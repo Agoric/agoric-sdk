@@ -14,11 +14,11 @@ import { getTelemetryProviders, makeSlogSender } from '@agoric/telemetry';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { makeWithQueue } from '@agoric/internal/src/queue.js';
 import { makeBatchedDeliver } from '@agoric/internal/src/batched-deliver.js';
+import { makeKVStoreFromMap } from '@agoric/internal/src/kv-store.js';
 import stringify from './helpers/json-stable-stringify.js';
 import { launch } from './launch-chain.js';
 import { DEFAULT_SIM_SWINGSET_PARAMS, QueueInbound } from './sim-params.js';
 import { parseQueueSizes } from './params.js';
-import { makeKVStoreFromMap } from './helpers/bufferedStorage.js';
 import { makeQueue, makeQueueStorageMock } from './helpers/make-queue.js';
 
 /** @import { Mailbox } from '@agoric/swingset-vat' */

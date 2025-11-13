@@ -17,7 +17,7 @@ export {};
  * @import {makeVatKeeper} from './kernel/state/vatKeeper.js';
  * @import {KernelKeeper} from './kernel/state/kernelKeeper.js';
  * @import {xsnap} from '@agoric/xsnap';
- * @import {KVStore} from '@agoric/swing-store';
+ * @import { KVStore } from '@agoric/internal/src/kv-store.js';
  */
 
 /* This file defines types that part of the external API of swingset. That
@@ -240,7 +240,7 @@ export {};
  * @typedef {BundleName | BundleRef | {bundleID: BundleID}} SourceOfBundle
  */
 /**
- * @typedef { import('@agoric/internal/src/kv-store.js').KVStore } KVStore
+ * @typedef { KVStore } KVStore
  * @typedef { import('@agoric/swing-store').SnapStore } SnapStore
  * @typedef { import('@agoric/swing-store').SnapshotResult } SnapshotResult
  * @typedef { import('@agoric/swing-store').TranscriptStore } TranscriptStore

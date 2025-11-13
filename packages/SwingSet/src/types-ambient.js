@@ -8,3 +8,7 @@
 /**
  * @import { TranscriptStore, SwingStore, SwingStoreKernelStorage, SwingStoreHostStorage, } from '@agoric/swing-store';
  */
+
+/**
+ * @import { KVStore } from '@agoric/internal/src/kv-store.js';
+ */

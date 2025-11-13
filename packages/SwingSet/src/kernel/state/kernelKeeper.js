@@ -36,6 +36,7 @@ import {
 const enableKernelGC = true;
 
 /**
+ * @import { KVStore } from '@agoric/internal/src/kv-store.js';
  * @import {SwingStoreKernelStorage} from '@agoric/swing-store';
  * @import { BundleCap, BundleID, EndoZipBase64Bundle, KernelSlog, ManagerType, SnapStore, TranscriptStore, VatKeeper, CleanupBudget, CleanupWork, PolicyOutputCleanupBudget } from '../../types-external.js'
  * @import { InternalKernelOptions, ReapDirtThreshold, PromiseRecord, RunQueueEventCleanupTerminatedVat } from '../../types-internal.js'
@@ -239,7 +240,7 @@ const setObjectReferenceCount = (kvStore, kref, counts) => {
  * and "recognizable" counts.
  *
  * @param { (key: string) => string} getRequired
- * @param { import('@agoric/internal/src/kv-store.js').KVStore } kvStore
+ * @param { KVStore } kvStore
  * @param {string} kref  The kernel slot whose refcount is to be incremented.
  * @param {string?} tag  Debugging note with rough source of the reference.
  * @param {{ isExport?: boolean, onlyRecognizable?: boolean }} options
