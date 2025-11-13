@@ -17,7 +17,8 @@
  */
 export const parseChainHubOpts = async scriptArgs => {
   // import dynamically so the modules can work in CoreEval environment
-  const { parseArgs } = await import('node:util');
+  const avoidBundling = 'node:util';
+  const { parseArgs } = await import(avoidBundling);
 
   /** @type {ParseArgsConfig['options']} */
   const parserOpts = {

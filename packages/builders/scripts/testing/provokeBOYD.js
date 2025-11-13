@@ -51,7 +51,8 @@ export const defaultProposalBuilder = async () =>
 
 /** @type {DeployScriptFunction} */
 export default async (homeP, endowments) => {
-  const dspModule = await import('@agoric/deploy-script-support');
+  const avoidBundling = '@agoric/deploy-script-support';
+  const dspModule = await import(avoidBundling);
   const { makeHelpers } = dspModule;
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
   await writeCoreEval(provokeBOYD.name, defaultProposalBuilder);

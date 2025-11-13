@@ -6,7 +6,8 @@ delete globalThis.VatData;
 
 /** @see present.test.js */
 test('methods available that throw', async t => {
-  const { defineKind } = await import('../src/index.js');
+  const avoidBundling = '../src/index.js';
+  const { defineKind } = await import(avoidBundling);
   t.throws(() => defineKind('someTag', () => {}, {}), {
     message: /VatData unavailable/,
   });

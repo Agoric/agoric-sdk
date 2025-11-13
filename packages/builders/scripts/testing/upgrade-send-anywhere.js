@@ -134,7 +134,8 @@ export const defaultProposalBuilder = async ({ publishRef, install }) =>
 /** @type {DeployScriptFunction} */
 export default async (homeP, endowments) => {
   // import dynamically so the module can work in CoreEval environment
-  const dspModule = await import('@agoric/deploy-script-support');
+  const avoidBundling = '@agoric/deploy-script-support';
+  const dspModule = await import(avoidBundling);
   const { makeHelpers } = dspModule;
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
   await writeCoreEval(upgradeSendAnywhere.name, defaultProposalBuilder);
