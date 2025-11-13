@@ -11,6 +11,10 @@ import {
   type IBCConnectionInfo,
 } from '@agoric/orchestration';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
+import type {
+  FundsFlowPlan,
+  PortfolioContinuingInvitationMaker,
+} from '@agoric/portfolio-api';
 import {
   AxelarChain,
   SupportedChain,
@@ -25,10 +29,6 @@ import type { Zone } from '@agoric/zone';
 import { Fail, X } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import type {
-  FundsFlowPlan,
-  PortfolioContinuingInvitationMaker,
-} from '@agoric/portfolio-api';
 import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
 import { type LocalAccount, type NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
@@ -73,9 +73,11 @@ export type AccountInfoFor = Record<AxelarChain, GMPAccountInfo> & {
   noble: NobleAccountInfo;
 };
 
+type MaybeFailed<T> = T | undefined;
+
 type PortfolioKitState = {
   portfolioId: number;
-  accountsPending: MapStore<SupportedChain, VowKit<AccountInfo>>;
+  accountsPending: MapStore<SupportedChain, MaybeFailed<VowKit<AccountInfo>>>;
   accounts: MapStore<SupportedChain, AccountInfo>;
   positions: MapStore<PoolKey, Position>;
   flowsRunning: MapStore<
@@ -311,15 +313,20 @@ export const preparePortfolioKit = (
         getPortfolioId() {
           return this.state.portfolioId;
         },
-        getGMPInfo(chainName: AxelarChain): Vow<GMPAccountInfo> {
-          const { accounts, accountsPending } = this.state;
-          if (accounts.has(chainName)) {
-            return vowTools.asVow(
-              () => accounts.get(chainName) as GMPAccountInfo,
-            );
-          }
-          const { vow } = accountsPending.get(chainName);
-          return vow as Vow<GMPAccountInfo>;
+        hasGMPInfo(chainName: AxelarChain) {
+          const { accounts } = this.state;
+          return accounts.has(chainName);
+        },
+        getGMPInfo(chainName: AxelarChain) {
+          const { accounts } = this.state;
+          return accounts.get(chainName) as GMPAccountInfo;
+        },
+        accountCreationFailed(chainName: AxelarChain) {
+          const { accountsPending } = this.state;
+          return (
+            accountsPending.has(chainName) &&
+            accountsPending.get(chainName) === undefined
+          );
         },
         getTargetAllocation() {
           return this.state.targetAllocation;
@@ -427,7 +434,11 @@ export const preparePortfolioKit = (
           }
           if (accountsPending.has(chainName)) {
             traceChain('accountsPending.has');
-            return accountsPending.get(chainName).vow as Vow<AccountInfoFor[C]>;
+            const val = accountsPending.get(chainName);
+            if (val) {
+              return val.vow as Vow<AccountInfoFor[C]>;
+            }
+            accountsPending.delete(chainName);
           }
           const pending: VowKit<AccountInfoFor[C]> = vowTools.makeVowKit();
           vowTools.watch(pending.vow, this.facets.accountWatcher, chainName);
@@ -435,6 +446,30 @@ export const preparePortfolioKit = (
           accountsPending.init(chainName, pending);
           this.facets.reporter.publishStatus();
           return undefined;
+        },
+        reservePendingAccount<C extends SupportedChain>(
+          chainName: C,
+        ): undefined | Vow<AccountInfoFor[C]> {
+          const traceChain = trace
+            .sub(`portfolio${this.state.portfolioId}`)
+            .sub(chainName);
+          traceChain('reservePendingAccount');
+          const { accountsPending } = this.state;
+          const pending: VowKit<AccountInfoFor[C]> = vowTools.makeVowKit();
+          vowTools.watch(pending.vow, this.facets.accountWatcher, chainName);
+          traceChain('accountsPending.init');
+          accountsPending.init(chainName, pending);
+          this.facets.reporter.publishStatus();
+          return undefined;
+        },
+        setAccountInfo(info: AccountInfo) {
+          const { accounts, portfolioId } = this.state;
+          const traceChain = trace
+            .sub(`portfolio${portfolioId}`)
+            .sub(info.chainName);
+          traceChain('accounts.init', info);
+          accounts.init(info.chainName, info);
+          this.facets.reporter.publishStatus();
         },
         resolveAccount(info: AccountInfo) {
           const { accounts, accountsPending, portfolioId } = this.state;
@@ -445,21 +480,30 @@ export const preparePortfolioKit = (
           if (accountsPending.has(info.chainName)) {
             const vow = accountsPending.get(info.chainName);
             // NEEDSTEST - why did all tests pass without .resolve()?
-            traceChain('accountsPending.resolve');
-            vow.resolver.resolve(info);
+            if (vow) {
+              traceChain('accountsPending.resolve');
+              vow.resolver.resolve(info);
+            }
             accountsPending.delete(info.chainName);
           }
           traceChain('accounts.init');
           accounts.init(info.chainName, info);
           this.facets.reporter.publishStatus();
         },
+        resetPendingAccount(chainName: AxelarChain) {
+          const { accountsPending } = this.state;
+          // XXX trace?
+          accountsPending.delete(chainName);
+          return this.facets.manager.reservePendingAccount(chainName);
+        },
         releaseAccount(chainName: SupportedChain, reason: unknown) {
           trace('releaseAccount', chainName, reason);
           const { accountsPending } = this.state;
           if (accountsPending.has(chainName)) {
             const vow = accountsPending.get(chainName);
+            if (!vow) return;
             vow.resolver.reject(reason);
-            accountsPending.delete(chainName);
+            accountsPending.set(chainName, undefined);
             this.facets.reporter.publishStatus();
           }
         },

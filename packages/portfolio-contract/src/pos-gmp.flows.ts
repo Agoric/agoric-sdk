@@ -15,7 +15,9 @@ import { makeTracer } from '@agoric/internal';
 import { encodeHex } from '@agoric/internal/src/hex.js';
 import type {
   AccountId,
+  BaseChainInfo,
   Bech32Address,
+  CaipChainId,
   Chain,
   DenomAmount,
 } from '@agoric/orchestration';
@@ -50,12 +52,18 @@ import {
 import { TxType } from './resolver/constants.js';
 import type { ResolverKit } from './resolver/resolver.exo.ts';
 import type { PoolKey } from './type-guards.ts';
+import { predictWalletAddress } from './utils/create2.ts';
 
 const trace = makeTracer('GMPF');
 const { keys } = Object;
 
-export const provideEVMAccount = async (
+export type GMPAccountStatus = GMPAccountInfo & {
+  ready: Promise<GMPAccountInfo>;
+};
+
+export const provideEVMAccount = (
   chainName: AxelarChain,
+  chainInfo: BaseChainInfo,
   gmp: {
     chain: Chain<{ chainId: string }>;
     fee: NatValue;
@@ -65,44 +73,79 @@ export const provideEVMAccount = async (
   lca: LocalAccount,
   ctx: PortfolioInstanceContext,
   pk: GuestInterface<PortfolioKit>,
-) => {
-  await null;
-  const found = pk.manager.reserveAccount(chainName);
-  if (found) {
-    return found as unknown as Promise<GMPAccountInfo>; // XXX Guest/Host #9822
-  }
+): GMPAccountStatus => {
+  const pId = pk.reader.getPortfolioId();
+  const traceChain = trace.sub(`portfolio${pId}`).sub(chainName);
 
-  // We have the map entry reserved - use critical section pattern
-  try {
-    const pId = pk.reader.getPortfolioId();
-    const traceChain = trace.sub(`portfolio${pId}`).sub(chainName);
-    const axelarId = gmp.axelarIds[chainName];
-    const target = {
-      axelarId,
-      remoteAddress: ctx.contracts[chainName].factory,
+  const predictAddress = () => {
+    const remoteAddress = predictWalletAddress({
+      owner: lca.getAddress().value as any, // TODO fromBech32?
+      factoryAddress: ctx.contracts[chainName].factory,
+      gasServiceAddress: ctx.gmpAddresses.AXELAR_GAS as any, // ???
+      gatewayAddress: '0x123' as const,
+      walletBytecode: '0x1234' as const,
+    });
+    const chainId: CaipChainId = `${chainInfo.namespace}:${chainInfo.reference}`;
+    const info: GMPAccountInfo = {
+      namespace: 'eip155',
+      chainName,
+      chainId,
+      remoteAddress,
     };
-    const fee = { denom: ctx.gmpFeeInfo.denom, value: gmp.fee };
-    fee.value > 0n || Fail`axelar makeAccount requires > 0 fee`;
-    const feeAccount = await ctx.contractAccount;
-    const src = feeAccount.getAddress();
-    traceChain('send makeAccountCall Axelar fee from', src.value);
-    await feeAccount.send(lca.getAddress(), fee);
+    return info;
+  };
 
-    await sendMakeAccountCall(
-      target,
-      fee,
-      lca,
-      gmp.chain,
-      ctx.gmpAddresses,
-      gmp.evmGas,
-    );
+  const installContract = async () => {
+    await null;
+    try {
+      const axelarId = gmp.axelarIds[chainName];
+      const target = {
+        axelarId,
+        remoteAddress: ctx.contracts[chainName].factory,
+      };
+      const fee = { denom: ctx.gmpFeeInfo.denom, value: gmp.fee };
+      fee.value > 0n || Fail`axelar makeAccount requires > 0 fee`;
+      const feeAccount = await ctx.contractAccount;
+      const src = feeAccount.getAddress();
+      traceChain('send makeAccountCall Axelar fee from', src.value);
+      await feeAccount.send(lca.getAddress(), fee);
 
-    return pk.reader.getGMPInfo(chainName);
-  } catch (reason) {
-    trace('failed to make', chainName, reason);
-    pk.manager.releaseAccount(chainName, reason);
-    throw reason;
+      await sendMakeAccountCall(
+        target,
+        fee,
+        lca,
+        gmp.chain,
+        ctx.gmpAddresses,
+        gmp.evmGas,
+      );
+    } catch (reason) {
+      traceChain('failed to makeAccount', reason);
+      pk.manager.releaseAccount(chainName, reason);
+      throw reason;
+    }
+  };
+
+  if (!pk.reader.hasGMPInfo(chainName)) {
+    const info = predictAddress();
+    pk.manager.setAccountInfo(info);
+    const ready = pk.manager.reservePendingAccount(
+      chainName,
+    ) as unknown as Promise<GMPAccountInfo>;
+
+    void installContract();
+    return { ...info, ready };
   }
+  const info = pk.reader.getGMPInfo(chainName);
+
+  if (pk.reader.accountCreationFailed(chainName)) {
+    const ready = pk.manager.resetPendingAccount(
+      chainName,
+    ) as unknown as Promise<GMPAccountInfo>;
+    void installContract();
+    return { ...info, ready };
+  }
+
+  return { ...info, ready: Promise.resolve(info) };
 };
 
 type TokenMessengerI = {
