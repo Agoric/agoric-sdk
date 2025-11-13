@@ -179,6 +179,7 @@ export default [
         },
       ],
 
+      'jsdoc/no-defaults': 'off',
       'no-use-before-define': 'off',
     },
   },
