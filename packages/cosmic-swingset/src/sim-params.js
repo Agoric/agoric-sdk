@@ -135,6 +135,7 @@ export const makeVatCleanupBudgetFromKeywords = keywordsRecord => {
 export const defaultVatCleanupBudget =
   makeVatCleanupBudgetFromKeywords(VatCleanupDefaults);
 
+// Source of truth is golang/cosmos/x/swingset/types/default-params.go
 /**
  * @type {JsonSafe<ParamsSDKType>}
  */
@@ -147,4 +148,6 @@ export const DEFAULT_SIM_SWINGSET_PARAMS = {
   vat_cleanup_budget: defaultVatCleanupBudget,
   installation_deadline_blocks: `${defaultInstallationDeadlineBlocks}`,
   installation_deadline_seconds: `${defaultInstallationDeadlineSeconds}`,
+  bundle_uncompressed_size_limit_bytes: `${defaultBundleUncompressedSizeLimitBytes}`,
+  chunk_size_limit_bytes: `${defaultChunkSizeLimitBytes}`,
 };

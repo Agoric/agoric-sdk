@@ -35,6 +35,11 @@ const makeSourceDescriptors = (
   return deepCopyJsonable(hardened);
 };
 
+/**
+ * Build swingset params with a custom vat cleanup budget.
+ * @param budget - Vat cleanup budget keywords.
+ * @returns Params with vat_cleanup_budget overrides applied.
+ */
 const makeCleanupBudgetParams = (
   budget: VatCleanupKeywordsRecord,
 ): JsonSafe<ParamsSDKType> => {
