@@ -4,6 +4,8 @@ import {
   type ParamsSDKType,
   Egress,
   type EgressSDKType,
+  ChunkedArtifact,
+  type ChunkedArtifactSDKType,
 } from './swingset.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { type JsonSafe } from '../../json-safe.js';
@@ -78,6 +80,37 @@ export interface QueryMailboxResponseProtoMsg {
 /** QueryMailboxResponse is the mailbox response. */
 export interface QueryMailboxResponseSDKType {
   value: string;
+}
+/** QueryChunkedArtifactStatusRequest is the request type for the Query/ChunkedArtifact RPC method. */
+export interface QueryChunkedArtifactStatusRequest {
+  chunkedArtifactId: bigint;
+}
+export interface QueryChunkedArtifactStatusRequestProtoMsg {
+  typeUrl: '/agoric.swingset.QueryChunkedArtifactStatusRequest';
+  value: Uint8Array;
+}
+/** QueryChunkedArtifactStatusRequest is the request type for the Query/ChunkedArtifact RPC method. */
+export interface QueryChunkedArtifactStatusRequestSDKType {
+  chunked_artifact_id: bigint;
+}
+/** QueryChunkedArtifactStatuslResponse is the response type for the Query/ChunkedArtifact RPC method. */
+export interface QueryChunkedArtifactStatusResponse {
+  chunkedArtifactId: bigint;
+  chunkedArtifact?: ChunkedArtifact;
+  /** Start time in UNIX epoch seconds. */
+  startTimeUnix: bigint;
+  startBlockHeight: bigint;
+}
+export interface QueryChunkedArtifactStatusResponseProtoMsg {
+  typeUrl: '/agoric.swingset.QueryChunkedArtifactStatusResponse';
+  value: Uint8Array;
+}
+/** QueryChunkedArtifactStatuslResponse is the response type for the Query/ChunkedArtifact RPC method. */
+export interface QueryChunkedArtifactStatusResponseSDKType {
+  chunked_artifact_id: bigint;
+  chunked_artifact?: ChunkedArtifactSDKType;
+  start_time_unix: bigint;
+  start_block_height: bigint;
 }
 function createBaseQueryParamsRequest(): QueryParamsRequest {
   return {};
@@ -472,6 +505,228 @@ export const QueryMailboxResponse = {
     return {
       typeUrl: '/agoric.swingset.QueryMailboxResponse',
       value: QueryMailboxResponse.encode(message).finish(),
+    };
+  },
+};
+function createBaseQueryChunkedArtifactStatusRequest(): QueryChunkedArtifactStatusRequest {
+  return {
+    chunkedArtifactId: BigInt(0),
+  };
+}
+export const QueryChunkedArtifactStatusRequest = {
+  typeUrl: '/agoric.swingset.QueryChunkedArtifactStatusRequest' as const,
+  encode(
+    message: QueryChunkedArtifactStatusRequest,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.chunkedArtifactId !== BigInt(0)) {
+      writer.uint32(8).uint64(message.chunkedArtifactId);
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryChunkedArtifactStatusRequest {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryChunkedArtifactStatusRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.chunkedArtifactId = reader.uint64();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): QueryChunkedArtifactStatusRequest {
+    return {
+      chunkedArtifactId: isSet(object.chunkedArtifactId)
+        ? BigInt(object.chunkedArtifactId.toString())
+        : BigInt(0),
+    };
+  },
+  toJSON(
+    message: QueryChunkedArtifactStatusRequest,
+  ): JsonSafe<QueryChunkedArtifactStatusRequest> {
+    const obj: any = {};
+    message.chunkedArtifactId !== undefined &&
+      (obj.chunkedArtifactId = (
+        message.chunkedArtifactId || BigInt(0)
+      ).toString());
+    return obj;
+  },
+  fromPartial(
+    object: Partial<QueryChunkedArtifactStatusRequest>,
+  ): QueryChunkedArtifactStatusRequest {
+    const message = createBaseQueryChunkedArtifactStatusRequest();
+    message.chunkedArtifactId =
+      object.chunkedArtifactId !== undefined &&
+      object.chunkedArtifactId !== null
+        ? BigInt(object.chunkedArtifactId.toString())
+        : BigInt(0);
+    return message;
+  },
+  fromProtoMsg(
+    message: QueryChunkedArtifactStatusRequestProtoMsg,
+  ): QueryChunkedArtifactStatusRequest {
+    return QueryChunkedArtifactStatusRequest.decode(message.value);
+  },
+  toProto(message: QueryChunkedArtifactStatusRequest): Uint8Array {
+    return QueryChunkedArtifactStatusRequest.encode(message).finish();
+  },
+  toProtoMsg(
+    message: QueryChunkedArtifactStatusRequest,
+  ): QueryChunkedArtifactStatusRequestProtoMsg {
+    return {
+      typeUrl: '/agoric.swingset.QueryChunkedArtifactStatusRequest',
+      value: QueryChunkedArtifactStatusRequest.encode(message).finish(),
+    };
+  },
+};
+function createBaseQueryChunkedArtifactStatusResponse(): QueryChunkedArtifactStatusResponse {
+  return {
+    chunkedArtifactId: BigInt(0),
+    chunkedArtifact: undefined,
+    startTimeUnix: BigInt(0),
+    startBlockHeight: BigInt(0),
+  };
+}
+export const QueryChunkedArtifactStatusResponse = {
+  typeUrl: '/agoric.swingset.QueryChunkedArtifactStatusResponse' as const,
+  encode(
+    message: QueryChunkedArtifactStatusResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.chunkedArtifactId !== BigInt(0)) {
+      writer.uint32(8).uint64(message.chunkedArtifactId);
+    }
+    if (message.chunkedArtifact !== undefined) {
+      ChunkedArtifact.encode(
+        message.chunkedArtifact,
+        writer.uint32(18).fork(),
+      ).ldelim();
+    }
+    if (message.startTimeUnix !== BigInt(0)) {
+      writer.uint32(24).int64(message.startTimeUnix);
+    }
+    if (message.startBlockHeight !== BigInt(0)) {
+      writer.uint32(32).int64(message.startBlockHeight);
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryChunkedArtifactStatusResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryChunkedArtifactStatusResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.chunkedArtifactId = reader.uint64();
+          break;
+        case 2:
+          message.chunkedArtifact = ChunkedArtifact.decode(
+            reader,
+            reader.uint32(),
+          );
+          break;
+        case 3:
+          message.startTimeUnix = reader.int64();
+          break;
+        case 4:
+          message.startBlockHeight = reader.int64();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): QueryChunkedArtifactStatusResponse {
+    return {
+      chunkedArtifactId: isSet(object.chunkedArtifactId)
+        ? BigInt(object.chunkedArtifactId.toString())
+        : BigInt(0),
+      chunkedArtifact: isSet(object.chunkedArtifact)
+        ? ChunkedArtifact.fromJSON(object.chunkedArtifact)
+        : undefined,
+      startTimeUnix: isSet(object.startTimeUnix)
+        ? BigInt(object.startTimeUnix.toString())
+        : BigInt(0),
+      startBlockHeight: isSet(object.startBlockHeight)
+        ? BigInt(object.startBlockHeight.toString())
+        : BigInt(0),
+    };
+  },
+  toJSON(
+    message: QueryChunkedArtifactStatusResponse,
+  ): JsonSafe<QueryChunkedArtifactStatusResponse> {
+    const obj: any = {};
+    message.chunkedArtifactId !== undefined &&
+      (obj.chunkedArtifactId = (
+        message.chunkedArtifactId || BigInt(0)
+      ).toString());
+    message.chunkedArtifact !== undefined &&
+      (obj.chunkedArtifact = message.chunkedArtifact
+        ? ChunkedArtifact.toJSON(message.chunkedArtifact)
+        : undefined);
+    message.startTimeUnix !== undefined &&
+      (obj.startTimeUnix = (message.startTimeUnix || BigInt(0)).toString());
+    message.startBlockHeight !== undefined &&
+      (obj.startBlockHeight = (
+        message.startBlockHeight || BigInt(0)
+      ).toString());
+    return obj;
+  },
+  fromPartial(
+    object: Partial<QueryChunkedArtifactStatusResponse>,
+  ): QueryChunkedArtifactStatusResponse {
+    const message = createBaseQueryChunkedArtifactStatusResponse();
+    message.chunkedArtifactId =
+      object.chunkedArtifactId !== undefined &&
+      object.chunkedArtifactId !== null
+        ? BigInt(object.chunkedArtifactId.toString())
+        : BigInt(0);
+    message.chunkedArtifact =
+      object.chunkedArtifact !== undefined && object.chunkedArtifact !== null
+        ? ChunkedArtifact.fromPartial(object.chunkedArtifact)
+        : undefined;
+    message.startTimeUnix =
+      object.startTimeUnix !== undefined && object.startTimeUnix !== null
+        ? BigInt(object.startTimeUnix.toString())
+        : BigInt(0);
+    message.startBlockHeight =
+      object.startBlockHeight !== undefined && object.startBlockHeight !== null
+        ? BigInt(object.startBlockHeight.toString())
+        : BigInt(0);
+    return message;
+  },
+  fromProtoMsg(
+    message: QueryChunkedArtifactStatusResponseProtoMsg,
+  ): QueryChunkedArtifactStatusResponse {
+    return QueryChunkedArtifactStatusResponse.decode(message.value);
+  },
+  toProto(message: QueryChunkedArtifactStatusResponse): Uint8Array {
+    return QueryChunkedArtifactStatusResponse.encode(message).finish();
+  },
+  toProtoMsg(
+    message: QueryChunkedArtifactStatusResponse,
+  ): QueryChunkedArtifactStatusResponseProtoMsg {
+    return {
+      typeUrl: '/agoric.swingset.QueryChunkedArtifactStatusResponse',
+      value: QueryChunkedArtifactStatusResponse.encode(message).finish(),
     };
   },
 };
