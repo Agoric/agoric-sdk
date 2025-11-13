@@ -1,0 +1,195 @@
+diff --git a/cache.js b/cache.js
+index e61f6d5e040f95ecb49db6cc5201cbb392a5caa8..d711a8a44311fe68408cc6eddcb465fb6857ca6d 100644
+--- a/cache.js
++++ b/cache.js
+@@ -92,11 +92,13 @@ export const makeBundleCache = (wr, cwd, readPowers, opts) => {
+ 
+     const bundleFileName = toBundleName(targetName);
+     const bundleWr = wr.neighbor(bundleFileName);
++    const esbuildRd = wr.neighbor(jsOpts.toBundleName(`${targetName}-esbuild`)).readOnly();
++    const esbuildPath = cwd.relative(esbuildRd.absolute());
+     const metaWr = wr.neighbor(toBundleMeta(targetName));
+ 
+     const bundle = await bundleSource(
+       rootPath,
+-      { ...bundleOptions, noTransforms, elideComments, format, conditions },
++      { ...bundleOptions, esbuildPath, noTransforms, elideComments, format, conditions },
+       {
+         ...readPowers,
+         read: loggedRead,
+diff --git a/package.json b/package.json
+index d95a02f005ffd458897f006e6fc6452869e44e01..089d8ec55e5a64f015ef6ae1b71b7aa58ff3347c 100644
+--- a/package.json
++++ b/package.json
+@@ -30,6 +30,7 @@
+     "@endo/init": "^1.1.12",
+     "@endo/promise-kit": "^1.1.13",
+     "@endo/where": "^1.0.11",
++    "esbuild": "^0.25.2",
+     "ts-blank-space": "^0.4.1"
+   },
+   "devDependencies": {
+diff --git a/src/bundle-source.js b/src/bundle-source.js
+index 173387c2225b4bfe7de3922388757fa6a7b5e58b..915026cb5583961385d64d39a3fab4d7f3b9b991 100644
+--- a/src/bundle-source.js
++++ b/src/bundle-source.js
+@@ -1,4 +1,6 @@
+ // @ts-check
++export const AGORIC_MAX_BYTE_LIMIT = 500_000;
++export const DEFAULT_OUT_DIR = 'bundles';
+ export const DEFAULT_MODULE_FORMAT = 'endoZipBase64';
+ export const SUPPORTED_FORMATS = [
+   'getExport',
+@@ -7,6 +9,84 @@ export const SUPPORTED_FORMATS = [
+   'endoScript',
+ ];
+ 
++const defaultEsbuildPath = async (date) => {
++  const isoTime = date.toISOString();
++  const fsFriendlyTime = isoTime.replace(/[-:]/g, '');
++  const esbuildFileName = `esbuild-bundle-${fsFriendlyTime}.js`;
++  const avoidBundling = 'path';
++  const path = await import(avoidBundling);
++  return path.join(DEFAULT_OUT_DIR, esbuildFileName);
++};
++
++/**
++ * Ensure that the input directory has a package.json above it.
++ *
++ * @param {string} startFilename 
++ */
++const prepareInputDirectory = async (startFilename) => {
++  const avoidBundlingPath = 'path';
++  const path = await import(avoidBundlingPath);
++  const inDir = path.dirname(startFilename);
++
++  const avoidBundlingUrl = 'url';
++  const url = await import(avoidBundlingUrl);
++  const avoidBundlingModule = 'module';
++  const module = await import(avoidBundlingModule);
++  try {
++    const origPJfile = module.findPackageJSON(url.pathToFileURL(startFilename));
++    if (origPJfile) {
++      // We have a package.json, so no need to create one.
++      return;
++    }
++  } catch (_e) {
++    // continue to create one
++  }
++
++  // Create a minimal package.json
++  const avoidBundlingFs = 'fs';
++  const fsp = await import(avoidBundlingFs).then(mod => mod.promises);
++  const pjFile = path.join(inDir, 'package.json');
++  const packageJson = JSON.stringify(
++    {
++      name: '@aglocal/temp-bundle-input',
++      type: 'module',
++    },
++    null,
++    2,
++  );
++  const tmpFile = `${pjFile}.${Date.now()}`;
++  try {
++    await fsp.writeFile(
++      tmpFile,
++      `${packageJson}\n`,
++    );
++    await fsp.rename(tmpFile, pjFile);
++  } catch (e) {
++    try {
++      await fsp.unlink(tmpFile);
++    } catch (_e) {
++      // ignore
++    }
++  }
++};
++
++/**
++ * @param {string} startFilename
++ * @param {string} outfile
++ */
++const esbuildBundle = async (startFilename, outfile) => {
++  const avoidBundling = 'esbuild';
++  const esbuild = await import(avoidBundling);
++  await esbuild.build({
++    entryPoints: [startFilename],
++    bundle: true,
++    platform: 'neutral',
++    mainFields: ['main'],
++    minifyWhitespace: true,
++    outfile,
++  });
++};
++
+ /** @type {import('./types.js').BundleSource} */
+ // @ts-ignore cast
+ const bundleSource = async (
+@@ -20,17 +100,37 @@ const bundleSource = async (
+   }
+   /** @type {{ format: import('./types.js').ModuleFormat }} */
+   // @ts-expect-error cast (xxx params)
+-  const { format: moduleFormat = DEFAULT_MODULE_FORMAT } = options;
++  const { format: moduleFormat = DEFAULT_MODULE_FORMAT, byteLimit = AGORIC_MAX_BYTE_LIMIT } = options;
+ 
+   switch (moduleFormat) {
+     case 'endoZipBase64': {
+-      const { bundleZipBase64 } = await import('./zip-base64.js');
+-      return bundleZipBase64(startFilename, options, powers);
++      const avoidBundling = './zip-base64.js';
++      const { bundleZipBase64 } = await import(avoidBundling);
++      const simpleBundle = await bundleZipBase64(startFilename, options, powers);
++      if (simpleBundle.endoZipBase64.length < byteLimit) {
++        return simpleBundle;
++      }
++
++      // When the Endo bundle is too big, fallback to esbuild-based bundling.
++      const { esbuildPath = await defaultEsbuildPath(new Date()) } = options;
++      await esbuildBundle(startFilename, esbuildPath);
++
++      await prepareInputDirectory(esbuildPath);
++      const esbuilt = await bundleZipBase64(esbuildPath, options, powers);
++      if (esbuilt.endoZipBase64.length > byteLimit) {
++        const warning = RangeError(
++          `Bundled source ${startFilename} still exceeds byteLimit of ${byteLimit} after minimizing; got ${esbuilt.endoZipBase64.length} bytes`,
++        );
++        console.warn(warning);
++      }
++
++      return esbuilt;
+     }
+     case 'getExport':
+     case 'nestedEvaluate':
+     case 'endoScript': {
+-      const { bundleScript } = await import('./script.js');
++      const avoidBundling = './script.js';
++      const { bundleScript } = await import(avoidBundling);
+       return bundleScript(startFilename, moduleFormat, options, powers);
+     }
+     default:
+diff --git a/src/types.d.ts b/src/types.d.ts
+index 656f89425805ab52e3f7d16c9732a75d90d34ea8..d63a6291fcfcee05ea2a774c260b393a1deeab8f 100644
+--- a/src/types.d.ts
++++ b/src/types.d.ts
+@@ -53,6 +53,8 @@ export type BundleOptions<T extends ModuleFormat> = {
+      * exports and imports.
+      */
+     conditions?: string[] | undefined;
++    byteLimit?: number | undefined;
++    esbuildPath?: string | undefined;
+ };
+ export type ReadFn = (location: string) => Promise<Uint8Array>;
+ /**
+diff --git a/src/types.ts b/src/types.ts
+index 315e4d187b65d04b911139d150689753fa374a81..dfa7896bf99d95957e7372f6a8f069813addcaa6 100644
+--- a/src/types.ts
++++ b/src/types.ts
+@@ -92,6 +92,8 @@ export type BundleOptions<T extends ModuleFormat> = {
+    * exports and imports.
+    */
+   conditions?: string[] | undefined;
++  byteLimit?: number | undefined;
++  esbuildPath?: string | undefined;
+ };
+ 
+ export type ReadFn = (location: string) => Promise<Uint8Array>;
