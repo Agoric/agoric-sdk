@@ -116,7 +116,7 @@ message State {
   uint64 first_chunked_artifact_id = 2
       [(gogoproto.jsontag) = "first_chunked_artifact_id", (gogoproto.moretags) = "yaml:\"first_chunked_artifact_id\""];
 
-  // The last chunked artifact id that has not expired or completed.
+  // The last chunked artifact id that has not expired nor completed.
   uint64 last_chunked_artifact_id = 3
       [(gogoproto.jsontag) = "last_chunked_artifact_id", (gogoproto.moretags) = "yaml:\"last_chunked_artifact_id\""];
 
@@ -199,7 +199,7 @@ message SwingStoreArtifact {
 // multiple transactions, in chunks, as when using InstallBundle to submit
 // chunks.
 message ChunkedArtifact {
-  // The SHA-512 hash of the compartment-map.json file inside the bundle.
+  // The SHA-512 hash of the entire bundle file's contents.
   string sha512 = 1 [(gogoproto.jsontag) = "sha512", (gogoproto.moretags) = "yaml:\"sha512\""];
 
   // The size of the final bundle artifact in bytes.
