@@ -10,10 +10,12 @@ import { type Amount, type Brand, type NatAmount } from '@agoric/ertp';
 import {
   deeplyFulfilledObject,
   makeTracer,
+  objectMap,
   type TraceLogger,
 } from '@agoric/internal';
 import type {
   AccountId,
+  BaseChainInfo,
   CaipChainId,
   CosmosChainAddress,
   Denom,
@@ -59,6 +61,7 @@ import {
   CompoundProtocol,
   provideEVMAccount,
   type EVMContext,
+  type GMPAccountStatus,
 } from './pos-gmp.flows.ts';
 import {
   agoricToNoble,
@@ -109,7 +112,7 @@ type PortfolioBootstrapContext = PortfolioInstanceContext & {
   makePortfolioKit: () => GuestInterface<PortfolioKit>;
 };
 
-type EVMAccounts = Partial<Record<AxelarChain, GMPAccountInfo>>;
+type EVMAccounts = Partial<Record<AxelarChain, GMPAccountStatus>>;
 type AccountsByChain = {
   agoric: AccountInfoFor['agoric'];
   noble?: AccountInfoFor['noble'];
@@ -750,16 +753,27 @@ const stepFlow = async (
     }
   };
 
-  const evmAcctInfo = await (async () => {
-    const axelar = await orch.getChain('axelar');
+  const asEntry = <K, V>(k: K, v: V): [K, V] => [k, v];
+  const axelar = await orch.getChain('axelar');
+  const infoFor: { [name: string]: BaseChainInfo<'eip155'> } =
+    await deeplyFulfilledObject(
+      objectMap(
+        fromEntries(keys(AxelarChain).map(name => [name, name])),
+        async name => {
+          const chain = await orch.getChain(name);
+          const info = await chain.getChainInfo();
+          return info;
+        },
+      ),
+    );
+  const evmAcctInfo = (() => {
     const { axelarIds } = ctx;
     const gmpCommon = { chain: axelar, axelarIds };
 
     const evmChains = keys(AxelarChain) as unknown[];
-    const asEntry = <K, V>(k: K, v: V): [K, V] => [k, v];
 
     const seen = new Set<AxelarChain>();
-    const chainToAcctP = moves.flatMap(move =>
+    const chainToAcctStatus = moves.flatMap(move =>
       [move.src, move.dest].flatMap(ref => {
         const maybeChain = getChainNameOfPlaceRef(ref);
         if (!evmChains.includes(maybeChain)) return [];
@@ -773,16 +787,21 @@ const stepFlow = async (
           evmGas: move.detail?.evmGas || 0n,
         };
 
-        const acctP = forChain(chain, () =>
-          provideEVMAccount(chain, gmp, agoric.lca, ctx, kit),
+        const acctInfo = provideEVMAccount(
+          chain,
+          infoFor[chain],
+          gmp,
+          agoric.lca,
+          ctx,
+          kit,
         );
-        return [asEntry(chain, acctP)];
+        return [asEntry(chain, acctInfo)];
       }),
     );
-    return deeplyFulfilledObject(harden(fromEntries(chainToAcctP)));
+    return harden(fromEntries(chainToAcctStatus));
   })();
 
-  traceFlow('EVM accounts ready', keys(evmAcctInfo));
+  traceFlow('EVM accounts pre-computed', keys(evmAcctInfo));
   const nobleMentioned = moves.some(m => [m.src, m.dest].includes('@noble'));
   const nobleInfo = await (nobleMentioned || keys(evmAcctInfo).length > 0
     ? forChain('noble', () =>
