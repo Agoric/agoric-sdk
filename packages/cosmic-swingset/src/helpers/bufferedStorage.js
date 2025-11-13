@@ -235,7 +235,11 @@ export const makeReadCachingStorage = kvStore => {
 
       // Fetch the value and cache it until the next commit or abort.
       value = kvStore.get(key);
-      cache.set(key, value === undefined ? undef : value);
+      cache.set(
+        key,
+        // eslint-disable-next-line no-nested-ternary
+        value === undefined ? (kvStore.has(key) ? undef : deleted) : value,
+      );
       return value;
     },
     set(key, value) {
