@@ -47,6 +47,7 @@ export type GmpTransfer = {
 
 type CctpTx = PendingTx & { type: typeof TxType.CCTP_TO_EVM; amount: bigint };
 type GmpTx = PendingTx & { type: typeof TxType.GMP };
+type MakeAccountTx = PendingTx & { type: typeof TxType.MAKE_ACCOUNT };
 
 type LiveWatchOpts = { mode: 'live'; timeoutMs: number };
 type LookBackWatchOpts = {
@@ -71,6 +72,7 @@ export type PendingTxMonitor<
 type MonitorRegistry = {
   [TxType.CCTP_TO_EVM]: PendingTxMonitor<CctpTx, EvmContext>;
   [TxType.GMP]: PendingTxMonitor<GmpTx, EvmContext>;
+  [TxType.MAKE_ACCOUNT]: PendingTxMonitor<MakeAccountTx, EvmContext>;
 };
 
 const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
