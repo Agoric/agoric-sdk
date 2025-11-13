@@ -147,7 +147,8 @@ export const defaultProposalBuilder = async (
 /** @type {DeployScriptFunction} */
 export default async (homeP, endowments) => {
   // import dynamically so the modules can work in CoreEval environment
-  const { makeHelpers } = await import('@agoric/deploy-script-support');
+  const avoidBundling = '@agoric/deploy-script-support';
+  const { makeHelpers } = await import(avoidBundling);
   const { scriptArgs } = endowments;
   const opts = parseChainHubOpts(scriptArgs);
   const { writeCoreEval } = await makeHelpers(homeP, endowments);

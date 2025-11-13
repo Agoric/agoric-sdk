@@ -218,7 +218,8 @@ export const defaultProposalBuilder = async (_utils, targetSpecifiers) => {
   parseTargets(targetSpecifiers);
 
   // Dynamic import to avoid inclusion in the proposal bundle.
-  const { getSpecifier } = await import('@agoric/internal/src/module-utils.js');
+  const avoidBundling = '@agoric/internal/src/module-utils.js';
+  const { getSpecifier } = await import(avoidBundling);
   const SELF = await getSpecifier(import.meta.url);
 
   return harden({
@@ -233,7 +234,8 @@ export default async (homeP, endowments) => {
   parseTargets(scriptArgs, makeUsageError);
 
   // Dynamic import to avoid inclusion in the proposal bundle.
-  const { makeHelpers } = await import('@agoric/deploy-script-support');
+  const avoidBundling = '@agoric/deploy-script-support';
+  const { makeHelpers } = await import(avoidBundling);
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
   await writeCoreEval(terminateGoverned.name, utils =>
     defaultProposalBuilder(utils, scriptArgs),
