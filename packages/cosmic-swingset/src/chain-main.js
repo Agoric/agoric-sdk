@@ -61,7 +61,7 @@ import {
 
 /**
  * @import {EReturn} from '@endo/far';
- * @import {KVStore} from './helpers/bufferedStorage.js';
+ * @import {KVStore} from '@agoric/internal/src/kv-store.js';
  * @import {SwingStore} from '@agoric/swing-store';
  * @import {StateSyncExporter} from './export-kernel-db.js';
  */
