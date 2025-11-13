@@ -1,37 +1,9 @@
 import test from 'ava';
-import {
-  makeSequenceManager,
-  type AccountResponse,
-} from '../src/sequence-manager.js';
-
-const createMockFetchAccountInfo = () => {
-  let mockSequence = '100';
-  const mockAccountNumber = '377';
-  let callCount = 0;
-
-  const fetch = async (address: string): Promise<AccountResponse> => {
-    callCount += 1;
-    return {
-      account: {
-        '@type': '/cosmos.auth.v1beta1.BaseAccount',
-        address,
-        account_number: mockAccountNumber,
-        sequence: mockSequence,
-      },
-    };
-  };
-
-  return {
-    fetch,
-    updateSequence: (newSequence: string) => {
-      mockSequence = newSequence;
-    },
-    getCallCount: () => callCount,
-  };
-};
+import { makeSequenceManager } from '../src/sequence-manager.js';
+import { createMockFetchAccountInfo } from './mocks.js';
 
 test('SequenceManager initialization', async t => {
-  const mockFetch = createMockFetchAccountInfo();
+  const mockFetch = createMockFetchAccountInfo('377', '100');
   const logs: string[] = [];
 
   const sequenceManager = await makeSequenceManager(
@@ -55,7 +27,7 @@ test('SequenceManager initialization', async t => {
 });
 
 test('SequenceManager sync functionality', async t => {
-  const mockFetch = createMockFetchAccountInfo();
+  const mockFetch = createMockFetchAccountInfo('377', '100');
   const logs: string[] = [];
 
   const sequenceManager = await makeSequenceManager(
@@ -73,7 +45,7 @@ test('SequenceManager sync functionality', async t => {
   sequenceManager.getSequence(); // 101
 
   // Mock network having advanced further
-  mockFetch.updateSequence('105');
+  mockFetch.setSequenceNumber('105');
 
   // Sync should update to network state
   await sequenceManager.syncSequence();

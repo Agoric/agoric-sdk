@@ -1,34 +1,9 @@
 import test from 'ava';
-import {
-  makeSequenceManager,
-  type AccountResponse,
-} from '../src/sequence-manager.js';
+import { arrayIsLike } from '@agoric/internal/tools/ava-assertions.js';
+import { makeSequenceManager } from '../src/sequence-manager.js';
 import { makeSmartWalletWithSequence } from '../src/smart-wallet-with-sequence.js';
 import type { SigningSmartWalletKit } from '../src/signing-smart-wallet-kit.js';
-
-const createMockFetchAccountInfo = () => {
-  let mockSequence = '100';
-  const mockAccountNumber = '377';
-
-  const fetch = async (address: string): Promise<AccountResponse> => {
-    return {
-      account: {
-        '@type': '/cosmos.auth.v1beta1.BaseAccount',
-        address,
-        account_number: mockAccountNumber,
-        sequence: mockSequence,
-      },
-    };
-  };
-
-  return {
-    fetch,
-    updateSequence: (newSequence: string) => {
-      mockSequence = newSequence;
-    },
-    getNetworkSequence: () => Number(mockSequence),
-  };
-};
+import { createMockFetchAccountInfo } from './mocks.js';
 
 type SubmitTxResponse = {
   code: number;
@@ -45,14 +20,15 @@ class MockSigningSmartWalletKit {
 
   private networkSequence: () => number;
 
-  private shouldSimulateSequenceConflicts = false;
+  private shouldSimulateSequenceConflicts: boolean;
 
-  constructor(getNetworkSequence: () => number) {
+  constructor(
+    getNetworkSequence: () => number,
+    options: { simulateSequenceConflicts?: boolean } = {},
+  ) {
     this.networkSequence = getNetworkSequence;
-  }
-
-  enableSequenceConflictSimulation() {
-    this.shouldSimulateSequenceConflicts = true;
+    this.shouldSimulateSequenceConflicts =
+      options.simulateSequenceConflicts ?? false;
   }
 
   async sendBridgeAction(
@@ -97,7 +73,7 @@ class MockSigningSmartWalletKit {
 }
 
 test('handles concurrent offers and actions with correct sequence management', async t => {
-  const mockFetch = createMockFetchAccountInfo();
+  const mockFetch = createMockFetchAccountInfo('377', '100');
   const mockWallet = new MockSigningSmartWalletKit(() =>
     mockFetch.getNetworkSequence(),
   );
@@ -128,33 +104,38 @@ test('handles concurrent offers and actions with correct sequence management', a
 
   const results = (await Promise.all(promises)) as any;
 
-  t.is(results.length, 4);
-  results.forEach((result: any) => {
-    t.is(result.code, 0);
-    t.truthy(result.transactionHash);
-  });
+  arrayIsLike(t, results, [
+    // prettier-ignore
+    { code: 0, transactionHash: 'hash_executeOffer_100', height: 3321451, sequence: 100 },
+    // prettier-ignore
+    { code: 0, transactionHash: 'hash_executeOffer_101', height: 3321452, sequence: 101 },
+    // prettier-ignore
+    { code: 0, transactionHash: 'hash_test_102', height: 3321453, sequence: 102 },
+    // prettier-ignore
+    { code: 0, transactionHash: 'hash_executeOffer_103', height: 3321454, sequence: 103 },
+  ]);
 
   const submittedTransactions = mockWallet.getSubmittedTransactions();
-  t.is(submittedTransactions.length, 4);
-
-  const sequences = submittedTransactions.map(tx => tx.sequence);
-  t.deepEqual(sequences, [100, 101, 102, 103]);
-
+  arrayIsLike(t, submittedTransactions, [
+    { method: 'executeOffer', sequence: 100 },
+    { method: 'executeOffer', sequence: 101 },
+    { method: 'test', sequence: 102 },
+    { method: 'executeOffer', sequence: 103 },
+  ]);
   t.true(logs.some(v => v.includes('Starting queue processing')));
   t.true(logs.some(v => v.includes('Queued executeOffer')));
   t.true(logs.some(v => v.includes('Queued sendBridgeAction')));
 });
 
 test('handles sequence error recovery with network sync', async t => {
-  const mockFetch = createMockFetchAccountInfo();
-  const mockWallet = new MockSigningSmartWalletKit(() =>
-    mockFetch.getNetworkSequence(),
+  const mockFetch = createMockFetchAccountInfo('377', '100');
+  const mockWallet = new MockSigningSmartWalletKit(
+    () => mockFetch.getNetworkSequence(),
+    { simulateSequenceConflicts: true },
   );
 
   const logs: string[] = [];
   const log = (...args: any[]) => logs.push(args.join(' '));
-
-  mockWallet.enableSequenceConflictSimulation();
 
   const sequenceManager = await makeSequenceManager(
     { log },
@@ -170,19 +151,24 @@ test('handles sequence error recovery with network sync', async t => {
     { chainId: 'agoricdev-25' },
   );
 
-  mockFetch.updateSequence('105');
+  mockFetch.setSequenceNumber('105');
 
   const result = (await walletWithSequence.executeOffer({
     id: 'offer1',
   } as any)) as any;
 
-  t.is(result.code, 0);
-  t.truthy(result.transactionHash);
+  t.deepEqual(result, {
+    code: 0,
+    height: 3321451,
+    transactionHash: `hash_executeOffer_105`,
+    sequence: 105,
+  });
 
   t.true(logs.some(v => v.includes('Sequence error detected')));
   t.true(logs.some(v => v.includes('Synced sequence: 101 → 105')));
 
   const submittedTransactions = mockWallet.getSubmittedTransactions();
-  t.is(submittedTransactions.length, 1);
-  t.is(submittedTransactions[0].sequence, 105);
+  arrayIsLike(t, submittedTransactions, [
+    { method: 'executeOffer', sequence: 105 },
+  ]);
 });

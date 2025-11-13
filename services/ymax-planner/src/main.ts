@@ -120,7 +120,7 @@ export type SimplePowers = {
 };
 
 export const main = async (
-  argsArr: string[],
+  cliArgs: string[],
   {
     env = process.env,
     fetch = globalThis.fetch,
@@ -133,8 +133,8 @@ export const main = async (
     WebSocket = ws.WebSocket,
   } = {},
 ) => {
-  const dashIdx = [...argsArr, '--'].indexOf('--');
-  const maybeOpts = argsArr.slice(0, dashIdx);
+  const dashIdx = [...cliArgs, '--'].indexOf('--');
+  const maybeOpts = cliArgs.slice(0, dashIdx);
   const isDryRun = maybeOpts.includes('--dry-run');
   const isVerbose = maybeOpts.includes('--verbose');
 
@@ -239,7 +239,7 @@ export const main = async (
 
   const sequenceManager = await makeSequenceManager(
     {
-      log: (...args) => console.log('[SequenceManager]:', ...args),
+      log: (...args) => console.log('[TxSequencer]:', ...args),
     },
     {
       address: signingSmartWalletKit.address,
@@ -251,7 +251,7 @@ export const main = async (
     {
       signingSmartWalletKit,
       sequenceManager,
-      log: (...args) => console.log('[SmartWalletWithSequence]:', ...args),
+      log: (...args) => console.log('[SigningSmartWallet]:', ...args),
     },
     { chainId: networkConfig.chainName },
   );
