@@ -26,6 +26,10 @@ import type {
 } from './support.ts';
 import { lookBackCctp, watchCctpTransfer } from './watchers/cctp-watcher.ts';
 import { lookBackGmp, watchGmp } from './watchers/gmp-watcher.ts';
+import {
+  watchSmartWalletTx,
+  lookBackSmartWalletTx,
+} from './watchers/wallet-watcher.ts';
 
 export type EvmChain = keyof typeof AxelarChain;
 

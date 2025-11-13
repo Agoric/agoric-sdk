@@ -65,7 +65,7 @@ export const watchSmartWalletTx = ({
     const TO_TOPIC = zeroPadValue(expectedAddr.toLowerCase(), 32);
     const filter = {
       address: factoryAddr,
-      topics: [SMART_WALLET_CREATED_SIGNATURE, null, TO_TOPIC],
+      topics: [SMART_WALLET_CREATED_SIGNATURE, TO_TOPIC],
     };
 
     log(`Watching SmartWalletCreated events emitted by ${factoryAddr}`);
@@ -148,7 +148,7 @@ export const lookBackSmartWalletTx = async ({
     const toTopic = zeroPadValue(expectedAddr.toLowerCase(), 32);
     const baseFilter: Filter = {
       address: factoryAddr,
-      topics: [SMART_WALLET_CREATED_SIGNATURE, null, toTopic],
+      topics: [SMART_WALLET_CREATED_SIGNATURE, toTopic],
     };
 
     const matchingEvent = await scanEvmLogsInChunks(
