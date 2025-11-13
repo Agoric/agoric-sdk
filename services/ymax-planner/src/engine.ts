@@ -173,7 +173,7 @@ export const makeVstorageEvent = (
   return { event, streamCellJson };
 };
 
-type Powers = {
+export type Powers = {
   evmCtx: Omit<EvmContext, 'signingSmartWalletKit' | 'fetch' | 'cosmosRest'>;
   rpc: CosmosRPCClient;
   spectrum: SpectrumClient;

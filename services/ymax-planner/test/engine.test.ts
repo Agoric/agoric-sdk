@@ -3,12 +3,15 @@ import test from 'ava';
 import { Fail } from '@endo/errors';
 
 import { boardSlottingMarshaller } from '@agoric/client-utils';
+import type { VStorage } from '@agoric/client-utils';
 import {
   AmountMath,
   type Brand,
   type DisplayInfo,
   type Issuer,
 } from '@agoric/ertp';
+import { objectMap } from '@agoric/internal';
+import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.exo.ts';
 import type {
   FlowDetail,
   StatusFor,
@@ -16,7 +19,13 @@ import type {
 import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 import { Far } from '@endo/pass-style';
+import type { CosmosRestClient } from '../src/cosmos-rest-client.ts';
 import { pickBalance, processPortfolioEvents } from '../src/engine.ts';
+import {
+  createMockEnginePowers,
+  createMockCosmosRestClient,
+  mockGasEstimator,
+} from './mocks.ts';
 
 let lastIbcId = 100;
 const mockAsset = (
@@ -68,15 +77,10 @@ test('processPortfolioEvents only resolves flows for new portfolio states', asyn
   const marshaller = boardSlottingMarshaller(
     slot => slotRegistry.get(slot as string) || Fail`Unknown slot ${slot}`,
   );
-  const flowKey = 'flow1';
-  const flowDetail: FlowDetail = harden({
-    type: 'deposit',
-    amount: AmountMath.make(depositBrand, 1_000_000n),
-  });
 
-  const portfolioKey = 'portfolio5';
   const portfoliosPathPrefix = 'published.ymaxTest.portfolios';
   const pendingTxPathPrefix = 'published.ymaxTest.pendingTxs';
+  const portfolioKey = 'portfolio5';
   const portfolioStatus: StatusFor['portfolio'] = harden({
     positionKeys: ['USDN'],
     flowCount: 1,
@@ -88,92 +92,65 @@ test('processPortfolioEvents only resolves flows for new portfolio states', asyn
     targetAllocation: {
       USDN: 1n,
     },
-    flowsRunning: { [flowKey]: flowDetail },
+    flowsRunning: {
+      flow1: {
+        type: 'deposit',
+        amount: AmountMath.make(depositBrand, 1_000_000n),
+      },
+    },
   });
-  const streamCellJson = JSON.stringify({
+  const portfolioStreamCellJson = JSON.stringify({
     blockHeight: '10',
     values: [JSON.stringify(marshaller.toCapData(portfolioStatus))],
   });
 
-  const simulatedBlockHeight = 40n;
-  const vstorage = {
-    async readStorageMeta(
-      _path: string,
-      { kind }: { kind: 'data' | 'children' },
-    ) {
-      if (kind === 'data') {
-        return {
-          blockHeight: simulatedBlockHeight,
-          result: { value: streamCellJson },
-        };
-      }
-      if (kind === 'children') {
-        return { blockHeight: simulatedBlockHeight, result: { children: [] } };
-      }
-      throw Error(`Unexpected readStorageMeta kind ${kind}`);
-    },
+  const vstorageData: Record<string, string[] | string> = {
+    [`${portfoliosPathPrefix}.${portfolioKey} data`]: portfolioStreamCellJson,
+    [`${portfoliosPathPrefix}.${portfolioKey}.flows children`]: [],
   };
-  const signingSmartWalletKit = {
-    marshaller,
-    query: { vstorage },
-  };
+  const readStorageMetaResponses = objectMap(vstorageData, (data, key) => {
+    const base = { blockHeight: 40n };
+    if (key.endsWith(' children')) {
+      return { ...base, result: { children: data } };
+    } else if (key.endsWith(' data')) {
+      return { ...base, result: { value: data } };
+    }
+    Fail`Invalid vstorage query: ${key}`;
+  });
+  const readStorageMeta: VStorage['readStorageMeta'] = async (
+    path,
+    { kind } = {},
+  ) =>
+    (readStorageMetaResponses[`${path} ${kind}`] as any) ||
+    Fail`Unexpected vstorage query: ${path} ${kind}`;
+  const sswkQuery = { vstorage: { readStorageMeta } };
+
+  const signingSmartWalletKit = { marshaller, query: sswkQuery } as any;
 
   const recordedSteps: MovementDesc[][] = [];
-  const planner = {
-    async resolvePlan(
-      portfolioId: number,
-      flowId: number,
-      steps: MovementDesc[],
-    ) {
-      recordedSteps.push(steps);
-      return {
-        tx: { hash: `${portfolioId}-${flowId}` },
-        id: `msg-${recordedSteps.length}`,
-      };
+  const planner: PortfolioPlanner = {
+    ...({} as any),
+    resolvePlan: (_portfolioId, _flowId, steps) => {
+      recordedSteps.push(steps as MovementDesc[]);
     },
-  };
-  const walletStore = {
-    get: () => planner,
   };
 
-  const memory: any = { deferrals: [] as any[] };
   const portfolioKeyForDepositAddr = new Map();
-  const cosmosRest = {
-    async getAccountBalance(
-      _chain: string,
-      _address: string,
-      denom: string,
-    ) {
-      return { amount: '0', denom };
-    },
-  };
-  const gasEstimator = {
-    async getWalletEstimate() {
-      return 1n;
-    },
-    async getFactoryContractEstimate() {
-      return 1n;
-    },
-    async getReturnFeeEstimate() {
-      return 1n;
-    },
-  };
-  const powers: any = {
-    isDryRun: true,
-    cosmosRest,
-    spectrum: {},
-    spectrumBlockchain: undefined,
-    spectrumPools: undefined,
-    spectrumChainIds: {},
-    spectrumPoolIds: {},
+  const getAccountBalance: CosmosRestClient['getAccountBalance'] = async (
+    _chainKey,
+    _address,
+    denom,
+  ) => ({ amount: '0', denom });
+  const powers = {
+    ...createMockEnginePowers(),
+    cosmosRest: { getAccountBalance } as any,
     signingSmartWalletKit,
-    walletStore,
-    getWalletInvocationUpdate: () => Promise.resolve(),
-    gasEstimator,
+    walletStore: { get: () => planner } as any,
+    gasEstimator: mockGasEstimator,
+    isDryRun: true,
     depositBrand,
     feeBrand,
     portfolioKeyForDepositAddr,
-    usdcTokensByChain: {},
     vstoragePathPrefixes: { portfoliosPathPrefix, pendingTxPathPrefix },
   };
 
@@ -182,7 +159,7 @@ test('processPortfolioEvents only resolves flows for new portfolio states', asyn
   ): Parameters<typeof processPortfolioEvents>[0] => [
     {
       path: `${portfoliosPathPrefix}.${portfolioKey}`,
-      value: streamCellJson,
+      value: portfolioStreamCellJson,
       eventRecord: {
         blockHeight,
         type: 'kvstore' as const,
@@ -191,6 +168,7 @@ test('processPortfolioEvents only resolves flows for new portfolio states', asyn
     },
   ];
 
+  const memory: any = { deferrals: [] as any[] };
   await processPortfolioEvents(makeEvents(30n), 30n, memory, powers);
   await processPortfolioEvents(makeEvents(31n), 31n, memory, powers);
 
