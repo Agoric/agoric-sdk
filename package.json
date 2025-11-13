@@ -55,6 +55,7 @@
     "@cosmjs/stargate@npm:0.32.3": "npm:^0.36.0",
     "@cosmjs/tendermint-rpc@npm:0.32.3": "npm:^0.36.0",
     "@cosmology/telescope@npm:^1.12.21": "patch:@cosmology/telescope@npm%3A1.12.21#~/.yarn/patches/@cosmology-telescope-npm-1.12.21-6ca5e89f7e.patch",
+    "@endo/bundle-source": "patch:@endo/bundle-source@npm%3A4.1.2#~/.yarn/patches/@endo-bundle-source-npm-4.1.2-80da9522ea.patch",
     "@noble/hashes@npm:^1": "npm:~1.8.0",
     "@noble/hashes@npm:^1.5.0": "npm:~1.8.0",
     "ava@npm:^5.3.0": "patch:ava@npm%3A5.3.1#~/.yarn/patches/ava-npm-5.3.1-d83c0bdc77.patch",
