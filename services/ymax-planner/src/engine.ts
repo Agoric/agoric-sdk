@@ -240,7 +240,7 @@ const fingerprintPortfolioState = (
   return fingerprint.body;
 };
 
-const processPortfolioEvents = async (
+export const processPortfolioEvents = async (
   portfolioEvents: VstorageEventDetail[],
   blockHeight: bigint,
   memory: PortfoliosMemory,
@@ -336,6 +336,7 @@ const processPortfolioEvents = async (
           return;
         }
       }
+      assert(steps.length, `No steps planned for in-progress flow ${flowKey}`);
       errorContext.steps = steps;
 
       const portfolioId = portfolioIdFromKey(portfolioKey as any);
