@@ -255,9 +255,93 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
   },
 };
 
+const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
+  watch: async (ctx, tx, log, opts) => {
+    await null;
+
+    const { txId, expectedAddr, destinationAddress } = tx;
+    const logPrefix = `[${txId}]`;
+
+    expectedAddr || Fail`${logPrefix} Missing expectedAddr`;
+    destinationAddress ||
+      Fail`${logPrefix} Missing destinationAddress (factory)`;
+
+    const {
+      namespace,
+      reference,
+      accountAddress: factoryAddr,
+    } = parseAccountId(destinationAddress);
+    const caipId: CaipChainId = `${namespace}:${reference}`;
+
+    const provider =
+      ctx.evmProviders[caipId] ||
+      Fail`${logPrefix} No EVM provider for chain: ${caipId}`;
+
+    const watchArgs = {
+      factoryAddr: factoryAddr as `0x${string}`,
+      provider,
+      expectedAddr: expectedAddr as `0x${string}`,
+      log: (msg, ...args) => log(logPrefix, msg, ...args),
+    };
+
+    let walletCreated: boolean | undefined;
+
+    if (opts.mode === 'live') {
+      walletCreated = await watchSmartWalletTx({
+        ...watchArgs,
+        timeoutMs: opts.timeoutMs,
+      });
+    } else {
+      const abortController = new AbortController();
+      const liveResultP = watchSmartWalletTx({
+        ...watchArgs,
+        timeoutMs: opts.timeoutMs,
+        signal: abortController.signal,
+      });
+      void liveResultP.then(found => {
+        if (found) {
+          log(`${logPrefix} Live mode completed`);
+          abortController.abort();
+        }
+      });
+
+      await null;
+
+      const currentBlock = await provider.getBlockNumber();
+      await waitForBlock(provider, currentBlock + 1);
+
+      walletCreated = await lookBackSmartWalletTx({
+        ...watchArgs,
+        publishTimeMs: opts.publishTimeMs,
+        chainId: caipId,
+        signal: abortController.signal,
+      });
+
+      if (walletCreated) {
+        log(`${logPrefix} Lookback found wallet creation`);
+        abortController.abort();
+      } else {
+        log(
+          `${logPrefix} Lookback completed without finding wallet creation, waiting for live mode`,
+        );
+        walletCreated = await liveResultP;
+      }
+    }
+
+    await resolvePendingTx({
+      signingSmartWalletKit: ctx.signingSmartWalletKit,
+      txId,
+      status: walletCreated ? TxStatus.SUCCESS : TxStatus.FAILED,
+    });
+
+    log(`${logPrefix} MAKE_ACCOUNT tx resolved`);
+  },
+};
+
 const createMonitorRegistry = (): MonitorRegistry => ({
   [TxType.CCTP_TO_EVM]: cctpMonitor,
   [TxType.GMP]: gmpMonitor,
+  [TxType.MAKE_ACCOUNT]: makeAccountMonitor,
 });
 
 export type HandlePendingTxOpts = {
