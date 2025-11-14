@@ -9,6 +9,10 @@ import {
   wfV2BundleName,
 } from './bootstrap-walletFactory-service-upgrade.js';
 
+/**
+ * @import {SwingSetConfig} from '@agoric/swingset-vat';
+ */
+
 // so paths can be expresssed relative to this file and made absolute
 const bfile = name => new URL(name, import.meta.url).pathname;
 
