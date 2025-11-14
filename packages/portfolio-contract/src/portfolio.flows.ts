@@ -4,7 +4,7 @@
  * @see {openPortfolio}
  * @see {rebalance}
  */
-import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.js';
+
 import type { GuestInterface } from '@agoric/async-flow';
 import { type Amount, type Brand, type NatAmount } from '@agoric/ertp';
 import {
@@ -16,7 +16,6 @@ import {
 import type {
   AccountId,
   BaseChainInfo,
-  CaipChainId,
   CosmosChainAddress,
   Denom,
   DenomAmount,
@@ -25,10 +24,8 @@ import type {
   OrchestrationFlow,
   Orchestrator,
 } from '@agoric/orchestration';
-import type { AxelarGmpIncomingMemo } from '@agoric/orchestration/src/axelar-types.js';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
-import { decodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
 import {
   TxType,
   type FlowErrors,
@@ -43,9 +40,7 @@ import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
-import { decodeBase64 } from '@endo/base64';
 import { assert, Fail, q } from '@endo/errors';
-import { DECODE_CONTRACT_CALL_RESULT_ABI } from './evm-facade.ts';
 import type { RegisterAccountMemo } from './noble-fwd-calc.js';
 import type { AxelarId, GmpAddresses } from './portfolio.contract.ts';
 import type { AccountInfoFor, PortfolioKit } from './portfolio.exo.ts';
