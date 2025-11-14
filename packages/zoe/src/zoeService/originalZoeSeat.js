@@ -16,6 +16,12 @@ import {
 
 /**
  * @import {Baggage} from '@agoric/vat-data';
+ * @import {InstanceAdminHelper} from '../internal-types.js';
+ * @import {WithdrawFacet} from '../internal-types.js';
+ * @import {ExitObj} from '../internal-types.js';
+ * @import {HandleOfferResult} from '../internal-types.js';
+ * @import {PaymentPKeywordRecord} from './types.ts';
+ * @import {Allocation} from '../types-index.js';
  */
 
 export const coreUserSeatMethods = harden({

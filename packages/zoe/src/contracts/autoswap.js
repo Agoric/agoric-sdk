@@ -15,6 +15,7 @@ import {
 
 /**
  * @import {OfferHandler, ZCF} from '@agoric/zoe';
+ * @import {AutoswapPublicFacet} from './types-ambient.js';
  */
 
 /**

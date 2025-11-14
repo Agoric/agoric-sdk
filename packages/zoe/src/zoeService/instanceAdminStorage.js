@@ -21,6 +21,9 @@ import { makeZoeSeatAdminFactory } from './zoeSeat.js';
 /**
  * @import {WeakMapStore} from '@agoric/store';
  * @import {Baggage} from '@agoric/vat-data';
+ * @import {HandleOfferResult} from '../internal-types.js';
+ * @import {SeatHandle} from '../internal-types.js';
+ * @import {ZoeSeatAdmin} from '../internal-types.js';
  */
 
 /**

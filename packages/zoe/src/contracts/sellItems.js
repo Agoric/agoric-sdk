@@ -15,6 +15,11 @@ import {
 } from '../contractSupport/index.js';
 
 /**
+ * @import {SellItemsPublicFacet} from './types-ambient.js';
+ * @import {SellItemsCreatorFacet} from './types-ambient.js';
+ */
+
+/**
  * Sell items in exchange for money. Items may be fungible or
  * non-fungible and multiple items may be bought at once. Money must
  * be fungible.

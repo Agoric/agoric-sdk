@@ -4,6 +4,10 @@ import { Fail, X, annotateError, assert, makeError } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 
 /**
+ * @import {InvitationHandle} from '../zoe.js';
+ */
+
+/**
  * Burn the invitation, assert that only one invitation was burned,
  * and extract and return the instanceHandle and invitationHandle
  *

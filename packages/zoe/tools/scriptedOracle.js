@@ -6,6 +6,7 @@ import { Far } from '@endo/marshal';
  * @import {ZoeService} from '../src/types-index.js';
  * @import {OracleStart} from '../src/contracts/oracle.js';
  * @import {TimerService} from '@agoric/time';
+ * @import {OracleHandler} from '../src/contracts/priceAggregatorTypes.js';
  */
 
 /**

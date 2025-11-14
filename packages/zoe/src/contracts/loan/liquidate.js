@@ -5,6 +5,7 @@ import { offerTo } from '../../contractSupport/zoeHelpers.js';
 
 /**
  * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
+ * @import {LoanConfigWithBorrower} from './types-ambient.js';
  */
 
 export const doLiquidation = async (

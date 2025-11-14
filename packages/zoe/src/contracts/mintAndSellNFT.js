@@ -7,6 +7,7 @@ import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only
 
 /**
  * @import {start as sellItemStart} from './sellItems.js';
+ * @import {MintAndSellNFTCreatorFacet} from './types-ambient.js';
  */
 
 /**

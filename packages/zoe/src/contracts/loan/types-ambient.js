@@ -20,7 +20,7 @@
 /**
  * @typedef LoanTerms
  *
- * @property {Ratio} mmr - Maintenance Margin Requirement, a Ratio record.
+ * @property {import('@agoric/ertp').Ratio} mmr - Maintenance Margin Requirement, a Ratio record.
  * Default is 150%
  *
  * @property {AutoswapInstance} autoswapInstance
@@ -32,7 +32,7 @@
  *
  * @property {PeriodNotifier} periodNotifier
  *
- * @property {Ratio} interestRate
+ * @property {import('@agoric/ertp').Ratio} interestRate
  *   The rate in basis points that will be multiplied with the debt on
  *   every period to compound interest.
  *
@@ -162,7 +162,7 @@
  *
  *   The AsyncIterable to notify when a period has occurred
  *
- * @property {Ratio} interestRate
+ * @property {import('@agoric/ertp').Ratio} interestRate
  * @property {import('@agoric/time').RelativeTime} interestPeriod
  *
  *  the period at which the outstanding debt increases by the interestRate

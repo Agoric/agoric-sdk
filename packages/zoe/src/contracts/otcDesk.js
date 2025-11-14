@@ -10,6 +10,7 @@ import {
 
 /**
  * @import {TimerService} from '@agoric/time';
+ * @import {UserSeat} from '../types-index.js';
  */
 
 /**

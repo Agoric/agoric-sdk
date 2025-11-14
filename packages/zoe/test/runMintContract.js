@@ -3,6 +3,10 @@ import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 
 /**
+ * @import {FeeMintAccess} from '../src/types-index.js';
+ */
+
+/**
  * @param {ZCF} zcf
  * @param {{feeMintAccess: FeeMintAccess}} privateArgs
  */
