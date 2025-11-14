@@ -2,8 +2,6 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
   },
   "include": [
     // omit exported.js because 1) it need not be included in the typecheck of
