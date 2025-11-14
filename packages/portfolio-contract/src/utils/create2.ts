@@ -1,4 +1,4 @@
-import { keccak_256 } from '@noble/hashes/sha3';
+import { keccak_256 as keccak256 } from '@noble/hashes/sha3';
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
 import { encodeAbiParameters, type Hex } from 'viem';
 import { Fail, q } from '@endo/errors';
@@ -38,7 +38,7 @@ const concatBytes = (...arrays: Uint8Array[]) => {
   return merged;
 };
 
-const keccakHex = (bytes: Uint8Array): Hex => toHex(keccak_256(bytes));
+const keccakHex = (bytes: Uint8Array): Hex => toHex(keccak256(bytes));
 
 export const deriveWalletSalt = (owner: string): Hex => {
   owner.length > 0 || Fail`wallet owner string must not be empty`;
@@ -64,7 +64,7 @@ export const computeCreate2Address = ({
     saltBytes,
     initHashBytes,
   );
-  const digest = keccak_256(payload);
+  const digest = keccak256(payload);
   const addressBytes = digest.slice(12); // last 20 bytes
   return toHex(addressBytes);
 };
