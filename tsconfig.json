@@ -16,6 +16,7 @@
     "noUncheckedSideEffectImports": true,
     "erasableSyntaxOnly": true,
     "verbatimModuleSyntax": true,
+    "typeRoots": ["./types", "./node_modules/@types"],
     // .ts and rewriting relative paths allow us to include in bundles
     // files that are JS executable (with TS chars blanked) but end in .ts
     "allowImportingTsExtensions": true,
@@ -25,6 +26,7 @@
   "include": [
     "eslint.config.mjs",
     "dist",
-    "scripts"
+    "scripts",
+    "types/**/*.d.ts"
   ]
 }
