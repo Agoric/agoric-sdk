@@ -187,23 +187,6 @@ export const setupTrader = async (t, initial = 10_000) => {
   return { ...deployed, makeFundedTrader, trader1, trader2, txResolver };
 };
 
-export const simulateUpcallFromAxelar = async (
-  transferBridge: ScopedBridgeManager<'vtransfer'>,
-  sourceChain: string,
-  address: `0x${string}` = '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
-  target = portfolio0lcaOrch,
-) => {
-  await eventLoopIteration();
-
-  const event = makeIncomingEVMEvent({ address, sourceChain, target });
-  return (
-    VE(transferBridge)
-      .fromBridge(event)
-      // .finally(() => console.debug('fromBridge for tap done'))
-      .then(() => eventLoopIteration())
-  );
-};
-
 export const simulateCCTPAck = async utils => {
   // ack CCTP
   return utils
