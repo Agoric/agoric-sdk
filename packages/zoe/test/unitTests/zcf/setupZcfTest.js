@@ -33,8 +33,11 @@ export const setupZCFTest = async (issuerKeywordRecord, terms) => {
     fakeVatAdmin.admin,
   );
   const bundle = await bundleSource(contractRoot);
-  fakeVatAdmin.vatAdminState.installBundle('b1-contract', bundle);
-  const installation = await E(zoe).installBundleID('b1-contract');
+  const b1contract = fakeVatAdmin.vatAdminState.registerBundle(
+    'b1-contract',
+    bundle,
+  );
+  const installation = await E(zoe).installBundleID(b1contract);
   const startInstanceResult = await E(zoe).startInstance(
     installation,
     issuerKeywordRecord,

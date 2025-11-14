@@ -202,8 +202,11 @@ export const makeAutoswapInstance = async (
 
   // Create autoswap installation and instance
   const autoswapBundle = await bundleSource(autoswapRoot);
-  vatAdminState.installBundle('b1-autoswap', autoswapBundle);
-  const autoswapInstallation = await E(zoe).installBundleID('b1-autoswap');
+  const b1autoswap = vatAdminState.registerBundle(
+    'b1-autoswap',
+    autoswapBundle,
+  );
+  const autoswapInstallation = await E(zoe).installBundleID(b1autoswap);
 
   const { instance: autoswapInstance, publicFacet } = await E(
     zoe,

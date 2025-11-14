@@ -49,8 +49,11 @@ test('zoe - coveredCall', async t => {
         // pack the contract
         const bundle = await bundleSource(coveredCallRoot);
         // install the contract
-        vatAdminState.installBundle('b1-coveredcall', bundle);
-        const installationP = E(zoe).installBundleID('b1-coveredcall');
+        const b1coveredcall = vatAdminState.registerBundle(
+          'b1-coveredcall',
+          bundle,
+        );
+        const installationP = E(zoe).installBundleID(b1coveredcall);
         return installationP;
       },
       startInstance: async installation => {
@@ -238,9 +241,8 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     setup();
   // Pack the contract.
   const bundle = await bundleSource(coveredCallRoot);
-  vatAdminState.installBundle('b1-coveredcall', bundle);
-  const coveredCallInstallation =
-    await E(zoe).installBundleID('b1-coveredcall');
+  const b1coveredcall = vatAdminState.registerBundle('b1-coveredcall', bundle);
+  const coveredCallInstallation = await E(zoe).installBundleID(b1coveredcall);
   const timer = buildManualTimer(t.log);
   const toTS = ts => TimeMath.coerceTimestampRecord(ts, timer.getTimerBrand());
 
@@ -379,13 +381,18 @@ test('zoe - coveredCall with swap for invitation', async t => {
   // Pack the contract.
   const coveredCallBundle = await bundleSource(coveredCallRoot);
 
-  vatAdminState.installBundle('b1-coveredcall', coveredCallBundle);
-  const coveredCallInstallation =
-    await E(zoe).installBundleID('b1-coveredcall');
+  const b1coveredcall = vatAdminState.registerBundle(
+    'b1-coveredcall',
+    coveredCallBundle,
+  );
+  const coveredCallInstallation = await E(zoe).installBundleID(b1coveredcall);
   const atomicSwapBundle = await bundleSource(atomicSwapRoot);
 
-  vatAdminState.installBundle('b1-atomicswap', atomicSwapBundle);
-  const swapInstallationId = await E(zoe).installBundleID('b1-atomicswap');
+  const b1atomicswap = vatAdminState.registerBundle(
+    'b1-atomicswap',
+    atomicSwapBundle,
+  );
+  const swapInstallationId = await E(zoe).installBundleID(b1atomicswap);
 
   // Setup Alice
   // Alice starts with 3 moola
@@ -650,9 +657,8 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   // Pack the contract.
   const bundle = await bundleSource(coveredCallRoot);
 
-  vatAdminState.installBundle('b1-coveredcall', bundle);
-  const coveredCallInstallation =
-    await E(zoe).installBundleID('b1-coveredcall');
+  const b1coveredcall = vatAdminState.registerBundle('b1-coveredcall', bundle);
+  const coveredCallInstallation = await E(zoe).installBundleID(b1coveredcall);
 
   // Setup Alice
   // Alice starts with 3 moola
@@ -939,10 +945,9 @@ test('zoe - coveredCall non-fungible', async t => {
 
   // install the contract.
   const bundle = await bundleSource(coveredCallRoot);
-  vatAdminState.installBundle('b1-coveredcall', bundle);
+  const b1coveredcall = vatAdminState.registerBundle('b1-coveredcall', bundle);
 
-  const coveredCallInstallation =
-    await E(zoe).installBundleID('b1-coveredcall');
+  const coveredCallInstallation = await E(zoe).installBundleID(b1coveredcall);
   const timer = buildManualTimer(t.log);
   const toTS = ts => TimeMath.coerceTimestampRecord(ts, timer.getTimerBrand());
 
@@ -1082,9 +1087,8 @@ test('zoe - coveredCall - bad proposal shape', async t => {
 
   // Bundle and install the contract.
   const bundle = await bundleSource(coveredCallRoot);
-  vatAdminState.installBundle('b1-coveredcall', bundle);
-  const coveredCallInstallation =
-    await E(zoe).installBundleID('b1-coveredcall');
+  const b1coveredcall = vatAdminState.registerBundle('b1-coveredcall', bundle);
+  const coveredCallInstallation = await E(zoe).installBundleID(b1coveredcall);
 
   // Start an instance.
   const issuerKeywordRecord = harden({

@@ -32,8 +32,8 @@ test(`ProposalShapes mismatch`, async t => {
   // pack the contract
   const bundle = await bundleSource(contractRoot);
   // install the contract
-  vatAdminState.installBundle('b1-zcftester', bundle);
-  const installation = await E(zoe).installBundleID('b1-zcftester');
+  const b1zcftester = vatAdminState.registerBundle('b1-zcftester', bundle);
+  const installation = await E(zoe).installBundleID(b1zcftester);
 
   // Alice creates an instance
   const issuerKeywordRecord = harden({
@@ -101,8 +101,8 @@ test(`ProposalShapes matched`, async t => {
   // pack the contract
   const bundle = await bundleSource(contractRoot);
   // install the contract
-  vatAdminState.installBundle('b1-zcftester', bundle);
-  const installation = await E(zoe).installBundleID('b1-zcftester');
+  const b1zcftester = vatAdminState.registerBundle('b1-zcftester', bundle);
+  const installation = await E(zoe).installBundleID(b1zcftester);
 
   // Alice creates an instance
   const issuerKeywordRecord = harden({
