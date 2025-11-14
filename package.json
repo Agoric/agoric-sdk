@@ -41,6 +41,7 @@
     "prettier-plugin-jsdoc": "~1.8.0",
     "prettier-plugin-sh": "^0.18.0",
     "ts-blank-space": "^0.6.2",
+    "ts-morph": "^27.0.2",
     "type-coverage": "^2.29.7",
     "typedoc": "^0.26.7",
     "typedoc-plugin-markdown": "^4.2.1",
