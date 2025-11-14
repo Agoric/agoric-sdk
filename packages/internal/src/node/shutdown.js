@@ -1,8 +1,6 @@
 import process from 'node:process';
 import anylogger from 'anylogger';
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore TODO remove when anylogger has types
 const console = anylogger('shutdown');
 
 export const makeFreshShutdown = (verbose = true) => {
