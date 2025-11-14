@@ -5,6 +5,10 @@ import * as chainBehaviorsPlus from './chain-behaviors.js';
 import * as simBehaviorsPlus from './sim-behaviors.js';
 import * as utils from './utils.js';
 
+/**
+ * @import {VatPowers} from '@agoric/swingset-vat';
+ */
+
 const { BASIC_BOOTSTRAP_PERMITS: _b, ...basicBehaviors } = basicBehaviorsPlus;
 const {
   CHAIN_BOOTSTRAP_MANIFEST: _c,

@@ -3,7 +3,7 @@ import { E } from '@endo/far';
 import { makeTracer } from '@agoric/internal';
 
 /**
- * @import {CreateVatResults} from '@agoric/swingset-vat';
+ * @import {CreateVatResults, VatAdminSvc} from '@agoric/swingset-vat';
  * @import {VatUpgradeOptions} from '@agoric/swingset-vat';
  */
 

@@ -1,7 +1,7 @@
 import { E } from '@endo/far';
 
 /**
- * @import {CreateVatResults} from '@agoric/swingset-vat';
+ * @import {CreateVatResults, VatAdminSvc} from '@agoric/swingset-vat';
  */
 
 /**

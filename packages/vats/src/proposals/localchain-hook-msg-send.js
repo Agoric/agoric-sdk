@@ -8,7 +8,7 @@ import {
 /**
  * @import {ScopedBridgeManager} from '../types.js';
  * @import {TransferMiddleware} from '../transfer.js';
- * @import {CreateVatResults} from '@agoric/swingset-vat';
+ * @import {CreateVatResults, VatAdminSvc} from '@agoric/swingset-vat';
  */
 
 /**
