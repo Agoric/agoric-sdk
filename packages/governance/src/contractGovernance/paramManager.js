@@ -27,6 +27,7 @@ import { CONTRACT_ELECTORATE } from './governParam.js';
  * @import {RelativeTime} from '@agoric/time';
  * @import {StoredPublisherKit} from '@agoric/notifier';
  * @import {ParamType} from '../constants.js';
+ * @import {Ratio} from '@agoric/ertp';
  */
 
 /**
