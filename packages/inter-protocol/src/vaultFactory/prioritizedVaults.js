@@ -17,6 +17,7 @@ import {
  * @import {MapStore} from '@agoric/store';
  * @import {Vault} from './vault.js';
  * @import {NormalizedDebt} from './storeUtils.js';
+ * @import {Ratio} from '@agoric/ertp';
  */
 
 const trace = makeTracer('PVaults', true);
@@ -59,7 +60,8 @@ export const makePrioritizedVaults = store => {
   /**
    * Ratio of the least-collateralized vault, if there is one.
    *
-   * @returns {Ratio | undefined} actual debt over collateral
+   * @returns {Ratio | undefined} actual debt over
+   *   collateral
    */
   const highestRatio = () => {
     if (vaults.getSize() === 0) {

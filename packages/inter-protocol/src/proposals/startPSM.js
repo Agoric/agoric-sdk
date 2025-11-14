@@ -27,6 +27,7 @@ import {
 /**
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js'
  * @import {PSMKit} from './econ-behaviors.js';
+ * @import {FeeMintAccess} from '@agoric/zoe';
  */
 /** @import {MetricsNotification} from '../psm/psm.js' */
 /** @import {EconomyBootstrapPowers} from './econ-behaviors.js' */
@@ -127,7 +128,6 @@ export const startPSM = async (
     X`anchorOptions.denom must be a string, not ${denom}`,
   );
   /** @type {[Brand<'nat'>, [Brand<'nat'>, Issuer<'nat'>], FeeMintAccess]} */
-  // @ts-expect-error cast
   const [minted, [anchorBrand, anchorIssuer], feeMintAccess] =
     await Promise.all([
       mintedP,

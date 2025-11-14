@@ -19,7 +19,7 @@ import { setUpZoeForTest as generalSetUpZoeForTest } from '@agoric/zoe/tools/set
 import { E } from '@endo/far';
 
 /**
- * @import {SourceBundle} from '@agoric/zoe';
+ * @import {FeeMintAccess, SourceBundle} from '@agoric/zoe';
  * @import {EconomyBootstrapPowers as Space} from '../src/proposals/econ-behaviors.js'
  * @import {TimerService} from '@agoric/time';
  * @import {start} from '@agoric/vats/src/centralSupply.js';
