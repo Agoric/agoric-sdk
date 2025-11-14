@@ -26,7 +26,6 @@ import {
 } from '@agoric/orchestration';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
-import { buildGasPayload } from '@agoric/orchestration/src/utils/gmp.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import type { FundsFlowPlan } from '@agoric/portfolio-api';
 import {
@@ -77,7 +76,6 @@ import { decodeFunctionCall } from './abi-utils.ts';
 import {
   axelarIdsMock,
   contractsMock,
-  evmNamingDistinction,
   gmpAddresses,
   planUSDNDeposit,
 } from './mocks.ts';
@@ -651,14 +649,12 @@ test('open portfolio with Aave position', async t => {
         { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
       ],
     }),
-    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(
-      async ([tap]) => {
-        // Complete GMP transaction
-        await txResolver.drainPending();
-        // Complete CCTP transaction
-        await txResolver.drainPending();
-      },
-    ),
+    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
+      // Complete GMP transaction
+      await txResolver.drainPending();
+      // Complete CCTP transaction
+      await txResolver.drainPending();
+    }),
   ]);
   const { log } = offer;
   t.log(log.map(msg => msg._method).join(', '));
@@ -678,12 +674,6 @@ test('open portfolio with Aave position', async t => {
     { _method: 'transfer', address: { chainId: 'axelar-6' } },
     { _method: 'exit', _cap: 'seat' },
   ]);
-
-  t.like(
-    JSON.parse(log[3].opts!.memo),
-    { payload: buildGasPayload(50n) },
-    '1st transfer to axelar carries evmGas for return message',
-  );
 
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
   t.is(passStyleOf(actual.invitationMakers), 'remotable');
@@ -846,7 +836,7 @@ test.skip('handle failure in sendGmp with Aave position', async t => {
   const amount = AmountMath.make(USDC, 300n);
   const feeAcct = AmountMath.make(BLD, 300n);
   const feeCall = AmountMath.make(BLD, 100n);
-  const { orch, tapPK, ctx, offer, storage } = mocks(
+  const { orch, ctx, offer, storage } = mocks(
     { transfer: Error('ag->axelar: SOS!') },
     { Deposit: amount },
   );
@@ -1213,11 +1203,9 @@ test('handle failure in provideEVMAccount sendMakeAccountCall', async t => {
 
   await Promise.all([
     attempt2P,
-    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(
-      async ([tap, _]) => {
-        await txResolver.drainPending();
-      },
-    ),
+    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
+      await txResolver.drainPending();
+    }),
   ]);
   t.truthy(log.find(entry => entry._method === 'exit'));
 
@@ -1375,7 +1363,7 @@ test('deposit in coordination with planner', async t => {
 });
 
 test('simple rebalance in coordination with planner', async t => {
-  const { orch, ctx, offer, storage, tapPK, txResolver } = mocks({});
+  const { orch, ctx, offer, storage, txResolver } = mocks({});
 
   const { getPortfolioStatus } = makeStorageTools(storage);
 
@@ -1468,7 +1456,7 @@ test('simple rebalance in coordination with planner', async t => {
 });
 
 test('parallel execution with scheduler', async t => {
-  const { orch, ctx, offer, storage, tapPK, txResolver } = mocks({});
+  const { orch, ctx, offer, storage, txResolver } = mocks({});
 
   const trace = makeTracer('PExec');
   const kit = await ctx.makePortfolioKit();

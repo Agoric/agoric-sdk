@@ -29,7 +29,6 @@ import {
   buildTxResponseString,
 } from '@agoric/orchestration/tools/ibc-mocks.ts';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
-import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import type { VowTools } from '@agoric/vow';
 import type { AmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import type { Zone } from '@agoric/zone';
@@ -356,26 +355,6 @@ export const axelarIdsMock: AxelarId = {
   Ethereum: 'ethereum-sepolia',
   Base: 'base-sepolia',
 } as const;
-
-/**
- * Use Arbitrum or any other EVM chain whose Axelar chain ID (`axelarId`) differs
- * from the chain name. For example, Arbitrum's `axelarId` is "arbitrum", while
- * Ethereum’s is "Ethereum" (case-sensitive). The challenge is that if a mismatch
- * occurs, it may go undetected since the `axelarId` is passed via the IBC memo
- * and not validated automatically.
- *
- * To ensure proper testing, it's best to use a chain where the `chainName` and
- * `axelarId` are not identical. This increases the likelihood of catching issues
- * with misconfigured or incorrectly passed `axelarId` values.
- *
- * To see the `axelarId` for a given chain, refer to:
- * @see {@link https://github.com/axelarnetwork/axelarjs-sdk/blob/f84c8a21ad9685091002e24cac7001ed1cdac774/src/chains/supported-chains-list.ts | supported-chains-list.ts}
- */
-export const evmNamingDistinction = {
-  destinationEVMChain: 'Arbitrum' as AxelarChain,
-  sourceChain: 'arbitrum',
-} as const;
-harden(evmNamingDistinction);
 
 /** from https://www.mintscan.io/noble explorer */
 export const explored = [
