@@ -77,9 +77,9 @@ export const provideEVMAccount = (
     const remoteAddress = predictWalletAddress({
       owner: lca.getAddress().value as any, // TODO fromBech32?
       factoryAddress: ctx.contracts[chainName].factory,
-      gasServiceAddress: ctx.gmpAddresses.AXELAR_GAS as any, // ???
-      gatewayAddress: '0x123' as const,
-      walletBytecode: '0x1234' as const,
+      gasServiceAddress: ctx.contracts[chainName].gasService,
+      gatewayAddress: ctx.contracts[chainName].gateway,
+      walletBytecode: '0x1234' as const, // TODO Replace PLACEHOLDER_BYTECODE with actual wallet bytecode,
     });
     const chainId: CaipChainId = `${chainInfo.namespace}:${chainInfo.reference}`;
     const info: GMPAccountInfo = {
@@ -116,22 +116,17 @@ export const provideEVMAccount = (
 
   if (!pk.reader.hasGMPInfo(chainName)) {
     const info = predictAddress();
-    pk.manager.setAccountInfo(info);
-    const ready = pk.manager.reservePendingAccount(
-      chainName,
-    ) as unknown as Promise<GMPAccountInfo>;
+    pk.manager.resolveAccount(info);
 
     void installContract();
-    return { ...info, ready };
+    return { ...info, ready: Promise.resolve(info) };
   }
   const info = pk.reader.getGMPInfo(chainName);
 
   if (pk.reader.accountCreationFailed(chainName)) {
-    const ready = pk.manager.resetPendingAccount(
-      chainName,
-    ) as unknown as Promise<GMPAccountInfo>;
+    pk.manager.resolveAccount(info);
     void installContract();
-    return { ...info, ready };
+    return { ...info, ready: Promise.resolve(info) };
   }
 
   return { ...info, ready: Promise.resolve(info) };
