@@ -21,8 +21,11 @@ test('zoe - brokenAutomaticRefund', async t => {
   const zoe = makeZoeForTest(fakeVatAdmin);
   // Pack the contract.
   const bundle = await bundleSource(automaticRefundRoot);
-  vatAdminState.installBundle('b1-brokenAutomaticRefund', bundle);
-  const installation = await E(zoe).installBundleID('b1-brokenAutomaticRefund');
+  const b1brokenAutomaticRefund = vatAdminState.registerBundle(
+    'b1-brokenAutomaticRefund',
+    bundle,
+  );
+  const installation = await E(zoe).installBundleID(b1brokenAutomaticRefund);
 
   const issuerKeywordRecord = harden({ Contribution: moolaKit.issuer });
 

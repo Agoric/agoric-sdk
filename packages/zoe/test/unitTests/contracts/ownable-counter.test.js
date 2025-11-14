@@ -25,9 +25,12 @@ test('zoe - ownable-counter contract', async t => {
 
   // Pack the contract.
   const bundle = await bundleSource(root);
-  vatAdminState.installBundle('b1-ownable-counter', bundle);
+  const b1ownablecounter = vatAdminState.registerBundle(
+    'b1-ownable-counter',
+    bundle,
+  );
   /** @type {Installation<typeof startOwnableCounter>} */
-  const installation = await E(zoe).installBundleID('b1-ownable-counter');
+  const installation = await E(zoe).installBundleID(b1ownablecounter);
 
   const { creatorFacet: firstCounter, publicFacet: viewCounter } = await E(
     zoe,
