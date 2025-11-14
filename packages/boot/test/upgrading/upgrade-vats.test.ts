@@ -1,7 +1,7 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { BridgeId, deepCopyJsonable } from '@agoric/internal';
-import { buildVatController } from '@agoric/swingset-vat';
+import { buildVatController, type SwingSetConfig } from '@agoric/swingset-vat';
 import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import { Fail } from '@endo/errors';
 import { makeTagged } from '@endo/marshal';

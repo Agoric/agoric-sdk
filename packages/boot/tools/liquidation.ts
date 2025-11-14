@@ -9,6 +9,7 @@ import {
 } from '@agoric/vats/tools/board-utils.js';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import type { ExecutionContext } from 'ava';
+import type { ManagerType } from '@agoric/swingset-vat';
 import { insistManagerType, makeSwingsetHarness } from './supports.js';
 import { type SwingsetTestKit, makeSwingsetTestKit } from './supports.js';
 import {
