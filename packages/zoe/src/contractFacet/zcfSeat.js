@@ -88,7 +88,7 @@ export const createSeatManager = (
     return activeZCFSeats.get(zcfSeat);
   };
 
-  const ZCFSeatI = M.interface('ZCFSeat', {}, { sloppy: true });
+  const ZCFSeatI = M.interface('ZCFSeat', {}, { defaultGuards: 'passable' });
 
   const makeZCFSeatInternal = prepareExoClass(
     zcfBaggage,
