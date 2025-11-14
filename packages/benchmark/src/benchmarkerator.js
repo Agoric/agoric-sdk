@@ -18,6 +18,7 @@ import { makeLiquidationTestKit } from '@aglocal/boot/tools/liquidation.js';
 
 /**
  * @import {SmartWalletDriver} from '@aglocal/boot/tools/drivers.ts';
+ * @import {ManagerType} from '@agoric/swingset-vat';
  */
 
 // When I was a child my family took a lot of roadtrips around California to go
