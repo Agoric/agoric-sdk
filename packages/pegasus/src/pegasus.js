@@ -14,9 +14,20 @@ import { ICS20TransferProtocol } from './ics20.js';
 import { makeCourierMaker, getCourierPK } from './courier.js';
 
 /**
- * @import {CloseReason, Connection} from '@agoric/network';
+ * @import {CloseReason, Connection, ConnectionHandler} from '@agoric/network';
  * @import {Remote} from '@agoric/vow';
  * @import {prepareVowTools} from '@agoric/vow';
+ * @import {BoardDepositFacet} from './types.js';
+ * @import {Denom} from './types.js';
+ * @import {Courier} from './types.js';
+ * @import {Peg} from './types.js';
+ * @import {TransferProtocol} from './types.js';
+ * @import {DenomTransformer} from './types.js';
+ * @import {PegasusConnectionActions} from './types.js';
+ * @import {PegasusConnectionKit} from './types.js';
+ * @import {PegasusConnection} from './types.js';
+ * @import {DepositAddress} from './types.js';
+ * @import {SenderOptions} from './types.js';
  */
 
 const DEFAULT_DENOM_TRANSFORMER = IBCSourceTraceDenomTransformer;
