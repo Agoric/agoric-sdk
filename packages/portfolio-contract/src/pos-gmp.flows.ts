@@ -74,17 +74,30 @@ export const provideEVMAccount = (
   ctx: PortfolioInstanceContext,
   pk: GuestInterface<PortfolioKit>,
 ): GMPAccountStatus => {
-  const ready = (async () => {
-    await null;
-    const found = pk.manager.reserveAccount(chainName);
-    if (found) {
-      return found as unknown as Promise<GMPAccountInfo>; // XXX Guest/Host #9822
-    }
+  const pId = pk.reader.getPortfolioId();
+  const traceChain = trace.sub(`portfolio${pId}`).sub(chainName);
 
-    // We have the map entry reserved - use critical section pattern
+  const predictAddress = () => {
+    const remoteAddress = predictWalletAddress({
+      owner: lca.getAddress().value as any, // TODO fromBech32?
+      factoryAddress: ctx.contracts[chainName].factory,
+      gasServiceAddress: ctx.gmpAddresses.AXELAR_GAS as any, // ???
+      gatewayAddress: '0x123' as const,
+      walletBytecode: '0x1234' as const,
+    });
+    const chainId: CaipChainId = `${chainInfo.namespace}:${chainInfo.reference}`;
+    const info: GMPAccountInfo = {
+      namespace: 'eip155',
+      chainName,
+      chainId,
+      remoteAddress,
+    };
+    return info;
+  };
+
+  const installContract = async () => {
+    await null;
     try {
-      const pId = pk.reader.getPortfolioId();
-      const traceChain = trace.sub(`portfolio${pId}`).sub(chainName);
       const axelarId = gmp.axelarIds[chainName];
       const target = {
         axelarId,
@@ -105,31 +118,34 @@ export const provideEVMAccount = (
         ctx.gmpAddresses,
         gmp.evmGas,
       );
-
-      return pk.reader.getGMPInfo(chainName);
     } catch (reason) {
-      trace('failed to make', chainName, reason);
+      traceChain('failed to makeAccount', reason);
       pk.manager.releaseAccount(chainName, reason);
       throw reason;
     }
-  })();
+  };
 
-  const remoteAddress = predictWalletAddress({
-    owner: lca.getAddress().value as any, // TODO fromBech32?
-    factoryAddress: ctx.contracts[chainName].factory,
-    gasServiceAddress: ctx.gmpAddresses.AXELAR_GAS as any, // ???
-    gatewayAddress: '0x123' as const,
-    walletBytecode: '0x1234' as const,
-  });
-  const chainId: CaipChainId = `${chainInfo.namespace}:${chainInfo.reference}`;
+  if (!pk.reader.hasGMPInfo(chainName)) {
+    const info = predictAddress();
+    pk.manager.setAccountInfo(info);
+    const ready = pk.manager.reservePendingAccount(
+      chainName,
+    ) as unknown as Promise<GMPAccountInfo>;
 
-  return harden({
-    namespace: 'eip155',
-    chainName,
-    chainId,
-    remoteAddress,
-    ready,
-  });
+    void installContract();
+    return { ...info, ready };
+  }
+  const info = pk.reader.getGMPInfo(chainName);
+
+  if (pk.reader.accountCreationFailed(chainName)) {
+    const ready = pk.manager.resetPendingAccount(
+      chainName,
+    ) as unknown as Promise<GMPAccountInfo>;
+    void installContract();
+    return { ...info, ready };
+  }
+
+  return { ...info, ready: Promise.resolve(info) };
 };
 
 type TokenMessengerI = {

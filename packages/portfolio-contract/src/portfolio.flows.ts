@@ -48,11 +48,7 @@ import { assert, Fail, q } from '@endo/errors';
 import { DECODE_CONTRACT_CALL_RESULT_ABI } from './evm-facade.ts';
 import type { RegisterAccountMemo } from './noble-fwd-calc.js';
 import type { AxelarId, GmpAddresses } from './portfolio.contract.ts';
-import type {
-  AccountInfoFor,
-  GMPAccountInfo,
-  PortfolioKit,
-} from './portfolio.exo.ts';
+import type { AccountInfoFor, PortfolioKit } from './portfolio.exo.ts';
 import {
   AaveProtocol,
   BeefyProtocol,
@@ -70,6 +66,7 @@ import {
 } from './pos-usdn.flows.ts';
 import type { Position } from './pos.exo.ts';
 import type { ResolverKit } from './resolver/resolver.exo.js';
+import { runJob, type Job } from './schedule-order.ts';
 import {
   getChainNameOfPlaceRef,
   getKeywordOfPlaceRef,
@@ -84,7 +81,6 @@ import {
   type PoolKey,
   type ProposalType,
 } from './type-guards.ts';
-import { runJob, type Job } from './schedule-order.ts';
 // XXX: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const { keys, entries, fromEntries } = Object;
