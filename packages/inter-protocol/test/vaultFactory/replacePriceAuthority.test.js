@@ -50,6 +50,9 @@ import { defaultParamValues } from './vaultFactoryUtils.js';
  * @import {RelativeTime} from '@agoric/time';
  * @import {VaultManager} from '../../src/vaultFactory/vaultManager.js';
  * @import {CollateralManager} from '../../src/vaultFactory/vaultManager.js';
+ * @import {VaultManagerParamValues} from '../../src/vaultFactory/types-ambient.js';
+ * @import {InterestTiming} from '../../src/vaultFactory/types-ambient.js';
+ * @import {VaultFactoryCreatorFacet} from '../../src/vaultFactory/types-ambient.js';
  */
 
 /**
@@ -74,7 +77,7 @@ const contractRoots = {
   auctioneer: './src/auction/auctioneer.js',
 };
 
-/** @import {VaultFactoryContract} from '../../src/vaultFactory/vaultFactory' */
+/** @import {VaultFactoryContract} from '../../src/vaultFactory/vaultFactory.js' */
 
 const trace = makeTracer('Test replc PriceAuthority', false);
 

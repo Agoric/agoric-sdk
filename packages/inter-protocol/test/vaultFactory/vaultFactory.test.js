@@ -49,13 +49,16 @@ import {
  * @import {AmountUtils} from '@agoric/zoe/tools/test-utils.js';
  * @import {TestFn} from 'ava';
  * @import {ExecutionContext} from 'ava';
- * @import {TimerService} from '@agoric/time';
+ * @import {RelativeTime, TimerService} from '@agoric/time';
  * @import {makeMockChainStorageRoot} from '@agoric/internal/src/storage-test-utils.js';
  * @import {Ratio} from '@agoric/ertp';
  * @import {VaultManager} from '../../src/vaultFactory/vaultManager.js';
  * @import {CollateralManager} from '../../src/vaultFactory/vaultManager.js';
  * @import {UserSeat} from '@agoric/zoe';
  * @import {VaultKit} from '../../src/vaultFactory/vaultKit.js';
+ * @import {VaultManagerParamValues} from '../../src/vaultFactory/types-ambient.js';
+ * @import {InterestTiming} from '../../src/vaultFactory/types-ambient.js';
+ * @import {VaultFactoryCreatorFacet} from '../../src/vaultFactory/types-ambient.js';
  */
 
 /**

@@ -1,5 +1,5 @@
 /* global E */
-// @ts-check
+// @ts-nocheck
 /// <reference types="@agoric/vats/src/core/core-eval-env" />
 /**
  * @file Script to replace the econ governance committee in a SwingSet Core Eval

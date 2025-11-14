@@ -46,6 +46,7 @@ import { AuctionState } from './util.js';
  * @import {ScheduleNotification} from './scheduler.js';
  * @import {OfferSpec} from './auctionBook.js';
  * @import {FullSchedule} from './scheduler.js';
+ * @import {AssetReservePublicFacet} from '../reserve/assetReserve.js';
  */
 
 const BASIS_POINTS = 10_000n;

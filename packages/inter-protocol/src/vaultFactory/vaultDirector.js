@@ -57,6 +57,9 @@ import {
  * @import {MakeERecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {VaultManager} from './vaultManager.js';
  * @import {VaultManagerParamOverrides} from './params.js';
+ * @import {BurnDebt, VaultManagerParamValues} from './types-ambient.js';
+ * @import {MintAndTransfer} from './types-ambient.js';
+ * @import {VaultFactoryParamPath} from './types-ambient.js';
  */
 
 const trace = makeTracer('VD', true);

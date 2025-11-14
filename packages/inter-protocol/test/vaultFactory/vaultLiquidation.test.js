@@ -56,6 +56,9 @@ import {
  * @import {VaultManager} from '../../src/vaultFactory/vaultManager.js';
  * @import {CollateralManager} from '../../src/vaultFactory/vaultManager.js';
  * @import {VaultKit} from '../../src/vaultFactory/vaultKit.js';
+ * @import {VaultManagerParamValues} from '../../src/vaultFactory/types-ambient.js';
+ * @import {InterestTiming} from '../../src/vaultFactory/types-ambient.js';
+ * @import {VaultFactoryCreatorFacet} from '../../src/vaultFactory/types-ambient.js';
  */
 
 /**

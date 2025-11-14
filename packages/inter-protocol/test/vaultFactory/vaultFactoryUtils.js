@@ -37,6 +37,8 @@ export const BASIS_POINTS = 10000n;
  * @import {Ratio} from '@agoric/ertp';
  * @import {RelativeTime} from '@agoric/time';
  * @import {VaultKit} from '../../src/vaultFactory/vaultKit.js';
+ * @import {VaultManagerParamValues} from '../../src/vaultFactory/types-ambient.js';
+ * @import {InterestTiming} from '../../src/vaultFactory/types-ambient.js';
  */
 
 /**
