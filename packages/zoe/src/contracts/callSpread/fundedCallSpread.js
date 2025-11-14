@@ -13,6 +13,8 @@ import { Position } from './position.js';
 
 /**
  * @import {PriceAuthority} from '@agoric/zoe/tools/types.js';
+ * @import {PositionKind} from './types-ambient.js';
+ * @import {PayoffHandler} from './types-ambient.js';
  */
 
 /**

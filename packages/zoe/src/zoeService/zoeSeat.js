@@ -17,6 +17,12 @@ import {
 
 /**
  * @import {Baggage} from '@agoric/vat-data';
+ * @import {InstanceAdminHelper} from '../internal-types.js';
+ * @import {WithdrawFacet} from '../internal-types.js';
+ * @import {HandleOfferResult} from '../internal-types.js';
+ * @import {ExitObj} from '../internal-types.js';
+ * @import {PaymentPKeywordRecord} from './types.ts';
+ * @import {Allocation} from './zoe.js';
  */
 
 // ZoeSeatAdmin has the implementation of coreUserSeatMethods, but ZoeUserSeat

@@ -25,6 +25,10 @@ import { assertRightsConserved } from './rightsConservation.js';
  * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {Allocation} from './types.js';
+ * @import {ZcfSeatManager, ZoeInstanceAdmin} from '../internal-types.js';
+ * @import {GetAssetKindByBrand} from '../internal-types.js';
+ * @import {ZcfMintReallocator} from '../internal-types.js';
+ * @import {SeatHandle} from '../internal-types.js';
  */
 
 /**

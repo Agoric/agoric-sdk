@@ -40,6 +40,10 @@ import {
  * @import {TimerWaker} from '@agoric/time';
  * @import {TimestampRecord} from '@agoric/time';
  * @import {OracleContract} from './oracle.js';
+ * @import {Ratio} from '@agoric/ertp';
+ * @import {OracleKey} from './priceAggregatorTypes.js';
+ * @import {OracleAdmin} from './priceAggregatorTypes.js';
+ * @import {OracleQuery} from './priceAggregatorTypes.js';
  */
 
 /** @typedef {bigint | number | string} ParsableNumber */

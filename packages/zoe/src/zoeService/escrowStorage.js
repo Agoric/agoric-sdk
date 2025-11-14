@@ -11,6 +11,8 @@ import { cleanKeywords } from '../cleanProposal.js';
 /**
  * @import {WeakMapStore} from '@agoric/store';
  * @import {Baggage} from '@agoric/vat-data';
+ * @import {CreatePurse, DepositPayments, ProvideLocalPurse} from './internal-types.js';
+ * @import {WithdrawPayments} from '../internal-types.js';
  */
 
 /**

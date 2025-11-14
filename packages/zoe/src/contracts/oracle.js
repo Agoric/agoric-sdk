@@ -8,6 +8,9 @@ import { atomicTransfer } from '../contractSupport/index.js';
 /**
  * @import {ContractMeta, Invitation, OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {ContractOf} from '../zoeService/utils.js';
+ * @import {OracleHandler} from './priceAggregatorTypes.js';
+ * @import {OracleCreatorFacet} from './priceAggregatorTypes.js';
+ * @import {OracleQuery} from './priceAggregatorTypes.js';
  */
 
 /**

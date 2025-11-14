@@ -8,6 +8,10 @@ import {
 } from '../../contractSupport/index.js';
 import { liquidate } from './liquidate.js';
 
+/**
+ * @import {ScheduleLiquidation} from './types-ambient.js';
+ */
+
 /** @type {ScheduleLiquidation} */
 export const scheduleLiquidation = (zcf, configWithBorrower) => {
   const {

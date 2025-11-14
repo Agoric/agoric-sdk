@@ -14,6 +14,8 @@ import {
 /**
  * @import {Baggage} from '@agoric/vat-data';
  * @import {InstanceRecord} from './zoeService/utils.js';
+ * @import {InstanceState} from './internal-types.js';
+ * @import {ZoeIssuerRecord} from './types-index.js';
  */
 
 const { ownKeys } = Reflect;

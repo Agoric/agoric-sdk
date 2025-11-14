@@ -11,6 +11,12 @@ import { calculateShares } from './calculateShares.js';
 import { Position } from './position.js';
 
 /**
+ * @import {PositionKind} from './types-ambient.js';
+ * @import {PayoffHandler} from './types-ambient.js';
+ * @import {MakeOptionInvitation} from './types-ambient.js';
+ */
+
+/**
  * makePayoffHandler returns an object with methods that are useful for
  * callSpread contracts.
  *

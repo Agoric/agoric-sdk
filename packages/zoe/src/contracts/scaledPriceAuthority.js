@@ -13,6 +13,7 @@ import { makePriceAuthorityTransform } from '../contractSupport/priceAuthorityTr
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  * @import {ZCF} from '@agoric/zoe';
  * @import {Baggage} from '@agoric/vat-data';
+ * @import {Ratio} from '@agoric/ertp';
  */
 
 /**
