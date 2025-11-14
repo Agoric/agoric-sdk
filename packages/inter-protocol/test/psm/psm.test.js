@@ -43,6 +43,8 @@ import { anchorAssets, chainStorageEntries } from './psm-storage-fixture.js';
  * @import {ExecutionContext} from 'ava';
  * @import {start} from '../../src/psm/psm.js';
  * @import {EconomyBootstrapPowers} from '../../src/proposals/econ-behaviors.js';
+ * @import {Ratio} from '@agoric/ertp';
+ * @import {PsmPublicFacet} from '../../src/psm/psm.js';
  */
 
 /** @type {TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */

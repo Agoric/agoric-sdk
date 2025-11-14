@@ -26,6 +26,8 @@ const trace = makeTracer('Vault', true);
  * @import {Recorder} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {Baggage} from '@agoric/swingset-liveslots';
  * @import {MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
+ * @import {Ratio} from '@agoric/ertp/src/ratio.js';
+ * @import {VaultKit} from './vaultKit.js';
  */
 
 /**
@@ -85,8 +87,11 @@ const validTransitions = {
 /**
  * @typedef {object} VaultNotification
  * @property {Amount<'nat'>} locked Amount of Collateral locked
- * @property {{ debt: Amount<'nat'>; interest: Ratio }} debtSnapshot 'debt' at
- *   the point the compounded interest was 'interest'
+ * @property {{
+ *   debt: Amount<'nat'>;
+ *   interest: Ratio;
+ * }} debtSnapshot
+ *   'debt' at the point the compounded interest was 'interest'
  * @property {Phase} vaultState
  */
 

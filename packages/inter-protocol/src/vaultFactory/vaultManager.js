@@ -82,6 +82,10 @@ import { AuctionPFShape } from '../auction/auctioneer.js';
  * @import {FactoryPowersFacet} from './vaultDirector.js';
  * @import {VaultBalances} from './proceeds.js';
  * @import {DistributionPlan} from './proceeds.js';
+ * @import {Ratio} from '@agoric/ertp';
+ * @import {Vault} from './vault.js';
+ * @import {VaultPhase} from './vault.js';
+ * @import {AuctioneerPublicFacet} from '../auction/auctioneer.js';
  */
 
 const trace = makeTracer('VM');
@@ -190,7 +194,7 @@ export const watchQuoteNotifier = async (notifierP, watcher, ...args) => {
  *   assetTopicKit: RecorderKit<AssetState>;
  *   debtBrand: Brand<'nat'>;
  *   liquidatingVaults: SetStore<Vault>;
- *   metricsTopicKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<MetricsNotification>;
+ *   metricsTopicKit: RecorderKit<MetricsNotification>;
  *   poolIncrementSeat: ZCFSeat;
  *   retainedCollateralSeat: ZCFSeat;
  *   unsettledVaults: MapStore<string, Vault>;
@@ -950,8 +954,8 @@ export const prepareVaultManagerKit = (
          * @param {NormalizedDebt} oldDebtNormalized
          * @param {Amount<'nat'>} oldCollateral
          * @param {VaultId} vaultId
-         * @param {import('./vault.js').VaultPhase} vaultPhase at the end of
-         *   whatever change updated balances
+         * @param {VaultPhase} vaultPhase at the end of whatever change updated
+         *   balances
          * @param {Vault} vault
          * @returns {void}
          */
@@ -1155,7 +1159,9 @@ export const prepareVaultManagerKit = (
           void facets.helper.writeMetrics();
           return storedCollateralQuote;
         },
-        /** @param {ERef<AuctioneerPublicFacet>} auctionPF */
+        /**
+         * @param {ERef<AuctioneerPublicFacet>} auctionPF
+         */
         async liquidateVaults(auctionPF) {
           const { state, facets } = this;
           const { self, helper } = facets;
@@ -1334,7 +1340,7 @@ export const prepareVaultManagerKit = (
 /**
  * Support restarting kits from baggage and mutating the array holding them
  *
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
  */
 export const provideAndStartVaultManagerKits = baggage => {
   trace('provideAndStartVaultManagerKits start');

@@ -33,6 +33,10 @@ export const BASIS_POINTS = 10000n;
  * @import {AuctionParams} from '../../src/auction/params.js';
  * @import {ManualPriceAuthority} from '@agoric/zoe/tools/manualPriceAuthority.js';
  * @import {start} from './faucet.js';
+ * @import {UserSeat} from '@agoric/zoe';
+ * @import {Ratio} from '@agoric/ertp';
+ * @import {RelativeTime} from '@agoric/time';
+ * @import {VaultKit} from '../../src/vaultFactory/vaultKit.js';
  */
 
 /**

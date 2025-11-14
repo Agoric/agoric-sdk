@@ -10,6 +10,7 @@ import { TimeMath } from '@agoric/time';
  * @import {Timestamp} from '@agoric/time'
  * @import {RelativeTime} from '@agoric/time'
  * @import {AdminFacet, InvitationAmount, ZCFMint} from '@agoric/zoe';
+ * @import {Ratio} from '@agoric/ertp';
  */
 
 export const SECONDS_PER_YEAR = 60n * 60n * 24n * 365n;

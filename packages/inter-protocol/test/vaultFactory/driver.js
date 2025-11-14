@@ -31,7 +31,7 @@ import {
 } from '../supports.js';
 
 /**
- * @import {PriceDescription} from '@agoric/zoe/tools/types.js';
+ * @import {FeeMintAccess} from '@agoric/zoe';
  * @import {VaultFactoryContract as VFC} from '../../src/vaultFactory/vaultFactory.js';
  * @import {AmountUtils} from '@agoric/zoe/tools/test-utils.js';
  * @import {EconomyBootstrapPowers} from '../../src/proposals/econ-behaviors.js';
@@ -40,6 +40,9 @@ import {
  * @import {start} from './faucet.js';
  * @import {VaultPhase} from '../../src/vaultFactory/vault.js';
  * @import {AuctionParams} from '../../src/auction/params.js';
+ * @import {VaultManager} from '../../src/vaultFactory/vaultManager.js';
+ * @import {UserSeat} from '@agoric/zoe';
+ * @import {VaultKit} from '../../src/vaultFactory/vaultKit.js';
  */
 
 const trace = makeTracer('VFDriver');
@@ -359,7 +362,9 @@ export const makeManagerDriver = async (
     collateral = aeth.make(1000n),
     debt = run.make(50n),
   ) => {
-    /** @type {UserSeat<VaultKit>} */
+    /**
+     * @type {UserSeat<VaultKit>}
+     */
     const vaultSeat = await E(zoe).offer(
       await E(lender).makeVaultInvitation(),
       harden({

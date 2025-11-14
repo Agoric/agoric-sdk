@@ -24,6 +24,8 @@ import { amountPattern, ratioPattern } from '../contractSupport.js';
  * @import {StoredPublisherKit} from '@agoric/notifier';
  * @import {TimerService} from '@agoric/time';
  * @import {Baggage} from '@agoric/vat-data';
+ * @import {Ratio} from '@agoric/ertp';
+ * @import {AssetReservePublicFacet} from '../reserve/assetReserve.js';
  */
 
 export const CHARGING_PERIOD_KEY = 'ChargingPeriod';
@@ -95,7 +97,9 @@ harden(makeVaultDirectorParams);
  * >} VaultDirectorParams
  */
 
-/** @type {(liquidationMargin: Ratio) => Ratio} */
+/**
+ * @type {(liquidationMargin: Ratio) => Ratio}
+ */
 const zeroRatio = liquidationMargin =>
   subtractRatios(liquidationMargin, liquidationMargin);
 
