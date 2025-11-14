@@ -12,6 +12,7 @@ const trace = makeTracer('VK', true);
  * @import {EReturn} from '@endo/far';
  * @import {Baggage} from '@agoric/swingset-liveslots';
  * @import {MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
+ * @import {Vault} from './vault.js';
  */
 
 /**

@@ -46,6 +46,10 @@ import { defaultParamValues } from './vaultFactoryUtils.js';
  * @import {AuctionParams} from '../../src/auction/params.js';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {TimerService} from '@agoric/time';
+ * @import {Ratio} from '@agoric/ertp';
+ * @import {RelativeTime} from '@agoric/time';
+ * @import {VaultManager} from '../../src/vaultFactory/vaultManager.js';
+ * @import {CollateralManager} from '../../src/vaultFactory/vaultManager.js';
  */
 
 /**
@@ -256,7 +260,9 @@ const setupServices = async (
   const governorCreatorFacet = E.get(
     consume.vaultFactoryKit,
   ).governorCreatorFacet;
-  /** @type {Promise<VaultFactoryCreatorFacet>} */
+  /**
+   * @type {Promise<VaultFactoryCreatorFacet>}
+   */
   const vaultFactoryCreatorFacetP = E.get(consume.vaultFactoryKit).creatorFacet;
   const reserveCreatorFacet = E.get(consume.reserveKit).creatorFacet;
   const reservePublicFacet = E.get(consume.reserveKit).publicFacet;
@@ -264,7 +270,9 @@ const setupServices = async (
   const reserveKit = { reserveCreatorFacet, reservePublicFacet };
 
   // Add a vault that will lend on aeth collateral
-  /** @type {Promise<VaultManager>} */
+  /**
+   * @type {Promise<VaultManager>}
+   */
   const aethVaultManagerP = E(vaultFactoryCreatorFacetP).addVaultType(
     aeth.issuer,
     'AEth',
