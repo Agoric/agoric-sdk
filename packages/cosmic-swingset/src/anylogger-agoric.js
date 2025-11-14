@@ -3,23 +3,23 @@ import {
   getEnvironmentOptionsList,
   getEnvironmentOption,
 } from '@endo/env-options';
-import anylogger from 'anylogger';
 import { defineName } from '@agoric/internal/src/js-utils.js';
 
-/** @import {BaseLevels} from 'anylogger'; */
-/** @typedef {keyof BaseLevels} LogLevel; */
+import anylogger from 'anylogger';
 
-const VAT_LOGGER_PREFIXES = Object.freeze([
-  'SwingSet:vat',
-  'SwingSet:ls', // "ls" for "liveslots"
-]);
+/**
+ * @import {BaseLevels} from 'anylogger';
+ * @typedef {keyof BaseLevels} LogLevel;
+ */
 
 const DEBUG_LIST = getEnvironmentOptionsList('DEBUG');
 
+// Turn on debugging output with DEBUG=agoric or DEBUG=agoric:${level}
 /**
  * As documented in ../../../docs/env.md, the log level defaults to "log" when
- * environment variable DEBUG is non-empty or unset, and to the quieter "info"
- * when it is set to an empty string, but in either case is overridden if DEBUG
+ * environment variable DEBUG is non-empty or `'unset'`,
+ * and to the quieter "info" when it is set to an empty string,
+ * but in either case is overridden if DEBUG
  * is a comma-separated list that contains "agoric:none" or "agoric:${level}" or
  * "agoric" (the last an alias for "agoric:debug").
  *
@@ -39,6 +39,11 @@ for (const selector of DEBUG_LIST) {
 const maxActiveLevelCode = /** @type {number} */ (
   (maxActiveLevel && anylogger.levels[maxActiveLevel]) ?? -Infinity
 );
+
+const VAT_LOGGER_PREFIXES = harden([
+  'SwingSet:vat',
+  'SwingSet:ls', // "ls" for "liveslots"
+]);
 
 const oldExt = anylogger.ext;
 anylogger.ext = logger => {
