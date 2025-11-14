@@ -173,7 +173,7 @@ export const makeVstorageEvent = (
   return { event, streamCellJson };
 };
 
-type Powers = {
+export type Powers = {
   evmCtx: Omit<EvmContext, 'signingSmartWalletKit' | 'fetch' | 'cosmosRest'>;
   rpc: CosmosRPCClient;
   spectrum: SpectrumClient;
@@ -213,7 +213,6 @@ type ProcessPortfolioPowers = Pick<
   portfolioKeyForDepositAddr: Map<Bech32Address, string>;
   vstoragePathPrefixes: {
     portfoliosPathPrefix: string;
-    pendingTxPathPrefix: string;
   };
 };
 
@@ -240,7 +239,7 @@ const fingerprintPortfolioState = (
   return fingerprint.body;
 };
 
-const processPortfolioEvents = async (
+export const processPortfolioEvents = async (
   portfolioEvents: VstorageEventDetail[],
   blockHeight: bigint,
   memory: PortfoliosMemory,
@@ -413,6 +412,7 @@ const processPortfolioEvents = async (
         assert(oldState);
         if (!oldState.repeats) console.warn(`⚠️  Ignoring unchanged ${path}`);
         oldState.repeats += 1;
+        return;
       }
       memory.snapshots.set(portfolioKey, { fingerprint, repeats: 0 });
 
