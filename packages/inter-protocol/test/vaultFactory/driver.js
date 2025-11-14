@@ -43,6 +43,10 @@ import {
  * @import {VaultManager} from '../../src/vaultFactory/vaultManager.js';
  * @import {UserSeat} from '@agoric/zoe';
  * @import {VaultKit} from '../../src/vaultFactory/vaultKit.js';
+ * @import {InterestTiming} from '../../src/vaultFactory/types-ambient.js';
+ * @import {VaultFactoryCreatorFacet} from '../../src/vaultFactory/types-ambient.js';
+ * @import {VaultFactoryParamPath} from '../../src/vaultFactory/types-ambient.js';
+ * @import {AssetReserveLimitedCreatorFacet} from '../../src/reserve/assetReserve.js'
  */
 
 const trace = makeTracer('VFDriver');

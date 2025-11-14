@@ -26,6 +26,7 @@ import { amountPattern, ratioPattern } from '../contractSupport.js';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {Ratio} from '@agoric/ertp';
  * @import {AssetReservePublicFacet} from '../reserve/assetReserve.js';
+ * @import {InterestTiming, VaultManagerParamValues} from './types-ambient.js';
  */
 
 export const CHARGING_PERIOD_KEY = 'ChargingPeriod';

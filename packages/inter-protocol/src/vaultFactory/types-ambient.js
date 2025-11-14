@@ -1,6 +1,10 @@
 /* eslint-disable @agoric/group-jsdoc-imports */
 // @jessie-check
 
+// XXX filename is still "ambient" but this module is not
+// Make this a module
+export {};
+
 /**
  * @typedef {import('./vaultFactory.js').VaultFactoryContract['publicFacet']} VaultFactoryPublicFacet
  * @import {VaultNotification} from './vault.js'

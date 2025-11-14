@@ -86,6 +86,7 @@ import { AuctionPFShape } from '../auction/auctioneer.js';
  * @import {Vault} from './vault.js';
  * @import {VaultPhase} from './vault.js';
  * @import {AuctioneerPublicFacet} from '../auction/auctioneer.js';
+ * @import {MintAndTransfer, VaultId} from './types-ambient.js';
  */
 
 const trace = makeTracer('VM');
@@ -123,7 +124,7 @@ export const watchQuoteNotifier = async (notifierP, watcher, ...args) => {
 };
 
 /** @import {NormalizedDebt} from './storeUtils.js' */
-/** @import {RelativeTime} from '@agoric/time' */
+/** @import {RelativeTime, Timestamp} from '@agoric/time' */
 
 // Metrics naming scheme: nouns are present values; past-participles are accumulative.
 /**
