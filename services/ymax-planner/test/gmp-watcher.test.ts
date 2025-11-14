@@ -104,20 +104,20 @@ test('handlePendingTx logs a time out on a GMP transaction with no matching even
     };
 
     (provider as any).emit(filter, mockLog);
-  }, 3010);
+  }, 700);
 
   await t.notThrowsAsync(async () => {
     await handlePendingTx(gmpTx, {
       ...opts,
       log: logger,
-      timeoutMs: 3000,
+      timeoutMs: 600,
     });
   });
 
   t.deepEqual(logMessages, [
     `[${txId}] handling ${type} tx`,
     `[${txId}] Watching for MulticallStatus and MulticallExecuted events for txId: ${txId} at contract: ${contractAddress}`,
-    `[${txId}] ✗ No MulticallStatus or MulticallExecuted found for txId ${txId} within 0.05 minutes`,
+    `[${txId}] ✗ No MulticallStatus or MulticallExecuted found for txId ${txId} within 0.01 minutes`,
     `[${txId}] MulticallExecuted detected: txId=${txId} contract=${contractAddress} tx=0x123abc`,
     `[${txId}] ✓ MulticallExecuted matches txId: ${txId}`,
     `[${txId}] GMP tx resolved`,
