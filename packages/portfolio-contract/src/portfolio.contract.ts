@@ -113,6 +113,8 @@ export type EVMContractAddresses = {
   aavePool: `0x${string}`;
   compound: `0x${string}`;
   factory: `0x${string}`;
+  gateway: `0x${string}`;
+  gasService: `0x${string}`;
   usdc: `0x${string}`;
   tokenMessenger: `0x${string}`;
   aaveUSDC: `0x${string}`;
