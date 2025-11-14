@@ -27,10 +27,7 @@ import {
   type ContractCall,
 } from '@agoric/orchestration/src/axelar-types.js';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
-import {
-  buildGasPayload,
-  buildGMPPayload,
-} from '@agoric/orchestration/src/utils/gmp.js';
+import { buildGMPPayload } from '@agoric/orchestration/src/utils/gmp.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import { fromBech32 } from '@cosmjs/encoding';
@@ -68,7 +65,6 @@ export const provideEVMAccount = (
     chain: Chain<{ chainId: string }>;
     fee: NatValue;
     axelarIds: AxelarId;
-    evmGas: bigint;
   },
   lca: LocalAccount,
   ctx: PortfolioInstanceContext,
@@ -110,14 +106,7 @@ export const provideEVMAccount = (
       traceChain('send makeAccountCall Axelar fee from', src.value);
       await feeAccount.send(lca.getAddress(), fee);
 
-      await sendMakeAccountCall(
-        target,
-        fee,
-        lca,
-        gmp.chain,
-        ctx.gmpAddresses,
-        gmp.evmGas,
-      );
+      await sendMakeAccountCall(target, fee, lca, gmp.chain, ctx.gmpAddresses);
     } catch (reason) {
       traceChain('failed to makeAccount', reason);
       pk.manager.releaseAccount(chainName, reason);
@@ -261,13 +250,12 @@ export const sendMakeAccountCall = async (
   lca: LocalAccount,
   gmpChain: Chain<{ chainId: string }>,
   gmpAddresses: GmpAddresses,
-  evmGas: bigint,
 ) => {
   const { AXELAR_GMP, AXELAR_GAS } = gmpAddresses;
   const memo: AxelarGmpOutgoingMemo = {
     destination_chain: dest.axelarId,
     destination_address: dest.remoteAddress,
-    payload: buildGasPayload(evmGas),
+    payload: buildGMPPayload([]),
     type: AxelarGMPMessageType.ContractCall,
     fee: { amount: String(fee.value), recipient: AXELAR_GAS },
   };

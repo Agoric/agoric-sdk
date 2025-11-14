@@ -775,7 +775,6 @@ const stepFlow = async (
         const gmp = {
           ...gmpCommon,
           fee: move.fee?.value || 0n,
-          evmGas: move.detail?.evmGas || 0n,
         };
 
         const acctInfo = provideEVMAccount(
