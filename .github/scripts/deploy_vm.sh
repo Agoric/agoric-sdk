@@ -17,4 +17,5 @@ echo "Deploying to $GCE_INSTANCE: $IMAGE"
 gcloud compute instances update-container "$GCE_INSTANCE" \
   --zone "$GCE_ZONE" \
   --container-env-file "$ENV_FILE" \
-  --container-image "$IMAGE"
+  --container-image "$IMAGE" \
+  --container-mount-host-path=mount-path=/db_data,host-path=/var/lib/kv-store,mode=rw
