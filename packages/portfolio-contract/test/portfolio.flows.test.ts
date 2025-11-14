@@ -366,6 +366,7 @@ const mocks = (
   const ctx1: PortfolioInstanceContext = {
     axelarIds: axelarIdsMock,
     contracts: contractsMock,
+    walletBytecode: '0x1234',
     gmpAddresses,
     usdc: { brand: USDC, denom },
     gmpFeeInfo: { brand: BLD, denom: 'uaxl' },
