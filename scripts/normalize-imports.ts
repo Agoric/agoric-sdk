@@ -1,8 +1,9 @@
-#!/usr/bin/env node
+#!/usr/bin/env -S node --import ts-blank-space/register
 /* eslint-disable @jessie.js/safe-await-separator */
 /* eslint-disable no-underscore-dangle */
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
+import { execa } from 'execa';
 import { Project } from 'ts-morph';
 import prettier from 'prettier';
 import ts from 'typescript';
@@ -64,6 +65,7 @@ const project = new Project({
   compilerOptions,
   // skipAddingFilesFromTsConfig: true,
 });
+const lintTargets = new Set<string>();
 
 const ensureFileInService = absPath => {
   const normalizedPath = toPosix(absPath);
@@ -190,30 +192,47 @@ const resolvePrettierOptions = async filePath => {
   };
 };
 
+const runEslintAutofix = async (filePath: string) => {
+  try {
+    await execa('yarn', ['eslint', '--fix', filePath], {
+      cwd: packageRoot,
+      stdio: 'inherit',
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.warn(`ESLint --fix failed for ${filePath}: ${message}`);
+  }
+};
+
 for (const sourceFile of sourceFiles) {
-  console.log(`Processing ${sourceFile.getFilePath()}`);
+  const filePath = sourceFile.getFilePath();
+  console.log(`Processing ${filePath}`);
   const originalText = sourceFile.getFullText();
   applyInlineTypeImportFixes(sourceFile);
-  sourceFile.organizeImports(); // the Organize Imports action in VSCode
   sourceFile.fixMissingImports({}, typeImportPreferences); // the Add all missing imports action in VSCode
-  const finalText = sourceFile.getFullText();
-  const changed = originalText !== finalText;
-  if (changed) {
+  const textAfterFixes = sourceFile.getFullText();
+  const changedByFixes = originalText !== textAfterFixes;
+  if (changedByFixes) {
     try {
-      const prettierOptions = await resolvePrettierOptions(
-        sourceFile.getFilePath(),
-      );
-      const formatted = await prettier.format(finalText, prettierOptions);
-      if (formatted !== finalText) {
+      const prettierOptions = await resolvePrettierOptions(filePath);
+      const formatted = await prettier.format(textAfterFixes, prettierOptions);
+      if (formatted !== textAfterFixes) {
         sourceFile.replaceWithText(formatted);
       }
     } catch (err) {
-      console.warn(`Prettier failed for ${sourceFile.getFilePath()}:`, err);
+      console.warn(`Prettier failed for ${filePath}:`, err);
     }
+  }
+  if (sourceFile.getFullText() !== originalText) {
+    lintTargets.add(filePath);
   }
 }
 
 await project.save();
+
+for (const filePath of lintTargets) {
+  await runEslintAutofix(filePath);
+}
 
 console.log(
   `Organize imports finished processing ${sourceFiles.length} files.`,
