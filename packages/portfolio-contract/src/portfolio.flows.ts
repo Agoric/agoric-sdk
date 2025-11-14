@@ -758,7 +758,7 @@ const stepFlow = async (
         async name => {
           const chain = await orch.getChain(name);
           const info = await chain.getChainInfo();
-          return info;
+          return harden(info);
         },
       ),
     );
