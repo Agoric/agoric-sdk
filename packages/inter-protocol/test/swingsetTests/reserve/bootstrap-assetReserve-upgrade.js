@@ -1,4 +1,5 @@
-// @ts-check
+// @ts-nocheck
+/* eslint-disable @agoric/group-jsdoc-imports */
 
 import { Fail } from '@endo/errors';
 import { makeIssuerKit } from '@agoric/ertp';

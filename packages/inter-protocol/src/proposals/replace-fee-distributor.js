@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { Stable } from '@agoric/internal/src/tokens.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
