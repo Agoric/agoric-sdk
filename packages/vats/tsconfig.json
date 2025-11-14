@@ -1,6 +1,9 @@
 {
   "extends": "../../tsconfig.json",
-  "compilerOptions": {},
+  "compilerOptions": {
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+  },
   "include": [
     "*.js",
     "scripts",
