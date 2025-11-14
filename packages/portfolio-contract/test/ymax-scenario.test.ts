@@ -6,13 +6,8 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { inspect } from 'node:util';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
-import {
-  getChainNameOfPlaceRef,
-  type MovementDesc,
-} from '../src/type-guards-steps.ts';
 import type { OfferArgsFor, ProposalType } from '../src/type-guards.ts';
 import {
   grokRebalanceScenarios,
@@ -21,34 +16,13 @@ import {
 } from '../tools/rebalance-grok.ts';
 import { setupTrader } from './contract-setup.ts';
 import {
-  evmNamingDistinction,
   makeCCTPTraffic,
   makeUSDNIBCTraffic,
   portfolio0lcaOrch,
 } from './mocks.ts';
 import { getResolverMakers, settleTransaction } from './resolver-helpers.ts';
 
-// Use an EVM chain whose axelar ID differs from its chain name
-const { sourceChain } = evmNamingDistinction;
-
 const { values } = Object;
-
-const dedup = <T>(xs: T[]) => harden([...new Set(xs)]);
-
-const findEVMChains = (moves: MovementDesc[]) => {
-  const evmChains = Object.keys(AxelarChain);
-
-  return dedup(
-    moves.flatMap(m =>
-      [m.src, m.dest].flatMap(ref => {
-        const maybeChain = getChainNameOfPlaceRef(ref);
-        if (!maybeChain) return [];
-        if (evmChains.includes(maybeChain)) return [maybeChain as AxelarChain];
-        return [];
-      }),
-    ),
-  );
-};
 
 const rebalanceScenarioMacro = test.macro({
   async exec(t, description: string) {

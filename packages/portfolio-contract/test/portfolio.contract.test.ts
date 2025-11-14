@@ -27,17 +27,10 @@ import {
   simulateAckTransferToAxelar,
   simulateCCTPAck,
 } from './contract-setup.ts';
-import {
-  evmNamingDistinction,
-  makeCCTPTraffic,
-  portfolio0lcaOrch,
-} from './mocks.ts';
+import { makeCCTPTraffic, portfolio0lcaOrch } from './mocks.ts';
 import { makeStorageTools } from './supports.ts';
 
 const { fromEntries, keys, values } = Object;
-
-// Use an EVM chain whose axelar ID differs from its chain name
-const { sourceChain } = evmNamingDistinction;
 
 const range = (n: number) => [...Array(n).keys()];
 

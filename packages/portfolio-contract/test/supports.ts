@@ -1,4 +1,3 @@
-import { makeReceiveUpCallPayload } from '@aglocal/boot/tools/axelar-supports.ts';
 import type { VstorageKit } from '@agoric/client-utils';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { makeIssuerKit } from '@agoric/ertp';
