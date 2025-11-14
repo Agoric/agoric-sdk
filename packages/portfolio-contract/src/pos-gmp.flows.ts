@@ -250,7 +250,7 @@ export const sendMakeAccountCall = async (
   const memo: AxelarGmpOutgoingMemo = {
     destination_chain: dest.axelarId,
     destination_address: dest.remoteAddress,
-    payload: buildGMPPayload([]),
+    payload: [],
     type: AxelarGMPMessageType.ContractCall,
     fee: { amount: String(fee.value), recipient: AXELAR_GAS },
   };
