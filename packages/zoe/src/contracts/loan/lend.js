@@ -1,6 +1,10 @@
 import { assertProposalShape } from '../../contractSupport/index.js';
 import { makeBorrowInvitation } from './borrow.js';
 
+/**
+ * @import {MakeLendInvitation} from './types-ambient.js';
+ */
+
 // The lender puts up the amount to be loaned to the borrower, but has
 // no further actions. The loan is ongoing until it is paid back
 // entirely or liquidated, at which point the lender receives a

@@ -29,9 +29,10 @@ import { makeStartInstance } from './startInstance.js';
 import { makeZoeStorageManager } from './zoeStorageManager.js';
 
 /**
- * @import {VatAdminSvc, ShutdownWithFailure} from '@agoric/swingset-vat';
+ * @import {VatAdminSvc, ShutdownWithFailure, BundleCap} from '@agoric/swingset-vat';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {FeeIssuerConfig, FeeMintAccess, ZCFSpec, ZoeService} from './types.js';
+ * @import {GetBundleCapForID} from './internal-types.js';
  */
 
 /**

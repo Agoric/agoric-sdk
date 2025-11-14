@@ -6,6 +6,10 @@ import { makeRatio, oneMinus } from '../../contractSupport/index.js';
 import { make0Percent, make100Percent } from './percent.js';
 
 /**
+ * @import {CalculateShares} from './types-ambient.js';
+ */
+
+/**
  * Calculate the portion (as a Ratio) of the collateral that should be
  * allocated to the long side of a call spread contract. price gives the value
  * of the underlying asset at closing that determines the payouts to the parties

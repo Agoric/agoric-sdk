@@ -38,6 +38,13 @@ import './internal-types.js';
 /**
  * @import {Baggage} from '@agoric/vat-data';
  * @import {InvitationAmount} from '@agoric/zoe';
+ * @import {CreateZCFVat} from './internal-types.js';
+ * @import {GetBundleCapForID} from './internal-types.js';
+ * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
+ * @import {GetFeeIssuerKit} from './internal-types.js';
+ * @import {ZoeMint} from '../internal-types.js';
+ * @import {MakeZoeInstanceStorageManager} from './internal-types.js';
+ * @import {UnwrapInstallation} from './internal-types.js';
  */
 
 const { ownKeys } = Reflect;
