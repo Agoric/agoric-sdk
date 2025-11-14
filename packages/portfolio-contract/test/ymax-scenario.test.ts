@@ -19,7 +19,7 @@ import {
   importCSV,
   withBrand,
 } from '../tools/rebalance-grok.ts';
-import { setupTrader, simulateUpcallFromAxelar } from './contract-setup.ts';
+import { setupTrader } from './contract-setup.ts';
 import {
   evmNamingDistinction,
   makeCCTPTraffic,
@@ -87,7 +87,6 @@ const rebalanceScenarioMacro = test.macro({
       await E(purse).deposit(funds);
     }
 
-    const upcallDone = new Set();
     let index = 0;
 
     const ackSteps = async (offerArgs: OfferArgsFor['openPortfolio']) => {
@@ -97,14 +96,6 @@ const rebalanceScenarioMacro = test.macro({
       await transmitVTransferEvent('acknowledgementPacket', -1); // NFA
 
       await eventLoopIteration();
-      for (const evmChain of findEVMChains(moves)) {
-        if (upcallDone.has(evmChain)) continue;
-        upcallDone.add(evmChain);
-        await simulateUpcallFromAxelar(
-          common.mocks.transferBridge,
-          sourceChain,
-        );
-      }
 
       for (const move of moves) {
         await eventLoopIteration();

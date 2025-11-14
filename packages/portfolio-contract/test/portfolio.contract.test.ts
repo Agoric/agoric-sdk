@@ -26,7 +26,6 @@ import {
   setupTrader,
   simulateAckTransferToAxelar,
   simulateCCTPAck,
-  simulateUpcallFromAxelar,
 } from './contract-setup.ts';
 import {
   evmNamingDistinction,
@@ -154,8 +153,6 @@ test('open a portfolio with Aave position', async t => {
   const chainP = (async () => {
     await ackNFA(common.utils);
     await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-    t.log('ackd send to Axelar to create account');
-    await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
     await simulateCCTPAck(common.utils);
     const misc = await txResolver.drainPending();
     // NOTE: Axelar Ack has to come _after_ drainPending.
@@ -205,8 +202,6 @@ test('open a portfolio with Compound position', async t => {
   await ackNFA(common.utils);
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   t.log('ackd NFA, send to Axelar to create account');
-
-  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
   await simulateCCTPAck(common.utils).finally(() =>
     txResolver
@@ -261,8 +256,6 @@ test('open portfolio with USDN, Aave positions', async t => {
   await ackNFA(common.utils);
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   t.log('ackd NFA, send to noble');
-
-  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
   await simulateCCTPAck(common.utils).finally(() =>
     txResolver
@@ -371,8 +364,6 @@ test('claim rewards on Aave position successfully', async t => {
   await ackNFA(common.utils);
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   t.log('ackd send to Axelar to create account');
-
-  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
   await simulateCCTPAck(common.utils).finally(() =>
     txResolver
@@ -523,8 +514,6 @@ const beefyTestMacro = test.macro({
     await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
     t.log('ackd send to Axelar to create account');
 
-    await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
-
     await simulateCCTPAck(common.utils).finally(() =>
       txResolver
         .drainPending()
@@ -607,8 +596,6 @@ test('Withdraw from a Beefy position (future client)', async t => {
   await ackNFA(common.utils);
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   t.log('ackd send to Axelar to create account');
-
-  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
   await simulateCCTPAck(common.utils).finally(() =>
     txResolver
@@ -737,8 +724,6 @@ test.serial(
     await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
     t.log('ackd send to Axelar to create account');
 
-    await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
-
     await common.utils
       .transmitVTransferEvent('acknowledgementPacket', -1)
       .then(() => eventLoopIteration());
@@ -810,7 +795,6 @@ test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
     depositToAave,
   );
 
-  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
   await simulateCCTPAck(common.utils).finally(() =>
     simulateAckTransferToAxelar(common.utils),
   );
@@ -821,12 +805,6 @@ test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
     depositToAave,
   );
 
-  await simulateUpcallFromAxelar(
-    common.mocks.transferBridge,
-    sourceChain,
-    addr2.evm,
-    addr2.lca,
-  );
   await simulateCCTPAck(common.utils).finally(() =>
     simulateAckTransferToAxelar(common.utils),
   );
