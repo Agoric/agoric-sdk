@@ -159,6 +159,7 @@ export type PortfolioPrivateArgs = OrchestrationPowers & {
   storageNode: Remote<StorageNode>;
   axelarIds: AxelarId;
   contracts: EVMContractAddressesMap;
+  walletBytecode: `0x${string}`;
   gmpAddresses: GmpAddresses;
 };
 
@@ -173,6 +174,7 @@ export const privateArgsShape: TypedPattern<PortfolioPrivateArgs> = {
   assetInfo: M.arrayOf([M.string(), DenomDetailShape]),
   axelarIds: AxelarIdShape,
   contracts: EVMContractAddressesMapShape,
+  walletBytecode: M.string(),
   gmpAddresses: GmpAddressesShape,
 };
 
@@ -236,6 +238,7 @@ export const contract = async (
     assetInfo,
     axelarIds,
     contracts,
+    walletBytecode,
     storageNode,
     gmpAddresses,
   } = privateArgs;
@@ -314,6 +317,7 @@ export const contract = async (
     },
     axelarIds,
     contracts,
+    walletBytecode,
     gmpAddresses,
     resolverClient,
     inertSubscriber,
