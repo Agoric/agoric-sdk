@@ -335,8 +335,6 @@ export const contract = async (
    * where required.
    */
   const txfrCtx: flows.OnTransferContext = {
-    axelarIds,
-    gmpAddresses,
     resolverService,
     transferChannels,
   };

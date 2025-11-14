@@ -904,67 +904,11 @@ const eventAbbr = ({ packet }: VTransferIBCEvent) => ({
   sequence: packet.sequence,
 });
 
-type UpcallData = Pick<PortfolioInstanceContext, 'gmpAddresses' | 'axelarIds'>;
-export type OnTransferContext = UpcallData &
-  Pick<PortfolioInstanceContext, 'transferChannels'> & {
-    resolverService: GuestInterface<ResolverKit['service']>;
-  };
-
-/**
- * Resolve EVM account creation from Axelar GMP memo.
- *
- * @param memo - GMP memo from AXELAR_GMP via axelar channel
- * @param axelarIds - name -> axelar id mapping
- * @param orch - Orchestrator to get chain information
- * @param portfolioManager - Portfolio manager to resolve the account
- * @param traceUpcall - Logger for tracing
- * @returns Promise<boolean> - true if account was resolved, false otherwise
- */
-const resolveEVMAccount = async (
-  memo: AxelarGmpIncomingMemo,
-  axelarIds: AxelarId,
-  orch: Orchestrator,
-  portfolioManager: GuestInterface<PortfolioKit['manager']>,
-  traceUpcall: TraceLogger,
-) => {
-  traceUpcall('GMP', memo);
-
-  const result = (entries(axelarIds) as [AxelarChain, string][]).find(
-    ([_, chainId]) => chainId === memo.source_chain,
-  );
-  if (!result) {
-    traceUpcall('unknown source_chain', memo);
-    return false;
-  }
-
-  const [chainName, _] = result;
-
-  const payloadBytes = decodeBase64(memo.payload);
-  const [{ data }] = decodeAbiParameters(
-    DECODE_CONTRACT_CALL_RESULT_ABI,
-    payloadBytes,
-  ) as [AgoricResponse];
-
-  traceUpcall('Decoded:', JSON.stringify({ data }));
-
-  const [message] = data;
-  const { success, result: result2 } = message;
-  if (!success) return false;
-
-  const [address] = decodeAbiParameters([{ type: 'address' }], result2);
-
-  const chainInfo = await (await orch.getChain(chainName)).getChainInfo();
-  const caipId: CaipChainId = `${chainInfo.namespace}:${chainInfo.reference}`;
-
-  traceUpcall(chainName, 'remoteAddress', address);
-  portfolioManager.resolveAccount({
-    namespace: 'eip155',
-    chainName,
-    chainId: caipId,
-    remoteAddress: address,
-  });
-
-  return true;
+export type OnTransferContext = Pick<
+  PortfolioInstanceContext,
+  'transferChannels'
+> & {
+  resolverService: GuestInterface<ResolverKit['service']>;
 };
 
 /**
@@ -1013,40 +957,19 @@ export const onAgoricTransfer = (async (
   traceUpcall('event', eventAbbr(event));
   if (event.packet.destination_port !== 'transfer') return false;
 
-  const { gmpAddresses, axelarIds, transferChannels } = ctx;
+  const { transferChannels, resolverService } = ctx;
   const { destination_channel: packetDest } = event.packet;
   const lca = reader.getLocalAccount();
 
   await null;
 
   switch (packetDest) {
-    case transferChannels.axelar?.channelId: {
-      const parsed = await lca.parseInboundTransfer(event.packet);
-      const { extra } = parsed;
-      if (extra.sender !== gmpAddresses.AXELAR_GMP) {
-        traceUpcall(
-          `GMP early exit; AXELAR_GMP sender expected ${gmpAddresses.AXELAR_GMP}, got ${extra.sender}`,
-        );
-        return false;
-      }
-
-      if (!extra.memo) return false;
-
-      const memo: AxelarGmpIncomingMemo = JSON.parse(extra.memo); // XXX unsound! use typed pattern
-      return resolveEVMAccount(
-        memo,
-        axelarIds,
-        orch,
-        pKit.manager,
-        traceUpcall,
-      );
-    }
     case transferChannels.noble.channelId: {
       const parsed = await lca.parseInboundTransfer(event.packet);
       return resolveCCTPIn(
         parsed,
         coerceAccountId(lca.getAddress()),
-        ctx.resolverService,
+        resolverService,
         traceUpcall,
       );
     }
