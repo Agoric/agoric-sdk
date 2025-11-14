@@ -137,14 +137,21 @@ export const makeSigningSmartWalletKit = async (
     return client.broadcastTx(txBytes);
   };
 
-  const executeOffer = async (offer: OfferSpec): Promise<OfferStatus> => {
+  const executeOffer = async (
+    offer: OfferSpec,
+    fee?: StdFee,
+    memo?: string,
+    signerData?: SignerData,
+  ): Promise<OfferStatus> => {
     const offerP = swk.pollOffer(address, offer.id);
 
     // Await for rejection handling
-    await sendBridgeAction({
-      method: 'executeOffer',
-      offer,
-    });
+    await sendBridgeAction(
+      { method: 'executeOffer', offer },
+      fee,
+      memo,
+      signerData,
+    );
 
     return offerP;
   };
