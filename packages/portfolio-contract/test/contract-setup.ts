@@ -68,6 +68,7 @@ export const deploy = async (t: ExecutionContext) => {
       ...common.commonPrivateArgs,
       axelarIds: axelarIdsMock,
       contracts: contractsMock,
+      walletBytecode: '0x1234',
       gmpAddresses,
       timerService,
       chainInfo,

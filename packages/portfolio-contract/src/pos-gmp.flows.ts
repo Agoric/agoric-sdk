@@ -79,7 +79,7 @@ export const provideEVMAccount = (
       factoryAddress: ctx.contracts[chainName].factory,
       gasServiceAddress: ctx.contracts[chainName].gasService,
       gatewayAddress: ctx.contracts[chainName].gateway,
-      walletBytecode: '0x1234' as const, // TODO Replace PLACEHOLDER_BYTECODE with actual wallet bytecode,
+      walletBytecode: ctx.walletBytecode,
     });
     const chainId: CaipChainId = `${chainInfo.namespace}:${chainInfo.reference}`;
     const info: GMPAccountInfo = {
