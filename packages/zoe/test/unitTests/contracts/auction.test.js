@@ -29,8 +29,11 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
         // pack the contract
         const bundle = await bundleSource(auctionRoot);
         // install the contract
-        vatAdminState.installBundle('b1-auctioneer', bundle);
-        const installationP = E(zoe).installBundleID('b1-auctioneer');
+        const b1auctioneer = vatAdminState.registerBundle(
+          'b1-auctioneer',
+          bundle,
+        );
+        const installationP = E(zoe).installBundleID(b1auctioneer);
         return installationP;
       },
       startInstance: async installation => {
@@ -271,8 +274,8 @@ test('zoe - secondPriceAuction - alice tries to exit', async t => {
   // Pack the contract.
   const bundle = await bundleSource(auctionRoot);
 
-  vatAdminState.installBundle('b1-auctioneer', bundle);
-  const installation = await E(zoe).installBundleID('b1-auctioneer');
+  const b1auctioneer = vatAdminState.registerBundle('b1-auctioneer', bundle);
+  const installation = await E(zoe).installBundleID(b1auctioneer);
   const issuerKeywordRecord = harden({
     Asset: moolaKit.issuer,
     Ask: simoleanKit.issuer,
@@ -422,8 +425,8 @@ test('zoe - secondPriceAuction - all bidders try to exit', async t => {
 
   // Pack the contract.
   const bundle = await bundleSource(auctionRoot);
-  vatAdminState.installBundle('b1-auctioneer', bundle);
-  const installation = await E(zoe).installBundleID('b1-auctioneer');
+  const b1auctioneer = vatAdminState.registerBundle('b1-auctioneer', bundle);
+  const installation = await E(zoe).installBundleID(b1auctioneer);
   const issuerKeywordRecord = harden({
     Asset: moolaKit.issuer,
     Ask: simoleanKit.issuer,
@@ -566,8 +569,8 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
 
   // Pack the contract.
   const bundle = await bundleSource(auctionRoot);
-  vatAdminState.installBundle('b1-auctioneer', bundle);
-  const installation = await E(zoe).installBundleID('b1-auctioneer');
+  const b1auctioneer = vatAdminState.registerBundle('b1-auctioneer', bundle);
+  const installation = await E(zoe).installBundleID(b1auctioneer);
   const issuerKeywordRecord = harden({
     Asset: ccIssuer,
     Ask: moolaIssuer,
@@ -852,8 +855,11 @@ test('zoe - firstPriceAuction w/ 3 bids', async t => {
         // pack the contract
         const bundle = await bundleSource(auctionRoot);
         // install the contract
-        vatAdminState.installBundle('b1-auctioneer', bundle);
-        const installationP = E(zoe).installBundleID('b1-auctioneer');
+        const b1auctioneer = vatAdminState.registerBundle(
+          'b1-auctioneer',
+          bundle,
+        );
+        const installationP = E(zoe).installBundleID(b1auctioneer);
         return installationP;
       },
       startInstance: async installation => {

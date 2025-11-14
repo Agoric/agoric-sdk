@@ -36,13 +36,16 @@ test('loan - lend - exit before borrow', async t => {
     vatAdminState,
   } = setup();
   const bundle = await bundleSource(loanRoot);
-  vatAdminState.installBundle('b1-loan', bundle);
-  const installation = await E(zoe).installBundleID('b1-loan');
+  const b1loan = vatAdminState.registerBundle('b1-loan', bundle);
+  const installation = await E(zoe).installBundleID(b1loan);
 
   // Create autoswap installation and instance
   const autoswapBundle = await bundleSource(autoswapRoot);
-  vatAdminState.installBundle('b1-autoswap', autoswapBundle);
-  const autoswapInstallation = await E(zoe).installBundleID('b1-autoswap');
+  const b1autoswap = vatAdminState.registerBundle(
+    'b1-autoswap',
+    autoswapBundle,
+  );
+  const autoswapInstallation = await E(zoe).installBundleID(b1autoswap);
 
   const { instance: autoswapInstance } = await E(zoe).startInstance(
     autoswapInstallation,

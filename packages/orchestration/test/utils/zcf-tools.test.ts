@@ -24,8 +24,11 @@ const makeTestContext = async () => {
   const bundleCache = await makeNodeBundleCache('bundles', {}, s => import(s));
   const contractBundle = await bundleCache.load(contractEntry);
 
-  fakeVatAdmin.vatAdminState.installBundle('b1-contract', contractBundle);
-  const installation = await E(zoe).installBundleID('b1-contract');
+  const bid = fakeVatAdmin.vatAdminState.registerBundle(
+    'b1-contract',
+    contractBundle,
+  );
+  const installation = await E(zoe).installBundleID(bid);
 
   const stuff = makeIssuerKit('Stuff');
   await E(zoe).startInstance(installation, { Stuff: stuff.issuer });

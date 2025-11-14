@@ -22,8 +22,11 @@ test('zoe - escrowToVote', async t => {
   // pack the contract
   const bundle = await bundleSource(contractRoot);
   // install the contract
-  vatAdminState.installBundle('b1-escrowtovote', bundle);
-  const installation = await E(zoe).installBundleID('b1-escrowtovote');
+  const b1escrowtovote = vatAdminState.registerBundle(
+    'b1-escrowtovote',
+    bundle,
+  );
+  const installation = await E(zoe).installBundleID(b1escrowtovote);
 
   // Alice creates an instance and acts as the Secretary
   const issuerKeywordRecord = harden({

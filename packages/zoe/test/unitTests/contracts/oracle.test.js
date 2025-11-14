@@ -42,7 +42,7 @@ test.before(
 
     // Pack the contract.
     const contractBundle = await bundleSource(contractPath);
-    vatAdminState.installBundle('b1-oracle', contractBundle);
+    const b1oracle = vatAdminState.registerBundle('b1-oracle', contractBundle);
 
     const link = makeIssuerKit('$LINK', AssetKind.NAT);
 
@@ -52,7 +52,7 @@ test.before(
     // else, and they can use it to create a new contract instance
     // using the same code.
     /** @type {Installation<OracleStart>} */
-    const installation = await E(zoe).installBundleID('b1-oracle');
+    const installation = await E(zoe).installBundleID(b1oracle);
 
     const feeAmount = AmountMath.make(link.brand, 1000n);
     /**
