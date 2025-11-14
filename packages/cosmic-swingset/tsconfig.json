@@ -2,7 +2,8 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "skipLibCheck": false
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
   },
   "include": [
     "*.cjs",
