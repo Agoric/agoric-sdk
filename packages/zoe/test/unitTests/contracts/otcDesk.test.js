@@ -19,8 +19,8 @@ let vatAdminState;
 
 const installCode = async zoe => {
   const bundle = await bundleSource(root);
-  vatAdminState.installBundle('b1-otcdesk', bundle);
-  const installation = await E(zoe).installBundleID('b1-otcdesk');
+  const b1otcdesk = vatAdminState.registerBundle('b1-otcdesk', bundle);
+  const installation = await E(zoe).installBundleID(b1otcdesk);
   return installation;
 };
 
@@ -28,8 +28,8 @@ const installCoveredCall = async zoe => {
   const bundle = await bundleSource(
     `${dirname}/../../../src/contracts/coveredCall`,
   );
-  vatAdminState.installBundle('b1-coveredcall', bundle);
-  const installation = await E(zoe).installBundleID('b1-coveredcall');
+  const b1coveredcall = vatAdminState.registerBundle('b1-coveredcall', bundle);
+  const installation = await E(zoe).installBundleID(b1coveredcall);
   return installation;
 };
 

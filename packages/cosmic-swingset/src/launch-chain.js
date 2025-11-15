@@ -1086,7 +1086,12 @@ export async function launchAndShareInternals({
           const { bundles, codeSteps: coreEvalCodeSteps } =
             await extractCoreProposalBundles(coreProposals, myFilename, {
               handleToBundleSpec: async (handle, source, _sequence, _piece) => {
-                const bundle = await bundleSource(source);
+                const bundle = await bundleSource(source, {
+                  // Disable bundle size limits for chain initialization/upgrade
+                  // bundles which may be large, but do not travel through RPC
+                  // and we still want to be legible.
+                  byteLimit: Infinity,
+                });
                 const { endoZipBase64Sha512: hash } = bundle;
                 const bundleID = `b1-${hash}`;
                 handle.bundleID = bundleID;

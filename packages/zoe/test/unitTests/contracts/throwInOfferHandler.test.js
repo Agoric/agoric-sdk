@@ -19,8 +19,8 @@ test('throw in offerHandler', async t => {
   // pack the contract
   const bundle = await bundleSource(contractRoot);
   // install the contract
-  vatAdminState.installBundle('b1-throw', bundle);
-  const installation = await E(zoe).installBundleID('b1-throw');
+  const b1throw = vatAdminState.registerBundle('b1-throw', bundle);
+  const installation = await E(zoe).installBundleID(b1throw);
 
   const { creatorFacet } = await E(zoe).startInstance(installation);
 

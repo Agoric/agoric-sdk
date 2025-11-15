@@ -18,8 +18,11 @@ test('zoe - simplest automaticRefund', async t => {
   const { moolaKit, moola, zoe, vatAdminState } = setup();
   // Pack the contract.
   const bundle = await bundleSource(automaticRefundRoot);
-  vatAdminState.installBundle('b1-automaticRefund', bundle);
-  const installation = await E(zoe).installBundleID('b1-automaticRefund');
+  const b1automaticRefund = vatAdminState.registerBundle(
+    'b1-automaticRefund',
+    bundle,
+  );
+  const installation = await E(zoe).installBundleID(b1automaticRefund);
 
   // Setup Alice
   const aliceMoolaPayment = moolaKit.mint.mintPayment(moola(3n));
@@ -58,8 +61,11 @@ test('zoe - automaticRefund same issuer', async t => {
   const { moolaKit, moola, zoe, vatAdminState } = setup();
   // Pack the contract.
   const bundle = await bundleSource(automaticRefundRoot);
-  vatAdminState.installBundle('b1-automaticRefund', bundle);
-  const installation = await E(zoe).installBundleID('b1-automaticRefund');
+  const b1automaticRefund = vatAdminState.registerBundle(
+    'b1-automaticRefund',
+    bundle,
+  );
+  const installation = await E(zoe).installBundleID(b1automaticRefund);
 
   // Setup Alice
   const aliceMoolaPayment = moolaKit.mint.mintPayment(moola(9n));
@@ -116,8 +122,11 @@ test('zoe with automaticRefund', async t => {
   const bundle = await bundleSource(automaticRefundRoot);
 
   // 1: Alice creates an automatic refund instance
-  vatAdminState.installBundle('b1-automaticRefund', bundle);
-  const installation = await E(zoe).installBundleID('b1-automaticRefund');
+  const b1automaticRefund = vatAdminState.registerBundle(
+    'b1-automaticRefund',
+    bundle,
+  );
+  const installation = await E(zoe).installBundleID(b1automaticRefund);
   const issuerKeywordRecord = harden({
     Contribution1: moolaKit.issuer,
     Contribution2: simoleanKit.issuer,
@@ -250,8 +259,11 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
   // Pack the contract.
   const bundle = await bundleSource(automaticRefundRoot);
 
-  vatAdminState.installBundle('b1-automaticRefund', bundle);
-  const installation = await E(zoe).installBundleID('b1-automaticRefund');
+  const b1automaticRefund = vatAdminState.registerBundle(
+    'b1-automaticRefund',
+    bundle,
+  );
+  const installation = await E(zoe).installBundleID(b1automaticRefund);
   const issuerKeywordRecord = harden({
     ContributionA: moolaKit.issuer,
     ContributionB: simoleanKit.issuer,
@@ -325,8 +337,11 @@ test('zoe - alice tries to complete after completion has already occurred', asyn
 
   // Pack the contract.
   const bundle = await bundleSource(automaticRefundRoot);
-  vatAdminState.installBundle('b1-automaticRefund', bundle);
-  const installation = await E(zoe).installBundleID('b1-automaticRefund');
+  const b1automaticRefund = vatAdminState.registerBundle(
+    'b1-automaticRefund',
+    bundle,
+  );
+  const installation = await E(zoe).installBundleID(b1automaticRefund);
   const issuerKeywordRecord = harden({
     ContributionA: moolaKit.issuer,
     ContributionB: simoleanKit.issuer,
@@ -387,8 +402,11 @@ test('zoe - automaticRefund non-fungible', async t => {
 
   // Pack the contract.
   const bundle = await bundleSource(automaticRefundRoot);
-  vatAdminState.installBundle('b1-automaticRefund', bundle);
-  const installation = await E(zoe).installBundleID('b1-automaticRefund');
+  const b1automaticRefund = vatAdminState.registerBundle(
+    'b1-automaticRefund',
+    bundle,
+  );
+  const installation = await E(zoe).installBundleID(b1automaticRefund);
 
   // Setup Alice
   const aliceCcPayment = ccMint.mintPayment(cryptoCats(harden(['tigger'])));

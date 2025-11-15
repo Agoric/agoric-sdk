@@ -7,6 +7,7 @@ const mockDefineKind = /** @type {any} */ (harden({}));
 globalThis.VatData ||= { defineKind: mockDefineKind };
 
 test('methods available', async t => {
-  const { defineKind } = await import('../src/index.js');
+  const avoidBundling = '../src/index.js';
+  const { defineKind } = await import(avoidBundling);
   t.is(defineKind, mockDefineKind);
 });

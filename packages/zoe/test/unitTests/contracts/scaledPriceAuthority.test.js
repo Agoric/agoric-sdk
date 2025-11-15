@@ -51,9 +51,12 @@ test.before('setup scaled price authority', async ot => {
   // of tests, we can also send the installation to someone
   // else, and they can use it to create a new contract instance
   // using the same code.
-  vatAdminState.installBundle('b1-scaled-price-authority', scaledPriceBundle);
-  const scaledPriceInstallation = await E(zoe).installBundleID(
+  const b1scaledpriceauthority = vatAdminState.registerBundle(
     'b1-scaled-price-authority',
+    scaledPriceBundle,
+  );
+  const scaledPriceInstallation = await E(zoe).installBundleID(
+    b1scaledpriceauthority,
   );
 
   // Pick some weird decimal places.

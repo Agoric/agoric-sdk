@@ -40,7 +40,8 @@ export const importBootTestUtils = async (log, bundleCache) => {
       bundleCache.validateOrAdd(entrypoint, name),
     ),
   );
-  const utils = await import('./boot-test-utils.js');
+  const avoidBundling = './boot-test-utils.js';
+  const utils = await import(avoidBundling);
   const mockPsmBootstrapArgs = () => {
     const mock = utils.makeMock(log);
     const vats = utils.mockSwingsetVats(mock);
