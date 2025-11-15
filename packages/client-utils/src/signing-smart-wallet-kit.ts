@@ -23,6 +23,7 @@ import type { SmartWalletKit } from './smart-wallet-kit.js';
 import type { RetryOptionsAndPowers } from './sync-tools.js';
 
 type TxOptions = RetryOptionsAndPowers & {
+  fee?: StdFee;
   sendOnly?: boolean;
   makeNonce?: () => string;
 };
@@ -187,7 +188,7 @@ export const reflectWalletStore = (
   ) => {
     const combinedOpts = { ...baseTxOpts, ...overrides } as TxOptions;
     combinedOpts.setTimeout || Fail`missing setTimeout`;
-    const { sendOnly, makeNonce, ...retryOpts } = combinedOpts;
+    const { fee, sendOnly, makeNonce, ...retryOpts } = combinedOpts;
     if (forSavingResults && !makeNonce && !sendOnly) {
       throw Fail`makeNonce is required without sendOnly: true (to create an awaitable message id)`;
     }
@@ -213,10 +214,10 @@ export const reflectWalletStore = (
             args,
             ...(saveResult ? { saveResult } : undefined),
           });
-          const tx = await sswk.sendBridgeAction({
-            method: 'invokeEntry',
-            message,
-          });
+          const tx = await sswk.sendBridgeAction(
+            { method: 'invokeEntry', message },
+            fee,
+          );
           if (tx.code !== 0) {
             throw Error(tx.rawLog);
           }
@@ -246,6 +247,7 @@ export const reflectWalletStore = (
       overwrite?: boolean;
     };
     const {
+      fee,
       sendOnly: _sendOnly,
       makeNonce,
       overwrite = true,
@@ -253,15 +255,16 @@ export const reflectWalletStore = (
     } = combinedOpts;
     if (!makeNonce) throw Fail`missing makeNonce`;
     const id = `${description}.${makeNonce()}`;
-    const tx = await sswk.sendBridgeAction({
-      method: 'executeOffer',
-      offer: {
-        id,
-        invitationSpec: { source: 'purse', instance, description },
-        proposal: {},
-        saveResult: { name, overwrite },
-      },
-    });
+    const offer: OfferSpec = {
+      id,
+      invitationSpec: { source: 'purse', instance, description },
+      proposal: {},
+      saveResult: { name, overwrite },
+    };
+    const tx = await sswk.sendBridgeAction(
+      { method: 'executeOffer', offer },
+      fee,
+    );
     const status = await getOfferResult(
       id,
       sswk.query.getLastUpdate,
