@@ -1,22 +1,24 @@
 /// <reference path="./types-ambient.js" />
 
+import { AmountMath } from '@agoric/ertp';
 import { Fail } from '@endo/errors';
-import { makePromiseKit } from '@endo/promise-kit';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { AmountMath } from '@agoric/ertp';
+import { makePromiseKit } from '@endo/promise-kit';
 import {
-  assertProposalShape,
-  depositToSeat,
   assertNatAssetKind,
-  makeRatio,
+  assertProposalShape,
   ceilMultiplyBy,
+  depositToSeat,
+  makeRatio,
 } from '../../contractSupport/index.js';
 import { makePayoffHandler } from './payoffHandler.js';
 import { Position } from './position.js';
 
 /**
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {PositionKind} from './types-ambient.js';
+ * @import {PayoffHandler} from './types-ambient.js';
  */
 
 const PERCENT_BASE = 100n;

@@ -2,6 +2,10 @@ import { Far } from '@endo/marshal';
 import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
 
 /**
+ * @import {FeeMintAccess} from '@agoric/zoe';
+ */
+
+/**
  * A Faucet providing Minted so we can provide initial liquidity where it's
  * needed.
  *

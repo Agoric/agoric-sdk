@@ -4,8 +4,8 @@
 import { E } from '@endo/far';
 import { Far } from '@endo/marshal';
 
-import { makeNotifier } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp';
+import { makeNotifier } from '@agoric/notifier';
 
 import { multiplyBy } from '@agoric/ertp/src/ratio.js';
 import { mintQuote } from './priceAuthorityTransform.js';
@@ -14,6 +14,7 @@ import { mintQuote } from './priceAuthorityTransform.js';
  * @import {Amount, Brand, Mint} from '@agoric/ertp';
  * @import {Notifier} from '@agoric/notifier';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {Ratio} from '@agoric/ertp';
  */
 
 /**

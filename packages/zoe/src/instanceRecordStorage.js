@@ -1,5 +1,5 @@
-import { q, Fail } from '@endo/errors';
-import { prepareExoClass, M } from '@agoric/vat-data';
+import { M, prepareExoClass } from '@agoric/vat-data';
+import { Fail, q } from '@endo/errors';
 import { assertKeywordName } from './cleanProposal.js';
 import {
   BrandKeywordRecordShape,
@@ -14,6 +14,8 @@ import {
 /**
  * @import {Baggage} from '@agoric/vat-data';
  * @import {InstanceRecord} from './zoeService/utils.js';
+ * @import {InstanceState} from './internal-types.js';
+ * @import {ZoeIssuerRecord} from './types-index.js';
  */
 
 const { ownKeys } = Reflect;

@@ -33,6 +33,7 @@ import {
  * @import {PriceAuthority} from '@agoric/zoe/tools/types.js';
  * @import {TypedPattern, Remote} from '@agoric/internal';
  * @import {MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
+ * @import {Ratio} from '@agoric/ertp';
  */
 
 const { makeEmpty } = AmountMath;

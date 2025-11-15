@@ -10,6 +10,10 @@ import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 
 import { makeTracer } from '@agoric/internal';
 
+/**
+ * @import {Vault} from '../../src/vaultFactory/vault.js';
+ */
+
 const vaultRoot = './vault-contract-wrapper.js';
 const trace = makeTracer('TestVault', false);
 

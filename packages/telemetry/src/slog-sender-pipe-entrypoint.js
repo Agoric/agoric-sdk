@@ -21,8 +21,6 @@ import { makeSlogSender } from './make-slog-sender.js';
  * @import {SlogSender} from './index.js';
  */
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore TODO remove when anylogger has types
 const logger = anylogger('slog-sender-pipe-entrypoint');
 
 /** @type {(msg: PipeAPIReply) => void} */

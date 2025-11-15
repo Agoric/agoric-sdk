@@ -1,9 +1,13 @@
 /// <reference path="./types-ambient.js" />
 
-import { Fail } from '@endo/errors';
 import { AmountMath } from '@agoric/ertp';
+import { Fail } from '@endo/errors';
 
 import { assertProposalShape } from '../../contractSupport/index.js';
+
+/**
+ * @import {MakeCloseLoanInvitation} from './types-ambient.js';
+ */
 
 // The debt, the amount which must be repaid, is just the amount
 // loaned plus interest (aka stability fee). All debt must be repaid

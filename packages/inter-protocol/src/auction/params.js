@@ -13,7 +13,8 @@ import { M } from '@agoric/store';
  * @import {Remote} from '@agoric/internal';
  * @import {TimerBrand} from '@agoric/time';
  * @import {StoredPublisherKit} from '@agoric/notifier';
- * @import {TimerService} from '@agoric/time';
+ * @import {RelativeTime, TimerService} from '@agoric/time';
+ * @import {AssetReservePublicFacet} from '../reserve/assetReserve.js';
  */
 
 // TODO duplicated with zoe/src/TypeGuards.js

@@ -26,8 +26,6 @@ import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore TODO remove when anylogger has types
 const logger = anylogger('slog-sender-pipe');
 
 const sink = () => {};

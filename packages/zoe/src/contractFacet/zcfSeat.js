@@ -1,5 +1,5 @@
-import { annotateError, Fail } from '@endo/errors';
-import { E } from '@endo/eventual-send';
+import { AmountMath } from '@agoric/ertp';
+import { initEmpty, M } from '@agoric/store';
 import {
   makeScalarBigWeakMapStore,
   prepareExoClass,
@@ -7,24 +7,28 @@ import {
   provide,
   provideDurableWeakMapStore,
 } from '@agoric/vat-data';
-import { AmountMath } from '@agoric/ertp';
-import { initEmpty, M } from '@agoric/store';
+import { annotateError, Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 
-import { isOfferSafe } from './offerSafety.js';
-import { assertRightsConserved } from './rightsConservation.js';
+import { TransferPartShape } from '../contractSupport/atomicTransfer.js';
 import {
   AmountKeywordRecordShape,
   SeatDataShape,
   SeatShape,
 } from '../typeGuards.js';
+import { isOfferSafe } from './offerSafety.js';
 import { makeAllocationMap } from './reallocate.js';
-import { TransferPartShape } from '../contractSupport/atomicTransfer.js';
+import { assertRightsConserved } from './rightsConservation.js';
 
 /**
  * @import {WeakMapStore} from '@agoric/store';
  * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {Allocation} from './types.js';
+ * @import {ZcfSeatManager, ZoeInstanceAdmin} from '../internal-types.js';
+ * @import {GetAssetKindByBrand} from '../internal-types.js';
+ * @import {ZcfMintReallocator} from '../internal-types.js';
+ * @import {SeatHandle} from '../internal-types.js';
  */
 
 /**
