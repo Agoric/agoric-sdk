@@ -69,6 +69,9 @@ export const AxelarChainIdMap = harden({
 // XXX: For unsupported chains,
 // we use `0x` until a proper strategy is defined.
 
+/** Placeholder zero address until gateway/gas service values are populated. */
+const zeroAddress = '0x0000000000000000000000000000000000000000';
+
 /** @type {AddressesMap} */
 const aaveAddresses = harden({
   mainnet: {
@@ -232,15 +235,15 @@ const mainnetTokenMessenger = (rows =>
   Object.fromEntries(
     rows.map(([Chain, Domain, Address]) => [Chain, { Domain, Address }]),
   ))(
-  /** @type {[string, number, `0x${string}`][]} */ ([
-    ['Ethereum', 0, '0xBd3fa81B58Ba92a82136038B25aDec7066af3155'],
-    ['Avalanche', 1, '0x6B25532e1060CE10cc3B0A99e5683b91BFDe6982'],
-    ['OP Mainnet', 2, '0x2B4069517957735bE00ceE0fadAE88a26365528f'],
-    ['Arbitrum', 3, '0x19330d10D9Cc8751218eaf51E8885D058642E08A'],
-    ['Base', 6, '0x1682Ae6375C4E4A97e4B583BC394c861A46D8962'],
-    ['Unichain', 10, '0x4e744b28E787c3aD0e810eD65A24461D4ac5a762'],
-  ]),
-);
+  /** @type {[string, number, `0x${string}`][]} */([
+      ['Ethereum', 0, '0xBd3fa81B58Ba92a82136038B25aDec7066af3155'],
+      ['Avalanche', 1, '0x6B25532e1060CE10cc3B0A99e5683b91BFDe6982'],
+      ['OP Mainnet', 2, '0x2B4069517957735bE00ceE0fadAE88a26365528f'],
+      ['Arbitrum', 3, '0x19330d10D9Cc8751218eaf51E8885D058642E08A'],
+      ['Base', 6, '0x1682Ae6375C4E4A97e4B583BC394c861A46D8962'],
+      ['Unichain', 10, '0x4e744b28E787c3aD0e810eD65A24461D4ac5a762'],
+    ]),
+  );
 
 /**
  * Mainnet configuration with real contract addresses
@@ -252,6 +255,8 @@ const mainnetContracts = {
     compound: '0x', // TODO
     compoundRewardsController: '0x', // TODO
     factory: factoryAddresses.mainnet.Avalanche,
+    gateway: zeroAddress,
+    gasService: zeroAddress,
     usdc: usdcAddresses.mainnet.Avalanche,
     tokenMessenger: mainnetTokenMessenger.Avalanche.Address,
     aaveUSDC: aaveUsdcAddresses.mainnet.Avalanche,
@@ -264,6 +269,8 @@ const mainnetContracts = {
     compoundRewardsController:
       compoundRewardsControllerAddresses.mainnet.Ethereum,
     factory: factoryAddresses.mainnet.Ethereum,
+    gateway: zeroAddress,
+    gasService: zeroAddress,
     usdc: usdcAddresses.mainnet.Ethereum,
     tokenMessenger: mainnetTokenMessenger.Ethereum.Address,
     aaveUSDC: aaveUsdcAddresses.mainnet.Ethereum,
@@ -279,6 +286,8 @@ const mainnetContracts = {
     compoundRewardsController:
       compoundRewardsControllerAddresses.mainnet.Optimism,
     factory: factoryAddresses.mainnet.Optimism,
+    gateway: zeroAddress,
+    gasService: zeroAddress,
     usdc: usdcAddresses.mainnet.Optimism,
     tokenMessenger: mainnetTokenMessenger['OP Mainnet'].Address,
     aaveUSDC: aaveUsdcAddresses.mainnet.Optimism,
@@ -292,6 +301,8 @@ const mainnetContracts = {
     compoundRewardsController:
       compoundRewardsControllerAddresses.mainnet.Arbitrum,
     factory: factoryAddresses.mainnet.Arbitrum,
+    gateway: zeroAddress,
+    gasService: zeroAddress,
     usdc: usdcAddresses.mainnet.Arbitrum,
     tokenMessenger: mainnetTokenMessenger.Arbitrum.Address,
     aaveUSDC: aaveUsdcAddresses.mainnet.Arbitrum,
@@ -304,6 +315,8 @@ const mainnetContracts = {
     compound: compoundAddresses.mainnet.Base,
     compoundRewardsController: compoundRewardsControllerAddresses.mainnet.Base,
     factory: factoryAddresses.mainnet.Base,
+    gateway: zeroAddress,
+    gasService: zeroAddress,
     usdc: usdcAddresses.mainnet.Base,
     tokenMessenger: mainnetTokenMessenger.Base.Address,
     aaveUSDC: aaveUsdcAddresses.mainnet.Base,
@@ -319,15 +332,15 @@ const testnetTokenMessenger = (rows =>
   Object.fromEntries(
     rows.map(([Chain, Domain, Address]) => [Chain, { Domain, Address }]),
   ))(
-  /** @type {[string, number, `0x${string}`][]} */ ([
-    ['Ethereum Sepolia', 0, '0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5'],
-    ['Avalanche Fuji', 1, '0xeb08f243E5d3FCFF26A9E38Ae5520A669f4019d0'],
-    ['OP Sepolia', 2, '0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5'],
-    ['Arbitrum Sepolia', 3, '0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5'],
-    ['Base Sepolia', 6, '0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5'],
-    ['Unichain Sepolia', 10, '0x8ed94B8dAd2Dc5453862ea5e316A8e71AAed9782'],
-  ]),
-);
+  /** @type {[string, number, `0x${string}`][]} */([
+      ['Ethereum Sepolia', 0, '0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5'],
+      ['Avalanche Fuji', 1, '0xeb08f243E5d3FCFF26A9E38Ae5520A669f4019d0'],
+      ['OP Sepolia', 2, '0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5'],
+      ['Arbitrum Sepolia', 3, '0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5'],
+      ['Base Sepolia', 6, '0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5'],
+      ['Unichain Sepolia', 10, '0x8ed94B8dAd2Dc5453862ea5e316A8e71AAed9782'],
+    ]),
+  );
 
 // XXX turn these inside out? contract.chain.address
 /**
@@ -340,6 +353,8 @@ const testnetContracts = {
     compound: '0x', // TODO
     compoundRewardsController: '0x',
     factory: factoryAddresses.testnet.Avalanche,
+    gateway: zeroAddress,
+    gasService: zeroAddress,
     usdc: usdcAddresses.testnet.Avalanche,
     tokenMessenger: testnetTokenMessenger['Avalanche Fuji'].Address,
     aaveUSDC: aaveUsdcAddresses.testnet.Avalanche,
@@ -350,6 +365,8 @@ const testnetContracts = {
     compound: compoundAddresses.testnet.Base,
     compoundRewardsController: compoundRewardsControllerAddresses.testnet.Base,
     factory: factoryAddresses.testnet.Base,
+    gateway: zeroAddress,
+    gasService: zeroAddress,
     usdc: usdcAddresses.testnet.Base,
     tokenMessenger: testnetTokenMessenger['Base Sepolia'].Address,
     aaveUSDC: aaveUsdcAddresses.testnet.Base,
@@ -361,6 +378,8 @@ const testnetContracts = {
     compoundRewardsController:
       compoundRewardsControllerAddresses.testnet.Ethereum,
     factory: factoryAddresses.testnet.Ethereum,
+    gateway: zeroAddress,
+    gasService: zeroAddress,
     usdc: usdcAddresses.testnet.Ethereum,
     tokenMessenger: testnetTokenMessenger['Ethereum Sepolia'].Address,
     aaveUSDC: aaveUsdcAddresses.testnet.Ethereum,
@@ -372,6 +391,8 @@ const testnetContracts = {
     compoundRewardsController:
       compoundRewardsControllerAddresses.testnet.Optimism,
     factory: factoryAddresses.testnet.Optimism,
+    gateway: zeroAddress,
+    gasService: zeroAddress,
     usdc: usdcAddresses.testnet.Optimism,
     tokenMessenger: testnetTokenMessenger['OP Sepolia'].Address,
     aaveUSDC: aaveUsdcAddresses.testnet.Optimism,
@@ -383,6 +404,8 @@ const testnetContracts = {
     compoundRewardsController:
       compoundRewardsControllerAddresses.testnet.Arbitrum,
     factory: factoryAddresses.testnet.Arbitrum,
+    gateway: zeroAddress,
+    gasService: zeroAddress,
     usdc: usdcAddresses.testnet.Arbitrum,
     tokenMessenger: testnetTokenMessenger['Arbitrum Sepolia'].Address,
     aaveUSDC: aaveUsdcAddresses.testnet.Arbitrum,
