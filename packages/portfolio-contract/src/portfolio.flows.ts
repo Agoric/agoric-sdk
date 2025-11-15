@@ -226,7 +226,7 @@ const trackFlow = async (
   const job: Job = { taskQty: moves.length, order };
   const results = await runJob(job, runTask, traceFlow);
   if (results.some(r => r.status === 'rejected')) {
-    const reasons = [...results].reverse().reduce((next, r, ix) => {
+    const reasons = results.reduce((next, r, ix) => {
       if (r.status !== 'rejected') return next;
       const errs: FlowErrors = {
         step: ix + 1,
@@ -537,10 +537,11 @@ const stepFlow = async (
   const { flow: moves, order: maybeOrder } = Array.isArray(plan)
     ? { flow: plan }
     : plan;
-  const order = maybeOrder || fullOrder(moves.length);
 
   traceFlow('checking', moves.length, 'moves');
   moves.length > 0 || Fail`moves list must not be empty`;
+
+  const order = maybeOrder || fullOrder(moves.length);
 
   for (const [i, move] of entries(moves)) {
     const traceMove = traceFlow.sub(`move${i}`);
