@@ -904,6 +904,7 @@ __metadata:
     "@endo/import-bundle": "npm:^1.5.2"
     "@endo/marshal": "npm:^1.8.0"
     "@endo/patterns": "npm:^1.7.0"
+    "@endo/promise-kit": "npm:^1.1.13"
     "@endo/ses-ava": "npm:^1.3.2"
     "@noble/hashes": "npm:~1.5.0"
     ava: "npm:^5.3.0"
@@ -1001,7 +1002,7 @@ __metadata:
     execa: "npm:^9.6.0"
     npm-run-all: "npm:^4.1.5"
     prettier: "npm:^3.5.3"
-    prettier-plugin-jsdoc: "npm:^1.3.2"
+    prettier-plugin-jsdoc: "npm:^1.5.0"
     prettier-plugin-sh: "npm:^0.17.2"
     type-coverage: "npm:^2.29.7"
     typedoc: "npm:^0.26.7"
@@ -3681,7 +3682,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/bundle-source@npm:^4.1.2":
+"@endo/bundle-source@npm:4.1.2":
   version: 4.1.2
   resolution: "@endo/bundle-source@npm:4.1.2"
   dependencies:
@@ -3695,6 +3696,23 @@ __metadata:
   bin:
     bundle-source: ./src/tool.js
   checksum: 10c0/7bee180864e8340877c0979a2c773dba7e7346959a208efdc7bc6dac48964f6f4ff61f7542195d71c7bc847f81844bc81f0c302e8136aa5d730bdd0efcb113ca
+  languageName: node
+  linkType: hard
+
+"@endo/bundle-source@patch:@endo/bundle-source@npm%3A4.1.2#~/.yarn/patches/@endo-bundle-source-npm-4.1.2-80da9522ea.patch":
+  version: 4.1.2
+  resolution: "@endo/bundle-source@patch:@endo/bundle-source@npm%3A4.1.2#~/.yarn/patches/@endo-bundle-source-npm-4.1.2-80da9522ea.patch::version=4.1.2&hash=4e3a90"
+  dependencies:
+    "@endo/base64": "npm:^1.0.12"
+    "@endo/compartment-mapper": "npm:^1.6.3"
+    "@endo/evasive-transform": "npm:^2.0.2"
+    "@endo/init": "npm:^1.1.12"
+    "@endo/promise-kit": "npm:^1.1.13"
+    "@endo/where": "npm:^1.0.11"
+    ts-blank-space: "npm:^0.4.1"
+  bin:
+    bundle-source: ./src/tool.js
+  checksum: 10c0/e8db174ada60400403e97e2b8676e81bb67b2f2897db06f862e7a1bf60f3ac8ccaee2d88f5ad7e98ba09ac74c74a006e46094ee5d603f49392bcd8f61f1b1d04
   languageName: node
   linkType: hard
 
@@ -17371,16 +17389,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prettier-plugin-jsdoc@npm:^1.3.2":
-  version: 1.3.2
-  resolution: "prettier-plugin-jsdoc@npm:1.3.2"
+"prettier-plugin-jsdoc@npm:^1.5.0":
+  version: 1.5.0
+  resolution: "prettier-plugin-jsdoc@npm:1.5.0"
   dependencies:
     binary-searching: "npm:^2.0.5"
     comment-parser: "npm:^1.4.0"
     mdast-util-from-markdown: "npm:^2.0.0"
   peerDependencies:
     prettier: ^3.0.0
-  checksum: 10c0/53d15897b75077f172d52e61e17e7f39314c9268e6c65128f825e56fd7b59669b06a286a88bec6742149b456b7c3d8f88ca0c2ab7797a623c0524c821e2d2f60
+  checksum: 10c0/574340657c87769e6b4dbbe08557136365f7e289514d9ecdec71a09f29e3192f68c09877eda77997c43fc64861d40ad8cf8dd3e741dddd104b570b0727dc9f7e
   languageName: node
   linkType: hard
 

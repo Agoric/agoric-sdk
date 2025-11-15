@@ -102,6 +102,7 @@ export type FlowStep = {
   amount: NatAmount;
   src: AssetPlaceRef;
   dest: AssetPlaceRef;
+  phases?: Record<string, any>;
   // XXX all parts: fee etc.
 };
 
@@ -145,6 +146,7 @@ export type StatusFor = {
     totalOut: NatAmount;
   };
   flow: FlowStatus & FlowDetail;
+  flowStep: FlowStep;
   flowSteps: FlowStep[];
   flowOrder: FundsFlowPlan['order'];
 };

@@ -147,23 +147,19 @@ export const prepareIBCTransferSender = (zone, { watch, makeIBCReplyKit }) => {
           );
           const resultV = watch(ackDataV, this.facets.verifyTransferSuccess);
 
-          const baseMeta = opts?.meta ?? {};
-          const traffic = baseMeta.traffic ?? [];
-          const priorTraffic = traffic.slice(0, -1);
-          const thisTraffic = traffic.at(-1);
+          const { progressReporter, trafficEntryIndex } = opts || {};
+          if (progressReporter && trafficEntryIndex != null) {
+            const priorReport = progressReporter.get();
+            const report = {
+              ...priorReport,
+              traffic: priorReport.traffic?.map((entry, i) =>
+                i === trafficEntryIndex ? { ...entry, seq: sequence } : entry,
+              ),
+            };
+            progressReporter.update(harden(report));
+          }
 
-          const meta = {
-            ...baseMeta,
-            traffic: [
-              ...priorTraffic,
-              {
-                ...thisTraffic,
-                seq: sequence,
-              },
-            ],
-          };
-
-          return harden({ resultV, ...rest, meta });
+          return harden({ ...rest, resultV });
         },
       },
       verifyTransferSuccess: {

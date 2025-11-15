@@ -10,6 +10,7 @@ import type { PublishedTx } from '@agoric/portfolio-api';
 import { TxStatus, TxType } from '@agoric/portfolio-api/src/resolver.js';
 import { M } from '@endo/patterns';
 
+// tx for transactions
 export type TxId = `tx${number}`;
 
 export type TransactionSettlementOfferArgs = {
@@ -67,6 +68,27 @@ export const PublishedTxShape: TypedPattern<PublishedTx> = M.or(
       status: TxStatus.PENDING,
     },
     {
+      amount: M.nat(),
+    },
+    {},
+  ),
+  M.splitRecord(
+    {
+      type: M.or(TxType.TRAFFIC),
+      status: M.or(TxStatus.PENDING),
+    },
+    {
+      op: M.string(),
+      srcChainId: M.string(),
+      src: M.arrayOf(M.any()),
+      dstChainId: M.string(),
+      dst: M.arrayOf(M.any()),
+      seq: M.or(
+        M.nat(),
+        M.number(),
+        M.string(),
+        M.splitRecord({ status: M.or('pending', 'unknown') }, {}),
+      ),
       amount: M.nat(),
     },
     {},
