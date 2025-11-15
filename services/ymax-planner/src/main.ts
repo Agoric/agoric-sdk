@@ -178,6 +178,10 @@ export const main = async (
   const walletStore = reflectWalletStore(signingSmartWalletKit, {
     setTimeout,
     makeNonce: () => new Date(now()).toISOString(),
+    fee: {
+      amount: [{ denom: 'ubld', amount: '15000' }], // 0.015 BLD
+      gas: '19700000',
+    },
   });
 
   const spectrum = new SpectrumClient(simplePowers, {
