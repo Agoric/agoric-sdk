@@ -1,0 +1,84 @@
+name: Deploy YMAX1 Planner (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      digest:
+        description: 'Optional sha256 digest for ghcr.io/agoric/agoric-sdk:ymax-planner (e.g., sha256:abcd...). If empty, use latest tag digest.'
+        required: false
+        type: string
+
+env:
+  REGISTRY: ghcr.io
+  DOCKER_IMAGE: ghcr.io/agoric/agoric-sdk:ymax-planner
+
+permissions:
+  contents: read
+  packages: read
+  id-token: write
+
+jobs:
+  deploy-ymax1-planner:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Auth to Google Cloud (SA key)
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Resolve digest (use input if provided; else fetch latest via GHCR token)
+        id: resolve
+        shell: bash
+        env:
+          INPUT_DIGEST: ${{ inputs.digest }}
+        run: |
+          set -euo pipefail
+          if [[ -n "${INPUT_DIGEST:-}" ]]; then
+            D="${INPUT_DIGEST#*@}"; D="${D#sha256:}"
+            DIGEST="sha256:${D}"
+          else
+            TOKEN=$(curl -s 'https://ghcr.io/token?service=ghcr.io&scope=repository:agoric/agoric-sdk:pull' | jq -r '.token')
+
+            DIGEST=$(
+              curl -sI \
+                -H "Authorization: Bearer $TOKEN" \
+                -H 'Accept: application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json' \
+                https://ghcr.io/v2/agoric/agoric-sdk/manifests/ymax-planner \
+              | awk -F': ' 'tolower($1)=="docker-content-digest"{gsub("\r","",$2); print $2}'
+            )
+          fi
+
+          echo "$DIGEST"
+          echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
+
+      - name: Write .env file from JSON
+        shell: bash
+        run: |
+          jq -r 'to_entries[] | "\(.key)=\(.value)"' \
+            <<< '${{ secrets.YMAX1_PLANNER_ENV }}' > .env.gcp
+
+      - name: Check if VM already has docker image digest
+        id: decide
+        shell: bash
+        env:
+          GCE_INSTANCE: ymax1-planner
+          GCE_ZONE: ${{ env.GCE_ZONE }}
+        run: |
+          TARGET="${{ env.DOCKER_IMAGE }}@${{ steps.resolve.outputs.digest }}"
+          .github/scripts/check_digest.sh "$GCE_INSTANCE" "$GCE_ZONE" "$TARGET"
+
+      - name: Update GCE Ymax1 container (by digest)
+        if: steps.decide.outputs.should_deploy == 'true'
+        shell: bash
+        env:
+          GCE_INSTANCE: ymax1-planner
+          GCE_ZONE: ${{ env.GCE_ZONE }}
+        run: |
+          IMAGE="${{ env.DOCKER_IMAGE }}@${{ steps.resolve.outputs.digest }}"
+          .github/scripts/deploy_vm.sh "$GCE_INSTANCE" "$GCE_ZONE" "$IMAGE" "./.env.gcp"
