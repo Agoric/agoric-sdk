@@ -1,10 +1,11 @@
-import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
+import { E } from '@endo/eventual-send';
 
 import { offerTo } from '../../contractSupport/zoeHelpers.js';
 
 /**
  * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
+ * @import {LoanConfigWithBorrower} from './types-ambient.js';
  */
 
 export const doLiquidation = async (

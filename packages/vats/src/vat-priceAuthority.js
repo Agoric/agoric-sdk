@@ -3,6 +3,7 @@ import { providePriceAuthorityRegistry } from './priceAuthorityRegistry.js';
 
 /**
  * @import {Baggage} from '@agoric/vat-data';
+ * @import {VatPowers} from '@agoric/swingset-vat';
  */
 
 /**

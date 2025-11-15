@@ -13,7 +13,10 @@ import {
   makeFakeVault,
 } from './interestSupport.js';
 
-/** @import {Vault} from '../../src/vaultFactory/vault.js' */
+/**
+ * @import {Vault} from '../../src/vaultFactory/vault.js'
+ * @import {Ratio} from '@agoric/ertp';
+ */
 
 const { brand: stableBrand } = makeIssuerKit('ducats');
 const make = value => AmountMath.make(stableBrand, value);

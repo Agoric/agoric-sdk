@@ -1,13 +1,13 @@
-import { q, Fail } from '@endo/errors';
+import { Fail, q } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 
 import { AmountMath, AmountShape, BrandShape } from '@agoric/ertp';
-import { makeNotifier } from '@agoric/notifier';
 import { makeTracer } from '@agoric/internal';
-import { TimestampShape } from '@agoric/time';
+import { makeNotifier } from '@agoric/notifier';
 import { M } from '@agoric/store';
+import { TimestampShape } from '@agoric/time';
 
 /**
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery, PriceQuoteCreate, PriceAuthorityKit, PriceQuoteTrigger, MutableQuote,} from '@agoric/zoe/tools/types.js';

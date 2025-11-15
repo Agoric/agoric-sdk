@@ -9,6 +9,7 @@ import { buildVatController } from '@agoric/swingset-vat';
 
 /**
  * @import {TestFn} from 'ava';
+ * @import {SwingSetConfig} from '@agoric/swingset-vat';
  */
 
 /**

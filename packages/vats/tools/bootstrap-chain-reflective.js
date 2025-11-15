@@ -18,7 +18,7 @@ import * as utils from '../src/core/utils.js';
 
 /**
  * @import {Baggage} from '@agoric/vat-data';
- * @import {CreateVatResults} from '@agoric/swingset-vat';
+ * @import {CreateVatResults, VatPowers} from '@agoric/swingset-vat';
  */
 
 // Gather up all defined bootstrap behaviors.

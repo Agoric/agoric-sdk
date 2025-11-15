@@ -15,6 +15,7 @@ import {
  * @import {Amount, Brand, Issuer, IssuerKit, Payment, Purse} from '@agoric/ertp';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  * @import {TimerService} from '@agoric/time';
+ * @import {Ratio} from '@agoric/ertp';
  */
 
 /**

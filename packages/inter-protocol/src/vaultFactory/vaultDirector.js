@@ -55,6 +55,11 @@ import {
  * @import {AuctioneerPublicFacet} from '../auction/auctioneer.js';
  * @import {MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {MakeERecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
+ * @import {VaultManager} from './vaultManager.js';
+ * @import {VaultManagerParamOverrides} from './params.js';
+ * @import {BurnDebt, VaultManagerParamValues} from './types-ambient.js';
+ * @import {MintAndTransfer} from './types-ambient.js';
+ * @import {VaultFactoryParamPath} from './types-ambient.js';
  */
 
 const trace = makeTracer('VD', true);
@@ -115,7 +120,7 @@ export const makeAllManagersDo = (collateralManagers, vaultManagers) => {
  * @param {ERemote<EMarshaller>} marshaller
  * @param {MakeRecorderKit} makeRecorderKit
  * @param {MakeERecorderKit} makeERecorderKit
- * @param {Record<string, import('./params.js').VaultManagerParamOverrides>} managerParams
+ * @param {Record<string, VaultManagerParamOverrides>} managerParams
  */
 const prepareVaultDirector = (
   baggage,

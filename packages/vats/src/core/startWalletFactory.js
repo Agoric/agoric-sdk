@@ -20,6 +20,7 @@ import {
  * @import {start as StartWalletFactory} from '@agoric/smart-wallet/src/walletFactory.js';
  * @import {CommitteeElectorateCreatorFacet} from '@agoric/governance/src/committee.js';
  * @import {ScopedBridgeManager} from '../types.js';
+ * @import {start} from '@agoric/inter-protocol/src/econCommitteeCharter.js';
  */
 
 const trace = makeTracer('StartWF', 'verbose');
@@ -71,11 +72,7 @@ const publishRevivableWalletState = async (
  *   PromiseSpaceOf<{
  *     economicCommitteeCreatorFacet: CommitteeElectorateCreatorFacet;
  *     econCharterKit: {
- *       creatorFacet: Awaited<
- *         ReturnType<
- *           typeof import('@agoric/inter-protocol/src/econCommitteeCharter.js').start
- *         >
- *       >['creatorFacet'];
+ *       creatorFacet: Awaited<ReturnType<typeof start>>['creatorFacet'];
  *       adminFacet: AdminFacet;
  *     };
  *     walletBridgeManager: ScopedBridgeManager<'wallet'>;

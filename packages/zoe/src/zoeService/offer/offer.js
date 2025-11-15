@@ -1,13 +1,13 @@
 // @jessie-check
 
-import { q, Fail } from '@endo/errors';
-import { passStyleOf } from '@endo/marshal';
 import { mustMatch } from '@agoric/store';
+import { Fail, q } from '@endo/errors';
 import { E } from '@endo/eventual-send';
+import { passStyleOf } from '@endo/marshal';
 
 import { cleanProposal } from '../../cleanProposal.js';
-import { burnInvitation } from './burnInvitation.js';
 import { makeInvitationQueryFns } from '../invitationQueries.js';
+import { burnInvitation } from './burnInvitation.js';
 
 /**
  * @import {Offer} from '@agoric/zoe';

@@ -1,6 +1,6 @@
+import { AmountMath } from '@agoric/ertp';
 import { assert, Fail } from '@endo/errors';
 import { Far } from '@endo/marshal';
-import { AmountMath } from '@agoric/ertp';
 
 import { E } from '@endo/eventual-send';
 import { atomicTransfer } from '../contractSupport/index.js';
@@ -8,6 +8,9 @@ import { atomicTransfer } from '../contractSupport/index.js';
 /**
  * @import {ContractMeta, Invitation, OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {ContractOf} from '../zoeService/utils.js';
+ * @import {OracleHandler} from './priceAggregatorTypes.js';
+ * @import {OracleCreatorFacet} from './priceAggregatorTypes.js';
+ * @import {OracleQuery} from './priceAggregatorTypes.js';
  */
 
 /**

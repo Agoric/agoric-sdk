@@ -9,6 +9,7 @@ import { assertAllDefined, makeTracer } from '@agoric/internal';
  * @import {TimestampRecord} from '@agoric/time';
  * @import {AuctionParamManager} from './params.js';
  * @import {Schedule} from './scheduler.js';
+ * @import {Timestamp} from '@agoric/time';
  */
 
 const { subtract, multiply, floorDivide } = natSafeMath;

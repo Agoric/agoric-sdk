@@ -6,6 +6,7 @@ import {
 
 /**
  * @import {Amount} from '@agoric/ertp/src/types.js';
+ * @import {Ratio} from '@agoric/ertp/src/ratio.js';
  */
 
 /**

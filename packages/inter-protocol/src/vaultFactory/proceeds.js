@@ -9,7 +9,10 @@ import {
 import { quoteAsRatio, subtractToEmpty } from '../contractSupport.js';
 import { liquidationResults } from './liquidation.js';
 
-/** @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js'; */
+/**
+ * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {Ratio} from '@agoric/ertp';
+ */
 
 /**
  * @typedef {{

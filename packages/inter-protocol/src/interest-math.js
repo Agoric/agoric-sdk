@@ -10,6 +10,7 @@ import {
 
 /**
  * @import {Amount, Brand, Payment} from '@agoric/ertp';
+ * @import {Ratio} from '@agoric/ertp/src/ratio.js';
  */
 
 /**

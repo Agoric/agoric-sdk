@@ -1,20 +1,21 @@
+import { AmountMath, isNatValue } from '@agoric/ertp';
 import { assert } from '@endo/errors';
 import { Far } from '@endo/marshal';
-import { AmountMath, isNatValue } from '@agoric/ertp';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
+  assertNatAssetKind,
+  assertProposalShape,
+  calcLiqValueToMint,
+  calcSecondaryRequired,
+  calcValueToRemove,
   getInputPrice,
   getOutputPrice,
-  calcLiqValueToMint,
-  calcValueToRemove,
-  assertProposalShape,
-  assertNatAssetKind,
-  calcSecondaryRequired,
 } from '../contractSupport/index.js';
 
 /**
  * @import {OfferHandler, ZCF} from '@agoric/zoe';
+ * @import {AutoswapPublicFacet} from './types-ambient.js';
  */
 
 /**

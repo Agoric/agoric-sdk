@@ -1,15 +1,15 @@
 import {
   AssetKind,
-  IssuerShape,
   BrandShape,
-  prepareIssuerKit,
   hasIssuer,
+  IssuerShape,
+  prepareIssuerKit,
 } from '@agoric/ertp';
 import { initEmpty, M } from '@agoric/store';
 import {
-  provideDurableMapStore,
-  provide,
   prepareExoClassKit,
+  provide,
+  provideDurableMapStore,
 } from '@agoric/vat-data';
 import { Fail, q } from '@endo/errors';
 import { FeeMintAccessShape } from '../typeGuards.js';
