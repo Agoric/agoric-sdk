@@ -50,7 +50,7 @@ test('near function callbacks', t => {
 });
 
 test('near method callbacks', t => {
-  const m2 = Symbol.for('m2');
+  const m2 = passableSymbolForName('m2');
   const o = {
     /**
      * @param {number} a
@@ -121,7 +121,7 @@ test('near method callbacks', t => {
 });
 
 test('far method callbacks', async t => {
-  const m2 = Symbol.for('m2');
+  const m2 = passableSymbolForName('m2');
   const o = Far('MyObject', {
     /**
      * @param {number} a
@@ -236,7 +236,7 @@ test('isCallback', t => {
     'manual method',
   );
   t.true(
-    cb.isCallback({ target: {}, methodName: Symbol.for('foo'), bound: [] }),
+    cb.isCallback({ target: {}, methodName: passableSymbolForName('foo'), bound: [] }),
     'manual symbol-keyed method',
   );
 
@@ -249,7 +249,7 @@ test('isCallback', t => {
     'non-object target',
   );
   t.false(
-    cb.isCallback({ target: {}, methodName: Symbol('foo'), bound: [] }),
+    cb.isCallback({ target: {}, methodName: unpassableSymbolForName('foo'), bound: [] }),
     'unique symbol method name',
   );
   t.false(cb.isCallback({ target: {}, bound: {} }), 'non-array bound args');
