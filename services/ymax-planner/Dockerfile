@@ -28,6 +28,9 @@ RUN --mount=type=cache,target=/root/.yarn/berry/cache yarn install --mode=skip-b
 RUN cd packages/cosmic-proto && yarn build
 RUN cd packages/client-utils && yarn build
 RUN cd services/ymax-planner && yarn build
+# `yarn workspaces focus ... --production` builds better-sqlite3 bindings without triggering build 
+# of dependencies such as xsnap.
+RUN yarn workspaces focus @aglocal/ymax-planner --production
 RUN cd packages/portfolio-contract && yarn build
 
 # Production stage
@@ -41,6 +44,18 @@ LABEL org.opencontainers.image.title="ymax-planner" \
 
 # Copy built application from builder stage
 COPY --from=builder /build/services/ymax-planner/dist/entrypoint.js /app/entrypoint.js
+
+# Copy better-sqlite3 bindings
+# better-sqlite3 will not run without this bindings file
+COPY --from=builder /build/node_modules/better-sqlite3/build/Release /app/Release
+
+# Copy node_modules for better-sqlite3
+#
+# better-sqlite3 requires that a node_modules or packages.json file be present
+# in order to find a root directory. since we use a compressed bundle, those
+# folders arent present and must be manually added
+RUN mkdir /app/node_modules
+COPY --from=builder /build/node_modules/better-sqlite3 /app/node_modules/better-sqlite3
 
 # Copy built highs.wasm file from builder stage
 COPY --from=builder /build/node_modules/highs/build/highs.wasm /app/highs.wasm

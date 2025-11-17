@@ -48,6 +48,9 @@ export interface YmaxPlannerConfig {
     readonly apiUrl: string;
     readonly chainIdMap: Record<AxelarChain, string>;
   };
+  readonly sqlite: {
+    readonly dbPath: string;
+  };
 }
 
 export type SecretManager = Pick<
@@ -171,6 +174,7 @@ export const loadConfig = async (
       '⚠️  Missing GRAPHQL_ENDPOINTS configuration for api-spectrum-blockchain and/or api-spectrum-blockchain. SPECTRUM_API_URL is deprecated.',
     );
   }
+  const sqliteDbPath = validateRequired(env, 'SQLITE_DB_PATH');
 
   const config: YmaxPlannerConfig = harden({
     clusterName,
@@ -194,6 +198,9 @@ export const loadConfig = async (
     axelar: {
       apiUrl: axelarApiAddress,
       chainIdMap: axelarChainIdMap,
+    },
+    sqlite: {
+      dbPath: sqliteDbPath,
     },
   });
 

@@ -1,5 +1,8 @@
 import test from 'ava';
 import { id, toBeHex, zeroPadValue } from 'ethers';
+import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
+import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
+import { makeKVStoreFromMap } from '@agoric/internal/src/kv-store.js';
 import { watchCctpTransfer } from '../src/watchers/cctp-watcher.ts';
 import {
   createMockPendingTxOpts,
@@ -7,8 +10,6 @@ import {
   mockFetch,
 } from './mocks.ts';
 import { handlePendingTx } from '../src/pending-tx-manager.ts';
-import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
-import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 
 const usdcAddress = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
 const toAddress = '0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64';
@@ -173,6 +174,7 @@ test('handlePendingTx keeps tx pending on amount mismatch until timeout and then
 test('watchCCTPTransfer detects multiple transfers but only matches exact amount', async t => {
   const provider = createMockProvider();
   const expectedAmount = 5_000_000n; // 5 USDC
+  const mockKvStore = makeKVStoreFromMap(new Map());
 
   const watchPromise = watchCctpTransfer({
     usdcAddress,
@@ -181,6 +183,8 @@ test('watchCCTPTransfer detects multiple transfers but only matches exact amount
     expectedAmount,
     timeoutMs: 6000,
     log: console.log,
+    kvStore: mockKvStore,
+    txId: 'tx0',
   });
 
   const transfers = [
