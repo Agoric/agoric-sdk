@@ -491,6 +491,23 @@ test('planWithdrawFromAllocations withdraws and rebalances', async t => {
   t.snapshot(steps);
 });
 
+test('planWithdrawFromAllocations considers former allocation targets', async t => {
+  const currentBalances = {
+    Aave_Avalanche: makeDeposit(1000n),
+    Compound_Arbitrum: makeDeposit(1000n),
+  };
+  const steps = await planWithdrawFromAllocations({
+    amount: makeDeposit(1200n),
+    brand: depositBrand,
+    currentBalances,
+    targetAllocation: { Compound_Arbitrum: 100n },
+    network: TEST_NETWORK,
+    feeBrand,
+    gasEstimator: mockGasEstimator,
+  });
+  t.snapshot(steps);
+});
+
 test('planWithdrawFromAllocations with no target preserves relative amounts', async t => {
   const currentBalances = {
     USDN: makeDeposit(800n),
