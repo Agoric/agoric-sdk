@@ -1,8 +1,8 @@
 // @jessie-check
 
-import { Nat } from '@endo/nat';
-import { Fail } from '@endo/errors';
 import { natSafeMath } from '@agoric/ertp/src/safeMath.js';
+import { Fail } from '@endo/errors';
+import { Nat } from '@endo/nat';
 
 const { subtract, add, multiply, floorDivide } = natSafeMath;
 

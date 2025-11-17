@@ -27,6 +27,8 @@ import { prepareVault } from '../../src/vaultFactory/vault.js';
 
 /**
  * @import {Baggage} from '@agoric/swingset-liveslots';
+ * @import {FeeMintAccess} from '@agoric/zoe';
+ * @import {MintAndTransfer} from '../../src/vaultFactory/types-ambient.js';
  */
 
 const BASIS_POINTS = 10000n;

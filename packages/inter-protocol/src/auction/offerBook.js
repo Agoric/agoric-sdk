@@ -16,6 +16,7 @@ import {
  * @import {MapStore} from '@agoric/store';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {Key, Pattern} from '@endo/patterns';
+ * @import {Ratio} from '@agoric/ertp';
  */
 
 // multiple offers might be provided at the same time (since the time

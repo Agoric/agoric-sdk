@@ -8,6 +8,7 @@ import { makePegasus } from './pegasus.js';
  * @import {ContractStartFn} from '@agoric/zoe';
  * @import {Pegasus} from './pegasus.js';
  * @import {NameHub} from '@agoric/vats';
+ * @import {BoardDepositFacet} from './types.js';
  */
 
 /**

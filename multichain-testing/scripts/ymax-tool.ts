@@ -47,7 +47,7 @@ import {
 import { YieldProtocol } from '@agoric/portfolio-api/src/constants.js';
 import type { OfferStatus } from '@agoric/smart-wallet/src/offers.js';
 import type { NameHub } from '@agoric/vats';
-import type { StartedInstanceKit as ZStarted } from '@agoric/zoe/src/zoeService/utils';
+import type { StartedInstanceKit as ZStarted } from '@agoric/zoe/src/zoeService/utils.js';
 import { SigningStargateClient } from '@cosmjs/stargate';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';

@@ -18,6 +18,8 @@ import {
  * @import {TimerBrand} from '@agoric/time';
  * @import {Recorder} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {TimestampRecord} from '@agoric/time';
+ * @import {Timestamp} from '@agoric/time';
+ * @import {RelativeTime} from '@agoric/time';
  */
 
 const trace = makeTracer('SCHED', true);
@@ -99,7 +101,12 @@ export const makeScheduler = async (
    */
   let liveSchedule = null;
 
-  /** @returns {Promise<{ now: Timestamp; nextSchedule: Schedule | null }>} */
+  /**
+   * @returns {Promise<{
+   *   now: Timestamp;
+   *   nextSchedule: Schedule | null;
+   * }>}
+   */
   const initializeNextSchedule = async () => {
     return E.when(
       // XXX manualTimer returns a bigint, not a timeRecord.

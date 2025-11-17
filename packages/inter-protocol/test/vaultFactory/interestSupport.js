@@ -3,6 +3,11 @@ import { floorMultiplyBy, makeRatio } from '@agoric/ertp/src/ratio.js';
 import { Far } from '@endo/marshal';
 import { reverseInterest } from '../../src/interest-math.js';
 
+/**
+ * @import {VaultId} from '../../src/vaultFactory/types-ambient.js';
+ * @import {Vault} from '../../src/vaultFactory/vault.js';
+ */
+
 export const makeCompoundedInterestProvider = brand => {
   let compoundedInterest = makeRatio(100n, brand);
   return {

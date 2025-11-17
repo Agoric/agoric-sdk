@@ -11,9 +11,9 @@ import { Fail } from '@endo/errors';
 import { TimeMath } from '@agoric/time';
 
 /**
- * @import {EconomyBootstrapPowers} from '../../src/proposals/econ-behaviors';
+ * @import {EconomyBootstrapPowers} from '../../src/proposals/econ-behaviors.js';
  * @import {start} from '../auction/auctioneer.js';
- * @import {VaultFactoryContract} from '../../src/vaultFactory/vaultFactory';
+ * @import {VaultFactoryContract} from '../../src/vaultFactory/vaultFactory.js';
  */
 
 const trace = makeTracer('upgrade Vaults proposal');

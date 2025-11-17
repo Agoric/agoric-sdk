@@ -1,10 +1,10 @@
-import { Fail, q } from '@endo/errors';
 import {
   M,
   prepareExo,
   prepareKind,
   provideDurableWeakMapStore,
 } from '@agoric/vat-data';
+import { Fail, q } from '@endo/errors';
 import {
   InstallationShape,
   UnwrappedInstallationShape,
@@ -14,7 +14,8 @@ import {
  * @import {Baggage} from '@agoric/swingset-liveslots';
  * @import {WeakMapStore} from '@agoric/store';
  * @import {BundleID, BundleCap} from '@agoric/swingset-vat';
- * @import {SourceBundle} from '@agoric/zoe';
+ * @import {InstallBundle, SourceBundle} from '@agoric/zoe';
+ * @import {GetBundleCapForID} from './internal-types.js';
  */
 
 /**

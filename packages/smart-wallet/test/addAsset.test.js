@@ -130,6 +130,7 @@ const the = async xP => {
  * @import {CapData} from '@endo/marshal';
  * @import {OfferSpec} from '../src/offers.js';
  * @import {UpdateRecord} from '../src/smartWallet.js';
+ * @import {Bundle} from '@agoric/swingset-vat';
  */
 
 const IST_UNIT = 1_000_000n;
