@@ -316,6 +316,13 @@ export const processPortfolioEvents = async (
       gasEstimator,
     };
 
+    const { network: _network, ...logContext } = plannerContext;
+    console.debug(
+      `Starting ${path} in-progress flow ${flowKey}`,
+      flowDetail,
+      inspectForStdout(logContext),
+    );
+
     try {
       let steps: MovementDesc[];
       const { type } = flowDetail;
