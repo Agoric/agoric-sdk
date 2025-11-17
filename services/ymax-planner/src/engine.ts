@@ -299,22 +299,34 @@ export const processPortfolioEvents = async (
       depositBrand,
       balanceQueryPowers,
     );
-    const errorContext: Record<string, unknown> = {
+    const { policyVersion, rebalanceCount, targetAllocation } = portfolioStatus;
+    const errorContext = {
+      path,
+      flowKey,
       flowDetail,
       currentBalances,
+      policyVersion,
+      rebalanceCount,
+      targetAllocation,
     };
     const plannerContext = {
+      ...errorContext,
       // @ts-expect-error "amount" is not present on all varieties of
       // FlowDetail, but we need it here when it is present (i.e., for types
       // "deposit" and "withdraw" and it's harmless otherwise.
       amount: flowDetail.amount,
-      currentBalances,
-      targetAllocation: portfolioStatus.targetAllocation,
       network: PROD_NETWORK,
       brand: depositBrand,
       feeBrand,
       gasEstimator,
     };
+
+    const { network: _network, ...logContext } = plannerContext;
+    console.debug(
+      `Starting ${path} in-progress flow ${flowKey}`,
+      flowDetail,
+      inspectForStdout(logContext),
+    );
 
     try {
       let steps: MovementDesc[];
@@ -335,11 +347,10 @@ export const processPortfolioEvents = async (
           return;
         }
       }
-      errorContext.steps = steps;
+      (errorContext as any).steps = steps;
 
       const portfolioId = portfolioIdFromKey(portfolioKey as any);
       const flowId = flowIdFromKey(flowKey as any);
-      const { policyVersion, rebalanceCount } = portfolioStatus;
       const planner = walletStore.get<PortfolioPlanner>('planner', {
         sendOnly: true,
       });
@@ -367,11 +378,10 @@ export const processPortfolioEvents = async (
         flowDetail,
         currentBalances,
         inspectForStdout({
-          portfolioId,
-          flowId,
-          steps,
           policyVersion,
           rebalanceCount,
+          targetAllocation,
+          steps,
         }),
         tx,
       );
