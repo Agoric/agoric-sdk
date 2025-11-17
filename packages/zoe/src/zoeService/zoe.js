@@ -14,24 +14,25 @@
 /// <reference types="@agoric/notifier/exported.js" />
 /// <reference path="../internal-types.js" />
 
+import { makeScalarBigMapStore, prepareExo } from '@agoric/vat-data';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { M } from '@endo/patterns';
-import { makeScalarBigMapStore, prepareExo } from '@agoric/vat-data';
 
-import { makeZoeStorageManager } from './zoeStorageManager.js';
-import { makeStartInstance } from './startInstance.js';
-import { makeOfferMethod } from './offer/offer.js';
-import { makeInvitationQueryFns } from './invitationQueries.js';
+import { ZoeServiceI } from '../typeGuards.js';
 import { getZcfBundleCap } from './createZCFVat.js';
 import { defaultFeeIssuerConfig, prepareFeeMint } from './feeMint.js';
-import { ZoeServiceI } from '../typeGuards.js';
+import { makeInvitationQueryFns } from './invitationQueries.js';
+import { makeOfferMethod } from './offer/offer.js';
+import { makeStartInstance } from './startInstance.js';
+import { makeZoeStorageManager } from './zoeStorageManager.js';
 
 /**
- * @import {VatAdminSvc, ShutdownWithFailure} from '@agoric/swingset-vat';
+ * @import {VatAdminSvc, ShutdownWithFailure, BundleCap} from '@agoric/swingset-vat';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {FeeIssuerConfig, FeeMintAccess, ZCFSpec, ZoeService} from './types.js';
+ * @import {GetBundleCapForID} from './internal-types.js';
  */
 
 /**

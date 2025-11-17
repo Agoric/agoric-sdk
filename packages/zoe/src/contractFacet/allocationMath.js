@@ -1,5 +1,9 @@
-import { Fail, q } from '@endo/errors';
 import { AmountMath } from '@agoric/ertp';
+import { Fail, q } from '@endo/errors';
+
+/**
+ * @import {Allocation} from './types.ts';
+ */
 
 /**
  * @callback Operation

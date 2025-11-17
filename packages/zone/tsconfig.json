@@ -1,7 +1,10 @@
 // This file can contain .js-specific Typescript compiler config.
 {
   "extends": "../../tsconfig.json",
-  "compilerOptions": {},
+  "compilerOptions": {
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+  },
   "include": [
     "*.js",
     "scripts",

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Test data for restoring PSM state.
  *
@@ -17,6 +18,10 @@ export const chainStorageEntries = [
     'published.psm.IST.USDC_axl.metrics',
     '{"blockHeight":"9555449","values":["{\\"body\\":\\"{\\\\\\"anchorPoolBalance\\\\\\":{\\\\\\"brand\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"iface\\\\\\":\\\\\\"Alleged: USDC_axl brand\\\\\\",\\\\\\"index\\\\\\":0},\\\\\\"value\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"bigint\\\\\\",\\\\\\"digits\\\\\\":\\\\\\"487464281410\\\\\\"}},\\\\\\"feePoolBalance\\\\\\":{\\\\\\"brand\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"iface\\\\\\":\\\\\\"Alleged: IST brand\\\\\\",\\\\\\"index\\\\\\":1},\\\\\\"value\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"bigint\\\\\\",\\\\\\"digits\\\\\\":\\\\\\"0\\\\\\"}},\\\\\\"mintedPoolBalance\\\\\\":{\\\\\\"brand\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"index\\\\\\":1},\\\\\\"value\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"bigint\\\\\\",\\\\\\"digits\\\\\\":\\\\\\"487464281410\\\\\\"}},\\\\\\"totalAnchorProvided\\\\\\":{\\\\\\"brand\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"index\\\\\\":0},\\\\\\"value\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"bigint\\\\\\",\\\\\\"digits\\\\\\":\\\\\\"4327825824427\\\\\\"}},\\\\\\"totalMintedProvided\\\\\\":{\\\\\\"brand\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"slot\\\\\\",\\\\\\"index\\\\\\":1},\\\\\\"value\\\\\\":{\\\\\\"@qclass\\\\\\":\\\\\\"bigint\\\\\\",\\\\\\"digits\\\\\\":\\\\\\"4815290105837\\\\\\"}}}\\",\\"slots\\":[\\"board0223\\",\\"board02314\\"]}"]}',
   ],
+
+  /**
+   * @import {AnchorOptions} from './gov-add-psm.js';
+   */
 
   [
     'published.psm.IST.USDT_axl.governance',

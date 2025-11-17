@@ -36,6 +36,9 @@ import { start } from '../../../src/contracts/priceAggregator.js';
  * @import {Timestamp} from '@agoric/time';
  * @import {TestFn} from 'ava';
  * @import {OracleStart} from '../../../src/contracts/oracle.js';
+ * @import {OracleKit} from '../../../src/contracts/priceAggregatorTypes.js';
+ * @import {PriceAggregatorKit} from '../../../src/contracts/priceAggregatorTypes.js';
+ * @import {OracleHandler} from '../../../src/contracts/priceAggregatorTypes.js';
  */
 
 /**

@@ -357,7 +357,7 @@ type ChainBootstrapSpaceT = {
     savePrivateArgs: (instance: Instance, privateArgs: unknown) => void;
   };
   /** Super powerful ability to mint IST. ("License to print money") */
-  feeMintAccess: FeeMintAccess;
+  feeMintAccess: import('@agoric/zoe').FeeMintAccess;
   highPrioritySendersManager:
     | import('@agoric/internal/src/priority-senders.js').PrioritySendersManager
     | undefined

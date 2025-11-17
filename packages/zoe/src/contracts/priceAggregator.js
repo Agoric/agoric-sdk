@@ -1,7 +1,7 @@
 import { AmountMath } from '@agoric/ertp';
 import { assertAllDefined } from '@agoric/internal';
-import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import {
   makeNotifierKit,
   makeStoredPublishKit,
@@ -40,6 +40,10 @@ import {
  * @import {TimerWaker} from '@agoric/time';
  * @import {TimestampRecord} from '@agoric/time';
  * @import {OracleContract} from './oracle.js';
+ * @import {Ratio} from '@agoric/ertp';
+ * @import {OracleKey} from './priceAggregatorTypes.js';
+ * @import {OracleAdmin} from './priceAggregatorTypes.js';
+ * @import {OracleQuery} from './priceAggregatorTypes.js';
  */
 
 /** @typedef {bigint | number | string} ParsableNumber */

@@ -1,22 +1,28 @@
-import { Fail } from '@endo/errors';
+import { NonNullish } from '@agoric/internal';
 import { prepareDurablePublishKit } from '@agoric/notifier';
-import { E } from '@endo/eventual-send';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
+import { Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 import { deeplyFulfilled } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
-import { NonNullish } from '@agoric/internal';
 
 import { satisfiesWant } from '../contractFacet/offerSafety.js';
 
 import {
+  coreUserSeatMethods,
   declareOldZoeSeatAdminKind,
   OriginalZoeSeatIKit,
   ZoeUserSeatShape,
-  coreUserSeatMethods,
 } from './originalZoeSeat.js';
 
 /**
  * @import {Baggage} from '@agoric/vat-data';
+ * @import {InstanceAdminHelper} from '../internal-types.js';
+ * @import {WithdrawFacet} from '../internal-types.js';
+ * @import {HandleOfferResult} from '../internal-types.js';
+ * @import {ExitObj} from '../internal-types.js';
+ * @import {PaymentPKeywordRecord} from './types.ts';
+ * @import {Allocation} from './zoe.js';
  */
 
 // ZoeSeatAdmin has the implementation of coreUserSeatMethods, but ZoeUserSeat

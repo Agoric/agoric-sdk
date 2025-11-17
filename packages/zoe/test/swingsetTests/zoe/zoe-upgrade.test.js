@@ -5,6 +5,10 @@ import bundleSource from '@endo/bundle-source';
 import { buildVatController } from '@agoric/swingset-vat';
 import { kunser } from '@agoric/kmarshal';
 
+/**
+ * @import {SwingSetConfig} from '@agoric/swingset-vat';
+ */
+
 const bfile = name => new URL(name, import.meta.url).pathname;
 
 test('zoe vat upgrade trauma', async t => {

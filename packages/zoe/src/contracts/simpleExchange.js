@@ -2,10 +2,10 @@ import { makeNotifierKit } from '@agoric/notifier';
 import { Far } from '@endo/marshal';
 
 import {
-  swap,
-  satisfies,
-  assertProposalShape,
   assertIssuerKeywords,
+  assertProposalShape,
+  satisfies,
+  swap,
 } from '../contractSupport/zoeHelpers.js';
 
 /**

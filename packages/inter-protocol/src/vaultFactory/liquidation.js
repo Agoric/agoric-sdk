@@ -20,6 +20,8 @@ const trace = makeTracer('LIQ');
  * @import {TimestampRecord} from '@agoric/time';
  * @import {AuctioneerPublicFacet} from '../auction/auctioneer.js';
  * @import {makePrioritizedVaults} from './prioritizedVaults.js';
+ * @import {Ratio} from '@agoric/ertp';
+ * @import {Vault} from './vault.js';
  */
 
 const makeCancelToken = makeCancelTokenMaker('liq');

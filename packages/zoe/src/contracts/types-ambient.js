@@ -19,7 +19,7 @@
  * @property {Amount} pricePerItem
  *
  * @typedef {object} SellItemsResult
- * @property {UserSeat} sellItemsCreatorSeat
+ * @property {import('../types-index.js').UserSeat} sellItemsCreatorSeat
  * @property {SellItemsCreatorFacet} sellItemsCreatorFacet
  * @property {Instance} sellItemsInstance
  * @property {SellItemsPublicFacet} sellItemsPublicFacet

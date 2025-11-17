@@ -11,6 +11,10 @@ import { RatioShape } from '@agoric/ertp';
 import { decodeData, encodeData } from '../vaultFactory/storeUtils.js';
 
 /**
+ * @import {Ratio} from '@agoric/ertp';
+ */
+
+/**
  * @file we use a floating point representation of the price or rate as the
  *   first part of the key in the store. The second part is the sequence number
  *   of the bid, but it doesn't matter for sorting. When we retrieve multiple
