@@ -55,6 +55,7 @@ const trace = makeTracer('GMPF');
 const { keys } = Object;
 
 export type GMPAccountStatus = GMPAccountInfo & {
+  /** created and ready to accept GMP messages */
   ready: Promise<GMPAccountInfo>;
 };
 
@@ -116,10 +117,14 @@ export const provideEVMAccount = (
 
   if (!pk.reader.hasGMPInfo(chainName)) {
     const info = predictAddress();
-    pk.manager.resolveAccount(info);
+    pk.manager.setAccountInfo(info);
+
+    const ready = pk.manager.reservePendingAccount(
+      chainName,
+    ) as unknown as Promise<GMPAccountInfo>;
 
     void installContract();
-    return { ...info, ready: Promise.resolve(info) };
+    return { ...info, ready };
   }
   const info = pk.reader.getGMPInfo(chainName);
 
