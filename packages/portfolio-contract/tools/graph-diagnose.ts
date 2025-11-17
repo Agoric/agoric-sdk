@@ -5,6 +5,13 @@ import { Fail, q } from '@endo/errors';
 
 import type { NatAmount } from '@agoric/ertp/src/types.js';
 import { provideLazyMap, typedEntries } from '@agoric/internal/src/js-utils.js';
+import { tryNow } from '@agoric/internal/src/ses-utils.js';
+import { isInterChainAccountRef } from '@agoric/portfolio-api/src/type-guards.js';
+import type {
+  AssetPlaceRef,
+  InterChainAccountRef,
+} from '@agoric/portfolio-api';
+import { chainOf } from './network/buildGraph.ts';
 
 import {
   PoolPlaces,
@@ -14,6 +21,21 @@ import {
 import type { RebalanceGraph } from './network/buildGraph.js';
 import type { NetworkSpec } from './network/network-spec.js';
 import type { LpModel } from './plan-solve.js';
+
+const bfs = <T>(start: T, adj: Map<T, T[]>): Set<T> => {
+  const queue = [start];
+  const seen = new Set(queue);
+  while (queue.length) {
+    const cur = queue.shift()!;
+    const arr = adj.get(cur);
+    for (const node of arr || []) {
+      if (seen.has(node)) continue;
+      seen.add(node);
+      queue.push(node);
+    }
+  }
+  return seen;
+};
 
 /**
  * Build human-readable diagnostics for infeasible models.
@@ -57,24 +79,9 @@ export const diagnoseInfeasible = (
     srcAdj.push(e.dest);
   }
 
-  const bfs = (start: string) => {
-    const queue = [start];
-    const seen = new Set(queue);
-    while (queue.length) {
-      const cur = queue.shift()!;
-      const outs = adj.get(cur);
-      for (const v of outs || []) {
-        if (seen.has(v)) continue;
-        seen.add(v);
-        queue.push(v);
-      }
-    }
-    return seen;
-  };
-
   const stranded = [] as { node: string; supply: number }[];
   for (const s of sources) {
-    const reach = bfs(s);
+    const reach = bfs(s, adj);
     const canReachSink = [...reach].some(n => sinksSet.has(n));
     if (!canReachSink) stranded.push({ node: s, supply: supplies[s] });
   }
@@ -114,90 +121,71 @@ export const diagnoseInfeasible = (
  */
 export const preflightValidateNetworkPlan = (
   network: NetworkSpec,
-  current: Partial<Record<string, NatAmount>>,
-  target: Partial<Record<string, NatAmount>>,
+  current: Partial<Record<AssetPlaceRef, NatAmount>>,
+  target: Partial<Record<AssetPlaceRef, NatAmount>>,
 ) => {
-  const keys = new Set<string>([
-    ...Object.keys(current ?? {}),
-    ...Object.keys(target ?? {}),
-  ]);
-  const vOf = (a?: NatAmount) => (a ? (a.value as bigint) : 0n);
+  const placeRefs = new Set(
+    Object.keys({ ...current, ...target }) as AssetPlaceRef[],
+  );
 
   // Build hub-only adjacency from NetworkSpec.links
-  const adj = new Map<string, string[]>();
-  for (const l of network.links) {
-    const src = `@${l.src}`;
-    const dest = `@${l.dest}`;
-    (adj.get(src) ?? adj.set(src, []).get(src)!).push(dest);
+  const hubAdj = new Map<InterChainAccountRef, InterChainAccountRef[]>();
+  for (const link of network.links) {
+    const { src, dest } = link;
+    if (!isInterChainAccountRef(src) || !isInterChainAccountRef(dest)) continue;
+    const srcAdj = provideLazyMap(hubAdj, src, () => []);
+    srcAdj.push(dest);
   }
-  const bfs = (start: string) => {
-    const seen = new Set<string>([start]);
-    const queue = [start];
-    while (queue.length) {
-      const cur = queue.shift()!;
-      for (const n of adj.get(cur) || [])
-        if (!seen.has(n)) {
-          seen.add(n);
-          queue.push(n);
-        }
-    }
-    return seen;
-  };
-  const reachFromAgoric = bfs('@agoric');
+  const reachFromAgoric = bfs('@agoric', hubAdj);
 
-  const needsToAgoric = new Map<string, string[]>();
-  const needsFromAgoric = new Map<string, string[]>();
-  const declared = new Set<string>([
-    ...network.chains.map(c => `@${c.name}`),
+  const needsToAgoric = new Map<InterChainAccountRef, AssetPlaceRef[]>();
+  const needsFromAgoric = new Map<InterChainAccountRef, AssetPlaceRef[]>();
+  const declared = new Set<AssetPlaceRef>([
+    ...network.chains.map(c => `@${c.name}` as InterChainAccountRef),
     ...network.pools.map(p => p.pool),
     ...(network.localPlaces ?? []).map(lp => lp.id),
-    '<Deposit>',
-    '<Cash>',
-    '+agoric',
+    ...(['<Deposit>', '<Cash>', '+agoric'] as AssetPlaceRef[]),
   ]);
 
-  for (const k of keys) {
+  for (const k of placeRefs) {
     if (k === '+agoric') continue;
-    const cur = vOf(current[k]);
-    const tgt = vOf(target[k]);
+    const cur = current[k]?.value ?? 0n;
+    const tgt = target[k]?.value ?? 0n;
     if (cur === tgt) continue;
 
-    const pp: PoolPlaceInfo | undefined = (
-      PoolPlaces as Record<PoolKey, PoolPlaceInfo | undefined>
-    )[k as PoolKey];
-    if (!pp && !declared.has(k)) {
-      throw Fail`Unsupported position key: ${q(k)}`;
-    }
-    // Determine the chain for this position key
-    const chain =
-      k === '<Deposit>' || k === '<Cash>' || k === '+agoric'
-        ? 'agoric'
-        : (pp?.chainName ?? /^[^_]+_([A-Za-z0-9-]+)$/.exec(k)?.[1] ?? '');
-    if (!chain) {
-      // If still unknown, skip further inter-hub checks; builder will surface issues
-      continue;
-    }
-    const hub = `@${chain}`;
+    const placeInfo = PoolPlaces[k as PoolKey];
+    placeInfo || declared.has(k) || Fail`Unsupported position key: ${q(k)}`;
+    const chain = tryNow(
+      () => chainOf(k),
+      () => undefined,
+    );
 
+    // If chain is unknown, skip further checks so the issue resurfaces with
+    // more context.
+    if (!chain) continue;
+
+    const hub = `@${chain}` as InterChainAccountRef;
     if (cur > tgt) {
-      (
-        needsToAgoric.get(chain) ?? needsToAgoric.set(chain, []).get(chain)!
-      ).push(k);
+      const hubSources = provideLazyMap(needsToAgoric, hub, () => []);
+      hubSources.push(k);
     } else if (tgt > cur) {
-      (
-        needsFromAgoric.get(chain) ?? needsFromAgoric.set(chain, []).get(chain)!
-      ).push(k);
+      const hubSinks = provideLazyMap(needsFromAgoric, hub, () => []);
+      hubSinks.push(k);
       if (!reachFromAgoric.has(hub)) {
-        const list = (needsFromAgoric.get(chain) || []).join(', ');
-        throw Fail`No inter-hub path @agoric->${hub}; positions: ${q(list)}`;
+        const list = needsFromAgoric.get(hub) || [];
+        const msg = `No inter-hub path @agoric->${hub}; positions: ${q(list)}`;
+        throw Error(msg);
       }
     }
   }
 
-  for (const [chain, posKeys] of needsToAgoric.entries()) {
-    const reach = bfs(`@${chain}`);
+  for (const [hub, posKeys] of needsToAgoric.entries() as Iterable<
+    [InterChainAccountRef, AssetPlaceRef[]]
+  >) {
+    const reach = bfs(hub, hubAdj);
     if (!reach.has('@agoric')) {
-      throw Fail`No inter-hub path @${chain}->@agoric; positions: ${q(posKeys.join(', '))}`;
+      const msg = `No inter-hub path ${hub}->@agoric; positions: ${q(posKeys.join(', '))}`;
+      throw Error(msg);
     }
   }
 };
@@ -323,19 +311,6 @@ export const diagnoseNearMisses = (graph: RebalanceGraph) => {
     if (e.capacity === undefined || e.capacity > 0)
       (capAdj.get(e.src) ?? capAdj.set(e.src, []).get(e.src)!).push(e.dest);
   }
-  const bfs = (start: string, A: Map<string, string[]>) => {
-    const seen = new Set<string>([start]);
-    const queue = [start];
-    while (queue.length) {
-      const cur = queue.shift()!;
-      for (const v of A.get(cur) || [])
-        if (!seen.has(v)) {
-          seen.add(v);
-          queue.push(v);
-        }
-    }
-    return seen;
-  };
 
   const interHubEdges = graph.edges
     .filter(e => e.src.startsWith('@') && e.dest.startsWith('@'))
