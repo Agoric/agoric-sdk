@@ -143,7 +143,9 @@ export type ZCFRegisterFeeMint = (
  * will be appended to the returned jig object (overriding any
  * provided by the `testFn`).
  */
-export type SetTestJig = (testFn?: () => Record<string, unknown>) => void;
+export type SetTestJig<
+  T extends Record<string, unknown> = Record<string, unknown>,
+> = (testFn?: () => T) => void;
 export type ZCFMint<K extends AssetKind = AssetKind> = {
   getIssuerRecord: () => ZoeIssuerRecord<K>;
   /**

@@ -22,6 +22,7 @@ import {
   deeplyFulfilledObject,
   objectMap,
   objectMetaMap,
+  withDeferredCleanup,
 } from '@agoric/internal';
 import { UsdcTokenIds } from '@agoric/portfolio-api/src/constants.js';
 
@@ -34,11 +35,14 @@ import { getSdk as getSpectrumPoolsSdk } from './graphql/api-spectrum-pools/__ge
 import { startEngine } from './engine.ts';
 import {
   createEVMContext,
+  prepareAbortController,
   spectrumChainIdsByCluster,
   spectrumPoolIdsByCluster,
 } from './support.ts';
+import type { MakeAbortController } from './support.ts';
 import { SpectrumClient } from './spectrum-client.ts';
 import { makeGasEstimator } from './gas-estimation.ts';
+import { makeSQLiteKeyValueStore } from './kv-store.ts';
 
 const assertChainId = async (
   rpc: CosmosRPCClient,
@@ -53,55 +57,11 @@ const assertChainId = async (
     Fail`Expected chain ID ${q(actualChainId)} to be ${q(chainId)}`;
 };
 
-/**
- * Mock the abort reason of `AbortSignal.timeout(ms)`.
- * https://dom.spec.whatwg.org/#dom-abortsignal-timeout
- */
-const makeTimeoutReason = () =>
-  Object.defineProperty(Error('Timed out'), 'name', {
-    value: 'TimeoutError',
-  });
-
-const prepareAbortController = ({
-  setTimeout,
-  AbortController = globalThis.AbortController,
-  AbortSignal = globalThis.AbortSignal,
-}: {
-  setTimeout: typeof globalThis.setTimeout;
-  AbortController?: typeof globalThis.AbortController;
-  AbortSignal?: typeof globalThis.AbortSignal;
-}) => {
-  /**
-   * Abstract AbortController/AbortSignal functionality upon a provided
-   * setTimeout.
-   */
-  const makeAbortController = (
-    timeoutMillisec?: number,
-    racingSignals: Iterable<AbortSignal> = [],
-  ) => {
-    let controller: AbortController | null = new AbortController();
-    const abort: AbortController['abort'] = reason => {
-      try {
-        return controller?.abort(reason);
-      } finally {
-        controller = null;
-      }
-    };
-    if (timeoutMillisec !== undefined) {
-      setTimeout(() => abort(makeTimeoutReason()), timeoutMillisec);
-    }
-    const signal = AbortSignal.any([controller.signal, ...racingSignals]);
-    signal.addEventListener('abort', _event => abort());
-    return { abort, signal };
-  };
-  return makeAbortController;
-};
-
 export type SimplePowers = {
   fetch: typeof fetch;
   setTimeout: typeof setTimeout;
   delay: (ms: number) => Promise<void>;
-  makeAbortController: ReturnType<typeof prepareAbortController>;
+  makeAbortController: MakeAbortController;
 };
 
 export const main = async (
@@ -123,15 +83,17 @@ export const main = async (
   const isDryRun = maybeOpts.includes('--dry-run');
   const isVerbose = maybeOpts.includes('--verbose');
 
+  const makeAbortController = prepareAbortController({
+    setTimeout,
+    AbortController,
+    AbortSignal,
+  });
+
   const simplePowers: SimplePowers = {
     fetch,
     setTimeout,
     delay: ms => new Promise(resolve => setTimeout(resolve, ms)).then(() => {}),
-    makeAbortController: prepareAbortController({
-      setTimeout,
-      AbortController,
-      AbortSignal,
-    }),
+    makeAbortController,
   };
 
   const config = await loadConfig(env);
@@ -272,8 +234,16 @@ export const main = async (
     fetch,
   });
 
+  const { db, kvStore } = makeSQLiteKeyValueStore(config.sqlite.dbPath, {
+    trace: () => {},
+  });
+
   const powers = {
-    evmCtx,
+    evmCtx: {
+      kvStore,
+      makeAbortController,
+      ...evmCtx,
+    },
     rpc,
     spectrum,
     spectrumChainIds,
@@ -292,11 +262,17 @@ export const main = async (
     gasEstimator,
     usdcTokensByChain,
   };
-  await startEngine(powers, {
-    isDryRun,
-    contractInstance: config.contractInstance,
-    depositBrandName: env.DEPOSIT_BRAND_NAME || 'USDC',
-    feeBrandName: env.FEE_BRAND_NAME || 'BLD',
+
+  await withDeferredCleanup(async addCleanup => {
+    addCleanup(async () => {
+      await db.close();
+    });
+    await startEngine(powers, {
+      isDryRun,
+      contractInstance: config.contractInstance,
+      depositBrandName: env.DEPOSIT_BRAND_NAME || 'USDC',
+      feeBrandName: env.FEE_BRAND_NAME || 'BLD',
+    });
   });
 };
 harden(main);

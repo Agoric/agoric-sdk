@@ -19,6 +19,7 @@ const minimalEnv = {
     'api-spectrum-blockchain': ['https://example.invalid/'],
     'api-spectrum-pools': ['https://example.invalid/'],
   }),
+  SQLITE_DB_PATH: './test-kv-store.db',
 };
 
 const makeFakeSecretManager = (mnemonic?: string) =>
@@ -59,6 +60,7 @@ test('loadConfig accepts valid configuration', async t => {
     COSMOS_REST_TIMEOUT: '10000',
     COSMOS_REST_RETRIES: '5',
     GRAPHQL_ENDPOINTS: minimalEnv.GRAPHQL_ENDPOINTS,
+    SQLITE_DB_PATH: './test-kv-store.db',
   };
   const secretManager = makeFakeSecretManager();
 

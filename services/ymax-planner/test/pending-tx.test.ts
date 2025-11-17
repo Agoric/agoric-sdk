@@ -497,7 +497,7 @@ test('resolves a 10 second old pending GMP transaction in lookback mode', async 
   // Trigger block event to resolve waitForBlock
   setTimeout(() => mockProvider.emit('block', latestBlock + 1), 10);
 
-  const event = createMockGmpExecutionEvent(txId);
+  const event = createMockGmpExecutionEvent(txId, latestBlock);
   mockProvider.getLogs = async () => [event];
 
   const ctxWithFetch = harden({
@@ -518,7 +518,7 @@ test('resolves a 10 second old pending GMP transaction in lookback mode', async 
               executed: {
                 transactionHash: '0xexecuted123',
                 receipt: {
-                  logs: [createMockGmpExecutionEvent(txId)],
+                  logs: [event],
                 },
               },
             },
@@ -545,7 +545,7 @@ test('resolves a 10 second old pending GMP transaction in lookback mode', async 
   t.deepEqual(logs, [
     `[${txId}] handling ${TxType.GMP} tx`,
     `[${txId}] Watching for MulticallStatus and MulticallExecuted events for txId: ${txId} at contract: ${contractAddress}`,
-    `[${txId}] Searching blocks ${fromBlock} → ${toBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
+    `[${txId}] Searching blocks ${fromBlock}/${fromBlock} → ${toBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
     `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,
     `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,
     `[${txId}] [LogScan] Match in tx=${event.transactionHash}`,

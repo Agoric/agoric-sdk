@@ -36,10 +36,9 @@ const { values } = Object;
 
 export const deploy = async (t: ExecutionContext) => {
   const common = await setupPortfolioTest(t);
-  let contractBaggage;
-  const setJig = ({ baggage }) => {
-    contractBaggage = baggage;
-  };
+  let testJig;
+  const setJig = jig => (testJig = jig);
+  const getTestJig = () => testJig;
   const { zoe, bundleAndInstall } = await setUpZoeForTest({ setJig });
   t.log('contract deployment', contractName);
 
@@ -92,8 +91,12 @@ export const deploy = async (t: ExecutionContext) => {
       }),
     ),
   );
+  const { baggage: contractBaggage } = getTestJig();
   return {
-    common: { ...common, utils: { ...common.utils, bundleAndInstall } },
+    common: {
+      ...common,
+      utils: { ...common.utils, bundleAndInstall, getTestJig },
+    },
     zoe,
     contractBaggage,
     started,

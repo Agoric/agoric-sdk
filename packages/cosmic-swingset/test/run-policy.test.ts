@@ -8,7 +8,7 @@ import { assert, Fail, q } from '@endo/errors';
 import { E } from '@endo/far';
 import type { TestFn } from 'ava';
 import anyTest from 'ava';
-import type { KVStore } from '../src/helpers/bufferedStorage.js';
+import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import { provideEnhancedKVStore } from '../src/helpers/bufferedStorage.js';
 import {
   DEFAULT_SIM_SWINGSET_PARAMS,

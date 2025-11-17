@@ -36,11 +36,11 @@ import {
 const enableKernelGC = true;
 
 /**
+ * @import { KVStore } from '@agoric/internal/src/kv-store.js';
  * @import {SwingStoreKernelStorage} from '@agoric/swing-store';
  * @import { BundleCap, BundleID, EndoZipBase64Bundle, KernelSlog, ManagerType, SnapStore, TranscriptStore, VatKeeper, CleanupBudget, CleanupWork, PolicyOutputCleanupBudget } from '../../types-external.js'
  * @import { InternalKernelOptions, ReapDirtThreshold, PromiseRecord, RunQueueEventCleanupTerminatedVat } from '../../types-internal.js'
  * @typedef { Pick<VatKeeper, 'deleteCListEntry' | 'deleteSnapshots' | 'deleteTranscripts'> } VatUndertaker
- * @import {KVStore} from '@agoric/swing-store';
  * @import {VatKeeperPowers} from './vatKeeper.js';
  */
 
