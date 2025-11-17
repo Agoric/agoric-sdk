@@ -58,7 +58,6 @@ type WalletStoreEntryProxy<T, Recursive extends true | false = false> = {
     : never;
 };
 
-// TODO parameterize as part of https://github.com/Agoric/agoric-sdk/issues/5912
 const defaultFee: StdFee = {
   amount: [{ denom: 'ubld', amount: '500000' }], // XXX enough?
   gas: '19700000',
