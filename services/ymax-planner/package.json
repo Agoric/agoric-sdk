@@ -34,6 +34,7 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "devDependencies": {
+    "@fast-check/ava": "^2.0.2",
     "@graphql-codegen/cli": "^6.0.1",
     "@graphql-codegen/client-preset": "^5.1.1",
     "@graphql-codegen/schema-ast": "^5.0.0",
