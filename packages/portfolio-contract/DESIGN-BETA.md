@@ -159,7 +159,7 @@ sequenceDiagram
   icaN -->> acctArb: $5ku
   acctArb -->> Res: observe $5k arriving
   Res ->> portfolio: ack $5k arriving
-  acctArb -->> Res: observe makeAccount (??? discuss)
+  acctArb -->> Res: observe makeAccount
   Res ->> portfolio: ack makeAccount
 
   Note over LCAorch, aavePos: Supply to Aave
