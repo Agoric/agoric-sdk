@@ -491,7 +491,7 @@ test('planWithdrawFromAllocations withdraws and rebalances', async t => {
   t.snapshot(steps);
 });
 
-test.failing('planWithdrawFromAllocations considers former allocation targets', async t => {
+test('planWithdrawFromAllocations considers former allocation targets', async t => {
   const currentBalances = {
     Aave_Avalanche: makeDeposit(1000n),
     Compound_Arbitrum: makeDeposit(1000n),
