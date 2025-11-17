@@ -173,6 +173,7 @@ export const preflightValidateNetworkPlan = (
       hubSinks.push(k);
       if (!reachFromAgoric.has(hub)) {
         const list = needsFromAgoric.get(hub) || [];
+        // Construct a string directly to avoid undesirable quoting of `Fail`.
         const msg = `No inter-hub path @agoric->${hub}; positions: ${q(list)}`;
         throw Error(msg);
       }
@@ -184,6 +185,7 @@ export const preflightValidateNetworkPlan = (
   >) {
     const reach = bfs(hub, hubAdj);
     if (!reach.has('@agoric')) {
+      // Construct a string directly to avoid undesirable quoting of `Fail`.
       const msg = `No inter-hub path ${hub}->@agoric; positions: ${q(posKeys.join(', '))}`;
       throw Error(msg);
     }
