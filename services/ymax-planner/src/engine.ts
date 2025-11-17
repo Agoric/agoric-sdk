@@ -323,11 +323,7 @@ export const processPortfolioEvents = async (
     };
 
     const { network: _network, ...logContext } = plannerContext;
-    logger.debug(
-      `Starting ${path} in-progress flow ${flowKey}`,
-      flowDetail,
-      inspectForStdout(logContext),
-    );
+    logger.debug(`Starting flow`, flowDetail, inspectForStdout(logContext));
 
     try {
       let steps: MovementDesc[];
@@ -343,8 +339,7 @@ export const processPortfolioEvents = async (
           steps = await planWithdrawFromAllocations(plannerContext);
           break;
         default: {
-          const msg = `⚠️  Unknown flow type ${type} for ${path} in-progress flow ${flowKey}`;
-          logger.warn(msg);
+          logger.warn(`⚠️  Unknown flow type ${type}`);
           return;
         }
       }
@@ -367,7 +362,7 @@ export const processPortfolioEvents = async (
       if (!isDryRun) {
         void getWalletInvocationUpdate(id as any).catch(err => {
           logger.warn(
-            `⚠️ Failure for ${path} in-progress flow ${flowKey} resolvePlan`,
+            `⚠️ Failure for resolvePlan`,
             { policyVersion, rebalanceCount },
             steps,
             err,
@@ -375,7 +370,7 @@ export const processPortfolioEvents = async (
         });
       }
       logger.info(
-        `Resolving ${path} in-progress flow ${flowKey}`,
+        `Resolving`,
         flowDetail,
         currentBalances,
         inspectForStdout({
