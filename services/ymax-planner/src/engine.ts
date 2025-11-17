@@ -1,21 +1,20 @@
 /// <reference types="ses" />
 /* eslint-env node */
 
-import { inspect } from 'node:util';
 import type { InspectOptions } from 'node:util';
+import { inspect } from 'node:util';
 
 import type { Coin } from '@cosmjs/stargate';
 
-import { Fail, annotateError, q } from '@endo/errors';
-import { Nat } from '@endo/nat';
-import { reflectWalletStore, getInvocationUpdate } from '@agoric/client-utils';
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
+import { getInvocationUpdate, reflectWalletStore } from '@agoric/client-utils';
 import type { RetryOptionsAndPowers } from '@agoric/client-utils/src/sync-tools.js';
 import { AmountMath, type Brand } from '@agoric/ertp';
 import type { Bech32Address } from '@agoric/orchestration';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
+import { annotateError, Fail, q } from '@endo/errors';
+import { Nat } from '@endo/nat';
 
-import type { SupportedChain } from '@agoric/portfolio-api/src/constants.js';
 import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.exo.ts';
 import {
   TxStatus,
@@ -27,16 +26,16 @@ import {
   type TxId,
 } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
+import type {
+  FlowDetail,
+  PoolKey as InstrumentId,
+  StatusFor,
+} from '@aglocal/portfolio-contract/src/type-guards.ts';
 import {
   flowIdFromKey,
   PoolPlaces,
   portfolioIdFromKey,
   PortfolioStatusShapeExt,
-} from '@aglocal/portfolio-contract/src/type-guards.ts';
-import type {
-  FlowDetail,
-  PoolKey as InstrumentId,
-  StatusFor,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import { PROD_NETWORK } from '@aglocal/portfolio-contract/tools/network/network.prod.js';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
@@ -50,13 +49,16 @@ import {
 } from '@agoric/internal';
 import { fromUniqueEntries } from '@agoric/internal/src/ses-utils.js';
 import { makeWorkPool } from '@agoric/internal/src/work-pool.js';
+import type { SupportedChain } from '@agoric/portfolio-api/src/constants.js';
 
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
-import { handlePendingTx } from './pending-tx-manager.ts';
-import type { EvmContext, HandlePendingTxOpts } from './pending-tx-manager.ts';
 import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
 import type { Sdk as SpectrumPoolsSdk } from './graphql/api-spectrum-pools/__generated/sdk.ts';
+import { logger, runWithFlowTrace } from './logger.ts';
+import type { EvmContext, HandlePendingTxOpts } from './pending-tx-manager.ts';
+import { handlePendingTx } from './pending-tx-manager.ts';
+import type { BalanceQueryPowers } from './plan-deposit.ts';
 import {
   getCurrentBalance,
   getNonDustBalances,
@@ -64,14 +66,13 @@ import {
   planRebalanceToAllocations,
   planWithdrawFromAllocations,
 } from './plan-deposit.ts';
-import type { BalanceQueryPowers } from './plan-deposit.ts';
 import type { SpectrumClient } from './spectrum-client.ts';
 import {
-  STALE_RESPONSE,
   parseStreamCell,
   parseStreamCellValue,
   readStorageMeta,
   readStreamCellValue,
+  STALE_RESPONSE,
   vstoragePathIsAncestorOf,
   vstoragePathIsParentOf,
 } from './vstorage-utils.ts';
@@ -322,7 +323,7 @@ export const processPortfolioEvents = async (
     };
 
     const { network: _network, ...logContext } = plannerContext;
-    console.debug(
+    logger.debug(
       `Starting ${path} in-progress flow ${flowKey}`,
       flowDetail,
       inspectForStdout(logContext),
@@ -343,7 +344,7 @@ export const processPortfolioEvents = async (
           break;
         default: {
           const msg = `⚠️  Unknown flow type ${type} for ${path} in-progress flow ${flowKey}`;
-          console.warn(msg);
+          logger.warn(msg);
           return;
         }
       }
@@ -365,7 +366,7 @@ export const processPortfolioEvents = async (
       // for at least another block.
       if (!isDryRun) {
         void getWalletInvocationUpdate(id as any).catch(err => {
-          console.warn(
+          logger.warn(
             `⚠️ Failure for ${path} in-progress flow ${flowKey} resolvePlan`,
             { policyVersion, rebalanceCount },
             steps,
@@ -373,7 +374,7 @@ export const processPortfolioEvents = async (
           );
         });
       }
-      console.log(
+      logger.info(
         `Resolving ${path} in-progress flow ${flowKey}`,
         flowDetail,
         currentBalances,
@@ -435,7 +436,10 @@ export const processPortfolioEvents = async (
       for (const [flowKey, flowDetail] of entries(status.flowsRunning || {})) {
         // If vstorage has data for this flow then we've already responded.
         if (flowKeys.has(flowKey)) continue;
-        await startFlow(status, portfolioKey, flowKey, flowDetail);
+        await runWithFlowTrace(
+          portfolioKey, flowKey,
+          () => startFlow(status, portfolioKey, flowKey, flowDetail),
+        );
         return;
       }
     } catch (err) {
