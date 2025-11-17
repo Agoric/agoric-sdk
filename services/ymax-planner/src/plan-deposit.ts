@@ -292,8 +292,10 @@ export const getNonDustBalances = async (
  * Derive weighted targets for allocation keys. Additionally, always zero out hub balances
  * (chains; keys starting with '@') that have non-zero current amounts. Returns only entries
  * whose values change compared to current.
+ *
+ * @returns Amount of `delta` to distribute to each `AssetPlaceRef`.
  */
-const computeWeightedTargets = (
+export const computeWeightedTargets = (
   brand: Brand<'nat'>,
   current: Partial<Record<AssetPlaceRef, NatAmount>>,
   delta: bigint,
@@ -426,6 +428,7 @@ export const planRebalanceToAllocations = async (
  */
 export const planWithdrawFromAllocations = async (
   details: PlannerContext & { amount: NatAmount },
+  rebalanceFlow: typeof planRebalanceFlow = planRebalanceFlow,
 ): Promise<MovementDesc[]> => {
   const { amount, brand, currentBalances, targetAllocation } = details;
   const target = computeWeightedTargets(
@@ -439,7 +442,7 @@ export const planWithdrawFromAllocations = async (
   target['<Cash>'] = AmountMath.add(currentCash, amount);
 
   const { network, feeBrand, gasEstimator } = details;
-  const flowDetail = await planRebalanceFlow({
+  const flowDetail = await rebalanceFlow({
     network,
     current: currentBalances,
     target,
