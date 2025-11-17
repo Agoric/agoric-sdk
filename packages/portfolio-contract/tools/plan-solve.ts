@@ -519,7 +519,7 @@ export const planRebalanceFlow = async (opts: {
   } catch (err) {
     try {
       // If the solver says infeasible, try to produce a clearer message
-      preflightValidateNetworkPlan(network as any, current as any, target as any);
+      preflightValidateNetworkPlan(network, current, target);
     } catch (networkValidationErr) {
       annotateError(networkValidationErr, err.message);
       throw networkValidationErr;
