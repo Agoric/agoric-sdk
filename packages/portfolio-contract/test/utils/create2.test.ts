@@ -3,8 +3,14 @@ import { axelarConfigTestnet } from '@aglocal/portfolio-deploy/src/axelar-config
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
-import { predictWalletAddress } from '../../src/utils/create2.ts';
+import {
+  computeCreate2Address,
+  predictWalletAddress,
+} from '../../src/utils/create2.ts';
 import { contractsMock } from '../mocks.ts';
+import type { Hex } from 'viem';
+import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
+import { keccak_256 } from '@noble/hashes/sha3';
 
 const nodeRequire = createRequire(import.meta.url);
 const asset = (spec: string) => readFile(nodeRequire.resolve(spec), 'utf8');
@@ -88,5 +94,32 @@ test('predictWalletAddress computes expected address', async t => {
     });
     t.log('walletAddress', actual);
     t.deepEqual(actual, walletAddress, label);
+  }
+});
+
+test('computeCreate2Address', t => {
+  /** https://eips.ethereum.org/EIPS/eip-1014#examples */
+  const examples = [
+    {
+      address: '0x0000000000000000000000000000000000000000',
+      salt: '0x0000000000000000000000000000000000000000000000000000000000000000',
+      initCode: '0x00',
+      result: '0x4D1A2e2bB4F88F0250f26Ffff098B0b30B26BF38',
+    },
+    {
+      address: '0x00000000000000000000000000000000deadbeef',
+      salt: '0x00000000000000000000000000000000000000000000000000000000cafebabe',
+      initCode: '0xdeadbeef',
+      result: '0x60f3f640a8508fC6a86d45DF051962668E1e8AC7',
+    },
+  ] as const;
+
+  const toHex = (bytes: Uint8Array): Hex => `0x${bytesToHex(bytes)}`;
+  const keccakHex = (bytes: Uint8Array): Hex => toHex(keccak_256(bytes));
+
+  for (const { address: deployer, salt, initCode, result } of examples) {
+    const initCodeHash = keccakHex(hexToBytes(initCode.replace(/^0x/, '')));
+    const actual = computeCreate2Address({ deployer, salt, initCodeHash });
+    t.is(actual.toLowerCase(), result.toLowerCase());
   }
 });
