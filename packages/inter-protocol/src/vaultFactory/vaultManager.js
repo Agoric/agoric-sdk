@@ -18,8 +18,6 @@
  */
 /// <reference types="@agoric/zoe/exported.js" />
 
-import { X, Fail, q, makeError } from '@endo/errors';
-import { E } from '@endo/eventual-send';
 import {
   AmountMath,
   AmountShape,
@@ -27,6 +25,7 @@ import {
   NotifierShape,
   RatioShape,
 } from '@agoric/ertp';
+import { multiplyBy } from '@agoric/ertp/src/ratio.js';
 import { makeTracer } from '@agoric/internal';
 import { makeStoredNotifier, observeNotifier } from '@agoric/notifier';
 import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
@@ -51,19 +50,17 @@ import {
   TopicsRecordShape,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { PriceQuoteShape, SeatShape } from '@agoric/zoe/src/typeGuards.js';
-import { multiplyBy } from '@agoric/ertp/src/ratio.js';
+import { Fail, makeError, X } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 import {
   checkDebtLimit,
   makeNatAmountShape,
   quoteAsRatio,
 } from '../contractSupport.js';
 import { chargeInterest } from '../interest.js';
-import { getLiquidatableVaults } from './liquidation.js';
 import { calculateMinimumCollateralization, minimumPrice } from './math.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { Phase, prepareVault } from './vault.js';
-import { calculateDistributionPlan } from './proceeds.js';
-import { AuctionPFShape } from '../auction/auctioneer.js';
 
 /**
  * @import {ERemote, Remote} from '@agoric/internal';
@@ -360,7 +357,6 @@ export const prepareVaultManagerKit = (
         getCollateralQuote: M.call().returns(PriceQuoteShape),
         getPublicFacet: M.call().returns(M.remotable('publicFacet')),
         lockOraclePrices: M.call().returns(PriceQuoteShape),
-        liquidateVaults: M.call(M.eref(AuctionPFShape)).returns(M.promise()),
       }),
     },
     initState,
@@ -692,172 +688,6 @@ export const prepareVaultManagerKit = (
 
           return E(metricsTopicKit.recorder).write(payload);
         },
-
-        /**
-         * This is designed to tolerate an incomplete plan, in case
-         * calculateDistributionPlan encounters an error during its calculation.
-         * We don't have a way to induce such errors in CI so we've done so
-         * manually in dev and verified this function recovers as expected.
-         *
-         * @param {AmountKeywordRecord} proceeds
-         * @param {Amount<'nat'>} totalDebt
-         * @param {Pick<PriceQuote, 'quoteAmount'>} oraclePriceAtStart
-         * @param {MapStore<
-         *   Vault,
-         *   { collateralAmount: Amount<'nat'>; debtAmount: Amount<'nat'> }
-         * >} vaultData
-         * @param {Amount<'nat'>} totalCollateral
-         */
-        planProceedsDistribution(
-          proceeds,
-          totalDebt,
-          oraclePriceAtStart,
-          vaultData,
-          totalCollateral,
-        ) {
-          const { state, facets } = this;
-
-          const { Collateral: collateralProceeds } = proceeds;
-          /** @type {Amount<'nat'>} */
-          const collateralSold = AmountMath.subtract(
-            totalCollateral,
-            collateralProceeds,
-          );
-          state.totalCollateralSold = AmountMath.add(
-            state.totalCollateralSold,
-            collateralSold,
-          );
-
-          const penaltyRate = facets.self
-            .getGovernedParams()
-            .getLiquidationPenalty();
-          const bestToWorst = [...vaultData.entries()].reverse();
-
-          // unzip the entry tuples
-          const vaultsInPlan = /** @type {Vault[]} */ ([]);
-          const vaultsBalances = /** @type {VaultBalances[]} */ ([]);
-          for (const [vault, balances] of bestToWorst) {
-            vaultsInPlan.push(vault);
-            vaultsBalances.push({
-              collateral: balances.collateralAmount,
-              // if interest accrued during sale, the current debt will be higher
-              presaleDebt: balances.debtAmount,
-              currentDebt: vault.getCurrentDebt(),
-            });
-          }
-          harden(vaultsInPlan);
-          harden(vaultsBalances);
-
-          const plan = calculateDistributionPlan({
-            proceeds,
-            totalDebt,
-            totalCollateral,
-            oraclePriceAtStart: oraclePriceAtStart.quoteAmount.value[0],
-            vaultsBalances,
-            penaltyRate,
-          });
-          return { plan, vaultsInPlan };
-        },
-
-        /**
-         * This is designed to tolerate an incomplete plan, in case
-         * calculateDistributionPlan encounters an error during its calculation.
-         * We don't have a way to induce such errors in CI so we've done so
-         * manually in dev and verified this function recovers as expected.
-         *
-         * @param {object} obj
-         * @param {DistributionPlan} obj.plan
-         * @param {Vault[]} obj.vaultsInPlan
-         * @param {ZCFSeat} obj.liqSeat
-         * @param {Amount<'nat'>} obj.totalCollateral
-         * @param {Amount<'nat'>} obj.totalDebt
-         * @returns {void}
-         */
-        distributeProceeds({
-          plan,
-          vaultsInPlan,
-          liqSeat,
-          totalCollateral,
-          totalDebt,
-        }) {
-          const { state, facets } = this;
-          // Putting all the rearrangements after the loop ensures that errors
-          // in the calculations don't result in paying back some vaults and
-          // leaving others hanging.
-          if (plan.transfersToVault.length > 0) {
-            const transfers = plan.transfersToVault.map(
-              ([vaultIndex, amounts]) =>
-                /** @type {TransferPart} */ ([
-                  liqSeat,
-                  vaultsInPlan[vaultIndex].getVaultSeat(),
-                  amounts,
-                ]),
-            );
-            zcf.atomicRearrange(harden(transfers));
-          }
-
-          const { prioritizedVaults } = collateralEphemera(
-            totalCollateral.brand,
-          );
-          state.numLiquidationsAborted += plan.vaultsToReinstate.length;
-          for (const vaultIndex of plan.vaultsToReinstate) {
-            const vault = vaultsInPlan[vaultIndex];
-            const vaultId = vault.abortLiquidation();
-            prioritizedVaults.addVault(vaultId, vault);
-            state.liquidatingVaults.delete(vault);
-          }
-
-          if (!AmountMath.isEmpty(plan.phantomDebt)) {
-            state.totalDebt = AmountMath.subtract(
-              state.totalDebt,
-              plan.phantomDebt,
-            );
-          }
-
-          facets.helper.burnToCoverDebt(
-            plan.debtToBurn,
-            plan.mintedProceeds,
-            liqSeat,
-          );
-          if (!AmountMath.isEmpty(plan.mintedForReserve)) {
-            facets.helper.sendToReserve(
-              plan.mintedForReserve,
-              liqSeat,
-              'Minted',
-            );
-          }
-
-          // send all that's left in the seat
-          const collateralInLiqSeat = liqSeat.getCurrentAllocation().Collateral;
-          if (!AmountMath.isEmpty(collateralInLiqSeat)) {
-            facets.helper.sendToReserve(collateralInLiqSeat, liqSeat);
-          }
-          // if it didn't match what was expected, report
-          if (!AmountMath.isEqual(collateralInLiqSeat, plan.collatRemaining)) {
-            console.error(
-              `⚠️ Excess collateral remaining sent to reserve. Expected ${q(
-                plan.collatRemaining,
-              )}, sent ${q(collateralInLiqSeat)}`,
-            );
-          }
-
-          // 'totalCollateralSold' is only for this liquidation event
-          // 'state.totalCollateralSold' represents all active vaults
-          const actualCollateralSold = plan.actualCollateralSold;
-          state.totalCollateral = AmountMath.isEmpty(actualCollateralSold)
-            ? AmountMath.subtract(state.totalCollateral, totalCollateral)
-            : AmountMath.subtract(state.totalCollateral, actualCollateralSold);
-
-          facets.helper.markDoneLiquidating(
-            totalDebt,
-            totalCollateral,
-            plan.overage,
-            plan.shortfallToReserve,
-          );
-
-          // liqSeat should be empty at this point, except that funds are sent
-          // asynchronously to the reserve.
-        },
       },
 
       manager: {
@@ -1159,133 +989,6 @@ export const prepareVaultManagerKit = (
           state.lockedQuote = storedCollateralQuote;
           void facets.helper.writeMetrics();
           return storedCollateralQuote;
-        },
-        /**
-         * @param {ERef<AuctioneerPublicFacet>} auctionPF
-         */
-        async liquidateVaults(auctionPF) {
-          const { state, facets } = this;
-          const { self, helper } = facets;
-          const {
-            collateralBrand,
-            compoundedInterest,
-            debtBrand,
-            liquidatingVaults,
-            lockedQuote,
-          } = state;
-          trace(collateralBrand, 'considering liquidation');
-
-          if (!lockedQuote) {
-            // By design, the first cycle of auction may call this before a quote is locked
-            // because the schedule is global at the vaultDirector level, and if a manager
-            // starts after the price lock time there's nothing to be done.
-            // NB: this message should not log repeatedly.
-            console.error(
-              'Skipping liquidation because no quote is locked yet (may happen with new manager)',
-            );
-            return;
-          }
-
-          const { storedCollateralQuote: collateralQuoteBefore } =
-            collateralEphemera(this.state.collateralBrand);
-          if (!collateralQuoteBefore) {
-            console.error(
-              'Skipping liquidation because collateralQuote is missing',
-            );
-            return;
-          }
-
-          const { prioritizedVaults } = collateralEphemera(collateralBrand);
-          prioritizedVaults || Fail`prioritizedVaults missing from ephemera`;
-
-          const liqMargin = self.getGovernedParams().getLiquidationMargin();
-
-          // totals *among* vaults being liquidated
-          const { totalDebt, totalCollateral, vaultData, liqSeat } =
-            getLiquidatableVaults(
-              zcf,
-              {
-                quote: lockedQuote,
-                interest: compoundedInterest,
-                margin: liqMargin,
-              },
-              prioritizedVaults,
-              liquidatingVaults,
-              debtBrand,
-              collateralBrand,
-            );
-          // reset lockedQuote after we've used it for the liquidation decision
-          state.lockedQuote = undefined;
-
-          if (vaultData.getSize() === 0) {
-            void helper.writeMetrics();
-            return;
-          }
-          trace(
-            ' Found vaults to liquidate',
-            liquidatingVaults.getSize(),
-            totalCollateral,
-          );
-
-          helper.markLiquidating(totalDebt, totalCollateral);
-          void helper.writeMetrics();
-
-          const { userSeatPromise, deposited } = await E.when(
-            E(auctionPF).makeDepositInvitation(),
-            depositInvitation =>
-              offerTo(
-                zcf,
-                depositInvitation,
-                harden({ Minted: 'Bid' }),
-                harden({ give: { Collateral: totalCollateral } }),
-                liqSeat,
-                liqSeat,
-                { goal: totalDebt },
-              ),
-          );
-
-          // This is expected to wait for the duration of the auction, which
-          // is controlled by the auction parameters startFrequency, clockStep,
-          // and the difference between startingRate and lowestRate.
-          const [proceeds] = await Promise.all([deposited, userSeatPromise]);
-
-          const { storedCollateralQuote } = collateralEphemera(
-            this.state.collateralBrand,
-          );
-
-          trace(`LiqV after long wait`, proceeds);
-          try {
-            const { plan, vaultsInPlan } = helper.planProceedsDistribution(
-              proceeds,
-              totalDebt,
-              // If a quote was available at the start of liquidation, but is no
-              // longer, using the earlier price is better than failing to
-              // distribute proceeds
-              storedCollateralQuote || collateralQuoteBefore,
-              vaultData,
-              totalCollateral,
-            );
-            trace('PLAN', plan);
-            // distributeProceeds may reconstitute vaults, removing them from liquidatingVaults
-            helper.distributeProceeds({
-              liqSeat,
-              plan,
-              totalCollateral,
-              totalDebt,
-              vaultsInPlan,
-            });
-          } catch (err) {
-            console.error('🚨 Error distributing proceeds:', err);
-          }
-
-          // for all non-reconstituted vaults, transition to 'liquidated' state
-          state.numLiquidationsCompleted += liquidatingVaults.getSize();
-          for (const vault of liquidatingVaults.values()) {
-            vault.liquidated();
-            liquidatingVaults.delete(vault);
-          }
-
-          void helper.writeMetrics();
         },
       },
     },

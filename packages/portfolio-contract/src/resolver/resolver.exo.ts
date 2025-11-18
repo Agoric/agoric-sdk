@@ -17,6 +17,7 @@ import type { Zone } from '@agoric/zone';
 import { Fail, q } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
+import type { NatValue } from '@agoric/ertp';
 import { TxStatus, TxType } from './constants.js';
 import type {
   PublishedTx,

@@ -1,17 +1,11 @@
-import { Fail } from '@endo/errors';
-import {
-  SECONDS_PER_HOUR,
-  SECONDS_PER_MINUTE,
-} from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
+import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
+import type { ManagerType } from '@agoric/swingset-vat';
 import {
   type AgoricNamesRemotes,
   makeAgoricNamesRemotesFromFakeStorage,
 } from '@agoric/vats/tools/board-utils.js';
-import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
+import { Fail } from '@endo/errors';
 import type { ExecutionContext } from 'ava';
-import type { ManagerType } from '@agoric/swingset-vat';
-import { insistManagerType, makeSwingsetHarness } from './supports.js';
-import { type SwingsetTestKit, makeSwingsetTestKit } from './supports.js';
 import {
   type GovernanceDriver,
   type PriceFeedDriver,
@@ -20,6 +14,12 @@ import {
   makePriceFeedDriver,
   makeWalletFactoryDriver,
 } from './drivers.js';
+import {
+  type SwingsetTestKit,
+  insistManagerType,
+  makeSwingsetHarness,
+  makeSwingsetTestKit,
+} from './supports.js';
 
 export type LiquidationSetup = {
   vaults: {
@@ -79,6 +79,9 @@ export const likePayouts = ({ Bid, Collateral }) => ({
   },
 });
 
+/**
+ * @deprecated liquidation is no longer supported
+ */
 export const makeLiquidationTestKit = async ({
   swingsetTestKit,
   agoricNamesRemotes,
@@ -178,26 +181,6 @@ export const makeLiquidationTestKit = async ({
           type: 'ratio',
           value: { numerator: { value: 50n }, denominator: { value: 10_000n } },
         },
-      },
-    });
-    t.like(readPublished('auction.governance'), {
-      current: {
-        AuctionStartDelay: { type: 'relativeTime', value: { relValue: 2n } },
-        ClockStep: {
-          type: 'relativeTime',
-          value: { relValue: 3n * SECONDS_PER_MINUTE },
-        },
-        DiscountStep: { type: 'nat', value: 500n }, // 5%
-        LowestRate: { type: 'nat', value: 6500n }, // 65%
-        PriceLockPeriod: {
-          type: 'relativeTime',
-          value: { relValue: SECONDS_PER_HOUR / 2n },
-        },
-        StartFrequency: {
-          type: 'relativeTime',
-          value: { relValue: SECONDS_PER_HOUR },
-        },
-        StartingRate: { type: 'nat', value: 10500n }, // 105%
       },
     });
   };
@@ -351,57 +334,3 @@ export const makeLiquidationTestContext = async (
 export type LiquidationTestContext = Awaited<
   ReturnType<typeof makeLiquidationTestContext>
 >;
-
-const addSTARsCollateral = async (
-  t: ExecutionContext<LiquidationTestContext>,
-) => {
-  const { controller, buildProposal } = t.context;
-
-  t.log('building proposal');
-  const proposal = await buildProposal(
-    '@agoric/builders/scripts/inter-protocol/add-STARS.js',
-  );
-
-  for await (const bundle of proposal.bundles) {
-    await controller.validateAndInstallBundle(bundle);
-  }
-  t.log('installed', proposal.bundles.length, 'bundles');
-
-  t.log('launching proposal');
-  const bridgeMessage = {
-    type: 'CORE_EVAL',
-    evals: proposal.evals,
-  };
-  t.log({ bridgeMessage });
-
-  const { EV } = t.context.runUtils;
-  const coreEvalBridgeHandler = await EV.vat('bootstrap').consumeItem(
-    'coreEvalBridgeHandler',
-  );
-  await EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
-
-  t.context.refreshAgoricNamesRemotes();
-
-  t.log('add-STARS proposal executed');
-};
-
-export const ensureVaultCollateral = async (
-  collateralBrandKey: string,
-  t: ExecutionContext<LiquidationTestContext>,
-) => {
-  // TODO: we'd like to have this work on any brand
-  const SUPPORTED_BRANDS = ['ATOM', 'STARS'];
-
-  if (!SUPPORTED_BRANDS.includes(collateralBrandKey)) {
-    throw Error('Unsupported brand type');
-  }
-
-  if (collateralBrandKey === 'ATOM') {
-    return;
-  }
-
-  if (collateralBrandKey === 'STARS') {
-    // eslint-disable-next-line @jessie.js/safe-await-separator
-    await addSTARsCollateral(t);
-  }
-};

@@ -439,7 +439,8 @@ export const contract = async (
           void openPortfolio(
             seat,
             offerArgs,
-            // @ts-expect-error XXX Guest...
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- sensitive to build order
+            // @ts-ignore XXX Guest...
             kit,
           );
           // Return immediately to avoid blocking on transfers the flow may initiate

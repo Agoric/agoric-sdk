@@ -27,7 +27,6 @@ export const storeInterContractStartKits = async ({
     econCharterKit,
     economicCommitteeKit,
     feeDistributorKit,
-    auctioneerKit,
     reserveKit,
     vaultFactoryKit,
   },
@@ -49,11 +48,7 @@ export const storeInterContractStartKits = async ({
     econCharterKit,
     feeDistributorKit,
   ]);
-  await storeAll(governedContractKits, [
-    auctioneerKit,
-    reserveKit,
-    vaultFactoryKit,
-  ]);
+  await storeAll(governedContractKits, [reserveKit, vaultFactoryKit]);
 };
 
 /** @type {BootstrapManifest} */
@@ -70,7 +65,6 @@ const SHARED_MAIN_MANIFEST = harden({
       priceAuthority: 'priceAuthority',
       economicCommitteeCreatorFacet: 'economicCommittee',
       reserveKit: 'reserve',
-      auctioneerKit: 'auction',
     },
     produce: { vaultFactoryKit: 'VaultFactory' },
     brand: { consume: { [Stable.symbol]: 'zoe' } },
@@ -84,7 +78,6 @@ const SHARED_MAIN_MANIFEST = harden({
     instance: {
       consume: {
         reserve: 'reserve',
-        auctioneer: 'auction',
       },
       produce: {
         VaultFactory: 'VaultFactory',
@@ -124,28 +117,6 @@ const SHARED_MAIN_MANIFEST = harden({
     },
   },
 
-  [econBehaviors.startAuctioneer.name]: {
-    consume: {
-      zoe: 'zoe',
-      board: 'board',
-      chainTimerService: 'timer',
-      priceAuthority: 'priceAuthority',
-      chainStorage: true,
-      economicCommitteeCreatorFacet: 'economicCommittee',
-    },
-    produce: { auctioneerKit: 'auction' },
-    instance: {
-      produce: { auctioneer: 'auction' },
-      consume: { reserve: 'auction' },
-    },
-    installation: {
-      consume: { contractGovernor: 'zoe', auctioneer: 'zoe' },
-    },
-    issuer: {
-      consume: { [Stable.symbol]: 'zoe' },
-    },
-  },
-
   [storeInterContractStartKits.name]: {
     consume: {
       contractKits: true,
@@ -153,7 +124,6 @@ const SHARED_MAIN_MANIFEST = harden({
       econCharterKit: true,
       economicCommitteeKit: true,
       feeDistributorKit: true,
-      auctioneerKit: true,
       reserveKit: true,
       vaultFactoryKit: true,
     },
@@ -211,7 +181,6 @@ export const getManifestForMain = (
     manifest: SHARED_MAIN_MANIFEST,
     installations: {
       VaultFactory: restoreRef(installKeys.vaultFactory),
-      auctioneer: restoreRef(installKeys.auctioneer),
       feeDistributor: restoreRef(installKeys.feeDistributor),
       reserve: restoreRef(installKeys.reserve),
     },
