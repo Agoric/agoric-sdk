@@ -5,6 +5,7 @@ import type { ExecutionContext } from 'ava';
 import { prepareCosmosOrchestrationAccount } from '../../src/exos/cosmos-orchestration-account.js';
 import { commonSetup } from '../supports.js';
 import type { ICQConnection } from '../../src/exos/icq-connection-kit.js';
+import { prepareProgressTracker } from '../../src/utils/progress.js';
 
 /**
  * A testing utility that creates a (Cosmos)ChainAccount and makes a
@@ -27,6 +28,13 @@ export const prepareMakeTestCOAKit = (
   t.log('exo setup - prepareCosmosOrchestrationAccount');
   const { cosmosInterchainService, rootZone, timer, vowTools } = bootstrap;
 
+  const makeProgressTracker = prepareProgressTracker(
+    rootZone.subZone('coaProgressTracker'),
+    {
+      vowTools,
+    },
+  );
+
   const { makeRecorderKit } = prepareRecorderKitMakers(
     rootZone.mapStore('CosmosOrchAccountRecorder'),
     marshaller,
@@ -36,6 +44,7 @@ export const prepareMakeTestCOAKit = (
     rootZone.subZone('CosmosOrchAccount'),
     {
       chainHub: facadeServices.chainHub,
+      makeProgressTracker,
       makeRecorderKit,
       timerService: timer,
       vowTools,
