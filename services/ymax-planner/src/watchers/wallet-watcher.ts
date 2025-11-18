@@ -1,11 +1,17 @@
 import type { Filter, WebSocketProvider, Log } from 'ethers';
 import { id, zeroPadValue, getAddress, AbiCoder } from 'ethers';
 import type { CaipChainId } from '@agoric/orchestration';
+import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
 } from '../support.ts';
 import { TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
+import {
+  deleteTxBlockLowerBound,
+  getTxBlockLowerBound,
+  setTxBlockLowerBound,
+} from '../kv-store.ts';
 
 export const SMART_WALLET_CREATED_SIGNATURE = id(
   'SmartWalletCreated(address,string,string,string)',
@@ -41,6 +47,8 @@ type SmartWalletWatch = {
   provider: WebSocketProvider;
   expectedAddr: `0x${string}`;
   log?: (...args: unknown[]) => void;
+  kvStore: KVStore;
+  txId: `tx${number}`;
 };
 
 export const watchSmartWalletTx = ({
@@ -128,6 +136,8 @@ export const lookBackSmartWalletTx = async ({
   chainId,
   log = () => {},
   signal,
+  kvStore,
+  txId,
 }: SmartWalletWatch & {
   publishTimeMs: number;
   chainId: CaipChainId;
@@ -141,8 +151,10 @@ export const lookBackSmartWalletTx = async ({
     );
     const toBlock = await provider.getBlockNumber();
 
+    const savedFromBlock = getTxBlockLowerBound(kvStore, txId) || fromBlock;
+
     log(
-      `Searching blocks ${fromBlock} → ${toBlock} for SmartWalletCreated events emitted by ${factoryAddr}`,
+      `Searching blocks ${savedFromBlock} → ${toBlock} for SmartWalletCreated events emitted by ${factoryAddr}`,
     );
 
     const toTopic = zeroPadValue(expectedAddr.toLowerCase(), 32);
@@ -152,7 +164,18 @@ export const lookBackSmartWalletTx = async ({
     };
 
     const matchingEvent = await scanEvmLogsInChunks(
-      { provider, baseFilter, fromBlock, toBlock, chainId, log, signal },
+      {
+        provider,
+        baseFilter,
+        fromBlock: savedFromBlock,
+        toBlock,
+        chainId,
+        log,
+        signal,
+        onRejectedChunk: (_, to) => {
+          setTxBlockLowerBound(kvStore, txId, to);
+        },
+      },
       ev => {
         try {
           const t = parseSmartWalletCreatedLog(ev);
@@ -166,6 +189,8 @@ export const lookBackSmartWalletTx = async ({
     );
 
     if (!matchingEvent) log(`No matching SmartWalletCreated event found`);
+    deleteTxBlockLowerBound(kvStore, txId);
+
     return !!matchingEvent;
   } catch (error) {
     log(`Error:`, error);
