@@ -112,6 +112,10 @@
       "types": "./dist/codegen/noble/dollar/vaults/v1/tx.d.ts",
       "default": "./dist/codegen/noble/dollar/vaults/v1/tx.js"
     },
+    "./noble/dollar/vaults/v1/vaults.js": {
+      "types": "./dist/codegen/noble/dollar/vaults/v1/vaults.d.ts",
+      "default": "./dist/codegen/noble/dollar/vaults/v1/vaults.js"
+    },
     "./noble/swap/v1/tx.js": {
       "types": "./dist/codegen/noble/swap/v1/tx.d.ts",
       "default": "./dist/codegen/noble/swap/v1/tx.js"
