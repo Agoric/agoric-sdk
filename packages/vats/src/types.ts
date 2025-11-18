@@ -150,19 +150,11 @@ export type IBCPacket = JsonSafe<{
   timeout_timestamp?: PacketSDKType['timeout_timestamp'];
 }>;
 
+export interface NetworkBindings {
+  ibc: [port: IBCPortID, channel: IBCChannelID];
+}
 export interface NetworkEndpoints {
-  relative: {
-    ibc: [protocol: 'ibc', port: IBCPortID, channel: IBCChannelID];
-  };
-  absolute: {
-    ibc: [
-      protocol: 'ibc',
-      namespace: string,
-      reference: string,
-      port: IBCPortID,
-      channel: IBCChannelID,
-    ];
-  };
+  ibc: [namespace: string, reference: string, ...NetworkBindings['ibc']];
 }
 
 export type IBCCounterParty = {
