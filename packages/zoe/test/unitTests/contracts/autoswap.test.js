@@ -17,6 +17,10 @@ import { setup } from '../setupBasicMints.js';
 import { installationPFromSource } from '../installFromSource.js';
 import { assertOfferResult, assertPayoutAmount } from '../../zoeTestHelpers.js';
 
+/**
+ * @import {AutoswapPublicFacet} from '../../../src/contracts/types-ambient.js';
+ */
+
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const autoswap = `${dirname}/../../../src/contracts/autoswap.js`;

@@ -48,6 +48,7 @@ const test = anyTest;
  * @import {Baggage} from '@agoric/swingset-liveslots';
  * @import {ManualPriceAuthority} from '@agoric/zoe/tools/manualPriceAuthority.js';
  * @import {MockChainStorageRoot} from '@agoric/internal/src/storage-test-utils.js';
+ * @import {Ratio} from '@agoric/ertp';
  */
 
 /**

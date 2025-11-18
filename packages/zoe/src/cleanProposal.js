@@ -1,8 +1,8 @@
-import { assert, q, Fail } from '@endo/errors';
 import { AmountMath, getAssetKind } from '@agoric/ertp';
 import { objectMap } from '@agoric/internal';
+import { assertKey, assertPattern, isKey, mustMatch } from '@agoric/store';
+import { assert, Fail, q } from '@endo/errors';
 import { assertRecord } from '@endo/marshal';
-import { assertKey, assertPattern, mustMatch, isKey } from '@agoric/store';
 import { FullProposalShape } from './typeGuards.js';
 
 const { ownKeys } = Reflect;
@@ -11,6 +11,7 @@ export const MAX_KEYWORD_LENGTH = 100;
 
 /**
  * @import {ExitRule, Proposal, ProposalRecord} from '@agoric/zoe';
+ * @import {GetAssetKindByBrand} from './internal-types.js';
  */
 
 const firstCapASCII = /^[A-Z][a-zA-Z0-9_$]*$/;

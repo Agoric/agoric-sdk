@@ -3,6 +3,10 @@
  */
 
 /**
+ * @import {Ratio} from '@agoric/ertp';
+ */
+
+/**
  * @callback MakeOptionInvitation
  * @param {PositionKind} positionKind
  * @returns {Promise<Invitation>}

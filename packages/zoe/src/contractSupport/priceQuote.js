@@ -1,9 +1,9 @@
 // @jessie-check
 
-import { Fail } from '@endo/errors';
-import { Nat } from '@endo/nat';
-import { E } from '@endo/eventual-send';
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
+import { Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
+import { Nat } from '@endo/nat';
 
 /**
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';

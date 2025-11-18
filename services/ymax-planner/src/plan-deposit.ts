@@ -9,6 +9,7 @@ import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import type { Brand, NatAmount, NatValue } from '@agoric/ertp/src/types.js';
 import {
   fromTypedEntries,
+  objectMap,
   objectMetaMap,
   typedEntries,
 } from '@agoric/internal';
@@ -304,11 +305,14 @@ const computeWeightedTargets = (
   );
   const total = currentTotal + delta;
   total >= 0n || Fail`total after delta must not be negative`;
-  const targetWeights = typedEntries(allocation as Required<typeof allocation>);
-  // In the absence of target weights, maintain the relative status quo.
-  const weights = targetWeights.length
-    ? targetWeights
-    : typedEntries(current as Required<typeof current>).map(
+  const weights = Object.keys(allocation).length
+    ? typedEntries({
+        // Any current balance with no target has an effective weight of 0.
+        ...objectMap(current, () => 0n),
+        ...(allocation as Required<typeof allocation>),
+      })
+    : // In the absence of target weights, maintain the relative status quo.
+      typedEntries(current as Required<typeof current>).map(
         ([key, amount]) => [key, amount.value] as [PoolKey, NatValue],
       );
   const sumW = weights.reduce<bigint>((acc, entry) => {

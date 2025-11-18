@@ -24,7 +24,7 @@ import { invertPromiseSettlement } from './iterable-testing-tools.js';
 /**
  * @import {makePublishKit as MakePublishKit} from '../src/index.js';
  * @import {PublicationRecord} from '../src/types.js';
- * @import {Bundle} from '@agoric/swingset-vat/src/types-external.js';
+ * @import {Bundle, SwingSetConfig} from '@agoric/swingset-vat/src/types-external.js';
  */
 
 const { ownKeys } = Reflect;

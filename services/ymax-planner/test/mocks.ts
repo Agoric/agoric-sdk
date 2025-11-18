@@ -11,11 +11,41 @@ import { makeKVStoreFromMap } from '@agoric/internal/src/kv-store.js';
 import type { Log } from 'ethers/providers';
 import type { CosmosRestClient } from '../src/cosmos-rest-client.ts';
 import type { CosmosRPCClient } from '../src/cosmos-rpc.ts';
+import type { Powers as EnginePowers } from '../src/engine.ts';
 import { makeGasEstimator } from '../src/gas-estimation.ts';
 import type { HandlePendingTxOpts } from '../src/pending-tx-manager.ts';
 import { prepareAbortController } from '../src/support.ts';
 
 const PENDING_TX_PATH_PREFIX = 'published.ymax1';
+
+const makeAbortController = prepareAbortController({
+  setTimeout,
+  AbortController,
+  AbortSignal,
+});
+
+/** Return a correctly-typed record lacking significant functionality. */
+export const createMockEnginePowers = (): EnginePowers => ({
+  evmCtx: {
+    usdcAddresses: {},
+    evmProviders: {},
+    kvStore: makeKVStoreFromMap(new Map()),
+    makeAbortController,
+  },
+  rpc: {} as any,
+  spectrum: {} as any,
+  spectrumBlockchain: undefined,
+  spectrumPools: undefined,
+  spectrumChainIds: {},
+  spectrumPoolIds: {},
+  cosmosRest: {} as any,
+  signingSmartWalletKit: {} as any,
+  walletStore: {} as any,
+  getWalletInvocationUpdate: async () => undefined,
+  now: () => NaN,
+  gasEstimator: {} as any,
+  usdcTokensByChain: {},
+});
 
 const mockFetchForGasEstimate = async (_, options?: any) => {
   return {
@@ -187,11 +217,7 @@ export const createMockPendingTxOpts = (
     pendingTxPathPrefix: PENDING_TX_PATH_PREFIX,
   },
   kvStore: makeKVStoreFromMap(new Map()),
-  makeAbortController: prepareAbortController({
-    setTimeout,
-    AbortController,
-    AbortSignal,
-  }),
+  makeAbortController,
 });
 
 export const createMockPendingTxEvent = (

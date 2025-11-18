@@ -84,8 +84,6 @@ export function computeSha512(bytes) {
  */
 function makeConsole(prefixer) {
   if (typeof prefixer !== 'function') {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore TODO remove when anylogger has types
     const logger = anylogger(prefixer);
     return makeLimitedConsole(level => logger[level]);
   }
@@ -96,8 +94,6 @@ function makeConsole(prefixer) {
       const prefix = prefixer(source);
       let logger = prefixToLogger.get(prefix);
       if (!logger) {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore TODO remove when anylogger has types
         logger = anylogger(prefix);
         prefixToLogger.set(prefix, logger);
       }

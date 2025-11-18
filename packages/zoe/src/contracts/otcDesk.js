@@ -2,14 +2,15 @@ import { assert } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import {
-  offerTo,
-  saveAllIssuers,
   assertProposalShape,
   atomicTransfer,
+  offerTo,
+  saveAllIssuers,
 } from '../contractSupport/index.js';
 
 /**
  * @import {TimerService} from '@agoric/time';
+ * @import {UserSeat} from '../types-index.js';
  */
 
 /**
