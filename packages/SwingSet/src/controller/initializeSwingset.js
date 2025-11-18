@@ -52,7 +52,9 @@ const allValues = async obj => {
 };
 
 const bundleRelative = rel =>
-  bundleSource(new URL(rel, import.meta.url).pathname);
+  bundleSource(new URL(rel, import.meta.url).pathname, {
+    byteLimit: Infinity,
+  });
 
 /**
  * Build the source bundles for the kernel. makeSwingsetController()
@@ -445,7 +447,14 @@ export async function initializeSwingset(
   const bundleCache = await (config.bundleCachePath
     ? provideBundleCache(
         config.bundleCachePath,
-        { dev: config.includeDevDependencies, format: config.bundleFormat },
+        {
+          dev: config.includeDevDependencies,
+          format: config.bundleFormat,
+          // Disable bundle size limits for kernel-generated bundles which may
+          // be large, but do not travel through RPC and we still want to be
+          // legible.
+          byteLimit: Infinity,
+        },
         s => import(s),
       )
     : null);
@@ -487,6 +496,9 @@ export async function initializeSwingset(
       return bundleSource(desc.sourceSpec, {
         dev: config.includeDevDependencies,
         format: config.bundleFormat,
+        // Disable bundle size limits for kernel-generated bundles which may be
+        // large, but do not travel through RPC and we still want to be legible.
+        byteLimit: Infinity,
       });
     } else if ('bundleName' in desc) {
       if (!nameToBundle) {

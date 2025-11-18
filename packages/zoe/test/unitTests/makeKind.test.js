@@ -19,8 +19,8 @@ test('defineKind non-swingset', async t => {
   const bundle = await bundleSource(root);
   const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
   const zoe = makeZoeForTest(fakeVatAdmin);
-  vatAdminState.installBundle('b1-minimal', bundle);
-  const installation = await E(zoe).installBundleID('b1-minimal');
+  const b1minimal = vatAdminState.registerBundle('b1-minimal', bundle);
+  const installation = await E(zoe).installBundleID(b1minimal);
   t.notThrows(() => VatData.defineKind('x', () => {}, {}));
   t.notThrows(() => VatData.defineKindMulti('x', () => {}, { x: {}, y: {} }));
   t.notThrows(() => VatData.makeKindHandle('tag'));

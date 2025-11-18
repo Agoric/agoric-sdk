@@ -20,8 +20,11 @@ test('plural invitation details', async t => {
 
   // Pack the contract.
   const bundle = await bundleSource(root);
-  vatAdminState.installBundle('a1-two-invitations', bundle);
-  const installation = await E(zoe).installBundleID('a1-two-invitations');
+  const a1twoinvitations = vatAdminState.registerBundle(
+    'a1-two-invitations',
+    bundle,
+  );
+  const installation = await E(zoe).installBundleID(a1twoinvitations);
 
   const { creatorFacet: twoInvitations } = await E(zoe).startInstance(
     installation,
