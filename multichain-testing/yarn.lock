@@ -260,6 +260,7 @@ __metadata:
     "@endo/far": "npm:^1.1.14"
     "@endo/marshal": "npm:^1.8.0"
     "@endo/patterns": "npm:^1.7.0"
+    "@endo/promise-kit": "npm:^1.1.13"
     "@noble/hashes": "npm:~1.5.0"
     bs58: "npm:^6.0.0"
   languageName: node
