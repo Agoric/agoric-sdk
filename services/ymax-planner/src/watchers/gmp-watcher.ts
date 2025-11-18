@@ -5,6 +5,7 @@ import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
+  type WatcherTimeoutOptions,
 } from '../support.ts';
 import type { MakeAbortController } from '../support.ts';
 import { TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
@@ -39,11 +40,7 @@ export const watchGmp = ({
   log = () => {},
   setTimeout = globalThis.setTimeout,
   signal,
-}: WatchGmp & {
-  timeoutMs?: number;
-  setTimeout?: typeof globalThis.setTimeout;
-  signal?: AbortSignal;
-}): Promise<boolean> => {
+}: WatchGmp & WatcherTimeoutOptions): Promise<boolean> => {
   return new Promise(resolve => {
     if (signal?.aborted) {
       resolve(false);

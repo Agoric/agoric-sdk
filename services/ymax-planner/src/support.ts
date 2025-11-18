@@ -24,6 +24,12 @@ type ROPartial<K extends string, V> = Readonly<Partial<Record<K, V>>>;
 
 type HexAddress = `0x${string}`;
 
+export type WatcherTimeoutOptions = {
+  timeoutMs?: number;
+  setTimeout?: typeof globalThis.setTimeout;
+  signal?: AbortSignal;
+};
+
 /**
  * @deprecated should come from e.g. @agoric/portfolio-api/src/constants.js
  *   or @agoric/orchestration
