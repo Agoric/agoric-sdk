@@ -4,6 +4,7 @@ import {
   type AccountId,
   type Bech32Address,
   type CosmosChainAddress,
+  type TrafficEntry,
 } from '@agoric/orchestration';
 import type {
   ContinuingInvitationSpec,
@@ -104,6 +105,7 @@ export type FlowStep = {
   amount: NatAmount;
   src: AssetPlaceRef;
   dest: AssetPlaceRef;
+  phases?: Record<string, any>;
   // XXX all parts: fee etc.
 };
 
@@ -111,6 +113,10 @@ export type FundsFlowPlan = {
   flow: MovementDesc[];
   /** default to full order */
   order?: [target: number, prereqs: number[]][];
+};
+
+export type TrafficReport = {
+  traffic: TrafficEntry[];
 };
 
 export type PortfolioKey = `portfolio${number}`;
