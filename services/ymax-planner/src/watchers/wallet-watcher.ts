@@ -7,7 +7,7 @@ import {
 } from '../support.ts';
 import { TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
 
-const SMART_WALLET_CREATED_SIGNATURE = id(
+export const SMART_WALLET_CREATED_SIGNATURE = id(
   'SmartWalletCreated(address,string,string,string)',
 );
 const abiCoder = new AbiCoder();

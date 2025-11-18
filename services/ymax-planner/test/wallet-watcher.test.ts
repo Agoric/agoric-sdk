@@ -4,10 +4,8 @@ import { createMockPendingTxOpts } from './mocks.ts';
 import { handlePendingTx } from '../src/pending-tx-manager.ts';
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
+import { SMART_WALLET_CREATED_SIGNATURE } from '../src/watchers/wallet-watcher.ts';
 
-const SMART_WALLET_CREATED_SIGNATURE = id(
-  'SmartWalletCreated(address,string,string,string)',
-);
 const abiCoder = new AbiCoder();
 
 const factoryAddress = '0x51e589D94b51d01B75442AE1504cD8c50d6127C9';
