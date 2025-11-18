@@ -63,6 +63,18 @@ test('predictWalletAddress computes expected address', async t => {
       owner: 'agoric10utru593dspjwfewcgdak8lvp9tkz0xttvcnxv',
       walletAddress: '0x3433aebfc13e92d0fd808e42d9585dc4792810c2',
     },
+
+    {
+      label: 'de3b64a',
+      // See actual tx: https://testnet.snowtrace.io/tx/0xd5672e95d47ec2b7d19a54fe296cb345322fd416191633500a141a224e3f3a2d/eventlog?chainid=43113
+      contracts: {
+        factory: AVALANCHE_FACTORY_ADDRESS,
+        gasService: GASSERVICE_ADDRESS,
+        gateway: GATEWAY_ADDRESS,
+      },
+      owner: 'agoric1wrfh296eu2z34p6pah7q04jjuyj3mxu9v98277',
+      walletAddress: '0x68ffd110d64bc38773f2cfd12b5ff46cd4700bca',
+    },
     {
       label: 'flows testing',
       //   {
@@ -70,18 +82,9 @@ test('predictWalletAddress computes expected address', async t => {
       //     gasServiceAddress: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
       //     owner: 'agoric11028'
       //   }
-      contracts: axelarConfigTestnet.Arbitrum.contracts,
+      contracts: axelarConfig.Arbitrum.contracts,
       owner: 'agoric11028',
       walletAddress: '0x36b64aa4b7023599ec4ea8dc97bfa86f68769c87',
-    },
-    {
-      label: 'de3b64a',
-      // from https://github.com/Agoric/agoric-sdk/commit/de3b64ab64f0055c7106a4011276567b05ae200e
-      // which has '0x8fcc8340520552c3cc861acaaa752e2d38bff2bb'
-      // how did it get that???
-      contracts: contractsMock.Avalanche,
-      owner: 'agoric1wrfh296eu2z34p6pah7q04jjuyj3mxu9v98277',
-      walletAddress: '0x68ffd110d64bc38773f2cfd12b5ff46cd4700bca',
     },
   ];
 
