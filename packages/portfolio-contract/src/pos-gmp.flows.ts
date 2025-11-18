@@ -74,21 +74,22 @@ export const provideEVMAccount = (
   const pId = pk.reader.getPortfolioId();
   const traceChain = trace.sub(`portfolio${pId}`).sub(chainName);
 
-  const predictAddress = () => {
+  const predictAddress = (owner: Bech32Address) => {
+    const contracts = ctx.contracts[chainName];
     const remoteAddress = predictWalletAddress({
-      owner: lca.getAddress().value as any, // TODO fromBech32?
-      factoryAddress: ctx.contracts[chainName].factory,
-      gasServiceAddress: ctx.contracts[chainName].gasService,
-      gatewayAddress: ctx.contracts[chainName].gateway,
+      owner,
+      factoryAddress: contracts.factory,
+      gasServiceAddress: contracts.gasService,
+      gatewayAddress: contracts.gateway,
       walletBytecode: ctx.walletBytecode,
     });
-    const chainId: CaipChainId = `${chainInfo.namespace}:${chainInfo.reference}`;
     const info: GMPAccountInfo = {
       namespace: 'eip155',
       chainName,
-      chainId,
+      chainId: `${chainInfo.namespace}:${chainInfo.reference}`,
       remoteAddress,
     };
+    traceChain('CREATE2', info.remoteAddress, 'for', owner);
     return info;
   };
 
@@ -116,7 +117,7 @@ export const provideEVMAccount = (
   };
 
   if (!pk.reader.hasGMPInfo(chainName)) {
-    const info = predictAddress();
+    const info = predictAddress(lca.getAddress().value);
     pk.manager.setAccountInfo(info);
 
     const ready = pk.manager.reservePendingAccount(
