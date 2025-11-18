@@ -122,10 +122,5 @@ export const predictWalletAddress = ({
     salt,
     initCodeHash,
   });
-  console.error(
-    'predictWalletAddress',
-    { gatewayAddress, gasServiceAddress, owner, walletAddress: out },
-    Error('show stack'),
-  );
   return out;
 };
