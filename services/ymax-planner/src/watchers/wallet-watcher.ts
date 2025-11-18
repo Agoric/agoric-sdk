@@ -5,6 +5,7 @@ import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
+  type WatcherTimeoutOptions,
 } from '../support.ts';
 import { TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
 import {
@@ -59,11 +60,7 @@ export const watchSmartWalletTx = ({
   log = () => {},
   setTimeout = globalThis.setTimeout,
   signal,
-}: SmartWalletWatch & {
-  timeoutMs?: number;
-  setTimeout?: typeof globalThis.setTimeout;
-  signal?: AbortSignal;
-}): Promise<boolean> => {
+}: SmartWalletWatch & WatcherTimeoutOptions): Promise<boolean> => {
   return new Promise(resolve => {
     if (signal?.aborted) {
       resolve(false);
@@ -188,10 +185,12 @@ export const lookBackSmartWalletTx = async ({
       },
     );
 
-    if (!matchingEvent) log(`No matching SmartWalletCreated event found`);
+    if (!matchingEvent) {
+      log(`No matching SmartWalletCreated event found`);
+      return false;
+    }
     deleteTxBlockLowerBound(kvStore, txId);
-
-    return !!matchingEvent;
+    return true;
   } catch (error) {
     log(`Error:`, error);
     return false;

@@ -5,6 +5,7 @@ import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
+  type WatcherTimeoutOptions,
 } from '../support.ts';
 import { TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
 import {
@@ -76,11 +77,7 @@ export const watchCctpTransfer = ({
   log = () => {},
   setTimeout = globalThis.setTimeout,
   signal,
-}: CctpWatch & {
-  timeoutMs?: number;
-  setTimeout?: typeof globalThis.setTimeout;
-  signal?: AbortSignal;
-}): Promise<boolean> => {
+}: CctpWatch & WatcherTimeoutOptions): Promise<boolean> => {
   return new Promise(resolve => {
     if (signal?.aborted) {
       resolve(false);
