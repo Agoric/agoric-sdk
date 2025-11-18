@@ -10,7 +10,6 @@ import type { Timestamp } from '@agoric/time';
 import type { QueryManyFn } from '@agoric/vats/src/localchain.js';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { Passable } from '@endo/marshal';
-import type { Vow } from '@agoric/vow';
 import type {
   AgoricChainMethods,
   CosmosChainAccountMethods,
@@ -22,6 +21,8 @@ import type {
   KnownNamespace,
   NobleMethods,
   Bech32Address,
+  ProgressTracker,
+  ProgressReport,
 } from './types.js';
 import type { ResolvedContinuingOfferResult } from './utils/zoe-tools.js';
 
@@ -251,12 +252,23 @@ export interface OrchestrationAccountCommon {
   getBalance: (denom: DenomArg) => Promise<DenomAmount>;
 
   /**
+   * @returns a progressTracker that can be used to give incremental updates to an
+   * orchestration client.
+   */
+  makeProgressTracker: (initialMeta?: ProgressReport) => ProgressTracker;
+
+  /**
    * Transfer amount to another account on the same chain. The promise settles when the transfer is complete.
    * @param toAccount - the account to send the amount to. MUST be on the same chain
    * @param amount - the amount to send
+   * @param [opts] - optional progressTracker to track the operation progress
    * @returns void
    */
-  send: (toAccount: AccountIdArg, amount: AmountArg) => Promise<void>;
+  send: (
+    toAccount: AccountIdArg,
+    amount: AmountArg,
+    opts?: { progressTracker?: ProgressTracker },
+  ) => Promise<unknown>;
 
   /**
    * Transfer multiple amounts to another account on the same chain. The promise settles when the transfer is complete.
@@ -267,7 +279,8 @@ export interface OrchestrationAccountCommon {
   sendAll: (
     toAccount: CosmosChainAddress,
     amounts: AmountArg[],
-  ) => Promise<void>;
+    opts?: { progressTracker?: ProgressTracker },
+  ) => Promise<unknown>;
 
   /**
    * Transfer an amount to another account, typically on another chain.
@@ -275,7 +288,7 @@ export interface OrchestrationAccountCommon {
    * @param amount - the amount to transfer. Can be provided as pure data using denoms or as ERTP Amounts.
    * @param destination - the account to transfer the amount to.
    * @param [opts] - an optional memo to include with the transfer, which could drive custom PFM behavior, and timeout parameters
-   * @returns {Promise<any>} The promise fulfills with the successful acknowledgement of the transfer
+   * @returns {Promise<unknown>} The promise fulfills with the successful acknowledgement of the transfer
    * @throws {Error} if route is not determinable, asset is not recognized, or
    * the transfer is rejected (insufficient funds, timeout, error ack)
    */
@@ -283,24 +296,7 @@ export interface OrchestrationAccountCommon {
     destination: AccountIdArg,
     amount: AmountArg,
     opts?: IBCMsgTransferOptions,
-  ) => Promise<any>;
-
-  /**
-   * Transfer an amount to another account, typically on another chain.
-   * @param destination - the account to transfer the amount to.
-   * @param amount - the amount to transfer. Can be provided as pure data using denoms or as ERTP Amounts.
-   * @param [opts] - an optional memo to include with the transfer, which could drive custom PFM behavior, and timeout parameters
-   * @returns Promise<resultMeta> The promise fulfills with resultMeta where
-   * .meta is metadata about transfer on sending, and the resultMeta.result
-   * fulfills with a completion message.
-   * @throws {Error} if route is not determinable, asset is not recognized, or
-   * the transfer is rejected (insufficient funds, timeout)
-   */
-  transferWithMeta: (
-    destination: AccountIdArg,
-    amount: AmountArg,
-    opts?: IBCMsgTransferOptions,
-  ) => Promise<{ result: Vow<any> | Promise<any>; meta: Record<string, any> }>;
+  ) => Promise<unknown>;
 
   /**
    * Transfer an amount to another account in multiple steps. The promise settles when
@@ -309,7 +305,7 @@ export interface OrchestrationAccountCommon {
    * @param msg - the transfer message, including follow-up steps
    * @returns void
    */
-  transferSteps: (amount: AmountArg, msg: TransferMsg) => Promise<void>;
+  transferSteps: (amount: AmountArg, msg: TransferMsg) => Promise<unknown>;
 
   /**
    * Returns `invitationMakers` and `publicSubscribers` to the account

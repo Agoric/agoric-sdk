@@ -40,19 +40,44 @@ import type {
   AccountId,
   AmountArg,
   BaseChainInfo,
+  CaipChainId,
   CosmosChainAddress,
   Denom,
   DenomAmount,
+  ProgressTracker,
 } from './types.js';
 
-export type MetaTrafficEntry<
-  P extends
-    keyof NetworkEndpoints['absolute'] = keyof NetworkEndpoints['absolute'],
+/**
+ * Logical record of Network API traffic for a specific data packet sent between
+ * two chains.
+ */
+export type TrafficEntry<
+  /** Source Protocol (like `'ibc'`) */
+  SP extends keyof NetworkEndpoints = keyof NetworkEndpoints,
+  /** Destination Protocol */
+  DP extends keyof NetworkEndpoints = SP,
 > = {
+  /** Logical operation name for debugging, e.g. 'IBC transfer' */
   op: string;
-  src: NetworkEndpoints['absolute'][P];
-  dst: NetworkEndpoints['absolute'][P];
-  seq: number | bigint | string | null;
+  /** CAIP-2 chain ID of source chain */
+  srcChainId: CaipChainId;
+  /** Network API endpoint info for source chain */
+  src: NetworkEndpoints[SP];
+  /** CAIP-2 chain ID of destination chain */
+  dstChainId: CaipChainId;
+  /** Network API endpoint info for destination chain */
+  dst: NetworkEndpoints[DP];
+  /** Sequence number to match sent packet to received acknowledgement */
+  seq: { status: 'pending' | 'unknown' } | number | bigint | string;
+};
+
+export type MetaWithTraffic = Record<string, any> & {
+  traffic?: TrafficEntry[];
+};
+
+export type SendTxOptions = Partial<Omit<TxBody, 'messages'>> & {
+  sendOpts?: SendOptions;
+  progressTracker?: ProgressTracker;
 };
 
 /**
@@ -225,7 +250,7 @@ export interface StakingAccountActions {
   delegate: (
     validator: CosmosValidatorAddress,
     amount: AmountArg,
-  ) => Promise<void>;
+  ) => Promise<unknown>;
 
   /**
    * Redelegate from one delegator to another.
@@ -239,7 +264,7 @@ export interface StakingAccountActions {
     srcValidator: CosmosValidatorAddress,
     dstValidator: CosmosValidatorAddress,
     amount: AmountArg,
-  ) => Promise<void>;
+  ) => Promise<unknown>;
 
   /**
    * Undelegate multiple delegations (concurrently). To delegate independently, pass an array with one item.
@@ -278,22 +303,16 @@ export interface IcaAccountMethods {
    * Submit a transaction on behalf of the remote account for execution on the remote chain.
    * @param msgs - records for the transaction
    * @param [opts] - optional parameters for the Tx. use `opts.sendOpts.relativeTimeoutNs` to specify a timeout for the ICA tx packet
-   * @returns acknowledgement string
+   * @returns base64 protobuf responses for tryDecodeMessages
    */
-  executeEncodedTx: (
-    msgs: AnyJson[],
-    opts?: Partial<Omit<TxBody, 'messages'>> & { sendOpts?: SendOptions },
-  ) => Promise<string>;
+  executeEncodedTx: (msgs: AnyJson[], opts?: SendTxOptions) => Promise<string>;
   /**
    * Submit a transaction on behalf of the remote account for execution on the remote chain.
    * @param msgs - records for the transaction
    * @param [opts] - optional parameters for the Tx. use `opts.sendOpts.relativeTimeoutNs` to specify a timeout for the ICA tx packet
-   * @returns acknowledgement string
+   * @returns decoded responses or Any if unknown
    */
-  executeEncodedTxWithMeta: (
-    msgs: AnyJson[],
-    opts?: Partial<Omit<TxBody, 'messages'>> & { sendOpts?: SendOptions },
-  ) => Promise<{ result: Promise<string>; meta: Record<string, any> }>;
+  evaluateTx: (msgs: AnyJson[], opts?: SendTxOptions) => Promise<unknown[]>;
   /**
    * Deactivates the ICA account by closing the ICA channel. The `Port` is
    * persisted so holders can always call `.reactivate()` to re-establish a new
@@ -325,7 +344,7 @@ export interface IcaAccount extends IcaAccountMethods {
   /**
    * Submit a transaction on behalf of the remote account for execution on the remote chain.
    * @param msgs - records for the transaction
-   * @returns acknowledgement string
+   * @returns acknowledgement
    */
   executeTx: (msgs: TypedJson[]) => Promise<string>;
   /** @returns the address of the remote channel */
@@ -352,7 +371,8 @@ export interface NobleMethods {
     amount: AmountArg,
     /** if specified, only this account can call MsgReceive on the destination chain */
     caller?: AccountId,
-  ) => Promise<void>;
+    opts?: SendTxOptions,
+  ) => Promise<unknown>;
 }
 
 // TODO support StakingAccountQueries
@@ -408,6 +428,7 @@ export type IBCMsgTransferOptions = {
     timeout?: ForwardInfo['forward']['timeout'];
     retries?: ForwardInfo['forward']['retries'];
   };
+  progressTracker?: ProgressTracker;
 };
 
 /**
