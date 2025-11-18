@@ -32,7 +32,11 @@ import {
   TypedJsonShape,
 } from '../typeGuards.js';
 import { maxClockSkew, toDenomAmount } from '../utils/cosmos.js';
-import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
+import {
+  addTrafficEntries,
+  orchestrationAccountMethods,
+  trafficTransforms,
+} from '../utils/orchestrationAccount.js';
 import { makeVowExoHelpers } from '../utils/exo-helpers.js';
 import { makeTimestampHelper } from '../utils/time.js';
 import { preparePacketTools } from './packet-tools.js';
@@ -73,7 +77,9 @@ const MsgSend = CodecHelper(MsgSendType);
  * @import {Matcher} from '@endo/patterns';
  * @import {ChainHub} from './chain-hub.js';
  * @import {PacketTools} from './packet-tools.js';
+ * @import {SliceDescriptor} from '../utils/orchestrationAccount.js';
  * @import {ZoeTools} from '../utils/zoe-tools.js';
+ * @import {MakeProgressTracker} from '../utils/progress.js';
  */
 
 /**
@@ -171,11 +177,13 @@ const ErrTraceNotFound = 'denomination trace not found';
  * @param {ChainHub} powers.chainHub
  * @param {Remote<LocalChain>} powers.localchain
  * @param {ZoeTools} powers.zoeTools
+ * @param {MakeProgressTracker} powers.makeProgressTracker
  */
 export const prepareLocalOrchestrationAccountKit = (
   zone,
   {
     makeRecorderKit,
+    makeProgressTracker,
     zcf,
     timerService,
     vowTools,
@@ -507,7 +515,7 @@ export const prepareLocalOrchestrationAccountKit = (
          * }} ctx
          */
         onFulfilled(
-          [_srcChainInfo, _dstChainInfo, { transferChannel }, timeoutTimestamp],
+          [srcChainInfo, dstChainInfo, { transferChannel }, timeoutTimestamp],
           { opts, route },
         ) {
           const { forwardInfo, ...transferDetails } = route;
@@ -555,10 +563,40 @@ export const prepareLocalOrchestrationAccountKit = (
             transferMsg,
           );
 
+          /** @type {SliceDescriptor | undefined} */
+          let trafficSlice;
+          const progressTracker = opts?.progressTracker;
+          if (progressTracker) {
+            const priorReport = progressTracker.getCurrentProgressReport();
+
+            const { traffic, slice } = addTrafficEntries(
+              priorReport.traffic,
+              // Sequence number is not known at this stage; it will be
+              // populated by IBCTransferSenderKit['responseWatcher'] once the
+              // transfer packet is sent and the sequence number is assigned.
+              trafficTransforms.IbcTransfer.start(
+                `${srcChainInfo.namespace}:${srcChainInfo.reference}`,
+                `${dstChainInfo.namespace}:${dstChainInfo.reference}`,
+                transferChannel,
+              ),
+            );
+            trafficSlice = slice;
+
+            const newMeta = {
+              ...priorReport,
+              traffic,
+            };
+
+            progressTracker.update(newMeta);
+          }
+
           // Begin capturing packets, send the transfer packet, then return a
           // vow that rejects unless the packet acknowledgment comes back and is
           // verified.
-          return holder.sendThenWaitForAck(sender);
+          return holder.sendThenWaitForAck(sender, {
+            ...opts,
+            trafficSlice,
+          });
         },
       },
       extractFirstResultWatcher: {
@@ -700,6 +738,11 @@ export const prepareLocalOrchestrationAccountKit = (
         },
       },
       holder: {
+        /** @type {OrchestrationAccountCommon['makeProgressTracker']} */
+        makeProgressTracker() {
+          return makeProgressTracker();
+        },
+
         /** @type {HostOf<OrchestrationAccountCommon['asContinuingOffer']>} */
         asContinuingOffer() {
           // getPublicTopics resolves promptly (same run), so we don't need a watcher

@@ -1,3 +1,4 @@
+// @ts-check
 import { makeMarshal, decodeToJustin } from '@endo/marshal';
 import { Shape as NetworkShape } from '@agoric/network';
 import { M, matches } from '@endo/patterns';
@@ -21,9 +22,11 @@ const just = obj => {
  * @import {Pattern} from '@endo/patterns';
  * @import {EVow, Remote, Vow, VowKit, VowResolver, VowTools} from '@agoric/vow';
  * @import {LocalChainAccount} from '@agoric/vats/src/localchain.js';
+ * @import {ProgressTracker} from '../types.js';
  * @import {IBCEvent, VTransferIBCEvent} from '@agoric/vats';
  * @import {TargetApp, TargetRegistration} from '@agoric/vats/src/bridge-target.js';
  * @import {IBCMsgTransferOptions} from '../cosmos-api.js';
+ * @import {SliceDescriptor} from '../utils/orchestrationAccount.js';
  * @import {Zone} from '@agoric/base-zone';
  */
 
@@ -48,6 +51,8 @@ const just = obj => {
  * @typedef {object} PacketOptions
  * @property {string} [opName]
  * @property {PacketTimeout} [timeout]
+ * @property {ProgressTracker} [progressTracker]
+ * @property {SliceDescriptor} [trafficSlice]
  */
 
 /**
