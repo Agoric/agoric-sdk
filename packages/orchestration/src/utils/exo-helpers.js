@@ -4,7 +4,10 @@ import { M } from '@endo/patterns';
 /**
  * @import {EVow, Vow, VowTools, Promissory} from '@agoric/vow';
  * @import {HostInterface} from '@agoric/async-flow';
+ * <<<<<<< HEAD
  * @import {InterfaceGuard, MethodGuard} from '@endo/patterns';
+ * =======
+ * >>>>>>> 8ffa29e4b6 (feat(orchestration): add `ProgressTracker` and polish)
  */
 
 /**
