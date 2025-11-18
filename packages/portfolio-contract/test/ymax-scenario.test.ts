@@ -92,7 +92,8 @@ const rebalanceScenarioMacro = test.macro({
       const { flow: moves } = { flow: [], ...offerArgs };
       const { transmitVTransferEvent } = common.utils;
 
-      await transmitVTransferEvent('acknowledgementPacket', -1); // NFA
+      // Noble forwarding account (NFA)
+      await transmitVTransferEvent('acknowledgementPacket', -1);
 
       const evmInvolved = moves.some(
         move => move.src === '@Arbitrum' || move.dest === '@Arbitrum',
