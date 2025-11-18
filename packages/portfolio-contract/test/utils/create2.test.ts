@@ -19,6 +19,9 @@ const GASSERVICE_ADDRESS =
   '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6' as const;
 
 test('predictWalletAddress computes expected address', async t => {
+  const { bytecode } = JSON.parse(
+    await asset('@aglocal/portfolio-deploy/tools/evm-orch/Wallet.json'),
+  );
   const cases = [
     {
       label: 'tx1',
@@ -28,6 +31,7 @@ test('predictWalletAddress computes expected address', async t => {
         gasService: GASSERVICE_ADDRESS,
         gateway: GATEWAY_ADDRESS,
       },
+      walletBytecode: bytecode,
       owner: 'agoric1u4yhqp9tp58hx3kkg2ktj4d9shpukg2q3cx8nv',
       walletAddress: '0xed49fc80bfe226f6652f556de53b88ca81f22637',
     },
@@ -41,6 +45,7 @@ test('predictWalletAddress computes expected address', async t => {
         gasService: GASSERVICE_ADDRESS,
         gateway: GATEWAY_ADDRESS,
       },
+      walletBytecode: bytecode,
       owner: 'agoric1wrfh296eu2z34p6pah7q04jjuyj3mxu9v98277',
       walletAddress: '0x68ffd110d64bc38773f2cfd12b5ff46cd4700bca',
     },
@@ -56,6 +61,7 @@ test('predictWalletAddress computes expected address', async t => {
         gasService: axelarConfigTestnet.Avalanche.contracts.gasService,
         gateway: axelarConfigTestnet.Avalanche.contracts.gateway,
       },
+      walletBytecode: bytecode,
       // Owner: agoric10utru593dspjwfewcgdak8lvp9tkz0xttvcnxv
       //   Wallet Address: 0x1750aC3a5B2FA7217c9b413A4d0BC37EE6440b70
       //   Salt: 0xc588432f2a0ef17c1e3e1eef64e0181fba5fc6cf443dd71f422e65282867fb88
@@ -72,6 +78,7 @@ test('predictWalletAddress computes expected address', async t => {
         gasService: GASSERVICE_ADDRESS,
         gateway: GATEWAY_ADDRESS,
       },
+      walletBytecode: bytecode,
       owner: 'agoric1wrfh296eu2z34p6pah7q04jjuyj3mxu9v98277',
       walletAddress: '0x68ffd110d64bc38773f2cfd12b5ff46cd4700bca',
     },
@@ -82,17 +89,20 @@ test('predictWalletAddress computes expected address', async t => {
       //     gasServiceAddress: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
       //     owner: 'agoric11028'
       //   }
-      contracts: axelarConfig.Arbitrum.contracts,
+      contracts: contractsMock.Arbitrum,
       owner: 'agoric11028',
       walletAddress: '0x36b64aa4b7023599ec4ea8dc97bfa86f68769c87',
+      walletBytecode: '0x1234',
     },
   ];
 
-  const { bytecode: walletBytecode } = JSON.parse(
-    await asset('@aglocal/portfolio-deploy/tools/evm-orch/Wallet.json'),
-  );
-
-  for (const { label, owner, walletAddress, contracts } of cases) {
+  for (const {
+    label,
+    owner,
+    walletAddress,
+    contracts,
+    walletBytecode,
+  } of cases) {
     const {
       factory: factoryAddress,
       gateway: gatewayAddress,
@@ -102,7 +112,7 @@ test('predictWalletAddress computes expected address', async t => {
     t.log(label, { factoryAddress, gatewayAddress, gasServiceAddress });
     const actual = predictWalletAddress({
       factoryAddress,
-      walletBytecode,
+      walletBytecode: walletBytecode as any,
       gatewayAddress,
       gasServiceAddress,
       owner,
