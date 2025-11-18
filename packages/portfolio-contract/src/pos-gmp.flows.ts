@@ -232,17 +232,14 @@ export const CCTP = {
 harden(CCTP);
 
 /**
- * Sends a GMP call to create a remote account on an EVM chain.
+ * Invoke EVM Wallet Factory contract to create a remote account
+ * at a predicatble address.
  *
- * The payload is encoded as a uint256 gas amount, which the factory contract
- * decodes and uses for the return message to Agoric.
- *
- * @see {@link https://github.com/agoric-labs/agoric-to-axelar-local/blob/3e5c4a140bf5e9f1606c72f54815d61231ef1fa5/packages/axelar-local-dev-cosmos/src/__tests__/contracts/Factory.sol#L121-L144 Factory.sol (lines 121–144)}
+ * @see {@link https://github.com/agoric-labs/agoric-to-axelar-local/blob/c3305c4/packages/axelar-local-dev-cosmos/src/__tests__/contracts/Factory.sol#L137-L150 Factory.sol (_execute method)}
  *
  * The factory contract:
- * 1. Decodes payload as uint256: `uint256 gasAmount = abi.decode(payload, (uint256))`
- * 2. Creates the smart wallet: `createSmartWallet(sourceAddress)`
- * 3. Sends response back to Agoric with the provided gas amount: `_send(..., gasAmount)`
+ * 1. Creates the smart wallet: `createSmartWallet(sourceAddress)`
+ * 2. Emits a SmartWalletCreated event.
  */
 export const sendMakeAccountCall = async (
   dest: { axelarId: string; remoteAddress: EVMT['address'] },
