@@ -4,8 +4,21 @@
 
 import { objectMap } from '@endo/common/object-map.js';
 
-/** @import {ClusterName} from '@agoric/internal'; */
-/** @import {CaipChainId} from '@agoric/orchestration'; */
+/**
+ * @import {ClusterName} from '@agoric/internal';
+ * @import {CaipChainId} from '@agoric/orchestration';
+ * @import {FlowConfig} from './types.js';
+ */
+
+/**
+ * Configuration arguments for newly-created portfolio flows.
+ *
+ * This is only a default so that existing flows continue to behave as before
+ * for replay fidelity.
+ *
+ * @type {FlowConfig | undefined}
+ */
+export const DEFAULT_FLOW_CONFIG = undefined;
 
 /**
  * Yield protocols for Proof of Concept.

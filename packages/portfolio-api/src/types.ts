@@ -14,6 +14,17 @@ import type { SupportedChain, YieldProtocol } from './constants.js';
 import type { InstrumentId } from './instruments.js';
 import type { PublishedTx } from './resolver.js';
 
+/**
+ * Feature flags to handle contract upgrade flow compatibility.
+ */
+export type FlowFeatures = Record<string, never>;
+
+/**
+ * Configuration options for flows.
+ */
+export type FlowConfig = {
+  features?: FlowFeatures;
+};
 export type SeatKeyword = 'Cash' | 'Deposit';
 
 /**
