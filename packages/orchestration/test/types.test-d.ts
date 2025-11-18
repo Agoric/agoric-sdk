@@ -8,6 +8,8 @@ import type {
   JsonSafe,
   MessageBody,
   Proto3CodecHelper,
+  ResponseTypeUrl,
+  TypeFromUrl,
 } from '@agoric/cosmic-proto';
 import type {
   QueryAllBalancesResponse as QueryAllBalancesResponseType,
@@ -25,7 +27,7 @@ import type {
   TargetRegistration,
 } from '@agoric/vats/src/bridge-target.js';
 import {
-  prepareCosmosOrchestrationAccount,
+  prepareCosmosOrchestrationAccount as prepareCOA,
   type CosmosOrchestrationAccount,
 } from '../src/exos/cosmos-orchestration-account.js';
 import type { LocalOrchestrationAccountKit } from '../src/exos/local-orchestration-account.js';
@@ -44,7 +46,7 @@ import type {
   StakingAccountActions,
   KnownChains,
 } from '../src/types.js';
-import { Any } from '../src/utils/codecs.js';
+import { Any as OrchAny } from '../src/utils/codecs.js';
 import type { ResolvedContinuingOfferResult } from '../src/utils/zoe-tools.js';
 import { withChainCapabilities } from '../src/chain-capabilities.js';
 import fetchedChainInfo from '../src/fetched-chain-info.js';
@@ -63,6 +65,7 @@ const QueryBalanceRequest: Proto3CodecHelper<'/cosmos.bank.v1beta1.QueryBalanceR
   null as any;
 const QueryBalanceResponse: Proto3CodecHelper<'/cosmos.bank.v1beta1.QueryBalanceResponse'> =
   null as any;
+const Any: typeof OrchAny = null as any;
 
 const anyVal = null as any;
 
@@ -150,6 +153,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
     readonly [QueryAllBalancesResponseType, MsgDelegateResponseType]
   >(resps);
 
+  const prepareCosmosOrchestrationAccount: typeof prepareCOA = null as any;
   const makeCosmosOrchestrationAccount = prepareCosmosOrchestrationAccount(
     anyVal,
     anyVal,
@@ -384,6 +388,13 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
       opts?: Partial<Omit<TxBody, 'messages'>>,
     ) => Promise<string>
   >(account.executeEncodedTx);
+
+  expectType<
+    <TUS extends readonly (keyof TypeFromUrl | unknown)[]>(
+      msgs: Readonly<{ [K in keyof TUS]: AnyJson<TUS[K]> }>,
+      opts?: CosmosActionOptions,
+    ) => Promise<{ [K in keyof TUS]: MessageBody<ResponseTypeUrl<TUS[K]>> }>
+  >(account.executeTxProto3);
 
   // Verify delegate is available via stakingTokens parameter
   expectType<

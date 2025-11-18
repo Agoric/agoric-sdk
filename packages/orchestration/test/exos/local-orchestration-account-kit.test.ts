@@ -10,7 +10,11 @@ import {
 } from '@agoric/vats/tools/fake-bridge.js';
 import { heapVowTools, heapVowE as VE } from '@agoric/vow/vat.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
-import type { IBCMsgTransferOptions } from '../../src/cosmos-api.js';
+import { isVow } from '@agoric/vow/src/vow-utils.js';
+import type {
+  IBCMsgTransferOptions,
+  TrafficEntry,
+} from '../../src/cosmos-api.js';
 import { PFM_RECEIVER } from '../../src/exos/chain-hub.js';
 import fetchedChainInfo from '../../src/fetched-chain-info.js';
 import type {
@@ -272,6 +276,55 @@ test('transfer', async t => {
       timeout: '10m',
     },
   });
+
+  const progressTracker = await VE(account).makeProgressTracker();
+  const multiHopResult = await doTransfer(aDenomAmount, dydxDest, {
+    progressTracker,
+  });
+
+  t.is(latestTxMsg().receiver, PFM_RECEIVER, 'defaults to "pfm" receiver');
+  t.deepEqual(JSON.parse(latestTxMsg().memo), {
+    forward: {
+      receiver: 'dydx1test',
+      port: 'transfer',
+      channel: 'channel-33',
+      retries: 3,
+      timeout: '10m',
+    },
+  });
+
+  t.assert(!isVow(multiHopResult), 'multiHopResult is not vow');
+  t.is(
+    await when(multiHopResult),
+    ICS20_TRANSFER_SUCCESS_RESULT,
+    'multiHopResult resolves to ICS20_TRANSFER_SUCCESS',
+  );
+
+  const multiHopMeta = await VE(progressTracker).finish();
+  t.deepEqual(
+    multiHopMeta,
+    {
+      traffic: [
+        {
+          op: 'transfer',
+          src: [
+            'ibc',
+            ['chain', 'cosmos:agoric-3'],
+            ['port', 'transfer'],
+            ['channel', 'channel-62'],
+          ],
+          dst: [
+            'ibc',
+            ['chain', 'cosmos:noble-1'],
+            ['port', 'transfer'],
+            ['channel', 'channel-21'],
+          ],
+          seq: 7,
+        },
+      ] as TrafficEntry[],
+    },
+    'we only receive meta for the first hop of a PFM-forwarded transfer',
+  );
 
   t.log('accepts pfm `forwardOpts`');
   const intermediateRecipient: CosmosChainAddress = {
