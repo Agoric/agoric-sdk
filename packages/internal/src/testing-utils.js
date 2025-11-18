@@ -35,7 +35,8 @@ export const inspectMapStore = store => {
   const obj = {};
   for (const key of store.keys()) {
     const value = store.get(key);
-    const hasKeys = typeof value === 'object' && 'keys' in value;
+    const hasKeys =
+      typeof value === 'object' && value != null && 'keys' in value;
     const index = stringOrTag(key);
     if (hasKeys && 'get' in value) {
       obj[index] = inspectMapStore(value);
