@@ -123,15 +123,15 @@ export const provideEVMAccount = (
       chainName,
     ) as unknown as Promise<GMPAccountInfo>;
 
-    void installContract();
-    return { ...info, ready };
+    return { ...info, ready: installContract().then(_ => ready) };
   }
   const info = pk.reader.getGMPInfo(chainName);
 
   if (pk.reader.accountCreationFailed(chainName)) {
-    pk.manager.resolveAccount(info);
-    void installContract();
-    return { ...info, ready: Promise.resolve(info) };
+    const ready = pk.manager.resetPendingAccount(
+      chainName,
+    ) as unknown as Promise<GMPAccountInfo>;
+    return { ...info, ready: installContract().then(_ => ready) };
   }
 
   return { ...info, ready: Promise.resolve(info) };
