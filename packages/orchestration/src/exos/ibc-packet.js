@@ -147,6 +147,18 @@ export const prepareIBCTransferSender = (zone, { watch, makeIBCReplyKit }) => {
           );
           const resultV = watch(ackDataV, this.facets.verifyTransferSuccess);
 
+          const { progressTracker, trafficEntryIndex } = opts || {};
+          if (progressTracker && trafficEntryIndex != null) {
+            const priorReport = progressTracker.getCurrentProgressReport();
+            const report = {
+              ...priorReport,
+              traffic: priorReport.traffic?.map((entry, i) =>
+                i === trafficEntryIndex ? { ...entry, seq: sequence } : entry,
+              ),
+            };
+            progressTracker.update(harden(report));
+          }
+
           return harden({ ...rest, resultV });
         },
       },

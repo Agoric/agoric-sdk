@@ -2,7 +2,7 @@ import { Shape as NetworkShape } from '@agoric/network';
 import { M } from '@endo/patterns';
 
 /**
- * @import {EVow, Vow, VowTools, Promissory, Fulfilled} from '@agoric/vow';
+ * @import {EVow, Vow, VowTools, Promissory} from '@agoric/vow';
  * @import {HostInterface} from '@agoric/async-flow';
  * @import {InterfaceGuard, MethodGuard} from '@endo/patterns';
  */
