@@ -210,10 +210,12 @@ export const lookBackCctp = async ({
       },
     );
 
-    if (!matchingEvent) log(`No matching transfer found`);
+    if (!matchingEvent) {
+      log(`No matching transfer found`);
+      return false;
+    }
     deleteTxBlockLowerBound(kvStore, txId);
-
-    return !!matchingEvent;
+    return true;
   } catch (error) {
     log(`Error:`, error);
     return false;
