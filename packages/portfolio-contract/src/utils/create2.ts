@@ -117,9 +117,15 @@ export const predictWalletAddress = ({
     owner,
   });
 
-  return computeCreate2Address({
+  const out = computeCreate2Address({
     deployer: normalizeHex(factoryAddress, 20),
     salt,
     initCodeHash,
   });
+  console.error(
+    'predictWalletAddress',
+    { gatewayAddress, gasServiceAddress, owner, walletAddress: out },
+    Error('show stack'),
+  );
+  return out;
 };
