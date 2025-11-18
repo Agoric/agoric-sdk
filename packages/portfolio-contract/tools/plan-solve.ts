@@ -1,7 +1,7 @@
 import jsLPSolver from 'javascript-lp-solver';
 import type { IModel, IModelVariableConstraint } from 'javascript-lp-solver';
 
-import { Fail } from '@endo/errors';
+import { Fail, annotateError } from '@endo/errors';
 
 import { AmountMath } from '@agoric/ertp';
 import type { Amount, NatAmount } from '@agoric/ertp/src/types.js';
@@ -517,8 +517,13 @@ export const planRebalanceFlow = async (opts: {
   try {
     result = await solveRebalance(model, graph);
   } catch (err) {
-    // If the solver says infeasible, try to produce a clearer message
-    preflightValidateNetworkPlan(network as any, current as any, target as any);
+    try {
+      // If the solver says infeasible, try to produce a clearer message
+      preflightValidateNetworkPlan(network, current, target);
+    } catch (networkValidationErr) {
+      annotateError(networkValidationErr, err.message);
+      throw networkValidationErr;
+    }
     throw err;
   }
   const { flows, detail } = result;
