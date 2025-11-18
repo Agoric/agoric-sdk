@@ -18,7 +18,13 @@ import { objectMap } from '@endo/common/object-map.js';
  *
  * @type {FlowConfig | undefined}
  */
-export const DEFAULT_FLOW_CONFIG = undefined;
+export const DEFAULT_FLOW_CONFIG = {
+  features: {
+    /** Enable ProgressTracker support in new flows. */
+    useProgressTracker: true,
+  },
+};
+harden(DEFAULT_FLOW_CONFIG);
 
 /**
  * Yield protocols for Proof of Concept.

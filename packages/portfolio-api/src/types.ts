@@ -17,7 +17,10 @@ import type { PublishedTx } from './resolver.js';
 /**
  * Feature flags to handle contract upgrade flow compatibility.
  */
-export type FlowFeatures = Record<string, never>;
+export type FlowFeatures = {
+  /** Control `ProgressTracker` support. */
+  useProgressTracker?: boolean;
+};
 
 /**
  * Configuration options for flows.
