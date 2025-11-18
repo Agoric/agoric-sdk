@@ -758,10 +758,12 @@ test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
   const { trader1, common, txResolver, trader2 } = await setupTrader(t);
   const { usdc, bld, poc26 } = common.brands;
 
+  // Portfolio1 (trader2) gets a different CREATE2 address than portfolio0 (trader1)
+  // because they have different agoric local chain addresses
   const addr2 = {
     lca: makeTestAddress(3), // agoric1q...rytxkw
     nobleICA: 'noble1test1',
-    evm: '0xFbb89cC04ffb710b1f645b2cbEda0CE7D93294F4',
+    evm: '0x9d935c48219d075735ea090130045d8693e6273f',
   } as const;
   const amount = usdc.units(3_333.33);
 
