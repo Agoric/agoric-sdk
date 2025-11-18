@@ -8,6 +8,16 @@ import type { CopyTagged, RemotableObject } from '@endo/pass-style';
 export type IsRetryableReason = (reason: any, priorRetryValue: any) => any;
 
 /**
+ * Types that are conceptually similar to Promise<F>.
+ */
+export type Promissory<F> = Promise<F> | PromiseLike<F> | Vow<F>; // s| PromiseStep<F> …etc.
+
+/**
+ * Extract the final fulfilment type from a chain of Promissories.
+ */
+export type Fulfilled<T> = T extends Promissory<infer F> ? Fulfilled<F> : T;
+
+/**
  * Return type of a function that may
  * return a promise or a vow.
  */
@@ -128,7 +138,11 @@ export type VowTools = {
    * fulfilled and rejects when any of the input's promises or vows are rejected
    * with the first rejection reason.
    */
-  all: (maybeVows: unknown[]) => Vow<any[]>;
+  all: <TS extends readonly unknown[]>(
+    maybeVows: TS,
+  ) => Vow<{
+    [K in keyof TS]: Fulfilled<TS[K]>;
+  }>;
   /**
    * Vow-tolerant
    * implementation of Promise.allSettled that takes an iterable of vows and other
@@ -136,19 +150,16 @@ export type VowTools = {
    * the input's promises or vows are settled with an array of settled outcome
    * objects.
    */
-  allSettled: (maybeVows: unknown[]) => Vow<
-    (
-      | {
-          status: 'fulfilled';
-          value: any;
-        }
-      | {
-          status: 'rejected';
-          reason: any;
-        }
-    )[]
-  >;
-  allVows: (maybeVows: unknown[]) => Vow<any[]>;
+  allSettled: <TS extends readonly unknown[]>(
+    maybeVows: TS,
+  ) => Vow<{
+    [K in keyof TS]: PromiseSettledResult<Fulfilled<TS[K]>>;
+  }>;
+  allVows: <TS extends readonly unknown[]>(
+    maybeVows: TS,
+  ) => Vow<{
+    [K in keyof TS]: Fulfilled<TS[K]>;
+  }>;
   /**
    * Convert a vow or promise to a promise, ensuring proper handling of ephemeral promises.
    */

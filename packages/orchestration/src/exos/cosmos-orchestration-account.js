@@ -502,7 +502,7 @@ export const prepareCosmosOrchestrationAccountKit = (
         /**
          * TODO(#1994): Subsume with IcaAccount.executeEncodedTxWithMeta().
          *
-         * @param {[
+         * @param {readonly [
          *   agoric: ChainInfo<'cosmos'>,
          *   la: LocalIbcAddress,
          *   counterparty: CaipChainId,
@@ -740,9 +740,9 @@ export const prepareCosmosOrchestrationAccountKit = (
       },
       transferWithMetaWatcher: {
         /**
-         * @param {[
+         * @param {readonly [
          *   { transferChannel: IBCConnectionInfo['transferChannel'] },
-         *   bigint,
+         *   bigint | undefined,
          * ]} results
          * @param {{
          *   destination: CosmosChainAddress;
@@ -1162,10 +1162,12 @@ export const prepareCosmosOrchestrationAccountKit = (
             );
 
             return watch(
-              allVows([
-                connectionInfoV,
-                timestampHelper.vowOrValueFromOpts(opts),
-              ]),
+              allVows(
+                /** @type {const} */ ([
+                  connectionInfoV,
+                  timestampHelper.vowOrValueFromOpts(opts),
+                ]),
+              ),
               this.facets.transferWithMetaWatcher,
               { opts, token, destination: cosmosDest },
             );
@@ -1221,7 +1223,6 @@ export const prepareCosmosOrchestrationAccountKit = (
         },
         /** @type {HostOf<StakingAccountQueries['getDelegation']>} */
         getDelegation(validator) {
-          // @ts-expect-error XXX string template with generics
           return asVow(() => {
             trace('getDelegation', validator);
             const { chainAddress, icqConnection } = this.state;
@@ -1241,7 +1242,6 @@ export const prepareCosmosOrchestrationAccountKit = (
         },
         /** @type {HostOf<StakingAccountQueries['getDelegations']>} */
         getDelegations() {
-          // @ts-expect-error XXX string template with generics
           return asVow(() => {
             trace('getDelegations');
             const { chainAddress, icqConnection } = this.state;
@@ -1337,7 +1337,6 @@ export const prepareCosmosOrchestrationAccountKit = (
         },
         /** @type {HostOf<StakingAccountQueries['getRewards']>} */
         getRewards() {
-          // @ts-expect-error XXX string template with generics
           return asVow(() => {
             trace('getRewards');
             const { chainAddress, icqConnection } = this.state;
@@ -1393,11 +1392,13 @@ export const prepareCosmosOrchestrationAccountKit = (
             const result = watch(E(acct).executeEncodedTx(msgs, opts));
             const agoric = chainHub.getChainInfo('agoric');
             const la = E(acct).getLocalAddress();
-            const counterparty = `cosmos:${chainAddress.chainId}`;
+            const counterparty = /** @type {const} */ (
+              `cosmos:${chainAddress.chainId}`
+            );
             const ra = E(acct).getRemoteAddress();
 
             return watch(
-              vowTools.all([agoric, la, counterparty, ra]),
+              allVows(/** @type {const} */ ([agoric, la, counterparty, ra])),
               this.facets.attachTxMetaWatcher,
               { result, meta: {} },
               'ibc',
