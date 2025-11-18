@@ -2,6 +2,7 @@ import { makeTracer } from '@agoric/internal';
 import { base64ToBytes, Shape as NetworkShape } from '@agoric/network';
 import { M } from '@endo/patterns';
 import { E } from '@endo/far';
+import { complete } from '../utils/orchestrationAccount.js';
 
 // As specified in ICS20, the success result is a base64-encoded '\0x1' byte.
 export const ICS20_TRANSFER_SUCCESS_BYTES = '\x01';
@@ -146,6 +147,20 @@ export const prepareIBCTransferSender = (zone, { watch, makeIBCReplyKit }) => {
             { opName: 'transfer', ...opts },
           );
           const resultV = watch(ackDataV, this.facets.verifyTransferSuccess);
+
+          const { progressTracker, trafficEntryIndex } = opts || {};
+          if (progressTracker && trafficEntryIndex != null) {
+            const priorReport = progressTracker.getCurrentProgressReport();
+            const report = {
+              ...priorReport,
+              traffic: priorReport.traffic?.map((entry, i) =>
+                i === trafficEntryIndex
+                  ? { ...complete(entry), seq: sequence }
+                  : entry,
+              ),
+            };
+            progressTracker.update(harden(report));
+          }
 
           return harden({ ...rest, resultV });
         },
