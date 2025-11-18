@@ -39,6 +39,14 @@ const replaceOrInit = <K, V>(
   map.set(key, callback(old, key, exists));
 };
 
+/**
+ * Reduce a value by a natural number of basis points, rounding the result down
+ * (e.g., 1 bp of 10k is exactly 1, so subtracting 1 bp from any value up to 10k
+ * reduces it by a full unit).
+ */
+export const applyHaircut = (n: bigint, bps: bigint) =>
+  (n * (10000n - bps)) / 10000n;
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const trace = makeTracer('solve');
 
@@ -442,11 +450,14 @@ export const rebalanceMinCostFlowSteps = async (
           break;
         }
         case 'toUSDN': {
-          // NOTE USDN transfer incurs a fee on output amount in basis points
-          // HACK of subtract 1n in order to avoid rounding errors in Noble
-          // See https://github.com/Agoric/agoric-private/issues/415
+          // USDN transfer imposes a "haircut" fee on the *amount*.
+          // Expose the post-fee net output as `detail.usdnOut`.
+          // TODO: Apply this in both directions per
+          // https://github.com/Agoric/agoric-private/issues/433
+          // HACK: subtract 1n to avoid rounding errors in Noble per
+          // https://github.com/Agoric/agoric-private/issues/415
           const usdnOut =
-            (BigInt(flow) * (10000n - BigInt(edge.variableFee))) / 10000n - 1n;
+            applyHaircut(BigInt(flow), BigInt(edge.variableFee)) - 1n;
           details = { detail: { usdnOut } };
           break;
         }
