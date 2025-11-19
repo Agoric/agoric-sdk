@@ -17,7 +17,6 @@ import type {
   AccountId,
   BaseChainInfo,
   Bech32Address,
-  CaipChainId,
   Chain,
   DenomAmount,
 } from '@agoric/orchestration';
@@ -93,7 +92,7 @@ export const provideEVMAccount = (
     return info;
   };
 
-  const installContract = async () => {
+  const installContract = async (remoteAccount: GMPAccountInfo) => {
     await null;
     try {
       const axelarId = gmp.axelarIds[chainName];
@@ -108,7 +107,15 @@ export const provideEVMAccount = (
       traceChain('send makeAccountCall Axelar fee from', src.value);
       await feeAccount.send(lca.getAddress(), fee);
 
-      await sendMakeAccountCall(target, fee, lca, gmp.chain, ctx.gmpAddresses);
+      await sendMakeAccountCall(
+        ctx,
+        target,
+        fee,
+        lca,
+        gmp.chain,
+        ctx.gmpAddresses,
+        remoteAccount.remoteAddress,
+      );
     } catch (reason) {
       traceChain('failed to makeAccount', reason);
       pk.manager.releaseAccount(chainName, reason);
@@ -127,7 +134,7 @@ export const provideEVMAccount = (
     ready.then(_ => {
       console.log('@@@@ready!!!', info);
     });
-    return { ...info, ready: installContract().then(_ => ready) };
+    return { ...info, ready: installContract(info).then(_ => ready) };
   }
   const info = pk.reader.getGMPInfo(chainName);
 
@@ -135,7 +142,7 @@ export const provideEVMAccount = (
     const ready = pk.manager.resetPendingAccount(
       chainName,
     ) as unknown as Promise<GMPAccountInfo>;
-    return { ...info, ready: installContract().then(_ => ready) };
+    return { ...info, ready: installContract(info).then(_ => ready) };
   }
 
   return { ...info, ready: Promise.resolve(info) };
@@ -246,11 +253,13 @@ harden(CCTP);
  * 2. Emits a SmartWalletCreated event.
  */
 export const sendMakeAccountCall = async (
+  ctx: PortfolioInstanceContext,
   dest: { axelarId: string; remoteAddress: EVMT['address'] },
   fee: DenomAmount,
   lca: LocalAccount,
   gmpChain: Chain<{ chainId: string }>,
   gmpAddresses: GmpAddresses,
+  expectedAddr: `0x${string}`,
 ) => {
   const { AXELAR_GMP, AXELAR_GAS } = gmpAddresses;
   const memo: AxelarGmpOutgoingMemo = {
@@ -261,8 +270,16 @@ export const sendMakeAccountCall = async (
     fee: { amount: String(fee.value), recipient: AXELAR_GAS },
   };
   const { chainId } = await gmpChain.getChainInfo();
+
+  const { result } = ctx.resolverClient.registerTransaction(
+    TxType.MAKE_ACCOUNT,
+    `${chainId as `${string}:${string}`}:${dest.remoteAddress}`,
+    undefined,
+    expectedAddr,
+  );
   const gmp = { chainId, value: AXELAR_GMP, encoding: 'bech32' as const };
   await lca.transfer(gmp, fee, { memo: JSON.stringify(memo) });
+  await result;
 };
 
 /**
