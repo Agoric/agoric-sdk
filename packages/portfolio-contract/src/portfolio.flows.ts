@@ -514,7 +514,9 @@ const stepFlow = async (
           poolKey,
           ctx.transferChannels.noble.counterPartyChannelId,
         );
+        traceP('awaiting Wallet contract...', gInfo);
         await gInfo.ready;
+        traceP('...Wallet contract ready', gInfo);
         if ('src' in way) {
           await pImpl.supply(evmCtx, amount, gInfo);
           return { destPos: pos };
