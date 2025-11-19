@@ -88,6 +88,7 @@ test('open portfolio with USDN position', async t => {
   // ack IBC transfer for NFA, forward
   await ackNFA(common.utils);
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
 
   const done = await doneP;
   const result = done.result as any;
@@ -146,7 +147,7 @@ test('open a portfolio with Aave position', async t => {
   const chainP = (async () => {
     await ackNFA(common.utils);
     await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-    await simulateCCTPAck(common.utils);
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
     const misc = await txResolver.drainPending();
     // NOTE: Axelar Ack has to come _after_ drainPending.
     await simulateAckTransferToAxelar(common.utils);
@@ -194,6 +195,7 @@ test('open a portfolio with Compound position', async t => {
   await eventLoopIteration(); // let IBC message go out
   await ackNFA(common.utils);
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
   t.log('ackd NFA, send to Axelar to create account');
 
   await simulateCCTPAck(common.utils).finally(() =>
@@ -248,6 +250,7 @@ test('open portfolio with USDN, Aave positions', async t => {
   t.log('openPortfolio, eventloop');
   await ackNFA(common.utils);
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
   t.log('ackd NFA, send to noble');
 
   await simulateCCTPAck(common.utils).finally(() =>
@@ -356,6 +359,7 @@ test('claim rewards on Aave position successfully', async t => {
   await eventLoopIteration(); // let IBC message go out
   await ackNFA(common.utils);
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
   t.log('ackd send to Axelar to create account');
 
   await simulateCCTPAck(common.utils).finally(() =>
@@ -505,6 +509,7 @@ const beefyTestMacro = test.macro({
     await eventLoopIteration(); // let IBC message go out
     await ackNFA(common.utils);
     await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
     t.log('ackd send to Axelar to create account');
 
     await simulateCCTPAck(common.utils).finally(() =>
@@ -588,6 +593,7 @@ test('Withdraw from a Beefy position (future client)', async t => {
   await eventLoopIteration(); // let IBC message go out
   await ackNFA(common.utils);
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
   t.log('ackd send to Axelar to create account');
 
   await simulateCCTPAck(common.utils).finally(() =>
@@ -714,7 +720,10 @@ test.serial(
 
     await eventLoopIteration();
     await ackNFA(common.utils);
+
     await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
+
     t.log('ackd send to Axelar to create account');
 
     await common.utils
@@ -790,6 +799,9 @@ test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
     depositToAave,
   );
 
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
+
   await simulateCCTPAck(common.utils).finally(() =>
     simulateAckTransferToAxelar(common.utils),
   );
@@ -799,6 +811,9 @@ test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
     { Deposit: amount, Access: poc26.make(1n) },
     depositToAave,
   );
+
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
 
   await simulateCCTPAck(common.utils).finally(() =>
     simulateAckTransferToAxelar(common.utils),

@@ -74,6 +74,7 @@ const rebalanceScenarioMacro = test.macro({
       for (const move of moves) {
         await eventLoopIteration();
         if (move.dest === '@Arbitrum') {
+          await transmitVTransferEvent('acknowledgementPacket', -2); // NFA
           // Also confirm CCTP transaction for flows to Arbitrum
           await settleTransaction(zoe, resolverMakers, index, 'success');
           index += 1;
