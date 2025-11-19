@@ -514,7 +514,7 @@ const stepFlow = async (
           poolKey,
           ctx.transferChannels.noble.counterPartyChannelId,
         );
-        await null;
+        await gInfo.ready;
         if ('src' in way) {
           await pImpl.supply(evmCtx, amount, gInfo);
           return { destPos: pos };
