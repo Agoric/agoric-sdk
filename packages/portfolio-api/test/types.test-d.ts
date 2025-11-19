@@ -14,6 +14,7 @@ import {
   iterateVstorageHistory,
   makeMockVstorageReaders,
   materializePortfolioPositions,
+  readPortfolioHistoryEntries,
   readPortfolioLatest,
   selectPendingFlows,
 } from '../src/vstorage-schema.js';
@@ -35,6 +36,7 @@ import type {
 import type {
   FlowNodeLatest,
   PortfolioChainAccountPlace,
+  PortfolioHistoryEvent,
   PortfolioLatestSnapshot,
   PortfolioPositionPlace,
 } from '../src/vstorage-schema.js';
@@ -233,6 +235,16 @@ expectAssignable<AsyncIterableIterator<any>>(historyIterator);
 const places = enumeratePortfolioPlaces({ status: status.portfolio });
 expectType<readonly PortfolioPositionPlace[]>(places.positions);
 expectType<readonly PortfolioChainAccountPlace[]>(places.chainAccounts);
+
+expectType<Promise<readonly PortfolioHistoryEvent[]>>(
+  readPortfolioHistoryEntries({
+    readAt,
+    listChildren,
+    portfoliosPathPrefix: 'published.ymax0.portfolios',
+    portfolioKey: 'portfolio1',
+    decodeValue: value => value,
+  }),
+);
 
 // Ensure every Axelar chain key is covered by SupportedChain.
 expectAssignable<keyof typeof SupportedChain>(

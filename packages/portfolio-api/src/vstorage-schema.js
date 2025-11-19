@@ -361,6 +361,20 @@ const toFlowKey = key => {
  */
 
 /**
+ * @typedef {object} PortfolioHistoryEntryBase
+ * @property {bigint} blockHeight
+ * @property {string} path
+ */
+
+/**
+ * @typedef {PortfolioHistoryEntryBase & { kind: 'portfolio'; value: StatusFor['portfolio']; }} PortfolioHistoryEntryPortfolio
+ * @typedef {PortfolioHistoryEntryBase & { kind: 'flow'; flowKey: `flow${number}`; value: StatusFor['flow']; }} PortfolioHistoryEntryFlow
+ * @typedef {PortfolioHistoryEntryBase & { kind: 'position'; poolKey: PoolKey; value: StatusFor['position']; }} PortfolioHistoryEntryPosition
+ */
+
+/** @typedef {PortfolioHistoryEntryPortfolio | PortfolioHistoryEntryFlow | PortfolioHistoryEntryPosition} PortfolioHistoryEvent */
+
+/**
  * @param {object} opts
  * @param {VstorageReadLatest} opts.readLatest
  * @param {string} opts.portfolioPath
@@ -667,27 +681,36 @@ export const iterateVstorageHistory = async function* iterateVstorageHistory({
     minHeight === undefined ? undefined : coerceHeightToBigInt(minHeight);
   /** @type {number | bigint | undefined} */
   let cursor;
-  // eslint-disable-next-line no-constant-condition
+
   while (true) {
-    const response = await readAt(path, cursor);
-    const blockHeight = coerceHeightToBigInt(response.blockHeight);
-    const decodedValues = (response.values || []).map((value, index) =>
-      decodeValue(value, index, blockHeight),
-    );
-    yield harden({ blockHeight, values: harden(decodedValues) });
-    if (blockHeight === 0n) break;
-    if (minHeightBig !== undefined && blockHeight <= minHeightBig) break;
-    const next =
-      typeof response.blockHeight === 'bigint'
-        ? response.blockHeight - 1n
-        : Number(blockHeight - 1n);
-    if (
-      (typeof next === 'bigint' && next < 0n) ||
-      (typeof next === 'number' && next < 0)
-    ) {
-      break;
+    /** @type {{ blockHeight: number | bigint; values: readonly unknown[] }} */
+    let cell;
+    try {
+      cell = await readAt(path, cursor);
+    } catch (err) {
+      const message = err && typeof err === 'object' ? err.message : undefined;
+      const isHistoryGap =
+        (typeof message === 'string' &&
+          /no history|unknown request|Unexpected end of JSON input/i.test(
+            message,
+          )) ||
+        (err && err.code === 18 && err.codespace === 'sdk');
+      if (isHistoryGap) {
+        break;
+      }
+      throw err;
     }
-    cursor = next;
+    const entryHeight = coerceHeightToBigInt(cell.blockHeight);
+    const decodedValues = (cell.values || []).map((value, index) =>
+      decodeValue(value, index, entryHeight),
+    );
+    yield harden({ blockHeight: entryHeight, values: harden(decodedValues) });
+    if (entryHeight === 0n) break;
+    if (minHeightBig !== undefined && entryHeight <= minHeightBig) break;
+    const nextHeight = entryHeight - 1n;
+    if (nextHeight < 0n) break;
+    cursor =
+      nextHeight <= Number.MAX_SAFE_INTEGER ? Number(nextHeight) : nextHeight;
   }
 };
 
@@ -720,3 +743,110 @@ export const makeMockVstorageReaders = (initialEntries = {}) => {
   return harden({ readLatest, listChildren, writeLatest, store });
 };
 // #endregion
+
+/**
+ * Read chronological history entries for a portfolio and its flows using
+ * `vstorage.readAt`. Values are decoded via the provided `decodeValue`
+ * function, which should typically marshal capdata into plain JS objects.
+ *
+ * @param {object} opts
+ * @param {VstorageReadAt} opts.readAt
+ * @param {(path: string) => Promise<string[]>} opts.listChildren
+ * @param {string} opts.portfoliosPathPrefix
+ * @param {PortfolioKey} opts.portfolioKey
+ * @param {(value: unknown, index: number, blockHeight: bigint) => any} opts.decodeValue
+ * @param {'asc' | 'desc'} [opts.sort]
+ * @returns {Promise<readonly PortfolioHistoryEvent[]>}
+ */
+export const readPortfolioHistoryEntries = async ({
+  readAt,
+  listChildren,
+  portfoliosPathPrefix,
+  portfolioKey,
+  decodeValue,
+  sort = 'asc',
+}) => {
+  const entries = [];
+  const portfolioPath = `${portfoliosPathPrefix}.${portfolioKey}`;
+
+  const collectPath = async (path, buildEntry) => {
+    for await (const {
+      blockHeight,
+      values: decodedValues,
+    } of iterateVstorageHistory({
+      readAt,
+      path,
+      decodeValue,
+    })) {
+      for (const value of decodedValues) {
+        buildEntry(blockHeight, value, path);
+      }
+    }
+  };
+
+  await collectPath(portfolioPath, (blockHeight, value, path) => {
+    entries.push(
+      harden({
+        kind: 'portfolio',
+        blockHeight,
+        value: /** @type {StatusFor['portfolio']} */ (value),
+        path,
+      }),
+    );
+  });
+
+  const flowsPath = `${portfolioPath}.flows`;
+  let flowChildren = [];
+  try {
+    flowChildren = await listChildren(flowsPath);
+  } catch {
+    flowChildren = [];
+  }
+  for (const child of flowChildren) {
+    const flowKey = toFlowKey(child);
+    if (!flowKey) continue;
+    const flowPath = `${flowsPath}.${flowKey}`;
+    await collectPath(flowPath, (blockHeight, value, path) => {
+      entries.push(
+        harden({
+          kind: 'flow',
+          blockHeight,
+          flowKey,
+          value: /** @type {StatusFor['flow']} */ (value),
+          path,
+        }),
+      );
+    });
+  }
+
+  const positionsPath = `${portfolioPath}.positions`;
+  let positionChildren = [];
+  try {
+    positionChildren = await listChildren(positionsPath);
+  } catch {
+    positionChildren = [];
+  }
+  for (const poolKey of positionChildren) {
+    const positionPath = `${positionsPath}.${poolKey}`;
+    await collectPath(positionPath, (blockHeight, value, path) => {
+      entries.push(
+        harden({
+          kind: 'position',
+          blockHeight,
+          poolKey: /** @type {PoolKey} */ (poolKey),
+          value: /** @type {StatusFor['position']} */ (value),
+          path,
+        }),
+      );
+    });
+  }
+
+  const sorted = entries.sort((left, right) =>
+    left.blockHeight === right.blockHeight
+      ? 0
+      : left.blockHeight < right.blockHeight
+        ? -1
+        : 1,
+  );
+  return harden(sort === 'desc' ? sorted.slice().reverse() : sorted);
+};

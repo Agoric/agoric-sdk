@@ -14,6 +14,7 @@ import {
   makeMockVstorageReaders,
   portfolioIdFromKey,
   portfolioIdOfPath,
+  readPortfolioHistoryEntries,
   readPortfolioLatest,
   selectPendingFlows,
   type PortfolioLatestSnapshot,
@@ -22,6 +23,33 @@ import type { StatusFor } from '../src/types.js';
 
 const { brand: USDC } = makeIssuerKit('USDC');
 const amount = AmountMath.make(USDC, 1n);
+
+const makeHistoryReadAt = history => {
+  const normalized = new Map(
+    [...history.entries()].map(([path, entries]) => {
+      const normalizedEntries = entries
+        .map(entry => ({
+          blockHeight: BigInt(entry.blockHeight),
+          values: entry.values,
+        }))
+        .sort((a, b) => Number(a.blockHeight - b.blockHeight));
+      return [path, normalizedEntries];
+    }),
+  );
+  return async (path, height) => {
+    const entriesForPath = normalized.get(path) || [];
+    const heightBig =
+      height === undefined ? undefined : typeof height === 'bigint' ? height : BigInt(height);
+    const candidates = entriesForPath.filter(entry =>
+      heightBig === undefined ? true : entry.blockHeight <= heightBig,
+    );
+    const entry = candidates.at(-1);
+    if (!entry) {
+      throw Error(`no history for ${path} <= ${height}`);
+    }
+    return entry;
+  };
+};
 
 test('path helpers and parsers', t => {
   t.deepEqual(makePortfolioPath(3), ['portfolio3']);
@@ -192,6 +220,83 @@ test('enumeratePortfolioPlaces joins account and position metadata', t => {
   t.is(usdPlace?.accountId, status.accountIdByChain.noble);
   const aavePlace = places.positions.find(p => p.poolKey === 'Aave_Ethereum');
   t.truthy(aavePlace?.pool?.protocol);
+});
+
+test('readPortfolioHistoryEntries collects chronological events', async t => {
+  const portfoliosPathPrefix = 'published.ymax0.portfolios';
+  const portfolioKey = 'portfolio1' as const;
+  const portfolioPath = `${portfoliosPathPrefix}.${portfolioKey}`;
+  const statusA: StatusFor['portfolio'] = {
+    positionKeys: ['USDN'],
+    flowCount: 0,
+    accountIdByChain: {},
+    policyVersion: 1,
+    rebalanceCount: 0,
+  } as StatusFor['portfolio'];
+  const statusB: StatusFor['portfolio'] = {
+    ...statusA,
+    policyVersion: 2,
+    flowsRunning: { flow1: { type: 'deposit', amount } },
+  };
+  const flowStatus: StatusFor['flow'] = {
+    state: 'run',
+    step: 1,
+    how: 'deposit',
+    type: 'deposit',
+    amount,
+  };
+  const history = new Map([
+    [
+      portfolioPath,
+      [
+        { blockHeight: 12n, values: [statusB] },
+        { blockHeight: 8n, values: [statusA] },
+      ],
+    ],
+    [
+      `${portfolioPath}.flows.flow1`,
+      [{ blockHeight: 10n, values: [flowStatus] }],
+    ],
+    [
+      `${portfolioPath}.positions.USDN`,
+      [
+        {
+          blockHeight: 11n,
+          values: [
+            {
+              protocol: 'USDN',
+              accountId: statusA.accountIdByChain?.noble,
+              totalIn: AmountMath.make(USDC, 10n),
+              totalOut: AmountMath.make(USDC, 1n),
+            } satisfies StatusFor['position'],
+          ],
+        },
+      ],
+    ],
+  ]);
+  const readAt = makeHistoryReadAt(history);
+  const listChildren = async path => {
+    if (path.endsWith('.flows')) return ['flow1'];
+    if (path.endsWith('.positions')) return ['USDN'];
+    return [];
+  };
+  const events = await readPortfolioHistoryEntries({
+    readAt,
+    listChildren,
+    portfoliosPathPrefix,
+    portfolioKey,
+    decodeValue: value => value,
+  });
+
+  t.deepEqual(
+    events.map(entry => [entry.kind, entry.blockHeight]),
+    [
+      ['portfolio', 8n],
+      ['flow', 10n],
+      ['position', 11n],
+      ['portfolio', 12n],
+    ],
+  );
 });
 
 test('selectPendingFlows filters flows without nodes', async t => {

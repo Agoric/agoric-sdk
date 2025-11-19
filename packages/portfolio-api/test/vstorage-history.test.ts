@@ -6,6 +6,12 @@ test('iterateVstorageHistory walks height history with decoder', async t => {
   let index = 0;
   const readAt = async (_path: string, _height?: number | bigint) => {
     const blockHeight = heights[index++];
+    if (blockHeight === 1n) {
+      const err = Error('Unexpected end of JSON input');
+      err.code = 18;
+      err.codespace = 'sdk';
+      throw err;
+    }
     return {
       blockHeight,
       values: blockHeight
