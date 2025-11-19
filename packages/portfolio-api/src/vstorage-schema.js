@@ -17,11 +17,13 @@ import { YieldProtocol } from './constants.js';
  * @import {NatValue}  from '@agoric/ertp';
  * @import {Brand} from '@agoric/ertp';
  * @import {Pattern} from '@endo/patterns';
+ * @import {AccountId} from '@agoric/orchestration';
  * @import {InstrumentId} from './instruments.js';
- * @import {AxelarChain} from './constants.js'
+ * @import {AxelarChain, SupportedChain} from './constants.js'
  * @import {FlowDetail}  from './types.js';
  * @import {FlowStep}  from './types.js';
  * @import {PortfolioKey}  from './types.js';
+ * @import {PoolKey}  from './types.js';
  * @import {StatusFor}  from './types.js';
  */
 
@@ -277,13 +279,6 @@ export const FlowStepsShape = M.arrayOf({
  */
 
 /**
- * @typedef {object} PortfolioLatestSnapshot
- * @property {PortfolioKey} portfolioKey
- * @property {StatusFor['portfolio']} status
- * @property {Record<`flow${number}`, FlowNodeLatest>} flows
- */
-
-/**
  * @param {FlowDetail | undefined} detail
  * @param {StatusFor['flow'] | undefined} status
  * @returns {FlowNodeLatest['phase']}
@@ -316,11 +311,144 @@ const toFlowKey = key => {
 };
 
 /**
+ * @typedef {object} PortfolioPositionLatest
+ * @property {PoolKey} poolKey
+ * @property {PoolPlaceInfo | undefined} place
+ * @property {StatusFor['position'] | undefined} status
+ * @property {SupportedChain | undefined} chainName
+ * @property {AccountId | undefined} accountId
+ */
+
+/**
+ * @typedef {object} ChainPositionsLatest
+ * @property {SupportedChain} chainName
+ * @property {AccountId | undefined} accountId
+ * @property {readonly PortfolioPositionLatest[]} positions
+ */
+
+/**
+ * @typedef {object} MaterializedPortfolioPositions
+ * @property {Partial<Record<PoolKey, PortfolioPositionLatest>>} positions
+ * @property {Partial<Record<SupportedChain, ChainPositionsLatest>>} positionsByChain
+ */
+
+/**
+ * @typedef {object} PortfolioLatestSnapshot
+ * @property {PortfolioKey} portfolioKey
+ * @property {StatusFor['portfolio']} status
+ * @property {Record<`flow${number}`, FlowNodeLatest>} flows
+ * @property {Partial<Record<PoolKey, PortfolioPositionLatest>>} [positions]
+ * @property {Partial<Record<SupportedChain, ChainPositionsLatest>>} [positionsByChain]
+ */
+
+/**
+ * @param {object} opts
+ * @param {VstorageReadLatest} opts.readLatest
+ * @param {string} opts.portfolioPath
+ * @param {readonly PoolKey[]} opts.positionKeys
+ * @returns {Promise<Partial<Record<PoolKey, StatusFor['position'] | undefined>>>}
+ */
+const readPositionNodesLatest = async ({
+  readLatest,
+  portfolioPath,
+  positionKeys,
+}) => {
+  if (!positionKeys.length) {
+    return harden({});
+  }
+  const entries = await Promise.all(
+    positionKeys.map(async poolKey => {
+      try {
+        const position = await readLatest(
+          `${portfolioPath}.positions.${poolKey}`,
+        );
+        return /** @type {[PoolKey, StatusFor['position']]} */ ([
+          poolKey,
+          /** @type {StatusFor['position']} */ (position),
+        ]);
+      } catch {
+        return /** @type {[PoolKey, undefined]} */ ([poolKey, undefined]);
+      }
+    }),
+  );
+  return harden(Object.fromEntries(entries));
+};
+
+/**
+ * @param {object} opts
+ * @param {StatusFor['portfolio']} opts.status
+ * @param {Partial<Record<PoolKey, StatusFor['position'] | undefined>>} opts.positionNodes
+ * @param {Record<PoolKey, PoolPlaceInfo>} [opts.poolPlaces]
+ * @returns {MaterializedPortfolioPositions}
+ */
+export const materializePortfolioPositions = ({
+  status,
+  positionNodes,
+  poolPlaces = /** @type {Record<PoolKey, PoolPlaceInfo>} */ (PoolPlaces),
+}) => {
+  const { positionKeys = [], accountIdByChain = {} } = status;
+  /** @type {Partial<Record<PoolKey, PortfolioPositionLatest>>} */
+  const positions = {};
+  /** @type {Map<SupportedChain, PortfolioPositionLatest[]>} */
+  const positionsByChainEntries = new Map();
+
+  for (const poolKey of positionKeys) {
+    const place = /** @type {PoolPlaceInfo | undefined} */ (poolPlaces[poolKey]);
+    const chainName = /** @type {SupportedChain | undefined} */ (
+      place?.chainName
+    );
+    const positionStatus = positionNodes[poolKey];
+    const accountId =
+      positionStatus?.accountId ??
+      (chainName ? accountIdByChain[chainName] : undefined);
+    const entry = harden({
+      poolKey,
+      place,
+      status: positionStatus,
+      chainName,
+      accountId,
+    });
+    positions[poolKey] = entry;
+    if (chainName) {
+      if (!positionsByChainEntries.has(chainName)) {
+        positionsByChainEntries.set(chainName, []);
+      }
+      positionsByChainEntries.get(chainName).push(entry);
+    }
+  }
+
+  for (const chainName of keys(accountIdByChain)) {
+    const supportedChain = /** @type {SupportedChain} */ (chainName);
+    if (!positionsByChainEntries.has(supportedChain)) {
+      positionsByChainEntries.set(supportedChain, []);
+    }
+  }
+
+  /** @type {Partial<Record<SupportedChain, ChainPositionsLatest>>} */
+  const positionsByChain = {};
+  for (const [chainName, chainPositions] of positionsByChainEntries.entries()) {
+    positionsByChain[chainName] = harden({
+      chainName,
+      accountId: accountIdByChain[chainName],
+      positions: harden(chainPositions),
+    });
+  }
+
+  return harden({
+    positions: harden(positions),
+    positionsByChain: harden(positionsByChain),
+  });
+};
+
+/**
  * Read the latest portfolio + flow state, combining `flowsRunning` (portfolio
  * node) with any flow nodes under `.flows`. Derived `phase` is aligned to the
  * planner expectations:
  * - `init` when present in `flowsRunning` but no flow node is written yet
  * - `running`, `done`, `fail` when a flow node is present
+ * When `includePositions` is true the snapshot also returns `positions` and
+ * `positionsByChain`, materializing `positionKeys` + `positions.*` nodes with
+ * PoolPlaces metadata and `accountIdByChain`.
  */
 export const readPortfolioLatest = async ({
   readLatest,
@@ -328,6 +456,8 @@ export const readPortfolioLatest = async ({
   portfoliosPathPrefix,
   portfolioKey,
   includeSteps = true,
+  includePositions = false,
+  poolPlaces = /** @type {Record<PoolKey, PoolPlaceInfo>} */ (PoolPlaces),
 }) => {
   const portfolioPath = `${portfoliosPathPrefix}.${portfolioKey}`;
   /** @type {StatusFor['portfolio']} */
@@ -388,6 +518,30 @@ export const readPortfolioLatest = async ({
     });
   }
 
-  return harden({ portfolioKey, status, flows });
+  let positions;
+  let positionsByChain;
+  if (includePositions) {
+    const positionNodes = await readPositionNodesLatest({
+      readLatest,
+      portfolioPath,
+      positionKeys: status.positionKeys || [],
+    });
+    const materialized = materializePortfolioPositions({
+      status,
+      positionNodes,
+      poolPlaces,
+    });
+    positions = materialized.positions;
+    positionsByChain = materialized.positionsByChain;
+  }
+
+  return harden({
+    portfolioKey,
+    status,
+    flows,
+    ...(includePositions
+      ? { positions: positions ?? harden({}), positionsByChain }
+      : {}),
+  });
 };
 // #endregion

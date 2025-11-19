@@ -9,6 +9,10 @@ import type { SupportedChain, YieldProtocol } from '../src/constants.js';
 import { AxelarChain } from '../src/constants.js';
 import type { InstrumentId } from '../src/instruments.js';
 import type { PublishedTx } from '../src/resolver.js';
+import {
+  materializePortfolioPositions,
+  readPortfolioLatest,
+} from '../src/vstorage-schema.js';
 import type {
   AssetPlaceRef,
   FlowDetail,
@@ -17,12 +21,14 @@ import type {
   FlowStep,
   InterChainAccountRef,
   LocalChainAccountRef,
+  PoolKey,
   PortfolioKey,
   ProposalType,
   SeatKeyword,
   StatusFor,
   TargetAllocation,
 } from '../src/types.js';
+import type { PortfolioLatestSnapshot } from '../src/vstorage-schema.js';
 
 declare const natAmount: NatAmount;
 declare const accountId: AccountId;
@@ -156,6 +162,32 @@ const status: StatusFor = {
 };
 
 expectType<StatusFor>(status);
+
+declare const readLatest: (path: string) => Promise<unknown>;
+declare const listChildren: (path: string) => Promise<string[]>;
+
+const positionNodes: Partial<Record<PoolKey, StatusFor['position']>> = {
+  [instrumentId]: status.position,
+};
+
+const materialized = materializePortfolioPositions({
+  status: status.portfolio,
+  positionNodes,
+});
+expectType<Partial<Record<PoolKey, unknown>>>(materialized.positions);
+expectType<
+  Partial<Record<SupportedChain, { positions: readonly unknown[] }>>
+>(materialized.positionsByChain);
+
+expectType<Promise<PortfolioLatestSnapshot>>(
+  readPortfolioLatest({
+    readLatest,
+    listChildren,
+    portfoliosPathPrefix: 'published.ymax0.portfolios',
+    portfolioKey: 'portfolio1',
+    includePositions: true,
+  }),
+);
 
 // Ensure every Axelar chain key is covered by SupportedChain.
 expectAssignable<keyof typeof SupportedChain>(
