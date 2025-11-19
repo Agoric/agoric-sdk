@@ -5,10 +5,11 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { TxType, type PublishedTx } from '@agoric/portfolio-api';
+import { TxType, type PublishedTx, type TxStatus } from '@agoric/portfolio-api';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { inspect } from 'node:util';
+import { makePromiseKit } from '@endo/promise-kit';
 import type { OfferArgsFor, ProposalType } from '../src/type-guards.ts';
 import {
   grokRebalanceScenarios,
@@ -57,6 +58,29 @@ const rebalanceScenarioMacro = test.macro({
 
     const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
 
+    const { storageUpdates, cancelStorageupdates } = storage;
+
+    const settleUntil = async (
+      done: Promise<unknown>,
+      status: Exclude<TxStatus, 'pending'> = 'success',
+    ) => {
+      void done.then(() => cancelStorageupdates());
+      for await (const message of storageUpdates) {
+        if (!message) continue;
+        const { method, args } = message;
+        if (method !== 'append') continue;
+        const [[key, _val]] = args;
+        if (!key.includes('.pendingTxs.')) continue;
+        const info = storage.getDeserialized(key).at(-1) as PublishedTx;
+        if (info.status !== 'pending') continue;
+        const txId = key.split('.').at(-1) as `tx${number}`;
+        const ix = Number(txId.replace(/^tx/, ''));
+        await settleTransaction(zoe, resolverMakers, ix, status);
+      }
+    };
+    const scenarioDonePK = makePromiseKit();
+    void settleUntil(scenarioDonePK.promise);
+
     if (description.includes('Recover')) {
       // simulate arrival of funds in the LCA via IBC from Noble
       const funds = await common.utils.pourPayment(usdc.units(500));
@@ -93,19 +117,9 @@ const rebalanceScenarioMacro = test.macro({
 
       for (const move of moves) {
         await eventLoopIteration();
-        if (move.dest === '@Arbitrum') {
-          // Also confirm CCTP transaction for flows to Arbitrum
-          await settleTransaction(zoe, resolverMakers, index, 'success');
-          index += 1;
-        }
         if (move.src === '@Arbitrum') {
-          await settleTransaction(zoe, resolverMakers, index, 'success');
-          index += 1;
           if (move.dest === '@agoric') {
             await transmitVTransferEvent('acknowledgementPacket', -1);
-            // Also confirm Noble transaction for flows to Noble
-            await settleTransaction(zoe, resolverMakers, index, 'success');
-            index += 1;
           }
         }
         try {
@@ -162,6 +176,7 @@ const rebalanceScenarioMacro = test.macro({
     const { Access: _, ...skipAssets } = payouts;
     t.deepEqual(skipAssets, scenario.payouts, 'payouts');
 
+    scenarioDonePK.resolve(undefined);
     // XXX: inspect bridge for netTransfersByPosition chains?
   },
   title(providedTitle = '', description: string) {
