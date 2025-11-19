@@ -10,8 +10,11 @@ import { AxelarChain } from '../src/constants.js';
 import type { InstrumentId } from '../src/instruments.js';
 import type { PublishedTx } from '../src/resolver.js';
 import {
+  iterateVstorageHistory,
+  makeMockVstorageReaders,
   materializePortfolioPositions,
   readPortfolioLatest,
+  selectPendingFlows,
 } from '../src/vstorage-schema.js';
 import type {
   AssetPlaceRef,
@@ -28,7 +31,10 @@ import type {
   StatusFor,
   TargetAllocation,
 } from '../src/types.js';
-import type { PortfolioLatestSnapshot } from '../src/vstorage-schema.js';
+import type {
+  FlowNodeLatest,
+  PortfolioLatestSnapshot,
+} from '../src/vstorage-schema.js';
 
 declare const natAmount: NatAmount;
 declare const accountId: AccountId;
@@ -188,6 +194,38 @@ expectType<Promise<PortfolioLatestSnapshot>>(
     includePositions: true,
   }),
 );
+
+const pending = selectPendingFlows({
+  portfolioKey: 'portfolio1',
+  status: status.portfolio,
+  flows: {
+    flow1: {
+      flowKey: 'flow1',
+      detail: flowsRunning.flow1,
+      status: undefined,
+      steps: undefined,
+      order: undefined,
+      phase: 'init',
+    },
+  },
+  },
+});
+expectType<readonly FlowNodeLatest[]>(pending);
+
+const mockReaders = makeMockVstorageReaders();
+expectType<Promise<unknown>>(mockReaders.readLatest('path'));
+expectType<Promise<string[]>>(mockReaders.listChildren('path'));
+
+declare const readAt: (
+  path: string,
+  height?: number | bigint,
+) => Promise<{ blockHeight: number | bigint; values: unknown[] }>;
+
+const historyIterator = iterateVstorageHistory({
+  readAt,
+  path: 'published.demo',
+});
+expectAssignable<AsyncIterableIterator<any>>(historyIterator);
 
 // Ensure every Axelar chain key is covered by SupportedChain.
 expectAssignable<keyof typeof SupportedChain>(

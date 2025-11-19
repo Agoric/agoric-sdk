@@ -10,32 +10,17 @@ import {
   makeFlowPath,
   makePortfolioPath,
   makePositionPath,
+  makeMockVstorageReaders,
   portfolioIdFromKey,
   portfolioIdOfPath,
   readPortfolioLatest,
+  selectPendingFlows,
   type PortfolioLatestSnapshot,
 } from '../src/vstorage-schema.js';
 import type { StatusFor } from '../src/types.js';
 
 const { brand: USDC } = makeIssuerKit('USDC');
 const amount = AmountMath.make(USDC, 1n);
-
-const makeVstorageTestReaders = (store: Map<string, unknown>) => {
-  const readLatest = async (path: string) => {
-    if (!store.has(path)) throw Error(`missing ${path}`);
-    return store.get(path);
-  };
-  const listChildren = async (path: string) => {
-    const prefix = `${path}.`;
-    const children = new Set<string>();
-    for (const key of store.keys()) {
-      if (!key.startsWith(prefix)) continue;
-      children.add(key.slice(prefix.length).split('.')[0]!);
-    }
-    return [...children];
-  };
-  return { readLatest, listChildren };
-};
 
 test('path helpers and parsers', t => {
   t.deepEqual(makePortfolioPath(3), ['portfolio3']);
@@ -80,8 +65,8 @@ test('shapes validate portfolio and flow data', t => {
 test('readPortfolioLatest combines flowsRunning and flow nodes', async t => {
   const portfoliosPathPrefix = 'published.ymax0.portfolios';
   const portfolioKey = 'portfolio3' as const;
-  const store = new Map<string, unknown>();
   const portfolioPath = `${portfoliosPathPrefix}.${portfolioKey}`;
+  const mock = makeMockVstorageReaders();
 
   const status: StatusFor['portfolio'] = {
     positionKeys: [PoolPlaces.USDN.protocol],
@@ -93,16 +78,15 @@ test('readPortfolioLatest combines flowsRunning and flow nodes', async t => {
       flow2: { type: 'deposit', amount },
     },
   };
-  store.set(portfolioPath, status);
-  store.set(`${portfolioPath}.flows.flow1`, {
+  mock.writeLatest(portfolioPath, status);
+  mock.writeLatest(`${portfolioPath}.flows.flow1`, {
     state: 'run',
     step: 1,
     how: 'deposit',
     type: 'deposit',
     amount,
   } satisfies StatusFor['flow']);
-
-  const { readLatest, listChildren } = makeVstorageTestReaders(store);
+  const { readLatest, listChildren } = mock;
 
   const snapshot: PortfolioLatestSnapshot = await readPortfolioLatest({
     readLatest,
@@ -122,8 +106,8 @@ test('readPortfolioLatest combines flowsRunning and flow nodes', async t => {
 test('readPortfolioLatest materializes positions and chains when requested', async t => {
   const portfoliosPathPrefix = 'published.ymax0.portfolios';
   const portfolioKey = 'portfolio5' as const;
-  const store = new Map<string, unknown>();
   const portfolioPath = `${portfoliosPathPrefix}.${portfolioKey}`;
+  const mock = makeMockVstorageReaders();
 
   const status: StatusFor['portfolio'] = {
     positionKeys: ['USDN', 'Aave_Ethereum', 'Compound_Base'],
@@ -137,7 +121,7 @@ test('readPortfolioLatest materializes positions and chains when requested', asy
     policyVersion: 3,
     rebalanceCount: 1,
   };
-  store.set(portfolioPath, status);
+  mock.writeLatest(portfolioPath, status);
   const usdPosition: StatusFor['position'] = {
     protocol: 'USDN',
     accountId: status.accountIdByChain.noble!,
@@ -150,9 +134,9 @@ test('readPortfolioLatest materializes positions and chains when requested', asy
     totalIn: amount,
     totalOut: amount,
   };
-  store.set(`${portfolioPath}.positions.USDN`, usdPosition);
-  store.set(`${portfolioPath}.positions.Aave_Ethereum`, aavePosition);
-  const { readLatest, listChildren } = makeVstorageTestReaders(store);
+  mock.writeLatest(`${portfolioPath}.positions.USDN`, usdPosition);
+  mock.writeLatest(`${portfolioPath}.positions.Aave_Ethereum`, aavePosition);
+  const { readLatest, listChildren } = mock;
 
   const snapshot = await readPortfolioLatest({
     readLatest,
@@ -180,4 +164,46 @@ test('readPortfolioLatest materializes positions and chains when requested', asy
   t.is(positionsByChain.Base?.positions[0]?.poolKey, 'Compound_Base');
   t.true(Array.isArray(positionsByChain.agoric?.positions));
   t.is(positionsByChain.agoric?.positions.length, 0);
+});
+
+test('selectPendingFlows filters flows without nodes', async t => {
+  const snapshot: PortfolioLatestSnapshot = {
+    portfolioKey: 'portfolio7',
+    status: /** @type {StatusFor['portfolio']} */ ({
+      positionKeys: [],
+      flowCount: 0,
+      accountIdByChain: {},
+      policyVersion: 0,
+      rebalanceCount: 0,
+      flowsRunning: {},
+    }),
+    flows: {
+      flow1: {
+        flowKey: 'flow1',
+        detail: { type: 'deposit', amount },
+        status: undefined,
+        steps: undefined,
+        order: undefined,
+        phase: 'init',
+      },
+      flow2: {
+        flowKey: 'flow2',
+        detail: { type: 'withdraw', amount },
+        status: {
+          state: 'run',
+          step: 1,
+          how: 'withdraw',
+          type: 'withdraw',
+          amount,
+        } as StatusFor['flow'],
+        steps: undefined,
+        order: undefined,
+        phase: 'running',
+      },
+    },
+  } as any;
+
+  const pending = selectPendingFlows(snapshot);
+  t.is(pending.length, 1);
+  t.is(pending[0]?.flowKey, 'flow1');
 });

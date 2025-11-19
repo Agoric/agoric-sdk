@@ -31,6 +31,7 @@ import {
   PortfolioStatusShapeExt,
   flowIdFromKey,
   portfolioIdFromKey,
+  selectPendingFlows,
   readPortfolioLatest,
   type FlowDetail,
   type InstrumentId,
@@ -454,8 +455,9 @@ export const processPortfolioEvents = async (
       // acceptance of the first submission would invalidate the others as
       // stale, but we'll see them again when such acceptance prompts changes
       // to the portfolio status.
-      for (const { flowKey, detail, status: flowStatus } of values(flows)) {
-        if (!detail || flowStatus) continue;
+      const pendingFlows = selectPendingFlows(snapshot);
+      for (const { flowKey, detail } of pendingFlows) {
+        if (!detail) continue;
         await runWithFlowTrace(
           portfolioKey,
           flowKey,

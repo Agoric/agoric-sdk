@@ -27,7 +27,7 @@ import { YieldProtocol } from './constants.js';
  * @import {StatusFor}  from './types.js';
  */
 
-const { keys } = Object;
+const { keys, values, entries } = Object;
 
 /**
  * @param {Brand<'nat'>} brand must be a 'nat' brand, not checked
@@ -535,7 +535,7 @@ export const readPortfolioLatest = async ({
     positionsByChain = materialized.positionsByChain;
   }
 
-  return harden({
+ return harden({
     portfolioKey,
     status,
     flows,
@@ -543,5 +543,108 @@ export const readPortfolioLatest = async ({
       ? { positions: positions ?? harden({}), positionsByChain }
       : {}),
   });
+};
+// #endregion
+
+// #region Flow selectors + history helpers
+
+/**
+ * @param {PortfolioLatestSnapshot} snapshot
+ * @returns {readonly FlowNodeLatest[]}
+ */
+export const selectPendingFlows = snapshot =>
+  harden(
+    values(snapshot.flows).filter(
+      flowNode => flowNode && flowNode.detail && !flowNode.status,
+    ),
+  );
+
+/**
+ * @typedef {object} VstorageReadAtResponse
+ * @property {number | bigint} blockHeight
+ * @property {readonly unknown[]} values
+ */
+
+/**
+ * @typedef {(path: string, height?: number | bigint) => Promise<VstorageReadAtResponse>} VstorageReadAt
+ * @typedef {(value: unknown, index: number, blockHeight: bigint) => unknown} VstorageValueDecoder
+ */
+
+const coerceHeightToBigInt = height =>
+  typeof height === 'bigint' ? height : BigInt(height || 0);
+
+/**
+ * Iterate a vstorage history stream from the latest entry down to an optional
+ * minimum height. This wraps `vstorage.readAt` semantics into an async
+ * generator so tests and production consumers can share the same culling logic.
+ *
+ * @param {object} opts
+ * @param {VstorageReadAt} opts.readAt
+ * @param {string} opts.path
+ * @param {bigint | number} [opts.minHeight]
+ * @param {VstorageValueDecoder} [opts.decodeValue]
+ * @returns {AsyncGenerator<{blockHeight: bigint, values: readonly unknown[]}>}
+ */
+export const iterateVstorageHistory = async function* iterateVstorageHistory({
+  readAt,
+  path,
+  minHeight,
+  decodeValue = value => value,
+}) {
+  const minHeightBig =
+    minHeight === undefined ? undefined : coerceHeightToBigInt(minHeight);
+  /** @type {number | bigint | undefined} */
+  let cursor;
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const response = await readAt(path, cursor);
+    const blockHeight = coerceHeightToBigInt(response.blockHeight);
+    const decodedValues = (response.values || []).map((value, index) =>
+      decodeValue(value, index, blockHeight),
+    );
+    yield harden({ blockHeight, values: harden(decodedValues) });
+    if (blockHeight === 0n) break;
+    if (minHeightBig !== undefined && blockHeight <= minHeightBig) break;
+    const next =
+      typeof response.blockHeight === 'bigint'
+        ? response.blockHeight - 1n
+        : Number(blockHeight - 1n);
+    if (
+      (typeof next === 'bigint' && next < 0n) ||
+      (typeof next === 'number' && next < 0)
+    ) {
+      break;
+    }
+    cursor = next;
+  }
+};
+
+/**
+ * In-memory mock storage for exercising `readPortfolioLatest` and related
+ * helpers. Tests can seed paths via `initialEntries` and call `writeLatest`
+ * while reusing the same `readLatest`/`listChildren` implementations that
+ * production helpers expect.
+ *
+ * @param {Record<string, unknown>} [initialEntries]
+ */
+export const makeMockVstorageReaders = (initialEntries = {}) => {
+  const store = new Map(entries(initialEntries));
+  const readLatest = async path => {
+    if (!store.has(path)) throw Fail`missing mock entry for ${path}`;
+    return store.get(path);
+  };
+  const writeLatest = (path, value) => {
+    store.set(path, value);
+  };
+  const listChildren = async path => {
+    const prefix = `${path}.`;
+    const children = new Set();
+    for (const key of store.keys()) {
+      if (!key.startsWith(prefix)) continue;
+      children.add(key.slice(prefix.length).split('.')[0]);
+    }
+    return [...children];
+  };
+  return harden({ readLatest, listChildren, writeLatest, store });
 };
 // #endregion
