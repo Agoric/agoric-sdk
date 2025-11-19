@@ -1,11 +1,13 @@
 import type { MsgTransfer } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import { VTRANSFER_IBC_EVENT } from '@agoric/internal/src/action-types.js';
+import type { StorageMessage } from '@agoric/internal/src/lib-chainStorage.js';
 import {
   defaultSerializer,
+  makeAsyncQueue,
   makeFakeStorageKit,
 } from '@agoric/internal/src/storage-test-utils.js';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { setupFakeNetwork } from '@agoric/orchestration/test/network-fakes.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import {
   makeNameHubKit,
@@ -131,7 +133,12 @@ export const setupOrchestrationTest = async ({
   const timer = buildZoeManualTimer(log);
   const board = makeFakeBoard();
   const marshaller = board.getPublishingMarshaller();
-  const storage = makeFakeStorageKit(ROOT_STORAGE_PATH);
+  const storageQueue = makeAsyncQueue<StorageMessage>();
+  const storage = makeFakeStorageKit(
+    ROOT_STORAGE_PATH,
+    { sequence: true },
+    { eachMessage: storageQueue.enqueue },
+  );
 
   const { portAllocator, setupIBCProtocol, ibcBridge } = setupFakeNetwork(
     rootZone.subZone('network'),
@@ -285,6 +292,8 @@ export const setupOrchestrationTest = async ({
         getDeserialized(path: string): unknown[] {
           return storage.getValues(path).map(defaultSerializer.parse);
         },
+        storageUpdates: storageQueue.iterable,
+        cancelStorageupdates: storageQueue.cancel,
       },
     },
     mocks: {
