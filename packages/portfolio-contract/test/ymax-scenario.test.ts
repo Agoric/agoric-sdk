@@ -204,26 +204,18 @@ const rebalanceScenarioMacro = test.macro({
 
 test('scenario:', rebalanceScenarioMacro, 'Open empty portfolio');
 test('scenario:', rebalanceScenarioMacro, 'Open portfolio with USDN position');
-test.failing(
-  'scenario:',
-  rebalanceScenarioMacro,
-  'Open portfolio with Aave position',
-);
+test('scenario:', rebalanceScenarioMacro, 'Open portfolio with Aave position');
 test('scenario:', rebalanceScenarioMacro, 'Recover funds from Noble ICA');
-test.failing('scenario:', rebalanceScenarioMacro, 'Open with 3 positions');
-test.failing('scenario:', rebalanceScenarioMacro, 'Consolidate to USDN');
-test.failing(
-  'scenario:',
-  rebalanceScenarioMacro,
-  'Withdraw some from Compound',
-);
-test.failing('scenario:', rebalanceScenarioMacro, 'Aave -> USDN');
+test('scenario:', rebalanceScenarioMacro, 'Open with 3 positions');
+test('scenario:', rebalanceScenarioMacro, 'Consolidate to USDN');
+test('scenario:', rebalanceScenarioMacro, 'Withdraw some from Compound');
+test('scenario:', rebalanceScenarioMacro, 'Aave -> USDN');
 // awkward: remote EVM account would exist prior
 test.skip('scenario:', rebalanceScenarioMacro, 'remote cash -> Aave');
-test.failing('scenario:', rebalanceScenarioMacro, 'Aave -> Compound');
-test.failing('scenario:', rebalanceScenarioMacro, 'USDN -> Aave');
-test.failing('scenario:', rebalanceScenarioMacro, 'A,C -> U');
-test.failing('scenario:', rebalanceScenarioMacro, 'Close out portfolio');
+test('scenario:', rebalanceScenarioMacro, 'Aave -> Compound');
+test('scenario:', rebalanceScenarioMacro, 'USDN -> Aave');
+test('scenario:', rebalanceScenarioMacro, 'A,C -> U');
+test('scenario:', rebalanceScenarioMacro, 'Close out portfolio');
 // grok isn't working on this one
 test.skip('scenario:', rebalanceScenarioMacro, 'Receive via hook');
 // requires internal planner
