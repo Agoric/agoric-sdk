@@ -16,11 +16,8 @@ import {
 } from '@agoric/orchestration';
 import type { TestFn } from 'ava';
 import {
-  makeFlowPath,
-  makePositionPath,
-  portfolioIdOfPath,
   PortfolioStatusShapeExt,
-  type StatusFor,
+  readPortfolioLatest,
 } from '@agoric/portfolio-api';
 import { mustMatch } from '@agoric/internal';
 
@@ -240,8 +237,6 @@ async function* readHistory(
   } while (blockHeight > 0);
 }
 
-const range = (n: number) => [...Array(n).keys()];
-
 // TODO: send an offer before running this test
 test('portfolio-opened', async t => {
   //   t.timeout(1_000);
@@ -262,28 +257,34 @@ test('portfolio-opened', async t => {
 
   const chopPub = (key: string) => key.replace(/^published./, '');
   for (const portfolioKey of portfolioKeys) {
-    const portfolioId = portfolioIdOfPath(portfolioKey);
-    const portfolioInfo = (await vsc.readPublished(
-      chopPub(portfolioKey),
-    )) as StatusFor['portfolio'];
+    const segments = portfolioKey.split('.');
+    const portfolioSegment = segments.pop();
+    portfolioSegment || t.fail('missing portfolio path segment');
+    const portfoliosPathPrefix = segments.join('.');
+    const readLatest = (path: string) => vsc.readPublished(chopPub(path));
+    const snapshot = await readPortfolioLatest({
+      readLatest,
+      listChildren: path => vs.keys(path),
+      portfoliosPathPrefix,
+      portfolioKey: /** @type {`portfolio${number}`} */ (portfolioSegment),
+      includePositions: true,
+    });
+    const portfolioInfo = snapshot.status;
     t.log(portfolioKey, portfolioInfo);
-    const { positionKeys, flowCount } = portfolioInfo;
-    for (const poolKey of positionKeys) {
-      // XXX this makePositionPath API is kinda messy
-      const positionKey = [
-        'ymax0',
-        'portfolios',
-        ...makePositionPath(portfolioId, poolKey),
-      ].join('.');
-      const positionInfo = (await vsc.readPublished(
-        positionKey,
-      )) as StatusFor['position'];
-      t.log(positionKey, positionInfo);
+    mustMatch(portfolioInfo, PortfolioStatusShapeExt, portfolioKey);
+
+    const baseLogPath = chopPub(`${portfoliosPathPrefix}.${snapshot.portfolioKey}`);
+    for (const [poolKey, position] of Object.entries(snapshot.positions || {})) {
+      t.log(
+        `${baseLogPath}.positions.${poolKey}`,
+        position?.status ?? 'missing position node',
+      );
     }
-    for (const flowNum of range(flowCount).map(x => x + 1)) {
-      const flowKey = makeFlowPath(portfolioId, flowNum).join('.');
+    const flowsWithNodes = values(snapshot.flows).filter(flow => flow.status);
+    for (const flowNode of flowsWithNodes) {
+      const flowPath = `${portfoliosPathPrefix}.${snapshot.portfolioKey}.flows.${flowNode.flowKey}`;
       try {
-        for await (const { blockHeight, values } of readHistory(flowKey, {
+        for await (const { blockHeight, values } of readHistory(flowPath, {
           vstorage: vs,
           setTimeout,
           clearTimeout,
@@ -291,7 +292,7 @@ test('portfolio-opened', async t => {
           try {
             const [jsonCapData] = values as string[];
             const info = vsc.marshaller.fromCapData(JSON.parse(jsonCapData));
-            t.log(flowKey, blockHeight, info);
+            t.log(flowPath, blockHeight, info);
           } catch (err) {
             t.log(blockHeight, values, err);
           }
