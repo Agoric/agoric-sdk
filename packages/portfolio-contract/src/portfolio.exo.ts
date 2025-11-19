@@ -460,7 +460,7 @@ export const preparePortfolioKit = (
           traceChain('accountsPending.init');
           accountsPending.init(chainName, pending);
           this.facets.reporter.publishStatus();
-          return undefined;
+          return pending.vow;
         },
         setAccountInfo(info: AccountInfo) {
           const { accounts, portfolioId } = this.state;
