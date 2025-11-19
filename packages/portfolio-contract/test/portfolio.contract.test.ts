@@ -720,7 +720,10 @@ test.serial(
 
     await eventLoopIteration();
     await ackNFA(common.utils);
+
     await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
+
     t.log('ackd send to Axelar to create account');
 
     await common.utils
@@ -796,6 +799,9 @@ test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
     depositToAave,
   );
 
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
+
   await simulateCCTPAck(common.utils).finally(() =>
     simulateAckTransferToAxelar(common.utils),
   );
@@ -805,6 +811,9 @@ test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
     { Deposit: amount, Access: poc26.make(1n) },
     depositToAave,
   );
+
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
 
   await simulateCCTPAck(common.utils).finally(() =>
     simulateAckTransferToAxelar(common.utils),
