@@ -119,7 +119,6 @@ export const provideEVMAccount = (
 
   if (!pk.reader.hasGMPInfo(chainName)) {
     const info = predictAddress(lca.getAddress().value);
-    pk.manager.setAccountInfo(info);
 
     const ready = pk.manager.reservePendingAccount(
       chainName,
