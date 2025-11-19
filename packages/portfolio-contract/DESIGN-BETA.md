@@ -115,16 +115,22 @@ sequenceDiagram
   YP ->> portfolio: read portfolio allocations
   YP ->> icaN: read balance
   YP ->> aavePos: read balance
-  YP ->> AX: figure out how much to pay for GMP(agoric, arbitrum) and GMP(arbitrum, agoric) ticket TBD
-  Note over YP: think and generate steps
-  YP ->> portfolio: send moves and X BLD for GMP(agoric, arbitrum) and Y ARB for GMP(arbitrum, agoric)
+  YP ->> AX: compute GMP costs (agoric→arbitrum)
+  Note over YP: planner thinks and generates steps
+  YP ->> portfolio: send moves and X BLD for GMP(agoric→arbitrum)<br/>
+
   Note over portfolio, acctArb: Make Account if Needed
   portfolio ->> LCAorch: LCAgas pays X BLD (#11781)
-  LCAorch ->> AX: makeAccount("Y ARB" for postage)
-  AX ->> factory: invoke makeAccount
-  factory ->> acctArb: makeAccount
-  factory ->> AX: return acctArb.accountID, Y ARB for postage
-  AX ->> LCAorch: return acctArb.accountID
+  LCAorch ->> AX: sendMakeAccountCall(... )<br/>GMP: request creation of remote Arbitrum wallet
+  AX -->> factory: invoke makeAccount on Arbitrum
+  factory -->> acctArb: deploy new Arbitrum wallet instance
+  factory -->> factory: emit SmartWalletCreated(acctArb.accountID)
+
+  Note over factory, YP: Ymax-Planner listens for<br/>SmartWalletCreated events
+  YP ->> Res: watchSmartWalletTx(... )<br/>detected SmartWalletCreated
+  Res ->> portfolio: resolvePendingTx(... )<br/>store acctArb.accountID
+
+  Note over portfolio, acctArb: Remote Arbitrum wallet acctArb<br/>created successfully and ready to use
 
   Note over LCAorch, acctArb: CCTP Out
   LCAin ->> LCAorch: $5k
