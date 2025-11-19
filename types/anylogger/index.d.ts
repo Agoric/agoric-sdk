@@ -27,7 +27,10 @@ declare module 'anylogger' {
   }
 
   export type Logger<L extends BaseLevels = BaseLevels> = BaseLogger<L> & {
-    [P in keyof Omit<L, keyof BaseLevels>]: (message?: any, ...args: any[]) => void;
+    [P in keyof Omit<L, keyof BaseLevels>]: (
+      message?: any,
+      ...args: any[]
+    ) => void;
   };
 
   export interface AnyLogger<

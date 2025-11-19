@@ -55,6 +55,9 @@ export const resolvePendingTx = async ({
     proposal,
   });
 
-  const result = await signingSmartWalletKit.executeOffer(action, smartWalletFee);
+  const result = await signingSmartWalletKit.executeOffer(
+    action,
+    smartWalletFee,
+  );
   return result;
 };
