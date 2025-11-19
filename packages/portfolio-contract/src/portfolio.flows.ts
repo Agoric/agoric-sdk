@@ -76,11 +76,11 @@ import {
 } from './type-guards-steps.ts';
 import {
   PoolPlaces,
-  type EVMContractAddressesMap,
   type FlowDetail,
   type PoolKey,
   type ProposalType,
-} from './type-guards.ts';
+} from '@agoric/portfolio-api';
+import type { EVMContractAddressesMap } from './type-guards.ts';
 import { runJob, type Job } from './schedule-order.ts';
 // XXX: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 

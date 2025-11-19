@@ -11,9 +11,6 @@
 - No `portfolio-api` module currently surfaces the vstorage schema; it only defines TypeScript types and minimal guards (`src/type-guards.ts`).
 
 ## Plan
-1) **Create canonical vstorage schema module in `portfolio-api`**
-   - Add a new source file (e.g., `src/vstorage-schema.ts`) exporting path helpers (`makePortfolioPath`, `makePositionPath`, `makeFlowPath`, `makeFlowStepsPath`, `portfolioIdFromKey`, `flowIdFromKey`, `portfolioIdOfPath`) and pattern guards (`PortfolioStatusShapeExt`, `PositionStatusShape`, `FlowStatusShape`, `FlowStepsShape`, `FlowDetailShape`, `TargetAllocationShapeExt`, etc.).
-   - Ensure the module depends only on shared packages (`@endo/patterns`, `@agoric/orchestration`, `@agoric/portfolio-api` types) so it is safe for off-repo consumers; expose it via the package entry points.
 
 2) **Move existing schema references to the new module**
    - Refactor `portfolio-contract` to import the schema helpers from `@agoric/portfolio-api` rather than defining them locally; breaking changes to `@aglocal/portfolio-contract/src/type-guards.ts` are acceptable (no compatibility shim needed).

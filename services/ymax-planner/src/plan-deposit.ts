@@ -4,7 +4,7 @@ import {
   type PoolPlaceInfo,
   type StatusFor,
   type TargetAllocation,
-} from '@aglocal/portfolio-contract/src/type-guards.js';
+} from '@agoric/portfolio-api';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import type { Brand, NatAmount, NatValue } from '@agoric/ertp/src/types.js';
 import {

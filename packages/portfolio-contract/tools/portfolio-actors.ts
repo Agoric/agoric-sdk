@@ -20,11 +20,10 @@ import { type start } from '@aglocal/portfolio-contract/src/portfolio.contract.j
 import {
   makePositionPath,
   portfolioIdOfPath,
-  type OfferArgsFor,
-  type ProposalType,
   type StatusFor,
   type PoolKey,
-} from '@aglocal/portfolio-contract/src/type-guards.js';
+} from '@agoric/portfolio-api';
+import type { OfferArgsFor, ProposalType } from '@aglocal/portfolio-contract/src/type-guards.js';
 import type { WalletTool } from '@aglocal/portfolio-contract/tools/wallet-offer-tools.js';
 import type {
   PortfolioPublicInvitationMaker,

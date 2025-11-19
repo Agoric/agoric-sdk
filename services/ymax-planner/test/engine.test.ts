@@ -5,7 +5,7 @@ import { Fail } from '@endo/errors';
 
 import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.exo.ts';
 import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
-import type { StatusFor } from '@aglocal/portfolio-contract/src/type-guards.ts';
+import type { StatusFor } from '@agoric/portfolio-api';
 import type {
   QueryChildrenMetaResponse,
   QueryDataMetaResponse,

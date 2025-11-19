@@ -26,17 +26,15 @@ import {
   type TxId,
 } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
-import type {
-  FlowDetail,
-  PoolKey as InstrumentId,
-  StatusFor,
-} from '@aglocal/portfolio-contract/src/type-guards.ts';
 import {
-  flowIdFromKey,
   PoolPlaces,
-  portfolioIdFromKey,
   PortfolioStatusShapeExt,
-} from '@aglocal/portfolio-contract/src/type-guards.ts';
+  flowIdFromKey,
+  portfolioIdFromKey,
+  type FlowDetail,
+  type InstrumentId,
+  type StatusFor,
+} from '@agoric/portfolio-api';
 import { PROD_NETWORK } from '@aglocal/portfolio-contract/tools/network/network.prod.js';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import {

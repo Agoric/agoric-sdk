@@ -12,7 +12,7 @@ import {
   type OfferArgsFor,
   type ProposalType,
   type TargetAllocation,
-} from '@aglocal/portfolio-contract/src/type-guards.ts';
+} from '@agoric/portfolio-api';
 import { makePortfolioSteps } from '@aglocal/portfolio-contract/tools/plan-transfers.ts';
 import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.ts';
 import {

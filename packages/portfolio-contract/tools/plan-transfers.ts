@@ -1,6 +1,6 @@
 import { AmountMath } from '@agoric/ertp';
 import type { Amount, Brand, NatAmount, NatValue } from '@agoric/ertp';
-import type { TargetAllocation } from '@aglocal/portfolio-contract/src/type-guards.js';
+import type { TargetAllocation } from '@agoric/portfolio-api';
 import { NonNullish } from '@agoric/internal';
 import type {
   YieldProtocol,

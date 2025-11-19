@@ -13,7 +13,7 @@ import {
 import PROD_NETWORK, {
   PROD_NETWORK as NAMED_PROD,
 } from '../../tools/network/network.prod.js';
-import { PoolPlaces } from '../../src/type-guards.js';
+import { PoolPlaces } from '@agoric/portfolio-api';
 import type { AssetPlaceRef } from '../../src/type-guards-steps.js';
 import type {
   PoolKey,
