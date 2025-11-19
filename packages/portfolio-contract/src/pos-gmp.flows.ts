@@ -93,7 +93,7 @@ export const provideEVMAccount = (
     return info;
   };
 
-  const installContract = async () => {
+  const installContract = async (info: GMPAccountInfo) => {
     await null;
     try {
       const axelarId = gmp.axelarIds[chainName];
@@ -109,6 +109,7 @@ export const provideEVMAccount = (
       await feeAccount.send(lca.getAddress(), fee);
 
       await sendMakeAccountCall(target, fee, lca, gmp.chain, ctx.gmpAddresses);
+      pk.manager.resolveAccount(info);
     } catch (reason) {
       traceChain('failed to makeAccount', reason);
       pk.manager.releaseAccount(chainName, reason);
@@ -127,7 +128,7 @@ export const provideEVMAccount = (
     ready.then(_ => {
       console.log('@@@@ready!!!', info);
     });
-    return { ...info, ready: installContract().then(_ => ready) };
+    return { ...info, ready: installContract(info).then(_ => ready) };
   }
   const info = pk.reader.getGMPInfo(chainName);
 
@@ -135,7 +136,7 @@ export const provideEVMAccount = (
     const ready = pk.manager.resetPendingAccount(
       chainName,
     ) as unknown as Promise<GMPAccountInfo>;
-    return { ...info, ready: installContract().then(_ => ready) };
+    return { ...info, ready: installContract(info).then(_ => ready) };
   }
 
   return { ...info, ready: Promise.resolve(info) };

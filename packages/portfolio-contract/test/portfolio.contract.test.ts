@@ -146,6 +146,7 @@ test('open a portfolio with Aave position', async t => {
   const chainP = (async () => {
     await ackNFA(common.utils);
     await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
     await simulateCCTPAck(common.utils);
     const misc = await txResolver.drainPending();
     // NOTE: Axelar Ack has to come _after_ drainPending.
