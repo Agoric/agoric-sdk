@@ -14,6 +14,7 @@ Portfolio vstorage paths, shapes, and helpers now live here (see `src/vstorage-s
 - History iterator: `iterateVstorageHistory({ readAt, path, minHeight, decodeValue })` wraps `vstorage.readAt` into an async generator so tests and services can replay state transitions with consistent culling.
 - Mock readers: `makeMockVstorageReaders(initialEntries)` provides `readLatest`, `listChildren`, and `writeLatest` helpers backed by a Map for deterministic tests that exercise these utilities without hitting a chain follower.
 - Materializer: `materializePortfolioPositions({ status, positionNodes, poolPlaces })` turns raw `positions.*` entries (or mock data) into the same `positions`/`positionsByChain` view for UIs that already have the node data.
+- Place enumerator: `enumeratePortfolioPlaces({ status, poolPlaces })` returns normalized arrays of chain accounts (e.g., `@noble`) and position entries (e.g., `Aave_Base`) so planners can build balance queries without duplicating `accountIdByChain`/`PoolPlaces` joins.
 
 Example (latest-only):
 

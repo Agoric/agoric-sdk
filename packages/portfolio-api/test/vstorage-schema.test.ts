@@ -7,6 +7,7 @@ import {
   FlowStepsShape,
   PortfolioStatusShapeExt,
   PoolPlaces,
+  enumeratePortfolioPlaces,
   makeFlowPath,
   makePortfolioPath,
   makePositionPath,
@@ -59,7 +60,9 @@ test('shapes validate portfolio and flow data', t => {
       FlowStepsShape,
     ),
   );
-  t.notThrows(() => mustMatch(harden({ type: 'withdraw', amount }), FlowDetailShape));
+  t.notThrows(() =>
+    mustMatch(harden({ type: 'withdraw', amount }), FlowDetailShape),
+  );
 });
 
 test('readPortfolioLatest combines flowsRunning and flow nodes', async t => {
@@ -166,17 +169,42 @@ test('readPortfolioLatest materializes positions and chains when requested', asy
   t.is(positionsByChain.agoric?.positions.length, 0);
 });
 
+test('enumeratePortfolioPlaces joins account and position metadata', t => {
+  const status: StatusFor['portfolio'] = {
+    positionKeys: ['USDN', 'Aave_Ethereum'],
+    accountIdByChain: {
+      noble: 'cosmos:noble-1:noble1def',
+      Ethereum: 'eip155:1:0xabc',
+    },
+    flowCount: 0,
+    policyVersion: 0,
+    rebalanceCount: 0,
+  } as StatusFor['portfolio'];
+
+  const places = enumeratePortfolioPlaces({ status });
+  t.is(places.chainAccounts.length, 2);
+  t.deepEqual(places.chainAccounts.map(({ chainName }) => chainName).sort(), [
+    'Ethereum',
+    'noble',
+  ]);
+  const [usdPlace] = places.positions.filter(p => p.poolKey === 'USDN');
+  t.is(usdPlace?.chainName, 'noble');
+  t.is(usdPlace?.accountId, status.accountIdByChain.noble);
+  const aavePlace = places.positions.find(p => p.poolKey === 'Aave_Ethereum');
+  t.truthy(aavePlace?.pool?.protocol);
+});
+
 test('selectPendingFlows filters flows without nodes', async t => {
   const snapshot: PortfolioLatestSnapshot = {
     portfolioKey: 'portfolio7',
-    status: /** @type {StatusFor['portfolio']} */ ({
+    status: /** @type {StatusFor['portfolio']} */ {
       positionKeys: [],
       flowCount: 0,
       accountIdByChain: {},
       policyVersion: 0,
       rebalanceCount: 0,
       flowsRunning: {},
-    }),
+    },
     flows: {
       flow1: {
         flowKey: 'flow1',

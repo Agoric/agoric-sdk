@@ -24,6 +24,7 @@ import { YieldProtocol } from './constants.js';
  * @import {FlowStep}  from './types.js';
  * @import {PortfolioKey}  from './types.js';
  * @import {PoolKey}  from './types.js';
+ * @import {AssetPlaceRef} from './types.js';
  * @import {StatusFor}  from './types.js';
  */
 
@@ -342,6 +343,24 @@ const toFlowKey = key => {
  */
 
 /**
+ * @typedef {object} PortfolioChainAccountPlace
+ * @property {'chain'} kind
+ * @property {SupportedChain} chainName
+ * @property {AccountId | undefined} accountId
+ * @property {AssetPlaceRef} place
+ */
+
+/**
+ * @typedef {object} PortfolioPositionPlace
+ * @property {'position'} kind
+ * @property {PoolKey} poolKey
+ * @property {PoolPlaceInfo | undefined} pool
+ * @property {SupportedChain | undefined} chainName
+ * @property {AccountId | undefined} accountId
+ * @property {PoolKey} place
+ */
+
+/**
  * @param {object} opts
  * @param {VstorageReadLatest} opts.readLatest
  * @param {string} opts.portfolioPath
@@ -393,7 +412,9 @@ export const materializePortfolioPositions = ({
   const positionsByChainEntries = new Map();
 
   for (const poolKey of positionKeys) {
-    const place = /** @type {PoolPlaceInfo | undefined} */ (poolPlaces[poolKey]);
+    const place = /** @type {PoolPlaceInfo | undefined} */ (
+      poolPlaces[poolKey]
+    );
     const chainName = /** @type {SupportedChain | undefined} */ (
       place?.chainName
     );
@@ -437,6 +458,57 @@ export const materializePortfolioPositions = ({
   return harden({
     positions: harden(positions),
     positionsByChain: harden(positionsByChain),
+  });
+};
+
+/**
+ * @param {object} opts
+ * @param {StatusFor['portfolio']} opts.status
+ * @param {Record<PoolKey, PoolPlaceInfo>} [opts.poolPlaces]
+ * @returns {{ chainAccounts: readonly PortfolioChainAccountPlace[], positions: readonly PortfolioPositionPlace[] }}
+ */
+export const enumeratePortfolioPlaces = ({
+  status,
+  poolPlaces = /** @type {Record<PoolKey, PoolPlaceInfo>} */ (PoolPlaces),
+}) => {
+  const { accountIdByChain = {}, positionKeys = [] } = status;
+
+  /** @type {PortfolioChainAccountPlace[]} */
+  const chainAccounts = [];
+  for (const [chainName, accountId] of entries(accountIdByChain)) {
+    chainAccounts.push(
+      harden({
+        kind: 'chain',
+        chainName: /** @type {SupportedChain} */ (chainName),
+        accountId,
+        place: /** @type {AssetPlaceRef} */ (`@${chainName}`),
+      }),
+    );
+  }
+
+  /** @type {PortfolioPositionPlace[]} */
+  const positions = [];
+  for (const poolKey of positionKeys) {
+    const pool = poolPlaces[poolKey];
+    const chainName = /** @type {SupportedChain | undefined} */ (
+      pool?.chainName
+    );
+    const accountId = chainName ? accountIdByChain[chainName] : undefined;
+    positions.push(
+      harden({
+        kind: 'position',
+        poolKey,
+        pool,
+        chainName,
+        accountId,
+        place: poolKey,
+      }),
+    );
+  }
+
+  return harden({
+    chainAccounts: harden(chainAccounts),
+    positions: harden(positions),
   });
 };
 
@@ -535,7 +607,7 @@ export const readPortfolioLatest = async ({
     positionsByChain = materialized.positionsByChain;
   }
 
- return harden({
+  return harden({
     portfolioKey,
     status,
     flows,

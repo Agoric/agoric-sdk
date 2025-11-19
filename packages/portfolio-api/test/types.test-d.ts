@@ -10,6 +10,7 @@ import { AxelarChain } from '../src/constants.js';
 import type { InstrumentId } from '../src/instruments.js';
 import type { PublishedTx } from '../src/resolver.js';
 import {
+  enumeratePortfolioPlaces,
   iterateVstorageHistory,
   makeMockVstorageReaders,
   materializePortfolioPositions,
@@ -33,7 +34,9 @@ import type {
 } from '../src/types.js';
 import type {
   FlowNodeLatest,
+  PortfolioChainAccountPlace,
   PortfolioLatestSnapshot,
+  PortfolioPositionPlace,
 } from '../src/vstorage-schema.js';
 
 declare const natAmount: NatAmount;
@@ -226,6 +229,10 @@ const historyIterator = iterateVstorageHistory({
   path: 'published.demo',
 });
 expectAssignable<AsyncIterableIterator<any>>(historyIterator);
+
+const places = enumeratePortfolioPlaces({ status: status.portfolio });
+expectType<readonly PortfolioPositionPlace[]>(places.positions);
+expectType<readonly PortfolioChainAccountPlace[]>(places.chainAccounts);
 
 // Ensure every Axelar chain key is covered by SupportedChain.
 expectAssignable<keyof typeof SupportedChain>(
