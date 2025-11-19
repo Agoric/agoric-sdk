@@ -123,7 +123,10 @@ export const provideEVMAccount = (
     const ready = pk.manager.reservePendingAccount(
       chainName,
     ) as unknown as Promise<GMPAccountInfo>;
-
+    console.log('@@@ready?', ready, info);
+    ready.then(_ => {
+      console.log('@@@@ready!!!', info);
+    });
     return { ...info, ready: installContract().then(_ => ready) };
   }
   const info = pk.reader.getGMPInfo(chainName);
