@@ -74,6 +74,8 @@ const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
     compound: M.string(),
     factory: M.string(),
     usdc: M.string(),
+    gateway: M.string(),
+    gasService: M.string(),
   });
 
 export type AxelarConfig = {
@@ -116,6 +118,8 @@ export type EVMContractAddresses = {
   aaveUSDC: `0x${string}`;
   aaveRewardsController: `0x${string}`;
   compoundRewardsController: `0x${string}`;
+  gateway: `0x${string}`;
+  gasService: `0x${string}`;
 } & Partial<BeefyContracts>;
 
 export type AxelarId = {

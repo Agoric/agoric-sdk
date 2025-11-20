@@ -20,6 +20,7 @@
   },
   "devDependencies": {
     "@aglocal/boot": "workspace:*",
+    "@aglocal/portfolio-deploy": "workspace:*",
     "@agoric/async-flow": "workspace:*",
     "@agoric/client-utils": "workspace:*",
     "@agoric/fast-usdc": "workspace:*",

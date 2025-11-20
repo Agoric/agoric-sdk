@@ -1,8 +1,8 @@
 /**
  * @import {AxelarChain} from '@agoric/portfolio-api/src/constants.js';
- * @import {EVMContractAddresses} from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
+ * @import {EVMContractAddresses} from '@aglocal/portfolio-contract/src/portfolio.contract.js';
  * @import {BaseChainInfo, Bech32Address} from '@agoric/orchestration'
- * @import {EVMContractAddressesMap} from '@aglocal/portfolio-contract/src/type-guards.ts';
+ * @import {EVMContractAddressesMap} from '@aglocal/portfolio-contract/src/type-guards.js';
  */
 
 /**
