@@ -221,7 +221,7 @@ const trackFlow = async (
   const job: Job = { taskQty: moves.length, order };
   const results = await runJob(job, runTask, traceFlow);
   if (results.some(r => r.status === 'rejected')) {
-    const reasons = [...results].reverse().reduce((next, r, ix) => {
+    const reasons = results.reduce((next, r, ix) => {
       if (r.status !== 'rejected') return next;
       const errs: FlowErrors = {
         step: ix + 1,
@@ -237,7 +237,7 @@ const trackFlow = async (
       ...reasons,
       ...detail,
     });
-    throw results;
+    throw reasons;
   }
 
   reporter.publishFlowStatus(flowId, { state: 'done', ...detail });
