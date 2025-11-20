@@ -417,13 +417,14 @@ export const preparePortfolioKit = (
       manager: {
         reserveAccount<C extends SupportedChain>(
           chainName: C,
+          ready?: Vow<unknown>,
         ): undefined | Vow<AccountInfoFor[C]> {
           const traceChain = trace
             .sub(`portfolio${this.state.portfolioId}`)
             .sub(chainName);
           traceChain('reserveAccount');
           const { accounts, accountsPending } = this.state;
-          if (accounts.has(chainName)) {
+          if (!ready && accounts.has(chainName)) {
             traceChain('accounts.has');
             return vowTools.asVow(async () => {
               const infoAny = accounts.get(chainName);
@@ -442,25 +443,14 @@ export const preparePortfolioKit = (
           }
           const pending: VowKit<AccountInfoFor[C]> = vowTools.makeVowKit();
           vowTools.watch(pending.vow, this.facets.accountWatcher, chainName);
+          if (ready) {
+            // XXX in the ready case, info is available elsewhere
+            pending.resolver.resolve(ready as any);
+          }
           traceChain('accountsPending.init');
           accountsPending.init(chainName, pending);
           this.facets.reporter.publishStatus();
           return undefined;
-        },
-        reservePendingAccount<C extends SupportedChain>(
-          chainName: C,
-        ): undefined | Vow<AccountInfoFor[C]> {
-          const traceChain = trace
-            .sub(`portfolio${this.state.portfolioId}`)
-            .sub(chainName);
-          traceChain('reservePendingAccount');
-          const { accountsPending } = this.state;
-          const pending: VowKit<AccountInfoFor[C]> = vowTools.makeVowKit();
-          vowTools.watch(pending.vow, this.facets.accountWatcher, chainName);
-          traceChain('accountsPending.init');
-          accountsPending.init(chainName, pending);
-          this.facets.reporter.publishStatus();
-          return pending.vow;
         },
         setAccountInfo(info: AccountInfo) {
           const { accounts, portfolioId } = this.state;
@@ -490,11 +480,11 @@ export const preparePortfolioKit = (
           accounts.init(info.chainName, info);
           this.facets.reporter.publishStatus();
         },
-        resetPendingAccount(chainName: AxelarChain) {
+        resetPendingAccount(chainName: AxelarChain, ready: Vow<unknown>) {
           const { accountsPending } = this.state;
           // XXX trace?
           accountsPending.delete(chainName);
-          return this.facets.manager.reservePendingAccount(chainName);
+          return this.facets.manager.reserveAccount(chainName, ready);
         },
         releaseAccount(chainName: SupportedChain, reason: unknown) {
           trace('releaseAccount', chainName, reason);
@@ -553,11 +543,24 @@ export const preparePortfolioKit = (
         },
       },
       accountWatcher: {
+        onFulfilled(info: AccountInfo, chainName: AxelarChain) {
+          const { accountsPending } = this.state;
+          if (accountsPending.has(chainName)) {
+            accountsPending.delete(chainName);
+          }
+          this.facets.reporter.publishStatus();
+          return info;
+        },
         onRejected(reason, chainName) {
+          const { accountsPending, portfolioId } = this.state;
           const traceChain = trace
-            .sub(`portfolio${this.state.portfolioId}`)
+            .sub(`portfolio${portfolioId}`)
             .sub(chainName);
           traceChain('rejected', reason);
+          if (accountsPending.has(chainName)) {
+            accountsPending.delete(chainName);
+          }
+          this.facets.reporter.publishStatus();
         },
       },
       rebalanceHandler: {
