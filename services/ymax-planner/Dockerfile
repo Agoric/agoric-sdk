@@ -22,16 +22,8 @@ COPY . ./
 RUN --mount=type=cache,target=/root/.yarn/berry/cache yarn install --mode=skip-build
 
 # Build the service and its dependencies
-# XXX manual list of dependencies is brittle
 # Cannot `npm run build` the repo because it assumes Git environment.
-# This should work but we have sloppy package dependencies: yarn workspaces foreach --topological --recursive --from @aglocal/ymax-planner run build
-RUN cd packages/cosmic-proto && yarn build
-RUN cd packages/client-utils && yarn build
-RUN cd services/ymax-planner && yarn build
-# `yarn workspaces focus ... --production` builds better-sqlite3 bindings without triggering build 
-# of dependencies such as xsnap.
-RUN yarn workspaces focus @aglocal/ymax-planner --production
-RUN cd packages/portfolio-contract && yarn build
+RUN yarn workspaces foreach --topological --recursive --from @aglocal/ymax-planner run build
 
 # Production stage
 FROM node:22-alpine AS production
