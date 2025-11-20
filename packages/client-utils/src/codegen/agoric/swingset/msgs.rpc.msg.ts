@@ -4,6 +4,8 @@ import { BinaryReader } from '../../binary.js';
 import {
   MsgInstallBundle,
   MsgInstallBundleResponse,
+  MsgSendChunk,
+  MsgSendChunkResponse,
   MsgDeliverInbound,
   MsgDeliverInboundResponse,
   MsgWalletAction,
@@ -19,6 +21,8 @@ import {
 export interface Msg {
   /** Install a JavaScript sources bundle on the chain's SwingSet controller. */
   installBundle(request: MsgInstallBundle): Promise<MsgInstallBundleResponse>;
+  /** Send a chunk of a bundle to tolerate RPC message size limits. */
+  sendChunk(request: MsgSendChunk): Promise<MsgSendChunkResponse>;
   /** Send inbound messages. */
   deliverInbound(
     request: MsgDeliverInbound,
@@ -39,6 +43,7 @@ export class MsgClientImpl implements Msg {
   constructor(rpc: Rpc) {
     this.rpc = rpc;
     this.installBundle = this.installBundle.bind(this);
+    this.sendChunk = this.sendChunk.bind(this);
     this.deliverInbound = this.deliverInbound.bind(this);
     this.walletAction = this.walletAction.bind(this);
     this.walletSpendAction = this.walletSpendAction.bind(this);
@@ -54,6 +59,13 @@ export class MsgClientImpl implements Msg {
     );
     return promise.then(data =>
       MsgInstallBundleResponse.decode(new BinaryReader(data)),
+    );
+  }
+  sendChunk(request: MsgSendChunk): Promise<MsgSendChunkResponse> {
+    const data = MsgSendChunk.encode(request).finish();
+    const promise = this.rpc.request('agoric.swingset.Msg', 'SendChunk', data);
+    return promise.then(data =>
+      MsgSendChunkResponse.decode(new BinaryReader(data)),
     );
   }
   deliverInbound(
