@@ -4,7 +4,7 @@ import {
   EvmWalletOperationType,
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
-import type { AxelarChain } from '@agoric/portfolio-api/src/constants';
+import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import {
   walletOperationGasLimitEstimates,
   walletOperationFallbackGasLimit,

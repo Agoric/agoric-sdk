@@ -1,7 +1,7 @@
 import { type SigningSmartWalletKit } from '@agoric/client-utils';
-import type { OfferSpec } from '@agoric/smart-wallet/src/offers';
+import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import type { TxStatus } from '@aglocal/portfolio-contract/src/resolver/constants.js';
-import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types';
+import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.js';
 import type { StdFee } from '@cosmjs/stargate';
 
 type ResolveTxParams = {

@@ -6,5 +6,8 @@
     "test",
     "testing",
     "tools"
+  ],
+  "exclude": [
+    "**/__generated"
   ]
 }
