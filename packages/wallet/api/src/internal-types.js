@@ -1,5 +1,7 @@
 // @ts-check
 
+/** @import {PursesJSONState, RecordMetadata} from './types-ambient.js'; */
+
 /**
  * @typedef {object} PursesAddedState
  * @property {Purse} purse
@@ -8,8 +10,12 @@
  */
 
 /**
- * @import {Petname} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {Key} from '@endo/patterns';
+ * @import {Coordinator} from '@agoric/cache';
+ * @import {Petname} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {AmountValue} from '@agoric/ertp/src/types.js';
+ * @import {ZoeIssuerRecord} from '@agoric/zoe';
+ * @import {WalletRoot} from './lib-wallet.js';
  */
 
 /**
@@ -18,7 +24,7 @@
 
 /**
  * @typedef {object} PurseActions
- * @property {(receiverP: ERef<{ receive: (payment: Payment) => void }>, valueToSend: import('@agoric/ertp/src/types.js').AmountValue) => Promise<void>} send
+ * @property {(receiverP: ERef<{ receive: (payment: Payment) => void }>, valueToSend: AmountValue) => Promise<void>} send
  * @property {(payment: Payment) => Promise<Amount>} receive
  * @property {(payment: Payment, amount?: Amount) => Promise<Amount>} deposit
  */
@@ -42,7 +48,7 @@
  * @property {Petname} petname
  * @property {boolean} enable
  * @property {string} origin
- * @property {ERef<import('@agoric/cache').Coordinator>} cacheCoordinator
+ * @property {ERef<Coordinator>} cacheCoordinator
  * @property {DappActions} actions
  */
 
@@ -85,7 +91,7 @@
  * @property {string} [issuerBoardId]
  *
  * @typedef {object} PaymentActions
- * @property {(purseOrPetname?: (Purse | Petname)) => Promise<import('@agoric/ertp/src/types.js').AmountValue>} deposit
+ * @property {(purseOrPetname?: (Purse | Petname)) => Promise<AmountValue>} deposit
  * @property {() => Promise<boolean>} refresh
  * @property {() => Promise<boolean>} getAmountOf
  */
@@ -96,6 +102,6 @@
  * would make them part of the WalletUser available as `home.wallet` in the
  * REPL.  Then, the Wallet UI could use that instead.
  *
- * @typedef {import('./lib-wallet.js').WalletRoot['admin']}
+ * @typedef {WalletRoot['admin']}
  * WalletAdminFacet
  */

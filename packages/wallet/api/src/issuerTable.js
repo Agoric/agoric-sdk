@@ -5,7 +5,10 @@ import { E } from '@endo/eventual-send';
 
 import { makeScalarWeakMapStore } from '@agoric/store';
 
-import './internal-types.js';
+/**
+ * @import {ZoeIssuerRecord} from '@agoric/zoe';
+ * @import {IssuerTable} from './types-ambient.js';
+ */
 
 /**
  * IssuerTable

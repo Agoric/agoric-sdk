@@ -3,6 +3,10 @@ import { E } from '@endo/eventual-send';
 import { passStyleOf } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 
+/**
+ * @import {Board} from '@agoric/vats';
+ */
+
 export const makeId = (dappOrigin, rawId) => `${dappOrigin}#${rawId}`;
 
 const assertFirstCapASCII = str => {
@@ -19,7 +23,7 @@ const assertFirstCapASCII = str => {
 /**
  * @param {Amount<'set'>} invitationPurseBalance
  * @param {object} query
- * @param {import('@agoric/vats').Board} query.board
+ * @param {Board} query.board
  * @param {string} query.boardId
  * @returns {Promise<Array>}
  * @deprecated
@@ -91,7 +95,7 @@ const makeContinuingInvitation = async (
 /**
  * @param {InvitationMaker} invitationMaker
  * @param {string} instanceHandleBoardId
- * @param {import('@agoric/vats').Board} board
+ * @param {Board} board
  * @param {ZoeService} zoe
  * @returns {Promise<Invitation>}
  */
