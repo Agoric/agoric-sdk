@@ -11,7 +11,7 @@ const { Fail, bare, details: X } = assert;
  * @import {Zone} from '@agoric/base-zone';
  * @import {Watch} from './watch.js';
  * @import {When} from './when.js';
- * @import {VowKit, AsPromiseFunction, IsRetryableReason, Vow} from './types.js';
+ * @import {VowKit, AsPromiseFunction, Fulfilled, IsRetryableReason, Vow} from './types.js';
  */
 
 const VowShape = M.tagged(
@@ -72,13 +72,23 @@ export const prepareWatchUtils = (
     },
     {
       utils: {
-        /** @param {unknown[]} specimens */
+        /**
+         * @template {readonly unknown[]} S
+         * @param {S} specimens
+         * @returns {Vow<{ [P in keyof S]: Fulfilled<S[P]> }>}
+         */
         all(specimens) {
-          return this.facets.helper.createVow(specimens, false);
+          return /** @type {Vow<{ [P in keyof S]: Fulfilled<S[P]> }>} */ (
+            this.facets.helper.createVow(specimens, false)
+          );
         },
-        /** @param {unknown[]} specimens */
+        /**
+         * @template {readonly unknown[]} S
+         * @param {S} specimens
+         * @returns {Vow<{ [P in keyof S]: PromiseSettledResult<Fulfilled<S[P]>> }>}
+         */
         allSettled(specimens) {
-          return /** @type {Vow<({status: 'fulfilled', value: any} | {status: 'rejected', reason: any})[]>} */ (
+          return /** @type {Vow<{ [P in keyof S]: PromiseSettledResult<Fulfilled<S[P]>> }>} */ (
             this.facets.helper.createVow(specimens, true)
           );
         },
@@ -121,7 +131,7 @@ export const prepareWatchUtils = (
       },
       helper: {
         /**
-         * @param {unknown[]} specimens
+         * @param {readonly unknown[]} specimens
          * @param {boolean} isAllSettled
          */
         createVow(specimens, isAllSettled) {

@@ -372,8 +372,8 @@ test('portfolio node includes flowsRunning, nobleForwardingAddress', t => {
     },
     status1: {
       accountIdByChain: {
-        agoric: 'cosmos:agoric-6:agoric11028',
-        noble: 'cosmos:noble-5:noble11056',
+        agoric: 'cosmos:agoric-3:agoric11028',
+        noble: 'cosmos:noble-1:noble11056',
       },
       accountsPending: [],
       depositAddress: 'agoric11042',
