@@ -1166,32 +1166,45 @@ test('handle failure in provideEVMAccount sendMakeAccountCall', async t => {
   const seat1 = makeMockSeat(give, undefined, log);
 
   const attempt1P = rebalance(orch, ctx, seat1, { flow: steps }, pKit);
+  const testDonePK = makePromiseKit();
+  txResolver.settleUntil(testDonePK.promise);
   t.is(await attempt1P, undefined);
 
   const seatFails = log.find(e => e._method === 'fail' && e._cap === 'seat');
-  t.deepEqual(
+  t.like(
     seatFails?.reason,
-    Error('Insufficient funds - piggy bank sprang a leak'),
+    {
+      error: 'Insufficient funds - piggy bank sprang a leak',
+      how: 'Compound',
+      step: 4,
+    },
     'rebalance should fail when EVM account creation fails',
   );
 
   const { getPortfolioStatus, getFlowStatus } = makeStorageTools(storage);
 
   {
-    const { accountIdByChain: byChain } = await getPortfolioStatus(1);
-    // limited accounts (no EVM account due to failure)
-    t.deepEqual(Object.keys(byChain), ['agoric']);
+    const { accountIdByChain: byChain, accountsPending } =
+      await getPortfolioStatus(1);
+    // addresses of all requested accounts are available
+    t.deepEqual(Object.keys(byChain), ['Arbitrum', 'agoric', 'noble']);
+    // attempt to install Arbitrum account is no longer pending
+    t.deepEqual(accountsPending, []);
 
-    // TODO: "Insufficient funds" error should be visible in vstorage
     const fs = await getFlowStatus(1, 1);
     t.log(fs);
-    t.deepEqual(fs, {
-      type: 'rebalance',
-      state: 'fail',
-      step: 0,
-      how: 'makeAccount: Arbitrum',
-      error: 'Insufficient funds - piggy bank sprang a leak',
-    });
+    t.deepEqual(
+      fs,
+      {
+        type: 'rebalance',
+        state: 'fail',
+        step: 4,
+        how: 'Compound',
+        error: 'Insufficient funds - piggy bank sprang a leak',
+        next: undefined,
+      },
+      '"Insufficient funds" error should be visible in vstorage',
+    );
   }
 
   // Recovery attempt - avoid the unlucky 13n fee using same portfolio
@@ -1214,6 +1227,8 @@ test('handle failure in provideEVMAccount sendMakeAccountCall', async t => {
     const { accountIdByChain: byChain } = await getPortfolioStatus(1);
     t.deepEqual(Object.keys(byChain), ['Arbitrum', 'agoric', 'noble']);
   }
+
+  testDonePK.resolve(undefined);
 });
 
 test.todo('recover from send step');
