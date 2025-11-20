@@ -316,6 +316,8 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
 
       walletCreated = await lookBackSmartWalletTx({
         ...watchArgs,
+        kvStore: ctx.kvStore,
+        txId,
         publishTimeMs: opts.publishTimeMs,
         chainId: caipId,
         signal: abortController.signal,
