@@ -16,6 +16,7 @@ import { encodeHex } from '@agoric/internal/src/hex.js';
 import type {
   AccountId,
   Bech32Address,
+  CaipChainId,
   Chain,
   DenomAmount,
 } from '@agoric/orchestration';
@@ -35,6 +36,7 @@ import { fromBech32 } from '@cosmjs/encoding';
 import { Fail, q, X } from '@endo/errors';
 import { ERC20, makeEVMSession, type EVMT } from './evm-facade.ts';
 import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
+import { predictWalletAddress } from './utils/create2.ts';
 import type {
   AxelarId,
   EVMContractAddresses,
@@ -77,9 +79,23 @@ export const provideEVMAccount = async (
     const pId = pk.reader.getPortfolioId();
     const traceChain = trace.sub(`portfolio${pId}`).sub(chainName);
     const axelarId = gmp.axelarIds[chainName];
+    const addresses = ctx.contracts[chainName];
+    const { factory, gateway, gasService } = addresses;
+    const walletBytecode = ctx.walletArtifact.bytecode;
+    walletBytecode.length > 2 ||
+      Fail`wallet bytecode not configured for ${chainName}`;
+    const owner = lca.getAddress().value;
+    const predictedAddress = predictWalletAddress({
+      factoryAddress: factory,
+      walletBytecode,
+      gatewayAddress: gateway,
+      gasServiceAddress: gasService,
+      owner,
+    });
+    traceChain('predicted wallet', predictedAddress);
     const target = {
       axelarId,
-      remoteAddress: ctx.contracts[chainName].factory,
+      remoteAddress: factory,
     };
     const fee = { denom: ctx.gmpFeeInfo.denom, value: gmp.fee };
     fee.value > 0n || Fail`axelar makeAccount requires > 0 fee`;
@@ -96,6 +112,19 @@ export const provideEVMAccount = async (
       ctx.gmpAddresses,
       gmp.evmGas,
     );
+
+    const chainInfo = ctx.evmChainInfo[chainName];
+    chainInfo || Fail`missing chain info for ${chainName}`;
+    chainInfo.namespace === 'eip155' ||
+      Fail`unexpected namespace ${chainInfo.namespace}`;
+    const chainId =
+      `${chainInfo.namespace}:${chainInfo.reference}` as CaipChainId;
+    pk.manager.resolveAccount({
+      namespace: 'eip155',
+      chainName,
+      chainId,
+      remoteAddress: predictedAddress,
+    });
 
     return pk.reader.getGMPInfo(chainName);
   } catch (reason) {

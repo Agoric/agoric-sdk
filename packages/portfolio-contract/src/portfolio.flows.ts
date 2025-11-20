@@ -7,6 +7,7 @@
 import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.js';
 import type { GuestInterface } from '@agoric/async-flow';
 import { type Amount, type Brand, type NatAmount } from '@agoric/ertp';
+import type { WalletArtifact } from './evm/wallet-artifact.ts';
 import {
   deeplyFulfilledObject,
   makeTracer,
@@ -15,6 +16,7 @@ import {
 import type {
   AccountId,
   CaipChainId,
+  ChainInfo,
   CosmosChainAddress,
   Denom,
   DenomAmount,
@@ -103,6 +105,11 @@ export type PortfolioInstanceContext = {
     noble: IBCConnectionInfo['transferChannel'];
     axelar?: IBCConnectionInfo['transferChannel'];
   };
+  walletArtifact: WalletArtifact;
+  evmChainInfo: Record<
+    AxelarChain,
+    Pick<ChainInfo<'eip155'>, 'namespace' | 'reference'>
+  >;
 };
 
 type PortfolioBootstrapContext = PortfolioInstanceContext & {
