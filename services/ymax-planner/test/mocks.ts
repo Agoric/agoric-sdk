@@ -6,7 +6,7 @@ import {
   type SigningSmartWalletKit,
 } from '@agoric/client-utils';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
-import type { OfferSpec } from '@agoric/smart-wallet/src/offers';
+import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import { makeKVStoreFromMap } from '@agoric/internal/src/kv-store.js';
 import type { Log } from 'ethers/providers';
 import type { CosmosRestClient } from '../src/cosmos-rest-client.ts';

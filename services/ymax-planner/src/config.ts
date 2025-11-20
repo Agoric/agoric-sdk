@@ -7,7 +7,7 @@ import { AxelarChainIdMap } from '@aglocal/portfolio-deploy/src/axelar-configs.j
 import * as AgoricClientUtils from '@agoric/client-utils';
 import { objectMap } from '@agoric/internal';
 import type { ClusterName } from '@agoric/internal';
-import type { AxelarChain } from '@agoric/portfolio-api/src/constants';
+import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import { parseGraphqlEndpoints } from './utils.ts';
 
 export const defaultAgoricNetworkSpecForCluster: Record<ClusterName, string> =
