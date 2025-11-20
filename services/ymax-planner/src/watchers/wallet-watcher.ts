@@ -43,11 +43,14 @@ const parseSmartWalletCreatedLog = (log: any) => {
   };
 };
 
-type SmartWalletWatch = {
+type SmartWalletWatchBase = {
   factoryAddr: `0x${string}`;
   provider: WebSocketProvider;
   expectedAddr: `0x${string}`;
   log?: (...args: unknown[]) => void;
+};
+
+type SmartWalletWatch = SmartWalletWatchBase & {
   kvStore: KVStore;
   txId: `tx${number}`;
 };
@@ -60,7 +63,7 @@ export const watchSmartWalletTx = ({
   log = () => {},
   setTimeout = globalThis.setTimeout,
   signal,
-}: SmartWalletWatch & WatcherTimeoutOptions): Promise<boolean> => {
+}: SmartWalletWatchBase & WatcherTimeoutOptions): Promise<boolean> => {
   return new Promise(resolve => {
     if (signal?.aborted) {
       resolve(false);
