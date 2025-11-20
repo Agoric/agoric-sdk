@@ -26,17 +26,18 @@ import {
   type TxId,
 } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
-import type {
-  FlowDetail,
-  PoolKey as InstrumentId,
-  StatusFor,
-} from '@aglocal/portfolio-contract/src/type-guards.ts';
 import {
-  flowIdFromKey,
   PoolPlaces,
-  portfolioIdFromKey,
   PortfolioStatusShapeExt,
-} from '@aglocal/portfolio-contract/src/type-guards.ts';
+  flowIdFromKey,
+  portfolioIdFromKey,
+  selectPendingFlows,
+  readPortfolioLatest,
+  type FlowDetail,
+  type InstrumentId,
+  type PortfolioKey,
+  type StatusFor,
+} from '@agoric/portfolio-api';
 import { PROD_NETWORK } from '@aglocal/portfolio-contract/tools/network/network.prod.js';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import {
@@ -392,16 +393,33 @@ export const processPortfolioEvents = async (
     if (handledPortfolioKeys.has(portfolioKey)) return;
     handledPortfolioKeys.add(portfolioKey);
     const path = `${portfoliosPathPrefix}.${portfolioKey}`;
-    const readOpts = { minBlockHeight: eventRecord.blockHeight, retries: 4, };
+    const readOpts = { minBlockHeight: eventRecord.blockHeight, retries: 4 };
     await null;
     try {
-      const [statusCapdata, flowKeysResp] = await Promise.all([
-        readStreamCellValue(vstorage, path, readOpts),
-        readStorageMeta(vstorage, `${path}.flows`, 'children', readOpts),
-      ]);
-      const status = marshaller.fromCapData(statusCapdata);
+      const snapshot = await readPortfolioLatest({
+        readLatest: async readPath => {
+          const capData = await readStreamCellValue(
+            vstorage,
+            readPath,
+            readOpts,
+          );
+          return marshaller.fromCapData(capData);
+        },
+        listChildren: async childrenPath => {
+          const resp = await readStorageMeta(
+            vstorage,
+            childrenPath,
+            'children',
+            readOpts,
+          );
+          return resp.result.children;
+        },
+        portfoliosPathPrefix,
+        portfolioKey: portfolioKey as PortfolioKey,
+        includeSteps: false,
+      });
+      const { status, flows } = snapshot;
       mustMatch(status, PortfolioStatusShapeExt, path);
-      const flowKeys = new Set(flowKeysResp.result.children);
 
       const { depositAddress } = status;
       if (depositAddress) {
@@ -413,7 +431,16 @@ export const processPortfolioEvents = async (
       memory.snapshots ||= new Map();
       const oldState = memory.snapshots.get(portfolioKey);
       const oldFingerprint = oldState?.fingerprint;
-      const fingerprint = fingerprintPortfolioState(status, flowKeys, { marshaller });
+      const flowKeysWithNodes = new Set(
+        values(flows)
+          .filter(flowNode => flowNode.status)
+          .map(flowNode => flowNode.flowKey),
+      );
+      const fingerprint = fingerprintPortfolioState(
+        status,
+        flowKeysWithNodes,
+        { marshaller },
+      );
       if (fingerprint === oldFingerprint) {
         assert(oldState);
         if (!oldState.repeats) console.warn(`⚠️  Ignoring unchanged ${path}`);
@@ -428,12 +455,13 @@ export const processPortfolioEvents = async (
       // acceptance of the first submission would invalidate the others as
       // stale, but we'll see them again when such acceptance prompts changes
       // to the portfolio status.
-      for (const [flowKey, flowDetail] of entries(status.flowsRunning || {})) {
-        // If vstorage has data for this flow then we've already responded.
-        if (flowKeys.has(flowKey)) continue;
+      const pendingFlows = selectPendingFlows(snapshot);
+      for (const { flowKey, detail } of pendingFlows) {
+        if (!detail) continue;
         await runWithFlowTrace(
-          portfolioKey, flowKey,
-          () => startFlow(status, portfolioKey, flowKey, flowDetail),
+          portfolioKey,
+          flowKey,
+          () => startFlow(status, portfolioKey, flowKey, detail),
         );
         return;
       }

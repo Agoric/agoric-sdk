@@ -13,7 +13,7 @@ import {
   makeOfferArgsShapes,
   type MovementDesc,
 } from '../src/type-guards-steps.ts';
-import type { StatusFor } from '../src/type-guards.ts';
+import type { StatusFor } from '@agoric/portfolio-api';
 
 const { brand: USDC } = makeIssuerKit('USDC');
 

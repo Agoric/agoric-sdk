@@ -15,6 +15,7 @@ import { Command, CommanderError, createCommand } from 'commander';
 import { makeOracleCommand } from './commands/oracle.js';
 import { makeGovCommand } from './commands/gov.js';
 import { makePsmCommand } from './commands/psm.js';
+import { makePortfolioCommand } from './commands/portfolio.js';
 import { makeReserveCommand } from './commands/reserve.js';
 import { makeVaultsCommand } from './commands/vaults.js';
 import { makePerfCommand } from './commands/perf.js';
@@ -65,6 +66,7 @@ const procIO = {
 };
 
 program.addCommand(makeOracleCommand(procIO, logger));
+program.addCommand(makePortfolioCommand(procIO));
 program.addCommand(makeReserveCommand(logger, procIO));
 program.addCommand(makeTestCommand(procIO, { fetch }));
 

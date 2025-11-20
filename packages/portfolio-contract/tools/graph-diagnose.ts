@@ -17,7 +17,7 @@ import {
   PoolPlaces,
   type PoolKey,
   type PoolPlaceInfo,
-} from '../src/type-guards.js';
+} from '@agoric/portfolio-api';
 import type { RebalanceGraph } from './network/buildGraph.js';
 import type { NetworkSpec } from './network/network-spec.js';
 import type { LpModel } from './plan-solve.js';

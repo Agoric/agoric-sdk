@@ -29,7 +29,7 @@ import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
 import { encodeAbiParameters } from 'viem';
-import type { StatusFor } from '../src/type-guards.ts';
+import type { StatusFor } from '@agoric/portfolio-api';
 import { gmpAddresses } from './mocks.ts';
 
 export const makeIncomingEVMEvent = ({

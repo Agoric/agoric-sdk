@@ -20,11 +20,11 @@ import { type start } from '@aglocal/portfolio-contract/src/portfolio.contract.j
 import {
   makePositionPath,
   portfolioIdOfPath,
-  type OfferArgsFor,
-  type ProposalType,
+  readPortfolioLatest,
   type StatusFor,
   type PoolKey,
-} from '@aglocal/portfolio-contract/src/type-guards.js';
+} from '@agoric/portfolio-api';
+import type { OfferArgsFor, ProposalType } from '@aglocal/portfolio-contract/src/type-guards.js';
 import type { WalletTool } from '@aglocal/portfolio-contract/tools/wallet-offer-tools.js';
 import type {
   PortfolioPublicInvitationMaker,
@@ -40,17 +40,45 @@ export const makePortfolioQuery = (
   readPublished: VstorageKit['readPublished'],
   portfolioKey: `${string}.portfolios.portfolio${number}`,
 ) => {
+  const segments = portfolioKey.split('.');
+  const portfolioSegment = segments.pop();
+  portfolioSegment || assert.fail('missing portfolio segment');
+  const portfoliosPathPrefix = segments.join('.');
+  assert(
+    portfolioSegment.startsWith('portfolio'),
+    `invalid portfolio key ${portfolioKey}`,
+  );
+
+  const readPortfolioSnapshot = async () =>
+    readPortfolioLatest({
+      readLatest: path => readPublished(stripRoot(path)),
+      portfoliosPathPrefix,
+      portfolioKey: /** @type {`portfolio${number}`} */ (
+        portfolioSegment
+      ),
+      includeSteps: false,
+      includePositions: true,
+    });
+
   const self = harden({
-    getPortfolioStatus: () =>
-      readPublished(portfolioKey) as Promise<StatusFor['portfolio']>,
+    getPortfolioSnapshot: () => readPortfolioSnapshot(),
+    getPortfolioStatus: async () => {
+      const snapshot = await readPortfolioSnapshot();
+      return snapshot.status;
+    },
     getPositionPaths: async () => {
-      const { positionKeys } = await self.getPortfolioStatus();
+      const snapshot = await readPortfolioSnapshot();
+      const { positionKeys } = snapshot.status;
       return positionKeys.map(key => `${portfolioKey}.positions.${key}`);
     },
-    getPositionStatus: (key: PoolKey) =>
-      readPublished(`${portfolioKey}.positions.${key}`) as Promise<
+    getPositionStatus: async (key: PoolKey) => {
+      const snapshot = await readPortfolioSnapshot();
+      const positionEntry = snapshot.positions?.[key];
+      if (positionEntry?.status) return positionEntry.status;
+      return readPublished(`${portfolioKey}.positions.${key}`) as Promise<
         StatusFor['position']
-      >,
+      >;
+    },
   });
   return self;
 };
@@ -90,6 +118,26 @@ export const makeTrader = (
 
   const { brand: accessBrand } = wallet.getAssets().Access;
   const Access = AmountMath.make(accessBrand, 1n);
+
+  const getPortfolioPathOrFail = () =>
+    portfolioPath || assert.fail('no portfolio');
+
+  const readPortfolioSnapshot = async () => {
+    const fullPath = getPortfolioPathOrFail();
+    const segments = fullPath.split('.');
+    const portfolioSegment = segments.pop();
+    portfolioSegment || assert.fail('missing portfolio segment');
+    const prefix = segments.join('.');
+    return readPortfolioLatest({
+      readLatest: path => readPublished(stripRoot(path)),
+      portfoliosPathPrefix: prefix,
+      portfolioKey: /** @type {`portfolio${number}`} */ (
+        portfolioSegment
+      ),
+      includeSteps: false,
+      includePositions: true,
+    });
+  };
 
   const self = harden({
     /**
@@ -218,14 +266,16 @@ export const makeTrader = (
       };
       return wallet.executeContinuingOffer({ id, invitationSpec, proposal });
     },
-    getPortfolioId: () => portfolioIdOfPath(stripRoot(self.getPortfolioPath())),
-    getPortfolioPath: () => portfolioPath || assert.fail('no portfolio'),
-    getPortfolioStatus: () =>
-      readPublished(stripRoot(self.getPortfolioPath())) as Promise<
-        StatusFor['portfolio']
-      >,
+    getPortfolioId: () =>
+      portfolioIdOfPath(stripRoot(self.getPortfolioPath())),
+    getPortfolioPath: () => getPortfolioPathOrFail(),
+    getPortfolioStatus: async () => {
+      const snapshot = await readPortfolioSnapshot();
+      return snapshot.status;
+    },
     getPositionPaths: async () => {
-      const { positionKeys } = await self.getPortfolioStatus();
+      const snapshot = await readPortfolioSnapshot();
+      const { positionKeys } = snapshot.status;
 
       // XXX why do we have to add 'portfolios'?
       return positionKeys.map(key =>
@@ -235,18 +285,15 @@ export const makeTrader = (
       );
     },
     netTransfersByPosition: async () => {
-      const paths = await self.getPositionPaths();
-      const positionStatuses = await Promise.all(
-        paths.map(
-          path => readPublished(path) as Promise<StatusFor['position']>,
-        ),
+      const snapshot = await readPortfolioSnapshot();
+      const entries = Object.values(snapshot.positions || {}).flatMap(
+        position => {
+          if (!position?.status) return [];
+          const { totalIn, totalOut, protocol } = position.status;
+          return [[protocol, AmountMath.subtract(totalIn, totalOut)]];
+        },
       );
-      return fromEntries(
-        positionStatuses.map(info => [
-          info.protocol,
-          AmountMath.subtract(info.totalIn, info.totalOut),
-        ]),
-      );
+      return fromEntries(entries);
     },
   });
   return self;

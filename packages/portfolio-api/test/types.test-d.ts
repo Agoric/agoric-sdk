@@ -9,6 +9,15 @@ import type { SupportedChain, YieldProtocol } from '../src/constants.js';
 import { AxelarChain } from '../src/constants.js';
 import type { InstrumentId } from '../src/instruments.js';
 import type { PublishedTx } from '../src/resolver.js';
+import {
+  enumeratePortfolioPlaces,
+  iterateVstorageHistory,
+  makeMockVstorageReaders,
+  materializePortfolioPositions,
+  readPortfolioHistoryEntries,
+  readPortfolioLatest,
+  selectPendingFlows,
+} from '../src/vstorage-schema.js';
 import type {
   AssetPlaceRef,
   FlowDetail,
@@ -17,12 +26,20 @@ import type {
   FlowStep,
   InterChainAccountRef,
   LocalChainAccountRef,
+  PoolKey,
   PortfolioKey,
   ProposalType,
   SeatKeyword,
   StatusFor,
   TargetAllocation,
 } from '../src/types.js';
+import type {
+  FlowNodeLatest,
+  PortfolioChainAccountPlace,
+  PortfolioHistoryEvent,
+  PortfolioLatestSnapshot,
+  PortfolioPositionPlace,
+} from '../src/vstorage-schema.js';
 
 declare const natAmount: NatAmount;
 declare const accountId: AccountId;
@@ -156,6 +173,78 @@ const status: StatusFor = {
 };
 
 expectType<StatusFor>(status);
+
+declare const readLatest: (path: string) => Promise<unknown>;
+declare const listChildren: (path: string) => Promise<string[]>;
+
+const positionNodes: Partial<Record<PoolKey, StatusFor['position']>> = {
+  [instrumentId]: status.position,
+};
+
+const materialized = materializePortfolioPositions({
+  status: status.portfolio,
+  positionNodes,
+});
+expectType<Partial<Record<PoolKey, unknown>>>(materialized.positions);
+expectType<
+  Partial<Record<SupportedChain, { positions: readonly unknown[] }>>
+>(materialized.positionsByChain);
+
+expectType<Promise<PortfolioLatestSnapshot>>(
+  readPortfolioLatest({
+    readLatest,
+    listChildren,
+    portfoliosPathPrefix: 'published.ymax0.portfolios',
+    portfolioKey: 'portfolio1',
+    includePositions: true,
+  }),
+);
+
+const pending = selectPendingFlows({
+  portfolioKey: 'portfolio1',
+  status: status.portfolio,
+  flows: {
+    flow1: {
+      flowKey: 'flow1',
+      detail: flowsRunning.flow1,
+      status: undefined,
+      steps: undefined,
+      order: undefined,
+      phase: 'init',
+    },
+  },
+  },
+});
+expectType<readonly FlowNodeLatest[]>(pending);
+
+const mockReaders = makeMockVstorageReaders();
+expectType<Promise<unknown>>(mockReaders.readLatest('path'));
+expectType<Promise<string[]>>(mockReaders.listChildren('path'));
+
+declare const readAt: (
+  path: string,
+  height?: number | bigint,
+) => Promise<{ blockHeight: number | bigint; values: unknown[] }>;
+
+const historyIterator = iterateVstorageHistory({
+  readAt,
+  path: 'published.demo',
+});
+expectAssignable<AsyncIterableIterator<any>>(historyIterator);
+
+const places = enumeratePortfolioPlaces({ status: status.portfolio });
+expectType<readonly PortfolioPositionPlace[]>(places.positions);
+expectType<readonly PortfolioChainAccountPlace[]>(places.chainAccounts);
+
+expectType<Promise<readonly PortfolioHistoryEvent[]>>(
+  readPortfolioHistoryEntries({
+    readAt,
+    listChildren,
+    portfoliosPathPrefix: 'published.ymax0.portfolios',
+    portfolioKey: 'portfolio1',
+    decodeValue: value => value,
+  }),
+);
 
 // Ensure every Axelar chain key is covered by SupportedChain.
 expectAssignable<keyof typeof SupportedChain>(

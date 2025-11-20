@@ -18,8 +18,8 @@ import type {
 } from '@agoric/portfolio-api/src/constants.js';
 
 import type { AssetPlaceRef, MovementDesc } from '../src/type-guards-steps.js';
-import { PoolPlaces } from '../src/type-guards.js';
-import type { PoolKey } from '../src/type-guards.js';
+import { PoolPlaces } from '@agoric/portfolio-api';
+import type { PoolKey } from '@agoric/portfolio-api';
 import {
   preflightValidateNetworkPlan,
   formatInfeasibleDiagnostics,

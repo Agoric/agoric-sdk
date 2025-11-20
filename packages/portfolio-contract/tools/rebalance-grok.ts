@@ -10,11 +10,8 @@ import {
   type MovementDesc,
   type SeatKeyword,
 } from '../src/type-guards-steps.js';
-import {
-  makeProposalShapes,
-  PoolPlaces,
-  type PoolKey,
-} from '../src/type-guards.js';
+import { PoolPlaces, type PoolKey } from '@agoric/portfolio-api';
+import { makeProposalShapes } from '../src/type-guards.ts';
 
 /** OCap exception: infrastructure to make up for lack of import x from 'foo.txt' */
 export const importText = (specifier: string, base): Promise<string> =>

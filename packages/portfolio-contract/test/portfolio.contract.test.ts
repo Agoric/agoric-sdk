@@ -17,9 +17,8 @@ import { E, passStyleOf } from '@endo/far';
 import type { AssetPlaceRef } from '../src/type-guards-steps.ts';
 import type {
   OfferArgsFor,
-  StatusFor,
-  TargetAllocation,
 } from '../src/type-guards.ts';
+import type { StatusFor, TargetAllocation } from '@agoric/portfolio-api';
 import { plannerClientMock } from '../tools/agents-mock.ts';
 import {
   deploy,

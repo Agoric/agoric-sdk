@@ -4,7 +4,7 @@ import type { NatAmount, Amount } from '@agoric/ertp/src/types.js';
 import { partialMap } from '@agoric/internal/src/js-utils.js';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 
-import { PoolPlaces } from '../../src/type-guards.js';
+import { PoolPlaces } from '@agoric/portfolio-api';
 import type { PoolKey } from '../../src/type-guards.js';
 import type { AssetPlaceRef } from '../../src/type-guards-steps.js';
 

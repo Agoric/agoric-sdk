@@ -10,9 +10,9 @@ import {
 } from '@agoric/portfolio-api/src/constants.js';
 import type { SupportedChain } from '@agoric/portfolio-api/src/constants.js';
 import type {
-  PoolKey as InstrumentId,
+  InstrumentId,
   PoolPlaceInfo,
-} from '@aglocal/portfolio-contract/src/type-guards.js';
+} from '@agoric/portfolio-api';
 import {
   aaveRewardsControllerAddresses,
   compoundAddresses,

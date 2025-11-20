@@ -6,14 +6,16 @@ import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { matches, mustMatch } from '@endo/patterns';
 import { makeOfferArgsShapes } from '../src/type-guards-steps.ts';
 import {
+  makeProposalShapes,
+} from '../src/type-guards.ts';
+import {
   FlowStatusShape,
   FlowStepsShape,
-  makeProposalShapes,
   PoolKeyShapeExt,
   PortfolioStatusShapeExt,
   PositionStatusShape,
   type StatusFor,
-} from '../src/type-guards.ts';
+} from '@agoric/portfolio-api';
 
 const usdcKit = withAmountUtils(makeIssuerKit('USDC'));
 const usdc = usdcKit.make;
