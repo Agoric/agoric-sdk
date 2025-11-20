@@ -4,17 +4,18 @@
  * Since Axelar GMP (General Message Passing) is used in both cases,
  * we use "gmp" in the filename.
  *
- * @see {@link provideEVMAccount}
+ * @see {@link makeAxelarOrchestrator}
  * @see {@link CCTP}
  * @see {@link AaveProtocol}
  * @see {@link CompoundProtocol}
  */
 import type { GuestInterface } from '@agoric/async-flow';
 import type { NatValue } from '@agoric/ertp';
-import { makeTracer } from '@agoric/internal';
+import { makeTracer, type TraceLogger } from '@agoric/internal';
 import { encodeHex } from '@agoric/internal/src/hex.js';
 import type {
   AccountId,
+  BaseChainInfo,
   Bech32Address,
   Chain,
   DenomAmount,
@@ -25,10 +26,7 @@ import {
   type ContractCall,
 } from '@agoric/orchestration/src/axelar-types.js';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
-import {
-  buildGasPayload,
-  buildGMPPayload,
-} from '@agoric/orchestration/src/utils/gmp.js';
+import { buildGMPPayload } from '@agoric/orchestration/src/utils/gmp.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import { fromBech32 } from '@cosmjs/encoding';
@@ -49,33 +47,144 @@ import {
 } from './portfolio.flows.ts';
 import { TxType } from './resolver/constants.js';
 import type { ResolverKit } from './resolver/resolver.exo.ts';
-import type { PoolKey } from './type-guards.ts';
+import type { EVMContractAddressesMap, PoolKey } from './type-guards.ts';
+import { predictWalletAddress } from './utils/create2.ts';
 
 const trace = makeTracer('GMPF');
 const { keys } = Object;
 
-export const provideEVMAccount = async (
+export type GMPAccountStatus = GMPAccountInfo & {
+  /** created and ready to accept GMP messages */
+  ready: Promise<unknown>;
+};
+
+export const makeAxelarOrchestrator = (
+  gmp: {
+    chain: Chain<{ chainId: string }>;
+    axelarIds: AxelarId;
+    addresses: GmpAddresses;
+  },
+  ctx: {
+    chainInfo: Record<AxelarChain, BaseChainInfo>;
+    contracts: EVMContractAddressesMap;
+    walletBytecode: `0x${string}`;
+    resolverClient: GuestInterface<ResolverKit['client']>;
+  },
+) => {
+  const getChain = (chainName: AxelarChain) => {
+    const chainInfo = ctx.chainInfo[chainName];
+
+    const predictAddress = (owner: Bech32Address) => {
+      const contracts = ctx.contracts[chainName];
+      const remoteAddress = predictWalletAddress({
+        owner,
+        factoryAddress: contracts.factory,
+        gasServiceAddress: contracts.gasService,
+        gatewayAddress: contracts.gateway,
+        walletBytecode: ctx.walletBytecode,
+      });
+      const info: GMPAccountInfo = {
+        namespace: 'eip155',
+        chainName,
+        chainId: `${chainInfo.namespace}:${chainInfo.reference}`,
+        remoteAddress,
+      };
+      return info;
+    };
+
+    const getAccountFor = ({
+      chainAddress,
+      ready,
+    }: {
+      chainAddress: GMPAccountInfo;
+      ready: Promise<void>; // XXX host/guest types
+    }) => {
+      return harden({
+        getAddress: () => chainAddress,
+        getReady: () => ready,
+      });
+    };
+
+    const makeAccount = async (opts: {
+      owner: LocalAccount;
+      traceOwner: TraceLogger;
+      gmpFee: DenomAmount;
+    }) => {
+      const { owner, traceOwner } = opts;
+      const traceChain = traceOwner.sub(chainName);
+
+      const { value: addr } = opts.owner.getAddress();
+      const chainAddress = predictAddress(addr);
+      const { remoteAddress } = chainAddress;
+      traceChain('CREATE2', remoteAddress, 'for', addr);
+
+      const target = {
+        axelarId: gmp.axelarIds[chainName],
+        remoteAddress: ctx.contracts[chainName].factory,
+      };
+
+      const { result } = ctx.resolverClient.registerTransaction(
+        TxType.MAKE_ACCOUNT,
+        `${chainAddress.chainId}:${target.remoteAddress}`,
+        undefined,
+        remoteAddress,
+      );
+
+      traceChain('sendMakeAccountCall');
+      await sendMakeAccountCall(
+        target,
+        opts.gmpFee,
+        owner,
+        gmp.chain,
+        gmp.addresses,
+      );
+
+      return getAccountFor({
+        chainAddress,
+        ready: result as unknown as Promise<void>, // XXX guest/host
+      });
+    };
+    return harden({ makeAccount, getAccountFor, predictAddress });
+  };
+  return harden({ getChain });
+};
+
+/** @deprecated; use makeAxelarOrchestrator */
+export const provideEVMAccount = (
   chainName: AxelarChain,
+  chainInfo: BaseChainInfo,
   gmp: {
     chain: Chain<{ chainId: string }>;
     fee: NatValue;
     axelarIds: AxelarId;
-    evmGas: bigint;
   },
   lca: LocalAccount,
   ctx: PortfolioInstanceContext,
   pk: GuestInterface<PortfolioKit>,
-) => {
-  await null;
-  const found = pk.manager.reserveAccount(chainName);
-  if (found) {
-    return found as unknown as Promise<GMPAccountInfo>; // XXX Guest/Host #9822
-  }
+): GMPAccountStatus => {
+  const pId = pk.reader.getPortfolioId();
+  const traceChain = trace.sub(`portfolio${pId}`).sub(chainName);
 
-  // We have the map entry reserved - use critical section pattern
-  try {
-    const pId = pk.reader.getPortfolioId();
-    const traceChain = trace.sub(`portfolio${pId}`).sub(chainName);
+  const predictAddress = (owner: Bech32Address) => {
+    const contracts = ctx.contracts[chainName];
+    const remoteAddress = predictWalletAddress({
+      owner,
+      factoryAddress: contracts.factory,
+      gasServiceAddress: contracts.gasService,
+      gatewayAddress: contracts.gateway,
+      walletBytecode: ctx.walletBytecode,
+    });
+    const info: GMPAccountInfo = {
+      namespace: 'eip155',
+      chainName,
+      chainId: `${chainInfo.namespace}:${chainInfo.reference}`,
+      remoteAddress,
+    };
+    traceChain('CREATE2', info.remoteAddress, 'for', owner);
+    return info;
+  };
+
+  const installContract = async (evmAccount: GMPAccountInfo) => {
     const axelarId = gmp.axelarIds[chainName];
     const target = {
       axelarId,
@@ -88,21 +197,54 @@ export const provideEVMAccount = async (
     traceChain('send makeAccountCall Axelar fee from', src.value);
     await feeAccount.send(lca.getAddress(), fee);
 
-    await sendMakeAccountCall(
-      target,
-      fee,
-      lca,
-      gmp.chain,
-      ctx.gmpAddresses,
-      gmp.evmGas,
+    const { result } = ctx.resolverClient.registerTransaction(
+      TxType.MAKE_ACCOUNT,
+      `${evmAccount.chainId}:${target.remoteAddress}`,
+      undefined,
+      evmAccount.remoteAddress,
     );
 
-    return pk.reader.getGMPInfo(chainName);
-  } catch (reason) {
-    trace('failed to make', chainName, reason);
-    pk.manager.releaseAccount(chainName, reason);
-    throw reason;
+    await sendMakeAccountCall(target, fee, lca, gmp.chain, ctx.gmpAddresses);
+
+    await result;
+  };
+
+  if (!pk.reader.hasGMPInfo(chainName)) {
+    const info = predictAddress(lca.getAddress().value);
+    pk.manager.setAccountInfo(info);
+
+    const ready = installContract(info);
+    ready.catch(err => {
+      console.error('@@@@@#@##%@#@hello?', err);
+      pk.manager.releaseAccount(chainName, err);
+    });
+    pk.manager.reserveAccount(
+      chainName,
+      // XXX host/guest types
+      ready as any,
+    );
+    console.log('@@@ready?', ready, info);
+    ready.then(_ => {
+      console.log('@@@@ready!!!', info);
+    });
+    return { ...info, ready };
   }
+
+  const info = pk.reader.getGMPInfo(chainName);
+  if (pk.reader.accountCreationFailed(chainName)) {
+    const ready = installContract(info);
+    pk.manager.resetPendingAccount(
+      chainName,
+      // XXX host/guest types
+      ready as any,
+    );
+    return { ...info, ready };
+  }
+
+  const ready = pk.manager.reserveAccount(
+    chainName,
+  ) as unknown as Promise<unknown>;
+  return { ...info, ready };
 };
 
 type TokenMessengerI = {
@@ -200,17 +342,14 @@ export const CCTP = {
 harden(CCTP);
 
 /**
- * Sends a GMP call to create a remote account on an EVM chain.
+ * Invoke EVM Wallet Factory contract to create a remote account
+ * at a predicatble address.
  *
- * The payload is encoded as a uint256 gas amount, which the factory contract
- * decodes and uses for the return message to Agoric.
- *
- * @see {@link https://github.com/agoric-labs/agoric-to-axelar-local/blob/3e5c4a140bf5e9f1606c72f54815d61231ef1fa5/packages/axelar-local-dev-cosmos/src/__tests__/contracts/Factory.sol#L121-L144 Factory.sol (lines 121–144)}
+ * @see {@link https://github.com/agoric-labs/agoric-to-axelar-local/blob/c3305c4/packages/axelar-local-dev-cosmos/src/__tests__/contracts/Factory.sol#L137-L150 Factory.sol (_execute method)}
  *
  * The factory contract:
- * 1. Decodes payload as uint256: `uint256 gasAmount = abi.decode(payload, (uint256))`
- * 2. Creates the smart wallet: `createSmartWallet(sourceAddress)`
- * 3. Sends response back to Agoric with the provided gas amount: `_send(..., gasAmount)`
+ * 1. Creates the smart wallet: `createSmartWallet(sourceAddress)`
+ * 2. Emits a SmartWalletCreated event.
  */
 export const sendMakeAccountCall = async (
   dest: { axelarId: string; remoteAddress: EVMT['address'] },
@@ -218,17 +357,17 @@ export const sendMakeAccountCall = async (
   lca: LocalAccount,
   gmpChain: Chain<{ chainId: string }>,
   gmpAddresses: GmpAddresses,
-  evmGas: bigint,
 ) => {
   const { AXELAR_GMP, AXELAR_GAS } = gmpAddresses;
   const memo: AxelarGmpOutgoingMemo = {
     destination_chain: dest.axelarId,
     destination_address: dest.remoteAddress,
-    payload: buildGasPayload(evmGas),
+    payload: [],
     type: AxelarGMPMessageType.ContractCall,
     fee: { amount: String(fee.value), recipient: AXELAR_GAS },
   };
   const { chainId } = await gmpChain.getChainInfo();
+
   const gmp = { chainId, value: AXELAR_GMP, encoding: 'bech32' as const };
   await lca.transfer(gmp, fee, { memo: JSON.stringify(memo) });
 };

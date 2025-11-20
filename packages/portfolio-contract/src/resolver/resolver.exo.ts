@@ -34,7 +34,10 @@ type TransactionEntry = {
   amountValue?: bigint;
   vowKit: VowKit<void>;
   type: TxType;
+  expectedAddr?: `0x${string}`;
 };
+
+const txsWithAmounts: TxType[] = [TxType.CCTP_TO_AGORIC, TxType.CCTP_TO_EVM];
 
 const trace = makeTracer('Resolver');
 
@@ -43,7 +46,7 @@ const PromiseVowShape = M.any();
 
 const ClientFacetI = M.interface('ResolverClient', {
   registerTransaction: M.call(M.or(...Object.values(TxType)), M.string())
-    .optional(M.nat())
+    .optional(M.nat(), M.string())
     .returns(M.splitRecord({ result: PromiseVowShape, txId: M.string() })),
 });
 
@@ -53,7 +56,7 @@ const ReporterI = M.interface('Reporter', {
     M.string(),
     M.or(...Object.values(TxType)),
   )
-    .optional(M.nat())
+    .optional(M.nat(), M.string())
     .returns(),
   completePendingTransaction: M.call(
     M.string(),
@@ -137,11 +140,13 @@ export const prepareResolverKit = (
          * @param type
          * @param destinationAddress
          * @param amountValue
+         * @param expectedAddr
          */
         registerTransaction(
           type: TxType,
           destinationAddress: AccountId,
           amountValue?: NatValue,
+          expectedAddr?: `0x${string}`,
         ): { result: Vow<void>; txId: TxId } {
           const txId: TxId = `tx${this.state.index}`;
           this.state.index += 1;
@@ -152,7 +157,8 @@ export const prepareResolverKit = (
             destinationAddress,
             vowKit,
             type,
-            ...(type !== TxType.GMP ? { amountValue } : {}),
+            ...(txsWithAmounts.includes(type) ? { amountValue } : {}),
+            ...(type === TxType.MAKE_ACCOUNT ? { expectedAddr } : {}),
           };
           transactionRegistry.init(txId, harden(txEntry));
           this.facets.reporter.insertPendingTransaction(
@@ -160,6 +166,7 @@ export const prepareResolverKit = (
             destinationAddress,
             type,
             amountValue,
+            expectedAddr,
           );
 
           trace(`Registered pending transaction: ${txId}`);
@@ -172,12 +179,14 @@ export const prepareResolverKit = (
           destinationAddress: AccountId,
           type: TxType,
           amount?: NatValue,
+          expectedAddr?: `0x${string}`,
         ) {
           const value: PublishedTx = {
             type,
             destinationAddress,
             status: TxStatus.PENDING,
-            ...(type !== TxType.GMP ? { amount } : {}),
+            ...(txsWithAmounts.includes(type) ? { amount } : {}),
+            ...(type === TxType.MAKE_ACCOUNT ? { expectedAddr } : {}),
           };
           const node = E(pendingTxsNode).makeChildNode(txId);
           writeToNode(node, value);
@@ -192,8 +201,11 @@ export const prepareResolverKit = (
           const value: PublishedTx = {
             destinationAddress: txEntry.destinationAddress,
             type: txEntry.type,
-            ...(txEntry.type !== TxType.GMP
+            ...(txsWithAmounts.includes(txEntry.type)
               ? { amount: txEntry.amountValue }
+              : {}),
+            ...(txEntry.type === TxType.MAKE_ACCOUNT
+              ? { expectedAddr: txEntry.expectedAddr }
               : {}),
             status,
           };

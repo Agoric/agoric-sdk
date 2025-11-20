@@ -111,6 +111,8 @@ export type EVMContractAddresses = {
   aavePool: `0x${string}`;
   compound: `0x${string}`;
   factory: `0x${string}`;
+  gateway: `0x${string}`;
+  gasService: `0x${string}`;
   usdc: `0x${string}`;
   tokenMessenger: `0x${string}`;
   aaveUSDC: `0x${string}`;
@@ -153,6 +155,7 @@ export type PortfolioPrivateArgs = OrchestrationPowers & {
   storageNode: Remote<StorageNode>;
   axelarIds: AxelarId;
   contracts: EVMContractAddressesMap;
+  walletBytecode: `0x${string}`;
   gmpAddresses: GmpAddresses;
 };
 
@@ -167,6 +170,7 @@ export const privateArgsShape: TypedPattern<PortfolioPrivateArgs> = {
   assetInfo: M.arrayOf([M.string(), DenomDetailShape]),
   axelarIds: AxelarIdShape,
   contracts: EVMContractAddressesMapShape,
+  walletBytecode: M.string(),
   gmpAddresses: GmpAddressesShape,
 };
 
@@ -230,6 +234,7 @@ export const contract = async (
     assetInfo,
     axelarIds,
     contracts,
+    walletBytecode,
     storageNode,
     gmpAddresses,
   } = privateArgs;
@@ -308,6 +313,7 @@ export const contract = async (
     },
     axelarIds,
     contracts,
+    walletBytecode,
     gmpAddresses,
     resolverClient,
     inertSubscriber,
@@ -335,8 +341,6 @@ export const contract = async (
    * where required.
    */
   const txfrCtx: flows.OnTransferContext = {
-    axelarIds,
-    gmpAddresses,
     resolverService,
     transferChannels,
   };
