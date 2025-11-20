@@ -232,10 +232,20 @@ export const getCurrentBalances = async (
       throw AggregateError(errors, msg);
     }
     for (let i = 0; i < accountQueries.length; i += 1) {
-      const { place } = accountQueries[i];
+      const { place, asset } = accountQueries[i];
       const result = accountBalances[i];
       if (result.error) errors.push(Error(result.error));
-      balances.set(place, amountFromAccountBalance(brand, result.balance));
+      const balanceAmount = amountFromAccountBalance(brand, result.balance);
+      balances.set(place, balanceAmount);
+      // XXX as of 2025-11-19, spectrumBlockchain.getBalances returns @agoric
+      // IBC USDC balances in micro-USDC (uusdc) rather than USDC like the rest.
+      if (place === '@agoric' && asset === 'USDC' && result.balance) {
+        if (!result.balance.match(/^[0-9]+$/)) {
+          const msg = `⚠️ Got a non-integer balance ${result.balance} for @agoric USDC; verify scaling with Spectrum`;
+          errors.push(Error(msg));
+        }
+        balances.set(place, AmountMath.make(brand, BigInt(result.balance)));
+      }
     }
     for (let i = 0; i < positionQueries.length; i += 1) {
       const { place } = positionQueries[i];
