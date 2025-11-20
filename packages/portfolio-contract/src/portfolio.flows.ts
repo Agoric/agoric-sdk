@@ -9,6 +9,7 @@ import type { GuestInterface } from '@agoric/async-flow';
 import { type Amount, type Brand, type NatAmount } from '@agoric/ertp';
 import {
   deeplyFulfilledObject,
+  fromTypedEntries,
   makeTracer,
   objectMap,
   type TraceLogger,
@@ -50,6 +51,7 @@ import {
   CCTP,
   CCTPfromEVM,
   CompoundProtocol,
+  makeAxelarOrchestrator,
   provideEVMAccount,
   type EVMContext,
   type GMPAccountStatus,
@@ -749,17 +751,72 @@ const stepFlow = async (
 
   const asEntry = <K, V>(k: K, v: V): [K, V] => [k, v];
   const axelar = await orch.getChain('axelar');
-  const infoFor: { [name: string]: BaseChainInfo<'eip155'> } =
-    await deeplyFulfilledObject(
-      objectMap(
-        fromEntries(keys(AxelarChain).map(name => [name, name])),
-        async name => {
-          const chain = await orch.getChain(name);
-          const info = await chain.getChainInfo();
-          return harden(info);
-        },
+  const infoFor: Record<
+    AxelarChain,
+    BaseChainInfo<'eip155'>
+  > = await deeplyFulfilledObject(
+    objectMap(
+      fromTypedEntries(
+        (keys(AxelarChain) as AxelarChain[]).map(name => [name, name]),
       ),
-    );
+      async name => {
+        const chain = await orch.getChain(name);
+        const info = await chain.getChainInfo();
+        return harden(info);
+      },
+    ),
+  );
+
+  const orchEVM = makeAxelarOrchestrator(
+    {
+      chain: axelar,
+      axelarIds: ctx.axelarIds,
+      addresses: ctx.gmpAddresses,
+    },
+    {
+      chainInfo: infoFor,
+      contracts: ctx.contracts,
+      walletBytecode: ctx.walletBytecode,
+      resolverClient: ctx.resolverClient,
+    },
+  );
+
+  // fee: { denom: ctx.gmpFeeInfo.denom, value: ctx },
+
+  const evmAccountsForFlow = await (async () => {
+    const done: Partial<Record<AxelarChain, GMPAccountStatus>> = {};
+    const evmChains = keys(AxelarChain) as unknown[];
+    const seen = new Set<AxelarChain>();
+    for (const move of moves) {
+      for (const ref of [move.src, move.dest]) {
+        const maybeChain = getChainNameOfPlaceRef(ref);
+        if (!evmChains.includes(maybeChain)) continue;
+        const chain = maybeChain as AxelarChain;
+        if (seen.has(chain)) continue;
+        seen.add(chain);
+
+        const evmChain = orchEVM.getChain(chain);
+        throw Error('TODO! provide: do we already have one?');
+
+        const gmpFee = {
+          denom: ctx.gmpFeeInfo.denom,
+          value: move.fee?.value || 0n,
+        };
+        gmpFee.value > 0n || Fail`axelar makeAccount requires > 0 fee`;
+
+        const acct = await evmChain.makeAccount({
+          owner: agoric.lca,
+          gmpFee,
+          traceOwner: traceFlow,
+        });
+        const chainAddress = acct.getAddress();
+        const ready = acct.getReady();
+        done[chain] = harden({ ...chainAddress, ready });
+      }
+    }
+    return done;
+  })();
+
   const evmAcctInfo = (() => {
     const { axelarIds } = ctx;
     const gmpCommon = { chain: axelar, axelarIds };
