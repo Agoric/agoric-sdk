@@ -71,7 +71,7 @@
     "@endo/promise-kit": "^1.1.13",
     "@endo/zip": "^1.0.11",
     "@iarna/toml": "^2.2.3",
-    "anylogger": "^0.21.0",
+    "anylogger": "^1.0.11",
     "chalk": "^5.2.0",
     "commander": "^12.1.0",
     "deterministic-json": "^1.0.5",
