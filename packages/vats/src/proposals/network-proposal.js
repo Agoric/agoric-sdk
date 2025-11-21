@@ -18,6 +18,8 @@ const { when } = heapVowTools;
 /**
  * @import {ProtocolHandler} from '@agoric/network';
  * @import {Remote} from '@agoric/vow';
+ * @import {ScopedBridgeManager} from '../types.js';
+ * @import {BootstrapPowers, IBCVat, NetworkVat, Producer, ProvisioningVat, VatSourceRef} from '../core/types-ambient.js';
  */
 
 /**

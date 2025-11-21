@@ -11,6 +11,7 @@ import type { start as assetReserveStart } from '@agoric/inter-protocol/src/rese
 import { expectNotType, expectType } from 'tsd';
 
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
+import type { WellKnownSpaces } from '../index.js';
 
 const mock = null as any;
 

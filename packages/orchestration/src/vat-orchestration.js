@@ -6,7 +6,7 @@ import { prepareCosmosInterchainService } from './exos/cosmos-interchain-service
 /**
  * @import {Baggage} from '@agoric/vat-data';
  * @import {CosmosOrchestrationPowers} from './exos/cosmos-interchain-service.js';
- * @import {VatPowers} from '@agoric/swingset-vat';
+ * @import {DProxy, VatPowers} from '@agoric/swingset-vat';
  */
 
 /**

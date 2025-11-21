@@ -3,7 +3,10 @@ import { registerChain } from '../chain-info.js';
 
 const trace = makeTracer('ReviseChainInfo', true);
 
-/** @import {CosmosChainInfo} from '../types.js'; */
+/**
+ * @import {CosmosChainInfo} from '../types.js';
+ * @import {BootstrapPowers} from '@agoric/vats';
+ */
 
 /**
  * This will add news values AND overwrite any existing values. Voters on a
