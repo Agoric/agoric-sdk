@@ -1,5 +1,4 @@
 // @jessie-check
-/// <reference types="@agoric/governance/exported.js" />
 /// <reference types="@agoric/zoe/exported.js" />
 
 import { M, mustMatch } from '@agoric/store';
@@ -15,6 +14,7 @@ import { E } from '@endo/far';
  * @import {MapStore, SetStore} from '@agoric/store';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {TimestampValue} from '@agoric/time';
+ * @import {GovernorCreatorFacet} from '@agoric/governance/src/types.js';
  */
 
 /**
@@ -60,7 +60,9 @@ harden(meta);
  */
 export const start = async (zcf, privateArgs, baggage) => {
   const { binaryVoteCounterInstallation: counter } = zcf.getTerms();
-  /** @type {MapStore<Instance<unknown>, GovernorCreatorFacet<any>>} */
+  /**
+   * @type {MapStore<Instance<unknown>, GovernorCreatorFacet<any>>}
+   */
   const instanceToGovernor = provideDurableMapStore(
     baggage,
     'instanceToGovernor',

@@ -15,6 +15,9 @@ import { prepareAssetReserveKit } from './assetReserveKit.js';
  * @import {EReturn} from '@endo/far';
  * @import {ContractOf} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {Allocation, ContractMeta, FeeMintAccess, Installation} from '@agoric/zoe';
+ * @import {GovernanceTerms} from '@agoric/governance/src/types.js';
+ * @import {GovernedCreatorFacet} from '@agoric/governance/src/types.js';
+ * @import {GovernedPublicFacet} from '@agoric/governance/src/types.js';
  */
 
 const trace = makeTracer('AR', true);

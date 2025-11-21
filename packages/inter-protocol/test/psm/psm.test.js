@@ -47,6 +47,7 @@ import { anchorAssets, chainStorageEntries } from './psm-storage-fixture.js';
  * @import {PsmPublicFacet} from '../../src/psm/psm.js';
  * @import {StartedInstanceKit} from '@agoric/vats';
  * @import {BankManager} from '@agoric/vats';
+ * @import {ParamStateRecord} from '@agoric/governance/src/types.js';
  */
 
 /** @type {TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */

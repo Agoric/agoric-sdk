@@ -25,6 +25,7 @@ import { withAmountUtils } from '../supports.js';
  * @import {ContinuingInvitationSpec} from '@agoric/smart-wallet/src/invitations.js';
  * @import {ChainBootstrapSpace} from '@agoric/vats';
  * @import {EconomyBootstrapPowers} from '../../src/proposals/econ-behaviors.js';
+ * @import {CommitteeElectoratePublic} from '@agoric/governance/src/types.js';
  */
 
 // referenced by TS

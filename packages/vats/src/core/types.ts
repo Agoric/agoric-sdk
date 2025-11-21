@@ -1,4 +1,8 @@
 import type {
+  GovernableStartFn,
+  GovernanceFacetKit,
+} from '@agoric/governance/src/types.js';
+import type {
   Device,
   DProxy,
   VatAdminSvc,

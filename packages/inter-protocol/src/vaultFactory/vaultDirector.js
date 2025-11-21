@@ -1,4 +1,3 @@
-/// <reference types="@agoric/governance/exported.js" />
 /// <reference types="@agoric/zoe/exported.js" />
 
 import { AmountMath, AmountShape, BrandShape, IssuerShape } from '@agoric/ertp';
@@ -56,6 +55,7 @@ import {
  * @import {BurnDebt, VaultManagerParamValues} from './types.js';
  * @import {MintAndTransfer} from './types.js';
  * @import {VaultFactoryParamPath} from './types.js';
+ * @import {GovernedApis} from '@agoric/governance/src/types.js';
  */
 
 const trace = makeTracer('VD', true);
@@ -354,7 +354,9 @@ const prepareVaultDirector = (
         getLimitedCreatorFacet() {
           return this.facets.machine;
         },
-        /** @returns {ERef<GovernedApis>} */
+        /**
+         * @returns {ERef<GovernedApis>}
+         */
         getGovernedApis() {
           // @ts-expect-error cast
           return Far('governedAPIs', {});
