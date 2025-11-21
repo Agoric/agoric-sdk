@@ -26,14 +26,14 @@ import { makeNameHubKit, prepareMixinMyAddress } from '../src/nameHub.js';
 /**
  * @import {UserPaymentRecord} from '../src/core/demoIssuers.js';
  * @import {MyAddressNameAdmin} from '../src/types.js';
- * @import {BoardVat} from '../src/core/types-ambient.js';
- * @import {MintsVat} from '../src/core/types-ambient.js';
- * @import {BootstrapPowers} from '../src/core/types-ambient.js';
- * @import {DemoFaucetPowers} from '../src/core/types-ambient.js';
- * @import {Producer} from '../src/core/types-ambient.js';
- * @import {VatLoader} from '../src/core/types-ambient.js';
- * @import {WellKnownVats} from '../src/core/types-ambient.js';
- * @import {BootstrapSpace} from '../src/core/types-ambient.js';
+ * @import {BoardVat} from '../src/core/types.js';
+ * @import {MintsVat} from '../src/core/types.js';
+ * @import {BootstrapPowers} from '../src/core/types.js';
+ * @import {DemoFaucetPowers} from '../src/core/types.js';
+ * @import {Producer} from '../src/core/types.js';
+ * @import {VatLoader} from '../src/core/types.js';
+ * @import {WellKnownVats} from '../src/core/types.js';
+ * @import {BootstrapSpace} from '../src/core/types.js';
  */
 
 /**

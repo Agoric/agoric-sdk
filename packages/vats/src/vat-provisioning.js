@@ -20,10 +20,10 @@ import {
  * @import {NameHub} from './types.js';
  * @import {MyAddressNameAdmin} from './types.js';
  * @import {Baggage} from '@agoric/vat-data';
- * @import {ClientCreator} from './core/types-ambient.js';
- * @import {CommsVatRoot} from './core/types-ambient.js';
- * @import {VattpVat} from './core/types-ambient.js';
- * @import {ClientFacet} from './core/types-ambient.js';
+ * @import {ClientCreator} from './core/types.js';
+ * @import {CommsVatRoot} from './core/types.js';
+ * @import {VattpVat} from './core/types.js';
+ * @import {ClientFacet} from './core/types.js';
  */
 
 // This vat contains the controller-side provisioning service. To enable local

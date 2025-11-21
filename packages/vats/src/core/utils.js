@@ -8,7 +8,7 @@ import { keyEQ } from '@agoric/store';
 import { makeNameHubKit } from '../nameHub.js';
 import { makeLogHooks, makePromiseSpace } from './promise-space.js';
 
-import './types-ambient.js';
+import './types.js';
 
 const { entries, fromEntries, keys } = Object;
 
@@ -321,8 +321,8 @@ export const makeMyAddressNameAdminKit = address => {
 /** @typedef {MapStore<string, CreateVatResults>} VatStore */
 
 /**
- * @import {VatAdminVat} from './types-ambient.js';
- * @import {NamedVatPowers} from './types-ambient.js';
+ * @import {VatAdminVat} from './types.js';
+ * @import {NamedVatPowers} from './types.js';
  */
 
 /**
@@ -335,11 +335,11 @@ export const makeMyAddressNameAdminKit = address => {
  * @import {NameAdmin} from '../types.js';
  * @import {NameHub} from '../types.js';
  * @import {MyAddressNameAdmin} from '../types.js';
- * @import {WellKnownName} from './types-ambient.js';
- * @import {VattpVat} from './types-ambient.js';
- * @import {CommsVatRoot} from './types-ambient.js';
- * @import {PromiseSpaceOf} from './types-ambient.js';
- * @import {WellKnownSpaces} from './types-ambient.js';
+ * @import {WellKnownName} from './types.js';
+ * @import {VattpVat} from './types.js';
+ * @import {CommsVatRoot} from './types.js';
+ * @import {PromiseSpaceOf} from './types.js';
+ * @import {WellKnownSpaces} from './types.js';
  */
 export const makeVatSpace = (
   svc,

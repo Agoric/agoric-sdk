@@ -10,7 +10,7 @@ import { prepareNameHubKit } from './nameHub.js';
  * @import {Zone} from '@agoric/zone';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {NameAdmin} from './types.js';
- * @import {BoardVat} from './core/types-ambient.js';
+ * @import {BoardVat} from './core/types.js';
  */
 
 /** @param {Zone} zone */

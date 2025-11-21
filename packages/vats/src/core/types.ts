@@ -1,10 +1,14 @@
-import { Device, DProxy } from '@agoric/swingset-vat/src/types-external.js';
+import type {
+  Device,
+  DProxy,
+  VatAdminSvc,
+} from '@agoric/swingset-vat/src/types-external.js';
 
-export { Device, DProxy };
+export type { Device, DProxy };
 
 export type BootDevices<T> = { vatPowers: { D: DProxy }; devices: T };
 
-export { BridgeDevice } from '@agoric/swingset-vat/src/devices/bridge/device-bridge.js';
+export type { BridgeDevice } from '@agoric/swingset-vat/src/devices/bridge/device-bridge.js';
 
 export type CommandDevice = Device<
   ReturnType<
@@ -331,17 +335,17 @@ export type StartedInstanceKitWithLabel = {
 >;
 
 export type ChainBootstrapSpaceT = {
-  agoricNames: import('../types.js').NameHub;
+  agoricNames: import('../types.ts').NameHub;
   agoricNamesAdmin: import('@agoric/vats').NameAdmin;
   bankManager: import('@agoric/vats/src/vat-bank.js').BankManager;
   bldIssuerKit: RemoteIssuerKit;
   board: import('@agoric/vats').Board;
-  bridgeManager: import('../types.js').BridgeManager | undefined;
+  bridgeManager: import('../types.ts').BridgeManager | undefined;
   chainStorage: import('@agoric/internal').Remote<StorageNode> | null;
   chainTimerService: import('@agoric/time').TimerService;
   client: ClientManager;
   clientCreator: any;
-  coreEvalBridgeHandler: import('../types.js').BridgeHandler;
+  coreEvalBridgeHandler: import('../types.ts').BridgeHandler;
   cosmosInterchainService: import('@agoric/orchestration').CosmosInterchainService;
   /** Utilities to support debugging */
   diagnostics: {
@@ -366,8 +370,8 @@ export type ChainBootstrapSpaceT = {
   instancePrivateArgs: Map<Instance, unknown>;
   localchain: import('@agoric/vats/src/localchain.js').LocalChain;
   mints?: MintsVat;
-  namesByAddress: import('../types.js').NameHub;
-  namesByAddressAdmin: import('../types.js').NamesByAddressAdmin;
+  namesByAddress: import('../types.ts').NameHub;
+  namesByAddressAdmin: import('../types.ts').NamesByAddressAdmin;
   networkVat: NetworkVat;
   orchestration?: import('@agoric/orchestration').CosmosInterchainService;
   pegasusConnections: import('@agoric/vats').NameHubKit;
@@ -380,13 +384,13 @@ export type ChainBootstrapSpaceT = {
   priceAuthorityAdmin: import('@agoric/vats/src/priceAuthorityRegistry.js').PriceAuthorityRegistryAdmin;
   provisioning: Awaited<ProvisioningVat> | undefined;
   provisionBridgeManager:
-    | import('../types.js').ScopedBridgeManager<'provision'>
+    | import('../types.ts').ScopedBridgeManager<'provision'>
     | undefined;
   provisionWalletBridgeManager:
-    | import('../types.js').ScopedBridgeManager<'provisionWallet'>
+    | import('../types.ts').ScopedBridgeManager<'provisionWallet'>
     | undefined;
   storageBridgeManager:
-    | import('../types.js').ScopedBridgeManager<'storage'>
+    | import('../types.ts').ScopedBridgeManager<'storage'>
     | undefined;
   transferMiddleware: import('../transfer.js').TransferMiddleware;
   /**
@@ -406,7 +410,7 @@ export type ChainBootstrapSpaceT = {
   /** Used only for testing. Should not appear in any production proposals. */
   testFirstAnchorKit: import('../vat-bank.js').AssetIssuerKit;
   walletBridgeManager:
-    | import('../types.js').ScopedBridgeManager<'wallet'>
+    | import('../types.ts').ScopedBridgeManager<'wallet'>
     | undefined;
   walletFactoryStartResult: import('./startWalletFactory.js').WalletFactoryStartResult;
   provisionPoolStartResult: GovernanceFacetKit<

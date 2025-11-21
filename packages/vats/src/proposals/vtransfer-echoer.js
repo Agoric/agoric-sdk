@@ -4,7 +4,7 @@ import { E } from '@endo/far';
 
 /**
  * @import {TransferMiddleware} from '../transfer.js';
- * @import {BootstrapPowers} from '../core/types-ambient.js';
+ * @import {BootstrapPowers} from '../core/types.js';
  */
 
 /**

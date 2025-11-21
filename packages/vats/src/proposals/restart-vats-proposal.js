@@ -6,7 +6,7 @@ import { E, getInterfaceOf } from '@endo/far';
 /**
  * @import {AdminFacet, ContractOf, InvitationAmount, ZCFMint} from '@agoric/zoe';
  * @import {EconomyBootstrapSpace} from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
- * @import {BootstrapPowers} from '../core/types-ambient.js';
+ * @import {BootstrapPowers} from '../core/types.js';
  */
 
 const trace = makeTracer('RV');
