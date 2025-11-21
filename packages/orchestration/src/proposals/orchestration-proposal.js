@@ -5,6 +5,9 @@ const trace = makeTracer('CoreEvalOrchestration', true);
 
 /**
  * @import {PortAllocator} from '@agoric/network';
+ * @import {BootstrapPowers} from '@agoric/vats';
+ * @import {Producer} from '@agoric/vats';
+ * @import {VatSourceRef} from '@agoric/vats';
  */
 
 /**

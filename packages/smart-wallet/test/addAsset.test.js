@@ -131,6 +131,7 @@ const the = async xP => {
  * @import {OfferSpec} from '../src/offers.js';
  * @import {UpdateRecord} from '../src/smartWallet.js';
  * @import {Bundle} from '@agoric/swingset-vat';
+ * @import {BootstrapPowers} from '@agoric/vats';
  */
 
 const IST_UNIT = 1_000_000n;

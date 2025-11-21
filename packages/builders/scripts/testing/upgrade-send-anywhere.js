@@ -14,6 +14,7 @@ import { E } from '@endo/far';
  * @import {Installation, Instance} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {BootstrapPowers} from '@agoric/vats';
  */
 
 const trace = makeTracer('UpgradeSA', true);

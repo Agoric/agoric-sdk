@@ -32,6 +32,8 @@ import {
  * @import {SmartWallet} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {PriceRound} from '@agoric/inter-protocol/src/price/roundsManager.js';
  * @import {ContinuingInvitationSpec} from '@agoric/smart-wallet/src/invitations.js';
+ * @import {ChainBootstrapSpace, NamedVatPowers} from '@agoric/vats';
+ * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
  */
 
 /**

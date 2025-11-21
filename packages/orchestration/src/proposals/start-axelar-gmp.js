@@ -12,6 +12,8 @@ import { E } from '@endo/far';
  * @import {Installation, Instance} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  * @import {start as StartFn} from '@agoric/orchestration/src/examples/axelar-gmp.contract.js';
+ * @import {BootstrapPowers} from '@agoric/vats';
+ * @import {Producer} from '@agoric/vats';
  */
 
 const trace = makeTracer('start axelarGmp', true);

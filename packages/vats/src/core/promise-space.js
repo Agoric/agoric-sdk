@@ -5,7 +5,7 @@ import { makePromiseKit } from '@endo/promise-kit';
 
 /**
  * @import {Passable} from '@endo/marshal';
- * @import {PromiseSpaceOf} from './types-ambient';
+ * @import {PromiseSpaceOf} from './types-ambient.js';
  */
 
 /**

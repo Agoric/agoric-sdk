@@ -22,6 +22,11 @@ import { E, Far } from '@endo/far';
  * @import {StoredFacet} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {BridgeManager} from '@agoric/vats';
  * @import {TopicsRecord} from '@agoric/zoe/src/contractSupport/index.js';
+ * @import {WellKnownVats} from '@agoric/vats';
+ * @import {BootstrapPowers} from '@agoric/vats';
+ * @import {ChainBootstrapSpace} from '@agoric/vats';
+ * @import {Producer} from '@agoric/vats';
+ * @import {VatLoader} from '@agoric/vats';
  */
 
 export { ActionType };

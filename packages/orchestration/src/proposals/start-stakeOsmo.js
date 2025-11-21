@@ -8,7 +8,7 @@ import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
 
 /**
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
- * @import {IBCConnectionID} from '@agoric/vats';
+ * @import {BootstrapPowers, IBCConnectionID, StartUpgradableOpts} from '@agoric/vats';
  * @import {StakeIcaSF} from '../examples/stake-ica.contract.js';
  * @import {start} from '../examples/stake-ica.contract.js';
  */

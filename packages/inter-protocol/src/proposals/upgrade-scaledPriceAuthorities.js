@@ -1,6 +1,11 @@
 import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
 
+/**
+ * @import {ChainBootstrapSpace} from '@agoric/vats';
+ * @import {StartedInstanceKit} from '@agoric/vats';
+ */
+
 const trace = makeTracer('upgradeScaledPA', true);
 
 /**
