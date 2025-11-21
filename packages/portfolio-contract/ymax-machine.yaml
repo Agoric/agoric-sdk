@@ -64,7 +64,45 @@ states:
           invariants:
             - accountsPending empty
       moving:
-        description: Execute movement steps (localTransfer, IBC, CCTP, GMP, supply/withdraw). FlowStatus state=run advances; fail publishes FlowStatus state=fail.
+        description: Execute MovementDesc steps (localTransfer, withdrawToSeat, send, IBC, CCTP, GMP, protocol supply/withdraw). FlowStatus state=run advances; fail publishes FlowStatus state=fail. IBC legs can block if relayer is down/slow.
+        initial: dispatch
+        states:
+          dispatch:
+            description: Performing the current movement. For IBC legs, once packet is sent funds are escrowed at source until relay.
+            on:
+              ibc.packet_sent:
+                target: ibc_wait_relayer
+                description: IBC transfer enqueued; funds escrowed on source chain.
+              ibc.leg_complete:
+                target: dispatch
+                description: IBC ack received and step finished; proceed to next movement.
+          ibc_wait_relayer:
+            description: Waiting on relayer to deliver packet to destination chain; funds escrowed at source.
+            on:
+              ibc.packet_received:
+                target: ibc_wait_ack
+                description: Destination chain processed packet (recv/ack pending).
+              ibc.timeout:
+                target: ibc_timeout_refund
+                description: Packet timed out; refund path should unescrow.
+          ibc_wait_ack:
+            description: Packet received and funds credited at destination; waiting for ack to be written on source.
+            on:
+              ibc.ack:
+                target: dispatch
+                description: Ack observed; IBC leg complete.
+              ibc.timeout:
+                target: ibc_timeout_refund
+                description: Timeout observed instead of ack; refund path should unescrow.
+          ibc_timeout_refund:
+            description: Timeout detected; funds should be refunded/unescrowed on source chain. If refund fails, operator action required.
+            on:
+              ibc.refund_ok:
+                target: dispatch
+                description: Refund confirmed; resume execution with remaining steps.
+              ibc.refund_failed:
+                target: failed
+                description: Refund did not post; funds stuck in escrow.
         on:
           flow.step_failed:
             target: failed
@@ -78,9 +116,12 @@ states:
         meta:
           observedFrom:
             - published.{instance}.portfolios.portfolio{n}.flows.flow{n} (state=run|fail|done)
+            - IBC packet/ack events per channel+port for each MovementDesc how==IBC
           invariants:
             - proposal satisfied for give/want seats
             - flow{n}.order respected when present
+            - how == IBC implies escrowed funds observable at source until ack/timeout
+            - how in {CCTP, GMP} expect pendingTx registered for the leg; missing pendingTx implies error
       settling:
         description: Waiting on cross-chain confirmations from resolver (TxStatus pending -> success/failed).
         on:
