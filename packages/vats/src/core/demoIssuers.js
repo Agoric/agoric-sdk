@@ -14,6 +14,8 @@ import { Stake, Stable } from '@agoric/internal/src/tokens.js';
 /**
  * @import {FeeMintAccess, Installation} from '@agoric/zoe'
  * @import {EconomyBootstrapPowers} from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
+ * @import {MintsVat} from './types-ambient.js';
+ * @import {BootstrapSpace} from './types-ambient.js';
  */
 
 const { multiply, floorDivide } = natSafeMath;
@@ -224,7 +226,8 @@ const provideCoin = async (name, mints) => {
 };
 
 /**
- * @param {BootstrapSpace} powers TODO: sync this type with end-user docs?
+ * @param {BootstrapSpace} powers TODO: sync this
+ *   type with end-user docs?
  *
  * @typedef {{
  *   issuer: ERef<Issuer>;

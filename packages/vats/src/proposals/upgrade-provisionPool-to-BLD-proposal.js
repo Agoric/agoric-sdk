@@ -3,6 +3,11 @@ import { deeplyFulfilled } from '@endo/marshal';
 import { makeTracer } from '@agoric/internal';
 import { Stake } from '@agoric/internal/src/tokens.js';
 
+/**
+ * @import {BootstrapPowers} from '../core/types-ambient.js';
+ * @import {VatSourceRef} from '../core/types-ambient.js';
+ */
+
 const trace = makeTracer('UpgradeProvisionPool');
 
 /**

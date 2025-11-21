@@ -21,6 +21,9 @@ import {
  * @import {CommitteeElectorateCreatorFacet} from '@agoric/governance/src/committee.js';
  * @import {ScopedBridgeManager} from '../types.js';
  * @import {start} from '@agoric/inter-protocol/src/econCommitteeCharter.js';
+ * @import {BootstrapPowers} from './types-ambient.js';
+ * @import {ChainStorageVatParams} from './types-ambient.js';
+ * @import {PromiseSpaceOf} from './types-ambient.js';
  */
 
 const trace = makeTracer('StartWF', 'verbose');

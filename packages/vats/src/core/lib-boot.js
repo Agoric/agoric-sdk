@@ -10,9 +10,12 @@ import { makePromiseSpace } from './promise-space.js';
 
 /**
  * @import {EReturn} from '@endo/far';
- * @import {VatPowers} from '@agoric/swingset-vat';
+ * @import {DProxy, VatPowers} from '@agoric/swingset-vat';
  * @import {Zone} from '@agoric/zone';
  * @import {BridgeHandler} from '../types.js';
+ * @import {SwingsetVats} from './types-ambient.js';
+ * @import {SoloDevices} from './types-ambient.js';
+ * @import {ChainDevices} from './types-ambient.js';
  */
 
 /**

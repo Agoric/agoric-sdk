@@ -7,6 +7,15 @@ import { registerNetworkProtocols } from '../proposals/network-proposal.js';
 import { makeVatsFromBundles } from './basic-behaviors.js';
 
 /**
+ * @import {BootstrapVatParams, SwingsetVats} from './types-ambient.js';
+ * @import {SoloDevices} from './types-ambient.js';
+ * @import {VatAdminSvc} from '@agoric/swingset-vat';
+ * @import {DProxy} from '@agoric/swingset-vat';
+ * @import {BootDevices} from './types-ambient.js';
+ * @import {BootstrapSpace} from './types-ambient.js';
+ */
+
+/**
  * @typedef SoloVats
  * @property {ERef<
  *   ReturnType<

@@ -9,6 +9,7 @@ import {
  * @import {ScopedBridgeManager} from '../types.js';
  * @import {TransferMiddleware} from '../transfer.js';
  * @import {CreateVatResults, VatAdminSvc} from '@agoric/swingset-vat';
+ * @import {BootstrapPowers} from '../core/types-ambient.js';
  */
 
 /**

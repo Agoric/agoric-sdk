@@ -27,6 +27,14 @@ import { makeScopedBridge } from '../bridge.js';
  * @import {InitMsg} from '@agoric/internal/src/chain-utils.js';
  * @import {start} from '../centralSupply.js';
  * @import {BootstrapManifest} from './lib-boot.js';
+ * @import {BootstrapPowers} from './types-ambient.js';
+ * @import {Producer} from './types-ambient.js';
+ * @import {VatLoader} from './types-ambient.js';
+ * @import {ChainBootstrapSpace} from './types-ambient.js';
+ * @import {BootstrapSpace} from './types-ambient.js';
+ * @import {StartedInstanceKitWithLabel} from './types-ambient.js';
+ * @import {StartUpgradable} from './types-ambient.js';
+ * @import {NamedVatPowers} from './types-ambient.js';
  */
 
 /**

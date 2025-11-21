@@ -3,6 +3,8 @@ import { E } from '@endo/far';
 
 /**
  * @import {CreateVatResults, VatAdminSvc} from '@agoric/swingset-vat';
+ * @import {BootstrapPowers} from '../core/types-ambient.js';
+ * @import {VatSourceRef} from '../core/types-ambient.js';
  */
 
 /**

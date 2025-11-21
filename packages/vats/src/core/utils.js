@@ -321,6 +321,11 @@ export const makeMyAddressNameAdminKit = address => {
 /** @typedef {MapStore<string, CreateVatResults>} VatStore */
 
 /**
+ * @import {VatAdminVat} from './types-ambient.js';
+ * @import {NamedVatPowers} from './types-ambient.js';
+ */
+
+/**
  * @param {ERef<ReturnType<Awaited<VatAdminVat>['createVatAdminService']>>} svc
  * @param {unknown} criticalVatKey
  * @param {(...args: any) => void} [log]
@@ -330,6 +335,11 @@ export const makeMyAddressNameAdminKit = address => {
  * @import {NameAdmin} from '../types.js';
  * @import {NameHub} from '../types.js';
  * @import {MyAddressNameAdmin} from '../types.js';
+ * @import {WellKnownName} from './types-ambient.js';
+ * @import {VattpVat} from './types-ambient.js';
+ * @import {CommsVatRoot} from './types-ambient.js';
+ * @import {PromiseSpaceOf} from './types-ambient.js';
+ * @import {WellKnownSpaces} from './types-ambient.js';
  */
 export const makeVatSpace = (
   svc,

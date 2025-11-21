@@ -2,6 +2,11 @@ import { E } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
 import { makeTracer } from '@agoric/internal';
 
+/**
+ * @import {BootstrapPowers} from '../core/types-ambient.js';
+ * @import {VatSourceRef} from '../core/types-ambient.js';
+ */
+
 const trace = makeTracer('UpgradePSM');
 
 /**

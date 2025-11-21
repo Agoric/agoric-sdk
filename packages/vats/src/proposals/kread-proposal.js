@@ -1,6 +1,10 @@
 import { E } from '@endo/far';
 
 /**
+ * @import {BootstrapPowers} from '../core/types-ambient.js';
+ */
+
+/**
  * @param {BootstrapPowers & {
  *   consume: { kreadKit: any };
  * }} powers

@@ -8,6 +8,9 @@ import { makeScopedBridge } from '../bridge.js';
  * @import {EReturn} from '@endo/far';
  * @import {BridgeManager} from '../types.js';
  * @import {ScopedBridgeManager} from '../types.js';
+ * @import {BootstrapPowers} from '../core/types-ambient.js';
+ * @import {Producer} from '../core/types-ambient.js';
+ * @import {VatSourceRef} from '../core/types-ambient.js';
  */
 
 /**
