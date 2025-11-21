@@ -17,8 +17,6 @@ import {
   makeXsnapBundleData,
 } from './bundle-handler.js';
 
-import '../types-ambient.js';
-
 /**
  * @import {BundleFormat} from '../types-external.js';
  * @import {SwingSetConfig} from '../types-external.js';

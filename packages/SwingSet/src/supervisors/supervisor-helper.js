@@ -2,7 +2,6 @@ import {
   insistVatSyscallObject,
   insistVatSyscallResult,
 } from '../lib/message.js';
-import '../types-ambient.js';
 
 /**
  * @import {CapData} from '@endo/marshal';
