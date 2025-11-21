@@ -18,7 +18,7 @@ jobs:
       matrix:
         node-version: ['node-new', 'node-old']
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: 'true'
       - uses: ./.github/actions/restore-node
@@ -37,7 +37,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/restore-node
         with:
           node-version: 'node-new'
@@ -93,7 +93,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{github.event_name == 'push' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/restore-node
         with:
           node-version: 'node-new'
@@ -133,7 +133,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{github.event_name == 'push'}}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/restore-node
         with:
           node-version: 'node-new'

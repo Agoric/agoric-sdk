@@ -16,7 +16,7 @@ runs:
     - name: set default environment variables
       run: echo GOPATH="$HOME/go" >> $GITHUB_ENV
       shell: bash
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
         path: ${{ inputs.path }}
         clean: 'false'
