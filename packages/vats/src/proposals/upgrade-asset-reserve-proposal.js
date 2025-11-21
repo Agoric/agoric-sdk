@@ -3,8 +3,8 @@ import { deeplyFulfilled } from '@endo/marshal';
 import { makeTracer } from '@agoric/internal';
 
 /**
- * @import {BootstrapPowers} from '../core/types-ambient.js';
- * @import {VatSourceRef} from '../core/types-ambient.js';
+ * @import {BootstrapPowers} from '../core/types.js';
+ * @import {VatSourceRef} from '../core/types.js';
  */
 
 const tracer = makeTracer('UpgradeAssetReserve');

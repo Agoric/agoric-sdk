@@ -10,7 +10,7 @@ import { E } from '@endo/far';
  * @import {ScopedBridgeManager} from './types.js';
  * @import {Zone} from '@agoric/zone';
  * @import {DProxy} from '@agoric/swingset-vat';
- * @import {BridgeDevice} from './core/types-ambient.js';
+ * @import {BridgeDevice} from './core/types.js';
  */
 
 /**

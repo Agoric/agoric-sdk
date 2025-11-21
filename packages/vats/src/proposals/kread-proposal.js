@@ -1,7 +1,7 @@
 import { E } from '@endo/far';
 
 /**
- * @import {BootstrapPowers} from '../core/types-ambient.js';
+ * @import {BootstrapPowers} from '../core/types.js';
  */
 
 /**

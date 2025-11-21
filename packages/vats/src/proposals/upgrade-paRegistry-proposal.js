@@ -4,8 +4,8 @@ import { AmountMath } from '@agoric/ertp';
 import { Stable } from '@agoric/internal/src/tokens.js';
 
 /**
- * @import {BootstrapPowers} from '../core/types-ambient.js';
- * @import {VatSourceRef} from '../core/types-ambient.js';
+ * @import {BootstrapPowers} from '../core/types.js';
+ * @import {VatSourceRef} from '../core/types.js';
  */
 
 /**

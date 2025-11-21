@@ -5,9 +5,9 @@ import { makeTracer } from '@agoric/internal';
 /**
  * @import {CreateVatResults, VatAdminSvc} from '@agoric/swingset-vat';
  * @import {VatUpgradeOptions} from '@agoric/swingset-vat';
- * @import {BootstrapPowers} from '../core/types-ambient.js';
- * @import {VatSourceRef} from '../core/types-ambient.js';
- * @import {PromiseSpaceOf} from '../core/types-ambient.js';
+ * @import {BootstrapPowers} from '../core/types.js';
+ * @import {VatSourceRef} from '../core/types.js';
+ * @import {PromiseSpaceOf} from '../core/types.js';
  */
 
 const trace = makeTracer('UpgradeVats');

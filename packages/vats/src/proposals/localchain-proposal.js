@@ -10,9 +10,9 @@ import { makeScopedBridge } from '../bridge.js';
  * @import {TransferMiddleware} from '../transfer.js';
  * @import {LocalChainVat} from '../vat-localchain.js';
  * @import {LocalChain} from '../localchain.js';
- * @import {BootstrapPowers} from '../core/types-ambient.js';
- * @import {Producer} from '../core/types-ambient.js';
- * @import {VatSourceRef} from '../core/types-ambient.js';
+ * @import {BootstrapPowers} from '../core/types.js';
+ * @import {Producer} from '../core/types.js';
+ * @import {VatSourceRef} from '../core/types.js';
  */
 
 /**

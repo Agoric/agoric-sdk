@@ -1,5 +1,4 @@
-// TODO rename now that it's not ambient
-export * from './src/core/types-ambient.js';
+export * from './src/core/types.js';
 
 // eslint-disable-next-line import/export -- no named exports
 export * from './src/types-index.js';

@@ -32,7 +32,7 @@ import { makeScopedBridge } from '../bridge.js';
  *   ClientFacet,
  *   BootDevices,
  *   ChainDevices,
- *   NamedVatPowers,} from './types-ambient.js';
+ *   NamedVatPowers,} from './types.js';
  */
 
 const { keys } = Object;
