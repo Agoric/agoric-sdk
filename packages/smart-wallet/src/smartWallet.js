@@ -64,6 +64,7 @@ import { prepareOfferWatcher, makeWatchOfferOutcomes } from './offerWatcher.js';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {PublicSubscribers} from './types.js';
  * @import {CapData} from '@endo/marshal';
+ * @import {Notifier} from '@agoric/notifier';
  */
 
 const trace = makeTracer('SmrtWlt');

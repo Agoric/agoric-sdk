@@ -23,6 +23,7 @@ import { prepareVoterKit } from './voterKit.js';
  * @import {ElectorateCreatorFacet, CommitteeElectoratePublic, QuestionDetails, OutcomeRecord, AddQuestion} from './types.js';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {QuestionRecord} from './electorateTools.js';
+ * @import {StoredPublishKit} from '@agoric/notifier';
  */
 
 /**

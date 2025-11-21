@@ -84,6 +84,7 @@ import { Phase, prepareVault } from './vault.js';
  * @import {VaultPhase} from './vault.js';
  * @import {AuctioneerPublicFacet} from '../auction/auctioneer.js';
  * @import {MintAndTransfer, VaultId} from './types.js';
+ * @import {LatestTopic} from '@agoric/notifier';
  */
 
 const trace = makeTracer('VM');

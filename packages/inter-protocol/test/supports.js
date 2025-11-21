@@ -26,6 +26,10 @@ import { E } from '@endo/far';
  * @import {TopicsRecord} from '@agoric/zoe/src/contractSupport/index.js';
  * @import {ExecutionContext} from 'ava';
  * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
+ * @import {StoredSubscription} from '@agoric/notifier';
+ * @import {StoredSubscriber} from '@agoric/notifier';
+ * @import {Subscriber} from '@agoric/notifier';
+ * @import {Subscription} from '@agoric/notifier';
  */
 
 export { makeMockChainStorageRoot };

@@ -44,6 +44,8 @@ import {
  * @import {OracleKey} from './priceAggregatorTypes.js';
  * @import {OracleAdmin} from './priceAggregatorTypes.js';
  * @import {OracleQuery} from './priceAggregatorTypes.js';
+ * @import {Notifier} from '@agoric/notifier';
+ * @import {UpdateRecord} from '@agoric/notifier';
  */
 
 /** @typedef {bigint | number | string} ParsableNumber */

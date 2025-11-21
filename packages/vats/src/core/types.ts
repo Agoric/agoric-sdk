@@ -2,6 +2,7 @@ import type {
   GovernableStartFn,
   GovernanceFacetKit,
 } from '@agoric/governance/src/types.js';
+import type { Notifier } from '@agoric/notifier';
 import type {
   Device,
   DProxy,

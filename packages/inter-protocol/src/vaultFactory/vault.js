@@ -29,6 +29,7 @@ const trace = makeTracer('Vault', true);
  * @import {Ratio} from '@agoric/ertp/src/ratio.js';
  * @import {VaultKit} from './vaultKit.js';
  * @import {MintAndTransfer, VaultId} from './types.js';
+ * @import {Subscriber} from '@agoric/notifier';
  */
 
 /**

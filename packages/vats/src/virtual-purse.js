@@ -18,6 +18,7 @@ import {
  * @import {Key, Pattern} from '@endo/patterns';
  * @import {Amount, Issuer, IssuerKit, Paymnent} from '@agoric/ertp';
  * @import {Zone} from '@agoric/zone';
+ * @import {LatestTopic} from '@agoric/notifier';
  */
 
 /**

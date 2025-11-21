@@ -27,6 +27,7 @@ import { E, Far } from '@endo/far';
  * @import {ChainBootstrapSpace} from '@agoric/vats';
  * @import {Producer} from '@agoric/vats';
  * @import {VatLoader} from '@agoric/vats';
+ * @import {Subscriber} from '@agoric/notifier';
  */
 
 export { ActionType };

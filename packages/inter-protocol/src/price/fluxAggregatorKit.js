@@ -28,6 +28,7 @@ import { prepareRoundsManagerKit } from './roundsManager.js';
  * @import {LatestRound} from './roundsManager.js';
  * @import {OracleKit} from './priceOracleKit.js';
  * @import {PriceRound} from './roundsManager.js';
+ * @import {PublishKit} from '@agoric/notifier';
  */
 
 const trace = makeTracer('FlxAgg', true);

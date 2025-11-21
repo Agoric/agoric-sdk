@@ -9,6 +9,7 @@ import { Far } from '@endo/marshal';
  * @import {MutableQuote, PriceAuthority, PriceQuote, PriceDescription,} from '@agoric/zoe/tools/types.js';
  * @import {TimerService} from '@agoric/time';
  * @import {TimestampRecord} from '@agoric/time';
+ * @import {Notifier} from '@agoric/notifier';
  */
 
 /**

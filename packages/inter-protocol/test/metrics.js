@@ -13,6 +13,8 @@ import { makeTracer } from '@agoric/internal';
  * @import {ExecutionContext} from 'ava';
  * @import {CollateralManager} from '../src/vaultFactory/vaultManager.js';
  * @import {MetricsNotification} from '../src/vaultFactory/vaultManager.js';
+ * @import {UpdateRecord} from '@agoric/notifier';
+ * @import {Subscriber} from '@agoric/notifier';
  */
 
 // While t.log has the advantage of omitting by default when tests pass,

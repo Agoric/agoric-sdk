@@ -13,6 +13,7 @@ export {};
  * @import {Allocation, PaymentPKeywordRecord, UserSeat, Completion, ZoeIssuerRecord} from './types-index.js';
  * @import {InvitationHandle, BrandKeywordRecord, AnyTerms} from './types.js';
  * @import {InstanceRecord} from './zoeService/utils.js';
+ * @import {Subscriber} from '@agoric/notifier';
  */
 
 /**

@@ -20,6 +20,7 @@ import {
  * @import {TimerService} from '@agoric/time';
  * @import {RelativeTime} from '@agoric/time';
  * @import {Timestamp} from '@agoric/time';
+ * @import {NotifierRecord} from '@agoric/notifier';
  */
 
 const { coerceRelativeTimeRecord } = TimeMath;

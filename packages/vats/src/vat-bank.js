@@ -35,6 +35,12 @@ import {
  * @import {DepositFacet} from '@agoric/ertp/src/types.js';
  * @import {MakeAttenuator} from '@agoric/internal/src/callback.js';
  * @import {NameAdmin} from './types.js';
+ * @import {Publisher} from '@agoric/notifier';
+ * @import {PublishKit} from '@agoric/notifier';
+ * @import {LatestTopic} from '@agoric/notifier';
+ * @import {EachTopic} from '@agoric/notifier';
+ * @import {PublicationRecord} from '@agoric/notifier';
+ * @import {IterableEachTopic} from '@agoric/notifier';
  */
 
 const { VirtualPurseControllerI } = makeVirtualPurseKitIKit();

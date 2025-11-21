@@ -24,6 +24,8 @@ import { makePromiseKit } from '@endo/promise-kit';
  * @import {OracleKit} from '../../../src/price/priceOracleKit.js';
  * @import {StartParams} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {VatAdminSvc} from '@agoric/swingset-vat';
+ * @import {Subscriber} from '@agoric/notifier';
+ * @import {UpdateRecord} from '@agoric/notifier';
  */
 
 const trace = makeTracer('BootFAUpg');

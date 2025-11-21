@@ -22,6 +22,7 @@ import {
  * @import {HandleOfferResult} from '../internal-types.js';
  * @import {PaymentPKeywordRecord} from './types.ts';
  * @import {Allocation} from '../types-index.js';
+ * @import {PublishKit} from '@agoric/notifier';
  */
 
 export const coreUserSeatMethods = harden({

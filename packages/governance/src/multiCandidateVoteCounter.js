@@ -22,6 +22,7 @@ import { breakTie } from './breakTie.js';
  * @import {MapStore} from '@agoric/swingset-liveslots';
  * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
  * @import {QuestionSpec, BuildMultiVoteCounter, MultiOutcomeRecord, Position, VoteStatistics} from './types.js';
+ * @import {Publisher} from '@agoric/notifier';
  */
 
 const validateQuestionSpec = questionSpec => {

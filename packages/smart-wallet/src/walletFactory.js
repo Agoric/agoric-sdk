@@ -21,6 +21,7 @@ import { shape } from './typeGuards.js';
 
 /**
  * @import {ERemote} from '@agoric/internal';
+ * @import {IterableEachTopic} from '@agoric/notifier';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {MapStore} from '@agoric/swingset-liveslots';
  * @import {NameHub} from '@agoric/vats';

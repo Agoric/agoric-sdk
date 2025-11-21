@@ -33,6 +33,7 @@ import { makeScopedBridge } from '../bridge.js';
  *   BootDevices,
  *   ChainDevices,
  *   NamedVatPowers,} from './types.js';
+ * @import {SubscriptionRecord} from '@agoric/notifier';
  */
 
 const { keys } = Object;

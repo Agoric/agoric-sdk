@@ -39,6 +39,7 @@ import { start } from '../../../src/contracts/priceAggregator.js';
  * @import {OracleKit} from '../../../src/contracts/priceAggregatorTypes.js';
  * @import {PriceAggregatorKit} from '../../../src/contracts/priceAggregatorTypes.js';
  * @import {OracleHandler} from '../../../src/contracts/priceAggregatorTypes.js';
+ * @import {UpdateRecord} from '@agoric/notifier';
  */
 
 /**

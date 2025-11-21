@@ -18,6 +18,7 @@
  * @import {ZCF} from '../../types-index.js';
  * @import {Invitation} from '../../types-index.js';
  * @import {Timestamp} from '@agoric/time';
+ * @import {Notifier} from '@agoric/notifier';
  */
 
 /**
