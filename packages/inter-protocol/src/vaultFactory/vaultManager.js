@@ -83,7 +83,7 @@ import { Phase, prepareVault } from './vault.js';
  * @import {Vault} from './vault.js';
  * @import {VaultPhase} from './vault.js';
  * @import {AuctioneerPublicFacet} from '../auction/auctioneer.js';
- * @import {MintAndTransfer, VaultId} from './types-ambient.js';
+ * @import {MintAndTransfer, VaultId} from './types.js';
  */
 
 const trace = makeTracer('VM');
