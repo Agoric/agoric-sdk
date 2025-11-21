@@ -9,7 +9,7 @@ import { addToAllocation, subtractFromAllocation } from './allocationMath.js';
 import { ZcfMintI } from './typeGuards.js';
 
 /**
- * @import {UserSeat, ZCFMint, ZCFSeat, ZoeIssuerRecord} from '@agoric/zoe';
+ * @import {AmountKeywordRecord, UserSeat, ZCFMint, ZCFSeat, ZoeIssuerRecord} from '@agoric/zoe';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {GetAssetKindByBrand} from '../internal-types.js';
  * @import {ZcfMintReallocator} from '../internal-types.js';

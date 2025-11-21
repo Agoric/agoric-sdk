@@ -1,7 +1,12 @@
 // @jessie-check
 
+/**
+ * @import {PaymentPKeywordRecord, ZCF, ZCFSeat} from '../types-index.js';
+ * @import {AmountKeywordRecord} from '../types-index.js';
+ * @import {IssuerKeywordRecord, Keyword} from '../types.ts';
+ */
+
 /// <reference types="ses" />
-/// <reference types="@agoric/zoe/exported.js" />
 
 // Make this a module
 export {};

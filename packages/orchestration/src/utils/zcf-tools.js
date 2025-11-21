@@ -2,6 +2,7 @@
  * @import {HostInterface} from '@agoric/async-flow';
  * @import {VowTools} from '@agoric/vow';
  * @import {ZcfTools} from '../types.js';
+ * @import {ZCF} from '@agoric/zoe';
  */
 
 import { M, mustMatch } from '@endo/patterns';

@@ -14,7 +14,7 @@ import { Far } from '@endo/marshal';
 import { makeZCFZygote } from './zcfZygote.js';
 
 /**
- * @import {ZoeService} from '@agoric/zoe';
+ * @import {ZCF, ZoeService} from '@agoric/zoe';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {VatPowers} from '@agoric/swingset-vat';
  * @import {BundleCap} from '@agoric/swingset-vat';

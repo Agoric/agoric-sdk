@@ -29,6 +29,7 @@ import { prepareRoundsManagerKit } from './roundsManager.js';
  * @import {OracleKit} from './priceOracleKit.js';
  * @import {PriceRound} from './roundsManager.js';
  * @import {PublishKit} from '@agoric/notifier';
+ * @import {ZCF, ZCFSeat} from '@agoric/zoe';
  */
 
 const trace = makeTracer('FlxAgg', true);

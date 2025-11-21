@@ -18,6 +18,7 @@ import { makeManualPriceAuthority } from '../../../tools/manualPriceAuthority.js
  * @import {prepare} from '../../../src/contracts/scaledPriceAuthority.js';
  * @import {TestFn} from 'ava';
  * @import {ExecutionContext} from 'ava';
+ * @import {Installation} from '../../../src/zoeService/utils.js';
  */
 
 // This contract still uses 'prepare', so this test covers that case.

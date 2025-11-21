@@ -17,6 +17,7 @@ import {
 /**
  * @import {SellItemsPublicFacet} from './types.js';
  * @import {SellItemsCreatorFacet} from './types.js';
+ * @import {ZCF} from '../types-index.js';
  */
 
 /**

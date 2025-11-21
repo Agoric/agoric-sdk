@@ -5,12 +5,13 @@ import { Fail } from '@endo/errors';
 
 /**
  * @import {Amount, Brand, Payment, Purse} from '@agoric/ertp';
- * @import {Proposal} from '@agoric/zoe';
+ * @import {AmountKeywordRecord, Proposal} from '@agoric/zoe';
  * @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js';
  * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
  * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {BoardRemote} from '@agoric/internal/src/marshal/board-client-utils.js';
  * @import {OfferMaker} from '@agoric/smart-wallet/src/types.js';
+ * @import {Instance} from '@agoric/zoe/src/zoeService/utils.js';
  */
 
 // XXX support other decimal places

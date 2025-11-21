@@ -1,5 +1,4 @@
 // @jessie-check
-/// <reference types="@agoric/zoe/exported.js" />
 
 // The vaultFactory owns a number of VaultManagers and a mint for Minted.
 //

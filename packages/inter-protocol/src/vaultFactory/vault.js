@@ -30,6 +30,11 @@ const trace = makeTracer('Vault', true);
  * @import {VaultKit} from './vaultKit.js';
  * @import {MintAndTransfer, VaultId} from './types.js';
  * @import {Subscriber} from '@agoric/notifier';
+ * @import {ZCFSeat} from '@agoric/zoe';
+ * @import {ZCF} from '@agoric/zoe';
+ * @import {ProposalRecord} from '@agoric/zoe';
+ * @import {TransferPart} from '@agoric/zoe';
+ * @import {Invitation} from '@agoric/zoe';
  */
 
 /**

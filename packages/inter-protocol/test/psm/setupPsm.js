@@ -26,6 +26,7 @@ const charterRoot = './src/econCommitteeCharter.js'; // package relative
  * @import {ZoeManualTimer} from '@agoric/zoe/tools/manualTimer.js';
  * @import {TimerService} from '@agoric/time';
  * @import {EconomyBootstrapPowers} from '../../src/proposals/econ-behaviors.js';
+ * @import {ZoeService} from '@agoric/zoe';
  */
 
 /** @typedef {ReturnType<typeof setUpZoeForTest>} FarZoeKit */

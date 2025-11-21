@@ -19,7 +19,7 @@ import { setUpZoeForTest as generalSetUpZoeForTest } from '@agoric/zoe/tools/set
 import { E } from '@endo/far';
 
 /**
- * @import {FeeMintAccess, SourceBundle} from '@agoric/zoe';
+ * @import {FeeMintAccess, SourceBundle, ZoeService} from '@agoric/zoe';
  * @import {EconomyBootstrapPowers as Space} from '../src/proposals/econ-behaviors.js'
  * @import {TimerService} from '@agoric/time';
  * @import {start} from '@agoric/vats/src/centralSupply.js';
@@ -30,6 +30,7 @@ import { E } from '@endo/far';
  * @import {StoredSubscriber} from '@agoric/notifier';
  * @import {Subscriber} from '@agoric/notifier';
  * @import {Subscription} from '@agoric/notifier';
+ * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
  */
 
 export { makeMockChainStorageRoot };
@@ -121,7 +122,9 @@ export const installPuppetGovernance = (zoe, produce) => {
 /**
  * @param {bigint} value
  * @param {{
- *   centralSupply: ERef<Installation<typeof start>>;
+ *   centralSupply: ERef<
+ *     Installation<typeof start>
+ *   >;
  *   feeMintAccess: ERef<FeeMintAccess>;
  *   zoe: ERef<ZoeService>;
  * }} powers

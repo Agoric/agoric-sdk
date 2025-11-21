@@ -26,6 +26,8 @@ import { makePromiseKit } from '@endo/promise-kit';
  * @import {VatAdminSvc} from '@agoric/swingset-vat';
  * @import {Subscriber} from '@agoric/notifier';
  * @import {UpdateRecord} from '@agoric/notifier';
+ * @import {ZoeService} from '@agoric/zoe';
+ * @import {Installation} from '@agoric/zoe';
  */
 
 const trace = makeTracer('BootFAUpg');
@@ -55,8 +57,12 @@ export const buildRootObject = async () => {
   /**
    * @type {{
    *   committee?: Installation<typeof committeeStart>;
-   *   fluxAggregatorV1?: Installation<typeof fluxAggregatorStart>;
-   *   puppetContractGovernor?: Installation<typeof puppetGovernorStart>;
+   *   fluxAggregatorV1?: Installation<
+   *     typeof fluxAggregatorStart
+   *   >;
+   *   puppetContractGovernor?: Installation<
+   *     typeof puppetGovernorStart
+   *   >;
    * }}
    */
   const installations = {};

@@ -323,6 +323,7 @@ export const makeMyAddressNameAdminKit = address => {
 /**
  * @import {VatAdminVat} from './types.js';
  * @import {NamedVatPowers} from './types.js';
+ * @import {FeeIssuerConfig} from '@agoric/zoe';
  */
 
 /**

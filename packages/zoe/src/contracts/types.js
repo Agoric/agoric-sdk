@@ -1,6 +1,8 @@
 /**
  * @import {Invitation} from '../types-index.js';
  * @import {UserSeat} from '../types-index.js';
+ * @import {Installation} from '../zoeService/utils.js';
+ * @import {Instance} from '../zoeService/utils.js';
  */
 
 /**
@@ -19,13 +21,13 @@
  * @property {Record<string, any>} customValueProperties
  * @property {number} count
  * @property {Issuer} moneyIssuer
- * @property {Installation} sellItemsInstallation
+ * @property {Installation<any>} sellItemsInstallation
  * @property {Amount} pricePerItem
  *
  * @typedef {object} SellItemsResult
  * @property {UserSeat} sellItemsCreatorSeat
  * @property {SellItemsCreatorFacet} sellItemsCreatorFacet
- * @property {Instance} sellItemsInstance
+ * @property {Instance<any>} sellItemsInstance
  * @property {SellItemsPublicFacet} sellItemsPublicFacet
  *
  * @typedef {object} MintAndSellNFTCreatorFacet

@@ -7,6 +7,7 @@ import { assertProposalShape } from '../../contractSupport/index.js';
 
 /**
  * @import {MakeCloseLoanInvitation} from './types.js';
+ * @import {OfferHandler} from '../../types-index.js';
  */
 
 // The debt, the amount which must be repaid, is just the amount

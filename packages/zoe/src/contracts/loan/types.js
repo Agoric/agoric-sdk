@@ -13,16 +13,17 @@
  * @import {Ratio} from '@agoric/ertp';
  * @import {PriceAuthority} from '../../../tools/types.js';
  * @import {RelativeTime} from '@agoric/time';
- * @import {ZCFSeat} from '../../types-index.js';
+ * @import {Handle, ZCFSeat} from '../../types-index.js';
  * @import {PriceQuote} from '../../../tools/types.js';
  * @import {ZCF} from '../../types-index.js';
  * @import {Invitation} from '../../types-index.js';
  * @import {Timestamp} from '@agoric/time';
  * @import {Notifier} from '@agoric/notifier';
+ * @import {Instance} from '../../zoeService/utils.js';
  */
 
 /**
- * @typedef {Instance} AutoswapInstance
+ * @typedef {Instance<any>} AutoswapInstance
  *   The running contract instance for an Autoswap installation.  The
  *   publicFacet from the Autoswap
  *   instance is used for producing an invitation to sell the

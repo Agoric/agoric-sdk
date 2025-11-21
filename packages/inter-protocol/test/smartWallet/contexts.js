@@ -26,6 +26,7 @@ import { withAmountUtils } from '../supports.js';
  * @import {ChainBootstrapSpace} from '@agoric/vats';
  * @import {EconomyBootstrapPowers} from '../../src/proposals/econ-behaviors.js';
  * @import {CommitteeElectoratePublic} from '@agoric/governance/src/types.js';
+ * @import {Installation} from '@agoric/zoe';
  */
 
 // referenced by TS
@@ -81,7 +82,9 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     'walletFactory',
   );
   /**
-   * @type {Promise<Installation<StartWalletFactory>>}
+   * @type {Promise<
+   *   Installation<StartWalletFactory>
+   * >}
    */
   const installation = E(zoe).install(bundle);
 

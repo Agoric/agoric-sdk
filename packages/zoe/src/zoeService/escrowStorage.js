@@ -103,12 +103,14 @@ export const provideEscrowStorage = baggage => {
     // as issuers are well-behaved. For more, see
     // https://github.com/Agoric/agoric-sdk/issues/1271
     const depositPs = objectMap(give, (amount, keyword) => {
+      // @ts-expect-error symbol cannot be used as an index type
       payments[keyword] !== undefined ||
         Fail`The ${q(
           keyword,
         )} keyword in proposal.give did not have an associated payment in the paymentKeywordRecord, which had keywords: ${q(
           paymentKeywords,
         )}`;
+      // @ts-expect-error symbol cannot be used as an index type
       return doDepositPayment(payments[keyword], amount);
     });
     const deposits = await deeplyFulfilledObject(depositPs);

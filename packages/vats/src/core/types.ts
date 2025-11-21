@@ -8,6 +8,12 @@ import type {
   DProxy,
   VatAdminSvc,
 } from '@agoric/swingset-vat/src/types-external.js';
+import type {
+  Installation,
+  Instance,
+  IssuerKeywordRecord,
+  ZoeService,
+} from '@agoric/zoe';
 
 export type { Device, DProxy };
 

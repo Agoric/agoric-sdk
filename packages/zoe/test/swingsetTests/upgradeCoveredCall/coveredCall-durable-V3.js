@@ -10,6 +10,9 @@ import {
 
 /**
  * @import {Baggage} from '@agoric/vat-data';
+ * @import {ContractMeta} from '../../../src/types-index.js';
+ * @import {ZCF} from '../../../src/types-index.js';
+ * @import {OfferHandler} from '../../../src/types-index.js';
  */
 
 const sellSeatExpiredMsg = 'The covered call option is expired.';

@@ -5,6 +5,11 @@ import { swapExact } from '../contractSupport/index.js';
 import { isAfterDeadlineExitRule } from '../typeGuards.js';
 
 /**
+ * @import {ZCF} from '../types-index.js';
+ * @import {OfferHandler} from '../types-index.js';
+ */
+
+/**
  * A call option is the right (but not the obligation) to buy digital
  * assets at a pre-determined price, called the strike price. This
  * call option is "covered," meaning that the owner of the digital

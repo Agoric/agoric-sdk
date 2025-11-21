@@ -33,12 +33,14 @@ import { prepareZcMint } from './zcfMint.js';
  * @import {BundleCap, ShutdownWithFailure, VatPowers} from '@agoric/swingset-vat';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {IssuerOptionsRecord} from '@agoric/ertp';
- * @import {ZoeIssuerRecord, ZCFRegisterFeeMint, ContractStartFn, SetTestJig} from './types.js';
+ * @import {ZoeIssuerRecord, ZCFRegisterFeeMint, ContractStartFn, SetTestJig, ContractMeta, ZCFMint, ZCF} from './types.js';
  * @import {InstanceState, IssuerRecords, ZoeInstanceAdmin} from '../internal-types.js';
  * @import {InstanceRecord} from '../zoeService/utils.js';
  * @import {ExecuteContractResult} from '../internal-types.js';
  * @import {ZoeMint} from '../internal-types.js';
  * @import {HandleOfferResult} from '../internal-types.js';
+ * @import {ZoeService} from '../types-index.js';
+ * @import {Keyword} from '../types.ts';
  */
 
 /**

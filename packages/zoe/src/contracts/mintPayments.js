@@ -2,6 +2,10 @@ import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 
 /**
+ * @import {ZCF} from '../types-index.js';
+ */
+
+/**
  * This is a very simple contract that creates a new issuer and mints payments
  * from it, in order to give an example of how that can be done.  This contract
  * sends new tokens to anyone who has an invitation.

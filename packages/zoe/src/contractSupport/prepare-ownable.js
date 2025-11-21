@@ -4,6 +4,8 @@ import { OfferHandlerI } from '../typeGuards.js';
 
 /**
  * @import {Zone} from '@agoric/base-zone';
+ * @import {ZCF} from '../types-index.js';
+ * @import {Invitation} from '../types-index.js';
  */
 
 const TransferProposalShape = M.splitRecord({

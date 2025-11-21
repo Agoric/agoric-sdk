@@ -10,7 +10,7 @@ const { ownKeys } = Reflect;
 export const MAX_KEYWORD_LENGTH = 100;
 
 /**
- * @import {ExitRule, Proposal, ProposalRecord} from '@agoric/zoe';
+ * @import {AmountKeywordRecord, ExitRule, Proposal, ProposalRecord} from '@agoric/zoe';
  * @import {GetAssetKindByBrand} from './internal-types.js';
  */
 

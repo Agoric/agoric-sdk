@@ -6,7 +6,10 @@ import { Fail } from '@endo/errors';
 
 import { HandleI } from './typeGuards.js';
 
-/** @import {Baggage} from '@agoric/vat-data' */
+/**
+ * @import {Baggage} from '@agoric/vat-data'
+ * @import {Handle, Instance} from './types-index.js';
+ */
 
 /**
  * @template {string} H

@@ -8,6 +8,7 @@ export {};
  * @import {Bank} from '@agoric/vats/src/vat-bank.js';
  * @import {Board} from '@agoric/vats';
  * @import {NameAdmin} from '@agoric/vats';
+ * @import {ZoeService} from '@agoric/zoe';
  */
 
 // TODO move this type somewhere better

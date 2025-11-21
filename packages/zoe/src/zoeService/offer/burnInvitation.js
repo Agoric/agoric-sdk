@@ -5,6 +5,7 @@ import { E } from '@endo/eventual-send';
 
 /**
  * @import {InvitationHandle} from '../zoe.js';
+ * @import {Instance} from '../utils.js';
  */
 
 /**
@@ -15,7 +16,7 @@ import { E } from '@endo/eventual-send';
  * @param {Issuer<K>} invitationIssuer
  * @param {ERef<Payment<K>>} invitation
  * @returns {Promise<{
- *   instanceHandle: Instance,
+ *   instanceHandle: Instance<any>,
  *   invitationHandle: InvitationHandle,
  * }>}
  */

@@ -21,6 +21,7 @@ import { calculateInterest, makeDebtCalculator } from './updateDebt.js';
  * @import {DebtCalculatorConfig} from './types.js';
  * @import {LoanConfigWithBorrower} from './types.js';
  * @import {BorrowFacet} from './types.js';
+ * @import {OfferHandler} from '../../types-index.js';
  */
 
 /** @type {MakeBorrowInvitation} */

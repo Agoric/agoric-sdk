@@ -10,7 +10,7 @@ import {
 
 /**
  * @import {TimerService} from '@agoric/time';
- * @import {UserSeat} from '../types-index.js';
+ * @import {AmountKeywordRecord, Invitation, IssuerKeywordRecord, UserSeat, ZCF} from '../types-index.js';
  */
 
 /**

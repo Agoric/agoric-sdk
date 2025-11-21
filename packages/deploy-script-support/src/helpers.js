@@ -1,7 +1,5 @@
 // @ts-check
 
-/// <reference types="@agoric/zoe/exported.js" />
-
 import { E } from '@endo/far';
 import bundleSource from '@endo/bundle-source';
 

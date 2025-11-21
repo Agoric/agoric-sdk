@@ -7,9 +7,10 @@ import { shape } from './typeGuards.js';
 
 /**
  * @import {OfferId} from './offers.js';
- * @import {InvitationDetails} from '@agoric/zoe';
+ * @import {Invitation, InvitationDetails, ZoeService} from '@agoric/zoe';
  * @import {NameHub} from '@agoric/vats';
  * @import {InvitationMakers} from './types.js';
+ * @import {Instance} from '@agoric/zoe/src/zoeService/utils.js';
  */
 
 // A safety limit

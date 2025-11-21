@@ -11,6 +11,7 @@ import { makeScalarBigMapStore } from '@agoric/vat-data';
  * @import {NameAdmin, Producer} from '@agoric/vats';
  * @import {ScratchPad} from '@agoric/internal/src/scratch.js';
  * @import {Bundle} from '@agoric/swingset-vat';
+ * @import {Installation} from '@agoric/zoe';
  */
 
 /**
@@ -122,7 +123,11 @@ export const makeInstallCache = async (
   /**
    * @type {CopyMap<
    *   string,
-   *   { installation: Installation; boardId: string; path?: string }
+   *   {
+   *     installation: Installation;
+   *     boardId: string;
+   *     path?: string;
+   *   }
    * >}
    */
   const initial = await provideWhen(E.get(homeP).scratch, installCacheKey, () =>
@@ -132,7 +137,11 @@ export const makeInstallCache = async (
   /**
    * @type {Map<
    *   string,
-   *   { installation: Installation; boardId: string; path?: string }
+   *   {
+   *     installation: Installation;
+   *     boardId: string;
+   *     path?: string;
+   *   }
    * >}
    */
   const working = new Map(getCopyMapEntries(initial));

@@ -16,6 +16,8 @@ import * as secondPriceLogic from './secondPriceLogic.js';
 
 /**
  * @import {TimerService} from '@agoric/time';
+ * @import {ZCF} from '../../types-index.js';
+ * @import {OfferHandler} from '../../types-index.js';
  */
 
 const FIRST_PRICE = 'first-price';

@@ -13,6 +13,7 @@ import { setupZCFTest } from './zcf/setupZcfTest.js';
 
 /**
  * @import {start as startAutomaticRefund} from '@agoric/zoe/src/contracts/automaticRefund.js';
+ * @import {Installation} from '../../src/types-index.js';
  */
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);

@@ -35,6 +35,10 @@ import { makeScopedBridge } from '../bridge.js';
  * @import {StartedInstanceKitWithLabel} from './types.js';
  * @import {StartUpgradable} from './types.js';
  * @import {NamedVatPowers} from './types.js';
+ * @import {Instance} from '@agoric/zoe';
+ * @import {ZoeService} from '@agoric/zoe';
+ * @import {Installation} from '@agoric/zoe';
+ * @import {IssuerKeywordRecord} from '@agoric/zoe';
  */
 
 /**

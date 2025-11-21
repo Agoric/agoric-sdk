@@ -12,6 +12,7 @@ const trace = makeTracer('BasicFlows');
  * @import {OrchestrationAccount, OrchestrationFlow, Orchestrator} from '@agoric/orchestration';
  * @import {ResolvedPublicTopic} from '@agoric/zoe/src/contractSupport/topics.js';
  * @import {MakePortfolioHolder} from '../exos/portfolio-holder-kit.js';
+ * @import {ZCFSeat} from '@agoric/zoe';
  */
 
 /**

@@ -6,7 +6,7 @@ export {};
 /**
  * @import {VaultFactoryContract} from './vaultFactory.js';
  * @import {Ratio} from '@agoric/ertp';
- * @import {Allocation} from '@agoric/zoe';
+ * @import {Allocation, Invitation, TransferPart, ZCFSeat} from '@agoric/zoe';
  * @import {PriceQuote} from '@agoric/zoe/tools/types.js';
  * @import {KeywordKeywordRecord} from '@agoric/zoe/src/contractSupport/types.js';
  * @import {Proposal} from '@agoric/zoe';

@@ -1,6 +1,11 @@
 import { AmountMath } from '@agoric/ertp';
 
 /**
+ * @import {ZCF} from '../../types-index.js';
+ * @import {ZCFSeat} from '../../types-index.js';
+ */
+
+/**
  * @param {ZCF} zcf
  * @param {ZCFSeat} sellSeat
  * @param {Array<ZCFSeat>} bidSeats

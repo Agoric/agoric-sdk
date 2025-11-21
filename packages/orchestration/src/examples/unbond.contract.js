@@ -10,6 +10,7 @@ import * as flows from './unbond.flows.js';
  * @import {Zone} from '@agoric/zone';
  * @import {CosmosInterchainService} from '../exos/exo-interfaces.js';
  * @import {OrchestrationTools} from '../utils/start-helper.js';
+ * @import {ZCF} from '@agoric/zoe';
  */
 
 /**

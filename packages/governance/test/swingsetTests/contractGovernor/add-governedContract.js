@@ -19,6 +19,7 @@ import { MALLEABLE_NUMBER } from '@agoric/governance/test/swingsetTests/contract
  * @import {EconomyBootstrapPowers} from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
  * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {Installation} from '@agoric/zoe';
  */
 
 const trace = makeTracer('startGovernedInstance', true);

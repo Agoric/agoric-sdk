@@ -27,6 +27,7 @@ import { prepareSmartWallet } from '../src/smartWallet.js';
  * @import {Bank} from '@agoric/vats/src/vat-bank.js';
  * @import {BridgeAction} from '../src/smartWallet.js';
  * @import {BootstrapPowers} from '@agoric/vats';
+ * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
  */
 
 /** @type {TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */
@@ -87,7 +88,11 @@ const makeTestContext = async t => {
   const startAnyContract = async () => {
     const bundle = await bundleCache.load(asset.anyContract, 'automaticRefund');
     /**
-     * @type {Promise<Installation<typeof prepare>>}
+     * @type {Promise<
+     *   Installation<
+     *     typeof prepare
+     *   >
+     * >}
      */
     const installation = E(zoe).install(bundle);
     return E(zoe).startInstance(installation);

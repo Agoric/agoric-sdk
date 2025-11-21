@@ -11,6 +11,8 @@ import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/index.js';
  * @import {StoredSubscription} from '@agoric/notifier';
  * @import {Publisher} from '@agoric/notifier';
  * @import {StoredSubscriber} from '@agoric/notifier';
+ * @import {ProposalRecord} from '@agoric/zoe';
+ * @import {AmountKeywordRecord} from '@agoric/zoe';
  */
 
 export const amountPattern = harden({ brand: M.remotable(), value: M.any() });

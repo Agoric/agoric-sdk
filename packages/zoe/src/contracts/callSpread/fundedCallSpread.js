@@ -15,6 +15,9 @@ import { Position } from './position.js';
  * @import {PriceAuthority} from '@agoric/zoe/tools/types.js';
  * @import {PositionKind} from './types.js';
  * @import {PayoffHandler} from './types.js';
+ * @import {ZCF} from '../../types-index.js';
+ * @import {ZCFSeat} from '../../types-index.js';
+ * @import {OfferHandler} from '../../types-index.js';
  */
 
 /**

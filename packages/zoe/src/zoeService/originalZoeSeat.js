@@ -20,8 +20,8 @@ import {
  * @import {WithdrawFacet} from '../internal-types.js';
  * @import {ExitObj} from '../internal-types.js';
  * @import {HandleOfferResult} from '../internal-types.js';
- * @import {PaymentPKeywordRecord} from './types.ts';
- * @import {Allocation} from '../types-index.js';
+ * @import {PaymentPKeywordRecord, ProposalRecord} from './types.ts';
+ * @import {Allocation, ZCFSeat} from '../types-index.js';
  * @import {PublishKit} from '@agoric/notifier';
  */
 

@@ -1,6 +1,11 @@
 import { Far } from '@endo/marshal';
 
 /**
+ * @import {ZCF} from '../types-index.js';
+ * @import {OfferHandler} from '../types-index.js';
+ */
+
+/**
  * This is a very trivial contract to explain and test Zoe.
  * AutomaticRefund just gives you back what you put in.
  * AutomaticRefund tells Zoe to complete the

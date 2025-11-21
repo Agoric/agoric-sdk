@@ -3,6 +3,8 @@ import { Fail, q } from '@endo/errors';
 
 /**
  * @import {Allocation} from './types.ts';
+ * @import {Keyword} from '../types.ts';
+ * @import {AmountKeywordRecord} from '../types-index.js';
  */
 
 /**

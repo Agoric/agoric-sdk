@@ -12,9 +12,11 @@ import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 
 /**
- * @import {AdminFacet, ContractOf, InvitationAmount, ZCFMint} from '@agoric/zoe';
+ * @import {AdminFacet, ContractOf, InvitationAmount, ZCFMint, ZoeService} from '@agoric/zoe';
  * @import {SmartWallet} from '../../../src/smartWallet.js';
  * @import {start as StartWalletFactory} from '../../../src/walletFactory.js';
+ * @import {Instance} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
  */
 
 const trace = makeTracer('BootWFUpg', false);
@@ -36,7 +38,10 @@ export const buildRootObject = async () => {
 
   /** @type {PromiseKit<ZoeService>} */
   const { promise: zoe, ...zoePK } = makePromiseKit();
-  /** @type {PromiseKit<Instance>} */
+  /**
+   @type {PromiseKit<
+  Instance
+>} */
   const { promise: automaticRefundInstance, ...arPK } = makePromiseKit();
 
   let vatAdmin;

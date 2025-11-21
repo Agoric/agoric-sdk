@@ -1,6 +1,10 @@
 import { Far } from '@endo/far';
 
 /**
+ * @import {ZCF} from '../../../src/types-index.js';
+ */
+
+/**
  * Tests ZCF
  *
  * @param {ZCF} zcf

@@ -30,6 +30,9 @@ const { assign, keys, values } = Object;
  * @import {ResolvedPublicTopic} from '@agoric/zoe/src/contractSupport/topics.js';
  * @import {VowTools} from '@agoric/vow';
  * @import {LocalAccountMethods} from '../types.js';
+ * @import {ZCFSeat} from '@agoric/zoe';
+ * @import {AmountKeywordRecord} from '@agoric/zoe';
+ * @import {ZCF} from '@agoric/zoe';
  */
 
 /**

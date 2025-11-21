@@ -25,6 +25,8 @@ import { headValue, sequenceCurrents, withAmountUtils } from '../supports.js';
  * @import {PurseInvitationSpec} from '@agoric/smart-wallet/src/invitations.js';
  * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {ContinuingInvitationSpec} from '@agoric/smart-wallet/src/invitations.js';
+ * @import {Instance} from '@agoric/zoe';
+ * @import {InvitationAmount} from '@agoric/zoe';
  */
 
 /**
@@ -242,7 +244,9 @@ test('govern offerFilter', async t => {
    * @param {string} desc
    * @param {number} len
    * @param {any} balances XXX please improve this
-   * @returns {Promise<[{ description: string; instance: Instance }]>}
+   * @returns {Promise<
+   *   [{ description: string; instance: Instance }]
+   * >}
    */
   const getInvitationFor = async (desc, len, balances) =>
     // @ts-expect-error TS can't tell that it's going to satisfy the @returns.

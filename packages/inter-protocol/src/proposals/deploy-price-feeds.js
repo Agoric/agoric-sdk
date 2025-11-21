@@ -28,6 +28,8 @@ export const DEFAULT_CONTRACT_TERMS = {
  * @import {ChainlinkConfig} from '@agoric/inter-protocol/src/price/fluxAggregatorKit.js';
  * @import {StartedInstanceKit} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {NamedVatPowers, PromiseSpaceOf} from '@agoric/vats';
+ * @import {Installation} from '@agoric/zoe';
+ * @import {Instance} from '@agoric/zoe';
  */
 /** @import {FluxStartFn} from '@agoric/inter-protocol/src/price/fluxAggregatorContract.js'; */
 
@@ -90,7 +92,12 @@ export const ensureOracleBrand = async (
 
 /**
  * @param {EconomyBootstrapPowers &
- *   PromiseSpaceOf<{ retiredContractInstances: MapStore<string, Instance> }>} powers
+ *   PromiseSpaceOf<{
+ *     retiredContractInstances: MapStore<
+ *       string,
+ *       Instance
+ *     >;
+ *   }>} powers
  * @param {{
  *   AGORIC_INSTANCE_NAME: string;
  *   contractTerms: ChainlinkConfig;
@@ -218,7 +225,12 @@ const distributeInvitations = async (
 /**
  * @param {EconomyBootstrapPowers &
  *   NamedVatPowers &
- *   PromiseSpaceOf<{ retiredContractInstances: MapStore<string, Instance> }>} powers
+ *   PromiseSpaceOf<{
+ *     retiredContractInstances: MapStore<
+ *       string,
+ *       Instance
+ *     >;
+ *   }>} powers
  * @param {{
  *   options: PriceFeedConfig & {
  *     priceAggregatorRef: { bundleID: string };

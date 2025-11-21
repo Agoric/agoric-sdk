@@ -6,6 +6,11 @@ import {
 } from '../contractSupport/index.js';
 
 /**
+ * @import {ZCF} from '../types-index.js';
+ * @import {OfferHandler} from '../types-index.js';
+ */
+
+/**
  * Trade one item for another.
  * https://agoric.com/documentation/zoe/guide/contracts/atomic-swap.html
  *

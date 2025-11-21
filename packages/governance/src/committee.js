@@ -19,7 +19,7 @@ import { prepareVoterKit } from './voterKit.js';
 /**
  * @import {Remote} from '@agoric/internal';
  * @import {MapStore} from '@agoric/swingset-liveslots';
- * @import {ContractMeta, Invitation, ZCF} from '@agoric/zoe';
+ * @import {ContractMeta, Handle, Invitation, ZCF} from '@agoric/zoe';
  * @import {ElectorateCreatorFacet, CommitteeElectoratePublic, QuestionDetails, OutcomeRecord, AddQuestion} from './types.js';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {QuestionRecord} from './electorateTools.js';

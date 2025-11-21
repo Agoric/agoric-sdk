@@ -4,6 +4,10 @@ import { Far } from '@endo/marshal';
 import { depositToSeat } from '../../../src/contractSupport/index.js';
 
 /**
+ * @import {ZCF} from '../../../src/types-index.js';
+ */
+
+/**
  * This is a a broken contact to test that
  * errors in offerHandlers are appropriately handled
  *

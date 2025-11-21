@@ -10,8 +10,8 @@ export {};
  * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {IssuerOptionsRecord, IssuerRecord} from '@agoric/ertp';
- * @import {Allocation, PaymentPKeywordRecord, UserSeat, Completion, ZoeIssuerRecord} from './types-index.js';
- * @import {InvitationHandle, BrandKeywordRecord, AnyTerms} from './types.js';
+ * @import {Allocation, PaymentPKeywordRecord, UserSeat, Completion, ZoeIssuerRecord, AmountKeywordRecord, Installation, Instance, ProposalRecord, ZCFSeat, Invitation, FeeMintAccess} from './types-index.js';
+ * @import {InvitationHandle, BrandKeywordRecord, AnyTerms, IssuerKeywordRecord, Keyword, Handle} from './types.js';
  * @import {InstanceRecord} from './zoeService/utils.js';
  * @import {Subscriber} from '@agoric/notifier';
  */

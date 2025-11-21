@@ -21,6 +21,9 @@ const trace = makeTracer('FluxAgg', false);
  * @import {PrioritySendersManager} from '@agoric/internal/src/priority-senders.js';
  * @import {NameAdmin} from '@agoric/vats';
  * @import {QuoteKit} from './roundsManager.js';
+ * @import {ContractMeta} from '@agoric/zoe';
+ * @import {ZCF} from '@agoric/zoe';
+ * @import {Invitation} from '@agoric/zoe';
  */
 
 /** @type {ContractMeta} */

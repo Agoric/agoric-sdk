@@ -16,7 +16,6 @@
  *   liquidated. If the auction is unsuccessful, the liquidation may be
  *   reverted.
  */
-/// <reference types="@agoric/zoe/exported.js" />
 
 import {
   AmountMath,
@@ -67,7 +66,7 @@ import { Phase, prepareVault } from './vault.js';
  * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  * @import {MapStore, SetStore} from '@agoric/store';
  * @import {EReturn} from '@endo/far';
- * @import {ZCFMint} from '@agoric/zoe';
+ * @import {ZCFMint, ZCFSeat} from '@agoric/zoe';
  * @import {PriceQuote} from '@agoric/zoe/tools/types.js';
  * @import {PromiseWatcher} from '@agoric/swingset-liveslots';
  * @import {RecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
@@ -77,12 +76,9 @@ import { Phase, prepareVault } from './vault.js';
  * @import {MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {MakeERecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {FactoryPowersFacet} from './vaultDirector.js';
- * @import {VaultBalances} from './proceeds.js';
- * @import {DistributionPlan} from './proceeds.js';
  * @import {Ratio} from '@agoric/ertp';
  * @import {Vault} from './vault.js';
  * @import {VaultPhase} from './vault.js';
- * @import {AuctioneerPublicFacet} from '../auction/auctioneer.js';
  * @import {MintAndTransfer, VaultId} from './types.js';
  * @import {LatestTopic} from '@agoric/notifier';
  */
