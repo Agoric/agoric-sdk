@@ -1,24 +1,23 @@
 // @jessie-check
-/// <reference types="@agoric/zoe/exported.js" />
 
 // Make this a module
 export {};
 
 /**
  * @import {FeeMintAccess, GetBrands, GetBundleIDFromInstallation, GetIssuers, InstallBundle, InstallBundleID, PaymentPKeywordRecord, SourceBundle} from './types.js';
- * @import {InstanceRecord} from './utils.js';
+ * @import {Installation, Instance, InstanceRecord} from './utils.js';
  * @import {BundleCap, VatAdminFacet} from '@agoric/swingset-vat';
  * @import {GetPublicFacet} from './utils.js';
  * @import {GetTerms} from './utils.js';
  * @import {CreateVatResults} from '@agoric/swingset-vat';
- * @import {AnyTerms, BrandKeywordRecord, InvitationHandle} from '../types.ts';
+ * @import {AnyTerms, BrandKeywordRecord, InvitationHandle, IssuerKeywordRecord} from '../types.ts';
  * @import {MakeZoeMint} from '../internal-types.js';
  * @import {RegisterFeeMint} from '../internal-types.js';
  * @import {ZoeInstanceAdminMakeInvitation} from '../internal-types.js';
  * @import {GetAssetKindByBrand} from '../internal-types.js';
  * @import {Pattern} from '@agoric/swingset-liveslots';
  * @import {BundleID} from '@agoric/swingset-vat/src/controller/bundle-handler.js';
- * @import {Allocation} from '../types-index.js';
+ * @import {Allocation, ZCF} from '../types-index.js';
  */
 
 /**
@@ -57,8 +56,8 @@ export {};
 
 /**
  * @callback InitInstanceAdmin
- * @param {Instance} instance
- * @param {InstanceAdmin} InstanceAdmin
+ * @param {Instance<any>} instance
+ * @param {InstanceAdmin<any>} InstanceAdmin
  * @returns {void}
  */
 
@@ -80,12 +79,12 @@ export {};
  * Assert the installation is known, and return the bundle/bundlecap and
  * installation
  *
- * @param {ERef<Installation>} installationP
+ * @param {ERef<Installation<any>>} installationP
  * @returns {ERef<{
  *   bundle?: SourceBundle,
  *   bundleCap?: BundleCap,
  *   bundleID?: BundleID,
- *   installation:Installation
+ *   installation:Installation<any>
  * }>} XXX not really an ERef; the implemention is sync and the API is a promise because of callWhen
  */
 // TODO remove or automate ERef https://github.com/Agoric/agoric-sdk/issues/7110
@@ -150,7 +149,7 @@ export {};
  * @property {GetTerms} getTerms
  * @property {(instance: Instance<any>) => string[]} getOfferFilter
  * @property {(instance: Instance<any>, strings: string[]) => any} setOfferFilter
- * @property {(instance: Instance<any>) => Promise<Installation>} getInstallationForInstance
+ * @property {(instance: Instance<any>) => Promise<Installation<any>>} getInstallationForInstance
  * @property {GetInstanceAdmin} getInstanceAdmin
  * @property {UnwrapInstallation} unwrapInstallation
  * @property {(invitationHandle: InvitationHandle) => Pattern | undefined} getProposalShapeForInvitation

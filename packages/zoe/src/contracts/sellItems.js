@@ -15,8 +15,9 @@ import {
 } from '../contractSupport/index.js';
 
 /**
- * @import {SellItemsPublicFacet} from './types-ambient.js';
- * @import {SellItemsCreatorFacet} from './types-ambient.js';
+ * @import {SellItemsPublicFacet} from './types.js';
+ * @import {SellItemsCreatorFacet} from './types.js';
+ * @import {ZCF} from '../types-index.js';
  */
 
 /**

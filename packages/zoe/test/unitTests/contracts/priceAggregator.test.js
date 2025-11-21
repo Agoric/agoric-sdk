@@ -28,7 +28,7 @@ import buildManualTimer from '../../../tools/manualTimer.js';
 import { start } from '../../../src/contracts/priceAggregator.js';
 
 /**
- * @import {FeeIssuerConfig, ZoeService} from '@agoric/zoe';
+ * @import {FeeIssuerConfig, Installation, ZCF, ZoeService} from '@agoric/zoe';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  * @import {ZoeManualTimer} from '../../../tools/manualTimer.js';
  * @import {Instance} from '../../../src/zoeService/utils.js';
@@ -39,6 +39,7 @@ import { start } from '../../../src/contracts/priceAggregator.js';
  * @import {OracleKit} from '../../../src/contracts/priceAggregatorTypes.js';
  * @import {PriceAggregatorKit} from '../../../src/contracts/priceAggregatorTypes.js';
  * @import {OracleHandler} from '../../../src/contracts/priceAggregatorTypes.js';
+ * @import {UpdateRecord} from '@agoric/notifier';
  */
 
 /**

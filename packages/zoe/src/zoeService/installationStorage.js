@@ -16,6 +16,7 @@ import {
  * @import {BundleID, BundleCap} from '@agoric/swingset-vat';
  * @import {InstallBundle, SourceBundle} from '@agoric/zoe';
  * @import {GetBundleCapForID} from './internal-types.js';
+ * @import {Installation} from './utils.js';
  */
 
 /**
@@ -23,12 +24,12 @@ import {
  * @param {Baggage} zoeBaggage
  */
 export const makeInstallationStorage = (getBundleCapForID, zoeBaggage) => {
-  /** @type {WeakMapStore<Installation, { bundleCap: BundleCap, bundleID: BundleID }>} */
+  /** @type {WeakMapStore<Installation<any>, { bundleCap: BundleCap, bundleID: BundleID }>} */
   const installationsBundleCap = provideDurableWeakMapStore(
     zoeBaggage,
     'installationsBundleCap',
   );
-  /** @type {WeakMapStore<Installation, SourceBundle>} */
+  /** @type {WeakMapStore<Installation<any>, SourceBundle>} */
   const installationsBundle = provideDurableWeakMapStore(
     zoeBaggage,
     'installationsBundle',
@@ -71,7 +72,7 @@ export const makeInstallationStorage = (getBundleCapForID, zoeBaggage) => {
   /** @type {InstallBundle} */
   const installSourceBundle = async (bundle, bundleLabel) => {
     typeof bundle === 'object' || Fail`a bundle must be provided`;
-    /** @type {Installation} */
+    /** @type {Installation<any>} */
     bundle || Fail`a bundle must be provided`;
     const installation = makeBundleInstallation(bundle, bundleLabel);
     installationsBundle.init(installation, bundle);

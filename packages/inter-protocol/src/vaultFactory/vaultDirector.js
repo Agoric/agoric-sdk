@@ -1,6 +1,3 @@
-/// <reference types="@agoric/governance/exported.js" />
-/// <reference types="@agoric/zoe/exported.js" />
-
 import { AmountMath, AmountShape, BrandShape, IssuerShape } from '@agoric/ertp';
 import {
   GovernorFacetShape,
@@ -37,7 +34,7 @@ import {
 
 /**
  * @import {MapStore} from '@agoric/store';
- * @import {TransferPart, ZCF, ZCFMint, ZCFSeat} from '@agoric/zoe';
+ * @import {AmountKeywordRecord, Keyword, TransferPart, ZCF, ZCFMint, ZCFSeat} from '@agoric/zoe';
  * @import {EReturn} from '@endo/far';
  * @import {TypedPattern, ERemote, Remote} from '@agoric/internal';
  * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
@@ -48,14 +45,14 @@ import {
  * @import {Baggage} from '@agoric/swingset-liveslots';
  * @import {VaultFactoryZCF} from './vaultFactory.js';
  * @import {TimerService} from '@agoric/time';
- * @import {AuctioneerPublicFacet} from '../auction/auctioneer.js';
  * @import {MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {MakeERecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {VaultManager} from './vaultManager.js';
  * @import {VaultManagerParamOverrides} from './params.js';
- * @import {BurnDebt, VaultManagerParamValues} from './types-ambient.js';
- * @import {MintAndTransfer} from './types-ambient.js';
- * @import {VaultFactoryParamPath} from './types-ambient.js';
+ * @import {BurnDebt, VaultManagerParamValues} from './types.js';
+ * @import {MintAndTransfer} from './types.js';
+ * @import {VaultFactoryParamPath} from './types.js';
+ * @import {GovernedApis} from '@agoric/governance/src/types.js';
  */
 
 const trace = makeTracer('VD', true);
@@ -354,7 +351,9 @@ const prepareVaultDirector = (
         getLimitedCreatorFacet() {
           return this.facets.machine;
         },
-        /** @returns {ERef<GovernedApis>} */
+        /**
+         * @returns {ERef<GovernedApis>}
+         */
         getGovernedApis() {
           // @ts-expect-error cast
           return Far('governedAPIs', {});

@@ -21,7 +21,7 @@ import { makeTimerDeviceDateNow, makeTimerServiceDateNow } from './date-now.js';
 /**
  * @import {Petname} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {WalletAdminFacet} from './internal-types.js';
- * @import {OfferState, PursesJSONState, WalletAdmin, WalletBridge} from './types-ambient.js';
+ * @import {OfferState, PursesJSONState, WalletAdmin, WalletBridge} from './types.js';
  */
 
 /**

@@ -9,6 +9,11 @@ import { AmountMath, AssetKind } from '@agoric/ertp/src/amountMath.js';
 import { makeTracer } from '@agoric/internal';
 import { M, getCopyBagEntries } from '@agoric/store';
 
+/**
+ * @import {ZCF} from '@agoric/zoe';
+ * @import {ZCFSeat} from '@agoric/zoe';
+ */
+
 const trace = makeTracer('Game', true);
 
 /** @param {Amount<'copyBag'>} amt */

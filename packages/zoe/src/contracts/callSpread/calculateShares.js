@@ -1,4 +1,4 @@
-/// <reference path="./types-ambient.js" />
+/// <reference path="./types.js" />
 
 import { AmountMath, isNatValue } from '@agoric/ertp';
 import { assert } from '@endo/errors';
@@ -6,7 +6,7 @@ import { makeRatio, oneMinus } from '../../contractSupport/index.js';
 import { make0Percent, make100Percent } from './percent.js';
 
 /**
- * @import {CalculateShares} from './types-ambient.js';
+ * @import {CalculateShares} from './types.js';
  */
 
 /**

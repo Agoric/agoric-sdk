@@ -9,7 +9,7 @@ import {
 import { liquidate } from './liquidate.js';
 
 /**
- * @import {ScheduleLiquidation} from './types-ambient.js';
+ * @import {ScheduleLiquidation} from './types.js';
  */
 
 /** @type {ScheduleLiquidation} */

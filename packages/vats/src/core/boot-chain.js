@@ -7,7 +7,7 @@ import * as utils from './utils.js';
 
 /**
  * @import {Baggage} from '@agoric/vat-data';
- * @import {VatPowers} from '@agoric/swingset-vat';
+ * @import {DProxy, VatPowers} from '@agoric/swingset-vat';
  */
 
 const { BASIC_BOOTSTRAP_PERMITS: _b, ...basicBehaviors } = basicBehaviorsPlus;

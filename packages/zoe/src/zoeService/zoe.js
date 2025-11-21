@@ -11,7 +11,6 @@
  */
 
 /// <reference types="@agoric/internal/exported.js" />
-/// <reference types="@agoric/notifier/exported.js" />
 /// <reference path="../internal-types.js" />
 
 import { makeScalarBigMapStore, prepareExo } from '@agoric/vat-data';

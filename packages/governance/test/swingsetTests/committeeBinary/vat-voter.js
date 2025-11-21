@@ -10,6 +10,7 @@ import { keyEQ } from '@agoric/store';
  * @import {Instance} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {start} from '@agoric/governance/src/committee.js';
  * @import {BuildRootObjectForTestVat} from '@agoric/swingset-vat/src/kernel/vat-loader/types.js';
+ * @import {ZoeService} from '@agoric/zoe';
  */
 
 /**

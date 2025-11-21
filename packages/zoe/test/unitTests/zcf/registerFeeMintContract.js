@@ -3,7 +3,7 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
 /**
- * @import {FeeMintAccess} from '../../../src/types-index.js';
+ * @import {FeeMintAccess, ZCF} from '../../../src/types-index.js';
  */
 
 /**

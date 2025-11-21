@@ -18,6 +18,7 @@ import { makeZoeForTest } from '../../../tools/setup-zoe.js';
  * @import {OracleStart} from '../../../src/contracts/oracle.js';
  * @import {OracleKit} from '../../../src/contracts/priceAggregatorTypes.js';
  * @import {OracleHandler} from '../../../src/contracts/priceAggregatorTypes.js';
+ * @import {Installation} from '../../../src/zoeService/utils.js';
  */
 
 /**

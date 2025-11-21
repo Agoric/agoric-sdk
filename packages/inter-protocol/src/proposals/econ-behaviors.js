@@ -13,8 +13,14 @@ import { makeGovernedTerms as makeGovernedVFTerms } from '../vaultFactory/params
 /**
  * @import {GovernorCreatorFacet, GovernanceFacetKit, GovernorStartedInstallationKit} from '@agoric/governance/src/types.js';
  * @import {StartedInstanceKit} from '@agoric/zoe/src/zoeService/utils.js';
- * @import {AdminFacet} from '@agoric/zoe';
+ * @import {AdminFacet, Instance} from '@agoric/zoe';
  * @import {MapStore, SetStore} from '@agoric/store';
+ * @import {RelativeTime} from '@agoric/time';
+ * @import {WellKnownSpaces} from '@agoric/vats';
+ * @import {ChainBootstrapSpace} from '@agoric/vats';
+ * @import {PromiseSpaceOf} from '@agoric/vats';
+ * @import {CommitteeElectorateCreatorFacet} from '@agoric/governance/src/committee.js';
+ * @import {PeriodicFeeCollector} from '../feeDistributor.js';
  */
 
 // Duplicated from vaultFactory/types-ambient.js to solve a CI problem.

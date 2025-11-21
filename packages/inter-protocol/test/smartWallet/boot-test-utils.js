@@ -17,7 +17,7 @@ import { vatRoots } from '@agoric/vats/tools/boot-test-utils.js';
 import { bundles, devices } from './devices.js';
 
 /**
- * @import {VatAdminFacet} from '@agoric/swingset-vat';
+ * @import {DProxy, VatAdminFacet} from '@agoric/swingset-vat';
  */
 
 export const noop = () => {};
