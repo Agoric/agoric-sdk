@@ -1,0 +1,115 @@
+# yaml-language-server: $schema=./ymax-machine.schema.json
+machine: YmaxFlow
+version: 0.1.0
+description: Canonical lifecycle for Ymax portfolio movements (deposit, withdraw, rebalance) across planner, contract, and resolver.
+initial: flow_registered
+states:
+  flow_registered:
+    description: Flow detail recorded in flowsRunning (type and optional amount) via startFlow().
+    on:
+      steps.provided:
+        target: planned
+        description: Steps were provided inline (offerArgs.flow) so execution can start without planner.
+      steps.requested:
+        target: planning
+        description: No steps provided; planner must compute and resolve flow{n}.steps.
+    meta:
+      observedFrom:
+        - published.{instance}.portfolios.portfolio{n}.status.flowsRunning
+      userMessage: Request received; building plan.
+  planning:
+    description: Planner computes steps/order from balances + targetAllocation and posts flow{n}.steps.
+    on:
+      planner.steps_ready:
+        target: planned
+        description: flow{n}.steps published (and optional order) by planner.
+      planner.failed:
+        target: failed
+        description: Planner/solver errored or allocation infeasible.
+    meta:
+      observedFrom:
+        - services/ymax-planner planRebalanceFlow/planDepositToAllocations
+        - published.{instance}.portfolios.portfolio{n}.flows.flow{n}.steps
+      invariants:
+        - deposit/withdraw amounts reconcile with portfolio status and balances
+  planned:
+    description: Concrete MovementDesc[] (and optional deterministic order) available at flow{n}.steps.
+    on:
+      flow.started:
+        target: executing
+        description: executePlan() begins; FlowStatus state=run emitted.
+      plan.superseded:
+        target: planning
+        description: policyVersion incremented or targetAllocation changed before execution.
+    meta:
+      observedFrom:
+        - published.{instance}.portfolios.portfolio{n}.flows.flow{n}.steps
+      userMessage: Plan ready; executing transfers.
+  executing:
+    description: Contract performing ordered movements; publishes FlowStatus run/fail/done.
+    initial: provisioning
+    states:
+      provisioning:
+        description: Make/resolve accounts (Agoric, Noble, EVM) and register resolver pending transactions when needed.
+        on:
+          provision.complete:
+            target: moving
+            description: provideCosmosAccount/provideEVMAccount resolved; accountsPending empty.
+          provision.failed:
+            target: failed
+            description: Account creation or resolver registerTransaction failed.
+        meta:
+          observedFrom:
+            - FlowStatus state=run with how=makeAccounts(...)
+          invariants:
+            - accountsPending empty
+      moving:
+        description: Execute movement steps (localTransfer, IBC, CCTP, GMP, supply/withdraw). FlowStatus state=run advances; fail publishes FlowStatus state=fail.
+        on:
+          flow.step_failed:
+            target: failed
+            description: FlowStatus state=fail emitted for a step.
+          flow.waiting_settlement:
+            target: settling
+            description: Tx requiring confirmation added to pendingTxs (MAKE_ACCOUNT, GMP, CCTP out/in).
+          flow.done_no_pending:
+            target: completed
+            description: FlowStatus state=done and no TxStatus pending.
+        meta:
+          observedFrom:
+            - published.{instance}.portfolios.portfolio{n}.flows.flow{n} (state=run|fail|done)
+          invariants:
+            - proposal satisfied for give/want seats
+            - flow{n}.order respected when present
+      settling:
+        description: Waiting on cross-chain confirmations from resolver (TxStatus pending -> success/failed).
+        on:
+          tx.all_success:
+            target: moving
+            description: All pendingTxs for this flow settled success; continue or finish.
+          tx.any_failed:
+            target: failed
+            description: pendingTx updated to failed.
+        meta:
+          observedFrom:
+            - published.{instance}.pendingTxs.tx{m} (TxStatus pending/success/failed)
+          expectedSlaMs: 300000
+          userMessage: Waiting for cross-chain confirmation.
+    on:
+      flow.failed:
+        target: failed
+        description: FlowStatus state=fail emitted.
+      flow.done:
+        target: completed
+        description: FlowStatus state=done and all relevant pendingTxs are success.
+  completed:
+    description: Flow finished; balances/positions updated; pendingTxs (if any) marked success.
+    type: final
+    meta:
+      userMessage: Flow finished.
+  failed:
+    description: Flow halted; partial effects possible; operator or planner must retry/correct.
+    type: final
+    meta:
+      severity: error
+      userMessage: Flow failed; inspect flow{n} status and pendingTx logs.
