@@ -1,59 +1,56 @@
-// Ambient type defs. Cannot use top-level import() because that would turn it into a module.
+import { Device, DProxy } from '@agoric/swingset-vat/src/types-external.js';
 
-type Device<T> = import('@agoric/swingset-vat/src/types-external.js').Device<T>;
+export { Device, DProxy };
 
-type DProxy = import('@agoric/swingset-vat/src/types-external.js').DProxy;
+export type BootDevices<T> = { vatPowers: { D: DProxy }; devices: T };
 
-type BootDevices<T> = { vatPowers: { D: DProxy }; devices: T };
+export { BridgeDevice } from '@agoric/swingset-vat/src/devices/bridge/device-bridge.js';
 
-type BridgeDevice =
-  import('@agoric/swingset-vat/src/devices/bridge/device-bridge.js').BridgeDevice;
-
-type CommandDevice = Device<
+export type CommandDevice = Device<
   ReturnType<
     typeof import('@agoric/swingset-vat/src/devices/command/device-command.js').buildRootDeviceNode
   >
 >;
 
-type MailboxDevice = Device<
+export type MailboxDevice = Device<
   ReturnType<
     typeof import('@agoric/swingset-vat/src/devices/mailbox/device-mailbox.js').buildRootDeviceNode
   >
 >;
 
-type PluginDevice = Device<
+export type PluginDevice = Device<
   ReturnType<
     typeof import('@agoric/swingset-vat/src/devices/plugin/device-plugin.js').buildRootDeviceNode
   >
 >;
 
-type TimerDevice =
+export type TimerDevice =
   import('@agoric/swingset-vat/src/devices/timer/device-timer.js').TimerDevice;
 
-type VatAdminDevice = Device<
+export type VatAdminDevice = Device<
   import('@agoric/swingset-vat/src/devices/vat-admin/device-vat-admin.js').VatAdminRootDeviceNode
 >;
 
-type VattpVat = ERef<
+export type VattpVat = ERef<
   ReturnType<
     typeof import('@agoric/swingset-vat/src/vats/vattp/vat-vattp.js').buildRootObject
   >
 >;
 
-type VatAdminVat = ERef<
+export type VatAdminVat = ERef<
   ReturnType<
     typeof import('@agoric/swingset-vat/src/vats/vat-admin/vat-vat-admin.js').buildRootObject
   >
 >;
 
 /** @see deliverToController in packages/SwingSet/src/vats/comms/controller.js */
-type TimerVat = ERef<
+export type TimerVat = ERef<
   ReturnType<
     typeof import('@agoric/swingset-vat/src/vats/timer/vat-timer.js').buildRootObject
   >
 >;
 
-type CommsVatRoot = ERef<{
+export type CommsVatRoot = ERef<{
   addRemote: (name: string, tx: unknown, rx: unknown) => void;
   addEgress: (addr: string, ix: number, provider: unknown) => void;
   addIngress: (
@@ -63,18 +60,18 @@ type CommsVatRoot = ERef<{
   ) => Promise<any>;
 }>;
 
-type SwingsetVats = {
+export type SwingsetVats = {
   comms: CommsVatRoot;
   timer: TimerVat;
   vatAdmin: VatAdminVat;
   vattp: VattpVat;
 };
 
-type ChainStorageVatParams = {
+export type ChainStorageVatParams = {
   vatParameters: { chainStorageEntries?: [k: string, v: string][] };
 };
 
-type SoloDevices = {
+export type SoloDevices = {
   vatAdmin: VatAdminDevice;
   mailbox: MailboxDevice;
   command: CommandDevice;
@@ -82,37 +79,39 @@ type SoloDevices = {
   plugin: PluginDevice;
 };
 
-type ChainDevices = {
+export type ChainDevices = {
   vatAdmin: VatAdminDevice;
   mailbox: MailboxDevice;
   timer: import('@agoric/swingset-vat/src/devices/timer/device-timer.js').TimerDevice;
   bridge?: import('@agoric/swingset-vat/src/devices/bridge/device-bridge.js').BridgeDevice;
 };
 
-type ClientProvider = {
+export type ClientProvider = {
   getChainBundle: () => unknown;
   getChainConfigNotifier: () => Notifier<unknown>;
 };
 
-type Producer<T> = {
+export type Producer<T> = {
   resolve: (v: ERef<T>) => void;
   reject: (r: unknown) => void;
   reset: (reason?: unknown) => void;
 };
 
-type VatSourceRef = { bundleName?: string; bundleID?: string };
-type VatLoader<Names extends keyof WellKnownVats = keyof WellKnownVats> = <
-  N extends Names,
->(
-  name: N,
-  sourceRef?: VatSourceRef,
-) => Promise<Awaited<WellKnownVats[N]>>;
+export type VatSourceRef = { bundleName?: string; bundleID?: string };
+export type VatLoader<Names extends keyof WellKnownVats = keyof WellKnownVats> =
+  <N extends Names>(
+    name: N,
+    sourceRef?: VatSourceRef,
+  ) => Promise<Awaited<WellKnownVats[N]>>;
 
 /** callback to assign a property onto the `home` object of the client */
-type PropertyMaker = (addr: string, flags: string[]) => Record<string, unknown>;
+export type PropertyMaker = (
+  addr: string,
+  flags: string[],
+) => Record<string, unknown>;
 
 /** tool to put properties onto the `home` object of the client */
-type ClientManager = {
+export type ClientManager = {
   assignBundle: (ps: PropertyMaker[]) => void;
 };
 /**
@@ -120,18 +119,18 @@ type ClientManager = {
  * @template C - Consume only
  * @template P - Produce only
  */
-type PromiseSpaceOf<B, C = object, P = object> = {
+export type PromiseSpaceOf<B, C = object, P = object> = {
   consume: { [K in keyof (B & C)]: Promise<(B & C)[K]> };
   produce: { [K in keyof (B & P)]: Producer<(B & P)[K]> };
 };
 
-type CreateUserBundle = (
+export type CreateUserBundle = (
   nickname: string,
   clientAddress: string,
   powerFlags: string[],
 ) => Promise<Record<string, Promise<any>>>;
 
-type ClientFacet = {
+export type ClientFacet = {
   /**
    * Required for ag-solo, but deprecated in favour of getConfiguration NOTE: we
    * use `any` rather than `unknown` because each client that wants to call a
@@ -145,7 +144,7 @@ type ClientFacet = {
     clientHome: Record<string, any>;
   }>;
 };
-type ClientCreator = {
+export type ClientCreator = {
   createClientFacet(
     nickname: string,
     clientAddress: string,
@@ -154,7 +153,7 @@ type ClientCreator = {
   createUserBundle: CreateUserBundle;
 };
 
-type WellKnownName = {
+export type WellKnownName = {
   issuer:
     | import('@agoric/internal/src/tokens.js').TokenKeyword
     | 'Invitation'
@@ -196,7 +195,7 @@ type WellKnownName = {
   uiConfig: 'VaultFactory';
 };
 
-type ContractInstallationPromises<
+export type ContractInstallationPromises<
   StartFns extends Record<
     WellKnownName['installation'],
     import('@agoric/zoe').ContractStartFn
@@ -205,7 +204,7 @@ type ContractInstallationPromises<
   [Property in keyof StartFns]: Promise<Installation<StartFns[Property]>>;
 };
 
-type ContractInstancePromises<
+export type ContractInstancePromises<
   StartFns extends Record<
     WellKnownName['instance'],
     import('@agoric/zoe').ContractStartFn
@@ -216,7 +215,7 @@ type ContractInstancePromises<
   >;
 };
 
-type WellKnownContracts = {
+export type WellKnownContracts = {
   centralSupply: typeof import('@agoric/vats/src/centralSupply.js').start;
   committee: typeof import('@agoric/governance/src/committee.js').start;
   contractGovernor: typeof import('@agoric/governance/src/contractGovernor.js').start;
@@ -233,7 +232,7 @@ type WellKnownContracts = {
   walletFactory: import('@agoric/smart-wallet/src/walletFactory.js').start;
 };
 
-type WellKnownSpaces = {
+export type WellKnownSpaces = {
   issuer: {
     produce: Record<WellKnownName['issuer'], Producer<Issuer>>;
     consume: Record<WellKnownName['issuer'], Promise<Issuer>> & {
@@ -276,7 +275,7 @@ type WellKnownSpaces = {
   };
 };
 
-type StartGovernedUpgradableOpts<SF extends GovernableStartFn> = {
+export type StartGovernedUpgradableOpts<SF extends GovernableStartFn> = {
   installation: ERef<Installation<SF>>;
   issuerKeywordRecord?: IssuerKeywordRecord;
   governedParams: Record<string, unknown>;
@@ -292,11 +291,11 @@ type StartGovernedUpgradableOpts<SF extends GovernableStartFn> = {
   label: string;
 };
 
-type StartGovernedUpgradable = <SF extends GovernableStartFn>(
+export type StartGovernedUpgradable = <SF extends GovernableStartFn>(
   opts: StartGovernedUpgradableOpts<SF>,
 ) => Promise<GovernanceFacetKit<SF>>;
 
-type StartUpgradableOpts<
+export type StartUpgradableOpts<
   SF extends
     import('@agoric/zoe/src/zoeService/utils.js').ContractStartFunction,
 > = {
@@ -310,7 +309,7 @@ type StartUpgradableOpts<
   label: string;
 };
 
-type StartUpgradable = <
+export type StartUpgradable = <
   SF extends
     import('@agoric/zoe/src/zoeService/utils.js').ContractStartFunction,
 >(
@@ -321,17 +320,17 @@ type StartUpgradable = <
   }
 >;
 
-type StartedInstanceKit<
+export type StartedInstanceKit<
   T extends import('@agoric/zoe/src/zoeService/utils.js').ContractStartFunction,
 > = import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<T>;
 
-type StartedInstanceKitWithLabel = {
+export type StartedInstanceKitWithLabel = {
   label: string;
 } & StartedInstanceKit<
   import('@agoric/zoe/src/zoeService/utils.js').ContractStartFunction
 >;
 
-type ChainBootstrapSpaceT = {
+export type ChainBootstrapSpaceT = {
   agoricNames: import('../types.js').NameHub;
   agoricNamesAdmin: import('@agoric/vats').NameAdmin;
   bankManager: import('@agoric/vats/src/vat-bank.js').BankManager;
@@ -418,9 +417,9 @@ type ChainBootstrapSpaceT = {
   zoe: ZoeService;
 };
 
-type ChainBootstrapSpace = PromiseSpaceOf<ChainBootstrapSpaceT>;
+export type ChainBootstrapSpace = PromiseSpaceOf<ChainBootstrapSpaceT>;
 
-type BootstrapVatParams = {
+export type BootstrapVatParams = {
   argv: {
     hardcodedClientAddresses?: string[];
     FIXME_GCI: string;
@@ -428,7 +427,7 @@ type BootstrapVatParams = {
   };
 };
 
-type BootstrapPowers = BootstrapSpace & {
+export type BootstrapPowers = BootstrapSpace & {
   zone: import('@agoric/zone').Zone;
   devices: SoloDevices | ChainDevices;
   vats: SwingsetVats;
@@ -438,7 +437,7 @@ type BootstrapPowers = BootstrapSpace & {
   modules: import('./boot-chain.js').BootstrapModules;
 };
 
-type BootstrapSpace = WellKnownSpaces &
+export type BootstrapSpace = WellKnownSpaces &
   PromiseSpaceOf<
     ChainBootstrapSpaceT & {
       vatAdminSvc: VatAdminSvc;
@@ -450,64 +449,70 @@ type BootstrapSpace = WellKnownSpaces &
     object
   >;
 
-type LocalChainVat = ERef<
+export type LocalChainVat = ERef<
   ReturnType<typeof import('../vat-localchain.js').buildRootObject>
 >;
 
-type TransferVat = ERef<
+export type TransferVat = ERef<
   ReturnType<typeof import('../vat-transfer.js').buildRootObject>
 >;
 
-type ProvisioningVat = ERef<
+export type ProvisioningVat = ERef<
   ReturnType<typeof import('../vat-provisioning.js').buildRootObject>
 >;
 
-type MintsVat = ERef<
+export type MintsVat = ERef<
   ReturnType<typeof import('../vat-mints.js').buildRootObject>
 >;
 
-type PriceAuthorityVat = ERef<
+export type PriceAuthorityVat = ERef<
   ReturnType<typeof import('../vat-priceAuthority.js').buildRootObject>
 >;
 
-type NetworkVat = ERef<
+export type NetworkVat = ERef<
   ReturnType<typeof import('../vat-network.js').buildRootObject>
 >;
-type IBCVat = ERef<ReturnType<typeof import('../vat-ibc.js').buildRootObject>>;
-type NamedVatPowers = {
+export type IBCVat = ERef<
+  ReturnType<typeof import('../vat-ibc.js').buildRootObject>
+>;
+export type NamedVatPowers = {
   namedVat: PromiseSpaceOf<{
     agoricNames: Awaited<AgoricNamesVat>;
     board: Awaited<BoardVat>;
   }>;
 };
 
-type OrchestrationVat = ERef<import('@agoric/orchestration').OrchestrationVat>;
-type ZoeVat = ERef<import('../vat-zoe.js').ZoeVat>;
+export type OrchestrationVat = ERef<
+  import('@agoric/orchestration').OrchestrationVat
+>;
+export type ZoeVat = ERef<import('../vat-zoe.js').ZoeVat>;
 
-type RemoteIssuerKit = {
+export type RemoteIssuerKit = {
   mint: ERef<Mint>;
   issuer: ERef<Issuer>;
   brand: Brand;
 };
-type AgoricNamesVat = ERef<
+export type AgoricNamesVat = ERef<
   ReturnType<typeof import('../vat-agoricNames.js').buildRootObject>
 >;
-type BankVat = ERef<
+export type BankVat = ERef<
   ReturnType<typeof import('../vat-bank.js').buildRootObject>
 >;
-type BoardVat = ERef<
+export type BoardVat = ERef<
   ReturnType<typeof import('../vat-board.js').buildRootObject>
 >;
-type ChainStorageVat = ERef<
+export type ChainStorageVat = ERef<
   ReturnType<typeof import('../vat-bridge.js').buildRootObject>
 >;
-type BankManager = Awaited<ReturnType<Awaited<BankVat>['makeBankManager']>>;
+export type BankManager = Awaited<
+  ReturnType<Awaited<BankVat>['makeBankManager']>
+>;
 
-type DemoFaucetPowers = PromiseSpaceOf<{
+export type DemoFaucetPowers = PromiseSpaceOf<{
   mints: MintsVat;
 }>;
 
-type WellKnownVats = SwingsetVats & {
+export type WellKnownVats = SwingsetVats & {
   bank: BankVat;
   board: BoardVat;
   bridge: ChainStorageVat;

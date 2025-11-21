@@ -1,5 +1,5 @@
-// Ambient types
-import './src/core/types-ambient.js';
+// TODO rename now that it's not ambient
+export * from './src/core/types-ambient.js';
 
 // eslint-disable-next-line import/export -- no named exports
 export * from './src/types-index.js';
