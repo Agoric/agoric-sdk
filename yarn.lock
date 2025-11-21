@@ -222,6 +222,7 @@ __metadata:
     c8: "npm:^10.1.3"
     highs: "npm:^1.8.0"
     javascript-lp-solver: "npm:^0.4.24"
+    js-yaml: "npm:^4.1.0"
     ts-blank-space: "npm:^0.6.2"
     viem: "npm:^2.31.0"
   languageName: unknown
