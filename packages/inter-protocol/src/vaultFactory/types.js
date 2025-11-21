@@ -1,12 +1,19 @@
-/* eslint-disable @agoric/group-jsdoc-imports */
 // @jessie-check
 
-// XXX filename is still "ambient" but this module is not
 // Make this a module
 export {};
 
 /**
- * @typedef {import('./vaultFactory.js').VaultFactoryContract['publicFacet']} VaultFactoryPublicFacet
+ * @import {VaultFactoryContract} from './vaultFactory.js';
+ * @import {Ratio} from '@agoric/ertp';
+ * @import {Allocation} from '@agoric/zoe';
+ * @import {PriceQuote} from '@agoric/zoe/tools/types.js';
+ * @import {KeywordKeywordRecord} from '@agoric/zoe/src/contractSupport/types.js';
+ * @import {Proposal} from '@agoric/zoe';
+ */
+
+/**
+ * @typedef {VaultFactoryContract['publicFacet']} VaultFactoryPublicFacet
  * @import {VaultNotification} from './vault.js'
  * @import {Vault} from './vault.js'
  * @import {VaultKit} from './vaultKit.js'
@@ -26,17 +33,17 @@ export {};
 
 /**
  * @typedef {object} VaultManagerParamValues
- * @property {import('@agoric/ertp').Ratio} liquidationMargin - margin below
- *   which collateral will be liquidated to satisfy the debt.
- * @property {import('@agoric/ertp').Ratio} liquidationPenalty - penalty charged
- *   upon liquidation as proportion of debt
- * @property {import('@agoric/ertp').Ratio} interestRate - annual interest rate
- *   charged on debt positions
- * @property {import('@agoric/ertp').Ratio} mintFee - The fee (in BasisPoints)
- *   charged when creating or increasing a debt position.
+ * @property {Ratio} liquidationMargin - margin below which collateral will be
+ *   liquidated to satisfy the debt.
+ * @property {Ratio} liquidationPenalty - penalty charged upon liquidation as
+ *   proportion of debt
+ * @property {Ratio} interestRate - annual interest rate charged on debt
+ *   positions
+ * @property {Ratio} mintFee - The fee (in BasisPoints) charged when creating or
+ *   increasing a debt position.
  * @property {Amount<'nat'>} debtLimit
- * @property {import('@agoric/ertp').Ratio} [liquidationPadding] - vault must
- *   maintain this in order to remove collateral or add debt
+ * @property {Ratio} [liquidationPadding] - vault must maintain this in order to
+ *   remove collateral or add debt
  */
 
 /**
@@ -50,7 +57,7 @@ export {};
 /**
  * @typedef {object} VaultFactoryCreatorFacet
  * @property {AddVaultType} addVaultType
- * @property {() => import('@agoric/zoe').Allocation} getRewardAllocation
+ * @property {() => Allocation} getRewardAllocation
  * @property {() => Promise<Invitation<string, never>>} makeCollectFeesInvitation
  */
 
@@ -76,11 +83,11 @@ export {};
 
 /**
  * @typedef {object} GetVaultParams
- * @property {() => import('@agoric/ertp').Ratio} getLiquidationMargin
- * @property {() => import('@agoric/ertp').Ratio} getMintFee
- * @property {() => Promise<import('@agoric/zoe/tools/types.js').PriceQuote>} getCollateralQuote
- * @property {() => import('@agoric/ertp').Ratio} getInterestRate - The annual
- *   interest rate on a debt position
+ * @property {() => Ratio} getLiquidationMargin
+ * @property {() => Ratio} getMintFee
+ * @property {() => Promise<PriceQuote>} getCollateralQuote
+ * @property {() => Ratio} getInterestRate - The annual interest rate on a debt
+ *   position
  * @property {() => RelativeTime} getChargingPeriod - The period (in seconds) at
  *   which interest is charged to the debt position.
  * @property {() => RelativeTime} getRecordingPeriod - The period (in seconds)
@@ -97,21 +104,15 @@ export {};
 
 /**
  * @typedef {object} LiquidationStrategy
- * @property {() => import('@agoric/zoe/src/contractSupport/types.js').KeywordKeywordRecord} keywordMapping
- * @property {(
- *   collateral: Amount,
- *   run: Amount,
- * ) => import('@agoric/zoe').Proposal} makeProposal
+ * @property {() => KeywordKeywordRecord} keywordMapping
+ * @property {(collateral: Amount, run: Amount) => Proposal} makeProposal
  * @property {(debt: Amount) => Promise<Invitation>} makeInvitation
  */
 
 /**
  * @typedef {object} Liquidator
  * @property {() => Promise<
- *   Invitation<
- *     void,
- *     { debt: Amount<'nat'>; penaltyRate: import('@agoric/ertp').Ratio }
- *   >
+ *   Invitation<void, { debt: Amount<'nat'>; penaltyRate: Ratio }>
  * >} makeLiquidateInvitation
  */
 
