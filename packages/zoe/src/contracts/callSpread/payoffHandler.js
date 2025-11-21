@@ -1,4 +1,4 @@
-/// <reference path="./types-ambient.js" />
+/// <reference path="./types.js" />
 
 import { AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
@@ -11,9 +11,9 @@ import { calculateShares } from './calculateShares.js';
 import { Position } from './position.js';
 
 /**
- * @import {PositionKind} from './types-ambient.js';
- * @import {PayoffHandler} from './types-ambient.js';
- * @import {MakeOptionInvitation} from './types-ambient.js';
+ * @import {PositionKind} from './types.js';
+ * @import {PayoffHandler} from './types.js';
+ * @import {MakeOptionInvitation} from './types.js';
  */
 
 /**

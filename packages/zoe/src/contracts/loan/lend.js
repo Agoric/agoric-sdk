@@ -2,7 +2,7 @@ import { assertProposalShape } from '../../contractSupport/index.js';
 import { makeBorrowInvitation } from './borrow.js';
 
 /**
- * @import {MakeLendInvitation} from './types-ambient.js';
+ * @import {MakeLendInvitation} from './types.js';
  */
 
 // The lender puts up the amount to be loaned to the borrower, but has
