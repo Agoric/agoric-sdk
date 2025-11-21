@@ -5,8 +5,6 @@ import {
 } from '@agoric/internal';
 import { E } from '@endo/far';
 
-/// <reference types="@agoric/vats/src/core/types-ambient.js"/>
-
 /**
  * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';

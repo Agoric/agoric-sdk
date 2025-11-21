@@ -1,5 +1,3 @@
-/// <reference types="@agoric/vats/src/core/types-ambient.js"/>
-
 import {
   deeplyFulfilledObject,
   makeTracer,
