@@ -97,7 +97,7 @@ export {};
 
 /**
  * @typedef {object} LiquidationStrategy
- * @property {() => import('@agoric/zoe/src/contractSupport/types-ambient.js').KeywordKeywordRecord} keywordMapping
+ * @property {() => import('@agoric/zoe/src/contractSupport/types.js').KeywordKeywordRecord} keywordMapping
  * @property {(
  *   collateral: Amount,
  *   run: Amount,

@@ -3,7 +3,6 @@
 /// <reference types="ses" />
 /// <reference types="@agoric/zoe/exported.js" />
 
-// XXX filename is still "ambient" but this module is not
 // Make this a module
 export {};
 
