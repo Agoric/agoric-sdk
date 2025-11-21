@@ -1,60 +1,54 @@
 import test from 'ava';
-import { makeSequenceManager } from '../src/sequence-manager.js';
-import { createMockFetchAccountInfo } from './mocks.js';
+import { makeTxSequencer } from '../src/sequence-manager.js';
+import { createMockFetchAccount } from './mocks.js';
 
-test('SequenceManager initialization', async t => {
-  const mockFetch = createMockFetchAccountInfo('377', '100');
+test('TxSequencer initialization', async t => {
+  const mockFetch = createMockFetchAccount(377n, 100n);
   const logs: string[] = [];
 
-  const sequenceManager = await makeSequenceManager(
-    {
-      log: (...args: any[]) => logs.push(args.join(' ')),
-    },
-    {
-      address: 'agoric1test',
-      fetchAccountInfo: mockFetch.fetch,
-    },
-  );
+  const sequencer = await makeTxSequencer(mockFetch.fetch, {
+    log: (...args: any[]) => logs.push(args.join(' ')),
+  });
 
-  t.is(sequenceManager.getAccountNumber(), 377);
-  t.is(sequenceManager.getSequence(), 100);
-  t.is(sequenceManager.getSequence(), 101);
-  t.is(sequenceManager.getAccountNumber(), 377);
+  t.is(sequencer.getAccountNumber(), 377n);
+  t.is(sequencer.getSequenceNumber(), 100n);
+  t.is(sequencer.getSequenceNumber(), 101n);
+  t.is(sequencer.getAccountNumber(), 377n);
 
   t.true(
-    logs.some(log => log.includes('initialized: account=377, sequence=100')),
+    logs.some(log =>
+      log.includes('Initialized accountNumber 377 sequence number to 100'),
+    ),
   );
 });
 
-test('SequenceManager sync functionality', async t => {
-  const mockFetch = createMockFetchAccountInfo('377', '100');
+test('TxSequencer resync functionality', async t => {
+  const mockFetch = createMockFetchAccount(377n, 100n);
   const logs: string[] = [];
 
-  const sequenceManager = await makeSequenceManager(
-    {
-      log: (...args: any[]) => logs.push(args.join(' ')),
-    },
-    {
-      address: 'agoric1test',
-      fetchAccountInfo: mockFetch.fetch,
-    },
-  );
+  const sequencer = await makeTxSequencer(mockFetch.fetch, {
+    log: (...args: any[]) => logs.push(args.join(' ')),
+  });
 
   // Use some sequences
-  sequenceManager.getSequence(); // 100
-  sequenceManager.getSequence(); // 101
+  sequencer.getSequenceNumber(); // 100
+  sequencer.getSequenceNumber(); // 101
 
   // Mock network having advanced further
-  mockFetch.setSequenceNumber('105');
+  mockFetch.setSequenceNumber(105n);
 
-  // Sync should update to network state
-  await sequenceManager.syncSequence();
+  // Resync should update to network state
+  await sequencer.resync();
 
-  t.is(sequenceManager.getSequence(), 105);
-  t.true(logs.some(log => log.includes('Synced sequence: 102 → 105')));
+  t.is(sequencer.getSequenceNumber(), 105n);
+  t.true(
+    logs.some(log =>
+      log.includes('Resynced accountNumber 377 sequence number from 102 to 105'),
+    ),
+  );
 });
 
-test('SequenceManager error handling', async t => {
+test('TxSequencer error handling', async t => {
   const mockFetch = async () => {
     throw new Error('Network error');
   };
@@ -63,18 +57,11 @@ test('SequenceManager error handling', async t => {
 
   await t.throwsAsync(
     () =>
-      makeSequenceManager(
-        {
-          log: (...args: any[]) => logs.push(args.join(' ')),
-        },
-        {
-          address: 'agoric1test',
-          fetchAccountInfo: mockFetch,
-        },
-      ),
+      makeTxSequencer(mockFetch, {
+        log: (...args: any[]) => logs.push(args.join(' ')),
+      }),
     {
       message: 'Network error',
     },
   );
-  t.true(logs.some(log => log.includes('Failed to fetch account info')));
 });

@@ -5,6 +5,7 @@ import { Fail } from '@endo/errors';
 import type { CaipChainId } from '@agoric/orchestration';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
+import type { SigningSmartWalletKit } from '@agoric/client-utils';
 
 import type { AxelarId } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
 import {
@@ -23,7 +24,6 @@ import {
 import { watchGmp, lookBackGmp } from './watchers/gmp-watcher.ts';
 import { watchCctpTransfer, lookBackCctp } from './watchers/cctp-watcher.ts';
 import type { CosmosRPCClient } from './cosmos-rpc.ts';
-import type { SmartWalletKitWithSequence } from './main.ts';
 
 export type EvmChain = keyof typeof AxelarChain;
 
@@ -31,7 +31,7 @@ export type EvmContext = {
   cosmosRest: CosmosRestClient;
   usdcAddresses: UsdcAddresses['mainnet' | 'testnet'];
   evmProviders: EvmProviders;
-  signingSmartWalletKit: SmartWalletKitWithSequence;
+  signingSmartWalletKit: SigningSmartWalletKit;
   fetch: typeof fetch;
 };
 
@@ -246,7 +246,7 @@ export type HandlePendingTxOpts = {
   cosmosRpc: CosmosRPCClient;
   log?: (...args: unknown[]) => void;
   error?: (...args: unknown[]) => void;
-  marshaller: SmartWalletKitWithSequence['marshaller'];
+  marshaller: SigningSmartWalletKit['marshaller'];
   registry?: MonitorRegistry;
   timeoutMs?: number;
   vstoragePathPrefixes: {

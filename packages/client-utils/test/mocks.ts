@@ -1,27 +1,27 @@
-import type { AccountResponse } from '../src/sequence-manager.js';
+import type { BaseAccount } from '../src/codegen/cosmos/auth/v1beta1/auth.js';
 
-export const createMockFetchAccountInfo = (
-  accountNumber: `${bigint}`,
-  sequenceNumber: `${bigint}`,
+export const createMockFetchAccount = (
+  accountNumber: bigint,
+  sequenceNumber: bigint,
 ) => {
   let callCount = 0;
-  const fetch = async (address: string): Promise<AccountResponse> => {
+  let currentSequence = sequenceNumber;
+
+  const fetch = async (): Promise<BaseAccount> => {
     callCount += 1;
     return {
-      account: {
-        '@type': '/cosmos.auth.v1beta1.BaseAccount',
-        address,
-        account_number: accountNumber,
-        sequence: sequenceNumber,
-      },
+      address: 'agoric1test',
+      accountNumber,
+      sequence: currentSequence,
     };
   };
+
   return {
     fetch,
-    setSequenceNumber: (newSequenceNumber: `${bigint}`) => {
-      sequenceNumber = newSequenceNumber;
+    setSequenceNumber: (newSequenceNumber: bigint) => {
+      currentSequence = newSequenceNumber;
     },
     getCallCount: () => callCount,
-    getNetworkSequence: () => Number(sequenceNumber),
+    getNetworkSequence: () => currentSequence,
   };
 };

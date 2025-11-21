@@ -1,103 +1,59 @@
-export type AccountInfo = {
-  '@type': string;
-  address: string;
-  pub_key?: {
-    '@type': string;
-    key: string;
-  };
-  account_number: string;
-  sequence: string;
-};
-
-export type AccountResponse = {
-  account: AccountInfo;
-};
-
-/**
- * Function to fetch account information from the network
- */
-export type FetchAccountInfo = (address: string) => Promise<AccountResponse>;
-
-type SequenceManagerConfig = {
-  address: string;
-  fetchAccountInfo: FetchAccountInfo;
-};
-
-type SequenceManagerPowers = {
-  log?: (...args: unknown[]) => void;
-};
+import type { BaseAccount } from './codegen/cosmos/auth/v1beta1/auth.js';
 
 /**
  * @alpha
  */
-export type SequenceManager = {
-  getSequence: () => number;
-  getAccountNumber: () => number;
-  syncSequence: () => Promise<void>;
+export type TxSequencer = {
+  getAccountNumber: () => bigint;
+  getSequenceNumber: () => bigint;
+  resync: () => Promise<void>;
 };
 
 /**
- * Create a new SequenceManager by fetching current account info from the network
+ * Manage sequence numbers for submitting transactions from a single address.
  *
  * @alpha
  */
-export const makeSequenceManager = async (
-  io: SequenceManagerPowers,
-  config: SequenceManagerConfig,
-): Promise<SequenceManager> => {
-  await null;
-  const { log = () => {} } = io;
-  const { address, fetchAccountInfo } = config;
-
-  const fetchAccount = async (): Promise<AccountInfo> => {
-    await null;
-    try {
-      const response = await fetchAccountInfo(address);
-      return response.account;
-    } catch (error) {
-      log(`Failed to fetch account info for ${address}:`, error);
-      throw error;
-    }
-  };
-
-  const accountInfo = await fetchAccount();
-
-  let sequence = Number(accountInfo.sequence);
-  const accountNumber = Number(accountInfo.account_number);
-
+export const makeTxSequencer = async (
+  fetchAccount: () => Promise<BaseAccount>,
+  { log = () => {} }: { log?: (...args: unknown[]) => void },
+): Promise<TxSequencer> => {
+  const initial = await fetchAccount();
+  const accountNumber: bigint = initial.accountNumber;
+  let sequenceNumber: bigint = initial.sequence;
   log(
-    `Sequence manager initialized: account=${accountNumber}, sequence=${sequence}`,
+    `Initialized accountNumber ${accountNumber} sequence number to ${sequenceNumber}`,
   );
 
   /**
-   * Get the next sequence number and increment the internal counter
-   */
-  const getSequence = () => {
-    const curr = sequence;
-    sequence += 1;
-    return curr;
-  };
-
-  /**
-   * Get the account number
+   * Get the account number.
    */
   const getAccountNumber = () => accountNumber;
 
   /**
-   * Sync sequence with the network (useful for error recovery)
+   * Get the next sequence number and increment the internal counter.
    */
-  const syncSequence = async () => {
-    const oldSequence = sequence;
-    const acctInfo = await fetchAccount();
-    sequence = Number(acctInfo.sequence);
+  const getSequenceNumber = () => {
+    const curr = sequenceNumber;
+    sequenceNumber += 1n;
+    return curr;
+  };
+
+  /**
+   * Resync with the network (useful for error recovery).
+   */
+  const resync = async () => {
+    const old = sequenceNumber;
+    const account = await fetchAccount();
+    sequenceNumber = account.sequence;
     log(
-      `Synced sequence: ${oldSequence} → ${sequence} (network: ${acctInfo.sequence})`,
+      `Resynced accountNumber ${accountNumber} sequence number from ${old} to ${sequenceNumber}`,
     );
   };
 
   return harden({
-    getSequence,
     getAccountNumber,
-    syncSequence,
+    getSequenceNumber,
+    resync,
   });
 };

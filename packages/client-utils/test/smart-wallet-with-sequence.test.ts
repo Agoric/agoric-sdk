@@ -1,29 +1,33 @@
 import test from 'ava';
 import { arrayIsLike } from '@agoric/internal/tools/ava-assertions.js';
-import { makeSequenceManager } from '../src/sequence-manager.js';
-import { makeSmartWalletWithSequence } from '../src/smart-wallet-with-sequence.js';
+import { makeTxSequencer } from '../src/sequence-manager.js';
+import { makeSequencingSmartWallet } from '../src/smart-wallet-with-sequence.js';
 import type { SigningSmartWalletKit } from '../src/signing-smart-wallet-kit.js';
-import { createMockFetchAccountInfo } from './mocks.js';
+import { createMockFetchAccount } from './mocks.js';
 
 type SubmitTxResponse = {
   code: number;
   height: number;
   transactionHash: string;
-  sequence: number;
+  sequence: bigint;
 };
 
 class MockSigningSmartWalletKit {
   private submittedTransactions: Array<{
     method: string;
-    sequence: number;
+    sequence: bigint;
   }> = [];
 
-  private networkSequence: () => number;
+  private networkSequence: () => bigint;
 
   private shouldSimulateSequenceConflicts: boolean;
 
+  networkConfig = { chainName: 'agoricdev-25' };
+
+  address = 'agoric1test';
+
   constructor(
-    getNetworkSequence: () => number,
+    getNetworkSequence: () => bigint,
     options: { simulateSequenceConflicts?: boolean } = {},
   ) {
     this.networkSequence = getNetworkSequence;
@@ -67,13 +71,18 @@ class MockSigningSmartWalletKit {
     };
   }
 
+  async pollOffer(_address: string, _offerId: string) {
+    void this.submittedTransactions;
+    return { status: 'accepted' };
+  }
+
   getSubmittedTransactions() {
     return this.submittedTransactions;
   }
 }
 
 test('handles concurrent offers and actions with correct sequence management', async t => {
-  const mockFetch = createMockFetchAccountInfo('377', '100');
+  const mockFetch = createMockFetchAccount(377n, 100n);
   const mockWallet = new MockSigningSmartWalletKit(() =>
     mockFetch.getNetworkSequence(),
   );
@@ -81,18 +90,12 @@ test('handles concurrent offers and actions with correct sequence management', a
   const logs: string[] = [];
   const log = (...args: any[]) => logs.push(args.join(' '));
 
-  const sequenceManager = await makeSequenceManager(
-    { log },
-    { address: 'agoric1test', fetchAccountInfo: mockFetch.fetch },
-  );
+  const sequencer = await makeTxSequencer(mockFetch.fetch, { log });
 
-  const walletWithSequence = makeSmartWalletWithSequence(
-    {
-      signingSmartWalletKit: mockWallet as any as SigningSmartWalletKit,
-      sequenceManager: sequenceManager as any,
-      log,
-    },
-    { chainId: 'agoricdev-25' },
+  const walletWithSequence = makeSequencingSmartWallet(
+    mockWallet as any as SigningSmartWalletKit,
+    sequencer,
+    { log },
   );
 
   const promises = [
@@ -106,21 +109,21 @@ test('handles concurrent offers and actions with correct sequence management', a
 
   arrayIsLike(t, results, [
     // prettier-ignore
-    { code: 0, transactionHash: 'hash_executeOffer_100', height: 3321451, sequence: 100 },
+    { code: 0, transactionHash: 'hash_executeOffer_100', height: 3321451, sequence: 100n },
     // prettier-ignore
-    { code: 0, transactionHash: 'hash_executeOffer_101', height: 3321452, sequence: 101 },
+    { code: 0, transactionHash: 'hash_executeOffer_101', height: 3321452, sequence: 101n },
     // prettier-ignore
-    { code: 0, transactionHash: 'hash_test_102', height: 3321453, sequence: 102 },
+    { code: 0, transactionHash: 'hash_test_102', height: 3321453, sequence: 102n },
     // prettier-ignore
-    { code: 0, transactionHash: 'hash_executeOffer_103', height: 3321454, sequence: 103 },
+    { code: 0, transactionHash: 'hash_executeOffer_103', height: 3321454, sequence: 103n },
   ]);
 
   const submittedTransactions = mockWallet.getSubmittedTransactions();
   arrayIsLike(t, submittedTransactions, [
-    { method: 'executeOffer', sequence: 100 },
-    { method: 'executeOffer', sequence: 101 },
-    { method: 'test', sequence: 102 },
-    { method: 'executeOffer', sequence: 103 },
+    { method: 'executeOffer', sequence: 100n },
+    { method: 'executeOffer', sequence: 101n },
+    { method: 'test', sequence: 102n },
+    { method: 'executeOffer', sequence: 103n },
   ]);
   t.true(logs.some(v => v.includes('Starting queue processing')));
   t.true(logs.some(v => v.includes('Queued executeOffer')));
@@ -128,7 +131,7 @@ test('handles concurrent offers and actions with correct sequence management', a
 });
 
 test('handles sequence error recovery with network sync', async t => {
-  const mockFetch = createMockFetchAccountInfo('377', '100');
+  const mockFetch = createMockFetchAccount(377n, 100n);
   const mockWallet = new MockSigningSmartWalletKit(
     () => mockFetch.getNetworkSequence(),
     { simulateSequenceConflicts: true },
@@ -137,21 +140,15 @@ test('handles sequence error recovery with network sync', async t => {
   const logs: string[] = [];
   const log = (...args: any[]) => logs.push(args.join(' '));
 
-  const sequenceManager = await makeSequenceManager(
+  const sequencer = await makeTxSequencer(mockFetch.fetch, { log });
+
+  const walletWithSequence = makeSequencingSmartWallet(
+    mockWallet as any as SigningSmartWalletKit,
+    sequencer,
     { log },
-    { address: 'agoric1test', fetchAccountInfo: mockFetch.fetch },
   );
 
-  const walletWithSequence = makeSmartWalletWithSequence(
-    {
-      signingSmartWalletKit: mockWallet as any as SigningSmartWalletKit,
-      sequenceManager: sequenceManager as any,
-      log,
-    },
-    { chainId: 'agoricdev-25' },
-  );
-
-  mockFetch.setSequenceNumber('105');
+  mockFetch.setSequenceNumber(105n);
 
   const result = (await walletWithSequence.executeOffer({
     id: 'offer1',
@@ -161,14 +158,14 @@ test('handles sequence error recovery with network sync', async t => {
     code: 0,
     height: 3321451,
     transactionHash: `hash_executeOffer_105`,
-    sequence: 105,
+    sequence: 105n,
   });
 
   t.true(logs.some(v => v.includes('Sequence error detected')));
-  t.true(logs.some(v => v.includes('Synced sequence: 101 → 105')));
+  t.true(logs.some(v => v.includes('Resynced accountNumber 377 sequence number from 101 to 105')));
 
   const submittedTransactions = mockWallet.getSubmittedTransactions();
   arrayIsLike(t, submittedTransactions, [
-    { method: 'executeOffer', sequence: 105 },
+    { method: 'executeOffer', sequence: 105n },
   ]);
 });

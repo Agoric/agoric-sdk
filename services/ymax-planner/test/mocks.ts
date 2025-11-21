@@ -3,7 +3,7 @@ import { ethers, type WebSocketProvider } from 'ethers';
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import {
   boardSlottingMarshaller,
-  type AccountResponse,
+  type SigningSmartWalletKit,
 } from '@agoric/client-utils';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers';
@@ -11,7 +11,6 @@ import type { CosmosRestClient } from '../src/cosmos-rest-client.ts';
 import type { CosmosRPCClient } from '../src/cosmos-rpc.ts';
 import { makeGasEstimator } from '../src/gas-estimation.ts';
 import type { HandlePendingTxOpts } from '../src/pending-tx-manager.ts';
-import type { SmartWalletKitWithSequence } from '../src/main.ts';
 
 const PENDING_TX_PATH_PREFIX = 'published.ymax1';
 
@@ -86,46 +85,45 @@ export const createMockProvider = () => {
   return mockProvider;
 };
 
-export const createMockSigningSmartWalletKit =
-  (): SmartWalletKitWithSequence => {
-    const executedOffers: OfferSpec[] = [];
+export const createMockSigningSmartWalletKit = (): SigningSmartWalletKit => {
+  const executedOffers: OfferSpec[] = [];
 
-    return {
-      address: 'agoric1mockplanner123456789abcdefghijklmnopqrstuvwxyz',
+  return {
+    address: 'agoric1mockplanner123456789abcdefghijklmnopqrstuvwxyz',
 
-      query: {
-        getCurrentWalletRecord: async () => ({
-          offerToUsedInvitation: [
-            [
-              'resolver-offer-1',
-              {
-                value: [
-                  {
-                    description: 'resolver',
-                    instance: 'mock-instance',
-                    installation: 'mock-installation',
-                  },
-                ],
-              },
-            ],
+    query: {
+      getCurrentWalletRecord: async () => ({
+        offerToUsedInvitation: [
+          [
+            'resolver-offer-1',
+            {
+              value: [
+                {
+                  description: 'resolver',
+                  instance: 'mock-instance',
+                  installation: 'mock-installation',
+                },
+              ],
+            },
           ],
-          liveOffers: [],
-          purses: [],
-        }),
-      },
+        ],
+        liveOffers: [],
+        purses: [],
+      }),
+    },
 
-      executeOffer: async (offerSpec: OfferSpec) => {
-        executedOffers.push(offerSpec);
-        return {
-          offerId: offerSpec.id,
-          invitationSpec: offerSpec.invitationSpec,
-          offerArgs: offerSpec.offerArgs,
-          proposal: offerSpec.proposal,
-          status: 'executed',
-        };
-      },
-    } as any;
-  };
+    executeOffer: async (offerSpec: OfferSpec) => {
+      executedOffers.push(offerSpec);
+      return {
+        offerId: offerSpec.id,
+        invitationSpec: offerSpec.invitationSpec,
+        offerArgs: offerSpec.offerArgs,
+        proposal: offerSpec.proposal,
+        status: 'executed',
+      };
+    },
+  } as any;
+};
 
 type BalanceResponse = { amount: string; denom: string };
 type Account = {
@@ -166,10 +164,7 @@ export const createMockCosmosRestClient = (
         amount: response.amount,
       };
     },
-    async getAccountSequence(
-      chainKey: string,
-      address: string,
-    ): Promise<AccountResponse> {
+    async getAccountSequence(chainKey: string, address: string) {
       callCount++;
       return { account: mockAccount };
     },

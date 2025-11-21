@@ -2,222 +2,181 @@
  * @file Smart wallet wrapper with queue-based transaction sequence management
  */
 
-import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import type { BridgeAction } from '@agoric/smart-wallet/src/smartWallet.js';
 import type { SignerData } from '@cosmjs/stargate';
-import type { SigningSmartWalletKit } from './signing-smart-wallet-kit.js';
-import type { SequenceManager } from './sequence-manager.js';
+import { Fail } from '@endo/errors';
+import type {
+  SigningSmartWalletKit,
+  SmartWalletKit,
+} from './signing-smart-wallet-kit.js';
+import type { TxSequencer } from './sequence-manager.js';
 
-type SmartWalletWithSequencePowers = {
-  signingSmartWalletKit: SigningSmartWalletKit;
-  sequenceManager: SequenceManager;
-  log?: (...args: unknown[]) => void;
-};
-
-type SmartWalletWithSequenceConfig = {
-  chainId: string;
-};
-
-type QueuedOperation<T> = {
-  operation: () => Promise<T>;
+type QueuedThunk<T> = {
+  label: string;
   resolve: (value: T) => void;
-  reject: (error: any) => void;
-  context: string;
+  reject: (reason: unknown) => void;
+  thunk: () => Promise<T>;
+};
+
+const isSequenceNumberMismatch = (error: Error | unknown) => {
+  // @ts-expect-error reading "message" is fine here
+  const message = error?.message || `${error}`;
+  // *sigh*
+  return message.includes('account sequence mismatch');
 };
 
 /**
- * @alpha
- */
-export type SmartWalletWithSequence = {
-  sendBridgeAction: (
-    action: BridgeAction,
-  ) => Promise<Awaited<ReturnType<SigningSmartWalletKit['sendBridgeAction']>>>;
-  executeOffer: (
-    offer: OfferSpec,
-  ) => Promise<Awaited<ReturnType<SigningSmartWalletKit['sendBridgeAction']>>>;
-};
-
-/**
- * A smart wallet kit wrapper that manages sequence numbers for wallet operations.
- *
- * Provides:
+ * Make a SigningSmartWalletKit with automatic management of outbound
+ * transaction sequencing:
  * - Queue-based transaction serialization to prevent sequence conflicts
  * - Automatic error recovery for sequence mismatches
  * - Network sync on sequence errors with retry logic
  *
  * @alpha
  */
-export const makeSmartWalletWithSequence = (
-  powers: SmartWalletWithSequencePowers,
-  config: SmartWalletWithSequenceConfig,
-): SmartWalletWithSequence => {
-  const { signingSmartWalletKit, sequenceManager, log = () => {} } = powers;
-  const { chainId } = config;
+export const makeSequencingSmartWallet = (
+  signingSmartWalletKit: SigningSmartWalletKit,
+  txSequencer: TxSequencer,
+  { log = () => {} }: { log?: (...args: unknown[]) => void },
+): SigningSmartWalletKit => {
+  // We only override `executeOffer` and `sendBridgeAction`, so ensure that
+  // there are no unknown properties which could potentially bypass them.
+  const {
+    query,
+    address,
+    executeOffer: _unsafeExecuteOffer,
+    sendBridgeAction: unsafeSendBridgeAction,
+    ...swk
+  } = signingSmartWalletKit;
+  ({
+    query,
+    address,
+    executeOffer: _unsafeExecuteOffer,
+    sendBridgeAction: unsafeSendBridgeAction,
+  }) satisfies Omit<SigningSmartWalletKit, keyof SmartWalletKit>;
 
-  // TODO: Add bounds checking to prevent unbounded queue growth under sustained failures
-  const operationQueue: QueuedOperation<any>[] = [];
-  let isProcessingQueue = false;
+  const chainId = swk.networkConfig.chainName;
+  const accountNumber = Number(txSequencer.getAccountNumber());
 
-  /**
-   * Creates SignerData with managed sequence number
-   */
-  const createSignerData = (): SignerData => {
-    const sequence = sequenceManager.getSequence();
-    const accountNumber = sequenceManager.getAccountNumber();
-
-    log(
-      `Creating SignerData with sequence: ${sequence}, accountNumber: ${accountNumber}`,
-    );
-
-    return {
-      accountNumber,
-      sequence,
-      chainId,
-    };
+  const makeSignerData = (label: string): SignerData => {
+    const sequence = Number(txSequencer.getSequenceNumber());
+    const signerData: SignerData = { accountNumber, sequence, chainId };
+    log(`${label} signerData:`, signerData);
+    return signerData;
   };
 
+  // XXX There is no limit on queue growth.
+  const queue = [] as QueuedThunk<unknown>[];
+  let isDraining = false;
+
   /**
-   * Handles sequence number errors and retries with sync
+   * Run a thunk, retrying if it results in a sequence number mismatch error
+   * (but only retrying at most once).
    */
-  const performOperation = async <T>(
-    operation: () => Promise<T>,
-    context: string,
+  const runResyncable = async <T>(
+    label: string,
+    thunk: () => Promise<T>,
   ): Promise<T> => {
     await null;
     try {
-      return await operation();
+      return await thunk();
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-
-      if (errorMessage.includes('account sequence mismatch')) {
-        log(
-          `Sequence error detected in ${context}, syncing and retrying:`,
-          errorMessage,
-        );
-
-        // Sync sequence with network and retry once
-        await sequenceManager.syncSequence();
-
+      if (isSequenceNumberMismatch(error)) {
+        log(`${label} retrying with resynced sequence number`, error);
+        await txSequencer.resync();
         try {
-          return await operation();
+          return await thunk();
         } catch (retryError) {
-          log(`Retry failed for ${context}:`, retryError);
+          log(`${label} retry failed`, retryError);
           throw retryError;
         }
       }
-
       throw error;
     }
   };
 
   /**
-   * Process the operation queue sequentially
+   * Sequentially drain the queue.
    */
-  const processQueue = async (): Promise<void> => {
+  const drainQueue = async (): Promise<void> => {
     await null;
-    log(
-      `Starting queue processing, ${operationQueue.length} operations queued`,
-    );
+    log(`Draining ${queue.length} operations`);
 
-    while (operationQueue.length > 0) {
-      const queuedOp = operationQueue.shift()!;
+    while (queue.length > 0) {
+      const { label, resolve, reject, thunk } = queue.shift()!;
 
-      log(`Processing ${queuedOp.context}, ${operationQueue.length} remaining`);
+      log(`${label} processing, ${queue.length} remaining`);
 
       try {
-        const result = await performOperation(
-          queuedOp.operation,
-          queuedOp.context,
-        );
-        queuedOp.resolve(result);
-        log(`Completed ${queuedOp.context}`);
+        const result = await runResyncable(label, thunk);
+        log(`${label} completed`);
+        resolve(result);
       } catch (error) {
-        log(`Failed ${queuedOp.context}:`, error);
-        queuedOp.reject(error);
+        log(`${label} failed:`, error);
+        reject(error);
       }
     }
   };
 
   /**
-   * Queue an operation for sequential execution
+   * Enqueue a thunk for sequential execution.
    */
-  const queueOperation = async <T>(
-    operation: () => Promise<T>,
-    context: string,
-    logPrefix = '',
-  ): Promise<T> => {
-    return new Promise((resolve, reject) => {
-      operationQueue.push({
-        operation,
-        resolve,
-        reject,
-        context: logPrefix ? `${logPrefix} ${context}` : context,
+  const enqueue = <T>(label: string, thunk: () => Promise<T>): Promise<T> => {
+    const nextIndex = queue.length;
+    const resultP = new Promise<T>((resolve, reject) => {
+      queue.push({ label, resolve, reject, thunk });
+    });
+    log(`${label} enqueued at index ${nextIndex}`);
+
+    if (!isDraining) {
+      isDraining = true;
+      void drainQueue().finally(() => {
+        isDraining = false;
       });
+    }
 
-      log(
-        `${logPrefix ? `${logPrefix} ` : ''}Queued ${context}, queue length: ${operationQueue.length}`,
-      );
+    return resultP;
+  };
 
-      if (!isProcessingQueue) {
-        isProcessingQueue = true;
-        void processQueue().finally(() => {
-          isProcessingQueue = false;
-        });
-      }
+  /**
+   * Send a bridge action with managed sequence number.
+   */
+  const sendBridgeAction: SigningSmartWalletKit['sendBridgeAction'] = async (
+    action,
+    fee,
+    memo,
+    manualSignerData,
+  ) => {
+    manualSignerData === undefined || Fail`manual signerData is not supported`;
+    const label = 'sendBridgeAction';
+    return enqueue(label, () => {
+      const signerData = makeSignerData(label);
+      return unsafeSendBridgeAction(action, fee, memo, signerData);
     });
   };
 
   /**
-   * Send a bridge action with managed sequence number
+   * Execute an offer with managed sequence number.
    */
-  const sendBridgeAction = async (
-    action: BridgeAction,
-  ): Promise<
-    Awaited<ReturnType<SigningSmartWalletKit['sendBridgeAction']>>
-  > => {
-    const operation = async () => {
-      const signerData = createSignerData();
-      return signingSmartWalletKit.sendBridgeAction(
-        action,
-        undefined,
-        undefined,
-        signerData,
-      );
-    };
-
-    return queueOperation(operation, 'sendBridgeAction');
-  };
-
-  /**
-   * Execute an offer with managed sequence number
-   */
-  const executeOffer = async (
-    offer: OfferSpec,
-  ): Promise<
-    Awaited<ReturnType<SigningSmartWalletKit['sendBridgeAction']>>
-  > => {
+  const executeOffer: SigningSmartWalletKit['executeOffer'] = async offer => {
     const txId = offer.offerArgs?.txId;
-    const logPrefix = txId ? `[${txId}]` : '';
-
-    const operation = async () => {
-      const signerData = createSignerData();
-      return signingSmartWalletKit.sendBridgeAction(
-        harden({
-          method: 'executeOffer',
-          offer,
-        }),
-        undefined,
-        undefined,
-        signerData,
-      );
-    };
-
-    return queueOperation(operation, 'executeOffer', logPrefix);
+    const label = `executeOffer${txId ? ` ${txId}` : ''}`;
+    return enqueue(label, async () => {
+      const signerData = makeSignerData(label);
+      const action: BridgeAction = { method: 'executeOffer', offer };
+      const offerP = swk.pollOffer(address, offer.id);
+      await unsafeSendBridgeAction(action, undefined, undefined, signerData);
+      return offerP;
+    });
   };
 
-  return harden({
-    sendBridgeAction,
+  const sequencingSmartWallet = {
+    ...swk,
+    query,
+    address,
     executeOffer,
-  });
+    sendBridgeAction,
+  };
+
+  return harden(sequencingSmartWallet);
 };
