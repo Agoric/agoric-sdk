@@ -3,8 +3,6 @@
 /// <reference types="@agoric/ertp/exported.js" />
 /// <reference types="@endo/pass-style" />
 
-import './src/contractSupport/types-ambient.js';
-
 import {
   AdminFacet as _AdminFacet,
   AmountKeywordRecord as _AmountKeywordRecord,
