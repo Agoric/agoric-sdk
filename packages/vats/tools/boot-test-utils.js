@@ -21,7 +21,7 @@ import { buildRootObject as provisioningRoot } from '../src/vat-provisioning.js'
 import { buildRootObject as zoeRoot } from '../src/vat-zoe.js';
 
 /**
- * @import {VatAdminFacet} from '@agoric/swingset-vat';
+ * @import {DProxy, VatAdminFacet} from '@agoric/swingset-vat';
  */
 
 export const vatRoots = {

@@ -19,6 +19,7 @@ import { isAbandonedError } from '@agoric/internal/src/upgrade-api.js';
 /**
  * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {BootstrapPowers} from '../core/types-ambient.js';
  */
 
 const USAGE = `Usage: agoric run /path/to/terminate-governed-instance.js \\

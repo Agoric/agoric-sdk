@@ -4,6 +4,7 @@ import { addRemote } from './utils.js';
 
 /**
  * @import {BootstrapManifest} from './lib-boot.js';
+ * @import {BootstrapPowers} from './types-ambient.js';
  */
 
 export { connectFaucet };

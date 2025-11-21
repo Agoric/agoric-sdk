@@ -2,6 +2,11 @@
 import { E } from '@endo/far';
 
 /**
+ * @import {BootstrapPowers} from '../core/types-ambient.js';
+ * @import {VatSourceRef} from '../core/types-ambient.js';
+ */
+
+/**
  * @param {BootstrapPowers} powers
  * @param {object} options
  * @param {{ zcfRef: VatSourceRef }} options.options
