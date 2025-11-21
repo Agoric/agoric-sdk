@@ -1,0 +1,44 @@
+stateDiagram-v2
+[*] --> flow_registered
+state "flow_registered<br/>Flow detail recorded in flowsRunning (type and optional amount) via startFlow()." as flow_registered
+flow_registered --> planned: Steps were provided inline (offerArgs.flow) so execution can start without planner.
+flow_registered --> planning: No steps provided, planner must compute and resolve flow(n).steps.
+state "planning<br/>Planner computes steps/order from balances + targetAllocation and posts flow(n).steps." as planning
+planning --> planned: flow(n).steps published (and optional order) by planner.
+planning --> failed: Planner/solver errored or allocation infeasible.
+state "planned<br/>Concrete MovementDesc[] (and optional deterministic order) available at flow(n).steps." as planned
+planned --> executing: executePlan() begins, FlowStatus state=run emitted.
+planned --> planning: policyVersion incremented or targetAllocation changed before execution.
+state "executing<br/>Contract performing ordered movements, publishes FlowStatus run/fail/done." as executing {
+  [*] --> provisioning
+  state "provisioning<br/>Make/resolve accounts (Agoric, Noble, EVM) and register resolver pending transactions when needed." as provisioning
+  provisioning --> moving: provideCosmosAccount/provideEVMAccount resolved, accountsPending empty.
+  provisioning --> failed: Account creation or resolver registerTransaction failed.
+  state "moving<br/>Execute MovementDesc steps (localTransfer, withdrawToSeat, send, IBC, CCTP, GMP, protocol supply/withdraw). FlowStatus state=run advances, fail publishes FlowStatus state=fail. IBC legs can block if relayer is down/slow." as moving {
+    [*] --> dispatch
+    state "dispatch<br/>Performing the current movement. For IBC legs, once packet is sent funds are escrowed at source until relay." as dispatch
+    dispatch --> ibc_wait_relayer: IBC transfer enqueued, funds escrowed on source chain.
+    dispatch --> dispatch: IBC ack received and step finished, proceed to next movement.
+    state "ibc_wait_relayer<br/>Waiting on relayer to deliver packet to destination chain, funds escrowed at source." as ibc_wait_relayer
+    ibc_wait_relayer --> ibc_wait_ack: Destination chain processed packet (recv/ack pending).
+    ibc_wait_relayer --> ibc_timeout_refund: Packet timed out, refund path should unescrow.
+    state "ibc_wait_ack<br/>Packet received and funds credited at destination, waiting for ack to be written on source." as ibc_wait_ack
+    ibc_wait_ack --> dispatch: Ack observed, IBC leg complete.
+    ibc_wait_ack --> ibc_timeout_refund: Timeout observed instead of ack, refund path should unescrow.
+    state "ibc_timeout_refund<br/>Timeout detected, funds should be refunded/unescrowed on source chain. If refund fails, operator action required." as ibc_timeout_refund
+    ibc_timeout_refund --> dispatch: Refund confirmed, resume execution with remaining steps.
+    ibc_timeout_refund --> failed: Refund did not post, funds stuck in escrow.
+  }
+  moving --> failed: FlowStatus state=fail emitted for a step.
+  moving --> settling: Tx requiring confirmation added to pendingTxs (MAKE_ACCOUNT, GMP, CCTP out/in).
+  moving --> completed: FlowStatus state=done and no TxStatus pending.
+  state "settling<br/>Waiting on cross-chain confirmations from resolver (TxStatus pending -> success/failed)." as settling
+  settling --> moving: All pendingTxs for this flow settled success, continue or finish.
+  settling --> failed: pendingTx updated to failed.
+}
+executing --> failed: FlowStatus state=fail emitted.
+executing --> completed: FlowStatus state=done and all relevant pendingTxs are success.
+state "completed<br/>Flow finished, balances/positions updated, pendingTxs (if any) marked success." as completed
+completed --> [*]
+state "failed<br/>Flow halted, partial effects possible, operator or planner must retry/correct." as failed
+failed --> [*]
