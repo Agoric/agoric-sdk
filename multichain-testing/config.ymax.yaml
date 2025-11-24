@@ -36,7 +36,8 @@ chains:
       memory: 4Gi
   - id: noblelocal
     name: noble
-    image: ghcr.io/agoric/noble:v10.0.0
+    image: ghcr.io/agoric-labs/starship/noble:v10.1.2
+    #image: ghcr.io/agoric-labs/starship/noble:v11.1.0
     numValidators: 1
     balances:
       # USDN whale
