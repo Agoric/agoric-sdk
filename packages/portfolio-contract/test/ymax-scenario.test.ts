@@ -63,11 +63,26 @@ const rebalanceScenarioMacro = test.macro({
 
     let index = 0;
 
-    const ackSteps = async (offerArgs: OfferArgsFor['openPortfolio']) => {
+    const ackSteps = async (
+      offerArgs: OfferArgsFor['openPortfolio'],
+      isRebalance = false,
+    ) => {
       const { flow: moves } = { flow: [], ...offerArgs };
       const { transmitVTransferEvent } = common.utils;
 
       await transmitVTransferEvent('acknowledgementPacket', -1); // NFA
+
+      console.log('ackSteps moves:', moves);
+
+      const evmInvloved = moves.some(
+        move => move.src === '@Arbitrum' || move.dest === '@Arbitrum',
+      );
+      // Settle make account only if we know an EVM account is going to be made
+      if (evmInvloved && !isRebalance) {
+        // Confirm MakeAccount tx
+        await settleTransaction(zoe, resolverMakers, index, 'success');
+        index += 1;
+      }
 
       await eventLoopIteration();
 
@@ -120,7 +135,7 @@ const rebalanceScenarioMacro = test.macro({
         scenario.proposal,
         scenario.offerArgs,
       );
-      await ackSteps(scenario.offerArgs);
+      await ackSteps(scenario.offerArgs, true);
       const result = await rebalanceP;
       return result;
     })();
