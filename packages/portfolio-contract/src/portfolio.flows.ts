@@ -796,7 +796,7 @@ const stepFlow = async (
       // For EVM accounts, we need to return with ready promise
       // If it's a completed account, create a resolved promise
       const ready = Promise.resolve();
-      return { ...info, ready } as GMPAccountStatus;
+      return { ...info, ready } as unknown as GMPAccountStatus;
     }
 
     try {
@@ -807,6 +807,10 @@ const stepFlow = async (
         const info = kit.reader.getGMPInfo(chainName);
         if (kit.reader.accountCreationFailed(chainName)) {
           traceChain('retrying failed account creation');
+
+          gmpFee.value > 0n || Fail`axelar makeAccount requires > 0 fee`;
+          const feeAccount = await ctx.contractAccount;
+          await feeAccount.send(agoric.lca.getAddress(), gmpFee);
           // Retry account creation
           const acct = await evmChain.makeAccount({
             owner: agoric.lca,
@@ -827,6 +831,14 @@ const stepFlow = async (
         agoric.lca.getAddress().value,
       );
       kit.manager.setAccountInfo(chainAddress);
+
+      gmpFee.value > 0n || Fail`axelar makeAccount requires > 0 fee`;
+      const feeAccount = await ctx.contractAccount;
+      traceChain(
+        'send makeAccountCall Axelar fee from',
+        feeAccount.getAddress().value,
+      );
+      await feeAccount.send(agoric.lca.getAddress(), gmpFee);
 
       const acct = await evmChain.makeAccount({
         owner: agoric.lca,
