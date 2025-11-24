@@ -11,6 +11,7 @@ on:
 env:
   REGISTRY: ghcr.io
   DOCKER_IMAGE: ghcr.io/agoric/agoric-sdk:ymax-planner
+  GCE_ZONE: us-central1-a
 
 permissions:
   contents: read
