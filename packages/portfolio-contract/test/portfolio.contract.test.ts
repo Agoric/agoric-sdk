@@ -790,9 +790,25 @@ test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
     depositToAave,
   );
 
-  await simulateCCTPAck(common.utils).finally(() =>
-    simulateAckTransferToAxelar(common.utils),
-  );
+  const chain1P = (async () => {
+    await eventLoopIteration();
+    await ackNFA(common.utils, 0);
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+
+    await simulateCCTPAck(common.utils);
+    await eventLoopIteration();
+    await eventLoopIteration();
+    await eventLoopIteration();
+
+    await txResolver.drainPending();
+    await simulateAckTransferToAxelar(common.utils);
+    await eventLoopIteration();
+
+    await eventLoopIteration();
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  })();
+
+  await Promise.all([open1P, chain1P]);
 
   const open2P = trader2.openPortfolio(
     t,
@@ -800,20 +816,30 @@ test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
     depositToAave,
   );
 
-  await simulateCCTPAck(common.utils).finally(() =>
-    simulateAckTransferToAxelar(common.utils),
-  );
+  const chain2P = (async () => {
+    await eventLoopIteration();
+    await ackNFA(common.utils, -1);
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
 
-  await txResolver.drainPending();
+    await simulateCCTPAck(common.utils);
+    await eventLoopIteration();
+    await eventLoopIteration();
+    await eventLoopIteration();
 
-  await eventLoopIteration(); // let IBC message go out
-  await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
+    await txResolver.drainPending();
+    await simulateAckTransferToAxelar(common.utils);
+    await eventLoopIteration();
 
-  await eventLoopIteration(); // let IBC message go out
-  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await eventLoopIteration(); // let IBC message go out
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  })();
 
-  for (const openP of [open1P, open2P]) {
-    const { result, payouts } = await openP;
+  await Promise.all([open2P, chain2P]);
+
+  const result1 = await open1P;
+  const result2 = await open2P;
+
+  for (const { result, payouts } of [result1, result2]) {
     t.deepEqual(payouts.Deposit, { brand: usdc.brand, value: 0n });
     const { storagePath } = result.publicSubscribers.portfolio;
     t.log(storagePath);
