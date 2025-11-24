@@ -7,7 +7,7 @@ import {
 } from '@agoric/portfolio-api/src/constants.js';
 
 import {
-  makeGraphFromDefinition,
+  makeGraphForFlow,
   type RebalanceGraph,
 } from '../../tools/network/buildGraph.js';
 import PROD_NETWORK, {
@@ -72,8 +72,7 @@ const POOLS: ReadonlyArray<PoolKey> = [
 ];
 
 // Helpers
-const getGraph = () =>
-  makeGraphFromDefinition(PROD_NETWORK, {}, {}, brand, feeBrand);
+const getGraph = () => makeGraphForFlow(PROD_NETWORK, {}, {}, brand, feeBrand);
 
 const hasEdge = (
   edges: RebalanceGraph['edges'],

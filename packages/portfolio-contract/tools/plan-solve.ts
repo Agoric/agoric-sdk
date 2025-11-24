@@ -25,7 +25,7 @@ import {
   formatInfeasibleDiagnostics,
   validateSolvedFlows,
 } from './graph-diagnose.js';
-import { chainOf, makeGraphFromDefinition } from './network/buildGraph.js';
+import { chainOf, makeGraphForFlow } from './network/buildGraph.js';
 import type { FlowEdge, RebalanceGraph } from './network/buildGraph.js';
 import type { NetworkSpec } from './network/network-spec.js';
 
@@ -504,7 +504,7 @@ export const planRebalanceFlow = async (opts: {
     gasEstimator,
   } = opts;
   // TODO remove "automatic" values that should be static
-  const graph = makeGraphFromDefinition(
+  const graph = makeGraphForFlow(
     network,
     current,
     target,
