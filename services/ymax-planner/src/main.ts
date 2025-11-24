@@ -179,7 +179,32 @@ export const main = async (
     setTimeout,
     makeNonce: () => new Date(now()).toISOString(),
     fee: {
-      amount: [{ denom: 'ubld', amount: '15000' }], // 0.015 BLD
+      // XXX The required fee amount has an "inboundTx" fixed-size component and
+      // a "messageByte" variable component, both measured in "beans" of which
+      // there are "feeUnit" per `fee_unit_price` (all visible as swingset
+      // params via e.g.
+      // `agd --node https://main.rpc.agoric.net:443 query swingset params`).
+      // We should probably be adjusting fees in accordance with current
+      // parameters and `(msg MsgWalletSpendAction) CheckAdmissibility`
+      // (cf. ../../../golang/cosmos/x/swingset/types/msgs.go), i.e.
+      // `$beansPerInboundTx + $beansPerMessageByte * msgLen` where
+      // * `msgLen` is `JSON.stringify(swk.marshaller.toCapData(bridgeAction)).length`
+      //   (@see {@link SigningSmartWalletKit} `sendBridgeAction`)
+      // * `bridgeAction` is `{ method: "invokeEntry", message }`
+      //   (@see {@link reflectWalletStore} `makeEntryProxy`)
+      // * `message` is `{ id, targetName, method, args, saveResult? } }`
+      //   (@see {@link reflectWalletStore} `makeEntryProxy`)
+      // * `id` is either `${method}.${makeNonce()}` or undefined
+      //   (@see {@link reflectWalletStore} `makeEntryProxy`)
+      // * `method` is e.g. "resolvePlan"
+      //   (@see {@link processPortfolioEvents} `startFlow`)
+      // But the necessary plumbing is missing, so as of 2025-11 we hard-code
+      // 0.5 BLD for parameters "inboundTx" 1000000000, "messageByte" 20000000,
+      // "feeUnit" 150000000000, `fee_unit_price` 1000000ubld and expected
+      // `spend_action` sizes like the 1470 bytes from transaction
+      // 2E1D14A1B2F92383E7BAB6FB7EC0E34F332AC8A7ED6884B7627A29D8AB194567
+      // (leaving a buffer for larger transactions).
+      amount: [{ denom: 'ubld', amount: '500000' }],
       gas: '19700000',
     },
   });
