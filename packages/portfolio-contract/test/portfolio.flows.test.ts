@@ -1171,13 +1171,9 @@ test('handle failure in provideEVMAccount sendMakeAccountCall', async t => {
   t.is(await attempt1P, undefined);
 
   const seatFails = log.find(e => e._method === 'fail' && e._cap === 'seat');
-  t.like(
-    seatFails?.reason,
-    {
-      error: 'Insufficient funds - piggy bank sprang a leak',
-      how: 'Compound',
-      step: 4,
-    },
+  t.is(
+    seatFails?.reason.toString(),
+    'Error: Insufficient funds - piggy bank sprang a leak',
     'rebalance should fail when EVM account creation fails',
   );
 
@@ -1187,7 +1183,7 @@ test('handle failure in provideEVMAccount sendMakeAccountCall', async t => {
     const { accountIdByChain: byChain, accountsPending } =
       await getPortfolioStatus(1);
     // addresses of all requested accounts are available
-    t.deepEqual(Object.keys(byChain), ['Arbitrum', 'agoric', 'noble']);
+    t.deepEqual(Object.keys(byChain), ['Arbitrum', 'agoric']);
     // attempt to install Arbitrum account is no longer pending
     t.deepEqual(accountsPending, []);
 
@@ -1198,10 +1194,9 @@ test('handle failure in provideEVMAccount sendMakeAccountCall', async t => {
       {
         type: 'rebalance',
         state: 'fail',
-        step: 4,
-        how: 'Compound',
+        step: 0,
+        how: 'makeAccount: Arbitrum',
         error: 'Insufficient funds - piggy bank sprang a leak',
-        next: undefined,
       },
       '"Insufficient funds" error should be visible in vstorage',
     );
