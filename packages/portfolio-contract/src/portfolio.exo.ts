@@ -476,8 +476,13 @@ export const preparePortfolioKit = (
             }
             accountsPending.delete(info.chainName);
           }
-          traceChain('accounts.init');
-          accounts.init(info.chainName, info);
+          if (accounts.has(info.chainName)) {
+            traceChain('accounts.set');
+            accounts.set(info.chainName, info);
+          } else {
+            traceChain('accounts.init');
+            accounts.init(info.chainName, info);
+          }
           this.facets.reporter.publishStatus();
         },
         resetPendingAccount(chainName: AxelarChain, ready: Vow<unknown>) {

@@ -52,7 +52,6 @@ import {
   CCTPfromEVM,
   CompoundProtocol,
   makeAxelarOrchestrator,
-  provideEVMAccount,
   type EVMContext,
   type GMPAccountStatus,
 } from './pos-gmp.flows.ts';
@@ -783,6 +782,68 @@ const stepFlow = async (
 
   // fee: { denom: ctx.gmpFeeInfo.denom, value: ctx },
 
+  const provideEVMAccount = async (
+    chainName: AxelarChain,
+    gmpFee: DenomAmount,
+  ): Promise<GMPAccountStatus> => {
+    await null;
+    const traceChain = traceFlow.sub(chainName);
+
+    // Check if account creation is pending - return existing promise
+    const promiseMaybe = kit.manager.reserveAccount(chainName);
+    if (promiseMaybe) {
+      const info = await promiseMaybe;
+      // For EVM accounts, we need to return with ready promise
+      // If it's a completed account, create a resolved promise
+      const ready = Promise.resolve();
+      return { ...info, ready } as GMPAccountStatus;
+    }
+
+    try {
+      const evmChain = orchEVM.getChain(chainName);
+
+      // Check if we already have account info (failed previously)
+      if (kit.reader.hasGMPInfo(chainName)) {
+        const info = kit.reader.getGMPInfo(chainName);
+        if (kit.reader.accountCreationFailed(chainName)) {
+          traceChain('retrying failed account creation');
+          // Retry account creation
+          const acct = await evmChain.makeAccount({
+            owner: agoric.lca,
+            gmpFee,
+            traceOwner: traceFlow,
+          });
+          const ready = acct.getReady();
+          kit.manager.resetPendingAccount(chainName, ready as any);
+          return { ...info, ready };
+        }
+        // Account exists and is ready
+        const ready = Promise.resolve();
+        return { ...info, ready };
+      }
+
+      // Create new account
+      const chainAddress = evmChain.predictAddress(
+        agoric.lca.getAddress().value,
+      );
+      kit.manager.setAccountInfo(chainAddress);
+
+      const acct = await evmChain.makeAccount({
+        owner: agoric.lca,
+        gmpFee,
+        traceOwner: traceFlow,
+      });
+      const ready = acct.getReady();
+
+      kit.manager.resolveAccount(chainAddress);
+      return { ...chainAddress, ready };
+    } catch (reason) {
+      traceChain('failed to make', reason);
+      kit.manager.releaseAccount(chainName, reason);
+      throw reason;
+    }
+  };
+
   const evmAccountsForFlow = await (async () => {
     const done: Partial<Record<AxelarChain, GMPAccountStatus>> = {};
     const evmChains = keys(AxelarChain) as unknown[];
@@ -795,65 +856,24 @@ const stepFlow = async (
         if (seen.has(chain)) continue;
         seen.add(chain);
 
-        const evmChain = orchEVM.getChain(chain);
-        throw Error('TODO! provide: do we already have one?');
-
         const gmpFee = {
           denom: ctx.gmpFeeInfo.denom,
           value: move.fee?.value || 0n,
         };
         gmpFee.value > 0n || Fail`axelar makeAccount requires > 0 fee`;
 
-        const acct = await evmChain.makeAccount({
-          owner: agoric.lca,
-          gmpFee,
-          traceOwner: traceFlow,
-        });
-        const chainAddress = acct.getAddress();
-        const ready = acct.getReady();
-        done[chain] = harden({ ...chainAddress, ready });
+        const acctInfo = await forChain(chain, () =>
+          provideEVMAccount(chain, gmpFee),
+        );
+        done[chain] = acctInfo;
       }
     }
     return done;
   })();
 
-  const evmAcctInfo = (() => {
-    const { axelarIds } = ctx;
-    const gmpCommon = { chain: axelar, axelarIds };
-
-    const evmChains = keys(AxelarChain) as unknown[];
-
-    const seen = new Set<AxelarChain>();
-    const chainToAcctStatus = moves.flatMap(move =>
-      [move.src, move.dest].flatMap(ref => {
-        const maybeChain = getChainNameOfPlaceRef(ref);
-        if (!evmChains.includes(maybeChain)) return [];
-        const chain = maybeChain as AxelarChain;
-        if (seen.has(chain)) return [];
-        seen.add(chain);
-
-        const gmp = {
-          ...gmpCommon,
-          fee: move.fee?.value || 0n,
-        };
-
-        const acctInfo = provideEVMAccount(
-          chain,
-          infoFor[chain],
-          gmp,
-          agoric.lca,
-          ctx,
-          kit,
-        );
-        return [asEntry(chain, acctInfo)];
-      }),
-    );
-    return harden(fromEntries(chainToAcctStatus));
-  })();
-
-  traceFlow('EVM accounts pre-computed', keys(evmAcctInfo));
+  traceFlow('EVM accounts created', keys(evmAccountsForFlow));
   const nobleMentioned = moves.some(m => [m.src, m.dest].includes('@noble'));
-  const nobleInfo = await (nobleMentioned || keys(evmAcctInfo).length > 0
+  const nobleInfo = await (nobleMentioned || keys(evmAccountsForFlow).length > 0
     ? forChain('noble', () =>
         provideCosmosAccount(orch, 'noble', kit, traceFlow),
       )
@@ -861,7 +881,7 @@ const stepFlow = async (
   const accounts: AccountsByChain = {
     agoric,
     ...(nobleInfo && { noble: nobleInfo }),
-    ...evmAcctInfo,
+    ...evmAccountsForFlow,
   };
   traceFlow('accounts for trackFlow', keys(accounts));
 
