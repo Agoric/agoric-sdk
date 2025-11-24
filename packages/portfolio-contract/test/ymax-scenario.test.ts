@@ -8,6 +8,9 @@ import { inspect } from 'node:util';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
+import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.ts';
+import type { VstorageKit } from '@agoric/client-utils';
+import { TxType, type PublishedTx } from '@agoric/portfolio-api';
 import type { OfferArgsFor, ProposalType } from '../src/type-guards.ts';
 import {
   grokRebalanceScenarios,
@@ -44,6 +47,15 @@ const rebalanceScenarioMacro = test.macro({
       }
     }
 
+    const { storage } = common.bootstrap;
+    const readPublished = (async subpath => {
+      await eventLoopIteration();
+      const val = storage
+        .getDeserialized(`${ROOT_STORAGE_PATH}.${subpath}`)
+        .at(-1);
+      return val;
+    }) as unknown as VstorageKit['readPublished'];
+
     const { usdc } = common.brands;
     const scenario = withBrand(rawScenario, usdc.brand);
     const previous = scenario.previous
@@ -63,25 +75,25 @@ const rebalanceScenarioMacro = test.macro({
 
     let index = 0;
 
-    const ackSteps = async (
-      offerArgs: OfferArgsFor['openPortfolio'],
-      isRebalance = false,
-    ) => {
+    const ackSteps = async (offerArgs: OfferArgsFor['openPortfolio']) => {
       const { flow: moves } = { flow: [], ...offerArgs };
       const { transmitVTransferEvent } = common.utils;
 
       await transmitVTransferEvent('acknowledgementPacket', -1); // NFA
 
-      console.log('ackSteps moves:', moves);
-
       const evmInvloved = moves.some(
         move => move.src === '@Arbitrum' || move.dest === '@Arbitrum',
       );
       // Settle make account only if we know an EVM account is going to be made
-      if (evmInvloved && !isRebalance) {
-        // Confirm MakeAccount tx
-        await settleTransaction(zoe, resolverMakers, index, 'success');
-        index += 1;
+      if (evmInvloved) {
+        const currentTx = (await readPublished(
+          `pendingTxs.tx${index}`,
+        )) as PublishedTx;
+        if (currentTx.type === TxType.MAKE_ACCOUNT) {
+          // Confirm MakeAccount tx
+          await settleTransaction(zoe, resolverMakers, index, 'success');
+          index += 1;
+        }
       }
 
       await eventLoopIteration();
@@ -135,7 +147,7 @@ const rebalanceScenarioMacro = test.macro({
         scenario.proposal,
         scenario.offerArgs,
       );
-      await ackSteps(scenario.offerArgs, true);
+      await ackSteps(scenario.offerArgs);
       const result = await rebalanceP;
       return result;
     })();
