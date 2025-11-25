@@ -187,7 +187,8 @@ export const main = async (
       // We should probably be adjusting fees in accordance with current
       // parameters and `(msg MsgWalletSpendAction) CheckAdmissibility`
       // (cf. ../../../golang/cosmos/x/swingset/types/msgs.go), i.e.
-      // `$beansPerInboundTx + $beansPerMessageByte * msgLen` where
+      // `$beansPerInboundTx + $beansPerMessage + $beansPerMessageByte * msgLen`
+      // where
       // * `msgLen` is `JSON.stringify(swk.marshaller.toCapData(bridgeAction)).length`
       //   (@see {@link SigningSmartWalletKit} `sendBridgeAction`)
       // * `bridgeAction` is `{ method: "invokeEntry", message }`

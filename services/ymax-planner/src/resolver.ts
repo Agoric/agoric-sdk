@@ -12,7 +12,7 @@ type ResolveTxParams = {
 };
 
 const smartWalletFee: StdFee = {
-  amount: [{ denom: 'ubld', amount: '50000' }], // 0.05 BLD
+  amount: [{ denom: 'ubld', amount: '250000' }], // 0.25 BLD
   gas: '19700000',
 };
 
