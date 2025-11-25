@@ -145,11 +145,12 @@ test('open a portfolio with Aave position', async t => {
 
   const chainP = (async () => {
     await ackNFA(common.utils);
-    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    // Acknowledge Axelar makeAccount - it's the second-to-last transfer
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
     await simulateCCTPAck(common.utils);
     const misc = await txResolver.drainPending();
-    // NOTE: Axelar Ack has to come _after_ drainPending.
-    await simulateAckTransferToAxelar(common.utils);
+    // Acknowledge Aave GMP call to Axelar
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
     return misc;
   })();
 
@@ -193,7 +194,7 @@ test('open a portfolio with Compound position', async t => {
 
   await eventLoopIteration(); // let IBC message go out
   await ackNFA(common.utils);
-  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
   t.log('ackd NFA, send to Axelar to create account');
 
   await simulateCCTPAck(common.utils).finally(() =>
@@ -247,7 +248,7 @@ test('open portfolio with USDN, Aave positions', async t => {
   await eventLoopIteration(); // let outgoing IBC happen
   t.log('openPortfolio, eventloop');
   await ackNFA(common.utils);
-  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
   t.log('ackd NFA, send to noble');
 
   await simulateCCTPAck(common.utils).finally(() =>
@@ -355,7 +356,7 @@ test('claim rewards on Aave position successfully', async t => {
 
   await eventLoopIteration(); // let IBC message go out
   await ackNFA(common.utils);
-  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
   t.log('ackd send to Axelar to create account');
 
   await simulateCCTPAck(common.utils).finally(() =>
@@ -504,7 +505,7 @@ const beefyTestMacro = test.macro({
 
     await eventLoopIteration(); // let IBC message go out
     await ackNFA(common.utils);
-    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
     t.log('ackd send to Axelar to create account');
 
     await simulateCCTPAck(common.utils).finally(() =>
@@ -587,7 +588,7 @@ test('Withdraw from a Beefy position (future client)', async t => {
 
   await eventLoopIteration(); // let IBC message go out
   await ackNFA(common.utils);
-  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
   t.log('ackd send to Axelar to create account');
 
   await simulateCCTPAck(common.utils).finally(() =>
@@ -714,7 +715,7 @@ test.serial(
 
     await eventLoopIteration();
     await ackNFA(common.utils);
-    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
     t.log('ackd send to Axelar to create account');
 
     await common.utils
