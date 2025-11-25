@@ -10,7 +10,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { GuestInterface } from '@agoric/async-flow';
 import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 import { AmountMath, makeIssuerKit, type NatAmount } from '@agoric/ertp';
-import { makeTracer, mustMatch } from '@agoric/internal';
+import { makeTracer, mustMatch, type TraceLogger } from '@agoric/internal';
 import { type StorageMessage } from '@agoric/internal/src/lib-chainStorage.js';
 import {
   defaultSerializer,
@@ -84,6 +84,10 @@ import {
   makeIncomingVTransferEvent,
   makeStorageTools,
 } from './supports.ts';
+import {
+  provideEVMAccount,
+  type GMPAccountStatus,
+} from '../src/pos-gmp.flows.ts';
 
 const theExit = harden(() => {}); // for ava comparison
 // @ts-expect-error mock
@@ -166,6 +170,13 @@ const mocks = (
   const log = (ev: MockLogEvent) => {
     buf.push(ev);
   };
+  const kinks: Array<(ev: MockLogEvent) => Promise<void>> = [];
+  const record = async (ev: MockLogEvent) => {
+    for (const kink of kinks) {
+      await kink(ev);
+    }
+    log(ev);
+  };
   let nonce = 0;
   const tapPK = makePromiseKit<TargetApp>();
   const factoryPK = makePromiseKit();
@@ -207,7 +218,12 @@ const mocks = (
             async send(toAccount, amount) {
               const { send: sendErr } = errs;
               if (sendErr && amount?.value === 13n) throw sendErr;
-              log({ _cap: addr.value, _method: 'send', toAccount, amount });
+              await record({
+                _cap: addr.value,
+                _method: 'send',
+                toAccount,
+                amount,
+              });
             },
             async transfer(address, amount, opts) {
               if (!('denom' in amount)) throw Error('#10449');
@@ -475,7 +491,7 @@ const mocks = (
     orch,
     tapPK,
     ctx: { ...ctx1, makePortfolioKit: makePortfolioKitGuest },
-    offer: { log: buf, seat, factoryPK },
+    offer: { log: buf, seat, factoryPK, kinks },
     storage: {
       ...storage,
       getDeserialized,
@@ -1574,3 +1590,136 @@ test('parallel execution with scheduler', async t => {
 
   t.snapshot(flowHistory, 'parallel flow history');
 });
+
+type EStep = 'predict' | 'send' | 'register' | 'txfr' | 'resolve';
+
+const makeAccountEVMRace = test.macro({
+  title: (providedTitle = '', _headStart: EStep, _errAt?: EStep) =>
+    `EVM makeAccount race: ${providedTitle}`,
+  async exec(t, headStart: EStep, errAt?: EStep) {
+    if (errAt) {
+      return t.fail('TODO');
+    }
+
+    const { orch, ctx, offer, txResolver } = mocks({});
+
+    const trace = makeTracer('PExec');
+    const pKit = await ctx.makePortfolioKit();
+    await provideCosmosAccount(orch, 'agoric', pKit, trace);
+    const portfolioId = pKit.reader.getPortfolioId();
+    const traceP = makeTracer(`portfolio${portfolioId}`);
+
+    const chainName = 'Arbitrum';
+    const { [chainName]: chainInfo } = axelarCCTPConfig;
+    const gmp = { chain: await orch.getChain('axelar'), fee: 123n };
+
+    const silent: TraceLogger = Object.assign(() => {}, {
+      sub: () => silent,
+    });
+    await provideCosmosAccount(orch, 'agoric', pKit, silent);
+    const lca = pKit.reader.getLocalAccount();
+
+    const attempt = async () => {
+      await null;
+      return provideEVMAccount(chainName, chainInfo, gmp, lca, ctx, pKit);
+    };
+
+    const { log, kinks } = offer;
+    type Kink = (typeof kinks)[0];
+    const A = attempt();
+
+    const resolveAfterBStarts: ((r: unknown) => void)[] = [];
+    const removeAfterAFinishes: Kink[] = [];
+    const waitDuring = (method: string) => {
+      const sync = makePromiseKit();
+      resolveAfterBStarts.push(sync.resolve);
+      const kink: Kink = async ev => {
+        if (ev._method === 'send') {
+          t.log('wait for B before', method);
+          await sync.promise;
+        }
+      };
+      kinks.push(kink);
+      removeAfterAFinishes.push(kink);
+    };
+    let expectBeforeB: string[];
+
+    switch (headStart) {
+      case 'predict': {
+        expectBeforeB = ['monitorTransfers'];
+        waitDuring('send');
+        break;
+      }
+
+      case 'send': {
+        t.log('TODO: wait before register');
+        expectBeforeB = ['monitorTransfers', 'send'];
+        waitDuring('transfer');
+        break;
+      }
+
+      case 'register': {
+        expectBeforeB = ['monitorTransfers'];
+        waitDuring('transfer');
+        break;
+      }
+
+      case 'txfr':
+        expectBeforeB = ['TODO'];
+        return t.fail('TODO');
+
+      case 'resolve': {
+        expectBeforeB = ['monitorTransfers', 'send', 'transfer'];
+        const status = await A;
+        await txResolver.settleUntil(status.ready);
+        break;
+      }
+    }
+
+    await eventLoopIteration(); // A runs until paused
+    const getMethods = () => log.map(msg => msg._method);
+    t.log('calls before B:', getMethods().join(', '));
+    t.deepEqual(getMethods(), expectBeforeB, 'methods called before B');
+
+    const B = attempt();
+    for (const resolve of resolveAfterBStarts) {
+      resolve(null);
+    }
+    kinks.push(async ev => {
+      if (ev._method === 'transfer') throw Error('repeat transfer!');
+    });
+
+    const { remoteAddress } = await A;
+    t.log('address prompt', remoteAddress);
+    const statusB = await B;
+    t.is(statusB.remoteAddress, remoteAddress, 'same address for both racers');
+
+    await A.then(s => s.ready);
+    for (const kink of removeAfterAFinishes) {
+      kinks.splice(kinks.indexOf(kink));
+    }
+    const actual = await B.then(s => s.ready);
+
+    t.log('calls:', getMethods().join(', '));
+    t.deepEqual(
+      getMethods(),
+      ['monitorTransfers', 'send', 'transfer'],
+      'account creation methods called just once',
+    );
+    t.snapshot(log, 'call log');
+  },
+});
+
+test('A and B arrive together; A wins the race', makeAccountEVMRace, 'predict');
+test('A pays fee; B arrives', makeAccountEVMRace, 'send');
+test.skip('A fails to pay fee; B arrives', makeAccountEVMRace, 'send', 'send');
+test('A registers txN; B arrives', makeAccountEVMRace, 'register');
+test('A transfers to axelar; B arrives', makeAccountEVMRace, 'txfr');
+test.skip(
+  'A times out on axelar; B arrives',
+  makeAccountEVMRace,
+  'txfr',
+  'txfr',
+);
+test.skip('A gets rejected txN; B arrives', makeAccountEVMRace, 'txfr', 'txfr');
+test('A finishes before attempt B starts', makeAccountEVMRace, 'resolve');

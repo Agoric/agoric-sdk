@@ -73,11 +73,9 @@ export type AccountInfoFor = Record<AxelarChain, GMPAccountInfo> & {
   noble: NobleAccountInfo;
 };
 
-type MaybeFailed<T> = T | undefined;
-
 type PortfolioKitState = {
   portfolioId: number;
-  accountsPending: MapStore<SupportedChain, MaybeFailed<VowKit<AccountInfo>>>;
+  accountsPending: MapStore<SupportedChain, VowKit<AccountInfo>>;
   accounts: MapStore<SupportedChain, AccountInfo>;
   positions: MapStore<PoolKey, Position>;
   flowsRunning: MapStore<
@@ -417,42 +415,42 @@ export const preparePortfolioKit = (
       manager: {
         reserveAccount<C extends SupportedChain>(
           chainName: C,
-          ready?: Vow<unknown>,
         ): undefined | Vow<AccountInfoFor[C]> {
+          const { ready, init } =
+            this.facets.manager.reserveAccountFull(chainName);
+          return init ? undefined : ready;
+        },
+        reserveAccountFull<C extends SupportedChain>(
+          chainName: C,
+        ): { init: boolean; ready: Vow<AccountInfoFor[C]> } {
           const traceChain = trace
             .sub(`portfolio${this.state.portfolioId}`)
             .sub(chainName);
           traceChain('reserveAccount');
           const { accounts, accountsPending } = this.state;
-          if (!ready && accounts.has(chainName)) {
+          if (accounts.has(chainName)) {
             traceChain('accounts.has');
-            return vowTools.asVow(async () => {
+            const ready = vowTools.asVow(async () => {
               const infoAny = accounts.get(chainName);
               assert.equal(infoAny.chainName, chainName);
               const info = infoAny as AccountInfoFor[C];
               return info;
             });
+            return { ready, init: false };
           }
           if (accountsPending.has(chainName)) {
             traceChain('accountsPending.has');
             const val = accountsPending.get(chainName);
-            if (val) {
-              return val.vow as Vow<AccountInfoFor[C]>;
-            }
-            accountsPending.delete(chainName);
+            return { ready: val.vow as Vow<AccountInfoFor[C]>, init: false };
           }
           const pending: VowKit<AccountInfoFor[C]> = vowTools.makeVowKit();
           vowTools.watch(pending.vow, this.facets.accountWatcher, chainName);
-          if (ready) {
-            // XXX in the ready case, info is available elsewhere
-            pending.resolver.resolve(ready as any);
-          }
           traceChain('accountsPending.init');
           accountsPending.init(chainName, pending);
           this.facets.reporter.publishStatus();
-          return undefined;
+          return { ready: pending.vow as Vow<AccountInfoFor[C]>, init: true };
         },
-        setAccountInfo(info: AccountInfo) {
+        initAccountInfo(info: AccountInfo) {
           const { accounts, portfolioId } = this.state;
           const traceChain = trace
             .sub(`portfolio${portfolioId}`)
@@ -468,32 +466,23 @@ export const preparePortfolioKit = (
             .sub(info.chainName);
 
           if (accountsPending.has(info.chainName)) {
-            const vow = accountsPending.get(info.chainName);
-            // NEEDSTEST - why did all tests pass without .resolve()?
-            if (vow) {
-              traceChain('accountsPending.resolve');
-              vow.resolver.resolve(info);
-            }
-            accountsPending.delete(info.chainName);
+            const pending = accountsPending.get(info.chainName);
+            traceChain('accountsPending.resolve');
+            pending.resolver.resolve(info);
           }
           traceChain('accounts.init');
-          accounts.init(info.chainName, info);
+          if (!accounts.has(info.chainName)) {
+            accounts.init(info.chainName, info);
+          }
           this.facets.reporter.publishStatus();
-        },
-        resetPendingAccount(chainName: AxelarChain, ready: Vow<unknown>) {
-          const { accountsPending } = this.state;
-          // XXX trace?
-          accountsPending.delete(chainName);
-          return this.facets.manager.reserveAccount(chainName, ready);
         },
         releaseAccount(chainName: SupportedChain, reason: unknown) {
           trace('releaseAccount', chainName, reason);
           const { accountsPending } = this.state;
           if (accountsPending.has(chainName)) {
             const vow = accountsPending.get(chainName);
-            if (!vow) return;
             vow.resolver.reject(reason);
-            accountsPending.set(chainName, undefined);
+            accountsPending.delete(chainName);
             this.facets.reporter.publishStatus();
           }
         },

@@ -58,6 +58,7 @@ export type GMPAccountStatus = GMPAccountInfo & {
   ready: Promise<unknown>;
 };
 
+/** @deprecated incomplete design */
 export const makeAxelarOrchestrator = (
   gmp: {
     chain: Chain<{ chainId: string }>;
@@ -149,14 +150,12 @@ export const makeAxelarOrchestrator = (
   return harden({ getChain });
 };
 
-/** @deprecated; use makeAxelarOrchestrator */
 export const provideEVMAccount = (
   chainName: AxelarChain,
   chainInfo: BaseChainInfo,
   gmp: {
     chain: Chain<{ chainId: string }>;
     fee: NatValue;
-    axelarIds: AxelarId;
   },
   lca: LocalAccount,
   ctx: PortfolioInstanceContext,
@@ -164,6 +163,12 @@ export const provideEVMAccount = (
 ): GMPAccountStatus => {
   const pId = pk.reader.getPortfolioId();
   const traceChain = trace.sub(`portfolio${pId}`).sub(chainName);
+
+  const reserve = pk.manager.reserveAccountFull(chainName);
+  if (!reserve.init) {
+    const info = pk.reader.getGMPInfo(chainName);
+    return { ...info, ready: reserve.ready as unknown as Promise<void> };
+  }
 
   const predictAddress = (owner: Bech32Address) => {
     const contracts = ctx.contracts[chainName];
@@ -183,68 +188,50 @@ export const provideEVMAccount = (
     traceChain('CREATE2', info.remoteAddress, 'for', owner);
     return info;
   };
+  const evmAccount = predictAddress(lca.getAddress().value);
+  pk.manager.initAccountInfo(evmAccount);
 
-  const installContract = async (evmAccount: GMPAccountInfo) => {
-    const axelarId = gmp.axelarIds[chainName];
-    const target = {
-      axelarId,
-      remoteAddress: ctx.contracts[chainName].factory,
-    };
-    const fee = { denom: ctx.gmpFeeInfo.denom, value: gmp.fee };
-    fee.value > 0n || Fail`axelar makeAccount requires > 0 fee`;
-    const feeAccount = await ctx.contractAccount;
-    const src = feeAccount.getAddress();
-    traceChain('send makeAccountCall Axelar fee from', src.value);
-    await feeAccount.send(lca.getAddress(), fee);
+  const installContract = async () => {
+    try {
+      const axelarId = ctx.axelarIds[chainName];
+      const target = {
+        axelarId,
+        remoteAddress: ctx.contracts[chainName].factory,
+      };
+      const fee = { denom: ctx.gmpFeeInfo.denom, value: gmp.fee };
+      fee.value > 0n || Fail`axelar makeAccount requires > 0 fee`;
+      const feeAccount = await ctx.contractAccount;
+      const src = feeAccount.getAddress();
+      traceChain('send makeAccountCall Axelar fee from', src.value);
+      await feeAccount.send(lca.getAddress(), fee);
 
-    const { result } = ctx.resolverClient.registerTransaction(
-      TxType.MAKE_ACCOUNT,
-      `${evmAccount.chainId}:${target.remoteAddress}`,
-      undefined,
-      evmAccount.remoteAddress,
-    );
+      const { result, txId } = ctx.resolverClient.registerTransaction(
+        TxType.MAKE_ACCOUNT,
+        `${evmAccount.chainId}:${target.remoteAddress}`,
+        undefined,
+        evmAccount.remoteAddress,
+      );
 
-    await sendMakeAccountCall(target, fee, lca, gmp.chain, ctx.gmpAddresses);
+      await sendMakeAccountCall(target, fee, lca, gmp.chain, ctx.gmpAddresses);
 
-    await result;
+      const ready = result as unknown as Promise<void>; // XXX host/guest
+      console.log(txId, '@@@ready?', evmAccount.remoteAddress);
+      ready.then(_ => {
+        console.log(txId, '@@@@ready!!!', evmAccount.remoteAddress);
+      });
+
+      pk.manager.resolveAccount(evmAccount);
+    } catch (reason) {
+      traceChain('failed to make', reason);
+      pk.manager.releaseAccount(chainName, reason);
+    }
   };
+  void installContract();
 
-  if (!pk.reader.hasGMPInfo(chainName)) {
-    const info = predictAddress(lca.getAddress().value);
-    pk.manager.setAccountInfo(info);
-
-    const ready = installContract(info);
-    ready.catch(err => {
-      console.error('@@@@@#@##%@#@hello?', err);
-      pk.manager.releaseAccount(chainName, err);
-    });
-    pk.manager.reserveAccount(
-      chainName,
-      // XXX host/guest types
-      ready as any,
-    );
-    console.log('@@@ready?', ready, info);
-    ready.then(_ => {
-      console.log('@@@@ready!!!', info);
-    });
-    return { ...info, ready };
-  }
-
-  const info = pk.reader.getGMPInfo(chainName);
-  if (pk.reader.accountCreationFailed(chainName)) {
-    const ready = installContract(info);
-    pk.manager.resetPendingAccount(
-      chainName,
-      // XXX host/guest types
-      ready as any,
-    );
-    return { ...info, ready };
-  }
-
-  const ready = pk.manager.reserveAccount(
-    chainName,
-  ) as unknown as Promise<unknown>;
-  return { ...info, ready };
+  return {
+    ...evmAccount,
+    ready: reserve.ready as unknown as Promise<void>, // XXX host/guest
+  };
 };
 
 type TokenMessengerI = {
