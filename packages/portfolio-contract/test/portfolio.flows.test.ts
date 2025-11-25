@@ -55,6 +55,7 @@ import {
   type OnTransferContext,
   type PortfolioInstanceContext,
 } from '../src/portfolio.flows.ts';
+import { provideEVMAccount } from '../src/pos-gmp.flows.ts';
 import {
   makeSwapLockMessages,
   makeUnlockSwapMessages,
@@ -84,10 +85,6 @@ import {
   makeIncomingVTransferEvent,
   makeStorageTools,
 } from './supports.ts';
-import {
-  provideEVMAccount,
-  type GMPAccountStatus,
-} from '../src/pos-gmp.flows.ts';
 
 const theExit = harden(() => {}); // for ava comparison
 // @ts-expect-error mock
@@ -227,7 +224,7 @@ const mocks = (
             },
             async transfer(address, amount, opts) {
               if (!('denom' in amount)) throw Error('#10449');
-              log({
+              await record({
                 _cap: addr.value,
                 _method: 'transfer',
                 address,
@@ -246,7 +243,11 @@ const mocks = (
               }
             },
             async executeEncodedTx(msgs) {
-              log({ _cap: addr.value, _method: 'executeEncodedTx', msgs });
+              await record({
+                _cap: addr.value,
+                _method: 'executeEncodedTx',
+                msgs,
+              });
               const { executeEncodedTx: err } = errs;
               if (err) throw err;
               return harden(msgs.map(_ => ({})));
@@ -1591,6 +1592,7 @@ test('parallel execution with scheduler', async t => {
   t.snapshot(flowHistory, 'parallel flow history');
 });
 
+/** turn boundaries in provideEVMAccount (except awaiting feeAccount and getChainInfo) */
 type EStep = 'predict' | 'send' | 'register' | 'txfr' | 'resolve';
 
 const makeAccountEVMRace = test.macro({
@@ -1627,6 +1629,15 @@ const makeAccountEVMRace = test.macro({
     const { log, kinks } = offer;
     type Kink = (typeof kinks)[0];
     const A = attempt();
+    const Adone = A.then(status => status.ready);
+    void Adone.then(() =>
+      kinks.push(async ev => {
+        if (ev._method === 'transfer') throw Error('repeat transfer!');
+      }),
+    );
+
+    const startSettlingPK = makePromiseKit();
+    void startSettlingPK.promise.then(() => txResolver.settleUntil(Adone));
 
     const resolveAfterBStarts: ((r: unknown) => void)[] = [];
     const removeAfterAFinishes: Kink[] = [];
@@ -1634,8 +1645,8 @@ const makeAccountEVMRace = test.macro({
       const sync = makePromiseKit();
       resolveAfterBStarts.push(sync.resolve);
       const kink: Kink = async ev => {
-        if (ev._method === 'send') {
-          t.log('wait for B before', method);
+        if (ev._method === method) {
+          t.log('wait for B before:', method);
           await sync.promise;
         }
       };
@@ -1648,30 +1659,34 @@ const makeAccountEVMRace = test.macro({
       case 'predict': {
         expectBeforeB = ['monitorTransfers'];
         waitDuring('send');
+        startSettlingPK.resolve(null);
         break;
       }
 
       case 'send': {
-        t.log('TODO: wait before register');
         expectBeforeB = ['monitorTransfers', 'send'];
         waitDuring('transfer');
+        startSettlingPK.resolve(null);
         break;
       }
 
       case 'register': {
-        expectBeforeB = ['monitorTransfers'];
+        expectBeforeB = ['monitorTransfers', 'send'];
         waitDuring('transfer');
+        startSettlingPK.resolve(null);
         break;
       }
 
       case 'txfr':
-        expectBeforeB = ['TODO'];
-        return t.fail('TODO');
+        expectBeforeB = ['monitorTransfers', 'send', 'transfer'];
+        kinks.push(async ev => {
+          if (ev._method === 'transfer') startSettlingPK.resolve(null);
+        });
+        break;
 
       case 'resolve': {
         expectBeforeB = ['monitorTransfers', 'send', 'transfer'];
-        const status = await A;
-        await txResolver.settleUntil(status.ready);
+        startSettlingPK.resolve(null);
         break;
       }
     }
@@ -1685,20 +1700,19 @@ const makeAccountEVMRace = test.macro({
     for (const resolve of resolveAfterBStarts) {
       resolve(null);
     }
-    kinks.push(async ev => {
-      if (ev._method === 'transfer') throw Error('repeat transfer!');
-    });
 
     const { remoteAddress } = await A;
     t.log('address prompt', remoteAddress);
     const statusB = await B;
     t.is(statusB.remoteAddress, remoteAddress, 'same address for both racers');
 
-    await A.then(s => s.ready);
+    // TODO: Promise.race()/any() to see which finished first?
+
+    await Adone;
     for (const kink of removeAfterAFinishes) {
       kinks.splice(kinks.indexOf(kink));
     }
-    const actual = await B.then(s => s.ready);
+    await B.then(status => status.ready);
 
     t.log('calls:', getMethods().join(', '));
     t.deepEqual(
@@ -1706,7 +1720,6 @@ const makeAccountEVMRace = test.macro({
       ['monitorTransfers', 'send', 'transfer'],
       'account creation methods called just once',
     );
-    t.snapshot(log, 'call log');
   },
 });
 

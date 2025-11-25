@@ -214,15 +214,14 @@ export const provideEVMAccount = (
 
       await sendMakeAccountCall(target, fee, lca, gmp.chain, ctx.gmpAddresses);
 
-      const ready = result as unknown as Promise<void>; // XXX host/guest
       console.log(txId, '@@@ready?', evmAccount.remoteAddress);
-      ready.then(_ => {
-        console.log(txId, '@@@@ready!!!', evmAccount.remoteAddress);
-      });
+      await (result as unknown as Promise<void>); // XXX host/guest;
+      console.log(txId, '@@@@ready!!!', evmAccount.remoteAddress);
 
       pk.manager.resolveAccount(evmAccount);
     } catch (reason) {
       traceChain('failed to make', reason);
+      traceChain('@@TODO! reject registered transaction');
       pk.manager.releaseAccount(chainName, reason);
     }
   };
