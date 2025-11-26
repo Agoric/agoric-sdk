@@ -190,6 +190,7 @@ __metadata:
   resolution: "@aglocal/portfolio-contract@workspace:packages/portfolio-contract"
   dependencies:
     "@aglocal/boot": "workspace:*"
+    "@aglocal/portfolio-deploy": "workspace:*"
     "@agoric/async-flow": "workspace:*"
     "@agoric/client-utils": "workspace:*"
     "@agoric/cosmic-proto": "workspace:*"
