@@ -361,22 +361,25 @@ export const rebalanceMinCostFlowSteps = async (
     pendingFlows.delete(chosen.edge.id);
     lastChain = chosen.srcChain;
   }
+
   /**
-   * Pad each fee estimate in case the landscape changes between estimation and
-   * execution. Add 20%
+   * Add 20% to a fee estimate in case the landscape changes between estimation
+   * and execution.
    */
   const padFeeEstimate = (estimate: bigint): bigint => (estimate * 120n) / 100n;
 
   /**
-   * Ensures minimun gas is sent for Axelar GMP tx
-   * This is to prevent outlier estimates that might result in "not enough gas" errors
-   * Note: This function should only be used for an Axelar GMP tx which is in BLD
-   * and not for any other type, such as return evm gas which is in ETH
+   * Ensure minimum gas is sent for an Axelar GMP transaction, to hopefully
+   * prevent "not enough gas" errors.
+   * Note: This function returns a `feeBrand` Amount that is appropriate for
+   * Axelar GMP transaction fees but not for e.g. EVM gas (with is in ETH).
    */
-  const ensureMinimumGas = (estimate: bigint): bigint => {
-    // Value calculated from this data https://github.com/Agoric/agoric-private/issues/548#issuecomment-3517683817
-    const MINIMUM_GAS_ESTIMATE = 5_000_000n;
-    return estimate < MINIMUM_GAS_ESTIMATE ? MINIMUM_GAS_ESTIMATE : estimate;
+  const makeGmpFeeAmount = (estimate: bigint): NatAmount => {
+    const padded = padFeeEstimate(estimate);
+    // cf. https://github.com/Agoric/agoric-private/issues/548#issuecomment-3517683817
+    const MINIMUM_GAS = 5_000_000n;
+    const feeValue = padded < MINIMUM_GAS ? MINIMUM_GAS : padded;
+    return AmountMath.make(feeBrand, feeValue);
   };
 
   const steps: MovementDesc[] = await Promise.all(
@@ -396,10 +399,7 @@ export const rebalanceMinCostFlowSteps = async (
             await gasEstimator.getReturnFeeEstimate(destinationEvmChain);
           details = {
             detail: { evmGas: padFeeEstimate(returnFeeValue) },
-            fee: AmountMath.make(
-              feeBrand,
-              ensureMinimumGas(padFeeEstimate(feeValue)),
-            ),
+            fee: makeGmpFeeAmount(feeValue),
           };
           break;
         }
@@ -412,12 +412,7 @@ export const rebalanceMinCostFlowSteps = async (
             EvmWalletOperationType.Withdraw,
             protocol,
           );
-          details = {
-            fee: AmountMath.make(
-              feeBrand,
-              ensureMinimumGas(padFeeEstimate(feeValue)),
-            ),
-          };
+          details = { fee: makeGmpFeeAmount(feeValue) };
           break;
         }
         case 'evmToPool': {
@@ -428,12 +423,7 @@ export const rebalanceMinCostFlowSteps = async (
             EvmWalletOperationType.Supply,
             protocol,
           );
-          details = {
-            fee: AmountMath.make(
-              feeBrand,
-              ensureMinimumGas(padFeeEstimate(feeValue)),
-            ),
-          };
+          details = { fee: makeGmpFeeAmount(feeValue) };
           break;
         }
         case 'evmToNoble': {
@@ -441,12 +431,7 @@ export const rebalanceMinCostFlowSteps = async (
             chainOf(edge.src) as AxelarChain,
             EvmWalletOperationType.DepositForBurn,
           );
-          details = {
-            fee: AmountMath.make(
-              feeBrand,
-              ensureMinimumGas(padFeeEstimate(feeValue)),
-            ),
-          };
+          details = { fee: makeGmpFeeAmount(feeValue) };
           break;
         }
         case 'toUSDN': {
