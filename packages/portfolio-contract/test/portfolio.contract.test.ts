@@ -809,9 +809,13 @@ test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
 
   await eventLoopIteration(); // let IBC message go out
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -6);
+
+  await txResolver.drainPending();
 
   await eventLoopIteration(); // let IBC message go out
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
 
   for (const openP of [open1P, open2P]) {
     const { result, payouts } = await openP;
