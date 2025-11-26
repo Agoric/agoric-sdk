@@ -8,14 +8,17 @@
 // `yarn build-zcfBundle`.
 
 import { Fail } from '@endo/errors';
-import { Far } from '@endo/marshal';
 import { E } from '@endo/far';
+import { Far } from '@endo/marshal';
 
 import { makeZCFZygote } from './zcfZygote.js';
 
 /**
  * @import {ZoeService} from '@agoric/zoe';
  * @import {Baggage} from '@agoric/vat-data';
+ * @import {VatPowers} from '@agoric/swingset-vat';
+ * @import {BundleCap} from '@agoric/swingset-vat';
+ * @import {StartZcf} from '../internal-types.js';
  */
 
 /**

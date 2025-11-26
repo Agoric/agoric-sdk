@@ -6,7 +6,6 @@
       "testing/recorded-retired-instances.js test/recorded-instances-submission",
       "vats/test-localchain.js test/localchaintest-submission",
       "testing/restart-valueVow.js test/restart-valueVow",
-      "testing/upgrade-vaultFactory.js test/upgrade-vaultFactory",
       "vats/upgrade-provisionPool.js test/upgrade-provisionPool",
       "orchestration/init-stakeBld.js"
     ]

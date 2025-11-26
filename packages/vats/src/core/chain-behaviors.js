@@ -23,6 +23,7 @@ import { makeScopedBridge } from '../bridge.js';
 /**
  * @import {BridgeMessage} from '@agoric/cosmic-swingset/src/types.js';
  * @import {BootstrapManifest} from './lib-boot.js';
+ * @import {BundleCap} from '@agoric/swingset-vat';
  */
 
 const { keys } = Object;

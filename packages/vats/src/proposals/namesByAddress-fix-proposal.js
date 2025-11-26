@@ -2,7 +2,7 @@
 import { E } from '@endo/far';
 
 /**
- * @import {BootstrapManifest} from '../core/lib-boot';
+ * @import {BootstrapManifest} from '../core/lib-boot.js';
  */
 
 const vatUpgrade = /** @type {const} */ ({

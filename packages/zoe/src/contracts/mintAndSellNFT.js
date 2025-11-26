@@ -1,5 +1,5 @@
+import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { assert } from '@endo/errors';
-import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
@@ -7,6 +7,7 @@ import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only
 
 /**
  * @import {start as sellItemStart} from './sellItems.js';
+ * @import {MintAndSellNFTCreatorFacet} from './types-ambient.js';
  */
 
 /**

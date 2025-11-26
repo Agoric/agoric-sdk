@@ -164,7 +164,6 @@ type WellKnownName = {
     | 'mintHolder'
     | 'walletFactory'
     | 'provisionPool'
-    | 'auctioneer'
     | 'feeDistributor'
     | 'contractGovernor'
     | 'committee'
@@ -183,7 +182,6 @@ type WellKnownName = {
   instance:
     | 'economicCommittee'
     | 'feeDistributor'
-    | 'auctioneer'
     | 'VaultFactory'
     | 'VaultFactoryGovernor'
     | 'econCommitteeCharter'
@@ -219,7 +217,6 @@ type ContractInstancePromises<
 };
 
 type WellKnownContracts = {
-  auctioneer: typeof import('@agoric/inter-protocol/src/auction/auctioneer.js').start;
   centralSupply: typeof import('@agoric/vats/src/centralSupply.js').start;
   committee: typeof import('@agoric/governance/src/committee.js').start;
   contractGovernor: typeof import('@agoric/governance/src/contractGovernor.js').start;
@@ -357,7 +354,7 @@ type ChainBootstrapSpaceT = {
     savePrivateArgs: (instance: Instance, privateArgs: unknown) => void;
   };
   /** Super powerful ability to mint IST. ("License to print money") */
-  feeMintAccess: FeeMintAccess;
+  feeMintAccess: import('@agoric/zoe').FeeMintAccess;
   highPrioritySendersManager:
     | import('@agoric/internal/src/priority-senders.js').PrioritySendersManager
     | undefined

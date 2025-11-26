@@ -201,7 +201,7 @@ export const partialMap = (arr, mapOrDrop) =>
  *
  * @template K
  * @template V
- * @param {K extends WeakKey ? WeakMap<K, V> : Map<K, V>} map
+ * @param {[K] extends [WeakKey] ? WeakMap<K, V> : Map<K, V>} map
  * @param {K} key
  * @param {(key: K) => V} makeValue
  * @returns {V}

@@ -21,10 +21,12 @@ import { scale6, withAmountUtils } from '../../supports.js';
 
 /**
  * @import {FeeMintAccess} from '@agoric/zoe';
- * @import {MetricsNotification} from '../../../src/psm/psm.js';
+ * @import {MetricsNotification, PsmPublicFacet} from '../../../src/psm/psm.js';
  * @import {start as startPeppetGovernor} from '@agoric/governance/tools/puppetContractGovernor.js';
  * @import {PuppetContractGovernorKit} from '@agoric/governance/tools/puppetContractGovernor.js';
  * @import {StartParams} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {VatAdminSvc} from '@agoric/swingset-vat';
+ * @import {start} from '@agoric/governance/src/committee.js';
  */
 
 const trace = makeTracer('BootPSMUpg');
@@ -74,9 +76,7 @@ export const buildRootObject = async () => {
   // for startInstance
   /**
    * @type {{
-   *   committee?: Installation<
-   *     typeof import('@agoric/governance/src/committee.js').start
-   *   >;
+   *   committee?: Installation<typeof start>;
    *   psmV1?: Installation<typeof startPsm>;
    *   puppetContractGovernor?: Installation<typeof startPeppetGovernor>;
    * }}

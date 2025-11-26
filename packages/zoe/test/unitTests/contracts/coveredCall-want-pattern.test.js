@@ -39,13 +39,18 @@ test('zoe - coveredCall with swap for invitation', async t => {
   // Pack the contract.
   const coveredCallBundle = await bundleSource(coveredCallRoot);
 
-  vatAdminState.installBundle('b1-coveredcall', coveredCallBundle);
-  const coveredCallInstallation =
-    await E(zoe).installBundleID('b1-coveredcall');
+  const b1coveredcall = vatAdminState.registerBundle(
+    'b1-coveredcall',
+    coveredCallBundle,
+  );
+  const coveredCallInstallation = await E(zoe).installBundleID(b1coveredcall);
   const atomicSwapBundle = await bundleSource(atomicSwapRoot);
 
-  vatAdminState.installBundle('b1-atomicswap', atomicSwapBundle);
-  const swapInstallationId = await E(zoe).installBundleID('b1-atomicswap');
+  const b1atomicswap = vatAdminState.registerBundle(
+    'b1-atomicswap',
+    atomicSwapBundle,
+  );
+  const swapInstallationId = await E(zoe).installBundleID(b1atomicswap);
 
   // Setup Alice
   // Alice starts with 3 moola

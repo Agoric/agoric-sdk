@@ -71,6 +71,17 @@ export const PublishedTxShape: TypedPattern<PublishedTx> = M.or(
     },
     {},
   ),
+  // MAKE_ACCOUNT requires expectedAddr (hex) and destinationAddress is factory (CAIP)
+  M.splitRecord(
+    {
+      type: M.or(TxType.MAKE_ACCOUNT),
+      destinationAddress: M.string(),
+      expectedAddr: M.string(),
+      status: TxStatus.PENDING,
+    },
+    {},
+    {},
+  ),
 );
 
 // Backwards compatibility

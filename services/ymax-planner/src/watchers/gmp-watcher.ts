@@ -1,12 +1,13 @@
-import { ethers, type Filter, type WebSocketProvider, type Log } from 'ethers';
-import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types';
+import { ethers } from 'ethers';
+import type { Filter, WebSocketProvider, Log } from 'ethers';
+import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.js';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
 } from '../support.ts';
-import type { MakeAbortController } from '../support.ts';
+import type { MakeAbortController, WatcherTimeoutOptions } from '../support.ts';
 import { TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
 import {
   deleteTxBlockLowerBound,
@@ -39,11 +40,7 @@ export const watchGmp = ({
   log = () => {},
   setTimeout = globalThis.setTimeout,
   signal,
-}: WatchGmp & {
-  timeoutMs?: number;
-  setTimeout?: typeof globalThis.setTimeout;
-  signal?: AbortSignal;
-}): Promise<boolean> => {
+}: WatchGmp & WatcherTimeoutOptions): Promise<boolean> => {
   return new Promise(resolve => {
     if (signal?.aborted) {
       resolve(false);

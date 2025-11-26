@@ -15,6 +15,9 @@
     "test:xcs": "ava --config ava.xcs.config.js"
   },
   "packageManager": "yarn@4.9.3",
+  "dependencies": {
+    "@endo/bundle-source": "MULTICHAIN_TESTING"
+  },
   "devDependencies": {
     "@agoric/cosmic-proto": "MULTICHAIN_TESTING",
     "@agoric/fast-usdc": "MULTICHAIN_TESTING",
@@ -112,7 +115,8 @@
     "@cosmjs/math@npm:0.32.3": "npm:^0.36.0",
     "@cosmjs/proto-signing@npm:0.32.3": "npm:^0.36.0",
     "@cosmjs/stargate@npm:0.32.3": "npm:^0.36.0",
-    "@cosmjs/tendermint-rpc@npm:0.32.3": "npm:^0.36.0"
+    "@cosmjs/tendermint-rpc@npm:0.32.3": "npm:^0.36.0",
+    "@endo/bundle-source": "portal:../../agoric-sdk/node_modules/@endo/bundle-source"
   },
   "license": "Apache-2.0"
 }

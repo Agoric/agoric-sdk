@@ -1,6 +1,10 @@
 /* eslint-disable @agoric/group-jsdoc-imports */
 // @jessie-check
 
+// XXX filename is still "ambient" but this module is not
+// Make this a module
+export {};
+
 /**
  * @typedef {import('./vaultFactory.js').VaultFactoryContract['publicFacet']} VaultFactoryPublicFacet
  * @import {VaultNotification} from './vault.js'
@@ -10,7 +14,6 @@
  * @import {CollateralManager} from './vaultManager.js'
  * @import {AssetReserveLimitedCreatorFacet} from '../reserve/assetReserve.js'
  * @import {AssetReservePublicFacet} from '../reserve/assetReserve.js'
- * @import {AuctioneerPublicFacet} from '../auction/auctioneer.js'
  * @import {Timestamp} from '@agoric/time'
  * @import {RelativeTime} from '@agoric/time'
  */
@@ -23,17 +26,17 @@
 
 /**
  * @typedef {object} VaultManagerParamValues
- * @property {Ratio} liquidationMargin - margin below which collateral will be
- *   liquidated to satisfy the debt.
- * @property {Ratio} liquidationPenalty - penalty charged upon liquidation as
- *   proportion of debt
- * @property {Ratio} interestRate - annual interest rate charged on debt
- *   positions
- * @property {Ratio} mintFee - The fee (in BasisPoints) charged when creating or
- *   increasing a debt position.
+ * @property {import('@agoric/ertp').Ratio} liquidationMargin - margin below
+ *   which collateral will be liquidated to satisfy the debt.
+ * @property {import('@agoric/ertp').Ratio} liquidationPenalty - penalty charged
+ *   upon liquidation as proportion of debt
+ * @property {import('@agoric/ertp').Ratio} interestRate - annual interest rate
+ *   charged on debt positions
+ * @property {import('@agoric/ertp').Ratio} mintFee - The fee (in BasisPoints)
+ *   charged when creating or increasing a debt position.
  * @property {Amount<'nat'>} debtLimit
- * @property {Ratio} [liquidationPadding] - vault must maintain this in order to
- *   remove collateral or add debt
+ * @property {import('@agoric/ertp').Ratio} [liquidationPadding] - vault must
+ *   maintain this in order to remove collateral or add debt
  */
 
 /**
@@ -49,8 +52,6 @@
  * @property {AddVaultType} addVaultType
  * @property {() => import('@agoric/zoe').Allocation} getRewardAllocation
  * @property {() => Promise<Invitation<string, never>>} makeCollectFeesInvitation
- * @property {() => import('@agoric/time').TimerWaker} makeLiquidationWaker
- * @property {() => import('@agoric/time').TimerWaker} makePriceLockWaker
  */
 
 /**
@@ -75,11 +76,11 @@
 
 /**
  * @typedef {object} GetVaultParams
- * @property {() => Ratio} getLiquidationMargin
- * @property {() => Ratio} getMintFee
+ * @property {() => import('@agoric/ertp').Ratio} getLiquidationMargin
+ * @property {() => import('@agoric/ertp').Ratio} getMintFee
  * @property {() => Promise<import('@agoric/zoe/tools/types.js').PriceQuote>} getCollateralQuote
- * @property {() => Ratio} getInterestRate - The annual interest rate on a debt
- *   position
+ * @property {() => import('@agoric/ertp').Ratio} getInterestRate - The annual
+ *   interest rate on a debt position
  * @property {() => RelativeTime} getChargingPeriod - The period (in seconds) at
  *   which interest is charged to the debt position.
  * @property {() => RelativeTime} getRecordingPeriod - The period (in seconds)
@@ -96,7 +97,7 @@
 
 /**
  * @typedef {object} LiquidationStrategy
- * @property {() => KeywordKeywordRecord} keywordMapping
+ * @property {() => import('@agoric/zoe/src/contractSupport/types-ambient.js').KeywordKeywordRecord} keywordMapping
  * @property {(
  *   collateral: Amount,
  *   run: Amount,
@@ -107,7 +108,10 @@
 /**
  * @typedef {object} Liquidator
  * @property {() => Promise<
- *   Invitation<void, { debt: Amount<'nat'>; penaltyRate: Ratio }>
+ *   Invitation<
+ *     void,
+ *     { debt: Amount<'nat'>; penaltyRate: import('@agoric/ertp').Ratio }
+ *   >
  * >} makeLiquidateInvitation
  */
 

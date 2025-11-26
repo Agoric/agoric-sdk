@@ -28,6 +28,7 @@ const selectedCode = anylogger.levels[selectedLevel];
 const globalCode = selectedCode === undefined ? -Infinity : selectedCode;
 
 const oldExt = anylogger.ext;
+/** @type {typeof anylogger.ext} */
 anylogger.ext = (l, ...rest) => {
   l = oldExt(l, ...rest);
   l.enabledFor = lvl => globalCode >= anylogger.levels[lvl];

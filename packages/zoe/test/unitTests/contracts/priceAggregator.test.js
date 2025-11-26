@@ -36,6 +36,9 @@ import { start } from '../../../src/contracts/priceAggregator.js';
  * @import {Timestamp} from '@agoric/time';
  * @import {TestFn} from 'ava';
  * @import {OracleStart} from '../../../src/contracts/oracle.js';
+ * @import {OracleKit} from '../../../src/contracts/priceAggregatorTypes.js';
+ * @import {PriceAggregatorKit} from '../../../src/contracts/priceAggregatorTypes.js';
+ * @import {OracleHandler} from '../../../src/contracts/priceAggregatorTypes.js';
  */
 
 /**
@@ -114,12 +117,15 @@ test.before('setup aggregator and oracles', async t => {
   // of tests, we can also send the installation to someone
   // else, and they can use it to create a new contract instance
   // using the same code.
-  vatAdminState.installBundle('b1-oracle', oracleBundle);
+  const b1oracle = vatAdminState.registerBundle('b1-oracle', oracleBundle);
   /** @type {Installation<OracleStart>} */
-  const oracleInstallation = await E(zoe).installBundleID('b1-oracle');
-  vatAdminState.installBundle('b1-aggregator', aggregatorBundle);
+  const oracleInstallation = await E(zoe).installBundleID(b1oracle);
+  const b1aggregator = vatAdminState.registerBundle(
+    'b1-aggregator',
+    aggregatorBundle,
+  );
   /** @type {Installation<typeof start>} */
-  const aggregatorInstallation = await E(zoe).installBundleID('b1-aggregator');
+  const aggregatorInstallation = await E(zoe).installBundleID(b1aggregator);
 
   const link = makeIssuerKit('$ATOM');
   const { brand: atomBrand } = makeIssuerKit('$ATOM');

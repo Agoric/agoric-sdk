@@ -38,10 +38,6 @@ const installKeyGroups = {
     ],
   },
   main: {
-    auctioneer: [
-      '@agoric/inter-protocol/src/auction/auctioneer.js',
-      '../../inter-protocol/bundles/bundle-auctioneer.js',
-    ],
     vaultFactory: [
       '@agoric/inter-protocol/src/vaultFactory/vaultFactory.js',
       '../../inter-protocol/bundles/bundle-vaultFactory.js',

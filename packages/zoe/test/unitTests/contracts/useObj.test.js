@@ -22,8 +22,8 @@ test('zoe - useObj', async t => {
   // pack the contract
   const bundle = await bundleSource(contractRoot);
   // install the contract
-  vatAdminState.installBundle('b1-use-obj', bundle);
-  const installation = await E(zoe).installBundleID('b1-use-obj');
+  const b1useobj = vatAdminState.registerBundle('b1-use-obj', bundle);
+  const installation = await E(zoe).installBundleID(b1useobj);
 
   // Setup Alice
   const aliceMoolaPayment = moolaMint.mintPayment(moola(3n));

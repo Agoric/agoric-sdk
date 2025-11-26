@@ -256,6 +256,7 @@ __metadata:
     "@endo/pass-style": "npm:^1.6.3"
     "@endo/patterns": "npm:^1.7.0"
     "@endo/promise-kit": "npm:^1.1.13"
+    "@noble/hashes": "npm:~1.5.0"
     ava: "npm:^5.3.0"
     c8: "npm:^10.1.3"
     esbuild: "npm:^0.25.2"
@@ -989,6 +990,7 @@ __metadata:
     ava: "npm:^5.3.0"
     c8: "npm:^10.1.3"
     conventional-changelog-conventionalcommits: "npm:^9.1.0"
+    dprint: "npm:^0.50.2"
     eslint: "npm:^9.39.1"
     eslint-config-airbnb-base: "npm:^15.0.0"
     eslint-config-jessie: "npm:^0.0.6"
@@ -3674,6 +3676,69 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@dprint/darwin-arm64@npm:0.50.2":
+  version: 0.50.2
+  resolution: "@dprint/darwin-arm64@npm:0.50.2"
+  conditions: os=darwin & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@dprint/darwin-x64@npm:0.50.2":
+  version: 0.50.2
+  resolution: "@dprint/darwin-x64@npm:0.50.2"
+  conditions: os=darwin & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@dprint/linux-arm64-glibc@npm:0.50.2":
+  version: 0.50.2
+  resolution: "@dprint/linux-arm64-glibc@npm:0.50.2"
+  conditions: os=linux & cpu=arm64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@dprint/linux-arm64-musl@npm:0.50.2":
+  version: 0.50.2
+  resolution: "@dprint/linux-arm64-musl@npm:0.50.2"
+  conditions: os=linux & cpu=arm64 & libc=musl
+  languageName: node
+  linkType: hard
+
+"@dprint/linux-riscv64-glibc@npm:0.50.2":
+  version: 0.50.2
+  resolution: "@dprint/linux-riscv64-glibc@npm:0.50.2"
+  conditions: os=linux & cpu=riscv64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@dprint/linux-x64-glibc@npm:0.50.2":
+  version: 0.50.2
+  resolution: "@dprint/linux-x64-glibc@npm:0.50.2"
+  conditions: os=linux & cpu=x64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@dprint/linux-x64-musl@npm:0.50.2":
+  version: 0.50.2
+  resolution: "@dprint/linux-x64-musl@npm:0.50.2"
+  conditions: os=linux & cpu=x64 & libc=musl
+  languageName: node
+  linkType: hard
+
+"@dprint/win32-arm64@npm:0.50.2":
+  version: 0.50.2
+  resolution: "@dprint/win32-arm64@npm:0.50.2"
+  conditions: os=win32 & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@dprint/win32-x64@npm:0.50.2":
+  version: 0.50.2
+  resolution: "@dprint/win32-x64@npm:0.50.2"
+  conditions: os=win32 & cpu=x64
+  languageName: node
+  linkType: hard
+
 "@endo/base64@npm:^1.0.12":
   version: 1.0.12
   resolution: "@endo/base64@npm:1.0.12"
@@ -3681,7 +3746,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/bundle-source@npm:^4.1.2":
+"@endo/bundle-source@npm:4.1.2":
   version: 4.1.2
   resolution: "@endo/bundle-source@npm:4.1.2"
   dependencies:
@@ -3695,6 +3760,23 @@ __metadata:
   bin:
     bundle-source: ./src/tool.js
   checksum: 10c0/7bee180864e8340877c0979a2c773dba7e7346959a208efdc7bc6dac48964f6f4ff61f7542195d71c7bc847f81844bc81f0c302e8136aa5d730bdd0efcb113ca
+  languageName: node
+  linkType: hard
+
+"@endo/bundle-source@patch:@endo/bundle-source@npm%3A4.1.2#~/.yarn/patches/@endo-bundle-source-npm-4.1.2-80da9522ea.patch":
+  version: 4.1.2
+  resolution: "@endo/bundle-source@patch:@endo/bundle-source@npm%3A4.1.2#~/.yarn/patches/@endo-bundle-source-npm-4.1.2-80da9522ea.patch::version=4.1.2&hash=c46a8c"
+  dependencies:
+    "@endo/base64": "npm:^1.0.12"
+    "@endo/compartment-mapper": "npm:^1.6.3"
+    "@endo/evasive-transform": "npm:^2.0.2"
+    "@endo/init": "npm:^1.1.12"
+    "@endo/promise-kit": "npm:^1.1.13"
+    "@endo/where": "npm:^1.0.11"
+    ts-blank-space: "npm:^0.4.1"
+  bin:
+    bundle-source: ./src/tool.js
+  checksum: 10c0/c6b4838640c3afa9fa827db84058bf5df4dc330a560812aafdfed1a2bab116574da37ee215b2c4f33d2eab837be29af6abc745dc3649722f02e2ed0a7aaf5f6e
   languageName: node
   linkType: hard
 
@@ -10932,6 +11014,44 @@ __metadata:
   version: 0.1.2
   resolution: "dotty@npm:0.1.2"
   checksum: 10c0/5fbcbd29c7451508a54764e5f7792d3252a8daeb9956969191698e31d7b7e73dd5d590b1609c1413ef845511d428262a50460554322cf41d23b018656527c131
+  languageName: node
+  linkType: hard
+
+"dprint@npm:^0.50.2":
+  version: 0.50.2
+  resolution: "dprint@npm:0.50.2"
+  dependencies:
+    "@dprint/darwin-arm64": "npm:0.50.2"
+    "@dprint/darwin-x64": "npm:0.50.2"
+    "@dprint/linux-arm64-glibc": "npm:0.50.2"
+    "@dprint/linux-arm64-musl": "npm:0.50.2"
+    "@dprint/linux-riscv64-glibc": "npm:0.50.2"
+    "@dprint/linux-x64-glibc": "npm:0.50.2"
+    "@dprint/linux-x64-musl": "npm:0.50.2"
+    "@dprint/win32-arm64": "npm:0.50.2"
+    "@dprint/win32-x64": "npm:0.50.2"
+  dependenciesMeta:
+    "@dprint/darwin-arm64":
+      optional: true
+    "@dprint/darwin-x64":
+      optional: true
+    "@dprint/linux-arm64-glibc":
+      optional: true
+    "@dprint/linux-arm64-musl":
+      optional: true
+    "@dprint/linux-riscv64-glibc":
+      optional: true
+    "@dprint/linux-x64-glibc":
+      optional: true
+    "@dprint/linux-x64-musl":
+      optional: true
+    "@dprint/win32-arm64":
+      optional: true
+    "@dprint/win32-x64":
+      optional: true
+  bin:
+    dprint: bin.js
+  checksum: 10c0/07fa9a79dcd72fb5a03cec04981d6152bb4495f3803725a0f920d752fede0102509395f936166015832afd677331b852f08bbb6642b215d0598b98da8d4a1356
   languageName: node
   linkType: hard
 

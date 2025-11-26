@@ -1,25 +1,25 @@
-import { E } from '@endo/far';
 import {
+  AmountMath,
   AssetKind,
   makeDurableIssuerKit,
-  AmountMath,
   upgradeIssuerKit,
 } from '@agoric/ertp';
 import {
   makeScalarBigMapStore,
-  provideDurableWeakMapStore,
-  prepareExoClassKit,
   prepareExoClass,
+  prepareExoClassKit,
   provideDurableSetStore,
+  provideDurableWeakMapStore,
 } from '@agoric/vat-data';
+import { E } from '@endo/far';
 
-import { provideIssuerStorage } from '../issuerStorage.js';
 import { makeInstanceRecordStorage } from '../instanceRecordStorage.js';
 import { makeIssuerRecord } from '../issuerRecord.js';
+import { provideIssuerStorage } from '../issuerStorage.js';
 import { provideEscrowStorage } from './escrowStorage.js';
-import { prepareInvitationKit } from './makeInvitation.js';
-import { makeInstanceAdminStorage } from './instanceAdminStorage.js';
 import { makeInstallationStorage } from './installationStorage.js';
+import { makeInstanceAdminStorage } from './instanceAdminStorage.js';
+import { prepareInvitationKit } from './makeInvitation.js';
 
 import {
   InstanceStorageManagerIKit,
@@ -38,6 +38,13 @@ import './internal-types.js';
 /**
  * @import {Baggage} from '@agoric/vat-data';
  * @import {InvitationAmount} from '@agoric/zoe';
+ * @import {CreateZCFVat} from './internal-types.js';
+ * @import {GetBundleCapForID} from './internal-types.js';
+ * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
+ * @import {GetFeeIssuerKit} from './internal-types.js';
+ * @import {ZoeMint} from '../internal-types.js';
+ * @import {MakeZoeInstanceStorageManager} from './internal-types.js';
+ * @import {UnwrapInstallation} from './internal-types.js';
  */
 
 const { ownKeys } = Reflect;

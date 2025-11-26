@@ -21,11 +21,27 @@ export const PROD_NETWORK: NetworkSpec = {
     { pool: 'Aave_Ethereum', chain: 'Ethereum', protocol: 'Aave' },
     { pool: 'Aave_Optimism', chain: 'Optimism', protocol: 'Aave' },
     { pool: 'Beefy_re7_Avalanche', chain: 'Avalanche', protocol: 'Beefy' },
-    { pool: 'Beefy_morphoGauntletUsdc_Ethereum', chain: 'Ethereum', protocol: 'Beefy' },
-    { pool: 'Beefy_morphoSmokehouseUsdc_Ethereum', chain: 'Ethereum', protocol: 'Beefy' },
+    {
+      pool: 'Beefy_morphoGauntletUsdc_Ethereum',
+      chain: 'Ethereum',
+      protocol: 'Beefy',
+    },
+    {
+      pool: 'Beefy_morphoSmokehouseUsdc_Ethereum',
+      chain: 'Ethereum',
+      protocol: 'Beefy',
+    },
     { pool: 'Beefy_morphoSeamlessUsdc_Base', chain: 'Base', protocol: 'Beefy' },
-    { pool: 'Beefy_compoundUsdc_Optimism', chain: 'Optimism', protocol: 'Beefy' },
-    { pool: 'Beefy_compoundUsdc_Arbitrum', chain: 'Arbitrum', protocol: 'Beefy' },
+    {
+      pool: 'Beefy_compoundUsdc_Optimism',
+      chain: 'Optimism',
+      protocol: 'Beefy',
+    },
+    {
+      pool: 'Beefy_compoundUsdc_Arbitrum',
+      chain: 'Arbitrum',
+      protocol: 'Beefy',
+    },
     { pool: 'Compound_Arbitrum', chain: 'Arbitrum', protocol: 'Compound' },
     { pool: 'Compound_Base', chain: 'Base', protocol: 'Compound' },
     { pool: 'Compound_Ethereum', chain: 'Ethereum', protocol: 'Compound' },
@@ -40,8 +56,22 @@ export const PROD_NETWORK: NetworkSpec = {
   ],
   links: [
     // USDN costs a fee to get into
-    { src: '@noble', dest: 'USDN', transfer: 'local', variableFeeBps: 10, timeSec: 0, feeMode: 'toUSDN' },
-    { src: '@noble', dest: 'USDNVault', transfer: 'local', variableFeeBps: 10, timeSec: 0, feeMode: 'toUSDN' },
+    {
+      src: '@noble',
+      dest: 'USDN',
+      transfer: 'local',
+      variableFeeBps: 10,
+      timeSec: 0,
+      feeMode: 'toUSDN',
+    },
+    {
+      src: '@noble',
+      dest: 'USDNVault',
+      transfer: 'local',
+      variableFeeBps: 10,
+      timeSec: 0,
+      feeMode: 'toUSDN',
+    },
 
     // CCTP slow (inbound auto-forward compressed: EVM -> @agoric)
     // Latency kept at 1080s (assuming IBC forward overlaps); adjust if sequential.
@@ -127,8 +157,20 @@ export const PROD_NETWORK: NetworkSpec = {
       feeMode: 'makeEvmAccount',
     },
     // IBC connectivity (explicit both directions required for USDN and other noble-origin flows)
-    { src: '@agoric', dest: '@noble', transfer: 'ibc', variableFeeBps: 0, timeSec: 10 },
-    { src: '@noble', dest: '@agoric', transfer: 'ibc', variableFeeBps: 0, timeSec: 10 },
+    {
+      src: '@agoric',
+      dest: '@noble',
+      transfer: 'ibc',
+      variableFeeBps: 0,
+      timeSec: 10,
+    },
+    {
+      src: '@noble',
+      dest: '@agoric',
+      transfer: 'ibc',
+      variableFeeBps: 0,
+      timeSec: 10,
+    },
   ],
 };
 
