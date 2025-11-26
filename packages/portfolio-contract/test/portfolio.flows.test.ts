@@ -1185,7 +1185,7 @@ test('handle failure in provideEVMAccount sendMakeAccountCall', async t => {
 
   const attempt1P = rebalance(orch, ctx, seat1, { flow: steps }, pKit);
   const testDonePK = makePromiseKit();
-  txResolver.settleUntil(testDonePK.promise);
+  void txResolver.settleUntil(testDonePK.promise);
   t.is(await attempt1P, undefined);
 
   const seatFails = log.find(e => e._method === 'fail' && e._cap === 'seat');
@@ -1707,6 +1707,8 @@ const makeAccountEVMRace = test.macro({
         startSettlingPK.resolve(null);
         break;
       }
+      default:
+        throw Error('unreachable');
     }
 
     const { remoteAddress } = await A;
@@ -1727,7 +1729,7 @@ const makeAccountEVMRace = test.macro({
 
     await (errAt ? t.throwsAsync(Aready) : t.notThrowsAsync(Aready));
     t.snapshot(
-      { methodsBeforeB: methodsBeforeB, failedMethods },
+      { methodsBeforeB, failedMethods },
       JSON.stringify({ headStart, errAt }),
     );
 
