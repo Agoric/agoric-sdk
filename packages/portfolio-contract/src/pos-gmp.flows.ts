@@ -108,7 +108,6 @@ export const provideEVMAccount = (
 
   const installContract = async () => {
     let txId: TxId | undefined;
-    await null;
     try {
       const axelarId = ctx.axelarIds[chainName];
       const target = {
