@@ -51,7 +51,6 @@ import {
   CCTP,
   CCTPfromEVM,
   CompoundProtocol,
-  makeAxelarOrchestrator,
   provideEVMAccount,
   type EVMContext,
   type GMPAccountStatus,
@@ -766,56 +765,6 @@ const stepFlow = async (
       },
     ),
   );
-
-  const orchEVM = makeAxelarOrchestrator(
-    {
-      chain: axelar,
-      axelarIds: ctx.axelarIds,
-      addresses: ctx.gmpAddresses,
-    },
-    {
-      chainInfo: infoFor,
-      contracts: ctx.contracts,
-      walletBytecode: ctx.walletBytecode,
-      resolverClient: ctx.resolverClient,
-    },
-  );
-
-  // fee: { denom: ctx.gmpFeeInfo.denom, value: ctx },
-
-  const evmAccountsForFlow = await (async () => {
-    const done: Partial<Record<AxelarChain, GMPAccountStatus>> = {};
-    const evmChains = keys(AxelarChain) as unknown[];
-    const seen = new Set<AxelarChain>();
-    for (const move of moves) {
-      for (const ref of [move.src, move.dest]) {
-        const maybeChain = getChainNameOfPlaceRef(ref);
-        if (!evmChains.includes(maybeChain)) continue;
-        const chain = maybeChain as AxelarChain;
-        if (seen.has(chain)) continue;
-        seen.add(chain);
-
-        const evmChain = orchEVM.getChain(chain);
-        throw Error('TODO! provide: do we already have one?');
-
-        const gmpFee = {
-          denom: ctx.gmpFeeInfo.denom,
-          value: move.fee?.value || 0n,
-        };
-        gmpFee.value > 0n || Fail`axelar makeAccount requires > 0 fee`;
-
-        const acct = await evmChain.makeAccount({
-          owner: agoric.lca,
-          gmpFee,
-          traceOwner: traceFlow,
-        });
-        const chainAddress = acct.getAddress();
-        const ready = acct.getReady();
-        done[chain] = harden({ ...chainAddress, ready });
-      }
-    }
-    return done;
-  })();
 
   const evmAcctInfo = (() => {
     const { axelarIds } = ctx;
