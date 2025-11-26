@@ -102,6 +102,7 @@ export type FlowStep = {
   amount: NatAmount;
   src: AssetPlaceRef;
   dest: AssetPlaceRef;
+  phases?: Record<string, any>;
   // XXX all parts: fee etc.
 };
 

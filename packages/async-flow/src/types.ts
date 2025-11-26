@@ -57,7 +57,9 @@ export type HostInterface<T> = {
     ? HostOf<T[K]>
     : T[K] extends Record<string, any>
       ? Simplify<HostInterface<T[K]>>
-      : T[K];
+      : T[K] extends Promise<infer P>
+        ? Vow<HostInterface<P>>
+        : T[K];
 };
 
 /**
@@ -83,9 +85,11 @@ export type GuestInterface<T> = {
 export type HostOf<F extends CallableFunction> = F extends (
   ...args: infer A
 ) => infer R
-  ? R extends Promise<infer T>
-    ? (...args: A) => Vow<T extends Passable ? T : HostInterface<T>>
-    : (...args: A) => HostInterface<R>
+  ? R extends Vow<infer T>
+    ? (...args: A) => Vow<HostInterface<T>>
+    : R extends Promise<infer T>
+      ? (...args: A) => Vow<T extends Passable ? T : HostInterface<T>>
+      : (...args: A) => HostInterface<R>
   : F;
 
 export type HostArgs<GA extends any[]> = { [K in keyof GA]: HostOf<GA[K]> };

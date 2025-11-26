@@ -26,6 +26,7 @@ import type {
 import {
   prepareCosmosOrchestrationAccount,
   type CosmosOrchestrationAccount,
+  Any as OrchAny,
 } from '../src/exos/cosmos-orchestration-account.js';
 import type { LocalOrchestrationAccountKit } from '../src/exos/local-orchestration-account.js';
 import type { OrchestrationFacade } from '../src/facade.js';
@@ -60,7 +61,7 @@ const QueryBalanceRequest: Proto3CodecHelper<'/cosmos.bank.v1beta1.QueryBalanceR
   null as any;
 const QueryBalanceResponse: Proto3CodecHelper<'/cosmos.bank.v1beta1.QueryBalanceResponse'> =
   null as any;
-const Any: Proto3CodecHelper<'/google.protobuf.Any'> = null as any;
+const Any: typeof OrchAny = null as any;
 
 const anyVal = null as any;
 
@@ -108,7 +109,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
 // CosmosOrchestrationAccount interfaces
 {
   const coa: CosmosOrchestrationAccount = null as any;
-  const resultMeta = coa.executeEncodedTxWithMeta([
+  const resultP = coa.evaluateTx([
     Any.toJSON(
       MsgDelegate.toProtoMsg({
         amount: {
@@ -126,22 +127,13 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
     ),
   ] as const);
 
-  expectType<
-    Vow<{
-      result: Vow<string>;
-      meta: Record<string, any>;
-    }>
-  >(resultMeta);
-  const { result: resultP, meta } = await vt.when(resultMeta);
-  expectType<Record<string, any>>(meta);
+  expectType<Vow<[MsgDelegateResponseType, QueryAllBalancesResponseType]>>(
+    resultP,
+  );
 
-  const result = await vt.when(resultP);
+  const resps = await vt.when(resultP);
 
-  const resps = tryDecodeResponses(result, [
-    MsgDelegateResponse,
-    QueryAllBalancesResponse,
-  ]);
-
+  expectType<[MsgDelegateResponseType, QueryAllBalancesResponseType]>(resps);
   expectType<2>(resps.length);
 
   // Check that the result is a tuple of the expected types.
@@ -357,7 +349,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
 
   // Verify StakingAccountActions are available (StakingAccountQueries not yet supported)
   expectType<
-    (validator: CosmosValidatorAddress, amount: AmountArg) => Promise<void>
+    (validator: CosmosValidatorAddress, amount: AmountArg) => Promise<unknown>
   >(account.delegate);
 
   // @ts-expect-error executeEncodedTx not available on localAccount
@@ -388,12 +380,12 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
     (
       msgs: AnyJson[],
       opts?: Partial<Omit<TxBody, 'messages'>>,
-    ) => Promise<{ result: Promise<string>; meta: Record<string, any> }>
-  >(account.executeEncodedTxWithMeta);
+    ) => Promise<unknown[]>
+  >(account.evaluateTx);
 
   // Verify delegate is available via stakingTokens parameter
   expectType<
-    (validator: CosmosValidatorAddress, amount: AmountArg) => Promise<void>
+    (validator: CosmosValidatorAddress, amount: AmountArg) => Promise<unknown>
   >(account.delegate);
 
   expectType<(destination, amount: AmountArg) => Promise<void>>(
@@ -412,13 +404,13 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
   const remoteChain: ChainFacade = null as any;
   const account = await remoteChain.makeAccount();
 
-  expectType<(destination, amount: AmountArg) => Promise<void>>(
+  expectType<(destination, amount: AmountArg) => Promise<unknown>>(
     account.depositForBurn,
   );
 
   // Verify delegate is not available (no stakingTokens parameter)
   expectType<
-    (validator: CosmosValidatorAddress, amount: AmountArg) => Promise<void>
+    (validator: CosmosValidatorAddress, amount: AmountArg) => Promise<unknown>
     // @ts-expect-error StakingMethods not available on noble
   >(account.delegate);
 }
