@@ -11,7 +11,7 @@ import {
   PortfolioStateShape,
   preparePortfolioKit,
 } from '../src/portfolio.exo.ts';
-import type { StatusFor } from '../src/type-guards.ts';
+import type { StatusFor } from '@agoric/portfolio-api';
 import { PositionStateShape } from '../src/pos.exo.ts';
 
 const { brand: USDC } = makeIssuerKit('USDC');

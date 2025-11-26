@@ -11,11 +11,11 @@ import {
 } from '@agoric/portfolio-api/src/constants.js';
 import { M } from '@endo/patterns';
 import {
-  makeNatAmountShape,
   PoolPlaces,
   TargetAllocationShape,
   type TargetAllocation,
-} from './type-guards.ts';
+  makeNatAmountShape,
+} from '@agoric/portfolio-api';
 
 const { keys, values } = Object;
 

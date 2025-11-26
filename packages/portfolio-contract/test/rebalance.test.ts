@@ -8,7 +8,7 @@ import type {
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
 import { Far } from '@endo/marshal';
-import type { PoolKey } from '../src/type-guards.js';
+import type { PoolKey } from '@agoric/portfolio-api';
 import type { AssetPlaceRef } from '../src/type-guards-steps.js';
 import type {
   NetworkSpec,

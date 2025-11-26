@@ -1,10 +1,12 @@
 import {
   PoolPlaces,
+  enumeratePortfolioPlaces,
   type PoolKey,
   type PoolPlaceInfo,
+  type PortfolioPositionPlace,
   type StatusFor,
   type TargetAllocation,
-} from '@aglocal/portfolio-contract/src/type-guards.js';
+} from '@agoric/portfolio-api';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import type { Brand, NatAmount, NatValue } from '@agoric/ertp/src/types.js';
 import {
@@ -156,19 +158,17 @@ export const getCurrentBalances = async (
   brand: Brand<'nat'>,
   powers: BalanceQueryPowers,
 ): Promise<Partial<Record<AssetPlaceRef, NatAmount | undefined>>> => {
-  const { positionKeys, accountIdByChain } = status;
   const { spectrumBlockchain, spectrumPools } = powers;
+  const { chainAccounts, positions } = enumeratePortfolioPlaces({ status });
   const addressInfo = new Map<SupportedChain, Caip10Record>();
   const accountQueries = [] as AccountQueryDescriptor[];
   const positionQueries = [] as PositionQueryDescriptor[];
   const balances = new Map<AssetPlaceRef, NatAmount | undefined>();
   const errors = [] as Error[];
-  for (const [chainName, accountId] of typedEntries(
-    accountIdByChain as Required<typeof accountIdByChain>,
-  )) {
-    const place = `@${chainName}` as AssetPlaceRef;
+  for (const { chainName, accountId, place } of chainAccounts) {
     balances.set(place, undefined);
     try {
+      accountId || Fail`Missing account ID for chain ${chainName}`;
       const addressParts = parseAccountId(accountId);
       addressInfo.set(chainName, addressParts);
       const { accountAddress: address } = addressParts;
@@ -178,16 +178,19 @@ export const getCurrentBalances = async (
       errors.push(Error(`Invalid CAIP-10 address for chain: ${chainName}`));
     }
   }
-  for (const instrument of positionKeys) {
-    const place = instrument;
+  for (const position of positions) {
+    const { poolKey: instrument, chainName, accountId, pool, place } = position;
     balances.set(place, undefined);
     try {
       const poolPlaceInfo =
+        pool ||
         getOwn(PoolPlaces, instrument) ||
         Fail`Unknown instrument: ${instrument}`;
-      const { chainName, protocol } = poolPlaceInfo;
+      const { protocol } = poolPlaceInfo;
+      chainName || Fail`Missing chain for instrument ${instrument}`;
       const { namespace, accountAddress: address } =
         addressInfo.get(chainName) ||
+        (accountId ? parseAccountId(accountId) : undefined) ||
         Fail`No ${chainName} address for instrument ${instrument}`;
       if (namespace !== 'eip155') {
         // USDN Vaults are not "pools" and specifically are not in the Spectrum
@@ -260,24 +263,28 @@ export const getCurrentBalances = async (
   }
   // XXX Fallback during the transition to using only Spectrum GraphQL.
   const balanceEntries = await Promise.all(
-    positionKeys.map(async (posKey: PoolKey): Promise<[PoolKey, NatAmount]> => {
-      await null;
-      try {
-        const poolPlaceInfo =
-          getOwn(PoolPlaces, posKey) || Fail`Unknown PoolPlace`;
-        // TODO there should be a bulk query operation available now
-        const amountValue = await getCurrentBalance(
-          poolPlaceInfo,
-          accountIdByChain,
-          powers,
-        );
-        return [posKey, AmountMath.make(brand, amountValue)];
-      } catch (cause) {
-        errors.push(Error(`Could not get ${posKey} balance`, { cause }));
-        // @ts-expect-error
-        return [posKey, undefined];
-      }
-    }),
+    positions.map(
+      async ({
+        poolKey: posKey,
+      }: PortfolioPositionPlace): Promise<[PoolKey, NatAmount]> => {
+        await null;
+        try {
+          const poolPlaceInfo =
+            getOwn(PoolPlaces, posKey) || Fail`Unknown PoolPlace`;
+          // TODO there should be a bulk query operation available now
+          const amountValue = await getCurrentBalance(
+            poolPlaceInfo,
+            status.accountIdByChain,
+            powers,
+          );
+          return [posKey, AmountMath.make(brand, amountValue)];
+        } catch (cause) {
+          errors.push(Error(`Could not get ${posKey} balance`, { cause }));
+          // @ts-expect-error
+          return [posKey, undefined];
+        }
+      },
+    ),
   );
   if (errors.length) {
     throw AggregateError(errors, 'Could not get balances');
