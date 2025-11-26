@@ -355,9 +355,9 @@ export const rebalanceMinCostFlowSteps = async (
   }
   /**
    * Pad each fee estimate in case the landscape changes between estimation and
-   * execution. Add 10%
+   * execution. Add 20%
    */
-  const padFeeEstimate = (estimate: bigint): bigint => (estimate * 110n) / 100n;
+  const padFeeEstimate = (estimate: bigint): bigint => (estimate * 120n) / 100n;
 
   /**
    * Ensures minimun gas is sent for Axelar GMP tx
