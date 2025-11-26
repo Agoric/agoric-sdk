@@ -4,7 +4,7 @@ import type { IModel, IModelVariableConstraint } from 'javascript-lp-solver';
 import { Fail, annotateError } from '@endo/errors';
 
 import { AmountMath } from '@agoric/ertp';
-import type { Amount, NatAmount } from '@agoric/ertp/src/types.js';
+import type { NatAmount } from '@agoric/ertp/src/types.js';
 import {
   makeTracer,
   naturalCompare,
@@ -26,7 +26,7 @@ import {
   validateSolvedFlows,
 } from './graph-diagnose.js';
 import { chainOf, makeGraphForFlow } from './network/buildGraph.js';
-import type { FlowEdge, RebalanceGraph } from './network/buildGraph.js';
+import type { FlowEdge, FlowGraph } from './network/buildGraph.js';
 import type { NetworkSpec } from './network/network-spec.js';
 
 const replaceOrInit = <K, V>(
@@ -137,7 +137,7 @@ const modeFns = new Map(
  * Build LP/MIP model for javascript-lp-solver.
  */
 export const buildLPModel = (
-  graph: RebalanceGraph,
+  graph: FlowGraph,
   mode: RebalanceMode,
 ): LpModel => {
   const { getPrimaryWeights, setWeights } =
@@ -171,7 +171,7 @@ export const buildLPModel = (
     // also magnified by 1e6 if the scaling is actually 1e6).
     // The solution may be disrupted by either over- or under-weighting
     // variableFee w.r.t. fixedFee, but not otherwise, and we accept the risk.
-    // TODO: Define RebalanceGraph['scale'] to eliminate this guesswork.
+    // TODO: Define FlowGraph['scale'] to eliminate this guesswork.
     const magnifiedVariableFee = variableFee / 10_000;
     const magnifiedFlatFee = fixedFee * 1e6;
 
@@ -271,7 +271,7 @@ const prettyJsonable = (obj: unknown): string => {
 // This operation is async to allow future use of async solvers if needed
 export const solveRebalance = async (
   model: LpModel,
-  graph: RebalanceGraph,
+  graph: FlowGraph,
 ): Promise<{ flows: SolvedEdgeFlow[]; detail?: Record<string, unknown> }> => {
   await null;
   const solution = jsLPSolver.Solve(model, 1e-9);
@@ -304,8 +304,16 @@ export const solveRebalance = async (
 
 export const rebalanceMinCostFlowSteps = async (
   flows: SolvedEdgeFlow[],
-  graph: RebalanceGraph,
-  gasEstimator: GasEstimator,
+  graph: FlowGraph,
+  {
+    brand,
+    feeBrand,
+    gasEstimator,
+  }: {
+    brand: NatAmount['brand'];
+    feeBrand: NatAmount['brand'];
+    gasEstimator: GasEstimator;
+  },
 ): Promise<MovementDesc[]> => {
   const supplies = new Map(
     typedEntries(graph.supplies).filter(([_place, amount]) => amount > 0),
@@ -375,7 +383,7 @@ export const rebalanceMinCostFlowSteps = async (
     prioritized.map(async ({ edge, flow }) => {
       Number.isSafeInteger(flow) ||
         Fail`flow ${flow} for edge ${edge} is not a safe integer`;
-      const amount = AmountMath.make(graph.brand, BigInt(flow));
+      const amount = AmountMath.make(brand, BigInt(flow));
 
       await null;
       let details = {};
@@ -389,7 +397,7 @@ export const rebalanceMinCostFlowSteps = async (
           details = {
             detail: { evmGas: padFeeEstimate(returnFeeValue) },
             fee: AmountMath.make(
-              graph.feeBrand,
+              feeBrand,
               ensureMinimumGas(padFeeEstimate(feeValue)),
             ),
           };
@@ -406,7 +414,7 @@ export const rebalanceMinCostFlowSteps = async (
           );
           details = {
             fee: AmountMath.make(
-              graph.feeBrand,
+              feeBrand,
               ensureMinimumGas(padFeeEstimate(feeValue)),
             ),
           };
@@ -422,7 +430,7 @@ export const rebalanceMinCostFlowSteps = async (
           );
           details = {
             fee: AmountMath.make(
-              graph.feeBrand,
+              feeBrand,
               ensureMinimumGas(padFeeEstimate(feeValue)),
             ),
           };
@@ -435,7 +443,7 @@ export const rebalanceMinCostFlowSteps = async (
           );
           details = {
             fee: AmountMath.make(
-              graph.feeBrand,
+              feeBrand,
               ensureMinimumGas(padFeeEstimate(feeValue)),
             ),
           };
@@ -489,8 +497,8 @@ export const planRebalanceFlow = async (opts: {
   network: NetworkSpec;
   current: Partial<Record<AssetPlaceRef, NatAmount>>;
   target: Partial<Record<AssetPlaceRef, NatAmount>>;
-  brand: Amount['brand'];
-  feeBrand: Amount['brand'];
+  brand: NatAmount['brand'];
+  feeBrand: NatAmount['brand'];
   mode?: RebalanceMode;
   gasEstimator: GasEstimator;
 }) => {
@@ -504,13 +512,7 @@ export const planRebalanceFlow = async (opts: {
     gasEstimator,
   } = opts;
   // TODO remove "automatic" values that should be static
-  const graph = makeGraphForFlow(
-    network,
-    current,
-    target,
-    brand,
-    feeBrand,
-  );
+  const graph = makeGraphForFlow(network, current, target);
   const model = buildLPModel(graph, mode);
   let result;
   await null;
@@ -527,7 +529,11 @@ export const planRebalanceFlow = async (opts: {
     throw err;
   }
   const { flows, detail } = result;
-  const steps = await rebalanceMinCostFlowSteps(flows, graph, gasEstimator);
+  const steps = await rebalanceMinCostFlowSteps(flows, graph, {
+    brand,
+    feeBrand,
+    gasEstimator,
+  });
   return harden({ graph, model, flows, steps, detail });
 };
 

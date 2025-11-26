@@ -3,7 +3,7 @@ import type {
   AssetPlaceRef,
   MovementDesc,
 } from '../../src/type-guards-steps.js';
-import type { RebalanceGraph, FlowEdge } from './buildGraph.js';
+import type { FlowEdge, FlowGraph } from './buildGraph.js';
 
 /** Weight selector: cheapest => variableFee, fastest => timeFixed, default 1 */
 const edgeWeight = (e: FlowEdge, mode: 'cheapest' | 'fastest') => {
@@ -14,7 +14,7 @@ const edgeWeight = (e: FlowEdge, mode: 'cheapest' | 'fastest') => {
 
 /** Find shortest(weighted) path using Dijkstra (graph small so OK). */
 export const findPath = (
-  graph: RebalanceGraph,
+  graph: FlowGraph,
   src: AssetPlaceRef,
   dest: AssetPlaceRef,
   mode: 'cheapest' | 'fastest' = 'cheapest',

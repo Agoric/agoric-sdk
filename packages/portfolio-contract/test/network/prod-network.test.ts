@@ -1,15 +1,11 @@
 import test from 'ava';
-import { Far } from '@endo/marshal';
-import type { Brand } from '@agoric/ertp/src/types.js';
 import {
   AxelarChain,
   SupportedChain,
 } from '@agoric/portfolio-api/src/constants.js';
 
-import {
-  makeGraphForFlow,
-  type RebalanceGraph,
-} from '../../tools/network/buildGraph.js';
+import { makeGraphForFlow } from '../../tools/network/buildGraph.js';
+import type { FlowGraph } from '../../tools/network/buildGraph.js';
 import PROD_NETWORK, {
   PROD_NETWORK as NAMED_PROD,
 } from '../../tools/network/network.prod.js';
@@ -19,9 +15,6 @@ import type {
   PoolKey,
   TransferProtocol,
 } from '../../tools/network/network-spec.js';
-
-const brand = Far('TestBrand') as Brand<'nat'>;
-const feeBrand = Far('TestFeeBrand') as Brand<'nat'>;
 
 const toSet = <T>(iter: Iterable<T>) => new Set(iter);
 
@@ -72,10 +65,10 @@ const POOLS: ReadonlyArray<PoolKey> = [
 ];
 
 // Helpers
-const getGraph = () => makeGraphForFlow(PROD_NETWORK, {}, {}, brand, feeBrand);
+const getGraph = () => makeGraphForFlow(PROD_NETWORK, {}, {});
 
 const hasEdge = (
-  edges: RebalanceGraph['edges'],
+  edges: FlowGraph['edges'],
   src: AssetPlaceRef,
   dest: AssetPlaceRef,
   via?: TransferProtocol,
@@ -85,7 +78,7 @@ const hasEdge = (
   );
 
 const isReachable = (
-  edges: RebalanceGraph['edges'],
+  edges: FlowGraph['edges'],
   start: AssetPlaceRef,
   goal: AssetPlaceRef,
 ) => {
