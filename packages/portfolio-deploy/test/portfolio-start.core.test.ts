@@ -53,6 +53,10 @@ const { entries, keys } = Object;
 const nodeRequire = createRequire(import.meta.url);
 const asset = (spec: string) => readFile(nodeRequire.resolve(spec), 'utf8');
 
+const { bytecode: walletBytecode } = JSON.parse(
+  await asset('@aglocal/portfolio-deploy/tools/evm-orch/Wallet.json'),
+);
+
 const docOpts = {
   note: 'YMax VStorage Schema',
   // XXX?
@@ -151,7 +155,11 @@ const makeBootstrap = async t => {
 };
 
 const ymaxOptions = toExternalConfig(
-  harden({ axelarConfig, gmpAddresses } as PortfolioDeployConfig),
+  harden({
+    axelarConfig,
+    gmpAddresses,
+    walletBytecode,
+  } as PortfolioDeployConfig),
   {},
   portfolioDeployConfigShape,
 );
@@ -319,10 +327,6 @@ test('delegate ymax control; invite planner; submit plan', async t => {
     const issuers = { USDC, Access: PoC26, Fee: BLD, BLD };
     const { privateArgs } = await (powers as PortfolioBootPowers).consume
       .ymax0Kit;
-
-    const { bytecode: walletBytecode } = JSON.parse(
-      await asset('@aglocal/portfolio-deploy/tools/evm-orch/Wallet.json'),
-    );
 
     // New portfolio-control does not use privateArgs from previous kit
     const privateArgsOverrides = {
