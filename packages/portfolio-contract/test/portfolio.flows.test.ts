@@ -1694,11 +1694,12 @@ const makeAccountEVMRace = test.macro({
       }
 
       case 'txfr':
-        kinks.push(async ev => {
-          if (ev._method === 'transfer') startSettlingPK.resolve(null);
-        });
         if (errAt === 'txfr') {
           failDuring('transfer', 'timeout: coach is not happy');
+        } else {
+          kinks.push(async ev => {
+            if (ev._method === 'transfer') startSettlingPK.resolve(null);
+          });
         }
         break;
 
