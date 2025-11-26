@@ -1,16 +1,16 @@
 /** @file create2 test */
 import { axelarConfigTestnet } from '@aglocal/portfolio-deploy/src/axelar-configs.js';
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { keccak_256 as keccak256 } from '@noble/hashes/sha3';
+import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
+import type { Hex } from 'viem';
 import {
   computeCreate2Address,
   predictWalletAddress,
 } from '../../src/utils/create2.ts';
 import { contractsMock } from '../mocks.ts';
-import type { Hex } from 'viem';
-import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
-import { keccak_256 } from '@noble/hashes/sha3';
 
 const nodeRequire = createRequire(import.meta.url);
 const asset = (spec: string) => readFile(nodeRequire.resolve(spec), 'utf8');
@@ -115,7 +115,7 @@ test('computeCreate2Address', t => {
   ] as const;
 
   const toHex = (bytes: Uint8Array): Hex => `0x${bytesToHex(bytes)}`;
-  const keccakHex = (bytes: Uint8Array): Hex => toHex(keccak_256(bytes));
+  const keccakHex = (bytes: Uint8Array): Hex => toHex(keccak256(bytes));
 
   for (const { address: deployer, salt, initCode, result } of examples) {
     const initCodeHash = keccakHex(hexToBytes(initCode.replace(/^0x/, '')));
