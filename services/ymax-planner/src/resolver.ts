@@ -12,8 +12,14 @@ type ResolveTxParams = {
 };
 
 const smartWalletFee: StdFee = {
-  amount: [{ denom: 'ubld', amount: '250000' }], // 0.25 BLD
-  gas: '19700000',
+  // As of 2025-11, a resolver transaction consumes 125_000 to 160_000 gas
+  // units, so 400_000 includes a fudge factor of over 2x.
+  gas: '400000',
+  // As of 2025-11, validators seem to still be using the Agoric
+  // `minimum-gas-prices` recommendation of 0.01ubld per gas unit:
+  // https://community.agoric.com/t/network-change-instituting-fees-on-the-agoric-chain-to-mitigate-spam-transactions/109/2
+  // So 10_000 ubld = 0.01 BLD includes a fudge factor of over 2x.
+  amount: [{ denom: 'ubld', amount: '10000' }],
 };
 
 const getInvitationMakers = async (wallet: SigningSmartWalletKit) => {
