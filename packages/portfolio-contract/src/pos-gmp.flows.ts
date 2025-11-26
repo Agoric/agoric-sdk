@@ -47,6 +47,7 @@ import {
 } from './portfolio.flows.ts';
 import { TxType } from './resolver/constants.js';
 import type { ResolverKit } from './resolver/resolver.exo.ts';
+import type { TxId } from './resolver/types.ts';
 import type { EVMContractAddressesMap, PoolKey } from './type-guards.ts';
 import { predictWalletAddress } from './utils/create2.ts';
 
@@ -198,6 +199,8 @@ export const provideEVMAccount = (
   }
 
   const installContract = async () => {
+    let txId: TxId | undefined;
+    await null;
     try {
       const axelarId = ctx.axelarIds[chainName];
       const target = {
@@ -211,24 +214,30 @@ export const provideEVMAccount = (
       traceChain('send makeAccountCall Axelar fee from', src.value);
       await feeAccount.send(lca.getAddress(), fee);
 
-      const { result, txId } = ctx.resolverClient.registerTransaction(
+      const watchTx = ctx.resolverClient.registerTransaction(
         TxType.MAKE_ACCOUNT,
         `${evmAccount.chainId}:${target.remoteAddress}`,
         undefined,
         evmAccount.remoteAddress,
       );
+      txId = watchTx.txId;
+      const result = watchTx.result as unknown as Promise<void>; // XXX host/guest;
+      result.catch(err => {
+        trace(txId, 'rejected', err);
+      });
 
       await sendMakeAccountCall(target, fee, lca, gmp.chain, ctx.gmpAddresses);
 
-      console.log(txId, '@@@ready?', evmAccount.remoteAddress);
-      await (result as unknown as Promise<void>); // XXX host/guest;
-      console.log(txId, '@@@@ready!!!', evmAccount.remoteAddress);
+      traceChain('await makeAccount', txId);
+      await result;
 
       pk.manager.resolveAccount(evmAccount);
     } catch (reason) {
       traceChain('failed to make', reason);
-      traceChain('@@TODO! reject registered transaction');
       pk.manager.releaseAccount(chainName, reason);
+      if (txId) {
+        ctx.resolverClient.unsubscribe(txId, `unsubscribe: ${reason}`);
+      }
     }
   };
   void installContract();
