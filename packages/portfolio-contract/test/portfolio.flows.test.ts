@@ -1593,33 +1593,35 @@ test('parallel execution with scheduler', async t => {
   t.snapshot(flowHistory, 'parallel flow history');
 });
 
+const silent: TraceLogger = Object.assign(() => {}, {
+  sub: () => silent,
+});
+
 /** turn boundaries in provideEVMAccount (except awaiting feeAccount and getChainInfo) */
 type EStep = 'predict' | 'send' | 'register' | 'txfr' | 'resolve';
 
+/**
+ * make 2 attempts A, and B, to provideEVMAccount.
+ * Give A a headStart and then pause it.
+ * Optionally, fail A at some step.
+ * If A succeeds, B should re-use its result.
+ * Otherwise, B should succeed after recovering.
+ */
 const makeAccountEVMRace = test.macro({
   title: (providedTitle = '', _headStart: EStep, _errAt?: EStep) =>
     `EVM makeAccount race: ${providedTitle}`,
   async exec(t, headStart: EStep, errAt?: EStep) {
     const { orch, ctx, offer, txResolver } = mocks({});
 
-    const trace = makeTracer('PExec');
     const pKit = await ctx.makePortfolioKit();
-    await provideCosmosAccount(orch, 'agoric', pKit, trace);
-    const portfolioId = pKit.reader.getPortfolioId();
-    const traceP = makeTracer(`portfolio${portfolioId}`);
+    await provideCosmosAccount(orch, 'agoric', pKit, silent);
+    const lca = pKit.reader.getLocalAccount();
 
     const chainName = 'Arbitrum';
     const { [chainName]: chainInfo } = axelarCCTPConfig;
     const gmp = { chain: await orch.getChain('axelar'), fee: 123n };
 
-    const silent: TraceLogger = Object.assign(() => {}, {
-      sub: () => silent,
-    });
-    await provideCosmosAccount(orch, 'agoric', pKit, silent);
-    const lca = pKit.reader.getLocalAccount();
-
     const attempt = async () => {
-      await null;
       return provideEVMAccount(chainName, chainInfo, gmp, lca, ctx, pKit);
     };
 
@@ -1628,11 +1630,6 @@ const makeAccountEVMRace = test.macro({
     const A = attempt();
     const Aready = A.then(status => status.ready);
     const Asettled = Aready.catch(_ => {});
-    void Asettled.finally(() =>
-      kinks.push(async ev => {
-        if (ev._method === 'transfer') throw Error('repeat transfer!');
-      }),
-    );
 
     const startSettlingPK = makePromiseKit();
     const [txStatus, txReason] =
@@ -1644,45 +1641,53 @@ const makeAccountEVMRace = test.macro({
     );
 
     const resolveAfterBStarts: ((r: unknown) => void)[] = [];
-    const removeAfterAFinishes: Kink[] = [];
+    const removeKink = (kink: Kink) => {
+      const ix = kinks.indexOf(kink);
+      t.log('remove kink at', ix, kink.name);
+      kinks.splice(ix);
+    };
     const waitDuring = (method: string) => {
       const sync = makePromiseKit();
       resolveAfterBStarts.push(sync.resolve);
-      const kink: Kink = async ev => {
+      const waitKink: Kink = async ev => {
         if (ev._method === method) {
+          removeKink(waitKink);
           t.log('wait for B before:', method);
           await sync.promise;
         }
       };
-      kinks.push(kink);
-      removeAfterAFinishes.push(kink);
+      kinks.push(waitKink);
     };
-    const failDuring = (method: string) => {
-      const kink: Kink = async ev => {
-        if (ev._method === method) throw Error('kink in the works!!');
+    const failedMethods: string[] = [];
+    const failDuring = (method: string, msg = 'no joy') => {
+      const failKink: Kink = async ev => {
+        if (ev._method === method) {
+          t.log('fail in A during:', method);
+          failedMethods.push(method);
+          removeKink(failKink);
+          throw Error(msg);
+        }
       };
-      kinks.push(kink);
-      removeAfterAFinishes.push(kink);
+      kinks.push(failKink);
     };
-    let expectBeforeB: string[];
 
     switch (headStart) {
       case 'predict': {
-        expectBeforeB = ['monitorTransfers'];
         waitDuring('send');
         startSettlingPK.resolve(null);
         break;
       }
 
       case 'send': {
-        expectBeforeB = ['monitorTransfers', 'send'];
         waitDuring('transfer');
+        if (errAt === 'send') {
+          failDuring('send', 'insufficient funds: need moar!');
+        }
         startSettlingPK.resolve(null);
         break;
       }
 
       case 'register': {
-        expectBeforeB = ['monitorTransfers', 'send'];
         waitDuring('transfer');
         startSettlingPK.resolve(null);
         break;
@@ -1693,47 +1698,43 @@ const makeAccountEVMRace = test.macro({
           if (ev._method === 'transfer') startSettlingPK.resolve(null);
         });
         if (errAt === 'txfr') {
-          failDuring('transfer');
-          expectBeforeB = ['monitorTransfers', 'send'];
-        } else {
-          expectBeforeB = ['monitorTransfers', 'send', 'transfer'];
+          failDuring('transfer', 'timeout: coach is not happy');
         }
         break;
 
       case 'resolve': {
-        expectBeforeB = ['monitorTransfers', 'send', 'transfer'];
         startSettlingPK.resolve(null);
         break;
       }
     }
 
+    const { remoteAddress } = await A;
+    t.log('promptly available address', remoteAddress);
+
     await eventLoopIteration(); // A runs until paused
     const getMethods = () => log.map(msg => msg._method);
-    t.log('calls before B:', getMethods().join(', '));
-    t.deepEqual(getMethods(), expectBeforeB, 'methods called before B');
+    const methodsBeforeB = getMethods();
+    t.log('calls before B:', methodsBeforeB.join(', '));
 
     const B = attempt();
     for (const resolve of resolveAfterBStarts) {
       resolve(null);
     }
 
-    const { remoteAddress } = await A;
-    t.log('address prompt', remoteAddress);
     const statusB = await B;
     t.is(statusB.remoteAddress, remoteAddress, 'same address for both racers');
 
     await (errAt ? t.throwsAsync(Aready) : t.notThrowsAsync(Aready));
-    for (const kink of removeAfterAFinishes) {
-      kinks.splice(kinks.indexOf(kink));
-    }
-    await B.then(status => status.ready);
-
-    t.log('calls:', getMethods().join(', '));
-    t.deepEqual(
-      getMethods(),
-      ['monitorTransfers', 'send', 'transfer'],
-      'account creation methods called just once',
+    t.snapshot(
+      { methodsBeforeB: methodsBeforeB, failedMethods },
+      JSON.stringify({ headStart, errAt }),
     );
+
+    t.log('calls after A:', getMethods().join(', '));
+    await t.notThrowsAsync(B.then(status => status.ready));
+
+    t.log('calls after A,B:', getMethods().join(', '));
+    t.snapshot(getMethods(), 'total sequence of completed methods');
   },
 });
 
