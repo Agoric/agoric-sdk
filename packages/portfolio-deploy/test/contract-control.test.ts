@@ -21,12 +21,12 @@ import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/eventual-send';
 import { passStyleOf } from '@endo/pass-style';
 import type { ExecutionContext, TestFn } from 'ava';
+import { readFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import {
   prepareContractControl,
   type ContractControl,
 } from '../src/contract-control.js';
-import { readFile } from 'node:fs/promises';
-import { createRequire } from 'node:module';
 
 const nodeRequire = createRequire(import.meta.url);
 const asset = (spec: string) => readFile(nodeRequire.resolve(spec), 'utf8');

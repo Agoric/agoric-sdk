@@ -26,6 +26,8 @@ import type { Instance, ZoeService } from '@agoric/zoe';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
 import { passStyleOf, type CopyRecord } from '@endo/pass-style';
+import { readFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import { produceAttenuatedDeposit } from '../src/attenuated-deposit.core.js';
 import { axelarConfig } from '../src/axelar-configs.js';
 import type { ChainInfoPowers } from '../src/chain-info.core.js';
@@ -47,6 +49,9 @@ import { produceDeliverContractControl } from '../src/contract-control.core.js';
 import { produceGetUpgradeKit } from '../src/get-upgrade-kit.core.js';
 
 const { entries, keys } = Object;
+
+const nodeRequire = createRequire(import.meta.url);
+const asset = (spec: string) => readFile(nodeRequire.resolve(spec), 'utf8');
 
 const docOpts = {
   note: 'YMax VStorage Schema',
@@ -315,6 +320,10 @@ test('delegate ymax control; invite planner; submit plan', async t => {
     const { privateArgs } = await (powers as PortfolioBootPowers).consume
       .ymax0Kit;
 
+    const { bytecode: walletBytecode } = JSON.parse(
+      await asset('@aglocal/portfolio-deploy/tools/evm-orch/Wallet.json'),
+    );
+
     // New portfolio-control does not use privateArgs from previous kit
     const privateArgsOverrides = {
       assetInfo: privateArgs.assetInfo,
@@ -322,6 +331,7 @@ test('delegate ymax control; invite planner; submit plan', async t => {
       chainInfo: privateArgs.chainInfo,
       contracts: privateArgs.contracts,
       gmpAddresses: privateArgs.gmpAddresses,
+      walletBytecode,
     } as CopyRecord;
 
     await E(E(walletCtrl).getInvokeFacet()).invokeEntry({
