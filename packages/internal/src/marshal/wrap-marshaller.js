@@ -89,8 +89,6 @@ const { slotToWrapper, wrapperToSlot } = (() => {
 
 const capacityOfDefaultCache = 50;
 
-// TODO(https://github.com/Agoric/agoric-sdk/issues/12111)
-// Check cost of using virtual-aware WeakMap in liveslots
 /**
  * @template K
  * @template V
@@ -99,7 +97,10 @@ const capacityOfDefaultCache = 50;
 const makeDefaultCacheMap = weakKey =>
   /** @type {WeakMapAPI<K, V>} */ (
     makeCacheMapKit(capacityOfDefaultCache, {
-      makeMap: weakKey ? WeakMap : Map,
+      // We use a Map even for weakKey as the assumption is that we run under
+      // liveslots which virtualizes WeakMap, and since the mapping is
+      // bidirectional by default, the key would be pinned anyway.
+      makeMap: weakKey ? Map : Map,
     }).cache
   );
 
