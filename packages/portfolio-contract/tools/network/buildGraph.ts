@@ -2,7 +2,7 @@ import { Fail } from '@endo/errors';
 
 import { zeroPad } from '@endo/marshal';
 
-import type { NatAmount, Amount } from '@agoric/ertp/src/types.js';
+import type { NatAmount } from '@agoric/ertp/src/types.js';
 import { partialMap, typedEntries } from '@agoric/internal/src/js-utils.js';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 
@@ -38,14 +38,12 @@ export interface FlowEdge {
  * Interior nodes represent chains and start with "@" ("@agoric", "@noble",
  * "@Arbitrum", etc.).
  */
-export interface RebalanceGraph {
+export interface FlowGraph {
   /** When true, print extra diagnostics on solver failure */
   debug?: boolean;
   nodes: Set<AssetPlaceRef>;
   edges: FlowEdge[];
   supplies: SupplyMap;
-  brand: Amount['brand'];
-  feeBrand: Amount['brand'];
 }
 
 export const chainOf = (id: AssetPlaceRef): string => {
@@ -69,7 +67,7 @@ const localFlowEdgeBase: Omit<FlowEdge, 'src' | 'dest' | 'id'> = {
 };
 
 /**
- * Build the base of a RebalanceGraph for current/target Amounts.
+ * Build the base of a FlowGraph for current/target Amounts.
  * Guarantees a "@$chain" hub node for each AssetPlaceRef and minimal-cost
  * intra-chain leaf <-> hub edges (unidirectional within the Agoric chain and
  * bidirectional otherwise).
@@ -78,7 +76,7 @@ const makeGraphBase = (
   placeRefs: AssetPlaceRef[],
   current: Partial<Record<AssetPlaceRef, NatAmount>>,
   target: Partial<Record<AssetPlaceRef, NatAmount>>,
-): Omit<RebalanceGraph, 'brand' | 'feeBrand'> => {
+): FlowGraph => {
   const nodes = new Set<AssetPlaceRef>();
   const edges: FlowEdge[] = [];
   const supplies: SupplyMap = {};
@@ -138,11 +136,11 @@ const makeGraphBase = (
   });
 
   // Return a mutable object in anticipation of further overrides.
-  return { debug: false, nodes, edges, supplies } as RebalanceGraph;
+  return { debug: false, nodes, edges, supplies };
 };
 
 /**
- * Build a RebalanceGraph from a NetworkSpec and current/target Amounts.
+ * Build a FlowGraph from a NetworkSpec and current/target Amounts.
  * Guarantees intra-chain leaf <-> hub edges (unidirectional within the Agoric
  * chain and bidirectional otherwise).
  */
@@ -150,9 +148,7 @@ export const makeGraphForFlow = (
   network: NetworkSpec,
   current: Partial<Record<AssetPlaceRef, NatAmount>>,
   target: Partial<Record<AssetPlaceRef, NatAmount>>,
-  brand: Amount['brand'],
-  feeBrand: Amount['brand'],
-): RebalanceGraph => {
+): FlowGraph => {
   const hubs = new Set<string>(network.chains.map(c => `@${c.name}`));
   const dynamicNodes = new Set<string>([
     ...Object.keys(current ?? {}),
@@ -238,5 +234,5 @@ export const makeGraphForFlow = (
   const zeroPadId = (id: number) => zeroPad(id, idWidth);
   graph.edges = edges.map((edge, i) => ({ ...edge, id: `e${zeroPadId(i)}` }));
 
-  return { ...graph, brand, feeBrand };
+  return graph;
 };

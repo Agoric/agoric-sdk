@@ -21,7 +21,7 @@ test('NetworkSpec minimal validation via builder', t => {
     links: [],
     localPlaces: [],
   } as any;
-  t.notThrows(() => makeGraphForFlow(base, {}, {}, Far('B'), feeBrand));
+  t.notThrows(() => makeGraphForFlow(base, {}, {}));
 });
 
 test('makeGraphForFlow adds intra-chain edges and appends inter edges with sequential ids', t => {
@@ -52,7 +52,7 @@ test('makeGraphForFlow adds intra-chain edges and appends inter edges with seque
       },
     ],
   } as any;
-  const graph = makeGraphForFlow(net, {}, {}, brand, feeBrand);
+  const graph = makeGraphForFlow(net, {}, {});
   const leafCount = 2; // Aave_Arbitrum, Compound_Ethereum
   const expectedIntra = leafCount * 2; // bidirectional
   t.true(graph.edges.length >= expectedIntra + net.links.length);
