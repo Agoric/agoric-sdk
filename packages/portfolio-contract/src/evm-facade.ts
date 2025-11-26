@@ -13,6 +13,7 @@ export type EVMT = {
   bytes32: `0x${string}`;
   'address[]': Array<`0x${string}`>;
   bool: boolean;
+  string: string;
   // ... others from the yellow book would go here.
   // We only use these, so far.
 };
@@ -27,7 +28,7 @@ export const ERC20: ERC20I = {
   approve: ['address', 'uint256'],
 };
 
-type EVMParameters<KS extends Array<keyof EVMT>> = {
+export type EVMParameters<KS extends Array<keyof EVMT>> = {
   [IX in keyof KS]: EVMT[KS[IX]];
 };
 type EVMMethod<P extends Array<keyof EVMT>> = (
