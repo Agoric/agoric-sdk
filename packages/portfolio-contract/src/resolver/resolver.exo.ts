@@ -232,7 +232,7 @@ export const prepareResolverKit = (
               return;
 
             case TxStatus.FAILED:
-              trace('reject:', txId, registryEntry.type);
+              trace('reject:', txId, registryEntry.type, rejectionReason);
               registryEntry.vowKit.resolver.reject(
                 Error(rejectionReason || 'Transaction failed'),
               );
