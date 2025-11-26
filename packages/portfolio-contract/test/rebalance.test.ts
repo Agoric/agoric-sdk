@@ -35,8 +35,8 @@ const { brand: TOK_BRAND } = (() => ({ brand: Far('USD*') as Brand<'nat'> }))();
 const { brand: FEE_BRAND } = (() => ({ brand: Far('BLD') as Brand<'nat'> }))();
 const token = (v: bigint) => AmountMath.make(TOK_BRAND, v * USCALE);
 const ZERO = token(0n);
-const fixedFee = AmountMath.make(FEE_BRAND, 11n * USCALE);
-const evmGas = 220000000n * USCALE;
+const fixedFee = AmountMath.make(FEE_BRAND, 12n * USCALE);
+const evmGas = 240000000n * USCALE;
 const subtract5bps = (scaled: bigint) =>
   // HACK subtract an extra 1n to match `rebalanceMinCostFlowSteps`.
   // See https://github.com/Agoric/agoric-private/issues/415
