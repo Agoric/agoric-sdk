@@ -48,6 +48,7 @@ const ClientFacetI = M.interface('ResolverClient', {
   registerTransaction: M.call(M.or(...Object.values(TxType)), M.string())
     .optional(M.nat(), M.string())
     .returns(M.splitRecord({ result: PromiseVowShape, txId: M.string() })),
+  unsubscribe: M.call(M.string(), M.string()).returns(),
 });
 
 const ReporterI = M.interface('Reporter', {
@@ -171,6 +172,17 @@ export const prepareResolverKit = (
 
           trace(`Registered pending transaction: ${txId}`);
           return { result: vowKit.vow, txId };
+        },
+        unsubscribe(txId: TxId, reason: string) {
+          const { transactionRegistry } = this.state;
+          const { service } = this.facets;
+          if (transactionRegistry.has(txId)) {
+            service.settleTransaction({
+              txId,
+              status: 'failed',
+              rejectionReason: reason,
+            });
+          }
         },
       },
       reporter: {
