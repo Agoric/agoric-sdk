@@ -13,7 +13,7 @@ const nodeRequire = createRequire(import.meta.url);
 const asset = (spec: string) => readFile(nodeRequire.resolve(spec), 'utf8');
 
 const avalancheIntegration = {
-  factory: '0x9F9684d7FA7318698a0030ca16ECC4a01944836b',
+  factory: '0x2B3545638859C49df84660eA2D110f82F2e80De8',
   gateway: '0xC249632c2D40b9001FE907806902f63038B737Ab',
   gasService: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
 } as const;
