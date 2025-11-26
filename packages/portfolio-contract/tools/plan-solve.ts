@@ -366,7 +366,8 @@ export const rebalanceMinCostFlowSteps = async (
    * Add 20% to a fee estimate in case the landscape changes between estimation
    * and execution.
    */
-  const padFeeEstimate = (estimate: bigint): bigint => (estimate * 120n) / 100n;
+  const padFeeEstimate = (estimate: bigint): bigint =>
+    estimate <= 0n ? estimate : (estimate * 120n - 1n) / 100n + 1n;
 
   /**
    * Ensure minimum gas is sent for an Axelar GMP transaction, to hopefully
