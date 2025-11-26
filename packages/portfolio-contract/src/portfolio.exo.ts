@@ -52,12 +52,14 @@ export type AccountInfo = GMPAccountInfo | AgoricAccountInfo | NobleAccountInfo;
 export type GMPAccountInfo = {
   namespace: 'eip155';
   chainName: AxelarChain;
+  err?: string;
   chainId: CaipChainId;
   remoteAddress: `0x${string}`;
 };
 type AgoricAccountInfo = {
   namespace: 'cosmos';
   chainName: 'agoric';
+  err?: string;
   lca: LocalAccount;
   lcaIn: LocalAccount;
   reg: TargetRegistration;
@@ -65,6 +67,7 @@ type AgoricAccountInfo = {
 type NobleAccountInfo = {
   namespace: 'cosmos';
   chainName: 'noble';
+  err?: string;
   ica: NobleAccount;
 };
 
@@ -412,44 +415,77 @@ export const preparePortfolioKit = (
           detail.sync.resolver.resolve(steps);
         },
       },
+      /**
+       * Manages a cooperative reservation protocol for per-chain accounts.
+       *
+       * For each chain, callers coordinate through four states:
+       *   'new' | 'failed' — caller holds the reservation
+       *   'pending'        — another caller is initializing
+       *   'ok'             — initialization finished
+       *
+       * When holding the reservation ('new' or 'failed'), the caller must run a
+       * try/catch critical section and finish with exactly one of:
+       *   resolveAccount(info)  // success
+       *   releaseAccount(chain, reason)  // failure
+       *
+       * initAccountInfo(info) is optional before the terminal call.
+       */
       manager: {
+        /**
+         * Legacy wrapper for {@link reserveAccountState}.
+         * @see reserveAccountState
+         */
         reserveAccount<C extends SupportedChain>(
           chainName: C,
         ): undefined | Vow<AccountInfoFor[C]> {
-          const { ready, init } =
-            this.facets.manager.reserveAccountFull(chainName);
-          return init ? undefined : ready;
+          const { ready, state } =
+            this.facets.manager.reserveAccountState(chainName);
+          return state === 'new' ? undefined : ready;
         },
-        reserveAccountFull<C extends SupportedChain>(
+        /**
+         * Returns the current reservation state for the given chain,
+         * along with a vow that resolves when initialization completes.
+         *
+         * @see manager — for the full reservation protocol and caller obligations.
+         */
+        reserveAccountState<C extends SupportedChain>(
           chainName: C,
-        ): { init: boolean; ready: Vow<AccountInfoFor[C]> } {
+        ): {
+          state: 'new' | 'pending' | 'ok' | 'failed';
+          ready: Vow<AccountInfoFor[C]>;
+        } {
           const traceChain = trace
             .sub(`portfolio${this.state.portfolioId}`)
             .sub(chainName);
           traceChain('reserveAccount');
           const { accounts, accountsPending } = this.state;
           if (accounts.has(chainName)) {
-            traceChain('accounts.has');
-            const ready = vowTools.asVow(async () => {
-              const infoAny = accounts.get(chainName);
-              assert.equal(infoAny.chainName, chainName);
-              const info = infoAny as AccountInfoFor[C];
-              return info;
-            });
-            return { ready, init: false };
+            const infoAny = accounts.get(chainName);
+            assert.equal(infoAny.chainName, chainName);
+            const info = infoAny as AccountInfoFor[C];
+            const state = info.err ? 'failed' : 'ok';
+            traceChain('state', state);
+            const ready = vowTools.asVow(async () => info);
+            return { ready, state };
           }
           if (accountsPending.has(chainName)) {
-            traceChain('accountsPending.has');
+            const state = 'pending';
+            traceChain('state', state);
             const val = accountsPending.get(chainName);
-            return { ready: val.vow as Vow<AccountInfoFor[C]>, init: false };
+            return { ready: val.vow as Vow<AccountInfoFor[C]>, state };
           }
+          const state = 'new';
+          traceChain('state', state);
           const pending: VowKit<AccountInfoFor[C]> = vowTools.makeVowKit();
           vowTools.watch(pending.vow, this.facets.accountWatcher, chainName);
-          traceChain('accountsPending.init');
           accountsPending.init(chainName, pending);
           this.facets.reporter.publishStatus();
-          return { ready: pending.vow as Vow<AccountInfoFor[C]>, init: true };
+          return { ready: pending.vow as Vow<AccountInfoFor[C]>, state };
         },
+        /**
+         * Optionally record preliminary account info (e.g., predicted addresses).
+         * Valid only when the caller holds the reservation (`'new'` or `'failed'`).
+         */
         initAccountInfo(info: AccountInfo) {
           const { accounts, portfolioId } = this.state;
           const traceChain = trace
@@ -459,6 +495,11 @@ export const preparePortfolioKit = (
           accounts.init(info.chainName, info);
           this.facets.reporter.publishStatus();
         },
+        /**
+         * Terminal success action for the reservation protocol.
+         * Resolves any pending vow and commits stable account info.
+         * Valid only when the caller holds the reservation.
+         */
         resolveAccount(info: AccountInfo) {
           const { accounts, accountsPending, portfolioId } = this.state;
           const traceChain = trace
@@ -470,15 +511,28 @@ export const preparePortfolioKit = (
             traceChain('accountsPending.resolve');
             pending.resolver.resolve(info);
           }
-          traceChain('accounts.init');
-          if (!accounts.has(info.chainName)) {
+          if (accounts.has(info.chainName)) {
+            const { err: _, ...noErr } = accounts.get(info.chainName);
+            traceChain('accounts.set');
+            accounts.set(info.chainName, noErr);
+          } else {
+            traceChain('accounts.init');
             accounts.init(info.chainName, info);
           }
           this.facets.reporter.publishStatus();
         },
+        /**
+         * Terminal failure action for the reservation protocol.
+         * Rejects any pending vow and marks the account as failed.
+         * Valid only when the caller holds the reservation.
+         */
         releaseAccount(chainName: SupportedChain, reason: unknown) {
           trace('releaseAccount', chainName, reason);
-          const { accountsPending } = this.state;
+          const { accounts, accountsPending } = this.state;
+          if (accounts.has(chainName)) {
+            const info = accounts.get(chainName);
+            accounts.set(chainName, { ...info, err: `${reason}` });
+          }
           if (accountsPending.has(chainName)) {
             const vow = accountsPending.get(chainName);
             vow.resolver.reject(reason);

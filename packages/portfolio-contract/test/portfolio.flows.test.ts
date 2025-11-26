@@ -472,6 +472,7 @@ const mocks = (
     settleUntil: async (
       done: Promise<unknown>,
       status: Exclude<TxStatus, 'pending'> = 'success',
+      rejectionReason?: string,
     ) => {
       void done.then(() => cancelStorageupdates());
       for await (const message of storageUpdates) {
@@ -483,7 +484,7 @@ const mocks = (
         const info = getDeserialized(key).at(-1) as PublishedTx;
         if (info.status !== 'pending') continue;
         const txId = key.split('.').at(-1) as `tx${number}`;
-        resolverService.settleTransaction({ txId, status });
+        resolverService.settleTransaction({ txId, status, rejectionReason });
       }
     },
   });
@@ -1599,10 +1600,6 @@ const makeAccountEVMRace = test.macro({
   title: (providedTitle = '', _headStart: EStep, _errAt?: EStep) =>
     `EVM makeAccount race: ${providedTitle}`,
   async exec(t, headStart: EStep, errAt?: EStep) {
-    if (errAt) {
-      return t.fail('TODO');
-    }
-
     const { orch, ctx, offer, txResolver } = mocks({});
 
     const trace = makeTracer('PExec');
@@ -1629,15 +1626,22 @@ const makeAccountEVMRace = test.macro({
     const { log, kinks } = offer;
     type Kink = (typeof kinks)[0];
     const A = attempt();
-    const Adone = A.then(status => status.ready);
-    void Adone.then(() =>
+    const Aready = A.then(status => status.ready);
+    const Asettled = Aready.catch(_ => {});
+    void Asettled.finally(() =>
       kinks.push(async ev => {
         if (ev._method === 'transfer') throw Error('repeat transfer!');
       }),
     );
 
     const startSettlingPK = makePromiseKit();
-    void startSettlingPK.promise.then(() => txResolver.settleUntil(Adone));
+    const [txStatus, txReason] =
+      errAt === 'resolve'
+        ? (['failed', 'oops!'] as const)
+        : (['success', undefined] as const);
+    void startSettlingPK.promise.then(() =>
+      txResolver.settleUntil(Asettled, txStatus, txReason),
+    );
 
     const resolveAfterBStarts: ((r: unknown) => void)[] = [];
     const removeAfterAFinishes: Kink[] = [];
@@ -1649,6 +1653,13 @@ const makeAccountEVMRace = test.macro({
           t.log('wait for B before:', method);
           await sync.promise;
         }
+      };
+      kinks.push(kink);
+      removeAfterAFinishes.push(kink);
+    };
+    const failDuring = (method: string) => {
+      const kink: Kink = async ev => {
+        if (ev._method === method) throw Error('kink in the works!!');
       };
       kinks.push(kink);
       removeAfterAFinishes.push(kink);
@@ -1678,10 +1689,15 @@ const makeAccountEVMRace = test.macro({
       }
 
       case 'txfr':
-        expectBeforeB = ['monitorTransfers', 'send', 'transfer'];
         kinks.push(async ev => {
           if (ev._method === 'transfer') startSettlingPK.resolve(null);
         });
+        if (errAt === 'txfr') {
+          failDuring('transfer');
+          expectBeforeB = ['monitorTransfers', 'send'];
+        } else {
+          expectBeforeB = ['monitorTransfers', 'send', 'transfer'];
+        }
         break;
 
       case 'resolve': {
@@ -1706,9 +1722,7 @@ const makeAccountEVMRace = test.macro({
     const statusB = await B;
     t.is(statusB.remoteAddress, remoteAddress, 'same address for both racers');
 
-    // TODO: Promise.race()/any() to see which finished first?
-
-    await Adone;
+    await (errAt ? t.throwsAsync(Aready) : t.notThrowsAsync(Aready));
     for (const kink of removeAfterAFinishes) {
       kinks.splice(kinks.indexOf(kink));
     }
@@ -1725,14 +1739,9 @@ const makeAccountEVMRace = test.macro({
 
 test('A and B arrive together; A wins the race', makeAccountEVMRace, 'predict');
 test('A pays fee; B arrives', makeAccountEVMRace, 'send');
-test.skip('A fails to pay fee; B arrives', makeAccountEVMRace, 'send', 'send');
+test('A fails to pay fee; B arrives', makeAccountEVMRace, 'send', 'send');
 test('A registers txN; B arrives', makeAccountEVMRace, 'register');
 test('A transfers to axelar; B arrives', makeAccountEVMRace, 'txfr');
-test.skip(
-  'A times out on axelar; B arrives',
-  makeAccountEVMRace,
-  'txfr',
-  'txfr',
-);
-test.skip('A gets rejected txN; B arrives', makeAccountEVMRace, 'txfr', 'txfr');
+test('A times out on axelar; B arrives', makeAccountEVMRace, 'txfr', 'txfr');
+test('A gets rejected txN; B arrives', makeAccountEVMRace, 'txfr', 'resolve');
 test('A finishes before attempt B starts', makeAccountEVMRace, 'resolve');

@@ -164,12 +164,6 @@ export const provideEVMAccount = (
   const pId = pk.reader.getPortfolioId();
   const traceChain = trace.sub(`portfolio${pId}`).sub(chainName);
 
-  const reserve = pk.manager.reserveAccountFull(chainName);
-  if (!reserve.init) {
-    const info = pk.reader.getGMPInfo(chainName);
-    return { ...info, ready: reserve.ready as unknown as Promise<void> };
-  }
-
   const predictAddress = (owner: Bech32Address) => {
     const contracts = ctx.contracts[chainName];
     const remoteAddress = predictWalletAddress({
@@ -188,8 +182,20 @@ export const provideEVMAccount = (
     traceChain('CREATE2', info.remoteAddress, 'for', owner);
     return info;
   };
-  const evmAccount = predictAddress(lca.getAddress().value);
-  pk.manager.initAccountInfo(evmAccount);
+  const reserve = pk.manager.reserveAccountState(chainName);
+
+  const evmAccount =
+    reserve.state === 'new'
+      ? predictAddress(lca.getAddress().value)
+      : pk.reader.getGMPInfo(chainName);
+
+  if (['pending', 'ok'].includes(reserve.state)) {
+    return { ...evmAccount, ready: reserve.ready as unknown as Promise<void> };
+  }
+
+  if (reserve.state === 'new') {
+    pk.manager.initAccountInfo(evmAccount);
+  }
 
   const installContract = async () => {
     try {
