@@ -16,8 +16,6 @@ import type {
   TransferProtocol,
 } from '../../tools/network/network-spec.js';
 
-const toSet = <T>(iter: Iterable<T>) => new Set(iter);
-
 // Shared expectations (precisely typed)
 type HubKey = `@${(typeof SupportedChain)[keyof typeof SupportedChain]}`;
 type EvmHubKey = `@${(typeof AxelarChain)[keyof typeof AxelarChain]}`;
@@ -134,13 +132,13 @@ test('PROD_NETWORK has the expected hubs', t => {
   t.is(PROD_NETWORK, NAMED_PROD);
 
   const graph = getGraph();
-  const nodes = toSet(graph.nodes.values());
+  const nodes = new Set(graph.nodes.values());
   for (const hub of HUBS) t.true(nodes.has(hub), `missing hub ${hub}`);
 });
 
 test('PROD_NETWORK has the expected pools', t => {
   const graph = getGraph();
-  const nodes = toSet(graph.nodes.values());
+  const nodes = new Set(graph.nodes.values());
   for (const p of POOLS) t.true(nodes.has(p), `missing pool ${p}`);
 });
 
