@@ -4,6 +4,7 @@
  */
 import '@endo/init';
 
+import WalletArtifact from '@aglocal/portfolio-deploy/tools/evm-orch/Wallet.json' with { type: 'json' };
 import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.exo.ts';
 import type { start as YMaxStart } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
 import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.ts';
@@ -116,6 +117,8 @@ const GoalDataShape: TypedPattern<GoalData> = M.recordOf(
 const trace = makeTracer('YMXTool');
 const { fromEntries } = Object;
 const { make } = AmountMath;
+
+const walletBytecode = WalletArtifact.bytecode;
 
 const parseTypedJSON = <T>(
   json: string,
@@ -369,6 +372,7 @@ const overridesForEthChainInfo = async (
     contracts: objectMap(axelarConfig, c => c.contracts),
     chainInfo,
     gmpAddresses,
+    walletBytecode,
   });
   console.log(
     'privateArgsOverrides',
