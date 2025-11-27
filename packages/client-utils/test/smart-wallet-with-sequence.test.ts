@@ -1,96 +1,9 @@
 import test from 'ava';
 import { arrayIsLike } from '@agoric/internal/tools/ava-assertions.js';
-import { BroadcastTxError } from '@cosmjs/stargate';
 import { makeTxSequencer } from '../src/sequence-manager.js';
 import { makeSequencingSmartWallet } from '../src/smart-wallet-with-sequence.js';
 import type { SigningSmartWalletKit } from '../src/signing-smart-wallet-kit.js';
-import { createMockFetchAccount } from './mocks.js';
-
-type SubmitTxResponse = {
-  code: number;
-  height: number;
-  transactionHash: string;
-  sequence: bigint;
-};
-
-class MockSigningSmartWalletKit {
-  #submittedTransactions: Array<{
-    method: string;
-    sequence: bigint;
-  }> = [];
-
-  #networkSequence: () => bigint;
-
-  #shouldSimulateSequenceConflicts: boolean;
-
-  networkConfig = { chainName: 'agoricdev-25' };
-
-  sendBridgeAction: (
-    action: any,
-    fee: any,
-    memo: any,
-    signerData: any,
-  ) => Promise<SubmitTxResponse>;
-
-  pollOffer: (
-    _address: string,
-    _offerId: string,
-  ) => Promise<{ status: string }>;
-
-  getSubmittedTransactions: () => Array<{ method: string; sequence: bigint }>;
-
-  constructor(
-    getNetworkSequence: () => bigint,
-    options: { simulateSequenceConflicts?: boolean } = {},
-  ) {
-    this.#networkSequence = getNetworkSequence;
-    this.#shouldSimulateSequenceConflicts =
-      options.simulateSequenceConflicts ?? false;
-
-    this.sendBridgeAction = async (
-      action: any,
-      fee: any,
-      memo: any,
-      signerData: any,
-    ): Promise<SubmitTxResponse> => {
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 10));
-
-      const currentNetworkSequence = this.#networkSequence();
-
-      // Simulate sequence mismatch if enabled and sequence is out of sync
-      if (
-        this.#shouldSimulateSequenceConflicts &&
-        signerData.sequence < currentNetworkSequence
-      ) {
-        const log = `account sequence mismatch, expected ${currentNetworkSequence}, got ${signerData.sequence}: incorrect account sequence`;
-        throw new BroadcastTxError(32, 'sdk', log);
-      }
-
-      // Record successful transaction
-      const method = action.method || 'sendBridgeAction';
-      this.#submittedTransactions.push({
-        method,
-        sequence: BigInt(signerData.sequence),
-      });
-
-      return {
-        code: 0,
-        height: 3321450 + this.#submittedTransactions.length,
-        transactionHash: `hash_${method}_${signerData.sequence}`,
-        sequence: BigInt(signerData.sequence),
-      };
-    };
-
-    this.pollOffer = async (_address: string, _offerId: string) => {
-      return { status: 'accepted' };
-    };
-
-    this.getSubmittedTransactions = () => {
-      return this.#submittedTransactions;
-    };
-  }
-}
+import { createMockFetchAccount, MockSigningSmartWalletKit } from './mocks.js';
 
 test('handles concurrent offers and actions with correct sequence management', async t => {
   const mockFetch = createMockFetchAccount(377n, 100n);
