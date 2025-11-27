@@ -180,6 +180,7 @@ export const makeSigningSmartWalletKit = async (
   });
 };
 export type SigningSmartWalletKit = EReturn<typeof makeSigningSmartWalletKit>;
+export type { SmartWalletKit };
 
 /**
  * @alpha

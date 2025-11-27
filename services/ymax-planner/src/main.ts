@@ -13,8 +13,10 @@ import { isPrimitive } from '@endo/pass-style';
 import {
   fetchEnvNetworkConfig,
   getInvocationUpdate,
+  makeTxSequencer,
   makeSigningSmartWalletKit,
   makeSmartWalletKit,
+  makeSequencingSmartWallet,
   reflectWalletStore,
 } from '@agoric/client-utils';
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
@@ -65,7 +67,7 @@ export type SimplePowers = {
 };
 
 export const main = async (
-  args: string[],
+  cliArgs: string[],
   {
     env = process.env,
     fetch = globalThis.fetch,
@@ -78,8 +80,8 @@ export const main = async (
     WebSocket = ws.WebSocket,
   } = {},
 ) => {
-  const dashIdx = [...args, '--'].indexOf('--');
-  const maybeOpts = args.slice(0, dashIdx);
+  const dashIdx = [...cliArgs, '--'].indexOf('--');
+  const maybeOpts = cliArgs.slice(0, dashIdx);
   const isDryRun = maybeOpts.includes('--dry-run');
   const isVerbose = maybeOpts.includes('--verbose');
 
@@ -190,6 +192,38 @@ export const main = async (
     },
   });
 
+  const fetchAccount = async () => {
+    const response = await cosmosRest.getAccountSequence(
+      'agoric',
+      signingSmartWalletKit.address,
+    );
+    const account = response.account;
+    if (!account) {
+      throw Fail`Account not found for address ${signingSmartWalletKit.address}`;
+    }
+    return {
+      address: signingSmartWalletKit.address,
+      accountNumber: account.accountNumber,
+      sequence: account.sequence,
+    };
+  };
+
+  const txSequencer = await makeTxSequencer(fetchAccount, {
+    log: isVerbose
+      ? (...args) => console.log('[TxSequencer]', ...args)
+      : () => {},
+  });
+
+  const smartWalletKitWithSequence = makeSequencingSmartWallet(
+    signingSmartWalletKit,
+    txSequencer,
+    {
+      log: isVerbose
+        ? (...args) => console.log('[SigningSmartWallet]', ...args)
+        : () => {},
+    },
+  );
+
   const spectrum = new SpectrumClient(simplePowers, {
     baseUrl: config.spectrum.apiUrl,
     timeout: config.spectrum.timeout,
@@ -257,7 +291,7 @@ export const main = async (
     spectrumBlockchain,
     spectrumPools,
     cosmosRest,
-    signingSmartWalletKit,
+    signingSmartWalletKit: smartWalletKitWithSequence,
     walletStore,
     getWalletInvocationUpdate: (messageId, opts) => {
       const { getLastUpdate } = signingSmartWalletKit.query;

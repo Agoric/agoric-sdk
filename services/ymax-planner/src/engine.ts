@@ -6,25 +6,25 @@ import { inspect } from 'node:util';
 
 import type { Coin } from '@cosmjs/stargate';
 
+import { Fail, annotateError, q } from '@endo/errors';
+import { Nat } from '@endo/nat';
+import { reflectWalletStore, getInvocationUpdate } from '@agoric/client-utils';
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
-import { getInvocationUpdate, reflectWalletStore } from '@agoric/client-utils';
 import type { RetryOptionsAndPowers } from '@agoric/client-utils/src/sync-tools.js';
 import { AmountMath, type Brand } from '@agoric/ertp';
 import type { Bech32Address } from '@agoric/orchestration';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
-import { annotateError, Fail, q } from '@endo/errors';
-import { Nat } from '@endo/nat';
 
 import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.exo.ts';
-import {
-  TxStatus,
-  TxType,
-} from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import {
   PublishedTxShape,
   type PendingTx,
   type TxId,
 } from '@aglocal/portfolio-contract/src/resolver/types.ts';
+import {
+  TxStatus,
+  TxType,
+} from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
 import type {
   FlowDetail,
