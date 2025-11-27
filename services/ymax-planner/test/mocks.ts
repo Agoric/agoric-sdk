@@ -461,46 +461,46 @@ type SubmitTxResponse = {
   sequence: number;
 };
 export class MockSigningSmartWalletKit {
-  private submittedTransactions: Array<{
+  #submittedTransactions: Array<{
     method: string;
     sequence: number;
     timestamp: number;
   }> = [];
-  private networkSequence: () => number;
-  private shouldSimulateSequenceConflicts = false;
-  private networkDelay = 20;
-  private mockTime = 1234567890000;
-  private sequenceCounter = 0;
+  #networkSequence: () => number;
+  #shouldSimulateSequenceConflicts = false;
+  #networkDelay = 20;
+  #mockTime = 1234567890000;
+  #sequenceCounter = 0;
 
   constructor(getNetworkSequence: () => number, mockTime = 1234567890000) {
-    this.networkSequence = getNetworkSequence;
-    this.mockTime = mockTime;
+    this.#networkSequence = getNetworkSequence;
+    this.#mockTime = mockTime;
   }
 
   enableSequenceConflictSimulation() {
-    this.shouldSimulateSequenceConflicts = true;
+    this.#shouldSimulateSequenceConflicts = true;
   }
 
   async executeOffer(offer: any, signerData: any) {
-    return this.submitTransaction('executeOffer', signerData);
+    return this.#submitTransaction('executeOffer', signerData);
   }
 
   async sendBridgeAction(action: any, fee: any, memo: any, signerData: any) {
-    return this.submitTransaction('sendBridgeAction', signerData);
+    return this.#submitTransaction('sendBridgeAction', signerData);
   }
 
-  private async submitTransaction(
+  async #submitTransaction(
     method: string,
     signerData: any,
   ): Promise<SubmitTxResponse> {
     // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, this.networkDelay));
+    await new Promise(resolve => setTimeout(resolve, this.#networkDelay));
 
-    const currentNetworkSequence = this.networkSequence();
+    const currentNetworkSequence = this.#networkSequence();
 
     // Simulate sequence mismatch if enabled and sequence is out of sync
     if (
-      this.shouldSimulateSequenceConflicts &&
+      this.#shouldSimulateSequenceConflicts &&
       signerData.sequence < currentNetworkSequence
     ) {
       throw new Error(
@@ -509,33 +509,33 @@ export class MockSigningSmartWalletKit {
     }
 
     // Record successful transaction
-    this.submittedTransactions.push({
+    this.#submittedTransactions.push({
       method,
       sequence: signerData.sequence,
-      timestamp: this.mockTime + this.sequenceCounter++ * 1000, // Increment by 1 second for each transaction
+      timestamp: this.#mockTime + this.#sequenceCounter++ * 1000, // Increment by 1 second for each transaction
     });
 
     return {
       code: 0,
-      height: 3321450 + this.submittedTransactions.length,
+      height: 3321450 + this.#submittedTransactions.length,
       transactionHash: `hash_${method}_${signerData.sequence}`,
       sequence: signerData.sequence,
     };
   }
 
   getSubmittedTransactions() {
-    return this.submittedTransactions;
+    return this.#submittedTransactions;
   }
 
   clearTransactions() {
-    this.submittedTransactions = [];
+    this.#submittedTransactions = [];
   }
 
   setNetworkDelay(delay: number) {
-    this.networkDelay = delay;
+    this.#networkDelay = delay;
   }
 
   setMockTime(time: number) {
-    this.mockTime = time;
+    this.#mockTime = time;
   }
 }
