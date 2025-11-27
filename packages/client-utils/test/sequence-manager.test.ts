@@ -11,8 +11,8 @@ test('TxSequencer initialization', async t => {
   });
 
   t.is(sequencer.getAccountNumber(), 377n);
-  t.is(sequencer.getSequenceNumber(), 100n);
-  t.is(sequencer.getSequenceNumber(), 101n);
+  t.is(sequencer.nextSequence(), 100n);
+  t.is(sequencer.nextSequence(), 101n);
   t.is(sequencer.getAccountNumber(), 377n);
 
   t.true(
@@ -31,8 +31,8 @@ test('TxSequencer resync functionality', async t => {
   });
 
   // Use some sequences
-  sequencer.getSequenceNumber(); // 100
-  sequencer.getSequenceNumber(); // 101
+  sequencer.nextSequence(); // 100
+  sequencer.nextSequence(); // 101
 
   // Mock network having advanced further
   mockFetch.setSequenceNumber(105n);
@@ -40,10 +40,12 @@ test('TxSequencer resync functionality', async t => {
   // Resync should update to network state
   await sequencer.resync();
 
-  t.is(sequencer.getSequenceNumber(), 105n);
+  t.is(sequencer.nextSequence(), 105n);
   t.true(
     logs.some(log =>
-      log.includes('Resynced accountNumber 377 sequence number from 102 to 105'),
+      log.includes(
+        'Resynced accountNumber 377 sequence number from 102 to 105',
+      ),
     ),
   );
 });

@@ -5,7 +5,7 @@ import type { BaseAccount } from './codegen/cosmos/auth/v1beta1/auth.js';
  */
 export type TxSequencer = {
   getAccountNumber: () => bigint;
-  getSequenceNumber: () => bigint;
+  nextSequence: () => bigint;
   resync: () => Promise<void>;
 };
 
@@ -20,9 +20,11 @@ export const makeTxSequencer = async (
 ): Promise<TxSequencer> => {
   const initial = await fetchAccount();
   const accountNumber: bigint = initial.accountNumber;
-  let sequenceNumber: bigint = initial.sequence;
+  /** The sequence number to be included in the next transaction. */
+  let nextSequenceNumber: bigint = initial.sequence;
+
   log(
-    `Initialized accountNumber ${accountNumber} sequence number to ${sequenceNumber}`,
+    `Initialized accountNumber ${accountNumber} sequence number to ${nextSequenceNumber}`,
   );
 
   /**
@@ -31,11 +33,12 @@ export const makeTxSequencer = async (
   const getAccountNumber = () => accountNumber;
 
   /**
-   * Get the next sequence number and increment the internal counter.
+   * Return the sequence number expected for the next transaction and increment
+   * the internal counter for subsequent invocations.
    */
-  const getSequenceNumber = () => {
-    const curr = sequenceNumber;
-    sequenceNumber += 1n;
+  const nextSequence = () => {
+    const curr = nextSequenceNumber;
+    nextSequenceNumber += 1n;
     return curr;
   };
 
@@ -43,17 +46,17 @@ export const makeTxSequencer = async (
    * Resync with the network (useful for error recovery).
    */
   const resync = async () => {
-    const old = sequenceNumber;
+    const old = nextSequenceNumber;
     const account = await fetchAccount();
-    sequenceNumber = account.sequence;
+    nextSequenceNumber = account.sequence;
     log(
-      `Resynced accountNumber ${accountNumber} sequence number from ${old} to ${sequenceNumber}`,
+      `Resynced accountNumber ${accountNumber} sequence number from ${old} to ${nextSequenceNumber}`,
     );
   };
 
   return harden({
     getAccountNumber,
-    getSequenceNumber,
+    nextSequence,
     resync,
   });
 };

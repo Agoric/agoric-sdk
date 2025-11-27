@@ -162,7 +162,11 @@ test('handles sequence error recovery with network sync', async t => {
   });
 
   t.true(logs.some(v => v.includes('Sequence error detected')));
-  t.true(logs.some(v => v.includes('Resynced accountNumber 377 sequence number from 101 to 105')));
+  t.true(
+    logs.some(v =>
+      v.includes('Resynced accountNumber 377 sequence number from 101 to 105'),
+    ),
+  );
 
   const submittedTransactions = mockWallet.getSubmittedTransactions();
   arrayIsLike(t, submittedTransactions, [

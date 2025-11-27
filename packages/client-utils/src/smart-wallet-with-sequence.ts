@@ -59,7 +59,7 @@ export const makeSequencingSmartWallet = (
   const accountNumber = Number(txSequencer.getAccountNumber());
 
   const makeSignerData = (label: string): SignerData => {
-    const sequence = Number(txSequencer.getSequenceNumber());
+    const sequence = Number(txSequencer.nextSequence());
     const signerData: SignerData = { accountNumber, sequence, chainId };
     log(`${label} signerData:`, signerData);
     return signerData;
