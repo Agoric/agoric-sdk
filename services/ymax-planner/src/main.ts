@@ -209,14 +209,18 @@ export const main = async (
   };
 
   const txSequencer = await makeTxSequencer(fetchAccount, {
-    log: (...args) => console.log('[TxSequencer]:', ...args),
+    log: isVerbose
+      ? (...args) => console.log('[TxSequencer]', ...args)
+      : () => {},
   });
 
   const smartWalletKitWithSequence = makeSequencingSmartWallet(
     signingSmartWalletKit,
     txSequencer,
     {
-      log: (...args) => console.log('[SequencingSmartWallet]:', ...args),
+      log: isVerbose
+        ? (...args) => console.log('[SigningSmartWallet]', ...args)
+        : () => {},
     },
   );
 
