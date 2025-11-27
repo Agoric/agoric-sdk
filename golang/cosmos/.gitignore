@@ -89,3 +89,4 @@ typings/
 /binding.gyp
 *-stamp
 build/
+/tmp-swagger-gen
