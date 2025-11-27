@@ -3,7 +3,7 @@
  */
 
 import type { BridgeAction } from '@agoric/smart-wallet/src/smartWallet.js';
-import type { SignerData } from '@cosmjs/stargate';
+import { BroadcastTxError, type SignerData } from '@cosmjs/stargate';
 import { Fail } from '@endo/errors';
 import type {
   SigningSmartWalletKit,
@@ -18,12 +18,12 @@ type QueuedThunk<T> = {
   thunk: () => Promise<T>;
 };
 
-const isSequenceNumberMismatch = (error: Error | unknown) => {
-  // @ts-expect-error reading "message" is fine here
-  const message = error?.message || `${error}`;
-  // *sigh*
-  return message.includes('account sequence mismatch');
-};
+const isSequenceNumberMismatch = (error: BroadcastTxError | Error | unknown) =>
+  // https://cosmos.github.io/cosmjs/latest/stargate/classes/BroadcastTxError.html
+  error instanceof BroadcastTxError &&
+  // https://pkg.go.dev/github.com/cosmos/cosmos-sdk/types/errors#pkg-variables:~:text=ErrWrongSequence
+  error.codespace === 'sdk' &&
+  error.code === 32;
 
 /**
  * Make a SigningSmartWalletKit with automatic management of outbound
