@@ -164,7 +164,7 @@ export const makeSequencingSmartWallet = (
     return enqueue(label, async () => {
       const signerData = makeSignerData(label);
       const action: BridgeAction = { method: 'executeOffer', offer };
-      const offerP = swk.pollOffer(address, offer.id);
+      const offerP = signingSmartWalletKit.pollOffer(address, offer.id);
       await unsafeSendBridgeAction(action, undefined, undefined, signerData);
       return offerP;
     });
