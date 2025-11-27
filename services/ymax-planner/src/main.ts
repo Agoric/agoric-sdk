@@ -19,6 +19,7 @@ import {
   makeSequencingSmartWallet,
   reflectWalletStore,
 } from '@agoric/client-utils';
+import type { BaseAccountSDKType } from '@agoric/client-utils/src/codegen/cosmos/auth/v1beta1/auth.js';
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import {
   deeplyFulfilledObject,
@@ -197,13 +198,13 @@ export const main = async (
       'agoric',
       signingSmartWalletKit.address,
     );
-    const account = response.account;
+    const account = response.account as BaseAccountSDKType;
     if (!account) {
       throw Fail`Account not found for address ${signingSmartWalletKit.address}`;
     }
     return {
       address: signingSmartWalletKit.address,
-      accountNumber: account.accountNumber,
+      accountNumber: account.account_number,
       sequence: account.sequence,
     };
   };
