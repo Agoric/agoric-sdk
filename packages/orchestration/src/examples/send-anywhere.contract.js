@@ -16,6 +16,7 @@ import * as sharedFlows from './shared.flows.js';
  * @import {Zone} from '@agoric/zone';
  * @import {OrchestrationPowers, OrchestrationTools} from '../utils/start-helper.js';
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
+ * @import {ZCF} from '@agoric/zoe';
  */
 
 export const SingleNatAmountRecord = M.and(

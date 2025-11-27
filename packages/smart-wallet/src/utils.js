@@ -8,6 +8,8 @@ import { E } from '@endo/far';
  * @import {Follower} from '@agoric/casting';
  * @import {PublicSubscribers} from './types.js';
  * @import {TopicsRecord} from '@agoric/zoe/src/contractSupport/index.js';
+ * @import {Subscriber} from '@agoric/notifier';
+ * @import {Instance} from '@agoric/zoe';
  */
 
 export const NO_SMART_WALLET_ERROR = 'no smart wallet';

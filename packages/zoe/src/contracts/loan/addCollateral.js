@@ -6,7 +6,8 @@ import {
 import { scheduleLiquidation } from './scheduleLiquidation.js';
 
 /**
- * @import {MakeAddCollateralInvitation} from './types-ambient.js';
+ * @import {MakeAddCollateralInvitation} from './types.js';
+ * @import {OfferHandler} from '../../types-index.js';
  */
 
 // Create an invitation to add collateral to the loan. Part of the

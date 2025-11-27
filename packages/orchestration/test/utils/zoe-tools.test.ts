@@ -13,6 +13,8 @@ import {
   withAmountUtils,
 } from '@agoric/zoe/tools/test-utils.js';
 import { E, type EReturn } from '@endo/far';
+import type { StartedInstanceKit } from '@agoric/vats';
+import type { Installation, ZoeService } from '@agoric/zoe';
 import { commonSetup } from '../supports.js';
 
 import * as contractExports from '../fixtures/zoe-tools.contract.js';

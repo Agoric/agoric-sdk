@@ -1,7 +1,6 @@
 // @jessie-check
 
 /// <reference types="@agoric/internal/exported.js" />
-/// <reference path="./types-ambient.js" />
 
 import {
   CONTRACT_ELECTORATE,
@@ -27,7 +26,8 @@ import { amountPattern, ratioPattern } from '../contractSupport.js';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {Ratio} from '@agoric/ertp';
  * @import {AssetReservePublicFacet} from '../reserve/assetReserve.js';
- * @import {InterestTiming, VaultManagerParamValues} from './types-ambient.js';
+ * @import {InterestTiming, VaultManagerParamValues} from './types.js';
+ * @import {GovernanceSubscriptionState} from '@agoric/governance/src/types.js';
  */
 
 export const CHARGING_PERIOD_KEY = 'ChargingPeriod';

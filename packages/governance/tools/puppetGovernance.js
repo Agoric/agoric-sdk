@@ -4,7 +4,7 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { CONTRACT_ELECTORATE, ParamTypes } from '../src/index.js';
 
 /**
- * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
+ * @import {ContractMeta, Installation, Instance, Invitation, IssuerKeywordRecord, ZCF, ZoeService} from '@agoric/zoe';
  * @import {GovernableStartFn} from '../src/types.js';
  * @import {TimerService} from '@agoric/time';
  * @import {start} from './puppetContractGovernor.js';

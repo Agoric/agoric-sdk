@@ -6,7 +6,7 @@ import { registerKnownChains } from '../chain-info.js';
 import { HubName } from '../exos/chain-hub.js';
 
 /**
- * @import {NameHubKit} from '@agoric/vats';
+ * @import {BootstrapPowers, NameHubKit} from '@agoric/vats';
  * @import {Remote} from '@agoric/internal';
  */
 

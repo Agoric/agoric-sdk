@@ -9,6 +9,9 @@
 
 /**
  * @import {PriceAggregatorContract} from './priceAggregator.js';
+ * @import {Invitation} from '../types-index.js';
+ * @import {AmountKeywordRecord} from '../types-index.js';
+ * @import {Instance} from '../types-index.js';
  */
 
 /**

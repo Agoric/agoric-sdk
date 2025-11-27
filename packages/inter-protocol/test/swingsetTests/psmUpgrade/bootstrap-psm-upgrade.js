@@ -20,13 +20,15 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { scale6, withAmountUtils } from '../../supports.js';
 
 /**
- * @import {FeeMintAccess} from '@agoric/zoe';
+ * @import {FeeMintAccess, Installation, ZoeService} from '@agoric/zoe';
  * @import {MetricsNotification, PsmPublicFacet} from '../../../src/psm/psm.js';
  * @import {start as startPeppetGovernor} from '@agoric/governance/tools/puppetContractGovernor.js';
  * @import {PuppetContractGovernorKit} from '@agoric/governance/tools/puppetContractGovernor.js';
  * @import {StartParams} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {VatAdminSvc} from '@agoric/swingset-vat';
  * @import {start} from '@agoric/governance/src/committee.js';
+ * @import {Subscriber} from '@agoric/notifier';
+ * @import {UpdateRecord} from '@agoric/notifier';
  */
 
 const trace = makeTracer('BootPSMUpg');

@@ -9,6 +9,7 @@ import type { IBCMethod } from '@agoric/vats';
 import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
+import type { Installation } from '@agoric/zoe';
 import * as contractExports from '../../src/examples/staking-combinations.contract.js';
 import {
   buildMsgResponseString,

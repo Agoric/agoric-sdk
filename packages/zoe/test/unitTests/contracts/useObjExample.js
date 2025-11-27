@@ -9,6 +9,10 @@ import {
 } from '../../../src/contractSupport/index.js';
 
 /**
+ * @import {ZCF} from '../../../src/types-index.js';
+ */
+
+/**
  * Give a use object when a payment is escrowed
  *
  * @param {ZCF} zcf

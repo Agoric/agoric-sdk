@@ -16,8 +16,9 @@ import { TimestampShape } from '@agoric/time';
 /**
  * @import {TypedPattern} from '@agoric/internal';
  * @import {AfterDeadlineExitRule, ZoeIssuerRecord} from '@agoric/zoe';
- * @import {ExitRule, InvitationHandle, WaivedExitRule} from './types-index.js';
+ * @import {ExitRule, Invitation, InvitationHandle, WaivedExitRule} from './types-index.js';
  * @import {InvitationDetails} from './types-index.js';
+ * @import {Installation} from './zoeService/utils.js';
  */
 
 // keywords have an initial cap
@@ -28,7 +29,7 @@ export const InvitationHandleShape = M.remotable('InvitationHandle');
 /** @type {TypedPattern<Invitation>} */
 export const InvitationShape = M.remotable('Invitation');
 export const InstanceHandleShape = M.remotable('InstanceHandle');
-/** @type {TypedPattern<Installation>} */
+/** @type {TypedPattern<Installation<any>>} */
 export const InstallationShape = M.remotable('Installation');
 export const SeatShape = M.remotable('Seat');
 

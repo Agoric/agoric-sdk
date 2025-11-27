@@ -1,6 +1,10 @@
 import { Far } from '@endo/far';
 
 /**
+ * @import {ZCF} from '@agoric/zoe';
+ */
+
+/**
  * Tests ZCF
  *
  * @param {ZCF} zcf

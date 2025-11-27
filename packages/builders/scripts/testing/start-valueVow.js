@@ -5,7 +5,6 @@
 import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
 
-/// <reference types="@agoric/vats/src/core/types-ambient.js"/>
 /**
  * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {start} from '@agoric/zoe/src/contracts/valueVow.contract.js';

@@ -15,6 +15,7 @@ import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
 const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
 
 /**
+ * @import {Publisher} from '@agoric/notifier';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  * @import {Timestamp, TimerService} from '@agoric/time'
  * @import {MapStore, SetStore} from '@agoric/store';

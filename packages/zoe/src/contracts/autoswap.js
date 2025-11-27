@@ -14,8 +14,8 @@ import {
 } from '../contractSupport/index.js';
 
 /**
- * @import {OfferHandler, ZCF} from '@agoric/zoe';
- * @import {AutoswapPublicFacet} from './types-ambient.js';
+ * @import {Keyword, OfferHandler, ZCF} from '@agoric/zoe';
+ * @import {AutoswapPublicFacet} from './types.js';
  */
 
 /**

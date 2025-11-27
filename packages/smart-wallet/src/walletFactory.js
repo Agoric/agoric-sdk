@@ -21,6 +21,7 @@ import { shape } from './typeGuards.js';
 
 /**
  * @import {ERemote} from '@agoric/internal';
+ * @import {IterableEachTopic} from '@agoric/notifier';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {MapStore} from '@agoric/swingset-liveslots';
  * @import {NameHub} from '@agoric/vats';
@@ -34,6 +35,7 @@ import { shape } from './typeGuards.js';
  * @import {WalletBridgeMsg} from './types.js';
  * @import {Bank} from '@agoric/vats/src/vat-bank.js';
  * @import {TestJigKit} from '@agoric/zoe/src/contractSupport/testJigHelpers.js';
+ * @import {ZCF} from '@agoric/zoe';
  */
 
 const trace = makeTracer('WltFct');

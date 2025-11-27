@@ -1,6 +1,6 @@
 // @ts-check
 
-/** @import {PursesJSONState, RecordMetadata} from './types-ambient.js'; */
+/** @import {PursesJSONState, RecordMetadata} from './types.js'; */
 
 /**
  * @typedef {object} PursesAddedState

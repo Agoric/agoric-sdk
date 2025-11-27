@@ -11,6 +11,11 @@ import { KeywordShape } from '@agoric/zoe/src/typeGuards.js';
  * @import {MapStore, SetStore} from '@agoric/store';
  * @import {EOnly} from '@endo/far';
  * @import {DepositFacet} from '@agoric/ertp/src/types.js';
+ * @import {ContractMeta} from '@agoric/zoe';
+ * @import {Invitation} from '@agoric/zoe';
+ * @import {ZoeService} from '@agoric/zoe';
+ * @import {Keyword} from '@agoric/zoe';
+ * @import {ZCF} from '@agoric/zoe';
  */
 
 const KeywordSharesShape = M.recordOf(KeywordShape, M.nat());
@@ -354,7 +359,10 @@ export const makeFeeDistributor = (feeIssuer, terms) => {
 /** @typedef {ReturnType<typeof makeFeeDistributor>['creatorFacet']} FeeDistributorCreatorFacet */
 /** @typedef {ReturnType<typeof makeFeeDistributor>['publicFacet']} FeeDistributorPublicFacet */
 
-/** @param {ZCF<Parameters<typeof makeFeeDistributor>[1]>} zcf */
+/**
+   @param {ZCF<
+  Parameters<typeof makeFeeDistributor>[1]
+>} zcf */
 export const start = async zcf => {
   const feeIssuer = E(zcf.getZoeService()).getFeeIssuer();
   return makeFeeDistributor(feeIssuer, zcf.getTerms());

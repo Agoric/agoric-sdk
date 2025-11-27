@@ -12,6 +12,7 @@ import { TimestampShape } from '@agoric/time';
 /**
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery, PriceQuoteCreate, PriceAuthorityKit, PriceQuoteTrigger, MutableQuote,} from '@agoric/zoe/tools/types.js';
  * @import {TimerService} from '@agoric/time';
+ * @import {Notifier} from '@agoric/notifier';
  */
 
 const trace = makeTracer('PA', false);
