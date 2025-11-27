@@ -31,8 +31,8 @@ test('TxSequencer resync functionality', async t => {
   });
 
   // Use some sequences
-  sequencer.nextSequence(); // 100
-  sequencer.nextSequence(); // 101
+  t.is(sequencer.nextSequence(), 100n);
+  t.is(sequencer.nextSequence(), 101n);
 
   // Mock network having advanced further
   mockFetch.setSequenceNumber(105n);

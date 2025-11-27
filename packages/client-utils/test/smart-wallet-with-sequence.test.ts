@@ -1,5 +1,6 @@
 import test from 'ava';
 import { arrayIsLike } from '@agoric/internal/tools/ava-assertions.js';
+import { BroadcastTxError } from '@cosmjs/stargate';
 import { makeTxSequencer } from '../src/sequence-manager.js';
 import { makeSequencingSmartWallet } from '../src/smart-wallet-with-sequence.js';
 import type { SigningSmartWalletKit } from '../src/signing-smart-wallet-kit.js';
@@ -13,25 +14,21 @@ type SubmitTxResponse = {
 };
 
 class MockSigningSmartWalletKit {
-  private submittedTransactions: Array<{
+  #submittedTransactions: Array<{
     method: string;
     sequence: bigint;
   }> = [];
 
-  private networkSequence: () => bigint;
+  #networkSequence: () => bigint;
 
-  private shouldSimulateSequenceConflicts: boolean;
-
-  networkConfig = { chainName: 'agoricdev-25' };
-
-  address = 'agoric1test';
+  #shouldSimulateSequenceConflicts: boolean;
 
   constructor(
     getNetworkSequence: () => bigint,
     options: { simulateSequenceConflicts?: boolean } = {},
   ) {
-    this.networkSequence = getNetworkSequence;
-    this.shouldSimulateSequenceConflicts =
+    this.#networkSequence = getNetworkSequence;
+    this.#shouldSimulateSequenceConflicts =
       options.simulateSequenceConflicts ?? false;
   }
 
@@ -44,40 +41,38 @@ class MockSigningSmartWalletKit {
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 10));
 
-    const currentNetworkSequence = this.networkSequence();
+    const currentNetworkSequence = this.#networkSequence();
 
     // Simulate sequence mismatch if enabled and sequence is out of sync
     if (
-      this.shouldSimulateSequenceConflicts &&
+      this.#shouldSimulateSequenceConflicts &&
       signerData.sequence < currentNetworkSequence
     ) {
-      throw new Error(
-        `Broadcasting transaction failed with code 32 (codespace: sdk). Log: account sequence mismatch, expected ${currentNetworkSequence}, got ${signerData.sequence}: incorrect account sequence`,
-      );
+      const log = `account sequence mismatch, expected ${currentNetworkSequence}, got ${signerData.sequence}: incorrect account sequence`;
+      throw new BroadcastTxError(32, 'sdk', log);
     }
 
     // Record successful transaction
     const method = action.method || 'sendBridgeAction';
-    this.submittedTransactions.push({
+    this.#submittedTransactions.push({
       method,
       sequence: signerData.sequence,
     });
 
     return {
       code: 0,
-      height: 3321450 + this.submittedTransactions.length,
+      height: 3321450 + this.#submittedTransactions.length,
       transactionHash: `hash_${method}_${signerData.sequence}`,
       sequence: signerData.sequence,
     };
   }
 
   async pollOffer(_address: string, _offerId: string) {
-    void this.submittedTransactions;
     return { status: 'accepted' };
   }
 
   getSubmittedTransactions() {
-    return this.submittedTransactions;
+    return this.#submittedTransactions;
   }
 }
 
