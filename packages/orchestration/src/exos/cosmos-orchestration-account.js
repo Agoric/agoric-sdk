@@ -307,20 +307,13 @@ export const prepareCosmosOrchestrationAccountKit = (
   },
 ) => {
   /**
-   * Use a WeakMapStore to memoize some additional details about the ICA
-   * Account.
-   *
-   * @type {WeakMapStore<
-   *   IcaAccount,
-   *   {
-   *     agoric: ChainInfo<'cosmos'>;
-   *     la: LocalIbcAddress;
-   *     counterparty: CaipChainId;
-   *     ra: RemoteIbcAddress;
-   *   }
-   * >}
+   * Abandon the icaAccountToDetails weakMapStore, since it introduced a caching
+   * layer that was never properly invalidated. So, we mark it as a tombstone
+   * (null) that's part of new contract instance baggage, while leaving older
+   * contracts with the undisturbed zone slot assignment.
    */
-  const icaAccountToDetails = zone.weakMapStore('icaAccountToDetails');
+  void zone.makeOnce('icaAccountToDetails', () => null);
+
   const timestampHelper = makeTimestampHelper(timerService);
   const makeCosmosOrchestrationAccountKit = zone.exoClassKit(
     'Cosmos Orchestration Account Holder',
@@ -523,16 +516,6 @@ export const prepareCosmosOrchestrationAccountKit = (
           { result, meta: origMeta },
           protocol,
         ) {
-          const { helper } = this.facets;
-          const acct = helper.owned();
-          if (!icaAccountToDetails.has(acct)) {
-            // Memoize the details for next time.
-            icaAccountToDetails.init(
-              acct,
-              harden({ agoric, la, counterparty, ra }),
-            );
-          }
-
           const cp = counterparty.split(':', 2);
           const lad = decodeIbcEndpoint(la);
           const rad = decodeIbcEndpoint(ra);
@@ -1408,21 +1391,13 @@ export const prepareCosmosOrchestrationAccountKit = (
             const { helper } = this.facets;
             const acct = helper.owned();
             const result = watch(E(acct).executeEncodedTx(msgs, opts));
-            const all = [];
-            if (icaAccountToDetails.has(acct)) {
-              const { agoric, la, counterparty, ra } =
-                icaAccountToDetails.get(acct);
-              all.push(agoric, la, counterparty, ra);
-            } else {
-              const agoric = chainHub.getChainInfo('agoric');
-              const la = E(acct).getLocalAddress();
-              const counterparty = `cosmos:${chainAddress.chainId}`;
-              const ra = E(acct).getRemoteAddress();
+            const agoric = chainHub.getChainInfo('agoric');
+            const la = E(acct).getLocalAddress();
+            const counterparty = `cosmos:${chainAddress.chainId}`;
+            const ra = E(acct).getRemoteAddress();
 
-              all.push(agoric, la, counterparty, ra);
-            }
             return watch(
-              allVows(all),
+              vowTools.all([agoric, la, counterparty, ra]),
               this.facets.attachTxMetaWatcher,
               { result, meta: {} },
               'ibc',
