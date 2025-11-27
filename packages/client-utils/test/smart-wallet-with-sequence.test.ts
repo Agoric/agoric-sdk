@@ -116,17 +116,20 @@ test('handles concurrent offers and actions with correct sequence management', a
     walletWithSequence.executeOffer({ id: 'offer3' } as any),
   ];
 
-  const results = (await Promise.all(promises)) as any;
+  const results = await Promise.all(promises);
 
   arrayIsLike(t, results, [
-    // prettier-ignore
-    { code: 0, transactionHash: 'hash_executeOffer_100', height: 3321451, sequence: 100n },
-    // prettier-ignore
-    { code: 0, transactionHash: 'hash_executeOffer_101', height: 3321452, sequence: 101n },
-    // prettier-ignore
-    { code: 0, transactionHash: 'hash_test_102', height: 3321453, sequence: 102n },
-    // prettier-ignore
-    { code: 0, transactionHash: 'hash_executeOffer_103', height: 3321454, sequence: 103n },
+    // executeOffer returns OfferStatus from pollOffer
+    { status: 'accepted' },
+    { status: 'accepted' },
+    // sendBridgeAction returns transaction details
+    {
+      code: 0,
+      transactionHash: 'hash_test_102',
+      height: 3321453,
+      sequence: 102n,
+    },
+    { status: 'accepted' },
   ]);
 
   const submittedTransactions = mockWallet.getSubmittedTransactions();
@@ -137,8 +140,8 @@ test('handles concurrent offers and actions with correct sequence management', a
     { method: 'executeOffer', sequence: 103n },
   ]);
   t.true(logs.some(v => v.includes('Starting queue processing')));
-  t.true(logs.some(v => v.includes('Queued executeOffer')));
-  t.true(logs.some(v => v.includes('Queued sendBridgeAction')));
+  t.true(logs.some(v => v.includes('executeOffer enqueued at index')));
+  t.true(logs.some(v => v.includes('sendBridgeAction enqueued at index')));
 });
 
 test('handles sequence error recovery with network sync', async t => {
@@ -161,18 +164,15 @@ test('handles sequence error recovery with network sync', async t => {
 
   mockFetch.setSequenceNumber(105n);
 
-  const result = (await walletWithSequence.executeOffer({
+  const result = await walletWithSequence.executeOffer({
     id: 'offer1',
-  } as any)) as any;
+  } as any);
 
   t.deepEqual(result, {
-    code: 0,
-    height: 3321451,
-    transactionHash: `hash_executeOffer_105`,
-    sequence: 105n,
+    status: 'accepted',
   });
 
-  t.true(logs.some(v => v.includes('Sequence error detected')));
+  t.true(logs.some(v => v.includes('retrying with resynced sequence number')));
   t.true(
     logs.some(v =>
       v.includes('Resynced accountNumber 377 sequence number from 101 to 105'),

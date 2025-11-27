@@ -130,6 +130,7 @@ export const makeSequencingSmartWallet = (
 
     if (!isDraining) {
       isDraining = true;
+      log('Starting queue processing');
       void drainQueue().finally(() => {
         isDraining = false;
       });
@@ -158,14 +159,20 @@ export const makeSequencingSmartWallet = (
   /**
    * Execute an offer with managed sequence number.
    */
-  const executeOffer: SigningSmartWalletKit['executeOffer'] = async offer => {
+  const executeOffer: SigningSmartWalletKit['executeOffer'] = async (
+    offer,
+    fee,
+    memo,
+    manualSignerData,
+  ) => {
+    manualSignerData === undefined || Fail`manual signerData is not supported`;
     const txId = offer.offerArgs?.txId;
     const label = `executeOffer${txId ? ` ${txId}` : ''}`;
     return enqueue(label, async () => {
       const signerData = makeSignerData(label);
       const action: BridgeAction = { method: 'executeOffer', offer };
       const offerP = signingSmartWalletKit.pollOffer(address, offer.id);
-      await unsafeSendBridgeAction(action, undefined, undefined, signerData);
+      await unsafeSendBridgeAction(action, fee, memo, signerData);
       return offerP;
     });
   };
