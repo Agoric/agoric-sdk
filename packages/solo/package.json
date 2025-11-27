@@ -44,7 +44,7 @@
     "@endo/init": "^1.1.12",
     "@endo/marshal": "^1.8.0",
     "@endo/promise-kit": "^1.1.13",
-    "anylogger": "^0.21.0",
+    "anylogger": "^1.0.11",
     "deterministic-json": "^1.0.5",
     "express": "^5.0.1",
     "http-proxy-middleware": "^2.0.6",
