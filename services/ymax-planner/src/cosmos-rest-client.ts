@@ -1,5 +1,6 @@
 /* eslint-disable max-classes-per-file */
 import type { QueryAllBalancesResponse } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
+import type { QueryAccountResponse } from '@agoric/cosmic-proto/cosmos/auth/v1beta1/query.js';
 import type { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
 import ky, { HTTPError, type KyInstance } from 'ky';
 
@@ -212,7 +213,10 @@ export class CosmosRestClient {
     );
   }
 
-  async getAccountSequence(chainKey: string, address: string) {
+  async getAccountSequence(
+    chainKey: string,
+    address: string,
+  ): Promise<QueryAccountResponse> {
     const chainConfig = this.chainConfigs.get(chainKey);
     if (!chainConfig) {
       throw new Error(`Chain configuration not found for: ${chainKey}`);
@@ -221,10 +225,10 @@ export class CosmosRestClient {
 
     this.log(`[CosmosRestClient] Fetching account sequence for ${address}`);
 
-    return this.makeRequest(
+    return this.makeRequest<QueryAccountResponse>(
       url,
       chainConfig,
-      `Chain info for ${chainConfig.name}`,
+      `Account info for ${address} on ${chainConfig.name}`,
     );
   }
 

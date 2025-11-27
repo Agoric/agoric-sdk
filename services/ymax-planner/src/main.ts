@@ -46,7 +46,6 @@ import { SpectrumClient } from './spectrum-client.ts';
 import { makeGasEstimator } from './gas-estimation.ts';
 import { makeSQLiteKeyValueStore } from './kv-store.ts';
 
-
 const assertChainId = async (
   rpc: CosmosRPCClient,
   chainId: string,
@@ -194,12 +193,18 @@ export const main = async (
   });
 
   const fetchAccount = async () => {
-    const response = await cosmosRest.getAccountSequence('agoric', signingSmartWalletKit.address);
-    const { account } = response as any;
+    const response = await cosmosRest.getAccountSequence(
+      'agoric',
+      signingSmartWalletKit.address,
+    );
+    const account = response.account;
+    if (!account) {
+      throw Fail`Account not found for address ${signingSmartWalletKit.address}`;
+    }
     return {
       address: signingSmartWalletKit.address,
-      accountNumber: BigInt(account.account_number),
-      sequence: BigInt(account.sequence),
+      accountNumber: account.accountNumber,
+      sequence: account.sequence,
     };
   };
 
