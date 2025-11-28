@@ -33,12 +33,7 @@ export type EVow<T> = ERef<T | Vow<T>>;
  * Follow the chain of vow shortening to the end, returning the final value.
  * This is used within E, so we must narrow the type to its remote form.
  */
-export type EUnwrap<T> =
-  T extends Vow<infer U>
-    ? EUnwrap<U>
-    : T extends PromiseLike<infer U>
-      ? EUnwrap<U>
-      : T;
+export type EUnwrap<T> = Fulfilled<T>;
 
 /**
  * The first version of the vow implementation
@@ -155,6 +150,9 @@ export type VowTools = {
   ) => Vow<{
     [K in keyof TS]: PromiseSettledResult<Fulfilled<TS[K]>>;
   }>;
+  /**
+   * @deprecated use `all`
+   */
   allVows: <TS extends readonly unknown[]>(
     maybeVows: TS,
   ) => Vow<{
