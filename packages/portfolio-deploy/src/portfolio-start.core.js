@@ -32,6 +32,7 @@ const trace = makeTracer(`YMX-Start`, true);
  *     AXELAR_GAS: Bech32Address;
  *   };
  *   oldBoardId?: string;
+ *   walletBytecode: `0x${string}`;
  * } & CopyRecord} PortfolioDeployConfig
  */
 
@@ -44,6 +45,7 @@ export const portfolioDeployConfigShape = M.splitRecord(
       AXELAR_GMP: M.string(),
       AXELAR_GAS: M.string(),
     }),
+    walletBytecode: M.string(),
   },
   {
     oldBoardId: M.string(),
@@ -60,7 +62,7 @@ export const makePrivateArgs = async (
   marshaller,
   config,
 ) => {
-  const { axelarConfig, gmpAddresses } = config;
+  const { axelarConfig, gmpAddresses, walletBytecode } = config;
   const { agoricNames } = orchestrationPowers;
   const { chainInfo: cosmosChainInfo, assetInfo } = await lookupInterchainInfo(
     agoricNames,
@@ -108,6 +110,7 @@ export const makePrivateArgs = async (
     axelarIds,
     contracts,
     gmpAddresses,
+    walletBytecode,
   });
   return it;
 };

@@ -4,6 +4,8 @@ import { privateArgsShape } from '@aglocal/portfolio-contract/src/portfolio.cont
 import { mustMatch } from '@agoric/internal';
 import { type CosmosChainInfo } from '@agoric/orchestration';
 import { Far } from '@endo/pass-style';
+import { readFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import { makeAssetInfo } from '../src/chain-name-service.js';
 import {
   chainInfoDevNet,
@@ -11,6 +13,9 @@ import {
   ethOverridesDevNet,
   ethOverridesMainNet,
 } from './chain-info.fixture.js';
+
+const nodeRequire = createRequire(import.meta.url);
+const asset = (spec: string) => readFile(nodeRequire.resolve(spec), 'utf8');
 
 const { entries, fromEntries } = Object;
 
@@ -123,13 +128,21 @@ const stubPowers = {
   timerService: Far('TimerService'),
 };
 
-test('devnet overrides match ymax privateArgsShape', t => {
+test('devnet overrides match ymax privateArgsShape', async t => {
+  const { bytecode: walletBytecode } = JSON.parse(
+    await asset('@aglocal/portfolio-deploy/tools/evm-orch/Wallet.json'),
+  );
   const bidirectional = complementConnections(chainInfoDevNet);
   const assetInfo = makeAssetInfo(bidirectional, tokenMap);
 
   /** include connection info */
   const chainInfo = { ...ethOverridesDevNet.chainInfo, ...bidirectional };
-  const privateArgsData = { ...ethOverridesDevNet, chainInfo, assetInfo };
+  const privateArgsData = {
+    ...ethOverridesDevNet,
+    chainInfo,
+    assetInfo,
+    walletBytecode,
+  };
   t.notThrows(() =>
     mustMatch(harden({ ...stubPowers, ...privateArgsData }), privateArgsShape),
   );
@@ -140,13 +153,21 @@ test('devnet overrides match ymax privateArgsShape', t => {
   );
 });
 
-test('mainnet overrides match ymax privateArgsShape', t => {
+test('mainnet overrides match ymax privateArgsShape', async t => {
+  const { bytecode: walletBytecode } = JSON.parse(
+    await asset('@aglocal/portfolio-deploy/tools/evm-orch/Wallet.json'),
+  );
   const bidirectional = complementConnections(chainInfoProposal100);
   const assetInfo = makeAssetInfo(bidirectional, tokenMap);
 
   /** include connection info */
   const chainInfo = { ...ethOverridesMainNet.chainInfo, ...bidirectional };
-  const privateArgsData = { ...ethOverridesMainNet, chainInfo, assetInfo };
+  const privateArgsData = {
+    ...ethOverridesMainNet,
+    chainInfo,
+    assetInfo,
+    walletBytecode,
+  };
   t.notThrows(() =>
     mustMatch(harden({ ...stubPowers, ...privateArgsData }), privateArgsShape),
   );

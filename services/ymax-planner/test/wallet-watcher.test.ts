@@ -9,7 +9,8 @@ import { SMART_WALLET_CREATED_SIGNATURE } from '../src/watchers/wallet-watcher.t
 const abiCoder = new AbiCoder();
 
 const factoryAddress = '0x51e589D94b51d01B75442AE1504cD8c50d6127C9';
-const expectedWalletAddr = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
+// address posted on vstorage is in lowercase
+const expectedWalletAddr = '0x8cb4b25e77844fc0632aca14f1f9b23bdd654ebf';
 
 const createSmartWalletCreatedLog = (
   walletAddr: string,
@@ -64,7 +65,7 @@ test('handlePendingTx processes MAKE_ACCOUNT transaction successfully', async t 
       address: factoryAddress,
       topics: [
         SMART_WALLET_CREATED_SIGNATURE,
-        zeroPadValue(expectedWalletAddr.toLowerCase(), 32),
+        zeroPadValue(expectedWalletAddr, 32),
       ],
     };
 
@@ -118,7 +119,7 @@ test('handlePendingTx logs timeout on MAKE_ACCOUNT transaction with no matching 
       address: factoryAddress,
       topics: [
         SMART_WALLET_CREATED_SIGNATURE,
-        zeroPadValue(expectedWalletAddr.toLowerCase(), 32),
+        zeroPadValue(expectedWalletAddr, 32),
       ],
     };
 
@@ -151,9 +152,8 @@ test('handlePendingTx ignores non-matching wallet addresses', async t => {
   const type = TxType.MAKE_ACCOUNT;
 
   // Use a different address - getAddress normalizes it to checksummed format
-  const wrongWalletAddrChecksummed = getAddress(
-    '0x742d35cc6635c0532925a3b8d9deb1c9e5eb2b64',
-  );
+  const wrongWalletAddrChecksummed =
+    '0x742d35cc6635c0532925a3b8d9deb1c9e5eb2b64';
 
   const logMessages: string[] = [];
   const logger = (...args: any[]) => logMessages.push(args.join(' '));
@@ -179,7 +179,7 @@ test('handlePendingTx ignores non-matching wallet addresses', async t => {
       address: factoryAddress,
       topics: [
         SMART_WALLET_CREATED_SIGNATURE,
-        zeroPadValue(expectedWalletAddr.toLowerCase(), 32),
+        zeroPadValue(expectedWalletAddr, 32),
       ],
     };
 
@@ -198,7 +198,7 @@ test('handlePendingTx ignores non-matching wallet addresses', async t => {
       address: factoryAddress,
       topics: [
         SMART_WALLET_CREATED_SIGNATURE,
-        zeroPadValue(expectedWalletAddr.toLowerCase(), 32),
+        zeroPadValue(expectedWalletAddr, 32),
       ],
     };
 

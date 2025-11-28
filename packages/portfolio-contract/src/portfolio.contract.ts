@@ -32,10 +32,12 @@ import {
   type OrchestrationPowers,
   type OrchestrationTools,
 } from '@agoric/orchestration';
+import type { PortfolioPublicInvitationMaker } from '@agoric/portfolio-api';
 import {
   AxelarChain,
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
+import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
 import type { ContractMeta, ZCF, ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
@@ -46,8 +48,6 @@ import { E } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
-import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
-import type { PortfolioPublicInvitationMaker } from '@agoric/portfolio-api';
 import { preparePlanner } from './planner.exo.ts';
 import { preparePortfolioKit, type PortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
@@ -157,6 +157,7 @@ export type PortfolioPrivateArgs = OrchestrationPowers & {
   storageNode: Remote<StorageNode>;
   axelarIds: AxelarId;
   contracts: EVMContractAddressesMap;
+  walletBytecode: `0x${string}`;
   gmpAddresses: GmpAddresses;
 };
 
@@ -171,6 +172,7 @@ export const privateArgsShape: TypedPattern<PortfolioPrivateArgs> = {
   assetInfo: M.arrayOf([M.string(), DenomDetailShape]),
   axelarIds: AxelarIdShape,
   contracts: EVMContractAddressesMapShape,
+  walletBytecode: M.string(),
   gmpAddresses: GmpAddressesShape,
 };
 
@@ -234,6 +236,7 @@ export const contract = async (
     assetInfo,
     axelarIds,
     contracts,
+    walletBytecode,
     storageNode,
     gmpAddresses,
   } = privateArgs;
@@ -312,6 +315,7 @@ export const contract = async (
     },
     axelarIds,
     contracts,
+    walletBytecode,
     gmpAddresses,
     resolverClient,
     inertSubscriber,
@@ -339,8 +343,6 @@ export const contract = async (
    * where required.
    */
   const txfrCtx: flows.OnTransferContext = {
-    axelarIds,
-    gmpAddresses,
     resolverService,
     transferChannels,
   };

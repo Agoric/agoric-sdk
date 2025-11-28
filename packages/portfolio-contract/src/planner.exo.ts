@@ -104,7 +104,10 @@ export const preparePlanner = (
         policyVersion: number,
         rebalanceCount = 0,
       ) {
-        trace('TODO(#11782): vet plan', { portfolioId, plan: planOrSteps });
+        const traceFlow = trace
+          .sub(`portfolio${portfolioId}`)
+          .sub(`flow${flowId}`);
+        traceFlow('TODO(#11782): vet plan', planOrSteps);
         const { planner: portfolioPlanner } = getPortfolio(portfolioId);
         portfolioPlanner.submitVersion(policyVersion, rebalanceCount);
         portfolioPlanner.resolveFlowPlan(flowId, planOrSteps);

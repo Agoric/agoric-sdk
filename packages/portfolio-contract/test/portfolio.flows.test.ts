@@ -10,7 +10,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { GuestInterface } from '@agoric/async-flow';
 import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 import { AmountMath, makeIssuerKit, type NatAmount } from '@agoric/ertp';
-import { makeTracer, mustMatch } from '@agoric/internal';
+import { makeTracer, mustMatch, type TraceLogger } from '@agoric/internal';
 import { type StorageMessage } from '@agoric/internal/src/lib-chainStorage.js';
 import {
   defaultSerializer,
@@ -26,9 +26,7 @@ import {
 } from '@agoric/orchestration';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
-import { buildGasPayload } from '@agoric/orchestration/src/utils/gmp.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
-import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import type { FundsFlowPlan } from '@agoric/portfolio-api';
 import {
   RebalanceStrategy,
@@ -57,6 +55,7 @@ import {
   type OnTransferContext,
   type PortfolioInstanceContext,
 } from '../src/portfolio.flows.ts';
+import { provideEVMAccount } from '../src/pos-gmp.flows.ts';
 import {
   makeSwapLockMessages,
   makeUnlockSwapMessages,
@@ -78,19 +77,14 @@ import { decodeFunctionCall } from './abi-utils.ts';
 import {
   axelarIdsMock,
   contractsMock,
-  evmNamingDistinction,
   gmpAddresses,
   planUSDNDeposit,
 } from './mocks.ts';
 import {
   axelarCCTPConfig,
-  makeIncomingEVMEvent,
   makeIncomingVTransferEvent,
   makeStorageTools,
 } from './supports.ts';
-
-// Use an EVM chain whose axelar ID differs from its chain name
-const { sourceChain } = evmNamingDistinction;
 
 const theExit = harden(() => {}); // for ava comparison
 // @ts-expect-error mock
@@ -173,6 +167,13 @@ const mocks = (
   const log = (ev: MockLogEvent) => {
     buf.push(ev);
   };
+  const kinks: Array<(ev: MockLogEvent) => Promise<void>> = [];
+  const record = async (ev: MockLogEvent) => {
+    for (const kink of kinks) {
+      await kink(ev);
+    }
+    log(ev);
+  };
   let nonce = 0;
   const tapPK = makePromiseKit<TargetApp>();
   const factoryPK = makePromiseKit();
@@ -214,11 +215,16 @@ const mocks = (
             async send(toAccount, amount) {
               const { send: sendErr } = errs;
               if (sendErr && amount?.value === 13n) throw sendErr;
-              log({ _cap: addr.value, _method: 'send', toAccount, amount });
+              await record({
+                _cap: addr.value,
+                _method: 'send',
+                toAccount,
+                amount,
+              });
             },
             async transfer(address, amount, opts) {
               if (!('denom' in amount)) throw Error('#10449');
-              log({
+              await record({
                 _cap: addr.value,
                 _method: 'transfer',
                 address,
@@ -237,7 +243,11 @@ const mocks = (
               }
             },
             async executeEncodedTx(msgs) {
-              log({ _cap: addr.value, _method: 'executeEncodedTx', msgs });
+              await record({
+                _cap: addr.value,
+                _method: 'executeEncodedTx',
+                msgs,
+              });
               const { executeEncodedTx: err } = errs;
               if (err) throw err;
               return harden(msgs.map(_ => ({})));
@@ -363,8 +373,6 @@ const mocks = (
   } as const;
 
   const txfrCtx: OnTransferContext = {
-    axelarIds: axelarIdsMock,
-    gmpAddresses,
     resolverService,
     transferChannels,
   };
@@ -375,6 +383,7 @@ const mocks = (
   const ctx1: PortfolioInstanceContext = {
     axelarIds: axelarIdsMock,
     contracts: contractsMock,
+    walletBytecode: '0x1234',
     gmpAddresses,
     usdc: { brand: USDC, denom },
     gmpFeeInfo: { brand: BLD, denom: 'uaxl' },
@@ -463,6 +472,7 @@ const mocks = (
     settleUntil: async (
       done: Promise<unknown>,
       status: Exclude<TxStatus, 'pending'> = 'success',
+      rejectionReason?: string,
     ) => {
       void done.then(() => cancelStorageupdates());
       for await (const message of storageUpdates) {
@@ -474,7 +484,7 @@ const mocks = (
         const info = getDeserialized(key).at(-1) as PublishedTx;
         if (info.status !== 'pending') continue;
         const txId = key.split('.').at(-1) as `tx${number}`;
-        resolverService.settleTransaction({ txId, status });
+        resolverService.settleTransaction({ txId, status, rejectionReason });
       }
     },
   });
@@ -483,7 +493,7 @@ const mocks = (
     orch,
     tapPK,
     ctx: { ...ctx1, makePortfolioKit: makePortfolioKitGuest },
-    offer: { log: buf, seat, factoryPK },
+    offer: { log: buf, seat, factoryPK, kinks },
     storage: {
       ...storage,
       getDeserialized,
@@ -636,7 +646,7 @@ test(
   'open portfolio with Aave and USDN positions then inbound GMP',
   openAndTransfer,
   { Aave: make(USDC, 3_333_000_000n), USDN: make(USDC, 3_333_000_000n) },
-  () => [makeIncomingEVMEvent({ sourceChain })],
+  () => [],
 );
 
 test('open portfolio with Aave position', async t => {
@@ -658,15 +668,12 @@ test('open portfolio with Aave position', async t => {
         { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
       ],
     }),
-    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(
-      async ([tap]) => {
-        // Complete GMP transaction
-        await txResolver.drainPending();
-        await tap.receiveUpcall(makeIncomingEVMEvent({ sourceChain }));
-        // Complete CCTP transaction
-        await txResolver.drainPending();
-      },
-    ),
+    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
+      // Complete GMP transaction
+      await txResolver.drainPending();
+      // Complete CCTP transaction
+      await txResolver.drainPending();
+    }),
   ]);
   const { log } = offer;
   t.log(log.map(msg => msg._method).join(', '));
@@ -686,12 +693,6 @@ test('open portfolio with Aave position', async t => {
     { _method: 'transfer', address: { chainId: 'axelar-6' } },
     { _method: 'exit', _cap: 'seat' },
   ]);
-
-  t.like(
-    JSON.parse(log[3].opts!.memo),
-    { payload: buildGasPayload(50n) },
-    '1st transfer to axelar carries evmGas for return message',
-  );
 
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
   t.is(passStyleOf(actual.invitationMakers), 'remotable');
@@ -716,12 +717,9 @@ test('open portfolio with Compound position', async t => {
     openPortfolio(orch, { ...ctx }, offer.seat, {
       flow: steps,
     }),
-    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(
-      async ([tap, _]) => {
-        await tap.receiveUpcall(makeIncomingEVMEvent({ sourceChain }));
-        await txResolver.drainPending();
-      },
-    ),
+    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
+      await txResolver.drainPending();
+    }),
   ]);
   const { log } = offer;
   t.log(log.map(msg => msg._method).join(', '));
@@ -857,7 +855,7 @@ test.skip('handle failure in sendGmp with Aave position', async t => {
   const amount = AmountMath.make(USDC, 300n);
   const feeAcct = AmountMath.make(BLD, 300n);
   const feeCall = AmountMath.make(BLD, 100n);
-  const { orch, tapPK, ctx, offer, storage } = mocks(
+  const { orch, ctx, offer, storage } = mocks(
     { transfer: Error('ag->axelar: SOS!') },
     { Deposit: amount },
   );
@@ -871,11 +869,6 @@ test.skip('handle failure in sendGmp with Aave position', async t => {
       { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
     ],
   });
-
-  // Ensure the upcall happens to resolve getGMPAddress(), then let the transfer fail
-  // the failure is expected before offer.factoryPK resolves, so don't wait for it.
-  const tap = await tapPK.promise;
-  await tap.receiveUpcall(makeIncomingEVMEvent({ sourceChain }));
 
   const actual = await portfolioPromise;
   const { log } = offer;
@@ -897,7 +890,6 @@ test(
   openAndTransfer,
   { Aave: make(USDC, 3_333_000_000n), USDN: make(USDC, 3_333_000_000n) },
   () => [
-    makeIncomingEVMEvent({ sourceChain }),
     makeIncomingVTransferEvent({
       hookQuery: { rebalance: RebalanceStrategy.Preset },
       amount: 1_000_000_000n,
@@ -968,12 +960,9 @@ test('claim rewards on Aave position', async t => {
       },
       kit,
     ),
-    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(
-      async ([tap, _]) => {
-        await tap.receiveUpcall(makeIncomingEVMEvent({ sourceChain }));
-        await txResolver.drainPending();
-      },
-    ),
+    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
+      await txResolver.drainPending();
+    }),
   ]);
 
   const { log } = offer;
@@ -1022,15 +1011,9 @@ test('open portfolio with Beefy position', async t => {
         },
       ],
     }),
-    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(
-      async ([tap, _]) => {
-        await tap.receiveUpcall(
-          makeIncomingEVMEvent({ sourceChain: 'Avalanche' }),
-        );
-
-        await txResolver.drainPending();
-      },
-    ),
+    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
+      await txResolver.drainPending();
+    }),
   ]);
   const { log } = offer;
   t.log(log.map(msg => msg._method).join(', '));
@@ -1112,31 +1095,6 @@ test('client can move to deposit LCA', async t => {
   t.like(log, [{ _method: 'monitorTransfers' }, { _method: 'localTransfer' }]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
   await documentStorageSchema(t, storage, docOpts);
-});
-
-test('receiveUpcall returns false if sender is not AXELAR_GMP', async t => {
-  const { give, steps } = await makePortfolioSteps(
-    { Compound: make(USDC, 300n) },
-    { fees: { Compound: { Account: make(BLD, 300n), Call: make(BLD, 100n) } } },
-  );
-  const { orch, tapPK, ctx, offer } = mocks({}, give);
-
-  // The portfolio flow will hang waiting for valid GMP, so we don't await it
-  // This is expected behavior - the test just needs to verify receiveUpcall validation
-  void openPortfolio(orch, { ...ctx }, offer.seat, {
-    flow: steps,
-  });
-
-  const tap = await tapPK.promise;
-  // XXX resolution of tapPK entails that reg = await monitorTransfers() has been called,
-  // but not that resolveAccount({... lca, reg }) has been called
-  await eventLoopIteration();
-
-  const upcallProcessed = await tap.receiveUpcall(
-    makeIncomingEVMEvent({ sourceChain, sender: makeTestAddress() }),
-  );
-
-  t.is(upcallProcessed, false, 'upcall indicates bad GMP sender');
 });
 
 test('handle failure in provideCosmosAccount makeAccount', async t => {
@@ -1226,32 +1184,45 @@ test('handle failure in provideEVMAccount sendMakeAccountCall', async t => {
   const seat1 = makeMockSeat(give, undefined, log);
 
   const attempt1P = rebalance(orch, ctx, seat1, { flow: steps }, pKit);
+  const testDonePK = makePromiseKit();
+  void txResolver.settleUntil(testDonePK.promise);
   t.is(await attempt1P, undefined);
 
   const seatFails = log.find(e => e._method === 'fail' && e._cap === 'seat');
-  t.deepEqual(
+  t.like(
     seatFails?.reason,
-    Error('Insufficient funds - piggy bank sprang a leak'),
+    {
+      error: 'Insufficient funds - piggy bank sprang a leak',
+      how: 'Compound',
+      step: 4,
+    },
     'rebalance should fail when EVM account creation fails',
   );
 
   const { getPortfolioStatus, getFlowStatus } = makeStorageTools(storage);
 
   {
-    const { accountIdByChain: byChain } = await getPortfolioStatus(1);
-    // limited accounts (no EVM account due to failure)
-    t.deepEqual(Object.keys(byChain), ['agoric']);
+    const { accountIdByChain: byChain, accountsPending } =
+      await getPortfolioStatus(1);
+    // addresses of all requested accounts are available
+    t.deepEqual(Object.keys(byChain), ['Arbitrum', 'agoric', 'noble']);
+    // attempt to install Arbitrum account is no longer pending
+    t.deepEqual(accountsPending, []);
 
-    // TODO: "Insufficient funds" error should be visible in vstorage
     const fs = await getFlowStatus(1, 1);
     t.log(fs);
-    t.deepEqual(fs, {
-      type: 'rebalance',
-      state: 'fail',
-      step: 0,
-      how: 'makeAccount: Arbitrum',
-      error: 'Insufficient funds - piggy bank sprang a leak',
-    });
+    t.deepEqual(
+      fs,
+      {
+        type: 'rebalance',
+        state: 'fail',
+        step: 4,
+        how: 'Compound',
+        error: 'Insufficient funds - piggy bank sprang a leak',
+        next: undefined,
+      },
+      '"Insufficient funds" error should be visible in vstorage',
+    );
   }
 
   // Recovery attempt - avoid the unlucky 13n fee using same portfolio
@@ -1264,13 +1235,9 @@ test('handle failure in provideEVMAccount sendMakeAccountCall', async t => {
 
   await Promise.all([
     attempt2P,
-    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(
-      async ([tap, _]) => {
-        await tap.receiveUpcall(makeIncomingEVMEvent({ sourceChain }));
-
-        await txResolver.drainPending();
-      },
-    ),
+    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
+      await txResolver.drainPending();
+    }),
   ]);
   t.truthy(log.find(entry => entry._method === 'exit'));
 
@@ -1278,6 +1245,8 @@ test('handle failure in provideEVMAccount sendMakeAccountCall', async t => {
     const { accountIdByChain: byChain } = await getPortfolioStatus(1);
     t.deepEqual(Object.keys(byChain), ['Arbitrum', 'agoric', 'noble']);
   }
+
+  testDonePK.resolve(undefined);
 });
 
 test.todo('recover from send step');
@@ -1312,12 +1281,9 @@ test('withdraw in coordination with planner', async t => {
     );
     await Promise.all([
       depositP,
-      Promise.all([tapPK.promise, offer.factoryPK.promise]).then(
-        async ([tap]) => {
-          await tap.receiveUpcall(makeIncomingEVMEvent({ sourceChain }));
-          await txResolver.drainPending();
-        },
-      ),
+      Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
+        await txResolver.drainPending();
+      }),
     ]);
   }
 
@@ -1431,7 +1397,7 @@ test('deposit in coordination with planner', async t => {
 });
 
 test('simple rebalance in coordination with planner', async t => {
-  const { orch, ctx, offer, storage, tapPK, txResolver } = mocks({});
+  const { orch, ctx, offer, storage, txResolver } = mocks({});
 
   const { getPortfolioStatus } = makeStorageTools(storage);
 
@@ -1511,10 +1477,6 @@ test('simple rebalance in coordination with planner', async t => {
 
   // Simulate external system responses for cross-chain operations
   const simulationP = (async () => {
-    // Wait for the tap to be set up, then simulate Axelar GMP response for Arbitrum account creation
-    const tap = await tapPK.promise;
-    await tap.receiveUpcall(makeIncomingEVMEvent({ sourceChain }));
-
     await txResolver.drainPending();
   })();
 
@@ -1528,7 +1490,7 @@ test('simple rebalance in coordination with planner', async t => {
 });
 
 test('parallel execution with scheduler', async t => {
-  const { orch, ctx, offer, storage, tapPK, txResolver } = mocks({});
+  const { orch, ctx, offer, storage, txResolver } = mocks({});
 
   const trace = makeTracer('PExec');
   const kit = await ctx.makePortfolioKit();
@@ -1581,9 +1543,7 @@ test('parallel execution with scheduler', async t => {
 
   // Simulate external system responses for cross-chain operations
   const simulationP = (async () => {
-    const tap = await tapPK.promise;
     await offer.factoryPK.promise;
-    await tap.receiveUpcall(makeIncomingEVMEvent({ sourceChain }));
   })();
 
   const [result] = await Promise.all([
@@ -1632,3 +1592,160 @@ test('parallel execution with scheduler', async t => {
 
   t.snapshot(flowHistory, 'parallel flow history');
 });
+
+const silent: TraceLogger = Object.assign(() => {}, {
+  sub: () => silent,
+});
+
+/** turn boundaries in provideEVMAccount (except awaiting feeAccount and getChainInfo) */
+type EStep = 'predict' | 'send' | 'register' | 'txfr' | 'resolve';
+
+/**
+ * make 2 attempts A, and B, to provideEVMAccount.
+ * Give A a headStart and then pause it.
+ * Optionally, fail A at some step.
+ * If A succeeds, B should re-use its result.
+ * Otherwise, B should succeed after recovering.
+ */
+const makeAccountEVMRace = test.macro({
+  title: (providedTitle = '', _headStart: EStep, _errAt?: EStep) =>
+    `EVM makeAccount race: ${providedTitle}`,
+  async exec(t, headStart: EStep, errAt?: EStep) {
+    const { orch, ctx, offer, txResolver } = mocks({});
+
+    const pKit = await ctx.makePortfolioKit();
+    await provideCosmosAccount(orch, 'agoric', pKit, silent);
+    const lca = pKit.reader.getLocalAccount();
+
+    const chainName = 'Arbitrum';
+    const { [chainName]: chainInfo } = axelarCCTPConfig;
+    const gmp = { chain: await orch.getChain('axelar'), fee: 123n };
+
+    const attempt = async () => {
+      return provideEVMAccount(chainName, chainInfo, gmp, lca, ctx, pKit);
+    };
+
+    const { log, kinks } = offer;
+    type Kink = (typeof kinks)[0];
+    const A = attempt();
+    const Aready = A.then(status => status.ready);
+    const Asettled = Aready.catch(_ => {});
+
+    const startSettlingPK = makePromiseKit();
+    const [txStatus, txReason] =
+      errAt === 'resolve'
+        ? (['failed', 'oops!'] as const)
+        : (['success', undefined] as const);
+    void startSettlingPK.promise.then(() =>
+      txResolver.settleUntil(Asettled, txStatus, txReason),
+    );
+
+    const resolveAfterBStarts: ((r: unknown) => void)[] = [];
+    const removeKink = (kink: Kink) => {
+      const ix = kinks.indexOf(kink);
+      t.log('remove kink at', ix, kink.name);
+      kinks.splice(ix);
+    };
+    const waitDuring = (method: string) => {
+      const sync = makePromiseKit();
+      resolveAfterBStarts.push(sync.resolve);
+      const waitKink: Kink = async ev => {
+        if (ev._method === method) {
+          removeKink(waitKink);
+          t.log('wait for B before:', method);
+          await sync.promise;
+        }
+      };
+      kinks.push(waitKink);
+    };
+    const failedMethods: string[] = [];
+    const failDuring = (method: string, msg = 'no joy') => {
+      const failKink: Kink = async ev => {
+        if (ev._method === method) {
+          t.log('fail in A during:', method);
+          failedMethods.push(method);
+          removeKink(failKink);
+          throw Error(msg);
+        }
+      };
+      kinks.push(failKink);
+    };
+
+    switch (headStart) {
+      case 'predict': {
+        waitDuring('send');
+        startSettlingPK.resolve(null);
+        break;
+      }
+
+      case 'send': {
+        waitDuring('transfer');
+        if (errAt === 'send') {
+          failDuring('send', 'insufficient funds: need moar!');
+        }
+        startSettlingPK.resolve(null);
+        break;
+      }
+
+      case 'register': {
+        waitDuring('transfer');
+        startSettlingPK.resolve(null);
+        break;
+      }
+
+      case 'txfr':
+        if (errAt === 'txfr') {
+          failDuring('transfer', 'timeout: coach is not happy');
+        } else {
+          kinks.push(async ev => {
+            if (ev._method === 'transfer') startSettlingPK.resolve(null);
+          });
+        }
+        break;
+
+      case 'resolve': {
+        startSettlingPK.resolve(null);
+        break;
+      }
+      default:
+        throw Error('unreachable');
+    }
+
+    const { remoteAddress } = await A;
+    t.log('promptly available address', remoteAddress);
+
+    await eventLoopIteration(); // A runs until paused
+    const getMethods = () => log.map(msg => msg._method);
+    const methodsBeforeB = getMethods();
+    t.log('calls before B:', methodsBeforeB.join(', '));
+
+    const B = attempt();
+    for (const resolve of resolveAfterBStarts) {
+      resolve(null);
+    }
+
+    const statusB = await B;
+    t.is(statusB.remoteAddress, remoteAddress, 'same address for both racers');
+
+    await (errAt ? t.throwsAsync(Aready) : t.notThrowsAsync(Aready));
+    t.snapshot(
+      { methodsBeforeB, failedMethods },
+      JSON.stringify({ headStart, errAt }),
+    );
+
+    t.log('calls after A:', getMethods().join(', '));
+    await t.notThrowsAsync(B.then(status => status.ready));
+
+    t.log('calls after A,B:', getMethods().join(', '));
+    t.snapshot(getMethods(), 'total sequence of completed methods');
+  },
+});
+
+test('A and B arrive together; A wins the race', makeAccountEVMRace, 'predict');
+test('A pays fee; B arrives', makeAccountEVMRace, 'send');
+test('A fails to pay fee; B arrives', makeAccountEVMRace, 'send', 'send');
+test('A registers txN; B arrives', makeAccountEVMRace, 'register');
+test('A transfers to axelar; B arrives', makeAccountEVMRace, 'txfr');
+test('A times out on axelar; B arrives', makeAccountEVMRace, 'txfr', 'txfr');
+test('A gets rejected txN; B arrives', makeAccountEVMRace, 'txfr', 'resolve');
+test('A finishes before attempt B starts', makeAccountEVMRace, 'resolve');

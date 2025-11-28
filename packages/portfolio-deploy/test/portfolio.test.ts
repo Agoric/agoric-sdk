@@ -564,6 +564,7 @@ test.serial('remove old contract; start new contract', async t => {
     chainInfo: privateArgs.chainInfo,
     contracts: privateArgs.contracts,
     gmpAddresses: privateArgs.gmpAddresses,
+    walletBytecode: privateArgs.walletBytecode,
   }) satisfies CopyRecord;
   t.is(passStyleOf(privateArgsOverrides), 'copyRecord');
 

@@ -13,7 +13,7 @@ const nodeRequire = createRequire(import.meta.url);
 const asset = (spec: string) => readFile(nodeRequire.resolve(spec), 'utf8');
 
 const avalancheIntegration = {
-  factory: '0x9F9684d7FA7318698a0030ca16ECC4a01944836b',
+  factory: '0x2B3545638859C49df84660eA2D110f82F2e80De8',
   gateway: '0xC249632c2D40b9001FE907806902f63038B737Ab',
   gasService: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
 } as const;
@@ -25,19 +25,17 @@ test('predictWalletAddress computes expected address', async t => {
   const cases = [
     {
       label: 'Nov14at0545Z',
-      // See actual tx: https://testnet.snowtrace.io/tx/0xd5672e95d47ec2b7d19a54fe296cb345322fd416191633500a141a224e3f3a2d/eventlog?chainid=43113
       contracts: avalancheIntegration,
       walletBytecode: bytecode,
       owner: 'agoric1wrfh296eu2z34p6pah7q04jjuyj3mxu9v98277',
-      walletAddress: '0x68ffd110d64bc38773f2cfd12b5ff46cd4700bca',
+      walletAddress: '0xaef9533b97c55f2df3260c3460f0e90003eef324',
     },
     {
       label: 'Nov17at1346Z',
-      // See actual tx: https://testnet.snowtrace.io/tx/0x8de043788a3beff7b0940c7e6eab83adcdf0646d8282b466dd8bc59940b4d32d/eventlog?chainid=43113
       contracts: avalancheIntegration,
       walletBytecode: bytecode,
       owner: 'agoric1u4yhqp9tp58hx3kkg2ktj4d9shpukg2q3cx8nv',
-      walletAddress: '0xed49fc80bfe226f6652f556de53b88ca81f22637',
+      walletAddress: '0x1859396e40f6e523efa5e906e22e7a4d9288ab09',
     },
     {
       label: 'computeAddr.js',
@@ -57,7 +55,7 @@ test('predictWalletAddress computes expected address', async t => {
       //   Salt: 0xc588432f2a0ef17c1e3e1eef64e0181fba5fc6cf443dd71f422e65282867fb88
       //   Init Code Hash: 0xd18a438c2dc8ba0f3764d8036e3684fa64b8cae656150d29106189daa729d2fc
       owner: 'agoric10utru593dspjwfewcgdak8lvp9tkz0xttvcnxv',
-      walletAddress: '0x3433aebfc13e92d0fd808e42d9585dc4792810c2',
+      walletAddress: '0x7b3516b18c18ad39ae7f5e756d250d6692b60346',
     },
     {
       label: 'flows testing',
