@@ -16,7 +16,10 @@ export type { TypeFromUrl };
  * The result of Any.toJSON(). Exported at top level as a convenience
  * for a very common import.
  */
-export type AnyJson = JsonSafe<Any>;
+export type AnyJson<TU extends unknown | keyof TypeFromUrl = unknown> =
+  TU extends keyof TypeFromUrl
+    ? JsonSafe<Omit<Any, 'typeUrl'> & { typeUrl: TU }>
+    : JsonSafe<Any>;
 
 /**
  * The encoding introduced in Protobuf 3 for Any that can be serialized to JSON.

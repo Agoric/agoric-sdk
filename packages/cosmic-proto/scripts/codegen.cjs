@@ -39,6 +39,9 @@ function fixTypeImport(directory, gnuSed) {
   });
 }
 
+/**
+ * @type {import('@cosmology/telescope').TelescopeInput}
+ */
 const input = {
   protoDirs,
   outPath,
@@ -56,9 +59,20 @@ const input = {
     },
     interfaces: {
       enabled: true,
+      // useGlobalDecoderRegistry: true,
+      registerAllDecodersToGlobal: false,
       useUnionTypes: false,
     },
     prototypes: {
+      /**
+       * Not working as expected with @cosmology/telescope@1.12.2
+       * It was only implemented for an Amino registry.
+       */
+      // enableRegistryLoader: true,
+      /**
+       * Relies on tree-shaking to avoid huge bundle sizes.
+       */
+      enableMessageComposer: false,
       includePackageVar: false,
       excluded: {
         packages: [
@@ -121,8 +135,9 @@ const input = {
       },
     },
     aminoEncoding: {
-      // Necessary for getSigningAgoricClient
+      // Must be enabled for getSigningAgoricClient
       enabled: false,
+      // disableMsgTypes: true,
     },
     lcdClients: {
       enabled: false,
