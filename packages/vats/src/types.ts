@@ -150,12 +150,25 @@ export type IBCPacket = JsonSafe<{
   timeout_timestamp?: PacketSDKType['timeout_timestamp'];
 }>;
 
-export interface NetworkBindings {
-  ibc: [port: IBCPortID, channel: IBCChannelID];
+export type NetworkHost = [['chain', `${string}:${string}`]];
+
+export interface NetworkBinding {
+  ibc: [['port', IBCPortID], ['channel', IBCChannelID]];
 }
-export interface NetworkEndpoints {
-  ibc: [namespace: string, reference: string, ...NetworkBindings['ibc']];
-}
+
+export type NetworkEndpoint<Proto extends keyof NetworkBinding> = [
+  Proto,
+  ...(NetworkHost | []),
+  ...(NetworkBinding[Proto] | []),
+];
+
+/** @deprecated Use NetworkEndpoint<Proto> instead */
+export type MetaNetworkEndpoint<Proto extends keyof NetworkBinding> = [
+  Proto,
+  ...{
+    ibc: [ns: string, ref: string, port: IBCPortID, channel: IBCChannelID];
+  }[Proto],
+];
 
 export type IBCCounterParty = {
   port_id: IBCPortID;

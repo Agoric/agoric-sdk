@@ -55,7 +55,7 @@ const MsgUndelegate = CodecHelper(MsgUndelegateType);
 const MsgSend = CodecHelper(MsgSendType);
 
 /**
- * @import {HostOf} from '@agoric/async-flow';
+ * @import {HostInterface, HostOf} from '@agoric/async-flow';
  * @import {LocalChain, LocalChainAccount} from '@agoric/vats/src/localchain.js';
  * @import {AmountArg, CosmosChainAddress, DenomAmount, IBCMsgTransferOptions,
  *   OrchestrationAccountCommon, LocalAccountMethods, MetaTrafficEntry, TransferRoute,
@@ -697,16 +697,14 @@ export const prepareLocalOrchestrationAccountKit = (
       holder: {
         /** @type {HostOf<OrchestrationAccountCommon['asContinuingOffer']>} */
         asContinuingOffer() {
-          // @ts-expect-error XXX invitationMakers
           // getPublicTopics resolves promptly (same run), so we don't need a watcher
           // eslint-disable-next-line no-restricted-syntax
           return asVow(async () => {
             await null;
             const { holder, invitationMakers: im } = this.facets;
-            // XXX cast to a type that has string index signature
-            const invitationMakers = /** @type {InvitationMakers} */ (
-              /** @type {unknown} */ (im)
-            );
+            // Cast to a type that has string index signature
+            const invitationMakers =
+              /** @type {HostInterface<InvitationMakers> & typeof im} */ (im);
 
             return harden({
               // getPublicTopics returns a vow, for membrane compatibility.

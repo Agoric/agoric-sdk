@@ -5,7 +5,13 @@ import { M } from '@endo/patterns';
 
 /**
  * @import {TypedPattern} from '@agoric/internal';
- * @import {CosmosAssetInfo, CosmosChainInfo, DenomAmount, DenomInfo, AmountArg, CosmosValidatorAddress, OrchestrationPowers, ForwardInfo, IBCMsgTransferOptions, AccountIdArg, BaseChainInfo, ChainInfo,Caip10Record} from './types.js';
+ * @import {Pattern} from '@endo/patterns';
+ * @import {CosmosAssetInfo, CosmosChainInfo, DenomAmount,
+ *   DenomInfo, AmountArg, CosmosValidatorAddress, CosmosActionOptions,
+ *   OrchestrationPowers, ForwardInfo, IBCMsgTransferOptions,
+ *   AccountIdArg, BaseChainInfo, ChainInfo, Caip10Record,
+ * LegacyExecuteEncodedTxOptions,
+ * CosmosQueryOptions} from './types.js';
  * @import {Any as Proto3Msg} from '@agoric/cosmic-proto/google/protobuf/any.js';
  * @import {TxBody} from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
@@ -201,10 +207,17 @@ export const ICQMsgShape = M.splitRecord(
 /** @type {TypedPattern<TypedJson>} */
 export const TypedJsonShape = M.splitRecord({ '@type': M.string() });
 
+const orchestrationOptsProperties = /** @type {Record<string, Pattern>} */ ({});
+
+export const OrchestrationOptionsShape = M.splitRecord(
+  {},
+  orchestrationOptsProperties,
+);
+
 /** @see {Chain} */
 export const chainFacadeMethods = {
   getChainInfo: M.call().returns(VowShape),
-  makeAccount: M.call().returns(VowShape),
+  makeAccount: M.call().optional(OrchestrationOptionsShape).returns(VowShape),
 };
 harden(chainFacadeMethods);
 
@@ -220,19 +233,59 @@ harden(TimestampProtoShape);
 
 /**
  * see {@link TxBody} for more details
- *
- * @internal
  */
-export const ExecuteICATxOptsShape = M.splitRecord(
+const txOptsProperties = {
+  memo: M.string(),
+  timeoutHeight: M.bigint(),
+  extensionOptions: M.arrayOf(M.any()),
+  nonCriticalExtensionOptions: M.arrayOf(M.any()),
+};
+
+/** @type {TypedPattern<NonNullable<CosmosActionOptions['txOpts']>>} */
+export const CosmosTxOptionsShape = M.splitRecord({}, txOptsProperties);
+
+/** @type {TypedPattern<CosmosActionOptions>} */
+export const CosmosActionOptionsShape = M.splitRecord(
   {},
   {
-    memo: M.string(),
-    timeoutHeight: M.bigint(),
-    extensionOptions: M.arrayOf(M.any()),
-    nonCriticalExtensionOptions: M.arrayOf(M.any()),
+    txOpts: CosmosTxOptionsShape,
     sendOpts: SendOptionsShape,
+    ...orchestrationOptsProperties,
   },
 );
+
+/** @type {TypedPattern<LegacyExecuteEncodedTxOptions>} */
+export const LegacyExecuteEncodedTxOptionsShape = M.splitRecord(
+  {},
+  {
+    sendOpts: SendOptionsShape,
+    ...txOptsProperties,
+  },
+);
+
+/** @type {TypedPattern<NonNullable<CosmosQueryOptions['queryOpts']>>} */
+export const RequestQueryOptionsShape = M.splitRecord(
+  {},
+  {
+    height: M.bigint(),
+    prove: M.boolean(),
+  },
+);
+
+/** @type {TypedPattern<CosmosQueryOptions>} */
+export const CosmosQueryOptionsShape = M.splitRecord(
+  {},
+  {
+    queryOpts: RequestQueryOptionsShape,
+    sendOpts: SendOptionsShape,
+    ...orchestrationOptsProperties,
+  },
+);
+
+/**
+ * @deprecated use {@link CosmosTxOptionsShape}
+ */
+export const ExecuteICATxOptsShape = CosmosTxOptionsShape;
 
 /**
  * Ensures at least one {@link AmountKeywordRecord} entry is present and only
@@ -245,11 +298,11 @@ export const AnyNatAmountsRecord = M.and(
 
 /** @type {TypedPattern<OrchestrationPowers>} */
 export const OrchestrationPowersShape = {
-  agoricNames: M.remotable(),
-  localchain: M.remotable(),
-  orchestrationService: M.remotable(),
-  storageNode: M.remotable(),
-  timerService: M.remotable(),
+  agoricNames: M.remotable('AgoricNames'),
+  localchain: M.remotable('Localchain'),
+  orchestrationService: M.remotable('OrchestrationService'),
+  storageNode: M.remotable('StorageNode'),
+  timerService: M.remotable('TimerService'),
 };
 harden(OrchestrationPowersShape);
 
@@ -279,7 +332,7 @@ harden(ForwardInfoShape);
 /**
  * Caller configurable values of {@link ForwardInfo}
  *
- * @type {TypedPattern<IBCMsgTransferOptions['forwardOpts']>}
+ * @type {TypedPattern<NonNullable<IBCMsgTransferOptions['forwardOpts']>>}
  */
 export const ForwardOptsShape = M.splitRecord(
   {},
@@ -295,16 +348,19 @@ export const ForwardOptsShape = M.splitRecord(
  * @type {TypedPattern<IBCMsgTransferOptions>}
  * @internal
  */
-export const IBCTransferOptionsShape = M.splitRecord(
-  {},
-  {
-    timeoutTimestamp: M.bigint(),
-    timeoutHeight: {
-      revisionHeight: M.bigint(),
-      revisionNumber: M.bigint(),
+export const IBCTransferOptionsShape = M.and(
+  M.splitRecord(
+    {},
+    {
+      timeoutTimestamp: M.bigint(),
+      timeoutHeight: {
+        revisionHeight: M.bigint(),
+        revisionNumber: M.bigint(),
+      },
+      timeoutRelativeSeconds: M.bigint(),
+      memo: M.string(),
+      forwardOpts: ForwardOptsShape,
     },
-    timeoutRelativeSeconds: M.bigint(),
-    memo: M.string(),
-    forwardOpts: ForwardOptsShape,
-  },
+  ),
+  CosmosActionOptionsShape,
 );

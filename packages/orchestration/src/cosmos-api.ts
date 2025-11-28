@@ -1,5 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars -- fails to notice the @see uses */
-import type { AnyJson, JsonSafe, TypedJson } from '@agoric/cosmic-proto';
+import type {
+  AnyJson,
+  JsonSafe,
+  MessageBody,
+  ResponseTypeUrl,
+  TypedJson,
+  TypeFromUrl,
+} from '@agoric/cosmic-proto';
 import type { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
 import type {
   RedelegationResponse,
@@ -18,13 +25,15 @@ import type {
   ResponseQuery,
 } from '@agoric/cosmic-proto/tendermint/abci/types.js';
 import type { Amount, Payment } from '@agoric/ertp/src/types.js';
-import type { Port, SendOptions } from '@agoric/network';
+import type { Port } from '@agoric/network';
 import type { TimerService } from '@agoric/time';
 import type {
   IBCChannelID,
   IBCConnectionID,
   IBCPortID,
-  NetworkEndpoints,
+  MetaNetworkEndpoint,
+  NetworkBinding,
+  NetworkEndpoint,
   VTransferIBCEvent,
 } from '@agoric/vats';
 import type {
@@ -35,23 +44,64 @@ import type {
   LocalIbcAddress,
   RemoteIbcAddress,
 } from '@agoric/vats/tools/ibc-utils.js';
-import { PFM_RECEIVER } from './exos/chain-hub.js';
+import type { PFM_RECEIVER } from './exos/chain-hub.js';
 import type {
   AccountId,
   AmountArg,
   BaseChainInfo,
+  CaipChainId,
   CosmosChainAddress,
   Denom,
   DenomAmount,
+  PacketOptions,
 } from './types.js';
 
-export type MetaTrafficEntry<
-  P extends keyof NetworkEndpoints = keyof NetworkEndpoints,
+/**
+ * Record of Network API traffic for a specific data packet sent between two
+ * chains.
+ */
+export type TrafficEntry<
+  /** Source Protocol (like 'ibc') */
+  SP extends keyof NetworkBinding = keyof NetworkBinding,
+  /** Destination Protocol */
+  DP extends keyof NetworkBinding = SP,
 > = {
+  /** Semantic operation name for debugging, e.g. 'IBC transfer' */
   op: string;
-  src: [protocol: P, ...NetworkEndpoints[P]];
-  dst: [protocol: P, ...NetworkEndpoints[P]];
-  seq: number | bigint | string | null;
+  /** Network API endpoint info for source chain */
+  src: NetworkEndpoint<SP>;
+  /** Network API endpoint info for destination chain */
+  dst: NetworkEndpoint<DP>;
+  /** Sequence number to match sent packet to received acknowledgement */
+  seq: { status: 'pending' | 'unknown' } | number | bigint | string;
+};
+
+/** @deprecated use TrafficEntry<SP> instead  */
+export type MetaTrafficEntry<
+  /** Source Protocol (like 'ibc') */
+  SP extends keyof NetworkBinding = keyof NetworkBinding,
+  /** Destination Protocol */
+  DP extends keyof NetworkBinding = SP,
+> = {
+  /** Semantic operation name for debugging, e.g. 'IBC transfer' */
+  op: string;
+  /** Network API endpoint info for source chain */
+  src: MetaNetworkEndpoint<SP>;
+  /** Network API endpoint info for destination chain */
+  dst: MetaNetworkEndpoint<DP>;
+  /** Sequence number to match sent packet to received acknowledgement */
+  seq: null | { status: 'pending' | 'unknown' } | number | bigint | string;
+};
+
+export type CosmosActionOptions = PacketOptions & {
+  txOpts?: Partial<Omit<TxBody, 'messages'>>;
+};
+
+export type LegacyExecuteEncodedTxOptions = CosmosActionOptions['txOpts'] &
+  Omit<CosmosActionOptions, 'txOpts'>;
+
+export type CosmosQueryOptions = PacketOptions & {
+  queryOpts?: Partial<Omit<RequestQuery, 'path' | 'data'>>;
 };
 
 /**
@@ -170,42 +220,52 @@ export interface StakingAccountQueries {
   /**
    * @returns all active delegations from the account to any validator (or [] if none)
    */
-  getDelegations: () => Promise<CosmosDelegationResponse[]>;
-
+  getDelegations: (
+    opts?: CosmosQueryOptions,
+  ) => Promise<CosmosDelegationResponse[]>;
   /**
    * @returns the active delegation from the account to a specific validator. Return an
    * empty Delegation if there is no delegation.
    */
   getDelegation: (
     validator: CosmosValidatorAddress,
+    opts?: CosmosQueryOptions,
   ) => Promise<CosmosDelegationResponse>;
 
   /**
    * @returns the unbonding delegations from the account to any validator (or [] if none)
    */
-  getUnbondingDelegations: () => Promise<UnbondingDelegation[]>;
+  getUnbondingDelegations: (
+    opts?: CosmosQueryOptions,
+  ) => Promise<UnbondingDelegation[]>;
 
   /**
    * @returns the unbonding delegations from the account to a specific validator (or [] if none)
    */
   getUnbondingDelegation: (
     validator: CosmosValidatorAddress,
+    opts?: CosmosQueryOptions,
   ) => Promise<UnbondingDelegation>;
 
-  getRedelegations: () => Promise<RedelegationResponse[]>;
+  getRedelegations: (
+    opts?: CosmosQueryOptions,
+  ) => Promise<RedelegationResponse[]>;
 
   /**
    * Get the pending rewards for the account.
    * @returns the amounts of the account's rewards pending from all validators
    */
-  getRewards: () => Promise<CosmosRewardsResponse>;
+  getRewards: (opts?: CosmosQueryOptions) => Promise<CosmosRewardsResponse>;
 
   /**
    * Get the rewards pending with a specific validator.
    * @param validator - the validator address to query for
    * @returns the amount of the account's rewards pending from a specific validator
    */
-  getReward: (validator: CosmosValidatorAddress) => Promise<DenomAmount[]>;
+  getReward: (
+    validator: CosmosValidatorAddress,
+    opts?: CosmosQueryOptions,
+  ) => Promise<DenomAmount[]>;
 }
 
 /**
@@ -219,12 +279,14 @@ export interface StakingAccountActions {
    * Delegate an amount to a validator. The promise settles when the delegation is complete.
    * @param validator - the validator to delegate to
    * @param amount  - the amount to delegate
-   * @returns void
+   * @param [opts] - transaction submission options
+   * @returns unknown
    */
   delegate: (
     validator: CosmosValidatorAddress,
     amount: AmountArg,
-  ) => Promise<void>;
+    opts?: CosmosActionOptions,
+  ) => Promise<unknown>;
 
   /**
    * Redelegate from one delegator to another.
@@ -232,19 +294,22 @@ export interface StakingAccountActions {
    * @param srcValidator - the current validator for the delegation.
    * @param dstValidator - the validator that will receive the delegation.
    * @param amount - how much to redelegate.
+   * @param [opts] - transaction submission options
    * @returns
    */
   redelegate: (
     srcValidator: CosmosValidatorAddress,
     dstValidator: CosmosValidatorAddress,
     amount: AmountArg,
-  ) => Promise<void>;
+    opts?: CosmosActionOptions,
+  ) => Promise<unknown>;
 
   /**
    * Undelegate multiple delegations (concurrently). To delegate independently, pass an array with one item.
    * Resolves when the undelegation is complete and the tokens are no longer bonded. Note it may take weeks.
    * The unbonding time is padded by 10 minutes to account for clock skew.
    * @param delegations - the delegation to undelegate
+   * @param [opts] - transaction submission options
    */
   undelegate: (
     delegations: {
@@ -252,47 +317,43 @@ export interface StakingAccountActions {
       delegator?: CosmosChainAddress;
       validator: CosmosValidatorAddress;
     }[],
-  ) => Promise<void>;
+    opts?: CosmosActionOptions,
+  ) => Promise<unknown>;
 
   /**
    * Withdraw rewards from all validators. The promise settles when the rewards are withdrawn.
+   * @param [opts] - transaction submission options
    * @returns The total amounts of rewards withdrawn
    */
-  withdrawRewards: () => Promise<DenomAmount[]>;
+  withdrawRewards: (opts?: CosmosActionOptions) => Promise<DenomAmount[]>;
 
   /**
    * Withdraw rewards from a specific validator. The promise settles when the rewards are withdrawn.
    * @param validator - the validator to withdraw rewards from
+   * @param [opts] - transaction submission options
    * @returns
    */
-  withdrawReward: (validator: CosmosValidatorAddress) => Promise<DenomAmount[]>;
+  withdrawReward: (
+    validator: CosmosValidatorAddress,
+    opts?: CosmosActionOptions,
+  ) => Promise<DenomAmount[]>;
 }
 
 /**
  * Low level methods from IcaAccount that we pass through to CosmosOrchestrationAccount
  */
 
-export interface IcaAccountMethods {
+export interface IcaAccountImplMethods {
   /**
    * Submit a transaction on behalf of the remote account for execution on the remote chain.
    * @param msgs - records for the transaction
    * @param [opts] - optional parameters for the Tx. use `opts.sendOpts.relativeTimeoutNs` to specify a timeout for the ICA tx packet
-   * @returns acknowledgement string
+   * @returns base64 protobuf responses for tryDecodeMessages
    */
   executeEncodedTx: (
-    msgs: AnyJson[],
-    opts?: Partial<Omit<TxBody, 'messages'>> & { sendOpts?: SendOptions },
+    msgs: readonly AnyJson[],
+    opts?: LegacyExecuteEncodedTxOptions,
   ) => Promise<string>;
-  /**
-   * Submit a transaction on behalf of the remote account for execution on the remote chain.
-   * @param msgs - records for the transaction
-   * @param [opts] - optional parameters for the Tx. use `opts.sendOpts.relativeTimeoutNs` to specify a timeout for the ICA tx packet
-   * @returns acknowledgement string
-   */
-  executeEncodedTxWithMeta: (
-    msgs: AnyJson[],
-    opts?: Partial<Omit<TxBody, 'messages'>> & { sendOpts?: SendOptions },
-  ) => Promise<{ result: Promise<string>; meta: Record<string, any> }>;
   /**
    * Deactivates the ICA account by closing the ICA channel. The `Port` is
    * persisted so holders can always call `.reactivate()` to re-establish a new
@@ -305,7 +366,7 @@ export interface IcaAccountMethods {
    * Reactivates the ICA account by re-establishing a new channel with the
    * original Port and requested address.
    * If a channel is closed for an unexpected reason, such as a packet timeout,
-   * an automatic attempt to re will be made and the holder should not need
+   * an automatic attempt to reopen will be made and the holder should not need
    * to call `.reactivate()`.
    * @throws {Error} if connection is currently active
    */
@@ -315,7 +376,7 @@ export interface IcaAccountMethods {
 /**
  * Low level object that supports queries and operations for an account on a remote chain.
  */
-export interface IcaAccount extends IcaAccountMethods {
+export interface IcaAccount extends IcaAccountImplMethods {
   /**
    * @returns the address of the account on the remote chain
    */
@@ -324,7 +385,7 @@ export interface IcaAccount extends IcaAccountMethods {
   /**
    * Submit a transaction on behalf of the remote account for execution on the remote chain.
    * @param msgs - records for the transaction
-   * @returns acknowledgement string
+   * @returns acknowledgement
    */
   executeTx: (msgs: TypedJson[]) => Promise<string>;
   /** @returns the address of the remote channel */
@@ -335,9 +396,28 @@ export interface IcaAccount extends IcaAccountMethods {
   getPort: () => Port;
 }
 
+/**
+ * Full-featured ICA account methods.
+ */
+export interface IcaAccountMethods extends IcaAccountImplMethods {
+  /**
+   * Submit a transaction on behalf of the remote account for execution on the remote chain.
+   * @param msgs - records for the transaction
+   * @param [opts] - optional parameters for the Tx. use `opts.sendOpts.relativeTimeoutNs` to specify a timeout for the ICA tx packet
+   * @returns acknowledgement string
+   */
+  executeEncodedTxWithMeta: (
+    msgs: AnyJson[],
+    opts?: CosmosActionOptions['txOpts'] & Omit<CosmosActionOptions, 'txOpts'>,
+  ) => Promise<{ result: Promise<string>; meta: Record<string, any> }>;
+}
+
 /** Methods on chains that support Liquid Staking */
 export interface LiquidStakingMethods {
-  liquidStake: (amount: AmountArg) => Promise<void>;
+  liquidStake: (
+    amount: AmountArg,
+    opts?: CosmosActionOptions,
+  ) => Promise<unknown>;
 }
 
 /**
@@ -351,7 +431,8 @@ export interface NobleMethods {
     amount: AmountArg,
     /** if specified, only this account can call MsgReceive on the destination chain */
     caller?: AccountId,
-  ) => Promise<void>;
+    opts?: CosmosActionOptions,
+  ) => Promise<unknown>;
 }
 
 // TODO support StakingAccountQueries
@@ -407,7 +488,7 @@ export type IBCMsgTransferOptions = {
     timeout?: ForwardInfo['forward']['timeout'];
     retries?: ForwardInfo['forward']['retries'];
   };
-};
+} & CosmosActionOptions;
 
 /**
  * Cosmos-specific methods to extend `OrchestrationAccountI`, parameterized
