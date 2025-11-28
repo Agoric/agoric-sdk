@@ -322,11 +322,9 @@ export default makeE;
 
 /**
  * @template {Callable} T
- * @typedef {ReturnType<T> extends EUnwrap<ReturnType<T>>
- *     ? (...args: Parameters<T>) => Promise<ReturnType<T>>
- *     : ReturnType<T> extends Promise<EUnwrap<ReturnType<T>>>
- *       ? T
- *       : (...args: Parameters<T>) => Promise<EUnwrap<ReturnType<T>>>} ECallable
+ * @typedef {ReturnType<T> extends Promise<EUnwrap<ReturnType<T>>>
+ *     ? T
+ *     : (...args: Parameters<T>) => Promise<EUnwrap<ReturnType<T>>>} ECallable
  */
 
 /**

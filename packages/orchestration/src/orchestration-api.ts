@@ -10,7 +10,7 @@ import type { Timestamp } from '@agoric/time';
 import type { QueryManyFn } from '@agoric/vats/src/localchain.js';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { Passable } from '@endo/marshal';
-import type { Vow } from '@agoric/vow';
+import type { SendOptions } from '@agoric/network';
 import type {
   AgoricChainMethods,
   CosmosChainAccountMethods,
@@ -23,7 +23,30 @@ import type {
   NobleMethods,
   Bech32Address,
 } from './types.js';
+
 import type { ResolvedContinuingOfferResult } from './utils/zoe-tools.js';
+
+export type OrchestrationOptions = {
+  _placeholder?: never;
+};
+
+export type PacketOptions = OrchestrationOptions & {
+  sendOpts?: SendOptions;
+};
+
+/**
+ * Options relevant to all queries (non-mutating).
+ */
+export type QueryOptions = PacketOptions & {
+  queryOpts?: Record<string, any>;
+};
+
+/**
+ * Options relevant to all actions (mutating).
+ */
+export type ActionOptions = PacketOptions & {
+  txOpts?: Record<string, any>;
+};
 
 /**
  * A denom that designates a path to a token type on some blockchain.
@@ -156,7 +179,9 @@ export interface Chain<CI extends Partial<ChainInfo>> {
    * Creates a new Orchestration Account on the current Chain.
    * @returns an object that controls the account
    */
-  makeAccount: () => CI extends { chainId: string }
+  makeAccount: (
+    opts?: OrchestrationOptions,
+  ) => CI extends { chainId: string }
     ? Promise<OrchestrationAccount<CI>>
     : never;
   // FUTURE supply optional port object; also fetch port object
@@ -241,33 +266,40 @@ export interface OrchestrationAccountCommon {
    *
    * @throws when prohibited (see `icqEnabled` in {@link CosmosChainInfo})
    */
-  getBalances: () => Promise<DenomAmount[]>;
+  getBalances: (opts?: QueryOptions) => Promise<DenomAmount[]>;
 
   /**
    * @returns the balance of a specific denom for the account.
    *
    * @throws when prohibited (see `icqEnabled` in {@link CosmosChainInfo})
    */
-  getBalance: (denom: DenomArg) => Promise<DenomAmount>;
+  getBalance: (denom: DenomArg, opts?: QueryOptions) => Promise<DenomAmount>;
 
   /**
    * Transfer amount to another account on the same chain. The promise settles when the transfer is complete.
    * @param toAccount - the account to send the amount to. MUST be on the same chain
    * @param amount - the amount to send
-   * @returns void
+   * @param [opts] - transaction submission options
+   * @returns unknown
    */
-  send: (toAccount: AccountIdArg, amount: AmountArg) => Promise<void>;
+  send: (
+    toAccount: AccountIdArg,
+    amount: AmountArg,
+    opts?: ActionOptions,
+  ) => Promise<unknown>;
 
   /**
    * Transfer multiple amounts to another account on the same chain. The promise settles when the transfer is complete.
    * @param toAccount - the account to send the amount to. MUST be on the same chain
    * @param amounts - the amounts to send
-   * @returns void
+   * @param [opts] - transaction submission options
+   * @returns unknown
    */
   sendAll: (
     toAccount: CosmosChainAddress,
     amounts: AmountArg[],
-  ) => Promise<void>;
+    opts?: ActionOptions,
+  ) => Promise<unknown>;
 
   /**
    * Transfer an amount to another account, typically on another chain.
@@ -275,7 +307,7 @@ export interface OrchestrationAccountCommon {
    * @param amount - the amount to transfer. Can be provided as pure data using denoms or as ERTP Amounts.
    * @param destination - the account to transfer the amount to.
    * @param [opts] - an optional memo to include with the transfer, which could drive custom PFM behavior, and timeout parameters
-   * @returns {Promise<any>} The promise fulfills with the successful acknowledgement of the transfer
+   * @returns {Promise<unknown>} The promise fulfills with the successful acknowledgement of the transfer
    * @throws {Error} if route is not determinable, asset is not recognized, or
    * the transfer is rejected (insufficient funds, timeout, error ack)
    */
@@ -283,7 +315,7 @@ export interface OrchestrationAccountCommon {
     destination: AccountIdArg,
     amount: AmountArg,
     opts?: IBCMsgTransferOptions,
-  ) => Promise<any>;
+  ) => Promise<unknown>;
 
   /**
    * Transfer an amount to another account, typically on another chain.
@@ -300,16 +332,16 @@ export interface OrchestrationAccountCommon {
     destination: AccountIdArg,
     amount: AmountArg,
     opts?: IBCMsgTransferOptions,
-  ) => Promise<{ result: Vow<any> | Promise<any>; meta: Record<string, any> }>;
+  ) => Promise<{ result: Promise<any>; meta: Record<string, any> }>;
 
   /**
    * Transfer an amount to another account in multiple steps. The promise settles when
    * the entire path of the transfer is complete.
    * @param amount - the amount to transfer
    * @param msg - the transfer message, including follow-up steps
-   * @returns void
+   * @returns unknown
    */
-  transferSteps: (amount: AmountArg, msg: TransferMsg) => Promise<void>;
+  transferSteps: (amount: AmountArg, msg: TransferMsg) => Promise<unknown>;
 
   /**
    * Returns `invitationMakers` and `publicSubscribers` to the account

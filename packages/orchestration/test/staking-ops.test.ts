@@ -125,7 +125,7 @@ const makeScenario = () => {
     addr = 'agoric1234' as Bech32Address,
     delegations = {} as Record<string, Coin>,
   ) => {
-    const calls = [] as Array<{ msgs: AnyJson[] }>;
+    const calls = [] as Array<{ msgs: readonly AnyJson[] }>;
 
     const simulate = {
       '/cosmos.staking.v1beta1.MsgDelegate': _m => {
@@ -176,19 +176,14 @@ const makeScenario = () => {
 
     const account: IcaAccount = Far('MockAccount', {
       getAddress: () => chainAddress,
-      executeEncodedTxWithMeta: async msgs => {
+      executeEncodedTx: async msgs => {
         assert.equal(msgs.length, 1);
         const { typeUrl } = msgs[0];
         const doMessage = simulate[typeUrl];
         assert(doMessage, `unknown ${typeUrl}`);
         await null;
         calls.push({ msgs });
-        return { result: doMessage(msgs[0]), meta: {} };
-      },
-      executeEncodedTx: async msgs => {
-        const { result, meta } = await account.executeEncodedTxWithMeta(msgs);
-        assert(meta);
-        return result;
+        return doMessage(msgs[0]);
       },
       executeTx: () => Fail`mock`,
       deactivate: () => Fail`mock`,

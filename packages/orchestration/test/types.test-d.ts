@@ -357,7 +357,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
 
   // Verify StakingAccountActions are available (StakingAccountQueries not yet supported)
   expectType<
-    (validator: CosmosValidatorAddress, amount: AmountArg) => Promise<void>
+    (validator: CosmosValidatorAddress, amount: AmountArg) => Promise<unknown>
   >(account.delegate);
 
   // @ts-expect-error executeEncodedTx not available on localAccount
@@ -393,7 +393,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
 
   // Verify delegate is available via stakingTokens parameter
   expectType<
-    (validator: CosmosValidatorAddress, amount: AmountArg) => Promise<void>
+    (validator: CosmosValidatorAddress, amount: AmountArg) => Promise<unknown>
   >(account.delegate);
 
   expectType<(destination, amount: AmountArg) => Promise<void>>(
@@ -412,7 +412,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
   const remoteChain: ChainFacade = null as any;
   const account = await remoteChain.makeAccount();
 
-  expectType<(destination, amount: AmountArg) => Promise<void>>(
+  expectType<(destination, amount: AmountArg) => Promise<unknown>>(
     account.depositForBurn,
   );
 
