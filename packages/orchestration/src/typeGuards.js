@@ -201,10 +201,19 @@ export const ICQMsgShape = M.splitRecord(
 /** @type {TypedPattern<TypedJson>} */
 export const TypedJsonShape = M.splitRecord({ '@type': M.string() });
 
+const orchestrationOptsProperties = {
+  progressTracker: M.remotable(),
+};
+
+export const OrchestrationOptionsShape = M.splitRecord(
+  {},
+  orchestrationOptsProperties,
+);
+
 /** @see {Chain} */
 export const chainFacadeMethods = {
   getChainInfo: M.call().returns(VowShape),
-  makeAccount: M.call().returns(VowShape),
+  makeAccount: M.call().optional(OrchestrationOptionsShape).returns(VowShape),
 };
 harden(chainFacadeMethods);
 
@@ -220,19 +229,54 @@ harden(TimestampProtoShape);
 
 /**
  * see {@link TxBody} for more details
- *
- * @internal
  */
-export const ExecuteICATxOptsShape = M.splitRecord(
+const txOptsProperties = {
+  memo: M.string(),
+  timeoutHeight: M.bigint(),
+  extensionOptions: M.arrayOf(M.any()),
+  nonCriticalExtensionOptions: M.arrayOf(M.any()),
+};
+
+export const CosmosTxOptionsShape = M.splitRecord({}, txOptsProperties);
+
+export const CosmosActionOptionsShape = M.splitRecord(
   {},
   {
-    memo: M.string(),
-    timeoutHeight: M.bigint(),
-    extensionOptions: M.arrayOf(M.any()),
-    nonCriticalExtensionOptions: M.arrayOf(M.any()),
+    txOpts: CosmosTxOptionsShape,
     sendOpts: SendOptionsShape,
+    ...orchestrationOptsProperties,
   },
 );
+
+export const LegacyExecuteEncodedTxOptionsShape = M.splitRecord(
+  {},
+  {
+    sendOpts: SendOptionsShape,
+    ...txOptsProperties,
+  },
+);
+
+export const RequestQueryOptionsShape = M.splitRecord(
+  {},
+  {
+    height: M.bigint(),
+    prove: M.boolean(),
+  },
+);
+
+export const CosmosQueryOptionsShape = M.splitRecord(
+  {},
+  {
+    queryOpts: RequestQueryOptionsShape,
+    sendOpts: SendOptionsShape,
+    ...orchestrationOptsProperties,
+  },
+);
+
+/**
+ * @deprecated use {@link CosmosTxOptionsShape}
+ */
+export const ExecuteICATxOptsShape = CosmosTxOptionsShape;
 
 /**
  * Ensures at least one {@link AmountKeywordRecord} entry is present and only
@@ -295,16 +339,19 @@ export const ForwardOptsShape = M.splitRecord(
  * @type {TypedPattern<IBCMsgTransferOptions>}
  * @internal
  */
-export const IBCTransferOptionsShape = M.splitRecord(
-  {},
-  {
-    timeoutTimestamp: M.bigint(),
-    timeoutHeight: {
-      revisionHeight: M.bigint(),
-      revisionNumber: M.bigint(),
+export const IBCTransferOptionsShape = M.and(
+  M.splitRecord(
+    {},
+    {
+      timeoutTimestamp: M.bigint(),
+      timeoutHeight: {
+        revisionHeight: M.bigint(),
+        revisionNumber: M.bigint(),
+      },
+      timeoutRelativeSeconds: M.bigint(),
+      memo: M.string(),
+      forwardOpts: ForwardOptsShape,
     },
-    timeoutRelativeSeconds: M.bigint(),
-    memo: M.string(),
-    forwardOpts: ForwardOptsShape,
-  },
+  ),
+  CosmosActionOptionsShape,
 );
