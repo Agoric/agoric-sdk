@@ -296,4 +296,6 @@ export { makeDurableZoeKit, makeZoeKit };
  */
 
 // eslint-disable-next-line import/export -- no named value exports; only types
-export * from '../types-index.js';
+export * from '../contractFacet/types.js';
+export * from '../zoeService/types.js';
+export * from '../types.js';
