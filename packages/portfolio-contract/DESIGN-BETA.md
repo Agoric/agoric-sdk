@@ -141,20 +141,18 @@ sequenceDiagram
   Note over YP: planner thinks and generates steps
   YP ->> portfolio: send moves and X BLD for GMP(agoric→arbitrum)
 
-  Note over portfolio, acctArb: Make Account if Needed
+  Note over portfolio, acctArb: makeAccount (if needed) and CCTP Out in paralel
+
+  par makeAccount (if needed)
   portfolio ->> LCAorch: LCAgas pays X BLD
   LCAorch ->> AX: sendMakeAccountCall(... )<br/>GMP: request creation of remote Arbitrum wallet
   AX -->> factory: invoke makeAccount on Arbitrum
-  factory -->> acctArb: deploy new Arbitrum wallet instance
+  factory -->> acctArb: (...cont. step 9, invoke makeAccount on Arbitrum)<br/>deploy new Arbitrum wallet instance
   factory -->> factory: emit SmartWalletCreated(acctArb.accountID)
-
-  Note over factory, YP: Ymax-Planner listens for<br/>SmartWalletCreated events
-  YP ->> Res: watchSmartWalletTx(... )<br/>detected SmartWalletCreated
+  Res ->> factory: watchSmartWalletTx(... )<br/>detected SmartWalletCreated
   Res ->> portfolio: resolvePendingTx(... )<br/>store acctArb.accountID
 
-  Note over portfolio, acctArb: Remote Arbitrum wallet acctArb<br/>created successfully and ready to use
-
-  Note over LCAorch, acctArb: CCTP Out
+  and CCTP out
   LCAorch ->> icaN: $5k
   icaN ->> LCAorch: ack
   LCAorch ->> icaN: depositForBurn
@@ -162,10 +160,9 @@ sequenceDiagram
   icaN -->> acctArb: $5ku
   acctArb -->> Res: observe $5k arriving
   Res ->> portfolio: ack $5k arriving
-  acctArb -->> Res: observe makeAccount
-  Res ->> portfolio: ack makeAccount
+  end
 
-  Note over LCAorch, aavePos: Supply to Aave
+  Note over LCAorch, aavePos: both makeAccount and CCTP out successful<br/> Now supply to Aave
   LCAorch ->> AX: supply $5k acctArb
   AX -->> acctArb: supply $5k
   acctArb ->> aavePos: $5k
