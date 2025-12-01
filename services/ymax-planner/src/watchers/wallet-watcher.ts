@@ -103,16 +103,19 @@ export const watchSmartWalletTx = ({
       }
 
       const { wallet } = eventData;
-
-      log(`SmartWalletCreated event detected: wallet:${wallet}`);
-
-      if (wallet === expectedAddr) {
-        log(`✓ Address matches! Expected: ${expectedAddr}, Found: ${wallet}`);
+      const normalizedWallet = wallet.toLowerCase();
+      log(`SmartWalletCreated event detected: wallet:${normalizedWallet}`);
+      if (normalizedWallet === expectedAddr) {
+        log(
+          `✓ Address matches! Expected: ${expectedAddr}, Found: ${normalizedWallet}`,
+        );
         walletCreated = true;
         finish(true);
         return;
       }
-      log(`Address mismatch. Expected: ${expectedAddr}, Found: ${wallet}`);
+      log(
+        `Address mismatch. Expected: ${expectedAddr}, Found: ${normalizedWallet}`,
+      );
     };
 
     void provider.on(filter, listenForSmartWalletCreation);
@@ -179,8 +182,9 @@ export const lookBackSmartWalletTx = async ({
       ev => {
         try {
           const t = parseSmartWalletCreatedLog(ev);
-          log(`Check: addresss=${t.wallet}`);
-          return t.wallet === expectedAddr;
+          const normalizedWallet = t.wallet.toLowerCase();
+          log(`Check: addresss=${normalizedWallet}`);
+          return normalizedWallet === expectedAddr;
         } catch (e) {
           log(`Parse error:`, e);
           return false;

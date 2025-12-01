@@ -4,17 +4,19 @@
  * @see {openPortfolio}
  * @see {rebalance}
  */
-import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.js';
+
 import type { GuestInterface } from '@agoric/async-flow';
 import { type Amount, type Brand, type NatAmount } from '@agoric/ertp';
 import {
   deeplyFulfilledObject,
+  fromTypedEntries,
   makeTracer,
+  objectMap,
   type TraceLogger,
 } from '@agoric/internal';
 import type {
   AccountId,
-  CaipChainId,
+  BaseChainInfo,
   CosmosChainAddress,
   Denom,
   DenomAmount,
@@ -23,10 +25,8 @@ import type {
   OrchestrationFlow,
   Orchestrator,
 } from '@agoric/orchestration';
-import type { AxelarGmpIncomingMemo } from '@agoric/orchestration/src/axelar-types.js';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
-import { decodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
 import {
   TxType,
   type FlowErrors,
@@ -41,16 +41,10 @@ import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
-import { decodeBase64 } from '@endo/base64';
 import { assert, Fail, q } from '@endo/errors';
-import { DECODE_CONTRACT_CALL_RESULT_ABI } from './evm-facade.ts';
 import type { RegisterAccountMemo } from './noble-fwd-calc.js';
 import type { AxelarId, GmpAddresses } from './portfolio.contract.ts';
-import type {
-  AccountInfoFor,
-  GMPAccountInfo,
-  PortfolioKit,
-} from './portfolio.exo.ts';
+import type { AccountInfoFor, PortfolioKit } from './portfolio.exo.ts';
 import {
   AaveProtocol,
   BeefyProtocol,
@@ -59,6 +53,7 @@ import {
   CompoundProtocol,
   provideEVMAccount,
   type EVMContext,
+  type GMPAccountStatus,
 } from './pos-gmp.flows.ts';
 import {
   agoricToNoble,
@@ -67,6 +62,7 @@ import {
 } from './pos-usdn.flows.ts';
 import type { Position } from './pos.exo.ts';
 import type { ResolverKit } from './resolver/resolver.exo.js';
+import { runJob, type Job } from './schedule-order.ts';
 import {
   getChainNameOfPlaceRef,
   getKeywordOfPlaceRef,
@@ -81,7 +77,6 @@ import {
   type PoolKey,
   type ProposalType,
 } from './type-guards.ts';
-import { runJob, type Job } from './schedule-order.ts';
 // XXX: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const { keys, entries, fromEntries } = Object;
@@ -92,6 +87,7 @@ export type NobleAccount = OrchestrationAccount<{ chainId: 'noble-any' }>;
 export type PortfolioInstanceContext = {
   axelarIds: AxelarId;
   contracts: EVMContractAddressesMap;
+  walletBytecode: `0x${string}`;
   gmpAddresses: GmpAddresses;
   usdc: { brand: Brand<'nat'>; denom: Denom };
   gmpFeeInfo: { brand: Brand<'nat'>; denom: Denom };
@@ -109,7 +105,7 @@ type PortfolioBootstrapContext = PortfolioInstanceContext & {
   makePortfolioKit: () => GuestInterface<PortfolioKit>;
 };
 
-type EVMAccounts = Partial<Record<AxelarChain, GMPAccountInfo>>;
+type EVMAccounts = Partial<Record<AxelarChain, GMPAccountStatus>>;
 type AccountsByChain = {
   agoric: AccountInfoFor['agoric'];
   noble?: AccountInfoFor['noble'];
@@ -226,7 +222,7 @@ const trackFlow = async (
   const job: Job = { taskQty: moves.length, order };
   const results = await runJob(job, runTask, traceFlow);
   if (results.some(r => r.status === 'rejected')) {
-    const reasons = [...results].reverse().reduce((next, r, ix) => {
+    const reasons = results.reduce((next, r, ix) => {
       if (r.status !== 'rejected') return next;
       const errs: FlowErrors = {
         step: ix + 1,
@@ -242,7 +238,7 @@ const trackFlow = async (
       ...reasons,
       ...detail,
     });
-    throw results;
+    throw reasons;
   }
 
   reporter.publishFlowStatus(flowId, { state: 'done', ...detail });
@@ -519,7 +515,9 @@ const stepFlow = async (
           poolKey,
           ctx.transferChannels.noble.counterPartyChannelId,
         );
-        await null;
+        traceP('awaiting Wallet contract...', gInfo);
+        await gInfo.ready;
+        traceP('...Wallet contract ready', gInfo);
         if ('src' in way) {
           await pImpl.supply(evmCtx, amount, gInfo);
           return { destPos: pos };
@@ -750,16 +748,32 @@ const stepFlow = async (
     }
   };
 
-  const evmAcctInfo = await (async () => {
-    const axelar = await orch.getChain('axelar');
+  const asEntry = <K, V>(k: K, v: V): [K, V] => [k, v];
+  const axelar = await orch.getChain('axelar');
+  const infoFor: Record<
+    AxelarChain,
+    BaseChainInfo<'eip155'>
+  > = await deeplyFulfilledObject(
+    objectMap(
+      fromTypedEntries(
+        (keys(AxelarChain) as AxelarChain[]).map(name => [name, name]),
+      ),
+      async name => {
+        const chain = await orch.getChain(name);
+        const info = await chain.getChainInfo();
+        return harden(info);
+      },
+    ),
+  );
+
+  const evmAcctInfo = (() => {
     const { axelarIds } = ctx;
     const gmpCommon = { chain: axelar, axelarIds };
 
     const evmChains = keys(AxelarChain) as unknown[];
-    const asEntry = <K, V>(k: K, v: V): [K, V] => [k, v];
 
     const seen = new Set<AxelarChain>();
-    const chainToAcctP = moves.flatMap(move =>
+    const chainToAcctStatus = moves.flatMap(move =>
       [move.src, move.dest].flatMap(ref => {
         const maybeChain = getChainNameOfPlaceRef(ref);
         if (!evmChains.includes(maybeChain)) return [];
@@ -770,19 +784,23 @@ const stepFlow = async (
         const gmp = {
           ...gmpCommon,
           fee: move.fee?.value || 0n,
-          evmGas: move.detail?.evmGas || 0n,
         };
 
-        const acctP = forChain(chain, () =>
-          provideEVMAccount(chain, gmp, agoric.lca, ctx, kit),
+        const acctInfo = provideEVMAccount(
+          chain,
+          infoFor[chain],
+          gmp,
+          agoric.lca,
+          ctx,
+          kit,
         );
-        return [asEntry(chain, acctP)];
+        return [asEntry(chain, acctInfo)];
       }),
     );
-    return deeplyFulfilledObject(harden(fromEntries(chainToAcctP)));
+    return harden(fromEntries(chainToAcctStatus));
   })();
 
-  traceFlow('EVM accounts ready', keys(evmAcctInfo));
+  traceFlow('EVM accounts pre-computed', keys(evmAcctInfo));
   const nobleMentioned = moves.some(m => [m.src, m.dest].includes('@noble'));
   const nobleInfo = await (nobleMentioned || keys(evmAcctInfo).length > 0
     ? forChain('noble', () =>
@@ -889,67 +907,11 @@ const eventAbbr = ({ packet }: VTransferIBCEvent) => ({
   sequence: packet.sequence,
 });
 
-type UpcallData = Pick<PortfolioInstanceContext, 'gmpAddresses' | 'axelarIds'>;
-export type OnTransferContext = UpcallData &
-  Pick<PortfolioInstanceContext, 'transferChannels'> & {
-    resolverService: GuestInterface<ResolverKit['service']>;
-  };
-
-/**
- * Resolve EVM account creation from Axelar GMP memo.
- *
- * @param memo - GMP memo from AXELAR_GMP via axelar channel
- * @param axelarIds - name -> axelar id mapping
- * @param orch - Orchestrator to get chain information
- * @param portfolioManager - Portfolio manager to resolve the account
- * @param traceUpcall - Logger for tracing
- * @returns Promise<boolean> - true if account was resolved, false otherwise
- */
-const resolveEVMAccount = async (
-  memo: AxelarGmpIncomingMemo,
-  axelarIds: AxelarId,
-  orch: Orchestrator,
-  portfolioManager: GuestInterface<PortfolioKit['manager']>,
-  traceUpcall: TraceLogger,
-) => {
-  traceUpcall('GMP', memo);
-
-  const result = (entries(axelarIds) as [AxelarChain, string][]).find(
-    ([_, chainId]) => chainId === memo.source_chain,
-  );
-  if (!result) {
-    traceUpcall('unknown source_chain', memo);
-    return false;
-  }
-
-  const [chainName, _] = result;
-
-  const payloadBytes = decodeBase64(memo.payload);
-  const [{ data }] = decodeAbiParameters(
-    DECODE_CONTRACT_CALL_RESULT_ABI,
-    payloadBytes,
-  ) as [AgoricResponse];
-
-  traceUpcall('Decoded:', JSON.stringify({ data }));
-
-  const [message] = data;
-  const { success, result: result2 } = message;
-  if (!success) return false;
-
-  const [address] = decodeAbiParameters([{ type: 'address' }], result2);
-
-  const chainInfo = await (await orch.getChain(chainName)).getChainInfo();
-  const caipId: CaipChainId = `${chainInfo.namespace}:${chainInfo.reference}`;
-
-  traceUpcall(chainName, 'remoteAddress', address);
-  portfolioManager.resolveAccount({
-    namespace: 'eip155',
-    chainName,
-    chainId: caipId,
-    remoteAddress: address,
-  });
-
-  return true;
+export type OnTransferContext = Pick<
+  PortfolioInstanceContext,
+  'transferChannels'
+> & {
+  resolverService: GuestInterface<ResolverKit['service']>;
 };
 
 /**
@@ -998,40 +960,19 @@ export const onAgoricTransfer = (async (
   traceUpcall('event', eventAbbr(event));
   if (event.packet.destination_port !== 'transfer') return false;
 
-  const { gmpAddresses, axelarIds, transferChannels } = ctx;
+  const { transferChannels, resolverService } = ctx;
   const { destination_channel: packetDest } = event.packet;
   const lca = reader.getLocalAccount();
 
   await null;
 
   switch (packetDest) {
-    case transferChannels.axelar?.channelId: {
-      const parsed = await lca.parseInboundTransfer(event.packet);
-      const { extra } = parsed;
-      if (extra.sender !== gmpAddresses.AXELAR_GMP) {
-        traceUpcall(
-          `GMP early exit; AXELAR_GMP sender expected ${gmpAddresses.AXELAR_GMP}, got ${extra.sender}`,
-        );
-        return false;
-      }
-
-      if (!extra.memo) return false;
-
-      const memo: AxelarGmpIncomingMemo = JSON.parse(extra.memo); // XXX unsound! use typed pattern
-      return resolveEVMAccount(
-        memo,
-        axelarIds,
-        orch,
-        pKit.manager,
-        traceUpcall,
-      );
-    }
     case transferChannels.noble.channelId: {
       const parsed = await lca.parseInboundTransfer(event.packet);
       return resolveCCTPIn(
         parsed,
         coerceAccountId(lca.getAddress()),
-        ctx.resolverService,
+        resolverService,
         traceUpcall,
       );
     }
