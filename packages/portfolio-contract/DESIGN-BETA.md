@@ -43,7 +43,6 @@ sequenceDiagram
     participant portfolio
     participant vstorage
     participant LCAorch
-    participant LCAin
   end
 
   box rgb(163,180,243) Noble
@@ -66,7 +65,6 @@ sequenceDiagram
     participant portfolio
     participant vstorage
     participant LCAorch
-    participant LCAin
   end
 
   box rgb(163,180,243) Noble
@@ -86,7 +84,6 @@ sequenceDiagram
     participant portfolio
     participant vstorage
     participant LCAorch
-    participant LCAin
   end
 
   box rgb(163,180,243) Noble
@@ -110,7 +107,6 @@ sequenceDiagram
     participant portfolio
     participant vstorage
     participant LCAorch
-    participant LCAin
   end
 
   box  rgb(255,165,0) Agoric off-chain
@@ -159,7 +155,6 @@ sequenceDiagram
   Note over portfolio, acctArb: Remote Arbitrum wallet acctArb<br/>created successfully and ready to use
 
   Note over LCAorch, acctArb: CCTP Out
-  LCAin ->> LCAorch: $5k
   LCAorch ->> icaN: $5k
   icaN ->> LCAorch: ack
   LCAorch ->> icaN: depositForBurn
@@ -258,7 +253,6 @@ sequenceDiagram
     participant portfolio
     participant vstorage
     participant LCAorch
-    participant LCAin
   end
 
   box  rgb(255,165,0) Agoric off-chain
@@ -312,7 +306,6 @@ sequenceDiagram
     participant portfolio
     participant vstorage
     participant LCAorch
-    participant LCAin
   end
 
   box rgb(255,165,0) Agoric off-chain
