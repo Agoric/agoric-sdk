@@ -40,6 +40,10 @@ If something wonky was added to master _since the last release_, cleaning it up 
 
 Between `docs`, `test`, and `chore`, the distinction has less impact. Salt to taste.
 
+# API
+
+The portfolio product spans several packages and services. The public interfaces are documented in @agoric/portfolio-api. It also documents the states of the whole system in its `docs/ymax-machine.yaml`. When making state machine changes be sure to update that description too.
+
 ## Deployment is out of scope
 
 The `@aglocal/portfolio-deploy` package takes care of deployment. It depends on this package.
