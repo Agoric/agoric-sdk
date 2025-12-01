@@ -60,6 +60,7 @@ import {
   reflectWalletStore,
   walletUpdates,
 } from '../tools/wallet-store-reflect.ts';
+import type { StdFee } from 'osmojs';
 
 const nodeRequire = createRequire(import.meta.url);
 const asset = (spec: string) => readFile(nodeRequire.resolve(spec), 'utf8');
@@ -110,6 +111,16 @@ const parseToolArgs = (argv: string[]) =>
     },
     allowPositionals: false,
   });
+
+const makeFee = ({
+  gas = 20_000, // cosmjs default
+  adjustment = 1.0,
+  denom = 'ubld',
+  price = 0.01, // ubld. per 2025-11 community discussion
+} = {}): StdFee => ({
+  gas: `${Math.round(gas * adjustment)}`,
+  amount: [{ denom, amount: `${Math.round(gas * adjustment * price)}` }],
+});
 
 type GoalData = Partial<Record<YieldProtocol, ParsableNumber>>;
 const YieldProtocolShape = M.or(...Object.keys(YieldProtocol));
@@ -453,6 +464,8 @@ const main = async (
     setTimeout,
     log: trace,
     fresh,
+    // as in: Error#1: out of gas ... gasUsed: 809068
+    fee: makeFee({ gas: 809068, adjustment: 1.4 }),
   });
 
   if (values.redeem) {
