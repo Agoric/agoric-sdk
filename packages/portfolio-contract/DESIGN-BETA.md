@@ -158,8 +158,8 @@ sequenceDiagram
   LCAorch ->> icaN: depositForBurn
   icaN ->> LCAorch: ack
   icaN -->> acctArb: $5ku
-  acctArb -->> Res: observe $5k arriving
-  Res ->> portfolio: ack $5k arriving
+  acctArb -->> Res: handlePendingTx(...)<br/>observe $5k arriving
+  Res ->> portfolio: resolvePendingTx(...)<br/>ack $5k arriving
   end
 
   Note over LCAorch, aavePos: both makeAccount and CCTP out successful<br/> Now supply to Aave
