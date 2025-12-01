@@ -105,6 +105,10 @@
     "meta": {
       "type": "object",
       "properties": {
+        "row": {
+          "type": "string",
+          "description": "Visualization row grouping (e.g., 'Cosmos Realm', 'Portfolio Contract', 'Planner Service', 'Orchestration', 'Final States')"
+        },
         "userMessage": { "type": "string" },
         "expectedSlaMs": { "type": "integer", "minimum": 0 },
         "invariants": {

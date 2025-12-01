@@ -6,6 +6,8 @@ initial: transaction_defined
 states:
   transaction_defined:
     description: User specifies their portfolio offer in a transaction (usually in the Ymax web UI)
+    meta:
+      row: Cosmos Realm
     on:
       transaction.signed:
         target: transaction_committed
@@ -13,6 +15,7 @@ states:
   transaction_committed:
     description: The user's transaction is in consensus
     meta:
+      row: Cosmos Realm
       observedFrom:
         - Agoric tx history for the user's wallet address
     on:
@@ -32,12 +35,14 @@ states:
       #   target: planning
       #   description: No steps provided; planner must compute and resolve flow{n}.steps.
     meta:
+      row: Portfolio Contract
       observedFrom:
         - published.{instance}.portfolios.portfolio{n} status.flowsRunning
       userMessage: Request received; building plan.
   planning:
     description: Planner computes steps/order from balances + targetAllocation and posts flow{n}.steps.
     meta:
+      row: Planner Service
       observedFrom:
          - services/ymax-planner log messages (planRebalanceFlow/planDepositToAllocations)
       invariants:
@@ -52,6 +57,7 @@ states:
   planned:
     description: Planner has submitted transaction to the contract with the steps for the flow.
     meta:
+      row: Planner Service
       observedFrom:
         - Agoric tx history for the planner address
     on:
@@ -64,6 +70,7 @@ states:
   executing:
     description: Contract performing ordered movements; publishes FlowStatus run/fail/done.
     meta:
+      row: Orchestration
       observedFrom:
         - published.{instance}.portfolios.portfolio{n}.flows.flow{n}.steps
       userMessage: Plan ready; executing transfers.
@@ -79,6 +86,7 @@ states:
             target: failed
             description: Account creation or resolver registerTransaction failed.
         meta:
+          row: Orchestration
           observedFrom:
             - FlowStatus state=run with how=makeAccounts(...)
           invariants:
@@ -95,6 +103,7 @@ states:
             target: completed
             description: FlowStatus state=done and no TxStatus pending.
         meta:
+          row: Orchestration
           observedFrom:
             - published.{instance}.portfolios.portfolio{n}.flows.flow{n} (state=run|fail|done, steps=[])
           invariants:
@@ -110,10 +119,12 @@ states:
     description: Flow finished; balances/positions updated; pendingTxs (if any) marked success.
     type: final
     meta:
+      row: Final States
       userMessage: Flow finished.
   failed:
     description: Flow halted; partial effects possible; operator or planner must retry/correct.
     type: final
     meta:
+      row: Final States
       severity: error
       userMessage: Flow failed; inspect flow{n} status and pendingTx logs.
