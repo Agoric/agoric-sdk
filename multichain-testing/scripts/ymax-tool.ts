@@ -4,7 +4,8 @@
  */
 import '@endo/init';
 
-import WalletArtifact from '@aglocal/portfolio-deploy/tools/evm-orch/Wallet.json' with { type: 'json' };
+import { readFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.exo.ts';
 import type { start as YMaxStart } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
 import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.ts';
@@ -59,6 +60,9 @@ import {
   reflectWalletStore,
   walletUpdates,
 } from '../tools/wallet-store-reflect.ts';
+
+const nodeRequire = createRequire(import.meta.url);
+const asset = (spec: string) => readFile(nodeRequire.resolve(spec), 'utf8');
 
 type YMaxStartFn = typeof YMaxStart;
 
@@ -118,7 +122,9 @@ const trace = makeTracer('YMXTool');
 const { fromEntries } = Object;
 const { make } = AmountMath;
 
-const walletBytecode = WalletArtifact.bytecode;
+const { bytecode: walletBytecode } = JSON.parse(
+  await asset('@aglocal/portfolio-deploy/tools/evm-orch/Wallet.json'),
+);
 
 const parseTypedJSON = <T>(
   json: string,
