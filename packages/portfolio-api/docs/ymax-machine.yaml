@@ -1,0 +1,119 @@
+# yaml-language-server: $schema=./ymax-machine.schema.json
+machine: YmaxFlow
+version: 0.1.0
+description: Canonical lifecycle for Ymax portfolio movements (deposit, withdraw, rebalance) across planner, contract, and resolver.
+initial: transaction_defined
+states:
+  transaction_defined:
+    description: User specifies their portfolio offer in a transaction (usually in the Ymax web UI)
+    on:
+      transaction.signed:
+        target: transaction_committed
+        description: User signed a transaction with the offer and broadcast it
+  transaction_committed:
+    description: The user's transaction is in consensus
+    meta:
+      observedFrom:
+        - Agoric tx history for the user's wallet address
+    on:
+      transaction.handled:
+        description: Agoric contract machinery forwards it from smart-wallet bridge to the Portfolio Contract
+        target: flow_registered
+  flow_inited:
+    description: Flow basic details recorded in flowsRunning (type and optional amount). Virtual FlowStatus=init, not yet FlowStatus=run
+    on:
+      flow.discovered:
+        description: Planner service observes the new key in `flowsRunning`
+        target: planning
+      # steps.provided:
+      #   target: planned
+      #   description: Steps were provided inline (offerArgs.flow) so execution can start without planner.
+      # steps.requested:
+      #   target: planning
+      #   description: No steps provided; planner must compute and resolve flow{n}.steps.
+    meta:
+      observedFrom:
+        - published.{instance}.portfolios.portfolio{n} status.flowsRunning
+      userMessage: Request received; building plan.
+  planning:
+    description: Planner computes steps/order from balances + targetAllocation and posts flow{n}.steps.
+    meta:
+      observedFrom:
+         - services/ymax-planner log messages (planRebalanceFlow/planDepositToAllocations)
+      invariants:
+        - deposit/withdraw amounts reconcile with portfolio status and balances
+    on:
+      planner.steps_submitted:
+        target: planned
+        description: Planner submits a transaction to the contract and the contract handles it.
+      planner.failed:
+        target: failed
+        description: Planner/solver errored or allocation infeasible.
+  planned:
+    description: Planner has submitted transaction to the contract with the steps for the flow.
+    meta:
+      observedFrom:
+        - Agoric tx history for the planner address
+    on:
+      flow.plan_resolved:
+        target: executing
+        description: executePlan() begins; FlowStatus state=run emitted.
+      # plan.superseded:
+      #   target: planning
+      #   description: policyVersion incremented or targetAllocation changed before execution.
+  executing:
+    description: Contract performing ordered movements; publishes FlowStatus run/fail/done.
+    meta:
+      observedFrom:
+        - published.{instance}.portfolios.portfolio{n}.flows.flow{n}.steps
+      userMessage: Plan ready; executing transfers.
+    initial: provisioning
+    states:
+      provisioning:
+        description: Make/resolve accounts (Agoric, Noble, EVM) and register resolver pending transactions when needed.
+        on:
+          provision.complete:
+            target: moving
+            description: provideCosmosAccount/provideEVMAccount resolved; accountsPending empty.
+          provision.failed:
+            target: failed
+            description: Account creation or resolver registerTransaction failed.
+        meta:
+          observedFrom:
+            - FlowStatus state=run with how=makeAccounts(...)
+          invariants:
+            - accountsPending empty
+      moving:
+        # TODO express another state diagram for the execution of each step, which run concurrently
+        description: Execute MovementDesc steps (localTransfer, withdrawToSeat, send, IBC, CCTP, GMP, protocol supply/withdraw). FlowStatus state=run advances; fail publishes FlowStatus state=fail. IBC legs can block if relayer is down/slow.
+        initial: dispatch
+        on:
+          flow.step_failed:
+            target: failed
+            description: FlowStatus state=fail emitted for a step.
+          flow.done_no_pending:
+            target: completed
+            description: FlowStatus state=done and no TxStatus pending.
+        meta:
+          observedFrom:
+            - published.{instance}.portfolios.portfolio{n}.flows.flow{n} (state=run|fail|done, steps=[])
+          invariants:
+            - proposal satisfied for give/want seats
+    on:
+      flow.failed:
+        target: failed
+        description: FlowStatus state=fail emitted.
+      flow.done:
+        target: completed
+        description: FlowStatus state=done and all relevant pendingTxs are success.
+  completed:
+    description: Flow finished; balances/positions updated; pendingTxs (if any) marked success.
+    type: final
+    meta:
+      userMessage: Flow finished.
+  failed:
+    description: Flow halted; partial effects possible; operator or planner must retry/correct.
+    type: final
+    meta:
+      severity: error
+      userMessage: Flow failed; inspect flow{n} status and pendingTx logs.
