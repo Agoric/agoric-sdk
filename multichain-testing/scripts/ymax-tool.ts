@@ -4,6 +4,8 @@
  */
 import '@endo/init';
 
+import { readFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.exo.ts';
 import type { start as YMaxStart } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
 import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.ts';
@@ -58,6 +60,10 @@ import {
   reflectWalletStore,
   walletUpdates,
 } from '../tools/wallet-store-reflect.ts';
+import type { StdFee } from 'osmojs';
+
+const nodeRequire = createRequire(import.meta.url);
+const asset = (spec: string) => readFile(nodeRequire.resolve(spec), 'utf8');
 
 type YMaxStartFn = typeof YMaxStart;
 
@@ -95,6 +101,7 @@ const parseToolArgs = (argv: string[]) =>
       terminate: { type: 'string' },
       buildEthOverrides: { type: 'boolean' },
       installAndStart: { type: 'string' },
+      upgrade: { type: 'string' },
       invitePlanner: { type: 'string' },
       inviteResolver: { type: 'string' },
       checkStorage: { type: 'boolean' },
@@ -104,6 +111,16 @@ const parseToolArgs = (argv: string[]) =>
     },
     allowPositionals: false,
   });
+
+const makeFee = ({
+  gas = 20_000, // cosmjs default
+  adjustment = 1.0,
+  denom = 'ubld',
+  price = 0.01, // ubld. per 2025-11 community discussion
+} = {}): StdFee => ({
+  gas: `${Math.round(gas * adjustment)}`,
+  amount: [{ denom, amount: `${Math.round(gas * adjustment * price)}` }],
+});
 
 type GoalData = Partial<Record<YieldProtocol, ParsableNumber>>;
 const YieldProtocolShape = M.or(...Object.keys(YieldProtocol));
@@ -116,6 +133,10 @@ const GoalDataShape: TypedPattern<GoalData> = M.recordOf(
 const trace = makeTracer('YMXTool');
 const { fromEntries } = Object;
 const { make } = AmountMath;
+
+const { bytecode: walletBytecode } = JSON.parse(
+  await asset('@aglocal/portfolio-deploy/tools/evm-orch/Wallet.json'),
+);
 
 const parseTypedJSON = <T>(
   json: string,
@@ -252,7 +273,7 @@ const agoricNamesForChainInfo = (vsk: VstorageKit) => {
     const out: [string, unknown][] = [];
     const children = await vstorage.keys(`published.agoricNames.${kind}`);
     for (const child of children) {
-      console.debug('readPublished', kind, child);
+      // console.error('readPublished', kind, child);
       const value = await readPublished(`agoricNames.${kind}.${child}`);
       // console.debug(kind, child, value);
       if (kind === 'chain') {
@@ -369,11 +390,8 @@ const overridesForEthChainInfo = async (
     contracts: objectMap(axelarConfig, c => c.contracts),
     chainInfo,
     gmpAddresses,
+    walletBytecode,
   });
-  console.log(
-    'privateArgsOverrides',
-    JSON.stringify(privateArgsOverrides, null, 2),
-  );
   return privateArgsOverrides;
 };
 
@@ -441,10 +459,13 @@ const main = async (
     MNEMONIC,
   );
   trace('address', sig.address);
+  const fresh = () => new Date(now()).toISOString();
   const walletStore = reflectWalletStore(sig, {
     setTimeout,
     log: trace,
-    fresh: () => new Date(now()).toISOString(),
+    fresh,
+    // as in: Error#1: out of gas ... gasUsed: 809068
+    fee: makeFee({ gas: 809068, adjustment: 1.4 }),
   });
 
   if (values.redeem) {
@@ -453,6 +474,22 @@ const main = async (
     const { [contract]: instance } = fromEntries(
       await walletKit.readPublished('agoricNames.instance'),
     );
+
+    // XXX generalize to --no-save or some such?
+    if (description === 'resolver') {
+      const id = `redeem-${fresh()}`;
+      await sig.sendBridgeAction({
+        method: 'executeOffer',
+        offer: {
+          id,
+          invitationSpec: { source: 'purse', description, instance },
+          proposal: {},
+        },
+      });
+      await sig.pollOffer(sig.address, id, undefined, true);
+      return;
+    }
+
     const result = await walletStore.saveOfferResult(
       { instance, description },
       description.replace(/^deliver /, ''),
@@ -512,6 +549,15 @@ const main = async (
       issuers: { USDC, BLD, Fee: BLD, Access: upoc26.issuer },
       privateArgsOverrides,
     });
+    return;
+  }
+
+  if (values.upgrade) {
+    const { upgrade: bundleId } = values;
+
+    const privateArgsOverrides = JSON.parse(await readText(stdin));
+
+    await yc.upgrade({ bundleId, privateArgsOverrides });
     return;
   }
 

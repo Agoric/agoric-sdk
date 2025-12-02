@@ -21,10 +21,15 @@ import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/eventual-send';
 import { passStyleOf } from '@endo/pass-style';
 import type { ExecutionContext, TestFn } from 'ava';
+import { readFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import {
   prepareContractControl,
   type ContractControl,
 } from '../src/contract-control.js';
+
+const nodeRequire = createRequire(import.meta.url);
+const asset = (spec: string) => readFile(nodeRequire.resolve(spec), 'utf8');
 
 type YMaxStartFn = typeof ymaxExports.start;
 
@@ -70,6 +75,10 @@ const makeTestContext = async (t: ExecutionContext) => {
     zoe,
   });
 
+  const { bytecode: walletBytecode } = JSON.parse(
+    await asset('@aglocal/portfolio-deploy/tools/evm-orch/Wallet.json'),
+  );
+
   return {
     common,
     zoe,
@@ -77,47 +86,41 @@ const makeTestContext = async (t: ExecutionContext) => {
     startUpgradable,
     makeContractControl,
     space,
+    walletBytecode,
   };
 };
 
 test.before(async t => (t.context = await makeTestContext(t)));
 
 const contractName = 'ymax0';
-
-const ymaxDataPrivateArgs: Omit<
-  Parameters<YMaxStartFn>[1],
-  | 'agoricNames'
-  | 'localchain'
-  | 'marshaller'
-  | 'orchestrationService'
-  | 'storageNode'
-  | 'timerService'
-> = harden({
-  chainInfo: Object.fromEntries(
-    // XXX factor out of contract-setup.ts?
-    [
-      'agoric',
-      'noble',
-      'axelar',
-      'osmosis',
-      'Optimism',
-      'Avalanche',
-      'Arbitrum',
-    ].map(name => [name, chainInfoWithCCTP[name]]),
-  ),
-  assetInfo: [],
-  axelarIds: axelarIdsMock,
-  contracts: contractsMock,
-  gmpAddresses,
-});
-harden(ymaxDataPrivateArgs);
+const makeYmaxDataPrivateArgs = (walletBytecode: string) =>
+  harden({
+    chainInfo: Object.fromEntries(
+      // XXX factor out of contract-setup.ts?
+      [
+        'agoric',
+        'noble',
+        'axelar',
+        'osmosis',
+        'Optimism',
+        'Avalanche',
+        'Arbitrum',
+      ].map(name => [name, chainInfoWithCCTP[name]]),
+    ),
+    assetInfo: [],
+    axelarIds: axelarIdsMock,
+    contracts: contractsMock,
+    gmpAddresses,
+    walletBytecode,
+  });
 
 test.serial('make, deliver ContractControl for ymax', async t => {
-  const { common, makeContractControl, space } = t.context;
+  const { common, makeContractControl, space, walletBytecode } = t.context;
 
   const { rootNode: chainStorage } = common.bootstrap.storage;
   const storageNode = await E(chainStorage).makeChildNode(contractName);
 
+  const ymaxDataPrivateArgs = makeYmaxDataPrivateArgs(walletBytecode);
   const initialPrivateArgs = {
     ...ymaxDataPrivateArgs,
     // @ts-expect-error some commonPrivateArgs types are sus
