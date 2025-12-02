@@ -13,7 +13,11 @@
 import { E } from '@endo/far';
 import url from 'url';
 
-/** @typedef {ReturnType<typeof import('./endo-pieces-contract.js').start>['publicFacet']} BundleMaker */
+/**
+ * @import {start} from './endo-pieces-contract.js';
+ */
+
+/** @typedef {ReturnType<typeof start>['publicFacet']} BundleMaker */
 /** @typedef {ReturnType<BundleMaker['makeBundler']>} Bundler */
 
 export const makeGetBundlerMaker =

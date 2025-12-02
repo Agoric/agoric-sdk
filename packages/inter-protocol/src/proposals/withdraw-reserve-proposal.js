@@ -3,10 +3,14 @@ import { makeTracer } from '@agoric/internal/src/debug.js';
 import { reserveThenDeposit } from './utils.js';
 
 /**
+ * @import {start} from '../reserve/assetReserve.js';
+ */
+
+/**
  * @param {BootstrapPowers & {
  *   consume: {
  *     reserveKit: Promise<
- *       ReturnType<typeof import('../reserve/assetReserve.js').start>
+ *       ReturnType<typeof start>
  *     >;
  *   };
  * }} powers

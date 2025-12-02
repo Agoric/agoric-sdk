@@ -32,6 +32,8 @@ import {
  * @import {SmartWallet} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {PriceRound} from '@agoric/inter-protocol/src/price/roundsManager.js';
  * @import {ContinuingInvitationSpec} from '@agoric/smart-wallet/src/invitations.js';
+ * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
+ * @import {start as CommitteeStart} from '@agoric/governance/src/committee.js';
  */
 
 /**
@@ -253,7 +255,7 @@ test.serial('invitations', async t => {
   });
 
   const currentSub = E(wallet).getCurrentSubscriber();
-  /** @type {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} */
+  /** @type {CurrentWalletRecord} */
   const currentState = await headValue(currentSub);
   t.deepEqual(
     currentState.offerToUsedInvitation.map(([k, _]) => k),
@@ -392,9 +394,7 @@ test.serial('govern oracles list', async t => {
     'econCommitteeCharter',
   );
   /**
-   * @type {Instance<
-   *   typeof import('@agoric/governance/src/committee.js').start
-   * >}
+   * @type {Instance<CommitteeStart>}
    */
   const economicCommittee = await E(agoricNames).lookup(
     'instance',
@@ -452,7 +452,7 @@ test.serial('govern oracles list', async t => {
       proposal: {},
     });
 
-    /** @type {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} */
+    /** @type {CurrentWalletRecord} */
     let currentState = await headValue(currentSub);
     t.is(
       // @ts-expect-error cast amount kind
@@ -502,7 +502,7 @@ test.serial('govern oracles list', async t => {
 
   // Call for a vote to addOracles ////////////////////////////////
   {
-    /** @type {import('@agoric/smart-wallet/src/invitations.js').ContinuingInvitationSpec} */
+    /** @type {ContinuingInvitationSpec} */
     const proposeInvitationSpec = {
       source: 'continuing',
       previousOffer: 'acceptEcInvitationOID',
@@ -558,7 +558,7 @@ test.serial('govern oracles list', async t => {
 
   // Call for a vote to removeOracles ////////////////////////////////
   {
-    /** @type {import('@agoric/smart-wallet/src/invitations.js').ContinuingInvitationSpec} */
+    /** @type {ContinuingInvitationSpec} */
     const proposeInvitationSpec = {
       source: 'continuing',
       previousOffer: 'acceptEcInvitationOID',

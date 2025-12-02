@@ -12,10 +12,15 @@ import { ExitCode } from '../api.js';
 
 /**
  * @import { Readable, Writable, Duplex } from 'stream'
+ * @import {ChildProcess} from 'child_process';
+ * @import {ChildProcessWithoutNullStreams} from 'child_process';
+ * @import {XSnapOptions} from '../src/xsnap.js';
+ * @import {spawn} from 'child_process';
+ * @import {ExecutionContext} from 'ava';
  */
 
 /**
- * @typedef {Omit<import("child_process").ChildProcess, 'stdio'> &
+ * @typedef {Omit<ChildProcess, 'stdio'> &
  *   {
  *     stdin: null;
  *     stdout: Readable;
@@ -28,18 +33,17 @@ import { ExitCode } from '../api.js';
 test('xsnap-worker complains while waiting for answer when parent is killed', async t => {
   const exitedPKit = makePromiseKit();
 
-  const child =
-    /** @type {import("child_process").ChildProcessWithoutNullStreams} */ (
-      proc.fork(
-        fileURLToPath(
-          new URL(
-            './fixture-xsnap-kill-parent-in-handlecommand.js',
-            import.meta.url,
-          ),
+  const child = /** @type {ChildProcessWithoutNullStreams} */ (
+    proc.fork(
+      fileURLToPath(
+        new URL(
+          './fixture-xsnap-kill-parent-in-handlecommand.js',
+          import.meta.url,
         ),
-        { stdio: ['ignore', 'pipe', 'pipe', 'ipc'] },
-      )
-    );
+      ),
+      { stdio: ['ignore', 'pipe', 'pipe', 'ipc'] },
+    )
+  );
 
   const outP = text(child.stdout);
   const errP = text(child.stderr);
@@ -72,14 +76,14 @@ test('xsnap-worker complains while waiting for answer when parent is killed', as
  * object and exit promise, command input/output streams, and promises for
  * stdout/stderr text).
  *
- * @param {import('../src/xsnap.js').XSnapOptions['handleCommand']} handleCommand
+ * @param {XSnapOptions['handleCommand']} handleCommand
  */
 async function spawnReflectiveWorker(handleCommand) {
   const exitedPKit = makePromiseKit();
   /** @type {XsnapChildProcess | undefined} */
   let xsnapProcess;
 
-  /** @type {typeof import('child_process').spawn} */
+  /** @type {typeof spawn} */
   const spawnSpy = (...args) => {
     // @ts-expect-error overloaded signature
     const cp = proc.spawn(...args);
@@ -190,11 +194,11 @@ function verifyStdError(t, results, expectedStderr) {
 
 const testInterruption = test.macro(
   /**
-   * @param {import('ava').ExecutionContext} t
+   * @param {ExecutionContext} t
    * @param {(worker: ReflectiveWorker) => Promise<unknown>} beforeWait
    * @param {(worker: ReflectiveWorker, message: Uint8Array) => Promise<Uint8Array>} onRequest
    * @param {(worker: ReflectiveWorker) => Promise<unknown>} afterWait
-   * @param {(t: import('ava').ExecutionContext, results: Awaited<ReturnType<expectTermination>>) => void} verifyResults
+   * @param {(t: ExecutionContext, results: Awaited<ReturnType<expectTermination>>) => void} verifyResults
    */
   async (t, beforeWait, onRequest, afterWait, verifyResults) => {
     const handleCommand = message => {

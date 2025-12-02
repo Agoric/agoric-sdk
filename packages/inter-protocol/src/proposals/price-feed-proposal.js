@@ -16,6 +16,7 @@ import {
 /**
  * @import {ChainlinkConfig} from '@agoric/inter-protocol/src/price/fluxAggregatorKit.js';
  * @import {EconomyBootstrapPowers} from './econ-behaviors.js';
+ * @import {start} from '@agoric/inter-protocol/src/price/fluxAggregatorContract.js';
  */
 
 // backwards compatibility
@@ -173,7 +174,7 @@ export const createPriceFeed = async (
    * @type {[
    *   [Brand<'nat'>, Brand<'nat'>],
    *   Installation<
-   *     typeof import('@agoric/inter-protocol/src/price/fluxAggregatorContract.js').start
+   *     typeof start
    *   >,
    *   Timer,
    * ]}

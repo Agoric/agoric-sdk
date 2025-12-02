@@ -34,6 +34,7 @@ import {
  * @import {WalletReviver} from '@agoric/smart-wallet/src/walletFactory.js'
  * @import {TestFn} from 'ava';
  * @import {WalletFactoryStartResult} from '@agoric/vats/src/core/startWalletFactory.js';
+ * @import {start} from '../src/provisionPool.js';
  */
 
 const pathname = new URL(import.meta.url).pathname;
@@ -66,7 +67,7 @@ const makeTestContext = async () => {
   const committeeInstall = await E(zoe).install(committeeBundle);
   const psmInstall = await E(zoe).install(psmBundle);
   const centralSupply = await E(zoe).install(centralSupplyBundle);
-  /** @type {Installation<typeof import('../src/provisionPool.js').start>} */
+  /** @type {Installation<typeof start>} */
   const policyInstall = await E(zoe).install(policyBundle);
 
   const mintLimit = AmountMath.make(mintedBrand, MINT_LIMIT);
