@@ -1,6 +1,6 @@
 /* eslint-disable max-classes-per-file */
 import type { ERef, RemotableBrand } from '@endo/eventual-send';
-import type { Primitive } from '@endo/pass-style';
+import type { Primitive, RemotableObject } from '@endo/pass-style';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- used in JSDoc
 import type { mustMatch as endoMustMatch, Pattern } from '@endo/patterns';
 import type { Callable } from './ses-utils.js';
@@ -73,6 +73,13 @@ export declare class SyncCallback<
  * //=> false
  */
 export type IsPrimitive<T> = [T] extends [Primitive] ? true : false;
+
+// XXX https://github.com/endojs/endo/issues/2979
+export type IsRemotable<T> = T extends RemotableObject
+  ? true
+  : T extends RemotableBrand<any, any>
+    ? true
+    : false;
 
 /** Recursively extract the non-callable properties of T */
 export type DataOnly<T> =
