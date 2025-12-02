@@ -4,8 +4,21 @@
 import { M } from '@endo/patterns';
 
 /**
+ * @import {DataOnly, RemotableBrand} from '@endo/eventual-send';
  * @import {TypedPattern} from './types.js';
  */
+
+/**
+ * Mark a value with RemotableBrand.
+ *
+ * @template T
+ * @param {T} value
+ * @returns {T & RemotableBrand<DataOnly<T>, T>}
+ */
+export const remotable = value =>
+  /** @type {T & RemotableBrand<DataOnly<T>, T>} */ (
+    /** @type {unknown} */ (value)
+  );
 
 export const StorageNodeShape = M.remotable('StorageNode');
 

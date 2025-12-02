@@ -889,7 +889,6 @@ export const prepareLocalOrchestrationAccountKit = (
         },
         /** @type {HostOf<OrchestrationAccountCommon['transferWithMeta']>} */
         transferWithMeta(destination, amount, opts) {
-          // @ts-expect-error Vow combined with HostInterface doesn't type.
           return asVow(() => {
             trace('Transferring funds over IBC');
 

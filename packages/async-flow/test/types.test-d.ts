@@ -1,5 +1,6 @@
-import { expectType } from 'tsd';
+import { expectAssignable, expectType } from 'tsd';
 import type { Vow, VowTools } from '@agoric/vow';
+import type { RemotableObject } from '@endo/pass-style';
 import type {
   HostOf,
   GuestOf,
@@ -69,5 +70,18 @@ expectType<{
 }>(
   castable as GuestInterface<{
     facet: ExoHostAPI;
+  }>,
+);
+
+type AssetKind = 'nat' | 'set' | 'copySet';
+type Brand<K extends AssetKind = AssetKind> = RemotableObject & {
+  isMyIssuer: (issuer: Promise<K> | K) => Promise<boolean>;
+};
+expectAssignable<{ brand?: Brand<'nat'>; other: { getN: () => Vow<number> } }>(
+  castable as HostInterface<{
+    brand?: Brand;
+    other: {
+      getN: () => Promise<number>;
+    };
   }>,
 );
