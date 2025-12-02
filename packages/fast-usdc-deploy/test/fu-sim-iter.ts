@@ -26,6 +26,7 @@ import type {
 } from '@agoric/smart-wallet/src/offers.js';
 import type { IBCChannelID } from '@agoric/vats';
 import { makePromiseKit } from '@endo/promise-kit';
+import type { CopyRecord } from '@endo/pass-style';
 import { configurations } from '../src/utils/deploy-config.js';
 import { type WalletFactoryTestContext } from './walletFactory.js';
 
@@ -139,8 +140,7 @@ const makeInvokeTxOracle = (
         id: `submit-evidence-${nonce}`,
         targetName: 'fastUsdcOperator',
         method: 'submitEvidence',
-        // @ts-expect-error
-        args: [evidence],
+        args: [evidence as CopyRecord],
       };
       await wallet.invokeEntry(it);
     },
