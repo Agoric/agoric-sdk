@@ -1,0 +1,35 @@
+stateDiagram-v2
+[*] --> initiated
+state initiated
+note right of initiated
+  lca.transfer(noble_ica_address, denomAmount) called
+end note
+initiated --> packet_in_flight: MsgTransfer submitted and included in Agoric block
+initiated --> failed: MsgTransfer rejected (e.g., invalid channel, insufficient funds)
+state packet_in_flight
+note right of packet_in_flight
+  IBC packet sent from Agoric, waiting for relayer to deliver to Noble
+end note
+packet_in_flight --> ack_pending: Relayer delivered packet to Noble chain
+packet_in_flight --> timed_out: Packet not delivered within timeout period
+state ack_pending
+note right of ack_pending
+  Packet received on Noble, waiting for acknowledgement to be relayed back
+end note
+ack_pending --> completed: Acknowledgement received on Agoric confirming successful transfer
+ack_pending --> failed: Noble returned error acknowledgement (e.g., account doesn't exist)
+state completed
+note right of completed
+  IBC transfer complete, funds on Noble ICA
+end note
+completed --> [*]
+state timed_out
+note right of timed_out
+  IBC packet timed out, funds refunded on source chain
+end note
+timed_out --> [*]
+state failed
+note right of failed
+  IBC transfer failed
+end note
+failed --> [*]

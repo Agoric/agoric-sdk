@@ -1,0 +1,65 @@
+stateDiagram-v2
+[*] --> initiated
+state initiated
+note right of initiated
+  GMP contract call to depositForBurn on EVM wallet
+end note
+initiated --> gmp_pending: GMP message sent via Axelar
+initiated --> failed: GMP submission failed
+state gmp_pending
+note right of gmp_pending
+  GMP message in transit to EVM chain via Axelar (sent as IBC packet to Axelar gateway)
+end note
+gmp_pending --> burn_pending: Axelar delivered and executed GMP payload on EVM
+gmp_pending --> gmp_failed: GMP message delivery or execution failed
+gmp_pending --> gmp_failed: IBC packet to Axelar timed out
+gmp_pending --> gmp_failed: Axelar gateway returned IBC acknowledgement error
+state burn_pending
+note right of burn_pending
+  EVM wallet executing depositForBurn
+end note
+burn_pending --> attestation_pending: USDC burned on EVM, waiting for attestation
+burn_pending --> failed: Burn transaction reverted on EVM
+state attestation_pending
+note right of attestation_pending
+  Waiting for Circle attestation
+end note
+attestation_pending --> noble_mint_pending: Attestation ready, mint can proceed on Noble
+attestation_pending --> attestation_timeout: Attestation timed out
+state noble_mint_pending
+note right of noble_mint_pending
+  USDC being minted on Noble to NFA (Noble Forwarding Account)
+end note
+noble_mint_pending --> ibc_forward_pending: USDC minted on Noble NFA
+noble_mint_pending --> failed: Noble mint failed
+state ibc_forward_pending
+note right of ibc_forward_pending
+  NFA auto-forwarding USDC to Agoric via IBC
+end note
+ibc_forward_pending --> completed: Funds arrived on Agoric LCA
+ibc_forward_pending --> ibc_timeout: IBC forward timed out
+state completed
+note right of completed
+  CCTP+IBC transfer complete, USDC on Agoric LCA
+end note
+completed --> [*]
+state gmp_failed
+note right of gmp_failed
+  Axelar GMP delivery or execution failed
+end note
+gmp_failed --> [*]
+state attestation_timeout
+note right of attestation_timeout
+  Circle attestation timed out
+end note
+attestation_timeout --> [*]
+state ibc_timeout
+note right of ibc_timeout
+  IBC forward from Noble to Agoric timed out
+end note
+ibc_timeout --> [*]
+state failed
+note right of failed
+  CCTP transfer failed
+end note
+failed --> [*]

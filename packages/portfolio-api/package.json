@@ -20,8 +20,9 @@
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
     "lint:eslint": "yarn run -T eslint .",
     "lint:types": "yarn run -T tsc",
-    "lint:mermaid": "scripts/gen-mermaid.mts --check",
-    "lint:ymax-diagram": "scripts/lint-ymax-state-diagram.mts"
+    "lint:mermaid": "npx tsx scripts/gen-mermaid.mts --check",
+    "lint:ymax-diagram": "npx tsx scripts/lint-ymax-state-diagram.mts",
+    "lint:visualizer-data": "npx tsx scripts/gen-visualizer-data.mts --check"
   },
   "dependencies": {
     "@agoric/orchestration": "workspace:*",

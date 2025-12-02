@@ -1,5 +1,6 @@
 #!/usr/bin/env -S node --import ts-blank-space/register
-// Generate a Mermaid state diagram from ymax-machine.yaml
+// Generate Mermaid state diagrams from ymax-machine.yaml
+// Outputs separate .mmd files for each machine in the spec
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -8,12 +9,12 @@ import type { PathLike } from 'fs';
 import assert from 'node:assert';
 
 const input = '../docs/ymax-machine.yaml';
-const output = '../docs/ymax-machine.mmd';
+const outputDir = '../docs';
 
 const thisFile = fileURLToPath(import.meta.url);
 const here = path.dirname(thisFile);
 const defaultSpecPath = path.resolve(here, input);
-const outputPath = path.resolve(here, output);
+const outputPath = path.resolve(here, outputDir);
 
 const args = process.argv.slice(2);
 const checkMode = args.includes('--check');
@@ -21,9 +22,44 @@ const specPath = args.find(arg => !arg.startsWith('--'))
   ? path.resolve(process.cwd(), args.find(arg => !arg.startsWith('--'))!)
   : defaultSpecPath;
 
-const readYaml = async (file: PathLike | fs.FileHandle) => {
+interface TransitionTarget {
+  target: string;
+  description?: string;
+  guard?: string;
+  actions?: string[];
+}
+
+interface StateNode {
+  description: string;
+  type?: 'atomic' | 'compound' | 'final' | 'parallel';
+  initial?: string;
+  states?: Record<string, StateNode>;
+  on?: Record<string, TransitionTarget | TransitionTarget[]>;
+  after?: Record<string, TransitionTarget | TransitionTarget[]>;
+  meta?: {
+    row?: string;
+    observedFrom?: string[];
+    observabilityTodo?: string;
+    wayMachines?: string[];
+    [key: string]: unknown;
+  };
+}
+
+interface MachineDefinition {
+  description: string;
+  category?: 'flow' | 'step';
+  initial: string;
+  states: Record<string, StateNode>;
+}
+
+interface YmaxSpec {
+  version?: string;
+  machines: Record<string, MachineDefinition>;
+}
+
+const readYaml = async (file: PathLike | fs.FileHandle): Promise<YmaxSpec> => {
   const text = await fs.readFile(file, 'utf8');
-  return yaml.load(text) as any;
+  return yaml.load(text) as YmaxSpec;
 };
 
 const sanitizeText = (str: unknown) =>
@@ -46,15 +82,15 @@ const addNote = (
   lines.push(`${indent}end note`);
 };
 
-const listifyTransitions = (target: unknown) => {
+const listifyTransitions = (target: unknown): TransitionTarget[] => {
   if (Array.isArray(target)) return target;
-  return [target];
+  return [target as TransitionTarget];
 };
 
 const renderTransitions = (
   lines: string[],
   stateName: string,
-  node: any,
+  node: StateNode,
   indent: string,
 ) => {
   if (node.on) {
@@ -77,10 +113,10 @@ const renderTransitions = (
 
 const renderStates = (
   lines: string[],
-  states: { [s: string]: any } | ArrayLike<any>,
+  states: Record<string, StateNode>,
   indent = '',
   isRoot = false,
-  initial: any,
+  initial?: string,
 ) => {
   if (isRoot && initial) {
     lines.push(`${indent}[*] --> ${initial}`);
@@ -101,7 +137,7 @@ const renderStates = (
       if (node.initial) {
         lines.push(`${indent2}[*] --> ${node.initial}`);
       }
-      renderStates(lines, node.states, indent2, false, node.initial);
+      renderStates(lines, node.states!, indent2, false, node.initial);
       lines.push(`${indent}}`);
       addNote(lines, indent, name, node.description);
       renderTransitions(lines, name, node, indent);
@@ -121,37 +157,87 @@ const renderStates = (
   }
 };
 
+const generateMermaidForMachine = (machine: MachineDefinition): string => {
+  const lines = ['stateDiagram-v2'];
+  renderStates(lines, machine.states, '', true, machine.initial);
+  return `${lines.join('\n')}\n`;
+};
+
 const main = async () => {
   const spec = await readYaml(specPath);
-  if (!spec?.states || !spec.initial) {
-    throw new Error('Spec must have "states" and "initial"');
-  }
-  const lines = ['stateDiagram-v2'];
-  renderStates(lines, spec.states, '', true, spec.initial);
-  const generatedContent = `${lines.join('\n')}\n`;
 
-  if (checkMode) {
-    try {
-      const existingContent = await fs.readFile(outputPath, 'utf8');
-      if (existingContent !== generatedContent) {
-        console.error(
-          `Error: ${outputPath} is out of date. Run '${path.relative(process.cwd(), thisFile)}' to update.`,
-        );
-        process.exitCode = 1;
-      }
-    } catch (err) {
+  if (!spec?.machines) {
+    throw new Error('Spec must have "machines" property');
+  }
+
+  const machineNames = Object.keys(spec.machines);
+  console.log(
+    `Found ${machineNames.length} machines: ${machineNames.join(', ')}`,
+  );
+
+  let hasErrors = false;
+
+  for (const [machineName, machine] of Object.entries(spec.machines)) {
+    if (!machine.states || !machine.initial) {
       console.error(
-        `Error: ${outputPath} does not exist. Run '${path.relative(process.cwd(), thisFile)}' to create it.`,
+        `Machine "${machineName}" must have "states" and "initial"`,
       );
-      process.exitCode = 1;
+      hasErrors = true;
+      continue;
     }
-  } else {
-    await fs.writeFile(outputPath, generatedContent, 'utf8');
-    console.log(`Generated ${outputPath}`);
+
+    const generatedContent = generateMermaidForMachine(machine);
+    const machineOutputPath = path.resolve(
+      outputPath,
+      `ymax-machine-${machineName}.mmd`,
+    );
+
+    if (checkMode) {
+      try {
+        const existingContent = await fs.readFile(machineOutputPath, 'utf8');
+        if (existingContent !== generatedContent) {
+          console.error(
+            `Error: ${machineOutputPath} is out of date. Run '${path.relative(process.cwd(), thisFile)}' to update.`,
+          );
+          hasErrors = true;
+        } else {
+          console.log(`✓ ${machineName} is up to date`);
+        }
+      } catch (err) {
+        console.error(
+          `Error: ${machineOutputPath} does not exist. Run '${path.relative(process.cwd(), thisFile)}' to create it.`,
+        );
+        hasErrors = true;
+      }
+    } else {
+      await fs.writeFile(machineOutputPath, generatedContent, 'utf8');
+      console.log(`Generated ${machineOutputPath}`);
+    }
+  }
+
+  // Also generate a combined index file listing all machines
+  if (!checkMode) {
+    const indexContent = generateIndexFile(spec);
+    const indexPath = path.resolve(outputPath, 'ymax-machine.mmd');
+    await fs.writeFile(indexPath, indexContent, 'utf8');
+    console.log(`Generated ${indexPath} (main flow)`);
+  }
+
+  if (hasErrors) {
+    process.exitCode = 1;
   }
 };
 
+const generateIndexFile = (spec: YmaxSpec): string => {
+  // Generate the main flow machine as the default .mmd file
+  const mainMachine = spec.machines['YmaxFlow'];
+  if (!mainMachine) {
+    throw new Error('Main machine "YmaxFlow" not found');
+  }
+  return generateMermaidForMachine(mainMachine);
+};
+
 main().catch(err => {
-  console.error('Failed to generate Mermaid diagram:', err);
+  console.error('Failed to generate Mermaid diagrams:', err);
   process.exitCode = 1;
 });

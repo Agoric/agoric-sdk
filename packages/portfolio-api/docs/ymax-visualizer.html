@@ -4,6 +4,1271 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ymax State Machine Visualizer</title>
+  <!-- Machine data embedded by scripts/gen-visualizer-data.mts -->
+  <script id="ymax-machine-data" type="application/json">
+{
+  "version": "0.2.0",
+  "machines": {
+    "YmaxFlow": {
+      "description": "Canonical lifecycle for Ymax portfolio movements (deposit, withdraw, rebalance) across planner, contract, and resolver.",
+      "category": "flow",
+      "initial": "transaction_defined",
+      "states": {
+        "transaction_defined": {
+          "description": "User specifies their portfolio offer in a transaction (usually in the Ymax web UI)",
+          "meta": {
+            "row": "Cosmos Realm"
+          },
+          "on": {
+            "transaction.signed": {
+              "target": "transaction_committed",
+              "description": "User signed a transaction with the offer and broadcast it"
+            }
+          }
+        },
+        "transaction_committed": {
+          "description": "The user's transaction is in consensus",
+          "meta": {
+            "row": "Cosmos Realm",
+            "observedFrom": [
+              "Agoric tx history for the user's wallet address"
+            ]
+          },
+          "on": {
+            "transaction.handled": {
+              "description": "Agoric contract machinery forwards it from smart-wallet bridge to the Portfolio Contract",
+              "target": "flow_inited"
+            }
+          }
+        },
+        "flow_inited": {
+          "description": "Flow basic details recorded in flowsRunning (type and optional amount). Virtual FlowStatus=init, not yet FlowStatus=run",
+          "on": {
+            "flow.discovered": {
+              "description": "Planner service observes the new key in `flowsRunning`",
+              "target": "planning"
+            }
+          },
+          "meta": {
+            "row": "Portfolio Contract",
+            "observedFrom": [
+              "published.{instance}.portfolios.portfolio{n} status.flowsRunning"
+            ],
+            "userMessage": "Request received; building plan."
+          }
+        },
+        "planning": {
+          "description": "Planner computes steps/order from balances + targetAllocation and posts flow{n}.steps.",
+          "meta": {
+            "row": "Planner Service",
+            "observedFrom": [
+              "services/ymax-planner log messages (planRebalanceFlow/planDepositToAllocations)"
+            ],
+            "invariants": [
+              "deposit/withdraw amounts reconcile with portfolio status and balances"
+            ]
+          },
+          "on": {
+            "planner.steps_submitted": {
+              "target": "planned",
+              "description": "Planner submits a transaction to the contract and the contract handles it."
+            },
+            "planner.failed": {
+              "target": "failed",
+              "description": "Planner/solver errored or allocation infeasible."
+            }
+          }
+        },
+        "planned": {
+          "description": "Planner has submitted transaction to the contract with the steps for the flow.",
+          "meta": {
+            "row": "Planner Service",
+            "observedFrom": [
+              "Agoric tx history for the planner address"
+            ]
+          },
+          "on": {
+            "flow.plan_resolved": {
+              "target": "executing",
+              "description": "executePlan() begins; FlowStatus state=run emitted."
+            }
+          }
+        },
+        "executing": {
+          "description": "Contract performing ordered movements; publishes FlowStatus run/fail/done.",
+          "meta": {
+            "row": "Orchestration",
+            "observedFrom": [
+              "published.{instance}.portfolios.portfolio{n}.flows.flow{n}.steps"
+            ],
+            "userMessage": "Plan ready; executing transfers."
+          },
+          "initial": "provisioning",
+          "states": {
+            "provisioning": {
+              "description": "Make/resolve accounts (Agoric, Noble, EVM) and register resolver pending transactions when needed.",
+              "on": {
+                "provision.complete": {
+                  "target": "moving",
+                  "description": "provideCosmosAccount/provideEVMAccount resolved; accountsPending empty."
+                },
+                "provision.failed": {
+                  "target": "failed",
+                  "description": "Account creation or resolver registerTransaction failed."
+                }
+              },
+              "meta": {
+                "row": "Orchestration",
+                "observedFrom": [
+                  "FlowStatus state=run with how=makeAccounts(...)"
+                ],
+                "invariants": [
+                  "accountsPending empty"
+                ]
+              }
+            },
+            "moving": {
+              "description": "Execute MovementDesc steps concurrently. Each step runs as one of the Way types below.",
+              "type": "parallel",
+              "onDone": {
+                "target": "completed",
+                "description": "All active steps reached their completed state"
+              },
+              "onError": {
+                "target": "failed",
+                "description": "Any step reached a failure/timeout state"
+              },
+              "meta": {
+                "row": "Orchestration",
+                "observedFrom": [
+                  "published.{instance}.portfolios.portfolio{n}.flows.flow{n} (state=run|fail|done, steps=[])"
+                ],
+                "invariants": [
+                  "proposal satisfied for give/want seats"
+                ],
+                "wayMachines": [
+                  "localTransfer",
+                  "withdrawToSeat",
+                  "send",
+                  "IBC_agoric_noble",
+                  "IBC_noble_agoric",
+                  "CCTP_noble_EVM",
+                  "CCTP_EVM_agoric",
+                  "GMP_protocol_supply",
+                  "GMP_protocol_withdraw",
+                  "USDN_supply",
+                  "USDN_withdraw"
+                ]
+              }
+            }
+          },
+          "on": {
+            "flow.failed": {
+              "target": "failed",
+              "description": "FlowStatus state=fail emitted."
+            },
+            "flow.done": {
+              "target": "completed",
+              "description": "FlowStatus state=done and all relevant pendingTxs are success."
+            }
+          }
+        },
+        "completed": {
+          "description": "Flow finished; balances/positions updated; pendingTxs (if any) marked success.",
+          "type": "final",
+          "meta": {
+            "row": "Final States",
+            "userMessage": "Flow finished."
+          }
+        },
+        "failed": {
+          "description": "Flow halted; partial effects possible; operator or planner must retry/correct.",
+          "type": "final",
+          "meta": {
+            "row": "Final States",
+            "severity": "error",
+            "userMessage": "Flow failed; inspect flow{n} status and pendingTx logs."
+          }
+        }
+      }
+    },
+    "localTransfer": {
+      "description": "Transfer assets from a ZCF seat to an Agoric local chain account (LCA). Synchronous Zoe operation.",
+      "category": "step",
+      "initial": "initiated",
+      "states": {
+        "initiated": {
+          "description": "localTransfer() called with seat and target account",
+          "meta": {
+            "row": "Zoe",
+            "observedFrom": [
+              "FlowStatus state=run with how=localTransfer"
+            ]
+          },
+          "on": {
+            "transfer.complete": {
+              "target": "completed",
+              "description": "zoeTools.localTransfer() returned successfully"
+            },
+            "transfer.failed": {
+              "target": "failed",
+              "description": "Zoe transfer threw an error (e.g., insufficient funds, wrong brand)"
+            }
+          }
+        },
+        "completed": {
+          "description": "Assets moved from seat to LCA",
+          "type": "final",
+          "meta": {
+            "row": "Zoe",
+            "observedFrom": [
+              "ZCF seat allocation updated",
+              "LCA balance increased"
+            ]
+          }
+        },
+        "failed": {
+          "description": "Transfer failed; seat allocation unchanged",
+          "type": "final",
+          "meta": {
+            "row": "Zoe",
+            "severity": "error",
+            "observedFrom": [
+              "FlowStatus state=fail with error message"
+            ]
+          }
+        }
+      }
+    },
+    "withdrawToSeat": {
+      "description": "Withdraw assets from an Agoric LCA back to a ZCF seat. Synchronous Zoe operation.",
+      "category": "step",
+      "initial": "initiated",
+      "states": {
+        "initiated": {
+          "description": "withdrawToSeat() called with account and target seat",
+          "meta": {
+            "row": "Zoe",
+            "observedFrom": [
+              "FlowStatus state=run with how=withdrawToSeat"
+            ]
+          },
+          "on": {
+            "withdraw.complete": {
+              "target": "completed",
+              "description": "zoeTools.withdrawToSeat() returned successfully"
+            },
+            "withdraw.failed": {
+              "target": "failed",
+              "description": "Zoe withdraw threw an error"
+            }
+          }
+        },
+        "completed": {
+          "description": "Assets moved from LCA to seat",
+          "type": "final",
+          "meta": {
+            "row": "Zoe",
+            "observedFrom": [
+              "ZCF seat allocation increased (Cash keyword)",
+              "LCA balance decreased"
+            ]
+          }
+        },
+        "failed": {
+          "description": "Withdraw failed; LCA balance unchanged",
+          "type": "final",
+          "meta": {
+            "row": "Zoe",
+            "severity": "error",
+            "observedFrom": [
+              "FlowStatus state=fail with error message"
+            ]
+          }
+        }
+      }
+    },
+    "send": {
+      "description": "Internal cosmos send between two Agoric LCAs. Main use is sending BLD from the contract fee account to an LCA in preparation for an IBC GMP message to Axelar.",
+      "category": "step",
+      "initial": "initiated",
+      "states": {
+        "initiated": {
+          "description": "lcaIn.send(lca.getAddress(), amount) called",
+          "meta": {
+            "row": "Agoric Chain",
+            "observedFrom": [
+              "FlowStatus state=run with how=send"
+            ]
+          },
+          "on": {
+            "send.complete": {
+              "target": "completed",
+              "description": "send() returned successfully"
+            },
+            "send.failed": {
+              "target": "failed",
+              "description": "send() threw an error"
+            }
+          }
+        },
+        "completed": {
+          "description": "Assets moved between LCAs",
+          "type": "final",
+          "meta": {
+            "row": "Agoric Chain",
+            "observedFrom": [
+              "Agoric tx history showing MsgSend",
+              "LCA balances updated"
+            ]
+          }
+        },
+        "failed": {
+          "description": "Send failed",
+          "type": "final",
+          "meta": {
+            "row": "Agoric Chain",
+            "severity": "error",
+            "observedFrom": [
+              "FlowStatus state=fail with error message"
+            ]
+          }
+        }
+      }
+    },
+    "IBC_agoric_noble": {
+      "description": "IBC transfer from Agoric LCA to Noble ICA. Uses lca.transfer() which sends MsgTransfer.",
+      "category": "step",
+      "initial": "initiated",
+      "states": {
+        "initiated": {
+          "description": "lca.transfer(noble_ica_address, denomAmount) called",
+          "meta": {
+            "row": "Agoric Chain",
+            "observedFrom": [
+              "FlowStatus state=run with how=IBC to Noble"
+            ],
+            "protocol": "IBC"
+          },
+          "on": {
+            "packet.sent": {
+              "target": "packet_in_flight",
+              "description": "MsgTransfer submitted and included in Agoric block"
+            },
+            "transfer.failed": {
+              "target": "failed",
+              "description": "MsgTransfer rejected (e.g., invalid channel, insufficient funds)"
+            }
+          }
+        },
+        "packet_in_flight": {
+          "description": "IBC packet sent from Agoric, waiting for relayer to deliver to Noble",
+          "meta": {
+            "row": "IBC Relayer",
+            "observedFrom": [
+              "Agoric tx history showing MsgTransfer with packet sequence",
+              "Relayer logs (Hermes/rly) showing SendPacket event"
+            ],
+            "observabilityTodo": "TODO: Add relayer metrics endpoint to monitor packet delivery latency",
+            "protocol": "IBC"
+          },
+          "on": {
+            "packet.received": {
+              "target": "ack_pending",
+              "description": "Relayer delivered packet to Noble chain"
+            },
+            "packet.timeout": {
+              "target": "timed_out",
+              "description": "Packet not delivered within timeout period"
+            }
+          }
+        },
+        "ack_pending": {
+          "description": "Packet received on Noble, waiting for acknowledgement to be relayed back",
+          "meta": {
+            "row": "Noble Chain",
+            "observedFrom": [
+              "Noble tx history showing RecvPacket"
+            ],
+            "observabilityTodo": "TODO: Index Noble RecvPacket events for correlation",
+            "protocol": "IBC"
+          },
+          "on": {
+            "ack.received": {
+              "target": "completed",
+              "description": "Acknowledgement received on Agoric confirming successful transfer"
+            },
+            "ack.error": {
+              "target": "failed",
+              "description": "Noble returned error acknowledgement (e.g., account doesn't exist)"
+            }
+          }
+        },
+        "completed": {
+          "description": "IBC transfer complete; funds on Noble ICA",
+          "type": "final",
+          "meta": {
+            "row": "Noble Chain",
+            "observedFrom": [
+              "Noble ICA balance increased",
+              "Agoric LCA balance decreased"
+            ]
+          }
+        },
+        "timed_out": {
+          "description": "IBC packet timed out; funds refunded on source chain",
+          "type": "final",
+          "meta": {
+            "row": "Agoric Chain",
+            "severity": "error",
+            "observedFrom": [
+              "MsgTimeout on Agoric",
+              "Agoric LCA balance restored"
+            ],
+            "notes": "Relayer may be down or slow. Check Hermes/rly status."
+          }
+        },
+        "failed": {
+          "description": "IBC transfer failed",
+          "type": "final",
+          "meta": {
+            "row": "Agoric Chain",
+            "severity": "error",
+            "observedFrom": [
+              "FlowStatus state=fail with error message"
+            ]
+          }
+        }
+      }
+    },
+    "IBC_noble_agoric": {
+      "description": "IBC transfer from Noble ICA to Agoric LCA. Uses ica.transfer() which sends MsgTransfer.",
+      "category": "step",
+      "initial": "initiated",
+      "states": {
+        "initiated": {
+          "description": "noble_ica.transfer(agoric_lca_address, denomAmount) called via ICS-27",
+          "meta": {
+            "row": "Noble Chain",
+            "observedFrom": [
+              "FlowStatus state=run with how=IBC from Noble"
+            ],
+            "protocol": "IBC"
+          },
+          "on": {
+            "ica_tx.submitted": {
+              "target": "ica_tx_pending",
+              "description": "ICA host tx submitted on Noble"
+            },
+            "ica_tx.failed": {
+              "target": "failed",
+              "description": "ICA execution failed"
+            }
+          }
+        },
+        "ica_tx_pending": {
+          "description": "Waiting for Noble to execute the ICA transfer message",
+          "meta": {
+            "row": "Noble Chain",
+            "observedFrom": [
+              "Noble tx history for ICA controller"
+            ],
+            "observabilityTodo": "TODO: Add ICA tx indexing for Noble chain",
+            "protocol": "IBC"
+          },
+          "on": {
+            "packet.sent": {
+              "target": "packet_in_flight",
+              "description": "Noble executed MsgTransfer, packet in flight to Agoric"
+            },
+            "ica_tx.error": {
+              "target": "failed",
+              "description": "ICA execution returned error"
+            }
+          }
+        },
+        "packet_in_flight": {
+          "description": "IBC packet sent from Noble, waiting for relayer to deliver to Agoric",
+          "meta": {
+            "row": "IBC Relayer",
+            "observedFrom": [
+              "Noble tx history showing MsgTransfer with packet sequence",
+              "Relayer logs showing SendPacket event"
+            ],
+            "protocol": "IBC"
+          },
+          "on": {
+            "packet.received": {
+              "target": "ack_pending",
+              "description": "Relayer delivered packet to Agoric chain"
+            },
+            "packet.timeout": {
+              "target": "timed_out",
+              "description": "Packet not delivered within timeout period"
+            }
+          }
+        },
+        "ack_pending": {
+          "description": "Packet received on Agoric, waiting for acknowledgement",
+          "meta": {
+            "row": "Agoric Chain",
+            "observedFrom": [
+              "Agoric tx history showing RecvPacket"
+            ],
+            "protocol": "IBC"
+          },
+          "on": {
+            "ack.received": {
+              "target": "completed",
+              "description": "Transfer acknowledged successfully"
+            },
+            "ack.error": {
+              "target": "failed",
+              "description": "Agoric returned error acknowledgement"
+            }
+          }
+        },
+        "completed": {
+          "description": "IBC transfer complete; funds on Agoric LCA",
+          "type": "final",
+          "meta": {
+            "row": "Agoric Chain",
+            "observedFrom": [
+              "Agoric LCA balance increased",
+              "Noble ICA balance decreased"
+            ]
+          }
+        },
+        "timed_out": {
+          "description": "IBC packet timed out; funds refunded on Noble",
+          "type": "final",
+          "meta": {
+            "row": "Noble Chain",
+            "severity": "error",
+            "observedFrom": [
+              "MsgTimeout on Noble",
+              "Noble ICA balance restored"
+            ]
+          }
+        },
+        "failed": {
+          "description": "IBC transfer failed",
+          "type": "final",
+          "meta": {
+            "row": "Noble Chain",
+            "severity": "error",
+            "observedFrom": [
+              "FlowStatus state=fail with error message"
+            ]
+          }
+        }
+      }
+    },
+    "CCTP_noble_EVM": {
+      "description": "CCTP transfer from Noble to EVM chain. Burns USDC on Noble, Circle attestation, mint on EVM.",
+      "category": "step",
+      "initial": "initiated",
+      "states": {
+        "initiated": {
+          "description": "noble_ica.depositForBurn(destinationAddress, denomAmount) called",
+          "meta": {
+            "row": "Noble Chain",
+            "observedFrom": [
+              "FlowStatus state=run with how=CCTP"
+            ],
+            "txType": "CCTP_TO_EVM",
+            "protocol": "Circle CCTP"
+          },
+          "on": {
+            "burn.submitted": {
+              "target": "burn_pending",
+              "description": "depositForBurn ICA tx submitted"
+            },
+            "burn.failed": {
+              "target": "failed",
+              "description": "depositForBurn submission failed"
+            }
+          }
+        },
+        "burn_pending": {
+          "description": "Waiting for Noble to confirm burn transaction",
+          "meta": {
+            "row": "Noble Chain",
+            "observedFrom": [
+              "Noble tx history showing depositForBurn",
+              "resolver pendingTxs with type=CCTP_TO_EVM, status=pending"
+            ],
+            "protocol": "Circle CCTP"
+          },
+          "on": {
+            "burn.confirmed": {
+              "target": "attestation_pending",
+              "description": "Burn tx confirmed on Noble; waiting for Circle attestation"
+            },
+            "burn.error": {
+              "target": "failed",
+              "description": "Burn tx failed on Noble"
+            }
+          }
+        },
+        "attestation_pending": {
+          "description": "Burn confirmed; waiting for Circle attestation (no protocol timeout; poll until available)",
+          "meta": {
+            "row": "Circle Attestation",
+            "observedFrom": [
+              "Circle Attestation API (iris-api.circle.com/v1/attestations)"
+            ],
+            "observabilityTodo": "TODO: Poll Circle attestation API and publish status",
+            "protocol": "Circle CCTP",
+            "notes": "Circle returns 404 until attestation is published; attested messages do not expire."
+          },
+          "on": {
+            "attestation.received": {
+              "target": "mint_pending",
+              "description": "Circle attestation fetched and verified"
+            },
+            "attestation.error": {
+              "target": "failed",
+              "description": "Attestation fetch/validation failed"
+            }
+          }
+        },
+        "mint_pending": {
+          "description": "Attestation received; mint message ready on destination EVM chain",
+          "meta": {
+            "row": "EVM Chain",
+            "observedFrom": [
+              "EVM mempool or pending transactions"
+            ],
+            "observabilityTodo": "TODO: Monitor EVM chain for receiveMessage tx",
+            "protocol": "Circle CCTP"
+          },
+          "on": {
+            "mint.confirmed": {
+              "target": "completed",
+              "description": "USDC minted on EVM chain to destination address"
+            },
+            "mint.failed": {
+              "target": "failed",
+              "description": "Mint transaction failed on EVM"
+            }
+          }
+        },
+        "completed": {
+          "description": "CCTP transfer complete; USDC on EVM wallet",
+          "type": "final",
+          "meta": {
+            "row": "EVM Chain",
+            "observedFrom": [
+              "EVM wallet balance increased",
+              "resolver pendingTxs status=success"
+            ]
+          }
+        },
+        "failed": {
+          "description": "CCTP transfer failed",
+          "type": "final",
+          "meta": {
+            "row": "Noble Chain",
+            "severity": "error",
+            "observedFrom": [
+              "FlowStatus state=fail with error message",
+              "resolver pendingTxs status=failed"
+            ]
+          }
+        }
+      }
+    },
+    "CCTP_EVM_agoric": {
+      "description": "CCTP transfer from EVM to Agoric via Noble. Burns on EVM, attestation, mints on Noble, forwards via NFA to Agoric.",
+      "category": "step",
+      "initial": "initiated",
+      "states": {
+        "initiated": {
+          "description": "GMP contract call to depositForBurn on EVM wallet",
+          "meta": {
+            "row": "Agoric Chain",
+            "observedFrom": [
+              "FlowStatus state=run with how=CCTP"
+            ],
+            "txType": "CCTP_TO_AGORIC",
+            "protocol": "Circle CCTP + Axelar GMP"
+          },
+          "on": {
+            "gmp.submitted": {
+              "target": "gmp_pending",
+              "description": "GMP message sent via Axelar"
+            },
+            "gmp.failed": {
+              "target": "failed",
+              "description": "GMP submission failed"
+            }
+          }
+        },
+        "gmp_pending": {
+          "description": "GMP message in transit to EVM chain via Axelar (sent as IBC packet to Axelar gateway)",
+          "meta": {
+            "row": "Axelar Network / IBC Relayer",
+            "observedFrom": [
+              "Axelar GMP explorer (axelarscan.io)"
+            ],
+            "observabilityTodo": "TODO: Poll Axelar API for GMP message status",
+            "protocol": "Axelar GMP over IBC"
+          },
+          "on": {
+            "gmp.executed": {
+              "target": "burn_pending",
+              "description": "Axelar delivered and executed GMP payload on EVM"
+            },
+            "gmp.failed": {
+              "target": "gmp_failed",
+              "description": "GMP message delivery or execution failed"
+            },
+            "gmp.timeout": {
+              "target": "gmp_failed",
+              "description": "IBC packet to Axelar timed out"
+            },
+            "gmp.ack_error": {
+              "target": "gmp_failed",
+              "description": "Axelar gateway returned IBC acknowledgement error"
+            }
+          }
+        },
+        "burn_pending": {
+          "description": "EVM wallet executing depositForBurn",
+          "meta": {
+            "row": "EVM Chain",
+            "observedFrom": [
+              "EVM tx history for smart wallet"
+            ],
+            "protocol": "Circle CCTP"
+          },
+          "on": {
+            "burn.confirmed": {
+              "target": "attestation_pending",
+              "description": "USDC burned on EVM; waiting for attestation"
+            },
+            "burn.failed": {
+              "target": "failed",
+              "description": "Burn transaction reverted on EVM"
+            }
+          }
+        },
+        "attestation_pending": {
+          "description": "Waiting for Circle attestation",
+          "meta": {
+            "row": "Circle Attestation",
+            "observedFrom": [
+              "Circle Attestation API"
+            ],
+            "protocol": "Circle CCTP",
+            "expectedSlaMs": 60000
+          },
+          "on": {
+            "attestation.received": {
+              "target": "noble_mint_pending",
+              "description": "Attestation ready; mint can proceed on Noble"
+            },
+            "attestation.timeout": {
+              "target": "attestation_timeout",
+              "description": "Attestation timed out"
+            }
+          }
+        },
+        "noble_mint_pending": {
+          "description": "USDC being minted on Noble to NFA (Noble Forwarding Account)",
+          "meta": {
+            "row": "Noble Chain",
+            "observedFrom": [
+              "Noble tx history showing receiveMessage"
+            ],
+            "observabilityTodo": "TODO: Monitor Noble for CCTP receiveMessage events",
+            "protocol": "Circle CCTP"
+          },
+          "on": {
+            "mint.confirmed": {
+              "target": "ibc_forward_pending",
+              "description": "USDC minted on Noble NFA"
+            },
+            "mint.failed": {
+              "target": "failed",
+              "description": "Noble mint failed"
+            }
+          }
+        },
+        "ibc_forward_pending": {
+          "description": "NFA auto-forwarding USDC to Agoric via IBC",
+          "meta": {
+            "row": "IBC Relayer",
+            "observedFrom": [
+              "Noble tx history showing auto-forward",
+              "Relayer logs"
+            ],
+            "protocol": "IBC"
+          },
+          "on": {
+            "forward.complete": {
+              "target": "completed",
+              "description": "Funds arrived on Agoric LCA"
+            },
+            "forward.timeout": {
+              "target": "ibc_timeout",
+              "description": "IBC forward timed out"
+            }
+          }
+        },
+        "completed": {
+          "description": "CCTP+IBC transfer complete; USDC on Agoric LCA",
+          "type": "final",
+          "meta": {
+            "row": "Agoric Chain",
+            "observedFrom": [
+              "Agoric LCA balance increased",
+              "resolver pendingTxs status=success"
+            ]
+          }
+        },
+        "gmp_failed": {
+          "description": "Axelar GMP delivery or execution failed",
+          "type": "final",
+          "meta": {
+            "row": "Axelar Network",
+            "severity": "error",
+            "observedFrom": [
+              "Axelar GMP explorer showing failed status"
+            ],
+            "notes": "Check gas payment, destination contract. May need manual recovery."
+          }
+        },
+        "attestation_timeout": {
+          "description": "Circle attestation timed out",
+          "type": "final",
+          "meta": {
+            "row": "Circle Attestation",
+            "severity": "error"
+          }
+        },
+        "ibc_timeout": {
+          "description": "IBC forward from Noble to Agoric timed out",
+          "type": "final",
+          "meta": {
+            "row": "IBC Relayer",
+            "severity": "error",
+            "observedFrom": [
+              "Funds stuck on Noble NFA"
+            ],
+            "notes": "Relayer may be down. Funds safe on Noble."
+          }
+        },
+        "failed": {
+          "description": "CCTP transfer failed",
+          "type": "final",
+          "meta": {
+            "row": "EVM Chain",
+            "severity": "error",
+            "observedFrom": [
+              "FlowStatus state=fail with error message",
+              "resolver pendingTxs status=failed"
+            ]
+          }
+        }
+      }
+    },
+    "GMP_protocol_supply": {
+      "description": "Supply USDC to yield protocol (Aave/Compound/Beefy) on EVM via Axelar GMP. Encodes approve+supply calls.",
+      "category": "step",
+      "initial": "initiated",
+      "states": {
+        "initiated": {
+          "description": "GMP contract call payload encoded with approve + supply calls",
+          "meta": {
+            "row": "Agoric Chain",
+            "observedFrom": [
+              "FlowStatus state=run with how=Aave|Compound|Beefy"
+            ],
+            "txType": "GMP",
+            "protocol": "Axelar GMP"
+          },
+          "on": {
+            "gmp.submitted": {
+              "target": "gmp_pending",
+              "description": "GMP message sent to Axelar with supply payload"
+            },
+            "gmp.failed": {
+              "target": "failed",
+              "description": "GMP submission failed"
+            }
+          }
+        },
+        "gmp_pending": {
+          "description": "GMP message in transit via Axelar to EVM chain (sent as IBC packet to Axelar gateway)",
+          "meta": {
+            "row": "Axelar Network / IBC Relayer",
+            "observedFrom": [
+              "Axelar GMP explorer",
+              "resolver pendingTxs with type=GMP, status=pending"
+            ],
+            "protocol": "Axelar GMP over IBC",
+            "expectedSlaMs": 120000
+          },
+          "on": {
+            "gmp.delivered": {
+              "target": "contract_call_pending",
+              "description": "Axelar delivered payload to EVM smart wallet"
+            },
+            "gmp.failed": {
+              "target": "gmp_failed",
+              "description": "GMP delivery failed (insufficient gas, network issue)"
+            },
+            "gmp.timeout": {
+              "target": "gmp_failed",
+              "description": "IBC packet to Axelar timed out"
+            },
+            "gmp.ack_error": {
+              "target": "gmp_failed",
+              "description": "Axelar gateway returned IBC acknowledgement error"
+            }
+          }
+        },
+        "contract_call_pending": {
+          "description": "Smart wallet executing multicall (approve + supply)",
+          "meta": {
+            "row": "EVM Chain",
+            "observedFrom": [
+              "EVM tx history for smart wallet address"
+            ],
+            "observabilityTodo": "TODO: Index EVM events for protocol supply operations",
+            "protocol": "Aave/Compound/Beefy"
+          },
+          "on": {
+            "calls.executed": {
+              "target": "completed",
+              "description": "All contract calls succeeded; position created"
+            },
+            "calls.reverted": {
+              "target": "contract_failed",
+              "description": "One or more contract calls reverted"
+            }
+          }
+        },
+        "completed": {
+          "description": "Supply complete; position recorded on yield protocol",
+          "type": "final",
+          "meta": {
+            "row": "EVM Chain",
+            "observedFrom": [
+              "Protocol position balance (aToken, cToken, or vault shares)",
+              "resolver pendingTxs status=success"
+            ]
+          }
+        },
+        "gmp_failed": {
+          "description": "Axelar GMP failed to deliver message",
+          "type": "final",
+          "meta": {
+            "row": "Axelar Network",
+            "severity": "error",
+            "observedFrom": [
+              "Axelar GMP explorer showing failed",
+              "resolver pendingTxs status=failed"
+            ],
+            "notes": "Check Axelar gas service, relayer status"
+          }
+        },
+        "contract_failed": {
+          "description": "EVM contract calls reverted",
+          "type": "final",
+          "meta": {
+            "row": "EVM Chain",
+            "severity": "error",
+            "observedFrom": [
+              "EVM tx receipt showing revert",
+              "resolver pendingTxs status=failed"
+            ],
+            "notes": "Check protocol state, slippage, liquidity"
+          }
+        },
+        "failed": {
+          "description": "Supply operation failed",
+          "type": "final",
+          "meta": {
+            "row": "Agoric Chain",
+            "severity": "error",
+            "observedFrom": [
+              "FlowStatus state=fail with error message"
+            ]
+          }
+        }
+      }
+    },
+    "GMP_protocol_withdraw": {
+      "description": "Withdraw USDC from yield protocol on EVM via Axelar GMP. Optionally claims rewards first.",
+      "category": "step",
+      "initial": "initiated",
+      "states": {
+        "initiated": {
+          "description": "GMP contract call payload encoded with optional claim + withdraw calls",
+          "meta": {
+            "row": "Agoric Chain",
+            "observedFrom": [
+              "FlowStatus state=run with how=Aave|Compound|Beefy"
+            ],
+            "txType": "GMP",
+            "protocol": "Axelar GMP"
+          },
+          "on": {
+            "gmp.submitted": {
+              "target": "gmp_pending",
+              "description": "GMP message sent to Axelar with withdraw payload"
+            },
+            "gmp.failed": {
+              "target": "failed",
+              "description": "GMP submission failed"
+            }
+          }
+        },
+        "gmp_pending": {
+          "description": "GMP message in transit via Axelar to EVM chain (sent as IBC packet to Axelar gateway)",
+          "meta": {
+            "row": "Axelar Network / IBC Relayer",
+            "observedFrom": [
+              "Axelar GMP explorer",
+              "resolver pendingTxs with type=GMP, status=pending"
+            ],
+            "protocol": "Axelar GMP over IBC",
+            "expectedSlaMs": 120000
+          },
+          "on": {
+            "gmp.delivered": {
+              "target": "contract_call_pending",
+              "description": "Axelar delivered payload to EVM smart wallet"
+            },
+            "gmp.failed": {
+              "target": "gmp_failed",
+              "description": "GMP delivery failed"
+            },
+            "gmp.timeout": {
+              "target": "gmp_failed",
+              "description": "IBC packet to Axelar timed out"
+            },
+            "gmp.ack_error": {
+              "target": "gmp_failed",
+              "description": "Axelar gateway returned IBC acknowledgement error"
+            }
+          }
+        },
+        "contract_call_pending": {
+          "description": "Smart wallet executing multicall (optional claim + withdraw)",
+          "meta": {
+            "row": "EVM Chain",
+            "observedFrom": [
+              "EVM tx history for smart wallet address"
+            ],
+            "protocol": "Aave/Compound/Beefy"
+          },
+          "on": {
+            "calls.executed": {
+              "target": "completed",
+              "description": "Withdraw succeeded; USDC in smart wallet"
+            },
+            "calls.reverted": {
+              "target": "contract_failed",
+              "description": "Contract calls reverted"
+            }
+          }
+        },
+        "completed": {
+          "description": "Withdraw complete; USDC available in EVM wallet for subsequent CCTP",
+          "type": "final",
+          "meta": {
+            "row": "EVM Chain",
+            "observedFrom": [
+              "EVM wallet USDC balance increased",
+              "Protocol position decreased",
+              "resolver pendingTxs status=success"
+            ]
+          }
+        },
+        "gmp_failed": {
+          "description": "Axelar GMP failed",
+          "type": "final",
+          "meta": {
+            "row": "Axelar Network",
+            "severity": "error",
+            "observedFrom": [
+              "resolver pendingTxs status=failed"
+            ]
+          }
+        },
+        "contract_failed": {
+          "description": "EVM contract calls reverted",
+          "type": "final",
+          "meta": {
+            "row": "EVM Chain",
+            "severity": "error",
+            "observedFrom": [
+              "EVM tx receipt showing revert"
+            ],
+            "notes": "Check withdrawal limits, protocol pause status"
+          }
+        },
+        "failed": {
+          "description": "Withdraw operation failed",
+          "type": "final",
+          "meta": {
+            "row": "Agoric Chain",
+            "severity": "error",
+            "observedFrom": [
+              "FlowStatus state=fail with error message"
+            ]
+          }
+        }
+      }
+    },
+    "USDN_supply": {
+      "description": "Supply USDC to Noble Dollar (USDN) protocol. Swaps USDC→USDN and optionally locks in vault.",
+      "category": "step",
+      "initial": "initiated",
+      "states": {
+        "initiated": {
+          "description": "ICA executeEncodedTx called with MsgSwap (+ optional MsgLock) messages",
+          "meta": {
+            "row": "Noble Chain",
+            "observedFrom": [
+              "FlowStatus state=run with how=USDN"
+            ],
+            "protocol": "Noble Dollar"
+          },
+          "on": {
+            "ica_tx.submitted": {
+              "target": "tx_pending",
+              "description": "ICA messages submitted to Noble"
+            },
+            "ica_tx.failed": {
+              "target": "failed",
+              "description": "ICA submission failed"
+            }
+          }
+        },
+        "tx_pending": {
+          "description": "Waiting for Noble to execute swap (and lock) messages",
+          "meta": {
+            "row": "Noble Chain",
+            "observedFrom": [
+              "Noble tx history showing MsgSwap"
+            ],
+            "observabilityTodo": "TODO: Index Noble MsgSwap events for USDN tracking",
+            "protocol": "Noble Dollar"
+          },
+          "on": {
+            "tx.confirmed": {
+              "target": "completed",
+              "description": "Swap (and optional lock) completed successfully"
+            },
+            "tx.failed": {
+              "target": "failed",
+              "description": "Transaction failed (e.g., slippage exceeded, insufficient funds)"
+            }
+          }
+        },
+        "completed": {
+          "description": "USDN supply complete; position in USDN (and optionally vault)",
+          "type": "final",
+          "meta": {
+            "row": "Noble Chain",
+            "observedFrom": [
+              "Noble ICA uusdn balance increased",
+              "Noble vault balance (if locked)"
+            ]
+          }
+        },
+        "failed": {
+          "description": "USDN supply failed",
+          "type": "final",
+          "meta": {
+            "row": "Noble Chain",
+            "severity": "error",
+            "observedFrom": [
+              "FlowStatus state=fail with error message",
+              "Noble tx showing failure reason"
+            ]
+          }
+        }
+      }
+    },
+    "USDN_withdraw": {
+      "description": "Withdraw from Noble Dollar (USDN) protocol. Unlocks from vault (if locked) and swaps USDN→USDC.",
+      "category": "step",
+      "initial": "initiated",
+      "states": {
+        "initiated": {
+          "description": "ICA executeEncodedTx called with optional MsgUnlock + MsgSwap messages",
+          "meta": {
+            "row": "Noble Chain",
+            "observedFrom": [
+              "FlowStatus state=run with how=USDN"
+            ],
+            "protocol": "Noble Dollar"
+          },
+          "on": {
+            "ica_tx.submitted": {
+              "target": "tx_pending",
+              "description": "ICA messages submitted to Noble"
+            },
+            "ica_tx.failed": {
+              "target": "failed",
+              "description": "ICA submission failed"
+            }
+          }
+        },
+        "tx_pending": {
+          "description": "Waiting for Noble to execute unlock and swap messages",
+          "meta": {
+            "row": "Noble Chain",
+            "observedFrom": [
+              "Noble tx history showing MsgUnlock, MsgSwap"
+            ],
+            "protocol": "Noble Dollar"
+          },
+          "on": {
+            "tx.confirmed": {
+              "target": "completed",
+              "description": "Unlock and swap completed; USDC available"
+            },
+            "tx.failed": {
+              "target": "failed",
+              "description": "Transaction failed"
+            }
+          }
+        },
+        "completed": {
+          "description": "USDN withdraw complete; USDC on Noble ICA ready for IBC transfer",
+          "type": "final",
+          "meta": {
+            "row": "Noble Chain",
+            "observedFrom": [
+              "Noble ICA uusdc balance increased",
+              "USDN position decreased"
+            ]
+          }
+        },
+        "failed": {
+          "description": "USDN withdraw failed",
+          "type": "final",
+          "meta": {
+            "row": "Noble Chain",
+            "severity": "error",
+            "observedFrom": [
+              "FlowStatus state=fail with error message"
+            ],
+            "notes": "Check vault lock period, slippage settings"
+          }
+        }
+      }
+    }
+  }
+}
+</script>
   <style>
     * {
       box-sizing: border-box;
@@ -19,40 +1284,71 @@
     }
 
     .container {
-      max-width: 1400px;
+      max-width: 1600px;
       margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .main-content {
       display: grid;
-      grid-template-columns: 300px 1fr;
+      grid-template-columns: 1fr 300px;
       gap: 20px;
     }
 
     .control-panel {
       background: white;
       border-radius: 8px;
-      padding: 20px;
+      padding: 15px 20px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      height: fit-content;
-      position: sticky;
-      top: 20px;
     }
 
-    .control-panel h2 {
-      font-size: 18px;
-      margin-bottom: 15px;
-      color: #333;
+    .control-panel-header {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 10px;
     }
 
-    .control-panel label {
-      display: block;
-      font-size: 13px;
-      font-weight: 600;
+    .control-panel-header h2 {
+      font-size: 14px;
       color: #666;
-      margin-bottom: 8px;
+      margin: 0;
+      white-space: nowrap;
+    }
+
+    .example-select {
+      padding: 6px 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 12px;
+      background: white;
+      cursor: pointer;
+      min-width: 200px;
+    }
+
+    .example-select:focus {
+      outline: none;
+      border-color: #4a90e2;
+    }
+
+    .help-text {
+      font-size: 11px;
+      color: #999;
+      margin-left: auto;
+    }
+
+    .help-text code {
+      background: #f0f0f0;
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-size: 10px;
     }
 
     .control-panel textarea {
       width: 100%;
-      min-height: 200px;
+      height: 80px;
       padding: 10px;
       border: 1px solid #ddd;
       border-radius: 4px;
@@ -66,1020 +1362,1175 @@
       border-color: #4a90e2;
     }
 
-    .help-text {
-      font-size: 11px;
-      color: #999;
-      margin-top: 8px;
-      line-height: 1.4;
-    }
-
-    .examples {
-      margin-top: 15px;
-      padding-top: 15px;
-      border-top: 1px solid #eee;
-    }
-
-    .examples h3 {
-      font-size: 13px;
-      color: #666;
-      margin-bottom: 8px;
-    }
-
-    .example-btn {
-      display: block;
-      width: 100%;
-      padding: 8px 12px;
-      margin-bottom: 6px;
-      background: #f8f8f8;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 12px;
-      cursor: pointer;
-      text-align: left;
-      transition: all 0.2s;
-    }
-
-    .example-btn:hover {
-      background: #e8e8e8;
-      border-color: #ccc;
-    }
-
     .visualization-panel {
       background: white;
       border-radius: 8px;
-      padding: 30px;
+      padding: 20px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      min-height: 600px;
+      overflow: hidden;
     }
 
     .visualization-panel h2 {
       font-size: 18px;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
       color: #333;
     }
 
-    #state-diagram {
+    .diagram-container {
       width: 100%;
-      height: auto;
-      display: block;
+      min-height: 500px;
+      overflow: auto;
     }
 
-    /* SVG Styles */
+    #state-diagram {
+      display: block;
+      width: 100%;
+      height: 500px;
+    }
+
+    /* State node styles */
     .state-node {
       cursor: pointer;
-      transition: all 0.2s;
     }
 
     .state-node rect {
       fill: #fff;
-      stroke: #ddd;
+      stroke: #ccc;
       stroke-width: 2;
+      transition: all 0.2s;
     }
 
     .state-node.visited rect {
-      fill: #e8f4fd;
-      stroke: #4a90e2;
-      stroke-width: 2;
+      fill: #e3f2fd;
+      stroke: #2196f3;
     }
 
     .state-node.current rect {
-      fill: #4a90e2;
-      stroke: #2c5aa0;
+      fill: #1976d2;
+      stroke: #0d47a1;
       stroke-width: 3;
     }
 
-    .state-node.current text {
+    .state-node.current text.state-name {
       fill: white;
+    }
+
+    .state-node.failed rect {
+      fill: #ffebee;
+      stroke: #f44336;
+    }
+
+    .state-node.failed.current rect {
+      fill: #f44336;
+    }
+
+    .state-node text.state-name {
+      font-size: 11px;
+      font-weight: 500;
+      fill: #333;
+    }
+
+    .state-node text.timestamp {
+      font-size: 9px;
+      fill: #666;
+    }
+
+    .state-node text.time-since {
+      font-size: 9px;
+      fill: #e65100;
       font-weight: 600;
     }
 
-    .state-node text {
-      fill: #333;
-      font-size: 12px;
-      font-weight: 500;
-      pointer-events: none;
-    }
-
-    .state-node.future text {
-      fill: #999;
-    }
-
-    .state-node:hover rect {
-      filter: brightness(0.95);
-    }
-
+    /* Transitions */
     .transition-line {
+      fill: none;
       stroke: #ddd;
       stroke-width: 2;
-      fill: none;
-      marker-end: url(#arrowhead);
     }
 
     .transition-line.visited {
-      stroke: #4a90e2;
-      stroke-width: 2;
+      stroke: #2196f3;
     }
 
-    .transition-line.next-happy-path {
-      stroke: #52c41a;
-      stroke-width: 3;
+    .transition-line.happy-path {
+      stroke: #4caf50;
+      stroke-width: 2.5;
       stroke-dasharray: 5,5;
-      animation: dash 1s linear infinite;
+      animation: dash 0.8s linear infinite;
     }
 
     .transition-line.failure {
-      stroke: #ff4d4f;
+      stroke: #ffcdd2;
       stroke-dasharray: 3,3;
     }
 
     @keyframes dash {
-      to {
-        stroke-dashoffset: -10;
-      }
+      to { stroke-dashoffset: -10; }
     }
 
-    .transition-label {
-      font-size: 11px;
-      fill: #666;
-      pointer-events: none;
-    }
-
-    .timestamp-badge {
-      font-size: 10px;
-      fill: #666;
-    }
-
-    .time-since {
-      font-size: 10px;
-      fill: #ff6b35;
-      font-weight: 600;
-    }
-
-    .tooltip {
-      position: absolute;
-      background: rgba(0, 0, 0, 0.9);
-      color: white;
-      padding: 10px 12px;
-      border-radius: 6px;
-      font-size: 12px;
-      pointer-events: auto;
-      opacity: 0;
-      transition: opacity 0.2s;
-      max-width: 400px;
-      z-index: 1000;
-      line-height: 1.4;
-    }
-
-    .tooltip.visible {
-      opacity: 1;
-    }
-
-    .tooltip a {
-      color: #6eb5ff;
-      text-decoration: none;
-    }
-
-    .tooltip a:hover {
-      text-decoration: underline;
-    }
-
-    .tooltip code {
-      background: rgba(255, 255, 255, 0.1);
-      padding: 2px 4px;
-      border-radius: 3px;
-      font-family: 'Monaco', 'Courier New', monospace;
-      font-size: 11px;
-    }
-
-    .verify-links {
-      margin-top: 8px;
-      padding-top: 8px;
-      border-top: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .verify-link {
-      display: inline-block;
-      margin-right: 8px;
-      font-size: 11px;
-    }
-
-    .nested-state-group {
-      cursor: pointer;
-    }
-
-    .nested-state-group rect.container {
-      fill: #fafafa;
-      stroke: #ccc;
+    /* Step machine inline container */
+    .step-container rect.step-bg {
+      fill: #fffde7;
+      stroke: #ffc107;
       stroke-width: 1;
-      stroke-dasharray: 4,4;
+      stroke-dasharray: 4,2;
+      rx: 8;
+    }
+
+    .step-container text.step-label {
+      font-size: 10px;
+      font-weight: 600;
+      fill: #f57c00;
+    }
+
+    .step-state-node rect {
+      fill: #fff8e1;
+      stroke: #ffb300;
+      stroke-width: 1.5;
+    }
+
+    .step-state-node.visited rect {
+      fill: #fff3e0;
+      stroke: #ff9800;
+    }
+
+    .step-state-node.current rect {
+      fill: #ff9800;
+      stroke: #e65100;
+    }
+
+    .step-state-node.current text.state-name {
+      fill: white;
+    }
+
+    .step-state-node.failed rect {
+      fill: #ffebee;
+      stroke: #f44336;
+    }
+
+    /* Row backgrounds */
+    .row-bg {
+      rx: 6;
+    }
+
+    .row-label {
+      font-size: 10px;
+      font-weight: 600;
+      fill: #666;
+    }
+
+    /* Details Pane (right column) */
+    .details-pane {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      font-size: 12px;
+      line-height: 1.6;
+      height: fit-content;
+      position: sticky;
+      top: 20px;
+      max-height: calc(100vh - 40px);
+      overflow-y: auto;
+    }
+
+    .details-pane h3 {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .details-placeholder {
+      color: #999;
+      font-style: italic;
+      text-align: center;
+      padding: 30px 0;
+    }
+
+    .details-pane .details-header {
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .details-pane .protocol-badge {
+      display: inline-block;
+      background: #4caf50;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 500;
+    }
+
+    .details-pane .details-description {
+      color: #555;
+      margin-bottom: 10px;
+    }
+
+    .details-pane .details-section {
+      margin-top: 10px;
+    }
+
+    .details-pane .details-section-title {
+      font-weight: 600;
+      color: #666;
+      font-size: 11px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .details-pane .details-list {
+      margin: 0;
+      padding-left: 16px;
+      color: #555;
+    }
+
+    .details-pane .details-list li {
+      margin-bottom: 2px;
+    }
+
+    .details-pane code {
+      background: #e8e8e8;
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-size: 11px;
+    }
+
+    .details-pane .todo-note {
+      color: #e65100;
+      font-style: italic;
+      margin-top: 8px;
+    }
+
+    .details-pane .transition-item {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+
+    .details-pane .transition-icon {
+      color: #999;
+    }
+
+    .details-pane .transition-icon.error {
+      color: #f44336;
     }
 
     .error-message {
-      color: #ff4d4f;
+      color: #d32f2f;
       font-size: 13px;
       padding: 12px;
-      background: #fff2f0;
-      border: 1px solid #ffccc7;
+      background: #ffebee;
+      border: 1px solid #ffcdd2;
       border-radius: 4px;
       margin-top: 10px;
+    }
+
+    /* Legend (in visualization panel) */
+    .legend {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-top: 15px;
+      padding: 10px 15px;
+      background: #fafafa;
+      border-radius: 6px;
+      font-size: 11px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .legend-color {
+      width: 16px;
+      height: 16px;
+      border-radius: 3px;
+      border: 2px solid;
+    }
+
+    .legend-color.future { background: #fff; border-color: #ccc; }
+    .legend-color.visited { background: #e3f2fd; border-color: #2196f3; }
+    .legend-color.current { background: #1976d2; border-color: #0d47a1; }
+    .legend-color.step { background: #fff8e1; border-color: #ff9800; }
+
+    /* Parallel progress indicator */
+    .parallel-progress {
+      font-size: 10px;
+      font-weight: 600;
+      fill: #666;
+    }
+
+    .parallel-progress.all-done {
+      fill: #4caf50;
+    }
+
+    .parallel-progress.has-failed {
+      fill: #f44336;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="control-panel">
-      <h2>Control Panel</h2>
-      <label for="state-vector">State Vector</label>
-      <textarea id="state-vector" placeholder="Enter states (one per line)&#10;Format: state_name [timestamp]&#10;&#10;Example:&#10;transaction_defined 2025-01-15T13:10:00Z&#10;transaction_committed 13:15&#10;flow_inited"></textarea>
-      <div class="help-text">
-        Enter one state per line. Timestamps are optional and can be ISO format or simple time (HH:MM).
+      <div class="control-panel-header">
+        <h2>Debug Input</h2>
+        <select id="example-select" class="example-select">
+          <option value="">Load example...</option>
+          <option value="deposit-early">Deposit: Planning</option>
+          <option value="deposit-ibc">Deposit: IBC Transfer</option>
+          <option value="deposit-completed">Deposit: Completed</option>
+          <option value="rebalance-cctp">Rebalance: CCTP</option>
+          <option value="rebalance-gmp">Rebalance: GMP Supply</option>
+          <option value="withdraw-usdn">Withdraw: USDN</option>
+          <option value="failed-timeout">Failed: IBC Timeout</option>
+          <option value="concurrent-steps">Concurrent Steps</option>
+        </select>
+        <span class="help-text">
+          Format: <code>state [time]</code> or <code>step:machine.state [time]</code>
+        </span>
       </div>
-
-      <div class="examples">
-        <h3>Quick Examples</h3>
-        <button class="example-btn" data-example="early">Early Stage (Planning)</button>
-        <button class="example-btn" data-example="executing">Executing Flow</button>
-        <button class="example-btn" data-example="completed">Completed</button>
-        <button class="example-btn" data-example="failed">Failed Flow</button>
-        <button class="example-btn" data-example="rebalance">Rebalance (from logs)</button>
-      </div>
+      <textarea id="state-vector" placeholder="transaction_defined 13:10&#10;executing 13:15&#10;moving 13:16&#10;step:IBC_agoric_noble.packet_in_flight 13:17"></textarea>
     </div>
 
-    <div class="visualization-panel">
-      <h2>State Machine Visualization</h2>
-      <svg id="state-diagram" viewBox="0 0 800 600"></svg>
-      <div id="error-container"></div>
+    <div class="main-content">
+      <div class="visualization-panel">
+        <h2>Flow State Machine</h2>
+        <div class="diagram-container">
+          <svg id="state-diagram"></svg>
+        </div>
+        <div id="error-container"></div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-color future"></div> Future</div>
+          <div class="legend-item"><div class="legend-color visited"></div> Visited</div>
+          <div class="legend-item"><div class="legend-color current"></div> Current</div>
+          <div class="legend-item"><div class="legend-color step"></div> Step</div>
+        </div>
+      </div>
+
+      <div class="details-pane" id="details-pane">
+        <h3>State Details</h3>
+        <div class="details-placeholder">Hover over a state to see details</div>
+      </div>
     </div>
   </div>
 
-  <div class="tooltip" id="tooltip"></div>
-
   <script>
-    // State machine definition (parsed from YAML)
-    const stateMachine = {
-      initial: 'transaction_defined',
-      states: {
-        transaction_defined: {
-          description: 'User specifies their portfolio offer in a transaction (usually in the Ymax web UI)',
-          transitions: {
-            'transaction.signed': {
-              target: 'transaction_committed',
-              description: 'User signed a transaction with the offer and broadcast it'
-            }
-          }
-        },
-        transaction_committed: {
-          description: "The user's transaction is in consensus",
-          meta: {
-            observedFrom: ['Agoric tx history for the user\'s wallet address']
-          },
-          transitions: {
-            'transaction.handled': {
-              target: 'flow_registered',
-              description: 'Agoric contract machinery forwards it from smart-wallet bridge to the Portfolio Contract'
-            }
-          }
-        },
-        flow_registered: {
-          description: 'Portfolio contract received and registered the flow request',
-          transitions: {
-            'flow.inited': {
-              target: 'flow_inited',
-              description: 'Flow initialized in flowsRunning'
-            }
-          }
-        },
-        flow_inited: {
-          description: 'Flow basic details recorded in flowsRunning (type and optional amount). Virtual FlowStatus=init, not yet FlowStatus=run',
-          meta: {
-            observedFrom: ['published.{instance}.portfolios.portfolio{n} status.flowsRunning'],
-            userMessage: 'Request received; building plan.'
-          },
-          transitions: {
-            'flow.discovered': {
-              target: 'planning',
-              description: 'Planner service observes the new key in `flowsRunning`'
-            }
-          }
-        },
-        planning: {
-          description: 'Planner computes steps/order from balances + targetAllocation and posts flow{n}.steps.',
-          meta: {
-            observedFrom: ['services/ymax-planner log messages (planRebalanceFlow/planDepositToAllocations)'],
-            invariants: ['deposit/withdraw amounts reconcile with portfolio status and balances']
-          },
-          transitions: {
-            'planner.steps_submitted': {
-              target: 'planned',
-              description: 'Planner submits a transaction to the contract and the contract handles it.',
-              happyPath: true
-            },
-            'planner.failed': {
-              target: 'failed',
-              description: 'Planner/solver errored or allocation infeasible.',
-              failure: true
-            }
-          }
-        },
-        planned: {
-          description: 'Planner has submitted transaction to the contract with the steps for the flow.',
-          meta: {
-            observedFrom: ['Agoric tx history for the planner address']
-          },
-          transitions: {
-            'flow.plan_resolved': {
-              target: 'executing',
-              description: 'executePlan() begins; FlowStatus state=run emitted.'
-            }
-          }
-        },
-        executing: {
-          description: 'Contract performing ordered movements; publishes FlowStatus run/fail/done.',
-          meta: {
-            observedFrom: ['published.{instance}.portfolios.portfolio{n}.flows.flow{n}.steps'],
-            userMessage: 'Plan ready; executing transfers.'
-          },
-          nested: true,
-          substates: {
-            provisioning: {
-              description: 'Make/resolve accounts (Agoric, Noble, EVM) and register resolver pending transactions when needed.',
-              meta: {
-                observedFrom: ['FlowStatus state=run with how=makeAccounts(...)'],
-                invariants: ['accountsPending empty']
-              },
-              transitions: {
-                'provision.complete': {
-                  target: 'moving',
-                  description: 'provideCosmosAccount/provideEVMAccount resolved; accountsPending empty.',
-                  happyPath: true
-                },
-                'provision.failed': {
-                  target: 'failed',
-                  description: 'Account creation or resolver registerTransaction failed.',
-                  failure: true
-                }
-              }
-            },
-            moving: {
-              description: 'Execute MovementDesc steps (localTransfer, withdrawToSeat, send, IBC, CCTP, GMP, protocol supply/withdraw). FlowStatus state=run advances; fail publishes FlowStatus state=fail. IBC legs can block if relayer is down/slow.',
-              meta: {
-                observedFrom: ['published.{instance}.portfolios.portfolio{n}.flows.flow{n} (state=run|fail|done, steps=[])'],
-                invariants: ['proposal satisfied for give/want seats']
-              },
-              transitions: {
-                'flow.step_failed': {
-                  target: 'failed',
-                  description: 'FlowStatus state=fail emitted for a step.',
-                  failure: true
-                },
-                'flow.done_no_pending': {
-                  target: 'completed',
-                  description: 'FlowStatus state=done and no TxStatus pending.',
-                  happyPath: true
-                }
-              }
-            }
-          },
-          transitions: {
-            'flow.failed': {
-              target: 'failed',
-              description: 'FlowStatus state=fail emitted.',
-              failure: true
-            },
-            'flow.done': {
-              target: 'completed',
-              description: 'FlowStatus state=done and all relevant pendingTxs are success.',
-              happyPath: true
-            }
-          }
-        },
-        completed: {
-          description: 'Flow finished; balances/positions updated; pendingTxs (if any) marked success.',
-          meta: { userMessage: 'Flow finished.' },
-          final: true
-        },
-        failed: {
-          description: 'Flow halted; partial effects possible; operator or planner must retry/correct.',
-          meta: {
-            severity: 'error',
-            userMessage: 'Flow failed; inspect flow{n} status and pendingTx logs.'
-          },
-          final: true
-        }
-      }
-    };
+    // Global state
+    let allMachines = {};
+    const flowMachine = 'YmaxFlow';
 
-    // Layout configuration
+    // Layout config - fixed dimensions
     const layout = {
+      width: 1000,
       stateWidth: 140,
       stateHeight: 50,
-      horizontalSpacing: 30,
-      verticalSpacing: 80,
-      rowSpacing: 15,
-      nestedPadding: 10,
-      nestedIndent: 20,
-      marginLeft: 40,
-      marginTop: 40
+      stepStateWidth: 95,
+      stepStateHeight: 36,
+      hGap: 40,
+      vGap: 70,
+      rowPadding: 40,
+      stepRowHeight: 100,
+      stepHGap: 12,
+      margin: { top: 30, left: 30, right: 30, bottom: 30 }
     };
 
-    // Row groupings by realm/service
-    const stateGroups = [
-      {
-        name: 'Cosmos Realm',
-        color: '#e3f2fd',
-        states: ['transaction_defined', 'transaction_committed']
-      },
-      {
-        name: 'Portfolio Contract',
-        color: '#f3e5f5',
-        states: ['flow_registered', 'flow_inited']
-      },
-      {
-        name: 'Planner Service',
-        color: '#fff3e0',
-        states: ['planning', 'planned']
-      },
-      {
-        name: 'Orchestration',
-        color: '#e8f5e9',
-        states: ['executing']
-      },
-      {
-        name: 'Final States',
-        color: '#fce4ec',
-        states: ['completed', 'failed']
-      }
+    // Row definitions for YmaxFlow layout
+    const rowConfig = [
+      { id: 'cosmos', label: 'Cosmos / User', color: '#e3f2fd', states: ['transaction_defined', 'transaction_committed'] },
+      { id: 'contract', label: 'Portfolio Contract', color: '#f3e5f5', states: ['flow_inited'] },
+      { id: 'planner', label: 'Planner Service', color: '#fff3e0', states: ['planning', 'planned'] },
+      { id: 'orchestration', label: 'Orchestration', color: '#e8f5e9', states: ['executing', 'provisioning', 'moving'] },
+      { id: 'final', label: 'Final', color: '#eceff1', states: ['completed', 'failed'] }
     ];
 
-    // Parse state vector from text input
+    // Load embedded data
+    function loadSpec() {
+      const dataScript = document.getElementById('ymax-machine-data');
+      if (!dataScript) {
+        showError('Missing embedded machine data. Run scripts/gen-visualizer-data.mts');
+        return;
+      }
+
+      try {
+        const spec = JSON.parse(dataScript.textContent);
+        if (!spec.machines) throw new Error('Invalid spec format');
+        allMachines = spec.machines;
+        renderVisualization();
+      } catch (err) {
+        showError(`Error parsing data: ${err.message}`);
+      }
+    }
+
+    function showError(msg) {
+      document.getElementById('error-container').innerHTML =
+        `<div class="error-message">${msg}</div>`;
+    }
+
+    // Parse state vector with step notation
     function parseStateVector(text) {
-      const lines = text.trim().split('\n').filter(line => line.trim());
-      const states = [];
+      const lines = text.trim().split('\n').filter(l => l.trim());
+      const flowStates = [];
+      const stepStates = [];
       const now = new Date();
 
       for (const line of lines) {
-        const parts = line.trim().split(/\s+/);
-        const stateName = parts[0];
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+
+        // Parse: "state_name [timestamp]" or "step:machine.state [timestamp]"
+        const match = trimmed.match(/^(step:)?([^\s]+)(?:\s+(.+))?$/);
+        if (!match) continue;
+
+        const isStep = !!match[1];
+        const statePath = match[2];
+        const timeStr = match[3];
+
         let timestamp = null;
-
-        if (parts.length > 1) {
-          const timeStr = parts.slice(1).join(' ');
-          // Try parsing as ISO date first
+        if (timeStr) {
           timestamp = new Date(timeStr);
-
-          // If invalid, try parsing as simple time HH:MM
           if (isNaN(timestamp.getTime()) && /^\d{1,2}:\d{2}$/.test(timeStr)) {
-            const [hours, minutes] = timeStr.split(':').map(Number);
+            const [h, m] = timeStr.split(':').map(Number);
             timestamp = new Date(now);
-            timestamp.setHours(hours, minutes, 0, 0);
+            timestamp.setHours(h, m, 0, 0);
           }
-
-          if (isNaN(timestamp.getTime())) {
-            timestamp = null;
-          }
+          if (isNaN(timestamp.getTime())) timestamp = null;
         }
 
-        states.push({ state: stateName, timestamp });
+        if (isStep) {
+          // step:machine.state
+          const [machine, state] = statePath.split('.');
+          if (machine && state) {
+            stepStates.push({ machine, state, timestamp });
+          }
+        } else {
+          flowStates.push({ state: statePath, timestamp });
+        }
       }
 
-      return states;
+      return { flowStates, stepStates };
     }
 
-    // Format relative time
-    function formatRelativeTime(timestamp) {
-      if (!timestamp) return '';
-
-      const now = new Date();
-      const diffMs = now - timestamp;
-      const diffSecs = Math.floor(diffMs / 1000);
-      const diffMins = Math.floor(diffSecs / 60);
-      const diffHours = Math.floor(diffMins / 60);
-      const diffDays = Math.floor(diffHours / 24);
-
-      if (diffSecs < 60) return `${diffSecs}s ago`;
-      if (diffMins < 60) return `${diffMins}m ago`;
-      if (diffHours < 24) return `${diffHours}h ago`;
-      return `${diffDays}d ago`;
+    function formatTime(ts) {
+      if (!ts) return '';
+      return ts.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
     }
 
-    // Generate verification links for production data
-    function generateVerificationLinks(stateName, state) {
-      let links = '<div class="verify-links"><strong>Verify in Production:</strong><br>';
+    function formatRelative(ts) {
+      if (!ts) return '';
+      const diff = Math.floor((Date.now() - ts.getTime()) / 1000);
+      if (diff < 60) return `${diff}s ago`;
+      if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
+      return `${Math.floor(diff/3600)}h ago`;
+    }
 
-      const walletAddr = '{walletAddr}';
-      const portfolioN = '{n}';
-      const flowN = '{n}';
-      const instance = '{instance}';
-
-      // Map states to verification URLs
-      const verificationMap = {
-        'transaction_committed': [
-          { label: 'Tx History', url: `https://explorer.agoric.net/accounts/${walletAddr}` },
-        ],
-        'transaction_defined': [
-          { label: 'Ymax UI', url: `https://${instance}.ymax.app` },
-        ],
-        'flow_inited': [
-          { label: 'Portfolio Status', url: `https://vstorage.agoric.net/?path=published.${instance}.portfolios.portfolio${portfolioN}` },
-        ],
-        'planning': [
-          { label: 'Planner Logs', url: 'https://logs.agoric.net/ymax-planner' },
-        ],
-        'planned': [
-          { label: 'Planner Tx', url: `https://explorer.agoric.net/accounts/{plannerAddr}` },
-        ],
-        'executing': [
-          { label: 'Flow Steps', url: `https://vstorage.agoric.net/?path=published.${instance}.portfolios.portfolio${portfolioN}.flows.flow${flowN}.steps` },
-          { label: 'Flow Status', url: `https://vstorage.agoric.net/?path=published.${instance}.portfolios.portfolio${portfolioN}.flows.flow${flowN}` },
-        ],
-        'provisioning': [
-          { label: 'Flow Status', url: `https://vstorage.agoric.net/?path=published.${instance}.portfolios.portfolio${portfolioN}.flows.flow${flowN}` },
-        ],
-        'moving': [
-          { label: 'Flow Steps', url: `https://vstorage.agoric.net/?path=published.${instance}.portfolios.portfolio${portfolioN}.flows.flow${flowN}.steps` },
-          { label: 'Pending Txs', url: `https://vstorage.agoric.net/?path=published.${instance}.portfolios.portfolio${portfolioN}.pendingTxs` },
-        ],
-        'completed': [
-          { label: 'Portfolio', url: `https://vstorage.agoric.net/?path=published.${instance}.portfolios.portfolio${portfolioN}` },
-        ],
-        'failed': [
-          { label: 'Flow Status', url: `https://vstorage.agoric.net/?path=published.${instance}.portfolios.portfolio${portfolioN}.flows.flow${flowN}` },
-          { label: 'Pending Txs', url: `https://vstorage.agoric.net/?path=published.${instance}.portfolios.portfolio${portfolioN}.pendingTxs` },
-        ],
-      };
-
-      const stateLinks = verificationMap[stateName];
-      if (stateLinks && stateLinks.length > 0) {
-        stateLinks.forEach(link => {
-          links += `<span class="verify-link">📊 <a href="${link.url}" target="_blank" rel="noopener">${link.label}</a></span>`;
-        });
-      } else {
-        links += '<em>No verification links available for this state</em>';
+    // Main render function
+    function renderVisualization() {
+      const machine = allMachines[flowMachine];
+      if (!machine) {
+        showError('YmaxFlow machine not found');
+        return;
       }
 
-      links += '</div>';
-      return links;
+      const text = document.getElementById('state-vector').value;
+      const { flowStates, stepStates } = parseStateVector(text);
+
+      const visitedFlow = new Set(flowStates.map(s => s.state));
+      const currentFlow = flowStates.length > 0 ? flowStates[flowStates.length - 1] : null;
+      const flowTimestamps = Object.fromEntries(flowStates.map(s => [s.state, s.timestamp]));
+
+      const visitedStep = new Set(stepStates.map(s => `${s.machine}.${s.state}`));
+      const stepTimestamps = Object.fromEntries(stepStates.map(s => [`${s.machine}.${s.state}`, s.timestamp]));
+
+      // Group step states by machine to support concurrent steps
+      const stepsByMachine = new Map();
+      for (const s of stepStates) {
+        if (!stepsByMachine.has(s.machine)) {
+          stepsByMachine.set(s.machine, []);
+        }
+        stepsByMachine.get(s.machine).push(s);
+      }
+
+      // Find current state per machine (last state for each machine)
+      const currentStepPerMachine = new Map();
+      for (const [machineName, states] of stepsByMachine) {
+        currentStepPerMachine.set(machineName, states[states.length - 1]);
+      }
+
+      // Determine if we need to show step machines
+      const showStepMachines = visitedFlow.has('moving') && stepStates.length > 0;
+      const activeStepMachines = Array.from(stepsByMachine.keys());
+
+      renderFlowDiagram(machine, visitedFlow, currentFlow, flowTimestamps,
+                        showStepMachines, activeStepMachines, visitedStep, currentStepPerMachine, stepTimestamps);
     }
 
-    // Render state machine
-    function renderStateMachine(stateVector) {
+    function renderFlowDiagram(machine, visitedFlow, currentFlow, flowTimestamps,
+                               showStepMachines, activeStepMachines, visitedStep, currentStepPerMachine, stepTimestamps) {
       const svg = document.getElementById('state-diagram');
       svg.innerHTML = '';
 
-      // Create markers for arrows
+      // Add arrow markers
+      const defs = createDefs();
+      svg.appendChild(defs);
+
+      // Calculate positions
+      const positions = {};
+      let y = layout.margin.top;
+      const rowBounds = [];
+      const numStepMachines = showStepMachines ? activeStepMachines.length : 0;
+
+      for (const row of rowConfig) {
+        const statesInRow = row.states.filter(s => findState(machine.states, s));
+        if (statesInRow.length === 0) continue;
+
+        const rowStart = y;
+        let x = layout.margin.left + 10;
+
+        for (const stateName of statesInRow) {
+          positions[stateName] = { x, y: y + 20, row: row.id };
+          x += layout.stateWidth + layout.hGap;
+        }
+
+        let rowHeight = layout.stateHeight + 40;
+
+        // Add extra height for step machines if this is orchestration row and we're showing steps
+        if (row.id === 'orchestration' && showStepMachines) {
+          rowHeight += layout.stepRowHeight * numStepMachines;
+        }
+
+        rowBounds.push({
+          id: row.id,
+          label: row.label,
+          color: row.color,
+          x: layout.margin.left,
+          y: rowStart,
+          width: layout.width - layout.margin.left - layout.margin.right,
+          height: rowHeight
+        });
+
+        y += rowHeight + 10;
+      }
+
+      const totalHeight = y + layout.margin.bottom;
+      svg.setAttribute('viewBox', `0 0 ${layout.width} ${totalHeight}`);
+      svg.style.height = `${totalHeight}px`;
+
+      // Draw row backgrounds
+      for (const rb of rowBounds) {
+        const rect = createRect(rb.x, rb.y, rb.width, rb.height, rb.color, '#ddd', 1);
+        rect.classList.add('row-bg');
+        svg.appendChild(rect);
+
+        const label = createText(rb.x + 8, rb.y + 14, rb.label);
+        label.classList.add('row-label');
+        svg.appendChild(label);
+      }
+
+      // Draw transitions
+      const allStates = Object.keys(machine.states);
+      const executingState = machine.states.executing;
+      if (executingState?.states) {
+        for (const ns of Object.keys(executingState.states)) {
+          if (!allStates.includes(ns)) allStates.push(ns);
+        }
+      }
+
+      drawTransitions(svg, machine.states, positions, visitedFlow, currentFlow);
+      if (executingState?.states) {
+        drawTransitions(svg, executingState.states, positions, visitedFlow, currentFlow);
+      }
+
+      // Draw flow state nodes
+      for (const [name, state] of Object.entries(machine.states)) {
+        if (positions[name]) {
+          drawFlowState(svg, name, state, positions[name], visitedFlow, currentFlow, flowTimestamps[name]);
+        }
+        // Draw nested states (executing substates)
+        if (state.states) {
+          for (const [subName, subState] of Object.entries(state.states)) {
+            if (positions[subName]) {
+              drawFlowState(svg, subName, subState, positions[subName], visitedFlow, currentFlow, flowTimestamps[subName]);
+            }
+          }
+        }
+      }
+
+      // Draw step machines if active (supports multiple concurrent steps)
+      if (showStepMachines && activeStepMachines.length > 0) {
+        const movingPos = positions['moving'];
+        if (movingPos) {
+          let stepY = movingPos.y + layout.stateHeight + 20;
+          const stepStartX = layout.margin.left + 20; // Start from left margin
+
+          // Calculate parallel progress
+          let completedCount = 0;
+          let failedCount = 0;
+          const totalSteps = activeStepMachines.length;
+
+          for (const machineName of activeStepMachines) {
+            const currentStep = currentStepPerMachine.get(machineName);
+            if (currentStep) {
+              const stepMachine = allMachines[machineName];
+              const stepState = stepMachine?.states?.[currentStep.state];
+              if (stepState?.type === 'final') {
+                if (currentStep.state === 'completed') {
+                  completedCount++;
+                } else {
+                  failedCount++;
+                }
+              }
+            }
+          }
+
+          for (const machineName of activeStepMachines) {
+            if (allMachines[machineName]) {
+              const currentStep = currentStepPerMachine.get(machineName);
+              drawStepMachine(svg, machineName, allMachines[machineName],
+                              stepStartX, stepY,
+                              visitedStep, currentStep, stepTimestamps);
+              stepY += layout.stepRowHeight;
+            }
+          }
+
+          // Draw parallel progress summary on moving state
+          const progressText = `${completedCount}/${totalSteps} done${failedCount > 0 ? `, ${failedCount} failed` : ''}`;
+          const progress = createText(movingPos.x + layout.stateWidth / 2, movingPos.y + layout.stateHeight + 10, progressText);
+          progress.setAttribute('text-anchor', 'middle');
+          progress.classList.add('parallel-progress');
+          if (completedCount === totalSteps && failedCount === 0) {
+            progress.classList.add('all-done');
+          } else if (failedCount > 0) {
+            progress.classList.add('has-failed');
+          }
+          svg.appendChild(progress);
+        }
+      }
+    }
+
+    function createDefs() {
       const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
 
-      // Regular arrow
+      // Normal arrow
       const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
-      marker.setAttribute('id', 'arrowhead');
+      marker.setAttribute('id', 'arrow');
       marker.setAttribute('markerWidth', '10');
       marker.setAttribute('markerHeight', '10');
       marker.setAttribute('refX', '9');
       marker.setAttribute('refY', '3');
       marker.setAttribute('orient', 'auto');
-      const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-      polygon.setAttribute('points', '0 0, 10 3, 0 6');
-      polygon.setAttribute('fill', '#ddd');
-      marker.appendChild(polygon);
+      const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+      poly.setAttribute('points', '0 0, 10 3, 0 6');
+      poly.setAttribute('fill', '#999');
+      marker.appendChild(poly);
       defs.appendChild(marker);
 
       // Happy path arrow
-      const happyMarker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
-      happyMarker.setAttribute('id', 'arrowhead-happy');
-      happyMarker.setAttribute('markerWidth', '10');
-      happyMarker.setAttribute('markerHeight', '10');
-      happyMarker.setAttribute('refX', '9');
-      happyMarker.setAttribute('refY', '3');
-      happyMarker.setAttribute('orient', 'auto');
-      const happyPolygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-      happyPolygon.setAttribute('points', '0 0, 10 3, 0 6');
-      happyPolygon.setAttribute('fill', '#52c41a');
-      happyMarker.appendChild(happyPolygon);
+      const happyMarker = marker.cloneNode(true);
+      happyMarker.setAttribute('id', 'arrow-happy');
+      happyMarker.querySelector('polygon').setAttribute('fill', '#4caf50');
       defs.appendChild(happyMarker);
 
-      svg.appendChild(defs);
+      // Visited arrow
+      const visitedMarker = marker.cloneNode(true);
+      visitedMarker.setAttribute('id', 'arrow-visited');
+      visitedMarker.querySelector('polygon').setAttribute('fill', '#2196f3');
+      defs.appendChild(visitedMarker);
 
-      // Determine visited states and current state
-      const visitedStates = new Set(stateVector.map(s => s.state));
-      const currentState = stateVector.length > 0 ? stateVector[stateVector.length - 1] : null;
-      const stateTimestamps = Object.fromEntries(stateVector.map(s => [s.state, s.timestamp]));
+      return defs;
+    }
 
+    function createRect(x, y, w, h, fill, stroke, strokeWidth) {
+      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      rect.setAttribute('x', x);
+      rect.setAttribute('y', y);
+      rect.setAttribute('width', w);
+      rect.setAttribute('height', h);
+      rect.setAttribute('rx', '4');
+      rect.setAttribute('fill', fill);
+      rect.setAttribute('stroke', stroke);
+      rect.setAttribute('stroke-width', strokeWidth);
+      return rect;
+    }
 
-      // Calculate positions for states in horizontal rows
-      const positions = {};
-      const groupBounds = [];
-      let currentY = layout.marginTop;
-      let maxWidth = 0;
+    function createText(x, y, content) {
+      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      text.setAttribute('x', x);
+      text.setAttribute('y', y);
+      text.textContent = content;
+      return text;
+    }
 
-      for (const group of stateGroups) {
-        let currentX = layout.marginLeft;
-        const groupStartY = currentY;
-        let groupMaxHeight = layout.stateHeight;
-
-        // Position states in this group horizontally
-        for (const stateName of group.states) {
-          const state = stateMachine.states[stateName];
-          if (!state) continue;
-
-          positions[stateName] = {
-            x: currentX,
-            y: currentY,
-            group: group.name,
-            groupColor: group.color
-          };
-
-          // Handle nested states (executing) - always expanded
-          if (state.nested) {
-            positions[stateName].nested = true;
-
-            // Position nested states below the parent
-            const nestedY = currentY + layout.stateHeight + layout.rowSpacing;
-            positions['provisioning'] = {
-              x: currentX,
-              y: nestedY,
-              group: group.name,
-              groupColor: group.color
-            };
-            positions['moving'] = {
-              x: currentX + layout.stateWidth + layout.horizontalSpacing,
-              y: nestedY,
-              group: group.name,
-              groupColor: group.color
-            };
-            groupMaxHeight = layout.stateHeight * 2 + layout.rowSpacing;
-          }
-
-          currentX += layout.stateWidth + layout.horizontalSpacing;
-        }
-
-        maxWidth = Math.max(maxWidth, currentX);
-
-        // Store group bounds for background drawing
-        groupBounds.push({
-          name: group.name,
-          color: group.color,
-          x: layout.marginLeft - 10,
-          y: groupStartY - 30,
-          width: currentX - layout.marginLeft,
-          height: groupMaxHeight + 40
-        });
-
-        currentY += groupMaxHeight + layout.verticalSpacing;
-      }
-
-      // Update SVG viewBox
-      svg.setAttribute('viewBox', `0 0 ${maxWidth + 40} ${currentY}`);
-
-      // Draw group backgrounds first
-      for (const bounds of groupBounds) {
-        const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        bgRect.setAttribute('x', bounds.x);
-        bgRect.setAttribute('y', bounds.y);
-        bgRect.setAttribute('width', bounds.width);
-        bgRect.setAttribute('height', bounds.height);
-        bgRect.setAttribute('rx', '8');
-        bgRect.setAttribute('fill', bounds.color);
-        bgRect.setAttribute('stroke', '#ddd');
-        bgRect.setAttribute('stroke-width', '1');
-        svg.appendChild(bgRect);
-
-        // Draw group label
-        const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        label.setAttribute('x', bounds.x + 10);
-        label.setAttribute('y', bounds.y + 15);
-        label.setAttribute('font-size', '11px');
-        label.setAttribute('font-weight', '600');
-        label.setAttribute('fill', '#666');
-        label.textContent = bounds.name;
-        svg.appendChild(label);
-      }
-
-      // Draw transitions
-      const drawnTransitions = new Set();
-
-      for (const group of stateGroups) {
-        for (const stateName of group.states) {
-          const state = stateMachine.states[stateName];
-          if (!state || !positions[stateName]) continue;
-
-          const fromPos = positions[stateName];
-          const transitions = state.transitions || {};
-
-          for (const [eventName, transition] of Object.entries(transitions)) {
-            const toState = transition.target;
-            if (!positions[toState]) continue;
-
-            const key = `${stateName}->${toState}`;
-            if (drawnTransitions.has(key)) continue;
-            drawnTransitions.add(key);
-
-            const toPos = positions[toState];
-            drawTransition(svg, fromPos, toPos, transition, stateName, toState, visitedStates, currentState);
-          }
-
-          // Draw nested state transitions
-          if (state.nested && state.substates && positions[stateName].nested) {
-            for (const [substateName, substate] of Object.entries(state.substates)) {
-              if (!positions[substateName]) continue;
-
-              const fromPos = positions[substateName];
-              const transitions = substate.transitions || {};
-
-              for (const [eventName, transition] of Object.entries(transitions)) {
-                const toState = transition.target;
-                if (!positions[toState]) continue;
-
-                const key = `${substateName}->${toState}`;
-                if (drawnTransitions.has(key)) continue;
-                drawnTransitions.add(key);
-
-                const toPos = positions[toState];
-                drawTransition(svg, fromPos, toPos, transition, substateName, toState, visitedStates, currentState);
-              }
-            }
-          }
+    function findState(states, name) {
+      if (states[name]) return states[name];
+      for (const s of Object.values(states)) {
+        if (s.states) {
+          const found = findState(s.states, name);
+          if (found) return found;
         }
       }
+      return null;
+    }
 
-      // Draw state nodes
-      for (const group of stateGroups) {
-        for (const stateName of group.states) {
-          const state = stateMachine.states[stateName];
-          if (!state || !positions[stateName]) continue;
+    function drawTransitions(svg, states, positions, visitedFlow, currentFlow) {
+      for (const [fromName, state] of Object.entries(states)) {
+        if (!positions[fromName] || !state.on) continue;
 
-          const pos = positions[stateName];
-          const isVisited = visitedStates.has(stateName);
-          const isCurrent = currentState && currentState.state === stateName;
-          const timestamp = stateTimestamps[stateName];
+        for (const [event, targets] of Object.entries(state.on)) {
+          const targetList = Array.isArray(targets) ? targets : [targets];
+          for (const t of targetList) {
+            if (!positions[t.target]) continue;
 
-          drawStateNode(svg, stateName, state, pos, isVisited, isCurrent, timestamp);
+            const from = positions[fromName];
+            const to = positions[t.target];
+            const isVisited = visitedFlow.has(fromName) && visitedFlow.has(t.target);
+            const isHappyPath = currentFlow?.state === fromName && !visitedFlow.has(t.target);
+            const isFailure = t.target.includes('fail') || t.target.includes('timeout');
 
-          // Draw nested states if expanded
-          if (state.nested && state.substates && positions[stateName].nested) {
-            for (const [substateName, substate] of Object.entries(state.substates)) {
-              if (!positions[substateName]) continue;
-
-              const subPos = positions[substateName];
-              const isSubVisited = visitedStates.has(substateName);
-              const isSubCurrent = currentState && currentState.state === substateName;
-              const subTimestamp = stateTimestamps[substateName];
-
-              drawStateNode(svg, substateName, substate, subPos, isSubVisited, isSubCurrent, subTimestamp);
-            }
+            drawArrow(svg, from, to, isVisited, isHappyPath && !isFailure, isFailure);
           }
         }
       }
     }
 
-    function drawStateNode(svg, name, state, pos, isVisited, isCurrent, timestamp) {
+    function drawArrow(svg, from, to, isVisited, isHappy, isFailure) {
+      const x1 = from.x + layout.stateWidth;
+      const y1 = from.y + layout.stateHeight / 2;
+      const x2 = to.x;
+      const y2 = to.y + layout.stateHeight / 2;
+
+      // Use curved path for different rows, straight for same row
+      let d;
+      if (Math.abs(y1 - y2) < 10) {
+        d = `M ${x1} ${y1} L ${x2} ${y2}`;
+      } else {
+        d = `M ${x1} ${y1} C ${x1 + 30} ${y1}, ${x2 - 30} ${y2}, ${x2} ${y2}`;
+      }
+
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', d);
+      path.classList.add('transition-line');
+
+      if (isVisited) {
+        path.classList.add('visited');
+        path.setAttribute('marker-end', 'url(#arrow-visited)');
+      } else if (isHappy) {
+        path.classList.add('happy-path');
+        path.setAttribute('marker-end', 'url(#arrow-happy)');
+      } else if (isFailure) {
+        path.classList.add('failure');
+        path.setAttribute('marker-end', 'url(#arrow)');
+      } else {
+        path.setAttribute('marker-end', 'url(#arrow)');
+      }
+
+      svg.appendChild(path);
+    }
+
+    function drawFlowState(svg, name, state, pos, visitedFlow, currentFlow, timestamp) {
       const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
       g.classList.add('state-node');
+
+      const isVisited = visitedFlow.has(name);
+      const isCurrent = currentFlow?.state === name;
+      const isFailed = name === 'failed' || name.includes('timeout');
+
       if (isVisited) g.classList.add('visited');
       if (isCurrent) g.classList.add('current');
-      if (!isVisited && !isCurrent) g.classList.add('future');
+      if (isFailed) g.classList.add('failed');
 
-      // State box
-      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-      rect.setAttribute('x', pos.x);
-      rect.setAttribute('y', pos.y);
-      rect.setAttribute('width', layout.stateWidth);
-      rect.setAttribute('height', layout.stateHeight);
-      rect.setAttribute('rx', '6');
+      // Background rect
+      const rect = createRect(pos.x, pos.y, layout.stateWidth, layout.stateHeight, '#fff', '#ccc', 2);
       g.appendChild(rect);
 
       // State name
-      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      text.setAttribute('x', pos.x + layout.stateWidth / 2);
-      text.setAttribute('y', pos.y + layout.stateHeight / 2 - 3);
-      text.setAttribute('text-anchor', 'middle');
-      text.setAttribute('dominant-baseline', 'middle');
-      text.textContent = name.replace(/_/g, ' ');
-      g.appendChild(text);
+      const nameText = createText(pos.x + layout.stateWidth/2, pos.y + layout.stateHeight/2 - (timestamp ? 4 : 0),
+                                  name.replace(/_/g, ' '));
+      nameText.setAttribute('text-anchor', 'middle');
+      nameText.setAttribute('dominant-baseline', 'middle');
+      nameText.classList.add('state-name');
+      g.appendChild(nameText);
 
-      // Timestamp badge
+      // Timestamp
       if (timestamp) {
-        const timeText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        timeText.classList.add('timestamp-badge');
-        timeText.setAttribute('x', pos.x + layout.stateWidth / 2);
-        timeText.setAttribute('y', pos.y + layout.stateHeight / 2 + 10);
+        const timeText = createText(pos.x + layout.stateWidth/2, pos.y + layout.stateHeight/2 + 10, formatTime(timestamp));
         timeText.setAttribute('text-anchor', 'middle');
-        const timeStr = timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-        timeText.textContent = timeStr;
+        timeText.classList.add('timestamp');
         g.appendChild(timeText);
       }
 
-      // Time since last transition (if current)
+      // Time since (for current state)
       if (isCurrent && timestamp) {
-        const timeSince = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        timeSince.classList.add('time-since');
-        timeSince.setAttribute('x', pos.x + layout.stateWidth + 10);
-        timeSince.setAttribute('y', pos.y + layout.stateHeight / 2);
-        timeSince.setAttribute('dominant-baseline', 'middle');
-        timeSince.textContent = formatRelativeTime(timestamp);
-        g.appendChild(timeSince);
-
-        // Update time every second
-        setInterval(() => {
-          timeSince.textContent = formatRelativeTime(timestamp);
-        }, 1000);
+        const sinceText = createText(pos.x + layout.stateWidth + 8, pos.y + layout.stateHeight/2, formatRelative(timestamp));
+        sinceText.setAttribute('dominant-baseline', 'middle');
+        sinceText.classList.add('time-since');
+        g.appendChild(sinceText);
       }
 
-      // Tooltip on hover
-      g.addEventListener('mouseenter', (e) => {
-        const tooltip = document.getElementById('tooltip');
-        let content = `<strong>${name.replace(/_/g, ' ')}</strong><br><br>${state.description}`;
-
-        if (state.meta) {
-          if (state.meta.userMessage) {
-            content += `<br><br><strong>User Message:</strong><br><em>"${state.meta.userMessage}"</em>`;
-          }
-          if (state.meta.observedFrom && state.meta.observedFrom.length > 0) {
-            content += `<br><br><strong>Observable From:</strong><br>`;
-            content += state.meta.observedFrom.map(o => `• ${o}`).join('<br>');
-          }
-          if (state.meta.invariants && state.meta.invariants.length > 0) {
-            content += `<br><br><strong>Invariants:</strong><br>`;
-            content += state.meta.invariants.map(i => `• ${i}`).join('<br>');
-          }
-        }
-
-        // Add transition information
-        if (state.transitions && Object.keys(state.transitions).length > 0) {
-          content += `<br><br><strong>Transitions:</strong>`;
-          for (const [event, trans] of Object.entries(state.transitions)) {
-            const icon = trans.happyPath ? '✓' : (trans.failure ? '✗' : '→');
-            content += `<br>${icon} <code>${event}</code>: ${trans.description}`;
-          }
-        }
-
-        // Add verification links
-        content += generateVerificationLinks(name, state);
-
-        tooltip.innerHTML = content;
-
-        // Position tooltip fixed relative to the node, not following cursor
-        const rect = g.getBoundingClientRect();
-        tooltip.style.left = (rect.right + 10) + 'px';
-        tooltip.style.top = rect.top + 'px';
-        tooltip.classList.add('visible');
-      });
-
-      g.addEventListener('mouseleave', (e) => {
-        const tooltip = document.getElementById('tooltip');
-        const tooltipRect = tooltip.getBoundingClientRect();
-
-        // Check if mouse is moving to the tooltip
-        setTimeout(() => {
-          if (!tooltip.matches(':hover')) {
-            tooltip.classList.remove('visible');
-          }
-        }, 100);
-      });
+      // Update details pane on hover
+      g.addEventListener('mouseenter', () => updateDetailsPane(name, state));
 
       svg.appendChild(g);
     }
 
-    function drawTransition(svg, fromPos, toPos, transition, fromState, toState, visitedStates, currentState) {
-      const isVisited = visitedStates.has(fromState) && visitedStates.has(toState);
-      const isNextHappyPath = currentState && currentState.state === fromState &&
-                              transition.happyPath && !visitedStates.has(toState);
-      const isFailure = transition.failure;
+    function drawStepMachine(svg, machineName, machine, startX, startY, visitedStep, currentStep, stepTimestamps) {
+      // Calculate container width based on number of states
+      const stateCount = Object.keys(machine.states).length;
+      const containerWidth = stateCount * (layout.stepStateWidth + layout.stepHGap) + 20;
+      const containerHeight = layout.stepRowHeight - 10;
 
-      // Determine connection points based on relative positions
-      let x1, y1, x2, y2;
+      const containerG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      containerG.classList.add('step-container');
 
-      // Check if states are in the same row (horizontal) or different rows (vertical)
-      const sameRow = Math.abs(fromPos.y - toPos.y) < layout.stateHeight;
+      // Background
+      const bg = createRect(startX - 10, startY - 5, containerWidth, containerHeight, '#fffde7', '#ffc107', 1);
+      bg.classList.add('step-bg');
+      containerG.appendChild(bg);
 
-      if (sameRow) {
-        // Horizontal connection (right to left)
-        x1 = fromPos.x + layout.stateWidth;
-        y1 = fromPos.y + layout.stateHeight / 2;
-        x2 = toPos.x;
-        y2 = toPos.y + layout.stateHeight / 2;
-      } else {
-        // Vertical connection (bottom to top)
-        x1 = fromPos.x + layout.stateWidth / 2;
-        y1 = fromPos.y + layout.stateHeight;
-        x2 = toPos.x + layout.stateWidth / 2;
-        y2 = toPos.y;
+      // Label
+      const label = createText(startX, startY + 12, `Step: ${machineName}`);
+      label.classList.add('step-label');
+      containerG.appendChild(label);
+
+      // Draw step states horizontally
+      let x = startX;
+      const y = startY + 30;
+      const stepPositions = {};
+
+      for (const [stateName, state] of Object.entries(machine.states)) {
+        stepPositions[stateName] = { x, y };
+        x += layout.stepStateWidth + layout.stepHGap;
       }
 
-      // Create path with curves for better aesthetics
-      let pathD;
-      if (sameRow) {
-        // Horizontal with slight curve
-        const midX = (x1 + x2) / 2;
-        pathD = `M ${x1} ${y1} C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}`;
-      } else if (Math.abs(x1 - x2) < 20) {
-        // Straight vertical
-        pathD = `M ${x1} ${y1} L ${x2} ${y2}`;
-      } else {
-        // Curved vertical connection
-        const midY = (y1 + y2) / 2;
-        pathD = `M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`;
+      // Draw step transitions
+      for (const [fromName, state] of Object.entries(machine.states)) {
+        if (!stepPositions[fromName] || !state.on) continue;
+
+        for (const targets of Object.values(state.on)) {
+          const targetList = Array.isArray(targets) ? targets : [targets];
+          for (const t of targetList) {
+            if (!stepPositions[t.target]) continue;
+
+            const from = stepPositions[fromName];
+            const to = stepPositions[t.target];
+            const key1 = `${machineName}.${fromName}`;
+            const key2 = `${machineName}.${t.target}`;
+            const isVisited = visitedStep.has(key1) && visitedStep.has(key2);
+            const isHappy = currentStep?.machine === machineName && currentStep?.state === fromName && !visitedStep.has(key2);
+            const isFailure = t.target.includes('fail') || t.target.includes('timeout');
+
+            const x1 = from.x + layout.stepStateWidth;
+            const y1 = from.y + layout.stepStateHeight / 2;
+            const x2 = to.x;
+            const y2 = to.y + layout.stepStateHeight / 2;
+
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', `M ${x1} ${y1} L ${x2} ${y2}`);
+            path.classList.add('transition-line');
+            if (isVisited) {
+              path.classList.add('visited');
+              path.setAttribute('marker-end', 'url(#arrow-visited)');
+            } else if (isHappy && !isFailure) {
+              path.classList.add('happy-path');
+              path.setAttribute('marker-end', 'url(#arrow-happy)');
+            } else {
+              path.setAttribute('marker-end', 'url(#arrow)');
+              if (isFailure) path.classList.add('failure');
+            }
+            containerG.appendChild(path);
+          }
+        }
       }
 
-      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path.classList.add('transition-line');
-      if (isVisited) path.classList.add('visited');
-      if (isNextHappyPath) {
-        path.classList.add('next-happy-path');
-        path.setAttribute('marker-end', 'url(#arrowhead-happy)');
-      } else if (isFailure) {
-        path.classList.add('failure');
+      // Draw step state nodes
+      for (const [stateName, state] of Object.entries(machine.states)) {
+        const pos = stepPositions[stateName];
+        if (!pos) continue;
+
+        const key = `${machineName}.${stateName}`;
+        const isVisited = visitedStep.has(key);
+        const isCurrent = currentStep?.machine === machineName && currentStep?.state === stateName;
+        const isFailed = stateName.includes('fail') || stateName.includes('timeout');
+        const timestamp = stepTimestamps[key];
+
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.classList.add('step-state-node');
+        if (isVisited) g.classList.add('visited');
+        if (isCurrent) g.classList.add('current');
+        if (isFailed) g.classList.add('failed');
+
+        const rect = createRect(pos.x, pos.y, layout.stepStateWidth, layout.stepStateHeight, '#fff8e1', '#ffb300', 1.5);
+        g.appendChild(rect);
+
+        const nameText = createText(pos.x + layout.stepStateWidth/2, pos.y + layout.stepStateHeight/2,
+                                    stateName.replace(/_/g, ' '));
+        nameText.setAttribute('text-anchor', 'middle');
+        nameText.setAttribute('dominant-baseline', 'middle');
+        nameText.classList.add('state-name');
+        nameText.style.fontSize = '10px';
+        g.appendChild(nameText);
+
+        g.addEventListener('mouseenter', () => updateDetailsPane(`${machineName}.${stateName}`, state));
+
+        containerG.appendChild(g);
       }
 
-      path.setAttribute('d', pathD);
-      svg.appendChild(path);
+      svg.appendChild(containerG);
+    }
+
+    function updateDetailsPane(name, state) {
+      const pane = document.getElementById('details-pane');
+      let html = '<h3>State Details</h3>';
+
+      // Header with name and protocol badge
+      html += `<div class="details-header">`;
+      html += `<span>${name.replace(/_/g, ' ')}</span>`;
+      if (state.meta?.protocol) {
+        html += `<span class="protocol-badge">${state.meta.protocol}</span>`;
+      }
+      html += `</div>`;
+
+      // Description
+      if (state.description) {
+        html += `<div class="details-description">${state.description}</div>`;
+      }
+
+      // Observable From
+      if (state.meta?.observedFrom?.length) {
+        html += `<div class="details-section">`;
+        html += `<div class="details-section-title">Observable From</div>`;
+        html += `<ul class="details-list">`;
+        for (const source of state.meta.observedFrom) {
+          html += `<li>${source}</li>`;
+        }
+        html += `</ul></div>`;
+      }
+
+      // Observability TODO
+      if (state.meta?.observabilityTodo) {
+        html += `<div class="todo-note">${state.meta.observabilityTodo}</div>`;
+      }
+
+      // Resolver TxType
+      if (state.meta?.txType) {
+        html += `<div class="details-section">`;
+        html += `<div class="details-section-title">Resolver TxType</div>`;
+        html += `<code>${state.meta.txType}</code>`;
+        html += `</div>`;
+      }
+
+      // Invariants
+      if (state.meta?.invariants?.length) {
+        html += `<div class="details-section">`;
+        html += `<div class="details-section-title">Invariants</div>`;
+        html += `<ul class="details-list">`;
+        for (const inv of state.meta.invariants) {
+          html += `<li>${inv}</li>`;
+        }
+        html += `</ul></div>`;
+      }
+
+      // Parallel state info
+      if (state.type === 'parallel') {
+        html += `<div class="details-section">`;
+        html += `<div class="details-section-title">Parallel State</div>`;
+        html += `<div style="color: #666; font-style: italic; margin-bottom: 8px;">All child regions execute concurrently</div>`;
+        if (state.onDone) {
+          html += `<div class="transition-item">`;
+          html += `<span class="transition-icon" style="color: #4caf50;">✓</span>`;
+          html += `<span><strong>onDone</strong> → <code>${state.onDone.target}</code>: ${state.onDone.description || ''}</span>`;
+          html += `</div>`;
+        }
+        if (state.onError) {
+          html += `<div class="transition-item">`;
+          html += `<span class="transition-icon error">✗</span>`;
+          html += `<span><strong>onError</strong> → <code>${state.onError.target}</code>: ${state.onError.description || ''}</span>`;
+          html += `</div>`;
+        }
+        html += `</div>`;
+      }
+
+      // Transitions
+      if (state.on) {
+        html += `<div class="details-section">`;
+        html += `<div class="details-section-title">Transitions</div>`;
+        for (const [event, t] of Object.entries(state.on)) {
+          const target = Array.isArray(t) ? t[0] : t;
+          const isError = target.target.includes('fail') || target.target.includes('timeout');
+          html += `<div class="transition-item">`;
+          html += `<span class="transition-icon ${isError ? 'error' : ''}">${isError ? '!' : '→'}</span>`;
+          html += `<span><code>${event}</code>: ${target.description || target.target}</span>`;
+          html += `</div>`;
+        }
+        html += `</div>`;
+      }
+
+      // Notes
+      if (state.meta?.notes) {
+        html += `<div class="details-section">`;
+        html += `<div class="details-section-title">Notes</div>`;
+        html += `<div>${state.meta.notes}</div>`;
+        html += `</div>`;
+      }
+
+      pane.innerHTML = html;
     }
 
     // Examples
     const examples = {
-      early: `transaction_defined 2025-01-15T13:10:00Z
-flow_registered 2025-01-15T13:10:30Z
-transaction_committed 2025-01-15T13:11:00Z
-flow_inited 2025-01-15T13:11:30Z
-planning`,
-      executing: `transaction_defined 13:10
+      'deposit-early': `transaction_defined 13:10
 transaction_committed 13:11
-flow_registered 13:11
 flow_inited 13:12
-planning 13:12
-planned 13:13
-executing 13:14
-provisioning 13:14
-moving`,
-      completed: `transaction_defined 13:10
+planning`,
+
+      'deposit-ibc': `transaction_defined 13:10
 transaction_committed 13:11
-flow_registered 13:11
 flow_inited 13:12
 planning 13:13
 planned 13:14
 executing 13:15
 provisioning 13:15
 moving 13:16
-completed 13:17`,
-      failed: `transaction_defined 13:10
+step:IBC_agoric_noble.initiated 13:16
+step:IBC_agoric_noble.packet_in_flight`,
+
+      'deposit-completed': `transaction_defined 13:10
 transaction_committed 13:11
-flow_registered 13:11
 flow_inited 13:12
 planning 13:13
-failed 13:14`,
-  // Generated from logs:
-  // - transaction_defined - 21:55:00Z (estimated start)
-  // - transaction_committed - 21:55:30Z (estimated)
-  // - flow_registered - 21:55:45Z (estimated)
-  // - flow_inited - 21:55:51Z (from "waiting for steps from planner")
-  // - planning - 21:56:01Z (from plan received)
-  // - planned - 21:56:02Z (from "checking moves")
-  // - executing - 21:56:02Z (from step execution start)
-  // - provisioning - 21:56:03Z (from GMPF makeAccount calls)
-  // - moving - 21:58:10Z (from accounts resolved, IBC/CCTP transfers)
-  // - completed - 22:03:04Z (from "stepFlow done")
-      rebalance: `transaction_defined 2025-12-01T21:55:00Z
-transaction_committed 2025-12-01T21:55:30Z
-flow_registered 2025-12-01T21:55:45Z
-flow_inited 2025-12-01T21:55:51Z
-planning 2025-12-01T21:56:01Z
-planned 2025-12-01T21:56:02Z
-executing 2025-12-01T21:56:02Z
-provisioning 2025-12-01T21:56:03Z
-moving 2025-12-01T21:58:10Z
-completed 2025-12-01T22:03:04Z`
+planned 13:14
+executing 13:15
+provisioning 13:15
+moving 13:16
+step:IBC_agoric_noble.initiated 13:16
+step:IBC_agoric_noble.packet_in_flight 13:17
+step:IBC_agoric_noble.ack_pending 13:18
+step:IBC_agoric_noble.completed 13:19
+completed 13:20`,
+
+      'rebalance-cctp': `transaction_defined 13:10
+transaction_committed 13:11
+flow_inited 13:12
+planning 13:13
+planned 13:14
+executing 13:15
+moving 13:16
+step:CCTP_noble_EVM.initiated 13:16
+step:CCTP_noble_EVM.burn_pending 13:17
+step:CCTP_noble_EVM.attestation_pending`,
+
+      'rebalance-gmp': `transaction_defined 13:10
+transaction_committed 13:11
+flow_inited 13:12
+planning 13:13
+planned 13:14
+executing 13:15
+moving 13:16
+step:GMP_protocol_supply.initiated 13:16
+step:GMP_protocol_supply.gmp_pending 13:17
+step:GMP_protocol_supply.contract_call_pending`,
+
+      'withdraw-usdn': `transaction_defined 13:10
+transaction_committed 13:11
+flow_inited 13:12
+planning 13:13
+planned 13:14
+executing 13:15
+moving 13:16
+step:USDN_withdraw.initiated 13:16
+step:USDN_withdraw.tx_pending`,
+
+      'failed-timeout': `transaction_defined 13:10
+transaction_committed 13:11
+flow_inited 13:12
+planning 13:13
+planned 13:14
+executing 13:15
+moving 13:16
+step:IBC_agoric_noble.initiated 13:16
+step:IBC_agoric_noble.packet_in_flight 13:17
+step:IBC_agoric_noble.timed_out 13:47
+failed`,
+
+      'concurrent-steps': `transaction_defined 13:10
+transaction_committed 13:11
+flow_inited 13:12
+planning 13:13
+planned 13:14
+executing 13:15
+provisioning 13:15
+moving 13:16
+step:IBC_agoric_noble.initiated 13:16
+step:IBC_agoric_noble.packet_in_flight 13:17
+step:CCTP_noble_EVM.initiated 13:17
+step:IBC_agoric_noble.ack_pending 13:18
+step:CCTP_noble_EVM.burn_pending 13:18
+step:CCTP_noble_EVM.attestation_pending 13:19
+step:IBC_agoric_noble.completed 13:19`
     };
 
-    // Event listeners
-    document.getElementById('state-vector').addEventListener('input', (e) => {
-      const errorContainer = document.getElementById('error-container');
-      errorContainer.innerHTML = '';
+    // URL query param handling
+    function getExampleFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('example');
+    }
 
+    function setExampleInUrl(exampleKey) {
+      const url = new URL(window.location.href);
+      if (exampleKey) {
+        url.searchParams.set('example', exampleKey);
+      } else {
+        url.searchParams.delete('example');
+      }
+      window.history.replaceState({}, '', url);
+    }
+
+    function loadExample(exampleKey) {
+      const example = examples[exampleKey];
+      if (example) {
+        document.getElementById('state-vector').value = example;
+        document.getElementById('example-select').value = exampleKey;
+        setExampleInUrl(exampleKey);
+        renderVisualization();
+      }
+    }
+
+    // Event handlers
+    document.getElementById('state-vector').addEventListener('input', () => {
+      document.getElementById('error-container').innerHTML = '';
       try {
-        const stateVector = parseStateVector(e.target.value);
-        renderStateMachine(stateVector);
-      } catch (error) {
-        errorContainer.innerHTML = `<div class="error-message">Error: ${error.message}</div>`;
+        renderVisualization();
+      } catch (err) {
+        showError(err.message);
       }
     });
 
-    document.querySelectorAll('.example-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const example = btn.dataset.example;
-        const textarea = document.getElementById('state-vector');
-        textarea.value = examples[example];
-        textarea.dispatchEvent(new Event('input'));
-      });
+    document.getElementById('example-select').addEventListener('change', (e) => {
+      const exampleKey = e.target.value;
+      if (exampleKey && examples[exampleKey]) {
+        loadExample(exampleKey);
+      } else {
+        setExampleInUrl(null);
+      }
     });
 
-    // Tooltip hover handler to keep it visible when hovering over it
-    const tooltip = document.getElementById('tooltip');
-    tooltip.addEventListener('mouseleave', () => {
-      tooltip.classList.remove('visible');
-    });
+    // Initialize
+    loadSpec();
 
-    // Initial render
-    document.getElementById('state-vector').value = examples.early;
-    document.getElementById('state-vector').dispatchEvent(new Event('input'));
+    // Load example from URL if specified
+    const urlExample = getExampleFromUrl();
+    if (urlExample && examples[urlExample]) {
+      loadExample(urlExample);
+    }
   </script>
 </body>
 </html>
