@@ -194,7 +194,16 @@ export default [
     ],
 
     rules: {
-      'no-restricted-syntax': ['error', ...deprecatedTerminology.all],
+      'no-restricted-syntax': [
+        'error',
+        ...deprecatedTerminology.all,
+        {
+          selector:
+            'CallExpression[callee.object.name="Object"][callee.property.name="fromEntries"] > CallExpression.arguments[callee.object.name="Object"][callee.property.name="entries"]',
+          message:
+            'Prefer objectMap over Object.fromEntries(Object.entries(...))',
+        },
+      ],
     },
   },
   {
