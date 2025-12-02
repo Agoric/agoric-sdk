@@ -1,22 +1,17 @@
-import { M, getInterfaceGuardPayload } from '@endo/patterns';
+import { M, getInterfaceGuardPayload, objectMap } from '@endo/patterns';
 
 /**
  * @import {Zone} from '../src/types.js';
  */
 
 /**
- * @template {{}} T
+ * @template {Record<string, Function>} T
  * @param {T} obj
  * @param {unknown} that
  * @returns {T}
  */
 export const bindAllMethodsTo = (obj, that = obj) =>
-  /** @type {T} */
-  (
-    Object.fromEntries(
-      Object.entries(obj).map(([name, fn]) => [name, fn.bind(that)]),
-    )
-  );
+  objectMap(obj, fn => fn.bind(that));
 
 export const GreeterI = M.interface('Greeter', {
   greet: M.call().optional(M.string()).returns(M.string()),

@@ -1,5 +1,5 @@
 /** @file Orchestration facade */
-import { assertAllDefined, deepMapObject } from '@agoric/internal';
+import { assertAllDefined, deepMapObject, objectMap } from '@agoric/internal';
 
 /**
  * @import {AsyncFlowTools, GuestInterface, HostArgs} from '@agoric/async-flow';
@@ -122,11 +122,8 @@ export const makeOrchestrationFacade = ({
     );
 
     const orcFns = /** @type {{ [N in keyof GFM]: HostForGuest<GFM[N]> }} */ (
-      Object.fromEntries(
-        Object.entries(guestFns).map(([name, guestFn]) => [
-          name,
-          orchestrate(name, mappedContext, guestFn),
-        ]),
+      objectMap(guestFns, (guestFn, name) =>
+        orchestrate(String(name), mappedContext, guestFn),
       )
     );
 
