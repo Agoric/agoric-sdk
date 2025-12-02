@@ -31,7 +31,6 @@ import type {
   IBCChannelID,
   IBCConnectionID,
   IBCPortID,
-  MetaNetworkEndpoint,
   NetworkBinding,
   NetworkEndpoint,
   VTransferIBCEvent,
@@ -49,7 +48,6 @@ import type {
   AccountId,
   AmountArg,
   BaseChainInfo,
-  CaipChainId,
   CosmosChainAddress,
   Denom,
   DenomAmount,
@@ -74,23 +72,6 @@ export type TrafficEntry<
   dst: NetworkEndpoint<DP>;
   /** Sequence number to match sent packet to received acknowledgement */
   seq: { status: 'pending' | 'unknown' } | number | bigint | string;
-};
-
-/** @deprecated use TrafficEntry<SP> instead  */
-export type MetaTrafficEntry<
-  /** Source Protocol (like 'ibc') */
-  SP extends keyof NetworkBinding = keyof NetworkBinding,
-  /** Destination Protocol */
-  DP extends keyof NetworkBinding = SP,
-> = {
-  /** Semantic operation name for debugging, e.g. 'IBC transfer' */
-  op: string;
-  /** Network API endpoint info for source chain */
-  src: MetaNetworkEndpoint<SP>;
-  /** Network API endpoint info for destination chain */
-  dst: MetaNetworkEndpoint<DP>;
-  /** Sequence number to match sent packet to received acknowledgement */
-  seq: null | { status: 'pending' | 'unknown' } | number | bigint | string;
 };
 
 export type CosmosActionOptions = PacketOptions & {
@@ -401,15 +382,41 @@ export interface IcaAccount extends IcaAccountImplMethods {
  */
 export interface IcaAccountMethods extends IcaAccountImplMethods {
   /**
-   * Submit a transaction on behalf of the remote account for execution on the remote chain.
+   * Submit a transaction on behalf of the remote account for execution on
+   * the remote chain, and decode the response.
+   *
+   * Set `relativeTimeoutNs` to provide a timeout for the IBC packet.
+   *
+   * `TxBody` fields like `timeoutHeight` and `memo` can be set, but these
+   * typically do not affect IBC app protocols like PFM, ICA.
+   *
    * @param msgs - records for the transaction
    * @param [opts] - optional parameters for the Tx. use `opts.sendOpts.relativeTimeoutNs` to specify a timeout for the ICA tx packet
-   * @returns acknowledgement string
+   * @returns decoded responses or Any if unknown
    */
-  executeEncodedTxWithMeta: (
-    msgs: AnyJson[],
-    opts?: CosmosActionOptions['txOpts'] & Omit<CosmosActionOptions, 'txOpts'>,
-  ) => Promise<{ result: Promise<string>; meta: Record<string, any> }>;
+  executeTxProto3: <TUS extends readonly (keyof TypeFromUrl | unknown)[]>(
+    msgs: Readonly<{
+      [K in keyof TUS]: AnyJson<TUS[K]>;
+    }>,
+    opts?: CosmosActionOptions,
+  ) => Promise<{ [K in keyof TUS]: MessageBody<ResponseTypeUrl<TUS[K]>> }>;
+  /**
+   * Submit a transaction on behalf of the remote account for execution on
+   * the remote chain, but do not decode the response.
+   *
+   * Set `relativeTimeoutNs` to provide a timeout for the IBC packet.
+   *
+   * `TxBody` fields like `timeoutHeight` and `memo` can be set, but these
+   * typically do not affect IBC app protocols like PFM, ICA.
+   *
+   * @param msgs - records for the transaction
+   * @param [opts] - optional parameters for the Tx. use `opts.sendOpts.relativeTimeoutNs` to specify a timeout for the ICA tx packet
+   * @returns base64 protobuf responses for tryDecodeMessages
+   */
+  executeTxProto3Undecoded: (
+    msgs: readonly AnyJson[],
+    opts?: CosmosActionOptions,
+  ) => Promise<string>;
 }
 
 /** Methods on chains that support Liquid Staking */

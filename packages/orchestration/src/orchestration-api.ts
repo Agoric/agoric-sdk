@@ -318,23 +318,6 @@ export interface OrchestrationAccountCommon {
   ) => Promise<unknown>;
 
   /**
-   * Transfer an amount to another account, typically on another chain.
-   * @param destination - the account to transfer the amount to.
-   * @param amount - the amount to transfer. Can be provided as pure data using denoms or as ERTP Amounts.
-   * @param [opts] - an optional memo to include with the transfer, which could drive custom PFM behavior, and timeout parameters
-   * @returns Promise<resultMeta> The promise fulfills with resultMeta where
-   * .meta is metadata about transfer on sending, and the resultMeta.result
-   * fulfills with a completion message.
-   * @throws {Error} if route is not determinable, asset is not recognized, or
-   * the transfer is rejected (insufficient funds, timeout)
-   */
-  transferWithMeta: (
-    destination: AccountIdArg,
-    amount: AmountArg,
-    opts?: IBCMsgTransferOptions,
-  ) => Promise<{ result: Promise<any>; meta: Record<string, any> }>;
-
-  /**
    * Transfer an amount to another account in multiple steps. The promise settles when
    * the entire path of the transfer is complete.
    * @param amount - the amount to transfer

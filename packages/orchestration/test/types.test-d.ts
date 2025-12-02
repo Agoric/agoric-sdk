@@ -6,6 +6,7 @@ import type { HostInterface, HostOf } from '@agoric/async-flow';
 import type {
   AnyJson,
   JsonSafe,
+  MessageBody,
   Proto3CodecHelper,
 } from '@agoric/cosmic-proto';
 import type {
@@ -17,7 +18,7 @@ import type { ResponseQuery } from '@agoric/cosmic-proto/tendermint/abci/types.j
 import type { Vow, VowTools } from '@agoric/vow';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { Passable } from '@endo/marshal';
-import { expectAssignable, expectNotType, expectType } from 'tsd';
+import { expectAssignable, expectError, expectNotType, expectType } from 'tsd';
 import type { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
 import type {
   TargetApp,
@@ -32,6 +33,7 @@ import type { OrchestrationFacade } from '../src/facade.js';
 import type {
   AmountArg,
   Chain,
+  CosmosActionOptions,
   CosmosChainAddress,
   ChainInfo,
   CosmosChainInfo,
@@ -42,6 +44,7 @@ import type {
   StakingAccountActions,
   KnownChains,
 } from '../src/types.js';
+import { Any } from '../src/utils/codecs.js';
 import type { ResolvedContinuingOfferResult } from '../src/utils/zoe-tools.js';
 import { withChainCapabilities } from '../src/chain-capabilities.js';
 import fetchedChainInfo from '../src/fetched-chain-info.js';
@@ -60,7 +63,6 @@ const QueryBalanceRequest: Proto3CodecHelper<'/cosmos.bank.v1beta1.QueryBalanceR
   null as any;
 const QueryBalanceResponse: Proto3CodecHelper<'/cosmos.bank.v1beta1.QueryBalanceResponse'> =
   null as any;
-const Any: Proto3CodecHelper<'/google.protobuf.Any'> = null as any;
 
 const anyVal = null as any;
 
@@ -108,7 +110,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
 // CosmosOrchestrationAccount interfaces
 {
   const coa: CosmosOrchestrationAccount = null as any;
-  const resultMeta = coa.executeEncodedTxWithMeta([
+  const resultP = coa.executeTxProto3([
     Any.toJSON(
       MsgDelegate.toProtoMsg({
         amount: {
@@ -127,28 +129,26 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
   ] as const);
 
   expectType<
-    Vow<{
-      result: Vow<string>;
-      meta: Record<string, any>;
-    }>
-  >(resultMeta);
-  const { result: resultP, meta } = await vt.when(resultMeta);
-  expectType<Record<string, any>>(meta);
+    Vow<
+      readonly [
+        MessageBody<typeof MsgDelegateResponse.typeUrl>,
+        MessageBody<typeof QueryAllBalancesResponse.typeUrl>,
+      ]
+    >
+  >(resultP);
 
-  const result = await vt.when(resultP);
-
-  const resps = tryDecodeResponses(result, [
-    MsgDelegateResponse,
-    QueryAllBalancesResponse,
-  ]);
-
+  const resps = await vt.when(resultP);
   expectType<2>(resps.length);
 
   // Check that the result is a tuple of the expected types.
-  expectType<[MsgDelegateResponseType, QueryAllBalancesResponseType]>(resps);
+  expectType<readonly [MsgDelegateResponseType, QueryAllBalancesResponseType]>(
+    resps,
+  );
 
   // Ensure the result is not widened to (MsgDelegateResponseType | QueryAllBalancesResponseType)[]
-  expectNotType<[QueryAllBalancesResponseType, MsgDelegateResponseType]>(resps);
+  expectNotType<
+    readonly [QueryAllBalancesResponseType, MsgDelegateResponseType]
+  >(resps);
 
   const makeCosmosOrchestrationAccount = prepareCosmosOrchestrationAccount(
     anyVal,
@@ -384,22 +384,19 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
     ) => Promise<string>
   >(account.executeEncodedTx);
 
-  expectType<
-    (
-      msgs: AnyJson[],
-      opts?: Partial<Omit<TxBody, 'messages'>>,
-    ) => Promise<{ result: Promise<string>; meta: Record<string, any> }>
-  >(account.executeEncodedTxWithMeta);
-
   // Verify delegate is available via stakingTokens parameter
   expectType<
-    (validator: CosmosValidatorAddress, amount: AmountArg) => Promise<unknown>
+    (
+      validator: CosmosValidatorAddress,
+      amount: AmountArg,
+      opts?: CosmosActionOptions,
+    ) => Promise<unknown>
   >(account.delegate);
 
-  expectType<(destination, amount: AmountArg) => Promise<void>>(
-    // @ts-expect-error `depositForBurn` only available for noble
-    account.depositForBurn,
-  );
+  expectError(() => {
+    // @ts-expect-error - 'depositForBurn' doesn't exist
+    account.depositForBurn;
+  });
 }
 
 // Test NobleAccountMethods

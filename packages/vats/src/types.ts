@@ -162,14 +162,6 @@ export type NetworkEndpoint<Proto extends keyof NetworkBinding> = [
   ...(NetworkBinding[Proto] | []),
 ];
 
-/** @deprecated Use NetworkEndpoint<Proto> instead */
-export type MetaNetworkEndpoint<Proto extends keyof NetworkBinding> = [
-  Proto,
-  ...{
-    ibc: [ns: string, ref: string, port: IBCPortID, channel: IBCChannelID];
-  }[Proto],
-];
-
 export type IBCCounterParty = {
   port_id: IBCPortID;
   channel_id: IBCChannelID;
