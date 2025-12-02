@@ -32,10 +32,8 @@ import {
   TypedJsonShape,
 } from '../typeGuards.js';
 import { maxClockSkew, toDenomAmount } from '../utils/cosmos.js';
-import {
-  orchestrationAccountMethods,
-  pickData,
-} from '../utils/orchestrationAccount.js';
+import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
+import { makeVowExoHelpers } from '../utils/exo-helpers.js';
 import { makeTimestampHelper } from '../utils/time.js';
 import { preparePacketTools } from './packet-tools.js';
 import { prepareIBCTools } from './ibc-packet.js';
@@ -58,8 +56,8 @@ const MsgSend = CodecHelper(MsgSendType);
  * @import {HostInterface, HostOf} from '@agoric/async-flow';
  * @import {LocalChain, LocalChainAccount} from '@agoric/vats/src/localchain.js';
  * @import {AmountArg, CosmosChainAddress, DenomAmount, IBCMsgTransferOptions,
- *   OrchestrationAccountCommon, LocalAccountMethods, MetaTrafficEntry, TransferRoute,
- *   AccountIdArg, Denom, Bech32Address, IBCConnectionInfo, ChainInfo, CosmosChainInfo} from '@agoric/orchestration';
+ *   OrchestrationAccountCommon, LocalAccountMethods, TransferRoute,
+ *   AccountIdArg, Denom, IBCConnectionInfo, ChainInfo, CosmosChainInfo} from '@agoric/orchestration';
  * @import {OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {IBCEvent} from '@agoric/vats';
  * @import {QueryDenomHashResponse} from '@agoric/cosmic-proto/ibc/applications/transfer/v1/query.js';
@@ -126,9 +124,6 @@ const HolderI = M.interface('holder', {
   sendThenWaitForAck: M.call(EVow$(M.remotable('PacketSender')))
     .optional(M.any())
     .returns(EVow$(M.any())),
-  sendThenWaitForAckWithMeta: M.call(EVow$(M.remotable('PacketSender')))
-    .optional(M.any())
-    .returns(EVow$({ result: EVow$(M.any()), meta: M.record() })),
   matchFirstPacket: M.call(M.any()).returns(EVow$(M.any())),
   monitorTransfers: M.call(M.remotable('TargetApp')).returns(EVow$(M.any())),
   parseInboundTransfer: M.call(M.recordOf(M.string(), M.any())).returns(
@@ -176,6 +171,7 @@ export const prepareLocalOrchestrationAccountKit = (
   },
 ) => {
   const { watch, asVow, when } = vowTools;
+  const vowExo = makeVowExoHelpers({ watch });
   const { makeIBCTransferSender } = prepareIBCTools(
     zone.subZone('ibcTools'),
     vowTools,
@@ -190,11 +186,12 @@ export const prepareLocalOrchestrationAccountKit = (
   const makeLocalOrchestrationAccountKit = zone.exoClassKit(
     'Local Orchestration Account Kit',
     {
+      ...vowExo.watcherShapes,
       helper: M.interface('helper', {
+        ...vowExo.helperShapes,
         amountToCoin: M.call(AmountArgShape).returns(M.record()),
       }),
       holder: HolderI,
-      pickDataWatcher: pickData.shape,
       undelegateWatcher: M.interface('undelegateWatcher', {
         onFulfilled: M.call([
           M.splitRecord({ completionTime: TimestampProtoShape }),
@@ -203,15 +200,7 @@ export const prepareLocalOrchestrationAccountKit = (
           .returns(VowShape),
       }),
       transferWatcher: M.interface('transferWatcher', {
-        onFulfilled: M.call(M.nat())
-          .optional({
-            opts: M.opt(IBCTransferOptionsShape),
-            route: TransferRouteShape,
-          })
-          .returns(Vow$(M.record())),
-      }),
-      transferWithMetaWatcher: M.interface('transferWatcher', {
-        onFulfilled: M.call([M.record(), M.record(), M.record(), M.nat()])
+        onFulfilled: M.call(M.array())
           .optional({
             opts: M.opt(IBCTransferOptionsShape),
             route: TransferRouteShape,
@@ -288,7 +277,9 @@ export const prepareLocalOrchestrationAccountKit = (
       return { account, address, packetTools, topicKit };
     },
     {
+      ...vowExo.watchers,
       helper: {
+        ...vowExo.helper,
         /**
          * @param {AmountArg} amount
          * @returns {Coin}
@@ -297,7 +288,6 @@ export const prepareLocalOrchestrationAccountKit = (
           return coerceCoin(chainHub, amount);
         },
       },
-      pickDataWatcher: pickData.watcher,
       invitationMakers: {
         /**
          * @param {string} validatorAddress
@@ -452,18 +442,12 @@ export const prepareLocalOrchestrationAccountKit = (
                 timeout,
               ]),
             ),
-            this.facets.transferWithMetaWatcher,
+            this.facets.transferWatcher,
             ctx,
           );
         },
       },
-      /** @deprecated migrate to transferWithMetaWatcher */
       transferWatcher: {
-        onFulfilled(...args) {
-          throw Fail`obsolete transferWatcher(${args}); please retry`;
-        },
-      },
-      transferWithMetaWatcher: {
         /**
          * @param {readonly [
          *   ChainInfo,
@@ -477,7 +461,7 @@ export const prepareLocalOrchestrationAccountKit = (
          * }} ctx
          */
         onFulfilled(
-          [srcChainInfo, dstChainInfo, { transferChannel }, timeoutTimestamp],
+          [_srcChainInfo, _dstChainInfo, { transferChannel }, timeoutTimestamp],
           { opts, route },
         ) {
           const { forwardInfo, ...transferDetails } = route;
@@ -525,45 +509,20 @@ export const prepareLocalOrchestrationAccountKit = (
             transferMsg,
           );
 
-          const meta = {
-            traffic: /** @type {MetaTrafficEntry[]} */ ([
-              {
-                op: 'transfer',
-                src: [
-                  'ibc',
-                  srcChainInfo.namespace,
-                  srcChainInfo.reference,
-                  transferDetails.sourcePort,
-                  transferDetails.sourceChannel,
-                ],
-                dst: [
-                  'ibc',
-                  dstChainInfo.namespace,
-                  dstChainInfo.reference,
-                  transferChannel.counterPartyPortId,
-                  transferChannel.counterPartyChannelId,
-                ],
-
-                // Sequence number is not known at this stage; it will be
-                // populated by IBCTransferSenderKit['responseWatcher'] once the
-                // transfer packet is sent and the sequence number is assigned.
-                seq: null,
-              },
-            ]),
-          };
-
           // Begin capturing packets, send the transfer packet, then return a
           // vow that rejects unless the packet acknowledgment comes back and is
           // verified.
-          return holder.sendThenWaitForAckWithMeta(sender, { ...opts, meta });
+          return holder.sendThenWaitForAck(sender);
         },
       },
-      /**
-       * takes an array of results (from `executeEncodedTx`) and returns the
-       * first result
-       */
       extractFirstResultWatcher: {
-        /** @param {Record<unknown, unknown>[]} results */
+        /**
+         * Takes an array of results (from `executeTx`) and returns the first
+         * result element.
+         *
+         * @param {Record<PropertyKey, unknown>[]} results
+         * @returns {Record<PropertyKey, unknown>}
+         */
         onFulfilled(results) {
           results.length === 1 ||
             Fail`expected exactly one result; got ${results}`;
@@ -823,10 +782,7 @@ export const prepareLocalOrchestrationAccountKit = (
          */
         /** @type {HostOf<LocalAccountMethods['deposit']>} */
         deposit(payment) {
-          return watch(
-            E(this.state.account).deposit(payment),
-            this.facets.returnVoidWatcher,
-          );
+          return watch(E(this.state.account).deposit(payment));
         },
         /** @type {HostOf<LocalAccountMethods['withdraw']>} */
         withdraw(amount) {
@@ -845,7 +801,7 @@ export const prepareLocalOrchestrationAccountKit = (
          *
          * @type {HostOf<OrchestrationAccountCommon['send']>}
          */
-        send(toAccount, amount) {
+        send(toAccount, amount, _opts = {}) {
           return asVow(() => {
             trace('send', toAccount, amount);
             const cosmosDest = chainHub.coerceCosmosAddress(toAccount);
@@ -885,8 +841,8 @@ export const prepareLocalOrchestrationAccountKit = (
             );
           });
         },
-        /** @type {HostOf<OrchestrationAccountCommon['transferWithMeta']>} */
-        transferWithMeta(destination, amount, opts) {
+        /** @type {HostOf<OrchestrationAccountCommon['transfer']>} */
+        transfer(destination, amount, opts) {
           return asVow(() => {
             trace('Transferring funds over IBC');
 
@@ -938,19 +894,6 @@ export const prepareLocalOrchestrationAccountKit = (
               },
             );
             return resultV;
-          });
-        },
-        /**
-         * @type {HostOf<OrchestrationAccountCommon['transfer']>}
-         */
-        transfer(destination, amount, opts) {
-          return asVow(() => {
-            trace('transfer', destination, amount, opts);
-            return watch(
-              this.facets.holder.transferWithMeta(destination, amount, opts),
-              this.facets.pickDataWatcher,
-              'result',
-            );
           });
         },
         /**
@@ -1026,15 +969,7 @@ export const prepareLocalOrchestrationAccountKit = (
         /** @type {HostOf<PacketTools['sendThenWaitForAck']>} */
         sendThenWaitForAck(sender, opts) {
           return watch(
-            E(this.facets.holder).sendThenWaitForAckWithMeta(sender, opts),
-            this.facets.pickDataWatcher,
-            'result',
-          );
-        },
-        /** @type {HostOf<PacketTools['sendThenWaitForAckWithMeta']>} */
-        sendThenWaitForAckWithMeta(sender, opts) {
-          return watch(
-            E(this.state.packetTools).sendThenWaitForAckWithMeta(sender, opts),
+            E(this.state.packetTools).sendThenWaitForAck(sender, opts),
           );
         },
         /** @type {HostOf<PacketTools['matchFirstPacket']>} */
