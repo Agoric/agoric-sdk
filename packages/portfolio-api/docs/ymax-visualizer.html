@@ -301,6 +301,7 @@
         <button class="example-btn" data-example="executing">Executing Flow</button>
         <button class="example-btn" data-example="completed">Completed</button>
         <button class="example-btn" data-example="failed">Failed Flow</button>
+        <button class="example-btn" data-example="rebalance">Rebalance (from logs)</button>
       </div>
     </div>
 
@@ -1024,7 +1025,28 @@ transaction_committed 13:11
 flow_registered 13:11
 flow_inited 13:12
 planning 13:13
-failed 13:14`
+failed 13:14`,
+  // Generated from logs:
+  // - transaction_defined - 21:55:00Z (estimated start)
+  // - transaction_committed - 21:55:30Z (estimated)
+  // - flow_registered - 21:55:45Z (estimated)
+  // - flow_inited - 21:55:51Z (from "waiting for steps from planner")
+  // - planning - 21:56:01Z (from plan received)
+  // - planned - 21:56:02Z (from "checking moves")
+  // - executing - 21:56:02Z (from step execution start)
+  // - provisioning - 21:56:03Z (from GMPF makeAccount calls)
+  // - moving - 21:58:10Z (from accounts resolved, IBC/CCTP transfers)
+  // - completed - 22:03:04Z (from "stepFlow done")
+      rebalance: `transaction_defined 2025-12-01T21:55:00Z
+transaction_committed 2025-12-01T21:55:30Z
+flow_registered 2025-12-01T21:55:45Z
+flow_inited 2025-12-01T21:55:51Z
+planning 2025-12-01T21:56:01Z
+planned 2025-12-01T21:56:02Z
+executing 2025-12-01T21:56:02Z
+provisioning 2025-12-01T21:56:03Z
+moving 2025-12-01T21:58:10Z
+completed 2025-12-01T22:03:04Z`
     };
 
     // Event listeners
