@@ -19,7 +19,7 @@ import type { CoreEvalSDKType } from '@agoric/cosmic-proto/agoric/swingset/swing
 import { makeArchiveSnapshot, type SnapStoreDebug } from '@agoric/swing-store';
 import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
 import type { BridgeHandler } from '@agoric/vats';
-import { keyEQ } from '@endo/patterns';
+import { keyEQ, objectMap } from '@endo/patterns';
 import fs from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
@@ -231,9 +231,7 @@ test.serial('iterate simulation several times', async t => {
     const snapshotted = new Set(await controller.snapshotAllVats());
     // Account for snapshot pseudo-deliveries without triggering reap
     previousReapPos = controller.reapAllVats(
-      Object.fromEntries(
-        Object.entries(previousReapPos).map(([vatID]) => [vatID, Infinity]),
-      ),
+      objectMap(previousReapPos, () => Infinity),
     );
     await controller.run(); // clear any reactions, should be none
     const { kernelTable } = controller.dump();
