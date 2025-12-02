@@ -1,4 +1,4 @@
-/// <reference path="./types-ambient.js" />
+/// <reference path="./types.js" />
 
 import { AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
@@ -13,8 +13,8 @@ import { Position } from './position.js';
 
 /**
  * @import {PriceAuthority} from '@agoric/zoe/tools/types.js';
- * @import {PositionKind} from './types-ambient.js';
- * @import {PayoffHandler} from './types-ambient.js';
+ * @import {PositionKind} from './types.js';
+ * @import {PayoffHandler} from './types.js';
  */
 
 /**

@@ -46,7 +46,7 @@ import { makePaymentActions } from './actions.js';
  * @import {Petname} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {UserSeat} from '@agoric/zoe';
  * @import {BrandRecord, Contact, DappRecord, Mapping, PaymentRecord, PursesFullState} from './internal-types.js';
- * @import {InstallationManager, InstanceManager, IssuerManager, OfferState, PursesJSONState, RecordMetadata} from './types-ambient.js';
+ * @import {InstallationManager, InstanceManager, IssuerManager, OfferState, PursesJSONState, RecordMetadata} from './types.js';
  */
 
 // does nothing

@@ -17,7 +17,10 @@ import {
 } from '@agoric/internal/src/lib-chainStorage.js';
 import { provideRetiredInstances, reserveThenDeposit } from './utils.js';
 
-/** @import {EconomyBootstrapPowers} from './econ-behaviors.js' */
+/**
+ * @import {EconomyBootstrapPowers} from './econ-behaviors.js'
+ * @import {PromiseSpaceOf} from '@agoric/vats';
+ */
 /** @import {EconCharterStartResult} from './econ-behaviors.js' */
 /** @import {CommitteeElectorateCreatorFacet} from '@agoric/governance/src/committee.js'; */
 

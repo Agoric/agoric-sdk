@@ -5,7 +5,7 @@ import { makeMarshal } from '@endo/marshal';
 import { allValues } from '@agoric/internal';
 
 /**
- * @import {NameHub} from '@agoric/vats';
+ * @import {BootstrapPowers, NameHub, VatSourceRef} from '@agoric/vats';
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js';
  */
 

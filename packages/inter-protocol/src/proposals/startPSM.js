@@ -28,6 +28,8 @@ import {
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js'
  * @import {PSMKit} from './econ-behaviors.js';
  * @import {FeeMintAccess} from '@agoric/zoe';
+ * @import {WellKnownSpaces} from '@agoric/vats';
+ * @import {ChainStorageVatParams} from '@agoric/vats';
  */
 /** @import {MetricsNotification} from '../psm/psm.js' */
 /** @import {EconomyBootstrapPowers} from './econ-behaviors.js' */

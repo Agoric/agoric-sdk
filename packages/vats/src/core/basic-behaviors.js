@@ -27,6 +27,14 @@ import { makeScopedBridge } from '../bridge.js';
  * @import {InitMsg} from '@agoric/internal/src/chain-utils.js';
  * @import {start} from '../centralSupply.js';
  * @import {BootstrapManifest} from './lib-boot.js';
+ * @import {BootstrapPowers} from './types.js';
+ * @import {Producer} from './types.js';
+ * @import {VatLoader} from './types.js';
+ * @import {ChainBootstrapSpace} from './types.js';
+ * @import {BootstrapSpace} from './types.js';
+ * @import {StartedInstanceKitWithLabel} from './types.js';
+ * @import {StartUpgradable} from './types.js';
+ * @import {NamedVatPowers} from './types.js';
  */
 
 /**

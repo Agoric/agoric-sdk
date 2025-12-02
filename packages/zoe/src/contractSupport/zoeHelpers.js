@@ -10,7 +10,7 @@ import { atomicTransfer, fromOnly, toOnly } from './atomicTransfer.js';
 /**
  * @import {Pattern} from '@endo/patterns';
  * @import {ContractMeta, Invitation, PaymentPKeywordRecord, Proposal, UserSeat, ZCF, ZCFSeat} from '@agoric/zoe';
- * @import {KeywordKeywordRecord, MapKeywords, Reverse, Swap, SwapExact} from './types-ambient.js';
+ * @import {KeywordKeywordRecord, MapKeywords, Reverse, Swap, SwapExact} from './types.js';
  * @import {Allocation} from '../contractFacet/types.ts';
  */
 

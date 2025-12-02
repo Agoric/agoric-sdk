@@ -14,6 +14,8 @@ import { Stake, Stable } from '@agoric/internal/src/tokens.js';
 /**
  * @import {FeeMintAccess, Installation} from '@agoric/zoe'
  * @import {EconomyBootstrapPowers} from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
+ * @import {MintsVat} from './types.js';
+ * @import {BootstrapSpace} from './types.js';
  */
 
 const { multiply, floorDivide } = natSafeMath;
