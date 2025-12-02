@@ -6,15 +6,18 @@ import {
 } from './upgrade-vats-generic-proposal.js';
 
 /**
+ * @import {ScopedBridgeManager} from '../types.js';
+ * @import {TransferMiddleware} from '../transfer.js';
+ * @import {CreateVatResults, VatAdminSvc} from '@agoric/swingset-vat';
+ */
+
+/**
  * @param {BootstrapPowers & {
  *   consume: {
- *     vtransferBridgeManager: import('../types.js').ScopedBridgeManager<'vtransfer'>;
- *     transferMiddleware: import('../transfer.js').TransferMiddleware;
+ *     vtransferBridgeManager: ScopedBridgeManager<'vtransfer'>;
+ *     transferMiddleware: TransferMiddleware;
  *     vatAdminSvc: VatAdminSvc;
- *     vatStore: MapStore<
- *       string,
- *       import('@agoric/swingset-vat').CreateVatResults
- *     >;
+ *     vatStore: MapStore<string, CreateVatResults>;
  *   };
  * }} powers
  * @param {object} options

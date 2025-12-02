@@ -31,7 +31,11 @@ const providedCaches = new Map();
  * destination, return it.
  *
  * @param {string} dest
- * @param {{ format?: string, dev?: boolean }} options
+ * @param {object} options
+ * @param {string} [options.format]
+ * @param {boolean} [options.dev]
+ * @param {number} [options.byteLimit=490_000] - Maximum bundle size in bytes before
+ *   falling back to optimizations that may reduce legibility.
  * @param {(id: string) => Promise<any>} loadModule
  * @param {number} [pid]
  * @returns {Promise<BundleCache>}

@@ -1,5 +1,6 @@
 /* eslint-disable max-classes-per-file */
 import type { QueryAllBalancesResponse } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
+import type { QueryAccountResponseSDKType } from '@agoric/cosmic-proto/cosmos/auth/v1beta1/query.js';
 import type { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
 import ky, { HTTPError, type KyInstance } from 'ky';
 
@@ -12,7 +13,7 @@ import { chain as nobleTest } from 'chain-registry/testnet/nobletestnet/index.js
 import { chain as agoricTest } from 'chain-registry/testnet/agoricdevnet/index.js'; // agoricdev was named before testnets were a thing
 import { Fail } from '@endo/errors';
 
-import type { ClusterName } from './config.ts';
+import type { ClusterName } from '@agoric/internal';
 
 interface CosmosRestClientConfig {
   clusterName: ClusterName;
@@ -209,6 +210,25 @@ export class CosmosRestClient {
       url,
       chainConfig,
       `Chain info for ${chainConfig.name}`,
+    );
+  }
+
+  async getAccountSequence(
+    chainKey: string,
+    address: string,
+  ): Promise<QueryAccountResponseSDKType> {
+    const chainConfig = this.chainConfigs.get(chainKey);
+    if (!chainConfig) {
+      throw new Error(`Chain configuration not found for: ${chainKey}`);
+    }
+    const url = `${chainConfig.restEndpoint}/cosmos/auth/v1beta1/accounts/${address}`;
+
+    this.log(`[CosmosRestClient] Fetching account sequence for ${address}`);
+
+    return this.makeRequest<QueryAccountResponseSDKType>(
+      url,
+      chainConfig,
+      `Account info for ${address} on ${chainConfig.name}`,
     );
   }
 

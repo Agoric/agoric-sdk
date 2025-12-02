@@ -1,8 +1,8 @@
 /**
  * @import {AxelarChain} from '@agoric/portfolio-api/src/constants.js';
- * @import {EVMContractAddresses} from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
+ * @import {EVMContractAddresses} from '@aglocal/portfolio-contract/src/portfolio.contract.js';
  * @import {BaseChainInfo, Bech32Address} from '@agoric/orchestration'
- * @import {EVMContractAddressesMap} from '@aglocal/portfolio-contract/src/type-guards.ts';
+ * @import {EVMContractAddressesMap} from '@aglocal/portfolio-contract/src/type-guards.js';
  */
 
 /**
@@ -124,7 +124,7 @@ const aaveUsdcAddresses = harden({
 });
 
 /** @type {AddressesMap} */
-const aaveRewardsControllerAddresses = harden({
+export const aaveRewardsControllerAddresses = harden({
   mainnet: {
     Ethereum: '0x8164Cc65827dcFe994AB23944CBC90e0aa80bFcb', // https://aave.com/docs/resources/addresses -> Ethereum V3 Market -> DefaultIncentivesController contract
     Avalanche: '0x929EC64c34a17401F460460D4B9390518E5B473e', // https://aave.com/docs/resources/addresses -> Avalanche V3 Market -> DefaultIncentivesController contract
@@ -142,7 +142,7 @@ const aaveRewardsControllerAddresses = harden({
 });
 
 /** @type {AddressesMap} */
-const compoundAddresses = harden({
+export const compoundAddresses = harden({
   mainnet: {
     Ethereum: '0xc3d688B66703497DAA19211EEdff47f25384cdc3', // https://docs.compound.finance/#networks -> Ethereum USDC -> cUSDCv3 contract
     Arbitrum: '0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf', // https://docs.compound.finance/#networks -> Arbitrum USDC -> cUSDCv3 contract
@@ -212,18 +212,64 @@ const beefyVaultAddresses = harden({
 /** @type {AddressesMap} */
 const factoryAddresses = harden({
   mainnet: {
-    Arbitrum: '0x51e589D94b51d01B75442AE1504cD8c50d6127C9', // https://arbiscan.io/address/0x51e589D94b51d01B75442AE1504cD8c50d6127C9
-    Avalanche: '0x13cA288486f2bb6B3619c5fd6A2917Ec98a41E7f', // https://snowtrace.io/address/0x13cA288486f2bb6B3619c5fd6A2917Ec98a41E7f
-    Base: '0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1', // https://basescan.org/address/0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1
-    Ethereum: '0x6ca3e8BFe9196A463136cB2442672e46BBe00BCc', // https://etherscan.io/address/0x6ca3e8BFe9196A463136cB2442672e46BBe00BCc
-    Optimism: '0x6ca3e8BFe9196A463136cB2442672e46BBe00BCc', // https://optimistic.etherscan.io/address/0x6ca3e8BFe9196A463136cB2442672e46BBe00BCc
+    Arbitrum: '0x3bF3056835f7C25b1f71aff99B734Ad07d644577', // https://arbiscan.io/address/0x3bF3056835f7C25b1f71aff99B734Ad07d644577
+    Avalanche: '0xdBde53d9EDaE219C7b8e27fbbeDfB9130F637B46', // https://snowtrace.io/address/0xdBde53d9EDaE219C7b8e27fbbeDfB9130F637B46
+    Base: '0x6ca3e8BFe9196A463136cB2442672e46BBe00BCc', // https://basescan.org/address/0x6ca3e8BFe9196A463136cB2442672e46BBe00BCc
+    Ethereum: '0x647Ead1a35dbC2b0160Cbe6e565f25C4915a125F', // https://etherscan.io/address/0x647Ead1a35dbC2b0160Cbe6e565f25C4915a125F
+    Optimism: '0xE0aFf709b7A6Cdf476738b86354D17bd334eB516', // https://optimistic.etherscan.io/address/0xE0aFf709b7A6Cdf476738b86354D17bd334eB516
   },
   testnet: {
-    Arbitrum: '0x230973176B58Ea6071cf2e45061B07692ff1057f', // https://sepolia.arbiscan.io/address/0x230973176B58Ea6071cf2e45061B07692ff1057f
-    Avalanche: '0x75E97ed669C1500784194626b9b45006f76F75f2', // https://testnet.snowtrace.io/address/0x75E97ed669C1500784194626b9b45006f76F75f2
+    Arbitrum: '0xcD58949D815d25A06560AFa539972bB5B4B28902', // https://sepolia.arbiscan.io/address/0xcD58949D815d25A06560AFa539972bB5B4B28902
+    Avalanche: '0x2B3545638859C49df84660eA2D110f82F2e80De8', // https://testnet.snowtrace.io/address/0x2B3545638859C49df84660eA2D110f82F2e80De8
     Base: '0x98B8598E1cAc53FE9C0B40eB71e3d9aA4ED6bAAF', // https://sepolia.basescan.org/address/0x98B8598E1cAc53FE9C0B40eB71e3d9aA4ED6bAAF
-    Ethereum: '0x2cA7d5d7d1492714FC3636b7A190b99fc80aD057', // https://sepolia.etherscan.io/address/0x2cA7d5d7d1492714FC3636b7A190b99fc80aD057
+    Ethereum: '0x4cd5CbD60Aa8BE121CB59a89920e88D89c355588', // https://sepolia.etherscan.io/address/0x4cd5CbD60Aa8BE121CB59a89920e88D89c355588
     Optimism: '0x',
+  },
+});
+
+/**
+ * Axelar Gateway contract addresses
+ * @see {@link https://docs.axelar.dev/dev/reference/mainnet-contract-addresses/}
+ * @see {@link https://docs.axelar.dev/dev/reference/testnet-contract-addresses/}
+ * @type {AddressesMap}
+ */
+const gatewayAddresses = harden({
+  mainnet: {
+    Arbitrum: '0xe432150cce91c13a887f7D836923d5597adD8E31',
+    Avalanche: '0x5029C0EFf6C34351a0CEc334542cDb22c7928f78',
+    Base: '0xe432150cce91c13a887f7D836923d5597adD8E31',
+    Ethereum: '0x4F4495243837681061C4743b74B3eEdf548D56A5',
+    Optimism: '0xe432150cce91c13a887f7D836923d5597adD8E31',
+  },
+  testnet: {
+    Arbitrum: '0xe1cE95479C84e9809269227C7F8524aE051Ae77a',
+    Avalanche: '0xC249632c2D40b9001FE907806902f63038B737Ab',
+    Base: '0xe432150cce91c13a887f7D836923d5597adD8E31',
+    Ethereum: '0xe432150cce91c13a887f7D836923d5597adD8E31',
+    Optimism: '0xe432150cce91c13a887f7D836923d5597adD8E31',
+  },
+});
+
+/**
+ * Axelar Gas Service contract addresses
+ * @see {@link https://docs.axelar.dev/dev/reference/mainnet-contract-addresses/}
+ * @see {@link https://docs.axelar.dev/dev/reference/testnet-contract-addresses/}
+ * @type {AddressesMap}
+ */
+const gasServiceAddresses = harden({
+  mainnet: {
+    Arbitrum: '0x2d5d7d31F671F86C782533cc367F14109a082712',
+    Avalanche: '0x2d5d7d31F671F86C782533cc367F14109a082712',
+    Base: '0x2d5d7d31F671F86C782533cc367F14109a082712',
+    Ethereum: '0x2d5d7d31F671F86C782533cc367F14109a082712',
+    Optimism: '0x2d5d7d31F671F86C782533cc367F14109a082712',
+  },
+  testnet: {
+    Arbitrum: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
+    Avalanche: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
+    Base: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
+    Ethereum: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
+    Optimism: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
   },
 });
 
@@ -252,6 +298,8 @@ const mainnetContracts = {
     compound: '0x', // TODO
     compoundRewardsController: '0x', // TODO
     factory: factoryAddresses.mainnet.Avalanche,
+    gateway: gatewayAddresses.mainnet.Avalanche,
+    gasService: gasServiceAddresses.mainnet.Avalanche,
     usdc: usdcAddresses.mainnet.Avalanche,
     tokenMessenger: mainnetTokenMessenger.Avalanche.Address,
     aaveUSDC: aaveUsdcAddresses.mainnet.Avalanche,
@@ -264,6 +312,8 @@ const mainnetContracts = {
     compoundRewardsController:
       compoundRewardsControllerAddresses.mainnet.Ethereum,
     factory: factoryAddresses.mainnet.Ethereum,
+    gateway: gatewayAddresses.mainnet.Ethereum,
+    gasService: gasServiceAddresses.mainnet.Ethereum,
     usdc: usdcAddresses.mainnet.Ethereum,
     tokenMessenger: mainnetTokenMessenger.Ethereum.Address,
     aaveUSDC: aaveUsdcAddresses.mainnet.Ethereum,
@@ -279,6 +329,8 @@ const mainnetContracts = {
     compoundRewardsController:
       compoundRewardsControllerAddresses.mainnet.Optimism,
     factory: factoryAddresses.mainnet.Optimism,
+    gateway: gatewayAddresses.mainnet.Optimism,
+    gasService: gasServiceAddresses.mainnet.Optimism,
     usdc: usdcAddresses.mainnet.Optimism,
     tokenMessenger: mainnetTokenMessenger['OP Mainnet'].Address,
     aaveUSDC: aaveUsdcAddresses.mainnet.Optimism,
@@ -292,6 +344,8 @@ const mainnetContracts = {
     compoundRewardsController:
       compoundRewardsControllerAddresses.mainnet.Arbitrum,
     factory: factoryAddresses.mainnet.Arbitrum,
+    gateway: gatewayAddresses.mainnet.Arbitrum,
+    gasService: gasServiceAddresses.mainnet.Arbitrum,
     usdc: usdcAddresses.mainnet.Arbitrum,
     tokenMessenger: mainnetTokenMessenger.Arbitrum.Address,
     aaveUSDC: aaveUsdcAddresses.mainnet.Arbitrum,
@@ -304,6 +358,8 @@ const mainnetContracts = {
     compound: compoundAddresses.mainnet.Base,
     compoundRewardsController: compoundRewardsControllerAddresses.mainnet.Base,
     factory: factoryAddresses.mainnet.Base,
+    gateway: gatewayAddresses.mainnet.Base,
+    gasService: gasServiceAddresses.mainnet.Base,
     usdc: usdcAddresses.mainnet.Base,
     tokenMessenger: mainnetTokenMessenger.Base.Address,
     aaveUSDC: aaveUsdcAddresses.mainnet.Base,
@@ -340,6 +396,8 @@ const testnetContracts = {
     compound: '0x', // TODO
     compoundRewardsController: '0x',
     factory: factoryAddresses.testnet.Avalanche,
+    gateway: gatewayAddresses.testnet.Avalanche,
+    gasService: gasServiceAddresses.testnet.Avalanche,
     usdc: usdcAddresses.testnet.Avalanche,
     tokenMessenger: testnetTokenMessenger['Avalanche Fuji'].Address,
     aaveUSDC: aaveUsdcAddresses.testnet.Avalanche,
@@ -350,6 +408,8 @@ const testnetContracts = {
     compound: compoundAddresses.testnet.Base,
     compoundRewardsController: compoundRewardsControllerAddresses.testnet.Base,
     factory: factoryAddresses.testnet.Base,
+    gateway: gatewayAddresses.testnet.Base,
+    gasService: gasServiceAddresses.testnet.Base,
     usdc: usdcAddresses.testnet.Base,
     tokenMessenger: testnetTokenMessenger['Base Sepolia'].Address,
     aaveUSDC: aaveUsdcAddresses.testnet.Base,
@@ -361,6 +421,8 @@ const testnetContracts = {
     compoundRewardsController:
       compoundRewardsControllerAddresses.testnet.Ethereum,
     factory: factoryAddresses.testnet.Ethereum,
+    gateway: gatewayAddresses.testnet.Ethereum,
+    gasService: gasServiceAddresses.testnet.Ethereum,
     usdc: usdcAddresses.testnet.Ethereum,
     tokenMessenger: testnetTokenMessenger['Ethereum Sepolia'].Address,
     aaveUSDC: aaveUsdcAddresses.testnet.Ethereum,
@@ -372,6 +434,8 @@ const testnetContracts = {
     compoundRewardsController:
       compoundRewardsControllerAddresses.testnet.Optimism,
     factory: factoryAddresses.testnet.Optimism,
+    gateway: gatewayAddresses.testnet.Optimism,
+    gasService: gasServiceAddresses.testnet.Optimism,
     usdc: usdcAddresses.testnet.Optimism,
     tokenMessenger: testnetTokenMessenger['OP Sepolia'].Address,
     aaveUSDC: aaveUsdcAddresses.testnet.Optimism,
@@ -383,6 +447,8 @@ const testnetContracts = {
     compoundRewardsController:
       compoundRewardsControllerAddresses.testnet.Arbitrum,
     factory: factoryAddresses.testnet.Arbitrum,
+    gateway: gatewayAddresses.testnet.Arbitrum,
+    gasService: gasServiceAddresses.testnet.Arbitrum,
     usdc: usdcAddresses.testnet.Arbitrum,
     tokenMessenger: testnetTokenMessenger['Arbitrum Sepolia'].Address,
     aaveUSDC: aaveUsdcAddresses.testnet.Arbitrum,

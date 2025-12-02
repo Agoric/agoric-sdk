@@ -7,6 +7,7 @@ import { makeAgoricQueryClient } from '@agoric/client-utils';
 /**
  * @import {MinimalNetworkConfig} from '@agoric/client-utils';
  * @import {Params, ParamsSDKType} from '@agoric/cosmic-proto/agoric/swingset/swingset.js';
+ * @import {Writable} from 'stream';
  */
 
 const agdBinary = 'agd';
@@ -79,8 +80,8 @@ const makeGasOpts = limit => {
  *   dryRun?: boolean,
  *   verbose?: boolean,
  *   keyring?: {home?: string, backend: string}
- *   stdout?: Pick<import('stream').Writable, 'write'>
- *   execFileSync?: typeof import('child_process').execFileSync
+ *   stdout?: Pick<Writable, 'write'>
+ *   execFileSync?: typeof execFileSyncAmbient
  * }} opts
  */
 export const execSwingsetTransaction = (swingsetArgs, opts) => {
@@ -145,7 +146,7 @@ harden(fetchSwingsetParams);
 
 /**
  * @param {MinimalNetworkConfig & {
- *   execFileSync: typeof import('child_process').execFileSync,
+ *   execFileSync: typeof execFileSyncAmbient,
  *   delay: (ms: number) => Promise<void>,
  *   period?: number,
  *   retryMessage?: string,
@@ -184,7 +185,7 @@ export const pollBlocks = opts => async lookup => {
 /**
  * @param {string} txhash
  * @param {MinimalNetworkConfig & {
- *   execFileSync: typeof import('child_process').execFileSync,
+ *   execFileSync: typeof execFileSyncAmbient,
  *   delay: (ms: number) => Promise<void>,
  *   period?: number,
  * }} opts

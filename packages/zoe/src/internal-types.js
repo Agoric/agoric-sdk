@@ -1,5 +1,8 @@
 // @jessie-check
-/// <reference types="@agoric/ertp/exported" />
+/// <reference types="@agoric/ertp/exported.js" />
+
+// Make this a module
+export {};
 
 /**
  * @import {RemotableObject, Passable} from '@endo/pass-style';
@@ -9,6 +12,7 @@
  * @import {IssuerOptionsRecord, IssuerRecord} from '@agoric/ertp';
  * @import {Allocation, PaymentPKeywordRecord, UserSeat, Completion, ZoeIssuerRecord} from './types-index.js';
  * @import {InvitationHandle, BrandKeywordRecord, AnyTerms} from './types.js';
+ * @import {InstanceRecord} from './zoeService/utils.js';
  */
 
 /**

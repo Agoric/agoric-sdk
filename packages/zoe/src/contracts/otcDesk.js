@@ -2,11 +2,16 @@ import { assert } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import {
-  offerTo,
-  saveAllIssuers,
   assertProposalShape,
   atomicTransfer,
+  offerTo,
+  saveAllIssuers,
 } from '../contractSupport/index.js';
+
+/**
+ * @import {TimerService} from '@agoric/time';
+ * @import {UserSeat} from '../types-index.js';
+ */
 
 /**
  * This contract is inspired by the description of an OTC Desk smart
@@ -58,7 +63,7 @@ const start = zcf => {
    *
    * @param {AmountKeywordRecord} price
    * @param {AmountKeywordRecord} assets
-   * @param {import('@agoric/time').TimerService} timeAuthority
+   * @param {TimerService} timeAuthority
    * @param {any} deadline
    * @returns {Promise<Payment>}
    */

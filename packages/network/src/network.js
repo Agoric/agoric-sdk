@@ -12,6 +12,7 @@ import { Shape } from './shapes.js';
 /**
  * @import {AttemptDescription, Bytes, CloseReason, Closable, Connection, ConnectionHandler, Endpoint, ListenHandler, Port, Protocol, ProtocolHandler, ProtocolImpl, SendOptions} from './types.js';
  * @import {PromiseVow, Remote, VowTools} from '@agoric/vow';
+ * @import {Zone} from '@agoric/base-zone';
  */
 
 /** @typedef {VowTools & { finalizer: Finalizer }} Powers */
@@ -84,7 +85,7 @@ function throwIfInvalidPortName(specifiedName) {
  */
 
 /**
- * @param {import('@agoric/base-zone').Zone} zone
+ * @param {Zone} zone
  * @param {Powers} powers
  */
 const prepareHalfConnection = (zone, { watch, allVows, finalizer }) => {
@@ -190,7 +191,7 @@ const prepareHalfConnection = (zone, { watch, allVows, finalizer }) => {
 };
 
 /**
- * @param {import('@agoric/zone').Zone} zone
+ * @param {Zone} zone
  * @param {Remote<Required<ConnectionHandler>>} handler0
  * @param {Endpoint} addr0
  * @param {Remote<Required<ConnectionHandler>>} handler1
@@ -252,7 +253,7 @@ export const crossoverConnection = (
 };
 
 /**
- * @param {import('@agoric/zone').Zone} zone
+ * @param {Zone} zone
  * @param {(opts: ConnectionOpts) => Connection} makeConnection
  * @param {Powers} powers
  */
@@ -417,7 +418,7 @@ const RevokeState = /** @type {const} */ ({
 harden(RevokeState);
 
 /**
- * @param {import('@agoric/zone').Zone} zone
+ * @param {Zone} zone
  * @param {Powers} powers
  */
 const preparePort = (zone, powers) => {
@@ -665,7 +666,7 @@ const preparePort = (zone, powers) => {
 };
 
 /**
- * @param {import('@agoric/base-zone').Zone} zone
+ * @param {Zone} zone
  * @param {Powers} powers
  */
 const prepareBinder = (zone, powers) => {
@@ -1182,7 +1183,7 @@ const prepareBinder = (zone, powers) => {
 };
 
 /**
- * @param {import('@agoric/base-zone').Zone} zone
+ * @param {Zone} zone
  * @param {Powers} powers
  */
 export const prepareNetworkProtocol = (zone, powers) => {
@@ -1222,7 +1223,7 @@ export const prepareNetworkProtocol = (zone, powers) => {
 /**
  * Create a ConnectionHandler that just echoes its packets.
  *
- * @param {import('@agoric/base-zone').Zone} zone
+ * @param {Zone} zone
  */
 export const prepareEchoConnectionKit = zone => {
   const makeEchoConnectionKit = zone.exoClassKit(
@@ -1306,7 +1307,7 @@ export const prepareEchoConnectionKit = zone => {
 /**
  * Create a protocol handler that just connects to itself.
  *
- * @param {import('@agoric/base-zone').Zone} zone
+ * @param {Zone} zone
  * @param {VowTools} powers
  */
 export function prepareLoopbackProtocolHandler(zone, { watch, allVows }) {
@@ -1346,7 +1347,7 @@ export function prepareLoopbackProtocolHandler(zone, { watch, allVows }) {
          * @param {*} _port
          * @param {Endpoint} localAddr
          * @param {Endpoint} remoteAddr
-         * @returns {import('@agoric/vow').PromiseVow<AttemptDescription>}}
+         * @returns {PromiseVow<AttemptDescription>}}
          */
         async onConnect(_port, localAddr, remoteAddr) {
           const { listeners } = this.state;
@@ -1464,7 +1465,7 @@ export function prepareLoopbackProtocolHandler(zone, { watch, allVows }) {
 
 /**
  *
- * @param {import('@agoric/base-zone').Zone} zone
+ * @param {Zone} zone
  * @param {Powers} powers
  */
 export const preparePortAllocator = (zone, { watch }) =>
@@ -1544,7 +1545,7 @@ export const preparePortAllocator = (zone, { watch }) =>
  * The reason this functionality wasn't just baked into the other network exos
  * is to maintain upgrade-compatible with minimal additional changes.
  *
- * @param {import('@agoric/base-zone').Zone} zone
+ * @param {Zone} zone
  * @param {VowTools} vowTools
  */
 const prepareFinalizer = (zone, { watch }) => {
@@ -1601,7 +1602,7 @@ const prepareFinalizer = (zone, { watch }) => {
 harden(prepareFinalizer);
 
 /**
- * @param {import('@agoric/base-zone').Zone} zone
+ * @param {Zone} zone
  * @param {VowTools} vowTools
  * @returns {Powers}
  */

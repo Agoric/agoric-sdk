@@ -11,6 +11,8 @@ import { enumeratePrefixedKeys } from '../kernel/state/storageHelper.js';
 
 /**
  * @import {ReapDirtThreshold, RunQueueEvent} from '../types-internal.js';
+ * @import {KVStore} from '../types-external.js';
+ * @import {SwingStoreKernelStorage} from '../types-external.js';
  */
 
 /**

@@ -1,6 +1,6 @@
 // @ts-check
 
-/// <reference path="../../zoe/exported.js" />
+/// <reference types="@agoric/zoe/exported.js" />
 
 import { E } from '@endo/far';
 import bundleSource from '@endo/bundle-source';
@@ -18,6 +18,13 @@ import { makeGetBundlerMaker } from './getBundlerMaker.js';
 import { assertOfferResult } from './assertOfferResult.js';
 import { installInPieces } from './installInPieces.js';
 import { makeWriteCoreEval } from './writeCoreEvalParts.js';
+
+/**
+ * @import {CommonHome} from './externalTypes.js';
+ * @import {AgSoloHome} from './externalTypes.js';
+ * @import {DeployScriptEndownments} from './externalTypes.js';
+ * @import {WriteCoreEval} from './writeCoreEvalParts.js';
+ */
 
 export * from '@agoric/internal/src/node/createBundles.js';
 export { parseScriptArgs } from './parseCoreEvalArgs.js';
@@ -54,8 +61,8 @@ const makeLazyObject = sourceObject => {
 };
 
 /**
- * @param {Promise<import('./externalTypes.js').CommonHome | import('./externalTypes.js').AgSoloHome>} homePromise
- * @param {import('./externalTypes.js').DeployScriptEndownments} endowments
+ * @param {Promise<CommonHome | AgSoloHome>} homePromise
+ * @param {DeployScriptEndownments} endowments
  */
 export const makeHelpers = async (homePromise, endowments) => {
   // Endowments provided via `agoric run` or `agoric deploy`.
@@ -146,7 +153,7 @@ export const makeHelpers = async (homePromise, endowments) => {
     get getBundlerMaker() {
       return makeGetBundlerMaker(homePromise, { bundleSource, lookup });
     },
-    /** @returns {import('./writeCoreEvalParts.js').WriteCoreEval} */
+    /** @returns {WriteCoreEval} */
     get writeCoreEval() {
       return makeWriteCoreEval(homePromise, endowments, {
         getBundleSpec: deps.cacheAndGetBundleSpec,

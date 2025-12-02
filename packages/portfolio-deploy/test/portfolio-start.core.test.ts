@@ -26,6 +26,8 @@ import type { Instance, ZoeService } from '@agoric/zoe';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
 import { passStyleOf, type CopyRecord } from '@endo/pass-style';
+import { readFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import { produceAttenuatedDeposit } from '../src/attenuated-deposit.core.js';
 import { axelarConfig } from '../src/axelar-configs.js';
 import type { ChainInfoPowers } from '../src/chain-info.core.js';
@@ -47,6 +49,13 @@ import { produceDeliverContractControl } from '../src/contract-control.core.js';
 import { produceGetUpgradeKit } from '../src/get-upgrade-kit.core.js';
 
 const { entries, keys } = Object;
+
+const nodeRequire = createRequire(import.meta.url);
+const asset = (spec: string) => readFile(nodeRequire.resolve(spec), 'utf8');
+
+const { bytecode: walletBytecode } = JSON.parse(
+  await asset('@aglocal/portfolio-deploy/tools/evm-orch/Wallet.json'),
+);
 
 const docOpts = {
   note: 'YMax VStorage Schema',
@@ -130,12 +139,13 @@ const makeBootstrap = async t => {
     await eventLoopIteration();
     return getCapDataStructure(storage.getValues(path).at(-1));
   };
+  const getTestJig = () => ({});
   const { provisionSmartWallet } = await deployWalletFactory({
     boot: async () => {
       return {
         ...common.bootstrap,
         zoe: zoe as any, // XXX Guarded<ZoeService>
-        utils: { ...common.utils, readLegible, bundleAndInstall },
+        utils: { ...common.utils, readLegible, bundleAndInstall, getTestJig },
       };
     },
   });
@@ -145,7 +155,11 @@ const makeBootstrap = async t => {
 };
 
 const ymaxOptions = toExternalConfig(
-  harden({ axelarConfig, gmpAddresses } as PortfolioDeployConfig),
+  harden({
+    axelarConfig,
+    gmpAddresses,
+    walletBytecode,
+  } as PortfolioDeployConfig),
   {},
   portfolioDeployConfigShape,
 );
@@ -321,6 +335,7 @@ test('delegate ymax control; invite planner; submit plan', async t => {
       chainInfo: privateArgs.chainInfo,
       contracts: privateArgs.contracts,
       gmpAddresses: privateArgs.gmpAddresses,
+      walletBytecode,
     } as CopyRecord;
 
     await E(E(walletCtrl).getInvokeFacet()).invokeEntry({

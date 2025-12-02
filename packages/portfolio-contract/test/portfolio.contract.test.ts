@@ -11,9 +11,10 @@ import {
 } from '@agoric/internal/src/testing-utils.js';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.ts';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
+import type { FundsFlowPlan } from '@agoric/portfolio-api';
 import { deploy as deployWalletFactory } from '@agoric/smart-wallet/tools/wf-tools.js';
 import { E, passStyleOf } from '@endo/far';
-import type { AssetPlaceRef, MovementDesc } from '../src/type-guards-steps.ts';
+import type { AssetPlaceRef } from '../src/type-guards-steps.ts';
 import type {
   OfferArgsFor,
   StatusFor,
@@ -25,19 +26,11 @@ import {
   setupTrader,
   simulateAckTransferToAxelar,
   simulateCCTPAck,
-  simulateUpcallFromAxelar,
 } from './contract-setup.ts';
-import {
-  evmNamingDistinction,
-  makeCCTPTraffic,
-  portfolio0lcaOrch,
-} from './mocks.ts';
+import { makeCCTPTraffic, portfolio0lcaOrch } from './mocks.ts';
 import { makeStorageTools } from './supports.ts';
 
 const { fromEntries, keys, values } = Object;
-
-// Use an EVM chain whose axelar ID differs from its chain name
-const { sourceChain } = evmNamingDistinction;
 
 const range = (n: number) => [...Array(n).keys()];
 
@@ -152,13 +145,12 @@ test('open a portfolio with Aave position', async t => {
 
   const chainP = (async () => {
     await ackNFA(common.utils);
-    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-    t.log('ackd send to Axelar to create account');
-    await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
+    // Acknowledge Axelar makeAccount - it's the second-to-last transfer
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
     await simulateCCTPAck(common.utils);
     const misc = await txResolver.drainPending();
-    // NOTE: Axelar Ack has to come _after_ drainPending.
-    await simulateAckTransferToAxelar(common.utils);
+    // Acknowledge Aave GMP call to Axelar
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
     return misc;
   })();
 
@@ -202,10 +194,8 @@ test('open a portfolio with Compound position', async t => {
 
   await eventLoopIteration(); // let IBC message go out
   await ackNFA(common.utils);
-  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
   t.log('ackd NFA, send to Axelar to create account');
-
-  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
   await simulateCCTPAck(common.utils).finally(() =>
     txResolver
@@ -258,10 +248,8 @@ test('open portfolio with USDN, Aave positions', async t => {
   await eventLoopIteration(); // let outgoing IBC happen
   t.log('openPortfolio, eventloop');
   await ackNFA(common.utils);
-  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
   t.log('ackd NFA, send to noble');
-
-  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
   await simulateCCTPAck(common.utils).finally(() =>
     txResolver
@@ -368,10 +356,8 @@ test('claim rewards on Aave position successfully', async t => {
 
   await eventLoopIteration(); // let IBC message go out
   await ackNFA(common.utils);
-  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
   t.log('ackd send to Axelar to create account');
-
-  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
   await simulateCCTPAck(common.utils).finally(() =>
     txResolver
@@ -519,10 +505,8 @@ const beefyTestMacro = test.macro({
 
     await eventLoopIteration(); // let IBC message go out
     await ackNFA(common.utils);
-    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
     t.log('ackd send to Axelar to create account');
-
-    await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
     await simulateCCTPAck(common.utils).finally(() =>
       txResolver
@@ -604,10 +588,8 @@ test('Withdraw from a Beefy position (future client)', async t => {
 
   await eventLoopIteration(); // let IBC message go out
   await ackNFA(common.utils);
-  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
   t.log('ackd send to Axelar to create account');
-
-  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
   await simulateCCTPAck(common.utils).finally(() =>
     txResolver
@@ -733,10 +715,8 @@ test.serial(
 
     await eventLoopIteration();
     await ackNFA(common.utils);
-    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
     t.log('ackd send to Axelar to create account');
-
-    await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
     await common.utils
       .transmitVTransferEvent('acknowledgementPacket', -1)
@@ -779,10 +759,12 @@ test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
   const { trader1, common, txResolver, trader2 } = await setupTrader(t);
   const { usdc, bld, poc26 } = common.brands;
 
+  // Portfolio1 (trader2) gets a different CREATE2 address than portfolio0 (trader1)
+  // because they have different agoric local chain addresses
   const addr2 = {
     lca: makeTestAddress(3), // agoric1q...rytxkw
     nobleICA: 'noble1test1',
-    evm: '0xFbb89cC04ffb710b1f645b2cbEda0CE7D93294F4',
+    evm: '0x9d935c48219d075735ea090130045d8693e6273f',
   } as const;
   const amount = usdc.units(3_333.33);
 
@@ -809,7 +791,6 @@ test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
     depositToAave,
   );
 
-  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
   await simulateCCTPAck(common.utils).finally(() =>
     simulateAckTransferToAxelar(common.utils),
   );
@@ -820,12 +801,6 @@ test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
     depositToAave,
   );
 
-  await simulateUpcallFromAxelar(
-    common.mocks.transferBridge,
-    sourceChain,
-    addr2.evm,
-    addr2.lca,
-  );
   await simulateCCTPAck(common.utils).finally(() =>
     simulateAckTransferToAxelar(common.utils),
   );
@@ -834,9 +809,13 @@ test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
 
   await eventLoopIteration(); // let IBC message go out
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -6);
+
+  await txResolver.drainPending();
 
   await eventLoopIteration(); // let IBC message go out
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
 
   for (const openP of [open1P, open2P]) {
     const { result, payouts } = await openP;
@@ -1020,7 +999,10 @@ test('withdraw using planner', async t => {
     // XXX brand from vstorage isn't suitable for use in call to kit
     const amount = AmountMath.make(Deposit.brand, detail.amount.value);
 
-    const plan: MovementDesc[] = [{ src: '@agoric', dest: '<Cash>', amount }];
+    const plan: FundsFlowPlan = {
+      flow: [{ src: '@agoric', dest: '<Cash>', amount }],
+      order: [],
+    };
     await E(planner1.stub).resolvePlan(
       pId,
       fId,
@@ -1141,9 +1123,10 @@ test('deposit using planner', async t => {
     // XXX brand from vstorage isn't suitable for use in call to kit
     const amount = AmountMath.make(Deposit.brand, detail.amount.value);
 
-    const plan: MovementDesc[] = [
-      { src: '<Deposit>', dest: '@agoric', amount },
-    ];
+    const plan: FundsFlowPlan = {
+      flow: [{ src: '<Deposit>', dest: '@agoric', amount }],
+      order: [],
+    };
     await E(planner1.stub).resolvePlan(
       pId,
       fId,
@@ -1208,7 +1191,10 @@ test('simple rebalance using planner', async t => {
 
     const amount = AmountMath.make(usdc.brand, 1_000n);
 
-    const plan: MovementDesc[] = [{ src: '@agoric', dest: '<Cash>', amount }];
+    const plan: FundsFlowPlan = {
+      flow: [{ src: '@agoric', dest: '<Cash>', amount }],
+      order: [[0, []]],
+    };
     await E(planner1.stub).resolvePlan(
       pId,
       fId,
@@ -1273,9 +1259,10 @@ test('create+deposit using planner', async t => {
     // XXX brand from vstorage isn't suitable for use in call to kit
     const amount = AmountMath.make(usdc.brand, detail.amount.value);
 
-    const plan: MovementDesc[] = [
-      { src: '<Deposit>', dest: '@agoric', amount },
-    ];
+    const plan: FundsFlowPlan = {
+      flow: [{ src: '<Deposit>', dest: '@agoric', amount }],
+      order: [],
+    };
     await E(planner1.stub).resolvePlan(
       pId,
       fId,

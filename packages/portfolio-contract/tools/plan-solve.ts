@@ -1,7 +1,7 @@
 import jsLPSolver from 'javascript-lp-solver';
 import type { IModel, IModelVariableConstraint } from 'javascript-lp-solver';
 
-import { Fail } from '@endo/errors';
+import { Fail, annotateError } from '@endo/errors';
 
 import { AmountMath } from '@agoric/ertp';
 import type { Amount, NatAmount } from '@agoric/ertp/src/types.js';
@@ -355,9 +355,21 @@ export const rebalanceMinCostFlowSteps = async (
   }
   /**
    * Pad each fee estimate in case the landscape changes between estimation and
-   * execution. Add 10%
+   * execution. Add 20%
    */
-  const padFeeEstimate = (estimate: bigint): bigint => (estimate * 110n) / 100n;
+  const padFeeEstimate = (estimate: bigint): bigint => (estimate * 120n) / 100n;
+
+  /**
+   * Ensures minimun gas is sent for Axelar GMP tx
+   * This is to prevent outlier estimates that might result in "not enough gas" errors
+   * Note: This function should only be used for an Axelar GMP tx which is in BLD
+   * and not for any other type, such as return evm gas which is in ETH
+   */
+  const ensureMinimumGas = (estimate: bigint): bigint => {
+    // Value calculated from this data https://github.com/Agoric/agoric-private/issues/548#issuecomment-3517683817
+    const MINIMUM_GAS_ESTIMATE = 5_000_000n;
+    return estimate < MINIMUM_GAS_ESTIMATE ? MINIMUM_GAS_ESTIMATE : estimate;
+  };
 
   const steps: MovementDesc[] = await Promise.all(
     prioritized.map(async ({ edge, flow }) => {
@@ -376,7 +388,10 @@ export const rebalanceMinCostFlowSteps = async (
             await gasEstimator.getReturnFeeEstimate(destinationEvmChain);
           details = {
             detail: { evmGas: padFeeEstimate(returnFeeValue) },
-            fee: AmountMath.make(graph.feeBrand, padFeeEstimate(feeValue)),
+            fee: AmountMath.make(
+              graph.feeBrand,
+              ensureMinimumGas(padFeeEstimate(feeValue)),
+            ),
           };
           break;
         }
@@ -390,7 +405,10 @@ export const rebalanceMinCostFlowSteps = async (
             protocol,
           );
           details = {
-            fee: AmountMath.make(graph.feeBrand, padFeeEstimate(feeValue)),
+            fee: AmountMath.make(
+              graph.feeBrand,
+              ensureMinimumGas(padFeeEstimate(feeValue)),
+            ),
           };
           break;
         }
@@ -403,7 +421,10 @@ export const rebalanceMinCostFlowSteps = async (
             protocol,
           );
           details = {
-            fee: AmountMath.make(graph.feeBrand, padFeeEstimate(feeValue)),
+            fee: AmountMath.make(
+              graph.feeBrand,
+              ensureMinimumGas(padFeeEstimate(feeValue)),
+            ),
           };
           break;
         }
@@ -413,7 +434,10 @@ export const rebalanceMinCostFlowSteps = async (
             EvmWalletOperationType.DepositForBurn,
           );
           details = {
-            fee: AmountMath.make(graph.feeBrand, padFeeEstimate(feeValue)),
+            fee: AmountMath.make(
+              graph.feeBrand,
+              ensureMinimumGas(padFeeEstimate(feeValue)),
+            ),
           };
           break;
         }
@@ -493,8 +517,13 @@ export const planRebalanceFlow = async (opts: {
   try {
     result = await solveRebalance(model, graph);
   } catch (err) {
-    // If the solver says infeasible, try to produce a clearer message
-    preflightValidateNetworkPlan(network as any, current as any, target as any);
+    try {
+      // If the solver says infeasible, try to produce a clearer message
+      preflightValidateNetworkPlan(network, current, target);
+    } catch (networkValidationErr) {
+      annotateError(networkValidationErr, err.message);
+      throw networkValidationErr;
+    }
     throw err;
   }
   const { flows, detail } = result;

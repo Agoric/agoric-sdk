@@ -1,3 +1,4 @@
+/* eslint-disable @agoric/group-jsdoc-imports */
 import { E, Far } from '@endo/far';
 import { makePluginManager } from '@agoric/swingset-vat/src/vats/plugin-manager.js';
 import { observeNotifier } from '@agoric/notifier';
@@ -42,7 +43,7 @@ function makeVattpFrom(vats) {
 /**
  * @param {SoloVats & SwingsetVats} vats
  * @param {SoloDevices} devices
- * @param {ERef<VatAdminSvc>} vatAdminSvc
+ * @param {ERef<import('@agoric/swingset-vat').VatAdminSvc>} vatAdminSvc
  * @param {{ [prop: string]: any; D: DProxy }} vatPowers
  */
 async function createLocalBundle(vats, devices, vatAdminSvc, vatPowers) {

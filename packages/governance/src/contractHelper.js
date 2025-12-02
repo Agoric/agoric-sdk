@@ -18,6 +18,10 @@ import { CONTRACT_ELECTORATE } from './contractGovernance/governParam.js';
  * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
  * @import {VoteCounterCreatorFacet, VoteCounterPublicFacet, QuestionSpec, OutcomeRecord, AddQuestion, AddQuestionReturn, GovernanceSubscriptionState, GovernanceTerms, GovernedApis, GovernedCreatorFacet, GovernedPublicFacet} from './types.js';
  * @import {Baggage} from '@agoric/vat-data';
+ * @import {TypedParamManager} from './contractGovernance/typedParamManager.js';
+ * @import {ParamTypesMap} from './contractGovernance/typedParamManager.js';
+ * @import {FunctionsPlusContext} from '@agoric/swingset-liveslots';
+ * @import {StoredPublisherKit} from '@agoric/notifier';
  */
 
 export const GOVERNANCE_STORAGE_KEY = 'governance';
@@ -42,7 +46,7 @@ const publicMixinAPI = harden({
  * Verify that the electorate is represented by a live invitation.
  *
  * @param {ZCF<GovernanceTerms<{}> & {}>} zcf
- * @param {import('./contractGovernance/typedParamManager.js').TypedParamManager<any>} paramManager
+ * @param {TypedParamManager<any>} paramManager
  */
 export const validateElectorate = (zcf, paramManager) => {
   const invitation = paramManager.getInternalParamValue(CONTRACT_ELECTORATE);
@@ -56,9 +60,9 @@ harden(validateElectorate);
 /**
  * Utility function for `makeParamGovernance`.
  *
- * @template {import('./contractGovernance/typedParamManager.js').ParamTypesMap} T
+ * @template {ParamTypesMap} T
  * @param {ZCF<GovernanceTerms<{}> & {}>} zcf
- * @param {import('./contractGovernance/typedParamManager.js').TypedParamManager<T>} paramManager
+ * @param {TypedParamManager<T>} paramManager
  */
 const facetHelpers = (zcf, paramManager) => {
   // validate async to wait for params to be finished
@@ -159,7 +163,7 @@ const facetHelpers = (zcf, paramManager) => {
    * @param {LCF} limitedCreatorFacet
    */
   const makeVirtualGovernorFacet = limitedCreatorFacet => {
-    /** @type {import('@agoric/swingset-liveslots').FunctionsPlusContext<unknown, GovernedCreatorFacet<limitedCreatorFacet>>} */
+    /** @type {FunctionsPlusContext<unknown, GovernedCreatorFacet<typeof limitedCreatorFacet>>} */
     const governorFacet = harden({
       getParamMgrRetriever: () =>
         Far('paramRetriever', { get: () => paramManager }),
@@ -249,7 +253,7 @@ const facetHelpers = (zcf, paramManager) => {
  * parameter values, and the governance guarantees only hold if they're not used
  * directly by the governed contract.
  *
- * @template {import('./contractGovernance/typedParamManager.js').ParamTypesMap} M
+ * @template {ParamTypesMap} M
  *   Map of types of custom governed terms
  * @param {ZCF<GovernanceTerms<M>>} zcf
  * @param {Invitation} initialPoserInvitation
@@ -266,7 +270,7 @@ const handleParamGovernance = (
   marshaller,
   overrides,
 ) => {
-  /** @type {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} */
+  /** @type {StoredPublisherKit<GovernanceSubscriptionState>} */
   const publisherKit = makeStoredPublisherKit(
     storageNode,
     marshaller,

@@ -6,7 +6,7 @@ import { E } from '@endo/far';
 const trace = makeTracer('FUSD-UpdateFees', true);
 
 // avoid importing all of @agoric/ertp
-/** @type {typeof import('@agoric/ertp').AmountMath.make} */
+/** @type {typeof AmountMath.make} */
 // @ts-expect-error AssetKind conditionals aren't captured
 const make = (brand, value) => harden({ brand, value });
 
@@ -23,6 +23,7 @@ const make = (brand, value) => harden({ brand, value });
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js';
  * @import {FastUSDCCorePowers} from './start-fast-usdc.core.js';
  * @import {FeeConfig} from '@agoric/fast-usdc';
+ * @import {AmountMath} from '@agoric/ertp';
  */
 
 /**

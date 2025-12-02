@@ -1,6 +1,14 @@
 // @ts-check
 
 /**
+ * @import {Coordinator} from '@agoric/cache';
+ * @import {Petname} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {Board} from '@agoric/vats';
+ * @import {ZoeIssuerRecord} from '@agoric/zoe';
+ * @import {BrandRecord, WalletAdminFacet} from './internal-types.js';
+ */
+
+/**
  * This is the complete wallet, including the means to get the WalletAdminFacet
  * (necessary for the operation of the Wallet UI, and useful for the REPL).
  *
@@ -57,7 +65,7 @@
  * wallet.
  *
  * @property {(offer: OfferState) => Promise<string>} addOffer
- * @property {() => Promise<import('@agoric/cache').Coordinator>} getCacheCoordinator
+ * @property {() => Promise<Coordinator>} getCacheCoordinator
  * @property {(brandBoardId: string) => Promise<string>} getDepositFacetId
  * Return the board ID to use to receive payments of the specified brand.
  * @property {() => Promise<Notifier<Array<PursesJSONState>>>} getPursesNotifier
@@ -85,7 +93,7 @@
  * is safe to pass to the dapp UI.
  * @property {() => Promise<ZoeService>} getZoe
  * Get the Zoe Service
- * @property {() => Promise<import('@agoric/vats').Board>} getBoard
+ * @property {() => Promise<Board>} getBoard
  * Get the Board
  * @property {(...path: Array<unknown>) => Promise<unknown>} getAgoricNames
  * Get the curated Agoric public naming hub

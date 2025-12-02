@@ -1,3 +1,5 @@
+/* eslint-disable @agoric/group-jsdoc-imports */
+
 export {};
 
 /**
@@ -7,6 +9,15 @@ export {};
  * @import {AdminFacet, InstallationStart, InvitationAmount} from '@agoric/zoe';
  * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
  * @import {ContractStartFunction} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {Ratio} from '@agoric/ertp';
+ * @import {TimestampRecord} from '@agoric/time';
+ * @import {RelativeTimeRecord} from '@agoric/time';
+ * @import {Timestamp} from '@agoric/time';
+ * @import {RelativeTime} from '@agoric/time';
+ * @import {ParamTypesMap} from './contractGovernance/typedParamManager.js';
+ * @import {start} from './contractGovernor.js';
+ * @import {ParamRecordsFromTypes} from './contractGovernance/typedParamManager.js';
+ * @import {TimerService} from '@agoric/time';
  */
 
 /**
@@ -42,8 +53,8 @@ export {};
 
 /**
  * @typedef { Amount | Brand | Installation | Instance | number | bigint |
- *   Ratio | string | import('@agoric/time').TimestampRecord |
- *   import('@agoric/time').RelativeTimeRecord | Container<any, any> } ParamValue
+ *   Ratio | string | TimestampRecord |
+ *   RelativeTimeRecord | Container<any, any> } ParamValue
  */
 
 // XXX better to use the manifest constant ParamTypes
@@ -59,8 +70,8 @@ export {};
  * T extends 'nat' ? bigint :
  * T extends 'ratio' ? Ratio :
  * T extends 'string' ? string :
- * T extends 'timestamp' ? import('@agoric/time').Timestamp :
- * T extends 'relativeTime' ? import('@agoric/time').RelativeTime :
+ * T extends 'timestamp' ? Timestamp :
+ * T extends 'relativeTime' ? RelativeTime :
  * T extends 'unknown' ? unknown :
  * never
  * } ParamValueForType
@@ -74,10 +85,10 @@ export {};
 /**
  * Terms a contract must provide in order to be governed.
  *
- * @template {import('./contractGovernance/typedParamManager.js').ParamTypesMap} T Governed parameters of contract
+ * @template {ParamTypesMap} T Governed parameters of contract
  * @typedef {{
- *   electionManager: import('@agoric/zoe/src/zoeService/utils.js').Instance<import('./contractGovernor.js')['start']>,
- *   governedParams: import('./contractGovernance/typedParamManager.js').ParamRecordsFromTypes<T & {
+ *   electionManager: Instance<typeof start>,
+ *   governedParams: ParamRecordsFromTypes<T & {
  *     Electorate: 'invitation'
  *   }>
  * }} GovernanceTerms
@@ -342,8 +353,8 @@ export {};
 
 /**
  * @typedef {object} ClosingRule
- * @property {ERef<import('@agoric/time').TimerService>} timer
- * @property {import('@agoric/time').Timestamp} deadline
+ * @property {ERef<TimerService>} timer
+ * @property {Timestamp} deadline
  */
 
 /**
@@ -356,8 +367,8 @@ export {};
  * @typedef {object} AddQuestionReturn
  * @property {VoteCounterPublicFacet} publicFacet
  * @property {VoteCounterCreatorFacet} creatorFacet
- * @property {import('@agoric/zoe/src/zoeService/utils.js').Instance<typeof import('./binaryVoteCounter.js').start>} instance
- * @property {import('@agoric/time').Timestamp} deadline
+ * @property {Instance<typeof import('./binaryVoteCounter.js').start>} instance
+ * @property {Timestamp} deadline
  * @property {Handle<'Question'>} questionHandle
  */
 
@@ -388,7 +399,7 @@ export {};
  * @template [P=StandardParamPath] path for a paramManagerRetriever
  * @typedef {object} ParamChangeIssue
  * @property {ParamChangesSpec<P>} spec
- * @property {import('@agoric/zoe/src/zoeService/utils.js').Instance<(zcf: ZCF<GovernanceTerms<{}>>) => {}>} contract
+ * @property {Instance<(zcf: ZCF<GovernanceTerms<{}>>) => {}>} contract
  */
 
 /**
@@ -441,8 +452,8 @@ export {};
  * @property {(name: string) => bigint} getNat
  * @property {(name: string) => Ratio} getRatio
  * @property {(name: string) => string} getString
- * @property {(name: string) => import('@agoric/time').TimestampRecord} getTimestamp
- * @property {(name: string) => import('@agoric/time').RelativeTimeRecord} getRelativeTime
+ * @property {(name: string) => TimestampRecord} getTimestamp
+ * @property {(name: string) => RelativeTimeRecord} getRelativeTime
  * @property {(name: string) => any} getUnknown
  * @property {(name: string, proposedValue: ParamValue) => ParamValue} getVisibleValue - for
  *   most types, the visible value is the same as proposedValue. For Invitations
@@ -624,7 +635,7 @@ export {};
  *
  * @callback VoteOnParamChanges
  * @param {Installation} voteCounterInstallation
- * @param {import('@agoric/time').Timestamp} deadline
+ * @param {Timestamp} deadline
  * @param {ParamChangesSpec<P>} paramSpec
  * @returns {Promise<ContractGovernanceVoteResult>}
  */
@@ -634,14 +645,14 @@ export {};
  * @param {string} apiMethodName
  * @param {Passable[]} methodArgs
  * @param {Installation} voteCounterInstallation
- * @param {import('@agoric/time').Timestamp} deadline
+ * @param {Timestamp} deadline
  * @returns {Promise<ContractGovernanceVoteResult>}
  */
 
 /**
  * @callback VoteOnOfferFilter
  * @param {Installation} voteCounterInstallation
- * @param {import('@agoric/time').Timestamp} deadline
+ * @param {Timestamp} deadline
  * @param {string[]} strings
  * @returns {Promise<ContractGovernanceVoteResult>}
  */
@@ -689,9 +700,9 @@ export {};
  * @callback AssertContractGovernance
  *
  * @param {ERef<ZoeService>} zoe
- * @param {import('@agoric/zoe/src/zoeService/utils.js').Instance<(zcf: ZCF<GovernanceTerms<{}>>) => {}>} allegedGoverned
+ * @param {Instance<(zcf: ZCF<GovernanceTerms<{}>>) => {}>} allegedGoverned
  * @param {Instance<(zcf) => {publicFacet: GovernorPublic}>} allegedGovernor
- * @param {Installation<import('@agoric/governance/src/contractGovernor.js').start>} contractGovernorInstallation
+ * @param {Installation<typeof import('@agoric/governance/src/contractGovernor.js').start>} contractGovernorInstallation
  * @returns {Promise<GovernancePair>}
  */
 
@@ -711,7 +722,7 @@ export {};
  */
 
 /**
- * @typedef {import('./contractGovernor.js')['start']} GovernorSF
+ * @typedef {typeof start} GovernorSF
  */
 
 // TODO find a way to parameterize the startInstance so the governed contract types flow
@@ -722,7 +733,7 @@ export {};
  * Same result as StartedInstanceKit but:
  * - typed for contractGovernor installation being started by Zoe. (It in turn starts the governed contract.)
  * - parameterized by Installation instead of StartFunction
- * @property {import('@agoric/zoe/src/zoeService/utils.js').Instance<GovernorSF>} instance
+ * @property {Instance<GovernorSF>} instance
  * @property {AdminFacet} adminFacet
  * @property {GovernorCreatorFacet<InstallationStart<Awaited<I>>>} creatorFacet
  * @property {GovernorPublic} publicFacet

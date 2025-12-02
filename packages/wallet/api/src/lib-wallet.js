@@ -42,7 +42,12 @@ import { makeId, findOrMakeInvitation } from './findOrMakeInvitation.js';
 import { bigintStringify } from './bigintStringify.js';
 import { makePaymentActions } from './actions.js';
 
-import './internal-types.js';
+/**
+ * @import {Petname} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {UserSeat} from '@agoric/zoe';
+ * @import {BrandRecord, Contact, DappRecord, Mapping, PaymentRecord, PursesFullState} from './internal-types.js';
+ * @import {InstallationManager, InstanceManager, IssuerManager, OfferState, PursesJSONState, RecordMetadata} from './types-ambient.js';
+ */
 
 // does nothing
 const noActionStateChangeHandler = _newState => {};
@@ -58,12 +63,18 @@ const cmp = (a, b) => {
 };
 
 /**
+ * @import {Board} from '@agoric/vats';
+ * @import {MyAddressNameAdmin} from '@agoric/vats';
+ * @import {makeMarshal} from '@endo/marshal';
+ */
+
+/**
  * @param {{
  * agoricNames?: ERef<NameHub>
- * board: ERef<import('@agoric/vats').Board>
+ * board: ERef<Board>
  * dateNow?: () => number,
  * inboxStateChangeHandler?: (state: any) => void,
- * myAddressNameAdmin: ERef<import('@agoric/vats').MyAddressNameAdmin>
+ * myAddressNameAdmin: ERef<MyAddressNameAdmin>
  * namesByAddress?: ERef<NameHub>
  * pursesStateChangeHandler?: (state: any) => void,
  * zoe: ERef<ZoeService>,
@@ -1264,11 +1275,10 @@ export function makeWalletRoot({
   const { updater: paymentsUpdater, notifier: paymentsNotifier } =
     /** @type {NotifierRecord<PaymentRecord[]>} */ (makeNotifierKit([]));
   /**
-   * @param {PaymentRecord} param0
+   * @param {PaymentRecord & {displayPayment?: ReturnType<typeof fillInSlots>}} param0
    */
   const updatePaymentRecord = ({ actions, ...preDisplay }) => {
     // in case we have been here before...
-    // @ts-expect-error
     delete preDisplay.displayPayment;
     const displayPayment = fillInSlots(dehydrate(harden(preDisplay)));
     const paymentRecord = addMeta({
@@ -1690,7 +1700,7 @@ export function makeWalletRoot({
 
   const firstPathToLookup = createRootLookups();
 
-  /** @type {ReturnType<typeof import('@endo/marshal').makeMarshal>} */
+  /** @type {ReturnType<typeof makeMarshal>} */
   const marshaller = harden({
     fromCapData: context.fromCapData,
     toCapData: context.toCapData,

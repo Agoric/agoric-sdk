@@ -1,3 +1,4 @@
+/* eslint-disable @agoric/group-jsdoc-imports */
 // @ts-check
 export {};
 
@@ -70,7 +71,7 @@ export {};
  * }} CommonHome
  */
 
-// TODO wallet as import('@agoric/wallet-backend/src/types').WalletAdmin once it's a module
+// TODO wallet as import('@agoric/wallet-backend/src/types.js').WalletAdmin once it's a module
 /**
  * @typedef {CommonHome & {
  * agoricNames: ERef<NameHub>,

@@ -23,8 +23,11 @@ export const DEFAULT_CONTRACT_TERMS = {
   maxSubmissionValue: 2 ** 256,
 };
 
-/** @import {EconomyBootstrapPowers} from './econ-behaviors.js'; */
-/** @import {ChainlinkConfig} from '@agoric/inter-protocol/src/price/fluxAggregatorKit.js'; */
+/**
+ * @import {EconomyBootstrapPowers} from './econ-behaviors.js';
+ * @import {ChainlinkConfig} from '@agoric/inter-protocol/src/price/fluxAggregatorKit.js';
+ * @import {StartedInstanceKit} from '@agoric/zoe/src/zoeService/utils.js';
+ */
 /** @import {FluxStartFn} from '@agoric/inter-protocol/src/price/fluxAggregatorContract.js'; */
 
 const trace = makeTracer('DeployPriceFeed', true);
@@ -89,7 +92,7 @@ export const ensureOracleBrand = async (
  *   PromiseSpaceOf<{ retiredContractInstances: MapStore<string, Instance> }>} powers
  * @param {{
  *   AGORIC_INSTANCE_NAME: string;
- *   contractTerms: import('@agoric/inter-protocol/src/price/fluxAggregatorKit.js').ChainlinkConfig;
+ *   contractTerms: ChainlinkConfig;
  *   brandIn: Brand<'nat'>;
  *   brandOut: Brand<'nat'>;
  * }} config
@@ -176,7 +179,7 @@ const startPriceAggregatorInstance = async (
   );
   trace('added', label, 'instance to econCharter');
 
-  /** @type {import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<FluxStartFn>} */
+  /** @type {StartedInstanceKit<FluxStartFn>} */
   // @ts-expect-error
   const { instance, publicFacet, creatorFacet } = governedKit;
 

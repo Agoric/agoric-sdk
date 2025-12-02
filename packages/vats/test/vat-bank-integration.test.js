@@ -20,6 +20,10 @@ import { makeAgoricNamesAccess } from '../src/core/utils.js';
 import { makePromiseSpace } from '../src/core/promise-space.js';
 import { makePopulatedFakeVatAdmin } from '../tools/boot-test-utils.js';
 
+/**
+ * @import {InitMsg} from '@agoric/internal/src/chain-utils.js';
+ */
+
 test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
   // Supply bootstrap prerequisites.
   const space = /** @type {any} */ (makePromiseSpace(t.log));
@@ -46,7 +50,7 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
   });
 
   // Genesis RUN supply: 50
-  /** @type {import('@agoric/internal/src/chain-utils.js').InitMsg} */
+  /** @type {InitMsg} */
   // @ts-expect-error missing properties
   const bootMsg = {
     type: AG_COSMOS_INIT,

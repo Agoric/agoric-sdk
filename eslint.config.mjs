@@ -50,6 +50,7 @@ const deprecatedTerminology = Object.fromEntries(
 export default [
   {
     ignores: [
+      '**/__generated',
       '**/codegen',
       '**/coverage/',
       '**/node_modules/',
@@ -89,6 +90,7 @@ export default [
   ...fixupConfigRules(
     compat.extends(
       '@agoric',
+      'plugin:@agoric/recommended',
       'plugin:ava/recommended',
       'plugin:require-extensions/recommended',
     ),
@@ -177,6 +179,7 @@ export default [
         },
       ],
 
+      'jsdoc/no-defaults': 'off',
       'no-use-before-define': 'off',
     },
   },

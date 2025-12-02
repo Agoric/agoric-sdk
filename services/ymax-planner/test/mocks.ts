@@ -6,19 +6,52 @@ import {
   type SigningSmartWalletKit,
 } from '@agoric/client-utils';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
-import type { OfferSpec } from '@agoric/smart-wallet/src/offers';
+import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
+import { makeKVStoreFromMap } from '@agoric/internal/src/kv-store.js';
+import type { Log } from 'ethers/providers';
 import type { CosmosRestClient } from '../src/cosmos-rest-client.ts';
 import type { CosmosRPCClient } from '../src/cosmos-rpc.ts';
+import type { Powers as EnginePowers } from '../src/engine.ts';
 import { makeGasEstimator } from '../src/gas-estimation.ts';
 import type { HandlePendingTxOpts } from '../src/pending-tx-manager.ts';
+import { prepareAbortController } from '../src/support.ts';
 
 const PENDING_TX_PATH_PREFIX = 'published.ymax1';
+
+const makeAbortController = prepareAbortController({
+  setTimeout,
+  AbortController,
+  AbortSignal,
+});
+
+/** Return a correctly-typed record lacking significant functionality. */
+export const createMockEnginePowers = (): EnginePowers => ({
+  evmCtx: {
+    usdcAddresses: {},
+    evmProviders: {},
+    kvStore: makeKVStoreFromMap(new Map()),
+    makeAbortController,
+  },
+  rpc: {} as any,
+  spectrum: {} as any,
+  spectrumBlockchain: undefined,
+  spectrumPools: undefined,
+  spectrumChainIds: {},
+  spectrumPoolIds: {},
+  cosmosRest: {} as any,
+  signingSmartWalletKit: {} as any,
+  walletStore: {} as any,
+  getWalletInvocationUpdate: async () => undefined,
+  now: () => NaN,
+  gasEstimator: {} as any,
+  usdcTokensByChain: {},
+});
 
 const mockFetchForGasEstimate = async (_, options?: any) => {
   return {
     ok: true,
-    json: async () => JSON.parse(options.body).gasLimit,
-    text: async () => JSON.parse(options.body).gasLimit,
+    json: async () => String(BigInt(JSON.parse(options.body).gasLimit) * 10n),
+    text: async () => String(BigInt(JSON.parse(options.body).gasLimit) * 10n),
   } as Response;
 };
 
@@ -38,9 +71,14 @@ export const mockGasEstimator = makeGasEstimator({
   fetch: mockFetchForGasEstimate,
 });
 
-export const createMockProvider = () => {
+export const createMockProvider = (
+  latestBlock = 1000,
+  events?: Pick<Log, 'blockNumber' | 'data' | 'topics' | 'transactionHash'>[],
+): WebSocketProvider => {
   const eventListeners = new Map<string, Function[]>();
-  let currentBlock = 1000;
+  let currentBlock = latestBlock;
+  const currentTimeMs = 1700000000; // 2023-11-14T22:13:20Z
+  const avgBlockTimeMs = 300;
 
   const mockProvider = {
     on: (eventOrFilter: any, listener: Function) => {
@@ -76,9 +114,22 @@ export const createMockProvider = () => {
         listeners.forEach(listener => listener(log));
       }
     },
-    waitForBlock: blockTag => {},
+    waitForBlock: _blockTag => {},
     getBlockNumber: async () => {
       return currentBlock;
+    },
+    getBlock: async (blockNumber: number) => {
+      const blocksAgo = latestBlock - blockNumber;
+      const ts = currentTimeMs - blocksAgo * avgBlockTimeMs;
+      return { number: blockNumber, timestamp: Math.floor(ts / 1000) };
+    },
+    getLogs: async (args: { fromBlock: number; toBlock: number }) => {
+      if (events === undefined) throw Error('No event data provided in mock');
+      return events.filter(
+        event =>
+          event.blockNumber >= args.fromBlock &&
+          event.blockNumber <= args.toBlock,
+      );
     },
   } as WebSocketProvider;
 
@@ -125,10 +176,33 @@ export const createMockSigningSmartWalletKit = (): SigningSmartWalletKit => {
   } as any;
 };
 
+type BalanceResponse = { amount: string; denom: string };
+type Account = {
+  '@type': string;
+  address: string;
+  account_number: string;
+  sequence: string;
+};
+type CosmosRestClientConfig = {
+  balanceResponses?: BalanceResponse[];
+  initialAccount?: Account;
+};
+const DEFAULT_BALANCE_RESPONSES: BalanceResponse[] = [
+  { amount: '1000000', denom: 'uusdc' },
+];
+const DEFAULT_ACCOUNT: Account = {
+  '@type': '/cosmos.auth.v1beta1.BaseAccount',
+  address: 'agoric1test',
+  account_number: '377',
+  sequence: '100',
+};
 export const createMockCosmosRestClient = (
-  balanceResponses: Array<{ amount: string; denom: string }>,
-): CosmosRestClient => {
+  config: CosmosRestClientConfig = {},
+) => {
   let callCount = 0;
+  const balanceResponses = config.balanceResponses ?? DEFAULT_BALANCE_RESPONSES;
+  const initialAccount = config.initialAccount ?? DEFAULT_ACCOUNT;
+  let mockAccount = initialAccount;
 
   return {
     getAccountBalance: async (chainKey, address, denom) => {
@@ -141,15 +215,34 @@ export const createMockCosmosRestClient = (
         amount: response.amount,
       };
     },
+    async getAccountSequence(chainKey: string, address: string) {
+      callCount++;
+      return { account: mockAccount };
+    },
+
+    getCallCount() {
+      return callCount;
+    },
+
+    updateSequence(amount: string) {
+      mockAccount.sequence = amount;
+    },
+
+    getNetworkSequence() {
+      return Number(mockAccount.sequence);
+    },
   } as any;
 };
 
-export const createMockPendingTxOpts = (): HandlePendingTxOpts => ({
+export const createMockPendingTxOpts = (
+  latestBlock = 1000,
+  events?: Pick<Log, 'blockNumber' | 'data' | 'topics' | 'transactionHash'>[],
+): HandlePendingTxOpts => ({
   cosmosRest: {} as unknown as CosmosRestClient,
   cosmosRpc: {} as unknown as CosmosRPCClient,
   evmProviders: {
-    'eip155:1': createMockProvider(),
-    'eip155:42161': createMockProvider(),
+    'eip155:1': createMockProvider(latestBlock, events),
+    'eip155:42161': createMockProvider(latestBlock, events),
   },
   fetch: global.fetch,
   marshaller: boardSlottingMarshaller(),
@@ -162,6 +255,8 @@ export const createMockPendingTxOpts = (): HandlePendingTxOpts => ({
     portfoliosPathPrefix: 'IGNORED',
     pendingTxPathPrefix: PENDING_TX_PATH_PREFIX,
   },
+  kvStore: makeKVStoreFromMap(new Map()),
+  makeAbortController,
 });
 
 export const createMockPendingTxEvent = (
@@ -342,13 +437,17 @@ export const createMockTransferEvent = (
   };
 };
 
-export const createMockGmpExecutionEvent = (txId: string) => {
+export const createMockGmpExecutionEvent = (
+  txId: string,
+  blockNumber: number,
+): Pick<Log, 'blockNumber' | 'data' | 'topics' | 'transactionHash'> => {
   const MULTICALL_EXECUTED_SIGNATURE = ethers.id(
     'MulticallExecuted(string,(bool,bytes)[])',
   );
   const txIdTopic = ethers.keccak256(ethers.toUtf8Bytes(txId));
 
   return {
+    blockNumber,
     topics: [MULTICALL_EXECUTED_SIGNATURE, txIdTopic],
     data: '0x',
     transactionHash: '0x1234567890abcdef1234567890abcdef12345678',

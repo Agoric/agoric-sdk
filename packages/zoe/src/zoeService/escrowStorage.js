@@ -1,8 +1,8 @@
 import { AmountMath } from '@agoric/ertp';
-import { E } from '@endo/eventual-send';
-import { q, Fail } from '@endo/errors';
 import { deeplyFulfilledObject, objectMap } from '@agoric/internal';
 import { provideDurableWeakMapStore } from '@agoric/vat-data';
+import { Fail, q } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 
 /// <reference path="./types.js" />
 
@@ -10,13 +10,16 @@ import { cleanKeywords } from '../cleanProposal.js';
 
 /**
  * @import {WeakMapStore} from '@agoric/store';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {CreatePurse, DepositPayments, ProvideLocalPurse} from './internal-types.js';
+ * @import {WithdrawPayments} from '../internal-types.js';
  */
 
 /**
  * Store the pool purses whose purpose is to escrow assets, with one
  * purse per brand.
  *
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
  */
 export const provideEscrowStorage = baggage => {
   /** @type {WeakMapStore<Brand, Purse>} */

@@ -15,11 +15,10 @@ import zcfBundle from '../bundles/bundle-contractFacet.js';
 
 /**
  * @import {MapStore} from '@agoric/swingset-liveslots';
- * @import {BundleID, EndoZipBase64Bundle, TestBundle} from '@agoric/swingset-vat';
+ * @import {BundleCap, BundleID, EndoZipBase64Bundle, TestBundle} from '@agoric/swingset-vat';
  */
 
 // this simulates a bundlecap, which is normally a swingset "device node"
-/** @typedef { import('@agoric/swingset-vat').BundleCap } BundleCap */
 /** @type {() => BundleCap} */
 const fakeBundleCap = () => makeHandle('FakeBundleCap');
 const bogusBundleCap = () => makeHandle('BogusBundleCap');
@@ -140,6 +139,28 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
     getHasExited: () => hasExited,
     getExitWithFailure: () => exitWithFailure,
     /**
+     * @param {string} base
+     * @param {EndoZipBase64Bundle | TestBundle} bundle
+     */
+    getBundleID: (base, bundle) => {
+      if (bundle.moduleFormat !== 'endoZipBase64') {
+        return base;
+      }
+      if (base === `b1-${bundle.endoZipBase64Sha512}`) {
+        return base;
+      }
+      return `${base}-${bundle.endoZipBase64Sha512}`;
+    },
+    /**
+     * @param {string} base
+     * @param {EndoZipBase64Bundle | TestBundle} bundle
+     */
+    registerBundle: (base, bundle) => {
+      const bid = vatAdminState.getBundleID(base, bundle);
+      vatAdminState.installBundle(bid, bundle);
+      return bid;
+    },
+    /**
      * @param {string} id
      * @param {EndoZipBase64Bundle | TestBundle} bundle
      */
@@ -151,7 +172,14 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
         if (extant.moduleFormat === 'endoZipBase64') {
           // Narrow bundle.moduleFormat now that extant.moduleFormat is narrowed
           assert.equal(bundle.moduleFormat, extant.moduleFormat);
-          assert.equal(bundle.endoZipBase64, extant.endoZipBase64);
+          // Make the error message managable by only showing the length,
+          // beginning and end of the huge base64 strings.
+          const summarize = s =>
+            `${s.length} chars (${s.slice(0, 10)}...${s.slice(-10)})`;
+          assert(
+            bundle.endoZipBase64 === extant.endoZipBase64,
+            `bundle ${id} ${summarize(bundle.endoZipBase64)} differs from extant ${summarize(extant.endoZipBase64)}`,
+          );
         }
         return idToBundleCap.get(id);
       }

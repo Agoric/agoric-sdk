@@ -31,12 +31,20 @@ import { start } from '../../../src/contracts/priceAggregator.js';
  * @import {FeeIssuerConfig, ZoeService} from '@agoric/zoe';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  * @import {ZoeManualTimer} from '../../../tools/manualTimer.js';
+ * @import {Instance} from '../../../src/zoeService/utils.js';
+ * @import {MockChainStorageRoot} from '@agoric/internal/src/storage-test-utils.js';
+ * @import {Timestamp} from '@agoric/time';
+ * @import {TestFn} from 'ava';
+ * @import {OracleStart} from '../../../src/contracts/oracle.js';
+ * @import {OracleKit} from '../../../src/contracts/priceAggregatorTypes.js';
+ * @import {PriceAggregatorKit} from '../../../src/contracts/priceAggregatorTypes.js';
+ * @import {OracleHandler} from '../../../src/contracts/priceAggregatorTypes.js';
  */
 
 /**
  * @callback MakeFakePriceOracle
  * @param {bigint} [valueOut]
- * @returns {Promise<OracleKit & { instance: Instance }>}
+ * @returns {Promise<OracleKit & { instance: Instance<unknown> }>}
  */
 
 /**
@@ -62,7 +70,7 @@ const testStartFn = (zcf, privateArgs) => start(zcf, privateArgs);
  * @typedef {object} TestContext
  * @property {ZoeService} zoe
  * @property {MakeFakePriceOracle} makeFakePriceOracle
- * @property {(unitValueIn?: bigint) => Promise<PriceAggregatorKit & { instance: import('../../../src/zoeService/utils.js').Instance<typeof testStartFn>, mockStorageRoot: import('@agoric/internal/src/storage-test-utils.js').MockChainStorageRoot }>} makeMedianAggregator
+ * @property {(unitValueIn?: bigint) => Promise<PriceAggregatorKit & { instance: Instance<typeof testStartFn>, mockStorageRoot: MockChainStorageRoot }>} makeMedianAggregator
  * @property {Amount} feeAmount
  * @property {IssuerKit} link
  */
@@ -78,7 +86,7 @@ const makePublicationChecker = async (t, aggregatorPublicFacet, timerBrand) => {
   )[Symbol.asyncIterator]();
 
   return {
-    /** @param {{timestamp: import('@agoric/time').Timestamp, amountOut: any}} spec */
+    /** @param {{timestamp: Timestamp, amountOut: any}} spec */
     async nextMatches({ timestamp, amountOut }) {
       const expectedTimestamp = TimeMath.coerceTimestampRecord(
         timestamp,
@@ -91,7 +99,7 @@ const makePublicationChecker = async (t, aggregatorPublicFacet, timerBrand) => {
   };
 };
 
-/** @type {import('ava').TestFn<TestContext>} */
+/** @type {TestFn<TestContext>} */
 const test = unknownTest;
 
 test.before('setup aggregator and oracles', async t => {
@@ -109,12 +117,15 @@ test.before('setup aggregator and oracles', async t => {
   // of tests, we can also send the installation to someone
   // else, and they can use it to create a new contract instance
   // using the same code.
-  vatAdminState.installBundle('b1-oracle', oracleBundle);
-  /** @type {Installation<import('../../../src/contracts/oracle.js').OracleStart>} */
-  const oracleInstallation = await E(zoe).installBundleID('b1-oracle');
-  vatAdminState.installBundle('b1-aggregator', aggregatorBundle);
-  /** @type {Installation<import('../../../src/contracts/priceAggregator.js').start>} */
-  const aggregatorInstallation = await E(zoe).installBundleID('b1-aggregator');
+  const b1oracle = vatAdminState.registerBundle('b1-oracle', oracleBundle);
+  /** @type {Installation<OracleStart>} */
+  const oracleInstallation = await E(zoe).installBundleID(b1oracle);
+  const b1aggregator = vatAdminState.registerBundle(
+    'b1-aggregator',
+    aggregatorBundle,
+  );
+  /** @type {Installation<typeof start>} */
+  const aggregatorInstallation = await E(zoe).installBundleID(b1aggregator);
 
   const link = makeIssuerKit('$ATOM');
   const { brand: atomBrand } = makeIssuerKit('$ATOM');

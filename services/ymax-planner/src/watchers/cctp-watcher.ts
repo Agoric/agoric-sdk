@@ -1,11 +1,18 @@
 import type { Filter, WebSocketProvider, Log } from 'ethers';
 import { id, zeroPadValue, getAddress, ethers } from 'ethers';
 import type { CaipChainId } from '@agoric/orchestration';
+import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
+  type WatcherTimeoutOptions,
 } from '../support.ts';
 import { TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
+import {
+  deleteTxBlockLowerBound,
+  getTxBlockLowerBound,
+  setTxBlockLowerBound,
+} from '../kv-store.ts';
 
 /**
  * The Keccak256 hash (event signature) of the standard ERC-20 `Transfer` event.
@@ -35,6 +42,8 @@ type CctpWatch = {
   toAddress: `0x${string}`;
   expectedAmount: bigint;
   log?: (...args: unknown[]) => void;
+  kvStore: KVStore;
+  txId: `tx${number}`;
 };
 
 const parseTransferLog = log => {
@@ -68,11 +77,7 @@ export const watchCctpTransfer = ({
   log = () => {},
   setTimeout = globalThis.setTimeout,
   signal,
-}: CctpWatch & {
-  timeoutMs?: number;
-  setTimeout?: typeof globalThis.setTimeout;
-  signal?: AbortSignal;
-}): Promise<boolean> => {
+}: CctpWatch & WatcherTimeoutOptions): Promise<boolean> => {
   return new Promise(resolve => {
     if (signal?.aborted) {
       resolve(false);
@@ -151,6 +156,8 @@ export const lookBackCctp = async ({
   chainId,
   log = () => {},
   signal,
+  kvStore,
+  txId,
 }: CctpWatch & {
   publishTimeMs: number;
   chainId: CaipChainId;
@@ -164,8 +171,10 @@ export const lookBackCctp = async ({
     );
     const toBlock = await provider.getBlockNumber();
 
+    const savedFromBlock =
+      (await getTxBlockLowerBound(kvStore, txId)) || fromBlock;
     log(
-      `Searching blocks ${fromBlock} → ${toBlock} for Transfer to ${toAddress} with amount ${expectedAmount}`,
+      `Searching blocks ${savedFromBlock} → ${toBlock} for Transfer to ${toAddress} with amount ${expectedAmount}`,
     );
 
     const toTopic = ethers.zeroPadValue(toAddress.toLowerCase(), 32);
@@ -177,7 +186,18 @@ export const lookBackCctp = async ({
     // TODO: Consider async iteration pattern for more flexible log scanning
     // See: https://github.com/Agoric/agoric-sdk/pull/11915#discussion_r2353872425
     const matchingEvent = await scanEvmLogsInChunks(
-      { provider, baseFilter, fromBlock, toBlock, chainId, log, signal },
+      {
+        provider,
+        baseFilter,
+        fromBlock: savedFromBlock,
+        toBlock,
+        chainId,
+        log,
+        signal,
+        onRejectedChunk: async (_, to) => {
+          await setTxBlockLowerBound(kvStore, txId, to);
+        },
+      },
       ev => {
         try {
           const t = parseTransferLog(ev);
@@ -190,8 +210,12 @@ export const lookBackCctp = async ({
       },
     );
 
-    if (!matchingEvent) log(`No matching transfer found`);
-    return !!matchingEvent;
+    if (!matchingEvent) {
+      log(`No matching transfer found`);
+      return false;
+    }
+    deleteTxBlockLowerBound(kvStore, txId);
+    return true;
   } catch (error) {
     log(`Error:`, error);
     return false;

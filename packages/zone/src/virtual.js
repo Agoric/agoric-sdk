@@ -17,6 +17,12 @@ import {
   watchPromise,
 } from '@agoric/base-zone';
 
+/**
+ * @import {Zone} from './index.js';
+ * @import {DefineKindOptions} from '@agoric/vat-data';
+ * @import {Stores} from './index.js';
+ */
+
 const emptyRecord = harden({});
 const initEmpty = harden(() => emptyRecord);
 
@@ -24,7 +30,7 @@ const initEmpty = harden(() => emptyRecord);
  * This implementation of `defineVirtualExo` only exists to ensure there are no
  * gaps in the virtualZone API.
  *
- * @type {import('.').Zone['exo']}
+ * @type {Zone['exo']}
  */
 const makeVirtualExo = (
   label,
@@ -33,9 +39,7 @@ const makeVirtualExo = (
   options = undefined,
 ) => {
   const defineKindOptions =
-    /** @type {import('@agoric/vat-data').DefineKindOptions<{ self: typeof methods }>} */ (
-      options
-    );
+    /** @type {DefineKindOptions<{ self: typeof methods }>} */ (options);
   const makeInstance = defineVirtualExoClass(
     label,
     interfaceGuard,
@@ -46,7 +50,7 @@ const makeVirtualExo = (
   return makeInstance();
 };
 
-/** @type {import('.').Stores} */
+/** @type {Stores} */
 const detachedVirtualStores = Far('virtualStores', {
   detached: () => detachedVirtualStores,
   isStorable: isPassable,
@@ -61,7 +65,7 @@ const detachedVirtualStores = Far('virtualStores', {
  * current vat.
  *
  * @param {string} [baseLabel]
- * @returns {import('.').Zone}
+ * @returns {Zone}
  */
 export const makeVirtualZone = (baseLabel = 'virtualZone') => {
   const { makeOnce, wrapProvider } = makeOnceKit(

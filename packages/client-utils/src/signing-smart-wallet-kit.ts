@@ -23,6 +23,7 @@ import type { SmartWalletKit } from './smart-wallet-kit.js';
 import type { RetryOptionsAndPowers } from './sync-tools.js';
 
 type TxOptions = RetryOptionsAndPowers & {
+  fee?: StdFee;
   sendOnly?: boolean;
   makeNonce?: () => string;
 };
@@ -57,10 +58,19 @@ type WalletStoreEntryProxy<T, Recursive extends true | false = false> = {
     : never;
 };
 
-// TODO parameterize as part of https://github.com/Agoric/agoric-sdk/issues/5912
+/**
+ * A reasonable default fee for transactions consisting of a single
+ * WalletSpendAction message.
+ */
 const defaultFee: StdFee = {
-  amount: [{ denom: 'ubld', amount: '500000' }], // XXX enough?
-  gas: '19700000',
+  // As of 2025-11, even a large isolated spend action transaction consumes
+  // less than 200_000 gas units, so 400_000 includes a fudge factor of over 2x.
+  gas: '400000',
+  // As of 2025-11, validators seem to still be using the Agoric
+  // `minimum-gas-prices` recommendation of 0.01ubld per gas unit:
+  // https://community.agoric.com/t/network-change-instituting-fees-on-the-agoric-chain-to-mitigate-spam-transactions/109/2
+  // So 10_000 ubld = 0.01 BLD includes a fudge factor of over 2x.
+  amount: [{ denom: 'ubld', amount: '10000' }],
 };
 
 /**
@@ -137,14 +147,21 @@ export const makeSigningSmartWalletKit = async (
     return client.broadcastTx(txBytes);
   };
 
-  const executeOffer = async (offer: OfferSpec): Promise<OfferStatus> => {
+  const executeOffer = async (
+    offer: OfferSpec,
+    fee?: StdFee,
+    memo?: string,
+    signerData?: SignerData,
+  ): Promise<OfferStatus> => {
     const offerP = swk.pollOffer(address, offer.id);
 
     // Await for rejection handling
-    await sendBridgeAction({
-      method: 'executeOffer',
-      offer,
-    });
+    await sendBridgeAction(
+      { method: 'executeOffer', offer },
+      fee,
+      memo,
+      signerData,
+    );
 
     return offerP;
   };
@@ -163,6 +180,7 @@ export const makeSigningSmartWalletKit = async (
   });
 };
 export type SigningSmartWalletKit = EReturn<typeof makeSigningSmartWalletKit>;
+export type { SmartWalletKit };
 
 /**
  * @alpha
@@ -180,7 +198,7 @@ export const reflectWalletStore = (
   ) => {
     const combinedOpts = { ...baseTxOpts, ...overrides } as TxOptions;
     combinedOpts.setTimeout || Fail`missing setTimeout`;
-    const { sendOnly, makeNonce, ...retryOpts } = combinedOpts;
+    const { fee, sendOnly, makeNonce, ...retryOpts } = combinedOpts;
     if (forSavingResults && !makeNonce && !sendOnly) {
       throw Fail`makeNonce is required without sendOnly: true (to create an awaitable message id)`;
     }
@@ -206,10 +224,10 @@ export const reflectWalletStore = (
             args,
             ...(saveResult ? { saveResult } : undefined),
           });
-          const tx = await sswk.sendBridgeAction({
-            method: 'invokeEntry',
-            message,
-          });
+          const tx = await sswk.sendBridgeAction(
+            { method: 'invokeEntry', message },
+            fee,
+          );
           if (tx.code !== 0) {
             throw Error(tx.rawLog);
           }
@@ -239,6 +257,7 @@ export const reflectWalletStore = (
       overwrite?: boolean;
     };
     const {
+      fee,
       sendOnly: _sendOnly,
       makeNonce,
       overwrite = true,
@@ -246,15 +265,16 @@ export const reflectWalletStore = (
     } = combinedOpts;
     if (!makeNonce) throw Fail`missing makeNonce`;
     const id = `${description}.${makeNonce()}`;
-    const tx = await sswk.sendBridgeAction({
-      method: 'executeOffer',
-      offer: {
-        id,
-        invitationSpec: { source: 'purse', instance, description },
-        proposal: {},
-        saveResult: { name, overwrite },
-      },
-    });
+    const offer: OfferSpec = {
+      id,
+      invitationSpec: { source: 'purse', instance, description },
+      proposal: {},
+      saveResult: { name, overwrite },
+    };
+    const tx = await sswk.sendBridgeAction(
+      { method: 'executeOffer', offer },
+      fee,
+    );
     const status = await getOfferResult(
       id,
       sswk.query.getLastUpdate,

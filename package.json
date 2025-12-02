@@ -25,7 +25,8 @@
     "ava": "^5.3.0",
     "c8": "^10.1.3",
     "conventional-changelog-conventionalcommits": "^9.1.0",
-    "eslint": "^9.32.0",
+    "dprint": "^0.50.2",
+    "eslint": "^9.39.1",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-jessie": "^0.0.6",
     "eslint-config-prettier": "^10.0.2",
@@ -55,6 +56,7 @@
     "@cosmjs/stargate@npm:0.32.3": "npm:^0.36.0",
     "@cosmjs/tendermint-rpc@npm:0.32.3": "npm:^0.36.0",
     "@cosmology/telescope@npm:^1.12.21": "patch:@cosmology/telescope@npm%3A1.12.21#~/.yarn/patches/@cosmology-telescope-npm-1.12.21-6ca5e89f7e.patch",
+    "@endo/bundle-source": "patch:@endo/bundle-source@npm%3A4.1.2#~/.yarn/patches/@endo-bundle-source-npm-4.1.2-80da9522ea.patch",
     "@noble/hashes@npm:^1": "npm:~1.8.0",
     "@noble/hashes@npm:^1.5.0": "npm:~1.8.0",
     "ava@npm:^5.3.0": "patch:ava@npm%3A5.3.1#~/.yarn/patches/ava-npm-5.3.1-d83c0bdc77.patch",
@@ -88,7 +90,11 @@
     "@endo/far@npm:^1.0.0": "patch:@endo/far@npm%3A1.1.14#~/.yarn/patches/@endo-far-npm-1.1.14-ef03a62612.patch",
     "@endo/pass-style@npm:^1.6.3": "patch:@endo/pass-style@npm%3A1.6.3#~/.yarn/patches/@endo-pass-style-npm-1.6.3-139d4e4c47.patch",
     "@endo/patterns@npm:^1.7.0": "patch:@endo/patterns@npm%3A1.7.0#~/.yarn/patches/@endo-patterns-npm-1.7.0-70bb963d8a.patch",
-    "@endo/marshal@npm:^1.8.0": "patch:@endo/marshal@npm%3A1.8.0#~/.yarn/patches/@endo-marshal-npm-1.8.0-c73c5363a1.patch"
+    "@endo/marshal@npm:^1.8.0": "patch:@endo/marshal@npm%3A1.8.0#~/.yarn/patches/@endo-marshal-npm-1.8.0-c73c5363a1.patch",
+    "@graphql-codegen/visitor-plugin-common@npm:2.13.8": "patch:@graphql-codegen/visitor-plugin-common@npm%3A6.1.0#~/.yarn/patches/@graphql-codegen-visitor-plugin-common-npm-6.1.0-c6f558d634.patch",
+    "@graphql-codegen/visitor-plugin-common@npm:^6.1.0": "patch:@graphql-codegen/visitor-plugin-common@npm%3A6.1.0#~/.yarn/patches/@graphql-codegen-visitor-plugin-common-npm-6.1.0-c6f558d634.patch",
+    "@graphql-codegen/visitor-plugin-common@npm:6.1.0": "patch:@graphql-codegen/visitor-plugin-common@npm%3A6.1.0#~/.yarn/patches/@graphql-codegen-visitor-plugin-common-npm-6.1.0-c6f558d634.patch",
+    "@graphql-tools/optimize@npm:^2.0.0": "patch:@graphql-tools/optimize@npm%3A2.0.0#~/.yarn/patches/@graphql-tools-optimize-npm-2.0.0-710bf461f3.patch"
   },
   "dependenciesMeta": {
     "better-sqlite3@10.1.0": {
@@ -112,8 +118,8 @@
     "lerna": "lerna",
     "link-cli": "yarn run create-agoric-cli",
     "create-agoric-cli": "node ./scripts/create-agoric-cli.cjs",
-    "format": "yarn prettier --write .github golang packages scripts a3p-integration multichain-testing eslint.config.mjs",
-    "lint:format": "yarn prettier --check .github golang packages scripts a3p-integration multichain-testing eslint.config.mjs",
+    "format": "dprint fmt",
+    "lint:format": "dprint check",
     "lint-fix": "yarn lerna run --no-bail lint-fix",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
     "lint:packages": "yarn lerna run --no-bail lint",

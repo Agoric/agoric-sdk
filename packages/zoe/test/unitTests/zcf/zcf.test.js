@@ -13,7 +13,7 @@ import { setupZCFTest } from './setupZcfTest.js';
 import { assertAmountsEqual } from '../../zoeTestHelpers.js';
 
 /**
- * @import {ContractMeta, Invitation, OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
+ * @import {ContractMeta, Invitation, OfferHandler, ZCF, ZCFSeat, ZoeIssuerRecord} from '@agoric/zoe';
  */
 
 test(`zcf.getZoeService`, async t => {

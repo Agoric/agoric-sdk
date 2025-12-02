@@ -5,6 +5,10 @@ import { X, Fail, makeError } from '@endo/errors';
 import { Nat, isNat } from '@endo/nat';
 
 /**
+ * @import {ParamsSDKType} from '@agoric/cosmic-proto/swingset/swingset.js';
+ */
+
+/**
  * @template {number | bigint} T
  * @param {T} n
  * @returns {T}
@@ -59,7 +63,7 @@ export const encodeQueueSizes = queueSizes =>
 
 /**
  * Map the SwingSet parameters to a deterministic data structure.
- * @param {import('@agoric/cosmic-proto/swingset/swingset.js').ParamsSDKType} params
+ * @param {ParamsSDKType} params
  */
 export const parseParams = params => {
   const {

@@ -564,6 +564,7 @@ test.serial('remove old contract; start new contract', async t => {
     chainInfo: privateArgs.chainInfo,
     contracts: privateArgs.contracts,
     gmpAddresses: privateArgs.gmpAddresses,
+    walletBytecode: privateArgs.walletBytecode,
   }) satisfies CopyRecord;
   t.is(passStyleOf(privateArgsOverrides), 'copyRecord');
 
@@ -733,7 +734,7 @@ test.skip('CCTP settlement works with new invitation after contract remove and s
 const { make } = AmountMath;
 
 // give: ...rest: {"Access":{"brand":"[Alleged: BoardRemotePoC26 brand]","value":"[1n]"}} - Must be: {}
-test.skip('open a USDN position', async t => {
+test.failing('open a USDN position', async t => {
   const { walletFactoryDriver: wfd, agoricNamesRemotes } = t.context;
 
   for (const { msg, ack } of Object.values(

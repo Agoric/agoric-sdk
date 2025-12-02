@@ -1,10 +1,15 @@
 import { Fail } from '@endo/errors';
 
 /**
+ * @import {BundleHandler} from '../controller/bundle-handler.js';
+ * @import {WorkerOptions} from '../types-internal.js';
+ */
+
+/**
  * @param {string} managerType
- * @param {import('../controller/bundle-handler').BundleHandler} bundleHandler
+ * @param {BundleHandler} bundleHandler
  * @param {string[]} [nodeOptions]
- * @returns {Promise<import("../types-internal").WorkerOptions>}
+ * @returns {Promise<WorkerOptions>}
  */
 export async function makeWorkerOptions(
   managerType,
@@ -27,9 +32,9 @@ export async function makeWorkerOptions(
 }
 
 /**
- * @param {import('../types-internal').WorkerOptions} origWorkerOptions
- * @param {{bundleHandler: import("../controller/bundle-handler").BundleHandler}} options
- * @returns {Promise<import("../types-internal").WorkerOptions>}
+ * @param {WorkerOptions} origWorkerOptions
+ * @param {{bundleHandler: BundleHandler}} options
+ * @returns {Promise<WorkerOptions>}
  */
 export async function updateWorkerOptions(
   origWorkerOptions,

@@ -301,20 +301,31 @@ export const makeFlowPath = (parent: number, id: number) => [
   `flow${id}`,
 ];
 
-export const makeFlowStepsPath = (parent: number, id: number) => [
-  `portfolio${parent}`,
-  'flows',
-  `flow${id}`,
-  'steps',
-];
+export const makeFlowStepsPath = (
+  parent: number,
+  id: number,
+  prop: 'steps' | 'order' = 'steps',
+) => [`portfolio${parent}`, 'flows', `flow${id}`, prop];
+
+const FlowDetailsProps = {
+  type: M.string(),
+  amount: AnyNatAmountShape,
+};
 
 export const FlowStatusShape: TypedPattern<StatusFor['flow']> = M.or(
-  { state: 'run', step: M.number(), how: M.string() },
+  M.splitRecord(
+    { state: 'run', step: M.number(), how: M.string() },
+    { steps: M.arrayOf(M.number()), ...FlowDetailsProps },
+  ),
   { state: 'undo', step: M.number(), how: M.string() }, // XXX Not currently used
-  { state: 'done' },
+  M.splitRecord({ state: 'done' }, FlowDetailsProps),
   M.splitRecord(
     { state: 'fail', step: M.number(), how: M.string(), error: M.string() },
-    { where: AnyString<AssetPlaceRef>() },
+    {
+      next: M.record(), // XXX recursive pattern
+      where: AnyString<AssetPlaceRef>(), // XXX obsolete
+      ...FlowDetailsProps,
+    },
     {},
   ),
 );

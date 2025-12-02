@@ -38,7 +38,16 @@ import {
 } from '../supports.js';
 import { anchorAssets, chainStorageEntries } from './psm-storage-fixture.js';
 
-/** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
+/**
+ * @import {TestFn} from 'ava';
+ * @import {ExecutionContext} from 'ava';
+ * @import {start} from '../../src/psm/psm.js';
+ * @import {EconomyBootstrapPowers} from '../../src/proposals/econ-behaviors.js';
+ * @import {Ratio} from '@agoric/ertp';
+ * @import {PsmPublicFacet} from '../../src/psm/psm.js';
+ */
+
+/** @type {TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */
 const test = anyTest;
 
 const trace = makeTracer('TestPSM', false);
@@ -167,9 +176,7 @@ test.before(async t => {
 });
 
 /**
- * @param {import('ava').ExecutionContext<
- *   Awaited<ReturnType<makeTestContext>>
- * >} t
+ * @param {ExecutionContext<Awaited<ReturnType<typeof makeTestContext>>>} t
  * @param {{}} [customTerms]
  */
 async function makePsmDriver(t, customTerms) {
@@ -185,7 +192,7 @@ async function makePsmDriver(t, customTerms) {
   // Each driver needs its own to avoid state pollution between tests
   const mockChainStorage = makeMockChainStorageRoot();
 
-  /** @type {StartedInstanceKit<import('../../src/psm/psm.js').start>} */
+  /** @type {StartedInstanceKit<typeof start>} */
   const { creatorFacet, publicFacet } = await E(zoe).startInstance(
     psmInstall,
     harden({ AUSD: anchor.issuer }),
@@ -739,7 +746,7 @@ const makeMockBankManager = t => {
 };
 
 test('restore PSM: startPSM with previous metrics, params', async t => {
-  /** @type {import('../../src/proposals/econ-behaviors.js').EconomyBootstrapPowers} */
+  /** @type {EconomyBootstrapPowers} */
   // @ts-expect-error mock
   const { produce, consume } = makePromiseSpace();
   const { agoricNames, agoricNamesAdmin, spaces } =

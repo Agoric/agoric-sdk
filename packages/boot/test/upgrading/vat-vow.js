@@ -2,11 +2,15 @@ import { prepareVowTools } from '@agoric/vow/vat.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { Far } from '@endo/far';
 
+/**
+ * @import {VowResolver} from '@agoric/vow';
+ */
+
 export const buildRootObject = (_vatPowers, _args, baggage) => {
   const zone = makeDurableZone(baggage);
   const { watch, makeVowKit } = prepareVowTools(zone.subZone('VowTools'));
 
-  /** @typedef {({ status: 'unsettled' } | PromiseSettledResult<any>) & { resolver?: import('@agoric/vow').VowResolver }} WatcherResult */
+  /** @typedef {({ status: 'unsettled' } | PromiseSettledResult<any>) & { resolver?: VowResolver }} WatcherResult */
 
   /** @type {MapStore<string, WatcherResult>} */
   const nameToResult = zone.mapStore('nameToResult');

@@ -38,7 +38,7 @@ async function* mapHistory(f, chunks) {
 }
 
 /**
- * @param {ERef<import('./makeHttpClient').LCD>} lcd
+ * @param {ERef<import('./makeHttpClient.js').LCD>} lcd
  */
 export const makeVStorage = lcd => {
   // height=0 is the same as omitting height and implies the highest block
@@ -129,7 +129,7 @@ const parseIfJSON = d => {
 };
 
 /**
- * @param {ReturnType<makeVStorage>} vstorage
+ * @param {ReturnType<typeof makeVStorage>} vstorage
  * @param {FromCapData<string>} unmarshal
  * @param {[AgoricChainStoragePathKind, string][]} paths
  */

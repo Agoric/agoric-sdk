@@ -1,10 +1,16 @@
 // @jessie-check
 
-import { X, Fail, q, makeError, annotateError } from '@endo/errors';
+import { annotateError, Fail, makeError, q, X } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 
+/**
+ * @import {GetInvitationDetails} from './types.ts';
+ * @import {GetInstance} from './types.ts';
+ * @import {GetInstallation} from './types.ts';
+ */
+
 export const makeInvitationQueryFns = invitationIssuer => {
-  /** @type {import('./types.ts').GetInvitationDetails} */
+  /** @type {GetInvitationDetails} */
   const getInvitationDetails = async invitationP => {
     const onRejected = reason => {
       const err = makeError(
@@ -21,11 +27,11 @@ export const makeInvitationQueryFns = invitationIssuer => {
     return invAmount.value[0];
   };
 
-  /** @type {import('./types.ts').GetInstance} */
+  /** @type {GetInstance} */
   const getInstance = invitation =>
     E.get(getInvitationDetails(invitation)).instance;
 
-  /** @type {import('./types.ts').GetInstallation} */
+  /** @type {GetInstallation} */
   const getInstallation = invitation =>
     E.get(getInvitationDetails(invitation)).installation;
 

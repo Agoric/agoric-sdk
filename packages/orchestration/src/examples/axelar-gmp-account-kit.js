@@ -8,6 +8,8 @@
  * @import {AxelarGmpIncomingMemo, EvmTapState, ContractCall, SupportedEVMChains} from '../axelar-types.js';
  * @import {ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {AxelarGmpOutgoingMemo, GMPMessageType} from '../axelar-types.js'
+ * @import {CosmosChainAddress} from '@agoric/orchestration';
+ * @import {AmountArg} from '@agoric/orchestration';
  */
 
 /** @typedef {ContractCall} ContractCall */
@@ -195,8 +197,8 @@ export const prepareEvmAccountKit = (
          * Sends tokens from the local account to a specified Cosmos chain
          * address.
          *
-         * @param {import('@agoric/orchestration').CosmosChainAddress} toAccount
-         * @param {import('@agoric/orchestration').AmountArg} amount
+         * @param {CosmosChainAddress} toAccount
+         * @param {AmountArg} amount
          * @returns {Promise<string>} A success message upon completion.
          */
         async send(toAccount, amount) {

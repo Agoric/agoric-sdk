@@ -8,10 +8,10 @@ import sqlite3 from 'better-sqlite3';
 import { Fail, q } from '@endo/errors';
 
 import { attenuate } from '@agoric/internal';
+import { makeKVStore } from '@agoric/internal/src/kv-store.js';
 import { TRUE } from '@agoric/internal/src/js-utils.js';
 
-import { dbFileInDirectory } from './util.js';
-import { makeKVStore, getKeyType } from './kvStore.js';
+import { dbFileInDirectory, getKVStoreKeyType } from './util.js';
 import { makeTranscriptStore } from './transcriptStore.js';
 import { makeSnapStore } from './snapStore.js';
 import { makeBundleStore } from './bundleStore.js';
@@ -28,18 +28,25 @@ const IN_MEMORY = ':memory:';
  */
 
 /**
- * @typedef { import('./kvStore.js').KVStore } KVStore
+ * @import {SwingStoreExporter} from './exporter.js';
+ * @import {SwingStoreInternal} from './internal.js';
+ * @import {SnapshotCallback} from './snapStore.js';
+ * @import {TranscriptCallback} from './transcriptStore.js';
+ */
+
+/**
+ * @import {KVStore} from '@agoric/internal/src/kv-store.js';
  *
- * @typedef { import('./snapStore.js').SnapStore } SnapStore
- * @typedef { import('./snapStore.js').SnapshotResult } SnapshotResult
+ * @import {SnapStore} from './snapStore.js';
+ * @import {SnapshotResult} from './snapStore.js';
  *
- * @typedef { import('./transcriptStore.js').TranscriptStore } TranscriptStore
- * @typedef { import('./transcriptStore.js').TranscriptStoreDebug } TranscriptStoreDebug
+ * @import {TranscriptStore} from './transcriptStore.js';
+ * @import {TranscriptStoreDebug} from './transcriptStore.js';
  *
- * @typedef { import('./bundleStore.js').BundleStore } BundleStore
- * @typedef { import('./bundleStore.js').BundleStoreDebug } BundleStoreDebug
+ * @import {BundleStore} from './bundleStore.js';
+ * @import {BundleStoreDebug} from './bundleStore.js';
  *
- * @typedef { import('./exporter.js').KVPair } KVPair
+ * @import {KVPair} from './exporter.js';
  *
  * @typedef {{
  *   kvStore: KVStore, // a key-value API object to load and store data on behalf of the kernel
@@ -59,7 +66,7 @@ const IN_MEMORY = ':memory:';
  *   commit: () => Promise<void>,  // commit changes made since the last commit
  *   close: () => Promise<void>,   // shutdown the store, abandoning any uncommitted changes
  *   diskUsage?: () => number, // optional stats method
- *   repairMetadata: (exporter: import('./exporter.js').SwingStoreExporter) => Promise<void>,
+ *   repairMetadata: (exporter: SwingStoreExporter) => Promise<void>,
  * }} SwingStoreHostStorage
  */
 
@@ -79,7 +86,7 @@ const IN_MEMORY = ':memory:';
  *  kernelStorage: SwingStoreKernelStorage,
  *  hostStorage: SwingStoreHostStorage,
  *  debug: SwingStoreDebugTools,
- *  internal: import('./internal.js').SwingStoreInternal,
+ *  internal: SwingStoreInternal,
  * }} SwingStore
  */
 
@@ -139,13 +146,13 @@ const IN_MEMORY = ':memory:';
  * @property {string} [traceFile]  Path at which to record KVStore set/delete activity
  * @property {boolean} [keepSnapshots]  Retain old heap snapshots
  * @property {boolean} [keepTranscripts]  Retain old transcript span items
- * @property {import('./snapStore.js').SnapshotCallback} [archiveSnapshot]  Called after creation of a new heap snapshot
- * @property {import('./transcriptStore.js').TranscriptCallback} [archiveTranscript]  Called after a formerly-current transcript span is finalized
+ * @property {SnapshotCallback} [archiveSnapshot]  Called after creation of a new heap snapshot
+ * @property {TranscriptCallback} [archiveTranscript]  Called after a formerly-current transcript span is finalized
  * @property {(pendingExports: Iterable<[key: string, value: string | null]>) => void} [exportCallback]
- * @property {Replacer<ReturnType<makeKVStore>>} [wrapKvStore]
- * @property {Replacer<ReturnType<makeTranscriptStore>>} [wrapTranscriptStore]
- * @property {Replacer<ReturnType<makeSnapStore>>} [wrapSnapStore]
- * @property {Replacer<ReturnType<makeBundleStore>>} [wrapBundleStore]
+ * @property {Replacer<ReturnType<typeof makeKVStore>>} [wrapKvStore]
+ * @property {Replacer<ReturnType<typeof makeTranscriptStore>>} [wrapTranscriptStore]
+ * @property {Replacer<ReturnType<typeof makeSnapStore>>} [wrapSnapStore]
+ * @property {Replacer<ReturnType<typeof makeBundleStore>>} [wrapBundleStore]
  */
 
 /**
@@ -351,7 +358,7 @@ export function makeSwingStore(path, forceReset, options = {}) {
   const kernelKVStore = {
     ...kvStore,
     set(key, value) {
-      const keyType = getKeyType(key);
+      const keyType = getKVStoreKeyType(key);
       keyType !== 'host' || Fail`kernelKVStore refuses host keys`;
       kvStore.set(key, value);
       if (keyType === 'consensus') {
@@ -365,7 +372,7 @@ export function makeSwingStore(path, forceReset, options = {}) {
       }
     },
     delete(key) {
-      const keyType = getKeyType(key);
+      const keyType = getKVStoreKeyType(key);
       keyType !== 'host' || Fail`kernelKVStore refuses host keys`;
       kvStore.delete(key);
       if (keyType === 'consensus') {
@@ -381,12 +388,12 @@ export function makeSwingStore(path, forceReset, options = {}) {
   const hostKVStore = {
     ...kvStore,
     set(key, value) {
-      const keyType = getKeyType(key);
+      const keyType = getKVStoreKeyType(key);
       keyType === 'host' || Fail`hostKVStore requires host keys`;
       kvStore.set(key, value);
     },
     delete(key) {
-      const keyType = getKeyType(key);
+      const keyType = getKVStoreKeyType(key);
       keyType === 'host' || Fail`hostKVStore requires host keys`;
       kvStore.delete(key);
     },
@@ -515,7 +522,7 @@ export function makeSwingStore(path, forceReset, options = {}) {
     stopTrace();
   }
 
-  /** @type {import('./internal.js').SwingStoreInternal} */
+  /** @type {SwingStoreInternal} */
   const internal = harden({
     dirPath: asFile ? null : path,
     asFile,

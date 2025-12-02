@@ -8,11 +8,15 @@
  */
 
 /**
+ * @import {PriceAggregatorContract} from './priceAggregator.js';
+ */
+
+/**
  * @typedef {{} | string} OracleKey
  */
 
 /**
- * @typedef {Pick<import("./priceAggregator").PriceAggregatorContract, 'creatorFacet' | 'publicFacet'>} PriceAggregatorKit
+ * @typedef {Pick<PriceAggregatorContract, 'creatorFacet' | 'publicFacet'>} PriceAggregatorKit
  */
 
 /**

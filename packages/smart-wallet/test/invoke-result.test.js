@@ -10,13 +10,14 @@ import * as gameExports from './gameAssetContract.js';
 import * as priceExports from './wallet-fun.contract.js';
 
 /**
- * @import {TestFn, ExecutionContext} from 'ava'
- * @import {OfferSpec, ResultPlan} from '../src/offers.js';
- * @import {InvokeStoreEntryAction} from '../src/smartWallet.js';
+ * @import {TestFn, ExecutionContext, ThrowsExpectation} from 'ava'
+ * @import {InvokeEntryMessage, OfferSpec, ResultPlan} from '../src/offers.js';
+ * @import {InvokeStoreEntryAction, SmartWallet} from '../src/smartWallet.js';
+ * @import {Instance} from '@agoric/zoe';
  */
 
 /**
- * @typedef {Awaited<ReturnType<makeTestContext>>} WTestCtx
+ * @typedef {Awaited<ReturnType<typeof makeTestContext>>} WTestCtx
  */
 
 const contractName = 'walletFactory';
@@ -31,7 +32,7 @@ const makeTestContext = async t => {
   return deployed;
 };
 
-test.before(async t => (t.context = await makeTestContext(t)));
+test.beforeEach(async t => (t.context = await makeTestContext(t)));
 
 test(`deploy ${contractName}`, async t => {
   const { walletFactoryFacets } = t.context;
@@ -157,22 +158,44 @@ const startPriceContract = async (t, addr) => {
   });
 };
 
-const redeemAdminInvitation = async (t, { wallet, instance }) => {
+/**
+ * @param {object} opts
+ * @param {Instance} opts.instance
+ * @param {string} [opts.id]
+ * @returns {OfferSpec}
+ */
+const makeRedeemAdminInvitationOffer = ({ instance, id = 'redeem-1' }) => ({
+  id,
+  invitationSpec: {
+    source: 'purse',
+    instance,
+    description: 'admin',
+  },
+  proposal: {},
+  saveResult: { name: 'priceSetter' },
+});
+
+/**
+ * @param {ExecutionContext<WTestCtx>} t
+ * @param {object} powers
+ * @param {SmartWallet} powers.wallet
+ * @param {Instance} powers.instance
+ * @param {ThrowsExpectation<any>} [expectedError]
+ */
+const redeemAdminInvitation = async (
+  t,
+  { wallet, instance },
+  expectedError,
+) => {
   t.log('redeem price admin invitation');
-  /** @type {OfferSpec} */
-  const redeemSpec = {
-    id: 'redeem-1',
-    invitationSpec: {
-      source: 'purse',
-      instance,
-      description: 'admin',
-    },
-    proposal: {},
-    saveResult: { name: 'priceSetter' },
-  };
+  const redeemSpec = makeRedeemAdminInvitationOffer({ instance });
 
   const offersP = E(wallet).getOffersFacet();
-  await t.notThrowsAsync(E(offersP).executeOffer(redeemSpec));
+  const result = E(offersP).executeOffer(redeemSpec);
+  const expectedOutcome = expectedError
+    ? t.throwsAsync(result, expectedError)
+    : t.notThrowsAsync(result);
+  await expectedOutcome;
 };
 
 test('start price contract; set prices', async t => {
@@ -299,7 +322,15 @@ test('save result of method call - overwrite cases', async t => {
 });
 
 test('invoke with bad targetName', async t => {
-  const { provisionSmartWallet } = t.context;
+  const {
+    provisionSmartWallet,
+    bootstrap: {
+      board,
+      utils: { readLegible },
+    },
+  } = t.context;
+  const marshaller = E(board).getReadonlyMarshaller();
+
   const addr = 'agoric1price-oracle2';
   const [wallet] = await provisionSmartWallet(addr);
   const invokeP = E(wallet).getInvokeFacet();
@@ -308,4 +339,134 @@ test('invoke with bad targetName', async t => {
     E(invokeP).invokeEntry({ targetName: 'item3', method: '?', args: [] }),
     { message: /no such item/ },
   );
+
+  const invokeActionCapData = await E(marshaller).toCapData({
+    method: 'invokeEntry',
+    message: { targetName: 'item4', method: '?', args: [] },
+  });
+  // The smart wallet reporting handles and doesn't pass through the error...
+  await t.notThrowsAsync(
+    E(wallet).handleBridgeAction(invokeActionCapData, true),
+  );
+  const { structure: bridgeActionWithoutId } = await readLegible(
+    `ROOT.wallet.${addr}`,
+  );
+  t.like(bridgeActionWithoutId, {
+    updated: 'walletAction',
+    status: { error: 'cannot invoke "item4": no such item' },
+  });
+
+  await t.throwsAsync(
+    E(invokeP).invokeEntry({
+      id: 'bogusInvoke',
+      targetName: 'item5',
+      method: '?',
+      args: [],
+    }),
+    { message: /no such item/ },
+  );
+  const { structure: invokeWithId } = await readLegible(`ROOT.wallet.${addr}`);
+  t.like(invokeWithId, {
+    updated: 'invocation',
+    id: 'bogusInvoke',
+    error: 'Error: cannot invoke "item5": no such item',
+  });
+
+  const invokeActionWithIdCapData = await E(marshaller).toCapData({
+    method: 'invokeEntry',
+    message: {
+      id: 'bogusInvokeAction',
+      targetName: 'item6',
+      method: '?',
+      args: [],
+    },
+  });
+  await t.throwsAsync(
+    E(wallet).handleBridgeAction(invokeActionWithIdCapData, true),
+    {
+      message: /no such item/,
+    },
+  );
+  const { structure: bridgeActionWithId } = await readLegible(
+    `ROOT.wallet.${addr}`,
+  );
+  t.like(bridgeActionWithId, {
+    updated: 'invocation',
+    id: 'bogusInvokeAction',
+    error: 'Error: cannot invoke "item6": no such item',
+  });
+});
+
+test('invoke with old wallet', async t => {
+  const {
+    provisionSmartWallet,
+    testJig: { setWithMyStore },
+    bootstrap: {
+      board,
+      utils: { readLegible },
+    },
+  } = t.context;
+  const marshaller = E(board).getReadonlyMarshaller();
+
+  setWithMyStore(false);
+  const addr = 'agoric1-old-wallet';
+  const [wallet] = await provisionSmartWallet(addr);
+
+  const { instance, tools } = await startPriceContract(t, addr);
+  await tools.getReceived();
+
+  t.log('attempt redeem by bridge action');
+  const redeemOfferSpec = makeRedeemAdminInvitationOffer({
+    instance,
+    id: 'redeem-2',
+  });
+  const redeemActionCapData = await E(marshaller).toCapData({
+    method: 'executeOffer',
+    offer: redeemOfferSpec,
+  });
+  await t.notThrowsAsync(
+    E(wallet).handleBridgeAction(redeemActionCapData, true),
+  );
+  const { structure: redeemUpdateStructure } = await readLegible(
+    `ROOT.wallet.${addr}`,
+  );
+  t.like(redeemUpdateStructure, {
+    updated: 'offerStatus',
+    status: {
+      result: {
+        name: 'priceSetter',
+        passStyle: 'remotable',
+      },
+    },
+  });
+
+  /** @type {InvokeEntryMessage} */
+  const message = {
+    id: 123,
+    targetName: 'priceSetter',
+    method: 'setPrice',
+    args: [100n],
+  };
+
+  t.log('attempt invokeEntry bridge action');
+  const invokeActionCapData = await E(marshaller).toCapData({
+    method: 'invokeEntry',
+    message,
+  });
+  await t.notThrowsAsync(
+    E(wallet).handleBridgeAction(invokeActionCapData, true),
+  );
+  const { structure: invokeUpdateStructure } = await readLegible(
+    `ROOT.wallet.${addr}`,
+  );
+  t.like(invokeUpdateStructure, {
+    updated: 'invocation',
+    result: {
+      passStyle: 'undefined',
+    },
+  });
+
+  t.log('attempt direct invokeEntry');
+  const invokeP = E(wallet).getInvokeFacet();
+  await t.notThrowsAsync(E(invokeP).invokeEntry(message));
 });

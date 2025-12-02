@@ -13,7 +13,10 @@ export const TRUE = /** @type {const} */ (true);
 /**
  * @typedef {<O extends Record<string, unknown>>(
  *   obj: O,
- * ) => { [K in keyof O]: K extends string ? [K, O[K]] : never }[keyof O][]} TypedEntries
+ * ) => Exclude<
+ *   { [K in keyof O]: K extends string ? [K, O[K]] : never }[keyof O],
+ *   undefined
+ * >[]} TypedEntries
  */
 export const typedEntries = /** @type {TypedEntries} */ (Object.entries);
 
@@ -198,7 +201,7 @@ export const partialMap = (arr, mapOrDrop) =>
  *
  * @template K
  * @template V
- * @param {K extends WeakKey ? WeakMap<K, V> : Map<K, V>} map
+ * @param {[K] extends [WeakKey] ? WeakMap<K, V> : Map<K, V>} map
  * @param {K} key
  * @param {(key: K) => V} makeValue
  * @returns {V}

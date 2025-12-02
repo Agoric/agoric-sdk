@@ -190,8 +190,7 @@ directory name in the second field:
 ```json
 "sdk-generate": [
   "probe-zcf-bundle probe-submission",
-  "updatePriceFeeds priceFeed-submission",
-  "add-auction newAuction-submission"
+  "updatePriceFeeds priceFeed-submission"
 ],
 ```
 Any remaining fields provide additional arguments to the build script:

@@ -1,6 +1,6 @@
 // @jessie-check
-/// <reference types="@agoric/governance/exported" />
-/// <reference types="@agoric/zoe/exported" />
+/// <reference types="@agoric/governance/exported.js" />
+/// <reference types="@agoric/zoe/exported.js" />
 
 // The vaultFactory owns a number of VaultManagers and a mint for Minted.
 //
@@ -26,7 +26,6 @@ import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { E } from '@endo/eventual-send';
 import { FeeMintAccessShape } from '@agoric/zoe/src/typeGuards.js';
-import { InvitationShape } from '../auction/params.js';
 import { SHORTFALL_INVITATION_KEY, vaultDirectorParamTypes } from './params.js';
 import { provideDirector } from './vaultDirector.js';
 
@@ -35,16 +34,22 @@ import { provideDirector } from './vaultDirector.js';
  * @import {ContractMeta, FeeMintAccess, HandleOffer, Invitation, OfferHandler, TransferPart, ZCF, ZCFMint, ZCFSeat} from '@agoric/zoe';
  * @import {ContractOf} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {VaultDirectorParams} from './params.js';
+ * @import {TimerService} from '@agoric/time';
+ * @import {start as auctioneerStart} from '../auction/auctioneer.js';
+ * @import {AssetReservePublicFacet} from '../reserve/assetReserve.js';
+ * @import {VaultManagerParamOverrides} from './params.js';
+ * @import {Baggage} from '@agoric/swingset-liveslots';
  */
 
 const trace = makeTracer('VF', true);
 
 /**
  * @typedef {ZCF<
- *   GovernanceTerms<import('./params').VaultDirectorParams> & {
+ *   GovernanceTerms<VaultDirectorParams> & {
  *     priceAuthority: ERef<PriceAuthority>;
  *     reservePublicFacet: AssetReservePublicFacet;
- *     timerService: import('@agoric/time').TimerService;
+ *     timerService: TimerService;
  *   }
  * >} VaultFactoryZCF
  */
@@ -59,8 +64,8 @@ export const meta = {
     {
       // only necessary on first invocation, not subsequent
       feeMintAccess: FeeMintAccessShape,
-      initialPoserInvitation: InvitationShape,
-      initialShortfallInvitation: InvitationShape,
+      initialPoserInvitation: M.any(),
+      initialShortfallInvitation: M.any(),
     },
   ),
   upgradability: 'canUpgrade',
@@ -75,14 +80,10 @@ harden(meta);
  *   initialShortfallInvitation: Invitation;
  *   storageNode: Remote<StorageNode>;
  *   marshaller: Remote<Marshaller>;
- *   auctioneerInstance: Instance<import('../auction/auctioneer.js').start>;
- *   managerParams: Record<
- *     string,
- *     import('./params.js').VaultManagerParamOverrides
- *   >;
+ *   managerParams: Record<string, VaultManagerParamOverrides>;
  *   directorParamOverrides: [object];
  * }} privateArgs
- * @param {import('@agoric/swingset-liveslots').Baggage} baggage
+ * @param {Baggage} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
   trace('prepare start', privateArgs, [...baggage.keys()]);
@@ -91,7 +92,6 @@ export const start = async (zcf, privateArgs, baggage) => {
     initialShortfallInvitation,
     marshaller: remoteMarshaller,
     storageNode,
-    auctioneerInstance,
     managerParams,
     directorParamOverrides,
   } = privateArgs;
@@ -108,9 +108,6 @@ export const start = async (zcf, privateArgs, baggage) => {
   }));
 
   const { timerService } = zcf.getTerms();
-
-  const zoe = zcf.getZoeService();
-  const auctioneerPublicFacet = E(zoe).getPublicFacet(auctioneerInstance);
 
   const { makeRecorderKit, makeERecorderKit } = prepareRecorderKitMakers(
     baggage,
@@ -147,7 +144,6 @@ export const start = async (zcf, privateArgs, baggage) => {
     vaultDirectorParamManager,
     debtMint,
     timerService,
-    auctioneerPublicFacet,
     storageNode,
     // XXX remove Recorder makers; remove once we excise deprecated kits for governance
     cachingMarshaller,

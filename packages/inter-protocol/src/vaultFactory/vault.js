@@ -21,6 +21,14 @@ const trace = makeTracer('Vault', true);
  * @import {EReturn} from '@endo/far';
  * @import {Brand} from '@agoric/ertp/src/types.js';
  * @import {NormalizedDebt} from './storeUtils.js';
+ * @import {AssetState} from './vaultManager.js';
+ * @import {GovernedParamGetters} from './vaultManager.js';
+ * @import {Recorder} from '@agoric/zoe/src/contractSupport/recorder.js';
+ * @import {Baggage} from '@agoric/swingset-liveslots';
+ * @import {MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
+ * @import {Ratio} from '@agoric/ertp/src/ratio.js';
+ * @import {VaultKit} from './vaultKit.js';
+ * @import {MintAndTransfer, VaultId} from './types-ambient.js';
  */
 
 /**
@@ -80,15 +88,18 @@ const validTransitions = {
 /**
  * @typedef {object} VaultNotification
  * @property {Amount<'nat'>} locked Amount of Collateral locked
- * @property {{ debt: Amount<'nat'>; interest: Ratio }} debtSnapshot 'debt' at
- *   the point the compounded interest was 'interest'
+ * @property {{
+ *   debt: Amount<'nat'>;
+ *   interest: Ratio;
+ * }} debtSnapshot
+ *   'debt' at the point the compounded interest was 'interest'
  * @property {Phase} vaultState
  */
 
 // XXX masks typedef from types.js, but using that causes circular def problems
 /**
  * @typedef {object} VaultManager
- * @property {() => Subscriber<import('./vaultManager.js').AssetState>} getAssetSubscriber
+ * @property {() => Subscriber<AssetState>} getAssetSubscriber
  * @property {(collateralAmount: Amount) => Amount<'nat'>} maxDebtFor
  * @property {() => Brand<'nat'>} getCollateralBrand
  * @property {(base: string) => string} scopeDescription
@@ -97,13 +108,13 @@ const validTransitions = {
  * @property {(amount: Amount, seat: ZCFSeat) => void} burn
  * @property {() => Ratio} getCompoundedInterest
  * @property {(
- *   oldDebt: import('./storeUtils.js').NormalizedDebt,
+ *   oldDebt: NormalizedDebt,
  *   oldCollateral: Amount<'nat'>,
  *   vaultId: VaultId,
  *   vaultPhase: VaultPhase,
  *   vault: Vault,
  * ) => void} handleBalanceChange
- * @property {() => import('./vaultManager.js').GovernedParamGetters} getGovernedParams
+ * @property {() => GovernedParamGetters} getGovernedParams
  */
 
 /**
@@ -123,9 +134,7 @@ const validTransitions = {
  *   interestSnapshot: Ratio;
  *   phase: VaultPhase;
  *   debtSnapshot: Amount<'nat'>;
- *   outerUpdater:
- *     | import('@agoric/zoe/src/contractSupport/recorder.js').Recorder<VaultNotification>
- *     | null;
+ *   outerUpdater: Recorder<VaultNotification> | null;
  * }} MutableState
  */
 
@@ -155,8 +164,8 @@ const VaultStateShape = harden({
 });
 
 /**
- * @param {import('@agoric/swingset-liveslots').Baggage} baggage
- * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
+ * @param {Baggage} baggage
+ * @param {MakeRecorderKit} makeRecorderKit
  * @param {ZCF} zcf
  */
 export const prepareVault = (baggage, makeRecorderKit, zcf) => {
@@ -857,9 +866,8 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
          * order vaults by their debt-to-collateral ratios without having to
          * mutate the debts as the interest accrues.
          *
-         * @returns {import('./storeUtils.js').NormalizedDebt} as if the vault
-         *   was open at the launch of this manager, before any interest
-         *   accrued
+         * @returns {NormalizedDebt} as if the vault was open at the launch of
+         *   this manager, before any interest accrued
          * @see getActualDebAmount
          */
         getNormalizedDebt() {

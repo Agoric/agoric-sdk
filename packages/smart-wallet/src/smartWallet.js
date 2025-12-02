@@ -51,10 +51,19 @@ import { prepareOfferWatcher, makeWatchOfferOutcomes } from './offerWatcher.js';
  * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  * @import {Amount, Brand, Issuer, Payment, Purse} from '@agoric/ertp';
  * @import {WeakMapStore, MapStore} from '@agoric/store'
- * @import {InvitationAmount, InvitationDetails, PaymentPKeywordRecord, Proposal, UserSeat} from '@agoric/zoe';
+ * @import {InvitationAmount, InvitationDetails, PaymentPKeywordRecord, Proposal, UserSeat, SetTestJig} from '@agoric/zoe';
  * @import {CopyRecord} from '@endo/pass-style';
  * @import {EReturn} from '@endo/far';
  * @import {OfferId, OfferStatus, OfferSpec, InvokeEntryMessage, ResultPlan} from './offers.js';
+ * @import {MakeOfferWatcher} from './offerWatcher.js';
+ * @import {Petname} from './types.js';
+ * @import {Bank} from '@agoric/vats/src/vat-bank.js';
+ * @import {NameHub} from '@agoric/vats';
+ * @import {InvitationMakers} from './types.js';
+ * @import {RecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {PublicSubscribers} from './types.js';
+ * @import {CapData} from '@endo/marshal';
  */
 
 const trace = makeTracer('SmrtWlt');
@@ -70,7 +79,7 @@ const trace = makeTracer('SmrtWlt');
  *     info: (...args: any[]) => void;
  *     error: (...args: any[]) => void;
  *   };
- *   makeOfferWatcher: import('./offerWatcher.js').MakeOfferWatcher;
+ *   makeOfferWatcher: MakeOfferWatcher;
  *   invitationFromSpec: ERef<Invitation>;
  * }} ExecutorPowers
  */
@@ -162,7 +171,7 @@ const trace = makeTracer('SmrtWlt');
  *   brand: Brand;
  *   displayInfo: DisplayInfo;
  *   issuer: Issuer;
- *   petname: import('./types.js').Petname;
+ *   petname: Petname;
  * }} BrandDescriptor
  *   For use by clients to describe brands to users. Includes `displayInfo` to
  *   save a remote call.
@@ -171,7 +180,7 @@ const trace = makeTracer('SmrtWlt');
 /**
  * @typedef {{
  *   address: string;
- *   bank: ERef<import('@agoric/vats/src/vat-bank.js').Bank>;
+ *   bank: ERef<Bank>;
  *   currentStorageNode: Remote<StorageNode>;
  *   invitationPurse: Purse<'set', InvitationDetails>;
  *   walletStorageNode: Remote<StorageNode>;
@@ -182,7 +191,7 @@ const trace = makeTracer('SmrtWlt');
  *
  *
  * @typedef {{
- *   agoricNames: ERef<import('@agoric/vats').NameHub>;
+ *   agoricNames: ERef<NameHub>;
  *   registry: BrandDescriptorRegistry;
  *   invitationIssuer: Issuer<'set'>;
  *   invitationBrand: Brand<'set'>;
@@ -204,19 +213,16 @@ const trace = makeTracer('SmrtWlt');
  * @typedef {Readonly<
  *   UniqueParams & {
  *     paymentQueues: MapStore<Brand, Payment[]>;
- *     offerToInvitationMakers: MapStore<
- *       string,
- *       import('./types.js').InvitationMakers
- *     >;
+ *     offerToInvitationMakers: MapStore<string, InvitationMakers>;
  *     offerToPublicSubscriberPaths: MapStore<string, Record<string, string>>;
  *     offerToUsedInvitation: MapStore<string, Amount<'set'>>;
  *     purseBalances: MapStore<Purse, Amount>;
- *     updateRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<UpdateRecord>;
- *     currentRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<CurrentWalletRecord>;
+ *     updateRecorderKit: RecorderKit<UpdateRecord>;
+ *     currentRecorderKit: RecorderKit<CurrentWalletRecord>;
  *     liveOffers: MapStore<OfferId, OfferStatus>;
  *     liveOfferSeats: MapStore<OfferId, UserSeat<unknown>>;
  *     liveOfferPayments: MapStore<OfferId, MapStore<Brand, Payment>>;
- *     myStore: MapStore;
+ *     myStore?: MapStore<string, unknown> | undefined;
  *   }
  * >} ImmutableState
  *
@@ -227,12 +233,17 @@ const trace = makeTracer('SmrtWlt');
  */
 
 /**
+ * @typedef {object} SmartWalletTestJig
+ * @property {(enabled: boolean) => void} setWithMyStore
+ */
+
+/**
  * NameHub reverse-lookup, finding 0 or more names for a target value
  *
  * TODO: consider moving to nameHub.js?
  *
  * @param {unknown} target - passable Key
- * @param {ERef<import('@agoric/vats').NameHub>} nameHub
+ * @param {ERef<NameHub>} nameHub
  */
 const namesOf = async (target, nameHub) => {
   const entries = await E(nameHub).entries();
@@ -262,6 +273,8 @@ const checkMutual = (issuer, brand) =>
     E(brand).isMyIssuer(issuer),
   ]).then(checks => checks.every(Boolean));
 
+export const EXISTING_WALLET_MY_STORES_KEY = 'existingWalletMyStores';
+
 export const BRAND_TO_PURSES_KEY = 'brandToPurses';
 
 const getBrandToPurses = (walletPurses, key) => {
@@ -276,10 +289,11 @@ const getBrandToPurses = (walletPurses, key) => {
 };
 
 /**
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
  * @param {SharedParams} shared
+ * @param {SetTestJig} [setTestJig]
  */
-export const prepareSmartWallet = (baggage, shared) => {
+export const prepareSmartWallet = (baggage, shared, setTestJig) => {
   const { registry: _r, ...passableShared } = shared;
   mustMatch(
     harden(passableShared),
@@ -303,6 +317,19 @@ export const prepareSmartWallet = (baggage, shared) => {
     });
     return store;
   });
+
+  const existingWalletMyStores = zone.weakMapStore('myStore by wallet');
+
+  let withMyStore = true;
+
+  setTestJig?.(
+    () =>
+      /** @type {SmartWalletTestJig} */ ({
+        setWithMyStore: value => {
+          withMyStore = value;
+        },
+      }),
+  );
 
   const vowTools = prepareVowTools(zone.subZone('vow'));
 
@@ -434,17 +461,18 @@ export const prepareSmartWallet = (baggage, shared) => {
           durable: true,
         },
       ),
-      // NB: Wallets before this state property was added do not support
-      // saving results or invoking the saved items.
-      myStore: zone.detached().mapStore('my items'),
+      // NB: Wallets before this state property was added also support saving
+      // results or invoking the saved items, but through the alternate
+      // EXISTING_WALLET_MY_STORES_KEY baggage map.
+      myStore: withMyStore ? zone.detached().mapStore('my items') : undefined,
     };
 
-    /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<UpdateRecord>} */
+    /** @type {RecorderKit<UpdateRecord>} */
     const updateRecorderKit = makeRecorderKit(unique.walletStorageNode);
     // NB: state size must not grow monotonically
     // This is the node that UIs subscribe to for everything they need.
     // e.g. agoric follow :published.wallet.agoric1nqxg4pye30n3trct0hf7dclcwfxz8au84hr3ht
-    /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<CurrentWalletRecord>} */
+    /** @type {RecorderKit<CurrentWalletRecord>} */
     const currentRecorderKit = makeRecorderKit(unique.currentStorageNode);
 
     const nonpreciousState = {
@@ -495,6 +523,7 @@ export const prepareSmartWallet = (baggage, shared) => {
       logWalletInfo: M.call().rest(M.arrayOf(M.any())).returns(),
       logWalletError: M.call().rest(M.arrayOf(M.any())).returns(),
       getLiveOfferPayments: M.call().returns(M.remotable('mapStore')),
+      getMyStore: M.call().returns(M.remotable('my items store')),
       saveEntry: M.call(shape.ResultPlan, M.any()).returns(M.string()),
       findUnusedName: M.call(M.string()).returns(M.string()),
     }),
@@ -516,7 +545,7 @@ export const prepareSmartWallet = (baggage, shared) => {
       tryExitOffer: M.call(M.scalar()).returns(M.promise()),
     }),
     invoke: M.interface('invoke', {
-      invokeEntry: M.callWhen(shape.InvokeEntryMessage).returns(),
+      invokeEntry: M.call(shape.InvokeEntryMessage).returns(M.promise()),
     }),
     resultStepWatcher: M.interface('resultStepWatcher', {
       onFulfilled: M.call(M.any(), invocationResultShape).returns(),
@@ -646,8 +675,7 @@ export const prepareSmartWallet = (baggage, shared) => {
          * transition to decentralized introductions.
          *
          * @param {Brand} brand
-         * @param {ERef<import('@agoric/vats').NameHub>} known - namehub with
-         *   brand, issuer branches
+         * @param {ERef<NameHub>} known - namehub with brand, issuer branches
          * @returns {Promise<Purse | undefined>} undefined if brand is not known
          */
         async getPurseIfKnownBrand(brand, known) {
@@ -726,8 +754,8 @@ export const prepareSmartWallet = (baggage, shared) => {
         /**
          * @param {string} offerId
          * @param {Amount<'set'>} invitationAmount
-         * @param {import('./types.js').InvitationMakers} invitationMakers
-         * @param {import('./types.js').PublicSubscribers} publicSubscribers
+         * @param {InvitationMakers} invitationMakers
+         * @param {PublicSubscribers} publicSubscribers
          */
         async addContinuingOffer(
           offerId,
@@ -799,9 +827,25 @@ export const prepareSmartWallet = (baggage, shared) => {
           }
           return baggage.get(state.address);
         },
+        /**
+         * @returns {NonNullable<ImmutableState['myStore']>}
+         */
+        getMyStore() {
+          const {
+            state,
+            facets: { self },
+          } = this;
+          if ('myStore' in state && state.myStore != null) {
+            return state.myStore;
+          }
+
+          return provideLazy(existingWalletMyStores, self, _k =>
+            zone.detached().mapStore('my items'),
+          );
+        },
         /** @param {string} suggestion */
         findUnusedName(suggestion) {
-          const { myStore } = this.state;
+          const myStore = this.facets.helper.getMyStore();
           let nonce = 0;
           let name = suggestion;
           while (myStore.has(name)) {
@@ -815,7 +859,7 @@ export const prepareSmartWallet = (baggage, shared) => {
          * @param {unknown} value
          */
         saveEntry(plan, value) {
-          const { myStore } = this.state;
+          const myStore = this.facets.helper.getMyStore();
           const name = plan.overwrite
             ? plan.name
             : this.facets.helper.findUnusedName(plan.name);
@@ -1107,28 +1151,49 @@ export const prepareSmartWallet = (baggage, shared) => {
         /**
          * @param {InvokeEntryMessage} message
          */
-        async invokeEntry(message) {
+        invokeEntry(message) {
           trace('invokeEntry', message);
-          const { myStore } = this.state;
-          const { resultStepWatcher } = this.facets;
+          const { resultStepWatcher, helper } = this.facets;
 
           const { targetName: name, method, args, saveResult, id } = message;
-          myStore.has(name) || Fail`cannot invoke ${q(name)}: no such item`;
-          const value = myStore.get(name);
-          trace('entry', name, value);
-          trace('invoke', value, '.', method, '(', args, ')');
-          if (id) {
-            const { updateRecorderKit } = this.state;
-            void updateRecorderKit.recorder.write({
-              updated: 'invocation',
-              id,
-            });
-          }
-          const callP = E(value)[method](...args);
-          if (id || saveResult) {
-            vowTools.watch(callP, resultStepWatcher, { id, saveResult });
-          } else {
-            void callP;
+          // From here on we can report status records related to the id
+          try {
+            const myStore = helper.getMyStore();
+            myStore.has(name) || Fail`cannot invoke ${q(name)}: no such item`;
+            const value = myStore.get(name);
+            trace('entry', name, value);
+            trace('invoke', value, '.', method, '(', args, ')');
+            if (id) {
+              const { updateRecorderKit } = this.state;
+              void updateRecorderKit.recorder.write({
+                updated: 'invocation',
+                id,
+              });
+            }
+            const callP = E(value)[method](...args);
+            if (id || saveResult) {
+              vowTools.watch(callP, resultStepWatcher, { id, saveResult });
+            } else {
+              void callP;
+            }
+            return Promise.resolve();
+          } catch (reason) {
+            if (id) {
+              const { updateRecorderKit } = this.state;
+              void updateRecorderKit.recorder.write({
+                updated: 'invocation',
+                id,
+                error: String(reason),
+              });
+              // handleBridgeAction records sync error so return a rejected
+              // Promise to avoid overriding our update, but still report an
+              // error to any test caller of `handleBridgeAction`
+              return Promise.reject(reason);
+            } else {
+              // We could'd report the failure, so let `handleBridgeAction` do
+              // some best effort reporting
+              throw reason;
+            }
           }
         },
       },
@@ -1179,13 +1244,12 @@ export const prepareSmartWallet = (baggage, shared) => {
          * Umarshals the actionCapData and delegates to the appropriate action
          * handler.
          *
-         * @param {import('@endo/marshal').CapData<string | null>} actionCapData
-         *   of type BridgeAction
+         * @param {CapData<string | null>} actionCapData of type BridgeAction
          * @param {boolean} [canSpend]
          * @returns {Promise<void>}
          */
         handleBridgeAction(actionCapData, canSpend = false) {
-          const { facets, state } = this;
+          const { facets } = this;
           const { offers, invoke } = facets;
           const { publicMarshaller } = shared;
 
@@ -1199,8 +1263,6 @@ export const prepareSmartWallet = (baggage, shared) => {
             });
           };
 
-          const walletHasNameHub = 'myStore' in state && state.myStore != null;
-
           // use E.when to retain distributed stack trace
           return E.when(
             E(publicMarshaller).fromCapData(actionCapData),
@@ -1210,9 +1272,6 @@ export const prepareSmartWallet = (baggage, shared) => {
                 switch (action.method) {
                   case 'executeOffer': {
                     canSpend || Fail`executeOffer requires spend authority`;
-                    if (action.offer.saveResult != null && !walletHasNameHub) {
-                      Fail`executeOffer saveResult requires a new smart wallet with myStore`;
-                    }
 
                     return offers.executeOffer(action.offer);
                   }
@@ -1221,8 +1280,6 @@ export const prepareSmartWallet = (baggage, shared) => {
                     return offers.tryExitOffer(action.offerId);
                   }
                   case 'invokeEntry': {
-                    walletHasNameHub ||
-                      Fail`invokeEntry requires a new smart wallet with myStore`;
                     return invoke.invokeEntry(action.message);
                   }
                   default: {

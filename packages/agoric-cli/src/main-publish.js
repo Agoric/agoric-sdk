@@ -9,6 +9,10 @@ import { parseLocatedJson } from './json.js';
 
 import { makeBundlePublisher, makeCosmosBundlePublisher } from './publish.js';
 
+/**
+ * @import {CosmosConnectionSpec} from './publish.js';
+ */
+
 const publishMain = async (progname, rawArgs, powers, opts) => {
   const { fs } = powers;
 
@@ -23,7 +27,7 @@ const publishMain = async (progname, rawArgs, powers, opts) => {
     );
   }
 
-  /** @type {import('./publish.js').CosmosConnectionSpec} */
+  /** @type {CosmosConnectionSpec} */
   const connectionSpec = {
     type: 'chain-cosmos-sdk',
     rpcAddresses: [rpcAddress],

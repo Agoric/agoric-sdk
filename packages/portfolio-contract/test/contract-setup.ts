@@ -3,8 +3,6 @@ import { mustMatch } from '@agoric/internal';
 import { defaultSerializer } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.ts';
-import type { ScopedBridgeManager } from '@agoric/vats';
-import { heapVowE as VE } from '@agoric/vow';
 import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
@@ -21,14 +19,9 @@ import {
   gmpAddresses,
   makeCCTPTraffic,
   makeUSDNIBCTraffic,
-  portfolio0lcaOrch,
 } from './mocks.ts';
 import { getResolverMakers, settleTransaction } from './resolver-helpers.ts';
-import {
-  chainInfoWithCCTP,
-  makeIncomingEVMEvent,
-  setupPortfolioTest,
-} from './supports.ts';
+import { chainInfoWithCCTP, setupPortfolioTest } from './supports.ts';
 
 const contractName = 'ymax0';
 type StartFn = typeof contractExports.start;
@@ -36,10 +29,9 @@ const { values } = Object;
 
 export const deploy = async (t: ExecutionContext) => {
   const common = await setupPortfolioTest(t);
-  let contractBaggage;
-  const setJig = ({ baggage }) => {
-    contractBaggage = baggage;
-  };
+  let testJig;
+  const setJig = jig => (testJig = jig);
+  const getTestJig = () => testJig;
   const { zoe, bundleAndInstall } = await setUpZoeForTest({ setJig });
   t.log('contract deployment', contractName);
 
@@ -76,6 +68,7 @@ export const deploy = async (t: ExecutionContext) => {
       ...common.commonPrivateArgs,
       axelarIds: axelarIdsMock,
       contracts: contractsMock,
+      walletBytecode: '0x1234',
       gmpAddresses,
       timerService,
       chainInfo,
@@ -92,8 +85,12 @@ export const deploy = async (t: ExecutionContext) => {
       }),
     ),
   );
+  const { baggage: contractBaggage } = getTestJig();
   return {
-    common: { ...common, utils: { ...common.utils, bundleAndInstall } },
+    common: {
+      ...common,
+      utils: { ...common.utils, bundleAndInstall, getTestJig },
+    },
     zoe,
     contractBaggage,
     started,
@@ -182,23 +179,6 @@ export const setupTrader = async (t, initial = 10_000) => {
   });
 
   return { ...deployed, makeFundedTrader, trader1, trader2, txResolver };
-};
-
-export const simulateUpcallFromAxelar = async (
-  transferBridge: ScopedBridgeManager<'vtransfer'>,
-  sourceChain: string,
-  address: `0x${string}` = '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
-  target = portfolio0lcaOrch,
-) => {
-  await eventLoopIteration();
-
-  const event = makeIncomingEVMEvent({ address, sourceChain, target });
-  return (
-    VE(transferBridge)
-      .fromBridge(event)
-      // .finally(() => console.debug('fromBridge for tap done'))
-      .then(() => eventLoopIteration())
-  );
 };
 
 export const simulateCCTPAck = async utils => {

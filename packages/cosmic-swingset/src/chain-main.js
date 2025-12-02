@@ -61,6 +61,9 @@ import {
 
 /**
  * @import {EReturn} from '@endo/far';
+ * @import {KVStore} from '@agoric/internal/src/kv-store.js';
+ * @import {SwingStore} from '@agoric/swing-store';
+ * @import {StateSyncExporter} from './export-kernel-db.js';
  */
 
 const ignore = () => {};
@@ -144,7 +147,7 @@ export const extractPortNums = action => {
  * @param {"set" | "legacySet" | "setWithoutNotify"} setterMethod
  * @param {(value: string) => T} fromBridgeStringValue
  * @param {(value: T) => string} toBridgeStringValue
- * @returns {import('./helpers/bufferedStorage.js').KVStore<T>}
+ * @returns {KVStore<T>}
  */
 const makePrefixedBridgeStorage = (
   call,
@@ -229,7 +232,7 @@ export const makeQueueStorage = (call, queuePath) => {
  * @param {{
  *   debugName?: string,
  *   slogSender?: ERef<EReturn<typeof makeSlogSender>>,
- *   swingStore?: import('@agoric/swing-store').SwingStore,
+ *   swingStore?: SwingStore,
  *   vatconfig?: Parameters<typeof launch>[0]['vatconfig'],
  *   withInternals?: boolean,
  * }} [options.testingOverrides] Exposed only for testing purposes.
@@ -642,7 +645,7 @@ export default async function main(
   /**
    * @type {undefined | {
    *   blockHeight: number,
-   *   exporter?: import('./export-kernel-db.js').StateSyncExporter,
+   *   exporter?: StateSyncExporter,
    *   exportDir?: string,
    *   cleanup?: () => Promise<void>,
    * }}

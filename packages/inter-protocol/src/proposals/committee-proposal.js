@@ -2,6 +2,11 @@ import { deeplyFulfilledObject } from '@agoric/internal';
 import { E } from '@endo/far';
 import { reserveThenDeposit } from './utils.js';
 
+/**
+ * @import {EconomyBootstrapPowers} from './econ-behaviors.js';
+ * @import {EconCharterStartResult} from './econ-behaviors.js';
+ */
+
 const { values } = Object;
 
 /** @type {<X, Y>(xs: X[], ys: Y[]) => [X, Y][]} */
@@ -10,7 +15,7 @@ const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
 const EC_HIGH_PRIORITY_SENDERS_NAMESPACE = 'economicCommittee';
 
 /**
- * @param {import('./econ-behaviors.js').EconomyBootstrapPowers} powers
+ * @param {EconomyBootstrapPowers} powers
  * @param {{ options: { voterAddresses: Record<string, string> } }} param1
  */
 export const inviteCommitteeMembers = async (
@@ -51,7 +56,7 @@ export const inviteCommitteeMembers = async (
 
 harden(inviteCommitteeMembers);
 
-/** @param {import('./econ-behaviors.js').EconomyBootstrapPowers} powers */
+/** @param {EconomyBootstrapPowers} powers */
 export const startEconCharter = async ({
   consume: { zoe },
   produce: { econCharterKit },
@@ -72,7 +77,7 @@ export const startEconCharter = async ({
     }),
   );
 
-  /** @type {Promise<import('./econ-behaviors.js').EconCharterStartResult>} */
+  /** @type {Promise<EconCharterStartResult>} */
   const startResult = E(zoe).startInstance(
     charterInstall,
     undefined,
@@ -88,12 +93,12 @@ harden(startEconCharter);
 /**
  * Introduce charter to governed creator facets.
  *
- * @param {import('./econ-behaviors.js').EconomyBootstrapPowers} powers
+ * @param {EconomyBootstrapPowers} powers
  */
 export const addGovernorsToEconCharter = async ({
-  consume: { reserveKit, vaultFactoryKit, econCharterKit, auctioneerKit },
+  consume: { reserveKit, vaultFactoryKit, econCharterKit },
   instance: {
-    consume: { reserve, VaultFactory, auctioneer },
+    consume: { reserve, VaultFactory },
   },
 }) => {
   const { creatorFacet } = E.get(econCharterKit);
@@ -110,11 +115,6 @@ export const addGovernorsToEconCharter = async ({
         instanceP: VaultFactory,
         facetP: E.get(vaultFactoryKit).governorCreatorFacet,
       },
-      {
-        label: 'auctioneer',
-        instanceP: auctioneer,
-        facetP: E.get(auctioneerKit).governorCreatorFacet,
-      },
     ].map(async ({ label, instanceP, facetP }) => {
       const [instance, govFacet] = await Promise.all([instanceP, facetP]);
 
@@ -126,7 +126,7 @@ export const addGovernorsToEconCharter = async ({
 harden(addGovernorsToEconCharter);
 
 /**
- * @param {import('./econ-behaviors.js').EconomyBootstrapPowers} powers
+ * @param {EconomyBootstrapPowers} powers
  * @param {{ options: { voterAddresses: Record<string, string> } }} param1
  */
 export const inviteToEconCharter = async (
@@ -175,7 +175,6 @@ export const getManifestForInviteCommittee = async (
       },
       [addGovernorsToEconCharter.name]: {
         consume: {
-          auctioneerKit: t,
           econCharterKit: t,
           zoe: t,
           agoricNames: t,
@@ -188,7 +187,7 @@ export const getManifestForInviteCommittee = async (
           consume: { binaryVoteCounter: t },
         },
         instance: {
-          consume: { auctioneer: t, reserve: t, VaultFactory: t },
+          consume: { reserve: t, VaultFactory: t },
         },
       },
       [inviteToEconCharter.name]: {

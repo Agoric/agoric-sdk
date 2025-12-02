@@ -17,6 +17,7 @@ import {
  * @import {EReturn} from '@endo/far';
  * @import {Key, Pattern} from '@endo/patterns';
  * @import {Amount, Issuer, IssuerKit, Paymnent} from '@agoric/ertp';
+ * @import {Zone} from '@agoric/zone';
  */
 
 /**
@@ -111,7 +112,7 @@ export const makeVirtualPurseKitIKit = (
  *   current balance iterable for a given brand.
  */
 
-/** @param {import('@agoric/zone').Zone} zone */
+/** @param {Zone} zone */
 const prepareVirtualPurseKit = zone =>
   zone.exoClassKit(
     'VirtualPurseKit',
@@ -281,7 +282,7 @@ const prepareVirtualPurseKit = zone =>
     },
   );
 
-/** @param {import('@agoric/zone').Zone} zone */
+/** @param {Zone} zone */
 export const prepareVirtualPurse = zone => {
   const makeVirtualPurseKit = prepareVirtualPurseKit(zone);
 

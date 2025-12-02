@@ -27,6 +27,8 @@ const trace = makeTracer('ReserveKit', true);
  * @import {MapStore, SetStore} from '@agoric/store';
  * @import {AmountKeywordRecord} from '@agoric/zoe/src/zoeService/types.js';
  * @import {ZCF, OfferHandler, Keyword, ZCFMint, ZCFSeat} from '@agoric/zoe';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  */
 
 /**
@@ -39,10 +41,10 @@ const trace = makeTracer('ReserveKit', true);
  */
 
 /**
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
  * @param {{
  *   feeMint: ZCFMint<'nat'>;
- *   makeRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit;
+ *   makeRecorderKit: MakeRecorderKit;
  *   storageNode: ERemote<StorageNode>;
  *   zcf: ZCF;
  * }} powers

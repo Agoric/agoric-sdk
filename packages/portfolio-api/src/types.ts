@@ -64,17 +64,51 @@ export type FlowDetail =
   | { type: 'deposit'; amount: NatAmount }
   | { type: 'rebalance' }; // aka simpleRebalance
 
+/** linked list of concurrent failures, including dependencies */
+export type FlowErrors = {
+  step: number;
+  how: string;
+  error: string;
+  next?: FlowErrors;
+};
+
 export type FlowStatus =
-  | { state: 'run'; step: number; how: string }
+  | {
+      state: 'run';
+      /** minimum currently running step */
+      step: number;
+      how: string;
+      /** currently running steps, when executing concurrently */
+      steps?: number[];
+    }
+  /** @deprecated - contract no longer does automatic recovery */
   | { state: 'undo'; step: number; how: string }
   | { state: 'done' }
-  | { state: 'fail'; step: number; how: string; error: string; where?: string };
+  | ({ state: 'fail' } & FlowErrors);
+
+export type MovementDesc = {
+  amount: NatAmount;
+  src: AssetPlaceRef;
+  dest: AssetPlaceRef;
+  /** for example: GMP fee */
+  fee?: NatAmount;
+  /** for example: { usdnOut: 98n } */
+  detail?: Record<string, bigint>;
+  claim?: boolean;
+};
 
 export type FlowStep = {
   how: string;
   amount: NatAmount;
   src: AssetPlaceRef;
   dest: AssetPlaceRef;
+  // XXX all parts: fee etc.
+};
+
+export type FundsFlowPlan = {
+  flow: MovementDesc[];
+  /** default to full order */
+  order?: [target: number, prereqs: number[]][];
 };
 
 export type PortfolioKey = `portfolio${number}`;
@@ -110,8 +144,9 @@ export type StatusFor = {
     totalIn: NatAmount;
     totalOut: NatAmount;
   };
-  flow: FlowStatus;
+  flow: FlowStatus & FlowDetail;
   flowSteps: FlowStep[];
+  flowOrder: FundsFlowPlan['order'];
 };
 
 /**

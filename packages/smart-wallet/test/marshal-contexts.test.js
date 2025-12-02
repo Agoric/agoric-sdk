@@ -8,14 +8,18 @@ import {
   makeImportContext,
 } from '../src/marshal-contexts.js';
 
-/** @param {import('@agoric/vats').Board} board */
+/**
+ * @import {Board} from '@agoric/vats';
+ */
+
+/** @param {Board} board */
 const makeAMM = board => {
   const atom = Far('ATOM brand', {});
   const pub = board.getPublishingMarshaller();
   return harden({ getMetrics: () => pub.toCapData(harden([atom])) });
 };
 
-/** @param {import('@agoric/vats').Board} board */
+/** @param {Board} board */
 const makeOnChainWallet = board => {
   const context = makeExportContext();
   let brand;

@@ -1,7 +1,7 @@
-import { Fail } from '@endo/errors';
-import { E } from '@endo/eventual-send';
 import { deeplyFulfilledObject, objectMap } from '@agoric/internal';
 import { provideDurableWeakMapStore } from '@agoric/vat-data';
+import { Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 
 import { cleanKeywords } from './cleanProposal.js';
 import { makeIssuerRecord } from './issuerRecord.js';
@@ -10,13 +10,16 @@ const STORAGE_INSTANTIATED_KEY = 'IssuerStorageInstantiated';
 
 /**
  * @import {LegacyWeakMap, WeakMapStore} from '@agoric/store';
- * @import {ZoeIssuerRecord} from '@agoric/zoe';
+ * @import {BrandKeywordRecord, ZoeIssuerRecord} from '@agoric/zoe';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {GetAssetKindByBrand} from './internal-types.js';
+ * @import {IssuerRecords} from './internal-types.js';
  */
 
 /**
  * Make the Issuer Storage.
  *
- * @param {import('@agoric/vat-data').Baggage} zcfBaggage
+ * @param {Baggage} zcfBaggage
  */
 export const provideIssuerStorage = zcfBaggage => {
   /** @type {WeakMapStore<Brand, ZoeIssuerRecord>} */

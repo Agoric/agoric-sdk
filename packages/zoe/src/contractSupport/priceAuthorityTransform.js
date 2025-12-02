@@ -1,20 +1,22 @@
+import { AmountMath } from '@agoric/ertp';
+import { makeNotifier } from '@agoric/notifier';
 import { Fail, assert } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { AmountMath } from '@agoric/ertp';
-import { makeNotifier } from '@agoric/notifier';
 
 /**
  * @import {EOnly} from '@endo/eventual-send';
  * @import {MutableQuote, PriceAuthority, PriceQuote, PriceDescription,} from '@agoric/zoe/tools/types.js';
+ * @import {TimerService} from '@agoric/time';
+ * @import {TimestampRecord} from '@agoric/time';
  */
 
 /**
  * @param {Brand<'set'>} quoteBrand
  * @param {Amount<'nat'>} amountIn
  * @param {Amount<'nat'>} amountOut
- * @param {import('@agoric/time').TimerService} timer
- * @param {import('@agoric/time').TimestampRecord} timestamp
+ * @param {TimerService} timer
+ * @param {TimestampRecord} timestamp
  * @param {ERef<Mint<'set', PriceDescription>>} quoteMint
  * @returns {Promise<PriceQuote>}
  */

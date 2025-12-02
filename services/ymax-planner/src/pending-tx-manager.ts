@@ -2,10 +2,10 @@ import type { WebSocketProvider } from 'ethers';
 
 import { Fail } from '@endo/errors';
 
-import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import type { CaipChainId } from '@agoric/orchestration';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
+import type { SigningSmartWalletKit } from '@agoric/client-utils';
 
 import type { AxelarId } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
 import {
@@ -13,17 +13,23 @@ import {
   TxType,
 } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
+import type { KVStore } from '@agoric/internal/src/kv-store.js';
 
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
-import { resolvePendingTx } from './resolver.ts';
-import {
-  waitForBlock,
-  type EvmProviders,
-  type UsdcAddresses,
-} from './support.ts';
-import { watchGmp, lookBackGmp } from './watchers/gmp-watcher.ts';
-import { watchCctpTransfer, lookBackCctp } from './watchers/cctp-watcher.ts';
 import type { CosmosRPCClient } from './cosmos-rpc.ts';
+import { resolvePendingTx } from './resolver.ts';
+import { waitForBlock } from './support.ts';
+import type {
+  EvmProviders,
+  MakeAbortController,
+  UsdcAddresses,
+} from './support.ts';
+import { lookBackCctp, watchCctpTransfer } from './watchers/cctp-watcher.ts';
+import { lookBackGmp, watchGmp } from './watchers/gmp-watcher.ts';
+import {
+  watchSmartWalletTx,
+  lookBackSmartWalletTx,
+} from './watchers/wallet-watcher.ts';
 
 export type EvmChain = keyof typeof AxelarChain;
 
@@ -33,6 +39,8 @@ export type EvmContext = {
   evmProviders: EvmProviders;
   signingSmartWalletKit: SigningSmartWalletKit;
   fetch: typeof fetch;
+  kvStore: KVStore;
+  makeAbortController: MakeAbortController;
 };
 
 export type GmpTransfer = {
@@ -43,6 +51,7 @@ export type GmpTransfer = {
 
 type CctpTx = PendingTx & { type: typeof TxType.CCTP_TO_EVM; amount: bigint };
 type GmpTx = PendingTx & { type: typeof TxType.GMP };
+type MakeAccountTx = PendingTx & { type: typeof TxType.MAKE_ACCOUNT };
 
 type LiveWatchOpts = { mode: 'live'; timeoutMs: number };
 type LookBackWatchOpts = {
@@ -67,6 +76,7 @@ export type PendingTxMonitor<
 type MonitorRegistry = {
   [TxType.CCTP_TO_EVM]: PendingTxMonitor<CctpTx, EvmContext>;
   [TxType.GMP]: PendingTxMonitor<GmpTx, EvmContext>;
+  [TxType.MAKE_ACCOUNT]: PendingTxMonitor<MakeAccountTx, EvmContext>;
 };
 
 const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
@@ -102,6 +112,8 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
       transferStatus = await watchCctpTransfer({
         ...watchArgs,
         timeoutMs: opts.timeoutMs,
+        kvStore: ctx.kvStore,
+        txId,
       });
     } else {
       // Lookback mode with concurrent live watching
@@ -111,6 +123,8 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
         ...watchArgs,
         timeoutMs: opts.timeoutMs,
         signal: abortController.signal,
+        kvStore: ctx.kvStore,
+        txId,
       });
       void liveResultP.then(found => {
         if (found) {
@@ -130,6 +144,8 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
         publishTimeMs: opts.publishTimeMs,
         chainId: caipId,
         signal: abortController.signal,
+        kvStore: ctx.kvStore,
+        txId,
       });
 
       if (transferStatus) {
@@ -184,6 +200,8 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
       transferStatus = await watchGmp({
         ...watchArgs,
         timeoutMs: opts.timeoutMs,
+        kvStore: ctx.kvStore,
+        makeAbortController: ctx.makeAbortController,
       });
     } else {
       // Lookback mode with concurrent live watching
@@ -193,6 +211,8 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
         ...watchArgs,
         timeoutMs: opts.timeoutMs,
         signal: abortController.signal,
+        kvStore: ctx.kvStore,
+        makeAbortController: ctx.makeAbortController,
       });
       void liveResultP.then(found => {
         if (found) {
@@ -212,6 +232,8 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
         publishTimeMs: opts.publishTimeMs,
         chainId: caipId,
         signal: abortController.signal,
+        kvStore: ctx.kvStore,
+        makeAbortController: ctx.makeAbortController,
       });
 
       if (transferStatus) {
@@ -237,9 +259,95 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
   },
 };
 
+const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
+  watch: async (ctx, tx, log, opts) => {
+    await null;
+
+    const { txId, expectedAddr, destinationAddress } = tx;
+    const logPrefix = `[${txId}]`;
+
+    expectedAddr || Fail`${logPrefix} Missing expectedAddr`;
+    destinationAddress ||
+      Fail`${logPrefix} Missing destinationAddress (factory)`;
+
+    const {
+      namespace,
+      reference,
+      accountAddress: factoryAddr,
+    } = parseAccountId(destinationAddress);
+    const caipId: CaipChainId = `${namespace}:${reference}`;
+
+    const provider =
+      ctx.evmProviders[caipId] ||
+      Fail`${logPrefix} No EVM provider for chain: ${caipId}`;
+
+    const watchArgs = {
+      factoryAddr: factoryAddr as `0x${string}`,
+      provider,
+      expectedAddr: expectedAddr as `0x${string}`,
+      log: (msg, ...args) => log(logPrefix, msg, ...args),
+    };
+
+    let walletCreated: boolean | undefined;
+
+    if (opts.mode === 'live') {
+      walletCreated = await watchSmartWalletTx({
+        ...watchArgs,
+        timeoutMs: opts.timeoutMs,
+      });
+    } else {
+      const abortController = new AbortController();
+      const liveResultP = watchSmartWalletTx({
+        ...watchArgs,
+        timeoutMs: opts.timeoutMs,
+        signal: abortController.signal,
+      });
+      void liveResultP.then(found => {
+        if (found) {
+          log(`${logPrefix} Live mode completed`);
+          abortController.abort();
+        }
+      });
+
+      await null;
+
+      const currentBlock = await provider.getBlockNumber();
+      await waitForBlock(provider, currentBlock + 1);
+
+      walletCreated = await lookBackSmartWalletTx({
+        ...watchArgs,
+        kvStore: ctx.kvStore,
+        txId,
+        publishTimeMs: opts.publishTimeMs,
+        chainId: caipId,
+        signal: abortController.signal,
+      });
+
+      if (walletCreated) {
+        log(`${logPrefix} Lookback found wallet creation`);
+        abortController.abort();
+      } else {
+        log(
+          `${logPrefix} Lookback completed without finding wallet creation, waiting for live mode`,
+        );
+        walletCreated = await liveResultP;
+      }
+    }
+
+    await resolvePendingTx({
+      signingSmartWalletKit: ctx.signingSmartWalletKit,
+      txId,
+      status: walletCreated ? TxStatus.SUCCESS : TxStatus.FAILED,
+    });
+
+    log(`${logPrefix} MAKE_ACCOUNT tx resolved`);
+  },
+};
+
 const createMonitorRegistry = (): MonitorRegistry => ({
   [TxType.CCTP_TO_EVM]: cctpMonitor,
   [TxType.GMP]: gmpMonitor,
+  [TxType.MAKE_ACCOUNT]: makeAccountMonitor,
 });
 
 export type HandlePendingTxOpts = {

@@ -1,12 +1,17 @@
-import path from 'path';
 import { Buffer } from 'buffer';
+import path from 'path';
+import { Fail } from '@endo/errors';
+
+/**
+ * @import {AnyIterable} from './exporter.js';
+ */
 
 /**
  * This is a polyfill for the `buffer` function from Node's
  * 'stream/consumers' package, which unfortunately only exists in newer versions
  * of Node.
  *
- * @param {import('./exporter.js').AnyIterable<Uint8Array>} inStream
+ * @param {AnyIterable<Uint8Array>} inStream
  */
 export const buffer = async inStream => {
   const chunks = [];
@@ -19,4 +24,17 @@ export const buffer = async inStream => {
 export function dbFileInDirectory(dirPath) {
   const filePath = path.resolve(dirPath, 'swingstore.sqlite');
   return filePath;
+}
+
+/**
+ * @param {string} key
+ */
+export function getKVStoreKeyType(key) {
+  typeof key === 'string' || Fail`key must be a string`;
+  if (key.startsWith('local.')) {
+    return 'local';
+  } else if (key.startsWith('host.')) {
+    return 'host';
+  }
+  return 'consensus';
 }

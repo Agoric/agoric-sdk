@@ -17,6 +17,7 @@ const trace = makeTracer('IBCP');
  * @import {IBCEvent, IBCPacket} from '@agoric/vats';
  * @import {LocalChainAccount} from '@agoric/vats/src/localchain.js';
  * @import {PacketOptions} from './packet-tools.js';
+ * @import {Zone} from '@agoric/base-zone';
  */
 
 const { Fail, bare } = assert;
@@ -62,7 +63,7 @@ export const createSequencePattern = sequence => {
 harden(createSequencePattern);
 
 /**
- * @param {import('@agoric/base-zone').Zone} zone
+ * @param {Zone} zone
  * @param {VowTools & { makeIBCReplyKit: MakeIBCReplyKit }} powers
  */
 export const prepareIBCTransferSender = (zone, { watch, makeIBCReplyKit }) => {
@@ -215,7 +216,7 @@ harden(prepareIBCTransferSender);
  *
  * Returns a vow that settles when a match is found.
  *
- * @param {import('@agoric/base-zone').Zone} zone
+ * @param {Zone} zone
  * @param {VowTools} vowTools
  */
 export const prepareIBCReplyKit = (zone, vowTools) => {
@@ -280,7 +281,7 @@ harden(prepareIBCReplyKit);
 /** @typedef {ReturnType<typeof prepareIBCReplyKit>} MakeIBCReplyKit */
 
 /**
- * @param {import('@agoric/base-zone').Zone} zone
+ * @param {Zone} zone
  * @param {VowTools} vowTools
  */
 export const prepareIBCTools = (zone, vowTools) => {

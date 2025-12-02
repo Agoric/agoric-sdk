@@ -1,4 +1,3 @@
-import { makeReceiveUpCallPayload } from '@aglocal/boot/tools/axelar-supports.ts';
 import type { VstorageKit } from '@agoric/client-utils';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { makeIssuerKit } from '@agoric/ertp';
@@ -10,6 +9,7 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import {
   denomHash,
   withChainCapabilities,
+  type BaseChainInfo,
   type ChainInfo,
   type CosmosChainInfo,
   type Denom,
@@ -27,51 +27,7 @@ import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
-import { encodeAbiParameters } from 'viem';
 import type { StatusFor } from '../src/type-guards.ts';
-import { gmpAddresses } from './mocks.ts';
-
-export const makeIncomingEVMEvent = ({
-  sender = gmpAddresses.AXELAR_GMP,
-  address = '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
-  sourceChain,
-  target = makeTestAddress(0), // agoric1q...p7zqht
-}: {
-  sender?: `${string}1${string}`;
-  address?: `0x${string}`;
-  sourceChain: string;
-  target?: string;
-}) => {
-  const encodedAddress = encodeAbiParameters([{ type: 'address' }], [address]);
-
-  const axelarConnections =
-    fetchedChainInfo.agoric.connections['axelar-dojo-1'];
-
-  const agoricChannel = axelarConnections.transferChannel.channelId;
-  const axelarChannel = axelarConnections.transferChannel.counterPartyChannelId;
-
-  const result = makeIncomingVTransferEvent({
-    sender,
-    sourceChannel: axelarChannel,
-    destinationChannel: agoricChannel,
-    target,
-    memo: JSON.stringify({
-      source_chain: sourceChain,
-      source_address: '0x19e71e7eE5c2b13eF6bd52b9E3b437bdCc7d43c8',
-      payload: makeReceiveUpCallPayload({
-        isContractCallResult: false,
-        data: [
-          {
-            success: true,
-            result: encodedAddress,
-          },
-        ],
-      }),
-      type: 1,
-    }),
-  });
-  return result;
-};
 
 export const makeIncomingVTransferEvent = ({
   sender = makeTestAddress(),
@@ -127,19 +83,21 @@ export const makeStorageTools = (storage: FakeStorageKit) => {
       .at(-1) as StatusFor['portfolio'];
   };
 
-  const getFlowStatus = async (pId: number, fId: number) => {
+  const getFlowHistory = async (pId: number, fId: number) => {
     await vstoragePendingWrites();
-    return storage
-      .getDeserialized(
-        `published.ymax0.portfolios.portfolio${pId}.flows.flow${fId}`,
-      )
-      .at(-1) as StatusFor['flow'];
+    return storage.getDeserialized(
+      `published.ymax0.portfolios.portfolio${pId}.flows.flow${fId}`,
+    ) as StatusFor['flow'][];
   };
+
+  const getFlowStatus = async (pId: number, fId: number) =>
+    getFlowHistory(pId, fId).then(xs => xs.at(-1));
 
   return harden({
     readPublished,
     readLegible,
     getPortfolioStatus,
+    getFlowHistory,
     getFlowStatus,
   });
 };
@@ -159,7 +117,7 @@ export {
  * - https://docs.simplehash.com/reference/supported-chains-testnets (accessed on
  *   4 July 2025)
  *
- * @satisfies {Record<string, import('./orchestration-api').BaseChainInfo>}
+ *
  */
 export const axelarCCTPConfig = {
   Ethereum: {
@@ -187,7 +145,7 @@ export const axelarCCTPConfig = {
     reference: '8453',
     cctpDestinationDomain: 6,
   },
-};
+} satisfies Record<string, BaseChainInfo>;
 
 export const chainInfoWithCCTP = {
   ...withChainCapabilities(fetchedChainInfo),

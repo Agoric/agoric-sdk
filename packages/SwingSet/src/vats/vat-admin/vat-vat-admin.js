@@ -22,6 +22,11 @@ import {
  * @import {VatAdminRootDeviceNode} from '../../devices/vat-admin/device-vat-admin.js';
  * @import {DProxy} from'../../types-external.js';
  * @import {Baggage} from '@agoric/vat-data';
+ * @import {VatPowers} from '../../types-external.js';
+ * @import {BundleID} from '../../types-external.js';
+ * @import {BundleCap} from '../../types-external.js';
+ * @import {Device} from '../../types-external.js';
+ * @import {UpgradeID} from '../../devices/vat-admin/device-vat-admin.js';
  */
 
 const managerTypes = ['local', 'node-subprocess', 'xsnap', 'xs-worker']; // xs-worker is alias
@@ -49,7 +54,7 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
   const pendingBundles = new Map();
   const pendingUpgrades = new Map(); // upgradeID -> Promise<UpgradeResults>
 
-  /** @type {import('../../types-external.js').Device<VatAdminRootDeviceNode>} */
+  /** @type {Device<VatAdminRootDeviceNode>} */
   let vatAdminDev;
 
   const runningVats = new Map(); // vatID -> [doneP, { resolve, reject }]
@@ -523,7 +528,7 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
   /**
    * the kernel queues this to us when a vat upgrade completes or fails
    *
-   * @param {import('../../devices/vat-admin/device-vat-admin.js').UpgradeID} upgradeID
+   * @param {UpgradeID} upgradeID
    * @param {boolean} success
    * @param {Error | undefined} error
    * @param {number} incarnationNumber

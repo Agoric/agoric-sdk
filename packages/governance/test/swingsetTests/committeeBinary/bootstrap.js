@@ -14,6 +14,9 @@ import { remoteNullMarshaller } from '../utils.js';
 
 /**
  * @import {QuestionDetails} from '../../../src/types.js';
+ * @import {Timestamp} from '@agoric/time';
+ * @import {CommitteeElectorateCreatorFacet} from '../../../src/committee.js';
+ * @import {TimerService} from '@agoric/time';
  */
 
 const makeVoterVat = async (log, vats, zoe) => {
@@ -24,8 +27,8 @@ const makeVoterVat = async (log, vats, zoe) => {
 
 /**
  * @param {Pick<QuestionDetails, 'issue' | 'positions' | 'electionType'>} qDetails
- * @param {import('@agoric/time').Timestamp} closingTime
- * @param {{ electorateFacet: import('../../../src/committee.js').CommitteeElectorateCreatorFacet, installations: Record<string, Installation>, timer: import('@agoric/time').TimerService }} tools
+ * @param {Timestamp} closingTime
+ * @param {{ electorateFacet: CommitteeElectorateCreatorFacet, installations: Record<string, Installation>, timer: TimerService }} tools
  * @param {*} quorumRule
  */
 const createQuestion = async (qDetails, closingTime, tools, quorumRule) => {

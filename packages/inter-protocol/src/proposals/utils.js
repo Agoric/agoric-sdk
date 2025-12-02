@@ -8,16 +8,20 @@ import { makeScalarBigMapStore } from '@agoric/vat-data';
 /**
  * @import {CopyMap} from '@endo/patterns';
  * @import {MapStore, SetStore} from '@agoric/store';
+ * @import {NameAdmin} from '@agoric/vats';
+ * @import {ScratchPad} from '@agoric/internal/src/scratch.js';
+ * @import {Bundle} from '@agoric/swingset-vat';
  */
 
 /**
- * @param {ERef<import('@agoric/vats').NameAdmin>} nameAdmin
+ * @param {ERef<NameAdmin>} nameAdmin
  * @param {string[][]} paths
  */
 export const reserveThenGetNamePaths = async (nameAdmin, paths) => {
   /**
-   * @param {ERef<import('@agoric/vats').NameAdmin>} nextAdmin
+   * @param {ERef<NameAdmin>} nextAdmin
    * @param {string[]} path
+   * @returns {Promise<unknown>}
    */
   const nextPath = async (nextAdmin, path) => {
     const [nextName, ...rest] = path;
@@ -46,8 +50,9 @@ export const reserveThenGetNamePaths = async (nameAdmin, paths) => {
 };
 
 /**
- * @param {ERef<import('@agoric/vats').NameAdmin>} nameAdmin
+ * @param {ERef<NameAdmin>} nameAdmin
  * @param {string[]} names
+ * @returns {Promise<any[]>}
  */
 export const reserveThenGetNames = async (nameAdmin, names) =>
   reserveThenGetNamePaths(
@@ -57,7 +62,7 @@ export const reserveThenGetNames = async (nameAdmin, names) =>
 
 /**
  * @param {string} debugName
- * @param {ERef<import('@agoric/vats').NameAdmin>} namesByAddressAdmin
+ * @param {ERef<NameAdmin>} namesByAddressAdmin
  * @param {string} addr
  * @param {ERef<Payment>[]} payments
  */
@@ -68,6 +73,7 @@ export const reserveThenDeposit = async (
   payments,
 ) => {
   console.info('awaiting depositFacet for', debugName);
+  /** @type {any} */
   const [depositFacet] = await reserveThenGetNamePaths(namesByAddressAdmin, [
     [addr, WalletName.depositFacet],
   ]);
@@ -86,9 +92,7 @@ export const reserveThenDeposit = async (
 
 /**
  * @type {<T>(
- *   store: ERef<
- *     Map<string, T> | import('@agoric/internal/src/scratch.js').ScratchPad
- *   >,
+ *   store: ERef<Map<string, T> | ScratchPad>,
  *   key: string,
  *   make: () => T,
  * ) => Promise<T>}
@@ -105,7 +109,7 @@ const provideWhen = async (store, key, make) => {
 
 /**
  * @param {Promise<{
- *   scratch: ERef<import('@agoric/internal/src/scratch.js').ScratchPad>;
+ *   scratch: ERef<ScratchPad>;
  * }>} homeP
  * @param {object} opts
  * @param {(specifier: string) => Promise<{ default: Bundle }>} opts.loadBundle

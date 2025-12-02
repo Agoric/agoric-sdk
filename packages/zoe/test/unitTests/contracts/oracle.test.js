@@ -14,6 +14,10 @@ import { makeZoeForTest } from '../../../tools/setup-zoe.js';
 
 /**
  * @import {ZoeService} from '@agoric/zoe';
+ * @import {ExecutionContext} from 'ava';
+ * @import {OracleStart} from '../../../src/contracts/oracle.js';
+ * @import {OracleKit} from '../../../src/contracts/priceAggregatorTypes.js';
+ * @import {OracleHandler} from '../../../src/contracts/priceAggregatorTypes.js';
  */
 
 /**
@@ -22,8 +26,6 @@ import { makeZoeForTest } from '../../../tools/setup-zoe.js';
  * @property {(t: ExecutionContext) => Promise<OracleKit>} makePingOracle
  * @property {Amount} feeAmount
  * @property {IssuerKit} link
- *
- * @typedef {import('ava').ExecutionContext<TestContext>} ExecutionContext
  */
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
@@ -32,7 +34,7 @@ const contractPath = `${dirname}/../../../src/contracts/oracle.js`;
 
 test.before(
   'setup oracle',
-  /** @param {ExecutionContext} ot */ async ot => {
+  /** @param {ExecutionContext<TestContext>} ot */ async ot => {
     // Outside of tests, we should use the long-lived Zoe on the
     // testnet. In this test, we must create a new Zoe.
     const { admin, vatAdminState } = makeFakeVatAdmin();
@@ -40,7 +42,7 @@ test.before(
 
     // Pack the contract.
     const contractBundle = await bundleSource(contractPath);
-    vatAdminState.installBundle('b1-oracle', contractBundle);
+    const b1oracle = vatAdminState.registerBundle('b1-oracle', contractBundle);
 
     const link = makeIssuerKit('$LINK', AssetKind.NAT);
 
@@ -49,12 +51,12 @@ test.before(
     // of tests, we can also send the installation to someone
     // else, and they can use it to create a new contract instance
     // using the same code.
-    /** @type {Installation<import('../../../src/contracts/oracle.js').OracleStart>} */
-    const installation = await E(zoe).installBundleID('b1-oracle');
+    /** @type {Installation<OracleStart>} */
+    const installation = await E(zoe).installBundleID(b1oracle);
 
     const feeAmount = AmountMath.make(link.brand, 1000n);
     /**
-     * @param {ExecutionContext} _t
+     * @param {ExecutionContext<TestContext>} _t
      * @returns {Promise<OracleKit>}
      */
     const makePingOracle = async _t => {
@@ -100,7 +102,7 @@ test.before(
   },
 );
 
-test('single oracle', /** @param {ExecutionContext} t */ async t => {
+test('single oracle', /** @param {ExecutionContext<TestContext>} t */ async t => {
   const { zoe, link, makePingOracle, feeAmount } = t.context;
 
   // Get the Zoe invitation issuer from Zoe.

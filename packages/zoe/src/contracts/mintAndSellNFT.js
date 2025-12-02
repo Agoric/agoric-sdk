@@ -1,9 +1,14 @@
+import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { assert } from '@endo/errors';
-import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
 import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
+
+/**
+ * @import {start as sellItemStart} from './sellItems.js';
+ * @import {MintAndSellNFTCreatorFacet} from './types-ambient.js';
+ */
 
 /**
  * This contract mints non-fungible tokens and creates a selling contract
@@ -39,7 +44,7 @@ const start = zcf => {
 
   /**
    * @param {object} obj
-   * @param {Installation<import('./sellItems.js').start>} obj.sellItemsInstallation
+   * @param {Installation<typeof sellItemStart>} obj.sellItemsInstallation
    * @param {*} obj.customValueProperties
    * @param {number} obj.count
    * @param {*} obj.moneyIssuer

@@ -6,12 +6,15 @@ import { makePegasus } from './pegasus.js';
 /**
  * @import {Remote} from '@agoric/vow';
  * @import {ContractStartFn} from '@agoric/zoe';
+ * @import {Pegasus} from './pegasus.js';
+ * @import {NameHub} from '@agoric/vats';
+ * @import {BoardDepositFacet} from './types.js';
  */
 
 /**
- * @type {ContractStartFn<import('./pegasus.js').Pegasus, never, {}, {
+ * @type {ContractStartFn<Pegasus, never, {}, {
  *   board: Remote<BoardDepositFacet>,
- *   namesByAddress: Remote<import('@agoric/vats').NameHub>
+ *   namesByAddress: Remote<NameHub>
  * }>}
  */
 export const start = (zcf, privateArgs, baggage) => {

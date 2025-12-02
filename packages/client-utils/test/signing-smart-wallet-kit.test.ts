@@ -96,7 +96,7 @@ test('sendBridgeAction handles simple action', async t => {
         },
       },
     ],
-    fee: { amount: [{ denom: 'ubld', amount: '500000' }], gas: '19700000' },
+    fee: { amount: [{ denom: 'ubld', amount: '10000' }], gas: '400000' },
   });
 });
 
@@ -174,7 +174,7 @@ test('sendBridgeAction uses explicit signing when signerData provided', async t 
         },
       },
     ],
-    fee: { amount: [{ denom: 'ubld', amount: '500000' }], gas: '19700000' },
+    fee: { amount: [{ denom: 'ubld', amount: '10000' }], gas: '400000' },
     memo: 'test memo',
     signerData,
   });

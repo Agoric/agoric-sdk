@@ -3,7 +3,7 @@
 const { freeze } = Object;
 
 /**
- * @import {PathNode, FileRd, FileRW} from './file';
+ * @import {PathNode, FileRd, FileRW} from './file.js';
  *
  * XXX TODO: basename, relative
  * @typedef {Omit<PathNode, 'basename' | 'relative'> & Pick<FileRd, 'readText' | 'readJSON'>} TextRd

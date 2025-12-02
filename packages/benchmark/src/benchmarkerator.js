@@ -16,6 +16,11 @@ import {
 } from '@aglocal/boot/tools/drivers.js';
 import { makeLiquidationTestKit } from '@aglocal/boot/tools/liquidation.js';
 
+/**
+ * @import {SmartWalletDriver} from '@aglocal/boot/tools/drivers.ts';
+ * @import {ManagerType} from '@agoric/swingset-vat';
+ */
+
 // When I was a child my family took a lot of roadtrips around California to go
 // camping and backpacking and so on.  It was not uncommon in those days (nor is
 // it uncommon today) to encounter points of historical interest alongside the
@@ -44,7 +49,7 @@ import { makeLiquidationTestKit } from '@aglocal/boot/tools/liquidation.js';
  * @typedef {{
  *    options: Record<string, string>,
  *    argv: string[],
- *    actors: Record<string, import('@aglocal/boot/tools/drivers.ts').SmartWalletDriver>,
+ *    actors: Record<string, SmartWalletDriver>,
  *    tools: Record<string, unknown>,
  *    title?: string,
  *    rounds?: number,

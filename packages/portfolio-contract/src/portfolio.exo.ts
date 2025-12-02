@@ -11,6 +11,10 @@ import {
   type IBCConnectionInfo,
 } from '@agoric/orchestration';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
+import type {
+  FundsFlowPlan,
+  PortfolioContinuingInvitationMaker,
+} from '@agoric/portfolio-api';
 import {
   AxelarChain,
   SupportedChain,
@@ -25,7 +29,6 @@ import type { Zone } from '@agoric/zone';
 import { Fail, X } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import type { PortfolioContinuingInvitationMaker } from '@agoric/portfolio-api';
 import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
 import { type LocalAccount, type NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
@@ -49,12 +52,14 @@ export type AccountInfo = GMPAccountInfo | AgoricAccountInfo | NobleAccountInfo;
 export type GMPAccountInfo = {
   namespace: 'eip155';
   chainName: AxelarChain;
+  err?: string;
   chainId: CaipChainId;
   remoteAddress: `0x${string}`;
 };
 type AgoricAccountInfo = {
   namespace: 'cosmos';
   chainName: 'agoric';
+  err?: string;
   lca: LocalAccount;
   lcaIn: LocalAccount;
   reg: TargetRegistration;
@@ -62,6 +67,7 @@ type AgoricAccountInfo = {
 type NobleAccountInfo = {
   namespace: 'cosmos';
   chainName: 'noble';
+  err?: string;
   ica: NobleAccount;
 };
 
@@ -75,7 +81,10 @@ type PortfolioKitState = {
   accountsPending: MapStore<SupportedChain, VowKit<AccountInfo>>;
   accounts: MapStore<SupportedChain, AccountInfo>;
   positions: MapStore<PoolKey, Position>;
-  flowsRunning: MapStore<number, { sync: VowKit<MovementDesc[]> } & FlowDetail>;
+  flowsRunning: MapStore<
+    number,
+    { sync: VowKit<MovementDesc[] | FundsFlowPlan> } & FlowDetail
+  >;
   nextFlowId: number;
   targetAllocation?: TargetAllocation;
   policyVersion: number;
@@ -305,15 +314,9 @@ export const preparePortfolioKit = (
         getPortfolioId() {
           return this.state.portfolioId;
         },
-        getGMPInfo(chainName: AxelarChain): Vow<GMPAccountInfo> {
-          const { accounts, accountsPending } = this.state;
-          if (accounts.has(chainName)) {
-            return vowTools.asVow(
-              () => accounts.get(chainName) as GMPAccountInfo,
-            );
-          }
-          const { vow } = accountsPending.get(chainName);
-          return vow as Vow<GMPAccountInfo>;
+        getGMPInfo(chainName: AxelarChain) {
+          const { accounts } = this.state;
+          return accounts.get(chainName) as GMPAccountInfo;
         },
         getTargetAllocation() {
           return this.state.targetAllocation;
@@ -369,9 +372,16 @@ export const preparePortfolioKit = (
           this.facets.reporter.publishStatus();
         },
         // XXX collecting flow nodes is TBD
-        publishFlowSteps(id: number, steps: StatusFor['flowSteps']) {
+        publishFlowSteps(
+          id: number,
+          steps: StatusFor['flowSteps'],
+          order?: FundsFlowPlan['order'],
+        ) {
           const { portfolioId } = this.state;
-          publishStatus(makeFlowStepsPath(portfolioId, id), steps);
+          publishStatus(makeFlowStepsPath(portfolioId, id, 'steps'), steps);
+          if (order) {
+            publishStatus(makeFlowStepsPath(portfolioId, id, 'order'), order);
+          }
         },
         publishFlowStatus(id: number, status: StatusFor['flow']) {
           const { portfolioId } = this.state;
@@ -388,41 +398,97 @@ export const preparePortfolioKit = (
           this.state.rebalanceCount += 1;
           this.facets.reporter.publishStatus();
         },
-        resolveFlowPlan(flowId: number, steps: MovementDesc[]) {
+        resolveFlowPlan(flowId: number, steps: MovementDesc[] | FundsFlowPlan) {
           const { flowsRunning } = this.state;
           const detail = flowsRunning.get(flowId);
           detail.sync.resolver.resolve(steps);
         },
       },
+      /**
+       * Manages a cooperative reservation protocol for per-chain accounts.
+       *
+       * For each chain, callers coordinate through four states:
+       *   'new' | 'failed' — caller holds the reservation
+       *   'pending'        — another caller is initializing
+       *   'ok'             — initialization finished
+       *
+       * When holding the reservation ('new' or 'failed'), the caller must run a
+       * try/catch critical section and finish with exactly one of:
+       *   resolveAccount(info)  // success
+       *   releaseAccount(chain, reason)  // failure
+       *
+       * initAccountInfo(info) is optional before the terminal call.
+       */
       manager: {
+        /**
+         * Legacy wrapper for {@link reserveAccountState}.
+         * @see reserveAccountState
+         */
         reserveAccount<C extends SupportedChain>(
           chainName: C,
         ): undefined | Vow<AccountInfoFor[C]> {
+          const { ready, state } =
+            this.facets.manager.reserveAccountState(chainName);
+          return state === 'new' ? undefined : ready;
+        },
+        /**
+         * Returns the current reservation state for the given chain,
+         * along with a vow that resolves when initialization completes.
+         *
+         * @see manager — for the full reservation protocol and caller obligations.
+         */
+        reserveAccountState<C extends SupportedChain>(
+          chainName: C,
+        ): {
+          state: 'new' | 'pending' | 'ok' | 'failed';
+          ready: Vow<AccountInfoFor[C]>;
+        } {
           const traceChain = trace
             .sub(`portfolio${this.state.portfolioId}`)
             .sub(chainName);
           traceChain('reserveAccount');
           const { accounts, accountsPending } = this.state;
           if (accounts.has(chainName)) {
-            traceChain('accounts.has');
-            return vowTools.asVow(async () => {
-              const infoAny = accounts.get(chainName);
-              assert.equal(infoAny.chainName, chainName);
-              const info = infoAny as AccountInfoFor[C];
-              return info;
-            });
+            const infoAny = accounts.get(chainName);
+            assert.equal(infoAny.chainName, chainName);
+            const info = infoAny as AccountInfoFor[C];
+            const state = info.err ? 'failed' : 'ok';
+            traceChain('state', state);
+            const ready = vowTools.asVow(async () => info);
+            return { ready, state };
           }
           if (accountsPending.has(chainName)) {
-            traceChain('accountsPending.has');
-            return accountsPending.get(chainName).vow as Vow<AccountInfoFor[C]>;
+            const state = 'pending';
+            traceChain('state', state);
+            const val = accountsPending.get(chainName);
+            return { ready: val.vow as Vow<AccountInfoFor[C]>, state };
           }
+          const state = 'new';
+          traceChain('state', state);
           const pending: VowKit<AccountInfoFor[C]> = vowTools.makeVowKit();
           vowTools.watch(pending.vow, this.facets.accountWatcher, chainName);
-          traceChain('accountsPending.init');
           accountsPending.init(chainName, pending);
           this.facets.reporter.publishStatus();
-          return undefined;
+          return { ready: pending.vow as Vow<AccountInfoFor[C]>, state };
         },
+        /**
+         * Optionally record preliminary account info (e.g., predicted addresses).
+         * Valid only when the caller holds the reservation (`'new'` or `'failed'`).
+         */
+        initAccountInfo(info: AccountInfo) {
+          const { accounts, portfolioId } = this.state;
+          const traceChain = trace
+            .sub(`portfolio${portfolioId}`)
+            .sub(info.chainName);
+          traceChain('accounts.init', info);
+          accounts.init(info.chainName, info);
+          this.facets.reporter.publishStatus();
+        },
+        /**
+         * Terminal success action for the reservation protocol.
+         * Resolves any pending vow and commits stable account info.
+         * Valid only when the caller holds the reservation.
+         */
         resolveAccount(info: AccountInfo) {
           const { accounts, accountsPending, portfolioId } = this.state;
           const traceChain = trace
@@ -430,19 +496,32 @@ export const preparePortfolioKit = (
             .sub(info.chainName);
 
           if (accountsPending.has(info.chainName)) {
-            const vow = accountsPending.get(info.chainName);
-            // NEEDSTEST - why did all tests pass without .resolve()?
+            const pending = accountsPending.get(info.chainName);
             traceChain('accountsPending.resolve');
-            vow.resolver.resolve(info);
-            accountsPending.delete(info.chainName);
+            pending.resolver.resolve(info);
           }
-          traceChain('accounts.init');
-          accounts.init(info.chainName, info);
+          if (accounts.has(info.chainName)) {
+            const { err: _, ...noErr } = accounts.get(info.chainName);
+            traceChain('accounts.set');
+            accounts.set(info.chainName, noErr);
+          } else {
+            traceChain('accounts.init');
+            accounts.init(info.chainName, info);
+          }
           this.facets.reporter.publishStatus();
         },
+        /**
+         * Terminal failure action for the reservation protocol.
+         * Rejects any pending vow and marks the account as failed.
+         * Valid only when the caller holds the reservation.
+         */
         releaseAccount(chainName: SupportedChain, reason: unknown) {
           trace('releaseAccount', chainName, reason);
-          const { accountsPending } = this.state;
+          const { accounts, accountsPending } = this.state;
+          if (accounts.has(chainName)) {
+            const info = accounts.get(chainName);
+            accounts.set(chainName, { ...info, err: `${reason}` });
+          }
           if (accountsPending.has(chainName)) {
             const vow = accountsPending.get(chainName);
             vow.resolver.reject(reason);
@@ -496,11 +575,24 @@ export const preparePortfolioKit = (
         },
       },
       accountWatcher: {
+        onFulfilled(info: AccountInfo, chainName: AxelarChain) {
+          const { accountsPending } = this.state;
+          if (accountsPending.has(chainName)) {
+            accountsPending.delete(chainName);
+          }
+          this.facets.reporter.publishStatus();
+          return info;
+        },
         onRejected(reason, chainName) {
+          const { accountsPending, portfolioId } = this.state;
           const traceChain = trace
-            .sub(`portfolio${this.state.portfolioId}`)
+            .sub(`portfolio${portfolioId}`)
             .sub(chainName);
           traceChain('rejected', reason);
+          if (accountsPending.has(chainName)) {
+            accountsPending.delete(chainName);
+          }
+          this.facets.reporter.publishStatus();
         },
       },
       rebalanceHandler: {

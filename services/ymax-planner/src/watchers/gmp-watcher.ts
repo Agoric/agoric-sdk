@@ -1,11 +1,19 @@
-import { ethers, type Filter, type WebSocketProvider, type Log } from 'ethers';
-import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types';
+import { ethers } from 'ethers';
+import type { Filter, WebSocketProvider, Log } from 'ethers';
+import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.js';
 import type { CaipChainId } from '@agoric/orchestration';
+import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
 } from '../support.ts';
+import type { MakeAbortController, WatcherTimeoutOptions } from '../support.ts';
 import { TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
+import {
+  deleteTxBlockLowerBound,
+  getTxBlockLowerBound,
+  setTxBlockLowerBound,
+} from '../kv-store.ts';
 
 // TODO: Remove once all contracts are upgraded to emit MulticallStatus
 const MULTICALL_EXECUTED_SIGNATURE = ethers.id(
@@ -20,6 +28,8 @@ type WatchGmp = {
   contractAddress: `0x${string}`;
   txId: TxId;
   log: (...args: unknown[]) => void;
+  kvStore: KVStore;
+  makeAbortController: MakeAbortController;
 };
 
 export const watchGmp = ({
@@ -30,11 +40,7 @@ export const watchGmp = ({
   log = () => {},
   setTimeout = globalThis.setTimeout,
   signal,
-}: WatchGmp & {
-  timeoutMs?: number;
-  setTimeout?: typeof globalThis.setTimeout;
-  signal?: AbortSignal;
-}): Promise<boolean> => {
+}: WatchGmp & WatcherTimeoutOptions): Promise<boolean> => {
   return new Promise(resolve => {
     if (signal?.aborted) {
       resolve(false);
@@ -115,6 +121,17 @@ export const watchGmp = ({
   });
 };
 
+// We search separately for MulticallExecuted vs. MulticallStatus events
+// indicating resolution of any given transaction.
+// XXX It should be possible to combine them per
+// https://docs.ethers.org/v6/api/providers/#TopicFilter , but we only search
+// for the former to maintain backwards compatibility and so have not pursued
+// such an approach.
+export const EVENTS = {
+  MULTICALL_EXECUTED: 'executed',
+  MULTICALL_STATUS: 'status',
+};
+
 export const lookBackGmp = async ({
   provider,
   contractAddress,
@@ -123,6 +140,8 @@ export const lookBackGmp = async ({
   chainId,
   log = () => {},
   signal,
+  kvStore,
+  makeAbortController,
 }: WatchGmp & {
   publishTimeMs: number;
   chainId: CaipChainId;
@@ -136,11 +155,24 @@ export const lookBackGmp = async ({
     );
     const toBlock = await provider.getBlockNumber();
 
+    // We don't know whether resolution will take the form of "executed" or
+    // "status", so we look for both and track progress separately.
+    const statusEventLowerBound =
+      getTxBlockLowerBound(kvStore, txId, EVENTS.MULTICALL_STATUS) || fromBlock;
+    const executedEventLowerBound =
+      getTxBlockLowerBound(kvStore, txId, EVENTS.MULTICALL_EXECUTED) ||
+      fromBlock;
+
     log(
-      `Searching blocks ${fromBlock} → ${toBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
+      `Searching blocks ${statusEventLowerBound}/${executedEventLowerBound} → ${toBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
     );
     const expectedIdTopic = ethers.keccak256(ethers.toUtf8Bytes(txId));
+    const isMatch = ev => ev.topics[1] === expectedIdTopic;
 
+    // XXX It should be possible to combine both filters into one disjunction:
+    // https://docs.ethers.org/v6/api/providers/#TopicFilter
+    // > array is effectively an OR-ed set, where any one of those values must
+    // > match
     const statusFilter: Filter = {
       address: contractAddress,
       topics: [MULTICALL_STATUS_SIGNATURE, expectedIdTopic],
@@ -151,51 +183,54 @@ export const lookBackGmp = async ({
       topics: [MULTICALL_EXECUTED_SIGNATURE, expectedIdTopic],
     };
 
-    const statusController = new AbortController();
-    const executedController = new AbortController();
+    const updateStatusEventLowerBound = (_from: number, to: number) =>
+      setTxBlockLowerBound(kvStore, txId, to, EVENTS.MULTICALL_STATUS);
 
-    if (signal) {
-      signal.addEventListener('abort', () => {
-        statusController.abort();
-        executedController.abort();
-      });
-    }
+    const updateExecutedEventLowerBound = (_from: number, to: number) =>
+      setTxBlockLowerBound(kvStore, txId, to, EVENTS.MULTICALL_EXECUTED);
+
+    // Options shared by both scans (including an abort signal that is triggered
+    // by a match from either).
+    // see `prepareAbortController` in services/ymax-planner/src/main.ts
+    const { abort: abortScans, signal: sharedSignal } = makeAbortController(
+      undefined,
+      signal ? [signal] : [],
+    );
+    const baseScanOpts = {
+      provider,
+      toBlock,
+      chainId,
+      log,
+      signal: sharedSignal,
+    };
 
     const matchingEvent = await Promise.race([
       scanEvmLogsInChunks(
         {
-          provider,
+          ...baseScanOpts,
           baseFilter: statusFilter,
-          fromBlock,
-          toBlock,
-          chainId,
-          log,
-          signal: statusController.signal,
+          fromBlock: statusEventLowerBound,
+          onRejectedChunk: updateStatusEventLowerBound,
         },
-        ev => ev.topics[1] === expectedIdTopic,
-      ).then(result => {
-        executedController.abort();
-        return result;
-      }),
+        isMatch,
+      ),
       scanEvmLogsInChunks(
         {
-          provider,
+          ...baseScanOpts,
           baseFilter: executedFilter,
-          fromBlock,
-          toBlock,
-          chainId,
-          log,
-          signal: executedController.signal,
+          fromBlock: executedEventLowerBound,
+          onRejectedChunk: updateExecutedEventLowerBound,
         },
-        ev => ev.topics[1] === expectedIdTopic,
-      ).then(result => {
-        statusController.abort();
-        return result;
-      }),
+        isMatch,
+      ),
     ]);
+
+    abortScans();
 
     if (matchingEvent) {
       log(`Found matching event`);
+      deleteTxBlockLowerBound(kvStore, txId, EVENTS.MULTICALL_EXECUTED);
+      deleteTxBlockLowerBound(kvStore, txId, EVENTS.MULTICALL_STATUS);
       return true;
     }
 

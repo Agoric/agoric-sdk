@@ -2,23 +2,25 @@ import { E } from '@endo/far';
 
 import { makeTracer } from '@agoric/internal';
 
+/**
+ * @import {CreateVatResults, VatAdminSvc} from '@agoric/swingset-vat';
+ * @import {VatUpgradeOptions} from '@agoric/swingset-vat';
+ */
+
 const trace = makeTracer('UpgradeVats');
 
 /**
  * @param {BootstrapPowers & {
  *   consume: {
  *     vatAdminSvc: VatAdminSvc;
- *     vatStore: MapStore<
- *       string,
- *       import('@agoric/swingset-vat').CreateVatResults
- *     >;
+ *     vatStore: MapStore<string, CreateVatResults>;
  *   };
  * }} powers
  * @param {object} options
  * @param {{
  *   bundleRefs: { [vatName: string]: VatSourceRef };
  *   vatOptions?: {
- *     [vatName: string]: import('@agoric/swingset-vat').VatUpgradeOptions;
+ *     [vatName: string]: VatUpgradeOptions;
  *   };
  * }} options.options
  */

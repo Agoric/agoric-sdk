@@ -19,7 +19,15 @@ import {
 } from '../../../src/walletFactory.js';
 
 /**
- * @type {typeof import('../../../src/walletFactory.js').prepare}
+ * @import {prepare as wfPrepare} from '../../../src/walletFactory.js';
+ * @import {SmartWallet} from '../../../src/smartWallet.js';
+ * @import {WalletBridgeMsg} from '../../../src/types.js';
+ * @import {Bank} from '@agoric/vats/src/vat-bank.js';
+ * @import {NameAdmin} from '@agoric/vats/src/types.js';
+ */
+
+/**
+ * @type {typeof wfPrepare}
  */
 export const prepare = async (zcf, privateArgs, baggage) => {
   // copy paste from original contract, with type imports fixed and sayHelloUpgrade method added to creatorFacet)
@@ -29,10 +37,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
   const { storageNode, walletBridgeManager } = privateArgs;
 
   /**
-   * @type {MapStore<
-   *   string,
-   *   import('../../../src/smartWallet.js').SmartWallet
-   * >}
+   * @type {MapStore<string, SmartWallet>}
    */
   const walletsByAddress = provideDurableMapStore(baggage, 'walletsByAddress');
   const provider = makeAtomicProvider(walletsByAddress);
@@ -44,8 +49,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     }),
     {
       /**
-       * @param {import('../../../src/types.js').WalletBridgeMsg} obj validated
-       *   by shape.WalletBridgeMsg
+       * @param {WalletBridgeMsg} obj validated by shape.WalletBridgeMsg
        */
       fromBridge: async obj => {
         console.log('walletFactory.fromBridge:', obj);
@@ -118,20 +122,16 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     {
       /**
        * @param {string} address
-       * @param {ERef<import('@agoric/vats/src/vat-bank.js').Bank>} bank
-       * @param {ERef<import('@agoric/vats/src/types.js').NameAdmin>} namesByAddressAdmin
-       * @returns {Promise<
-       *   [import('../../../src/smartWallet.js').SmartWallet, boolean]
-       * >}
-       *   wallet along with a flag to distinguish between looking up an existing
-       *   wallet and creating a new one.
+       * @param {ERef<Bank>} bank
+       * @param {ERef<NameAdmin>} namesByAddressAdmin
+       * @returns {Promise<[SmartWallet, boolean]>} wallet along with a flag to
+       *   distinguish between looking up an existing wallet and creating a new
+       *   one.
        */
       provideSmartWallet(address, bank, namesByAddressAdmin) {
         let makerCalled = false;
         /**
-         * @type {() => Promise<
-         *   import('../../../src/smartWallet.js').SmartWallet
-         * >}
+         * @type {() => Promise<SmartWallet>}
          */
         const maker = async () => {
           const invitationPurse = await E(invitationIssuer).makeEmptyPurse();

@@ -19,6 +19,18 @@ import {
 
 import '../types-ambient.js';
 
+/**
+ * @import {BundleFormat} from '../types-external.js';
+ * @import {SwingSetConfig} from '../types-external.js';
+ * @import {SwingSetKernelConfig} from '../types-external.js';
+ * @import {SwingSetConfigDescriptor} from '../types-external.js';
+ * @import {SwingSetConfigProperties} from '../types-external.js';
+ * @import {Bundle} from '../types-external.js';
+ * @import {SwingStoreKernelStorage} from '../types-external.js';
+ * @import {EndoZipBase64Bundle} from '../types-external.js';
+ * @import {BundleHandler} from './bundle-handler.js';
+ */
+
 const trace = makeTracer('IniSwi', false);
 
 /**
@@ -40,7 +52,9 @@ const allValues = async obj => {
 };
 
 const bundleRelative = rel =>
-  bundleSource(new URL(rel, import.meta.url).pathname);
+  bundleSource(new URL(rel, import.meta.url).pathname, {
+    byteLimit: Infinity,
+  });
 
 /**
  * Build the source bundles for the kernel. makeSwingsetController()
@@ -300,7 +314,7 @@ function sortObjectProperties(obj, firsts = []) {
  * @param {SwingStoreKernelStorage} kernelStorage
  * @param {InitializationOptions} initializationOptions
  * @param {{ env?: Record<string, string | undefined >,
- *           bundleHandler?: import('./bundle-handler.js').BundleHandler,
+ *           bundleHandler?: BundleHandler,
  *         }} runtimeOptions
  * @returns {Promise<string | undefined>} KPID of the bootstrap message result promise
  */
@@ -433,7 +447,14 @@ export async function initializeSwingset(
   const bundleCache = await (config.bundleCachePath
     ? provideBundleCache(
         config.bundleCachePath,
-        { dev: config.includeDevDependencies, format: config.bundleFormat },
+        {
+          dev: config.includeDevDependencies,
+          format: config.bundleFormat,
+          // Disable bundle size limits for kernel-generated bundles which may
+          // be large, but do not travel through RPC and we still want to be
+          // legible.
+          byteLimit: Infinity,
+        },
         s => import(s),
       )
     : null);
@@ -475,6 +496,9 @@ export async function initializeSwingset(
       return bundleSource(desc.sourceSpec, {
         dev: config.includeDevDependencies,
         format: config.bundleFormat,
+        // Disable bundle size limits for kernel-generated bundles which may be
+        // large, but do not travel through RPC and we still want to be legible.
+        byteLimit: Infinity,
       });
     } else if ('bundleName' in desc) {
       if (!nameToBundle) {

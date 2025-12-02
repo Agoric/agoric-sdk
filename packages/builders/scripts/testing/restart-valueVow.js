@@ -5,9 +5,12 @@
 import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
 
-/// <reference types="@agoric/vats/src/core/types-ambient"/>
+/// <reference types="@agoric/vats/src/core/types-ambient.js"/>
 /**
  * @import {Instance} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {start} from '@agoric/zoe/src/contracts/valueVow.contract.js';
+ * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
  */
 
 const trace = makeTracer('RestartValueVow', true);
@@ -17,7 +20,7 @@ const trace = makeTracer('RestartValueVow', true);
  *   instance: {
  *     consume: {
  *       valueVow: Instance<
- *         import('@agoric/zoe/src/contracts/valueVow.contract.js').start
+ *         start
  *       >;
  *     };
  *   };
@@ -57,7 +60,7 @@ export const getManifestForValueVow = ({ restoreRef }, { valueVowRef }) => {
   };
 };
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
+/** @type {CoreEvalBuilder} */
 export const defaultProposalBuilder = async ({ publishRef, install }) =>
   harden({
     // Somewhat unorthodox, source the exports from this builder module
@@ -72,7 +75,7 @@ export const defaultProposalBuilder = async ({ publishRef, install }) =>
     ],
   });
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
+/** @type {DeployScriptFunction} */
 export default async (homeP, endowments) => {
   // import dynamically so the module can work in CoreEval environment
   const dspModule = await import('@agoric/deploy-script-support');

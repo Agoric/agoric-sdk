@@ -2,6 +2,7 @@ import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import { retryUntilCondition, type RetryOptions } from '@agoric/client-utils';
 import type { UpdateRecord } from '@agoric/smart-wallet/src/smartWallet.js';
 import type { EMethods } from '@agoric/vow/src/E.js';
+import type { StdFee } from '@cosmjs/amino';
 
 export const walletUpdates = (
   getLastUpdate: () => Promise<UpdateRecord>,
@@ -67,6 +68,7 @@ export const reflectWalletStore = (
     log: (...args: unknown[]) => void;
     setTimeout: typeof globalThis.setTimeout;
     fresh: () => number | string;
+    fee?: StdFee;
   },
 ) => {
   const up = walletUpdates(sig.query.getLastUpdate, retryOpts);
@@ -98,11 +100,13 @@ export const reflectWalletStore = (
             args,
             ...(saveResult ? { saveResult } : {}),
           });
+          const { fee } = retryOpts;
           const tx = await sig.sendBridgeAction(
-            harden({
+            {
               method: 'invokeEntry',
               message,
-            }),
+            },
+            fee,
           );
           if (tx.code !== 0) {
             throw Error(tx.rawLog);

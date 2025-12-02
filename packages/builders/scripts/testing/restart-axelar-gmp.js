@@ -9,12 +9,14 @@ import {
 } from '@agoric/internal';
 import { E } from '@endo/far';
 
-/// <reference types="@agoric/vats/src/core/types-ambient"/>
+/// <reference types="@agoric/vats/src/core/types-ambient.js"/>
 
 const trace = makeTracer('StartAxelarGmp', true);
 
 /**
  * @import {start as StartFn} from '@agoric/orchestration/src/examples/axelar-gmp.contract.js';
+ * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
  */
 
 /**
@@ -78,14 +80,14 @@ export const getManifest = () => {
   };
 };
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
+/** @type {CoreEvalBuilder} */
 export const defaultProposalBuilder = async () =>
   harden({
     sourceSpec: '@agoric/builders/scripts/testing/restart-axelar-gmp.js',
     getManifestCall: [getManifest.name],
   });
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
+/** @type {DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const dspModule = await import('@agoric/deploy-script-support');
   const { makeHelpers } = dspModule;

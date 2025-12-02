@@ -13,6 +13,8 @@ import {
 /**
  * @import {BundleSource, BundleSourceResult} from '@endo/bundle-source';
  * @import {AgSoloHome, CanonicalHome, CommonHome, CoreEvalBuilder, CoreEvalDescriptor, ManifestBundleRef} from './externalTypes.js';
+ * @import {BundleMaker} from './getBundlerMaker.js';
+ * @import {Bundler} from './getBundlerMaker.js';
  */
 
 /**
@@ -40,8 +42,8 @@ import {
  *   pathResolve: (path: string) => string,
  * }} endowments
  * @param {{
- *   getBundlerMaker: () => Promise<import('./getBundlerMaker.js').BundleMaker>,
- *   getBundleSpec: (bundle: Promise<BundleSourceResult<'endoZipBase64'>>, getBundle: () => import('./getBundlerMaker.js').Bundler, opts?: any) => Promise<ManifestBundleRef>,
+ *   getBundlerMaker: () => Promise<BundleMaker>,
+ *   getBundleSpec: (bundle: Promise<BundleSourceResult<'endoZipBase64'>>, getBundle: () => Bundler, opts?: any) => Promise<ManifestBundleRef>,
  *   log?: typeof console.log,
  *   writeFile?: typeof fs.promises.writeFile
  * }} io
@@ -60,7 +62,7 @@ export const makeWriteCoreEval = (
   const { bundleSource, pathResolve } = endowments;
 
   let bundlerCache;
-  /** @returns {import('./getBundlerMaker.js').Bundler} */
+  /** @returns {Bundler} */
   const getBundler = () => {
     if (!bundlerCache) {
       bundlerCache = E(getBundlerMaker()).makeBundler({

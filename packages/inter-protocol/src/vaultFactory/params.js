@@ -1,5 +1,6 @@
 // @jessie-check
 
+/// <reference types="@agoric/internal/exported.js" />
 /// <reference path="./types-ambient.js" />
 
 import {
@@ -20,6 +21,13 @@ import { amountPattern, ratioPattern } from '../contractSupport.js';
  * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  * @import {MapStore} from '@agoric/store';
  * @import {PriceAuthority} from '@agoric/zoe/tools/types.js';
+ * @import {ParamTypesMapFromRecord} from '@agoric/governance/src/contractGovernance/typedParamManager.js';
+ * @import {StoredPublisherKit} from '@agoric/notifier';
+ * @import {TimerService} from '@agoric/time';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {Ratio} from '@agoric/ertp';
+ * @import {AssetReservePublicFacet} from '../reserve/assetReserve.js';
+ * @import {InterestTiming, VaultManagerParamValues} from './types-ambient.js';
  */
 
 export const CHARGING_PERIOD_KEY = 'ChargingPeriod';
@@ -86,17 +94,19 @@ const makeVaultDirectorParams = (
 harden(makeVaultDirectorParams);
 
 /**
- * @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager.js').ParamTypesMapFromRecord<
- *     ReturnType<typeof makeVaultDirectorParams>
- *   >} VaultDirectorParams
+ * @typedef {ParamTypesMapFromRecord<
+ *   ReturnType<typeof makeVaultDirectorParams>
+ * >} VaultDirectorParams
  */
 
-/** @type {(liquidationMargin: Ratio) => Ratio} */
+/**
+ * @type {(liquidationMargin: Ratio) => Ratio}
+ */
 const zeroRatio = liquidationMargin =>
   subtractRatios(liquidationMargin, liquidationMargin);
 
 /**
- * @param {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
+ * @param {StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
  * @param {VaultManagerParamValues} initial
  */
 export const makeVaultParamManager = (
@@ -140,7 +150,7 @@ export const vaultParamPattern = M.splitRecord(
  *   minInitialDebt: Amount<'nat'>;
  *   bootstrapPaymentValue: bigint;
  *   priceAuthority: ERef<PriceAuthority>;
- *   timer: ERef<import('@agoric/time').TimerService>;
+ *   timer: ERef<TimerService>;
  *   reservePublicFacet: AssetReservePublicFacet;
  *   interestTiming: InterestTiming;
  *   shortfallInvitationAmount: Amount<'set'>;
@@ -182,7 +192,7 @@ harden(makeGovernedTerms);
  *
  * NB: changes from initial values will be lost upon restart
  *
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
  * @param {ERemote<EMarshaller>} marshaller
  * @param {Record<string, VaultManagerParamOverrides>} managerParamOverrides
  */

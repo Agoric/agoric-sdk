@@ -14,6 +14,7 @@ import { M, makeExo, makeScalarMapStore, mustMatch } from '@agoric/store';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import { prepareExo, provideDurableMapStore } from '@agoric/vat-data';
 import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
+import { makeJigKit } from '@agoric/zoe/src/contractSupport/testJigHelpers.js';
 import { E } from '@endo/far';
 import { prepareSmartWallet } from './smartWallet.js';
 import { shape } from './typeGuards.js';
@@ -23,6 +24,16 @@ import { shape } from './typeGuards.js';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {MapStore} from '@agoric/swingset-liveslots';
  * @import {NameHub} from '@agoric/vats';
+ * @import {SmartWallet, SmartWalletTestJig} from './smartWallet.js';
+ * @import {NameAdmin} from '@agoric/vats';
+ * @import {Petname} from './types.js';
+ * @import {Board} from '@agoric/vats';
+ * @import {AssetDescriptor} from '@agoric/vats/src/vat-bank.js';
+ * @import {ScopedBridgeManager} from '@agoric/vats';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {WalletBridgeMsg} from './types.js';
+ * @import {Bank} from '@agoric/vats/src/vat-bank.js';
+ * @import {TestJigKit} from '@agoric/zoe/src/contractSupport/testJigHelpers.js';
  */
 
 const trace = makeTracer('WltFct');
@@ -47,8 +58,8 @@ const WALLETS_BY_ADDRESS = 'walletsByAddress';
  * already done.
  *
  * @param {string} address
- * @param {import('./smartWallet.js').SmartWallet} wallet
- * @param {ERef<import('@agoric/vats').NameAdmin>} namesByAddressAdmin
+ * @param {SmartWallet} wallet
+ * @param {ERef<NameAdmin>} namesByAddressAdmin
  */
 export const publishDepositFacet = async (
   address,
@@ -81,7 +92,7 @@ export const makeAssetRegistry = assetPublisher => {
    *   brand: Brand;
    *   displayInfo: DisplayInfo;
    *   issuer: Issuer;
-   *   petname: import('./types.js').Petname;
+   *   petname: Petname;
    * }} BrandDescriptor
    *   For use by clients to describe brands to users. Includes `displayInfo` to
    *   save a remote call.
@@ -125,24 +136,20 @@ export const makeAssetRegistry = assetPublisher => {
 /**
  * @typedef {{
  *   agoricNames: ERef<NameHub>;
- *   board: ERef<import('@agoric/vats').Board>;
+ *   board: ERef<Board>;
  *   assetPublisher: AssetPublisher;
  * }} SmartWalletContractTerms
  *
  *
  * @typedef {{
- *   getAssetSubscription: () => ERef<
- *     IterableEachTopic<import('@agoric/vats/src/vat-bank.js').AssetDescriptor>
- *   >;
+ *   getAssetSubscription: () => ERef<IterableEachTopic<AssetDescriptor>>;
  * }} AssetPublisher
  *
  *
  * @typedef {boolean} IsRevive
  *
  * @typedef {{
- *   reviveWallet: (
- *     address: string,
- *   ) => Promise<import('./smartWallet.js').SmartWallet>;
+ *   reviveWallet: (address: string) => Promise<SmartWallet>;
  *   ackWallet: (address: string) => IsRevive;
  * }} WalletReviver
  */
@@ -154,12 +161,10 @@ export const makeAssetRegistry = assetPublisher => {
  * @param {ZCF<SmartWalletContractTerms>} zcf
  * @param {{
  *   storageNode: ERemote<StorageNode>;
- *   walletBridgeManager?: ERef<
- *     import('@agoric/vats').ScopedBridgeManager<'wallet'>
- *   >;
+ *   walletBridgeManager?: ERef<ScopedBridgeManager<'wallet'>>;
  *   walletReviver?: ERef<WalletReviver>;
  * }} privateArgs
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
  */
 export const prepare = async (zcf, privateArgs, baggage) => {
   const upgrading = baggage.has(WALLETS_BY_ADDRESS);
@@ -168,7 +173,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
   const zoe = zcf.getZoeService();
   const { storageNode, walletBridgeManager, walletReviver } = privateArgs;
 
-  /** @type {MapStore<string, import('./smartWallet.js').SmartWallet>} */
+  /** @type {MapStore<string, SmartWallet>} */
   const walletsByAddress = provideDurableMapStore(baggage, WALLETS_BY_ADDRESS);
   const provider = makeAtomicProvider(walletsByAddress);
 
@@ -193,8 +198,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
        * Once the owner is known, this calls handleBridgeAction which ensures
        * that all errors are published in the owner wallet's vstorage path.
        *
-       * @param {import('./types.js').WalletBridgeMsg} obj validated by
-       *   shape.WalletBridgeMsg
+       * @param {WalletBridgeMsg} obj validated by shape.WalletBridgeMsg
        * @returns {Promise<void>}
        */
       fromBridge: async obj => {
@@ -255,13 +259,20 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     zoe,
   });
 
+  /** @type {TestJigKit<SmartWalletTestJig>} */
+  const smartWalletJigKit = makeJigKit();
+
   /**
    * Holders of this object:
    *
    * - vat (transitively from holding the wallet factory)
    * - wallet-ui (which has key material; dapps use wallet-ui to propose actions)
    */
-  const makeSmartWallet = prepareSmartWallet(baggage, shared);
+  const makeSmartWallet = prepareSmartWallet(
+    baggage,
+    shared,
+    smartWalletJigKit.setTestJig,
+  );
 
   const creatorFacet = prepareExo(
     baggage,
@@ -276,21 +287,17 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     {
       /**
        * @param {string} address
-       * @param {ERef<import('@agoric/vats/src/vat-bank.js').Bank>} bank
-       * @param {ERef<import('@agoric/vats/src/types.js').NameAdmin>} namesByAddressAdmin
-       * @returns {Promise<
-       *   [wallet: import('./smartWallet.js').SmartWallet, isNew: boolean]
-       * >}
-       *   wallet along with a flag to distinguish between looking up an existing
-       *   wallet and creating a new one.
+       * @param {ERef<Bank>} bank
+       * @param {ERef<NameAdmin>} namesByAddressAdmin
+       * @returns {Promise<[wallet: SmartWallet, isNew: boolean]>} wallet along
+       *   with a flag to distinguish between looking up an existing wallet and
+       *   creating a new one.
        */
       provideSmartWallet(address, bank, namesByAddressAdmin) {
         let isNew = false;
 
         /**
-         * @type {(
-         *   address: string,
-         * ) => Promise<import('./smartWallet.js').SmartWallet>}
+         * @type {(address: string) => Promise<SmartWallet>}
          */
         const maker = async _address => {
           const invitationPurse = await E(invitationIssuer).makeEmptyPurse();
@@ -331,6 +338,10 @@ export const prepare = async (zcf, privateArgs, baggage) => {
       void E(walletBridgeManager).initHandler(handleWalletAction);
     }
   }
+
+  zcf.setTestJig(() => {
+    return { ...smartWalletJigKit.getTestJig() };
+  });
 
   return {
     creatorFacet,

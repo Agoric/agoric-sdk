@@ -23,6 +23,10 @@ import {
  * @import {ToCapData, FromCapData} from '@endo/marshal';
  * @import {Pattern} from '@endo/patterns';
  * @import {SwingSetCapData} from './types.js';
+ * @import {VirtualReferenceManager} from './virtualReferences.js';
+ * @import {LiveSlotsOptions} from './types.js';
+ * @import {Cache} from './cache.js';
+ * @import {VatData} from './vatDataTypes.js';
  */
 
 const {
@@ -300,7 +304,7 @@ const insistCompatibleShapeCapData = (
  * Create a new virtual object manager.  There is one of these for each vat.
  *
  * @param {*} syscall  Vat's syscall object, used to access the vatstore operations.
- * @param {import('./virtualReferences.js').VirtualReferenceManager} vrm  Virtual reference manager, to handle reference counting and GC
+ * @param {VirtualReferenceManager} vrm  Virtual reference manager, to handle reference counting and GC
  *   of virtual references.
  * @param {() => number} allocateExportID  Function to allocate the next object
  *   export ID for the enclosing vat.
@@ -314,7 +318,7 @@ const insistCompatibleShapeCapData = (
  * @param {FromCapData<string>} unserialize  Unserializer for this vat
  * @param {*} assertAcceptableSyscallCapdataSize  Function to check for oversized
  *   syscall params
- * @param {import('./types.js').LiveSlotsOptions} [liveSlotsOptions]
+ * @param {LiveSlotsOptions} [liveSlotsOptions]
  * @param {{ WeakMap: typeof WeakMap, WeakSet: typeof WeakSet }} [powers]
  * Specifying the underlying WeakMap/WeakSet objects to wrap with
  * VirtualObjectAwareWeakMap/Set.  By default, capture the ones currently
@@ -877,7 +881,7 @@ export const makeVirtualObjectManager = (
     // (capdata) contents of the virtual-object state record.
     // dataCache[baseRef] -> { capdatas, valueMap }
     // valueCD=capdatas[prop], value=valueMap.get(prop)
-    /** @type { import('./cache.js').Cache<{ capdatas: any, valueMap: Map<string, any> }>} */
+    /** @type { Cache<{ capdatas: any, valueMap: Map<string, any> }>} */
     const dataCache = makeDataCache(syscall);
     allCaches.push(dataCache);
 
@@ -1248,7 +1252,7 @@ export const makeVirtualObjectManager = (
     return id;
   };
 
-  /** @type {import('./vatDataTypes').VatData['defineKind']} */
+  /** @type {VatData['defineKind']} */
   const defineKind = (tag, init, behavior, options) => {
     const kindID = `${allocateExportID()}`;
     saveVirtualKindDescriptor(kindID, { kindID, tag });
@@ -1264,7 +1268,7 @@ export const makeVirtualObjectManager = (
     );
   };
 
-  /** @type {import('./vatDataTypes').VatData['defineKindMulti']} */
+  /** @type {VatData['defineKindMulti']} */
   const defineKindMulti = (tag, init, behavior, options) => {
     const kindID = `${allocateExportID()}`;
     saveVirtualKindDescriptor(kindID, { kindID, tag });
@@ -1304,7 +1308,7 @@ export const makeVirtualObjectManager = (
     return kindHandle;
   };
 
-  /** @type {import('./vatDataTypes').VatData['defineDurableKind']} */
+  /** @type {VatData['defineDurableKind']} */
   const defineDurableKind = (kindHandle, init, behavior, options) => {
     kindHandleToID.has(kindHandle) || Fail`unknown handle ${kindHandle}`;
     const kindID = kindHandleToID.get(kindHandle);
@@ -1327,7 +1331,7 @@ export const makeVirtualObjectManager = (
     return maker;
   };
 
-  /** @type {import('./vatDataTypes').VatData['defineDurableKindMulti']} */
+  /** @type {VatData['defineDurableKindMulti']} */
   const defineDurableKindMulti = (kindHandle, init, behavior, options) => {
     kindHandleToID.has(kindHandle) || Fail`unknown handle ${kindHandle}`;
     const kindID = kindHandleToID.get(kindHandle);

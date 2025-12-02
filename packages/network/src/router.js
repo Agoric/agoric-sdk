@@ -12,6 +12,8 @@ import { Shape } from './shapes.js';
 /**
  * @import {Endpoint, Port, Protocol, ProtocolHandler} from './types.js';
  * @import {PromiseVow, Remote, VowTools} from '@agoric/vow';
+ * @import {Zone} from '@agoric/base-zone';
+ * @import {Powers} from './network.js';
  */
 
 /**
@@ -33,7 +35,7 @@ export const RouterI = M.interface('Router', {
 
 /**
  * @template T
- * @param {import('@agoric/base-zone').Zone} zone
+ * @param {Zone} zone
  */
 export const prepareRouter = zone => {
   const detached = zone.detached();
@@ -107,8 +109,8 @@ export const prepareRouter = zone => {
 /**
  * Create a router that behaves like a Protocol.
  *
- * @param {import('@agoric/base-zone').Zone} zone
- * @param {import('./network.js').Powers} powers
+ * @param {Zone} zone
+ * @param {Powers} powers
  * @param {typeof defaultE} [E] Eventual sender
  */
 export const prepareRouterProtocol = (zone, powers, E = defaultE) => {

@@ -40,6 +40,19 @@ import { makeStartSubprocessWorkerNode } from './startNodeSubprocess.js';
  * @import {EReturn} from '@endo/far';
  * @import {LimitedConsole} from '@agoric/internal';
  * @import {VatID} from '../types-internal.js';
+ * @import {SwingStoreKernelStorage} from '../types-external.js';
+ * @import {Bundle} from '../types-external.js';
+ * @import {EndoZipBase64Bundle} from '../types-external.js';
+ * @import {BundleID} from '../types-external.js';
+ * @import {RunPolicy} from '../types-external.js';
+ * @import {ResolutionPolicy} from '../types-external.js';
+ * @import {SwingSetCapData} from '../types-external.js';
+ * @import {SwingSetConfig} from '../types-external.js';
+ * @import {SlogSender} from '@agoric/telemetry';
+ * @import {VatWarehousePolicy} from '../types-external.js';
+ * @import {spawn as procSpawn} from 'child_process';
+ * @import {BundleHandler} from './bundle-handler.js';
+ * @import {default as kernelDefault} from '../kernel/kernel.js';
  */
 
 /**
@@ -122,15 +135,15 @@ function onUnhandledRejection(e, pr) {
  *   verbose?: boolean,
  *   debugPrefix?: string,
  *   slogCallbacks?: unknown,
- *   slogSender?: import('@agoric/telemetry').SlogSender,
+ *   slogSender?: SlogSender,
  *   testTrackDecref?: unknown,
- *   warehousePolicy?: import('../types-external.js').VatWarehousePolicy,
+ *   warehousePolicy?: VatWarehousePolicy,
  *   overrideVatManagerOptions?: unknown,
- *   spawn?: typeof import('child_process').spawn,
+ *   spawn?: typeof procSpawn,
  *   env?: Record<string, string | undefined>,
  *   kernelBundle?: Bundle
- *   xsnapBundleData?: ReturnType<import('./bundle-handler.js').makeXsnapBundleData>,
- *   bundleHandler?: import('./bundle-handler.js').BundleHandler,
+ *   xsnapBundleData?: ReturnType<typeof makeXsnapBundleData>,
+ *   bundleHandler?: BundleHandler,
  *   profileVats?: string[],
  *   debugVats?: string[],
  * }} runtimeOptions
@@ -327,7 +340,7 @@ export async function makeSwingsetController(
             Base64: globalThis.Base64, // Available only on XSnap
           },
         });
-        return kernelNS.default;
+        return /** @type {typeof kernelDefault} */ (kernelNS.default);
       },
     );
 
@@ -354,7 +367,6 @@ export async function makeSwingsetController(
       overrideVatManagerOptions,
     };
 
-    /** @type { ReturnType<typeof import('../kernel/kernel.js').default> } */
     const kernel = buildKernel(
       kernelEndowments,
       deviceEndowments,
@@ -400,6 +412,10 @@ export async function makeSwingsetController(
       writeSlogObject,
 
       slogDuration,
+
+      dumpLog(idx) {
+        return deepCopyJsonable(kernel.dumpLog(idx));
+      },
 
       dump() {
         return deepCopyJsonable(kernel.dump());
@@ -617,7 +633,7 @@ export async function makeSwingsetController(
  * the two stages; this can happen, for example, in some debugging cases.
  *
  * @param {SwingSetConfig} config
- * @param {string[]} argv
+ * @param {string[]} bootstrapArgs
  * @param {{
  *   kernelStorage?: SwingStoreKernelStorage;
  *   env?: Record<string, string>;
@@ -625,16 +641,15 @@ export async function makeSwingsetController(
  *   kernelBundles?: Record<string, Bundle>;
  *   debugPrefix?: string;
  *   slogCallbacks?: unknown;
- *   slogSender?: import('@agoric/telemetry').SlogSender;
+ *   slogSender?: SlogSender;
  *   testTrackDecref?: unknown;
- *   warehousePolicy?: import('../types-external.js').VatWarehousePolicy;
+ *   warehousePolicy?: VatWarehousePolicy;
  * }} runtimeOptions
  * @param {Record<string, unknown>} deviceEndowments
- * @typedef { import('@agoric/swing-store').KVStore } KVStore
  */
 export async function buildVatController(
   config,
-  argv = [],
+  bootstrapArgs = [],
   runtimeOptions = {},
   deviceEndowments = {},
 ) {
@@ -670,7 +685,7 @@ export async function buildVatController(
   if (!swingsetIsInitialized(kernelStorage)) {
     bootstrapResult = await initializeSwingset(
       config,
-      argv,
+      bootstrapArgs,
       kernelStorage,
       initializationOptions,
       runtimeOptions,

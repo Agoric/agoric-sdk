@@ -3,6 +3,7 @@ import { Fail } from '@endo/errors';
 
 /**
  * @import {IssuerRecord} from '@agoric/ertp';
+ * @import {ZoeIssuerRecord} from './types-index.js';
  */
 
 /**
