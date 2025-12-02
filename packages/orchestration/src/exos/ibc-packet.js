@@ -147,23 +147,7 @@ export const prepareIBCTransferSender = (zone, { watch, makeIBCReplyKit }) => {
           );
           const resultV = watch(ackDataV, this.facets.verifyTransferSuccess);
 
-          const baseMeta = opts?.meta ?? {};
-          const traffic = baseMeta.traffic ?? [];
-          const priorTraffic = traffic.slice(0, -1);
-          const thisTraffic = traffic.at(-1);
-
-          const meta = {
-            ...baseMeta,
-            traffic: [
-              ...priorTraffic,
-              {
-                ...thisTraffic,
-                seq: sequence,
-              },
-            ],
-          };
-
-          return harden({ resultV, ...rest, meta });
+          return harden({ ...rest, resultV });
         },
       },
       verifyTransferSuccess: {
