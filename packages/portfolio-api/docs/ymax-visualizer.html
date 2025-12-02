@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ymax State Machine Visualizer</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 20px;
+    }
+
+    .control-panel {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      height: fit-content;
+      position: sticky;
+      top: 20px;
+    }
+
+    .control-panel h2 {
+      font-size: 18px;
+      margin-bottom: 15px;
+      color: #333;
+    }
+
+    .control-panel label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #666;
+      margin-bottom: 8px;
+    }
+
+    .control-panel textarea {
+      width: 100%;
+      min-height: 200px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 12px;
+      resize: vertical;
+    }
+
+    .control-panel textarea:focus {
+      outline: none;
+      border-color: #4a90e2;
+    }
+
+    .help-text {
+      font-size: 11px;
+      color: #999;
+      margin-top: 8px;
+      line-height: 1.4;
+    }
+
+    .examples {
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid #eee;
+    }
+
+    .examples h3 {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 8px;
+    }
+
+    .example-btn {
+      display: block;
+      width: 100%;
+      padding: 8px 12px;
+      margin-bottom: 6px;
+      background: #f8f8f8;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s;
+    }
+
+    .example-btn:hover {
+      background: #e8e8e8;
+      border-color: #ccc;
+    }
+
+    .visualization-panel {
+      background: white;
+      border-radius: 8px;
+      padding: 30px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      min-height: 600px;
+    }
+
+    .visualization-panel h2 {
+      font-size: 18px;
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    #state-diagram {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    /* SVG Styles */
+    .state-node {
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .state-node rect {
+      fill: #fff;
+      stroke: #ddd;
+      stroke-width: 2;
+    }
+
+    .state-node.visited rect {
+      fill: #e8f4fd;
+      stroke: #4a90e2;
+      stroke-width: 2;
+    }
+
+    .state-node.current rect {
+      fill: #4a90e2;
+      stroke: #2c5aa0;
+      stroke-width: 3;
+    }
+
+    .state-node.current text {
+      fill: white;
+      font-weight: 600;
+    }
+
+    .state-node text {
+      fill: #333;
+      font-size: 12px;
+      font-weight: 500;
+      pointer-events: none;
+    }
+
+    .state-node.future text {
+      fill: #999;
+    }
+
+    .state-node:hover rect {
+      filter: brightness(0.95);
+    }
+
+    .transition-line {
+      stroke: #ddd;
+      stroke-width: 2;
+      fill: none;
+      marker-end: url(#arrowhead);
+    }
+
+    .transition-line.visited {
+      stroke: #4a90e2;
+      stroke-width: 2;
+    }
+
+    .transition-line.next-happy-path {
+      stroke: #52c41a;
+      stroke-width: 3;
+      stroke-dasharray: 5,5;
+      animation: dash 1s linear infinite;
+    }
+
+    .transition-line.failure {
+      stroke: #ff4d4f;
+      stroke-dasharray: 3,3;
+    }
+
+    @keyframes dash {
+      to {
+        stroke-dashoffset: -10;
+      }
+    }
+
+    .transition-label {
+      font-size: 11px;
+      fill: #666;
+      pointer-events: none;
+    }
+
+    .timestamp-badge {
+      font-size: 10px;
+      fill: #666;
+    }
+
+    .time-since {
+      font-size: 10px;
+      fill: #ff6b35;
+      font-weight: 600;
+    }
+
+    .tooltip {
+      position: absolute;
+      background: rgba(0, 0, 0, 0.9);
+      color: white;
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      pointer-events: auto;
+      opacity: 0;
+      transition: opacity 0.2s;
+      max-width: 400px;
+      z-index: 1000;
+      line-height: 1.4;
+    }
+
+    .tooltip.visible {
+      opacity: 1;
+    }
+
+    .tooltip a {
+      color: #6eb5ff;
+      text-decoration: none;
+    }
+
+    .tooltip a:hover {
+      text-decoration: underline;
+    }
+
+    .tooltip code {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 2px 4px;
+      border-radius: 3px;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 11px;
+    }
+
+    .verify-links {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .verify-link {
+      display: inline-block;
+      margin-right: 8px;
+      font-size: 11px;
+    }
+
+    .nested-state-group {
+      cursor: pointer;
+    }
+
+    .nested-state-group rect.container {
+      fill: #fafafa;
+      stroke: #ccc;
+      stroke-width: 1;
+      stroke-dasharray: 4,4;
+    }
+
+    .error-message {
+      color: #ff4d4f;
+      font-size: 13px;
+      padding: 12px;
+      background: #fff2f0;
+      border: 1px solid #ffccc7;
+      border-radius: 4px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="control-panel">
+      <h2>Control Panel</h2>
+      <label for="state-vector">State Vector</label>
+      <textarea id="state-vector" placeholder="Enter states (one per line)&#10;Format: state_name [timestamp]&#10;&#10;Example:&#10;transaction_defined 2025-01-15T13:10:00Z&#10;transaction_committed 13:15&#10;flow_inited"></textarea>
+      <div class="help-text">
+        Enter one state per line. Timestamps are optional and can be ISO format or simple time (HH:MM).
+      </div>
+
+      <div class="examples">
+        <h3>Quick Examples</h3>
+        <button class="example-btn" data-example="early">Early Stage (Planning)</button>
+        <button class="example-btn" data-example="executing">Executing Flow</button>
+        <button class="example-btn" data-example="completed">Completed</button>
+        <button class="example-btn" data-example="failed">Failed Flow</button>
+        <button class="example-btn" data-example="rebalance">Rebalance (from logs)</button>
+      </div>
+    </div>
+
+    <div class="visualization-panel">
+      <h2>State Machine Visualization</h2>
+      <svg id="state-diagram" viewBox="0 0 800 600"></svg>
+      <div id="error-container"></div>
+    </div>
+  </div>
+
+  <div class="tooltip" id="tooltip"></div>
+
+  <script>
+    // State machine definition (parsed from YAML)
+    const stateMachine = {
+      initial: 'transaction_defined',
+      states: {
+        transaction_defined: {
+          description: 'User specifies their portfolio offer in a transaction (usually in the Ymax web UI)',
+          transitions: {
+            'transaction.signed': {
+              target: 'transaction_committed',
+              description: 'User signed a transaction with the offer and broadcast it'
+            }
+          }
+        },
+        transaction_committed: {
+          description: "The user's transaction is in consensus",
+          meta: {
+            observedFrom: ['Agoric tx history for the user\'s wallet address']
+          },
+          transitions: {
+            'transaction.handled': {
+              target: 'flow_registered',
+              description: 'Agoric contract machinery forwards it from smart-wallet bridge to the Portfolio Contract'
+            }
+          }
+        },
+        flow_registered: {
+          description: 'Portfolio contract received and registered the flow request',
+          transitions: {
+            'flow.inited': {
+              target: 'flow_inited',
+              description: 'Flow initialized in flowsRunning'
+            }
+          }
+        },
+        flow_inited: {
+          description: 'Flow basic details recorded in flowsRunning (type and optional amount). Virtual FlowStatus=init, not yet FlowStatus=run',
+          meta: {
+            observedFrom: ['published.{instance}.portfolios.portfolio{n} status.flowsRunning'],
+            userMessage: 'Request received; building plan.'
+          },
+          transitions: {
+            'flow.discovered': {
+              target: 'planning',
+              description: 'Planner service observes the new key in `flowsRunning`'
+            }
+          }
+        },
+        planning: {
+          description: 'Planner computes steps/order from balances + targetAllocation and posts flow{n}.steps.',
+          meta: {
+            observedFrom: ['services/ymax-planner log messages (planRebalanceFlow/planDepositToAllocations)'],
+            invariants: ['deposit/withdraw amounts reconcile with portfolio status and balances']
+          },
+          transitions: {
+            'planner.steps_submitted': {
+              target: 'planned',
+              description: 'Planner submits a transaction to the contract and the contract handles it.',
+              happyPath: true
+            },
+            'planner.failed': {
+              target: 'failed',
+              description: 'Planner/solver errored or allocation infeasible.',
+              failure: true
+            }
+          }
+        },
+        planned: {
+          description: 'Planner has submitted transaction to the contract with the steps for the flow.',
+          meta: {
+            observedFrom: ['Agoric tx history for the planner address']
+          },
+          transitions: {
+            'flow.plan_resolved': {
+              target: 'executing',
+              description: 'executePlan() begins; FlowStatus state=run emitted.'
+            }
+          }
+        },
+        executing: {
+          description: 'Contract performing ordered movements; publishes FlowStatus run/fail/done.',
+          meta: {
+            observedFrom: ['published.{instance}.portfolios.portfolio{n}.flows.flow{n}.steps'],
+            userMessage: 'Plan ready; executing transfers.'
+          },
+          nested: true,
+          substates: {
+            provisioning: {
+              description: 'Make/resolve accounts (Agoric, Noble, EVM) and register resolver pending transactions when needed.',
+              meta: {
+                observedFrom: ['FlowStatus state=run with how=makeAccounts(...)'],
+                invariants: ['accountsPending empty']
+              },
+              transitions: {
+                'provision.complete': {
+                  target: 'moving',
+                  description: 'provideCosmosAccount/provideEVMAccount resolved; accountsPending empty.',
+                  happyPath: true
+                },
+                'provision.failed': {
+                  target: 'failed',
+                  description: 'Account creation or resolver registerTransaction failed.',
+                  failure: true
+                }
+              }
+            },
+            moving: {
+              description: 'Execute MovementDesc steps (localTransfer, withdrawToSeat, send, IBC, CCTP, GMP, protocol supply/withdraw). FlowStatus state=run advances; fail publishes FlowStatus state=fail. IBC legs can block if relayer is down/slow.',
+              meta: {
+                observedFrom: ['published.{instance}.portfolios.portfolio{n}.flows.flow{n} (state=run|fail|done, steps=[])'],
+                invariants: ['proposal satisfied for give/want seats']
+              },
+              transitions: {
+                'flow.step_failed': {
+                  target: 'failed',
+                  description: 'FlowStatus state=fail emitted for a step.',
+                  failure: true
+                },
+                'flow.done_no_pending': {
+                  target: 'completed',
+                  description: 'FlowStatus state=done and no TxStatus pending.',
+                  happyPath: true
+                }
+              }
+            }
+          },
+          transitions: {
+            'flow.failed': {
+              target: 'failed',
+              description: 'FlowStatus state=fail emitted.',
+              failure: true
+            },
+            'flow.done': {
+              target: 'completed',
+              description: 'FlowStatus state=done and all relevant pendingTxs are success.',
+              happyPath: true
+            }
+          }
+        },
+        completed: {
+          description: 'Flow finished; balances/positions updated; pendingTxs (if any) marked success.',
+          meta: { userMessage: 'Flow finished.' },
+          final: true
+        },
+        failed: {
+          description: 'Flow halted; partial effects possible; operator or planner must retry/correct.',
+          meta: {
+            severity: 'error',
+            userMessage: 'Flow failed; inspect flow{n} status and pendingTx logs.'
+          },
+          final: true
+        }
+      }
+    };
+
+    // Layout configuration
+    const layout = {
+      stateWidth: 140,
+      stateHeight: 50,
+      horizontalSpacing: 30,
+      verticalSpacing: 80,
+      rowSpacing: 15,
+      nestedPadding: 10,
+      nestedIndent: 20,
+      marginLeft: 40,
+      marginTop: 40
+    };
+
+    // Row groupings by realm/service
+    const stateGroups = [
+      {
+        name: 'Cosmos Realm',
+        color: '#e3f2fd',
+        states: ['transaction_defined', 'transaction_committed']
+      },
+      {
+        name: 'Portfolio Contract',
+        color: '#f3e5f5',
+        states: ['flow_registered', 'flow_inited']
+      },
+      {
+        name: 'Planner Service',
+        color: '#fff3e0',
+        states: ['planning', 'planned']
+      },
+      {
+        name: 'Orchestration',
+        color: '#e8f5e9',
+        states: ['executing']
+      },
+      {
+        name: 'Final States',
+        color: '#fce4ec',
+        states: ['completed', 'failed']
+      }
+    ];
+
+    // Parse state vector from text input
+    function parseStateVector(text) {
+      const lines = text.trim().split('\n').filter(line => line.trim());
+      const states = [];
+      const now = new Date();
+
+      for (const line of lines) {
+        const parts = line.trim().split(/\s+/);
+        const stateName = parts[0];
+        let timestamp = null;
+
+        if (parts.length > 1) {
+          const timeStr = parts.slice(1).join(' ');
+          // Try parsing as ISO date first
+          timestamp = new Date(timeStr);
+
+          // If invalid, try parsing as simple time HH:MM
+          if (isNaN(timestamp.getTime()) && /^\d{1,2}:\d{2}$/.test(timeStr)) {
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            timestamp = new Date(now);
+            timestamp.setHours(hours, minutes, 0, 0);
+          }
+
+          if (isNaN(timestamp.getTime())) {
+            timestamp = null;
+          }
+        }
+
+        states.push({ state: stateName, timestamp });
+      }
+
+      return states;
+    }
+
+    // Format relative time
+    function formatRelativeTime(timestamp) {
+      if (!timestamp) return '';
+
+      const now = new Date();
+      const diffMs = now - timestamp;
+      const diffSecs = Math.floor(diffMs / 1000);
+      const diffMins = Math.floor(diffSecs / 60);
+      const diffHours = Math.floor(diffMins / 60);
+      const diffDays = Math.floor(diffHours / 24);
+
+      if (diffSecs < 60) return `${diffSecs}s ago`;
+      if (diffMins < 60) return `${diffMins}m ago`;
+      if (diffHours < 24) return `${diffHours}h ago`;
+      return `${diffDays}d ago`;
+    }
+
+    // Generate verification links for production data
+    function generateVerificationLinks(stateName, state) {
+      let links = '<div class="verify-links"><strong>Verify in Production:</strong><br>';
+
+      const walletAddr = '{walletAddr}';
+      const portfolioN = '{n}';
+      const flowN = '{n}';
+      const instance = '{instance}';
+
+      // Map states to verification URLs
+      const verificationMap = {
+        'transaction_committed': [
+          { label: 'Tx History', url: `https://explorer.agoric.net/accounts/${walletAddr}` },
+        ],
+        'transaction_defined': [
+          { label: 'Ymax UI', url: `https://${instance}.ymax.app` },
+        ],
+        'flow_inited': [
+          { label: 'Portfolio Status', url: `https://vstorage.agoric.net/?path=published.${instance}.portfolios.portfolio${portfolioN}` },
+        ],
+        'planning': [
+          { label: 'Planner Logs', url: 'https://logs.agoric.net/ymax-planner' },
+        ],
+        'planned': [
+          { label: 'Planner Tx', url: `https://explorer.agoric.net/accounts/{plannerAddr}` },
+        ],
+        'executing': [
+          { label: 'Flow Steps', url: `https://vstorage.agoric.net/?path=published.${instance}.portfolios.portfolio${portfolioN}.flows.flow${flowN}.steps` },
+          { label: 'Flow Status', url: `https://vstorage.agoric.net/?path=published.${instance}.portfolios.portfolio${portfolioN}.flows.flow${flowN}` },
+        ],
+        'provisioning': [
+          { label: 'Flow Status', url: `https://vstorage.agoric.net/?path=published.${instance}.portfolios.portfolio${portfolioN}.flows.flow${flowN}` },
+        ],
+        'moving': [
+          { label: 'Flow Steps', url: `https://vstorage.agoric.net/?path=published.${instance}.portfolios.portfolio${portfolioN}.flows.flow${flowN}.steps` },
+          { label: 'Pending Txs', url: `https://vstorage.agoric.net/?path=published.${instance}.portfolios.portfolio${portfolioN}.pendingTxs` },
+        ],
+        'completed': [
+          { label: 'Portfolio', url: `https://vstorage.agoric.net/?path=published.${instance}.portfolios.portfolio${portfolioN}` },
+        ],
+        'failed': [
+          { label: 'Flow Status', url: `https://vstorage.agoric.net/?path=published.${instance}.portfolios.portfolio${portfolioN}.flows.flow${flowN}` },
+          { label: 'Pending Txs', url: `https://vstorage.agoric.net/?path=published.${instance}.portfolios.portfolio${portfolioN}.pendingTxs` },
+        ],
+      };
+
+      const stateLinks = verificationMap[stateName];
+      if (stateLinks && stateLinks.length > 0) {
+        stateLinks.forEach(link => {
+          links += `<span class="verify-link">📊 <a href="${link.url}" target="_blank" rel="noopener">${link.label}</a></span>`;
+        });
+      } else {
+        links += '<em>No verification links available for this state</em>';
+      }
+
+      links += '</div>';
+      return links;
+    }
+
+    // Render state machine
+    function renderStateMachine(stateVector) {
+      const svg = document.getElementById('state-diagram');
+      svg.innerHTML = '';
+
+      // Create markers for arrows
+      const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+
+      // Regular arrow
+      const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+      marker.setAttribute('id', 'arrowhead');
+      marker.setAttribute('markerWidth', '10');
+      marker.setAttribute('markerHeight', '10');
+      marker.setAttribute('refX', '9');
+      marker.setAttribute('refY', '3');
+      marker.setAttribute('orient', 'auto');
+      const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+      polygon.setAttribute('points', '0 0, 10 3, 0 6');
+      polygon.setAttribute('fill', '#ddd');
+      marker.appendChild(polygon);
+      defs.appendChild(marker);
+
+      // Happy path arrow
+      const happyMarker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+      happyMarker.setAttribute('id', 'arrowhead-happy');
+      happyMarker.setAttribute('markerWidth', '10');
+      happyMarker.setAttribute('markerHeight', '10');
+      happyMarker.setAttribute('refX', '9');
+      happyMarker.setAttribute('refY', '3');
+      happyMarker.setAttribute('orient', 'auto');
+      const happyPolygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+      happyPolygon.setAttribute('points', '0 0, 10 3, 0 6');
+      happyPolygon.setAttribute('fill', '#52c41a');
+      happyMarker.appendChild(happyPolygon);
+      defs.appendChild(happyMarker);
+
+      svg.appendChild(defs);
+
+      // Determine visited states and current state
+      const visitedStates = new Set(stateVector.map(s => s.state));
+      const currentState = stateVector.length > 0 ? stateVector[stateVector.length - 1] : null;
+      const stateTimestamps = Object.fromEntries(stateVector.map(s => [s.state, s.timestamp]));
+
+
+      // Calculate positions for states in horizontal rows
+      const positions = {};
+      const groupBounds = [];
+      let currentY = layout.marginTop;
+      let maxWidth = 0;
+
+      for (const group of stateGroups) {
+        let currentX = layout.marginLeft;
+        const groupStartY = currentY;
+        let groupMaxHeight = layout.stateHeight;
+
+        // Position states in this group horizontally
+        for (const stateName of group.states) {
+          const state = stateMachine.states[stateName];
+          if (!state) continue;
+
+          positions[stateName] = {
+            x: currentX,
+            y: currentY,
+            group: group.name,
+            groupColor: group.color
+          };
+
+          // Handle nested states (executing) - always expanded
+          if (state.nested) {
+            positions[stateName].nested = true;
+
+            // Position nested states below the parent
+            const nestedY = currentY + layout.stateHeight + layout.rowSpacing;
+            positions['provisioning'] = {
+              x: currentX,
+              y: nestedY,
+              group: group.name,
+              groupColor: group.color
+            };
+            positions['moving'] = {
+              x: currentX + layout.stateWidth + layout.horizontalSpacing,
+              y: nestedY,
+              group: group.name,
+              groupColor: group.color
+            };
+            groupMaxHeight = layout.stateHeight * 2 + layout.rowSpacing;
+          }
+
+          currentX += layout.stateWidth + layout.horizontalSpacing;
+        }
+
+        maxWidth = Math.max(maxWidth, currentX);
+
+        // Store group bounds for background drawing
+        groupBounds.push({
+          name: group.name,
+          color: group.color,
+          x: layout.marginLeft - 10,
+          y: groupStartY - 30,
+          width: currentX - layout.marginLeft,
+          height: groupMaxHeight + 40
+        });
+
+        currentY += groupMaxHeight + layout.verticalSpacing;
+      }
+
+      // Update SVG viewBox
+      svg.setAttribute('viewBox', `0 0 ${maxWidth + 40} ${currentY}`);
+
+      // Draw group backgrounds first
+      for (const bounds of groupBounds) {
+        const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        bgRect.setAttribute('x', bounds.x);
+        bgRect.setAttribute('y', bounds.y);
+        bgRect.setAttribute('width', bounds.width);
+        bgRect.setAttribute('height', bounds.height);
+        bgRect.setAttribute('rx', '8');
+        bgRect.setAttribute('fill', bounds.color);
+        bgRect.setAttribute('stroke', '#ddd');
+        bgRect.setAttribute('stroke-width', '1');
+        svg.appendChild(bgRect);
+
+        // Draw group label
+        const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        label.setAttribute('x', bounds.x + 10);
+        label.setAttribute('y', bounds.y + 15);
+        label.setAttribute('font-size', '11px');
+        label.setAttribute('font-weight', '600');
+        label.setAttribute('fill', '#666');
+        label.textContent = bounds.name;
+        svg.appendChild(label);
+      }
+
+      // Draw transitions
+      const drawnTransitions = new Set();
+
+      for (const group of stateGroups) {
+        for (const stateName of group.states) {
+          const state = stateMachine.states[stateName];
+          if (!state || !positions[stateName]) continue;
+
+          const fromPos = positions[stateName];
+          const transitions = state.transitions || {};
+
+          for (const [eventName, transition] of Object.entries(transitions)) {
+            const toState = transition.target;
+            if (!positions[toState]) continue;
+
+            const key = `${stateName}->${toState}`;
+            if (drawnTransitions.has(key)) continue;
+            drawnTransitions.add(key);
+
+            const toPos = positions[toState];
+            drawTransition(svg, fromPos, toPos, transition, stateName, toState, visitedStates, currentState);
+          }
+
+          // Draw nested state transitions
+          if (state.nested && state.substates && positions[stateName].nested) {
+            for (const [substateName, substate] of Object.entries(state.substates)) {
+              if (!positions[substateName]) continue;
+
+              const fromPos = positions[substateName];
+              const transitions = substate.transitions || {};
+
+              for (const [eventName, transition] of Object.entries(transitions)) {
+                const toState = transition.target;
+                if (!positions[toState]) continue;
+
+                const key = `${substateName}->${toState}`;
+                if (drawnTransitions.has(key)) continue;
+                drawnTransitions.add(key);
+
+                const toPos = positions[toState];
+                drawTransition(svg, fromPos, toPos, transition, substateName, toState, visitedStates, currentState);
+              }
+            }
+          }
+        }
+      }
+
+      // Draw state nodes
+      for (const group of stateGroups) {
+        for (const stateName of group.states) {
+          const state = stateMachine.states[stateName];
+          if (!state || !positions[stateName]) continue;
+
+          const pos = positions[stateName];
+          const isVisited = visitedStates.has(stateName);
+          const isCurrent = currentState && currentState.state === stateName;
+          const timestamp = stateTimestamps[stateName];
+
+          drawStateNode(svg, stateName, state, pos, isVisited, isCurrent, timestamp);
+
+          // Draw nested states if expanded
+          if (state.nested && state.substates && positions[stateName].nested) {
+            for (const [substateName, substate] of Object.entries(state.substates)) {
+              if (!positions[substateName]) continue;
+
+              const subPos = positions[substateName];
+              const isSubVisited = visitedStates.has(substateName);
+              const isSubCurrent = currentState && currentState.state === substateName;
+              const subTimestamp = stateTimestamps[substateName];
+
+              drawStateNode(svg, substateName, substate, subPos, isSubVisited, isSubCurrent, subTimestamp);
+            }
+          }
+        }
+      }
+    }
+
+    function drawStateNode(svg, name, state, pos, isVisited, isCurrent, timestamp) {
+      const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      g.classList.add('state-node');
+      if (isVisited) g.classList.add('visited');
+      if (isCurrent) g.classList.add('current');
+      if (!isVisited && !isCurrent) g.classList.add('future');
+
+      // State box
+      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      rect.setAttribute('x', pos.x);
+      rect.setAttribute('y', pos.y);
+      rect.setAttribute('width', layout.stateWidth);
+      rect.setAttribute('height', layout.stateHeight);
+      rect.setAttribute('rx', '6');
+      g.appendChild(rect);
+
+      // State name
+      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      text.setAttribute('x', pos.x + layout.stateWidth / 2);
+      text.setAttribute('y', pos.y + layout.stateHeight / 2 - 3);
+      text.setAttribute('text-anchor', 'middle');
+      text.setAttribute('dominant-baseline', 'middle');
+      text.textContent = name.replace(/_/g, ' ');
+      g.appendChild(text);
+
+      // Timestamp badge
+      if (timestamp) {
+        const timeText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        timeText.classList.add('timestamp-badge');
+        timeText.setAttribute('x', pos.x + layout.stateWidth / 2);
+        timeText.setAttribute('y', pos.y + layout.stateHeight / 2 + 10);
+        timeText.setAttribute('text-anchor', 'middle');
+        const timeStr = timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        timeText.textContent = timeStr;
+        g.appendChild(timeText);
+      }
+
+      // Time since last transition (if current)
+      if (isCurrent && timestamp) {
+        const timeSince = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        timeSince.classList.add('time-since');
+        timeSince.setAttribute('x', pos.x + layout.stateWidth + 10);
+        timeSince.setAttribute('y', pos.y + layout.stateHeight / 2);
+        timeSince.setAttribute('dominant-baseline', 'middle');
+        timeSince.textContent = formatRelativeTime(timestamp);
+        g.appendChild(timeSince);
+
+        // Update time every second
+        setInterval(() => {
+          timeSince.textContent = formatRelativeTime(timestamp);
+        }, 1000);
+      }
+
+      // Tooltip on hover
+      g.addEventListener('mouseenter', (e) => {
+        const tooltip = document.getElementById('tooltip');
+        let content = `<strong>${name.replace(/_/g, ' ')}</strong><br><br>${state.description}`;
+
+        if (state.meta) {
+          if (state.meta.userMessage) {
+            content += `<br><br><strong>User Message:</strong><br><em>"${state.meta.userMessage}"</em>`;
+          }
+          if (state.meta.observedFrom && state.meta.observedFrom.length > 0) {
+            content += `<br><br><strong>Observable From:</strong><br>`;
+            content += state.meta.observedFrom.map(o => `• ${o}`).join('<br>');
+          }
+          if (state.meta.invariants && state.meta.invariants.length > 0) {
+            content += `<br><br><strong>Invariants:</strong><br>`;
+            content += state.meta.invariants.map(i => `• ${i}`).join('<br>');
+          }
+        }
+
+        // Add transition information
+        if (state.transitions && Object.keys(state.transitions).length > 0) {
+          content += `<br><br><strong>Transitions:</strong>`;
+          for (const [event, trans] of Object.entries(state.transitions)) {
+            const icon = trans.happyPath ? '✓' : (trans.failure ? '✗' : '→');
+            content += `<br>${icon} <code>${event}</code>: ${trans.description}`;
+          }
+        }
+
+        // Add verification links
+        content += generateVerificationLinks(name, state);
+
+        tooltip.innerHTML = content;
+
+        // Position tooltip fixed relative to the node, not following cursor
+        const rect = g.getBoundingClientRect();
+        tooltip.style.left = (rect.right + 10) + 'px';
+        tooltip.style.top = rect.top + 'px';
+        tooltip.classList.add('visible');
+      });
+
+      g.addEventListener('mouseleave', (e) => {
+        const tooltip = document.getElementById('tooltip');
+        const tooltipRect = tooltip.getBoundingClientRect();
+
+        // Check if mouse is moving to the tooltip
+        setTimeout(() => {
+          if (!tooltip.matches(':hover')) {
+            tooltip.classList.remove('visible');
+          }
+        }, 100);
+      });
+
+      svg.appendChild(g);
+    }
+
+    function drawTransition(svg, fromPos, toPos, transition, fromState, toState, visitedStates, currentState) {
+      const isVisited = visitedStates.has(fromState) && visitedStates.has(toState);
+      const isNextHappyPath = currentState && currentState.state === fromState &&
+                              transition.happyPath && !visitedStates.has(toState);
+      const isFailure = transition.failure;
+
+      // Determine connection points based on relative positions
+      let x1, y1, x2, y2;
+
+      // Check if states are in the same row (horizontal) or different rows (vertical)
+      const sameRow = Math.abs(fromPos.y - toPos.y) < layout.stateHeight;
+
+      if (sameRow) {
+        // Horizontal connection (right to left)
+        x1 = fromPos.x + layout.stateWidth;
+        y1 = fromPos.y + layout.stateHeight / 2;
+        x2 = toPos.x;
+        y2 = toPos.y + layout.stateHeight / 2;
+      } else {
+        // Vertical connection (bottom to top)
+        x1 = fromPos.x + layout.stateWidth / 2;
+        y1 = fromPos.y + layout.stateHeight;
+        x2 = toPos.x + layout.stateWidth / 2;
+        y2 = toPos.y;
+      }
+
+      // Create path with curves for better aesthetics
+      let pathD;
+      if (sameRow) {
+        // Horizontal with slight curve
+        const midX = (x1 + x2) / 2;
+        pathD = `M ${x1} ${y1} C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}`;
+      } else if (Math.abs(x1 - x2) < 20) {
+        // Straight vertical
+        pathD = `M ${x1} ${y1} L ${x2} ${y2}`;
+      } else {
+        // Curved vertical connection
+        const midY = (y1 + y2) / 2;
+        pathD = `M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`;
+      }
+
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.classList.add('transition-line');
+      if (isVisited) path.classList.add('visited');
+      if (isNextHappyPath) {
+        path.classList.add('next-happy-path');
+        path.setAttribute('marker-end', 'url(#arrowhead-happy)');
+      } else if (isFailure) {
+        path.classList.add('failure');
+      }
+
+      path.setAttribute('d', pathD);
+      svg.appendChild(path);
+    }
+
+    // Examples
+    const examples = {
+      early: `transaction_defined 2025-01-15T13:10:00Z
+flow_registered 2025-01-15T13:10:30Z
+transaction_committed 2025-01-15T13:11:00Z
+flow_inited 2025-01-15T13:11:30Z
+planning`,
+      executing: `transaction_defined 13:10
+transaction_committed 13:11
+flow_registered 13:11
+flow_inited 13:12
+planning 13:12
+planned 13:13
+executing 13:14
+provisioning 13:14
+moving`,
+      completed: `transaction_defined 13:10
+transaction_committed 13:11
+flow_registered 13:11
+flow_inited 13:12
+planning 13:13
+planned 13:14
+executing 13:15
+provisioning 13:15
+moving 13:16
+completed 13:17`,
+      failed: `transaction_defined 13:10
+transaction_committed 13:11
+flow_registered 13:11
+flow_inited 13:12
+planning 13:13
+failed 13:14`,
+  // Generated from logs:
+  // - transaction_defined - 21:55:00Z (estimated start)
+  // - transaction_committed - 21:55:30Z (estimated)
+  // - flow_registered - 21:55:45Z (estimated)
+  // - flow_inited - 21:55:51Z (from "waiting for steps from planner")
+  // - planning - 21:56:01Z (from plan received)
+  // - planned - 21:56:02Z (from "checking moves")
+  // - executing - 21:56:02Z (from step execution start)
+  // - provisioning - 21:56:03Z (from GMPF makeAccount calls)
+  // - moving - 21:58:10Z (from accounts resolved, IBC/CCTP transfers)
+  // - completed - 22:03:04Z (from "stepFlow done")
+      rebalance: `transaction_defined 2025-12-01T21:55:00Z
+transaction_committed 2025-12-01T21:55:30Z
+flow_registered 2025-12-01T21:55:45Z
+flow_inited 2025-12-01T21:55:51Z
+planning 2025-12-01T21:56:01Z
+planned 2025-12-01T21:56:02Z
+executing 2025-12-01T21:56:02Z
+provisioning 2025-12-01T21:56:03Z
+moving 2025-12-01T21:58:10Z
+completed 2025-12-01T22:03:04Z`
+    };
+
+    // Event listeners
+    document.getElementById('state-vector').addEventListener('input', (e) => {
+      const errorContainer = document.getElementById('error-container');
+      errorContainer.innerHTML = '';
+
+      try {
+        const stateVector = parseStateVector(e.target.value);
+        renderStateMachine(stateVector);
+      } catch (error) {
+        errorContainer.innerHTML = `<div class="error-message">Error: ${error.message}</div>`;
+      }
+    });
+
+    document.querySelectorAll('.example-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const example = btn.dataset.example;
+        const textarea = document.getElementById('state-vector');
+        textarea.value = examples[example];
+        textarea.dispatchEvent(new Event('input'));
+      });
+    });
+
+    // Tooltip hover handler to keep it visible when hovering over it
+    const tooltip = document.getElementById('tooltip');
+    tooltip.addEventListener('mouseleave', () => {
+      tooltip.classList.remove('visible');
+    });
+
+    // Initial render
+    document.getElementById('state-vector').value = examples.early;
+    document.getElementById('state-vector').dispatchEvent(new Event('input'));
+  </script>
+</body>
+</html>

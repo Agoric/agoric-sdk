@@ -1,0 +1,58 @@
+stateDiagram-v2
+[*] --> transaction_defined
+state transaction_defined
+note right of transaction_defined
+  User specifies their portfolio offer in a transaction (usually in the Ymax web UI)
+end note
+transaction_defined --> transaction_committed: User signed a transaction with the offer and broadcast it
+state transaction_committed
+note right of transaction_committed
+  The user's transaction is in consensus
+end note
+transaction_committed --> flow_registered: Agoric contract machinery forwards it from smart-wallet bridge to the Portfolio Contract
+state flow_inited
+note right of flow_inited
+  Flow basic details recorded in flowsRunning (type and optional amount). Virtual FlowStatus=init, not yet FlowStatus=run
+end note
+flow_inited --> planning: Planner service observes the new key in `flowsRunning`
+state planning
+note right of planning
+  Planner computes steps/order from balances + targetAllocation and posts flow(n).steps.
+end note
+planning --> planned: Planner submits a transaction to the contract and the contract handles it.
+planning --> failed: Planner/solver errored or allocation infeasible.
+state planned
+note right of planned
+  Planner has submitted transaction to the contract with the steps for the flow.
+end note
+planned --> executing: executePlan() begins, FlowStatus state=run emitted.
+state executing {
+  [*] --> provisioning
+  state provisioning
+  note right of provisioning
+    Make/resolve accounts (Agoric, Noble, EVM) and register resolver pending transactions when needed.
+  end note
+  provisioning --> moving: provideCosmosAccount/provideEVMAccount resolved, accountsPending empty.
+  provisioning --> failed: Account creation or resolver registerTransaction failed.
+  state moving
+  note right of moving
+    Execute MovementDesc steps (localTransfer, withdrawToSeat, send, IBC, CCTP, GMP, protocol supply/withdraw). FlowStatus state=run advances, fail publishes FlowStatus state=fail. IBC legs can block if relayer is down/slow.
+  end note
+  moving --> failed: FlowStatus state=fail emitted for a step.
+  moving --> completed: FlowStatus state=done and no TxStatus pending.
+}
+note right of executing
+  Contract performing ordered movements, publishes FlowStatus run/fail/done.
+end note
+executing --> failed: FlowStatus state=fail emitted.
+executing --> completed: FlowStatus state=done and all relevant pendingTxs are success.
+state completed
+note right of completed
+  Flow finished, balances/positions updated, pendingTxs (if any) marked success.
+end note
+completed --> [*]
+state failed
+note right of failed
+  Flow halted, partial effects possible, operator or planner must retry/correct.
+end note
+failed --> [*]

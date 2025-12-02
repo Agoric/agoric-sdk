@@ -1,0 +1,135 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Ymax canonical state machine schema",
+  "type": "object",
+  "required": ["machine", "initial", "states"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "machine": { "type": "string", "description": "Machine identifier" },
+    "version": { "type": "string", "description": "Semantic version of the machine definition" },
+    "description": { "type": "string" },
+    "initial": { "type": "string", "description": "Initial state key" },
+    "states": { "$ref": "#/definitions/stateDictionary" }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "stateDictionary": {
+      "type": "object",
+      "patternProperties": {
+        "^[-A-Za-z0-9_.]+$": { "$ref": "#/definitions/stateNode" }
+      },
+      "additionalProperties": false
+    },
+    "stateNode": {
+      "type": "object",
+      "required": ["description"],
+      "properties": {
+        "description": { "type": "string" },
+        "type": {
+          "type": "string",
+          "enum": ["atomic", "compound", "final", "parallel"],
+          "default": "atomic"
+        },
+        "initial": { "type": "string" },
+        "states": { "$ref": "#/definitions/stateDictionary" },
+        "on": { "$ref": "#/definitions/transitionMap" },
+        "after": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/transitionTarget" }
+        },
+        "entry": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "exit": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "meta": { "$ref": "#/definitions/meta" }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": ["states"]
+          },
+          "then": {
+            "required": ["initial"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "final" } }
+          },
+          "then": {
+            "not": { "required": ["states", "initial", "on", "after"] }
+          }
+        }
+      ]
+    },
+    "transitionMap": {
+      "type": "object",
+      "patternProperties": {
+        "^[-A-Za-z0-9_.:]+$": { "$ref": "#/definitions/transitionList" }
+      },
+      "additionalProperties": false
+    },
+    "transitionList": {
+      "oneOf": [
+        { "$ref": "#/definitions/transitionTarget" },
+        {
+          "type": "array",
+          "items": { "$ref": "#/definitions/transitionTarget" },
+          "minItems": 1
+        }
+      ]
+    },
+    "transitionTarget": {
+      "type": "object",
+      "required": ["target"],
+      "properties": {
+        "target": { "type": "string" },
+        "description": { "type": "string" },
+        "guard": { "type": "string" },
+        "actions": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "meta": {
+      "type": "object",
+      "properties": {
+        "row": {
+          "type": "string",
+          "description": "Visualization row grouping (e.g., 'Cosmos Realm', 'Portfolio Contract', 'Planner Service', 'Orchestration', 'Final States')"
+        },
+        "userMessage": { "type": "string" },
+        "expectedSlaMs": { "type": "integer", "minimum": 0 },
+        "invariants": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "observedFrom": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "signals": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "notes": { "type": "string" },
+        "severity": {
+          "type": "string",
+          "enum": ["info", "warn", "error"]
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
