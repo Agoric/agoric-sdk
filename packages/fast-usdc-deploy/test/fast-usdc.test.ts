@@ -31,7 +31,7 @@ import {
   buildVTransferEvent,
 } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { Fail } from '@endo/errors';
-import type { Passable } from '@endo/pass-style';
+import type { CopyRecord, Passable } from '@endo/pass-style';
 import type { ForwardInfo } from '@agoric/orchestration';
 import { configurations } from '../src/utils/deploy-config.js';
 import {
@@ -142,11 +142,7 @@ test.before('bootstrap', async t => {
           id: `${invocationIdPrefix}-${i}`,
           targetName: 'fastUsdcOperator',
           method: 'submitEvidence',
-          args: [
-            // @ts-expect-error Type 'CctpTxEvidence' is not assignable to type 'Passable'.
-            evidence,
-            ...extraArgs,
-          ],
+          args: [evidence as CopyRecord, ...extraArgs],
         }),
       ),
     );
