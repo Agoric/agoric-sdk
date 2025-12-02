@@ -1,4 +1,4 @@
-import { makeMarshal, type Passable } from '@endo/marshal';
+import { makeMarshal, type CopyRecord } from '@endo/marshal';
 import test from 'ava';
 import { Command } from 'commander';
 import { type BridgeAction } from '@agoric/smart-wallet/src/smartWallet.js';
@@ -70,8 +70,7 @@ const testAttest = test.macro(
               id: 'operatorAttestInvocation-1234',
               targetName: nonEvidenceArgs.invokePower ?? 'fastUsdcOperator',
               method: 'submitEvidence',
-              // @ts-expect-error
-              args: [evidence as Passable],
+              args: [evidence as CopyRecord],
             },
           };
 

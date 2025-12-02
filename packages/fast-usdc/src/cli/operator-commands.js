@@ -1,6 +1,7 @@
 /* eslint-env node */
 /**
  * @import {Command} from 'commander';
+ * @import {CopyRecord} from '@endo/pass-style';
  * @import {InvokeEntryMessage, OfferSpec} from '@agoric/smart-wallet/src/offers.js';
  * @import {ExecuteOfferAction} from '@agoric/smart-wallet/src/smartWallet.js';
  */
@@ -167,8 +168,7 @@ export const addOperatorCommands = (
           id: invocationId,
           targetName: invokePower,
           method: 'submitEvidence',
-          // @ts-expect-error:  CctpTxEvidence not Passable?
-          args: [evidence],
+          args: [/** @type {CopyRecord} */ (evidence)],
         };
 
         outputActionAndHint(
