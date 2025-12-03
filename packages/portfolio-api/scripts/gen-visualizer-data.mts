@@ -1,20 +1,22 @@
 #!/usr/bin/env -S node --import ts-blank-space/register
 /**
- * Embed ymax-machine.yaml data into ymax-visualizer.html
+ * Embed Ymax machine data into ymax-visualizer.html
  * Usage:
  *   scripts/gen-visualizer-data.mts         # Update the HTML
- *   scripts/gen-visualizer-data.mts --check # Verify HTML matches YAML
+ *   scripts/gen-visualizer-data.mts --check # Verify HTML matches generated data
  */
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import yaml from 'js-yaml';
+import {
+  ymaxMachine,
+  type YmaxSpec,
+} from '../src/model/generated/ymax-machine.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const YAML_PATH = path.resolve(__dirname, '../docs/ymax-machine.yaml');
 const HTML_PATH = path.resolve(__dirname, '../docs/ymax-visualizer.html');
 
 const SCRIPT_TAG_START =
@@ -27,9 +29,7 @@ const args = process.argv.slice(2);
 const checkMode = args.includes('--check');
 
 async function main() {
-  // Read and parse YAML
-  const yamlContent = await fs.readFile(YAML_PATH, 'utf8');
-  const spec = yaml.load(yamlContent);
+  const spec: YmaxSpec = ymaxMachine;
 
   // Convert to JSON (compact but readable)
   const jsonData = JSON.stringify(spec, null, 2);
@@ -67,7 +67,7 @@ async function main() {
     } else {
       await fs.writeFile(HTML_PATH, newHtmlContent, 'utf8');
       console.log(
-        `✓ Updated ymax-visualizer.html with data from ymax-machine.yaml`,
+        `✓ Updated ymax-visualizer.html with generated Ymax machine data`,
       );
     }
   }

@@ -1,66 +1,26 @@
 #!/usr/bin/env -S node --import ts-blank-space/register
-// Generate Mermaid state diagrams from ymax-machine.yaml
-// Outputs separate .mmd files for each machine in the spec
+// Generate Mermaid state diagrams from the generated Ymax machine model.
+// Outputs separate .mmd files for each machine in the spec.
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import yaml from 'js-yaml';
-import type { PathLike } from 'fs';
 import assert from 'node:assert';
+import {
+  ymaxMachine,
+  type MachineDefinition,
+  StateNode,
+  TransitionTarget,
+  YmaxSpec,
+} from '../src/model/generated/ymax-machine.js';
 
-const input = '../docs/ymax-machine.yaml';
 const outputDir = '../docs';
 
 const thisFile = fileURLToPath(import.meta.url);
 const here = path.dirname(thisFile);
-const defaultSpecPath = path.resolve(here, input);
 const outputPath = path.resolve(here, outputDir);
 
 const args = process.argv.slice(2);
 const checkMode = args.includes('--check');
-const specPath = args.find(arg => !arg.startsWith('--'))
-  ? path.resolve(process.cwd(), args.find(arg => !arg.startsWith('--'))!)
-  : defaultSpecPath;
-
-interface TransitionTarget {
-  target: string;
-  description?: string;
-  guard?: string;
-  actions?: string[];
-}
-
-interface StateNode {
-  description: string;
-  type?: 'atomic' | 'compound' | 'final' | 'parallel';
-  initial?: string;
-  states?: Record<string, StateNode>;
-  on?: Record<string, TransitionTarget | TransitionTarget[]>;
-  after?: Record<string, TransitionTarget | TransitionTarget[]>;
-  meta?: {
-    row?: string;
-    observedFrom?: string[];
-    observabilityTodo?: string;
-    wayMachines?: string[];
-    [key: string]: unknown;
-  };
-}
-
-interface MachineDefinition {
-  description: string;
-  category?: 'flow' | 'step';
-  initial: string;
-  states: Record<string, StateNode>;
-}
-
-interface YmaxSpec {
-  version?: string;
-  machines: Record<string, MachineDefinition>;
-}
-
-const readYaml = async (file: PathLike | fs.FileHandle): Promise<YmaxSpec> => {
-  const text = await fs.readFile(file, 'utf8');
-  return yaml.load(text) as YmaxSpec;
-};
 
 const sanitizeText = (str: unknown) =>
   String(str)
@@ -164,7 +124,7 @@ const generateMermaidForMachine = (machine: MachineDefinition): string => {
 };
 
 const main = async () => {
-  const spec = await readYaml(specPath);
+  const spec: YmaxSpec = ymaxMachine;
 
   if (!spec?.machines) {
     throw new Error('Spec must have "machines" property');

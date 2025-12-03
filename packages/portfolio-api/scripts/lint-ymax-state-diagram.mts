@@ -7,16 +7,11 @@
  * - Verifies wayMachines references exist
  */
 
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import yaml from 'js-yaml';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const YAML_PATH = path.join(__dirname, '../docs/ymax-machine.yaml');
-const SCHEMA_PATH = path.join(__dirname, '../docs/ymax-machine.schema.json');
+import {
+  ymaxMachine,
+  type StateNode,
+  YmaxSpec,
+} from '../src/model/generated/ymax-machine.js';
 
 // ANSI color codes for terminal output
 const colors = {
@@ -46,47 +41,6 @@ function success(message: string) {
 
 function info(message: string) {
   log(colors.blue, message);
-}
-
-interface TransitionTarget {
-  target: string;
-  description?: string;
-}
-
-interface StateNode {
-  description: string;
-  type?: string;
-  initial?: string;
-  states?: Record<string, StateNode>;
-  on?: Record<string, TransitionTarget | TransitionTarget[]>;
-  meta?: {
-    wayMachines?: string[];
-    [key: string]: unknown;
-  };
-}
-
-interface MachineDefinition {
-  description: string;
-  category?: string;
-  initial: string;
-  states: Record<string, StateNode>;
-}
-
-interface YmaxSpec {
-  version?: string;
-  machines: Record<string, MachineDefinition>;
-}
-
-// Parse YAML state machine
-function parseYamlStateMachine(): YmaxSpec {
-  try {
-    const yamlContent = fs.readFileSync(YAML_PATH, 'utf8');
-    const doc = yaml.load(yamlContent) as YmaxSpec;
-    return doc;
-  } catch (err: any) {
-    error(`Failed to parse YAML file: ${err.message}`);
-    process.exit(1);
-  }
 }
 
 // Get all state names in a machine (including nested states)
@@ -251,7 +205,11 @@ function validateStateMachines() {
   info('='.repeat(50));
   info('');
 
-  const spec = parseYamlStateMachine();
+  const spec: YmaxSpec = ymaxMachine;
+  if (!spec?.machines) {
+    throw new Error('Spec must have "machines" property');
+  }
+
   let totalIssues = 0;
 
   // Validate required fields

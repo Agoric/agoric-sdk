@@ -4,11 +4,12 @@ An interactive visualization tool for the Ymax flow state machine that helps use
 
 ## Files
 
-- **`ymax-machine.yaml`** - Canonical state machine definitions (12 machines)
-- **`ymax-machine.mmd`** - Main flow Mermaid diagram (generated from YAML)
+- **`src/model/ymax-machine.yaml`** - Canonical state machine definitions (12 machines)
+- **`src/model/ymax-machine.schema.json`** - JSON Schema for validating YAML
+- **`src/model/generated/ymax-machine.js`** - Generated JS module with spec + JSDoc types
+- **`ymax-machine.mmd`** - Main flow Mermaid diagram (generated)
 - **`ymax-machine-{name}.mmd`** - Individual Mermaid diagrams per machine
 - **`ymax-visualizer.html`** - Interactive SVG-based visualizer with collapsible step machines
-- **`ymax-machine.schema.json`** - JSON Schema for validating YAML
 
 ## Machines
 
@@ -99,8 +100,9 @@ The linter checks:
 To verify generated files are up-to-date:
 
 ```bash
-yarn lint:mermaid          # Check Mermaid diagrams match YAML
-yarn lint:visualizer-data  # Check HTML embedded data matches YAML
+yarn lint:ymax-machine     # Check generated JS matches YAML + schema
+yarn lint:mermaid          # Check Mermaid diagrams match generated data
+yarn lint:visualizer-data  # Check HTML embedded data matches generated data
 ```
 
 ## Embedding in MCP UI
@@ -135,16 +137,17 @@ Links use placeholder values (`{walletAddr}`, `{n}`, `{instance}`) that should b
 
 When modifying the state machine:
 
-1. **Update `ymax-machine.yaml`** - This is the source of truth
+1. **Update `src/model/ymax-machine.yaml`** - This is the source of truth
 2. **Run the generators**:
+   - `npx tsx scripts/gen-ymax-machine.mts` - Validates against schema and writes `src/model/generated/ymax-machine.js`
    - `npx tsx scripts/gen-mermaid.mts` - Updates Mermaid diagrams
-   - `npx tsx scripts/gen-visualizer-data.mts` - Embeds YAML data into HTML
+   - `npx tsx scripts/gen-visualizer-data.mts` - Embeds generated data into HTML
 3. **Run the linter** - Verify consistency: `yarn lint:ymax-diagram`
 4. **Test the visualization** - Open the HTML file and test with example data
 
 ### Adding a New Step Machine
 
-1. Add the new machine to `ymax-machine.yaml` under `machines:`
+1. Add the new machine to `src/model/ymax-machine.yaml` under `machines:`
 2. Set `category: step` to mark it as a step machine
 3. Reference it in `YmaxFlow.states.executing.states.moving.meta.wayMachines`
 4. Run the generator and linter
@@ -166,4 +169,4 @@ The Ymax flow state machine tracks portfolio transactions through these main sta
 8. **completed** - Flow finished successfully
 9. **failed** - Flow halted with error
 
-See `ymax-machine.yaml` for complete details including observable data sources, invariants, and transition conditions.
+See `src/model/ymax-machine.yaml` for complete details including observable data sources, invariants, and transition conditions.
