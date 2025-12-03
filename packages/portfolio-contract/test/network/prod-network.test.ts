@@ -72,7 +72,7 @@ const hasEdge = (
   via?: TransferProtocol,
 ) =>
   edges.some(
-    e => e.src === src && e.dest === dest && (via ? e.via === via : true),
+    e => e.src === src && e.dest === dest && (via ? e.transfer === via : true),
   );
 
 const isReachable = (

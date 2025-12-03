@@ -235,8 +235,10 @@ export const explainPath = (
   if (path.length < 2) return { ok: true };
   const nodes = graph.nodes;
   const edgeMap = new Map<string, { capacity: number }>();
-  for (const e of graph.edges)
-    edgeMap.set(`${e.src}->${e.dest}`, { capacity: e.capacity ?? Infinity });
+  for (const e of graph.edges) {
+    const capacity = Number(e.capacity ?? Infinity);
+    edgeMap.set(`${e.src}->${e.dest}`, { capacity });
+  }
   for (let i = 0; i < path.length - 1; i += 1) {
     const src = path[i];
     const dest = path[i + 1];

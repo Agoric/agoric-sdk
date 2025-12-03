@@ -7,8 +7,8 @@ import type { FlowEdge, FlowGraph } from './buildGraph.js';
 
 /** Weight selector: cheapest => variableFee, fastest => timeFixed, default 1 */
 const edgeWeight = (e: FlowEdge, mode: 'cheapest' | 'fastest') => {
-  if (mode === 'cheapest') return e.variableFee ?? 0;
-  if (mode === 'fastest') return e.timeFixed ?? 0;
+  if (mode === 'cheapest') return e.variableFeeBps ?? 0;
+  if (mode === 'fastest') return e.timeSec ?? 0;
   return 1;
 };
 
