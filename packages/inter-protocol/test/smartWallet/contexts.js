@@ -23,6 +23,10 @@ import { withAmountUtils } from '../supports.js';
  * @import {FluxStartFn} from '@agoric/inter-protocol/src/price/fluxAggregatorContract.js';
  * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {ContinuingInvitationSpec} from '@agoric/smart-wallet/src/invitations.js';
+ * @import {ChainBootstrapSpace} from '@agoric/vats';
+ * @import {EconomyBootstrapPowers} from '../../src/proposals/econ-behaviors.js';
+ * @import {CommitteeElectoratePublic} from '@agoric/governance/src/types.js';
+ * @import {Installation} from '@agoric/zoe';
  */
 
 // referenced by TS
@@ -51,7 +55,7 @@ export const importBootTestUtils = async (log, bundleCache) => {
 
 /**
  * @param {ExecutionContext} t
- * @param {(logger, cache) => Promise<ChainBootstrapSpace>} makeSpace
+ * @param {(logger, cache) => Promise<EconomyBootstrapPowers>} makeSpace
  */
 export const makeDefaultTestContext = async (t, makeSpace) => {
   // To debug, pass t.log instead of null logger
@@ -60,7 +64,6 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
   const bundleCache = await unsafeMakeBundleCache('bundles/');
   const zone = makeHeapZone();
 
-  // @ts-expect-error xxx
   const { consume, produce, instance } = await makeSpace(log, bundleCache);
   const { agoricNames, zoe } = consume;
 
@@ -79,7 +82,9 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     'walletFactory',
   );
   /**
-   * @type {Promise<Installation<StartWalletFactory>>}
+   * @type {Promise<
+   *   Installation<StartWalletFactory>
+   * >}
    */
   const installation = E(zoe).install(bundle);
 
@@ -193,7 +198,6 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     produce.priceAuthorityAdmin.resolve(mockPriceAuthorityAdmin);
 
     await createPriceFeed(
-      // @ts-expect-error xxx
       { consume, produce, instance },
       {
         options: {

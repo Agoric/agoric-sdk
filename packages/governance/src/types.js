@@ -5,8 +5,8 @@ export {};
 /**
  * @import {Guarded} from '@endo/exo';
  * @import {Passable, Container} from '@endo/pass-style';
- * @import {Publisher} from '@agoric/notifier';
- * @import {AdminFacet, InstallationStart, InvitationAmount} from '@agoric/zoe';
+ * @import {Publisher, StoredSubscription, Subscriber} from '@agoric/notifier';
+ * @import {AdminFacet, Handle, InstallationStart, InvitationAmount, IssuerKeywordRecord, Keyword, ZoeService} from '@agoric/zoe';
  * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
  * @import {ContractStartFunction} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {Ratio} from '@agoric/ertp';

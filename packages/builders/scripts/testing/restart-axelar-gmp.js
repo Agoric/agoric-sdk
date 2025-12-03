@@ -9,8 +9,6 @@ import {
 } from '@agoric/internal';
 import { E } from '@endo/far';
 
-/// <reference types="@agoric/vats/src/core/types-ambient.js"/>
-
 const trace = makeTracer('StartAxelarGmp', true);
 
 /**

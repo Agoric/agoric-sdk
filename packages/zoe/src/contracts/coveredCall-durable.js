@@ -6,6 +6,8 @@ import { isAfterDeadlineExitRule, OfferHandlerI } from '../typeGuards.js';
 
 /**
  * @import {Baggage} from '@agoric/vat-data';
+ * @import {ZCF} from '../types-index.js';
+ * @import {OfferHandler} from '../types-index.js';
  */
 
 const sellSeatExpiredMsg = 'The covered call option is expired.';

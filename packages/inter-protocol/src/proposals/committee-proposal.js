@@ -5,6 +5,7 @@ import { reserveThenDeposit } from './utils.js';
 /**
  * @import {EconomyBootstrapPowers} from './econ-behaviors.js';
  * @import {EconCharterStartResult} from './econ-behaviors.js';
+ * @import {Invitation} from '@agoric/zoe';
  */
 
 const { values } = Object;

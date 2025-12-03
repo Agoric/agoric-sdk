@@ -6,6 +6,9 @@ import { assertRightsConserved } from './rightsConservation.js';
 
 /**
  * @import {MapStore} from '@agoric/swingset-liveslots';
+ * @import {AmountKeywordRecord} from '../types-index.js';
+ * @import {TransferPart} from './types.ts';
+ * @import {ZCFSeat} from './types.ts';
  */
 
 /** @typedef {Array<AmountKeywordRecord>} TransactionList */

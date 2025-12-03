@@ -6,6 +6,7 @@
  * @import {MakeCombineInvitationMakers} from '../exos/combine-invitation-makers.js';
  * @import {CosmosOrchestrationAccount} from '../exos/cosmos-orchestration-account.js';
  * @import {ResolvedContinuingOfferResult, ZoeTools} from '../utils/zoe-tools.js';
+ * @import {ZCFSeat} from '@agoric/zoe';
  */
 
 import { mustMatch } from '@endo/patterns';

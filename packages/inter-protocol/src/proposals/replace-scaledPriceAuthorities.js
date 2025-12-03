@@ -4,6 +4,11 @@ import { E } from '@endo/far';
 import { startScaledPriceAuthority } from './addAssetToVault.js';
 import { scaledPriceFeedName } from './utils.js';
 
+/**
+ * @import {BootstrapPowers} from '@agoric/vats';
+ * @import {ChainBootstrapSpace} from '@agoric/vats';
+ */
+
 const trace = makeTracer('replaceScaledPA', true);
 
 /**

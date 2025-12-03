@@ -17,7 +17,12 @@ import {
 } from '@agoric/internal/src/lib-chainStorage.js';
 import { provideRetiredInstances, reserveThenDeposit } from './utils.js';
 
-/** @import {EconomyBootstrapPowers} from './econ-behaviors.js' */
+/**
+ * @import {EconomyBootstrapPowers} from './econ-behaviors.js'
+ * @import {PromiseSpaceOf} from '@agoric/vats';
+ * @import {Invitation} from '@agoric/zoe';
+ * @import {Instance} from '@agoric/zoe';
+ */
 /** @import {EconCharterStartResult} from './econ-behaviors.js' */
 /** @import {CommitteeElectorateCreatorFacet} from '@agoric/governance/src/committee.js'; */
 
@@ -150,7 +155,9 @@ const inviteECMembers = async (
  *     voterAddresses: Record<string, string>;
  *     econCharterKit: {
  *       creatorFacet: {
- *         makeCharterMemberInvitation: () => Promise<Invitation>;
+ *         makeCharterMemberInvitation: () => Promise<
+ *           Invitation
+ *         >;
  *       };
  *     };
  *   };
@@ -182,7 +189,12 @@ const inviteToEconCharter = async (
  * provided committee specifications.
  *
  * @param {EconomyBootstrapPowers &
- *   PromiseSpaceOf<{ retiredContractInstances: MapStore<string, Instance> }>} powers
+ *   PromiseSpaceOf<{
+ *     retiredContractInstances: MapStore<
+ *       string,
+ *       Instance
+ *     >;
+ *   }>} powers
  *   - The resources and capabilities required to start the committee.
  *
  * @param {{
@@ -290,7 +302,12 @@ const startNewEconomicCommittee = async (
  * provided committee specifications.
  *
  * @param {EconomyBootstrapPowers &
- *   PromiseSpaceOf<{ retiredContractInstances: MapStore<string, Instance> }>} powers
+ *   PromiseSpaceOf<{
+ *     retiredContractInstances: MapStore<
+ *       string,
+ *       Instance
+ *     >;
+ *   }>} powers
  *   - The resources and capabilities required to start the committee.
  *
  * @returns {Promise<EconCharterStartResult>} A promise that resolves to the

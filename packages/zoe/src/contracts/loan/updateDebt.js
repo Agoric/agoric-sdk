@@ -9,7 +9,7 @@ import { scheduleLiquidation } from './scheduleLiquidation.js';
 
 /**
  * @import {TimestampRecord} from '@agoric/time';
- * @import {CalcInterestFn, MakeDebtCalculator} from './types-ambient.js';
+ * @import {CalcInterestFn, MakeDebtCalculator} from './types.js';
  */
 
 // Update the debt by adding the new interest on every period, as

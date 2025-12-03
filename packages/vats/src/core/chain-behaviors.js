@@ -24,6 +24,16 @@ import { makeScopedBridge } from '../bridge.js';
  * @import {BridgeMessage} from '@agoric/cosmic-swingset/src/types.js';
  * @import {BootstrapManifest} from './lib-boot.js';
  * @import {BundleCap} from '@agoric/swingset-vat';
+ * @import {BootstrapPowers,
+ *   BootstrapSpace,
+ *   PropertyMaker,
+ *   ClientManager,
+ *   ClientCreator,
+ *   ClientFacet,
+ *   BootDevices,
+ *   ChainDevices,
+ *   NamedVatPowers,} from './types.js';
+ * @import {SubscriptionRecord} from '@agoric/notifier';
  */
 
 const { keys } = Object;
@@ -420,7 +430,6 @@ export const produceHighPrioritySendersManager = async ({
   managerP.resolve(manager);
 };
 
-/** @param {BootstrapPowers & NamedVatPowers} powers */
 export const publishAgoricNamesToChainStorage = async ({
   consume: { chainStorage: rootP },
   namedVat: {
