@@ -10,7 +10,7 @@ import { PoolPlaces } from '../../src/type-guards.js';
 import type { PoolKey } from '../../src/type-guards.js';
 import type { AssetPlaceRef } from '../../src/type-guards-steps.js';
 
-import type { FeeMode, NetworkSpec, TransferProtocol } from './network-spec.js';
+import type { LinkSpec, NetworkSpec } from './network-spec.js';
 
 /** Node supply: positive => must send out; negative => must receive */
 export interface SupplyMap {
@@ -18,18 +18,7 @@ export interface SupplyMap {
 }
 
 /** Internal edge representation */
-export interface FlowEdge {
-  id: string;
-  src: AssetPlaceRef;
-  dest: AssetPlaceRef;
-  capacity?: number; // numeric for LP; derived from bigint
-  min?: number; // numeric for LP; derived from bigint
-  variableFee: number; // cost coefficient per unit flow in basis points
-  fixedFee?: number; // optional fixed cost (cheapest mode)
-  timeFixed?: number; // optional time cost (fastest mode)
-  via?: TransferProtocol; // annotation (e.g. 'intra-chain', 'cctp', etc.)
-  feeMode?: FeeMode;
-}
+export type FlowEdge = LinkSpec & { id: string };
 
 /**
  * Graph structure.
@@ -60,10 +49,10 @@ export const chainOf = (id: AssetPlaceRef): string => {
 };
 
 const localFlowEdgeBase: Omit<FlowEdge, 'src' | 'dest' | 'id'> = {
-  variableFee: 1,
-  fixedFee: 0,
-  timeFixed: 1,
-  via: 'local',
+  variableFeeBps: 1,
+  flatFee: 0n,
+  timeSec: 1,
+  transfer: 'local',
 };
 
 /**
@@ -202,30 +191,19 @@ export const makeGraphForFlow = (
   // Override edges as specified.
   const dynamicEdges = [...graph.edges] as Array<FlowEdge | undefined>;
   for (const link of network.links) {
-    const { src, dest, transfer: via } = link;
+    const { src, dest, transfer } = link;
     (graph.nodes.has(src) && graph.nodes.has(dest)) ||
       Fail`Graph missing nodes for link ${src}->${dest}`;
 
-    // Remove any existing edge that matches on (src, dest, via?).
+    // Remove any existing edge that matches on (src, dest, transfer?).
     for (let i = 0; i < dynamicEdges.length; i += 1) {
       const edge = dynamicEdges[i];
       if (!edge || edge.src !== src || edge.dest !== dest) continue;
-      if (via !== undefined && edge.via !== via) continue;
+      if (transfer !== undefined && edge.transfer !== transfer) continue;
       dynamicEdges[i] = undefined;
     }
 
-    dynamicEdges.push({
-      id: 'TBD',
-      src,
-      dest,
-      capacity: link.capacity === undefined ? undefined : Number(link.capacity),
-      min: link.min === undefined ? undefined : Number(link.min),
-      variableFee: link.variableFeeBps ?? 0,
-      fixedFee: link.flatFee === undefined ? undefined : Number(link.flatFee),
-      timeFixed: link.timeSec,
-      via,
-      feeMode: link.feeMode,
-    });
+    dynamicEdges.push({ id: 'TBD', ...link });
   }
 
   // Define sequential edge IDs for avoiding collisions in the solver.

@@ -99,7 +99,7 @@ type IntVar = Record<
   number
 >;
 type BinaryVar = Record<
-  `allow_${string}` | 'magnifiedFlatFee' | 'timeFixed' | 'weight',
+  `allow_${string}` | 'magnifiedFlatFee' | 'timeSec' | 'weight',
   number
 >;
 type WeightFns = {
@@ -118,16 +118,16 @@ const modeFns = new Map(
         // Fees have full weight; time is weighted by epsilon.
         intVar.weight = intVar.magnifiedVariableFee;
         binaryVar.weight =
-          binaryVar.magnifiedFlatFee + binaryVar.timeFixed * epsilon;
+          binaryVar.magnifiedFlatFee + binaryVar.timeSec * epsilon;
       },
     },
     fastest: {
-      getPrimaryWeights: (_intVar, binaryVar) => [binaryVar.timeFixed],
+      getPrimaryWeights: (_intVar, binaryVar) => [binaryVar.timeSec],
       setWeights: (intVar, binaryVar, epsilon) => {
         // Fees are weighted by epsilon; time has full weight.
         intVar.weight = intVar.magnifiedVariableFee * epsilon;
         binaryVar.weight =
-          binaryVar.timeFixed + binaryVar.magnifiedFlatFee * epsilon;
+          binaryVar.timeSec + binaryVar.magnifiedFlatFee * epsilon;
       },
     },
   } as Record<RebalanceMode, WeightFns>),
@@ -151,29 +151,29 @@ export const buildLPModel = (
   let minPrimaryWeight = Infinity;
   for (const edge of graph.edges) {
     const { id, src, dest } = edge;
-    const { capacity, min, variableFee, fixedFee = 0, timeFixed = 0 } = edge;
+    const { capacity, min, variableFeeBps, flatFee = 0n, timeSec = 0 } = edge;
 
     throughputConstraints[`through_${id}`] = {
-      min: min || 0,
-      max: capacity,
+      min: Number(min ?? 0n),
+      max: capacity === undefined ? undefined : Number(capacity),
     };
 
-    // The numbers in graph.supplies should use the same units as fixedFee, but
-    // variableFee is in basis points relative to some scaling of those other
+    // The numbers in graph.supplies should use the same units as flatFee, but
+    // variableFeeBps is in basis points relative to some scaling of those other
     // values.
     // We also want fee attributes large enough to avoid IEEE 754 rounding
     // issues.
     // Assume that scaling to be 1e6 (i.e., 100 bp = 1% of supplies[key]/1e6)
-    // and scale the fee attributes accordingly such that variableFee 100 will
+    // and scale the fee attributes accordingly such that variableFeeBps 100 will
     // contribute a weight of 0.01 for each `via_$edge` atomic unit of payload
-    // (i.e., magnified by 1e6 if the scaling is actually 1e6) and fixedFee 1
+    // (i.e., magnified by 1e6 if the scaling is actually 1e6) and flatFee 1
     // will contribute a weight of 1e6 if the corresponding edge is used (i.e.,
     // also magnified by 1e6 if the scaling is actually 1e6).
     // The solution may be disrupted by either over- or under-weighting
-    // variableFee w.r.t. fixedFee, but not otherwise, and we accept the risk.
+    // variableFeeBps w.r.t. flatFee, but not otherwise, and we accept the risk.
     // TODO: Define FlowGraph['scale'] to eliminate this guesswork.
-    const magnifiedVariableFee = variableFee / 10_000;
-    const magnifiedFlatFee = fixedFee * 1e6;
+    const magnifiedVariableFee = variableFeeBps / 10_000;
+    const magnifiedFlatFee = Number(flatFee) * 1e6;
 
     // Dynamic costs for this edge are associated with the numeric `via_${id}`
     // variable, and fixed costs are associated with the binary `pick_${id}`.
@@ -199,7 +199,7 @@ export const buildLPModel = (
     const binaryVar = {
       [`allow_${id}`]: COVER_FLOW,
       magnifiedFlatFee,
-      timeFixed,
+      timeSec,
       weight: 0, // increased below
     };
     binaryVariables[`pick_${id}`] = binaryVar;
@@ -440,7 +440,7 @@ export const rebalanceMinCostFlowSteps = async (
           // HACK of subtract 1n in order to avoid rounding errors in Noble
           // See https://github.com/Agoric/agoric-private/issues/415
           const usdnOut =
-            (BigInt(flow) * (10000n - BigInt(edge.variableFee))) / 10000n - 1n;
+            (BigInt(flow) * (10000n - BigInt(edge.variableFeeBps))) / 10000n - 1n;
           details = { detail: { usdnOut } };
           break;
         }
