@@ -51,7 +51,12 @@ const listifyTransitions = (target: unknown) => {
   return [target];
 };
 
-const renderTransitions = (lines: string[], stateName: string, node: any, indent: string) => {
+const renderTransitions = (
+  lines: string[],
+  stateName: string,
+  node: any,
+  indent: string,
+) => {
   if (node.on) {
     for (const [event, targets] of Object.entries(node.on)) {
       for (const t of listifyTransitions(targets)) {
@@ -70,7 +75,13 @@ const renderTransitions = (lines: string[], stateName: string, node: any, indent
   }
 };
 
-const renderStates = (lines: string[], states: { [s: string]: any; } | ArrayLike<any>, indent = '', isRoot = false, initial: any) => {
+const renderStates = (
+  lines: string[],
+  states: { [s: string]: any } | ArrayLike<any>,
+  indent = '',
+  isRoot = false,
+  initial: any,
+) => {
   if (isRoot && initial) {
     lines.push(`${indent}[*] --> ${initial}`);
   }
@@ -81,7 +92,11 @@ const renderStates = (lines: string[], states: { [s: string]: any; } | ArrayLike
     const indent2 = `${indent}  `;
 
     if (hasChildren) {
-      assert.equal(name, sanitizeText(name), `State name "${name}" has invalid characters`);
+      assert.equal(
+        name,
+        sanitizeText(name),
+        `State name "${name}" has invalid characters`,
+      );
       lines.push(`${indent}state ${name} {`);
       if (node.initial) {
         lines.push(`${indent2}[*] --> ${node.initial}`);
@@ -91,7 +106,11 @@ const renderStates = (lines: string[], states: { [s: string]: any; } | ArrayLike
       addNote(lines, indent, name, node.description);
       renderTransitions(lines, name, node, indent);
     } else {
-      assert.equal(name, sanitizeText(name), `State name "${name}" has invalid characters`);
+      assert.equal(
+        name,
+        sanitizeText(name),
+        `State name "${name}" has invalid characters`,
+      );
       lines.push(`${indent}state ${name}`);
       addNote(lines, indent, name, node.description);
       if (type === 'final') {
@@ -115,11 +134,15 @@ const main = async () => {
     try {
       const existingContent = await fs.readFile(outputPath, 'utf8');
       if (existingContent !== generatedContent) {
-        console.error(`Error: ${outputPath} is out of date. Run '${path.relative(process.cwd(), thisFile)}' to update.`);
+        console.error(
+          `Error: ${outputPath} is out of date. Run '${path.relative(process.cwd(), thisFile)}' to update.`,
+        );
         process.exitCode = 1;
       }
-        } catch (err) {
-      console.error(`Error: ${outputPath} does not exist. Run '${path.relative(process.cwd(), thisFile)}' to create it.`);
+    } catch (err) {
+      console.error(
+        `Error: ${outputPath} does not exist. Run '${path.relative(process.cwd(), thisFile)}' to create it.`,
+      );
       process.exitCode = 1;
     }
   } else {
