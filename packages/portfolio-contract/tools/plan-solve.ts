@@ -1,5 +1,9 @@
 import jsLPSolver from 'javascript-lp-solver';
-import type { IModel, IModelVariableConstraint } from 'javascript-lp-solver';
+import type {
+  IModel,
+  IModelVariableConstraint,
+  Solution,
+} from 'javascript-lp-solver';
 
 import { Fail, annotateError } from '@endo/errors';
 
@@ -42,6 +46,9 @@ const replaceOrInit = <K, V>(
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const trace = makeTracer('solve');
 
+/** The count of minor units per major unit (e.g., uusdc per USDC) */
+const UNIT_SCALE = 1e6;
+
 /** Mode of optimization */
 export type RebalanceMode = 'cheapest' | 'fastest';
 
@@ -54,6 +61,7 @@ export interface SolvedEdgeFlow {
 
 /** Model shape for javascript-lp-solver */
 export type LpModel = IModel<string, string>;
+export type LpSolution = Solution<string>;
 
 /**
  * Gas estimation interface:
@@ -90,145 +98,154 @@ const FLOW_EPS = 1e-6;
 
 // ------------------------------ Model Building -------------------------------
 
-type IntVar = Record<
+type FlowVar = Record<
   | `allow_${string}`
   | `through_${string}`
   | `netOut_${string}`
-  | 'magnifiedVariableFee'
+  | 'variableFeeBps'
   | 'weight',
   number
 >;
-type BinaryVar = Record<
+type PickVar = Record<
   `allow_${string}` | 'magnifiedFlatFee' | 'timeSec' | 'weight',
   number
 >;
 type WeightFns = {
-  getPrimaryWeights: (intVar: IntVar, binaryVar: BinaryVar) => number[];
-  setWeights: (intVar: IntVar, binaryVar: BinaryVar, epsilon: number) => void;
+  classifyWeights: (
+    flowVar: FlowVar,
+    pickVar: PickVar,
+  ) => { primary: number[]; other: number[] };
+  setWeights: (flowVar: FlowVar, pickVar: PickVar, epsilon: number) => void;
 };
+
+const DEFAULT_SECONDARY_WEIGHT_EPSILON = 1e-6;
 
 const modeFns = new Map(
   typedEntries({
     cheapest: {
-      getPrimaryWeights: (intVar, binaryVar) => [
-        intVar.magnifiedVariableFee,
-        binaryVar.magnifiedFlatFee,
-      ],
-      setWeights: (intVar, binaryVar, epsilon) => {
+      classifyWeights: (flowVar, pickVar) => ({
+        primary: [flowVar.variableFeeBps, pickVar.magnifiedFlatFee],
+        other: [pickVar.timeSec],
+      }),
+      setWeights: (flowVar, pickVar, epsilon) => {
         // Fees have full weight; time is weighted by epsilon.
-        intVar.weight = intVar.magnifiedVariableFee;
-        binaryVar.weight =
-          binaryVar.magnifiedFlatFee + binaryVar.timeSec * epsilon;
+        flowVar.weight = flowVar.variableFeeBps;
+        pickVar.weight = pickVar.magnifiedFlatFee + pickVar.timeSec * epsilon;
       },
     },
     fastest: {
-      getPrimaryWeights: (_intVar, binaryVar) => [binaryVar.timeSec],
-      setWeights: (intVar, binaryVar, epsilon) => {
+      classifyWeights: (flowVar, pickVar) => ({
+        primary: [pickVar.timeSec],
+        other: [flowVar.variableFeeBps, pickVar.magnifiedFlatFee],
+      }),
+      setWeights: (flowVar, pickVar, epsilon) => {
         // Fees are weighted by epsilon; time has full weight.
-        intVar.weight = intVar.magnifiedVariableFee * epsilon;
-        binaryVar.weight =
-          binaryVar.timeSec + binaryVar.magnifiedFlatFee * epsilon;
+        flowVar.weight = flowVar.variableFeeBps * epsilon;
+        pickVar.weight = pickVar.timeSec + pickVar.magnifiedFlatFee * epsilon;
       },
     },
   } as Record<RebalanceMode, WeightFns>),
 );
 
 /**
- * Build LP/MIP model for javascript-lp-solver.
+ * Build LP/MIP model for javascript-lp-solver, expressing amounts in major
+ * units with floating point values (e.g., `1.5` for 1.5 USDC from 1_500_000n
+ * uusdc).
  */
 export const buildLPModel = (
   graph: FlowGraph,
   mode: RebalanceMode,
 ): LpModel => {
-  const { getPrimaryWeights, setWeights } =
+  const { classifyWeights, setWeights } =
     modeFns.get(mode) || Fail`unknown mode ${mode}`;
 
-  const intVariables = {} as Record<`via_${string}`, IntVar>;
-  const binaryVariables = {} as Record<`pick_${string}`, BinaryVar>;
+  const flowVariables = {} as Record<`via_${string}`, FlowVar>;
+  const pickVariables = {} as Record<`pick_${string}`, PickVar>;
   const couplingConstraints = {} as Record<string, IModelVariableConstraint>;
   const throughputConstraints = {} as Record<string, IModelVariableConstraint>;
   const netFlowConstraints = {} as Record<string, IModelVariableConstraint>;
-  let minPrimaryWeight = Infinity;
+  let [minPrimaryWeight, maxSecondaryWeight] = [Infinity, -Infinity];
   for (const edge of graph.edges) {
     const { id, src, dest } = edge;
     const { capacity, min, variableFeeBps, flatFee = 0n, timeSec = 0 } = edge;
 
+    // Scale min and capacity to major units.
     throughputConstraints[`through_${id}`] = {
-      min: Number(min ?? 0n),
-      max: capacity === undefined ? undefined : Number(capacity),
+      min: min === undefined ? 0 : Number(min) / UNIT_SCALE,
+      max: capacity === undefined ? undefined : Number(capacity) / UNIT_SCALE,
     };
-
-    // The numbers in graph.supplies should use the same units as flatFee, but
-    // variableFeeBps is in basis points relative to some scaling of those other
-    // values.
-    // We also want fee attributes large enough to avoid IEEE 754 rounding
-    // issues.
-    // Assume that scaling to be 1e6 (i.e., 100 bp = 1% of supplies[key]/1e6)
-    // and scale the fee attributes accordingly such that variableFeeBps 100 will
-    // contribute a weight of 0.01 for each `via_$edge` atomic unit of payload
-    // (i.e., magnified by 1e6 if the scaling is actually 1e6) and flatFee 1
-    // will contribute a weight of 1e6 if the corresponding edge is used (i.e.,
-    // also magnified by 1e6 if the scaling is actually 1e6).
-    // The solution may be disrupted by either over- or under-weighting
-    // variableFeeBps w.r.t. flatFee, but not otherwise, and we accept the risk.
-    // TODO: Define FlowGraph['scale'] to eliminate this guesswork.
-    const magnifiedVariableFee = variableFeeBps / 10_000;
-    const magnifiedFlatFee = Number(flatFee) * 1e6;
 
     // Dynamic costs for this edge are associated with the numeric `via_${id}`
     // variable, and fixed costs are associated with the binary `pick_${id}`.
     // We couple them together with a shared `allow_${id}` attribute that has a
-    // tiny negative value for the former and an enormous positive value for the
+    // small negative value for the former and a large positive value for the
     // latter, and a constraint that the total sum be non-negative.
     // So any `via_${id}` dynamic flow requires activation of `pick_${id}`,
     // which adds enough `allow_${id}` to cover all of the flow.
     couplingConstraints[`allow_${id}`] = { min: 0 };
-    const FORCE_PICK = -1e-6;
-    const COVER_FLOW = 1e9;
+    const FORCE_PICK = -1;
+    const COVER_FLOW = 1e12;
 
-    const intVar: IntVar = {
+    const flowVar: FlowVar = {
       [`allow_${id}`]: FORCE_PICK,
       [`through_${id}`]: 1,
       [`netOut_${src}`]: 1,
       [`netOut_${dest}`]: -1,
-      magnifiedVariableFee,
+      variableFeeBps,
       weight: 0, // increased below
     };
-    intVariables[`via_${id}`] = intVar;
+    flowVariables[`via_${id}`] = flowVar;
 
-    const binaryVar = {
+    // Basing weight on unscaled variableFeeBps is an an implicit magnification
+    // by 1e4 to hundreds of minor units/thousandths of major units (e.g.,
+    // 100 bps = 1% of 1.5 USDC is actually 0.015 USDC but manifests as 150),
+    // and flatFee (which is in minor units) should follow suit such that e.g.
+    // 123 uusdc = 0.000123 USDC manifests as 1.23.
+    const magnifiedFlatFee = (Number(flatFee) * 1e4) / UNIT_SCALE;
+
+    const pickVar: PickVar = {
       [`allow_${id}`]: COVER_FLOW,
       magnifiedFlatFee,
       timeSec,
       weight: 0, // increased below
     };
-    binaryVariables[`pick_${id}`] = binaryVar;
+    pickVariables[`pick_${id}`] = pickVar;
 
-    // Keep track of the lowest non-zero primary weight for `mode`.
+    // Track the gap between primary and non-primary non-zero weights.
+    const weights = classifyWeights(flowVar, pickVar);
     minPrimaryWeight = Math.min(
       minPrimaryWeight,
-      ...getPrimaryWeights(intVar, binaryVar).map(n => n || Infinity),
+      ...weights.primary.map(n => n || Infinity),
+    );
+    maxSecondaryWeight = Math.max(
+      maxSecondaryWeight,
+      ...weights.other.map(n => n || -Infinity),
     );
   }
 
-  // Finalize the weights.
-  const epsilonWeight = Number.isFinite(minPrimaryWeight)
-    ? minPrimaryWeight / 1e6
-    : 1e-9;
+  // Finalize the weights, trying to leave 100x overhead between primary and
+  // non-primary contributions.
+  const maxExpectedFlow = Math.max(
+    ...Object.values(graph.supplies).map(x => Math.abs(x) / UNIT_SCALE),
+  );
+  const epsilonWeight =
+    Number.isFinite(minPrimaryWeight) && Number.isFinite(maxSecondaryWeight)
+      ? minPrimaryWeight / (maxSecondaryWeight * maxExpectedFlow * 100)
+      : DEFAULT_SECONDARY_WEIGHT_EPSILON;
   for (const { id } of graph.edges) {
     setWeights(
-      intVariables[`via_${id}`],
-      binaryVariables[`pick_${id}`],
+      flowVariables[`via_${id}`],
+      pickVariables[`pick_${id}`],
       epsilonWeight,
     );
     // No arc is free.
-    binaryVariables[`pick_${id}`].weight += 1;
+    pickVariables[`pick_${id}`].weight += 1;
   }
 
   // Constrain the net flow from each node.
   for (const node of graph.nodes) {
     const supply = graph.supplies[node] || 0;
-    netFlowConstraints[`netOut_${node}`] = { equal: supply };
+    netFlowConstraints[`netOut_${node}`] = { equal: supply / UNIT_SCALE };
   }
 
   return {
@@ -239,10 +256,50 @@ export const buildLPModel = (
       ...throughputConstraints,
       ...netFlowConstraints,
     },
-    binaries: objectMap(binaryVariables, () => true),
-    ints: objectMap(intVariables, () => true),
-    variables: { ...binaryVariables, ...intVariables },
+    binaries: objectMap(pickVariables, () => true),
+    ints: {},
+    variables: { ...pickVariables, ...flowVariables },
   };
+};
+
+/**
+ * Refine a coarse model of floating-point major-unit amount values and a
+ * corresponding solution into a narrow model of integer minor-unit amount
+ * values along only selected arcs.
+ */
+const refineModel = (
+  fullModel: LpModel,
+  graph: FlowGraph,
+  solution: LpSolution,
+): LpModel => {
+  const cloned = JSON.parse(JSON.stringify(fullModel));
+  cloned.binaries = {};
+  cloned.ints = {};
+  for (const edge of graph.edges) {
+    const { id, capacity, min } = edge;
+    const pickVar = `pick_${id}`;
+    const flowVar = `via_${id}`;
+    if ((solution[flowVar] ?? 0) > 0) {
+      cloned.binaries[pickVar] = true;
+      cloned.ints[flowVar] = true;
+      cloned.constraints[`through_${id}`] = {
+        min: min === undefined ? 0 : Number(min),
+        max: capacity === undefined ? undefined : Number(capacity),
+      };
+      cloned.variables[pickVar].weight =
+        (cloned.variables[pickVar].weight - 1) * UNIT_SCALE + 1;
+    } else {
+      delete cloned.variables[pickVar];
+      delete cloned.variables[flowVar];
+      delete cloned.constraints[`allow_${id}`];
+      delete cloned.constraints[`through_${id}`];
+    }
+  }
+  for (const node of graph.nodes) {
+    const supply = graph.supplies[node] || 0;
+    cloned.constraints[`netOut_${node}`] = { equal: supply };
+  }
+  return cloned;
 };
 
 /**
@@ -268,15 +325,9 @@ const prettyJsonable = (obj: unknown): string => {
   return pretty;
 };
 
-// This operation is async to allow future use of async solvers if needed
-export const solveRebalance = async (
-  model: LpModel,
-  graph: FlowGraph,
-): Promise<{ flows: SolvedEdgeFlow[]; detail?: Record<string, unknown> }> => {
-  await null;
+const solveLPModel = (model: LpModel, graph: FlowGraph): LpSolution => {
   const solution = jsLPSolver.Solve(model, 1e-9);
 
-  // jsLPSolver returns an object with variable values
   // The 'feasible' flag can be overly strict, so we check if we got a result
   // instead. If result is undefined or there are no variable values, it's truly infeasible.
   if (!(solution?.feasible || solution?.result)) {
@@ -289,6 +340,24 @@ export const solveRebalance = async (
     }
     throw Fail`No feasible solution: ${solution}`;
   }
+
+  return solution;
+};
+
+// This operation is async to allow future use of async solvers if needed
+export const solveRebalance = async (
+  model: LpModel,
+  graph: FlowGraph,
+): Promise<{ flows: SolvedEdgeFlow[]; detail?: Record<string, unknown> }> => {
+  await null;
+
+  // First, use the provided model with major-unit amount values to pick arcs.
+  // Then, derive a new model with minor-unit integer amount values against the
+  // selected subgraph.
+  // This two-step approach seems to dodge some IEEE 754 rounding issues.
+  const pickSolution = solveLPModel(model, graph);
+  const refinedModel = refineModel(model, graph, pickSolution);
+  const solution = solveLPModel(refinedModel, graph);
 
   const flows: SolvedEdgeFlow[] = [];
   for (const edge of graph.edges) {
@@ -440,7 +509,8 @@ export const rebalanceMinCostFlowSteps = async (
           // HACK of subtract 1n in order to avoid rounding errors in Noble
           // See https://github.com/Agoric/agoric-private/issues/415
           const usdnOut =
-            (BigInt(flow) * (10000n - BigInt(edge.variableFeeBps))) / 10000n - 1n;
+            (BigInt(flow) * (10000n - BigInt(edge.variableFeeBps))) / 10000n -
+            1n;
           details = { detail: { usdnOut } };
           break;
         }
