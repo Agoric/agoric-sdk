@@ -12,6 +12,7 @@
     "dev": "nodemon --ext js,ts --exec 'node --import ts-blank-space/register ./src/entrypoint.ts '$@' || touch ./src/entrypoint.ts'",
     "debug": "node --inspect ./dist/entrypoint.js",
     "process-tx": "node --import ts-blank-space/register ./tools/process-tx-entrypoint.ts",
+    "resolve-tx": "node --import ts-blank-space/register ./tools/resolve-tx-entrypoint.ts",
     "build": "yarn run codegen && yarn run -T run-s 'build:*'",
     "build:esbuild": "node ./esbuild.config.mjs",
     "codegen": "ls -d ./src/graphql/api-* | xargs -n 1 yarn run graphql-dir-codegen",
