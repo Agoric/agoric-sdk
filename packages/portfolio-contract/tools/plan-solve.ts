@@ -325,8 +325,12 @@ const prettyJsonable = (obj: unknown): string => {
   return pretty;
 };
 
-const solveLPModel = (model: LpModel, graph: FlowGraph): LpSolution => {
-  const solution = jsLPSolver.Solve(model, 1e-9);
+const solveLPModel = (
+  model: LpModel,
+  graph: FlowGraph,
+  { precision = 1e-9 } = {},
+): LpSolution => {
+  const solution = jsLPSolver.Solve(model, precision);
 
   // The 'feasible' flag can be overly strict, so we check if we got a result
   // instead. If result is undefined or there are no variable values, it's truly infeasible.
@@ -355,7 +359,7 @@ export const solveRebalance = async (
   // Then, derive a new model with minor-unit integer amount values against the
   // selected subgraph.
   // This two-step approach seems to dodge some IEEE 754 rounding issues.
-  const pickSolution = solveLPModel(model, graph);
+  const pickSolution = solveLPModel(model, graph, { precision: 1e-15 });
   const refinedModel = refineModel(model, graph, pickSolution);
   const solution = solveLPModel(refinedModel, graph);
 
