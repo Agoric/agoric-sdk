@@ -2,17 +2,36 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Ymax canonical state machine schema",
   "type": "object",
-  "required": ["machine", "initial", "states"],
+  "required": ["machines"],
   "properties": {
     "$schema": { "type": "string" },
-    "machine": { "type": "string", "description": "Machine identifier" },
-    "version": { "type": "string", "description": "Semantic version of the machine definition" },
-    "description": { "type": "string" },
-    "initial": { "type": "string", "description": "Initial state key" },
-    "states": { "$ref": "#/definitions/stateDictionary" }
+    "version": { "type": "string", "description": "Semantic version of the machine definitions" },
+    "machines": {
+      "type": "object",
+      "description": "Dictionary of named state machines",
+      "patternProperties": {
+        "^[-A-Za-z0-9_]+$": { "$ref": "#/definitions/machineDefinition" }
+      },
+      "additionalProperties": false
+    }
   },
   "additionalProperties": false,
   "definitions": {
+    "machineDefinition": {
+      "type": "object",
+      "required": ["description", "initial", "states"],
+      "properties": {
+        "description": { "type": "string" },
+        "initial": { "type": "string", "description": "Initial state key" },
+        "states": { "$ref": "#/definitions/stateDictionary" },
+        "category": {
+          "type": "string",
+          "enum": ["flow", "step"],
+          "description": "Whether this is a top-level flow machine or a step execution machine"
+        }
+      },
+      "additionalProperties": false
+    },
     "stateDictionary": {
       "type": "object",
       "patternProperties": {
@@ -33,6 +52,14 @@
         "initial": { "type": "string" },
         "states": { "$ref": "#/definitions/stateDictionary" },
         "on": { "$ref": "#/definitions/transitionMap" },
+        "onDone": {
+          "$ref": "#/definitions/transitionTarget",
+          "description": "Transition when all parallel regions reach final states (for type: parallel)"
+        },
+        "onError": {
+          "$ref": "#/definitions/transitionTarget",
+          "description": "Transition when any parallel region reaches an error state (for type: parallel)"
+        },
         "after": {
           "type": "object",
           "additionalProperties": { "$ref": "#/definitions/transitionTarget" }
@@ -117,7 +144,12 @@
         },
         "observedFrom": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": { "type": "string" },
+          "description": "Data sources where this state can be observed"
+        },
+        "observabilityTodo": {
+          "type": "string",
+          "description": "TODO note for states that are not yet observable - describes investigation needed"
         },
         "signals": {
           "type": "array",
@@ -127,6 +159,19 @@
         "severity": {
           "type": "string",
           "enum": ["info", "warn", "error"]
+        },
+        "wayMachines": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of step machine names that can execute within this state"
+        },
+        "txType": {
+          "type": "string",
+          "description": "Resolver TxType for correlating with pendingTxs (e.g., CCTP_TO_EVM, GMP, CCTP_TO_AGORIC, MAKE_ACCOUNT)"
+        },
+        "protocol": {
+          "type": "string",
+          "description": "External protocol involved (e.g., Circle CCTP, Axelar GMP, IBC)"
         }
       },
       "additionalProperties": false

@@ -4,10 +4,36 @@ An interactive visualization tool for the Ymax flow state machine that helps use
 
 ## Files
 
-- **`ymax-machine.yaml`** - Canonical state machine definition
-- **`ymax-machine.mmd`** - Mermaid diagram (generated from YAML)
-- **`ymax-visualizer.html`** - Interactive SVG-based visualizer
-- **`lint-ymax-state-diagram.js`** - Linter to verify HTML matches YAML
+- **`src/model/ymax-machine.yaml`** - Canonical state machine definitions (12 machines)
+- **`src/model/ymax-machine.schema.json`** - JSON Schema for validating YAML
+- **`src/model/generated/ymax-machine.js`** - Generated JS module with spec + JSDoc types
+- **`ymax-machine.mmd`** - Main flow Mermaid diagram (generated)
+- **`ymax-machine-{name}.mmd`** - Individual Mermaid diagrams per machine
+- **`ymax-visualizer.html`** - Interactive SVG-based visualizer with collapsible step machines
+
+## Machines
+
+The spec contains 12 state machines:
+
+### Flow Machine
+- **YmaxFlow** - Main portfolio flow (deposit, withdraw, rebalance)
+
+### Step Machines (Ways)
+Each step in a flow executes as one of these "Way" types:
+
+| Machine | Protocol | Description |
+|---------|----------|-------------|
+| `localTransfer` | Zoe | Seat → Agoric LCA |
+| `withdrawToSeat` | Zoe | Agoric LCA → Seat |
+| `send` | Agoric | LCA → LCA (internal) |
+| `IBC_agoric_noble` | IBC | Agoric → Noble |
+| `IBC_noble_agoric` | IBC | Noble → Agoric |
+| `CCTP_noble_EVM` | Circle CCTP | Noble → EVM (burn/attest/mint) |
+| `CCTP_EVM_agoric` | CCTP + GMP | EVM → Noble → Agoric |
+| `GMP_protocol_supply` | Axelar GMP | Supply to Aave/Compound/Beefy |
+| `GMP_protocol_withdraw` | Axelar GMP | Withdraw from Aave/Compound/Beefy |
+| `USDN_supply` | Noble Dollar | Swap USDC → USDN |
+| `USDN_withdraw` | Noble Dollar | Swap USDN → USDC |
 
 ## Usage
 
@@ -58,24 +84,26 @@ planning
 
 ## Linting
 
-To verify the HTML visualizer matches the canonical YAML definition:
+To validate the YAML state machine definitions:
 
 ```bash
 yarn lint:ymax-diagram
 ```
 
-Or directly:
+The linter checks:
+- All required fields present (machines, initial, states, description)
+- All transitions target existing states within the machine
+- All wayMachines references point to existing machines
+- All states have descriptions
+- Valid category values (flow or step)
+
+To verify generated files are up-to-date:
 
 ```bash
-node docs/lint-ymax-state-diagram.js
+yarn lint:ymax-machine     # Check generated JS matches YAML + schema
+yarn lint:mermaid          # Check Mermaid diagrams match generated data
+yarn lint:visualizer-data  # Check HTML embedded data matches generated data
 ```
-
-The linter checks:
-- All states exist in both files
-- State descriptions match
-- Transitions match (events, targets, descriptions)
-- Final state flags match
-- Nested state structure matches
 
 ## Embedding in MCP UI
 
@@ -109,10 +137,21 @@ Links use placeholder values (`{walletAddr}`, `{n}`, `{instance}`) that should b
 
 When modifying the state machine:
 
-1. **Update `ymax-machine.yaml`** - This is the source of truth
-2. **Update `ymax-visualizer.html`** - Modify the `stateMachine` object to match
+1. **Update `src/model/ymax-machine.yaml`** - This is the source of truth
+2. **Run the generators**:
+   - `npx tsx scripts/gen-ymax-machine.mts` - Validates against schema and writes `src/model/generated/ymax-machine.js`
+   - `npx tsx scripts/gen-mermaid.mts` - Updates Mermaid diagrams
+   - `npx tsx scripts/gen-visualizer-data.mts` - Embeds generated data into HTML
 3. **Run the linter** - Verify consistency: `yarn lint:ymax-diagram`
 4. **Test the visualization** - Open the HTML file and test with example data
+
+### Adding a New Step Machine
+
+1. Add the new machine to `src/model/ymax-machine.yaml` under `machines:`
+2. Set `category: step` to mark it as a step machine
+3. Reference it in `YmaxFlow.states.executing.states.moving.meta.wayMachines`
+4. Run the generator and linter
+5. The visualizer will automatically show it in the collapsible section
 
 ## State Machine Overview
 
@@ -130,4 +169,4 @@ The Ymax flow state machine tracks portfolio transactions through these main sta
 8. **completed** - Flow finished successfully
 9. **failed** - Flow halted with error
 
-See `ymax-machine.yaml` for complete details including observable data sources, invariants, and transition conditions.
+See `src/model/ymax-machine.yaml` for complete details including observable data sources, invariants, and transition conditions.

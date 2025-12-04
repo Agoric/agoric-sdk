@@ -1,0 +1,42 @@
+stateDiagram-v2
+[*] --> initiated
+state initiated
+note right of initiated
+  GMP contract call payload encoded with approve + supply calls
+end note
+initiated --> gmp_pending: GMP message sent to Axelar with supply payload
+initiated --> failed: GMP submission failed
+state gmp_pending
+note right of gmp_pending
+  GMP message in transit via Axelar to EVM chain (sent as IBC packet to Axelar gateway)
+end note
+gmp_pending --> contract_call_pending: Axelar delivered payload to EVM smart wallet
+gmp_pending --> gmp_failed: GMP delivery failed (insufficient gas, network issue)
+gmp_pending --> gmp_failed: IBC packet to Axelar timed out
+gmp_pending --> gmp_failed: Axelar gateway returned IBC acknowledgement error
+state contract_call_pending
+note right of contract_call_pending
+  Smart wallet executing multicall (approve + supply)
+end note
+contract_call_pending --> completed: All contract calls succeeded, position created
+contract_call_pending --> contract_failed: One or more contract calls reverted
+state completed
+note right of completed
+  Supply complete, position recorded on yield protocol
+end note
+completed --> [*]
+state gmp_failed
+note right of gmp_failed
+  Axelar GMP failed to deliver message
+end note
+gmp_failed --> [*]
+state contract_failed
+note right of contract_failed
+  EVM contract calls reverted
+end note
+contract_failed --> [*]
+state failed
+note right of failed
+  Supply operation failed
+end note
+failed --> [*]

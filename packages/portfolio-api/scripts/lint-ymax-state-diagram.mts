@@ -1,20 +1,17 @@
 #!/usr/bin/env -S node --import ts-blank-space/register
 
 /**
- * Linter to verify that the state machine definition in ymax-visualizer.html
- * matches the canonical definition in ymax-machine.yaml
+ * Linter to verify that the state machine definitions are valid.
+ * - Validates YAML against schema
+ * - Checks that all transitions target existing states
+ * - Verifies wayMachines references exist
  */
 
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import yaml from 'js-yaml';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const YAML_PATH = path.join(__dirname, '../docs/ymax-machine.yaml');
-const HTML_PATH = path.join(__dirname, '../docs/ymax-visualizer.html');
+import {
+  ymaxMachine,
+  type StateNode,
+  YmaxSpec,
+} from '../src/model/generated/ymax-machine.js';
 
 // ANSI color codes for terminal output
 const colors = {
@@ -26,223 +23,180 @@ const colors = {
   bold: '\x1b[1m',
 };
 
-function log(color, message) {
+function log(color: string, message: string) {
   console.log(`${color}${message}${colors.reset}`);
 }
 
-function error(message) {
+function error(message: string) {
   log(colors.red, `❌ ERROR: ${message}`);
 }
 
-function warn(message) {
+function warn(message: string) {
   log(colors.yellow, `⚠️  WARNING: ${message}`);
 }
 
-function success(message) {
+function success(message: string) {
   log(colors.green, `✓ ${message}`);
 }
 
-function info(message) {
+function info(message: string) {
   log(colors.blue, message);
 }
 
-// Parse YAML state machine
-function parseYamlStateMachine() {
-  try {
-    const yamlContent = fs.readFileSync(YAML_PATH, 'utf8');
-    const doc = yaml.load(yamlContent);
-    return doc;
-  } catch (err) {
-    error(`Failed to parse YAML file: ${err.message}`);
-    process.exit(1);
-  }
-}
-
-// Extract state machine definition from HTML
-function extractHtmlStateMachine() {
-  try {
-    const htmlContent = fs.readFileSync(HTML_PATH, 'utf8');
-
-    // Find the stateMachine definition in the script
-    const stateMachineMatch = htmlContent.match(
-      /const stateMachine = ({[\s\S]*?});[\s\n]*\/\/ Layout configuration/,
-    );
-
-    if (!stateMachineMatch) {
-      error('Could not find stateMachine definition in HTML file');
-      process.exit(1);
+// Get all state names in a machine (including nested states)
+function getAllStateNames(
+  states: Record<string, StateNode>,
+  prefix = '',
+): Set<string> {
+  const names = new Set<string>();
+  for (const [name, state] of Object.entries(states)) {
+    names.add(name);
+    if (state.states) {
+      const nested = getAllStateNames(state.states, `${prefix}${name}.`);
+      nested.forEach(n => names.add(n));
     }
-
-    // Find the stateGroups definition
-    const stateGroupsMatch = htmlContent.match(
-      /const stateGroups = (\[[\s\S]*?\]);[\s\n]*\/\/ Parse state vector/,
-    );
-
-    // Use eval to parse the objects (in Node.js context, this is safe for our controlled input)
-    const stateMachineCode = stateMachineMatch[1];
-    const stateMachine = eval(`(${stateMachineCode})`);
-
-    if (stateGroupsMatch) {
-      const stateGroupsCode = stateGroupsMatch[1];
-      stateMachine.stateGroups = eval(`(${stateGroupsCode})`);
-    }
-
-    return stateMachine;
-  } catch (err) {
-    error(`Failed to extract state machine from HTML: ${err.message}`);
-    process.exit(1);
   }
+  return names;
 }
 
-// Normalize state data for comparison
-function normalizeYamlState(yamlState, stateName) {
-  return {
-    name: stateName,
-    description: yamlState.description || '',
-    transitions: Object.entries(yamlState.on || {}).map(([event, trans]) => ({
-      event,
-      target: trans.target,
-      description: trans.description || '',
-    })),
-    meta: yamlState.meta || {},
-    row: yamlState.meta?.row || null,
-    final: yamlState.type === 'final',
-    nested: !!yamlState.states,
-    substates: yamlState.states || null,
-  };
-}
+// Validate transitions in a machine
+function validateTransitions(
+  machineName: string,
+  states: Record<string, StateNode>,
+  allStateNames: Set<string>,
+  path: string[] = [],
+): string[] {
+  const issues: string[] = [];
 
-function normalizeHtmlState(
-  htmlState,
-  stateName,
-  htmlStateMachine,
-  parentRow = null,
-) {
-  // Find row from stateGroups definition in HTML
-  let row = null;
-  if (htmlStateMachine.stateGroups) {
-    for (const group of htmlStateMachine.stateGroups) {
-      if (group.states.includes(stateName)) {
-        row = group.name;
-        break;
+  for (const [stateName, state] of Object.entries(states)) {
+    const currentPath = [...path, stateName].join('.');
+
+    if (state.on) {
+      for (const [event, targets] of Object.entries(state.on)) {
+        const targetList = Array.isArray(targets) ? targets : [targets];
+        for (const t of targetList) {
+          if (!allStateNames.has(t.target)) {
+            issues.push(
+              `[${machineName}] State "${currentPath}" has transition to unknown state "${t.target}" on event "${event}"`,
+            );
+          }
+        }
       }
     }
-  }
 
-  // If no row found and parent row provided (for nested states), use parent's row
-  if (!row && parentRow) {
-    row = parentRow;
-  }
-
-  return {
-    name: stateName,
-    description: htmlState.description || '',
-    transitions: Object.entries(htmlState.transitions || {}).map(
-      ([event, trans]) => ({
-        event,
-        target: trans.target,
-        description: trans.description || '',
-      }),
-    ),
-    meta: htmlState.meta || {},
-    row: row,
-    final: htmlState.final || false,
-    nested: htmlState.nested || false,
-    substates: htmlState.substates || null,
-  };
-}
-
-// Compare two state definitions
-function compareStates(yamlState, htmlState, statePath) {
-  let issues = [];
-
-  // Check description
-  if (yamlState.description !== htmlState.description) {
-    issues.push({
-      type: 'description',
-      path: statePath,
-      yaml: yamlState.description,
-      html: htmlState.description,
-    });
-  }
-
-  // Check transitions
-  const yamlTransitions = new Map(yamlState.transitions.map(t => [t.event, t]));
-  const htmlTransitions = new Map(htmlState.transitions.map(t => [t.event, t]));
-
-  // Check for missing or extra transitions
-  for (const [event, trans] of yamlTransitions) {
-    if (!htmlTransitions.has(event)) {
-      issues.push({
-        type: 'missing_transition',
-        path: statePath,
-        event,
-        target: trans.target,
-      });
-    } else {
-      const htmlTrans = htmlTransitions.get(event);
-      if (trans.target !== htmlTrans.target) {
-        issues.push({
-          type: 'transition_target_mismatch',
-          path: statePath,
-          event,
-          yamlTarget: trans.target,
-          htmlTarget: htmlTrans.target,
-        });
+    // Check nested states
+    if (state.states) {
+      // Verify initial state exists
+      if (state.initial && !state.states[state.initial]) {
+        issues.push(
+          `[${machineName}] State "${currentPath}" has initial state "${state.initial}" that doesn't exist in nested states`,
+        );
       }
-      if (trans.description !== htmlTrans.description) {
-        issues.push({
-          type: 'transition_description_mismatch',
-          path: statePath,
-          event,
-          yaml: trans.description,
-          html: htmlTrans.description,
-        });
-      }
+      const nestedIssues = validateTransitions(
+        machineName,
+        state.states,
+        allStateNames,
+        [...path, stateName],
+      );
+      issues.push(...nestedIssues);
     }
-  }
-
-  for (const event of htmlTransitions.keys()) {
-    if (!yamlTransitions.has(event)) {
-      issues.push({
-        type: 'extra_transition',
-        path: statePath,
-        event,
-      });
-    }
-  }
-
-  // Check final state flag
-  if (yamlState.final !== htmlState.final) {
-    issues.push({
-      type: 'final_flag_mismatch',
-      path: statePath,
-      yaml: yamlState.final,
-      html: htmlState.final,
-    });
-  }
-
-  // Check nested state flag
-  if (yamlState.nested !== htmlState.nested) {
-    issues.push({
-      type: 'nested_flag_mismatch',
-      path: statePath,
-      yaml: yamlState.nested,
-      html: htmlState.nested,
-    });
-  }
-
-  // Check row metadata
-  if (yamlState.row !== htmlState.row) {
-    issues.push({
-      type: 'row_mismatch',
-      path: statePath,
-      yaml: yamlState.row,
-      html: htmlState.row,
-    });
   }
 
   return issues;
+}
+
+// Validate wayMachines references
+function validateWayMachines(
+  machineName: string,
+  states: Record<string, StateNode>,
+  allMachineNames: Set<string>,
+  path: string[] = [],
+): string[] {
+  const issues: string[] = [];
+
+  for (const [stateName, state] of Object.entries(states)) {
+    const currentPath = [...path, stateName].join('.');
+
+    if (state.meta?.wayMachines) {
+      for (const wayMachine of state.meta.wayMachines) {
+        if (!allMachineNames.has(wayMachine)) {
+          issues.push(
+            `[${machineName}] State "${currentPath}" references unknown wayMachine "${wayMachine}"`,
+          );
+        }
+      }
+    }
+
+    if (state.states) {
+      const nestedIssues = validateWayMachines(
+        machineName,
+        state.states,
+        allMachineNames,
+        [...path, stateName],
+      );
+      issues.push(...nestedIssues);
+    }
+  }
+
+  return issues;
+}
+
+// Validate required fields
+function validateRequiredFields(spec: YmaxSpec): string[] {
+  const issues: string[] = [];
+
+  if (!spec.machines) {
+    issues.push('Spec must have "machines" property');
+    return issues;
+  }
+
+  for (const [machineName, machine] of Object.entries(spec.machines)) {
+    if (!machine.initial) {
+      issues.push(`[${machineName}] Machine missing "initial" property`);
+    }
+    if (!machine.states) {
+      issues.push(`[${machineName}] Machine missing "states" property`);
+    }
+    if (!machine.description) {
+      issues.push(`[${machineName}] Machine missing "description" property`);
+    }
+
+    // Verify initial state exists
+    if (machine.initial && machine.states && !machine.states[machine.initial]) {
+      issues.push(
+        `[${machineName}] Initial state "${machine.initial}" does not exist in states`,
+      );
+    }
+
+    // Check that all states have descriptions
+    if (machine.states) {
+      validateStateDescriptions(machineName, machine.states, issues);
+    }
+  }
+
+  return issues;
+}
+
+function validateStateDescriptions(
+  machineName: string,
+  states: Record<string, StateNode>,
+  issues: string[],
+  path: string[] = [],
+) {
+  for (const [stateName, state] of Object.entries(states)) {
+    const currentPath = [...path, stateName].join('.');
+    if (!state.description) {
+      issues.push(
+        `[${machineName}] State "${currentPath}" missing description`,
+      );
+    }
+    if (state.states) {
+      validateStateDescriptions(machineName, state.states, issues, [
+        ...path,
+        stateName,
+      ]);
+    }
+  }
 }
 
 // Main validation function
@@ -251,143 +205,69 @@ function validateStateMachines() {
   info('='.repeat(50));
   info('');
 
-  const yamlDoc = parseYamlStateMachine();
-  const htmlStateMachine = extractHtmlStateMachine();
+  const spec: YmaxSpec = ymaxMachine;
+  if (!spec?.machines) {
+    throw new Error('Spec must have "machines" property');
+  }
 
   let totalIssues = 0;
 
-  // Check initial state
-  if (yamlDoc.initial !== htmlStateMachine.initial) {
-    error(
-      `Initial state mismatch: YAML="${yamlDoc.initial}" vs HTML="${htmlStateMachine.initial}"`,
-    );
-    totalIssues++;
+  // Validate required fields
+  const requiredIssues = validateRequiredFields(spec);
+  if (requiredIssues.length > 0) {
+    requiredIssues.forEach(issue => error(issue));
+    totalIssues += requiredIssues.length;
   } else {
-    success(`Initial state matches: ${yamlDoc.initial}`);
+    success('All required fields present');
   }
 
-  // Check all states exist
-  const yamlStates = new Set(Object.keys(yamlDoc.states));
-  const htmlStates = new Set(Object.keys(htmlStateMachine.states));
-
-  // Check for states in YAML but not in HTML (excluding flow_registered which is added in HTML)
-  for (const stateName of yamlStates) {
-    if (!htmlStates.has(stateName)) {
-      error(`State "${stateName}" exists in YAML but not in HTML`);
-      totalIssues++;
-    }
+  if (!spec.machines) {
+    process.exit(1);
   }
 
-  // Check for states in HTML but not in YAML (allow flow_registered as it's an intermediate state)
-  const allowedExtraStates = new Set(['flow_registered']);
-  for (const stateName of htmlStates) {
-    if (!yamlStates.has(stateName) && !allowedExtraStates.has(stateName)) {
-      warn(`State "${stateName}" exists in HTML but not in YAML`);
-    }
-  }
+  const allMachineNames = new Set(Object.keys(spec.machines));
+  info(
+    `\nFound ${allMachineNames.size} machines: ${Array.from(allMachineNames).join(', ')}\n`,
+  );
 
-  // Compare each state
-  for (const stateName of yamlStates) {
-    if (!htmlStates.has(stateName)) continue;
+  // Validate each machine
+  for (const [machineName, machine] of Object.entries(spec.machines)) {
+    info(`Validating ${machineName}...`);
 
-    const yamlState = normalizeYamlState(yamlDoc.states[stateName], stateName);
-    const htmlState = normalizeHtmlState(
-      htmlStateMachine.states[stateName],
-      stateName,
-      htmlStateMachine,
+    if (!machine.states) continue;
+
+    // Get all state names for this machine
+    const stateNames = getAllStateNames(machine.states);
+
+    // Validate transitions
+    const transitionIssues = validateTransitions(
+      machineName,
+      machine.states,
+      stateNames,
     );
-
-    const issues = compareStates(yamlState, htmlState, stateName);
-
-    if (issues.length > 0) {
-      error(`\nState "${stateName}" has ${issues.length} issue(s):`);
-      issues.forEach(issue => {
-        switch (issue.type) {
-          case 'description':
-            console.log(`  - Description mismatch`);
-            console.log(`    YAML: "${issue.yaml}"`);
-            console.log(`    HTML: "${issue.html}"`);
-            break;
-          case 'missing_transition':
-            console.log(
-              `  - Missing transition: ${issue.event} -> ${issue.target}`,
-            );
-            break;
-          case 'extra_transition':
-            console.log(`  - Extra transition in HTML: ${issue.event}`);
-            break;
-          case 'transition_target_mismatch':
-            console.log(
-              `  - Transition ${issue.event} target mismatch: YAML="${issue.yamlTarget}" vs HTML="${issue.htmlTarget}"`,
-            );
-            break;
-          case 'transition_description_mismatch':
-            console.log(`  - Transition ${issue.event} description mismatch`);
-            console.log(`    YAML: "${issue.yaml}"`);
-            console.log(`    HTML: "${issue.html}"`);
-            break;
-          case 'final_flag_mismatch':
-            console.log(
-              `  - Final flag mismatch: YAML=${issue.yaml} vs HTML=${issue.html}`,
-            );
-            break;
-          case 'nested_flag_mismatch':
-            console.log(
-              `  - Nested flag mismatch: YAML=${issue.yaml} vs HTML=${issue.html}`,
-            );
-            break;
-          case 'row_mismatch':
-            console.log(
-              `  - Row metadata mismatch: YAML="${issue.yaml}" vs HTML="${issue.html}"`,
-            );
-            break;
-        }
-      });
-      totalIssues += issues.length;
+    if (transitionIssues.length > 0) {
+      transitionIssues.forEach(issue => error(issue));
+      totalIssues += transitionIssues.length;
     } else {
-      success(`State "${stateName}" matches`);
+      success(`  Transitions valid (${stateNames.size} states)`);
     }
 
-    // Check nested states if present
-    if (yamlState.substates && htmlState.substates) {
-      for (const substateName of Object.keys(yamlState.substates)) {
-        if (!htmlState.substates[substateName]) {
-          error(
-            `Substate "${stateName}.${substateName}" exists in YAML but not in HTML`,
-          );
-          totalIssues++;
-          continue;
-        }
+    // Validate wayMachines references
+    const wayMachineIssues = validateWayMachines(
+      machineName,
+      machine.states,
+      allMachineNames,
+    );
+    if (wayMachineIssues.length > 0) {
+      wayMachineIssues.forEach(issue => error(issue));
+      totalIssues += wayMachineIssues.length;
+    }
 
-        const yamlSubstate = normalizeYamlState(
-          yamlState.substates[substateName],
-          substateName,
-        );
-        const htmlSubstate = normalizeHtmlState(
-          htmlState.substates[substateName],
-          substateName,
-          htmlStateMachine,
-          htmlState.row,
-        );
-
-        const substateIssues = compareStates(
-          yamlSubstate,
-          htmlSubstate,
-          `${stateName}.${substateName}`,
-        );
-
-        if (substateIssues.length > 0) {
-          error(
-            `\nSubstate "${stateName}.${substateName}" has ${substateIssues.length} issue(s):`,
-          );
-          substateIssues.forEach(issue => {
-            console.log(`  - ${issue.type}: ${JSON.stringify(issue)}`);
-          });
-          totalIssues += substateIssues.length;
-        } else {
-          success(`Substate "${stateName}.${substateName}" matches`);
-        }
-      }
+    // Check category
+    if (machine.category && !['flow', 'step'].includes(machine.category)) {
+      warn(
+        `[${machineName}] Unknown category "${machine.category}" (expected "flow" or "step")`,
+      );
     }
   }
 
@@ -396,7 +276,7 @@ function validateStateMachines() {
   info('='.repeat(50));
   if (totalIssues === 0) {
     success(
-      `${colors.bold}✓ All checks passed! The HTML state machine matches the YAML definition.${colors.reset}`,
+      `${colors.bold}✓ All checks passed! ${allMachineNames.size} machines validated.${colors.reset}`,
     );
     process.exit(0);
   } else {

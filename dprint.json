@@ -5,7 +5,7 @@
     "singleQuote": true
   },
   "includes": [
-    "**/*.{ts,tsx,js,jsx,cjs,mjs}"
+    "**/*.{ts,tsx,js,jsx,cjs,mjs,cts,mts}"
   ],
   "excludes": [
     "**/node_modules",

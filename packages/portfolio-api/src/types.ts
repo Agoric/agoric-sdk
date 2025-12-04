@@ -98,6 +98,8 @@ export type MovementDesc = {
 };
 
 export type FlowStep = {
+  /** Human readable description of how the step accomplishes the transfer from `src` to `dest` */
+  // Distinct from `Way.how` in the contract
   how: string;
   amount: NatAmount;
   src: AssetPlaceRef;

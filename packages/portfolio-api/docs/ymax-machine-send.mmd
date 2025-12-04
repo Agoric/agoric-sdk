@@ -1,0 +1,18 @@
+stateDiagram-v2
+[*] --> initiated
+state initiated
+note right of initiated
+  lcaIn.send(lca.getAddress(), amount) called
+end note
+initiated --> completed: send() returned successfully
+initiated --> failed: send() threw an error
+state completed
+note right of completed
+  Assets moved between LCAs
+end note
+completed --> [*]
+state failed
+note right of failed
+  Send failed
+end note
+failed --> [*]
