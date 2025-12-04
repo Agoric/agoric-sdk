@@ -635,7 +635,7 @@ testWithAllModes(
   },
 );
 
-test.failing('solver differentiates cheapest vs. fastest', async t => {
+test('solver differentiates cheapest vs. fastest', async t => {
   const network: NetworkSpec = {
     debug: true,
     environment: 'test',
