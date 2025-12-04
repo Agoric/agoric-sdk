@@ -1,5 +1,5 @@
 import { makeTracer } from '@agoric/internal';
-import { M } from '@endo/patterns';
+import { M, objectMap } from '@endo/patterns';
 import { E } from '@endo/far';
 import {
   lookupInterchainInfo,
@@ -75,12 +75,7 @@ export const makePrivateArgs = async (
 
   const chainInfo = {
     ...cosmosChainInfo,
-    ...Object.fromEntries(
-      Object.entries(axelarConfig).map(([chain, info]) => [
-        chain,
-        info.chainInfo,
-      ]),
-    ),
+    ...objectMap(axelarConfig, info => info.chainInfo),
   };
 
   /** @type {AxelarId} */

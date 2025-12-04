@@ -5,6 +5,12 @@ import { fileURLToPath } from 'url';
 import fsTop from 'fs';
 import osTop from 'os';
 
+/**
+ * @import {spawn} from 'child_process';
+ * @import {ChildProcess} from 'child_process';
+ * @import {promises} from 'fs';
+ */
+
 const { freeze } = Object;
 
 /** @param {string} path */
@@ -36,11 +42,11 @@ const ModdableSDK = {
  *
  * @param {string} command
  * @param {{
- *   spawn: typeof import('child_process').spawn,
+ *   spawn: typeof spawn,
  * }} io
  */
 function makeCLI(command, { spawn }) {
-  /** @param {import('child_process').ChildProcess} child */
+  /** @param {ChildProcess} child */
   const wait = child =>
     new Promise((resolve, reject) => {
       child.on('close', () => {
@@ -228,7 +234,7 @@ const updateSubmodules = async (submodules, { fs, git }) => {
  * @param {boolean} force
  * @param {{
  *   fs: Pick<typeof import('fs'), 'existsSync'> &
- *     Pick<typeof import('fs').promises, 'readFile' | 'writeFile'>,
+ *     Pick<typeof promises, 'readFile' | 'writeFile'>,
  *   make: ReturnType<typeof makeCLI>,
  * }} io
  */
@@ -275,9 +281,9 @@ const buildXsnap = async (platform, force, { fs, make }) => {
  * @param {{
  *   env: Record<string, string | undefined>,
  *   stdout: typeof process.stdout,
- *   spawn: typeof import('child_process').spawn,
+ *   spawn: typeof spawn,
  *   fs: Pick<typeof import('fs'), 'existsSync' | 'rmdirSync'> &
- *     Pick<typeof import('fs').promises, 'readFile' | 'writeFile'>,
+ *     Pick<typeof promises, 'readFile' | 'writeFile'>,
  *   os: Pick<typeof import('os'), 'type'>,
  * }} io
  */

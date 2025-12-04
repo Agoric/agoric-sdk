@@ -182,12 +182,10 @@ async function replay(transcriptFile) {
 
   const fakeKernelKeeper = /** @type {KernelKeeper} */ ({
     provideVatKeeper: _vatID =>
-      /** @type {VatKeeper} */ (
-        /** @type {Partial<import('../src/types-external.js').VatKeeper>} */ ({
-          addToTranscript: () => {},
-          getSnapshotInfo: () => loadSnapshotID && { hash: loadSnapshotID },
-        })
-      ),
+      /** @type {Partial<VatKeeper>} */ ({
+        addToTranscript: () => {},
+        getSnapshotInfo: () => loadSnapshotID && { hash: loadSnapshotID },
+      }),
     getRelaxDurabilityRules: () => false,
   });
 
@@ -205,7 +203,7 @@ async function replay(transcriptFile) {
   });
 
   const kernelSlog = /** @type {KernelSlog} */ (
-    /** @type {Partial<import('../src/types-external.js').KernelSlog>} */ ({
+    /** @type {Partial<KernelSlog>} */ ({
       write() {},
       delivery: () => () => undefined,
       syscall: () => () => undefined,
@@ -278,7 +276,7 @@ async function replay(transcriptFile) {
     meterControl,
   });
   const allVatPowers = /** @type {VatPowers} */ (
-    /** @type {Partial<import('../src/types-external.js').VatPowers>} */ ({
+    /** @type {Partial<VatPowers>} */ ({
       testLog,
     })
   );
@@ -436,7 +434,7 @@ async function replay(transcriptFile) {
     updateWorkersSynced();
     const currentBundleIDs = await bundleHandler.getCurrentBundleIDs();
     const managerOptions = /** @type {ManagerOptions} */ (
-      /** @type {Partial<import('../src/types-internal.js').ManagerOptions>} */ ({
+      /** @type {Partial<ManagerOptions>} */ ({
         sourcedConsole: console,
         vatParameters,
         useTranscript: true,
@@ -591,7 +589,7 @@ async function replay(transcriptFile) {
     },
   );
 
-  /** @type {import('stream').Readable} */
+  /** @type {Readable} */
   let transcriptF = fs.createReadStream(transcriptFile);
   if (transcriptFile.endsWith('.gz')) {
     transcriptF = transcriptF.pipe(zlib.createGunzip());

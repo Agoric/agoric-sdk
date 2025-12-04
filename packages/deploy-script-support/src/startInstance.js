@@ -1,4 +1,5 @@
 // @ts-check
+import { objectMap } from '@agoric/internal';
 import { assert } from '@endo/errors';
 import { E, passStyleOf } from '@endo/far';
 
@@ -36,13 +37,8 @@ export const makeStartInstance = (
   zoeInvitationPurse,
 ) => {
   const makeIssuerKeywordRecord = issuerPetnameKeywordRecord => {
-    return Object.fromEntries(
-      Object.entries(issuerPetnameKeywordRecord).map(
-        ([keyword, issuerPetname]) => {
-          const issuerP = E(issuerManager).get(issuerPetname);
-          return [keyword, issuerP];
-        },
-      ),
+    return objectMap(issuerPetnameKeywordRecord, issuerPetname =>
+      E(issuerManager).get(issuerPetname),
     );
   };
 

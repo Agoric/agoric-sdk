@@ -3,6 +3,7 @@ import { assert } from '@endo/errors';
 import { E } from '@endo/far';
 // Avoid pulling in too many dependencies like notifiers
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
+import { objectMap } from '@agoric/internal';
 
 /**
  * @import {Petname} from '@agoric/deploy-script-support/src/externalTypes.js';
@@ -53,17 +54,22 @@ export const makeOfferAndFindInvitationAmount = (
     return AmountMath.make(invitationAmount.brand, value);
   };
 
+  /**
+   * @param {Partial<ProposalRecord>} proposal
+   * @param {Record<Keyword, Petname>} paymentsWithPursePetnames
+   * @returns {Record<Keyword, ERef<Payment>>} payments
+   */
   const withdrawPayments = (proposal, paymentsWithPursePetnames) => {
-    return Object.fromEntries(
-      Object.entries(paymentsWithPursePetnames).map(
-        ([keyword, pursePetname]) => {
-          const purse = E(walletAdmin).getPurse(pursePetname);
-          const amountToWithdraw = proposal.give[keyword];
-          const paymentP = E(purse).withdraw(amountToWithdraw);
-          return [keyword, paymentP];
-        },
-      ),
-    );
+    return objectMap(paymentsWithPursePetnames, (pursePetname, keyword) => {
+      const purse = E(walletAdmin).getPurse(pursePetname);
+      assert(
+        'give' in proposal && proposal.give,
+        `proposal.give is required to withdraw`,
+      );
+      const amountToWithdraw = proposal.give[keyword];
+      const paymentP = E(purse).withdraw(amountToWithdraw);
+      return paymentP;
+    });
   };
 
   const withdrawInvitation = async invitationDetails => {

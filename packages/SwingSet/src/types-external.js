@@ -1,4 +1,3 @@
-/* eslint-disable @agoric/no-typedef-import -- it's the only way to re-export with JSDoc */
 export {};
 
 /**
@@ -18,6 +17,14 @@ export {};
  * @import {KernelKeeper} from './kernel/state/kernelKeeper.js';
  * @import {xsnap} from '@agoric/xsnap';
  * @import { KVStore } from '@agoric/internal/src/kv-store.js';
+ * @import {SnapStore} from '@agoric/swing-store';
+ * @import {SnapshotResult} from '@agoric/swing-store';
+ * @import {TranscriptStore} from '@agoric/swing-store';
+ * @import {SwingStore} from '@agoric/swing-store';
+ * @import {SwingStoreKernelStorage} from '@agoric/swing-store';
+ * @import {SwingStoreHostStorage} from '@agoric/swing-store';
+ * @import {Mailbox} from './devices/mailbox/mailbox.js';
+ * @import {MailboxExport} from './devices/mailbox/mailbox.js';
  */
 
 /* This file defines types that part of the external API of swingset. That
@@ -241,12 +248,12 @@ export {};
  */
 /**
  * @typedef { KVStore } KVStore
- * @typedef { import('@agoric/swing-store').SnapStore } SnapStore
- * @typedef { import('@agoric/swing-store').SnapshotResult } SnapshotResult
- * @typedef { import('@agoric/swing-store').TranscriptStore } TranscriptStore
- * @typedef { import('@agoric/swing-store').SwingStore } SwingStore
- * @typedef { import('@agoric/swing-store').SwingStoreKernelStorage } SwingStoreKernelStorage
- * @typedef { import('@agoric/swing-store').SwingStoreHostStorage } SwingStoreHostStorage
+ * @typedef { SnapStore } SnapStore
+ * @typedef { SnapshotResult } SnapshotResult
+ * @typedef { TranscriptStore } TranscriptStore
+ * @typedef { SwingStore } SwingStore
+ * @typedef { SwingStoreKernelStorage } SwingStoreKernelStorage
+ * @typedef { SwingStoreHostStorage } SwingStoreHostStorage
  */
 
 /**
@@ -316,10 +323,10 @@ export {};
  */
 
 /**
- * @typedef { import('./devices/mailbox/mailbox.js').Mailbox } Mailbox
+ * @typedef { Mailbox } Mailbox
  */
 /**
- * @typedef { import('./devices/mailbox/mailbox.js').MailboxExport } MailboxExport
+ * @typedef { MailboxExport } MailboxExport
  */
 
 /**

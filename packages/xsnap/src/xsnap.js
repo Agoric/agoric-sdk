@@ -12,10 +12,14 @@ import { makePromiseKit, racePromises } from '@endo/promise-kit';
 import { forever } from '@agoric/internal';
 import { ErrorCode, ErrorSignal, ErrorMessage, METER_TYPE } from '../api.js';
 
-/** @import {PromiseKit} from '@endo/promise-kit' */
+/**
+ * @import {PromiseKit} from '@endo/promise-kit'
+ * @import {spawn} from 'child_process';
+ * @import {TmpNameOptions} from 'tmp';
+ */
 
 /**
- * @typedef {typeof import('child_process').spawn} Spawn
+ * @typedef {typeof spawn} Spawn
  * @import {Writable} from 'stream'
  */
 
@@ -67,7 +71,7 @@ const safeHintFromDescription = description =>
  * @callback MakeSnapshotLoader
  * @param {AsyncIterable<Uint8Array>} sourceBytes
  * @param {string} description
- * @param {{fs: Pick<typeof import('fs/promises'), 'open' | 'unlink'>, ptmpName: (opts: import('tmp').TmpNameOptions) => Promise<string>}} ioPowers
+ * @param {{fs: Pick<typeof import('fs/promises'), 'open' | 'unlink'>, ptmpName: (opts: TmpNameOptions) => Promise<string>}} ioPowers
  * @returns {Promise<SnapshotLoader>}
  */
 
@@ -189,7 +193,7 @@ export async function xsnap(options) {
 
   assert(!/^-/.test(name), `name '${name}' cannot start with hyphen`);
 
-  /** @type {(opts: import('tmp').TmpNameOptions) => Promise<string>} */
+  /** @type {(opts: TmpNameOptions) => Promise<string>} */
   const ptmpName = fs.tmpName && promisify(fs.tmpName);
   const makeSnapshotLoader = snapshotUseFs
     ? makeSnapshotLoaderWithFS
@@ -432,7 +436,7 @@ export async function xsnap(options) {
 
   /**
    * @param {string} description
-   * @param {import('@endo/promise-kit').PromiseKit<void>} batonKit
+   * @param {PromiseKit<void>} batonKit
    * @returns {AsyncGenerator<Uint8Array, void, undefined>}
    */
   async function* makeSnapshotInternal(description, batonKit) {
