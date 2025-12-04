@@ -5,13 +5,13 @@ This document describes the current balance rebalancing solver used in `plan-sol
 ## 1. Domain & Graph Structure
 We model a multi-chain, multi-place asset distribution problem as a directed flow network.
 
-Node (vertex) types (all implement `AssetPlaceRef`):
-- Chain hubs: `@ChainName` (e.g. `@Arbitrum`, `@Avalanche`, `@Ethereum`, `@noble`, `@agoric`). A single hub per chain collects and redistributes flow for that chain.
-- Protocol / pool leaves: `Protocol_Chain` identifiers (e.g. `Aave_Arbitrum`, `Beefy_re7_Avalanche`, `Compound_Ethereum`). Each is attached to exactly one hub (its chain).
-- Local Agoric seats: `'<Cash>'`, `'<Deposit>'`, and `'+agoric'` – all leaves on the `@agoric` hub.
+Node (vertex) types (all implement AssetPlaceRef):
+- Chain hubs: `@${chainName}` (e.g. `@Arbitrum`, `@Avalanche`, `@Ethereum`, `@noble`, `@agoric`). A single hub per chain collects and redistributes flow for that chain.
+- Per-instrument leaves: `${yieldProtocol}_${chainName}` identifiers (e.g. `Aave_Arbitrum`, `Beefy_re7_Avalanche`, `Compound_Ethereum`). Each is attached to exactly one hub (its chain).
+- Local Agoric seats and accounts: `<Cash>`, `<Deposit>`, and `+agoric`. Each is a leaf on the `@agoric` hub.
 
 Notes:
-- Pool-to-chain affiliation is sourced from PoolPlaces (typed map) at build time. Hubs are not auto-added from PoolPlaces; only pools whose hub is already present in the NetworkSpec are auto-included. When a pool id isn't found, `chainOf(x)` falls back to parsing the suffix of `Protocol_Chain`.
+- Pool-to-chain affiliation is sourced from PoolPlaces (typed map) at build time. Hubs are not auto-added from PoolPlaces; only pools whose hub is already present in the NetworkSpec are auto-included. When a pool id isn't found, `chainOf(x)` falls back to parsing the suffix of `${yieldProtocol}_${chainName}`.
 - `+agoric` is a staging account on `@agoric`, used to accumulate new deposits before distribution; for deposit planning it must end at 0 in the final targets.
 
 Supply (net position) per node:
@@ -22,7 +22,7 @@ netSupply(node) = current[node] - target[node]
 = 0 : balanced
 ```
 Upstream data prep filters out balances at or below `ACCOUNT_DUST_EPSILON`
-(currently 100 `uusdc`, ≈$10^{-4}$ USDC) via `getNonDustBalances` so the solver
+(currently 100 uusdc = 0.0001 USDC) via `getNonDustBalances` so the solver
 never sees dust-only accounts. Once a place clears that threshold the graph
 records its full delta (no additional epsilon trimming inside the solver).
 
@@ -31,8 +31,8 @@ Sum of all supplies must be zero for feasibility.
 ## 2. Edges
 Two classes of directed edges:
 1. Intra-chain (leaf <-> hub)
-   - Always present for every non-hub leaf.
-   - Attributes: `variableFee=1`, `fixedFee=0`, `timeFixed=1`, very large capacity.
+   - Always present for every non-hub leaf, unidirectional at `@agoric` but bidirectional elsewhere.
+   - Attributes: `variableFeeBps=1`, `flatFee=0`, `timeSec=1`, very large capacity.
 2. Inter-chain (hub -> hub) links provided by `NetworkSpec.links`:
   - CCTP slow (EVM -> Noble): high latency (≈1080s), low/zero variable fee.
   - CCTP return (Noble -> EVM): low latency (≈20s).
@@ -44,15 +44,15 @@ Overrides:
 - Explicit inter-hub links from the `NetworkSpec` supersede any auto-added base edge with the same `src -> dest`. This lets the definition supply real pricing/latency.
 
 Edge attributes used by optimizer:
-- `capacity` (numeric upper bound on flow) – large default for intra-chain.
-- `variableFee` (linear cost coefficient per unit flow) – used in Cheapest mode. For inter-hub links this comes from `LinkSpec.variableFeeBps`.
-- `fixedFee` (flat activation cost) – triggers binary var only if >0 in Cheapest mode (from `LinkSpec.flatFee` when provided).
-- `timeFixed` (activation latency metric) – triggers binary var only if >0 in Fastest mode (from `LinkSpec.timeSec`).
+- `capacity` (upper bound on flow) – large default for intra-chain.
+- `variableFeeBps` (linear cost coefficient per unit flow) – used in Cheapest mode.
+- `flatFee` (flat activation cost) – triggers binary var only if >0 in Cheapest mode.
+- `timeSec` (activation latency metric) – triggers binary var only if >0 in Fastest mode.
 
 ## 3. Optimization Modes
 Two primary objectives, with optional secondary tie-breaks:
-- Cheapest (primary): Minimize Σ (fixedFee_e * y_e + variableFee_e * f_e)
-- Fastest (primary): Minimize Σ (timeFixed_e * y_e)
+- Cheapest (primary): Minimize Σ (flatFee_e * picked_e + variableFeeBps_e * through_e)
+- Fastest (primary): Minimize Σ (timeSec_e * picked_e)
 
 Secondary (tie-break) options:
 1) Two-pass lexicographic (not currently enabled):
@@ -60,34 +60,32 @@ Secondary (tie-break) options:
 2) Composite objective (implemented):
    - Minimize Primary + ε · Secondary, where ε is chosen dynamically small enough not to perturb the primary optimum.
 
-Current behavior:
-- In Cheapest mode, secondary prefers lower Σ(timeFixed_e · y_e).
-- In Fastest mode, secondary prefers lower Σ(fixedFee_e · y_e + variableFee_e · f_e).
+## 4. Constraints
+For every edge e:
+- through_e ≥ min_e (default 0)
+- through_e ≤ capacity_e (default infinite)
+- allow_e ≥ 0
+- allow_e ≠ 0 if and only if through_id ≠ 0
 
-In both modes:
-- Continuous flow variables: `f_e ≥ 0` for every edge.
-- Linking constraint for edges with a binary: `f_e ≤ capacity_e * y_e`.
-
-## 4. Flow Conservation
-For every node v:
+Flow conservation for every node v:
 ```
-Σ_out f_e - Σ_in f_e = netSupply(v)
+Σ_out through_e - Σ_in through_e = netSupply(v)
 ```
-A surplus node exports its excess; a deficit node imports exactly its shortfall.
+A supply node exports exactly its excess; a sink node imports exactly its shortfall.
 
 ## 5. Model Representation and Solver (javascript-lp-solver)
 We build an LP/MIP object with:
 - `variables`: one per flow variable `via_edgeId`, each holding coefficients into every node constraint and capacity constraint; plus binary usage vars `pick_edgeId` when required.
 - `constraints`:
-  - Node equality constraints (one per node with any incident edges): `netOut_node = netSupply`.
-  - Capacity constraints: `through_edgeId ≤ capacity_e`.
-  - Coupling constraints when binary present: ensures `via_edgeId > 0` requires activation of `pick_edgeId`.
-- `optimize`: composite weight combining primary and secondary objectives.
-- `opType`: `min`.
+  - Node equality constraints: netOut_nodeId = netSupply(nodeId).
+  - Throughput constraints: through_edgeId ≥ min_edgeId and through_edgeId ≤ capacity_edgeId.
+  - Coupling constraints: ensure that each via_edgeId > 0 requires activation of pick_edgeId.
+- `optimize`: `"weight"` (combining primary and secondary objectives).
+- `opType`: `"min"`.
 - `binaries` / `ints`: maps of binary / integer variables (both used).
 
 ### Solver Implementation
-The model is solved using **javascript-lp-solver**, a pure JavaScript Mixed Integer Programming solver:
+The model is solved using [javascript-lp-solver](https://www.npmjs.com/package/javascript-lp-solver), a pure JavaScript Mixed Integer Programming solver:
 - Input: Standard LP/MIP model object (as described above)
 - Output: Object containing:
   - `feasible`: boolean indicating solution feasibility
@@ -209,12 +207,12 @@ interface NetworkSpec {
 Builder & translation to solver:
 - Hubs come from `spec.chains`. Hubs are not auto-added from PoolPlaces.
 - Leaves include `spec.pools`, `spec.localPlaces.id`, known PoolPlaces whose hub is present, and any nodes mentioned in `current`/`target` (validated to avoid implicitly adding hubs).
-- Intra-chain leaf<->hub edges are auto-added with large capacity and base costs (`variableFee=1`, `timeFixed=1`).
-- Agoric-local overrides: `+agoric`, `<Cash>`, and `<Deposit>` have zero-fee/zero-time edges to/from `@agoric` and between each other.
-- Inter-hub links from `spec.links` are added hub->hub. If an auto-added edge exists with the same `src -> dest`, the explicit link replaces it (override precedence). Mapping to solver fields: `variableFee = variableFeeBps`, `timeFixed = timeSec`, `fixedFee = flatFee`, `via = transfer`.
+- Intra-chain leaf<->hub edges are auto-added with large capacity and base costs (`variableFeeBps=1`, `timeSec=1`).
+- Agoric-local edges are auto-added: `<Deposit>` -> `+agoric` -> `@agoric` -> `<Cash>` and `<Deposit>` -> `@agoric` (`variableFeeBps=1`, `timeSec=1`)
+- Inter-hub links from `spec.links` are added hub->hub. If an auto-added edge exists with the same `src` and `dest`, the explicit link replaces it (override precedence).
 
 Determinism:
-- After applying all edges, edge IDs are normalized to `e0..eN` in insertion order to stabilize solver behavior and tests.
+- After applying all edges, edge IDs are normalized to `e00` through `e${n}` in insertion order to stabilize solver behavior and tests.
 
 Validation:
 - Minimal validation ensures link `src`/`dest` chains are declared in `spec.chains`.
