@@ -4,8 +4,8 @@ import test from 'ava';
 import { Fail } from '@endo/errors';
 
 import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.exo.ts';
-import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
 import type { StatusFor } from '@aglocal/portfolio-contract/src/type-guards.ts';
+import type { FundsFlowPlan } from '@agoric/portfolio-api';
 import type {
   QueryChildrenMetaResponse,
   QueryDataMetaResponse,
@@ -133,11 +133,11 @@ test('processPortfolioEvents only resolves flows for new portfolio states', asyn
 
   const signingSmartWalletKit = { marshaller, query: sswkQuery } as any;
 
-  const recordedSteps: MovementDesc[][] = [];
+  const recordedPlans: FundsFlowPlan[] = [];
   const planner: PortfolioPlanner = {
     ...({} as any),
-    resolvePlan: (_portfolioId, _flowId, steps) => {
-      recordedSteps.push(steps as MovementDesc[]);
+    resolvePlan: (_portfolioId, _flowId, plan) => {
+      recordedPlans.push(plan as FundsFlowPlan);
       return { tx: { mock: true }, id: 'tx-recorded' };
     },
   };
@@ -178,8 +178,8 @@ test('processPortfolioEvents only resolves flows for new portfolio states', asyn
   await processNextBlock();
   await processNextBlock();
 
-  t.is(recordedSteps.length, 1, 'planner invoked exactly once');
-  t.true(recordedSteps[0]!.length > 0, 'planner receives non-empty steps');
+  t.is(recordedPlans.length, 1, 'planner invoked exactly once');
+  t.true(recordedPlans[0]!.flow.length > 0, 'planner receives non-empty steps');
   t.is(memory.snapshots?.get(portfolioKey)?.repeats, 1);
   t.is(powers.portfolioKeyForDepositAddr.size, 0);
 });
