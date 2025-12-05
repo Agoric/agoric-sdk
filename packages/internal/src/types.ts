@@ -105,8 +105,25 @@ export type ERemote<Primary, Local = DataOnly<Primary>> = ERef<
  * explictly specify the type that the Pattern will verify through a match.
  *
  * TODO move all this pattern typing stuff to @endo/patterns
+ *
+ * CAVEAT: We use a constant string here to avoid exposing a `unique symbol`
+ * type publicly, such as with:
+ *
+ * @example
+ *   declare const mySymbol: unique symbol;
+ *
+ * Without this workaround, we've observed errors when using at least
+ * `typescript@5.9.3`'s `tsc` to generate declaration files (.d.ts) for
+ * consumers of modules that in turn import the declaration:
+ *
+ * @example
+ *   error TS9006: Declaration emit for this file requires using private name
+ *   'tag' from module '.../internal/src/tagged"'. An explicit
+ *   type annotation may unblock declaration emit.
  */
-declare const validatedType: unique symbol;
+// declare const validatedType: unique symbol;
+declare const validatedType: 'Symbol(validatedType)';
+
 /**
  * Tag a pattern with the static type it represents.
  */
