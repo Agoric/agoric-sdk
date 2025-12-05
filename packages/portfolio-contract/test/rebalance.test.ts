@@ -107,7 +107,9 @@ const testWithAllModes = (
 testWithAllModes('solver simple 2-pool case (A -> B 30)', async (t, mode) => {
   const current = balances({ [A]: 80n, [B]: 20n });
   const targetBps = { [A]: 5000n, [B]: 5000n };
-  const { steps } = await planRebalanceFlow({
+  const {
+    plan: { flow: steps },
+  } = await planRebalanceFlow({
     mode: mode as RebalanceMode,
     network: TEST_NETWORK,
     current,
@@ -142,7 +144,9 @@ testWithAllModes(
   async (t, mode) => {
     const current = balances({ [A]: 100n, [B]: 0n, [C]: 0n });
     const targetBps = { [A]: 3400n, [B]: 3300n, [C]: 3300n };
-    const { steps } = await planRebalanceFlow({
+    const {
+      plan: { flow: steps },
+    } = await planRebalanceFlow({
       mode: mode as RebalanceMode,
       network: TEST_NETWORK,
       current,
@@ -188,7 +192,9 @@ testWithAllModes(
 testWithAllModes('solver already balanced => no steps', async (t, mode) => {
   const current = balances({ [A]: 50n, [B]: 50n });
   const targetBps = { [A]: 5000n, [B]: 5000n };
-  const { steps } = await planRebalanceFlow({
+  const {
+    plan: { flow: steps },
+  } = await planRebalanceFlow({
     mode: mode as RebalanceMode,
     network: TEST_NETWORK,
     current,
@@ -202,7 +208,9 @@ testWithAllModes('solver already balanced => no steps', async (t, mode) => {
 
 testWithAllModes('solver all to one (B + C -> A)', async (t, mode) => {
   const current = balances({ [A]: 10n, [B]: 20n, [C]: 70n });
-  const { steps } = await planRebalanceFlow({
+  const {
+    plan: { flow: steps },
+  } = await planRebalanceFlow({
     mode: mode as RebalanceMode,
     network: TEST_NETWORK,
     current,
@@ -235,7 +243,9 @@ testWithAllModes(
   async (t, mode) => {
     const current = balances({ [A]: 100n, [B]: 0n, [C]: 0n });
     const target = { [A]: ZERO, [B]: token(60n), [C]: token(40n) };
-    const { steps } = await planRebalanceFlow({
+    const {
+      plan: { flow: steps },
+    } = await planRebalanceFlow({
       mode: mode as RebalanceMode,
       network: TEST_NETWORK,
       current,
@@ -276,7 +286,9 @@ testWithAllModes(
   'solver collect to one (B 30 + C 70 -> A)',
   async (t, mode) => {
     const current = balances({ [A]: 0n, [B]: 30n, [C]: 70n });
-    const { steps } = await planRebalanceFlow({
+    const {
+      plan: { flow: steps },
+    } = await planRebalanceFlow({
       mode: mode as RebalanceMode,
       network: TEST_NETWORK,
       current,
@@ -309,7 +321,9 @@ testWithAllModes(
   'solver deposit redistribution (+agoric 100 -> A 70, B 30)',
   async (t, mode) => {
     const current = balances({ '+agoric': 100n, [A]: 0n, [B]: 0n });
-    const { steps } = await planRebalanceFlow({
+    const {
+      plan: { flow: steps },
+    } = await planRebalanceFlow({
       mode: mode as RebalanceMode,
       network: TEST_NETWORK,
       current,
@@ -349,7 +363,9 @@ testWithAllModes(
   'solver deposit redistribution (Deposit 100 -> A 70, B 30)',
   async (t, mode) => {
     const current = balances({ '<Deposit>': 100n, [A]: 0n, [B]: 0n });
-    const { steps } = await planRebalanceFlow({
+    const {
+      plan: { flow: steps },
+    } = await planRebalanceFlow({
       mode: mode as RebalanceMode,
       network: TEST_NETWORK,
       current,
@@ -389,7 +405,9 @@ testWithAllModes(
   'solver withdraw to cash (A 50 + B 30 -> Cash)',
   async (t, mode) => {
     const current = balances({ [A]: 50n, [B]: 30n, '<Cash>': 0n });
-    const { steps } = await planRebalanceFlow({
+    const {
+      plan: { flow: steps },
+    } = await planRebalanceFlow({
       mode: mode as RebalanceMode,
       network: TEST_NETWORK,
       current,
@@ -419,7 +437,9 @@ testWithAllModes(
       '@Avalanche': 20n,
       '@noble': 20n,
     });
-    const { steps } = await planRebalanceFlow({
+    const {
+      plan: { flow: steps },
+    } = await planRebalanceFlow({
       mode: mode as RebalanceMode,
       network: TEST_NETWORK,
       current,
@@ -469,7 +489,9 @@ testWithAllModes(
       [A]: token(300n),
       [C]: token(200n),
     };
-    const { steps } = await planRebalanceFlow({
+    const {
+      plan: { flow: steps },
+    } = await planRebalanceFlow({
       mode: mode as RebalanceMode,
       network: TEST_NETWORK,
       current,
@@ -529,7 +551,9 @@ testWithAllModes(
       [C]: token(160n),
       '<Deposit>': ZERO,
     };
-    const { steps } = await planRebalanceFlow({
+    const {
+      plan: { flow: steps },
+    } = await planRebalanceFlow({
       mode: mode as RebalanceMode,
       network: TEST_NETWORK,
       current,
@@ -579,7 +603,9 @@ testWithAllModes(
     const USDN = 'USDN';
     const current = balances({ '<Deposit>': 1000n, [USDN]: 500n });
     const target = { '<Deposit>': ZERO, [USDN]: token(1500n) };
-    const { steps } = await planRebalanceFlow({
+    const {
+      plan: { flow: steps },
+    } = await planRebalanceFlow({
       mode: mode as RebalanceMode,
       network: TEST_NETWORK,
       current,
@@ -606,7 +632,9 @@ testWithAllModes(
   async (t, mode) => {
     const current = balances({ [A]: 80n, [B]: 20n, [C]: 7n }); // C present in current
     const target = { [A]: token(50n), [B]: token(50n) }; // C omitted from target
-    const { steps } = await planRebalanceFlow({
+    const {
+      plan: { flow: steps },
+    } = await planRebalanceFlow({
       mode: mode as RebalanceMode,
       network: TEST_NETWORK,
       current,
@@ -687,7 +715,7 @@ test.failing('solver differentiates cheapest vs. fastest', async t => {
     { src: '@agoric', dest: '@External', via: 'cheap' },
     { src: '@External', dest: 'Sink_External', via: 'local' },
   ]);
-  await assertSteps(t, cheapResult.steps, [
+  await assertSteps(t, cheapResult.plan.flow, [
     { src: '+agoric', dest: '@agoric', amount: token(100n) },
     {
       src: '@agoric',
@@ -712,7 +740,7 @@ test.failing('solver differentiates cheapest vs. fastest', async t => {
     { src: '@agoric', dest: '@External', via: 'fast' },
     { src: '@External', dest: 'Sink_External', via: 'local' },
   ]);
-  await assertSteps(t, fastResult.steps, [
+  await assertSteps(t, fastResult.plan.flow, [
     { src: '+agoric', dest: '@agoric', amount: token(100n) },
     {
       src: '@agoric',

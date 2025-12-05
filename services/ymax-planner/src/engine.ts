@@ -25,7 +25,7 @@ import {
   TxStatus,
   TxType,
 } from '@aglocal/portfolio-contract/src/resolver/constants.js';
-import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
+import type { FundsFlowPlan } from '@agoric/portfolio-api';
 import type {
   FlowDetail,
   PoolKey as InstrumentId,
@@ -326,24 +326,24 @@ export const processPortfolioEvents = async (
     logger.debug(`Starting flow`, flowDetail, inspectForStdout(logContext));
 
     try {
-      let steps: MovementDesc[];
+      let plan: FundsFlowPlan;
       const { type } = flowDetail;
       switch (type) {
         case 'deposit':
-          steps = await planDepositToAllocations(plannerContext);
+          plan = await planDepositToAllocations(plannerContext);
           break;
         case 'rebalance':
-          steps = await planRebalanceToAllocations(plannerContext);
+          plan = await planRebalanceToAllocations(plannerContext);
           break;
         case 'withdraw':
-          steps = await planWithdrawFromAllocations(plannerContext);
+          plan = await planWithdrawFromAllocations(plannerContext);
           break;
         default: {
           logger.warn(`⚠️  Unknown flow type ${type}`);
           return;
         }
       }
-      (errorContext as any).steps = steps;
+      (errorContext as any).plan = plan;
 
       const portfolioId = portfolioIdFromKey(portfolioKey as any);
       const flowId = flowIdFromKey(flowKey as any);
@@ -353,7 +353,7 @@ export const processPortfolioEvents = async (
       const { tx, id } = await planner.resolvePlan(
         portfolioId,
         flowId,
-        steps,
+        plan,
         policyVersion,
         rebalanceCount,
       );
@@ -364,7 +364,7 @@ export const processPortfolioEvents = async (
           logger.warn(
             `⚠️ Failure for resolvePlan`,
             { policyVersion, rebalanceCount },
-            steps,
+            plan,
             err,
           );
         });
@@ -377,7 +377,7 @@ export const processPortfolioEvents = async (
           policyVersion,
           rebalanceCount,
           targetAllocation,
-          steps,
+          plan,
         }),
         tx,
       );

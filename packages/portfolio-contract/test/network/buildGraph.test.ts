@@ -118,5 +118,5 @@ test('planRebalanceFlow uses NetworkSpec (legacy links param ignored at type lev
     e => e.src.startsWith('@') && e.dest.startsWith('@'),
   );
   t.is(hubEdges.length, 2);
-  t.true(res.steps.length > 0);
+  t.true(res.plan.flow.length > 0);
 });
