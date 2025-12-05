@@ -1,7 +1,7 @@
 import jsLPSolver from 'javascript-lp-solver';
 import type { IModel, IModelVariableConstraint } from 'javascript-lp-solver';
 
-import { Fail, annotateError } from '@endo/errors';
+import { assert, Fail, X } from '@endo/errors';
 
 import { AmountMath } from '@agoric/ertp';
 import type { Amount, NatAmount } from '@agoric/ertp/src/types.js';
@@ -41,6 +41,14 @@ const replaceOrInit = <K, V>(
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const trace = makeTracer('solve');
+
+export const NoSolutionError = class extends Error {} as ErrorConstructor;
+harden(NoSolutionError);
+
+const failUnsolvable = (
+  details: ReturnType<typeof X> | string,
+  cause?: Error,
+): never => assert.fail(details, NoSolutionError, { cause });
 
 /** Mode of optimization */
 export type RebalanceMode = 'cheapest' | 'fastest';
@@ -285,9 +293,9 @@ export const solveRebalance = async (
       let msg = formatInfeasibleDiagnostics(graph, model);
       msg += ` | ${prettyJsonable(solution)}`;
       console.error('[solver] No feasible solution. Diagnostics:', msg);
-      throw Fail`No feasible solution: ${msg}`;
+      failUnsolvable(X`No feasible solution: ${msg}`);
     }
-    throw Fail`No feasible solution: ${solution}`;
+    failUnsolvable(X`No feasible solution: ${solution}`);
   }
 
   const flows: SolvedEdgeFlow[] = [];
@@ -336,7 +344,9 @@ export const rebalanceMinCostFlowSteps = async (
         const shortage = f.flow - srcSupply;
         return `${f.edge.id}: ${f.edge.src}(${srcSupply}) -> ${f.edge.dest} needs ${f.flow} (short ${shortage})`;
       });
-      throw Fail`Scheduling deadlock: no flows can be executed. Remaining flows:\n${diagnostics.join('\n')}`;
+      failUnsolvable(
+        X`Scheduling deadlock: no flows can be executed. Remaining flows:\n${diagnostics.join('\n')}`,
+      );
     }
     // Prefer continuing with lastChain if possible.
     const fromSameChain = lastChain
@@ -374,7 +384,7 @@ export const rebalanceMinCostFlowSteps = async (
   const steps: MovementDesc[] = await Promise.all(
     prioritized.map(async ({ edge, flow }) => {
       Number.isSafeInteger(flow) ||
-        Fail`flow ${flow} for edge ${edge} is not a safe integer`;
+        failUnsolvable(X`flow ${flow} for edge ${edge} is not a safe integer`);
       const amount = AmountMath.make(graph.brand, BigInt(flow));
 
       await null;
@@ -466,7 +476,9 @@ export const rebalanceMinCostFlowSteps = async (
       console.error('[solver] Original supplies:', graph.supplies);
       console.error('[solver] Scheduling deadlock. Final supplies:', supplies);
       console.error('[solver] All proposed flows in order:', steps);
-      throw Fail`Flow validation failed: ${validation.errors.join('; ')}`;
+      failUnsolvable(
+        X`Flow validation failed: ${validation.errors.join('; ')}`,
+      );
     }
     if (validation.warnings.length > 0) {
       console.warn('[solver] Flow validation warnings:', validation.warnings);
@@ -517,14 +529,15 @@ export const planRebalanceFlow = async (opts: {
   try {
     result = await solveRebalance(model, graph);
   } catch (err) {
+    const { message } = err;
     try {
       // If the solver says infeasible, try to produce a clearer message
       preflightValidateNetworkPlan(network, current, target);
     } catch (networkValidationErr) {
-      annotateError(networkValidationErr, err.message);
-      throw networkValidationErr;
+      // eslint-disable-next-line no-ex-assign
+      err = AggregateError([err, networkValidationErr]);
     }
-    throw err;
+    failUnsolvable(message, err);
   }
   const { flows, detail } = result;
   const steps = await rebalanceMinCostFlowSteps(flows, graph, gasEstimator);
