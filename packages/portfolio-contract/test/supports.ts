@@ -3,6 +3,7 @@ import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { makeIssuerKit } from '@agoric/ertp';
 import {
   defaultMarshaller,
+  defaultSerializer,
   type FakeStorageKit,
 } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
@@ -76,16 +77,20 @@ export const makeStorageTools = (storage: FakeStorageKit) => {
     return getCapDataStructure(storage.getValues(path).at(-1));
   };
 
+  const getDeserialized = (path: string): unknown[] => {
+    return storage.getValues(path).map(defaultSerializer.parse);
+  };
+
   const getPortfolioStatus = async (pId: number) => {
     await vstoragePendingWrites();
-    return storage
-      .getDeserialized(`published.ymax0.portfolios.portfolio${pId}`)
-      .at(-1) as StatusFor['portfolio'];
+    return getDeserialized(`published.ymax0.portfolios.portfolio${pId}`).at(
+      -1,
+    ) as StatusFor['portfolio'];
   };
 
   const getFlowHistory = async (pId: number, fId: number) => {
     await vstoragePendingWrites();
-    return storage.getDeserialized(
+    return getDeserialized(
       `published.ymax0.portfolios.portfolio${pId}.flows.flow${fId}`,
     ) as StatusFor['flow'][];
   };

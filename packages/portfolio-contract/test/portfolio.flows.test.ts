@@ -1749,3 +1749,71 @@ test('A transfers to axelar; B arrives', makeAccountEVMRace, 'txfr');
 test('A times out on axelar; B arrives', makeAccountEVMRace, 'txfr', 'txfr');
 test('A gets rejected txN; B arrives', makeAccountEVMRace, 'txfr', 'resolve');
 test('A finishes before attempt B starts', makeAccountEVMRace, 'resolve');
+test('planner rejects plan and flow fails gracefully', async t => {
+  const { orch, ctx, offer, storage } = mocks({});
+
+  const { getPortfolioStatus } = makeStorageTools(storage);
+
+  const kit = await ctx.makePortfolioKit();
+  const portfolioId = kit.reader.getPortfolioId();
+
+  // Set up portfolio with initial allocation
+  kit.manager.setTargetAllocation({ USDN: 10000n }); // 100% USDN
+
+  const webUiDone = (async () => {
+    const Cash = make(USDC, 1_000_000n);
+    const dSeat = makeMockSeat({}, { Cash }, offer.log);
+
+    // This should fail when planner rejects the plan
+    await t.throwsAsync(
+      () =>
+        executePlan(orch, ctx, dSeat, {}, kit, {
+          type: 'withdraw',
+          amount: Cash,
+        }),
+      { message: 'insufficient funds for this operation' },
+    );
+  })();
+
+  const plannerP = (async () => {
+    const { flowsRunning = {} } = await getPortfolioStatus(portfolioId);
+    const [[flowId, detail]] = Object.entries(flowsRunning);
+    t.log('planner found running flow', { portfolioId, flowId, detail });
+
+    if (detail.type !== 'withdraw')
+      throw t.fail(`Expected withdraw, got ${detail.type}`);
+
+    // Planner rejects the plan due to insufficient funds
+    const flowIdNum = Number(flowId.replace('flow', ''));
+
+    kit.planner.rejectFlowPlan(
+      flowIdNum,
+      'insufficient funds for this operation',
+    );
+  })();
+
+  await Promise.all([webUiDone, plannerP]);
+
+  const { log } = offer;
+  t.log('calls:', log.map(msg => msg._method).join(', '));
+
+  // Verify the seat failed rather than exited successfully
+  const seatCalls = log.filter(entry => entry._cap === 'seat');
+  const failCall = seatCalls.find(call => call._method === 'fail');
+  const exitCall = seatCalls.find(call => call._method === 'exit');
+
+  t.truthy(failCall, 'seat.fail() should be called when plan is rejected');
+  t.falsy(exitCall, 'seat.exit() should not be called when plan is rejected');
+  t.deepEqual(
+    `${failCall?.reason}`,
+    'Error: insufficient funds for this operation',
+    'failure reason should match rejection message',
+  );
+
+  // Verify flow is cleaned up from running flows
+  const { flowsRunning = {} } = await getPortfolioStatus(portfolioId);
+  t.deepEqual(flowsRunning, {}, 'flow should be cleaned up after rejection');
+
+  t.snapshot(log, 'call log');
+  await documentStorageSchema(t, storage, docOpts);
+});

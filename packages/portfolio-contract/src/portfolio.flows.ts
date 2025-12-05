@@ -1108,13 +1108,24 @@ export const executePlan = (async (
     startedFlow ?? pKit.manager.startFlow(flowDetail, offerArgs.flow);
   const traceFlow = traceP.sub(`flow${flowId}`);
   if (!offerArgs.flow) traceFlow('waiting for steps from planner');
-  // idea: race with seat.getSubscriber()
-  const plan = await (stepsP as unknown as Promise<
-    MovementDesc[] | FundsFlowPlan
-  >); // XXX Guest/Host types UNTIL #9822
+  await null;
   try {
+    // idea: race with seat.getSubscriber()
+    const plan = await (stepsP as unknown as Promise<
+      MovementDesc[] | FundsFlowPlan
+    >); // XXX Guest/Host types UNTIL #9822
     await stepFlow(orch, ctx, seat, plan, pKit, traceP, flowId, flowDetail);
     return `flow${flowId}`;
+  } catch (err) {
+    if (!seat.hasExited()) seat.fail(err);
+    pKit.reporter.publishFlowStatus(flowId, {
+      state: 'fail',
+      step: 0,
+      error: errmsg(err),
+      how: `await plan`,
+      ...flowDetail,
+    });
+    throw err;
   } finally {
     // The seat must be exited no matter what to avoid leaks
     if (!seat.hasExited()) seat.exit();
