@@ -70,7 +70,7 @@ export function OperationForm({ userAddress, onSigned }: Props) {
           invitationSpec: {
             source: 'agoricContract',
             instancePath: ['ymax0'],
-            callPipe: [{ method: 'makeOpenPortfolioInvitation', args: [] }]
+            callPipe: JSON.stringify([['makeOpenPortfolioInvitation', []]])
           },
           proposal: {
             give: {
@@ -111,11 +111,7 @@ export function OperationForm({ userAddress, onSigned }: Props) {
         InvitationSpec: [
           { name: 'source', type: 'string' },
           { name: 'instancePath', type: 'string[]' },
-          { name: 'callPipe', type: 'CallPipeEntry[]' }
-        ],
-        CallPipeEntry: [
-          { name: 'method', type: 'string' },
-          { name: 'args', type: 'string[]' }
+          { name: 'callPipe', type: 'string' }
         ],
         Proposal: [
           { name: 'give', type: 'string' },
