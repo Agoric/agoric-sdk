@@ -38,6 +38,7 @@ import {
   PortfolioStatusShapeExt,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import { PROD_NETWORK } from '@aglocal/portfolio-contract/tools/network/network.prod.js';
+import { NoSolutionError } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import {
   mustMatch,
@@ -67,6 +68,7 @@ import {
   planWithdrawFromAllocations,
 } from './plan-deposit.ts';
 import type { SpectrumClient } from './spectrum-client.ts';
+import { UserInputError } from './support.ts';
 import {
   parseStreamCell,
   parseStreamCellValue,
@@ -295,12 +297,17 @@ export const processPortfolioEvents = async (
     flowDetail: FlowDetail,
   ) => {
     const path = `${portfoliosPathPrefix}.${portfolioKey}`;
+    const portfolioId = portfolioIdFromKey(portfolioKey as any);
+    const flowId = flowIdFromKey(flowKey as any);
+    const scope: [number, number] = [portfolioId, flowId];
+    const { policyVersion, rebalanceCount, targetAllocation } = portfolioStatus;
+    const conditions: [number, number] = [policyVersion, rebalanceCount];
+
     const currentBalances = await getNonDustBalances(
       portfolioStatus,
       depositBrand,
       balanceQueryPowers,
     );
-    const { policyVersion, rebalanceCount, targetAllocation } = portfolioStatus;
     const errorContext = {
       path,
       flowKey,
@@ -324,6 +331,25 @@ export const processPortfolioEvents = async (
 
     const { network: _network, ...logContext } = plannerContext;
     logger.debug(`Starting flow`, flowDetail, inspectForStdout(logContext));
+    const settle = async <M extends string & keyof PortfolioPlanner>(
+      methodName: M,
+      args: PortfolioPlanner[M] extends (...args: infer Args) => any
+        ? Args
+        : never,
+    ) => {
+      const planReceiver = walletStore.get<PortfolioPlanner>('planner', {
+        sendOnly: true,
+      });
+      const { tx, id } = await planReceiver[methodName]!(...args);
+      // The transaction has been submitted, but we won't know about a rejection
+      // for at least another block.
+      if (!isDryRun) {
+        void getWalletInvocationUpdate(id as any).catch(err => {
+          logger.warn(`⚠️ Failure for ${methodName}`, args, err);
+        });
+      }
+      return tx;
+    };
 
     try {
       let steps: MovementDesc[];
@@ -345,30 +371,13 @@ export const processPortfolioEvents = async (
       }
       (errorContext as any).steps = steps;
 
-      const portfolioId = portfolioIdFromKey(portfolioKey as any);
-      const flowId = flowIdFromKey(flowKey as any);
-      const planner = walletStore.get<PortfolioPlanner>('planner', {
-        sendOnly: true,
-      });
-      const { tx, id } = await planner.resolvePlan(
-        portfolioId,
-        flowId,
-        steps,
-        policyVersion,
-        rebalanceCount,
-      );
-      // The transaction has been submitted, but we won't know about a rejection
-      // for at least another block.
-      if (!isDryRun) {
-        void getWalletInvocationUpdate(id as any).catch(err => {
-          logger.warn(
-            `⚠️ Failure for resolvePlan`,
-            { policyVersion, rebalanceCount },
-            steps,
-            err,
-          );
-        });
-      }
+      const tx = await (steps.length === 0
+        ? settle('rejectPlan', [
+            ...scope,
+            'Nothing to do for this operation',
+            ...conditions,
+          ])
+        : settle('resolvePlan', [...scope, steps, ...conditions]));
       logger.info(
         `Resolving`,
         flowDetail,
@@ -382,6 +391,14 @@ export const processPortfolioEvents = async (
         tx,
       );
     } catch (err) {
+      if (err instanceof UserInputError || err instanceof NoSolutionError) {
+        try {
+          await settle('rejectPlan', [...scope, err.message, ...conditions]);
+        } catch (settleErr) {
+          // eslint-disable-next-line no-ex-assign
+          err = AggregateError([err, settleErr]);
+        }
+      }
       annotateError(err, inspect(errorContext, { depth: 4 }));
       throw err;
     }
