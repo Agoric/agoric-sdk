@@ -1,3 +1,4 @@
+// @ts-check
 import { makeMarshal, decodeToJustin } from '@endo/marshal';
 import { Shape as NetworkShape } from '@agoric/network';
 import { M, matches } from '@endo/patterns';
@@ -7,6 +8,10 @@ import { makeTracer } from '@agoric/internal';
 import { makeVowExoHelpers } from '../utils/exo-helpers.js';
 
 const trace = makeTracer('PacketTools');
+
+const TOMBSTONED_WATCHERS = /** @type {const} */ ([
+  'packetWasSentWithMetaWatcher',
+]);
 
 const { toCapData } = makeMarshal(undefined, undefined, {
   marshalName: 'JustEncoder',
@@ -21,6 +26,7 @@ const just = obj => {
  * @import {Pattern} from '@endo/patterns';
  * @import {EVow, Remote, Vow, VowKit, VowResolver, VowTools} from '@agoric/vow';
  * @import {LocalChainAccount} from '@agoric/vats/src/localchain.js';
+ * @import {ProgressTracker} from '../types.js';
  * @import {IBCEvent, VTransferIBCEvent} from '@agoric/vats';
  * @import {TargetApp, TargetRegistration} from '@agoric/vats/src/bridge-target.js';
  * @import {IBCMsgTransferOptions} from '../cosmos-api.js';
@@ -48,6 +54,8 @@ const just = obj => {
  * @typedef {object} PacketOptions
  * @property {string} [opName]
  * @property {PacketTimeout} [timeout]
+ * @property {ProgressTracker} [progressTracker]
+ * @property {number} [trafficEntryIndex]
  */
 
 /**
@@ -75,6 +83,7 @@ export const preparePacketTools = (zone, vowTools) => {
   const makePacketToolsKit = zone.exoClassKit(
     'PacketToolsKit',
     {
+      ...vowExo.makeTombstonedWatcherShapes(TOMBSTONED_WATCHERS),
       public: M.interface('PacketTools', {
         sendThenWaitForAck: M.call(EVow$(M.remotable('PacketSender')))
           .optional(M.any())
@@ -149,6 +158,7 @@ export const preparePacketTools = (zone, vowTools) => {
       };
     },
     {
+      ...vowExo.makeTombstonedWatchers(TOMBSTONED_WATCHERS),
       public: {
         /**
          * @param {ERef<TargetApp>} monitor

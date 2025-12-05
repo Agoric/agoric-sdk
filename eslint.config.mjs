@@ -1,3 +1,4 @@
+/* eslint-disable no-underscore-dangle, import/no-extraneous-dependencies */
 import { fixupConfigRules, fixupPluginRules } from '@eslint/compat';
 import typescriptEslint from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';

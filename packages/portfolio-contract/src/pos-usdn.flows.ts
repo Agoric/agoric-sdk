@@ -14,15 +14,16 @@ import {
   MsgLock as MsgLockType,
   MsgUnlock as MsgUnlockType,
 } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
+import { VaultType } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/vaults.js';
 import { MsgSwap as MsgSwapType } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import { type NatValue } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
-import type { CosmosChainAddress, Denom } from '@agoric/orchestration';
+import { type CosmosChainAddress, type Denom } from '@agoric/orchestration';
+import type { ProgressTracker } from '@agoric/orchestration/src/utils/progress.js';
 import {
   type ProtocolDetail,
   type TransportDetail,
 } from './portfolio.flows.ts';
-// XXX: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const Any = CodecHelper(AnyType);
 const MsgLock = CodecHelper(MsgLockType);
@@ -71,7 +72,7 @@ export const makeUnlockSwapMessages = (
     poolId = 0n,
     denom = 'uusdn',
     denomTo = 'uusdc',
-    vault = 1, // VaultType.STAKED
+    vault = VaultType.STAKED,
     usdnOut = undefined as bigint | undefined,
   } = {},
 ) => {
@@ -104,7 +105,7 @@ export const protocolUSDN = {
   protocol: 'USDN',
   chains: ['noble'],
   supply: async (ctx, amount, src) => {
-    const { usdnOut, vault } = ctx;
+    const { usdnOut, vault, progressTracker } = ctx;
     const { ica } = src;
     const nobleAddr = ica.getAddress();
 
@@ -115,14 +116,16 @@ export const protocolUSDN = {
     );
 
     trace('executing', [msgSwap, msgLock].filter(Boolean));
-    const result = await ica.executeEncodedTx(protoMessages);
+    const result = await ica.executeEncodedTx(protoMessages, {
+      progressTracker,
+    });
     trace('supply result', result);
   },
   withdraw: async (ctx, amount, dest, claim) => {
     if (claim) {
       throw new Error('claiming USDN is not supported');
     }
-    const { usdnOut } = ctx;
+    const { usdnOut, progressTracker } = ctx;
     const { ica } = dest;
     const address = ica.getAddress();
     const { msgUnlock, msgSwap, protoMessages } = makeUnlockSwapMessages(
@@ -131,13 +134,15 @@ export const protocolUSDN = {
       { usdnOut },
     );
     trace('executing', [msgUnlock, msgSwap].filter(Boolean));
-    const result = await ica.executeEncodedTx(protoMessages);
+    const result = await ica.executeEncodedTx(protoMessages, {
+      progressTracker,
+    });
     trace('withdraw result', result);
   },
 } as const satisfies ProtocolDetail<
   'USDN',
   'noble',
-  { usdnOut?: NatValue; vault?: number }
+  { usdnOut?: NatValue; vault?: number; progressTracker?: ProgressTracker }
 >;
 harden(protocolUSDN);
 
@@ -147,27 +152,31 @@ export const agoricToNoble = {
   apply: async (ctx, amount, src, dest) => {
     const { denom } = ctx.usdc;
     const denomAmount = { value: amount.value, denom };
-    await src.lca.transfer(dest.ica.getAddress(), denomAmount);
+    await src.lca.transfer(dest.ica.getAddress(), denomAmount, {
+      progressTracker: ctx.progressTracker,
+    });
   },
 } as const satisfies TransportDetail<
   'IBC to Noble',
   'agoric',
   'noble',
-  { usdc: { denom: Denom } }
+  { usdc: { denom: Denom }; progressTracker?: ProgressTracker }
 >;
 harden(agoricToNoble);
 
 export const nobleToAgoric = {
   how: 'IBC from Noble',
   connections: [{ src: 'noble', dest: 'agoric' }],
-  apply: async (_ctx, amount, src, dest) => {
+  apply: async (ctx, amount, src, dest) => {
     const nobleAmount = { value: amount.value, denom: 'uusdc' };
-    await src.ica.transfer(dest.lca.getAddress(), nobleAmount);
+    await src.ica.transfer(dest.lca.getAddress(), nobleAmount, {
+      progressTracker: ctx.progressTracker,
+    });
   },
 } as const satisfies TransportDetail<
   'IBC from Noble',
   'noble',
   'agoric',
-  { usdc: { denom: Denom } }
+  { usdc: { denom: Denom }; progressTracker?: ProgressTracker }
 >;
 harden(agoricToNoble);

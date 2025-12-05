@@ -38,4 +38,5 @@ export const orchestrationAccountMethods = {
     }),
   ),
   getPublicTopics: M.call().returns(Vow$(TopicsRecordShape)),
+  makeProgressTracker: M.call().returns(M.remotable('ProgressTracker')),
 };

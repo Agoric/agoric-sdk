@@ -147,7 +147,7 @@ test('delegate, undelegate, redelegate, withdrawReward', async t => {
   t.deepEqual(
     await undelegationP,
     undefined,
-    'undelegation returns void after completion_time',
+    'undelegation returns undefined after completion_time',
   );
 
   const redelegation = await E(account).redelegate(
@@ -162,7 +162,7 @@ test('delegate, undelegate, redelegate, withdrawReward', async t => {
   t.deepEqual(
     redelegation,
     { completionTime: { nanos: 0, seconds: 5n } },
-    'redelegation returns completionTime',
+    'redelegation returns expected completionTime',
   );
 
   const expectedRewards: DenomAmount = { value: 1n, denom: 'uatom' };
