@@ -279,7 +279,7 @@ Options:
   let conditionToStopPolling = pools =>
     Array.isArray(pools) && pools.length > 0;
   swapPools = await pollSwapPools(pod, container, conditionToStopPolling);
-  console.log('Swap pool created successfuly...', swapPools);
+  console.log('Swap pool created successfully...', swapPools);
 
   // Add liquidity in pool with uusdc and uusdn
   const args = {

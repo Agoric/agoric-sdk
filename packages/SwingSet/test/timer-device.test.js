@@ -279,7 +279,7 @@ test('multiMap remove edge cases', t => {
   // Add the same handler multiple times for the same time
   mm.add(8n, handlerC);
   mm.add(8n, handlerC); // Add C again at time 8, right after the other C
-  mm.add(8n, handlerB); // Cause a gap between 2 occurences of C
+  mm.add(8n, handlerB); // Cause a gap between 2 occurrences of C
   mm.add(8n, handlerC);
 
   t.deepEqual(mm.cloneSchedule(), [
