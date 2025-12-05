@@ -3,10 +3,15 @@ export interface TargetAllocation {
   basisPoints: number; // out of 10000
 }
 
+export interface CallPipeEntry {
+  method: string;
+  args: string[];
+}
+
 export interface InvitationSpec {
   source: 'agoricContract';
   instancePath: string[];
-  callPipe: [string, any[]][];
+  callPipe: CallPipeEntry[];
 }
 
 export interface Proposal {
@@ -40,6 +45,7 @@ export interface EIP712Types {
   BridgeAction: Array<{ name: string; type: string }>;
   OfferSpec: Array<{ name: string; type: string }>;
   InvitationSpec: Array<{ name: string; type: string }>;
+  CallPipeEntry: Array<{ name: string; type: string }>;
   Proposal: Array<{ name: string; type: string }>;
   OfferArgs: Array<{ name: string; type: string }>;
 }
