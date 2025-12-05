@@ -1,7 +1,7 @@
-import type { PortfolioOperation } from '../types';
+import type { BridgeAction } from '../types';
 
 interface Props {
-  message: PortfolioOperation;
+  message: BridgeAction;
   signature: string;
 }
 

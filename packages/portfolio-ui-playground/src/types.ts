@@ -3,13 +3,32 @@ export interface TargetAllocation {
   basisPoints: number; // out of 10000
 }
 
-export interface PortfolioOperation {
-  operation: 'openPortfolio' | 'rebalance' | 'deposit' | 'withdraw';
-  user: string; // EVM address
-  amount: string; // wei string
-  targetAllocation: TargetAllocation[];
-  nonce: number; // timestamp
-  deadline: number; // timestamp + 1 hour
+export interface InvitationSpec {
+  source: 'agoricContract';
+  instancePath: string[];
+  callPipe: [string, any[]][];
+}
+
+export interface Proposal {
+  give?: Record<string, { brand: string; value: string }>;
+  want?: Record<string, { brand: string; value: string }>;
+}
+
+export interface OfferSpec {
+  id: string;
+  invitationSpec: InvitationSpec;
+  proposal: Proposal;
+  offerArgs?: {
+    targetAllocation?: Record<string, string>; // LegibleCapData bigints as "+5000"
+  };
+}
+
+export interface BridgeAction {
+  method: 'executeOffer';
+  offer: OfferSpec;
+  user: string; // EVM address for signature
+  nonce: number; // timestamp for signature
+  deadline: number; // timestamp + 1 hour for signature
 }
 
 export interface EIP712Domain {
@@ -18,6 +37,9 @@ export interface EIP712Domain {
 }
 
 export interface EIP712Types {
-  PortfolioOperation: Array<{ name: string; type: string }>;
-  TargetAllocation: Array<{ name: string; type: string }>;
+  BridgeAction: Array<{ name: string; type: string }>;
+  OfferSpec: Array<{ name: string; type: string }>;
+  InvitationSpec: Array<{ name: string; type: string }>;
+  Proposal: Array<{ name: string; type: string }>;
+  OfferArgs: Array<{ name: string; type: string }>;
 }

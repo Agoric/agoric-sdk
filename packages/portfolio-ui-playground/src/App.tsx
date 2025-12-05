@@ -2,10 +2,10 @@ import { signal } from '@preact/signals';
 import { WalletConnection } from './components/WalletConnection';
 import { OperationForm } from './components/OperationForm';
 import { SignatureDisplay } from './components/SignatureDisplay';
-import type { PortfolioOperation } from './types';
+import type { BridgeAction } from './types';
 
 const walletAddress = signal<string>('');
-const signedMessage = signal<{ message: PortfolioOperation; signature: string } | null>(null);
+const signedMessage = signal<{ message: BridgeAction; signature: string } | null>(null);
 
 export function App() {
   return (

@@ -1,10 +1,10 @@
 import { useState } from 'preact/hooks';
 import { BrowserProvider } from 'ethers';
-import type { PortfolioOperation, TargetAllocation, EIP712Domain, EIP712Types } from '../types';
+import type { BridgeAction, TargetAllocation, EIP712Domain, EIP712Types } from '../types';
 
 interface Props {
   userAddress: string;
-  onSigned: (result: { message: PortfolioOperation; signature: string }) => void;
+  onSigned: (result: { message: BridgeAction; signature: string }) => void;
 }
 
 const POOL_OPTIONS = [
@@ -20,7 +20,7 @@ const POOL_OPTIONS = [
 ];
 
 export function OperationForm({ userAddress, onSigned }: Props) {
-  const [operation, setOperation] = useState<PortfolioOperation['operation']>('openPortfolio');
+  const [operation, setOperation] = useState<'openPortfolio' | 'rebalance' | 'deposit' | 'withdraw'>('openPortfolio');
   const [amount, setAmount] = useState('1000');
   const [allocations, setAllocations] = useState<TargetAllocation[]>([
     { poolKey: 'USDN', basisPoints: 5000 },
@@ -56,11 +56,35 @@ export function OperationForm({ userAddress, onSigned }: Props) {
 
     try {
       const now = Math.floor(Date.now() / 1000);
-      const message: PortfolioOperation = {
-        operation,
+      
+      // Convert allocations to LegibleCapData format (bigints as "+5000")
+      const targetAllocation = allocations.reduce((acc, alloc) => {
+        acc[alloc.poolKey] = `+${alloc.basisPoints}`;
+        return acc;
+      }, {} as Record<string, string>);
+
+      const message: BridgeAction = {
+        method: 'executeOffer',
+        offer: {
+          id: `${operation}-${Date.now()}`,
+          invitationSpec: {
+            source: 'agoricContract',
+            instancePath: ['ymax0'],
+            callPipe: [['makeOpenPortfolioInvitation', []]]
+          },
+          proposal: {
+            give: {
+              Deposit: {
+                brand: 'USDC',
+                value: (parseFloat(amount) * 1e6).toString()
+              }
+            }
+          },
+          offerArgs: {
+            targetAllocation
+          }
+        },
         user: userAddress,
-        amount: (parseFloat(amount) * 1e6).toString(), // Convert to USDC wei (6 decimals)
-        targetAllocation: allocations,
         nonce: now,
         deadline: now + 3600 // 1 hour
       };
@@ -71,17 +95,29 @@ export function OperationForm({ userAddress, onSigned }: Props) {
       };
 
       const types: EIP712Types = {
-        PortfolioOperation: [
-          { name: 'operation', type: 'string' },
+        BridgeAction: [
+          { name: 'method', type: 'string' },
+          { name: 'offer', type: 'OfferSpec' },
           { name: 'user', type: 'address' },
-          { name: 'amount', type: 'uint256' },
-          { name: 'targetAllocation', type: 'TargetAllocation[]' },
           { name: 'nonce', type: 'uint256' },
           { name: 'deadline', type: 'uint256' }
         ],
-        TargetAllocation: [
-          { name: 'poolKey', type: 'string' },
-          { name: 'basisPoints', type: 'uint256' }
+        OfferSpec: [
+          { name: 'id', type: 'string' },
+          { name: 'invitationSpec', type: 'InvitationSpec' },
+          { name: 'proposal', type: 'Proposal' },
+          { name: 'offerArgs', type: 'OfferArgs' }
+        ],
+        InvitationSpec: [
+          { name: 'source', type: 'string' },
+          { name: 'instancePath', type: 'string[]' },
+          { name: 'callPipe', type: 'string[][]' }
+        ],
+        Proposal: [
+          { name: 'give', type: 'string' },
+        ],
+        OfferArgs: [
+          { name: 'targetAllocation', type: 'string' }
         ]
       };
 
