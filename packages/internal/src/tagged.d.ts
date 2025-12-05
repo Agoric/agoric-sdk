@@ -3,7 +3,19 @@
 // different name to avoid confusion with pass-style "tagged"
 export { Tagged as TypeTag };
 
-declare const tag: unique symbol;
+/**
+ * We use a constant string here to avoid exposing a `unique symbol` type
+ * publicly.
+ *
+ * Without this workaround, we've observed errors when using
+ * `typescript@5.9.3`'s `tsc` to generate declaration files (.d.ts) for
+ * consumers of modules that import `PASS_STYLE`:
+ * @example
+ *   error TS9006: Declaration emit for this file requires using private name
+ *   'tag' from module '.../internal/src/tagged.d.ts"'. An explicit
+ *   type annotation may unblock declaration emit.
+ */
+declare const tag: 'Symbol(tag)';
 
 export type TagContainer<Token> = {
   readonly [tag]: Token;
