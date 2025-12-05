@@ -18,7 +18,7 @@ import {
   type PoolKey,
   type PoolPlaceInfo,
 } from '../src/type-guards.js';
-import type { RebalanceGraph } from './network/buildGraph.js';
+import type { FlowGraph } from './network/buildGraph.js';
 import type { NetworkSpec } from './network/network-spec.js';
 import type { LpModel } from './plan-solve.js';
 
@@ -48,7 +48,7 @@ const bfs = <T>(start: T, adj: Map<T, T[]>): Set<T> => {
  *   - Set `debug: true` on the NetworkSpec used to build the graph.
  */
 export const diagnoseInfeasible = (
-  graph: RebalanceGraph,
+  graph: FlowGraph,
   _model: LpModel,
 ): string => {
   const nodes = [...graph.nodes];
@@ -216,7 +216,7 @@ export const preflightValidateNetworkPlan = (
  *   before validating it with `explainPath`.
  */
 export const explainPath = (
-  graph: RebalanceGraph,
+  graph: FlowGraph,
   path: string[],
 ):
   | { ok: true }
@@ -235,8 +235,10 @@ export const explainPath = (
   if (path.length < 2) return { ok: true };
   const nodes = graph.nodes;
   const edgeMap = new Map<string, { capacity: number }>();
-  for (const e of graph.edges)
-    edgeMap.set(`${e.src}->${e.dest}`, { capacity: e.capacity ?? Infinity });
+  for (const e of graph.edges) {
+    const capacity = Number(e.capacity ?? Infinity);
+    edgeMap.set(`${e.src}->${e.dest}`, { capacity });
+  }
   for (let i = 0; i < path.length - 1; i += 1) {
     const src = path[i];
     const dest = path[i + 1];
@@ -300,7 +302,7 @@ export const explainPath = (
  * Diagnose near-miss connectivity categories for each source (positive supply)
  * and sink (negative supply). Purely topological; ignores objective.
  */
-export const diagnoseNearMisses = (graph: RebalanceGraph) => {
+export const diagnoseNearMisses = (graph: FlowGraph) => {
   const nodes = [...graph.nodes];
   const supplies = graph.supplies;
   const sources = nodes.filter(n => (supplies[n] || 0) > 0);
@@ -353,7 +355,7 @@ export const diagnoseNearMisses = (graph: RebalanceGraph) => {
 
 /** Build a canonical leaf/hub -> hub/leaf path skeleton between two nodes. */
 export const canonicalPathBetween = (
-  graph: RebalanceGraph,
+  graph: FlowGraph,
   src: string,
   dest: string,
 ): string[] => {
@@ -384,7 +386,7 @@ export const canonicalPathBetween = (
 
 /** Build an example path explanation for a pair of nodes. */
 export const examplePathExplain = (
-  graph: RebalanceGraph,
+  graph: FlowGraph,
   src: string,
   dest: string,
 ) => {
@@ -398,7 +400,7 @@ export const examplePathExplain = (
  * Includes supply/reachability summary, near-miss pairs, and an example path explanation.
  */
 export const formatInfeasibleDiagnostics = (
-  graph: RebalanceGraph,
+  graph: FlowGraph,
   model: LpModel,
 ): string => {
   const diag = diagnoseInfeasible(graph, model);
@@ -438,7 +440,7 @@ export const formatInfeasibleDiagnostics = (
  * @returns Validation result with ok flag and details
  */
 export const validateSolvedFlows = (
-  graph: RebalanceGraph,
+  graph: FlowGraph,
   flows: Array<{
     edge: { src: string; dest: string; id: string };
     flow: number;
