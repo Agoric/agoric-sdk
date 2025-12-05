@@ -1,0 +1,54 @@
+diff --git a/src/passStyle-helpers.d.ts b/src/passStyle-helpers.d.ts
+index 2f3705f0fdcbe959fbdbd1eb12f4781e5261ba90..acb9f15aaddcd52a66b92e718c18820229fa7c1d 100644
+--- a/src/passStyle-helpers.d.ts
++++ b/src/passStyle-helpers.d.ts
+@@ -12,7 +12,20 @@ export const isPrimitive: (val: unknown) => val is JSPrimitive;
+  */
+ export const isObject: (val: unknown) => val is (Function | Record<string | symbol, unknown>);
+ export function isTypedArray(object: unknown): boolean;
+-export const PASS_STYLE: unique symbol;
++/**
++ * We cast our `Symbol.for()` to a string constant here to avoid exposing the
++ * `unique symbol` type publicly.  The cast doesn't change any runtime
++ * behavior... it's still actually a symbol.
++ *
++ * Without this workaround, we've observed errors when using
++ * `typescript@5.9.3`'s `tsc` to generate declaration files (.d.ts) for
++ * consumers of modules that import `PASS_STYLE`:
++ * @example
++ *   error TS9006: Declaration emit for this file requires using private name
++ *   'PASS_STYLE' from module '.../@endo/pass-style/src/types"'. An explicit
++ *   type annotation may unblock declaration emit.
++ */
++export const PASS_STYLE: "Symbol(passStyle)";
+ /**
+  * Below we have a series of predicate functions and their (curried) assertion
+  * functions. The semantics of the assertion function is just to assert that
+diff --git a/src/passStyle-helpers.js b/src/passStyle-helpers.js
+index 26e0fe2997ff449e41a65a0f505c13faf0fe62e4..4fe8b0895bac2210105b0fe37061a9515548628a 100644
+--- a/src/passStyle-helpers.js
++++ b/src/passStyle-helpers.js
+@@ -65,7 +65,22 @@ export const isTypedArray = object => {
+ };
+ harden(isTypedArray);
+ 
+-export const PASS_STYLE = Symbol.for('passStyle');
++/**
++ * We cast our `Symbol.for()` to a string constant here to avoid exposing the
++ * `unique symbol` type publicly.  The cast doesn't change any runtime
++ * behavior... it's still actually a symbol.
++ *
++ * Without this workaround, we've observed errors when using
++ * `typescript@5.9.3`'s `tsc` to generate declaration files (.d.ts) for
++ * consumers of modules that import `PASS_STYLE`:
++ * @example
++ *   error TS9006: Declaration emit for this file requires using private name
++ *   'PASS_STYLE' from module '.../@endo/pass-style/src/types"'. An explicit
++ *   type annotation may unblock declaration emit.
++ */
++export const PASS_STYLE = /** @type {'Symbol(passStyle)'} */ (
++  /** @type {unknown} */ (Symbol.for('passStyle'))
++);
+ 
+ /**
+  * Below we have a series of predicate functions and their (curried) assertion
