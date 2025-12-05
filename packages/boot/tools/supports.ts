@@ -962,6 +962,21 @@ export function insistManagerType(mt) {
   assert(['local', 'node-subprocess', 'xsnap', 'xs-worker'].includes(mt));
 }
 
+/**
+ * @template {Response} [R=Response]
+ * @param {R} resp
+ * @param {string} [type]
+ * @returns {R}
+ */
+export const assertOk = (resp: Response, type = 'File') => {
+  if (!resp.ok) {
+    throw new Error(
+      `${type} failed (${resp.status} ${resp.statusText}) at ${resp.url}: `,
+    );
+  }
+  return resp;
+};
+
 // TODO explore doing this as part of a post-install script
 // and having the test import it statically instead of fetching lazily
 /**
@@ -978,37 +993,35 @@ export const fetchCoreEvalRelease = async (
 
   try {
     const planResponse = await fetch(planUrl);
-    if (planResponse.ok) {
-      const plan = (await planResponse.json()) as {
-        name: string;
-        permit: string;
-        script: string;
-        bundles: Array<{
-          bundleID: string;
-          entrypoint: string;
-          fileName: string;
-        }>;
-      };
+    const plan = (await assertOk(planResponse, 'Plan').json()) as {
+      name: string;
+      permit: string;
+      script: string;
+      bundles: Array<{
+        bundleID: string;
+        entrypoint: string;
+        fileName: string;
+      }>;
+    };
 
-      assert.equal(plan.name, config.name);
-      const script = await fetch(`${artifacts}/${plan.script}`).then(r =>
-        r.text(),
-      );
-      const permit = await fetch(`${artifacts}/${plan.permit}`).then(r =>
-        r.text(),
-      );
-      const bundles: EndoZipBase64Bundle[] = await Promise.all(
-        plan.bundles.map(b =>
-          fetch(`${artifacts}/${b.bundleID}.json`).then(r => r.json()),
-        ),
-      );
-
-      return { bundles, evals: [{ js_code: script, json_permits: permit }] };
-    }
-  } catch {
-    console.warn(
-      `Plan file not found at ${planUrl}. Falling back to direct artifact detection.`,
+    assert.equal(plan.name, config.name);
+    const script = await fetch(`${artifacts}/${plan.script}`).then(r =>
+      assertOk(r, 'Script').text(),
     );
+    const permit = await fetch(`${artifacts}/${plan.permit}`).then(r =>
+      assertOk(r, 'Permit').text(),
+    );
+    const bundles: EndoZipBase64Bundle[] = await Promise.all(
+      plan.bundles.map(b =>
+        fetch(`${artifacts}/${b.bundleID}.json`).then(r =>
+          assertOk(r, 'Bundle').json(),
+        ),
+      ),
+    );
+
+    return { bundles, evals: [{ js_code: script, json_permits: permit }] };
+  } catch (e) {
+    console.warn(`Falling back to direct artifact detection:`, e);
   }
 
   try {
@@ -1018,16 +1031,10 @@ export const fetchCoreEvalRelease = async (
 
     // Fetch script and permit directly
     const scriptResponse = await fetch(`${artifacts}/${scriptName}`);
-    if (!scriptResponse.ok) {
-      throw new Error(`Script not found at ${artifacts}/${scriptName}`);
-    }
-    const script = await scriptResponse.text();
+    const script = await assertOk(scriptResponse, 'Script').text();
 
     const permitResponse = await fetch(`${artifacts}/${permitName}`);
-    if (!permitResponse.ok) {
-      throw new Error(`Permit not found at ${artifacts}/${permitName}`);
-    }
-    const permit = await permitResponse.text();
+    const permit = await assertOk(permitResponse, 'Permit').text();
 
     // Parse script to detect bundle references
     const bundlePattern = /"(b1-[a-f0-9]+)"/g;
@@ -1049,7 +1056,9 @@ export const fetchCoreEvalRelease = async (
     }
     const bundles: EndoZipBase64Bundle[] = await Promise.all(
       uniqueBundleIds.map(bundleId =>
-        fetch(`${artifacts}/${bundleId}.json`).then(r => r.json()),
+        fetch(`${artifacts}/${bundleId}.json`).then(r =>
+          assertOk(r, 'Bundle').json(),
+        ),
       ),
     );
 
