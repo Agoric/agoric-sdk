@@ -121,6 +121,10 @@ export function OperationForm({ userAddress, onSigned }: Props) {
         ]
       };
 
+      console.log('EIP-712 Domain:', domain);
+      console.log('EIP-712 Types:', types);
+      console.log('EIP-712 Message:', message);
+
       const provider = new BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       
