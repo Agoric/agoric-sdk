@@ -1,6 +1,7 @@
 import { useState } from 'preact/hooks';
 import { BrowserProvider } from 'ethers';
-import type { BridgeAction, TargetAllocation, EIP712Domain, EIP712Types } from '../types';
+import type { BridgeAction, TargetAllocation } from '../types';
+import { createEIP712Message, getEIP712Config } from '../eip712-utils';
 
 interface Props {
   userAddress: string;
@@ -55,71 +56,8 @@ export function OperationForm({ userAddress, onSigned }: Props) {
     setError('');
 
     try {
-      const now = Math.floor(Date.now() / 1000);
-      
-      // Convert allocations to LegibleCapData format (bigints as "+5000")
-      const targetAllocation = allocations.reduce((acc, alloc) => {
-        acc[alloc.poolKey] = `+${alloc.basisPoints}`;
-        return acc;
-      }, {} as Record<string, string>);
-
-      const message: BridgeAction = {
-        method: 'executeOffer',
-        offer: {
-          id: `${operation}-${Date.now()}`,
-          invitationSpec: {
-            source: 'agoricContract',
-            instancePath: ['ymax0'],
-            callPipe: JSON.stringify([['makeOpenPortfolioInvitation', []]])
-          },
-          proposal: {
-            give: {
-              Deposit: {
-                brand: 'USDC',
-                value: (parseFloat(amount) * 1e6).toString()
-              }
-            }
-          },
-          offerArgs: {
-            targetAllocation
-          }
-        },
-        user: userAddress,
-        nonce: now,
-        deadline: now + 3600 // 1 hour
-      };
-
-      const domain: EIP712Domain = {
-        name: 'YMax Portfolio Authorization',
-        version: '1'
-      };
-
-      const types: EIP712Types = {
-        BridgeAction: [
-          { name: 'method', type: 'string' },
-          { name: 'offer', type: 'OfferSpec' },
-          { name: 'user', type: 'address' },
-          { name: 'nonce', type: 'uint256' },
-          { name: 'deadline', type: 'uint256' }
-        ],
-        OfferSpec: [
-          { name: 'id', type: 'string' },
-          { name: 'invitationSpec', type: 'InvitationSpec' },
-          { name: 'proposal', type: 'Proposal' },
-          { name: 'offerArgs', type: 'OfferArgs' }
-        ],
-        InvitationSpec: [
-          { name: 'source', type: 'string' },
-          { name: 'instancePath', type: 'string[]' },
-          { name: 'callPipe', type: 'string' }
-        ],
-        Proposal: [
-          { name: 'give', type: 'string' },
-        ],
-        OfferArgs: [
-          { name: 'targetAllocation', type: 'string' }
-        ]
-      };
+      const message = createEIP712Message(operation, userAddress, amount, allocations);
+      const { domain, types } = getEIP712Config();
 
       console.log('EIP-712 Domain:', domain);
       console.log('EIP-712 Types:', types);

@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "ava"
   },
   "dependencies": {
     "@preact/signals": "^1.2.2",
@@ -16,6 +17,8 @@
   "devDependencies": {
     "@preact/preset-vite": "^2.7.0",
     "typescript": "^5.3.3",
-    "vite": "^5.0.8"
+    "vite": "^5.0.8",
+    "@metamask/eth-sig-util": "^7.0.1",
+    "ava": "^6.0.1"
   }
 }
