@@ -30,7 +30,7 @@
       "ts": "module"
     },
     "nodeArguments": [
-      "--import=tsx"
+      "--import=tsx/esm"
     ]
   }
 }
