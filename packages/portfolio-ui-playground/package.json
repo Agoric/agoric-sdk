@@ -18,7 +18,19 @@
     "@metamask/eth-sig-util": "^8.2.0",
     "@preact/preset-vite": "^2.7.0",
     "ava": "^6.4.1",
+    "tsx": "^4.6.2",
     "typescript": "^5.3.3",
     "vite": "^5.0.8"
+  },
+  "ava": {
+    "files": [
+      "test/**/*.test.ts"
+    ],
+    "extensions": {
+      "ts": "module"
+    },
+    "nodeArguments": [
+      "--loader=tsx"
+    ]
   }
 }
