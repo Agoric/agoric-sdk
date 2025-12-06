@@ -15,10 +15,10 @@
     "preact": "^10.19.3"
   },
   "devDependencies": {
+    "@metamask/eth-sig-util": "^8.2.0",
     "@preact/preset-vite": "^2.7.0",
+    "ava": "^6.4.1",
     "typescript": "^5.3.3",
-    "vite": "^5.0.8",
-    "@metamask/eth-sig-util": "^7.0.1",
-    "ava": "^6.0.1"
+    "vite": "^5.0.8"
   }
 }
