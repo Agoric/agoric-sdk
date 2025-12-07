@@ -45,7 +45,7 @@ runs:
             OUTPUT_NODE_VERSION="20"
             ;;
           node-new)
-            OUTPUT_NODE_VERSION="22"
+            OUTPUT_NODE_VERSION="24"
             ;;
         esac
 
