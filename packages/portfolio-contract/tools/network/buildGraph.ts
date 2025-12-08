@@ -10,7 +10,7 @@ import { PoolPlaces } from '../../src/type-guards.js';
 import type { PoolKey } from '../../src/type-guards.js';
 import type { AssetPlaceRef } from '../../src/type-guards-steps.js';
 
-import type { LinkSpec, NetworkSpec } from './network-spec.js';
+import type { FeeMode, LinkSpec, NetworkSpec } from './network-spec.js';
 
 /** Node supply: positive => must send out; negative => must receive */
 export interface SupplyMap {
@@ -67,8 +67,16 @@ const makeGraphBase = (
   target: Partial<Record<AssetPlaceRef, NatAmount>>,
 ): FlowGraph => {
   const nodes = new Set<AssetPlaceRef>();
-  const edges: FlowEdge[] = [];
   const supplies: SupplyMap = {};
+  const edges: FlowEdge[] = [];
+  const addEdge = (
+    src: AssetPlaceRef,
+    dest: AssetPlaceRef,
+    feeMode?: FeeMode,
+  ) => {
+    const overrides = feeMode && { feeMode };
+    edges.push({ id: 'TBD', src, dest, ...localFlowEdgeBase, ...overrides });
+  };
 
   // Collect chains needed
   for (const ref of placeRefs) {
@@ -98,31 +106,16 @@ const makeGraphBase = (
     if (node === hub || hub === '@agoric') continue;
 
     const chainIsEvm = Object.keys(AxelarChain).includes(chainName);
-    edges.push({
-      id: 'TBD',
-      src: node,
-      dest: hub,
-      ...localFlowEdgeBase,
-      ...(chainIsEvm ? { feeMode: 'poolToEvm' } : {}),
-    });
-    edges.push({
-      id: 'TBD',
-      src: hub,
-      dest: node,
-      ...localFlowEdgeBase,
-      ...(chainIsEvm ? { feeMode: 'evmToPool' } : {}),
-    });
+    addEdge(node, hub, chainIsEvm ? 'poolToEvm' : undefined);
+    addEdge(hub, node, chainIsEvm ? 'evmToPool' : undefined);
   }
 
   // Ensure unidirectional <Deposit> -> +agoric -> @agoric -> <Cash>
   // intra-Agoric links, plus a special <Deposit> -> @agoric bypass.
-  // eslint-disable-next-line github/array-foreach
-  ['<Deposit>', '+agoric', '@agoric', '<Cash>'].forEach((place, i, arr) => {
-    const [src, dest] = (
-      i >= 1 ? [arr[i - 1], place] : ['<Deposit>', '@agoric']
-    ) as [AssetPlaceRef, AssetPlaceRef];
-    edges.push({ id: 'TBD', src, dest, ...localFlowEdgeBase });
-  });
+  addEdge('<Deposit>', '+agoric');
+  addEdge('+agoric', '@agoric');
+  addEdge('@agoric', '<Cash>');
+  addEdge('<Deposit>', '@agoric');
 
   // Return a mutable object in anticipation of further overrides.
   return { debug: false, nodes, edges, supplies };
