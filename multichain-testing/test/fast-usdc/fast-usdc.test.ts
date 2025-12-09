@@ -802,6 +802,8 @@ test.serial('sendFromSettlementAccount', async t => {
     opts.destinationAddress,
     io.usdcDenom,
   );
+  const prev = BigInt(balancesBefore.balance?.amount || 0n);
+
   t.log('build, run proposal to distribute fees', opts);
   await io.deployBuilder(
     '../packages/fast-usdc-deploy/src/reimburse-manual-intervention.build.js',
@@ -810,10 +812,10 @@ test.serial('sendFromSettlementAccount', async t => {
 
   const { balance } = await io.retryUntilCondition(
     () => queryClient.queryBalance(opts.destinationAddress, io.usdcDenom),
-    ({ balance }) => !!balance && BigInt(balance.amount) > 0n,
+    ({ balance }) => BigInt(balance?.amount || 0n) > prev,
     `funds received at ${opts.destinationAddress}`,
   );
+
   t.log('funds received', balance);
-  const prev = BigInt(balancesBefore!.balance!.amount! || 0n);
-  t.is(BigInt(balance!.amount), prev + BigInt(opts.principal));
+  t.is(BigInt(balance?.amount || 0n), prev + BigInt(opts.principal));
 });

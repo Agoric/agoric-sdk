@@ -182,10 +182,10 @@ export const LOCALCHAIN_DEFAULT_ADDRESS = 'agoric1fakeLCAAddress';
  * unless specified otherwise. Less useful for the DibcBridge which rejects all
  * messages unless specified otherwise.
  */
-export const SIMULATED_ERRORS = {
+export const SIMULATED_ERRORS = /** @type {const} */ ({
   TIMEOUT: 504n,
   BAD_REQUEST: 400n,
-};
+});
 
 /**
  * Used to mock responses from Cosmos Golang back to SwingSet for for

@@ -1,5 +1,6 @@
 import type { Passable } from '@endo/pass-style';
-import type { Vow, VowTools } from '@agoric/vow';
+import type { Fulfilled, VowLike, Vow, VowTools } from '@agoric/vow';
+import type { IsPrimitive, IsRemotable } from '@agoric/internal';
 import type { LogStore } from './log-store.js';
 import type { Bijection } from './bijection.js';
 import type { EndowmentTools } from './endowments.js';
@@ -49,16 +50,48 @@ export type GuestOf<F extends HostAsyncFuncWrapper> = F extends (
 // from https://github.com/sindresorhus/type-fest/blob/main/source/simplify.d.ts
 type Simplify<T> = { [KeyType in keyof T]: T[KeyType] } & {};
 
+type EmptyRecord = { [K in never]: never };
+
+/**
+ * Returns a boolean indicating whether the parameter is exactly the `any` type.
+ */
+type IsStrictAny<T> = 0 extends 1 & T ? false : true;
+
+/**
+ * Returns a boolean indicating whether the parameter is the `unknown` type.
+ */
+type IsUnknown<T> = unknown extends T ? IsStrictAny<T> : false;
+
+/**
+ * Returns a boolean for whether Host or Guest type recursion should stop for
+ * the given parameter.
+ */
+type StopRecursion<T> =
+  IsRemotable<T> extends true
+    ? true
+    : IsUnknown<T> extends true
+      ? true
+      : IsPrimitive<T> extends true
+        ? true
+        : false;
+
 /**
  * Convert an entire Guest interface into what the host will implement.
  */
-export type HostInterface<T> = {
-  [K in keyof T]: T[K] extends CallableFunction
-    ? HostOf<T[K]>
-    : T[K] extends Record<string, any>
-      ? Simplify<HostInterface<T[K]>>
-      : T[K];
-};
+export type HostInterface<T, Overrides = EmptyRecord> =
+  StopRecursion<NonNullable<T>> extends true
+    ? T
+    : T extends VowLike<infer P>
+      ? Vow<HostInterface<Fulfilled<P>>>
+      : {
+          [K in keyof T]: K extends keyof Overrides
+            ? Overrides[K]
+            : T[K] extends CallableFunction
+              ? HostOf<T[K]>
+              : T[K] extends Record<string, any>
+                ? Simplify<HostInterface<T[K]>>
+                : HostInterface<T[K]>;
+        };
 
 /**
  * Convert an entire Host interface into what the Guest will receive.
@@ -80,13 +113,12 @@ export type GuestInterface<T> = {
  *
  * Specifically, Promise return values are converted to Vows.
  */
-export type HostOf<F extends CallableFunction> = F extends (
-  ...args: infer A
-) => infer R
-  ? R extends Promise<infer T>
-    ? (...args: A) => Vow<T extends Passable ? T : HostInterface<T>>
-    : (...args: A) => HostInterface<R>
-  : F;
+export type HostOf<F> =
+  StopRecursion<F> extends true
+    ? F
+    : F extends (...args: infer A) => infer R
+      ? (...args: A) => HostInterface<R>
+      : F;
 
 export type HostArgs<GA extends any[]> = { [K in keyof GA]: HostOf<GA[K]> };
 

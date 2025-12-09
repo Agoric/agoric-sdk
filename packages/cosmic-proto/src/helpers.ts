@@ -6,10 +6,20 @@ import type { Any } from './codegen/google/protobuf/any.js';
 import type { QueryBalanceRequestProtoMsg } from './codegen/cosmos/bank/v1beta1/query.js';
 
 /**
+ * A mapping from typeUrl strings to their corresponding TypeScript types. This
+ * is generated automatically during the build process, and has no runtime code,
+ * just compiler hints.
+ */
+export type { TypeFromUrl };
+
+/**
  * The result of Any.toJSON(). Exported at top level as a convenience
  * for a very common import.
  */
-export type AnyJson = JsonSafe<Any>;
+export type AnyJson<TU extends unknown | keyof TypeFromUrl = unknown> =
+  TU extends keyof TypeFromUrl
+    ? JsonSafe<Omit<Any, 'typeUrl'> & { typeUrl: TU }>
+    : JsonSafe<Any>;
 
 /**
  * The encoding introduced in Protobuf 3 for Any that can be serialized to JSON.
@@ -38,12 +48,16 @@ type TxMessageTypeUrl<
   Name extends Capitalize<string>,
 > = `/${Package}.Msg${Name}`;
 
-export type ResponseTo<T extends TypedJson> =
-  T['@type'] extends RequestTypeUrl<infer Base>
-    ? TypedJson<`/${Base}Response`>
-    : T['@type'] extends TxMessageTypeUrl<infer Package, infer Name>
-      ? TypedJson<`/${Package}.Msg${Name}Response`>
-      : TypedJson;
+export type ResponseTypeUrl<TU extends keyof TypeFromUrl | unknown> =
+  TU extends RequestTypeUrl<infer Base>
+    ? `/${Base}Response`
+    : TU extends TxMessageTypeUrl<infer Package, infer Name>
+      ? `/${Package}.Msg${Name}Response`
+      : unknown;
+
+export type ResponseTo<T extends TypedJson> = TypedJson<
+  ResponseTypeUrl<T['@type']>
+>;
 
 export const typedJson = <TU extends keyof TypeFromUrl>(
   typeStr: TU,
