@@ -71,7 +71,7 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
           minimumFractionDigits: 2, 
           maximumFractionDigits: 2 
         }), // "1,000.00"
-        token: '0xa0B86a33e6441E6C7d3e4C2C4c6C6c6C6c6C6c6C', // USDC contract address (Ethereum mainnet)
+        token: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48', // USDC contract address (Ethereum mainnet)
         decimals: '6',
         allocation: allocationEntries,
         nonce: now,
