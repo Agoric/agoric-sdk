@@ -21,8 +21,23 @@ export function WalletConnection({ address }: Props) {
 
     try {
       const provider = new BrowserProvider(window.ethereum);
-      const accounts = await provider.send('eth_requestAccounts', []);
-      address.value = accounts[0];
+      
+      // Request permission first
+      await provider.send('eth_requestAccounts', []);
+      
+      // Get the currently selected account
+      const signer = await provider.getSigner();
+      const currentAddress = await signer.getAddress();
+      address.value = currentAddress;
+      
+      // Listen for account changes
+      window.ethereum?.on('accountsChanged', (accounts: string[]) => {
+        if (accounts.length > 0) {
+          address.value = accounts[0];
+        } else {
+          address.value = '';
+        }
+      });
     } catch (err: any) {
       setError(err.message || 'Failed to connect wallet');
     } finally {
