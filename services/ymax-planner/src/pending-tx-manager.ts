@@ -41,6 +41,7 @@ export type EvmContext = {
   fetch: typeof fetch;
   kvStore: KVStore;
   makeAbortController: MakeAbortController;
+  axelarApiUrl: string;
 };
 
 export type GmpTransfer = {
@@ -202,6 +203,8 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
         timeoutMs: opts.timeoutMs,
         kvStore: ctx.kvStore,
         makeAbortController: ctx.makeAbortController,
+        axelarApiUrl: ctx.axelarApiUrl,
+        fetch: ctx.fetch,
       });
     } else {
       // Lookback mode with concurrent live watching
@@ -213,6 +216,8 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
         signal: abortController.signal,
         kvStore: ctx.kvStore,
         makeAbortController: ctx.makeAbortController,
+        axelarApiUrl: ctx.axelarApiUrl,
+        fetch: ctx.fetch,
       });
       void liveResultP.then(found => {
         if (found) {

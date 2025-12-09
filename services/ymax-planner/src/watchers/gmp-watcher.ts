@@ -14,6 +14,10 @@ import {
   getTxBlockLowerBound,
   setTxBlockLowerBound,
 } from '../kv-store.ts';
+import {
+  AXELAR_SCAN_TX_STATUS,
+  findTxStatusFromAxelarscan,
+} from '../axelarscan-utils.ts';
 
 // TODO: Remove once all contracts are upgraded to emit MulticallStatus
 const MULTICALL_EXECUTED_SIGNATURE = ethers.id(
@@ -23,13 +27,18 @@ const MULTICALL_STATUS_SIGNATURE = ethers.id(
   'MulticallStatus(string,bool,uint256)',
 );
 
-type WatchGmp = {
+type GmpMonitor = {
   provider: WebSocketProvider;
   contractAddress: `0x${string}`;
   txId: TxId;
   log: (...args: unknown[]) => void;
   kvStore: KVStore;
   makeAbortController: MakeAbortController;
+};
+
+type WatchGmp = {
+  fetch: typeof fetch;
+  axelarApiUrl: string;
 };
 
 export const watchGmp = ({
@@ -40,7 +49,9 @@ export const watchGmp = ({
   log = () => {},
   setTimeout = globalThis.setTimeout,
   signal,
-}: WatchGmp & WatcherTimeoutOptions): Promise<boolean> => {
+  axelarApiUrl,
+  fetch,
+}: GmpMonitor & WatchGmp & WatcherTimeoutOptions): Promise<boolean> => {
   return new Promise(resolve => {
     if (signal?.aborted) {
       resolve(false);
@@ -110,12 +121,25 @@ export const watchGmp = ({
     void provider.on(executedFilter, listenForExecution);
     listeners.push({ event: statusFilter, listener: listenForStatus });
     listeners.push({ event: executedFilter, listener: listenForExecution });
-
-    timeoutId = setTimeout(() => {
+    timeoutId = setTimeout(async () => {
+      await null;
       if (!executionFound) {
         log(
           `✗ No MulticallStatus or MulticallExecuted found for txId ${txId} within ${timeoutMs / 60000} minutes`,
         );
+        const txStatus = await findTxStatusFromAxelarscan(
+          txId,
+          contractAddress,
+          {
+            axelarApiUrl,
+            fetch,
+          },
+        );
+
+        if (txStatus === AXELAR_SCAN_TX_STATUS.error) {
+          log('failed to execute on destination chain');
+          finish(false);
+        }
       }
     }, timeoutMs);
   });
@@ -142,7 +166,7 @@ export const lookBackGmp = async ({
   signal,
   kvStore,
   makeAbortController,
-}: WatchGmp & {
+}: GmpMonitor & {
   publishTimeMs: number;
   chainId: CaipChainId;
   signal?: AbortSignal;
