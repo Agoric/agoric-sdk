@@ -11,8 +11,6 @@ export interface AllocationEntry {
 export interface TokenAmount {
   amount: string; // amount in smallest unit like "1000000"
   token: string; // USDC contract address
-  chainId: string; // "1" for Ethereum mainnet
-  decimals: string; // "6"
 }
 
 export interface OpenPortfolio {

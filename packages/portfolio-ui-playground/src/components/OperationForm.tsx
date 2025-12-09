@@ -101,8 +101,6 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
       const tokenAmount = {
         amount: (parseFloat(amount) * 1e6).toString(),
         token: baseFields.token,
-        chainId: baseFields.chainId,
-        decimals: baseFields.decimals,
       };
 
       switch (operation) {
@@ -126,8 +124,6 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
             TokenAmount: [
               { name: 'amount', type: 'uint256' },
               { name: 'token', type: 'address' },
-              { name: 'chainId', type: 'string' },
-              { name: 'decimals', type: 'uint32' },
             ],
             AllocationEntry: [
               { name: 'protocol', type: 'string' },
@@ -153,8 +149,6 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
             TokenAmount: [
               { name: 'amount', type: 'uint256' },
               { name: 'token', type: 'address' },
-              { name: 'chainId', type: 'string' },
-              { name: 'decimals', type: 'uint32' },
             ],
           };
           break;
@@ -176,8 +170,6 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
             TokenAmount: [
               { name: 'amount', type: 'uint256' },
               { name: 'token', type: 'address' },
-              { name: 'chainId', type: 'string' },
-              { name: 'decimals', type: 'uint32' },
             ],
           };
           break;
