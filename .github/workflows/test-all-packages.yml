@@ -258,6 +258,13 @@ jobs:
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
+      - name: Upload test results to Mergify CI Insights
+        if: always()
+        uses: mergifyio/gha-mergify-ci@v6
+        with:
+          flaky_test_detection: true
+          token: ${{ secrets.MERGIFY_TOKEN }}
+          report_path: 'packages/*/junit.xml'
 
   # Verify that running `yarn codegen` in any package that defines it
   # does not produce changes. Only runs on pull requests.
@@ -415,6 +422,13 @@ jobs:
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
+      - name: Upload test results to Mergify CI Insights
+        if: always()
+        uses: mergifyio/gha-mergify-ci@v6
+        with:
+          flaky_test_detection: true
+          token: ${{ secrets.MERGIFY_TOKEN }}
+          report_path: 'packages/*/junit.xml'
 
   ##############
   # Long-running tests are executed individually.
@@ -456,6 +470,13 @@ jobs:
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
+      - name: Upload test results to Mergify CI Insights
+        if: always()
+        uses: mergifyio/gha-mergify-ci@v6
+        with:
+          flaky_test_detection: true
+          token: ${{ secrets.MERGIFY_TOKEN }}
+          report_path: 'packages/*/junit.xml'
 
   test-governance:
     # BEGIN-TEST-BOILERPLATE
@@ -495,6 +516,13 @@ jobs:
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
+      - name: Upload test results to Mergify CI Insights
+        if: always()
+        uses: mergifyio/gha-mergify-ci@v6
+        with:
+          flaky_test_detection: true
+          token: ${{ secrets.MERGIFY_TOKEN }}
+          report_path: 'packages/*/junit.xml'
 
   test-solo:
     # BEGIN-TEST-BOILERPLATE
@@ -534,6 +562,13 @@ jobs:
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
+      - name: Upload test results to Mergify CI Insights
+        if: always()
+        uses: mergifyio/gha-mergify-ci@v6
+        with:
+          flaky_test_detection: true
+          token: ${{ secrets.MERGIFY_TOKEN }}
+          report_path: 'packages/*/junit.xml'
 
   test-cosmic-swingset:
     # BEGIN-TEST-BOILERPLATE
@@ -577,6 +612,13 @@ jobs:
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
+      - name: Upload test results to Mergify CI Insights
+        if: always()
+        uses: mergifyio/gha-mergify-ci@v6
+        with:
+          flaky_test_detection: true
+          token: ${{ secrets.MERGIFY_TOKEN }}
+          report_path: 'packages/*/junit.xml'
 
   test-inter-protocol:
     # BEGIN-TEST-BOILERPLATE
@@ -616,6 +658,13 @@ jobs:
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
+      - name: Upload test results to Mergify CI Insights
+        if: always()
+        uses: mergifyio/gha-mergify-ci@v6
+        with:
+          flaky_test_detection: true
+          token: ${{ secrets.MERGIFY_TOKEN }}
+          report_path: 'packages/*/junit.xml'
 
   test-boot:
     # BEGIN-TEST-BOILERPLATE
@@ -660,6 +709,13 @@ jobs:
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
+      - name: Upload test results to Mergify CI Insights
+        if: always()
+        uses: mergifyio/gha-mergify-ci@v6
+        with:
+          flaky_test_detection: true
+          token: ${{ secrets.MERGIFY_TOKEN }}
+          report_path: 'packages/*/junit.xml'
 
   test-swingset:
     # BEGIN-TEST-BOILERPLATE
@@ -710,6 +766,13 @@ jobs:
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
+      - name: Upload test results to Mergify CI Insights
+        if: always()
+        uses: mergifyio/gha-mergify-ci@v6
+        with:
+          flaky_test_detection: true
+          token: ${{ secrets.MERGIFY_TOKEN }}
+          report_path: 'packages/*/junit.xml'
 
   test-zoe-unit:
     # BEGIN-TEST-BOILERPLATE
@@ -752,6 +815,13 @@ jobs:
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
+      - name: Upload test results to Mergify CI Insights
+        if: always()
+        uses: mergifyio/gha-mergify-ci@v6
+        with:
+          flaky_test_detection: true
+          token: ${{ secrets.MERGIFY_TOKEN }}
+          report_path: 'packages/*/junit.xml'
 
   test-zoe-swingset:
     # BEGIN-TEST-BOILERPLATE
@@ -793,3 +863,10 @@ jobs:
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
+      - name: Upload test results to Mergify CI Insights
+        if: always()
+        uses: mergifyio/gha-mergify-ci@v6
+        with:
+          flaky_test_detection: true
+          token: ${{ secrets.MERGIFY_TOKEN }}
+          report_path: 'packages/*/junit.xml'
