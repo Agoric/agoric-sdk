@@ -74,25 +74,12 @@ export declare class SyncCallback<
  */
 export type IsPrimitive<T> = [T] extends [Primitive] ? true : false;
 
-export type IsStrictAny<T> = 0 extends 1 & T ? false : true;
-export type IsUnknown<T> = unknown extends T ? IsStrictAny<T> : false;
+// XXX https://github.com/endojs/endo/issues/2979
 export type IsRemotable<T> = T extends RemotableObject
   ? true
   : T extends RemotableBrand<any, any>
     ? true
     : false;
-
-/**
- * Returns a boolean for whether type recursion should stop for the given parameter.
- */
-export type StopRecursion<T> =
-  IsRemotable<T> extends true
-    ? true
-    : IsUnknown<T> extends true
-      ? true
-      : IsPrimitive<T> extends true
-        ? true
-        : false;
 
 /** Recursively extract the non-callable properties of T */
 export type DataOnly<T> =
