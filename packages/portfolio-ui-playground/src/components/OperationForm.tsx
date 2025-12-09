@@ -21,7 +21,7 @@ const POOL_OPTIONS = [
 ];
 
 export function OperationForm({ userAddress, provider, onSigned }: Props) {
-  const [operation, setOperation] = useState<PortfolioOperation['intent']>('allocate');
+  const [operation, setOperation] = useState<'openPortfolio' | 'deposit' | 'withdraw' | 'reallocate'>('openPortfolio');
   const [amount, setAmount] = useState('1000');
   const [allocations, setAllocations] = useState<TargetAllocation[]>([
     { poolKey: 'USDN', percentage: 50 },
@@ -47,7 +47,7 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
   const totalPercentage = allocations.reduce((sum, alloc) => sum + alloc.percentage, 0);
 
   const signMessage = async () => {
-    if (totalPercentage !== 100) {
+    if ((operation === 'openPortfolio' || operation === 'reallocate') && totalPercentage !== 100) {
       setError('Total allocation must equal 100%');
       return;
     }
@@ -64,43 +64,116 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
         percentage: alloc.percentage
       }));
 
-      const message: PortfolioOperation = {
-        intent: operation === 'openPortfolio' ? 'allocate' : operation,
+      let message: PortfolioOperation;
+      let primaryType: string;
+      let types: EIP712Types;
+
+      const baseFields = {
         user: userAddress,
-        depositAmount: (parseFloat(amount) * 1e6).toString(), // USDC in smallest unit (6 decimals)
         token: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48', // USDC contract address (Ethereum mainnet)
         decimals: '6',
-        allocation: allocationEntries,
         nonce: now.toString(),
         deadline: (now + 3600).toString() // 1 hour
       };
+
+      switch (operation) {
+        case 'openPortfolio':
+          message = {
+            ...baseFields,
+            depositAmount: (parseFloat(amount) * 1e6).toString(),
+            allocation: allocationEntries,
+          };
+          primaryType = 'OpenPortfolio';
+          types = {
+            OpenPortfolio: [
+              { name: 'user', type: 'address' },
+              { name: 'depositAmount', type: 'string' },
+              { name: 'token', type: 'address' },
+              { name: 'decimals', type: 'string' },
+              { name: 'allocation', type: 'AllocationEntry[]' },
+              { name: 'nonce', type: 'uint256' },
+              { name: 'deadline', type: 'uint256' }
+            ],
+            AllocationEntry: [
+              { name: 'protocol', type: 'string' },
+              { name: 'percentage', type: 'uint256' }
+            ]
+          };
+          break;
+        case 'deposit':
+          message = {
+            ...baseFields,
+            depositAmount: (parseFloat(amount) * 1e6).toString(),
+          };
+          primaryType = 'Deposit';
+          types = {
+            Deposit: [
+              { name: 'user', type: 'address' },
+              { name: 'depositAmount', type: 'string' },
+              { name: 'token', type: 'address' },
+              { name: 'decimals', type: 'string' },
+              { name: 'nonce', type: 'uint256' },
+              { name: 'deadline', type: 'uint256' }
+            ],
+            AllocationEntry: [
+              { name: 'protocol', type: 'string' },
+              { name: 'percentage', type: 'uint256' }
+            ]
+          };
+          break;
+        case 'withdraw':
+          message = {
+            ...baseFields,
+            withdrawAmount: (parseFloat(amount) * 1e6).toString(),
+          };
+          primaryType = 'Withdraw';
+          types = {
+            Withdraw: [
+              { name: 'user', type: 'address' },
+              { name: 'withdrawAmount', type: 'string' },
+              { name: 'token', type: 'address' },
+              { name: 'decimals', type: 'string' },
+              { name: 'nonce', type: 'uint256' },
+              { name: 'deadline', type: 'uint256' }
+            ],
+            AllocationEntry: [
+              { name: 'protocol', type: 'string' },
+              { name: 'percentage', type: 'uint256' }
+            ]
+          };
+          break;
+        case 'reallocate':
+          message = {
+            ...baseFields,
+            allocation: allocationEntries,
+          };
+          primaryType = 'Reallocate';
+          types = {
+            Reallocate: [
+              { name: 'user', type: 'address' },
+              { name: 'allocation', type: 'AllocationEntry[]' },
+              { name: 'nonce', type: 'uint256' },
+              { name: 'deadline', type: 'uint256' }
+            ],
+            AllocationEntry: [
+              { name: 'protocol', type: 'string' },
+              { name: 'percentage', type: 'uint256' }
+            ]
+          };
+          break;
+        default:
+          throw new Error(`Unknown operation: ${operation}`);
+      }
 
       const domain: EIP712Domain = {
         name: 'YMax Portfolio Authorization',
         version: '1'
       };
 
-      const types: EIP712Types = {
-        PortfolioOperation: [
-          { name: 'intent', type: 'string' },
-          { name: 'user', type: 'address' },
-          { name: 'depositAmount', type: 'string' },
-          { name: 'token', type: 'address' },
-          { name: 'decimals', type: 'string' },
-          { name: 'allocation', type: 'AllocationEntry[]' },
-          { name: 'nonce', type: 'uint256' },
-          { name: 'deadline', type: 'uint256' }
-        ],
-        AllocationEntry: [
-          { name: 'protocol', type: 'string' },
-          { name: 'percentage', type: 'uint256' }
-        ]
-      };
-
       const ethersProvider = new BrowserProvider(provider);
       const signer = await ethersProvider.getSigner();
       
-      const signature = await signer.signTypedData(domain, types, message);
+      const signature = await signer.signTypedData(domain, types, message, primaryType);
       
       onSigned({ message, signature });
     } catch (err: any) {
@@ -123,10 +196,10 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
           onChange={(e) => setOperation(e.currentTarget.value as any)}
           style={{ padding: '8px', width: '200px' }}
         >
-          <option value="allocate">Allocate Funds</option>
+          <option value="openPortfolio">Open Portfolio</option>
           <option value="deposit">Deposit</option>
-          <option value="rebalance">Rebalance</option>
           <option value="withdraw">Withdraw</option>
+          <option value="reallocate">Reallocate</option>
         </select>
       </div>
 
@@ -144,12 +217,13 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
         />
       </div>
 
-      <div style={{ marginBottom: '20px' }}>
-        <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>
-          Target Allocation:
-        </label>
-        
-        {allocations.map((alloc, index) => (
+      {(operation === 'openPortfolio' || operation === 'reallocate') && (
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>
+            Target Allocation:
+          </label>
+          
+          {allocations.map((alloc, index) => (
           <div key={index} style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'center' }}>
             <select 
               value={alloc.poolKey}
@@ -188,22 +262,23 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
           Add Allocation
         </button>
         
-        <span style={{ fontSize: '14px', color: totalPercentage === 100 ? '#28a745' : '#dc3545' }}>
-          Total: {totalPercentage}%
-        </span>
-      </div>
+          <span style={{ fontSize: '14px', color: totalPercentage === 100 ? '#28a745' : '#dc3545' }}>
+            Total: {totalPercentage}%
+          </span>
+        </div>
+      )}
 
       <button 
         onClick={signMessage}
-        disabled={signing || totalPercentage !== 100}
+        disabled={signing || ((operation === 'openPortfolio' || operation === 'reallocate') && totalPercentage !== 100)}
         style={{ 
           padding: '12px 24px', 
           fontSize: '16px', 
-          background: signing || totalPercentage !== 100 ? '#6c757d' : '#007bff', 
+          background: signing || ((operation === 'openPortfolio' || operation === 'reallocate') && totalPercentage !== 100) ? '#6c757d' : '#007bff', 
           color: 'white', 
           border: 'none', 
           borderRadius: '4px',
-          cursor: signing || totalPercentage !== 100 ? 'not-allowed' : 'pointer'
+          cursor: signing || ((operation === 'openPortfolio' || operation === 'reallocate') && totalPercentage !== 100) ? 'not-allowed' : 'pointer'
         }}
       >
         {signing ? 'Signing...' : 'Sign with MetaMask'}
