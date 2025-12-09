@@ -74,8 +74,8 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
         token: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48', // USDC contract address (Ethereum mainnet)
         decimals: '6',
         allocation: allocationEntries,
-        nonce: now,
-        deadline: now + 3600 // 1 hour
+        nonce: now.toString(),
+        deadline: (now + 3600).toString() // 1 hour
       };
 
       const domain: EIP712Domain = {

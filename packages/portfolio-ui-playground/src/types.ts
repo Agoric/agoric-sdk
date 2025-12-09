@@ -15,8 +15,8 @@ export interface PortfolioOperation {
   token: string; // USDC contract address
   decimals: string; // "6"
   allocation: AllocationEntry[];
-  nonce: number; // timestamp
-  deadline: number; // timestamp + 1 hour
+  nonce: string; // timestamp as string
+  deadline: string; // timestamp + 1 hour as string
 }
 
 export interface EIP712Domain {
