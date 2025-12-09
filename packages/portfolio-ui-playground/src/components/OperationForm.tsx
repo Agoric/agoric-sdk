@@ -67,10 +67,7 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
       const message: PortfolioOperation = {
         intent: operation === 'openPortfolio' ? 'allocate' : operation,
         user: userAddress,
-        depositAmount: parseFloat(amount).toLocaleString('en-US', { 
-          minimumFractionDigits: 2, 
-          maximumFractionDigits: 2 
-        }), // "1,000.00"
+        depositAmount: (parseFloat(amount) * 1e6).toString(), // USDC in smallest unit (6 decimals)
         token: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48', // USDC contract address (Ethereum mainnet)
         decimals: '6',
         allocation: allocationEntries,

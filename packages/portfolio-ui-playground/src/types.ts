@@ -11,7 +11,7 @@ export interface AllocationEntry {
 export interface PortfolioOperation {
   intent: 'allocate' | 'rebalance' | 'deposit' | 'withdraw';
   user: string; // EVM address
-  depositAmount: string; // formatted amount like "1,000.00"
+  depositAmount: string; // amount in smallest unit like "1000000"
   token: string; // USDC contract address
   decimals: string; // "6"
   allocation: AllocationEntry[];
