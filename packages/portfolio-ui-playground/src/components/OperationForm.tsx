@@ -107,7 +107,7 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
         case 'openPortfolio':
           message = {
             user: baseFields.user,
-            deposit: tokenAmount,
+            asset: tokenAmount,
             allocation: allocationEntries,
             nonce: baseFields.nonce,
             deadline: baseFields.deadline,
@@ -116,7 +116,7 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
           types = {
             OpenPortfolio: [
               { name: 'user', type: 'address' },
-              { name: 'deposit', type: 'TokenAmount' },
+              { name: 'asset', type: 'TokenAmount' },
               { name: 'allocation', type: 'AllocationEntry[]' },
               { name: 'nonce', type: 'uint256' },
               { name: 'deadline', type: 'uint256' },
@@ -134,7 +134,7 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
         case 'deposit':
           message = {
             user: baseFields.user,
-            deposit: tokenAmount,
+            asset: tokenAmount,
             nonce: baseFields.nonce,
             deadline: baseFields.deadline,
           };
@@ -142,7 +142,7 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
           types = {
             DepositIntent: [
               { name: 'user', type: 'address' },
-              { name: 'deposit', type: 'TokenAmount' },
+              { name: 'asset', type: 'TokenAmount' },
               { name: 'nonce', type: 'uint256' },
               { name: 'deadline', type: 'uint256' },
             ],
@@ -155,7 +155,7 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
         case 'withdraw':
           message = {
             user: baseFields.user,
-            withdraw: tokenAmount,
+            asset: tokenAmount,
             nonce: baseFields.nonce,
             deadline: baseFields.deadline,
           };
@@ -163,7 +163,7 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
           types = {
             WithdrawIntent: [
               { name: 'user', type: 'address' },
-              { name: 'withdraw', type: 'TokenAmount' },
+              { name: 'asset', type: 'TokenAmount' },
               { name: 'nonce', type: 'uint256' },
               { name: 'deadline', type: 'uint256' },
             ],

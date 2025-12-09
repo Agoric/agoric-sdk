@@ -15,7 +15,7 @@ export interface TokenAmount {
 
 export interface OpenPortfolio {
   user: string; // EVM address
-  deposit: TokenAmount;
+  asset: TokenAmount;
   allocation: AllocationEntry[];
   nonce: string; // timestamp as string
   deadline: string; // timestamp + 1 hour as string
@@ -23,14 +23,14 @@ export interface OpenPortfolio {
 
 export interface Deposit {
   user: string; // EVM address
-  deposit: TokenAmount;
+  asset: TokenAmount;
   nonce: string; // timestamp as string
   deadline: string; // timestamp + 1 hour as string
 }
 
 export interface Withdraw {
   user: string; // EVM address
-  withdraw: TokenAmount;
+  asset: TokenAmount;
   nonce: string; // timestamp as string
   deadline: string; // timestamp + 1 hour as string
 }
