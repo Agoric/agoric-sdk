@@ -138,10 +138,33 @@ jobs:
         working-directory: ./agoric-sdk/multichain-testing
 
       - name: Run @agoric/multichain-testing E2E Tests
-        run: ${{ inputs.test_command }}
+        run: |
+          # Enable pipefail to preserve test failure exit codes while capturing TAP output with tee.
+          # TAP output is written to _testoutput.txt as it's generated, even if tests fail.
+          set -o pipefail
+          AGORIC_AVA_USE_TAP=true ${{ inputs.test_command }} 2>&1 | tee _testoutput.txt
         working-directory: ./agoric-sdk/multichain-testing
         env:
           FILE: ${{ inputs.config }}
+
+      - name: Convert TAP to JUnit
+        if: always()
+        run: |
+          if [ -f _testoutput.txt ]; then
+            ../scripts/ava-etap-to-junit.mjs _testoutput.txt > junit.xml || true
+            echo "JUnit XML generated at multichain-testing/junit.xml"
+          else
+            echo "No TAP output found, skipping JUnit conversion"
+          fi
+        working-directory: ./agoric-sdk/multichain-testing
+
+      - name: Upload test results to Mergify CI Insights
+        if: always()
+        uses: mergifyio/gha-mergify-ci@v6
+        with:
+          flaky_test_detection: true
+          token: ${{ secrets.MERGIFY_TOKEN }}
+          report_path: 'agoric-sdk/multichain-testing/junit.xml'
 
       - name: Capture slog.slog
         if: always()
