@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks';
 import { BrowserProvider } from 'ethers';
-import type { PortfolioOperation, TargetAllocation, EIP712Domain, EIP712Types } from '../types';
+import type { PortfolioOperation, TargetAllocation, EIP712Domain, EIP712Types, AllocationEntry } from '../types';
 
 interface Props {
   userAddress: string;
@@ -20,7 +20,7 @@ const POOL_OPTIONS = [
 ];
 
 export function OperationForm({ userAddress, onSigned }: Props) {
-  const [operation, setOperation] = useState<PortfolioOperation['operation']>('openPortfolio');
+  const [operation, setOperation] = useState<PortfolioOperation['intent']>('allocate');
   const [amount, setAmount] = useState('1000');
   const [allocations, setAllocations] = useState<TargetAllocation[]>([
     { poolKey: 'USDN', basisPoints: 5000 },
@@ -56,11 +56,23 @@ export function OperationForm({ userAddress, onSigned }: Props) {
 
     try {
       const now = Math.floor(Date.now() / 1000);
+      
+      // Convert allocations to user-friendly format
+      const allocationEntries = allocations.map(alloc => ({
+        protocol: alloc.poolKey.replace('_', ' '), // "Aave_Ethereum" -> "Aave Ethereum"
+        percentage: `${(alloc.basisPoints / 100).toFixed(2)}%`
+      }));
+
       const message: PortfolioOperation = {
-        operation,
+        intent: operation === 'openPortfolio' ? 'allocate' : operation,
         user: userAddress,
-        amount: (parseFloat(amount) * 1e6).toString(), // Convert to USDC wei (6 decimals)
-        targetAllocation: allocations,
+        depositAmount: parseFloat(amount).toLocaleString('en-US', { 
+          minimumFractionDigits: 2, 
+          maximumFractionDigits: 2 
+        }), // "1,000.00"
+        token: '0xA0b86a33E6441E6C7D3E4C2C4C6C6C6C6C6C6C6C', // USDC contract address
+        decimals: '6',
+        allocation: allocationEntries,
         nonce: now,
         deadline: now + 3600 // 1 hour
       };
@@ -72,16 +84,18 @@ export function OperationForm({ userAddress, onSigned }: Props) {
 
       const types: EIP712Types = {
         PortfolioOperation: [
-          { name: 'operation', type: 'string' },
+          { name: 'intent', type: 'string' },
           { name: 'user', type: 'address' },
-          { name: 'amount', type: 'uint256' },
-          { name: 'targetAllocation', type: 'TargetAllocation[]' },
+          { name: 'depositAmount', type: 'string' },
+          { name: 'token', type: 'address' },
+          { name: 'decimals', type: 'string' },
+          { name: 'allocation', type: 'AllocationEntry[]' },
           { name: 'nonce', type: 'uint256' },
           { name: 'deadline', type: 'uint256' }
         ],
-        TargetAllocation: [
-          { name: 'poolKey', type: 'string' },
-          { name: 'basisPoints', type: 'uint256' }
+        AllocationEntry: [
+          { name: 'protocol', type: 'string' },
+          { name: 'percentage', type: 'string' }
         ]
       };
 
@@ -111,7 +125,7 @@ export function OperationForm({ userAddress, onSigned }: Props) {
           onChange={(e) => setOperation(e.currentTarget.value as any)}
           style={{ padding: '8px', width: '200px' }}
         >
-          <option value="openPortfolio">Open Portfolio</option>
+          <option value="allocate">Allocate Funds</option>
           <option value="deposit">Deposit</option>
           <option value="rebalance">Rebalance</option>
           <option value="withdraw">Withdraw</option>
