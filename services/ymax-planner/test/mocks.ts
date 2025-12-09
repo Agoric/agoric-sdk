@@ -9,12 +9,14 @@ import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import { makeKVStoreFromMap } from '@agoric/internal/src/kv-store.js';
 import type { Log } from 'ethers/providers';
+import { encodeAbiParameters } from 'viem';
 import type { CosmosRestClient } from '../src/cosmos-rest-client.ts';
 import type { CosmosRPCClient } from '../src/cosmos-rpc.ts';
 import type { Powers as EnginePowers } from '../src/engine.ts';
 import { makeGasEstimator } from '../src/gas-estimation.ts';
 import type { HandlePendingTxOpts } from '../src/pending-tx-manager.ts';
 import { prepareAbortController } from '../src/support.ts';
+import { AXELAR_SCAN_TX_STATUS, GMP_ABI } from '../src/axelarscan-utils.ts';
 
 const PENDING_TX_PATH_PREFIX = 'published.ymax1';
 
@@ -31,6 +33,7 @@ export const createMockEnginePowers = (): EnginePowers => ({
     evmProviders: {},
     kvStore: makeKVStoreFromMap(new Map()),
     makeAbortController,
+    axelarApiUrl: mockAxelarApiAddress,
   },
   rpc: {} as any,
   spectrum: {} as any,
@@ -257,6 +260,7 @@ export const createMockPendingTxOpts = (
   },
   kvStore: makeKVStoreFromMap(new Map()),
   makeAbortController,
+  axelarApiUrl: mockAxelarApiAddress,
 });
 
 export const createMockPendingTxEvent = (
@@ -272,7 +276,10 @@ export const createMockStreamCell = (values: unknown[]) => ({
   blockHeight: '1000',
 });
 
-const createMockAxelarScanResponse = (txId: string, status = 'executed') => {
+const createMockAxelarScanResponse = (
+  txId: string,
+  status = AXELAR_SCAN_TX_STATUS.executed,
+) => {
   const baseEvent = {
     call: {
       chain: 'agoric',
@@ -284,7 +291,7 @@ const createMockAxelarScanResponse = (txId: string, status = 'executed') => {
           '0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
         destinationChain: 'ethereum',
         messageId: 'msg_12345',
-        payload: '0x',
+        payload: encodeAbiParameters(GMP_ABI, [{ id: txId, calls: [] }]),
         sender: 'agoric1sender123',
         sourceChain: 'agoric',
       },
@@ -309,7 +316,7 @@ const createMockAxelarScanResponse = (txId: string, status = 'executed') => {
       },
     },
     message_id: 'msg_12345',
-    status: status === 'executed' ? 'executed' : 'confirming',
+    status: AXELAR_SCAN_TX_STATUS[status],
     simplified_status: status,
     is_invalid_call: false,
     is_not_enough_gas: false,
@@ -404,9 +411,15 @@ const createMockAxelarScanResponse = (txId: string, status = 'executed') => {
   };
 };
 
-export const mockFetch = ({ txId }: { txId: TxId }) => {
+export const mockFetch = ({
+  txId,
+  status = AXELAR_SCAN_TX_STATUS.executed,
+}: {
+  txId: TxId;
+  status?: string;
+}) => {
   return async () => {
-    const response = createMockAxelarScanResponse(txId);
+    const response = createMockAxelarScanResponse(txId, status);
     return {
       ok: true,
       json: async () => response,
