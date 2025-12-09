@@ -88,7 +88,7 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
           types = {
             OpenPortfolio: [
               { name: 'user', type: 'address' },
-              { name: 'depositAmount', type: 'string' },
+              { name: 'depositAmount', type: 'uint256' },
               { name: 'token', type: 'address' },
               { name: 'chainId', type: 'string' },
               { name: 'decimals', type: 'string' },
@@ -111,7 +111,7 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
           types = {
             Deposit: [
               { name: 'user', type: 'address' },
-              { name: 'depositAmount', type: 'string' },
+              { name: 'depositAmount', type: 'uint256' },
               { name: 'token', type: 'address' },
               { name: 'chainId', type: 'string' },
               { name: 'decimals', type: 'string' },
@@ -129,7 +129,7 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
           types = {
             Withdraw: [
               { name: 'user', type: 'address' },
-              { name: 'withdrawAmount', type: 'string' },
+              { name: 'withdrawAmount', type: 'uint256' },
               { name: 'token', type: 'address' },
               { name: 'chainId', type: 'string' },
               { name: 'decimals', type: 'string' },
