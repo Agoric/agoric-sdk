@@ -138,9 +138,9 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
             nonce: baseFields.nonce,
             deadline: baseFields.deadline,
           };
-          primaryType = 'Deposit';
+          primaryType = 'DepositIntent';
           types = {
-            Deposit: [
+            DepositIntent: [
               { name: 'user', type: 'address' },
               { name: 'deposit', type: 'TokenAmount' },
               { name: 'nonce', type: 'uint256' },
@@ -159,9 +159,9 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
             nonce: baseFields.nonce,
             deadline: baseFields.deadline,
           };
-          primaryType = 'Withdraw';
+          primaryType = 'WithdrawIntent';
           types = {
-            Withdraw: [
+            WithdrawIntent: [
               { name: 'user', type: 'address' },
               { name: 'withdraw', type: 'TokenAmount' },
               { name: 'nonce', type: 'uint256' },
@@ -178,9 +178,9 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
             ...baseFields,
             allocation: allocationEntries,
           };
-          primaryType = 'Reallocate';
+          primaryType = 'ReallocateIntent';
           types = {
-            Reallocate: [
+            ReallocateIntent: [
               { name: 'user', type: 'address' },
               { name: 'allocation', type: 'AllocationEntry[]' },
               { name: 'nonce', type: 'uint256' },
