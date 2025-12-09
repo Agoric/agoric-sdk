@@ -7,18 +7,6 @@ import { M } from '@endo/patterns';
  * @import {TypedPattern} from './types.js';
  */
 
-/**
- * Mark a value with RemotableBrand.
- *
- * @template T
- * @param {T} value
- * @returns {T & RemotableBrand<DataOnly<T>, T>}
- */
-export const remotable = value =>
-  /** @type {T & RemotableBrand<DataOnly<T>, T>} */ (
-    /** @type {unknown} */ (value)
-  );
-
 export const StorageNodeShape = M.remotable('StorageNode');
 
 /** To be used only for 'helper' facets where the calls are from trusted code. */
