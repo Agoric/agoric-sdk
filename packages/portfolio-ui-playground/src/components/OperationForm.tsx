@@ -91,7 +91,7 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
               { name: 'depositAmount', type: 'uint256' },
               { name: 'token', type: 'address' },
               { name: 'chainId', type: 'string' },
-              { name: 'decimals', type: 'string' },
+              { name: 'decimals', type: 'uint32' },
               { name: 'allocation', type: 'AllocationEntry[]' },
               { name: 'nonce', type: 'uint256' },
               { name: 'deadline', type: 'uint256' }
@@ -114,7 +114,7 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
               { name: 'depositAmount', type: 'uint256' },
               { name: 'token', type: 'address' },
               { name: 'chainId', type: 'string' },
-              { name: 'decimals', type: 'string' },
+              { name: 'decimals', type: 'uint32' },
               { name: 'nonce', type: 'uint256' },
               { name: 'deadline', type: 'uint256' }
             ]
@@ -132,7 +132,7 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
               { name: 'withdrawAmount', type: 'uint256' },
               { name: 'token', type: 'address' },
               { name: 'chainId', type: 'string' },
-              { name: 'decimals', type: 'string' },
+              { name: 'decimals', type: 'uint32' },
               { name: 'nonce', type: 'uint256' },
               { name: 'deadline', type: 'uint256' }
             ]
