@@ -8,12 +8,16 @@ export interface AllocationEntry {
   percentage: number; // 0-100
 }
 
-export interface OpenPortfolio {
-  user: string; // EVM address
-  depositAmount: string; // amount in smallest unit like "1000000"
+export interface TokenAmount {
+  amount: string; // amount in smallest unit like "1000000"
   token: string; // USDC contract address
   chainId: string; // "1" for Ethereum mainnet
   decimals: string; // "6"
+}
+
+export interface OpenPortfolio {
+  user: string; // EVM address
+  deposit: TokenAmount;
   allocation: AllocationEntry[];
   nonce: string; // timestamp as string
   deadline: string; // timestamp + 1 hour as string
@@ -21,20 +25,14 @@ export interface OpenPortfolio {
 
 export interface Deposit {
   user: string; // EVM address
-  depositAmount: string; // amount in smallest unit like "1000000"
-  token: string; // USDC contract address
-  chainId: string; // "1" for Ethereum mainnet
-  decimals: string; // "6"
+  deposit: TokenAmount;
   nonce: string; // timestamp as string
   deadline: string; // timestamp + 1 hour as string
 }
 
 export interface Withdraw {
   user: string; // EVM address
-  withdrawAmount: string; // amount in smallest unit like "1000000"
-  token: string; // USDC contract address
-  chainId: string; // "1" for Ethereum mainnet
-  decimals: string; // "6"
+  withdraw: TokenAmount;
   nonce: string; // timestamp as string
   deadline: string; // timestamp + 1 hour as string
 }

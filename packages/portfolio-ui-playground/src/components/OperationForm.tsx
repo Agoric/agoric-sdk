@@ -98,24 +98,36 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
         deadline: (now + 3600).toString(), // 1 hour
       };
 
+      const tokenAmount = {
+        amount: (parseFloat(amount) * 1e6).toString(),
+        token: baseFields.token,
+        chainId: baseFields.chainId,
+        decimals: baseFields.decimals,
+      };
+
       switch (operation) {
         case 'openPortfolio':
           message = {
-            ...baseFields,
-            depositAmount: (parseFloat(amount) * 1e6).toString(),
+            user: baseFields.user,
+            deposit: tokenAmount,
             allocation: allocationEntries,
+            nonce: baseFields.nonce,
+            deadline: baseFields.deadline,
           };
           primaryType = 'OpenPortfolio';
           types = {
             OpenPortfolio: [
               { name: 'user', type: 'address' },
-              { name: 'depositAmount', type: 'uint256' },
-              { name: 'token', type: 'address' },
-              { name: 'chainId', type: 'string' },
-              { name: 'decimals', type: 'uint32' },
+              { name: 'deposit', type: 'TokenAmount' },
               { name: 'allocation', type: 'AllocationEntry[]' },
               { name: 'nonce', type: 'uint256' },
               { name: 'deadline', type: 'uint256' },
+            ],
+            TokenAmount: [
+              { name: 'amount', type: 'uint256' },
+              { name: 'token', type: 'address' },
+              { name: 'chainId', type: 'string' },
+              { name: 'decimals', type: 'uint32' },
             ],
             AllocationEntry: [
               { name: 'protocol', type: 'string' },
@@ -125,37 +137,47 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
           break;
         case 'deposit':
           message = {
-            ...baseFields,
-            depositAmount: (parseFloat(amount) * 1e6).toString(),
+            user: baseFields.user,
+            deposit: tokenAmount,
+            nonce: baseFields.nonce,
+            deadline: baseFields.deadline,
           };
           primaryType = 'Deposit';
           types = {
             Deposit: [
               { name: 'user', type: 'address' },
-              { name: 'depositAmount', type: 'uint256' },
+              { name: 'deposit', type: 'TokenAmount' },
+              { name: 'nonce', type: 'uint256' },
+              { name: 'deadline', type: 'uint256' },
+            ],
+            TokenAmount: [
+              { name: 'amount', type: 'uint256' },
               { name: 'token', type: 'address' },
               { name: 'chainId', type: 'string' },
               { name: 'decimals', type: 'uint32' },
-              { name: 'nonce', type: 'uint256' },
-              { name: 'deadline', type: 'uint256' },
             ],
           };
           break;
         case 'withdraw':
           message = {
-            ...baseFields,
-            withdrawAmount: (parseFloat(amount) * 1e6).toString(),
+            user: baseFields.user,
+            withdraw: tokenAmount,
+            nonce: baseFields.nonce,
+            deadline: baseFields.deadline,
           };
           primaryType = 'Withdraw';
           types = {
             Withdraw: [
               { name: 'user', type: 'address' },
-              { name: 'withdrawAmount', type: 'uint256' },
+              { name: 'withdraw', type: 'TokenAmount' },
+              { name: 'nonce', type: 'uint256' },
+              { name: 'deadline', type: 'uint256' },
+            ],
+            TokenAmount: [
+              { name: 'amount', type: 'uint256' },
               { name: 'token', type: 'address' },
               { name: 'chainId', type: 'string' },
               { name: 'decimals', type: 'uint32' },
-              { name: 'nonce', type: 'uint256' },
-              { name: 'deadline', type: 'uint256' },
             ],
           };
           break;
