@@ -24,14 +24,14 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
   const [operation, setOperation] = useState<PortfolioOperation['intent']>('allocate');
   const [amount, setAmount] = useState('1000');
   const [allocations, setAllocations] = useState<TargetAllocation[]>([
-    { poolKey: 'USDN', basisPoints: 5000 },
-    { poolKey: 'Aave_Ethereum', basisPoints: 5000 }
+    { poolKey: 'USDN', percentage: 50 },
+    { poolKey: 'Aave_Ethereum', percentage: 50 }
   ]);
   const [signing, setSigning] = useState(false);
   const [error, setError] = useState<string>('');
 
   const addAllocation = () => {
-    setAllocations([...allocations, { poolKey: 'USDN', basisPoints: 0 }]);
+    setAllocations([...allocations, { poolKey: 'USDN', percentage: 0 }]);
   };
 
   const updateAllocation = (index: number, field: keyof TargetAllocation, value: string | number) => {
@@ -44,11 +44,11 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
     setAllocations(allocations.filter((_, i) => i !== index));
   };
 
-  const totalBasisPoints = allocations.reduce((sum, alloc) => sum + alloc.basisPoints, 0);
+  const totalPercentage = allocations.reduce((sum, alloc) => sum + alloc.percentage, 0);
 
   const signMessage = async () => {
-    if (totalBasisPoints !== 10000) {
-      setError('Total allocation must equal 100% (10000 basis points)');
+    if (totalPercentage !== 100) {
+      setError('Total allocation must equal 100%');
       return;
     }
 
@@ -58,10 +58,10 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
     try {
       const now = Math.floor(Date.now() / 1000);
       
-      // Convert allocations to user-friendly format
+      // Convert allocations to clean format
       const allocationEntries = allocations.map(alloc => ({
         protocol: alloc.poolKey.replace('_', ' '), // "Aave_Ethereum" -> "Aave Ethereum"
-        percentage: `${(alloc.basisPoints / 100).toFixed(2)}%`
+        percentage: alloc.percentage
       }));
 
       const message: PortfolioOperation = {
@@ -93,7 +93,7 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
         ],
         AllocationEntry: [
           { name: 'protocol', type: 'string' },
-          { name: 'percentage', type: 'string' }
+          { name: 'percentage', type: 'uint256' }
         ]
       };
 
@@ -162,15 +162,15 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
             </select>
             <input 
               type="number"
-              value={alloc.basisPoints}
-              onChange={(e) => updateAllocation(index, 'basisPoints', parseInt(e.currentTarget.value) || 0)}
+              value={alloc.percentage}
+              onChange={(e) => updateAllocation(index, 'percentage', parseInt(e.currentTarget.value) || 0)}
               style={{ padding: '5px', width: '100px' }}
-              placeholder="Basis points"
+              placeholder="Percentage"
               min="0"
-              max="10000"
+              max="100"
             />
             <span style={{ fontSize: '12px', color: '#666' }}>
-              ({(alloc.basisPoints / 100).toFixed(2)}%)
+              %
             </span>
             <button 
               onClick={() => removeAllocation(index)}
@@ -188,22 +188,22 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
           Add Allocation
         </button>
         
-        <span style={{ fontSize: '14px', color: totalBasisPoints === 10000 ? '#28a745' : '#dc3545' }}>
-          Total: {totalBasisPoints} basis points ({(totalBasisPoints / 100).toFixed(2)}%)
+        <span style={{ fontSize: '14px', color: totalPercentage === 100 ? '#28a745' : '#dc3545' }}>
+          Total: {totalPercentage}%
         </span>
       </div>
 
       <button 
         onClick={signMessage}
-        disabled={signing || totalBasisPoints !== 10000}
+        disabled={signing || totalPercentage !== 100}
         style={{ 
           padding: '12px 24px', 
           fontSize: '16px', 
-          background: signing || totalBasisPoints !== 10000 ? '#6c757d' : '#007bff', 
+          background: signing || totalPercentage !== 100 ? '#6c757d' : '#007bff', 
           color: 'white', 
           border: 'none', 
           borderRadius: '4px',
-          cursor: signing || totalBasisPoints !== 10000 ? 'not-allowed' : 'pointer'
+          cursor: signing || totalPercentage !== 100 ? 'not-allowed' : 'pointer'
         }}
       >
         {signing ? 'Signing...' : 'Sign with MetaMask'}

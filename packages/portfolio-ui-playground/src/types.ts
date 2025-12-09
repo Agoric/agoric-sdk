@@ -1,11 +1,11 @@
 export interface TargetAllocation {
   poolKey: string;
-  basisPoints: number; // out of 10000
+  percentage: number; // 0-100
 }
 
 export interface AllocationEntry {
   protocol: string;
-  percentage: string; // "50.00%"
+  percentage: number; // 0-100
 }
 
 export interface PortfolioOperation {
