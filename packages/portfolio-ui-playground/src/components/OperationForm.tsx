@@ -117,10 +117,6 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
               { name: 'decimals', type: 'string' },
               { name: 'nonce', type: 'uint256' },
               { name: 'deadline', type: 'uint256' }
-            ],
-            AllocationEntry: [
-              { name: 'protocol', type: 'string' },
-              { name: 'percentage', type: 'uint256' }
             ]
           };
           break;
@@ -139,10 +135,6 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
               { name: 'decimals', type: 'string' },
               { name: 'nonce', type: 'uint256' },
               { name: 'deadline', type: 'uint256' }
-            ],
-            AllocationEntry: [
-              { name: 'protocol', type: 'string' },
-              { name: 'percentage', type: 'uint256' }
             ]
           };
           break;
