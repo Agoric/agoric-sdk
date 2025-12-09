@@ -8,8 +8,8 @@ on:
   push:
     branches: [master]
   schedule:
-    # We start a little earlier to give our build cache time to populate.
-    - cron: '47 5 * * *'
+    # Run every 3 hours on the main branch for continuous flaky test detection
+    - cron: '0 0,3,6,9,12,15,18,21 * * *'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
