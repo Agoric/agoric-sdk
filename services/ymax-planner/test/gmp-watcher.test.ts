@@ -4,7 +4,6 @@ import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.t
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import { createMockPendingTxOpts, mockFetch } from './mocks.ts';
 import { handlePendingTx } from '../src/pending-tx-manager.ts';
-import { AXELAR_SCAN_TX_STATUS } from '../src/axelarscan-utils.ts';
 
 test('handlePendingTx processes GMP transaction successfully', async t => {
   const opts = createMockPendingTxOpts();
@@ -129,7 +128,7 @@ test('handlePendingTx logs a time out on a GMP transaction with no matching even
 test('handlePendingTx fails a pendingTx on it finds a failed tx on Axelarscan', async t => {
   const opts = createMockPendingTxOpts();
   const txId = 'tx2';
-  opts.fetch = mockFetch({ txId, status: AXELAR_SCAN_TX_STATUS.error });
+  opts.fetch = mockFetch({ txId, status: 'error' });
   const chain = 'eip155:1'; // Ethereum
   const amount = 1_000_000n; // 1 USDC
   const contractAddress = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';

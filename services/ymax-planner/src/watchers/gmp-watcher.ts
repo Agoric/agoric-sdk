@@ -14,10 +14,7 @@ import {
   getTxBlockLowerBound,
   setTxBlockLowerBound,
 } from '../kv-store.ts';
-import {
-  AXELAR_SCAN_TX_STATUS,
-  findTxStatusFromAxelarscan,
-} from '../axelarscan-utils.ts';
+import { findTxStatusFromAxelarscan } from '../axelarscan-utils.ts';
 
 // TODO: Remove once all contracts are upgraded to emit MulticallStatus
 const MULTICALL_EXECUTED_SIGNATURE = ethers.id(
@@ -27,7 +24,7 @@ const MULTICALL_STATUS_SIGNATURE = ethers.id(
   'MulticallStatus(string,bool,uint256)',
 );
 
-type GmpMonitor = {
+type WatchGmp = {
   provider: WebSocketProvider;
   contractAddress: `0x${string}`;
   txId: TxId;
@@ -36,7 +33,7 @@ type GmpMonitor = {
   makeAbortController: MakeAbortController;
 };
 
-type WatchGmp = {
+type AxelarScanOptions = {
   fetch: typeof fetch;
   axelarApiUrl: string;
 };
@@ -51,7 +48,7 @@ export const watchGmp = ({
   signal,
   axelarApiUrl,
   fetch,
-}: GmpMonitor & WatchGmp & WatcherTimeoutOptions): Promise<boolean> => {
+}: AxelarScanOptions & WatchGmp & WatcherTimeoutOptions): Promise<boolean> => {
   return new Promise(resolve => {
     if (signal?.aborted) {
       resolve(false);
@@ -136,7 +133,7 @@ export const watchGmp = ({
           },
         );
 
-        if (txStatus === AXELAR_SCAN_TX_STATUS.error) {
+        if (txStatus === 'error') {
           log('failed to execute on destination chain');
           finish(false);
         }
@@ -166,7 +163,7 @@ export const lookBackGmp = async ({
   signal,
   kvStore,
   makeAbortController,
-}: GmpMonitor & {
+}: WatchGmp & {
   publishTimeMs: number;
   chainId: CaipChainId;
   signal?: AbortSignal;

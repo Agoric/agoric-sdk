@@ -10,13 +10,14 @@ import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import { makeKVStoreFromMap } from '@agoric/internal/src/kv-store.js';
 import type { Log } from 'ethers/providers';
 import { encodeAbiParameters } from 'viem';
+import type { GMPTxStatus } from '@axelarjs/api';
 import type { CosmosRestClient } from '../src/cosmos-rest-client.ts';
 import type { CosmosRPCClient } from '../src/cosmos-rpc.ts';
 import type { Powers as EnginePowers } from '../src/engine.ts';
 import { makeGasEstimator } from '../src/gas-estimation.ts';
 import type { HandlePendingTxOpts } from '../src/pending-tx-manager.ts';
 import { prepareAbortController } from '../src/support.ts';
-import { AXELAR_SCAN_TX_STATUS, GMP_ABI } from '../src/axelarscan-utils.ts';
+import { GMP_ABI } from '../src/axelarscan-utils.ts';
 
 const PENDING_TX_PATH_PREFIX = 'published.ymax1';
 
@@ -278,7 +279,7 @@ export const createMockStreamCell = (values: unknown[]) => ({
 
 const createMockAxelarScanResponse = (
   txId: string,
-  status = AXELAR_SCAN_TX_STATUS.executed,
+  status: GMPTxStatus = 'executed',
 ) => {
   const baseEvent = {
     call: {
@@ -316,7 +317,7 @@ const createMockAxelarScanResponse = (
       },
     },
     message_id: 'msg_12345',
-    status: AXELAR_SCAN_TX_STATUS[status],
+    status,
     simplified_status: status,
     is_invalid_call: false,
     is_not_enough_gas: false,
@@ -413,10 +414,10 @@ const createMockAxelarScanResponse = (
 
 export const mockFetch = ({
   txId,
-  status = AXELAR_SCAN_TX_STATUS.executed,
+  status = 'executed',
 }: {
   txId: TxId;
-  status?: string;
+  status?: GMPTxStatus;
 }) => {
   return async () => {
     const response = createMockAxelarScanResponse(txId, status);
