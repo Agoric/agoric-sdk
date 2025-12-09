@@ -8,14 +8,14 @@ import type { CopyTagged, RemotableObject } from '@endo/pass-style';
 export type IsRetryableReason = (reason: any, priorRetryValue: any) => any;
 
 /**
- * Types that are conceptually similar to Promise<F>.
+ * Types that are conceptually similar to Promise<F> in that they wrap a fulfilled type.
  */
-export type Promissory<F> = Promise<F> | PromiseLike<F> | Vow<F>; // s| PromiseStep<F> …etc.
+export type VowLike<F> = Promise<F> | PromiseLike<F> | Vow<F>; // s| PromiseStep<F> …etc.
 
 /**
- * Extract the final fulfilment type from a chain of Promissories.
+ * Extract the final fulfilment type from a chain of VowLikes.
  */
-export type Fulfilled<T> = T extends Promissory<infer F> ? Fulfilled<F> : T;
+export type Fulfilled<T> = T extends VowLike<infer F> ? Fulfilled<F> : T;
 
 /**
  * Return type of a function that may
