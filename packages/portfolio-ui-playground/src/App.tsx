@@ -5,6 +5,7 @@ import { SignatureDisplay } from './components/SignatureDisplay';
 import type { PortfolioOperation } from './types';
 
 const walletAddress = signal<string>('');
+const selectedProvider = signal<EIP1193Provider | null>(null);
 const signedMessage = signal<{ message: PortfolioOperation; signature: string } | null>(null);
 
 export function App() {
@@ -17,12 +18,14 @@ export function App() {
       <h1>YMax Portfolio UI Playground</h1>
       
       <WalletConnection 
-        address={walletAddress} 
+        address={walletAddress}
+        selectedProvider={selectedProvider}
       />
       
-      {walletAddress.value && (
+      {walletAddress.value && selectedProvider.value && (
         <OperationForm 
           userAddress={walletAddress.value}
+          provider={selectedProvider.value}
           onSigned={(result) => signedMessage.value = result}
         />
       )}

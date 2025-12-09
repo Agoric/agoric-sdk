@@ -4,6 +4,7 @@ import type { PortfolioOperation, TargetAllocation, EIP712Domain, EIP712Types, A
 
 interface Props {
   userAddress: string;
+  provider: EIP1193Provider;
   onSigned: (result: { message: PortfolioOperation; signature: string }) => void;
 }
 
@@ -19,7 +20,7 @@ const POOL_OPTIONS = [
   'Compound_Base'
 ];
 
-export function OperationForm({ userAddress, onSigned }: Props) {
+export function OperationForm({ userAddress, provider, onSigned }: Props) {
   const [operation, setOperation] = useState<PortfolioOperation['intent']>('allocate');
   const [amount, setAmount] = useState('1000');
   const [allocations, setAllocations] = useState<TargetAllocation[]>([
@@ -99,8 +100,8 @@ export function OperationForm({ userAddress, onSigned }: Props) {
         ]
       };
 
-      const provider = new BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
+      const ethersProvider = new BrowserProvider(provider);
+      const signer = await ethersProvider.getSigner();
       
       const signature = await signer.signTypedData(domain, types, message);
       
