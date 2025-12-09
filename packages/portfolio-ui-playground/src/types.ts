@@ -46,17 +46,15 @@ export interface Reallocate {
   deadline: string; // timestamp + 1 hour as string
 }
 
-export type PortfolioOperation = OpenPortfolio | Deposit | Withdraw | Reallocate;
+export type PortfolioOperation =
+  | OpenPortfolio
+  | Deposit
+  | Withdraw
+  | Reallocate;
 
 export interface EIP712Domain {
   name: string;
   version: string;
 }
 
-export interface EIP712Types {
-  OpenPortfolio?: Array<{ name: string; type: string }>;
-  Deposit?: Array<{ name: string; type: string }>;
-  Withdraw?: Array<{ name: string; type: string }>;
-  Reallocate?: Array<{ name: string; type: string }>;
-  AllocationEntry: Array<{ name: string; type: string }>;
-}
+export type EIP712Types = Record<string, Array<{ name: string; type: string }>>;
