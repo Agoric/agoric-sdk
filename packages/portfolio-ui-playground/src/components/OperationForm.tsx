@@ -71,6 +71,7 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
       const baseFields = {
         user: userAddress,
         token: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48', // USDC contract address (Ethereum mainnet)
+        chainId: '1', // Ethereum mainnet
         decimals: '6',
         nonce: now.toString(),
         deadline: (now + 3600).toString() // 1 hour
@@ -89,6 +90,7 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
               { name: 'user', type: 'address' },
               { name: 'depositAmount', type: 'string' },
               { name: 'token', type: 'address' },
+              { name: 'chainId', type: 'string' },
               { name: 'decimals', type: 'string' },
               { name: 'allocation', type: 'AllocationEntry[]' },
               { name: 'nonce', type: 'uint256' },
@@ -111,6 +113,7 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
               { name: 'user', type: 'address' },
               { name: 'depositAmount', type: 'string' },
               { name: 'token', type: 'address' },
+              { name: 'chainId', type: 'string' },
               { name: 'decimals', type: 'string' },
               { name: 'nonce', type: 'uint256' },
               { name: 'deadline', type: 'uint256' }
@@ -132,6 +135,7 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
               { name: 'user', type: 'address' },
               { name: 'withdrawAmount', type: 'string' },
               { name: 'token', type: 'address' },
+              { name: 'chainId', type: 'string' },
               { name: 'decimals', type: 'string' },
               { name: 'nonce', type: 'uint256' },
               { name: 'deadline', type: 'uint256' }
