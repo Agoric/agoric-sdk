@@ -25,7 +25,6 @@ import {
   TxStatus,
   TxType,
 } from '@aglocal/portfolio-contract/src/resolver/constants.js';
-import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
 import type {
   FlowDetail,
   PoolKey as InstrumentId,
@@ -51,8 +50,12 @@ import {
 } from '@agoric/internal';
 import { fromUniqueEntries } from '@agoric/internal/src/ses-utils.js';
 import { makeWorkPool } from '@agoric/internal/src/work-pool.js';
-import type { SupportedChain } from '@agoric/portfolio-api/src/constants.js';
-import type { PortfolioKey, FlowKey } from '@agoric/portfolio-api/src/types.js';
+import type {
+  FlowKey,
+  FundsFlowPlan,
+  PortfolioKey,
+  SupportedChain,
+} from '@agoric/portfolio-api';
 
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
@@ -336,26 +339,29 @@ export const processPortfolioEvents = async (
       gasEstimator,
     };
     try {
-      let steps: MovementDesc[];
+      let plan: FundsFlowPlan;
       const { type } = flowDetail;
       switch (type) {
         case 'deposit':
-          steps = await planDepositToAllocations(plannerContext);
+          plan = await planDepositToAllocations(plannerContext);
           break;
         case 'rebalance':
-          steps = await planRebalanceToAllocations(plannerContext);
+          plan = await planRebalanceToAllocations(plannerContext);
           break;
         case 'withdraw':
-          steps = await planWithdrawFromAllocations(plannerContext);
+          plan = await planWithdrawFromAllocations(plannerContext);
           break;
         default:
           logger.warn(`⚠️  Unknown flow type ${type}`);
           return;
       }
-      (logContext as any).steps = steps;
+      (logContext as any).plan = plan;
 
-      if (steps.length > 0) {
-        await settle('resolvePlan', [...scope, steps, ...versions], { steps });
+      if (plan.flow.length > 0) {
+        const planOrSteps = plan.order ? plan : plan.flow;
+        await settle('resolvePlan', [...scope, planOrSteps, ...versions], {
+          plan,
+        });
       } else {
         const reason = 'Nothing to do for this operation.';
         await settle('rejectPlan', [...scope, reason, ...versions]);

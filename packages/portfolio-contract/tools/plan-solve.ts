@@ -13,13 +13,16 @@ import {
   makeTracer,
   naturalCompare,
   objectMap,
+  partialMap,
+  provideLazyMap,
   typedEntries,
 } from '@agoric/internal';
-import { EvmWalletOperationType } from '@agoric/portfolio-api/src/constants.js';
+import { EvmWalletOperationType } from '@agoric/portfolio-api';
 import type {
   AxelarChain,
+  FundsFlowPlan,
   YieldProtocol,
-} from '@agoric/portfolio-api/src/constants.js';
+} from '@agoric/portfolio-api';
 
 import type { AssetPlaceRef, MovementDesc } from '../src/type-guards-steps.js';
 import { PoolPlaces } from '../src/type-guards.js';
@@ -64,6 +67,9 @@ const failUnsolvable = (
 
 /** Mode of optimization */
 export type RebalanceMode = 'cheapest' | 'fastest';
+
+/** For representing partial order in a flow graph */
+export type StepOrder = Required<FundsFlowPlan>['order'];
 
 /** Solver result edge */
 export interface SolvedEdgeFlow {
@@ -388,6 +394,128 @@ export const solveRebalance = async (
   return { flows, detail: { solution } };
 };
 
+/**
+ * Compute partial order from solved flows and initial supplies.
+ *
+ * For each node, we track available supply (initial + completed inflows).
+ * An outflow step depends on the minimum set of inflow steps needed to
+ * provide sufficient supply.
+ *
+ * This approach correctly handles cases like:
+ * - Multiple operations to/from the same node with separate dependencies
+ * - Initial supplies that satisfy some outflows immediately
+ * - Fan-out patterns where multiple outflows depend on the same inflow
+ *
+ * @param flows - solved flows from the LP solver
+ * @param initialSupplies - starting balances at each node
+ * @returns prioritized flows in execution order and partial order constraints
+ */
+export const computePartialOrder = (
+  flows: SolvedEdgeFlow[],
+  initialSupplies: Map<string, number>,
+): { prioritized: SolvedEdgeFlow[]; order?: StepOrder } => {
+  // Return immediately if there's nothing to do.
+  if (flows.length === 0) return { prioritized: [] };
+
+  /** Available supply at each node */
+  const available = new Map(initialSupplies);
+
+  /** Remaining initial supply at each node (for dependency calculation) */
+  const initialRemaining = new Map(initialSupplies);
+
+  /** Which step indices have contributed to each node's balance */
+  const inflows = new Map<
+    AssetPlaceRef,
+    { flowIdx: number; amount: number }[]
+  >();
+
+  const order: StepOrder = [];
+  const prioritized: SolvedEdgeFlow[] = [];
+  const scheduled = new Set<number>();
+
+  // Maintain last chosen originating chain to group sequential operations.
+  let lastChain: string | undefined;
+
+  while (scheduled.size < flows.length) {
+    /** Flows that can execute with current available supply */
+    const candidates: { idx: number; flow: SolvedEdgeFlow }[] = [];
+    for (let idx = 0; idx < flows.length; idx += 1) {
+      if (scheduled.has(idx)) continue;
+      const flow = flows[idx];
+      const avail = available.get(flow.edge.src) || 0;
+      if (avail >= flow.flow) candidates.push({ idx, flow });
+    }
+
+    if (!candidates.length) {
+      // Deadlock detected
+      const remaining = partialMap(flows, (f, idx) => {
+        if (scheduled.has(idx)) return;
+        const { id, src, dest } = f.edge;
+        const srcSupply = available.get(src) || 0;
+        return `${idx}: ${id} ${src}(${srcSupply}) -> ${dest} needs ${f.flow}`;
+      });
+      throw Fail`Scheduling deadlock: no flows can be executed. Remaining:\n${remaining.join('\n')}`;
+    }
+
+    // Prefer continuing with lastChain if possible
+    const fromSameChain = lastChain
+      ? candidates.filter(c => chainOf(c.flow.edge.src) === lastChain)
+      : undefined;
+    const chosenGroup = fromSameChain?.length ? fromSameChain : candidates;
+
+    // Pick deterministic smallest edge id within chosen group
+    chosenGroup.sort((a, b) => naturalCompare(a.flow.edge.id, b.flow.edge.id));
+    const { idx: chosenIdx, flow: chosen } = chosenGroup[0];
+
+    // Compute prerequisites: which inflows provided the supply we're consuming?
+    const prereqs: number[] = [];
+    const srcInflows = inflows.get(chosen.edge.src) || [];
+    const remainingInitial = initialRemaining.get(chosen.edge.src) || 0;
+
+    // We need `chosen.flow` units. Remaining initial supply covers some; inflows cover the rest.
+    let needed = chosen.flow;
+    const usedFromInitial = Math.min(remainingInitial, needed);
+    needed -= usedFromInitial;
+    initialRemaining.set(chosen.edge.src, remainingInitial - usedFromInitial);
+
+    for (const inflow of srcInflows) {
+      if (needed <= 0) break;
+      prereqs.push(inflow.flowIdx);
+      needed -= inflow.amount;
+    }
+
+    if (prereqs.length > 0) {
+      order.push([prioritized.length, prereqs]);
+    }
+
+    // Update state
+    replaceOrInit(available, chosen.edge.src, (old = 0) => old - chosen.flow);
+    replaceOrInit(available, chosen.edge.dest, (old = 0) => old + chosen.flow);
+
+    // Record this as an inflow to dest (using prioritized index, not original idx)
+    const destInflows = provideLazyMap(inflows, chosen.edge.dest, () => []);
+    destInflows.push({ flowIdx: prioritized.length, amount: chosen.flow });
+
+    prioritized.push(chosen);
+    scheduled.add(chosenIdx);
+    lastChain = chainOf(chosen.edge.src);
+  }
+
+  // Don't bother returning a trivial `order` in which each step depends upon
+  // exactly the previous step.
+  const isTrivialOrder = (): boolean => {
+    if (order.length !== prioritized.length - 1) return false;
+    for (let i = 0; i < order.length; i += 1) {
+      const [target, prereqs] = order[i];
+      if (target !== i + 1) return false;
+      if (prereqs.length !== 1 || prereqs[0] !== i) return false;
+    }
+    return true;
+  };
+
+  return isTrivialOrder() ? { prioritized } : { prioritized, order };
+};
+
 export const rebalanceMinCostFlowSteps = async (
   flows: SolvedEdgeFlow[],
   graph: FlowGraph,
@@ -400,55 +528,16 @@ export const rebalanceMinCostFlowSteps = async (
     feeBrand: NatAmount['brand'];
     gasEstimator: GasEstimator;
   },
-): Promise<MovementDesc[]> => {
-  const supplies = new Map(
+): Promise<FundsFlowPlan> => {
+  const filteredFlows = flows.filter(f => f.flow > FLOW_EPS);
+  const initialSupplies = new Map(
     typedEntries(graph.supplies).filter(([_place, amount]) => amount > 0),
   );
 
-  type AnnotatedFlow = SolvedEdgeFlow & { srcChain: string };
-  const pendingFlows = new Map<string, AnnotatedFlow>(
-    flows
-      .filter(f => f.flow > FLOW_EPS)
-      .map(f => [f.edge.id, { ...f, srcChain: chainOf(f.edge.src) }]),
+  const { prioritized, order } = computePartialOrder(
+    filteredFlows,
+    initialSupplies,
   );
-  const prioritized = [] as AnnotatedFlow[];
-
-  // Maintain last chosen originating chain to group sequential operations.
-  let lastChain: string | undefined;
-
-  while (pendingFlows.size) {
-    // Find flows that can be executed based on current supplies.
-    const candidates = [...pendingFlows.values()].filter(
-      f => (supplies.get(f.edge.src) || 0) >= f.flow,
-    );
-
-    if (!candidates.length) {
-      // Deadlock detected: cannot schedule remaining flows.
-      // This indicates a solver bug or rounding error that produced an infeasible flow.
-      const diagnostics = [...pendingFlows.values()].map(f => {
-        const srcSupply = supplies.get(f.edge.src) || 0;
-        const shortage = f.flow - srcSupply;
-        return `${f.edge.id}: ${f.edge.src}(${srcSupply}) -> ${f.edge.dest} needs ${f.flow} (short ${shortage})`;
-      });
-      failUnsolvable(
-        X`Scheduling deadlock: no flows can be executed. Remaining flows:\n${diagnostics.join('\n')}`,
-      );
-    }
-    // Prefer continuing with lastChain if possible.
-    const fromSameChain = lastChain
-      ? candidates.filter(c => c.srcChain === lastChain)
-      : undefined;
-    const chosenGroup = fromSameChain?.length ? fromSameChain : candidates;
-
-    // Pick deterministic smallest edge id within chosen group.
-    chosenGroup.sort((a, b) => naturalCompare(a.edge.id, b.edge.id));
-    const chosen = chosenGroup[0];
-    prioritized.push(chosen);
-    replaceOrInit(supplies, chosen.edge.src, (old = 0) => old - chosen.flow);
-    replaceOrInit(supplies, chosen.edge.dest, (old = 0) => old + chosen.flow);
-    pendingFlows.delete(chosen.edge.id);
-    lastChain = chosen.srcChain;
-  }
 
   /**
    * Add 20% to a fee estimate in case the landscape changes between estimation
@@ -547,7 +636,6 @@ export const rebalanceMinCostFlowSteps = async (
     if (!validation.ok) {
       console.error('[solver] Flow validation failed:', validation.errors);
       console.error('[solver] Original supplies:', graph.supplies);
-      console.error('[solver] Scheduling deadlock. Final supplies:', supplies);
       console.error('[solver] All proposed flows in order:', steps);
       failUnsolvable(
         X`Flow validation failed: ${validation.errors.join('; ')}`,
@@ -558,7 +646,7 @@ export const rebalanceMinCostFlowSteps = async (
     }
   }
 
-  return harden(steps);
+  return harden({ flow: steps, order });
 };
 
 // -------------------------- Convenience End-to-End ---------------------------
@@ -607,34 +695,10 @@ export const planRebalanceFlow = async (opts: {
     failUnsolvable(message, err);
   }
   const { flows, detail } = result;
-  const steps = await rebalanceMinCostFlowSteps(flows, graph, {
+  const plan = await rebalanceMinCostFlowSteps(flows, graph, {
     brand,
     feeBrand,
     gasEstimator,
   });
-  return harden({ graph, model, flows, steps, detail });
+  return harden({ graph, model, flows, plan, detail });
 };
-
-// ---------------------------- Example (commented) ----------------------------
-/*
-Example usage:
-
-const { steps } = await planRebalanceFlow(
-  {
-    nodes: ['Aave_Arbitrum', 'Compound_Arbitrum', 'USDN', '<Deposit>', '@agoric'],
-    edges,
-  },
-  {
-    Aave_Arbitrum: AmountMath.make(brand, 1_000n),
-    Compound_Arbitrum: AmountMath.make(brand, 100n),
-  },
-  {
-    Aave_Arbitrum: AmountMath.make(brand, 800n),
-    Compound_Arbitrum: AmountMath.make(brand, 300n),
-  },
-  brand,
-  'cheapest',
-});
-
-console.log(steps);
-*/
