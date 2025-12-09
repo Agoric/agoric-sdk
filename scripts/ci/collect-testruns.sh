@@ -9,7 +9,7 @@ for pkg in ./packages/*/_testoutput.txt; do
     echo "processing $pkg"
     junit=$(dirname "$pkg")/junit.xml
     echo "dest $junit"
-    $SCRIPT_DIR/../ava-etap-to-junit.mjs $pkg > $junit
+    $SCRIPT_DIR/../ava-etap-to-junit.mjs $pkg > $junit || true
   fi
 done
 
