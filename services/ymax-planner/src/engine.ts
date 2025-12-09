@@ -372,9 +372,7 @@ export const processPortfolioEvents = async (
       (errorContext as any).steps = steps;
 
       const tx = await (steps.length === 0
-        ? // @ts-expect-error rejectPlan is not yet available
-          // https://github.com/Agoric/agoric-sdk/pull/12183
-          settle('rejectPlan', [
+        ? settle('rejectPlan', [
             ...scope,
             'Nothing to do for this operation',
             ...conditions,
@@ -395,8 +393,6 @@ export const processPortfolioEvents = async (
     } catch (err) {
       if (err instanceof UserInputError || err instanceof NoSolutionError) {
         try {
-          // @ts-expect-error rejectPlan is not yet available
-          // https://github.com/Agoric/agoric-sdk/pull/12183
           await settle('rejectPlan', [...scope, err.message, ...conditions]);
         } catch (settleErr) {
           // eslint-disable-next-line no-ex-assign
