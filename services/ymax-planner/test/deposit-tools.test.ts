@@ -442,7 +442,7 @@ test('planRebalanceToAllocations emits an empty plan when already balanced', asy
   const currentBalances = objectMap(targetAllocation, v =>
     makeDeposit(v * 200n),
   );
-  const steps = await planRebalanceToAllocations({
+  const plan = await planRebalanceToAllocations({
     brand: depositBrand,
     currentBalances,
     targetAllocation,
@@ -450,7 +450,7 @@ test('planRebalanceToAllocations emits an empty plan when already balanced', asy
     feeBrand,
     gasEstimator: mockGasEstimator,
   });
-  t.deepEqual(steps, []);
+  t.deepEqual(plan, { flow: [], order: [] });
 });
 
 test('planRebalanceToAllocations moves funds when needed', async t => {

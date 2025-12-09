@@ -33,9 +33,9 @@ import type { VowTools } from '@agoric/vow';
 import type { AmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import type { Zone } from '@agoric/zone';
 import { makePromiseKit } from '@endo/promise-kit';
+import type { FundsFlowPlan } from '@agoric/portfolio-api';
 import type { AxelarId, GmpAddresses } from '../src/portfolio.contract.ts';
 import type { EVMContractAddressesMap } from '../src/type-guards.ts';
-import type { MovementDesc } from '../src/type-guards-steps.ts';
 
 /** address of orch LCA for portfolio0, after contract/fee LCA */
 export const portfolio0lcaOrch = makeTestAddress(1); // agoric1q...c09z0g';
@@ -398,11 +398,14 @@ export const gasEstimator = {
 };
 
 /** plan for deposit to USDN */
-export const planUSDNDeposit = (amount: NatAmount): MovementDesc[] => {
+export const planUSDNDeposit = (amount: NatAmount): FundsFlowPlan => {
   const detail = { usdnOut: (amount.value * 999n) / 1000n - 1n };
-  return [
-    { amount, dest: '@agoric', src: '<Deposit>' },
-    { amount, dest: '@noble', src: '@agoric' },
-    { amount, dest: 'USDN', detail, src: '@noble' },
-  ];
+  // Full sequential order is omitted (execution defaults to it)
+  return {
+    flow: [
+      { amount, dest: '@agoric', src: '<Deposit>' },
+      { amount, dest: '@noble', src: '@agoric' },
+      { amount, dest: 'USDN', detail, src: '@noble' },
+    ],
+  };
 };

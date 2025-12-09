@@ -17,14 +17,12 @@ import type { AccountId, Caip10Record } from '@agoric/orchestration';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import { Fail, q } from '@endo/errors';
 // import { TEST_NETWORK } from '@aglocal/portfolio-contract/test/network/test-network.js';
-import type {
-  AssetPlaceRef,
-  MovementDesc,
-} from '@aglocal/portfolio-contract/src/type-guards-steps.js';
+import type { AssetPlaceRef } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
 import type { NetworkSpec } from '@aglocal/portfolio-contract/tools/network/network-spec.js';
 import { planRebalanceFlow } from '@aglocal/portfolio-contract/tools/plan-solve.js';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import { ACCOUNT_DUST_EPSILON } from '@agoric/portfolio-api';
+import type { FundsFlowPlan } from '@agoric/portfolio-api';
 import type { SupportedChain } from '@agoric/portfolio-api/src/constants.js';
 import { USDN, type CosmosRestClient } from './cosmos-rest-client.js';
 import type { ChainAddressTokenBalance } from './graphql/api-spectrum-blockchain/__generated/graphql.ts';
@@ -376,9 +374,9 @@ type PlannerContext = {
  */
 export const planDepositToAllocations = async (
   details: PlannerContext & { amount: NatAmount },
-): Promise<MovementDesc[]> => {
+): Promise<FundsFlowPlan> => {
   const { amount, brand, currentBalances, targetAllocation } = details;
-  if (!targetAllocation) return [];
+  if (!targetAllocation) return { flow: [] };
   const target = computeWeightedTargets(
     brand,
     currentBalances,
@@ -399,7 +397,7 @@ export const planDepositToAllocations = async (
     feeBrand,
     gasEstimator,
   });
-  return flowDetail.steps;
+  return flowDetail.plan;
 };
 
 /**
@@ -408,9 +406,9 @@ export const planDepositToAllocations = async (
  */
 export const planRebalanceToAllocations = async (
   details: PlannerContext,
-): Promise<MovementDesc[]> => {
+): Promise<FundsFlowPlan> => {
   const { brand, currentBalances, targetAllocation } = details;
-  if (!targetAllocation) return [];
+  if (!targetAllocation) return { flow: [] };
   const target = computeWeightedTargets(
     brand,
     currentBalances,
@@ -427,7 +425,7 @@ export const planRebalanceToAllocations = async (
     feeBrand,
     gasEstimator,
   });
-  return flowDetail.steps;
+  return flowDetail.plan;
 };
 
 /**
@@ -436,7 +434,7 @@ export const planRebalanceToAllocations = async (
  */
 export const planWithdrawFromAllocations = async (
   details: PlannerContext & { amount: NatAmount },
-): Promise<MovementDesc[]> => {
+): Promise<FundsFlowPlan> => {
   const { amount, brand, currentBalances, targetAllocation } = details;
   const target = computeWeightedTargets(
     brand,
@@ -457,5 +455,5 @@ export const planWithdrawFromAllocations = async (
     feeBrand,
     gasEstimator,
   });
-  return flowDetail.steps;
+  return flowDetail.plan;
 };
