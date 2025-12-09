@@ -4,7 +4,6 @@
 import { M } from '@endo/patterns';
 
 /**
- * @import {DataOnly, RemotableBrand} from '@endo/eventual-send';
  * @import {TypedPattern} from './types.js';
  */
 
