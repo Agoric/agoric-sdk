@@ -21,7 +21,7 @@ on:
   workflow_call:
   push:
     # Temporary: ws/flaky-tests added for testing before merge
-    branches: [master, ws/flaky-tests]
+    branches: [ws/flaky-tests]
   schedule:
     # Run every 3 hours for continuous flaky test detection (orchestration-queries-hermes only)
     - cron: '0 0,3,6,9,12,15,18,21 * * *'
