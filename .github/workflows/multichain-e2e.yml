@@ -19,6 +19,12 @@ on:
           - swap-on-osmosis
           - ymax-hermes
   workflow_call:
+  push:
+    # Temporary: ws/flaky-tests added for testing before merge
+    branches: [master, ws/flaky-tests]
+  schedule:
+    # Run every 3 hours for continuous flaky test detection (orchestration-queries-hermes only)
+    - cron: '0 0,3,6,9,12,15,18,21 * * *'
 
 jobs:
   orchestration-api-hermes:
@@ -101,11 +107,13 @@ jobs:
 
   orchestration-queries-hermes:
     name: Orchestration Queries - Hermes
-    # Don't run on PRs or call, only on dispatch.
-    # TODO(#11788): reenable conditions once flake is understood.
+    # Run on schedule (every 3h), push to ws/flaky-tests, or manual dispatch
+    # TODO(#11788): reenable PR/call conditions once flake is understood.
     # github.event_name == 'workflow_call' ||
     # github.event_name == 'pull_request' ||
     if: |
+      github.event_name == 'schedule' ||
+      github.event_name == 'push' ||
       (github.event_name == 'workflow_dispatch' && inputs.test_type == 'orchestration-queries-hermes')
     uses: ./.github/workflows/multichain-e2e-template.yml
     with:
