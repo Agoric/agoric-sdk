@@ -4,7 +4,9 @@ export interface TargetAllocation {
 }
 
 export interface AllocationEntry {
-  protocol: string;
+  protocol: string; // "Aave", "Compound", "USDN"
+  network: string; // "Ethereum", "Arbitrum", "Optimism", "Base", "Noble"
+  instrument: string; // "USDC", "Pool_v3", etc.
   percentage: number; // 0-100
 }
 

@@ -18,15 +18,15 @@ interface Props {
 }
 
 const POOL_OPTIONS = [
-  'USDN',
-  'Aave_Ethereum',
-  'Aave_Arbitrum',
-  'Aave_Optimism',
-  'Aave_Base',
-  'Compound_Ethereum',
-  'Compound_Arbitrum',
-  'Compound_Optimism',
-  'Compound_Base',
+  { key: 'USDN', protocol: 'USDN', network: 'Noble', instrument: 'USDC' },
+  { key: 'Aave_Ethereum', protocol: 'Aave', network: 'Ethereum', instrument: 'USDC' },
+  { key: 'Aave_Arbitrum', protocol: 'Aave', network: 'Arbitrum', instrument: 'USDC' },
+  { key: 'Aave_Optimism', protocol: 'Aave', network: 'Optimism', instrument: 'USDC' },
+  { key: 'Aave_Base', protocol: 'Aave', network: 'Base', instrument: 'USDC' },
+  { key: 'Compound_Ethereum', protocol: 'Compound', network: 'Ethereum', instrument: 'USDC' },
+  { key: 'Compound_Arbitrum', protocol: 'Compound', network: 'Arbitrum', instrument: 'USDC' },
+  { key: 'Compound_Optimism', protocol: 'Compound', network: 'Optimism', instrument: 'USDC' },
+  { key: 'Compound_Base', protocol: 'Compound', network: 'Base', instrument: 'USDC' },
 ];
 
 export function OperationForm({ userAddress, provider, onSigned }: Props) {
@@ -79,11 +79,16 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
     try {
       const now = Math.floor(Date.now() / 1000);
 
-      // Convert allocations to clean format
-      const allocationEntries = allocations.map(alloc => ({
-        protocol: alloc.poolKey.replace('_', ' '), // "Aave_Ethereum" -> "Aave Ethereum"
-        percentage: alloc.percentage,
-      }));
+      // Convert allocations to structured format
+      const allocationEntries = allocations.map(alloc => {
+        const poolOption = POOL_OPTIONS.find(option => option.key === alloc.poolKey);
+        return {
+          protocol: poolOption?.protocol || alloc.poolKey,
+          network: poolOption?.network || '',
+          instrument: poolOption?.instrument || 'USDC',
+          percentage: alloc.percentage,
+        };
+      });
 
       let message: PortfolioOperation;
       let primaryType: string;
@@ -127,6 +132,8 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
             ],
             AllocationEntry: [
               { name: 'protocol', type: 'string' },
+              { name: 'network', type: 'string' },
+              { name: 'instrument', type: 'string' },
               { name: 'percentage', type: 'uint256' },
             ],
           };
@@ -188,6 +195,8 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
             ],
             AllocationEntry: [
               { name: 'protocol', type: 'string' },
+              { name: 'network', type: 'string' },
+              { name: 'instrument', type: 'string' },
               { name: 'percentage', type: 'uint256' },
             ],
           };
@@ -282,8 +291,8 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
                 style={{ padding: '5px', flex: 1 }}
               >
                 {POOL_OPTIONS.map(pool => (
-                  <option key={pool} value={pool}>
-                    {pool}
+                  <option key={pool.key} value={pool.key}>
+                    {pool.protocol} - {pool.network} ({pool.instrument})
                   </option>
                 ))}
               </select>
