@@ -219,11 +219,14 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
         axelarApiUrl: ctx.axelarApiUrl,
         fetch: ctx.fetch,
       });
-      void liveResultP.then(found => {
-        if (found) {
-          log(`${logPrefix} Live mode completed`);
-          abortController.abort();
-        }
+      void liveResultP.then(async found => {
+        log(`${logPrefix} Live mode completed`);
+        await resolvePendingTx({
+          signingSmartWalletKit: ctx.signingSmartWalletKit,
+          txId,
+          status: found ? TxStatus.SUCCESS : TxStatus.FAILED,
+        });
+        abortController.abort();
       });
 
       await null;
