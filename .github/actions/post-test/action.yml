@@ -14,6 +14,9 @@ inputs:
     description: 'gcp'
     required: false
     default: ''
+  mergify-token:
+    description: 'token for Mergify CI Insights'
+    required: true
 
 runs:
   using: composite
@@ -49,3 +52,10 @@ runs:
         GCP_CREDENTIALS: ${{ inputs.gcp-credentials }}
       run: |
         node .github/actions/ci-test-result.cjs ./packages/*/_testoutput.txt
+    - name: Upload test results to Mergify CI Insights
+      if: always()
+      uses: mergifyio/gha-mergify-ci@v6
+      with:
+        flaky_test_detection: true
+        token: ${{ inputs.mergify-token }}
+        report_path: 'packages/*/junit.xml'

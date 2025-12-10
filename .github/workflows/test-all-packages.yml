@@ -252,20 +252,16 @@ jobs:
           from: ${{ secrets.NOTIFY_EMAIL_FROM }}
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
+      # Use always() to ensure Mergify receives test results even on cancelled runs for flaky test detection.
+      # Codecov uploads use (success() || failure()) conditions inside post-test/action.yml.
       - uses: ./.github/actions/post-test
-        if: (success() || failure())
+        if: always()
         continue-on-error: true
         timeout-minutes: 4
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
-      - name: Upload test results to Mergify CI Insights
-        if: always()
-        uses: mergifyio/gha-mergify-ci@v6
-        with:
-          flaky_test_detection: true
-          token: ${{ secrets.MERGIFY_TOKEN }}
-          report_path: 'packages/*/junit.xml'
+          mergify-token: ${{ secrets.MERGIFY_TOKEN }}
 
   # Verify that running `yarn codegen` in any package that defines it
   # does not produce changes. Only runs on pull requests.
@@ -417,19 +413,13 @@ jobs:
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
-        if: (success() || failure())
+        if: always()
         continue-on-error: true
         timeout-minutes: 4
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
-      - name: Upload test results to Mergify CI Insights
-        if: always()
-        uses: mergifyio/gha-mergify-ci@v6
-        with:
-          flaky_test_detection: true
-          token: ${{ secrets.MERGIFY_TOKEN }}
-          report_path: 'packages/*/junit.xml'
+          mergify-token: ${{ secrets.MERGIFY_TOKEN }}
 
   ##############
   # Long-running tests are executed individually.
@@ -465,19 +455,13 @@ jobs:
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
-        if: (success() || failure())
+        if: always()
         continue-on-error: true
         timeout-minutes: 4
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
-      - name: Upload test results to Mergify CI Insights
-        if: always()
-        uses: mergifyio/gha-mergify-ci@v6
-        with:
-          flaky_test_detection: true
-          token: ${{ secrets.MERGIFY_TOKEN }}
-          report_path: 'packages/*/junit.xml'
+          mergify-token: ${{ secrets.MERGIFY_TOKEN }}
 
   test-governance:
     # BEGIN-TEST-BOILERPLATE
@@ -511,19 +495,13 @@ jobs:
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
-        if: (success() || failure())
+        if: always()
         continue-on-error: true
         timeout-minutes: 4
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
-      - name: Upload test results to Mergify CI Insights
-        if: always()
-        uses: mergifyio/gha-mergify-ci@v6
-        with:
-          flaky_test_detection: true
-          token: ${{ secrets.MERGIFY_TOKEN }}
-          report_path: 'packages/*/junit.xml'
+          mergify-token: ${{ secrets.MERGIFY_TOKEN }}
 
   test-solo:
     # BEGIN-TEST-BOILERPLATE
@@ -557,19 +535,13 @@ jobs:
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
-        if: (success() || failure())
+        if: always()
         continue-on-error: true
         timeout-minutes: 4
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
-      - name: Upload test results to Mergify CI Insights
-        if: always()
-        uses: mergifyio/gha-mergify-ci@v6
-        with:
-          flaky_test_detection: true
-          token: ${{ secrets.MERGIFY_TOKEN }}
-          report_path: 'packages/*/junit.xml'
+          mergify-token: ${{ secrets.MERGIFY_TOKEN }}
 
   test-cosmic-swingset:
     # BEGIN-TEST-BOILERPLATE
@@ -607,19 +579,13 @@ jobs:
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
-        if: (success() || failure())
+        if: always()
         continue-on-error: true
         timeout-minutes: 4
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
-      - name: Upload test results to Mergify CI Insights
-        if: always()
-        uses: mergifyio/gha-mergify-ci@v6
-        with:
-          flaky_test_detection: true
-          token: ${{ secrets.MERGIFY_TOKEN }}
-          report_path: 'packages/*/junit.xml'
+          mergify-token: ${{ secrets.MERGIFY_TOKEN }}
 
   test-inter-protocol:
     # BEGIN-TEST-BOILERPLATE
@@ -653,19 +619,13 @@ jobs:
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
-        if: (success() || failure())
+        if: always()
         continue-on-error: true
         timeout-minutes: 4
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
-      - name: Upload test results to Mergify CI Insights
-        if: always()
-        uses: mergifyio/gha-mergify-ci@v6
-        with:
-          flaky_test_detection: true
-          token: ${{ secrets.MERGIFY_TOKEN }}
-          report_path: 'packages/*/junit.xml'
+          mergify-token: ${{ secrets.MERGIFY_TOKEN }}
 
   test-boot:
     # BEGIN-TEST-BOILERPLATE
@@ -704,19 +664,13 @@ jobs:
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
-        if: (success() || failure())
+        if: always()
         continue-on-error: true
         timeout-minutes: 4
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
-      - name: Upload test results to Mergify CI Insights
-        if: always()
-        uses: mergifyio/gha-mergify-ci@v6
-        with:
-          flaky_test_detection: true
-          token: ${{ secrets.MERGIFY_TOKEN }}
-          report_path: 'packages/*/junit.xml'
+          mergify-token: ${{ secrets.MERGIFY_TOKEN }}
 
   test-swingset:
     # BEGIN-TEST-BOILERPLATE
@@ -761,19 +715,13 @@ jobs:
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
-        if: (success() || failure())
+        if: always()
         continue-on-error: true
         timeout-minutes: 4
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
-      - name: Upload test results to Mergify CI Insights
-        if: always()
-        uses: mergifyio/gha-mergify-ci@v6
-        with:
-          flaky_test_detection: true
-          token: ${{ secrets.MERGIFY_TOKEN }}
-          report_path: 'packages/*/junit.xml'
+          mergify-token: ${{ secrets.MERGIFY_TOKEN }}
 
   test-zoe-unit:
     # BEGIN-TEST-BOILERPLATE
@@ -810,19 +758,13 @@ jobs:
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
-        if: (success() || failure())
+        if: always()
         continue-on-error: true
         timeout-minutes: 4
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
-      - name: Upload test results to Mergify CI Insights
-        if: always()
-        uses: mergifyio/gha-mergify-ci@v6
-        with:
-          flaky_test_detection: true
-          token: ${{ secrets.MERGIFY_TOKEN }}
-          report_path: 'packages/*/junit.xml'
+          mergify-token: ${{ secrets.MERGIFY_TOKEN }}
 
   test-zoe-swingset:
     # BEGIN-TEST-BOILERPLATE
@@ -858,16 +800,10 @@ jobs:
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
-        if: (success() || failure())
+        if: always()
         continue-on-error: true
         timeout-minutes: 4
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
-      - name: Upload test results to Mergify CI Insights
-        if: always()
-        uses: mergifyio/gha-mergify-ci@v6
-        with:
-          flaky_test_detection: true
-          token: ${{ secrets.MERGIFY_TOKEN }}
-          report_path: 'packages/*/junit.xml'
+          mergify-token: ${{ secrets.MERGIFY_TOKEN }}
