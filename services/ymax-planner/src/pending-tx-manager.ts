@@ -25,7 +25,11 @@ import type {
   UsdcAddresses,
 } from './support.ts';
 import { lookBackCctp, watchCctpTransfer } from './watchers/cctp-watcher.ts';
-import { lookBackGmp, watchGmp } from './watchers/gmp-watcher.ts';
+import {
+  lookBackGmp,
+  WATCH_GMP_ABORTED,
+  watchGmp,
+} from './watchers/gmp-watcher.ts';
 import {
   watchSmartWalletTx,
   lookBackSmartWalletTx,
@@ -41,6 +45,7 @@ export type EvmContext = {
   fetch: typeof fetch;
   kvStore: KVStore;
   makeAbortController: MakeAbortController;
+  axelarApiUrl: string;
 };
 
 export type GmpTransfer = {
@@ -202,6 +207,8 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
         timeoutMs: opts.timeoutMs,
         kvStore: ctx.kvStore,
         makeAbortController: ctx.makeAbortController,
+        axelarApiUrl: ctx.axelarApiUrl,
+        fetch: ctx.fetch,
       });
     } else {
       // Lookback mode with concurrent live watching
@@ -213,13 +220,25 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
         signal: abortController.signal,
         kvStore: ctx.kvStore,
         makeAbortController: ctx.makeAbortController,
+        axelarApiUrl: ctx.axelarApiUrl,
+        fetch: ctx.fetch,
       });
-      void liveResultP.then(found => {
-        if (found) {
+      void liveResultP
+        .then(async found => {
           log(`${logPrefix} Live mode completed`);
+          await resolvePendingTx({
+            signingSmartWalletKit: ctx.signingSmartWalletKit,
+            txId,
+            status: found ? TxStatus.SUCCESS : TxStatus.FAILED,
+          });
           abortController.abort();
-        }
-      });
+        })
+        .catch(error => {
+          // if promise was aborted. no action needed
+          if (error !== WATCH_GMP_ABORTED) {
+            throw error;
+          }
+        });
 
       await null;
       // Wait for at least one block to ensure overlap between lookback and live mode

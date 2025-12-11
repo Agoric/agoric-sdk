@@ -83,7 +83,8 @@ Environment variables:
 
 - `CLUSTER`: "local", "testnet", or "mainnet" to specify the respective
   collection of networks to use, in which "local" is currently incomplete and
-  overlaps with "testnet" (default derived from `AGORIC_NET`)
+  overlaps with "testnet" (default derived from `AGORIC_NET`).
+  This setting is also used to derive the correct `axelarApiUrl` for the selected network cluster.
 - `AGORIC_NET`: network specifier per
   [Agoric SDK Environment Variables](../../docs/env.md), either "$subdomain" for
   requesting MinimalNetworkConfig from URL

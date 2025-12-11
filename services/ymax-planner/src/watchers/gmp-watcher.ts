@@ -14,6 +14,10 @@ import {
   getTxBlockLowerBound,
   setTxBlockLowerBound,
 } from '../kv-store.ts';
+import { findTxStatusFromAxelarscan } from '../axelarscan-utils.ts';
+
+// Custom error code for aborted GMP watch
+export const WATCH_GMP_ABORTED = 'WATCH_GMP_ABORTED';
 
 // TODO: Remove once all contracts are upgraded to emit MulticallStatus
 const MULTICALL_EXECUTED_SIGNATURE = ethers.id(
@@ -32,6 +36,11 @@ type WatchGmp = {
   makeAbortController: MakeAbortController;
 };
 
+type AxelarScanOptions = {
+  fetch: typeof fetch;
+  axelarApiUrl: string;
+};
+
 export const watchGmp = ({
   provider,
   contractAddress,
@@ -40,10 +49,12 @@ export const watchGmp = ({
   log = () => {},
   setTimeout = globalThis.setTimeout,
   signal,
-}: WatchGmp & WatcherTimeoutOptions): Promise<boolean> => {
-  return new Promise(resolve => {
+  axelarApiUrl,
+  fetch,
+}: AxelarScanOptions & WatchGmp & WatcherTimeoutOptions): Promise<boolean> => {
+  return new Promise((resolve, reject) => {
     if (signal?.aborted) {
-      resolve(false);
+      reject(WATCH_GMP_ABORTED);
       return;
     }
 
@@ -74,7 +85,11 @@ export const watchGmp = ({
       listeners = [];
     };
 
-    signal?.addEventListener('abort', () => finish(false));
+    signal?.addEventListener('abort', () => {
+      // Explicitly reject before finishing to avoid resolving the promise
+      reject(WATCH_GMP_ABORTED);
+      finish(false);
+    });
 
     const listenForStatus = (eventLog: Log) => {
       log(
@@ -110,12 +125,25 @@ export const watchGmp = ({
     void provider.on(executedFilter, listenForExecution);
     listeners.push({ event: statusFilter, listener: listenForStatus });
     listeners.push({ event: executedFilter, listener: listenForExecution });
-
-    timeoutId = setTimeout(() => {
+    timeoutId = setTimeout(async () => {
+      await null;
       if (!executionFound) {
         log(
           `✗ No MulticallStatus or MulticallExecuted found for txId ${txId} within ${timeoutMs / 60000} minutes`,
         );
+        const txStatus = await findTxStatusFromAxelarscan(
+          txId,
+          contractAddress,
+          {
+            axelarApiUrl,
+            fetch,
+          },
+        );
+
+        if (txStatus === 'error') {
+          log('failed to execute on destination chain');
+          finish(false);
+        }
       }
     }, timeoutMs);
   });
