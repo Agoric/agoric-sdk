@@ -262,6 +262,7 @@ jobs:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
           mergify-token: ${{ secrets.MERGIFY_TOKEN }}
+          job-name: 'test-quick (${{ matrix.engine }})'
 
   # Verify that running `yarn codegen` in any package that defines it
   # does not produce changes. Only runs on pull requests.
@@ -420,6 +421,7 @@ jobs:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
           mergify-token: ${{ secrets.MERGIFY_TOKEN }}
+          job-name: 'test-quick2 (${{ matrix.engine }})'
 
   ##############
   # Long-running tests are executed individually.
@@ -462,6 +464,7 @@ jobs:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
           mergify-token: ${{ secrets.MERGIFY_TOKEN }}
+          job-name: 'test-fast-usdc-deploy (${{ matrix.engine }})'
 
   test-governance:
     # BEGIN-TEST-BOILERPLATE
@@ -502,6 +505,7 @@ jobs:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
           mergify-token: ${{ secrets.MERGIFY_TOKEN }}
+          job-name: 'test-governance (${{ matrix.engine }})'
 
   test-solo:
     # BEGIN-TEST-BOILERPLATE
@@ -542,6 +546,7 @@ jobs:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
           mergify-token: ${{ secrets.MERGIFY_TOKEN }}
+          job-name: 'test-solo (${{ matrix.engine }})'
 
   test-cosmic-swingset:
     # BEGIN-TEST-BOILERPLATE
@@ -586,6 +591,7 @@ jobs:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
           mergify-token: ${{ secrets.MERGIFY_TOKEN }}
+          job-name: 'test-cosmic-swingset (${{ matrix.engine }})'
 
   test-inter-protocol:
     # BEGIN-TEST-BOILERPLATE
@@ -626,6 +632,7 @@ jobs:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
           mergify-token: ${{ secrets.MERGIFY_TOKEN }}
+          job-name: 'test-inter-protocol (${{ matrix.engine }})'
 
   test-boot:
     # BEGIN-TEST-BOILERPLATE
@@ -671,6 +678,7 @@ jobs:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
           mergify-token: ${{ secrets.MERGIFY_TOKEN }}
+          job-name: 'test-boot (${{ matrix.engine }})'
 
   test-swingset:
     # BEGIN-TEST-BOILERPLATE
@@ -722,6 +730,7 @@ jobs:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
           mergify-token: ${{ secrets.MERGIFY_TOKEN }}
+          job-name: 'test-swingset (${{ matrix.engine }})'
 
   test-zoe-unit:
     # BEGIN-TEST-BOILERPLATE
@@ -765,6 +774,7 @@ jobs:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
           mergify-token: ${{ secrets.MERGIFY_TOKEN }}
+          job-name: 'test-zoe-unit (${{ matrix.engine }})'
 
   test-zoe-swingset:
     # BEGIN-TEST-BOILERPLATE
@@ -807,3 +817,4 @@ jobs:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
           mergify-token: ${{ secrets.MERGIFY_TOKEN }}
+          job-name: 'test-zoe-swingset (${{ matrix.engine }})'

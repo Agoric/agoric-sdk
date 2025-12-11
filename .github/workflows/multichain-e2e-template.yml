@@ -165,6 +165,7 @@ jobs:
           flaky_test_detection: true
           token: ${{ secrets.MERGIFY_TOKEN }}
           report_path: 'agoric-sdk/multichain-testing/junit.xml'
+          job_name: 'multichain-e2e (${{ inputs.test_suite_name }})'
 
       - name: Capture slog.slog
         if: always()

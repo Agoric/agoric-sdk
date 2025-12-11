@@ -17,6 +17,10 @@ inputs:
   mergify-token:
     description: 'token for Mergify CI Insights'
     required: true
+  job-name:
+    description: 'Job name for Mergify CI Insights (use with matrix to distinguish variations)'
+    required: false
+    default: ''
 
 runs:
   using: composite
@@ -59,3 +63,4 @@ runs:
         flaky_test_detection: true
         token: ${{ inputs.mergify-token }}
         report_path: 'packages/*/junit.xml'
+        job_name: ${{ inputs.job-name }}
