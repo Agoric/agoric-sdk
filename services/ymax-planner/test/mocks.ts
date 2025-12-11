@@ -27,6 +27,21 @@ const makeAbortController = prepareAbortController({
   AbortSignal,
 });
 
+export const makeNotImplemented = (
+  key: string | symbol,
+  { async }: { async?: boolean } = {},
+) => {
+  const rejector: any = () => {
+    const err = Error(`Not implemented: ${String(key)}`);
+    if (async) return Promise.reject(err);
+    throw err;
+  };
+  return rejector;
+};
+
+export const makeNotImplementedAsync = (key: string | symbol) =>
+  makeNotImplemented(key, { async: true });
+
 /** Return a correctly-typed record lacking significant functionality. */
 export const createMockEnginePowers = (): EnginePowers => ({
   evmCtx: {
@@ -468,3 +483,13 @@ export const createMockGmpExecutionEvent = (
     transactionHash: '0x1234567890abcdef1234567890abcdef12345678',
   };
 };
+
+export const makeStreamCellFromText = (
+  blockHeight: bigint,
+  values: string[],
+) => ({ blockHeight: `${blockHeight}`, values });
+
+export const makeStreamCellJsonFromText = (
+  blockHeight: bigint,
+  values: string[],
+) => JSON.stringify(makeStreamCellFromText(blockHeight, values));
