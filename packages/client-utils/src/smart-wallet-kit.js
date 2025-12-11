@@ -10,6 +10,7 @@ import { makeAgoricNames, makeVstorageKit } from './vstorage-kit.js';
  * @import {CurrentWalletRecord, UpdateRecord} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {MinimalNetworkConfig} from './network-config.js';
  * @import {RetryOptionsAndPowers} from './sync-tools.js';
+ * @import {VstorageKit} from './vstorage-kit.js';
  * @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js';
  */
 
@@ -113,28 +114,20 @@ export const getOfferWantsSatisfied = async (id, getLastUpdate, retryOpts) => {
 harden(getOfferWantsSatisfied);
 
 /**
- * Augment VstorageKit with addtional convenience methods for working with
+ * Augment VstorageKit with additional convenience methods for working with
  * Agoric smart wallets. This use of "kit" is unfortunate because it does not
  * pertain to a single smart wallet. (Whereas VstorageKit pertains to a single
  * vstorage tree.) It was once called WalletUtils, which is more accurate.
  *
- * @param {object} root0
- * @param {typeof globalThis.fetch} root0.fetch
- * @param {(ms: number) => Promise<void>} root0.delay
- * @param {boolean} [root0.names]
- * @param {MinimalNetworkConfig} networkConfig
+ * @param {VstorageKit} vsk
+ * @param {object} [options]
+ * @param {boolean} [options.names]
+ * @alpha
  */
-export const makeSmartWalletKit = async (
-  {
-    fetch,
-    // eslint-disable-next-line no-unused-vars -- keep for removing ambient authority
-    delay,
-    names = true,
-  },
-  networkConfig,
+export const makeSmartWalletKitFromVstorageKit = async (
+  vsk,
+  { names = true } = {},
 ) => {
-  const vsk = makeVstorageKit({ fetch }, networkConfig);
-
   const agoricNames = await (names
     ? makeAgoricNames(vsk.fromBoard, vsk.vstorage)
     : /** @type {AgoricNamesRemotes} */ ({}));
@@ -213,4 +206,32 @@ export const makeSmartWalletKit = async (
     pollOffer,
   };
 };
+harden(makeSmartWalletKitFromVstorageKit);
+
+/**
+ * Augment VstorageKit with additional convenience methods for working with
+ * Agoric smart wallets. This use of "kit" is unfortunate because it does not
+ * pertain to a single smart wallet. (Whereas VstorageKit pertains to a single
+ * vstorage tree.) It was once called WalletUtils, which is more accurate.
+ *
+ * @param {object} root0
+ * @param {typeof globalThis.fetch} root0.fetch
+ * @param {(ms: number) => Promise<void>} root0.delay
+ * @param {boolean} [root0.names]
+ * @param {MinimalNetworkConfig} networkConfig
+ */
+export const makeSmartWalletKit = async (
+  {
+    fetch,
+    // eslint-disable-next-line no-unused-vars -- keep for removing ambient authority
+    delay,
+    names = true,
+  },
+  networkConfig,
+) => {
+  const vsk = makeVstorageKit({ fetch }, networkConfig);
+  return makeSmartWalletKitFromVstorageKit(vsk, { names });
+};
+harden(makeSmartWalletKit);
+
 /** @typedef {EReturn<typeof makeSmartWalletKit>} SmartWalletKit */
