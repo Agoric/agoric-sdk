@@ -1,10 +1,10 @@
-import { ethers, type WebSocketProvider } from 'ethers';
+import { ethers } from 'ethers';
+import type { WebSocketProvider } from 'ethers';
 
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.ts';
-import {
-  boardSlottingMarshaller,
-  type SigningSmartWalletKit,
-} from '@agoric/client-utils';
+import { TEST_NETWORK } from '@aglocal/portfolio-contract/test/network/test-network.js';
+import { boardSlottingMarshaller } from '@agoric/client-utils';
+import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import { makeKVStoreFromMap } from '@agoric/internal/src/kv-store.js';
@@ -43,6 +43,7 @@ export const createMockEnginePowers = (): EnginePowers => ({
   spectrumChainIds: {},
   spectrumPoolIds: {},
   cosmosRest: {} as any,
+  network: TEST_NETWORK,
   signingSmartWalletKit: {} as any,
   walletStore: {} as any,
   getWalletInvocationUpdate: async () => undefined,
