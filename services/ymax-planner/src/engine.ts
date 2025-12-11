@@ -37,7 +37,7 @@ import {
   portfolioIdFromKey,
   PortfolioStatusShapeExt,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
-import { PROD_NETWORK } from '@aglocal/portfolio-contract/tools/network/network.prod.js';
+import type { NetworkSpec } from '@aglocal/portfolio-contract/tools/network/network-spec.js';
 import { NoSolutionError } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import {
@@ -185,6 +185,7 @@ export type Powers = {
   spectrumChainIds: Partial<Record<SupportedChain, string>>;
   spectrumPoolIds: Partial<Record<InstrumentId, string>>;
   cosmosRest: CosmosRestClient;
+  network: NetworkSpec;
   signingSmartWalletKit: SigningSmartWalletKit;
   walletStore: ReturnType<typeof reflectWalletStore>;
   getWalletInvocationUpdate: (
@@ -199,6 +200,7 @@ export type Powers = {
 type ProcessPortfolioPowers = Pick<
   Powers,
   | 'cosmosRest'
+  | 'network'
   | 'spectrum'
   | 'spectrumBlockchain'
   | 'spectrumPools'
@@ -252,6 +254,7 @@ export const processPortfolioEvents = async (
     depositBrand,
     feeBrand,
     gasEstimator,
+    network,
     signingSmartWalletKit,
     walletStore,
     getWalletInvocationUpdate,
@@ -323,7 +326,7 @@ export const processPortfolioEvents = async (
       // FlowDetail, but we need it here when it is present (i.e., for types
       // "deposit" and "withdraw" and it's harmless otherwise.
       amount: flowDetail.amount,
-      network: PROD_NETWORK,
+      network,
       brand: depositBrand,
       feeBrand,
       gasEstimator,
