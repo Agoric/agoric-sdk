@@ -70,6 +70,8 @@ import {
 import type { SpectrumClient } from './spectrum-client.ts';
 import { UserInputError } from './support.ts';
 import {
+  encodedKeyToPath,
+  pathToEncodedKey,
   parseStreamCell,
   parseStreamCellValue,
   readStorageMeta,
@@ -118,25 +120,6 @@ const makeVstoragePathPrefixes = (contractInstance: string) => ({
   pendingTxPathPrefix: `published.${contractInstance}.pendingTxs`,
 });
 
-/** cf. golang/cosmos/x/vstorage/types/path_keys.go */
-const EncodedKeySeparator = '\x00';
-const PathSeparator = '.';
-
-/**
- * TODO: Promote elsewhere, maybe @agoric/internal?
- * cf. golang/cosmos/x/vstorage/types/path_keys.go
- */
-const encodedKeyToPath = (key: string) => {
-  const encodedParts = key.split(EncodedKeySeparator);
-  encodedParts.length > 1 || Fail`invalid encoded key ${q(key)}`;
-  const path = encodedParts.slice(1).join(PathSeparator);
-  return path;
-};
-const pathToEncodedKey = (path: string) => {
-  const segments = path.split(PathSeparator);
-  return `${segments.length}${EncodedKeySeparator}${segments.join(EncodedKeySeparator)}`;
-};
-
 const vstorageEntryFromCosmosEvent = (event: CosmosEvent) => {
   const attributes = tryNow(
     fromUniqueEntries,
@@ -164,14 +147,13 @@ export const makeVstorageEvent = (
     blockHeight: String(blockHeight),
     values: [JSON.stringify(marshaller.toCapData(value))],
   });
-  const eventAttrs = {
-    store: 'vstorage',
-    key: pathToEncodedKey(path),
-    value: streamCellJson,
-  };
   const event: CosmosEvent = {
     type: 'state_change',
-    attributes: entries(eventAttrs).map(([k, v]) => ({ key: k, value: v })),
+    attributes: [
+      { key: 'store', value: 'vstorage' },
+      { key: 'key', value: pathToEncodedKey(path) },
+      { key: 'value', value: streamCellJson },
+    ],
   };
   return { event, streamCellJson };
 };
