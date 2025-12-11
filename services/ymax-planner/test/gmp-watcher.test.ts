@@ -2,8 +2,15 @@ import test from 'ava';
 import { id, keccak256, toUtf8Bytes } from 'ethers';
 import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
-import { createMockPendingTxOpts, mockFetch } from './mocks.ts';
+import { createMockPendingTxData } from '@aglocal/portfolio-contract/tools/mocks.ts';
+import { encodeAbiParameters } from 'viem';
+import {
+  createMockGmpExecutionEvent,
+  createMockPendingTxOpts,
+  mockFetch,
+} from './mocks.ts';
 import { handlePendingTx } from '../src/pending-tx-manager.ts';
+import { GMP_ABI } from '../src/axelarscan-utils.ts';
 
 test('handlePendingTx processes GMP transaction successfully', async t => {
   const opts = createMockPendingTxOpts();
@@ -125,7 +132,7 @@ test('handlePendingTx logs a time out on a GMP transaction with no matching even
   ]);
 });
 
-test('handlePendingTx fails a pendingTx on it finds a failed tx on Axelarscan', async t => {
+test('handlePendingTx fails a pendingTx on it finds a failed tx on Axelarscan (live mode)', async t => {
   const opts = createMockPendingTxOpts();
   const txId = 'tx2';
   opts.fetch = mockFetch({ txId, status: 'error' });
@@ -182,6 +189,89 @@ test('handlePendingTx fails a pendingTx on it finds a failed tx on Axelarscan', 
     `[${txId}] Watching for MulticallStatus and MulticallExecuted events for txId: ${txId} at contract: ${contractAddress}`,
     `[${txId}] ✗ No MulticallStatus or MulticallExecuted found for txId ${txId} within 0.01 minutes`,
     `[${txId}] failed to execute on destination chain`,
+    `[${txId}] GMP tx resolved`,
+  ]);
+});
+
+test('handlePendingTx fails a pendingTx on it finds a failed tx on Axelarscan (lookback mode)', async t => {
+  const logs: string[] = [];
+  const mockLog = (...args: unknown[]) => logs.push(args.join(' '));
+
+  const contractAddress = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
+  const destinationAddress = `eip155:42161:${contractAddress}`;
+  const txId = 'tx2' as `tx${number}`;
+
+  const gmpTx = createMockPendingTxData({
+    type: TxType.GMP,
+    destinationAddress,
+  });
+
+  const chainId = 'eip155:42161';
+  const latestBlock = 8;
+  const opts = createMockPendingTxOpts(latestBlock);
+  const mockProvider = opts.evmProviders[chainId] as any;
+
+  const currentTimeMs = 1700000000; // 2023-11-14T22:13:20Z
+  const txTimestampMs = currentTimeMs - 10 * 1000; // 10 seconds ago
+
+  const event = createMockGmpExecutionEvent(txId, latestBlock);
+  mockProvider.getLogs = async () => [];
+
+  const ctxWithFetch = harden({
+    ...opts,
+    fetch: async (url: string) => {
+      return {
+        ok: true,
+        json: async () => ({
+          data: [
+            {
+              status: 'error',
+              call: {
+                transactionHash: '0xabcdef123456',
+                returnValues: {
+                  messageId: `msg_${txId}`,
+                  payload: encodeAbiParameters(GMP_ABI, [
+                    { id: txId, calls: [] },
+                  ]),
+                },
+              },
+              executed: {
+                transactionHash: '0xexecuted123',
+                receipt: {
+                  logs: [event],
+                },
+              },
+            },
+          ],
+        }),
+      } as Response;
+    },
+  });
+
+  await handlePendingTx(
+    { txId, ...gmpTx },
+    {
+      ...ctxWithFetch,
+      log: mockLog,
+      timeoutMs: 600,
+    },
+    txTimestampMs,
+  );
+
+  const fromBlock = 0;
+  const expectedChunkEnd = latestBlock + 1;
+
+  t.deepEqual(logs, [
+    `[${txId}] handling ${TxType.GMP} tx`,
+    `[${txId}] Watching for MulticallStatus and MulticallExecuted events for txId: ${txId} at contract: ${contractAddress}`,
+    `[${txId}] Searching blocks ${fromBlock}/${fromBlock} → ${expectedChunkEnd} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
+    `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,
+    `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,
+    `[${txId}] No matching MulticallStatus or MulticallExecuted found`,
+    `[${txId}] Lookback completed without finding transaction, waiting for live mode`,
+    `[${txId}] ✗ No MulticallStatus or MulticallExecuted found for txId ${txId} within 0.01 minutes`,
+    `[${txId}] failed to execute on destination chain`,
+    `[${txId}] Live mode completed`,
     `[${txId}] GMP tx resolved`,
   ]);
 });
