@@ -15,24 +15,28 @@
     "preact": "^10.19.3"
   },
   "devDependencies": {
+    "@endo/init": "^1.1.12",
     "@preact/preset-vite": "^2.7.0",
     "ava": "^6.0.1",
-    "ts-node": "^10.9.1",
+    "ts-blank-space": "^0.6.2",
     "typescript": "^5.3.3",
     "vite": "^5.0.8"
   },
   "ava": {
-    "files": [
-      "test/**/*.test.ts",
-      "test/**/*.test.js"
-    ],
     "extensions": {
-      "ts": "module",
-      "js": true
+      "js": true,
+      "ts": "module"
     },
+    "files": [
+      "test/**/*.test.*"
+    ],
     "nodeArguments": [
-      "--loader=ts-node/esm",
+      "--import=ts-blank-space/register",
       "--no-warnings"
-    ]
+    ],
+    "require": [
+      "@endo/init/debug.js"
+    ],
+    "timeout": "20m"
   }
 }
