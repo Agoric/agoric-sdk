@@ -11,37 +11,36 @@ export interface AllocationEntry {
 }
 
 export interface TokenAmount {
-  amount: string; // amount in smallest unit like "1000000"
-  token: string; // USDC contract address
+  amount: `${number}`; // amount in smallest unit like "1000000"
+  token: `0x${string}`; // USDC contract address
 }
 
-export interface OpenPortfolio {
-  user: string; // EVM address
+type EVMAddress = `0x${string}`;
+
+export interface AvoidReplay {
+  nonce: `${number}`; // timestamp as string
+  deadline: `${number}`; // timestamp + 1 hour as string
+}
+
+export interface OpenPortfolio extends AvoidReplay {
+  user: EVMAddress;
   asset: TokenAmount;
   allocation: AllocationEntry[];
-  nonce: string; // timestamp as string
-  deadline: string; // timestamp + 1 hour as string
 }
 
-export interface Deposit {
+export interface Deposit extends AvoidReplay {
+  user: EVMAddress;
+  asset: TokenAmount;
+}
+
+export interface Withdraw extends AvoidReplay {
   user: string; // EVM address
   asset: TokenAmount;
-  nonce: string; // timestamp as string
-  deadline: string; // timestamp + 1 hour as string
 }
 
-export interface Withdraw {
-  user: string; // EVM address
-  asset: TokenAmount;
-  nonce: string; // timestamp as string
-  deadline: string; // timestamp + 1 hour as string
-}
-
-export interface Reallocate {
+export interface Reallocate extends AvoidReplay {
   user: string; // EVM address
   allocation: AllocationEntry[];
-  nonce: string; // timestamp as string
-  deadline: string; // timestamp + 1 hour as string
 }
 
 export type PortfolioOperation =

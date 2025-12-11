@@ -6,6 +6,7 @@ import type {
   EIP712Domain,
   EIP712Types,
   AllocationEntry,
+  OpenPortfolio,
 } from '../types';
 
 interface Props {
@@ -19,14 +20,49 @@ interface Props {
 
 const POOL_OPTIONS = [
   { key: 'USDN', protocol: 'USDN', network: 'Noble', instrument: 'USDC' },
-  { key: 'Aave_Ethereum', protocol: 'Aave', network: 'Ethereum', instrument: 'USDC' },
-  { key: 'Aave_Arbitrum', protocol: 'Aave', network: 'Arbitrum', instrument: 'USDC' },
-  { key: 'Aave_Optimism', protocol: 'Aave', network: 'Optimism', instrument: 'USDC' },
+  {
+    key: 'Aave_Ethereum',
+    protocol: 'Aave',
+    network: 'Ethereum',
+    instrument: 'USDC',
+  },
+  {
+    key: 'Aave_Arbitrum',
+    protocol: 'Aave',
+    network: 'Arbitrum',
+    instrument: 'USDC',
+  },
+  {
+    key: 'Aave_Optimism',
+    protocol: 'Aave',
+    network: 'Optimism',
+    instrument: 'USDC',
+  },
   { key: 'Aave_Base', protocol: 'Aave', network: 'Base', instrument: 'USDC' },
-  { key: 'Compound_Ethereum', protocol: 'Compound', network: 'Ethereum', instrument: 'USDC' },
-  { key: 'Compound_Arbitrum', protocol: 'Compound', network: 'Arbitrum', instrument: 'USDC' },
-  { key: 'Compound_Optimism', protocol: 'Compound', network: 'Optimism', instrument: 'USDC' },
-  { key: 'Compound_Base', protocol: 'Compound', network: 'Base', instrument: 'USDC' },
+  {
+    key: 'Compound_Ethereum',
+    protocol: 'Compound',
+    network: 'Ethereum',
+    instrument: 'USDC',
+  },
+  {
+    key: 'Compound_Arbitrum',
+    protocol: 'Compound',
+    network: 'Arbitrum',
+    instrument: 'USDC',
+  },
+  {
+    key: 'Compound_Optimism',
+    protocol: 'Compound',
+    network: 'Optimism',
+    instrument: 'USDC',
+  },
+  {
+    key: 'Compound_Base',
+    protocol: 'Compound',
+    network: 'Base',
+    instrument: 'USDC',
+  },
 ];
 
 export function OperationForm({ userAddress, provider, onSigned }: Props) {
@@ -81,7 +117,9 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
 
       // Convert allocations to structured format
       const allocationEntries = allocations.map(alloc => {
-        const poolOption = POOL_OPTIONS.find(option => option.key === alloc.poolKey);
+        const poolOption = POOL_OPTIONS.find(
+          option => option.key === alloc.poolKey,
+        );
         return {
           protocol: poolOption?.protocol || alloc.poolKey,
           network: poolOption?.network || '',
@@ -96,15 +134,15 @@ export function OperationForm({ userAddress, provider, onSigned }: Props) {
 
       const baseFields = {
         user: userAddress,
-        token: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48', // USDC contract address (Ethereum mainnet)
+        token: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48' as `0x${string}`, // USDC contract address (Ethereum mainnet)
         chainId: '1', // Ethereum mainnet
         decimals: '6',
-        nonce: now.toString(),
-        deadline: (now + 3600).toString(), // 1 hour
+        nonce: `${now}` as `${number}`,
+        deadline: `${now + 3600}` as `${number}`, // 1 hour
       };
 
       const tokenAmount = {
-        amount: (parseFloat(amount) * 1e6).toString(),
+        amount: `${parseFloat(amount) * 1e6}` as `${number}`,
         token: baseFields.token,
       };
 
