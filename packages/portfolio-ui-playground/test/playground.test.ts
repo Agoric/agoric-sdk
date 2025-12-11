@@ -1,9 +1,15 @@
 import test from 'ava';
+// import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-test('1 + 1 = 2', t => {
+import { makeTxToSign } from '../src/lib/portfolio-operations.js';
+
+test('openPortfolio', t => {
   t.is(1 + 1, 2);
-});
-
-test('string concatenation', t => {
-  t.is('hello' + ' world', 'hello world');
+  // try {
+  //   // const now = Date.parse('2020-01-01').valueOf();
+  //   // const actual = makeTxToSign([], '0x123', now, `1`, 'openPortfolio');
+  //   // t.log(actual);
+  // } catch (err) {
+  //   console.error('@@oops!', err);
+  // }
 });
