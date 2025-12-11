@@ -47,10 +47,12 @@ import {
   provideLazyMap,
   stripPrefix,
   tryNow,
+  typedEntries,
 } from '@agoric/internal';
 import { fromUniqueEntries } from '@agoric/internal/src/ses-utils.js';
 import { makeWorkPool } from '@agoric/internal/src/work-pool.js';
 import type { SupportedChain } from '@agoric/portfolio-api/src/constants.js';
+import type { PortfolioKey, FlowKey } from '@agoric/portfolio-api/src/types.js';
 
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
@@ -81,7 +83,7 @@ import {
   vstoragePathIsParentOf,
 } from './vstorage-utils.ts';
 
-const { entries, fromEntries, values } = Object;
+const { fromEntries, values } = Object;
 
 // eslint-disable-next-line no-nested-ternary
 const compareBigints = (a: bigint, b: bigint) => (a > b ? 1 : a < b ? -1 : 0);
@@ -277,16 +279,16 @@ export const processPortfolioEvents = async (
   };
   const startFlow = async (
     portfolioStatus: StatusFor['portfolio'],
-    portfolioKey: string,
-    flowKey: string,
+    portfolioKey: PortfolioKey,
+    flowKey: FlowKey,
     flowDetail: FlowDetail,
   ) => {
     const path = `${portfoliosPathPrefix}.${portfolioKey}`;
-    const portfolioId = portfolioIdFromKey(portfolioKey as any);
-    const flowId = flowIdFromKey(flowKey as any);
-    const scope: [number, number] = [portfolioId, flowId];
+    const portfolioId = portfolioIdFromKey(portfolioKey);
+    const flowId = flowIdFromKey(flowKey);
+    const scope = [portfolioId, flowId] as const;
     const { policyVersion, rebalanceCount, targetAllocation } = portfolioStatus;
-    const conditions: [number, number] = [policyVersion, rebalanceCount];
+    const conditions = [policyVersion, rebalanceCount] as const;
 
     const currentBalances = await getNonDustBalances(
       portfolioStatus,
@@ -390,7 +392,7 @@ export const processPortfolioEvents = async (
   };
   const handledPortfolioKeys = new Set<string>();
   // prettier-ignore
-  const handlePortfolio = async (portfolioKey: string, eventRecord: EventRecord) => {
+  const handlePortfolio = async (portfolioKey: PortfolioKey, eventRecord: EventRecord) => {
     if (handledPortfolioKeys.has(portfolioKey)) return;
     handledPortfolioKeys.add(portfolioKey);
     const path = `${portfoliosPathPrefix}.${portfolioKey}`;
@@ -430,7 +432,7 @@ export const processPortfolioEvents = async (
       // acceptance of the first submission would invalidate the others as
       // stale, but we'll see them again when such acceptance prompts changes
       // to the portfolio status.
-      for (const [flowKey, flowDetail] of entries(status.flowsRunning || {})) {
+      for (const [flowKey, flowDetail] of typedEntries(status.flowsRunning || {})) {
         // If vstorage has data for this flow then we've already responded.
         if (flowKeys.has(flowKey)) continue;
         await runWithFlowTrace(
@@ -482,7 +484,10 @@ export const processPortfolioEvents = async (
         }
       }
     } else if (vstoragePathIsParentOf(portfoliosPathPrefix, path)) {
-      const portfolioKey = stripPrefix(`${portfoliosPathPrefix}.`, path);
+      const portfolioKey = stripPrefix(
+        `${portfoliosPathPrefix}.`,
+        path,
+      ) as PortfolioKey;
       await handlePortfolio(portfolioKey, eventRecord);
     }
   }
@@ -622,7 +627,7 @@ export const startEngine = async (
             chainName === 'noble'
               ? 'cosmos:testnoble:noble1xw2j23rcwrkg02yxdn5ha2d2x868cuk6370s9y'
               : (([caipChainId, addr]) => `${caipChainId}:${addr}`)(
-                  entries(evmCtx.usdcAddresses)[0],
+                  typedEntries(evmCtx.usdcAddresses)[0],
                 );
           const accountIdByChain = { [chainName]: dummyAddress } as any;
           await getCurrentBalance(info, accountIdByChain, powers);
@@ -799,7 +804,7 @@ export const startEngine = async (
       deferrals.push(deferral);
       return false;
     }) as Array<EventRecord & { type: 'kvstore' }>;
-    const newEvents = entries(respData).flatMap(([key, value]) => {
+    const newEvents = typedEntries(respData).flatMap(([key, value]) => {
       // We care about result_begin_block/result_end_block/etc.
       if (!key.startsWith('result_')) return [];
       const events = (value as any)?.events;
