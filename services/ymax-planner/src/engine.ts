@@ -109,7 +109,7 @@ type EventRecord = { blockHeight: bigint } & (
   | { type: 'transfer'; address: Bech32Address }
 );
 
-type VstorageEventDetail = {
+export type VstorageEventDetail = {
   path: string;
   value: string;
   eventRecord: EventRecord;
@@ -181,7 +181,7 @@ export type Powers = {
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
 };
 
-type ProcessPortfolioPowers = Pick<
+export type ProcessPortfolioPowers = Pick<
   Powers,
   | 'cosmosRest'
   | 'network'
@@ -205,7 +205,7 @@ type ProcessPortfolioPowers = Pick<
   };
 };
 
-type PortfoliosMemory = {
+export type PortfoliosMemory = {
   deferrals: EventRecord[];
   snapshots?: Map<string, { fingerprint: string; repeats: number }>;
 };
