@@ -66,6 +66,8 @@ export type TrafficEntry<
 > = {
   /** Semantic operation name for debugging, e.g. 'IBC transfer' */
   op: string;
+  /** Indicates whether the traffic entry is not yet finalized. */
+  incomplete?: boolean;
   /** Network API endpoint info for source chain */
   src: NetworkEndpoint<SP>;
   /** Network API endpoint info for destination chain */
