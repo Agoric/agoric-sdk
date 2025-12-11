@@ -16,6 +16,9 @@ import {
 } from '../kv-store.ts';
 import { findTxStatusFromAxelarscan } from '../axelarscan-utils.ts';
 
+// Custom error code for aborted GMP watch
+export const WATCH_GMP_ABORTED = 'WATCH_GMP_ABORTED';
+
 // TODO: Remove once all contracts are upgraded to emit MulticallStatus
 const MULTICALL_EXECUTED_SIGNATURE = ethers.id(
   'MulticallExecuted(string,(bool,bytes)[])',
@@ -49,9 +52,9 @@ export const watchGmp = ({
   axelarApiUrl,
   fetch,
 }: AxelarScanOptions & WatchGmp & WatcherTimeoutOptions): Promise<boolean> => {
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
     if (signal?.aborted) {
-      resolve(false);
+      reject(WATCH_GMP_ABORTED);
       return;
     }
 
@@ -82,7 +85,11 @@ export const watchGmp = ({
       listeners = [];
     };
 
-    signal?.addEventListener('abort', () => finish(false));
+    signal?.addEventListener('abort', () => {
+      // Explicitly reject before finishing to avoid resolving the promise
+      reject(WATCH_GMP_ABORTED);
+      finish(false);
+    });
 
     const listenForStatus = (eventLog: Log) => {
       log(
