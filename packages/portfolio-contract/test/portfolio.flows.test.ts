@@ -1752,6 +1752,7 @@ test('A transfers to axelar; B arrives', makeAccountEVMRace, 'txfr');
 test('A times out on axelar; B arrives', makeAccountEVMRace, 'txfr', 'txfr');
 test('A gets rejected txN; B arrives', makeAccountEVMRace, 'txfr', 'resolve');
 test('A finishes before attempt B starts', makeAccountEVMRace, 'resolve');
+
 test('planner rejects plan and flow fails gracefully', async t => {
   const { orch, ctx, offer, storage } = mocks({});
 
@@ -1844,7 +1845,40 @@ test('failed transaction publishes rejectionReason to vstorage', async t => {
   await t.throwsAsync(() => vowTools.when(result), {
     message: rejectionReason,
   });
+  await documentStorageSchema(t, storage, docOpts);
+});
 
+test('asking to relay less than 1 USDC over CCTP is refused by contract', async t => {
+  const { give, steps } = await makePortfolioSteps(
+    { Aave: make(USDC, 250_000n) },
+    { feeBrand: BLD },
+  );
+  const { Deposit } = give;
+  const { orch, tapPK, ctx, offer, storage, txResolver } = mocks(
+    {},
+    { Deposit },
+  );
+
+  const [actual] = await Promise.all([
+    openPortfolio(orch, ctx, offer.seat, { flow: steps }),
+    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
+      await txResolver.drainPending();
+    }),
+  ]);
+  const { log } = offer;
+  t.log(log.map(msg => msg._method).join(', '));
+  t.like(log, [
+    { _method: 'monitorTransfers' },
+    { _method: 'transfer' },
+    { _method: 'send' },
+    { _method: 'transfer' },
+    { _method: 'localTransfer' },
+    { _method: 'transfer', address: { chainId: 'noble-5' } },
+    { _method: 'fail' },
+  ]);
+
+  t.snapshot(log, 'call log');
+  t.is(passStyleOf(actual.invitationMakers), 'remotable');
   await documentStorageSchema(t, storage, docOpts);
 });
 
