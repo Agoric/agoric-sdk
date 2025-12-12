@@ -6,6 +6,21 @@ import type { mustMatch as endoMustMatch, Pattern } from '@endo/patterns';
 import type { Callable } from './ses-utils.js';
 
 /**
+ * A mapping of a tuple type (as from `Parameters<...>`) into a corresponding
+ * object type with named fields.
+ *
+ * @example
+ * ```
+ * RecordFromTuple<[string, bigint], ['denom', 'amount']>
+ * //=> { denom: string, amount: bigint }
+ * ```
+ */
+export type RecordFromTuple<
+  Types extends readonly unknown[],
+  Names extends Record<Exclude<keyof Types, keyof unknown[]>, string>,
+> = { [K in Exclude<keyof Types, keyof any[]> as Names[K]]: Types[K] };
+
+/**
  * A map corresponding with a total function such that `get(key)` is assumed to
  * always succeed.
  */
