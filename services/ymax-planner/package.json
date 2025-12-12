@@ -57,6 +57,7 @@
     "@agoric/internal": "workspace:*",
     "@agoric/orchestration": "workspace:*",
     "@agoric/portfolio-api": "workspace:^",
+    "@axelarjs/api": "^0.4.4",
     "@cosmjs/crypto": "^0.36.0",
     "@cosmjs/encoding": "^0.36.0",
     "@cosmjs/proto-signing": "^0.36.0",
@@ -77,6 +78,7 @@
     "json-rpc-2.0": "^1.7.1",
     "ky": "^1.13.0",
     "ts-blank-space": "^0.6.1",
+    "viem": "^2.41.2",
     "ws": "^8.18.3"
   },
   "ava": {

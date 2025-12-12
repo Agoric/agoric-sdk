@@ -283,6 +283,7 @@ export const main = async (
     evmCtx: {
       kvStore,
       makeAbortController,
+      axelarApiUrl: config.axelar.apiUrl,
       ...evmCtx,
     },
     rpc,
