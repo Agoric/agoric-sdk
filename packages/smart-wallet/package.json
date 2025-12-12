@@ -24,7 +24,7 @@
     "@endo/bundle-source": "^4.1.2",
     "@endo/captp": "^4.4.8",
     "@endo/init": "^1.1.12",
-    "ava": "^5.3.0",
+    "ava": "patch:ava@npm%3A6.3.0#~/.yarn/patches/ava-npm-6.3.0-3cec8f89e3.patch",
     "import-meta-resolve": "^4.1.0"
   },
   "dependencies": {
