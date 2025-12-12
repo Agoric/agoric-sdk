@@ -47,6 +47,7 @@ import {
 } from '../src/portfolio.exo.ts';
 import {
   executePlan,
+  makeErrorList,
   onAgoricTransfer,
   openPortfolio,
   provideCosmosAccount,
@@ -1844,5 +1845,112 @@ test('failed transaction publishes rejectionReason to vstorage', async t => {
     message: rejectionReason,
   });
 
+  await documentStorageSchema(t, storage, docOpts);
+});
+
+test('makeErrorList collects any number of errors', t => {
+  {
+    const fromNoRejections = makeErrorList(
+      [{ status: 'fulfilled', value: undefined }],
+      [],
+    );
+    t.deepEqual(fromNoRejections, undefined, 'no errors');
+  }
+
+  {
+    const fromOneRejection = makeErrorList(
+      [
+        { status: 'fulfilled', value: undefined },
+        { status: 'rejected', reason: Error('insufficient funds') },
+      ],
+      [{ how: 'IBC' }, { how: 'Aave' }],
+    );
+    t.log('single error', fromOneRejection);
+    t.deepEqual(
+      fromOneRejection,
+      {
+        error: 'insufficient funds',
+        how: 'Aave',
+        next: undefined,
+        step: 2,
+      },
+      'single error',
+    );
+  }
+
+  {
+    const fromSeveralRejections = makeErrorList(
+      [
+        { status: 'fulfilled', value: undefined },
+        { status: 'rejected', reason: Error('insufficient funds') },
+        { status: 'fulfilled', value: undefined },
+        { status: 'rejected', reason: Error('no route') },
+        { status: 'fulfilled', value: undefined },
+        { status: 'rejected', reason: Error('prereq 4 failed') },
+      ],
+      [
+        { how: 'IBC' },
+        { how: 'Aave' },
+        { how: 'send' },
+        { how: 'pidgeon' },
+        { how: 'IBC' },
+        { how: 'Compound' },
+      ],
+    );
+    t.log('several errors', fromSeveralRejections);
+    t.deepEqual(
+      fromSeveralRejections,
+      {
+        error: 'insufficient funds',
+        how: 'Aave',
+        next: {
+          error: 'no route',
+          how: 'pidgeon',
+          next: {
+            error: 'prereq 4 failed',
+            how: 'Compound',
+            next: undefined,
+            step: 6,
+          },
+          step: 4,
+        },
+        step: 2,
+      },
+      'several errors',
+    );
+  }
+});
+
+test('asking to relay less than 1 USDC over CCTP is refused by contract', async t => {
+  const { give, steps } = await makePortfolioSteps(
+    { Aave: make(USDC, 250_000n) },
+    { feeBrand: BLD },
+  );
+  const { Deposit } = give;
+  const { orch, tapPK, ctx, offer, storage, txResolver } = mocks(
+    {},
+    { Deposit },
+  );
+
+  const [actual] = await Promise.all([
+    openPortfolio(orch, ctx, offer.seat, { flow: steps }),
+    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
+      await txResolver.drainPending();
+    }),
+  ]);
+  const { log } = offer;
+  t.log(log.map(msg => msg._method).join(', '));
+  t.like(log, [
+    { _method: 'monitorTransfers' },
+    { _method: 'transfer' },
+    { _method: 'send' },
+    { _method: 'transfer' },
+    { _method: 'localTransfer' },
+    { _method: 'transfer', address: { chainId: 'noble-5' } },
+    { _method: 'fail' },
+  ]);
+
+  t.snapshot(log, 'call log');
+  t.is(passStyleOf(actual.invitationMakers), 'remotable');
   await documentStorageSchema(t, storage, docOpts);
 });

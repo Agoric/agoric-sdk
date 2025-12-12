@@ -168,6 +168,25 @@ const fullOrder = (length: number): Job['order'] =>
   range(length - 1).map(lo => [lo + 1, [lo]]);
 
 /**
+ * Extract a linked list of FlowErrors from an array of results
+ */
+export const makeErrorList = (
+  results: PromiseSettledResult<void>[],
+  moves: Pick<AssetMovement, 'how'>[],
+): FlowErrors | undefined =>
+  [...results].reverse().reduce((next, r, ix) => {
+    if (r.status !== 'rejected') return next;
+    const step = moves.length - ix;
+    const errs: FlowErrors = {
+      step,
+      how: moves[step - 1].how,
+      error: errmsg(r.reason),
+      next,
+    };
+    return errs;
+  }, undefined);
+
+/**
  * **Failure Handling**: Logs failures and publishes status without attempting
  * to unwind already-completed steps. Operators must resolve any partial
  * effects manually.
@@ -220,18 +239,11 @@ const trackFlow = async (
   };
 
   const job: Job = { taskQty: moves.length, order };
-  const results = await runJob(job, runTask, traceFlow);
+  const results = await runJob(job, runTask, traceFlow, (ix, reason) =>
+    Error(`predecessor ${ix + 1} failed`, { cause: reason }),
+  );
   if (results.some(r => r.status === 'rejected')) {
-    const reasons = results.reduce((next, r, ix) => {
-      if (r.status !== 'rejected') return next;
-      const errs: FlowErrors = {
-        step: ix + 1,
-        how: moves[ix].how,
-        error: errmsg(r.reason),
-        next,
-      };
-      return errs;
-    }, undefined);
+    const reasons = makeErrorList(results, moves);
     assert(reasons); // guaranteed by results.some(...) above
     reporter.publishFlowStatus(flowId, {
       state: 'fail',
