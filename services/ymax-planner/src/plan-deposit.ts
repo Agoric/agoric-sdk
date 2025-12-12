@@ -212,8 +212,12 @@ export const getCurrentBalances = async (
       makeSpectrumPoolQuery(desc, powers),
     );
     const [accountResult, positionResult] = await Promise.allSettled([
-      spectrumBlockchain.getBalances({ accounts: spectrumAccountQueries }),
-      spectrumPools.getBalances({ positions: spectrumPoolQueries }),
+      spectrumAccountQueries.length
+        ? spectrumBlockchain.getBalances({ accounts: spectrumAccountQueries })
+        : { balances: [] },
+      spectrumPoolQueries.length
+        ? spectrumPools.getBalances({ positions: spectrumPoolQueries })
+        : { balances: [] },
     ]);
     if (
       accountResult.status !== 'fulfilled' ||
