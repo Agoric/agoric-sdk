@@ -39,6 +39,7 @@ const parseStatus = (statusArg: string): Omit<TxStatus, 'pending'> => {
 export const resolveTx = async (
   txId: `tx${number}`,
   statusArg: string,
+  reason?: string,
   {
     env = process.env,
     fetch = globalThis.fetch,
@@ -54,6 +55,12 @@ export const resolveTx = async (
 
   const status = parseStatus(statusArg);
   console.log(`📝 Setting status to: ${status}\n`);
+  if (status === TxStatus.FAILED) {
+    if (!reason) {
+      throw Fail`Reason is required when marking a transaction as failed`;
+    }
+    console.log(`📋 Reason: ${reason}\n`);
+  }
 
   const makeAbortController = prepareAbortController({
     setTimeout,
@@ -99,6 +106,7 @@ export const resolveTx = async (
       signingSmartWalletKit,
       txId,
       status,
+      ...(status === TxStatus.FAILED ? { rejectionReason: reason } : {}),
     });
 
     console.log(`\n✅ Transaction ${txId} resolved as ${status}!\n`);

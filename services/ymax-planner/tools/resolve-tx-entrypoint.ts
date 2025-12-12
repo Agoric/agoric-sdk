@@ -28,19 +28,40 @@ import { resolveTx } from './resolve-tx.ts';
 
   const args = process.argv.slice(2);
   if (args.length < 2) {
-    console.error('Usage: yarn resolve-tx <txId> <status>');
+    console.error('Usage: yarn resolve-tx <txId> <status> [reason]');
     console.error('  status: "success" or "fail"');
+    console.error(
+      '  reason: required when status is "fail", optional for "success"',
+    );
     console.error('');
     console.error('Examples:');
     console.error('  yarn resolve-tx tx399 success');
-    console.error('  yarn resolve-tx tx400 fail');
+    console.error('  yarn resolve-tx tx400 fail "Transaction timeout"');
+    console.error(
+      '  yarn resolve-tx tx401 fail "Unable to confirm on destination chain"',
+    );
     process.exit(1);
   }
 
   const txId = args[0] as `tx${number}`;
   const statusArg = args[1];
+  const reason = args[2];
 
-  return resolveTx(txId, statusArg, { env });
+  // Validate that reason is provided when status is fail
+  const isFail = ['fail', 'failed', 'failure'].includes(
+    statusArg.toLowerCase(),
+  );
+  if (isFail && !reason) {
+    console.error(
+      'Error: Reason is required when marking a transaction as failed',
+    );
+    console.error('');
+    console.error('Usage: yarn resolve-tx <txId> fail <reason>');
+    console.error('Example: yarn resolve-tx tx400 fail "Transaction timeout"');
+    process.exit(1);
+  }
+
+  return resolveTx(txId, statusArg, reason, { env });
 })().catch(err => {
   console.error(err);
   process.exit(1);
