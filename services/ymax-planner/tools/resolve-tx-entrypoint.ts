@@ -48,10 +48,7 @@ import { resolveTx } from './resolve-tx.ts';
   const reason = args[2];
 
   // Validate that reason is provided when status is fail
-  const isFail = ['fail', 'failed', 'failure'].includes(
-    statusArg.toLowerCase(),
-  );
-  if (isFail && !reason) {
+  if (statusArg.toLowerCase() === 'fail' && !reason) {
     console.error(
       'Error: Reason is required when marking a transaction as failed',
     );

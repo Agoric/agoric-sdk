@@ -104,23 +104,10 @@ yarn process-tx tx233 --verbose
 Manually mark a pending transaction as succeeded or failed.
 
 ```bash
-# For success
-yarn resolve-tx <txId> success
-
-# For failure (reason required)
-yarn resolve-tx <txId> fail <reason>
+yarn resolve-tx
 ```
 
-Where:
-- `<status>` is one of: `success`, `succeeded`, `fail`, `failed`, or `failure`
-- `<reason>` is **required** when status is "fail" to document why the transaction failed
-
-**Examples:**
-```bash
-yarn resolve-tx tx399 success
-yarn resolve-tx tx400 fail "Transaction timeout after 10 minutes"
-yarn resolve-tx tx401 fail "Unable to confirm on destination chain"
-```
+Run the command without arguments to see usage and examples.
 
 **Use cases:**
 - Manually resolve stuck transactions
