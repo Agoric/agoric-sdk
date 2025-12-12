@@ -17,7 +17,7 @@
     "@endo/far": "^1.1.14",
     "@endo/init": "^1.1.12",
     "@endo/pass-style": "^1.6.3",
-    "ava": "^5.3.1"
+    "ava": "^6.3.0"
   },
   "resolutions": {
     "@cosmjs/amino": "^0.36.0",

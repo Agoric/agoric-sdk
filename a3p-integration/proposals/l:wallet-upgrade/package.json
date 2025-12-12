@@ -13,7 +13,7 @@
     "@agoric/synthetic-chain": "^0.6.1",
     "@endo/init": "^1.1.12",
     "agoric": "dev",
-    "ava": "^5.3.1"
+    "ava": "^6.3.0"
   },
   "resolutions": {
     "@cosmjs/amino": "^0.36.0",
