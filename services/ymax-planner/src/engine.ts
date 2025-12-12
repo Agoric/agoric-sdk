@@ -361,7 +361,7 @@ export const processPortfolioEvents = async (
       const tx = await (steps.length === 0
         ? settle('rejectPlan', [
             ...scope,
-            'Nothing to do for this operation',
+            'Nothing to do for this operation.',
             ...conditions,
           ])
         : settle('resolvePlan', [...scope, steps, ...conditions]));
