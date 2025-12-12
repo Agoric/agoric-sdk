@@ -131,7 +131,7 @@ export const makeVowExoHelpers = ({ watch }) => ({
           name,
           {
             onFulfilled: () => {
-              throw new Error(
+              throw Error(
                 `${name} is removed.  Retry your request to switch to a supported code path.`,
               );
             },

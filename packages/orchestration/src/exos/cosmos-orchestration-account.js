@@ -1,4 +1,5 @@
 /** @file Use-object for the owner of a staking account */
+// @ts-check
 import { toRequestQueryJson } from '@agoric/cosmic-proto';
 import { makeTracer } from '@agoric/internal';
 import { Shape as NetworkShape } from '@agoric/network';
@@ -7,6 +8,7 @@ import { VowShape } from '@agoric/vow';
 import { decodeBase64 } from '@endo/base64';
 import { Fail, makeError, q } from '@endo/errors';
 import { E } from '@endo/far';
+import { decodeIbcEndpoint } from '@agoric/vats/tools/ibc-utils.js';
 import {
   AmountArgShape,
   CoinShape,
@@ -29,7 +31,10 @@ import {
   tryDecodeResponses,
 } from '../utils/cosmos.js';
 import { makeVowExoHelpers } from '../utils/exo-helpers.js';
-import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
+import {
+  orchestrationAccountMethods,
+  complete,
+} from '../utils/orchestrationAccount.js';
 import { makeTimestampHelper } from '../utils/time.js';
 import { accountIdTo32Bytes, parseAccountId } from '../utils/address.js';
 import {
@@ -69,7 +74,8 @@ import {
  *   ICQConnection, StakingAccountActions, StakingAccountQueries, NobleMethods,
  *   OrchestrationAccountCommon, CosmosRewardsResponse, IBCConnectionInfo,
  *   IBCMsgTransferOptions, ChainHub, CosmosDelegationResponse, CaipChainId,
- *   ChainInfo, AccountIdArg, CosmosActionOptions, IcaAccountMethods,} from '../types.js';
+ *   ChainInfo, AccountIdArg, CosmosActionOptions, IcaAccountMethods,
+ *   TrafficEntry, ProgressTracker, MakeProgressTracker} from '../types.js';
  * @import {OfferHandler, ZCF} from '@agoric/zoe';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
@@ -84,6 +90,7 @@ import {
  * @import {Matcher} from '@endo/patterns';
  * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
  * @import {AnyType, MsgDepositForBurnType, MsgUndelegateResponseType} from '../utils/codecs.js';
+ * @import {ProgressReport} from '../utils/progress.js';
  */
 
 /**
@@ -267,6 +274,7 @@ harden(CosmosOrchestrationInvitationMakersI);
  * @param {Zone} zone
  * @param {object} powers
  * @param {ChainHub} powers.chainHub
+ * @param {MakeProgressTracker} powers.makeProgressTracker
  * @param {MakeRecorderKit} powers.makeRecorderKit
  * @param {Remote<TimerService>} powers.timerService
  * @param {VowTools} powers.vowTools
@@ -274,7 +282,14 @@ harden(CosmosOrchestrationInvitationMakersI);
  */
 export const prepareCosmosOrchestrationAccountKit = (
   zone,
-  { chainHub, makeRecorderKit, timerService, vowTools, zcf },
+  {
+    chainHub,
+    makeProgressTracker,
+    makeRecorderKit,
+    timerService,
+    vowTools,
+    zcf,
+  },
 ) => {
   /**
    * Abandon the icaAccountToDetails weakMapStore, since it introduced a caching
@@ -298,6 +313,16 @@ export const prepareCosmosOrchestrationAccountKit = (
         owned: M.call().returns(M.remotable()),
         getUpdater: M.call().returns(M.remotable()),
         amountToCoin: M.call(AmountArgShape).returns(M.record()),
+      }),
+      updateTxProgressWatcher: M.interface('updateTxProgressWatcher', {
+        onFulfilled: M.call(
+          M.arrayOf(M.any()),
+          M.splitRecord({
+            progressTracker: M.remotable('ProgressTracker'),
+            protocol: M.string(),
+            trafficEntryIndex: M.number(),
+          }),
+        ).returns(),
       }),
       returnVoidWatcher: M.interface('returnVoidWatcher', {
         onFulfilled: M.call().rest(M.any()).returns(M.undefined()),
@@ -339,6 +364,12 @@ export const prepareCosmosOrchestrationAccountKit = (
             },
           })
           .returns(Vow$(M.any())),
+      }),
+      fillSequenceWatcher: M.interface('fillSequenceWatcher', {
+        onFulfilled: M.call(
+          [M.splitRecord({ sequence: M.bigint() })],
+          M.record(),
+        ).returns(),
       }),
       delegationQueryWatcher: M.interface('delegationQueryWatcher', {
         onFulfilled: M.call(M.arrayOf(M.record())).returns(M.record()),
@@ -456,6 +487,59 @@ export const prepareCosmosOrchestrationAccountKit = (
       },
       ...vowExo.watchers,
       ...vowExo.makeTombstonedWatchers(TOMBSTONED_WATCHERS),
+      updateTxProgressWatcher: {
+        /**
+         * @param {readonly [
+         *   agoric: ChainInfo<'cosmos'>,
+         *   la: LocalIbcAddress,
+         *   ra: RemoteIbcAddress,
+         * ]} param0
+         * @param {{
+         *   progressTracker: ProgressTracker;
+         *   trafficEntryIndex: number;
+         *   protocol: 'ibc';
+         * }} opts
+         */
+        onFulfilled(
+          [agoric, la, ra],
+          { progressTracker, trafficEntryIndex, protocol },
+        ) {
+          protocol;
+          const lad = decodeIbcEndpoint(la);
+          const rad = decodeIbcEndpoint(ra);
+
+          const priorReport = progressTracker.getCurrentProgressReport();
+          const report = {
+            ...priorReport,
+            traffic: priorReport.traffic?.map(
+              /**
+               * @param {TrafficEntry} entry
+               * @param {number} i
+               */
+              (entry, i) =>
+                i === trafficEntryIndex
+                  ? /** @type {TrafficEntry<typeof protocol>} */ ({
+                      ...complete(entry),
+                      src: [
+                        ...entry.src,
+                        ['chain', `${agoric.namespace}:${agoric.reference}`],
+                        ['port', lad.portID],
+                        ['channel', lad.channelID],
+                      ],
+                      dst: [
+                        ...entry.dst,
+                        ['port', rad.portID],
+                        ['channel', rad.channelID],
+                      ],
+                      // TODO(#11994): Need to expose from Network API `conn.sendWithMeta(...)`
+                      seq: { status: 'unknown' },
+                    })
+                  : entry,
+            ),
+          };
+          progressTracker.update(harden(report));
+        },
+      },
       balanceQueryWatcher: {
         /**
          * @param {JsonSafe<ResponseQuery>[]} results
@@ -722,10 +806,81 @@ export const prepareCosmosOrchestrationAccountKit = (
             ],
             restOpts,
           );
-          return this.facets.helper.overrideVow(
-            results,
-            harden({ status: 'unknown' }),
-          );
+
+          const { progressTracker } = restOpts;
+          if (progressTracker) {
+            const priorReport = progressTracker.getCurrentProgressReport();
+            /** @type {TrafficEntry} */
+            const transferTraffic = {
+              op: 'transfer',
+              src: [
+                'ibc',
+                ['chain', `cosmos:${chainAddress.chainId}`],
+                ['port', transferChannel.portId],
+                ['channel', transferChannel.channelId],
+              ],
+              dst: [
+                'ibc',
+                ['chain', `cosmos:${destination.chainId}`],
+                ['port', transferChannel.counterPartyPortId],
+                ['channel', transferChannel.counterPartyChannelId],
+              ],
+              seq: { status: 'pending' }, // filled in by fillSequenceWatcher.onFulfilled below
+              incomplete: true,
+            };
+            const report = {
+              ...priorReport,
+              traffic: [...(priorReport.traffic || []), transferTraffic],
+            };
+            const trafficEntryIndex = report.traffic.length - 1;
+            progressTracker.update(harden(report));
+            watch(results, this.facets.fillSequenceWatcher, {
+              progressTracker,
+              trafficEntryIndex,
+            });
+          }
+          return this.facets.helper.overrideVow(results, 'FOLLOW_TRAFFIC');
+        },
+      },
+      fillSequenceWatcher: {
+        /**
+         * @param {[{ sequence: bigint }]} transferResponse
+         * @param {object} opts
+         * @param {ProgressTracker} opts.progressTracker
+         * @param {number} opts.trafficEntryIndex
+         */
+        onFulfilled([{ sequence }], { progressTracker, trafficEntryIndex }) {
+          const priorReport = progressTracker.getCurrentProgressReport();
+          trace('fillSequenceWatcher', {
+            sequence,
+            priorReport,
+            trafficEntryIndex,
+          });
+
+          const targetTrafficEntry = priorReport.traffic[trafficEntryIndex];
+          targetTrafficEntry ||
+            Fail`expected meta.traffic to have at an entry at ${trafficEntryIndex}: ${q(priorReport)}`;
+          const baseSequence = targetTrafficEntry?.seq;
+          baseSequence?.status === 'pending' ||
+            Fail`expected traffic?.seq ${baseSequence} to be pending`;
+          sequence != null ||
+            Fail`expected transferResp.sequence ${sequence} to be non-nullish`;
+
+          /** @type {ProgressReport} */
+          const report = {
+            ...priorReport,
+            traffic: priorReport.traffic?.map(
+              /**
+               * @param {TrafficEntry} entry
+               * @param {number} i
+               */
+              (entry, i) =>
+                i === trafficEntryIndex
+                  ? { ...complete(entry), seq: sequence }
+                  : entry,
+            ),
+          };
+          progressTracker.update(harden(report));
         },
       },
       invitationMakers: {
@@ -852,6 +1007,10 @@ export const prepareCosmosOrchestrationAccountKit = (
         },
       },
       holder: {
+        /** @type {OrchestrationAccountCommon['makeProgressTracker']} */
+        makeProgressTracker() {
+          return makeProgressTracker();
+        },
         /** @type {HostOf<OrchestrationAccountCommon['asContinuingOffer']>} */
         asContinuingOffer() {
           // @ts-expect-error XXX invitationMakers
@@ -1261,9 +1420,45 @@ export const prepareCosmosOrchestrationAccountKit = (
         },
         /** @type {HostOf<IcaAccountMethods['executeEncodedTx']>} */
         executeEncodedTx(msgs, opts = {}) {
-          return asVow(() =>
-            E(this.facets.helper.owned()).executeEncodedTx(msgs, opts),
-          );
+          return asVow(() => {
+            const { progressTracker } = opts;
+            const { helper } = this.facets;
+            const acct = helper.owned();
+
+            if (progressTracker) {
+              const { chainAddress } = this.state;
+              const agoric = chainHub.getChainInfo('agoric');
+              const la = E(acct).getLocalAddress();
+              /** @type {CaipChainId} */
+              const dstChain = `cosmos:${chainAddress.chainId}`;
+              const ra = E(acct).getRemoteAddress();
+              // Identify this as an ICA operation.
+              const priorReport = progressTracker.getCurrentProgressReport();
+              const report = {
+                ...priorReport,
+                traffic: [
+                  ...(priorReport.traffic || []),
+                  {
+                    op: 'ICA',
+                    dst: ['ibc', ['chain', dstChain]],
+                    src: ['ibc'],
+                    seq: { status: 'pending' }, // filled in by ICA processing
+                    incomplete: true,
+                  },
+                ],
+              };
+              const trafficEntryIndex = report.traffic.length - 1;
+
+              progressTracker.update(harden(report));
+              // Update the report when we can.
+              void watch(
+                allVows(/** @type {const} */ ([agoric, la, ra])),
+                this.facets.updateTxProgressWatcher,
+                { progressTracker, protocol: 'ibc', trafficEntryIndex },
+              );
+            }
+            return E(acct).executeEncodedTx(msgs, opts);
+          });
         },
         /** @type {HostOf<IcaAccountMethods['executeTxProto3Undecoded']>} */
         executeTxProto3Undecoded(msgs, opts = {}) {
@@ -1374,6 +1569,7 @@ export const prepareCosmosOrchestrationAccountKit = (
  * @param {Zone} zone
  * @param {object} powers
  * @param {ChainHub} powers.chainHub
+ * @param {MakeProgressTracker} powers.makeProgressTracker
  * @param {MakeRecorderKit} powers.makeRecorderKit
  * @param {Remote<TimerService>} powers.timerService
  * @param {VowTools} powers.vowTools
@@ -1386,10 +1582,18 @@ export const prepareCosmosOrchestrationAccountKit = (
  */
 export const prepareCosmosOrchestrationAccount = (
   zone,
-  { chainHub, makeRecorderKit, timerService, vowTools, zcf },
+  {
+    chainHub,
+    makeProgressTracker,
+    makeRecorderKit,
+    timerService,
+    vowTools,
+    zcf,
+  },
 ) => {
   const makeKit = prepareCosmosOrchestrationAccountKit(zone, {
     chainHub,
+    makeProgressTracker,
     makeRecorderKit,
     timerService,
     vowTools,

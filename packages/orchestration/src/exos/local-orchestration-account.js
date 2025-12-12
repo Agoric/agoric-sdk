@@ -56,7 +56,7 @@ const MsgSend = CodecHelper(MsgSendType);
  * @import {HostInterface, HostOf} from '@agoric/async-flow';
  * @import {LocalChain, LocalChainAccount} from '@agoric/vats/src/localchain.js';
  * @import {AmountArg, CosmosChainAddress, DenomAmount, IBCMsgTransferOptions,
- *   OrchestrationAccountCommon, LocalAccountMethods, TransferRoute,
+ *   OrchestrationAccountCommon, LocalAccountMethods, TrafficEntry, TransferRoute,
  *   AccountIdArg, Denom, IBCConnectionInfo, ChainInfo, CosmosChainInfo} from '@agoric/orchestration';
  * @import {OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {IBCEvent} from '@agoric/vats';
@@ -74,6 +74,7 @@ const MsgSend = CodecHelper(MsgSendType);
  * @import {ChainHub} from './chain-hub.js';
  * @import {PacketTools} from './packet-tools.js';
  * @import {ZoeTools} from '../utils/zoe-tools.js';
+ * @import {MakeProgressTracker} from '../utils/progress.js';
  */
 
 const trace = makeTracer('LocalOrchAccount');
@@ -157,11 +158,13 @@ const ErrTraceNotFound = 'denomination trace not found';
  * @param {ChainHub} powers.chainHub
  * @param {Remote<LocalChain>} powers.localchain
  * @param {ZoeTools} powers.zoeTools
+ * @param {MakeProgressTracker} powers.makeProgressTracker
  */
 export const prepareLocalOrchestrationAccountKit = (
   zone,
   {
     makeRecorderKit,
+    makeProgressTracker,
     zcf,
     timerService,
     vowTools,
@@ -461,7 +464,7 @@ export const prepareLocalOrchestrationAccountKit = (
          * }} ctx
          */
         onFulfilled(
-          [_srcChainInfo, _dstChainInfo, { transferChannel }, timeoutTimestamp],
+          [srcChainInfo, dstChainInfo, { transferChannel }, timeoutTimestamp],
           { opts, route },
         ) {
           const { forwardInfo, ...transferDetails } = route;
@@ -509,10 +512,61 @@ export const prepareLocalOrchestrationAccountKit = (
             transferMsg,
           );
 
+          /** @type {number | undefined} */
+          let trafficEntryIndex;
+          const progressTracker = opts?.progressTracker;
+          if (progressTracker) {
+            const priorMeta = progressTracker.getCurrentProgressReport() || {};
+
+            /** @type {TrafficEntry} */
+            const newTrafficEntry = {
+              op: 'transfer',
+              src: [
+                'ibc',
+                [
+                  'chain',
+                  `${srcChainInfo.namespace}:${srcChainInfo.reference}`,
+                ],
+                ['port', transferDetails.sourcePort],
+                ['channel', transferDetails.sourceChannel],
+              ],
+              dst: [
+                'ibc',
+                [
+                  'chain',
+                  `${dstChainInfo.namespace}:${dstChainInfo.reference}`,
+                ],
+                ['port', transferChannel.counterPartyPortId],
+                ['channel', transferChannel.counterPartyChannelId],
+              ],
+
+              // Sequence number is not known at this stage; it will be
+              // populated by IBCTransferSenderKit['responseWatcher'] once the
+              // transfer packet is sent and the sequence number is assigned.
+              seq: { status: 'pending' },
+              incomplete: true,
+            };
+
+            const priorTrafficEntries = priorMeta.traffic || [];
+            trafficEntryIndex = priorTrafficEntries.length;
+            const newMeta = {
+              ...priorMeta,
+              traffic: /** @type {TrafficEntry[]} */ ([
+                ...priorTrafficEntries,
+                newTrafficEntry,
+              ]),
+            };
+
+            progressTracker.update(newMeta);
+          }
+
           // Begin capturing packets, send the transfer packet, then return a
           // vow that rejects unless the packet acknowledgment comes back and is
           // verified.
-          return holder.sendThenWaitForAck(sender);
+          return holder.sendThenWaitForAck(sender, {
+            ...opts,
+            trafficEntryIndex,
+          });
         },
       },
       extractFirstResultWatcher: {
@@ -654,6 +708,11 @@ export const prepareLocalOrchestrationAccountKit = (
         },
       },
       holder: {
+        /** @type {OrchestrationAccountCommon['makeProgressTracker']} */
+        makeProgressTracker(initialMeta = {}) {
+          return makeProgressTracker(initialMeta);
+        },
+
         /** @type {HostOf<OrchestrationAccountCommon['asContinuingOffer']>} */
         asContinuingOffer() {
           // getPublicTopics resolves promptly (same run), so we don't need a watcher

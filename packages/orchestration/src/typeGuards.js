@@ -207,7 +207,12 @@ export const ICQMsgShape = M.splitRecord(
 export const TypedJsonShape = M.splitRecord({ '@type': M.string() });
 
 /** @type {TypedPattern<OrchestrationOptions>} */
-export const OrchestrationOptionsShape = M.splitRecord({});
+export const OrchestrationOptionsShape = M.splitRecord(
+  {},
+  {
+    progressTracker: M.remotable('ProgressTracker'),
+  },
+);
 
 /** @type {TypedPattern<PacketOptions>} */
 export const PacketOptionsShape = M.and(

@@ -13,6 +13,17 @@ import {
 
 const { Vow$ } = NetworkShape; // TODO #9611
 
+/**
+ * Mark a possibly incomplete object as complete by removing the `incomplete`
+ * property.
+ *
+ * @template {Record<string, any>} T
+ * @param {T & { incomplete?: any }} maybeIncomplete
+ * @returns {T}
+ */
+export const complete = ({ incomplete: _, ...completed }) =>
+  /** @type {T} */ (harden(completed));
+
 /** @see {OrchestrationAccountCommon} */
 export const orchestrationAccountMethods = {
   getAddress: M.call().returns(CosmosChainAddressShape),
@@ -38,4 +49,5 @@ export const orchestrationAccountMethods = {
     }),
   ),
   getPublicTopics: M.call().returns(Vow$(TopicsRecordShape)),
+  makeProgressTracker: M.call().returns(M.remotable('ProgressTracker')),
 };
