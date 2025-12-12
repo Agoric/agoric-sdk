@@ -62,7 +62,9 @@ const ReporterI = M.interface('Reporter', {
   completePendingTransaction: M.call(
     M.string(),
     M.or(TxStatus.SUCCESS, TxStatus.FAILED),
-  ).returns(),
+  )
+    .optional(M.string())
+    .returns(),
 });
 
 const TargetShape = M.splitRecord(
@@ -207,6 +209,7 @@ export const prepareResolverKit = (
         completePendingTransaction(
           txId: TxId,
           status: Exclude<TxStatus, 'pending'> = TxStatus.SUCCESS,
+          rejectionReason?: string,
         ) {
           const node = E(pendingTxsNode).makeChildNode(txId);
           const txEntry = this.state.transactionRegistry.get(txId);
@@ -220,6 +223,7 @@ export const prepareResolverKit = (
               ? { expectedAddr: txEntry.expectedAddr }
               : {}),
             status,
+            ...(rejectionReason ? { rejectionReason } : {}),
           };
           // UNTIL https://github.com/Agoric/agoric-sdk/issues/11791
           writeToNode(node, value);
@@ -251,6 +255,7 @@ export const prepareResolverKit = (
               this.facets.reporter.completePendingTransaction(
                 txId,
                 TxStatus.FAILED,
+                rejectionReason,
               );
               transactionRegistry.delete(txId);
               return;

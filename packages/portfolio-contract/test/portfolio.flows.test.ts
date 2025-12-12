@@ -501,6 +501,8 @@ const mocks = (
     },
     vowTools,
     txResolver,
+    resolverClient,
+    resolverService,
   };
 };
 
@@ -1815,5 +1817,32 @@ test('planner rejects plan and flow fails gracefully', async t => {
   t.deepEqual(flowsRunning, {}, 'flow should be cleaned up after rejection');
 
   t.snapshot(log, 'call log');
+  await documentStorageSchema(t, storage, docOpts);
+});
+
+test('failed transaction publishes rejectionReason to vstorage', async t => {
+  const { storage, resolverClient, resolverService, vowTools } = mocks({});
+
+  const { result, txId } = resolverClient.registerTransaction(
+    'GMP',
+    'eip155:137:0x9e1028F5F1D5eDE59748FFceC5532509976840E0',
+  );
+  await eventLoopIteration();
+
+  const rejectionReason = 'remote account does not have enough USDC';
+
+  // Settle the transaction as failed with a rejection reason
+  resolverService.settleTransaction({
+    txId,
+    status: 'failed',
+    rejectionReason,
+  });
+  await eventLoopIteration();
+
+  // Verify the vow is rejected with the correct reason
+  await t.throwsAsync(() => vowTools.when(result), {
+    message: rejectionReason,
+  });
+
   await documentStorageSchema(t, storage, docOpts);
 });
