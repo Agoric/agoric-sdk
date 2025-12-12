@@ -122,7 +122,7 @@ const prepareRemoteChainFacadeKit = (
         },
 
         /** @type {HostOf<Chain['makeAccount']>} */
-        makeAccount(_opts) {
+        makeAccount() {
           return asVow(() => {
             const { remoteChainInfo, connectionInfo } = this.state;
 

@@ -131,13 +131,7 @@ const prepareOrchestratorKit = (
             return vow;
           });
         },
-        /**
-         * @template {keyof KnownChains} HoldingChain
-         * @template {keyof KnownChains} IssuingChain
-         * @param {Denom} denom
-         * @param {HoldingChain} holdingChainName
-         * @returns {HostInterface<DenomInfo<HoldingChain, IssuingChain>>}
-         */
+        /** @type {HostOf<Orchestrator['getDenomInfo']>} */
         getDenomInfo(denom, holdingChainName) {
           const denomDetail = chainHub.getAsset(denom, holdingChainName);
           if (!denomDetail) throw Fail`No denom detail for ${q(denom)}`;
@@ -156,11 +150,10 @@ const prepareOrchestratorKit = (
             throw Fail`wait until getChain(${q(baseName)}) completes before getDenomInfo(${q(denom)})`;
           }
           const base = maybeBase.value;
-          const denomInfo =
-            /** @type {HostInterface<DenomInfo<HoldingChain, IssuingChain>>} */ (
-              harden({ chain, base, brand, baseDenom })
-            );
-          return denomInfo;
+          const denomInfo = harden({ chain, base, brand, baseDenom });
+          return /** @type {ReturnType<HostOf<Orchestrator['getDenomInfo']>>} */ (
+            denomInfo
+          );
         },
         /** @type {HostOf<Orchestrator['asAmount']>} */
         asAmount: () => Fail`not yet implemented`,

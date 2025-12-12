@@ -101,7 +101,7 @@ const prepareLocalChainFacadeKit = (
         },
 
         /** @type {HostOf<Chain['makeAccount']>} */
-        makeAccount(_opts) {
+        makeAccount() {
           const lcaP = E(localchain).makeAccount();
           return watch(
             // XXX makeAccount returns a Promise for an exo but reserves being able to return a vow
