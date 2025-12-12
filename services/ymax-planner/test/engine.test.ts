@@ -67,11 +67,19 @@ import {
 
 // #region client-utils mocks
 // XXX these helpers belong somewhere else; maybe *in* packages/client-utils?
+
 type PassableObj = Passable & object;
 type FakeVstorageKitConfig = {
   blockHeight?: bigint;
   marshaller?: Pick<Marshal<string>, 'fromCapData' | 'toCapData'>;
 };
+
+/**
+ * Fake a VstorageKit with an optional initial block height and marshaller.
+ * Exported powers support advancing the block height and updating vstorage
+ * contents, optionally using objects rather than strings and optionally
+ * auto-wrapping contents in a StreamCell.
+ */
 const fakeVstorageKit = (config: FakeVstorageKitConfig = {}) => {
   let { blockHeight = 100n, marshaller = boardSlottingMarshaller<string>() } =
     config;
@@ -87,6 +95,8 @@ const fakeVstorageKit = (config: FakeVstorageKitConfig = {}) => {
     blockHeight = newHeight;
     return blockHeight;
   };
+  // XXX Maybe StreamCell-wrapping should be default behavior, replacing `wrap`
+  // with `raw`?
   type UpdateVstorage = {
     (path: string, method: 'delete'): void;
     (
@@ -128,6 +138,8 @@ const fakeVstorageKit = (config: FakeVstorageKitConfig = {}) => {
       return;
     }
 
+    method === 'append' || Fail`Unknown method ${q(method)}`;
+
     const oldData = vstorageStrings.get(path) ?? vstorageObjects.get(path);
     if (oldData === undefined) {
       store.set(path, [value]);
@@ -138,10 +150,12 @@ const fakeVstorageKit = (config: FakeVstorageKitConfig = {}) => {
       Fail`Cannot append to a non-StreamCell`;
     store.has(path) ||
       Fail`Appending must preserve string vs. object representation`;
+    // XXX We should probably mimic vstorage.go in replacing old contents as
+    // detected by a non-current block height.
     (oldData as Array<typeof value>).push(value);
   };
 
-  // agoricNames cannot start empty.
+  // Some agoricNames sub-collections must be present.
   for (const collectionName of ['brand', 'instance', 'vbankAsset']) {
     const path = `published.agoricNames.${collectionName}`;
     updateVstorage(path, 'set', { object: Object.entries({}), wrap: 1n });
@@ -217,6 +231,11 @@ type FakeSmartWalletKitConfig<
 > = Mode extends 'inclusive'
   ? FakeVstorageKitConfig & WithMockVstorageKit
   : FakeVstorageKitConfig | WithMockVstorageKit;
+/**
+ * Fake a SmartWalletKit with an optional VstorageKit mocking kit (or the
+ * components to build one).
+ * Exported powers include those of the VstorageKit mocking kit.
+ */
 const fakeSmartWalletKit = async (config: FakeSmartWalletKitConfig = {}) => {
   const {
     blockHeight,
@@ -244,6 +263,12 @@ type FakeSigningSmartWalletKitConfig<
   : FakeSmartWalletKitConfig<Mode> | WithMockSmartWalletKit) & {
   address?: string;
 };
+/**
+ * Fake a SigningSmartWalletKit with an optional SmartWalletKit mocking kit (or
+ * the components to build one) and/or address.
+ * Exported powers include those of the SmartWalletKit mocking kit and a
+ * function exposing the log of activity submitted to the bridge.
+ */
 const fakeSigningSmartWalletKit = async (
   config: FakeSigningSmartWalletKitConfig = {},
 ) => {
@@ -358,6 +383,9 @@ const defaultMarshaller = boardSlottingMarshaller<string>(
 );
 
 let caipAddressCount = 0;
+/**
+ * Fake a single portfolio and its containing environment.
+ */
 const fakePortfolioKit = async ({
   accounts,
   otherBalances = {},
