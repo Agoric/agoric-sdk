@@ -77,6 +77,51 @@ the planner actually sign and submit actions rather than just logging them).
 yarn test
 ```
 
+### Manual Transaction Tools
+
+Two utility commands are available for manually processing and resolving transactions:
+
+#### Process Transaction
+
+Manually process a pending transaction.
+
+```bash
+yarn process-tx <txId> [--verbose]
+```
+
+**Examples:**
+```bash
+yarn process-tx tx233
+yarn process-tx tx233 --verbose
+```
+**Use cases:**
+- Re-process a transaction that may have been skipped or failed
+- Debug transaction processing issues
+- Manually trigger transaction handling in development/testing
+
+#### Resolve Transaction
+
+Manually mark a pending transaction as succeeded or failed.
+
+```bash
+yarn resolve-tx <txId> <status>
+```
+
+Where `<status>` is one of: `success`, `succeeded`, `fail`, `failed`, or `failure`
+
+**Examples:**
+```bash
+yarn resolve-tx tx399 success
+yarn resolve-tx tx400 fail
+```
+**Use cases:**
+- Manually resolve stuck transactions
+- Administrative cleanup of transaction states
+
+#### Required Environment Variables
+
+These tools use the same configuration as the main planner service. You can use a `.env` file or set environment variables directly.
+
 ## Configuration
 
 Environment variables:
