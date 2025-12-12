@@ -48,27 +48,13 @@ const { Vow$ } = NetworkShape;
  */
 
 /**
- * @template {unknown[]} T
- * @typedef {Promise<T>} PromiseVowOfTupleMappedToGenerics Temporary hack
- *
- *   UNTIL(microsoft/TypeScript#57122): This type should be replaced with just
- *   PromiseVow<T>, but TypeScript doesn't understand that the result of a
- *   mapping a tuple type using generics is iterable:
- *
- *   'JsonSafe<MsgTransferResponse & { '@type':
- *   "/ibc.applications.transfer.v1.MsgTransferResponse"; }>[] |
- *   Vow<JsonSafe<MsgTransferResponse & { ...; }>[]>' must have a
- *   '[Symbol.iterator]()' method that returns an iterator.
- */
-
-/**
  * Send a batch of query requests to the local chain. Unless there is a system
  * error, will return all results to indicate their success or failure.
  *
  * @template {TypedJson[]} [RT=TypedJson[]]
  * @callback QueryManyFn
  * @param {RT} requests
- * @returns {PromiseVowOfTupleMappedToGenerics<{
+ * @returns {PromiseVow<{
  *   [K in keyof RT]: JsonSafe<{
  *     error?: string;
  *     reply: ResponseTo<RT[K]>;
@@ -355,7 +341,7 @@ export const prepareLocalChainAccountKit = (
          * @template {TypedJson[]} MT messages tuple (use const with multiple
          *   elements or it will be a mixed array)
          * @param {MT} messages
-         * @returns {PromiseVowOfTupleMappedToGenerics<ResponseToMany<MT>>}
+         * @returns {PromiseVow<ResponseToMany<MT>>}
          * @see {typedJson} which can be used on arguments to get typed return
          * values.
          */
@@ -424,9 +410,7 @@ export const prepareLocalChainAccountKit = (
 
           const notifiedV =
             /**
-             * @type {PromiseVowOfTupleMappedToGenerics<
-             *   ResponseToMany<MT>
-             * >}
+             * @type {PromiseVow<ResponseToMany<MT>>}
              */
             (
               /** @type {unknown} */ (
