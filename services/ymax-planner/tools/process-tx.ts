@@ -13,9 +13,7 @@ import {
   makeSigningSmartWalletKit,
   makeSmartWalletKit,
 } from '@agoric/client-utils';
-import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import { deeplyFulfilledObject, mustMatch, objectMap } from '@agoric/internal';
-import { UsdcTokenIds } from '@agoric/portfolio-api/src/constants.js';
 
 import {
   PublishedTxShape,
@@ -29,17 +27,15 @@ import {
 import { loadConfig } from '../src/config.ts';
 import { CosmosRestClient } from '../src/cosmos-rest-client.ts';
 import { CosmosRPCClient } from '../src/cosmos-rpc.ts';
-import {
-  createEVMContext,
-  prepareAbortController,
-  spectrumChainIdsByCluster,
-  spectrumPoolIdsByCluster,
-} from '../src/support.ts';
+import { createEVMContext, prepareAbortController } from '../src/support.ts';
 import type { SimplePowers } from '../src/main.ts';
 import { makeSQLiteKeyValueStore } from '../src/kv-store.ts';
 import type { HandlePendingTxOpts } from '../src/pending-tx-manager.ts';
 import { handlePendingTx } from '../src/pending-tx-manager.ts';
-import { parseStreamCell, parseStreamCellValue } from '../src/vstorage-utils.ts';
+import {
+  parseStreamCell,
+  parseStreamCellValue,
+} from '../src/vstorage-utils.ts';
 
 const makeVstoragePathPrefixes = (contractInstance: string) => ({
   portfoliosPathPrefix: `published.${contractInstance}.portfolios`,
@@ -190,9 +186,9 @@ export const processTx = async (
         log: (...args) => console.log('[TX]', ...args),
         error: (...args) => console.error('[ERROR]', ...args),
         marshaller,
-        now,
         signingSmartWalletKit,
         vstoragePathPrefixes,
+        axelarApiUrl: config.axelar.apiUrl,
       });
 
       // Get the block timestamp for lookback mode
