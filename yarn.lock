@@ -9384,7 +9384,7 @@ __metadata:
 
 "ava@patch:ava@npm%3A5.3.1#~/.yarn/patches/ava-npm-5.3.1-d83c0bdc77.patch":
   version: 5.3.1
-  resolution: "ava@patch:ava@npm%3A5.3.1#~/.yarn/patches/ava-npm-5.3.1-d83c0bdc77.patch::version=5.3.1&hash=07eaec"
+  resolution: "ava@patch:ava@npm%3A5.3.1#~/.yarn/patches/ava-npm-5.3.1-d83c0bdc77.patch::version=5.3.1&hash=37070f"
   dependencies:
     acorn: "npm:^8.8.2"
     acorn-walk: "npm:^8.2.0"
@@ -9436,7 +9436,7 @@ __metadata:
       optional: true
   bin:
     ava: entrypoints/cli.mjs
-  checksum: 10c0/a30f37b9ed6809719f39c0d52e71031980d297c3596d3bf8d6745a81a95d4d1d0e6f63b2f28652a90e3a4b02a4a3beb7cff5841f3ce4f6fbb47896ecb00761c7
+  checksum: 10c0/524abad685f7570e50794c9a0788c30fc39e272b24eee154c1433a7ced395bb7176294084884903524deaf2a2796e7c23bac66e1008daab7b256660f35743a86
   languageName: node
   linkType: hard
 
