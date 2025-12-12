@@ -8,6 +8,7 @@ type ResolveTxParams = {
   signingSmartWalletKit: SigningSmartWalletKit;
   txId: TxId;
   status: Omit<TxStatus, 'pending'>;
+  rejectionReason?: string;
   proposal?: object;
 };
 
@@ -41,6 +42,7 @@ export const resolvePendingTx = async ({
   signingSmartWalletKit,
   txId,
   status,
+  rejectionReason,
   proposal = {},
 }: ResolveTxParams) => {
   const invitationMakersOffer = await getInvitationMakers(
@@ -57,6 +59,7 @@ export const resolvePendingTx = async ({
     offerArgs: {
       status,
       txId,
+      ...(rejectionReason ? { rejectionReason } : {}),
     },
     proposal,
   });
