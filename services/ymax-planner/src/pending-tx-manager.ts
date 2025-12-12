@@ -86,8 +86,10 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
     const { txId, destinationAddress, amount } = tx;
     const logPrefix = `[${txId}]`;
 
+    if (destinationAddress === undefined)
+      throw Fail`CctpTxdestinationAddress is missing; got ${destinationAddress}`;
+
     // Parse destinationAddress format: 'eip155:42161:0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092'
-    assert.typeof(destinationAddress, 'string');
     const { namespace, reference, accountAddress } =
       parseAccountId(destinationAddress);
     const caipId: CaipChainId = `${namespace}:${reference}`;
