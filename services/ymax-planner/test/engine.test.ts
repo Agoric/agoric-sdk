@@ -790,7 +790,7 @@ test.serial('no-step flows are rejected', testRejection, {
     type: 'deposit',
     amount: AmountMath.make(depositBrand, 1_000_000n),
   },
-  expectedReason: 'Nothing to do for this operation',
+  expectedReason: 'Nothing to do for this operation.',
 });
 
 test.serial('invalid targetAllocation is rejected', testRejection, {
@@ -799,7 +799,7 @@ test.serial('invalid targetAllocation is rejected', testRejection, {
     type: 'deposit',
     amount: AmountMath.make(depositBrand, 1_000_000n),
   },
-  expectedReason: 'allocation weights must sum > 0',
+  expectedReason: 'Total target allocation weights must be positive.',
 });
 
 // Try to withdraw $1 when all links have minimum throughput $10.
@@ -826,6 +826,6 @@ test.serial('excessive withdrawal is rejected', testRejection, {
     type: 'withdraw',
     amount: AmountMath.make(depositBrand, 2_000_000n),
   },
-  expectedReason: 'total after delta must not be negative',
+  expectedReason: 'Insufficient funds for withdrawal.',
 });
 // #endregion processPortfolioEvents

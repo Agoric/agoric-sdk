@@ -322,7 +322,7 @@ const computeWeightedTargets = (
     0n,
   );
   const total = currentTotal + delta;
-  total >= 0n || rejectUserInput('total after delta must not be negative');
+  total >= 0n || rejectUserInput('Insufficient funds for withdrawal.');
   const weights = Object.keys(allocation).length
     ? typedEntries({
         // Any current balance with no target has an effective weight of 0.
@@ -336,10 +336,13 @@ const computeWeightedTargets = (
   const sumW = weights.reduce<bigint>((acc, entry) => {
     const w = entry[1];
     (typeof w === 'bigint' && w >= 0n) ||
-      rejectUserInput(X`allocation weight in ${entry} must be a Nat`);
+      rejectUserInput(
+        X`Target allocation weight in ${entry} must be a natural number.`,
+      );
     return acc + w;
   }, 0n);
-  sumW > 0n || rejectUserInput('allocation weights must sum > 0');
+  sumW > 0n ||
+    rejectUserInput('Total target allocation weights must be positive.');
   const draft: Partial<Record<AssetPlaceRef, NatAmount>> = {};
   let remainder = total;
   let [maxKey, maxW] = [weights[0][0], -1n];
