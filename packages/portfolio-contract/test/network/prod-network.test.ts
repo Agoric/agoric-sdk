@@ -1,15 +1,11 @@
 import test from 'ava';
-import { Far } from '@endo/marshal';
-import type { Brand } from '@agoric/ertp/src/types.js';
 import {
   AxelarChain,
   SupportedChain,
 } from '@agoric/portfolio-api/src/constants.js';
 
-import {
-  makeGraphFromDefinition,
-  type RebalanceGraph,
-} from '../../tools/network/buildGraph.js';
+import { makeGraphForFlow } from '../../tools/network/buildGraph.js';
+import type { FlowGraph } from '../../tools/network/buildGraph.js';
 import PROD_NETWORK, {
   PROD_NETWORK as NAMED_PROD,
 } from '../../tools/network/network.prod.js';
@@ -19,11 +15,6 @@ import type {
   PoolKey,
   TransferProtocol,
 } from '../../tools/network/network-spec.js';
-
-const brand = Far('TestBrand') as Brand<'nat'>;
-const feeBrand = Far('TestFeeBrand') as Brand<'nat'>;
-
-const toSet = <T>(iter: Iterable<T>) => new Set(iter);
 
 // Shared expectations (precisely typed)
 type HubKey = `@${(typeof SupportedChain)[keyof typeof SupportedChain]}`;
@@ -72,21 +63,20 @@ const POOLS: ReadonlyArray<PoolKey> = [
 ];
 
 // Helpers
-const getGraph = () =>
-  makeGraphFromDefinition(PROD_NETWORK, {}, {}, brand, feeBrand);
+const getGraph = () => makeGraphForFlow(PROD_NETWORK, {}, {});
 
 const hasEdge = (
-  edges: RebalanceGraph['edges'],
+  edges: FlowGraph['edges'],
   src: AssetPlaceRef,
   dest: AssetPlaceRef,
   via?: TransferProtocol,
 ) =>
   edges.some(
-    e => e.src === src && e.dest === dest && (via ? e.via === via : true),
+    e => e.src === src && e.dest === dest && (via ? e.transfer === via : true),
   );
 
 const isReachable = (
-  edges: RebalanceGraph['edges'],
+  edges: FlowGraph['edges'],
   start: AssetPlaceRef,
   goal: AssetPlaceRef,
 ) => {
@@ -142,13 +132,13 @@ test('PROD_NETWORK has the expected hubs', t => {
   t.is(PROD_NETWORK, NAMED_PROD);
 
   const graph = getGraph();
-  const nodes = toSet(graph.nodes.values());
+  const nodes = new Set(graph.nodes.values());
   for (const hub of HUBS) t.true(nodes.has(hub), `missing hub ${hub}`);
 });
 
 test('PROD_NETWORK has the expected pools', t => {
   const graph = getGraph();
-  const nodes = toSet(graph.nodes.values());
+  const nodes = new Set(graph.nodes.values());
   for (const p of POOLS) t.true(nodes.has(p), `missing pool ${p}`);
 });
 

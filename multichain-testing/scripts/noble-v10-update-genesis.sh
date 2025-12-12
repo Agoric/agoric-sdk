@@ -228,8 +228,12 @@ jq --arg amount "$INITIAL_UUSDN_AMOUNT" \
 # Configure parameter authority
 echo "Configure parameter authority..."
 jq --arg addr "$GENESIS_ADDR" '
-  .app_state.params.params.authority = $addr |
-  .app_state.upgrade.params.authority = $addr
+  if .app_state.params != null then
+    .app_state.params.authority = $addr |
+    .app_state.upgrade.params.authority = $addr  
+  else
+    .
+  end
 ' $CHAIN_DIR/config/genesis.json > /tmp/genesis.json && mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
 
 echo "Configure owner for authority module…"
@@ -248,6 +252,19 @@ jq --arg addr "$GENESIS_ADDR" --arg amount "$INITIAL_UUSDN_AMOUNT" \
       }
     ]' \
   $CHAIN_DIR/config/genesis.json > /tmp/genesis.json && mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
+
+echo "Configure forwarding module..."
+jq '
+  if .app_state.forwarding.allowed_denoms != null then
+    .app_state.forwarding.allowed_denoms = [
+        "uusdc",
+        "uusdn",
+        "ufrienzies"
+    ]
+  else
+    .
+  end
+' $CHAIN_DIR/config/genesis.json > /tmp/genesis.json && mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
 
 # Configure CCTP module
 echo "Configure CCTP module..."
@@ -368,8 +385,11 @@ function gov_overrides_sdk_v47() {
 
 if [ "$(jq -r '.app_state.gov.params' $CHAIN_DIR/config/genesis.json)" == "null" ]; then
   gov_overrides_sdk_v46
-else
+elif [ "$(jq -r '.app_state.params' $CHAIN_DIR/config/genesis.json)" != "null" ]; then
   gov_overrides_sdk_v47
+else
+  # At least v0.50 and beyond, no overrides needed.
+  echo "No gov overrides needed"
 fi
 
 $CHAIN_BIN tendermint show-node-id

@@ -46,12 +46,11 @@ import type {
 } from './types.js';
 
 export type MetaTrafficEntry<
-  P extends
-    keyof NetworkEndpoints['absolute'] = keyof NetworkEndpoints['absolute'],
+  P extends keyof NetworkEndpoints = keyof NetworkEndpoints,
 > = {
   op: string;
-  src: NetworkEndpoints['absolute'][P];
-  dst: NetworkEndpoints['absolute'][P];
+  src: [protocol: P, ...NetworkEndpoints[P]];
+  dst: [protocol: P, ...NetworkEndpoints[P]];
   seq: number | bigint | string | null;
 };
 

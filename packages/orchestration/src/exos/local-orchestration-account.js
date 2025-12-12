@@ -439,17 +439,19 @@ export const prepareLocalOrchestrationAccountKit = (
       },
       transferConnectionWatcher: {
         /**
-         * @param {[CosmosChainInfo, CosmosChainInfo, bigint]} all
+         * @param {readonly [CosmosChainInfo, CosmosChainInfo, bigint]} all
          * @param {Record<string, any>} ctx
          */
         onFulfilled([srcChainInfo, nextChainInfo, timeout], ctx) {
           return watch(
-            vowTools.allVows([
-              srcChainInfo,
-              nextChainInfo,
-              chainHub.getConnectionInfo(srcChainInfo, nextChainInfo),
-              timeout,
-            ]),
+            vowTools.allVows(
+              /** @type {const} */ ([
+                srcChainInfo,
+                nextChainInfo,
+                chainHub.getConnectionInfo(srcChainInfo, nextChainInfo),
+                timeout,
+              ]),
+            ),
             this.facets.transferWithMetaWatcher,
             ctx,
           );
@@ -463,7 +465,7 @@ export const prepareLocalOrchestrationAccountKit = (
       },
       transferWithMetaWatcher: {
         /**
-         * @param {[
+         * @param {readonly [
          *   ChainInfo,
          *   ChainInfo,
          *   Pick<IBCConnectionInfo, 'transferChannel'>,
@@ -887,7 +889,6 @@ export const prepareLocalOrchestrationAccountKit = (
         },
         /** @type {HostOf<OrchestrationAccountCommon['transferWithMeta']>} */
         transferWithMeta(destination, amount, opts) {
-          // @ts-expect-error Vow combined with HostInterface doesn't type.
           return asVow(() => {
             trace('Transferring funds over IBC');
 
@@ -925,11 +926,13 @@ export const prepareLocalOrchestrationAccountKit = (
             // don't resolve the vow until the transfer is confirmed on remote
             // and reject vow if the transfer fails for any reason
             const resultV = watch(
-              vowTools.allVows([
-                srcChainInfo,
-                nextChainInfo,
-                timestampHelper.vowOrValueFromOpts(opts),
-              ]),
+              vowTools.allVows(
+                /** @type {const} */ ([
+                  srcChainInfo,
+                  nextChainInfo,
+                  timestampHelper.vowOrValueFromOpts(opts),
+                ]),
+              ),
               this.facets.transferConnectionWatcher,
               {
                 opts: rest,

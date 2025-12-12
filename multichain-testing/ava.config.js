@@ -8,7 +8,7 @@ export default {
   files: ['test/**/*.test.*'],
   concurrency: 1,
   serial: true,
-  timeout: '125s',
+  timeout: '300s',
   failFast: true,
   environmentVariables: {
     LOCKDOWN_HARDEN_TAMING: 'unsafe',

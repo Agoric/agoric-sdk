@@ -4,7 +4,7 @@ import { AmountMath } from '@agoric/ertp';
 
 import { gasEstimator } from '../mocks.js';
 import type { NetworkSpec } from '../../tools/network/network-spec.js';
-import { makeGraphFromDefinition } from '../../tools/network/buildGraph.js';
+import { makeGraphForFlow } from '../../tools/network/buildGraph.js';
 import { planRebalanceFlow } from '../../tools/plan-solve.js';
 
 const brand = Far('TestBrand') as any;
@@ -21,10 +21,10 @@ test('NetworkSpec minimal validation via builder', t => {
     links: [],
     localPlaces: [],
   } as any;
-  t.notThrows(() => makeGraphFromDefinition(base, {}, {}, Far('B'), feeBrand));
+  t.notThrows(() => makeGraphForFlow(base, {}, {}));
 });
 
-test('makeGraphFromDefinition adds intra-chain edges and appends inter edges with sequential ids', t => {
+test('makeGraphForFlow adds intra-chain edges and appends inter edges with sequential ids', t => {
   const net: NetworkSpec = {
     chains: [
       { name: 'Arbitrum', control: 'axelar' },
@@ -52,7 +52,7 @@ test('makeGraphFromDefinition adds intra-chain edges and appends inter edges wit
       },
     ],
   } as any;
-  const graph = makeGraphFromDefinition(net, {}, {}, brand, feeBrand);
+  const graph = makeGraphForFlow(net, {}, {});
   const leafCount = 2; // Aave_Arbitrum, Compound_Ethereum
   const expectedIntra = leafCount * 2; // bidirectional
   t.true(graph.edges.length >= expectedIntra + net.links.length);
