@@ -11,6 +11,7 @@
  * @property {AccountId} destinationAddress - The destination account identifier for the transaction (CCTP/GMP destination, or MAKE_ACCOUNT factory address in CAIP format)
  * @property {string} [expectedAddr] - The expected smart wallet hex address to be created (for MAKE_ACCOUNT only, format: 0x...)
  * @property {TxStatus} status - Current status of the transaction (pending, success, or failed)
+ * @property {string} [rejectionReason] - Optional reason for failure (only present when status is 'failed')
  */
 
 /**
