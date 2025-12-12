@@ -85,6 +85,7 @@ const fakeVstorageKit = (config: FakeVstorageKitConfig = {}) => {
     newHeight > blockHeight ||
       Fail`blockHeight ${newHeight} must be greater than ${blockHeight}`;
     blockHeight = newHeight;
+    return blockHeight;
   };
   type UpdateVstorage = {
     (path: string, method: 'delete'): void;
@@ -359,10 +360,19 @@ const defaultMarshaller = boardSlottingMarshaller<string>(
 let caipAddressCount = 0;
 const fakePortfolioKit = async ({
   accounts,
-}: { accounts?: Partial<Record<SupportedChain, NatAmount>> } = {}) => {
+  otherBalances = {},
+}: {
+  accounts?: Partial<Record<SupportedChain, NatAmount>>;
+  otherBalances?: Record<string, NatAmount>;
+} = {}) => {
   const {
     signingSmartWalletKit,
-    powers: { getBlockHeight, getBridgeSends, updateVstorage },
+    powers: {
+      getBlockHeight,
+      getBridgeSends,
+      updateBlockHeight,
+      updateVstorage,
+    },
   } = await fakeSigningSmartWalletKit({ marshaller: defaultMarshaller });
   const walletStore = reflectWalletStore(signingSmartWalletKit, {
     setTimeout: makeNotImplemented('reflectWalletStore setTimeout'),
@@ -394,7 +404,7 @@ const fakePortfolioKit = async ({
     initialPortfolioStatus.accountIdByChain = {};
     powers.spectrumChainIds = {};
     powers.usdcTokensByChain = {};
-    for (const [chainName, balanceAmount] of typedEntries(accounts)) {
+    for (const [chainName, _balanceAmount] of typedEntries(accounts)) {
       initialPortfolioStatus.accountIdByChain[chainName] =
         `mocked:${chainName}:mockaddr${++caipAddressCount}`;
       powers.spectrumChainIds[chainName] = chainName;
@@ -404,7 +414,11 @@ const fakePortfolioKit = async ({
       getBalances: async ({ accounts: accountQueries }) => {
         if (!Array.isArray(accountQueries)) accountQueries = [accountQueries];
         const balances = accountQueries.map(({ chain, address, token }) => {
-          const balance = Number(accounts[chain as any].value) / 1e6;
+          const microBalance =
+            token === powers.usdcTokensByChain[chain as any]
+              ? accounts[chain as any].value
+              : otherBalances[token as any].value;
+          const balance = Number(microBalance) / 1e6;
           return { chain, address, token, balance: `${balance}` };
         });
         return { balances };
@@ -425,7 +439,12 @@ const fakePortfolioKit = async ({
     portfolioPath,
     initialPortfolioStatus,
     powers,
-    testPowers: { getBridgeSends, updateVstorage },
+    testPowers: {
+      getBlockHeight,
+      getBridgeSends,
+      updateBlockHeight,
+      updateVstorage,
+    },
   };
 };
 
@@ -460,199 +479,125 @@ test('ignore additional balances', t => {
 test.serial(
   'processPortfolioEvents only resolves flows for new portfolio states',
   async t => {
-    const portfoliosPathPrefix = 'published.ymaxTest.portfolios';
-    const portfolioKey = 'portfolio5';
+    const kit = await fakePortfolioKit({
+      accounts: { noble: AmountMath.make(depositBrand, 0n) },
+      otherBalances: { usdn: AmountMath.make(depositBrand, 0n) },
+    });
+    const { portfolioId, portfolioPath, initialPortfolioStatus, powers } = kit;
+    const { getBridgeSends, updateBlockHeight, updateVstorage } =
+      kit.testPowers;
 
-    /** Updated as the test progresses. */
-    let currentBlockHeight = 30n;
-    const portfolioStatus: StatusFor['portfolio'] = {
-      positionKeys: ['USDN'],
-      flowCount: 1,
-      accountIdByChain: {
-        noble: 'cosmos:noble:noble1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq',
-      },
-      policyVersion: 1,
+    const flowId = 5;
+    const portfolioStatus = {
+      ...initialPortfolioStatus,
       rebalanceCount: 0,
+      positionKeys: ['USDN'],
       targetAllocation: {
         USDN: 1n,
       },
+      flowCount: 1,
       flowsRunning: {
-        flow1: {
+        [`flow${flowId}`]: {
           type: 'deposit',
           amount: AmountMath.make(depositBrand, 1_000_000n),
         },
       },
     };
-    const portfolioDataKey = `${portfoliosPathPrefix}.${portfolioKey} data`;
-    const vstorageData: Record<string, string[] | string> = {
-      [portfolioDataKey]: '<uninitialized>',
-      [`${portfoliosPathPrefix}.${portfolioKey}.flows children`]: [],
+    const writePortfolioStatus = () => {
+      updateVstorage(portfolioPath, 'set', {
+        object: { ...portfolioStatus },
+        wrap: true,
+      });
     };
-    const advanceBlock = () => {
-      currentBlockHeight += 1n;
-      portfolioStatus.rebalanceCount += 1;
-      const newStatus = harden({ ...portfolioStatus });
-      const newStreamCell = {
-        blockHeight: `${currentBlockHeight}`,
-        values: [JSON.stringify(defaultMarshaller.toCapData(newStatus))],
-      };
-      vstorageData[portfolioDataKey] = JSON.stringify(newStreamCell);
-    };
-
-    const readStorageMeta: VStorage['readStorageMeta'] = async (
-      path,
-      { kind } = {},
-    ) => {
-      const data =
-        (vstorageData[`${path} ${kind}`] as any) ||
-        Fail`Unexpected vstorage query: ${path} ${kind}`;
-
-      const base = { blockHeight: currentBlockHeight };
-      let resp: QueryChildrenMetaResponse | QueryDataMetaResponse | undefined;
-      if (kind === 'children') resp = { ...base, result: { children: data } };
-      if (kind === 'data') resp = { ...base, result: { value: data } };
-      return (resp as any) || Fail`Unreachable`;
-    };
-    const sswkQuery = { vstorage: { readStorageMeta } };
-
-    const signingSmartWalletKit = {
-      marshaller: defaultMarshaller,
-      query: sswkQuery,
-    } as any;
-
-    const recordedSteps: MovementDesc[][] = [];
-    const planner: PortfolioPlanner = {
-      ...({} as any),
-      resolvePlan: (_portfolioId, _flowId, steps) => {
-        recordedSteps.push(steps as MovementDesc[]);
-        return { tx: { mock: true }, id: 'tx-recorded' };
-      },
-    };
-
-    const portfolioKeyForDepositAddr = new Map();
-    const getAccountBalance: CosmosRestClient['getAccountBalance'] = async (
-      _chainKey,
-      _address,
-      denom,
-    ) => ({ amount: '0', denom });
-    const powers = {
-      ...createMockEnginePowers(),
-      cosmosRest: { getAccountBalance } as any,
-      signingSmartWalletKit,
-      walletStore: { get: () => planner } as any,
-      gasEstimator: mockGasEstimator,
-      isDryRun: true,
-      depositBrand,
-      feeBrand,
-      portfolioKeyForDepositAddr,
-      vstoragePathPrefixes: { portfoliosPathPrefix },
-    };
+    writePortfolioStatus();
 
     const memory: any = { deferrals: [] as any[] };
     const processNextBlock = async () => {
-      advanceBlock();
-      const event = {
-        path: `${portfoliosPathPrefix}.${portfolioKey}`,
-        value: vstorageData[portfolioDataKey] as string,
-        eventRecord: {
-          blockHeight: currentBlockHeight,
-          type: 'kvstore' as const,
-          event: { type: 'state_change', attributes: [] },
-        },
-      };
-      await processPortfolioEvents([event], currentBlockHeight, memory, powers);
+      const blockHeight = updateBlockHeight();
+      portfolioStatus.rebalanceCount += 1;
+      writePortfolioStatus();
+      const vstorageEventDetail = makeVstorageEventDetail(
+        blockHeight,
+        portfolioPath,
+        harden({ ...portfolioStatus }),
+      );
+      await processPortfolioEvents(
+        [vstorageEventDetail],
+        blockHeight,
+        memory,
+        powers,
+      );
     };
     await processNextBlock();
     await processNextBlock();
 
-    t.is(recordedSteps.length, 1, 'planner invoked exactly once');
-    t.true(recordedSteps[0]!.length > 0, 'planner receives non-empty steps');
-    t.is(memory.snapshots?.get(portfolioKey)?.repeats, 1);
+    const bridgeActions = getBridgeSends().map(invocation => invocation.action);
+    arrayIsLike(
+      t,
+      bridgeActions,
+      [bridgeActions[0]],
+      'planner invoked exactly once',
+    );
+    t.like(bridgeActions[0], {
+      method: 'invokeEntry',
+      message: {
+        targetName: 'planner',
+        method: 'resolvePlan',
+      },
+    });
+    const { message } = bridgeActions[0] as InvokeStoreEntryAction;
+    arrayIsLike(
+      t,
+      message.args,
+      [
+        portfolioId,
+        flowId,
+        message.args[2],
+        portfolioStatus.policyVersion,
+        message.args[4],
+      ],
+      'resolvePlan args',
+    );
+    t.true(Array.isArray(message.args[2]));
+    t.true(
+      (message.args[2] as unknown[]).length > 0,
+      'planner receives non-empty steps',
+    );
+    t.is(memory.snapshots?.get(`portfolio${portfolioId}`)?.repeats, 1);
     t.is(powers.portfolioKeyForDepositAddr.size, 0);
   },
 );
 
 test.serial('startFlow logs include traceId prefix', async t => {
-  const portfoliosPathPrefix = 'published.ymaxTest.portfolios';
-  const portfolioKey = 'portfolio6';
-  const flowKey = 'flow2';
-  const tracePrefix = `[${portfolioKey}.${flowKey}] `;
+  debugger;
+  const kit = await fakePortfolioKit({
+    accounts: { noble: AmountMath.make(depositBrand, 1_000_000n) },
+  });
+  const {
+    blockHeight,
+    portfolioId,
+    portfolioPath,
+    initialPortfolioStatus,
+    powers,
+  } = kit;
+  const { updateVstorage } = kit.testPowers;
 
-  const currentBlockHeight = 10n;
-  const portfolioStatus: StatusFor['portfolio'] = harden({
-    positionKeys: ['USDN'],
+  const flowId = 2;
+  const portfolioStatus = harden({
+    ...initialPortfolioStatus,
     flowCount: 1,
-    accountIdByChain: {
-      noble: 'cosmos:noble:noble1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq',
-    },
-    policyVersion: 1,
-    rebalanceCount: 0,
-    targetAllocation: {
-      USDN: 1n,
-    },
     flowsRunning: {
-      [flowKey]: {
-        type: 'deposit',
+      [`flow${flowId}`]: {
+        type: 'withdraw',
         amount: AmountMath.make(depositBrand, 1_000_000n),
       },
     },
   });
-  const portfolioDataKey = `${portfoliosPathPrefix}.${portfolioKey} data`;
-  const streamCell = {
-    blockHeight: `${currentBlockHeight}`,
-    values: [JSON.stringify(defaultMarshaller.toCapData(portfolioStatus))],
-  };
-  const vstorageData: Record<string, string[] | string> = {
-    [portfolioDataKey]: JSON.stringify(streamCell),
-    [`${portfoliosPathPrefix}.${portfolioKey}.flows children`]: [],
-  };
+  updateVstorage(portfolioPath, 'set', { object: portfolioStatus, wrap: true });
 
-  // @ts-expect-error mock
-  const readStorageMeta: VStorage['readStorageMeta'] = async (
-    path,
-    { kind } = {},
-  ) => {
-    const data =
-      (vstorageData[`${path} ${kind}`] as any) ||
-      Fail`Unexpected vstorage query: ${path} ${kind}`;
-
-    const base = { blockHeight: currentBlockHeight };
-    if (kind === 'children') return { ...base, result: { children: data } };
-    if (kind === 'data') return { ...base, result: { value: data } };
-    throw Fail`Unreachable`;
-  };
-  const sswkQuery = { vstorage: { readStorageMeta } };
-
-  const signingSmartWalletKit = {
-    marshaller: defaultMarshaller,
-    query: sswkQuery,
-  } as any;
-
-  const planner: PortfolioPlanner = {
-    ...({} as any),
-    resolvePlan: async () => ({
-      tx: { mock: true },
-      id: 'tx1',
-    }),
-  };
-
-  const getAccountBalance: CosmosRestClient['getAccountBalance'] = async (
-    _chainKey,
-    _address,
-    denom,
-  ) => ({ amount: '0', denom });
-  const powers = {
-    ...createMockEnginePowers(),
-    cosmosRest: { getAccountBalance } as any,
-    signingSmartWalletKit,
-    walletStore: { get: () => planner } as any,
-    gasEstimator: mockGasEstimator,
-    isDryRun: true,
-    depositBrand,
-    feeBrand,
-    portfolioKeyForDepositAddr: new Map(),
-    vstoragePathPrefixes: { portfoliosPathPrefix },
-  };
+  const portfolioKey = `portfolio${portfolioId}`;
+  const flowKey = `flow${flowId}`;
+  const tracePrefix = `[${portfolioKey}.${flowKey}] `;
 
   const captured: Array<{ level: 'debug' | 'info'; args: any[] }> = [];
   const originalLogTarget = console;
@@ -663,19 +608,14 @@ test.serial('startFlow logs include traceId prefix', async t => {
       info: (...args: any[]) => captured.push({ level: 'info', args }),
     });
 
+    const vstorageEventDetail = makeVstorageEventDetail(
+      blockHeight,
+      portfolioPath,
+      portfolioStatus,
+    );
     await processPortfolioEvents(
-      [
-        {
-          path: `${portfoliosPathPrefix}.${portfolioKey}`,
-          value: vstorageData[portfolioDataKey] as string,
-          eventRecord: {
-            blockHeight: currentBlockHeight,
-            type: 'kvstore' as const,
-            event: { type: 'state_change', attributes: [] },
-          },
-        },
-      ],
-      currentBlockHeight,
+      [vstorageEventDetail],
+      blockHeight,
       { deferrals: [] },
       powers,
     );
