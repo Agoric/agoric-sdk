@@ -1,0 +1,65 @@
+diff --git a/lib/reporters/default.js b/lib/reporters/default.js
+index a70f24e4eb7053e62b31ef99bd60cbf5c6c0a555..1446ab597a9e3d8cc4230e229d0f8a4a21bffee7 100644
+--- a/lib/reporters/default.js
++++ b/lib/reporters/default.js
+@@ -725,8 +725,11 @@ export default class Reporter {
+ 			this.lineWriter.writeLine(colors.todo(`${this.stats.todoTests} ${plur('test', this.stats.todoTests)} todo`));
+ 		}
+ 
+-		if (this.stats.unhandledRejections > 0) {
+-			this.lineWriter.writeLine(colors.error(`${this.stats.unhandledRejections} unhandled ${plur('rejection', this.stats.unhandledRejections)}`));
++		// AGORIC: TODO(#11028): unhandled exceptions patch should be accomplished in userspace.
++		if (this.stats.unhandledRejections > 0 || process.env.AGORIC_AVA_EXPECT_UNHANDLED_REJECTIONS) {
++			const expected = Number(process.env.AGORIC_AVA_EXPECT_UNHANDLED_REJECTIONS || 0);
++			const color = this.stats.unhandledRejections === expected ? 'skip' : 'error';
++			this.lineWriter.writeLine(colors[color](`${this.stats.unhandledRejections} unhandled ${plur('rejection', this.stats.unhandledRejections)} (AGORIC_AVA_EXPECT_UNHANDLED_REJECTIONS=${expected})`));
+ 		}
+ 
+ 		if (this.stats.uncaughtExceptions > 0) {
+diff --git a/lib/run-status.js b/lib/run-status.js
+index ae6b68c4ea375b03c7f8618a243231164f58298e..789a7a57d3a0f2945589148d6c340dadb55e8ced 100644
+--- a/lib/run-status.js
++++ b/lib/run-status.js
+@@ -242,7 +242,7 @@ export default class RunStatus extends Emittery {
+ 			|| this.stats.timeouts > 0
+ 			|| this.stats.uncaughtExceptions > 0
+ 			|| this.stats.unexpectedProcessExits > 0
+-			|| this.stats.unhandledRejections > 0
++			// AGORIC: `unhandledRejections` are processed below.
+ 		) {
+ 			return 1;
+ 		}
+@@ -251,6 +251,14 @@ export default class RunStatus extends Emittery {
+ 			return 1;
+ 		}
+ 
++		// AGORIC: TODO(#11028): unhandled exceptions patch should be accomplished in userspace.
++		if (this.stats.unhandledRejections > 0 || process.env.AGORIC_AVA_EXPECT_UNHANDLED_REJECTIONS) {
++			const expected = Number(process.env.AGORIC_AVA_EXPECT_UNHANDLED_REJECTIONS || 0);
++			if (this.stats.unhandledRejections !== expected) {
++				return 1;
++			}
++		}
++
+ 		return 0;
+ 	}
+ 
+diff --git a/lib/worker/base.js b/lib/worker/base.js
+index 28f174bb6ab2e451666c6e28c834c2b82360344a..a27805ad08ad33a88dcee8c9b4e7625f7d3e31e9 100644
+--- a/lib/worker/base.js
++++ b/lib/worker/base.js
+@@ -131,7 +131,13 @@ const run = async options => {
+ 				channel.send({type: 'unhandled-rejection', err: serializeError(rejection.reason, {testFile: options.file})});
+ 			}
+ 
+-			forceExit();
++			// AGORIC: TODO(#11028): unhandled exceptions patch should be accomplished in userspace.
++			const expectedUnhandled = Number(process.env.AGORIC_AVA_EXPECT_UNHANDLED_REJECTIONS || 0);
++			if (unhandled.length === expectedUnhandled) {
++				avaIsDone();
++			} else {
++				forceExit();
++			}
+ 		});
+ 	});
+ 
