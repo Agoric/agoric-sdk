@@ -129,9 +129,9 @@ test('delegate, undelegate, redelegate, withdrawReward', async t => {
     value: 10n,
   };
   const delegationResult = await E(account).delegate(validatorAddr, delegation);
-  t.is(delegationResult, undefined, 'delegation returns void');
+  t.deepEqual(delegationResult, {}, 'delegation returns an empty object');
 
-  const undelegatationP = E(account).undelegate([
+  const undelegationP = E(account).undelegate([
     {
       amount: delegation,
       validator: validatorAddr,
@@ -140,12 +140,12 @@ test('delegate, undelegate, redelegate, withdrawReward', async t => {
   const completionTime = UNBOND_PERIOD_SECONDS + maxClockSkew;
   const notTooSoon = Promise.race([
     timer.wakeAt(completionTime - 1n).then(() => true),
-    undelegatationP,
+    undelegationP,
   ]);
   timer.advanceTo(completionTime, 'end of unbonding period');
   t.true(await notTooSoon, "undelegate doesn't resolve before completion_time");
-  t.is(
-    await undelegatationP,
+  t.deepEqual(
+    await undelegationP,
     undefined,
     'undelegation returns void after completion_time',
   );
@@ -159,7 +159,11 @@ test('delegate, undelegate, redelegate, withdrawReward', async t => {
     },
     { denom: 'uatom', value: 10n },
   );
-  t.is(redelegation, undefined, 'redelegation returns void');
+  t.deepEqual(
+    redelegation,
+    { completionTime: { nanos: 0, seconds: 5n } },
+    'redelegation returns completionTime',
+  );
 
   const expectedRewards: DenomAmount = { value: 1n, denom: 'uatom' };
   const rewards = await E(account).withdrawReward(validatorAddr);
