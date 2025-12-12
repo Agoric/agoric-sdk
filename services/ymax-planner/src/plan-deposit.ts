@@ -41,7 +41,8 @@ const scale6 = (x: number) => {
 };
 
 const rejectUserInput = (details: ReturnType<typeof X> | string): never =>
-  assert.fail(details, UserInputError);
+  assert.fail(details, ((...args) =>
+    Reflect.construct(UserInputError, args)) as ErrorConstructor);
 
 // Note the differences in the shape of field `balance` between the two Spectrum
 // APIs (string vs. Record<'USDC' | 'USD' | string, number>).
@@ -321,7 +322,7 @@ const computeWeightedTargets = (
     0n,
   );
   const total = currentTotal + delta;
-  total >= 0n || Fail`total after delta must not be negative`;
+  total >= 0n || rejectUserInput('total after delta must not be negative');
   const weights = Object.keys(allocation).length
     ? typedEntries({
         // Any current balance with no target has an effective weight of 0.
