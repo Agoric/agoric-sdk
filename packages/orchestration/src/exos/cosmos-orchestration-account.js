@@ -96,9 +96,11 @@ import {
  */
 const TOMBSTONED_WATCHERS = /** @type {const} */ ([
   'attachTxMetaWatcher',
-  'fillSequenceWatcher',
   'parseTransferWatcher',
+  'transferWatcher',
   'transferWithMetaWatcher',
+  'undelegateWatcher',
+  'withdrawRewardWatcher',
 ]);
 
 const trace = makeTracer('CosmosOrchAccount');
@@ -315,15 +317,18 @@ export const prepareCosmosOrchestrationAccountKit = (
           M.arrayOf(M.record()),
         ),
       }),
-      undelegateWatcher: M.interface('undelegateWatcher', {
+      decodedUndelegateWatcher: M.interface('decodedUndelegateWatcher', {
         onFulfilled: M.call(M.arrayOf(M.any())).returns(Vow$(M.promise())),
       }),
-      withdrawRewardWatcher: M.interface('withdrawRewardWatcher', {
-        onFulfilled: M.call(M.splitRecord({ amount: M.arrayOf(CoinShape) }))
-          .optional(M.arrayOf(M.undefined())) // empty context
-          .returns(M.arrayOf(DenomAmountShape)),
-      }),
-      transferWatcher: M.interface('transferWatcher', {
+      decodedWithdrawRewardWatcher: M.interface(
+        'decodedWithdrawRewardWatcher',
+        {
+          onFulfilled: M.call(M.splitRecord({ amount: M.arrayOf(CoinShape) }))
+            .optional(M.arrayOf(M.undefined())) // empty context
+            .returns(M.arrayOf(DenomAmountShape)),
+        },
+      ),
+      beginTransferWatcher: M.interface('beginTransferWatcher', {
         onFulfilled: M.call([M.any(), M.opt(M.nat())])
           .optional({
             destination: CosmosChainAddressShape,
@@ -334,11 +339,6 @@ export const prepareCosmosOrchestrationAccountKit = (
             },
           })
           .returns(Vow$(M.any())),
-      }),
-      parseTransferWatcher: M.interface('parseTransferWatcher', {
-        onFulfilled: M.call([M.string(), M.record()], M.record()).returns(
-          Vow$(M.record()),
-        ),
       }),
       delegationQueryWatcher: M.interface('delegationQueryWatcher', {
         onFulfilled: M.call(M.arrayOf(M.record())).returns(M.record()),
@@ -607,7 +607,7 @@ export const prepareCosmosOrchestrationAccountKit = (
           return harden(balances.map(coin => toDenomAmount(coin)));
         },
       },
-      undelegateWatcher: {
+      decodedUndelegateWatcher: {
         /**
          * @param {MsgUndelegateResponseType[]} responses
          */
@@ -639,7 +639,7 @@ export const prepareCosmosOrchestrationAccountKit = (
           return undefined;
         },
       },
-      withdrawRewardWatcher: {
+      decodedWithdrawRewardWatcher: {
         /** @param {{ amount: Coin[] }} response */
         onFulfilled(response) {
           trace('withdrawReward response', response);
@@ -686,7 +686,7 @@ export const prepareCosmosOrchestrationAccountKit = (
           return /** @type {Result} */ (harden(decoded));
         },
       },
-      transferWatcher: {
+      beginTransferWatcher: {
         /**
          * @param {readonly [
          *   { transferChannel: IBCConnectionInfo['transferChannel'] },
@@ -942,7 +942,6 @@ export const prepareCosmosOrchestrationAccountKit = (
               opts,
             );
 
-            // NOTE: response, including completionTime, is currently discarded.
             return helper.pickVowIndex(results, 0);
           });
         },
@@ -959,7 +958,7 @@ export const prepareCosmosOrchestrationAccountKit = (
 
             const result = holder.executeTxProto3([Any.toJSON(msg)], opts);
             const reward = helper.pickVowIndex(result, 0);
-            return watch(reward, this.facets.withdrawRewardWatcher);
+            return watch(reward, this.facets.decodedWithdrawRewardWatcher);
           });
         },
         /** @type {HostOf<OrchestrationAccountCommon['getBalance']>} */
@@ -1067,7 +1066,7 @@ export const prepareCosmosOrchestrationAccountKit = (
                   timestampHelper.vowOrValueFromOpts(opts),
                 ]),
               ),
-              this.facets.transferWatcher,
+              this.facets.beginTransferWatcher,
               { opts, token, destination: cosmosDest },
             );
           });
@@ -1108,7 +1107,7 @@ export const prepareCosmosOrchestrationAccountKit = (
                 ),
                 opts,
               ),
-              this.facets.undelegateWatcher,
+              this.facets.decodedUndelegateWatcher,
             );
             return watch(undelegateV, this.facets.returnVoidWatcher);
           });
