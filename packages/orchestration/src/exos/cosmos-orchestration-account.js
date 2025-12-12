@@ -86,6 +86,14 @@ import {
  * @import {AnyType, MsgDepositForBurnType, MsgUndelegateResponseType} from '../utils/codecs.js';
  */
 
+/**
+ * Watcher facets of the CosmosOrchestrationAccount exoClassKit that have been
+ * removed from service, but need to leave behind a dummy facet to allow older
+ * contracts that use orchestration to be upgraded.
+ *
+ * Add new watchers here as they are removed from service. Maybe someday
+ * contract upgrade will allow us to prune this list.
+ */
 const TOMBSTONED_WATCHERS = /** @type {const} */ ([
   'attachTxMetaWatcher',
   'fillSequenceWatcher',
@@ -604,12 +612,14 @@ export const prepareCosmosOrchestrationAccountKit = (
          * @param {MsgUndelegateResponseType[]} responses
          */
         onFulfilled(responses) {
-          trace('undelegate response', responses);
+          trace('undelegate responses', responses);
           const completionSeconds = responses.reduce((maxTime, resp) => {
             // ignore nanoseconds and just use seconds from Timestamp
             const completionS = resp?.completionTime?.seconds ?? 0n;
             return completionS > maxTime ? completionS : maxTime;
           }, 0n);
+          completionSeconds ||
+            Fail`No completion time in responses ${responses}`;
           return watch(
             E(this.state.timer).wakeAt(completionSeconds + maxClockSkew),
           );
@@ -1267,8 +1277,8 @@ export const prepareCosmosOrchestrationAccountKit = (
         },
         /**
          * @template {readonly (keyof TypeFromUrl | unknown)[]} TUS
-         * @param {readonly {
-         *   [K in keyof TUS]: AnyJson<TUS[K]>;
+         * @param {{
+         *   readonly [K in keyof TUS]: AnyJson<TUS[K]>;
          * }} msgs
          * @param {CosmosActionOptions} [opts]
          * @returns {Vow<{

@@ -325,6 +325,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
       prove: true,
     },
   ] as const);
+  results;
 }
 
 {
@@ -361,7 +362,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
   >(account.delegate);
 
   // @ts-expect-error executeEncodedTx not available on localAccount
-  expectType<() => Promise<string>>(account.executeEncodedTx);
+  account.executeEncodedTx;
 }
 
 // Test CosmosChainAccountMethods
@@ -393,10 +394,8 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
     ) => Promise<unknown>
   >(account.delegate);
 
-  expectError(() => {
-    // @ts-expect-error - 'depositForBurn' doesn't exist
-    account.depositForBurn;
-  });
+  // @ts-expect-error `depositForBurn` only available for noble
+  account.depositForBurn;
 }
 
 // Test NobleAccountMethods
@@ -413,11 +412,8 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
     account.depositForBurn,
   );
 
-  // Verify delegate is not available (no stakingTokens parameter)
-  expectType<
-    (validator: CosmosValidatorAddress, amount: AmountArg) => Promise<void>
-    // @ts-expect-error StakingMethods not available on noble
-  >(account.delegate);
+  // @ts-expect-error StakingMethods not available on noble
+  account.delegate;
 }
 
 // KnownChains - Agoric

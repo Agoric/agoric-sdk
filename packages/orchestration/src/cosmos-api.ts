@@ -329,7 +329,7 @@ export interface StakingAccountActions {
  * Low level methods from IcaAccount that we pass through to CosmosOrchestrationAccount
  */
 
-export interface IcaAccountImplMethods {
+export interface IcaAccountBaseMethods {
   /**
    * Submit a transaction on behalf of the remote account for execution on the remote chain.
    * @param msgs - records for the transaction
@@ -364,7 +364,7 @@ export interface IcaAccountImplMethods {
 /**
  * Low level object that supports queries and operations for an account on a remote chain.
  */
-export interface IcaAccount extends IcaAccountImplMethods {
+export interface IcaAccount extends IcaAccountBaseMethods {
   /**
    * @returns the address of the account on the remote chain
    */
@@ -385,9 +385,10 @@ export interface IcaAccount extends IcaAccountImplMethods {
 }
 
 /**
- * Full-featured ICA account methods.
+ * ICA-related account methods exposed on the Cosmos Orchestration Account
+ * holder facet.
  */
-export interface IcaAccountMethods extends IcaAccountImplMethods {
+export interface IcaAccountMethods extends IcaAccountBaseMethods {
   /**
    * Submit a transaction on behalf of the remote account for execution on
    * the remote chain, and decode the response.
