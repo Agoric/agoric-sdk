@@ -55,7 +55,12 @@ harden(NoSolutionError);
 const failUnsolvable = (
   details: ReturnType<typeof X> | string,
   cause?: Error,
-): never => assert.fail(details, NoSolutionError, { cause });
+): never =>
+  assert.fail(
+    details,
+    ((...args) => Reflect.construct(NoSolutionError, args)) as ErrorConstructor,
+    { cause },
+  );
 
 /** Mode of optimization */
 export type RebalanceMode = 'cheapest' | 'fastest';
