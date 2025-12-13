@@ -6,10 +6,11 @@ on:
   pull_request:
   merge_group:
   push:
-    branches: [master]
+    # Temporary: ws/flaky-tests added for testing before merge
+    branches: [master, ws/flaky-tests]
   schedule:
-    # We start a little earlier to give our build cache time to populate.
-    - cron: '47 5 * * *'
+    # Run every 3 hours on the main branch for continuous flaky test detection
+    - cron: '0 0,3,6,9,12,15,18,21 * * *'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -248,13 +249,17 @@ jobs:
           from: ${{ secrets.NOTIFY_EMAIL_FROM }}
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
+      # Use always() to ensure Mergify receives test results even on cancelled runs for flaky test detection.
+      # Codecov uploads use (success() || failure()) conditions inside post-test/action.yml.
       - uses: ./.github/actions/post-test
-        if: (success() || failure())
+        if: always()
         continue-on-error: true
         timeout-minutes: 4
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
+          mergify-token: ${{ secrets.MERGIFY_TOKEN }}
+          job-name: 'test-quick (${{ matrix.engine }})'
 
   # Verify that running `yarn codegen` in any package that defines it
   # does not produce changes. Only runs on pull requests.
@@ -406,12 +411,14 @@ jobs:
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
-        if: (success() || failure())
+        if: always()
         continue-on-error: true
         timeout-minutes: 4
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
+          mergify-token: ${{ secrets.MERGIFY_TOKEN }}
+          job-name: 'test-quick2 (${{ matrix.engine }})'
 
   ##############
   # Long-running tests are executed individually.
@@ -447,12 +454,14 @@ jobs:
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
-        if: (success() || failure())
+        if: always()
         continue-on-error: true
         timeout-minutes: 4
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
+          mergify-token: ${{ secrets.MERGIFY_TOKEN }}
+          job-name: 'test-fast-usdc-deploy (${{ matrix.engine }})'
 
   test-governance:
     # BEGIN-TEST-BOILERPLATE
@@ -486,12 +495,14 @@ jobs:
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
-        if: (success() || failure())
+        if: always()
         continue-on-error: true
         timeout-minutes: 4
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
+          mergify-token: ${{ secrets.MERGIFY_TOKEN }}
+          job-name: 'test-governance (${{ matrix.engine }})'
 
   test-portfolio-contract:
     # BEGIN-TEST-BOILERPLATE
@@ -564,12 +575,14 @@ jobs:
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
-        if: (success() || failure())
+        if: always()
         continue-on-error: true
         timeout-minutes: 4
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
+          mergify-token: ${{ secrets.MERGIFY_TOKEN }}
+          job-name: 'test-solo (${{ matrix.engine }})'
 
   test-cosmic-swingset:
     # BEGIN-TEST-BOILERPLATE
@@ -607,12 +620,14 @@ jobs:
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
-        if: (success() || failure())
+        if: always()
         continue-on-error: true
         timeout-minutes: 4
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
+          mergify-token: ${{ secrets.MERGIFY_TOKEN }}
+          job-name: 'test-cosmic-swingset (${{ matrix.engine }})'
 
   test-inter-protocol:
     # BEGIN-TEST-BOILERPLATE
@@ -646,12 +661,14 @@ jobs:
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
-        if: (success() || failure())
+        if: always()
         continue-on-error: true
         timeout-minutes: 4
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
+          mergify-token: ${{ secrets.MERGIFY_TOKEN }}
+          job-name: 'test-inter-protocol (${{ matrix.engine }})'
 
   test-boot:
     # BEGIN-TEST-BOILERPLATE
@@ -690,12 +707,14 @@ jobs:
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
-        if: (success() || failure())
+        if: always()
         continue-on-error: true
         timeout-minutes: 4
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
+          mergify-token: ${{ secrets.MERGIFY_TOKEN }}
+          job-name: 'test-boot (${{ matrix.engine }})'
 
   test-swingset:
     # BEGIN-TEST-BOILERPLATE
@@ -740,12 +759,14 @@ jobs:
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
-        if: (success() || failure())
+        if: always()
         continue-on-error: true
         timeout-minutes: 4
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
+          mergify-token: ${{ secrets.MERGIFY_TOKEN }}
+          job-name: 'test-swingset (${{ matrix.engine }})'
 
   test-zoe-unit:
     # BEGIN-TEST-BOILERPLATE
@@ -782,12 +803,14 @@ jobs:
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
-        if: (success() || failure())
+        if: always()
         continue-on-error: true
         timeout-minutes: 4
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
+          mergify-token: ${{ secrets.MERGIFY_TOKEN }}
+          job-name: 'test-zoe-unit (${{ matrix.engine }})'
 
   test-zoe-swingset:
     # BEGIN-TEST-BOILERPLATE
@@ -823,9 +846,11 @@ jobs:
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
-        if: (success() || failure())
+        if: always()
         continue-on-error: true
         timeout-minutes: 4
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
+          mergify-token: ${{ secrets.MERGIFY_TOKEN }}
+          job-name: 'test-zoe-swingset (${{ matrix.engine }})'
