@@ -76,6 +76,20 @@ const MsgSend = CodecHelper(MsgSendType);
  * @import {ZoeTools} from '../utils/zoe-tools.js';
  */
 
+/**
+ * Watcher facets of the exoClassKit that have been removed from service, but
+ * need to leave behind a dummy facet to allow older contracts that use
+ * orchestration to be upgraded.
+ *
+ * Add new watchers here as they are removed from service. Maybe someday
+ * contract upgrade will allow us to prune this list.
+ */
+const TOMBSTONED_WATCHERS = /** @type {const} */ (
+  [
+    // 'transferWithMetaWatcher', // deprecated but not yet tombstoned
+  ]
+);
+
 const trace = makeTracer('LocalOrchAccount');
 
 const { Vow$ } = NetworkShape; // TODO #9611
@@ -186,6 +200,17 @@ export const prepareLocalOrchestrationAccountKit = (
   const makeLocalOrchestrationAccountKit = zone.exoClassKit(
     'Local Orchestration Account Kit',
     {
+      /** @deprecated replaced by transferWatcher */
+      transferWithMetaWatcher: M.interface('transferWatcher', {
+        onFulfilled: M.call([M.record(), M.record(), M.record(), M.nat()])
+          .optional({
+            opts: M.opt(IBCTransferOptionsShape),
+            route: TransferRouteShape,
+          })
+          .returns(Vow$(M.record())),
+      }),
+      /** Facets above this line are deprecated. */
+      ...vowExo.makeTombstonedWatcherShapes(TOMBSTONED_WATCHERS),
       ...vowExo.watcherShapes,
       helper: M.interface('helper', {
         ...vowExo.helperShapes,
@@ -277,6 +302,27 @@ export const prepareLocalOrchestrationAccountKit = (
       return { account, address, packetTools, topicKit };
     },
     {
+      /** @deprecated replaced by transferWatcher */
+      transferWithMetaWatcher: {
+        /**
+         * @param {readonly [
+         *   ChainInfo,
+         *   ChainInfo,
+         *   Pick<IBCConnectionInfo, 'transferChannel'>,
+         *   bigint,
+         * ]} details
+         * @param {{
+         *   opts?: Omit<IBCMsgTransferOptions, 'forwardOpts'>;
+         *   route: TransferRoute;
+         * }} ctx
+         */
+        onFulfilled(details, ctx) {
+          const result = this.facets.transferWatcher.onFulfilled(details, ctx);
+          return harden({ result, meta: {} });
+        },
+      },
+      /** Facets above this line are deprecated. */
+      ...vowExo.makeTombstonedWatcherShapes(TOMBSTONED_WATCHERS),
       ...vowExo.watchers,
       helper: {
         ...vowExo.helper,

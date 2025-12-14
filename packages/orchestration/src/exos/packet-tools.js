@@ -57,6 +57,20 @@ const just = obj => {
  * >} PacketTimeout
  */
 
+/**
+ * Watcher facets of the exoClassKit that have been removed from service, but
+ * need to leave behind a dummy facet to allow older contracts that use
+ * orchestration to be upgraded.
+ *
+ * Add new watchers here as they are removed from service. Maybe someday
+ * contract upgrade will allow us to prune this list.
+ */
+const TOMBSTONED_WATCHERS = /** @type {const} */ (
+  [
+    // 'packetWasSentWithMetaWatcher', // deprecated but not yet tombstoned
+  ]
+);
+
 const { Vow$ } = NetworkShape; // TODO #9611
 
 const EVow$ = shape => M.or(Vow$(shape), M.promise(/* shape */));
@@ -75,6 +89,22 @@ export const preparePacketTools = (zone, vowTools) => {
   const makePacketToolsKit = zone.exoClassKit(
     'PacketToolsKit',
     {
+      /** @deprecated replaced by packetWasSentWatcher */
+      packetWasSentWithMetaWatcher: M.interface(
+        'packetWasSentWithMetaWatcher',
+        {
+          onFulfilled: M.call(
+            {
+              eventPattern: M.pattern(),
+              resultV: Vow$(M.any()),
+              meta: M.record(),
+            },
+            M.record(),
+          ).returns(Vow$({ result: M.any(), meta: M.record() })),
+        },
+      ),
+      /** Facets above this line are deprecated. */
+      ...vowExo.makeTombstonedWatcherShapes(TOMBSTONED_WATCHERS),
       public: M.interface('PacketTools', {
         sendThenWaitForAck: M.call(EVow$(M.remotable('PacketSender')))
           .optional(M.any())
@@ -149,6 +179,34 @@ export const preparePacketTools = (zone, vowTools) => {
       };
     },
     {
+      /**
+       * @deprecated replaced by packetWasSentWatcher
+       */
+      packetWasSentWithMetaWatcher: {
+        /**
+         * @param {{
+         *   eventPattern: Pattern;
+         *   resultV: Vow<unknown>;
+         *   meta: Record<string, any>;
+         * }} param0
+         * @param {{
+         *   opts: PacketOptions;
+         *   patternResolver: VowKit<Pattern>['resolver'];
+         * }} ctx
+         */
+        onFulfilled({ eventPattern, resultV, meta }, ctx) {
+          const result = this.facets.packetWasSentWatcher.onFulfilled(
+            {
+              eventPattern,
+              resultV,
+            },
+            ctx,
+          );
+          return harden({ result, meta });
+        },
+      },
+      /** Facets above this line are deprecated. */
+      ...vowExo.makeTombstonedWatchers(TOMBSTONED_WATCHERS),
       public: {
         /**
          * @param {ERef<TargetApp>} monitor

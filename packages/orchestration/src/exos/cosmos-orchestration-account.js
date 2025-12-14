@@ -87,20 +87,21 @@ import {
  */
 
 /**
- * Watcher facets of the CosmosOrchestrationAccount exoClassKit that have been
- * removed from service, but need to leave behind a dummy facet to allow older
- * contracts that use orchestration to be upgraded.
+ * Watcher facets of the exoClassKit that have been removed from service, but
+ * need to leave behind a dummy facet to allow older contracts that use
+ * orchestration to be upgraded.
  *
  * Add new watchers here as they are removed from service. Maybe someday
  * contract upgrade will allow us to prune this list.
  */
 const TOMBSTONED_WATCHERS = /** @type {const} */ ([
-  'attachTxMetaWatcher',
-  'parseTransferWatcher',
+  // 'attachTxMetaWatcher', // deprecated but not yet tombstoned
+  // 'parseTransferWatcher', // deprecated but not yet tombstoned
+  'redelegationQueryWatcher',
   'transferWatcher',
-  'transferWithMetaWatcher',
-  'undelegateWatcher',
-  'withdrawRewardWatcher',
+  // 'transferWithMetaWatcher', // deprecated but not yet tombstoned
+  // 'undelegateWatcher', // deprecated but not yet tombstoned
+  // 'withdrawRewardWatcher', // deprecated but not yet tombstoned
 ]);
 
 const trace = makeTracer('CosmosOrchAccount');
@@ -201,7 +202,7 @@ const stakingAccountQueriesMethods = {
   getReward: M.call(CosmosChainAddressShape)
     .optional(CosmosQueryOptionsShape)
     .returns(VowShape),
-  getRewards: M.call().returns(VowShape),
+  getRewards: M.call().optional(CosmosQueryOptionsShape).returns(VowShape),
 };
 
 /** @see {NobleMethods} */
@@ -291,8 +292,48 @@ export const prepareCosmosOrchestrationAccountKit = (
   const makeCosmosOrchestrationAccountKit = zone.exoClassKit(
     'Cosmos Orchestration Account Holder',
     {
-      ...vowExo.watcherShapes,
+      /** @deprecated only used by obsolete *WithMeta methods */
+      attachTxMetaWatcher: M.interface('attachTxMetaWatcher', {
+        onFulfilled: M.call(
+          M.arrayOf(M.any()),
+          EVow$(M.splitRecord({ result: EVow$(M.any()), meta: M.record() })),
+          M.string(),
+        ).returns(EVow$(M.any())),
+      }),
+      /** @deprecated only used by obsolete *WithMeta methods */
+      transferWithMetaWatcher: M.interface('transferWithMetaWatcher', {
+        onFulfilled: M.call([M.record(), M.nat()])
+          .optional({
+            destination: CosmosChainAddressShape,
+            opts: M.or(M.undefined(), IBCTransferOptionsShape),
+            token: {
+              denom: M.string(),
+              amount: M.string(),
+            },
+          })
+          .returns(Vow$({ result: Vow$(M.any()), meta: M.record() })),
+      }),
+      /** @deprecated only used by obsolete *WithMeta methods */
+      parseTransferWatcher: M.interface('parseTransferWatcher', {
+        onFulfilled: M.call([M.string(), M.record()], M.record()).returns(
+          Vow$(M.record()),
+        ),
+      }),
+      /** @deprecated only used before executeTxProto3 */
+      undelegateWatcher: M.interface('undelegateWatcher', {
+        onFulfilled: M.call(M.string())
+          .optional(M.arrayOf(M.undefined())) // empty context
+          .returns(Vow$(M.promise())),
+      }),
+      /** @deprecated only used before executeTxProto3 */
+      withdrawRewardWatcher: M.interface('withdrawRewardWatcher', {
+        onFulfilled: M.call(M.string())
+          .optional(M.arrayOf(M.undefined())) // empty context
+          .returns(M.arrayOf(DenomAmountShape)),
+      }),
+      /** Facets above this line are deprecated. */
       ...vowExo.makeTombstonedWatcherShapes(TOMBSTONED_WATCHERS),
+      ...vowExo.watcherShapes,
       helper: M.interface('helper', {
         ...vowExo.helperShapes,
         owned: M.call().returns(M.remotable()),
@@ -362,11 +403,6 @@ export const prepareCosmosOrchestrationAccountKit = (
           ),
         },
       ),
-      redelegationQueryWatcher: M.interface('redelegationQueryWatcher', {
-        onFulfilled: M.call(M.arrayOf(M.record())).returns(
-          M.arrayOf(M.record()),
-        ),
-      }),
       redelegationsQueryWatcher: M.interface('redelegationsQueryWatcher', {
         onFulfilled: M.call(M.arrayOf(M.record())).returns(
           M.arrayOf(M.record()),
@@ -430,6 +466,88 @@ export const prepareCosmosOrchestrationAccountKit = (
       };
     },
     {
+      /** @deprecated only used by obsolete *WithMeta methods */
+      attachTxMetaWatcher: {
+        /**
+         * TODO(#1994): Subsume with IcaAccount.executeEncodedTxWithMeta().
+         *
+         * @param {readonly [
+         *   agoric: ChainInfo<'cosmos'>,
+         *   la: LocalIbcAddress,
+         *   counterparty: CaipChainId,
+         *   ra: RemoteIbcAddress,
+         * ]} _param0
+         * @param {{ result: Vow<any>; meta: Record<string, any> }} param1
+         * @param {string} _protocol
+         */
+        onFulfilled(_param0, { result, meta }, _protocol) {
+          return { result, meta };
+        },
+      },
+
+      /** @deprecated only used by obsolete *WithMeta methods */
+      parseTransferWatcher: {
+        onFulfilled() {
+          // Result is unknown, so return Vow<null>.
+          const result = watch(null);
+          return { result, meta: {} };
+        },
+      },
+
+      /** @deprecated only used by obsolete *WithMeta methods */
+      transferWithMetaWatcher: {
+        /**
+         * @param {readonly [
+         *   { transferChannel: IBCConnectionInfo['transferChannel'] },
+         *   bigint | undefined,
+         * ]} results
+         * @param {{
+         *   destination: CosmosChainAddress;
+         *   opts?: IBCMsgTransferOptions;
+         *   token: Coin;
+         * }} ctx
+         */
+        onFulfilled(results, ctx) {
+          const result = this.facets.beginTransferWatcher.onFulfilled(
+            results,
+            ctx,
+          );
+          return harden({ result, meta: {} });
+        },
+      },
+
+      /** @deprecated only used before executeTxProto3 */
+      undelegateWatcher: {
+        /**
+         * @param {string} txResult
+         */
+        onFulfilled(txResult) {
+          const responses = this.facets.decodeResponsesWatcher.onFulfilled(
+            txResult,
+            /** @type {const} */ (['/cosmos.staking.v1beta1.MsgUndelegate']),
+          );
+          return this.facets.decodedUndelegateWatcher.onFulfilled(responses);
+        },
+      },
+
+      /** @deprecated only used before executeTxProto3 */
+      withdrawRewardWatcher: {
+        /** @param {string} result */
+        onFulfilled(result) {
+          const [response] = this.facets.decodeResponsesWatcher.onFulfilled(
+            result,
+            /** @type {const} */ ([
+              '/cosmos.distribution.v1beta1.MsgWithdrawDelegatorReward',
+            ]),
+          );
+          return this.facets.decodedWithdrawRewardWatcher.onFulfilled(response);
+        },
+      },
+
+      /** Facets above this line are deprecated. */
+      ...vowExo.makeTombstonedWatchers(TOMBSTONED_WATCHERS),
+      ...vowExo.watchers,
+
       helper: {
         ...vowExo.helper,
         /** @throws if this holder no longer owns the account */
@@ -454,8 +572,6 @@ export const prepareCosmosOrchestrationAccountKit = (
           return coerceCoin(chainHub, amount);
         },
       },
-      ...vowExo.watchers,
-      ...vowExo.makeTombstonedWatchers(TOMBSTONED_WATCHERS),
       balanceQueryWatcher: {
         /**
          * @param {JsonSafe<ResponseQuery>[]} results
@@ -531,20 +647,6 @@ export const prepareCosmosOrchestrationAccountKit = (
           return harden(unbondingResponses);
         },
       },
-      redelegationQueryWatcher: {
-        /**
-         * @param {JsonSafe<ResponseQuery>[]} results
-         */
-        onFulfilled([result]) {
-          const { redelegationResponses } = decodeIcqResult(
-            QueryRedelegationsResponse,
-            result,
-          );
-          if (!redelegationResponses)
-            throw Fail`Result lacked redelegationResponses key: ${result}`;
-          return harden(redelegationResponses);
-        },
-      },
       redelegationsQueryWatcher: {
         /**
          * @param {JsonSafe<ResponseQuery>[]} results
@@ -555,7 +657,7 @@ export const prepareCosmosOrchestrationAccountKit = (
             result,
           );
           if (!redelegationResponses)
-            throw Fail`Result lacked redelegationResponses key: ${result}`;
+            throw Fail`Result lacked redelegationsResponses key: ${result}`;
           return harden(redelegationResponses);
         },
       },
@@ -609,7 +711,7 @@ export const prepareCosmosOrchestrationAccountKit = (
       },
       decodedUndelegateWatcher: {
         /**
-         * @param {MsgUndelegateResponseType[]} responses
+         * @param {readonly MsgUndelegateResponseType[]} responses
          */
         onFulfilled(responses) {
           trace('undelegate responses', responses);
