@@ -150,12 +150,26 @@ export type IBCPacket = JsonSafe<{
   timeout_timestamp?: PacketSDKType['timeout_timestamp'];
 }>;
 
+/**
+ * The network host is the tuple type that identifies the system providing a
+ * NetworkBinding. We currently only support chain-based Caip10 hosts, but
+ * others may be added later.
+ */
 export type NetworkHost = [['chain', `${string}:${string}`]];
 
+/**
+ * A network binding is the protocol-specific minimal information needed to
+ * identify a specific source or destination, knowing the NetworkHost for which
+ * it has been bound.
+ */
 export interface NetworkBinding {
   ibc: [['port', IBCPortID], ['channel', IBCChannelID]];
 }
 
+/**
+ * A network endpoint is a tuple that identifies a specific network location,
+ * including the protocol, host, and any protocol-specific binding information.
+ */
 export type NetworkEndpoint<Proto extends keyof NetworkBinding> = [
   Proto,
   ...(NetworkHost | []),
