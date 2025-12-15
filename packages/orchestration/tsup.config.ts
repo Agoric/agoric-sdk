@@ -5,7 +5,7 @@
 import { defineConfig } from 'tsup';
 
 export default defineConfig({
-  entry: ['src/stubs/viem-abi.ts'],
+  entry: ['src/stubs/viem-abi.ts', 'src/stubs/viem-typedData.ts'],
   format: ['esm'],
   outDir: 'src/vendor/viem',
   target: 'es2020',

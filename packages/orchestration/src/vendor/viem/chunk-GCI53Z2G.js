@@ -1483,6 +1483,13 @@ var AbiItemAmbiguityError = class extends BaseError3 {
     });
   }
 };
+var BytesSizeMismatchError = class extends BaseError3 {
+  constructor({ expectedSize, givenSize }) {
+    super(`Expected bytes${expectedSize}, got bytes${givenSize}.`, {
+      name: "BytesSizeMismatchError"
+    });
+  }
+};
 var InvalidAbiEncodingTypeError = class extends BaseError3 {
   constructor(type, { docsPath: docsPath6 }) {
     super([
@@ -1972,6 +1979,11 @@ function checksumAddress(address_, chainId) {
   checksumAddressCache.set(`${address_}.${chainId}`, result);
   return result;
 }
+function getAddress(address, chainId) {
+  if (!isAddress(address, { strict: false }))
+    throw new InvalidAddressError({ address });
+  return checksumAddress(address, chainId);
+}
 
 // ../../node_modules/viem/_esm/errors/cursor.js
 var NegativeOffsetError = class extends BaseError3 {
@@ -2217,6 +2229,7 @@ function concatHex(values) {
 }
 
 // ../../node_modules/viem/_esm/utils/regex.js
+var bytesRegex2 = /^bytes([1-9]|1[0-9]|2[0-9]|3[0-2])?$/;
 var integerRegex2 = /^(u?int)(8|16|24|32|40|48|56|64|72|80|88|96|104|112|120|128|136|144|152|160|168|176|184|192|200|208|216|224|232|240|248|256)?$/;
 
 // ../../node_modules/viem/_esm/utils/abi/encodeAbiParameters.js
@@ -3701,7 +3714,7 @@ async function call(client, args) {
     return { data: response };
   } catch (err) {
     const data2 = getRevertErrorData(err);
-    const { offchainLookup: offchainLookup2, offchainLookupSignature: offchainLookupSignature2 } = await import("./ccip-A3AASSMQ.js");
+    const { offchainLookup: offchainLookup2, offchainLookupSignature: offchainLookupSignature2 } = await import("./ccip-34BSSMV5.js");
     if (client.ccipRead !== false && data2?.slice(0, 10) === offchainLookupSignature2 && to)
       return { data: await offchainLookup2(client, { data: data2, to }) };
     if (deploylessCall && data2?.slice(0, 10) === "0x101bb98d")
@@ -4075,9 +4088,27 @@ async function ccipRequest({ data, sender, urls }) {
 }
 
 export {
+  BaseError3 as BaseError,
+  stringify,
+  isHex,
+  size2 as size,
+  hexToBigInt,
+  hexToNumber,
+  toHex,
+  numberToHex,
+  BytesSizeMismatchError,
+  keccak256,
+  InvalidAddressError,
+  isAddress,
+  checksumAddress,
+  getAddress,
+  concat,
+  bytesRegex2 as bytesRegex,
+  integerRegex2 as integerRegex,
   encodeAbiParameters,
   decodeAbiParameters,
   encodeFunctionData,
+  isAddressEqual,
   offchainLookupSignature,
   offchainLookupAbiItem,
   offchainLookup,
