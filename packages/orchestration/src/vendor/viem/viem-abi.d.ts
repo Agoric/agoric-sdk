@@ -1,1 +1,1 @@
-export { decodeAbiParameters, encodeAbiParameters, encodeFunctionData } from 'viem/utils';
+export { decodeAbiParameters, encodeAbiParameters, encodeFunctionData, hashStruct, hashTypedData, recoverTypedDataAddress, serializeTypedData, validateTypedData, verifyTypedData } from 'viem/utils';
