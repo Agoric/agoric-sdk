@@ -1,39 +1,245 @@
-import {
-  aInRange,
-  abool,
-  abytes,
-  bitLen,
-  bitMask,
-  bytesToHex,
-  bytesToNumberBE,
-  bytesToNumberLE,
-  concatBytes,
-  createHmacDrbg,
-  ensureBytes,
-  hexToBytes,
-  inRange,
-  isBytes,
-  memoized,
-  numberToBytesBE,
-  numberToBytesLE,
-  numberToHexUnpadded,
-  utf8ToBytes,
-  validateObject
-} from "./chunk-XN4LUOIH.js";
 import "./chunk-4VNS5WPM.js";
 
-// ../../node_modules/@noble/curves/esm/secp256k1.js
+// ../../node_modules/viem/node_modules/@noble/curves/esm/secp256k1.js
 import { sha256 } from "@noble/hashes/sha2";
 import { randomBytes as randomBytes2 } from "@noble/hashes/utils";
 
-// ../../node_modules/@noble/curves/esm/_shortw_utils.js
+// ../../node_modules/viem/node_modules/@noble/curves/esm/_shortw_utils.js
 import { hmac } from "@noble/hashes/hmac";
 import { concatBytes as concatBytes2, randomBytes } from "@noble/hashes/utils";
 
-// ../../node_modules/@noble/curves/esm/abstract/modular.js
+// ../../node_modules/viem/node_modules/@noble/curves/esm/abstract/modular.js
 import { anumber } from "@noble/hashes/utils";
-var _0n = BigInt(0);
-var _1n = BigInt(1);
+
+// ../../node_modules/viem/node_modules/@noble/curves/esm/abstract/utils.js
+var _0n = /* @__PURE__ */ BigInt(0);
+var _1n = /* @__PURE__ */ BigInt(1);
+function isBytes(a) {
+  return a instanceof Uint8Array || ArrayBuffer.isView(a) && a.constructor.name === "Uint8Array";
+}
+function abytes(item) {
+  if (!isBytes(item))
+    throw new Error("Uint8Array expected");
+}
+function abool(title, value) {
+  if (typeof value !== "boolean")
+    throw new Error(title + " boolean expected, got " + value);
+}
+function numberToHexUnpadded(num2) {
+  const hex = num2.toString(16);
+  return hex.length & 1 ? "0" + hex : hex;
+}
+function hexToNumber(hex) {
+  if (typeof hex !== "string")
+    throw new Error("hex string expected, got " + typeof hex);
+  return hex === "" ? _0n : BigInt("0x" + hex);
+}
+var hasHexBuiltin = (
+  // @ts-ignore
+  typeof Uint8Array.from([]).toHex === "function" && typeof Uint8Array.fromHex === "function"
+);
+var hexes = /* @__PURE__ */ Array.from({ length: 256 }, (_, i) => i.toString(16).padStart(2, "0"));
+function bytesToHex(bytes) {
+  abytes(bytes);
+  if (hasHexBuiltin)
+    return bytes.toHex();
+  let hex = "";
+  for (let i = 0; i < bytes.length; i++) {
+    hex += hexes[bytes[i]];
+  }
+  return hex;
+}
+var asciis = { _0: 48, _9: 57, A: 65, F: 70, a: 97, f: 102 };
+function asciiToBase16(ch) {
+  if (ch >= asciis._0 && ch <= asciis._9)
+    return ch - asciis._0;
+  if (ch >= asciis.A && ch <= asciis.F)
+    return ch - (asciis.A - 10);
+  if (ch >= asciis.a && ch <= asciis.f)
+    return ch - (asciis.a - 10);
+  return;
+}
+function hexToBytes(hex) {
+  if (typeof hex !== "string")
+    throw new Error("hex string expected, got " + typeof hex);
+  if (hasHexBuiltin)
+    return Uint8Array.fromHex(hex);
+  const hl = hex.length;
+  const al = hl / 2;
+  if (hl % 2)
+    throw new Error("hex string expected, got unpadded hex of length " + hl);
+  const array = new Uint8Array(al);
+  for (let ai = 0, hi = 0; ai < al; ai++, hi += 2) {
+    const n1 = asciiToBase16(hex.charCodeAt(hi));
+    const n2 = asciiToBase16(hex.charCodeAt(hi + 1));
+    if (n1 === void 0 || n2 === void 0) {
+      const char = hex[hi] + hex[hi + 1];
+      throw new Error('hex string expected, got non-hex character "' + char + '" at index ' + hi);
+    }
+    array[ai] = n1 * 16 + n2;
+  }
+  return array;
+}
+function bytesToNumberBE(bytes) {
+  return hexToNumber(bytesToHex(bytes));
+}
+function bytesToNumberLE(bytes) {
+  abytes(bytes);
+  return hexToNumber(bytesToHex(Uint8Array.from(bytes).reverse()));
+}
+function numberToBytesBE(n, len) {
+  return hexToBytes(n.toString(16).padStart(len * 2, "0"));
+}
+function numberToBytesLE(n, len) {
+  return numberToBytesBE(n, len).reverse();
+}
+function ensureBytes(title, hex, expectedLength) {
+  let res;
+  if (typeof hex === "string") {
+    try {
+      res = hexToBytes(hex);
+    } catch (e) {
+      throw new Error(title + " must be hex string or Uint8Array, cause: " + e);
+    }
+  } else if (isBytes(hex)) {
+    res = Uint8Array.from(hex);
+  } else {
+    throw new Error(title + " must be hex string or Uint8Array");
+  }
+  const len = res.length;
+  if (typeof expectedLength === "number" && len !== expectedLength)
+    throw new Error(title + " of length " + expectedLength + " expected, got " + len);
+  return res;
+}
+function concatBytes(...arrays) {
+  let sum = 0;
+  for (let i = 0; i < arrays.length; i++) {
+    const a = arrays[i];
+    abytes(a);
+    sum += a.length;
+  }
+  const res = new Uint8Array(sum);
+  for (let i = 0, pad = 0; i < arrays.length; i++) {
+    const a = arrays[i];
+    res.set(a, pad);
+    pad += a.length;
+  }
+  return res;
+}
+function utf8ToBytes(str) {
+  if (typeof str !== "string")
+    throw new Error("string expected");
+  return new Uint8Array(new TextEncoder().encode(str));
+}
+var isPosBig = (n) => typeof n === "bigint" && _0n <= n;
+function inRange(n, min, max) {
+  return isPosBig(n) && isPosBig(min) && isPosBig(max) && min <= n && n < max;
+}
+function aInRange(title, n, min, max) {
+  if (!inRange(n, min, max))
+    throw new Error("expected valid " + title + ": " + min + " <= n < " + max + ", got " + n);
+}
+function bitLen(n) {
+  let len;
+  for (len = 0; n > _0n; n >>= _1n, len += 1)
+    ;
+  return len;
+}
+var bitMask = (n) => (_1n << BigInt(n)) - _1n;
+var u8n = (len) => new Uint8Array(len);
+var u8fr = (arr) => Uint8Array.from(arr);
+function createHmacDrbg(hashLen, qByteLen, hmacFn) {
+  if (typeof hashLen !== "number" || hashLen < 2)
+    throw new Error("hashLen must be a number");
+  if (typeof qByteLen !== "number" || qByteLen < 2)
+    throw new Error("qByteLen must be a number");
+  if (typeof hmacFn !== "function")
+    throw new Error("hmacFn must be a function");
+  let v = u8n(hashLen);
+  let k = u8n(hashLen);
+  let i = 0;
+  const reset = () => {
+    v.fill(1);
+    k.fill(0);
+    i = 0;
+  };
+  const h = (...b) => hmacFn(k, v, ...b);
+  const reseed = (seed = u8n(0)) => {
+    k = h(u8fr([0]), seed);
+    v = h();
+    if (seed.length === 0)
+      return;
+    k = h(u8fr([1]), seed);
+    v = h();
+  };
+  const gen = () => {
+    if (i++ >= 1e3)
+      throw new Error("drbg: tried 1000 values");
+    let len = 0;
+    const out = [];
+    while (len < qByteLen) {
+      v = h();
+      const sl = v.slice();
+      out.push(sl);
+      len += v.length;
+    }
+    return concatBytes(...out);
+  };
+  const genUntil = (seed, pred) => {
+    reset();
+    reseed(seed);
+    let res = void 0;
+    while (!(res = pred(gen())))
+      reseed();
+    reset();
+    return res;
+  };
+  return genUntil;
+}
+var validatorFns = {
+  bigint: (val) => typeof val === "bigint",
+  function: (val) => typeof val === "function",
+  boolean: (val) => typeof val === "boolean",
+  string: (val) => typeof val === "string",
+  stringOrUint8Array: (val) => typeof val === "string" || isBytes(val),
+  isSafeInteger: (val) => Number.isSafeInteger(val),
+  array: (val) => Array.isArray(val),
+  field: (val, object) => object.Fp.isValid(val),
+  hash: (val) => typeof val === "function" && Number.isSafeInteger(val.outputLen)
+};
+function validateObject(object, validators, optValidators = {}) {
+  const checkField = (fieldName, type, isOptional) => {
+    const checkVal = validatorFns[type];
+    if (typeof checkVal !== "function")
+      throw new Error("invalid validator function");
+    const val = object[fieldName];
+    if (isOptional && val === void 0)
+      return;
+    if (!checkVal(val, object)) {
+      throw new Error("param " + String(fieldName) + " is invalid. Expected " + type + ", got " + val);
+    }
+  };
+  for (const [fieldName, type] of Object.entries(validators))
+    checkField(fieldName, type, false);
+  for (const [fieldName, type] of Object.entries(optValidators))
+    checkField(fieldName, type, true);
+  return object;
+}
+function memoized(fn) {
+  const map = /* @__PURE__ */ new WeakMap();
+  return (arg, ...args) => {
+    const val = map.get(arg);
+    if (val !== void 0)
+      return val;
+    const computed = fn(arg, ...args);
+    map.set(arg, computed);
+    return computed;
+  };
+}
+
+// ../../node_modules/viem/node_modules/@noble/curves/esm/abstract/modular.js
+var _0n2 = BigInt(0);
+var _1n2 = BigInt(1);
 var _2n = /* @__PURE__ */ BigInt(2);
 var _3n = /* @__PURE__ */ BigInt(3);
 var _4n = /* @__PURE__ */ BigInt(4);
@@ -41,25 +247,25 @@ var _5n = /* @__PURE__ */ BigInt(5);
 var _8n = /* @__PURE__ */ BigInt(8);
 function mod(a, b) {
   const result = a % b;
-  return result >= _0n ? result : b + result;
+  return result >= _0n2 ? result : b + result;
 }
 function pow2(x, power, modulo) {
   let res = x;
-  while (power-- > _0n) {
+  while (power-- > _0n2) {
     res *= res;
     res %= modulo;
   }
   return res;
 }
 function invert(number, modulo) {
-  if (number === _0n)
+  if (number === _0n2)
     throw new Error("invert: expected non-zero number");
-  if (modulo <= _0n)
+  if (modulo <= _0n2)
     throw new Error("invert: expected positive modulus, got " + modulo);
   let a = mod(number, modulo);
   let b = modulo;
-  let x = _0n, y = _1n, u = _1n, v = _0n;
-  while (a !== _0n) {
+  let x = _0n2, y = _1n2, u = _1n2, v = _0n2;
+  while (a !== _0n2) {
     const q = b / a;
     const r = b % a;
     const m = x - u * q;
@@ -67,12 +273,12 @@ function invert(number, modulo) {
     b = a, a = r, x = u, y = v, u = m, v = n;
   }
   const gcd = b;
-  if (gcd !== _1n)
+  if (gcd !== _1n2)
     throw new Error("invert: does not exist");
   return mod(x, modulo);
 }
 function sqrt3mod4(Fp, n) {
-  const p1div4 = (Fp.ORDER + _1n) / _4n;
+  const p1div4 = (Fp.ORDER + _1n2) / _4n;
   const root = Fp.pow(n, p1div4);
   if (!Fp.eql(Fp.sqr(root), n))
     throw new Error("Cannot find square root");
@@ -92,9 +298,9 @@ function sqrt5mod8(Fp, n) {
 function tonelliShanks(P) {
   if (P < BigInt(3))
     throw new Error("sqrt is not defined for small field");
-  let Q = P - _1n;
+  let Q = P - _1n2;
   let S = 0;
-  while (Q % _2n === _0n) {
+  while (Q % _2n === _0n2) {
     Q /= _2n;
     S++;
   }
@@ -107,7 +313,7 @@ function tonelliShanks(P) {
   if (S === 1)
     return sqrt3mod4;
   let cc = _Fp.pow(Z, Q);
-  const Q1div2 = (Q + _1n) / _2n;
+  const Q1div2 = (Q + _1n2) / _2n;
   return function tonelliSlow(Fp, n) {
     if (Fp.is0(n))
       return n;
@@ -128,7 +334,7 @@ function tonelliShanks(P) {
         if (i === M)
           throw new Error("Cannot find square root");
       }
-      const exponent = _1n << BigInt(M - i - 1);
+      const exponent = _1n2 << BigInt(M - i - 1);
       const b = Fp.pow(c, exponent);
       M = i;
       c = Fp.sqr(b);
@@ -178,19 +384,19 @@ function validateField(field) {
   return validateObject(field, opts);
 }
 function FpPow(Fp, num2, power) {
-  if (power < _0n)
+  if (power < _0n2)
     throw new Error("invalid exponent, negatives unsupported");
-  if (power === _0n)
+  if (power === _0n2)
     return Fp.ONE;
-  if (power === _1n)
+  if (power === _1n2)
     return num2;
   let p = Fp.ONE;
   let d = num2;
-  while (power > _0n) {
-    if (power & _1n)
+  while (power > _0n2) {
+    if (power & _1n2)
       p = Fp.mul(p, d);
     d = Fp.sqr(d);
-    power >>= _1n;
+    power >>= _1n2;
   }
   return p;
 }
@@ -212,7 +418,7 @@ function FpInvertBatch(Fp, nums, passZero = false) {
   return inverted;
 }
 function FpLegendre(Fp, n) {
-  const p1mod2 = (Fp.ORDER - _1n) / _2n;
+  const p1mod2 = (Fp.ORDER - _1n2) / _2n;
   const powered = Fp.pow(n, p1mod2);
   const yes = Fp.eql(powered, Fp.ONE);
   const zero = Fp.eql(powered, Fp.ZERO);
@@ -229,7 +435,7 @@ function nLength(n, nBitLength) {
   return { nBitLength: _nBitLength, nByteLength };
 }
 function Field(ORDER, bitLen2, isLE = false, redef = {}) {
-  if (ORDER <= _0n)
+  if (ORDER <= _0n2)
     throw new Error("invalid field: expected ORDER > 0, got " + ORDER);
   const { nBitLength: BITS, nByteLength: BYTES } = nLength(ORDER, bitLen2);
   if (BYTES > 2048)
@@ -241,16 +447,16 @@ function Field(ORDER, bitLen2, isLE = false, redef = {}) {
     BITS,
     BYTES,
     MASK: bitMask(BITS),
-    ZERO: _0n,
-    ONE: _1n,
+    ZERO: _0n2,
+    ONE: _1n2,
     create: (num2) => mod(num2, ORDER),
     isValid: (num2) => {
       if (typeof num2 !== "bigint")
         throw new Error("invalid field element: expected bigint, got " + typeof num2);
-      return _0n <= num2 && num2 < ORDER;
+      return _0n2 <= num2 && num2 < ORDER;
     },
-    is0: (num2) => num2 === _0n,
-    isOdd: (num2) => (num2 & _1n) === _1n,
+    is0: (num2) => num2 === _0n2,
+    isOdd: (num2) => (num2 & _1n2) === _1n2,
     neg: (num2) => mod(-num2, ORDER),
     eql: (lhs, rhs) => lhs === rhs,
     sqr: (num2) => mod(num2 * num2, ORDER),
@@ -301,13 +507,13 @@ function mapHashToField(key, fieldOrder, isLE = false) {
   if (len < 16 || len < minLen || len > 1024)
     throw new Error("expected " + minLen + "-1024 bytes of input, got " + len);
   const num2 = isLE ? bytesToNumberLE(key) : bytesToNumberBE(key);
-  const reduced = mod(num2, fieldOrder - _1n) + _1n;
+  const reduced = mod(num2, fieldOrder - _1n2) + _1n2;
   return isLE ? numberToBytesLE(reduced, fieldLen) : numberToBytesBE(reduced, fieldLen);
 }
 
-// ../../node_modules/@noble/curves/esm/abstract/curve.js
-var _0n2 = BigInt(0);
-var _1n2 = BigInt(1);
+// ../../node_modules/viem/node_modules/@noble/curves/esm/abstract/curve.js
+var _0n3 = BigInt(0);
+var _1n3 = BigInt(1);
 function constTimeNegate(condition, item) {
   const neg = item.negate();
   return condition ? neg : item;
@@ -331,7 +537,7 @@ function calcOffsets(n, window, wOpts) {
   let nextN = n >> shiftBy;
   if (wbits > windowSize) {
     wbits -= maxNumber;
-    nextN += _1n2;
+    nextN += _1n3;
   }
   const offsetStart = window * windowSize;
   const offset = offsetStart + Math.abs(wbits) - 1;
@@ -371,11 +577,11 @@ function wNAF(c, bits) {
     // non-const time multiplication ladder
     unsafeLadder(elm, n, p = c.ZERO) {
       let d = elm;
-      while (n > _0n2) {
-        if (n & _1n2)
+      while (n > _0n3) {
+        if (n & _1n3)
           p = p.add(d);
         d = d.double();
-        n >>= _1n2;
+        n >>= _1n3;
       }
       return p;
     },
@@ -440,7 +646,7 @@ function wNAF(c, bits) {
     wNAFUnsafe(W, precomputes, n, acc = c.ZERO) {
       const wo = calcWOpts(W, bits);
       for (let window = 0; window < wo.windows; window++) {
-        if (n === _0n2)
+        if (n === _0n3)
           break;
         const { nextN, offset, isZero, isNeg } = calcOffsets(n, window, wo);
         n = nextN;
@@ -539,7 +745,7 @@ function validateBasic(curve) {
   });
 }
 
-// ../../node_modules/@noble/curves/esm/abstract/weierstrass.js
+// ../../node_modules/viem/node_modules/@noble/curves/esm/abstract/weierstrass.js
 function validateSigVerOpts(opts) {
   if (opts.lowS !== void 0)
     abool("lowS", opts.lowS);
@@ -638,7 +844,7 @@ var DER = {
   _int: {
     encode(num2) {
       const { Err: E } = DER;
-      if (num2 < _0n3)
+      if (num2 < _0n4)
         throw new E("integer: negative integers are not allowed");
       let hex = numberToHexUnpadded(num2);
       if (Number.parseInt(hex[0], 16) & 8)
@@ -679,8 +885,8 @@ var DER = {
 function numToSizedHex(num2, size) {
   return bytesToHex(numberToBytesBE(num2, size));
 }
-var _0n3 = BigInt(0);
-var _1n3 = BigInt(1);
+var _0n4 = BigInt(0);
+var _1n4 = BigInt(1);
 var _2n2 = BigInt(2);
 var _3n2 = BigInt(3);
 var _4n2 = BigInt(4);
@@ -716,7 +922,7 @@ function weierstrassPoints(opts) {
   if (Fp.is0(Fp.add(_4a3, _27b2)))
     throw new Error("bad curve params: a or b");
   function isWithinCurveOrder(num2) {
-    return inRange(num2, _1n3, CURVE.n);
+    return inRange(num2, _1n4, CURVE.n);
   }
   function normPrivateKeyToScalar(key) {
     const { allowedPrivateKeyLengths: lengths, nByteLength, wrapPrivateKey, n: N } = CURVE;
@@ -735,7 +941,7 @@ function weierstrassPoints(opts) {
     }
     if (wrapPrivateKey)
       num2 = mod(num2, N);
-    aInRange("private key", num2, _1n3, N);
+    aInRange("private key", num2, _1n4, N);
     return num2;
   }
   function aprjpoint(other) {
@@ -974,11 +1180,11 @@ function weierstrassPoints(opts) {
      */
     multiplyUnsafe(sc) {
       const { endo: endo2, n: N } = CURVE;
-      aInRange("scalar", sc, _0n3, N);
+      aInRange("scalar", sc, _0n4, N);
       const I = Point2.ZERO;
-      if (sc === _0n3)
+      if (sc === _0n4)
         return I;
-      if (this.is0() || sc === _1n3)
+      if (this.is0() || sc === _1n4)
         return this;
       if (!endo2 || wnaf.hasPrecomputes(this))
         return wnaf.wNAFCachedUnsafe(this, sc, Point2.normalizeZ);
@@ -986,14 +1192,14 @@ function weierstrassPoints(opts) {
       let k1p = I;
       let k2p = I;
       let d = this;
-      while (k1 > _0n3 || k2 > _0n3) {
-        if (k1 & _1n3)
+      while (k1 > _0n4 || k2 > _0n4) {
+        if (k1 & _1n4)
           k1p = k1p.add(d);
-        if (k2 & _1n3)
+        if (k2 & _1n4)
           k2p = k2p.add(d);
         d = d.double();
-        k1 >>= _1n3;
-        k2 >>= _1n3;
+        k1 >>= _1n4;
+        k2 >>= _1n4;
       }
       if (k1neg)
         k1p = k1p.negate();
@@ -1013,7 +1219,7 @@ function weierstrassPoints(opts) {
      */
     multiply(scalar) {
       const { endo: endo2, n: N } = CURVE;
-      aInRange("scalar", scalar, _1n3, N);
+      aInRange("scalar", scalar, _1n4, N);
       let point, fake;
       if (endo2) {
         const { k1neg, k1, k2neg, k2 } = endo2.splitScalar(scalar);
@@ -1039,7 +1245,7 @@ function weierstrassPoints(opts) {
      */
     multiplyAndAddUnsafe(Q, a, b) {
       const G = Point2.BASE;
-      const mul = (P, a2) => a2 === _0n3 || a2 === _1n3 || !P.equals(G) ? P.multiplyUnsafe(a2) : P.multiply(a2);
+      const mul = (P, a2) => a2 === _0n4 || a2 === _1n4 || !P.equals(G) ? P.multiplyUnsafe(a2) : P.multiply(a2);
       const sum = mul(this, a).add(mul(Q, b));
       return sum.is0() ? void 0 : sum;
     }
@@ -1051,7 +1257,7 @@ function weierstrassPoints(opts) {
     }
     isTorsionFree() {
       const { h: cofactor, isTorsionFree } = CURVE;
-      if (cofactor === _1n3)
+      if (cofactor === _1n4)
         return true;
       if (isTorsionFree)
         return isTorsionFree(Point2, this);
@@ -1059,7 +1265,7 @@ function weierstrassPoints(opts) {
     }
     clearCofactor() {
       const { h: cofactor, clearCofactor } = CURVE;
-      if (cofactor === _1n3)
+      if (cofactor === _1n4)
         return this;
       if (clearCofactor)
         return clearCofactor(Point2, this);
@@ -1130,7 +1336,7 @@ function weierstrass(curveDef) {
       const tail = bytes.subarray(1);
       if (len === compressedLen && (head === 2 || head === 3)) {
         const x = bytesToNumberBE(tail);
-        if (!inRange(x, _1n3, Fp.ORDER))
+        if (!inRange(x, _1n4, Fp.ORDER))
           throw new Error("Point is not on curve");
         const y2 = weierstrassEquation(x);
         let y;
@@ -1140,7 +1346,7 @@ function weierstrass(curveDef) {
           const suffix = sqrtError instanceof Error ? ": " + sqrtError.message : "";
           throw new Error("Point is not on curve" + suffix);
         }
-        const isYOdd = (y & _1n3) === _1n3;
+        const isYOdd = (y & _1n4) === _1n4;
         const isHeadOdd = (head & 1) === 1;
         if (isHeadOdd !== isYOdd)
           y = Fp.neg(y);
@@ -1157,7 +1363,7 @@ function weierstrass(curveDef) {
     }
   });
   function isBiggerThanHalfOrder(number) {
-    const HALF = CURVE_ORDER >> _1n3;
+    const HALF = CURVE_ORDER >> _1n4;
     return number > HALF;
   }
   function normalizeS(s) {
@@ -1166,8 +1372,8 @@ function weierstrass(curveDef) {
   const slcNum = (b, from, to) => bytesToNumberBE(b.slice(from, to));
   class Signature {
     constructor(r, s, recovery) {
-      aInRange("r", r, _1n3, CURVE_ORDER);
-      aInRange("s", s, _1n3, CURVE_ORDER);
+      aInRange("r", r, _1n4, CURVE_ORDER);
+      aInRange("s", s, _1n4, CURVE_ORDER);
       this.r = r;
       this.s = s;
       if (recovery != null)
@@ -1308,7 +1514,7 @@ function weierstrass(curveDef) {
   };
   const ORDER_MASK = bitMask(nBitLength);
   function int2octets(num2) {
-    aInRange("num < 2^" + nBitLength, num2, _0n3, ORDER_MASK);
+    aInRange("num < 2^" + nBitLength, num2, _0n4, ORDER_MASK);
     return numberToBytesBE(num2, nByteLength);
   }
   function prepSig(msgHash, privateKey, opts = defaultSigOpts) {
@@ -1338,12 +1544,12 @@ function weierstrass(curveDef) {
       const ik = invN(k);
       const q = Point2.BASE.multiply(k).toAffine();
       const r = modN2(q.x);
-      if (r === _0n3)
+      if (r === _0n4)
         return;
       const s = modN2(ik * modN2(m + r * d));
-      if (s === _0n3)
+      if (s === _0n4)
         return;
-      let recovery = (q.x === r ? 0 : 2) | Number(q.y & _1n3);
+      let recovery = (q.x === r ? 0 : 2) | Number(q.y & _1n4);
       let normS = s;
       if (lowS && isBiggerThanHalfOrder(s)) {
         normS = normalizeS(s);
@@ -1426,18 +1632,18 @@ function weierstrass(curveDef) {
 }
 function SWUFpSqrtRatio(Fp, Z) {
   const q = Fp.ORDER;
-  let l = _0n3;
-  for (let o = q - _1n3; o % _2n2 === _0n3; o /= _2n2)
-    l += _1n3;
+  let l = _0n4;
+  for (let o = q - _1n4; o % _2n2 === _0n4; o /= _2n2)
+    l += _1n4;
   const c1 = l;
-  const _2n_pow_c1_1 = _2n2 << c1 - _1n3 - _1n3;
+  const _2n_pow_c1_1 = _2n2 << c1 - _1n4 - _1n4;
   const _2n_pow_c1 = _2n_pow_c1_1 * _2n2;
-  const c2 = (q - _1n3) / _2n_pow_c1;
-  const c3 = (c2 - _1n3) / _2n2;
-  const c4 = _2n_pow_c1 - _1n3;
+  const c2 = (q - _1n4) / _2n_pow_c1;
+  const c3 = (c2 - _1n4) / _2n2;
+  const c4 = _2n_pow_c1 - _1n4;
   const c5 = _2n_pow_c1_1;
   const c6 = Fp.pow(Z, c2);
-  const c7 = Fp.pow(Z, (c2 + _1n3) / _2n2);
+  const c7 = Fp.pow(Z, (c2 + _1n4) / _2n2);
   let sqrtRatio = (u, v) => {
     let tv1 = c6;
     let tv2 = Fp.pow(v, c4);
@@ -1455,9 +1661,9 @@ function SWUFpSqrtRatio(Fp, Z) {
     tv5 = Fp.mul(tv4, tv1);
     tv3 = Fp.cmov(tv2, tv3, isQR);
     tv4 = Fp.cmov(tv5, tv4, isQR);
-    for (let i = c1; i > _1n3; i--) {
+    for (let i = c1; i > _1n4; i--) {
       let tv52 = i - _2n2;
-      tv52 = _2n2 << tv52 - _1n3;
+      tv52 = _2n2 << tv52 - _1n4;
       let tvv5 = Fp.pow(tv4, tv52);
       const e1 = Fp.eql(tvv5, Fp.ONE);
       tv2 = Fp.mul(tv3, tv1);
@@ -1525,7 +1731,7 @@ function mapToCurveSimpleSWU(Fp, opts) {
   };
 }
 
-// ../../node_modules/@noble/curves/esm/_shortw_utils.js
+// ../../node_modules/viem/node_modules/@noble/curves/esm/_shortw_utils.js
 function getHash(hash) {
   return {
     hash,
@@ -1538,7 +1744,7 @@ function createCurve(curveDef, defHash) {
   return { ...create(defHash), create };
 }
 
-// ../../node_modules/@noble/curves/esm/abstract/hash-to-curve.js
+// ../../node_modules/viem/node_modules/@noble/curves/esm/abstract/hash-to-curve.js
 var os2ip = bytesToNumberBE;
 function i2osp(value, length) {
   anum(value);
@@ -1686,11 +1892,11 @@ function createHasher(Point2, mapToCurve, defaults) {
   };
 }
 
-// ../../node_modules/@noble/curves/esm/secp256k1.js
+// ../../node_modules/viem/node_modules/@noble/curves/esm/secp256k1.js
 var secp256k1P = BigInt("0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f");
 var secp256k1N = BigInt("0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141");
-var _0n4 = BigInt(0);
-var _1n4 = BigInt(1);
+var _0n5 = BigInt(0);
+var _1n5 = BigInt(1);
 var _2n3 = BigInt(2);
 var divNearest = (a, b) => (a + b / _2n3) / b;
 function sqrtMod(y) {
@@ -1717,7 +1923,7 @@ function sqrtMod(y) {
 }
 var Fpk1 = Field(secp256k1P, void 0, void 0, { sqrt: sqrtMod });
 var secp256k1 = createCurve({
-  a: _0n4,
+  a: _0n5,
   b: BigInt(7),
   Fp: Fpk1,
   n: secp256k1N,
@@ -1732,7 +1938,7 @@ var secp256k1 = createCurve({
     splitScalar: (k) => {
       const n = secp256k1N;
       const a1 = BigInt("0x3086d221a7d46bcde86c90e49284eb15");
-      const b1 = -_1n4 * BigInt("0xe4437ed6010e88286f547fa90abfe4c3");
+      const b1 = -_1n5 * BigInt("0xe4437ed6010e88286f547fa90abfe4c3");
       const a2 = BigInt("0x114ca50f7a8e2f3f657c1108d9d44cfd8");
       const b2 = a1;
       const POW_2_128 = BigInt("0x100000000000000000000000000000000");
@@ -1776,13 +1982,13 @@ function schnorrGetExtPubKey(priv) {
   return { scalar, bytes: pointToBytes(p) };
 }
 function lift_x(x) {
-  aInRange("x", x, _1n4, secp256k1P);
+  aInRange("x", x, _1n5, secp256k1P);
   const xx = modP(x * x);
   const c = modP(xx * x + BigInt(7));
   let y = sqrtMod(c);
-  if (y % _2n3 !== _0n4)
+  if (y % _2n3 !== _0n5)
     y = modP(-y);
-  const p = new Point(x, y, _1n4);
+  const p = new Point(x, y, _1n5);
   p.assertValidity();
   return p;
 }
@@ -1800,7 +2006,7 @@ function schnorrSign(message, privateKey, auxRand = randomBytes2(32)) {
   const t = numTo32b(d ^ num(taggedHash("BIP0340/aux", a)));
   const rand = taggedHash("BIP0340/nonce", t, px, m);
   const k_ = modN(num(rand));
-  if (k_ === _0n4)
+  if (k_ === _0n5)
     throw new Error("sign failed: k is zero");
   const { bytes: rx, scalar: k } = schnorrGetExtPubKey(k_);
   const e = challenge(rx, px, m);
@@ -1818,10 +2024,10 @@ function schnorrVerify(signature, message, publicKey) {
   try {
     const P = lift_x(num(pub));
     const r = num(sig.subarray(0, 32));
-    if (!inRange(r, _1n4, secp256k1P))
+    if (!inRange(r, _1n5, secp256k1P))
       return false;
     const s = num(sig.subarray(32, 64));
-    if (!inRange(s, _1n4, secp256k1N))
+    if (!inRange(s, _1n5, secp256k1N))
       return false;
     const e = challenge(numTo32b(r), pointToBytes(P), m);
     const R = GmulAdd(P, s, modN(-e));
@@ -1905,6 +2111,7 @@ export {
 };
 /*! Bundled license information:
 
+@noble/curves/esm/abstract/utils.js:
 @noble/curves/esm/abstract/modular.js:
 @noble/curves/esm/abstract/curve.js:
 @noble/curves/esm/abstract/weierstrass.js:

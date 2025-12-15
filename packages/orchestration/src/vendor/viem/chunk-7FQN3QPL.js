@@ -3698,7 +3698,7 @@ async function call(client, args) {
     return { data: response };
   } catch (err) {
     const data2 = getRevertErrorData(err);
-    const { offchainLookup: offchainLookup2, offchainLookupSignature: offchainLookupSignature2 } = await import("./ccip-AAQDZF3N.js");
+    const { offchainLookup: offchainLookup2, offchainLookupSignature: offchainLookupSignature2 } = await import("./ccip-P7E7G325.js");
     if (client.ccipRead !== false && data2?.slice(0, 10) === offchainLookupSignature2 && to)
       return { data: await offchainLookup2(client, { data: data2, to }) };
     if (deploylessCall && data2?.slice(0, 10) === "0x101bb98d")
