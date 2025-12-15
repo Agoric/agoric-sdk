@@ -2660,7 +2660,7 @@ var require_buffer = __commonJS({
     function numberIsNaN(obj) {
       return obj !== obj;
     }
-    var hexSliceLookupTable = function() {
+    var hexSliceLookupTable = (function() {
       const alphabet = "0123456789abcdef";
       const table = new Array(256);
       for (let i = 0; i < 16; ++i) {
@@ -2670,7 +2670,7 @@ var require_buffer = __commonJS({
         }
       }
       return table;
-    }();
+    })();
     function defineBigIntMethod(fn) {
       return typeof BigInt === "undefined" ? BufferBigIntNotDefined : fn;
     }
