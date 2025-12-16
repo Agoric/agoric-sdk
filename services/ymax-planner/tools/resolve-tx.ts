@@ -1,94 +1,51 @@
+#!/usr/bin/env -S node --import ts-blank-space/register
 /* eslint-env node */
 
-import { SigningStargateClient } from '@cosmjs/stargate';
+import '@endo/init/pre-remoting.js';
+import '../src/shims.cjs';
+import '../src/lockdown.js';
 
-import { Fail, q } from '@endo/errors';
+import { resolveTx } from './resolve-tx-lib.ts';
 
-import {
-  fetchEnvNetworkConfig,
-  makeSigningSmartWalletKit,
-  makeSmartWalletKit,
-} from '@agoric/client-utils';
+const dotEnvFile = process.env.DOTENV || '.env';
+const processEnv = { ...process.env };
+const dotenv = await import('dotenv');
+const dotEnvAdditions = {} as { [key: string]: string };
+dotenv.config({ path: dotEnvFile, processEnv: dotEnvAdditions });
+const env = harden({ ...dotEnvAdditions, ...processEnv });
 
-import { TxStatus } from '@aglocal/portfolio-contract/src/resolver/constants.js';
-
-import { loadConfig } from '../src/config.ts';
-import { prepareAbortController } from '../src/support.ts';
-import type { SimplePowers } from '../src/main.ts';
-import { resolvePendingTx } from '../src/resolver.ts';
-
-const parseStatus = (statusArg: string): Omit<TxStatus, 'pending'> => {
-  const normalized = statusArg.toLowerCase();
-  switch (normalized) {
-    case 'success':
-      return TxStatus.SUCCESS;
-    case 'fail':
-      return TxStatus.FAILED;
-    default:
-      throw Fail`Invalid status: ${q(statusArg)}. Use "success" or "fail"`;
-  }
-};
-
-export const resolveTx = async (
-  txId: `tx${number}`,
-  statusArg: string,
-  reason?: string,
-  {
-    env = process.env,
-    fetch = globalThis.fetch,
-    setTimeout = globalThis.setTimeout,
-    connectWithSigner = SigningStargateClient.connectWithSigner,
-    AbortController = globalThis.AbortController,
-    AbortSignal = globalThis.AbortSignal,
-  } = {},
-) => {
-  console.log(`\n🔧 Manually resolving transaction: ${txId}\n`);
-
-  const status = parseStatus(statusArg);
-  console.log(`📝 Setting status to: ${status}\n`);
-  if (status === TxStatus.FAILED) {
-    if (!reason) {
-      throw Fail`Reason is required when marking a transaction as failed`;
-    }
-    console.log(`📋 Reason: ${reason}\n`);
-  }
-
-  const makeAbortController = prepareAbortController({
-    setTimeout,
-    AbortController,
-    AbortSignal,
-  });
-
-  const simplePowers: SimplePowers = {
-    fetch,
-    setTimeout,
-    delay: ms => new Promise(resolve => setTimeout(resolve, ms)).then(() => {}),
-    makeAbortController,
-  };
-
-  const config = await loadConfig(env);
-
-  const networkConfig = await fetchEnvNetworkConfig({
-    env: { AGORIC_NET: config.cosmosRest.agoricNetworkSpec },
-    fetch,
-  });
-
-  const walletUtils = await makeSmartWalletKit(simplePowers, networkConfig);
-  const signingSmartWalletKit = await makeSigningSmartWalletKit(
-    { connectWithSigner, walletUtils },
-    config.mnemonic,
+const args = process.argv.slice(2);
+if (args.length < 2) {
+  console.error('Usage: ./tools/resolve-tx.ts <txId> <status> [reason]');
+  console.error('  status: "success" or "fail"');
+  console.error(
+    '  reason: required when status is "fail", optional for "success"',
   );
-  console.log('👛 Signer address:', signingSmartWalletKit.address);
+  console.error('');
+  console.error('Examples:');
+  console.error('  ./tools/resolve-tx.ts tx399 success');
+  console.error('  ./tools/resolve-tx.ts tx400 fail "Transaction timeout"');
+  console.error(
+    '  ./tools/resolve-tx.ts tx401 fail "Unable to confirm on destination chain"',
+  );
+  process.exit(1);
+}
 
-  console.log(`\n🔄 Resolving transaction...\n`);
+const txId = args[0] as `tx${number}`;
+const statusArg = args[1];
+const reason = args[2];
 
-  await resolvePendingTx({
-    signingSmartWalletKit,
-    txId,
-    status,
-    ...(status === TxStatus.FAILED ? { rejectionReason: reason } : {}),
-  });
+if (statusArg.toLowerCase() === 'fail' && !reason) {
+  console.error(
+    'Error: Reason is required when marking a transaction as failed',
+  );
+  console.error('');
+  console.error('Usage: ./tools/resolve-tx.ts <txId> fail <reason>');
+  console.error('Example: ./tools/resolve-tx.ts tx400 fail "Transaction timeout"');
+  process.exit(1);
+}
 
-  console.log(`\n✅ Transaction ${txId} resolved as ${status}!\n`);
-};
-harden(resolveTx);
+resolveTx(txId, statusArg, reason, { env }).catch(err => {
+  console.error(err);
+  process.exit(1);
+});

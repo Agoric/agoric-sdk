@@ -86,13 +86,13 @@ Two utility commands are available for manually processing and resolving transac
 Manually process a pending transaction.
 
 ```bash
-yarn process-tx <txId> [--verbose]
+./tools/process-tx.ts <txId> [--verbose]
 ```
 
 **Examples:**
 ```bash
-yarn process-tx tx233
-yarn process-tx tx233 --verbose
+./tools/process-tx.ts tx233
+./tools/process-tx.ts tx233 --verbose
 ```
 **Use cases:**
 - Re-process a transaction that may have been skipped or failed
@@ -104,7 +104,7 @@ yarn process-tx tx233 --verbose
 Manually mark a pending transaction as succeeded or failed.
 
 ```bash
-yarn resolve-tx
+./tools/resolve-tx.ts
 ```
 
 Run the command without arguments to see usage and examples.
