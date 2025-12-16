@@ -20,6 +20,9 @@ import {
 import type { EvmContext } from './pending-tx-manager.ts';
 import { lookupValueForKey } from './utils.ts';
 
+export const UserInputError = class extends Error {} as ErrorConstructor;
+harden(UserInputError);
+
 type ROPartial<K extends string, V> = Readonly<Partial<Record<K, V>>>;
 
 type HexAddress = `0x${string}`;
