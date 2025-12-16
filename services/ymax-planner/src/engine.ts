@@ -37,7 +37,8 @@ import {
   portfolioIdFromKey,
   PortfolioStatusShapeExt,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
-import { PROD_NETWORK } from '@aglocal/portfolio-contract/tools/network/network.prod.js';
+import type { NetworkSpec } from '@aglocal/portfolio-contract/tools/network/network-spec.js';
+import { NoSolutionError } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import {
   mustMatch,
@@ -46,10 +47,12 @@ import {
   provideLazyMap,
   stripPrefix,
   tryNow,
+  typedEntries,
 } from '@agoric/internal';
 import { fromUniqueEntries } from '@agoric/internal/src/ses-utils.js';
 import { makeWorkPool } from '@agoric/internal/src/work-pool.js';
 import type { SupportedChain } from '@agoric/portfolio-api/src/constants.js';
+import type { PortfolioKey, FlowKey } from '@agoric/portfolio-api/src/types.js';
 
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
@@ -67,7 +70,10 @@ import {
   planWithdrawFromAllocations,
 } from './plan-deposit.ts';
 import type { SpectrumClient } from './spectrum-client.ts';
+import { UserInputError } from './support.ts';
 import {
+  encodedKeyToPath,
+  pathToEncodedKey,
   parseStreamCell,
   parseStreamCellValue,
   readStorageMeta,
@@ -77,7 +83,7 @@ import {
   vstoragePathIsParentOf,
 } from './vstorage-utils.ts';
 
-const { entries, fromEntries, values } = Object;
+const { fromEntries, values } = Object;
 
 // eslint-disable-next-line no-nested-ternary
 const compareBigints = (a: bigint, b: bigint) => (a > b ? 1 : a < b ? -1 : 0);
@@ -103,7 +109,7 @@ type EventRecord = { blockHeight: bigint } & (
   | { type: 'transfer'; address: Bech32Address }
 );
 
-type VstorageEventDetail = {
+export type VstorageEventDetail = {
   path: string;
   value: string;
   eventRecord: EventRecord;
@@ -115,25 +121,6 @@ const makeVstoragePathPrefixes = (contractInstance: string) => ({
   portfoliosPathPrefix: `published.${contractInstance}.portfolios`,
   pendingTxPathPrefix: `published.${contractInstance}.pendingTxs`,
 });
-
-/** cf. golang/cosmos/x/vstorage/types/path_keys.go */
-const EncodedKeySeparator = '\x00';
-const PathSeparator = '.';
-
-/**
- * TODO: Promote elsewhere, maybe @agoric/internal?
- * cf. golang/cosmos/x/vstorage/types/path_keys.go
- */
-const encodedKeyToPath = (key: string) => {
-  const encodedParts = key.split(EncodedKeySeparator);
-  encodedParts.length > 1 || Fail`invalid encoded key ${q(key)}`;
-  const path = encodedParts.slice(1).join(PathSeparator);
-  return path;
-};
-const pathToEncodedKey = (path: string) => {
-  const segments = path.split(PathSeparator);
-  return `${segments.length}${EncodedKeySeparator}${segments.join(EncodedKeySeparator)}`;
-};
 
 const vstorageEntryFromCosmosEvent = (event: CosmosEvent) => {
   const attributes = tryNow(
@@ -162,14 +149,13 @@ export const makeVstorageEvent = (
     blockHeight: String(blockHeight),
     values: [JSON.stringify(marshaller.toCapData(value))],
   });
-  const eventAttrs = {
-    store: 'vstorage',
-    key: pathToEncodedKey(path),
-    value: streamCellJson,
-  };
   const event: CosmosEvent = {
     type: 'state_change',
-    attributes: entries(eventAttrs).map(([k, v]) => ({ key: k, value: v })),
+    attributes: [
+      { key: 'store', value: 'vstorage' },
+      { key: 'key', value: pathToEncodedKey(path) },
+      { key: 'value', value: streamCellJson },
+    ],
   };
   return { event, streamCellJson };
 };
@@ -183,6 +169,7 @@ export type Powers = {
   spectrumChainIds: Partial<Record<SupportedChain, string>>;
   spectrumPoolIds: Partial<Record<InstrumentId, string>>;
   cosmosRest: CosmosRestClient;
+  network: NetworkSpec;
   signingSmartWalletKit: SigningSmartWalletKit;
   walletStore: ReturnType<typeof reflectWalletStore>;
   getWalletInvocationUpdate: (
@@ -194,9 +181,10 @@ export type Powers = {
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
 };
 
-type ProcessPortfolioPowers = Pick<
+export type ProcessPortfolioPowers = Pick<
   Powers,
   | 'cosmosRest'
+  | 'network'
   | 'spectrum'
   | 'spectrumBlockchain'
   | 'spectrumPools'
@@ -217,7 +205,7 @@ type ProcessPortfolioPowers = Pick<
   };
 };
 
-type PortfoliosMemory = {
+export type PortfoliosMemory = {
   deferrals: EventRecord[];
   snapshots?: Map<string, { fingerprint: string; repeats: number }>;
 };
@@ -250,6 +238,7 @@ export const processPortfolioEvents = async (
     depositBrand,
     feeBrand,
     gasEstimator,
+    network,
     signingSmartWalletKit,
     walletStore,
     getWalletInvocationUpdate,
@@ -290,17 +279,22 @@ export const processPortfolioEvents = async (
   };
   const startFlow = async (
     portfolioStatus: StatusFor['portfolio'],
-    portfolioKey: string,
-    flowKey: string,
+    portfolioKey: PortfolioKey,
+    flowKey: FlowKey,
     flowDetail: FlowDetail,
   ) => {
     const path = `${portfoliosPathPrefix}.${portfolioKey}`;
+    const portfolioId = portfolioIdFromKey(portfolioKey);
+    const flowId = flowIdFromKey(flowKey);
+    const scope = [portfolioId, flowId] as const;
+    const { policyVersion, rebalanceCount, targetAllocation } = portfolioStatus;
+    const conditions = [policyVersion, rebalanceCount] as const;
+
     const currentBalances = await getNonDustBalances(
       portfolioStatus,
       depositBrand,
       balanceQueryPowers,
     );
-    const { policyVersion, rebalanceCount, targetAllocation } = portfolioStatus;
     const errorContext = {
       path,
       flowKey,
@@ -316,7 +310,7 @@ export const processPortfolioEvents = async (
       // FlowDetail, but we need it here when it is present (i.e., for types
       // "deposit" and "withdraw" and it's harmless otherwise.
       amount: flowDetail.amount,
-      network: PROD_NETWORK,
+      network,
       brand: depositBrand,
       feeBrand,
       gasEstimator,
@@ -324,6 +318,25 @@ export const processPortfolioEvents = async (
 
     const { network: _network, ...logContext } = plannerContext;
     logger.debug(`Starting flow`, flowDetail, inspectForStdout(logContext));
+    const settle = async <M extends string & keyof PortfolioPlanner>(
+      methodName: M,
+      args: PortfolioPlanner[M] extends (...args: infer Args) => any
+        ? Args
+        : never,
+    ) => {
+      const planReceiver = walletStore.get<PortfolioPlanner>('planner', {
+        sendOnly: true,
+      });
+      const { tx, id } = await planReceiver[methodName]!(...args);
+      // The transaction has been submitted, but we won't know about a rejection
+      // for at least another block.
+      if (!isDryRun) {
+        void getWalletInvocationUpdate(id as any).catch(err => {
+          logger.warn(`⚠️ Failure for ${methodName}`, args, err);
+        });
+      }
+      return tx;
+    };
 
     try {
       let steps: MovementDesc[];
@@ -345,30 +358,13 @@ export const processPortfolioEvents = async (
       }
       (errorContext as any).steps = steps;
 
-      const portfolioId = portfolioIdFromKey(portfolioKey as any);
-      const flowId = flowIdFromKey(flowKey as any);
-      const planner = walletStore.get<PortfolioPlanner>('planner', {
-        sendOnly: true,
-      });
-      const { tx, id } = await planner.resolvePlan(
-        portfolioId,
-        flowId,
-        steps,
-        policyVersion,
-        rebalanceCount,
-      );
-      // The transaction has been submitted, but we won't know about a rejection
-      // for at least another block.
-      if (!isDryRun) {
-        void getWalletInvocationUpdate(id as any).catch(err => {
-          logger.warn(
-            `⚠️ Failure for resolvePlan`,
-            { policyVersion, rebalanceCount },
-            steps,
-            err,
-          );
-        });
-      }
+      const tx = await (steps.length === 0
+        ? settle('rejectPlan', [
+            ...scope,
+            'Nothing to do for this operation.',
+            ...conditions,
+          ])
+        : settle('resolvePlan', [...scope, steps, ...conditions]));
       logger.info(
         `Resolving`,
         flowDetail,
@@ -382,13 +378,21 @@ export const processPortfolioEvents = async (
         tx,
       );
     } catch (err) {
+      if (err instanceof UserInputError || err instanceof NoSolutionError) {
+        try {
+          await settle('rejectPlan', [...scope, err.message, ...conditions]);
+        } catch (settleErr) {
+          // eslint-disable-next-line no-ex-assign
+          err = AggregateError([err, settleErr]);
+        }
+      }
       annotateError(err, inspect(errorContext, { depth: 4 }));
       throw err;
     }
   };
   const handledPortfolioKeys = new Set<string>();
   // prettier-ignore
-  const handlePortfolio = async (portfolioKey: string, eventRecord: EventRecord) => {
+  const handlePortfolio = async (portfolioKey: PortfolioKey, eventRecord: EventRecord) => {
     if (handledPortfolioKeys.has(portfolioKey)) return;
     handledPortfolioKeys.add(portfolioKey);
     const path = `${portfoliosPathPrefix}.${portfolioKey}`;
@@ -428,7 +432,7 @@ export const processPortfolioEvents = async (
       // acceptance of the first submission would invalidate the others as
       // stale, but we'll see them again when such acceptance prompts changes
       // to the portfolio status.
-      for (const [flowKey, flowDetail] of entries(status.flowsRunning || {})) {
+      for (const [flowKey, flowDetail] of typedEntries(status.flowsRunning || {})) {
         // If vstorage has data for this flow then we've already responded.
         if (flowKeys.has(flowKey)) continue;
         await runWithFlowTrace(
@@ -480,7 +484,10 @@ export const processPortfolioEvents = async (
         }
       }
     } else if (vstoragePathIsParentOf(portfoliosPathPrefix, path)) {
-      const portfolioKey = stripPrefix(`${portfoliosPathPrefix}.`, path);
+      const portfolioKey = stripPrefix(
+        `${portfoliosPathPrefix}.`,
+        path,
+      ) as PortfolioKey;
       await handlePortfolio(portfolioKey, eventRecord);
     }
   }
@@ -620,7 +627,7 @@ export const startEngine = async (
             chainName === 'noble'
               ? 'cosmos:testnoble:noble1xw2j23rcwrkg02yxdn5ha2d2x868cuk6370s9y'
               : (([caipChainId, addr]) => `${caipChainId}:${addr}`)(
-                  entries(evmCtx.usdcAddresses)[0],
+                  typedEntries(evmCtx.usdcAddresses)[0],
                 );
           const accountIdByChain = { [chainName]: dummyAddress } as any;
           await getCurrentBalance(info, accountIdByChain, powers);
@@ -797,7 +804,7 @@ export const startEngine = async (
       deferrals.push(deferral);
       return false;
     }) as Array<EventRecord & { type: 'kvstore' }>;
-    const newEvents = entries(respData).flatMap(([key, value]) => {
+    const newEvents = typedEntries(respData).flatMap(([key, value]) => {
       // We care about result_begin_block/result_end_block/etc.
       if (!key.startsWith('result_')) return [];
       const events = (value as any)?.events;
