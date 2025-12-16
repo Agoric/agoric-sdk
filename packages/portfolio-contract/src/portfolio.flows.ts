@@ -61,6 +61,7 @@ import {
   CCTP,
   CCTPfromEVM,
   CompoundProtocol,
+  ERC4626Protocol,
   provideEVMAccount,
   type EVMContext,
   type GMPAccountStatus,
@@ -580,7 +581,7 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
       const poolKey = src as PoolKey;
       const { protocol } = PoolPlaces[poolKey];
       // TODO move this into metadata
-      const feeRequired = ['Compound', 'Aave', 'Beefy'];
+      const feeRequired = ['Compound', 'Aave', 'Beefy', 'ERC4626'];
       moveDesc.fee ||
         !feeRequired.includes(protocol) ||
         Fail`missing fee ${q(moveDesc)}`;
@@ -728,7 +729,9 @@ const stepFlow = async (
     return harden({ ...evmCtx, poolKey });
   };
 
-  const makeEVMProtocolStep = <P extends 'Compound' | 'Aave' | 'Beefy'>(
+  const makeEVMProtocolStep = <
+    P extends 'Compound' | 'Aave' | 'Beefy' | 'ERC4626',
+  >(
     way: Way & { how: P },
     move: MovementDesc,
   ): AssetMovement => {
@@ -741,6 +744,7 @@ const stepFlow = async (
       Compound: CompoundProtocol,
       Aave: AaveProtocol,
       Beefy: BeefyProtocol,
+      ERC4626: ERC4626Protocol,
     }[way.how];
 
     const { amount } = move;
@@ -945,6 +949,10 @@ const stepFlow = async (
 
       case 'Beefy':
         todo.push(makeEVMProtocolStep(way as Way & { how: 'Beefy' }, move));
+        break;
+
+      case 'ERC4626':
+        todo.push(makeEVMProtocolStep(way as Way & { how: 'ERC4626' }, move));
         break;
 
       default:
