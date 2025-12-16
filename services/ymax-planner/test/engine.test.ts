@@ -125,6 +125,7 @@ const fakeVstorageKit = (config: FakeVstorageKitConfig = {}) => {
     if (method === 'delete') return;
 
     const { wrap = false } = data;
+    const newHeight = typeof wrap !== 'boolean' ? wrap : blockHeight;
     const value = harden(data.string ?? data.object);
     const store = typeof value === 'string' ? vstorageStrings : vstorageObjects;
 
@@ -133,7 +134,7 @@ const fakeVstorageKit = (config: FakeVstorageKitConfig = {}) => {
         store.set(path, value);
       } else {
         store.set(path, [value]);
-        vstorageStreamCellHeights.set(path, wrap === true ? blockHeight : wrap);
+        vstorageStreamCellHeights.set(path, newHeight);
       }
       return;
     }
@@ -141,18 +142,20 @@ const fakeVstorageKit = (config: FakeVstorageKitConfig = {}) => {
     method === 'append' || Fail`Unknown method ${q(method)}`;
 
     const oldData = vstorageStrings.get(path) ?? vstorageObjects.get(path);
-    if (oldData === undefined) {
+    const oldHeight = vstorageStreamCellHeights.get(path);
+    if (oldData !== undefined && newHeight === oldHeight) {
+      // Append to the existing StreamCell for this height.
+      store.has(path) ||
+        Fail`Appending must preserve string vs. object representation`;
+      (oldData as Array<typeof value>).push(value);
+    } else {
+      oldData === undefined ||
+        oldHeight !== undefined ||
+        Fail`Cannot append to a non-StreamCell`;
+      // Create a new StreamCell.
       store.set(path, [value]);
-      vstorageStreamCellHeights.set(path, wrap === true ? blockHeight : wrap);
-      return;
+      vstorageStreamCellHeights.set(path, newHeight);
     }
-    vstorageStreamCellHeights.has(path) ||
-      Fail`Cannot append to a non-StreamCell`;
-    store.has(path) ||
-      Fail`Appending must preserve string vs. object representation`;
-    // XXX We should probably mimic vstorage.go in replacing old contents as
-    // detected by a non-current block height.
-    (oldData as Array<typeof value>).push(value);
   };
 
   // Some agoricNames sub-collections must be present.
