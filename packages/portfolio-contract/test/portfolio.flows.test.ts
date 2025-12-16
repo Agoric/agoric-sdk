@@ -47,6 +47,7 @@ import {
 } from '../src/portfolio.exo.ts';
 import {
   executePlan,
+  makeErrorList,
   onAgoricTransfer,
   openPortfolio,
   provideCosmosAccount,
@@ -652,7 +653,7 @@ test(
 );
 
 test('open portfolio with Aave position', async t => {
-  const amount = AmountMath.make(USDC, 300n);
+  const amount = AmountMath.make(USDC, 2_000_000n);
   const feeAcct = AmountMath.make(BLD, 50n);
   const detail = { evmGas: 50n };
   const feeCall = AmountMath.make(BLD, 100n);
@@ -687,7 +688,7 @@ test('open portfolio with Aave position', async t => {
     { _method: 'transfer', address: { chainId: 'axelar-6' } },
     {
       _method: 'localTransfer',
-      amounts: { Deposit: { value: 300n } },
+      amounts: { Deposit: { value: 2_000_000n } },
     },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
     { _method: 'depositForBurn' },
@@ -710,7 +711,7 @@ test.skip('reject missing fee before committing anything', t => {
 
 test('open portfolio with Compound position', async t => {
   const { give, steps } = await makePortfolioSteps(
-    { Compound: make(USDC, 300n) },
+    { Compound: make(USDC, 2_000_000n) },
     { fees: { Compound: { Account: make(BLD, 300n), Call: make(BLD, 100n) } } },
   );
   const { orch, tapPK, ctx, offer, storage, txResolver } = mocks({}, give);
@@ -730,7 +731,7 @@ test('open portfolio with Compound position', async t => {
     { _method: 'transfer', address: { chainId: 'noble-5' } },
     { _method: 'send' },
     { _method: 'transfer', address: { chainId: 'axelar-6' } },
-    { _method: 'localTransfer', amounts: { Deposit: { value: 300n } } },
+    { _method: 'localTransfer', amounts: { Deposit: { value: 2_000_000n } } },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
     { _method: 'depositForBurn' },
     { _method: 'send' },
@@ -935,7 +936,7 @@ test.skip('rebalance handles stepFlow failure correctly', async t => {
 });
 
 test('claim rewards on Aave position', async t => {
-  const amount = AmountMath.make(USDC, 300n);
+  const amount = AmountMath.make(USDC, 2_000_000n);
   const emptyAmount = AmountMath.make(USDC, 0n);
   const feeCall = AmountMath.make(BLD, 100n);
   const { orch, tapPK, ctx, offer, storage, txResolver } = mocks(
@@ -990,7 +991,7 @@ test('claim rewards on Aave position', async t => {
 });
 
 test('open portfolio with Beefy position', async t => {
-  const amount = AmountMath.make(USDC, 300n);
+  const amount = AmountMath.make(USDC, 2_000_000n);
   const feeAcct = AmountMath.make(BLD, 50n);
   const detail = { evmGas: 50n };
   const feeCall = AmountMath.make(BLD, 100n);
@@ -1026,7 +1027,7 @@ test('open portfolio with Beefy position', async t => {
     { _method: 'transfer', address: { chainId: 'axelar-6' } },
     {
       _method: 'localTransfer',
-      amounts: { Deposit: { value: 300n } },
+      amounts: { Deposit: { value: 2_000_000n } },
     },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
     { _method: 'depositForBurn' },
@@ -1047,7 +1048,7 @@ test('open portfolio with Beefy position', async t => {
 });
 
 test('wayFromSrcToDesc handles +agoric -> @agoric', t => {
-  const amount = AmountMath.make(USDC, 300n);
+  const amount = AmountMath.make(USDC, 2_000_000n);
   const actual = wayFromSrcToDesc({ src: '+agoric', dest: '@agoric', amount });
   t.deepEqual(actual, { how: 'send' });
 });
@@ -1056,7 +1057,7 @@ test('Engine can move deposits +agoric -> @agoric', async t => {
   const { orch, ctx, offer, storage } = mocks({}, {});
   const { log } = offer;
 
-  const amount = AmountMath.make(USDC, 300n);
+  const amount = AmountMath.make(USDC, 2_000_000n);
   const kit = await ctx.makePortfolioKit();
 
   await rebalance(
@@ -1084,7 +1085,7 @@ test('client can move to deposit LCA', async t => {
   const { orch, ctx, offer, storage } = mocks({}, {});
   const { log } = offer;
 
-  const amount = AmountMath.make(USDC, 300n);
+  const amount = AmountMath.make(USDC, 2_000_000n);
   const kit = await ctx.makePortfolioKit();
 
   await rebalance(
@@ -1167,7 +1168,7 @@ test('handle failure in provideCosmosAccount makeAccount', async t => {
 test('handle failure in provideEVMAccount sendMakeAccountCall', async t => {
   const unlucky = make(BLD, 13n);
   const { give, steps } = await makePortfolioSteps(
-    { Compound: make(USDC, 300n) },
+    { Compound: make(USDC, 2_000_000n) },
     {
       fees: { Compound: { Account: unlucky, Call: make(BLD, 100n) } },
       evm: 'Arbitrum',
@@ -1229,7 +1230,7 @@ test('handle failure in provideEVMAccount sendMakeAccountCall', async t => {
 
   // Recovery attempt - avoid the unlucky 13n fee using same portfolio
   const { give: giveGood, steps: stepsGood } = await makePortfolioSteps(
-    { Compound: make(USDC, 300n) },
+    { Compound: make(USDC, 2_000_000n) },
     { fees: { Compound: { Account: make(BLD, 300n), Call: make(BLD, 100n) } } },
   );
   const seat2 = makeMockSeat(giveGood, undefined, log);
@@ -1290,7 +1291,7 @@ test('withdraw in coordination with planner', async t => {
   }
 
   const webUiDone = (async () => {
-    const Cash = make(USDC, 300n);
+    const Cash = make(USDC, 2_000_000n);
     const wSeat = makeMockSeat({}, { Cash }, offer.log);
     await executePlan(orch, ctx, wSeat, {}, kit, {
       type: 'withdraw',
@@ -1341,7 +1342,7 @@ test('withdraw in coordination with planner', async t => {
     },
     { _method: 'send', _cap: 'agoric11014' },
     { _method: 'transfer' }, // depositForBurn
-    { _method: 'withdrawToSeat', amounts: { Cash: { value: 300n } } },
+    { _method: 'withdrawToSeat', amounts: { Cash: { value: 2_000_000n } } },
     { _method: 'exit' },
   ]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
@@ -1456,17 +1457,17 @@ test('simple rebalance in coordination with planner', async t => {
 
     // Planner provides steps to move from USDN to mixed allocation
     const steps: MovementDesc[] = [
-      { src: 'USDN', dest: '@noble', amount: make(USDC, 5000n) },
+      { src: 'USDN', dest: '@noble', amount: make(USDC, 5_000_000n) },
       {
         src: '@noble',
         dest: '@Arbitrum',
-        amount: make(USDC, 5000n),
+        amount: make(USDC, 5_000_000n),
         fee: make(BLD, 100n),
       },
       {
         src: '@Arbitrum',
         dest: 'Aave_Arbitrum',
-        amount: make(USDC, 5000n),
+        amount: make(USDC, 5_000_000n),
         fee: make(BLD, 50n),
       },
     ];
@@ -1751,6 +1752,7 @@ test('A transfers to axelar; B arrives', makeAccountEVMRace, 'txfr');
 test('A times out on axelar; B arrives', makeAccountEVMRace, 'txfr', 'txfr');
 test('A gets rejected txN; B arrives', makeAccountEVMRace, 'txfr', 'resolve');
 test('A finishes before attempt B starts', makeAccountEVMRace, 'resolve');
+
 test('planner rejects plan and flow fails gracefully', async t => {
   const { orch, ctx, offer, storage } = mocks({});
 
@@ -1843,6 +1845,146 @@ test('failed transaction publishes rejectionReason to vstorage', async t => {
   await t.throwsAsync(() => vowTools.when(result), {
     message: rejectionReason,
   });
+  await documentStorageSchema(t, storage, docOpts);
+});
 
+test('asking to relay less than 1 USDC over CCTP is refused by contract', async t => {
+  const { give, steps } = await makePortfolioSteps(
+    { Aave: make(USDC, 250_000n) },
+    { feeBrand: BLD },
+  );
+  const { Deposit } = give;
+  const { orch, tapPK, ctx, offer, storage, txResolver } = mocks(
+    {},
+    { Deposit },
+  );
+
+  const [actual] = await Promise.all([
+    openPortfolio(orch, ctx, offer.seat, { flow: steps }),
+    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
+      await txResolver.drainPending();
+    }),
+  ]);
+  const { log } = offer;
+  t.log(log.map(msg => msg._method).join(', '));
+  t.like(log, [
+    { _method: 'monitorTransfers' },
+    { _method: 'transfer' },
+    { _method: 'send' },
+    { _method: 'transfer' },
+    { _method: 'localTransfer' },
+    { _method: 'transfer', address: { chainId: 'noble-5' } },
+    { _method: 'fail' },
+  ]);
+
+  t.snapshot(log, 'call log');
+  t.is(passStyleOf(actual.invitationMakers), 'remotable');
+  await documentStorageSchema(t, storage, docOpts);
+});
+
+test('makeErrorList collects any number of errors', t => {
+  {
+    const fromNoRejections = makeErrorList(
+      [{ status: 'fulfilled', value: undefined }],
+      [],
+    );
+    t.deepEqual(fromNoRejections, undefined, 'no errors');
+  }
+
+  {
+    const fromOneRejection = makeErrorList(
+      [
+        { status: 'fulfilled', value: undefined },
+        { status: 'rejected', reason: Error('insufficient funds') },
+      ],
+      [{ how: 'IBC' }, { how: 'Aave' }],
+    );
+    t.log('single error', fromOneRejection);
+    t.deepEqual(
+      fromOneRejection,
+      {
+        error: 'insufficient funds',
+        how: 'Aave',
+        next: undefined,
+        step: 2,
+      },
+      'single error',
+    );
+  }
+
+  {
+    const fromSeveralRejections = makeErrorList(
+      [
+        { status: 'fulfilled', value: undefined },
+        { status: 'rejected', reason: Error('insufficient funds') },
+        { status: 'fulfilled', value: undefined },
+        { status: 'rejected', reason: Error('no route') },
+        { status: 'fulfilled', value: undefined },
+        { status: 'rejected', reason: Error('prereq 4 failed') },
+      ],
+      [
+        { how: 'IBC' },
+        { how: 'Aave' },
+        { how: 'send' },
+        { how: 'pidgeon' },
+        { how: 'IBC' },
+        { how: 'Compound' },
+      ],
+    );
+    t.log('several errors', fromSeveralRejections);
+    t.deepEqual(
+      fromSeveralRejections,
+      {
+        error: 'insufficient funds',
+        how: 'Aave',
+        next: {
+          error: 'no route',
+          how: 'pidgeon',
+          next: {
+            error: 'prereq 4 failed',
+            how: 'Compound',
+            next: undefined,
+            step: 6,
+          },
+          step: 4,
+        },
+        step: 2,
+      },
+      'several errors',
+    );
+  }
+});
+
+test('asking to relay less than 1 USDC over CCTP is refused by contract', async t => {
+  const { give, steps } = await makePortfolioSteps(
+    { Aave: make(USDC, 250_000n) },
+    { feeBrand: BLD },
+  );
+  const { Deposit } = give;
+  const { orch, tapPK, ctx, offer, storage, txResolver } = mocks(
+    {},
+    { Deposit },
+  );
+
+  const [actual] = await Promise.all([
+    openPortfolio(orch, ctx, offer.seat, { flow: steps }),
+    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
+      await txResolver.drainPending();
+    }),
+  ]);
+  const { log } = offer;
+  t.log(log.map(msg => msg._method).join(', '));
+  t.like(log, [
+    { _method: 'monitorTransfers' },
+    { _method: 'transfer' },
+    { _method: 'send' },
+    { _method: 'transfer' },
+    { _method: 'localTransfer' },
+    { _method: 'transfer', address: { chainId: 'noble-5' } },
+    { _method: 'fail' },
+  ]);
+
+  t.snapshot(log, 'call log');
+  t.is(passStyleOf(actual.invitationMakers), 'remotable');
   await documentStorageSchema(t, storage, docOpts);
 });
