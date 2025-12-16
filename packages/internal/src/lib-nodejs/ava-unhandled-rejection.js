@@ -36,15 +36,17 @@ const makeUnhandledTracker = () => {
   let unhandled = 0;
   let seenUnhandled = 0;
   const pending = new Set();
+  const handledLate = new Set();
   const tokenByPromise = new WeakMap();
   // Finalization callbacks run on the main thread; `pending` is only mutated
   // here and after the flushes in countUnhandled, so no extra synchronization
   // is required.
   const registry = new FinalizationRegistry(token => {
     if (pending.delete(token)) {
-      // We count once per promise when it is collected, regardless of whether
-      // a handler was attached later.
-      unhandled += 1;
+      // Don't count promises that were handled late.
+      if (!handledLate.delete(token)) {
+        unhandled += 1;
+      }
     }
   });
 
@@ -57,13 +59,15 @@ const makeUnhandledTracker = () => {
   };
 
   const onHandledLate = promise => {
+    const token = tokenByPromise.get(promise);
     tokenByPromise.delete(promise);
-    // Keep the token in `pending` so late handlers don't mask an earlier
-    // unhandled notification; we want to count every unhandledRejection event
-    // that fired in the subprocess even if it is observed later. The registry
-    // callback runs at most once per promise on the main thread, so this does
-    // not double-count. Tokens stay in `pending` only until the promise is GC'd
-    // and the finalizer fires to delete them.
+    // Mark this token as handled late so it won't be counted when the
+    // finalizer runs. We remove it from `pending` to exclude it from
+    // the pending count, and track it in `handledLate` to avoid counting
+    // it when GC'd.
+    if (token && pending.delete(token)) {
+      handledLate.add(token);
+    }
   };
 
   const snapshot = () => ({ unhandled, pending: pending.size, seenUnhandled });
@@ -126,16 +130,16 @@ export const makeExpectUnhandledRejection = ({ test, importMetaUrl }) => {
   const gcAndFinalize = makeGcAndFinalize(engineGC);
 
   if (process.env[AVA_EXPECT_UNHANDLED_REJECTIONS]) {
-    return _expectedUnhandled =>
+    return expectedUnhandled =>
       test.macro({
         title: (_, name, _impl) => SUBTEST_PREFIX + name,
         exec: async (t, _name, impl) => {
           const rawExpected =
-            process.env[AVA_EXPECT_UNHANDLED_REJECTIONS] ?? _expectedUnhandled;
+            process.env[AVA_EXPECT_UNHANDLED_REJECTIONS] ?? expectedUnhandled;
           const expected = Number(rawExpected);
-          if (!Number.isFinite(expected)) {
-            throw Error(
-              `expected unhandled rejection count must be numeric, got ${rawExpected}`,
+          if (!Number.isSafeInteger(expected) || expected < 0) {
+            t.fail(
+              `expected unhandled rejection count to be a natural number, got ${rawExpected}`,
             );
           }
           const { unhandled, pending, seenUnhandled } = await countUnhandled(
@@ -144,8 +148,8 @@ export const makeExpectUnhandledRejection = ({ test, importMetaUrl }) => {
           );
           const totalUnhandled = unhandled + pending;
           if (totalUnhandled !== expected) {
-            throw Error(
-              `got ${totalUnhandled} (of ${seenUnhandled} seen, ${pending} pending finalization) unhandled rejections, expected ${expected}`,
+            t.fail(
+              `expected ${expected} unhandled promise rejections, got ${totalUnhandled} (of ${seenUnhandled} seen, ${pending} pending finalization)`,
             );
           }
         },
