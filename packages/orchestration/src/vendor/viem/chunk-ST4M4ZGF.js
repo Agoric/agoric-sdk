@@ -708,6 +708,9 @@ function parseAbi(signatures) {
   return abi;
 }
 
+// ../../node_modules/ox/_esm/core/Hex.js
+import { equalBytes } from "@noble/curves/abstract/utils";
+
 // ../../node_modules/ox/_esm/core/version.js
 var version2 = "0.1.1";
 
@@ -3698,7 +3701,7 @@ async function call(client, args) {
     return { data: response };
   } catch (err) {
     const data2 = getRevertErrorData(err);
-    const { offchainLookup: offchainLookup2, offchainLookupSignature: offchainLookupSignature2 } = await import("./ccip-P7E7G325.js");
+    const { offchainLookup: offchainLookup2, offchainLookupSignature: offchainLookupSignature2 } = await import("./ccip-A3AASSMQ.js");
     if (client.ccipRead !== false && data2?.slice(0, 10) === offchainLookupSignature2 && to)
       return { data: await offchainLookup2(client, { data: data2, to }) };
     if (deploylessCall && data2?.slice(0, 10) === "0x101bb98d")
