@@ -14,5 +14,5 @@ export default defineConfig({
   bundle: true,
   splitting: false,
   platform: 'neutral',
-  external: ['stream', 'crypto', 'http', 'https', 'zlib', 'net', 'tls', 'url'],
+  external: ['stream', 'crypto', 'http', 'https', 'zlib', 'net', 'tls', 'url', '@noble/hashes', '@noble/curves'],
 });
