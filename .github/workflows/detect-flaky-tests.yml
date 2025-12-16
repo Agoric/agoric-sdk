@@ -1,0 +1,147 @@
+name: Detect Flaky Tests
+
+# Triggers when any of the monitored workflows complete
+on:
+  workflow_run:
+    workflows:
+      - 'Test all Packages'
+      - 'Integration tests'
+      - 'Test Golang'
+      - 'Multichain E2E Tests'
+    types:
+      - completed
+
+jobs:
+  detect-flaky:
+    runs-on: ubuntu-latest
+    # Only run if this is a retry attempt (attempt > 1) and it succeeded
+    if: >
+      github.event.workflow_run.run_attempt > 1 &&
+      github.event.workflow_run.conclusion == 'success'
+    steps:
+      - name: Check for flaky test recovery
+        uses: actions/github-script@v7
+        id: check-flaky
+        with:
+          script: |
+            const runId = context.payload.workflow_run.id;
+            const currentAttempt = context.payload.workflow_run.run_attempt;
+            const workflowName = context.payload.workflow_run.name;
+            const runUrl = context.payload.workflow_run.html_url;
+            const headBranch = context.payload.workflow_run.head_branch;
+            const headSha = context.payload.workflow_run.head_sha.substring(0, 7);
+
+            console.log(`Checking flaky status for workflow: ${workflowName}`);
+            console.log(`Run ID: ${runId}, Current Attempt: ${currentAttempt}`);
+
+            // Fetch the previous attempt's status
+            const previousAttemptNumber = currentAttempt - 1;
+            console.log(`Fetching attempt ${previousAttemptNumber} status...`);
+
+            const previousAttempt = await github.rest.actions.getWorkflowRunAttempt({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: runId,
+              attempt_number: previousAttemptNumber
+            });
+
+            const previousConclusion = previousAttempt.data.conclusion;
+            console.log(`Previous attempt conclusion: ${previousConclusion}`);
+
+            // If previous attempt didn't fail, this isn't a flaky recovery
+            if (previousConclusion !== 'failure') {
+              console.log('Previous attempt did not fail. Not a flaky test recovery.');
+              core.setOutput('is_flaky', 'false');
+              return;
+            }
+
+            // FLAKY TEST DETECTED!
+            console.log('🚨 Flaky test detected! Previous attempt failed, current succeeded.');
+
+            // Get failed jobs from previous attempt for more detail
+            const previousJobs = await github.rest.actions.listJobsForWorkflowRunAttempt({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: runId,
+              attempt_number: previousAttemptNumber
+            });
+
+            const failedJobs = previousJobs.data.jobs
+              .filter(job => job.conclusion === 'failure')
+              .map(job => job.name);
+
+            console.log(`Failed jobs in previous attempt: ${failedJobs.join(', ')}`);
+
+            // Set outputs for Slack notification
+            core.setOutput('is_flaky', 'true');
+            core.setOutput('workflow_name', workflowName);
+            core.setOutput('run_url', runUrl);
+            core.setOutput('current_attempt', currentAttempt.toString());
+            core.setOutput('previous_attempt', previousAttemptNumber.toString());
+            core.setOutput('failed_jobs', failedJobs.join(', ') || 'Unknown');
+            core.setOutput('head_branch', headBranch);
+            core.setOutput('head_sha', headSha);
+
+      - name: Send Slack notification for flaky test
+        if: steps.check-flaky.outputs.is_flaky == 'true'
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "text": "⚠️ Flaky Test Detected!",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "⚠️ Flaky Test Detected!",
+                    "emoji": true
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Workflow:*\n${{ steps.check-flaky.outputs.workflow_name }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Branch:*\n${{ steps.check-flaky.outputs.head_branch }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Commit:*\n${{ steps.check-flaky.outputs.head_sha }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Status:*\nPassed on attempt #${{ steps.check-flaky.outputs.current_attempt }} after failing on attempt #${{ steps.check-flaky.outputs.previous_attempt }}"
+                    }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Failed jobs in previous attempt:*\n${{ steps.check-flaky.outputs.failed_jobs }}"
+                  }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "View Run",
+                        "emoji": true
+                      },
+                      "url": "${{ steps.check-flaky.outputs.run_url }}"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
