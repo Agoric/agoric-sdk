@@ -12,6 +12,7 @@ export default defineConfig({
   clean: true,
   dts: true,
   bundle: true,
+  splitting: false,
   platform: 'neutral',
   external: ['stream', 'crypto', 'http', 'https', 'zlib', 'net', 'tls', 'url'],
 });
