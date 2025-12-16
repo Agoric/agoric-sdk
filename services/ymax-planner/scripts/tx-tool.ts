@@ -16,7 +16,7 @@ dotenv.config({ path: dotEnvFile, processEnv: dotEnvAdditions });
 const env = harden({ ...dotEnvAdditions, ...processEnv });
 
 const showUsage = () => {
-  console.error('Usage: ./tools/tx-tool.ts <command> [options]');
+  console.error('Usage: ./scripts/tx-tool.ts <command> [options]');
   console.error('');
   console.error('Commands:');
   console.error('  scan <txId> [--verbose]');
@@ -28,10 +28,12 @@ const showUsage = () => {
   console.error('    reason: required when status is "fail"');
   console.error('');
   console.error('Examples:');
-  console.error('  ./tools/tx-tool.ts scan tx233');
-  console.error('  ./tools/tx-tool.ts scan tx233 --verbose');
-  console.error('  ./tools/tx-tool.ts settle tx399 success');
-  console.error('  ./tools/tx-tool.ts settle tx400 fail "Transaction timeout"');
+  console.error('  ./scripts/tx-tool.ts scan tx233');
+  console.error('  ./scripts/tx-tool.ts scan tx233 --verbose');
+  console.error('  ./scripts/tx-tool.ts settle tx399 success');
+  console.error(
+    '  ./scripts/tx-tool.ts settle tx400 fail "Transaction timeout"',
+  );
 };
 
 const args = process.argv.slice(2);
@@ -47,8 +49,8 @@ if (command === 'scan') {
   if (commandArgs.length === 0) {
     console.error('Error: scan requires a transaction ID');
     console.error('');
-    console.error('Usage: ./tools/tx-tool.ts scan <txId> [--verbose]');
-    console.error('Example: ./tools/tx-tool.ts scan tx233');
+    console.error('Usage: ./scripts/tx-tool.ts scan <txId> [--verbose]');
+    console.error('Example: ./scripts/tx-tool.ts scan tx233');
     process.exit(1);
   }
 
@@ -63,14 +65,16 @@ if (command === 'scan') {
   if (commandArgs.length < 2) {
     console.error('Error: settle requires a transaction ID and status');
     console.error('');
-    console.error('Usage: ./tools/tx-tool.ts settle <txId> <status> [reason]');
+    console.error(
+      'Usage: ./scripts/tx-tool.ts settle <txId> <status> [reason]',
+    );
     console.error('  status: "success" or "fail"');
     console.error('  reason: required when status is "fail"');
     console.error('');
     console.error('Examples:');
-    console.error('  ./tools/tx-tool.ts settle tx399 success');
+    console.error('  ./scripts/tx-tool.ts settle tx399 success');
     console.error(
-      '  ./tools/tx-tool.ts settle tx400 fail "Transaction timeout"',
+      '  ./scripts/tx-tool.ts settle tx400 fail "Transaction timeout"',
     );
     process.exit(1);
   }
@@ -84,9 +88,9 @@ if (command === 'scan') {
       'Error: Reason is required when marking a transaction as failed',
     );
     console.error('');
-    console.error('Usage: ./tools/tx-tool.ts settle <txId> fail <reason>');
+    console.error('Usage: ./scripts/tx-tool.ts settle <txId> fail <reason>');
     console.error(
-      'Example: ./tools/tx-tool.ts settle tx400 fail "Transaction timeout"',
+      'Example: ./scripts/tx-tool.ts settle tx400 fail "Transaction timeout"',
     );
     process.exit(1);
   }

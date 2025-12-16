@@ -82,20 +82,20 @@ yarn test
 A unified tool for manually processing and resolving transactions:
 
 ```bash
-./tools/tx-tool.ts <command> [options]
+./scripts/tx-tool.ts <command> [options]
 ```
 
 #### Commands
 
 **scan** - Process a pending transaction by reading from vstorage
 ```bash
-./tools/tx-tool.ts scan <txId> [--verbose]
+./scripts/tx-tool.ts scan <txId> [--verbose]
 ```
 
 Examples:
 ```bash
-./tools/tx-tool.ts scan tx233
-./tools/tx-tool.ts scan tx233 --verbose
+./scripts/tx-tool.ts scan tx233
+./scripts/tx-tool.ts scan tx233 --verbose
 ```
 
 Use cases:
@@ -105,14 +105,14 @@ Use cases:
 
 **settle** - Manually mark a transaction as succeeded or failed
 ```bash
-./tools/tx-tool.ts settle <txId> <status> [reason]
+./scripts/tx-tool.ts settle <txId> <status> [reason]
 ```
 
 Examples:
 ```bash
-./tools/tx-tool.ts settle tx399 success
-./tools/tx-tool.ts settle tx400 fail "Transaction timeout"
-./tools/tx-tool.ts settle tx401 fail "Unable to confirm on destination chain"
+./scripts/tx-tool.ts settle tx399 success
+./scripts/tx-tool.ts settle tx400 fail "Transaction timeout"
+./scripts/tx-tool.ts settle tx401 fail "Unable to confirm on destination chain"
 ```
 
 Use cases:
@@ -120,7 +120,7 @@ Use cases:
 - Administrative cleanup of transaction states
 - Document specific failure reasons for audit purposes
 
-Run `./tools/tx-tool.ts` without arguments to see full usage.
+Run `./scripts/tx-tool.ts` without arguments to see full usage.
 
 #### Setup for Local Use
 
