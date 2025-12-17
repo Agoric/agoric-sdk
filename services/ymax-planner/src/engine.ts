@@ -295,7 +295,7 @@ export const processPortfolioEvents = async (
       depositBrand,
       balanceQueryPowers,
     );
-    const errorContext = {
+    const logContext = {
       path,
       flowKey,
       flowDetail,
@@ -304,20 +304,6 @@ export const processPortfolioEvents = async (
       rebalanceCount,
       targetAllocation,
     };
-    const plannerContext = {
-      ...errorContext,
-      // @ts-expect-error "amount" is not present on all varieties of
-      // FlowDetail, but we need it here when it is present (i.e., for types
-      // "deposit" and "withdraw" and it's harmless otherwise.
-      amount: flowDetail.amount,
-      network,
-      brand: depositBrand,
-      feeBrand,
-      gasEstimator,
-    };
-
-    const { network: _network, ...logContext } = plannerContext;
-    logger.debug(`Starting flow`, flowDetail, inspectForStdout(logContext));
     const settle = async <M extends string & keyof PortfolioPlanner>(
       methodName: M,
       args: PortfolioPlanner[M] extends (...args: infer Args) => any
@@ -334,15 +320,21 @@ export const processPortfolioEvents = async (
           logger.warn(`⚠️ Failure for ${methodName}`, args, err);
         });
       }
-      const details = inspectForStdout({
-        policyVersion,
-        rebalanceCount,
-        targetAllocation,
-        ...extraDetails,
-      });
-      logger.info('Resolving', flowDetail, currentBalances, details, tx);
+      const details = inspectForStdout({ ...logContext, ...extraDetails });
+      logger.info(methodName, flowDetail, currentBalances, details, tx);
     };
 
+    const plannerContext = {
+      ...logContext,
+      // @ts-expect-error "amount" is not present on all varieties of
+      // FlowDetail, but we need it here when it is present (i.e., for types
+      // "deposit" and "withdraw" and it's harmless otherwise.
+      amount: flowDetail.amount,
+      network,
+      brand: depositBrand,
+      feeBrand,
+      gasEstimator,
+    };
     try {
       let steps: MovementDesc[];
       const { type } = flowDetail;
@@ -360,7 +352,7 @@ export const processPortfolioEvents = async (
           logger.warn(`⚠️  Unknown flow type ${type}`);
           return;
       }
-      (errorContext as any).steps = steps;
+      (logContext as any).steps = steps;
 
       if (steps.length > 0) {
         await settle('resolvePlan', [...scope, steps, ...versions], { steps });
@@ -369,7 +361,7 @@ export const processPortfolioEvents = async (
         await settle('rejectPlan', [...scope, reason, ...versions]);
       }
     } catch (err) {
-      annotateError(err, inspect(errorContext, { depth: 4 }));
+      annotateError(err, inspect(logContext, { depth: 4 }));
       if (err instanceof UserInputError || err instanceof NoSolutionError) {
         await settle('rejectPlan', [...scope, err.message, ...versions], {
           cause: err,

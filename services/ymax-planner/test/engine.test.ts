@@ -309,6 +309,14 @@ const fakeSigningSmartWalletKit = async (
     ['action', 'fee', 'memo', 'signerData']
   >[];
   const getBridgeSends = () => harden([...bridgeSends]);
+  const mockDeliverTxResponseProto = {
+    constructor: undefined,
+    then: undefined,
+    toJSON: undefined,
+    valueOf: undefined,
+    [Symbol.iterator]: undefined,
+    [Symbol.toStringTag]: 'MockDeliverTxResponse',
+  };
   const sendBridgeAction: SigningSmartWalletKit['sendBridgeAction'] = async (
     action,
     fee,
@@ -322,8 +330,9 @@ const fakeSigningSmartWalletKit = async (
       { code: 0, height, transactionHash },
       {
         get: (target: object, key: string | symbol) => {
-          if (key === 'then') return undefined;
-          if (Object.hasOwn(target, key)) return target[key];
+          for (const obj of [target, mockDeliverTxResponseProto]) {
+            if (Object.hasOwn(obj, key)) return obj[key];
+          }
           Fail`Not implemented: DeliverTxResponse ${q(key)}`;
         },
       },
@@ -466,6 +475,7 @@ const fakePortfolioKit = async ({
 
   return {
     blockHeight: getBlockHeight(),
+    portfoliosPathPrefix,
     portfolioId,
     portfolioPath,
     initialPortfolioStatus,
@@ -600,12 +610,12 @@ test.serial(
 );
 
 test.serial('startFlow logs include traceId prefix', async t => {
-  debugger;
   const kit = await fakePortfolioKit({
     accounts: { noble: AmountMath.make(depositBrand, 1_000_000n) },
   });
   const {
     blockHeight,
+    portfoliosPathPrefix,
     portfolioId,
     portfolioPath,
     initialPortfolioStatus,
@@ -613,22 +623,34 @@ test.serial('startFlow logs include traceId prefix', async t => {
   } = kit;
   const { updateVstorage } = kit.testPowers;
 
-  const flowId = 2;
-  const portfolioStatus = harden({
-    ...initialPortfolioStatus,
+  const fakeWithdrawFlow = (flowId: number, amountValue: bigint) => ({
     flowCount: 1,
     flowsRunning: {
       [`flow${flowId}`]: {
         type: 'withdraw',
-        amount: AmountMath.make(depositBrand, 1_000_000n),
+        amount: AmountMath.make(depositBrand, amountValue),
       },
     },
   });
-  updateVstorage(portfolioPath, 'set', { object: portfolioStatus, wrap: true });
 
   const portfolioKey = `portfolio${portfolioId}`;
-  const flowKey = `flow${flowId}`;
-  const tracePrefix = `[${portfolioKey}.${flowKey}] `;
+  const portfolioStatus = harden({
+    ...initialPortfolioStatus,
+    ...fakeWithdrawFlow(4, 2_000_000n),
+  });
+  updateVstorage(portfolioPath, 'set', { object: portfolioStatus, wrap: true });
+
+  const portfolioId2 = portfolioId + 1;
+  const portfolioKey2 = `portfolio${portfolioId2}`;
+  const portfolioPath2 = `${portfoliosPathPrefix}.${portfolioKey2}`;
+  const portfolioStatus2 = {
+    ...initialPortfolioStatus,
+    ...fakeWithdrawFlow(2, 1_000_000n),
+  };
+  updateVstorage(portfolioPath2, 'set', {
+    object: portfolioStatus2,
+    wrap: true,
+  });
 
   const captured: Array<{ level: 'debug' | 'info'; args: any[] }> = [];
   const originalLogTarget = console;
@@ -639,13 +661,11 @@ test.serial('startFlow logs include traceId prefix', async t => {
       info: (...args: any[]) => captured.push({ level: 'info', args }),
     });
 
-    const vstorageEventDetail = makeVstorageEventDetail(
-      blockHeight,
-      portfolioPath,
-      portfolioStatus,
-    );
     await processPortfolioEvents(
-      [vstorageEventDetail],
+      [
+        makeVstorageEventDetail(blockHeight, portfolioPath, portfolioStatus),
+        makeVstorageEventDetail(blockHeight, portfolioPath2, portfolioStatus2),
+      ],
       blockHeight,
       { deferrals: [] },
       powers,
@@ -656,13 +676,13 @@ test.serial('startFlow logs include traceId prefix', async t => {
 
   const tracedLogs = captured.filter(
     ({ level, args }) =>
-      ['debug', 'info'].includes(level) && args[0] === tracePrefix,
+      ['debug', 'info'].includes(level) &&
+      /\[portfolio[0-9]+[.]flow[0-9]+\] /.test(args[0]),
   );
-  t.true(tracedLogs.length >= 2, 'captured start and completion logs');
-  t.true(
-    tracedLogs.every(entry => entry.args[0] === tracePrefix),
-    'all traced logs include the trace prefix',
-  );
+  arrayIsLike(t, tracedLogs, [
+    { args: { 0: `[${portfolioKey}.flow4] `, 1: 'rejectPlan', length: 6 } },
+    { args: { 0: `[${portfolioKey2}.flow2] `, 1: 'resolvePlan', length: 6 } },
+  ]);
 });
 
 /**
