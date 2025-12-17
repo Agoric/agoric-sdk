@@ -288,7 +288,7 @@ export const processPortfolioEvents = async (
     const flowId = flowIdFromKey(flowKey);
     const scope = [portfolioId, flowId] as const;
     const { policyVersion, rebalanceCount, targetAllocation } = portfolioStatus;
-    const conditions = [policyVersion, rebalanceCount] as const;
+    const versions = [policyVersion, rebalanceCount] as const;
 
     const currentBalances = await getNonDustBalances(
       portfolioStatus,
@@ -325,12 +325,10 @@ export const processPortfolioEvents = async (
         : never,
       extraDetails?: object,
     ) => {
-      const planReceiver = walletStore.get<PortfolioPlanner>('planner', {
-        sendOnly: true,
-      });
+      const txOpts = { sendOnly: true };
+      const planReceiver = walletStore.get<PortfolioPlanner>('planner', txOpts);
       const { tx, id } = await planReceiver[methodName]!(...args);
-      // The transaction has been submitted, but we won't know about a rejection
-      // for at least another block.
+      // tx has been submitted, but we won't know its fate until a future block.
       if (!isDryRun) {
         void getWalletInvocationUpdate(id as any).catch(err => {
           logger.warn(`⚠️ Failure for ${methodName}`, args, err);
@@ -358,36 +356,29 @@ export const processPortfolioEvents = async (
         case 'withdraw':
           steps = await planWithdrawFromAllocations(plannerContext);
           break;
-        default: {
+        default:
           logger.warn(`⚠️  Unknown flow type ${type}`);
           return;
-        }
       }
       (errorContext as any).steps = steps;
 
-      await (steps.length === 0
-        ? settle('rejectPlan', [
-            ...scope,
-            'Nothing to do for this operation.',
-            ...conditions,
-          ])
-        : settle('resolvePlan', [...scope, steps, ...conditions], { steps }));
-    } catch (err) {
-      if (err instanceof UserInputError || err instanceof NoSolutionError) {
-        try {
-          await settle(
-            'rejectPlan',
-            [...scope, err.message, ...conditions],
-            { cause: err },
-          );
-          return;
-        } catch (settleErr) {
-          // eslint-disable-next-line no-ex-assign
-          err = AggregateError([err, settleErr]);
-        }
+      if (steps.length > 0) {
+        await settle('resolvePlan', [...scope, steps, ...versions], { steps });
+      } else {
+        const reason = 'Nothing to do for this operation.';
+        await settle('rejectPlan', [...scope, reason, ...versions]);
       }
+    } catch (err) {
       annotateError(err, inspect(errorContext, { depth: 4 }));
-      throw err;
+      if (err instanceof UserInputError || err instanceof NoSolutionError) {
+        await settle('rejectPlan', [...scope, err.message, ...versions], {
+          cause: err,
+        }).catch(err2 => {
+          throw AggregateError([err, err2]);
+        });
+      } else {
+        throw err;
+      }
     }
   };
   const handledPortfolioKeys = new Set<string>();
