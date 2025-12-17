@@ -179,6 +179,10 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
       }
     }
 
+    if (opts.signal.aborted) {
+      return;
+    }
+
     await resolvePendingTx({
       signingSmartWalletKit: ctx.signingSmartWalletKit,
       txId,
@@ -301,6 +305,10 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
       }
     }
 
+    if (opts.signal.aborted) {
+      return;
+    }
+
     await resolvePendingTx({
       signingSmartWalletKit: ctx.signingSmartWalletKit,
       txId,
@@ -405,6 +413,10 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
       } finally {
         opts.signal.removeEventListener('abort', handleExternalAbort);
       }
+    }
+
+    if (opts.signal.aborted) {
+      return;
     }
 
     await resolvePendingTx({
