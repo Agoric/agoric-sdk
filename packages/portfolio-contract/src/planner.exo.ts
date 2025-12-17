@@ -5,6 +5,7 @@
 import { makeTracer, type TypedPattern } from '@agoric/internal';
 import type { FundsFlowPlan } from '@agoric/portfolio-api';
 import { type Vow, VowShape, type VowTools } from '@agoric/vow';
+import { verifyTypedData } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
 import type { ZCF, ZCFSeat } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
 import { M } from '@endo/patterns';
@@ -63,6 +64,7 @@ export const preparePlanner = (
     rejectPlan: M.call(M.number(), M.number(), M.string())
       .optional(M.number(), M.number())
       .returns(),
+    verifySignature: M.callWhen(M.record()).returns(M.boolean()),
   });
 
   return zone.exoClass(
@@ -126,6 +128,14 @@ export const preparePlanner = (
         const { planner: portfolioPlanner } = getPortfolio(portfolioId);
         portfolioPlanner.submitVersion(policyVersion, rebalanceCount);
         portfolioPlanner.rejectFlowPlan(flowId, reason);
+      },
+      async verifySignature(params) {
+        const result = await verifyTypedData({
+          address: params.message.user,
+          ...params,
+        });
+        console.log('verifySignature', result);
+        return result;
       },
     },
     {

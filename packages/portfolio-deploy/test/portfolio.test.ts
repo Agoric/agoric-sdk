@@ -616,7 +616,7 @@ test.serial('remove old contract; start new contract', async t => {
   });
 });
 
-test.serial('invite planner', async t => {
+test.serial('invite planner, verify sig', async t => {
   const {
     agoricNamesRemotes,
     refreshAgoricNamesRemotes,
@@ -658,6 +658,66 @@ test.serial('invite planner', async t => {
     },
     proposal: {},
     saveResult: { name: 'planner' },
+  });
+
+  t.log('sig check');
+  await plannerWallet.invokeEntry({
+    id: Date.now().toString(),
+    targetName: 'planner',
+    method: 'verifySignature',
+    args: [
+      {
+        domain: {
+          name: 'YMax Portfolio Authorization',
+          version: '1',
+        },
+        message: {
+          user: '0x764B3426a25b781c2Dc942529d6B4DEdCc859496',
+          asset: {
+            amount: 1000000000n,
+            token: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+          },
+          allocation: [
+            {
+              protocol: 'USDN',
+              network: 'Noble',
+              instrument: 'USDC',
+              percentage: 50,
+            },
+            {
+              protocol: 'Aave',
+              network: 'Ethereum',
+              instrument: 'USDC',
+              percentage: 50,
+            },
+          ],
+          nonce: 1765920713n,
+          deadline: 1765924313n,
+        },
+        primaryType: 'OpenPortfolio',
+        types: {
+          OpenPortfolio: [
+            { name: 'user', type: 'address' },
+            { name: 'asset', type: 'TokenAmount' },
+            { name: 'allocation', type: 'AllocationEntry[]' },
+            { name: 'nonce', type: 'uint256' },
+            { name: 'deadline', type: 'uint256' },
+          ],
+          TokenAmount: [
+            { name: 'amount', type: 'uint256' },
+            { name: 'token', type: 'address' },
+          ],
+          AllocationEntry: [
+            { name: 'protocol', type: 'string' },
+            { name: 'network', type: 'string' },
+            { name: 'instrument', type: 'string' },
+            { name: 'percentage', type: 'uint256' },
+          ],
+        },
+        signature:
+          '0xd3909f661db6ee6c2ab4d34a0a87b02d1152acbc5a93cb5bbfa0cf17b79d1c8e6999387c529db36c3b683dea32dabf1e6b2cfe8e93839a00a953c9c1521c6ac61b',
+      },
+    ],
   });
 
   t.pass();
