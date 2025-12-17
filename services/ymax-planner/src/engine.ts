@@ -323,6 +323,7 @@ export const processPortfolioEvents = async (
       args: PortfolioPlanner[M] extends (...args: infer Args) => any
         ? Args
         : never,
+      extraDetails?: object,
     ) => {
       const planReceiver = walletStore.get<PortfolioPlanner>('planner', {
         sendOnly: true,
@@ -335,7 +336,13 @@ export const processPortfolioEvents = async (
           logger.warn(`⚠️ Failure for ${methodName}`, args, err);
         });
       }
-      return tx;
+      const details = inspectForStdout({
+        policyVersion,
+        rebalanceCount,
+        targetAllocation,
+        ...extraDetails,
+      });
+      logger.info('Resolving', flowDetail, currentBalances, details, tx);
     };
 
     try {
@@ -358,29 +365,21 @@ export const processPortfolioEvents = async (
       }
       (errorContext as any).steps = steps;
 
-      const tx = await (steps.length === 0
+      await (steps.length === 0
         ? settle('rejectPlan', [
             ...scope,
             'Nothing to do for this operation.',
             ...conditions,
           ])
-        : settle('resolvePlan', [...scope, steps, ...conditions]));
-      logger.info(
-        `Resolving`,
-        flowDetail,
-        currentBalances,
-        inspectForStdout({
-          policyVersion,
-          rebalanceCount,
-          targetAllocation,
-          steps,
-        }),
-        tx,
-      );
+        : settle('resolvePlan', [...scope, steps, ...conditions], { steps }));
     } catch (err) {
       if (err instanceof UserInputError || err instanceof NoSolutionError) {
         try {
-          await settle('rejectPlan', [...scope, err.message, ...conditions]);
+          await settle(
+            'rejectPlan',
+            [...scope, err.message, ...conditions],
+            { cause: err },
+          );
           return;
         } catch (settleErr) {
           // eslint-disable-next-line no-ex-assign
