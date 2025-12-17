@@ -95,6 +95,7 @@ test('updates lower bound when a pending tx is being searched', async t => {
       log: mockLog,
     },
     txTimestampMs,
+    new AbortController().signal,
   );
 
   const finalExecutedBlockSaved = await getTxBlockLowerBound(
@@ -148,6 +149,7 @@ test('begins searching from the lower bound block number stored in kv store', as
       log: mockLog,
     },
     txTimestampMs,
+    new AbortController().signal,
   );
 
   const finalExecutedBlockSaved = await getTxBlockLowerBound(

@@ -204,7 +204,8 @@ export const processTx = async (
       );
 
       // Process the transaction with lookback mode
-      await handlePendingTx(tx, txPowers, timestampMs);
+      const abortController = new AbortController();
+      await handlePendingTx(tx, txPowers, timestampMs, abortController.signal);
 
       console.log(`\n✅ Transaction ${txId} processing complete!\n`);
     } catch (err) {

@@ -1,5 +1,5 @@
 import test from 'ava';
-import { id, zeroPadValue, AbiCoder, getAddress } from 'ethers';
+import { id, zeroPadValue, AbiCoder } from 'ethers';
 import { createMockPendingTxOpts } from './mocks.ts';
 import { handlePendingTx } from '../src/pending-tx-manager.ts';
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
@@ -73,11 +73,16 @@ test('handlePendingTx processes MAKE_ACCOUNT transaction successfully', async t 
   }, 50);
 
   await t.notThrowsAsync(async () => {
-    await handlePendingTx(makeAccountTx, {
-      ...opts,
-      log: logger,
-      timeoutMs: 3000,
-    });
+    await handlePendingTx(
+      makeAccountTx,
+      {
+        ...opts,
+        log: logger,
+        timeoutMs: 3000,
+      },
+      undefined,
+      new AbortController().signal,
+    );
   });
 
   t.deepEqual(logMessages, [
@@ -127,11 +132,16 @@ test('handlePendingTx logs timeout on MAKE_ACCOUNT transaction with no matching 
   }, 3010);
 
   await t.notThrowsAsync(async () => {
-    await handlePendingTx(makeAccountTx, {
-      ...opts,
-      log: logger,
-      timeoutMs: 3000,
-    });
+    await handlePendingTx(
+      makeAccountTx,
+      {
+        ...opts,
+        log: logger,
+        timeoutMs: 3000,
+      },
+      undefined,
+      new AbortController().signal,
+    );
   });
 
   t.deepEqual(logMessages, [
@@ -206,11 +216,16 @@ test('handlePendingTx ignores non-matching wallet addresses', async t => {
   }, 60);
 
   await t.notThrowsAsync(async () => {
-    await handlePendingTx(makeAccountTx, {
-      ...opts,
-      log: logger,
-      timeoutMs: 3000,
-    });
+    await handlePendingTx(
+      makeAccountTx,
+      {
+        ...opts,
+        log: logger,
+        timeoutMs: 3000,
+      },
+      undefined,
+      new AbortController().signal,
+    );
   });
 
   t.deepEqual(logMessages, [

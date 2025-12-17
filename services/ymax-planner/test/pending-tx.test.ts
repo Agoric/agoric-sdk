@@ -45,6 +45,7 @@ test('processPendingTxEvents handles valid single transaction event', async t =>
     events,
     mockHandlePendingTx,
     createMockPendingTxOpts(),
+    new Map(),
   );
 
   t.is(handledTxs.length, 1);
@@ -81,6 +82,7 @@ test('processPendingTxEvents handles multiple transaction events', async t => {
     events,
     mockHandlePendingTx,
     createMockPendingTxOpts(),
+    new Map(),
   );
 
   t.is(handledTxs.length, 2);
@@ -123,10 +125,15 @@ test('processPendingTxEvents errors do not disrupt processing valid transactions
   ];
 
   const errorLog = [] as Array<any[]>;
-  await processPendingTxEvents(events, mockHandlePendingTx, {
-    ...createMockPendingTxOpts(),
-    error: (...args) => errorLog.push(args),
-  });
+  await processPendingTxEvents(
+    events,
+    mockHandlePendingTx,
+    {
+      ...createMockPendingTxOpts(),
+      error: (...args) => errorLog.push(args),
+    },
+    new Map(),
+  );
   if (errorLog.length !== 2) {
     t.log(errorLog);
   }
@@ -164,6 +171,7 @@ test('processPendingTxEvents handles only pending transactions', async t => {
     events,
     mockHandlePendingTx,
     createMockPendingTxOpts(),
+    new Map(),
   );
 
   t.is(handledTxs.length, 1);
@@ -184,10 +192,15 @@ test('handlePendingTx throws error for unsupported transaction type', async t =>
 
   await t.throwsAsync(
     () =>
-      handlePendingTx(unsupportedTx, {
-        ...createMockPendingTxOpts(),
-        log: mockLog,
-      }),
+      handlePendingTx(
+        unsupportedTx,
+        {
+          ...createMockPendingTxOpts(),
+          log: mockLog,
+        },
+        undefined,
+        new AbortController().signal,
+      ),
     { message: /No monitor registered for tx type: "cctpV2"/ },
   );
 });
@@ -241,6 +254,7 @@ test('resolves a 31 min old pending CCTP transaction in lookback mode', async t 
       log: mockLog,
     },
     txTimestampMs,
+    new AbortController().signal,
   );
 
   const currentBlock = await mockProvider.getBlockNumber();
@@ -309,6 +323,7 @@ test('resolves a 28 min old pending CCTP transaction in lookback mode', async t 
       log: mockLog,
     },
     txTimestampMs,
+    new AbortController().signal,
   );
 
   const currentBlock = await mockProvider.getBlockNumber();
@@ -377,6 +392,7 @@ test('resolves a transaction published at current time in lookback mode', async 
       log: mockLog,
     },
     txTimestampMs,
+    new AbortController().signal,
   );
 
   const currentBlock = await mockProvider.getBlockNumber();
@@ -445,6 +461,7 @@ test('resolves a 10 second old pending CCTP transaction in lookback mode', async
       log: mockLog,
     },
     txTimestampMs,
+    new AbortController().signal,
   );
 
   const currentBlock = await mockProvider.getBlockNumber();
@@ -535,6 +552,7 @@ test('resolves a 10 second old pending GMP transaction in lookback mode', async 
       log: mockLog,
     },
     txTimestampMs,
+    new AbortController().signal,
   );
 
   const currentBlock = await mockProvider.getBlockNumber();
@@ -609,6 +627,7 @@ test('processInitialPendingTransactions handles transactions with lookback', asy
   await processInitialPendingTransactions(
     pendingTxRecords,
     txPowers,
+    new Map(),
     mockHandlePendingTx,
   );
 
@@ -673,6 +692,7 @@ test('processInitialPendingTransactions handles transactions with age < 20min in
   await processInitialPendingTransactions(
     pendingTxRecords,
     txPowers,
+    new Map(),
     mockHandlePendingTx,
   );
 

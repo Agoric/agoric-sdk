@@ -54,11 +54,16 @@ test('handlePendingTx processes GMP transaction successfully', async t => {
   }, 50);
 
   await t.notThrowsAsync(async () => {
-    await handlePendingTx(gmpTx, {
-      ...opts,
-      log: logger,
-      timeoutMs: 3000,
-    });
+    await handlePendingTx(
+      gmpTx,
+      {
+        ...opts,
+        log: logger,
+        timeoutMs: 3000,
+      },
+      undefined,
+      new AbortController().signal,
+    );
   });
 
   t.deepEqual(logMessages, [
@@ -115,11 +120,16 @@ test('handlePendingTx logs a time out on a GMP transaction with no matching even
   }, 700);
 
   await t.notThrowsAsync(async () => {
-    await handlePendingTx(gmpTx, {
-      ...opts,
-      log: logger,
-      timeoutMs: 600,
-    });
+    await handlePendingTx(
+      gmpTx,
+      {
+        ...opts,
+        log: logger,
+        timeoutMs: 600,
+      },
+      undefined,
+      new AbortController().signal,
+    );
   });
 
   t.deepEqual(logMessages, [
@@ -177,11 +187,16 @@ test('handlePendingTx fails a pendingTx on it finds a failed tx on Axelarscan (l
   }, 700);
 
   await t.notThrowsAsync(async () => {
-    await handlePendingTx(gmpTx, {
-      ...opts,
-      log: logger,
-      timeoutMs: 600,
-    });
+    await handlePendingTx(
+      gmpTx,
+      {
+        ...opts,
+        log: logger,
+        timeoutMs: 600,
+      },
+      undefined,
+      new AbortController().signal,
+    );
   });
 
   t.deepEqual(logMessages, [
@@ -261,6 +276,7 @@ test('handlePendingTx fails a pendingTx on it finds a failed tx on Axelarscan (l
       timeoutMs: 600,
     },
     txTimestampMs,
+    new AbortController().signal,
   );
 
   const fromBlock = 0;

@@ -64,11 +64,16 @@ test('handlePendingTx processes CCTP transaction successfully', async t => {
   }, 50);
 
   await t.notThrowsAsync(async () => {
-    await handlePendingTx(cctpTx, {
-      ...opts,
-      log: logger,
-      timeoutMs: 3000,
-    });
+    await handlePendingTx(
+      cctpTx,
+      {
+        ...opts,
+        log: logger,
+        timeoutMs: 3000,
+      },
+      undefined,
+      new AbortController().signal,
+    );
   });
 
   t.deepEqual(logMessages, [
@@ -152,11 +157,16 @@ test('handlePendingTx keeps tx pending on amount mismatch until timeout and then
   }, 3010);
 
   await t.notThrowsAsync(async () => {
-    await handlePendingTx(cctpTx, {
-      ...opts,
-      log: logger,
-      timeoutMs: 3000,
-    });
+    await handlePendingTx(
+      cctpTx,
+      {
+        ...opts,
+        log: logger,
+        timeoutMs: 3000,
+      },
+      undefined,
+      new AbortController().signal,
+    );
   });
 
   t.deepEqual(logMessages, [
