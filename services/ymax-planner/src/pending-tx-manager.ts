@@ -127,50 +127,55 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
       const abortController = new AbortController();
 
       // If external signal is aborted, abort internal controller
-      opts.signal.addEventListener('abort', () => {
+      const handleExternalAbort = () => {
         log(`${logPrefix} External abort signal received`);
         abortController.abort();
-      });
+      };
+      opts.signal.addEventListener('abort', handleExternalAbort);
 
-      const liveResultP = watchCctpTransfer({
-        ...watchArgs,
-        timeoutMs: opts.timeoutMs,
-        signal: abortController.signal,
-        kvStore: ctx.kvStore,
-        txId,
-      });
-      void liveResultP.then(found => {
-        if (found) {
-          log(`${logPrefix} Live mode completed`);
+      try {
+        const liveResultP = watchCctpTransfer({
+          ...watchArgs,
+          timeoutMs: opts.timeoutMs,
+          signal: abortController.signal,
+          kvStore: ctx.kvStore,
+          txId,
+        });
+        void liveResultP.then(found => {
+          if (found) {
+            log(`${logPrefix} Live mode completed`);
+            abortController.abort();
+          }
+        });
+
+        await null;
+        // Wait for at least one block to ensure overlap between lookback and live mode
+        const currentBlock = await provider.getBlockNumber();
+        await waitForBlock(provider, currentBlock + 1);
+
+        // Scan historical blocks
+        transferStatus = await lookBackCctp({
+          ...watchArgs,
+          publishTimeMs: opts.publishTimeMs,
+          chainId: caipId,
+          signal: abortController.signal,
+          kvStore: ctx.kvStore,
+          txId,
+        });
+
+        if (transferStatus) {
+          // Found in lookback, cancel live mode
+          log(`${logPrefix} Lookback found transaction`);
           abortController.abort();
+        } else {
+          // Not found in lookback, rely on live mode
+          log(
+            `${logPrefix} Lookback completed without finding transaction, waiting for live mode`,
+          );
+          transferStatus = await liveResultP;
         }
-      });
-
-      await null;
-      // Wait for at least one block to ensure overlap between lookback and live mode
-      const currentBlock = await provider.getBlockNumber();
-      await waitForBlock(provider, currentBlock + 1);
-
-      // Scan historical blocks
-      transferStatus = await lookBackCctp({
-        ...watchArgs,
-        publishTimeMs: opts.publishTimeMs,
-        chainId: caipId,
-        signal: abortController.signal,
-        kvStore: ctx.kvStore,
-        txId,
-      });
-
-      if (transferStatus) {
-        // Found in lookback, cancel live mode
-        log(`${logPrefix} Lookback found transaction`);
-        abortController.abort();
-      } else {
-        // Not found in lookback, rely on live mode
-        log(
-          `${logPrefix} Lookback completed without finding transaction, waiting for live mode`,
-        );
-        transferStatus = await liveResultP;
+      } finally {
+        opts.signal.removeEventListener('abort', handleExternalAbort);
       }
     }
 
@@ -232,64 +237,67 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
       const abortController = new AbortController();
 
       // If external signal is aborted, abort internal controller
-      opts.signal.addEventListener('abort', () => {
+      const handleExternalAbort = () => {
         log(`${logPrefix} External abort signal received`);
         abortController.abort();
-      });
+      };
+      opts.signal.addEventListener('abort', handleExternalAbort);
 
-      const liveResultP = watchGmp({
-        ...watchArgs,
-        timeoutMs: opts.timeoutMs,
-        signal: abortController.signal,
-        kvStore: ctx.kvStore,
-        makeAbortController: ctx.makeAbortController,
-        axelarApiUrl: ctx.axelarApiUrl,
-        fetch: ctx.fetch,
-      });
-      void liveResultP
-        .then(async result => {
-          log(`${logPrefix} Live mode completed`);
-          await resolvePendingTx({
-            signingSmartWalletKit: ctx.signingSmartWalletKit,
-            txId,
-            status: result.found ? TxStatus.SUCCESS : TxStatus.FAILED,
-            rejectionReason: result.rejectionReason || undefined,
+      try {
+        const liveResultP = watchGmp({
+          ...watchArgs,
+          timeoutMs: opts.timeoutMs,
+          signal: abortController.signal,
+          kvStore: ctx.kvStore,
+          makeAbortController: ctx.makeAbortController,
+          axelarApiUrl: ctx.axelarApiUrl,
+          fetch: ctx.fetch,
+        });
+        void liveResultP
+          .then(async found => {
+            log(`${logPrefix} Live mode completed`);
+            await resolvePendingTx({
+              signingSmartWalletKit: ctx.signingSmartWalletKit,
+              txId,
+              status: found ? TxStatus.SUCCESS : TxStatus.FAILED,
+            });
+            abortController.abort();
+          })
+          .catch(error => {
+            // if promise was aborted. no action needed
+            if (error !== WATCH_GMP_ABORTED) {
+              throw error;
+            }
           });
-          abortController.abort();
-        })
-        .catch(error => {
-          // if promise was aborted. no action needed
-          if (error !== WATCH_GMP_ABORTED) {
-            throw error;
-          }
+
+        await null;
+        // Wait for at least one block to ensure overlap between lookback and live mode
+        const currentBlock = await provider.getBlockNumber();
+        await waitForBlock(provider, currentBlock + 1);
+
+        // Scan historical blocks
+        transferStatus = await lookBackGmp({
+          ...watchArgs,
+          publishTimeMs: opts.publishTimeMs,
+          chainId: caipId,
+          signal: abortController.signal,
+          kvStore: ctx.kvStore,
+          makeAbortController: ctx.makeAbortController,
         });
 
-      await null;
-      // Wait for at least one block to ensure overlap between lookback and live mode
-      const currentBlock = await provider.getBlockNumber();
-      await waitForBlock(provider, currentBlock + 1);
-
-      // Scan historical blocks
-      const lookbackFound = await lookBackGmp({
-        ...watchArgs,
-        publishTimeMs: opts.publishTimeMs,
-        chainId: caipId,
-        signal: abortController.signal,
-        kvStore: ctx.kvStore,
-        makeAbortController: ctx.makeAbortController,
-      });
-
-      if (lookbackFound) {
-        // Found in lookback, cancel live mode
-        log(`${logPrefix} Lookback found transaction`);
-        abortController.abort();
-        transferResult = { found: true };
-      } else {
-        // Not found in lookback, rely on live mode
-        log(
-          `${logPrefix} Lookback completed without finding transaction, waiting for live mode`,
-        );
-        transferResult = await liveResultP;
+        if (transferStatus) {
+          // Found in lookback, cancel live mode
+          log(`${logPrefix} Lookback found transaction`);
+          abortController.abort();
+        } else {
+          // Not found in lookback, rely on live mode
+          log(
+            `${logPrefix} Lookback completed without finding transaction, waiting for live mode`,
+          );
+          transferStatus = await liveResultP;
+        }
+      } finally {
+        opts.signal.removeEventListener('abort', handleExternalAbort);
       }
     }
 
@@ -352,45 +360,50 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
       const abortController = new AbortController();
 
       // If external signal is aborted, abort internal controller
-      opts.signal.addEventListener('abort', () => {
+      const handleExternalAbort = () => {
         log(`${logPrefix} External abort signal received`);
         abortController.abort();
-      });
+      };
+      opts.signal.addEventListener('abort', handleExternalAbort);
 
-      const liveResultP = watchSmartWalletTx({
-        ...watchArgs,
-        timeoutMs: opts.timeoutMs,
-        signal: abortController.signal,
-      });
-      void liveResultP.then(found => {
-        if (found) {
-          log(`${logPrefix} Live mode completed`);
+      try {
+        const liveResultP = watchSmartWalletTx({
+          ...watchArgs,
+          timeoutMs: opts.timeoutMs,
+          signal: abortController.signal,
+        });
+        void liveResultP.then(found => {
+          if (found) {
+            log(`${logPrefix} Live mode completed`);
+            abortController.abort();
+          }
+        });
+
+        await null;
+
+        const currentBlock = await provider.getBlockNumber();
+        await waitForBlock(provider, currentBlock + 1);
+
+        walletCreated = await lookBackSmartWalletTx({
+          ...watchArgs,
+          kvStore: ctx.kvStore,
+          txId,
+          publishTimeMs: opts.publishTimeMs,
+          chainId: caipId,
+          signal: abortController.signal,
+        });
+
+        if (walletCreated) {
+          log(`${logPrefix} Lookback found wallet creation`);
           abortController.abort();
+        } else {
+          log(
+            `${logPrefix} Lookback completed without finding wallet creation, waiting for live mode`,
+          );
+          walletCreated = await liveResultP;
         }
-      });
-
-      await null;
-
-      const currentBlock = await provider.getBlockNumber();
-      await waitForBlock(provider, currentBlock + 1);
-
-      walletCreated = await lookBackSmartWalletTx({
-        ...watchArgs,
-        kvStore: ctx.kvStore,
-        txId,
-        publishTimeMs: opts.publishTimeMs,
-        chainId: caipId,
-        signal: abortController.signal,
-      });
-
-      if (walletCreated) {
-        log(`${logPrefix} Lookback found wallet creation`);
-        abortController.abort();
-      } else {
-        log(
-          `${logPrefix} Lookback completed without finding wallet creation, waiting for live mode`,
-        );
-        walletCreated = await liveResultP;
+      } finally {
+        opts.signal.removeEventListener('abort', handleExternalAbort);
       }
     }
 
