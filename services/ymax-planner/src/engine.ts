@@ -480,6 +480,7 @@ export const processPendingTxEvents = async (
   events: Array<{ path: string; value: string }>,
   handlePendingTxFn,
   txPowers: HandlePendingTxOpts,
+  pendingTxAbortControllers: Map<TxId, AbortController>,
 ) => {
   const {
     marshaller,
@@ -492,22 +493,41 @@ export const processPendingTxEvents = async (
     let data;
     try {
       // Extract txId from path (e.g., "published.ymax0.pendingTxs.tx1")
-      const txId = stripPrefix(`${pendingTxPathPrefix}.`, path);
+      const txId = stripPrefix(`${pendingTxPathPrefix}.`, path) as TxId;
       log('Processing pendingTx event', path);
 
       const streamCell = parseStreamCell(cellJson, path);
       const value = parseStreamCellValue(streamCell, -1, path);
       data = marshaller.fromCapData(value);
-      if (
-        data?.status !== TxStatus.PENDING ||
-        data.type === TxType.CCTP_TO_AGORIC
-      )
+
+      // If transaction is no longer PENDING, abort any ongoing watchers
+      if (data?.status !== TxStatus.PENDING) {
+        const abortController = pendingTxAbortControllers.get(txId);
+        if (abortController) {
+          log(
+            `Aborting watcher for ${txId} - status changed to ${data?.status}`,
+          );
+          abortController.abort();
+          pendingTxAbortControllers.delete(txId);
+        }
         continue;
+      }
+
+      if (data.type === TxType.CCTP_TO_AGORIC) continue;
+
       mustMatch(data, PublishedTxShape, `${path} index -1`);
       const tx = { txId, ...data } as PendingTx;
       log('New pending tx', tx);
+
+      const abortController = new AbortController();
+      pendingTxAbortControllers.set(txId, abortController);
+
       // Tx resolution is non-blocking.
-      void handlePendingTxFn(tx, txPowers).catch(err => error(errLabel, err));
+      void handlePendingTxFn(tx, txPowers, undefined, abortController.signal)
+        .catch(err => error(errLabel, err))
+        .finally(() => {
+          pendingTxAbortControllers.delete(txId);
+        });
     } catch (err) {
       error(errLabel, data, err);
     }
@@ -536,6 +556,7 @@ export const pickBalance = (
 export const processInitialPendingTransactions = async (
   initialPendingTxData: PendingTxRecord[],
   txPowers: HandlePendingTxOpts,
+  pendingTxAbortControllers: Map<TxId, AbortController>,
   handlePendingTxFn = handlePendingTx,
 ) => {
   const { error = () => {}, log = () => {}, cosmosRpc } = txPowers;
@@ -567,12 +588,20 @@ export const processInitialPendingTransactions = async (
     if (timestampMs === undefined) return;
 
     log(`Processing pending tx ${tx.txId} with lookback`);
+
+    const abortController = new AbortController();
+    pendingTxAbortControllers.set(tx.txId, abortController);
+
     // TODO: Optimize blockchain scanning by reusing state across transactions.
     // For details, see: https://github.com/Agoric/agoric-sdk/issues/11945
-    void handlePendingTxFn(tx, txPowers, timestampMs).catch(err => {
-      const msg = ` Failed to process pending tx ${tx.txId} with lookback`;
-      error(msg, pendingTxRecord, err);
-    });
+    void handlePendingTxFn(tx, txPowers, timestampMs, abortController.signal)
+      .catch(err => {
+        const msg = ` Failed to process pending tx ${tx.txId} with lookback`;
+        error(msg, pendingTxRecord, err);
+      })
+      .finally(() => {
+        pendingTxAbortControllers.delete(tx.txId);
+      });
   }).done;
 };
 
@@ -736,6 +765,10 @@ export const startEngine = async (
   });
   console.warn(`Found ${pendingTxKeys.length} pending transactions`);
 
+  // Map to track AbortControllers for each pending transaction
+  // This allows aborting watchers when transactions are manually resolved
+  const pendingTxAbortControllers = new Map<TxId, AbortController>();
+
   const initialPendingTxData: PendingTxRecord[] = [];
   await makeWorkPool(pendingTxKeys, undefined, async (txId: TxId) => {
     const path = `${pendingTxPathPrefix}.${txId}`;
@@ -767,7 +800,11 @@ export const startEngine = async (
 
   if (initialPendingTxData.length > 0) {
     // Process initial transactions in lookback mode upon planner startup
-    await processInitialPendingTransactions(initialPendingTxData, txPowers);
+    await processInitialPendingTransactions(
+      initialPendingTxData,
+      txPowers,
+      pendingTxAbortControllers,
+    );
   }
 
   // console.warn('consuming events');
@@ -838,7 +875,12 @@ export const startEngine = async (
       processPortfolioPowers,
     );
 
-    await processPendingTxEvents(pendingTxEvents, handlePendingTx, txPowers);
+    await processPendingTxEvents(
+      pendingTxEvents,
+      handlePendingTx,
+      txPowers,
+      pendingTxAbortControllers,
+    );
 
     console.log(
       inspectForStdout({

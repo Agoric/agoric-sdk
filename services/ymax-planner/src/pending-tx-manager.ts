@@ -58,11 +58,12 @@ type CctpTx = PendingTx & { type: typeof TxType.CCTP_TO_EVM; amount: bigint };
 type GmpTx = PendingTx & { type: typeof TxType.GMP };
 type MakeAccountTx = PendingTx & { type: typeof TxType.MAKE_ACCOUNT };
 
-type LiveWatchOpts = { mode: 'live'; timeoutMs: number };
+type LiveWatchOpts = { mode: 'live'; timeoutMs: number; signal?: AbortSignal };
 type LookBackWatchOpts = {
   mode: 'lookback';
   publishTimeMs: number;
   timeoutMs: number;
+  signal?: AbortSignal;
 };
 type WatchOpts = LiveWatchOpts | LookBackWatchOpts;
 
@@ -84,6 +85,11 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
 
     const { txId, destinationAddress, amount } = tx;
     const logPrefix = `[${txId}]`;
+
+    if (opts.signal?.aborted) {
+      log(`${logPrefix} CCTP watch aborted before starting`);
+      return;
+    }
 
     // Parse destinationAddress format: 'eip155:42161:0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092'
     const { namespace, reference, accountAddress } =
@@ -111,6 +117,7 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
       transferStatus = await watchCctpTransfer({
         ...watchArgs,
         timeoutMs: opts.timeoutMs,
+        signal: opts.signal,
         kvStore: ctx.kvStore,
         txId,
       });
@@ -118,6 +125,15 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
       // Lookback mode with concurrent live watching
       // Start live mode now in case the txId has not yet appeared
       const abortController = new AbortController();
+
+      // If external signal is aborted, abort internal controller
+      if (opts.signal) {
+        opts.signal.addEventListener('abort', () => {
+          log(`${logPrefix} External abort signal received`);
+          abortController.abort();
+        });
+      }
+
       const liveResultP = watchCctpTransfer({
         ...watchArgs,
         timeoutMs: opts.timeoutMs,
@@ -177,6 +193,11 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
     const { txId, destinationAddress } = tx;
     const logPrefix = `[${txId}]`;
 
+    if (opts.signal?.aborted) {
+      log(`${logPrefix} GMP watch aborted before starting`);
+      return;
+    }
+
     // Parse destinationAddress format: 'eip155:42161:0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092'
     const { namespace, reference, accountAddress } =
       parseAccountId(destinationAddress);
@@ -201,6 +222,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
       transferResult = await watchGmp({
         ...watchArgs,
         timeoutMs: opts.timeoutMs,
+        signal: opts.signal,
         kvStore: ctx.kvStore,
         makeAbortController: ctx.makeAbortController,
         axelarApiUrl: ctx.axelarApiUrl,
@@ -210,6 +232,15 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
       // Lookback mode with concurrent live watching
       // Start live mode now in case the txId has not yet appeared
       const abortController = new AbortController();
+
+      // If external signal is aborted, abort internal controller
+      if (opts.signal) {
+        opts.signal.addEventListener('abort', () => {
+          log(`${logPrefix} External abort signal received`);
+          abortController.abort();
+        });
+      }
+
       const liveResultP = watchGmp({
         ...watchArgs,
         timeoutMs: opts.timeoutMs,
@@ -286,6 +317,11 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
     const { txId, expectedAddr, destinationAddress } = tx;
     const logPrefix = `[${txId}]`;
 
+    if (opts.signal?.aborted) {
+      log(`${logPrefix} MAKE_ACCOUNT watch aborted before starting`);
+      return;
+    }
+
     expectedAddr || Fail`${logPrefix} Missing expectedAddr`;
     destinationAddress ||
       Fail`${logPrefix} Missing destinationAddress (factory)`;
@@ -314,9 +350,19 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
       walletCreated = await watchSmartWalletTx({
         ...watchArgs,
         timeoutMs: opts.timeoutMs,
+        signal: opts.signal,
       });
     } else {
       const abortController = new AbortController();
+
+      // If external signal is aborted, abort internal controller
+      if (opts.signal) {
+        opts.signal.addEventListener('abort', () => {
+          log(`${logPrefix} External abort signal received`);
+          abortController.abort();
+        });
+      }
+
       const liveResultP = watchSmartWalletTx({
         ...watchArgs,
         timeoutMs: opts.timeoutMs,
@@ -387,10 +433,16 @@ export const handlePendingTx = async (
   tx: PendingTx,
   { log = () => {}, timeoutMs = TX_TIMEOUT_MS, ...evmCtx }: HandlePendingTxOpts,
   txTimestampMs?: number,
+  signal?: AbortSignal,
 ) => {
   await null;
   const logPrefix = `[${tx.txId}]`;
   log(`${logPrefix} handling ${tx.type} tx`);
+
+  if (signal?.aborted) {
+    log(`${logPrefix} watch aborted before starting`);
+    return;
+  }
 
   const monitor =
     MONITORS.get(tx.type) ||
@@ -401,8 +453,9 @@ export const handlePendingTx = async (
       mode: 'lookback',
       publishTimeMs: txTimestampMs,
       timeoutMs,
+      signal,
     });
   } else {
-    await monitor.watch(evmCtx, tx, log, { mode: 'live', timeoutMs });
+    await monitor.watch(evmCtx, tx, log, { mode: 'live', timeoutMs, signal });
   }
 };
