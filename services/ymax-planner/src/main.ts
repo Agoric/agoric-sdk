@@ -86,6 +86,8 @@ export const main = async (
   const maybeOpts = cliArgs.slice(0, dashIdx);
   const isDryRun = maybeOpts.includes('--dry-run');
   const isVerbose = maybeOpts.includes('--verbose');
+  const makeMaybeLogger = (prefix: string): ((...args: unknown[]) => void) =>
+    isVerbose ? (...args) => console.log(prefix, ...args) : () => {};
 
   const makeAbortController = prepareAbortController({
     setTimeout,
@@ -135,49 +137,66 @@ export const main = async (
   console.warn('Agoric chain versions:', agoricVersions && agoricSummary);
 
   const walletUtils = await makeSmartWalletKit(simplePowers, networkConfig);
-  let signingSmartWalletKit = await makeSigningSmartWalletKit(
-    { connectWithSigner, walletUtils },
-    config.mnemonic,
-  );
-  if (isDryRun) {
-    const stdoutIsTty = process.stdout.isTTY;
-    const bridgeActionInspectOpts = { depth: 6, colors: stdoutIsTty };
-    const { address, query, pollOffer } = signingSmartWalletKit;
-    const sendBridgeAction: SigningSmartWalletKit['sendBridgeAction'] = async (
-      action,
-      fee,
-      memo,
-      signerData,
-    ) => {
-      if (isVerbose) {
-        console.log(
-          '[sendBridgeAction]',
-          inspect({ action, fee, memo, signerData }, bridgeActionInspectOpts),
-        );
+  const signingSmartWalletKit =
+    await (async (): Promise<SigningSmartWalletKit> => {
+      const baseSswk = await makeSigningSmartWalletKit(
+        { connectWithSigner, walletUtils },
+        config.mnemonic,
+      );
+      const { address, query, pollOffer } = baseSswk;
+
+      if (isDryRun) {
+        const logBridgeAction = makeMaybeLogger('[sendBridgeAction]');
+        const stdoutIsTty = process.stdout.isTTY;
+        const bridgeActionInspectOpts = { depth: 6, colors: stdoutIsTty };
+        type SendBridgeAction = SigningSmartWalletKit['sendBridgeAction'];
+        const sendBridgeAction: SendBridgeAction = async (
+          action,
+          fee,
+          memo,
+          signerData,
+        ) => {
+          logBridgeAction(
+            inspect({ action, fee, memo, signerData }, bridgeActionInspectOpts),
+          );
+          return {
+            height: 0,
+            txIndex: 0,
+            code: 0,
+            transactionHash: '',
+            events: [],
+            msgResponses: [],
+            gasUsed: 0n,
+            gasWanted: 0n,
+          };
+        };
+        return {
+          ...walletUtils,
+          address,
+          query,
+          sendBridgeAction,
+          executeOffer: async offer => {
+            const offerP = pollOffer(address, offer.id);
+            await sendBridgeAction({ method: 'executeOffer', offer });
+            return offerP;
+          },
+        };
       }
-      return {
-        height: 0,
-        txIndex: 0,
-        code: 0,
-        transactionHash: '',
-        events: [],
-        msgResponses: [],
-        gasUsed: 0n,
-        gasWanted: 0n,
+
+      const fetchAccount = async () => {
+        const response = await cosmosRest.getAccountSequence('agoric', address);
+        const { account_number: accountNumber, sequence } =
+          (response.account as BaseAccountSDKType) ||
+          Fail`Account not found for address ${address}`;
+        return { address, accountNumber, sequence };
       };
-    };
-    signingSmartWalletKit = {
-      ...walletUtils,
-      address,
-      query,
-      sendBridgeAction,
-      executeOffer: async offer => {
-        const offerP = pollOffer(address, offer.id);
-        await sendBridgeAction({ method: 'executeOffer', offer });
-        return offerP;
-      },
-    };
-  }
+      const txSequencer = await makeTxSequencer(fetchAccount, {
+        log: makeMaybeLogger('[TxSequencer]'),
+      });
+      return makeSequencingSmartWallet(baseSswk, txSequencer, {
+        log: makeMaybeLogger('[SigningSmartWallet]'),
+      });
+    })();
   console.warn('Signer address:', signingSmartWalletKit.address);
   const walletStore = reflectWalletStore(signingSmartWalletKit, {
     setTimeout,
@@ -193,38 +212,6 @@ export const main = async (
       amount: [{ denom: 'ubld', amount: '10000' }],
     },
   });
-
-  const fetchAccount = async () => {
-    const response = await cosmosRest.getAccountSequence(
-      'agoric',
-      signingSmartWalletKit.address,
-    );
-    const account = response.account as BaseAccountSDKType;
-    if (!account) {
-      throw Fail`Account not found for address ${signingSmartWalletKit.address}`;
-    }
-    return {
-      address: signingSmartWalletKit.address,
-      accountNumber: account.account_number,
-      sequence: account.sequence,
-    };
-  };
-
-  const txSequencer = await makeTxSequencer(fetchAccount, {
-    log: isVerbose
-      ? (...args) => console.log('[TxSequencer]', ...args)
-      : () => {},
-  });
-
-  const smartWalletKitWithSequence = makeSequencingSmartWallet(
-    signingSmartWalletKit,
-    txSequencer,
-    {
-      log: isVerbose
-        ? (...args) => console.log('[SigningSmartWallet]', ...args)
-        : () => {},
-    },
-  );
 
   const spectrum = new SpectrumClient(simplePowers, {
     baseUrl: config.spectrum.apiUrl,
@@ -295,7 +282,7 @@ export const main = async (
     spectrumPools,
     cosmosRest,
     network: PROD_NETWORK,
-    signingSmartWalletKit: smartWalletKitWithSequence,
+    signingSmartWalletKit,
     walletStore,
     getWalletInvocationUpdate: (messageId, opts) => {
       const { getLastUpdate } = signingSmartWalletKit.query;

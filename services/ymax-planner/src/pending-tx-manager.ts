@@ -78,12 +78,6 @@ export type PendingTxMonitor<
   ) => Promise<void>;
 };
 
-type MonitorRegistry = {
-  [TxType.CCTP_TO_EVM]: PendingTxMonitor<CctpTx, EvmContext>;
-  [TxType.GMP]: PendingTxMonitor<GmpTx, EvmContext>;
-  [TxType.MAKE_ACCOUNT]: PendingTxMonitor<MakeAccountTx, EvmContext>;
-};
-
 const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
   watch: async (ctx, tx, log, opts) => {
     await null;
@@ -363,18 +357,17 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
   },
 };
 
-const createMonitorRegistry = (): MonitorRegistry => ({
-  [TxType.CCTP_TO_EVM]: cctpMonitor,
-  [TxType.GMP]: gmpMonitor,
-  [TxType.MAKE_ACCOUNT]: makeAccountMonitor,
-});
+const MONITORS = new Map<TxType, PendingTxMonitor<PendingTx, EvmContext>>([
+  [TxType.CCTP_TO_EVM, cctpMonitor],
+  [TxType.GMP, gmpMonitor],
+  [TxType.MAKE_ACCOUNT, makeAccountMonitor],
+]);
 
 export type HandlePendingTxOpts = {
   cosmosRpc: CosmosRPCClient;
   log?: (...args: unknown[]) => void;
   error?: (...args: unknown[]) => void;
   marshaller: SigningSmartWalletKit['marshaller'];
-  registry?: MonitorRegistry;
   timeoutMs?: number;
   vstoragePathPrefixes: {
     portfoliosPathPrefix: string;
@@ -385,20 +378,16 @@ export type HandlePendingTxOpts = {
 export const TX_TIMEOUT_MS = 30 * 60 * 1000; // 30 min
 export const handlePendingTx = async (
   tx: PendingTx,
-  {
-    log = () => {},
-    registry = createMonitorRegistry(),
-    timeoutMs = TX_TIMEOUT_MS,
-    ...evmCtx
-  }: HandlePendingTxOpts,
+  { log = () => {}, timeoutMs = TX_TIMEOUT_MS, ...evmCtx }: HandlePendingTxOpts,
   txTimestampMs?: number,
 ) => {
   await null;
   const logPrefix = `[${tx.txId}]`;
   log(`${logPrefix} handling ${tx.type} tx`);
 
-  const monitor = registry[tx.type] as PendingTxMonitor<PendingTx, EvmContext>;
-  monitor || Fail`${logPrefix} No monitor registered for tx type: ${tx.type}`;
+  const monitor =
+    MONITORS.get(tx.type) ||
+    Fail`${logPrefix} No monitor registered for tx type: ${tx.type}`;
 
   if (txTimestampMs) {
     await monitor.watch(evmCtx, tx, log, {
