@@ -9,7 +9,7 @@
     "services/*"
   ],
   "type": "module",
-  "packageManager": "yarn@4.9.3",
+  "packageManager": "yarn@4.12.0",
   "devDependencies": {
     "@endo/eslint-plugin": "^2.4.0",
     "@google-cloud/monitoring": "^4.1.0",
