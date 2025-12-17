@@ -5,9 +5,9 @@ on:
   workflow_run:
     workflows:
       - 'Test all Packages'
-      - 'Integration tests'
-      - 'Test Golang'
-      - 'Multichain E2E Tests'
+      # - 'Integration tests'
+      # - 'Test Golang'
+      # - 'Multichain E2E Tests'
     types:
       - completed
 
