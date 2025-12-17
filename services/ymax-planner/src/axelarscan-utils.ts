@@ -97,13 +97,13 @@ const findTxInAxelarScan = harden(
  * @param {TxId} txId - The transaction ID to search for
  * @param {`0x${string}`} destinationAddress - The destination address on the EVM chain
  * @param {{ axelarApiUrl: string; fetch: typeof fetch }} config - Configuration object containing Axelar API URL and fetch function
- * @returns {Promise<GMPTxStatus | undefined>} The status of the GMP transaction if found, otherwise undefined
+ * @returns {Promise<{ status: GMPTxStatus | undefined; errorMessage?: string }>} The status and optional error message of the GMP transaction
  */
 export const findTxStatusFromAxelarscan = async (
   txId: TxId,
   destinationAddress: `0x${string}`,
   config: { axelarApiUrl: string; fetch: typeof fetch },
-): Promise<GMPTxStatus | undefined> => {
+): Promise<{ status: GMPTxStatus | undefined; errorMessage?: string }> => {
   // XXX: Add a `from` timestamp to avoid fetching too much data
   const foundTxs = await findTxInAxelarScan(
     destinationAddress,
@@ -125,5 +125,9 @@ export const findTxStatusFromAxelarscan = async (
     return false;
   });
 
-  return txInAxelarScan?.status;
+  const status = txInAxelarScan?.status;
+  const errorMessage =
+    status === 'error' ? txInAxelarScan?.error?.error?.message : undefined;
+
+  return { status, errorMessage };
 };

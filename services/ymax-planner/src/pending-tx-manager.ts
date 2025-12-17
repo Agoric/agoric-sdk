@@ -193,10 +193,12 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
       log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
     };
 
-    let transferStatus: boolean | undefined;
+    let transferResult:
+      | { found: boolean; rejectionReason?: string }
+      | undefined;
 
     if (opts.mode === 'live') {
-      transferStatus = await watchGmp({
+      transferResult = await watchGmp({
         ...watchArgs,
         timeoutMs: opts.timeoutMs,
         kvStore: ctx.kvStore,
@@ -218,12 +220,13 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
         fetch: ctx.fetch,
       });
       void liveResultP
-        .then(async found => {
+        .then(async result => {
           log(`${logPrefix} Live mode completed`);
           await resolvePendingTx({
             signingSmartWalletKit: ctx.signingSmartWalletKit,
             txId,
-            status: found ? TxStatus.SUCCESS : TxStatus.FAILED,
+            status: result.found ? TxStatus.SUCCESS : TxStatus.FAILED,
+            rejectionReason: result.rejectionReason || undefined,
           });
           abortController.abort();
         })
@@ -240,7 +243,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
       await waitForBlock(provider, currentBlock + 1);
 
       // Scan historical blocks
-      transferStatus = await lookBackGmp({
+      const lookbackFound = await lookBackGmp({
         ...watchArgs,
         publishTimeMs: opts.publishTimeMs,
         chainId: caipId,
@@ -249,23 +252,27 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
         makeAbortController: ctx.makeAbortController,
       });
 
-      if (transferStatus) {
+      if (lookbackFound) {
         // Found in lookback, cancel live mode
         log(`${logPrefix} Lookback found transaction`);
         abortController.abort();
+        transferResult = { found: true };
       } else {
         // Not found in lookback, rely on live mode
         log(
           `${logPrefix} Lookback completed without finding transaction, waiting for live mode`,
         );
-        transferStatus = await liveResultP;
+        transferResult = await liveResultP;
       }
     }
 
     await resolvePendingTx({
       signingSmartWalletKit: ctx.signingSmartWalletKit,
       txId,
-      status: transferStatus ? TxStatus.SUCCESS : TxStatus.FAILED,
+      status: transferResult?.found ? TxStatus.SUCCESS : TxStatus.FAILED,
+      ...(transferResult?.rejectionReason
+        ? { rejectionReason: transferResult.rejectionReason }
+        : {}),
     });
 
     log(`${logPrefix} GMP tx resolved`);
