@@ -381,6 +381,7 @@ export const processPortfolioEvents = async (
       if (err instanceof UserInputError || err instanceof NoSolutionError) {
         try {
           await settle('rejectPlan', [...scope, err.message, ...conditions]);
+          return;
         } catch (settleErr) {
           // eslint-disable-next-line no-ex-assign
           err = AggregateError([err, settleErr]);
