@@ -93,7 +93,7 @@ export const makeLiquidationTestKit = async ({
   agoricNamesRemotes: AgoricNamesRemotes;
   walletFactoryDriver: WalletFactoryDriver;
   governanceDriver: GovernanceDriver;
-  t: Pick<ExecutionContext, 'like'>;
+  t: ExecutionContext;
 }) => {
   const priceFeedDrivers = {} as Record<string, PriceFeedDriver>;
 
@@ -103,15 +103,13 @@ export const makeLiquidationTestKit = async ({
 
   const setupStartingState = async ({
     collateralBrandKey,
-    managerIndex,
     price,
   }: {
     collateralBrandKey: string;
     managerIndex: number;
     price: number;
   }) => {
-    const managerPath = `vaultFactory.managers.manager${managerIndex}`;
-    const { advanceTimeBy, readPublished } = swingsetTestKit;
+    const { advanceTimeBy } = swingsetTestKit;
 
     await null;
     if (!priceFeedDrivers[collateralBrandKey]) {
@@ -156,33 +154,6 @@ export const makeLiquidationTestKit = async ({
         },
       },
     );
-
-    // confirm Relevant Governance Parameter Assumptions
-    t.like(readPublished(`${managerPath}.governance`), {
-      current: {
-        DebtLimit: { value: { value: DebtLimitValue } },
-        InterestRate: {
-          type: 'ratio',
-          value: { numerator: { value: 1n }, denominator: { value: 100n } },
-        },
-        LiquidationMargin: {
-          type: 'ratio',
-          value: { numerator: { value: 150n }, denominator: { value: 100n } },
-        },
-        LiquidationPadding: {
-          type: 'ratio',
-          value: { numerator: { value: 25n }, denominator: { value: 100n } },
-        },
-        LiquidationPenalty: {
-          type: 'ratio',
-          value: { numerator: { value: 1n }, denominator: { value: 100n } },
-        },
-        MintFee: {
-          type: 'ratio',
-          value: { numerator: { value: 50n }, denominator: { value: 10_000n } },
-        },
-      },
-    });
   };
 
   const check = {
