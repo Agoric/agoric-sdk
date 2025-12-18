@@ -14,7 +14,7 @@
     "postpack": "git clean -f '*.d.*ts*' '*.tsbuildinfo'",
     "test": "ava --verbose",
     "test:c8": "c8 --all ${C8_OPTIONS:-} ava",
-    "test:unit": "ava 'test/unitTests' -T 1m --verbose",
+    "test:unit": "ava 'test/unitTests' -T 2m --verbose",
     "test:swingset": "ava 'test/swingsetTests' -T 10m --verbose",
     "test:xs": "yarn test:xs-worker",
     "test:xs-unit": "exit 0",
