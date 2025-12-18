@@ -56,6 +56,7 @@ import { PENDING_TXS_NODE_KEY } from './resolver/types.ts';
 import { makeOfferArgsShapes } from './type-guards-steps.ts';
 import {
   BeefyPoolPlaces,
+  ERC4626PoolPlaces,
   makeProposalShapes,
   type EVMContractAddressesMap,
   type OfferArgsFor,
@@ -109,6 +110,10 @@ export type BeefyContracts = {
   [K in keyof typeof BeefyPoolPlaces]: `0x${string}`;
 };
 
+export type ERC4626Contracts = {
+  [K in keyof typeof ERC4626PoolPlaces]: `0x${string}`;
+};
+
 export type EVMContractAddresses = {
   aavePool: `0x${string}`;
   compound: `0x${string}`;
@@ -120,7 +125,8 @@ export type EVMContractAddresses = {
   compoundRewardsController: `0x${string}`;
   gateway: `0x${string}`;
   gasService: `0x${string}`;
-} & Partial<BeefyContracts>;
+} & Partial<BeefyContracts> &
+  Partial<ERC4626Contracts>;
 
 export type AxelarId = {
   [chain in AxelarChain]: string;
