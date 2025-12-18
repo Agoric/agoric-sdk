@@ -2,12 +2,13 @@ import {
   boardSlottingMarshaller,
   makeBoardRemote,
 } from '@agoric/vats/tools/board-utils.js';
-import { assertAllDefined } from '@agoric/internal';
+import { assertAllDefined, tryNow } from '@agoric/internal';
 import { makeVStorage } from './vstorage.js';
 
 export { boardSlottingMarshaller };
 
 /**
+ * @import {Marshal} from '@endo/marshal';
  * @import {MinimalNetworkConfig} from './network-config.js';
  * @import {TypedPublished} from './types.js';
  * @import {VStorage} from './vstorage.js';
@@ -96,54 +97,90 @@ export const makeAgoricNames = async (ctx, vstorage) => {
 };
 
 /**
+ * @param {object} config
+ * @param {VStorage} config.vstorage
+ * @param {MinimalNetworkConfig} config.networkConfig
+ * @param {Pick<Marshal<string>, 'fromCapData' | 'toCapData'>} [config.marshaller]
+ * @alpha
+ */
+export const makeVstorageKitFromVstorage = ({
+  vstorage,
+  networkConfig,
+  marshaller,
+}) => {
+  /** @type {IdMap} */
+  const fromBoard = marshaller
+    ? {
+        // XXX Route conversions through a provided marshaller.
+        // Note that the fromBoard pattern is deprecated.
+        convertSlotToVal: (boardId, iface) => {
+          const boardRemote = makeBoardRemote({ boardId, iface });
+          // @ts-expect-error TS18048 marshaller won't be undefined here.
+          return marshaller.fromCapData(marshaller.toCapData(boardRemote));
+        },
+      }
+    : makeFromBoard();
+  marshaller ??= boardSlottingMarshaller(fromBoard.convertSlotToVal);
+
+  /** @type {(txt: string | {value: string}) => unknown} */
+  const unserializeHead = txt => {
+    const { capDatas } = storageHelper.parseCapData(txt);
+    // XXX For backwards compatibility with the old implementation
+    // (`storageHelper.unserializeTxt(txt, fromBoard).at(-1)`), parse every
+    // capDatas item even though we only care about the last one.
+    // This is almost certainly safe to improve in a dedicated PR.
+    const values = capDatas.map(capData => marshaller.fromCapData(capData));
+    return values.at(-1);
+  };
+
+  /**
+   * Read latest at path and unmarshal it
+   * @template T
+   * @type {(path: string) => Promise<T>}
+   */
+  const readLatestHead = path =>
+    // @ts-expect-error cast
+    vstorage.readLatest(path).then(unserializeHead);
+
+  /**
+   * Read latest at published path and unmarshal it.
+   *
+   * Note this does not perform a runtime check to verify the shape. The
+   * static types come from the spec of what is supposed to be written to
+   * vstorage, which is validated in testing of the chain code that is run
+   * in consensus.
+   *
+   * @type {<T extends string>(subpath: T) => Promise<TypedPublished<T>>}
+   */
+  const readPublished = subpath =>
+    // @ts-expect-error cast
+    readLatestHead(`published.${subpath}`);
+
+  return {
+    fromBoard,
+    marshaller,
+    networkConfig,
+    readLatestHead,
+    readPublished,
+    unserializeHead,
+    vstorage,
+  };
+};
+harden(makeVstorageKitFromVstorage);
+
+/**
  * @param {{ fetch: typeof window.fetch }} io
  * @param {MinimalNetworkConfig} networkConfig
  */
 export const makeVstorageKit = ({ fetch }, networkConfig) => {
-  try {
-    const vstorage = makeVStorage({ fetch }, networkConfig);
-    const fromBoard = makeFromBoard();
-
-    const marshaller = boardSlottingMarshaller(fromBoard.convertSlotToVal);
-
-    /** @type {(txt: string | {value: string}) => unknown} */
-    const unserializeHead = txt =>
-      storageHelper.unserializeTxt(txt, fromBoard).at(-1);
-
-    /**
-     * Read latest at path and unmarshal it
-     * @template T
-     * @type {(path: string) => Promise<T>}
-     */
-    const readLatestHead = path =>
-      // @ts-expect-error cast
-      vstorage.readLatest(path).then(unserializeHead);
-
-    /**
-     * Read latest at published path and unmarshal it.
-     *
-     * Note this does not perform a runtime check to verify the shape. The
-     * static types come from the spec of what is supposed to be written to
-     * vstorage, which is validated in testing of the chain code that is run
-     * in consensus.
-     *
-     * @type {<T extends string>(subpath: T) => Promise<TypedPublished<T>>}
-     */
-    const readPublished = subpath =>
-      // @ts-expect-error cast
-      readLatestHead(`published.${subpath}`);
-
-    return {
-      fromBoard,
-      marshaller,
-      networkConfig,
-      readLatestHead,
-      readPublished,
-      unserializeHead,
-      vstorage,
-    };
-  } catch (err) {
-    throw Error(`RPC failure (${networkConfig.rpcAddrs}): ${err.message}`);
-  }
+  const vstorage = tryNow(
+    () => makeVStorage({ fetch }, networkConfig),
+    err => {
+      throw Error(`RPC failure (${networkConfig.rpcAddrs}): ${err.message}`);
+    },
+  );
+  return makeVstorageKitFromVstorage({ vstorage, networkConfig });
 };
+harden(makeVstorageKit);
+
 /** @typedef {ReturnType<typeof makeVstorageKit>} VstorageKit */

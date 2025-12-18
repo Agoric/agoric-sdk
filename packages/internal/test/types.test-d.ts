@@ -1,8 +1,25 @@
 import { expectNotType, expectType } from 'tsd';
 import { E, type ERef } from '@endo/far';
 import { attenuate } from '../src/ses-utils.js';
-import type { Permit, Remote } from '../src/types.js';
+import type { Permit, RecordFromTuple, Remote } from '../src/types.js';
 import type { StorageNode } from '../src/lib-chainStorage.js';
+
+{
+  const makeCoin = (denom: string, amount: bigint) => ({ denom, amount });
+  const coin = makeCoin('foo', 42n);
+  const manualCoin = { denom: 'bar', amount: 100n };
+
+  type Coin = RecordFromTuple<Parameters<typeof makeCoin>, ['denom', 'amount']>;
+  expectType<Coin>(coin);
+  expectType<Coin>(manualCoin);
+
+  type MisnamedCoin = RecordFromTuple<
+    Parameters<typeof makeCoin>,
+    ['denom', 'value']
+  >;
+  expectNotType<MisnamedCoin>(coin);
+  expectNotType<MisnamedCoin>(manualCoin);
+}
 
 {
   const obj = {

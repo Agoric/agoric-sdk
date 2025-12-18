@@ -15,7 +15,7 @@ import {
 } from '@agoric/internal';
 import type { AccountId, Caip10Record } from '@agoric/orchestration';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
-import { Fail, q } from '@endo/errors';
+import { assert, Fail, q, X } from '@endo/errors';
 // import { TEST_NETWORK } from '@aglocal/portfolio-contract/test/network/test-network.js';
 import type {
   AssetPlaceRef,
@@ -32,13 +32,17 @@ import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockc
 import type { ProtocolPoolUserBalanceResult } from './graphql/api-spectrum-pools/__generated/graphql.ts';
 import type { Sdk as SpectrumPoolsSdk } from './graphql/api-spectrum-pools/__generated/sdk.ts';
 import type { Chain, Pool, SpectrumClient } from './spectrum-client.js';
-import { spectrumProtocols } from './support.ts';
+import { spectrumProtocols, UserInputError } from './support.ts';
 import { getOwn, lookupValueForKey } from './utils.js';
 
 const scale6 = (x: number) => {
   assert.typeof(x, 'number');
   return BigInt(Math.round(x * 1e6));
 };
+
+const rejectUserInput = (details: ReturnType<typeof X> | string): never =>
+  assert.fail(details, ((...args) =>
+    Reflect.construct(UserInputError, args)) as ErrorConstructor);
 
 // Note the differences in the shape of field `balance` between the two Spectrum
 // APIs (string vs. Record<'USDC' | 'USD' | string, number>).
@@ -209,8 +213,12 @@ export const getCurrentBalances = async (
       makeSpectrumPoolQuery(desc, powers),
     );
     const [accountResult, positionResult] = await Promise.allSettled([
-      spectrumBlockchain.getBalances({ accounts: spectrumAccountQueries }),
-      spectrumPools.getBalances({ positions: spectrumPoolQueries }),
+      spectrumAccountQueries.length
+        ? spectrumBlockchain.getBalances({ accounts: spectrumAccountQueries })
+        : { balances: [] },
+      spectrumPoolQueries.length
+        ? spectrumPools.getBalances({ positions: spectrumPoolQueries })
+        : { balances: [] },
     ]);
     if (
       accountResult.status !== 'fulfilled' ||
@@ -314,7 +322,7 @@ const computeWeightedTargets = (
     0n,
   );
   const total = currentTotal + delta;
-  total >= 0n || Fail`total after delta must not be negative`;
+  total >= 0n || rejectUserInput('Insufficient funds for withdrawal.');
   const weights = Object.keys(allocation).length
     ? typedEntries({
         // Any current balance with no target has an effective weight of 0.
@@ -328,10 +336,13 @@ const computeWeightedTargets = (
   const sumW = weights.reduce<bigint>((acc, entry) => {
     const w = entry[1];
     (typeof w === 'bigint' && w >= 0n) ||
-      Fail`allocation weight in ${entry} must be a Nat`;
+      rejectUserInput(
+        X`Target allocation weight in ${entry} must be a natural number.`,
+      );
     return acc + w;
   }, 0n);
-  sumW > 0n || Fail`allocation weights must sum > 0`;
+  sumW > 0n ||
+    rejectUserInput('Total target allocation weights must be positive.');
   const draft: Partial<Record<AssetPlaceRef, NatAmount>> = {};
   let remainder = total;
   let [maxKey, maxW] = [weights[0][0], -1n];

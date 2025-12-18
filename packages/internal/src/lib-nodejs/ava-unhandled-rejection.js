@@ -14,6 +14,108 @@ export const AVA_EXPECT_UNHANDLED_REJECTIONS =
 
 export const SUBTEST_PREFIX = '(unhandled rejection subprocess): ';
 
+const delayTurn = () => new Promise(resolve => setImmediate(resolve));
+const settleUnhandled = async () => {
+  await delayTurn();
+  await delayTurn();
+};
+
+const stripListeners = event => {
+  const listeners = process.listeners(event);
+  for (const listener of listeners) {
+    process.off(event, listener);
+  }
+  return () => {
+    for (const listener of listeners) {
+      process.on(event, listener);
+    }
+  };
+};
+
+const makeUnhandledTracker = () => {
+  let unhandled = 0;
+  let seenUnhandled = 0;
+  const pending = new Set();
+  const handledLate = new Set();
+  const tokenByPromise = new WeakMap();
+  // Finalization callbacks run on the main thread; `pending` is only mutated
+  // here and after the flushes in countUnhandled, so no extra synchronization
+  // is required.
+  const registry = new FinalizationRegistry(token => {
+    if (pending.delete(token)) {
+      // Don't count promises that were handled late.
+      if (!handledLate.delete(token)) {
+        unhandled += 1;
+      }
+    }
+  });
+
+  const onUnhandled = (_reason, promise) => {
+    seenUnhandled += 1;
+    const token = Symbol('unhandledRejection');
+    tokenByPromise.set(promise, token);
+    pending.add(token);
+    registry.register(promise, token, token);
+  };
+
+  const onHandledLate = promise => {
+    const token = tokenByPromise.get(promise);
+    tokenByPromise.delete(promise);
+    // Mark this token as handled late so it won't be counted when the
+    // finalizer runs. We remove it from `pending` to exclude it from
+    // the pending count, and track it in `handledLate` to avoid counting
+    // it when GC'd.
+    if (token && pending.delete(token)) {
+      handledLate.add(token);
+    }
+  };
+
+  const snapshot = () => ({ unhandled, pending: pending.size, seenUnhandled });
+
+  return {
+    onUnhandled,
+    onHandledLate,
+    snapshot,
+  };
+};
+
+/**
+ * Count unhandled rejections for the given work by running it after removing
+ * any existing listeners (like AVA's) and waiting for GC/finalization.
+ *
+ * @param {() => any | Promise<any>} work
+ * @param {object} powers
+ * @param {() => Promise<void>} powers.gcAndFinalize
+ */
+export const countUnhandled = async (work, { gcAndFinalize }) => {
+  await null; // for Jessie
+  const tracker = makeUnhandledTracker();
+  const restoreUnhandled = stripListeners('unhandledRejection');
+  const restoreHandled = stripListeners('rejectionHandled');
+  const flushUnhandled = async () => {
+    await settleUnhandled();
+    await gcAndFinalize();
+  };
+  process.on('unhandledRejection', tracker.onUnhandled);
+  process.on('rejectionHandled', tracker.onHandledLate);
+  try {
+    await work();
+  } finally {
+    // Two passes through settle+GC help ensure finalizers run before we snapshot
+    // the unhandled state across Node/XS runtimes, even when callbacks queue
+    // additional macrotasks. This count happens after the flushes so finalizer
+    // timing cannot race the snapshot.
+    await flushUnhandled();
+    await flushUnhandled();
+    await settleUnhandled();
+    process.off('unhandledRejection', tracker.onUnhandled);
+    process.off('rejectionHandled', tracker.onHandledLate);
+    restoreUnhandled();
+    restoreHandled();
+  }
+  return tracker.snapshot();
+};
+
 /**
  * @template C
  * @param {object} powers
@@ -28,16 +130,27 @@ export const makeExpectUnhandledRejection = ({ test, importMetaUrl }) => {
   const gcAndFinalize = makeGcAndFinalize(engineGC);
 
   if (process.env[AVA_EXPECT_UNHANDLED_REJECTIONS]) {
-    return _expectedUnhandled =>
+    return expectedUnhandled =>
       test.macro({
         title: (_, name, _impl) => SUBTEST_PREFIX + name,
         exec: async (t, _name, impl) => {
-          await null;
-          try {
-            const result = await impl(t);
-            return result;
-          } finally {
-            await gcAndFinalize();
+          const rawExpected =
+            process.env[AVA_EXPECT_UNHANDLED_REJECTIONS] ?? expectedUnhandled;
+          const expected = Number(rawExpected);
+          if (!Number.isSafeInteger(expected) || expected < 0) {
+            t.fail(
+              `expected unhandled rejection count to be a natural number, got ${rawExpected}`,
+            );
+          }
+          const { unhandled, pending, seenUnhandled } = await countUnhandled(
+            () => impl(t),
+            { gcAndFinalize },
+          );
+          const totalUnhandled = unhandled + pending;
+          if (totalUnhandled !== expected) {
+            t.fail(
+              `expected ${expected} unhandled promise rejections, got ${totalUnhandled} (of ${seenUnhandled} seen, ${pending} pending finalization)`,
+            );
           }
         },
       });

@@ -75,23 +75,17 @@ const defaultFee: StdFee = {
 
 /**
  * Augment a read-only SmartWalletKit with signing ability
+ * @alpha
  */
-export const makeSigningSmartWalletKit = async (
-  {
-    connectWithSigner,
-    walletUtils,
-  }: {
-    connectWithSigner: typeof SigningStargateClient.connectWithSigner;
-    walletUtils: SmartWalletKit;
-  },
-  MNEMONIC: string,
-) => {
-  const { address, client } = await makeStargateClientKit(MNEMONIC, {
-    connectWithSigner,
-    // XXX always the first
-    rpcAddr: walletUtils.networkConfig.rpcAddrs[0],
-  });
-
+export const makeSigningSmartWalletKitFromClient = async ({
+  smartWalletKit: walletUtils,
+  address,
+  client,
+}: {
+  smartWalletKit: SmartWalletKit;
+  address: string;
+  client: SigningStargateClient;
+}) => {
   // Omit deprecated utilities
   const { storedWalletState: _, ...swk } = walletUtils;
 
@@ -179,6 +173,33 @@ export const makeSigningSmartWalletKit = async (
     sendBridgeAction,
   });
 };
+harden(makeSigningSmartWalletKitFromClient);
+
+/**
+ * Augment a read-only SmartWalletKit with signing ability
+ */
+export const makeSigningSmartWalletKit = async (
+  {
+    connectWithSigner,
+    walletUtils,
+  }: {
+    connectWithSigner: typeof SigningStargateClient.connectWithSigner;
+    walletUtils: SmartWalletKit;
+  },
+  MNEMONIC: string,
+) => {
+  const { address, client } = await makeStargateClientKit(MNEMONIC, {
+    connectWithSigner,
+    // XXX always the first
+    rpcAddr: walletUtils.networkConfig.rpcAddrs[0],
+  });
+  return makeSigningSmartWalletKitFromClient({
+    smartWalletKit: walletUtils,
+    address,
+    client,
+  });
+};
+harden(makeSigningSmartWalletKit);
 export type SigningSmartWalletKit = EReturn<typeof makeSigningSmartWalletKit>;
 export type { SmartWalletKit };
 
