@@ -175,13 +175,6 @@ jobs:
           node-version: ${{ matrix.engine }}
       # END-TEST-BOILERPLATE
 
-      # TODO: REMOVE AFTER TESTING FLAKY DETECTION
-      - name: TEMP - Simulate flaky test (REMOVE AFTER TESTING)
-        if: github.run_attempt == 1
-        run: |
-          echo "Simulating flaky test - failing on attempt 1"
-          exit 1
-
       # We run separate steps for each package, to make it easier to drill down
       # into errors. If we wanted to just run everything, run 'yarn test' from
       # the top level.
