@@ -396,7 +396,7 @@ export const processPortfolioEvents = async (
       }
 
       // If this (portfolio, flows) data hasn't changed since our last
-      // submission, there's no point in trying again.
+      // successful submission, there's no point in trying again.
       memory.snapshots ||= new Map();
       const oldState = memory.snapshots.get(portfolioKey);
       const oldFingerprint = oldState?.fingerprint;
@@ -407,7 +407,6 @@ export const processPortfolioEvents = async (
         oldState.repeats += 1;
         return;
       }
-      memory.snapshots.set(portfolioKey, { fingerprint, repeats: 0 });
 
       // If any in-progress flows need activation (as indicated by not having
       // its own dedicated vstorage data), then find the first such flow and
@@ -422,8 +421,9 @@ export const processPortfolioEvents = async (
           portfolioKey, flowKey,
           () => startFlow(status, portfolioKey, flowKey, flowDetail),
         );
-        return;
+        break;
       }
+      memory.snapshots.set(portfolioKey, { fingerprint, repeats: 0 });
     } catch (err) {
       const age = blockHeight - eventRecord.blockHeight;
       if (err.code === STALE_RESPONSE) {
