@@ -288,14 +288,14 @@ export const processPortfolioEvents = async (
     const flowId = flowIdFromKey(flowKey);
     const scope = [portfolioId, flowId] as const;
     const { policyVersion, rebalanceCount, targetAllocation } = portfolioStatus;
-    const conditions = [policyVersion, rebalanceCount] as const;
+    const versions = [policyVersion, rebalanceCount] as const;
 
     const currentBalances = await getNonDustBalances(
       portfolioStatus,
       depositBrand,
       balanceQueryPowers,
     );
-    const errorContext = {
+    const logContext = {
       path,
       flowKey,
       flowDetail,
@@ -304,8 +304,28 @@ export const processPortfolioEvents = async (
       rebalanceCount,
       targetAllocation,
     };
+    const settle = async <M extends string & keyof PortfolioPlanner>(
+      methodName: M,
+      args: PortfolioPlanner[M] extends (...args: infer Args) => any
+        ? Args
+        : never,
+      extraDetails?: object,
+    ) => {
+      const txOpts = { sendOnly: true };
+      const planReceiver = walletStore.get<PortfolioPlanner>('planner', txOpts);
+      const { tx, id } = await planReceiver[methodName]!(...args);
+      // tx has been submitted, but we won't know its fate until a future block.
+      if (!isDryRun) {
+        void getWalletInvocationUpdate(id as any).catch(err => {
+          logger.warn(`⚠️ Failure for ${methodName}`, args, err);
+        });
+      }
+      const details = inspectForStdout({ ...logContext, ...extraDetails });
+      logger.info(methodName, flowDetail, currentBalances, details, tx);
+    };
+
     const plannerContext = {
-      ...errorContext,
+      ...logContext,
       // @ts-expect-error "amount" is not present on all varieties of
       // FlowDetail, but we need it here when it is present (i.e., for types
       // "deposit" and "withdraw" and it's harmless otherwise.
@@ -315,29 +335,6 @@ export const processPortfolioEvents = async (
       feeBrand,
       gasEstimator,
     };
-
-    const { network: _network, ...logContext } = plannerContext;
-    logger.debug(`Starting flow`, flowDetail, inspectForStdout(logContext));
-    const settle = async <M extends string & keyof PortfolioPlanner>(
-      methodName: M,
-      args: PortfolioPlanner[M] extends (...args: infer Args) => any
-        ? Args
-        : never,
-    ) => {
-      const planReceiver = walletStore.get<PortfolioPlanner>('planner', {
-        sendOnly: true,
-      });
-      const { tx, id } = await planReceiver[methodName]!(...args);
-      // The transaction has been submitted, but we won't know about a rejection
-      // for at least another block.
-      if (!isDryRun) {
-        void getWalletInvocationUpdate(id as any).catch(err => {
-          logger.warn(`⚠️ Failure for ${methodName}`, args, err);
-        });
-      }
-      return tx;
-    };
-
     try {
       let steps: MovementDesc[];
       const { type } = flowDetail;
@@ -351,43 +348,29 @@ export const processPortfolioEvents = async (
         case 'withdraw':
           steps = await planWithdrawFromAllocations(plannerContext);
           break;
-        default: {
+        default:
           logger.warn(`⚠️  Unknown flow type ${type}`);
           return;
-        }
       }
-      (errorContext as any).steps = steps;
+      (logContext as any).steps = steps;
 
-      const tx = await (steps.length === 0
-        ? settle('rejectPlan', [
-            ...scope,
-            'Nothing to do for this operation.',
-            ...conditions,
-          ])
-        : settle('resolvePlan', [...scope, steps, ...conditions]));
-      logger.info(
-        `Resolving`,
-        flowDetail,
-        currentBalances,
-        inspectForStdout({
-          policyVersion,
-          rebalanceCount,
-          targetAllocation,
-          steps,
-        }),
-        tx,
-      );
-    } catch (err) {
-      if (err instanceof UserInputError || err instanceof NoSolutionError) {
-        try {
-          await settle('rejectPlan', [...scope, err.message, ...conditions]);
-        } catch (settleErr) {
-          // eslint-disable-next-line no-ex-assign
-          err = AggregateError([err, settleErr]);
-        }
+      if (steps.length > 0) {
+        await settle('resolvePlan', [...scope, steps, ...versions], { steps });
+      } else {
+        const reason = 'Nothing to do for this operation.';
+        await settle('rejectPlan', [...scope, reason, ...versions]);
       }
-      annotateError(err, inspect(errorContext, { depth: 4 }));
-      throw err;
+    } catch (err) {
+      annotateError(err, inspect(logContext, { depth: 4 }));
+      if (err instanceof UserInputError || err instanceof NoSolutionError) {
+        await settle('rejectPlan', [...scope, err.message, ...versions], {
+          cause: err,
+        }).catch(err2 => {
+          throw AggregateError([err, err2]);
+        });
+      } else {
+        throw err;
+      }
     }
   };
   const handledPortfolioKeys = new Set<string>();
@@ -413,7 +396,7 @@ export const processPortfolioEvents = async (
       }
 
       // If this (portfolio, flows) data hasn't changed since our last
-      // submission, there's no point in trying again.
+      // successful submission, there's no point in trying again.
       memory.snapshots ||= new Map();
       const oldState = memory.snapshots.get(portfolioKey);
       const oldFingerprint = oldState?.fingerprint;
@@ -424,7 +407,6 @@ export const processPortfolioEvents = async (
         oldState.repeats += 1;
         return;
       }
-      memory.snapshots.set(portfolioKey, { fingerprint, repeats: 0 });
 
       // If any in-progress flows need activation (as indicated by not having
       // its own dedicated vstorage data), then find the first such flow and
@@ -439,8 +421,9 @@ export const processPortfolioEvents = async (
           portfolioKey, flowKey,
           () => startFlow(status, portfolioKey, flowKey, flowDetail),
         );
-        return;
+        break;
       }
+      memory.snapshots.set(portfolioKey, { fingerprint, repeats: 0 });
     } catch (err) {
       const age = blockHeight - eventRecord.blockHeight;
       if (err.code === STALE_RESPONSE) {
