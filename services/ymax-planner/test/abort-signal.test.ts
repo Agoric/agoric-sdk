@@ -25,6 +25,22 @@ test('handlePendingTx aborts CCTP watcher in live mode when signal is aborted', 
 
   mockProvider.getLogs = async () => [];
 
+  // Track calls to executeOffer (used by resolvePendingTx)
+  let resolveAttempts = 0;
+  const originalExecuteOffer = opts.signingSmartWalletKit.executeOffer;
+  opts.signingSmartWalletKit.executeOffer = async (...args) => {
+    resolveAttempts++;
+    return originalExecuteOffer(...args);
+  };
+
+  // Track event listener cleanup
+  let offCallCount = 0;
+  const originalOff = mockProvider.off;
+  mockProvider.off = (...args) => {
+    offCallCount++;
+    return originalOff(...args);
+  };
+
   const abortController = new AbortController();
 
   const watchPromise = handlePendingTx(
@@ -50,6 +66,9 @@ test('handlePendingTx aborts CCTP watcher in live mode when signal is aborted', 
     `[${txId}] Watching for ERC-20 transfers to: ${recipientAddress} with amount: ${txAmount}`,
     '[TEST] Aborting signal',
   ]);
+
+  t.is(resolveAttempts, 0, 'Transaction should not be resolved after abort');
+  t.is(offCallCount, 1, 'Should remove the Transfer event listener');
 });
 
 test('handlePendingTx aborts GMP watcher in live mode when signal is aborted', async t => {
@@ -70,6 +89,22 @@ test('handlePendingTx aborts GMP watcher in live mode when signal is aborted', a
   const mockProvider = opts.evmProviders[chainId] as any;
 
   mockProvider.getLogs = async () => [];
+
+  // Track calls to executeOffer (used by resolvePendingTx)
+  let resolveAttempts = 0;
+  const originalExecuteOffer = opts.signingSmartWalletKit.executeOffer;
+  opts.signingSmartWalletKit.executeOffer = async (...args) => {
+    resolveAttempts++;
+    return originalExecuteOffer(...args);
+  };
+
+  // Track event listener cleanup
+  let offCallCount = 0;
+  const originalOff = mockProvider.off;
+  mockProvider.off = (...args) => {
+    offCallCount++;
+    return originalOff(...args);
+  };
 
   const ctxWithFetch = harden({
     ...opts,
@@ -113,6 +148,14 @@ test('handlePendingTx aborts GMP watcher in live mode when signal is aborted', a
     `[${txId}] Watching for MulticallStatus and MulticallExecuted events for txId: ${txId} at contract: ${contractAddress}`,
     '[TEST] Aborting signal',
   ]);
+
+  // Assert that the watcher actually aborted
+  t.is(resolveAttempts, 0, 'Transaction should not be resolved after abort');
+  t.is(
+    offCallCount,
+    2,
+    'Should remove both event listeners (MulticallStatus and MulticallExecuted)',
+  );
 });
 
 test('handlePendingTx exits early if signal is already aborted before starting', async t => {

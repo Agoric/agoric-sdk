@@ -131,7 +131,12 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
         log(`${logPrefix} External abort signal received`);
         abortController.abort();
       };
-      opts.signal.addEventListener('abort', handleExternalAbort);
+      opts.signal.addEventListener('abort', handleExternalAbort, {
+        once: true,
+      });
+      if (opts.signal.aborted) {
+        handleExternalAbort();
+      }
 
       try {
         const liveResultP = watchCctpTransfer({
@@ -237,7 +242,9 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
       });
     } else {
       // Lookback mode with concurrent live watching
-      // Start live mode now in case the txId has not yet appeared
+      // Strategy: Run both live and lookback concurrently. Whichever finds the
+      // transaction first aborts the other. This ensures we don't miss the
+      // transaction (lookback covers history, live covers new events).
       const abortController = new AbortController();
 
       // If external signal is aborted, abort internal controller
@@ -245,7 +252,12 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
         log(`${logPrefix} External abort signal received`);
         abortController.abort();
       };
-      opts.signal.addEventListener('abort', handleExternalAbort);
+      opts.signal.addEventListener('abort', handleExternalAbort, {
+        once: true,
+      });
+      if (opts.signal.aborted) {
+        handleExternalAbort();
+      }
 
       try {
         const liveResultP = watchGmp({
@@ -257,21 +269,23 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
           axelarApiUrl: ctx.axelarApiUrl,
           fetch: ctx.fetch,
         });
+
+        // Attach handler to abort lookback if live mode completes first with
+        // a definitive result. This handler does NOT resolve the transaction -
+        // resolution happens once at the end to prevent duplicate resolutions.
         void liveResultP
-          .then(async result => {
-            log(`${logPrefix} Live mode completed`);
-            await resolvePendingTx({
-              signingSmartWalletKit: ctx.signingSmartWalletKit,
-              txId,
-              status: result.found ? TxStatus.SUCCESS : TxStatus.FAILED,
-              ...(result.rejectionReason
-                ? { rejectionReason: result.rejectionReason }
-                : {}),
-            });
-            abortController.abort();
+          .then(result => {
+            // Abort lookback only if live mode has a definitive answer:
+            // - Transaction found successfully (result.found === true)
+            // - Transaction found but failed (result.rejectionReason present)
+            // If neither (just timed out), let lookback continue - it might find it.
+            if (result.found || result.rejectionReason) {
+              log(`${logPrefix} Live mode completed`);
+              abortController.abort();
+            }
           })
           .catch(error => {
-            // if promise was aborted. no action needed
+            // If lookback aborted live mode, no action needed
             if (error !== WATCH_GMP_ABORTED) {
               throw error;
             }
@@ -292,6 +306,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
           makeAbortController: ctx.makeAbortController,
         });
 
+        // Determine which result to use based on what completed successfully
         if (lookBackResult) {
           // Found in lookback, cancel live mode
           log(`${logPrefix} Lookback found transaction`);
@@ -376,7 +391,12 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
         log(`${logPrefix} External abort signal received`);
         abortController.abort();
       };
-      opts.signal.addEventListener('abort', handleExternalAbort);
+      opts.signal.addEventListener('abort', handleExternalAbort, {
+        once: true,
+      });
+      if (opts.signal.aborted) {
+        handleExternalAbort();
+      }
 
       try {
         const liveResultP = watchSmartWalletTx({
