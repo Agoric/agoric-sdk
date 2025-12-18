@@ -421,6 +421,23 @@ const createMockAxelarScanResponse = (
     };
   }
 
+  if (status === 'error') {
+    return {
+      data: [
+        {
+          ...baseEvent,
+          error: {
+            error: {
+              message: 'Transaction execution failed',
+            },
+          },
+        },
+      ],
+      total: 1,
+      time_spent: 100,
+    };
+  }
+
   return {
     data: [baseEvent],
     total: 1,
