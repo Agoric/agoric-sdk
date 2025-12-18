@@ -4,7 +4,11 @@
  *   https://github.com/Agoric/agoric-sdk/issues/7503
  */
 /* global setImmediate */
-/** @import {MapStore} from '@agoric/store'; */
+/**
+ * @import {MapStore} from '@agoric/store';
+ * @import {ExecutionContext as AvaT} from 'ava';
+ * @import {ERef} from '@endo/eventual-send';
+ */
 
 /**
  * A workaround for some issues with fake time in tests.
@@ -52,3 +56,79 @@ export const inspectMapStore = store => {
   return obj;
 };
 harden(inspectMapStore);
+
+/**
+ * @typedef {readonly [
+ *   stepName: string,
+ *   fn: (input: any, label: string) => unknown,
+ * ]} TestStep
+ */
+
+/**
+ * For each step, run to just before that point and pause for continuation after
+ * interrupt.
+ *
+ * @template [Context=unknown]
+ * @param {AvaT<Context>} t
+ * @param {readonly TestStep[]} allSteps
+ * @param {(t: AvaT<Context>) => ERef<void>} doInterrupt
+ */
+export const testInterruptedSteps = async (t, allSteps, doInterrupt) => {
+  /**
+   * @typedef {{
+   *   label: string;
+   *   accum?: unknown;
+   * }} RunState
+   */
+
+  /**
+   * @param {string} label
+   * @param {readonly TestStep[]} steps
+   * @param {RunState} [runState]
+   * @returns {Promise<RunState>}
+   */
+  const runSteps = async (label, steps, runState = { label }) => {
+    await null;
+    let accum = runState.accum;
+    const runLabel = runState.label;
+    for (const [stepName, fn] of steps) {
+      await t.notThrowsAsync(async () => {
+        accum = await fn(accum, runLabel);
+      }, `${label} ${stepName} must complete successfully`);
+    }
+    return { label: runLabel, accum };
+  };
+
+  // Sanity check
+  await runSteps('pre-interrupt', allSteps);
+
+  /**
+   * @type {{
+   *   runState: RunState;
+   *   remainingSteps: readonly TestStep[];
+   * }[]}
+   */
+  const pausedRuns = [];
+  for (let i = 0; i < allSteps.length; i += 1) {
+    const [beforeStepName] = allSteps[i];
+    const runState = await runSteps(
+      `pre-${beforeStepName}`,
+      allSteps.slice(0, i),
+      { label: `pause-before-${beforeStepName}` },
+    );
+    pausedRuns.push({ runState, remainingSteps: allSteps.slice(i) });
+  }
+
+  // Run the user code that interrupts the steps.
+  await doInterrupt(t);
+
+  // Verify a complete run post-interrupt.
+  await runSteps('post-interrupt', allSteps);
+
+  // Verify completion of each paused step.
+  for (const { runState, remainingSteps } of pausedRuns) {
+    const [beforeStepName] = remainingSteps[0];
+    await runSteps(`resumed-${beforeStepName}`, remainingSteps, runState);
+  }
+};
+harden(testInterruptedSteps);
