@@ -60,6 +60,8 @@ const POOLS: ReadonlyArray<PoolKey> = [
   // USDN pools
   'USDN',
   'USDNVault',
+  // ERC4626 vaults
+  'ERC4626_vaultU2_Ethereum',
 ];
 
 // Helpers

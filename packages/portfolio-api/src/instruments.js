@@ -23,6 +23,7 @@ export const InstrumentId = /** @type {const} */ ({
   Compound_Base: 'Compound_Base',
   Compound_Ethereum: 'Compound_Ethereum',
   Compound_Optimism: 'Compound_Optimism',
+  ERC4626_vaultU2_Ethereum: 'ERC4626_vaultU2_Ethereum',
   USDN: 'USDN',
   USDNVault: 'USDNVault',
 });

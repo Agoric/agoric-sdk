@@ -1315,3 +1315,145 @@ test('create+deposit using planner', async t => {
   t.log('bankBridge for', addr, myVBankIO);
   t.like(myVBankIO, [{ type: 'VBANK_GIVE', amount: '1000000000' }]);
 });
+
+const erc4626TestMacro = test.macro({
+  async exec(t, vaultKey: AssetPlaceRef) {
+    const { trader1, common, txResolver } = await setupTrader(t);
+    const { usdc, bld, poc26 } = common.brands;
+
+    const amount = usdc.units(3_333.33);
+    const feeAcct = bld.make(100n);
+    const feeCall = bld.make(100n);
+
+    const actualP = trader1.openPortfolio(
+      t,
+      { Deposit: amount, Access: poc26.make(1n) },
+      {
+        flow: [
+          { src: '<Deposit>', dest: '@agoric', amount },
+          { src: '@agoric', dest: '@noble', amount },
+          { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+          { src: '@Arbitrum', dest: vaultKey, amount, fee: feeCall },
+        ],
+      },
+    );
+
+    await eventLoopIteration(); // let IBC message go out
+    await ackNFA(common.utils);
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
+    t.log('ackd send to Axelar to create account');
+
+    await simulateCCTPAck(common.utils).finally(() =>
+      txResolver
+        .drainPending()
+        .then(() => simulateAckTransferToAxelar(common.utils)),
+    );
+    const actual = await actualP;
+
+    t.log('=== Portfolio completed');
+    const result = actual.result as any;
+    t.is(passStyleOf(result.invitationMakers), 'remotable');
+
+    t.is(keys(result.publicSubscribers).length, 1);
+    const { storagePath } = result.publicSubscribers.portfolio;
+    t.log(storagePath);
+    const { contents } = getPortfolioInfo(
+      storagePath,
+      common.bootstrap.storage,
+    );
+    t.snapshot(contents, 'vstorage');
+    t.snapshot(actual.payouts, 'refund payouts');
+  },
+  title(providedTitle = '', vaultKey: AssetPlaceRef) {
+    return `${providedTitle} ${vaultKey}`.trim();
+  },
+});
+
+test(
+  'open a portfolio with ERC4626 vault:',
+  erc4626TestMacro,
+  'ERC4626_vaultU2_Ethereum',
+);
+
+test('Withdraw from an ERC4626 position', async t => {
+  const { trader1, common, txResolver } = await setupTrader(t);
+  const { usdc, bld, poc26 } = common.brands;
+
+  const amount = usdc.units(3_333.33);
+  const feeAcct = bld.make(100n);
+  const feeCall = bld.make(100n);
+
+  const actualP = trader1.openPortfolio(
+    t,
+    { Deposit: amount, Access: poc26.make(1n) },
+    {
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+        {
+          src: '@Arbitrum',
+          dest: 'ERC4626_vaultU2_Ethereum',
+          amount,
+          fee: feeCall,
+        },
+      ],
+    },
+  );
+
+  await eventLoopIteration(); // let IBC message go out
+  await ackNFA(common.utils);
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
+  t.log('ackd send to Axelar to create account');
+
+  await simulateCCTPAck(common.utils).finally(() =>
+    txResolver
+      .drainPending()
+      .then(() => simulateAckTransferToAxelar(common.utils)),
+  );
+  const actual = await actualP;
+
+  const result = actual.result as any;
+
+  const withdrawP = trader1.rebalance(
+    t,
+    { give: {}, want: {} },
+    {
+      flow: [
+        {
+          src: 'ERC4626_vaultU2_Ethereum',
+          dest: '@Arbitrum',
+          amount,
+          fee: feeCall,
+        },
+        {
+          src: '@Arbitrum',
+          dest: '@agoric',
+          amount,
+        },
+        {
+          src: '@agoric',
+          dest: '<Cash>',
+          amount,
+        },
+      ],
+    },
+  );
+
+  // GMP transaction settlement for the withdraw
+  await txResolver.drainPending();
+
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  await simulateCCTPAck(common.utils).finally(() =>
+    txResolver
+      .drainPending()
+      .then(() => simulateAckTransferToAxelar(common.utils)),
+  );
+
+  const withdraw = await withdrawP;
+
+  const { storagePath } = result.publicSubscribers.portfolio;
+  const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);
+  t.snapshot(contents, 'vstorage');
+  t.snapshot(withdraw.payouts, 'refund payouts');
+});
