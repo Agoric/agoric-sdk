@@ -1,13 +1,13 @@
-name: Detect Flaky Tests
+name: Detect Flaky Jobs
 
 # Triggers when any of the monitored workflows complete
 on:
   workflow_run:
     workflows:
       - 'Test all Packages'
-      # - 'Integration tests'
-      # - 'Test Golang'
-      # - 'Multichain E2E Tests'
+      - 'Integration tests'
+      - 'Test Golang'
+      - 'Multichain E2E Tests'
     types:
       - completed
 
@@ -19,7 +19,7 @@ jobs:
       github.event.workflow_run.run_attempt > 1 &&
       github.event.workflow_run.conclusion == 'success'
     steps:
-      - name: Check for flaky test recovery
+      - name: Check for flaky job recovery
         uses: actions/github-script@v7
         id: check-flaky
         with:
@@ -50,13 +50,13 @@ jobs:
 
             // If previous attempt didn't fail, this isn't a flaky recovery
             if (previousConclusion !== 'failure') {
-              console.log('Previous attempt did not fail. Not a flaky test recovery.');
+              console.log('Previous attempt did not fail. Not a flaky job recovery.');
               core.setOutput('is_flaky', 'false');
               return;
             }
 
-            // FLAKY TEST DETECTED!
-            console.log('🚨 Flaky test detected! Previous attempt failed, current succeeded.');
+            // FLAKY JOB DETECTED!
+            console.log('🚨 Flaky job detected! Previous attempt failed, current succeeded.');
 
             // Get failed jobs from previous attempt for more detail
             const previousJobs = await github.rest.actions.listJobsForWorkflowRunAttempt({
@@ -82,19 +82,19 @@ jobs:
             core.setOutput('head_branch', headBranch);
             core.setOutput('head_sha', headSha);
 
-      - name: Send Slack notification for flaky test
+      - name: Send Slack notification for flaky job
         if: steps.check-flaky.outputs.is_flaky == 'true'
         uses: slackapi/slack-github-action@v1.24.0
         with:
           payload: |
             {
-              "text": "⚠️ Flaky Test Detected!",
+              "text": "⚠️ Flaky Job Detected!",
               "blocks": [
                 {
                   "type": "header",
                   "text": {
                     "type": "plain_text",
-                    "text": "⚠️ Flaky Test Detected!",
+                    "text": "⚠️ Flaky Job Detected!",
                     "emoji": true
                   }
                 },
