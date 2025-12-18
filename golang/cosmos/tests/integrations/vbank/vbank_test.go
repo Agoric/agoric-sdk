@@ -170,6 +170,7 @@ func initVbankFixtures(t *testing.T) VbankFixtures {
 		accountKeeper,
 		bankKeeper,
 		authtypes.FeeCollectorName,
+		authority.String(),
 		swingSetKeeper.PushAction,
 	)
 
