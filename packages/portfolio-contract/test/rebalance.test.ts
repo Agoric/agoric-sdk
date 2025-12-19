@@ -15,9 +15,9 @@ import type {
   TransferProtocol,
 } from '../tools/network/network-spec.js';
 import type { FlowEdge } from '../tools/network/buildGraph.js';
+import { TEST_NETWORK } from '../tools/network/test-network.js';
 import { planRebalanceFlow } from '../tools/plan-solve.js';
 import type { RebalanceMode } from '../tools/plan-solve.js';
-import { TEST_NETWORK } from './network/test-network.js';
 import { gasEstimator } from './mocks.js';
 
 // eslint-disable-next-line no-nested-ternary

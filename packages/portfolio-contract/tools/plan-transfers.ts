@@ -10,7 +10,7 @@ import { throwRedacted as Fail } from '@endo/errors';
 import { objectMap } from '@endo/patterns';
 import type { MovementDesc } from '../src/type-guards-steps.ts';
 import { planRebalanceFlow } from './plan-solve.js';
-import { PROD_NETWORK } from './network/network.prod.js';
+import { PROD_NETWORK } from './network/prod-network.js';
 /**
  * Plan deposit transfers based on the target allocation and current balances.
  *

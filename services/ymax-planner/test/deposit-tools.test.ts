@@ -3,8 +3,8 @@
 import test from 'ava';
 
 import { planUSDNDeposit } from '@aglocal/portfolio-contract/test/mocks.js';
-import { TEST_NETWORK } from '@aglocal/portfolio-contract/test/network/test-network.js';
-import PROD_NETWORK from '@aglocal/portfolio-contract/tools/network/network.prod.ts';
+import { PROD_NETWORK } from '@aglocal/portfolio-contract/tools/network/prod-network.ts';
+import { TEST_NETWORK } from '@aglocal/portfolio-contract/tools/network/test-network.js';
 import type { NetworkSpec } from '@aglocal/portfolio-contract/tools/network/network-spec.js';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.js';
