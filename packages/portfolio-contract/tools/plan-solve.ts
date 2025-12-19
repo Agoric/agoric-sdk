@@ -46,6 +46,27 @@ const replaceOrInit = <K, V>(
   map.set(key, callback(old, key, exists));
 };
 
+// XXX These probably belong in @agoric/internal.
+/**
+ * Return the minimum and maximum bigint value from non-empty arguments, similar
+ * to `Math.min` and `Math.max` (which don't work with bigints).
+ */
+const bigIntExtremes = (first: bigint, ...rest: bigint[]) => {
+  let min = first;
+  let max = first;
+  for (const arg of rest) {
+    if (arg < min) min = arg;
+    if (arg > max) max = arg;
+  }
+  return { min, max };
+};
+/**
+ * Return the maximum bigint value from non-empty arguments, similar to
+ * `Math.max` (which doesn't work with bigints).
+ */
+const bigIntMax = (first: bigint, ...rest: bigint[]): bigint =>
+  bigIntExtremes(first, ...rest).max;
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const trace = makeTracer('solve');
 
@@ -539,10 +560,7 @@ export const rebalanceMinCostFlowSteps = async (
     initialSupplies,
   );
 
-  /**
-   * Add 20% to a fee estimate in case the landscape changes between estimation
-   * and execution.
-   */
+  /** Add 20% to a fee estimate as a buffer against short-term variability. */
   const padFeeEstimate = (estimate: bigint): bigint =>
     estimate <= 0n ? estimate : (estimate * 120n - 1n) / 100n + 1n;
 
@@ -556,77 +574,68 @@ export const rebalanceMinCostFlowSteps = async (
     const padded = padFeeEstimate(estimate);
     // cf. https://github.com/Agoric/agoric-private/issues/548#issuecomment-3517683817
     const MINIMUM_GAS = 5_000_000n;
-    const feeValue = padded < MINIMUM_GAS ? MINIMUM_GAS : padded;
-    return AmountMath.make(feeBrand, feeValue);
+    return AmountMath.make(feeBrand, bigIntMax(MINIMUM_GAS, padded));
   };
 
-  const steps: MovementDesc[] = await Promise.all(
-    prioritized.map(async ({ edge, flow }) => {
+  const steps = await Promise.all(
+    prioritized.map(async ({ edge, flow }): Promise<MovementDesc> => {
+      const { src, dest, variableFeeBps } = edge;
       Number.isSafeInteger(flow) ||
         failUnsolvable(X`flow ${flow} for edge ${edge} is not a safe integer`);
       const amount = AmountMath.make(brand, BigInt(flow));
+      const stepBase = { src, dest, amount };
 
       await null;
-      let details = {};
       switch (edge.feeMode) {
         case 'makeEvmAccount': {
-          const destinationEvmChain = chainOf(edge.dest) as AxelarChain;
+          const destinationEvmChain = chainOf(dest) as AxelarChain;
           const feeValue =
             await gasEstimator.getFactoryContractEstimate(destinationEvmChain);
           const returnFeeValue =
             await gasEstimator.getReturnFeeEstimate(destinationEvmChain);
-          details = {
+          return {
+            ...stepBase,
             detail: { evmGas: padFeeEstimate(returnFeeValue) },
             fee: makeGmpFeeAmount(feeValue),
           };
-          break;
         }
         // XXX: revisit https://github.com/Agoric/agoric-sdk/pull/11953#discussion_r2383034184
         case 'poolToEvm': {
-          const poolInfo = PoolPlaces[edge.src as PoolKey];
-          const protocol = poolInfo?.protocol;
+          const poolInfo = PoolPlaces[src as PoolKey];
           const feeValue = await gasEstimator.getWalletEstimate(
-            chainOf(edge.dest) as AxelarChain,
+            chainOf(dest) as AxelarChain,
             EvmWalletOperationType.Withdraw,
-            protocol,
+            poolInfo?.protocol,
           );
-          details = { fee: makeGmpFeeAmount(feeValue) };
-          break;
+          return { ...stepBase, fee: makeGmpFeeAmount(feeValue) };
         }
         case 'evmToPool': {
-          const poolInfo = PoolPlaces[edge.dest as PoolKey];
-          const protocol = poolInfo?.protocol;
+          const poolInfo = PoolPlaces[dest as PoolKey];
           const feeValue = await gasEstimator.getWalletEstimate(
-            chainOf(edge.dest) as AxelarChain,
+            chainOf(dest) as AxelarChain,
             EvmWalletOperationType.Supply,
-            protocol,
+            poolInfo?.protocol,
           );
-          details = { fee: makeGmpFeeAmount(feeValue) };
-          break;
+          return { ...stepBase, fee: makeGmpFeeAmount(feeValue) };
         }
         case 'evmToNoble': {
           const feeValue = await gasEstimator.getWalletEstimate(
-            chainOf(edge.src) as AxelarChain,
+            chainOf(src) as AxelarChain,
             EvmWalletOperationType.DepositForBurn,
           );
-          details = { fee: makeGmpFeeAmount(feeValue) };
-          break;
+          return { ...stepBase, fee: makeGmpFeeAmount(feeValue) };
         }
         case 'toUSDN': {
           // NOTE USDN transfer incurs a fee on output amount in basis points
           // HACK of subtract 1n in order to avoid rounding errors in Noble
           // See https://github.com/Agoric/agoric-private/issues/415
           const usdnOut =
-            (BigInt(flow) * (10000n - BigInt(edge.variableFeeBps))) / 10000n -
-            1n;
-          details = { detail: { usdnOut } };
-          break;
+            (BigInt(flow) * (10000n - BigInt(variableFeeBps))) / 10000n - 1n;
+          return { ...stepBase, detail: { usdnOut } };
         }
         default:
-          break;
+          return stepBase;
       }
-
-      return { src: edge.src, dest: edge.dest, amount, ...details };
     }),
   );
 
