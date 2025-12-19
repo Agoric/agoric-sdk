@@ -45,8 +45,8 @@ func (k msgServer) SetDenomMetaData(goCtx context.Context, msg *types.MsgSetDeno
 		Display:     msg.Metadata.Display,
 		Name:        msg.Metadata.Name,
 		Symbol:      msg.Metadata.Symbol,
-		URI:         msg.Metadata.Uri,
-		URIHash:     msg.Metadata.UriHash,
+		URI:         msg.Metadata.URI,
+		URIHash:     msg.Metadata.URIHash,
 	}
 
 	for i, unit := range msg.Metadata.DenomUnits {
