@@ -94,6 +94,7 @@
       "test/**/*.test.*"
     ],
     "require": [
+      "@agoric/internal/src/ava-force-exit.mjs",
       "@endo/init/debug.js"
     ],
     "timeout": "20m"

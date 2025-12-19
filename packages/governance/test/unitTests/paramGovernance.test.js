@@ -326,16 +326,6 @@ test('change multiple params used invitation', async t => {
     governorFacets.creatorFacet,
   ).voteOnParamChanges(installs.counter, 2n, paramChangesSpec);
 
-  outcomeOfUpdate
-    .then(o => t.fail(`update should break, ${o}`))
-    .catch(e =>
-      t.regex(
-        e.message,
-        /was not a live payment for brand/,
-        'Invitatation was burned and should not be usable',
-      ),
-    );
-
   const details = await detailsP;
   const positive = details.positions[0];
   await setUpVoterAndVote(
@@ -349,6 +339,10 @@ test('change multiple params used invitation', async t => {
 
   await E(timer).tick();
   await E(timer).tick();
+
+  await t.throwsAsync(outcomeOfUpdate, {
+    message: /is not live/,
+  });
 
   // no update2 because the value didn't change
 
