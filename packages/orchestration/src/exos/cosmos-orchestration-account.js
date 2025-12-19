@@ -12,7 +12,7 @@ import {
   CoinShape,
   CosmosActionOptionsShape,
   CosmosChainAddressShape,
-  CosmosQueryOptionsShape,
+  CosmosQuerierOptionsShape,
   DelegationShape,
   DenomAmountShape,
   IBCTransferOptionsShape,
@@ -187,22 +187,24 @@ const stakingAccountActionsMethods = {
 /** @see {StakingAccountQueries} */
 const stakingAccountQueriesMethods = {
   getDelegation: M.call(CosmosChainAddressShape)
-    .optional(CosmosQueryOptionsShape)
+    .optional(CosmosQuerierOptionsShape)
     .returns(VowShape),
-  getDelegations: M.call().optional(CosmosQueryOptionsShape).returns(VowShape),
+  getDelegations: M.call()
+    .optional(CosmosQuerierOptionsShape)
+    .returns(VowShape),
   getUnbondingDelegation: M.call(CosmosChainAddressShape)
-    .optional(CosmosQueryOptionsShape)
+    .optional(CosmosQuerierOptionsShape)
     .returns(VowShape),
   getUnbondingDelegations: M.call()
-    .optional(CosmosQueryOptionsShape)
+    .optional(CosmosQuerierOptionsShape)
     .returns(VowShape),
   getRedelegations: M.call()
-    .optional(CosmosQueryOptionsShape)
+    .optional(CosmosQuerierOptionsShape)
     .returns(VowShape),
   getReward: M.call(CosmosChainAddressShape)
-    .optional(CosmosQueryOptionsShape)
+    .optional(CosmosQuerierOptionsShape)
     .returns(VowShape),
-  getRewards: M.call().optional(CosmosQueryOptionsShape).returns(VowShape),
+  getRewards: M.call().optional(CosmosQuerierOptionsShape).returns(VowShape),
 };
 
 /** @see {NobleMethods} */

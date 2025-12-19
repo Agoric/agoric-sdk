@@ -9,7 +9,7 @@ import { M } from '@endo/patterns';
  *   DenomInfo, AmountArg, CosmosValidatorAddress, CosmosActionOptions,
  *   OrchestrationPowers, ForwardInfo, IBCMsgTransferOptions,
  *   AccountIdArg, BaseChainInfo, ChainInfo, Caip10Record,
- *   LegacyExecuteEncodedTxOptions, CosmosQueryOptions,
+ *   LegacyExecuteEncodedTxOptions, CosmosQuerierOptions,
  *   PacketOptions, OrchestrationOptions} from './types.js';
  * @import {Any as Proto3Msg} from '@agoric/cosmic-proto/google/protobuf/any.js';
  * @import {TxBody} from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
@@ -270,7 +270,7 @@ export const LegacyExecuteEncodedTxOptionsShape = M.and(
   CosmosTxOptionsShape,
 );
 
-/** @type {TypedPattern<NonNullable<CosmosQueryOptions['queryOpts']>>} */
+/** @type {TypedPattern<NonNullable<CosmosQuerierOptions['queryOpts']>>} */
 export const RequestQueryOptionsShape = M.splitRecord(
   {},
   {
@@ -279,8 +279,8 @@ export const RequestQueryOptionsShape = M.splitRecord(
   },
 );
 
-/** @type {TypedPattern<CosmosQueryOptions>} */
-export const CosmosQueryOptionsShape = M.and(
+/** @type {TypedPattern<CosmosQuerierOptions>} */
+export const CosmosQuerierOptionsShape = M.and(
   PacketOptionsShape,
   M.splitRecord(
     {},

@@ -86,7 +86,7 @@ export type CosmosActionOptions = PacketOptions & {
 export type LegacyExecuteEncodedTxOptions = CosmosActionOptions['txOpts'] &
   Omit<CosmosActionOptions, 'txOpts'>;
 
-export type CosmosQueryOptions = PacketOptions & {
+export type CosmosQuerierOptions = PacketOptions & {
   queryOpts?: Partial<Omit<RequestQuery, 'path' | 'data'>>;
 };
 
@@ -207,7 +207,7 @@ export interface StakingAccountQueries {
    * @returns all active delegations from the account to any validator (or [] if none)
    */
   getDelegations: (
-    opts?: CosmosQueryOptions,
+    opts?: CosmosQuerierOptions,
   ) => Promise<CosmosDelegationResponse[]>;
   /**
    * @returns the active delegation from the account to a specific validator. Return an
@@ -215,14 +215,14 @@ export interface StakingAccountQueries {
    */
   getDelegation: (
     validator: CosmosValidatorAddress,
-    opts?: CosmosQueryOptions,
+    opts?: CosmosQuerierOptions,
   ) => Promise<CosmosDelegationResponse>;
 
   /**
    * @returns the unbonding delegations from the account to any validator (or [] if none)
    */
   getUnbondingDelegations: (
-    opts?: CosmosQueryOptions,
+    opts?: CosmosQuerierOptions,
   ) => Promise<UnbondingDelegation[]>;
 
   /**
@@ -230,18 +230,18 @@ export interface StakingAccountQueries {
    */
   getUnbondingDelegation: (
     validator: CosmosValidatorAddress,
-    opts?: CosmosQueryOptions,
+    opts?: CosmosQuerierOptions,
   ) => Promise<UnbondingDelegation>;
 
   getRedelegations: (
-    opts?: CosmosQueryOptions,
+    opts?: CosmosQuerierOptions,
   ) => Promise<RedelegationResponse[]>;
 
   /**
    * Get the pending rewards for the account.
    * @returns the amounts of the account's rewards pending from all validators
    */
-  getRewards: (opts?: CosmosQueryOptions) => Promise<CosmosRewardsResponse>;
+  getRewards: (opts?: CosmosQuerierOptions) => Promise<CosmosRewardsResponse>;
 
   /**
    * Get the rewards pending with a specific validator.
@@ -250,7 +250,7 @@ export interface StakingAccountQueries {
    */
   getReward: (
     validator: CosmosValidatorAddress,
-    opts?: CosmosQueryOptions,
+    opts?: CosmosQuerierOptions,
   ) => Promise<DenomAmount[]>;
 }
 

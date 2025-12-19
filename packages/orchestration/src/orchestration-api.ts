@@ -37,7 +37,7 @@ export type PacketOptions = OrchestrationOptions & {
 /**
  * Options relevant to all queries (non-mutating).
  */
-export type QueryOptions = PacketOptions & {
+export type QuerierOptions = PacketOptions & {
   queryOpts?: Record<string, any>;
 };
 
@@ -266,14 +266,14 @@ export interface OrchestrationAccountCommon {
    *
    * @throws when prohibited (see `icqEnabled` in {@link CosmosChainInfo})
    */
-  getBalances: (opts?: QueryOptions) => Promise<DenomAmount[]>;
+  getBalances: (opts?: QuerierOptions) => Promise<DenomAmount[]>;
 
   /**
    * @returns the balance of a specific denom for the account.
    *
    * @throws when prohibited (see `icqEnabled` in {@link CosmosChainInfo})
    */
-  getBalance: (denom: DenomArg, opts?: QueryOptions) => Promise<DenomAmount>;
+  getBalance: (denom: DenomArg, opts?: QuerierOptions) => Promise<DenomAmount>;
 
   /**
    * Transfer amount to another account on the same chain. The promise settles when the transfer is complete.

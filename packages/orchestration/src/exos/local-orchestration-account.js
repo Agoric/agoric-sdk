@@ -707,7 +707,7 @@ export const prepareLocalOrchestrationAccountKit = (
           return asVow(async () => {
             await null;
             const { holder, invitationMakers: im } = this.facets;
-            // Cast to a type that has string index signature
+            // XXX cast to a type that has string index signature
             const invitationMakers =
               /** @type {HostInterface<InvitationMakers> & typeof im} */ (im);
 
