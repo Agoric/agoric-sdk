@@ -1,8 +1,11 @@
 package keeper_test
 
 import (
+	"context"
 	"testing"
 
+	"cosmossdk.io/core/address"
+	sdkmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
@@ -14,9 +17,9 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
-	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/keeper"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"
 )
@@ -26,11 +29,11 @@ const testAuthority = "cosmos10d07y265gmmuvt4z0w9aw880jnsr700cw3yg84"
 type MsgServerTestSuite struct {
 	suite.Suite
 
-	msgServer   types.MsgServer
-	keeper      keeper.Keeper
-	bankKeeper  *mockBankKeeper
-	ctx         sdk.Context
-	encCfg      moduletestutil.TestEncodingConfig
+	msgServer  types.MsgServer
+	keeper     keeper.Keeper
+	bankKeeper *mockBankKeeper
+	ctx        sdk.Context
+	encCfg     moduletestutil.TestEncodingConfig
 }
 
 type mockBankKeeper struct {
@@ -39,35 +42,35 @@ type mockBankKeeper struct {
 
 func (m *mockBankKeeper) AppendSendRestriction(restriction banktypes.SendRestrictionFn) {}
 
-func (m *mockBankKeeper) BurnCoins(ctx sdk.Context, moduleName string, amt sdk.Coins) error {
+func (m *mockBankKeeper) BurnCoins(ctx context.Context, moduleName string, amt sdk.Coins) error {
 	return nil
 }
 
-func (m *mockBankKeeper) GetAllBalances(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
+func (m *mockBankKeeper) GetAllBalances(ctx context.Context, addr sdk.AccAddress) sdk.Coins {
 	return sdk.NewCoins()
 }
 
-func (m *mockBankKeeper) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin {
-	return sdk.NewCoin(denom, sdk.ZeroInt())
+func (m *mockBankKeeper) GetBalance(ctx context.Context, addr sdk.AccAddress, denom string) sdk.Coin {
+	return sdk.NewCoin(denom, sdkmath.ZeroInt())
 }
 
-func (m *mockBankKeeper) MintCoins(ctx sdk.Context, moduleName string, amt sdk.Coins) error {
+func (m *mockBankKeeper) MintCoins(ctx context.Context, moduleName string, amt sdk.Coins) error {
 	return nil
 }
 
-func (m *mockBankKeeper) SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
+func (m *mockBankKeeper) SendCoinsFromAccountToModule(ctx context.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
 	return nil
 }
 
-func (m *mockBankKeeper) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
+func (m *mockBankKeeper) SendCoinsFromModuleToAccount(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
 	return nil
 }
 
-func (m *mockBankKeeper) SendCoinsFromModuleToModule(ctx sdk.Context, senderModule, recipientModule string, amt sdk.Coins) error {
+func (m *mockBankKeeper) SendCoinsFromModuleToModule(ctx context.Context, senderModule, recipientModule string, amt sdk.Coins) error {
 	return nil
 }
 
-func (m *mockBankKeeper) SetDenomMetaData(ctx sdk.Context, denomMetaData banktypes.Metadata) {
+func (m *mockBankKeeper) SetDenomMetaData(ctx context.Context, denomMetaData banktypes.Metadata) {
 	if m.denomMetadata == nil {
 		m.denomMetadata = make(map[string]banktypes.Metadata)
 	}
@@ -76,16 +79,26 @@ func (m *mockBankKeeper) SetDenomMetaData(ctx sdk.Context, denomMetaData banktyp
 
 type mockAccountKeeper struct{}
 
-func (m *mockAccountKeeper) GetModuleAccount(ctx sdk.Context, name string) sdk.ModuleAccountI {
+func (m *mockAccountKeeper) GetModuleAccount(ctx context.Context, name string) sdk.ModuleAccountI {
 	return nil
 }
 
-func (m *mockAccountKeeper) GetAccount(ctx sdk.Context, addr sdk.AccAddress) sdk.AccountI {
+func (m *mockAccountKeeper) GetAccount(ctx context.Context, addr sdk.AccAddress) sdk.AccountI {
 	return nil
 }
 
-func (m *mockAccountKeeper) AddressCodec() sdk.AccAddress {
-	return nil
+type mockAddressCodec struct{}
+
+func (m mockAddressCodec) StringToBytes(text string) ([]byte, error) {
+	return sdk.AccAddressFromBech32(text)
+}
+
+func (m mockAddressCodec) BytesToString(bz []byte) (string, error) {
+	return sdk.AccAddress(bz).String(), nil
+}
+
+func (m *mockAccountKeeper) AddressCodec() address.Codec {
+	return mockAddressCodec{}
 }
 
 func (suite *MsgServerTestSuite) SetupTest() {
@@ -111,14 +124,14 @@ func (suite *MsgServerTestSuite) SetupTest() {
 	paramsKeeper.Subspace(types.ModuleName)
 	paramsSubspace, _ := paramsKeeper.GetSubspace(types.ModuleName)
 
-	pushAction := func(ctx sdk.Context, action interface{}) error {
+	pushAction := func(ctx sdk.Context, action vm.Action) error {
 		return nil
 	}
 
 	suite.keeper = keeper.NewKeeper(
 		suite.encCfg.Codec,
 		runtime.NewKVStoreService(key),
-		runtime.NewKVStoreService(tkey),
+		runtime.NewTransientStoreService(tkey),
 		paramsSubspace,
 		mockAccountKeeper,
 		suite.bankKeeper,
@@ -156,8 +169,8 @@ func (suite *MsgServerTestSuite) TestSetDenomMetaData_Success() {
 			Display: "usdc",
 			Name:    "USDC",
 			Symbol:  "USDC",
-			Uri:     "https://www.centre.io/usdc",
-			UriHash: "abc123",
+			URI:     "https://www.centre.io/usdc",
+			URIHash: "abc123",
 		},
 	}
 
