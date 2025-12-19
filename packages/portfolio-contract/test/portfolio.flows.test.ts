@@ -868,7 +868,6 @@ test(
 test('open portfolio with Aave position', async t => {
   const amount = AmountMath.make(USDC, 2_000_000n);
   const feeAcct = AmountMath.make(BLD, 50n);
-  const detail = { evmGas: 50n };
   const feeCall = AmountMath.make(BLD, 100n);
   const { orch, tapPK, ctx, offer, storage, txResolver, cosmosId } = mocks(
     {},
@@ -880,7 +879,7 @@ test('open portfolio with Aave position', async t => {
       flow: [
         { src: '<Deposit>', dest: '@agoric', amount },
         { src: '@agoric', dest: '@noble', amount },
-        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct, detail },
+        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
         { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
       ],
     }),
@@ -1223,7 +1222,6 @@ test('claim rewards on Aave position', async t => {
 test('open portfolio with Beefy position', async t => {
   const amount = AmountMath.make(USDC, 2_000_000n);
   const feeAcct = AmountMath.make(BLD, 50n);
-  const detail = { evmGas: 50n };
   const feeCall = AmountMath.make(BLD, 100n);
   const { orch, tapPK, ctx, offer, storage, txResolver, cosmosId } = mocks(
     {},
@@ -1238,7 +1236,7 @@ test('open portfolio with Beefy position', async t => {
       flow: [
         { src: '<Deposit>', dest: '@agoric', amount },
         { src: '@agoric', dest: '@noble', amount },
-        { src: '@noble', dest: '@Avalanche', amount, fee: feeAcct, detail },
+        { src: '@noble', dest: '@Avalanche', amount, fee: feeAcct },
         {
           src: '@Avalanche',
           dest: 'Beefy_re7_Avalanche',
@@ -1507,7 +1505,6 @@ test('withdraw in coordination with planner', async t => {
     const amount = make(USDC, 50_000_000n);
     const seat = makeMockSeat({ Aave: amount }, {}, offer.log);
     const feeAcct = AmountMath.make(BLD, 50n);
-    const detail = { evmGas: 50n };
     const feeCall = AmountMath.make(BLD, 100n);
     const depositP = rebalance(
       orch,
@@ -1517,7 +1514,7 @@ test('withdraw in coordination with planner', async t => {
         flow: [
           { src: '<Deposit>', dest: '@agoric', amount },
           { src: '@agoric', dest: '@noble', amount },
-          { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct, detail },
+          { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
           { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
         ],
       },
@@ -2214,7 +2211,6 @@ test('makeErrorList collects any number of errors', t => {
 test('open portfolio with ERC4626 position', async t => {
   const amount = AmountMath.make(USDC, 1_000_000n);
   const feeAcct = AmountMath.make(BLD, 50n);
-  const detail = { evmGas: 50n };
   const feeCall = AmountMath.make(BLD, 100n);
   const { orch, tapPK, ctx, offer, storage, txResolver } = mocks(
     {},
@@ -2226,7 +2222,7 @@ test('open portfolio with ERC4626 position', async t => {
       flow: [
         { src: '<Deposit>', dest: '@agoric', amount },
         { src: '@agoric', dest: '@noble', amount },
-        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct, detail },
+        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
         {
           src: '@Arbitrum',
           dest: 'ERC4626_vaultU2_Ethereum',
