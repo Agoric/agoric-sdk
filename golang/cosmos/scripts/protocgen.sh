@@ -18,9 +18,7 @@ done
 cd ..
 
 # move proto files to the right places
-if [ -d "github.com/Agoric/agoric-sdk/golang/cosmos" ]; then
-  cp -r github.com/Agoric/agoric-sdk/golang/cosmos/* ./
-  rm -rf github.com
-fi
+cp -r github.com/Agoric/agoric-sdk/golang/cosmos/* ./
+rm -rf github.com
 
 go mod tidy
