@@ -188,7 +188,7 @@ test('handlePendingTx fails a pendingTx on it finds a failed tx on Axelarscan (l
     `[${txId}] handling ${type} tx`,
     `[${txId}] Watching for MulticallStatus and MulticallExecuted events for txId: ${txId} at contract: ${contractAddress}`,
     `[${txId}] ✗ No MulticallStatus or MulticallExecuted found for txId ${txId} within 0.01 minutes`,
-    `[${txId}] failed to execute on destination chain`,
+    `[${txId}] Error: Transaction execution failed`,
     `[${txId}] GMP tx resolved`,
   ]);
 });
@@ -235,6 +235,11 @@ test('handlePendingTx fails a pendingTx on it finds a failed tx on Axelarscan (l
                   ]),
                 },
               },
+              error: {
+                error: {
+                  message: 'Execution failed on destination chain',
+                },
+              },
               executed: {
                 transactionHash: '0xexecuted123',
                 receipt: {
@@ -270,7 +275,7 @@ test('handlePendingTx fails a pendingTx on it finds a failed tx on Axelarscan (l
     `[${txId}] No matching MulticallStatus or MulticallExecuted found`,
     `[${txId}] Lookback completed without finding transaction, waiting for live mode`,
     `[${txId}] ✗ No MulticallStatus or MulticallExecuted found for txId ${txId} within 0.01 minutes`,
-    `[${txId}] failed to execute on destination chain`,
+    `[${txId}] Error: Execution failed on destination chain`,
     `[${txId}] Live mode completed`,
     `[${txId}] GMP tx resolved`,
   ]);
