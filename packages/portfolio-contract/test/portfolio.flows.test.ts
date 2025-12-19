@@ -344,7 +344,7 @@ const mocks = (
   const {
     enqueue: eachMessage,
     iterable: storageUpdates,
-    cancel: cancelStorageupdates,
+    cancel: cancelStorageUpdates,
   } = makeAsyncQueue<StorageMessage>();
   const storage = makeFakeStorageKit(
     'published',
@@ -475,7 +475,7 @@ const mocks = (
       status: Exclude<TxStatus, 'pending'> = 'success',
       rejectionReason?: string,
     ) => {
-      void done.then(() => cancelStorageupdates());
+      void done.then(() => cancelStorageUpdates());
       for await (const message of storageUpdates) {
         if (!message) continue;
         const { method, args } = message;

@@ -293,7 +293,7 @@ export const setupOrchestrationTest = async ({
           return storage.getValues(path).map(defaultSerializer.parse);
         },
         storageUpdates: storageQueue.iterable,
-        cancelStorageupdates: storageQueue.cancel,
+        cancelStorageUpdates: storageQueue.cancel,
       },
     },
     mocks: {
