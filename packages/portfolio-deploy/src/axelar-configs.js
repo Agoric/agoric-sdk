@@ -214,7 +214,7 @@ const erc4626VaultAddresses = harden({
   vaultU2: {
     mainnet: {},
     testnet: {
-      Ethereum: '0xAA1dD21066383b1aC4652Ea41C7520Fb373840Bc',
+      Ethereum: '0xAA1dD21066383b1aC4652Ea41C7520Fb373840Bc', // https://sepolia.etherscan.io/address/0xAA1dD21066383b1aC4652Ea41C7520Fb373840Bc
     },
   },
 });
