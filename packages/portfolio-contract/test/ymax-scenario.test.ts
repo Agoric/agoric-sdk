@@ -56,13 +56,13 @@ const rebalanceScenarioMacro = test.macro({
 
     const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
 
-    const { storageUpdates, cancelStorageupdates } = storage;
+    const { storageUpdates, cancelStorageUpdates } = storage;
 
     const settleUntil = async (
       done: Promise<unknown>,
       status: Exclude<TxStatus, 'pending'> = 'success',
     ) => {
-      void done.then(() => cancelStorageupdates());
+      void done.then(() => cancelStorageUpdates());
       for await (const message of storageUpdates) {
         if (!message) continue;
         const { method, args } = message;
