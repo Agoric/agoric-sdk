@@ -146,6 +146,7 @@ SDK_BASE_TYPES = third_party/proto/cosmos/base/v1beta1
 SDK_QUERY_TYPES = third_party/proto/cosmos/base/query/v1beta1
 SDK_UPGRADE_TYPES = third_party/proto/cosmos/upgrade/v1beta1
 SDK_MSG_TYPES = third_party/proto/cosmos/msg/v1
+SDK_BANK_TYPES = third_party/proto/cosmos/bank/v1beta1
 
 proto-update-deps:
 	mkdir -p $(COSMOS_PROTO_TYPES)
@@ -185,7 +186,10 @@ proto-update-deps:
 	mkdir -p $(SDK_UPGRADE_TYPES) && \
 	curl -sSL $$url/upgrade/v1beta1/upgrade.proto > $(SDK_UPGRADE_TYPES)/upgrade.proto && \
 	mkdir -p $(SDK_MSG_TYPES) && \
-	curl -sSL $$url/msg/v1/msg.proto > $(SDK_MSG_TYPES)/msg.proto
+	curl -sSL $$url/msg/v1/msg.proto > $(SDK_MSG_TYPES)/msg.proto && \
+	mkdir -p $(SDK_BANK_TYPES) && \
+	curl -sSL $$url/bank/v1beta1/bank.proto > $(SDK_BANK_TYPES)/bank.proto
+
 
 	url="$(COSMOS_SDK_AMINO_URL)"; \
 	mkdir -p $(COSMOS_SDK_AMINO_TYPES) && \
