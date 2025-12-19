@@ -85,9 +85,6 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
     const { txId, destinationAddress, amount } = tx;
     const logPrefix = `[${txId}]`;
 
-    if (destinationAddress === undefined)
-      throw Fail`CctpTxdestinationAddress is missing; got ${destinationAddress}`;
-
     // Parse destinationAddress format: 'eip155:42161:0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092'
     const { namespace, reference, accountAddress } =
       parseAccountId(destinationAddress);
@@ -181,7 +178,6 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
     const logPrefix = `[${txId}]`;
 
     // Parse destinationAddress format: 'eip155:42161:0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092'
-    assert.typeof(destinationAddress, 'string');
     const { namespace, reference, accountAddress } =
       parseAccountId(destinationAddress);
     const caipId: CaipChainId = `${namespace}:${reference}`;
@@ -284,7 +280,8 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
     const logPrefix = `[${txId}]`;
 
     expectedAddr || Fail`${logPrefix} Missing expectedAddr`;
-    assert.typeof(destinationAddress, 'string');
+    destinationAddress ||
+      Fail`${logPrefix} Missing destinationAddress (factory)`;
 
     const {
       namespace,
