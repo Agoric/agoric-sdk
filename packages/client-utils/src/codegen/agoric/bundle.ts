@@ -17,9 +17,10 @@ import * as _226 from './swingset/query.rpc.Query.js';
 import * as _227 from './vbank/query.rpc.Query.js';
 import * as _228 from './vstorage/query.rpc.Query.js';
 import * as _229 from './swingset/msgs.rpc.msg.js';
-import * as _230 from './vibc/msgs.rpc.msg.js';
-import * as _289 from './rpc.query.js';
-import * as _290 from './rpc.tx.js';
+import * as _230 from './vbank/msgs.rpc.msg.js';
+import * as _231 from './vibc/msgs.rpc.msg.js';
+import * as _290 from './rpc.query.js';
+import * as _291 from './rpc.tx.js';
 export namespace agoric {
   export const swingset = {
     ..._0,
@@ -35,10 +36,11 @@ export namespace agoric {
     ..._6,
     ..._7,
     ..._227,
+    ..._230,
   };
   export const vibc = {
     ..._8,
-    ..._230,
+    ..._231,
   };
   export const vlocalchain = {
     ..._9,
@@ -53,7 +55,7 @@ export namespace agoric {
     ..._13,
   };
   export const ClientFactory = {
-    ..._289,
     ..._290,
+    ..._291,
   };
 }
