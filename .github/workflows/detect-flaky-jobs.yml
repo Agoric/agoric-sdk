@@ -48,8 +48,8 @@ jobs:
             const previousConclusion = previousAttempt.data.conclusion;
             console.log(`Previous attempt conclusion: ${previousConclusion}`);
 
-            // If previous attempt didn't fail, this isn't a flaky recovery
-            if (previousConclusion !== 'failure') {
+            // If previous attempt didn't fail or timeout, this isn't a flaky recovery
+            if (previousConclusion !== 'failure' && previousConclusion !== 'timed_out') {
               console.log('Previous attempt did not fail. Not a flaky job recovery.');
               core.setOutput('is_flaky', 'false');
               return;
@@ -67,7 +67,7 @@ jobs:
             });
 
             const failedJobs = previousJobs.data.jobs
-              .filter(job => job.conclusion === 'failure')
+              .filter(job => job.conclusion === 'failure' || job.conclusion === 'timed_out')
               .map(job => job.name);
 
             console.log(`Failed jobs in previous attempt: ${failedJobs.join(', ')}`);
