@@ -58,12 +58,12 @@ type CctpTx = PendingTx & { type: typeof TxType.CCTP_TO_EVM; amount: bigint };
 type GmpTx = PendingTx & { type: typeof TxType.GMP };
 type MakeAccountTx = PendingTx & { type: typeof TxType.MAKE_ACCOUNT };
 
-type LiveWatchOpts = { mode: 'live'; timeoutMs: number; signal: AbortSignal };
+type LiveWatchOpts = { mode: 'live'; timeoutMs: number; signal?: AbortSignal };
 type LookBackWatchOpts = {
   mode: 'lookback';
   publishTimeMs: number;
   timeoutMs: number;
-  signal: AbortSignal;
+  signal?: AbortSignal;
 };
 type WatchOpts = LiveWatchOpts | LookBackWatchOpts;
 
@@ -86,7 +86,7 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
     const { txId, destinationAddress, amount } = tx;
     const logPrefix = `[${txId}]`;
 
-    if (opts.signal.aborted) {
+    if (opts.signal?.aborted) {
       log(`${logPrefix} CCTP watch aborted before starting`);
       return;
     }
@@ -131,10 +131,10 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
         log(`${logPrefix} External abort signal received`);
         abortController.abort();
       };
-      opts.signal.addEventListener('abort', handleExternalAbort, {
+      opts.signal?.addEventListener('abort', handleExternalAbort, {
         once: true,
       });
-      if (opts.signal.aborted) {
+      if (opts.signal?.aborted) {
         handleExternalAbort();
       }
 
@@ -180,11 +180,11 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
           transferStatus = await liveResultP;
         }
       } finally {
-        opts.signal.removeEventListener('abort', handleExternalAbort);
+        opts.signal?.removeEventListener('abort', handleExternalAbort);
       }
     }
 
-    if (opts.signal.aborted) {
+    if (opts.signal?.aborted) {
       return;
     }
 
@@ -205,7 +205,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
     const { txId, destinationAddress } = tx;
     const logPrefix = `[${txId}]`;
 
-    if (opts.signal.aborted) {
+    if (opts.signal?.aborted) {
       log(`${logPrefix} GMP watch aborted before starting`);
       return;
     }
@@ -252,10 +252,10 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
         log(`${logPrefix} External abort signal received`);
         abortController.abort();
       };
-      opts.signal.addEventListener('abort', handleExternalAbort, {
+      opts.signal?.addEventListener('abort', handleExternalAbort, {
         once: true,
       });
-      if (opts.signal.aborted) {
+      if (opts.signal?.aborted) {
         handleExternalAbort();
       }
 
@@ -320,11 +320,11 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
           transferResult = await liveResultP;
         }
       } finally {
-        opts.signal.removeEventListener('abort', handleExternalAbort);
+        opts.signal?.removeEventListener('abort', handleExternalAbort);
       }
     }
 
-    if (opts.signal.aborted) {
+    if (opts.signal?.aborted) {
       return;
     }
 
@@ -348,7 +348,7 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
     const { txId, expectedAddr, destinationAddress } = tx;
     const logPrefix = `[${txId}]`;
 
-    if (opts.signal.aborted) {
+    if (opts.signal?.aborted) {
       log(`${logPrefix} MAKE_ACCOUNT watch aborted before starting`);
       return;
     }
@@ -391,10 +391,10 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
         log(`${logPrefix} External abort signal received`);
         abortController.abort();
       };
-      opts.signal.addEventListener('abort', handleExternalAbort, {
+      opts.signal?.addEventListener('abort', handleExternalAbort, {
         once: true,
       });
-      if (opts.signal.aborted) {
+      if (opts.signal?.aborted) {
         handleExternalAbort();
       }
 
@@ -435,11 +435,11 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
           walletCreated = await liveResultP;
         }
       } finally {
-        opts.signal.removeEventListener('abort', handleExternalAbort);
+        opts.signal?.removeEventListener('abort', handleExternalAbort);
       }
     }
 
-    if (opts.signal.aborted) {
+    if (opts.signal?.aborted) {
       return;
     }
 
@@ -469,6 +469,8 @@ export type HandlePendingTxOpts = {
     portfoliosPathPrefix: string;
     pendingTxPathPrefix: string;
   };
+  txTimestampMs?: number;
+  signal?: AbortSignal;
 } & EvmContext;
 
 export const TX_TIMEOUT_MS = 30 * 60 * 1000; // 30 min
@@ -478,16 +480,16 @@ export const handlePendingTx = async (
     log = () => {},
     error = () => {},
     timeoutMs = TX_TIMEOUT_MS,
+    txTimestampMs,
+    signal,
     ...evmCtx
   }: HandlePendingTxOpts,
-  txTimestampMs: number | undefined,
-  signal: AbortSignal,
 ) => {
   await null;
   const logPrefix = `[${tx.txId}]`;
   log(`${logPrefix} handling ${tx.type} tx`);
 
-  if (signal.aborted) {
+  if (signal?.aborted) {
     log(`${logPrefix} watch aborted before starting`);
     return;
   }
@@ -505,7 +507,11 @@ export const handlePendingTx = async (
         signal,
       });
     } else {
-      await monitor.watch(evmCtx, tx, log, { mode: 'live', timeoutMs, signal });
+      await monitor.watch(evmCtx, tx, log, {
+        mode: 'live',
+        timeoutMs,
+        signal,
+      });
     }
   } catch (err) {
     const mode = txTimestampMs ? 'with lookback' : 'in live mode';
