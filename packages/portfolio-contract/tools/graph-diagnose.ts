@@ -20,7 +20,7 @@ import {
 } from '../src/type-guards.js';
 import type { FlowGraph } from './network/buildGraph.js';
 import type { NetworkSpec } from './network/network-spec.js';
-import type { LpModel } from './plan-solve.js';
+import type { LpModel, SolvedEdgeFlow } from './plan-solve.js';
 
 const bfs = <T>(start: T, adj: Map<T, T[]>): Set<T> => {
   const queue = [start];
@@ -441,10 +441,7 @@ export const formatInfeasibleDiagnostics = (
  */
 export const validateSolvedFlows = (
   graph: FlowGraph,
-  flows: Array<{
-    edge: { src: string; dest: string; id: string };
-    flow: number;
-  }>,
+  flows: SolvedEdgeFlow[],
 ): {
   ok: boolean;
   errors: string[];

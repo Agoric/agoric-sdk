@@ -433,10 +433,12 @@ export const solveRebalance = async (
  */
 export const computePartialOrder = (
   flows: SolvedEdgeFlow[],
-  initialSupplies: Map<string, number>,
+  initialSupplies: Map<AssetPlaceRef, number>,
 ): { prioritized: SolvedEdgeFlow[]; order?: StepOrder } => {
   // Return immediately if there's nothing to do.
   if (flows.length === 0) return { prioritized: [] };
+
+  type FlowIndex = number;
 
   /** Available supply at each node */
   const available = new Map(initialSupplies);
@@ -447,24 +449,24 @@ export const computePartialOrder = (
   /** Which step indices have contributed to each node's balance */
   const inflows = new Map<
     AssetPlaceRef,
-    { flowIdx: number; amount: number }[]
+    { stepIdx: number; amount: number }[]
   >();
 
   const order: StepOrder = [];
   const prioritized: SolvedEdgeFlow[] = [];
-  const scheduled = new Set<number>();
+  const scheduled = new Set<FlowIndex>();
 
   // Maintain last chosen originating chain to group sequential operations.
   let lastChain: string | undefined;
 
   while (scheduled.size < flows.length) {
     /** Flows that can execute with current available supply */
-    const candidates: { idx: number; flow: SolvedEdgeFlow }[] = [];
-    for (let idx = 0; idx < flows.length; idx += 1) {
-      if (scheduled.has(idx)) continue;
-      const flow = flows[idx];
-      const avail = available.get(flow.edge.src) || 0;
-      if (avail >= flow.flow) candidates.push({ idx, flow });
+    const candidates: { flowIdx: FlowIndex; flow: SolvedEdgeFlow }[] = [];
+    for (let i = 0; i < flows.length; i += 1) {
+      if (scheduled.has(i)) continue;
+      const flow = flows[i];
+      const srcSupply = available.get(flow.edge.src) || 0;
+      if (srcSupply >= flow.flow) candidates.push({ flowIdx: i, flow });
     }
 
     if (!candidates.length) {
@@ -486,22 +488,23 @@ export const computePartialOrder = (
 
     // Pick deterministic smallest edge id within chosen group
     chosenGroup.sort((a, b) => naturalCompare(a.flow.edge.id, b.flow.edge.id));
-    const { idx: chosenIdx, flow: chosen } = chosenGroup[0];
+    const { flowIdx, flow: chosen } = chosenGroup[0];
+    const { src, dest } = chosen.edge;
 
     // Compute prerequisites: which inflows provided the supply we're consuming?
     const prereqs: number[] = [];
-    const srcInflows = inflows.get(chosen.edge.src) || [];
-    const remainingInitial = initialRemaining.get(chosen.edge.src) || 0;
+    const srcInflows = inflows.get(src) || [];
+    const remainingInitial = initialRemaining.get(src) || 0;
 
     // We need `chosen.flow` units. Remaining initial supply covers some; inflows cover the rest.
     let needed = chosen.flow;
     const usedFromInitial = Math.min(remainingInitial, needed);
     needed -= usedFromInitial;
-    initialRemaining.set(chosen.edge.src, remainingInitial - usedFromInitial);
+    initialRemaining.set(src, remainingInitial - usedFromInitial);
 
     for (const inflow of srcInflows) {
       if (needed <= 0) break;
-      prereqs.push(inflow.flowIdx);
+      prereqs.push(inflow.stepIdx);
       needed -= inflow.amount;
     }
 
@@ -510,16 +513,16 @@ export const computePartialOrder = (
     }
 
     // Update state
-    replaceOrInit(available, chosen.edge.src, (old = 0) => old - chosen.flow);
-    replaceOrInit(available, chosen.edge.dest, (old = 0) => old + chosen.flow);
+    replaceOrInit(available, src, (old = 0) => old - chosen.flow);
+    replaceOrInit(available, dest, (old = 0) => old + chosen.flow);
 
     // Record this as an inflow to dest (using prioritized index, not original idx)
-    const destInflows = provideLazyMap(inflows, chosen.edge.dest, () => []);
-    destInflows.push({ flowIdx: prioritized.length, amount: chosen.flow });
+    const destInflows = provideLazyMap(inflows, dest, () => []);
+    destInflows.push({ stepIdx: prioritized.length, amount: chosen.flow });
 
     prioritized.push(chosen);
-    scheduled.add(chosenIdx);
-    lastChain = chainOf(chosen.edge.src);
+    scheduled.add(flowIdx);
+    lastChain = chainOf(src);
   }
 
   // Don't bother returning a trivial `order` in which each step depends upon
@@ -553,7 +556,7 @@ export const rebalanceMinCostFlowSteps = async (
   const filteredFlows = flows.filter(f => f.flow > FLOW_EPS);
   const initialSupplies = new Map(
     typedEntries(graph.supplies).filter(([_place, amount]) => amount > 0),
-  );
+  ) as Map<AssetPlaceRef, number>;
 
   const { prioritized, order } = computePartialOrder(
     filteredFlows,

@@ -1,4 +1,5 @@
 import test from 'ava';
+import type { AssetPlaceRef } from '../src/type-guards-steps.js';
 import {
   computePartialOrder,
   type SolvedEdgeFlow,
@@ -27,19 +28,19 @@ const makeFlow = (
 });
 
 test('computePartialOrder - simple fan-out (step 0 -> steps 1,2)', t => {
-  // Initial: @Noble has 0
+  // Initial: @noble has 0
   // Steps:
-  //   0: @Agoric -> @Noble (100)
-  //   1: @Noble -> @Arbitrum (50)
-  //   2: @Noble -> @Optimism (50)
+  //   0: @agoric -> @noble (100)
+  //   1: @noble -> @Arbitrum (50)
+  //   2: @noble -> @Optimism (50)
   // Expected: steps 1 and 2 both depend on step 0
 
   const flows = [
-    makeFlow('@Agoric', '@Noble', 100),
-    makeFlow('@Noble', '@Arbitrum', 50),
-    makeFlow('@Noble', '@Optimism', 50),
+    makeFlow('@agoric', '@noble', 100),
+    makeFlow('@noble', '@Arbitrum', 50),
+    makeFlow('@noble', '@Optimism', 50),
   ];
-  const initialSupplies = new Map([['@Agoric', 100]]);
+  const initialSupplies = new Map<AssetPlaceRef, number>([['@agoric', 100]]);
 
   const { prioritized, order } = computePartialOrder(flows, initialSupplies);
 
@@ -50,34 +51,34 @@ test('computePartialOrder - simple fan-out (step 0 -> steps 1,2)', t => {
       [1, [0]], // step 1 depends on step 0
       [2, [0]], // step 2 depends on step 0
     ],
-    'both outflows from @Noble depend on the inflow',
+    'both outflows from @noble depend on the inflow',
   );
 });
 
 test('computePartialOrder - withdraw and rebalance (design doc example)', t => {
-  // Initial: @Noble has 50 USDC, @Agoric has 100 USDC
+  // Initial: @noble has 50 USDC, @agoric has 100 USDC
   // Input flows:
-  //   - @Noble -> <Cash> (50 USDC withdraw)
-  //   - @Agoric -> @Noble (100 USDC)
-  //   - @Noble -> @Arbitrum (100 USDC)
+  //   - @noble -> <Cash> (50 USDC withdraw)
+  //   - @agoric -> @noble (100 USDC)
+  //   - @noble -> @Arbitrum (100 USDC)
   //
-  // The key insight: the 50 USDC withdraw uses @Noble's initial supply,
+  // The key insight: the 50 USDC withdraw uses @noble's initial supply,
   // so it has NO dependencies and nothing depends on it.
-  // The 100 USDC to @Arbitrum needs the inflow from @Agoric.
+  // The 100 USDC to @Arbitrum needs the inflow from @agoric.
   //
   // After scheduling (sorted by edge ID: a < n-cash < n-out):
-  //   Step 0: @Agoric -> @Noble (100)   <- uses initial supply at @Agoric, no deps
-  //   Step 1: @Noble -> <Cash> (50)     <- uses initial supply at @Noble, no deps
-  //   Step 2: @Noble -> @Arbitrum (100) <- needs inflow from step 0
+  //   Step 0: @agoric -> @noble (100)   <- uses initial supply at @agoric, no deps
+  //   Step 1: @noble -> <Cash> (50)     <- uses initial supply at @noble, no deps
+  //   Step 2: @noble -> @Arbitrum (100) <- needs inflow from step 0
 
   const flows = [
-    makeFlow('@Noble', '<Cash>', 50, 'n-cash'),
-    makeFlow('@Agoric', '@Noble', 100, 'a-noble'),
-    makeFlow('@Noble', '@Arbitrum', 100, 'n-out'),
+    makeFlow('@noble', '<Cash>', 50, 'n-cash'),
+    makeFlow('@agoric', '@noble', 100, 'a-noble'),
+    makeFlow('@noble', '@Arbitrum', 100, 'n-out'),
   ];
-  const initialSupplies = new Map([
-    ['@Noble', 50],
-    ['@Agoric', 100],
+  const initialSupplies = new Map<AssetPlaceRef, number>([
+    ['@noble', 50],
+    ['@agoric', 100],
   ]);
 
   const { prioritized, order } = computePartialOrder(flows, initialSupplies);
@@ -85,13 +86,13 @@ test('computePartialOrder - withdraw and rebalance (design doc example)', t => {
   t.is(prioritized.length, 3);
 
   // Verify the prioritized order (sorted by edge ID: a-noble < n-cash < n-out)
-  t.is(prioritized[0].edge.id, 'a-noble', 'step 0 is @Agoric -> @Noble');
-  t.is(prioritized[1].edge.id, 'n-cash', 'step 1 is @Noble -> <Cash>');
-  t.is(prioritized[2].edge.id, 'n-out', 'step 2 is @Noble -> @Arbitrum');
+  t.is(prioritized[0].edge.id, 'a-noble', 'step 0 is @agoric -> @noble');
+  t.is(prioritized[1].edge.id, 'n-cash', 'step 1 is @noble -> <Cash>');
+  t.is(prioritized[2].edge.id, 'n-out', 'step 2 is @noble -> @Arbitrum');
 
-  // Step 0 has no deps (uses initial supply at @Agoric)
-  // Step 1 has no deps (uses initial supply at @Noble - the withdraw is independent!)
-  // Step 2 needs 100 at @Noble: initial 50 was consumed by step 1, so needs all from step 0
+  // Step 0 has no deps (uses initial supply at @agoric)
+  // Step 1 has no deps (uses initial supply at @noble - the withdraw is independent!)
+  // Step 2 needs 100 at @noble: initial 50 was consumed by step 1, so needs all from step 0
   t.deepEqual(
     order,
     [[2, [0]]],
@@ -100,20 +101,20 @@ test('computePartialOrder - withdraw and rebalance (design doc example)', t => {
 });
 
 test('computePartialOrder - multiple inflows to same node', t => {
-  // Initial: @Noble has 0
+  // Initial: @noble has 0
   // Steps:
-  //   0: @Agoric -> @Noble (50)
-  //   1: @Optimism -> @Noble (50)
-  //   2: @Noble -> @Arbitrum (100)  <- needs both inflows
+  //   0: @agoric -> @noble (50)
+  //   1: @Optimism -> @noble (50)
+  //   2: @noble -> @Arbitrum (100)  <- needs both inflows
   // Expected: step 2 depends on both steps 0 and 1
 
   const flows = [
-    makeFlow('@Agoric', '@Noble', 50, 'agoric->noble'),
-    makeFlow('@Optimism', '@Noble', 50, 'opt->noble'),
-    makeFlow('@Noble', '@Arbitrum', 100, 'noble->arb'),
+    makeFlow('@agoric', '@noble', 50, 'agoric->noble'),
+    makeFlow('@Optimism', '@noble', 50, 'opt->noble'),
+    makeFlow('@noble', '@Arbitrum', 100, 'noble->arb'),
   ];
-  const initialSupplies = new Map([
-    ['@Agoric', 50],
+  const initialSupplies = new Map<AssetPlaceRef, number>([
+    ['@agoric', 50],
     ['@Optimism', 50],
   ]);
 
@@ -128,16 +129,16 @@ test('computePartialOrder - multiple inflows to same node', t => {
 
 test('computePartialOrder - independent chains', t => {
   // Two completely independent transfer chains
-  // Chain A: @Agoric -> @Noble (100)
+  // Chain A: @agoric -> @noble (100)
   // Chain B: @Optimism -> @Arbitrum (50)
   // Expected: no dependencies at all
 
   const flows = [
-    makeFlow('@Agoric', '@Noble', 100),
+    makeFlow('@agoric', '@noble', 100),
     makeFlow('@Optimism', '@Arbitrum', 50),
   ];
-  const initialSupplies = new Map([
-    ['@Agoric', 100],
+  const initialSupplies = new Map<AssetPlaceRef, number>([
+    ['@agoric', 100],
     ['@Optimism', 50],
   ]);
 
@@ -167,7 +168,10 @@ test('computePartialOrder - diamond pattern', t => {
     makeFlow('@B', '@D', 50, 'b->d'),
     makeFlow('@C', '@D', 50, 'c->d'),
   ];
-  const initialSupplies = new Map([['@A', 100]]);
+  const initialSupplies = new Map([['@A', 100]]) as unknown as Map<
+    AssetPlaceRef,
+    number
+  >;
 
   const { prioritized, order } = computePartialOrder(flows, initialSupplies);
 
@@ -199,7 +203,10 @@ test('computePartialOrder - sequential chain', t => {
     makeFlow('@B', '@C', 100, 'b->c'),
     makeFlow('@C', '@D', 100, 'c->d'),
   ];
-  const initialSupplies = new Map([['@A', 100]]);
+  const initialSupplies = new Map([['@A', 100]]) as unknown as Map<
+    AssetPlaceRef,
+    number
+  >;
 
   const result = computePartialOrder(flows, initialSupplies);
 
@@ -212,20 +219,20 @@ test('computePartialOrder - sequential chain', t => {
 });
 
 test('computePartialOrder - partial initial supply', t => {
-  // @Noble has 30, needs to receive 70 more to send 100
+  // @noble has 30, needs to receive 70 more to send 100
   // Steps:
-  //   0: @Agoric -> @Noble (70)
-  //   1: @Noble -> @Arbitrum (100)
-  // Step 1 depends on step 0 (even though @Noble has some supply), but since
+  //   0: @agoric -> @noble (70)
+  //   1: @noble -> @Arbitrum (100)
+  // Step 1 depends on step 0 (even though @noble has some supply), but since
   // this is equivalent to full sequential order, the order property is omitted.
 
   const flows = [
-    makeFlow('@Agoric', '@Noble', 70),
-    makeFlow('@Noble', '@Arbitrum', 100),
+    makeFlow('@agoric', '@noble', 70),
+    makeFlow('@noble', '@Arbitrum', 100),
   ];
-  const initialSupplies = new Map([
-    ['@Agoric', 70],
-    ['@Noble', 30],
+  const initialSupplies = new Map<AssetPlaceRef, number>([
+    ['@agoric', 70],
+    ['@noble', 30],
   ]);
 
   const result = computePartialOrder(flows, initialSupplies);
