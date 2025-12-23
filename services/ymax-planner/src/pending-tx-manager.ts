@@ -459,20 +459,16 @@ export const handlePendingTx = async (
     MONITORS.get(tx.type) ||
     Fail`${logPrefix} No monitor registered for tx type: ${tx.type}`;
 
+  const watchOpts: Omit<WatchOpts, 'mode'> = { timeoutMs, signal };
   try {
     if (txTimestampMs) {
       await monitor.watch(evmCtx, tx, log, {
         mode: 'lookback',
         publishTimeMs: txTimestampMs,
-        timeoutMs,
-        signal,
+        ...watchOpts,
       });
     } else {
-      await monitor.watch(evmCtx, tx, log, {
-        mode: 'live',
-        timeoutMs,
-        signal,
-      });
+      await monitor.watch(evmCtx, tx, log, { mode: 'live', ...watchOpts });
     }
   } catch (err) {
     const mode = txTimestampMs ? 'with lookback' : 'in live mode';
