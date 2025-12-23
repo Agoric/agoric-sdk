@@ -41,6 +41,14 @@ type AxelarScanOptions = {
   axelarApiUrl: string;
 };
 
+/** Watches for GMP transaction completion in live mode by listening to MulticallStatus
+ * and MulticallExecuted events. On timeout, queries Axelarscan to detect failures.
+ *
+ * NOTE: This watcher has a different API than other watchers (watchCctpTransfer,
+ * watchSmartWalletTx) because it tracks both success AND failure(via AxelarScan) states.
+ * Other watchers only detect success events. The Axelarscan dependency has been unreliable
+ * and this watcher will be refactored/removed in the future to align with other watchers.
+ */
 export const watchGmp = ({
   provider,
   contractAddress,
