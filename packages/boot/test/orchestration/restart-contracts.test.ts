@@ -2,7 +2,11 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
-import { BridgeId } from '@agoric/internal';
+import { BridgeId, typedEntries } from '@agoric/internal';
+import {
+  type TestStep,
+  testInterruptedSteps,
+} from '@agoric/internal/src/testing-utils.js';
 import {
   withChainCapabilities,
   type CosmosValidatorAddress,
@@ -16,12 +20,59 @@ import {
 } from '../bootstrapTests/walletFactory.js';
 import { minimalChainInfos } from '../tools/chainInfo.js';
 
-const test: TestFn<WalletFactoryTestContext> = anyTest;
+const test: TestFn<
+  WalletFactoryTestContext & {
+    assertInboundQueueLength: (
+      phase: 'before' | 'after',
+      label: string,
+      stepName: string,
+      expected?: number,
+    ) => unknown;
+    lastChannelNum: number;
+  }
+> = anyTest;
+
+const wrapSteps = <S extends TestStep[]>(
+  assertInvariants: (
+    phase: 'before' | 'after',
+    label: string,
+    stepName: string,
+  ) => unknown,
+  steps: S,
+): S =>
+  steps.map(
+    ([stepName, stepFn]) =>
+      [
+        stepName,
+        async (opts, label) => {
+          try {
+            await assertInvariants('before', label, stepName);
+            const nextOpts = await stepFn(opts, label);
+            return nextOpts;
+          } finally {
+            await assertInvariants('after', label, stepName);
+          }
+        },
+      ] as const,
+  ) as S;
+
 test.before(async t => {
-  t.context = await makeWalletFactoryContext(
+  const context = await makeWalletFactoryContext(
     t,
     '@agoric/vm-config/decentral-itest-orchestration-config.json',
   );
+
+  const { getInboundQueueLength } = context.bridgeUtils;
+  const assertInboundQueueLength = (phase, label, stepName, expected = 0) => {
+    const inboundQueueLength = getInboundQueueLength();
+    t.is(
+      inboundQueueLength,
+      expected,
+      `${label} ${phase} ${stepName} expected inboundQueueLength=${expected}; got ${inboundQueueLength}`,
+    );
+  };
+
+  t.context = { ...context, assertInboundQueueLength, lastChannelNum: 0 };
 });
 test.after.always(t => t.context.shutdown?.());
 
@@ -30,7 +81,8 @@ test.serial('send-anywhere', async t => {
     walletFactoryDriver,
     buildProposal,
     evalProposal,
-    bridgeUtils: { runInbound, getInboundQueueLength, flushInboundQueue },
+    bridgeUtils: { runInbound, flushInboundQueue },
+    assertInboundQueueLength,
   } = t.context;
 
   const { IST } = t.context.agoricNamesRemotes.brand;
@@ -55,84 +107,115 @@ test.serial('send-anywhere', async t => {
     ]),
   );
 
-  t.log('making offer');
-  const wallet = await walletFactoryDriver.provideSmartWallet('agoric1test');
-  // no money in wallet to actually send
-  const zero = { brand: IST, value: 0n };
-  // send because it won't resolve
-  await wallet.sendOffer({
-    id: 'send-somewhere',
-    invitationSpec: {
-      source: 'agoricContract',
-      instancePath: ['sendAnywhere'],
-      callPipe: [['makeSendInvitation']],
-    },
-    proposal: {
-      // @ts-expect-error XXX BoardRemote
-      give: { Send: zero },
-    },
-    offerArgs: {
-      // meaningless address
-      destAddr: 'cosmos1qy352eufjjmc9c',
-      chainName: 'cosmoshub',
-    },
+  t.context.lastChannelNum += 1;
+  await flushInboundQueue(); // establish baseline
+
+  let lastId = 0;
+  let lastSequence = 0;
+  const allSteps = wrapSteps(
+    assertInboundQueueLength,
+    typedEntries({
+      makeWallet: async (_opts, label) => {
+        lastId += 1;
+        const wallet = await walletFactoryDriver.provideSmartWallet(
+          `agoric1test${lastId}`,
+        );
+        // no money in wallet to actually send
+        const zero = { brand: IST, value: 0n };
+        // send because it won't resolve
+        t.log(`${label} making offer`);
+        await wallet.sendOffer({
+          id: 'send-somewhere',
+          invitationSpec: {
+            source: 'agoricContract',
+            instancePath: ['sendAnywhere'],
+            callPipe: [['makeSendInvitation']],
+          },
+          proposal: {
+            // @ts-expect-error XXX BoardRemote
+            give: { Send: zero },
+          },
+          offerArgs: {
+            // meaningless address
+            destAddr: 'cosmos1qy352eufjjmc9c',
+            chainName: 'cosmoshub',
+          },
+        });
+
+        t.like(
+          wallet.getCurrentWalletRecord(),
+          { liveOffers: [['send-somewhere']] },
+          `${label} live offer until we simulate the transfer ack`,
+        );
+        lastSequence += 1;
+        return { wallet, sequence: String(lastSequence) };
+      },
+      checkEmptyBalance: async (opts, label) => {
+        t.like(
+          opts.wallet.getLatestUpdateRecord(),
+          {
+            updated: 'balance',
+            currentAmount: { value: [] },
+          },
+          `${label} no offerStatus updates`,
+        );
+        return opts;
+      },
+      inboundAck: async (opts, _label) => {
+        // simulate ibc/MsgTransfer ack from remote chain, enabling `.transfer()` promise
+        // to resolve
+        await runInbound(
+          BridgeId.VTRANSFER,
+          buildVTransferEvent({
+            sender: makeTestAddress(),
+            target: makeTestAddress(),
+            sourceChannel: 'channel-5',
+            sequence: opts.sequence,
+          }),
+        );
+        return opts;
+      },
+      checkTransferSettled: async (opts, label) => {
+        const conclusion = opts.wallet.getLatestUpdateRecord();
+        t.like(conclusion, {
+          updated: 'offerStatus',
+          status: {
+            id: 'send-somewhere',
+            numWantsSatisfied: 1,
+            error: undefined,
+          },
+        });
+        t.true('result' in conclusion.status, `${label} transfer vow settled`);
+
+        return opts;
+      },
+      finalFlush: async (opts, label) => {
+        await flushInboundQueue();
+        t.like(
+          opts.wallet.getLatestUpdateRecord(),
+          {
+            status: {
+              error: undefined,
+              result: undefined,
+            },
+          },
+          `${label} no further updates after flush`,
+        );
+        return opts;
+      },
+    } as const),
+  ) satisfies TestStep[];
+
+  await testInterruptedSteps(t, allSteps, async () => {
+    t.log('restart send-anywhere');
+    await evalProposal(
+      buildProposal(
+        '@agoric/builders/scripts/testing/restart-send-anywhere.js',
+      ),
+    );
   });
 
-  t.like(
-    wallet.getCurrentWalletRecord(),
-    { liveOffers: [['send-somewhere']] },
-    'live offer until we simulate the transfer ack',
-  );
-
-  t.log('restart send-anywhere');
-  await evalProposal(
-    buildProposal('@agoric/builders/scripts/testing/restart-send-anywhere.js'),
-  );
-
-  t.like(
-    wallet.getLatestUpdateRecord(),
-    {
-      updated: 'balance',
-      currentAmount: { value: [] },
-    },
-    'no offerStatus updates',
-  );
-
-  // simulate ibc/MsgTransfer ack from remote chain, enabling `.transfer()` promise
-  // to resolve
-  await runInbound(
-    BridgeId.VTRANSFER,
-    buildVTransferEvent({
-      sender: makeTestAddress(),
-      target: makeTestAddress(),
-      sourceChannel: 'channel-5',
-      sequence: '1',
-    }),
-  );
-
-  const conclusion = wallet.getLatestUpdateRecord();
-  t.like(conclusion, {
-    updated: 'offerStatus',
-    status: {
-      id: 'send-somewhere',
-      numWantsSatisfied: 1,
-      error: undefined,
-    },
-  });
-  if (conclusion.updated !== 'offerStatus') {
-    throw new Error('expected offerStatus');
-  }
-  t.true('result' in conclusion.status, 'transfer vow settled');
-
-  t.is(getInboundQueueLength(), 1);
-  t.is(await flushInboundQueue(1), 1);
-  t.like(wallet.getLatestUpdateRecord(), {
-    status: {
-      error: undefined,
-      result: undefined,
-    },
-  });
-  t.is(getInboundQueueLength(), 0);
+  assertInboundQueueLength('after', 'all', 'finalize');
 });
 
 const validatorAddress: CosmosValidatorAddress = {
@@ -154,7 +237,7 @@ test.serial('stakeAtom', async t => {
     buildProposal,
     evalProposal,
     agoricNamesRemotes,
-    bridgeUtils: { getInboundQueueLength, flushInboundQueue },
+    bridgeUtils: { flushInboundQueue },
     readLatest,
   } = t.context;
 
@@ -165,70 +248,85 @@ test.serial('stakeAtom', async t => {
     ]),
   );
 
-  const wd = await t.context.walletFactoryDriver.provideSmartWallet(
-    'agoric1testStakAtom',
+  await flushInboundQueue(); // establish baseline
+
+  t.context.assertInboundQueueLength('before', 'all', 'begun');
+
+  let lastId = 0;
+  const allSteps = wrapSteps(
+    t.context.assertInboundQueueLength,
+    typedEntries({
+      makeOffer: async (_opts, _label) => {
+        lastId += 1;
+        const wallet = await t.context.walletFactoryDriver.provideSmartWallet(
+          `agoric1testStakeAtom${lastId}`,
+        );
+
+        // The account changes depending on whether `send-anywhere` test runs previously.
+        const testAccount = `cosmos1test${t.context.lastChannelNum || ''}`;
+        const accountPath = `published.stakeAtom.accounts.${testAccount}`;
+        t.throws(() => readLatest(accountPath));
+
+        t.context.lastChannelNum += 1;
+        const channelNum = t.context.lastChannelNum;
+        await wallet.sendOffer({
+          id: 'request-account',
+          invitationSpec: {
+            source: 'agoricContract',
+            instancePath: ['stakeAtom'],
+            callPipe: [['makeAccountInvitationMaker']],
+          },
+          proposal: {},
+        });
+
+        // no result yet because the IBC incoming messages haven't arrived
+        // and won't until we flush.
+        await flushInboundQueue();
+        const latest = readLatest(accountPath);
+        t.deepEqual(latest, {
+          localAddress: `/ibc-port/icacontroller-${lastId}/ordered/{"version":"ics27-1","controllerConnectionId":"connection-8","hostConnectionId":"connection-649","address":"${testAccount}","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-${channelNum}`,
+          remoteAddress: `/ibc-hop/connection-8/ibc-port/icahost/ordered/{"version":"ics27-1","controllerConnectionId":"connection-8","hostConnectionId":"connection-649","address":"${testAccount}","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-${channelNum}`,
+        });
+
+        return { wallet, channelNum };
+      },
+      makeOffer2: async (opts, _label) => {
+        const { ATOM } = agoricNamesRemotes.brand;
+        assert(ATOM);
+
+        await opts.wallet.sendOffer({
+          id: 'request-delegate',
+          invitationSpec: {
+            source: 'continuing',
+            previousOffer: 'request-account',
+            invitationMakerName: 'Delegate',
+            invitationArgs: [
+              validatorAddress,
+              { denom: ATOM_DENOM, value: 10n },
+            ],
+          },
+          proposal: {},
+        });
+        // no result yet because the IBC incoming messages haven't arrived
+        // and won't until we flush.
+        t.false(hasResult(opts.wallet.getLatestUpdateRecord()));
+        await flushInboundQueue();
+        // now the offer has resolved
+        t.true(hasResult(opts.wallet.getLatestUpdateRecord()));
+        return opts;
+      },
+    }),
   );
 
-  await wd.sendOffer({
-    id: 'request-account',
-    invitationSpec: {
-      source: 'agoricContract',
-      instancePath: ['stakeAtom'],
-      callPipe: [['makeAccountInvitationMaker']],
-    },
-    proposal: {},
+  await testInterruptedSteps(t, allSteps, async () => {
+    t.log('restart stakeAtom');
+    await evalProposal(
+      buildProposal('@agoric/builders/scripts/testing/restart-stakeAtom.js'),
+    );
+    await flushInboundQueue();
   });
 
-  // The path changes depending on whether `send-anywhere` test runs previously.
-  const accountPath = 'published.stakeAtom.accounts.cosmos1test';
-  const accountPath2 = 'published.stakeAtom.accounts.cosmos1test1';
-
-  t.throws(() => readLatest(accountPath));
-  t.throws(() => readLatest(accountPath2));
-
-  t.is(getInboundQueueLength(), 1);
-  await flushInboundQueue(1);
-
-  try {
-    const latest = readLatest(accountPath);
-    t.deepEqual(latest, {
-      localAddress:
-        '/ibc-port/icacontroller-1/ordered/{"version":"ics27-1","controllerConnectionId":"connection-8","hostConnectionId":"connection-649","address":"cosmos1test","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-1',
-      remoteAddress:
-        '/ibc-hop/connection-8/ibc-port/icahost/ordered/{"version":"ics27-1","controllerConnectionId":"connection-8","hostConnectionId":"connection-649","address":"cosmos1test","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-1',
-    });
-  } catch (e) {
-    t.log('first path failed', e);
-    const latest2 = readLatest(accountPath2);
-    t.deepEqual(latest2, {
-      localAddress:
-        '/ibc-port/icacontroller-2/ordered/{"version":"ics27-1","controllerConnectionId":"connection-8","hostConnectionId":"connection-649","address":"cosmos1test1","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-2',
-      remoteAddress:
-        '/ibc-hop/connection-8/ibc-port/icahost/ordered/{"version":"ics27-1","controllerConnectionId":"connection-8","hostConnectionId":"connection-649","address":"cosmos1test1","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-2',
-    });
-  }
-
-  const { ATOM } = agoricNamesRemotes.brand;
-  assert(ATOM);
-
-  await wd.sendOffer({
-    id: 'request-delegate',
-    invitationSpec: {
-      source: 'continuing',
-      previousOffer: 'request-account',
-      invitationMakerName: 'Delegate',
-      invitationArgs: [validatorAddress, { denom: ATOM_DENOM, value: 10n }],
-    },
-    proposal: {},
-  });
-  // no result yet because the IBC incoming messages haven't arrived
-  // and won't until we flush.
-  t.false(hasResult(wd.getLatestUpdateRecord()));
-
-  t.log('restart stakeAtom');
-  await evalProposal(
-    buildProposal('@agoric/builders/scripts/testing/restart-stakeAtom.js'),
-  );
+  t.context.assertInboundQueueLength('after', 'all', 'finished');
 });
 
 // Tests restart of an orchestration() flow while an IBC response is pending.
