@@ -458,7 +458,7 @@ export const computePartialOrder = (
   // Maintain last chosen originating chain to group sequential operations.
   let lastChain: string | undefined;
 
-  while (scheduled.size < flows.length) {
+  for (let stepIdx = 0; stepIdx < flows.length; stepIdx += 1) {
     /** Flows that can execute with current available supply */
     const candidates: { flowIdx: FlowIndex; flow: SolvedEdgeFlow }[] = [];
     for (let i = 0; i < flows.length; i += 1) {
@@ -508,7 +508,6 @@ export const computePartialOrder = (
     // Record use of `chosen` in outer-scope variables.
     replaceOrInit(available, src, (old = 0) => old - chosen.flow);
     replaceOrInit(available, dest, (old = 0) => old + chosen.flow);
-    const stepIdx = scheduled.size;
     scheduled.add(flowIdx);
     destInflows.push({ stepIdx, unclaimed: chosen.flow });
     if (prereqs.length > 0) order.push([stepIdx, prereqs]);
