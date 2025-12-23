@@ -92,7 +92,7 @@ sequenceDiagram
     note over EMS: NOT SHOWN:<br/>early validation
     note right of EMS: using walletFactory invokeEntry
     EMS -->> EMH: signed<br/>OpenPortfolio(intent543, ...)
-    EMH -->> EMH: check sig
+    EMH -->> EMH: check sig:<br/>pubkey = ecRecover(...)<br/>addr = hash(pubkey) 
     EMH -->> YC: OpenPortfolio({60% A, 40% B},<br/>deadline)
     YC -->> EMH: portfolio123
     note over EMH: NOT SHOWN:<br/>vstorage, YDS details
