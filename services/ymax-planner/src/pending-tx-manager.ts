@@ -124,63 +124,50 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
     } else {
       // Lookback mode with concurrent live watching
       // Start live mode now in case the txId has not yet appeared
-      const abortController = ctx.makeAbortController();
+      const abortController = ctx.makeAbortController(
+        undefined,
+        opts.signal ? [opts.signal] : undefined,
+      );
 
-      // If external signal is aborted, abort internal controller
-      const handleExternalAbort = () => {
-        log(`${logPrefix} External abort signal received`);
-        abortController.abort();
-      };
-      opts.signal?.addEventListener('abort', handleExternalAbort, {
-        once: true,
+      const liveResultP = watchCctpTransfer({
+        ...watchArgs,
+        timeoutMs: opts.timeoutMs,
+        signal: abortController.signal,
+        kvStore: ctx.kvStore,
+        txId,
       });
-      if (opts.signal?.aborted) {
-        handleExternalAbort();
-      }
-
-      try {
-        const liveResultP = watchCctpTransfer({
-          ...watchArgs,
-          timeoutMs: opts.timeoutMs,
-          signal: abortController.signal,
-          kvStore: ctx.kvStore,
-          txId,
-        });
-        void liveResultP.then(found => {
-          if (found) {
-            log(`${logPrefix} Live mode completed`);
-            abortController.abort();
-          }
-        });
-
-        await null;
-        // Wait for at least one block to ensure overlap between lookback and live mode
-        const currentBlock = await provider.getBlockNumber();
-        await waitForBlock(provider, currentBlock + 1);
-
-        // Scan historical blocks
-        transferStatus = await lookBackCctp({
-          ...watchArgs,
-          publishTimeMs: opts.publishTimeMs,
-          chainId: caipId,
-          signal: abortController.signal,
-          kvStore: ctx.kvStore,
-          txId,
-        });
-
-        if (transferStatus) {
-          // Found in lookback, cancel live mode
-          log(`${logPrefix} Lookback found transaction`);
+      void liveResultP.then(found => {
+        if (found) {
+          log(`${logPrefix} Live mode completed`);
           abortController.abort();
-        } else {
-          // Not found in lookback, rely on live mode
-          log(
-            `${logPrefix} Lookback completed without finding transaction, waiting for live mode`,
-          );
-          transferStatus = await liveResultP;
         }
-      } finally {
-        opts.signal?.removeEventListener('abort', handleExternalAbort);
+      });
+
+      await null;
+      // Wait for at least one block to ensure overlap between lookback and live mode
+      const currentBlock = await provider.getBlockNumber();
+      await waitForBlock(provider, currentBlock + 1);
+
+      // Scan historical blocks
+      transferStatus = await lookBackCctp({
+        ...watchArgs,
+        publishTimeMs: opts.publishTimeMs,
+        chainId: caipId,
+        signal: abortController.signal,
+        kvStore: ctx.kvStore,
+        txId,
+      });
+
+      if (transferStatus) {
+        // Found in lookback, cancel live mode
+        log(`${logPrefix} Lookback found transaction`);
+        abortController.abort();
+      } else {
+        // Not found in lookback, rely on live mode
+        log(
+          `${logPrefix} Lookback completed without finding transaction, waiting for live mode`,
+        );
+        transferStatus = await liveResultP;
       }
     }
 
@@ -245,82 +232,69 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
       // Strategy: Run both live and lookback concurrently. Whichever finds the
       // transaction first aborts the other. This ensures we don't miss the
       // transaction (lookback covers history, live covers new events).
-      const abortController = ctx.makeAbortController();
+      const abortController = ctx.makeAbortController(
+        undefined,
+        opts.signal ? [opts.signal] : undefined,
+      );
 
-      // If external signal is aborted, abort internal controller
-      const handleExternalAbort = () => {
-        log(`${logPrefix} External abort signal received`);
-        abortController.abort();
-      };
-      opts.signal?.addEventListener('abort', handleExternalAbort, {
-        once: true,
+      const liveResultP = watchGmp({
+        ...watchArgs,
+        timeoutMs: opts.timeoutMs,
+        signal: abortController.signal,
+        kvStore: ctx.kvStore,
+        makeAbortController: ctx.makeAbortController,
+        axelarApiUrl: ctx.axelarApiUrl,
+        fetch: ctx.fetch,
       });
-      if (opts.signal?.aborted) {
-        handleExternalAbort();
-      }
 
-      try {
-        const liveResultP = watchGmp({
-          ...watchArgs,
-          timeoutMs: opts.timeoutMs,
-          signal: abortController.signal,
-          kvStore: ctx.kvStore,
-          makeAbortController: ctx.makeAbortController,
-          axelarApiUrl: ctx.axelarApiUrl,
-          fetch: ctx.fetch,
+      // Attach handler to abort lookback if live mode completes first with
+      // a definitive result. This handler does NOT resolve the transaction -
+      // resolution happens once at the end to prevent duplicate resolutions.
+      void liveResultP
+        .then(result => {
+          // Abort lookback only if live mode has a definitive answer:
+          // - Transaction found successfully (result.found === true)
+          // - Transaction found but failed (result.rejectionReason present)
+          // If neither (just timed out), let lookback continue - it might find it.
+          if (result.found || result.rejectionReason) {
+            log(`${logPrefix} Live mode completed`);
+            abortController.abort();
+          }
+        })
+        .catch(error => {
+          // If lookback aborted live mode, no action needed
+          if (error !== WATCH_GMP_ABORTED) {
+            throw error;
+          }
         });
 
-        // Attach handler to abort lookback if live mode completes first with
-        // a definitive result. This handler does NOT resolve the transaction -
-        // resolution happens once at the end to prevent duplicate resolutions.
-        void liveResultP
-          .then(result => {
-            // Abort lookback only if live mode has a definitive answer:
-            // - Transaction found successfully (result.found === true)
-            // - Transaction found but failed (result.rejectionReason present)
-            // If neither (just timed out), let lookback continue - it might find it.
-            if (result.found || result.rejectionReason) {
-              log(`${logPrefix} Live mode completed`);
-              abortController.abort();
-            }
-          })
-          .catch(error => {
-            // If lookback aborted live mode, no action needed
-            if (error !== WATCH_GMP_ABORTED) {
-              throw error;
-            }
-          });
+      await null;
+      // Wait for at least one block to ensure overlap between lookback and live mode
+      const currentBlock = await provider.getBlockNumber();
+      await waitForBlock(provider, currentBlock + 1);
 
-        await null;
-        // Wait for at least one block to ensure overlap between lookback and live mode
-        const currentBlock = await provider.getBlockNumber();
-        await waitForBlock(provider, currentBlock + 1);
+      // Scan historical blocks
+      const lookBackResult = await lookBackGmp({
+        ...watchArgs,
+        publishTimeMs: opts.publishTimeMs,
+        chainId: caipId,
+        signal: abortController.signal,
+        kvStore: ctx.kvStore,
+        makeAbortController: ctx.makeAbortController,
+      });
 
-        // Scan historical blocks
-        const lookBackResult = await lookBackGmp({
-          ...watchArgs,
-          publishTimeMs: opts.publishTimeMs,
-          chainId: caipId,
-          signal: abortController.signal,
-          kvStore: ctx.kvStore,
-          makeAbortController: ctx.makeAbortController,
-        });
-
-        // Determine which result to use based on what completed successfully
-        if (lookBackResult) {
-          // Found in lookback, cancel live mode
-          log(`${logPrefix} Lookback found transaction`);
-          transferResult = { found: true };
-          abortController.abort();
-        } else {
-          // Not found in lookback, rely on live mode
-          log(
-            `${logPrefix} Lookback completed without finding transaction, waiting for live mode`,
-          );
-          transferResult = await liveResultP;
-        }
-      } finally {
-        opts.signal?.removeEventListener('abort', handleExternalAbort);
+      // Determine which result to use based on what completed successfully
+      if (lookBackResult) {
+        // Found in lookback, cancel live mode
+        log(`${logPrefix} Lookback found transaction`);
+        transferResult = { found: true };
+        abortController.abort();
+      } else {
+        // Not found in lookback, rely on live mode
+        log(
+          `${logPrefix} Lookback completed without finding transaction, waiting for live mode`,
+        );
+        transferResult = await liveResultP;
       }
     }
 
@@ -384,58 +358,45 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
         signal: opts.signal,
       });
     } else {
-      const abortController = ctx.makeAbortController();
+      const abortController = ctx.makeAbortController(
+        undefined,
+        opts.signal ? [opts.signal] : undefined,
+      );
 
-      // If external signal is aborted, abort internal controller
-      const handleExternalAbort = () => {
-        log(`${logPrefix} External abort signal received`);
-        abortController.abort();
-      };
-      opts.signal?.addEventListener('abort', handleExternalAbort, {
-        once: true,
+      const liveResultP = watchSmartWalletTx({
+        ...watchArgs,
+        timeoutMs: opts.timeoutMs,
+        signal: abortController.signal,
       });
-      if (opts.signal?.aborted) {
-        handleExternalAbort();
-      }
-
-      try {
-        const liveResultP = watchSmartWalletTx({
-          ...watchArgs,
-          timeoutMs: opts.timeoutMs,
-          signal: abortController.signal,
-        });
-        void liveResultP.then(found => {
-          if (found) {
-            log(`${logPrefix} Live mode completed`);
-            abortController.abort();
-          }
-        });
-
-        await null;
-
-        const currentBlock = await provider.getBlockNumber();
-        await waitForBlock(provider, currentBlock + 1);
-
-        walletCreated = await lookBackSmartWalletTx({
-          ...watchArgs,
-          kvStore: ctx.kvStore,
-          txId,
-          publishTimeMs: opts.publishTimeMs,
-          chainId: caipId,
-          signal: abortController.signal,
-        });
-
-        if (walletCreated) {
-          log(`${logPrefix} Lookback found wallet creation`);
+      void liveResultP.then(found => {
+        if (found) {
+          log(`${logPrefix} Live mode completed`);
           abortController.abort();
-        } else {
-          log(
-            `${logPrefix} Lookback completed without finding wallet creation, waiting for live mode`,
-          );
-          walletCreated = await liveResultP;
         }
-      } finally {
-        opts.signal?.removeEventListener('abort', handleExternalAbort);
+      });
+
+      await null;
+
+      const currentBlock = await provider.getBlockNumber();
+      await waitForBlock(provider, currentBlock + 1);
+
+      walletCreated = await lookBackSmartWalletTx({
+        ...watchArgs,
+        kvStore: ctx.kvStore,
+        txId,
+        publishTimeMs: opts.publishTimeMs,
+        chainId: caipId,
+        signal: abortController.signal,
+      });
+
+      if (walletCreated) {
+        log(`${logPrefix} Lookback found wallet creation`);
+        abortController.abort();
+      } else {
+        log(
+          `${logPrefix} Lookback completed without finding wallet creation, waiting for live mode`,
+        );
+        walletCreated = await liveResultP;
       }
     }
 
@@ -488,11 +449,6 @@ export const handlePendingTx = async (
   await null;
   const logPrefix = `[${tx.txId}]`;
   log(`${logPrefix} handling ${tx.type} tx`);
-
-  if (signal?.aborted) {
-    log(`${logPrefix} watch aborted before starting`);
-    return;
-  }
 
   const monitor =
     MONITORS.get(tx.type) ||

@@ -73,16 +73,11 @@ test('handlePendingTx processes MAKE_ACCOUNT transaction successfully', async t 
   }, 50);
 
   await t.notThrowsAsync(async () => {
-    await handlePendingTx(
-      makeAccountTx,
-      {
-        ...opts,
-        log: logger,
-        timeoutMs: 3000,
-      },
-      undefined,
-      new AbortController().signal,
-    );
+    await handlePendingTx(makeAccountTx, {
+      ...opts,
+      log: logger,
+      timeoutMs: 3000,
+    });
   });
 
   t.deepEqual(logMessages, [
@@ -132,16 +127,11 @@ test('handlePendingTx logs timeout on MAKE_ACCOUNT transaction with no matching 
   }, 3010);
 
   await t.notThrowsAsync(async () => {
-    await handlePendingTx(
-      makeAccountTx,
-      {
-        ...opts,
-        log: logger,
-        timeoutMs: 3000,
-      },
-      undefined,
-      new AbortController().signal,
-    );
+    await handlePendingTx(makeAccountTx, {
+      ...opts,
+      log: logger,
+      timeoutMs: 3000,
+    });
   });
 
   t.deepEqual(logMessages, [
@@ -216,16 +206,11 @@ test('handlePendingTx ignores non-matching wallet addresses', async t => {
   }, 60);
 
   await t.notThrowsAsync(async () => {
-    await handlePendingTx(
-      makeAccountTx,
-      {
-        ...opts,
-        log: logger,
-        timeoutMs: 3000,
-      },
-      undefined,
-      new AbortController().signal,
-    );
+    await handlePendingTx(makeAccountTx, {
+      ...opts,
+      log: logger,
+      timeoutMs: 3000,
+    });
   });
 
   t.deepEqual(logMessages, [

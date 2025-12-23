@@ -49,9 +49,8 @@ test('handlePendingTx aborts CCTP watcher in live mode when signal is aborted', 
       ...opts,
       log: mockLog,
       timeoutMs: 5000,
+      signal: abortController.signal,
     },
-    undefined,
-    abortController.signal,
   );
 
   setTimeout(() => {
@@ -126,9 +125,8 @@ test('handlePendingTx aborts GMP watcher in live mode when signal is aborted', a
       ...ctxWithFetch,
       log: mockLog,
       timeoutMs: 5000,
+      signal: abortController.signal,
     },
-    undefined,
-    abortController.signal,
   ).catch(err => {
     // GMP watcher can throw WATCH_GMP_ABORTED when aborted, which is expected
     if (err !== 'WATCH_GMP_ABORTED') {
@@ -185,15 +183,14 @@ test('handlePendingTx exits early if signal is already aborted before starting',
       ...opts,
       log: mockLog,
       timeoutMs: 3000,
+      signal: abortController.signal,
     },
-    undefined,
-    abortController.signal,
   );
 
   // Should log that it's handling the tx and then abort immediately
   t.deepEqual(logs, [
     `[${txId}] handling ${TxType.CCTP_TO_EVM} tx`,
-    `[${txId}] watch aborted before starting`,
+    `[${txId}] CCTP watch aborted before starting`,
   ]);
 });
 
@@ -244,9 +241,9 @@ test('handlePendingTx aborts CCTP watcher in lookback mode when signal is aborte
       ...opts,
       log: mockLog,
       timeoutMs: 10000,
+      txTimestampMs,
+      signal: abortController.signal,
     },
-    txTimestampMs,
-    abortController.signal,
   );
 
   // Abort after 150ms - should interrupt the lookback scan
@@ -266,7 +263,6 @@ test('handlePendingTx aborts CCTP watcher in lookback mode when signal is aborte
     `[${txId}] Searching blocks ${fromBlock} → ${toBlock} for Transfer to ${recipientAddress} with amount ${txAmount}`,
     `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${fromBlock + 9}`,
     '[TEST] Aborting signal',
-    `[${txId}] External abort signal received`,
     `[${txId}] [LogScan] Aborted`,
     `[${txId}] No matching transfer found`,
     `[${txId}] Lookback completed without finding transaction, waiting for live mode`,
@@ -329,9 +325,9 @@ test('handlePendingTx aborts GMP watcher in lookback mode when signal is aborted
       ...ctxWithFetch,
       log: mockLog,
       timeoutMs: 10000,
+      txTimestampMs,
+      signal: abortController.signal,
     },
-    txTimestampMs,
-    abortController.signal,
   ).catch(err => {
     // GMP watcher can throw WATCH_GMP_ABORTED when aborted, which is expected
     if (err !== 'WATCH_GMP_ABORTED') {
@@ -356,7 +352,6 @@ test('handlePendingTx aborts GMP watcher in lookback mode when signal is aborted
     `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${fromBlock + 9}`,
     `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${fromBlock + 9}`,
     '[TEST] Aborting signal',
-    `[${txId}] External abort signal received`,
     `[${txId}] [LogScan] Aborted`,
     `[${txId}] No matching MulticallStatus or MulticallExecuted found`,
     `[${txId}] Lookback completed without finding transaction, waiting for live mode`,

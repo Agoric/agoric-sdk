@@ -193,15 +193,10 @@ test('handlePendingTx throws error for unsupported transaction type', async t =>
 
   await t.throwsAsync(
     () =>
-      handlePendingTx(
-        unsupportedTx,
-        {
-          ...createMockPendingTxOpts(),
-          log: mockLog,
-        },
-        undefined,
-        new AbortController().signal,
-      ),
+      handlePendingTx(unsupportedTx, {
+        ...createMockPendingTxOpts(),
+        log: mockLog,
+      }),
     { message: /No monitor registered for tx type: "cctpV2"/ },
   );
 });
@@ -253,9 +248,8 @@ test('resolves a 31 min old pending CCTP transaction in lookback mode', async t 
     {
       ...opts,
       log: mockLog,
+      txTimestampMs,
     },
-    txTimestampMs,
-    new AbortController().signal,
   );
 
   const currentBlock = await mockProvider.getBlockNumber();
@@ -322,9 +316,8 @@ test('resolves a 28 min old pending CCTP transaction in lookback mode', async t 
     {
       ...opts,
       log: mockLog,
+      txTimestampMs,
     },
-    txTimestampMs,
-    new AbortController().signal,
   );
 
   const currentBlock = await mockProvider.getBlockNumber();
@@ -391,9 +384,8 @@ test('resolves a transaction published at current time in lookback mode', async 
     {
       ...opts,
       log: mockLog,
+      txTimestampMs,
     },
-    txTimestampMs,
-    new AbortController().signal,
   );
 
   const currentBlock = await mockProvider.getBlockNumber();
@@ -460,9 +452,8 @@ test('resolves a 10 second old pending CCTP transaction in lookback mode', async
     {
       ...opts,
       log: mockLog,
+      txTimestampMs,
     },
-    txTimestampMs,
-    new AbortController().signal,
   );
 
   const currentBlock = await mockProvider.getBlockNumber();
@@ -551,9 +542,8 @@ test('resolves a 10 second old pending GMP transaction in lookback mode', async 
     {
       ...ctxWithFetch,
       log: mockLog,
+      txTimestampMs,
     },
-    txTimestampMs,
-    new AbortController().signal,
   );
 
   const currentBlock = await mockProvider.getBlockNumber();
@@ -581,13 +571,9 @@ test('processInitialPendingTransactions handles transactions with lookback', asy
   const handledCalls: Array<{ tx: any; opts: any }> = [];
   const txId: TxId = 'tx1';
 
-  const mockHandlePendingTx = async (
-    tx: any,
-    opts: any,
-    timeStamp: number | undefined,
-  ) => {
+  const mockHandlePendingTx = async (tx: any, opts: any) => {
     handledCalls.push({ tx, opts });
-    if (timeStamp) {
+    if (opts.txTimestampMs) {
       logs.push('Processing old tx');
     }
   };
@@ -648,13 +634,9 @@ test('processInitialPendingTransactions handles transactions with age < 20min in
   const txId: TxId = 'tx2';
   const logs: string[] = [];
 
-  const mockHandlePendingTx = async (
-    tx: any,
-    opts: any,
-    timeStamp: number | undefined,
-  ) => {
+  const mockHandlePendingTx = async (tx: any, opts: any) => {
     handledCalls.push({ tx, opts });
-    if (timeStamp) {
+    if (opts.txTimestampMs) {
       logs.push('Processing old tx');
     }
   };
@@ -792,9 +774,8 @@ test('GMP monitor does not resolve transaction twice when live mode completes be
       ...ctxWithFetch,
       log: mockLog,
       timeoutMs: 5000,
+      txTimestampMs,
     },
-    txTimestampMs,
-    new AbortController().signal,
   );
 
   // Regression test: Ensure transaction is resolved exactly once, not twice.
