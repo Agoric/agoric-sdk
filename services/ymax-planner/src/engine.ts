@@ -486,28 +486,51 @@ export const processPendingTxEvents = async (
     error = () => {},
     log = () => {},
     vstoragePathPrefixes: { pendingTxPathPrefix },
+    pendingTxAbortControllers,
   } = txPowers;
   for (const { path, value: cellJson } of events) {
     const errLabel = `🚨 Failed to process pending tx ${path}`;
     let data;
     try {
       // Extract txId from path (e.g., "published.ymax0.pendingTxs.tx1")
-      const txId = stripPrefix(`${pendingTxPathPrefix}.`, path);
+      const txId = stripPrefix(`${pendingTxPathPrefix}.`, path) as TxId;
       log('Processing pendingTx event', path);
 
       const streamCell = parseStreamCell(cellJson, path);
       const value = parseStreamCellValue(streamCell, -1, path);
       data = marshaller.fromCapData(value);
-      if (
-        data?.status !== TxStatus.PENDING ||
-        data.type === TxType.CCTP_TO_AGORIC
-      )
+
+      // If transaction is no longer PENDING, abort any ongoing watchers
+      if (data.status !== TxStatus.PENDING) {
+        const abortController = pendingTxAbortControllers.get(txId);
+        if (abortController) {
+          const reason = `Aborting watcher for ${txId} - status changed to ${data?.status}`;
+          log(reason);
+          abortController.abort(reason);
+          pendingTxAbortControllers.delete(txId);
+        }
         continue;
+      }
+
+      if (data.type === TxType.CCTP_TO_AGORIC) continue;
+
       mustMatch(data, PublishedTxShape, `${path} index -1`);
       const tx = { txId, ...data } as PendingTx;
       log('New pending tx', tx);
+
+      const abortController = provideLazyMap(
+        pendingTxAbortControllers,
+        txId,
+        () => txPowers.makeAbortController(),
+      );
+
       // Tx resolution is non-blocking.
-      void handlePendingTxFn(tx, txPowers).catch(err => error(errLabel, err));
+      void handlePendingTxFn(tx, {
+        ...txPowers,
+        signal: abortController.signal,
+      }).finally(() => {
+        pendingTxAbortControllers.delete(txId);
+      });
     } catch (err) {
       error(errLabel, data, err);
     }
@@ -538,7 +561,12 @@ export const processInitialPendingTransactions = async (
   txPowers: HandlePendingTxOpts,
   handlePendingTxFn = handlePendingTx,
 ) => {
-  const { error = () => {}, log = () => {}, cosmosRpc } = txPowers;
+  const {
+    error = () => {},
+    log = () => {},
+    cosmosRpc,
+    pendingTxAbortControllers,
+  } = txPowers;
 
   log(`Processing ${initialPendingTxData.length} pending transactions`);
 
@@ -567,11 +595,21 @@ export const processInitialPendingTransactions = async (
     if (timestampMs === undefined) return;
 
     log(`Processing pending tx ${tx.txId} with lookback`);
+
+    const abortController = provideLazyMap(
+      pendingTxAbortControllers,
+      tx.txId,
+      () => txPowers.makeAbortController(),
+    );
+
     // TODO: Optimize blockchain scanning by reusing state across transactions.
     // For details, see: https://github.com/Agoric/agoric-sdk/issues/11945
-    void handlePendingTxFn(tx, txPowers, timestampMs).catch(err => {
-      const msg = ` Failed to process pending tx ${tx.txId} with lookback`;
-      error(msg, pendingTxRecord, err);
+    void handlePendingTxFn(tx, {
+      ...txPowers,
+      txTimestampMs: timestampMs,
+      signal: abortController.signal,
+    }).finally(() => {
+      pendingTxAbortControllers.delete(tx.txId);
     });
   }).done;
 };
@@ -722,6 +760,10 @@ export const startEngine = async (
     );
   }).done;
 
+  // Map to track AbortControllers for each pending transaction
+  // This allows aborting watchers when transactions are manually resolved
+  const pendingTxAbortControllers = new Map<TxId, AbortController>();
+
   const txPowers: HandlePendingTxOpts = Object.freeze({
     ...evmCtx,
     cosmosRest,
@@ -733,6 +775,7 @@ export const startEngine = async (
     now,
     signingSmartWalletKit,
     vstoragePathPrefixes,
+    pendingTxAbortControllers,
   });
   console.warn(`Found ${pendingTxKeys.length} pending transactions`);
 

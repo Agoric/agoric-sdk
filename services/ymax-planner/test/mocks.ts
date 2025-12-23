@@ -278,6 +278,7 @@ export const createMockPendingTxOpts = (
   kvStore: makeKVStoreFromMap(new Map()),
   makeAbortController,
   axelarApiUrl: mockAxelarApiAddress,
+  pendingTxAbortControllers: new Map(),
 });
 
 export const createMockPendingTxEvent = (

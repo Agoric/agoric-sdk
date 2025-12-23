@@ -189,6 +189,7 @@ export const processTx = async (
         signingSmartWalletKit,
         vstoragePathPrefixes,
         axelarApiUrl: config.axelar.apiUrl,
+        pendingTxAbortControllers: new Map(),
       });
 
       // Get the block timestamp for lookback mode
@@ -204,7 +205,7 @@ export const processTx = async (
       );
 
       // Process the transaction with lookback mode
-      await handlePendingTx(tx, txPowers, timestampMs);
+      await handlePendingTx(tx, { ...txPowers, txTimestampMs: timestampMs });
 
       console.log(`\n✅ Transaction ${txId} processing complete!\n`);
     } catch (err) {

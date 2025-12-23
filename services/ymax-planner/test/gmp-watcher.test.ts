@@ -259,8 +259,8 @@ test('handlePendingTx fails a pendingTx on it finds a failed tx on Axelarscan (l
       ...ctxWithFetch,
       log: mockLog,
       timeoutMs: 600,
+      txTimestampMs,
     },
-    txTimestampMs,
   );
 
   const fromBlock = 0;

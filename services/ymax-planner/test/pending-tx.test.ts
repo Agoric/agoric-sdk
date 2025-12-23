@@ -1,4 +1,5 @@
 import test from 'ava';
+import { ethers } from 'ethers';
 import { boardSlottingMarshaller } from '@agoric/client-utils';
 import { handlePendingTx } from '../src/pending-tx-manager.ts';
 import {
@@ -239,8 +240,8 @@ test('resolves a 31 min old pending CCTP transaction in lookback mode', async t 
     {
       ...opts,
       log: mockLog,
+      txTimestampMs,
     },
-    txTimestampMs,
   );
 
   const currentBlock = await mockProvider.getBlockNumber();
@@ -307,8 +308,8 @@ test('resolves a 28 min old pending CCTP transaction in lookback mode', async t 
     {
       ...opts,
       log: mockLog,
+      txTimestampMs,
     },
-    txTimestampMs,
   );
 
   const currentBlock = await mockProvider.getBlockNumber();
@@ -375,8 +376,8 @@ test('resolves a transaction published at current time in lookback mode', async 
     {
       ...opts,
       log: mockLog,
+      txTimestampMs,
     },
-    txTimestampMs,
   );
 
   const currentBlock = await mockProvider.getBlockNumber();
@@ -443,8 +444,8 @@ test('resolves a 10 second old pending CCTP transaction in lookback mode', async
     {
       ...opts,
       log: mockLog,
+      txTimestampMs,
     },
-    txTimestampMs,
   );
 
   const currentBlock = await mockProvider.getBlockNumber();
@@ -533,8 +534,8 @@ test('resolves a 10 second old pending GMP transaction in lookback mode', async 
     {
       ...ctxWithFetch,
       log: mockLog,
+      txTimestampMs,
     },
-    txTimestampMs,
   );
 
   const currentBlock = await mockProvider.getBlockNumber();
@@ -562,13 +563,9 @@ test('processInitialPendingTransactions handles transactions with lookback', asy
   const handledCalls: Array<{ tx: any; opts: any }> = [];
   const txId: TxId = 'tx1';
 
-  const mockHandlePendingTx = async (
-    tx: any,
-    opts: any,
-    timeStamp: number | undefined,
-  ) => {
+  const mockHandlePendingTx = async (tx: any, opts: any) => {
     handledCalls.push({ tx, opts });
-    if (timeStamp) {
+    if (opts.txTimestampMs) {
       logs.push('Processing old tx');
     }
   };
@@ -628,13 +625,9 @@ test('processInitialPendingTransactions handles transactions with age < 20min in
   const txId: TxId = 'tx2';
   const logs: string[] = [];
 
-  const mockHandlePendingTx = async (
-    tx: any,
-    opts: any,
-    timeStamp: number | undefined,
-  ) => {
+  const mockHandlePendingTx = async (tx: any, opts: any) => {
     handledCalls.push({ tx, opts });
-    if (timeStamp) {
+    if (opts.txTimestampMs) {
       logs.push('Processing old tx');
     }
   };
@@ -685,4 +678,110 @@ test('processInitialPendingTransactions handles transactions with age < 20min in
     `Processing pending tx ${txId} with lookback`,
     'Processing old tx',
   ]);
+});
+
+test('GMP monitor does not resolve transaction twice when live mode completes before lookback', async t => {
+  const logs: string[] = [];
+  const mockLog = (...args: unknown[]) => logs.push(args.join(' '));
+
+  const contractAddress = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
+  const destinationAddress = `eip155:42161:${contractAddress}`;
+  const txId = 'tx999' as `tx${number}`;
+
+  const gmpTx = createMockPendingTxData({
+    type: TxType.GMP,
+    destinationAddress,
+  });
+
+  const chainId = 'eip155:42161';
+  const latestBlock = 1000;
+  const opts = createMockPendingTxOpts(latestBlock);
+  const mockProvider = opts.evmProviders[chainId] as any;
+
+  const currentTimeMs = 1700000000;
+  const txTimestampMs = currentTimeMs - 10 * 1000; // 10 seconds ago
+
+  // Track executeOffer calls to detect duplicate resolution
+  const executeOfferCalls: any[] = [];
+  const originalExecuteOffer = opts.signingSmartWalletKit.executeOffer;
+  opts.signingSmartWalletKit.executeOffer = async (offerSpec: any) => {
+    executeOfferCalls.push({
+      timestamp: Date.now(),
+      offerArgs: offerSpec.offerArgs,
+    });
+    return originalExecuteOffer(offerSpec);
+  };
+
+  // Make lookback return nothing (simulate not finding the transaction)
+  mockProvider.getLogs = async () => [];
+
+  // Simulate live mode finding the transaction quickly (before lookback completes)
+  const event = createMockGmpExecutionEvent(txId, latestBlock + 2);
+  setTimeout(() => {
+    const expectedIdTopic = ethers.keccak256(ethers.toUtf8Bytes(txId));
+    const filter = {
+      address: contractAddress,
+      topics: [
+        ethers.id('MulticallExecuted(string,(bool,bytes)[])'),
+        expectedIdTopic,
+      ],
+    };
+    mockProvider.emit(filter, event);
+  }, 50);
+
+  const ctxWithFetch = harden({
+    ...opts,
+    fetch: async (url: string) => {
+      // Axelarscan returns executed status
+      return {
+        ok: true,
+        json: async () => ({
+          data: [
+            {
+              status: 'executed',
+              call: {
+                transactionHash: '0xabcdef123456',
+                returnValues: {
+                  messageId: `msg_${txId}`,
+                },
+              },
+              executed: {
+                transactionHash: '0xexecuted123',
+                receipt: {
+                  logs: [event],
+                },
+              },
+            },
+          ],
+        }),
+      } as Response;
+    },
+  });
+
+  await handlePendingTx(
+    { txId, ...gmpTx },
+    {
+      ...ctxWithFetch,
+      log: mockLog,
+      timeoutMs: 5000,
+      txTimestampMs,
+    },
+  );
+
+  // Regression test: Ensure transaction is resolved exactly once, not twice.
+  // The bug being tested: When both live mode and lookback mode find the same
+  // transaction, both would attempt to resolve it - once when live mode's
+  // .then() handler detects success, and again at the end after lookback completes.
+  t.is(
+    executeOfferCalls.length,
+    1,
+    `Expected 1 resolution, but got ${executeOfferCalls.length}. This indicates the race condition bug where the transaction is resolved twice.`,
+  );
+
+  if (executeOfferCalls.length > 1) {
+    t.log('Multiple resolution calls detected:');
+    executeOfferCalls.forEach((call, index) => {
+      t.log(`  Call ${index + 1}:`, call.offerArgs);
+    });
+  }
 });
