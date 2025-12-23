@@ -274,5 +274,63 @@ sequenceDiagram
 
 ## Create + Deposit Orchestration
 
-see [comment below](#issuecomment-3671276125)
+based on exploratory prototype...
+
+ - https://github.com/agoric-labs/agoric-to-axelar-local/pull/48
+    - [Factory.sol](https://github.com/agoric-labs/agoric-to-axelar-local/blame/dc-permit2-actors/packages/axelar-local-dev-cosmos/src/__tests__/contracts/Factory.sol)
+ - https://github.com/agoric-labs/agoric-to-axelar-local/pull/49
+    - [createAndDeposit.ts](https://github.com/agoric-labs/agoric-to-axelar-local/blob/dc-permit2-actors/integration/agoric/createAndDeposit.ts)
+
+```mermaid
+
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#f0f8ff',
+    'primaryTextColor': '#2c3e50',
+    'primaryBorderColor': '#7fb2e6',
+    'lineColor': '#7fb2e6',
+    'secondaryColor': '#f6f8fa',
+    'tertiaryColor': '#fff5e6'
+  }
+}}%%
+sequenceDiagram
+  title Create + Deposit Orchestration
+  autonumber
+    box Pink Ymax Contract
+    participant EMH as EVM<br/>Handler
+    participant YC as Ymax<br/>Orchestrator
+    end
+  participant R as Resolver
+
+    %% Notation: ->> for initial message, -->> for consequences
+
+  Note over EMH: NOT SHOWN:validation
+
+    EMH -->> YC: OpenPortfolio(1,000 USDC,<br/>{60% A, 40% B},<br/>deadline)
+    YC -->> EMH: portfolio123<br/>flow1
+    note over EMH: NOT SHOWN:<br/>vstorage, YDS details
+
+  box base
+    participant P2 as Permit2
+    participant USDC as USDC
+    participant F as Factory
+  end
+
+  note right of YC: 2 contract calls pipelined<br/>via Axelar GMP
+  YC-->>USDC: approve(permit2, 1,000 USDC)
+  YC-->>YC: permit = {permitted: {token: USDC, amount: 1,000e6 },<br/>nonce, deadline,<br/>spender: 0xFAC1}
+  YC-->>YC: payload = (@agoric, 0xED123, 1,000 USDC,<br/>permit, signature)
+  YC-->>F: execute(payload)
+  F-->>F: require(0xED123 != 0,<br/>USDC !=0,<br/>amount > 0)
+  F-->>F: @Base = new Wallet{owner=agoric1...}
+  F-->>P2: permitTransferFrom(permit,<br/>{ to: @Base, requestedAmount: 1,000e6 },<br/>0xED123, signature)
+  P2-->>USDC: transfer{from: 0xED123, to: 0xFAC1<br/>value: 1,000e6 }
+  USDC-->>R: Transfer{to: 0xFAC1,<br/>value: 1,000e6 }<br/>(Base log events)
+  F-->>USDC: transfer{to: @Base, amount: 1,000e6}
+  F-->>R: SmartWalletCreated
+  R -->> YC: success
+  note over YC: NOT SHOWN:<br/>supply to A, B from @Base
+  YC -->> EMH: flow done
+```
 
