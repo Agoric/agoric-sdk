@@ -15,7 +15,7 @@ import { DenomInfoShape, DenomAmountShape, DenomShape } from '../typeGuards.js';
  * @import {MapStore, SetStore} from '@agoric/store';
  * @import {MakeLocalChainFacade} from './local-chain-facade.js';
  * @import {MakeRemoteChainFacade} from './remote-chain-facade.js';
- * @import {Chain, ChainInfo, IBCConnectionInfo, KnownChains, Orchestrator} from '../types.js';
+ * @import {Chain, ChainInfo, Denom, DenomInfo, IBCConnectionInfo, KnownChains, Orchestrator} from '../types.js';
  */
 
 const { Vow$ } = NetworkShape; // TODO #9611
@@ -142,21 +142,18 @@ const prepareOrchestratorKit = (
           if (maybeChain.pending) {
             throw Fail`wait until getChain(${q(chainName)}) completes before getDenomInfo(${q(denom)})`;
           }
-          const chain =
-            /** @type {HostInterface<Chain<KnownChains[keyof KnownChains]>>} */ (
-              maybeChain.value
-            );
+          const chain = maybeChain.value;
           chainByName.has(baseName) ||
             Fail`use getChain(${q(baseName)}) before getDenomInfo(${q(denom)})`;
           const maybeBase = chainByName.get(baseName);
           if (maybeBase.pending) {
             throw Fail`wait until getChain(${q(baseName)}) completes before getDenomInfo(${q(denom)})`;
           }
-          const base =
-            /** @type {HostInterface<Chain<KnownChains[keyof KnownChains]>>} */ (
-              maybeBase.value
-            );
-          return harden({ chain, base, brand, baseDenom });
+          const base = maybeBase.value;
+          const denomInfo = harden({ chain, base, brand, baseDenom });
+          return /** @type {ReturnType<HostOf<Orchestrator['getDenomInfo']>>} */ (
+            denomInfo
+          );
         },
         /** @type {HostOf<Orchestrator['asAmount']>} */
         asAmount: () => Fail`not yet implemented`,
