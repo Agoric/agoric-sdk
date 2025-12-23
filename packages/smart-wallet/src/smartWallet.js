@@ -333,7 +333,7 @@ export const prepareSmartWallet = (baggage, shared, setTestJig) => {
 
   const vowTools = prepareVowTools(zone.subZone('vow'));
 
-  const makeOfferWatcher = prepareOfferWatcher(baggage, vowTools);
+  const makeOfferWatcher = prepareOfferWatcher(baggage, vowTools, zone);
   const watchOfferOutcomes = makeWatchOfferOutcomes(vowTools);
 
   const updateShape = {
