@@ -501,7 +501,7 @@ export const processPendingTxEvents = async (
       data = marshaller.fromCapData(value);
 
       // If transaction is no longer PENDING, abort any ongoing watchers
-      if (data?.status !== TxStatus.PENDING) {
+      if (data.status !== TxStatus.PENDING) {
         const abortController = pendingTxAbortControllers.get(txId);
         if (abortController) {
           log(
@@ -519,7 +519,7 @@ export const processPendingTxEvents = async (
       const tx = { txId, ...data } as PendingTx;
       log('New pending tx', tx);
 
-      const abortController = new AbortController();
+      const abortController = txPowers.makeAbortController();
       pendingTxAbortControllers.set(txId, abortController);
 
       // Tx resolution is non-blocking.
@@ -587,18 +587,16 @@ export const processInitialPendingTransactions = async (
 
     if (timestampMs === undefined) return;
 
+    const errLabel = `🚨 Failed to process pending tx ${tx.txId} with lookback`;
     log(`Processing pending tx ${tx.txId} with lookback`);
 
-    const abortController = new AbortController();
+    const abortController = txPowers.makeAbortController();
     pendingTxAbortControllers.set(tx.txId, abortController);
 
     // TODO: Optimize blockchain scanning by reusing state across transactions.
     // For details, see: https://github.com/Agoric/agoric-sdk/issues/11945
     void handlePendingTxFn(tx, txPowers, timestampMs, abortController.signal)
-      .catch(err => {
-        const msg = ` Failed to process pending tx ${tx.txId} with lookback`;
-        error(msg, pendingTxRecord, err);
-      })
+      .catch(err => error(errLabel, err))
       .finally(() => {
         pendingTxAbortControllers.delete(tx.txId);
       });

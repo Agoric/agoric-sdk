@@ -124,7 +124,7 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
     } else {
       // Lookback mode with concurrent live watching
       // Start live mode now in case the txId has not yet appeared
-      const abortController = new AbortController();
+      const abortController = ctx.makeAbortController();
 
       // If external signal is aborted, abort internal controller
       const handleExternalAbort = () => {
@@ -245,7 +245,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
       // Strategy: Run both live and lookback concurrently. Whichever finds the
       // transaction first aborts the other. This ensures we don't miss the
       // transaction (lookback covers history, live covers new events).
-      const abortController = new AbortController();
+      const abortController = ctx.makeAbortController();
 
       // If external signal is aborted, abort internal controller
       const handleExternalAbort = () => {
@@ -384,7 +384,7 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
         signal: opts.signal,
       });
     } else {
-      const abortController = new AbortController();
+      const abortController = ctx.makeAbortController();
 
       // If external signal is aborted, abort internal controller
       const handleExternalAbort = () => {
