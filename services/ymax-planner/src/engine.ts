@@ -523,11 +523,14 @@ export const processPendingTxEvents = async (
       pendingTxAbortControllers.set(txId, abortController);
 
       // Tx resolution is non-blocking.
-      void handlePendingTxFn(tx, txPowers, undefined, abortController.signal)
-        .catch(err => error(errLabel, err))
-        .finally(() => {
-          pendingTxAbortControllers.delete(txId);
-        });
+      void handlePendingTxFn(
+        tx,
+        txPowers,
+        undefined,
+        abortController.signal,
+      ).finally(() => {
+        pendingTxAbortControllers.delete(txId);
+      });
     } catch (err) {
       error(errLabel, data, err);
     }
@@ -587,7 +590,6 @@ export const processInitialPendingTransactions = async (
 
     if (timestampMs === undefined) return;
 
-    const errLabel = `🚨 Failed to process pending tx ${tx.txId} with lookback`;
     log(`Processing pending tx ${tx.txId} with lookback`);
 
     const abortController = txPowers.makeAbortController();
@@ -595,11 +597,14 @@ export const processInitialPendingTransactions = async (
 
     // TODO: Optimize blockchain scanning by reusing state across transactions.
     // For details, see: https://github.com/Agoric/agoric-sdk/issues/11945
-    void handlePendingTxFn(tx, txPowers, timestampMs, abortController.signal)
-      .catch(err => error(errLabel, err))
-      .finally(() => {
-        pendingTxAbortControllers.delete(tx.txId);
-      });
+    void handlePendingTxFn(
+      tx,
+      txPowers,
+      timestampMs,
+      abortController.signal,
+    ).finally(() => {
+      pendingTxAbortControllers.delete(tx.txId);
+    });
   }).done;
 };
 

@@ -474,7 +474,12 @@ export type HandlePendingTxOpts = {
 export const TX_TIMEOUT_MS = 30 * 60 * 1000; // 30 min
 export const handlePendingTx = async (
   tx: PendingTx,
-  { log = () => {}, timeoutMs = TX_TIMEOUT_MS, ...evmCtx }: HandlePendingTxOpts,
+  {
+    log = () => {},
+    error = () => {},
+    timeoutMs = TX_TIMEOUT_MS,
+    ...evmCtx
+  }: HandlePendingTxOpts,
   txTimestampMs: number | undefined,
   signal: AbortSignal,
 ) => {
@@ -491,14 +496,19 @@ export const handlePendingTx = async (
     MONITORS.get(tx.type) ||
     Fail`${logPrefix} No monitor registered for tx type: ${tx.type}`;
 
-  if (txTimestampMs) {
-    await monitor.watch(evmCtx, tx, log, {
-      mode: 'lookback',
-      publishTimeMs: txTimestampMs,
-      timeoutMs,
-      signal,
-    });
-  } else {
-    await monitor.watch(evmCtx, tx, log, { mode: 'live', timeoutMs, signal });
+  try {
+    if (txTimestampMs) {
+      await monitor.watch(evmCtx, tx, log, {
+        mode: 'lookback',
+        publishTimeMs: txTimestampMs,
+        timeoutMs,
+        signal,
+      });
+    } else {
+      await monitor.watch(evmCtx, tx, log, { mode: 'live', timeoutMs, signal });
+    }
+  } catch (err) {
+    const mode = txTimestampMs ? 'with lookback' : 'in live mode';
+    error(`🚨 Failed to process pending tx ${tx.txId} ${mode}`, err);
   }
 };
