@@ -439,22 +439,21 @@ export const computePartialOrder = (
   if (flows.length === 0) return { prioritized: [] };
 
   type FlowIndex = number;
+  type Inflow = { stepIdx?: number; unclaimed: number };
 
-  /** Available supply at each node */
+  /** Instantaneous supply by node */
   const available = new Map(initialSupplies);
 
-  /** Remaining initial supply at each node (for dependency calculation) */
-  const initialRemaining = new Map(initialSupplies);
+  /** Step indices constituting those supplies (starting with just the initial supply) */
+  const inflows = new Map<AssetPlaceRef, Inflow[]>(
+    [...initialSupplies.entries()].map(([place, value]) => {
+      const nullInflow = { stepIdx: undefined, unclaimed: value };
+      return [place, [nullInflow]];
+    }),
+  );
 
-  /** Which step indices have contributed to each node's balance */
-  const inflows = new Map<
-    AssetPlaceRef,
-    { stepIdx: number; amount: number }[]
-  >();
-
-  const order: StepOrder = [];
-  const prioritized: SolvedEdgeFlow[] = [];
   const scheduled = new Set<FlowIndex>();
+  const order: StepOrder = [];
 
   // Maintain last chosen originating chain to group sequential operations.
   let lastChain: string | undefined;
@@ -490,45 +489,36 @@ export const computePartialOrder = (
     chosenGroup.sort((a, b) => naturalCompare(a.flow.edge.id, b.flow.edge.id));
     const { flowIdx, flow: chosen } = chosenGroup[0];
     const { src, dest } = chosen.edge;
-
-    // Compute prerequisites: which inflows provided the supply we're consuming?
-    const prereqs: number[] = [];
     const srcInflows = inflows.get(src) || [];
-    const remainingInitial = initialRemaining.get(src) || 0;
+    const destInflows = provideLazyMap(inflows, dest, () => []);
 
-    // We need `chosen.flow` units. Remaining initial supply covers some; inflows cover the rest.
-    let needed = chosen.flow;
-    const usedFromInitial = Math.min(remainingInitial, needed);
-    needed -= usedFromInitial;
-    initialRemaining.set(src, remainingInitial - usedFromInitial);
-
+    // Identify inflows to consume (partially or completely), drawing from them
+    // in the order they were added and marking them as prereqs along the way.
+    let unfunded = chosen.flow;
+    const prereqs: number[] = [];
     for (const inflow of srcInflows) {
-      if (needed <= 0) break;
-      prereqs.push(inflow.stepIdx);
-      needed -= inflow.amount;
+      if (unfunded <= 0) break;
+      if (inflow.unclaimed <= 0) continue;
+      const claimed = Math.min(inflow.unclaimed, unfunded);
+      unfunded -= claimed;
+      inflow.unclaimed -= claimed;
+      if (inflow.stepIdx !== undefined) prereqs.push(inflow.stepIdx);
     }
 
-    if (prereqs.length > 0) {
-      order.push([prioritized.length, prereqs]);
-    }
-
-    // Update state
+    // Record use of `chosen` in outer-scope variables.
     replaceOrInit(available, src, (old = 0) => old - chosen.flow);
     replaceOrInit(available, dest, (old = 0) => old + chosen.flow);
-
-    // Record this as an inflow to dest (using prioritized index, not original idx)
-    const destInflows = provideLazyMap(inflows, dest, () => []);
-    destInflows.push({ stepIdx: prioritized.length, amount: chosen.flow });
-
-    prioritized.push(chosen);
+    const stepIdx = scheduled.size;
     scheduled.add(flowIdx);
+    destInflows.push({ stepIdx, unclaimed: chosen.flow });
+    if (prereqs.length > 0) order.push([stepIdx, prereqs]);
     lastChain = chainOf(src);
   }
 
   // Don't bother returning a trivial `order` in which each step depends upon
   // exactly the previous step.
   const isTrivialOrder = (): boolean => {
-    if (order.length !== prioritized.length - 1) return false;
+    if (order.length !== scheduled.size - 1) return false;
     for (let i = 0; i < order.length; i += 1) {
       const [target, prereqs] = order[i];
       if (target !== i + 1) return false;
@@ -537,6 +527,7 @@ export const computePartialOrder = (
     return true;
   };
 
+  const prioritized = [...scheduled].map(idx => flows[idx]);
   return isTrivialOrder() ? { prioritized } : { prioritized, order };
 };
 
