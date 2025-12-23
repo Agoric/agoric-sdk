@@ -41,7 +41,8 @@ type AxelarScanOptions = {
   axelarApiUrl: string;
 };
 
-/** Watches for GMP transaction completion in live mode by listening to MulticallStatus
+/**
+ * Watches for GMP transaction completion in live mode by listening to MulticallStatus
  * and MulticallExecuted events. On timeout, queries Axelarscan to detect failures.
  *
  * NOTE: This watcher has a different API than other watchers (watchCctpTransfer,

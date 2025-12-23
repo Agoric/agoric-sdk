@@ -480,13 +480,13 @@ export const processPendingTxEvents = async (
   events: Array<{ path: string; value: string }>,
   handlePendingTxFn,
   txPowers: HandlePendingTxOpts,
-  pendingTxAbortControllers: Map<TxId, AbortController>,
 ) => {
   const {
     marshaller,
     error = () => {},
     log = () => {},
     vstoragePathPrefixes: { pendingTxPathPrefix },
+    pendingTxAbortControllers,
   } = txPowers;
   for (const { path, value: cellJson } of events) {
     const errLabel = `🚨 Failed to process pending tx ${path}`;
@@ -504,10 +504,9 @@ export const processPendingTxEvents = async (
       if (data.status !== TxStatus.PENDING) {
         const abortController = pendingTxAbortControllers.get(txId);
         if (abortController) {
-          log(
-            `Aborting watcher for ${txId} - status changed to ${data?.status}`,
-          );
-          abortController.abort();
+          const reason = `Aborting watcher for ${txId} - status changed to ${data?.status}`;
+          log(reason);
+          abortController.abort(reason);
           pendingTxAbortControllers.delete(txId);
         }
         continue;
@@ -560,10 +559,14 @@ export const pickBalance = (
 export const processInitialPendingTransactions = async (
   initialPendingTxData: PendingTxRecord[],
   txPowers: HandlePendingTxOpts,
-  pendingTxAbortControllers: Map<TxId, AbortController>,
   handlePendingTxFn = handlePendingTx,
 ) => {
-  const { error = () => {}, log = () => {}, cosmosRpc } = txPowers;
+  const {
+    error = () => {},
+    log = () => {},
+    cosmosRpc,
+    pendingTxAbortControllers,
+  } = txPowers;
 
   log(`Processing ${initialPendingTxData.length} pending transactions`);
 
@@ -757,6 +760,10 @@ export const startEngine = async (
     );
   }).done;
 
+  // Map to track AbortControllers for each pending transaction
+  // This allows aborting watchers when transactions are manually resolved
+  const pendingTxAbortControllers = new Map<TxId, AbortController>();
+
   const txPowers: HandlePendingTxOpts = Object.freeze({
     ...evmCtx,
     cosmosRest,
@@ -768,12 +775,9 @@ export const startEngine = async (
     now,
     signingSmartWalletKit,
     vstoragePathPrefixes,
+    pendingTxAbortControllers,
   });
   console.warn(`Found ${pendingTxKeys.length} pending transactions`);
-
-  // Map to track AbortControllers for each pending transaction
-  // This allows aborting watchers when transactions are manually resolved
-  const pendingTxAbortControllers = new Map<TxId, AbortController>();
 
   const initialPendingTxData: PendingTxRecord[] = [];
   await makeWorkPool(pendingTxKeys, undefined, async (txId: TxId) => {
@@ -806,11 +810,7 @@ export const startEngine = async (
 
   if (initialPendingTxData.length > 0) {
     // Process initial transactions in lookback mode upon planner startup
-    await processInitialPendingTransactions(
-      initialPendingTxData,
-      txPowers,
-      pendingTxAbortControllers,
-    );
+    await processInitialPendingTransactions(initialPendingTxData, txPowers);
   }
 
   // console.warn('consuming events');
@@ -881,12 +881,7 @@ export const startEngine = async (
       processPortfolioPowers,
     );
 
-    await processPendingTxEvents(
-      pendingTxEvents,
-      handlePendingTx,
-      txPowers,
-      pendingTxAbortControllers,
-    );
+    await processPendingTxEvents(pendingTxEvents, handlePendingTx, txPowers);
 
     console.log(
       inspectForStdout({

@@ -12,7 +12,10 @@ import {
   TxStatus,
   TxType,
 } from '@aglocal/portfolio-contract/src/resolver/constants.js';
-import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
+import type {
+  PendingTx,
+  TxId,
+} from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import type { KVStore } from '@agoric/internal/src/kv-store.js';
 
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
@@ -160,8 +163,9 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
 
       if (transferStatus) {
         // Found in lookback, cancel live mode
-        log(`${logPrefix} Lookback found transaction`);
-        abortController.abort();
+        const reason = `${logPrefix} Lookback found transaction`;
+        log(reason);
+        abortController.abort(reason);
       } else {
         // Not found in lookback, rely on live mode
         log(
@@ -229,9 +233,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
       });
     } else {
       // Lookback mode with concurrent live watching
-      // Strategy: Run both live and lookback concurrently. Whichever finds the
-      // transaction first aborts the other. This ensures we don't miss the
-      // transaction (lookback covers history, live covers new events).
+      // Start live mode now in case the txId has not yet appeared
       const abortController = ctx.makeAbortController(
         undefined,
         opts.signal ? [opts.signal] : undefined,
@@ -257,8 +259,9 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
           // - Transaction found but failed (result.rejectionReason present)
           // If neither (just timed out), let lookback continue - it might find it.
           if (result.found || result.rejectionReason) {
-            log(`${logPrefix} Live mode completed`);
-            abortController.abort();
+            const reason = `${logPrefix} Live mode completed`;
+            log(reason);
+            abortController.abort(reason);
           }
         })
         .catch(error => {
@@ -286,9 +289,10 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
       // Determine which result to use based on what completed successfully
       if (lookBackResult) {
         // Found in lookback, cancel live mode
-        log(`${logPrefix} Lookback found transaction`);
         transferResult = { found: true };
-        abortController.abort();
+        const reason = `${logPrefix} Lookback found transaction`;
+        log(reason);
+        abortController.abort(reason);
       } else {
         // Not found in lookback, rely on live mode
         log(
@@ -432,6 +436,7 @@ export type HandlePendingTxOpts = {
   };
   txTimestampMs?: number;
   signal?: AbortSignal;
+  pendingTxAbortControllers: Map<TxId, AbortController>;
 } & EvmContext;
 
 export const TX_TIMEOUT_MS = 30 * 60 * 1000; // 30 min

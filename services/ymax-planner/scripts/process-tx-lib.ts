@@ -189,6 +189,7 @@ export const processTx = async (
         signingSmartWalletKit,
         vstoragePathPrefixes,
         axelarApiUrl: config.axelar.apiUrl,
+        pendingTxAbortControllers: new Map(),
       });
 
       // Get the block timestamp for lookback mode

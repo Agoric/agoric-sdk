@@ -46,7 +46,6 @@ test('processPendingTxEvents handles valid single transaction event', async t =>
     events,
     mockHandlePendingTx,
     createMockPendingTxOpts(),
-    new Map(),
   );
 
   t.is(handledTxs.length, 1);
@@ -83,7 +82,6 @@ test('processPendingTxEvents handles multiple transaction events', async t => {
     events,
     mockHandlePendingTx,
     createMockPendingTxOpts(),
-    new Map(),
   );
 
   t.is(handledTxs.length, 2);
@@ -126,15 +124,10 @@ test('processPendingTxEvents errors do not disrupt processing valid transactions
   ];
 
   const errorLog = [] as Array<any[]>;
-  await processPendingTxEvents(
-    events,
-    mockHandlePendingTx,
-    {
-      ...createMockPendingTxOpts(),
-      error: (...args) => errorLog.push(args),
-    },
-    new Map(),
-  );
+  await processPendingTxEvents(events, mockHandlePendingTx, {
+    ...createMockPendingTxOpts(),
+    error: (...args) => errorLog.push(args),
+  });
   if (errorLog.length !== 2) {
     t.log(errorLog);
   }
@@ -172,7 +165,6 @@ test('processPendingTxEvents handles only pending transactions', async t => {
     events,
     mockHandlePendingTx,
     createMockPendingTxOpts(),
-    new Map(),
   );
 
   t.is(handledTxs.length, 1);
@@ -614,7 +606,6 @@ test('processInitialPendingTransactions handles transactions with lookback', asy
   await processInitialPendingTransactions(
     pendingTxRecords,
     txPowers,
-    new Map(),
     mockHandlePendingTx,
   );
 
@@ -675,7 +666,6 @@ test('processInitialPendingTransactions handles transactions with age < 20min in
   await processInitialPendingTransactions(
     pendingTxRecords,
     txPowers,
-    new Map(),
     mockHandlePendingTx,
   );
 
