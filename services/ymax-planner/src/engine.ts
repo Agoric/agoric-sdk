@@ -519,8 +519,11 @@ export const processPendingTxEvents = async (
       const tx = { txId, ...data } as PendingTx;
       log('New pending tx', tx);
 
-      const abortController = txPowers.makeAbortController();
-      pendingTxAbortControllers.set(txId, abortController);
+      const abortController = provideLazyMap(
+        pendingTxAbortControllers,
+        txId,
+        () => txPowers.makeAbortController(),
+      );
 
       // Tx resolution is non-blocking.
       void handlePendingTxFn(
@@ -592,8 +595,11 @@ export const processInitialPendingTransactions = async (
 
     log(`Processing pending tx ${tx.txId} with lookback`);
 
-    const abortController = txPowers.makeAbortController();
-    pendingTxAbortControllers.set(tx.txId, abortController);
+    const abortController = provideLazyMap(
+      pendingTxAbortControllers,
+      tx.txId,
+      () => txPowers.makeAbortController(),
+    );
 
     // TODO: Optimize blockchain scanning by reusing state across transactions.
     // For details, see: https://github.com/Agoric/agoric-sdk/issues/11945
