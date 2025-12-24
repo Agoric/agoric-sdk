@@ -95,6 +95,7 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
     }
 
     // Parse destinationAddress format: 'eip155:42161:0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092'
+    assert(destinationAddress, `${logPrefix} Missing destinationAddress`);
     const { namespace, reference, accountAddress } =
       parseAccountId(destinationAddress);
     const caipId: CaipChainId = `${namespace}:${reference}`;
@@ -202,6 +203,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
     }
 
     // Parse destinationAddress format: 'eip155:42161:0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092'
+    assert(destinationAddress, `${logPrefix} Missing destinationAddress`);
     const { namespace, reference, accountAddress } =
       parseAccountId(destinationAddress);
     const caipId: CaipChainId = `${namespace}:${reference}`;
@@ -335,6 +337,8 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
     destinationAddress ||
       Fail`${logPrefix} Missing destinationAddress (factory)`;
 
+    // Parse destinationAddress format: 'eip155:42161:0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092'
+    assert(destinationAddress, `${logPrefix} Missing destinationAddress`);
     const {
       namespace,
       reference,
