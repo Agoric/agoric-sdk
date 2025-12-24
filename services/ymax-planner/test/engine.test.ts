@@ -38,7 +38,7 @@ import {
   type NatAmount,
 } from '@agoric/ertp';
 import { arrayIsLike } from '@agoric/internal/tools/ava-assertions.js';
-import type { SupportedChain } from '@agoric/portfolio-api/src/constants.js';
+import type { FlowStatus, SupportedChain } from '@agoric/portfolio-api';
 import type { InvokeStoreEntryAction } from '@agoric/smart-wallet/src/smartWallet.js';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 import type { Marshal } from '@endo/marshal';
@@ -385,6 +385,7 @@ const mockAsset = (
 
 const depositAsset = mockAsset('USDC');
 const { boardId: depositBoardId, brand: depositBrand } = depositAsset;
+const makeDeposit = (value: bigint) => AmountMath.make(depositBrand, value);
 const { boardId: feeBoardId, brand: feeBrand } = mockAsset('Fee');
 const defaultMarshallerEntries: Pick<Map<string, unknown>, 'get'> = new Map([
   [depositBoardId, depositBrand],
@@ -606,6 +607,120 @@ test.serial(
     );
     t.is(memory.snapshots?.get(`portfolio${portfolioId}`)?.repeats, 1);
     t.is(powers.portfolioKeyForDepositAddr.size, 0);
+  },
+);
+
+test.serial.failing(
+  'processPortfolioEvents runs flows in sequence',
+  async t => {
+    const kit = await fakePortfolioKit({
+      accounts: { noble: makeDeposit(0n) },
+      otherBalances: { usdn: makeDeposit(0n) },
+    });
+    const { portfolioId, portfolioPath, initialPortfolioStatus, powers } = kit;
+    const { getBridgeSends, updateBlockHeight, updateVstorage } =
+      kit.testPowers;
+
+    // Three flows, the first one actively running.
+    const flowId1: number = 5;
+    const flowId2: number = 6;
+    const flowId3: number = 7;
+    const flowPath1 = `${portfolioPath}.flows.flow${flowId1}`;
+    const portfolioStatus = {
+      ...initialPortfolioStatus,
+      rebalanceCount: 0,
+      positionKeys: ['USDN'],
+      targetAllocation: { USDN: 1n },
+      flowCount: 3,
+      flowsRunning: {
+        [`flow${flowId1}`]: {
+          type: 'deposit',
+          amount: makeDeposit(1_000_000n),
+        },
+        [`flow${flowId2}`]: {
+          type: 'deposit',
+          amount: makeDeposit(2_000_000n),
+        },
+        [`flow${flowId3}`]: {
+          type: 'deposit',
+          amount: makeDeposit(3_000_000n),
+        },
+      },
+    };
+    updateVstorage(portfolioPath, 'set', {
+      object: { ...portfolioStatus },
+      wrap: true,
+    });
+    updateVstorage(`${portfolioPath}.flows`, 'set', { string: '' });
+    updateVstorage(flowPath1, 'set', {
+      object: { state: 'run', step: 0, how: '' } satisfies FlowStatus,
+      wrap: true,
+    });
+
+    {
+      const blockHeight = updateBlockHeight();
+      const vstorageEventDetail = makeVstorageEventDetail(
+        blockHeight,
+        portfolioPath,
+        harden({ ...portfolioStatus }),
+      );
+      const memory: PortfoliosMemory = { deferrals: [] };
+      await processPortfolioEvents(
+        [vstorageEventDetail],
+        blockHeight,
+        memory,
+        powers,
+      );
+
+      t.deepEqual(
+        getBridgeSends().map(invocation => invocation.action),
+        [],
+        'a running flow blocks further invocations',
+      );
+      t.deepEqual(
+        memory.deferrals,
+        [vstorageEventDetail.eventRecord],
+        'portfolio with a running flow is deferred',
+      );
+    }
+    {
+      // Completing the first flow allows the second to start.
+      const blockHeight = updateBlockHeight();
+      updateVstorage(flowPath1, 'set', {
+        object: { state: 'done' } satisfies FlowStatus,
+        wrap: true,
+      });
+      const vstorageEventDetail = makeVstorageEventDetail(
+        blockHeight,
+        portfolioPath,
+        harden({ ...portfolioStatus }),
+      );
+      const memory: PortfoliosMemory = { deferrals: [] };
+      await processPortfolioEvents(
+        [vstorageEventDetail],
+        blockHeight,
+        memory,
+        powers,
+      );
+
+      t.deepEqual(memory.deferrals, []);
+      const bridgeActions = getBridgeSends().map(
+        invocation => invocation.action,
+      );
+      arrayIsLike(t, bridgeActions, [bridgeActions[0]]);
+      const action = bridgeActions[0] as InvokeStoreEntryAction;
+      t.like(action, {
+        method: 'invokeEntry',
+        message: { targetName: 'planner', method: 'resolvePlan' },
+      });
+      arrayIsLike(t, action.message.args, [
+        portfolioId,
+        flowId2,
+        action.message.args[2],
+        portfolioStatus.policyVersion,
+        portfolioStatus.rebalanceCount,
+      ]);
+    }
   },
 );
 
