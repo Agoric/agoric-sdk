@@ -468,12 +468,12 @@ export const computePartialOrder = (
       if (srcSupply >= flow.flow) candidates.push({ flowIdx: i, flow });
     }
 
+    // Fail upon encountering deadlock.
     if (!candidates.length) {
-      // Deadlock detected
       const remaining = partialMap(flows, (f, idx) => {
         if (scheduled.has(idx)) return;
         const { id, src, dest } = f.edge;
-        const srcSupply = available.get(src) || 0;
+        const srcSupply = available.get(src);
         return `${idx}: ${id} ${src}(${srcSupply}) -> ${dest} needs ${f.flow}`;
       });
       throw Fail`Scheduling deadlock: no flows can be executed. Remaining:\n${remaining.join('\n')}`;
