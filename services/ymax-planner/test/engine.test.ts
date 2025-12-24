@@ -658,15 +658,11 @@ test.serial('processPortfolioEvents runs flows in sequence', async t => {
       powers,
     );
 
+    t.deepEqual(memory.deferrals, []);
     t.deepEqual(
       getBridgeSends().map(invocation => invocation.action),
       [],
       'a running flow blocks further invocations',
-    );
-    t.deepEqual(
-      memory.deferrals,
-      [vstorageEventDetail.eventRecord],
-      'portfolio with a running flow is deferred',
     );
   }
   {

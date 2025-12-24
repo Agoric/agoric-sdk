@@ -440,17 +440,11 @@ export const processPortfolioEvents = async (
       // is pointless because acceptance of the first submission would
       // invalidate the others as stale, but we'll see them again when such
       // acceptance prompts changes to the portfolio status.
-      let hasActiveFlow = false;
       for (const [flowKey, flowDetail] of typedEntries(status.flowsRunning || {})) {
         // If vstorage has a node for this flow then we've already responded.
         if (flowKeys.has(flowKey)) {
-          hasActiveFlow ||= await isActiveFlow(portfolioKey, flowKey, readOpts);
+          if (await isActiveFlow(portfolioKey, flowKey, readOpts)) return;
           continue;
-        }
-        if (hasActiveFlow) {
-          // Another flow is already running; wait for it to finish.
-          deferrals.push(eventRecord);
-          return;
         }
         await runWithFlowTrace(
           portfolioKey, flowKey,
