@@ -127,6 +127,7 @@ export const spectrumProtocols: Readonly<
   Beefy: 'beefy',
   Compound: 'compound',
   USDN: 'USDN',
+  ERC4626: 'ERC4626',
 };
 
 /**

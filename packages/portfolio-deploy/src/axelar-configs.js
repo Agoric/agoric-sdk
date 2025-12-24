@@ -209,6 +209,16 @@ const beefyVaultAddresses = harden({
   },
 });
 
+/** @type {Record<string, AddressesMap>} */
+const erc4626VaultAddresses = harden({
+  vaultU2: {
+    mainnet: {},
+    testnet: {
+      Ethereum: '0xAA1dD21066383b1aC4652Ea41C7520Fb373840Bc', // https://sepolia.etherscan.io/address/0xAA1dD21066383b1aC4652Ea41C7520Fb373840Bc
+    },
+  },
+});
+
 /** @type {AddressesMap} */
 const factoryAddresses = harden({
   mainnet: {
@@ -427,6 +437,7 @@ const testnetContracts = {
     tokenMessenger: testnetTokenMessenger['Ethereum Sepolia'].Address,
     aaveUSDC: aaveUsdcAddresses.testnet.Ethereum,
     aaveRewardsController: aaveRewardsControllerAddresses.testnet.Ethereum,
+    ERC4626_vaultU2_Ethereum: erc4626VaultAddresses.vaultU2.testnet.Ethereum,
   },
   Optimism: {
     aavePool: aaveAddresses.testnet.Optimism,
