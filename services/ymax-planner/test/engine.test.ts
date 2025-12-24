@@ -6,8 +6,6 @@ import type { DeliverTxResponse } from '@cosmjs/stargate';
 
 import { Fail, q } from '@endo/errors';
 
-import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.exo.ts';
-import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
 import type {
   FlowDetail,
   StatusFor,
@@ -18,13 +16,7 @@ import {
   makeVstorageKitFromVstorage,
   reflectWalletStore,
 } from '@agoric/client-utils';
-import type {
-  QueryChildrenMetaResponse,
-  QueryDataMetaResponse,
-  SigningSmartWalletKit,
-  VStorage,
-  VstorageKit,
-} from '@agoric/client-utils';
+import type { SigningSmartWalletKit, VStorage } from '@agoric/client-utils';
 import { boardSlottingMarshaller } from '@agoric/client-utils';
 import { partialMap, typedEntries } from '@agoric/internal';
 import type { RecordFromTuple } from '@agoric/internal';
@@ -44,7 +36,6 @@ import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 import type { Marshal } from '@endo/marshal';
 import { Far } from '@endo/pass-style';
 import type { Passable } from '@endo/pass-style';
-import type { CosmosRestClient } from '../src/cosmos-rest-client.ts';
 import {
   makeVstorageEvent,
   pickBalance,
@@ -61,8 +52,6 @@ import {
   createMockEnginePowers,
   makeNotImplemented,
   makeNotImplementedAsync,
-  makeStreamCellJsonFromText,
-  mockGasEstimator,
 } from './mocks.ts';
 
 // #region client-utils mocks
