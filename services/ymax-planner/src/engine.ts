@@ -32,6 +32,7 @@ import type {
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import {
   flowIdFromKey,
+  FlowStatusShape,
   PoolPlaces,
   portfolioIdFromKey,
   PortfolioStatusShapeExt,
@@ -85,6 +86,7 @@ import {
   vstoragePathIsAncestorOf,
   vstoragePathIsParentOf,
 } from './vstorage-utils.ts';
+import type { ReadStorageMetaOptions } from './vstorage-utils.ts';
 
 const { fromEntries, values } = Object;
 
@@ -280,6 +282,21 @@ export const processPortfolioEvents = async (
     spectrumPoolIds,
     usdcTokensByChain,
   };
+  type ReadVstorageSimpleOpts = Pick<
+    ReadStorageMetaOptions<'data'>,
+    'minBlockHeight' | 'retries'
+  >;
+  const isActiveFlow = async (
+    portfolioKey: PortfolioKey,
+    flowKey: FlowKey,
+    opts?: ReadVstorageSimpleOpts,
+  ) => {
+    const path = `${portfoliosPathPrefix}.${portfolioKey}.flows.${flowKey}`;
+    const capdata = await readStreamCellValue(vstorage, path, opts);
+    const flowStatus = marshaller.fromCapData(capdata);
+    mustMatch(flowStatus, FlowStatusShape, path);
+    return flowStatus.state === 'run';
+  };
   const startFlow = async (
     portfolioStatus: StatusFor['portfolio'],
     portfolioKey: PortfolioKey,
@@ -385,7 +402,10 @@ export const processPortfolioEvents = async (
     if (handledPortfolioKeys.has(portfolioKey)) return;
     handledPortfolioKeys.add(portfolioKey);
     const path = `${portfoliosPathPrefix}.${portfolioKey}`;
-    const readOpts = { minBlockHeight: eventRecord.blockHeight, retries: 4, };
+    const readOpts: ReadVstorageSimpleOpts = {
+      minBlockHeight: eventRecord.blockHeight,
+      retries: 4,
+    };
     await null;
     try {
       const [statusCapdata, flowKeysResp] = await Promise.all([
@@ -414,15 +434,24 @@ export const processPortfolioEvents = async (
         return;
       }
 
-      // If any in-progress flows need activation (as indicated by not having
-      // its own dedicated vstorage data), then find the first such flow and
-      // respond to it. Responding to the rest now is pointless because
-      // acceptance of the first submission would invalidate the others as
-      // stale, but we'll see them again when such acceptance prompts changes
-      // to the portfolio status.
+      // If any in-progress flows need activation (as indicated by lacking a
+      // dedicated vstorage node) and there is not already a running flow, then
+      // find the first such flow and respond to it. Responding to the rest now
+      // is pointless because acceptance of the first submission would
+      // invalidate the others as stale, but we'll see them again when such
+      // acceptance prompts changes to the portfolio status.
+      let hasActiveFlow = false;
       for (const [flowKey, flowDetail] of typedEntries(status.flowsRunning || {})) {
-        // If vstorage has data for this flow then we've already responded.
-        if (flowKeys.has(flowKey)) continue;
+        // If vstorage has a node for this flow then we've already responded.
+        if (flowKeys.has(flowKey)) {
+          hasActiveFlow ||= await isActiveFlow(portfolioKey, flowKey, readOpts);
+          continue;
+        }
+        if (hasActiveFlow) {
+          // Another flow is already running; wait for it to finish.
+          deferrals.push(eventRecord);
+          return;
+        }
         await runWithFlowTrace(
           portfolioKey, flowKey,
           () => startFlow(status, portfolioKey, flowKey, flowDetail),
