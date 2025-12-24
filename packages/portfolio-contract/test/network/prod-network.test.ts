@@ -8,7 +8,7 @@ import { makeGraphForFlow } from '../../tools/network/buildGraph.js';
 import type { FlowGraph } from '../../tools/network/buildGraph.js';
 import PROD_NETWORK, {
   PROD_NETWORK as NAMED_PROD,
-} from '../../tools/network/network.prod.js';
+} from '../../tools/network/prod-network.js';
 import { PoolPlaces } from '../../src/type-guards.js';
 import type { AssetPlaceRef } from '../../src/type-guards-steps.js';
 import type {

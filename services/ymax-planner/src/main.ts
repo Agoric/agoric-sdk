@@ -10,7 +10,7 @@ import * as ws from 'ws';
 import { Fail, q } from '@endo/errors';
 import { isPrimitive } from '@endo/pass-style';
 
-import { PROD_NETWORK } from '@aglocal/portfolio-contract/tools/network/network.prod.js';
+import { PROD_NETWORK } from '@aglocal/portfolio-contract/tools/network/prod-network.js';
 import {
   fetchEnvNetworkConfig,
   getInvocationUpdate,

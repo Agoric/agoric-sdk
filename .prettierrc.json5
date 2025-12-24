@@ -31,8 +31,8 @@
     {
       // Keep network definitions readable on wide lines
       files: [
-        'packages/portfolio-contract/tools/network/network.prod.ts',
-        'packages/portfolio-contract/test/network/test-network.ts',
+        'packages/portfolio-contract/tools/network/prod-network.ts',
+        'packages/portfolio-contract/tools/network/test-network.ts',
       ],
       options: {
         printWidth: 180,
