@@ -339,7 +339,7 @@ test('handleDeposit handles missing targetAllocation gracefully', async t => {
 });
 
 test('handleDeposit handles different position types correctly', async t => {
-  const deposit = makeDeposit(1000n);
+  const deposit = makeDeposit(1_000_000n);
   const portfolioKey = 'test.portfolios.portfolio1' as const;
 
   // Mock VstorageKit readPublished with various position types
@@ -381,7 +381,7 @@ test('handleDeposit handles different position types correctly', async t => {
           pool,
           chain,
           address: addr,
-          balance: { supplyBalance: 150, borrowAmount: 0 },
+          balance: { supplyBalance: 150_000, borrowAmount: 0 },
         };
       }
       if (chain === 'ethereum' && pool === 'compound') {
@@ -389,7 +389,7 @@ test('handleDeposit handles different position types correctly', async t => {
           pool,
           chain,
           address: addr,
-          balance: { supplyBalance: 75, borrowAmount: 0 },
+          balance: { supplyBalance: 75_000, borrowAmount: 0 },
         };
       }
       return {
@@ -410,7 +410,7 @@ test('handleDeposit handles different position types correctly', async t => {
 
     async getAccountBalance(chainName: string, addr: string, denom: string) {
       if (chainName === 'noble' && denom === 'uusdn') {
-        return { denom, amount: '300' };
+        return { denom, amount: '300000' };
       }
       return { denom, amount: '0' };
     }
