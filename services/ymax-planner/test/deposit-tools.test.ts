@@ -2,6 +2,7 @@
 /* eslint-disable max-classes-per-file, class-methods-use-this */
 import test from 'ava';
 
+import { ACCOUNT_DUST_EPSILON } from '@agoric/portfolio-api';
 import { planUSDNDeposit } from '@aglocal/portfolio-contract/test/mocks.js';
 import { PROD_NETWORK } from '@aglocal/portfolio-contract/tools/network/prod-network.ts';
 import { TEST_NETWORK } from '@aglocal/portfolio-contract/tools/network/test-network.js';
@@ -71,6 +72,10 @@ const handleDeposit = async (
   });
   return { policyVersion, rebalanceCount, plan };
 };
+
+test('USDN denom', t => {
+  t.is(USDN.base, 'uusdn');
+});
 
 test('getNonDustBalances filters balances at or below the dust epsilon', async t => {
   const status = {
@@ -339,7 +344,7 @@ test('handleDeposit handles missing targetAllocation gracefully', async t => {
 });
 
 test('handleDeposit handles different position types correctly', async t => {
-  const deposit = makeDeposit(1000n);
+  const deposit = makeDeposit(1_000_000n);
   const portfolioKey = 'test.portfolios.portfolio1' as const;
 
   // Mock VstorageKit readPublished with various position types
@@ -381,7 +386,7 @@ test('handleDeposit handles different position types correctly', async t => {
           pool,
           chain,
           address: addr,
-          balance: { supplyBalance: 150, borrowAmount: 0 },
+          balance: { supplyBalance: 150_000, borrowAmount: 0 },
         };
       }
       if (chain === 'ethereum' && pool === 'compound') {
@@ -389,7 +394,7 @@ test('handleDeposit handles different position types correctly', async t => {
           pool,
           chain,
           address: addr,
-          balance: { supplyBalance: 75, borrowAmount: 0 },
+          balance: { supplyBalance: 75_000, borrowAmount: 0 },
         };
       }
       return {
@@ -410,7 +415,7 @@ test('handleDeposit handles different position types correctly', async t => {
 
     async getAccountBalance(chainName: string, addr: string, denom: string) {
       if (chainName === 'noble' && denom === 'uusdn') {
-        return { denom, amount: '300' };
+        return { denom, amount: '300000' };
       }
       return { denom, amount: '0' };
     }
@@ -449,6 +454,29 @@ test('planRebalanceToAllocations emits an empty plan when already balanced', asy
   const plan = await planRebalanceToAllocations({
     brand: depositBrand,
     currentBalances,
+    targetAllocation,
+    network: TEST_NETWORK,
+    feeBrand,
+    gasEstimator: mockGasEstimator,
+  });
+  t.deepEqual(plan, emptyPlan);
+});
+
+// https://github.com/Agoric/agoric-private/issues/623
+test('planRebalanceToAllocations emits an empty plan when almost balanced', async t => {
+  const targetAllocation = {
+    Aave_Arbitrum: 25n,
+    Aave_Avalanche: 50n,
+    Compound_Ethereum: 25n,
+  };
+  const currentBalanceValues = {
+    Aave_Arbitrum: 25_000_000n - ACCOUNT_DUST_EPSILON + 1n,
+    Aave_Avalanche: 50_000_000n + 2n * ACCOUNT_DUST_EPSILON - 2n,
+    Compound_Ethereum: 25_000_000n - ACCOUNT_DUST_EPSILON + 1n,
+  };
+  const plan = await planRebalanceToAllocations({
+    brand: depositBrand,
+    currentBalances: objectMap(currentBalanceValues, v => makeDeposit(v)),
     targetAllocation,
     network: TEST_NETWORK,
     feeBrand,
@@ -548,10 +576,6 @@ test('planDepositToAllocations produces plan expected by contract', async t => {
 
   const expected = planUSDNDeposit(amount);
   t.deepEqual(actual, expected);
-});
-
-test('USDN denom', t => {
-  t.is(USDN.base, 'uusdn');
 });
 
 async function singleSourceRebalanceSteps(scale: number) {
