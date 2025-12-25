@@ -2,6 +2,7 @@
 /* eslint-disable max-classes-per-file, class-methods-use-this */
 import test from 'ava';
 
+import { ACCOUNT_DUST_EPSILON } from '@agoric/portfolio-api';
 import { planUSDNDeposit } from '@aglocal/portfolio-contract/test/mocks.js';
 import { PROD_NETWORK } from '@aglocal/portfolio-contract/tools/network/prod-network.ts';
 import { TEST_NETWORK } from '@aglocal/portfolio-contract/tools/network/test-network.js';
@@ -71,6 +72,10 @@ const handleDeposit = async (
   });
   return { policyVersion, rebalanceCount, plan };
 };
+
+test('USDN denom', t => {
+  t.is(USDN.base, 'uusdn');
+});
 
 test('getNonDustBalances filters balances at or below the dust epsilon', async t => {
   const status = {
@@ -457,6 +462,29 @@ test('planRebalanceToAllocations emits an empty plan when already balanced', asy
   t.deepEqual(plan, emptyPlan);
 });
 
+// https://github.com/Agoric/agoric-private/issues/623
+test('planRebalanceToAllocations emits an empty plan when almost balanced', async t => {
+  const targetAllocation = {
+    Aave_Arbitrum: 25n,
+    Aave_Avalanche: 50n,
+    Compound_Ethereum: 25n,
+  };
+  const currentBalanceValues = {
+    Aave_Arbitrum: 25_000_000n - ACCOUNT_DUST_EPSILON + 1n,
+    Aave_Avalanche: 50_000_000n + 2n * ACCOUNT_DUST_EPSILON - 2n,
+    Compound_Ethereum: 25_000_000n - ACCOUNT_DUST_EPSILON + 1n,
+  };
+  const plan = await planRebalanceToAllocations({
+    brand: depositBrand,
+    currentBalances: objectMap(currentBalanceValues, v => makeDeposit(v)),
+    targetAllocation,
+    network: TEST_NETWORK,
+    feeBrand,
+    gasEstimator: mockGasEstimator,
+  });
+  t.deepEqual(plan, emptyPlan);
+});
+
 test('planRebalanceToAllocations moves funds when needed', async t => {
   const targetAllocation = {
     USDN: 40n,
@@ -548,10 +576,6 @@ test('planDepositToAllocations produces plan expected by contract', async t => {
 
   const expected = planUSDNDeposit(amount);
   t.deepEqual(actual, expected);
-});
-
-test('USDN denom', t => {
-  t.is(USDN.base, 'uusdn');
 });
 
 async function singleSourceRebalanceSteps(scale: number) {
