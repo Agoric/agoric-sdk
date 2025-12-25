@@ -28,6 +28,7 @@ import type {
 } from '../src/types.js';
 import { MILLISECONDS_PER_SECOND } from '../src/utils/time.js';
 import { makeChainHub } from '../src/exos/chain-hub.js';
+import { prepareProgressTracker } from '../src/utils/progress.js';
 
 import {
   Any,
@@ -156,6 +157,7 @@ const makeScenario = () => {
     });
 
     const account: IcaAccount = Far('MockAccount', {
+      makeProgressTracker: () => makeProgressTracker(),
       getAddress: () => chainAddress,
       executeEncodedTx: async msgs => {
         assert.equal(msgs.length, 1);
@@ -216,6 +218,12 @@ const makeScenario = () => {
   });
 
   const vowTools = prepareVowTools(zone.subZone('VowTools'));
+  const makeProgressTracker = prepareProgressTracker(
+    zone.subZone('ProgressTracker'),
+    {
+      vowTools,
+    },
+  );
 
   const icqConnection = Far('ICQConnection', {}) as ICQConnection;
 
@@ -234,6 +242,7 @@ const makeScenario = () => {
   return {
     baggage,
     zone,
+    makeProgressTracker,
     makeRecorderKit,
     ...mockAccount(undefined, delegations),
     storageNode: rootNode,
@@ -250,6 +259,7 @@ test('makeAccount() writes to storage', async t => {
   const s = makeScenario();
   const { account, timer } = s;
   const {
+    makeProgressTracker,
     makeRecorderKit,
     storageNode,
     zcf,
@@ -260,6 +270,7 @@ test('makeAccount() writes to storage', async t => {
   } = s;
   const make = prepareCosmosOrchestrationAccountKit(zone, {
     chainHub,
+    makeProgressTracker,
     makeRecorderKit,
     timerService: timer,
     vowTools,
@@ -298,6 +309,7 @@ test('withdrawRewards() on StakingAccountHolder formats message correctly', asyn
   const s = makeScenario();
   const { account, calls, timer } = s;
   const {
+    makeProgressTracker,
     makeRecorderKit,
     storageNode,
     zcf,
@@ -308,6 +320,7 @@ test('withdrawRewards() on StakingAccountHolder formats message correctly', asyn
   } = s;
   const make = prepareCosmosOrchestrationAccountKit(zone, {
     chainHub,
+    makeProgressTracker,
     makeRecorderKit,
     timerService: timer,
     vowTools,
@@ -342,6 +355,7 @@ test(`delegate; redelegate using invitationMakers`, async t => {
   const s = makeScenario();
   const { account, calls, timer } = s;
   const {
+    makeProgressTracker,
     makeRecorderKit,
     storageNode,
     zcf,
@@ -353,6 +367,7 @@ test(`delegate; redelegate using invitationMakers`, async t => {
   } = s;
   const makeAccountKit = prepareCosmosOrchestrationAccountKit(zone, {
     chainHub,
+    makeProgressTracker,
     makeRecorderKit,
     timerService: timer,
     vowTools,
@@ -419,6 +434,9 @@ test(`delegate; redelegate using invitationMakers`, async t => {
     const result = await E(seat).getOfferResult();
 
     t.deepEqual(result, { completionTime: { nanos: 0, seconds: 1765941840n } });
+    // const seconds = result?.completionTime?.seconds;
+    // t.like(result, { completionTime: { nanos: 0, seconds } });
+    // t.assert(typeof seconds === 'bigint');
     const msg = {
       typeUrl: '/cosmos.staking.v1beta1.MsgBeginRedelegate',
       value:
@@ -432,6 +450,7 @@ test(`withdraw rewards using invitationMakers`, async t => {
   const s = makeScenario();
   const { account, calls, timer } = s;
   const {
+    makeProgressTracker,
     makeRecorderKit,
     storageNode,
     zcf,
@@ -443,6 +462,7 @@ test(`withdraw rewards using invitationMakers`, async t => {
   } = s;
   const makeAccountKit = prepareCosmosOrchestrationAccountKit(zone, {
     chainHub,
+    makeProgressTracker,
     makeRecorderKit,
     timerService: timer,
     vowTools,
@@ -480,6 +500,7 @@ test(`undelegate waits for unbonding period`, async t => {
   const s = makeScenario();
   const { account, calls, timer } = s;
   const {
+    makeProgressTracker,
     makeRecorderKit,
     storageNode,
     zcf,
@@ -491,6 +512,7 @@ test(`undelegate waits for unbonding period`, async t => {
   } = s;
   const makeAccountKit = prepareCosmosOrchestrationAccountKit(zone, {
     chainHub,
+    makeProgressTracker,
     makeRecorderKit,
     timerService: timer,
     vowTools,

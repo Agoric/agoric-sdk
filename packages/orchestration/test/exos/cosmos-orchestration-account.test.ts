@@ -42,7 +42,7 @@ import { makeIssuerKit } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { IBCMethod } from '@agoric/vats';
 import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
-import { heapVowE as E } from '@agoric/vow/vat.js';
+import { heapVowE as E, heapVowTools } from '@agoric/vow/vat.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { decodeBase64 } from '@endo/base64';
 import type { EReturn } from '@endo/far';
@@ -50,7 +50,10 @@ import type { TestFn } from 'ava';
 import { MsgDepositForBurn as MsgDepositForBurnType } from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
 import { CodecHelper } from '@agoric/cosmic-proto';
 import { Height as HeightType } from '@agoric/cosmic-proto/ibc/core/client/v1/client.js';
-import type { CosmosValidatorAddress } from '../../src/cosmos-api.js';
+import type {
+  CosmosValidatorAddress,
+  TrafficEntry,
+} from '../../src/cosmos-api.js';
 import fetchedChainInfo from '../../src/fetched-chain-info.js';
 import type {
   AmountArg,
@@ -344,11 +347,79 @@ test('transfer', async t => {
     basicIbcTransfer,
     'outgoing transfer msg matches expected default mock',
   );
+  const transferResult = await res;
   t.deepEqual(
-    await res,
-    { status: 'unknown' },
-    'distant transfer returns { status: unknown } (for now)',
+    transferResult,
+    'FOLLOW_TRAFFIC',
+    `distant transfer returns 'FOLLOW_TRAFFIC' (for now)`,
   );
+  t.snapshot(transferResult, 'transfer full result');
+
+  const progressTracker = await E(account).makeProgressTracker();
+  const resultP = E(account).transfer(mockDestination, mockAmountArg, {
+    progressTracker,
+  });
+  await eventLoopIteration();
+  progressTracker.finish();
+
+  const pktWithMeta = await getAndDecodeLatestPacket();
+  t.deepEqual(
+    pktWithMeta,
+    basicIbcTransfer,
+    'outgoing transfer msg matches expected default mock',
+  );
+
+  const result = await heapVowTools.when(resultP);
+  const resultMeta = {
+    result,
+    meta: progressTracker.getCurrentProgressReport(),
+  };
+  t.deepEqual(
+    resultMeta.meta,
+    {
+      traffic: [
+        {
+          op: 'ICA',
+          seq: { status: 'unknown' },
+          src: [
+            'ibc',
+            ['chain', 'cosmos:agoric-3'],
+            ['port', 'icacontroller-1'],
+            ['channel', 'channel-0'],
+          ],
+          dst: [
+            'ibc',
+            ['chain', 'cosmos:cosmoshub-4'],
+            ['port', 'icahost'],
+            ['channel', 'channel-0'],
+          ],
+        },
+        {
+          op: 'transfer',
+          seq: 0n,
+          src: [
+            'ibc',
+            ['chain', 'cosmos:cosmoshub-4'],
+            ['port', 'transfer'],
+            ['channel', 'channel-536'],
+          ],
+          dst: [
+            'ibc',
+            ['chain', 'cosmos:noble-1'],
+            ['port', 'transfer'],
+            ['channel', 'channel-4'],
+          ],
+        },
+      ] as TrafficEntry[],
+    },
+    'transfer returns proper meta',
+  );
+  t.deepEqual(
+    result,
+    'FOLLOW_TRAFFIC',
+    `distant transfer returns result of 'FOLLOW_TRAFFIC' (for now)`,
+  );
+  t.snapshot(resultMeta, 'transfer result with metadata');
 
   t.log('transfer accepts custom memo');
   await E(account).transfer(mockDestination, mockAmountArg, {

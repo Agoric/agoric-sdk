@@ -22,12 +22,13 @@ import type {
   KnownNamespace,
   NobleMethods,
   Bech32Address,
+  ProgressTracker,
 } from './types.js';
 
 import type { ResolvedContinuingOfferResult } from './utils/zoe-tools.js';
 
 export type OrchestrationOptions = {
-  _placeholder?: never;
+  progressTracker?: ProgressTracker;
 };
 
 export type PacketOptions = OrchestrationOptions & {
@@ -274,6 +275,12 @@ export interface OrchestrationAccountCommon {
    * @throws when prohibited (see `icqEnabled` in {@link CosmosChainInfo})
    */
   getBalance: (denom: DenomArg, opts?: QuerierOptions) => Promise<DenomAmount>;
+
+  /**
+   * @returns a progressTracker that can be used to give incremental updates to an
+   * orchestration client.
+   */
+  makeProgressTracker: () => ProgressTracker;
 
   /**
    * Transfer amount to another account on the same chain. The promise settles when the transfer is complete.

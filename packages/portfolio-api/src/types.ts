@@ -4,6 +4,7 @@ import {
   type AccountId,
   type Bech32Address,
   type CosmosChainAddress,
+  type TrafficEntry,
 } from '@agoric/orchestration';
 import type {
   ContinuingInvitationSpec,
@@ -13,6 +14,20 @@ import type { SupportedChain, YieldProtocol } from './constants.js';
 import type { InstrumentId } from './instruments.js';
 import type { PublishedTx } from './resolver.js';
 
+/**
+ * Feature flags to handle contract upgrade flow compatibility.
+ */
+export type FlowFeatures = {
+  /** Control `ProgressTracker` support. */
+  useProgressTracker?: boolean;
+};
+
+/**
+ * Configuration options for flows.
+ */
+export type FlowConfig = {
+  features?: FlowFeatures;
+};
 export type SeatKeyword = 'Cash' | 'Deposit';
 
 /**
@@ -104,6 +119,7 @@ export type FlowStep = {
   amount: NatAmount;
   src: AssetPlaceRef;
   dest: AssetPlaceRef;
+  phases?: Record<string, any>;
   // XXX all parts: fee etc.
 };
 
@@ -111,6 +127,10 @@ export type FundsFlowPlan = {
   flow: MovementDesc[];
   /** default to full order */
   order?: [target: number, prereqs: number[]][];
+};
+
+export type TrafficReport = {
+  traffic: TrafficEntry[];
 };
 
 export type PortfolioKey = `portfolio${number}`;
