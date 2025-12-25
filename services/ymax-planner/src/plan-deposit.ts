@@ -42,6 +42,9 @@ const rejectUserInput = (details: ReturnType<typeof X> | string): never =>
   assert.fail(details, ((...args) =>
     Reflect.construct(UserInputError, args)) as ErrorConstructor);
 
+const isDust = (value: bigint) =>
+  -ACCOUNT_DUST_EPSILON < value && value < ACCOUNT_DUST_EPSILON;
+
 // Note the differences in the shape of field `balance` between the two Spectrum
 // APIs (string vs. Record<'USDC' | 'USD' | string, number>).
 type AccountBalance = ChainAddressTokenBalance['balance'];
@@ -307,7 +310,7 @@ export const getNonDustBalances = async (
 /**
  * Derive weighted targets for allocation keys. Additionally, always zero out hub balances
  * (chains; keys starting with '@') that have non-zero current amounts. Returns only entries
- * whose values change compared to current.
+ * whose values change by at least ACCOUNT_DUST_EPSILON compared to current.
  */
 const computeWeightedTargets = (
   brand: Brand<'nat'>,
@@ -345,24 +348,34 @@ const computeWeightedTargets = (
   sumW > 0n ||
     rejectUserInput('Total target allocation weights must be positive.');
 
-  // Try to satisfy the weights, reserving any amount otherwise subject to
-  // rounding loss.
+  // Try to satisfy the weights, leaving any amount otherwise subject to
+  // rounding loss or representing a too-small delta at the highest-weight
+  // place that can accept it.
   const draft: Partial<Record<AssetPlaceRef, NatValue>> = {};
   let remainder = total;
-  let [maxKey, maxW] = [weights[0][0], -1n];
   for (const [key, w] of weights) {
-    if (w > maxW) {
-      [maxKey, maxW] = [key, w];
-    }
-    const v = (total * w) / sumW;
+    const a = currentValues[key] || 0n;
+    const b = (total * w) / sumW;
+    const v = isDust(b - a) ? a : b;
     draft[key] = v;
     remainder -= v;
   }
-
-  // Leave any remainder at the highest-weight place.
   if (remainder !== 0n) {
-    // @ts-expect-error draft[maxKey] won't be undefined here
-    draft[maxKey] += remainder;
+    // eslint-disable-next-line no-nested-ternary
+    weights.sort(([_k1, a], [_k2, b]) => (a < b ? 1 : a > b ? -1 : 0));
+    for (const [key, _w] of weights) {
+      const a = currentValues[key] || 0n;
+      const v = (draft[key] || 0n) + remainder;
+      if (v === a || !isDust(v - a)) {
+        draft[key] = v;
+        remainder = 0n;
+        break;
+      }
+    }
+    remainder === 0n ||
+      rejectUserInput(
+        X`Nowhere to place ${remainder} in update of ${currentValues} to ${draft}`,
+      );
   }
 
   // Zero out hubs (chains) with non-zero current balances so those funds get
