@@ -49,6 +49,7 @@ import { E } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
+import { prepareEVMWalletHandlerKit } from './evm-wallet-handler.ts';
 import { preparePlanner } from './planner.exo.ts';
 import { preparePortfolioKit, type PortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
@@ -537,6 +538,19 @@ export const contract = async (
     makePlanner(),
   );
 
+  const { makeEVMWalletMessageHandler } = prepareEVMWalletHandlerKit(
+    zone.subZone('evmWalletHandler'),
+    {
+      storageNode: E(storageNode).makeChildNode('evmWallets'),
+      vowTools,
+    },
+  );
+
+  const makeEVMWalletHandlerInvitation = prepareResultOnlyInvitation(
+    'evmWalletHandler',
+    () => makeEVMWalletMessageHandler(),
+  );
+
   const creatorFacet = zone.exo(
     'PortfolioAdmin',
     M.interface('PortfolioAdmin', {
@@ -547,6 +561,11 @@ export const contract = async (
       ).returns(),
       makePlannerInvitation: M.callWhen().returns(InvitationShape),
       deliverPlannerInvitation: M.callWhen(
+        M.string(),
+        M.remotable('Instance'),
+      ).returns(),
+      makeEVMWalletHandlerInvitation: M.callWhen().returns(InvitationShape),
+      deliverEVMWalletHandlerInvitation: M.callWhen(
         M.string(),
         M.remotable('Instance'),
       ).returns(),
@@ -592,6 +611,25 @@ export const contract = async (
         trace('made planner invitation', invitation);
         await E(pfP).deliverPayment(address, invitation);
         trace('delivered planner invitation');
+      },
+      makeEVMWalletHandlerInvitation() {
+        return makeEVMWalletHandlerInvitation();
+      },
+      /**
+       * @param address - Agoric address where to deliver the invitation
+       * @param instancePS - Postal service instance for delivery
+       */
+      async deliverEVMWalletHandlerInvitation(
+        address: string,
+        instancePS: Instance<() => { publicFacet: PostalServiceI }>,
+      ) {
+        trace('deliverEVMWalletHandlerInvitation');
+        const zoe = zcf.getZoeService();
+        const pfP = E(zoe).getPublicFacet(instancePS);
+        const invitation = await makeEVMWalletHandlerInvitation();
+        trace('made EVM wallet handler invitation', invitation);
+        await E(pfP).deliverPayment(address, invitation);
+        trace('delivered EVM wallet handler invitation');
       },
       /**
        * Withdraw from contractAccount; for example, before terminating the contract
