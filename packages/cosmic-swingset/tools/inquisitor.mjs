@@ -40,6 +40,7 @@ import { isMainThread } from 'node:worker_threads';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import sqlite3 from 'better-sqlite3';
 import { Fail, b, q } from '@endo/errors';
+import * as farExports from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import { objectMap, BridgeId } from '@agoric/internal';
 import { QueuedActionType } from '@agoric/internal/src/action-types.js';
@@ -355,6 +356,19 @@ export const makeHelpers = ({ db, EV }) => {
     return results;
   };
 
+  // Mimic ../../vats/src/core/chain-behaviors.js
+  const coreEvalCompartmentEndowments = {
+    // XXX ...allPowers.modules,
+
+    ...farExports,
+
+    // XXX VatData: ...
+    console,
+    assert: globalThis.assert,
+    Base64: globalThis.Base64,
+    URL: globalThis.URL,
+  };
+
   /**
    * Run a core-eval directly through the controller (i.e., without a block).
    *
@@ -366,7 +380,7 @@ export const makeHelpers = ({ db, EV }) => {
   const runCoreEval = async (fnText, permits = true) => {
     // Fail noisily if fnText does not evaluate to a function.
     // This must be refactored if there is ever a need for such input.
-    const fn = new Compartment().evaluate(fnText);
+    const fn = new Compartment(coreEvalCompartmentEndowments).evaluate(fnText);
     typeof fn === 'function' || Fail`text must evaluate to a function`;
     /** @type {CoreEvalSDKType} */
     const coreEvalDesc = {
