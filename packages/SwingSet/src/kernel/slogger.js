@@ -4,7 +4,7 @@ import { objectMap } from '@agoric/internal';
 import { defineName } from '@agoric/internal/src/js-utils.js';
 import { makeLimitedConsole } from '@agoric/internal/src/ses-utils.js';
 
-/** @import {Callable} from '@agoric/internal'; */
+/** @import {Callable, OnlyStringKeys} from '@agoric/internal'; */
 /** @import {LimitedConsole} from '@agoric/internal/src/js-utils.js'; */
 /** @import {SlogProps, SlogDurationProps, SwingsetController} from '../controller/controller.js'; */
 /** @import {KernelSlog} from '../types-external.js'; */
@@ -35,7 +35,7 @@ const noopFinisher = harden(() => {});
  */
 function addSlogCallbacks(slogCallbacks, unusedMsgPrefix, methods) {
   const unused = new Set(Object.keys(slogCallbacks));
-  const wrappedMethods = /** @type {Methods} */ (
+  const wrappedMethods = /** @type {OnlyStringKeys<Methods>} */ (
     objectMap(methods, (impl, methodKey) => {
       const methodName = /** @type {keyof typeof slogCallbacks} */ (methodKey);
       unused.delete(methodName);

@@ -5,6 +5,10 @@ import type { Primitive, RemotableObject } from '@endo/pass-style';
 import type { mustMatch as endoMustMatch, Pattern } from '@endo/patterns';
 import type { Callable } from './ses-utils.js';
 
+export type OnlyStringKeys<O> = {
+  [K in keyof O]: K extends string ? O[K] : never;
+};
+
 /**
  * A mapping of a tuple type (as from `Parameters<...>`) into a corresponding
  * object type with named fields.
