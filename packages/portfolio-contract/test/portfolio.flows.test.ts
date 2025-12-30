@@ -868,7 +868,6 @@ test(
 test('open portfolio with Aave position', async t => {
   const amount = AmountMath.make(USDC, 2_000_000n);
   const feeAcct = AmountMath.make(BLD, 50n);
-  const detail = { evmGas: 50n };
   const feeCall = AmountMath.make(BLD, 100n);
   const { orch, tapPK, ctx, offer, storage, txResolver, cosmosId } = mocks(
     {},
@@ -880,7 +879,7 @@ test('open portfolio with Aave position', async t => {
       flow: [
         { src: '<Deposit>', dest: '@agoric', amount },
         { src: '@agoric', dest: '@noble', amount },
-        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct, detail },
+        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
         { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
       ],
     }),
@@ -1223,7 +1222,6 @@ test('claim rewards on Aave position', async t => {
 test('open portfolio with Beefy position', async t => {
   const amount = AmountMath.make(USDC, 2_000_000n);
   const feeAcct = AmountMath.make(BLD, 50n);
-  const detail = { evmGas: 50n };
   const feeCall = AmountMath.make(BLD, 100n);
   const { orch, tapPK, ctx, offer, storage, txResolver, cosmosId } = mocks(
     {},
@@ -1238,7 +1236,7 @@ test('open portfolio with Beefy position', async t => {
       flow: [
         { src: '<Deposit>', dest: '@agoric', amount },
         { src: '@agoric', dest: '@noble', amount },
-        { src: '@noble', dest: '@Avalanche', amount, fee: feeAcct, detail },
+        { src: '@noble', dest: '@Avalanche', amount, fee: feeAcct },
         {
           src: '@Avalanche',
           dest: 'Beefy_re7_Avalanche',
@@ -1507,7 +1505,6 @@ test('withdraw in coordination with planner', async t => {
     const amount = make(USDC, 50_000_000n);
     const seat = makeMockSeat({ Aave: amount }, {}, offer.log);
     const feeAcct = AmountMath.make(BLD, 50n);
-    const detail = { evmGas: 50n };
     const feeCall = AmountMath.make(BLD, 100n);
     const depositP = rebalance(
       orch,
@@ -1517,7 +1514,7 @@ test('withdraw in coordination with planner', async t => {
         flow: [
           { src: '<Deposit>', dest: '@agoric', amount },
           { src: '@agoric', dest: '@noble', amount },
-          { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct, detail },
+          { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
           { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
         ],
       },
@@ -2209,4 +2206,116 @@ test('makeErrorList collects any number of errors', t => {
       'several errors',
     );
   }
+});
+
+test('open portfolio with ERC4626 position', async t => {
+  const amount = AmountMath.make(USDC, 1_000_000n);
+  const feeAcct = AmountMath.make(BLD, 50n);
+  const feeCall = AmountMath.make(BLD, 100n);
+  const { orch, tapPK, ctx, offer, storage, txResolver } = mocks(
+    {},
+    { Deposit: amount },
+  );
+
+  const [actual] = await Promise.all([
+    openPortfolio(orch, ctx, offer.seat, {
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+        {
+          src: '@Arbitrum',
+          dest: 'ERC4626_vaultU2_Ethereum',
+          amount,
+          fee: feeCall,
+        },
+      ],
+    }),
+    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
+      await txResolver.drainPending();
+      await txResolver.drainPending();
+    }),
+  ]);
+  const { log } = offer;
+  t.log(log.map(msg => msg._method).join(', '));
+  t.like(log, [
+    { _method: 'monitorTransfers' },
+    { _method: 'transfer', address: { chainId: 'noble-1' } },
+    { _method: 'send' },
+    { _method: 'transfer', address: { chainId: 'axelar-dojo-1' } },
+    {
+      _method: 'localTransfer',
+      amounts: { Deposit: { value: 1_000_000n } },
+    },
+    { _method: 'transfer', address: { chainId: 'noble-1' } },
+    { _method: 'depositForBurn' },
+    { _method: 'send' },
+    { _method: 'transfer', address: { chainId: 'axelar-dojo-1' } },
+    { _method: 'exit', _cap: 'seat' },
+  ]);
+
+  t.snapshot(log, 'call log'); // see snapshot for remaining arg details
+  t.is(passStyleOf(actual.invitationMakers), 'remotable');
+  await documentStorageSchema(t, storage, docOpts);
+
+  const rawMemo = log[8].opts!.memo;
+  const decodedCalls = decodeFunctionCall(rawMemo, [
+    'approve(address,uint256)',
+    'deposit(uint256,address)',
+  ]);
+  t.snapshot(decodedCalls, 'decoded calls');
+});
+
+test('withdraw from ERC4626 position', async t => {
+  const amount = AmountMath.make(USDC, 1_000_000n);
+  const feeCall = AmountMath.make(BLD, 100n);
+  const { orch, tapPK, ctx, offer, storage, txResolver } = mocks(
+    {},
+    { Deposit: amount },
+  );
+
+  const kit = await ctx.makePortfolioKit();
+  const emptyAmount = AmountMath.make(USDC, 0n);
+
+  await Promise.all([
+    rebalance(
+      orch,
+      ctx,
+      offer.seat,
+      {
+        flow: [
+          {
+            dest: '@Arbitrum',
+            src: 'ERC4626_vaultU2_Ethereum',
+            amount: emptyAmount,
+            fee: feeCall,
+          },
+        ],
+      },
+      kit,
+    ),
+    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
+      await txResolver.drainPending();
+    }),
+  ]);
+
+  const { log } = offer;
+  t.log(log.map(msg => msg._method).join(', '));
+  t.like(log, [
+    { _method: 'monitorTransfers' },
+    { _method: 'send' },
+    { _method: 'transfer', address: { chainId: 'axelar-dojo-1' } },
+    { _method: 'send' },
+    { _method: 'transfer', address: { chainId: 'axelar-dojo-1' } },
+    { _method: 'exit', _cap: 'seat' },
+  ]);
+  t.snapshot(log, 'call log');
+
+  const rawMemo = log[4].opts!.memo;
+  const decodedCalls = decodeFunctionCall(rawMemo, [
+    'withdraw(uint256,address,address)',
+  ]);
+  t.snapshot(decodedCalls, 'decoded calls');
+
+  await documentStorageSchema(t, storage, docOpts);
 });

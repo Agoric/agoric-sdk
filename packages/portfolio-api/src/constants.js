@@ -36,6 +36,7 @@ export const YieldProtocol = /** @type {const} */ ({
   Compound: 'Compound',
   USDN: 'USDN',
   Beefy: 'Beefy',
+  ERC4626: 'ERC4626',
 });
 harden(YieldProtocol);
 

@@ -1,5 +1,5 @@
 /**
- * @file flows for Aave and Compound protocols on EVM chains
+ * @file flows for Aave, Compound, Beefy, and ERC4626 protocols on EVM chains
  *
  * Since Axelar GMP (General Message Passing) is used in both cases,
  * we use "gmp" in the filename.
@@ -8,6 +8,8 @@
  * @see {@link CCTP}
  * @see {@link AaveProtocol}
  * @see {@link CompoundProtocol}
+ * @see {@link BeefyProtocol}
+ * @see {@link ERC4626Protocol}
  */
 import type { GuestInterface } from '@agoric/async-flow';
 import type { NatValue } from '@agoric/ertp';
@@ -536,6 +538,57 @@ export const BeefyProtocol = {
   },
 } as const satisfies ProtocolDetail<
   'Beefy',
+  AxelarChain,
+  EVMContext & { poolKey: PoolKey }
+>;
+
+/**
+ * see {@link https://eips.ethereum.org/EIPS/eip-4626 }
+ * ERC-4626: Tokenized Vault Standard
+ */
+type ERC4626I = {
+  deposit: ['uint256', 'address'];
+  withdraw: ['uint256', 'address', 'address'];
+};
+
+const ERC4626: ERC4626I = {
+  deposit: ['uint256', 'address'],
+  withdraw: ['uint256', 'address', 'address'],
+};
+
+export const ERC4626Protocol = {
+  protocol: 'ERC4626',
+  chains: keys(AxelarChain) as AxelarChain[],
+  supply: async (ctx, amount, src, opts) => {
+    const { addresses: a, poolKey } = ctx;
+    const { remoteAddress } = src;
+    const session = makeEVMSession();
+    const usdc = session.makeContract(a.usdc, ERC20);
+    const vaultAddress =
+      a[poolKey] ||
+      assert.fail(X`ERC4626 pool key ${q(poolKey)} not found in addresses`);
+    const vault = session.makeContract(vaultAddress, ERC4626);
+    usdc.approve(vaultAddress, amount.value);
+    vault.deposit(amount.value, remoteAddress);
+    const calls = session.finish();
+
+    await sendGMPContractCall(ctx, src, calls, opts);
+  },
+  withdraw: async (ctx, amount, dest, _claim, opts) => {
+    const { addresses: a, poolKey } = ctx;
+    const { remoteAddress } = dest;
+    const session = makeEVMSession();
+    const vaultAddress =
+      a[poolKey] ||
+      assert.fail(X`ERC4626 pool key ${q(poolKey)} not found in addresses`);
+    const vault = session.makeContract(vaultAddress, ERC4626);
+    vault.withdraw(amount.value, remoteAddress, remoteAddress);
+    const calls = session.finish();
+
+    await sendGMPContractCall(ctx, dest, calls, opts);
+  },
+} as const satisfies ProtocolDetail<
+  'ERC4626',
   AxelarChain,
   EVMContext & { poolKey: PoolKey }
 >;
