@@ -42,6 +42,9 @@ const rejectUserInput = (details: ReturnType<typeof X> | string): never =>
   assert.fail(details, ((...args) =>
     Reflect.construct(UserInputError, args)) as ErrorConstructor);
 
+const isDust = (value: bigint) =>
+  -ACCOUNT_DUST_EPSILON < value && value < ACCOUNT_DUST_EPSILON;
+
 // Note the differences in the shape of field `balance` between the two Spectrum
 // APIs (string vs. Record<'USDC' | 'USD' | string, number>).
 type AccountBalance = ChainAddressTokenBalance['balance'];
@@ -307,30 +310,33 @@ export const getNonDustBalances = async (
 /**
  * Derive weighted targets for allocation keys. Additionally, always zero out hub balances
  * (chains; keys starting with '@') that have non-zero current amounts. Returns only entries
- * whose values change compared to current.
+ * whose values change by at least ACCOUNT_DUST_EPSILON compared to current.
  */
 const computeWeightedTargets = (
   brand: Brand<'nat'>,
-  current: Partial<Record<AssetPlaceRef, NatAmount>>,
-  delta: bigint,
+  currentAmounts: Partial<Record<AssetPlaceRef, NatAmount>>,
+  balanceDelta: bigint,
   allocation: TargetAllocation = {},
 ): Partial<Record<AssetPlaceRef, NatAmount>> => {
-  const currentTotal = Object.values(current).reduce(
-    (acc, amount) => acc + amount.value,
+  const currentValues = objectMap(
+    currentAmounts as Required<typeof currentAmounts>,
+    amount => amount.value,
+  );
+  const currentTotal = Object.values(currentValues).reduce(
+    (acc, value) => acc + value,
     0n,
   );
-  const total = currentTotal + delta;
+  const total = currentTotal + balanceDelta;
   total >= 0n || rejectUserInput('Insufficient funds for withdrawal.');
+
   const weights = Object.keys(allocation).length
     ? typedEntries({
         // Any current balance with no target has an effective weight of 0.
-        ...objectMap(current, () => 0n),
+        ...objectMap(currentValues, () => 0n),
         ...(allocation as Required<typeof allocation>),
       })
     : // In the absence of target weights, maintain the relative status quo.
-      typedEntries(current as Required<typeof current>).map(
-        ([key, amount]) => [key, amount.value] as [PoolKey, NatValue],
-      );
+      typedEntries(currentValues);
   const sumW = weights.reduce<bigint>((acc, entry) => {
     const w = entry[1];
     (typeof w === 'bigint' && w >= 0n) ||
@@ -341,33 +347,53 @@ const computeWeightedTargets = (
   }, 0n);
   sumW > 0n ||
     rejectUserInput('Total target allocation weights must be positive.');
-  const draft: Partial<Record<AssetPlaceRef, NatAmount>> = {};
+
+  // Try to satisfy the weights, leaving any amount otherwise subject to
+  // rounding loss or representing a too-small delta at the highest-weight
+  // place that can accept it.
+  const draft: Partial<Record<AssetPlaceRef, NatValue>> = {};
   let remainder = total;
-  let [maxKey, maxW] = [weights[0][0], -1n];
   for (const [key, w] of weights) {
-    if (w > maxW) {
-      [maxKey, maxW] = [key, w];
-    }
-    const v = (total * w) / sumW;
-    draft[key] = AmountMath.make(brand, v);
+    const a = currentValues[key] || 0n;
+    const b = (total * w) / sumW;
+    const v = isDust(b - a) ? a : b;
+    draft[key] = v;
     remainder -= v;
   }
   if (remainder !== 0n) {
-    const remainderAmount = AmountMath.make(brand, remainder);
-    draft[maxKey] = AmountMath.add(draft[maxKey] as NatAmount, remainderAmount);
+    // eslint-disable-next-line no-nested-ternary
+    weights.sort(([_k1, a], [_k2, b]) => (a < b ? 1 : a > b ? -1 : 0));
+    for (const [key, _w] of weights) {
+      const a = currentValues[key] || 0n;
+      const v = (draft[key] || 0n) + remainder;
+      if (v === a || !isDust(v - a)) {
+        draft[key] = v;
+        remainder = 0n;
+        break;
+      }
+    }
+    remainder === 0n ||
+      rejectUserInput(
+        X`Nowhere to place ${remainder} in update of ${currentValues} to ${draft}`,
+      );
   }
-  // Zero out hubs (chains) with non-zero current balances
-  for (const key of Object.keys(current)) {
-    if (key.startsWith('@')) draft[key] = AmountMath.make(brand, 0n);
+
+  // Zero out hubs (chains) with non-zero current balances so those funds get
+  // deployed too.
+  for (const key of Object.keys(currentValues)) {
+    if (key.startsWith('@')) draft[key] = 0n;
   }
+
   // Delete entries reflecting no change.
   for (const [key, amount] of Object.entries(draft)) {
-    const currentAmount = current[key];
-    if (currentAmount && AmountMath.isEqual(currentAmount, amount)) {
+    if (amount === currentValues[key]) {
       delete draft[key];
     }
   }
-  return draft;
+
+  return {
+    ...objectMap(draft, (value: NatValue) => AmountMath.make(brand, value)),
+  };
 };
 
 type PlannerContext = {
