@@ -16,16 +16,16 @@ sequenceDiagram
   autonumber
   actor op as YMax Operator
   box bootstrap
-  participant YC as ymaxControl
+    participant YC as ymaxControl
   end
   box ymax
-  participant CF as CreatorFacet
+    participant CF as CreatorFacet
   end
   box postalService
-  participant PS as publicFacet
+    participant PS as publicFacet
   end
   box walletFactory
-  participant W as wallet agoric1evm
+    participant W as wallet agoric1evm
   end
   actor evm as EVM Service Operator
 
@@ -45,7 +45,8 @@ sequenceDiagram
   W-->>W: saveResult('evmWalletHandler')
   W-->>evm: ack
 ```
-</details> 
+
+</details>
 
 ## EVM Wallet to Ymax Contract via App Server
 
@@ -71,15 +72,15 @@ sequenceDiagram
     actor U as Ted EVM User
     participant MM as Metamask<br/>0xED123
   end
-    participant D as Ymax UI
-    participant EMS as EVM<br/> Message Service
-    %% [Where it runs]
-    box Pink Ymax Contract
+  participant D as Ymax UI
+  participant EMS as EVM<br/> Message Service
+  %% [Where it runs]
+  box Pink Ymax Contract
     participant EMH as EVM<br/>Handler
     participant YC as Ymax<br/>Orchestrator
-    end
+  end
 
-    %% Notation: ->> for initial message, -->> for consequences
+  %% Notation: ->> for initial message, -->> for consequences
 
   U->>D: allocate 60% A, 40% B
   U->>D: Open Portfolio
@@ -94,16 +95,16 @@ sequenceDiagram
   note over MM: NOT SHOWN:<br/>Deposit
   D-->>U: stand by...
 
-    D -->> EMS: signed<br/>OpenPortfolio(intent543, ...)
-    note over EMS: NOT SHOWN:<br/>early validation
-    note right of EMS: using walletFactory invokeEntry
-    EMS -->> EMH: signed<br/>OpenPortfolio(intent543, ...)
-    EMH -->> EMH: check sig:<br/>pubkey = ecRecover(...)<br/>addr = hash(pubkey) 
-    EMH -->> YC: OpenPortfolio({60% A, 40% B},<br/>deadline)
-    YC -->> EMH: portfolio123
-    note over EMH: NOT SHOWN:<br/>vstorage, YDS details
-    EMH -->> D: portfolio123
-    D ->> U: dashboard
+  D -->> EMS: signed<br/>OpenPortfolio(intent543, ...)
+  note over EMS: NOT SHOWN:<br/>early validation
+  note right of EMS: using walletFactory invokeEntry
+  EMS -->> EMH: signed<br/>OpenPortfolio(intent543, ...)
+  EMH -->> EMH: check sig:<br/>pubkey = ecRecover(...)<br/>addr = hash(pubkey)
+  EMH -->> YC: OpenPortfolio({60% A, 40% B},<br/>deadline)
+  YC -->> EMH: portfolio123
+  note over EMH: NOT SHOWN:<br/>vstorage, YDS details
+  EMH -->> D: portfolio123
+  D ->> U: dashboard
 ```
 
 ## Open Portfolio with Deposit Permit
@@ -130,15 +131,15 @@ sequenceDiagram
     actor U as Ted EVM User
     participant MM as Metamask<br/>0xED123
   end
-    participant D as Ymax UI
-    participant EMS as EVM<br/> Message Service
-    %% [Where it runs]
-    box Pink Ymax Contract
+  participant D as Ymax UI
+  participant EMS as EVM<br/> Message Service
+  %% [Where it runs]
+  box Pink Ymax Contract
     participant EMH as EVM<br/>Handler
     participant YC as Ymax<br/>Orchestrator
-    end
+  end
 
-    %% Notation: ->> for initial message, -->> for consequences
+  %% Notation: ->> for initial message, -->> for consequences
 
   U->>D: allocate 60% A, 40% B
   U->>D: choose 1,000 USDC
@@ -157,20 +158,19 @@ sequenceDiagram
   MM-->>D: signature
   D-->>U: stand by...
 
-    D -->> EMS: signed<br/>OpenPortfolio(intent543, ...)<br/>signed Permit(...)
-    note over EMS: NOT SHOWN:<br/>early validation
-    note right of EMS: using walletFactory invokeEntry
-    EMS -->> EMH: signed<br/>OpenPortfolio(intent543, ...)<br/>signed Permit(...)
-    EMH -->> EMH: check sigs
-    EMH -->> YC: OpenPortfolio(1,000 USDC,<br/>{60% A, 40% B},<br/>deadline)
-    note over EMH: NOT SHOWN:<br/>vstorage, YDS details
-    YC -->> EMH: portfolio123<br/>flow1
-    EMH -->> D: portfolio123<br/>flow1
-    D -->> U: dashboard
-    note over YC: NOT SHOWN:<br/>Orchestration<br/>Magic...
-    YC-->> D: flow1 done
-    D -->> U: deposit done
-
+  D -->> EMS: signed<br/>OpenPortfolio(intent543, ...)<br/>signed Permit(...)
+  note over EMS: NOT SHOWN:<br/>early validation
+  note right of EMS: using walletFactory invokeEntry
+  EMS -->> EMH: signed<br/>OpenPortfolio(intent543, ...)<br/>signed Permit(...)
+  EMH -->> EMH: check sigs
+  EMH -->> YC: OpenPortfolio(1,000 USDC,<br/>{60% A, 40% B},<br/>deadline)
+  note over EMH: NOT SHOWN:<br/>vstorage, YDS details
+  YC -->> EMH: portfolio123<br/>flow1
+  EMH -->> D: portfolio123<br/>flow1
+  D -->> U: dashboard
+  note over YC: NOT SHOWN:<br/>Orchestration<br/>Magic...
+  YC-->> D: flow1 done
+  D -->> U: deposit done
 ```
 
 ## Early Validation
@@ -194,19 +194,18 @@ it does early validation of signatures and balance:
 sequenceDiagram
   title Avoid Spam: Tentative Validation
   autonumber
-    participant D as Ymax UI
-    participant EMS as EVM<br/> Message Service
-    %% [Where it runs]
-    box Pink Ymax Contract
+  participant D as Ymax UI
+  participant EMS as EVM<br/> Message Service
+  %% [Where it runs]
+  box Pink Ymax Contract
     participant EMH as EVM<br/>Handler
     participant YC as Ymax<br/>Orchestrator
-    end
+  end
+  participant B as Base<br/>chain
 
-    participant B as Base<br/>chain
+  %% Notation: ->> for initial message, -->> for consequences
 
-    %% Notation: ->> for initial message, -->> for consequences
-
-    D -->> EMS: signed<br/>OpenPortfolio(intent543, ...)<br/>signed Permit(1,000 USDC)
+  D -->> EMS: signed<br/>OpenPortfolio(intent543, ...)<br/>signed Permit(1,000 USDC)
 
   note over EMS: avoid SPAM:<br/>tentative validation<br/>of sig, balance
   EMS-->>EMS: verify signatures,<br />deadline
@@ -215,11 +214,10 @@ sequenceDiagram
   B-->>EMS: n USDC
   EMS-->>EMS: verify n >= 1,000
 
-    note right of EMS: using walletFactory invokeEntry
-    EMS -->> EMH: signed<br/>OpenPortfolio(intent543, ...)<br/>signed Permit(...)
-    EMH -->> EMH: check sigs
-    EMH -->> YC: OpenPortfolio(1,000 USDC,<br/>{60% A, 40% B})
-
+  note right of EMS: using walletFactory invokeEntry
+  EMS -->> EMH: signed<br/>OpenPortfolio(intent543, ...)<br/>signed Permit(...)
+  EMH -->> EMH: check sigs
+  EMH -->> YC: OpenPortfolio(1,000 USDC,<br/>{60% A, 40% B})
 ```
 
 ## Publishing EVM Wallet intent state to VStorage
@@ -242,50 +240,47 @@ The UI and YDS follow the intent state via vstorage, much like they do from `pub
 sequenceDiagram
   title Publishing EVM Wallet intent state
   autonumber
-    participant D as Ymax UI
-    participant EMS as EVM<br/> Message Service
-    participant YDS
-    %% [Where it runs]
-    box Pink Ymax Contract
+  participant D as Ymax UI
+  participant EMS as EVM<br/> Message Service
+  participant YDS
+  %% [Where it runs]
+  box Pink Ymax Contract
     participant EMH as EVM<br/>Handler
     participant YC as Ymax<br/>Orchestrator
-    end
+  end
 
-    %% Notation: ->> for initial message, -->> for consequences
+  %% Notation: ->> for initial message, -->> for consequences
 
+  D -->> EMS: signed<br/>OpenPortfolio(intent543, ...)<br/>signed Permit(...)
 
+  note over D: NOT SHOWN:<br/>tentative validation
+  note right of EMS: using walletFactory invokeEntry
+  EMS -->> EMH: signed<br/>OpenPortfolio(intent543, ...)<br/>signed Permit(...)
+  EMS -->> YDS: invokeEntry<br/>tx hash
+  EMS -->> D: OK
+  note over D: tx submitted toast
 
-    D -->> EMS: signed<br/>OpenPortfolio(intent543, ...)<br/>signed Permit(...)
+  YDS -->> YDS: get tx contents
+  YDS -->> YDS: extract intent543,<br/>0xED123, portfolio123
+  EMH -->> EMH: check sigs
+  EMH -->> YC: OpenPortfolio(1,000 USDC,<br/>{60% A, 40% B},<br/>deadline)
+  EMH -->> EMH: update published.??.0xED123<br/>to intent543 status
+  YDS -->> EMH: GET published.??.0xED123
+  EMH -->>YDS: intent543 outcome
 
-    note over D: NOT SHOWN:<br/>tentative validation
-    note right of EMS: using walletFactory invokeEntry
-    EMS -->> EMH: signed<br/>OpenPortfolio(intent543, ...)<br/>signed Permit(...)
-    EMS -->> YDS: invokeEntry<br/>tx hash
-    EMS -->> D: OK
-    note over D: tx submitted toast
-  
-    YDS -->> YDS: get tx contents
-    YDS -->> YDS: extract intent543,<br/>0xED123, portfolio123 
-    EMH -->> EMH: check sigs
-    EMH -->> YC: OpenPortfolio(1,000 USDC,<br/>{60% A, 40% B},<br/>deadline)
-    EMH -->> EMH: update published.??.0xED123<br/>to intent543 status
-    YDS -->> EMH: GET published.??.0xED123
-    EMH -->>YDS: intent543 outcome
-
-    note over YC: NOT SHOWN:<br/>Orchestration<br/>Magic...
-    D -->> YDS: portfolio123.intent543
-    YDS -->> D: updated state
-
+  note over YC: NOT SHOWN:<br/>Orchestration<br/>Magic...
+  D -->> YDS: portfolio123.intent543
+  YDS -->> D: updated state
 ```
 
 ## Create + Deposit Orchestration
 
 based on exploratory prototype...
 
- - https://github.com/agoric-labs/agoric-to-axelar-local/pull/48
-    - [Factory.sol](https://github.com/agoric-labs/agoric-to-axelar-local/blame/dc-permit2-actors/packages/axelar-local-dev-cosmos/src/__tests__/contracts/Factory.sol)
- - https://github.com/agoric-labs/agoric-to-axelar-local/pull/49
-    - [createAndDeposit.ts](https://github.com/agoric-labs/agoric-to-axelar-local/blob/dc-permit2-actors/integration/agoric/createAndDeposit.ts)
+- https://github.com/agoric-labs/agoric-to-axelar-local/pull/48
+  - [Factory.sol](https://github.com/agoric-labs/agoric-to-axelar-local/blame/dc-permit2-actors/packages/axelar-local-dev-cosmos/src/__tests__/contracts/Factory.sol)
+- https://github.com/agoric-labs/agoric-to-axelar-local/pull/49
+  - [createAndDeposit.ts](https://github.com/agoric-labs/agoric-to-axelar-local/blob/dc-permit2-actors/integration/agoric/createAndDeposit.ts)
 
 ```mermaid
 
@@ -303,19 +298,19 @@ based on exploratory prototype...
 sequenceDiagram
   title Create + Deposit Orchestration
   autonumber
-    box Pink Ymax Contract
+  box Pink Ymax Contract
     participant EMH as EVM<br/>Handler
     participant YC as Ymax<br/>Orchestrator
-    end
+  end
   participant R as Resolver
 
-    %% Notation: ->> for initial message, -->> for consequences
+  %% Notation: ->> for initial message, -->> for consequences
 
   Note over EMH: NOT SHOWN:validation
 
-    EMH -->> YC: OpenPortfolio(1,000 USDC,<br/>{60% A, 40% B},<br/>deadline)
-    YC -->> EMH: portfolio123<br/>flow1
-    note over EMH: NOT SHOWN:<br/>vstorage, YDS details
+  EMH -->> YC: OpenPortfolio(1,000 USDC,<br/>{60% A, 40% B},<br/>deadline)
+  YC -->> EMH: portfolio123<br/>flow1
+  note over EMH: NOT SHOWN:<br/>vstorage, YDS details
 
   box base
     participant P2 as Permit2
@@ -339,4 +334,3 @@ sequenceDiagram
   note over YC: NOT SHOWN:<br/>supply to A, B from @Base
   YC -->> EMH: flow done
 ```
-
