@@ -209,9 +209,10 @@ export const buildLPModel = (
     const { id, src, dest } = edge;
     const { capacity, min, variableFeeBps, flatFee = 0n, timeSec = 0 } = edge;
 
-    // Scale min and capacity to major units.
+    // Scale capacity to major units; handle min via coupling because a nonzero
+    // min here would force the solver to pick otherwise unnecessary arcs.
     throughputConstraints[`through_${id}`] = {
-      min: min === undefined ? 0 : Number(min) / UNIT_SCALE,
+      min: 0,
       max: capacity === undefined ? undefined : Number(capacity) / UNIT_SCALE,
     };
 
@@ -225,6 +226,15 @@ export const buildLPModel = (
     couplingConstraints[`allow_${id}`] = { min: 0 };
     const FORCE_PICK = -1;
     const COVER_FLOW = 1e12;
+    if (min !== undefined) {
+      // This arc has a defined minimum that applies whenever it used, which we
+      // represent as a *maximum* bound on the coupling attribute such that
+      // there must be enough `via_${id}` throughput to reduce the sum by a
+      // correspondingly high amount from the COVER_FLOW starting point
+      // established by `pick_${id}`.
+      const scaledMin = Number(min) / UNIT_SCALE;
+      couplingConstraints[`allow_${id}`].max = COVER_FLOW - scaledMin;
+    }
 
     const flowVar: FlowVar = {
       [`allow_${id}`]: FORCE_PICK,
@@ -323,7 +333,7 @@ const refineModel = (
       cloned.binaries[pickVar] = true;
       cloned.ints[flowVar] = true;
       cloned.constraints[`through_${id}`] = {
-        min: min === undefined ? 0 : Number(min),
+        min: min === undefined ? undefined : Number(min),
         max: capacity === undefined ? undefined : Number(capacity),
       };
       cloned.variables[pickVar].weight =
