@@ -476,7 +476,9 @@ export const computePartialOrder = (
         const srcSupply = available.get(src);
         return `${idx}: ${id} ${src}(${srcSupply}) -> ${dest} needs ${f.flow}`;
       });
-      throw Fail`Scheduling deadlock: no flows can be executed. Remaining:\n${remaining.join('\n')}`;
+      throw failUnsolvable(
+        X`Scheduling deadlock: no flows can be executed. Remaining:\n${remaining.join('\n')}`,
+      );
     }
 
     // Prefer continuing with lastChain if possible
