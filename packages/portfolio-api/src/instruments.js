@@ -24,6 +24,28 @@ export const InstrumentId = /** @type {const} */ ({
   Compound_Ethereum: 'Compound_Ethereum',
   Compound_Optimism: 'Compound_Optimism',
   ERC4626_vaultU2_Ethereum: 'ERC4626_vaultU2_Ethereum',
+  ERC4626_morphoClearstarHighYieldUsdc_Ethereum:
+    'ERC4626_morphoClearstarHighYieldUsdc_Ethereum',
+  ERC4626_morphoClearstarUsdcCore_Ethereum:
+    'ERC4626_morphoClearstarUsdcCore_Ethereum',
+  ERC4626_morphoGauntletUsdcRwa_Ethereum:
+    'ERC4626_morphoGauntletUsdcRwa_Ethereum',
+  ERC4626_morphoSteakhouseHighYieldInstant_Ethereum:
+    'ERC4626_morphoSteakhouseHighYieldInstant_Ethereum',
+  ERC4626_morphoClearstarInstitutionalUsdc_Ethereum:
+    'ERC4626_morphoClearstarInstitutionalUsdc_Ethereum',
+  ERC4626_morphoClearstarUsdcReactor_Ethereum:
+    'ERC4626_morphoClearstarUsdcReactor_Ethereum',
+  ERC4626_morphoAlphaUsdcCore_Ethereum: 'ERC4626_morphoAlphaUsdcCore_Ethereum',
+  ERC4626_morphoResolvUsdc_Ethereum: 'ERC4626_morphoResolvUsdc_Ethereum',
+  ERC4626_morphoGauntletUsdcFrontier_Ethereum:
+    'ERC4626_morphoGauntletUsdcFrontier_Ethereum',
+  ERC4626_morphoHyperithmUsdcMidcurve_Ethereum:
+    'ERC4626_morphoHyperithmUsdcMidcurve_Ethereum',
+  ERC4626_morphoHyperithmUsdcDegen_Ethereum:
+    'ERC4626_morphoHyperithmUsdcDegen_Ethereum',
+  ERC4626_morphoGauntletUsdcCore_Ethereum:
+    'ERC4626_morphoGauntletUsdcCore_Ethereum',
   USDN: 'USDN',
   USDNVault: 'USDNVault',
 });

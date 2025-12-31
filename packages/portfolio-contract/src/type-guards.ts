@@ -142,6 +142,54 @@ export const ERC4626PoolPlaces = {
     protocol: 'ERC4626',
     chainName: 'Ethereum',
   },
+  ERC4626_morphoClearstarHighYieldUsdc_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoClearstarUsdcCore_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoGauntletUsdcRwa_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoSteakhouseHighYieldInstant_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoClearstarInstitutionalUsdc_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoClearstarUsdcReactor_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoAlphaUsdcCore_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoResolvUsdc_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoGauntletUsdcFrontier_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoHyperithmUsdcMidcurve_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoHyperithmUsdcDegen_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoGauntletUsdcCore_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
 } as const satisfies Partial<Record<InstrumentId, PoolPlaceInfo>>;
 
 export const PoolPlaces = {
