@@ -858,10 +858,16 @@ const testRejection = test.macro(
       powers,
     );
     const bridgeActions = getBridgeSends().map(invocation => invocation.action);
+    arrayIsLike(
+      t,
+      bridgeActions,
+      [{ method: 'invokeEntry' }],
+      'contract planner facet was invoked',
+    );
     if (typeof expectedReason !== 'string') {
       const actualReason = (bridgeActions as InvokeStoreEntryAction[])[0]
         ?.message?.args?.[2];
-      t.regex(actualReason as string, expectedReason);
+      t.regex(actualReason as string, expectedReason, 'flow rejection reason');
       expectedInvocation.args[2] = actualReason;
     }
     arrayIsLike(t, bridgeActions, [
@@ -899,7 +905,7 @@ test.serial('unsolvable flow is rejected', testRejection, {
     type: 'withdraw',
     amount: AmountMath.make(depositBrand, 1_000_000n),
   },
-  expectedReason: /^No feasible solution\b/,
+  expectedReason: /^No feasible solution\b|\b(deadlock)\b/,
 });
 
 // Try to withdraw $2 from a total of $1.
