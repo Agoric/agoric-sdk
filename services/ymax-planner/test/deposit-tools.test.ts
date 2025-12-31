@@ -13,6 +13,7 @@ import type { VstorageKit } from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp';
 import type { Brand, NatAmount } from '@agoric/ertp/src/types.js';
 import { objectMap } from '@agoric/internal';
+import { arrayIsLike } from '@agoric/internal/tools/ava-assertions.js';
 import { Far } from '@endo/pass-style';
 import { CosmosRestClient, USDN } from '../src/cosmos-rest-client.ts';
 import {
@@ -33,6 +34,10 @@ const feeBrand = Far('fee brand (BLD)') as Brand<'nat'>;
 const powers = { fetch, setTimeout };
 
 const emptyPlan = harden({ flow: [], order: undefined });
+
+const makeMovementDesc = (src: string, dest: string, value: bigint) => {
+  return { src, dest, amount: { value } };
+};
 
 /**
  * Helper for test results
@@ -171,26 +176,19 @@ test('getNonDustBalances retains noble balances above the dust epsilon', async t
   t.is(balances.USDN!.value, 101n);
 });
 
-/**
- * Deposit: 1000n
- * TargetAllocation:
- *   USDN: 50%
- *   Aave_Arbitrum: 30%
- *   Compound_Arbitrum: 20%
- 
- * CurrentBalance:
- *   Noble: 200n,
- *   Aave_Arbitrum: 100n,
- *   Compound_Arlanbitrum: 50n,
- * 
- * Expected:
- *   USDN: 675n, +675n, 475n from deposit, 200n Noble
- *   Aave_Arbitrum: 405n, +305n
- *   Compound_Arbitrum: 270n, +220n
- */
 test('handleDeposit works with mocked dependencies', async t => {
-  const deposit = makeDeposit(1000n);
   const portfolioKey = 'test.portfolios.portfolio1' as const;
+  const targetAllocation = {
+    USDN: 50n,
+    Aave_Arbitrum: 30n,
+    Compound_Arbitrum: 20n,
+  };
+  const initialBalances = {
+    USDN: 200_000n,
+    Aave_Arbitrum: 100_000n,
+    Compound_Arbitrum: 50_000n,
+  };
+  const deposit = makeDeposit(9_650_000n);
 
   // Mock VstorageKit readPublished
   const mockReadPublished = async (path: string) => {
@@ -202,11 +200,7 @@ test('handleDeposit works with mocked dependencies', async t => {
           noble: 'noble:test:addr1',
           Arbitrum: 'arbitrum:test:addr2',
         },
-        targetAllocation: {
-          USDN: 50n,
-          Aave_Arbitrum: 30n,
-          Compound_Arbitrum: 20n,
-        },
+        targetAllocation,
         policyVersion: 4,
         rebalanceCount: 2,
       };
@@ -220,30 +214,17 @@ test('handleDeposit works with mocked dependencies', async t => {
       super(powers);
     }
 
-    async getPoolBalance(chain: any, pool: any, addr: any) {
-      // Return different balances for different pools
+    async getPoolBalance(chain: any, pool: any, address: any) {
+      let balance = 0;
       if (pool === 'aave' && chain === 'arbitrum') {
-        return {
-          pool,
-          chain,
-          address: addr,
-          balance: { supplyBalance: 100, borrowAmount: 0 },
-        };
+        balance = 100_000;
+        balance = Number(initialBalances.Aave_Arbitrum);
       }
       if (pool === 'compound' && chain === 'arbitrum') {
-        return {
-          pool,
-          chain,
-          address: addr,
-          balance: { supplyBalance: 50, borrowAmount: 0 },
-        };
+        balance = Number(initialBalances.Compound_Arbitrum);
       }
-      return {
-        pool,
-        chain,
-        address: addr,
-        balance: { supplyBalance: 0, borrowAmount: 0 },
-      };
+      let balanceObj = { supplyBalance: balance, borrowAmount: 0 };
+      return { pool, chain, address, balance: balanceObj };
     }
   }
   const mockSpectrumClient = new MockSpectrumClient();
@@ -256,7 +237,7 @@ test('handleDeposit works with mocked dependencies', async t => {
 
     async getAccountBalance(chainName: string, addr: string, denom: string) {
       if (chainName === 'noble' && denom === 'uusdn') {
-        return { denom, amount: '200' };
+        return { denom, amount: `${initialBalances.USDN}` };
       }
       return { denom, amount: '0' };
     }
@@ -274,6 +255,28 @@ test('handleDeposit works with mocked dependencies', async t => {
     cosmosRest: mockCosmosRestClient,
     gasEstimator: mockGasEstimator,
   });
+  arrayIsLike(t, result.plan.flow, [
+    makeMovementDesc('<Deposit>', '@agoric', deposit.value),
+    makeMovementDesc('@agoric', '@noble', deposit.value),
+    makeMovementDesc('@noble', 'USDN', 5_000_000n - initialBalances.USDN),
+    makeMovementDesc(
+      '@noble',
+      '@Arbitrum',
+      5_000_000n -
+        initialBalances.Aave_Arbitrum -
+        initialBalances.Compound_Arbitrum,
+    ),
+    makeMovementDesc(
+      '@Arbitrum',
+      'Aave_Arbitrum',
+      3_000_000n - initialBalances.Aave_Arbitrum,
+    ),
+    makeMovementDesc(
+      '@Arbitrum',
+      'Compound_Arbitrum',
+      2_000_000n - initialBalances.Compound_Arbitrum,
+    ),
+  ]);
   t.snapshot(result);
 });
 
@@ -621,10 +624,10 @@ async function singleSourceRebalanceSteps(scale: number) {
   return plan;
 }
 
-test('planRebalanceToAllocations regression - single source', async t => {
+test('planRebalanceToAllocations regression - single source, 2x', async t => {
   // TODO: For human comprehensibility, adopt something like `readableSteps`
   // from packages/portfolio-contract/test/rebalance.test.ts.
-  const plan = await singleSourceRebalanceSteps(1);
+  const plan = await singleSourceRebalanceSteps(2);
   t.snapshot(plan);
 });
 
