@@ -1,6 +1,6 @@
 ## Preface: Invite EVM Messenger Service
 
-Much like we invite the Planner and Resolver, we start by inviting the EVM Messenger Service.
+Much like we invite the Planner and Resolver, we start by inviting the EVM Messenger Service, and redeeming the invitation.
 
 <details><summary>Sequence Diagram: Invite EVM Messenger Service</summary>
 
@@ -14,7 +14,7 @@ sequenceDiagram
   %% - `-->>` denotes a consequence of a prior message
 
   autonumber
-  actor op as Operator
+  actor op as YMax Operator
   box bootstrap
   participant YC as ymaxControl
   end
@@ -27,10 +27,11 @@ sequenceDiagram
   box walletFactory
   participant W as wallet agoric1evm
   end
+  actor evm as EVM Service Operator
 
   op->>op: ymax-tool invite-evm-msg-svc
   op-->>YC: invokeEntry(ymaxCreator, ...)
-  YC-->>CF: deliverEVMMessageInvitation(<br/>'agoric1emv', postalService)
+  YC-->>CF: deliverEVMWalletHandlerInvitation(<br/>'agoric1evm', postalService)
   CF-->>CF: inv1 = makeInvitation(...)
   CF-->>PS: deliverPayment('agoric1evm', inv1)
   PS-->>W: receive(inv1)
@@ -38,6 +39,11 @@ sequenceDiagram
   PS-->>CF: ack
   CF-->>YC: ack
   YC-->>op: ack
+
+  evm->>evm: redeem invitation
+  evm-->>W: executeOffer('evmWalletHandler', ...)
+  W-->>W: saveResult('evmWalletHandler')
+  W-->>evm: ack
 ```
 </details> 
 
