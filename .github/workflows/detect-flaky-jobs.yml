@@ -61,15 +61,15 @@ jobs:
                     attempt_number: attemptNum
                   });
 
-                  const failedJobsInAttempt = jobs.data.jobs
-                    .filter(job => job.conclusion === 'failure' || job.conclusion === 'timed_out')
-                    .map(job => job.name);
-
-                  for (const jobName of failedJobsInAttempt) {
-                    if (!allFailedJobs.has(jobName)) {
-                      allFailedJobs.set(jobName, []);
+                  const failedJobsInAttempt = [];
+                  for (const job of jobs.data.jobs) {
+                    if (job.conclusion === 'failure' || job.conclusion === 'timed_out') {
+                      failedJobsInAttempt.push(job.name);
+                      if (!allFailedJobs.has(job.name)) {
+                        allFailedJobs.set(job.name, []);
+                      }
+                      allFailedJobs.get(job.name).push(attemptNum);
                     }
-                    allFailedJobs.get(jobName).push(attemptNum);
                   }
 
                   console.log(`Attempt ${attemptNum}: Failed jobs - ${failedJobsInAttempt.join(', ')}`);
@@ -100,7 +100,7 @@ jobs:
             console.log(`🚨 Flaky job detected! Succeeded on attempt ${currentAttempt} after ${failedWorkflowAttemptsCount} failed workflow attempt(s).`);
 
             // Build detailed job failure summary
-            // Format: "job-name (failed in attempts: 1, 2)"
+            // Format: "• job-name (attempt #1)" or "• job-name (attempts #1, #2)"
             const jobFailureSummary = Array.from(allFailedJobs.entries())
               .map(([jobName, attempts]) => {
                 if (attempts.length === 1) {
