@@ -50,7 +50,7 @@ sequenceDiagram
 
 ## EVM Wallet to Ymax Contract via App Server
 
-Using a pattern established by across, 1inch, etc., Ted, who owns `0xED123`, opens `portfolio123` using his EVM Wallet, MetaMask. MetaMask doesn't submit to any chain; rather: it displays the data to be signed according to EIP-712, and gives a signature back to the UI, which POSTs to an app server that we'll call the EVM Message Service:
+Using a pattern established by across, 1inch, etc., Ted, who owns `0xED123` uses his EVM Wallet, MetaMask. MetaMask doesn't submit to any chain; rather: it displays the data to be signed according to EIP-712, and gives a signature back to the UI, which POSTs to an app server that we'll call the EVM Message Service:
 
 ```mermaid
 
@@ -82,34 +82,37 @@ sequenceDiagram
 
   %% Notation: ->> for initial message, -->> for consequences
 
-  U->>D: allocate 60% A, 40% B
-  U->>D: Open Portfolio
-  D-->>D: allocate intent543
+  U->>D: some portfolio operation
+  D-->>D: allocate nonce543
   note over D: TBD:<br/>? how to choose deadline?
   note right of MM: EIP-712 signTypedData
-  note right of MM: WIP:<br/>Schema
-  D->>MM: OpenPortfolio(intent543,<br/>{60% A, 40% B}<br/>nonce,deadline)
-  MM-->>U: OpenPortfolio(intent543,<br/>{60% A, 40% B}<br/>nonce,deadline) ok?
+  note right of MM: Schema<br/>dependent on operation
+  D->>MM: PortfolioOp(...args,<br/>nonce543,deadline)
+  MM-->>U: PortfolioOp(...args,<br/>nonce543,deadline) ok?
   U->>MM: ok
   MM-->>D: signature
-  note over MM: NOT SHOWN:<br/>Deposit
+  note over MM: NOT SHOWN:<br/>Any needed one time<br/>Permit2 approval
   D-->>U: stand by...
 
-  D -->> EMS: signed<br/>OpenPortfolio(intent543, ...)
+  D -->> EMS: signed<br/>PortfolioOp(nonce543, ...)
   note over EMS: NOT SHOWN:<br/>early validation
   note right of EMS: using walletFactory invokeEntry
-  EMS -->> EMH: signed<br/>OpenPortfolio(intent543, ...)
+  EMS -->> EMH: handleMessage(<br/>PortfolioOp(nonce543, ...), signature)
   EMH -->> EMH: check sig:<br/>pubkey = ecRecover(...)<br/>addr = hash(pubkey)
-  EMH -->> YC: OpenPortfolio({60% A, 40% B},<br/>deadline)
-  YC -->> EMH: portfolio123
+  EMH -->> YC: PortfolioOp(...args)
+  YC -->> EMH: result
   note over EMH: NOT SHOWN:<br/>vstorage, YDS details
-  EMH -->> D: portfolio123
+  EMH -->> D: outcome
   D ->> U: dashboard
 ```
 
-## Open Portfolio with Deposit Permit
+### Open Portfolio with Deposit Permit
 
-The established pattern involves not just the intent to open a portfolio but also a permit to withdraw funds from Ted's account, `0xED123`, and deposit them into the portfolio:
+To open a portfolio, YMax requires a deposit to be made. Unlike with a cosmos based wallet where the funds can be included in the Zoe offer (withdrawn from the cosmos account), Ted signs a permit to withdraw funds from their EVM account, `0xED123`.
+
+To reduce the number of signatures and transactions needed, we use permit2, which supports custom payloads for the dApp's usage, where we include the Open Portfolio details. This is akin to Circle's CPN Transactions v2.
+
+This requires to prompt Ted for a one time approval of the permit2 contract if they haven't previously approved it in any dApp.
 
 ```mermaid
 
@@ -144,28 +147,33 @@ sequenceDiagram
   U->>D: allocate 60% A, 40% B
   U->>D: choose 1,000 USDC
   U->>D: Open Portfolio
-  D-->>D: allocate intent543
+
+  opt permit2 approval
+    D-->>MM: Approve(permit2, USDC, ∞)
+    MM-->>U: Approve(permit2, USDC, ∞) ok?
+    U->>MM: ok
+    MM-->>MM: Submit approval
+    MM-->>D: done
+  end
+
+  D-->>D: allocate nonce543
   note right of MM: EIP-712 signTypedData
-  D->>MM: OpenPortfolio(intent543,<br/>1,0000 USDC,<br/>{60% A, 40% B}<br/>nonce,deadline)
-  MM-->>U: OpenPortfolio(intent543,<br/>1,0000 USDC,<br/>{60% A, 40% B}<br/>nonce,deadline) ok?
+  D->>MM: PermitWitnessTransferFrom(<br/>1,0000 USDC,<br/>YMax Factory Contract<br/>{60% A, 40% B},<br/>nonce543,deadline)
+  MM-->>U: PermitWitnessTransferFrom(<br/>1,0000 USDC,<br/>YMax Factory Contract<br/>{60% A, 40% B},<br/>nonce543,deadline) ok?
   U->>MM: ok
   MM-->>D: signature
 
-  D->>MM: Permit(Ymax, 1,000USDC)
-  MM-->>U: Permit YMax<br/>Factory Contract<br/>1,000 USDC ?
-  U->>MM: ok
-
-  MM-->>D: signature
   D-->>U: stand by...
 
-  D -->> EMS: signed<br/>OpenPortfolio(intent543, ...)<br/>signed Permit(...)
+  D -->> EMS: signed<br/>PermitWitnessTransferFrom(<br/>nonce543, ...)
   note over EMS: NOT SHOWN:<br/>early validation
   note right of EMS: using walletFactory invokeEntry
-  EMS -->> EMH: signed<br/>OpenPortfolio(intent543, ...)<br/>signed Permit(...)
+  EMS -->> EMH: handleMessage(<br/>PermitWitnessTransferFrom(<br/>nonce543, ...), signature)
   EMH -->> EMH: check sigs
-  EMH -->> YC: OpenPortfolio(1,000 USDC,<br/>{60% A, 40% B},<br/>deadline)
-  note over EMH: NOT SHOWN:<br/>vstorage, YDS details
+  EMH -->> EMH: extract nested operation
+  EMH -->> YC: OpenPortfolio(1,000 USDC,<br/>{60% A, 40% B},<br/>signed permit)
   YC -->> EMH: portfolio123<br/>flow1
+  note over EMH: NOT SHOWN:<br/>vstorage, YDS details
   EMH -->> D: portfolio123<br/>flow1
   D -->> U: dashboard
   note over YC: NOT SHOWN:<br/>Orchestration<br/>Magic...
@@ -205,24 +213,29 @@ sequenceDiagram
 
   %% Notation: ->> for initial message, -->> for consequences
 
-  D -->> EMS: signed<br/>OpenPortfolio(intent543, ...)<br/>signed Permit(1,000 USDC)
+  D -->> EMS: signed<br/>PermitWitnessTransferFrom(<br/>1,000 USDC,<br/>nonce543, ...)
 
   note over EMS: avoid SPAM:<br/>tentative validation<br/>of sig, balance
   EMS-->>EMS: verify signatures,<br />deadline
   note left of B: using Spectrum API
-  EMS-->>B: Get 0xED123 balance,<br/>allowance
+  EMS-->>B: Get 0xED123 permit2 USDC,<br/>approval, allowances
+  B-->>EMS: a, limit
+  EMS-->>EMS: verify a == true && limit > 1,000
+
+  EMS-->>B: Get 0xED123 balances
   B-->>EMS: n USDC
   EMS-->>EMS: verify n >= 1,000
 
   note right of EMS: using walletFactory invokeEntry
-  EMS -->> EMH: signed<br/>OpenPortfolio(intent543, ...)<br/>signed Permit(...)
+  EMS -->> EMH: handleMessage(<br/>PermitWitnessTransferFrom(<br/>nonce543, ...), signature)
   EMH -->> EMH: check sigs
-  EMH -->> YC: OpenPortfolio(1,000 USDC,<br/>{60% A, 40% B})
+  EMH -->> EMH: extract nested operation
+  EMH -->> YC: OpenPortfolio(1,000 USDC,<br/>{60% A, 40% B},<br/>signed permit)
 ```
 
-## Publishing EVM Wallet intent state to VStorage
+## Publishing EVM Wallet operation state to VStorage
 
-The UI and YDS follow the intent state via vstorage, much like they do from `published.wallet.agoric1...`.
+The UI and YDS follow the operation state via vstorage, much like they do from `published.wallet.agoric1...`.
 
 ```mermaid
 
@@ -238,12 +251,15 @@ The UI and YDS follow the intent state via vstorage, much like they do from `pub
   }
 }}%%
 sequenceDiagram
-  title Publishing EVM Wallet intent state
+  title Publishing EVM Wallet operation state
   autonumber
   participant D as Ymax UI
   participant EMS as EVM<br/> Message Service
   participant YDS
   %% [Where it runs]
+  box Wallet Factory
+    participant W as Smart<br/>Wallet
+  end
   box Pink Ymax Contract
     participant EMH as EVM<br/>Handler
     participant YC as Ymax<br/>Orchestrator
@@ -251,25 +267,43 @@ sequenceDiagram
 
   %% Notation: ->> for initial message, -->> for consequences
 
-  D -->> EMS: signed<br/>OpenPortfolio(intent543, ...)<br/>signed Permit(...)
+  D -->> EMS: signed<br/>PortfolioOp(...args,<br/>nonce543,deadline)<br/>signed Permit(...)
 
-  note over D: NOT SHOWN:<br/>tentative validation
-  note right of EMS: using walletFactory invokeEntry
-  EMS -->> EMH: signed<br/>OpenPortfolio(intent543, ...)<br/>signed Permit(...)
+  note over EMS: NOT SHOWN:<br/>tentative validation
+  EMS --> W: invokeEntry(invoke78,<br/>evmWalletHandler,<br/>handleMessage, ...)
   EMS -->> YDS: invokeEntry<br/>tx hash
   EMS -->> D: OK
   note over D: tx submitted toast
 
   YDS -->> YDS: get tx contents
-  YDS -->> YDS: extract intent543,<br/>0xED123, portfolio123
+  YDS -->> YDS: extract invokeEntry args
+  YDS -->> YDS: recover signer 0xED123
+  opt permit2
+    YDS -->> YDS: extract nested witness
+  end
+  YDS -->> YDS: extract OpDetails<br/>nonce543, portfolio123
+
+  W -->> EMH: handleMessage(<br/>PortfolioOp(nonce543, ...),<br/>signature)
   EMH -->> EMH: check sigs
-  EMH -->> YC: OpenPortfolio(1,000 USDC,<br/>{60% A, 40% B},<br/>deadline)
-  EMH -->> EMH: update published.??.0xED123<br/>to intent543 status
-  YDS -->> EMH: GET published.??.0xED123
-  EMH -->>YDS: intent543 outcome
+  alt sig failure
+    EMH -->> W: error
+    W -->> W: update published.wallet<br/>.agoric1evm<br/>to invoke78 status
+  else sig success
+    EMH -->> YC: PortfolioOp(...args)
+    EMH -->> EMH: update published.ymaxN<br/>.evmWallet.0xED123<br/>to nonce543 status
+    note over EMH: handleMessage outcome<br/>include PortfolioOp result?
+    EMH -->> W: ok
+    W -->> W: update published.wallet<br/>.agoric1evm<br/>to invoke78 status
+    YDS -->> EMH: GET published.ymaxN<br/>.evmWallet.0xED123
+    EMH -->> YDS: nonce543 outcome
+  end
 
   note over YC: NOT SHOWN:<br/>Orchestration<br/>Magic...
-  D -->> YDS: portfolio123.intent543
+
+  YDS -->> YC: GET published.ymaxN<br/>.portfolio123
+  YC -->> YDS: updated portfolio state
+
+  D -->> YDS: portfolio123
   YDS -->> D: updated state
 ```
 
@@ -278,9 +312,59 @@ sequenceDiagram
 based on exploratory prototype...
 
 - https://github.com/agoric-labs/agoric-to-axelar-local/pull/48
-  - [Factory.sol](https://github.com/agoric-labs/agoric-to-axelar-local/blame/dc-permit2-actors/packages/axelar-local-dev-cosmos/src/__tests__/contracts/Factory.sol)
-- https://github.com/agoric-labs/agoric-to-axelar-local/pull/49
-  - [createAndDeposit.ts](https://github.com/agoric-labs/agoric-to-axelar-local/blob/dc-permit2-actors/integration/agoric/createAndDeposit.ts)
+  - [Factory.sol](https://github.com/agoric-labs/agoric-to-axelar-local/blame/rs-spike-permit2-with-witness/packages/axelar-local-dev-cosmos/src/__tests__/contracts/Factory.sol)
+- https://github.com/agoric-labs/agoric-to-axelar-local/pull/51
+  - [FactoryFactory.sol](https://github.com/agoric-labs/agoric-to-axelar-local/blame/rs-spike-permit2-with-witness/packages/axelar-local-dev-cosmos/src/__tests__/contracts/FactoryFactory.sol)
+  - [createAndDeposit.ts](https://github.com/agoric-labs/agoric-to-axelar-local/blob/rs-spike-permit2-with-witness/integration/agoric/createAndDeposit.ts)
+
+### Preface: YMax specific Factory instance
+
+To ensure that the signed permit cannot be used by another call from the Agoric chain, the YMax instance needs an owned instance of the Factory contract. Users will sign the permits
+with that instance designated as spender.
+
+<details>
+<summary>Sequence Diagram: Setup owned Factory</summary>
+
+```mermaid
+sequenceDiagram
+  title: Setup owned Factory
+
+  %% Conventions:
+  %% - use `box` for vats / contracts
+  %% - `->>` denotes a spontaneous action (initiating cause)
+  %% - `-->>` denotes a consequence of a prior message
+
+  autonumber
+  actor op as YMax Operator
+  box bootstrap
+    participant YC as ymaxControl
+  end
+  box YMax Contract
+    participant YO as YMax Orchestrator
+  end
+  participant R as Resolver
+  box base
+    participant FF as FactoryFactory
+  end
+
+  op->>op: ymax-tool upgrade
+  op-->>YC: invokeEntry(ymaxCreator, ...)
+  YC-->>YO: start
+  YO-->>YO: contractAccount = makeLCA()<br/>// agoric1ymaxlca
+  note right of YO: call via Axelar GMP<br/>from contractAccount
+  YO-->>FF: execute()
+  FF-->>FF: Factory = new Factory{<br/>owner=agoric1ymaxlca}
+  FF-->>R: FactoryCreated{address=0xFAC1}
+  R -->> YO: success
+  YO-->>YO: update vstorage factoryAddress=0xFAC1
+```
+
+</details>
+
+### Orchestration details
+
+The signed permit must be stored by the YMax contract on the flow until the planner resolves the plan including using the deposit from the EVM account.
+To inform the planner that the deposit is from an EVM account, an optional "chainId" is added to flow details. To let the planner  designating non-agoric deposit accounts in plans, we expand `+` refs: `+base` means the user's EOA on base, for which a permit must exist.
 
 ```mermaid
 
@@ -302,30 +386,39 @@ sequenceDiagram
     participant EMH as EVM<br/>Handler
     participant YC as Ymax<br/>Orchestrator
   end
+  participant P as Planner
   participant R as Resolver
-
-  %% Notation: ->> for initial message, -->> for consequences
-
-  Note over EMH: NOT SHOWN:validation
-
-  EMH -->> YC: OpenPortfolio(1,000 USDC,<br/>{60% A, 40% B},<br/>deadline)
-  YC -->> EMH: portfolio123<br/>flow1
-  note over EMH: NOT SHOWN:<br/>vstorage, YDS details
-
   box base
     participant P2 as Permit2
     participant USDC as USDC
     participant F as Factory
   end
 
-  note right of YC: 2 contract calls pipelined<br/>via Axelar GMP
-  YC-->>USDC: approve(permit2, 1,000 USDC)
-  YC-->>YC: permit = {permitted: {token: USDC, amount: 1,000e6 },<br/>nonce, deadline,<br/>spender: 0xFAC1}
-  YC-->>YC: payload = (@agoric, 0xED123, 1,000 USDC,<br/>permit, signature)
+  %% Notation: ->> for initial message, -->> for consequences
+
+  Note over EMH: NOT SHOWN:validation
+
+  EMH -->> EMH: signed permit = {permit,<br/>owner: 0xED123, chainId: 8453,<br/>witness, witnessTypeString,<br/>signature}
+  EMH -->> YC: OpenPortfolio(1,000 USDC,<br/>{60% A, 40% B},<br/>signed permit)
+  YC -->> EMH: portfolio123
+  note over EMH: NOT SHOWN:<br/>vstorage, YDS details
+
+  note over YC: NOT SHOWN:<br/>LCA, Noble account creation
+  YC -->> YC: Create flow1,<br/>store signed permit
+
+  P -->> YC: GET portfolio123
+  YC -->> P: flowsRunning.flow1<br/>{type: "deposit",<br/>chainId: "base"}
+  P -->> YC: resolvePlan(flow1,<br/>[[+base,@base], ...])
+  YC -->> YC: read stored<br/>signed permit
+
+  note right of YC: call via Axelar GMP<br/>from contractAccount
+  YC-->>YC: payload = (@agoric, signed permit)
+  note over F: Owned factory 0xFAC1<br/>for ymax instance
   YC-->>F: execute(payload)
-  F-->>F: require(0xED123 != 0,<br/>USDC !=0,<br/>amount > 0)
+  F-->>F: require(0xED123 != 0,<br/>USDC != 0,<br/>amount > 0)
   F-->>F: @Base = new Wallet{owner=agoric1...}
-  F-->>P2: permitTransferFrom(permit,<br/>{ to: @Base, requestedAmount: 1,000e6 },<br/>0xED123, signature)
+  F-->>F: transferDetails = { to: @Base,<br/>requestedAmount: permit.permitted.amount }
+  F-->>P2: permitWitnessTransferFrom(<br/>permit, transferDetails,<br/>owner, witness,<br/>witnessTypeString, signature)
   P2-->>USDC: transfer{from: 0xED123, to: 0xFAC1<br/>value: 1,000e6 }
   USDC-->>R: Transfer{to: 0xFAC1,<br/>value: 1,000e6 }<br/>(Base log events)
   F-->>USDC: transfer{to: @Base, amount: 1,000e6}
