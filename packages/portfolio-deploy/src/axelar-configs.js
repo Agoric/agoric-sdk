@@ -217,6 +217,78 @@ const erc4626VaultAddresses = harden({
       Ethereum: '0xAA1dD21066383b1aC4652Ea41C7520Fb373840Bc', // https://sepolia.etherscan.io/address/0xAA1dD21066383b1aC4652Ea41C7520Fb373840Bc
     },
   },
+  morphoClearstarHighYieldUsdc: {
+    mainnet: {
+      Ethereum: '0x9B5E92fd227876b4C07a8c02367E2CB23c639DfA', // https://app.morpho.org/ethereum/vault/0x9B5E92fd227876b4C07a8c02367E2CB23c639DfA/clearstar-high-yield-usdc
+    },
+    testnet: {},
+  },
+  morphoClearstarUsdcCore: {
+    mainnet: {
+      Ethereum: '0x69A238Ae7ebeb3c53ff3B544E48B96a2142fc284', // https://app.morpho.org/ethereum/vault/0x69A238Ae7ebeb3c53ff3B544E48B96a2142fc284/clearstar-usdc-core
+    },
+    testnet: {},
+  },
+  morphoGauntletUsdcRwa: {
+    mainnet: {
+      Ethereum: '0xA8875aaeBc4f830524e35d57F9772FfAcbdD6C45', // https://app.morpho.org/ethereum/vault/0xA8875aaeBc4f830524e35d57F9772FfAcbdD6C45/gauntlet-usdc-rwa
+    },
+    testnet: {},
+  },
+  morphoSteakhouseHighYieldInstant: {
+    mainnet: {
+      Ethereum: '0xbeeff2C5bF38f90e3482a8b19F12E5a6D2FCa757', // https://app.morpho.org/ethereum/vault/0xbeeff2C5bF38f90e3482a8b19F12E5a6D2FCa757/steakhouse-high-yield-instant
+    },
+    testnet: {},
+  },
+  morphoClearstarInstitutionalUsdc: {
+    mainnet: {
+      Ethereum: '0x8F40e713a1Cfeff2A052E0c610C8118Be3f75b12', // https://app.morpho.org/ethereum/vault/0x8F40e713a1Cfeff2A052E0c610C8118Be3f75b12/clearstar-institutional-usdc
+    },
+    testnet: {},
+  },
+  morphoClearstarUsdcReactor: {
+    mainnet: {
+      Ethereum: '0x62fE596d59fB077c2Df736dF212E0AFfb522dC78', // https://app.morpho.org/ethereum/vault/0x62fE596d59fB077c2Df736dF212E0AFfb522dC78/clearstar-usdc-reactor
+    },
+    testnet: {},
+  },
+  morphoAlphaUsdcCore: {
+    mainnet: {
+      Ethereum: '0xb0f05E4De970A1aaf77f8C2F823953a367504BA9', // https://app.morpho.org/ethereum/vault/0xb0f05E4De970A1aaf77f8C2F823953a367504BA9/alpha-usdc-core
+    },
+    testnet: {},
+  },
+  morphoResolvUsdc: {
+    mainnet: {
+      Ethereum: '0x132E6C9C33A62D7727cd359b1f51e5B566E485Eb', // https://app.morpho.org/ethereum/vault/0x132E6C9C33A62D7727cd359b1f51e5B566E485Eb/resolv-usdc
+    },
+    testnet: {},
+  },
+  morphoGauntletUsdcFrontier: {
+    mainnet: {
+      Ethereum: '0x9a1D6bd5b8642C41F25e0958129B85f8E1176F3e', // https://app.morpho.org/ethereum/vault/0x9a1D6bd5b8642C41F25e0958129B85f8E1176F3e/gauntlet-usdc-frontier
+    },
+    testnet: {},
+  },
+  morphoHyperithmUsdcMidcurve: {
+    mainnet: {
+      Ethereum: '0xCdaea3dde6cE5969aA1414A82A3A681cEd51Ce72', // https://app.morpho.org/ethereum/vault/0xCdaea3dde6cE5969aA1414A82A3A681cEd51Ce72/hyperithm-usdc-midcurve
+    },
+    testnet: {},
+  },
+  morphoHyperithmUsdcDegen: {
+    mainnet: {
+      Ethereum: '0x777791C4d6DC2CE140D00D2828a7C93503c67777', // https://app.morpho.org/ethereum/vault/0x777791C4d6DC2CE140D00D2828a7C93503c67777/hyperithm-usdc-degen,
+    },
+    testnet: {},
+  },
+  morphoGauntletUsdcCore: {
+    mainnet: {
+      Ethereum: '0x8eB67A509616cd6A7c1B3c8C21D48FF57df3d458', // https://app.morpho.org/ethereum/vault/0x8eB67A509616cd6A7c1B3c8C21D48FF57df3d458/gauntlet-usdc-core
+    },
+    testnet: {},
+  },
 });
 
 /** @type {AddressesMap} */
@@ -332,6 +404,30 @@ const mainnetContracts = {
       beefyVaultAddresses.morphoGauntletUsdc.mainnet.Ethereum,
     Beefy_morphoSmokehouseUsdc_Ethereum:
       beefyVaultAddresses.morphoSmokehouseUsdc.mainnet.Ethereum,
+    ERC4626_morphoClearstarHighYieldUsdc_Ethereum:
+      erc4626VaultAddresses.morphoClearstarHighYieldUsdc.mainnet.Ethereum,
+    ERC4626_morphoClearstarUsdcCore_Ethereum:
+      erc4626VaultAddresses.morphoClearstarUsdcCore.mainnet.Ethereum,
+    ERC4626_morphoGauntletUsdcRwa_Ethereum:
+      erc4626VaultAddresses.morphoGauntletUsdcRwa.mainnet.Ethereum,
+    ERC4626_morphoSteakhouseHighYieldInstant_Ethereum:
+      erc4626VaultAddresses.morphoSteakhouseHighYieldInstant.mainnet.Ethereum,
+    ERC4626_morphoClearstarInstitutionalUsdc_Ethereum:
+      erc4626VaultAddresses.morphoClearstarInstitutionalUsdc.mainnet.Ethereum,
+    ERC4626_morphoClearstarUsdcReactor_Ethereum:
+      erc4626VaultAddresses.morphoClearstarUsdcReactor.mainnet.Ethereum,
+    ERC4626_morphoAlphaUsdcCore_Ethereum:
+      erc4626VaultAddresses.morphoAlphaUsdcCore.mainnet.Ethereum,
+    ERC4626_morphoResolvUsdc_Ethereum:
+      erc4626VaultAddresses.morphoResolvUsdc.mainnet.Ethereum,
+    ERC4626_morphoGauntletUsdcFrontier_Ethereum:
+      erc4626VaultAddresses.morphoGauntletUsdcFrontier.mainnet.Ethereum,
+    ERC4626_morphoHyperithmUsdcMidcurve_Ethereum:
+      erc4626VaultAddresses.morphoHyperithmUsdcMidcurve.mainnet.Ethereum,
+    ERC4626_morphoHyperithmUsdcDegen_Ethereum:
+      erc4626VaultAddresses.morphoHyperithmUsdcDegen.mainnet.Ethereum,
+    ERC4626_morphoGauntletUsdcCore_Ethereum:
+      erc4626VaultAddresses.morphoGauntletUsdcCore.mainnet.Ethereum,
   },
   Optimism: {
     aavePool: aaveAddresses.mainnet.Optimism,
