@@ -21,7 +21,7 @@ import {
 } from '@agoric/internal';
 import type { AccountId, Caip10Record } from '@agoric/orchestration';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
-import { ACCOUNT_DUST_EPSILON } from '@agoric/portfolio-api';
+import { ACCOUNT_DUST_EPSILON, isInstrumentId } from '@agoric/portfolio-api';
 import type { FundsFlowPlan, SupportedChain } from '@agoric/portfolio-api';
 
 import { USDN, type CosmosRestClient } from './cosmos-rest-client.js';
@@ -45,12 +45,9 @@ const rejectUserInput = (details: ReturnType<typeof X> | string): never =>
 const isDust = (value: bigint): boolean =>
   -ACCOUNT_DUST_EPSILON < value && value < ACCOUNT_DUST_EPSILON;
 
-const isPoolKey = (place: AssetPlaceRef): place is PoolKey =>
-  !place.match(/^[@<+]/);
-
 const isNonemptyPositionEntry = (entry: [AssetPlaceRef, NatValue]): boolean => {
   const [place, value] = entry;
-  return isPoolKey(place) && value > 0n;
+  return isInstrumentId(place) && value > 0n;
 };
 
 // Note the differences in the shape of field `balance` between the two Spectrum
@@ -347,7 +344,7 @@ const computeWeightedTargets = (
       // zero out hubs (chains) if there is anywhere else to deploy their funds.
       (valueEntries => {
         return valueEntries.some(isNonemptyPositionEntry)
-          ? valueEntries.map(([p, v]) => [p, isPoolKey(p) ? v : 0n])
+          ? valueEntries.map(([p, v]) => [p, isInstrumentId(p) ? v : 0n])
           : valueEntries;
       })(typedEntries(currentValues));
   const sumW = weights.reduce<bigint>((acc, entry) => {
