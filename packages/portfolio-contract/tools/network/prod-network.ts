@@ -115,13 +115,14 @@ export const PROD_NETWORK: NetworkSpec = {
       timeSec: 1080,
       feeMode: 'evmToNoble',
     },
-    // CCTP return (fast on return path)
+    // CCTP return (fast on return path); 1 USDC minimum
     {
       src: '@noble',
       dest: '@Arbitrum',
       transfer: 'cctpReturn',
       variableFeeBps: 0,
       timeSec: 20,
+      min: 1_000_000n,
       feeMode: 'makeEvmAccount',
     },
     {
@@ -130,6 +131,7 @@ export const PROD_NETWORK: NetworkSpec = {
       transfer: 'cctpReturn',
       variableFeeBps: 0,
       timeSec: 20,
+      min: 1_000_000n,
       feeMode: 'makeEvmAccount',
     },
     {
@@ -138,6 +140,7 @@ export const PROD_NETWORK: NetworkSpec = {
       transfer: 'cctpReturn',
       variableFeeBps: 0,
       timeSec: 20,
+      min: 1_000_000n,
       feeMode: 'makeEvmAccount',
     },
     {
@@ -146,6 +149,7 @@ export const PROD_NETWORK: NetworkSpec = {
       transfer: 'cctpReturn',
       variableFeeBps: 0,
       timeSec: 20,
+      min: 1_000_000n,
       feeMode: 'makeEvmAccount',
     },
     {
@@ -154,6 +158,7 @@ export const PROD_NETWORK: NetworkSpec = {
       transfer: 'cctpReturn',
       variableFeeBps: 0,
       timeSec: 20,
+      min: 1_000_000n,
       feeMode: 'makeEvmAccount',
     },
     // IBC connectivity (explicit both directions required for USDN and other noble-origin flows)
