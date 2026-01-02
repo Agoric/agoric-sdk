@@ -2100,15 +2100,20 @@ test('failed transaction publishes rejectionReason to vstorage', async t => {
 });
 
 test('asking to relay less than 1 USDC over CCTP is refused by contract', async t => {
-  const { give, steps } = await makePortfolioSteps(
-    { Aave: make(USDC, 250_000n) },
-    { feeBrand: BLD },
-  );
-  const { Deposit } = give;
+  const amount = make(USDC, 250_000n);
   const { orch, tapPK, ctx, offer, storage, txResolver, cosmosId } = mocks(
     {},
-    { Deposit },
+    { Deposit: amount },
   );
+
+  const feeAcct = AmountMath.make(BLD, 150n);
+  const feeCall = AmountMath.make(BLD, 100n);
+  const steps: MovementDesc[] = [
+    { src: '<Deposit>', dest: '@agoric', amount },
+    { src: '@agoric', dest: '@noble', amount },
+    { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+    { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
+  ];
 
   const nobleId = await cosmosId('noble');
 
