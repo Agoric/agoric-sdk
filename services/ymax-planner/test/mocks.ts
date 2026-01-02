@@ -1,10 +1,10 @@
-import { ethers, type WebSocketProvider } from 'ethers';
+import { ethers } from 'ethers';
+import type { WebSocketProvider } from 'ethers';
 
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.ts';
-import {
-  boardSlottingMarshaller,
-  type SigningSmartWalletKit,
-} from '@agoric/client-utils';
+import { TEST_NETWORK } from '@aglocal/portfolio-contract/tools/network/test-network.js';
+import { boardSlottingMarshaller } from '@agoric/client-utils';
+import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import { makeKVStoreFromMap } from '@agoric/internal/src/kv-store.js';
@@ -27,6 +27,21 @@ const makeAbortController = prepareAbortController({
   AbortSignal,
 });
 
+export const makeNotImplemented = (
+  key: string | symbol,
+  { async }: { async?: boolean } = {},
+) => {
+  const rejector: any = () => {
+    const err = Error(`Not implemented: ${String(key)}`);
+    if (async) return Promise.reject(err);
+    throw err;
+  };
+  return rejector;
+};
+
+export const makeNotImplementedAsync = (key: string | symbol) =>
+  makeNotImplemented(key, { async: true });
+
 /** Return a correctly-typed record lacking significant functionality. */
 export const createMockEnginePowers = (): EnginePowers => ({
   evmCtx: {
@@ -43,6 +58,7 @@ export const createMockEnginePowers = (): EnginePowers => ({
   spectrumChainIds: {},
   spectrumPoolIds: {},
   cosmosRest: {} as any,
+  network: TEST_NETWORK,
   signingSmartWalletKit: {} as any,
   walletStore: {} as any,
   getWalletInvocationUpdate: async () => undefined,
@@ -262,6 +278,7 @@ export const createMockPendingTxOpts = (
   kvStore: makeKVStoreFromMap(new Map()),
   makeAbortController,
   axelarApiUrl: mockAxelarApiAddress,
+  pendingTxAbortControllers: new Map(),
 });
 
 export const createMockPendingTxEvent = (
@@ -405,6 +422,23 @@ const createMockAxelarScanResponse = (
     };
   }
 
+  if (status === 'error') {
+    return {
+      data: [
+        {
+          ...baseEvent,
+          error: {
+            error: {
+              message: 'Transaction execution failed',
+            },
+          },
+        },
+      ],
+      total: 1,
+      time_spent: 100,
+    };
+  }
+
   return {
     data: [baseEvent],
     total: 1,
@@ -467,3 +501,13 @@ export const createMockGmpExecutionEvent = (
     transactionHash: '0x1234567890abcdef1234567890abcdef12345678',
   };
 };
+
+export const makeStreamCellFromText = (
+  blockHeight: bigint,
+  values: string[],
+) => ({ blockHeight: `${blockHeight}`, values });
+
+export const makeStreamCellJsonFromText = (
+  blockHeight: bigint,
+  values: string[],
+) => JSON.stringify(makeStreamCellFromText(blockHeight, values));

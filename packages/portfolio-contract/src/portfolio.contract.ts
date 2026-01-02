@@ -36,6 +36,7 @@ import type { PortfolioPublicInvitationMaker } from '@agoric/portfolio-api';
 import {
   AxelarChain,
   YieldProtocol,
+  DEFAULT_FLOW_CONFIG,
 } from '@agoric/portfolio-api/src/constants.js';
 import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
 import type { ContractMeta, ZCF, ZCFSeat } from '@agoric/zoe';
@@ -56,6 +57,7 @@ import { PENDING_TXS_NODE_KEY } from './resolver/types.ts';
 import { makeOfferArgsShapes } from './type-guards-steps.ts';
 import {
   BeefyPoolPlaces,
+  ERC4626PoolPlaces,
   makeProposalShapes,
   type EVMContractAddressesMap,
   type OfferArgsFor,
@@ -109,6 +111,10 @@ export type BeefyContracts = {
   [K in keyof typeof BeefyPoolPlaces]: `0x${string}`;
 };
 
+export type ERC4626Contracts = {
+  [K in keyof typeof ERC4626PoolPlaces]: `0x${string}`;
+};
+
 export type EVMContractAddresses = {
   aavePool: `0x${string}`;
   compound: `0x${string}`;
@@ -120,7 +126,8 @@ export type EVMContractAddresses = {
   compoundRewardsController: `0x${string}`;
   gateway: `0x${string}`;
   gasService: `0x${string}`;
-} & Partial<BeefyContracts>;
+} & Partial<BeefyContracts> &
+  Partial<ERC4626Contracts>;
 
 export type AxelarId = {
   [chain in AxelarChain]: string;
@@ -323,14 +330,41 @@ export const contract = async (
     transferChannels,
   };
 
+  // We wrap all the orchFns1 (and orchFns2) to have replaying flows use `config
+  // = undefined` (and the original, pre-progressTracker behavior), but
+  // newly-invoked flows get `config = DEFAULT_FLOW_CONFIG`.
+  //
   // Create rebalance flow first - needed by preparePortfolioKit
-  const { executePlan, rebalance } = orchestrateAll(
+  const orchFns1 = orchestrateAll(
     {
       executePlan: flows.executePlan,
       rebalance: flows.rebalance,
     },
     ctx1,
   );
+  const executePlan: typeof orchFns1.executePlan = (
+    seat,
+    offerArgs,
+    pKit,
+    flowDetail,
+    startedFlow,
+    config = DEFAULT_FLOW_CONFIG,
+  ) =>
+    orchFns1.executePlan(
+      seat,
+      offerArgs,
+      pKit,
+      flowDetail,
+      startedFlow,
+      config,
+    );
+  const rebalance: typeof orchFns1.rebalance = (
+    seat,
+    offerArgs,
+    kit,
+    startedFlow,
+    config = DEFAULT_FLOW_CONFIG,
+  ) => orchFns1.rebalance(seat, offerArgs, kit, startedFlow, config);
 
   // unused but must be defined for upgrade
   const { parseInboundTransfer: _obsolete } = orchestrateAll(
@@ -383,8 +417,12 @@ export const contract = async (
     return kit;
   };
 
+  // As per orchFns1, we wrap orchFns2 to have replaying flows use `config
+  // = undefined` (and the original, pre-progressTracker behavior), but
+  // newly-invoked flows get `config = DEFAULT_FLOW_CONFIG`.
+  //
   // Create openPortfolio flow with makePortfolioKit - circular dependency avoided
-  const { openPortfolio } = orchestrateAll(
+  const orchFns2 = orchestrateAll(
     { openPortfolio: flows.openPortfolio },
     {
       ...ctx1,
@@ -393,6 +431,12 @@ export const contract = async (
       inertSubscriber,
     },
   );
+  const openPortfolio: typeof orchFns2.openPortfolio = (
+    seat,
+    offerArgs,
+    kit,
+    config = DEFAULT_FLOW_CONFIG,
+  ) => orchFns2.openPortfolio(seat, offerArgs, kit, config);
 
   const usedAccessTokens = zone.makeOnce(
     'usedAccessTokens',

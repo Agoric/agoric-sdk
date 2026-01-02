@@ -77,6 +77,76 @@ the planner actually sign and submit actions rather than just logging them).
 yarn test
 ```
 
+### Manual Transaction Tool
+
+A unified tool for manually processing and resolving transactions:
+
+```bash
+./scripts/tx-tool.ts <command> [options]
+```
+
+#### Commands
+
+**scan** - Process a pending transaction by reading from vstorage
+```bash
+./scripts/tx-tool.ts scan <txId> [--verbose]
+```
+
+Examples:
+```bash
+./scripts/tx-tool.ts scan tx233
+./scripts/tx-tool.ts scan tx233 --verbose
+```
+
+Use cases:
+- Re-process a transaction that may have been skipped or failed
+- Debug transaction processing issues
+- Manually trigger transaction handling in development/testing
+
+**settle** - Manually mark a transaction as succeeded or failed
+```bash
+./scripts/tx-tool.ts settle <txId> <status> [reason]
+```
+
+Examples:
+```bash
+./scripts/tx-tool.ts settle tx399 success
+./scripts/tx-tool.ts settle tx400 fail "Transaction timeout"
+./scripts/tx-tool.ts settle tx401 fail "Unable to confirm on destination chain"
+```
+
+Use cases:
+- Manually resolve stuck transactions
+- Administrative cleanup of transaction states
+- Document specific failure reasons for audit purposes
+
+Run `./scripts/tx-tool.ts` without arguments to see full usage.
+
+#### Setup for Local Use
+
+These tools are intended for **debugging and manual intervention**, run locally by developers:
+
+1. **Configure environment** - Set up your `.env` with the target network config (production, testnet, or local):
+   - RPC endpoints
+   - Contract addresses
+   - Mnemonic
+   - Other service configuration
+
+2. **Set database path** - Point `SQLITE_DB_PATH` to a local file:
+   ```bash
+   SQLITE_DB_PATH=./local-dev.db
+   ```
+   Use a local database file path that exists on your machine.
+
+**Usage scenarios:**
+- Debug transaction processing issues
+- Manually settle stuck transactions
+- Test transaction handling against testnet or production data
+
+#### Required Environment Variables
+
+These tools use the same configuration as the main planner service. You can use a `.env` file or set environment variables directly.
+
 ## Configuration
 
 Environment variables:

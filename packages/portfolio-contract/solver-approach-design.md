@@ -261,7 +261,7 @@ import { Far } from '@endo/far';
 import { AmountMath } from '@agoric/ertp';
 import type { Brand, NatAmount } from '@agoric/ertp';
 import { makeGraphFromDefinition } from '@aglocal/portfolio-contract/src/network/buildGraph.js';
-import { PROD_NETWORK } from '@aglocal/portfolio-contract/src/network/network.prod.js';
+import { PROD_NETWORK } from '@aglocal/portfolio-contract/src/network/prod-network.js';
 import type { LinkSpec } from '@aglocal/portfolio-contract/src/network/network-spec.js';
 import type { AssetPlaceRef } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
 import {

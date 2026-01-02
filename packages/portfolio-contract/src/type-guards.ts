@@ -137,6 +137,13 @@ export const BeefyPoolPlaces = {
   },
 } as const satisfies Partial<Record<InstrumentId, PoolPlaceInfo>>;
 
+export const ERC4626PoolPlaces = {
+  ERC4626_vaultU2_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+} as const satisfies Partial<Record<InstrumentId, PoolPlaceInfo>>;
+
 export const PoolPlaces = {
   USDN: { protocol: 'USDN', vault: null, chainName: 'noble' }, // MsgSwap only
   USDNVault: { protocol: 'USDN', vault: 1, chainName: 'noble' }, // MsgSwap, MsgLock
@@ -150,6 +157,7 @@ export const PoolPlaces = {
   Compound_Arbitrum: { protocol: 'Compound', chainName: 'Arbitrum' },
   Compound_Base: { protocol: 'Compound', chainName: 'Base' },
   ...BeefyPoolPlaces,
+  ...ERC4626PoolPlaces,
 } as const satisfies Record<InstrumentId, PoolPlaceInfo>;
 harden(PoolPlaces);
 

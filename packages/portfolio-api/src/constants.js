@@ -4,8 +4,27 @@
 
 import { objectMap } from '@endo/common/object-map.js';
 
-/** @import {ClusterName} from '@agoric/internal'; */
-/** @import {CaipChainId} from '@agoric/orchestration'; */
+/**
+ * @import {ClusterName} from '@agoric/internal';
+ * @import {CaipChainId} from '@agoric/orchestration';
+ * @import {FlowConfig} from './types.js';
+ */
+
+/**
+ * Configuration arguments for newly-created portfolio flows.
+ *
+ * This is only a default so that existing flows continue to behave as before
+ * for replay fidelity.
+ *
+ * @type {FlowConfig | undefined}
+ */
+export const DEFAULT_FLOW_CONFIG = {
+  features: {
+    /** Enable ProgressTracker support in new flows. */
+    useProgressTracker: true,
+  },
+};
+harden(DEFAULT_FLOW_CONFIG);
 
 /**
  * Yield protocols for Proof of Concept.
@@ -17,6 +36,7 @@ export const YieldProtocol = /** @type {const} */ ({
   Compound: 'Compound',
   USDN: 'USDN',
   Beefy: 'Beefy',
+  ERC4626: 'ERC4626',
 });
 harden(YieldProtocol);
 

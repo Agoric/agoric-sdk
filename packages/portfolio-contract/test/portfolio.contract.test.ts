@@ -4,7 +4,11 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath } from '@agoric/ertp';
 import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
-import { type makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import {
+  defaultSerializer,
+  documentStorageSchema,
+  type makeFakeStorageKit,
+} from '@agoric/internal/src/storage-test-utils.js';
 import {
   eventLoopIteration,
   inspectMapStore,
@@ -36,6 +40,14 @@ const range = (n: number) => [...Array(n).keys()];
 
 type FakeStorage = ReturnType<typeof makeFakeStorageKit>;
 
+const pendingTxOpts = {
+  pattern: `${ROOT_STORAGE_PATH}.`,
+  replacement: 'published.',
+  node: `pendingTxs`,
+  owner: 'ymax',
+  showValue: defaultSerializer.parse,
+};
+
 const getFlowHistory = (
   portfolioKey: string,
   flowCount: number,
@@ -44,10 +56,17 @@ const getFlowHistory = (
   const flowPaths = range(flowCount).map(
     ix => `${portfolioKey}.flows.flow${ix + 1}`,
   );
-  const flowEntries = flowPaths.map(p => [p, storage.getDeserialized(p)]);
+  const flowEntries: [string, StatusFor['flow'][]][] = flowPaths.map(p => [
+    p,
+    storage.getDeserialized(p),
+  ]);
+  const stepsEntries = flowPaths
+    .map(fp => `${fp}.steps`)
+    .map(fsp => [fsp, storage.getDeserialized(fsp).at(-1)]);
+  const zipped = flowEntries.flatMap((e, ix) => [e, stepsEntries[ix]]);
   return {
     flowPaths,
-    byFlow: fromEntries(flowEntries) as Record<string, StatusFor['flow']>,
+    byFlow: fromEntries(zipped),
   };
 };
 
@@ -101,11 +120,11 @@ test('open portfolio with USDN position', async t => {
   t.is(keys(result.publicSubscribers).length, 1);
   const { storagePath } = result.publicSubscribers.portfolio;
   t.log(storagePath);
-  const { contents, positionPaths } = getPortfolioInfo(
-    storagePath,
-    common.bootstrap.storage,
-  );
+  const { storage } = common.bootstrap;
+  const { contents, positionPaths } = getPortfolioInfo(storagePath, storage);
   t.snapshot(contents, 'vstorage');
+  await documentStorageSchema(t, storage, pendingTxOpts);
+
   t.log(
     'I can see where my money is:',
     positionPaths.map(p => contents[p].accountId),
@@ -163,8 +182,10 @@ test('open a portfolio with Aave position', async t => {
   t.is(keys(result.publicSubscribers).length, 1);
   const { storagePath } = result.publicSubscribers.portfolio;
   t.log(storagePath);
-  const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);
+  const { storage } = common.bootstrap;
+  const { contents } = getPortfolioInfo(storagePath, storage);
   t.snapshot(contents, 'vstorage');
+  await documentStorageSchema(t, storage, pendingTxOpts);
   t.snapshot(actual.payouts, 'refund payouts');
 });
 
@@ -213,8 +234,10 @@ test('open a portfolio with Compound position', async t => {
   t.is(keys(result.publicSubscribers).length, 1);
   const { storagePath } = result.publicSubscribers.portfolio;
   t.log(storagePath);
-  const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);
+  const { storage } = common.bootstrap;
+  const { contents } = getPortfolioInfo(storagePath, storage);
   t.snapshot(contents, 'vstorage');
+  await documentStorageSchema(t, storage, pendingTxOpts);
   t.snapshot(actual.payouts, 'refund payouts');
 });
 
@@ -266,8 +289,10 @@ test('open portfolio with USDN, Aave positions', async t => {
   t.is(keys(result.publicSubscribers).length, 1);
   const { storagePath } = result.publicSubscribers.portfolio;
   t.log(storagePath);
-  const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);
+  const { storage } = common.bootstrap;
+  const { contents } = getPortfolioInfo(storagePath, storage);
   t.snapshot(contents, 'vstorage');
+  await documentStorageSchema(t, storage, pendingTxOpts);
   t.snapshot(done.payouts, 'refund payouts');
 
   const tree = inspectMapStore(contractBaggage);
@@ -400,8 +425,10 @@ test('claim rewards on Aave position successfully', async t => {
   t.deepEqual(messagesAfter.length - messagesBefore.length, 2);
 
   t.log(storagePath);
-  const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);
+  const { storage } = common.bootstrap;
+  const { contents } = getPortfolioInfo(storagePath, storage);
   t.snapshot(contents, 'vstorage');
+  await documentStorageSchema(t, storage, pendingTxOpts);
 
   t.snapshot(rebalanceResult.payouts, 'rebalance payouts');
 });
@@ -439,10 +466,12 @@ test('USDN claim fails currently', async t => {
   t.is(keys(result.publicSubscribers).length, 1);
   const { storagePath } = result.publicSubscribers.portfolio;
   t.log(storagePath);
-  const { contents, positionPaths } = getPortfolioInfo(
-    storagePath,
-    common.bootstrap.storage,
-  );
+
+  const { storage } = common.bootstrap;
+  const { contents, positionPaths } = getPortfolioInfo(storagePath, storage);
+  t.snapshot(contents, 'vstorage');
+  await documentStorageSchema(t, storage, pendingTxOpts);
+
   t.log(
     'I can see where my money is:',
     positionPaths.map(p => contents[p].accountId),
@@ -474,7 +503,7 @@ test('USDN claim fails currently', async t => {
     payouts: {},
   });
 
-  const portfolioInfo = getPortfolioInfo(storagePath, common.bootstrap.storage);
+  const portfolioInfo = getPortfolioInfo(storagePath, storage);
   const flowInfo =
     portfolioInfo.contents[`${storagePath}.flows.${rebalanceRet.result}`];
   t.snapshot(flowInfo, 'flow info after failed claim');
@@ -522,11 +551,10 @@ const beefyTestMacro = test.macro({
     t.is(keys(result.publicSubscribers).length, 1);
     const { storagePath } = result.publicSubscribers.portfolio;
     t.log(storagePath);
-    const { contents } = getPortfolioInfo(
-      storagePath,
-      common.bootstrap.storage,
-    );
+    const { storage } = common.bootstrap;
+    const { contents } = getPortfolioInfo(storagePath, storage);
     t.snapshot(contents, 'vstorage');
+    await documentStorageSchema(t, storage, pendingTxOpts);
     t.snapshot(actual.payouts, 'refund payouts');
   },
   title(providedTitle = '', vaultKey: AssetPlaceRef) {
@@ -638,8 +666,10 @@ test('Withdraw from a Beefy position (future client)', async t => {
   const withdraw = await withdrawP;
 
   const { storagePath } = result.publicSubscribers.portfolio;
-  const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);
+  const { storage } = common.bootstrap;
+  const { contents } = getPortfolioInfo(storagePath, storage);
   t.snapshot(contents, 'vstorage');
+  await documentStorageSchema(t, storage, pendingTxOpts);
   t.snapshot(withdraw.payouts, 'refund payouts');
 });
 
@@ -746,11 +776,10 @@ test.serial(
     t.is(keys(result.publicSubscribers).length, 1);
     const { storagePath } = result.publicSubscribers.portfolio;
     t.log(storagePath);
-    const { contents } = getPortfolioInfo(
-      storagePath,
-      common.bootstrap.storage,
-    );
+    const { storage } = common.bootstrap;
+    const { contents } = getPortfolioInfo(storagePath, storage);
     t.snapshot(contents, 'vstorage');
+    await documentStorageSchema(t, storage, pendingTxOpts);
     t.snapshot(actual.payouts, 'refund payouts');
   },
 );
@@ -817,14 +846,16 @@ test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
 
+  const { storage } = common.bootstrap;
   for (const openP of [open1P, open2P]) {
     const { result, payouts } = await openP;
     t.deepEqual(payouts.Deposit, { brand: usdc.brand, value: 0n });
     const { storagePath } = result.publicSubscribers.portfolio;
     t.log(storagePath);
-    const info = getPortfolioInfo(storagePath, common.bootstrap.storage);
-    t.snapshot(info.contents, storagePath);
+    const { contents } = getPortfolioInfo(storagePath, storage);
+    t.snapshot(contents, storagePath);
   }
+  await documentStorageSchema(t, storage, pendingTxOpts);
 });
 
 test('start deposit more to same', async t => {
@@ -1283,4 +1314,146 @@ test('create+deposit using planner', async t => {
   );
   t.log('bankBridge for', addr, myVBankIO);
   t.like(myVBankIO, [{ type: 'VBANK_GIVE', amount: '1000000000' }]);
+});
+
+const erc4626TestMacro = test.macro({
+  async exec(t, vaultKey: AssetPlaceRef) {
+    const { trader1, common, txResolver } = await setupTrader(t);
+    const { usdc, bld, poc26 } = common.brands;
+
+    const amount = usdc.units(3_333.33);
+    const feeAcct = bld.make(100n);
+    const feeCall = bld.make(100n);
+
+    const actualP = trader1.openPortfolio(
+      t,
+      { Deposit: amount, Access: poc26.make(1n) },
+      {
+        flow: [
+          { src: '<Deposit>', dest: '@agoric', amount },
+          { src: '@agoric', dest: '@noble', amount },
+          { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+          { src: '@Arbitrum', dest: vaultKey, amount, fee: feeCall },
+        ],
+      },
+    );
+
+    await eventLoopIteration(); // let IBC message go out
+    await ackNFA(common.utils);
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
+    t.log('ackd send to Axelar to create account');
+
+    await simulateCCTPAck(common.utils).finally(() =>
+      txResolver
+        .drainPending()
+        .then(() => simulateAckTransferToAxelar(common.utils)),
+    );
+    const actual = await actualP;
+
+    t.log('=== Portfolio completed');
+    const result = actual.result as any;
+    t.is(passStyleOf(result.invitationMakers), 'remotable');
+
+    t.is(keys(result.publicSubscribers).length, 1);
+    const { storagePath } = result.publicSubscribers.portfolio;
+    t.log(storagePath);
+    const { contents } = getPortfolioInfo(
+      storagePath,
+      common.bootstrap.storage,
+    );
+    t.snapshot(contents, 'vstorage');
+    t.snapshot(actual.payouts, 'refund payouts');
+  },
+  title(providedTitle = '', vaultKey: AssetPlaceRef) {
+    return `${providedTitle} ${vaultKey}`.trim();
+  },
+});
+
+test(
+  'open a portfolio with ERC4626 vault:',
+  erc4626TestMacro,
+  'ERC4626_vaultU2_Ethereum',
+);
+
+test('Withdraw from an ERC4626 position', async t => {
+  const { trader1, common, txResolver } = await setupTrader(t);
+  const { usdc, bld, poc26 } = common.brands;
+
+  const amount = usdc.units(3_333.33);
+  const feeAcct = bld.make(100n);
+  const feeCall = bld.make(100n);
+
+  const actualP = trader1.openPortfolio(
+    t,
+    { Deposit: amount, Access: poc26.make(1n) },
+    {
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+        {
+          src: '@Arbitrum',
+          dest: 'ERC4626_vaultU2_Ethereum',
+          amount,
+          fee: feeCall,
+        },
+      ],
+    },
+  );
+
+  await eventLoopIteration(); // let IBC message go out
+  await ackNFA(common.utils);
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
+  t.log('ackd send to Axelar to create account');
+
+  await simulateCCTPAck(common.utils).finally(() =>
+    txResolver
+      .drainPending()
+      .then(() => simulateAckTransferToAxelar(common.utils)),
+  );
+  const actual = await actualP;
+
+  const result = actual.result as any;
+
+  const withdrawP = trader1.rebalance(
+    t,
+    { give: {}, want: {} },
+    {
+      flow: [
+        {
+          src: 'ERC4626_vaultU2_Ethereum',
+          dest: '@Arbitrum',
+          amount,
+          fee: feeCall,
+        },
+        {
+          src: '@Arbitrum',
+          dest: '@agoric',
+          amount,
+        },
+        {
+          src: '@agoric',
+          dest: '<Cash>',
+          amount,
+        },
+      ],
+    },
+  );
+
+  // GMP transaction settlement for the withdraw
+  await txResolver.drainPending();
+
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  await simulateCCTPAck(common.utils).finally(() =>
+    txResolver
+      .drainPending()
+      .then(() => simulateAckTransferToAxelar(common.utils)),
+  );
+
+  const withdraw = await withdrawP;
+
+  const { storagePath } = result.publicSubscribers.portfolio;
+  const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);
+  t.snapshot(contents, 'vstorage');
+  t.snapshot(withdraw.payouts, 'refund payouts');
 });

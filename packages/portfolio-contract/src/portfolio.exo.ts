@@ -60,7 +60,9 @@ type AgoricAccountInfo = {
   namespace: 'cosmos';
   chainName: 'agoric';
   err?: string;
+  /** aka `@agoric` */
   lca: LocalAccount;
+  /** aka `+agoric` */
   lcaIn: LocalAccount;
   reg: TargetRegistration;
 };

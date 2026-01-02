@@ -270,3 +270,37 @@ test('portfolio8 log entry', async t => {
   const job = { taskQty: steps.length, order };
   await t.notThrowsAsync(runJob(job, runTask, t.log));
 });
+
+const range = (n: number) => Array.from(Array(n).keys());
+const checkAllStarted = test.macro({
+  title: provided => `checkAll: ${provided}`,
+  exec: async (t, { steps, order }) => {
+    const started = new Set();
+    const runTask = makeRunTask(steps, (ix, _r) => started.add(ix));
+    await runJob({ order, taskQty: steps.length }, runTask, t.log);
+    t.deepEqual([...started].sort(), range(steps.length));
+  },
+});
+
+test('unmentioned steps implicitly have no dependencies', checkAllStarted, {
+  steps: [{ id: 'a-noble' }, { id: 'n-cash' }, { id: 'n-out' }],
+  order: [[2, [0]]],
+});
+
+test('one step may depend on many', checkAllStarted, {
+  steps: [{ id: 'a-noble' }, { id: 'n-cash' }, { id: 'n-out' }],
+  order: [[2, [0, 1]]],
+});
+
+test('independent chains', checkAllStarted, {
+  steps: [{ id: 'a-noble' }, { id: 'o-arb' }],
+  order: [],
+});
+
+test('diamond', checkAllStarted, {
+  steps: [{ id: 'a->b' }, { id: 'a->c' }, { id: 'b->d' }, { id: 'c->d' }],
+  order: [
+    [2, [0]],
+    [3, [1]],
+  ],
+});

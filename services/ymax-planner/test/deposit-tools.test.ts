@@ -2,9 +2,10 @@
 /* eslint-disable max-classes-per-file, class-methods-use-this */
 import test from 'ava';
 
+import { ACCOUNT_DUST_EPSILON } from '@agoric/portfolio-api';
 import { planUSDNDeposit } from '@aglocal/portfolio-contract/test/mocks.js';
-import { TEST_NETWORK } from '@aglocal/portfolio-contract/test/network/test-network.js';
-import PROD_NETWORK from '@aglocal/portfolio-contract/tools/network/network.prod.ts';
+import { PROD_NETWORK } from '@aglocal/portfolio-contract/tools/network/prod-network.ts';
+import { TEST_NETWORK } from '@aglocal/portfolio-contract/tools/network/test-network.js';
 import type { NetworkSpec } from '@aglocal/portfolio-contract/tools/network/network-spec.js';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.js';
@@ -31,6 +32,8 @@ const feeBrand = Far('fee brand (BLD)') as Brand<'nat'>;
 
 const powers = { fetch, setTimeout };
 
+const emptyPlan = harden({ flow: [], order: undefined });
+
 /**
  * Helper for test results
  */
@@ -49,14 +52,16 @@ const handleDeposit = async (
   const querier = makePortfolioQuery(powers.readPublished, portfolioKey);
   const status = await querier.getPortfolioStatus();
   const { policyVersion, rebalanceCount, targetAllocation } = status;
-  if (!targetAllocation) return { policyVersion, rebalanceCount, steps: [] };
+  if (!targetAllocation) {
+    return { policyVersion, rebalanceCount, plan: emptyPlan };
+  }
   const currentBalances = await getCurrentBalances(status, amount.brand, {
     spectrumChainIds: {},
     spectrumPoolIds: {},
     usdcTokensByChain: {},
     ...powers,
   });
-  const steps = await planDepositToAllocations({
+  const plan = await planDepositToAllocations({
     amount,
     brand: amount.brand,
     currentBalances,
@@ -65,8 +70,12 @@ const handleDeposit = async (
     feeBrand,
     gasEstimator: powers.gasEstimator,
   });
-  return { policyVersion, rebalanceCount, steps };
+  return { policyVersion, rebalanceCount, plan };
 };
+
+test('USDN denom', t => {
+  t.is(USDN.base, 'uusdn');
+});
 
 test('getNonDustBalances filters balances at or below the dust epsilon', async t => {
   const status = {
@@ -331,11 +340,11 @@ test('handleDeposit handles missing targetAllocation gracefully', async t => {
     gasEstimator: mockGasEstimator,
   });
 
-  t.deepEqual(result, { policyVersion: 4, rebalanceCount: 0, steps: [] });
+  t.deepEqual(result, { policyVersion: 4, rebalanceCount: 0, plan: emptyPlan });
 });
 
 test('handleDeposit handles different position types correctly', async t => {
-  const deposit = makeDeposit(1000n);
+  const deposit = makeDeposit(1_000_000n);
   const portfolioKey = 'test.portfolios.portfolio1' as const;
 
   // Mock VstorageKit readPublished with various position types
@@ -377,7 +386,7 @@ test('handleDeposit handles different position types correctly', async t => {
           pool,
           chain,
           address: addr,
-          balance: { supplyBalance: 150, borrowAmount: 0 },
+          balance: { supplyBalance: 150_000, borrowAmount: 0 },
         };
       }
       if (chain === 'ethereum' && pool === 'compound') {
@@ -385,7 +394,7 @@ test('handleDeposit handles different position types correctly', async t => {
           pool,
           chain,
           address: addr,
-          balance: { supplyBalance: 75, borrowAmount: 0 },
+          balance: { supplyBalance: 75_000, borrowAmount: 0 },
         };
       }
       return {
@@ -406,7 +415,7 @@ test('handleDeposit handles different position types correctly', async t => {
 
     async getAccountBalance(chainName: string, addr: string, denom: string) {
       if (chainName === 'noble' && denom === 'uusdn') {
-        return { denom, amount: '300' };
+        return { denom, amount: '300000' };
       }
       return { denom, amount: '0' };
     }
@@ -430,7 +439,7 @@ test('handleDeposit handles different position types correctly', async t => {
     },
     TEST_NETWORK,
   );
-  t.snapshot(result?.steps);
+  t.snapshot(result?.plan);
 });
 
 test('planRebalanceToAllocations emits an empty plan when already balanced', async t => {
@@ -442,7 +451,7 @@ test('planRebalanceToAllocations emits an empty plan when already balanced', asy
   const currentBalances = objectMap(targetAllocation, v =>
     makeDeposit(v * 200n),
   );
-  const steps = await planRebalanceToAllocations({
+  const plan = await planRebalanceToAllocations({
     brand: depositBrand,
     currentBalances,
     targetAllocation,
@@ -450,7 +459,30 @@ test('planRebalanceToAllocations emits an empty plan when already balanced', asy
     feeBrand,
     gasEstimator: mockGasEstimator,
   });
-  t.deepEqual(steps, []);
+  t.deepEqual(plan, emptyPlan);
+});
+
+// https://github.com/Agoric/agoric-private/issues/623
+test('planRebalanceToAllocations emits an empty plan when almost balanced', async t => {
+  const targetAllocation = {
+    Aave_Arbitrum: 25n,
+    Aave_Avalanche: 50n,
+    Compound_Ethereum: 25n,
+  };
+  const currentBalanceValues = {
+    Aave_Arbitrum: 25_000_000n - ACCOUNT_DUST_EPSILON + 1n,
+    Aave_Avalanche: 50_000_000n + 2n * ACCOUNT_DUST_EPSILON - 2n,
+    Compound_Ethereum: 25_000_000n - ACCOUNT_DUST_EPSILON + 1n,
+  };
+  const plan = await planRebalanceToAllocations({
+    brand: depositBrand,
+    currentBalances: objectMap(currentBalanceValues, v => makeDeposit(v)),
+    targetAllocation,
+    network: TEST_NETWORK,
+    feeBrand,
+    gasEstimator: mockGasEstimator,
+  });
+  t.deepEqual(plan, emptyPlan);
 });
 
 test('planRebalanceToAllocations moves funds when needed', async t => {
@@ -461,7 +493,7 @@ test('planRebalanceToAllocations moves funds when needed', async t => {
     Compound_Arbitrum: 20n,
   };
   const currentBalances = { USDN: makeDeposit(1000n) };
-  const steps = await planRebalanceToAllocations({
+  const plan = await planRebalanceToAllocations({
     brand: depositBrand,
     currentBalances,
     targetAllocation,
@@ -469,7 +501,7 @@ test('planRebalanceToAllocations moves funds when needed', async t => {
     feeBrand,
     gasEstimator: mockGasEstimator,
   });
-  t.snapshot(steps);
+  t.snapshot(plan);
 });
 
 test('planWithdrawFromAllocations withdraws and rebalances', async t => {
@@ -479,7 +511,7 @@ test('planWithdrawFromAllocations withdraws and rebalances', async t => {
     Compound_Arbitrum: 20n,
   };
   const currentBalances = { USDN: makeDeposit(2000n) };
-  const steps = await planWithdrawFromAllocations({
+  const plan = await planWithdrawFromAllocations({
     amount: makeDeposit(1000n),
     brand: depositBrand,
     currentBalances,
@@ -488,7 +520,7 @@ test('planWithdrawFromAllocations withdraws and rebalances', async t => {
     feeBrand,
     gasEstimator: mockGasEstimator,
   });
-  t.snapshot(steps);
+  t.snapshot(plan);
 });
 
 test('planWithdrawFromAllocations considers former allocation targets', async t => {
@@ -496,7 +528,7 @@ test('planWithdrawFromAllocations considers former allocation targets', async t 
     Aave_Avalanche: makeDeposit(1000n),
     Compound_Arbitrum: makeDeposit(1000n),
   };
-  const steps = await planWithdrawFromAllocations({
+  const plan = await planWithdrawFromAllocations({
     amount: makeDeposit(1200n),
     brand: depositBrand,
     currentBalances,
@@ -505,7 +537,7 @@ test('planWithdrawFromAllocations considers former allocation targets', async t 
     feeBrand,
     gasEstimator: mockGasEstimator,
   });
-  t.snapshot(steps);
+  t.snapshot(plan);
 });
 
 test('planWithdrawFromAllocations with no target preserves relative amounts', async t => {
@@ -514,7 +546,7 @@ test('planWithdrawFromAllocations with no target preserves relative amounts', as
     Aave_Arbitrum: makeDeposit(800n),
     Compound_Arbitrum: makeDeposit(400n),
   };
-  const steps = await planWithdrawFromAllocations({
+  const plan = await planWithdrawFromAllocations({
     amount: makeDeposit(1000n),
     brand: depositBrand,
     currentBalances,
@@ -523,10 +555,10 @@ test('planWithdrawFromAllocations with no target preserves relative amounts', as
     feeBrand,
     gasEstimator: mockGasEstimator,
   });
-  t.snapshot(steps);
+  t.snapshot(plan);
 });
 
-test('planDepositToAllocations produces steps expected by contract', async t => {
+test('planDepositToAllocations produces plan expected by contract', async t => {
   const USDC = depositBrand;
   const BLD = feeBrand;
   const amount = makeDeposit(1000n);
@@ -546,10 +578,6 @@ test('planDepositToAllocations produces steps expected by contract', async t => 
   t.deepEqual(actual, expected);
 });
 
-test('USDN denom', t => {
-  t.is(USDN.base, 'uusdn');
-});
-
 async function singleSourceRebalanceSteps(scale: number) {
   const targetAllocation = {
     Aave_Arbitrum: 10n,
@@ -563,7 +591,7 @@ async function singleSourceRebalanceSteps(scale: number) {
     Aave_Avalanche: makeDeposit(3750061n * BigInt(scale)),
   };
 
-  const steps = await planRebalanceToAllocations({
+  const plan = await planRebalanceToAllocations({
     brand: depositBrand,
     currentBalances,
     targetAllocation,
@@ -572,19 +600,19 @@ async function singleSourceRebalanceSteps(scale: number) {
     feeBrand,
     gasEstimator: mockGasEstimator,
   });
-  return steps;
+  return plan;
 }
 
 test('planRebalanceToAllocations regression - single source', async t => {
   // TODO: For human comprehensibility, adopt something like `readableSteps`
   // from packages/portfolio-contract/test/rebalance.test.ts.
-  const steps = await singleSourceRebalanceSteps(1);
-  t.snapshot(steps);
+  const plan = await singleSourceRebalanceSteps(1);
+  t.snapshot(plan);
 });
 
 test('planRebalanceToAllocations regression - single source, 10x', async t => {
-  const steps = await singleSourceRebalanceSteps(10);
-  t.snapshot(steps);
+  const plan = await singleSourceRebalanceSteps(10);
+  t.snapshot(plan);
 });
 
 test('planRebalanceToAllocations regression - multiple sources', async t => {
@@ -607,7 +635,7 @@ test('planRebalanceToAllocations regression - multiple sources', async t => {
     Compound_Arbitrum: makeDeposit(2849999n),
   };
 
-  const steps = await planRebalanceToAllocations({
+  const plan = await planRebalanceToAllocations({
     brand: depositBrand,
     currentBalances,
     targetAllocation,
@@ -616,5 +644,5 @@ test('planRebalanceToAllocations regression - multiple sources', async t => {
     feeBrand,
     gasEstimator: mockGasEstimator,
   });
-  t.snapshot(steps);
+  t.snapshot(plan);
 });

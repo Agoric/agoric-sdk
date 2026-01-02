@@ -52,7 +52,7 @@ import { CodecHelper } from '@agoric/cosmic-proto';
 import { Height as HeightType } from '@agoric/cosmic-proto/ibc/core/client/v1/client.js';
 import type {
   CosmosValidatorAddress,
-  MetaTrafficEntry,
+  TrafficEntry,
 } from '../../src/cosmos-api.js';
 import fetchedChainInfo from '../../src/fetched-chain-info.js';
 import type {
@@ -133,12 +133,12 @@ test('send (to addr on same chain)', async t => {
   };
 
   // single send
-  t.is(
+  t.deepEqual(
     await E(account).send(toAddress, {
       value: 10n,
       denom: 'uatom',
     }),
-    undefined,
+    {},
   );
 
   // register handler for ist bank send
@@ -159,21 +159,21 @@ test('send (to addr on same chain)', async t => {
     buildMsgResponseString(MsgSendResponse, {}),
   );
 
-  t.is(
+  t.deepEqual(
     await E(account).send(toAddress, {
       denom: uistOnCosmos,
       value: 10n,
     } as AmountArg),
-    undefined,
+    {},
     'send accepts Amount',
   );
 
-  t.is(
+  t.deepEqual(
     await E(account).send(`cosmos:${toAddress.chainId}:${toAddress.value}`, {
       denom: uistOnCosmos,
       value: 10n,
     } as AmountArg),
-    undefined,
+    {},
     'send accepts AccountId',
   );
 
@@ -206,12 +206,12 @@ test('send (to addr on same chain)', async t => {
   );
 
   // multi-send (sendAll)
-  t.is(
+  t.deepEqual(
     await E(account).sendAll(toAddress, [
       { value: 10n, denom: 'uatom' } as AmountArg,
       { value: 10n, denom: 'ibc/1234' } as AmountArg,
     ]),
-    undefined,
+    {},
   );
 
   const { bridgeDowncalls } = await inspectDibcBridge();
@@ -347,13 +347,20 @@ test('transfer', async t => {
     basicIbcTransfer,
     'outgoing transfer msg matches expected default mock',
   );
-  t.deepEqual(await res, null, 'transfer returns null (for now)');
-
-  const resWithMeta = E(account).transferWithMeta(
-    mockDestination,
-    mockAmountArg,
+  const transferResult = await res;
+  t.deepEqual(
+    transferResult,
+    'FOLLOW_TRAFFIC',
+    `distant transfer returns 'FOLLOW_TRAFFIC' (for now)`,
   );
+  t.snapshot(transferResult, 'transfer full result');
+
+  const progressTracker = await E(account).makeProgressTracker();
+  const resultP = E(account).transfer(mockDestination, mockAmountArg, {
+    progressTracker,
+  });
   await eventLoopIteration();
+  progressTracker.finish();
 
   const pktWithMeta = await getAndDecodeLatestPacket();
   t.deepEqual(
@@ -362,32 +369,57 @@ test('transfer', async t => {
     'outgoing transfer msg matches expected default mock',
   );
 
-  const resultMeta = await resWithMeta;
+  const result = await heapVowTools.when(resultP);
+  const resultMeta = {
+    result,
+    meta: progressTracker.getCurrentProgressReport(),
+  };
   t.deepEqual(
     resultMeta.meta,
     {
       traffic: [
         {
           op: 'ICA',
-          seq: null,
-          src: ['ibc', 'cosmos', 'agoric-3', 'icacontroller-1', 'channel-0'],
-          dst: ['ibc', 'cosmos', 'cosmoshub-4', 'icahost', 'channel-0'],
+          seq: { status: 'unknown' },
+          src: [
+            'ibc',
+            ['chain', 'cosmos:agoric-3'],
+            ['port', 'icacontroller-1'],
+            ['channel', 'channel-0'],
+          ],
+          dst: [
+            'ibc',
+            ['chain', 'cosmos:cosmoshub-4'],
+            ['port', 'icahost'],
+            ['channel', 'channel-0'],
+          ],
         },
         {
           op: 'transfer',
           seq: 0n,
-          src: ['ibc', 'cosmos', 'cosmoshub-4', 'transfer', 'channel-536'],
-          dst: ['ibc', 'cosmos', 'noble-1', 'transfer', 'channel-4'],
+          src: [
+            'ibc',
+            ['chain', 'cosmos:cosmoshub-4'],
+            ['port', 'transfer'],
+            ['channel', 'channel-536'],
+          ],
+          dst: [
+            'ibc',
+            ['chain', 'cosmos:noble-1'],
+            ['port', 'transfer'],
+            ['channel', 'channel-4'],
+          ],
         },
-      ] as MetaTrafficEntry[],
+      ] as TrafficEntry[],
     },
     'transfer returns proper meta',
   );
-  t.is(
-    await heapVowTools.when(resultMeta.result),
-    null,
-    'transfer result is null, indicating no knowledge of the acknowledgement',
+  t.deepEqual(
+    result,
+    'FOLLOW_TRAFFIC',
+    `distant transfer returns result of 'FOLLOW_TRAFFIC' (for now)`,
   );
+  t.snapshot(resultMeta, 'transfer result with metadata');
 
   t.log('transfer accepts custom memo');
   await E(account).transfer(mockDestination, mockAmountArg, {
@@ -1106,7 +1138,7 @@ test(`depositForBurn via Noble to Base`, async t => {
   );
 
   t.log('check the bridge');
-  t.deepEqual(actual, undefined);
+  t.deepEqual(actual, { nonce: 0n });
 
   const getAndDecodeLatestPacket = async () => {
     await eventLoopIteration();

@@ -20,6 +20,9 @@ import {
 import type { EvmContext } from './pending-tx-manager.ts';
 import { lookupValueForKey } from './utils.ts';
 
+export const UserInputError = class extends Error {} as ErrorConstructor;
+harden(UserInputError);
+
 type ROPartial<K extends string, V> = Readonly<Partial<Record<K, V>>>;
 
 type HexAddress = `0x${string}`;
@@ -124,6 +127,7 @@ export const spectrumProtocols: Readonly<
   Beefy: 'beefy',
   Compound: 'compound',
   USDN: 'USDN',
+  ERC4626: 'ERC4626',
 };
 
 /**
@@ -487,6 +491,10 @@ const makeTimeoutReason = () =>
     value: 'TimeoutError',
   });
 
+/**
+ * Abstract AbortController/AbortSignal functionality upon a provided
+ * setTimeout.
+ */
 export const prepareAbortController = ({
   setTimeout,
   AbortController = globalThis.AbortController,
@@ -497,13 +505,14 @@ export const prepareAbortController = ({
   AbortSignal?: typeof globalThis.AbortSignal;
 }) => {
   /**
-   * Abstract AbortController/AbortSignal functionality upon a provided
-   * setTimeout.
+   * Make a new manually-abortable AbortSignal with optional timeout and/or
+   * optional signals whose own aborts should propagate (as with
+   * `AbortSignal.any`).
    */
   const makeAbortController = (
     timeoutMillisec?: number,
-    racingSignals: Iterable<AbortSignal> = [],
-  ) => {
+    racingSignals?: Iterable<AbortSignal>,
+  ): AbortController => {
     let controller: AbortController | null = new AbortController();
     const abort: AbortController['abort'] = reason => {
       try {
@@ -514,6 +523,9 @@ export const prepareAbortController = ({
     };
     if (timeoutMillisec !== undefined) {
       setTimeout(() => abort(makeTimeoutReason()), timeoutMillisec);
+    }
+    if (!racingSignals) {
+      return { abort, signal: controller.signal };
     }
     const signal = AbortSignal.any([controller.signal, ...racingSignals]);
     signal.addEventListener('abort', _event => abort());

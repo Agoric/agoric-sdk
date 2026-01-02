@@ -19,6 +19,15 @@
  * @import {Endpoint} from '@agoric/network';
  */
 
+/**
+ * @typedef {object} IBCEndpoint
+ * @property {IBCConnectionID[]} hops
+ * @property {IBCPortID} portID
+ * @property {IBCChannelOrdering} [order]
+ * @property {string} [version]
+ * @property {IBCChannelID} [channelID]
+ */
+
 export const IBC_ADDR_RE =
   /^(?<hops>\/ibc-hop\/[^/]+)*\/ibc-port\/(?<portID>[^/]+)(\/(?<order>ordered|unordered)\/(?<version>[^/]+)(\/ibc-channel\/(?<channelID>[^/]+))?)?$/s;
 harden(IBC_ADDR_RE);
@@ -81,13 +90,7 @@ harden(decodeIbcHops);
 
 /**
  * @param {string} addr
- * @returns {{
- *   hops: IBCConnectionID[];
- *   portID: IBCPortID;
- *   order?: IBCChannelOrdering;
- *   version?: string;
- *   channelID?: IBCChannelID;
- * }}
+ * @returns {IBCEndpoint}
  */
 export const decodeIbcEndpoint = addr => {
   const match = validateIbcAddress(addr);

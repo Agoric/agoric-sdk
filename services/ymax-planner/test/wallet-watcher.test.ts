@@ -1,5 +1,5 @@
 import test from 'ava';
-import { id, zeroPadValue, AbiCoder, getAddress } from 'ethers';
+import { id, zeroPadValue, AbiCoder } from 'ethers';
 import { createMockPendingTxOpts } from './mocks.ts';
 import { handlePendingTx } from '../src/pending-tx-manager.ts';
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';

@@ -1,10 +1,16 @@
-import {
-  PoolPlaces,
-  type PoolKey,
-  type PoolPlaceInfo,
-  type StatusFor,
-  type TargetAllocation,
+import { assert, Fail, q, X } from '@endo/errors';
+
+import { PoolPlaces } from '@aglocal/portfolio-contract/src/type-guards.js';
+import type {
+  PoolKey,
+  PoolPlaceInfo,
+  StatusFor,
+  TargetAllocation,
 } from '@aglocal/portfolio-contract/src/type-guards.js';
+import type { AssetPlaceRef } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
+import type { NetworkSpec } from '@aglocal/portfolio-contract/tools/network/network-spec.js';
+import { planRebalanceFlow } from '@aglocal/portfolio-contract/tools/plan-solve.js';
+import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import type { Brand, NatAmount, NatValue } from '@agoric/ertp/src/types.js';
 import {
@@ -15,30 +21,29 @@ import {
 } from '@agoric/internal';
 import type { AccountId, Caip10Record } from '@agoric/orchestration';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
-import { Fail, q } from '@endo/errors';
-// import { TEST_NETWORK } from '@aglocal/portfolio-contract/test/network/test-network.js';
-import type {
-  AssetPlaceRef,
-  MovementDesc,
-} from '@aglocal/portfolio-contract/src/type-guards-steps.js';
-import type { NetworkSpec } from '@aglocal/portfolio-contract/tools/network/network-spec.js';
-import { planRebalanceFlow } from '@aglocal/portfolio-contract/tools/plan-solve.js';
-import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import { ACCOUNT_DUST_EPSILON } from '@agoric/portfolio-api';
-import type { SupportedChain } from '@agoric/portfolio-api/src/constants.js';
+import type { FundsFlowPlan, SupportedChain } from '@agoric/portfolio-api';
+
 import { USDN, type CosmosRestClient } from './cosmos-rest-client.js';
 import type { ChainAddressTokenBalance } from './graphql/api-spectrum-blockchain/__generated/graphql.ts';
 import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
 import type { ProtocolPoolUserBalanceResult } from './graphql/api-spectrum-pools/__generated/graphql.ts';
 import type { Sdk as SpectrumPoolsSdk } from './graphql/api-spectrum-pools/__generated/sdk.ts';
 import type { Chain, Pool, SpectrumClient } from './spectrum-client.js';
-import { spectrumProtocols } from './support.ts';
+import { spectrumProtocols, UserInputError } from './support.ts';
 import { getOwn, lookupValueForKey } from './utils.js';
 
 const scale6 = (x: number) => {
   assert.typeof(x, 'number');
   return BigInt(Math.round(x * 1e6));
 };
+
+const rejectUserInput = (details: ReturnType<typeof X> | string): never =>
+  assert.fail(details, ((...args) =>
+    Reflect.construct(UserInputError, args)) as ErrorConstructor);
+
+const isDust = (value: bigint) =>
+  -ACCOUNT_DUST_EPSILON < value && value < ACCOUNT_DUST_EPSILON;
 
 // Note the differences in the shape of field `balance` between the two Spectrum
 // APIs (string vs. Record<'USDC' | 'USD' | string, number>).
@@ -209,8 +214,12 @@ export const getCurrentBalances = async (
       makeSpectrumPoolQuery(desc, powers),
     );
     const [accountResult, positionResult] = await Promise.allSettled([
-      spectrumBlockchain.getBalances({ accounts: spectrumAccountQueries }),
-      spectrumPools.getBalances({ positions: spectrumPoolQueries }),
+      spectrumAccountQueries.length
+        ? spectrumBlockchain.getBalances({ accounts: spectrumAccountQueries })
+        : { balances: [] },
+      spectrumPoolQueries.length
+        ? spectrumPools.getBalances({ positions: spectrumPoolQueries })
+        : { balances: [] },
     ]);
     if (
       accountResult.status !== 'fulfilled' ||
@@ -301,64 +310,90 @@ export const getNonDustBalances = async (
 /**
  * Derive weighted targets for allocation keys. Additionally, always zero out hub balances
  * (chains; keys starting with '@') that have non-zero current amounts. Returns only entries
- * whose values change compared to current.
+ * whose values change by at least ACCOUNT_DUST_EPSILON compared to current.
  */
 const computeWeightedTargets = (
   brand: Brand<'nat'>,
-  current: Partial<Record<AssetPlaceRef, NatAmount>>,
-  delta: bigint,
+  currentAmounts: Partial<Record<AssetPlaceRef, NatAmount>>,
+  balanceDelta: bigint,
   allocation: TargetAllocation = {},
 ): Partial<Record<AssetPlaceRef, NatAmount>> => {
-  const currentTotal = Object.values(current).reduce(
-    (acc, amount) => acc + amount.value,
+  const currentValues = objectMap(
+    currentAmounts as Required<typeof currentAmounts>,
+    amount => amount.value,
+  );
+  const currentTotal = Object.values(currentValues).reduce(
+    (acc, value) => acc + value,
     0n,
   );
-  const total = currentTotal + delta;
-  total >= 0n || Fail`total after delta must not be negative`;
+  const total = currentTotal + balanceDelta;
+  total >= 0n || rejectUserInput('Insufficient funds for withdrawal.');
+
   const weights = Object.keys(allocation).length
     ? typedEntries({
         // Any current balance with no target has an effective weight of 0.
-        ...objectMap(current, () => 0n),
+        ...objectMap(currentValues, () => 0n),
         ...(allocation as Required<typeof allocation>),
       })
     : // In the absence of target weights, maintain the relative status quo.
-      typedEntries(current as Required<typeof current>).map(
-        ([key, amount]) => [key, amount.value] as [PoolKey, NatValue],
-      );
+      typedEntries(currentValues);
   const sumW = weights.reduce<bigint>((acc, entry) => {
     const w = entry[1];
     (typeof w === 'bigint' && w >= 0n) ||
-      Fail`allocation weight in ${entry} must be a Nat`;
+      rejectUserInput(
+        X`Target allocation weight in ${entry} must be a natural number.`,
+      );
     return acc + w;
   }, 0n);
-  sumW > 0n || Fail`allocation weights must sum > 0`;
-  const draft: Partial<Record<AssetPlaceRef, NatAmount>> = {};
+  sumW > 0n ||
+    rejectUserInput('Total target allocation weights must be positive.');
+
+  // Try to satisfy the weights, leaving any amount otherwise subject to
+  // rounding loss or representing a too-small delta at the highest-weight
+  // place that can accept it.
+  const draft: Partial<Record<AssetPlaceRef, NatValue>> = {};
   let remainder = total;
-  let [maxKey, maxW] = [weights[0][0], -1n];
   for (const [key, w] of weights) {
-    if (w > maxW) {
-      [maxKey, maxW] = [key, w];
-    }
-    const v = (total * w) / sumW;
-    draft[key] = AmountMath.make(brand, v);
+    const a = currentValues[key] || 0n;
+    const b = (total * w) / sumW;
+    const v = isDust(b - a) ? a : b;
+    draft[key] = v;
     remainder -= v;
   }
   if (remainder !== 0n) {
-    const remainderAmount = AmountMath.make(brand, remainder);
-    draft[maxKey] = AmountMath.add(draft[maxKey] as NatAmount, remainderAmount);
+    // eslint-disable-next-line no-nested-ternary
+    weights.sort(([_k1, a], [_k2, b]) => (a < b ? 1 : a > b ? -1 : 0));
+    for (const [key, _w] of weights) {
+      const a = currentValues[key] || 0n;
+      const v = (draft[key] || 0n) + remainder;
+      if (v === a || !isDust(v - a)) {
+        draft[key] = v;
+        remainder = 0n;
+        break;
+      }
+    }
+    remainder === 0n ||
+      rejectUserInput(
+        X`Nowhere to place ${remainder} in update of ${currentValues} to ${draft}`,
+      );
   }
-  // Zero out hubs (chains) with non-zero current balances
-  for (const key of Object.keys(current)) {
-    if (key.startsWith('@')) draft[key] = AmountMath.make(brand, 0n);
+
+  // Zero out hubs (chains) with non-zero current balances so those funds get
+  // deployed too.
+  for (const key of Object.keys(currentValues)) {
+    if (key.startsWith('@')) draft[key] = 0n;
   }
+
   // Delete entries reflecting no change.
   for (const [key, amount] of Object.entries(draft)) {
-    const currentAmount = current[key];
-    if (currentAmount && AmountMath.isEqual(currentAmount, amount)) {
+    if (amount === currentValues[key]) {
       delete draft[key];
     }
   }
-  return draft;
+
+  return {
+    ...objectMap(draft, (value: NatValue) => AmountMath.make(brand, value)),
+  };
 };
 
 type PlannerContext = {
@@ -376,9 +411,9 @@ type PlannerContext = {
  */
 export const planDepositToAllocations = async (
   details: PlannerContext & { amount: NatAmount },
-): Promise<MovementDesc[]> => {
+): Promise<FundsFlowPlan> => {
   const { amount, brand, currentBalances, targetAllocation } = details;
-  if (!targetAllocation) return [];
+  if (!targetAllocation) return { flow: [] };
   const target = computeWeightedTargets(
     brand,
     currentBalances,
@@ -399,7 +434,7 @@ export const planDepositToAllocations = async (
     feeBrand,
     gasEstimator,
   });
-  return flowDetail.steps;
+  return flowDetail.plan;
 };
 
 /**
@@ -408,9 +443,9 @@ export const planDepositToAllocations = async (
  */
 export const planRebalanceToAllocations = async (
   details: PlannerContext,
-): Promise<MovementDesc[]> => {
+): Promise<FundsFlowPlan> => {
   const { brand, currentBalances, targetAllocation } = details;
-  if (!targetAllocation) return [];
+  if (!targetAllocation) return { flow: [] };
   const target = computeWeightedTargets(
     brand,
     currentBalances,
@@ -427,7 +462,7 @@ export const planRebalanceToAllocations = async (
     feeBrand,
     gasEstimator,
   });
-  return flowDetail.steps;
+  return flowDetail.plan;
 };
 
 /**
@@ -436,7 +471,7 @@ export const planRebalanceToAllocations = async (
  */
 export const planWithdrawFromAllocations = async (
   details: PlannerContext & { amount: NatAmount },
-): Promise<MovementDesc[]> => {
+): Promise<FundsFlowPlan> => {
   const { amount, brand, currentBalances, targetAllocation } = details;
   const target = computeWeightedTargets(
     brand,
@@ -457,5 +492,5 @@ export const planWithdrawFromAllocations = async (
     feeBrand,
     gasEstimator,
   });
-  return flowDetail.steps;
+  return flowDetail.plan;
 };

@@ -41,6 +41,15 @@ type AxelarScanOptions = {
   axelarApiUrl: string;
 };
 
+/**
+ * Watches for GMP transaction completion in live mode by listening to MulticallStatus
+ * and MulticallExecuted events. On timeout, queries Axelarscan to detect failures.
+ *
+ * NOTE: This watcher has a different API than other watchers (watchCctpTransfer,
+ * watchSmartWalletTx) because it tracks both success AND failure(via AxelarScan) states.
+ * Other watchers only detect success events. The Axelarscan dependency has been unreliable
+ * and this watcher will be refactored/removed in the future to align with other watchers.
+ */
 export const watchGmp = ({
   provider,
   contractAddress,
@@ -51,7 +60,10 @@ export const watchGmp = ({
   signal,
   axelarApiUrl,
   fetch,
-}: AxelarScanOptions & WatchGmp & WatcherTimeoutOptions): Promise<boolean> => {
+}: AxelarScanOptions & WatchGmp & WatcherTimeoutOptions): Promise<{
+  found: boolean;
+  rejectionReason?: string;
+}> => {
   return new Promise((resolve, reject) => {
     if (signal?.aborted) {
       reject(WATCH_GMP_ABORTED);
@@ -76,7 +88,7 @@ export const watchGmp = ({
     let timeoutId: NodeJS.Timeout;
     let listeners: Array<{ event: any; listener: any }> = [];
 
-    const finish = (result: boolean) => {
+    const finish = (result: { found: boolean; rejectionReason?: string }) => {
       resolve(result);
       if (timeoutId) clearTimeout(timeoutId);
       for (const { event, listener } of listeners) {
@@ -88,7 +100,7 @@ export const watchGmp = ({
     signal?.addEventListener('abort', () => {
       // Explicitly reject before finishing to avoid resolving the promise
       reject(WATCH_GMP_ABORTED);
-      finish(false);
+      finish({ found: false });
     });
 
     const listenForStatus = (eventLog: Log) => {
@@ -100,7 +112,7 @@ export const watchGmp = ({
       if (eventLog.topics[1] === expectedIdTopic) {
         log(`✓ MulticallStatus matches txId: ${txId}`);
         executionFound = true;
-        finish(true);
+        finish({ found: true });
       } else {
         log(`MulticallStatus txId mismatch for ${txId}`);
       }
@@ -115,7 +127,7 @@ export const watchGmp = ({
       if (eventLog.topics[1] === expectedIdTopic) {
         log(`✓ MulticallExecuted matches txId: ${txId}`);
         executionFound = true;
-        finish(true);
+        finish({ found: true });
       } else {
         log(`MulticallExecuted txId mismatch for ${txId}`);
       }
@@ -131,7 +143,7 @@ export const watchGmp = ({
         log(
           `✗ No MulticallStatus or MulticallExecuted found for txId ${txId} within ${timeoutMs / 60000} minutes`,
         );
-        const txStatus = await findTxStatusFromAxelarscan(
+        const { status, errorMessage } = await findTxStatusFromAxelarscan(
           txId,
           contractAddress,
           {
@@ -140,9 +152,11 @@ export const watchGmp = ({
           },
         );
 
-        if (txStatus === 'error') {
-          log('failed to execute on destination chain');
-          finish(false);
+        if (status === 'error') {
+          const rejectionReason =
+            errorMessage || 'failed to execute on destination chain';
+          log(`Error: ${rejectionReason}`);
+          finish({ found: false, rejectionReason });
         }
       }
     }, timeoutMs);

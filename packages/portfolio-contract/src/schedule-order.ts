@@ -84,6 +84,10 @@ export const runJob = async (
   job: Job,
   runTask: (ix: Ix, running: number[]) => Promise<void>,
   trace: (...args: unknown[]) => void,
+  makeError = (ix: Ix, reason) =>
+    Error(`predecessor ${ix} failed`, {
+      cause: reason,
+    }),
 ): Promise<PromiseSettledResult<void>[]> => {
   const running = new Map<Ix, Promise<Ix>>();
 
@@ -100,7 +104,7 @@ export const runJob = async (
     todo.delete(ix);
     results[ix] = { status: 'rejected', reason };
 
-    const cascade = Error(`predecessor ${ix} failed`, { cause: reason });
+    const cascade = makeError(ix, reason);
     for (const [candidate, deps] of order.entries()) {
       if (deps.has(ix)) {
         failTaskAndAncestors(candidate, cascade);
