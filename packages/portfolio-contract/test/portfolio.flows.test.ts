@@ -2108,7 +2108,7 @@ test('asking to relay less than 1 USDC over CCTP is refused by contract', async 
 
   const feeAcct = AmountMath.make(BLD, 150n);
   const feeCall = AmountMath.make(BLD, 100n);
-  const steps = [
+  const steps: MovementDesc[] = [
     { src: '<Deposit>', dest: '@agoric', amount },
     { src: '@agoric', dest: '@noble', amount },
     { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
