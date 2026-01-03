@@ -1,0 +1,28 @@
+{
+  "info": {
+    "title": "Agoric SDK - Agd gRPC Gateway docs",
+    "description": "A REST interface for agd state queries.",
+    "version": "1.1.0"
+  },
+  "apis": [
+    {
+      "url": "./tmp-swagger-gen/agoric/swingset/query.swagger.json",
+      "operationIds": {
+        "rename": {
+          "Params": "SwingsetParams"
+        }
+      }
+    },
+    {
+      "url": "./tmp-swagger-gen/agoric/vbank/query.swagger.json",
+      "operationIds": {
+        "rename": {
+          "Params": "VbankParams"
+        }
+      }
+    },
+    {
+      "url": "./tmp-swagger-gen/agoric/vstorage/query.swagger.json"
+    }
+  ]
+}
