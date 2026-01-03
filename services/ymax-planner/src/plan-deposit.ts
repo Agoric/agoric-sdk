@@ -21,7 +21,7 @@ import {
 } from '@agoric/internal';
 import type { AccountId, Caip10Record } from '@agoric/orchestration';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
-import { ACCOUNT_DUST_EPSILON } from '@agoric/portfolio-api';
+import { ACCOUNT_DUST_EPSILON, isInstrumentId } from '@agoric/portfolio-api';
 import type { FundsFlowPlan, SupportedChain } from '@agoric/portfolio-api';
 
 import { USDN, type CosmosRestClient } from './cosmos-rest-client.js';
@@ -42,8 +42,13 @@ const rejectUserInput = (details: ReturnType<typeof X> | string): never =>
   assert.fail(details, ((...args) =>
     Reflect.construct(UserInputError, args)) as ErrorConstructor);
 
-const isDust = (value: bigint) =>
+const isDust = (value: bigint): boolean =>
   -ACCOUNT_DUST_EPSILON < value && value < ACCOUNT_DUST_EPSILON;
+
+const isNonemptyPositionEntry = (entry: [AssetPlaceRef, NatValue]): boolean => {
+  const [place, value] = entry;
+  return isInstrumentId(place) && value > 0n;
+};
 
 // Note the differences in the shape of field `balance` between the two Spectrum
 // APIs (string vs. Record<'USDC' | 'USD' | string, number>).
@@ -329,14 +334,19 @@ const computeWeightedTargets = (
   const total = currentTotal + balanceDelta;
   total >= 0n || rejectUserInput('Insufficient funds for withdrawal.');
 
-  const weights = Object.keys(allocation).length
+  const weights: [AssetPlaceRef, NatValue][] = Object.keys(allocation).length
     ? typedEntries({
         // Any current balance with no target has an effective weight of 0.
         ...objectMap(currentValues, () => 0n),
         ...(allocation as Required<typeof allocation>),
       })
-    : // In the absence of target weights, maintain the relative status quo.
-      typedEntries(currentValues);
+    : // In the absence of target weights, maintain the relative status quo but
+      // zero out hubs (chains) if there is anywhere else to deploy their funds.
+      (valueEntries => {
+        return valueEntries.some(isNonemptyPositionEntry)
+          ? valueEntries.map(([p, v]) => [p, isInstrumentId(p) ? v : 0n])
+          : valueEntries;
+      })(typedEntries(currentValues));
   const sumW = weights.reduce<bigint>((acc, entry) => {
     const w = entry[1];
     (typeof w === 'bigint' && w >= 0n) ||
@@ -376,12 +386,6 @@ const computeWeightedTargets = (
       rejectUserInput(
         X`Nowhere to place ${remainder} in update of ${currentValues} to ${draft}`,
       );
-  }
-
-  // Zero out hubs (chains) with non-zero current balances so those funds get
-  // deployed too.
-  for (const key of Object.keys(currentValues)) {
-    if (key.startsWith('@')) draft[key] = 0n;
   }
 
   // Delete entries reflecting no change.
