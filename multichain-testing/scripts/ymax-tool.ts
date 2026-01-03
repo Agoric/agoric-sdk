@@ -207,7 +207,7 @@ const openPositions = async (
 
   // planner will supply remaining steps
   const steps: MovementDesc[] = [
-    { src: '<Deposit>', dest: '+agoric', amount: give.Deposit },
+    { src: '<Deposit>', dest: '@agoric', amount: give.Deposit },
   ];
   const offerArgs: OfferArgsFor['openPortfolio'] = {
     flow: steps,

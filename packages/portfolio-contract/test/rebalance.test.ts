@@ -314,20 +314,19 @@ testWithAllModes(
 );
 
 testWithAllModes(
-  'solver deposit redistribution (+agoric 100 -> A 70, B 30)',
+  'solver deposit redistribution (@agoric 100 -> A 70, B 30)',
   async (t, mode) => {
-    const current = balances({ '+agoric': 100n, [A]: 0n, [B]: 0n });
+    const current = balances({ '@agoric': 100n, [A]: 0n, [B]: 0n });
     const { plan } = await planRebalanceFlow({
       mode: mode as RebalanceMode,
       network: TEST_NETWORK,
       current,
-      target: { '+agoric': ZERO, [A]: token(70n), [B]: token(30n) },
+      target: { '@agoric': ZERO, [A]: token(70n), [B]: token(30n) },
       brand: TOK_BRAND,
       feeBrand: FEE_BRAND,
       gasEstimator,
     });
     await assertSteps(t, plan.flow, [
-      { src: '+agoric', dest: '@agoric', amount: token(100n) },
       { src: '@agoric', dest: '@noble', amount: token(100n) },
       {
         src: '@noble',
@@ -658,7 +657,6 @@ test('solver differentiates cheapest vs. fastest', async t => {
         protocol: 'sink' as YieldProtocol,
       },
     ],
-    localPlaces: [{ id: '+agoric', chain: 'agoric' }],
     links: [
       {
         src: '@agoric',
@@ -678,8 +676,8 @@ test('solver differentiates cheapest vs. fastest', async t => {
       },
     ],
   };
-  const current = balances({ '+agoric': 100n, Sink_External: 0n });
-  const target = balances({ '+agoric': 0n, Sink_External: 100n });
+  const current = balances({ '@agoric': 100n, Sink_External: 0n });
+  const target = balances({ '@agoric': 0n, Sink_External: 100n });
 
   const cheapResult = await planRebalanceFlow({
     mode: 'cheapest',
@@ -691,18 +689,11 @@ test('solver differentiates cheapest vs. fastest', async t => {
     gasEstimator,
   });
   t.like(cheapResult.flows.map(flow => flow.edge).sort(compareFlowEdges), [
-    { src: '+agoric', dest: '@agoric', transfer: 'local' },
     { src: '@agoric', dest: '@External', transfer: 'cheap' },
     { src: '@External', dest: 'Sink_External', transfer: 'local' },
   ]);
   await assertSteps(t, cheapResult.plan.flow, [
-    { src: '+agoric', dest: '@agoric', amount: token(100n) },
-    {
-      src: '@agoric',
-      dest: '@External',
-      amount: token(100n),
-      fee: fixedFee,
-    },
+    { src: '@agoric', dest: '@External', amount: token(100n), fee: fixedFee },
     { src: '@External', dest: 'Sink_External', amount: token(100n) },
   ]);
 
@@ -716,18 +707,11 @@ test('solver differentiates cheapest vs. fastest', async t => {
     gasEstimator,
   });
   t.like(fastResult.flows.map(flow => flow.edge).sort(compareFlowEdges), [
-    { src: '+agoric', dest: '@agoric', transfer: 'local' },
     { src: '@agoric', dest: '@External', transfer: 'fast' },
     { src: '@External', dest: 'Sink_External', transfer: 'local' },
   ]);
   await assertSteps(t, fastResult.plan.flow, [
-    { src: '+agoric', dest: '@agoric', amount: token(100n) },
-    {
-      src: '@agoric',
-      dest: '@External',
-      amount: token(100n),
-      fee: fixedFee,
-    },
+    { src: '@agoric', dest: '@External', amount: token(100n), fee: fixedFee },
     { src: '@External', dest: 'Sink_External', amount: token(100n) },
   ]);
 });
