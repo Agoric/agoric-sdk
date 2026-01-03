@@ -62,8 +62,6 @@ type AgoricAccountInfo = {
   err?: string;
   /** aka `@agoric` */
   lca: LocalAccount;
-  /** aka `+agoric` */
-  lcaIn: LocalAccount;
   reg: TargetRegistration;
 };
 type NobleAccountInfo = {
@@ -344,16 +342,15 @@ export const preparePortfolioKit = (
 
           const agoricAux = (): Pick<
             StatusFor['portfolio'],
-            'depositAddress' | 'nobleForwardingAddress'
+            'nobleForwardingAddress'
           > => {
-            const { lca, lcaIn } = accounts.get('agoric') as AgoricAccountInfo;
+            const { lca } = accounts.get('agoric') as AgoricAccountInfo;
             const { value: recipient } = lca.getAddress();
-            const { value: depositAddress } = lcaIn.getAddress();
             const nobleForwardingAddress = generateNobleForwardingAddress(
               transferChannels.noble.counterPartyChannelId,
               recipient,
             );
-            return { depositAddress, nobleForwardingAddress };
+            return { nobleForwardingAddress };
           };
 
           publishStatus(makePortfolioPath(portfolioId), {

@@ -8,11 +8,10 @@ We model a multi-chain, multi-place asset distribution problem as a directed flo
 Node (vertex) types (all implement AssetPlaceRef):
 - Chain hubs: `@${chainName}` (e.g. `@Arbitrum`, `@Avalanche`, `@Ethereum`, `@noble`, `@agoric`). A single hub per chain collects and redistributes flow for that chain.
 - Per-instrument leaves: `${yieldProtocol}_${chainName}` identifiers (e.g. `Aave_Arbitrum`, `Beefy_re7_Avalanche`, `Compound_Ethereum`). Each is attached to exactly one hub (its chain).
-- Local Agoric seats and accounts: `<Cash>`, `<Deposit>`, and `+agoric`. Each is a leaf on the `@agoric` hub.
+- Local Agoric seats: `<Cash>`, `<Deposit>`. Each is a leaf on the `@agoric` hub.
 
 Notes:
 - Pool-to-chain affiliation is sourced from PoolPlaces (typed map) at build time. Hubs are not auto-added from PoolPlaces; only pools whose hub is already present in the NetworkSpec are auto-included. When a pool id isn't found, `chainOf(x)` falls back to parsing the suffix of `${yieldProtocol}_${chainName}`.
-- `+agoric` is a staging account on `@agoric`, used to accumulate new deposits before distribution; for deposit planning it must end at 0 in the final targets.
 
 Supply (net position) per node:
 ```
@@ -169,9 +168,9 @@ interface PoolSpec {
   protocol: YieldProtocol;        // protocol identifier
 }
 
-// Local places: seats (<Deposit>, <Cash>) and local accounts (+agoric)
+// Local places: seats (<Deposit>, <Cash>)
 interface LocalPlaceSpec {
-  id: AssetPlaceRef;              // '<Deposit>' | '<Cash>' | '+agoric' | PoolKey
+  id: AssetPlaceRef;              // '<Deposit>' | '<Cash>' | PoolKey
   chain: SupportedChain;          // typically 'agoric'
   variableFeeBps?: number;        // optional local edge variable fee (bps)
   flatFee?: NatValue;             // optional flat fee in local units
@@ -208,7 +207,7 @@ Builder & translation to solver:
 - Hubs come from `spec.chains`. Hubs are not auto-added from PoolPlaces.
 - Leaves include `spec.pools`, `spec.localPlaces.id`, known PoolPlaces whose hub is present, and any nodes mentioned in `current`/`target` (validated to avoid implicitly adding hubs).
 - Intra-chain leaf<->hub edges are auto-added with large capacity and base costs (`variableFeeBps=1`, `timeSec=1`).
-- Agoric-local edges are auto-added: `<Deposit>` -> `+agoric` -> `@agoric` -> `<Cash>` and `<Deposit>` -> `@agoric` (`variableFeeBps=1`, `timeSec=1`)
+- Agoric-local edges are auto-added: `<Deposit>` -> `@agoric` -> `<Cash>` (`variableFeeBps=1`, `timeSec=1`)
 - Inter-hub links from `spec.links` are added hub->hub. If an auto-added edge exists with the same `src` and `dest`, the explicit link replaces it (override precedence).
 
 Determinism:
@@ -241,7 +240,7 @@ Implementation notes:
 When a particular route is suspected to be viable but the solver reports infeasible, it helps to check a candidate path hop-by-hop and to summarize “almost works” pairs. Two helpers are available in `graph-diagnose.ts`:
 
 - `explainPath(graph, path: string[])`
-  - Validates each hop in the given path array (e.g., `['+agoric', '@agoric', '@noble', 'USDNVault']`).
+  - Validates each hop in the given path array (e.g., `['<Deposit>', '@agoric', '@noble', 'USDNVault']`).
   - Returns `{ ok: true }` if every hop exists and has positive capacity; otherwise returns the first failing hop with a reason and suggestion:
     - `missing-node`: node isn’t in `graph.nodes`.
     - `missing-edge`: no `src -> dest` edge exists.
@@ -274,10 +273,10 @@ const USDC = Far('USDC Brand') as Brand<'nat'>;
 const deposit = AmountMath.make(USDC, 50_000_000n);
 const zero = AmountMath.make(USDC, 0n);
 const current: Partial<Record<AssetPlaceRef, NatAmount>> = {
-  '+agoric': deposit,
+  '@agoric': deposit,
 };
 const target: Partial<Record<AssetPlaceRef, NatAmount>> = {
-  '+agoric': zero,
+  '@agoric': zero,
   USDNVault: deposit,
 };
 
@@ -293,10 +292,10 @@ const incomplete = makeGraphFromDefinition(network, current, target, USDC);
 const near = diagnoseNearMisses(incomplete);
 console.log(near);
 // => { missingPairs: [
-//   { src: '+agoric', dest: 'USDNVault', category: 'no-directed-path', hint: undefined } ]
+//   { src: '@agoric', dest: 'USDNVault', category: 'no-directed-path', hint: undefined } ]
 
 // 2) Explain a candidate path
-const path = ['+agoric', '@agoric', '@noble', 'USDNVault'];
+const path = ['<Deposit>', '@agoric', '@noble', 'USDNVault'];
 const pathReport = explainPath(incomplete, path);
 console.log(pathReport);
 // => { ok: false, failAtIndex: 1, src: '@agoric', dest: '@noble', reason: 'wrong-direction',

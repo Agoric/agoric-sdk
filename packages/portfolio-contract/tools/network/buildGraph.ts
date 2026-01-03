@@ -22,8 +22,7 @@ export type FlowEdge = LinkSpec & { id: string };
 
 /**
  * Graph structure.
- * Leaf nodes look like PoolKey, `<$SeatName>` (e.g. "<Deposit>" or "<Cash>"),
- * or "+agoric".
+ * Leaf nodes look like PoolKey or `<$SeatName>` (e.g. "<Deposit>" or "<Cash>").
  * Interior nodes represent chains and start with "@" ("@agoric", "@noble",
  * "@Arbitrum", etc.).
  */
@@ -36,7 +35,7 @@ export interface FlowGraph {
 }
 
 export const chainOf = (id: AssetPlaceRef): string => {
-  if (id.startsWith('<') || id === '+agoric') return 'agoric';
+  if (id.startsWith('<')) return 'agoric';
   if (id.startsWith('@')) return id.slice(1);
   if (Object.hasOwn(PoolPlaces, id)) return PoolPlaces[id as PoolKey].chainName;
 
@@ -110,12 +109,10 @@ const makeGraphBase = (
     addEdge(hub, node, chainIsEvm ? 'evmToPool' : undefined);
   }
 
-  // Ensure unidirectional <Deposit> -> +agoric -> @agoric -> <Cash>
-  // intra-Agoric links, plus a special <Deposit> -> @agoric bypass.
-  addEdge('<Deposit>', '+agoric');
-  addEdge('+agoric', '@agoric');
-  addEdge('@agoric', '<Cash>');
+  // Ensure unidirectional <Deposit> -> @agoric -> <Cash>
+  // intra-Agoric links.
   addEdge('<Deposit>', '@agoric');
+  addEdge('@agoric', '<Cash>');
 
   // Return a mutable object in anticipation of further overrides.
   return { debug: false, nodes, edges, supplies };

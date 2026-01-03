@@ -35,7 +35,6 @@ export const TEST_NETWORK: NetworkSpec = {
     // Agoric seats/accounts
     { id: '<Deposit>', chain: 'agoric' },
     { id: '<Cash>', chain: 'agoric' },
-    { id: '+agoric', chain: 'agoric' },
   ],
   links: [
     // USDN costs a fee to get into

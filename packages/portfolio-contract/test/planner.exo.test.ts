@@ -78,7 +78,6 @@ test('planner exo submit method', async t => {
   const portfolioId = 0;
   const amount = { brand: USDC, value: 100n };
   const plan: MovementDesc[] = [
-    { src: '+agoric', dest: '@agoric', amount },
     { src: '@agoric', dest: '@noble', amount },
     { src: '@noble', dest: 'USDN', amount },
   ];

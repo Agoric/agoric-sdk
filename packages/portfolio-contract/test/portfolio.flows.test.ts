@@ -1278,45 +1278,6 @@ test('open portfolio with Beefy position', async t => {
   t.snapshot(decodedCalls, 'decoded calls');
 });
 
-test('wayFromSrcToDesc handles +agoric -> @agoric', t => {
-  const amount = AmountMath.make(USDC, 2_000_000n);
-  const actual = wayFromSrcToDesc({ src: '+agoric', dest: '@agoric', amount });
-  t.deepEqual(actual, { how: 'send' });
-});
-
-test('Engine can move deposits +agoric -> @agoric', async t => {
-  const { orch, ctx, offer, storage } = mocks({}, {});
-  const { log } = offer;
-
-  const amount = AmountMath.make(USDC, 2_000_000n);
-  const kit = await ctx.makePortfolioKit();
-
-  await rebalance(
-    orch,
-    ctx,
-    offer.seat,
-    { flow: [{ src: '+agoric', dest: '@agoric', amount }] },
-    kit,
-  );
-
-  t.log(log.map(msg => msg._method).join(', '));
-
-  const lca = kit.reader.getLocalAccount();
-  t.is(lca.getAddress().value, 'agoric11028');
-  t.like(log, [
-    { _cap: 'agoric11028', _method: 'monitorTransfers' },
-    {
-      _cap: 'agoric11042',
-      _method: 'send',
-      toAccount: { value: 'agoric11028' },
-    },
-    { _method: 'exit' },
-  ]);
-
-  t.snapshot(log, 'call log'); // see snapshot for remaining arg details
-  await documentStorageSchema(t, storage, docOpts);
-});
-
 test('client can move to deposit LCA', async t => {
   const { orch, ctx, offer, storage } = mocks({}, {});
   const { log } = offer;
@@ -1328,7 +1289,7 @@ test('client can move to deposit LCA', async t => {
     orch,
     ctx,
     offer.seat,
-    { flow: [{ src: '<Deposit>', dest: '+agoric', amount }] },
+    { flow: [{ src: '<Deposit>', dest: '@agoric', amount }] },
     kit,
   );
   t.like(log, [{ _method: 'monitorTransfers' }, { _method: 'localTransfer' }]);

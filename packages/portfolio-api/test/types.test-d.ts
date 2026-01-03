@@ -16,7 +16,6 @@ import type {
   FlowStatus,
   FlowStep,
   InterChainAccountRef,
-  LocalChainAccountRef,
   PortfolioKey,
   ProposalType,
   SeatKeyword,
@@ -37,15 +36,10 @@ expectAssignable<SeatKeyword>('Cash');
 expectAssignable<SeatKeyword>('Deposit');
 expectNotAssignable<SeatKeyword>('Flow');
 
-expectAssignable<LocalChainAccountRef>('+agoric');
-expectNotAssignable<LocalChainAccountRef>('+other');
-expectNotAssignable<LocalChainAccountRef>('@agoric');
-
 expectAssignable<InterChainAccountRef>('@Base');
 expectNotAssignable<InterChainAccountRef>('Arbitrum');
 
 expectAssignable<AssetPlaceRef>('<Deposit>');
-expectAssignable<AssetPlaceRef>('+agoric');
 expectAssignable<AssetPlaceRef>(instrumentId);
 expectNotAssignable<AssetPlaceRef>('Deposit');
 
@@ -106,7 +100,7 @@ const flowStep: FlowStep = {
   how: 'send',
   amount: natAmount,
   src: assetRef,
-  dest: '+agoric',
+  dest: '@Base',
 };
 
 const flowSteps: FlowStep[] = [flowStep, { ...flowStep, dest: '@Base' }];
@@ -133,7 +127,6 @@ const status: StatusFor = {
     positionKeys: [instrumentId],
     accountIdByChain: { [supportedChain]: accountId },
     accountsPending: [supportedChain],
-    depositAddress: bech32Address,
     nobleForwardingAddress: bech32Address,
     targetAllocation,
     policyVersion: 1,

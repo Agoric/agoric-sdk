@@ -144,11 +144,10 @@ export const preflightValidateNetworkPlan = (
     ...network.chains.map(c => `@${c.name}` as InterChainAccountRef),
     ...network.pools.map(p => p.pool),
     ...(network.localPlaces ?? []).map(lp => lp.id),
-    ...(['<Deposit>', '<Cash>', '+agoric'] as AssetPlaceRef[]),
+    ...(['<Deposit>', '<Cash>'] as AssetPlaceRef[]),
   ]);
 
   for (const k of placeRefs) {
-    if (k === '+agoric') continue;
     const cur = current[k]?.value ?? 0n;
     const tgt = target[k]?.value ?? 0n;
     if (cur === tgt) continue;
@@ -200,7 +199,7 @@ export const preflightValidateNetworkPlan = (
  * - Each hop is interpreted as the directed edge `n[i] -> n[i+1]`.
  * - Node id conventions used by the rebalance graph:
  *   - Hubs: `@{chain}` (e.g., `@agoric`, `@noble`, `@Arbitrum`).
- *   - Agoric-local seats: `<Deposit>`, `<Cash>`, `+agoric` (these live on `@agoric`).
+ *   - Agoric-local seats: `<Deposit>`, `<Cash>` (these live on `@agoric`).
  *   - Pools/positions: `{Pool}_{Chain}` (e.g., `Aave_Arbitrum`, `Compound_Arbitrum`).
  *   - Local places and dynamics use their declared `id` verbatim.
  *
@@ -363,8 +362,7 @@ export const canonicalPathBetween = (
   const hubOf = (n: string) => {
     if (n.startsWith('@')) return n;
     // Seats live on agoric
-    if (n === '<Cash>' || n === '<Deposit>' || n === '+agoric')
-      return '@agoric';
+    if (n === '<Cash>' || n === '<Deposit>') return '@agoric';
     const pp = (PoolPlaces as Record<string, PoolPlaceInfo | undefined>)[
       n as PoolKey
     ];

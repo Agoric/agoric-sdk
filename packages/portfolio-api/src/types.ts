@@ -30,17 +30,10 @@ export type FlowConfig = {
 };
 export type SeatKeyword = 'Cash' | 'Deposit';
 
-/**
- * Reference to a local chain accounts (LCA).
- * '+agoric' is published as `depositAddress`
- */
-export type LocalChainAccountRef = '+agoric';
-
 export type InterChainAccountRef = `@${SupportedChain}`;
 
 export type AssetPlaceRef =
   | `<${SeatKeyword}>`
-  | LocalChainAccountRef
   | InterChainAccountRef
   | InstrumentId;
 
@@ -148,7 +141,6 @@ export type StatusFor = {
     positionKeys: InstrumentId[];
     accountIdByChain: Partial<Record<SupportedChain, AccountId>>;
     accountsPending?: SupportedChain[];
-    depositAddress?: Bech32Address;
     /** Noble Forwarding Address (NFA) registered by the contract for the `@agoric` address */
     nobleForwardingAddress?: Bech32Address;
     targetAllocation?: TargetAllocation;

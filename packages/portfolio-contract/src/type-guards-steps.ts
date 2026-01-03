@@ -25,7 +25,6 @@ harden(seatKeywords);
 
 const AssetPlaceRefShape = M.or(
   ...seatKeywords.map(kw => `<${kw}>`),
-  '+agoric',
   ...values(SupportedChain).map(c => `@${c}`),
   ...keys(PoolPlaces),
 );
