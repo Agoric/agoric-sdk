@@ -10,7 +10,11 @@ import type {
   ContinuingInvitationSpec,
   ContractInvitationSpec,
 } from '@agoric/smart-wallet/src/invitations.js';
-import type { SupportedChain, YieldProtocol } from './constants.js';
+import type {
+  AxelarChain,
+  SupportedChain,
+  YieldProtocol,
+} from './constants.js';
 import type { InstrumentId } from './instruments.js';
 import type { PublishedTx } from './resolver.js';
 
@@ -36,11 +40,25 @@ export type SeatKeyword = 'Cash' | 'Deposit';
  */
 export type LocalChainAccountRef = '+agoric';
 
+/**
+ * Identifies the blockchain hosting an address external to ymax from which
+ * funds for a deposit must be supplied.
+ */
+export type DepositFromChainRef = `+${AxelarChain}`;
+
+/**
+ * Identifies the blockchain hosting an address external to ymax to which
+ * withdrawn funds will be sent.
+ */
+export type WithdrawToChainRef = `-${AxelarChain}`;
+
 export type InterChainAccountRef = `@${SupportedChain}`;
 
 export type AssetPlaceRef =
   | `<${SeatKeyword}>`
   | LocalChainAccountRef
+  | DepositFromChainRef
+  | WithdrawToChainRef
   | InterChainAccountRef
   | InstrumentId;
 
@@ -75,8 +93,8 @@ export type ProposalType = {
 export type TargetAllocation = Partial<Record<InstrumentId, bigint>>;
 
 export type FlowDetail =
-  | { type: 'withdraw'; amount: NatAmount }
-  | { type: 'deposit'; amount: NatAmount }
+  | { type: 'withdraw'; amount: NatAmount; toChain?: SupportedChain }
+  | { type: 'deposit'; amount: NatAmount; fromChain?: SupportedChain }
   | { type: 'rebalance' }; // aka simpleRebalance
 
 /** linked list of concurrent failures, including dependencies */

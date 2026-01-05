@@ -284,15 +284,21 @@ export const portfolioIdOfPath = (path: string | string[]) => {
   );
 };
 
-export const FlowDetailShape: TypedPattern<FlowDetail> = M.or(
-  { type: 'withdraw', amount: AnyNatAmountShape },
-  { type: 'deposit', amount: AnyNatAmountShape },
-  { type: 'rebalance' },
-);
-
 /** ChainNames including those in future upgrades */
 type ChainNameExt = string;
 const ChainNameExtShape: TypedPattern<ChainNameExt> = M.string();
+
+export const FlowDetailShape: TypedPattern<FlowDetail> = M.or(
+  M.splitRecord(
+    { type: 'withdraw', amount: AnyNatAmountShape },
+    { toChain: ChainNameExtShape },
+  ),
+  M.splitRecord(
+    { type: 'deposit', amount: AnyNatAmountShape },
+    { fromChain: ChainNameExtShape },
+  ),
+  { type: 'rebalance' },
+);
 
 export const PortfolioStatusShapeExt: TypedPattern<StatusFor['portfolio']> =
   M.splitRecord(
