@@ -923,7 +923,7 @@ __metadata:
     bs58: "npm:^6.0.0"
     c8: "npm:^10.1.3"
     esbuild: "npm:^0.25.2"
-    prettier: "npm:^3.5.3"
+    prettier: "npm:^3.7.4"
     ts-blank-space: "npm:^0.6.2"
     tsup: "npm:^8.5.0"
     viem: "npm:^2.31.0"
@@ -1004,7 +1004,7 @@ __metadata:
     ava: "npm:^5.3.0"
     c8: "npm:^10.1.3"
     conventional-changelog-conventionalcommits: "npm:^9.1.0"
-    dprint: "npm:^0.50.2"
+    dprint: "npm:^0.51.1"
     eslint: "npm:^9.39.1"
     eslint-config-airbnb-base: "npm:^15.0.0"
     eslint-config-jessie: "npm:^0.0.6"
@@ -1016,7 +1016,7 @@ __metadata:
     eslint-plugin-require-extensions: "npm:^0.1.3"
     execa: "npm:^9.6.0"
     npm-run-all: "npm:^4.1.5"
-    prettier: "npm:^3.5.3"
+    prettier: "npm:^3.7.4"
     prettier-plugin-jsdoc: "npm:~1.3.2"
     prettier-plugin-sh: "npm:^0.17.2"
     type-coverage: "npm:^2.29.7"
@@ -1026,6 +1026,8 @@ __metadata:
     typescript-eslint: "npm:^8.40.0"
   dependenciesMeta:
     better-sqlite3@10.1.0:
+      built: true
+    dprint@0.51.1:
       built: true
     esbuild@0.25.10:
       built: true
@@ -3908,65 +3910,79 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@dprint/darwin-arm64@npm:0.50.2":
-  version: 0.50.2
-  resolution: "@dprint/darwin-arm64@npm:0.50.2"
+"@dprint/darwin-arm64@npm:0.51.1":
+  version: 0.51.1
+  resolution: "@dprint/darwin-arm64@npm:0.51.1"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@dprint/darwin-x64@npm:0.50.2":
-  version: 0.50.2
-  resolution: "@dprint/darwin-x64@npm:0.50.2"
+"@dprint/darwin-x64@npm:0.51.1":
+  version: 0.51.1
+  resolution: "@dprint/darwin-x64@npm:0.51.1"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"@dprint/linux-arm64-glibc@npm:0.50.2":
-  version: 0.50.2
-  resolution: "@dprint/linux-arm64-glibc@npm:0.50.2"
+"@dprint/linux-arm64-glibc@npm:0.51.1":
+  version: 0.51.1
+  resolution: "@dprint/linux-arm64-glibc@npm:0.51.1"
   conditions: os=linux & cpu=arm64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@dprint/linux-arm64-musl@npm:0.50.2":
-  version: 0.50.2
-  resolution: "@dprint/linux-arm64-musl@npm:0.50.2"
+"@dprint/linux-arm64-musl@npm:0.51.1":
+  version: 0.51.1
+  resolution: "@dprint/linux-arm64-musl@npm:0.51.1"
   conditions: os=linux & cpu=arm64 & libc=musl
   languageName: node
   linkType: hard
 
-"@dprint/linux-riscv64-glibc@npm:0.50.2":
-  version: 0.50.2
-  resolution: "@dprint/linux-riscv64-glibc@npm:0.50.2"
+"@dprint/linux-loong64-glibc@npm:0.51.1":
+  version: 0.51.1
+  resolution: "@dprint/linux-loong64-glibc@npm:0.51.1"
+  conditions: os=linux & cpu=loong64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@dprint/linux-loong64-musl@npm:0.51.1":
+  version: 0.51.1
+  resolution: "@dprint/linux-loong64-musl@npm:0.51.1"
+  conditions: os=linux & cpu=loong64 & libc=musl
+  languageName: node
+  linkType: hard
+
+"@dprint/linux-riscv64-glibc@npm:0.51.1":
+  version: 0.51.1
+  resolution: "@dprint/linux-riscv64-glibc@npm:0.51.1"
   conditions: os=linux & cpu=riscv64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@dprint/linux-x64-glibc@npm:0.50.2":
-  version: 0.50.2
-  resolution: "@dprint/linux-x64-glibc@npm:0.50.2"
+"@dprint/linux-x64-glibc@npm:0.51.1":
+  version: 0.51.1
+  resolution: "@dprint/linux-x64-glibc@npm:0.51.1"
   conditions: os=linux & cpu=x64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@dprint/linux-x64-musl@npm:0.50.2":
-  version: 0.50.2
-  resolution: "@dprint/linux-x64-musl@npm:0.50.2"
+"@dprint/linux-x64-musl@npm:0.51.1":
+  version: 0.51.1
+  resolution: "@dprint/linux-x64-musl@npm:0.51.1"
   conditions: os=linux & cpu=x64 & libc=musl
   languageName: node
   linkType: hard
 
-"@dprint/win32-arm64@npm:0.50.2":
-  version: 0.50.2
-  resolution: "@dprint/win32-arm64@npm:0.50.2"
+"@dprint/win32-arm64@npm:0.51.1":
+  version: 0.51.1
+  resolution: "@dprint/win32-arm64@npm:0.51.1"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
 
-"@dprint/win32-x64@npm:0.50.2":
-  version: 0.50.2
-  resolution: "@dprint/win32-x64@npm:0.50.2"
+"@dprint/win32-x64@npm:0.51.1":
+  version: 0.51.1
+  resolution: "@dprint/win32-x64@npm:0.51.1"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
@@ -11339,19 +11355,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dprint@npm:^0.50.2":
-  version: 0.50.2
-  resolution: "dprint@npm:0.50.2"
+"dprint@npm:^0.51.1":
+  version: 0.51.1
+  resolution: "dprint@npm:0.51.1"
   dependencies:
-    "@dprint/darwin-arm64": "npm:0.50.2"
-    "@dprint/darwin-x64": "npm:0.50.2"
-    "@dprint/linux-arm64-glibc": "npm:0.50.2"
-    "@dprint/linux-arm64-musl": "npm:0.50.2"
-    "@dprint/linux-riscv64-glibc": "npm:0.50.2"
-    "@dprint/linux-x64-glibc": "npm:0.50.2"
-    "@dprint/linux-x64-musl": "npm:0.50.2"
-    "@dprint/win32-arm64": "npm:0.50.2"
-    "@dprint/win32-x64": "npm:0.50.2"
+    "@dprint/darwin-arm64": "npm:0.51.1"
+    "@dprint/darwin-x64": "npm:0.51.1"
+    "@dprint/linux-arm64-glibc": "npm:0.51.1"
+    "@dprint/linux-arm64-musl": "npm:0.51.1"
+    "@dprint/linux-loong64-glibc": "npm:0.51.1"
+    "@dprint/linux-loong64-musl": "npm:0.51.1"
+    "@dprint/linux-riscv64-glibc": "npm:0.51.1"
+    "@dprint/linux-x64-glibc": "npm:0.51.1"
+    "@dprint/linux-x64-musl": "npm:0.51.1"
+    "@dprint/win32-arm64": "npm:0.51.1"
+    "@dprint/win32-x64": "npm:0.51.1"
   dependenciesMeta:
     "@dprint/darwin-arm64":
       optional: true
@@ -11360,6 +11378,10 @@ __metadata:
     "@dprint/linux-arm64-glibc":
       optional: true
     "@dprint/linux-arm64-musl":
+      optional: true
+    "@dprint/linux-loong64-glibc":
+      optional: true
+    "@dprint/linux-loong64-musl":
       optional: true
     "@dprint/linux-riscv64-glibc":
       optional: true
@@ -11373,7 +11395,7 @@ __metadata:
       optional: true
   bin:
     dprint: bin.js
-  checksum: 10c0/07fa9a79dcd72fb5a03cec04981d6152bb4495f3803725a0f920d752fede0102509395f936166015832afd677331b852f08bbb6642b215d0598b98da8d4a1356
+  checksum: 10c0/eb4a142ba8ee3b4e397f870d267603efdf0acc99ddd968c88d187f9fb1fbdc115d5ce0c7779e29e8e84dfb7a6e19fff2a35c426892d44e933dd9936344f1e50c
   languageName: node
   linkType: hard
 
@@ -18000,12 +18022,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prettier@npm:^3.0.0, prettier@npm:^3.5.3":
+"prettier@npm:^3.0.0":
   version: 3.5.3
   resolution: "prettier@npm:3.5.3"
   bin:
     prettier: bin/prettier.cjs
   checksum: 10c0/3880cb90b9dc0635819ab52ff571518c35bd7f15a6e80a2054c05dbc8a3aa6e74f135519e91197de63705bcb38388ded7e7230e2178432a1468005406238b877
+  languageName: node
+  linkType: hard
+
+"prettier@npm:^3.7.4":
+  version: 3.7.4
+  resolution: "prettier@npm:3.7.4"
+  bin:
+    prettier: bin/prettier.cjs
+  checksum: 10c0/9675d2cd08eacb1faf1d1a2dbfe24bfab6a912b059fc9defdb380a408893d88213e794a40a2700bd29b140eb3172e0b07c852853f6e22f16f3374659a1a13389
   languageName: node
   linkType: hard
 
