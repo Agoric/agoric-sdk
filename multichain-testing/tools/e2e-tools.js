@@ -74,7 +74,6 @@ export const makeBlockTool = ({ rpc, delay }) => {
     for (
       let latestHeight = startHeight;
       latestHeight < startHeight + advance;
-
     ) {
       // Give some time for a new block
       await delay(1000, { ...info, latestHeight });

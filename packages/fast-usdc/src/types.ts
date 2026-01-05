@@ -188,8 +188,9 @@ export type AddressHook = {
 export type ChainHubChainInfo<N extends KnownNamespace = KnownNamespace> =
   N extends 'cosmos' ? CosmosChainInfo : BaseChainInfoWithChainId<N>;
 
-interface BaseChainInfoWithChainId<N extends KnownNamespace = KnownNamespace>
-  extends BaseChainInfo<N> {
+interface BaseChainInfoWithChainId<
+  N extends KnownNamespace = KnownNamespace,
+> extends BaseChainInfo<N> {
   chainId: string;
 }
 

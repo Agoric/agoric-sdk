@@ -96,16 +96,12 @@ export const createRPCQueryClient = async ({
         interchain_accounts: {
           controller: {
             v1: (
-              await import(
-                './applications/interchain_accounts/controller/v1/query.rpc.Query.js'
-              )
+              await import('./applications/interchain_accounts/controller/v1/query.rpc.Query.js')
             ).createRpcQueryExtension(client),
           },
           host: {
             v1: (
-              await import(
-                './applications/interchain_accounts/host/v1/query.rpc.Query.js'
-              )
+              await import('./applications/interchain_accounts/host/v1/query.rpc.Query.js')
             ).createRpcQueryExtension(client),
           },
         },
