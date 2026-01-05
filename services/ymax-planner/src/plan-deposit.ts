@@ -21,7 +21,11 @@ import {
 } from '@agoric/internal';
 import type { AccountId, Caip10Record } from '@agoric/orchestration';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
-import { ACCOUNT_DUST_EPSILON, isInstrumentId } from '@agoric/portfolio-api';
+import {
+  ACCOUNT_DUST_EPSILON,
+  isInstrumentId,
+  YieldProtocol,
+} from '@agoric/portfolio-api';
 import type { FundsFlowPlan, SupportedChain } from '@agoric/portfolio-api';
 
 import { USDN, type CosmosRestClient } from './cosmos-rest-client.js';
@@ -32,6 +36,8 @@ import type { Sdk as SpectrumPoolsSdk } from './graphql/api-spectrum-pools/__gen
 import type { Chain, Pool, SpectrumClient } from './spectrum-client.js';
 import { spectrumProtocols, UserInputError } from './support.ts';
 import { getOwn, lookupValueForKey } from './utils.js';
+import type { EvmContext } from './pending-tx-manager.ts';
+import { getERC4626VaultsBalances } from './erc4626-utils.ts';
 
 const scale6 = (x: number) => {
   assert.typeof(x, 'number');
@@ -77,6 +83,8 @@ export type BalanceQueryPowers = {
   spectrumChainIds: Partial<Record<SupportedChain, string>>;
   spectrumPoolIds: Partial<Record<PoolKey, string>>;
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
+  erc4626Vaults: Partial<Record<PoolKey, `0x${string}`>>;
+  evmCtx: Omit<EvmContext, 'cosmosRest' | 'signingSmartWalletKit' | 'fetch'>;
 };
 
 // UNTIL https://github.com/Agoric/agoric-sdk/issues/12186
@@ -161,16 +169,24 @@ const makeSpectrumPoolQuery = (
   };
 };
 
+export type ERC4626VaultQuery = {
+  place: PoolKey;
+  chainName: SupportedChain;
+  address: string;
+};
+
 export const getCurrentBalances = async (
   status: StatusFor['portfolio'],
   brand: Brand<'nat'>,
   powers: BalanceQueryPowers,
 ): Promise<Partial<Record<AssetPlaceRef, NatAmount | undefined>>> => {
+  console.log('faazz', status, brand, powers.erc4626Vaults);
   const { positionKeys, accountIdByChain } = status;
   const { spectrumBlockchain, spectrumPools } = powers;
   const addressInfo = new Map<SupportedChain, Caip10Record>();
   const accountQueries = [] as AccountQueryDescriptor[];
   const positionQueries = [] as PositionQueryDescriptor[];
+  const erc4626Queries = [] as PositionQueryDescriptor[];
   const balances = new Map<AssetPlaceRef, NatAmount | undefined>();
   const errors = [] as Error[];
   for (const [chainName, accountId] of typedEntries(
@@ -205,7 +221,12 @@ export const getCurrentBalances = async (
         accountQueries.push({ place, chainName, address, asset: protocol });
         continue;
       }
-      positionQueries.push({ place, chainName, protocol, address });
+
+      if (protocol === YieldProtocol.ERC4626) {
+        erc4626Queries.push({ place, chainName, protocol, address });
+      } else {
+        positionQueries.push({ place, chainName, protocol, address });
+      }
     } catch (err) {
       errors.push(err);
     }
@@ -218,31 +239,39 @@ export const getCurrentBalances = async (
     const spectrumPoolQueries = positionQueries.map(desc =>
       makeSpectrumPoolQuery(desc, powers),
     );
-    const [accountResult, positionResult] = await Promise.allSettled([
-      spectrumAccountQueries.length
-        ? spectrumBlockchain.getBalances({ accounts: spectrumAccountQueries })
-        : { balances: [] },
-      spectrumPoolQueries.length
-        ? spectrumPools.getBalances({ positions: spectrumPoolQueries })
-        : { balances: [] },
-    ]);
+
+    const [accountResult, positionResult, erc4626Result] =
+      await Promise.allSettled([
+        spectrumAccountQueries.length
+          ? spectrumBlockchain.getBalances({ accounts: spectrumAccountQueries })
+          : { balances: [] },
+        spectrumPoolQueries.length
+          ? spectrumPools.getBalances({ positions: spectrumPoolQueries })
+          : { balances: [] },
+        getERC4626VaultsBalances(erc4626Queries, powers, errors),
+      ]);
+
     if (
       accountResult.status !== 'fulfilled' ||
-      positionResult.status !== 'fulfilled'
+      positionResult.status !== 'fulfilled' ||
+      erc4626Result.status !== 'fulfilled'
     ) {
-      const rejections = [accountResult, positionResult].flatMap(settlement =>
-        settlement.status === 'fulfilled' ? [] : [settlement.reason],
+      const rejections = [accountResult, positionResult, erc4626Result].flatMap(
+        settlement =>
+          settlement.status === 'fulfilled' ? [] : [settlement.reason],
       );
       errors.push(...rejections);
       throw AggregateError(errors, 'Could not get balances');
     }
     const accountBalances = accountResult.value.balances;
     const positionBalances = positionResult.value.balances;
+    const erc4626Balances = erc4626Result.value;
     if (
       accountBalances.length !== accountQueries.length ||
-      positionBalances.length !== positionQueries.length
+      positionBalances.length !== positionQueries.length ||
+      erc4626Balances.length !== erc4626Queries.length
     ) {
-      const msg = `Bad balance query response(s), expected [${[accountBalances.length, positionBalances.length]}] results but got [${[accountQueries.length, positionQueries.length]}]`;
+      const msg = `Bad balance query response(s), expected [${[accountBalances.length, positionBalances.length, erc4626Balances.length]}] results but got [${[accountQueries.length, positionQueries.length, erc4626Queries.length]}]`;
       throw AggregateError(errors, msg);
     }
     for (let i = 0; i < accountQueries.length; i += 1) {
@@ -266,6 +295,17 @@ export const getCurrentBalances = async (
       const result = positionBalances[i];
       if (result.error) errors.push(Error(result.error));
       balances.set(place, amountFromPositionBalance(brand, result.balance));
+    }
+    for (let i = 0; i < erc4626Queries.length; i += 1) {
+      const result = erc4626Balances[i];
+      if (result.error) {
+        errors.push(Error(result.error));
+      }
+      if (result.balance === undefined) {
+        balances.set(result.place, undefined);
+      } else {
+        balances.set(result.place, AmountMath.make(brand, result.balance));
+      }
     }
     if (errors.length) {
       throw AggregateError(errors, 'Could not accept balances');

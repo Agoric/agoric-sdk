@@ -29,6 +29,11 @@ import {
   withDeferredCleanup,
 } from '@agoric/internal';
 import { UsdcTokenIds } from '@agoric/portfolio-api/src/constants.js';
+import {
+  axelarConfig,
+  axelarConfigTestnet,
+} from '@aglocal/portfolio-deploy/src/axelar-configs.js';
+import type { PoolKey } from '@aglocal/portfolio-contract/src/type-guards.ts';
 
 import { loadConfig } from './config.ts';
 import { CosmosRestClient } from './cosmos-rest-client.ts';
@@ -107,6 +112,20 @@ export const main = async (
   const spectrumChainIds = spectrumChainIdsByCluster[clusterName];
   const spectrumPoolIds = spectrumPoolIdsByCluster[clusterName];
   const usdcTokensByChain = UsdcTokenIds[clusterName];
+
+  const axelarCfg =
+    clusterName === 'mainnet' ? axelarConfig : axelarConfigTestnet;
+  const erc4626Vaults: Partial<Record<PoolKey, `0x${string}`>> = Object.entries(
+    axelarCfg,
+  )
+    .map(([_, chainDetails]) =>
+      Object.fromEntries(
+        Object.entries(chainDetails.contracts).filter(([contractName, __]) =>
+          contractName.startsWith('ERC4626'),
+        ),
+      ),
+    )
+    .reduce((acc, curr) => ({ ...acc, ...curr }), {});
 
   const networkConfig = await fetchEnvNetworkConfig({
     env: { AGORIC_NET: config.cosmosRest.agoricNetworkSpec },
@@ -292,6 +311,7 @@ export const main = async (
     now,
     gasEstimator,
     usdcTokensByChain,
+    erc4626Vaults,
   };
 
   await withDeferredCleanup(async addCleanup => {

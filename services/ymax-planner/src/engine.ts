@@ -28,6 +28,7 @@ import {
 import type {
   FlowDetail,
   PoolKey as InstrumentId,
+  PoolKey,
   StatusFor,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import {
@@ -184,6 +185,7 @@ export type Powers = {
   now: typeof Date.now;
   gasEstimator: GasEstimator;
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
+  erc4626Vaults: Partial<Record<PoolKey, `0x${string}`>>;
 };
 
 export type ProcessPortfolioPowers = Pick<
@@ -200,6 +202,8 @@ export type ProcessPortfolioPowers = Pick<
   | 'getWalletInvocationUpdate'
   | 'gasEstimator'
   | 'usdcTokensByChain'
+  | 'evmCtx'
+  | 'erc4626Vaults'
 > & {
   isDryRun?: boolean;
   depositBrand: Brand<'nat'>;
@@ -254,6 +258,8 @@ export const processPortfolioEvents = async (
     spectrumPoolIds,
     usdcTokensByChain,
     vstoragePathPrefixes,
+    erc4626Vaults,
+    evmCtx,
 
     portfolioKeyForDepositAddr,
   }: ProcessPortfolioPowers,
@@ -281,6 +287,8 @@ export const processPortfolioEvents = async (
     spectrumChainIds,
     spectrumPoolIds,
     usdcTokensByChain,
+    erc4626Vaults,
+    evmCtx,
   };
   type ReadVstorageSimpleOpts = Pick<
     ReadStorageMetaOptions<'data'>,
