@@ -876,15 +876,12 @@ test('start deposit more to same', async t => {
     t,
     { give: { Deposit: amount }, want: {} },
     {
-      flow: [{ src: '<Deposit>', dest: '+agoric', amount }],
+      flow: [{ src: '<Deposit>', dest: '@agoric', amount }],
     },
   );
 
   const info = await trader1.getPortfolioStatus();
-  t.deepEqual(
-    info.depositAddress,
-    makeTestAddress(2), // ...64vywd
-  );
+  t.is(info.depositAddress, undefined);
 });
 
 const setupPlanner = async t => {
@@ -915,10 +912,10 @@ test('redeem, use planner invitation', async t => {
   await trader1.rebalance(
     t,
     { give: { Deposit }, want: {} },
-    { flow: [{ src: '<Deposit>', dest: '+agoric', amount: Deposit }] },
+    { flow: [{ src: '<Deposit>', dest: '@agoric', amount: Deposit }] },
   );
   t.like(await trader1.getPortfolioStatus(), {
-    policyVersion: 1,
+    policyVersion: 0,
     rebalanceCount: 0,
   });
 
@@ -961,32 +958,32 @@ test('request rebalance - send same targetAllocation', async t => {
   await trader1.rebalance(
     t,
     { give: { Deposit }, want: {} },
-    { flow: [{ src: '<Deposit>', dest: '+agoric', amount: Deposit }] },
+    { flow: [{ src: '<Deposit>', dest: '@agoric', amount: Deposit }] },
   );
   t.like(await trader1.getPortfolioStatus(), {
-    policyVersion: 2,
+    policyVersion: 1,
     rebalanceCount: 0,
   });
 
   t.log('planner carries out (empty) deposit plan');
   const mockPlan = [];
-  await E(planner1.stub).submit(0, mockPlan, 2);
+  await E(planner1.stub).submit(0, mockPlan, 1);
   t.like(await trader1.getPortfolioStatus(), {
-    policyVersion: 2,
+    policyVersion: 1,
     rebalanceCount: 1,
   });
 
   t.log('user requests rebalance after yield makes things unbalanced');
   await trader1.rebalance(t, { give: {}, want: {} }, { targetAllocation });
   t.like(await trader1.getPortfolioStatus(), {
-    policyVersion: 3,
+    policyVersion: 2,
     rebalanceCount: 0,
   });
 
   t.log('planner carries out (empty) rebalance plan');
-  await E(planner1.stub).submit(0, mockPlan, 3);
+  await E(planner1.stub).submit(0, mockPlan, 2);
   t.like(await trader1.getPortfolioStatus(), {
-    policyVersion: 3,
+    policyVersion: 2,
     rebalanceCount: 1,
   });
 });

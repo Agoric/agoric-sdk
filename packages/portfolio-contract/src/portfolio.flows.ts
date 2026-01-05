@@ -487,14 +487,12 @@ export const provideCosmosAccount = async <C extends 'agoric' | 'noble'>(
       case 'agoric': {
         const agoricChain = await orch.getChain('agoric');
         const lca = await agoricChain.makeAccount(opts);
-        const lcaIn = await agoricChain.makeAccount(opts);
         const reg = await lca.monitorTransfers(kit.tap);
         traceChain('Monitoring transfers for', lca.getAddress().value);
         const info: AccountInfoFor['agoric'] = {
           namespace: 'cosmos',
           chainName,
           lca,
-          lcaIn,
           reg,
         };
         kit.manager.resolveAccount(info);
@@ -535,18 +533,16 @@ const registerNobleForwardingAccount = async (
 
 const getAssetPlaceRefKind = (
   ref: AssetPlaceRef,
-): 'pos' | 'accountId' | 'depositAddr' | 'seat' => {
+): 'pos' | 'accountId' | 'seat' => {
   if (keys(PoolPlaces).includes(ref)) return 'pos';
   if (getKeywordOfPlaceRef(ref)) return 'seat';
   if (getChainNameOfPlaceRef(ref)) return 'accountId';
-  if (ref === '+agoric') return 'depositAddr';
   throw Fail`bad ref: ${ref}`;
 };
 
 type Way =
   | { how: 'localTransfer' }
   | { how: 'withdrawToSeat' }
-  | { how: 'send' }
   | { how: 'IBC'; src: 'agoric'; dest: 'noble' }
   | { how: 'IBC'; src: 'noble'; dest: 'agoric' }
   | { how: 'CCTP'; dest: AxelarChain }
@@ -595,13 +591,9 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
     }
 
     case 'seat':
-      ['@agoric', '+agoric'].includes(dest) ||
+      dest === '@agoric' ||
         Fail`src seat must have agoric account as dest ${q(moveDesc)}`;
       return { how: 'localTransfer' };
-
-    case 'depositAddr':
-      dest === '@agoric' || Fail`src +agoric must have dest @agoric`;
-      return { how: 'send' };
 
     case 'accountId': {
       const srcName = getChainNameOfPlaceRef(src);
@@ -806,9 +798,8 @@ const stepFlow = async (
           dest: move.dest,
           amount,
           apply: async ({ agoric }) => {
-            const { lca, lcaIn } = agoric;
-            const account = move.dest === '+agoric' ? lcaIn : lca;
-            await ctx.zoeTools.localTransfer(src.seat, account, amounts);
+            const { lca } = agoric;
+            await ctx.zoeTools.localTransfer(src.seat, lca, amounts);
             return {};
           },
         });
@@ -829,20 +820,6 @@ const stepFlow = async (
         });
         break;
       }
-
-      case 'send':
-        todo.push({
-          how: 'send',
-          amount,
-          src: move.src,
-          dest: move.dest,
-          apply: async ({ agoric }) => {
-            const { lca, lcaIn } = agoric;
-            await lcaIn.send(lca.getAddress(), amount);
-            return {};
-          },
-        });
-        break;
 
       case 'IBC': {
         assert(
@@ -1184,9 +1161,6 @@ export const rebalance = (async (
   try {
     if (targetAllocation) {
       kit.manager.setTargetAllocation(targetAllocation);
-    } else if (flow?.some(step => step.dest === '+agoric')) {
-      // flow includes a deposit that the planner should respond to
-      kit.manager.incrPolicyVersion();
     }
 
     if (flow) {

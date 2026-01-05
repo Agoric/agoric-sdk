@@ -1,14 +1,5 @@
 import type { InstrumentId } from './instruments.js';
-import type { LocalChainAccountRef, InterChainAccountRef } from './types.js';
-
-/**
- * Without regard to supported chains, is the input plausibly a
- * LocalChainAccountRef (i.e., does it start with `+`)?
- */
-export const isLocalChainAccountRef = (
-  ref: string,
-): ref is LocalChainAccountRef => ref.startsWith('+');
-harden(isLocalChainAccountRef);
+import type { InterChainAccountRef } from './types.js';
 
 /**
  * Without regard to supported chains, is the input plausibly an

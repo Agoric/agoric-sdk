@@ -52,7 +52,6 @@ export const PROD_NETWORK: NetworkSpec = {
   localPlaces: [
     { id: '<Deposit>', chain: 'agoric' },
     { id: '<Cash>', chain: 'agoric' },
-    { id: '+agoric', chain: 'agoric' },
   ],
   links: [
     // USDN costs a fee to get into

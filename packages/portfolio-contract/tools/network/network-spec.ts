@@ -59,9 +59,9 @@ export interface PoolSpec {
   protocol: YieldProtocol; // reuse existing YieldProtocol keys
 }
 
-// Local places: seats (<Deposit>, <Cash>) and local accounts (+agoric), with local edge fees
+// Local places: seats (<Deposit>, <Cash>), with local edge fees
 export interface LocalPlaceSpec {
-  id: AssetPlaceRef; // '<Deposit>' | '<Cash>' | '+agoric' | PoolKey (treated as local to its hub)
+  id: AssetPlaceRef; // '<Deposit>' | '<Cash>' | PoolKey (treated as local to its hub)
   chain: SupportedChain; // typically 'agoric'
   // Local edge fee/policy when connecting to the hub on the same chain
   variableFeeBps?: number;
