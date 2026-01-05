@@ -16,7 +16,10 @@ import type { CosmosRPCClient } from '../src/cosmos-rpc.ts';
 import type { Powers as EnginePowers } from '../src/engine.ts';
 import { makeGasEstimator } from '../src/gas-estimation.ts';
 import type { HandlePendingTxOpts } from '../src/pending-tx-manager.ts';
-import { prepareAbortController } from '../src/support.ts';
+import {
+  chainNameToCaipChainId,
+  prepareAbortController,
+} from '../src/support.ts';
 import type { YdsNotifier } from '../src/yds-notifier.ts';
 
 const PENDING_TX_PATH_PREFIX = 'published.ymax1';
@@ -63,16 +66,7 @@ export const makeNotImplementedAsync = (key: string | symbol) =>
 
 /** Return a correctly-typed record lacking significant functionality. */
 export const createMockEnginePowers = (): EnginePowers => ({
-  evmCtx: {
-    usdcAddresses: {},
-    evmProviders: {},
-    kvStore: makeKVStoreFromMap(new Map()),
-    makeAbortController,
-    axelarApiUrl: mockAxelarApiAddress,
-    ydsNotifier: {
-      notifySettlement: async () => true,
-    } as unknown as YdsNotifier,
-  },
+  evmCtx: mockEvmCtx,
   rpc: {} as any,
   spectrum: {} as any,
   spectrumBlockchain: undefined,
@@ -87,6 +81,8 @@ export const createMockEnginePowers = (): EnginePowers => ({
   now: () => NaN,
   gasEstimator: {} as any,
   usdcTokensByChain: {},
+  erc4626Vaults: {},
+  chainNameToChainIdMap: chainNameToCaipChainId.testnet,
 });
 
 const mockFetchForGasEstimate = async (_, options?: any) => {
@@ -98,6 +94,17 @@ const mockFetchForGasEstimate = async (_, options?: any) => {
 };
 
 const mockAxelarApiAddress = 'https://api.axelar.example/';
+
+export const mockEvmCtx = {
+  usdcAddresses: {},
+  evmProviders: {},
+  kvStore: makeKVStoreFromMap(new Map()),
+  makeAbortController,
+  axelarApiUrl: mockAxelarApiAddress,
+  ydsNotifier: {
+    notifySettlement: async () => true,
+  } as unknown as YdsNotifier,
+};
 
 const mockAxelarChainIdMap: Record<AxelarChain, string> = {
   Avalanche: 'Avalanche',

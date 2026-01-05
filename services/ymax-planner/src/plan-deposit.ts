@@ -19,7 +19,11 @@ import {
   objectMetaMap,
   typedEntries,
 } from '@agoric/internal';
-import type { AccountId, Caip10Record } from '@agoric/orchestration';
+import type {
+  AccountId,
+  Caip10Record,
+  CaipChainId,
+} from '@agoric/orchestration';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import {
   ACCOUNT_DUST_EPSILON,
@@ -36,7 +40,7 @@ import type { Sdk as SpectrumPoolsSdk } from './graphql/api-spectrum-pools/__gen
 import type { Chain, Pool, SpectrumClient } from './spectrum-client.js';
 import { spectrumProtocols, UserInputError } from './support.ts';
 import { getOwn, lookupValueForKey } from './utils.js';
-import type { EvmContext } from './pending-tx-manager.ts';
+import type { EvmChain, EvmContext } from './pending-tx-manager.ts';
 import { getERC4626VaultsBalances } from './erc4626-utils.ts';
 
 const scale6 = (x: number) => {
@@ -85,6 +89,7 @@ export type BalanceQueryPowers = {
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
   erc4626Vaults: Partial<Record<PoolKey, `0x${string}`>>;
   evmCtx: Omit<EvmContext, 'cosmosRest' | 'signingSmartWalletKit' | 'fetch'>;
+  chainNameToChainIdMap: Record<EvmChain, CaipChainId>;
 };
 
 // UNTIL https://github.com/Agoric/agoric-sdk/issues/12186
@@ -231,6 +236,26 @@ export const getCurrentBalances = async (
     }
   }
   await null;
+
+  // Process any ERC4626 vault queries first. These dont rely on Spectrum.
+  if (erc4626Queries.length) {
+    const erc4626QueryResults = await getERC4626VaultsBalances(
+      erc4626Queries,
+      powers,
+    );
+    for (let i = 0; i < erc4626QueryResults.length; i += 1) {
+      const result = erc4626QueryResults[i];
+      if (result.error) {
+        errors.push(Error(result.error));
+      }
+      if (result.balance === undefined) {
+        balances.set(result.place, undefined);
+      } else {
+        balances.set(result.place, AmountMath.make(brand, result.balance));
+      }
+    }
+  }
+
   if (spectrumBlockchain && spectrumPools) {
     const spectrumAccountQueries = accountQueries.map(desc =>
       makeSpectrumAccountQuery(desc, powers),
@@ -239,38 +264,32 @@ export const getCurrentBalances = async (
       makeSpectrumPoolQuery(desc, powers),
     );
 
-    const [accountResult, positionResult, erc4626Result] =
-      await Promise.allSettled([
-        spectrumAccountQueries.length
-          ? spectrumBlockchain.getBalances({ accounts: spectrumAccountQueries })
-          : { balances: [] },
-        spectrumPoolQueries.length
-          ? spectrumPools.getBalances({ positions: spectrumPoolQueries })
-          : { balances: [] },
-        getERC4626VaultsBalances(erc4626Queries, powers, errors),
-      ]);
+    const [accountResult, positionResult] = await Promise.allSettled([
+      spectrumAccountQueries.length
+        ? spectrumBlockchain.getBalances({ accounts: spectrumAccountQueries })
+        : { balances: [] },
+      spectrumPoolQueries.length
+        ? spectrumPools.getBalances({ positions: spectrumPoolQueries })
+        : { balances: [] },
+    ]);
 
     if (
       accountResult.status !== 'fulfilled' ||
-      positionResult.status !== 'fulfilled' ||
-      erc4626Result.status !== 'fulfilled'
+      positionResult.status !== 'fulfilled'
     ) {
-      const rejections = [accountResult, positionResult, erc4626Result].flatMap(
-        settlement =>
-          settlement.status === 'fulfilled' ? [] : [settlement.reason],
+      const rejections = [accountResult, positionResult].flatMap(settlement =>
+        settlement.status === 'fulfilled' ? [] : [settlement.reason],
       );
       errors.push(...rejections);
       throw AggregateError(errors, 'Could not get balances');
     }
     const accountBalances = accountResult.value.balances;
     const positionBalances = positionResult.value.balances;
-    const erc4626Balances = erc4626Result.value;
     if (
       accountBalances.length !== accountQueries.length ||
-      positionBalances.length !== positionQueries.length ||
-      erc4626Balances.length !== erc4626Queries.length
+      positionBalances.length !== positionQueries.length
     ) {
-      const msg = `Bad balance query response(s), expected [${[accountBalances.length, positionBalances.length, erc4626Balances.length]}] results but got [${[accountQueries.length, positionQueries.length, erc4626Queries.length]}]`;
+      const msg = `Bad balance query response(s), expected [${[accountBalances.length, positionBalances.length]}] results but got [${[accountQueries.length, positionQueries.length]}]`;
       throw AggregateError(errors, msg);
     }
     for (let i = 0; i < accountQueries.length; i += 1) {
@@ -295,22 +314,13 @@ export const getCurrentBalances = async (
       if (result.error) errors.push(Error(result.error));
       balances.set(place, amountFromPositionBalance(brand, result.balance));
     }
-    for (let i = 0; i < erc4626Queries.length; i += 1) {
-      const result = erc4626Balances[i];
-      if (result.error) {
-        errors.push(Error(result.error));
-      }
-      if (result.balance === undefined) {
-        balances.set(result.place, undefined);
-      } else {
-        balances.set(result.place, AmountMath.make(brand, result.balance));
-      }
-    }
-    if (errors.length) {
-      throw AggregateError(errors, 'Could not accept balances');
-    }
-    return Object.fromEntries(balances);
   }
+  if (errors.length) {
+    throw AggregateError(errors, 'Could not accept balances');
+  }
+  const balancesExist = Array.from(balances.values()).some(v => !!v);
+  if (balancesExist) return Object.fromEntries(balances);
+
   // XXX Fallback during the transition to using only Spectrum GraphQL.
   const balanceEntries = await Promise.all(
     positionKeys.map(async (posKey: PoolKey): Promise<[PoolKey, NatAmount]> => {

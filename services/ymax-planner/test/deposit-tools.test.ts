@@ -25,7 +25,8 @@ import {
 } from '../src/plan-deposit.ts';
 import type { PlannerContext } from '../src/plan-deposit.ts';
 import { SpectrumClient } from '../src/spectrum-client.ts';
-import { mockGasEstimator } from './mocks.ts';
+import { mockEvmCtx, mockGasEstimator } from './mocks.ts';
+import { chainNameToCaipChainId } from '../src/support.ts';
 
 const depositBrand = Far('mock brand') as Brand<'nat'>;
 const makeDeposit = value => AmountMath.make(depositBrand, value);
@@ -75,6 +76,9 @@ const handleDeposit = async (
     spectrumChainIds: {},
     spectrumPoolIds: {},
     usdcTokensByChain: {},
+    erc4626Vaults: {},
+    chainNameToChainIdMap: chainNameToCaipChainId.testnet,
+    evmCtx: mockEvmCtx,
     ...powers,
   });
   const plan = await planDepositToAllocations({
@@ -145,6 +149,9 @@ test('getNonDustBalances filters balances at or below the dust epsilon', async t
     spectrumChainIds: {},
     spectrumPoolIds: {},
     usdcTokensByChain: {},
+    erc4626Vaults: {},
+    chainNameToChainIdMap: chainNameToCaipChainId.testnet,
+    evmCtx: mockEvmCtx,
   });
 
   t.deepEqual(Object.keys(balances), ['Compound_Base']);
@@ -181,6 +188,9 @@ test('getNonDustBalances retains noble balances above the dust epsilon', async t
     spectrumChainIds: {},
     spectrumPoolIds: {},
     usdcTokensByChain: {},
+    erc4626Vaults: {},
+    chainNameToChainIdMap: chainNameToCaipChainId.testnet,
+    evmCtx: mockEvmCtx,
   });
 
   t.deepEqual(Object.keys(balances), ['USDN']);
