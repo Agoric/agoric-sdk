@@ -1,48 +1,8 @@
 {
+  // NB: keep in sync with dprint.json's prettier plugin config
   arrowParens: 'avoid',
-  overrides: [
-    {
-      // opt into prettier-plugin-jsdoc
-      files: [
-        'packages/ERTP/**/*.js',
-        'packages/inter-protocol/**/*.js',
-        'packages/internal/**/*.js',
-        'packages/orchestration/**/*.js',
-        'packages/store/**/*.js',
-        'packages/smart-wallet/**/*.js',
-        'packages/vats/**/*.js',
-        'packages/vat-data/**/*.js',
-      ],
-      options: {
-        plugins: ['prettier-plugin-jsdoc'],
-        jsdocAddDefaultToDescription: false,
-        jsdocCommentLineStrategy: 'keep',
-        jsdocCapitalizeDescription: false,
-        /**
-         * Prevent incorrect '@overload' before '@template', by moving '@overload' down.
-         * @see {@link https://github.com/hosseinmd/prettier-plugin-jsdoc/blob/master/doc/CUSTOM_TAGS_ORDER.md#jsdoctagsorder}
-         */
-        // jsdocTagsOrder: '{"overload": 28.9}',
-        tsdoc: true,
-      },
-    },
-    {
-      // shell formatting
-      files: ['*.sh'],
-      options: {
-        plugins: ['prettier-plugin-sh'],
-      },
-    },
-    {
-      // Keep network definitions readable on wide lines
-      files: [
-        'packages/portfolio-contract/tools/network/prod-network.ts',
-        'packages/portfolio-contract/tools/network/test-network.ts',
-      ],
-      options: {
-        printWidth: 180,
-      },
-    },
-  ],
+  trailingComma: 'all',
   singleQuote: true,
+  // NB: dprint does not support overrides yet so we can't use Prettier's overrides feature
+  // https://github.com/dprint/dprint/issues/996
 }
