@@ -180,7 +180,6 @@ export const getCurrentBalances = async (
   brand: Brand<'nat'>,
   powers: BalanceQueryPowers,
 ): Promise<Partial<Record<AssetPlaceRef, NatAmount | undefined>>> => {
-  console.log('faazz', status, brand, powers.erc4626Vaults);
   const { positionKeys, accountIdByChain } = status;
   const { spectrumBlockchain, spectrumPools } = powers;
   const addressInfo = new Map<SupportedChain, Caip10Record>();
