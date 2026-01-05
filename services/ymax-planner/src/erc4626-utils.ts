@@ -73,13 +73,11 @@ export const getERC4626VaultBalance = async (
 export const getERC4626VaultsBalances = async (
   queries: ERC4626VaultQuery[],
   powers: BalanceQueryPowers,
-  errors: Error[],
 ): Promise<ERC4626BalanceResult[]> => {
   const { erc4626Vaults, evmCtx } = powers;
 
   if (!erc4626Vaults) {
     const err = 'ERC4626 vault configurations are required';
-    errors.push(Error(err));
     return queries.map(query => ({
       place: query.place,
       balance: undefined,
@@ -90,7 +88,6 @@ export const getERC4626VaultsBalances = async (
   if (!evmCtx || !evmCtx.evmProviders) {
     const err =
       'EVM context with providers is required for ERC4626 vault queries';
-    errors.push(Error(err));
     return queries.map(query => ({
       place: query.place,
       balance: undefined,
@@ -112,7 +109,7 @@ export const getERC4626VaultsBalances = async (
         const balance = await getERC4626VaultBalance(
           vaultAddress,
           address,
-          chainName,
+          powers.chainNameToChainIdMap[chainName],
           evmCtx.evmProviders,
         );
 

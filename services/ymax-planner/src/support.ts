@@ -219,6 +219,23 @@ export const getBlockTimeMs = (chainId: CaipChainId): number => {
   return chainBlockTimesMs[chainId] ?? 12_000; // Default to Ethereum's conservative 12s
 };
 
+export const chainNameToCaipChainId = {
+  mainnet: {
+    Ethereum: 'eip155:1',
+    Arbitrum: 'eip155:42161',
+    Avalanche: 'eip155:43114',
+    Base: 'eip155:8453',
+    Optimism: 'eip155:10',
+  },
+  testnet: {
+    Ethereum: 'eip155:11155111',
+    Arbitrum: 'eip155:421614',
+    Avalanche: 'eip155:43113',
+    Base: 'eip155:84532',
+    Optimism: 'eip155:11155420',
+  },
+};
+
 /**
  * @deprecated should come from e.g. @agoric/portfolio-api/src/constants.js
  *   or @agoric/orchestration

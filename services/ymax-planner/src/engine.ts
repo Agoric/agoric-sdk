@@ -12,7 +12,7 @@ import { reflectWalletStore, getInvocationUpdate } from '@agoric/client-utils';
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import type { RetryOptionsAndPowers } from '@agoric/client-utils/src/sync-tools.js';
 import { AmountMath, type Brand } from '@agoric/ertp';
-import type { Bech32Address } from '@agoric/orchestration';
+import type { Bech32Address, CaipChainId } from '@agoric/orchestration';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 
 import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.exo.ts';
@@ -186,6 +186,7 @@ export type Powers = {
   gasEstimator: GasEstimator;
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
   erc4626Vaults: Partial<Record<PoolKey, `0x${string}`>>;
+  chainNameToChainIdMap: Record<SupportedChain, CaipChainId>;
 };
 
 export type ProcessPortfolioPowers = Pick<
@@ -204,6 +205,7 @@ export type ProcessPortfolioPowers = Pick<
   | 'usdcTokensByChain'
   | 'evmCtx'
   | 'erc4626Vaults'
+  | 'chainNameToChainIdMap'
 > & {
   isDryRun?: boolean;
   depositBrand: Brand<'nat'>;
@@ -260,6 +262,7 @@ export const processPortfolioEvents = async (
     vstoragePathPrefixes,
     erc4626Vaults,
     evmCtx,
+    chainNameToChainIdMap,
 
     portfolioKeyForDepositAddr,
   }: ProcessPortfolioPowers,
@@ -289,6 +292,7 @@ export const processPortfolioEvents = async (
     usdcTokensByChain,
     erc4626Vaults,
     evmCtx,
+    chainNameToChainIdMap,
   };
   type ReadVstorageSimpleOpts = Pick<
     ReadStorageMetaOptions<'data'>,

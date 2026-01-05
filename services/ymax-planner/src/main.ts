@@ -43,6 +43,7 @@ import { getSdk as getSpectrumBlockchainSdk } from './graphql/api-spectrum-block
 import { getSdk as getSpectrumPoolsSdk } from './graphql/api-spectrum-pools/__generated/sdk.ts';
 import { startEngine } from './engine.ts';
 import {
+  chainNameToCaipChainId,
   createEVMContext,
   prepareAbortController,
   spectrumChainIdsByCluster,
@@ -286,6 +287,8 @@ export const main = async (
     trace: () => {},
   });
 
+  const chainNameToChainIdMap = chainNameToCaipChainId[clusterName];
+
   const powers = {
     evmCtx: {
       kvStore,
@@ -312,6 +315,7 @@ export const main = async (
     gasEstimator,
     usdcTokensByChain,
     erc4626Vaults,
+    chainNameToChainIdMap,
   };
 
   await withDeferredCleanup(async addCleanup => {
