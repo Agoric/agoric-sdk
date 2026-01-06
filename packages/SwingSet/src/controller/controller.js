@@ -338,6 +338,9 @@ export async function makeSwingsetController(
             ),
             URL: globalThis.Base64, // Unavailable only on XSnap
             Base64: globalThis.Base64, // Available only on XSnap
+            process: {
+              env,
+            },
           },
         });
         return /** @type {typeof kernelDefault} */ (kernelNS.default);
