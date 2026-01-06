@@ -40,7 +40,7 @@ import type { Sdk as SpectrumPoolsSdk } from './graphql/api-spectrum-pools/__gen
 import type { Chain, Pool, SpectrumClient } from './spectrum-client.js';
 import { spectrumProtocols, UserInputError } from './support.ts';
 import { getOwn, lookupValueForKey } from './utils.js';
-import type { EvmContext } from './pending-tx-manager.ts';
+import type { EvmChain, EvmContext } from './pending-tx-manager.ts';
 import { getERC4626VaultsBalances } from './erc4626-utils.ts';
 
 const scale6 = (x: number) => {
@@ -89,7 +89,7 @@ export type BalanceQueryPowers = {
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
   erc4626Vaults: Partial<Record<PoolKey, `0x${string}`>>;
   evmCtx: Omit<EvmContext, 'cosmosRest' | 'signingSmartWalletKit' | 'fetch'>;
-  chainNameToChainIdMap: Record<SupportedChain, CaipChainId>;
+  chainNameToChainIdMap: Record<EvmChain, CaipChainId>;
 };
 
 // UNTIL https://github.com/Agoric/agoric-sdk/issues/12186
@@ -318,7 +318,8 @@ export const getCurrentBalances = async (
   if (errors.length) {
     throw AggregateError(errors, 'Could not accept balances');
   }
-  if (balances.size) return Object.fromEntries(balances);
+  const balancesExist = Array.from(balances.values()).some(v => !!v);
+  if (balancesExist) return Object.fromEntries(balances);
 
   // XXX Fallback during the transition to using only Spectrum GraphQL.
   const balanceEntries = await Promise.all(

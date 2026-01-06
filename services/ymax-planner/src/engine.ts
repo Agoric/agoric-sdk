@@ -64,7 +64,11 @@ import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
 import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
 import type { Sdk as SpectrumPoolsSdk } from './graphql/api-spectrum-pools/__generated/sdk.ts';
 import { logger, runWithFlowTrace } from './logger.ts';
-import type { EvmContext, HandlePendingTxOpts } from './pending-tx-manager.ts';
+import type {
+  EvmChain,
+  EvmContext,
+  HandlePendingTxOpts,
+} from './pending-tx-manager.ts';
 import { handlePendingTx } from './pending-tx-manager.ts';
 import type { BalanceQueryPowers } from './plan-deposit.ts';
 import {
@@ -186,7 +190,7 @@ export type Powers = {
   gasEstimator: GasEstimator;
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
   erc4626Vaults: Partial<Record<PoolKey, `0x${string}`>>;
-  chainNameToChainIdMap: Record<SupportedChain, CaipChainId>;
+  chainNameToChainIdMap: Record<EvmChain, CaipChainId>;
 };
 
 export type ProcessPortfolioPowers = Pick<
