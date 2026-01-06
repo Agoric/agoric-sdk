@@ -360,13 +360,19 @@ export const processPortfolioEvents = async (
       const { type } = flowDetail;
       switch (type) {
         case 'deposit':
-          plan = await planDepositToAllocations(plannerContext);
+          plan = await planDepositToAllocations({
+            ...plannerContext,
+            fromChain: flowDetail.fromChain,
+          });
           break;
         case 'rebalance':
           plan = await planRebalanceToAllocations(plannerContext);
           break;
         case 'withdraw':
-          plan = await planWithdrawFromAllocations(plannerContext);
+          plan = await planWithdrawFromAllocations({
+            ...plannerContext,
+            toChain: flowDetail.toChain,
+          });
           break;
         default:
           logger.warn(`⚠️  Unknown flow type ${type}`);

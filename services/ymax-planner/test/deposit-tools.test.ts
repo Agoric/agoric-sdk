@@ -514,6 +514,17 @@ test('planWithdrawFromAllocations withdraws and rebalances', async t => {
   t.snapshot(plan);
 });
 
+test('planWithdrawFromAllocations can withdraw to an EVM account', async t => {
+  const plan = await planWithdrawFromAllocations({
+    ...plannerContext,
+    targetAllocation: { USDN: 40n, Aave_Arbitrum: 40n, Compound_Arbitrum: 20n },
+    currentBalances: { USDN: makeDeposit(2000n) },
+    amount: makeDeposit(1000n),
+    toChain: 'Ethereum',
+  });
+  t.snapshot(plan);
+});
+
 test('planWithdrawFromAllocations considers former allocation targets', async t => {
   const plan = await planWithdrawFromAllocations({
     ...plannerContext,
@@ -566,6 +577,25 @@ test('planDepositToAllocations produces plan expected by contract', async t => {
 
   const expected = planUSDNDeposit(amount);
   t.deepEqual(actual, expected);
+});
+
+test('planDepositToAllocations can deposit from an EVM account', async t => {
+  const amount = makeDeposit(1000n);
+  const plan = await planDepositToAllocations({
+    ...plannerContext,
+    targetAllocation: { USDN: 1n },
+    currentBalances: {},
+    amount,
+    fromChain: 'Avalanche',
+  });
+
+  const expectedFlow = [
+    { amount, src: '+Avalanche', dest: '@Avalanche' },
+    { amount, src: '@Avalanche', dest: '@agoric' },
+    { amount, src: '@agoric', dest: '@noble' },
+    { amount, src: '@noble', dest: 'USDN' },
+  ];
+  arrayIsLike(t, plan?.flow, expectedFlow);
 });
 
 async function singleSourceRebalanceSteps(scale: number) {
