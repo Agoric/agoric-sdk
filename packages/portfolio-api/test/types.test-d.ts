@@ -137,6 +137,12 @@ const status: StatusFor = {
   contract: {
     contractAccount: cosmosAddress.value,
   },
+  evmWallet: {
+    updated: 'messageUpdate',
+    nonce: 1n,
+    status: 'ok',
+  },
+  evmWalletPortfolios: [`published.ymax0.portfolios.portfolio123`],
   pendingTx: publishedTx,
   portfolios: {
     addPortfolio: 'portfolio1',
