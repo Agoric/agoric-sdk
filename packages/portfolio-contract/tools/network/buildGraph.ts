@@ -5,6 +5,10 @@ import { zeroPad } from '@endo/marshal';
 import type { NatAmount } from '@agoric/ertp/src/types.js';
 import { partialMap, typedEntries } from '@agoric/internal/src/js-utils.js';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
+import {
+  isInstrumentId,
+  isInterChainAccountRef,
+} from '@agoric/portfolio-api/src/type-guards.js';
 
 import { PoolPlaces } from '../../src/type-guards.js';
 import type { PoolKey } from '../../src/type-guards.js';
@@ -36,8 +40,9 @@ export interface FlowGraph {
 }
 
 export const chainOf = (id: AssetPlaceRef): string => {
-  if (id.startsWith('<') || id === '+agoric') return 'agoric';
-  if (id.startsWith('@')) return id.slice(1);
+  if (id.startsWith('<')) return 'agoric';
+  // {@link AssetPlaceRef} explains why this `.slice(1)` returns a chain name.
+  if (!isInstrumentId(id)) return id.slice(1);
   if (Object.hasOwn(PoolPlaces, id)) return PoolPlaces[id as PoolKey].chainName;
 
   // Fallback: syntactic pool id like "Protocol_Chain" => chain
@@ -131,33 +136,33 @@ export const makeGraphForFlow = (
   current: Partial<Record<AssetPlaceRef, NatAmount>>,
   target: Partial<Record<AssetPlaceRef, NatAmount>>,
 ): FlowGraph => {
-  const hubs = new Set<string>(network.chains.map(c => `@${c.name}`));
-  const dynamicNodes = new Set<string>([
+  const hubs = new Set(network.chains.map(c => `@${c.name}` as AssetPlaceRef));
+  const dynamicNodes = new Set([
     ...Object.keys(current ?? {}),
     ...Object.keys(target ?? {}),
-  ]);
+  ] as AssetPlaceRef[]);
 
   // Minimal validation: each hub mentioned by a link must exist and each
   // current/target node must be connected to a hub.
   const errors: string[] = [];
   for (const link of network.links) {
     const { src, dest } = link;
-    if (src.startsWith('@') && !hubs.has(src)) {
+    if (isInterChainAccountRef(src) && !hubs.has(src)) {
       errors.push(`missing link src hub ${src}`);
     }
-    if (dest.startsWith('@') && !hubs.has(dest)) {
+    if (isInterChainAccountRef(dest) && !hubs.has(dest)) {
       errors.push(`missing link dest hub ${dest}`);
     }
   }
   for (const placeRef of dynamicNodes) {
     // Nothing to validate for an Agoric-local place.
-    if (placeRef.startsWith('<') || placeRef.startsWith('+')) continue;
+    if (chainOf(placeRef) === 'agoric') continue;
 
-    if (placeRef.startsWith('@')) {
+    if (isInterChainAccountRef(placeRef)) {
       if (!hubs.has(placeRef)) errors.push(`undeclared hub ${placeRef}`);
     } else if (Object.hasOwn(PoolPlaces, placeRef)) {
       // Known PoolKey; require its hub to be present.
-      const hub = `@${PoolPlaces[placeRef as PoolKey].chainName}`;
+      const hub: AssetPlaceRef = `@${PoolPlaces[placeRef as PoolKey].chainName}`;
       if (!hubs.has(hub)) {
         errors.push(`pool ${placeRef} requires missing hub ${hub}`);
       }

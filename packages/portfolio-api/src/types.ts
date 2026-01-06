@@ -54,6 +54,15 @@ export type WithdrawToChainRef = `-${AxelarChain}`;
 
 export type InterChainAccountRef = `@${SupportedChain}`;
 
+/**
+ * An AssetPlaceRef describes a place where funds can be, either an
+ * {@link InstrumentId} (starting with an ASCII letter), a {@link SeatKeyword}
+ * wrapped in `<...>` angle brackets, or a value consisting of a
+ * single-character punctuator followed by a SupportedChain (that character
+ * being `@` for {@link InterChainAccountRef}, `+` for
+ * {@link LocalChainAccountRef} and {@link DepositFromChainRef}, and `-` for
+ * {@link WithdrawToChainRef}).
+ */
 export type AssetPlaceRef =
   | `<${SeatKeyword}>`
   | LocalChainAccountRef
