@@ -89,7 +89,19 @@ expectNotAssignable<ProposalType['withdraw']>({
 
 expectAssignable<FlowDetail>({ type: 'rebalance' });
 expectAssignable<FlowDetail>({ type: 'deposit', amount: natAmount });
+expectAssignable<FlowDetail>({
+  type: 'deposit',
+  amount: natAmount,
+  fromChain: 'Ethereum',
+});
+expectAssignable<FlowDetail>({ type: 'withdraw', amount: natAmount });
+expectAssignable<FlowDetail>({
+  type: 'withdraw',
+  amount: natAmount,
+  toChain: 'Ethereum',
+});
 expectNotAssignable<FlowDetail>({ type: 'deposit' });
+expectNotAssignable<FlowDetail>({ type: 'withdraw' });
 
 expectAssignable<FlowStatus>({ state: 'run', step: 1, how: 'start' });
 expectAssignable<FlowStatus>({
