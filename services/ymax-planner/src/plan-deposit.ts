@@ -400,7 +400,7 @@ const computeWeightedTargets = (
   };
 };
 
-type PlannerContext = {
+export type PlannerContext = {
   currentBalances: Partial<Record<AssetPlaceRef, NatAmount>>;
   targetAllocation?: TargetAllocation;
   network: NetworkSpec;
