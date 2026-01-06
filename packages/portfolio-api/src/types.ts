@@ -12,6 +12,7 @@ import type {
 import type { SupportedChain, YieldProtocol } from './constants.js';
 import type { InstrumentId } from './instruments.js';
 import type { PublishedTx } from './resolver.js';
+import type { EVMWalletUpdate, PortfolioPath } from './evm/types.ts';
 
 export type SeatKeyword = 'Cash' | 'Deposit';
 
@@ -121,6 +122,8 @@ export type StatusFor = {
     contractAccount: CosmosChainAddress['value'];
   };
   pendingTx: PublishedTx;
+  evmWallet: EVMWalletUpdate;
+  evmWalletPortfolios: PortfolioPath[];
   portfolios: {
     addPortfolio: PortfolioKey;
   };
