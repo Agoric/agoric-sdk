@@ -39,6 +39,7 @@ export interface FlowGraph {
   supplies: SupplyMap;
 }
 
+// XXX Possible to consolidate with {@link getChainNameOfPlaceRef}?
 export const chainOf = (id: AssetPlaceRef): string => {
   if (id.startsWith('<')) return 'agoric';
   // {@link AssetPlaceRef} explains why this `.slice(1)` returns a chain name.

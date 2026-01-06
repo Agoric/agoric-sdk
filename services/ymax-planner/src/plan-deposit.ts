@@ -427,9 +427,9 @@ export const planDepositToAllocations = async (
   );
 
   // The deposit should be distributed.
-  const depositFrom = (
-    fromChain === 'agoric' ? '<Deposit>' : `+${fromChain}`
-  ) as AssetPlaceRef;
+  const depositFrom =
+    // TODO(#12309): Remove the `<Deposit>` special case in favor of `+agoric`.
+    (fromChain === 'agoric' ? '<Deposit>' : `+${fromChain}`) as AssetPlaceRef;
   const zeroAmount = AmountMath.make(brand, 0n);
   const resolvedCurrent = { ...currentBalances, [depositFrom]: amount };
   const resolvedTarget = { ...target, [depositFrom]: zeroAmount };
@@ -490,9 +490,9 @@ export const planWithdrawFromAllocations = async (
     targetAllocation,
   );
 
-  const withdrawTo = (
-    toChain === 'agoric' ? '<Cash>' : `-${toChain}`
-  ) as AssetPlaceRef;
+  const withdrawTo =
+    // TODO(#12309): Remove the `<Cash>` special case in favor of `-agoric`.
+    (toChain === 'agoric' ? '<Cash>' : `-${toChain}`) as AssetPlaceRef;
   const zeroAmount = AmountMath.make(brand, 0n);
   const resolvedCurrent = { ...currentBalances, [withdrawTo]: zeroAmount };
   const resolvedTarget = { ...target, [withdrawTo]: amount };
