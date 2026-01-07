@@ -60,7 +60,7 @@ const handleDeposit = async (
     spectrumChainIds: {},
     spectrumPoolIds: {},
     usdcTokensByChain: {},
-    erc4626Vaults: {},
+    vaults: {},
     chainNameToChainIdMap: chainNameToCaipChainId.testnet,
     evmCtx: mockEvmCtx,
     ...powers,
@@ -133,7 +133,7 @@ test('getNonDustBalances filters balances at or below the dust epsilon', async t
     spectrumChainIds: {},
     spectrumPoolIds: {},
     usdcTokensByChain: {},
-    erc4626Vaults: {},
+    vaults: {},
     chainNameToChainIdMap: chainNameToCaipChainId.testnet,
     evmCtx: mockEvmCtx,
   });
@@ -172,7 +172,7 @@ test('getNonDustBalances retains noble balances above the dust epsilon', async t
     spectrumChainIds: {},
     spectrumPoolIds: {},
     usdcTokensByChain: {},
-    erc4626Vaults: {},
+    vaults: {},
     chainNameToChainIdMap: chainNameToCaipChainId.testnet,
     evmCtx: mockEvmCtx,
   });

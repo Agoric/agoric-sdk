@@ -116,13 +116,15 @@ export const main = async (
 
   const axelarCfg =
     clusterName === 'mainnet' ? axelarConfig : axelarConfigTestnet;
-  const erc4626Vaults: Partial<Record<PoolKey, `0x${string}`>> = Object.entries(
+  const vaults: Partial<Record<PoolKey, `0x${string}`>> = Object.entries(
     axelarCfg,
   )
     .map(([_, chainDetails]) =>
       Object.fromEntries(
-        Object.entries(chainDetails.contracts).filter(([contractName, __]) =>
-          contractName.startsWith('ERC4626'),
+        Object.entries(chainDetails.contracts).filter(
+          ([contractName, __]) =>
+            contractName.startsWith('ERC4626') ||
+            contractName.startsWith('Beefy'),
         ),
       ),
     )
@@ -314,7 +316,7 @@ export const main = async (
     now,
     gasEstimator,
     usdcTokensByChain,
-    erc4626Vaults,
+    vaults,
     chainNameToChainIdMap,
   };
 

@@ -189,7 +189,7 @@ export type Powers = {
   now: typeof Date.now;
   gasEstimator: GasEstimator;
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
-  erc4626Vaults: Partial<Record<PoolKey, `0x${string}`>>;
+  vaults: Partial<Record<PoolKey, `0x${string}`>>;
   chainNameToChainIdMap: Record<EvmChain, CaipChainId>;
 };
 
@@ -208,7 +208,7 @@ export type ProcessPortfolioPowers = Pick<
   | 'gasEstimator'
   | 'usdcTokensByChain'
   | 'evmCtx'
-  | 'erc4626Vaults'
+  | 'vaults'
   | 'chainNameToChainIdMap'
 > & {
   isDryRun?: boolean;
@@ -264,7 +264,7 @@ export const processPortfolioEvents = async (
     spectrumPoolIds,
     usdcTokensByChain,
     vstoragePathPrefixes,
-    erc4626Vaults,
+    vaults,
     evmCtx,
     chainNameToChainIdMap,
 
@@ -294,7 +294,7 @@ export const processPortfolioEvents = async (
     spectrumChainIds,
     spectrumPoolIds,
     usdcTokensByChain,
-    erc4626Vaults,
+    vaults,
     evmCtx,
     chainNameToChainIdMap,
   };

@@ -63,7 +63,7 @@ export const createMockEnginePowers = (): EnginePowers => ({
   now: () => NaN,
   gasEstimator: {} as any,
   usdcTokensByChain: {},
-  erc4626Vaults: {},
+  vaults: {},
   chainNameToChainIdMap: chainNameToCaipChainId.testnet,
 });
 
