@@ -7,35 +7,32 @@ import assert from 'node:assert';
 
 /**
  * @import {IBCChannelID, IBCConnectionID} from '@agoric/vats';
- * @import {Chain, IBCInfo} from '@chain-registry/types';
+ * @import {Chain, IBCData} from '@chain-registry/types';
  * @import {ChainRegistryClient} from '@chain-registry/client';
  * @import {CosmosChainInfo, IBCConnectionInfo} from '../cosmos-api.js';
  */
 
 /**
- * @param {IBCInfo} ibcInfo
+ * @param {IBCData} ibcInfo
  * @param {string} name
  * @param {Record<string, CosmosChainInfo>} chainInfo
  * @returns {[string, IBCConnectionInfo] | []}
  */
 function toConnectionEntry(ibcInfo, name, chainInfo) {
-  // IbcInfo encodes the undirected edge as a tuple of (chain_1, chain_2) in alphabetical order
-  const fromChain1 = ibcInfo.chain_1.chain_name === name;
+  // IbcInfo encodes the undirected edge as a tuple of (chain1, chain2) in alphabetical order
+  const fromChain1 = ibcInfo.chain1.chainName === name;
   const [from, to] = fromChain1
-    ? [ibcInfo.chain_1, ibcInfo.chain_2]
-    : [ibcInfo.chain_2, ibcInfo.chain_1];
-  assert.equal(from.chain_name, name);
+    ? [ibcInfo.chain1, ibcInfo.chain2]
+    : [ibcInfo.chain2, ibcInfo.chain1];
+  assert.equal(from.chainName, name);
   const transferChannels = ibcInfo.channels.filter(
-    c =>
-      c.chain_1.port_id === 'transfer' &&
-      // @ts-expect-error tags does not specify keys
-      c.tags?.preferred,
+    c => c.chain1.portId === 'transfer' && c.tags?.preferred,
   );
   if (transferChannels.length === 0) {
     console.warn(
       'no transfer channel for [',
-      from.chain_name,
-      to.chain_name,
+      from.chainName,
+      to.chainName,
       ']',
       '(skipping)',
     );
@@ -44,8 +41,8 @@ function toConnectionEntry(ibcInfo, name, chainInfo) {
   if (transferChannels.length > 1) {
     console.warn(
       'multiple preferred transfer channels [',
-      from.chain_name,
-      to.chain_name,
+      from.chainName,
+      to.chainName,
       ']:',
       transferChannels,
       '(choosing first)',
@@ -53,28 +50,28 @@ function toConnectionEntry(ibcInfo, name, chainInfo) {
   }
   const [channel] = transferChannels;
   const [channelFrom, channelTo] = fromChain1
-    ? [channel.chain_1, channel.chain_2]
-    : [channel.chain_2, channel.chain_1];
+    ? [channel.chain1, channel.chain2]
+    : [channel.chain2, channel.chain1];
   const record = {
-    id: /** @type {IBCConnectionID} */ (from.connection_id),
-    client_id: from.client_id,
+    id: /** @type {IBCConnectionID} */ (from.connectionId),
+    client_id: from.clientId,
     counterparty: {
-      client_id: to.client_id,
-      connection_id: /** @type {IBCConnectionID} */ (to.connection_id),
+      client_id: to.clientId,
+      connection_id: /** @type {IBCConnectionID} */ (to.connectionId),
     },
     state: IBCConnectionState.STATE_OPEN, // XXX presumably
     transferChannel: {
-      channelId: /** @type {IBCChannelID} */ (channelFrom.channel_id),
-      portId: channelFrom.port_id,
-      counterPartyChannelId: /** @type {IBCChannelID} */ (channelTo.channel_id),
-      counterPartyPortId: channelTo.port_id,
+      channelId: /** @type {IBCChannelID} */ (channelFrom.channelId),
+      portId: channelFrom.portId,
+      counterPartyChannelId: /** @type {IBCChannelID} */ (channelTo.channelId),
+      counterPartyPortId: channelTo.portId,
       // FIXME mapping, our guard expects a numerical enum
       ordering: Order.ORDER_NONE_UNSPECIFIED,
       state: IBCChannelState.STATE_OPEN, // XXX presumably
       version: channel.version,
     },
   };
-  const destChainId = chainInfo[to.chain_name].chainId;
+  const destChainId = chainInfo[to.chainName].chainId;
   return [destChainId, record];
 }
 
@@ -88,29 +85,32 @@ export const convertChainInfo = async registry => {
   const chainInfo = {};
 
   for (const chain of registry.chains) {
-    console.log('processing info', chain.chain_name);
-    chainInfo[chain.chain_name] = {
-      bech32Prefix: chain.bech32_prefix,
-      chainId: chain.chain_id,
+    console.log('processing info', chain.chainName);
+    chainInfo[chain.chainName] = {
+      // @ts-expect-error possibly undefined
+      bech32Prefix: chain.bech32Prefix,
+      // @ts-expect-error possibly undefined
+      chainId: chain.chainId,
       // UNTIL https://github.com/Agoric/agoric-sdk/issues/9326
-      icqEnabled: chain.chain_name === 'osmosis',
+      icqEnabled: chain.chainName === 'osmosis',
       namespace: 'cosmos',
-      reference: chain.chain_id,
-      stakingTokens: chain.staking?.staking_tokens,
+      // @ts-expect-error possibly undefined
+      reference: chain.chainId,
+      stakingTokens: chain.staking?.stakingTokens,
     };
   }
 
   // XXX probably easier to keep ibc separate
   const ibcLookup = {};
   for (const ibc of registry.ibcData) {
-    ibcLookup[ibc.chain_1.chain_name] ||= [];
-    ibcLookup[ibc.chain_2.chain_name] ||= [];
+    ibcLookup[ibc.chain1.chainName] ||= [];
+    ibcLookup[ibc.chain2.chainName] ||= [];
 
-    ibcLookup[ibc.chain_1.chain_name].push(ibc);
-    ibcLookup[ibc.chain_2.chain_name].push(ibc);
+    ibcLookup[ibc.chain1.chainName].push(ibc);
+    ibcLookup[ibc.chain2.chainName].push(ibc);
   }
 
-  const chainNames = registry.chains.map(c => c.chain_name).sort();
+  const chainNames = registry.chains.map(c => c.chainName).sort();
 
   // iterate this after chainInfo is filled out
   for (const name of chainNames) {
