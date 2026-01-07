@@ -36,7 +36,6 @@ import { provideDirector } from './vaultDirector.js';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  * @import {VaultDirectorParams} from './params.js';
  * @import {TimerService} from '@agoric/time';
- * @import {start as auctioneerStart} from '../auction/auctioneer.js';
  * @import {AssetReservePublicFacet} from '../reserve/assetReserve.js';
  * @import {VaultManagerParamOverrides} from './params.js';
  * @import {Baggage} from '@agoric/swingset-liveslots';

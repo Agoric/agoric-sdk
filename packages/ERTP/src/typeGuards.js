@@ -5,7 +5,7 @@ import { M, matches, getInterfaceGuardPayload } from '@endo/patterns';
  * @import {AmountValue, Ratio} from './types.js'
  * @import {TypedPattern} from '@agoric/internal'
  * @import {CopyBag, CopySet, Pattern} from '@endo/patterns';
- * @import {NatValue} from './types.js';
+ * @import {NatValue, SetValue} from './types.js';
  */
 
 export const BrandShape = M.remotable('Brand');
