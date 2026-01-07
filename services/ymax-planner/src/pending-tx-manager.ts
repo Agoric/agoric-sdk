@@ -28,11 +28,7 @@ import type {
   UsdcAddresses,
 } from './support.ts';
 import { lookBackCctp, watchCctpTransfer } from './watchers/cctp-watcher.ts';
-import {
-  lookBackGmp,
-  WATCH_GMP_ABORTED,
-  watchGmp,
-} from './watchers/gmp-watcher.ts';
+import { lookBackGmp, watchGmp } from './watchers/gmp-watcher.ts';
 import {
   watchSmartWalletTx,
   lookBackSmartWalletTx,
@@ -243,8 +239,6 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
         signal: opts.signal,
         kvStore: ctx.kvStore,
         makeAbortController: ctx.makeAbortController,
-        axelarApiUrl: ctx.axelarApiUrl,
-        fetch: ctx.fetch,
       });
     } else {
       // Lookback mode with concurrent live watching
@@ -260,31 +254,12 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
         signal: abortController.signal,
         kvStore: ctx.kvStore,
         makeAbortController: ctx.makeAbortController,
-        axelarApiUrl: ctx.axelarApiUrl,
-        fetch: ctx.fetch,
       });
 
       // Attach handler to abort lookback if live mode completes first with
       // a definitive result. This handler does NOT resolve the transaction -
       // resolution happens once at the end to prevent duplicate resolutions.
-      void liveResultP
-        .then(result => {
-          // Abort lookback only if live mode has a definitive answer:
-          // - Transaction found successfully (result.found === true)
-          // - Transaction found but failed (result.rejectionReason present)
-          // If neither (just timed out), let lookback continue - it might find it.
-          if (result.found || result.rejectionReason) {
-            const reason = `${logPrefix} Live mode completed`;
-            log(reason);
-            abortController.abort(reason);
-          }
-        })
-        .catch(error => {
-          // If lookback aborted live mode, no action needed
-          if (error !== WATCH_GMP_ABORTED) {
-            throw error;
-          }
-        });
+      void liveResultP;
 
       await null;
       // Wait for at least one block to ensure overlap between lookback and live mode
@@ -324,10 +299,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
     await resolvePendingTx({
       signingSmartWalletKit: ctx.signingSmartWalletKit,
       txId,
-      status: transferResult?.found ? TxStatus.SUCCESS : TxStatus.FAILED,
-      ...(transferResult?.rejectionReason
-        ? { rejectionReason: transferResult.rejectionReason }
-        : {}),
+      status: transferResult ? TxStatus.SUCCESS : TxStatus.FAILED,
     });
 
     if (transferResult?.txHash) {

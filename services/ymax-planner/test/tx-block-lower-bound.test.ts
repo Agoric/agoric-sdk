@@ -74,18 +74,12 @@ test('updates lower bound when a pending tx is being searched', async t => {
     blockWithEvent: 99,
   });
 
-  const initialExecutedBlockSaved = await getTxBlockLowerBound(
-    ctx.kvStore,
-    txId,
-    EVENTS.MULTICALL_EXECUTED,
-  );
   const initialStatusBlockSaved = await getTxBlockLowerBound(
     ctx.kvStore,
     txId,
     EVENTS.MULTICALL_STATUS,
   );
 
-  t.is(initialExecutedBlockSaved, undefined);
   t.is(initialStatusBlockSaved, undefined);
 
   await handlePendingTx(
@@ -97,11 +91,6 @@ test('updates lower bound when a pending tx is being searched', async t => {
     },
   );
 
-  const finalExecutedBlockSaved = await getTxBlockLowerBound(
-    ctx.kvStore,
-    txId,
-    EVENTS.MULTICALL_EXECUTED,
-  );
   const finalStatusBlockSaved = await getTxBlockLowerBound(
     ctx.kvStore,
     txId,
@@ -109,7 +98,6 @@ test('updates lower bound when a pending tx is being searched', async t => {
   );
 
   // final blocks saved in kvstore should be deleted after success
-  t.is(finalExecutedBlockSaved, undefined);
   t.is(finalStatusBlockSaved, undefined);
 });
 
@@ -125,15 +113,8 @@ test('begins searching from the lower bound block number stored in kv store', as
     txId,
   });
 
-  // Arbitrarty different starting lower bounds
-  const executedLowerBound = 83;
+  // Set starting lower bound for status events
   const statusLowerBound = 87;
-  await setTxBlockLowerBound(
-    ctx.kvStore,
-    txId,
-    executedLowerBound,
-    EVENTS.MULTICALL_EXECUTED,
-  );
   await setTxBlockLowerBound(
     ctx.kvStore,
     txId,
@@ -150,11 +131,6 @@ test('begins searching from the lower bound block number stored in kv store', as
     },
   );
 
-  const finalExecutedBlockSaved = await getTxBlockLowerBound(
-    ctx.kvStore,
-    txId,
-    EVENTS.MULTICALL_EXECUTED,
-  );
   const finalStatusBlockSaved = await getTxBlockLowerBound(
     ctx.kvStore,
     txId,
@@ -164,11 +140,9 @@ test('begins searching from the lower bound block number stored in kv store', as
   // handlePendingTx will search in chunks of 10 blocks
   // since the expected event should be found in the second block we search,
   // The final block saved should be the tail of the previous chunk
-  const executedFinalBlock = executedLowerBound + 9;
   const statusFinalBlock = statusLowerBound + 9;
 
   // final blocks saved in kvstore should be deleted after success
-  t.is(finalExecutedBlockSaved, undefined);
   t.is(finalStatusBlockSaved, undefined);
 
   // latestBlock has incremented by one in this entire process
@@ -176,14 +150,10 @@ test('begins searching from the lower bound block number stored in kv store', as
   t.deepEqual(logs, [
     `[${txId}] handling GMP tx`,
     `[${txId}] Watching for MulticallStatus and MulticallExecuted events for txId: ${txId} at contract: ${contractAddress}`,
-    `[${txId}] Searching blocks ${statusLowerBound}/${executedLowerBound} → ${newLatestBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
+    `[${txId}] Searching blocks ${statusLowerBound} → ${newLatestBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
     `[${txId}] [LogScan] Searching chunk ${statusLowerBound} → ${statusFinalBlock}`,
-    `[${txId}] [LogScan] Searching chunk ${executedLowerBound} → ${executedFinalBlock}`,
     // Next chunk start one after where the previous chunk ended
     `[${txId}] [LogScan] Searching chunk ${statusFinalBlock + 1} → ${newLatestBlock}`,
-    `[${txId}] [LogScan] Searching chunk ${executedFinalBlock + 1} → ${newLatestBlock}`,
-    // Our mock event matches both, so we expect to find a match in each
-    `[${txId}] [LogScan] Match in tx=0x1234567890abcdef1234567890abcdef12345678`,
     `[${txId}] [LogScan] Match in tx=0x1234567890abcdef1234567890abcdef12345678`,
     `[${txId}] Found matching event`,
     `[${txId}] Lookback found transaction`,
