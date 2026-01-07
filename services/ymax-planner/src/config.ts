@@ -51,6 +51,10 @@ export interface YmaxPlannerConfig {
   readonly sqlite: {
     readonly dbPath: string;
   };
+  readonly yds: {
+    readonly url: string;
+    readonly apiKey: string;
+  };
 }
 
 export type SecretManager = Pick<
@@ -176,6 +180,9 @@ export const loadConfig = async (
   }
   const sqliteDbPath = validateRequired(env, 'SQLITE_DB_PATH');
 
+  const ydsUrl = validateRequired(env, 'YDS_URL');
+  const ydsApiKey = validateRequired(env, 'YDS_API_KEY');
+
   const config: YmaxPlannerConfig = harden({
     clusterName,
     contractInstance,
@@ -201,6 +208,10 @@ export const loadConfig = async (
     },
     sqlite: {
       dbPath: sqliteDbPath,
+    },
+    yds: {
+      url: ydsUrl,
+      apiKey: ydsApiKey,
     },
   });
 

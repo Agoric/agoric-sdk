@@ -47,6 +47,7 @@ import type { MakeAbortController } from './support.ts';
 import { SpectrumClient } from './spectrum-client.ts';
 import { makeGasEstimator } from './gas-estimation.ts';
 import { makeSQLiteKeyValueStore } from './kv-store.ts';
+import { YdsNotifier } from './yds-notifier.ts';
 
 const assertChainId = async (
   rpc: CosmosRPCClient,
@@ -267,11 +268,20 @@ export const main = async (
     trace: () => {},
   });
 
+  const ydsNotifier = new YdsNotifier(
+    { fetch, log: console.log.bind(console) },
+    {
+      ydsUrl: config.yds.url,
+      ydsApiKey: config.yds.apiKey,
+    },
+  );
+
   const powers = {
     evmCtx: {
       kvStore,
       makeAbortController,
       axelarApiUrl: config.axelar.apiUrl,
+      ydsNotifier,
       ...evmCtx,
     },
     rpc,
