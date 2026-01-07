@@ -1,5 +1,5 @@
 import { Fail, q } from '@endo/errors';
-import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
+import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.js';
 import {
   EvmWalletOperationType,
   YieldProtocol,

@@ -6,17 +6,17 @@ import '@endo/init';
 
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
-import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.exo.ts';
-import type { start as YMaxStart } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
-import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.ts';
+import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.exo.js';
+import type { start as YMaxStart } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
+import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
 import {
   TargetAllocationShape,
   type OfferArgsFor,
   type ProposalType,
   type TargetAllocation,
-} from '@aglocal/portfolio-contract/src/type-guards.ts';
-import { makePortfolioSteps } from '@aglocal/portfolio-contract/tools/plan-transfers.ts';
-import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.ts';
+} from '@aglocal/portfolio-contract/src/type-guards.js';
+import { makePortfolioSteps } from '@aglocal/portfolio-contract/tools/plan-transfers.js';
+import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.js';
 import {
   axelarConfig as axelarConfigMainnet,
   axelarConfigTestnet,

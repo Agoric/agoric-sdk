@@ -7,10 +7,7 @@ import {
 import type { NatAmount } from '@agoric/ertp';
 import { TxStatus } from '@agoric/fast-usdc/src/constants.js';
 import { CctpTxEvidenceShape } from '@agoric/fast-usdc/src/type-guards.js';
-import type {
-  CctpTxEvidence,
-  EvidenceWithRisk,
-} from '@agoric/fast-usdc/src/types.ts';
+import type { CctpTxEvidence, EvidenceWithRisk } from '@agoric/fast-usdc';
 import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
 import {
   MockCctpTxEvidences,

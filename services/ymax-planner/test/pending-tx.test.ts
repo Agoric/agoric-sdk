@@ -17,8 +17,8 @@ import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type {
   PendingTx,
   TxId,
-} from '@aglocal/portfolio-contract/src/resolver/types.ts';
-import { createMockPendingTxData } from '@aglocal/portfolio-contract/tools/mocks.ts';
+} from '@aglocal/portfolio-contract/src/resolver/types.js';
+import { createMockPendingTxData } from '@aglocal/portfolio-contract/tools/mocks.js';
 
 const marshaller = boardSlottingMarshaller();
 

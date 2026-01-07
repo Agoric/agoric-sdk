@@ -3,7 +3,7 @@ import { id, zeroPadValue, AbiCoder } from 'ethers';
 import { createMockPendingTxOpts } from './mocks.ts';
 import { handlePendingTx } from '../src/pending-tx-manager.ts';
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
-import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
+import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.js';
 import { SMART_WALLET_CREATED_SIGNATURE } from '../src/watchers/wallet-watcher.ts';
 
 const abiCoder = new AbiCoder();

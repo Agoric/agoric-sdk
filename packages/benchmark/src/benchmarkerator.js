@@ -17,7 +17,7 @@ import {
 import { makeLiquidationTestKit } from '@aglocal/boot/tools/liquidation.js';
 
 /**
- * @import {SmartWalletDriver} from '@aglocal/boot/tools/drivers.ts';
+ * @import {SmartWalletDriver} from '@aglocal/boot/tools/drivers.js';
  * @import {ManagerType} from '@agoric/swingset-vat';
  */
 

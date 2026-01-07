@@ -21,7 +21,7 @@ import {
   portfolioIdOfPath,
   PortfolioStatusShapeExt,
   type StatusFor,
-} from '@aglocal/portfolio-contract/src/type-guards.ts';
+} from '@aglocal/portfolio-contract/src/type-guards.js';
 import { mustMatch } from '@agoric/internal';
 
 const { fromEntries, keys, values } = Object;

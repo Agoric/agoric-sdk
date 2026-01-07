@@ -9,7 +9,7 @@ import { Fail, q } from '@endo/errors';
 import type {
   FlowDetail,
   StatusFor,
-} from '@aglocal/portfolio-contract/src/type-guards.ts';
+} from '@aglocal/portfolio-contract/src/type-guards.js';
 import {
   makeSigningSmartWalletKitFromClient,
   makeSmartWalletKitFromVstorageKit,

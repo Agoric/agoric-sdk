@@ -1,7 +1,7 @@
 import { ethers } from 'ethers';
 import type { WebSocketProvider } from 'ethers';
 
-import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.ts';
+import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.js';
 import { TEST_NETWORK } from '@aglocal/portfolio-contract/tools/network/test-network.js';
 import { boardSlottingMarshaller } from '@agoric/client-utils';
 import type { SigningSmartWalletKit } from '@agoric/client-utils';

@@ -1,8 +1,8 @@
 import test from 'ava';
 import { id, keccak256, toUtf8Bytes } from 'ethers';
-import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
+import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.js';
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
-import { createMockPendingTxData } from '@aglocal/portfolio-contract/tools/mocks.ts';
+import { createMockPendingTxData } from '@aglocal/portfolio-contract/tools/mocks.js';
 import { encodeAbiParameters } from 'viem';
 import {
   createMockGmpExecutionEvent,

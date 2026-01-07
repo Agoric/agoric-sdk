@@ -18,7 +18,7 @@ import { deeplyFulfilledObject, mustMatch, objectMap } from '@agoric/internal';
 import {
   PublishedTxShape,
   type PendingTx,
-} from '@aglocal/portfolio-contract/src/resolver/types.ts';
+} from '@aglocal/portfolio-contract/src/resolver/types.js';
 import {
   TxStatus,
   TxType,

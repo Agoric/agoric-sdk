@@ -16,7 +16,7 @@ import {
  * @import {ManifestBundleRef} from '@agoric/deploy-script-support/src/externalTypes.js'
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js'
  * @import {LegibleCapData} from './utils/config-marshal.js'
- * @import {FastUsdcSF} from '@aglocal/fast-usdc-contract/src/fast-usdc.contract.ts'
+ * @import {FastUsdcSF} from '@aglocal/fast-usdc-contract/src/fast-usdc.contract.js'
  * @import {FastUSDCConfig} from '@agoric/fast-usdc/src/types.js'
  */
 
