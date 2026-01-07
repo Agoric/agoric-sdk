@@ -50,7 +50,7 @@ export class YdsNotifier {
       headers: {
         'Content-Type': 'application/json',
         'User-Agent': 'Agoric-YMax-Planner/1.0.0',
-        'x-api-key': this.#config.ydsApiKey,
+        'x-resolver-auth-key': this.#config.ydsApiKey,
       },
     });
   }
@@ -85,7 +85,7 @@ export class YdsNotifier {
     } catch (err) {
       const e = err as Error;
       this.#log(
-        `[YdsNotifier] Failed to send notification for ${txNum}: ${e.message}`,
+        `[YdsNotifier] Failed to send notification for ${txNum} ${txHash}: ${e.message}`,
       );
       return false;
     }

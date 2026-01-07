@@ -271,5 +271,9 @@ test('watchCctpTransfer returns txHash when transfer is found', async t => {
   const result = await watchPromise;
 
   t.true(result.found, 'Transfer should be found');
-  t.is(result.txHash, expectedTxHash, 'Should return the correct transaction hash');
+  t.is(
+    result.txHash,
+    expectedTxHash,
+    'Should return the correct transaction hash',
+  );
 });
