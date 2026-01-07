@@ -2,9 +2,26 @@
  * @file Type-safe EVM contract call builder for Axelar GMP integration.
  * @see {@link makeEVMSession} for creating contract call batches
  */
-import { type ContractCall } from '@agoric/orchestration/src/axelar-types.js';
 import type { NatValue } from '@agoric/ertp';
+import type { Bech32Address } from '@agoric/orchestration';
+import { type ContractCall } from '@agoric/orchestration/src/axelar-types.js';
+import type { PermitTransferFrom } from '@agoric/orchestration/src/utils/permit2.js';
+import type { AbiTypeToPrimitiveType as EVM_T } from 'abitype';
+import type { Address } from 'viem';
 
+// TODO: split EVM generic stuff from ymax stuff
+
+// XXX refactor on top of omit lcaOwner?
+export type CreateAndDepositPayload = {
+  lcaOwner: Bech32Address;
+  tokenOwner: Address;
+  permit: Readonly<PermitTransferFrom>;
+  witness: EVM_T<'bytes32'>;
+  witnessTypeString: string;
+  signature: EVM_T<'bytes'>;
+};
+
+// XXX migrate closer to viem / abitype
 export type EVMT = {
   uint16: number;
   uint32: number;

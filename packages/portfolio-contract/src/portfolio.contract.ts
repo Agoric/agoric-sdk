@@ -33,14 +33,13 @@ import {
   type OrchestrationTools,
 } from '@agoric/orchestration';
 import type {
-  FlowConfig,
   PortfolioPublicInvitationMaker,
+  TargetAllocation,
 } from '@agoric/portfolio-api';
 import {
   AxelarChain,
-  YieldProtocol,
   DEFAULT_FLOW_CONFIG,
-  FlowConfigShape,
+  YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
 import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
 import type { ContractMeta, ZCF, ZCFSeat } from '@agoric/zoe';
@@ -54,6 +53,7 @@ import { makeMarshal } from '@endo/marshal';
 import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import { prepareEVMWalletHandlerKit } from './evm-wallet-handler.ts';
+import type { CreateAndDepositPayload } from './evm-facade.ts';
 import { preparePlanner } from './planner.exo.ts';
 import { preparePortfolioKit, type PortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
@@ -373,7 +373,8 @@ export const contract = async (
     pKit,
     flowDetail,
     startedFlow,
-    config = defaultFlowConfig,
+    config = DEFAULT_FLOW_CONFIG,
+    options,
   ) =>
     orchFns1.executePlan(
       seat,
@@ -381,7 +382,8 @@ export const contract = async (
       pKit,
       flowDetail,
       startedFlow,
-      ...flowCfg(config),
+      config,
+      options,
     );
   const rebalance: typeof orchFns1.rebalance = (
     seat,
@@ -451,7 +453,10 @@ export const contract = async (
   // Create openPortfolio flow with makePortfolioKit - circular dependency
   // avoided
   const orchFns2 = orchestrateAll(
-    { openPortfolio: flows.openPortfolio },
+    {
+      openPortfolio: flows.openPortfolio,
+      openPortfolioFromEVM: flows.openPortfolioFromEVM,
+    },
     {
       ...ctx1,
       // Older name maintained for upgrade compatibility
@@ -532,7 +537,42 @@ export const contract = async (
         proposalShapes.openPortfolio,
       );
     },
-  } satisfies Record<PortfolioPublicInvitationMaker, any> & ThisType<any>);
+    /**
+     * Open a portfolio for EVM users with a signed Permit2 deposit.
+     *
+     * @returns storagePath (vstorage) and evmHandler facet
+     *
+     * @see {@link openPortfolioFromEVM} for the flow implementation
+     */
+    async openPortfolioFromEVM(
+      targetAllocation: TargetAllocation | undefined,
+      depositDetails: {
+        fromChain: AxelarChain;
+        signedPermit: Omit<CreateAndDepositPayload, 'lcaOwner'>;
+      },
+    ): Promise<{
+      storagePath: string;
+      evmHandler: PortfolioKit['evmHandler'];
+    }> {
+      const seat = zcf.makeEmptySeatKit().zcfSeat;
+      const kit = makeNextPortfolioKit();
+      void orchFns2.openPortfolioFromEVM(
+        seat,
+        depositDetails.signedPermit,
+        depositDetails.fromChain,
+        targetAllocation,
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- sensitive to build order
+        // @ts-ignore XXX Guest...
+        kit,
+      );
+      return harden({
+        storagePath: await vowTools.asPromise(kit.reader.getStoragePath()),
+        evmHandler: kit.evmHandler,
+      });
+    },
+  } satisfies Record<PortfolioPublicInvitationMaker, any> &
+    Record<'openPortfolioFromEVM', any> &
+    ThisType<any>);
 
   const prepareResultOnlyInvitation = <R>(
     description: string,

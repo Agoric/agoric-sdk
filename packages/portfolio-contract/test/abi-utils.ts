@@ -1,4 +1,5 @@
 import { decodeAbiParameters, decodeFunctionData } from 'viem';
+import { CREATE_AND_DEPOSIT_ABI_PARAMS } from '../src/pos-gmp.flows.ts';
 
 export const decodeFunctionCall = (
   memo: string,
@@ -52,4 +53,17 @@ export const decodeFunctionCall = (
   });
 
   return { id, calls: decodedCalls };
+};
+
+export const decodeCreateAndDepositPayload = (memo: string) => {
+  const parsedMemo = JSON.parse(memo);
+  const payloadBytes =
+    typeof parsedMemo.payload === 'string'
+      ? Buffer.from(parsedMemo.payload, 'base64')
+      : Buffer.from(parsedMemo.payload);
+  const decodedPayload = decodeAbiParameters(
+    CREATE_AND_DEPOSIT_ABI_PARAMS,
+    `0x${payloadBytes.toString('hex')}`,
+  );
+  return decodedPayload[0];
 };
