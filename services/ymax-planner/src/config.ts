@@ -180,7 +180,8 @@ export const loadConfig = async (
   }
   const sqliteDbPath = validateRequired(env, 'SQLITE_DB_PATH');
 
-  const ydsUrl = validateRequired(env, 'YDS_URL');
+  const ydsUrl =
+    validateUrl(env, 'YDS_URL', undefined) || Fail`YDS_URL is required`;
   const ydsApiKey = validateRequired(env, 'YDS_API_KEY');
 
   const config: YmaxPlannerConfig = harden({

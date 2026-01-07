@@ -13,6 +13,7 @@ import {
   getTxBlockLowerBound,
   setTxBlockLowerBound,
 } from '../kv-store.ts';
+import type { WatcherResult } from '../pending-tx-manager.ts';
 
 export const SMART_WALLET_CREATED_SIGNATURE = id(
   'SmartWalletCreated(address,string,string,string)',
@@ -63,10 +64,12 @@ export const watchSmartWalletTx = ({
   log = () => {},
   setTimeout = globalThis.setTimeout,
   signal,
-}: SmartWalletWatchBase & WatcherTimeoutOptions): Promise<boolean> => {
+}: SmartWalletWatchBase &
+  WatcherTimeoutOptions &
+  Partial<SmartWalletWatch>): Promise<WatcherResult> => {
   return new Promise(resolve => {
     if (signal?.aborted) {
-      resolve(false);
+      resolve({ found: false });
       return;
     }
 
@@ -82,7 +85,7 @@ export const watchSmartWalletTx = ({
     let timeoutId: NodeJS.Timeout;
     let listeners: Array<{ event: any; listener: any }> = [];
 
-    const finish = (result: boolean) => {
+    const finish = (result: WatcherResult) => {
       resolve(result);
       if (timeoutId) clearTimeout(timeoutId);
       for (const { event, listener } of listeners) {
@@ -91,9 +94,9 @@ export const watchSmartWalletTx = ({
       listeners = [];
     };
 
-    signal?.addEventListener('abort', () => finish(false));
+    signal?.addEventListener('abort', () => finish({ found: false }));
 
-    const listenForSmartWalletCreation = (eventLog: Log) => {
+    const listenForSmartWalletCreation = async (eventLog: Log) => {
       let eventData;
       try {
         eventData = parseSmartWalletCreatedLog(eventLog);
@@ -110,7 +113,7 @@ export const watchSmartWalletTx = ({
           `✓ Address matches! Expected: ${expectedAddr}, Found: ${normalizedWallet}`,
         );
         walletCreated = true;
-        finish(true);
+        finish({ found: true, txHash: eventLog.transactionHash });
         return;
       }
       log(
@@ -145,7 +148,7 @@ export const lookBackSmartWalletTx = async ({
   publishTimeMs: number;
   chainId: CaipChainId;
   signal?: AbortSignal;
-}): Promise<boolean> => {
+}): Promise<WatcherResult> => {
   await null;
   try {
     const fromBlock = await getBlockNumberBeforeRealTime(
@@ -194,12 +197,13 @@ export const lookBackSmartWalletTx = async ({
 
     if (!matchingEvent) {
       log(`No matching SmartWalletCreated event found`);
-      return false;
+      return { found: false };
     }
+
     deleteTxBlockLowerBound(kvStore, txId);
-    return true;
+    return { found: true, txHash: matchingEvent.transactionHash };
   } catch (error) {
     log(`Error:`, error);
-    return false;
+    return { found: false };
   }
 };

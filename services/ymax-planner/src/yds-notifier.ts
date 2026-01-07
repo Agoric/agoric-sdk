@@ -25,8 +25,11 @@ export type YdsNotifierPowers = {
  */
 export class YdsNotifier {
   #fetch: typeof fetch;
+
   #log: (...args: unknown[]) => void;
+
   #config: Required<YdsNotifierConfig>;
+
   #http: KyInstance;
 
   constructor(io: YdsNotifierPowers, config: YdsNotifierConfig) {
