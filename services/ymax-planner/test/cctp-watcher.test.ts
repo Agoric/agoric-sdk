@@ -222,7 +222,7 @@ test('watchCCTPTransfer detects multiple transfers but only matches exact amount
 
   const result = await watchPromise;
   t.true(
-    result,
+    result.found,
     'Should detect the exact matching amount among multiple transfers',
   );
 });

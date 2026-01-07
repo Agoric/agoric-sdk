@@ -18,6 +18,7 @@ import { makeGasEstimator } from '../src/gas-estimation.ts';
 import type { HandlePendingTxOpts } from '../src/pending-tx-manager.ts';
 import { prepareAbortController } from '../src/support.ts';
 import { GMP_ABI } from '../src/axelarscan-utils.ts';
+import type { YdsNotifier } from '../src/yds-notifier.ts';
 
 const PENDING_TX_PATH_PREFIX = 'published.ymax1';
 
@@ -50,6 +51,9 @@ export const createMockEnginePowers = (): EnginePowers => ({
     kvStore: makeKVStoreFromMap(new Map()),
     makeAbortController,
     axelarApiUrl: mockAxelarApiAddress,
+    ydsNotifier: {
+      notifySettlement: async () => true,
+    } as unknown as YdsNotifier,
   },
   rpc: {} as any,
   spectrum: {} as any,
@@ -267,6 +271,9 @@ export const createMockPendingTxOpts = (
   fetch: global.fetch,
   marshaller: boardSlottingMarshaller(),
   signingSmartWalletKit: createMockSigningSmartWalletKit(),
+  ydsNotifier: {
+    notifySettlement: async () => true,
+  } as unknown as YdsNotifier,
   usdcAddresses: {
     'eip155:1': '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', // Ethereum
     'eip155:42161': '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8', // Arbitrum
