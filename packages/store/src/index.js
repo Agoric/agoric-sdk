@@ -77,4 +77,4 @@ export {
 export { makeLegacyMap } from './legacy/legacyMap.js';
 export { makeLegacyWeakMap } from './legacy/legacyWeakMap.js';
 // eslint-disable-next-line import/export
-export * from './types.js';
+export * from './types-index.js';
