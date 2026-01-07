@@ -499,6 +499,8 @@ export const createMockPendingTxOpts = (
   cosmosRest: {} as unknown as CosmosRestClient,
   cosmosRpc: {} as unknown as CosmosRPCClient,
   evmProviders: createMockEvmProviders(latestBlock, events),
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore some resolutions don't expect this on global
   fetch: global.fetch,
   marshaller: boardSlottingMarshaller(),
   signingSmartWalletKit: createMockSigningSmartWalletKit(),

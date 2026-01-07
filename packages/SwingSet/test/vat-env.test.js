@@ -6,8 +6,16 @@ import bundleSource from '@endo/bundle-source';
 import { initSwingStore } from '@agoric/swing-store';
 import { buildVatController } from '../src/index.js';
 
+/**
+ * @import {SwingSetConfig} from '../src/types-external.js';
+ */
+
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore some resolutions don't expect this on global
+const { harden, VatData } = global;
+
 test('harden from SES is in the test environment', t => {
-  harden();
+  harden({});
   t.pass();
 });
 
