@@ -86,9 +86,11 @@ export const diagnoseInfeasible = (
     if (!canReachSink) stranded.push({ node: s, supply: supplies[s] });
   }
 
-  const hubSet = new Set(nodes.filter(n => n.startsWith('@')));
+  const hubSet = new Set(nodes.filter(n => isInterChainAccountRef(n)));
   const hubEdges = edges
-    .filter(e => e.src.startsWith('@') && e.dest.startsWith('@'))
+    .filter(
+      e => isInterChainAccountRef(e.src) && isInterChainAccountRef(e.dest),
+    )
     .map(e => `${e.src}->${e.dest}`);
 
   const lines: string[] = [];
@@ -317,7 +319,9 @@ export const diagnoseNearMisses = (graph: FlowGraph) => {
   }
 
   const interHubEdges = graph.edges
-    .filter(e => e.src.startsWith('@') && e.dest.startsWith('@'))
+    .filter(
+      e => isInterChainAccountRef(e.src) && isInterChainAccountRef(e.dest),
+    )
     .map(e => `${e.src}->${e.dest}`);
 
   const missingPairs: Array<{
@@ -334,7 +338,7 @@ export const diagnoseNearMisses = (graph: FlowGraph) => {
       if (reachDir.has(t) && reachCap.has(t)) continue; // reachable
       // Try to see if a single inter-hub edge would unlock (only for hubs)
       let hint: string | undefined;
-      if (s.startsWith('@') && t.startsWith('@')) {
+      if (isInterChainAccountRef(s) && isInterChainAccountRef(t)) {
         // if t not in reach from s, propose s->t if not present
         const cand = `${s}->${t}`;
         if (!interHubEdges.includes(cand))
@@ -361,7 +365,7 @@ export const canonicalPathBetween = (
 ): string[] => {
   if (src === dest) return [src];
   const hubOf = (n: string) => {
-    if (n.startsWith('@')) return n;
+    if (isInterChainAccountRef(n)) return n;
     // Seats live on agoric
     if (n === '<Cash>' || n === '<Deposit>' || n === '+agoric')
       return '@agoric';
@@ -483,7 +487,7 @@ export const validateSolvedFlows = (
 
   // Check 3: Hub chains should end with 0 balance
   for (const hub of graph.nodes) {
-    if (!hub.startsWith('@')) continue;
+    if (!isInterChainAccountRef(hub)) continue;
     const finalBalance = balances.get(hub) || 0;
     if (finalBalance !== 0) {
       warnings.push(`Hub ${hub} has non-zero final balance: ${finalBalance}`);

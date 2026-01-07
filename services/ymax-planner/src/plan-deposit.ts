@@ -400,7 +400,7 @@ const computeWeightedTargets = (
   };
 };
 
-type PlannerContext = {
+export type PlannerContext = {
   currentBalances: Partial<Record<AssetPlaceRef, NatAmount>>;
   targetAllocation?: TargetAllocation;
   network: NetworkSpec;
@@ -414,9 +414,10 @@ type PlannerContext = {
  * Computes absolute targets, then plans the corresponding flow.
  */
 export const planDepositToAllocations = async (
-  details: PlannerContext & { amount: NatAmount },
+  details: PlannerContext & { amount: NatAmount; fromChain?: SupportedChain },
 ): Promise<FundsFlowPlan> => {
   const { amount, brand, currentBalances, targetAllocation } = details;
+  const { fromChain = 'agoric' } = details;
   if (!targetAllocation) return { flow: [] };
   const target = computeWeightedTargets(
     brand,
@@ -426,14 +427,18 @@ export const planDepositToAllocations = async (
   );
 
   // The deposit should be distributed.
-  const currentWithDeposit = { ...currentBalances, '<Deposit>': amount };
-  target['<Deposit>'] = AmountMath.make(brand, 0n);
+  const depositFrom =
+    // TODO(#12309): Remove the `<Deposit>` special case in favor of `+agoric`.
+    (fromChain === 'agoric' ? '<Deposit>' : `+${fromChain}`) as AssetPlaceRef;
+  const zeroAmount = AmountMath.make(brand, 0n);
+  const resolvedCurrent = { ...currentBalances, [depositFrom]: amount };
+  const resolvedTarget = { ...target, [depositFrom]: zeroAmount };
 
   const { network, feeBrand, gasEstimator } = details;
   const flowDetail = await planRebalanceFlow({
     network,
-    current: currentWithDeposit,
-    target,
+    current: resolvedCurrent,
+    target: resolvedTarget,
     brand,
     feeBrand,
     gasEstimator,
@@ -474,9 +479,10 @@ export const planRebalanceToAllocations = async (
  * Computes absolute targets, then plans the corresponding flow.
  */
 export const planWithdrawFromAllocations = async (
-  details: PlannerContext & { amount: NatAmount },
+  details: PlannerContext & { amount: NatAmount; toChain?: SupportedChain },
 ): Promise<FundsFlowPlan> => {
   const { amount, brand, currentBalances, targetAllocation } = details;
+  const { toChain = 'agoric' } = details;
   const target = computeWeightedTargets(
     brand,
     currentBalances,
@@ -484,14 +490,18 @@ export const planWithdrawFromAllocations = async (
     targetAllocation,
   );
 
-  const currentCash = currentBalances['<Cash>'] || AmountMath.make(brand, 0n);
-  target['<Cash>'] = AmountMath.add(currentCash, amount);
+  const withdrawTo =
+    // TODO(#12309): Remove the `<Cash>` special case in favor of `-agoric`.
+    (toChain === 'agoric' ? '<Cash>' : `-${toChain}`) as AssetPlaceRef;
+  const zeroAmount = AmountMath.make(brand, 0n);
+  const resolvedCurrent = { ...currentBalances, [withdrawTo]: zeroAmount };
+  const resolvedTarget = { ...target, [withdrawTo]: amount };
 
   const { network, feeBrand, gasEstimator } = details;
   const flowDetail = await planRebalanceFlow({
     network,
-    current: currentBalances,
-    target,
+    current: resolvedCurrent,
+    target: resolvedTarget,
     brand,
     feeBrand,
     gasEstimator,

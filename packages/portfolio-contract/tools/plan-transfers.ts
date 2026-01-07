@@ -6,6 +6,7 @@ import type {
   YieldProtocol,
   AxelarChain,
 } from '@agoric/portfolio-api/src/constants.js';
+import { isInterChainAccountRef } from '@agoric/portfolio-api/src/type-guards.js';
 import { throwRedacted as Fail } from '@endo/errors';
 import { objectMap } from '@endo/patterns';
 import type { MovementDesc } from '../src/type-guards-steps.ts';
@@ -167,7 +168,7 @@ export const makePortfolioSteps = async <
     if (
       a.src === '@noble' &&
       typeof a.dest === 'string' &&
-      a.dest.startsWith('@')
+      isInterChainAccountRef(a.dest)
     ) {
       const hub = a.dest; // e.g., '@Arbitrum'
       if (b.src === hub && typeof b.dest === 'string') {

@@ -23,6 +23,7 @@ import {
   planRebalanceToAllocations,
   planWithdrawFromAllocations,
 } from '../src/plan-deposit.ts';
+import type { PlannerContext } from '../src/plan-deposit.ts';
 import { SpectrumClient } from '../src/spectrum-client.ts';
 import { mockGasEstimator } from './mocks.ts';
 
@@ -30,6 +31,16 @@ const depositBrand = Far('mock brand') as Brand<'nat'>;
 const makeDeposit = value => AmountMath.make(depositBrand, value);
 
 const feeBrand = Far('fee brand (BLD)') as Brand<'nat'>;
+
+const plannerContext: Omit<
+  PlannerContext,
+  'currentBalances' | 'targetAllocation'
+> = {
+  brand: depositBrand,
+  network: TEST_NETWORK,
+  feeBrand,
+  gasEstimator: mockGasEstimator,
+};
 
 const powers = { fetch, setTimeout };
 
@@ -451,16 +462,10 @@ test('planRebalanceToAllocations emits an empty plan when already balanced', asy
     Aave_Arbitrum: 40n,
     Compound_Arbitrum: 20n,
   };
-  const currentBalances = objectMap(targetAllocation, v =>
-    makeDeposit(v * 200n),
-  );
   const plan = await planRebalanceToAllocations({
-    brand: depositBrand,
-    currentBalances,
+    ...plannerContext,
     targetAllocation,
-    network: TEST_NETWORK,
-    feeBrand,
-    gasEstimator: mockGasEstimator,
+    currentBalances: objectMap(targetAllocation, v => makeDeposit(v * 200n)),
   });
   t.deepEqual(plan, emptyPlan);
 });
@@ -478,125 +483,119 @@ test('planRebalanceToAllocations emits an empty plan when almost balanced', asyn
     Compound_Ethereum: 25_000_000n - ACCOUNT_DUST_EPSILON + 1n,
   };
   const plan = await planRebalanceToAllocations({
-    brand: depositBrand,
-    currentBalances: objectMap(currentBalanceValues, v => makeDeposit(v)),
+    ...plannerContext,
     targetAllocation,
-    network: TEST_NETWORK,
-    feeBrand,
-    gasEstimator: mockGasEstimator,
+    currentBalances: objectMap(currentBalanceValues, v => makeDeposit(v)),
   });
   t.deepEqual(plan, emptyPlan);
 });
 
 test('planRebalanceToAllocations moves funds when needed', async t => {
-  const targetAllocation = {
-    USDN: 40n,
-    USDNVault: 0n,
-    Aave_Arbitrum: 40n,
-    Compound_Arbitrum: 20n,
-  };
-  const currentBalances = { USDN: makeDeposit(1000n) };
   const plan = await planRebalanceToAllocations({
-    brand: depositBrand,
-    currentBalances,
-    targetAllocation,
-    network: TEST_NETWORK,
-    feeBrand,
-    gasEstimator: mockGasEstimator,
+    ...plannerContext,
+    targetAllocation: {
+      USDN: 40n,
+      USDNVault: 0n,
+      Aave_Arbitrum: 40n,
+      Compound_Arbitrum: 20n,
+    },
+    currentBalances: { USDN: makeDeposit(1000n) },
   });
   t.snapshot(plan);
 });
 
 test('planWithdrawFromAllocations withdraws and rebalances', async t => {
-  const targetAllocation = {
-    USDN: 40n,
-    Aave_Arbitrum: 40n,
-    Compound_Arbitrum: 20n,
-  };
-  const currentBalances = { USDN: makeDeposit(2000n) };
   const plan = await planWithdrawFromAllocations({
+    ...plannerContext,
+    targetAllocation: { USDN: 40n, Aave_Arbitrum: 40n, Compound_Arbitrum: 20n },
+    currentBalances: { USDN: makeDeposit(2000n) },
     amount: makeDeposit(1000n),
-    brand: depositBrand,
-    currentBalances,
-    targetAllocation,
-    network: TEST_NETWORK,
-    feeBrand,
-    gasEstimator: mockGasEstimator,
+  });
+  t.snapshot(plan);
+});
+
+test('planWithdrawFromAllocations can withdraw to an EVM account', async t => {
+  const plan = await planWithdrawFromAllocations({
+    ...plannerContext,
+    targetAllocation: { USDN: 40n, Aave_Arbitrum: 40n, Compound_Arbitrum: 20n },
+    currentBalances: { USDN: makeDeposit(2000n) },
+    amount: makeDeposit(1000n),
+    toChain: 'Ethereum',
   });
   t.snapshot(plan);
 });
 
 test('planWithdrawFromAllocations considers former allocation targets', async t => {
-  const currentBalances = {
-    Aave_Avalanche: makeDeposit(1000n),
-    Compound_Arbitrum: makeDeposit(1000n),
-  };
   const plan = await planWithdrawFromAllocations({
-    amount: makeDeposit(1200n),
-    brand: depositBrand,
-    currentBalances,
+    ...plannerContext,
     targetAllocation: { Compound_Arbitrum: 100n },
-    network: TEST_NETWORK,
-    feeBrand,
-    gasEstimator: mockGasEstimator,
+    currentBalances: {
+      Aave_Avalanche: makeDeposit(1000n),
+      Compound_Arbitrum: makeDeposit(1000n),
+    },
+    amount: makeDeposit(1200n),
   });
   t.snapshot(plan);
 });
 
 test('planWithdrawFromAllocations with no target preserves relative positions', async t => {
-  const currentBalances = {
-    '@Arbitrum': makeDeposit(200n),
-    USDN: makeDeposit(800n),
-    Aave_Arbitrum: makeDeposit(800n),
-    Compound_Arbitrum: makeDeposit(400n),
-  };
   const plan = await planWithdrawFromAllocations({
-    amount: makeDeposit(1200n),
-    brand: depositBrand,
-    currentBalances,
+    ...plannerContext,
     targetAllocation: {},
-    network: TEST_NETWORK,
-    feeBrand,
-    gasEstimator: mockGasEstimator,
+    currentBalances: {
+      '@Arbitrum': makeDeposit(200n),
+      USDN: makeDeposit(800n),
+      Aave_Arbitrum: makeDeposit(800n),
+      Compound_Arbitrum: makeDeposit(400n),
+    },
+    amount: makeDeposit(1200n),
   });
   t.snapshot(plan);
 });
 
 test('planWithdrawFromAllocations with no target and no positions preserves relative amounts', async t => {
-  const currentBalances = {
-    '@Arbitrum': makeDeposit(1000n),
-    '@noble': makeDeposit(1000n),
-  };
   const plan = await planWithdrawFromAllocations({
-    amount: makeDeposit(1000n),
-    brand: depositBrand,
-    currentBalances,
+    ...plannerContext,
     targetAllocation: {},
-    network: TEST_NETWORK,
-    feeBrand,
-    gasEstimator: mockGasEstimator,
+    currentBalances: {
+      '@Arbitrum': makeDeposit(1000n),
+      '@noble': makeDeposit(1000n),
+    },
+    amount: makeDeposit(1000n),
   });
   t.snapshot(plan);
 });
 
 test('planDepositToAllocations produces plan expected by contract', async t => {
-  const USDC = depositBrand;
-  const BLD = feeBrand;
   const amount = makeDeposit(1000n);
-
-  const network = PROD_NETWORK;
   const actual = await planDepositToAllocations({
-    amount,
-    brand: USDC,
-    currentBalances: {},
-    feeBrand: BLD,
-    gasEstimator: null as any,
-    network,
+    ...plannerContext,
     targetAllocation: { USDN: 1n },
+    currentBalances: {},
+    amount,
   });
 
   const expected = planUSDNDeposit(amount);
   t.deepEqual(actual, expected);
+});
+
+test('planDepositToAllocations can deposit from an EVM account', async t => {
+  const amount = makeDeposit(1000n);
+  const plan = await planDepositToAllocations({
+    ...plannerContext,
+    targetAllocation: { USDN: 1n },
+    currentBalances: {},
+    amount,
+    fromChain: 'Avalanche',
+  });
+
+  const expectedFlow = [
+    { amount, src: '+Avalanche', dest: '@Avalanche' },
+    { amount, src: '@Avalanche', dest: '@agoric' },
+    { amount, src: '@agoric', dest: '@noble' },
+    { amount, src: '@noble', dest: 'USDN' },
+  ];
+  arrayIsLike(t, plan?.flow, expectedFlow);
 });
 
 async function singleSourceRebalanceSteps(scale: number) {
@@ -613,13 +612,11 @@ async function singleSourceRebalanceSteps(scale: number) {
   };
 
   const plan = await planRebalanceToAllocations({
-    brand: depositBrand,
+    ...plannerContext,
     currentBalances,
     targetAllocation,
     // TODO: Refactor this test against a stable network dedicated to testing.
     network: PROD_NETWORK,
-    feeBrand,
-    gasEstimator: mockGasEstimator,
   });
   return plan;
 }
@@ -657,13 +654,11 @@ test('planRebalanceToAllocations regression - multiple sources', async t => {
   };
 
   const plan = await planRebalanceToAllocations({
-    brand: depositBrand,
+    ...plannerContext,
     currentBalances,
     targetAllocation,
     // TODO: Refactor this test against a stable network dedicated to testing.
     network: PROD_NETWORK,
-    feeBrand,
-    gasEstimator: mockGasEstimator,
   });
   t.snapshot(plan);
 });

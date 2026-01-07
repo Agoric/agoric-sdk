@@ -1,6 +1,7 @@
 import test from 'ava';
 import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
+import { isInterChainAccountRef } from '@agoric/portfolio-api/src/type-guards.js';
 
 import { gasEstimator } from '../mocks.js';
 import type { NetworkSpec } from '../../tools/network/network-spec.js';
@@ -57,7 +58,7 @@ test('makeGraphForFlow adds intra-chain edges and appends inter edges with seque
   const expectedIntra = leafCount * 2; // bidirectional
   t.true(graph.edges.length >= expectedIntra + net.links.length);
   const interEdges = graph.edges.filter(
-    e => e.src.startsWith('@') && e.dest.startsWith('@'),
+    e => isInterChainAccountRef(e.src) && isInterChainAccountRef(e.dest),
   );
   t.is(interEdges.length, net.links.length);
   // Edge ids for inter edges should be the last ones appended in order
@@ -115,7 +116,7 @@ test('planRebalanceFlow uses NetworkSpec (legacy links param ignored at type lev
   });
   // Ensure only the two provided inter edges (plus intra) exist, not link-derived ones
   const hubEdges = res.graph.edges.filter(
-    e => e.src.startsWith('@') && e.dest.startsWith('@'),
+    e => isInterChainAccountRef(e.src) && isInterChainAccountRef(e.dest),
   );
   t.is(hubEdges.length, 2);
   t.true(res.plan.flow.length > 0);

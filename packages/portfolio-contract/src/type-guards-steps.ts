@@ -33,6 +33,7 @@ const AssetPlaceRefShape = M.or(
 // XXX NEEDSTEST: check that all SupportedChains match; no `@`s etc.
 export const accountRefPattern = /^@(?<chain>\w+)$/;
 
+// XXX Possible to consolidate with {@link chainOf}?
 export const getChainNameOfPlaceRef = (
   ref: AssetPlaceRef,
 ): SupportedChain | undefined => {
