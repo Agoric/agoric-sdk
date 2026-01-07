@@ -14,16 +14,7 @@ import {
   getTxBlockLowerBound,
   setTxBlockLowerBound,
 } from '../kv-store.ts';
-import { findTxStatusFromAxelarscan } from '../axelarscan-utils.ts';
-import type { GmpWatcherResult, WatcherResult } from '../pending-tx-manager.ts';
 
-// Custom error code for aborted GMP watch
-export const WATCH_GMP_ABORTED = 'WATCH_GMP_ABORTED';
-
-// TODO: Remove once all contracts are upgraded to emit MulticallStatus
-const MULTICALL_EXECUTED_SIGNATURE = ethers.id(
-  'MulticallExecuted(string,(bool,bytes)[])',
-);
 const MULTICALL_STATUS_SIGNATURE = ethers.id(
   'MulticallStatus(string,bool,uint256)',
 );
@@ -37,20 +28,6 @@ type WatchGmp = {
   makeAbortController: MakeAbortController;
 };
 
-type AxelarScanOptions = {
-  fetch: typeof fetch;
-  axelarApiUrl: string;
-};
-
-/**
- * Watches for GMP transaction completion in live mode by listening to MulticallStatus
- * and MulticallExecuted events. On timeout, queries Axelarscan to detect failures.
- *
- * NOTE: This watcher has a different API than other watchers (watchCctpTransfer,
- * watchSmartWalletTx) because it tracks both success AND failure(via AxelarScan) states.
- * Other watchers only detect success events. The Axelarscan dependency has been unreliable
- * and this watcher will be refactored/removed in the future to align with other watchers.
- */
 export const watchGmp = ({
   provider,
   contractAddress,
@@ -59,14 +36,10 @@ export const watchGmp = ({
   log = () => {},
   setTimeout = globalThis.setTimeout,
   signal,
-  axelarApiUrl,
-  fetch,
-}: AxelarScanOptions &
-  WatchGmp &
-  WatcherTimeoutOptions): Promise<GmpWatcherResult> => {
-  return new Promise((resolve, reject) => {
+}: WatchGmp & WatcherTimeoutOptions): Promise<boolean> => {
+  return new Promise(resolve => {
     if (signal?.aborted) {
-      reject(WATCH_GMP_ABORTED);
+      resolve(false);
       return;
     }
 
@@ -74,10 +47,6 @@ export const watchGmp = ({
     const statusFilter = {
       address: contractAddress,
       topics: [MULTICALL_STATUS_SIGNATURE, expectedIdTopic],
-    };
-    const executedFilter = {
-      address: contractAddress,
-      topics: [MULTICALL_EXECUTED_SIGNATURE, expectedIdTopic],
     };
 
     log(
@@ -88,8 +57,8 @@ export const watchGmp = ({
     let timeoutId: NodeJS.Timeout;
     let listeners: Array<{ event: any; listener: any }> = [];
 
-    const finish = (result: GmpWatcherResult) => {
-      resolve(result);
+    const finish = (found: boolean) => {
+      resolve(found);
       if (timeoutId) clearTimeout(timeoutId);
       for (const { event, listener } of listeners) {
         void provider.off(event, listener);
@@ -98,9 +67,7 @@ export const watchGmp = ({
     };
 
     signal?.addEventListener('abort', () => {
-      // Explicitly reject before finishing to avoid resolving the promise
-      reject(WATCH_GMP_ABORTED);
-      finish({ found: false });
+      finish(false);
     });
 
     const listenForStatus = async (eventLog: Log) => {
@@ -112,52 +79,20 @@ export const watchGmp = ({
       if (eventLog.topics[1] === expectedIdTopic) {
         log(`✓ MulticallStatus matches txId: ${txId}`);
         executionFound = true;
-        finish({ found: true, txHash: eventLog.transactionHash });
+        finish(true);
       } else {
         log(`MulticallStatus txId mismatch for ${txId}`);
       }
     };
 
-    const listenForExecution = async (eventLog: Log) => {
-      log(
-        `MulticallExecuted detected: txId=${txId} contract=${contractAddress} tx=${eventLog.transactionHash}`,
-      );
-
-      // Check if this log matches our expected txId
-      if (eventLog.topics[1] === expectedIdTopic) {
-        log(`✓ MulticallExecuted matches txId: ${txId}`);
-        executionFound = true;
-        finish({ found: true, txHash: eventLog.transactionHash });
-      } else {
-        log(`MulticallExecuted txId mismatch for ${txId}`);
-      }
-    };
-
     void provider.on(statusFilter, listenForStatus);
-    void provider.on(executedFilter, listenForExecution);
     listeners.push({ event: statusFilter, listener: listenForStatus });
-    listeners.push({ event: executedFilter, listener: listenForExecution });
     timeoutId = setTimeout(async () => {
       await null;
       if (!executionFound) {
         log(
           `✗ No MulticallStatus or MulticallExecuted found for txId ${txId} within ${timeoutMs / 60000} minutes`,
         );
-        const { status, errorMessage } = await findTxStatusFromAxelarscan(
-          txId,
-          contractAddress,
-          {
-            axelarApiUrl,
-            fetch,
-          },
-        );
-
-        if (status === 'error') {
-          const rejectionReason =
-            errorMessage || 'failed to execute on destination chain';
-          log(`Error: ${rejectionReason}`);
-          finish({ found: false, rejectionReason });
-        }
       }
     }, timeoutMs);
   });
@@ -170,7 +105,6 @@ export const watchGmp = ({
 // for the former to maintain backwards compatibility and so have not pursued
 // such an approach.
 export const EVENTS = {
-  MULTICALL_EXECUTED: 'executed',
   MULTICALL_STATUS: 'status',
 };
 
@@ -197,16 +131,11 @@ export const lookBackGmp = async ({
     );
     const toBlock = await provider.getBlockNumber();
 
-    // We don't know whether resolution will take the form of "executed" or
-    // "status", so we look for both and track progress separately.
     const statusEventLowerBound =
       getTxBlockLowerBound(kvStore, txId, EVENTS.MULTICALL_STATUS) || fromBlock;
-    const executedEventLowerBound =
-      getTxBlockLowerBound(kvStore, txId, EVENTS.MULTICALL_EXECUTED) ||
-      fromBlock;
 
     log(
-      `Searching blocks ${statusEventLowerBound}/${executedEventLowerBound} → ${toBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
+      `Searching blocks ${statusEventLowerBound} → ${toBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
     );
     const expectedIdTopic = ethers.keccak256(ethers.toUtf8Bytes(txId));
     const isMatch = ev => ev.topics[1] === expectedIdTopic;
@@ -220,16 +149,8 @@ export const lookBackGmp = async ({
       topics: [MULTICALL_STATUS_SIGNATURE, expectedIdTopic],
     };
 
-    const executedFilter: Filter = {
-      address: contractAddress,
-      topics: [MULTICALL_EXECUTED_SIGNATURE, expectedIdTopic],
-    };
-
     const updateStatusEventLowerBound = (_from: number, to: number) =>
       setTxBlockLowerBound(kvStore, txId, to, EVENTS.MULTICALL_STATUS);
-
-    const updateExecutedEventLowerBound = (_from: number, to: number) =>
-      setTxBlockLowerBound(kvStore, txId, to, EVENTS.MULTICALL_EXECUTED);
 
     // Options shared by both scans (including an abort signal that is triggered
     // by a match from either).
@@ -246,32 +167,20 @@ export const lookBackGmp = async ({
       signal: sharedSignal,
     };
 
-    const matchingEvent = await Promise.race([
-      scanEvmLogsInChunks(
-        {
-          ...baseScanOpts,
-          baseFilter: statusFilter,
-          fromBlock: statusEventLowerBound,
-          onRejectedChunk: updateStatusEventLowerBound,
-        },
-        isMatch,
-      ),
-      scanEvmLogsInChunks(
-        {
-          ...baseScanOpts,
-          baseFilter: executedFilter,
-          fromBlock: executedEventLowerBound,
-          onRejectedChunk: updateExecutedEventLowerBound,
-        },
-        isMatch,
-      ),
-    ]);
+    const matchingEvent = await scanEvmLogsInChunks(
+      {
+        ...baseScanOpts,
+        baseFilter: statusFilter,
+        fromBlock: statusEventLowerBound,
+        onRejectedChunk: updateStatusEventLowerBound,
+      },
+      isMatch,
+    );
 
     abortScans();
 
     if (matchingEvent) {
       log(`Found matching event`);
-      deleteTxBlockLowerBound(kvStore, txId, EVENTS.MULTICALL_EXECUTED);
       deleteTxBlockLowerBound(kvStore, txId, EVENTS.MULTICALL_STATUS);
       return { found: true, txHash: matchingEvent.transactionHash };
     }

@@ -127,12 +127,7 @@ test('handlePendingTx aborts GMP watcher in live mode when signal is aborted', a
       timeoutMs: 5000,
       signal: abortController.signal,
     },
-  ).catch(err => {
-    // GMP watcher can throw WATCH_GMP_ABORTED when aborted, which is expected
-    if (err !== 'WATCH_GMP_ABORTED') {
-      throw err;
-    }
-  });
+  );
 
   setTimeout(() => {
     mockLog('[TEST] Aborting signal');
@@ -151,8 +146,8 @@ test('handlePendingTx aborts GMP watcher in live mode when signal is aborted', a
   t.is(resolveAttempts, 0, 'Transaction should not be resolved after abort');
   t.is(
     offCallCount,
-    2,
-    'Should remove both event listeners (MulticallStatus and MulticallExecuted)',
+    1,
+    'Should remove the event listener (MulticallStatus)',
   );
 });
 
@@ -328,12 +323,7 @@ test('handlePendingTx aborts GMP watcher in lookback mode when signal is aborted
       txTimestampMs,
       signal: abortController.signal,
     },
-  ).catch(err => {
-    // GMP watcher can throw WATCH_GMP_ABORTED when aborted, which is expected
-    if (err !== 'WATCH_GMP_ABORTED') {
-      throw err;
-    }
-  });
+  );
 
   setTimeout(() => {
     mockLog('[TEST] Aborting signal');
@@ -348,8 +338,7 @@ test('handlePendingTx aborts GMP watcher in lookback mode when signal is aborted
   t.deepEqual(logs, [
     `[${txId}] handling ${TxType.GMP} tx`,
     `[${txId}] Watching for MulticallStatus and MulticallExecuted events for txId: ${txId} at contract: ${contractAddress}`,
-    `[${txId}] Searching blocks ${fromBlock}/${fromBlock} → ${toBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
-    `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${fromBlock + 9}`,
+    `[${txId}] Searching blocks ${fromBlock} → ${toBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
     `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${fromBlock + 9}`,
     '[TEST] Aborting signal',
     `[${txId}] [LogScan] Aborted`,

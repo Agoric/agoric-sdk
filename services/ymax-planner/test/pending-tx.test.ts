@@ -551,10 +551,8 @@ test('resolves a 10 second old pending GMP transaction in lookback mode', async 
   t.deepEqual(logs, [
     `[${txId}] handling ${TxType.GMP} tx`,
     `[${txId}] Watching for MulticallStatus and MulticallExecuted events for txId: ${txId} at contract: ${contractAddress}`,
-    `[${txId}] Searching blocks ${fromBlock}/${fromBlock} → ${toBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
+    `[${txId}] Searching blocks ${fromBlock} → ${toBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
     `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,
-    `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,
-    `[${txId}] [LogScan] Match in tx=${event.transactionHash}`,
     `[${txId}] [LogScan] Match in tx=${event.transactionHash}`,
     `[${txId}] Found matching event`,
     `[${txId}] Lookback found transaction`,
@@ -727,7 +725,7 @@ test('GMP monitor does not resolve transaction twice when live mode completes be
     const filter = {
       address: contractAddress,
       topics: [
-        ethers.id('MulticallExecuted(string,(bool,bytes)[])'),
+        ethers.id('MulticallStatus(string,bool,uint256)'),
         expectedIdTopic,
       ],
     };
