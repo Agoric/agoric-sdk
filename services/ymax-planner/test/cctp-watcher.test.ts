@@ -226,3 +226,50 @@ test('watchCCTPTransfer detects multiple transfers but only matches exact amount
     'Should detect the exact matching amount among multiple transfers',
   );
 });
+
+test('watchCctpTransfer returns txHash when transfer is found', async t => {
+  const provider = createMockProvider();
+  const expectedAmount = 1_000_000n;
+  const kvStore = makeKVStoreFromMap(new Map());
+
+  const watchPromise = watchCctpTransfer({
+    usdcAddress,
+    provider,
+    toAddress,
+    expectedAmount,
+    timeoutMs: 2000,
+    kvStore,
+    txId: 'tx1',
+  });
+
+  // Emit a matching transfer event
+  const expectedTxHash = '0xabcdef123456789';
+  setTimeout(() => {
+    const mockLog = {
+      address: usdcAddress,
+      topics: [
+        id('Transfer(address,address,uint256)'),
+        '0x000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb92266',
+        zeroPadValue(toAddress.toLowerCase(), 32),
+      ],
+      data: encodeAmount(expectedAmount),
+      transactionHash: expectedTxHash,
+      blockNumber: 18500000,
+    };
+
+    const filter = {
+      topics: [
+        id('Transfer(address,address,uint256)'),
+        null,
+        zeroPadValue(toAddress.toLowerCase(), 32),
+      ],
+    };
+
+    (provider as any).emit(filter, mockLog);
+  }, 50);
+
+  const result = await watchPromise;
+
+  t.true(result.found, 'Transfer should be found');
+  t.is(result.txHash, expectedTxHash, 'Should return the correct transaction hash');
+});
