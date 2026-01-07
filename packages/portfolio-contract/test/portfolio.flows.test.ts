@@ -35,7 +35,7 @@ import {
   chainOfAccount,
 } from '@agoric/orchestration/src/utils/address.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
-import type { FundsFlowPlan } from '@agoric/portfolio-api';
+import type { AxelarChain, FundsFlowPlan } from '@agoric/portfolio-api';
 import {
   DEFAULT_FLOW_CONFIG,
   RebalanceStrategy,
@@ -58,6 +58,7 @@ import {
   executePlan as rawExecutePlan,
   makeErrorList,
   onAgoricTransfer,
+  openPortfolioFromEVM,
   openPortfolio as rawOpenPortfolio,
   provideCosmosAccount,
   rebalance as rawRebalance,
@@ -65,7 +66,10 @@ import {
   type OnTransferContext,
   type PortfolioInstanceContext,
 } from '../src/portfolio.flows.ts';
-import { provideEVMAccount } from '../src/pos-gmp.flows.ts';
+import {
+  provideEVMAccount,
+  provideEVMAccountWithPermit,
+} from '../src/pos-gmp.flows.ts';
 import {
   makeSwapLockMessages,
   makeUnlockSwapMessages,
@@ -83,7 +87,10 @@ import {
 } from '../src/type-guards-steps.ts';
 import { makeProposalShapes, type ProposalType } from '../src/type-guards.ts';
 import { makePortfolioSteps } from '../tools/plan-transfers.ts';
-import { decodeFunctionCall } from './abi-utils.ts';
+import {
+  decodeCreateAndDepositPayload,
+  decodeFunctionCall,
+} from './abi-utils.ts';
 import {
   axelarIdsMock,
   contractsMock,
@@ -95,6 +102,7 @@ import {
   makeIncomingVTransferEvent,
   makeStorageTools,
 } from './supports.ts';
+import type { CreateAndDepositPayload } from '../src/evm-facade.ts';
 
 const executePlan: typeof rawExecutePlan = (
   orch,
@@ -105,6 +113,7 @@ const executePlan: typeof rawExecutePlan = (
   flowDetail,
   startedFlow,
   config = DEFAULT_FLOW_CONFIG,
+  options,
 ) =>
   rawExecutePlan(
     orch,
@@ -115,6 +124,7 @@ const executePlan: typeof rawExecutePlan = (
     flowDetail,
     startedFlow,
     config,
+    options,
   );
 
 const openPortfolio: typeof rawOpenPortfolio = (
@@ -295,6 +305,7 @@ const mocks = (
           });
           const account = {
             makeProgressTracker() {
+              // XXX this call should be logged
               return makeProgressTracker();
             },
             getAddress() {
@@ -1846,6 +1857,45 @@ const silent: TraceLogger = Object.assign(() => {}, {
 /** turn boundaries in provideEVMAccount (except awaiting feeAccount and getChainInfo) */
 type EStep = 'predict' | 'send' | 'register' | 'txfr' | 'resolve';
 
+type ProvideEVMAccountFn = (
+  ...args: Parameters<typeof provideEVMAccount>
+) => ReturnType<typeof provideEVMAccount>;
+
+const provideEVMAccountWithPermitStub: ProvideEVMAccountFn = (
+  chainName,
+  chainInfo,
+  gmp,
+  lca,
+  ctx,
+  pk,
+  opts,
+) =>
+  provideEVMAccountWithPermit(
+    chainName,
+    chainInfo,
+    gmp,
+    lca,
+    ctx,
+    pk,
+    {
+      tokenOwner: '0x1111111111111111111111111111111111111111',
+      permit: {
+        permitted: {
+          token: '0x0000000000000000000000000000000000000001',
+          amount: 1n,
+        },
+        nonce: 1n,
+        deadline: 1n,
+        spender: '0x0000000000000000000000000000000000000002',
+      },
+      witness:
+        '0x0000000000000000000000000000000000000000000000000000000000000000',
+      witnessTypeString: 'OpenPortfolioWitness',
+      signature: '0x1234' as `0x${string}`,
+    },
+    opts,
+  );
+
 /**
  * make 2 attempts A, and B, to provideEVMAccount.
  * Give A a headStart and then pause it.
@@ -1854,9 +1904,13 @@ type EStep = 'predict' | 'send' | 'register' | 'txfr' | 'resolve';
  * Otherwise, B should succeed after recovering.
  */
 const makeAccountEVMRace = test.macro({
-  title: (providedTitle = '', _headStart: EStep, _errAt?: EStep) =>
-    `EVM makeAccount race: ${providedTitle}`,
-  async exec(t, headStart: EStep, errAt?: EStep) {
+  title: (
+    providedTitle = '',
+    _provide: ProvideEVMAccountFn,
+    _headStart: EStep,
+    _errAt?: EStep,
+  ) => `EVM makeAccount race: ${providedTitle}`,
+  async exec(t, provide: ProvideEVMAccountFn, headStart: EStep, errAt?: EStep) {
     const { orch, ctx, offer, txResolver } = mocks({});
 
     const pKit = await ctx.makePortfolioKit();
@@ -1868,15 +1922,7 @@ const makeAccountEVMRace = test.macro({
     const gmp = { chain: await orch.getChain('axelar'), fee: 123n };
 
     const attempt = async () => {
-      return provideEVMAccount(
-        chainName,
-        chainInfo,
-        gmp,
-        lca,
-        ctx,
-        pKit,
-        undefined,
-      );
+      return provide(chainName, chainInfo, gmp, lca, ctx, pKit, undefined);
     };
 
     const { log, kinks } = offer;
@@ -1995,14 +2041,104 @@ const makeAccountEVMRace = test.macro({
   },
 });
 
-test('A and B arrive together; A wins the race', makeAccountEVMRace, 'predict');
-test('A pays fee; B arrives', makeAccountEVMRace, 'send');
-test('A fails to pay fee; B arrives', makeAccountEVMRace, 'send', 'send');
-test('A registers txN; B arrives', makeAccountEVMRace, 'register');
-test('A transfers to axelar; B arrives', makeAccountEVMRace, 'txfr');
-test('A times out on axelar; B arrives', makeAccountEVMRace, 'txfr', 'txfr');
-test('A gets rejected txN; B arrives', makeAccountEVMRace, 'txfr', 'resolve');
-test('A finishes before attempt B starts', makeAccountEVMRace, 'resolve');
+test(
+  'A and B arrive together; A wins the race',
+  makeAccountEVMRace,
+  provideEVMAccount,
+  'predict',
+);
+test('A pays fee; B arrives', makeAccountEVMRace, provideEVMAccount, 'send');
+test(
+  'A fails to pay fee; B arrives',
+  makeAccountEVMRace,
+  provideEVMAccount,
+  'send',
+  'send',
+);
+test(
+  'A registers txN; B arrives',
+  makeAccountEVMRace,
+  provideEVMAccount,
+  'register',
+);
+test(
+  'A transfers to axelar; B arrives',
+  makeAccountEVMRace,
+  provideEVMAccount,
+  'txfr',
+);
+test(
+  'A times out on axelar; B arrives',
+  makeAccountEVMRace,
+  provideEVMAccount,
+  'txfr',
+  'txfr',
+);
+test(
+  'A gets rejected txN; B arrives',
+  makeAccountEVMRace,
+  provideEVMAccount,
+  'txfr',
+  'resolve',
+);
+test(
+  'A finishes before attempt B starts',
+  makeAccountEVMRace,
+  provideEVMAccount,
+  'resolve',
+);
+
+test(
+  'withPermit: A and B arrive together; A wins the race',
+  makeAccountEVMRace,
+  provideEVMAccountWithPermitStub,
+  'predict',
+);
+test(
+  'withPermit: A pays fee; B arrives',
+  makeAccountEVMRace,
+  provideEVMAccountWithPermitStub,
+  'send',
+);
+test(
+  'withPermit: A fails to pay fee; B arrives',
+  makeAccountEVMRace,
+  provideEVMAccountWithPermitStub,
+  'send',
+  'send',
+);
+test(
+  'withPermit: A registers txN; B arrives',
+  makeAccountEVMRace,
+  provideEVMAccountWithPermitStub,
+  'register',
+);
+test(
+  'withPermit: A transfers to axelar; B arrives',
+  makeAccountEVMRace,
+  provideEVMAccountWithPermitStub,
+  'txfr',
+);
+test(
+  'withPermit: A times out on axelar; B arrives',
+  makeAccountEVMRace,
+  provideEVMAccountWithPermitStub,
+  'txfr',
+  'txfr',
+);
+test(
+  'withPermit: A gets rejected txN; B arrives',
+  makeAccountEVMRace,
+  provideEVMAccountWithPermitStub,
+  'txfr',
+  'resolve',
+);
+test(
+  'withPermit: A finishes before attempt B starts',
+  makeAccountEVMRace,
+  provideEVMAccountWithPermitStub,
+  'resolve',
+);
 
 test('planner rejects plan and flow fails gracefully', async t => {
   const { orch, ctx, offer, storage } = mocks({});
@@ -2324,3 +2460,137 @@ test('withdraw from ERC4626 position', async t => {
 
   await documentStorageSchema(t, storage, docOpts);
 });
+
+// EVM wallet integration - openPortfolioFromEVM flow
+test('openPortfolioFromEVM with Permit2 provisions account and starts deposit', async t => {
+  const axelarPayload: CreateAndDepositPayload = {
+    lcaOwner: 'agoric1LCAAllocatedByContract',
+    permit: {
+      deadline: 1767836187n,
+      nonce: 8157700000047684n,
+      permitted: {
+        amount: 15000000n,
+        token: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238',
+      },
+      spender: '0x9f9684d7fa7318698a0030ca16ecc4a01944836b',
+    },
+    witness:
+      '0x144bf517346c511015ea51d9b8b110f63f33db71c2df0c6dd960bbe8a88bcc0c',
+    witnessTypeString:
+      'YmaxV1OpenPortfolio ymaxOpenPortfolio)Allocation(string instrument,uint256 portion)TokenPermissions(address token,uint256 amount)YmaxV1OpenPortfolio(Allocation[] allocations)',
+    signature:
+      '0x12d9b6dcdc0695a6675da118a1bf5cf5324c4c36dc7f5f89bc4b19500cac74113457129904ccf9b3ef457f611b897a155623b493b54a06fd0e27f32b415a4c6e1b',
+    tokenOwner: '0xa1702d6c89c6ea11c5667a14c0329be273d96d78',
+  } as const;
+
+  const amount = make(USDC, axelarPayload.permit.permitted.amount);
+  const targetAllocation = {
+    Aave_Avalanche: 6000n, // 60% in basis points
+    Aave_Base: 4000n, // 40% in basis points
+  };
+
+  const { orch, ctx, offer, cosmosId, storage } = mocks();
+  const { log, seat } = offer;
+  const kit = await ctx.makePortfolioKit();
+  const portfolioId = kit.reader.getPortfolioId();
+  const { getPortfolioStatus, getFlowHistory } = makeStorageTools(storage);
+  let flowNum: number | undefined;
+
+  const webUiDone = openPortfolioFromEVM(
+    orch,
+    ctx,
+    seat,
+    axelarPayload,
+    'Base',
+    targetAllocation,
+    kit,
+  );
+
+  const plannerP = (async () => {
+    const { flowsRunning = {} } = await getPortfolioStatus(portfolioId);
+    const [[flowId, detail]] = Object.entries(flowsRunning);
+    if (detail.type !== 'deposit') throw t.fail(detail.type);
+    flowNum = Number(flowId.replace('flow', ''));
+    const fee = make(BLD, 100n);
+    const fromChain = detail.fromChain as AxelarChain;
+    const steps: MovementDesc[] = [
+      { src: `+${fromChain}`, dest: `@${fromChain}`, amount, fee },
+    ];
+    kit.planner.resolveFlowPlan(flowNum, steps);
+  })();
+
+  const [webResult, plannerResult] = await Promise.all([
+    webUiDone,
+    plannerP,
+    offer.factoryPK.promise,
+  ]);
+  t.is(webResult, undefined);
+  t.is(plannerResult, undefined);
+
+  await eventLoopIteration();
+  const { flowsRunning = {} } = await getPortfolioStatus(portfolioId);
+  t.deepEqual(flowsRunning, {}, 'flow should be cleaned up after completion');
+  if (flowNum === undefined) {
+    throw new Error('flow number not captured');
+  }
+  const flowHistory = await getFlowHistory(portfolioId, flowNum);
+  t.is(flowHistory.at(-1)?.state, 'done');
+
+  t.log(log.map(msg => msg._method).join(', '));
+  const nobleId = await cosmosId('noble');
+  const axelarId = await cosmosId('axelar');
+  const setupCalls = [
+    { _method: 'monitorTransfers' },
+    { _method: 'transfer', address: { chainId: nobleId } },
+  ];
+  const gmpCalls = [
+    { _method: 'send' },
+    { _method: 'transfer', address: { chainId: axelarId } },
+  ];
+  t.like(log, [...setupCalls, ...gmpCalls, { _method: 'exit', _cap: 'seat' }]);
+  t.snapshot(log, 'call log');
+
+  const axelarTransfer = log.find(
+    (e: any) => e._method === 'transfer' && e.address?.chainId === axelarId,
+  );
+  const rawMemo = axelarTransfer?.opts?.memo;
+  t.truthy(rawMemo);
+  const decodedPayload = decodeCreateAndDepositPayload(rawMemo as string);
+  const lca = kit.reader.getLocalAccount();
+  t.is(decodedPayload.lcaOwner, lca.getAddress().value);
+  t.is(decodedPayload.tokenOwner.toLowerCase(), axelarPayload.tokenOwner);
+  t.is(
+    decodedPayload.permit.permitted.token,
+    axelarPayload.permit.permitted.token,
+  );
+  t.is(
+    decodedPayload.permit.permitted.amount,
+    axelarPayload.permit.permitted.amount,
+  );
+  t.is(decodedPayload.permit.nonce, axelarPayload.permit.nonce);
+  t.is(decodedPayload.permit.deadline, axelarPayload.permit.deadline);
+  t.is(decodedPayload.signature, axelarPayload.signature);
+
+  // TODO: Verify EVM account was provisioned via Factory.execute()
+  // TODO: Verify deposit flow was started with fromChain: 'base'
+});
+
+test.todo(
+  'openPortfolioFromEVM retries when sendCreateAndDepositCall/Factory.execute fails',
+);
+
+test.todo(
+  'openPortfolioFromEVM handles subsequent deposits without skipping +Base -> @Base',
+);
+
+test.todo(
+  'openPortfolioFromEVM rejects permit with unexpected token for fromChain',
+);
+
+test.todo('openPortfolioFromEVM rejects permit for wrong chainId');
+
+test.todo('openPortfolioFromEVM rejects permit with wrong spender');
+
+test.todo(
+  'openPortfolioFromEVM rejects permit with zero amount or past deadline',
+);

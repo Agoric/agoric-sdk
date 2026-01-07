@@ -191,6 +191,7 @@ export const preparePortfolioKit = (
       kit: PortfolioKitCycleBreaker,
       flowDetail: FlowDetail,
       startedFlow?: { stepsP: Vow<MovementDesc[]>; flowId: number },
+      options?: unknown,
     ) => Vow<unknown>;
     onAgoricTransfer: (
       event: VTransferIBCEvent,
@@ -608,6 +609,13 @@ export const preparePortfolioKit = (
           }
           this.facets.reporter.publishStatus();
         },
+      },
+      evmHandler: {
+        getReaderFacet() {
+          return this.facets.reader;
+        },
+        rebalance() {},
+        deposit() {},
       },
       rebalanceHandler: {
         async handle(seat: ZCFSeat, offerArgs: unknown) {
