@@ -1,7 +1,4 @@
-import {
-  test,
-  VatData,
-} from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import path from 'path';
 
@@ -14,6 +11,10 @@ import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const root = `${dirname}/../minimalMakeKindContract.js`;
+
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore some resolutions don't expect this on global
+const VatData = global.VatData;
 
 test('defineKind non-swingset', async t => {
   const bundle = await bundleSource(root);
