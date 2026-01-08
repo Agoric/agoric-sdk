@@ -63,12 +63,13 @@ export const createMockEnginePowers = (): EnginePowers => ({
   now: () => NaN,
   gasEstimator: {} as any,
   usdcTokensByChain: {},
-  erc4626Vaults: {},
+  vaults: {},
   chainNameToChainIdMap: chainNameToCaipChainId.testnet,
 });
 
-export const erc4626VaultsMock: Partial<Record<InstrumentId, `0x${string}`>> = {
+export const vaultsMock: Partial<Record<InstrumentId, `0x${string}`>> = {
   ERC4626_vaultU2_Ethereum: '0xbcc48e14f89f2bff20a7827148b466ae8f2fbc9b',
+  Beefy_re7_Avalanche: '0x3a9f073b5d6b5b3f7c1ce5e4f4f4f4f4f4f4f4f4',
 };
 
 const mockFetchForGasEstimate = async (_, options?: any) => {
@@ -175,12 +176,22 @@ export const createMockProvider = (
         return '0x00000000000000000000000000000000000000000000000000000000000003e8';
       }
 
-      // convertToAssets function selector: 0x07a28720
+      // convertToAssets function selector: 0x07a2d13a
       if (selector === '0x07a2d13a') {
         // Extract shares parameter from calldata (after selector + address padding)
         // For simplicity, return shares * 1.1 to simulate yield
         // This is a simplified mock - in reality would need proper ABI decoding
         return '0x0000000000000000000000000000000000000000000000000000000000000bb8'; // 3000n as mock
+      }
+
+      // totalSupply function selector: 0x18160ddd
+      if (selector === '0x18160ddd') {
+        return '0x0000000000000000000000000000000000000000000000000000000000002710'; // 10000n as mock
+      }
+
+      // balance() function selector: 0xb69ef8a8
+      if (selector === '0xb69ef8a8') {
+        return '0x000000000000000000000000000000000000000000000000000000000005f5e1'; // 390001n as mock
       }
 
       throw Error(`Unrecognized function selector in mock call: ${selector}`);
@@ -196,6 +207,7 @@ export const mockEvmCtx = {
     'eip155:1': createMockProvider(),
     'eip155:11155111': createMockProvider(),
     'eip155:42161': createMockProvider(),
+    'eip155:43113': createMockProvider(),
   },
   kvStore: makeKVStoreFromMap(new Map()),
   makeAbortController,

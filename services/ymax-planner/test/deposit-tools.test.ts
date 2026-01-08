@@ -23,7 +23,7 @@ import {
   planWithdrawFromAllocations,
 } from '../src/plan-deposit.ts';
 import { SpectrumClient } from '../src/spectrum-client.ts';
-import { erc4626VaultsMock, mockEvmCtx, mockGasEstimator } from './mocks.ts';
+import { vaultsMock, mockEvmCtx, mockGasEstimator } from './mocks.ts';
 import { chainNameToCaipChainId } from '../src/support.ts';
 
 const depositBrand = Far('mock brand') as Brand<'nat'>;
@@ -60,7 +60,7 @@ const handleDeposit = async (
     spectrumChainIds: {},
     spectrumPoolIds: {},
     usdcTokensByChain: {},
-    erc4626Vaults: {},
+    vaults: {},
     chainNameToChainIdMap: chainNameToCaipChainId.testnet,
     evmCtx: mockEvmCtx,
     ...powers,
@@ -133,7 +133,7 @@ test('getNonDustBalances filters balances at or below the dust epsilon', async t
     spectrumChainIds: {},
     spectrumPoolIds: {},
     usdcTokensByChain: {},
-    erc4626Vaults: {},
+    vaults: {},
     chainNameToChainIdMap: chainNameToCaipChainId.testnet,
     evmCtx: mockEvmCtx,
   });
@@ -172,7 +172,7 @@ test('getNonDustBalances retains noble balances above the dust epsilon', async t
     spectrumChainIds: {},
     spectrumPoolIds: {},
     usdcTokensByChain: {},
-    erc4626Vaults: {},
+    vaults: {},
     chainNameToChainIdMap: chainNameToCaipChainId.testnet,
     evmCtx: mockEvmCtx,
   });
@@ -703,11 +703,48 @@ test('getNonDustBalances works for erc4626 vaults', async t => {
     spectrumChainIds: {},
     spectrumPoolIds: {},
     usdcTokensByChain: {},
-    erc4626Vaults: erc4626VaultsMock,
+    vaults: vaultsMock,
     chainNameToChainIdMap: chainNameToCaipChainId.testnet,
     evmCtx: mockEvmCtx,
   });
 
   t.deepEqual(Object.keys(balances), ['ERC4626_vaultU2_Ethereum']);
   t.is(balances.ERC4626_vaultU2_Ethereum!.value, 3000n);
+});
+
+test('getNonDustBalances works for beefy vaults', async t => {
+  const status = {
+    accountIdByChain: {
+      Avalanche: 'eip155:43113:0xbcc48e14f89f2bff20a7827148b466ae8f2fbc9b',
+      agoric:
+        'cosmos:agoricdev-25:agoric1gwcndgrd72vuj56jsp5dw26wq4tnzylj79vx8tpq5yc93xcm26js6x3k38',
+      noble:
+        'cosmos:grand-1:noble1utnnvgvratte5ulr4w28fd464g3shjl0z87fue9mkrljnr0t8mlst7h8uq',
+    },
+    accountsPending: [],
+    depositAddress:
+      'agoric17h7u4j564tuh04pfnf0ptjcarnhrmuja9w4u6phzrncs35up3ltshqqd0r',
+    flowCount: 0,
+    nobleForwardingAddress: 'noble18ppsadxr545ll6xdxw4mfr9r9le6gwukewy30c',
+    policyVersion: 1,
+    positionKeys: ['Beefy_re7_Avalanche'],
+    rebalanceCount: 2,
+    targetAllocation: {
+      Beefy_re7_Avalanche: 100n,
+    },
+  } as StatusFor['portfolio'];
+
+  const balances = await getNonDustBalances(status, depositBrand, {
+    cosmosRest: {} as unknown as CosmosRestClient,
+    spectrum: {} as unknown as SpectrumClient,
+    spectrumChainIds: {},
+    spectrumPoolIds: {},
+    usdcTokensByChain: {},
+    vaults: vaultsMock,
+    chainNameToChainIdMap: chainNameToCaipChainId.testnet,
+    evmCtx: mockEvmCtx,
+  });
+
+  t.deepEqual(Object.keys(balances), ['Beefy_re7_Avalanche']);
+  t.is(balances.Beefy_re7_Avalanche!.value, 39023n);
 });

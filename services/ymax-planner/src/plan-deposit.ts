@@ -42,6 +42,7 @@ import { spectrumProtocols, UserInputError } from './support.ts';
 import { getOwn, lookupValueForKey } from './utils.js';
 import type { EvmChain, EvmContext } from './pending-tx-manager.ts';
 import { getERC4626VaultsBalances } from './erc4626-utils.ts';
+import { getBeefyVaultsBalances } from './beefy-utils.ts';
 
 const scale6 = (x: number) => {
   assert.typeof(x, 'number');
@@ -87,7 +88,7 @@ export type BalanceQueryPowers = {
   spectrumChainIds: Partial<Record<SupportedChain, string>>;
   spectrumPoolIds: Partial<Record<PoolKey, string>>;
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
-  erc4626Vaults: Partial<Record<PoolKey, `0x${string}`>>;
+  vaults: Partial<Record<PoolKey, `0x${string}`>>;
   evmCtx: Omit<EvmContext, 'cosmosRest' | 'signingSmartWalletKit' | 'fetch'>;
   chainNameToChainIdMap: Record<EvmChain, CaipChainId>;
 };
@@ -180,6 +181,12 @@ export type ERC4626VaultQuery = {
   address: string;
 };
 
+export type BeefyVaultQuery = {
+  place: PoolKey;
+  chainName: SupportedChain;
+  address: string;
+};
+
 export const getCurrentBalances = async (
   status: StatusFor['portfolio'],
   brand: Brand<'nat'>,
@@ -191,6 +198,7 @@ export const getCurrentBalances = async (
   const accountQueries = [] as AccountQueryDescriptor[];
   const positionQueries = [] as PositionQueryDescriptor[];
   const erc4626Queries = [] as PositionQueryDescriptor[];
+  const beefyQueries = [] as PositionQueryDescriptor[];
   const balances = new Map<AssetPlaceRef, NatAmount | undefined>();
   const errors = [] as Error[];
   for (const [chainName, accountId] of typedEntries(
@@ -228,6 +236,8 @@ export const getCurrentBalances = async (
 
       if (protocol === YieldProtocol.ERC4626) {
         erc4626Queries.push({ place, chainName, protocol, address });
+      } else if (protocol === YieldProtocol.Beefy) {
+        beefyQueries.push({ place, chainName, protocol, address });
       } else {
         positionQueries.push({ place, chainName, protocol, address });
       }
@@ -245,6 +255,25 @@ export const getCurrentBalances = async (
     );
     for (let i = 0; i < erc4626QueryResults.length; i += 1) {
       const result = erc4626QueryResults[i];
+      if (result.error) {
+        errors.push(Error(result.error));
+      }
+      if (result.balance === undefined) {
+        balances.set(result.place, undefined);
+      } else {
+        balances.set(result.place, AmountMath.make(brand, result.balance));
+      }
+    }
+  }
+
+  // Process any Beefy vault queries. These dont rely on Spectrum.
+  if (beefyQueries.length) {
+    const beefyQueryResults = await getBeefyVaultsBalances(
+      beefyQueries,
+      powers,
+    );
+    for (let i = 0; i < beefyQueryResults.length; i += 1) {
+      const result = beefyQueryResults[i];
       if (result.error) {
         errors.push(Error(result.error));
       }

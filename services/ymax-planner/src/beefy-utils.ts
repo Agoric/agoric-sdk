@@ -1,10 +1,11 @@
 import type { PoolKey } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import { Contract } from 'ethers';
+import type { CaipChainId } from '@agoric/orchestration';
 import { getOwn } from './utils.ts';
-import type { BalanceQueryPowers, ERC4626VaultQuery } from './plan-deposit.ts';
+import type { BalanceQueryPowers, BeefyVaultQuery } from './plan-deposit.ts';
 
-// Minimal ABI for ERC4626 vault interactions
-const ERC4626_MINIMAL_ABI = [
+// Minimal ABI for Beefy vault interactions
+const BEEFY_VAULT_MINIMAL_ABI = [
   {
     name: 'balanceOf',
     type: 'function',
@@ -13,28 +14,35 @@ const ERC4626_MINIMAL_ABI = [
     stateMutability: 'view',
   },
   {
-    name: 'convertToAssets',
+    name: 'totalSupply',
     type: 'function',
-    inputs: [{ name: 'shares', type: 'uint256' }],
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    name: 'balance',
+    type: 'function',
+    inputs: [],
     outputs: [{ name: '', type: 'uint256' }],
     stateMutability: 'view',
   },
 ] as const;
 
-type ERC4626BalanceResult = {
+type BeefyBalanceResult = {
   place: PoolKey;
   balance: bigint | undefined;
   error?: string;
 };
 
 /**
- * Fetch ERC4626 vault underlying asset balance using ethers provider.
- * Queries the vault token balance, then converts it to underlying assets using convertToAssets.
+ * Fetch Beefy vault underlying asset balance using ethers provider.
+ * Queries the vault token balance, then calculates underlying assets using totalSupply and vault balance.
  */
-export const getERC4626VaultBalance = async (
+export const getBeefyVaultBalance = async (
   vaultAddress: string,
   userAddress: string,
-  chainId: string,
+  chainId: CaipChainId,
   evmProviders: NonNullable<BalanceQueryPowers['evmCtx']>['evmProviders'],
 ): Promise<bigint> => {
   await null;
@@ -43,37 +51,44 @@ export const getERC4626VaultBalance = async (
     throw Error(`No provider found for chain: ${chainId}`);
   }
 
-  // Create contract instance with minimal ABI
-  const vault = new Contract(vaultAddress, ERC4626_MINIMAL_ABI, provider);
+  const vault = new Contract(vaultAddress, BEEFY_VAULT_MINIMAL_ABI, provider);
 
   try {
-    // Step 1: Get vault token balance
     const vaultTokenBalance: bigint = await vault.balanceOf(userAddress);
 
-    // If balance is 0, return 0 immediately
     if (vaultTokenBalance === 0n) {
       return 0n;
     }
 
-    // Step 2: Convert vault tokens to underlying assets
-    const underlyingAssetBalance: bigint =
-      await vault.convertToAssets(vaultTokenBalance);
+    const totalSupply: bigint = await vault.totalSupply();
+    if (totalSupply === 0n) {
+      throw Error('Vault has zero total supply');
+    }
+
+    const vaultUnderlyingBalance: bigint = await vault.balance();
+
+    const underlyingAssetBalance =
+      (vaultTokenBalance * vaultUnderlyingBalance -
+        vaultUnderlyingBalance +
+        1n) /
+      totalSupply;
+    //   (vaultTokenBalance * vaultUnderlyingBalance) / totalSupply;
 
     return underlyingAssetBalance;
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);
-    throw Error(`Failed to fetch ERC4626 vault balance: ${errorMsg}`);
+    throw Error(`Failed to fetch Beefy vault balance: ${errorMsg}`);
   }
 };
 
 /**
- * Fetch ERC4626 vault balances using ethers provider.
+ * Fetch Beefy vault balances using ethers provider.
  * Similar interface to spectrumPools.getBalances for consistency.
  */
-export const getERC4626VaultsBalances = async (
-  queries: ERC4626VaultQuery[],
+export const getBeefyVaultsBalances = async (
+  queries: BeefyVaultQuery[],
   powers: BalanceQueryPowers,
-): Promise<ERC4626BalanceResult[]> => {
+): Promise<BeefyBalanceResult[]> => {
   const { vaults, evmCtx } = powers;
 
   if (!vaults) {
@@ -87,7 +102,7 @@ export const getERC4626VaultsBalances = async (
 
   if (!evmCtx || !evmCtx.evmProviders) {
     const err =
-      'EVM context with providers is required for ERC4626 vault queries';
+      'EVM context with providers is required for Beefy vault queries';
     return queries.map(query => ({
       place: query.place,
       balance: undefined,
@@ -96,17 +111,17 @@ export const getERC4626VaultsBalances = async (
   }
 
   return Promise.all(
-    queries.map(async (query): Promise<ERC4626BalanceResult> => {
+    queries.map(async (query): Promise<BeefyBalanceResult> => {
       await null;
       const { place, chainName, address } = query;
       try {
         const vaultAddress = getOwn(vaults, place);
         if (!vaultAddress) {
-          const err = `No vault configuration for ERC4626 instrument: ${place}`;
+          const err = `No vault configuration for Beefy instrument: ${place}`;
           return { place, balance: undefined, error: err };
         }
 
-        const balance = await getERC4626VaultBalance(
+        const balance = await getBeefyVaultBalance(
           vaultAddress,
           address,
           powers.chainNameToChainIdMap[chainName],
@@ -119,7 +134,7 @@ export const getERC4626VaultsBalances = async (
         return {
           place,
           balance: undefined,
-          error: `Could not get ERC4626 balance: ${errorMsg}`,
+          error: `Could not get Beefy balance: ${errorMsg}`,
         };
       }
     }),
