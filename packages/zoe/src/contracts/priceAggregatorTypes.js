@@ -9,6 +9,7 @@
 
 /**
  * @import {PriceAggregatorContract} from './priceAggregator.js';
+ * @import {Invitation} from '../types-index.js';
  */
 
 /**

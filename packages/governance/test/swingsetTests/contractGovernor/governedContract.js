@@ -5,6 +5,7 @@ import { CONTRACT_ELECTORATE } from '../../../src/contractGovernance/governParam
 
 /**
  * @import {GovernanceTerms} from '../../../src/types.js';
+ * @import {Invitation} from '@agoric/zoe';
  */
 
 const MALLEABLE_NUMBER = 'MalleableNumber';
