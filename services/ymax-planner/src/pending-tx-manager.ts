@@ -259,8 +259,8 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
       // Attach handler to abort lookback if live mode completes first with
       // a definitive result. This handler does NOT resolve the transaction -
       // resolution happens once at the end to prevent duplicate resolutions.
-      void liveResultP.then(found => {
-        if (found) {
+      void liveResultP.then(result => {
+        if (result.found) {
           const reason = `${logPrefix} Live mode completed`;
           log(reason);
           abortController.abort(reason);
@@ -305,7 +305,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
     await resolvePendingTx({
       signingSmartWalletKit: ctx.signingSmartWalletKit,
       txId,
-      status: transferResult ? TxStatus.SUCCESS : TxStatus.FAILED,
+      status: transferResult.found ? TxStatus.SUCCESS : TxStatus.FAILED,
     });
 
     if (transferResult?.txHash) {
