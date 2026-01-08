@@ -19,6 +19,7 @@ import { isAbandonedError } from '@agoric/internal/src/upgrade-api.js';
 /**
  * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {Instance} from '@agoric/zoe';
  */
 
 const USAGE = `Usage: agoric run /path/to/terminate-governed-instance.js \\
@@ -91,9 +92,10 @@ export const terminateGoverned = async (
       const targetData = [boardID, instanceKitLabel];
       const logLabel = q(targetData);
       const trace = makeTracer(`terminate-governed-instance ${logLabel}`, true);
-      const contractInstanceHandle = await E(board).getValue(boardID);
+      const contractInstanceHandle = /** @type {Instance<any>} */ (
+        await E(board).getValue(boardID)
+      );
       const instanceKit = await E(governedContractKits).get(
-        // @ts-expect-error TS2345 Property '[tag]' is missing
         contractInstanceHandle,
       );
       trace('alleged governed contract instance kit', instanceKit);
