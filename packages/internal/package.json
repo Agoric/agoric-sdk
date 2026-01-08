@@ -58,8 +58,7 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "files": [
-    "src",
-    "exported.js"
+    "src"
   ],
   "publishConfig": {
     "access": "public"
