@@ -301,11 +301,6 @@ export {};
  */
 
 /**
- * @callback GetOpenQuestions
- * @returns {Promise<Handle<'Question'>[]>}
- */
-
-/**
  * @callback GetQuestion
  * @param {Handle<'Question'>} h
  * @returns {Promise<Question>}
@@ -314,7 +309,7 @@ export {};
 /**
  * @typedef {object} ElectoratePublic
  * @property {() => Subscriber<QuestionDetails>} getQuestionSubscriber
- * @property {GetOpenQuestions} getOpenQuestions,
+ * @property {() => Promise<Handle<'Question'>[]>} getOpenQuestions
  * @property {() => Instance} getInstance
  * @property {GetQuestion} getQuestion
  */
