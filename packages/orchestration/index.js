@@ -1,4 +1,3 @@
-/// <reference types="@agoric/internal/exported.js" />
 /// <reference types="@agoric/vats/src/core/types-ambient.js" />
 
 // eslint-disable-next-line import/export
