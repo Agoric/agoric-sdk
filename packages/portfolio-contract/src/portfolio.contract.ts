@@ -49,6 +49,7 @@ import { E } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
+import { prepareEVMWalletHandlerKit } from './evm-wallet-handler.ts';
 import { preparePlanner } from './planner.exo.ts';
 import { preparePortfolioKit, type PortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
@@ -402,6 +403,7 @@ export const contract = async (
   });
 
   const portfolios = zone.mapStore<number, PortfolioKit>('portfolios');
+  const getPortfolio = (id: number) => portfolios.get(id);
 
   /**
    * Generate sequential portfolio IDs while keeping the portfolios collection private.
@@ -506,18 +508,24 @@ export const contract = async (
     },
   } satisfies Record<PortfolioPublicInvitationMaker, any> & ThisType<any>);
 
-  const makeResolverInvitation = () => {
-    trace('makeResolverInvitation');
-
-    const resolverHandler = (seat: ZCFSeat) => {
-      seat.exit();
-      return harden({ invitationMakers: makeResolverInvitationMakers });
+  const prepareResultOnlyInvitation = <R>(
+    description: string,
+    makeResult: () => R,
+  ): (() => Promise<Invitation<R>>) => {
+    const makeResultOnlyInvitation = () => {
+      trace('makeResultOnlyInvitation', description);
+      return zcf.makeInvitation((seat: ZCFSeat) => {
+        seat.exit();
+        return makeResult();
+      }, description);
     };
-
-    return zcf.makeInvitation(resolverHandler, 'resolver', undefined);
+    return makeResultOnlyInvitation;
   };
 
-  const getPortfolio = (id: number) => portfolios.get(id);
+  const makeResolverInvitation = prepareResultOnlyInvitation('resolver', () =>
+    harden({ invitationMakers: makeResolverInvitationMakers }),
+  );
+
   const makePlanner = preparePlanner(zone.subZone('planner'), {
     zcf,
     rebalance,
@@ -526,11 +534,22 @@ export const contract = async (
     vowTools,
   });
 
-  const makePlannerInvitation = () =>
-    zcf.makeInvitation(seat => {
-      seat.exit();
-      return makePlanner();
-    }, 'planner');
+  const makePlannerInvitation = prepareResultOnlyInvitation('planner', () =>
+    makePlanner(),
+  );
+
+  const { makeEVMWalletMessageHandler } = prepareEVMWalletHandlerKit(
+    zone.subZone('evmWalletHandler'),
+    {
+      storageNode: E(storageNode).makeChildNode('evmWallets'),
+      vowTools,
+    },
+  );
+
+  const makeEVMWalletHandlerInvitation = prepareResultOnlyInvitation(
+    'evmWalletHandler',
+    () => makeEVMWalletMessageHandler(),
+  );
 
   const creatorFacet = zone.exo(
     'PortfolioAdmin',
@@ -542,6 +561,11 @@ export const contract = async (
       ).returns(),
       makePlannerInvitation: M.callWhen().returns(InvitationShape),
       deliverPlannerInvitation: M.callWhen(
+        M.string(),
+        M.remotable('Instance'),
+      ).returns(),
+      makeEVMWalletHandlerInvitation: M.callWhen().returns(InvitationShape),
+      deliverEVMWalletHandlerInvitation: M.callWhen(
         M.string(),
         M.remotable('Instance'),
       ).returns(),
@@ -587,6 +611,25 @@ export const contract = async (
         trace('made planner invitation', invitation);
         await E(pfP).deliverPayment(address, invitation);
         trace('delivered planner invitation');
+      },
+      makeEVMWalletHandlerInvitation() {
+        return makeEVMWalletHandlerInvitation();
+      },
+      /**
+       * @param address - Agoric address where to deliver the invitation
+       * @param instancePS - Postal service instance for delivery
+       */
+      async deliverEVMWalletHandlerInvitation(
+        address: string,
+        instancePS: Instance<() => { publicFacet: PostalServiceI }>,
+      ) {
+        trace('deliverEVMWalletHandlerInvitation');
+        const zoe = zcf.getZoeService();
+        const pfP = E(zoe).getPublicFacet(instancePS);
+        const invitation = await makeEVMWalletHandlerInvitation();
+        trace('made EVM wallet handler invitation', invitation);
+        await E(pfP).deliverPayment(address, invitation);
+        trace('delivered EVM wallet handler invitation');
       },
       /**
        * Withdraw from contractAccount; for example, before terminating the contract
