@@ -1,5 +1,4 @@
 // @jessie-check
-/// <reference types="@agoric/governance/exported.js" />
 /// <reference types="@agoric/zoe/exported.js" />
 
 // The vaultFactory owns a number of VaultManagers and a mint for Minted.
@@ -36,10 +35,10 @@ import { provideDirector } from './vaultDirector.js';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  * @import {VaultDirectorParams} from './params.js';
  * @import {TimerService} from '@agoric/time';
- * @import {start as auctioneerStart} from '../auction/auctioneer.js';
  * @import {AssetReservePublicFacet} from '../reserve/assetReserve.js';
  * @import {VaultManagerParamOverrides} from './params.js';
  * @import {Baggage} from '@agoric/swingset-liveslots';
+ * @import {GovernanceTerms} from '@agoric/governance/src/types.js';
  */
 
 const trace = makeTracer('VF', true);
