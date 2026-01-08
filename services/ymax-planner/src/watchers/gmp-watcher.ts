@@ -125,8 +125,8 @@ const fetchReceiptWithRetry = async (
   let receipt = await provider.getTransactionReceipt(txHash);
   if (!receipt) {
     log(`Receipt not yet available for txHash=${txHash}, retrying...`);
-    for (let i = 0; i < maxRetries && !receipt; i++) {
-      const delay = Math.min(100 * Math.pow(2, i), 3000); // Max 3s delay
+    for (let i = 0; i < maxRetries && !receipt; i += 1) {
+      const delay = Math.min(100 * 2 ** i, 3000); // Max 3s delay
       await new Promise(resolve => setTimeout(resolve, delay));
       receipt = await provider.getTransactionReceipt(txHash);
     }
@@ -153,7 +153,10 @@ const fetchReceiptWithRetry = async (
  * If sourceAddress matches the LCA, it's a legitimate execution; otherwise it's spurious.
  *
  * @param provider - The WebSocket provider
- * @param tx - Transaction object with to, from, and data fields
+ * @param tx - Transaction object
+ * @param tx.to - Transaction recipient address
+ * @param tx.from - Transaction sender address
+ * @param tx.data - Transaction calldata
  * @param blockNumber - Block number to simulate at
  * @returns Revert data or null if call succeeded
  */
@@ -162,6 +165,7 @@ const simulateTransaction = async (
   tx: { to: string | null; from: string; data: string },
   blockNumber: number,
 ): Promise<string | null> => {
+  await null;
   try {
     await provider.call({
       to: tx.to,
@@ -186,7 +190,7 @@ export const watchGmp = ({
   signal,
 }: WatchGmp & WatcherTimeoutOptions): Promise<WatcherResult> => {
   return new Promise((resolve, reject) => {
-    if (signal?.aborted) return resolve({ found: false });
+    if (signal?.aborted) return resolve({ settled: false });
 
     log(
       `Watching transaction status for txId: ${txId} at contract: ${contractAddress}`,
@@ -222,7 +226,7 @@ export const watchGmp = ({
     };
 
     // Named so we can remove it
-    const onAbort = () => finish({ found: false });
+    const onAbort = () => finish({ settled: false });
 
     const cleanupListeners = () => {
       ws.off('message', messageHandler);
@@ -308,7 +312,7 @@ export const watchGmp = ({
           log(
             `✅ SUCCESS: txId=${txId} txHash=${txHash} block=${receipt.blockNumber}`,
           );
-          return finish({ found: true, txHash });
+          return finish({ settled: true, txHash });
         }
 
         if (receipt.status === 0) {
@@ -357,7 +361,7 @@ export const watchGmp = ({
             log(
               `❌ REVERTED: txId=${txId} txHash=${txHash} block=${receipt.blockNumber} (ContractCallFailed - user operation failed)`,
             );
-            return finish({ found: false, txHash });
+            return finish({ settled: true, txHash });
           } else {
             // Different revert reason - likely spurious execution attempt
             // Log for observability but continue watching for the legitimate execution
@@ -493,13 +497,13 @@ export const lookBackGmp = async ({
     if (matchingEvent) {
       log(`Found matching event`);
       deleteTxBlockLowerBound(kvStore, txId, EVENTS.MULTICALL_STATUS);
-      return { found: true, txHash: matchingEvent.transactionHash };
+      return { settled: true, txHash: matchingEvent.transactionHash };
     }
 
     log(`No matching MulticallStatus or MulticallExecuted found`);
-    return { found: false };
+    return { settled: false };
   } catch (error) {
     log(`Error:`, error);
-    return { found: false };
+    return { settled: false };
   }
 };

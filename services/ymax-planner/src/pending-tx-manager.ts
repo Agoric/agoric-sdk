@@ -38,7 +38,7 @@ import type { YdsNotifier } from './yds-notifier.ts';
 export type EvmChain = keyof typeof AxelarChain;
 
 export type WatcherResult = {
-  found: boolean;
+  settled: boolean;
   txHash?: string;
 };
 
@@ -148,7 +148,7 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
         txId,
       });
       void liveResultP.then(result => {
-        if (result.found) {
+        if (result.settled) {
           log(`${logPrefix} Live mode completed`);
           abortController.abort();
         }
@@ -169,7 +169,7 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
         txId,
       });
 
-      if (transferResult.found) {
+      if (transferResult.settled) {
         // Found in lookback, cancel live mode
         const reason = `${logPrefix} Lookback found transaction`;
         log(reason);
@@ -190,7 +190,7 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
     await resolvePendingTx({
       signingSmartWalletKit: ctx.signingSmartWalletKit,
       txId,
-      status: transferResult?.found ? TxStatus.SUCCESS : TxStatus.FAILED,
+      status: transferResult?.settled ? TxStatus.SUCCESS : TxStatus.FAILED,
     });
 
     if (transferResult?.txHash) {
@@ -260,7 +260,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
       // a definitive result. This handler does NOT resolve the transaction -
       // resolution happens once at the end to prevent duplicate resolutions.
       void liveResultP.then(result => {
-        if (result.found) {
+        if (result.settled) {
           const reason = `${logPrefix} Live mode completed`;
           log(reason);
           abortController.abort(reason);
@@ -283,7 +283,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
       });
 
       // Determine which result to use based on what completed successfully
-      if (lookBackResult.found) {
+      if (lookBackResult.settled) {
         // Found in lookback, cancel live mode
         transferResult = lookBackResult;
         const reason = `${logPrefix} Lookback found transaction`;
@@ -305,7 +305,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
     await resolvePendingTx({
       signingSmartWalletKit: ctx.signingSmartWalletKit,
       txId,
-      status: transferResult.found ? TxStatus.SUCCESS : TxStatus.FAILED,
+      status: transferResult.settled ? TxStatus.SUCCESS : TxStatus.FAILED,
     });
 
     if (transferResult?.txHash) {
@@ -374,7 +374,7 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
         txId,
       });
       void liveResultP.then(result => {
-        if (result.found) {
+        if (result.settled) {
           log(`${logPrefix} Live mode completed`);
           abortController.abort();
         }
@@ -394,7 +394,7 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
         signal: abortController.signal,
       });
 
-      if (walletResult.found) {
+      if (walletResult.settled) {
         log(`${logPrefix} Lookback found wallet creation`);
         abortController.abort();
       } else {
@@ -412,7 +412,7 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
     await resolvePendingTx({
       signingSmartWalletKit: ctx.signingSmartWalletKit,
       txId,
-      status: walletResult?.found ? TxStatus.SUCCESS : TxStatus.FAILED,
+      status: walletResult?.settled ? TxStatus.SUCCESS : TxStatus.FAILED,
     });
 
     if (walletResult?.txHash) {
