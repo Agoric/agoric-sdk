@@ -65,7 +65,7 @@ export const start = async (zcf, privateArgs) => {
   // In this fake, the ability to update params is not closely held.
   const limitedCreatorFacet = E(governedCF).getLimitedCreatorFacet();
 
-  /** @param {ParamChangesSpec<any>} paramSpec */
+  /** @param {ParamChangesSpec} paramSpec */
   const changeParams = paramSpec => {
     const paramMgr = E(paramMgrRetriever).get(paramSpec.paramPath);
     return E(paramMgr).updateParams(paramSpec.changes);
