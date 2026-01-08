@@ -4,11 +4,14 @@ import { Fail, q } from '@endo/errors';
  * @import {SnapStoreInternal} from './snapStore.js';
  * @import {TranscriptStoreInternal} from './transcriptStore.js';
  * @import {BundleStoreInternal} from './bundleStore.js';
- * @import { KVStore } from '@agoric/internal/src/kv-store.js';
- *
+ * @import {KVStore} from '@agoric/internal/src/kv-store.js';
+ * @import {Database} from 'better-sqlite3';
+ */
+
+/**
  * @typedef {{
  *    dirPath: string | null,
- *    db: ReturnType<import('better-sqlite3')>,
+ *    db: Database,
  *    kvStore: KVStore,
  *    transcriptStore: TranscriptStoreInternal,
  *    snapStore: SnapStoreInternal,
