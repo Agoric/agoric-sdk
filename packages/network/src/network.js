@@ -1,7 +1,5 @@
 // @ts-check
 
-/// <reference types="@agoric/store/exported.js" />
-
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
