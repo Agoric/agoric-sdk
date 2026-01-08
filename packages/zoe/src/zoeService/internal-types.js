@@ -15,7 +15,7 @@ export {};
  * @import {Purse} from '@agoric/ertp';
  * @import {MakeZoeMint} from '../internal-types.js';
  * @import {RegisterFeeMint} from '../internal-types.js';
- * @import {ZoeInstanceAdminMakeInvitation} from '../internal-types.js';
+ * @import {InstanceAdmin, IssuerRecords, ZoeInstanceAdminMakeInvitation} from '../internal-types.js';
  * @import {GetAssetKindByBrand} from '../internal-types.js';
  * @import {Pattern} from '@agoric/swingset-liveslots';
  * @import {BundleID} from '@agoric/swingset-vat/src/controller/bundle-handler.js';
