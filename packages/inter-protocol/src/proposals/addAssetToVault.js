@@ -31,7 +31,6 @@ export * from './startPSM.js';
 
 /**
  * @import {EconomyBootstrapPowers} from './econ-behaviors.js'
- * @import {FullSchedule} from '../auction/scheduler.js';
  * @import {TimerService} from '@agoric/time';
  * @import {Issuer, IssuerKit} from '@agoric/ertp';
  */
