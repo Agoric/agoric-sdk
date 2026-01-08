@@ -39,7 +39,7 @@ export const verifyPushedPrice = async (
     'price not pushed yet',
     {
       log: console.log,
-      setTimeout: global.setTimeout,
+      setTimeout: globalThis.setTimeout,
       ...pushPriceRetryOpts,
     },
   );
