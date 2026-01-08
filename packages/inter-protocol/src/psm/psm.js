@@ -46,7 +46,7 @@ import { makeNatAmountShape } from '../contractSupport.js';
  * @import {EReturn} from '@endo/far';
  * @import {TypedPattern, Remote} from '@agoric/internal';
  * @import {Baggage} from '@agoric/vat-data'
- * @import {ContractMeta, FeeMintAccess, Invitation} from '@agoric/zoe';
+ * @import {ContractMeta, FeeMintAccess, Invitation, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {Ratio} from '@agoric/ertp';
  * @import {GovernanceTerms} from '@agoric/governance/src/types.js';
  */

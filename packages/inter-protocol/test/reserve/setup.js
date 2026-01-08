@@ -19,6 +19,7 @@ import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.j
  * @import {AssetReserveLimitedCreatorFacet} from '../../src/reserve/assetReserve.js';
  * @import {AssetReservePublicFacet} from '../../src/reserve/assetReserve.js';
  * @import {ExecutionContext} from 'ava';
+ * @import {Instance} from '@agoric/zoe';
  */
 
 import * as reserveContractExports from '../../src/reserve/assetReserve.js'; // package relative

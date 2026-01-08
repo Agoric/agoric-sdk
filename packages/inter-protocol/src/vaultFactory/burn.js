@@ -3,6 +3,10 @@
 import { E } from '@endo/eventual-send';
 
 /**
+ * @import {ZCF, ZCFMint} from '@agoric/zoe';
+ */
+
+/**
  * @param {ZCF} zcf
  * @param {ZCFMint} zcfMint
  * @param {Amount} amount

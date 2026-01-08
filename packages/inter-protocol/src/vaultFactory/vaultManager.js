@@ -66,7 +66,7 @@ import { Phase, prepareVault } from './vault.js';
  * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  * @import {MapStore, SetStore} from '@agoric/store';
  * @import {EReturn} from '@endo/far';
- * @import {ZCFMint} from '@agoric/zoe';
+ * @import {ZCFMint, ZCFSeat} from '@agoric/zoe';
  * @import {PriceQuote} from '@agoric/zoe/tools/types.js';
  * @import {PromiseWatcher} from '@agoric/swingset-liveslots';
  * @import {RecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
