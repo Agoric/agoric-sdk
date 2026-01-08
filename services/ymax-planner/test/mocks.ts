@@ -11,6 +11,7 @@ import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import { makeKVStoreFromMap } from '@agoric/internal/src/kv-store.js';
 import type { Log } from 'ethers/providers';
 import { encodeAbiParameters } from 'viem';
+import type { InstrumentId } from '@agoric/portfolio-api';
 import type { CosmosRestClient } from '../src/cosmos-rest-client.ts';
 import type { CosmosRPCClient } from '../src/cosmos-rpc.ts';
 import type { Powers as EnginePowers } from '../src/engine.ts';
@@ -85,6 +86,10 @@ export const createMockEnginePowers = (): EnginePowers => ({
   chainNameToChainIdMap: chainNameToCaipChainId.testnet,
 });
 
+export const erc4626VaultsMock: Partial<Record<InstrumentId, `0x${string}`>> = {
+  ERC4626_vaultU2_Ethereum: '0xbcc48e14f89f2bff20a7827148b466ae8f2fbc9b',
+};
+
 const mockFetchForGasEstimate = async (_, options?: any) => {
   return {
     ok: true,
@@ -94,17 +99,6 @@ const mockFetchForGasEstimate = async (_, options?: any) => {
 };
 
 const mockAxelarApiAddress = 'https://api.axelar.example/';
-
-export const mockEvmCtx = {
-  usdcAddresses: {},
-  evmProviders: {},
-  kvStore: makeKVStoreFromMap(new Map()),
-  makeAbortController,
-  axelarApiUrl: mockAxelarApiAddress,
-  ydsNotifier: {
-    notifySettlement: async () => true,
-  } as unknown as YdsNotifier,
-};
 
 const mockAxelarChainIdMap: Record<AxelarChain, string> = {
   Avalanche: 'Avalanche',
@@ -274,9 +268,54 @@ export const createMockProvider = (
     getTransactionReceipt: async (txHash: string) => {
       return mockReceipts.get(txHash) || null;
     },
+    call: async (transaction: any) => {
+      // Mock implementation for contract calls like balanceOf and convertToAssets
+      // For testing purposes, we return mock data
+      // balanceOf(address) returns 1000n (as uint256 encoded)
+      // convertToAssets(shares) returns shares * 1.1 (simulating some yield)
+      const { data } = transaction;
+
+      if (!data || data === '0x') {
+        return '0x0000000000000000000000000000000000000000000000000000000000000000';
+      }
+
+      // Parse function selector (first 4 bytes of data)
+      const selector = data.slice(0, 10); // '0x' + 8 hex chars
+
+      // balanceOf function selector: 0x70a08231
+      if (selector === '0x70a08231') {
+        // Return mock balance: 1000n encoded as uint256
+        return '0x00000000000000000000000000000000000000000000000000000000000003e8';
+      }
+
+      // convertToAssets function selector: 0x07a28720
+      if (selector === '0x07a2d13a') {
+        // Extract shares parameter from calldata (after selector + address padding)
+        // For simplicity, return shares * 1.1 to simulate yield
+        // This is a simplified mock - in reality would need proper ABI decoding
+        return '0x0000000000000000000000000000000000000000000000000000000000000bb8'; // 3000n as mock
+      }
+
+      throw Error(`Unrecognized function selector in mock call: ${selector}`);
+    },
   };
 
   return mockProvider as unknown as WebSocketProvider;
+};
+
+export const mockEvmCtx = {
+  usdcAddresses: {},
+  evmProviders: {
+    'eip155:1': createMockProvider(),
+    'eip155:11155111': createMockProvider(),
+    'eip155:42161': createMockProvider(),
+  },
+  kvStore: makeKVStoreFromMap(new Map()),
+  makeAbortController,
+  axelarApiUrl: mockAxelarApiAddress,
+  ydsNotifier: {
+    notifySettlement: async () => true,
+  } as unknown as YdsNotifier,
 };
 
 export const createMockSigningSmartWalletKit = (): SigningSmartWalletKit => {
