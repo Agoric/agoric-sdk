@@ -5,7 +5,7 @@ import { Fail } from '@endo/errors';
 
 /**
  * @import {Amount, Brand, Payment, Purse} from '@agoric/ertp';
- * @import {Proposal} from '@agoric/zoe';
+ * @import {AmountKeywordRecord, Instance, Proposal} from '@agoric/zoe';
  * @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js';
  * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
  * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';

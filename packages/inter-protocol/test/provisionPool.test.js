@@ -35,6 +35,7 @@ import {
  * @import {TestFn} from 'ava';
  * @import {WalletFactoryStartResult} from '@agoric/vats/src/core/startWalletFactory.js';
  * @import {start} from '../src/provisionPool.js';
+ * @import {Installation} from '@agoric/zoe';
  */
 
 const pathname = new URL(import.meta.url).pathname;

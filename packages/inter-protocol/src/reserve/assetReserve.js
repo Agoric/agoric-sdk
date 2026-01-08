@@ -14,7 +14,7 @@ import { prepareAssetReserveKit } from './assetReserveKit.js';
  * @import {Baggage} from '@agoric/vat-data'
  * @import {EReturn} from '@endo/far';
  * @import {ContractOf} from '@agoric/zoe/src/zoeService/utils.js';
- * @import {Allocation, ContractMeta, FeeMintAccess, Invitation} from '@agoric/zoe';
+ * @import {Allocation, ContractMeta, FeeMintAccess, Invitation, ZCF} from '@agoric/zoe';
  * @import {GovernanceTerms} from '@agoric/governance/src/types.js';
  * @import {GovernedCreatorFacet} from '@agoric/governance/src/types.js';
  * @import {GovernedPublicFacet} from '@agoric/governance/src/types.js';

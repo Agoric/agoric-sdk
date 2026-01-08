@@ -27,6 +27,7 @@ export const DEFAULT_CONTRACT_TERMS = {
  * @import {EconomyBootstrapPowers} from './econ-behaviors.js';
  * @import {ChainlinkConfig} from '@agoric/inter-protocol/src/price/fluxAggregatorKit.js';
  * @import {StartedInstanceKit} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {Installation, Instance} from '@agoric/zoe';
  */
 /** @import {FluxStartFn} from '@agoric/inter-protocol/src/price/fluxAggregatorContract.js'; */
 
