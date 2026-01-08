@@ -12,7 +12,7 @@ import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only
 import { Stake, Stable } from '@agoric/internal/src/tokens.js';
 
 /**
- * @import {FeeMintAccess, Installation} from '@agoric/zoe'
+ * @import {FeeMintAccess, Installation, ZoeService} from '@agoric/zoe'
  * @import {EconomyBootstrapPowers} from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
  */
 

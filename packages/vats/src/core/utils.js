@@ -330,6 +330,7 @@ export const makeMyAddressNameAdminKit = address => {
  * @import {NameAdmin} from '../types.js';
  * @import {NameHub} from '../types.js';
  * @import {MyAddressNameAdmin} from '../types.js';
+ * @import {FeeIssuerConfig} from '@agoric/zoe';
  */
 export const makeVatSpace = (
   svc,
