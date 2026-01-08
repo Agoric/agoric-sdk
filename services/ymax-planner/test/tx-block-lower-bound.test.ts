@@ -9,10 +9,7 @@ import type { AccountId, CaipChainId } from '@agoric/orchestration';
 import { getTxBlockLowerBound, setTxBlockLowerBound } from '../src/kv-store.ts';
 import { handlePendingTx } from '../src/pending-tx-manager.ts';
 import { EVENTS } from '../src/watchers/gmp-watcher.ts';
-import {
-  createMockGmpExecutionEvent,
-  createMockPendingTxOpts,
-} from './mocks.ts';
+import { createMockGmpStatusEvent, createMockPendingTxOpts } from './mocks.ts';
 
 /**
  * Sets up a test environment for testing transaction block lower bound functionality.
@@ -44,7 +41,7 @@ const setupEnvironment = ({
     destinationAddress,
   });
 
-  const event = createMockGmpExecutionEvent(txId, blockWithEvent);
+  const event = createMockGmpStatusEvent(txId, blockWithEvent);
   const opts = createMockPendingTxOpts(latestBlock, [event]);
   const mockProvider = opts.evmProviders[chainId];
 
@@ -149,7 +146,7 @@ test('begins searching from the lower bound block number stored in kv store', as
   const newLatestBlock = latestBlock + 1;
   t.deepEqual(logs, [
     `[${txId}] handling GMP tx`,
-    `[${txId}] Watching for MulticallStatus and MulticallExecuted events for txId: ${txId} at contract: ${contractAddress}`,
+    `[${txId}] Watching transaction status for txId: ${txId} at contract: ${contractAddress}`,
     `[${txId}] Searching blocks ${statusLowerBound} → ${newLatestBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
     `[${txId}] [LogScan] Searching chunk ${statusLowerBound} → ${statusFinalBlock}`,
     // Next chunk start one after where the previous chunk ended
