@@ -28,6 +28,7 @@ export const DEFAULT_CONTRACT_TERMS = {
  * @import {ChainlinkConfig} from '@agoric/inter-protocol/src/price/fluxAggregatorKit.js';
  * @import {StartedInstanceKit} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {Installation, Instance} from '@agoric/zoe';
+ * @import {Brand} from '@agoric/ertp';
  */
 /** @import {FluxStartFn} from '@agoric/inter-protocol/src/price/fluxAggregatorContract.js'; */
 

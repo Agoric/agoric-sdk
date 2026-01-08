@@ -4,6 +4,7 @@ import { atomicTransfer } from '@agoric/zoe/src/contractSupport/index.js';
 
 /**
  * @import {Invitation, ZCF, ZCFSeat} from '@agoric/zoe';
+ * @import {Brand} from '@agoric/ertp';
  */
 
 /**

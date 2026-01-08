@@ -1,6 +1,4 @@
 // @jessie-check
-/// <reference types="@agoric/ertp/exported.js" />
-
 // Make this a module
 export {};
 
@@ -9,7 +7,7 @@ export {};
  * @import {Pattern} from '@endo/patterns';
  * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
  * @import {Baggage} from '@agoric/vat-data';
- * @import {IssuerOptionsRecord, IssuerRecord} from '@agoric/ertp';
+ * @import {AdditionalDisplayInfo, Amount, AssetKind, Brand, Issuer, IssuerKit, IssuerOptionsRecord, IssuerRecord} from '@agoric/ertp';
  * @import {Subscriber} from '@agoric/notifier';
  * @import {AmountKeywordRecord, Handle, Instance, Installation, IssuerKeywordRecord, Keyword, ProposalRecord, ZCFSeat} from '@agoric/zoe';
  * @import {Allocation, PaymentPKeywordRecord, UserSeat, Completion, ZoeIssuerRecord, Invitation} from './types-index.js';

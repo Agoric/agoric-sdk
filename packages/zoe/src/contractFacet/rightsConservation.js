@@ -4,6 +4,8 @@ import { assert, Fail } from '@endo/errors';
 
 /**
  * @import {MapStore} from '@agoric/store';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {Brand} from '@agoric/ertp';
  */
 
 /**

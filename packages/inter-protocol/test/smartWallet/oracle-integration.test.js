@@ -34,6 +34,8 @@ import {
  * @import {ContinuingInvitationSpec} from '@agoric/smart-wallet/src/invitations.js';
  * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {start as CommitteeStart} from '@agoric/governance/src/committee.js';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {Brand} from '@agoric/ertp';
  */
 
 /**

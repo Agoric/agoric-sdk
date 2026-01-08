@@ -11,9 +11,11 @@ import { ZcfMintI } from './typeGuards.js';
 /**
  * @import {AmountKeywordRecord, UserSeat, ZCFMint, ZCFSeat, ZoeIssuerRecord} from '@agoric/zoe';
  * @import {Baggage} from '@agoric/vat-data';
+ * @import {AssetKind} from '@agoric/ertp';
  * @import {GetAssetKindByBrand} from '../internal-types.js';
  * @import {ZcfMintReallocator} from '../internal-types.js';
  * @import {ZoeMint} from '../internal-types.js';
+ * @import {Amount} from '@agoric/ertp';
  */
 
 /**

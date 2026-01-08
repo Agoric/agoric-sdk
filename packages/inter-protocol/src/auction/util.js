@@ -10,7 +10,7 @@ import { Far } from '@endo/marshal';
 /**
  * @import {Key, Pattern} from '@endo/patterns';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
- * @import {Ratio} from '@agoric/ertp';
+ * @import {Brand, Ratio} from '@agoric/ertp';
  */
 
 /**

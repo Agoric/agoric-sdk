@@ -12,6 +12,7 @@ import { E } from '@endo/far';
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  * @import {start as StartFn} from '@agoric/orchestration/src/examples/send-anywhere.contract.js';
  * @import {Instance} from '@agoric/zoe';
+ * @import {Issuer} from '@agoric/ertp';
  */
 
 const trace = makeTracer('StartSA', true);

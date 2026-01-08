@@ -16,7 +16,7 @@ import { M, getCopyBagEntries } from '@agoric/store';
 
 const trace = makeTracer('Game', true);
 
-/** @param {Amount<'copyBag'>} amt */
+/** @param {import('@agoric/ertp').Amount<'copyBag'>} amt */
 const totalPlaces = amt => {
   /** @type {[unknown, bigint][]} */
   const entries = getCopyBagEntries(amt.value); // XXX getCopyBagEntries returns any???
@@ -25,7 +25,7 @@ const totalPlaces = amt => {
 };
 
 /**
- * @param {ZCF<{ joinPrice: Amount }>} zcf
+ * @param {ZCF<{ joinPrice: import('@agoric/ertp').Amount }>} zcf
  */
 export const start = async zcf => {
   const { joinPrice } = zcf.getTerms();

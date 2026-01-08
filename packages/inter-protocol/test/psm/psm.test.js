@@ -46,6 +46,9 @@ import { anchorAssets, chainStorageEntries } from './psm-storage-fixture.js';
  * @import {Ratio} from '@agoric/ertp';
  * @import {PsmPublicFacet} from '../../src/psm/psm.js';
  * @import {ParamStateRecord} from '@agoric/governance/src/types.js';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {IssuerKit} from '@agoric/ertp';
+ * @import {Payment} from '@agoric/ertp';
  */
 
 /** @type {TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */

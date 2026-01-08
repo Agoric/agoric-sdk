@@ -16,6 +16,8 @@ import { ChainInfoShape, DenomDetailShape } from '../typeGuards.js';
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  * @import {ContractMeta} from '@agoric/zoe';
  * @import {ZCF} from '@agoric/zoe';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {NatValue} from '@agoric/ertp';
  */
 
 /** @type {ContractMeta<typeof start>} */

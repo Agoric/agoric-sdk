@@ -10,6 +10,7 @@ import {
 
 /**
  * @import {ZCF} from '@agoric/zoe';
+ * @import {Amount} from '@agoric/ertp';
  */
 
 /**

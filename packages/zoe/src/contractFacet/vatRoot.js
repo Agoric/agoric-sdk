@@ -19,6 +19,7 @@ import { makeZCFZygote } from './zcfZygote.js';
  * @import {VatPowers} from '@agoric/swingset-vat';
  * @import {BundleCap} from '@agoric/swingset-vat';
  * @import {StartZcf} from '../internal-types.js';
+ * @import {Issuer} from '@agoric/ertp';
  */
 
 /**

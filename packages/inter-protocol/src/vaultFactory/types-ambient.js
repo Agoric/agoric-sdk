@@ -7,15 +7,12 @@ export {};
 
 /**
  * @typedef {import('./vaultFactory.js').VaultFactoryContract['publicFacet']} VaultFactoryPublicFacet
- * @import {VaultNotification} from './vault.js'
- * @import {Vault} from './vault.js'
- * @import {VaultKit} from './vaultKit.js'
- * @import {VaultManager} from './vaultManager.js'
- * @import {CollateralManager} from './vaultManager.js'
- * @import {AssetReserveLimitedCreatorFacet} from '../reserve/assetReserve.js'
- * @import {AssetReservePublicFacet} from '../reserve/assetReserve.js'
+ */
+/**
+ * @import {VaultManager} from './vaultManager.js';
  * @import {Timestamp} from '@agoric/time'
  * @import {RelativeTime} from '@agoric/time'
+ * @import {Amount, Brand, Issuer, NatValue, Ratio} from '@agoric/ertp'
  * @import {Invitation, Keyword, TransferPart, ZCFSeat} from '@agoric/zoe'
  */
 
@@ -27,16 +24,16 @@ export {};
 
 /**
  * @typedef {object} VaultManagerParamValues
- * @property {import('@agoric/ertp').Ratio} liquidationMargin - margin below
+ * @property {Ratio} liquidationMargin - margin below
  *   which collateral will be liquidated to satisfy the debt.
- * @property {import('@agoric/ertp').Ratio} liquidationPenalty - penalty charged
+ * @property {Ratio} liquidationPenalty - penalty charged
  *   upon liquidation as proportion of debt
- * @property {import('@agoric/ertp').Ratio} interestRate - annual interest rate
+ * @property {Ratio} interestRate - annual interest rate
  *   charged on debt positions
- * @property {import('@agoric/ertp').Ratio} mintFee - The fee (in BasisPoints)
+ * @property {Ratio} mintFee - The fee (in BasisPoints)
  *   charged when creating or increasing a debt position.
  * @property {Amount<'nat'>} debtLimit
- * @property {import('@agoric/ertp').Ratio} [liquidationPadding] - vault must
+ * @property {Ratio} [liquidationPadding] - vault must
  *   maintain this in order to remove collateral or add debt
  */
 
@@ -77,10 +74,10 @@ export {};
 
 /**
  * @typedef {object} GetVaultParams
- * @property {() => import('@agoric/ertp').Ratio} getLiquidationMargin
- * @property {() => import('@agoric/ertp').Ratio} getMintFee
+ * @property {() => Ratio} getLiquidationMargin
+ * @property {() => Ratio} getMintFee
  * @property {() => Promise<import('@agoric/zoe/tools/types.js').PriceQuote>} getCollateralQuote
- * @property {() => import('@agoric/ertp').Ratio} getInterestRate - The annual
+ * @property {() => Ratio} getInterestRate - The annual
  *   interest rate on a debt position
  * @property {() => RelativeTime} getChargingPeriod - The period (in seconds) at
  *   which interest is charged to the debt position.
@@ -111,7 +108,7 @@ export {};
  * @property {() => Promise<
  *   Invitation<
  *     void,
- *     { debt: Amount<'nat'>; penaltyRate: import('@agoric/ertp').Ratio }
+ *     { debt: Amount<'nat'>; penaltyRate: Ratio }
  *   >
  * >} makeLiquidateInvitation
  */

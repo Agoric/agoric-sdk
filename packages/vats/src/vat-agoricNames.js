@@ -10,6 +10,9 @@ import { prepareNameHubKit } from './nameHub.js';
  * @import {Zone} from '@agoric/zone';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {NameAdmin} from './types.js';
+ * @import {DisplayInfo} from '@agoric/ertp';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 /** @param {Zone} zone */

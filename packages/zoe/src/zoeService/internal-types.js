@@ -12,7 +12,7 @@ export {};
  * @import {CreateVatResults} from '@agoric/swingset-vat';
  * @import {Installation, Instance, IssuerKeywordRecord, ProposalRecord, ZCF} from '@agoric/zoe';
  * @import {AnyTerms, BrandKeywordRecord, InvitationHandle} from '../types.ts';
- * @import {Purse} from '@agoric/ertp';
+ * @import {Brand, Issuer, IssuerKit, Purse} from '@agoric/ertp';
  * @import {MakeZoeMint} from '../internal-types.js';
  * @import {RegisterFeeMint} from '../internal-types.js';
  * @import {InstanceAdmin, IssuerRecords, ZoeInstanceAdminMakeInvitation} from '../internal-types.js';

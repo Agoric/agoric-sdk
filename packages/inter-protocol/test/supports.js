@@ -28,6 +28,7 @@ import { E } from '@endo/far';
  * @import {ExecutionContext} from 'ava';
  * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {Payment} from '@agoric/ertp';
  */
 
 export { makeMockChainStorageRoot };

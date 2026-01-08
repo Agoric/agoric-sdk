@@ -22,6 +22,7 @@ import { calculateInterest, makeDebtCalculator } from './updateDebt.js';
  * @import {DebtCalculatorConfig} from './types-ambient.js';
  * @import {LoanConfigWithBorrower} from './types-ambient.js';
  * @import {BorrowFacet} from './types-ambient.js';
+ * @import {Brand} from '@agoric/ertp';
  */
 
 /** @type {MakeBorrowInvitation} */

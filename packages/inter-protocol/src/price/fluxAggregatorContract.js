@@ -23,6 +23,8 @@ const trace = makeTracer('FluxAgg', false);
  * @import {QuoteKit} from './roundsManager.js';
  * @import {Invitation} from '@agoric/zoe';
  * @import {ContractMeta, ZCF} from '@agoric/zoe';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Amount} from '@agoric/ertp';
  */
 
 /** @type {ContractMeta} */

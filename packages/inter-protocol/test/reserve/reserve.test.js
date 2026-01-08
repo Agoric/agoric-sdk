@@ -13,6 +13,7 @@ import { setupReserveServices } from './setup.js';
  * @import {Macro} from 'ava';
  * @import {Assertions} from 'ava';
  * @import {FeeMintAccess, Invitation, ZoeService} from '@agoric/zoe';
+ * @import {NatValue} from '@agoric/ertp';
  */
 
 /**

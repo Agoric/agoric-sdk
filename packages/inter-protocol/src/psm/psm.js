@@ -49,6 +49,8 @@ import { makeNatAmountShape } from '../contractSupport.js';
  * @import {ContractMeta, FeeMintAccess, Invitation, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {Ratio} from '@agoric/ertp';
  * @import {GovernanceTerms} from '@agoric/governance/src/types.js';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {Brand} from '@agoric/ertp';
  */
 
 /**

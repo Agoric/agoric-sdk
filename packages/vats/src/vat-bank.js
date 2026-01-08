@@ -33,7 +33,7 @@ import {
  * @import {AtomicProvider} from '@agoric/store/src/stores/store-utils.js';
  * @import {NameHubKit} from './types.js';
  * @import {EOnly} from '@endo/far';
- * @import {DepositFacet} from '@agoric/ertp/src/types.js';
+ * @import {Brand, DepositFacet, Mint, Purse} from '@agoric/ertp/src/types.js';
  * @import {MakeAttenuator} from '@agoric/internal/src/callback.js';
  * @import {NameAdmin} from './types.js';
  */

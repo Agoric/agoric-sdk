@@ -4,6 +4,7 @@ import { E } from '@endo/eventual-send';
 
 /**
  * @import {ZCF, ZCFMint} from '@agoric/zoe';
+ * @import {Amount} from '@agoric/ertp';
  */
 
 /**

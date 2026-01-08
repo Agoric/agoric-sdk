@@ -107,7 +107,7 @@ export const buildRootObject = async () => {
     namesByAddressAdmin,
   };
 
-  /** @param {Amount<'nat'>} amt */
+  /** @param {import('@agoric/ertp').Amount<'nat'>} amt */
   const addCollateral = async amt => {
     const arPublicFacet = await E(governorFacets.creatorFacet).getPublicFacet();
     const seat = E(zoeService).offer(

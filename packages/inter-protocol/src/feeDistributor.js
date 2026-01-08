@@ -10,7 +10,7 @@ import { KeywordShape } from '@agoric/zoe/src/typeGuards.js';
 /**
  * @import {MapStore, SetStore} from '@agoric/store';
  * @import {EOnly} from '@endo/far';
- * @import {DepositFacet} from '@agoric/ertp/src/types.js';
+ * @import {Amount, DepositFacet, Issuer, NatValue, Payment} from '@agoric/ertp/src/types.js';
  * @import {ContractMeta, Invitation, Keyword, ZCF, ZoeService} from '@agoric/zoe';
  */
 

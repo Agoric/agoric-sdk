@@ -25,7 +25,7 @@ import { amountPattern, ratioPattern } from '../contractSupport.js';
  * @import {StoredPublisherKit} from '@agoric/notifier';
  * @import {TimerService} from '@agoric/time';
  * @import {Baggage} from '@agoric/vat-data';
- * @import {Ratio} from '@agoric/ertp';
+ * @import {Amount, Brand, Ratio} from '@agoric/ertp';
  * @import {AssetReservePublicFacet} from '../reserve/assetReserve.js';
  * @import {InterestTiming, VaultManagerParamValues} from './types-ambient.js';
  * @import {GovernanceSubscriptionState} from '@agoric/governance/src/types.js';

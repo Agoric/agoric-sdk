@@ -91,15 +91,15 @@ export const makeAssetRegistry = assetPublisher => {
   trace('makeAssetRegistry', assetPublisher);
   /**
    * @typedef {{
-   *   brand: Brand;
-   *   displayInfo: DisplayInfo;
-   *   issuer: Issuer;
+   *   brand: import('@agoric/ertp').Brand;
+   *   displayInfo: import('@agoric/ertp').DisplayInfo;
+   *   issuer: import('@agoric/ertp').Issuer;
    *   petname: Petname;
    * }} BrandDescriptor
    *   For use by clients to describe brands to users. Includes `displayInfo` to
    *   save a remote call.
    */
-  /** @type {MapStore<Brand, BrandDescriptor>} */
+  /** @type {MapStore<import('@agoric/ertp').Brand, BrandDescriptor>} */
   const brandDescriptors = makeScalarMapStore();
 
   // Watch the bank for issuers to keep on hand for making purses.
@@ -126,9 +126,9 @@ export const makeAssetRegistry = assetPublisher => {
   );
 
   const registry = {
-    /** @param {Brand} brand */
+    /** @param {import('@agoric/ertp').Brand} brand */
     has: brand => brandDescriptors.has(brand),
-    /** @param {Brand} brand */
+    /** @param {import('@agoric/ertp').Brand} brand */
     get: brand => brandDescriptors.get(brand),
     values: () => brandDescriptors.values(),
   };

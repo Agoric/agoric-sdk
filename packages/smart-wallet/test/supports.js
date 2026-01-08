@@ -29,21 +29,21 @@ export { ActionType };
 
 /**
  * @param {object} kit
- * @param {Brand<'nat'>} kit.brand
- * @param {Issuer<'nat'>} kit.issuer
- * @param {Mint<'nat'>} [kit.mint]
+ * @param {import('@agoric/ertp').Brand<'nat'>} kit.brand
+ * @param {import('@agoric/ertp').Issuer<'nat'>} kit.issuer
+ * @param {import('@agoric/ertp').Mint<'nat'>} [kit.mint]
  */
 export const withAmountUtils = kit => {
   return {
     ...kit,
     /**
-     * @param {NatValue} v
+     * @param {import('@agoric/ertp').NatValue} v
      */
     make: v => AmountMath.make(kit.brand, v),
     makeEmpty: () => AmountMath.makeEmpty(kit.brand),
     /**
-     * @param {NatValue} n
-     * @param {NatValue} [d]
+     * @param {import('@agoric/ertp').NatValue} n
+     * @param {import('@agoric/ertp').NatValue} [d]
      */
     makeRatio: (n, d) => makeRatio(n, kit.brand, d),
   };

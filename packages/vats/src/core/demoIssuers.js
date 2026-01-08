@@ -194,7 +194,7 @@ const run2places = f =>
  *   feeMintAccess: ERef<FeeMintAccess>;
  *   zoe: ERef<ZoeService>;
  * }} powers
- * @returns {Promise<Payment<'nat'>>}
+ * @returns {Promise<import('@agoric/ertp').Payment<'nat'>>}
  */
 const mintRunPayment = async (
   value,
@@ -227,10 +227,10 @@ const provideCoin = async (name, mints) => {
  * @param {BootstrapSpace} powers TODO: sync this type with end-user docs?
  *
  * @typedef {{
- *   issuer: ERef<Issuer>;
+ *   issuer: ERef<import('@agoric/ertp').Issuer>;
  *   issuerPetname: string;
- *   payment: Payment;
- *   brand: Brand;
+ *   payment: import('@agoric/ertp').Payment;
+ *   brand: import('@agoric/ertp').Brand;
  *   pursePetname: string;
  * }} UserPaymentRecord
  */
@@ -393,9 +393,9 @@ export const ammPoolRunDeposits = issuers => {
 };
 
 /**
- * @param {Payment} bootstrapPayment
+ * @param {import('@agoric/ertp').Payment} bootstrapPayment
  * @param {Record<string, bigint>} balances
- * @param {{ issuer: ERef<Issuer>; brand: Brand }} central
+ * @param {{ issuer: ERef<import('@agoric/ertp').Issuer>; brand: import('@agoric/ertp').Brand }} central
  */
 export const splitAllCentralPayments = async (
   bootstrapPayment,
@@ -428,8 +428,8 @@ export const splitAllCentralPayments = async (
 /**
  * @param {string} issuerName
  * @param {(typeof AMMDemoState)['ATOM']} record
- * @param {Record<string, { issuer: ERef<Issuer>; brand: Brand }>} kits
- * @param {{ issuer: ERef<Issuer<'nat'>>; brand: Brand<'nat'> }} central
+ * @param {Record<string, { issuer: ERef<import('@agoric/ertp').Issuer>; brand: import('@agoric/ertp').Brand }>} kits
+ * @param {{ issuer: ERef<import('@agoric/ertp').Issuer<'nat'>>; brand: import('@agoric/ertp').Brand<'nat'> }} central
  */
 export const poolRates = (issuerName, record, kits, central) => {
   /** @param {bigint} n */
@@ -443,7 +443,7 @@ export const poolRates = (issuerName, record, kits, central) => {
 
   /**
    * @param {Rational} r
-   * @param {Brand} b
+   * @param {import('@agoric/ertp').Brand} b
    */
   const toRatio = ([n, d], b) => makeRatio(n, b, d);
   const rates = {

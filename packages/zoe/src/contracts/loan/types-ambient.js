@@ -3,7 +3,7 @@
  * @import {Notifier} from '@agoric/notifier';
  */
 /**
- * @import {Ratio} from '@agoric/ertp';
+ * @import {Amount, Brand, Ratio} from '@agoric/ertp';
  * @import {Handle, Instance} from '@agoric/zoe';
  */
 /**

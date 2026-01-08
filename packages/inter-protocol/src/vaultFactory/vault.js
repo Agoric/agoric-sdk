@@ -19,7 +19,7 @@ const trace = makeTracer('Vault', true);
 /**
  * @import {Remote} from '@agoric/internal';
  * @import {EReturn} from '@endo/far';
- * @import {Brand} from '@agoric/ertp/src/types.js';
+ * @import {Amount, Brand} from '@agoric/ertp/src/types.js';
  * @import {Subscriber} from '@agoric/notifier';
  * @import {NormalizedDebt} from './storeUtils.js';
  * @import {AssetState} from './vaultManager.js';

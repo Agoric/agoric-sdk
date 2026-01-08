@@ -10,6 +10,9 @@ import { Far } from '@endo/marshal';
  * @import {Notifier} from '@agoric/notifier';
  * @import {TimerService} from '@agoric/time';
  * @import {TimestampRecord} from '@agoric/time';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {Mint} from '@agoric/ertp';
  */
 
 /**
