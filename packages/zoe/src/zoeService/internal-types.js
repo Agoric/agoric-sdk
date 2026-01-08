@@ -1,5 +1,4 @@
 // @jessie-check
-/// <reference types="@agoric/zoe/exported.js" />
 
 // Make this a module
 export {};

@@ -1,5 +1,4 @@
 // @jessie-check
-/// <reference types="@agoric/zoe/exported.js" />
 
 import { M, mustMatch } from '@agoric/store';
 import { TimestampShape } from '@agoric/time';

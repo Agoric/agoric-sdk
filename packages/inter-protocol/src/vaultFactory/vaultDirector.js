@@ -1,5 +1,3 @@
-/// <reference types="@agoric/zoe/exported.js" />
-
 import { AmountMath, AmountShape, BrandShape, IssuerShape } from '@agoric/ertp';
 import {
   GovernorFacetShape,

@@ -16,7 +16,6 @@
  *   liquidated. If the auction is unsuccessful, the liquidation may be
  *   reverted.
  */
-/// <reference types="@agoric/zoe/exported.js" />
 
 import {
   AmountMath,
