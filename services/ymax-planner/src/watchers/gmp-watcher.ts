@@ -9,7 +9,7 @@ import {
   scanEvmLogsInChunks,
 } from '../support.ts';
 import type { MakeAbortController, WatcherTimeoutOptions } from '../support.ts';
-import { TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
+import { TX_TIMEOUT_MS, type WatcherResult } from '../pending-tx-manager.ts';
 import {
   deleteTxBlockLowerBound,
   getTxBlockLowerBound,
@@ -116,9 +116,9 @@ export const watchGmp = ({
   log = () => {},
   setTimeout = globalThis.setTimeout,
   signal,
-}: WatchGmp & WatcherTimeoutOptions): Promise<boolean> => {
+}: WatchGmp & WatcherTimeoutOptions): Promise<WatcherResult> => {
   return new Promise((resolve, reject) => {
-    if (signal?.aborted) return resolve(false);
+    if (signal?.aborted) return resolve({ found: false });
 
     log(
       `Watching transaction status for txId: ${txId} at contract: ${contractAddress}`,
@@ -154,7 +154,7 @@ export const watchGmp = ({
     };
 
     // Named so we can remove it
-    const onAbort = () => finish(false);
+    const onAbort = () => finish({ found: false });
 
     const cleanupListeners = () => {
       ws.off('message', messageHandler);
@@ -163,7 +163,7 @@ export const watchGmp = ({
       signal?.removeEventListener('abort', onAbort);
     };
 
-    const finish = (ok: boolean) => {
+    const finish = (res: WatcherResult) => {
       if (done) return;
       done = true;
 
@@ -176,7 +176,7 @@ export const watchGmp = ({
       }
 
       cleanupListeners();
-      resolve(ok);
+      resolve(res);
     };
 
     /**
@@ -240,7 +240,7 @@ export const watchGmp = ({
           log(
             `✅ SUCCESS: txId=${txId} txHash=${txHash} block=${receipt.blockNumber}`,
           );
-          return finish(true);
+          return finish({ found: true, txHash });
         }
 
         if (receipt.status === 0) {
@@ -292,7 +292,7 @@ export const watchGmp = ({
               log(
                 `❌ REVERTED: txId=${txId} txHash=${txHash} block=${receipt.blockNumber} (ContractCallFailed - user operation failed)`,
               );
-              return finish(false);
+              return finish({ found: true, txHash });
             } else {
               // Different revert reason - likely spurious execution attempt
               // Log for observability but continue watching for the legitimate execution
