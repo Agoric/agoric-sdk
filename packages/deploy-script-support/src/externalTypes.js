@@ -4,6 +4,7 @@ export {};
 
 /**
  * @import {NameHub} from '@agoric/vats';
+ * @import {ZoeService} from '@agoric/zoe';
  */
 
 // TODO move this type somewhere better

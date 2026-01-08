@@ -4,6 +4,10 @@ import { E, Far } from '@endo/far';
 import { encodeBase64, decodeBase64 } from '@endo/base64';
 import { ZipWriter } from '@endo/zip';
 
+/**
+ * @import {ZoeService} from '@agoric/zoe';
+ */
+
 export const start = () => {
   /** @type { Map<string, [string, Uint8Array]>} */
   const hashToEntry = new Map();
