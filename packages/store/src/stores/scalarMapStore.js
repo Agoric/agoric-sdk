@@ -36,7 +36,7 @@ export const makeMapStoreMethods = (
   jsmap,
   assertKVOkToAdd,
   assertKVOkToSet,
-  assertKeyOkToDelete = undefined,
+  assertKeyOkToDelete,
   tag = 'key',
 ) => {
   const { assertUpdateOnAdd, assertUpdateOnDelete, iterableKeys } =
@@ -54,7 +54,7 @@ export const makeMapStoreMethods = (
    * @param {Pattern} [valuePatt]
    * @returns {Iterable<K>}
    */
-  const keys = (keyPatt = undefined, valuePatt = undefined) => {
+  const keys = (keyPatt, valuePatt) => {
     if (keyPatt === undefined && valuePatt === undefined) {
       return iterableKeys;
     }
@@ -76,7 +76,7 @@ export const makeMapStoreMethods = (
    * @param {Pattern} [valuePatt]
    * @returns {Iterable<V>}
    */
-  const values = (keyPatt = undefined, valuePatt = undefined) =>
+  const values = (keyPatt, valuePatt) =>
     mapIterable(keys(keyPatt, valuePatt), k => /** @type {V} */ (jsmap.get(k)));
 
   /**
@@ -84,7 +84,7 @@ export const makeMapStoreMethods = (
    * @param {Pattern} [valuePatt]
    * @returns {Iterable<[K, V]>}
    */
-  const entries = (keyPatt = undefined, valuePatt = undefined) =>
+  const entries = (keyPatt, valuePatt) =>
     mapIterable(keys(keyPatt, valuePatt), k => [
       k,
       /** @type {V} */ (jsmap.get(k)),
@@ -140,7 +140,7 @@ export const makeMapStoreMethods = (
  */
 export const makeScalarMapStore = (
   tag = 'key',
-  { keyShape = undefined, valueShape = undefined } = {},
+  { keyShape, valueShape } = {},
 ) => {
   const jsmap = new Map();
   if (keyShape !== undefined) {
