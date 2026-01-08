@@ -2,7 +2,7 @@
 /* eslint-disable max-classes-per-file, class-methods-use-this */
 import test from 'ava';
 
-import { ACCOUNT_DUST_EPSILON } from '@agoric/portfolio-api';
+import { ACCOUNT_DUST_EPSILON, type StatusFor } from '@agoric/portfolio-api';
 import { planUSDNDeposit } from '@aglocal/portfolio-contract/test/mocks.js';
 import { PROD_NETWORK } from '@aglocal/portfolio-contract/tools/network/prod-network.ts';
 import { TEST_NETWORK } from '@aglocal/portfolio-contract/tools/network/test-network.js';
@@ -23,7 +23,7 @@ import {
   planWithdrawFromAllocations,
 } from '../src/plan-deposit.ts';
 import { SpectrumClient } from '../src/spectrum-client.ts';
-import { mockEvmCtx, mockGasEstimator } from './mocks.ts';
+import { erc4626VaultsMock, mockEvmCtx, mockGasEstimator } from './mocks.ts';
 import { chainNameToCaipChainId } from '../src/support.ts';
 
 const depositBrand = Far('mock brand') as Brand<'nat'>;
@@ -673,4 +673,41 @@ test('planRebalanceToAllocations regression - multiple sources', async t => {
     gasEstimator: mockGasEstimator,
   });
   t.snapshot(plan);
+});
+
+test('getNonDustBalances works for erc4626 vaults', async t => {
+  const status = {
+    accountIdByChain: {
+      Ethereum: 'eip155:11155111:0xbcc48e14f89f2bff20a7827148b466ae8f2fbc9b',
+      agoric:
+        'cosmos:agoricdev-25:agoric1gwcndgrd72vuj56jsp5dw26wq4tnzylj79vx8tpq5yc93xcm26js6x3k38',
+      noble:
+        'cosmos:grand-1:noble1utnnvgvratte5ulr4w28fd464g3shjl0z87fue9mkrljnr0t8mlst7h8uq',
+    },
+    accountsPending: [],
+    depositAddress:
+      'agoric17h7u4j564tuh04pfnf0ptjcarnhrmuja9w4u6phzrncs35up3ltshqqd0r',
+    flowCount: 0,
+    nobleForwardingAddress: 'noble18ppsadxr545ll6xdxw4mfr9r9le6gwukewy30c',
+    policyVersion: 1,
+    positionKeys: ['ERC4626_vaultU2_Ethereum'],
+    rebalanceCount: 2,
+    targetAllocation: {
+      ERC4626_vaultU2_Ethereum: 100n,
+    },
+  } as StatusFor['portfolio'];
+
+  const balances = await getNonDustBalances(status, depositBrand, {
+    cosmosRest: {} as unknown as CosmosRestClient,
+    spectrum: {} as unknown as SpectrumClient,
+    spectrumChainIds: {},
+    spectrumPoolIds: {},
+    usdcTokensByChain: {},
+    erc4626Vaults: erc4626VaultsMock,
+    chainNameToChainIdMap: chainNameToCaipChainId.testnet,
+    evmCtx: mockEvmCtx,
+  });
+
+  t.deepEqual(Object.keys(balances), ['ERC4626_vaultU2_Ethereum']);
+  t.is(balances.ERC4626_vaultU2_Ethereum!.value, 3000n);
 });
