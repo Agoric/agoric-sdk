@@ -11,6 +11,7 @@ import { calculateShares } from './calculateShares.js';
 import { Position } from './position.js';
 
 /**
+ * @import {ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {PositionKind} from './types-ambient.js';
  * @import {PayoffHandler} from './types-ambient.js';
  * @import {MakeOptionInvitation} from './types-ambient.js';

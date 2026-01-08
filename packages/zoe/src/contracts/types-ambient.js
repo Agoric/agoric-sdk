@@ -1,5 +1,8 @@
 /* eslint-disable @agoric/group-jsdoc-imports */
 /**
+ * @import {Installation, Instance} from '@agoric/zoe';
+ */
+/**
  * @typedef {object} SellItemsPublicFacet
  * @property {() => Issuer} getItemsIssuer
  * @property {() => Amount} getAvailableItems

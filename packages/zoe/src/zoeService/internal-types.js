@@ -10,6 +10,7 @@ export {};
  * @import {GetPublicFacet} from './utils.js';
  * @import {GetTerms} from './utils.js';
  * @import {CreateVatResults} from '@agoric/swingset-vat';
+ * @import {Installation, Instance, IssuerKeywordRecord, ProposalRecord, ZCF} from '@agoric/zoe';
  * @import {AnyTerms, BrandKeywordRecord, InvitationHandle} from '../types.ts';
  * @import {Purse} from '@agoric/ertp';
  * @import {MakeZoeMint} from '../internal-types.js';

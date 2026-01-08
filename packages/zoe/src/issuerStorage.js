@@ -10,7 +10,7 @@ const STORAGE_INSTANTIATED_KEY = 'IssuerStorageInstantiated';
 
 /**
  * @import {LegacyWeakMap, WeakMapStore} from '@agoric/store';
- * @import {BrandKeywordRecord, ZoeIssuerRecord} from '@agoric/zoe';
+ * @import {BrandKeywordRecord, IssuerKeywordRecord, ZoeIssuerRecord} from '@agoric/zoe';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {GetAssetKindByBrand} from './internal-types.js';
  * @import {IssuerRecords} from './internal-types.js';

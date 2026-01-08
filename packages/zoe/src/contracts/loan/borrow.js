@@ -17,6 +17,7 @@ import { scheduleLiquidation } from './scheduleLiquidation.js';
 import { calculateInterest, makeDebtCalculator } from './updateDebt.js';
 
 /**
+ * @import {OfferHandler} from '@agoric/zoe';
  * @import {MakeBorrowInvitation} from './types-ambient.js';
  * @import {DebtCalculatorConfig} from './types-ambient.js';
  * @import {LoanConfigWithBorrower} from './types-ambient.js';

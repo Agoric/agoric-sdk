@@ -7,6 +7,10 @@
 export {};
 
 /**
+ * @import {AmountKeywordRecord, IssuerKeywordRecord, Keyword, PaymentPKeywordRecord, ZCF, ZCFSeat} from '@agoric/zoe';
+ */
+
+/**
  * @typedef {object} SeatGainsLossesRecord
  * @property {ZCFSeat} seat
  * @property {AmountKeywordRecord} gains - what the seat will
