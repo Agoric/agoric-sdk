@@ -13,6 +13,7 @@ import { E } from '@endo/far';
  * @import {MapStore, SetStore} from '@agoric/store';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {TimestampValue} from '@agoric/time';
+ * @import {ContractMeta, Installation, Instance, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {GovernorCreatorFacet} from '@agoric/governance/src/types.js';
  */
 

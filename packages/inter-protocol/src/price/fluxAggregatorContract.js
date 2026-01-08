@@ -22,6 +22,7 @@ const trace = makeTracer('FluxAgg', false);
  * @import {NameAdmin} from '@agoric/vats';
  * @import {QuoteKit} from './roundsManager.js';
  * @import {Invitation} from '@agoric/zoe';
+ * @import {ContractMeta, ZCF} from '@agoric/zoe';
  */
 
 /** @type {ContractMeta} */

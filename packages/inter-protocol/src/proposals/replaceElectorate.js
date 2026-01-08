@@ -19,7 +19,7 @@ import { provideRetiredInstances, reserveThenDeposit } from './utils.js';
 
 /**
  * @import {EconomyBootstrapPowers} from './econ-behaviors.js'
- * @import {Invitation} from '@agoric/zoe';
+ * @import {Instance, Invitation} from '@agoric/zoe';
  */
 /** @import {EconCharterStartResult} from './econ-behaviors.js' */
 /** @import {CommitteeElectorateCreatorFacet} from '@agoric/governance/src/committee.js'; */

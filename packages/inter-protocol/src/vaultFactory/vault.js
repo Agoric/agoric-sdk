@@ -30,7 +30,7 @@ const trace = makeTracer('Vault', true);
  * @import {Ratio} from '@agoric/ertp/src/ratio.js';
  * @import {VaultKit} from './vaultKit.js';
  * @import {MintAndTransfer, VaultId} from './types-ambient.js';
- * @import {Invitation} from '@agoric/zoe';
+ * @import {Invitation, ProposalRecord, TransferPart, ZCF, ZCFSeat} from '@agoric/zoe';
  */
 
 /**
