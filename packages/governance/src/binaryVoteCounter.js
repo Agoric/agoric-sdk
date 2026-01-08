@@ -18,6 +18,7 @@ import {
 import { makeQuorumCounter } from './quorumCounter.js';
 
 /**
+ * @import {Handle} from '@agoric/zoe';
  * @import {MapStore} from '@agoric/swingset-liveslots';
  * @import {Publisher} from '@agoric/notifier';
  * @import {ZCF} from '@agoric/zoe';

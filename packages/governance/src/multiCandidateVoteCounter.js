@@ -19,6 +19,7 @@ import { makeQuorumCounter } from './quorumCounter.js';
 import { breakTie } from './breakTie.js';
 
 /**
+ * @import {Handle} from '@agoric/zoe';
  * @import {MapStore} from '@agoric/swingset-liveslots';
  * @import {Publisher} from '@agoric/notifier';
  * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';

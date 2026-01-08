@@ -17,6 +17,7 @@ import { ElectorateCreatorI, ElectoratePublicI } from './typeGuards.js';
 import { prepareVoterKit } from './voterKit.js';
 
 /**
+ * @import {Handle} from '@agoric/zoe';
  * @import {Remote} from '@agoric/internal';
  * @import {StoredPublishKit} from '@agoric/notifier';
  * @import {MapStore} from '@agoric/swingset-liveslots';
