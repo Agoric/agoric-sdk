@@ -34,7 +34,7 @@ if (!benchStatsFile) {
   process.exit(1);
 }
 
-function promHeader(name, metricType, help = undefined) {
+function promHeader(name, metricType, help) {
   let hdr = '';
   if (help !== undefined) {
     hdr += `\
@@ -114,7 +114,7 @@ function gatherMetrics(kind, data, labels, specs) {
   return Object.values(propMetrics).join('');
 }
 
-function generateMetricsFromPrimeData(data, labels = undefined) {
+function generateMetricsFromPrimeData(data, labels) {
   return gatherMetrics('prime', data, labels, [
     ['up', 'stat_up', 'counter', `Number of increments`],
     ['down', 'stat_down', 'counter', `Number of decrements`],
@@ -124,7 +124,7 @@ function generateMetricsFromPrimeData(data, labels = undefined) {
   ]);
 }
 
-function generateMetricsFromBenchmarkData(data, labels = undefined) {
+function generateMetricsFromBenchmarkData(data, labels) {
   return gatherMetrics('benchmark', data, labels, [
     ['delta', 'stat_delta', 'gauge', `Autobench benchmark delta`],
     [
