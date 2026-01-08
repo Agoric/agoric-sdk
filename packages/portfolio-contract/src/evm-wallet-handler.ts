@@ -3,19 +3,29 @@
  * and holding portfolios for EVM accounts.
  * @see {@link prepareEVMWalletHandlerKit}
  */
-import type { RecoverTypedDataAddressParameters, TypedData } from 'viem';
 import { makeTracer, type ERemote } from '@agoric/internal';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import { type Vow, VowShape, type VowTools } from '@agoric/vow';
 import type { Zone } from '@agoric/zone';
 import { M } from '@endo/patterns';
+import type { WithSignature } from '@agoric/orchestration/src/utils/viem.ts';
+import type {
+  YmaxStandaloneOperationData,
+  YmaxPermitWitnessTransferFromData,
+} from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.ts';
+import {
+  hashStruct,
+  recoverTypedDataAddress,
+  validateTypedData,
+  encodeType,
+} from '@agoric/orchestration/src/vendor/viem/viem-typedData.js';
+import { makeEVMHandlerUtils } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.ts';
 
 const trace = makeTracer('PEWH');
 
-export type EIP712Data<
-  typedData extends TypedData | Record<string, unknown> = TypedData,
-  primaryType extends keyof typedData = keyof typedData,
-> = RecoverTypedDataAddressParameters<typedData, primaryType>;
+type EIP712Data = WithSignature<
+  YmaxStandaloneOperationData | YmaxPermitWitnessTransferFromData
+>;
 
 export const EIP712DataShape = M.splitRecord({
   domain: M.any(),
@@ -49,6 +59,13 @@ export const prepareEVMWalletHandlerKit = (
     vowTools: Pick<VowTools, 'asVow'>;
   },
 ) => {
+  const { extractOperationDetailsFromSignedData } = makeEVMHandlerUtils({
+    hashStruct,
+    recoverTypedDataAddress,
+    validateTypedData,
+    encodeType,
+  });
+
   // TODO: key/value shapes?
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const wallets = zone.mapStore('wallets');
@@ -77,6 +94,13 @@ export const prepareEVMWalletHandlerKit = (
       handleMessage(messageData: EIP712Data): Vow<void> {
         return vowTools.asVow(async () => {
           trace('handleMessage', messageData);
+
+          // Resolves immediately on-chain since all deps are bundled
+          const details =
+            await extractOperationDetailsFromSignedData(messageData);
+
+          trace('extracted details', details);
+
           throw Error('TODO: Not implemented');
         });
       },

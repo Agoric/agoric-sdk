@@ -19,8 +19,18 @@ import {
 import type { ChainInfo } from '@agoric/orchestration';
 import { passStyleOf, type CopyRecord } from '@endo/pass-style';
 import { mustMatch } from '@endo/patterns';
+import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
+import {
+  getPermitWitnessTransferFromData,
+  type TokenPermissions,
+} from '@agoric/orchestration/src/utils/permit2.ts';
+import {
+  getYmaxWitness,
+  type TargetAllocation,
+} from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.ts';
 import type { TestFn } from 'ava';
 import type { PortfolioBootPowers } from '../src/portfolio-start.type.ts';
+import { axelarConfig } from '../src/axelar-configs.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
@@ -668,7 +678,7 @@ test.serial('invite planner', async t => {
   t.pass();
 });
 
-test.serial('invite evm handler', async t => {
+test.serial('invite evm handler; test open portfolio', async t => {
   const {
     agoricNamesRemotes,
     refreshAgoricNamesRemotes,
@@ -711,6 +721,50 @@ test.serial('invite evm handler', async t => {
     proposal: {},
     saveResult: { name: 'evmWalletHandler' },
   });
+
+  t.log('open portfolio');
+  const userPrivateKey = generatePrivateKey();
+  const userAccount = privateKeyToAccount(userPrivateKey);
+
+  const deadline = BigInt(Math.floor(Date.now() / 1000)) + 3600n;
+  // not a secure nonce, but sufficient for test purposes
+  const nonce = BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER));
+
+  const deposit: TokenPermissions = {
+    token: axelarConfig.Arbitrum.contracts.usdc,
+    amount: 15n * 1_000_000n,
+  };
+
+  const allocations: TargetAllocation[] = [
+    { instrument: 'USDN', portion: 50n },
+    { instrument: 'Aave_Ethereum', portion: 50n },
+  ];
+
+  const witness = getYmaxWitness('OpenPortfolio', { allocations });
+
+  const openPortfolioMessage = getPermitWitnessTransferFromData(
+    {
+      permitted: deposit,
+      // TODO: This should be the address of the owned deposit factory contract
+      spender: axelarConfig.Arbitrum.contracts.factory,
+      nonce,
+      deadline,
+    },
+    '0x000000000022D473030F116dDEE9F6B43aC78BA3', // Arbitrum permit2 address
+    BigInt(axelarConfig.Arbitrum.chainInfo.reference),
+    witness,
+  );
+
+  const signature = await userAccount.signTypedData(openPortfolioMessage);
+
+  await evmHandlerWallet.invokeEntry({
+    id: Date.now().toString(),
+    targetName: 'evmWalletHandler',
+    method: 'handleMessage',
+    args: [{ ...openPortfolioMessage, signature } as CopyRecord],
+  });
+
+  // TODO: check portfolio published in vstorage
 
   t.pass();
 });
