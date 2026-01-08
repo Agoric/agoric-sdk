@@ -2,10 +2,10 @@
 
 /// <reference types="ses" />
 
-import { objectMap } from '@endo/common/object-map.js';
+import { M, objectMap } from '@endo/patterns';
 
 /**
- * @import {ClusterName} from '@agoric/internal';
+ * @import {ClusterName, TypedPattern} from '@agoric/internal';
  * @import {CaipChainId} from '@agoric/orchestration';
  * @import {FlowConfig} from './types.js';
  */
@@ -190,3 +190,25 @@ harden(RebalanceStrategy);
  * This corresponds to 100 uusdc, i.e., $0.0001 for USDC.
  */
 export const ACCOUNT_DUST_EPSILON = 100n;
+
+/**
+ * Feature flags to handle contract upgrade flow compatibility.
+ * @type {TypedPattern<FlowConfig['features']>}
+ */
+export const FlowFeaturesShape = M.splitRecord(
+  {},
+  {
+    useProgressTracker: M.boolean(),
+  },
+);
+
+/**
+ * Configuration options for flows.
+ * @type {TypedPattern<FlowConfig>}
+ */
+export const FlowConfigShape = M.splitRecord(
+  {},
+  {
+    features: FlowFeaturesShape,
+  },
+);

@@ -73,7 +73,7 @@ export const provideEVMAccount = (
   lca: LocalAccount,
   ctx: PortfolioInstanceContext,
   pk: GuestInterface<PortfolioKit>,
-  opts?: OrchestrationOptions,
+  ...optsArgs: [OrchestrationOptions?]
 ): GMPAccountStatus => {
   const pId = pk.reader.getPortfolioId();
   const traceChain = trace.sub(`portfolio${pId}`).sub(chainName);
@@ -127,7 +127,7 @@ export const provideEVMAccount = (
       const feeAccount = await ctx.contractAccount;
       const src = feeAccount.getAddress();
       traceChain('send makeAccountCall Axelar fee from', src.value);
-      await feeAccount.send(lca.getAddress(), fee, opts);
+      await feeAccount.send(lca.getAddress(), fee, ...optsArgs);
 
       const watchTx = ctx.resolverClient.registerTransaction(
         TxType.MAKE_ACCOUNT,
@@ -147,7 +147,7 @@ export const provideEVMAccount = (
         lca,
         gmp.chain,
         ctx.gmpAddresses,
-        opts,
+        ...optsArgs,
       );
 
       traceChain('await makeAccount', txId);
@@ -204,7 +204,7 @@ export const CCTPfromEVM = {
     src,
     dest: 'agoric',
   })),
-  apply: async (ctx, amount, src, dest, opts) => {
+  apply: async (ctx, amount, src, dest, ...optsArgs) => {
     const traceTransfer = trace.sub('CCTPin').sub(src.chainName);
     traceTransfer('transfer', amount, 'from', src.remoteAddress);
     const { addresses, nobleForwardingChannel } = ctx;
@@ -228,7 +228,7 @@ export const CCTPfromEVM = {
       amount.value,
     );
 
-    await sendGMPContractCall(ctx, src, calls, opts);
+    await sendGMPContractCall(ctx, src, calls, ...optsArgs);
     await result;
   },
 } as const satisfies TransportDetail<'CCTP', AxelarChain, 'agoric', EVMContext>;
@@ -252,7 +252,7 @@ export const CCTP = {
     amount,
     src,
     dest,
-    opts?: OrchestrationOptions,
+    ...optsArgs: [OrchestrationOptions?]
   ) => {
     const traceTransfer = trace.sub('CCTPout').sub(dest.chainName);
     const denomAmount: DenomAmount = { denom: 'uusdc', value: amount.value };
@@ -268,8 +268,13 @@ export const CCTP = {
       destinationAddress,
       amount.value,
     );
+    // XXX depositForBurn optional `caller` argument needs to be `undefined` if
+    // we're adding any optsArgs.
+    const callerAndOptsArgs = (
+      optsArgs.length > 0 ? [undefined, ...optsArgs] : []
+    ) as [AccountId?, OrchestrationOptions?];
     await Promise.all([
-      ica.depositForBurn(destinationAddress, denomAmount, undefined, opts),
+      ica.depositForBurn(destinationAddress, denomAmount, ...callerAndOptsArgs),
       result,
     ]);
     traceTransfer('transfer complete.');
@@ -293,7 +298,7 @@ export const sendMakeAccountCall = async (
   lca: LocalAccount,
   gmpChain: Chain<{ chainId: string }>,
   gmpAddresses: GmpAddresses,
-  opts?: OrchestrationOptions,
+  ...optsArgs: [OrchestrationOptions?]
 ) => {
   const { AXELAR_GMP, AXELAR_GAS } = gmpAddresses;
   const memo: AxelarGmpOutgoingMemo = {
@@ -307,7 +312,7 @@ export const sendMakeAccountCall = async (
 
   const gmp = { chainId, value: AXELAR_GMP, encoding: 'bech32' as const };
   return lca.transfer(gmp, fee, {
-    ...opts,
+    ...optsArgs[0],
     memo: JSON.stringify(memo),
   });
 };
@@ -328,7 +333,7 @@ export const sendGMPContractCall = async (
   ctx: EVMContext,
   gmpAcct: GMPAccountInfo,
   calls: ContractCall[],
-  opts: OrchestrationOptions | undefined,
+  ...optsArgs: [OrchestrationOptions?]
 ) => {
   const {
     lca,
@@ -360,9 +365,9 @@ export const sendGMPContractCall = async (
     value: AXELAR_GMP,
     encoding: 'bech32' as const,
   };
-  await ctx.feeAccount.send(lca.getAddress(), fee, opts);
+  await ctx.feeAccount.send(lca.getAddress(), fee, ...optsArgs);
   await lca.transfer(gmp, fee, {
-    ...opts,
+    ...optsArgs[0],
     memo: JSON.stringify(memo),
   });
   await result;
@@ -406,7 +411,7 @@ const AaveRewardsController: AaveRewardsControllerI = {
 export const AaveProtocol = {
   protocol: 'Aave',
   chains: keys(AxelarChain) as AxelarChain[],
-  supply: async (ctx, amount, src, opts) => {
+  supply: async (ctx, amount, src, ...optsArgs) => {
     const { remoteAddress } = src;
     const { addresses: a } = ctx;
 
@@ -417,9 +422,9 @@ export const AaveProtocol = {
     aave.supply(a.usdc, amount.value, remoteAddress, 0);
     const calls = session.finish();
 
-    return sendGMPContractCall(ctx, src, calls, opts);
+    return sendGMPContractCall(ctx, src, calls, ...optsArgs);
   },
-  withdraw: async (ctx, amount, dest, claim, opts) => {
+  withdraw: async (ctx, amount, dest, claim, ...optsArgs) => {
     const { remoteAddress } = dest;
     const { addresses: a } = ctx;
 
@@ -435,7 +440,7 @@ export const AaveProtocol = {
     aave.withdraw(a.usdc, amount.value, remoteAddress);
     const calls = session.finish();
 
-    return sendGMPContractCall(ctx, dest, calls, opts);
+    return sendGMPContractCall(ctx, dest, calls, ...optsArgs);
   },
 } as const satisfies ProtocolDetail<'Aave', AxelarChain, EVMContext>;
 
@@ -464,7 +469,7 @@ const CompoundRewardsController: CompoundRewardsControllerI = {
 export const CompoundProtocol = {
   protocol: 'Compound',
   chains: keys(AxelarChain) as AxelarChain[],
-  supply: async (ctx, amount, src, opts) => {
+  supply: async (ctx, amount, src, ...optsArgs) => {
     const { addresses: a } = ctx;
     const session = makeEVMSession();
     const usdc = session.makeContract(a.usdc, ERC20);
@@ -473,9 +478,9 @@ export const CompoundProtocol = {
     compound.supply(a.usdc, amount.value);
     const calls = session.finish();
 
-    return sendGMPContractCall(ctx, src, calls, opts);
+    return sendGMPContractCall(ctx, src, calls, ...optsArgs);
   },
-  withdraw: async (ctx, amount, dest, claim, opts) => {
+  withdraw: async (ctx, amount, dest, claim, ...optsArgs) => {
     const { addresses: a } = ctx;
     const session = makeEVMSession();
     if (claim) {
@@ -489,7 +494,7 @@ export const CompoundProtocol = {
     compound.withdraw(a.usdc, amount.value);
     const calls = session.finish();
 
-    return sendGMPContractCall(ctx, dest, calls, opts);
+    return sendGMPContractCall(ctx, dest, calls, ...optsArgs);
   },
 } as const satisfies ProtocolDetail<'Compound', AxelarChain, EVMContext>;
 
@@ -510,7 +515,7 @@ const BeefyVault: BeefyVaultI = {
 export const BeefyProtocol = {
   protocol: 'Beefy',
   chains: keys(AxelarChain) as AxelarChain[],
-  supply: async (ctx, amount, src, opts) => {
+  supply: async (ctx, amount, src, ...optsArgs) => {
     const { addresses: a, poolKey } = ctx;
     const session = makeEVMSession();
     const usdc = session.makeContract(a.usdc, ERC20);
@@ -522,9 +527,9 @@ export const BeefyProtocol = {
     vault.deposit(amount.value);
     const calls = session.finish();
 
-    return sendGMPContractCall(ctx, src, calls, opts);
+    return sendGMPContractCall(ctx, src, calls, ...optsArgs);
   },
-  withdraw: async (ctx, amount, dest, _claim, opts) => {
+  withdraw: async (ctx, amount, dest, _claim, ...optsArgs) => {
     const { addresses: a, poolKey } = ctx;
     const session = makeEVMSession();
     const vaultAddress =
@@ -534,7 +539,7 @@ export const BeefyProtocol = {
     vault.withdraw(amount.value);
     const calls = session.finish();
 
-    return sendGMPContractCall(ctx, dest, calls, opts);
+    return sendGMPContractCall(ctx, dest, calls, ...optsArgs);
   },
 } as const satisfies ProtocolDetail<
   'Beefy',
@@ -559,7 +564,7 @@ const ERC4626: ERC4626I = {
 export const ERC4626Protocol = {
   protocol: 'ERC4626',
   chains: keys(AxelarChain) as AxelarChain[],
-  supply: async (ctx, amount, src, opts) => {
+  supply: async (ctx, amount, src, ...optsArgs) => {
     const { addresses: a, poolKey } = ctx;
     const { remoteAddress } = src;
     const session = makeEVMSession();
@@ -572,9 +577,9 @@ export const ERC4626Protocol = {
     vault.deposit(amount.value, remoteAddress);
     const calls = session.finish();
 
-    await sendGMPContractCall(ctx, src, calls, opts);
+    await sendGMPContractCall(ctx, src, calls, ...optsArgs);
   },
-  withdraw: async (ctx, amount, dest, _claim, opts) => {
+  withdraw: async (ctx, amount, dest, _claim, ...optsArgs) => {
     const { addresses: a, poolKey } = ctx;
     const { remoteAddress } = dest;
     const session = makeEVMSession();
@@ -585,7 +590,7 @@ export const ERC4626Protocol = {
     vault.withdraw(amount.value, remoteAddress, remoteAddress);
     const calls = session.finish();
 
-    await sendGMPContractCall(ctx, dest, calls, opts);
+    await sendGMPContractCall(ctx, dest, calls, ...optsArgs);
   },
 } as const satisfies ProtocolDetail<
   'ERC4626',
