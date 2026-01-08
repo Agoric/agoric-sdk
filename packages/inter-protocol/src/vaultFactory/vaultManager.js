@@ -76,12 +76,9 @@ import { Phase, prepareVault } from './vault.js';
  * @import {MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {MakeERecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {FactoryPowersFacet} from './vaultDirector.js';
- * @import {VaultBalances} from './proceeds.js';
- * @import {DistributionPlan} from './proceeds.js';
  * @import {Ratio} from '@agoric/ertp';
  * @import {Vault} from './vault.js';
  * @import {VaultPhase} from './vault.js';
- * @import {AuctioneerPublicFacet} from '../auction/auctioneer.js';
  * @import {MintAndTransfer, VaultId} from './types-ambient.js';
  */
 
