@@ -330,33 +330,34 @@ sequenceDiagram
   title: Setup owned Factory
 
   %% Conventions:
-  %% - use `box` for vats / contracts
   %% - `->>` denotes a spontaneous action (initiating cause)
   %% - `-->>` denotes a consequence of a prior message
 
   autonumber
-  actor op as YMax Operator
-  box bootstrap
-    participant YC as ymaxControl
-  end
-  box YMax Contract
-    participant YO as YMax Orchestrator
-  end
-  participant R as Resolver
-  box base
-    participant FF as FactoryFactory
+  actor op as Operator / User
+
+  box EVM
+    participant C3 as Axelar CREATE3 Deployer
+    participant DF as DepositFactory
   end
 
-  op->>op: ymax-tool upgrade
-  op-->>YC: invokeEntry(ymaxCreator, ...)
-  YC-->>YO: start
-  YO-->>YO: contractAccount = makeLCA()<br/>// agoric1ymaxlca
-  note right of YO: call via Axelar GMP<br/>from contractAccount
-  YO-->>FF: execute()
-  FF-->>FF: Factory = new Factory{<br/>owner=agoric1ymaxlca}
-  FF-->>R: FactoryCreated{address=0xFAC1}
-  R -->> YO: success
-  YO-->>YO: update vstorage factoryAddress=0xFAC1
+  box Agoric
+    participant Y as ymax-contract
+  end
+
+  %% 1) Deploy DepositFactory using CREATE3
+  op->>C3: deploy(bytecode=DepositFactory, salt)
+  Note right of C3: CREATE2 deploys CreateDeploy<br/>CreateDeploy.deploy() via CREATE
+  C3-->>DF: DepositFactory deployed<br/>at deterministic address
+  C3-->>op: deployedAddress = 0xDEPO...
+
+  %% 2) Operator manually wires address into ymax-contract
+  op->>op: ymax-tool upgrade<br/>privateArgs.depositFactoryAddress=0xDEPO...
+  op-->>Y: start(privateArgs)
+
+  %% 3) ymax-contract persists the address
+  Y-->>Y: read depositFactoryAddress from privateArgs
+  Y-->>Y: store depositFactoryAddress in vstorage
 ```
 
 </details>
