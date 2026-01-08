@@ -21,7 +21,8 @@
     // files that are JS executable (with TS chars blanked) but end in .ts
     "allowImportingTsExtensions": true,
     "rewriteRelativeImportExtensions": true,
-    "noEmit": true
+    "noEmit": true,
+    "incremental": true
   },
   "include": [
     "eslint.config.mjs",
