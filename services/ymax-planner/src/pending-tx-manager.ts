@@ -259,7 +259,13 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
       // Attach handler to abort lookback if live mode completes first with
       // a definitive result. This handler does NOT resolve the transaction -
       // resolution happens once at the end to prevent duplicate resolutions.
-      void liveResultP;
+      void liveResultP.then(found => {
+        if (found) {
+          const reason = `${logPrefix} Live mode completed`;
+          log(reason);
+          abortController.abort(reason);
+        }
+      });
 
       await null;
       // Wait for at least one block to ensure overlap between lookback and live mode

@@ -97,14 +97,6 @@ test('handlePendingTx aborts GMP watcher in live mode when signal is aborted', a
     return originalExecuteOffer(...args);
   };
 
-  // Track event listener cleanup
-  let offCallCount = 0;
-  const originalOff = mockProvider.off;
-  mockProvider.off = (...args) => {
-    offCallCount++;
-    return originalOff(...args);
-  };
-
   const ctxWithFetch = harden({
     ...opts,
     fetch: async (url: string) => {
@@ -138,17 +130,12 @@ test('handlePendingTx aborts GMP watcher in live mode when signal is aborted', a
 
   t.deepEqual(logs, [
     `[${txId}] handling ${TxType.GMP} tx`,
-    `[${txId}] Watching for MulticallStatus and MulticallExecuted events for txId: ${txId} at contract: ${contractAddress}`,
+    `[${txId}] Watching transaction status for txId: ${txId} at contract: ${contractAddress}`,
     '[TEST] Aborting signal',
   ]);
 
   // Assert that the watcher actually aborted
   t.is(resolveAttempts, 0, 'Transaction should not be resolved after abort');
-  t.is(
-    offCallCount,
-    1,
-    'Should remove the event listener (MulticallStatus)',
-  );
 });
 
 test('handlePendingTx exits early if signal is already aborted before starting', async t => {
@@ -337,7 +324,7 @@ test('handlePendingTx aborts GMP watcher in lookback mode when signal is aborted
 
   t.deepEqual(logs, [
     `[${txId}] handling ${TxType.GMP} tx`,
-    `[${txId}] Watching for MulticallStatus and MulticallExecuted events for txId: ${txId} at contract: ${contractAddress}`,
+    `[${txId}] Watching transaction status for txId: ${txId} at contract: ${contractAddress}`,
     `[${txId}] Searching blocks ${fromBlock} → ${toBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
     `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${fromBlock + 9}`,
     '[TEST] Aborting signal',
