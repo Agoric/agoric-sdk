@@ -37,8 +37,18 @@ import {
   watchSmartWalletTx,
   lookBackSmartWalletTx,
 } from './watchers/wallet-watcher.ts';
+import type { YdsNotifier } from './yds-notifier.ts';
 
 export type EvmChain = keyof typeof AxelarChain;
+
+export type WatcherResult = {
+  found: boolean;
+  txHash?: string;
+};
+
+export type GmpWatcherResult = WatcherResult & {
+  rejectionReason?: string;
+};
 
 export type EvmContext = {
   cosmosRest: CosmosRestClient;
@@ -49,6 +59,7 @@ export type EvmContext = {
   kvStore: KVStore;
   makeAbortController: MakeAbortController;
   axelarApiUrl: string;
+  ydsNotifier: YdsNotifier;
 };
 
 export type GmpTransfer = {
@@ -115,10 +126,10 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
       log: (msg, ...args) => log(logPrefix, msg, ...args),
     };
 
-    let transferStatus: boolean | undefined;
+    let transferResult: WatcherResult | undefined;
 
     if (opts.mode === 'live') {
-      transferStatus = await watchCctpTransfer({
+      transferResult = await watchCctpTransfer({
         ...watchArgs,
         timeoutMs: opts.timeoutMs,
         signal: opts.signal,
@@ -140,8 +151,8 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
         kvStore: ctx.kvStore,
         txId,
       });
-      void liveResultP.then(found => {
-        if (found) {
+      void liveResultP.then(result => {
+        if (result.found) {
           log(`${logPrefix} Live mode completed`);
           abortController.abort();
         }
@@ -153,7 +164,7 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
       await waitForBlock(provider, currentBlock + 1);
 
       // Scan historical blocks
-      transferStatus = await lookBackCctp({
+      transferResult = await lookBackCctp({
         ...watchArgs,
         publishTimeMs: opts.publishTimeMs,
         chainId: caipId,
@@ -162,7 +173,7 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
         txId,
       });
 
-      if (transferStatus) {
+      if (transferResult.found) {
         // Found in lookback, cancel live mode
         const reason = `${logPrefix} Lookback found transaction`;
         log(reason);
@@ -172,7 +183,7 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
         log(
           `${logPrefix} Lookback completed without finding transaction, waiting for live mode`,
         );
-        transferStatus = await liveResultP;
+        transferResult = await liveResultP;
       }
     }
 
@@ -183,8 +194,12 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
     await resolvePendingTx({
       signingSmartWalletKit: ctx.signingSmartWalletKit,
       txId,
-      status: transferStatus ? TxStatus.SUCCESS : TxStatus.FAILED,
+      status: transferResult?.found ? TxStatus.SUCCESS : TxStatus.FAILED,
     });
+
+    if (transferResult?.txHash) {
+      await ctx.ydsNotifier.notifySettlement(txId, transferResult.txHash);
+    }
 
     log(`${logPrefix} CCTP tx resolved`);
   },
@@ -219,9 +234,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
       log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
     };
 
-    let transferResult:
-      | { found: boolean; rejectionReason?: string }
-      | undefined;
+    let transferResult: GmpWatcherResult | undefined;
 
     if (opts.mode === 'live') {
       transferResult = await watchGmp({
@@ -289,9 +302,9 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
       });
 
       // Determine which result to use based on what completed successfully
-      if (lookBackResult) {
+      if (lookBackResult.found) {
         // Found in lookback, cancel live mode
-        transferResult = { found: true };
+        transferResult = lookBackResult;
         const reason = `${logPrefix} Lookback found transaction`;
         log(reason);
         abortController.abort(reason);
@@ -316,6 +329,10 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
         ? { rejectionReason: transferResult.rejectionReason }
         : {}),
     });
+
+    if (transferResult?.txHash) {
+      await ctx.ydsNotifier.notifySettlement(txId, transferResult.txHash);
+    }
 
     log(`${logPrefix} GMP tx resolved`);
   },
@@ -357,13 +374,14 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
       log: (msg, ...args) => log(logPrefix, msg, ...args),
     };
 
-    let walletCreated: boolean | undefined;
+    let walletResult: WatcherResult | undefined;
 
     if (opts.mode === 'live') {
-      walletCreated = await watchSmartWalletTx({
+      walletResult = await watchSmartWalletTx({
         ...watchArgs,
         timeoutMs: opts.timeoutMs,
         signal: opts.signal,
+        txId,
       });
     } else {
       const abortController = ctx.makeAbortController(
@@ -375,9 +393,10 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
         ...watchArgs,
         timeoutMs: opts.timeoutMs,
         signal: abortController.signal,
+        txId,
       });
-      void liveResultP.then(found => {
-        if (found) {
+      void liveResultP.then(result => {
+        if (result.found) {
           log(`${logPrefix} Live mode completed`);
           abortController.abort();
         }
@@ -388,7 +407,7 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
       const currentBlock = await provider.getBlockNumber();
       await waitForBlock(provider, currentBlock + 1);
 
-      walletCreated = await lookBackSmartWalletTx({
+      walletResult = await lookBackSmartWalletTx({
         ...watchArgs,
         kvStore: ctx.kvStore,
         txId,
@@ -397,14 +416,14 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
         signal: abortController.signal,
       });
 
-      if (walletCreated) {
+      if (walletResult.found) {
         log(`${logPrefix} Lookback found wallet creation`);
         abortController.abort();
       } else {
         log(
           `${logPrefix} Lookback completed without finding wallet creation, waiting for live mode`,
         );
-        walletCreated = await liveResultP;
+        walletResult = await liveResultP;
       }
     }
 
@@ -415,8 +434,12 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
     await resolvePendingTx({
       signingSmartWalletKit: ctx.signingSmartWalletKit,
       txId,
-      status: walletCreated ? TxStatus.SUCCESS : TxStatus.FAILED,
+      status: walletResult?.found ? TxStatus.SUCCESS : TxStatus.FAILED,
     });
+
+    if (walletResult?.txHash) {
+      await ctx.ydsNotifier.notifySettlement(txId, walletResult.txHash);
+    }
 
     log(`${logPrefix} MAKE_ACCOUNT tx resolved`);
   },
