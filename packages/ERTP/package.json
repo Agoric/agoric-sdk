@@ -60,9 +60,7 @@
   },
   "files": [
     "src",
-    "NEWS.md",
-    "exported.js",
-    "exported.d.ts"
+    "NEWS.md"
   ],
   "ava": {
     "files": [
