@@ -13,6 +13,7 @@ per https://agents.md/
 - `yarn build`: Build all workspaces (generates kernel bundles where needed).
 - `yarn test`: Run unit tests across all packages (AVA).
 - `yarn lint` | `yarn lint-fix`: Check or auto-fix lint issues across packages.
+- `yarn run -T tsc --noEmit --incremental`: Fast typecheck; do this after changes.
 - `yarn format`: Format code via Prettier; `yarn lint:format` to check only.
 - `./scripts/env-doctor.sh`: Verify toolchain (Node, Go, compiler) versions.
 - Example, single package: `cd packages/eventual-send && yarn test`.
