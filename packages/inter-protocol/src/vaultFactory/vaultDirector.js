@@ -1,4 +1,3 @@
-/// <reference types="@agoric/governance/exported.js" />
 /// <reference types="@agoric/zoe/exported.js" />
 
 import { AmountMath, AmountShape, BrandShape, IssuerShape } from '@agoric/ertp';
@@ -48,7 +47,6 @@ import {
  * @import {Baggage} from '@agoric/swingset-liveslots';
  * @import {VaultFactoryZCF} from './vaultFactory.js';
  * @import {TimerService} from '@agoric/time';
- * @import {AuctioneerPublicFacet} from '../auction/auctioneer.js';
  * @import {MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {MakeERecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {VaultManager} from './vaultManager.js';
@@ -56,6 +54,7 @@ import {
  * @import {BurnDebt, VaultManagerParamValues} from './types-ambient.js';
  * @import {MintAndTransfer} from './types-ambient.js';
  * @import {VaultFactoryParamPath} from './types-ambient.js';
+ * @import {GovernedApis} from '@agoric/governance/src/types.js';
  */
 
 const trace = makeTracer('VD', true);
