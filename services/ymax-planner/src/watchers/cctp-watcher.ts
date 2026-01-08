@@ -13,6 +13,7 @@ import {
   getTxBlockLowerBound,
   setTxBlockLowerBound,
 } from '../kv-store.ts';
+import type { WatcherResult } from '../pending-tx-manager.ts';
 
 /**
  * The Keccak256 hash (event signature) of the standard ERC-20 `Transfer` event.
@@ -77,10 +78,10 @@ export const watchCctpTransfer = ({
   log = () => {},
   setTimeout = globalThis.setTimeout,
   signal,
-}: CctpWatch & WatcherTimeoutOptions): Promise<boolean> => {
+}: CctpWatch & WatcherTimeoutOptions): Promise<WatcherResult> => {
   return new Promise(resolve => {
     if (signal?.aborted) {
-      resolve(false);
+      resolve({ found: false });
       return;
     }
 
@@ -97,7 +98,7 @@ export const watchCctpTransfer = ({
     let timeoutId: NodeJS.Timeout;
     let listeners: Array<{ event: any; listener: any }> = [];
 
-    const finish = (result: boolean) => {
+    const finish = (result: WatcherResult) => {
       resolve(result);
       if (timeoutId) clearTimeout(timeoutId);
       for (const { event, listener } of listeners) {
@@ -106,9 +107,9 @@ export const watchCctpTransfer = ({
       listeners = [];
     };
 
-    signal?.addEventListener('abort', () => finish(false));
+    signal?.addEventListener('abort', () => finish({ found: false }));
 
-    const listenForTransfer = (eventLog: Log) => {
+    const listenForTransfer = async (eventLog: Log) => {
       let transferData;
       try {
         transferData = parseTransferLog(eventLog);
@@ -129,7 +130,7 @@ export const watchCctpTransfer = ({
           `✓ Amount matches! Expected: ${expectedAmount}, Received: ${amount}`,
         );
         transferFound = true;
-        finish(true);
+        finish({ found: true, txHash: eventLog.transactionHash });
         return;
       }
       // Warn and continue watching.
@@ -162,7 +163,7 @@ export const lookBackCctp = async ({
   publishTimeMs: number;
   chainId: CaipChainId;
   signal?: AbortSignal;
-}): Promise<boolean> => {
+}): Promise<WatcherResult> => {
   await null;
   try {
     const fromBlock = await getBlockNumberBeforeRealTime(
@@ -212,12 +213,13 @@ export const lookBackCctp = async ({
 
     if (!matchingEvent) {
       log(`No matching transfer found`);
-      return false;
+      return { found: false };
     }
+
     deleteTxBlockLowerBound(kvStore, txId);
-    return true;
+    return { found: true, txHash: matchingEvent.transactionHash };
   } catch (error) {
     log(`Error:`, error);
-    return false;
+    return { found: false };
   }
 };

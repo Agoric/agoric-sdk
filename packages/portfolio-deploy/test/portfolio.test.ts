@@ -595,6 +595,100 @@ test.serial('remove old contract; start new contract', async t => {
   });
 });
 
+test.serial('invite planner', async t => {
+  const {
+    agoricNamesRemotes,
+    refreshAgoricNamesRemotes,
+    walletFactoryDriver: wfd,
+  } = t.context;
+
+  const controllerWallet = await wfd.provideSmartWallet(controllerAddr);
+
+  t.log('Getting new creator facet of ymax0');
+  await controllerWallet.invokeEntry({
+    id: Date.now().toString(),
+    targetName: 'ymaxControl',
+    method: 'getCreatorFacet',
+    args: [],
+    saveResult: { name: 'ymax0.creatorFacet-new', overwrite: true },
+  });
+
+  t.log('invite planner');
+  const plannerAddr = 'agoric1planner';
+  const plannerWallet = await wfd.provideSmartWallet(plannerAddr);
+  refreshAgoricNamesRemotes();
+  const postalService = agoricNamesRemotes.instance.postalService;
+
+  await controllerWallet.invokeEntry({
+    id: Date.now().toString(),
+    targetName: 'ymax0.creatorFacet-new',
+    method: 'deliverPlannerInvitation',
+    args: [plannerAddr, postalService],
+  });
+
+  t.log('redeem planner invitation');
+  const yInst = agoricNamesRemotes.instance.ymax0;
+  await plannerWallet.executeOffer({
+    id: Date.now().toString(),
+    invitationSpec: {
+      source: 'purse',
+      description: 'planner',
+      instance: yInst,
+    },
+    proposal: {},
+    saveResult: { name: 'planner' },
+  });
+
+  t.pass();
+});
+
+test.serial('invite evm handler', async t => {
+  const {
+    agoricNamesRemotes,
+    refreshAgoricNamesRemotes,
+    walletFactoryDriver: wfd,
+  } = t.context;
+
+  const controllerWallet = await wfd.provideSmartWallet(controllerAddr);
+
+  t.log('Getting new creator facet of ymax0');
+  await controllerWallet.invokeEntry({
+    id: Date.now().toString(),
+    targetName: 'ymaxControl',
+    method: 'getCreatorFacet',
+    args: [],
+    saveResult: { name: 'ymax0.creatorFacet-new', overwrite: true },
+  });
+
+  t.log('invite evm handler');
+  const evmHandlerAddr = 'agoric1evmhandler';
+  const evmHandlerWallet = await wfd.provideSmartWallet(evmHandlerAddr);
+  refreshAgoricNamesRemotes();
+  const postalService = agoricNamesRemotes.instance.postalService;
+
+  await controllerWallet.invokeEntry({
+    id: Date.now().toString(),
+    targetName: 'ymax0.creatorFacet-new',
+    method: 'deliverEVMWalletHandlerInvitation',
+    args: [evmHandlerAddr, postalService],
+  });
+
+  t.log('redeem evm handler invitation');
+  const yInst = agoricNamesRemotes.instance.ymax0;
+  await evmHandlerWallet.executeOffer({
+    id: Date.now().toString(),
+    invitationSpec: {
+      source: 'purse',
+      description: 'evmWalletHandler',
+      instance: yInst,
+    },
+    proposal: {},
+    saveResult: { name: 'evmWalletHandler' },
+  });
+
+  t.pass();
+});
+
 test.serial(
   'CCTP settlement with old invitation doesnt work with new contract instance',
   async t => {

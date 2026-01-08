@@ -20,6 +20,8 @@ const minimalEnv = {
     'api-spectrum-pools': ['https://example.invalid/'],
   }),
   SQLITE_DB_PATH: './test-kv-store.db',
+  YDS_URL: 'https://yds.example.com',
+  YDS_API_KEY: 'test-api-key-123',
 };
 
 const makeFakeSecretManager = (mnemonic?: string) =>
@@ -61,6 +63,8 @@ test('loadConfig accepts valid configuration', async t => {
     COSMOS_REST_RETRIES: '5',
     GRAPHQL_ENDPOINTS: minimalEnv.GRAPHQL_ENDPOINTS,
     SQLITE_DB_PATH: './test-kv-store.db',
+    YDS_URL: 'https://yds.example.com',
+    YDS_API_KEY: 'test-api-key-123',
   };
   const secretManager = makeFakeSecretManager();
 
