@@ -368,6 +368,7 @@ const startNewEconCharter = async ({
   const terms = harden({
     binaryVoteCounterInstallation: counterInstall,
   });
+  /** @type {EconCharterStartResult} */
   const startResult = await E(startUpgradable)({
     label,
     installation: charterInstall,
