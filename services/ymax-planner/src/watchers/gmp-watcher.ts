@@ -108,6 +108,74 @@ const extractTxIdFromCallData = (data: string): string | null => {
   }
 };
 
+/**
+ * Fetch transaction receipt with retry logic for freshly mined transactions.
+ * @param provider - The WebSocket provider
+ * @param txHash - Transaction hash
+ * @param log - Logging function
+ * @param maxRetries - Maximum number of retry attempts (default: 5)
+ * @returns Transaction receipt or null if not available after retries
+ */
+const fetchReceiptWithRetry = async (
+  provider: WebSocketProvider,
+  txHash: string,
+  log: (...args: unknown[]) => void,
+  maxRetries = 5,
+) => {
+  let receipt = await provider.getTransactionReceipt(txHash);
+  if (!receipt) {
+    log(`Receipt not yet available for txHash=${txHash}, retrying...`);
+    for (let i = 0; i < maxRetries && !receipt; i++) {
+      const delay = Math.min(100 * Math.pow(2, i), 3000); // Max 3s delay
+      await new Promise(resolve => setTimeout(resolve, delay));
+      receipt = await provider.getTransactionReceipt(txHash);
+    }
+
+    if (!receipt) {
+      log(
+        `Failed to get receipt for txHash=${txHash} after ${maxRetries} retries`,
+      );
+    }
+  }
+  return receipt;
+};
+
+/**
+ * Simulate transaction execution to extract revert reason.
+ *
+ * NOTE: This approach can be unreliable because:
+ * 1. Many providers don't support blockTag in call() and silently fall back to "latest"
+ * 2. State changes between tx execution and simulation can cause misclassification
+ *
+ * BETTER APPROACH: Instead of simulating, we should match the sourceAddress parameter
+ * from execute(bytes32 commandId, string sourceChain, string sourceAddress, bytes payload)
+ * against the LCA address available in vstorage.
+ * If sourceAddress matches the LCA, it's a legitimate execution; otherwise it's spurious.
+ *
+ * @param provider - The WebSocket provider
+ * @param tx - Transaction object with to, from, and data fields
+ * @param blockNumber - Block number to simulate at
+ * @returns Revert data or null if call succeeded
+ */
+const simulateTransaction = async (
+  provider: WebSocketProvider,
+  tx: { to: string | null; from: string; data: string },
+  blockNumber: number,
+): Promise<string | null> => {
+  try {
+    await provider.call({
+      to: tx.to,
+      from: tx.from,
+      data: tx.data,
+      blockTag: blockNumber,
+    });
+    // Call succeeded, no revert
+    return null;
+  } catch (error: any) {
+    return error?.data || error?.error?.data || null;
+  }
+};
+
 export const watchGmp = ({
   provider,
   contractAddress,
@@ -227,7 +295,7 @@ export const watchGmp = ({
         const extractedId = extractTxIdFromCallData(txData);
         if (extractedId !== txId) return;
 
-        const receipt = await provider.getTransactionReceipt(txHash);
+        const receipt = await fetchReceiptWithRetry(provider, txHash, log);
         if (!receipt) return;
 
         const matchingLog = receipt.logs.find(
@@ -273,35 +341,31 @@ export const watchGmp = ({
            * operation failed (ContractCallFailed). All other reverts are treated as
            * spurious execution attempts that don't represent the final transaction state.
            */
-          try {
-            // Replay the transaction to get the revert reason
-            await provider.call({
+          const revertData = await simulateTransaction(
+            provider,
+            {
               to: tx.to,
               from: tx.from,
               data: txData,
-            });
-          } catch (error: any) {
-            const revertData = error?.data || error?.error?.data;
+            },
+            receipt.blockNumber,
+          );
 
-            // Check if revert reason starts with ContractCallFailed selector
-            if (
-              revertData &&
-              revertData.startsWith(CONTRACT_CALL_FAILED_ERROR)
-            ) {
-              // This is a legitimate failure from the user's contract call
-              log(
-                `❌ REVERTED: txId=${txId} txHash=${txHash} block=${receipt.blockNumber} (ContractCallFailed - user operation failed)`,
-              );
-              return finish({ found: true, txHash });
-            } else {
-              // Different revert reason - likely spurious execution attempt
-              // Log for observability but continue watching for the legitimate execution
-              log(
-                `⚠️  IGNORED REVERT: txId=${txId} txHash=${txHash} block=${
-                  receipt.blockNumber
-                } reason=${revertData?.slice(0, 10) || 'unknown'} - likely spurious execution, continuing to watch`,
-              );
-            }
+          // Check if revert reason starts with ContractCallFailed selector
+          if (revertData && revertData.startsWith(CONTRACT_CALL_FAILED_ERROR)) {
+            // This is a legitimate failure from the user's contract call
+            log(
+              `❌ REVERTED: txId=${txId} txHash=${txHash} block=${receipt.blockNumber} (ContractCallFailed - user operation failed)`,
+            );
+            return finish({ found: false, txHash });
+          } else {
+            // Different revert reason - likely spurious execution attempt
+            // Log for observability but continue watching for the legitimate execution
+            log(
+              `⚠️  IGNORED REVERT: txId=${txId} txHash=${txHash} block=${
+                receipt.blockNumber
+              } reason=${revertData?.slice(0, 10) || 'unknown'} - likely spurious execution, continuing to watch`,
+            );
           }
         }
       } catch (e) {
