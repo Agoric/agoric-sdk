@@ -5,6 +5,7 @@
  * @import {Petname} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {Board} from '@agoric/vats';
  * @import {ZoeIssuerRecord} from '@agoric/zoe';
+ * @import {Purse} from '@agoric/ertp';
  * @import {BrandRecord, WalletAdminFacet} from './internal-types.js';
  */
 
