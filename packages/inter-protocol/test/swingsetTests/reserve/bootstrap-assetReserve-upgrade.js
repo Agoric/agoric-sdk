@@ -1,4 +1,3 @@
-// @ts-nocheck
 /* eslint-disable @agoric/group-jsdoc-imports */
 
 import { Fail } from '@endo/errors';
@@ -55,7 +54,7 @@ export const buildRootObject = async () => {
    */
   let metricsRecord;
 
-  /** @type {VatAdminSvc} */
+  /** @type {import('@agoric/swingset-vat').VatAdminSvc} */
   let vatAdmin;
 
   let initialPoserInvitation;
