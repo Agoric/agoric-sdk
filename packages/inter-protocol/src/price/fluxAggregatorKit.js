@@ -22,6 +22,7 @@ import { prepareRoundsManagerKit } from './roundsManager.js';
  * @import {EReturn} from '@endo/far';
  * @import {TypedPattern, Remote} from '@agoric/internal';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {PublishKit} from '@agoric/notifier';
  * @import {MapStore, SetStore} from '@agoric/store';
  * @import {QuoteKit} from './roundsManager.js';
  * @import {MakeRecorder} from '@agoric/zoe/src/contractSupport/recorder.js';

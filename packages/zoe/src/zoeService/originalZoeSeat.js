@@ -16,6 +16,7 @@ import {
 
 /**
  * @import {Baggage} from '@agoric/vat-data';
+ * @import {PublishKit} from '@agoric/notifier';
  * @import {InstanceAdminHelper} from '../internal-types.js';
  * @import {WithdrawFacet} from '../internal-types.js';
  * @import {ExitObj} from '../internal-types.js';

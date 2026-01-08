@@ -20,6 +20,7 @@ import { withAmountUtils } from '../../supports.js';
 /**
  * @import {FeeMintAccess} from '@agoric/zoe';
  * @import {MetricsNotification} from '../../../src/reserve/assetReserveKit.js';
+ * @import {Subscriber, UpdateRecord} from '@agoric/notifier';
  * @import {PuppetContractGovernorKit} from '@agoric/governance/tools/puppetContractGovernor.js';
  * @import {start} from '../../../src/reserve/assetReserve.js';
  * @import {StartParams} from '@agoric/zoe/src/zoeService/utils.js';
