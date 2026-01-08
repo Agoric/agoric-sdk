@@ -36,8 +36,6 @@ declare global {
     _Handle as Handle,
     _Installation as Installation,
     _Instance as Instance,
-    _Invitation as Invitation,
-    _InvitationAmount as InvitationAmount,
     _IssuerKeywordRecord as IssuerKeywordRecord,
     _Keyword as Keyword,
     _OfferHandler as OfferHandler,
