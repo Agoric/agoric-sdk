@@ -1,7 +1,11 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { protoMsgMockMap } from '@aglocal/boot/tools/ibc/mocks.ts';
-import { AckBehavior } from '@aglocal/boot/tools/supports.ts';
+import {
+  AckBehavior,
+  insistManagerType,
+  makeSwingsetHarness,
+} from '@aglocal/boot/tools/supports.ts';
 import { makeProposalShapes } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import { makeUSDNIBCTraffic } from '@aglocal/portfolio-contract/test/mocks.ts';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
@@ -22,7 +26,11 @@ import {
   type WalletFactoryTestContext,
 } from './walletFactory.ts';
 
-const test: TestFn<WalletFactoryTestContext> = anyTest;
+const test: TestFn<
+  WalletFactoryTestContext & {
+    harness?: ReturnType<typeof makeSwingsetHarness>;
+  }
+> = anyTest;
 
 const beneficiary = 'agoric126sd64qkuag2fva3vy3syavggvw44ca2zfrzyy';
 const controllerAddr = 'agoric1ymax0-admin';
@@ -124,12 +132,25 @@ const exampleDynamicChainInfo = {
   },
 } satisfies Record<string, ChainInfo>;
 
+const {
+  SLOGFILE: slogFile,
+  SWINGSET_WORKER_TYPE: defaultManagerType = 'local',
+} = process.env;
+
 test.before('bootstrap', async t => {
   const config = '@agoric/vm-config/decentral-itest-orchestration-config.json';
   // TODO: impact testing
-  const ctx = await makeWalletFactoryContext(t, config);
+  insistManagerType(defaultManagerType);
+  const harness = ['xs-worker', 'xsnap'].includes(defaultManagerType)
+    ? makeSwingsetHarness()
+    : undefined;
+  const ctx = await makeWalletFactoryContext(t, config, {
+    slogFile,
+    defaultManagerType,
+    harness,
+  });
 
-  t.context = ctx;
+  t.context = { ...ctx, harness };
 });
 test.after.always(t => t.context.shutdown?.());
 
