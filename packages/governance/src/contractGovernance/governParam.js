@@ -44,7 +44,7 @@ const makeParamChangePositions = changes => {
  * the question described by questionSpec.
  *
  * @param {{ parameterName: string, paramPath: unknown}} paramSpec
- * @param {QuestionSpec<ParamChangeIssue<unknown>>} questionSpec
+ * @param {QuestionSpec<ParamChangeIssue>} questionSpec
  */
 const assertBallotConcernsParam = (paramSpec, questionSpec) => {
   mustMatch(questionSpec, ParamChangesQuestionDetailsShape);
@@ -94,7 +94,7 @@ const setupParamGovernance = (
 
     const { positive, negative } = makeParamChangePositions(changes);
 
-    /** @type {ParamChangeIssue<unknown>} */
+    /** @type {ParamChangeIssue} */
     const issue = harden({
       spec: {
         paramPath: paramSpec.paramPath,
