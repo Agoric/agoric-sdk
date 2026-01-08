@@ -21,6 +21,7 @@ import {
   type WalletFactoryTestContext,
 } from '../bootstrapTests/walletFactory.js';
 import { minimalChainInfos } from '../tools/chainInfo.js';
+import type { ZoeService } from '@agoric/zoe';
 
 const test: TestFn<
   WalletFactoryTestContext & {

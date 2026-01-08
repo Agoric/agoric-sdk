@@ -11,6 +11,7 @@ import { E } from '@endo/far';
  * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  * @import {start as StartFn} from '@agoric/orchestration/src/examples/swap-anything.contract.js';
+ * @import {Instance} from '@agoric/zoe';
  */
 
 const trace = makeTracer('StartSA', true);

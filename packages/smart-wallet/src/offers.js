@@ -1,5 +1,5 @@
 /**
- * @import {Proposal} from '@agoric/zoe';
+ * @import {AmountKeywordRecord, Proposal} from '@agoric/zoe';
  * @import {Passable} from '@endo/pass-style';
  * @import {InvitationSpec} from './invitations.js';
  */

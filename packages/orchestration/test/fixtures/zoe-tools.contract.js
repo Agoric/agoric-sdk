@@ -23,6 +23,7 @@ const { values } = Object;
  * @import {AssetInfo} from '@agoric/vats/src/vat-bank.js';
  * @import {CosmosInterchainService} from '@agoric/orchestration';
  * @import {OrchestrationTools} from '../../src/utils/start-helper.js';
+ * @import {ZCF} from '@agoric/zoe';
  */
 
 /**

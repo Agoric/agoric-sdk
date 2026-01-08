@@ -15,6 +15,9 @@ import { makeTerms, MALLEABLE_NUMBER } from './governedContract.js';
 /**
  * @import {ContractGovernanceVoteResult, GovernedPublicFacetMethods, GovernorCreatorFacet, ParamChangesSpec, QuestionDetails, SimpleIssue, StandardParamPath} from '../../../src/types.js';
  * @import {EVatVoter} from './vat-voter.js';
+ * @import {ZoeService} from '@agoric/zoe';
+ * @import {Installation} from '@agoric/zoe';
+ * @import {Instance} from '@agoric/zoe';
  */
 
 /**

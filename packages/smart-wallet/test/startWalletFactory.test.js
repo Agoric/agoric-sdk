@@ -10,6 +10,7 @@ import { makeMockTestSpace } from './supports.js';
  * @import {EReturn} from '@endo/far';
  * @import {TestFn} from 'ava';
  * @import {start as StartWalletFactory} from '../src/walletFactory.js';
+ * @import {Installation} from '@agoric/zoe';
  */
 
 /**

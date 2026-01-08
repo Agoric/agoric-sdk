@@ -28,7 +28,7 @@ import type { RunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import type { TimerService } from '@agoric/time';
 import type { WalletFactoryStartResult } from '@agoric/vats/src/core/startWalletFactory.js';
 import { type AgoricNamesRemotes } from '@agoric/vats/tools/board-utils.js';
-import type { InvitationDetails } from '@agoric/zoe';
+import type { Instance, InvitationDetails } from '@agoric/zoe';
 import type { Marshal } from '@endo/marshal';
 import type { SwingsetTestKit } from './supports.js';
 

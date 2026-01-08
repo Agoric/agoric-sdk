@@ -18,7 +18,7 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { withAmountUtils } from '../../supports.js';
 
 /**
- * @import {FeeMintAccess} from '@agoric/zoe';
+ * @import {FeeMintAccess, Installation, ZoeService} from '@agoric/zoe';
  * @import {MetricsNotification} from '../../../src/reserve/assetReserveKit.js';
  * @import {Subscriber, UpdateRecord} from '@agoric/notifier';
  * @import {PuppetContractGovernorKit} from '@agoric/governance/tools/puppetContractGovernor.js';
