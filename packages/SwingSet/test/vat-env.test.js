@@ -1,6 +1,5 @@
-// @ts-nocheck
 // eslint-disable-next-line import/order
-import { test, VatData } from '../tools/prepare-test-env-ava.js';
+import { test } from '../tools/prepare-test-env-ava.js';
 
 import bundleSource from '@endo/bundle-source';
 import { initSwingStore } from '@agoric/swing-store';
@@ -74,7 +73,7 @@ test('store makers are in the test environment', t => {
 });
 
 async function testForExpectedGlobals(t, workerType) {
-  /** @type {SwingSetConfig} */
+  /** @satisfies {SwingSetConfig} */
   const config = {
     bootstrap: 'bootstrap',
     vats: {

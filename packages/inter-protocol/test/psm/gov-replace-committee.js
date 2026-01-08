@@ -1,6 +1,5 @@
 /* global E */
-// @ts-nocheck
-/// <reference types="@agoric/vats/src/core/core-eval-env" />
+/// <reference types="@agoric/vats/src/core/core-eval-env.js" />
 /**
  * @file Script to replace the econ governance committee in a SwingSet Core Eval
  *   (aka big hammer)
@@ -10,6 +9,7 @@ import { Fail } from '@endo/errors';
 
 /**
  * @import {NameAdmin} from '@agoric/vats';
+ * @import {Invitation} from '@agoric/zoe';
  */
 
 const runConfig = {

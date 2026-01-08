@@ -12,6 +12,7 @@ export {};
  * @import {IssuerOptionsRecord, IssuerRecord} from '@agoric/ertp';
  * @import {Allocation, PaymentPKeywordRecord, UserSeat, Completion, ZoeIssuerRecord} from './types-index.js';
  * @import {InvitationHandle, BrandKeywordRecord, AnyTerms} from './types.js';
+ * @import {FeeMintAccess} from './zoeService/types.js';
  * @import {InstanceRecord} from './zoeService/utils.js';
  */
 
@@ -217,7 +218,6 @@ export {};
 /**
  * @typedef {object} ZCFRoot
  * @property {StartZcf} startZcf
- * @property {RestartContract} restartContract
  */
 
 /**
@@ -235,12 +235,6 @@ export {};
  * @param {IssuerRecords} issuerStorageFromZoe
  * @param {object} [privateArgs]
  * @returns {Promise<ExecuteContractResult>}
- */
-
-/**
- * @callback RestartContract
- * @param {object} [privateArgs]
- * @returns {Promise<ExecuteUpgradeableContractResult>}
  */
 
 /**
