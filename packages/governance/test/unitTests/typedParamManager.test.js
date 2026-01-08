@@ -17,6 +17,7 @@ import {
 
 /**
  * @import {Invitation} from '@agoric/zoe';
+ * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
  */
 
 const drachmaKit = makeIssuerKit('drachma');

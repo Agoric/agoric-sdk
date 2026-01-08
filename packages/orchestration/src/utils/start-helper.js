@@ -26,6 +26,7 @@ import { makeZcfTools } from './zcf-tools.js';
  * @import {Zone} from '@agoric/zone';
  * @import {Pattern} from '@endo/patterns';
  * @import {CosmosInterchainService} from '../exos/exo-interfaces.js';
+ * @import {ZCF} from '@agoric/zoe';
  */
 
 /**

@@ -26,6 +26,7 @@ import { prepareSmartWallet } from '../src/smartWallet.js';
  * @import {BrandDescriptorRegistry} from '../src/smartWallet.js';
  * @import {Bank} from '@agoric/vats/src/vat-bank.js';
  * @import {BridgeAction} from '../src/smartWallet.js';
+ * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
  */
 
 /** @type {TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */

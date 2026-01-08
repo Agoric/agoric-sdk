@@ -2,7 +2,7 @@ import { Far } from '@endo/marshal';
 import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
 
 /**
- * @import {FeeMintAccess} from '@agoric/zoe';
+ * @import {FeeMintAccess, ZCF, ZCFSeat} from '@agoric/zoe';
  */
 
 /**

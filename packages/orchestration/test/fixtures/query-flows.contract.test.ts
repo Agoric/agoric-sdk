@@ -21,6 +21,7 @@ import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { decodeBase64 } from '@endo/base64';
 import { E, type EReturn } from '@endo/far';
 import type { TestFn } from 'ava';
+import type { ZoeService } from '@agoric/zoe';
 import * as contractExports from '../../src/fixtures/query-flows.contract.js';
 import {
   buildQueryPacketString,

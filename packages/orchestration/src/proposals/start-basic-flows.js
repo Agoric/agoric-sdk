@@ -8,6 +8,8 @@ import { E } from '@endo/far';
 /**
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  * @import {BasicFlowsSF} from '../examples/basic-flows.contract.js';
+ * @import {Installation} from '@agoric/zoe';
+ * @import {Instance} from '@agoric/zoe';
  */
 
 const trace = makeTracer('StartBasicFlows', true);

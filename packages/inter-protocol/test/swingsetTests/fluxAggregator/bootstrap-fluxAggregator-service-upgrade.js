@@ -25,6 +25,8 @@ import { makePromiseKit } from '@endo/promise-kit';
  * @import {Subscriber, UpdateRecord} from '@agoric/notifier';
  * @import {StartParams} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {VatAdminSvc} from '@agoric/swingset-vat';
+ * @import {ZoeService} from '@agoric/zoe';
+ * @import {Installation} from '@agoric/zoe';
  */
 
 const trace = makeTracer('BootFAUpg');

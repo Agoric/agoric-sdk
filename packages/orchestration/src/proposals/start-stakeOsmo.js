@@ -11,6 +11,7 @@ import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
  * @import {IBCConnectionID} from '@agoric/vats';
  * @import {StakeIcaSF} from '../examples/stake-ica.contract.js';
  * @import {start} from '../examples/stake-ica.contract.js';
+ * @import {Installation} from '@agoric/zoe';
  */
 
 const trace = makeTracer('StartStakeOsmo', true);

@@ -14,6 +14,8 @@ import { MALLEABLE_NUMBER } from './governedContract.js';
 /**
  * @import {EReturn} from '@endo/far';
  * @import {BuildRootObjectForTestVat} from '@agoric/swingset-vat/src/kernel/vat-loader/types.js';
+ * @import {Instance} from '@agoric/zoe';
+ * @import {Installation} from '@agoric/zoe';
  */
 
 const build = async (log, zoe) => {

@@ -8,7 +8,7 @@ import { prepareExoClassKit, provide } from '@agoric/vat-data';
 /**
  * @import {GovernanceTerms} from '@agoric/governance/src/types.js';
  * @import {Baggage} from '@agoric/vat-data';
- * @import {Invitation} from '@agoric/zoe';
+ * @import {Invitation, ZCF} from '@agoric/zoe';
  */
 
 const MALLEABLE_NUMBER = 'MalleableNumber';
