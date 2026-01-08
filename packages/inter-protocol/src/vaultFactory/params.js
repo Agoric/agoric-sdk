@@ -1,6 +1,5 @@
 // @jessie-check
 
-/// <reference types="@agoric/internal/exported.js" />
 /// <reference path="./types-ambient.js" />
 
 import {
