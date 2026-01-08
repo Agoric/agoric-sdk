@@ -248,6 +248,7 @@ __metadata:
     "@agoric/notifier": "workspace:*"
     "@agoric/orchestration": "workspace:*"
     "@agoric/pola-io": "workspace:*"
+    "@agoric/portfolio-api": "workspace:*"
     "@agoric/smart-wallet": "workspace:*"
     "@agoric/store": "workspace:*"
     "@agoric/vat-data": "workspace:*"
@@ -270,6 +271,7 @@ __metadata:
     execa: "npm:^9.6.0"
     ts-blank-space: "npm:^0.6.2"
     tsd: "npm:^0.33.0"
+    viem: "npm:^2.31.0"
   languageName: unknown
   linkType: soft
 
