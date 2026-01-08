@@ -1,6 +1,10 @@
 export {};
 
 /**
+ * @import {VatPowers} from '../../types-external.js'
+ */
+
+/**
  * @typedef { [string, ...unknown[]] } Tagged
  * @typedef { { meterType: string, allocate: number|null, compute: number|null } }
  * MeterUsage
