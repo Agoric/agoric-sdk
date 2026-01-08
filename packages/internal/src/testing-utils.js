@@ -58,9 +58,10 @@ export const inspectMapStore = store => {
 harden(inspectMapStore);
 
 /**
+ * @template [Input=any]
  * @typedef {readonly [
  *   stepName: string,
- *   fn: (input: any, label: string) => unknown,
+ *   fn: (input: Partial<Input>, label: string) => Partial<Input> | PromiseLike<Partial<Input>>,
  * ]} TestStep
  */
 
@@ -68,26 +69,27 @@ harden(inspectMapStore);
  * For each step, run to just before that point and pause for continuation after
  * interrupt.
  *
+ * @template [Input=any]
  * @template [Context=unknown]
  * @param {AvaT<Context>} t
- * @param {readonly TestStep[]} allSteps
- * @param {(t: AvaT<Context>) => ERef<void>} doInterrupt
+ * @param {readonly TestStep<Input>[]} allSteps
+ * @param {(t: AvaT<Context>) => ERef<void>} [doInterrupt]
  */
 export const testInterruptedSteps = async (t, allSteps, doInterrupt) => {
   /**
    * @typedef {{
    *   label: string;
-   *   accum?: unknown;
+   *   accum: Partial<Input>;
    * }} RunState
    */
 
   /**
    * @param {string} label
-   * @param {readonly TestStep[]} steps
+   * @param {readonly TestStep<Input>[]} steps
    * @param {RunState} [runState]
    * @returns {Promise<RunState>}
    */
-  const runSteps = async (label, steps, runState = { label }) => {
+  const runSteps = async (label, steps, runState = { label, accum: {} }) => {
     await null;
     let accum = runState.accum;
     const runLabel = runState.label;
@@ -101,11 +103,14 @@ export const testInterruptedSteps = async (t, allSteps, doInterrupt) => {
 
   // Sanity check
   await runSteps('pre-interrupt', allSteps);
+  if (!doInterrupt) {
+    return;
+  }
 
   /**
    * @type {{
    *   runState: RunState;
-   *   remainingSteps: readonly TestStep[];
+   *   remainingSteps: readonly TestStep<Input>[];
    * }[]}
    */
   const pausedRuns = [];
@@ -114,7 +119,7 @@ export const testInterruptedSteps = async (t, allSteps, doInterrupt) => {
     const runState = await runSteps(
       `pre-${beforeStepName}`,
       allSteps.slice(0, i),
-      { label: `pause-before-${beforeStepName}` },
+      { label: `pause-before-${beforeStepName}`, accum: {} },
     );
     pausedRuns.push({ runState, remainingSteps: allSteps.slice(i) });
   }
