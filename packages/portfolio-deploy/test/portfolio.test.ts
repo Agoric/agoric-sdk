@@ -240,7 +240,7 @@ test.serial('contract starts; appears in agoricNames', async t => {
 
   const materials = buildProposal(
     '@aglocal/portfolio-deploy/src/portfolio.build.js',
-    ['--net', 'mainnet'],
+    ['--net', 'mainnet', '--no-flow-config'],
   );
   await evalProposal(materials);
 
@@ -406,7 +406,12 @@ test.serial('restart contract', async t => {
   const kit = await (EV.vat('bootstrap').consumeItem as ConsumeBootstrapItem)(
     'ymax0Kit',
   );
-  const actual = await EV(kit.adminFacet).restartContract(kit.privateArgs);
+
+  // Ensure we're no longer overriding the defaultFlowConfig.
+  const { defaultFlowConfig: _, ...noDefaultFlowConfigArgs } = kit.privateArgs;
+  const actual = await EV(kit.adminFacet).restartContract(
+    noDefaultFlowConfigArgs,
+  );
 
   // Expect incarnation 1: first restart from initial deployment
   // (The "remove old contract; start new contract" test creates a new contract
