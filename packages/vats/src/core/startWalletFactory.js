@@ -16,11 +16,12 @@ import {
  * @import {ERemote} from '@agoric/internal';
  * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  * @import {EReturn} from '@endo/far';
- * @import {AdminFacet, ContractOf, InvitationAmount, ZCFMint} from '@agoric/zoe';
+ * @import {AdminFacet, ContractOf, InvitationAmount, ZCFMint, ZoeService} from '@agoric/zoe';
  * @import {start as StartWalletFactory} from '@agoric/smart-wallet/src/walletFactory.js';
  * @import {CommitteeElectorateCreatorFacet} from '@agoric/governance/src/committee.js';
  * @import {ScopedBridgeManager} from '../types.js';
  * @import {start} from '@agoric/inter-protocol/src/econCommitteeCharter.js';
+ * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
  */
 
 const trace = makeTracer('StartWF', 'verbose');
