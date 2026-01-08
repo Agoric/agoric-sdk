@@ -10,6 +10,7 @@ import {
   type TestStep,
 } from '@agoric/internal/src/testing-utils.js';
 import { typedEntries } from '@agoric/internal';
+import type { Installation, ZoeService } from '@agoric/zoe';
 import { makeSwingsetTestKit } from '../../tools/supports.js';
 
 const { entries, assign } = Object;

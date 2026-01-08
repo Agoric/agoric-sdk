@@ -18,6 +18,7 @@ const interfaceTODO = undefined;
  * @import {OrchestrationPowers, OrchestrationTools} from '../utils/start-helper.js';
  * @import {CosmosChainInfo, Denom, DenomDetail, OrchestrationAccount} from '@agoric/orchestration';
  * @import {VTransferIBCEvent} from '@agoric/vats';
+ * @import {ZCF} from '@agoric/zoe';
  */
 
 export const SingleNatAmountRecord = M.and(

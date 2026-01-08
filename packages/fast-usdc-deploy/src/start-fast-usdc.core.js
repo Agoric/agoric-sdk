@@ -13,6 +13,7 @@ import {
  * @import {ERemote, Remote} from '@agoric/internal';
  * @import {Instance, StartParams} from '@agoric/zoe/src/zoeService/utils.js'
  * @import {Board} from '@agoric/vats'
+ * @import {Installation} from '@agoric/zoe';
  * @import {ManifestBundleRef} from '@agoric/deploy-script-support/src/externalTypes.js'
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js'
  * @import {LegibleCapData} from './utils/config-marshal.js'

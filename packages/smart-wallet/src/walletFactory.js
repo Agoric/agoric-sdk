@@ -35,6 +35,7 @@ import { shape } from './typeGuards.js';
  * @import {WalletBridgeMsg} from './types.js';
  * @import {Bank} from '@agoric/vats/src/vat-bank.js';
  * @import {TestJigKit} from '@agoric/zoe/src/contractSupport/testJigHelpers.js';
+ * @import {ZCF} from '@agoric/zoe';
  */
 
 const trace = makeTracer('WltFct');

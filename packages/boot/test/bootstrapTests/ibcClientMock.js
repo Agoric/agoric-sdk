@@ -8,6 +8,7 @@ import { heapVowE as E } from '@agoric/vow/vat.js';
  * @import {ERemote} from '@agoric/internal';
  * @import {ERef} from '@agoric/vow';
  * @import {Baggage} from '@agoric/vat-data';
+ * @import {ZCF} from '@agoric/zoe';
  */
 
 /**

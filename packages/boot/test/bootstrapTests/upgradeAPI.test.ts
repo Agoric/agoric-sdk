@@ -8,6 +8,7 @@ import { MALLEABLE_NUMBER } from '@agoric/governance/test/swingsetTests/contract
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
 
 import { makePromiseKit } from '@endo/promise-kit';
+import type { ZoeService } from '@agoric/zoe';
 import { makeSwingsetTestKit } from '../../tools/supports.js';
 import {
   makeGovernanceDriver,

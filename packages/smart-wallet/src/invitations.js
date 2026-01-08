@@ -7,9 +7,10 @@ import { shape } from './typeGuards.js';
 
 /**
  * @import {OfferId} from './offers.js';
- * @import {Invitation, InvitationDetails} from '@agoric/zoe';
+ * @import {Invitation, InvitationDetails, ZoeService} from '@agoric/zoe';
  * @import {NameHub} from '@agoric/vats';
  * @import {InvitationMakers} from './types.js';
+ * @import {Instance} from '@agoric/zoe/src/zoeService/utils.js';
  */
 
 // A safety limit
@@ -38,7 +39,7 @@ const MAX_PIPE_LENGTH = 2;
  *
  * @typedef {{
  *   source: 'contract';
- *   instance: Instance;
+ *   instance: Instance<any>;
  *   publicInvitationMaker: string;
  *   invitationArgs?: any[];
  * }} ContractInvitationSpec
@@ -46,7 +47,7 @@ const MAX_PIPE_LENGTH = 2;
  *
  * @typedef {{
  *   source: 'purse';
- *   instance: Instance;
+ *   instance: Instance<any>;
  *   description: string;
  * }} PurseInvitationSpec
  *   the invitation is already in your Zoe "invitation" purse so we need to query
