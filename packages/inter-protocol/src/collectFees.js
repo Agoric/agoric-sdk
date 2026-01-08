@@ -3,6 +3,10 @@
 import { atomicTransfer } from '@agoric/zoe/src/contractSupport/index.js';
 
 /**
+ * @import {Invitation} from '@agoric/zoe';
+ */
+
+/**
  * Provide shared support for providing access to fees from a service contract.
  *
  * @param {ZCF} zcf
