@@ -2,15 +2,8 @@ import test from 'ava';
 import { id, keccak256, toUtf8Bytes } from 'ethers';
 import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
-import { createMockPendingTxData } from '@aglocal/portfolio-contract/tools/mocks.ts';
-import { encodeAbiParameters } from 'viem';
-import {
-  createMockGmpExecutionEvent,
-  createMockPendingTxOpts,
-  mockFetch,
-} from './mocks.ts';
+import { createMockPendingTxOpts, mockFetch } from './mocks.ts';
 import { handlePendingTx } from '../src/pending-tx-manager.ts';
-import { GMP_ABI } from '../src/axelarscan-utils.ts';
 
 test('handlePendingTx processes GMP transaction successfully', async t => {
   const opts = createMockPendingTxOpts();
@@ -43,6 +36,7 @@ test('handlePendingTx processes GMP transaction successfully', async t => {
       data: '0x', // No additional data needed for this event
       transactionHash: '0x123abc',
       blockNumber: 18500000,
+      txId,
     };
 
     const filter = {
@@ -63,9 +57,8 @@ test('handlePendingTx processes GMP transaction successfully', async t => {
 
   t.deepEqual(logMessages, [
     `[${txId}] handling ${type} tx`,
-    `[${txId}] Watching for MulticallStatus and MulticallExecuted events for txId: ${txId} at contract: ${contractAddress}`,
-    `[${txId}] MulticallStatus detected: txId=${txId} contract=${contractAddress} tx=0x123abc`,
-    `[${txId}] ✓ MulticallStatus matches txId: ${txId}`,
+    `[${txId}] Watching transaction status for txId: ${txId} at contract: ${contractAddress}`,
+    `[${txId}] ✅ SUCCESS: txId=${txId} txHash=0x123abc block=18500000`,
     `[${txId}] GMP tx resolved`,
   ]);
 });
@@ -104,6 +97,7 @@ test('handlePendingTx logs a time out on a GMP transaction with no matching even
       data: '0x', // No additional data needed for this event
       transactionHash: '0x123abc',
       blockNumber: 18500000,
+      txId,
     };
 
     const filter = {
@@ -124,10 +118,9 @@ test('handlePendingTx logs a time out on a GMP transaction with no matching even
 
   t.deepEqual(logMessages, [
     `[${txId}] handling ${type} tx`,
-    `[${txId}] Watching for MulticallStatus and MulticallExecuted events for txId: ${txId} at contract: ${contractAddress}`,
-    `[${txId}] ✗ No MulticallStatus or MulticallExecuted found for txId ${txId} within 0.01 minutes`,
-    `[${txId}] MulticallStatus detected: txId=${txId} contract=${contractAddress} tx=0x123abc`,
-    `[${txId}] ✓ MulticallStatus matches txId: ${txId}`,
+    `[${txId}] Watching transaction status for txId: ${txId} at contract: ${contractAddress}`,
+    `[${txId}] ✗ No transaction status found for txId ${txId} within 0.01 minutes`,
+    `[${txId}] ✅ SUCCESS: txId=${txId} txHash=0x123abc block=18500000`,
     `[${txId}] GMP tx resolved`,
   ]);
 });

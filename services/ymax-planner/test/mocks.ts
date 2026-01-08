@@ -104,7 +104,47 @@ export const createMockProvider = (
   const currentTimeMs = 1700000000; // 2023-11-14T22:13:20Z
   const avgBlockTimeMs = 300;
 
+  // Mock websocket for gmp-watcher - store event handlers
+  const wsEventHandlers = new Map<string, Function[]>();
+  const mockWebSocket = {
+    on: (event: string, handler: Function) => {
+      if (!wsEventHandlers.has(event)) {
+        wsEventHandlers.set(event, []);
+      }
+      wsEventHandlers.get(event)!.push(handler);
+    },
+    once: (event: string, handler: Function) => {
+      if (!wsEventHandlers.has(event)) {
+        wsEventHandlers.set(event, []);
+      }
+      const onceWrapper = (...args: any[]) => {
+        handler(...args);
+        mockWebSocket.removeListener(event, onceWrapper);
+      };
+      wsEventHandlers.get(event)!.push(onceWrapper);
+    },
+    removeListener: (event: string, handler: Function) => {
+      const handlers = wsEventHandlers.get(event);
+      if (handlers) {
+        const index = handlers.indexOf(handler);
+        if (index > -1) {
+          handlers.splice(index, 1);
+        }
+      }
+    },
+    off: (event: string, handler: Function) => {
+      mockWebSocket.removeListener(event, handler);
+    },
+    removeAllListeners: () => {
+      wsEventHandlers.clear();
+    },
+    readyState: 1, // WebSocket.OPEN
+  };
+
+  const mockReceipts = new Map<string, any>();
+
   const mockProvider = {
+    websocket: mockWebSocket,
     on: (eventOrFilter: any, listener: Function) => {
       const key = JSON.stringify(eventOrFilter);
       if (!eventListeners.has(key)) {
@@ -137,6 +177,71 @@ export const createMockProvider = (
       if (listeners) {
         listeners.forEach(listener => listener(log));
       }
+
+      // For websocket-based watchers, also trigger websocket message handlers
+      // by simulating an Alchemy subscription message
+      const messageHandlers = wsEventHandlers.get('message') || [];
+      if (
+        messageHandlers.length > 0 &&
+        log.transactionHash &&
+        eventOrFilter.topics
+      ) {
+        // Tests can include txId in the log object for websocket simulation
+        const txId = (log as any).txId;
+
+        if (txId) {
+          // Create proper Wallet.execute() calldata with the txId
+          const walletExecuteIface = new ethers.Interface([
+            'function execute(bytes32 commandId, string sourceChain, string sourceAddress, bytes payload) external',
+          ]);
+          const abiCoder = ethers.AbiCoder.defaultAbiCoder();
+
+          // Encode CallMessage payload with txId
+          const payload = abiCoder.encode(
+            ['tuple(string id, tuple(address target, bytes data)[] calls)'],
+            [[txId, []]], // CallMessage with txId and empty calls array
+          );
+
+          const mockCalldata = walletExecuteIface.encodeFunctionData(
+            'execute',
+            [
+              ethers.hexlify(ethers.randomBytes(32)), // commandId
+              'agoric', // sourceChain
+              'agoric1sender', // sourceAddress
+              payload,
+            ],
+          );
+
+          // Store the receipt so getTransactionReceipt can return it
+          mockReceipts.set(log.transactionHash, {
+            status: 1,
+            blockNumber: log.blockNumber,
+            logs: [log],
+            transactionHash: log.transactionHash,
+          });
+
+          // Simulate websocket message with transaction data
+          const wsMessage = {
+            method: 'eth_subscription',
+            params: {
+              result: {
+                transaction: {
+                  hash: log.transactionHash,
+                  input: mockCalldata,
+                  to: log.address,
+                  from: '0x0000000000000000000000000000000000000000',
+                  value: '0x0',
+                  gasLimit: '0x186a0',
+                },
+              },
+            },
+          };
+
+          messageHandlers.forEach(handler => {
+            handler(JSON.stringify(wsMessage));
+          });
+        }
+      }
     },
     waitForBlock: _blockTag => {},
     getBlockNumber: async () => {
@@ -155,9 +260,14 @@ export const createMockProvider = (
           event.blockNumber <= args.toBlock,
       );
     },
-  } as WebSocketProvider;
+    getNetwork: async () => ({ chainId: 1n, name: 'ethereum' }),
+    send: async () => 'mock-subscription-id',
+    getTransactionReceipt: async (txHash: string) => {
+      return mockReceipts.get(txHash) || null;
+    },
+  };
 
-  return mockProvider;
+  return mockProvider as unknown as WebSocketProvider;
 };
 
 export const createMockSigningSmartWalletKit = (): SigningSmartWalletKit => {
@@ -492,18 +602,18 @@ export const createMockTransferEvent = (
   };
 };
 
-export const createMockGmpExecutionEvent = (
+export const createMockGmpStatusEvent = (
   txId: string,
   blockNumber: number,
 ): Pick<Log, 'blockNumber' | 'data' | 'topics' | 'transactionHash'> => {
-  const MULTICALL_EXECUTED_SIGNATURE = ethers.id(
-    'MulticallExecuted(string,(bool,bytes)[])',
+  const MULTICALL_STATUS_SIGNATURE = ethers.id(
+    'MulticallStatus(string,bool,uint256)',
   );
   const txIdTopic = ethers.keccak256(ethers.toUtf8Bytes(txId));
 
   return {
     blockNumber,
-    topics: [MULTICALL_EXECUTED_SIGNATURE, txIdTopic],
+    topics: [MULTICALL_STATUS_SIGNATURE, txIdTopic],
     data: '0x',
     transactionHash: '0x1234567890abcdef1234567890abcdef12345678',
   };

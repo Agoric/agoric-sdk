@@ -17,7 +17,7 @@ import {
   createMockPendingTxEvent,
   createMockStreamCell,
   createMockTransferEvent,
-  createMockGmpExecutionEvent,
+  createMockGmpStatusEvent,
 } from './mocks.ts';
 
 const marshaller = boardSlottingMarshaller();
@@ -503,7 +503,7 @@ test('resolves a 10 second old pending GMP transaction in lookback mode', async 
   // Trigger block event to resolve waitForBlock
   setTimeout(() => mockProvider.emit('block', latestBlock + 1), 10);
 
-  const event = createMockGmpExecutionEvent(txId, latestBlock);
+  const event = createMockGmpStatusEvent(txId, latestBlock);
   mockProvider.getLogs = async () => [event];
 
   const ctxWithFetch = harden({
@@ -550,7 +550,7 @@ test('resolves a 10 second old pending GMP transaction in lookback mode', async 
 
   t.deepEqual(logs, [
     `[${txId}] handling ${TxType.GMP} tx`,
-    `[${txId}] Watching for MulticallStatus and MulticallExecuted events for txId: ${txId} at contract: ${contractAddress}`,
+    `[${txId}] Watching transaction status for txId: ${txId} at contract: ${contractAddress}`,
     `[${txId}] Searching blocks ${fromBlock} → ${toBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
     `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,
     `[${txId}] [LogScan] Match in tx=${event.transactionHash}`,
@@ -718,10 +718,22 @@ test('GMP monitor does not resolve transaction twice when live mode completes be
   // Make lookback return nothing (simulate not finding the transaction)
   mockProvider.getLogs = async () => [];
 
+  // Create event for MulticallStatus
+  const expectedIdTopic = ethers.keccak256(ethers.toUtf8Bytes(txId));
+  const event = {
+    address: contractAddress,
+    topics: [
+      ethers.id('MulticallStatus(string,bool,uint256)'),
+      expectedIdTopic,
+    ],
+    data: '0x',
+    blockNumber: latestBlock + 2,
+    transactionHash: '0x1234567890abcdef1234567890abcdef12345678',
+    txId, // Include txId for websocket message simulation
+  };
+
   // Simulate live mode finding the transaction quickly (before lookback completes)
-  const event = createMockGmpExecutionEvent(txId, latestBlock + 2);
   setTimeout(() => {
-    const expectedIdTopic = ethers.keccak256(ethers.toUtf8Bytes(txId));
     const filter = {
       address: contractAddress,
       topics: [
