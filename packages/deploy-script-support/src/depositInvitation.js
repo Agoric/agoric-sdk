@@ -3,7 +3,7 @@ import { E } from '@endo/far';
 
 /**
  * @import {Amount, Brand, Issuer, Payment, Purse} from '@agoric/ertp';
- * @import {InvitationDetails} from '@agoric/zoe';
+ * @import {Invitation, InvitationDetails} from '@agoric/zoe';
  */
 
 /**
