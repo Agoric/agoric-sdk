@@ -6,7 +6,7 @@ import { E, passStyleOf } from '@endo/far';
 /**
  * @import {Petname} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {Amount, Brand, Issuer, Payment, Purse} from '@agoric/ertp';
- * @import {IssuerKeywordRecord, Keyword} from '@agoric/zoe';
+ * @import {Instance, Installation, IssuerKeywordRecord, Keyword, ZoeService} from '@agoric/zoe';
  */
 
 /**

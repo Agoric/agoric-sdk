@@ -5,6 +5,7 @@ import { E } from '@endo/far';
 
 /**
  * @import {Petname} from '@agoric/deploy-script-support/src/externalTypes.js'
+ * @import {Installation, ZoeService} from '@agoric/zoe';
  * @import {InstallationManager} from './startInstance.js';
  */
 
