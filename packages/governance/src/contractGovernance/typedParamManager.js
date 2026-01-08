@@ -9,6 +9,7 @@ import { makeParamManagerBuilder } from './paramManager.js';
  * @import {VoteCounterCreatorFacet, VoteCounterPublicFacet, QuestionSpec, OutcomeRecord, AddQuestion, AddQuestionReturn, GovernanceSubscriptionState, GovernanceTerms, ParamManagerBase, ParamStateRecord, ParamValueForType, UpdateParams} from '../types.js';
  * @import {ParamType} from '../constants.js';
  * @import {StoredPublisherKit} from '@agoric/notifier';
+ * @import {Amount} from '@agoric/ertp';
  */
 
 /**

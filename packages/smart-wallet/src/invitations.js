@@ -73,8 +73,8 @@ const MAX_PIPE_LENGTH = 2;
 /**
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<NameHub>} agoricNames
- * @param {Brand<'set'>} invitationBrand
- * @param {Purse<'set', InvitationDetails>} invitationsPurse
+ * @param {import('@agoric/ertp').Brand<'set'>} invitationBrand
+ * @param {import('@agoric/ertp').Purse<'set', InvitationDetails>} invitationsPurse
  * @param {(fromOfferId: string) => InvitationMakers} getInvitationContinuation
  */
 export const makeInvitationsHelper = (

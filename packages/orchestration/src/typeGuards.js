@@ -16,6 +16,7 @@ import { M } from '@endo/patterns';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
  * @import {TypedJson} from '@agoric/cosmic-proto';
  * @import {DenomDetail} from './exos/chain-hub.js';
+ * @import {Amount} from '@agoric/ertp';
  */
 
 /**

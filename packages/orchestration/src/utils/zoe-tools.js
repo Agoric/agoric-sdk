@@ -33,6 +33,7 @@ const { assign, keys, values } = Object;
  * @import {ZCFSeat} from '@agoric/zoe';
  * @import {AmountKeywordRecord} from '@agoric/zoe';
  * @import {ZCF} from '@agoric/zoe';
+ * @import {Payment} from '@agoric/ertp';
  */
 
 /**

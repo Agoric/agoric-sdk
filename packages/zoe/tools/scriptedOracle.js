@@ -7,6 +7,7 @@ import { Far } from '@endo/marshal';
  * @import {OracleStart} from '../src/contracts/oracle.js';
  * @import {TimerService} from '@agoric/time';
  * @import {OracleHandler} from '../src/contracts/priceAggregatorTypes.js';
+ * @import {Issuer} from '@agoric/ertp';
  */
 
 /**

@@ -28,6 +28,7 @@ import { scale6, withAmountUtils } from '../../supports.js';
  * @import {StartParams} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {VatAdminSvc} from '@agoric/swingset-vat';
  * @import {start} from '@agoric/governance/src/committee.js';
+ * @import {Amount} from '@agoric/ertp';
  */
 
 const trace = makeTracer('BootPSMUpg');

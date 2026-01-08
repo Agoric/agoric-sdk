@@ -30,6 +30,8 @@ import { prepareRoundsManagerKit } from './roundsManager.js';
  * @import {LatestRound} from './roundsManager.js';
  * @import {OracleKit} from './priceOracleKit.js';
  * @import {PriceRound} from './roundsManager.js';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Amount} from '@agoric/ertp';
  */
 
 const trace = makeTracer('FlxAgg', true);

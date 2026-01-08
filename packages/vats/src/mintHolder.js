@@ -4,6 +4,7 @@ import { prepareIssuerKit } from '@agoric/ertp';
 
 /**
  * @import {Baggage} from '@agoric/vat-data'
+ * @import {AssetKind} from '@agoric/ertp'
  * @import {ZCF} from '@agoric/zoe';
  * @import {ContractMeta} from '@agoric/zoe';
  */
@@ -15,7 +16,7 @@ import { prepareIssuerKit } from '@agoric/ertp';
  * @typedef {{
  *   keyword: string;
  *   assetKind: K;
- *   displayInfo: DisplayInfo;
+ *   displayInfo: import('@agoric/ertp').DisplayInfo;
  * }} IssuerInfo<K>
  */
 

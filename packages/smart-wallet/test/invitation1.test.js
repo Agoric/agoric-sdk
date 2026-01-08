@@ -106,9 +106,9 @@ const makeTestContext = async t => {
   const spendable = makeSpendableAsset();
 
   const makeRegistry = async () => {
-    /** @type {[string, Brand][]} */
+    /** @type {[string, import('@agoric/ertp').Brand][]} */
     const be = await E(E(agoricNames).lookup('brand')).entries();
-    /** @type {[string, Issuer][]} */
+    /** @type {[string, import('@agoric/ertp').Issuer][]} */
     const ie = await E(E(agoricNames).lookup('issuer')).entries();
     const byName = Object.fromEntries(ie);
     const descriptors = await Promise.all(
@@ -124,7 +124,7 @@ const makeTestContext = async t => {
       }),
     );
     /**
-     * @type {MapStore<Brand, BrandDescriptor>}
+     * @type {MapStore<import('@agoric/ertp').Brand, BrandDescriptor>}
      */
     const store = makeScalarMapStore('registry');
     store.addAll(harden(descriptors.map(d => [d.brand, d])));
@@ -137,12 +137,16 @@ const makeTestContext = async t => {
   const swBaggage = makeScalarMapStore('smart-wallet');
 
   const { brand: brandSpace, issuer: issuerSpace } = bootKit.powers;
-  /** @type {Issuer<'set'>} */
+  /** @type {import('@agoric/ertp').Issuer<'set'>} */
   // @ts-expect-error cast
-  const invitationIssuer = await issuerSpace.consume.Invitation;
-  /** @type {Brand<'set'>} */
+  const invitationIssuer = /** @type {unknown} */ (
+    await issuerSpace.consume.Invitation
+  );
+  /** @type {import('@agoric/ertp').Brand<'set'>} */
   // @ts-expect-error cast
-  const invitationBrand = await brandSpace.consume.Invitation;
+  const invitationBrand = /** @type {unknown} */ (
+    await brandSpace.consume.Invitation
+  );
   const invitationDisplayInfo = await E(invitationBrand).getDisplayInfo();
   const publicMarshaller = await E(board).getPublishingMarshaller();
   const makeSmartWallet = prepareSmartWallet(swBaggage, {
@@ -163,9 +167,11 @@ test.before(async t => (t.context = await makeTestContext(t)));
 test.serial('handle failure to create invitation', async t => {
   const { powers, makeSmartWallet, spendable, shared } = t.context;
   const { chainStorage, board } = powers.consume;
-  /** @type {Issuer<'set', InvitationDetails>} */
+  /** @type {import('@agoric/ertp').Issuer<'set', InvitationDetails>} */
   // @ts-expect-error cast
-  const invitationIssuer = powers.issuer.consume.Invitation;
+  const invitationIssuer = /** @type {unknown} */ (
+    powers.issuer.consume.Invitation
+  );
   const address = 'agoric1234';
 
   // @ts-expect-error Test setup ensures that chainStorage resolution is not undefined. (see #8247)

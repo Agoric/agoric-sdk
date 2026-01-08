@@ -11,6 +11,10 @@ import { setup } from '../setupBasicMints.js';
 import buildManualTimer from '../../../tools/manualTimer.js';
 import { assertPayoutAmount } from '../../zoeTestHelpers.js';
 
+/**
+ * @import {Payment} from '@agoric/ertp';
+ */
+
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const root = `${dirname}/../../../src/contracts/otcDesk.js`;

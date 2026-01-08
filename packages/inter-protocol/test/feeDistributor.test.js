@@ -10,6 +10,12 @@ import { E, Far } from '@endo/far';
 import { mustMatch } from '@agoric/store';
 import { makeFeeDistributor, meta } from '../src/feeDistributor.js';
 
+/**
+ * @import {Issuer} from '@agoric/ertp';
+ * @import {Payment} from '@agoric/ertp';
+ * @import {Brand} from '@agoric/ertp';
+ */
+
 /** @param {Issuer} feeIssuer */
 const makeFakeFeeDepositFacetKit = feeIssuer => {
   const depositPayments = [];

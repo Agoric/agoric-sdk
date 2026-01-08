@@ -40,6 +40,11 @@ import { start } from '../../../src/contracts/priceAggregator.js';
  * @import {OracleKit} from '../../../src/contracts/priceAggregatorTypes.js';
  * @import {PriceAggregatorKit} from '../../../src/contracts/priceAggregatorTypes.js';
  * @import {OracleHandler} from '../../../src/contracts/priceAggregatorTypes.js';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {Mint} from '@agoric/ertp';
+ * @import {IssuerKit} from '@agoric/ertp';
+ * @import {Issuer} from '@agoric/ertp';
  */
 
 /**

@@ -2,7 +2,7 @@
 import { Fail } from '@endo/errors';
 
 /**
- * @import {IssuerRecord} from '@agoric/ertp';
+ * @import {AssetKind, Brand, DisplayInfo, Issuer, IssuerRecord} from '@agoric/ertp';
  * @import {ZoeIssuerRecord} from './types-index.js';
  */
 

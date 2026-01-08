@@ -10,6 +10,7 @@ import { E } from '@endo/far';
  * @import {BasicFlowsSF} from '../examples/basic-flows.contract.js';
  * @import {Installation} from '@agoric/zoe';
  * @import {Instance} from '@agoric/zoe';
+ * @import {Issuer} from '@agoric/ertp';
  */
 
 const trace = makeTracer('StartBasicFlows', true);

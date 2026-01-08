@@ -53,6 +53,9 @@ import {
  * @import {MintAndTransfer} from './types-ambient.js';
  * @import {VaultFactoryParamPath} from './types-ambient.js';
  * @import {GovernedApis} from '@agoric/governance/src/types.js';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {Issuer} from '@agoric/ertp';
  */
 
 const trace = makeTracer('VD', true);

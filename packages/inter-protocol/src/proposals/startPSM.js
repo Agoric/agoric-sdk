@@ -29,6 +29,9 @@ import {
  * @import {PSMKit} from './econ-behaviors.js';
  * @import {FeeMintAccess} from '@agoric/zoe';
  * @import {GovernanceSubscriptionState, GovernorStartedInstallationKit} from '@agoric/governance/src/types.js';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Issuer} from '@agoric/ertp';
+ * @import {Mint} from '@agoric/ertp';
  */
 /** @import {MetricsNotification} from '../psm/psm.js' */
 /** @import {EconomyBootstrapPowers} from './econ-behaviors.js' */
@@ -129,7 +132,6 @@ export const startPSM = async (
     X`anchorOptions.denom must be a string, not ${denom}`,
   );
   /** @type {[Brand<'nat'>, [Brand<'nat'>, Issuer<'nat'>], FeeMintAccess]} */
-  // @ts-expect-error cast
   const [minted, [anchorBrand, anchorIssuer], feeMintAccess] =
     await Promise.all([
       mintedP,

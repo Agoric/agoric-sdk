@@ -13,6 +13,7 @@ import { makeGovernedTerms as makeGovernedVFTerms } from '../vaultFactory/params
 /**
  * @import {GovernorCreatorFacet, GovernanceFacetKit, GovernorStartedInstallationKit} from '@agoric/governance/src/types.js';
  * @import {StartedInstanceKit} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {Amount, Brand, NatValue, Payment} from '@agoric/ertp';
  * @import {AdminFacet, Instance} from '@agoric/zoe';
  * @import {MapStore, SetStore} from '@agoric/store';
  */

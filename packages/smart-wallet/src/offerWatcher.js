@@ -140,10 +140,10 @@ export const prepareOfferWatcher = (baggage, vowTools) => {
     // XXX walletHelper is `any` because the helper facet is too nested to export its type
     /**
      * @param {any} walletHelper
-     * @param {{ receive: (payment: Payment) => Promise<Amount> }} deposit
+     * @param {{ receive: (payment: import("@agoric/ertp").Payment) => Promise<import('@agoric/ertp').Amount> }} deposit
      * @param {OfferSpec} offerSpec
      * @param {string} address
-     * @param {Amount<'set'>} invitationAmount
+     * @param {import('@agoric/ertp').Amount<'set'>} invitationAmount
      * @param {UserSeat} seatRef
      */
     (walletHelper, deposit, offerSpec, address, invitationAmount, seatRef) => ({
@@ -167,7 +167,7 @@ export const prepareOfferWatcher = (baggage, vowTools) => {
         },
         /**
          * @param {string} offerId
-         * @param {Amount<'set'>} invitationAmount
+         * @param {import('@agoric/ertp').Amount<'set'>} invitationAmount
          * @param {InvitationMakers} invitationMakers
          * @param {PublicSubscribers} publicSubscribers
          */

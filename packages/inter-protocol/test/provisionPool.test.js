@@ -36,6 +36,8 @@ import {
  * @import {WalletFactoryStartResult} from '@agoric/vats/src/core/startWalletFactory.js';
  * @import {start} from '../src/provisionPool.js';
  * @import {Installation} from '@agoric/zoe';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Purse} from '@agoric/ertp';
  */
 
 const pathname = new URL(import.meta.url).pathname;
