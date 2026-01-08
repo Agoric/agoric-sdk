@@ -3,7 +3,7 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
 /**
- * @import {ZoeService} from '../src/types-index.js';
+ * @import {Installation, ZoeService} from '@agoric/zoe';
  * @import {OracleStart} from '../src/contracts/oracle.js';
  * @import {TimerService} from '@agoric/time';
  * @import {OracleHandler} from '../src/contracts/priceAggregatorTypes.js';

@@ -14,7 +14,7 @@ import {
  * @import {Baggage} from '@agoric/swingset-liveslots';
  * @import {WeakMapStore} from '@agoric/store';
  * @import {BundleID, BundleCap} from '@agoric/swingset-vat';
- * @import {InstallBundle, SourceBundle} from '@agoric/zoe';
+ * @import {Installation, InstallBundle, SourceBundle} from '@agoric/zoe';
  * @import {GetBundleCapForID} from './internal-types.js';
  */
 

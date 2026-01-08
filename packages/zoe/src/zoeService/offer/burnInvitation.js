@@ -5,6 +5,7 @@ import { E } from '@endo/eventual-send';
 
 /**
  * @import {InvitationHandle} from '../zoe.js';
+ * @import {Instance} from '@agoric/zoe';
  */
 
 /**

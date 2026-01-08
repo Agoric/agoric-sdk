@@ -11,6 +11,10 @@ import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import { depositToSeat } from '../../../src/contractSupport/zoeHelpers.js';
 import { makeOffer } from '../makeOffer.js';
 
+/**
+ * @import {ZCF} from '@agoric/zoe';
+ */
+
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const contractRoot = `${dirname}/../zcf/zcfTesterContract.js`;

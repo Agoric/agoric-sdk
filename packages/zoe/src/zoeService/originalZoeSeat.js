@@ -23,6 +23,7 @@ import {
  * @import {HandleOfferResult} from '../internal-types.js';
  * @import {PaymentPKeywordRecord} from './types.ts';
  * @import {Allocation} from '../types-index.js';
+ * @import {ProposalRecord, ZCFSeat} from '@agoric/zoe';
  */
 
 export const coreUserSeatMethods = harden({
