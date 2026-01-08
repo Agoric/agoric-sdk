@@ -2,8 +2,6 @@
 /** @see {@link /docs/typescript.md} */
 /* eslint-disable -- doesn't understand .d.ts */
 
-import '@agoric/notifier/exported.js';
-
 import {
   Amount as _Amount,
   Brand as _Brand,

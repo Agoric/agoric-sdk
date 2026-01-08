@@ -18,6 +18,7 @@ import { prepareVoterKit } from './voterKit.js';
 
 /**
  * @import {Remote} from '@agoric/internal';
+ * @import {StoredPublishKit} from '@agoric/notifier';
  * @import {MapStore} from '@agoric/swingset-liveslots';
  * @import {ContractMeta, Invitation, ZCF} from '@agoric/zoe';
  * @import {ElectorateCreatorFacet, CommitteeElectoratePublic, QuestionDetails, OutcomeRecord, AddQuestion} from './types.js';

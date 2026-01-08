@@ -71,7 +71,7 @@ import { Phase, prepareVault } from './vault.js';
  * @import {PriceQuote} from '@agoric/zoe/tools/types.js';
  * @import {PromiseWatcher} from '@agoric/swingset-liveslots';
  * @import {RecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
- * @import {StoredNotifier} from '@agoric/notifier';
+ * @import {LatestTopic, StoredNotifier} from '@agoric/notifier';
  * @import {Baggage} from '@agoric/swingset-liveslots';
  * @import {VaultFactoryZCF} from './vaultFactory.js';
  * @import {MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';

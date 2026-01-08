@@ -22,6 +22,7 @@ import { makePromiseKit } from '@endo/promise-kit';
  * @import {start as fluxAggregatorStart} from '../../../src/price/fluxAggregatorContract.js';
  * @import {start as puppetGovernorStart} from '@agoric/governance/tools/puppetContractGovernor.js';
  * @import {OracleKit} from '../../../src/price/priceOracleKit.js';
+ * @import {Subscriber, UpdateRecord} from '@agoric/notifier';
  * @import {StartParams} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {VatAdminSvc} from '@agoric/swingset-vat';
  */

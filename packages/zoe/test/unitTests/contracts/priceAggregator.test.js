@@ -30,6 +30,7 @@ import { start } from '../../../src/contracts/priceAggregator.js';
 /**
  * @import {FeeIssuerConfig, ZoeService} from '@agoric/zoe';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {UpdateRecord} from '@agoric/notifier';
  * @import {ZoeManualTimer} from '../../../tools/manualTimer.js';
  * @import {Instance} from '../../../src/zoeService/utils.js';
  * @import {MockChainStorageRoot} from '@agoric/internal/src/storage-test-utils.js';

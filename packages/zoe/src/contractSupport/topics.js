@@ -4,6 +4,7 @@ import { E } from '@endo/far';
 
 /**
  * @import {Remote} from '@agoric/internal';
+ * @import {Subscriber} from '@agoric/notifier';
  * @import {RecorderKit} from './recorder.js';
  * @import {EventualRecorderKit} from './recorder.js';
  */

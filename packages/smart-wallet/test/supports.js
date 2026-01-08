@@ -21,6 +21,7 @@ import { E, Far } from '@endo/far';
 /**
  * @import {StoredFacet} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {BridgeManager} from '@agoric/vats';
+ * @import {Subscriber} from '@agoric/notifier';
  * @import {TopicsRecord} from '@agoric/zoe/src/contractSupport/index.js';
  */
 

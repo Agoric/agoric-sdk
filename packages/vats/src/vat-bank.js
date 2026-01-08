@@ -25,6 +25,7 @@ import {
  * @import {Amount, DisplayInfo, Issuer, IssuerKit, Payment} from '@agoric/ertp';
  * @import {Guarded} from '@endo/exo';
  * @import {RemotableObject} from '@endo/pass-style';
+ * @import {EachTopic, IterableEachTopic, LatestTopic, PublicationRecord, PublishKit, Publisher} from '@agoric/notifier';
  * @import {BridgeMessage, BridgeBigInt} from '@agoric/cosmic-swingset/src/types.js';
  * @import {VirtualPurse} from './virtual-purse.js';
  * @import {ScopedBridgeManager} from './types.js';

@@ -51,6 +51,7 @@ import { prepareOfferWatcher, makeWatchOfferOutcomes } from './offerWatcher.js';
  * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  * @import {Amount, Brand, Issuer, Payment, Purse} from '@agoric/ertp';
  * @import {WeakMapStore, MapStore} from '@agoric/store'
+ * @import {Notifier} from '@agoric/notifier';
  * @import {InvitationAmount, InvitationDetails, PaymentPKeywordRecord, Proposal, UserSeat, SetTestJig, Invitation} from '@agoric/zoe';
  * @import {CopyRecord} from '@endo/pass-style';
  * @import {EReturn} from '@endo/far';

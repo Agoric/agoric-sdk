@@ -6,6 +6,7 @@ import { E } from '@endo/far';
  * @import {OfferId, OfferStatus} from './offers.js';
  * @import {UpdateRecord} from './smartWallet.js';
  * @import {Follower} from '@agoric/casting';
+ * @import {Subscriber} from '@agoric/notifier';
  * @import {PublicSubscribers} from './types.js';
  * @import {TopicsRecord} from '@agoric/zoe/src/contractSupport/index.js';
  */

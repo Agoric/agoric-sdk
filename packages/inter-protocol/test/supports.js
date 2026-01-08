@@ -22,6 +22,7 @@ import { E } from '@endo/far';
  * @import {FeeMintAccess, SourceBundle} from '@agoric/zoe';
  * @import {EconomyBootstrapPowers as Space} from '../src/proposals/econ-behaviors.js'
  * @import {TimerService} from '@agoric/time';
+ * @import {StoredSubscriber, StoredSubscription, Subscriber, Subscription} from '@agoric/notifier';
  * @import {start} from '@agoric/vats/src/centralSupply.js';
  * @import {TopicsRecord} from '@agoric/zoe/src/contractSupport/index.js';
  * @import {ExecutionContext} from 'ava';
