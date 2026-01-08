@@ -1,5 +1,4 @@
 // @jessie-check
-/// <reference types="@agoric/zoe/exported.js" />
 
 import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
