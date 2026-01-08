@@ -7,7 +7,8 @@ import { Fail, q } from '@endo/errors';
  * See doccomment in the closely related `legacyMap.js` module.
  *
  * @deprecated switch to ScalarWeakMap if possible, WeakMap otherwise
- * @template K,V
+ * @template {WeakKey} K
+ * @template V
  * @param {string} [tag] - tag for debugging
  * @returns {LegacyWeakMap<K, V>}
  */

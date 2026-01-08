@@ -716,7 +716,7 @@ export const makeVirtualObjectManager = (
     behavior,
     options = {},
     isDurable,
-    durableKindDescriptor = undefined, // only for durables
+    durableKindDescriptor, // only for durables
   ) => {
     const {
       finish = undefined,
