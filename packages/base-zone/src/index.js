@@ -1,7 +1,5 @@
 // @jessie-check
 
-/// <reference types="@agoric/store/exported.js" />
-
 // eslint-disable-next-line import/export
 export * from './exports.js';
 
