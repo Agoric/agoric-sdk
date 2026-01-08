@@ -12,7 +12,7 @@ import { reflectWalletStore, getInvocationUpdate } from '@agoric/client-utils';
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import type { RetryOptionsAndPowers } from '@agoric/client-utils/src/sync-tools.js';
 import { AmountMath, type Brand } from '@agoric/ertp';
-import type { Bech32Address } from '@agoric/orchestration';
+import type { Bech32Address, CaipChainId } from '@agoric/orchestration';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 
 import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.exo.ts';
@@ -28,6 +28,7 @@ import {
 import type {
   FlowDetail,
   PoolKey as InstrumentId,
+  PoolKey,
   StatusFor,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import {
@@ -63,7 +64,11 @@ import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
 import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
 import type { Sdk as SpectrumPoolsSdk } from './graphql/api-spectrum-pools/__generated/sdk.ts';
 import { logger, runWithFlowTrace } from './logger.ts';
-import type { EvmContext, HandlePendingTxOpts } from './pending-tx-manager.ts';
+import type {
+  EvmChain,
+  EvmContext,
+  HandlePendingTxOpts,
+} from './pending-tx-manager.ts';
 import { handlePendingTx } from './pending-tx-manager.ts';
 import type { BalanceQueryPowers } from './plan-deposit.ts';
 import {
@@ -184,6 +189,8 @@ export type Powers = {
   now: typeof Date.now;
   gasEstimator: GasEstimator;
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
+  erc4626Vaults: Partial<Record<PoolKey, `0x${string}`>>;
+  chainNameToChainIdMap: Record<EvmChain, CaipChainId>;
 };
 
 export type ProcessPortfolioPowers = Pick<
@@ -200,6 +207,9 @@ export type ProcessPortfolioPowers = Pick<
   | 'getWalletInvocationUpdate'
   | 'gasEstimator'
   | 'usdcTokensByChain'
+  | 'evmCtx'
+  | 'erc4626Vaults'
+  | 'chainNameToChainIdMap'
 > & {
   isDryRun?: boolean;
   depositBrand: Brand<'nat'>;
@@ -254,6 +264,9 @@ export const processPortfolioEvents = async (
     spectrumPoolIds,
     usdcTokensByChain,
     vstoragePathPrefixes,
+    erc4626Vaults,
+    evmCtx,
+    chainNameToChainIdMap,
 
     portfolioKeyForDepositAddr,
   }: ProcessPortfolioPowers,
@@ -281,6 +294,9 @@ export const processPortfolioEvents = async (
     spectrumChainIds,
     spectrumPoolIds,
     usdcTokensByChain,
+    erc4626Vaults,
+    evmCtx,
+    chainNameToChainIdMap,
   };
   type ReadVstorageSimpleOpts = Pick<
     ReadStorageMetaOptions<'data'>,
