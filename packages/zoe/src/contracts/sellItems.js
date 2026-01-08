@@ -15,6 +15,7 @@ import {
 } from '../contractSupport/index.js';
 
 /**
+ * @import {ZCF} from '@agoric/zoe';
  * @import {SellItemsPublicFacet} from './types-ambient.js';
  * @import {SellItemsCreatorFacet} from './types-ambient.js';
  */

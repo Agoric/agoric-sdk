@@ -14,7 +14,7 @@ import buildManualTimer from '../../../tools/manualTimer.js';
 import { makeManualPriceAuthority } from '../../../tools/manualPriceAuthority.js';
 
 /**
- * @import {FeeIssuerConfig, ZoeService} from '@agoric/zoe';
+ * @import {FeeIssuerConfig, Installation, ZoeService} from '@agoric/zoe';
  * @import {prepare} from '../../../src/contracts/scaledPriceAuthority.js';
  * @import {TestFn} from 'ava';
  * @import {ExecutionContext} from 'ava';

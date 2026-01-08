@@ -15,7 +15,7 @@ import { TimestampShape } from '@agoric/time';
 
 /**
  * @import {TypedPattern} from '@agoric/internal';
- * @import {AfterDeadlineExitRule, ZoeIssuerRecord} from '@agoric/zoe';
+ * @import {AfterDeadlineExitRule, Installation, ZoeIssuerRecord} from '@agoric/zoe';
  * @import {ExitRule, Invitation, InvitationHandle, WaivedExitRule} from './types-index.js';
  * @import {InvitationDetails} from './types-index.js';
  */

@@ -24,6 +24,7 @@ import { assertRightsConserved } from './rightsConservation.js';
  * @import {WeakMapStore} from '@agoric/store';
  * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
  * @import {Baggage} from '@agoric/vat-data';
+ * @import {TransferPart, ZCFSeat} from '@agoric/zoe';
  * @import {Allocation} from './types.js';
  * @import {ZcfSeatManager, ZoeInstanceAdmin} from '../internal-types.js';
  * @import {GetAssetKindByBrand} from '../internal-types.js';

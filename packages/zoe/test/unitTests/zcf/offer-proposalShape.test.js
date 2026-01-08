@@ -12,7 +12,7 @@ import { setup } from '../setupBasicMints.js';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 
 /**
- * @import {ZoeService} from '@agoric/zoe';
+ * @import {ZCF, ZoeService} from '@agoric/zoe';
  */
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);

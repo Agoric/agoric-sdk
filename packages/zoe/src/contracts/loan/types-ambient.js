@@ -3,6 +3,10 @@
  * @import {Notifier} from '@agoric/notifier';
  */
 /**
+ * @import {Ratio} from '@agoric/ertp';
+ * @import {Handle, Instance} from '@agoric/zoe';
+ */
+/**
  * @typedef {Notifier<import('@agoric/time').TimestampRecord>} PeriodNotifier
  *
  *  The Notifier that provides notifications that periods have passed.

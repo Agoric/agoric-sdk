@@ -11,6 +11,7 @@ export {};
  * @import {Baggage} from '@agoric/vat-data';
  * @import {IssuerOptionsRecord, IssuerRecord} from '@agoric/ertp';
  * @import {Subscriber} from '@agoric/notifier';
+ * @import {AmountKeywordRecord, Handle, Instance, Installation, IssuerKeywordRecord, Keyword, ProposalRecord, ZCFSeat} from '@agoric/zoe';
  * @import {Allocation, PaymentPKeywordRecord, UserSeat, Completion, ZoeIssuerRecord, Invitation} from './types-index.js';
  * @import {InvitationHandle, BrandKeywordRecord, AnyTerms} from './types.js';
  * @import {FeeMintAccess} from './zoeService/types.js';

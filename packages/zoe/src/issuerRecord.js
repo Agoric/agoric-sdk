@@ -26,7 +26,7 @@ export const makeIssuerRecord = (brand, issuer, displayInfo) =>
 
 /**
  * @param {IssuerRecord<any>} issuerRecord
- * @returns {asserts issuerRecord is Required<IssuerRecord>}
+ * @returns {asserts issuerRecord is Required<IssuerRecord<any>>}
  */
 export const assertFullIssuerRecord = issuerRecord => {
   if (!issuerRecord.displayInfo) {

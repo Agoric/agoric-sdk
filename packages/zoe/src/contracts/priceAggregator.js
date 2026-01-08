@@ -35,7 +35,7 @@ import {
  * @import {Notifier, UpdateRecord} from '@agoric/notifier';
  * @import {ContractOf} from '../zoeService/utils.js';
  * @import {PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
- * @import {Invitation, ZCF, ZCFSeat} from '@agoric/zoe';
+ * @import {Instance, Invitation, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {TimerService} from '@agoric/time';
  * @import {Timestamp} from '@agoric/time';
  * @import {TimerWaker} from '@agoric/time';

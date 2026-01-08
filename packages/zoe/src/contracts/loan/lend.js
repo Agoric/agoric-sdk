@@ -2,6 +2,7 @@ import { assertProposalShape } from '../../contractSupport/index.js';
 import { makeBorrowInvitation } from './borrow.js';
 
 /**
+ * @import {OfferHandler} from '@agoric/zoe';
  * @import {MakeLendInvitation} from './types-ambient.js';
  */
 
