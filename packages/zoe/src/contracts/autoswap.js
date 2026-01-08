@@ -16,6 +16,8 @@ import {
 /**
  * @import {Keyword, OfferHandler, ZCF} from '@agoric/zoe';
  * @import {AutoswapPublicFacet} from './types-ambient.js';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Amount} from '@agoric/ertp';
  */
 
 /**

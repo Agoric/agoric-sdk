@@ -8,6 +8,7 @@ export {};
 
 /**
  * @import {AmountKeywordRecord, IssuerKeywordRecord, Keyword, PaymentPKeywordRecord, ZCF, ZCFSeat} from '@agoric/zoe';
+ * @import {Amount} from '@agoric/ertp';
  */
 
 /**

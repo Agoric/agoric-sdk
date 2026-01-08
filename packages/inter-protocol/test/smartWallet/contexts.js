@@ -25,6 +25,7 @@ import { withAmountUtils } from '../supports.js';
  * @import {ContinuingInvitationSpec} from '@agoric/smart-wallet/src/invitations.js';
  * @import {CommitteeElectoratePublic} from '@agoric/governance/src/types.js';
  * @import {Installation} from '@agoric/zoe';
+ * @import {Brand} from '@agoric/ertp';
  */
 
 // referenced by TS

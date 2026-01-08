@@ -632,7 +632,7 @@ export const addBankAssets = async ({
   });
 
   const bldBrand = await E(bldIssuer).getBrand();
-  const bldKit = /** @type {IssuerKit<'nat'>} */ (
+  const bldKit = /** @type {import('@agoric/ertp').IssuerKit<'nat'>} */ (
     harden({ mint: bldMint, issuer: bldIssuer, brand: bldBrand })
   );
   bldIssuerKit.resolve(bldKit);

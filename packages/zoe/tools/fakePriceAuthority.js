@@ -21,6 +21,9 @@ import {
  * @import {TimerService} from '@agoric/time';
  * @import {RelativeTime} from '@agoric/time';
  * @import {Timestamp} from '@agoric/time';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Mint} from '@agoric/ertp';
  */
 
 const { coerceRelativeTimeRecord } = TimeMath;

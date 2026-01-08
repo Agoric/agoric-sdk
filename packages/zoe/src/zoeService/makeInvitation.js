@@ -9,6 +9,7 @@ import { InvitationElementShape } from '../typeGuards.js';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
  * @import {InvitationDetails} from '../types-index.js';
+ * @import {IssuerKit} from '@agoric/ertp';
  */
 
 /**

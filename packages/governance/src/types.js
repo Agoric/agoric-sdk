@@ -9,7 +9,7 @@ export {};
  * @import {AdminFacet, Handle, InstallationStart, InvitationAmount, IssuerKeywordRecord, Keyword} from '@agoric/zoe';
  * @import {ContractMeta, Installation, Instance, Invitation, ZCF, ZoeService} from '@agoric/zoe';
  * @import {ContractStartFunction} from '@agoric/zoe/src/zoeService/utils.js';
- * @import {Ratio} from '@agoric/ertp';
+ * @import {Amount, Brand, Ratio} from '@agoric/ertp';
  * @import {TimestampRecord} from '@agoric/time';
  * @import {RelativeTimeRecord} from '@agoric/time';
  * @import {Timestamp} from '@agoric/time';

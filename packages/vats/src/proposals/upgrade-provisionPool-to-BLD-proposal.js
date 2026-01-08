@@ -107,7 +107,9 @@ export const upgradeProvisionPool = async (
 
   trace('Setting new bridgeHandler...');
   // @ts-expect-error casting
-  await E(provisionWalletBridgeManager).setHandler(bridgeHandler);
+  await E(/** @type {unknown} */ (provisionWalletBridgeManager)).setHandler(
+    bridgeHandler,
+  );
 
   trace('Null upgrading governor...', {
     economicCommitteeCreatorFacet: electorateCreatorFacet,

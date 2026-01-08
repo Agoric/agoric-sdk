@@ -28,6 +28,8 @@ import { CONTRACT_ELECTORATE } from './governParam.js';
  * @import {StoredPublisherKit} from '@agoric/notifier';
  * @import {ParamType} from '../constants.js';
  * @import {Ratio} from '@agoric/ertp';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {Brand} from '@agoric/ertp';
  */
 
 /**

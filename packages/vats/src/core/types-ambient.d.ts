@@ -91,7 +91,7 @@ type ChainDevices = {
 
 type ClientProvider = {
   getChainBundle: () => unknown;
-  getChainConfigNotifier: () => Notifier<unknown>;
+  getChainConfigNotifier: () => import('@agoric/notifier').Notifier<unknown>;
 };
 
 type Producer<T> = {
@@ -237,25 +237,43 @@ type WellKnownContracts = {
 
 type WellKnownSpaces = {
   issuer: {
-    produce: Record<WellKnownName['issuer'], Producer<Issuer>>;
-    consume: Record<WellKnownName['issuer'], Promise<Issuer>> & {
-      BLD: Promise<Issuer<'nat'>>;
-      IST: Promise<Issuer<'nat'>>;
+    produce: Record<
+      WellKnownName['issuer'],
+      Producer<import('@agoric/ertp').Issuer>
+    >;
+    consume: Record<
+      WellKnownName['issuer'],
+      Promise<import('@agoric/ertp').Issuer>
+    > & {
+      BLD: Promise<import('@agoric/ertp').Issuer<'nat'>>;
+      IST: Promise<import('@agoric/ertp').Issuer<'nat'>>;
     };
   };
   brand: {
-    produce: Record<WellKnownName['issuer'], Producer<Brand>> & {
+    produce: Record<
+      WellKnownName['issuer'],
+      Producer<import('@agoric/ertp').Brand>
+    > & {
       timer: Producer<import('@agoric/time').TimerBrand>;
     };
-    consume: Record<WellKnownName['issuer'], Promise<Brand>> & {
-      BLD: Promise<Brand<'nat'>>;
-      IST: Promise<Brand<'nat'>>;
+    consume: Record<
+      WellKnownName['issuer'],
+      Promise<import('@agoric/ertp').Brand>
+    > & {
+      BLD: Promise<import('@agoric/ertp').Brand<'nat'>>;
+      IST: Promise<import('@agoric/ertp').Brand<'nat'>>;
       timer: Producer<import('@agoric/time').TimerBrand>;
     };
   };
   oracleBrand: {
-    produce: Record<WellKnownName['oracleBrand'], Producer<Brand>>;
-    consume: Record<WellKnownName['oracleBrand'], Promise<Brand>>;
+    produce: Record<
+      WellKnownName['oracleBrand'],
+      Producer<import('@agoric/ertp').Brand>
+    >;
+    consume: Record<
+      WellKnownName['oracleBrand'],
+      Promise<import('@agoric/ertp').Brand>
+    >;
   };
   installation: {
     produce: Record<
@@ -375,7 +393,7 @@ type ChainBootstrapSpaceT = {
     | import('@agoric/internal/src/priority-senders.js').PrioritySendersManager
     | undefined
     | null;
-  initialSupply: Payment<'nat'>;
+  initialSupply: import('@agoric/ertp').Payment<'nat'>;
   /**
    * Very powerful. Has the private args for critical contract instances such as
    * Vault Factory. ONLY FOR DISASTER RECOVERY
@@ -389,7 +407,7 @@ type ChainBootstrapSpaceT = {
   orchestration?: import('@agoric/orchestration').CosmosInterchainService;
   pegasusConnections: import('@agoric/vats').NameHubKit;
   pegasusConnectionsAdmin: import('@agoric/vats').NameAdmin;
-  powerStore: MapStore;
+  powerStore: import('@agoric/store').MapStore;
   priceAuthorityVat: Awaited<PriceAuthorityVat>;
   priceAuthority: import('@agoric/zoe/tools/types.js').PriceAuthority;
   // signal that price feeds have #8400 QuotePayments storage leak fixed
@@ -412,14 +430,14 @@ type ChainBootstrapSpaceT = {
    */
   startUpgradable: StartUpgradable;
   /** kits stored by startUpgradable */
-  contractKits: MapStore<
+  contractKits: import('@agoric/store').MapStore<
     import('@agoric/zoe').Instance,
-    StartedInstanceKitWithLabel
+    StartedInstanceKitWithLabel<any>
   >;
   /** Convenience function for starting contracts governed by the Econ Committee */
   startGovernedUpgradable: StartGovernedUpgradable;
   /** kits stored by startGovernedUpgradable */
-  governedContractKits: MapStore<
+  governedContractKits: import('@agoric/store').MapStore<
     import('@agoric/zoe').Instance,
     import('@agoric/governance').GovernanceFacetKit<any> & { label: string }
   >;
@@ -433,7 +451,7 @@ type ChainBootstrapSpaceT = {
     typeof import('@agoric/inter-protocol/src/provisionPool.js').start
   >;
   vatStore: import('./utils.js').VatStore;
-  vatUpgradeInfo: MapStore;
+  vatUpgradeInfo: import('@agoric/store').MapStore;
   zoe: import('@agoric/zoe').ZoeService;
 };
 
@@ -460,7 +478,7 @@ type BootstrapPowers = BootstrapSpace & {
 type BootstrapSpace = WellKnownSpaces &
   PromiseSpaceOf<
     ChainBootstrapSpaceT & {
-      vatAdminSvc: VatAdminSvc;
+      vatAdminSvc: import('@agoric/swingset-vat').VatAdminSvc;
     },
     {
       loadVat: VatLoader;
@@ -504,9 +522,9 @@ type OrchestrationVat = ERef<import('@agoric/orchestration').OrchestrationVat>;
 type ZoeVat = ERef<import('../vat-zoe.js').ZoeVat>;
 
 type RemoteIssuerKit = {
-  mint: ERef<Mint>;
-  issuer: ERef<Issuer>;
-  brand: Brand;
+  mint: import('@endo/far').ERef<import('@agoric/ertp').Mint>;
+  issuer: import('@endo/far').ERef<import('@agoric/ertp').Issuer>;
+  brand: import('@agoric/ertp').Brand;
 };
 type AgoricNamesVat = ERef<
   ReturnType<typeof import('../vat-agoricNames.js').buildRootObject>

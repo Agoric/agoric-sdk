@@ -12,6 +12,7 @@ import {
  * @import {TimerService} from '@agoric/time';
  * @import {Invitation, UserSeat} from '../types-index.js';
  * @import {AmountKeywordRecord, IssuerKeywordRecord, ZCF} from '@agoric/zoe';
+ * @import {Payment} from '@agoric/ertp';
  */
 
 /**

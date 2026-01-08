@@ -4,6 +4,12 @@ import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { makeScalarMapStore } from '@agoric/store';
 import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
 
+/**
+ * @import {MapStore} from '@agoric/store';
+ * @import {Mint} from '@agoric/ertp';
+ * @import {Brand} from '@agoric/ertp';
+ */
+
 // This vat contains two starting mints for demos: moolaMint and
 // simoleanMint.
 

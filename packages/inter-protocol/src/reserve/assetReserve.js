@@ -18,6 +18,8 @@ import { prepareAssetReserveKit } from './assetReserveKit.js';
  * @import {GovernanceTerms} from '@agoric/governance/src/types.js';
  * @import {GovernedCreatorFacet} from '@agoric/governance/src/types.js';
  * @import {GovernedPublicFacet} from '@agoric/governance/src/types.js';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {Issuer} from '@agoric/ertp';
  */
 
 const trace = makeTracer('AR', true);

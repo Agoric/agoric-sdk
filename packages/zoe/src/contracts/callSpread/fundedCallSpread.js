@@ -16,6 +16,7 @@ import { Position } from './position.js';
  * @import {OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {PositionKind} from './types-ambient.js';
  * @import {PayoffHandler} from './types-ambient.js';
+ * @import {Amount} from '@agoric/ertp';
  */
 
 /**

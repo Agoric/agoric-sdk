@@ -18,6 +18,8 @@ import { makeManualPriceAuthority } from '../../../tools/manualPriceAuthority.js
  * @import {prepare} from '../../../src/contracts/scaledPriceAuthority.js';
  * @import {TestFn} from 'ava';
  * @import {ExecutionContext} from 'ava';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {IssuerKit} from '@agoric/ertp';
  */
 
 // This contract still uses 'prepare', so this test covers that case.
