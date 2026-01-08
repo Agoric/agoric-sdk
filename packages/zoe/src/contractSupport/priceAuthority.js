@@ -11,6 +11,7 @@ import { TimestampShape } from '@agoric/time';
 
 /**
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery, PriceQuoteCreate, PriceAuthorityKit, PriceQuoteTrigger, MutableQuote,} from '@agoric/zoe/tools/types.js';
+ * @import {Notifier} from '@agoric/notifier';
  * @import {TimerService} from '@agoric/time';
  */
 

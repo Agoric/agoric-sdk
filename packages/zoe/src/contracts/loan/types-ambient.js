@@ -1,5 +1,8 @@
 /* eslint-disable @agoric/group-jsdoc-imports */
 /**
+ * @import {Notifier} from '@agoric/notifier';
+ */
+/**
  * @typedef {Notifier<import('@agoric/time').TimestampRecord>} PeriodNotifier
  *
  *  The Notifier that provides notifications that periods have passed.

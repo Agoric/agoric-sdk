@@ -32,6 +32,7 @@ import {
 /**
  * @import {Remote} from '@agoric/internal';
  * @import {LegacyMap} from '@agoric/store'
+ * @import {Notifier, UpdateRecord} from '@agoric/notifier';
  * @import {ContractOf} from '../zoeService/utils.js';
  * @import {PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  * @import {Invitation, ZCF, ZCFSeat} from '@agoric/zoe';

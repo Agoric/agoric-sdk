@@ -24,6 +24,7 @@ import { shape } from './typeGuards.js';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {MapStore} from '@agoric/swingset-liveslots';
  * @import {NameHub} from '@agoric/vats';
+ * @import {IterableEachTopic} from '@agoric/notifier';
  * @import {SmartWallet, SmartWalletTestJig} from './smartWallet.js';
  * @import {NameAdmin} from '@agoric/vats';
  * @import {Petname} from './types.js';
