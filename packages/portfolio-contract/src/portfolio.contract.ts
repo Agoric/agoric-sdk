@@ -402,6 +402,7 @@ export const contract = async (
   });
 
   const portfolios = zone.mapStore<number, PortfolioKit>('portfolios');
+  const getPortfolio = (id: number) => portfolios.get(id);
 
   /**
    * Generate sequential portfolio IDs while keeping the portfolios collection private.
@@ -506,18 +507,24 @@ export const contract = async (
     },
   } satisfies Record<PortfolioPublicInvitationMaker, any> & ThisType<any>);
 
-  const makeResolverInvitation = () => {
-    trace('makeResolverInvitation');
-
-    const resolverHandler = (seat: ZCFSeat) => {
-      seat.exit();
-      return harden({ invitationMakers: makeResolverInvitationMakers });
+  const prepareResultOnlyInvitation = <R>(
+    description: string,
+    makeResult: () => R,
+  ): (() => Promise<Invitation<R>>) => {
+    const makeResultOnlyInvitation = () => {
+      trace('makeResultOnlyInvitation', description);
+      return zcf.makeInvitation((seat: ZCFSeat) => {
+        seat.exit();
+        return makeResult();
+      }, description);
     };
-
-    return zcf.makeInvitation(resolverHandler, 'resolver', undefined);
+    return makeResultOnlyInvitation;
   };
 
-  const getPortfolio = (id: number) => portfolios.get(id);
+  const makeResolverInvitation = prepareResultOnlyInvitation('resolver', () =>
+    harden({ invitationMakers: makeResolverInvitationMakers }),
+  );
+
   const makePlanner = preparePlanner(zone.subZone('planner'), {
     zcf,
     rebalance,
@@ -526,11 +533,9 @@ export const contract = async (
     vowTools,
   });
 
-  const makePlannerInvitation = () =>
-    zcf.makeInvitation(seat => {
-      seat.exit();
-      return makePlanner();
-    }, 'planner');
+  const makePlannerInvitation = prepareResultOnlyInvitation('planner', () =>
+    makePlanner(),
+  );
 
   const creatorFacet = zone.exo(
     'PortfolioAdmin',
