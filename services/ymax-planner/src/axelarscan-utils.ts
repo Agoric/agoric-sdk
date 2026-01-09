@@ -1,4 +1,4 @@
-import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.ts';
+import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.js';
 import { decodeAbiParameters } from 'viem';
 import type {
   GMPTxStatus,

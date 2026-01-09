@@ -38,6 +38,7 @@ typings/
 
 # General cache (e.g. by node-fetch-cache
 .cache
+*.tsbuildinfo
 
 # Optional REPL history
 .node_repl_history
@@ -86,4 +87,3 @@ endo-sha.txt
 .aider*
 !.aiderignore
 .claude
-

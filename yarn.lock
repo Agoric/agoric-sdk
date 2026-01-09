@@ -903,7 +903,7 @@ __metadata:
     "@agoric/vow": "workspace:*"
     "@agoric/zoe": "workspace:*"
     "@agoric/zone": "workspace:*"
-    "@chain-registry/client": "npm:^1.53.194"
+    "@chain-registry/client": "npm:^2.0.133"
     "@cosmjs/amino": "npm:^0.36.0"
     "@cosmjs/encoding": "npm:^0.36.0"
     "@cosmjs/proto-signing": "npm:^0.36.0"
@@ -3362,59 +3362,34 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@chain-registry/client@npm:1.47.4":
-  version: 1.47.4
-  resolution: "@chain-registry/client@npm:1.47.4"
+"@chain-registry/client@npm:^2.0.133":
+  version: 2.0.133
+  resolution: "@chain-registry/client@npm:2.0.133"
   dependencies:
-    "@chain-registry/types": "npm:^0.44.4"
-    "@chain-registry/utils": "npm:^1.45.4"
+    "@chain-registry/types": "npm:^2.0.133"
+    "@chain-registry/utils": "npm:^2.0.133"
     bfs-path: "npm:^1.0.2"
     cross-fetch: "npm:^3.1.5"
-  checksum: 10c0/dcd96f52fbeaf628939523d8dfa795cd711b64f7788f1b7da508250adfc47b278626518c34b7b03c324860a95d4e4244aa048d7a967564fd9984e7d277e43e43
+  checksum: 10c0/35f6dba80e8f6048df28d40e5a8ca4df5d2973cdbe1899470441787c03da73b66ac8cacd3d1d740d68103c17fb7428b44d36f37698e6e41dd6591e5a185c55cd
   languageName: node
   linkType: hard
 
-"@chain-registry/client@patch:@chain-registry/client@npm%3A1.47.4#~/.yarn/patches/@chain-registry-client-npm-1.47.4-e1f663239f.patch":
-  version: 1.47.4
-  resolution: "@chain-registry/client@patch:@chain-registry/client@npm%3A1.47.4#~/.yarn/patches/@chain-registry-client-npm-1.47.4-e1f663239f.patch::version=1.47.4&hash=4f0eb9"
+"@chain-registry/types@npm:^2.0.133":
+  version: 2.0.133
+  resolution: "@chain-registry/types@npm:2.0.133"
+  checksum: 10c0/8c79ad09a4e7d62f1ebe3a0658c45aac9ba4f80c7f76e174bad6f57e1cb10cf1650f872df714c15c84008a83c074d5d704bc898d4eb212d805d8bbdce0adedbc
+  languageName: node
+  linkType: hard
+
+"@chain-registry/utils@npm:^2.0.133":
+  version: 2.0.133
+  resolution: "@chain-registry/utils@npm:2.0.133"
   dependencies:
-    "@chain-registry/types": "npm:^0.44.4"
-    "@chain-registry/utils": "npm:^1.45.4"
-    bfs-path: "npm:^1.0.2"
-    cross-fetch: "npm:^3.1.5"
-  checksum: 10c0/9463184ba6c8b8aeff1026c964a37172a60577d0987858eb2f3cc0bfca6623ff8ce67dd703b3d3953ce436bd9753f06c34ce46e8122fd18fba8d05ba9242b5ac
-  languageName: node
-  linkType: hard
-
-"@chain-registry/types@npm:^0.44.4":
-  version: 0.44.11
-  resolution: "@chain-registry/types@npm:0.44.11"
-  checksum: 10c0/55c9d5dd570fc390c30c467e109f3bdfe4e2e997651d33c768feeeee29432f2827a918003bcbbf3ae4b97d85248e6b65110f6e3a2bb62405fda563b067a933d3
-  languageName: node
-  linkType: hard
-
-"@chain-registry/types@npm:^0.50.194":
-  version: 0.50.194
-  resolution: "@chain-registry/types@npm:0.50.194"
-  checksum: 10c0/dab4f8762ca4280f7447820a9a02c088aa24cda3466675e99ea5c8564873cb0ab59beebecb526bd16ac38e57e8cca5f77d96d10ee52f9abc1ce70bba48e089b0
-  languageName: node
-  linkType: hard
-
-"@chain-registry/types@npm:^2.0.44":
-  version: 2.0.44
-  resolution: "@chain-registry/types@npm:2.0.44"
-  checksum: 10c0/3e84fe0730af01a727e955486628c3b0fdca85b582af023baeed376d16302dfdc2cea3edd2294a287fc475fe7a267f43fc7d6b59f3b680d694764edbdc3c8cca
-  languageName: node
-  linkType: hard
-
-"@chain-registry/utils@npm:^1.45.4":
-  version: 1.51.194
-  resolution: "@chain-registry/utils@npm:1.51.194"
-  dependencies:
-    "@chain-registry/types": "npm:^0.50.194"
+    "@chain-registry/types": "npm:^2.0.133"
     bignumber.js: "npm:9.1.2"
+    chain-registry: "npm:^2.0.133"
     sha.js: "npm:^2.4.11"
-  checksum: 10c0/731ac26948b317c20a2a3e5cb1a86f446b5cd2327d53f0e74de3113134fd80166e3ea9b36161c41de4e0ec5370d12a62c8270aefeb21a27ef1987623d7507b47
+  checksum: 10c0/d0b249cf5ead731955930d9d48daea9ab99371a1bca0a0a6c2987c5a5de4148b8631caa72b015de6069a6f1c9adebf29e8182dfcd4473dba53ee7010fac31f1e
   languageName: node
   linkType: hard
 
@@ -10070,12 +10045,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chain-registry@npm:^2.0.44":
-  version: 2.0.44
-  resolution: "chain-registry@npm:2.0.44"
+"chain-registry@npm:^2.0.133, chain-registry@npm:^2.0.44":
+  version: 2.0.133
+  resolution: "chain-registry@npm:2.0.133"
   dependencies:
-    "@chain-registry/types": "npm:^2.0.44"
-  checksum: 10c0/15e45386b8a314150f2e66294f9493232e858bbcc667ec59d0a389d983e349351670d7c08171205e33a97d0e3a6edc93784ee014dd8791478b83e5d2371249ea
+    "@chain-registry/types": "npm:^2.0.133"
+  checksum: 10c0/fb13259173e8c4397ad817722b73f609ab0114f07e0bd28368d6723e6dead75685354f3fa456e38e7a4fcb3e9b924eb67e9ca46f9125d82403e120d898f31d6b
   languageName: node
   linkType: hard
 
@@ -14097,7 +14072,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"inherits@npm:2, inherits@npm:2.0.4, inherits@npm:^2.0.1, inherits@npm:^2.0.3, inherits@npm:^2.0.4":
+"inherits@npm:2, inherits@npm:2.0.4, inherits@npm:^2.0.3, inherits@npm:^2.0.4":
   version: 2.0.4
   resolution: "inherits@npm:2.0.4"
   checksum: 10c0/4e531f648b29039fb7426fb94075e6545faa1eb9fe83c29f0b6d9e7263aceb4289d2d4557db0d428188eeb449cc7c5e77b0a0b2c4e248ff2a65933a0dee49ef2
@@ -19154,14 +19129,15 @@ __metadata:
   linkType: hard
 
 "sha.js@npm:^2.4.11":
-  version: 2.4.11
-  resolution: "sha.js@npm:2.4.11"
+  version: 2.4.12
+  resolution: "sha.js@npm:2.4.12"
   dependencies:
-    inherits: "npm:^2.0.1"
-    safe-buffer: "npm:^5.0.1"
+    inherits: "npm:^2.0.4"
+    safe-buffer: "npm:^5.2.1"
+    to-buffer: "npm:^1.2.0"
   bin:
-    sha.js: ./bin.js
-  checksum: 10c0/b7a371bca8821c9cc98a0aeff67444a03d48d745cb103f17228b96793f455f0eb0a691941b89ea1e60f6359207e36081d9be193252b0f128e0daf9cfea2815a5
+    sha.js: bin.js
+  checksum: 10c0/9d36bdd76202c8116abbe152a00055ccd8a0099cb28fc17c01fa7bb2c8cffb9ca60e2ab0fe5f274ed6c45dc2633d8c39cf7ab050306c231904512ba9da4d8ab1
   languageName: node
   linkType: hard
 
@@ -20210,6 +20186,17 @@ __metadata:
   version: 1.0.5
   resolution: "tmpl@npm:1.0.5"
   checksum: 10c0/f935537799c2d1922cb5d6d3805f594388f75338fe7a4a9dac41504dd539704ca4db45b883b52e7b0aa5b2fd5ddadb1452bf95cd23a69da2f793a843f9451cc9
+  languageName: node
+  linkType: hard
+
+"to-buffer@npm:^1.2.0":
+  version: 1.2.2
+  resolution: "to-buffer@npm:1.2.2"
+  dependencies:
+    isarray: "npm:^2.0.5"
+    safe-buffer: "npm:^5.2.1"
+    typed-array-buffer: "npm:^1.0.3"
+  checksum: 10c0/56bc56352f14a2c4a0ab6277c5fc19b51e9534882b98eb068b39e14146591e62fa5b06bf70f7fed1626230463d7e60dca81e815096656e5e01c195c593873d12
   languageName: node
   linkType: hard
 

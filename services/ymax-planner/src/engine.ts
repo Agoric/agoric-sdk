@@ -15,12 +15,12 @@ import { AmountMath, type Brand } from '@agoric/ertp';
 import type { Bech32Address } from '@agoric/orchestration';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 
-import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.exo.ts';
+import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.exo.js';
 import {
   PublishedTxShape,
   type PendingTx,
   type TxId,
-} from '@aglocal/portfolio-contract/src/resolver/types.ts';
+} from '@aglocal/portfolio-contract/src/resolver/types.js';
 import {
   TxStatus,
   TxType,
@@ -29,17 +29,17 @@ import type {
   FlowDetail,
   PoolKey as InstrumentId,
   StatusFor,
-} from '@aglocal/portfolio-contract/src/type-guards.ts';
+} from '@aglocal/portfolio-contract/src/type-guards.js';
 import {
   flowIdFromKey,
   FlowStatusShape,
   PoolPlaces,
   portfolioIdFromKey,
   PortfolioStatusShapeExt,
-} from '@aglocal/portfolio-contract/src/type-guards.ts';
+} from '@aglocal/portfolio-contract/src/type-guards.js';
 import type { NetworkSpec } from '@aglocal/portfolio-contract/tools/network/network-spec.js';
-import { NoSolutionError } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
-import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
+import { NoSolutionError } from '@aglocal/portfolio-contract/tools/plan-solve.js';
+import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.js';
 import {
   mustMatch,
   naturalCompare,

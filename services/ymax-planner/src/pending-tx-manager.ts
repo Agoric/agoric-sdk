@@ -7,7 +7,7 @@ import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
 
-import type { AxelarId } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
+import type { AxelarId } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
 import {
   TxStatus,
   TxType,
@@ -15,7 +15,7 @@ import {
 import type {
   PendingTx,
   TxId,
-} from '@aglocal/portfolio-contract/src/resolver/types.ts';
+} from '@aglocal/portfolio-contract/src/resolver/types.js';
 import type { KVStore } from '@agoric/internal/src/kv-store.js';
 
 import type { CosmosRestClient } from './cosmos-rest-client.ts';

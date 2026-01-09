@@ -44,7 +44,7 @@ import {
   SupportedChain,
   type YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
-import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
+import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.js';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';

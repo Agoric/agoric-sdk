@@ -1,7 +1,7 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { expectType } from 'tsd';
 
-import * as ymaxExports from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
+import * as ymaxExports from '@aglocal/portfolio-contract/src/portfolio.contract.js';
 import {
   axelarIdsMock,
   contractsMock,

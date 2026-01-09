@@ -21,7 +21,7 @@
  */
 import '@endo/init';
 
-import { makeSwapLockMessages } from '@aglocal/portfolio-contract/src/pos-usdn.flows.ts';
+import { makeSwapLockMessages } from '@aglocal/portfolio-contract/src/pos-usdn.flows.js';
 import { CodecHelper } from '@agoric/cosmic-proto';
 import { MsgTransfer as MsgTransferType } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import { MsgLock as MsgLockType } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';

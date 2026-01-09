@@ -38,7 +38,7 @@ import {
   YieldProtocol,
   DEFAULT_FLOW_CONFIG,
 } from '@agoric/portfolio-api/src/constants.js';
-import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
+import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.js';
 import type { ContractMeta, ZCF, ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';

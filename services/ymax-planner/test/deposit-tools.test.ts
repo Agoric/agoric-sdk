@@ -4,10 +4,10 @@ import test from 'ava';
 
 import { ACCOUNT_DUST_EPSILON } from '@agoric/portfolio-api';
 import { planUSDNDeposit } from '@aglocal/portfolio-contract/test/mocks.js';
-import { PROD_NETWORK } from '@aglocal/portfolio-contract/tools/network/prod-network.ts';
+import { PROD_NETWORK } from '@aglocal/portfolio-contract/tools/network/prod-network.js';
 import { TEST_NETWORK } from '@aglocal/portfolio-contract/tools/network/test-network.js';
 import type { NetworkSpec } from '@aglocal/portfolio-contract/tools/network/network-spec.js';
-import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
+import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.js';
 import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.js';
 import type { VstorageKit } from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp';

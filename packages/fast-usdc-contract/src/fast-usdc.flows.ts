@@ -2,11 +2,7 @@ import type { GuestOf } from '@agoric/async-flow';
 import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { AmountMath, type Brand, type NatAmount } from '@agoric/ertp';
 import { AddressHookShape } from '@agoric/fast-usdc/src/type-guards.js';
-import type {
-  EvidenceWithRisk,
-  EvmHash,
-  FeeConfig,
-} from '@agoric/fast-usdc/src/types.ts';
+import type { EvidenceWithRisk, EvmHash, FeeConfig } from '@agoric/fast-usdc';
 import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
 import { assertAllDefined, mustMatch } from '@agoric/internal';
 import type {

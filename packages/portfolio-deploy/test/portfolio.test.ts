@@ -1,9 +1,9 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { protoMsgMockMap } from '@aglocal/boot/tools/ibc/mocks.ts';
-import { AckBehavior } from '@aglocal/boot/tools/supports.ts';
-import { makeProposalShapes } from '@aglocal/portfolio-contract/src/type-guards.ts';
-import { makeUSDNIBCTraffic } from '@aglocal/portfolio-contract/test/mocks.ts';
+import { protoMsgMockMap } from '@aglocal/boot/tools/ibc/mocks.js';
+import { AckBehavior } from '@aglocal/boot/tools/supports.js';
+import { makeProposalShapes } from '@aglocal/portfolio-contract/src/type-guards.js';
+import { makeUSDNIBCTraffic } from '@aglocal/portfolio-contract/test/mocks.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeClientMarshaller } from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp';
