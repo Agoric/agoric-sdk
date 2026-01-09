@@ -1,3 +1,4 @@
+/* global globalThis */
 import { Fail, q } from '@endo/errors';
 import { makeWalletStateCoalescer } from '@agoric/smart-wallet/src/utils.js';
 import { retryUntilCondition } from './sync-tools.js';
@@ -173,7 +174,7 @@ export const makeSmartWalletKitFromVstorageKit = async (
   ) => {
     const getAddrLastUpdate = () => getLastUpdate(from);
     // XXX ambient authority
-    const retryOpts = { setTimeout: global.setTimeout };
+    const retryOpts = { setTimeout: globalThis.setTimeout };
     const status = await (untilNumWantsSatisfied
       ? getOfferWantsSatisfied(id, getAddrLastUpdate, retryOpts)
       : getOfferResult(id, getAddrLastUpdate, retryOpts));

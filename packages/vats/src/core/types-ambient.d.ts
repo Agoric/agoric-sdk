@@ -276,7 +276,9 @@ type WellKnownSpaces = {
   };
 };
 
-type StartGovernedUpgradableOpts<SF extends GovernableStartFn> = {
+type StartGovernedUpgradableOpts<
+  SF extends import('@agoric/governance').GovernableStartFn,
+> = {
   installation: ERef<Installation<SF>>;
   issuerKeywordRecord?: IssuerKeywordRecord;
   governedParams: Record<string, unknown>;
@@ -292,9 +294,11 @@ type StartGovernedUpgradableOpts<SF extends GovernableStartFn> = {
   label: string;
 };
 
-type StartGovernedUpgradable = <SF extends GovernableStartFn>(
+type StartGovernedUpgradable = <
+  SF extends import('@agoric/governance').GovernableStartFn,
+>(
   opts: StartGovernedUpgradableOpts<SF>,
-) => Promise<GovernanceFacetKit<SF>>;
+) => Promise<import('@agoric/governance').GovernanceFacetKit<SF>>;
 
 type StartUpgradableOpts<
   SF extends
@@ -402,7 +406,7 @@ type ChainBootstrapSpaceT = {
   /** kits stored by startGovernedUpgradable */
   governedContractKits: MapStore<
     Instance,
-    GovernanceFacetKit<any> & { label: string }
+    import('@agoric/governance').GovernanceFacetKit<any> & { label: string }
   >;
   /** Used only for testing. Should not appear in any production proposals. */
   testFirstAnchorKit: import('../vat-bank.js').AssetIssuerKit;
@@ -410,7 +414,7 @@ type ChainBootstrapSpaceT = {
     | import('../types.js').ScopedBridgeManager<'wallet'>
     | undefined;
   walletFactoryStartResult: import('./startWalletFactory.js').WalletFactoryStartResult;
-  provisionPoolStartResult: GovernanceFacetKit<
+  provisionPoolStartResult: import('@agoric/governance').GovernanceFacetKit<
     typeof import('@agoric/inter-protocol/src/provisionPool.js').start
   >;
   vatStore: import('./utils.js').VatStore;

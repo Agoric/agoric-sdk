@@ -14,7 +14,7 @@
     "test:ymax": "ava --config ava.ymd.config.js",
     "test:xcs": "ava --config ava.xcs.config.js"
   },
-  "packageManager": "yarn@4.9.3",
+  "packageManager": "yarn@4.12.0",
   "dependencies": {
     "@endo/bundle-source": "MULTICHAIN_TESTING"
   },

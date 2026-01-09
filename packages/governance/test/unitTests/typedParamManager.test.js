@@ -15,6 +15,10 @@ import {
   makeParamManagerSync,
 } from '../../src/contractGovernance/typedParamManager.js';
 
+/**
+ * @import {Invitation} from '@agoric/zoe';
+ */
+
 const drachmaKit = makeIssuerKit('drachma');
 const drachmaBrand = drachmaKit.brand;
 

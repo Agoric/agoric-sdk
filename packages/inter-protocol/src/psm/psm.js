@@ -1,5 +1,4 @@
 // @jessie-check
-/// <reference types="@agoric/governance/exported.js" />
 /// <reference types="@agoric/zoe/exported.js" />
 
 import { Fail } from '@endo/errors';
@@ -48,8 +47,9 @@ import { makeNatAmountShape } from '../contractSupport.js';
  * @import {EReturn} from '@endo/far';
  * @import {TypedPattern, Remote} from '@agoric/internal';
  * @import {Baggage} from '@agoric/vat-data'
- * @import {ContractMeta, FeeMintAccess, Installation} from '@agoric/zoe';
+ * @import {ContractMeta, FeeMintAccess, Invitation} from '@agoric/zoe';
  * @import {Ratio} from '@agoric/ertp';
+ * @import {GovernanceTerms} from '@agoric/governance/src/types.js';
  */
 
 /**

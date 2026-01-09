@@ -31,7 +31,7 @@ const voteToChangeParameter = async (
   contractFacetAccess,
   deadline,
 ) => {
-  /** @type {ParamChangesSpec<StandardParamPath>} */
+  /** @type {ParamChangesSpec} */
   const paramChangeSpec = harden({
     paramPath: { key: 'governedParams' },
     changes: { [MALLEABLE_NUMBER]: 299792458n },
