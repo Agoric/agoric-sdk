@@ -1489,7 +1489,7 @@ harden(openPortfolio);
  * Open a portfolio from an EVM-signed Permit2 and execute the initial
  * create+deposit step.
  */
-export const openPortfolioFromEVM = (async (
+export const openPortfolioFromPermit2 = (async (
   orch: Orchestrator,
   ctx: PortfolioBootstrapContext,
   seat: ZCFSeat,
@@ -1500,7 +1500,7 @@ export const openPortfolioFromEVM = (async (
   madeKit: GuestInterface<PortfolioKit>,
 ) => {
   await null; // see https://github.com/Agoric/agoric-sdk/wiki/No-Nested-Await
-  const trace = makeTracer('openPortfolioFromEVM');
+  const trace = makeTracer('openPortfolioFromPermit2');
   const id = madeKit.reader.getPortfolioId();
   const traceP = trace.sub(`portfolio${id}`);
   traceP('portfolio opened');
@@ -1532,7 +1532,7 @@ export const openPortfolioFromEVM = (async (
   );
   return undefined;
 }) satisfies OrchestrationFlow;
-harden(openPortfolioFromEVM);
+harden(openPortfolioFromPermit2);
 
 export const makeLCA = (async (orch: Orchestrator): Promise<LocalAccount> => {
   const agoricChain = await orch.getChain('agoric');
