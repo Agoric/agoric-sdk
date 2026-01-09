@@ -73,6 +73,23 @@ import {
 const trace = makeTracer('PortC');
 const { fromEntries, keys } = Object;
 
+const makeTransferChannels = (chainInfo: PortfolioPrivateArgs['chainInfo']) => {
+  const { agoric, axelar, noble } = chainInfo as Record<
+    string,
+    CosmosChainInfo
+  >;
+  const { connections } = agoric;
+
+  const nobleConn = connections![noble.chainId].transferChannel;
+  let axelarConn: IBCConnectionInfo['transferChannel'] | undefined;
+  if ('axelar' in chainInfo) {
+    axelarConn = connections![axelar.chainId].transferChannel;
+  } else {
+    trace('⚠️ no axelar chainInfo; GMP not available', keys(chainInfo));
+  }
+  return harden({ noble: nobleConn, axelar: axelarConn });
+};
+
 const interfaceTODO = undefined;
 
 const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
@@ -267,22 +284,7 @@ export const contract = async (
   }
 
   // Extract transfer channel info synchronously
-  const transferChannels = (() => {
-    const { agoric, axelar, noble } = chainInfo as Record<
-      string,
-      CosmosChainInfo
-    >;
-    const { connections } = agoric;
-
-    const nobleConn = connections![noble.chainId].transferChannel;
-    let axelarConn: IBCConnectionInfo['transferChannel'] | undefined;
-    if ('axelar' in chainInfo) {
-      axelarConn = connections![axelar.chainId].transferChannel;
-    } else {
-      trace('⚠️ no axelar chainInfo; GMP not available', keys(chainInfo));
-    }
-    return harden({ noble: nobleConn, axelar: axelarConn });
-  })();
+  const transferChannels = makeTransferChannels(chainInfo);
 
   const proposalShapes = makeProposalShapes(brands.USDC, brands.Access);
   const offerArgsShapes = makeOfferArgsShapes(brands.USDC);
