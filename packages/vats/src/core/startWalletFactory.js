@@ -24,6 +24,7 @@ import {
  * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {ERef} from '@agoric/vow';
+ * @import {GovernanceFacetKit} from '@agoric/governance';
  */
 
 const trace = makeTracer('StartWF', 'verbose');
@@ -191,6 +192,12 @@ export const startWalletFactory = async (
   // We cannot await the start of the provisionPool, since
   // startGovernedUpgradable may potentially only fulfil after the
   // inter-protocol init-core.js is settled.
+  //
+  // eslint-disable-next-line @agoric/group-jsdoc-imports
+  /**
+   * XXX the type is being lost without this annotation
+   * @type {Promise<GovernanceFacetKit<import('@agoric/inter-protocol/src/provisionPool.js').start>>}
+   */
   const ppFacetsP = E(startGovernedUpgradable)({
     installation: provisionPool,
     terms: {},
