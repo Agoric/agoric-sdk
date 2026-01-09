@@ -59,7 +59,7 @@ for (const pkg of packages) {
   try {
     await $('bash', [
       '.github/actions/restore-node/check-git-status.sh',
-      '.',
+      pkg,
       'false',
     ]);
     console.log(`No changes detected after ${pkg} codegen.`);
@@ -69,6 +69,5 @@ for (const pkg of packages) {
       `Please run 'yarn codegen' in ${pkg} and commit the results.`,
     );
     process.exitCode = 1;
-    process.exit(1);
   }
 }
