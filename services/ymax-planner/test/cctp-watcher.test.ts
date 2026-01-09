@@ -222,7 +222,7 @@ test('watchCCTPTransfer detects multiple transfers but only matches exact amount
 
   const result = await watchPromise;
   t.true(
-    result.found,
+    result.settled,
     'Should detect the exact matching amount among multiple transfers',
   );
 });
@@ -270,7 +270,7 @@ test('watchCctpTransfer returns txHash when transfer is found', async t => {
 
   const result = await watchPromise;
 
-  t.true(result.found, 'Transfer should be found');
+  t.true(result.settled, 'Transfer should be found');
   t.is(
     result.txHash,
     expectedTxHash,
