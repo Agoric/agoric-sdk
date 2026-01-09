@@ -33,11 +33,15 @@ import { buildGMPPayload } from '@agoric/orchestration/src/utils/gmp.js';
 import { encodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
+import {
+  PermitTransferFromComponents,
+  PermitTransferFromInternalType,
+} from '@agoric/orchestration/src/utils/permit2.ts';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import { fromBech32 } from '@cosmjs/encoding';
 import { Fail, q, X } from '@endo/errors';
 import { hexToBytes } from '@noble/hashes/utils';
-import type { AbiParameter } from 'viem';
+import type { AbiParameter, AbiParameterToPrimitiveType } from 'viem';
 import { ERC20, makeEVMSession, type EVMT } from './evm-facade.ts';
 import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
 import type {
@@ -66,7 +70,6 @@ export type GMPAccountStatus = GMPAccountInfo & {
   ready: Promise<unknown>;
 };
 
-
 export const CREATE_AND_DEPOSIT_ABI_PARAMS = [
   {
     type: 'tuple',
@@ -77,23 +80,18 @@ export const CREATE_AND_DEPOSIT_ABI_PARAMS = [
       {
         name: 'permit',
         type: 'tuple',
-        components: [
-          {
-            name: 'permitted',
-            type: 'tuple',
-            components: [
-              { name: 'token', type: 'address' },
-              { name: 'amount', type: 'uint256' },
-            ],
-          },
-          { name: 'nonce', type: 'uint256' },
-          { name: 'deadline', type: 'uint256' },
-        ],
+        internalType: PermitTransferFromInternalType,
+        components: PermitTransferFromComponents,
       },
+      { name: 'witness', type: 'bytes32' },
+      { name: 'witnessTypeString', type: 'string' },
       { name: 'signature', type: 'bytes' },
     ],
   },
 ] as const satisfies AbiParameter[];
+export type CreateAndDepositPayload = AbiParameterToPrimitiveType<
+  (typeof CREATE_AND_DEPOSIT_ABI_PARAMS)[0]
+>;
 
 type ProvideEVMAccountSendCall = (
   dest: { axelarId: string; remoteAddress: EVMT['address'] },
@@ -389,7 +387,7 @@ export const provideEVMAccount = makeProvideEVMAccount({
 export const sendCreateAndDepositCall = async (
   dest: { axelarId: string; remoteAddress: EVMT['address'] },
   fee: DenomAmount,
-  permitDetails: PermitDetails,
+  permit2Payload: PermitDetails['permit2Payload'],
   lca: LocalAccount,
   gmpChain: Chain<{ chainId: string }>,
   gmpAddresses: GmpAddresses,
@@ -398,26 +396,24 @@ export const sendCreateAndDepositCall = async (
   // XXX: This encodes the payload directly; consider refactoring evm-facade
   // to use viem session tooling for contract call construction.
   const lcaOwner = lca.getAddress().value;
-  const { permit2Payload } = permitDetails;
-  const { permit, owner, signature } = permit2Payload;
-  const abiEncodedData = encodeAbiParameters(
-    CREATE_AND_DEPOSIT_ABI_PARAMS,
-    [
-      {
-        lcaOwner,
-        tokenOwner: owner,
-        permit: {
-          permitted: {
-            token: permit.permitted.token,
-            amount: permit.permitted.amount,
-          },
-          nonce: permit.nonce,
-          deadline: permit.deadline,
-        },
-        signature,
-      },
-    ],
-  );
+  const {
+    owner: tokenOwner,
+    permit,
+    signature,
+    witness,
+    witnessTypeString,
+  } = permit2Payload;
+
+  const abiEncodedData = encodeAbiParameters(CREATE_AND_DEPOSIT_ABI_PARAMS, [
+    {
+      lcaOwner,
+      tokenOwner,
+      permit,
+      signature,
+      witness,
+      witnessTypeString,
+    },
+  ]);
 
   const { AXELAR_GMP, AXELAR_GAS } = gmpAddresses;
   const memo: AxelarGmpOutgoingMemo = {
@@ -436,13 +432,13 @@ export const sendCreateAndDepositCall = async (
 };
 
 const makeSendCreateAndDepositCall = (
-  permitDetails: PermitDetails,
+  permit2Payload: PermitDetails['permit2Payload'],
 ): ProvideEVMAccountSendCall => {
   return (dest, fee, lca, gmpChain, gmpAddresses, opts) =>
     sendCreateAndDepositCall(
       dest,
       fee,
-      permitDetails,
+      permit2Payload,
       lca,
       gmpChain,
       gmpAddresses,
@@ -466,7 +462,7 @@ export const provideEVMAccountWithPermit = (
   lca: LocalAccount,
   ctx: PortfolioInstanceContext,
   pk: GuestInterface<PortfolioKit>,
-  permitDetails: PermitDetails,
+  permit2Payload: PermitDetails['permit2Payload'],
   opts?: OrchestrationOptions,
 ): GMPAccountStatus =>
   provideEVMAccountWithPermitBase(
@@ -477,7 +473,7 @@ export const provideEVMAccountWithPermit = (
     ctx,
     pk,
     opts,
-    permitDetails,
+    permit2Payload,
   );
 
 /**

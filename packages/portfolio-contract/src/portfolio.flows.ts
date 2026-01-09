@@ -42,6 +42,7 @@ import {
   TxType,
   type FlowConfig,
   type FlowErrors,
+  type FlowFeatures,
   type FlowStep,
   type FundsFlowPlan,
   type TrafficReport,
@@ -558,14 +559,20 @@ const setupPortfolioAccounts = async (
   ctx: Pick<PortfolioInstanceContext, 'contractAccount' | 'transferChannels'>,
   kit: GuestInterface<PortfolioKit>,
   trace: TraceLogger,
-  useProgressTracker: boolean,
+  { useProgressTracker = false }: FlowFeatures = {},
 ) => {
   const sender = await ctx.contractAccount;
   const { lca } = await provideCosmosAccount(orch, 'agoric', kit, trace);
-  const opts = useProgressTracker
-    ? { progressTracker: lca.makeProgressTracker() }
-    : undefined;
-  const { ica } = await provideCosmosAccount(orch, 'noble', kit, trace, opts);
+  const optsArgs = useProgressTracker
+    ? [{ progressTracker: lca.makeProgressTracker() }]
+    : [];
+  const { ica } = await provideCosmosAccount(
+    orch,
+    'noble',
+    kit,
+    trace,
+    ...optsArgs,
+  );
   const forwarding = {
     channel: ctx.transferChannels.noble.counterPartyChannelId,
     recipient: lca.getAddress().value,
@@ -577,7 +584,7 @@ const setupPortfolioAccounts = async (
     forwarding,
     trace,
     undefined,
-    opts,
+    ...optsArgs,
   );
   return { lca, ica };
 };
@@ -1157,7 +1164,7 @@ const stepFlow = async (
               agoric.lca,
               ctx,
               kit,
-              ...optsArgs,
+              { orchOpts: optsArgs[0] },
             );
 
             // Finalize only after the account has settled.
@@ -1444,13 +1451,7 @@ export const openPortfolio = (async (
     // TODO provide a way to recover if any of these provisionings fail
     // SEE https://github.com/Agoric/agoric-private/issues/488
     // Register Noble Forwarding Account (NFA) for CCTP transfers
-    await setupPortfolioAccounts(
-      orch,
-      ctxI,
-      kit,
-      traceP,
-      Boolean(features?.useProgressTracker),
-    );
+    await setupPortfolioAccounts(orch, ctxI, kit, traceP, features);
 
     const { give } = seat.getProposal() as ProposalType['openPortfolio'];
     try {
@@ -1530,7 +1531,9 @@ export const openPortfolioFromPermit2 = (async (
   if (targetAllocation) {
     madeKit.manager.setTargetAllocation(targetAllocation);
   }
-  await setupPortfolioAccounts(orch, ctx, madeKit, traceP, true);
+  await setupPortfolioAccounts(orch, ctx, madeKit, traceP, {
+    useProgressTracker: true,
+  });
   const amount = AmountMath.make(ctx.usdc.brand, depositDetails.amount);
   const flowDetail: FlowDetail = { type: 'deposit', amount, fromChain };
   await executePlan(
@@ -1560,12 +1563,12 @@ const queuePermit2Step = async (
   details: {
     gmpChain: Chain<{ chainId: string }>;
     steps: MovementDesc[];
-    permitDetails: PermitDetails;
+    permit2Payload: PermitDetails['permit2Payload'];
     fromChain: AxelarChain;
     chainInfo: BaseChainInfo<'eip155'>;
   },
 ) => {
-  const { gmpChain, steps, permitDetails, fromChain, chainInfo } = details;
+  const { gmpChain, steps, permit2Payload, fromChain, chainInfo } = details;
   const permitStep = steps.find(
     step => step.src === `+${fromChain}` && step.dest === `@${fromChain}`,
   );
@@ -1589,7 +1592,7 @@ const queuePermit2Step = async (
     lca,
     ctx,
     pKit,
-    permitDetails,
+    permit2Payload,
   );
   return [{ src: permitStep.src, dest: permitStep.dest }];
 };
@@ -1629,13 +1632,13 @@ export const executePlan = (async (
     const steps = Array.isArray(plan) ? plan : plan.flow;
     let queuedSteps: ExecutePlanOptions['queuedSteps'];
     if (options?.evmDepositDetail) {
-      const { fromChain, ...permitDetails } = options.evmDepositDetail;
+      const { fromChain, permit2Payload } = options.evmDepositDetail;
       const gmpChain = await orch.getChain('axelar');
       const chainInfo = await (await orch.getChain(fromChain)).getChainInfo();
       queuedSteps = await queuePermit2Step(pKit, ctx, {
         gmpChain,
         steps,
-        permitDetails,
+        permit2Payload,
         fromChain,
         chainInfo,
       });
