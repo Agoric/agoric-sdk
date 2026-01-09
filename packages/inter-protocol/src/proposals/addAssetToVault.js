@@ -224,7 +224,6 @@ export const startScaledPriceAuthority = async (
   });
 
   await E(priceAuthorityAdmin).registerPriceAuthority(
-    // @ts-expect-error The public facet should have getPriceAuthority
     E(spaKit.publicFacet).getPriceAuthority(),
     interchainBrand,
     stableBrand,
