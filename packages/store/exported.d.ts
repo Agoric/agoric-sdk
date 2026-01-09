@@ -3,8 +3,6 @@
 
 import { ERef as _ERef } from '@endo/far';
 import {
-  LegacyMap as _LegacyMap,
-  LegacyWeakMap as _LegacyWeakMap,
   MapStore as _MapStore,
   SetStore as _SetStore,
   StoreOptions as _StoreOptions,
@@ -15,8 +13,6 @@ import {
 declare global {
   export {
     _ERef as ERef,
-    _LegacyMap as LegacyMap,
-    _LegacyWeakMap as LegacyWeakMap,
     _MapStore as MapStore,
     _SetStore as SetStore,
     _StoreOptions as StoreOptions,
