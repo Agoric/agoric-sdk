@@ -21,6 +21,7 @@ import { Position } from './position.js';
  * @import {PositionKind} from './types-ambient.js';
  * @import {PayoffHandler} from './types-ambient.js';
  * @import {Amount} from '@agoric/ertp';
+ * @import {PromiseRecord} from '@endo/promise-kit';
  */
 
 const PERCENT_BASE = 100n;

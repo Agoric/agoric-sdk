@@ -15,6 +15,7 @@ import * as flows from './basic-flows.flows.js';
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  * @import {ZCF} from '@agoric/zoe';
  * @import {OrchestrationPowers, OrchestrationTools} from '../utils/start-helper.js';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 /**

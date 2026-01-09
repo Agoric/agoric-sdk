@@ -43,7 +43,7 @@ const StableUnit = BigInt(10 ** Stable.displayInfo.decimalPlaces);
  *
  * @param {string[]} oldAddresses
  * @param {ERemote<EMarshaller>} marshaller
- * @param {ERemote<StorageNode>} walletStorageNode
+ * @param {ERemote<import('@agoric/internal/src/lib-chainStorage.js').StorageNode>} walletStorageNode
  */
 const publishRevivableWalletState = async (
   oldAddresses,

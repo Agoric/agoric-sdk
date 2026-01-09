@@ -54,9 +54,9 @@ harden(makeNatAmountShape);
  *   agoricNames: Remote<NameHub>;
  *   localchain: Remote<LocalChain>;
  *   orchestrationService: Remote<CosmosInterchainService>;
- *   storageNode: Remote<StorageNode>;
+ *   storageNode: Remote<import('@agoric/internal/src/lib-chainStorage.js').StorageNode>;
  *   timerService: Remote<TimerService>;
- *   marshaller: Remote<Marshaller>;
+ *   marshaller: Remote<import('@agoric/internal/src/lib-chainStorage.js').Marshaller>;
  *   chainInfo: Record<string, CosmosChainInfo>;
  *   assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
  * }} privateArgs

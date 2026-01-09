@@ -2,6 +2,10 @@ import { E } from '@endo/eventual-send';
 import { observeNotifier } from '@agoric/notifier';
 import { makePromiseKit } from '@endo/promise-kit';
 
+/**
+ * @import {PromiseRecord} from '@endo/promise-kit';
+ */
+
 export const DEFAULT_TIMER_SERVICE_POLL_INTERVAL = 60_000n;
 export const DEFAULT_TIMER_DEVICE_SCALE = 1;
 

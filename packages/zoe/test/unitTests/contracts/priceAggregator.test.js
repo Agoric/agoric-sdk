@@ -45,6 +45,9 @@ import { start } from '../../../src/contracts/priceAggregator.js';
  * @import {Mint} from '@agoric/ertp';
  * @import {IssuerKit} from '@agoric/ertp';
  * @import {Issuer} from '@agoric/ertp';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {PromiseRecord} from '@endo/promise-kit';
  */
 
 /**

@@ -30,7 +30,7 @@ const { values } = Object;
  * @typedef {{
  *   localchain: Remote<LocalChain>;
  *   orchestrationService: Remote<CosmosInterchainService>;
- *   storageNode: Remote<StorageNode>;
+ *   storageNode: Remote<import('@agoric/internal/src/lib-chainStorage.js').StorageNode>;
  *   timerService: Remote<TimerService>;
  *   agoricNames: Remote<NameHub>;
  * }} OrchestrationPowers
@@ -39,7 +39,7 @@ const { values } = Object;
 /**
  * @param {ZCF} zcf
  * @param {OrchestrationPowers & {
- *   marshaller: Remote<Marshaller>;
+ *   marshaller: Remote<import('@agoric/internal/src/lib-chainStorage.js').Marshaller>;
  * }} privateArgs
  * @param {Zone} zone
  * @param {OrchestrationTools} tools
