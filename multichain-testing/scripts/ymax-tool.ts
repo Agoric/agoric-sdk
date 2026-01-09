@@ -67,23 +67,36 @@ const asset = (spec: string) => readFile(nodeRequire.resolve(spec), 'utf8');
 
 type YMaxStartFn = typeof YMaxStart;
 
-const getUsage = (
-  programName: string,
-): string => `USAGE: ${programName} [options]
+const getUsage = (programName: string): string =>
+  `USAGE: ${programName} [options...] [operation]
 Options:
-  --skip-poll            Skip polling for offer result
-  --exit-success         Exit with success code even if errors occur
-  --positions            JSON string of opening positions (e.g. '{"USDN":6000,"Aave":4000}')
-  --target-allocation    JSON string of target allocation (e.g. '{"USDN":6000,"Aave_Arbitrum":4000}')
-  --redeem               redeem invitation
-  --contract=[ymax0]     agoricNames.instance name of contract (ymax0 or ymax1, default: ymax0)
-                         Used for: opening portfolios, invitePlanner, inviteResolver
-  --description=[planner]
-  --submit-for <id>      submit (empty) plan for portfolio <id>
-  --invitePlanner <addr> send planner invitation to address (uses --contract to determine instance)
-  --inviteResolver <addr> send resolver invitation to address (uses --contract to determine instance)
-  --repl                 start a repl with walletStore and ymaxControl bound
-  -h, --help             Show this help message`;
+  --skip-poll             Skip polling for offer result
+  --exit-success          Exit with success code even if errors occur
+  --positions             JSON of opening positions (e.g. '{"USDN":6000,"Aave":4000}')
+  --target-allocation     JSON of target allocation (e.g. '{"USDN":6000,"Aave_Arbitrum":4000}')
+  --contract=[ymax0]      Contract key in agoricNames.instance ('ymax0' or 'ymax1'), used for
+                          portfolios and invitations
+  --description=[planner] For use with --redeem ('planner' or 'resolver', optionally preceded by 'deliver ')
+
+Operations:
+  -h, --help              Show this help message
+  --repl                  Start a repl with walletStore and ymaxControl bound
+  --checkStorage          Report outdated ymax0 vstorage nodes (older than agoricNames.instance)
+  --pruneStorage          Prune vstorage nodes read from { [ParentPath]: ChildPathSegment[] } stdin
+  --buildEthOverrides     Build privateArgsOverrides sufficient to add new EVM chains
+  --getCreatorFacet       Read the creator facet read from wallet store entry 'ymaxControl' and save
+                          the result in a new entry ('creatorFacet' for contract 'ymax0', otherwise
+                          \`creatorFacet-\${contract}\`)
+  --installAndStart <id>  Start a contract with bundleId <id> and privateArgsOverrides from stdin
+  --upgrade <id>          Upgrade the contract to bundleId <id> and privateArgsOverrides from stdin
+  --terminate <message>   Terminate the contract instance
+  --invitePlanner <addr>  Send planner invitation per --contract to <addr>
+  --inviteResolver <addr> Send resolver invitation per --contract to <addr>
+  --redeem                Redeem invitation per --description
+  --submit-for <id>       Submit (empty) plan for portfolio <id>
+  --open                  [default operation] Open a new portfolio per --positions and
+                          --target-allocation
+`.trim();
 
 const parseToolArgs = (argv: string[]) =>
   parseArgs({
@@ -608,6 +621,7 @@ const main = async (
     return;
   }
 
+  // if (values['open'])
   const positionData = parseTypedJSON(values.positions, GoalDataShape);
   const targetAllocation = values['target-allocation']
     ? parseTypedJSON(
