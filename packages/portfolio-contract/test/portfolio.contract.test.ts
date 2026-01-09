@@ -1565,9 +1565,12 @@ test('open portfolio from Arbitrum, 1000 USDC deposit', async t => {
   const inputs = {
     fromChain: 'Arbitrum' as const,
     depositAmount: usdc.units(1000),
-    targetAllocation: { Aave_Arbitrum: 6000n, Compound_Arbitrum: 4000n },
+    allocations: [
+      { instrument: 'Aave_Arbitrum', portion: 6000n },
+      { instrument: 'Compound_Arbitrum', portion: 4000n },
+    ],
   };
-  const { fromChain: evm, depositAmount, targetAllocation } = inputs;
+  const { fromChain: evm, depositAmount, allocations } = inputs;
 
   const expected = {
     storagePath: `${ROOT_STORAGE_PATH}.portfolios.portfolio0`,
@@ -1601,7 +1604,7 @@ test('open portfolio from Arbitrum, 1000 USDC deposit', async t => {
     // TODO: Use trader1 to exercise real client access once EMS/EMH wiring exists.
     const { storagePath, evmHandler } = await E(
       started.publicFacet,
-    ).openPortfolioFromEVM(targetAllocation, permitDetails);
+    ).openPortfolioFromEVM({ allocations }, permitDetails);
     t.is(storagePath, expected.storagePath);
     t.is(passStyleOf(evmHandler), 'remotable');
   };
@@ -1657,8 +1660,7 @@ test('open portfolio from Arbitrum, 1000 USDC deposit', async t => {
     expected.storagePath,
     common.bootstrap.storage,
   );
-  const flowHistory =
-    contents[`${expected.storagePath}.flows.flow${flowNum}`];
+  const flowHistory = contents[`${expected.storagePath}.flows.flow${flowNum}`];
 
   t.truthy(
     Array.isArray(flowHistory) &&
