@@ -39,8 +39,7 @@ import {
   simulateCCTPAck,
 } from './contract-setup.ts';
 import { contractsMock, makeCCTPTraffic, portfolio0lcaOrch } from './mocks.ts';
-import { makeStorageTools } from './supports.ts';
-import type { PortfolioPrivateArgs } from '../src/portfolio.contract.ts';
+import { chainInfoWithCCTP, makeStorageTools } from './supports.ts';
 
 const { fromEntries, keys, values } = Object;
 
@@ -1576,8 +1575,7 @@ test('open portfolio from Arbitrum, 1000 USDC deposit', async t => {
   };
 
   const traderDo = async () => {
-    const signedPermit = {
-      tokenOwner: '0x1111111111111111111111111111111111111111',
+    const permit2Payload = {
       permit: {
         permitted: {
           token: contractsMock[evm].usdc,
@@ -1585,18 +1583,25 @@ test('open portfolio from Arbitrum, 1000 USDC deposit', async t => {
         },
         nonce: 1n,
         deadline: 1n,
-        spender: '0x3333333333333333333333333333333333333333',
       },
+      owner: '0x1111111111111111111111111111111111111111',
       witness:
         '0x0000000000000000000000000000000000000000000000000000000000000000',
       witnessTypeString: 'OpenPortfolioWitness',
       signature: '0x1234',
     } as const;
+    const permitDetails = {
+      chainId: Number(chainInfoWithCCTP[evm].reference),
+      token: contractsMock[evm].usdc,
+      amount: depositAmount.value,
+      spender: '0x3333333333333333333333333333333333333333',
+      permit2Payload,
+    } as const;
 
     // TODO: Use trader1 to exercise real client access once EMS/EMH wiring exists.
     const { storagePath, evmHandler } = await E(
       started.publicFacet,
-    ).openPortfolioFromEVM(targetAllocation, { fromChain: evm, signedPermit });
+    ).openPortfolioFromEVM(targetAllocation, permitDetails);
     t.is(storagePath, expected.storagePath);
     t.is(passStyleOf(evmHandler), 'remotable');
   };

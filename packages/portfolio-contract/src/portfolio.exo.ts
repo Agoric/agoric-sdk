@@ -614,8 +614,15 @@ export const preparePortfolioKit = (
         getReaderFacet() {
           return this.facets.reader;
         },
-        rebalance() {},
-        deposit() {},
+        deposit() {
+          throw Error('TODO in a later PR');
+        },
+        rebalance() {
+          throw Error('TODO in a later PR');
+        },
+        withdraw() {
+          throw Error('TODO in a later PR');
+        },
       },
       rebalanceHandler: {
         async handle(seat: ZCFSeat, offerArgs: unknown) {
