@@ -3,6 +3,7 @@ import tmpambient from 'tmp';
 
 /**
  * @import {Database} from 'better-sqlite3';
+ * @import {LegacyMap} from '@agoric/store';
  */
 
 /**

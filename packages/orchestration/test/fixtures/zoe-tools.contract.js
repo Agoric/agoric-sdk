@@ -24,13 +24,15 @@ const { values } = Object;
  * @import {CosmosInterchainService} from '@agoric/orchestration';
  * @import {OrchestrationTools} from '../../src/utils/start-helper.js';
  * @import {ZCF} from '@agoric/zoe';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 /**
  * @typedef {{
  *   localchain: Remote<LocalChain>;
  *   orchestrationService: Remote<CosmosInterchainService>;
- *   storageNode: Remote<import('@agoric/internal/src/lib-chainStorage.js').StorageNode>;
+ *   storageNode: Remote<StorageNode>;
  *   timerService: Remote<TimerService>;
  *   agoricNames: Remote<NameHub>;
  * }} OrchestrationPowers
@@ -39,7 +41,7 @@ const { values } = Object;
 /**
  * @param {ZCF} zcf
  * @param {OrchestrationPowers & {
- *   marshaller: Remote<import('@agoric/internal/src/lib-chainStorage.js').Marshaller>;
+ *   marshaller: Remote<Marshaller>;
  * }} privateArgs
  * @param {Zone} zone
  * @param {OrchestrationTools} tools

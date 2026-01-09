@@ -17,13 +17,14 @@ const make = (brand, value) => harden({ brand, value });
 
 /**
  * @import {CopyRecord} from '@endo/pass-style';
- * @import {Brand} from '@agoric/ertp';
+ * @import {Amount, Brand} from '@agoric/ertp';
  * @import {ManifestBundleRef} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {BundleID} from '@agoric/swingset-vat';
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js';
  * @import {FastUSDCCorePowers} from './start-fast-usdc.core.js';
  * @import {FeeConfig} from '@agoric/fast-usdc';
  * @import {AmountMath} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

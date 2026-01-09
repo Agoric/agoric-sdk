@@ -18,6 +18,8 @@ import { ChainInfoShape, DenomDetailShape } from '../typeGuards.js';
  * @import {ZCF} from '@agoric/zoe';
  * @import {Brand} from '@agoric/ertp';
  * @import {NatValue} from '@agoric/ertp';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 /** @type {ContractMeta<typeof start>} */
@@ -54,9 +56,9 @@ harden(makeNatAmountShape);
  *   agoricNames: Remote<NameHub>;
  *   localchain: Remote<LocalChain>;
  *   orchestrationService: Remote<CosmosInterchainService>;
- *   storageNode: Remote<import('@agoric/internal/src/lib-chainStorage.js').StorageNode>;
+ *   storageNode: Remote<StorageNode>;
  *   timerService: Remote<TimerService>;
- *   marshaller: Remote<import('@agoric/internal/src/lib-chainStorage.js').Marshaller>;
+ *   marshaller: Remote<Marshaller>;
  *   chainInfo: Record<string, CosmosChainInfo>;
  *   assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
  * }} privateArgs

@@ -21,6 +21,7 @@ import {
  * @import {FastUSDCConfig} from '@agoric/fast-usdc/src/types.js'
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 const ShareAssetInfo = /** @type {const} */ harden({

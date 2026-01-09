@@ -64,6 +64,7 @@ import {
  * @import {KVStore} from '@agoric/internal/src/kv-store.js';
  * @import {SwingStore} from '@agoric/swing-store';
  * @import {StateSyncExporter} from './export-kernel-db.js';
+ * @import {ERef} from '@endo/far';
  */
 
 const ignore = () => {};

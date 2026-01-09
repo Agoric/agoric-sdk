@@ -7,6 +7,8 @@ import { inviteOracles } from './utils/core-eval.js';
  * @import {LegibleCapData} from './utils/config-marshal.js'
  * @import {FastUSDCConfig} from '@agoric/fast-usdc/src/types.js'
  * @import {FastUSDCCorePowers, FastUSDCKit} from './start-fast-usdc.core.js';
+ * @import {ERef} from '@agoric/vow';
+ * @import {Installation} from '@agoric/zoe';
  */
 
 const trace = makeTracer('FUSD-AddOperators', true);
