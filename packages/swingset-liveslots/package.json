@@ -39,8 +39,7 @@
   },
   "files": [
     "src",
-    "tools",
-    "exported.js"
+    "tools"
   ],
   "repository": {
     "type": "git",
