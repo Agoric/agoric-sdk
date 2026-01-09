@@ -9,6 +9,7 @@ import { E } from '@endo/far';
 import { passStyleOf } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
+import type { PortfolioPrivateArgs } from '../src/portfolio.contract.ts';
 import * as contractExports from '../src/portfolio.contract.ts';
 import type { PublishedTx, TxStatus } from '../src/resolver/types.ts';
 import { makeTrader } from '../tools/portfolio-actors.ts';
@@ -27,7 +28,10 @@ const contractName = 'ymax0';
 type StartFn = typeof contractExports.start;
 const { values } = Object;
 
-export const deploy = async (t: ExecutionContext) => {
+export const deploy = async (
+  t: ExecutionContext,
+  overrides: Partial<PortfolioPrivateArgs> = {},
+) => {
   const common = await setupPortfolioTest(t);
   let testJig;
   const setJig = jig => (testJig = jig);
@@ -60,24 +64,30 @@ export const deploy = async (t: ExecutionContext) => {
     selectedChains.map(name => [name, chainInfoWithCCTP[name]]),
   );
 
+  const makePrivateArgs = (
+    privateArgOverrides: Partial<PortfolioPrivateArgs> = {},
+  ): PortfolioPrivateArgs => ({
+    ...common.commonPrivateArgs,
+    axelarIds: axelarIdsMock,
+    contracts: contractsMock,
+    walletBytecode: '0x1234',
+    gmpAddresses,
+    timerService,
+    chainInfo,
+    ...privateArgOverrides,
+  });
+
   const started = await E(zoe).startInstance(
     installation,
     { USDC: usdc.issuer, Fee: bld.issuer, Access: poc26.issuer },
     {}, // terms
-    {
-      ...common.commonPrivateArgs,
-      axelarIds: axelarIdsMock,
-      contracts: contractsMock,
-      walletBytecode: '0x1234',
-      gmpAddresses,
-      timerService,
-      chainInfo,
-    }, // privateArgs
+    makePrivateArgs(overrides), // privateArgs
   );
   t.notThrows(() =>
     mustMatch(
       started,
       M.splitRecord({
+        adminFacet: M.remotable(),
         instance: M.remotable(),
         publicFacet: M.remotable(),
         creatorFacet: M.remotable(),
@@ -89,7 +99,7 @@ export const deploy = async (t: ExecutionContext) => {
   return {
     common: {
       ...common,
-      utils: { ...common.utils, bundleAndInstall, getTestJig },
+      utils: { ...common.utils, bundleAndInstall, getTestJig, makePrivateArgs },
     },
     zoe,
     contractBaggage,
@@ -98,8 +108,12 @@ export const deploy = async (t: ExecutionContext) => {
   };
 };
 
-export const setupTrader = async (t, initial = 10_000) => {
-  const deployed = await deploy(t);
+export const setupTrader = async (
+  t,
+  initial = 10_000,
+  overrides: Partial<PortfolioPrivateArgs> = {},
+) => {
+  const deployed = await deploy(t, overrides);
   const { common, zoe, started } = deployed;
   const { usdc, bld, poc26 } = common.brands;
   const { when } = common.utils.vowTools;

@@ -30,6 +30,7 @@ const parseBuilderArgs = args =>
     options: {
       net: { type: 'string' },
       replace: { type: 'string' },
+      'no-flow-config': { type: 'boolean', default: false },
     },
   });
 
@@ -59,6 +60,7 @@ const build = async (homeP, endowments) => {
   const { scriptArgs } = endowments;
   const { values: flags } = parseBuilderArgs(scriptArgs);
   const boardId = flags.replace;
+  const defaultFlowConfig = flags['no-flow-config'] ? null : undefined;
 
   const { bytecode: walletBytecode } = JSON.parse(
     await asset('@aglocal/portfolio-deploy/tools/evm-orch/Wallet.json'),
@@ -73,6 +75,7 @@ const build = async (homeP, endowments) => {
       },
       oldBoardId: boardId || '',
       walletBytecode,
+      defaultFlowConfig,
     },
     testnet: {
       axelarConfig: { ...axelarConfigTestnet },
@@ -81,6 +84,7 @@ const build = async (homeP, endowments) => {
       },
       oldBoardId: boardId || '',
       walletBytecode,
+      defaultFlowConfig,
     },
   });
 

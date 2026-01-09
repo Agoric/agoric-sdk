@@ -134,7 +134,7 @@ type AssetMovement = {
   apply: (
     accounts: AccountsByChain,
     tracer: TraceLogger,
-    opts?: OrchestrationOptions,
+    ...optsArgs: [OrchestrationOptions?]
   ) => Promise<{ srcPos?: Position; destPos?: Position }>;
 };
 
@@ -155,7 +155,7 @@ export type TransportDetail<
     amount: NatAmount,
     src: AccountInfoFor[S],
     dest: AccountInfoFor[D],
-    opts?: OrchestrationOptions,
+    ...optsArgs: [OrchestrationOptions?]
   ) => Promise<void>;
 };
 
@@ -170,14 +170,14 @@ export type ProtocolDetail<
     ctx: CTX,
     amount: NatAmount,
     src: AccountInfoFor[C],
-    opts?: OrchestrationOptions,
+    ...optsArgs: [OrchestrationOptions?]
   ) => Promise<void>;
   withdraw: (
     ctx: CTX,
     amount: NatAmount,
     dest: AccountInfoFor[C],
     claim?: boolean,
-    opts?: OrchestrationOptions,
+    ...optsArgs: [OrchestrationOptions?]
   ) => Promise<void>;
 };
 
@@ -389,7 +389,7 @@ const trackFlow = async (
     // Publish the step's traffic entries as they are produced.
     const progressTracker =
       progressPowers && accounts.agoric.lca.makeProgressTracker();
-    const opts = progressTracker && { progressTracker };
+    const optsArgs = progressTracker ? [{ progressTracker }] : [];
 
     await null;
     try {
@@ -411,7 +411,11 @@ const trackFlow = async (
       );
 
       // Wait for the move to complete.
-      const { srcPos, destPos } = await move.apply(accounts, traceStep, opts);
+      const { srcPos, destPos } = await move.apply(
+        accounts,
+        traceStep,
+        ...optsArgs,
+      );
 
       traceStep('done:', how);
 
@@ -459,7 +463,7 @@ export const provideCosmosAccount = async <C extends 'agoric' | 'noble'>(
   chainName: C,
   kit: GuestInterface<PortfolioKit>, // Guest<T>?
   tracePortfolio: TraceLogger,
-  opts?: OrchestrationOptions,
+  ...optsArgs: [OrchestrationOptions?]
 ): Promise<AccountInfoFor[C]> => {
   await null;
   const traceChain = tracePortfolio.sub(chainName);
@@ -474,7 +478,7 @@ export const provideCosmosAccount = async <C extends 'agoric' | 'noble'>(
       case 'noble': {
         const nobleChain = await orch.getChain('noble');
         traceChain('makeAccount()');
-        const ica: NobleAccount = await nobleChain.makeAccount(opts);
+        const ica: NobleAccount = await nobleChain.makeAccount(...optsArgs);
         traceChain('result:', coerceAccountId(ica.getAddress()));
         const info: AccountInfoFor['noble'] = {
           namespace: 'cosmos',
@@ -486,8 +490,8 @@ export const provideCosmosAccount = async <C extends 'agoric' | 'noble'>(
       }
       case 'agoric': {
         const agoricChain = await orch.getChain('agoric');
-        const lca = await agoricChain.makeAccount(opts);
-        const lcaIn = await agoricChain.makeAccount(opts);
+        const lca = await agoricChain.makeAccount(...optsArgs);
+        const lcaIn = await agoricChain.makeAccount(...optsArgs);
         const reg = await lca.monitorTransfers(kit.tap);
         traceChain('Monitoring transfers for', lca.getAddress().value);
         const info: AccountInfoFor['agoric'] = {
@@ -522,12 +526,12 @@ const registerNobleForwardingAccount = async (
   forwarding: RegisterAccountMemo['noble']['forwarding'],
   trace: TraceLogger,
   amount: DenomAmount = { denom: 'ubld', value: 1n },
-  opts?: OrchestrationOptions,
+  ...optsArgs: [opts?: OrchestrationOptions]
 ): Promise<void> => {
   trace('Registering NFA', forwarding, 'from', sender.getAddress().value);
 
   await sender.transfer(dest, amount, {
-    ...opts,
+    ...optsArgs[0],
     memo: JSON.stringify({ noble: { forwarding } }),
   });
   trace('NFA registration transfer sent');
@@ -836,9 +840,9 @@ const stepFlow = async (
           amount,
           src: move.src,
           dest: move.dest,
-          apply: async ({ agoric }) => {
+          apply: async ({ agoric }, _tracer, ...optsArgs) => {
             const { lca, lcaIn } = agoric;
-            await lcaIn.send(lca.getAddress(), amount);
+            await lcaIn.send(lca.getAddress(), amount, ...optsArgs);
             return {};
           },
         });
@@ -857,13 +861,25 @@ const stepFlow = async (
           amount,
           src: move.src,
           dest: move.dest,
-          apply: async ({ agoric, noble }, _tracer, opts) => {
+          apply: async ({ agoric, noble }, _tracer, ...optsArgs) => {
             assert(noble, 'nobleMentioned'); // per nobleMentioned below
             await null;
             if (way.src === 'agoric') {
-              await agoricToNoble.apply(ctxI, amount, agoric, noble, opts);
+              await agoricToNoble.apply(
+                ctxI,
+                amount,
+                agoric,
+                noble,
+                ...optsArgs,
+              );
             } else {
-              await nobleToAgoric.apply(ctxI, amount, noble, agoric, opts);
+              await nobleToAgoric.apply(
+                ctxI,
+                amount,
+                noble,
+                agoric,
+                ...optsArgs,
+              );
             }
             return {};
           },
@@ -885,14 +901,14 @@ const stepFlow = async (
           apply: async (
             { [evmChain]: gInfo, noble, agoric },
             _tracer,
-            opts,
+            ...optsArgs
           ) => {
             // If an EVM account is in a move, it's available
             // in the accounts arg, along with noble.
             assert(gInfo && noble, evmChain);
             await null;
             if (outbound) {
-              await CCTP.apply(ctx, amount, noble, gInfo, opts);
+              await CCTP.apply(ctx, amount, noble, gInfo, ...optsArgs);
               return {};
             }
             const evmCtx = await makeEVMCtx(
@@ -901,7 +917,7 @@ const stepFlow = async (
               agoric.lca,
               ctx.transferChannels.noble.counterPartyChannelId,
             );
-            await CCTPfromEVM.apply(evmCtx, amount, gInfo, agoric, opts);
+            await CCTPfromEVM.apply(evmCtx, amount, gInfo, agoric, ...optsArgs);
             return {};
           },
         });
@@ -921,16 +937,22 @@ const stepFlow = async (
           src: move.src,
           dest: move.dest,
           amount,
-          apply: async ({ noble }, _tracer, opts) => {
+          apply: async ({ noble }, _tracer, ...optsArgs) => {
             assert(noble); // per nobleMentioned below
             await null;
             const acctId = coerceAccountId(noble.ica.getAddress());
             const pos = kit.manager.providePosition('USDN', 'USDN', acctId);
             if (isSupply) {
-              await protocolUSDN.supply(ctxU, amount, noble, opts);
+              await protocolUSDN.supply(ctxU, amount, noble, ...optsArgs);
               return harden({ destPos: pos });
             } else {
-              await protocolUSDN.withdraw(ctxU, amount, noble, way.claim, opts);
+              await protocolUSDN.withdraw(
+                ctxU,
+                amount,
+                noble,
+                way.claim,
+                ...optsArgs,
+              );
               return harden({ srcPos: pos });
             }
           },
@@ -1054,7 +1076,7 @@ const stepFlow = async (
             : undefined;
           const acctP = forChain(chain, async () => {
             await null;
-            const opts = progressTracker && { progressTracker };
+            const optsArgs = progressTracker ? [{ progressTracker }] : [];
             void publishProvideAccountProgress(
               progressTracker,
               moveIndex + 1,
@@ -1067,7 +1089,7 @@ const stepFlow = async (
               agoric.lca,
               ctx,
               kit,
-              opts,
+              ...optsArgs,
             );
 
             // Finalize only after the account has settled.
@@ -1099,7 +1121,7 @@ const stepFlow = async (
         const progressTracker = features?.useProgressTracker
           ? agoric.lca.makeProgressTracker()
           : undefined;
-        const opts = progressTracker && { progressTracker };
+        const optsArgs = progressTracker ? [{ progressTracker }] : [];
         try {
           void publishProvideAccountProgress(
             progressTracker,
@@ -1111,7 +1133,7 @@ const stepFlow = async (
             'noble',
             kit,
             traceFlow,
-            opts,
+            ...optsArgs,
           );
           return result;
         } finally {
@@ -1357,15 +1379,15 @@ export const openPortfolio = (async (
     {
       const sender = await ctxI.contractAccount;
       const { lca } = await provideCosmosAccount(orch, 'agoric', kit, traceP);
-      const opts = features?.useProgressTracker
-        ? { progressTracker: lca.makeProgressTracker() }
-        : undefined;
+      const optsArgs = features?.useProgressTracker
+        ? [{ progressTracker: lca.makeProgressTracker() }]
+        : [];
       const { ica } = await provideCosmosAccount(
         orch,
         'noble',
         kit,
         traceP,
-        opts,
+        ...optsArgs,
       );
       const forwarding = {
         channel: transferChannels.noble.counterPartyChannelId,
@@ -1378,7 +1400,7 @@ export const openPortfolio = (async (
         forwarding,
         traceP,
         undefined,
-        opts,
+        ...optsArgs,
       );
     }
 

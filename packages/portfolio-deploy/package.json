@@ -33,6 +33,7 @@
     "@agoric/notifier": "workspace:*",
     "@agoric/orchestration": "workspace:*",
     "@agoric/pola-io": "workspace:*",
+    "@agoric/portfolio-api": "workspace:*",
     "@agoric/store": "workspace:*",
     "@agoric/vat-data": "workspace:*",
     "@agoric/vats": "workspace:*",

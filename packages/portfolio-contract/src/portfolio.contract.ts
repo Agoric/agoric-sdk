@@ -32,11 +32,15 @@ import {
   type OrchestrationPowers,
   type OrchestrationTools,
 } from '@agoric/orchestration';
-import type { PortfolioPublicInvitationMaker } from '@agoric/portfolio-api';
+import type {
+  FlowConfig,
+  PortfolioPublicInvitationMaker,
+} from '@agoric/portfolio-api';
 import {
   AxelarChain,
   YieldProtocol,
   DEFAULT_FLOW_CONFIG,
+  FlowConfigShape,
 } from '@agoric/portfolio-api/src/constants.js';
 import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
 import type { ContractMeta, ZCF, ZCFSeat } from '@agoric/zoe';
@@ -167,22 +171,30 @@ export type PortfolioPrivateArgs = OrchestrationPowers & {
   contracts: EVMContractAddressesMap;
   walletBytecode: `0x${string}`;
   gmpAddresses: GmpAddresses;
+  defaultFlowConfig?: FlowConfig | null;
 };
 
-export const privateArgsShape: TypedPattern<PortfolioPrivateArgs> = {
-  ...(OrchestrationPowersShape as CopyRecord),
-  marshaller: M.remotable('marshaller'),
-  storageNode: M.remotable('storageNode'),
-  chainInfo: M.and(
-    M.recordOf(M.string(), ChainInfoShape),
-    M.splitRecord({ agoric: M.any(), noble: M.any() }),
-  ),
-  assetInfo: M.arrayOf([M.string(), DenomDetailShape]),
-  axelarIds: AxelarIdShape,
-  contracts: EVMContractAddressesMapShape,
-  walletBytecode: M.string(),
-  gmpAddresses: GmpAddressesShape,
-};
+export const privateArgsShape: TypedPattern<PortfolioPrivateArgs> =
+  M.splitRecord(
+    {
+      ...(OrchestrationPowersShape as CopyRecord),
+      marshaller: M.remotable('marshaller'),
+      storageNode: M.remotable('storageNode'),
+      chainInfo: M.and(
+        M.recordOf(M.string(), ChainInfoShape),
+        M.splitRecord({ agoric: M.any(), noble: M.any() }),
+      ),
+      assetInfo: M.arrayOf([M.string(), DenomDetailShape]),
+      axelarIds: AxelarIdShape,
+      contracts: EVMContractAddressesMapShape,
+      walletBytecode: M.string(),
+      gmpAddresses: GmpAddressesShape,
+    },
+    {
+      defaultFlowConfig: M.or(FlowConfigShape, M.null()),
+    },
+    {},
+  );
 
 export const meta: ContractMeta = {
   privateArgsShape,
@@ -247,6 +259,7 @@ export const contract = async (
     walletBytecode,
     storageNode,
     gmpAddresses,
+    defaultFlowConfig = DEFAULT_FLOW_CONFIG,
   } = privateArgs;
   const { brands } = zcf.getTerms();
   const { orchestrateAll, zoeTools, chainHub, vowTools } = tools;
@@ -297,6 +310,17 @@ export const contract = async (
     invitationMakers: makeResolverInvitationMakers,
   } = resolverZone.makeOnce('resolverKit', () => makeResolverKit());
 
+  /**
+   * Helper to conditionally include FlowConfig argument.
+   *
+   * @param [config] FlowConfig or undefined.  Sentinel of null omits the argument.
+   * @returns Argument tuple for spreading into flow call.
+   */
+  const flowCfg = (config?: FlowConfig | null): readonly [FlowConfig?] => {
+    if (config === null) return [];
+    return [config];
+  };
+
   const { makeLCA } = orchestrateAll({ makeLCA: flows.makeLCA }, {});
   const contractAccountV = zone.makeOnce('contractAccountV', () => makeLCA());
   void vowTools.when(contractAccountV, acct => {
@@ -331,9 +355,9 @@ export const contract = async (
     transferChannels,
   };
 
-  // We wrap all the orchFns1 (and orchFns2) to have replaying flows use `config
-  // = undefined` (and the original, pre-progressTracker behavior), but
-  // newly-invoked flows get `config = DEFAULT_FLOW_CONFIG`.
+  // We wrap all the orchFns1 (and orchFns2) to have replaying flows omit the
+  // `config` argument (which defaults to the original, pre-progressTracker
+  // behavior), but newly-invoked flows get `config = defaultFlowConfig`.
   //
   // Create rebalance flow first - needed by preparePortfolioKit
   const orchFns1 = orchestrateAll(
@@ -349,7 +373,7 @@ export const contract = async (
     pKit,
     flowDetail,
     startedFlow,
-    config = DEFAULT_FLOW_CONFIG,
+    config = defaultFlowConfig,
   ) =>
     orchFns1.executePlan(
       seat,
@@ -357,15 +381,16 @@ export const contract = async (
       pKit,
       flowDetail,
       startedFlow,
-      config,
+      ...flowCfg(config),
     );
   const rebalance: typeof orchFns1.rebalance = (
     seat,
     offerArgs,
     kit,
     startedFlow,
-    config = DEFAULT_FLOW_CONFIG,
-  ) => orchFns1.rebalance(seat, offerArgs, kit, startedFlow, config);
+    config = defaultFlowConfig,
+  ) =>
+    orchFns1.rebalance(seat, offerArgs, kit, startedFlow, ...flowCfg(config));
 
   // unused but must be defined for upgrade
   const { parseInboundTransfer: _obsolete } = orchestrateAll(
@@ -419,11 +444,12 @@ export const contract = async (
     return kit;
   };
 
-  // As per orchFns1, we wrap orchFns2 to have replaying flows use `config
-  // = undefined` (and the original, pre-progressTracker behavior), but
-  // newly-invoked flows get `config = DEFAULT_FLOW_CONFIG`.
+  // As per orchFns1, we wrap orchFns2 to have replaying flows omit the `config`
+  // argument (which defaults to the original, pre-progressTracker behavior),
+  // but newly-invoked flows get `config = defaultFlowConfig`.
   //
-  // Create openPortfolio flow with makePortfolioKit - circular dependency avoided
+  // Create openPortfolio flow with makePortfolioKit - circular dependency
+  // avoided
   const orchFns2 = orchestrateAll(
     { openPortfolio: flows.openPortfolio },
     {
@@ -437,8 +463,8 @@ export const contract = async (
     seat,
     offerArgs,
     kit,
-    config = DEFAULT_FLOW_CONFIG,
-  ) => orchFns2.openPortfolio(seat, offerArgs, kit, config);
+    config = defaultFlowConfig,
+  ) => orchFns2.openPortfolio(seat, offerArgs, kit, ...flowCfg(config));
 
   const usedAccessTokens = zone.makeOnce(
     'usedAccessTokens',

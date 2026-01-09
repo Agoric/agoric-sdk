@@ -209,6 +209,13 @@ func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) upgradetyp
 				return nil, err
 			}
 
+			// Upgrade the components that changed.
+			CoreProposalSteps = append(CoreProposalSteps,
+				vm.CoreProposalStepForModules(
+					"@agoric/builders/scripts/smart-wallet/build-wallet-factory2-upgrade.js",
+				),
+			)
+
 			// terminationTargets is a slice of "$boardID:$instanceKitLabel" strings.
 			var terminationTargets []string
 			switch ctx.ChainID() {
