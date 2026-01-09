@@ -5,6 +5,7 @@ import { makeTracer } from '@agoric/internal';
 /**
  * @import {CreateVatResults, VatAdminSvc} from '@agoric/swingset-vat';
  * @import {VatUpgradeOptions} from '@agoric/swingset-vat';
+ * @import {MapStore} from '@agoric/store';
  */
 
 const trace = makeTracer('UpgradeVats');

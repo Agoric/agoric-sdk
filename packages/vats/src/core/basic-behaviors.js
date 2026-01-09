@@ -31,6 +31,8 @@ import { makeScopedBridge } from '../bridge.js';
  * @import {ZoeService} from '@agoric/zoe';
  * @import {Installation} from '@agoric/zoe';
  * @import {IssuerKeywordRecord} from '@agoric/zoe';
+ * @import {MapStore} from '@agoric/store';
+ * @import {IssuerKit} from '@agoric/ertp';
  */
 
 /**
@@ -632,7 +634,7 @@ export const addBankAssets = async ({
   });
 
   const bldBrand = await E(bldIssuer).getBrand();
-  const bldKit = /** @type {import('@agoric/ertp').IssuerKit<'nat'>} */ (
+  const bldKit = /** @type {IssuerKit<'nat'>} */ (
     harden({ mint: bldMint, issuer: bldIssuer, brand: bldBrand })
   );
   bldIssuerKit.resolve(bldKit);

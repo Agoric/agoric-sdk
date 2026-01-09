@@ -11,6 +11,9 @@ import { Shape } from './shapes.js';
  * @import {AttemptDescription, Bytes, CloseReason, Closable, Connection, ConnectionHandler, Endpoint, ListenHandler, Port, Protocol, ProtocolHandler, ProtocolImpl, SendOptions} from './types.js';
  * @import {PromiseVow, Remote, VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/base-zone';
+ * @import {MapStore} from '@agoric/store';
+ * @import {WeakSetStore} from '@agoric/store';
+ * @import {SetStore} from '@agoric/store';
  */
 
 /** @typedef {VowTools & { finalizer: Finalizer }} Powers */

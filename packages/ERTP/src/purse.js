@@ -8,6 +8,8 @@ import { makeAmountStore } from './amountStore.js';
  * @import {AssetKind, RecoverySetsOption, Brand, Payment} from './types.js'
  * @import {Zone} from '@agoric/zone';
  * @import {InterfaceGuard} from '@endo/patterns';
+ * @import {WeakMapStore} from '@agoric/store';
+ * @import {SetStore} from '@agoric/store';
  */
 
 const EMPTY_COPY_SET = makeCopySet([]);

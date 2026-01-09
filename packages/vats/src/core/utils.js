@@ -10,6 +10,10 @@ import { makeLogHooks, makePromiseSpace } from './promise-space.js';
 
 import './types-ambient.js';
 
+/**
+ * @import {MapStore} from '@agoric/store';
+ */
+
 const { entries, fromEntries, keys } = Object;
 
 /**

@@ -20,6 +20,7 @@ import { deeplyFulfilledObject, NonNullish } from '@agoric/internal';
  * @import {NameHub} from './types.js';
  * @import {NameHubKit} from './types.js';
  * @import {PromiseKit} from '@endo/promise-kit';
+ * @import {MapStore} from '@agoric/store';
  */
 
 const KeyShape = M.string();

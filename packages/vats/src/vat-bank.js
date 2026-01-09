@@ -36,6 +36,7 @@ import {
  * @import {Brand, DepositFacet, Mint, Purse} from '@agoric/ertp/src/types.js';
  * @import {MakeAttenuator} from '@agoric/internal/src/callback.js';
  * @import {NameAdmin} from './types.js';
+ * @import {MapStore} from '@agoric/store';
  */
 
 const { VirtualPurseControllerI } = makeVirtualPurseKitIKit();

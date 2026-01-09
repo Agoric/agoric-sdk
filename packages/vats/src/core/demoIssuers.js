@@ -14,6 +14,9 @@ import { Stake, Stable } from '@agoric/internal/src/tokens.js';
 /**
  * @import {FeeMintAccess, Installation, ZoeService} from '@agoric/zoe'
  * @import {EconomyBootstrapPowers} from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
+ * @import {Payment} from '@agoric/ertp';
+ * @import {Issuer} from '@agoric/ertp';
+ * @import {Brand} from '@agoric/ertp';
  */
 
 const { multiply, floorDivide } = natSafeMath;
@@ -194,7 +197,7 @@ const run2places = f =>
  *   feeMintAccess: ERef<FeeMintAccess>;
  *   zoe: ERef<ZoeService>;
  * }} powers
- * @returns {Promise<import('@agoric/ertp').Payment<'nat'>>}
+ * @returns {Promise<Payment<'nat'>>}
  */
 const mintRunPayment = async (
   value,
@@ -227,10 +230,10 @@ const provideCoin = async (name, mints) => {
  * @param {BootstrapSpace} powers TODO: sync this type with end-user docs?
  *
  * @typedef {{
- *   issuer: ERef<import('@agoric/ertp').Issuer>;
+ *   issuer: ERef<Issuer>;
  *   issuerPetname: string;
- *   payment: import('@agoric/ertp').Payment;
- *   brand: import('@agoric/ertp').Brand;
+ *   payment: Payment;
+ *   brand: Brand;
  *   pursePetname: string;
  * }} UserPaymentRecord
  */
@@ -393,9 +396,9 @@ export const ammPoolRunDeposits = issuers => {
 };
 
 /**
- * @param {import('@agoric/ertp').Payment} bootstrapPayment
+ * @param {Payment} bootstrapPayment
  * @param {Record<string, bigint>} balances
- * @param {{ issuer: ERef<import('@agoric/ertp').Issuer>; brand: import('@agoric/ertp').Brand }} central
+ * @param {{ issuer: ERef<Issuer>; brand: Brand }} central
  */
 export const splitAllCentralPayments = async (
   bootstrapPayment,
@@ -428,8 +431,8 @@ export const splitAllCentralPayments = async (
 /**
  * @param {string} issuerName
  * @param {(typeof AMMDemoState)['ATOM']} record
- * @param {Record<string, { issuer: ERef<import('@agoric/ertp').Issuer>; brand: import('@agoric/ertp').Brand }>} kits
- * @param {{ issuer: ERef<import('@agoric/ertp').Issuer<'nat'>>; brand: import('@agoric/ertp').Brand<'nat'> }} central
+ * @param {Record<string, { issuer: ERef<Issuer>; brand: Brand }>} kits
+ * @param {{ issuer: ERef<Issuer<'nat'>>; brand: Brand<'nat'> }} central
  */
 export const poolRates = (issuerName, record, kits, central) => {
   /** @param {bigint} n */
@@ -443,7 +446,7 @@ export const poolRates = (issuerName, record, kits, central) => {
 
   /**
    * @param {Rational} r
-   * @param {import('@agoric/ertp').Brand} b
+   * @param {Brand} b
    */
   const toRatio = ([n, d], b) => makeRatio(n, b, d);
   const rates = {

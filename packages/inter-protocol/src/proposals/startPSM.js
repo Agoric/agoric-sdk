@@ -32,6 +32,7 @@ import {
  * @import {Brand} from '@agoric/ertp';
  * @import {Issuer} from '@agoric/ertp';
  * @import {Mint} from '@agoric/ertp';
+ * @import {MapStore} from '@agoric/store';
  */
 /** @import {MetricsNotification} from '../psm/psm.js' */
 /** @import {EconomyBootstrapPowers} from './econ-behaviors.js' */
