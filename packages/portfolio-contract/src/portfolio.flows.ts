@@ -1538,12 +1538,12 @@ const queuePermit2Step = async (
   details: {
     gmpChain: Chain<{ chainId: string }>;
     steps: MovementDesc[];
-    permitDetails: PermitDetails;
+    permit2Payload: PermitDetails['permit2Payload'];
     fromChain: AxelarChain;
     chainInfo: BaseChainInfo<'eip155'>;
   },
 ) => {
-  const { gmpChain, steps, permitDetails, fromChain, chainInfo } = details;
+  const { gmpChain, steps, permit2Payload, fromChain, chainInfo } = details;
   const permitStep = steps.find(
     step => step.src === `+${fromChain}` && step.dest === `@${fromChain}`,
   );
@@ -1567,7 +1567,7 @@ const queuePermit2Step = async (
     lca,
     ctx,
     pKit,
-    permitDetails,
+    permit2Payload,
   );
   return [{ src: permitStep.src, dest: permitStep.dest }];
 };
@@ -1607,13 +1607,13 @@ export const executePlan = (async (
     const steps = Array.isArray(plan) ? plan : plan.flow;
     let queuedSteps: ExecutePlanOptions['queuedSteps'];
     if (options?.evmDepositDetail) {
-      const { fromChain, ...permitDetails } = options.evmDepositDetail;
+      const { fromChain, permit2Payload } = options.evmDepositDetail;
       const gmpChain = await orch.getChain('axelar');
       const chainInfo = await (await orch.getChain(fromChain)).getChainInfo();
       queuedSteps = await queuePermit2Step(pKit, ctx, {
         gmpChain,
         steps,
-        permitDetails,
+        permit2Payload,
         fromChain,
         chainInfo,
       });

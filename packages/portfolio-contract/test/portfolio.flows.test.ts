@@ -1885,25 +1885,19 @@ const provideEVMAccountWithPermitStub: ProvideEVMAccountFn = (
     ctx,
     pk,
     {
-      chainId: 1,
-      token: '0x0000000000000000000000000000000000000001',
-      amount: 1n,
-      spender: '0x0000000000000000000000000000000000000002',
-      permit2Payload: {
-        permit: {
-          permitted: {
-            token: '0x0000000000000000000000000000000000000001',
-            amount: 1n,
-          },
-          nonce: 1n,
-          deadline: 1n,
+      permit: {
+        permitted: {
+          token: '0x0000000000000000000000000000000000000001',
+          amount: 1n,
         },
-        owner: '0x1111111111111111111111111111111111111111',
-        witness:
-          '0x0000000000000000000000000000000000000000000000000000000000000000',
-        witnessTypeString: 'OpenPortfolioWitness',
-        signature: '0x1234' as `0x${string}`,
+        nonce: 1n,
+        deadline: 1n,
       },
+      owner: '0x1111111111111111111111111111111111111111',
+      witness:
+        '0x0000000000000000000000000000000000000000000000000000000000000000',
+      witnessTypeString: 'OpenPortfolioWitness',
+      signature: '0x1234' as `0x${string}`,
     },
     opts,
   );
