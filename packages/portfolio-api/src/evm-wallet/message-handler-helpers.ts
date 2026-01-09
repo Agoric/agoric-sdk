@@ -35,7 +35,9 @@ import {
   getYmaxOperationTypes,
 } from './eip712-messages.ts';
 
-export type YmaxOperationDetails<T extends OperationTypeNames> = {
+export type YmaxOperationDetails<
+  T extends OperationTypeNames = OperationTypeNames,
+> = {
   [P in T]: {
     operation: P;
     data: YmaxOperationType<P>;
