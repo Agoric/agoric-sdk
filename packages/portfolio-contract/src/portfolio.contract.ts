@@ -41,6 +41,7 @@ import {
   DEFAULT_FLOW_CONFIG,
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
+import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.ts';
 import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
 import type { ContractMeta, ZCF, ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
@@ -53,7 +54,6 @@ import { makeMarshal } from '@endo/marshal';
 import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import { prepareEVMWalletHandlerKit } from './evm-wallet-handler.ts';
-import type { CreateAndDepositPayload } from './evm-facade.ts';
 import { preparePlanner } from './planner.exo.ts';
 import { preparePortfolioKit, type PortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
@@ -524,10 +524,7 @@ export const contract = async (
      */
     async openPortfolioFromEVM(
       targetAllocation: TargetAllocation | undefined,
-      depositDetails: {
-        fromChain: AxelarChain;
-        signedPermit: Omit<CreateAndDepositPayload, 'lcaOwner'>;
-      },
+      depositDetails: PermitDetails,
     ): Promise<{
       storagePath: string;
       evmHandler: PortfolioKit['evmHandler'];
