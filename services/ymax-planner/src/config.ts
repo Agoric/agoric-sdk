@@ -52,8 +52,8 @@ export interface YmaxPlannerConfig {
     readonly dbPath: string;
   };
   readonly yds: {
-    readonly url: string;
-    readonly apiKey: string;
+    readonly url?: string;
+    readonly apiKey?: string;
   };
 }
 
@@ -180,9 +180,9 @@ export const loadConfig = async (
   }
   const sqliteDbPath = validateRequired(env, 'SQLITE_DB_PATH');
 
-  const ydsUrl =
-    validateUrl(env, 'YDS_URL', undefined) || Fail`YDS_URL is required`;
-  const ydsApiKey = validateRequired(env, 'YDS_API_KEY');
+  const ydsUrl = validateUrl(env, 'YDS_URL', undefined);
+  const ydsApiKey = env.YDS_API_KEY?.trim();
+  !ydsUrl || ydsApiKey || Fail`YDS_API_KEY is required with YDS_URL`;
 
   const config: YmaxPlannerConfig = harden({
     clusterName,

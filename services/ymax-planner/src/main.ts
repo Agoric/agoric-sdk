@@ -268,13 +268,15 @@ export const main = async (
     trace: () => {},
   });
 
-  const ydsNotifier = new YdsNotifier(
-    { fetch, log: console.log.bind(console) },
-    {
-      ydsUrl: config.yds.url,
-      ydsApiKey: config.yds.apiKey,
-    },
-  );
+  const ydsNotifier = config.yds.url
+    ? new YdsNotifier(
+        { fetch, log: console.log.bind(console) },
+        {
+          ydsUrl: config.yds.url,
+          ydsApiKey: config.yds.apiKey as string,
+        },
+      )
+    : undefined;
 
   const powers = {
     evmCtx: {
