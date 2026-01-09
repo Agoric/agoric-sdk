@@ -206,6 +206,7 @@ __metadata:
     "@agoric/orchestration": "workspace:*"
     "@agoric/portfolio-api": "workspace:*"
     "@agoric/smart-wallet": "workspace:*"
+    "@agoric/store": "workspace:*"
     "@agoric/swingset-liveslots": "workspace:*"
     "@agoric/time": "workspace:*"
     "@agoric/vats": "workspace:*"
