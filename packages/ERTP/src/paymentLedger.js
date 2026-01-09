@@ -1,7 +1,5 @@
 // @jessie-check
 
-/// <reference types="@agoric/store/exported.js" />
-
 import { q, Fail, annotateError, X } from '@endo/errors';
 import { isPromise } from '@endo/promise-kit';
 import { mustMatch, M, keyEQ } from '@endo/patterns';
