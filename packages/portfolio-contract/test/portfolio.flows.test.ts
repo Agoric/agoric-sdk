@@ -58,7 +58,7 @@ import {
   executePlan as rawExecutePlan,
   makeErrorList,
   onAgoricTransfer,
-  openPortfolioFromEVM,
+  openPortfolioFromPermit2,
   openPortfolio as rawOpenPortfolio,
   provideCosmosAccount,
   rebalance as rawRebalance,
@@ -2461,8 +2461,8 @@ test('withdraw from ERC4626 position', async t => {
   await documentStorageSchema(t, storage, docOpts);
 });
 
-// EVM wallet integration - openPortfolioFromEVM flow
-test('openPortfolioFromEVM with Permit2 provisions account and starts deposit', async t => {
+// EVM wallet integration - openPortfolioFromPermit2 flow
+test('openPortfolioFromPermit2 with Permit2 provisions account and starts deposit', async t => {
   const axelarPayload: CreateAndDepositPayload = {
     lcaOwner: 'agoric1LCAAllocatedByContract',
     permit: {
@@ -2496,7 +2496,7 @@ test('openPortfolioFromEVM with Permit2 provisions account and starts deposit', 
   const { getPortfolioStatus, getFlowHistory } = makeStorageTools(storage);
   let flowNum: number | undefined;
 
-  const webUiDone = openPortfolioFromEVM(
+  const webUiDone = openPortfolioFromPermit2(
     orch,
     ctx,
     seat,
@@ -2576,21 +2576,19 @@ test('openPortfolioFromEVM with Permit2 provisions account and starts deposit', 
 });
 
 test.todo(
-  'openPortfolioFromEVM retries when sendCreateAndDepositCall/Factory.execute fails',
+  'openPortfolioFromPermit2 retries when sendCreateAndDepositCall/Factory.execute fails',
 );
 
 test.todo(
-  'openPortfolioFromEVM handles subsequent deposits without skipping +Base -> @Base',
+  'openPortfolioFromPermit2 handles subsequent deposits without skipping +Base -> @Base',
 );
 
 test.todo(
-  'openPortfolioFromEVM rejects permit with unexpected token for fromChain',
+  'openPortfolioFromPermit2 rejects permit with unexpected token for fromChain',
 );
 
-test.todo('openPortfolioFromEVM rejects permit for wrong chainId');
+test.todo('openPortfolioFromPermit2 rejects deposit for unsupported chain');
 
-test.todo('openPortfolioFromEVM rejects permit with wrong spender');
+test.todo('openPortfolioFromPermit2 rejects deposit with wrong spender');
 
-test.todo(
-  'openPortfolioFromEVM rejects permit with zero amount or past deadline',
-);
+test.todo('openPortfolioFromPermit2 rejects permit with zero amount');
