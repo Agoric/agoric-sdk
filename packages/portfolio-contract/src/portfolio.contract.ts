@@ -581,8 +581,9 @@ export const contract = async (
         // @ts-ignore XXX Guest...
         kit,
       );
+      const storagePath = await vowTools.asPromise(kit.reader.getStoragePath());
       return harden({
-        storagePath: await vowTools.asPromise(kit.reader.getStoragePath()),
+        storagePath,
         evmHandler: kit.evmHandler,
       });
     },
