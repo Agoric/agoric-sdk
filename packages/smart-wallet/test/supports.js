@@ -23,27 +23,31 @@ import { E, Far } from '@endo/far';
  * @import {BridgeManager} from '@agoric/vats';
  * @import {Subscriber} from '@agoric/notifier';
  * @import {TopicsRecord} from '@agoric/zoe/src/contractSupport/index.js';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Issuer} from '@agoric/ertp';
+ * @import {Mint} from '@agoric/ertp';
+ * @import {NatValue} from '@agoric/ertp';
  */
 
 export { ActionType };
 
 /**
  * @param {object} kit
- * @param {import('@agoric/ertp').Brand<'nat'>} kit.brand
- * @param {import('@agoric/ertp').Issuer<'nat'>} kit.issuer
- * @param {import('@agoric/ertp').Mint<'nat'>} [kit.mint]
+ * @param {Brand<'nat'>} kit.brand
+ * @param {Issuer<'nat'>} kit.issuer
+ * @param {Mint<'nat'>} [kit.mint]
  */
 export const withAmountUtils = kit => {
   return {
     ...kit,
     /**
-     * @param {import('@agoric/ertp').NatValue} v
+     * @param {NatValue} v
      */
     make: v => AmountMath.make(kit.brand, v),
     makeEmpty: () => AmountMath.makeEmpty(kit.brand),
     /**
-     * @param {import('@agoric/ertp').NatValue} n
-     * @param {import('@agoric/ertp').NatValue} [d]
+     * @param {NatValue} n
+     * @param {NatValue} [d]
      */
     makeRatio: (n, d) => makeRatio(n, kit.brand, d),
   };

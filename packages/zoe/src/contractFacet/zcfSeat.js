@@ -30,6 +30,7 @@ import { assertRightsConserved } from './rightsConservation.js';
  * @import {GetAssetKindByBrand} from '../internal-types.js';
  * @import {ZcfMintReallocator} from '../internal-types.js';
  * @import {SeatHandle} from '../internal-types.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

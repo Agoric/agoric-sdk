@@ -14,6 +14,7 @@ export {};
  * @import {InvitationHandle, BrandKeywordRecord, AnyTerms} from './types.js';
  * @import {FeeMintAccess} from './zoeService/types.js';
  * @import {InstanceRecord} from './zoeService/utils.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

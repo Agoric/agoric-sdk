@@ -9,6 +9,7 @@ import { E } from '@endo/eventual-send';
  * @import {Instance} from '@agoric/zoe';
  * @import {Issuer} from '@agoric/ertp';
  * @import {Payment} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

@@ -13,6 +13,7 @@ import { prepareNameHubKit } from './nameHub.js';
  * @import {DisplayInfo} from '@agoric/ertp';
  * @import {Brand} from '@agoric/ertp';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /** @param {Zone} zone */
@@ -59,7 +60,7 @@ export const buildRootObject = (_vatPowers, _vatParameters, baggage) => {
   const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } = kit;
 
   /**
-   * @param {ERef<import('@agoric/internal/src/lib-chainStorage.js').StorageNode>} nameStorage
+   * @param {ERef<StorageNode>} nameStorage
    * @param {ERef<BoardVat>} vatBoard
    * @param {string[]} kinds brand, issuer, ...
    */

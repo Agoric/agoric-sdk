@@ -30,6 +30,7 @@ import { CONTRACT_ELECTORATE } from './governParam.js';
  * @import {Ratio} from '@agoric/ertp';
  * @import {Amount} from '@agoric/ertp';
  * @import {Brand} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

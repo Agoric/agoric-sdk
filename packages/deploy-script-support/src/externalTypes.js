@@ -68,21 +68,21 @@ export {};
 
 /**
  * @typedef {{
- *   scratch: ERef<import('@agoric/internal/src/scratch.js').ScratchPad>,
+ *   scratch: import('@agoric/vow').ERef<import('@agoric/internal/src/scratch.js').ScratchPad>,
  * }} CommonHome
  */
 
 // TODO wallet as import('@agoric/wallet-backend/src/types.js').WalletAdmin once it's a module
 /**
  * @typedef {CommonHome & {
- * agoricNames: ERef<NameHub>,
- * bank: ERef<import("@agoric/vats/src/vat-bank.js").Bank>,
- * board: ERef<import("@agoric/vats").Board>,
+ * agoricNames: import('@agoric/vow').ERef<NameHub>,
+ * bank: import('@agoric/vow').ERef<import("@agoric/vats/src/vat-bank.js").Bank>,
+ * board: import('@agoric/vow').ERef<import("@agoric/vats").Board>,
  * faucet: unknown,
- * myAddressNameAdmin: ERef<import("@agoric/vats").NameAdmin>,
- * namesByAddress: ERef<NameHub>,
+ * myAddressNameAdmin: import('@agoric/vow').ERef<import("@agoric/vats").NameAdmin>,
+ * namesByAddress: import('@agoric/vow').ERef<NameHub>,
  * wallet: any,
- * zoe: ERef<ZoeService>,
+ * zoe: import('@agoric/vow').ERef<ZoeService>,
  * }} AgSoloHome
  */
 

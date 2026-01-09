@@ -10,17 +10,20 @@ import { E } from '@endo/far';
  * @import {PublicSubscribers} from './types.js';
  * @import {TopicsRecord} from '@agoric/zoe/src/contractSupport/index.js';
  * @import {Instance} from '@agoric/zoe';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 export const NO_SMART_WALLET_ERROR = 'no smart wallet';
 
 const trace = makeTracer('WUTIL', false);
 
-/** @param {import('@agoric/ertp').Brand<'set'>} [invitationBrand] */
+/** @param {Brand<'set'>} [invitationBrand] */
 export const makeWalletStateCoalescer = (invitationBrand = undefined) => {
   /** @type {Map<OfferId, OfferStatus>} */
   const offerStatuses = new Map();
-  /** @type {Map<import('@agoric/ertp').Brand, import('@agoric/ertp').Amount>} */
+  /** @type {Map<Brand, Amount>} */
   const balances = new Map();
 
   /**
@@ -112,7 +115,7 @@ export const makeWalletStateCoalescer = (invitationBrand = undefined) => {
  * utility to reset state from RPC.
  *
  * @param {ERef<Subscriber<UpdateRecord>>} updates
- * @param {import('@agoric/ertp').Brand<'set'>} [invitationBrand]
+ * @param {Brand<'set'>} [invitationBrand]
  */
 export const coalesceUpdates = (updates, invitationBrand) => {
   const coalescer = makeWalletStateCoalescer(invitationBrand);

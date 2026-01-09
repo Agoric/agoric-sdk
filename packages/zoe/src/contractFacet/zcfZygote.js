@@ -42,6 +42,7 @@ import { prepareZcMint } from './zcfMint.js';
  * @import {HandleOfferResult} from '../internal-types.js';
  * @import {Issuer} from '@agoric/ertp';
  * @import {AdditionalDisplayInfo} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

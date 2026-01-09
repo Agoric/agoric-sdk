@@ -24,6 +24,7 @@ import {
  * @import {Amount} from '@agoric/ertp';
  * @import {Brand} from '@agoric/ertp';
  * @import {Mint} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 const { coerceRelativeTimeRecord } = TimeMath;

@@ -5,6 +5,7 @@ import buildManualTimer from '../../../tools/manualTimer.js';
 
 /**
  * @import {ZoeService} from '@agoric/zoe';
+ * @import {ERef} from '@agoric/vow';
  */
 
 const setupBasicMints = () => {

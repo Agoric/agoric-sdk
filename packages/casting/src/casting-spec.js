@@ -4,6 +4,7 @@ import { E, getInterfaceOf } from '@endo/far';
 /**
  * @import {CastingSpec} from './types.js';
  * @import {VStorageKey} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 const { toAscii } = encodingStar;

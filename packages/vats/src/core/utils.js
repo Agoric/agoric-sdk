@@ -12,6 +12,7 @@ import './types-ambient.js';
 
 /**
  * @import {MapStore} from '@agoric/store';
+ * @import {ERef} from '@agoric/vow';
  */
 
 const { entries, fromEntries, keys } = Object;

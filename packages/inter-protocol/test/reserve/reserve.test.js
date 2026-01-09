@@ -14,6 +14,7 @@ import { setupReserveServices } from './setup.js';
  * @import {Assertions} from 'ava';
  * @import {FeeMintAccess, Invitation, ZoeService} from '@agoric/zoe';
  * @import {NatValue} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

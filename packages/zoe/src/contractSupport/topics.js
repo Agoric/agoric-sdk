@@ -7,6 +7,7 @@ import { E } from '@endo/far';
  * @import {Subscriber} from '@agoric/notifier';
  * @import {RecorderKit} from './recorder.js';
  * @import {EventualRecorderKit} from './recorder.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 export { SubscriberShape };

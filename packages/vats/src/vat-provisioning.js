@@ -20,6 +20,7 @@ import {
  * @import {NameHub} from './types.js';
  * @import {MyAddressNameAdmin} from './types.js';
  * @import {Baggage} from '@agoric/vat-data';
+ * @import {ERef} from '@agoric/vow';
  */
 
 // This vat contains the controller-side provisioning service. To enable local

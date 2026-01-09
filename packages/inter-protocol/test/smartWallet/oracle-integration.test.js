@@ -36,6 +36,7 @@ import {
  * @import {start as CommitteeStart} from '@agoric/governance/src/committee.js';
  * @import {Amount} from '@agoric/ertp';
  * @import {Brand} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

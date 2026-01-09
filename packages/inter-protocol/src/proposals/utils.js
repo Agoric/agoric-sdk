@@ -13,6 +13,7 @@ import { makeScalarBigMapStore } from '@agoric/vat-data';
  * @import {Bundle} from '@agoric/swingset-vat';
  * @import {Installation} from '@agoric/zoe';
  * @import {Payment} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

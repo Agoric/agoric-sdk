@@ -20,6 +20,7 @@ export {};
  * @import {Pattern} from '@agoric/swingset-liveslots';
  * @import {BundleID} from '@agoric/swingset-vat/src/controller/bundle-handler.js';
  * @import {Allocation} from '../types-index.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

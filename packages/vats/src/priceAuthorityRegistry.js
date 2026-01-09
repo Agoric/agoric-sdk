@@ -18,6 +18,7 @@ import { PriceAuthorityI } from '@agoric/zoe/src/contractSupport/priceAuthority.
  * @import {Brand} from '@agoric/ertp';
  * @import {MapStore} from '@agoric/store';
  * @import {Amount} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

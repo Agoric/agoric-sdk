@@ -22,6 +22,7 @@ import { MALLEABLE_NUMBER } from '@agoric/governance/test/swingsetTests/contract
  * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {Installation} from '@agoric/zoe';
+ * @import {ERef} from '@agoric/vow';
  */
 
 const trace = makeTracer('startGovernedInstance', true);

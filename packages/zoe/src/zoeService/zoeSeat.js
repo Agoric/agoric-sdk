@@ -24,6 +24,7 @@ import {
  * @import {PaymentPKeywordRecord} from './types.ts';
  * @import {Allocation} from './zoe.js';
  * @import {ProposalRecord, ZCFSeat} from '@agoric/zoe';
+ * @import {ERef} from '@agoric/vow';
  */
 
 // ZoeSeatAdmin has the implementation of coreUserSeatMethods, but ZoeUserSeat

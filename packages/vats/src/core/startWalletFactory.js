@@ -23,6 +23,7 @@ import {
  * @import {start} from '@agoric/inter-protocol/src/econCommitteeCharter.js';
  * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 const trace = makeTracer('StartWF', 'verbose');

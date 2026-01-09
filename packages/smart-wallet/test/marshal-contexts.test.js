@@ -10,6 +10,7 @@ import {
 
 /**
  * @import {Board} from '@agoric/vats';
+ * @import {Brand} from '@agoric/ertp';
  */
 
 /** @param {Board} board */
@@ -65,11 +66,11 @@ test('makeImportContext preserves identity across AMM and wallet', t => {
     slots: ['board011'],
   });
 
-  const [b1] = /** @type {import('@agoric/ertp').Brand[]} */ (
+  const [b1] = /** @type {Brand[]} */ (
     context.fromBoard.fromCapData(ammMetricsCapData)
   );
 
-  const [b2] = /** @type {import('@agoric/ertp').Brand[]} */ (
+  const [b2] = /** @type {Brand[]} */ (
     context.fromBoard.fromCapData(amm.getMetrics())
   );
   t.is(b1, b2, 'unserialization twice from same source');

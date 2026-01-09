@@ -16,6 +16,7 @@ import { ZcfMintI } from './typeGuards.js';
  * @import {ZcfMintReallocator} from '../internal-types.js';
  * @import {ZoeMint} from '../internal-types.js';
  * @import {Amount} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

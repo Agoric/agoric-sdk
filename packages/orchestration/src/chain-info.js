@@ -48,7 +48,7 @@ const knownChains = /** @satisfies {Record<string, ChainInfo>} */ (
 /**
  * Register chain assets into agoricNames
  *
- * @param {ERef<NameAdmin>} agoricNamesAdmin
+ * @param {import('@agoric/vow').ERef<NameAdmin>} agoricNamesAdmin
  * @param {string} name
  * @param {CosmosAssetInfo[]} assets
  * @alpha
@@ -64,7 +64,7 @@ export const registerChainAssets = async (agoricNamesAdmin, name, assets) => {
 /**
  * Register a chain into agoricNames
  *
- * @param {ERef<NameAdmin>} agoricNamesAdmin
+ * @param {import('@agoric/vow').ERef<NameAdmin>} agoricNamesAdmin
  * @param {string} name
  * @param {ChainInfo} chainInfo
  * @param {(...messages: string[]) => void} [log]
@@ -123,7 +123,7 @@ export const registerChain = async (
  *
  * Not active on or planned for mainnet.
  *
- * @param {ERef<NameHubKit['nameAdmin']>} agoricNamesAdmin
+ * @param {import('@agoric/vow').ERef<NameHubKit['nameAdmin']>} agoricNamesAdmin
  * @param {(...messages: string[]) => void} [log]
  * @param {Record<string, ChainInfo>} chains
  */

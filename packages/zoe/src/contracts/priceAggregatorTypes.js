@@ -12,6 +12,7 @@
  * @import {Invitation} from '../types-index.js';
  * @import {AmountKeywordRecord, Instance} from '@agoric/zoe';
  * @import {Amount} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**
