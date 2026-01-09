@@ -11,6 +11,7 @@ const trace = makeTracer('FUSD-3', true);
  * @import {BundleID} from '@agoric/swingset-vat';
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js';
  * @import {FastUSDCCorePowers} from './start-fast-usdc.core.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 const { keys } = Object;

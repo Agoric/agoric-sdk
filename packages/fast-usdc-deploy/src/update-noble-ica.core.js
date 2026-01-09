@@ -29,6 +29,7 @@ const makeRatio = (numerator, numeratorBrand, denominator = 100n) =>
  * @import {ContractRecord, FeeConfig, FeedPolicy} from '@agoric/fast-usdc/src/types.js';
  * @import {AmountMath} from '@agoric/ertp';
  * @import {makeRatio as ertpMakeRatio} from '@agoric/ertp/src/ratio.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

@@ -19,6 +19,7 @@ import { ChainInfoShape, CosmosAssetInfoShape } from './typeGuards.js';
  * @import {NameAdmin} from '@agoric/vats';
  * @import {ChainInfo} from './orchestration-api.js';
  * @import {NameHubKit} from '@agoric/vats';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**
@@ -48,7 +49,7 @@ const knownChains = /** @satisfies {Record<string, ChainInfo>} */ (
 /**
  * Register chain assets into agoricNames
  *
- * @param {import('@agoric/vow').ERef<NameAdmin>} agoricNamesAdmin
+ * @param {ERef<NameAdmin>} agoricNamesAdmin
  * @param {string} name
  * @param {CosmosAssetInfo[]} assets
  * @alpha
@@ -64,7 +65,7 @@ export const registerChainAssets = async (agoricNamesAdmin, name, assets) => {
 /**
  * Register a chain into agoricNames
  *
- * @param {import('@agoric/vow').ERef<NameAdmin>} agoricNamesAdmin
+ * @param {ERef<NameAdmin>} agoricNamesAdmin
  * @param {string} name
  * @param {ChainInfo} chainInfo
  * @param {(...messages: string[]) => void} [log]
@@ -123,7 +124,7 @@ export const registerChain = async (
  *
  * Not active on or planned for mainnet.
  *
- * @param {import('@agoric/vow').ERef<NameHubKit['nameAdmin']>} agoricNamesAdmin
+ * @param {ERef<NameHubKit['nameAdmin']>} agoricNamesAdmin
  * @param {(...messages: string[]) => void} [log]
  * @param {Record<string, ChainInfo>} chains
  */

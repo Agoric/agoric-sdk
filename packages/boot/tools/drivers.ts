@@ -30,6 +30,7 @@ import type { WalletFactoryStartResult } from '@agoric/vats/src/core/startWallet
 import { type AgoricNamesRemotes } from '@agoric/vats/tools/board-utils.js';
 import type { Instance, InvitationDetails } from '@agoric/zoe';
 import type { Marshal } from '@endo/marshal';
+import type { ERef } from '@agoric/vow';
 import type { SwingsetTestKit } from './supports.js';
 
 type Marshaller = Omit<Marshal<string | null>, 'serialize' | 'unserialize'>;
