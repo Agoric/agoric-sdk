@@ -1,6 +1,5 @@
 // @ts-check
 
-/// <reference types="@agoric/store/exported.js" />
 /// <reference path="./types.js" />
 
 import { Fail } from '@endo/errors';

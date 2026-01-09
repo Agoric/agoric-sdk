@@ -45,7 +45,6 @@
   },
   "files": [
     "src/",
-    "exported.js",
     "NEWS.md"
   ],
   "publishConfig": {
