@@ -30,6 +30,11 @@ import { makeCache } from './cache.js';
  * @import {Pattern} from '@endo/patterns';
  * @import {VirtualReferenceManager} from './virtualReferences.js';
  * @import {Cache} from './cache.js';
+ * @import {StoreOptions} from '@agoric/store';
+ * @import {MapStore} from '@agoric/store';
+ * @import {WeakMapStore} from '@agoric/store';
+ * @import {SetStore} from '@agoric/store';
+ * @import {WeakSetStore} from '@agoric/store';
  */
 
 // XXX TODO: The following key length limit was put in place due to limitations

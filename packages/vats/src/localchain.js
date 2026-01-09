@@ -32,6 +32,7 @@ const { Vow$ } = NetworkShape;
  * @import {TransferMiddleware} from './transfer.js';
  * @import {Zone} from '@agoric/base-zone';
  * @import {Bech32Address} from '@agoric/orchestration';
+ * @import {WeakMapStore} from '@agoric/store';
  */
 
 /**

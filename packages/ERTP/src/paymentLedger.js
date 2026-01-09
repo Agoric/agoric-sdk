@@ -17,6 +17,8 @@ import { BrandI, makeIssuerInterfaces } from './typeGuards.js';
  * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
  * @import {AmountStore} from './amountStore.js';
  * @import {Amount, AssetKind, DisplayInfo, PaymentLedger, Payment, Brand, RecoverySetsOption, Purse, Issuer, Mint} from './types.js';
+ * @import {WeakMapStore} from '@agoric/store';
+ * @import {SetStore} from '@agoric/store';
  */
 
 /**

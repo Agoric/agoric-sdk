@@ -22,6 +22,7 @@ import {
  * @import {ScopedBridgeManager} from '../types.js';
  * @import {start} from '@agoric/inter-protocol/src/econCommitteeCharter.js';
  * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 const trace = makeTracer('StartWF', 'verbose');
@@ -43,7 +44,7 @@ const StableUnit = BigInt(10 ** Stable.displayInfo.decimalPlaces);
  *
  * @param {string[]} oldAddresses
  * @param {ERemote<EMarshaller>} marshaller
- * @param {ERemote<import('@agoric/internal/src/lib-chainStorage.js').StorageNode>} walletStorageNode
+ * @param {ERemote<StorageNode>} walletStorageNode
  */
 const publishRevivableWalletState = async (
   oldAddresses,

@@ -13,6 +13,7 @@ import { makePromiseSpace } from './promise-space.js';
  * @import {VatPowers} from '@agoric/swingset-vat';
  * @import {Zone} from '@agoric/zone';
  * @import {BridgeHandler} from '../types.js';
+ * @import {MapStore} from '@agoric/store';
  */
 
 /**
