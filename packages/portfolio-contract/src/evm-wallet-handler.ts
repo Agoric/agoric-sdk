@@ -15,6 +15,7 @@ import type {
 } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.ts';
 import {
   hashStruct,
+  isHex,
   recoverTypedDataAddress,
   validateTypedData,
   encodeType,
@@ -60,6 +61,7 @@ export const prepareEVMWalletHandlerKit = (
   },
 ) => {
   const { extractOperationDetailsFromSignedData } = makeEVMHandlerUtils({
+    isHex,
     hashStruct,
     recoverTypedDataAddress,
     validateTypedData,
