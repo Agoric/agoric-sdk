@@ -34,6 +34,7 @@ import { makeInstanceAdminMaker } from './instanceAdminStorage.js';
  * @import {ZCFRoot} from '../internal-types.js';
  * @import {InstanceAdmin} from '../internal-types.js';
  * @import {ZoeInstanceAdmin} from '../internal-types.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

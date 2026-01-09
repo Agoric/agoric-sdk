@@ -23,6 +23,7 @@ import {
  * @import {Brand} from '@agoric/ertp';
  * @import {Mint} from '@agoric/ertp';
  * @import {Purse} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

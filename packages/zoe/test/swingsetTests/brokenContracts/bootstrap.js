@@ -4,6 +4,7 @@ import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 
 /**
  * @import {ZoeService} from '@agoric/zoe';
+ * @import {ERef} from '@agoric/vow';
  */
 
 const setupBasicMints = () => {

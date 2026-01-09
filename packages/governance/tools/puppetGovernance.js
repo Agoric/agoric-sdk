@@ -8,6 +8,7 @@ import { CONTRACT_ELECTORATE, ParamTypes } from '../src/index.js';
  * @import {GovernableStartFn} from '../src/types.js';
  * @import {TimerService} from '@agoric/time';
  * @import {start} from './puppetContractGovernor.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 const makeBundle = async sourceRoot => {

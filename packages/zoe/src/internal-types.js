@@ -7,13 +7,14 @@ export {};
  * @import {Pattern} from '@endo/patterns';
  * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
  * @import {Baggage} from '@agoric/vat-data';
- * @import {Amount, AssetKind, Issuer, IssuerOptionsRecord, IssuerRecord} from '@agoric/ertp';
+ * @import {AdditionalDisplayInfo, Amount, AssetKind, Brand, Issuer, IssuerKit, IssuerRecord} from '@agoric/ertp';
  * @import {Subscriber} from '@agoric/notifier';
  * @import {AmountKeywordRecord, Handle, Instance, Installation, IssuerKeywordRecord, Keyword, ProposalRecord, ZCFSeat} from '@agoric/zoe';
  * @import {Allocation, PaymentPKeywordRecord, UserSeat, Completion, ZoeIssuerRecord, Invitation} from './types-index.js';
  * @import {InvitationHandle, BrandKeywordRecord, AnyTerms} from './types.js';
  * @import {FeeMintAccess} from './zoeService/types.js';
  * @import {InstanceRecord} from './zoeService/utils.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

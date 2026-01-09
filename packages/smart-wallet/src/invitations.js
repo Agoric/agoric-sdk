@@ -11,6 +11,9 @@ import { shape } from './typeGuards.js';
  * @import {NameHub} from '@agoric/vats';
  * @import {InvitationMakers} from './types.js';
  * @import {Instance} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {ERef} from '@agoric/vow';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Purse} from '@agoric/ertp';
  */
 
 // A safety limit
@@ -73,8 +76,8 @@ const MAX_PIPE_LENGTH = 2;
 /**
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<NameHub>} agoricNames
- * @param {import('@agoric/ertp').Brand<'set'>} invitationBrand
- * @param {import('@agoric/ertp').Purse<'set', InvitationDetails>} invitationsPurse
+ * @param {Brand<'set'>} invitationBrand
+ * @param {Purse<'set', InvitationDetails>} invitationsPurse
  * @param {(fromOfferId: string) => InvitationMakers} getInvitationContinuation
  */
 export const makeInvitationsHelper = (

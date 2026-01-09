@@ -37,6 +37,7 @@ import {
  * @import {MakeAttenuator} from '@agoric/internal/src/callback.js';
  * @import {NameAdmin} from './types.js';
  * @import {MapStore} from '@agoric/store';
+ * @import {ERef} from '@agoric/vow';
  */
 
 const { VirtualPurseControllerI } = makeVirtualPurseKitIKit();

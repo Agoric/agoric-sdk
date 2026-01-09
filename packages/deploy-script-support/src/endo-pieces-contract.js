@@ -6,6 +6,7 @@ import { ZipWriter } from '@endo/zip';
 
 /**
  * @import {ZoeService} from '@agoric/zoe';
+ * @import {ERef} from '@agoric/vow';
  */
 
 export const start = () => {

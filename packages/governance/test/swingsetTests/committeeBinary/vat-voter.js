@@ -11,6 +11,7 @@ import { keyEQ } from '@agoric/store';
  * @import {start} from '@agoric/governance/src/committee.js';
  * @import {BuildRootObjectForTestVat} from '@agoric/swingset-vat/src/kernel/vat-loader/types.js';
  * @import {ZoeService} from '@agoric/zoe';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**
