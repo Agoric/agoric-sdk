@@ -41,7 +41,10 @@ import {
   DEFAULT_FLOW_CONFIG,
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
-import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.ts';
+import type {
+  PermitDetails,
+  YmaxOperationDetails,
+} from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.ts';
 import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
 import type { ContractMeta, ZCF, ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
@@ -543,12 +546,17 @@ export const contract = async (
      * @see {@link openPortfolioFromPermit2} for the flow implementation
      */
     async openPortfolioFromEVM(
-      targetAllocation: TargetAllocation | undefined,
+      { allocations }: YmaxOperationDetails<'OpenPortfolio'>['data'],
       depositDetails: PermitDetails,
     ): Promise<{
       storagePath: string;
       evmHandler: PortfolioKit['evmHandler'];
     }> {
+      // XXX: validate instruments
+      const targetAllocation: TargetAllocation = Object.fromEntries(
+        allocations.map(({ instrument, portion }) => [instrument, portion]),
+      );
+
       const seat = zcf.makeEmptySeatKit().zcfSeat;
       const kit = makeNextPortfolioKit();
       void orchFns2.openPortfolioFromPermit2(
