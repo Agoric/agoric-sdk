@@ -6,6 +6,7 @@ import {
 import { scheduleLiquidation } from './scheduleLiquidation.js';
 
 /**
+ * @import {OfferHandler} from '@agoric/zoe';
  * @import {MakeAddCollateralInvitation} from './types-ambient.js';
  */
 

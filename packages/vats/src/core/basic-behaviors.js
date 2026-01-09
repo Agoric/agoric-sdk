@@ -27,6 +27,13 @@ import { makeScopedBridge } from '../bridge.js';
  * @import {InitMsg} from '@agoric/internal/src/chain-utils.js';
  * @import {start} from '../centralSupply.js';
  * @import {BootstrapManifest} from './lib-boot.js';
+ * @import {Instance} from '@agoric/zoe';
+ * @import {ZoeService} from '@agoric/zoe';
+ * @import {Installation} from '@agoric/zoe';
+ * @import {IssuerKeywordRecord} from '@agoric/zoe';
+ * @import {MapStore} from '@agoric/store';
+ * @import {IssuerKit} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

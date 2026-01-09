@@ -20,7 +20,7 @@ import { CONTRACT_ELECTORATE } from './governParam.js';
 
 /**
  * @import {MapStore} from '@agoric/swingset-liveslots';
- * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
+ * @import {ContractMeta, Installation, Instance, Invitation, Keyword, ZCF, ZoeService} from '@agoric/zoe';
  * @import {AnyParamManager, GovernanceSubscriptionState, ParamManagerBase, ParamStateRecord, ParamValueTyped, UpdateParams} from '../types.js';
  * @import {CopyRecord} from '@endo/marshal';
  * @import {Timestamp} from '@agoric/time';
@@ -28,6 +28,9 @@ import { CONTRACT_ELECTORATE } from './governParam.js';
  * @import {StoredPublisherKit} from '@agoric/notifier';
  * @import {ParamType} from '../constants.js';
  * @import {Ratio} from '@agoric/ertp';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

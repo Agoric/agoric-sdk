@@ -17,6 +17,7 @@ import { assertAmountsEqual } from '../../zoeTestHelpers.js';
 
 /**
  * @import {FeeIssuerConfig, InvitationDetails} from '@agoric/zoe';
+ * @import {Payment} from '@agoric/ertp';
  */
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);

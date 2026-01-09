@@ -21,6 +21,13 @@ const trace = makeTracer('FluxAgg', false);
  * @import {PrioritySendersManager} from '@agoric/internal/src/priority-senders.js';
  * @import {NameAdmin} from '@agoric/vats';
  * @import {QuoteKit} from './roundsManager.js';
+ * @import {Invitation} from '@agoric/zoe';
+ * @import {ContractMeta, ZCF} from '@agoric/zoe';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /** @type {ContractMeta} */

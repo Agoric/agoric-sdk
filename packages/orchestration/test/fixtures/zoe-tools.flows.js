@@ -15,6 +15,7 @@ const { values } = Object;
  * @import {LocalOrchestrationAccountKit} from '../../src/exos/local-orchestration-account.js';
  * @import {Orchestrator, LocalAccountMethods, OrchestrationAccountCommon, OrchestrationFlow, CosmosChainAddress} from '@agoric/orchestration';
  * @import {ZoeTools} from '../../src/utils/zoe-tools.js';
+ * @import {ZCFSeat} from '@agoric/zoe';
  */
 
 /**

@@ -8,7 +8,8 @@ import { objectMap } from '@agoric/internal';
 /**
  * @import {Petname} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {Amount, Brand, Issuer, Payment, Purse} from '@agoric/ertp';
- * @import {InvitationDetails, Keyword, Proposal} from '@agoric/zoe';
+ * @import {Invitation, InvitationAmount, InvitationDetails, Keyword, Proposal, ProposalRecord, ZoeService} from '@agoric/zoe';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

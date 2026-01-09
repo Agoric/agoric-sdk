@@ -6,6 +6,7 @@ import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 
 /**
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 console.warn('start-game1-proposal.js module evaluating');

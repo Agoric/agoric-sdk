@@ -24,6 +24,7 @@ import { crc6 } from './crc.js';
  * @import {Key} from '@endo/patterns';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {Zone} from '@agoric/zone';
+ * @import {MapStore} from '@agoric/store';
  */
 
 export const DEFAULT_CRC_DIGITS = 2;

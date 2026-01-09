@@ -16,6 +16,7 @@ import { ParamChangesQuestionDetailsShape } from '../typeGuards.js';
  * @import {ParamValue, ParamChangePositions, QuestionSpec, ChangeParamsPosition, ParamChangeIssue, ParamGovernor, ParamManagerRetriever, PoserFacet, VoteOnParamChanges} from '../types.js';
  * @import {TimerService} from '@agoric/time';
  * @import {Passable} from '@endo/marshal';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**
@@ -44,7 +45,7 @@ const makeParamChangePositions = changes => {
  * the question described by questionSpec.
  *
  * @param {{ parameterName: string, paramPath: unknown}} paramSpec
- * @param {QuestionSpec<ParamChangeIssue<unknown>>} questionSpec
+ * @param {QuestionSpec<ParamChangeIssue>} questionSpec
  */
 const assertBallotConcernsParam = (paramSpec, questionSpec) => {
   mustMatch(questionSpec, ParamChangesQuestionDetailsShape);
@@ -94,7 +95,7 @@ const setupParamGovernance = (
 
     const { positive, negative } = makeParamChangePositions(changes);
 
-    /** @type {ParamChangeIssue<unknown>} */
+    /** @type {ParamChangeIssue} */
     const issue = harden({
       spec: {
         paramPath: paramSpec.paramPath,

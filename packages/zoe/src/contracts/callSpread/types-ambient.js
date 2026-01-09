@@ -4,6 +4,7 @@
 
 /**
  * @import {Ratio} from '@agoric/ertp';
+ * @import {Invitation} from '@agoric/zoe';
  */
 
 /**

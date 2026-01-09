@@ -5,11 +5,11 @@ export {};
 /**
  * @import {Guarded} from '@endo/exo';
  * @import {Passable, Container} from '@endo/pass-style';
- * @import {Publisher} from '@agoric/notifier';
- * @import {AdminFacet, InstallationStart, InvitationAmount} from '@agoric/zoe';
- * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
+ * @import {Publisher, Subscriber, StoredSubscription} from '@agoric/notifier';
+ * @import {AdminFacet, Handle, InstallationStart, InvitationAmount, IssuerKeywordRecord, Keyword} from '@agoric/zoe';
+ * @import {ContractMeta, Installation, Instance, Invitation, ZCF, ZoeService} from '@agoric/zoe';
  * @import {ContractStartFunction} from '@agoric/zoe/src/zoeService/utils.js';
- * @import {Ratio} from '@agoric/ertp';
+ * @import {Amount, Brand, Ratio} from '@agoric/ertp';
  * @import {TimestampRecord} from '@agoric/time';
  * @import {RelativeTimeRecord} from '@agoric/time';
  * @import {Timestamp} from '@agoric/time';
@@ -18,6 +18,7 @@ export {};
  * @import {start} from './contractGovernor.js';
  * @import {ParamRecordsFromTypes} from './contractGovernance/typedParamManager.js';
  * @import {TimerService} from '@agoric/time';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**
@@ -95,7 +96,7 @@ export {};
  */
 
 /**
- * @typedef { SimpleIssue | ParamChangeIssue<unknown> | ApiInvocationIssue |
+ * @typedef { SimpleIssue | ParamChangeIssue | ApiInvocationIssue |
  *   OfferFilterIssue } Issue
  */
 
@@ -301,11 +302,6 @@ export {};
  */
 
 /**
- * @callback GetOpenQuestions
- * @returns {Promise<Handle<'Question'>[]>}
- */
-
-/**
  * @callback GetQuestion
  * @param {Handle<'Question'>} h
  * @returns {Promise<Question>}
@@ -314,13 +310,13 @@ export {};
 /**
  * @typedef {object} ElectoratePublic
  * @property {() => Subscriber<QuestionDetails>} getQuestionSubscriber
- * @property {GetOpenQuestions} getOpenQuestions,
+ * @property {() => Promise<Handle<'Question'>[]>} getOpenQuestions
  * @property {() => Instance} getInstance
  * @property {GetQuestion} getQuestion
  */
 
 /**
- * @typedef { ElectoratePublic & {makeVoterInvitation: () => ERef<Invitation>} } ClaimsElectoratePublic
+ * @typedef { ElectoratePublic & {makeVoterInvitation: () => import('@agoric/vow').ERef<Invitation>} } ClaimsElectoratePublic
  * @typedef { ElectoratePublic & {getName: () => string} } CommitteeElectoratePublic
  */
 
@@ -353,7 +349,7 @@ export {};
 
 /**
  * @typedef {object} ClosingRule
- * @property {ERef<TimerService>} timer
+ * @property {import('@agoric/vow').ERef<TimerService>} timer
  * @property {Timestamp} deadline
  */
 
@@ -396,9 +392,8 @@ export {};
  */
 
 /**
- * @template [P=StandardParamPath] path for a paramManagerRetriever
  * @typedef {object} ParamChangeIssue
- * @property {ParamChangesSpec<P>} spec
+ * @property {ParamChangesSpec} spec
  * @property {Instance<(zcf: ZCF<GovernanceTerms<{}>>) => {}>} contract
  */
 
@@ -423,7 +418,7 @@ export {};
  * @typedef {object} ParamChangeIssueDetails
  *    details for a question that can change a contract parameter
  * @property {ChoiceMethod} method
- * @property {ParamChangeIssue<unknown>} issue
+ * @property {ParamChangeIssue} issue
  * @property {ParamChangePositions} positions
  * @property {ElectionType} electionType
  * @property {number} maxChoices
@@ -443,7 +438,7 @@ export {};
 
 /**
  * @typedef {object} ParamManagerBase The base paramManager with typed getters
- * @property {() => ERef<ParamStateRecord>} getParams
+ * @property {() => import('@agoric/vow').ERef<ParamStateRecord>} getParams
  * @property {(name: string) => Amount} getAmount
  * @property {(name: string) => Brand} getBrand
  * @property {(name: string) => Instance} getInstance
@@ -544,7 +539,7 @@ export {};
  * @property {() => Promise<Instance>} getElectorate
  * @property {() => Instance} getGovernedContract
  * @property {(voteCounter: Instance) => Promise<void>} validateVoteCounter
- * @property {(regP: ERef<Instance>) => Promise<void>} validateElectorate
+ * @property {(regP: import('@agoric/vow').ERef<Instance>) => Promise<void>} validateElectorate
  * @property {(closingRule: ClosingRule) => void} validateTimer
  */
 
@@ -556,16 +551,18 @@ export {};
 /**
  * Description of a set of coordinated changes for a ParamManager
  *
- * @template P path for a paramManagerRetriever
- * @typedef {object} ParamChangesSpec<P>
- * @property {P} paramPath
- * @property {Record<string, ParamValue>} changes one or more changes to parameters
+ * paramPath can be any path for a paramManagerRetriever but is hardcoded
+ * here to StandardParamPath to avoid converting this file to .ts.
+ * @typedef {{
+ *   paramPath: StandardParamPath,
+ *   changes: Record<string, ParamValue>
+ * }} ParamChangesSpec
  */
 
 /**
  * @typedef {object} ContractGovernanceVoteResult
  * @property {Instance<((zcf: ZCF<{questionSpec: QuestionSpec, quorumThreshold: bigint }>, { outcomePublisher }: { outcomePublisher: Publisher<OutcomeRecord>; }) => {publicFacet: VoteCounterPublicFacet, creatorFacet: VoteCounterCreatorFacet})>} instance - instance of the VoteCounter
- * @property {ERef<QuestionDetails>} details
+ * @property {import('@agoric/vow').ERef<QuestionDetails>} details
  * @property {Promise<ParamValue>} outcomeOfUpdate - A promise for the result
  *    of updating the parameter value. Primarily useful for its behavior on
  *    rejection.
@@ -590,7 +587,7 @@ export {};
 /**
  * @typedef GovernedPublicFacetMethods
  * @property {(key?: any) => StoredSubscription<GovernanceSubscriptionState>} getSubscription
- * @property {(key?: any) => ERef<ParamStateRecord>} getGovernedParams - get descriptions of
+ * @property {(key?: any) => import('@agoric/vow').ERef<ParamStateRecord>} getGovernedParams - get descriptions of
  *   all the governed parameters
  * @property {(name: string) => Amount} getInvitationAmount
  */
@@ -612,11 +609,11 @@ export {};
  * @property {() => ParamManagerRetriever} getParamMgrRetriever - allows accessing
  *   and updating governed parameters. Should only be directly accessible to the
  *   contractGovernor
- * @property {() => ERef<CF>} getLimitedCreatorFacet - the creator
+ * @property {() => import('@agoric/vow').ERef<CF>} getLimitedCreatorFacet - the creator
  *   facet of the governed contract. Doesn't provide access to any governance
  *   functionality
  * @property {(name: string) => Promise<Invitation>} getInvitation
- * @property {() => ERef<GovernedApis>} getGovernedApis
+ * @property {() => import('@agoric/vow').ERef<GovernedApis>} getGovernedApis
  * @property {() => (string | symbol)[]} getGovernedApiNames
  * @property {(strings: string[]) => void} setOfferFilter
  */
@@ -636,7 +633,7 @@ export {};
  * @callback VoteOnParamChanges
  * @param {Installation} voteCounterInstallation
  * @param {Timestamp} deadline
- * @param {ParamChangesSpec<P>} paramSpec
+ * @param {ParamChangesSpec} paramSpec
  * @returns {Promise<ContractGovernanceVoteResult>}
  */
 
@@ -718,7 +715,7 @@ export {};
 
 /**
  * @typedef {ContractStartFunction
- * & ((zcf?: any, pa?: any, baggage?: any) => ERef<{creatorFacet: GovernedCreatorFacet<{}>, publicFacet: GovernedPublicFacet<{}>}>)} GovernableStartFn
+ * & ((zcf?: any, pa?: any, baggage?: any) => import('@agoric/vow').ERef<{creatorFacet: GovernedCreatorFacet<{}>, publicFacet: GovernedPublicFacet<{}>}>)} GovernableStartFn
  */
 
 /**
@@ -728,7 +725,7 @@ export {};
 // TODO find a way to parameterize the startInstance so the governed contract types flow
 /**
  * @see {StartedInstanceKit}
- * @template {ERef<Installation<GovernableStartFn>>} I
+ * @template {import('@agoric/vow').ERef<Installation<GovernableStartFn>>} I
  * @typedef GovernorStartedInstallationKit
  * Same result as StartedInstanceKit but:
  * - typed for contractGovernor installation being started by Zoe. (It in turn starts the governed contract.)

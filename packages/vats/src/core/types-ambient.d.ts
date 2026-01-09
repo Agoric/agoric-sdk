@@ -202,7 +202,9 @@ type ContractInstallationPromises<
     import('@agoric/zoe').ContractStartFn
   >,
 > = {
-  [Property in keyof StartFns]: Promise<Installation<StartFns[Property]>>;
+  [Property in keyof StartFns]: Promise<
+    import('@agoric/zoe').Installation<StartFns[Property]>
+  >;
 };
 
 type ContractInstancePromises<
@@ -212,7 +214,7 @@ type ContractInstancePromises<
   >,
 > = {
   [Property in keyof StartFns]: Promise<
-    import('@agoric/zoe/src/zoeService/utils.js').Instance<StartFns[Property]>
+    import('@agoric/zoe').Instance<StartFns[Property]>
   >;
 };
 
@@ -256,18 +258,25 @@ type WellKnownSpaces = {
     consume: Record<WellKnownName['oracleBrand'], Promise<Brand>>;
   };
   installation: {
-    produce: Record<WellKnownName['installation'], Producer<Installation>>;
+    produce: Record<
+      WellKnownName['installation'],
+      Producer<import('@agoric/zoe').Installation>
+    >;
     consume: Record<
       WellKnownName['installation'],
-      Promise<Installation<unknown>>
+      Promise<import('@agoric/zoe').Installation<unknown>>
     > &
-      // @ts-expect-error XXX
       ContractInstallationPromises<WellKnownContracts>;
   };
   instance: {
-    produce: Record<WellKnownName['instance'], Producer<Instance>>;
-    consume: Record<WellKnownName['instance'], Promise<Instance>> &
-      // @ts-expect-error XXX
+    produce: Record<
+      WellKnownName['instance'],
+      Producer<import('@agoric/zoe').Instance>
+    >;
+    consume: Record<
+      WellKnownName['instance'],
+      Promise<import('@agoric/zoe').Instance>
+    > &
       ContractInstancePromises<WellKnownContracts>;
   };
   uiConfig: {
@@ -276,9 +285,11 @@ type WellKnownSpaces = {
   };
 };
 
-type StartGovernedUpgradableOpts<SF extends GovernableStartFn> = {
-  installation: ERef<Installation<SF>>;
-  issuerKeywordRecord?: IssuerKeywordRecord;
+type StartGovernedUpgradableOpts<
+  SF extends import('@agoric/governance').GovernableStartFn,
+> = {
+  installation: ERef<import('@agoric/zoe').Installation<SF>>;
+  issuerKeywordRecord?: import('@agoric/zoe').IssuerKeywordRecord;
   governedParams: Record<string, unknown>;
   terms: Omit<
     import('@agoric/zoe/src/zoeService/utils.js').StartParams<SF>['terms'],
@@ -292,16 +303,18 @@ type StartGovernedUpgradableOpts<SF extends GovernableStartFn> = {
   label: string;
 };
 
-type StartGovernedUpgradable = <SF extends GovernableStartFn>(
+type StartGovernedUpgradable = <
+  SF extends import('@agoric/governance').GovernableStartFn,
+>(
   opts: StartGovernedUpgradableOpts<SF>,
-) => Promise<GovernanceFacetKit<SF>>;
+) => Promise<import('@agoric/governance').GovernanceFacetKit<SF>>;
 
 type StartUpgradableOpts<
   SF extends
     import('@agoric/zoe/src/zoeService/utils.js').ContractStartFunction,
 > = {
-  installation: ERef<Installation<SF>>;
-  issuerKeywordRecord?: IssuerKeywordRecord;
+  installation: ERef<import('@agoric/zoe').Installation<SF>>;
+  issuerKeywordRecord?: import('@agoric/zoe').IssuerKeywordRecord;
   terms?: Omit<
     import('@agoric/zoe/src/zoeService/utils.js').StartParams<SF>['terms'],
     'brands' | 'issuers'
@@ -338,7 +351,11 @@ type ChainBootstrapSpaceT = {
   bldIssuerKit: RemoteIssuerKit;
   board: import('@agoric/vats').Board;
   bridgeManager: import('../types.js').BridgeManager | undefined;
-  chainStorage: import('@agoric/internal').Remote<StorageNode> | null;
+  chainStorage:
+    | import('@agoric/internal').Remote<
+        import('@agoric/internal/src/lib-chainStorage.js').StorageNode
+      >
+    | null;
   chainTimerService: import('@agoric/time').TimerService;
   client: ClientManager;
   clientCreator: any;
@@ -351,7 +368,10 @@ type ChainBootstrapSpaceT = {
      *
      * Powerful. Can overwrite privateArgs storage for any instance.
      */
-    savePrivateArgs: (instance: Instance, privateArgs: unknown) => void;
+    savePrivateArgs: (
+      instance: import('@agoric/zoe').Instance,
+      privateArgs: unknown,
+    ) => void;
   };
   /** Super powerful ability to mint IST. ("License to print money") */
   feeMintAccess: import('@agoric/zoe').FeeMintAccess;
@@ -364,7 +384,7 @@ type ChainBootstrapSpaceT = {
    * Very powerful. Has the private args for critical contract instances such as
    * Vault Factory. ONLY FOR DISASTER RECOVERY
    */
-  instancePrivateArgs: Map<Instance, unknown>;
+  instancePrivateArgs: Map<import('@agoric/zoe').Instance, unknown>;
   localchain: import('@agoric/vats/src/localchain.js').LocalChain;
   mints?: MintsVat;
   namesByAddress: import('../types.js').NameHub;
@@ -396,13 +416,16 @@ type ChainBootstrapSpaceT = {
    */
   startUpgradable: StartUpgradable;
   /** kits stored by startUpgradable */
-  contractKits: MapStore<Instance, StartedInstanceKitWithLabel>;
+  contractKits: MapStore<
+    import('@agoric/zoe').Instance,
+    StartedInstanceKitWithLabel
+  >;
   /** Convenience function for starting contracts governed by the Econ Committee */
   startGovernedUpgradable: StartGovernedUpgradable;
   /** kits stored by startGovernedUpgradable */
   governedContractKits: MapStore<
-    Instance,
-    GovernanceFacetKit<any> & { label: string }
+    import('@agoric/zoe').Instance,
+    import('@agoric/governance').GovernanceFacetKit<any> & { label: string }
   >;
   /** Used only for testing. Should not appear in any production proposals. */
   testFirstAnchorKit: import('../vat-bank.js').AssetIssuerKit;
@@ -410,12 +433,12 @@ type ChainBootstrapSpaceT = {
     | import('../types.js').ScopedBridgeManager<'wallet'>
     | undefined;
   walletFactoryStartResult: import('./startWalletFactory.js').WalletFactoryStartResult;
-  provisionPoolStartResult: GovernanceFacetKit<
+  provisionPoolStartResult: import('@agoric/governance').GovernanceFacetKit<
     typeof import('@agoric/inter-protocol/src/provisionPool.js').start
   >;
   vatStore: import('./utils.js').VatStore;
   vatUpgradeInfo: MapStore;
-  zoe: ZoeService;
+  zoe: import('@agoric/zoe').ZoeService;
 };
 
 type ChainBootstrapSpace = PromiseSpaceOf<ChainBootstrapSpaceT>;

@@ -17,7 +17,13 @@ import {
  * @import {EReturn} from '@endo/far';
  * @import {Key, Pattern} from '@endo/patterns';
  * @import {Amount, Issuer, IssuerKit, Paymnent} from '@agoric/ertp';
+ * @import {LatestTopic} from '@agoric/notifier';
  * @import {Zone} from '@agoric/zone';
+ * @import {Payment} from '@agoric/ertp';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Mint} from '@agoric/ertp';
+ * @import {Purse} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

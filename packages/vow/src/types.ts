@@ -1,6 +1,9 @@
 import type { Remote } from '@agoric/internal';
 import type { Zone } from '@agoric/zone';
+import type { ERef } from '@endo/far';
 import type { CopyTagged, RemotableObject } from '@endo/pass-style';
+
+export type { ERef };
 
 /**
  * Return truthy if a rejection reason should result in a retry.
@@ -23,7 +26,6 @@ export type Fulfilled<T> = T extends VowLike<infer F> ? Fulfilled<F> : T;
  */
 export type PromiseVow<T> = Promise<T | Vow<T>>;
 
-export type ERef<T> = T | PromiseLike<T>;
 /**
  * Eventually a value T or Vow for it.
  */

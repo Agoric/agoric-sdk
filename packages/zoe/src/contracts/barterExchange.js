@@ -4,6 +4,10 @@ import { Far } from '@endo/marshal';
 import { satisfies } from '../contractSupport/index.js';
 
 /**
+ * @import {OfferHandler, ZCF} from '@agoric/zoe';
+ */
+
+/**
  * This Barter Exchange accepts offers to trade arbitrary goods for other
  * things. It doesn't require registration of Issuers. If two offers satisfy
  * each other, it exchanges the specified amounts in each side's want clause.

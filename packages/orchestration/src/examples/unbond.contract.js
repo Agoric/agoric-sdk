@@ -10,6 +10,7 @@ import * as flows from './unbond.flows.js';
  * @import {Zone} from '@agoric/zone';
  * @import {CosmosInterchainService} from '../exos/exo-interfaces.js';
  * @import {OrchestrationTools} from '../utils/start-helper.js';
+ * @import {ZCF} from '@agoric/zoe';
  */
 
 /**
@@ -20,8 +21,8 @@ import * as flows from './unbond.flows.js';
  *   agoricNames: Remote<NameHub>;
  *   localchain: Remote<LocalChain>;
  *   orchestrationService: Remote<CosmosInterchainService>;
- *   storageNode: Remote<StorageNode>;
- *   marshaller: Remote<Marshaller>;
+ *   storageNode: Remote<import('@agoric/internal/src/lib-chainStorage.js').StorageNode>;
+ *   marshaller: Remote<import('@agoric/internal/src/lib-chainStorage.js').Marshaller>;
  *   timerService: Remote<TimerService>;
  * }} privateArgs
  * @param {Zone} zone

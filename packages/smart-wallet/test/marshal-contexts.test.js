@@ -10,6 +10,7 @@ import {
 
 /**
  * @import {Board} from '@agoric/vats';
+ * @import {Brand} from '@agoric/ertp';
  */
 
 /** @param {Board} board */

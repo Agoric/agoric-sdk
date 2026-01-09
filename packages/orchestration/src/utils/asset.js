@@ -2,6 +2,7 @@ import { denomHash } from './denomHash.js';
 
 /**
  * @import {ChainHub, CosmosChainInfo, Denom, DenomDetail} from '../types.js';
+ * @import {Brand} from '@agoric/ertp';
  */
 
 /**

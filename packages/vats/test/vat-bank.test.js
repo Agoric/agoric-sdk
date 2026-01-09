@@ -12,6 +12,9 @@ import { buildRootObject } from '../src/vat-bank.js';
  * @import {Remote} from '@agoric/internal';
  * @import {BridgeHandler, ScopedBridgeManager} from '../src/types.js';
  * @import {VbankBalanceUpdateAction} from '@agoric/cosmic-swingset/src/types.js';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Issuer} from '@agoric/ertp';
+ * @import {Payment} from '@agoric/ertp';
  */
 
 const { fakeVomKit } = reincarnate({ relaxDurabilityRules: false });

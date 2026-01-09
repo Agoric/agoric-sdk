@@ -10,6 +10,7 @@ import {
 
 /**
  * @import {Baggage} from '@agoric/vat-data';
+ * @import {ContractMeta, OfferHandler, ZCF} from '@agoric/zoe';
  */
 
 const sellSeatExpiredMsg = 'The covered call option is expired.';

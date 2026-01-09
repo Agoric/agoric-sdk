@@ -23,6 +23,9 @@ const trace = makeTracer('IBC', false);
  * @import {BridgeHandler, ScopedBridgeManager, ConnectingInfo, IBCChannelID, IBCChannelOrdering, IBCEvent, IBCPacket, IBCPortID, IBCDowncallPacket, IBCDowncallMethod, IBCDowncallReturn, IBCDowncall, IBCBridgeEvent} from './types.js';
  * @import {Zone} from '@agoric/base-zone';
  * @import {PromiseVow, Remote, VowKit, VowResolver, VowTools} from '@agoric/vow';
+ * @import {MapStore} from '@agoric/store';
+ * @import {WeakMapStore} from '@agoric/store';
+ * @import {SetStore} from '@agoric/store';
  */
 
 // CAVEAT: IBC acks cannot be empty, as the Cosmos IAVL tree cannot represent

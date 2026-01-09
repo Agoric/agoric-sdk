@@ -66,6 +66,7 @@ bundle-*.js
 compiled
 dist
 api-docs
+*.tsbuildinfo
 
 # misc
 /.vagrant

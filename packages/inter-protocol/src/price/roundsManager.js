@@ -17,10 +17,15 @@ const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
 /**
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  * @import {Timestamp, TimerService} from '@agoric/time'
+ * @import {Publisher} from '@agoric/notifier';
  * @import {MapStore, SetStore} from '@agoric/store';
  * @import {OracleStatus} from './priceOracleKit.js'
  * @import {ChainlinkConfig} from './fluxAggregatorKit.js';
  * @import {Recorder} from '@agoric/zoe/src/contractSupport/recorder.js';
+ * @import {NatValue} from '@agoric/ertp';
+ * @import {IssuerKit} from '@agoric/ertp';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {Brand} from '@agoric/ertp';
  */
 
 /** @type {string} */

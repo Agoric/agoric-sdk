@@ -14,6 +14,7 @@ import * as wfExports from '../src/walletFactory.js';
  * @import {start as StartFn} from '../src/walletFactory.js';
  * @import {SmartWallet, SmartWalletTestJig} from '../src/smartWallet.js'
  * @import {StartedInstanceKit} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {Installation} from '@agoric/zoe';
  */
 
 const ROOT_STORAGE_PATH = 'ROOT';

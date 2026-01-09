@@ -14,6 +14,7 @@ import {
  * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
  * @import {Position, ApiGovernor, ApiInvocationIssue, PoserFacet, VoteOnApiInvocation, FilterGovernor, GovernedCreatorFacet, OfferFilterIssue, VoteOnOfferFilter} from '../types.js';
  * @import {TimerService} from '@agoric/time';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

@@ -10,6 +10,11 @@ import { makeLogHooks, makePromiseSpace } from './promise-space.js';
 
 import './types-ambient.js';
 
+/**
+ * @import {MapStore} from '@agoric/store';
+ * @import {ERef} from '@agoric/vow';
+ */
+
 const { entries, fromEntries, keys } = Object;
 
 /**
@@ -330,6 +335,7 @@ export const makeMyAddressNameAdminKit = address => {
  * @import {NameAdmin} from '../types.js';
  * @import {NameHub} from '../types.js';
  * @import {MyAddressNameAdmin} from '../types.js';
+ * @import {FeeIssuerConfig} from '@agoric/zoe';
  */
 export const makeVatSpace = (
   svc,

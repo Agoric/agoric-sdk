@@ -14,6 +14,7 @@ import { FAUCET_ADDRESS, makeFakeBankBridge } from './fake-bridge.js';
  * @import {AssetIssuerKit} from '../src/vat-bank.js';
  * @import {Bank} from '../src/vat-bank.js';
  * @import {Balances} from './fake-bridge.js';
+ * @import {MapStore} from '@agoric/store';
  */
 
 /**
@@ -24,7 +25,7 @@ export const makeFakeBankKit = issuerKits => {
   /** @type {MapStore<Brand, Issuer>} */
   const issuers = makeScalarMapStore();
   /**
-   * @type {MapStore<Brand, ERef<VirtualPurse>>}
+   * @type {MapStore<Brand, import('@agoric/vow').ERef<VirtualPurse>>}
    */
   const purses = makeScalarMapStore();
 

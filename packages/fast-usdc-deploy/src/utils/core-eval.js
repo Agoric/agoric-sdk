@@ -10,6 +10,7 @@ const trace = makeTracer('FUCoreEval');
  * @import {Brand, DepositFacet} from '@agoric/ertp';
  * @import {FastUSDCKit} from '../start-fast-usdc.core.js'
  * @import {FeedPolicy} from '@agoric/fast-usdc/src/types.js'
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 export const FEED_POLICY = 'feedPolicy';

@@ -15,6 +15,11 @@ import {
   makeParamManagerSync,
 } from '../../src/contractGovernance/typedParamManager.js';
 
+/**
+ * @import {Invitation} from '@agoric/zoe';
+ * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
+ */
+
 const drachmaKit = makeIssuerKit('drachma');
 const drachmaBrand = drachmaKit.brand;
 
@@ -143,7 +148,7 @@ test('params one installation', async t => {
   });
   const { zcf } = await setupZCFTest(issuerKeywordRecord, terms);
 
-  /** @type {Installation} */
+  /** @type {Installation<any>} */
   // @ts-expect-error mock
   const installationHandle = Far('fake Installation', {
     getBundle: () => ({ obfuscated: 42 }),
@@ -165,7 +170,7 @@ test('params one installation', async t => {
     },
     'value should be an installation',
   );
-  /** @type {Installation} */
+  /** @type {Installation<any>} */
   // @ts-expect-error mock
   const handle2 = Far('another fake Installation', {
     getBundle: () => ({ condensed: '() => {})' }),

@@ -10,6 +10,7 @@ import { assertAllDefined, deepMapObject, objectMap } from '@agoric/internal';
  * @import {Remote} from '@agoric/internal';
  * @import {CosmosInterchainService} from './exos/exo-interfaces.js';
  * @import {OrchestrationFlow, Orchestrator} from './types.js';
+ * @import {ZCF} from '@agoric/zoe';
  */
 
 /**

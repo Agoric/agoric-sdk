@@ -5,6 +5,7 @@ import { E } from '@endo/far';
 
 /**
  * @import {start} from '../../src/examples/stake-bld.contract.js';
+ * @import {Installation} from '@agoric/zoe';
  */
 
 const trace = makeTracer('StartStakeBld', true);

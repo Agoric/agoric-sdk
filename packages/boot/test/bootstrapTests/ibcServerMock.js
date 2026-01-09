@@ -10,6 +10,7 @@ const { log } = console;
 /**
  * @import {ListenHandler, PortAllocator} from '@agoric/network';
  * @import {Baggage} from '@agoric/vat-data';
+ * @import {ZCF} from '@agoric/zoe';
  */
 
 /**

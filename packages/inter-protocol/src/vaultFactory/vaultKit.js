@@ -1,7 +1,5 @@
 // @jessie-check
 
-/// <reference types="@agoric/zoe/exported.js" />
-
 import { makeTracer } from '@agoric/internal';
 import { prepareVaultHolder } from './vaultHolder.js';
 
@@ -13,6 +11,7 @@ const trace = makeTracer('VK', true);
  * @import {Baggage} from '@agoric/swingset-liveslots';
  * @import {MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {Vault} from './vault.js';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 /**

@@ -5,7 +5,14 @@ import { AmountMath } from '@agoric/ertp';
 import { M } from '@agoric/store';
 import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/index.js';
 
-/** @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js'; */
+/**
+ * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {NatValue} from '@agoric/ertp';
+ */
+/** @import {IterationObserver, Publisher, StoredSubscriber, StoredSubscription} from '@agoric/notifier'; */
+/** @import {AmountKeywordRecord, ProposalRecord} from '@agoric/zoe'; */
 
 export const amountPattern = harden({ brand: M.remotable(), value: M.any() });
 export const ratioPattern = harden({

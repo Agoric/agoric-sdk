@@ -15,6 +15,10 @@ import { makeTerms, MALLEABLE_NUMBER } from './governedContract.js';
 /**
  * @import {ContractGovernanceVoteResult, GovernedPublicFacetMethods, GovernorCreatorFacet, ParamChangesSpec, QuestionDetails, SimpleIssue, StandardParamPath} from '../../../src/types.js';
  * @import {EVatVoter} from './vat-voter.js';
+ * @import {ZoeService} from '@agoric/zoe';
+ * @import {Installation} from '@agoric/zoe';
+ * @import {Instance} from '@agoric/zoe';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**
@@ -31,7 +35,7 @@ const voteToChangeParameter = async (
   contractFacetAccess,
   deadline,
 ) => {
-  /** @type {ParamChangesSpec<StandardParamPath>} */
+  /** @type {ParamChangesSpec} */
   const paramChangeSpec = harden({
     paramPath: { key: 'governedParams' },
     changes: { [MALLEABLE_NUMBER]: 299792458n },

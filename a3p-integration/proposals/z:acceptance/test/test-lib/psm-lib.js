@@ -518,7 +518,7 @@ export const sendOfferAgd = async (address, offerPromise) => {
  * @param {{
  *   follow: (...params: string[]) => Promise<object>;
  *   sendOffer?: (address: string, offerPromise: Promise<string>) => Promise<SendOfferResult>;
- *   setTimeout: typeof global.setTimeout;
+ *   setTimeout: typeof globalThis.setTimeout;
  *   now: () => number
  * }} io
  */

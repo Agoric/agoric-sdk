@@ -29,6 +29,7 @@ import { caipIdFromInfo } from '../utils/chain-info.js';
  * @import {Remote, TypedPattern} from '@agoric/internal';
  * @import {Pattern} from '@endo/patterns';
  * @import {MapStore, SetStore} from '@agoric/store';
+ * @import {Brand} from '@agoric/ertp';
  */
 
 /** receiver address value for ibc transfers that involve PFM */

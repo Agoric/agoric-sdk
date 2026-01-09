@@ -4,6 +4,10 @@ import { natSafeMath } from '@agoric/ertp/src/safeMath.js';
 import { Fail } from '@endo/errors';
 import { Nat } from '@endo/nat';
 
+/**
+ * @import {NatValue} from '@agoric/ertp';
+ */
+
 const { subtract, add, multiply, floorDivide } = natSafeMath;
 
 const BASIS_POINTS = 10000n; // TODO change to 10_000n once tooling copes.

@@ -24,6 +24,8 @@ const trace = makeTracer('StakeIca');
  * @import {IBCConnectionID, NameHub} from '@agoric/vats';
  * @import {TimerService} from '@agoric/time';
  * @import {ResolvedContinuingOfferResult} from '../utils/zoe-tools.js';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 /** @type {ContractMeta<typeof start>} */

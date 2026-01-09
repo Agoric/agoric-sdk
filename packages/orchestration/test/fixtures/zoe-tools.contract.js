@@ -23,13 +23,14 @@ const { values } = Object;
  * @import {AssetInfo} from '@agoric/vats/src/vat-bank.js';
  * @import {CosmosInterchainService} from '@agoric/orchestration';
  * @import {OrchestrationTools} from '../../src/utils/start-helper.js';
+ * @import {ZCF} from '@agoric/zoe';
  */
 
 /**
  * @typedef {{
  *   localchain: Remote<LocalChain>;
  *   orchestrationService: Remote<CosmosInterchainService>;
- *   storageNode: Remote<StorageNode>;
+ *   storageNode: Remote<import('@agoric/internal/src/lib-chainStorage.js').StorageNode>;
  *   timerService: Remote<TimerService>;
  *   agoricNames: Remote<NameHub>;
  * }} OrchestrationPowers
@@ -38,7 +39,7 @@ const { values } = Object;
 /**
  * @param {ZCF} zcf
  * @param {OrchestrationPowers & {
- *   marshaller: Remote<Marshaller>;
+ *   marshaller: Remote<import('@agoric/internal/src/lib-chainStorage.js').Marshaller>;
  * }} privateArgs
  * @param {Zone} zone
  * @param {OrchestrationTools} tools

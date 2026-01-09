@@ -80,6 +80,8 @@ const MsgSend = CodecHelper(MsgSendType);
  * @import {SliceDescriptor} from '../utils/orchestrationAccount.js';
  * @import {ZoeTools} from '../utils/zoe-tools.js';
  * @import {MakeProgressTracker} from '../utils/progress.js';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 /**
