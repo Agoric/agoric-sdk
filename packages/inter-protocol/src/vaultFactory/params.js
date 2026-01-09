@@ -29,6 +29,7 @@ import { amountPattern, ratioPattern } from '../contractSupport.js';
  * @import {InterestTiming, VaultManagerParamValues} from './types-ambient.js';
  * @import {GovernanceSubscriptionState} from '@agoric/governance/src/types.js';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 export const CHARGING_PERIOD_KEY = 'ChargingPeriod';

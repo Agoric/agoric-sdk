@@ -48,6 +48,7 @@ import { start } from '../../../src/contracts/priceAggregator.js';
  * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {PromiseRecord} from '@endo/promise-kit';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

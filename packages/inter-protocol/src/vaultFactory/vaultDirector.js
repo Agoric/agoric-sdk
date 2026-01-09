@@ -57,6 +57,7 @@ import {
  * @import {Amount} from '@agoric/ertp';
  * @import {Issuer} from '@agoric/ertp';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 const trace = makeTracer('VD', true);

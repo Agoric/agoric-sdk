@@ -9,6 +9,7 @@ import { BridgeHandlerI } from './bridge.js';
  * @import {BridgeId} from '@agoric/internal';
  * @import {ScopedBridgeManager} from './types.js';
  * @import {MapStore} from '@agoric/store';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

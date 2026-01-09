@@ -14,6 +14,7 @@ import { ParamChangesQuestionDetailsShape } from './typeGuards.js';
  * @import {TimerService} from '@agoric/time';
  * @import {InvitationParam} from './contractGovernance/typedParamManager.js';
  * @import {Baggage} from '@agoric/vat-data';
+ * @import {ERef} from '@agoric/vow';
  */
 
 const trace = makeTracer('CGov', false);

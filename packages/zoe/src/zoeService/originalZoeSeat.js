@@ -24,6 +24,7 @@ import {
  * @import {PaymentPKeywordRecord} from './types.ts';
  * @import {Allocation} from '../types-index.js';
  * @import {ProposalRecord, ZCFSeat} from '@agoric/zoe';
+ * @import {ERef} from '@agoric/vow';
  */
 
 export const coreUserSeatMethods = harden({

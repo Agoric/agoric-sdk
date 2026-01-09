@@ -8,6 +8,7 @@ export {};
  * @import {TimerService} from '@agoric/time';
  * @import {TimestampRecord} from '@agoric/time';
  * @import {Timestamp} from '@agoric/time';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

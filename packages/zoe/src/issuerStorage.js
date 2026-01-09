@@ -18,6 +18,7 @@ const STORAGE_INSTANTIATED_KEY = 'IssuerStorageInstantiated';
  * @import {Brand} from '@agoric/ertp';
  * @import {Issuer} from '@agoric/ertp';
  * @import {DisplayInfo} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

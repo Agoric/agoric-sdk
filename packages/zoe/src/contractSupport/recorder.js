@@ -15,6 +15,7 @@ import { E } from '@endo/eventual-send';
  * @import {PublishKit} from '@agoric/notifier';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

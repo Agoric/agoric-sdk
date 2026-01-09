@@ -17,7 +17,7 @@ const { when } = heapVowTools;
 
 /**
  * @import {ProtocolHandler} from '@agoric/network';
- * @import {Remote} from '@agoric/vow';
+ * @import {ERef, Remote} from '@agoric/vow';
  */
 
 /**

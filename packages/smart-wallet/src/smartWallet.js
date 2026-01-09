@@ -67,6 +67,7 @@ import { prepareOfferWatcher, makeWatchOfferOutcomes } from './offerWatcher.js';
  * @import {CapData} from '@endo/marshal';
  * @import {DisplayInfo} from '@agoric/ertp';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 const trace = makeTracer('SmrtWlt');

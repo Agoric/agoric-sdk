@@ -25,7 +25,7 @@ export const makeFakeBankKit = issuerKits => {
   /** @type {MapStore<Brand, Issuer>} */
   const issuers = makeScalarMapStore();
   /**
-   * @type {MapStore<Brand, ERef<VirtualPurse>>}
+   * @type {MapStore<Brand, import('@agoric/vow').ERef<VirtualPurse>>}
    */
   const purses = makeScalarMapStore();
 

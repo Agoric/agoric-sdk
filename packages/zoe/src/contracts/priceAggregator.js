@@ -48,6 +48,7 @@ import {
  * @import {Mint} from '@agoric/ertp';
  * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /** @typedef {bigint | number | string} ParsableNumber */

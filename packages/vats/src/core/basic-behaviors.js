@@ -33,6 +33,7 @@ import { makeScopedBridge } from '../bridge.js';
  * @import {IssuerKeywordRecord} from '@agoric/zoe';
  * @import {MapStore} from '@agoric/store';
  * @import {IssuerKit} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

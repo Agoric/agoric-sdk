@@ -36,6 +36,10 @@ import { shape } from './typeGuards.js';
  * @import {Bank} from '@agoric/vats/src/vat-bank.js';
  * @import {TestJigKit} from '@agoric/zoe/src/contractSupport/testJigHelpers.js';
  * @import {ZCF} from '@agoric/zoe';
+ * @import {ERef} from '@agoric/vow';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {DisplayInfo} from '@agoric/ertp';
+ * @import {Issuer} from '@agoric/ertp';
  */
 
 const trace = makeTracer('WltFct');
@@ -91,15 +95,15 @@ export const makeAssetRegistry = assetPublisher => {
   trace('makeAssetRegistry', assetPublisher);
   /**
    * @typedef {{
-   *   brand: import('@agoric/ertp').Brand;
-   *   displayInfo: import('@agoric/ertp').DisplayInfo;
-   *   issuer: import('@agoric/ertp').Issuer;
+   *   brand: Brand;
+   *   displayInfo: DisplayInfo;
+   *   issuer: Issuer;
    *   petname: Petname;
    * }} BrandDescriptor
    *   For use by clients to describe brands to users. Includes `displayInfo` to
    *   save a remote call.
    */
-  /** @type {MapStore<import('@agoric/ertp').Brand, BrandDescriptor>} */
+  /** @type {MapStore<Brand, BrandDescriptor>} */
   const brandDescriptors = makeScalarMapStore();
 
   // Watch the bank for issuers to keep on hand for making purses.
@@ -126,9 +130,9 @@ export const makeAssetRegistry = assetPublisher => {
   );
 
   const registry = {
-    /** @param {import('@agoric/ertp').Brand} brand */
+    /** @param {Brand} brand */
     has: brand => brandDescriptors.has(brand),
-    /** @param {import('@agoric/ertp').Brand} brand */
+    /** @param {Brand} brand */
     get: brand => brandDescriptors.get(brand),
     values: () => brandDescriptors.values(),
   };

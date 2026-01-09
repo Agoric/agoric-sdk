@@ -12,6 +12,7 @@ import { atomicTransfer, fromOnly, toOnly } from './atomicTransfer.js';
  * @import {AmountKeywordRecord, ContractMeta, Invitation, IssuerKeywordRecord, Keyword, PaymentPKeywordRecord, Proposal, ProposalRecord, UserSeat, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {KeywordKeywordRecord, MapKeywords, Reverse, Swap, SwapExact} from './types-ambient.js';
  * @import {Allocation} from '../contractFacet/types.ts';
+ * @import {ERef} from '@agoric/vow';
  */
 
 export const defaultAcceptanceMsg = `The offer has been accepted. Once the contract has been completed, please check your payout`;

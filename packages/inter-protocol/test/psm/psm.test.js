@@ -49,6 +49,7 @@ import { anchorAssets, chainStorageEntries } from './psm-storage-fixture.js';
  * @import {Amount} from '@agoric/ertp';
  * @import {IssuerKit} from '@agoric/ertp';
  * @import {Payment} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /** @type {TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */

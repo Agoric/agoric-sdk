@@ -26,6 +26,7 @@ import { withAmountUtils } from '../supports.js';
  * @import {CommitteeElectoratePublic} from '@agoric/governance/src/types.js';
  * @import {Installation} from '@agoric/zoe';
  * @import {Brand} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 // referenced by TS

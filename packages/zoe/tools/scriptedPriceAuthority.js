@@ -17,6 +17,7 @@ import {
  * @import {Timestamp} from '@agoric/time';
  * @import {Amount} from '@agoric/ertp';
  * @import {IssuerKit} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

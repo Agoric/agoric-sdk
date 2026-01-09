@@ -13,6 +13,7 @@ import { Far } from '@endo/marshal';
  * @import {Brand} from '@agoric/ertp';
  * @import {Amount} from '@agoric/ertp';
  * @import {Mint} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

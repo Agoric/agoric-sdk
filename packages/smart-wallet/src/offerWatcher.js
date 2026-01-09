@@ -27,6 +27,8 @@ import { UNPUBLISHED_RESULT } from './offers.js';
  * @import {InvitationMakers} from './types.js';
  * @import {PublicSubscribers} from './types.js';
  * @import {UpgradeDisconnection} from '@agoric/internal/src/upgrade-api.js';
+ * @import {Payment} from '@agoric/ertp';
+ * @import {Amount} from '@agoric/ertp';
  */
 
 /**
@@ -206,10 +208,10 @@ export const prepareOfferWatcher = (baggage, vowTools, zone) => {
     // XXX walletHelper is `any` because the helper facet is too nested to export its type
     /**
      * @param {any} walletHelper
-     * @param {{ receive: (payment: import("@agoric/ertp").Payment) => Promise<import('@agoric/ertp').Amount> }} deposit
+     * @param {{ receive: (payment: Payment) => Promise<Amount> }} deposit
      * @param {OfferSpec} offerSpec
      * @param {string} address
-     * @param {import('@agoric/ertp').Amount<'set'>} invitationAmount
+     * @param {Amount<'set'>} invitationAmount
      * @param {UserSeat} seatRef
      */
     (walletHelper, deposit, offerSpec, address, invitationAmount, seatRef) => ({
@@ -233,7 +235,7 @@ export const prepareOfferWatcher = (baggage, vowTools, zone) => {
         },
         /**
          * @param {string} offerId
-         * @param {import('@agoric/ertp').Amount<'set'>} invitationAmount
+         * @param {Amount<'set'>} invitationAmount
          * @param {InvitationMakers} invitationMakers
          * @param {PublicSubscribers} publicSubscribers
          */

@@ -27,6 +27,7 @@ const trace = makeTracer('FluxAgg', false);
  * @import {Amount} from '@agoric/ertp';
  * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /** @type {ContractMeta} */

@@ -18,6 +18,7 @@ import { makeTerms, MALLEABLE_NUMBER } from './governedContract.js';
  * @import {ZoeService} from '@agoric/zoe';
  * @import {Installation} from '@agoric/zoe';
  * @import {Instance} from '@agoric/zoe';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

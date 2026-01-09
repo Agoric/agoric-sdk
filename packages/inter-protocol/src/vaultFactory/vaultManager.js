@@ -83,6 +83,7 @@ import { Phase, prepareVault } from './vault.js';
  * @import {Amount} from '@agoric/ertp';
  * @import {Brand} from '@agoric/ertp';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 const trace = makeTracer('VM');

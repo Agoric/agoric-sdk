@@ -17,6 +17,7 @@ import { cleanKeywords } from '../cleanProposal.js';
  * @import {Purse} from '@agoric/ertp';
  * @import {Payment} from '@agoric/ertp';
  * @import {Amount} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

@@ -11,6 +11,7 @@ import { Fail } from '@endo/errors';
  * @import {NameAdmin} from '@agoric/vats';
  * @import {Invitation} from '@agoric/zoe';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 const runConfig = {

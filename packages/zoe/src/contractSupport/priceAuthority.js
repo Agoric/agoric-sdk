@@ -17,6 +17,7 @@ import { TimestampShape } from '@agoric/time';
  * @import {Issuer} from '@agoric/ertp';
  * @import {Brand} from '@agoric/ertp';
  * @import {PromiseRecord} from '@endo/promise-kit';
+ * @import {ERef} from '@agoric/vow';
  */
 
 const trace = makeTracer('PA', false);

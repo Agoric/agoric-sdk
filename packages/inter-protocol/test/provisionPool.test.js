@@ -38,6 +38,7 @@ import {
  * @import {Installation} from '@agoric/zoe';
  * @import {Brand} from '@agoric/ertp';
  * @import {Purse} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 const pathname = new URL(import.meta.url).pathname;

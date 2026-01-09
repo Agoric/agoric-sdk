@@ -16,6 +16,7 @@ import { ParamChangesQuestionDetailsShape } from '../typeGuards.js';
  * @import {ParamValue, ParamChangePositions, QuestionSpec, ChangeParamsPosition, ParamChangeIssue, ParamGovernor, ParamManagerRetriever, PoserFacet, VoteOnParamChanges} from '../types.js';
  * @import {TimerService} from '@agoric/time';
  * @import {Passable} from '@endo/marshal';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

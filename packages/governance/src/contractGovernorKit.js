@@ -24,6 +24,7 @@ import { ClosingRuleShape, ParamChangesSpecShape } from './typeGuards.js';
  * @import {TimerService} from '@agoric/time';
  * @import {StartedInstanceKit} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {TypedParamManager} from './contractGovernance/typedParamManager.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 const trace = makeTracer('CGK', false);

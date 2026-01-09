@@ -1,6 +1,6 @@
 /**
  * @import {HostInterface, HostOf} from '@agoric/async-flow';
- * @import {Vow, VowTools} from '@agoric/vow';
+ * @import {ERef, Vow, VowTools} from '@agoric/vow';
  * @import {Invitation, OfferHandler, ZCF} from '@agoric/zoe';
  * @import {Pattern} from '@endo/patterns';
  * @import {ZcfTools} from '../types.js';

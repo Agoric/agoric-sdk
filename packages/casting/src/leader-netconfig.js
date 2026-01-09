@@ -11,6 +11,7 @@ import { assertNetworkConfig } from './netconfig.js';
 /**
  * @import {LeaderOptions} from './types.js';
  * @import {Leader} from './types.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

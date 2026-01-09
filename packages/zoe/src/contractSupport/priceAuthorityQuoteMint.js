@@ -7,6 +7,7 @@ import { provideDurableMapStore } from '@agoric/vat-data';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {Mint} from '@agoric/ertp';
  * @import {IssuerKit} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

@@ -10,6 +10,7 @@ import { E } from '@endo/far';
  * @import {ScopedBridgeManager} from './types.js';
  * @import {Zone} from '@agoric/zone';
  * @import {MapStore} from '@agoric/store';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**
