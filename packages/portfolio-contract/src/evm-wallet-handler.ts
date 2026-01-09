@@ -64,17 +64,64 @@ type NonceKeyData = {
 };
 
 export const makeNonceManager = (zone: Zone) => {
-  zone.setStore('noncesByDeadline');
-  zone.setStore('noncesByOwner');
+  // We must use our own encoder since liveslots collections only accept scalar keys
+  const { decodePassable, encodePassable } = makePassableKit({
+    format: 'compactOrdered',
+  });
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const insertNonce = (key: NonceKeyData): void => {
-    // TODO
+  const encodeKeyByDeadline = (key: NonceKeyData): string =>
+    encodePassable(harden([key.deadline, key.walletOwner, key.nonce]));
+
+  const decodeKeyByDeadline = (encoded: string): NonceKeyData => {
+    const [deadline, walletOwner, nonce] = decodePassable(encoded) as [
+      bigint,
+      Address,
+      bigint,
+    ];
+    return { deadline, walletOwner, nonce };
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const encodeKeyByOwner = (key: NonceKeyData): string =>
+    encodePassable(harden([key.walletOwner, key.nonce, key.deadline]));
+
+  const getByOwnerKeyPrefix = (key: NonceKeyData): string =>
+    encodePassable(harden([key.walletOwner, key.nonce]));
+
+  const noncesByDeadline = zone.setStore<string>('noncesByDeadline', {
+    keyShape: M.string(),
+  });
+  const noncesByOwner = zone.setStore<string>('noncesByOwner', {
+    keyShape: M.string(),
+  });
+
+  const insertNonce = (key: NonceKeyData): void => {
+    const candidatePrefix = getByOwnerKeyPrefix(key);
+    for (const encodedCandidateKey of noncesByOwner.keys(
+      M.gte(candidatePrefix),
+    )) {
+      if (!encodedCandidateKey.startsWith(candidatePrefix)) {
+        break;
+      }
+
+      Fail`Nonce ${q(key.nonce)} for wallet ${q(
+        key.walletOwner,
+      )} already used and not yet expired`;
+    }
+
+    noncesByDeadline.add(encodeKeyByDeadline(key));
+    noncesByOwner.add(encodeKeyByOwner(key));
+  };
+
   const removeExpiredNonces = (currentTime: bigint): void => {
-    // TODO
+    for (const encodedKey of noncesByDeadline.keys()) {
+      const key = decodeKeyByDeadline(encodedKey);
+      if (key.deadline > currentTime) {
+        break;
+      }
+
+      noncesByDeadline.delete(encodeKeyByDeadline(key));
+      noncesByOwner.delete(encodeKeyByOwner(key));
+    }
   };
 
   return harden({ insertNonce, removeExpiredNonces });

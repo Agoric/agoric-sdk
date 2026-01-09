@@ -25,6 +25,7 @@
     "@agoric/fast-usdc": "workspace:*",
     "@agoric/smart-wallet": "workspace:*",
     "@agoric/swingset-liveslots": "workspace:*",
+    "@agoric/vat-data": "workspace:*",
     "@agoric/zone": "workspace:*",
     "@endo/init": "^1.1.12",
     "@endo/promise-kit": "^1.1.13",

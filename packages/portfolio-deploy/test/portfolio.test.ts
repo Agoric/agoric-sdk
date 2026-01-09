@@ -45,6 +45,8 @@ const test: TestFn<
 const beneficiary = 'agoric126sd64qkuag2fva3vy3syavggvw44ca2zfrzyy';
 const controllerAddr = 'agoric1ymax0-admin';
 
+const CURRENT_TIME = 1357920000n;
+
 /** maps between on-chain identites and boardIDs */
 const showValue = (v: string) => defaultMarshaller.fromCapData(JSON.parse(v));
 
@@ -165,7 +167,8 @@ test.before('bootstrap', async t => {
 test.after.always(t => t.context.shutdown?.());
 
 test.serial('publish chainInfo etc.', async t => {
-  const { buildProposal, evalProposal, runUtils } = t.context;
+  const { buildProposal, evalProposal, runUtils, jumpTimeTo } = t.context;
+  await jumpTimeTo(CURRENT_TIME); // ensure deterministic deadline/nonces
   const materials = buildProposal(
     '@aglocal/portfolio-deploy/src/chain-info.build.js',
     ['--chainInfo', JSON.stringify(exampleDynamicChainInfo)],
@@ -726,7 +729,7 @@ test.serial('invite evm handler; test open portfolio', async t => {
   const userPrivateKey = generatePrivateKey();
   const userAccount = privateKeyToAccount(userPrivateKey);
 
-  const deadline = BigInt(Math.floor(Date.now() / 1000)) + 3600n;
+  const deadline = CURRENT_TIME + 3600n;
   // not a secure nonce, but sufficient for test purposes
   const nonce = BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER));
 
