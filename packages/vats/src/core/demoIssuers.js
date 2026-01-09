@@ -17,6 +17,7 @@ import { Stake, Stable } from '@agoric/internal/src/tokens.js';
  * @import {Payment} from '@agoric/ertp';
  * @import {Issuer} from '@agoric/ertp';
  * @import {Brand} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 const { multiply, floorDivide } = natSafeMath;

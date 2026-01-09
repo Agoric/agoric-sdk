@@ -15,6 +15,7 @@ import { buildRootObject } from '../src/vat-bank.js';
  * @import {Brand} from '@agoric/ertp';
  * @import {Issuer} from '@agoric/ertp';
  * @import {Payment} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 const { fakeVomKit } = reincarnate({ relaxDurabilityRules: false });

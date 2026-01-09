@@ -7,6 +7,10 @@ import { registerNetworkProtocols } from '../proposals/network-proposal.js';
 import { makeVatsFromBundles } from './basic-behaviors.js';
 
 /**
+ * @import {ERef} from '@agoric/vow';
+ */
+
+/**
  * @typedef SoloVats
  * @property {ERef<
  *   ReturnType<

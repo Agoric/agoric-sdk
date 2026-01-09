@@ -10,6 +10,7 @@ import { makeScopedBridge } from '../bridge.js';
  * @import {TransferMiddleware} from '../transfer.js';
  * @import {LocalChainVat} from '../vat-localchain.js';
  * @import {LocalChain} from '../localchain.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**
