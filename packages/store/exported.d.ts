@@ -1,6 +1,6 @@
-/** @file Ambient exports until https://github.com/Agoric/agoric-sdk/issues/6512 */
+/** @file Global definitions of foundational types */
 /** @see {@link /docs/typescript.md} */
-/* eslint-disable -- doesn't understand .d.ts */
+
 import { ERef as _ERef } from '@endo/far';
 import {
   LegacyMap as _LegacyMap,
@@ -13,7 +13,6 @@ import {
 } from './src/types.js';
 
 declare global {
-  // @ts-ignore TS2666: Exports and export assignments are not permitted in module augmentations.
   export {
     _ERef as ERef,
     _LegacyMap as LegacyMap,
