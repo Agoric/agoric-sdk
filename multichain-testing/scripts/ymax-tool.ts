@@ -49,6 +49,8 @@ import {
 import { YieldProtocol } from '@agoric/portfolio-api/src/constants.js';
 import type { OfferStatus } from '@agoric/smart-wallet/src/offers.js';
 import type { NameHub } from '@agoric/vats';
+import type { EMethods } from '@agoric/vow/src/E.js';
+import type { Instance } from '@agoric/zoe/src/zoeService/types.js';
 import type { StartedInstanceKit as ZStarted } from '@agoric/zoe/src/zoeService/utils.js';
 import { SigningStargateClient } from '@cosmjs/stargate';
 import { E } from '@endo/far';
@@ -79,23 +81,25 @@ Options:
   --description=[planner] For use with --redeem ('planner' or 'resolver', optionally preceded by 'deliver ')
 
 Operations:
-  -h, --help              Show this help message
-  --repl                  Start a repl with walletStore and ymaxControl bound
-  --checkStorage          Report outdated ymax0 vstorage nodes (older than agoricNames.instance)
-  --pruneStorage          Prune vstorage nodes read from { [ParentPath]: ChildPathSegment[] } stdin
-  --buildEthOverrides     Build privateArgsOverrides sufficient to add new EVM chains
-  --getCreatorFacet       Read the creator facet read from wallet store entry 'ymaxControl' and save
-                          the result in a new entry ('creatorFacet' for contract 'ymax0', otherwise
-                          \`creatorFacet-\${contract}\`)
-  --installAndStart <id>  Start a contract with bundleId <id> and privateArgsOverrides from stdin
-  --upgrade <id>          Upgrade the contract to bundleId <id> and privateArgsOverrides from stdin
-  --terminate <message>   Terminate the contract instance
-  --invitePlanner <addr>  Send planner invitation per --contract to <addr>
-  --inviteResolver <addr> Send resolver invitation per --contract to <addr>
-  --redeem                Redeem invitation per --description
-  --submit-for <id>       Submit (empty) plan for portfolio <id>
-  --open                  [default operation] Open a new portfolio per --positions and
-                          --target-allocation
+  -h, --help                Show this help message
+  --repl                    Start a repl with walletStore and ymaxControl bound
+  --checkStorage            Report outdated ymax0 vstorage nodes (older than agoricNames.instance)
+  --pruneStorage            Prune vstorage nodes read from Record<ParentPath, ChildPathSegment[]>
+                            stdin
+  --buildEthOverrides       Build privateArgsOverrides sufficient to add new EVM chains
+  --getCreatorFacet         Read the creator facet read from wallet store entry 'ymaxControl' and
+                            save the result in a new entry ('creatorFacet' for contract 'ymax0',
+                            otherwise \`creatorFacet-\${contract}\`)
+  --installAndStart <id>    Start a contract with bundleId <id> and privateArgsOverrides from stdin
+  --upgrade <id>            Upgrade to bundleId <id> and privateArgsOverrides from stdin
+  --terminate <message>     Terminate the contract instance
+  --inviteOwnerProxy <addr> Send EVM portfolio owner proxy invitation per --contract to <addr>
+  --invitePlanner <addr>    Send planner invitation per --contract to <addr>
+  --inviteResolver <addr>   Send resolver invitation per --contract to <addr>
+  --redeem                  Redeem invitation per --description
+  --submit-for <id>         Submit (empty) plan for portfolio <id>
+  --open                    [default operation] Open a new portfolio per --positions and
+                            --target-allocation
 `.trim();
 
 const parseToolArgs = (argv: string[]) =>
@@ -115,6 +119,7 @@ const parseToolArgs = (argv: string[]) =>
       buildEthOverrides: { type: 'boolean' },
       installAndStart: { type: 'string' },
       upgrade: { type: 'string' },
+      inviteOwnerProxy: { type: 'string' },
       invitePlanner: { type: 'string' },
       inviteResolver: { type: 'string' },
       checkStorage: { type: 'boolean' },
@@ -503,9 +508,10 @@ const main = async (
       return;
     }
 
+    const saveTo = description.replace(/^deliver /, '');
     const result = await walletStore.saveOfferResult(
       { instance, description },
-      description.replace(/^deliver /, ''),
+      saveTo,
     );
     trace('redeem result', result);
     return;
@@ -588,27 +594,39 @@ const main = async (
     return;
   }
 
-  if (values.invitePlanner) {
-    const { invitePlanner: planner, contract } = values;
+  type CFMethods = ZStarted<YMaxStartFn>['creatorFacet'];
+  const postalServiceDelivery = async (
+    fn: (cf: EMethods<CFMethods>, postalService: Instance) => Promise<void>,
+  ) => {
+    const { contract } = values;
     const creatorFacetKey = getCreatorFacetKey(contract);
-    const cf =
-      walletStore.get<ZStarted<YMaxStartFn>['creatorFacet']>(creatorFacetKey);
-    const { postalService } = fromEntries(
-      await walletKit.readPublished('agoricNames.instance'),
+    const cf = walletStore.get<CFMethods>(creatorFacetKey);
+    const instances = await walletKit.readPublished('agoricNames.instance');
+    const { postalService } = fromEntries(instances);
+    await fn(cf, postalService);
+  };
+
+  if (values.invitePlanner) {
+    const { invitePlanner: addr } = values;
+    await postalServiceDelivery((cf, postalService) =>
+      cf.deliverPlannerInvitation(addr, postalService),
     );
-    await cf.deliverPlannerInvitation(planner, postalService);
     return;
   }
 
   if (values.inviteResolver) {
-    const { inviteResolver: resolver, contract } = values;
-    const creatorFacetKey = getCreatorFacetKey(contract);
-    const cf =
-      walletStore.get<ZStarted<YMaxStartFn>['creatorFacet']>(creatorFacetKey);
-    const { postalService } = fromEntries(
-      await walletKit.readPublished('agoricNames.instance'),
+    const { inviteResolver: addr } = values;
+    await postalServiceDelivery((cf, postalService) =>
+      cf.deliverResolverInvitation(addr, postalService),
     );
-    await cf.deliverResolverInvitation(resolver, postalService);
+    return;
+  }
+
+  if (values.inviteOwnerProxy) {
+    const { inviteOwnerProxy: addr } = values;
+    await postalServiceDelivery((cf, postalService) =>
+      cf.deliverEVMWalletHandlerInvitation(addr, postalService),
+    );
     return;
   }
 
