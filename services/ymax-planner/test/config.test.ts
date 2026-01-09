@@ -20,8 +20,6 @@ const minimalEnv = {
     'api-spectrum-pools': ['https://example.invalid/'],
   }),
   SQLITE_DB_PATH: './test-kv-store.db',
-  YDS_URL: 'https://yds.example.com',
-  YDS_API_KEY: 'test-api-key-123',
 };
 
 const makeFakeSecretManager = (mnemonic?: string) =>
