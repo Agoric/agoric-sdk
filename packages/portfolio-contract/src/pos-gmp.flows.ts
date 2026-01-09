@@ -130,103 +130,100 @@ const makeProvideEVMAccount = ({
     opts?: OrchestrationOptions,
     sendCallArg?: unknown,
   ): GMPAccountStatus => {
-  const sendCall = getSendCall(sendCallArg);
-  const pId = pk.reader.getPortfolioId();
-  const traceChain = trace.sub(`portfolio${pId}`).sub(chainName);
+    const sendCall = getSendCall(sendCallArg);
+    const pId = pk.reader.getPortfolioId();
+    const traceChain = trace.sub(`portfolio${pId}`).sub(chainName);
 
-  const predictAddress = (owner: Bech32Address) => {
-    const contracts = ctx.contracts[chainName];
-    const remoteAddress = predictWalletAddress({
-      owner,
-      factoryAddress: contracts.factory,
-      gasServiceAddress: contracts.gasService,
-      gatewayAddress: contracts.gateway,
-      // XXX converting a 9k hex string to bytes for every account is a waste.
-      // But Uint8Array is not Passable. Pass it via prepareXYZ()?
-      walletBytecode: hexToBytes(ctx.walletBytecode.replace(/^0x/, '')),
-    });
-    const info: GMPAccountInfo = {
-      namespace: 'eip155',
-      chainName,
-      chainId: `${chainInfo.namespace}:${chainInfo.reference}`,
-      remoteAddress,
-    };
-    traceChain('CREATE2', info.remoteAddress, 'for', owner);
-    return info;
-  };
-  const reserve = pk.manager.reserveAccountState(chainName);
-
-  const evmAccount =
-    reserve.state === 'new'
-      ? predictAddress(lca.getAddress().value)
-      : pk.reader.getGMPInfo(chainName);
-
-  if (['pending', 'ok'].includes(reserve.state)) {
-    return { ...evmAccount, ready: reserve.ready as unknown as Promise<void> };
-  }
-
-  if (reserve.state === 'new') {
-    pk.manager.initAccountInfo(evmAccount);
-  }
-
-  const installContract = async () => {
-    let txId: TxId | undefined;
-    await null;
-    try {
-      const axelarId = ctx.axelarIds[chainName];
-      const target = {
-        axelarId,
-        remoteAddress: ctx.contracts[chainName].factory,
-      };
-      const fee = { denom: ctx.gmpFeeInfo.denom, value: gmp.fee };
-      fee.value > 0n || Fail`axelar makeAccount requires > 0 fee`;
-      const feeAccount = await ctx.contractAccount;
-      const src = feeAccount.getAddress();
-      traceChain('send makeAccountCall Axelar fee from', src.value);
-      await feeAccount.send(lca.getAddress(), fee, opts);
-
-      const watchTx = ctx.resolverClient.registerTransaction(
-        txType,
-        `${evmAccount.chainId}:${target.remoteAddress}`,
-        undefined,
-        evmAccount.remoteAddress,
-      );
-      txId = watchTx.txId;
-      const result = watchTx.result as unknown as Promise<void>; // XXX host/guest;
-      result.catch(err => {
-        trace(txId, 'rejected', err);
+    const predictAddress = (owner: Bech32Address) => {
+      const contracts = ctx.contracts[chainName];
+      const remoteAddress = predictWalletAddress({
+        owner,
+        factoryAddress: contracts.factory,
+        gasServiceAddress: contracts.gasService,
+        gatewayAddress: contracts.gateway,
+        // XXX converting a 9k hex string to bytes for every account is a waste.
+        // But Uint8Array is not Passable. Pass it via prepareXYZ()?
+        walletBytecode: hexToBytes(ctx.walletBytecode.replace(/^0x/, '')),
       });
+      const info: GMPAccountInfo = {
+        namespace: 'eip155',
+        chainName,
+        chainId: `${chainInfo.namespace}:${chainInfo.reference}`,
+        remoteAddress,
+      };
+      traceChain('CREATE2', info.remoteAddress, 'for', owner);
+      return info;
+    };
+    const reserve = pk.manager.reserveAccountState(chainName);
 
-      await sendCall(
-        target,
-        fee,
-        lca,
-        gmp.chain,
-        ctx.gmpAddresses,
-        opts,
-      );
+    const evmAccount =
+      reserve.state === 'new'
+        ? predictAddress(lca.getAddress().value)
+        : pk.reader.getGMPInfo(chainName);
 
-      traceChain('await', traceLabel, txId);
-      await result;
-
-      pk.manager.resolveAccount(evmAccount);
-    } catch (reason) {
-      traceChain('failed to', traceLabel, reason);
-      pk.manager.releaseAccount(chainName, reason);
-      if (txId) {
-        ctx.resolverClient.unsubscribe(txId, `unsubscribe: ${reason}`);
-      }
+    if (['pending', 'ok'].includes(reserve.state)) {
+      return {
+        ...evmAccount,
+        ready: reserve.ready as unknown as Promise<void>,
+      };
     }
-  };
-  void installContract();
 
-  return {
-    ...evmAccount,
-    ready: reserve.ready as unknown as Promise<void>, // XXX host/guest
-  };
+    if (reserve.state === 'new') {
+      pk.manager.initAccountInfo(evmAccount);
+    }
+
+    const installContract = async () => {
+      let txId: TxId | undefined;
+      await null;
+      try {
+        const axelarId = ctx.axelarIds[chainName];
+        const target = {
+          axelarId,
+          // TODO: this should be the deposit factory address not the basic factory
+          // in case of a CreateAndDeposit call
+          remoteAddress: ctx.contracts[chainName].factory,
+        };
+        const fee = { denom: ctx.gmpFeeInfo.denom, value: gmp.fee };
+        fee.value > 0n || Fail`axelar makeAccount requires > 0 fee`;
+        const feeAccount = await ctx.contractAccount;
+        const src = feeAccount.getAddress();
+        traceChain('send makeAccountCall Axelar fee from', src.value);
+        await feeAccount.send(lca.getAddress(), fee, opts);
+
+        const watchTx = ctx.resolverClient.registerTransaction(
+          txType,
+          `${evmAccount.chainId}:${target.remoteAddress}`,
+          undefined,
+          evmAccount.remoteAddress,
+        );
+        txId = watchTx.txId;
+        const result = watchTx.result as unknown as Promise<void>; // XXX host/guest;
+        result.catch(err => {
+          trace(txId, 'rejected', err);
+        });
+
+        await sendCall(target, fee, lca, gmp.chain, ctx.gmpAddresses, opts);
+
+        traceChain('await', traceLabel, txId);
+        await result;
+
+        pk.manager.resolveAccount(evmAccount);
+      } catch (reason) {
+        traceChain('failed to', traceLabel, reason);
+        pk.manager.releaseAccount(chainName, reason);
+        if (txId) {
+          ctx.resolverClient.unsubscribe(txId, `unsubscribe: ${reason}`);
+        }
+      }
+    };
+    void installContract();
+
+    return {
+      ...evmAccount,
+      ready: reserve.ready as unknown as Promise<void>, // XXX host/guest
+    };
   };
 };
-
 
 type TokenMessengerI = {
   depositForBurn: ['uint256', 'uint32', 'bytes32', 'address'];
