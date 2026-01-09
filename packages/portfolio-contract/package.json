@@ -40,6 +40,7 @@
     "@agoric/internal": "workspace:*",
     "@agoric/orchestration": "workspace:*",
     "@agoric/portfolio-api": "workspace:*",
+    "@agoric/store": "workspace:*",
     "@agoric/time": "workspace:*",
     "@agoric/vats": "workspace:*",
     "@agoric/vow": "workspace:*",
