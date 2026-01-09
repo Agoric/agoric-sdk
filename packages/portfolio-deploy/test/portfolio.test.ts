@@ -30,6 +30,7 @@ import {
 } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.ts';
 import type { TestFn } from 'ava';
 import type { PortfolioBootPowers } from '../src/portfolio-start.type.ts';
+import { axelarConfig } from '../src/axelar-configs.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
@@ -43,13 +44,6 @@ const test: TestFn<
 
 const beneficiary = 'agoric126sd64qkuag2fva3vy3syavggvw44ca2zfrzyy';
 const controllerAddr = 'agoric1ymax0-admin';
-
-export const SEPOLIA_CONTRACTS = {
-  PERMIT2: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
-  USDC: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238',
-  FACTORY: '0x9F9684d7FA7318698a0030ca16ECC4a01944836b', // YMax Factory
-  CHAIN_ID: 11155111,
-} as const;
 
 /** maps between on-chain identites and boardIDs */
 const showValue = (v: string) => defaultMarshaller.fromCapData(JSON.parse(v));
@@ -732,7 +726,7 @@ test.serial('invite evm handler; test open portfolio', async t => {
   const nonce = BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER));
 
   const deposit: TokenPermissions = {
-    token: SEPOLIA_CONTRACTS.USDC,
+    token: axelarConfig.Arbitrum.contracts.usdc,
     amount: 15n * 1_000_000n,
   };
 
@@ -744,9 +738,15 @@ test.serial('invite evm handler; test open portfolio', async t => {
   const witness = getYmaxWitness('OpenPortfolio', { allocations });
 
   const openPortfolioMessage = getPermitWitnessTransferFromData(
-    { permitted: deposit, spender: SEPOLIA_CONTRACTS.FACTORY, nonce, deadline },
-    SEPOLIA_CONTRACTS.PERMIT2,
-    SEPOLIA_CONTRACTS.CHAIN_ID,
+    {
+      permitted: deposit,
+      // TODO: This should be the address of the owned deposit factory contract
+      spender: axelarConfig.Arbitrum.contracts.factory,
+      nonce,
+      deadline,
+    },
+    '0x000000000022D473030F116dDEE9F6B43aC78BA3', // Arbitrum permit2 address
+    BigInt(axelarConfig.Arbitrum.chainInfo.reference),
     witness,
   );
 
