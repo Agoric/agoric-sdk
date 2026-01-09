@@ -134,6 +134,7 @@ const the = async xP => {
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {Brand} from '@agoric/ertp';
  * @import {PromiseKit} from '@endo/promise-kit';
+ * @import {ERef} from '@agoric/vow';
  */
 
 const IST_UNIT = 1_000_000n;

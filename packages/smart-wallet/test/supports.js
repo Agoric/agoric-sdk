@@ -27,6 +27,7 @@ import { E, Far } from '@endo/far';
  * @import {Issuer} from '@agoric/ertp';
  * @import {Mint} from '@agoric/ertp';
  * @import {NatValue} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 export { ActionType };

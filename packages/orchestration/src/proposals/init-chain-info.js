@@ -8,6 +8,8 @@ import { HubName } from '../exos/chain-hub.js';
 /**
  * @import {NameHubKit} from '@agoric/vats';
  * @import {Remote} from '@agoric/internal';
+ * @import {ERef} from '@agoric/vow';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 const trace = makeTracer('InitChainInfo', true);
@@ -19,7 +21,7 @@ const trace = makeTracer('InitChainInfo', true);
 
 /**
  * @param {ERef<NameHubKit['nameAdmin']>} agoricNamesAdmin
- * @param {ERef<Remote<import('@agoric/internal/src/lib-chainStorage.js').StorageNode> | null>} chainStorageP
+ * @param {ERef<Remote<StorageNode> | null>} chainStorageP
  */
 const publishChainInfoToChainStorage = async (
   agoricNamesAdmin,

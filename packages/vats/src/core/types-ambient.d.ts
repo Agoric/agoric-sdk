@@ -34,26 +34,26 @@ type VatAdminDevice = Device<
   import('@agoric/swingset-vat/src/devices/vat-admin/device-vat-admin.js').VatAdminRootDeviceNode
 >;
 
-type VattpVat = ERef<
+type VattpVat = import('@endo/far').ERef<
   ReturnType<
     typeof import('@agoric/swingset-vat/src/vats/vattp/vat-vattp.js').buildRootObject
   >
 >;
 
-type VatAdminVat = ERef<
+type VatAdminVat = import('@endo/far').ERef<
   ReturnType<
     typeof import('@agoric/swingset-vat/src/vats/vat-admin/vat-vat-admin.js').buildRootObject
   >
 >;
 
 /** @see deliverToController in packages/SwingSet/src/vats/comms/controller.js */
-type TimerVat = ERef<
+type TimerVat = import('@endo/far').ERef<
   ReturnType<
     typeof import('@agoric/swingset-vat/src/vats/timer/vat-timer.js').buildRootObject
   >
 >;
 
-type CommsVatRoot = ERef<{
+type CommsVatRoot = import('@endo/far').ERef<{
   addRemote: (name: string, tx: unknown, rx: unknown) => void;
   addEgress: (addr: string, ix: number, provider: unknown) => void;
   addIngress: (
@@ -95,7 +95,7 @@ type ClientProvider = {
 };
 
 type Producer<T> = {
-  resolve: (v: ERef<T>) => void;
+  resolve: (v: import('@endo/far').ERef<T>) => void;
   reject: (r: unknown) => void;
   reset: (reason?: unknown) => void;
 };
@@ -139,7 +139,7 @@ type ClientFacet = {
    * userBundle.bank; ideally, the cast is to some useful type. But unknown
    * can't be cast directly to some other type; it has to be cast to any first.
    */
-  getChainBundle(): ERef<Record<string, any>>;
+  getChainBundle(): import('@endo/far').ERef<Record<string, any>>;
   getConfiguration(): AsyncIterable<{
     clientAddress: string;
     clientHome: Record<string, any>;
@@ -306,7 +306,9 @@ type WellKnownSpaces = {
 type StartGovernedUpgradableOpts<
   SF extends import('@agoric/governance').GovernableStartFn,
 > = {
-  installation: ERef<import('@agoric/zoe').Installation<SF>>;
+  installation: import('@endo/far').ERef<
+    import('@agoric/zoe').Installation<SF>
+  >;
   issuerKeywordRecord?: import('@agoric/zoe').IssuerKeywordRecord;
   governedParams: Record<string, unknown>;
   terms: Omit<
@@ -331,7 +333,9 @@ type StartUpgradableOpts<
   SF extends
     import('@agoric/zoe/src/zoeService/utils.js').ContractStartFunction,
 > = {
-  installation: ERef<import('@agoric/zoe').Installation<SF>>;
+  installation: import('@endo/far').ERef<
+    import('@agoric/zoe').Installation<SF>
+  >;
   issuerKeywordRecord?: import('@agoric/zoe').IssuerKeywordRecord;
   terms?: Omit<
     import('@agoric/zoe/src/zoeService/utils.js').StartParams<SF>['terms'],
@@ -491,30 +495,32 @@ type BootstrapSpace = WellKnownSpaces &
     object
   >;
 
-type LocalChainVat = ERef<
+type LocalChainVat = import('@endo/far').ERef<
   ReturnType<typeof import('../vat-localchain.js').buildRootObject>
 >;
 
-type TransferVat = ERef<
+type TransferVat = import('@endo/far').ERef<
   ReturnType<typeof import('../vat-transfer.js').buildRootObject>
 >;
 
-type ProvisioningVat = ERef<
+type ProvisioningVat = import('@endo/far').ERef<
   ReturnType<typeof import('../vat-provisioning.js').buildRootObject>
 >;
 
-type MintsVat = ERef<
+type MintsVat = import('@endo/far').ERef<
   ReturnType<typeof import('../vat-mints.js').buildRootObject>
 >;
 
-type PriceAuthorityVat = ERef<
+type PriceAuthorityVat = import('@endo/far').ERef<
   ReturnType<typeof import('../vat-priceAuthority.js').buildRootObject>
 >;
 
-type NetworkVat = ERef<
+type NetworkVat = import('@endo/far').ERef<
   ReturnType<typeof import('../vat-network.js').buildRootObject>
 >;
-type IBCVat = ERef<ReturnType<typeof import('../vat-ibc.js').buildRootObject>>;
+type IBCVat = import('@endo/far').ERef<
+  ReturnType<typeof import('../vat-ibc.js').buildRootObject>
+>;
 type NamedVatPowers = {
   namedVat: PromiseSpaceOf<{
     agoricNames: Awaited<AgoricNamesVat>;
@@ -522,24 +528,26 @@ type NamedVatPowers = {
   }>;
 };
 
-type OrchestrationVat = ERef<import('@agoric/orchestration').OrchestrationVat>;
-type ZoeVat = ERef<import('../vat-zoe.js').ZoeVat>;
+type OrchestrationVat = import('@endo/far').ERef<
+  import('@agoric/orchestration').OrchestrationVat
+>;
+type ZoeVat = import('@endo/far').ERef<import('../vat-zoe.js').ZoeVat>;
 
 type RemoteIssuerKit = {
   mint: import('@endo/far').ERef<import('@agoric/ertp').Mint>;
   issuer: import('@endo/far').ERef<import('@agoric/ertp').Issuer>;
   brand: import('@agoric/ertp').Brand;
 };
-type AgoricNamesVat = ERef<
+type AgoricNamesVat = import('@endo/far').ERef<
   ReturnType<typeof import('../vat-agoricNames.js').buildRootObject>
 >;
-type BankVat = ERef<
+type BankVat = import('@endo/far').ERef<
   ReturnType<typeof import('../vat-bank.js').buildRootObject>
 >;
-type BoardVat = ERef<
+type BoardVat = import('@endo/far').ERef<
   ReturnType<typeof import('../vat-board.js').buildRootObject>
 >;
-type ChainStorageVat = ERef<
+type ChainStorageVat = import('@endo/far').ERef<
   ReturnType<typeof import('../vat-bridge.js').buildRootObject>
 >;
 type BankManager = Awaited<ReturnType<Awaited<BankVat>['makeBankManager']>>;
