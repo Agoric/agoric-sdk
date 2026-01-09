@@ -247,6 +247,7 @@ export const contract = async (
     walletBytecode,
     storageNode,
     gmpAddresses,
+    timerService,
   } = privateArgs;
   const { brands } = zcf.getTerms();
   const { orchestrateAll, zoeTools, chainHub, vowTools } = tools;
@@ -543,6 +544,8 @@ export const contract = async (
     {
       storageNode: E(storageNode).makeChildNode('evmWallets'),
       vowTools,
+      timerService,
+      portfolioContractPublicFacet: publicFacet,
     },
   );
 

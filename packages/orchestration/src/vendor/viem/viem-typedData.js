@@ -5,8 +5,10 @@ import {
   serializeTypedData,
   validateTypedData,
   verifyTypedData
-} from "./chunk-OFIEVWYB.js";
-import "./chunk-GCI53Z2G.js";
+} from "./chunk-ZKSIP2AM.js";
+import {
+  isHex
+} from "./chunk-GCI53Z2G.js";
 import "./chunk-4VNS5WPM.js";
 
 // src/utils/viem-utils/hashTypedData.ts
@@ -42,6 +44,7 @@ export {
   encodeType,
   hashStruct,
   hashTypedData,
+  isHex,
   recoverTypedDataAddress,
   serializeTypedData,
   validateTypedData,

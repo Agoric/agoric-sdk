@@ -1,4 +1,4 @@
-export { hashStruct, hashTypedData, recoverTypedDataAddress, serializeTypedData, validateTypedData, verifyTypedData } from 'viem/utils';
+export { hashStruct, hashTypedData, isHex, recoverTypedDataAddress, serializeTypedData, validateTypedData, verifyTypedData } from 'viem/utils';
 
 /**
  * @file viem internal typedData utils exported for direct usage

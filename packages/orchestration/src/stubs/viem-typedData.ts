@@ -7,6 +7,7 @@
  * while preserving type info.
  */
 export {
+  isHex,
   hashStruct,
   hashTypedData,
   recoverTypedDataAddress,
