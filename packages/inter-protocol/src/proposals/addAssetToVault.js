@@ -33,6 +33,7 @@ export * from './startPSM.js';
  * @import {EconomyBootstrapPowers} from './econ-behaviors.js'
  * @import {TimerService} from '@agoric/time';
  * @import {Issuer, IssuerKit} from '@agoric/ertp';
+ * @import {prepare} from '@agoric/zoe/src/contracts/scaledPriceAuthority.js';
  */
 
 /**
@@ -215,6 +216,7 @@ export const startScaledPriceAuthority = async (
 
   const label = scaledPriceFeedName(issuerName);
 
+  /** @type {StartedInstanceKit<prepare>} */
   const spaKit = await E(startUpgradable)({
     installation: scaledPriceAuthority,
     label,
