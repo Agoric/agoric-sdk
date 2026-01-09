@@ -11,6 +11,8 @@ import { prepareTransferTools } from './transfer.js';
  * @import {ScopedBridgeManager} from './types.js';
  * @import {BridgeId} from '@agoric/internal';
  * @import {AppTransformer} from './bridge-target.js';
+ * @import {WeakMapStore} from '@agoric/store';
+ * @import {MapStore} from '@agoric/store';
  */
 
 export const buildRootObject = (_vatPowers, _args, baggage) => {

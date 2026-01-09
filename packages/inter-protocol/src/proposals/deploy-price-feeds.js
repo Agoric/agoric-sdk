@@ -29,6 +29,7 @@ export const DEFAULT_CONTRACT_TERMS = {
  * @import {StartedInstanceKit} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {Installation, Instance} from '@agoric/zoe';
  * @import {Brand} from '@agoric/ertp';
+ * @import {MapStore} from '@agoric/store';
  */
 /** @import {FluxStartFn} from '@agoric/inter-protocol/src/price/fluxAggregatorContract.js'; */
 
