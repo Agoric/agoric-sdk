@@ -18,10 +18,9 @@ export type YdsNotifierPowers = {
 };
 
 /**
- * YDS (Your Data Service) Notifier - sends transaction settlement notifications via HTTP POST.
- * When a transaction is settled in any of the watchers (GMP, CCTP, Wallet),
- * this notifier sends a POST request to a configured YDS webhook endpoint with
- * the transaction number and hash.
+ * YMax Data Service Notifier - notifies YDS of transaction settlement
+ * Used by the GMP/CCTP/etc. watchers to send a POST request to YDS endpoint
+ * "/flow-step-tx-hashes" with the number and hash of each settled transaction.
  */
 export class YdsNotifier {
   #fetch: typeof fetch;
