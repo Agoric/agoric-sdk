@@ -90,6 +90,22 @@ const makeTransferChannels = (chainInfo: PortfolioPrivateArgs['chainInfo']) => {
   return harden({ noble: nobleConn, axelar: axelarConn });
 };
 
+const makeEip155ChainIdToAxelarChain = (
+  chainInfo: PortfolioPrivateArgs['chainInfo'],
+) => {
+  const chainIdToChainName: Record<`${number}`, AxelarChain> = {};
+  for (const [name, info] of Object.entries(chainInfo)) {
+    if (info.namespace === 'eip155') {
+      if (!Object.hasOwn(AxelarChain, name)) {
+        trace('⚠️ skipping non-Axelar EVM chain', name);
+        continue;
+      }
+      chainIdToChainName[`${info.reference}`] = name as AxelarChain;
+    }
+  }
+  return harden(chainIdToChainName);
+};
+
 const interfaceTODO = undefined;
 
 const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
@@ -285,6 +301,7 @@ export const contract = async (
 
   // Extract transfer channel info synchronously
   const transferChannels = makeTransferChannels(chainInfo);
+  const eip155ChainIdToAxelarChain = makeEip155ChainIdToAxelarChain(chainInfo);
 
   const proposalShapes = makeProposalShapes(brands.USDC, brands.Access);
   const offerArgsShapes = makeOfferArgsShapes(brands.USDC);
@@ -335,6 +352,7 @@ export const contract = async (
     inertSubscriber,
     contractAccount: contractAccountV as any, // XXX Guest...
     transferChannels,
+    eip155ChainIdToAxelarChain,
   };
 
   // We wrap all the orchFns1 (and orchFns2) to have replaying flows use `config
@@ -435,7 +453,7 @@ export const contract = async (
   const orchFns2 = orchestrateAll(
     {
       openPortfolio: flows.openPortfolio,
-      openPortfolioFromEVM: flows.openPortfolioFromEVM,
+      openPortfolioFromPermit2: flows.openPortfolioFromPermit2,
     },
     {
       ...ctx1,
@@ -522,7 +540,7 @@ export const contract = async (
      *
      * @returns storagePath (vstorage) and evmHandler facet
      *
-     * @see {@link openPortfolioFromEVM} for the flow implementation
+     * @see {@link openPortfolioFromPermit2} for the flow implementation
      */
     async openPortfolioFromEVM(
       targetAllocation: TargetAllocation | undefined,
@@ -533,10 +551,9 @@ export const contract = async (
     }> {
       const seat = zcf.makeEmptySeatKit().zcfSeat;
       const kit = makeNextPortfolioKit();
-      void orchFns2.openPortfolioFromEVM(
+      void orchFns2.openPortfolioFromPermit2(
         seat,
-        depositDetails.signedPermit,
-        depositDetails.fromChain,
+        depositDetails,
         targetAllocation,
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- sensitive to build order
         // @ts-ignore XXX Guest...

@@ -36,6 +36,7 @@ import {
 } from '@agoric/orchestration/src/utils/address.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import type { AxelarChain, FundsFlowPlan } from '@agoric/portfolio-api';
+import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import {
   DEFAULT_FLOW_CONFIG,
   RebalanceStrategy,
@@ -102,7 +103,6 @@ import {
   makeIncomingVTransferEvent,
   makeStorageTools,
 } from './supports.ts';
-import type { CreateAndDepositPayload } from '../src/evm-facade.ts';
 
 const executePlan: typeof rawExecutePlan = (
   orch,
@@ -278,6 +278,12 @@ const mocks = (
     noble: agoricConns[fetchedChainInfo.noble.chainId].transferChannel,
     axelar: agoricConns[fetchedChainInfo.axelar.chainId].transferChannel,
   } as const;
+  const eip155ChainIdToAxelarChain = Object.fromEntries(
+    Object.entries(axelarCCTPConfig).map(([name, info]) => [
+      `${Number(info.reference)}`,
+      name,
+    ]),
+  ) as Record<`${number}`, AxelarChain>;
 
   const chains = new Map();
   const orch = harden({
@@ -603,6 +609,7 @@ const mocks = (
     resolverClient,
     contractAccount: orch.getChain('agoric').then(ch => ch.makeAccount()),
     transferChannels,
+    eip155ChainIdToAxelarChain,
   };
 
   const rebalanceHost = (seat, offerArgs, kit) =>
@@ -1878,20 +1885,25 @@ const provideEVMAccountWithPermitStub: ProvideEVMAccountFn = (
     ctx,
     pk,
     {
-      tokenOwner: '0x1111111111111111111111111111111111111111',
-      permit: {
-        permitted: {
-          token: '0x0000000000000000000000000000000000000001',
-          amount: 1n,
+      chainId: 1,
+      token: '0x0000000000000000000000000000000000000001',
+      amount: 1n,
+      spender: '0x0000000000000000000000000000000000000002',
+      permit2Payload: {
+        permit: {
+          permitted: {
+            token: '0x0000000000000000000000000000000000000001',
+            amount: 1n,
+          },
+          nonce: 1n,
+          deadline: 1n,
         },
-        nonce: 1n,
-        deadline: 1n,
-        spender: '0x0000000000000000000000000000000000000002',
+        owner: '0x1111111111111111111111111111111111111111',
+        witness:
+          '0x0000000000000000000000000000000000000000000000000000000000000000',
+        witnessTypeString: 'OpenPortfolioWitness',
+        signature: '0x1234' as `0x${string}`,
       },
-      witness:
-        '0x0000000000000000000000000000000000000000000000000000000000000000',
-      witnessTypeString: 'OpenPortfolioWitness',
-      signature: '0x1234' as `0x${string}`,
     },
     opts,
   );
@@ -2463,27 +2475,30 @@ test('withdraw from ERC4626 position', async t => {
 
 // EVM wallet integration - openPortfolioFromPermit2 flow
 test('openPortfolioFromPermit2 with Permit2 provisions account and starts deposit', async t => {
-  const axelarPayload: CreateAndDepositPayload = {
-    lcaOwner: 'agoric1LCAAllocatedByContract',
-    permit: {
-      deadline: 1767836187n,
-      nonce: 8157700000047684n,
-      permitted: {
-        amount: 15000000n,
-        token: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238',
+  const permitDetails: PermitDetails = {
+    chainId: Number(axelarCCTPConfig.Base.reference),
+    token: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238',
+    amount: 15000000n,
+    spender: '0x9f9684d7fa7318698a0030ca16ecc4a01944836b',
+    permit2Payload: {
+      permit: {
+        deadline: 1767836187n,
+        nonce: 8157700000047684n,
+        permitted: {
+          amount: 15000000n,
+          token: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238',
+        },
       },
-      spender: '0x9f9684d7fa7318698a0030ca16ecc4a01944836b',
+      owner: '0xa1702d6c89c6ea11c5667a14c0329be273d96d78',
+      witness:
+        '0x144bf517346c511015ea51d9b8b110f63f33db71c2df0c6dd960bbe8a88bcc0c',
+      witnessTypeString:
+        'YmaxV1OpenPortfolio ymaxOpenPortfolio)Allocation(string instrument,uint256 portion)TokenPermissions(address token,uint256 amount)YmaxV1OpenPortfolio(Allocation[] allocations)',
+      signature:
+        '0x12d9b6dcdc0695a6675da118a1bf5cf5324c4c36dc7f5f89bc4b19500cac74113457129904ccf9b3ef457f611b897a155623b493b54a06fd0e27f32b415a4c6e1b',
     },
-    witness:
-      '0x144bf517346c511015ea51d9b8b110f63f33db71c2df0c6dd960bbe8a88bcc0c',
-    witnessTypeString:
-      'YmaxV1OpenPortfolio ymaxOpenPortfolio)Allocation(string instrument,uint256 portion)TokenPermissions(address token,uint256 amount)YmaxV1OpenPortfolio(Allocation[] allocations)',
-    signature:
-      '0x12d9b6dcdc0695a6675da118a1bf5cf5324c4c36dc7f5f89bc4b19500cac74113457129904ccf9b3ef457f611b897a155623b493b54a06fd0e27f32b415a4c6e1b',
-    tokenOwner: '0xa1702d6c89c6ea11c5667a14c0329be273d96d78',
-  } as const;
-
-  const amount = make(USDC, axelarPayload.permit.permitted.amount);
+  };
+  const amount = make(USDC, permitDetails.amount);
   const targetAllocation = {
     Aave_Avalanche: 6000n, // 60% in basis points
     Aave_Base: 4000n, // 40% in basis points
@@ -2500,8 +2515,7 @@ test('openPortfolioFromPermit2 with Permit2 provisions account and starts deposi
     orch,
     ctx,
     seat,
-    axelarPayload,
-    'Base',
+    permitDetails,
     targetAllocation,
     kit,
   );
@@ -2558,18 +2572,24 @@ test('openPortfolioFromPermit2 with Permit2 provisions account and starts deposi
   const decodedPayload = decodeCreateAndDepositPayload(rawMemo as string);
   const lca = kit.reader.getLocalAccount();
   t.is(decodedPayload.lcaOwner, lca.getAddress().value);
-  t.is(decodedPayload.tokenOwner.toLowerCase(), axelarPayload.tokenOwner);
+  t.is(
+    decodedPayload.tokenOwner.toLowerCase(),
+    permitDetails.permit2Payload.owner,
+  );
   t.is(
     decodedPayload.permit.permitted.token,
-    axelarPayload.permit.permitted.token,
+    permitDetails.permit2Payload.permit.permitted.token,
   );
   t.is(
     decodedPayload.permit.permitted.amount,
-    axelarPayload.permit.permitted.amount,
+    permitDetails.permit2Payload.permit.permitted.amount,
   );
-  t.is(decodedPayload.permit.nonce, axelarPayload.permit.nonce);
-  t.is(decodedPayload.permit.deadline, axelarPayload.permit.deadline);
-  t.is(decodedPayload.signature, axelarPayload.signature);
+  t.is(decodedPayload.permit.nonce, permitDetails.permit2Payload.permit.nonce);
+  t.is(
+    decodedPayload.permit.deadline,
+    permitDetails.permit2Payload.permit.deadline,
+  );
+  t.is(decodedPayload.signature, permitDetails.permit2Payload.signature);
 
   // TODO: Verify EVM account was provisioned via Factory.execute()
   // TODO: Verify deposit flow was started with fromChain: 'base'
