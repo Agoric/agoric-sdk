@@ -25,6 +25,8 @@ import { prepareVoterKit } from './voterKit.js';
  * @import {ElectorateCreatorFacet, CommitteeElectoratePublic, QuestionDetails, OutcomeRecord, AddQuestion} from './types.js';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {QuestionRecord} from './electorateTools.js';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 /**

@@ -17,6 +17,7 @@ import { makePromiseKit } from '@endo/promise-kit';
  * @import {start as StartWalletFactory} from '../../../src/walletFactory.js';
  * @import {Instance} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {PromiseKit} from '@endo/promise-kit';
  */
 
 const trace = makeTracer('BootWFUpg', false);

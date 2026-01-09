@@ -46,6 +46,8 @@ import {
  * @import {OracleAdmin} from './priceAggregatorTypes.js';
  * @import {OracleQuery} from './priceAggregatorTypes.js';
  * @import {Mint} from '@agoric/ertp';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 /** @typedef {bigint | number | string} ParsableNumber */

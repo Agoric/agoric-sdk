@@ -27,6 +27,7 @@ import {
  * @import {BundleCap} from '../../types-external.js';
  * @import {Device} from '../../types-external.js';
  * @import {UpgradeID} from '../../devices/vat-admin/device-vat-admin.js';
+ * @import {PromiseKit} from '@endo/promise-kit';
  */
 
 const managerTypes = ['local', 'node-subprocess', 'xsnap', 'xs-worker']; // xs-worker is alias

@@ -38,6 +38,8 @@ import { provideDirector } from './vaultDirector.js';
  * @import {VaultManagerParamOverrides} from './params.js';
  * @import {Baggage} from '@agoric/swingset-liveslots';
  * @import {GovernanceTerms} from '@agoric/governance/src/types.js';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 const trace = makeTracer('VF', true);

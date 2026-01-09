@@ -5,6 +5,7 @@ import { makePromiseKit } from '@endo/promise-kit';
 
 /**
  * @import {Passable} from '@endo/marshal';
+ * @import {PromiseRecord} from '@endo/promise-kit';
  */
 
 /**

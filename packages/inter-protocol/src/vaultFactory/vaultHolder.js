@@ -12,6 +12,7 @@ import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
  * @import {Baggage} from '@agoric/swingset-liveslots';
  * @import {MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {Vault, VaultNotification} from './vault.js';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 /**

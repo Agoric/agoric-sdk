@@ -20,6 +20,7 @@ import { prepareAssetReserveKit } from './assetReserveKit.js';
  * @import {GovernedPublicFacet} from '@agoric/governance/src/types.js';
  * @import {Amount} from '@agoric/ertp';
  * @import {Issuer} from '@agoric/ertp';
+ * @import {Marshaller, StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 const trace = makeTracer('AR', true);

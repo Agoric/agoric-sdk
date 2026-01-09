@@ -23,6 +23,7 @@ import { makeQuorumCounter } from './quorumCounter.js';
  * @import {Publisher} from '@agoric/notifier';
  * @import {ZCF} from '@agoric/zoe';
  * @import {BuildVoteCounter, OutcomeRecord, Position, QuestionSpec, VoteStatistics} from './types.js';
+ * @import {PromiseRecord} from '@endo/promise-kit';
  */
 
 const validateBinaryQuestionSpec = questionSpec => {

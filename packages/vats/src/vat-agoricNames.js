@@ -59,7 +59,7 @@ export const buildRootObject = (_vatPowers, _vatParameters, baggage) => {
   const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } = kit;
 
   /**
-   * @param {ERef<StorageNode>} nameStorage
+   * @param {ERef<import('@agoric/internal/src/lib-chainStorage.js').StorageNode>} nameStorage
    * @param {ERef<BoardVat>} vatBoard
    * @param {string[]} kinds brand, issuer, ...
    */

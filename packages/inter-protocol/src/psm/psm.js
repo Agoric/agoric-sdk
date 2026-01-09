@@ -51,6 +51,8 @@ import { makeNatAmountShape } from '../contractSupport.js';
  * @import {GovernanceTerms} from '@agoric/governance/src/types.js';
  * @import {Amount} from '@agoric/ertp';
  * @import {Brand} from '@agoric/ertp';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 /**

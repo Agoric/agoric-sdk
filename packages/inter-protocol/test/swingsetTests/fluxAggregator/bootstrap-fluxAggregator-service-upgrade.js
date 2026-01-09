@@ -27,6 +27,7 @@ import { makePromiseKit } from '@endo/promise-kit';
  * @import {VatAdminSvc} from '@agoric/swingset-vat';
  * @import {ZoeService} from '@agoric/zoe';
  * @import {Installation} from '@agoric/zoe';
+ * @import {PromiseKit} from '@endo/promise-kit';
  */
 
 const trace = makeTracer('BootFAUpg');

@@ -21,8 +21,8 @@ import * as flows from './unbond.flows.js';
  *   agoricNames: Remote<NameHub>;
  *   localchain: Remote<LocalChain>;
  *   orchestrationService: Remote<CosmosInterchainService>;
- *   storageNode: Remote<StorageNode>;
- *   marshaller: Remote<Marshaller>;
+ *   storageNode: Remote<import('@agoric/internal/src/lib-chainStorage.js').StorageNode>;
+ *   marshaller: Remote<import('@agoric/internal/src/lib-chainStorage.js').Marshaller>;
  *   timerService: Remote<TimerService>;
  * }} privateArgs
  * @param {Zone} zone
