@@ -2,9 +2,12 @@
  * @file Type-safe EVM contract call builder for Axelar GMP integration.
  * @see {@link makeEVMSession} for creating contract call batches
  */
-import { type ContractCall } from '@agoric/orchestration/src/axelar-types.js';
 import type { NatValue } from '@agoric/ertp';
+import { type ContractCall } from '@agoric/orchestration/src/axelar-types.js';
 
+// TODO: split EVM generic stuff from ymax stuff
+
+// XXX migrate closer to viem / abitype
 export type EVMT = {
   uint16: number;
   uint32: number;
