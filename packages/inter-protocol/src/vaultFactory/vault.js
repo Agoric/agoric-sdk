@@ -31,6 +31,7 @@ const trace = makeTracer('Vault', true);
  * @import {VaultKit} from './vaultKit.js';
  * @import {MintAndTransfer, VaultId} from './types-ambient.js';
  * @import {Invitation, ProposalRecord, TransferPart, ZCF, ZCFSeat} from '@agoric/zoe';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 /**

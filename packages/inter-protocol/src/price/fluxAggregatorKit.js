@@ -32,6 +32,7 @@ import { prepareRoundsManagerKit } from './roundsManager.js';
  * @import {PriceRound} from './roundsManager.js';
  * @import {Brand} from '@agoric/ertp';
  * @import {Amount} from '@agoric/ertp';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 const trace = makeTracer('FlxAgg', true);

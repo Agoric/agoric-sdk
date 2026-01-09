@@ -19,6 +19,7 @@ import { deeplyFulfilledObject, NonNullish } from '@agoric/internal';
  * @import {NameHubUpdateHandler} from './types.js';
  * @import {NameHub} from './types.js';
  * @import {NameHubKit} from './types.js';
+ * @import {PromiseKit} from '@endo/promise-kit';
  */
 
 const KeyShape = M.string();

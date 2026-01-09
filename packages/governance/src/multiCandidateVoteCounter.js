@@ -24,6 +24,7 @@ import { breakTie } from './breakTie.js';
  * @import {Publisher} from '@agoric/notifier';
  * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
  * @import {QuestionSpec, BuildMultiVoteCounter, MultiOutcomeRecord, Position, VoteStatistics} from './types.js';
+ * @import {PromiseRecord} from '@endo/promise-kit';
  */
 
 const validateQuestionSpec = questionSpec => {

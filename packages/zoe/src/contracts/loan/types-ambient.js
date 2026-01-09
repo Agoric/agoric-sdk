@@ -1,13 +1,19 @@
-/* eslint-disable @agoric/group-jsdoc-imports */
 /**
  * @import {Notifier} from '@agoric/notifier';
- */
-/**
+ * @import {TimestampRecord} from '@agoric/time';
  * @import {Amount, Brand, Ratio} from '@agoric/ertp';
+ * @import {PriceAuthority} from '../../../tools/types.js';
+ * @import {RelativeTime} from '@agoric/time';
+ * @import {ZCFSeat} from '../../types-index.js';
+ * @import {PromiseRecord} from '@endo/promise-kit';
+ * @import {PriceQuote} from '../../../tools/types.js';
+ * @import {ZCF} from '../../types-index.js';
+ * @import {Invitation} from '../../types-index.js';
+ * @import {Timestamp} from '@agoric/time';
  * @import {Handle, Instance} from '@agoric/zoe';
  */
 /**
- * @typedef {Notifier<import('@agoric/time').TimestampRecord>} PeriodNotifier
+ * @typedef {Notifier<TimestampRecord>} PeriodNotifier
  *
  *  The Notifier that provides notifications that periods have passed.
  *  Since notifiers can't be relied on to produce an output every time
@@ -27,23 +33,23 @@
 /**
  * @typedef LoanTerms
  *
- * @property {import('@agoric/ertp').Ratio} mmr - Maintenance Margin Requirement, a Ratio record.
+ * @property {Ratio} mmr - Maintenance Margin Requirement, a Ratio record.
  * Default is 150%
  *
  * @property {AutoswapInstance} autoswapInstance
  *
- * @property {import('../../../tools/types.js').PriceAuthority} priceAuthority
+ * @property {PriceAuthority} priceAuthority
  *
  *   Used for getting the current value of collateral and setting
  *   liquidation triggers.
  *
  * @property {PeriodNotifier} periodNotifier
  *
- * @property {import('@agoric/ertp').Ratio} interestRate
+ * @property {Ratio} interestRate
  *   The rate in basis points that will be multiplied with the debt on
  *   every period to compound interest.
  *
- * @property {import('@agoric/time').RelativeTime} interestPeriod
+ * @property {RelativeTime} interestPeriod
  *
  * @property {Brand} loanBrand
  * @property {Brand} collateralBrand
@@ -51,7 +57,7 @@
 
 /**
  * @typedef LenderSeatProperty
- * @property {import('../../types-index.js').ZCFSeat} lenderSeat
+ * @property {ZCFSeat} lenderSeat
  *
  *   The ZCFSeat representing the lender's position in the contract.
  */
@@ -65,7 +71,7 @@
 /**
  * @typedef BorrowerConfigProperties
  *
- * @property {import('../../types-index.js').ZCFSeat} collateralSeat
+ * @property {ZCFSeat} collateralSeat
  *
  *   The ZCFSeat holding the collateral in escrow after the borrower
  *   escrows it
@@ -74,7 +80,7 @@
  *
  *   A function to get the current debt
  *
- * @property {PromiseRecord<import('../../../tools/types.js').PriceQuote>} liquidationPromiseKit
+ * @property {PromiseRecord<PriceQuote>} liquidationPromiseKit
  *
  *   PromiseKit that includes a promise that resolves to a PriceQuote
  *   when liquidation is triggered
@@ -83,12 +89,12 @@
 /**
  * @typedef BorrowerConfigPropertiesMinusDebt
  *
- * @property {import('../../types-index.js').ZCFSeat} collateralSeat
+ * @property {ZCFSeat} collateralSeat
  *
  *   The ZCFSeat holding the collateral in escrow after the borrower
  *   escrows it
  *
- * @property {PromiseRecord<import('../../../tools/types.js').PriceQuote>} liquidationPromiseKit
+ * @property {PromiseRecord<PriceQuote>} liquidationPromiseKit
  *
  *   PromiseKit that includes a promise that resolves to a PriceQuote
  *   when liquidation is triggered
@@ -107,29 +113,29 @@
 
 /**
  * @callback ScheduleLiquidation
- * @param {import('../../types-index.js').ZCF} zcf
+ * @param {ZCF} zcf
  * @param {LoanConfigWithBorrower} config
  */
 
 /**
  * @callback MakeLendInvitation
- * @param {import('../../types-index.js').ZCF} zcf
+ * @param {ZCF} zcf
  * @param {LoanTerms} config
- * @returns {Promise<import('../../types-index.js').Invitation>} lendInvitation
+ * @returns {Promise<Invitation>} lendInvitation
  */
 
 /**
  * @callback MakeBorrowInvitation
- * @param {import('../../types-index.js').ZCF} zcf
+ * @param {ZCF} zcf
  * @param {LoanConfigWithLender} config
- * @returns {Promise<import('../../types-index.js').Invitation>} borrowInvitation
+ * @returns {Promise<Invitation>} borrowInvitation
  */
 
 /**
  * @callback MakeCloseLoanInvitation
- * @param {import('../../types-index.js').ZCF} zcf
+ * @param {ZCF} zcf
  * @param {LoanConfigWithBorrower} config
- * @returns {Promise<import('../../types-index.js').Invitation>} closeLoanInvitation
+ * @returns {Promise<Invitation>} closeLoanInvitation
  */
 
 /**
@@ -137,9 +143,9 @@
  * after adding.
  *
  * @callback MakeAddCollateralInvitation
- * @param {import('../../types-index.js').ZCF} zcf
+ * @param {ZCF} zcf
  * @param {LoanConfigWithBorrower} config
- * @returns {Promise<import('../../types-index.js').Invitation>} addCollateralInvitation
+ * @returns {Promise<Invitation>} addCollateralInvitation
  */
 
 /**
@@ -169,51 +175,51 @@
  *
  *   The AsyncIterable to notify when a period has occurred
  *
- * @property {import('@agoric/ertp').Ratio} interestRate
- * @property {import('@agoric/time').RelativeTime} interestPeriod
+ * @property {Ratio} interestRate
+ * @property {RelativeTime} interestPeriod
  *
  *  the period at which the outstanding debt increases by the interestRate
  *
- * @property {import('../../types-index.js').ZCF} zcf
+ * @property {ZCF} zcf
  *
  * @property {LoanConfigWithBorrowerMinusDebt} configMinusGetDebt
- * @property {import('@agoric/time').Timestamp} basetime The starting point from which to calculate
+ * @property {Timestamp} basetime The starting point from which to calculate
  * interest.
  */
 
 /**
  * @typedef {object} ConfigMinusGetDebt
- * @property {import('../../types-index.js').ZCFSeat} collateralSeat
+ * @property {ZCFSeat} collateralSeat
  * @property {PromiseRecord<any>} liquidationPromiseKit
  * @property {bigint} [mmr]
  * @property {Handle<'Instance'>} autoswapInstance
- * @property {import('../../../tools/types.js').PriceAuthority} priceAuthority
+ * @property {PriceAuthority} priceAuthority
  * @property {PeriodNotifier} periodNotifier
  * @property {bigint} interestRate
- * @property {import('@agoric/time').RelativeTime} interestPeriod
- * @property {import('../../types-index.js').ZCFSeat} lenderSeat
+ * @property {RelativeTime} interestPeriod
+ * @property {ZCFSeat} lenderSeat
  */
 
 /**
  * @typedef {object} BorrowFacet
  *
- * @property {() => Promise<import('../../types-index.js').Invitation>} makeCloseLoanInvitation
+ * @property {() => Promise<Invitation>} makeCloseLoanInvitation
  *
  * Make an invitation to close the loan by repaying the debt
  *   (including interest).
  *
- * @property {() => Promise<import('../../types-index.js').Invitation>} makeAddCollateralInvitation
+ * @property {() => Promise<Invitation>} makeAddCollateralInvitation
  *
  * Make an invitation to add collateral to protect against liquidation
  *
- * @property {() => Promise<import('../../../tools/types.js').PriceQuote>} getLiquidationPromise
+ * @property {() => Promise<PriceQuote>} getLiquidationPromise
  *
  * Get a promise for a priceQuote that will resolve if liquidation
  * occurs. The priceQuote is for the value of the collateral that
  * triggered the liquidation. This may be lower than expected if the
  * price is moving quickly.
  *
- * @property {() => import('@agoric/time').Timestamp} getLastCalculationTimestamp
+ * @property {() => Timestamp} getLastCalculationTimestamp
  *
  * Get the timestamp at which the debt was most recently recalculated.
  *

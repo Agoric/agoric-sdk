@@ -22,6 +22,7 @@ import { CONTRACT_ELECTORATE } from './contractGovernance/governParam.js';
  * @import {ParamTypesMap} from './contractGovernance/typedParamManager.js';
  * @import {FunctionsPlusContext} from '@agoric/swingset-liveslots';
  * @import {StoredPublisherKit} from '@agoric/notifier';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 export const GOVERNANCE_STORAGE_KEY = 'governance';

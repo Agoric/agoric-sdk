@@ -25,6 +25,8 @@ const trace = makeTracer('FluxAgg', false);
  * @import {ContractMeta, ZCF} from '@agoric/zoe';
  * @import {Brand} from '@agoric/ertp';
  * @import {Amount} from '@agoric/ertp';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 /** @type {ContractMeta} */

@@ -27,6 +27,8 @@ import {
  * @import {Bank} from '@agoric/vats/src/vat-bank.js';
  * @import {MetricsNotification} from './provisionPoolKit.js';
  * @import {Baggage} from '@agoric/vat-data';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 /** @type {ContractMeta} */

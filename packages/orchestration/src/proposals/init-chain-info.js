@@ -19,7 +19,7 @@ const trace = makeTracer('InitChainInfo', true);
 
 /**
  * @param {ERef<NameHubKit['nameAdmin']>} agoricNamesAdmin
- * @param {ERef<Remote<StorageNode> | null>} chainStorageP
+ * @param {ERef<Remote<import('@agoric/internal/src/lib-chainStorage.js').StorageNode> | null>} chainStorageP
  */
 const publishChainInfoToChainStorage = async (
   agoricNamesAdmin,

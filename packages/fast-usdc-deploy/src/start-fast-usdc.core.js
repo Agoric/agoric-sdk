@@ -19,6 +19,8 @@ import {
  * @import {LegibleCapData} from './utils/config-marshal.js'
  * @import {FastUsdcSF} from '@aglocal/fast-usdc-contract/src/fast-usdc.contract.ts'
  * @import {FastUSDCConfig} from '@agoric/fast-usdc/src/types.js'
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 const ShareAssetInfo = /** @type {const} */ harden({
