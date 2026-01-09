@@ -594,39 +594,27 @@ const main = async (
     return;
   }
 
+  // Deliver planner/resolver/EVM Wallet Handler invitations as specified.
   type CFMethods = ZStarted<YMaxStartFn>['creatorFacet'];
-  const postalServiceDelivery = async (
-    fn: (cf: EMethods<CFMethods>, postalService: Instance) => Promise<void>,
-  ) => {
-    const { contract } = values;
+  const inviters: Partial<
+    Record<
+      keyof typeof values,
+      (cf: EMethods<CFMethods>, ps: Instance, addr: string) => Promise<void>
+    >
+  > = {
+    invitePlanner: (cf, ps, addr) => cf.deliverPlannerInvitation(addr, ps),
+    inviteResolver: (cf, ps, addr) => cf.deliverResolverInvitation(addr, ps),
+    inviteOwnerProxy: (cf, ps, addr) =>
+      cf.deliverEVMWalletHandlerInvitation(addr, ps),
+  };
+  for (const [optName, inviter] of Object.entries(inviters)) {
+    const { contract, [optName as keyof typeof values]: addr } = values;
+    if (typeof addr !== 'string') continue;
     const creatorFacetKey = getCreatorFacetKey(contract);
-    const cf = walletStore.get<CFMethods>(creatorFacetKey);
+    const creatorFacet = walletStore.get<CFMethods>(creatorFacetKey);
     const instances = await walletKit.readPublished('agoricNames.instance');
     const { postalService } = fromEntries(instances);
-    await fn(cf, postalService);
-  };
-
-  if (values.invitePlanner) {
-    const { invitePlanner: addr } = values;
-    await postalServiceDelivery((cf, postalService) =>
-      cf.deliverPlannerInvitation(addr, postalService),
-    );
-    return;
-  }
-
-  if (values.inviteResolver) {
-    const { inviteResolver: addr } = values;
-    await postalServiceDelivery((cf, postalService) =>
-      cf.deliverResolverInvitation(addr, postalService),
-    );
-    return;
-  }
-
-  if (values.inviteOwnerProxy) {
-    const { inviteOwnerProxy: addr } = values;
-    await postalServiceDelivery((cf, postalService) =>
-      cf.deliverEVMWalletHandlerInvitation(addr, postalService),
-    );
+    await inviter(creatorFacet, postalService, addr);
     return;
   }
 
