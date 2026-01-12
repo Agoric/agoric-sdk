@@ -136,6 +136,7 @@
     "lint:scripts": "yarn eslint scripts/*js",
     "test": "yarn lerna run --no-bail test",
     "test:xs": "yarn workspaces foreach --all run test:xs",
+    "typecheck-all": "yarn workspaces foreach --all --parallel --verbose exec sh -c 'rg -q \"\\\"lint:types\\\"\" package.json || exit 0; yarn run -T tsc --noEmit --incremental'",
     "build": "yarn workspaces foreach --all --topological run build && scripts/agd-builder.sh stamp yarn-built",
     "postinstall": "scripts/agd-builder.sh stamp yarn-installed",
     "build-lockfiles": "./scripts/update-package-locks.sh",
