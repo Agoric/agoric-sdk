@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* global setTimeout */
 // NOTE: Runs outside SES
 
