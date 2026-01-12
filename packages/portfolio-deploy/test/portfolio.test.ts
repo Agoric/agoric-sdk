@@ -736,12 +736,12 @@ test.serial('invite evm handler; test open portfolio', async t => {
 
   const deposit: TokenPermissions = {
     token: axelarConfig.Arbitrum.contracts.usdc,
-    amount: 15n * 1_000_000n,
+    amount: 1_000n * 1_000_000n,
   };
 
   const allocations: TargetAllocation[] = [
-    { instrument: 'USDN', portion: 50n },
-    { instrument: 'Aave_Ethereum', portion: 50n },
+    { instrument: 'Aave_Arbitrum', portion: 6000n },
+    { instrument: 'Compound_Arbitrum', portion: 4000n },
   ];
 
   const witness = getYmaxWitness('OpenPortfolio', { allocations });
