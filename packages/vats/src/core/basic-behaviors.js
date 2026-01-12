@@ -131,7 +131,7 @@ export const produceStartUpgradable = async ({
   consume: { diagnostics, zoe },
   produce, // startUpgradable, contractKits
 }) => {
-  /** @type {MapStore<Instance, StartedInstanceKitWithLabel>} */
+  /** @type {MapStore<Instance, StartedInstanceKitWithLabel<any>>} */
   const contractKits = zone.mapStore('ContractKits');
 
   /** @type {StartUpgradable} */

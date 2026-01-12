@@ -12,6 +12,7 @@ import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
 import { Fail } from '@endo/errors';
 import type { TestFn } from 'ava';
+import type { ZoeService } from '@agoric/zoe';
 import {
   insistManagerType,
   makeSwingsetHarness,
@@ -21,7 +22,6 @@ import {
   type WalletFactoryTestContext,
 } from '../bootstrapTests/walletFactory.js';
 import { minimalChainInfos } from '../tools/chainInfo.js';
-import type { ZoeService } from '@agoric/zoe';
 
 const test: TestFn<
   WalletFactoryTestContext & {

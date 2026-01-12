@@ -1,4 +1,5 @@
 // @ts-check
+// @file @deprecated, not ambient anymore
 
 /**
  * @import {Coordinator} from '@agoric/cache';
@@ -161,11 +162,11 @@
  */
 
 /**
- * @typedef {PetnameManager<Installation>} InstallationManager
+ * @typedef {PetnameManager<Installation<any>>} InstallationManager
  */
 
 /**
- * @typedef {PetnameManager<Instance>} InstanceManager
+ * @typedef {PetnameManager<Instance<any>>} InstanceManager
  */
 
 /**

@@ -249,12 +249,15 @@ export const makeGovernanceDriver = async (
     ),
   );
 
-  const findInvitation = (wallet, descriptionSubstr) => {
-    return wallet
-      .getCurrentWalletRecord()
-      .purses[0].balance.value.find(v =>
-        v.description.startsWith(descriptionSubstr),
-      );
+  const findInvitation = (
+    wallet: SmartWalletDriver,
+    descriptionSubstr: string,
+  ) => {
+    const invitationBalance = wallet.getCurrentWalletRecord().purses[0]
+      .balance as Amount<'set', InvitationDetails>;
+    return invitationBalance.value.find(v =>
+      v.description.startsWith(descriptionSubstr),
+    );
   };
 
   const ecMembers = smartWallets.map(w => ({
