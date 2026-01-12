@@ -139,6 +139,7 @@ export const createMockProvider = (
       wsEventHandlers.clear();
     },
     readyState: 1, // WebSocket.OPEN
+    _getHandlers: (event: string) => wsEventHandlers.get(event) || [],
   };
 
   const mockReceipts = new Map<string, any>();
@@ -207,7 +208,7 @@ export const createMockProvider = (
             [
               ethers.hexlify(ethers.randomBytes(32)), // commandId
               'agoric', // sourceChain
-              'agoric1sender', // sourceAddress
+              'agoric1test', // sourceAddress
               payload,
             ],
           );

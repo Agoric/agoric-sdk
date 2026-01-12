@@ -205,7 +205,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
   watch: async (ctx, tx, log, opts) => {
     await null;
 
-    const { txId, destinationAddress } = tx;
+    const { txId, destinationAddress, sourceAddress } = tx;
     const logPrefix = `[${txId}]`;
 
     if (opts.signal?.aborted) {
@@ -215,6 +215,8 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
 
     // Parse destinationAddress format: 'eip155:42161:0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092'
     assert(destinationAddress, `${logPrefix} Missing destinationAddress`);
+    assert(sourceAddress, `${logPrefix} Missing sourceAddress`);
+
     const { namespace, reference, accountAddress } =
       parseAccountId(destinationAddress);
     const caipId: CaipChainId = `${namespace}:${reference}`;
@@ -223,10 +225,14 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
 
     const provider = ctx.evmProviders[caipId] as WebSocketProvider;
 
+    // Extract the address portion from sourceAddress (format: 'cosmos:agoric-3:agoric1...')
+    const lcaAddress = parseAccountId(sourceAddress).accountAddress;
+
     const watchArgs = {
       provider,
       contractAddress: accountAddress as `0x${string}`,
       txId,
+      expectedSourceAddress: lcaAddress,
       log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
     };
 

@@ -59,23 +59,11 @@ type WatchGmp = {
   provider: WebSocketProvider;
   contractAddress: `0x${string}`;
   txId: TxId;
+  expectedSourceAddress: string;
   log: (...args: unknown[]) => void;
   kvStore: KVStore;
   makeAbortController: MakeAbortController;
 };
-
-/**
- * Error signatures for revert reason checking
- *
- * ContractCallFailed(string,uint256) is emitted by the Wallet contract when a user's
- * contract call fails during execution. This represents a legitimate failure where:
- * - The Axelar bridge successfully delivered the message
- * - The Wallet contract successfully authenticated the call
- * - But the user's actual contract call failed (e.g., insufficient funds, failed assertion, etc.)
- */
-const CONTRACT_CALL_FAILED_ERROR = `0x${ethers
-  .id('ContractCallFailed(string,uint256)')
-  .slice(2, 10)}`;
 
 // AxelarExecutable entrypoint (standard)
 const WALLET_EXECUTE_ABI = [
@@ -85,15 +73,22 @@ const walletExecuteIface = new ethers.Interface(WALLET_EXECUTE_ABI);
 const abiCoder = ethers.AbiCoder.defaultAbiCoder();
 
 /**
- * Decode Wallet.execute(...) calldata and extract CallMessage.id from the payload.
+ * Decode Wallet.execute(...) calldata and extract CallMessage.id from the payload
+ * and sourceAddress from the execute() parameters.
+ *
+ * @returns Object with txId and sourceAddress, or null if parsing fails
  */
-const extractTxIdFromCallData = (data: string): string | null => {
+const extractExecuteData = (
+  data: string,
+): { txId: string; sourceAddress: string } | null => {
   try {
     const parsed = walletExecuteIface.parseTransaction({ data });
     if (!parsed) return null;
 
+    // execute(bytes32 commandId, string sourceChain, string sourceAddress, bytes payload)
+    const sourceAddress: string = parsed.args?.[2];
     const payload: string = parsed.args?.[3];
-    if (!payload) return null;
+    if (!sourceAddress || !payload) return null;
 
     // CallMessage { string id; ContractCalls[] calls; }
     const decoded = abiCoder.decode(
@@ -101,8 +96,10 @@ const extractTxIdFromCallData = (data: string): string | null => {
       payload,
     );
 
-    const id = decoded?.[0]?.id;
-    return typeof id === 'string' ? id : null;
+    const txId = decoded?.[0]?.id;
+    if (typeof txId !== 'string') return null;
+
+    return { txId, sourceAddress };
   } catch {
     return null;
   }
@@ -140,50 +137,11 @@ const fetchReceiptWithRetry = async (
   return receipt;
 };
 
-/**
- * Simulate transaction execution to extract revert reason.
- *
- * NOTE: This approach can be unreliable because:
- * 1. Many providers don't support blockTag in call() and silently fall back to "latest"
- * 2. State changes between tx execution and simulation can cause misclassification
- *
- * BETTER APPROACH: Instead of simulating, we should match the sourceAddress parameter
- * from execute(bytes32 commandId, string sourceChain, string sourceAddress, bytes payload)
- * against the LCA address available in vstorage.
- * If sourceAddress matches the LCA, it's a legitimate execution; otherwise it's spurious.
- *
- * @param provider - The WebSocket provider
- * @param tx - Transaction object
- * @param tx.to - Transaction recipient address
- * @param tx.from - Transaction sender address
- * @param tx.data - Transaction calldata
- * @param blockNumber - Block number to simulate at
- * @returns Revert data or null if call succeeded
- */
-const simulateTransaction = async (
-  provider: WebSocketProvider,
-  tx: { to: string | null; from: string; data: string },
-  blockNumber: number,
-): Promise<string | null> => {
-  await null;
-  try {
-    await provider.call({
-      to: tx.to,
-      from: tx.from,
-      data: tx.data,
-      blockTag: blockNumber,
-    });
-    // Call succeeded, no revert
-    return null;
-  } catch (error: any) {
-    return error?.data || error?.error?.data || null;
-  }
-};
-
 export const watchGmp = ({
   provider,
   contractAddress,
   txId,
+  expectedSourceAddress,
   timeoutMs = TX_TIMEOUT_MS,
   log = () => {},
   setTimeout = globalThis.setTimeout,
@@ -296,8 +254,15 @@ export const watchGmp = ({
         const txData = tx.input;
         if (!txHash || !txData) return;
 
-        const extractedId = extractTxIdFromCallData(txData);
-        if (extractedId !== txId) return;
+        const executeData = extractExecuteData(txData);
+        if (!executeData || executeData.txId !== txId) return;
+
+        if (executeData.sourceAddress !== expectedSourceAddress) {
+          log(
+            `⚠️  IGNORED: txId=${txId} txHash=${txHash} - sourceAddress mismatch (expected ${expectedSourceAddress}, got ${executeData.sourceAddress})`,
+          );
+          return;
+        }
 
         const receipt = await fetchReceiptWithRetry(provider, txHash, log);
         if (!receipt) return;
@@ -317,60 +282,18 @@ export const watchGmp = ({
 
         if (receipt.status === 0) {
           /**
-           * Transaction reverted - need to determine if this is a legitimate failure
-           * or a spurious execution attempt that should be ignored.
+           * Transaction reverted - since we've already validated that the sourceAddress
+           * matches our expected LCA address, this is a legitimate execution attempt
+           * from our own wallet that failed. We treat this as a transaction failure.
            *
-           * BACKGROUND:
-           * The Wallet contract uses Axelar's AxelarExecutable pattern where anyone
-           * (typically Axelar relayers) can call execute() to deliver cross-chain messages.
-           * However, the contract enforces ownership checks to ensure only authorized
-           * callers can execute certain operations.
-           *
-           * REVERT SCENARIOS:
-           *
-           * 1. ContractCallFailed(string,uint256):
-           *    - The message was successfully authenticated by Axelar
-           *    - The Wallet contract accepted the call
-           *    - But the user's actual contract call failed (business logic failure)
-           *    - ACTION: Mark transaction as FAILED and report to user
-           *
-           * 2. Ownership/Authorization errors (e.g., "Ownable: caller is not the owner"):
-           *    - Someone attempted to execute before the proper relayer
-           *    - Or a spurious call from an unauthorized party
-           *    - The legitimate execution may still succeed later
-           *    - ACTION: Ignore this revert and continue watching
-           *
-           * REASONING:
-           * We only fail the transaction if we have definitive proof that the user's
-           * operation failed (ContractCallFailed). All other reverts are treated as
-           * spurious execution attempts that don't represent the final transaction state.
+           * Note: Spurious executions from unauthorized parties are already filtered
+           * out by the sourceAddress check above, so any revert we see here represents
+           * a genuine failure of the user's operation.
            */
-          const revertData = await simulateTransaction(
-            provider,
-            {
-              to: tx.to,
-              from: tx.from,
-              data: txData,
-            },
-            receipt.blockNumber,
+          log(
+            `❌ REVERTED: txId=${txId} txHash=${txHash} block=${receipt.blockNumber} - transaction failed`,
           );
-
-          // Check if revert reason starts with ContractCallFailed selector
-          if (revertData && revertData.startsWith(CONTRACT_CALL_FAILED_ERROR)) {
-            // This is a legitimate failure from the user's contract call
-            log(
-              `❌ REVERTED: txId=${txId} txHash=${txHash} block=${receipt.blockNumber} (ContractCallFailed - user operation failed)`,
-            );
-            return finish({ settled: true, txHash });
-          } else {
-            // Different revert reason - likely spurious execution attempt
-            // Log for observability but continue watching for the legitimate execution
-            log(
-              `⚠️  IGNORED REVERT: txId=${txId} txHash=${txHash} block=${
-                receipt.blockNumber
-              } reason=${revertData?.slice(0, 10) || 'unknown'} - likely spurious execution, continuing to watch`,
-            );
-          }
+          return finish({ settled: true, txHash });
         }
       } catch (e) {
         log(
