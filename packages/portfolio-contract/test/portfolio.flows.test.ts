@@ -1875,7 +1875,7 @@ const provideEVMAccountWithPermitStub: ProvideEVMAccountFn = (
   lca,
   ctx,
   pk,
-  opts,
+  { orchOpts } = {},
 ) =>
   provideEVMAccountWithPermit(
     chainName,
@@ -1899,7 +1899,7 @@ const provideEVMAccountWithPermitStub: ProvideEVMAccountFn = (
       witnessTypeString: 'OpenPortfolioWitness',
       signature: '0x1234' as `0x${string}`,
     },
-    opts,
+    orchOpts,
   );
 
 /**
@@ -2463,32 +2463,32 @@ test('withdraw from ERC4626 position', async t => {
 // EVM wallet integration - openPortfolioFromPermit2 flow
 test('openPortfolioFromPermit2 with Permit2 provisions account and starts deposit', async t => {
   const permitDetails: PermitDetails = {
-    chainId: Number(axelarCCTPConfig.Base.reference),
-    token: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238',
-    amount: 15000000n,
-    spender: '0x9f9684d7fa7318698a0030ca16ecc4a01944836b',
+    chainId: Number(axelarCCTPConfig.Arbitrum.reference),
+    token: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', // USCD on Arbitrum
+    amount: 1_000_000_000n,
+    spender: '0x3bF3056835f7C25b1f71aff99B734Ad07d644577', // TODO: factory, should be deposit factory, on arbitrum
     permit2Payload: {
       permit: {
-        deadline: 1767836187n,
-        nonce: 8157700000047684n,
+        deadline: 1357923600n,
+        nonce: 7115368379195441n,
         permitted: {
-          amount: 15000000n,
-          token: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238',
+          amount: 1000000000n,
+          token: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
         },
       },
-      owner: '0xa1702d6c89c6ea11c5667a14c0329be273d96d78',
+      owner: '0x3e57cE0f7A44572c45dd2B7F0CB945cc918a22a6',
       witness:
-        '0x144bf517346c511015ea51d9b8b110f63f33db71c2df0c6dd960bbe8a88bcc0c',
+        '0x756823f5c7bdbad2bf2a6e47b55de7f60d4ad84b0360f929c5a37737b1e14f1e',
       witnessTypeString:
         'YmaxV1OpenPortfolio ymaxOpenPortfolio)Allocation(string instrument,uint256 portion)TokenPermissions(address token,uint256 amount)YmaxV1OpenPortfolio(Allocation[] allocations)',
       signature:
-        '0x12d9b6dcdc0695a6675da118a1bf5cf5324c4c36dc7f5f89bc4b19500cac74113457129904ccf9b3ef457f611b897a155623b493b54a06fd0e27f32b415a4c6e1b',
+        '0xc3a89a8ce8852845317084dbbb233c9e6902fc5914a6601c0a51199e9a72a615047089c3a1d837405b49d08b3f650ebbaf411e3e22bcbf22ad7cb4d4f59a04971b',
     },
   };
   const amount = make(USDC, permitDetails.amount);
   const targetAllocation = {
-    Aave_Avalanche: 6000n, // 60% in basis points
-    Aave_Base: 4000n, // 40% in basis points
+    Aave_Arbitrum: 6000n, // 60% in basis points
+    Compound_Arbitrum: 4000n, // 40% in basis points
   };
 
   const { orch, ctx, offer, cosmosId, storage } = mocks();
@@ -2558,7 +2558,7 @@ test('openPortfolioFromPermit2 with Permit2 provisions account and starts deposi
   t.is(decodedPayload.lcaOwner, lca.getAddress().value);
   t.is(
     decodedPayload.tokenOwner.toLowerCase(),
-    permitDetails.permit2Payload.owner,
+    permitDetails.permit2Payload.owner.toLowerCase(),
   );
   t.is(
     decodedPayload.permit.permitted.token,
@@ -2575,8 +2575,7 @@ test('openPortfolioFromPermit2 with Permit2 provisions account and starts deposi
   );
   t.is(decodedPayload.signature, permitDetails.permit2Payload.signature);
 
-  // TODO: Verify EVM account was provisioned via Factory.execute()
-  // TODO: Verify deposit flow was started with fromChain: 'base'
+  t.snapshot(decodedPayload, 'decoded payload');
 });
 
 test.todo(
