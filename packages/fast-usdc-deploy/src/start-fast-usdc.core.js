@@ -64,11 +64,7 @@ const POOL_METRICS = 'poolMetrics';
  *   brand: PromiseSpaceOf<{ FastLP: Brand }>;
  * }} FastUSDCCorePowers
  *
- * @typedef {StartedInstanceKitWithLabel & {
- *   publicFacet: StartedInstanceKit<FastUsdcSF>['publicFacet'];
- *   creatorFacet: StartedInstanceKit<FastUsdcSF>['creatorFacet'];
- *   privateArgs: StartParams<FastUsdcSF>['privateArgs'];
- * }} FastUSDCKit
+ * @typedef {StartedInstanceKitWithLabel<FastUsdcSF> & { privateArgs: StartParams<FastUsdcSF>['privateArgs'] }} FastUSDCKit
  */
 
 /**
