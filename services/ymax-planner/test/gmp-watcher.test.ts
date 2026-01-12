@@ -1,5 +1,13 @@
 import test from 'ava';
-import { id, keccak256, toUtf8Bytes } from 'ethers';
+import {
+  AbiCoder,
+  hexlify,
+  id,
+  Interface,
+  keccak256,
+  randomBytes,
+  toUtf8Bytes,
+} from 'ethers';
 import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import { createMockPendingTxOpts, mockFetch } from './mocks.ts';
@@ -23,6 +31,7 @@ test('handlePendingTx processes GMP transaction successfully', async t => {
     status: 'pending',
     amount,
     destinationAddress: `${chain}:${contractAddress}`,
+    sourceAddress: 'cosmos:agoric-3:agoric1test',
   };
 
   setTimeout(() => {
@@ -82,6 +91,7 @@ test('handlePendingTx logs a time out on a GMP transaction with no matching even
     status: 'pending',
     amount,
     destinationAddress: `${chain}:${contractAddress}`,
+    sourceAddress: 'cosmos:agoric-3:agoric1test',
   };
 
   // Don't emit any matching events - let it timeout
@@ -142,6 +152,7 @@ test('handlePendingTx detects legitimate failure from ContractCallFailed revert'
     status: 'pending',
     amount: 1_000_000n,
     destinationAddress: `${chain}:${contractAddress}`,
+    sourceAddress: 'cosmos:agoric-3:agoric1test',
   };
 
   // ContractCallFailed error signature
@@ -206,7 +217,7 @@ test('handlePendingTx detects legitimate failure from ContractCallFailed revert'
   );
 });
 
-test('handlePendingTx ignores spurious revert and continues watching', async t => {
+test('handlePendingTx ignores transaction with mismatched sourceAddress', async t => {
   const opts = createMockPendingTxOpts();
   const txId = 'tx134';
   const chain = 'eip155:1';
@@ -223,6 +234,7 @@ test('handlePendingTx ignores spurious revert and continues watching', async t =
     status: 'pending',
     amount: 1_000_000n,
     destinationAddress: `${chain}:${contractAddress}`,
+    sourceAddress: 'cosmos:agoric-3:agoric1test',
   };
 
   const spuriousTxHash = '0xspurioustx';
@@ -230,20 +242,51 @@ test('handlePendingTx ignores spurious revert and continues watching', async t =
 
   setTimeout(() => {
     const expectedIdTopic = keccak256(toUtf8Bytes(txId));
+    const walletExecuteIface = new Interface([
+      'function execute(bytes32 commandId, string sourceChain, string sourceAddress, bytes payload) external',
+    ]);
+    const abiCoder = AbiCoder.defaultAbiCoder();
 
-    // Set up receipt and call mocks
-    provider.getTransactionReceipt = async (hash: string) => {
+    // Create payload with txId
+    const payload = abiCoder.encode(
+      ['tuple(string id, tuple(address target, bytes data)[] calls)'],
+      [[txId, []]],
+    );
+
+    // Spurious execution with WRONG sourceAddress
+    const spuriousCalldata = walletExecuteIface.encodeFunctionData('execute', [
+      hexlify(randomBytes(32)),
+      'agoric',
+      'agoric1wrongsender', // Wrong sourceAddress
+      payload,
+    ]);
+
+    // Legitimate execution with CORRECT sourceAddress
+    const legitimateCalldata = walletExecuteIface.encodeFunctionData(
+      'execute',
+      [
+        hexlify(randomBytes(32)),
+        'agoric',
+        'agoric1test', // Correct sourceAddress
+        payload,
+      ],
+    );
+
+    // Mock getTransaction to return transaction data
+    provider.getTransaction = async (hash: string) => {
       if (hash === spuriousTxHash) {
-        return {
-          status: 0, // Reverted
-          blockNumber: 18500000,
-          logs: [],
-          transactionHash: spuriousTxHash,
-        };
+        return { data: spuriousCalldata, hash: spuriousTxHash };
       }
       if (hash === successTxHash) {
+        return { data: legitimateCalldata, hash: successTxHash };
+      }
+      return null;
+    };
+
+    provider.getTransactionReceipt = async (hash: string) => {
+      if (hash === successTxHash) {
         return {
-          status: 1, // Success
+          status: 1,
           blockNumber: 18500001,
           logs: [
             {
@@ -261,29 +304,33 @@ test('handlePendingTx ignores spurious revert and continues watching', async t =
       return null;
     };
 
-    // Authorization error (not ContractCallFailed)
-    provider.call = async () => {
-      const error: any = new Error('execution reverted');
-      error.data = '0x08c379a0'; // Generic revert
-      throw error;
-    };
-
     const filter = {
       address: contractAddress,
       topics: [id('MulticallStatus(string,bool,uint256)'), expectedIdTopic],
     };
 
-    // Emit spurious reverted transaction
-    provider.emit(filter, {
-      address: contractAddress,
-      topics: [id('MulticallStatus(string,bool,uint256)'), expectedIdTopic],
-      data: '0x',
-      transactionHash: spuriousTxHash,
-      blockNumber: 18500000,
-      txId,
-    });
+    // First emit spurious transaction with wrong sourceAddress
+    const ws = provider.websocket;
+    const messageHandlers = ws.listeners('message');
+    if (messageHandlers.length > 0) {
+      const spuriousMsg = JSON.stringify({
+        jsonrpc: '2.0',
+        method: 'eth_subscription',
+        params: {
+          result: {
+            transaction: {
+              hash: spuriousTxHash,
+              input: spuriousCalldata,
+              to: contractAddress,
+              from: '0xspurious',
+            },
+          },
+        },
+      });
+      messageHandlers.forEach(h => h(spuriousMsg));
+    }
 
-    // Then emit successful transaction
+    // Then emit legitimate transaction
     setTimeout(() => {
       provider.emit(filter, {
         address: contractAddress,
@@ -304,11 +351,14 @@ test('handlePendingTx ignores spurious revert and continues watching', async t =
     });
   });
 
-  // Verify spurious revert was ignored
+  // Verify spurious transaction with wrong sourceAddress was ignored
   const ignoredLog = logMessages.find(msg =>
-    msg.includes('⚠️  IGNORED REVERT'),
+    msg.includes('sourceAddress mismatch'),
   );
-  t.truthy(ignoredLog, 'Should log ignored spurious revert');
+  t.truthy(
+    ignoredLog,
+    'Should log ignored transaction with wrong sourceAddress',
+  );
 
   // Verify successful transaction was processed
   const successLog = logMessages.find(msg => msg.includes('✅ SUCCESS'));

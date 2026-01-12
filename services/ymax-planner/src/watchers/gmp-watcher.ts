@@ -4,6 +4,7 @@ import type { WebSocket } from 'ws';
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.js';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { KVStore } from '@agoric/internal/src/kv-store.js';
+import { tryJsonParse } from '@agoric/internal';
 import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
@@ -59,53 +60,66 @@ type WatchGmp = {
   provider: WebSocketProvider;
   contractAddress: `0x${string}`;
   txId: TxId;
+  expectedSourceAddress: string;
   log: (...args: unknown[]) => void;
   kvStore: KVStore;
   makeAbortController: MakeAbortController;
+  retryOptions?: RetryOptions;
 };
 
-/**
- * Error signatures for revert reason checking
- *
- * ContractCallFailed(string,uint256) is emitted by the Wallet contract when a user's
- * contract call fails during execution. This represents a legitimate failure where:
- * - The Axelar bridge successfully delivered the message
- * - The Wallet contract successfully authenticated the call
- * - But the user's actual contract call failed (e.g., insufficient funds, failed assertion, etc.)
- */
-const CONTRACT_CALL_FAILED_ERROR = `0x${ethers
-  .id('ContractCallFailed(string,uint256)')
-  .slice(2, 10)}`;
-
 // AxelarExecutable entrypoint (standard)
-const WALLET_EXECUTE_ABI = [
+// See https://docs.axelar.dev/dev/general-message-passing/executable
+// Note: Using _ABI_TEXT suffix for human-readable string format
+const WALLET_EXECUTE_CONTRACT_ABI_TEXT = [
   'function execute(bytes32 commandId, string sourceChain, string sourceAddress, bytes payload) external',
 ];
-const walletExecuteIface = new ethers.Interface(WALLET_EXECUTE_ABI);
+const walletExecuteIface = new ethers.Interface(
+  WALLET_EXECUTE_CONTRACT_ABI_TEXT,
+);
 const abiCoder = ethers.AbiCoder.defaultAbiCoder();
 
 /**
- * Decode Wallet.execute(...) calldata and extract CallMessage.id from the payload.
+ * Decode Wallet.execute(...) calldata and extract CallMessage.id from the payload
+ * and sourceAddress from the execute() parameters.
+ *
+ * @returns Object with txId and sourceAddress, or null if parsing fails
  */
-const extractTxIdFromCallData = (data: string): string | null => {
+const extractExecuteData = (
+  data: string,
+): { txId: string; sourceAddress: string } | null => {
   try {
     const parsed = walletExecuteIface.parseTransaction({ data });
     if (!parsed) return null;
 
-    const payload: string = parsed.args?.[3];
-    if (!payload) return null;
+    // execute(bytes32 commandId, string sourceChain, string sourceAddress, bytes payload)
+    const [_commandId, _sourceChain, sourceAddress, payload] = parsed.args;
+    if (!sourceAddress || !payload) return null;
 
     // CallMessage { string id; ContractCalls[] calls; }
-    const decoded = abiCoder.decode(
+    const [decoded] = abiCoder.decode(
       ['tuple(string id, tuple(address target, bytes data)[] calls)'],
       payload,
     );
 
-    const id = decoded?.[0]?.id;
-    return typeof id === 'string' ? id : null;
+    const txId = decoded?.id;
+    if (typeof txId !== 'string') return null;
+
+    return { txId, sourceAddress };
   } catch {
     return null;
   }
+};
+
+export type RetryOptions = {
+  /** Maximum number of retry attempts */
+  limit: number;
+  /** Maximum delay between retries in milliseconds */
+  backoffLimit: number;
+};
+
+export const DEFAULT_RETRY_OPTIONS: RetryOptions = {
+  limit: 5,
+  backoffLimit: 3000,
 };
 
 /**
@@ -113,81 +127,42 @@ const extractTxIdFromCallData = (data: string): string | null => {
  * @param provider - The WebSocket provider
  * @param txHash - Transaction hash
  * @param log - Logging function
- * @param maxRetries - Maximum number of retry attempts (default: 5)
+ * @param retryOptions - Retry configuration (limit and backoffLimit)
  * @returns Transaction receipt or null if not available after retries
  */
 const fetchReceiptWithRetry = async (
   provider: WebSocketProvider,
   txHash: string,
   log: (...args: unknown[]) => void,
-  maxRetries = 5,
+  retryOptions: RetryOptions = DEFAULT_RETRY_OPTIONS,
 ) => {
+  const { limit, backoffLimit } = retryOptions;
   let receipt = await provider.getTransactionReceipt(txHash);
   if (!receipt) {
     log(`Receipt not yet available for txHash=${txHash}, retrying...`);
-    for (let i = 0; i < maxRetries && !receipt; i += 1) {
-      const delay = Math.min(100 * 2 ** i, 3000); // Max 3s delay
+    for (let i = 0; i < limit && !receipt; i += 1) {
+      const delay = Math.min(100 * 2 ** i, backoffLimit);
       await new Promise(resolve => setTimeout(resolve, delay));
       receipt = await provider.getTransactionReceipt(txHash);
     }
 
     if (!receipt) {
-      log(
-        `Failed to get receipt for txHash=${txHash} after ${maxRetries} retries`,
-      );
+      log(`Failed to get receipt for txHash=${txHash} after ${limit} retries`);
     }
   }
   return receipt;
-};
-
-/**
- * Simulate transaction execution to extract revert reason.
- *
- * NOTE: This approach can be unreliable because:
- * 1. Many providers don't support blockTag in call() and silently fall back to "latest"
- * 2. State changes between tx execution and simulation can cause misclassification
- *
- * BETTER APPROACH: Instead of simulating, we should match the sourceAddress parameter
- * from execute(bytes32 commandId, string sourceChain, string sourceAddress, bytes payload)
- * against the LCA address available in vstorage.
- * If sourceAddress matches the LCA, it's a legitimate execution; otherwise it's spurious.
- *
- * @param provider - The WebSocket provider
- * @param tx - Transaction object
- * @param tx.to - Transaction recipient address
- * @param tx.from - Transaction sender address
- * @param tx.data - Transaction calldata
- * @param blockNumber - Block number to simulate at
- * @returns Revert data or null if call succeeded
- */
-const simulateTransaction = async (
-  provider: WebSocketProvider,
-  tx: { to: string | null; from: string; data: string },
-  blockNumber: number,
-): Promise<string | null> => {
-  await null;
-  try {
-    await provider.call({
-      to: tx.to,
-      from: tx.from,
-      data: tx.data,
-      blockTag: blockNumber,
-    });
-    // Call succeeded, no revert
-    return null;
-  } catch (error: any) {
-    return error?.data || error?.error?.data || null;
-  }
 };
 
 export const watchGmp = ({
   provider,
   contractAddress,
   txId,
+  expectedSourceAddress,
   timeoutMs = TX_TIMEOUT_MS,
   log = () => {},
   setTimeout = globalThis.setTimeout,
   signal,
+  retryOptions = DEFAULT_RETRY_OPTIONS,
 }: WatchGmp & WatcherTimeoutOptions): Promise<WatcherResult> => {
   return new Promise((resolve, reject) => {
     if (signal?.aborted) return resolve({ settled: false });
@@ -199,11 +174,50 @@ export const watchGmp = ({
     let done = false;
     let timeoutId: NodeJS.Timeout | undefined;
     let subId: string | null = null;
+    const cleanups: (() => void)[] = [];
 
     const ws = provider.websocket as WebSocket;
 
     // Precompute expected topic for txId
     const expectedIdTopic = ethers.keccak256(ethers.toUtf8Bytes(txId));
+
+    const finish = (res: WatcherResult) => {
+      if (done) return;
+      done = true;
+
+      if (timeoutId) clearTimeout(timeoutId);
+
+      resolve(res);
+      if (subId) {
+        void provider
+          .send('eth_unsubscribe', [subId])
+          .catch(e => log('Failed to unsubscribe:', e));
+      }
+      for (const cleanup of cleanups) cleanup();
+    };
+
+    /**
+     * Cleanup and reject with error.
+     * Used for fatal errors where we cannot continue watching (e.g., WebSocket failure,
+     * subscription failure). This indicates the WATCHING failed, not that the transaction
+     * failed.
+     */
+    const fail = (err: unknown) => {
+      if (done) return;
+      done = true;
+
+      if (timeoutId) clearTimeout(timeoutId);
+
+      reject(err);
+      if (subId) {
+        void provider
+          .send('eth_unsubscribe', [subId])
+          .catch(error =>
+            log('Failed to unsubscribe during error cleanup:', error),
+          );
+      }
+      for (const cleanup of cleanups) cleanup();
+    };
 
     const onWsError = (e: any) => {
       const errorMsg = e?.message || String(e);
@@ -213,79 +227,32 @@ export const watchGmp = ({
 
     const onWsClose = (code?: number, reason?: any) => {
       if (!done) {
-        const closeMsg = reason ? reason.toString() : 'Connection closed';
         log(
-          `WebSocket closed during GMP watch for txId=${txId} (code=${code}, reason=${closeMsg})`,
+          `WebSocket closed during GMP watch for txId=${txId} (code=${code}, reason=${reason})`,
         );
         fail(
-          new Error(
-            `WebSocket closed unexpectedly: ${closeMsg} (code=${code})`,
-          ),
+          new Error(`WebSocket closed unexpectedly: ${reason} (code=${code})`),
         );
       }
     };
 
-    // Named so we can remove it
-    const onAbort = () => finish({ settled: false });
-
-    const cleanupListeners = () => {
-      ws.off('message', messageHandler);
-      ws.off('error', onWsError);
-      ws.off('close', onWsClose);
-      signal?.removeEventListener('abort', onAbort);
-    };
-
-    const finish = (res: WatcherResult) => {
-      if (done) return;
-      done = true;
-
-      if (timeoutId) clearTimeout(timeoutId);
-
-      if (subId) {
-        provider
-          .send('eth_unsubscribe', [subId])
-          .catch(e => log('Failed to unsubscribe:', e));
-      }
-
-      cleanupListeners();
-      resolve(res);
-    };
-
-    /**
-     * Cleanup and reject with error.
-     * Used for fatal errors where we cannot continue watching (e.g., WebSocket failure,
-     * subscription failure). This indicates the WATCHING failed, not that the transaction
-     * failed.
-     */
-    const fail = (e: unknown) => {
-      if (done) return;
-      done = true;
-
-      if (timeoutId) clearTimeout(timeoutId);
-
-      if (subId) {
-        provider
-          .send('eth_unsubscribe', [subId])
-          .catch(err =>
-            log('Failed to unsubscribe during error cleanup:', err),
-          );
-      }
-
-      cleanupListeners();
-      reject(e);
-    };
+    if (signal) {
+      const onAbort = () => finish({ settled: false });
+      signal.addEventListener('abort', onAbort);
+      cleanups.unshift(() => {
+        signal.removeEventListener('abort', onAbort);
+      });
+    }
 
     const messageHandler = async (data: any) => {
       await null;
       if (done) return;
 
       try {
-        let msg: AlchemySubscriptionMessage;
-        try {
-          msg = JSON.parse(data.toString()) as AlchemySubscriptionMessage;
-        } catch {
-          return;
-        }
+        const msg = tryJsonParse(
+          data.toString(),
+          'alchemy_minedTransactions subscription response',
+        ) as AlchemySubscriptionMessage;
 
         if (msg.method !== 'eth_subscription') return;
 
@@ -296,10 +263,22 @@ export const watchGmp = ({
         const txData = tx.input;
         if (!txHash || !txData) return;
 
-        const extractedId = extractTxIdFromCallData(txData);
-        if (extractedId !== txId) return;
+        const executeData = extractExecuteData(txData);
+        if (!executeData || executeData.txId !== txId) return;
 
-        const receipt = await fetchReceiptWithRetry(provider, txHash, log);
+        if (executeData.sourceAddress !== expectedSourceAddress) {
+          log(
+            `⚠️  IGNORED: txId=${txId} txHash=${txHash} - sourceAddress mismatch (expected ${expectedSourceAddress}, got ${executeData.sourceAddress})`,
+          );
+          return;
+        }
+
+        const receipt = await fetchReceiptWithRetry(
+          provider,
+          txHash,
+          log,
+          retryOptions,
+        );
         if (!receipt) return;
 
         const matchingLog = receipt.logs.find(
@@ -317,60 +296,18 @@ export const watchGmp = ({
 
         if (receipt.status === 0) {
           /**
-           * Transaction reverted - need to determine if this is a legitimate failure
-           * or a spurious execution attempt that should be ignored.
+           * Transaction reverted - since we've already validated that the sourceAddress
+           * matches our expected LCA address, this is a legitimate execution attempt
+           * from our own wallet that failed. We treat this as a transaction failure.
            *
-           * BACKGROUND:
-           * The Wallet contract uses Axelar's AxelarExecutable pattern where anyone
-           * (typically Axelar relayers) can call execute() to deliver cross-chain messages.
-           * However, the contract enforces ownership checks to ensure only authorized
-           * callers can execute certain operations.
-           *
-           * REVERT SCENARIOS:
-           *
-           * 1. ContractCallFailed(string,uint256):
-           *    - The message was successfully authenticated by Axelar
-           *    - The Wallet contract accepted the call
-           *    - But the user's actual contract call failed (business logic failure)
-           *    - ACTION: Mark transaction as FAILED and report to user
-           *
-           * 2. Ownership/Authorization errors (e.g., "Ownable: caller is not the owner"):
-           *    - Someone attempted to execute before the proper relayer
-           *    - Or a spurious call from an unauthorized party
-           *    - The legitimate execution may still succeed later
-           *    - ACTION: Ignore this revert and continue watching
-           *
-           * REASONING:
-           * We only fail the transaction if we have definitive proof that the user's
-           * operation failed (ContractCallFailed). All other reverts are treated as
-           * spurious execution attempts that don't represent the final transaction state.
+           * Note: Spurious executions from unauthorized parties are already filtered
+           * out by the sourceAddress check above, so any revert we see here represents
+           * a genuine failure of the user's operation.
            */
-          const revertData = await simulateTransaction(
-            provider,
-            {
-              to: tx.to,
-              from: tx.from,
-              data: txData,
-            },
-            receipt.blockNumber,
+          log(
+            `❌ REVERTED: txId=${txId} txHash=${txHash} block=${receipt.blockNumber} - transaction failed`,
           );
-
-          // Check if revert reason starts with ContractCallFailed selector
-          if (revertData && revertData.startsWith(CONTRACT_CALL_FAILED_ERROR)) {
-            // This is a legitimate failure from the user's contract call
-            log(
-              `❌ REVERTED: txId=${txId} txHash=${txHash} block=${receipt.blockNumber} (ContractCallFailed - user operation failed)`,
-            );
-            return finish({ settled: true, txHash });
-          } else {
-            // Different revert reason - likely spurious execution attempt
-            // Log for observability but continue watching for the legitimate execution
-            log(
-              `⚠️  IGNORED REVERT: txId=${txId} txHash=${txHash} block=${
-                receipt.blockNumber
-              } reason=${revertData?.slice(0, 10) || 'unknown'} - likely spurious execution, continuing to watch`,
-            );
-          }
+          return finish({ settled: true, txHash });
         }
       } catch (e) {
         log(
@@ -381,6 +318,7 @@ export const watchGmp = ({
     };
 
     const subscribe = async () => {
+      // Verify liveness.
       await provider.getNetwork();
 
       subId = await provider.send('eth_subscribe', [
@@ -393,12 +331,15 @@ export const watchGmp = ({
       ]);
 
       ws.on('message', messageHandler);
+      cleanups.unshift(() => ws.off('message', messageHandler));
     };
 
-    // Attach listeners (all removable)
+    // Attach listeners
     ws.on('error', onWsError);
+    cleanups.unshift(() => ws.off('error', onWsError));
+
     ws.on('close', onWsClose);
-    signal?.addEventListener('abort', onAbort);
+    cleanups.unshift(() => ws.off('close', onWsClose));
 
     if (ws.readyState === 1) {
       subscribe().catch(fail);
@@ -419,9 +360,7 @@ export const watchGmp = ({
   });
 };
 
-export const EVENTS = {
-  MULTICALL_STATUS: 'status',
-};
+export const MULTICALL_STATUS_EVENT = 'status';
 
 export const lookBackGmp = async ({
   provider,
@@ -447,7 +386,7 @@ export const lookBackGmp = async ({
     const toBlock = await provider.getBlockNumber();
 
     const statusEventLowerBound =
-      getTxBlockLowerBound(kvStore, txId, EVENTS.MULTICALL_STATUS) || fromBlock;
+      getTxBlockLowerBound(kvStore, txId, MULTICALL_STATUS_EVENT) || fromBlock;
 
     log(
       `Searching blocks ${statusEventLowerBound} → ${toBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
@@ -465,7 +404,7 @@ export const lookBackGmp = async ({
     };
 
     const updateStatusEventLowerBound = (_from: number, to: number) =>
-      setTxBlockLowerBound(kvStore, txId, to, EVENTS.MULTICALL_STATUS);
+      setTxBlockLowerBound(kvStore, txId, to, MULTICALL_STATUS_EVENT);
 
     // Options shared by both scans (including an abort signal that is triggered
     // by a match from either).
@@ -496,7 +435,7 @@ export const lookBackGmp = async ({
 
     if (matchingEvent) {
       log(`Found matching event`);
-      deleteTxBlockLowerBound(kvStore, txId, EVENTS.MULTICALL_STATUS);
+      deleteTxBlockLowerBound(kvStore, txId, MULTICALL_STATUS_EVENT);
       return { settled: true, txHash: matchingEvent.transactionHash };
     }
 

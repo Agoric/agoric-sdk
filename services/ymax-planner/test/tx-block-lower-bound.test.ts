@@ -8,7 +8,7 @@ import { createMockPendingTxData } from '@aglocal/portfolio-contract/tools/mocks
 import type { AccountId, CaipChainId } from '@agoric/orchestration';
 import { getTxBlockLowerBound, setTxBlockLowerBound } from '../src/kv-store.ts';
 import { handlePendingTx } from '../src/pending-tx-manager.ts';
-import { EVENTS } from '../src/watchers/gmp-watcher.ts';
+import { MULTICALL_STATUS_EVENT } from '../src/watchers/gmp-watcher.ts';
 import { createMockGmpStatusEvent, createMockPendingTxOpts } from './mocks.ts';
 
 /**
@@ -74,7 +74,7 @@ test('updates lower bound when a pending tx is being searched', async t => {
   const initialStatusBlockSaved = await getTxBlockLowerBound(
     ctx.kvStore,
     txId,
-    EVENTS.MULTICALL_STATUS,
+    MULTICALL_STATUS_EVENT,
   );
 
   t.is(initialStatusBlockSaved, undefined);
@@ -91,7 +91,7 @@ test('updates lower bound when a pending tx is being searched', async t => {
   const finalStatusBlockSaved = await getTxBlockLowerBound(
     ctx.kvStore,
     txId,
-    EVENTS.MULTICALL_STATUS,
+    MULTICALL_STATUS_EVENT,
   );
 
   // final blocks saved in kvstore should be deleted after success
@@ -116,7 +116,7 @@ test('begins searching from the lower bound block number stored in kv store', as
     ctx.kvStore,
     txId,
     statusLowerBound,
-    EVENTS.MULTICALL_STATUS,
+    MULTICALL_STATUS_EVENT,
   );
 
   await handlePendingTx(
@@ -131,7 +131,7 @@ test('begins searching from the lower bound block number stored in kv store', as
   const finalStatusBlockSaved = await getTxBlockLowerBound(
     ctx.kvStore,
     txId,
-    EVENTS.MULTICALL_STATUS,
+    MULTICALL_STATUS_EVENT,
   );
 
   // handlePendingTx will search in chunks of 10 blocks

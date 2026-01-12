@@ -1,3 +1,4 @@
+import { EventEmitter } from 'events';
 import { ethers } from 'ethers';
 import type { WebSocketProvider } from 'ethers';
 
@@ -17,7 +18,7 @@ import type { Powers as EnginePowers } from '../src/engine.ts';
 import { makeGasEstimator } from '../src/gas-estimation.ts';
 import type { HandlePendingTxOpts } from '../src/pending-tx-manager.ts';
 import { prepareAbortController } from '../src/support.ts';
-import { GMP_ABI } from '../src/axelarscan-utils.ts';
+import { GMP_INPUTS_ABI_JSON } from '../src/axelarscan-utils.ts';
 import type { YdsNotifier } from '../src/yds-notifier.ts';
 
 const PENDING_TX_PATH_PREFIX = 'published.ymax1';
@@ -104,43 +105,27 @@ export const createMockProvider = (
   const currentTimeMs = 1700000000; // 2023-11-14T22:13:20Z
   const avgBlockTimeMs = 300;
 
-  // Mock websocket for gmp-watcher - store event handlers
-  const wsEventHandlers = new Map<string, Function[]>();
-  const mockWebSocket = {
-    on: (event: string, handler: Function) => {
-      if (!wsEventHandlers.has(event)) {
-        wsEventHandlers.set(event, []);
-      }
-      wsEventHandlers.get(event)!.push(handler);
-    },
-    once: (event: string, handler: Function) => {
-      if (!wsEventHandlers.has(event)) {
-        wsEventHandlers.set(event, []);
-      }
-      const onceWrapper = (...args: any[]) => {
-        handler(...args);
-        mockWebSocket.removeListener(event, onceWrapper);
-      };
-      wsEventHandlers.get(event)!.push(onceWrapper);
-    },
-    removeListener: (event: string, handler: Function) => {
-      const handlers = wsEventHandlers.get(event);
-      if (handlers) {
-        const index = handlers.indexOf(handler);
-        if (index > -1) {
-          handlers.splice(index, 1);
-        }
-      }
-    },
-    off: (event: string, handler: Function) => {
-      mockWebSocket.removeListener(event, handler);
-    },
-    removeAllListeners: () => {
-      wsEventHandlers.clear();
-    },
-    readyState: 1, // WebSocket.OPEN
+  const emitter = new EventEmitter();
+  // Mock websocket for gmp-watcher - delegate to EventEmitter
+  const mockWebSocket: Pick<
+    EventEmitter,
+    | 'on'
+    | 'once'
+    | 'off'
+    | 'removeListener'
+    | 'removeAllListeners'
+    | 'emit'
+    | 'listeners'
+  > & { readyState: number } = {
+    readyState: WebSocket.OPEN,
+    on: (...args) => emitter.on(...args),
+    once: (...args) => emitter.once(...args),
+    off: (...args) => emitter.off(...args),
+    removeListener: (...args) => emitter.removeListener(...args),
+    removeAllListeners: (...args) => emitter.removeAllListeners(...args),
+    emit: (...args) => emitter.emit(...args),
+    listeners: (...args) => emitter.listeners(...args),
   };
-
   const mockReceipts = new Map<string, any>();
 
   const mockProvider = {
@@ -180,7 +165,7 @@ export const createMockProvider = (
 
       // For websocket-based watchers, also trigger websocket message handlers
       // by simulating an Alchemy subscription message
-      const messageHandlers = wsEventHandlers.get('message') || [];
+      const messageHandlers = mockWebSocket.listeners('message');
       if (
         messageHandlers.length > 0 &&
         log.transactionHash &&
@@ -207,7 +192,7 @@ export const createMockProvider = (
             [
               ethers.hexlify(ethers.randomBytes(32)), // commandId
               'agoric', // sourceChain
-              'agoric1sender', // sourceAddress
+              'agoric1test', // sourceAddress
               payload,
             ],
           );
@@ -426,7 +411,9 @@ const createMockAxelarScanResponse = (
           '0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
         destinationChain: 'ethereum',
         messageId: 'msg_12345',
-        payload: encodeAbiParameters(GMP_ABI, [{ id: txId, calls: [] }]),
+        payload: encodeAbiParameters(GMP_INPUTS_ABI_JSON, [
+          { id: txId, calls: [] },
+        ]),
         sender: 'agoric1sender123',
         sourceChain: 'agoric',
       },

@@ -1,9 +1,13 @@
 import type { SearchGMPResponse, SearchGMPResponseData } from '@axelarjs/api';
 
 /**
+ * ABI naming convention:
+ * - *_ABI_JSON: JSON ABI representation (objects with type, name, components)
+ * - *_ABI_TEXT: Human-readable string format (Ethers fragment strings)
+ *
  * @see https://github.com/agoric-labs/agoric-to-axelar-local/blob/b884729ab2d24decabcc4a682f4157f9cf78a08b/packages/axelar-local-dev-cosmos/src/__tests__/contracts/Factory.sol#L26-L29
  */
-export const GMP_ABI = [
+export const GMP_INPUTS_ABI_JSON = [
   {
     type: 'tuple',
     name: 'callMessage',
