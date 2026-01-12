@@ -2,7 +2,11 @@
 /* eslint-disable max-classes-per-file, class-methods-use-this */
 import test from 'ava';
 
-import { ACCOUNT_DUST_EPSILON, type StatusFor } from '@agoric/portfolio-api';
+import {
+  ACCOUNT_DUST_EPSILON,
+  CaipChainIds,
+  type StatusFor,
+} from '@agoric/portfolio-api';
 import { planUSDNDeposit } from '@aglocal/portfolio-contract/test/mocks.js';
 import { PROD_NETWORK } from '@aglocal/portfolio-contract/tools/network/prod-network.ts';
 import { TEST_NETWORK } from '@aglocal/portfolio-contract/tools/network/test-network.js';
@@ -26,7 +30,6 @@ import {
 import type { PlannerContext } from '../src/plan-deposit.ts';
 import { SpectrumClient } from '../src/spectrum-client.ts';
 import { erc4626VaultsMock, mockEvmCtx, mockGasEstimator } from './mocks.ts';
-import { chainNameToCaipChainId } from '../src/support.ts';
 
 const depositBrand = Far('mock brand') as Brand<'nat'>;
 const makeDeposit = value => AmountMath.make(depositBrand, value);
@@ -76,9 +79,9 @@ const handleDeposit = async (
     spectrumChainIds: {},
     spectrumPoolIds: {},
     usdcTokensByChain: {},
-    erc4626Vaults: {},
-    chainNameToChainIdMap: chainNameToCaipChainId.testnet,
-    evmCtx: mockEvmCtx,
+    erc4626VaultAddresses: {},
+    chainNameToChainIdMap: CaipChainIds.testnet,
+    evmProviders: mockEvmCtx.evmProviders,
     ...powers,
   });
   const plan = await planDepositToAllocations({
@@ -149,9 +152,9 @@ test('getNonDustBalances filters balances at or below the dust epsilon', async t
     spectrumChainIds: {},
     spectrumPoolIds: {},
     usdcTokensByChain: {},
-    erc4626Vaults: {},
-    chainNameToChainIdMap: chainNameToCaipChainId.testnet,
-    evmCtx: mockEvmCtx,
+    erc4626VaultAddresses: {},
+    chainNameToChainIdMap: CaipChainIds.testnet,
+    evmProviders: mockEvmCtx.evmProviders,
   });
 
   t.deepEqual(Object.keys(balances), ['Compound_Base']);
@@ -188,9 +191,9 @@ test('getNonDustBalances retains noble balances above the dust epsilon', async t
     spectrumChainIds: {},
     spectrumPoolIds: {},
     usdcTokensByChain: {},
-    erc4626Vaults: {},
-    chainNameToChainIdMap: chainNameToCaipChainId.testnet,
-    evmCtx: mockEvmCtx,
+    erc4626VaultAddresses: {},
+    chainNameToChainIdMap: CaipChainIds.testnet,
+    evmProviders: mockEvmCtx.evmProviders,
   });
 
   t.deepEqual(Object.keys(balances), ['USDN']);
@@ -701,9 +704,9 @@ test('getNonDustBalances works for erc4626 vaults', async t => {
     spectrumChainIds: {},
     spectrumPoolIds: {},
     usdcTokensByChain: {},
-    erc4626Vaults: erc4626VaultsMock,
-    chainNameToChainIdMap: chainNameToCaipChainId.testnet,
-    evmCtx: mockEvmCtx,
+    erc4626VaultAddresses: erc4626VaultsMock,
+    chainNameToChainIdMap: CaipChainIds.testnet,
+    evmProviders: mockEvmCtx.evmProviders,
   });
 
   t.deepEqual(Object.keys(balances), ['ERC4626_vaultU2_Ethereum']);

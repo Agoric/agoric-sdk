@@ -11,7 +11,8 @@ import { Nat } from '@endo/nat';
 import { reflectWalletStore, getInvocationUpdate } from '@agoric/client-utils';
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import type { RetryOptionsAndPowers } from '@agoric/client-utils/src/sync-tools.js';
-import { AmountMath, type Brand } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
+import type { Brand } from '@agoric/ertp';
 import type { Bech32Address, CaipChainId } from '@agoric/orchestration';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 
@@ -26,9 +27,9 @@ import {
   TxType,
 } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type {
+  ERC4626InstrumentId,
   FlowDetail,
   PoolKey as InstrumentId,
-  PoolKey,
   StatusFor,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import {
@@ -58,6 +59,7 @@ import type {
   PortfolioKey,
   SupportedChain,
 } from '@agoric/portfolio-api';
+import type { EvmAddress } from '@agoric/fast-usdc';
 
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
@@ -80,6 +82,7 @@ import {
 } from './plan-deposit.ts';
 import type { SpectrumClient } from './spectrum-client.ts';
 import { UserInputError } from './support.ts';
+import type { EvmProviders } from './support.ts';
 import {
   encodedKeyToPath,
   pathToEncodedKey,
@@ -189,8 +192,8 @@ export type Powers = {
   now: typeof Date.now;
   gasEstimator: GasEstimator;
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
-  erc4626Vaults: Partial<Record<PoolKey, `0x${string}`>>;
-  chainNameToChainIdMap: Record<EvmChain, CaipChainId>;
+  erc4626VaultAddresses: Partial<Record<ERC4626InstrumentId, EvmAddress>>;
+  chainNameToChainIdMap: Partial<Record<EvmChain, CaipChainId>>;
 };
 
 export type ProcessPortfolioPowers = Pick<
@@ -207,8 +210,7 @@ export type ProcessPortfolioPowers = Pick<
   | 'getWalletInvocationUpdate'
   | 'gasEstimator'
   | 'usdcTokensByChain'
-  | 'evmCtx'
-  | 'erc4626Vaults'
+  | 'erc4626VaultAddresses'
   | 'chainNameToChainIdMap'
 > & {
   isDryRun?: boolean;
@@ -218,6 +220,7 @@ export type ProcessPortfolioPowers = Pick<
   vstoragePathPrefixes: {
     portfoliosPathPrefix: string;
   };
+  evmProviders: EvmProviders;
 };
 
 export type PortfoliosMemory = {
@@ -264,8 +267,8 @@ export const processPortfolioEvents = async (
     spectrumPoolIds,
     usdcTokensByChain,
     vstoragePathPrefixes,
-    erc4626Vaults,
-    evmCtx,
+    erc4626VaultAddresses,
+    evmProviders,
     chainNameToChainIdMap,
 
     portfolioKeyForDepositAddr,
@@ -294,8 +297,8 @@ export const processPortfolioEvents = async (
     spectrumChainIds,
     spectrumPoolIds,
     usdcTokensByChain,
-    erc4626Vaults,
-    evmCtx,
+    erc4626VaultAddresses,
+    evmProviders,
     chainNameToChainIdMap,
   };
   type ReadVstorageSimpleOpts = Pick<
@@ -702,7 +705,10 @@ export const startEngine = async (
                   typedEntries(evmCtx.usdcAddresses)[0],
                 );
           const accountIdByChain = { [chainName]: dummyAddress } as any;
-          await getCurrentBalance(info, accountIdByChain, powers);
+          await getCurrentBalance(info, accountIdByChain, {
+            ...powers,
+            evmProviders: evmCtx.evmProviders,
+          });
         } catch (err) {
           const expandos = partialMap(Reflect.ownKeys(err), key =>
             knownErrorProps.includes(key as any) ? false : [key, err[key]],
@@ -790,6 +796,7 @@ export const startEngine = async (
     feeBrand: feeAsset.brand as Brand<'nat'>,
     vstoragePathPrefixes,
     portfolioKeyForDepositAddr,
+    evmProviders: evmCtx.evmProviders,
   });
   await makeWorkPool(portfolioKeys, undefined, async portfolioKey => {
     const { streamCellJson, event } = makeVstorageEvent(
