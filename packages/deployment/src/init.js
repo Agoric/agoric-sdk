@@ -277,14 +277,13 @@ const askProvider =
 const doInit =
   ({ env, rd, wr, running, setup, inquirer, fetch, parseArgs }) =>
   async (progname, args) => {
-    const { needDoRun, needBacktick, cwd, chdir } = running;
+    const { needDoRun, cwd, chdir } = running;
     const PROVIDERS = makeProviders({
       env,
       inquirer,
       wr,
       setup,
       fetch,
-      needBacktick,
     });
 
     const { _: parsedArgs, noninteractive } = parseArgs(args.slice(1), {
