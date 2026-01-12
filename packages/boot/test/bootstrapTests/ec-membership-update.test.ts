@@ -105,6 +105,8 @@ test.before(async t => {
   t.context = await makeZoeTestContext(t);
 });
 
+test.after.always(t => t.context.shutdown?.());
+
 test.serial('normal running of committee', async t => {
   const { advanceTimeBy, storage, getVstorageData, governanceDriver } =
     t.context;
