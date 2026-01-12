@@ -9,11 +9,12 @@ import type {
 } from '@agoric/smart-wallet/src/smartWallet.js';
 import type { IBCChannelID } from '@agoric/vats';
 import type { ExecutionContext } from 'ava';
+import type { Instance, InvitationDetails } from '@agoric/zoe';
+import { makeTracer } from '@agoric/internal';
+import type { AssetKind, Brand, Amount } from '@agoric/ertp';
 import { makeDoOffer, type WalletDriver } from '../../tools/e2e-tools.js';
 import type { createWallet } from '../../tools/wallet.js';
 import type { commonSetup, SetupContextWithWallets } from '../support.js';
-import type { InvitationDetails } from '@agoric/zoe';
-import { makeTracer } from '@agoric/internal';
 
 const trace = makeTracer('FUActors');
 
