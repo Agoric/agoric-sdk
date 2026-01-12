@@ -122,7 +122,9 @@ jobs:
       # waiting for the slow integration test that by default only runs in the
       # master merge check
       - name: Lint a3p-integration
-        run: yarn install && yarn lint && yarn doctor
+        # FIXME restore `yarn lint` once client-utils in NPM is compatible with HEAD
+        # (after this change merges to master and the `dev` version is published)
+        run: yarn install && yarn doctor
         working-directory: a3p-integration
       - name: build A3P submissions
         run: yarn run build:submissions
