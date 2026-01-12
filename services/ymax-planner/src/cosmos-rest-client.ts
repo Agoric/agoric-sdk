@@ -65,7 +65,8 @@ const CHAIN_CONFIGS: Record<
   },
 };
 
-export const USDN: Asset =
+// XXX narrow to the minimal properties to work around breaking change in casing
+export const USDN: Pick<Asset, 'base'> =
   nobleAssetList.assets.find(a => a.symbol === 'USDN') || Fail`no USDN`;
 
 export class CosmosRestClient {

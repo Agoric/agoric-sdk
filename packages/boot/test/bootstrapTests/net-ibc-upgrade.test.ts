@@ -1,16 +1,17 @@
 /** @file upgrade network / IBC vat at many points in state machine */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
-import type { TestFn } from 'ava';
+import type { ExecutionContext, TestFn } from 'ava';
 import { createRequire } from 'module';
 
+import { typedEntries } from '@agoric/internal';
 import {
   testInterruptedSteps,
   type TestStep,
 } from '@agoric/internal/src/testing-utils.js';
-import { typedEntries } from '@agoric/internal';
+import type { EVProxy } from '@agoric/swingset-vat/tools/run-utils.js';
 import type { Installation, ZoeService } from '@agoric/zoe';
+import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
 import { makeSwingsetTestKit } from '../../tools/supports.js';
 
 const { entries, assign } = Object;
@@ -78,7 +79,7 @@ test.serial('test contracts are installed', async t => {
   }
 });
 
-const upgradeVats = async (t, EV, vatsToUpgrade) => {
+const upgradeVats = async (t: ExecutionContext, EV: EVProxy, vatsToUpgrade) => {
   const vatStore = await EV.vat('bootstrap').consumeItem('vatStore');
   const vatUpgradeInfo =
     await EV.vat('bootstrap').consumeItem('vatUpgradeInfo');

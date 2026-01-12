@@ -1,10 +1,10 @@
-/* eslint-disable @agoric/group-jsdoc-imports */
 // @ts-check
 export {};
 
 /**
  * @import {NameHub} from '@agoric/vats';
  * @import {ZoeService} from '@agoric/zoe';
+ * @import {BundleSource} from '@endo/bundle-source';
  * @import {ERef} from '@agoric/vow';
  * @import {ScratchPad} from '@agoric/internal/src/scratch.js';
  * @import {Bank} from '@agoric/vats/src/vat-bank.js';
@@ -61,7 +61,7 @@ export {};
 
 /**
  * @typedef {{
- *  bundleSource: typeof import('@endo/bundle-source').default,
+ *  bundleSource: BundleSource,
  *  cacheDir: string,
  *  lookup: (...path: string[]) => unknown,
  *  now: () => number,

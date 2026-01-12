@@ -156,9 +156,9 @@ export function makeWalletRoot({
     'contact',
     { useLegacyMap: true }, // because contacts have identity!
   );
-  /** @type {Mapping<Instance>} */
+  /** @type {Mapping<Instance<any>>} */
   const instanceMapping = makeMapping('instance');
-  /** @type {Mapping<Installation>} */
+  /** @type {Mapping<Installation<any>>} */
   const installationMapping = makeMapping('installation');
 
   const brandTable = makeIssuerTable();

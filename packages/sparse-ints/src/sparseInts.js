@@ -1,4 +1,4 @@
-// Copyright (C) 2019 Agoric, under Apache License 2.0
+/// <reference types="ses"/>
 
 /**
  * Generator function to produce a stream of positive integers that are
