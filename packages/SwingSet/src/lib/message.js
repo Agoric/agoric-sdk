@@ -2,7 +2,7 @@ import { assert, Fail } from '@endo/errors';
 import { insistCapData } from './capdata.js';
 
 /**
- * @import {VatSyscallObject, VatSyscallResult, VatDeliveryResult} from '@agoric/swingset-liveslots';
+ * @import {VatSyscallObject, VatSyscallResult, VatDeliveryObject, VatDeliveryResult} from '@agoric/swingset-liveslots';
  * @import {Message} from '../types-external.js';
  */
 

@@ -8,6 +8,10 @@ import { makeScalarWeakMapStore } from '@agoric/store';
 /**
  * @import {ZoeIssuerRecord} from '@agoric/zoe';
  * @import {IssuerTable} from './types-ambient.js';
+ * @import {WeakMapStore} from '@agoric/store';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Issuer} from '@agoric/ertp';
+ * @import {DisplayInfo} from '@agoric/ertp';
  */
 
 /**

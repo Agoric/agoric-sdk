@@ -19,6 +19,7 @@ import { execSwingsetTransaction, pollTx } from './chain.js';
  * @import {ValueFollowerElement} from '@agoric/casting';
  * @import {execFileSync} from 'child_process';
  * @import {InvitationAmount} from '@agoric/zoe';
+ * @import {Brand} from '@agoric/ertp';
  */
 
 const marshaller = boardSlottingMarshaller();

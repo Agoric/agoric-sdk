@@ -1,6 +1,14 @@
 import { AmountMath } from '@agoric/ertp';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 
+/**
+ * @import {ContractMeta} from '@agoric/zoe';
+ * @import {ZCF} from '@agoric/zoe';
+ * @import {MapStore} from '@agoric/store';
+ * @import {ZCFMint} from '@agoric/zoe';
+ * @import {OfferHandler} from '@agoric/zoe';
+ */
+
 /** @type {ContractMeta<typeof start>} */
 export const meta = {
   upgradability: 'canUpgrade',

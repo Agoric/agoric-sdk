@@ -10,7 +10,7 @@ import { fromExternalConfig } from './config-marshal.js';
  * @import { ChainInfo, IBCConnectionInfo } from '@agoric/orchestration';
  * @import { Board, NameHub } from '@agoric/vats';
  * @import { BootstrapManifest, BootstrapManifestPermit } from '@agoric/vats/src/core/lib-boot.js';
- * @import { Installation } from '@agoric/zoe';
+ * @import { Installation, IssuerKeywordRecord } from '@agoric/zoe';
  * @import { ContractStartFunction } from '@agoric/zoe/src/zoeService/utils.js';
  * @import { ERef } from '@endo/far';
  * @import { CopyRecord } from '@endo/pass-style';

@@ -13,11 +13,12 @@ const trace = makeTracer('CCtrl');
 /**
  * @import {Zone} from '@agoric/base-zone';
  * @import {ContractStartFunction, StartResult} from '@agoric/zoe/src/zoeService/utils.js';
- * @import {Instance, IssuerKeywordRecord} from '@agoric/zoe';
+ * @import {Installation, Instance, IssuerKeywordRecord, ZoeService} from '@agoric/zoe';
  * @import {Remote} from '@agoric/internal';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {Board, NameHubKit} from '@agoric/vats';
  * @import {UpgradeKit} from './get-upgrade-kit.core.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

@@ -28,6 +28,19 @@ import { makeCourierMaker, getCourierPK } from './courier.js';
  * @import {PegasusConnection} from './types.js';
  * @import {DepositAddress} from './types.js';
  * @import {SenderOptions} from './types.js';
+ * @import {ZCF} from '@agoric/zoe';
+ * @import {LegacyMap} from '@agoric/store';
+ * @import {IterationObserver} from '@agoric/notifier';
+ * @import {Subscription} from '@agoric/notifier';
+ * @import {LegacyWeakMap} from '@agoric/store';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {Keyword} from '@agoric/zoe';
+ * @import {ZCFSeat} from '@agoric/zoe';
+ * @import {SubscriptionRecord} from '@agoric/notifier';
+ * @import {PromiseRecord} from '@endo/promise-kit';
+ * @import {Invitation} from '@agoric/zoe';
+ * @import {OfferHandler} from '@agoric/zoe';
  */
 
 const DEFAULT_DENOM_TRANSFORMER = IBCSourceTraceDenomTransformer;

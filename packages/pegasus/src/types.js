@@ -3,7 +3,9 @@
 /// <reference types="ses" />
 /**
  * @import {Bytes, ConnectionHandler} from '@agoric/network';
- * @import {AmountValue} from '@agoric/ertp/src/types.js';
+ * @import {AmountValue, AssetKind, Brand, DisplayInfo, Issuer} from '@agoric/ertp/src/types.js';
+ * @import {ZCFSeat} from '@agoric/zoe';
+ * @import {Subscription} from '@agoric/notifier';
  */
 
 /**

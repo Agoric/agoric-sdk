@@ -4,9 +4,14 @@
  * @import {Coordinator} from '@agoric/cache';
  * @import {Petname} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {Board} from '@agoric/vats';
- * @import {ZoeIssuerRecord} from '@agoric/zoe';
- * @import {Purse} from '@agoric/ertp';
+ * @import {ZoeIssuerRecord, ZoeService} from '@agoric/zoe';
+ * @import {Brand, Issuer, Payment, Purse} from '@agoric/ertp';
  * @import {BrandRecord, WalletAdminFacet} from './internal-types.js';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {ERef} from '@agoric/vow';
+ * @import {Notifier} from '@agoric/notifier';
+ * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {Instance} from '@agoric/zoe/src/zoeService/utils.js';
  */
 
 /**

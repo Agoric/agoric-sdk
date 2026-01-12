@@ -44,10 +44,23 @@ import { makePaymentActions } from './actions.js';
 
 /**
  * @import {Petname} from '@agoric/deploy-script-support/src/externalTypes.js';
- * @import {UserSeat} from '@agoric/zoe';
+ * @import {Handle, UserSeat, ZoeService} from '@agoric/zoe';
  * @import {Purse} from '@agoric/ertp';
  * @import {BrandRecord, Contact, DappRecord, Mapping, PaymentRecord, PursesFullState} from './internal-types.js';
  * @import {InstallationManager, InstanceManager, IssuerManager, OfferState, PursesJSONState, RecordMetadata} from './types-ambient.js';
+ * @import {ERef} from '@agoric/vow';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Instance} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {WeakMapStore} from '@agoric/store';
+ * @import {Issuer} from '@agoric/ertp';
+ * @import {MapStore} from '@agoric/store';
+ * @import {LegacyMap} from '@agoric/store';
+ * @import {NotifierRecord} from '@agoric/notifier';
+ * @import {Payment} from '@agoric/ertp';
+ * @import {Subscriber} from '@agoric/notifier';
+ * @import {Notifier} from '@agoric/notifier';
+ * @import {PromiseRecord} from '@endo/promise-kit';
  */
 
 // does nothing
