@@ -788,9 +788,7 @@ test.serial(
   },
 );
 
-// XXX: something broke when changing makeProvideEVMAccount to support depositFactory
-// Possibly the order of the registerTransaction / sendCall
-test.serial.skip(
+test.serial(
   '2 portfolios open EVM positions: parallel CCTP ack',
   async t => {
     const { trader1, common, txResolver, trader2 } = await setupTrader(t);
@@ -846,7 +844,7 @@ test.serial.skip(
 
     await eventLoopIteration(); // let IBC message go out
     await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
-    await common.utils.transmitVTransferEvent('acknowledgementPacket', -6);
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -5);
 
     await txResolver.drainPending();
 
