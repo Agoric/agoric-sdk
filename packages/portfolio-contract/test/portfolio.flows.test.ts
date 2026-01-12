@@ -2107,13 +2107,6 @@ test(
   'send',
 );
 test(
-  'withPermit: A fails to pay fee; B arrives',
-  makeAccountEVMRace,
-  provideEVMAccountWithPermitStub,
-  'send',
-  'send',
-);
-test(
   'withPermit: A registers txN; B arrives',
   makeAccountEVMRace,
   provideEVMAccountWithPermitStub,
@@ -2551,10 +2544,7 @@ test('openPortfolioFromPermit2 with Permit2 provisions account and starts deposi
     { _method: 'monitorTransfers' },
     { _method: 'transfer', address: { chainId: nobleId } },
   ];
-  const gmpCalls = [
-    { _method: 'send' },
-    { _method: 'transfer', address: { chainId: axelarId } },
-  ];
+  const gmpCalls = [{ _method: 'transfer', address: { chainId: axelarId } }];
   t.like(log, [...setupCalls, ...gmpCalls, { _method: 'exit', _cap: 'seat' }]);
   t.snapshot(log, 'call log');
 
