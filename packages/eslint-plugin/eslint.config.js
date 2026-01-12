@@ -1,6 +1,6 @@
 import eslintPluginEslintPlugin from 'eslint-plugin-eslint-plugin';
 
-export default [
+exports.default = [
   {
     plugins: {
       'eslint-plugin': eslintPluginEslintPlugin,
