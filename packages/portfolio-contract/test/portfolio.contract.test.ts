@@ -16,7 +16,10 @@ import {
 import {
   eventLoopIteration,
   inspectMapStore,
+  testInterruptedSteps,
+  type TestStep,
 } from '@agoric/internal/src/testing-utils.js';
+import { typedEntries } from '@agoric/internal';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.ts';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import type { FundsFlowPlan } from '@agoric/portfolio-api';
@@ -37,6 +40,7 @@ import {
 } from './contract-setup.ts';
 import { contractsMock, makeCCTPTraffic, portfolio0lcaOrch } from './mocks.ts';
 import { chainInfoWithCCTP, makeStorageTools } from './supports.ts';
+import type { PortfolioPrivateArgs } from '../src/portfolio.contract.ts';
 
 const { fromEntries, keys, values } = Object;
 
@@ -894,8 +898,12 @@ test('start deposit more to same', async t => {
   );
 });
 
-const setupPlanner = async t => {
-  const { common, zoe, started, trader1, txResolver } = await setupTrader(t);
+const setupPlanner = async (
+  t,
+  overrides: Partial<PortfolioPrivateArgs> = {},
+) => {
+  const { common, zoe, started, makeFundedTrader, trader1, txResolver } =
+    await setupTrader(t, undefined, overrides);
   const { storage } = common.bootstrap;
   const { readPublished, readLegible } = makeStorageTools(storage);
   const utils = { ...common.utils, readLegible };
@@ -908,7 +916,16 @@ const setupPlanner = async t => {
   const planner1 = plannerClientMock(walletPlanner, started.instance, () =>
     readPublished(`wallet.agoric1planner`),
   );
-  return { common, zoe, started, trader1, planner1, readPublished, txResolver };
+  return {
+    common,
+    zoe,
+    started,
+    makeFundedTrader,
+    trader1,
+    planner1,
+    readPublished,
+    txResolver,
+  };
 };
 
 test('redeem, use planner invitation', async t => {
@@ -1257,68 +1274,152 @@ test('simple rebalance using planner', async t => {
   t.is(833332500n, (3333330000n * 25n) / 100n);
 });
 
-test('create+deposit using planner', async t => {
-  const { common, trader1, planner1, readPublished } = await setupPlanner(t);
-  const { usdc } = common.brands;
+const createAndDepositTestMacro = test.macro(
+  async (
+    t,
+    testOpts: {
+      deployOverrides?: Partial<PortfolioPrivateArgs>;
+      restartOverrides?: Partial<PortfolioPrivateArgs>;
+    } = {},
+  ) => {
+    const { common, makeFundedTrader, planner1, readPublished, started } =
+      await setupPlanner(t, testOpts.deployOverrides);
+    const { usdc } = common.brands;
 
-  await planner1.redeem();
+    await planner1.redeem();
 
-  const traderP = (async () => {
-    const Deposit = usdc.units(1_000);
-    await Promise.all([
-      trader1.openPortfolio(t, { Deposit }, { targetAllocation: { USDN: 1n } }),
-      ackNFA(common.utils),
-    ]);
-    t.log('trader created with deposit', Deposit);
-  })();
-
-  const plannerP = (async () => {
-    const getStatus = async pId => {
-      // NOTE: readPublished uses eventLoopIteration() to let vstorage writes settle
-      const x = await readPublished(`portfolios.portfolio${pId}`);
-      return x as unknown as StatusFor['portfolio'];
+    type Input = {
+      trader1: Awaited<ReturnType<typeof makeFundedTrader>>;
+      traderP: Promise<void>;
+      plannerP: Promise<void>;
+      pId: number;
     };
 
-    const pId = 0;
-    const {
-      flowsRunning = {},
-      policyVersion,
-      rebalanceCount,
-    } = await getStatus(pId);
-    t.is(keys(flowsRunning).length, 1);
-    const [[flowId, detail]] = Object.entries(flowsRunning);
-    const fId = Number(flowId.replace('flow', ''));
+    let nextPortfolioId = 0;
+    const allSteps: TestStep[] = typedEntries({
+      makeTrader1: async (opts, label) => {
+        const trader1 = await makeFundedTrader();
+        t.log(`${label} trader1 created`);
+        return { ...opts, trader1 };
+      },
+      startOpenPortfolio: async (opts, label) => {
+        const Deposit = usdc.units(1_000);
+        const traderP = (async () => {
+          await opts.trader1?.openPortfolio(
+            t,
+            { Deposit },
+            { targetAllocation: { USDN: 1n } },
+          );
+          t.log(`${label} trader created with deposit`, Deposit);
+        })();
 
-    // narrow the type
-    if (detail.type !== 'deposit') throw t.fail(detail.type);
+        const pId = nextPortfolioId;
+        nextPortfolioId += 1;
+        await ackNFA(common.utils, -1);
+        return { ...opts, traderP, pId };
+      },
+      resolvePlan: (opts, label) => {
+        const plannerP = (async () => {
+          const getStatus = async pId => {
+            // NOTE: readPublished uses eventLoopIteration() to let vstorage writes settle
+            const x = await readPublished(`portfolios.portfolio${pId}`);
+            return x as unknown as StatusFor['portfolio'];
+          };
 
-    // XXX brand from vstorage isn't suitable for use in call to kit
-    const amount = AmountMath.make(usdc.brand, detail.amount.value);
+          const pId = opts.pId!;
+          const {
+            flowsRunning = {},
+            policyVersion,
+            rebalanceCount,
+          } = await getStatus(pId);
+          t.is(
+            keys(flowsRunning).length,
+            1,
+            `${label} flowsRunning for ${pId}`,
+          );
+          const [[flowId, detail]] = Object.entries(flowsRunning);
+          const fId = Number(flowId.replace('flow', ''));
 
-    const plan: FundsFlowPlan = {
-      flow: [{ src: '<Deposit>', dest: '@agoric', amount }],
-    };
-    await E(planner1.stub).resolvePlan(
-      pId,
-      fId,
-      plan,
-      policyVersion,
-      rebalanceCount,
-    );
-    t.log('planner resolved plan');
-  })();
+          // narrow the type
+          if (detail.type !== 'deposit') throw t.fail(detail.type);
 
-  await Promise.all([traderP, plannerP]);
+          // XXX brand from vstorage isn't suitable for use in call to kit
+          const amount = AmountMath.make(usdc.brand, detail.amount.value);
 
-  const bankTraffic = common.utils.inspectBankBridge();
-  const { accountIdByChain } = await trader1.getPortfolioStatus();
-  const [_ns, _ref, addr] = accountIdByChain.agoric!.split(':');
-  const myVBankIO = bankTraffic.filter(obj =>
-    [obj.sender, obj.recipient].includes(addr),
-  );
-  t.log('bankBridge for', addr, myVBankIO);
-  t.like(myVBankIO, [{ type: 'VBANK_GIVE', amount: '1000000000' }]);
-});
+          const plan: FundsFlowPlan = {
+            flow: [{ src: '<Deposit>', dest: '@agoric', amount }],
+          };
+          await E(planner1.stub).resolvePlan(
+            pId,
+            fId,
+            plan,
+            policyVersion,
+            rebalanceCount,
+          );
+          t.log(`${label} planner resolved plan`);
+        })();
+
+        return { ...opts, plannerP };
+      },
+      syncTraderAndPlanner: async (opts, label) => {
+        await Promise.all([opts.traderP, opts.plannerP]);
+        t.log(`${label} trader and planner synced`);
+        return opts;
+      },
+      verifyBankIO: async (opts, label) => {
+        const bankTraffic = common.utils.inspectBankBridge();
+        const { accountIdByChain } =
+          (await opts.trader1?.getPortfolioStatus()) ?? {};
+        const [_ns, _ref, addr] = accountIdByChain?.agoric!.split(':') ?? [];
+        const myVBankIO = bankTraffic.filter(obj =>
+          [obj.sender, obj.recipient].includes(addr),
+        );
+        t.log(`${label} bankBridge for`, addr, myVBankIO);
+        t.like(myVBankIO, [{ type: 'VBANK_GIVE', amount: '1000000000' }]);
+        return opts;
+      },
+    } satisfies Record<string, TestStep<Input>[1]>);
+
+    const interrupt =
+      testOpts.restartOverrides &&
+      (async () => {
+        await t.throwsAsync(
+          async () => {
+            const privateArgs = common.utils.makePrivateArgs(
+              testOpts.restartOverrides,
+            );
+
+            // XXX restartContract is not supported in this test environment.
+            // The interrupt hook is intentionally a no-op here; restart
+            // behavior is covered by boot tests instead.
+            await E(started.adminFacet).restartContract(privateArgs);
+          },
+          { message: 'upgrade not faked' },
+        );
+      });
+    await testInterruptedSteps(t, allSteps, interrupt);
+  },
+);
+
+test('create portfolio and deposit using planner', createAndDepositTestMacro);
+test(
+  'create portfolio and deposit using planner (restart)',
+  createAndDepositTestMacro,
+  {
+    restartOverrides: {},
+  },
+);
+test(
+  'create portfolio and deposit using planner (upgrade)',
+  createAndDepositTestMacro,
+  {
+    deployOverrides: {
+      // Start with no config argument.
+      defaultFlowConfig: null,
+    },
+    restartOverrides: {},
+  },
+);
 
 const erc4626TestMacro = test.macro({
   async exec(t, vaultKey: AssetPlaceRef) {

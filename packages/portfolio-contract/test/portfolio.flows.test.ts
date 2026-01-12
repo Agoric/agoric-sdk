@@ -1875,7 +1875,7 @@ const provideEVMAccountWithPermitStub: ProvideEVMAccountFn = (
   lca,
   ctx,
   pk,
-  opts,
+  { orchOpts } = {},
 ) =>
   provideEVMAccountWithPermit(
     chainName,
@@ -1899,7 +1899,7 @@ const provideEVMAccountWithPermitStub: ProvideEVMAccountFn = (
       witnessTypeString: 'OpenPortfolioWitness',
       signature: '0x1234' as `0x${string}`,
     },
-    opts,
+    orchOpts,
   );
 
 /**

@@ -59,7 +59,7 @@ export type EvmContext = {
   kvStore: KVStore;
   makeAbortController: MakeAbortController;
   axelarApiUrl: string;
-  ydsNotifier: YdsNotifier;
+  ydsNotifier?: YdsNotifier;
 };
 
 export type GmpTransfer = {
@@ -198,7 +198,7 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
     });
 
     if (transferResult?.txHash) {
-      await ctx.ydsNotifier.notifySettlement(txId, transferResult.txHash);
+      await ctx.ydsNotifier?.notifySettlement(txId, transferResult.txHash);
     }
 
     log(`${logPrefix} CCTP tx resolved`);
@@ -331,7 +331,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
     });
 
     if (transferResult?.txHash) {
-      await ctx.ydsNotifier.notifySettlement(txId, transferResult.txHash);
+      await ctx.ydsNotifier?.notifySettlement(txId, transferResult.txHash);
     }
 
     log(`${logPrefix} GMP tx resolved`);
@@ -438,7 +438,7 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
     });
 
     if (walletResult?.txHash) {
-      await ctx.ydsNotifier.notifySettlement(txId, walletResult.txHash);
+      await ctx.ydsNotifier?.notifySettlement(txId, walletResult.txHash);
     }
 
     log(`${logPrefix} MAKE_ACCOUNT tx resolved`);

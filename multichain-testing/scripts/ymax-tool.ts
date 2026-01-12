@@ -49,6 +49,8 @@ import {
 import { YieldProtocol } from '@agoric/portfolio-api/src/constants.js';
 import type { OfferStatus } from '@agoric/smart-wallet/src/offers.js';
 import type { NameHub } from '@agoric/vats';
+import type { EMethods } from '@agoric/vow/src/E.js';
+import type { Instance } from '@agoric/zoe/src/zoeService/types.js';
 import type { StartedInstanceKit as ZStarted } from '@agoric/zoe/src/zoeService/utils.js';
 import { SigningStargateClient } from '@cosmjs/stargate';
 import { E } from '@endo/far';
@@ -67,23 +69,38 @@ const asset = (spec: string) => readFile(nodeRequire.resolve(spec), 'utf8');
 
 type YMaxStartFn = typeof YMaxStart;
 
-const getUsage = (
-  programName: string,
-): string => `USAGE: ${programName} [options]
+const getUsage = (programName: string): string =>
+  `USAGE: ${programName} [options...] [operation]
 Options:
-  --skip-poll            Skip polling for offer result
-  --exit-success         Exit with success code even if errors occur
-  --positions            JSON string of opening positions (e.g. '{"USDN":6000,"Aave":4000}')
-  --target-allocation    JSON string of target allocation (e.g. '{"USDN":6000,"Aave_Arbitrum":4000}')
-  --redeem               redeem invitation
-  --contract=[ymax0]     agoricNames.instance name of contract (ymax0 or ymax1, default: ymax0)
-                         Used for: opening portfolios, invitePlanner, inviteResolver
-  --description=[planner]
-  --submit-for <id>      submit (empty) plan for portfolio <id>
-  --invitePlanner <addr> send planner invitation to address (uses --contract to determine instance)
-  --inviteResolver <addr> send resolver invitation to address (uses --contract to determine instance)
-  --repl                 start a repl with walletStore and ymaxControl bound
-  -h, --help             Show this help message`;
+  --skip-poll             Skip polling for offer result
+  --exit-success          Exit with success code even if errors occur
+  --positions             JSON of opening positions (e.g. '{"USDN":6000,"Aave":4000}')
+  --target-allocation     JSON of target allocation (e.g. '{"USDN":6000,"Aave_Arbitrum":4000}')
+  --contract=[ymax0]      Contract key in agoricNames.instance ('ymax0' or 'ymax1'), used for
+                          portfolios and invitations
+  --description=[planner] For use with --redeem ('planner' or 'resolver', optionally preceded by 'deliver ')
+
+Operations:
+  -h, --help                Show this help message
+  --repl                    Start a repl with walletStore and ymaxControl bound
+  --checkStorage            Report outdated ymax0 vstorage nodes (older than agoricNames.instance)
+  --pruneStorage            Prune vstorage nodes read from Record<ParentPath, ChildPathSegment[]>
+                            stdin
+  --buildEthOverrides       Build privateArgsOverrides sufficient to add new EVM chains
+  --getCreatorFacet         Read the creator facet read from wallet store entry 'ymaxControl' and
+                            save the result in a new entry ('creatorFacet' for contract 'ymax0',
+                            otherwise \`creatorFacet-\${contract}\`)
+  --installAndStart <id>    Start a contract with bundleId <id> and privateArgsOverrides from stdin
+  --upgrade <id>            Upgrade to bundleId <id> and privateArgsOverrides from stdin
+  --terminate <message>     Terminate the contract instance
+  --inviteOwnerProxy <addr> Send EVM portfolio owner proxy invitation per --contract to <addr>
+  --invitePlanner <addr>    Send planner invitation per --contract to <addr>
+  --inviteResolver <addr>   Send resolver invitation per --contract to <addr>
+  --redeem                  Redeem invitation per --description
+  --submit-for <id>         Submit (empty) plan for portfolio <id>
+  --open                    [default operation] Open a new portfolio per --positions and
+                            --target-allocation
+`.trim();
 
 const parseToolArgs = (argv: string[]) =>
   parseArgs({
@@ -102,6 +119,7 @@ const parseToolArgs = (argv: string[]) =>
       buildEthOverrides: { type: 'boolean' },
       installAndStart: { type: 'string' },
       upgrade: { type: 'string' },
+      inviteOwnerProxy: { type: 'string' },
       invitePlanner: { type: 'string' },
       inviteResolver: { type: 'string' },
       checkStorage: { type: 'boolean' },
@@ -490,9 +508,10 @@ const main = async (
       return;
     }
 
+    const saveTo = description.replace(/^deliver /, '');
     const result = await walletStore.saveOfferResult(
       { instance, description },
-      description.replace(/^deliver /, ''),
+      saveTo,
     );
     trace('redeem result', result);
     return;
@@ -575,27 +594,27 @@ const main = async (
     return;
   }
 
-  if (values.invitePlanner) {
-    const { invitePlanner: planner, contract } = values;
+  // Deliver planner/resolver/EVM Wallet Handler invitations as specified.
+  type CFMethods = ZStarted<YMaxStartFn>['creatorFacet'];
+  const inviters: Partial<
+    Record<
+      keyof typeof values,
+      (cf: EMethods<CFMethods>, ps: Instance, addr: string) => Promise<void>
+    >
+  > = {
+    invitePlanner: (cf, ps, addr) => cf.deliverPlannerInvitation(addr, ps),
+    inviteResolver: (cf, ps, addr) => cf.deliverResolverInvitation(addr, ps),
+    inviteOwnerProxy: (cf, ps, addr) =>
+      cf.deliverEVMWalletHandlerInvitation(addr, ps),
+  };
+  for (const [optName, inviter] of Object.entries(inviters)) {
+    const { contract, [optName as keyof typeof values]: addr } = values;
+    if (typeof addr !== 'string') continue;
     const creatorFacetKey = getCreatorFacetKey(contract);
-    const cf =
-      walletStore.get<ZStarted<YMaxStartFn>['creatorFacet']>(creatorFacetKey);
-    const { postalService } = fromEntries(
-      await walletKit.readPublished('agoricNames.instance'),
-    );
-    await cf.deliverPlannerInvitation(planner, postalService);
-    return;
-  }
-
-  if (values.inviteResolver) {
-    const { inviteResolver: resolver, contract } = values;
-    const creatorFacetKey = getCreatorFacetKey(contract);
-    const cf =
-      walletStore.get<ZStarted<YMaxStartFn>['creatorFacet']>(creatorFacetKey);
-    const { postalService } = fromEntries(
-      await walletKit.readPublished('agoricNames.instance'),
-    );
-    await cf.deliverResolverInvitation(resolver, postalService);
+    const creatorFacet = walletStore.get<CFMethods>(creatorFacetKey);
+    const instances = await walletKit.readPublished('agoricNames.instance');
+    const { postalService } = fromEntries(instances);
+    await inviter(creatorFacet, postalService, addr);
     return;
   }
 
@@ -608,6 +627,7 @@ const main = async (
     return;
   }
 
+  // if (values['open'])
   const positionData = parseTypedJSON(values.positions, GoalDataShape);
   const targetAllocation = values['target-allocation']
     ? parseTypedJSON(
