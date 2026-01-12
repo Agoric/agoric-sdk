@@ -16,6 +16,9 @@ const trace = makeTracer('PoC-CE', true);
  * @import {ERemote} from '@agoric/internal';
  * @import {Board} from '@agoric/vats';
  * @import {AttenuatedDepositPowers} from './attenuated-deposit.core.js';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {IssuerKit} from '@agoric/ertp';
  */
 
 const PoCInfo = /** @type {const} */ ({

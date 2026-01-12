@@ -48,7 +48,7 @@ import type { VTransferIBCEvent } from '@agoric/vats';
 import type { TargetApp } from '@agoric/vats/src/bridge-target.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { type VowTools } from '@agoric/vow';
-import type { ZCFSeat } from '@agoric/zoe';
+import type { ZCF, ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import { makeHeapZone } from '@agoric/zone';
 import { Far, passStyleOf } from '@endo/pass-style';

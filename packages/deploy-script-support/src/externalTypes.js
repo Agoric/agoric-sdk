@@ -5,6 +5,11 @@ export {};
 /**
  * @import {NameHub} from '@agoric/vats';
  * @import {ZoeService} from '@agoric/zoe';
+ * @import {ERef} from '@agoric/vow';
+ * @import {ScratchPad} from '@agoric/internal/src/scratch.js';
+ * @import {Bank} from '@agoric/vats/src/vat-bank.js';
+ * @import {Board} from '@agoric/vats';
+ * @import {NameAdmin} from '@agoric/vats';
  */
 
 // TODO move this type somewhere better
@@ -68,21 +73,21 @@ export {};
 
 /**
  * @typedef {{
- *   scratch: import('@agoric/vow').ERef<import('@agoric/internal/src/scratch.js').ScratchPad>,
+ *   scratch: ERef<ScratchPad>,
  * }} CommonHome
  */
 
 // TODO wallet as import('@agoric/wallet-backend/src/types.js').WalletAdmin once it's a module
 /**
  * @typedef {CommonHome & {
- * agoricNames: import('@agoric/vow').ERef<NameHub>,
- * bank: import('@agoric/vow').ERef<import("@agoric/vats/src/vat-bank.js").Bank>,
- * board: import('@agoric/vow').ERef<import("@agoric/vats").Board>,
+ * agoricNames: ERef<NameHub>,
+ * bank: ERef<Bank>,
+ * board: ERef<Board>,
  * faucet: unknown,
- * myAddressNameAdmin: import('@agoric/vow').ERef<import("@agoric/vats").NameAdmin>,
- * namesByAddress: import('@agoric/vow').ERef<NameHub>,
+ * myAddressNameAdmin: ERef<NameAdmin>,
+ * namesByAddress: ERef<NameHub>,
  * wallet: any,
- * zoe: import('@agoric/vow').ERef<ZoeService>,
+ * zoe: ERef<ZoeService>,
  * }} AgSoloHome
  */
 

@@ -4,6 +4,8 @@ import { E } from '@endo/far';
 /**
  * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {MapStore} from '@agoric/store';
+ * @import {Instance} from '@agoric/zoe';
  */
 
 const trace = makeTracer('RecordedRetired', true);

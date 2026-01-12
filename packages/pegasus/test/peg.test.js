@@ -23,6 +23,9 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
  * @import {Assertions} from 'ava';
  * @import {DepositFacet} from '@agoric/ertp';
  * @import {Pegasus} from '../src/pegasus.js';
+ * @import {ERef} from '@agoric/vow';
+ * @import {Subscription} from '@agoric/notifier';
+ * @import {Connection} from '@agoric/network';
  */
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
