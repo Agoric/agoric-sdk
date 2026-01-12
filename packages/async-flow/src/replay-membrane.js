@@ -1,12 +1,11 @@
 import { isVow } from '@agoric/vow/src/vow-utils.js';
 import { heapVowE } from '@agoric/vow/vat.js';
-import { throwLabeled } from '@endo/common/throw-labeled.js';
 import { Fail, X, b, makeError, q } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { getMethodNames } from '@endo/eventual-send/utils.js';
 import { Far, Remotable, getInterfaceOf } from '@endo/pass-style';
 import { makeConvertKit } from './convert.js';
-import { makeEquate } from './equate.js';
+import { makeEquatesKit } from './equates.js';
 
 /**
  * @import {PromiseKit} from '@endo/promise-kit';
@@ -15,10 +14,11 @@ import { makeEquate } from './equate.js';
  * @import {Vow, VowTools, VowKit} from '@agoric/vow';
  * @import {LogStore} from './log-store.js';
  * @import {Bijection} from './bijection.js';
- * @import {Host, HostVow, LogEntry, Outcome} from './types.js';
+ * @import {Host, HostVow, LogEntry, Outcome, GuestReplayFaultHandler, GuestReplayFault, GuestFaultHandlingChoice, GuestLogEntry} from './types.js';
  */
 
 const { fromEntries, defineProperties, assign } = Object;
+const { apply } = Reflect;
 
 /**
  * @typedef {object} MakeReplayMembraneArg
@@ -62,7 +62,7 @@ export const makeReplayMembraneKitForTesting = ({
 }) => {
   const { when, makeVowKit } = vowTools;
 
-  const equate = makeEquate(bijection);
+  const { equates } = makeEquatesKit(bijection);
 
   const guestPromiseMap = new WeakMap();
 
@@ -159,6 +159,72 @@ export const makeReplayMembraneKitForTesting = ({
     });
   };
 
+  /**
+   * The default replay fault handler always declines
+   *
+   * @type {GuestReplayFaultHandler}
+   */
+  let guestReplayFaultHandler = _fault =>
+    // Separate line so we can breakpoint
+    harden({ kind: 'decline' });
+
+  /**
+   * @param {GuestLogEntry} guestEntry
+   * @param {LogEntry} hostEntry
+   * @param {string} [label]
+   * @returns {void}
+   */
+  const matchReplay = (guestEntry, hostEntry, label = undefined) => {
+    if (equates(guestEntry, hostEntry, label)) {
+      return;
+    }
+    /** @type {GuestReplayFault} */
+    const replayFault = harden({
+      generation,
+      logIndex: log.getIndex(),
+      expectedEntry: hostToGuest(hostEntry),
+      actualEntry: guestEntry,
+      label,
+
+      // The expectedOutcome is not yet implemented. It should be implemented
+      // for calls by peeking ahead for the corresponding `doReturn` or
+      // `doThrow`. For sends, it should be the returned guest promise.
+      // expectedOutcome
+    });
+
+    /** @type {GuestFaultHandlingChoice} */
+    const handlingChoice = apply(
+      guestReplayFaultHandler,
+      // The narrator is passed in a record in case we want to enhance
+      // that record to seem like the `this` binding of a guest method,
+      // i.e., a context object, such as `{state, self}` or
+      // `{state, facets}`.
+      harden({ narrator }),
+      [replayFault],
+    );
+    // @ts-expect-error actualOutcome is only on some branches, which is fine.
+    const { kind, actualOutcome = undefined } = handlingChoice;
+    actualOutcome === undefined ||
+      Fail`fault choice actualOutcome not yet implemented: ${replayFault} => ${handlingChoice}`;
+    switch (kind) {
+      case 'decline': {
+        throw Fail`Fault handler declined to handle fault ${replayFault}`;
+      }
+      case 'ignoreExpected': {
+        throw Fail`ignoreExpected not yet implemented: ${replayFault}`;
+      }
+      case 'ignoreDifference': {
+        return;
+      }
+      case 'ignoreActual': {
+        throw Fail`ignoreActual not yet implemented: ${replayFault}`;
+      }
+      default: {
+        Fail`Invalid fault handling choice representation ${q(kind)} for fault ${replayFault}`;
+      }
+    }
+  };
+
   // ///////////// Guest to Host or consume log ////////////////////////////////
 
   const performCall = (hostTarget, optVerb, hostArgs, callIndex) => {
@@ -212,14 +278,7 @@ export const makeReplayMembraneKitForTesting = ({
       ]);
       if (log.isReplaying()) {
         const entry = log.nextEntry();
-        equate(
-          guestEntry,
-          entry,
-          `replay ${callIndex}:
-     ${q(guestEntry)}
-  vs ${q(entry)}
-    `,
-        );
+        matchReplay(guestEntry, entry, 'replay call');
         outcome = /** @type {Outcome} */ (nestInterpreter(callIndex));
       } else {
         const entry = guestToHost(guestEntry);
@@ -329,19 +388,7 @@ export const makeReplayMembraneKitForTesting = ({
         ]);
         if (log.isReplaying()) {
           const entry = log.nextEntry();
-          try {
-            equate(guestEntry, entry);
-          } catch (equateErr) {
-            // TODO consider Richard Gibson's suggestion for a better way
-            // to keep track of the error labeling.
-            throwLabeled(
-              equateErr,
-              `replay ${callIndex}:
-     ${q(guestEntry)}
-  vs ${q(entry)}
-    `,
-            );
-          }
+          matchReplay(guestEntry, entry, 'replay send only');
         } else {
           const entry = guestToHost(guestEntry);
           log.pushEntry(entry);
@@ -377,19 +424,7 @@ export const makeReplayMembraneKitForTesting = ({
         ]);
         if (log.isReplaying()) {
           const entry = log.nextEntry();
-          try {
-            equate(guestEntry, entry);
-          } catch (equateErr) {
-            // TODO consider Richard Gibson's suggestion for a better way
-            // to keep track of the error labeling.
-            throwLabeled(
-              equateErr,
-              `replay ${callIndex}:
-     ${q(guestEntry)}
-  vs ${q(entry)}
-    `,
-            );
-          }
+          matchReplay(guestEntry, entry, 'replay send');
           outcome = /** @type {Outcome} */ (nestInterpreter(callIndex));
         } else {
           const entry = guestToHost(guestEntry);
@@ -716,7 +751,10 @@ export const makeReplayMembraneKitForTesting = ({
       stopped = true;
     },
   });
-  const flowInspector = Far('flowInspector', {
+  const narrator = Far('narrator', {
+    registerFaultHandler(handler) {
+      guestReplayFaultHandler = handler;
+    },
     getLogDump() {
       return hostToGuest(log.dump());
     },
@@ -728,6 +766,9 @@ export const makeReplayMembraneKitForTesting = ({
     },
     isReplaying() {
       return log.isReplaying();
+    },
+    panic(fatalProblem) {
+      throw panic(fatalProblem);
     },
   });
   return { membrane, flowInspector };

@@ -101,7 +101,7 @@ const makeVowishStore = name => {
  * and promises through the membrane.
  * The resulting host wrappers must not only survive upgrade, then must
  * reestablish their mapping to the correct corresponding guest objects that
- * they are taken to wrap. We plan to do this via `equate` repopulating
+ * they are taken to wrap. We plan to do this via `equates` repopulating
  * the bijection by the time the host wrapper needs to know what
  * corresponding guest it is now taken to wrap.
  *
