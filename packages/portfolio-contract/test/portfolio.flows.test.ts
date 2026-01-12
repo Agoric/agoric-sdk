@@ -2324,3 +2324,58 @@ test('withdraw from ERC4626 position', async t => {
 
   await documentStorageSchema(t, storage, docOpts);
 });
+
+test('withdraw from Beefy position', async t => {
+  const amount = AmountMath.make(USDC, 1_000_000n);
+  const feeCall = AmountMath.make(BLD, 100n);
+  const { orch, tapPK, ctx, offer, storage, txResolver } = mocks(
+    {},
+    { Deposit: amount },
+  );
+
+  const kit = await ctx.makePortfolioKit();
+
+  await Promise.all([
+    rebalance(
+      orch,
+      ctx,
+      offer.seat,
+      {
+        flow: [
+          {
+            dest: '@Arbitrum',
+            src: 'Beefy_re7_Avalanche',
+            amount,
+            fee: feeCall,
+          },
+        ],
+      },
+      kit,
+    ),
+    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
+      await txResolver.drainPending();
+    }),
+  ]);
+
+  const { log } = offer;
+  t.log(log.map(msg => msg._method).join(', '));
+  t.like(log, [
+    { _method: 'monitorTransfers' },
+    { _method: 'send' },
+    { _method: 'transfer', address: { chainId: 'axelar-dojo-1' } },
+    { _method: 'send' },
+    { _method: 'transfer', address: { chainId: 'axelar-dojo-1' } },
+    { _method: 'exit', _cap: 'seat' },
+  ]);
+  t.snapshot(log, 'call log');
+
+  const rawMemo = log[4].opts!.memo;
+  const decodedCalls = decodeFunctionCall(rawMemo, [
+    'approve(address,uint256)',
+    'beefyWithdrawUSDC(address,uint256)',
+    'approve(address,uint256)',
+  ]);
+  t.snapshot(decodedCalls, 'decoded calls');
+
+  await documentStorageSchema(t, storage, docOpts);
+});
