@@ -1,9 +1,6 @@
 // This file can contain .js-specific Typescript compiler config.
 {
   "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    "checkJs": false,
-  },
   "include": [
     "public/**/*.js",
     "src/**/*.js",

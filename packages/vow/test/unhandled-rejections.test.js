@@ -12,6 +12,10 @@ import { makeGcAndFinalize } from '@agoric/internal/src/lib-nodejs/gc-and-finali
 import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
 import { prepareVowTools } from '../vat.js';
 
+/**
+ * @import {VowKit} from '../src/types.ts';
+ */
+
 const expectUnhandled = makeExpectUnhandledRejection({
   test,
   importMetaUrl: import.meta.url,
@@ -125,6 +129,8 @@ test.serial(
       const zone = makeDurableZone(baggage, 'durableRoot');
       prepareVowTools(zone);
 
+      /** @type {VowKit} */
+      // @ts-expect-error the value will come from baggage, not the maker
       const testVowKit = zone.makeOnce('testVowKit', () =>
         t.fail('need testVowKit in baggage'),
       );
@@ -219,6 +225,7 @@ test.serial(
           return 'is not storable';
         },
       });
+      // @ts-expect-error testing non-storable rejection reason
       zone.makeOnce('testVow', () => makeRejectedVow(vowTools, nonStorable));
     });
 
