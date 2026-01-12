@@ -66,6 +66,7 @@ export const PublishedTxShape: TypedPattern<PublishedTx> = M.or(
       type: M.or(TxType.GMP),
       destinationAddress: M.string(),
       status: TxStatus.PENDING,
+      sourceAddress: M.string(),
     },
     {
       amount: M.nat(),

@@ -67,6 +67,7 @@ test('parsePendingTx accepts GMP transaction without amount field', t => {
   const gmpWithoutAmount = harden({
     type: TxType.GMP,
     status: 'pending',
+    sourceAddress: 'cosmos:agoric-3:agoric1test',
     destinationAddress:
       'eip155:42161:0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
   });
@@ -77,6 +78,7 @@ test('parsePendingTx accepts GMP transaction without amount field', t => {
     txId,
     type: TxType.GMP,
     status: 'pending',
+    sourceAddress: 'cosmos:agoric-3:agoric1test',
     destinationAddress:
       'eip155:42161:0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
   });

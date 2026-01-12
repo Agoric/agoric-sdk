@@ -346,9 +346,13 @@ export const sendGMPContractCall = async (
   const { chainName, remoteAddress, chainId: gmpChainId } = gmpAcct;
   const axelarId = axelarIds[chainName];
 
+  const sourceAddress = coerceAccountId(lca.getAddress());
   const { result, txId } = resolverClient.registerTransaction(
     TxType.GMP,
     `${gmpChainId}:${remoteAddress}`,
+    undefined,
+    undefined,
+    sourceAddress,
   );
 
   const { AXELAR_GMP, AXELAR_GAS } = gmpAddresses;
