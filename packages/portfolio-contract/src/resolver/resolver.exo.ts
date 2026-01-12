@@ -48,7 +48,7 @@ const PromiseVowShape = M.any();
 
 const ClientFacetI = M.interface('ResolverClient', {
   registerTransaction: M.call(M.or(...Object.values(TxType)), M.string())
-    .optional(M.nat(), M.string())
+    .optional(M.nat(), M.string(), M.string())
     .returns(M.splitRecord({ result: PromiseVowShape, txId: M.string() })),
   unsubscribe: M.call(M.string(), M.string()).returns(),
   createPendingTx: M.call(
@@ -69,6 +69,7 @@ interface TxMeta {
   type: TxType;
   nextTxId?: TxId;
   destinationAddress?: AccountId;
+  sourceAddress?: AccountId;
   amountValue?: bigint;
 }
 
@@ -215,18 +216,21 @@ export const prepareResolverKit = (
          * @param destinationAddress
          * @param amountValue
          * @param expectedAddr
+         * @param sourceAddress
          */
         registerTransaction(
           type: TxType,
           destinationAddress: AccountId,
           amountValue?: NatValue,
           expectedAddr?: `0x${string}`,
+          sourceAddress?: AccountId,
         ): { result: Vow<void>; txId: TxId } {
           const txMeta: TxMeta = {
             type,
             destinationAddress,
             ...(txsWithAmounts.includes(type) ? { amountValue } : {}),
             ...(type === TxType.MAKE_ACCOUNT ? { expectedAddr } : {}),
+            ...(sourceAddress ? { sourceAddress } : {}),
           };
           return this.facets.client.createPendingTx(txMeta);
         },
@@ -268,6 +272,7 @@ export const prepareResolverKit = (
           const {
             type,
             destinationAddress,
+            sourceAddress,
             amountValue: amount,
             expectedAddr,
             ...rest
@@ -277,6 +282,7 @@ export const prepareResolverKit = (
             type,
             ...rest,
             ...(destinationAddress ? { destinationAddress } : {}),
+            ...(sourceAddress ? { sourceAddress } : {}),
             ...(txsWithAmounts.includes(type) ? { amount } : {}),
             ...(type === TxType.MAKE_ACCOUNT ? { expectedAddr } : {}),
             ...(rejectionReason ? { rejectionReason } : {}),
