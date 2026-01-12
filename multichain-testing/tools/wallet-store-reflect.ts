@@ -1,4 +1,8 @@
-import type { SigningSmartWalletKit , retryUntilCondition, type RetryOptions } from '@agoric/client-utils';
+import {
+  type SigningSmartWalletKit,
+  retryUntilCondition,
+  type RetryOptions,
+} from '@agoric/client-utils';
 import type { UpdateRecord } from '@agoric/smart-wallet/src/smartWallet.js';
 import type { EMethods } from '@agoric/vow/src/E.js';
 import type { Instance } from '@agoric/zoe';
