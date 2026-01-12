@@ -23,6 +23,8 @@ import { makeGasEstimator } from '../src/gas-estimation.ts';
 import type { HandlePendingTxOpts } from '../src/pending-tx-manager.ts';
 import { prepareAbortController } from '../src/support.ts';
 import type { YdsNotifier } from '../src/yds-notifier.ts';
+import type { Sdk as SpectrumBlockchainSdk } from '../src/graphql/api-spectrum-blockchain/__generated/sdk.ts';
+import type { Sdk as SpectrumPoolsSdk } from '../src/graphql/api-spectrum-pools/__generated/sdk.ts';
 
 const PENDING_TX_PATH_PREFIX = 'published.ymax1';
 
@@ -66,13 +68,60 @@ export const makeNotImplemented = (
 export const makeNotImplementedAsync = (key: string | symbol) =>
   makeNotImplemented(key, { async: true });
 
+export const createMockSpectrumBlockchain = (amounts: {
+  [key: string]: number;
+}) =>
+  ({
+    async getBalances({
+      accounts,
+    }: {
+      accounts: {
+        chain: string;
+        address: string;
+        token: string;
+      }[];
+    }) {
+      return {
+        balances: accounts.map(query => {
+          return { balance: String(amounts[query.token] || 0), error: null };
+        }),
+      };
+    },
+  }) as SpectrumBlockchainSdk;
+
+export const createMockSpectrumPools = (amounts: { [key: string]: bigint }) =>
+  ({
+    async getBalances({
+      positions,
+    }: {
+      positions: {
+        chain: string;
+        protocol: string;
+        pool: string;
+        address: string;
+      }[];
+    }) {
+      return {
+        balances: positions.map(query => {
+          const amount = amounts[query.pool];
+          const balance =
+            amount !== undefined ? { USDC: Number(amount) / 1e6 } : null;
+          return {
+            balance,
+            error: null,
+          };
+        }),
+      };
+    },
+  }) as SpectrumPoolsSdk;
+
 /** Return a correctly-typed record lacking significant functionality. */
 export const createMockEnginePowers = (): EnginePowers => ({
   evmCtx: mockEvmCtx,
   rpc: {} as any,
   spectrum: {} as any,
-  spectrumBlockchain: undefined,
-  spectrumPools: undefined,
+  spectrumBlockchain: createMockSpectrumBlockchain({}),
+  spectrumPools: createMockSpectrumPools({}),
   spectrumChainIds: {},
   spectrumPoolIds: {},
   cosmosRest: {} as any,

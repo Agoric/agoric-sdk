@@ -245,21 +245,20 @@ export const main = async (
     retries: config.spectrum.retries,
   });
 
-  const makeOptionalGqlSdk = <Sdk>(
+  const makeGqlSdk = <Sdk>(
     makeSdk: (client: GraphQLClient) => Sdk,
-    endpoints?: string[],
-  ): Sdk | undefined => {
-    if (!endpoints) return undefined;
+    endpoints: string[],
+  ): Sdk => {
     const multiClient = makeGraphqlMultiClient(endpoints, simplePowers, {
       requestLimits: config.requestLimits,
     });
     return makeSdk(multiClient);
   };
-  const spectrumBlockchain = makeOptionalGqlSdk(
+  const spectrumBlockchain = makeGqlSdk(
     getSpectrumBlockchainSdk,
     config.spectrumBlockchainEndpoints,
   );
-  const spectrumPools = makeOptionalGqlSdk(
+  const spectrumPools = makeGqlSdk(
     getSpectrumPoolsSdk,
     config.spectrumPoolsEndpoints,
   );

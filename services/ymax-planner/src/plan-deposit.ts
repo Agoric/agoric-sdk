@@ -1,4 +1,4 @@
-import { assert, Fail, q, X } from '@endo/errors';
+import { assert, Fail, X } from '@endo/errors';
 
 import type { AssetPlaceRef } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
 import type {
@@ -13,17 +13,8 @@ import { planRebalanceFlow } from '@aglocal/portfolio-contract/tools/plan-solve.
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import type { Brand, NatAmount, NatValue } from '@agoric/ertp/src/types.js';
-import {
-  fromTypedEntries,
-  objectMap,
-  objectMetaMap,
-  typedEntries,
-} from '@agoric/internal';
-import type {
-  AccountId,
-  Caip10Record,
-  CaipChainId,
-} from '@agoric/orchestration';
+import { objectMap, objectMetaMap, typedEntries } from '@agoric/internal';
+import type { Caip10Record, CaipChainId } from '@agoric/orchestration';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { FundsFlowPlan, SupportedChain } from '@agoric/portfolio-api';
 import {
@@ -33,14 +24,13 @@ import {
 } from '@agoric/portfolio-api';
 
 import type { CosmosRestClient } from './cosmos-rest-client.js';
-import { USDN } from './cosmos-rest-client.js';
 import { getERC4626VaultsBalances } from './erc4626-utils.ts';
 import type { ChainAddressTokenBalance } from './graphql/api-spectrum-blockchain/__generated/graphql.ts';
 import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
 import type { ProtocolPoolUserBalanceResult } from './graphql/api-spectrum-pools/__generated/graphql.ts';
 import type { Sdk as SpectrumPoolsSdk } from './graphql/api-spectrum-pools/__generated/sdk.ts';
+import type { SpectrumClient } from './spectrum-client.js';
 import type { EvmChain } from './pending-tx-manager.ts';
-import type { Chain, Pool, SpectrumClient } from './spectrum-client.js';
 import type { EvmProviders } from './support.ts';
 import { spectrumProtocols, UserInputError } from './support.ts';
 import { getOwn, lookupValueForKey } from './utils.js';
@@ -84,55 +74,14 @@ const amountFromPositionBalance = (
 export type BalanceQueryPowers = {
   cosmosRest: CosmosRestClient;
   spectrum: SpectrumClient;
-  spectrumBlockchain?: SpectrumBlockchainSdk;
-  spectrumPools?: SpectrumPoolsSdk;
+  spectrumBlockchain: SpectrumBlockchainSdk;
+  spectrumPools: SpectrumPoolsSdk;
   spectrumChainIds: Partial<Record<SupportedChain, string>>;
   spectrumPoolIds: Partial<Record<PoolKey, string>>;
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
   erc4626VaultAddresses: Partial<Record<PoolKey, `0x${string}`>>;
   evmProviders: EvmProviders;
   chainNameToChainIdMap: Partial<Record<EvmChain, CaipChainId>>;
-};
-
-// UNTIL https://github.com/Agoric/agoric-sdk/issues/12186
-// This should move into @agoric/orchestration/src/utils/address.js, which
-// itself should be updated to conform with CAIP-10.
-// cf. https://github.com/Agoric/agoric-sdk/pull/12185/commits/34667cf25cb11a90d348f72750af6e50d632a22d
-const addressOfAccountId = (caip10AccountId: AccountId) =>
-  parseAccountId(caip10AccountId).accountAddress;
-
-export const getCurrentBalance = async (
-  { protocol, chainName, ..._details }: PoolPlaceInfo,
-  accountIdByChain: StatusFor['portfolio']['accountIdByChain'],
-  { spectrum, cosmosRest }: BalanceQueryPowers,
-): Promise<bigint> => {
-  await null;
-  switch (protocol) {
-    case 'USDN': {
-      const addr = addressOfAccountId(accountIdByChain[chainName] as any);
-      // XXX add denom to PoolPlaceInfo?
-      const resp = await cosmosRest.getAccountBalance(
-        chainName,
-        addr,
-        USDN.base,
-      );
-      return BigInt(resp.amount);
-    }
-    case 'Aave':
-    case 'Compound': {
-      const pool = protocol.toLowerCase() as Pool;
-      const chain = chainName.toLowerCase() as Chain;
-      const addr = addressOfAccountId(accountIdByChain[chainName] as any);
-      const resp = await spectrum.getPoolBalance(chain, pool, addr);
-      const balance = resp.balance.supplyBalance;
-      Number.isSafeInteger(balance) ||
-        Fail`Invalid balance for chain ${q(chain)} pool ${q(pool)} address ${addr}: ${balance}`;
-      return BigInt(balance);
-    }
-    default:
-      // TODO: Beefy
-      throw Fail`Unknown protocol: ${q(protocol)}`;
-  }
 };
 
 type AccountQueryDescriptor = {
@@ -236,118 +185,88 @@ export const getCurrentBalances = async (
       errors.push(err);
     }
   }
-  await null;
 
-  // Process any ERC4626 vault queries first. These dont rely on Spectrum.
-  if (erc4626Queries.length) {
-    const erc4626QueryResults = await getERC4626VaultsBalances(
-      erc4626Queries,
-      powers,
-    );
-    for (let i = 0; i < erc4626QueryResults.length; i += 1) {
-      const result = erc4626QueryResults[i];
-      if (result.error) {
-        errors.push(Error(result.error));
-      }
-      if (result.balance === undefined) {
-        balances.set(result.place, undefined);
-      } else {
-        balances.set(result.place, AmountMath.make(brand, result.balance));
-      }
-    }
-  }
+  const spectrumAccountQueries = accountQueries.map(desc =>
+    makeSpectrumAccountQuery(desc, powers),
+  );
+  const spectrumPoolQueries = positionQueries.map(desc =>
+    makeSpectrumPoolQuery(desc, powers),
+  );
 
-  if (spectrumBlockchain && spectrumPools) {
-    const spectrumAccountQueries = accountQueries.map(desc =>
-      makeSpectrumAccountQuery(desc, powers),
-    );
-    const spectrumPoolQueries = positionQueries.map(desc =>
-      makeSpectrumPoolQuery(desc, powers),
-    );
-
-    const [accountResult, positionResult] = await Promise.allSettled([
+  const [accountResult, positionResult, erc4626Result] =
+    await Promise.allSettled([
       spectrumAccountQueries.length
         ? spectrumBlockchain.getBalances({ accounts: spectrumAccountQueries })
         : { balances: [] },
       spectrumPoolQueries.length
         ? spectrumPools.getBalances({ positions: spectrumPoolQueries })
         : { balances: [] },
+      erc4626Queries.length
+        ? getERC4626VaultsBalances(erc4626Queries, powers)
+        : { balances: [] },
     ]);
 
-    if (
-      accountResult.status !== 'fulfilled' ||
-      positionResult.status !== 'fulfilled'
-    ) {
-      const rejections = [accountResult, positionResult].flatMap(settlement =>
+  if (
+    accountResult.status !== 'fulfilled' ||
+    positionResult.status !== 'fulfilled' ||
+    erc4626Result.status !== 'fulfilled'
+  ) {
+    const rejections = [accountResult, positionResult, erc4626Result].flatMap(
+      settlement =>
         settlement.status === 'fulfilled' ? [] : [settlement.reason],
-      );
-      errors.push(...rejections);
-      throw AggregateError(errors, 'Could not get balances');
-    }
-    const accountBalances = accountResult.value.balances;
-    const positionBalances = positionResult.value.balances;
-    if (
-      accountBalances.length !== accountQueries.length ||
-      positionBalances.length !== positionQueries.length
-    ) {
-      const msg = `Bad balance query response(s), expected [${[accountBalances.length, positionBalances.length]}] results but got [${[accountQueries.length, positionQueries.length]}]`;
-      throw AggregateError(errors, msg);
-    }
-    for (let i = 0; i < accountQueries.length; i += 1) {
-      const { place, asset } = accountQueries[i];
-      const result = accountBalances[i];
-      if (result.error) errors.push(Error(result.error));
-      const balanceAmount = amountFromAccountBalance(brand, result.balance);
-      balances.set(place, balanceAmount);
-      // XXX as of 2025-11-19, spectrumBlockchain.getBalances returns @agoric
-      // IBC USDC balances in micro-USDC (uusdc) rather than USDC like the rest.
-      if (place === '@agoric' && asset === 'USDC' && result.balance) {
-        if (!result.balance.match(/^[0-9]+$/)) {
-          const msg = `⚠️ Got a non-integer balance ${result.balance} for @agoric USDC; verify scaling with Spectrum`;
-          errors.push(Error(msg));
-        }
-        balances.set(place, AmountMath.make(brand, BigInt(result.balance)));
+    );
+    errors.push(...rejections);
+    throw AggregateError(errors, 'Could not get balances');
+  }
+  const accountBalances = accountResult.value.balances;
+  const positionBalances = positionResult.value.balances;
+  const erc4626Balances = erc4626Result.value.balances;
+  if (
+    accountBalances.length !== accountQueries.length ||
+    positionBalances.length !== positionQueries.length ||
+    erc4626Balances.length !== erc4626Queries.length
+  ) {
+    const msg = `Bad balance query response(s), expected [${[accountBalances.length, positionBalances.length, erc4626Balances.length]}] results but got [${[accountQueries.length, positionQueries.length, erc4626Queries.length]}]`;
+    throw AggregateError(errors, msg);
+  }
+  for (let i = 0; i < accountQueries.length; i += 1) {
+    const { place, asset } = accountQueries[i];
+    const result = accountBalances[i];
+    if (result.error) errors.push(Error(result.error));
+    const balanceAmount = amountFromAccountBalance(brand, result.balance);
+    balances.set(place, balanceAmount);
+    // XXX as of 2025-11-19, spectrumBlockchain.getBalances returns @agoric
+    // IBC USDC balances in micro-USDC (uusdc) rather than USDC like the rest.
+    if (place === '@agoric' && asset === 'USDC' && result.balance) {
+      if (!result.balance.match(/^[0-9]+$/)) {
+        const msg = `⚠️ Got a non-integer balance ${result.balance} for @agoric USDC; verify scaling with Spectrum`;
+        errors.push(Error(msg));
       }
-    }
-    for (let i = 0; i < positionQueries.length; i += 1) {
-      const { place } = positionQueries[i];
-      const result = positionBalances[i];
-      if (result.error) errors.push(Error(result.error));
-      balances.set(place, amountFromPositionBalance(brand, result.balance));
+      balances.set(place, AmountMath.make(brand, BigInt(result.balance)));
     }
   }
+  for (let i = 0; i < positionQueries.length; i += 1) {
+    const { place } = positionQueries[i];
+    const result = positionBalances[i];
+    if (result.error) errors.push(Error(result.error));
+    balances.set(place, amountFromPositionBalance(brand, result.balance));
+  }
+  for (let i = 0; i < erc4626Queries.length; i += 1) {
+    const result = erc4626Balances[i];
+    if (result.error) {
+      errors.push(Error(result.error));
+    }
+    if (result.balance === undefined) {
+      balances.set(result.place, undefined);
+    } else {
+      balances.set(result.place, AmountMath.make(brand, result.balance));
+    }
+  }
+
   if (errors.length) {
     throw AggregateError(errors, 'Could not accept balances');
   }
-  const balancesExist = Array.from(balances.values()).some(v => !!v);
-  if (balancesExist) return Object.fromEntries(balances);
-
-  // XXX Fallback during the transition to using only Spectrum GraphQL.
-  const balanceEntries = await Promise.all(
-    positionKeys.map(async (posKey: PoolKey): Promise<[PoolKey, NatAmount]> => {
-      await null;
-      try {
-        const poolPlaceInfo =
-          getOwn(PoolPlaces, posKey) || Fail`Unknown PoolPlace`;
-        // TODO there should be a bulk query operation available now
-        const amountValue = await getCurrentBalance(
-          poolPlaceInfo,
-          accountIdByChain,
-          powers,
-        );
-        return [posKey, AmountMath.make(brand, amountValue)];
-      } catch (cause) {
-        errors.push(Error(`Could not get ${posKey} balance`, { cause }));
-        // @ts-expect-error
-        return [posKey, undefined];
-      }
-    }),
-  );
-  if (errors.length) {
-    throw AggregateError(errors, 'Could not get balances');
-  }
-  const currentBalances = fromTypedEntries(balanceEntries);
-  return currentBalances;
+  return Object.fromEntries(balances);
 };
 
 export const getNonDustBalances = async (

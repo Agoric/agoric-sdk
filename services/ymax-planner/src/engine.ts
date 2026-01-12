@@ -35,7 +35,6 @@ import type {
 import {
   flowIdFromKey,
   FlowStatusShape,
-  PoolPlaces,
   portfolioIdFromKey,
   PortfolioStatusShapeExt,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
@@ -45,7 +44,6 @@ import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.
 import {
   mustMatch,
   naturalCompare,
-  partialMap,
   provideLazyMap,
   stripPrefix,
   tryNow,
@@ -74,7 +72,6 @@ import type {
 import { handlePendingTx } from './pending-tx-manager.ts';
 import type { BalanceQueryPowers } from './plan-deposit.ts';
 import {
-  getCurrentBalance,
   getNonDustBalances,
   planDepositToAllocations,
   planRebalanceToAllocations,
@@ -96,7 +93,7 @@ import {
 } from './vstorage-utils.ts';
 import type { ReadStorageMetaOptions } from './vstorage-utils.ts';
 
-const { fromEntries, values } = Object;
+const { values } = Object;
 
 // eslint-disable-next-line no-nested-ternary
 const compareBigints = (a: bigint, b: bigint) => (a > b ? 1 : a < b ? -1 : 0);
@@ -109,8 +106,6 @@ const inspectForStdout = (obj: unknown, options?: InspectOptions) =>
   inspect(obj, { ...inspectOptsForStdout, ...options });
 const inspectForStderr = (obj: unknown, options?: InspectOptions) =>
   inspect(obj, { ...inspectOptsForStderr, ...options });
-
-const knownErrorProps = harden(['cause', 'errors', 'message', 'name', 'stack']);
 
 type CosmosEvent = {
   type: string;
@@ -177,8 +172,8 @@ export type Powers = {
   evmCtx: Omit<EvmContext, 'signingSmartWalletKit' | 'fetch' | 'cosmosRest'>;
   rpc: CosmosRPCClient;
   spectrum: SpectrumClient;
-  spectrumBlockchain?: SpectrumBlockchainSdk;
-  spectrumPools?: SpectrumPoolsSdk;
+  spectrumBlockchain: SpectrumBlockchainSdk;
+  spectrumPools: SpectrumPoolsSdk;
   spectrumChainIds: Partial<Record<SupportedChain, string>>;
   spectrumPoolIds: Partial<Record<InstrumentId, string>>;
   cosmosRest: CosmosRestClient;
@@ -687,41 +682,6 @@ export const startEngine = async (
   const { portfoliosPathPrefix, pendingTxPathPrefix } = vstoragePathPrefixes;
   await null;
   const { query, marshaller } = signingSmartWalletKit;
-
-  // Test balance querying (using dummy addresses for now).
-  {
-    const poolPlaceInfoByProtocol = new Map(
-      values(PoolPlaces).map(info => [info.protocol, info]),
-    );
-    await Promise.all(
-      [...poolPlaceInfoByProtocol.values()].map(async info => {
-        await null;
-        try {
-          const { chainName } = info;
-          const dummyAddress =
-            chainName === 'noble'
-              ? 'cosmos:testnoble:noble1xw2j23rcwrkg02yxdn5ha2d2x868cuk6370s9y'
-              : (([caipChainId, addr]) => `${caipChainId}:${addr}`)(
-                  typedEntries(evmCtx.usdcAddresses)[0],
-                );
-          const accountIdByChain = { [chainName]: dummyAddress } as any;
-          await getCurrentBalance(info, accountIdByChain, {
-            ...powers,
-            evmProviders: evmCtx.evmProviders,
-          });
-        } catch (err) {
-          const expandos = partialMap(Reflect.ownKeys(err), key =>
-            knownErrorProps.includes(key as any) ? false : [key, err[key]],
-          );
-          console.warn(
-            `⚠️ Could not query ${info.protocol} balance`,
-            err,
-            ...(expandos.length ? [fromEntries(expandos)] : []),
-          );
-        }
-      }),
-    );
-  }
 
   const vbankAssets: AssetInfo[] = (
     await query.readPublished('agoricNames.vbankAsset')

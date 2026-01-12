@@ -78,7 +78,7 @@ export const getERC4626VaultsBalances = async (
     BalanceQueryPowers,
     'chainNameToChainIdMap' | 'erc4626VaultAddresses' | 'evmProviders'
   >,
-): Promise<ERC4626BalanceResult[]> => {
+): Promise<{ balances: ERC4626BalanceResult[] }> => {
   const { erc4626VaultAddresses, chainNameToChainIdMap, evmProviders } = powers;
 
   const missingPowers = partialMap(
@@ -92,7 +92,7 @@ export const getERC4626VaultsBalances = async (
   missingPowers.length === 0 ||
     Fail`ERC4626 vault queries missing powers: ${q(missingPowers)}`;
 
-  return Promise.all(
+  const balances = await Promise.all(
     queries.map(async ({ place, chainName, address }) => {
       await null;
       try {
@@ -121,4 +121,6 @@ export const getERC4626VaultsBalances = async (
       }
     }),
   );
+
+  return { balances };
 };
