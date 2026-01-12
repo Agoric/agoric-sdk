@@ -1,5 +1,5 @@
 // @ts-check
-/** global harden */
+/* global harden */
 import { makeSmartWalletKit, LOCAL_CONFIG } from '@agoric/client-utils';
 import { assert } from '@endo/errors';
 import { E, Far } from '@endo/far';
@@ -15,7 +15,6 @@ import { makeRetryUntilCondition } from './sleep.js';
 /**
  * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
  * @import {UpdateRecord} from '@agoric/smart-wallet/src/smartWallet.js';
- *
  * @import { EnglishMnemonic } from '@cosmjs/crypto';
  * @import { RetryUntilCondition } from './sleep.js';
  * @import {RpcClient} from '@cosmjs/tendermint-rpc';
@@ -25,7 +24,6 @@ import { makeRetryUntilCondition } from './sleep.js';
  * @import {BridgeAction} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {Issuer} from '@agoric/ertp';
  * @import {Amount} from '@agoric/ertp';
- * @import {MockWallet} from '../test/wallet-tools.js';
  * @import {BundleCache} from '@agoric/swingset-vat/tools/bundleTool.js';
  * @import {execFileSync} from 'child_process';
  */
@@ -280,7 +278,6 @@ const provisionSmartWalletAndMakeDriver = async (
 
   /** @param {BridgeAction} bridgeAction */
   const sendAction = async bridgeAction => {
-     
     const capData = q.toCapData(harden(bridgeAction));
     const offerBody = JSON.stringify(capData);
     const txInfo = await agd.tx(
@@ -305,7 +302,6 @@ const provisionSmartWalletAndMakeDriver = async (
     }
   }
 
-  // XXX  /** @type {import('../test/wallet-tools.js').MockWallet['offers']} */
   const offers = Far('Offers', {
     executeOffer,
     /** @param {OfferSpec} offer */
@@ -314,7 +310,6 @@ const provisionSmartWalletAndMakeDriver = async (
     tryExit: offerId => sendAction({ method: 'tryExitOffer', offerId }),
   });
 
-  // XXX  /** @type {import('../test/wallet-tools.js').MockWallet['deposit']} */
   const deposit = Far('DepositFacet', {
     getAddress: () => address,
     receive: async payment => {
@@ -337,7 +332,6 @@ const provisionSmartWalletAndMakeDriver = async (
     for await (const { balances: haystack } of cosmosBalanceUpdates()) {
       for (const candidate of haystack) {
         if (candidate.denom === denom) {
-           
           const amt = harden({ brand, value: BigInt(candidate.amount) });
           yield amt;
         }
@@ -571,7 +565,7 @@ export const makeE2ETools = async (
         installed: confirm.installed,
       });
     }
-     
+
     return harden(bundles);
   };
 
@@ -660,7 +654,7 @@ export const makeE2ETools = async (
 export const seatLike = updates => {
   const sync = {
     result: makePromiseKit(),
-    /** @type {PromiseKit<import('@agoric/zoe').AmountKeywordRecord>} */
+    /** @type {import('@endo/promise-kit').PromiseKit<import('@agoric/zoe').AmountKeywordRecord>} */
     payouts: makePromiseKit(),
   };
   (async () => {
@@ -683,7 +677,7 @@ export const seatLike = updates => {
       throw reason;
     }
   })();
-   
+
   return harden({
     getOfferResult: () => sync.result.promise,
     getPayoutAmounts: () => sync.payouts.promise,
