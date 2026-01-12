@@ -78,7 +78,8 @@ Options:
   --target-allocation     JSON of target allocation (e.g. '{"USDN":6000,"Aave_Arbitrum":4000}')
   --contract=[ymax0]      Contract key in agoricNames.instance ('ymax0' or 'ymax1'), used for
                           portfolios and invitations
-  --description=[planner] For use with --redeem ('planner' or 'resolver', optionally preceded by 'deliver ')
+  --description=[planner] For use with --redeem ('planner', 'resolver', or 'evmWalletHandler',
+                          optionally preceded by 'deliver ')
 
 Operations:
   -h, --help                Show this help message
@@ -100,6 +101,14 @@ Operations:
   --submit-for <id>         Submit (empty) plan for portfolio <id>
   --open                    [default operation] Open a new portfolio per --positions and
                             --target-allocation
+
+Environment variables:
+  AGORIC_NET: Network specifier per https://github.com/Agoric/agoric-sdk/blob/master/docs/env.md ,
+              either "$subdomain" for using https://$subdomain.agoric.net/network-config or
+              "$subdomain,$chainId" or "$fqdn,$chainId" for submitting to $subdomain.rpc.agoric.net
+              or $fqdn
+  MNEMONIC:   For the private key used to sign transactions (needed for all operations except
+              --checkStorage and --buildEthOverrides)
 `.trim();
 
 const parseToolArgs = (argv: string[]) =>
