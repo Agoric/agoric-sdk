@@ -134,6 +134,51 @@ export type AsyncFlowOptions = {
   startEager?: boolean;
 };
 
+export type GuestReplayFaultHandler = (
+  fault: GuestReplayFault,
+) => GuestFaultHandlingChoice;
+
+export type GuestReplayFault = {
+  generation: number;
+  logIndex: number;
+  /** logged entry translated to guest objects */
+  expectedEntry: GuestLogEntry;
+  /** what the guest is doing now */
+  actualEntry: GuestLogEntry;
+  /**
+   * Just diagnostic. May change over time. Do not make decisions based on
+   * this property
+   */
+  label?: string;
+  /** the logged outcome, translated to guest objects */
+  expectedOutcome?: Outcome;
+};
+
+// TODO Should be a guest-side analog to LogEntry
+export type GuestLogEntry = any[];
+
+export type GuestFaultHandlingChoiceKind =
+  | 'decline'
+  | 'ignoreExpected'
+  | 'ignoreDifference'
+  | 'ignoreActual';
+
+export type GuestFaultHandlingChoice =
+  | {
+      kind: 'decline';
+    }
+  | {
+      kind: 'ignoreExpected';
+    }
+  | {
+      kind: 'ignoreDifference';
+      actualOutcome?: Outcome;
+    }
+  | {
+      kind: 'ignoreActual';
+      actualOutcome: Outcome;
+    };
+
 export type OutcomeKind = 'return' | 'throw';
 
 export type Outcome =
