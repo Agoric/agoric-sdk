@@ -178,8 +178,8 @@ const walletHelperAddresses = harden({
   mainnet: {
     Avalanche: '0x',
     Ethereum: '0x',
-    Base: '0x',
-    Arbitrum: '0x',
+    Base: '0xE0aFf709b7A6Cdf476738b86354D17bd334eB516',
+    Arbitrum: '0x16e0e17f315eC5F2A1af92bB1A71754D667F8E70',
     Optimism: '0x',
   },
   testnet: {
