@@ -191,6 +191,7 @@ export const preparePortfolioKit = (
       kit: PortfolioKitCycleBreaker,
       flowDetail: FlowDetail,
       startedFlow?: { stepsP: Vow<MovementDesc[]>; flowId: number },
+      options?: unknown,
     ) => Vow<unknown>;
     onAgoricTransfer: (
       event: VTransferIBCEvent,
@@ -607,6 +608,20 @@ export const preparePortfolioKit = (
             accountsPending.delete(chainName);
           }
           this.facets.reporter.publishStatus();
+        },
+      },
+      evmHandler: {
+        getReaderFacet() {
+          return this.facets.reader;
+        },
+        deposit() {
+          throw Error('TODO in a later PR');
+        },
+        rebalance() {
+          throw Error('TODO in a later PR');
+        },
+        withdraw() {
+          throw Error('TODO in a later PR');
         },
       },
       rebalanceHandler: {
