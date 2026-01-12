@@ -1,16 +1,19 @@
 /** @file test for deposit tools */
-/* eslint-disable max-classes-per-file, class-methods-use-this */
 import test from 'ava';
 
 import {
   ACCOUNT_DUST_EPSILON,
   CaipChainIds,
+  SupportedChain,
   type StatusFor,
 } from '@agoric/portfolio-api';
 import { planUSDNDeposit } from '@aglocal/portfolio-contract/test/mocks.js';
 import { PROD_NETWORK } from '@aglocal/portfolio-contract/tools/network/prod-network.ts';
 import { TEST_NETWORK } from '@aglocal/portfolio-contract/tools/network/test-network.js';
-import type { NetworkSpec } from '@aglocal/portfolio-contract/tools/network/network-spec.js';
+import type {
+  NetworkSpec,
+  PoolKey,
+} from '@aglocal/portfolio-contract/tools/network/network-spec.js';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.js';
 import type { VstorageKit } from '@agoric/client-utils';
@@ -27,14 +30,20 @@ import {
   planWithdrawFromAllocations,
 } from '../src/plan-deposit.ts';
 import { SpectrumClient } from '../src/spectrum-client.ts';
-import { erc4626VaultsMock, mockEvmCtx, mockGasEstimator } from './mocks.ts';
+import {
+  erc4626VaultsMock,
+  mockEvmCtx,
+  mockGasEstimator,
+  createMockSpectrumBlockchain,
+  createMockSpectrumPools,
+} from './mocks.ts';
+import type { Sdk as SpectrumBlockchainSdk } from '../src/graphql/api-spectrum-blockchain/__generated/sdk.ts';
+import type { Sdk as SpectrumPoolsSdk } from '../src/graphql/api-spectrum-pools/__generated/sdk.ts';
 
 const depositBrand = Far('mock brand') as Brand<'nat'>;
 const makeDeposit = value => AmountMath.make(depositBrand, value);
 
 const feeBrand = Far('fee brand (BLD)') as Brand<'nat'>;
-
-const powers = { fetch, setTimeout };
 
 const emptyPlan = harden({ flow: [], order: undefined });
 
@@ -44,12 +53,17 @@ const emptyPlan = harden({ flow: [], order: undefined });
 const handleDeposit = async (
   portfolioKey: `${string}.portfolios.portfolio${number}`,
   amount: NatAmount,
-  feeBrand: Brand<'nat'>,
+  feeBrandName: Brand<'nat'>,
   powers: {
     readPublished: VstorageKit['readPublished'];
     spectrum: SpectrumClient;
-    cosmosRest: CosmosRestClient;
+    cosmosRest?: CosmosRestClient;
     gasEstimator: GasEstimator;
+    spectrumBlockchain?: SpectrumBlockchainSdk;
+    spectrumPools?: SpectrumPoolsSdk;
+    spectrumChainIds?: Partial<Record<SupportedChain, string>>;
+    spectrumPoolIds?: Partial<Record<PoolKey, string>>;
+    usdcTokensByChain?: Partial<Record<SupportedChain, string>>;
   },
   network: NetworkSpec = PROD_NETWORK,
 ) => {
@@ -60,12 +74,13 @@ const handleDeposit = async (
     return { policyVersion, rebalanceCount, plan: emptyPlan };
   }
   const currentBalances = await getCurrentBalances(status, amount.brand, {
-    spectrumChainIds: {},
-    spectrumPoolIds: {},
-    usdcTokensByChain: {},
+    spectrumChainIds: powers.spectrumChainIds || {},
+    spectrumPoolIds: powers.spectrumPoolIds || {},
+    usdcTokensByChain: powers.usdcTokensByChain || {},
     erc4626Vaults: {},
     chainNameToChainIdMap: CaipChainIds.testnet,
     evmProviders: mockEvmCtx.evmProviders,
+    cosmosRest: powers.cosmosRest || ({} as unknown as CosmosRestClient),
     ...powers,
   });
   const plan = await planDepositToAllocations({
@@ -74,7 +89,7 @@ const handleDeposit = async (
     currentBalances,
     targetAllocation,
     network,
-    feeBrand,
+    feeBrand: feeBrandName,
     gasEstimator: powers.gasEstimator,
   });
   return { policyVersion, rebalanceCount, plan };
@@ -88,42 +103,17 @@ test('getNonDustBalances filters balances at or below the dust epsilon', async t
   const status = {
     positionKeys: ['Aave_Arbitrum', 'Compound_Base'],
     accountIdByChain: {
-      Arbitrum: 'chain:mock:addr-arb',
-      Base: 'chain:mock:addr-base',
+      Arbitrum: 'eip155:42161:0xAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAa',
+      Base: 'eip155:8453:0xBbBbBbBbBbBbBbBbBbBbBbBbBbBbBbBbBbBbBbBb',
     },
   } as any;
 
-  class MockSpectrumClientDust extends SpectrumClient {
-    constructor() {
-      super(powers);
-    }
+  const spectrumStub = {
+    async getPoolBalance() {
+      throw new Error('unexpected Spectrum balance request');
+    },
+  } as unknown as SpectrumClient;
 
-    async getPoolBalance(chain: any, pool: any, addr: any) {
-      if (chain === 'arbitrum' && pool === 'aave') {
-        return {
-          pool,
-          chain,
-          address: addr,
-          balance: { supplyBalance: 100, borrowAmount: 0 },
-        };
-      }
-      if (chain === 'base' && pool === 'compound') {
-        return {
-          pool,
-          chain,
-          address: addr,
-          balance: { supplyBalance: 150, borrowAmount: 0 },
-        };
-      }
-      return {
-        pool,
-        chain,
-        address: addr,
-        balance: { supplyBalance: 0, borrowAmount: 0 },
-      };
-    }
-  }
-  const mockSpectrumClient = new MockSpectrumClientDust();
   const mockCosmosRestClient = {
     async getAccountBalance() {
       throw new Error('unexpected Cosmos balance request');
@@ -132,10 +122,21 @@ test('getNonDustBalances filters balances at or below the dust epsilon', async t
 
   const balances = await getNonDustBalances(status, depositBrand, {
     cosmosRest: mockCosmosRestClient,
-    spectrum: mockSpectrumClient,
-    spectrumChainIds: {},
-    spectrumPoolIds: {},
-    usdcTokensByChain: {},
+    spectrum: spectrumStub,
+    spectrumBlockchain: createMockSpectrumBlockchain({}),
+    spectrumPools: createMockSpectrumPools({
+      Aave_Arbitrum: 100n,
+      Compound_Base: 150n,
+    }),
+    spectrumChainIds: { Arbitrum: '0xa4b1', Base: '0x2105' },
+    spectrumPoolIds: {
+      Aave_Arbitrum: 'Aave_Arbitrum',
+      Compound_Base: 'Compound_Base',
+    },
+    usdcTokensByChain: {
+      Arbitrum: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+      Base: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+    },
     erc4626Vaults: {},
     chainNameToChainIdMap: CaipChainIds.testnet,
     evmProviders: mockEvmCtx.evmProviders,
@@ -172,16 +173,18 @@ test('getNonDustBalances retains noble balances above the dust epsilon', async t
   const balances = await getNonDustBalances(status, depositBrand, {
     cosmosRest: mockCosmosRestClient,
     spectrum: spectrumStub,
-    spectrumChainIds: {},
+    spectrumBlockchain: createMockSpectrumBlockchain({ usdn: 101 }),
+    spectrumPools: createMockSpectrumPools({}),
+    spectrumChainIds: { noble: 'noble-1' },
     spectrumPoolIds: {},
-    usdcTokensByChain: {},
+    usdcTokensByChain: { noble: 'uusdc' },
     erc4626Vaults: {},
     chainNameToChainIdMap: CaipChainIds.testnet,
     evmProviders: mockEvmCtx.evmProviders,
   });
 
   t.deepEqual(Object.keys(balances), ['USDN']);
-  t.is(balances.USDN!.value, 101n);
+  t.is(balances.USDN!.value, 101_000_000n);
 });
 
 /**
@@ -212,8 +215,8 @@ test('handleDeposit works with mocked dependencies', async t => {
         positionKeys: ['USDN', 'Aave_Arbitrum', 'Compound_Arbitrum'],
         flowCount: 0,
         accountIdByChain: {
-          noble: 'noble:test:addr1',
-          Arbitrum: 'arbitrum:test:addr2',
+          noble: 'cosmos:grand-1:noble1test',
+          Arbitrum: 'eip155:42161:0xAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAa',
         },
         targetAllocation: {
           USDN: 50n,
@@ -227,54 +230,11 @@ test('handleDeposit works with mocked dependencies', async t => {
     throw new Error(`Unexpected path: ${path}`);
   };
 
-  // Mock SpectrumClient
-  class MockSpectrumClient extends SpectrumClient {
-    constructor() {
-      super(powers);
-    }
-
-    async getPoolBalance(chain: any, pool: any, addr: any) {
-      // Return different balances for different pools
-      if (pool === 'aave' && chain === 'arbitrum') {
-        return {
-          pool,
-          chain,
-          address: addr,
-          balance: { supplyBalance: 100, borrowAmount: 0 },
-        };
-      }
-      if (pool === 'compound' && chain === 'arbitrum') {
-        return {
-          pool,
-          chain,
-          address: addr,
-          balance: { supplyBalance: 50, borrowAmount: 0 },
-        };
-      }
-      return {
-        pool,
-        chain,
-        address: addr,
-        balance: { supplyBalance: 0, borrowAmount: 0 },
-      };
-    }
-  }
-  const mockSpectrumClient = new MockSpectrumClient();
-
-  // Mock CosmosRestClient
-  class MockCosmosRestClient extends CosmosRestClient {
-    constructor() {
-      super(powers);
-    }
-
-    async getAccountBalance(chainName: string, addr: string, denom: string) {
-      if (chainName === 'noble' && denom === 'uusdn') {
-        return { denom, amount: '200' };
-      }
-      return { denom, amount: '0' };
-    }
-  }
-  const mockCosmosRestClient = new MockCosmosRestClient();
+  const spectrumStub = {
+    async getPoolBalance() {
+      throw new Error('unexpected Spectrum balance request');
+    },
+  } as unknown as SpectrumClient;
 
   // Mock VstorageKit
   const mockVstorageKit: VstorageKit = {
@@ -283,8 +243,25 @@ test('handleDeposit works with mocked dependencies', async t => {
 
   const result = await handleDeposit(portfolioKey, deposit, feeBrand, {
     readPublished: mockVstorageKit.readPublished,
-    spectrum: mockSpectrumClient,
-    cosmosRest: mockCosmosRestClient,
+    spectrum: spectrumStub,
+    spectrumBlockchain: createMockSpectrumBlockchain({ usdn: 0.0002 }),
+    spectrumPools: createMockSpectrumPools({
+      Aave_Arbitrum: 100n,
+      Compound_Arbitrum: 50n,
+    }),
+    spectrumChainIds: {
+      noble: 'noble-1',
+      Arbitrum: '0xa4b1',
+    },
+    spectrumPoolIds: {
+      Aave_Arbitrum: 'Aave_Arbitrum',
+      Compound_Arbitrum: 'Compound_Arbitrum',
+    },
+    usdcTokensByChain: {
+      noble: 'uusdc',
+      Arbitrum: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+    },
+    cosmosRest: {} as unknown as CosmosRestClient,
     gasEstimator: mockGasEstimator,
   });
   t.snapshot(result);
@@ -301,8 +278,8 @@ test('handleDeposit handles missing targetAllocation gracefully', async t => {
         positionKeys: ['USDN', 'Aave_Arbitrum'],
         flowCount: 0,
         accountIdByChain: {
-          noble: 'noble:test:addr1',
-          Arbitrum: 'arbitrum:test:addr2',
+          noble: 'cosmos:grand-1:noble1test',
+          Arbitrum: 'eip155:42161:0xAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAa',
         },
         // No targetAllocation
         policyVersion: 4,
@@ -312,34 +289,11 @@ test('handleDeposit handles missing targetAllocation gracefully', async t => {
     throw new Error(`Unexpected path: ${path}`);
   };
 
-  // Mock SpectrumClient
-  class MockSpectrumClient2 extends SpectrumClient {
-    constructor() {
-      super(powers);
-    }
-
-    async getPoolBalance(chain: any, pool: any, addr: any) {
-      return {
-        pool,
-        chain,
-        address: addr,
-        balance: { supplyBalance: 0, borrowAmount: 0 },
-      };
-    }
-  }
-  const mockSpectrumClient = new MockSpectrumClient2();
-
-  // Mock CosmosRestClient
-  class MockCosmosRestClient2 extends CosmosRestClient {
-    constructor() {
-      super(powers);
-    }
-
-    async getAccountBalance(chainName: string, addr: string, denom: string) {
-      return { denom, amount: '0' };
-    }
-  }
-  const mockCosmosRestClient = new MockCosmosRestClient2();
+  const spectrumStub = {
+    async getPoolBalance() {
+      throw new Error('unexpected Spectrum balance request');
+    },
+  } as unknown as SpectrumClient;
 
   // Mock VstorageKit
   const mockVstorageKit: VstorageKit = {
@@ -348,8 +302,9 @@ test('handleDeposit handles missing targetAllocation gracefully', async t => {
 
   const result = await handleDeposit(portfolioKey, deposit, feeBrand, {
     readPublished: mockVstorageKit.readPublished,
-    spectrum: mockSpectrumClient,
-    cosmosRest: mockCosmosRestClient,
+    spectrum: spectrumStub,
+    spectrumBlockchain: createMockSpectrumBlockchain({}),
+    spectrumPools: createMockSpectrumPools({}),
     gasEstimator: mockGasEstimator,
   });
 
@@ -372,9 +327,9 @@ test('handleDeposit handles different position types correctly', async t => {
         ],
         flowCount: 0,
         accountIdByChain: {
-          noble: 'noble:test:addr1',
-          Avalanche: 'example:avalanche:addr2',
-          Ethereum: 'example:ethereum:addr3',
+          noble: 'cosmos:grand-1:noble1test',
+          Avalanche: 'eip155:43114:0xAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAa',
+          Ethereum: 'eip155:1:0xBbBbBbBbBbBbBbBbBbBbBbBbBbBbBbBbBbBbBbBb',
         },
         targetAllocation: {
           USDN: 40n,
@@ -387,53 +342,11 @@ test('handleDeposit handles different position types correctly', async t => {
     throw new Error(`Unexpected path: ${path}`);
   };
 
-  // Mock SpectrumClient with different chain responses
-  class MockSpectrumClient3 extends SpectrumClient {
-    constructor() {
-      super(powers);
-    }
-
-    async getPoolBalance(chain: any, pool: any, addr: any) {
-      if (chain === 'avalanche' && pool === 'aave') {
-        return {
-          pool,
-          chain,
-          address: addr,
-          balance: { supplyBalance: 150_000, borrowAmount: 0 },
-        };
-      }
-      if (chain === 'ethereum' && pool === 'compound') {
-        return {
-          pool,
-          chain,
-          address: addr,
-          balance: { supplyBalance: 75_000, borrowAmount: 0 },
-        };
-      }
-      return {
-        pool,
-        chain,
-        address: addr,
-        balance: { supplyBalance: 0, borrowAmount: 0 },
-      };
-    }
-  }
-  const mockSpectrumClient = new MockSpectrumClient3();
-
-  // Mock CosmosRestClient
-  class MockCosmosRestClient3 extends CosmosRestClient {
-    constructor() {
-      super(powers);
-    }
-
-    async getAccountBalance(chainName: string, addr: string, denom: string) {
-      if (chainName === 'noble' && denom === 'uusdn') {
-        return { denom, amount: '300000' };
-      }
-      return { denom, amount: '0' };
-    }
-  }
-  const mockCosmosRestClient = new MockCosmosRestClient3();
+  const spectrumStub = {
+    async getPoolBalance() {
+      throw new Error('unexpected Spectrum balance request');
+    },
+  } as unknown as SpectrumClient;
 
   // Mock VstorageKit
   const mockVstorageKit: VstorageKit = {
@@ -446,8 +359,27 @@ test('handleDeposit handles different position types correctly', async t => {
     feeBrand,
     {
       readPublished: mockVstorageKit.readPublished,
-      spectrum: mockSpectrumClient,
-      cosmosRest: mockCosmosRestClient,
+      spectrum: spectrumStub,
+      spectrumBlockchain: createMockSpectrumBlockchain({ usdn: 0.3 }),
+      spectrumPools: createMockSpectrumPools({
+        Aave_Avalanche: 150_000n,
+        Compound_Ethereum: 75_000n,
+      }),
+      spectrumChainIds: {
+        noble: 'noble-1',
+        Avalanche: '0xa86a',
+        Ethereum: '0x1',
+      },
+      spectrumPoolIds: {
+        Aave_Avalanche: 'Aave_Avalanche',
+        Compound_Ethereum: 'Compound_Ethereum',
+      },
+      usdcTokensByChain: {
+        noble: 'uusdc',
+        Avalanche: '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E',
+        Ethereum: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+      },
+      cosmosRest: {} as unknown as CosmosRestClient,
       gasEstimator: mockGasEstimator,
     },
     TEST_NETWORK,

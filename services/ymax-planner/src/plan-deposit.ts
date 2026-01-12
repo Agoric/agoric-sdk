@@ -1,4 +1,4 @@
-import { assert, Fail, q, X } from '@endo/errors';
+import { assert, Fail, X } from '@endo/errors';
 
 import { PoolPlaces } from '@aglocal/portfolio-contract/src/type-guards.js';
 import type {
@@ -13,17 +13,8 @@ import { planRebalanceFlow } from '@aglocal/portfolio-contract/tools/plan-solve.
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import type { Brand, NatAmount, NatValue } from '@agoric/ertp/src/types.js';
-import {
-  fromTypedEntries,
-  objectMap,
-  objectMetaMap,
-  typedEntries,
-} from '@agoric/internal';
-import type {
-  AccountId,
-  Caip10Record,
-  CaipChainId,
-} from '@agoric/orchestration';
+import { objectMap, objectMetaMap, typedEntries } from '@agoric/internal';
+import type { Caip10Record, CaipChainId } from '@agoric/orchestration';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import {
   ACCOUNT_DUST_EPSILON,
@@ -32,12 +23,12 @@ import {
 } from '@agoric/portfolio-api';
 import type { FundsFlowPlan, SupportedChain } from '@agoric/portfolio-api';
 
-import { USDN, type CosmosRestClient } from './cosmos-rest-client.js';
+import { type CosmosRestClient } from './cosmos-rest-client.js';
 import type { ChainAddressTokenBalance } from './graphql/api-spectrum-blockchain/__generated/graphql.ts';
 import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
 import type { ProtocolPoolUserBalanceResult } from './graphql/api-spectrum-pools/__generated/graphql.ts';
 import type { Sdk as SpectrumPoolsSdk } from './graphql/api-spectrum-pools/__generated/sdk.ts';
-import type { Chain, Pool, SpectrumClient } from './spectrum-client.js';
+import type { SpectrumClient } from './spectrum-client.js';
 import {
   spectrumProtocols,
   UserInputError,
@@ -94,47 +85,6 @@ export type BalanceQueryPowers = {
   erc4626Vaults: Partial<Record<PoolKey, `0x${string}`>>;
   evmProviders: EvmProviders;
   chainNameToChainIdMap: Partial<Record<EvmChain, CaipChainId>>;
-};
-
-// UNTIL https://github.com/Agoric/agoric-sdk/issues/12186
-// This should move into @agoric/orchestration/src/utils/address.js, which
-// itself should be updated to conform with CAIP-10.
-// cf. https://github.com/Agoric/agoric-sdk/pull/12185/commits/34667cf25cb11a90d348f72750af6e50d632a22d
-const addressOfAccountId = (caip10AccountId: AccountId) =>
-  parseAccountId(caip10AccountId).accountAddress;
-
-export const getCurrentBalance = async (
-  { protocol, chainName, ..._details }: PoolPlaceInfo,
-  accountIdByChain: StatusFor['portfolio']['accountIdByChain'],
-  { spectrum, cosmosRest }: BalanceQueryPowers,
-): Promise<bigint> => {
-  await null;
-  switch (protocol) {
-    case 'USDN': {
-      const addr = addressOfAccountId(accountIdByChain[chainName] as any);
-      // XXX add denom to PoolPlaceInfo?
-      const resp = await cosmosRest.getAccountBalance(
-        chainName,
-        addr,
-        USDN.base,
-      );
-      return BigInt(resp.amount);
-    }
-    case 'Aave':
-    case 'Compound': {
-      const pool = protocol.toLowerCase() as Pool;
-      const chain = chainName.toLowerCase() as Chain;
-      const addr = addressOfAccountId(accountIdByChain[chainName] as any);
-      const resp = await spectrum.getPoolBalance(chain, pool, addr);
-      const balance = resp.balance.supplyBalance;
-      Number.isSafeInteger(balance) ||
-        Fail`Invalid balance for chain ${q(chain)} pool ${q(pool)} address ${addr}: ${balance}`;
-      return BigInt(balance);
-    }
-    default:
-      // TODO: Beefy
-      throw Fail`Unknown protocol: ${q(protocol)}`;
-  }
 };
 
 type AccountQueryDescriptor = {
@@ -322,35 +272,7 @@ export const getCurrentBalances = async (
   if (errors.length) {
     throw AggregateError(errors, 'Could not accept balances');
   }
-  const balancesExist = Array.from(balances.values()).some(v => !!v);
-  if (balancesExist) return Object.fromEntries(balances);
-
-  // XXX Fallback during the transition to using only Spectrum GraphQL.
-  const balanceEntries = await Promise.all(
-    positionKeys.map(async (posKey: PoolKey): Promise<[PoolKey, NatAmount]> => {
-      await null;
-      try {
-        const poolPlaceInfo =
-          getOwn(PoolPlaces, posKey) || Fail`Unknown PoolPlace`;
-        // TODO there should be a bulk query operation available now
-        const amountValue = await getCurrentBalance(
-          poolPlaceInfo,
-          accountIdByChain,
-          powers,
-        );
-        return [posKey, AmountMath.make(brand, amountValue)];
-      } catch (cause) {
-        errors.push(Error(`Could not get ${posKey} balance`, { cause }));
-        // @ts-expect-error
-        return [posKey, undefined];
-      }
-    }),
-  );
-  if (errors.length) {
-    throw AggregateError(errors, 'Could not get balances');
-  }
-  const currentBalances = fromTypedEntries(balanceEntries);
-  return currentBalances;
+  return Object.fromEntries(balances);
 };
 
 export const getNonDustBalances = async (
