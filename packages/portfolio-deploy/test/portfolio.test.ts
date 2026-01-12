@@ -726,6 +726,7 @@ test.serial('invite evm handler; test open portfolio', async t => {
   });
 
   t.log('open portfolio');
+  // TODO: get from context, ambient random
   const userPrivateKey = generatePrivateKey();
   const userAccount = privateKeyToAccount(userPrivateKey);
 
@@ -759,6 +760,8 @@ test.serial('invite evm handler; test open portfolio', async t => {
   );
 
   const signature = await userAccount.signTypedData(openPortfolioMessage);
+
+  t.log('signed message', { ...openPortfolioMessage, signature });
 
   await evmHandlerWallet.invokeEntry({
     id: Date.now().toString(),
