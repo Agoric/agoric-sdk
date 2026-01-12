@@ -360,11 +360,11 @@ type StartedInstanceKit<
   T extends import('@agoric/zoe/src/zoeService/utils.js').ContractStartFunction,
 > = import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<T>;
 
-type StartedInstanceKitWithLabel = {
+type StartedInstanceKitWithLabel<
+  T extends import('@agoric/zoe/src/zoeService/utils.js').ContractStartFunction,
+> = import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<T> & {
   label: string;
-} & StartedInstanceKit<
-  import('@agoric/zoe/src/zoeService/utils.js').ContractStartFunction
->;
+};
 
 type ChainBootstrapSpaceT = {
   agoricNames: import('../types.js').NameHub;
