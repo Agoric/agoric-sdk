@@ -30,7 +30,11 @@ import {
   type NatAmount,
 } from '@agoric/ertp';
 import { arrayIsLike } from '@agoric/internal/tools/ava-assertions.js';
-import type { FlowStatus, SupportedChain } from '@agoric/portfolio-api';
+import {
+  CaipChainIds,
+  type FlowStatus,
+  type SupportedChain,
+} from '@agoric/portfolio-api';
 import type { InvokeStoreEntryAction } from '@agoric/smart-wallet/src/smartWallet.js';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 import type { Marshal } from '@endo/marshal';
@@ -52,6 +56,7 @@ import {
   createMockEnginePowers,
   makeNotImplemented,
   makeNotImplementedAsync,
+  mockEvmCtx,
 } from './mocks.ts';
 
 // #region client-utils mocks
@@ -421,6 +426,8 @@ const fakePortfolioKit = async ({
     feeBrand,
     portfolioKeyForDepositAddr: new Map(),
     vstoragePathPrefixes: { portfoliosPathPrefix },
+    chainNameToChainIdMap: CaipChainIds.testnet,
+    evmProviders: mockEvmCtx.evmProviders,
   };
 
   const initialPortfolioStatus: StatusFor['portfolio'] = {

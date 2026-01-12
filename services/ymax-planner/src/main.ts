@@ -24,17 +24,23 @@ import type { BaseAccountSDKType } from '@agoric/client-utils/src/codegen/cosmos
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import {
   deeplyFulfilledObject,
+  fromUniqueEntries,
   objectMap,
   objectMetaMap,
+  typedEntries,
   withDeferredCleanup,
 } from '@agoric/internal';
-import { UsdcTokenIds } from '@agoric/portfolio-api/src/constants.js';
+import {
+  CaipChainIds,
+  UsdcTokenIds,
+} from '@agoric/portfolio-api/src/constants.js';
 import {
   axelarConfig,
   axelarConfigTestnet,
 } from '@aglocal/portfolio-deploy/src/axelar-configs.js';
 import type { PoolKey } from '@aglocal/portfolio-contract/src/type-guards.ts';
 
+import type { EvmAddress } from '@agoric/fast-usdc';
 import { loadConfig } from './config.ts';
 import { CosmosRestClient } from './cosmos-rest-client.ts';
 import { CosmosRPCClient } from './cosmos-rpc.ts';
@@ -43,7 +49,6 @@ import { getSdk as getSpectrumBlockchainSdk } from './graphql/api-spectrum-block
 import { getSdk as getSpectrumPoolsSdk } from './graphql/api-spectrum-pools/__generated/sdk.ts';
 import { startEngine } from './engine.ts';
 import {
-  chainNameToCaipChainId,
   createEVMContext,
   prepareAbortController,
   spectrumChainIdsByCluster,
@@ -116,17 +121,15 @@ export const main = async (
 
   const axelarCfg =
     clusterName === 'mainnet' ? axelarConfig : axelarConfigTestnet;
-  const erc4626Vaults: Partial<Record<PoolKey, `0x${string}`>> = Object.entries(
-    axelarCfg,
-  )
-    .map(([_, chainDetails]) =>
-      Object.fromEntries(
-        Object.entries(chainDetails.contracts).filter(([contractName, __]) =>
-          contractName.startsWith('ERC4626'),
-        ),
-      ),
-    )
-    .reduce((acc, curr) => ({ ...acc, ...curr }), {});
+
+  const isERC4626Entry = ([name, _addr]) => name.startsWith('ERC4626');
+  const erc4626VaultEntries = typedEntries(axelarCfg).flatMap(
+    ([_chainName, { contracts }]) =>
+      typedEntries(contracts).filter(isERC4626Entry),
+  );
+
+  const erc4626Vaults: Partial<Record<PoolKey, EvmAddress>> =
+    fromUniqueEntries(erc4626VaultEntries);
 
   const networkConfig = await fetchEnvNetworkConfig({
     env: { AGORIC_NET: config.cosmosRest.agoricNetworkSpec },
@@ -287,8 +290,6 @@ export const main = async (
     trace: () => {},
   });
 
-  const chainNameToChainIdMap = chainNameToCaipChainId[clusterName];
-
   const powers = {
     evmCtx: {
       kvStore,
@@ -315,7 +316,7 @@ export const main = async (
     gasEstimator,
     usdcTokensByChain,
     erc4626Vaults,
-    chainNameToChainIdMap,
+    chainNameToChainIdMap: CaipChainIds[clusterName],
   };
 
   await withDeferredCleanup(async addCleanup => {

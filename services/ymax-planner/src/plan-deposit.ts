@@ -38,9 +38,13 @@ import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockc
 import type { ProtocolPoolUserBalanceResult } from './graphql/api-spectrum-pools/__generated/graphql.ts';
 import type { Sdk as SpectrumPoolsSdk } from './graphql/api-spectrum-pools/__generated/sdk.ts';
 import type { Chain, Pool, SpectrumClient } from './spectrum-client.js';
-import { spectrumProtocols, UserInputError } from './support.ts';
+import {
+  spectrumProtocols,
+  UserInputError,
+  type EvmProviders,
+} from './support.ts';
 import { getOwn, lookupValueForKey } from './utils.js';
-import type { EvmChain, EvmContext } from './pending-tx-manager.ts';
+import type { EvmChain } from './pending-tx-manager.ts';
 import { getERC4626VaultsBalances } from './erc4626-utils.ts';
 
 const scale6 = (x: number) => {
@@ -88,8 +92,8 @@ export type BalanceQueryPowers = {
   spectrumPoolIds: Partial<Record<PoolKey, string>>;
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
   erc4626Vaults: Partial<Record<PoolKey, `0x${string}`>>;
-  evmCtx: Omit<EvmContext, 'cosmosRest' | 'signingSmartWalletKit' | 'fetch'>;
-  chainNameToChainIdMap: Record<EvmChain, CaipChainId>;
+  evmProviders: EvmProviders;
+  chainNameToChainIdMap: Partial<Record<EvmChain, CaipChainId>>;
 };
 
 // UNTIL https://github.com/Agoric/agoric-sdk/issues/12186

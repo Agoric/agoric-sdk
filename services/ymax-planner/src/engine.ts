@@ -79,7 +79,7 @@ import {
   planWithdrawFromAllocations,
 } from './plan-deposit.ts';
 import type { SpectrumClient } from './spectrum-client.ts';
-import { UserInputError } from './support.ts';
+import { UserInputError, type EvmProviders } from './support.ts';
 import {
   encodedKeyToPath,
   pathToEncodedKey,
@@ -190,7 +190,7 @@ export type Powers = {
   gasEstimator: GasEstimator;
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
   erc4626Vaults: Partial<Record<PoolKey, `0x${string}`>>;
-  chainNameToChainIdMap: Record<EvmChain, CaipChainId>;
+  chainNameToChainIdMap: Partial<Record<EvmChain, CaipChainId>>;
 };
 
 export type ProcessPortfolioPowers = Pick<
@@ -207,7 +207,6 @@ export type ProcessPortfolioPowers = Pick<
   | 'getWalletInvocationUpdate'
   | 'gasEstimator'
   | 'usdcTokensByChain'
-  | 'evmCtx'
   | 'erc4626Vaults'
   | 'chainNameToChainIdMap'
 > & {
@@ -218,6 +217,7 @@ export type ProcessPortfolioPowers = Pick<
   vstoragePathPrefixes: {
     portfoliosPathPrefix: string;
   };
+  evmProviders: EvmProviders;
 };
 
 export type PortfoliosMemory = {
@@ -265,7 +265,7 @@ export const processPortfolioEvents = async (
     usdcTokensByChain,
     vstoragePathPrefixes,
     erc4626Vaults,
-    evmCtx,
+    evmProviders,
     chainNameToChainIdMap,
 
     portfolioKeyForDepositAddr,
@@ -295,7 +295,7 @@ export const processPortfolioEvents = async (
     spectrumPoolIds,
     usdcTokensByChain,
     erc4626Vaults,
-    evmCtx,
+    evmProviders,
     chainNameToChainIdMap,
   };
   type ReadVstorageSimpleOpts = Pick<
@@ -696,7 +696,10 @@ export const startEngine = async (
                   typedEntries(evmCtx.usdcAddresses)[0],
                 );
           const accountIdByChain = { [chainName]: dummyAddress } as any;
-          await getCurrentBalance(info, accountIdByChain, powers);
+          await getCurrentBalance(info, accountIdByChain, {
+            ...powers,
+            evmProviders: evmCtx.evmProviders,
+          });
         } catch (err) {
           const expandos = partialMap(Reflect.ownKeys(err), key =>
             knownErrorProps.includes(key as any) ? false : [key, err[key]],
@@ -784,6 +787,7 @@ export const startEngine = async (
     feeBrand: feeAsset.brand as Brand<'nat'>,
     vstoragePathPrefixes,
     portfolioKeyForDepositAddr,
+    evmProviders: evmCtx.evmProviders,
   });
   await makeWorkPool(portfolioKeys, undefined, async portfolioKey => {
     const { streamCellJson, event } = makeVstorageEvent(

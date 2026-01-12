@@ -5,22 +5,23 @@ import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import { TEST_NETWORK } from '@aglocal/portfolio-contract/tools/network/test-network.js';
 import { boardSlottingMarshaller } from '@agoric/client-utils';
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
-import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
+import {
+  CaipChainIds,
+  type AxelarChain,
+} from '@agoric/portfolio-api/src/constants.js';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import { makeKVStoreFromMap } from '@agoric/internal/src/kv-store.js';
 import type { Log } from 'ethers/providers';
-import { encodeAbiParameters } from 'viem';
+import { encodeAbiParameters, toFunctionSelector } from 'viem';
 import type { GMPTxStatus } from '@axelarjs/api';
 import type { InstrumentId } from '@agoric/portfolio-api';
+import type { CaipChainId } from '@agoric/orchestration';
 import type { CosmosRestClient } from '../src/cosmos-rest-client.ts';
 import type { CosmosRPCClient } from '../src/cosmos-rpc.ts';
 import type { Powers as EnginePowers } from '../src/engine.ts';
 import { makeGasEstimator } from '../src/gas-estimation.ts';
 import type { HandlePendingTxOpts } from '../src/pending-tx-manager.ts';
-import {
-  chainNameToCaipChainId,
-  prepareAbortController,
-} from '../src/support.ts';
+import { prepareAbortController } from '../src/support.ts';
 import { GMP_ABI } from '../src/axelarscan-utils.ts';
 
 const PENDING_TX_PATH_PREFIX = 'published.ymax1';
@@ -64,7 +65,7 @@ export const createMockEnginePowers = (): EnginePowers => ({
   gasEstimator: {} as any,
   usdcTokensByChain: {},
   erc4626Vaults: {},
-  chainNameToChainIdMap: chainNameToCaipChainId.testnet,
+  chainNameToChainIdMap: CaipChainIds.testnet,
 });
 
 export const erc4626VaultsMock: Partial<Record<InstrumentId, `0x${string}`>> = {
@@ -158,29 +159,24 @@ export const createMockProvider = (
     call: async (transaction: any) => {
       // Mock implementation for contract calls like balanceOf and convertToAssets
       // For testing purposes, we return mock data
-      // balanceOf(address) returns 1000n (as uint256 encoded)
-      // convertToAssets(shares) returns shares * 1.1 (simulating some yield)
       const { data } = transaction;
 
+      const encodeAmount = (amount: bigint) =>
+        encodeAbiParameters([{ type: 'uint256' }], [amount]);
+
       if (!data || data === '0x') {
-        return '0x0000000000000000000000000000000000000000000000000000000000000000';
+        throw Error(`No data provided in mock call`);
       }
 
       // Parse function selector (first 4 bytes of data)
-      const selector = data.slice(0, 10); // '0x' + 8 hex chars
+      const selector = data.slice(0, 10);
 
-      // balanceOf function selector: 0x70a08231
-      if (selector === '0x70a08231') {
-        // Return mock balance: 1000n encoded as uint256
-        return '0x00000000000000000000000000000000000000000000000000000000000003e8';
+      if (selector === toFunctionSelector('balanceOf(address)')) {
+        return encodeAmount(1000n);
       }
 
-      // convertToAssets function selector: 0x07a28720
-      if (selector === '0x07a2d13a') {
-        // Extract shares parameter from calldata (after selector + address padding)
-        // For simplicity, return shares * 1.1 to simulate yield
-        // This is a simplified mock - in reality would need proper ABI decoding
-        return '0x0000000000000000000000000000000000000000000000000000000000000bb8'; // 3000n as mock
+      if (selector === toFunctionSelector('convertToAssets(uint256)')) {
+        return encodeAmount(3000n);
       }
 
       throw Error(`Unrecognized function selector in mock call: ${selector}`);
@@ -190,13 +186,18 @@ export const createMockProvider = (
   return mockProvider;
 };
 
+const createMockEvmProviders = (
+  latestBlock = 1000,
+  events?: Pick<Log, 'blockNumber' | 'data' | 'topics' | 'transactionHash'>[],
+): Record<CaipChainId, WebSocketProvider> => ({
+  'eip155:1': createMockProvider(latestBlock, events),
+  'eip155:42161': createMockProvider(latestBlock, events),
+  'eip155:11155111': createMockProvider(latestBlock, events),
+});
+
 export const mockEvmCtx = {
   usdcAddresses: {},
-  evmProviders: {
-    'eip155:1': createMockProvider(),
-    'eip155:11155111': createMockProvider(),
-    'eip155:42161': createMockProvider(),
-  },
+  evmProviders: createMockEvmProviders(),
   kvStore: makeKVStoreFromMap(new Map()),
   makeAbortController,
   axelarApiUrl: mockAxelarApiAddress,
@@ -306,10 +307,7 @@ export const createMockPendingTxOpts = (
 ): HandlePendingTxOpts => ({
   cosmosRest: {} as unknown as CosmosRestClient,
   cosmosRpc: {} as unknown as CosmosRPCClient,
-  evmProviders: {
-    'eip155:1': createMockProvider(latestBlock, events),
-    'eip155:42161': createMockProvider(latestBlock, events),
-  },
+  evmProviders: createMockEvmProviders(latestBlock, events),
   fetch: global.fetch,
   marshaller: boardSlottingMarshaller(),
   signingSmartWalletKit: createMockSigningSmartWalletKit(),
