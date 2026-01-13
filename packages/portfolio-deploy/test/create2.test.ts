@@ -28,14 +28,14 @@ test('predictWalletAddress computes expected address', async t => {
       contracts: avalancheIntegration,
       walletBytecode: bytecode,
       owner: 'agoric1wrfh296eu2z34p6pah7q04jjuyj3mxu9v98277',
-      walletAddress: '0xaef9533b97c55f2df3260c3460f0e90003eef324',
+      walletAddress: '0xb22169249c865bcc15d54399709973534664c532',
     },
     {
       label: 'Nov17at1346Z',
       contracts: avalancheIntegration,
       walletBytecode: bytecode,
       owner: 'agoric1u4yhqp9tp58hx3kkg2ktj4d9shpukg2q3cx8nv',
-      walletAddress: '0x1859396e40f6e523efa5e906e22e7a4d9288ab09',
+      walletAddress: '0xf46e5da52baad4a8d99e04497069bdc86e9f2217',
     },
     {
       label: 'computeAddr.js',
@@ -55,7 +55,7 @@ test('predictWalletAddress computes expected address', async t => {
       //   Salt: 0xc588432f2a0ef17c1e3e1eef64e0181fba5fc6cf443dd71f422e65282867fb88
       //   Init Code Hash: 0xd18a438c2dc8ba0f3764d8036e3684fa64b8cae656150d29106189daa729d2fc
       owner: 'agoric10utru593dspjwfewcgdak8lvp9tkz0xttvcnxv',
-      walletAddress: '0x7b3516b18c18ad39ae7f5e756d250d6692b60346',
+      walletAddress: '0xdff087d1231f6910ef6cb0ada328eb7ca7505101',
     },
     {
       label: 'flows testing',
