@@ -202,10 +202,7 @@ export type OfferHandler<OR = unknown, OA = never> =
   | {
       handle: HandleOffer<OR, OA>;
     };
-export type ContractMeta<
-  SF extends // import inline to maintain ambient mode
-    ContractStartFunction = ContractStartFunction,
-> = {
+export type ContractMeta<SF extends ContractStartFunction> = {
   customTermsShape?: Record<
     Parameters<SF>[0] extends ZCF<infer CT> ? keyof CT : never,
     Pattern

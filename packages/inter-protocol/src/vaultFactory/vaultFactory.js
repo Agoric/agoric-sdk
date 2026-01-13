@@ -55,8 +55,9 @@ const trace = makeTracer('VF', true);
  * >} VaultFactoryZCF
  */
 
-/** @type {ContractMeta} */
+/** @type {ContractMeta<typeof start>} */
 export const meta = {
+  // @ts-expect-error splitRecord loses the property keys
   privateArgsShape: M.splitRecord(
     {
       marshaller: M.remotable('Marshaller'),

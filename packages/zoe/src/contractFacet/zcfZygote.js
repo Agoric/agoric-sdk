@@ -240,13 +240,13 @@ export const makeZCFZygote = async (
    *     }
    *   | {
    *       prepare: ContractStartFn;
-   *       customTermsShape?: Pick<ContractMeta, 'customTermsShape'>,
-   *       privateArgsShape?: Pick<ContractMeta, 'privateArgsShape'>,
+   *       customTermsShape?: Pick<ContractMeta<any>, 'customTermsShape'>,
+   *       privateArgsShape?: Pick<ContractMeta<any>, 'privateArgsShape'>,
    *     }
    *   | {
    *       buildRootObject: undefined;
    *       start: ContractStartFn;
-   *       meta?: ContractMeta;
+   *       meta?: ContractMeta<any>;
    *     }
    * >}
    */
