@@ -156,8 +156,12 @@ export type FundsFlowPlan = {
   order?: [target: number, prereqs: number[]][];
 };
 
+// tx for transactions
+export type TxId = `tx${number}`;
+
 export type TrafficReport = {
   traffic: TrafficEntry[];
+  tailTxId?: TxId;
 };
 
 export type PortfolioKey = `portfolio${number}`;
