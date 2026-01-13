@@ -328,7 +328,7 @@ __metadata:
     "@graphql-codegen/cli": "npm:^6.1.1"
     "@graphql-codegen/client-preset": "npm:^5.2.2"
     "@graphql-codegen/schema-ast": "npm:^5.0.0"
-    "@graphql-codegen/typescript-graphql-request": "patch:@graphql-codegen/typescript-graphql-request@npm%3A6.3.0#~/.yarn/patches/@graphql-codegen-typescript-graphql-request-npm-6.3.0-38043fd4dc.patch"
+    "@graphql-codegen/typescript-graphql-request": "npm:^6.4.0"
     "@graphql-inspector/cli": "npm:^5.0.8"
     "@types/node": "npm:^22.10.2"
     "@types/ws": "npm:^8"
@@ -4815,9 +4815,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-codegen/typescript-graphql-request@npm:6.3.0":
-  version: 6.3.0
-  resolution: "@graphql-codegen/typescript-graphql-request@npm:6.3.0"
+"@graphql-codegen/typescript-graphql-request@npm:^6.4.0":
+  version: 6.4.0
+  resolution: "@graphql-codegen/typescript-graphql-request@npm:6.4.0"
   dependencies:
     "@graphql-codegen/plugin-helpers": "npm:^3.0.0"
     "@graphql-codegen/visitor-plugin-common": "npm:2.13.8"
@@ -4827,23 +4827,7 @@ __metadata:
     graphql: ^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
     graphql-request: ^6.0.0 || ^7.0.0
     graphql-tag: ^2.0.0
-  checksum: 10c0/6823640b577a63df8590e9e41a9508b97885a7f0c280ad67922e1a05592960c697bbdb6207dad21aa59e6ca31cfc417dba2574505423eb220de7054f0ea85a16
-  languageName: node
-  linkType: hard
-
-"@graphql-codegen/typescript-graphql-request@patch:@graphql-codegen/typescript-graphql-request@npm%3A6.3.0#~/.yarn/patches/@graphql-codegen-typescript-graphql-request-npm-6.3.0-38043fd4dc.patch":
-  version: 6.3.0
-  resolution: "@graphql-codegen/typescript-graphql-request@patch:@graphql-codegen/typescript-graphql-request@npm%3A6.3.0#~/.yarn/patches/@graphql-codegen-typescript-graphql-request-npm-6.3.0-38043fd4dc.patch::version=6.3.0&hash=d762ee"
-  dependencies:
-    "@graphql-codegen/plugin-helpers": "npm:^3.0.0"
-    "@graphql-codegen/visitor-plugin-common": "npm:2.13.8"
-    auto-bind: "npm:~4.0.0"
-    tslib: "npm:^2.8.1"
-  peerDependencies:
-    graphql: ^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
-    graphql-request: ^6.0.0 || ^7.0.0
-    graphql-tag: ^2.0.0
-  checksum: 10c0/47465711dafebabde5b4d87ea9cfe436e7792498e4d1100306ade46360cae66e5173a77ef06f9ee515a60c05115927d394179073401d89f936a2d34e9f7a1431
+  checksum: 10c0/7aaf77146223fdf002ae7b1a4688873625246927b6e535ccc1e3735e3cda15fcbbb5b538a5103b82de2ccdd189db63ff62a000796b5e4862051d8d3f9764dc56
   languageName: node
   linkType: hard
 
