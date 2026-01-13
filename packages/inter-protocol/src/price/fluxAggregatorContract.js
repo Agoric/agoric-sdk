@@ -30,8 +30,9 @@ const trace = makeTracer('FluxAgg', false);
  * @import {ERef} from '@agoric/vow';
  */
 
-/** @type {ContractMeta} */
+/** @type {ContractMeta<typeof start>} */
 export const meta = {
+  // @ts-expect-error splitRecord loses the property keys
   privateArgsShape: M.splitRecord(
     {
       storageNode: StorageNodeShape,

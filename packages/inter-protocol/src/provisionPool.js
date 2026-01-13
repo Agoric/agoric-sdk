@@ -31,8 +31,9 @@ import {
  * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
-/** @type {ContractMeta} */
+/** @type {ContractMeta<typeof start>} */
 export const meta = {
+  // @ts-expect-error splitRecord loses the property keys
   privateArgsShape: M.splitRecord(
     {
       poolBank: M.eref(M.remotable('bank')),

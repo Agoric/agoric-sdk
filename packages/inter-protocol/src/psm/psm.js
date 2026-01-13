@@ -70,7 +70,7 @@ import { makeNatAmountShape } from '../contractSupport.js';
  *   given by this contract
  */
 
-/** @type {ContractMeta} */
+/** @type {ContractMeta<typeof start>} */
 export const meta = {
   upgradability: 'canUpgrade',
   customTermsShape: {
@@ -93,6 +93,7 @@ export const meta = {
       MintLimit: { type: ParamTypes.AMOUNT, value: AmountShape },
     },
   },
+  // @ts-expect-error splitRecord loses the property keys
   privateArgsShape: M.splitRecord(
     {
       marshaller: M.remotable('Marshaller'),
