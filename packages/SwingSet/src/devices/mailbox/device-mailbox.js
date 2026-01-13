@@ -2,6 +2,10 @@ import { assert, Fail } from '@endo/errors';
 import { Nat } from '@endo/nat';
 import { Far } from '@endo/far';
 
+/**
+ * @import {Device} from '../../types-external.js';
+ */
+
 export function buildRootDeviceNode(tools) {
   const { SO, getDeviceState, setDeviceState, endowments } = tools;
 
@@ -89,3 +93,5 @@ export function buildRootDeviceNode(tools) {
     },
   });
 }
+
+/** @typedef {Device<ReturnType<typeof buildRootDeviceNode>>} MailboxDevice */
