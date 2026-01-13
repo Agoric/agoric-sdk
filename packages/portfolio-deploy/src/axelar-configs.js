@@ -313,11 +313,11 @@ const factoryAddresses = harden({
 const depositFactoryAddresses = harden({
   // TODO: These are addresses specific to ymax0 and its current contractAddress
   mainnet: {
-    Arbitrum: '0x', // https://arbiscan.io/address/0x
+    Arbitrum: '0x9524EEb5F792944a0FE929bb8Efb354438B19F7C', // https://arbiscan.io/address/0x9524EEb5F792944a0FE929bb8Efb354438B19F7C
     Avalanche: '0x9524EEb5F792944a0FE929bb8Efb354438B19F7C', // https://snowtrace.io/address/0x9524EEb5F792944a0FE929bb8Efb354438B19F7C
-    Base: '0x', // https://basescan.org/address/0x
+    Base: '0x9524EEb5F792944a0FE929bb8Efb354438B19F7C', // https://basescan.org/address/0x9524EEb5F792944a0FE929bb8Efb354438B19F7C
     Ethereum: '0x9524EEb5F792944a0FE929bb8Efb354438B19F7C', // https://etherscan.io/address/0x9524EEb5F792944a0FE929bb8Efb354438B19F7C
-    Optimism: '0x', // https://optimistic.etherscan.io/address/0x
+    Optimism: '0x9524EEb5F792944a0FE929bb8Efb354438B19F7C', // https://optimistic.etherscan.io/address/0x9524EEb5F792944a0FE929bb8Efb354438B19F7C
   },
   testnet: {
     Arbitrum: '0x', // https://sepolia.arbiscan.io/address/0x
