@@ -351,7 +351,7 @@ const openPositionsEVM = async ({
     harden({
       method: 'invokeEntry',
       message: {
-        id: Date.now().toString(),
+        id,
         targetName: 'evmWalletHandler',
         method: 'handleMessage',
         args: [{ ...openPortfolioMessage, signature } as CopyRecord],
@@ -360,7 +360,6 @@ const openPositionsEVM = async ({
   );
   if (tx.code !== 0) throw Error(tx.rawLog);
 
-  // result is UNPUBLISHED
   await walletUpdates(sig.query.getLastUpdate, {
     log: trace,
     setTimeout,
