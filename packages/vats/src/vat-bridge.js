@@ -53,3 +53,5 @@ export function buildRootObject(vatPowers, _args, baggage) {
     provideManagerForBridge,
   });
 }
+
+/** @typedef {ReturnType<typeof buildRootObject>} BridgeVat */

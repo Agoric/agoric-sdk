@@ -85,3 +85,5 @@ export function buildRootObject() {
 
   return api;
 }
+
+/** @typedef {ReturnType<typeof buildRootObject>} MintsVat */
