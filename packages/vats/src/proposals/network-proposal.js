@@ -1,4 +1,3 @@
-/* eslint-disable @agoric/group-jsdoc-imports */
 /**
  * @file CoreEval module to set up network, IBC vats.
  * @see {setupNetworkProtocols}
@@ -18,26 +17,24 @@ const { when } = heapVowTools;
 /**
  * @import {ProtocolHandler} from '@agoric/network';
  * @import {ERef, Remote} from '@agoric/vow';
+ * @import {SpawnerVat} from '@agoric/solo/src/vat-spawner.js';
+ * @import {HttpVat} from '@agoric/solo/src/vat-http.js';
+ * @import {NetworkVat} from '../vat-network.js';
+ * @import {UploadsVat} from '@agoric/solo/src/vat-uploads.js';
+ * @import {ScopedBridgeManager} from '../types.js';
+ * @import {BootstrapPowers} from '../core/types.ts';
+ * @import {Producer} from '../core/types.ts';
+ * @import {VatSourceRef} from '../core/types.ts';
+ * @import {ProvisioningVat} from '../vat-provisioning.js';
+ * @import {IBCVat} from '../vat-ibc.js';
  */
 
 /**
  * @typedef SoloVats
- * @property {ERef<
- *   ReturnType<
- *     typeof import('@agoric/solo/src/vat-spawner.js').buildRootObject
- *   >
- * >} spawner
- * @property {ERef<
- *   ReturnType<typeof import('@agoric/solo/src/vat-http.js').buildRootObject>
- * >} http
- * @property {ERef<
- *   ReturnType<typeof import('../vat-network.js').buildRootObject>
- * >} network
- * @property {ERef<
- *   ReturnType<
- *     typeof import('@agoric/solo/src/vat-uploads.js').buildRootObject
- *   >
- * >} uploads
+ * @property {ERef<SpawnerVat>} spawner
+ * @property {ERef<HttpVat>} http
+ * @property {ERef<NetworkVat>} network
+ * @property {ERef<UploadsVat>} uploads
  */
 const NUM_IBC_PORTS_PER_CLIENT = 3;
 

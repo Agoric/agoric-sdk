@@ -27,6 +27,7 @@ import { withAmountUtils } from '../supports.js';
  * @import {Installation} from '@agoric/zoe';
  * @import {Brand} from '@agoric/ertp';
  * @import {ERef} from '@agoric/vow';
+ * @import {ChainBootstrapSpace} from '@agoric/vats/src/core/types.ts';
  */
 
 // referenced by TS

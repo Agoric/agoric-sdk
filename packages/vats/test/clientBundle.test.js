@@ -29,10 +29,7 @@ import { makeNameHubKit, prepareMixinMyAddress } from '../src/nameHub.js';
  */
 
 /**
- * @typedef {{
- *   (n: 'board'): BoardVat;
- *   (n: 'mint'): MintsVat;
- * }} LoadVat
+ * @typedef {VatLoader<'mints' | 'board'>} LoadVat
  */
 test('connectFaucet produces payments', async t => {
   const space = /** @type {any} */ (makePromiseSpace(t.log));

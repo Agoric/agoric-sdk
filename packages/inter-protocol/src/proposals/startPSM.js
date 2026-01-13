@@ -33,6 +33,7 @@ import {
  * @import {Issuer} from '@agoric/ertp';
  * @import {Mint} from '@agoric/ertp';
  * @import {MapStore} from '@agoric/store';
+ * @import {ChainStorageVatParams, WellKnownSpaces} from '@agoric/vats/src/core/types.js';
  * @import {ERef} from '@agoric/vow';
  */
 /** @import {MetricsNotification} from '../psm/psm.js' */
@@ -134,6 +135,7 @@ export const startPSM = async (
     X`anchorOptions.denom must be a string, not ${denom}`,
   );
   /** @type {[Brand<'nat'>, [Brand<'nat'>, Issuer<'nat'>], FeeMintAccess]} */
+  // @ts-expect-error cast
   const [minted, [anchorBrand, anchorIssuer], feeMintAccess] =
     await Promise.all([
       mintedP,

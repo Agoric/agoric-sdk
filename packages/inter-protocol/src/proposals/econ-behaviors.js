@@ -57,10 +57,10 @@ export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
  */
 
 /**
- * @typedef {WellKnownSpaces & ChainBootstrapSpace & EconomyBootstrapSpace} EconomyBootstrapPowers
+ * @typedef {import('@agoric/vats/src/core/types.js').WellKnownSpaces & import('@agoric/vats/src/core/types.js').ChainBootstrapSpace & EconomyBootstrapSpace} EconomyBootstrapPowers
  *
  *
- * @typedef {PromiseSpaceOf<{
+ * @typedef {import('@agoric/vats/src/core/types.js').PromiseSpaceOf<{
  *   economicCommitteeKit: CommitteeStartResult;
  *   economicCommitteeCreatorFacet: import('@agoric/governance/src/committee.js').CommitteeElectorateCreatorFacet;
  *   feeDistributorKit: StartedInstanceKit<
