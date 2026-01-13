@@ -6,6 +6,9 @@ import { E } from '@endo/eventual-send';
 
 /**
  * @import {ContractStartFunction, Instance} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {StartedInstanceKit} from '@agoric/vats/src/core/types.js';
+ * @import {PromiseSpaceOf} from '@agoric/vats/src/core/types.js';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
  */
 
 const trace = (...args) => console.log('---- GetUpgradeKit', ...args);
@@ -49,9 +52,7 @@ export const produceGetUpgradeKit = async powers => {
     const instance = await E(agoricNames).lookup('instance', name);
 
     trace('getting contract kit for', name);
-    const kit = /** @type {StartedInstanceKit<SF> & {label: string}} */ (
-      contractKits.get(instance)
-    );
+    const kit = /** @type {UpgradeKit<SF>} */ (contractKits.get(instance));
 
     trace('getting privateArgs for', name);
     const privateArgs = instancePrivateArgs.has(instance)

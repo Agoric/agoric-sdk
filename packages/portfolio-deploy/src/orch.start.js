@@ -16,6 +16,7 @@ import { fromExternalConfig } from './config-marshal.js';
  * @import { CopyRecord } from '@endo/pass-style';
  * @import { LegibleCapData } from './config-marshal.js';
  * @import { PermitG, CorePowersG, ChainStoragePowers, MakePrivateArgs, UpgradeKit } from './orch.start.types.ts';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
  */
 
 const { entries, fromEntries, keys } = Object;

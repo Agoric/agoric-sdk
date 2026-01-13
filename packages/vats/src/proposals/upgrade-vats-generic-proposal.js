@@ -6,6 +6,9 @@ import { makeTracer } from '@agoric/internal';
  * @import {CreateVatResults, VatAdminSvc} from '@agoric/swingset-vat';
  * @import {VatUpgradeOptions} from '@agoric/swingset-vat';
  * @import {MapStore} from '@agoric/store';
+ * @import {BootstrapPowers} from '../core/types.ts';
+ * @import {VatSourceRef} from '../core/types.ts';
+ * @import {PromiseSpaceOf} from '../core/types.ts';
  */
 
 const trace = makeTracer('UpgradeVats');

@@ -40,7 +40,7 @@ const NUM_IBC_PORTS_PER_CLIENT = 3;
 
 /**
  * @param {SoloVats | NetVats} vats
- * @param {ERef<import('../types.js').ScopedBridgeManager<'dibc'>>} [dibcBridgeManager]
+ * @param {ERef<ScopedBridgeManager<'dibc'>>} [dibcBridgeManager]
  */
 export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
   /** @type {Promise<void>[]} */

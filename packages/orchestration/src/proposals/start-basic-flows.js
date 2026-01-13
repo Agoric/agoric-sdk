@@ -11,6 +11,8 @@ import { E } from '@endo/far';
  * @import {Installation} from '@agoric/zoe';
  * @import {Instance} from '@agoric/zoe';
  * @import {Issuer} from '@agoric/ertp';
+ * @import {BootstrapPowers, StartUpgradableOpts} from '@agoric/vats/src/core/types.js';
+ * @import {Producer} from '@agoric/vats/src/core/types.js';
  */
 
 const trace = makeTracer('StartBasicFlows', true);

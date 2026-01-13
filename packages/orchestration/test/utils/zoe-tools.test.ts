@@ -14,6 +14,7 @@ import {
 } from '@agoric/zoe/tools/test-utils.js';
 import { E, type EReturn } from '@endo/far';
 import type { ZoeService, Installation } from '@agoric/zoe';
+import type { StartedInstanceKit } from '@agoric/vats/src/core/types.js';
 import { commonSetup } from '../supports.js';
 
 import * as contractExports from '../fixtures/zoe-tools.contract.js';

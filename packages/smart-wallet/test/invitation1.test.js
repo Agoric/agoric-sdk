@@ -30,6 +30,7 @@ import { prepareSmartWallet } from '../src/smartWallet.js';
  * @import {Brand} from '@agoric/ertp';
  * @import {Issuer} from '@agoric/ertp';
  * @import {MapStore} from '@agoric/store';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
  */
 
 /** @type {TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */

@@ -26,6 +26,14 @@ import { makeNameHubKit, prepareMixinMyAddress } from '../src/nameHub.js';
 /**
  * @import {UserPaymentRecord} from '../src/core/demoIssuers.js';
  * @import {MyAddressNameAdmin} from '../src/types.js';
+ * @import {BoardVat} from '../src/vat-board.js';
+ * @import {MintsVat} from '../src/vat-mints.js';
+ * @import {BootstrapPowers} from '../src/core/types.ts';
+ * @import {DemoFaucetPowers} from '../src/core/types.ts';
+ * @import {Producer} from '../src/core/types.ts';
+ * @import {VatLoader} from '../src/core/types.ts';
+ * @import {WellKnownVats} from '../src/core/types.ts';
+ * @import {BootstrapSpace} from '../src/core/types.ts';
  */
 
 /**

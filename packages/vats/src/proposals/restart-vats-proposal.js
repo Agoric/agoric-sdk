@@ -8,6 +8,7 @@ import { E, getInterfaceOf } from '@endo/far';
  * @import {EconomyBootstrapSpace} from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
  * @import {Instance} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {ERef} from '@endo/far';
+ * @import {BootstrapPowers} from '../core/types.ts';
  */
 
 const trace = makeTracer('RV');

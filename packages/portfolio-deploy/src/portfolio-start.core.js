@@ -22,6 +22,7 @@ import { name, permit } from './portfolio.contract.permit.js';
  * @import { TypedPattern, Remote } from '@agoric/internal';
  * @import { ChainInfoPowers } from './chain-info.core.js';
  * @import { Bech32Address } from '@agoric/orchestration';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
  */
 
 const trace = makeTracer(`YMX-Start`, true);

@@ -25,6 +25,15 @@ import { makeScopedBridge } from '../bridge.js';
  * @import {BootstrapManifest} from './lib-boot.js';
  * @import {BundleCap} from '@agoric/swingset-vat';
  * @import {SubscriptionRecord} from '@agoric/notifier';
+ * @import {BootstrapPowers} from './types.ts';
+ * @import {BootstrapSpace} from './types.ts';
+ * @import {PropertyMaker} from './types.ts';
+ * @import {ClientManager} from './types.ts';
+ * @import {ClientCreator} from './types.ts';
+ * @import {ClientFacet} from './types.ts';
+ * @import {BootDevices} from './types.ts';
+ * @import {ChainDevices} from './types.ts';
+ * @import {NamedVatPowers} from './types.ts';
  */
 
 const { keys } = Object;

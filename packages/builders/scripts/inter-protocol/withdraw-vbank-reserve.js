@@ -2,6 +2,11 @@
 /// <reference types="@agoric/vats/src/core/core-eval-env.js" />
 // @ts-check
 
+/**
+ * @import {ChainBootstrapSpace} from '@agoric/vats/src/core/types.js';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
+ */
+
 // FIXME: we need to hardcode these values because the vbank reserve purse
 // balance is not synced.
 const DEFAULT_BLD_VALUE = 1_998n;

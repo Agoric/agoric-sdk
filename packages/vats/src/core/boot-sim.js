@@ -6,7 +6,7 @@ import * as simBehaviorsPlus from './sim-behaviors.js';
 import * as utils from './utils.js';
 
 /**
- * @import {VatPowers} from '@agoric/swingset-vat';
+ * @import {DProxy, VatPowers} from '@agoric/swingset-vat';
  */
 
 const { BASIC_BOOTSTRAP_PERMITS: _b, ...basicBehaviors } = basicBehaviorsPlus;

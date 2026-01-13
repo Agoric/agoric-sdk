@@ -19,6 +19,8 @@ const trace = makeTracer('CCtrl');
  * @import {Board, NameHubKit} from '@agoric/vats';
  * @import {UpgradeKit} from './get-upgrade-kit.core.js';
  * @import {ERef} from '@agoric/vow';
+ * @import {StartUpgradable} from '@agoric/vats/src/core/types.js';
+ * @import {StartedInstanceKit} from '@agoric/vats/src/core/types.js';
  */
 
 /**

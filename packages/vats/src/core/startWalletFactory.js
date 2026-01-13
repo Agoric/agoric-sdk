@@ -25,6 +25,9 @@ import {
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {ERef} from '@agoric/vow';
  * @import {GovernanceFacetKit} from '@agoric/governance';
+ * @import {BootstrapPowers} from './types.ts';
+ * @import {ChainStorageVatParams} from './types.ts';
+ * @import {PromiseSpaceOf} from './types.ts';
  */
 
 const trace = makeTracer('StartWF', 'verbose');

@@ -9,11 +9,11 @@ import {
 } from '@agoric/internal';
 import { E } from '@endo/far';
 
-/// <reference types="@agoric/vats/src/core/types-ambient.js"/>
 /**
  * @import {Installation, Instance} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
  */
 
 const trace = makeTracer('UpgradeSA', true);

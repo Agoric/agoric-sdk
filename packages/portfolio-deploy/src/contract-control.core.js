@@ -14,6 +14,8 @@ import { prepareContractControl } from './contract-control.js';
  * @import {PostalServiceBoot} from './postal-service.core.js';
  * @import {AttenuatedDepositPowers} from './attenuated-deposit.core.js';
  * @import {ContractControlOpts, ContractControl, UpdatePrivateArgs} from './contract-control.js';
+ * @import {PromiseSpaceOf} from '@agoric/vats/src/core/types.js';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
  */
 
 /**

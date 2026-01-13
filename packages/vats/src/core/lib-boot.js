@@ -10,10 +10,13 @@ import { makePromiseSpace } from './promise-space.js';
 
 /**
  * @import {EReturn} from '@endo/far';
- * @import {VatPowers} from '@agoric/swingset-vat';
+ * @import {DProxy, VatPowers} from '@agoric/swingset-vat';
  * @import {Zone} from '@agoric/zone';
  * @import {BridgeHandler} from '../types.js';
  * @import {MapStore} from '@agoric/store';
+ * @import {SwingsetVats} from './types.ts';
+ * @import {SoloDevices} from './types.ts';
+ * @import {ChainDevices} from './types.ts';
  */
 
 /**

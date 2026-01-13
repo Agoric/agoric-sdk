@@ -5,14 +5,14 @@ import {
 } from '@agoric/internal';
 import { E } from '@endo/far';
 
-/// <reference types="@agoric/vats/src/core/types-ambient.js"/>
-
 /**
  * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  * @import {start as StartFn} from '@agoric/orchestration/src/examples/send-anywhere.contract.js';
  * @import {Instance} from '@agoric/zoe';
  * @import {Issuer} from '@agoric/ertp';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
+ * @import {Producer} from '@agoric/vats/src/core/types.js';
  */
 
 const trace = makeTracer('StartSA', true);

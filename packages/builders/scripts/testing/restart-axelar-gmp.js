@@ -9,14 +9,14 @@ import {
 } from '@agoric/internal';
 import { E } from '@endo/far';
 
-/// <reference types="@agoric/vats/src/core/types-ambient.js"/>
-
 const trace = makeTracer('StartAxelarGmp', true);
 
 /**
  * @import {start as StartFn} from '@agoric/orchestration/src/examples/axelar-gmp.contract.js';
  * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
+ * @import {StartedInstanceKit} from '@agoric/zoe/src/zoeService/utils.js';
  */
 
 /**

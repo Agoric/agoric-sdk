@@ -10,6 +10,7 @@ import { E, passStyleOf, getInterfaceOf } from '@endo/far';
  * @import {PortfolioBootPowers} from './portfolio-start.type.ts';
  * @import {StartFn} from './portfolio-start.type.ts';
  * @import {UpgradeKit, GetUpgradeKitPowers} from './get-upgrade-kit.core.js';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
  */
 
 /**

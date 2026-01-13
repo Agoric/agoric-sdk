@@ -8,6 +8,8 @@ import { allValues } from '@agoric/internal';
  * @import {NameHub} from '@agoric/vats';
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js';
  * @import {ERef} from '@agoric/vow';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
+ * @import {VatSourceRef} from '@agoric/vats/src/core/types.js';
  */
 
 console.warn('upgrade-walletFactory-proposal.js module evaluating');

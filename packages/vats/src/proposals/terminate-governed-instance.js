@@ -7,8 +7,6 @@
  *       agoric run /path/to/$0 <$instanceHandleBoardID:$instanceKitLabel>...
  */
 
-/// <reference types="@agoric/vats/src/core/types-ambient.js"/>
-
 /* eslint-disable import/no-extraneous-dependencies */
 // dynamic import { makeHelpers } from '@agoric/deploy-script-support';
 // dynamic import { getSpecifier } from '@agoric/internal/src/module-utils.js';
@@ -20,6 +18,7 @@ import { isAbandonedError } from '@agoric/internal/src/upgrade-api.js';
  * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {Instance} from '@agoric/zoe';
+ * @import {BootstrapPowers} from '../core/types.ts';
  */
 
 const USAGE = `Usage: agoric run /path/to/terminate-governed-instance.js \\

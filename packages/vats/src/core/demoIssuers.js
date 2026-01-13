@@ -18,6 +18,8 @@ import { Stake, Stable } from '@agoric/internal/src/tokens.js';
  * @import {Issuer} from '@agoric/ertp';
  * @import {Brand} from '@agoric/ertp';
  * @import {ERef} from '@agoric/vow';
+ * @import {MintsVat} from '../vat-mints.js';
+ * @import {BootstrapSpace} from './types.ts';
  */
 
 const { multiply, floorDivide } = natSafeMath;

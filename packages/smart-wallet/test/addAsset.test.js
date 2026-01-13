@@ -135,6 +135,7 @@ const the = async xP => {
  * @import {Brand} from '@agoric/ertp';
  * @import {PromiseKit} from '@endo/promise-kit';
  * @import {ERef} from '@agoric/vow';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
  */
 
 const IST_UNIT = 1_000_000n;
