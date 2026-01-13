@@ -136,6 +136,13 @@ const flowsRunning: Record<FlowKey, FlowDetail> = {
 const status: StatusFor = {
   contract: {
     contractAccount: cosmosAddress.value,
+    depositFactoryAddresses: {
+      Arbitrum: `eip155:1234:0x5678`,
+      Avalanche: `eip155:4321:0x8765`,
+      Base: `eip155:1111:0x2222`,
+      Ethereum: `eip155:1:0x3333`,
+      Optimism: `eip155:10:0x4444`,
+    },
   },
   evmWallet: {
     updated: 'messageUpdate',

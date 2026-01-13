@@ -174,6 +174,7 @@ export type FlowKey = `flow${number}`;
 export type StatusFor = {
   contract: {
     contractAccount: CosmosChainAddress['value'];
+    depositFactoryAddresses?: Record<AxelarChain, AccountId>;
   };
   pendingTx: PublishedTx;
   evmWallet: EVMWalletUpdate;
