@@ -3,7 +3,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
-import { matches, mustMatch } from '@endo/patterns';
+import { M, matches, mustMatch } from '@endo/patterns';
 import { makeOfferArgsShapes } from '../src/type-guards-steps.ts';
 import {
   FlowStatusShape,
@@ -110,6 +110,62 @@ test('offerArgs can carry usdnOut', t => {
     flow: [{ src: '@noble', dest: 'USDN', amount, detail }],
   });
   t.notThrows(() => mustMatch(specimen, shapes.rebalance));
+});
+
+test('movementDescShape allows unknown additional properties', t => {
+  const shapes = makeOfferArgsShapes(USDC);
+  const { movementDescShape } = shapes;
+  const amount = usdc(200n);
+
+  // Specimen with an unknown future property
+  const specimenWithExtra = harden({
+    src: '@noble',
+    dest: '@Arbitrum',
+    amount,
+    futureField: 'some-value',
+    anotherNewField: 42n,
+  });
+
+  // Current shape allows additional properties
+  t.notThrows(
+    () => mustMatch(specimenWithExtra, movementDescShape),
+    'movementDescShape should allow unknown properties',
+  );
+
+  // A strict shape (with empty object {} as rest) rejects extra properties
+  const strictMovementDescShape = M.splitRecord(
+    {
+      amount: M.and(
+        M.recordOf(M.string(), M.any()),
+        M.splitRecord({ brand: USDC, value: M.gte(1n) }),
+      ),
+      src: M.string(),
+      dest: M.string(),
+    },
+    {
+      fee: M.any(),
+      detail: M.recordOf(M.string(), M.nat()),
+      claim: M.boolean(),
+    },
+    // Empty object rest - strict matching, no additional properties allowed
+    {},
+  );
+
+  t.false(
+    matches(specimenWithExtra, strictMovementDescShape),
+    'strict shape should reject unknown properties',
+  );
+
+  // Confirm the base case still works with strict shape
+  const specimenWithoutExtra = harden({
+    src: '@noble',
+    dest: '@Arbitrum',
+    amount,
+  });
+  t.true(
+    matches(specimenWithoutExtra, strictMovementDescShape),
+    'strict shape should accept valid specimen without extras',
+  );
 });
 
 test('PoolKeyExt shapes accept future pool keys', t => {
