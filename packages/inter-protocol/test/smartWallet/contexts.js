@@ -27,7 +27,7 @@ import { withAmountUtils } from '../supports.js';
  * @import {Installation} from '@agoric/zoe';
  * @import {Brand} from '@agoric/ertp';
  * @import {ERef} from '@agoric/vow';
- * @import {ChainBootstrapSpace} from '@agoric/vats/src/core/types.ts';
+ * @import {ChainBootstrapSpace, WellKnownSpaces} from '@agoric/vats/src/core/types.ts';
  */
 
 // referenced by TS
@@ -56,7 +56,7 @@ export const importBootTestUtils = async (log, bundleCache) => {
 
 /**
  * @param {ExecutionContext} t
- * @param {(logger, cache) => Promise<ChainBootstrapSpace>} makeSpace
+ * @param {(logger, cache) => Promise<ChainBootstrapSpace & WellKnownSpaces>} makeSpace
  */
 export const makeDefaultTestContext = async (t, makeSpace) => {
   // To debug, pass t.log instead of null logger
@@ -65,7 +65,6 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
   const bundleCache = await unsafeMakeBundleCache('bundles/');
   const zone = makeHeapZone();
 
-  // @ts-expect-error xxx
   const { consume, produce, instance } = await makeSpace(log, bundleCache);
   const { agoricNames, zoe } = consume;
 
