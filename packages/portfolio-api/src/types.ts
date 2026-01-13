@@ -120,6 +120,7 @@ export type FlowKey = `flow${number}`;
 export type StatusFor = {
   contract: {
     contractAccount: CosmosChainAddress['value'];
+    factoryContractAddress: `0x${string}`;
   };
   pendingTx: PublishedTx;
   evmWallet: EVMWalletUpdate;
