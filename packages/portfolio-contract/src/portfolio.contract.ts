@@ -117,6 +117,7 @@ const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
   M.splitRecord({
     aavePool: M.string(),
     compound: M.string(),
+    depositFactory: M.string(),
     factory: M.string(),
     usdc: M.string(),
     gateway: M.string(),
