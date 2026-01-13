@@ -1,38 +1,33 @@
-// Ambient type defs. Cannot use top-level import() because that would turn it into a module.
-
-type DProxy = import('@agoric/swingset-vat/src/types-external.js').DProxy;
-
-type BootDevices<T> = { vatPowers: { D: DProxy }; devices: T };
-
-type BridgeDevice =
-  import('@agoric/swingset-vat/src/devices/bridge/device-bridge.js').BridgeDevice;
-
-type CommandDevice =
-  import('@agoric/swingset-vat/src/devices/command/device-command.js').CommandDevice;
-
-type MailboxDevice =
-  import('@agoric/swingset-vat/src/devices/mailbox/device-mailbox.js').MailboxDevice;
-
-type PluginDevice =
-  import('@agoric/swingset-vat/src/devices/plugin/device-plugin.js').PluginDevice;
-
-type TimerDevice =
-  import('@agoric/swingset-vat/src/devices/timer/device-timer.js').TimerDevice;
-
-type VatAdminDevice =
-  import('@agoric/swingset-vat/src/devices/vat-admin/device-vat-admin.js').VatAdminDevice;
-
-type VattpVat =
-  import('@agoric/swingset-vat/src/vats/vattp/vat-vattp.js').VattpVat;
-
-type VatAdminVat =
-  import('@agoric/swingset-vat/src/vats/vat-admin/vat-vat-admin.js').VatAdminVat;
-
+import type { DProxy } from '@agoric/swingset-vat/src/types-external.js';
+import type { BridgeDevice } from '@agoric/swingset-vat/src/devices/bridge/device-bridge.js';
+import type { CommandDevice } from '@agoric/swingset-vat/src/devices/command/device-command.js';
+import type { MailboxDevice } from '@agoric/swingset-vat/src/devices/mailbox/device-mailbox.js';
+import type { PluginDevice } from '@agoric/swingset-vat/src/devices/plugin/device-plugin.js';
+import type { TimerDevice } from '@agoric/swingset-vat/src/devices/timer/device-timer.js';
+import type { VatAdminDevice } from '@agoric/swingset-vat/src/devices/vat-admin/device-vat-admin.js';
+import type { VattpVat } from '@agoric/swingset-vat/src/vats/vattp/vat-vattp.js';
+import type { VatAdminVat } from '@agoric/swingset-vat/src/vats/vat-admin/vat-vat-admin.js';
 /** @see deliverToController in packages/SwingSet/src/vats/comms/controller.js */
-type TimerVat =
-  import('@agoric/swingset-vat/src/vats/timer/vat-timer.js').TimerVat;
+import type { TimerVat } from '@agoric/swingset-vat/src/vats/timer/vat-timer.js';
+import type { Issuer, Brand, Payment, Mint } from '@agoric/ertp';
+import type { OrchestrationVat } from '@agoric/orchestration';
+import type { ERef } from 'jessie.js';
+import type { LocalChainVat } from '../vat-localchain.js';
+import type { TransferVat } from '../vat-transfer.js';
+import type { ZoeVat } from '../vat-zoe.js';
+import type { PriceAuthorityVat } from '../vat-priceAuthority.js';
+import type { ProvisioningVat } from '../vat-provisioning.js';
+import type { BankVat } from '../vat-bank.js';
+import type { MintsVat } from '../vat-mints.js';
+import type { NetworkVat } from '../vat-network.js';
+import type { IBCVat } from '../vat-ibc.js';
+import type { BoardVat } from '../vat-board.js';
+import type { AgoricNamesVat } from '../vat-agoricNames.js';
+import type { BridgeVat } from '../vat-bridge.js';
 
-type CommsVatRoot = import('@endo/far').ERef<{
+export type BootDevices<T> = { vatPowers: { D: DProxy }; devices: T };
+
+export type CommsVatRoot = ERef<{
   addRemote: (name: string, tx: unknown, rx: unknown) => void;
   addEgress: (addr: string, ix: number, provider: unknown) => void;
   addIngress: (
@@ -42,18 +37,18 @@ type CommsVatRoot = import('@endo/far').ERef<{
   ) => Promise<any>;
 }>;
 
-type SwingsetVats = {
+export type SwingsetVats = {
   comms: CommsVatRoot;
   timer: TimerVat;
   vatAdmin: VatAdminVat;
   vattp: VattpVat;
 };
 
-type ChainStorageVatParams = {
+export type ChainStorageVatParams = {
   vatParameters: { chainStorageEntries?: [k: string, v: string][] };
 };
 
-type SoloDevices = {
+export type SoloDevices = {
   vatAdmin: VatAdminDevice;
   mailbox: MailboxDevice;
   command: CommandDevice;
@@ -61,37 +56,39 @@ type SoloDevices = {
   plugin: PluginDevice;
 };
 
-type ChainDevices = {
+export type ChainDevices = {
   vatAdmin: VatAdminDevice;
   mailbox: MailboxDevice;
   timer: TimerDevice;
   bridge?: BridgeDevice;
 };
 
-type ClientProvider = {
+export type ClientProvider = {
   getChainBundle: () => unknown;
   getChainConfigNotifier: () => import('@agoric/notifier').Notifier<unknown>;
 };
 
-type Producer<T> = {
-  resolve: (v: import('@endo/far').ERef<T>) => void;
+export type Producer<T> = {
+  resolve: (v: ERef<T>) => void;
   reject: (r: unknown) => void;
   reset: (reason?: unknown) => void;
 };
 
-type VatSourceRef = { bundleName?: string; bundleID?: string };
-type VatLoader<Names extends keyof WellKnownVats = keyof WellKnownVats> = <
-  N extends Names,
->(
-  name: N,
-  sourceRef?: VatSourceRef,
-) => Promise<Awaited<WellKnownVats[N]>>;
+export type VatSourceRef = { bundleName?: string; bundleID?: string };
+export type VatLoader<Names extends keyof WellKnownVats = keyof WellKnownVats> =
+  <N extends Names>(
+    name: N,
+    sourceRef?: VatSourceRef,
+  ) => Promise<Awaited<WellKnownVats[N]>>;
 
 /** callback to assign a property onto the `home` object of the client */
-type PropertyMaker = (addr: string, flags: string[]) => Record<string, unknown>;
+export type PropertyMaker = (
+  addr: string,
+  flags: string[],
+) => Record<string, unknown>;
 
 /** tool to put properties onto the `home` object of the client */
-type ClientManager = {
+export type ClientManager = {
   assignBundle: (ps: PropertyMaker[]) => void;
 };
 /**
@@ -99,7 +96,7 @@ type ClientManager = {
  * @template C - Consume only
  * @template P - Produce only
  */
-type PromiseSpaceOf<B, C = object, P = object> = {
+export type PromiseSpaceOf<B, C = object, P = object> = {
   consume: { [K in keyof (B & C)]: Promise<(B & C)[K]> };
   produce: { [K in keyof (B & P)]: Producer<(B & P)[K]> };
 };
@@ -110,7 +107,7 @@ type CreateUserBundle = (
   powerFlags: string[],
 ) => Promise<Record<string, Promise<any>>>;
 
-type ClientFacet = {
+export type ClientFacet = {
   /**
    * Required for ag-solo, but deprecated in favour of getConfiguration NOTE: we
    * use `any` rather than `unknown` because each client that wants to call a
@@ -118,13 +115,13 @@ type ClientFacet = {
    * userBundle.bank; ideally, the cast is to some useful type. But unknown
    * can't be cast directly to some other type; it has to be cast to any first.
    */
-  getChainBundle(): import('@endo/far').ERef<Record<string, any>>;
+  getChainBundle(): ERef<Record<string, any>>;
   getConfiguration(): AsyncIterable<{
     clientAddress: string;
     clientHome: Record<string, any>;
   }>;
 };
-type ClientCreator = {
+export type ClientCreator = {
   createClientFacet(
     nickname: string,
     clientAddress: string,
@@ -133,7 +130,7 @@ type ClientCreator = {
   createUserBundle: CreateUserBundle;
 };
 
-type WellKnownName = {
+export type WellKnownName = {
   issuer:
     | import('@agoric/internal/src/tokens.js').TokenKeyword
     | 'Invitation'
@@ -175,7 +172,7 @@ type WellKnownName = {
   uiConfig: 'VaultFactory';
 };
 
-type ContractInstallationPromises<
+export type ContractInstallationPromises<
   StartFns extends Partial<
     Record<WellKnownName['installation'], import('@agoric/zoe').ContractStartFn>
   >,
@@ -185,7 +182,7 @@ type ContractInstallationPromises<
   >;
 };
 
-type ContractInstancePromises<
+export type ContractInstancePromises<
   StartFns extends Partial<
     Record<WellKnownName['instance'], import('@agoric/zoe').ContractStartFn>
   >,
@@ -195,7 +192,7 @@ type ContractInstancePromises<
   >;
 };
 
-type WellKnownContracts = {
+export type WellKnownContracts = {
   centralSupply: typeof import('@agoric/vats/src/centralSupply.js').start;
   committee: typeof import('@agoric/governance/src/committee.js').start;
   contractGovernor: typeof import('@agoric/governance/src/contractGovernor.js').start;
@@ -212,45 +209,27 @@ type WellKnownContracts = {
   walletFactory: import('@agoric/smart-wallet/src/walletFactory.js').start;
 };
 
-type WellKnownSpaces = {
+export type WellKnownSpaces = {
   issuer: {
-    produce: Record<
-      WellKnownName['issuer'],
-      Producer<import('@agoric/ertp').Issuer>
-    >;
-    consume: Record<
-      WellKnownName['issuer'],
-      Promise<import('@agoric/ertp').Issuer>
-    > & {
-      BLD: Promise<import('@agoric/ertp').Issuer<'nat'>>;
-      IST: Promise<import('@agoric/ertp').Issuer<'nat'>>;
+    produce: Record<WellKnownName['issuer'], Producer<Issuer>>;
+    consume: Record<WellKnownName['issuer'], Promise<Issuer>> & {
+      BLD: Promise<Issuer<'nat'>>;
+      IST: Promise<Issuer<'nat'>>;
     };
   };
   brand: {
-    produce: Record<
-      WellKnownName['issuer'],
-      Producer<import('@agoric/ertp').Brand>
-    > & {
+    produce: Record<WellKnownName['issuer'], Producer<Brand>> & {
       timer: Producer<import('@agoric/time').TimerBrand>;
     };
-    consume: Record<
-      WellKnownName['issuer'],
-      Promise<import('@agoric/ertp').Brand>
-    > & {
-      BLD: Promise<import('@agoric/ertp').Brand<'nat'>>;
-      IST: Promise<import('@agoric/ertp').Brand<'nat'>>;
+    consume: Record<WellKnownName['issuer'], Promise<Brand>> & {
+      BLD: Promise<Brand<'nat'>>;
+      IST: Promise<Brand<'nat'>>;
       timer: Producer<import('@agoric/time').TimerBrand>;
     };
   };
   oracleBrand: {
-    produce: Record<
-      WellKnownName['oracleBrand'],
-      Producer<import('@agoric/ertp').Brand>
-    >;
-    consume: Record<
-      WellKnownName['oracleBrand'],
-      Promise<import('@agoric/ertp').Brand>
-    >;
+    produce: Record<WellKnownName['oracleBrand'], Producer<Brand>>;
+    consume: Record<WellKnownName['oracleBrand'], Promise<Brand>>;
   };
   installation: {
     produce: Record<
@@ -280,12 +259,10 @@ type WellKnownSpaces = {
   };
 };
 
-type StartGovernedUpgradableOpts<
+export type StartGovernedUpgradableOpts<
   SF extends import('@agoric/governance').GovernableStartFn,
 > = {
-  installation: import('@endo/far').ERef<
-    import('@agoric/zoe').Installation<SF>
-  >;
+  installation: ERef<import('@agoric/zoe').Installation<SF>>;
   issuerKeywordRecord?: import('@agoric/zoe').IssuerKeywordRecord;
   governedParams: Record<string, unknown>;
   terms: Omit<
@@ -300,19 +277,17 @@ type StartGovernedUpgradableOpts<
   label: string;
 };
 
-type StartGovernedUpgradable = <
+export type StartGovernedUpgradable = <
   SF extends import('@agoric/governance').GovernableStartFn,
 >(
   opts: StartGovernedUpgradableOpts<SF>,
 ) => Promise<import('@agoric/governance').GovernanceFacetKit<SF>>;
 
-type StartUpgradableOpts<
+export type StartUpgradableOpts<
   SF extends
     import('@agoric/zoe/src/zoeService/utils.js').ContractStartFunction,
 > = {
-  installation: import('@endo/far').ERef<
-    import('@agoric/zoe').Installation<SF>
-  >;
+  installation: ERef<import('@agoric/zoe').Installation<SF>>;
   issuerKeywordRecord?: import('@agoric/zoe').IssuerKeywordRecord;
   terms?: Omit<
     import('@agoric/zoe/src/zoeService/utils.js').StartParams<SF>['terms'],
@@ -322,7 +297,7 @@ type StartUpgradableOpts<
   label: string;
 };
 
-type StartUpgradable = <
+export type StartUpgradable = <
   SF extends
     import('@agoric/zoe/src/zoeService/utils.js').ContractStartFunction,
 >(
@@ -333,17 +308,17 @@ type StartUpgradable = <
   }
 >;
 
-type StartedInstanceKit<
+export type StartedInstanceKit<
   T extends import('@agoric/zoe/src/zoeService/utils.js').ContractStartFunction,
 > = import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<T>;
 
-type StartedInstanceKitWithLabel<
+export type StartedInstanceKitWithLabel<
   T extends import('@agoric/zoe/src/zoeService/utils.js').ContractStartFunction,
 > = import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<T> & {
   label: string;
 };
 
-type ChainBootstrapSpaceT = {
+export type ChainBootstrapSpaceT = {
   agoricNames: import('../types.js').NameHub;
   agoricNamesAdmin: import('@agoric/vats').NameAdmin;
   bankManager: import('@agoric/vats/src/vat-bank.js').BankManager;
@@ -378,7 +353,7 @@ type ChainBootstrapSpaceT = {
     | import('@agoric/internal/src/priority-senders.js').PrioritySendersManager
     | undefined
     | null;
-  initialSupply: import('@agoric/ertp').Payment<'nat'>;
+  initialSupply: Payment<'nat'>;
   /**
    * Very powerful. Has the private args for critical contract instances such as
    * Vault Factory. ONLY FOR DISASTER RECOVERY
@@ -440,9 +415,9 @@ type ChainBootstrapSpaceT = {
   zoe: import('@agoric/zoe').ZoeService;
 };
 
-type ChainBootstrapSpace = PromiseSpaceOf<ChainBootstrapSpaceT>;
+export type ChainBootstrapSpace = PromiseSpaceOf<ChainBootstrapSpaceT>;
 
-type BootstrapVatParams = {
+export type BootstrapVatParams = {
   argv: {
     hardcodedClientAddresses?: string[];
     FIXME_GCI: string;
@@ -450,7 +425,7 @@ type BootstrapVatParams = {
   };
 };
 
-type BootstrapPowers = BootstrapSpace & {
+export type BootstrapPowers = BootstrapSpace & {
   zone: import('@agoric/zone').Zone;
   devices: SoloDevices | ChainDevices;
   vats: SwingsetVats;
@@ -460,7 +435,7 @@ type BootstrapPowers = BootstrapSpace & {
   modules: import('./boot-chain.js').BootstrapModules;
 };
 
-type BootstrapSpace = WellKnownSpaces &
+export type BootstrapSpace = WellKnownSpaces &
   PromiseSpaceOf<
     ChainBootstrapSpaceT & {
       vatAdminSvc: import('@agoric/swingset-vat').VatAdminSvc;
@@ -472,71 +447,31 @@ type BootstrapSpace = WellKnownSpaces &
     object
   >;
 
-type LocalChainVat = import('@endo/far').ERef<
-  ReturnType<typeof import('../vat-localchain.js').buildRootObject>
->;
-
-type TransferVat = import('@endo/far').ERef<
-  ReturnType<typeof import('../vat-transfer.js').buildRootObject>
->;
-
-type ProvisioningVat = import('@endo/far').ERef<
-  ReturnType<typeof import('../vat-provisioning.js').buildRootObject>
->;
-
-type MintsVat = import('@endo/far').ERef<
-  ReturnType<typeof import('../vat-mints.js').buildRootObject>
->;
-
-type PriceAuthorityVat = import('@endo/far').ERef<
-  ReturnType<typeof import('../vat-priceAuthority.js').buildRootObject>
->;
-
-type NetworkVat = import('@endo/far').ERef<
-  ReturnType<typeof import('../vat-network.js').buildRootObject>
->;
-type IBCVat = import('@endo/far').ERef<
-  ReturnType<typeof import('../vat-ibc.js').buildRootObject>
->;
-type NamedVatPowers = {
+export type NamedVatPowers = {
   namedVat: PromiseSpaceOf<{
     agoricNames: Awaited<AgoricNamesVat>;
     board: Awaited<BoardVat>;
   }>;
 };
 
-type OrchestrationVat = import('@endo/far').ERef<
-  import('@agoric/orchestration').OrchestrationVat
->;
-type ZoeVat = import('@endo/far').ERef<import('../vat-zoe.js').ZoeVat>;
-
 type RemoteIssuerKit = {
-  mint: import('@endo/far').ERef<import('@agoric/ertp').Mint>;
-  issuer: import('@endo/far').ERef<import('@agoric/ertp').Issuer>;
-  brand: import('@agoric/ertp').Brand;
+  mint: ERef<Mint>;
+  issuer: ERef<Issuer>;
+  brand: Brand;
 };
-type AgoricNamesVat = import('@endo/far').ERef<
-  ReturnType<typeof import('../vat-agoricNames.js').buildRootObject>
->;
-type BankVat = import('@endo/far').ERef<
-  ReturnType<typeof import('../vat-bank.js').buildRootObject>
->;
-type BoardVat = import('@endo/far').ERef<
-  ReturnType<typeof import('../vat-board.js').buildRootObject>
->;
-type ChainStorageVat = import('@endo/far').ERef<
-  ReturnType<typeof import('../vat-bridge.js').buildRootObject>
->;
-type BankManager = Awaited<ReturnType<Awaited<BankVat>['makeBankManager']>>;
 
-type DemoFaucetPowers = PromiseSpaceOf<{
+export type BankManager = Awaited<
+  ReturnType<Awaited<BankVat>['makeBankManager']>
+>;
+
+export type DemoFaucetPowers = PromiseSpaceOf<{
   mints: MintsVat;
 }>;
 
-type WellKnownVats = SwingsetVats & {
+export type WellKnownVats = SwingsetVats & {
   bank: BankVat;
   board: BoardVat;
-  bridge: ChainStorageVat;
+  bridge: BridgeVat;
   ibc: IBCVat;
   localchain: LocalChainVat;
   mints: MintsVat;

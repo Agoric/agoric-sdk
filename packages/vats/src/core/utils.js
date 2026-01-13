@@ -8,11 +8,16 @@ import { keyEQ } from '@agoric/store';
 import { makeNameHubKit } from '../nameHub.js';
 import { makeLogHooks, makePromiseSpace } from './promise-space.js';
 
-import './types-ambient.js';
-
 /**
  * @import {MapStore} from '@agoric/store';
  * @import {ERef} from '@agoric/vow';
+ * @import {WellKnownName} from './types.ts';
+ * @import {VattpVat} from '@agoric/swingset-vat/src/vats/vattp/vat-vattp.js';
+ * @import {CommsVatRoot} from './types.ts';
+ * @import {PromiseSpaceOf} from './types.ts';
+ * @import {WellKnownSpaces} from './types.ts';
+ * @import {VatAdminVat} from '@agoric/swingset-vat/src/vats/vat-admin/vat-vat-admin.js';
+ * @import {NamedVatPowers} from './types.ts';
  */
 
 const { entries, fromEntries, keys } = Object;
