@@ -2491,7 +2491,7 @@ test('openPortfolioFromPermit2 with Permit2 provisions account and starts deposi
     Compound_Arbitrum: 4000n, // 40% in basis points
   };
 
-  const { orch, ctx, offer, cosmosId, storage } = mocks();
+  const { orch, ctx, offer, cosmosId, storage, txResolver } = mocks();
   const { log, seat } = offer;
   const kit = await ctx.makePortfolioKit();
   const portfolioId = kit.reader.getPortfolioId();
@@ -2518,6 +2518,9 @@ test('openPortfolioFromPermit2 with Permit2 provisions account and starts deposi
       { src: `+${fromChain}`, dest: `@${fromChain}`, amount, fee },
     ];
     kit.planner.resolveFlowPlan(flowNum, steps);
+
+    // Complete GMP transaction
+    await txResolver.drainPending();
   })();
 
   const [webResult, plannerResult] = await Promise.all([

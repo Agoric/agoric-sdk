@@ -463,6 +463,12 @@ export const preparePortfolioKit = (
             .sub(chainName);
           traceChain('reserveAccount');
           const { accounts, accountsPending } = this.state;
+          if (accountsPending.has(chainName)) {
+            const state = 'pending';
+            traceChain('state', state);
+            const val = accountsPending.get(chainName);
+            return { ready: val.vow as Vow<AccountInfoFor[C]>, state };
+          }
           if (accounts.has(chainName)) {
             const infoAny = accounts.get(chainName);
             assert.equal(infoAny.chainName, chainName);
@@ -471,12 +477,6 @@ export const preparePortfolioKit = (
             traceChain('state', state);
             const ready = vowTools.asVow(async () => info);
             return { ready, state };
-          }
-          if (accountsPending.has(chainName)) {
-            const state = 'pending';
-            traceChain('state', state);
-            const val = accountsPending.get(chainName);
-            return { ready: val.vow as Vow<AccountInfoFor[C]>, state };
           }
           const state = 'new';
           traceChain('state', state);
