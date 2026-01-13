@@ -122,6 +122,11 @@ export type HostOf<F> =
 
 export type HostArgs<GA extends any[]> = { [K in keyof GA]: HostOf<GA[K]> };
 
+export type AsyncFlowOptions = {
+  startEager?: boolean;
+  precious?: boolean;
+};
+
 export type PreparationOptions = {
   vowTools?: VowTools;
   makeLogStore?: (() => LogStore) | undefined;

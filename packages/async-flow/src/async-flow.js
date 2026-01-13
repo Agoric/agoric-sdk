@@ -13,11 +13,12 @@ import { LogEntryShape, FlowStateShape } from './type-guards.js';
 /**
  * @import {WeakMapStore, MapStore} from '@agoric/store'
  * @import {Zone} from '@agoric/base-zone'
- * @import {FlowState, GuestAsyncFunc, HostAsyncFuncWrapper, HostOf, PreparationOptions} from '../src/types.js'
+ * @import {AsyncFlowOptions, FlowState, GuestAsyncFunc, HostAsyncFuncWrapper, HostOf, PreparationOptions} from '../src/types.js'
  * @import {ReplayMembrane} from '../src/replay-membrane.js'
  */
 
 const { defineProperties } = Object;
+const panicErrors = new WeakSet();
 
 const AsyncFlowIKit = harden({
   flow: M.interface('Flow', {
@@ -94,7 +95,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
    * @param {Zone} zone
    * @param {string} tag
    * @param {GuestAsyncFunc} guestAsyncFunc
-   * @param {{ startEager?: boolean }} [options]
+   * @param {AsyncFlowOptions} [options]
    */
   const prepareAsyncFlowKit = (zone, tag, guestAsyncFunc, options = {}) => {
     typeof guestAsyncFunc === 'function' ||
@@ -102,6 +103,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
     const {
       // May change default to false, once instances reliably wake up
       startEager = true,
+      precious = true,
     } = options;
 
     const internalMakeAsyncFlowKit = zone.exoClassKit(
@@ -118,6 +120,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
           bijection, // membrane's guest-host mapping
           outcomeKit: makeVowKit(), // outcome of activation as host vow
           isDone: false, // persistently done
+          isPrecious: precious,
         };
       },
       {
@@ -249,6 +252,9 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
             void E.when(
               guestResultP,
               gFulfillment => {
+                if (!state.isPrecious && state.isDone) {
+                  return;
+                }
                 if (bijection.hasGuest(guestResultP)) {
                   !log.isReplaying() ||
                     panic(
@@ -263,6 +269,9 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
                 }
               },
               guestReason => {
+                if (!state.isPrecious && state.isDone) {
+                  return;
+                }
                 // The `guestResultP` might be a failure thrown by `panic`
                 // indicating a failure to replay. In that case, we must not
                 // settle the outcomeVow, since the outcome vow only represents
@@ -284,6 +293,9 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
             )
               .then(
                 () => {
+                  if (!state.isPrecious && state.isDone) {
+                    return;
+                  }
                   if (flow.getFlowState() === 'Failed') {
                     // If the flow fails, we need to trigger the panic handler with
                     // the failure.
@@ -291,6 +303,9 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
                   }
                 },
                 maybePanicReason => {
+                  if (!state.isPrecious && state.isDone) {
+                    return;
+                  }
                   if (flow.getFlowState() === 'Failed') {
                     const err = flow.getOptFatalProblem();
                     // TODO: Annotate maybePanicReason robustly with err if it
@@ -310,7 +325,12 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
                   }
                 },
               )
-              .catch(panicHandler);
+              .catch(err => {
+                if (!state.isPrecious && (state.isDone || panicErrors.has(err))) {
+                  return;
+                }
+                return panicHandler(err);
+              });
           },
           wake() {
             const { facets } = this;
@@ -415,30 +435,45 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
           },
           panic(fatalProblem) {
             const { state, facets } = this;
-            const { bijection, log } = state;
-            const { flow } = facets;
+            const { bijection, log, outcomeKit, isPrecious } = state;
+            const { flow, admin } = facets;
 
-            if (failures.has(flow)) {
-              const prevErr = failures.get(flow);
-              annotateError(
-                prevErr,
-                X`doubly failed somehow with ${fatalProblem}`,
-              );
-              // prevErr likely to be the more relevant diagnostic to report
-              fatalProblem = prevErr;
+            if (isPrecious) {
+              if (failures.has(flow)) {
+                const prevErr = failures.get(flow);
+                annotateError(
+                  prevErr,
+                  X`doubly failed somehow with ${fatalProblem}`,
+                );
+                // prevErr likely to be the more relevant diagnostic to report
+                fatalProblem = prevErr;
+              } else {
+                failures.init(flow, fatalProblem);
+              }
+
+              if (hasMembrane(flow)) {
+                getMembrane(flow).stop();
+                deleteMembrane(flow);
+              }
+              log.reset();
+              bijection.reset();
+
+              flow.getFlowState() === 'Failed' ||
+                Fail`Panicked flow must be Failed ${flow}`;
             } else {
-              failures.init(flow, fatalProblem);
+              admin.reset();
+              if (eagerWakers.has(flow)) {
+                eagerWakers.delete(flow);
+              }
+              flowForOutcomeVowKey.delete(toPassableCap(flow.getOutcome()));
+              state.isDone = true;
+              log.dispose();
+              try {
+                outcomeKit.resolver.reject(fatalProblem);
+              } catch (_e) {
+                // ignore double-settle or already-terminated outcomes
+              }
             }
-
-            if (hasMembrane(flow)) {
-              getMembrane(flow).stop();
-              deleteMembrane(flow);
-            }
-            log.reset();
-            bijection.reset();
-
-            flow.getFlowState() === 'Failed' ||
-              Fail`Panicked flow must be Failed ${flow}`;
 
             // This is not an expected throw, so in theory arbitrary chaos
             // may ensue from throwing it. But at this point
@@ -449,6 +484,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
             const err = makeError(
               X`In a Failed state: see getFailures() or getOptFatalProblem() for more information`,
             );
+            panicErrors.add(err);
             annotateError(err, X`due to ${fatalProblem}`);
             throw err;
           },
@@ -482,7 +518,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
    * @param {Zone} zone
    * @param {string} tag
    * @param {F} guestFunc
-   * @param {{ startEager?: boolean }} [options]
+   * @param {AsyncFlowOptions} [options]
    * @returns {HostOf<F>}
    */
   const asyncFlow = (zone, tag, guestFunc, options = undefined) => {

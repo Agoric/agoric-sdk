@@ -369,6 +369,11 @@ export const contract = async (
       rebalance: flows.rebalance,
     },
     ctx1,
+    {
+      flowOptions: {
+        rebalance: { precious: false },
+      },
+    },
   );
   const executePlan: typeof orchFns1.executePlan = (
     seat,

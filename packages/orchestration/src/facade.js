@@ -2,7 +2,7 @@
 import { assertAllDefined, deepMapObject, objectMap } from '@agoric/internal';
 
 /**
- * @import {AsyncFlowTools, GuestInterface, HostArgs} from '@agoric/async-flow';
+ * @import {AsyncFlowOptions, AsyncFlowTools, GuestInterface, HostArgs} from '@agoric/async-flow';
  * @import {Zone} from '@agoric/zone';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {TimerService} from '@agoric/time';
@@ -64,12 +64,13 @@ export const makeOrchestrationFacade = ({
    *   (to resume across upgrades)
    * @param {HC} hostCtx - values to pass through the async flow membrane
    * @param {GF} guestFn
+   * @param {AsyncFlowOptions} [options]
    * @returns {HostForGuest<GF>}
    */
-  const orchestrate = (durableName, hostCtx, guestFn) => {
+  const orchestrate = (durableName, hostCtx, guestFn, options = undefined) => {
     const subZone = zone.subZone(durableName);
     const [wrappedCtx] = prepareEndowment(subZone, 'endowments', [hostCtx]);
-    const hostFn = asyncFlow(subZone, 'asyncFlow', guestFn);
+    const hostFn = asyncFlow(subZone, 'asyncFlow', guestFn, options);
 
     deepMapObject(
       wrappedCtx,
@@ -106,9 +107,21 @@ export const makeOrchestrationFacade = ({
    *   guest fn map
    * @param {GFM} guestFns
    * @param {HC} hostCtx
+   * @param {AsyncFlowOptions & {
+   *   defaultFlowOptions?: AsyncFlowOptions;
+   *   flowOptions?: Record<string, AsyncFlowOptions>;
+   * }} [options]
    * @returns {{ [N in keyof GFM]: HostForGuest<GFM[N]> }}
    */
-  const orchestrateAll = (guestFns, hostCtx) => {
+  const orchestrateAll = (guestFns, hostCtx, options = undefined) => {
+    const {
+      flowOptions = {},
+      defaultFlowOptions,
+      ...restFlowOptions
+    } = options || {};
+    const defaultOptions =
+      defaultFlowOptions ||
+      (Object.keys(restFlowOptions).length ? restFlowOptions : undefined);
     const mappedFlows = new Map(
       Object.entries(guestFns).map(([name, guestFn]) => [
         guestFn,
@@ -123,7 +136,12 @@ export const makeOrchestrationFacade = ({
 
     const orcFns = /** @type {{ [N in keyof GFM]: HostForGuest<GFM[N]> }} */ (
       objectMap(guestFns, (guestFn, name) =>
-        orchestrate(String(name), mappedContext, guestFn),
+        orchestrate(
+          String(name),
+          mappedContext,
+          guestFn,
+          flowOptions[name] || defaultOptions,
+        ),
       )
     );
 
