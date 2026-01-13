@@ -157,9 +157,10 @@ sequenceDiagram
   end
 
   D-->>D: allocate nonce543
+  note over D: TBD:<br/>? how to choose deadline?
   note right of MM: EIP-712 signTypedData
-  D->>MM: PermitWitnessTransferFrom(<br/>1,0000 USDC,<br/>YMax Factory Contract<br/>{60% A, 40% B},<br/>nonce543,deadline)
-  MM-->>U: PermitWitnessTransferFrom(<br/>1,0000 USDC,<br/>YMax Factory Contract<br/>{60% A, 40% B},<br/>nonce543,deadline) ok?
+  D->>MM: PermitWitnessTransferFrom(<br/>1,0000 USDC,<br/>YMaxV1OpenPortfolio<br/>{60% A, 40% B},<br/>nonce543,deadline)
+  MM-->>U: PermitWitnessTransferFrom(<br/>1,0000 USDC,<br/>YMaxV1OpenPortfolio<br/>{60% A, 40% B},<br/>nonce543,deadline) ok?
   U->>MM: ok
   MM-->>D: signature
 
@@ -254,8 +255,10 @@ sequenceDiagram
   title Publishing EVM Wallet operation state
   autonumber
   participant D as Ymax UI
-  participant EMS as EVM<br/> Message Service
-  participant YDS
+  box lightblue ymax-web
+    participant YDS
+    participant EMS as EVM<br/> Message Service
+  end
   %% [Where it runs]
   box Wallet Factory
     participant W as Smart<br/>Wallet
@@ -267,21 +270,16 @@ sequenceDiagram
 
   %% Notation: ->> for initial message, -->> for consequences
 
-  D -->> EMS: signed<br/>PortfolioOp(...args,<br/>nonce543,deadline)<br/>signed Permit(...)
+  D -->> YDS: POST /evm-operations<br/>signed PortfolioOp(nonce543, ...)
+  YDS -->> EMS: signed<br/>PortfolioOp(nonce543, ...)
 
   note over EMS: NOT SHOWN:<br/>tentative validation
   EMS --> W: invokeEntry(invoke78,<br/>evmWalletHandler,<br/>handleMessage, ...)
-  EMS -->> YDS: invokeEntry<br/>tx hash
-  EMS -->> D: OK
+  EMS -->> YDS: OpDetails<br/>nonce543<br/>0xED123<br/>portfolio123?<br/>tx hash
+  YDS -->> D: OK
   note over D: tx submitted toast
 
-  YDS -->> YDS: get tx contents
-  YDS -->> YDS: extract invokeEntry args
-  YDS -->> YDS: recover signer 0xED123
-  opt permit2
-    YDS -->> YDS: extract nested witness
-  end
-  YDS -->> YDS: extract OpDetails<br/>nonce543, portfolio123
+  YDS -->> YDS: watch tx,<br/>0xED123/portfolio123
 
   W -->> EMH: handleMessage(<br/>PortfolioOp(nonce543, ...),<br/>signature)
   EMH -->> EMH: check sigs
@@ -334,30 +332,29 @@ sequenceDiagram
   %% - `-->>` denotes a consequence of a prior message
 
   autonumber
-  actor op as Operator / User
-
-  box EVM
-    participant C3 as Axelar CREATE3 Deployer
-    participant DF as DepositFactory
-  end
+  actor op as Operator
 
   box Agoric
     participant Y as ymax-contract
   end
 
-  %% 1) Deploy DepositFactory using CREATE3
-  op->>C3: deploy(bytecode=DepositFactory, salt)
-  Note right of C3: CREATE2 deploys CreateDeploy<br/>CreateDeploy.deploy() via CREATE
-  C3-->>DF: DepositFactory deployed<br/>at deterministic address
-  C3-->>op: deployedAddress = 0xDEPO...
+  box EVM
+    participant DF as DepositFactory
+  end
 
-  %% 2) Operator manually wires address into ymax-contract
-  op->>op: ymax-tool upgrade<br/>privateArgs.depositFactoryAddress=0xDEPO...
-  op-->>Y: start(privateArgs)
+  %% 1) Start YMax contract
+  op ->> Y: start()
+  Y -->> Y: create & publish<br/>contractAccount
 
-  %% 3) ymax-contract persists the address
-  Y-->>Y: read depositFactoryAddress from privateArgs
-  Y-->>Y: store depositFactoryAddress in vstorage
+  %% 2) Deploy DepositFactory
+  op->>DF: create(bytecode=DepositFactory,<br/>nonce=1, owner=contractAccount)
+  DF-->>op: deployedAddress = 0xFAC1...
+
+  %% 3) Operator manually wires address into ymax-contract
+  op->>op: ymax-tool upgrade<br/>privateArgs.depositFactoryAddress=0xFAC1...
+  op-->>Y: upgrade(privateArgs)
+  Y-->>Y: read depositFactoryAddress<br/>from privateArgs
+  Y-->>Y: publish ymax0.depositFactoryAddress<br/>in vstorage
 ```
 
 </details>
