@@ -25,6 +25,7 @@ const { make } = AmountMath;
  * @import {Brand} from '@agoric/ertp';
  * @import {Amount} from '@agoric/ertp';
  * @import {ERef} from '@agoric/vow';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
  */
 
 const { keys } = Object;

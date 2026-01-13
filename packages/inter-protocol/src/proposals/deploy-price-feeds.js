@@ -30,6 +30,8 @@ export const DEFAULT_CONTRACT_TERMS = {
  * @import {Installation, Instance} from '@agoric/zoe';
  * @import {Brand} from '@agoric/ertp';
  * @import {MapStore} from '@agoric/store';
+ * @import {NamedVatPowers} from '@agoric/vats/src/core/types.js';
+ * @import {PromiseSpaceOf} from '@agoric/vats/src/core/types.js';
  */
 /** @import {FluxStartFn} from '@agoric/inter-protocol/src/price/fluxAggregatorContract.js'; */
 
@@ -290,7 +292,6 @@ export const deployPriceFeeds = async (powers, config) => {
     );
   }
 
-  // @ts-expect-error replaceScaledPriceAuthorities uses a subset of the powers.
   await replaceScaledPriceAuthorities(powers, {
     options: { scaledPARef },
   });

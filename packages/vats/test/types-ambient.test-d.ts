@@ -5,12 +5,11 @@
  *   https://www.typescriptlang.org/docs/handbook/jsdoc-supported-types.html
  */
 
-/// <reference path="../src/core/types-ambient.d.ts" />
-
 import type { start as assetReserveStart } from '@agoric/inter-protocol/src/reserve/assetReserve.js';
 import { expectNotType, expectType } from 'tsd';
 
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
+import type { WellKnownSpaces } from '../src/core/types.js';
 
 const mock = null as any;
 

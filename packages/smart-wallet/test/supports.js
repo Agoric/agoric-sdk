@@ -28,6 +28,11 @@ import { E, Far } from '@endo/far';
  * @import {Mint} from '@agoric/ertp';
  * @import {NatValue} from '@agoric/ertp';
  * @import {ERef} from '@agoric/vow';
+ * @import {ChainBootstrapSpace} from '@agoric/vats/src/core/types.js';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
+ * @import {Producer} from '@agoric/vats/src/core/types.js';
+ * @import {VatLoader} from '@agoric/vats/src/core/types.js';
+ * @import {WellKnownVats} from '@agoric/vats/src/core/types.js';
  */
 
 export { ActionType };

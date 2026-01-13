@@ -24,6 +24,12 @@ import type { ExecutionContext, TestFn } from 'ava';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import type { ZoeService } from '@agoric/zoe';
+import type {
+  WellKnownSpaces,
+  BootstrapSpace,
+  PromiseSpaceOf,
+} from '@agoric/vats/src/core/types.js';
+import type { StartedInstanceKit } from '@agoric/zoe/src/zoeService/utils.js';
 import {
   prepareContractControl,
   type ContractControl,

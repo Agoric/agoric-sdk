@@ -37,6 +37,8 @@ import {
  * @import {Amount} from '@agoric/ertp';
  * @import {Brand} from '@agoric/ertp';
  * @import {ERef} from '@agoric/vow';
+ * @import {ChainBootstrapSpace} from '@agoric/vats/src/core/types.js';
+ * @import {NamedVatPowers} from '@agoric/vats/src/core/types.js';
  */
 
 /**

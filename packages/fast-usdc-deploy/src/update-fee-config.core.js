@@ -25,6 +25,7 @@ const make = (brand, value) => harden({ brand, value });
  * @import {FeeConfig} from '@agoric/fast-usdc';
  * @import {AmountMath} from '@agoric/ertp';
  * @import {ERef} from '@agoric/vow';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
  */
 
 /**

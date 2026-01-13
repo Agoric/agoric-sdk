@@ -30,6 +30,7 @@ const makeRatio = (numerator, numeratorBrand, denominator = 100n) =>
  * @import {AmountMath} from '@agoric/ertp';
  * @import {makeRatio as ertpMakeRatio} from '@agoric/ertp/src/ratio.js';
  * @import {ERef} from '@agoric/vow';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
  */
 
 /**

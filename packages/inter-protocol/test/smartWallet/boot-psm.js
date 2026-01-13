@@ -55,6 +55,9 @@ import {
 /**
  * @import {EconomyBootstrapSpace} from '@agoric/inter-protocol/src/proposals/econ-behaviors.js'
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js';
+ * @import {BootstrapSpace} from '@agoric/vats/src/core/types.js';
+ * @import {DProxy} from '@agoric/swingset-vat';
+ * @import {ChainBootstrapSpace} from '@agoric/vats/src/core/types.js';
  */
 
 /** @param {BootstrapSpace & EconomyBootstrapSpace} powers */

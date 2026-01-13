@@ -17,6 +17,8 @@ import {
  * @import {ChainlinkConfig} from '@agoric/inter-protocol/src/price/fluxAggregatorKit.js';
  * @import {EconomyBootstrapPowers} from './econ-behaviors.js';
  * @import {start} from '@agoric/inter-protocol/src/price/fluxAggregatorContract.js';
+ * @import {Installation} from '@agoric/zoe';
+ * @import {ChainBootstrapSpace} from '@agoric/vats/src/core/types.js';
  */
 
 // backwards compatibility
@@ -97,7 +99,7 @@ export const ensureOracleBrands = async (
  *       contractTerms: ChainlinkConfig;
  *       IN_BRAND_NAME: string;
  *       OUT_BRAND_NAME: string;
- *       priceAggregatorRef: Installation;
+ *       priceAggregatorRef?: Installation;
  *     };
  *   };
  * }} config

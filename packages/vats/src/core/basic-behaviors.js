@@ -34,6 +34,14 @@ import { makeScopedBridge } from '../bridge.js';
  * @import {MapStore} from '@agoric/store';
  * @import {IssuerKit} from '@agoric/ertp';
  * @import {ERef} from '@agoric/vow';
+ * @import {BootstrapPowers} from './types.ts';
+ * @import {Producer} from './types.ts';
+ * @import {VatLoader} from './types.ts';
+ * @import {ChainBootstrapSpace} from './types.ts';
+ * @import {BootstrapSpace} from './types.ts';
+ * @import {StartedInstanceKitWithLabel} from './types.ts';
+ * @import {StartUpgradable} from './types.ts';
+ * @import {NamedVatPowers} from './types.ts';
  */
 
 /**

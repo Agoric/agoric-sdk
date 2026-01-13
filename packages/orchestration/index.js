@@ -1,5 +1,3 @@
-/// <reference types="@agoric/vats/src/core/types-ambient.js" />
-
 // eslint-disable-next-line import/export
 export * from './src/types-index.js'; // no named exports
 export * from './src/exos/cosmos-interchain-service.js';

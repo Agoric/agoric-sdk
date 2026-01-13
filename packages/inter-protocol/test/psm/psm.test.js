@@ -50,6 +50,8 @@ import { anchorAssets, chainStorageEntries } from './psm-storage-fixture.js';
  * @import {IssuerKit} from '@agoric/ertp';
  * @import {Payment} from '@agoric/ertp';
  * @import {ERef} from '@agoric/vow';
+ * @import {BankManager} from '@agoric/vats/src/vat-bank.js';
+ * @import {StartedInstanceKit} from '@agoric/vats/src/core/types.js';
  */
 
 /** @type {TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */

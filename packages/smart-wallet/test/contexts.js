@@ -10,6 +10,7 @@ import { withAmountUtils } from './supports.js';
  * @import {ExecutionContext} from 'ava';
  * @import {start as StartWalletFactory} from '../src/walletFactory.js';
  * @import {Installation} from '@agoric/zoe';
+ * @import {ChainBootstrapSpace} from '@agoric/vats/src/core/types.js';
  */
 
 /**

@@ -18,6 +18,7 @@ const trace = makeTracer('RegisterInterchainBankAssets', true);
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {Brand} from '@agoric/ertp';
  * @import {IssuerKit} from '@agoric/ertp';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
  */
 
 /**

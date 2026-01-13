@@ -9,6 +9,7 @@ const trace = (...args) => console.log('---- AttD', ...args);
 
 /**
  * @import {DepositFacet} from '@agoric/ertp';
+ * @import {BootstrapPowers, PromiseSpaceOf} from '@agoric/vats/src/core/types.js';
  */
 const depositFacetKey = 'depositFacet';
 

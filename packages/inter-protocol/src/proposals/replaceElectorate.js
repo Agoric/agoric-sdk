@@ -21,6 +21,7 @@ import { provideRetiredInstances, reserveThenDeposit } from './utils.js';
  * @import {EconomyBootstrapPowers} from './econ-behaviors.js'
  * @import {Instance, Invitation} from '@agoric/zoe';
  * @import {MapStore} from '@agoric/store';
+ * @import {PromiseSpaceOf} from '@agoric/vats/src/core/types.js';
  */
 /** @import {EconCharterStartResult} from './econ-behaviors.js' */
 /** @import {CommitteeElectorateCreatorFacet} from '@agoric/governance/src/committee.js'; */

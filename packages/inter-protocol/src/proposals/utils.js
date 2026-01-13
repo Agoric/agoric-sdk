@@ -14,6 +14,7 @@ import { makeScalarBigMapStore } from '@agoric/vat-data';
  * @import {Installation} from '@agoric/zoe';
  * @import {Payment} from '@agoric/ertp';
  * @import {ERef} from '@agoric/vow';
+ * @import {Producer} from '@agoric/vats/src/core/types.js';
  */
 
 /**

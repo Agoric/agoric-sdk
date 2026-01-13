@@ -15,6 +15,8 @@ import { parseChainHubOpts } from '../orchestration/helpers.js';
  * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {Installation} from '@agoric/zoe';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
+ * @import {StartUpgradableOpts} from '@agoric/vats/src/core/types.js';
  */
 
 const contractName = 'queryFlows';

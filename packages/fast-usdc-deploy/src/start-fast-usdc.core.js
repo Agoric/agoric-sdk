@@ -22,6 +22,7 @@ import {
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {ERef} from '@agoric/vow';
+ * @import {BootstrapPowers, PromiseSpaceOf, StartedInstanceKitWithLabel} from '@agoric/vats/src/core/types.js';
  */
 
 const ShareAssetInfo = /** @type {const} */ harden({

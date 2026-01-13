@@ -3,6 +3,7 @@ import { E } from '@endo/far';
 
 /**
  * @import {BootstrapManifest} from '../core/lib-boot.js';
+ * @import {BootstrapPowers} from '../core/types.ts';
  */
 
 const vatUpgrade = /** @type {const} */ ({

@@ -6,6 +6,7 @@ import { getInterfaceOf, E } from '@endo/far';
 /**
  * @import {EconomyBootstrapPowers} from './econ-behaviors.js';
  * @import {start} from '@agoric/inter-protocol/src/feeDistributor.js';
+ * @import {StartedInstanceKit} from '@agoric/vats/src/core/types.js';
  */
 
 const trace = makeTracer('ReplaceFeeDistributer', true);

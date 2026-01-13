@@ -9,6 +9,7 @@ import { inviteOracles } from './utils/core-eval.js';
  * @import {FastUSDCCorePowers, FastUSDCKit} from './start-fast-usdc.core.js';
  * @import {ERef} from '@agoric/vow';
  * @import {Installation} from '@agoric/zoe';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
  */
 
 const trace = makeTracer('FUSD-AddOperators', true);

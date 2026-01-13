@@ -6,6 +6,8 @@ import { E } from '@endo/far';
  * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {MapStore} from '@agoric/store';
  * @import {Instance} from '@agoric/zoe';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
+ * @import {PromiseSpaceOf} from '@agoric/vats/src/core/types.js';
  */
 
 const trace = makeTracer('RecordedRetired', true);

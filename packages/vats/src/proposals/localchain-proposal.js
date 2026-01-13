@@ -11,6 +11,9 @@ import { makeScopedBridge } from '../bridge.js';
  * @import {LocalChainVat} from '../vat-localchain.js';
  * @import {LocalChain} from '../localchain.js';
  * @import {ERef} from '@agoric/vow';
+ * @import {BootstrapPowers} from '../core/types.ts';
+ * @import {Producer} from '../core/types.ts';
+ * @import {VatSourceRef} from '../core/types.ts';
  */
 
 /**

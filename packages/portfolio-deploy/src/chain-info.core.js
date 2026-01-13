@@ -13,6 +13,8 @@ import { makeMarshal } from '@endo/marshal';
  * @import {AxelarChainConfigMap} from './axelar-configs.js';
  * @import {ERef} from '@endo/eventual-send';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {PromiseSpaceOf} from '@agoric/vats/src/core/types.js';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
  */
 
 const trace = makeTracer('ChainInfoCore', true);

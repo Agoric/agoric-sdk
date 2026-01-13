@@ -28,6 +28,7 @@ import { E } from '@endo/far';
 import { passStyleOf, type CopyRecord } from '@endo/pass-style';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
+import type { BootstrapPowers } from '@agoric/vats/src/core/types.js';
 import { produceAttenuatedDeposit } from '../src/attenuated-deposit.core.js';
 import { axelarConfig } from '../src/axelar-configs.js';
 import type { ChainInfoPowers } from '../src/chain-info.core.js';

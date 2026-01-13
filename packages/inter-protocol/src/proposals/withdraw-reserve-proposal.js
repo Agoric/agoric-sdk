@@ -4,6 +4,7 @@ import { reserveThenDeposit } from './utils.js';
 
 /**
  * @import {start} from '../reserve/assetReserve.js';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
  */
 
 /**
