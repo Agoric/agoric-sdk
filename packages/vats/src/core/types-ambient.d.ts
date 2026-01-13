@@ -1,7 +1,5 @@
 // Ambient type defs. Cannot use top-level import() because that would turn it into a module.
 
-type Device<T> = import('@agoric/swingset-vat/src/types-external.js').Device<T>;
-
 type DProxy = import('@agoric/swingset-vat/src/types-external.js').DProxy;
 
 type BootDevices<T> = { vatPowers: { D: DProxy }; devices: T };
@@ -9,30 +7,20 @@ type BootDevices<T> = { vatPowers: { D: DProxy }; devices: T };
 type BridgeDevice =
   import('@agoric/swingset-vat/src/devices/bridge/device-bridge.js').BridgeDevice;
 
-type CommandDevice = Device<
-  ReturnType<
-    typeof import('@agoric/swingset-vat/src/devices/command/device-command.js').buildRootDeviceNode
-  >
->;
+type CommandDevice =
+  import('@agoric/swingset-vat/src/devices/command/device-command.js').CommandDevice;
 
-type MailboxDevice = Device<
-  ReturnType<
-    typeof import('@agoric/swingset-vat/src/devices/mailbox/device-mailbox.js').buildRootDeviceNode
-  >
->;
+type MailboxDevice =
+  import('@agoric/swingset-vat/src/devices/mailbox/device-mailbox.js').MailboxDevice;
 
-type PluginDevice = Device<
-  ReturnType<
-    typeof import('@agoric/swingset-vat/src/devices/plugin/device-plugin.js').buildRootDeviceNode
-  >
->;
+type PluginDevice =
+  import('@agoric/swingset-vat/src/devices/plugin/device-plugin.js').PluginDevice;
 
 type TimerDevice =
   import('@agoric/swingset-vat/src/devices/timer/device-timer.js').TimerDevice;
 
-type VatAdminDevice = Device<
-  import('@agoric/swingset-vat/src/devices/vat-admin/device-vat-admin.js').VatAdminRootDeviceNode
->;
+type VatAdminDevice =
+  import('@agoric/swingset-vat/src/devices/vat-admin/device-vat-admin.js').VatAdminDevice;
 
 type VattpVat = import('@endo/far').ERef<
   ReturnType<
@@ -78,15 +66,15 @@ type SoloDevices = {
   vatAdmin: VatAdminDevice;
   mailbox: MailboxDevice;
   command: CommandDevice;
-  timer: import('@agoric/swingset-vat/src/devices/timer/device-timer.js').TimerDevice;
+  timer: TimerDevice;
   plugin: PluginDevice;
 };
 
 type ChainDevices = {
   vatAdmin: VatAdminDevice;
   mailbox: MailboxDevice;
-  timer: import('@agoric/swingset-vat/src/devices/timer/device-timer.js').TimerDevice;
-  bridge?: import('@agoric/swingset-vat/src/devices/bridge/device-bridge.js').BridgeDevice;
+  timer: TimerDevice;
+  bridge?: BridgeDevice;
 };
 
 type ClientProvider = {
