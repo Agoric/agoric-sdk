@@ -326,7 +326,7 @@ const openPositionsEVM = async ({
 
   const deposit: TokenPermissions = {
     token: axelarChainConfig.contracts.usdc,
-    amount: amount * 1_000_000n,
+    amount: amount,
   };
 
   const witness = getYmaxWitness('OpenPortfolio', { allocations });
