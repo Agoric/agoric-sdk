@@ -15,7 +15,7 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
      * Get the balances for an arbitrary number of accounts.
      *
      * Each account is identified by a blockchain (for EVM chains, a
-     * '0x<upaddedLowercaseHexDigits>'' representation of their EIP-155 CHAIN_ID [cf.
+     * '0x<upaddedLowercaseHexDigits>' representation of their EIP-155 CHAIN_ID [cf.
      * https://chainlist.org/ ]), address, and token (for EVM chains, a
      * '0x<hexDigits>' representation of its contract address, visible on e.g.
      * https://coinmarketcap.com/ ).
