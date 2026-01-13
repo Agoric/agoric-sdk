@@ -24,6 +24,17 @@ test('predictWalletAddress computes expected address', async t => {
   );
   const cases = [
     {
+      label: 'Growth Jam portfolio30',
+      contracts: {
+        ...axelarConfigTestnet.Arbitrum.contracts,
+        factory: axelarConfigTestnet.Arbitrum.contracts.depositFactory,
+      },
+      walletBytecode: bytecode,
+      owner:
+        'agoric1z2jw387vea5c33fr9pa74qwehlqa89x8jvfn60wtvt8ksqcuuq8qkv7z2x',
+      walletAddress: '0x1a7d494712266f69be4b5402a70b9442b323f3bc',
+    },
+    {
       label: 'Nov14at0545Z',
       contracts: avalancheIntegration,
       walletBytecode: bytecode,
