@@ -15,6 +15,7 @@ import { keyMirror } from '@agoric/internal';
  * @property {string} [expectedAddr] - The expected smart wallet hex address to be created (for MAKE_ACCOUNT only, format: 0x...)
  * @property {TxStatus} status - Current status of the transaction (pending, success, or failed)
  * @property {string} [rejectionReason] - Optional reason for failure (only present when status is 'failed')
+ * @property {string} [nextTxId] - Optional ID of the next transaction in operation
  */
 
 /**

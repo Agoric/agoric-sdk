@@ -61,6 +61,7 @@ import type { ResolverKit } from './resolver/resolver.exo.ts';
 import type { TxId } from './resolver/types.ts';
 import type { PoolKey } from './type-guards.ts';
 import { predictWalletAddress } from './utils/evm-orch-factory.ts';
+import { setAppendedTxIds } from './utils/traffic.ts';
 
 const trace = makeTracer('GMPF');
 const { keys } = Object;
@@ -224,6 +225,8 @@ const makeProvideEVMAccount = ({
           evmAccount.remoteAddress,
         );
         txId = watchTx.txId;
+        setAppendedTxIds(opts.orchOpts?.progressTracker, [txId]);
+
         const result = watchTx.result as unknown as Promise<void>; // XXX host/guest;
         result.catch(err => {
           trace(txId, 'rejected', err);
@@ -302,11 +305,12 @@ export const CCTPfromEVM = {
     tm.depositForBurn(amount.value, nobleDomain, mintRecipient, addresses.usdc);
     const calls = session.finish();
 
-    const { result } = ctx.resolverClient.registerTransaction(
+    const { result, txId } = ctx.resolverClient.registerTransaction(
       TxType.CCTP_TO_AGORIC,
       coerceAccountId(dest.lca.getAddress()),
       amount.value,
     );
+    setAppendedTxIds(optsArgs[0]?.progressTracker, [txId]);
 
     await sendGMPContractCall(ctx, src, calls, ...optsArgs);
     await result;
@@ -343,11 +347,13 @@ export const CCTP = {
     const destinationAddress: AccountId = `${chainId}:${remoteAddress}`;
     const { ica } = src;
 
-    const { result } = ctx.resolverClient.registerTransaction(
+    const { result, txId } = ctx.resolverClient.registerTransaction(
       TxType.CCTP_TO_EVM,
       destinationAddress,
       amount.value,
     );
+    setAppendedTxIds(optsArgs[0]?.progressTracker, [txId]);
+
     // XXX depositForBurn optional `caller` argument needs to be `undefined` if
     // we're adding any optsArgs.
     const callerAndOptsArgs = (
@@ -544,6 +550,7 @@ export const sendGMPContractCall = async (
     undefined,
     sourceAddress,
   );
+  setAppendedTxIds(optsArgs[0]?.progressTracker, [txId]);
 
   const { AXELAR_GMP, AXELAR_GAS } = gmpAddresses;
   const memo: AxelarGmpOutgoingMemo = {

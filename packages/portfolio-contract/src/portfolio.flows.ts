@@ -49,6 +49,8 @@ import {
   type FlowStep,
   type FundsFlowPlan,
   type TrafficReport,
+  type TxId,
+  type TxPhase,
 } from '@agoric/portfolio-api';
 import {
   AxelarChain,
@@ -87,7 +89,6 @@ import {
 } from './pos-usdn.flows.ts';
 import type { Position } from './pos.exo.ts';
 import type { ResolverKit } from './resolver/resolver.exo.js';
-import type { TxId } from './resolver/types.ts';
 import { runJob, type Job } from './schedule-order.ts';
 import {
   getChainNameOfPlaceRef,
@@ -105,6 +106,7 @@ import {
   type ProposalType,
   type TargetAllocation,
 } from './type-guards.ts';
+import { setAppendedTxIds } from './utils/traffic.ts';
 
 const { keys, entries, fromEntries } = Object;
 const { reduceProgressReports } = progressTrackerAsyncFlowUtils;
@@ -113,7 +115,6 @@ export type LocalAccount = OrchestrationAccount<{ chainId: 'agoric-any' }>;
 export type NobleAccount = OrchestrationAccount<{ chainId: 'noble-any' }>;
 
 const SETUP_STEP = 0;
-type StepPhase = 'makeSrcAccount' | 'makeDestAccount' | 'apply' | 'undo';
 
 export type PortfolioInstanceContext = {
   axelarIds: AxelarId;
@@ -220,7 +221,7 @@ const deepEqual = (a: any, b: any): boolean =>
 type FlowStepPowers = {
   createPendingTx: ResolverKit['client']['createPendingTx'];
   updateTxMeta: ResolverKit['client']['updateTxMeta'];
-  updateFirstTx: (txId: TxId) => void;
+  updatePhase: (txIds: TxId[]) => void;
 };
 
 type ExecutePlanOptions = {
@@ -238,7 +239,7 @@ const makeFlowStepPowers = (
   }: {
     flowId: number;
     step: number;
-    phase: StepPhase;
+    phase: TxPhase;
     assetMoves?: AssetMovement[];
     moveDescs?: MovementDesc[];
   },
@@ -249,15 +250,15 @@ const makeFlowStepPowers = (
   }: {
     reporter: GuestInterface<PortfolioKit['reporter']>;
     resolverClient: GuestInterface<ResolverKit['client']>;
-    phasesForStep: Map<StepPhase, TxId>[];
+    phasesForStep: Map<TxPhase, TxId[]>[];
   },
 ): FlowStepPowers => ({
   createPendingTx: (txMeta: PendingTxMeta) =>
     resolverClient.createPendingTx(txMeta),
   updateTxMeta: (txId: TxId, txMeta: PendingTxMeta) =>
     resolverClient.updateTxMeta(txId, txMeta),
-  updateFirstTx: (txId: TxId) => {
-    phasesForStep[step - 1].set(phase, txId);
+  updatePhase: (txIds: TxId[]) => {
+    phasesForStep[step - 1].set(phase, txIds);
     if (!assetMoves) {
       // XXX what can we publish before AssetMovements are initialized?
       return;
@@ -265,7 +266,7 @@ const makeFlowStepPowers = (
     // Publish each move with updated step phase information.
     const movesWithPhases = assetMoves.map((m, i) => ({
       ...moveStatus(m),
-      phases: Object.fromEntries(phasesForStep[i].entries()),
+      phases: fromTypedEntries([...phasesForStep[i].entries()]),
     }));
     reporter.publishFlowSteps(flowId, movesWithPhases);
   },
@@ -288,17 +289,17 @@ type PendingTxsEntry = {
 const makeTrafficPublishingReducer = ({
   createPendingTx,
   updateTxMeta,
-  updateFirstTx,
+  updatePhase,
 }: FlowStepPowers) => {
   return async (thisReport: TrafficReport, priorTxs: PendingTxsEntry[]) => {
-    const { traffic: thisTraffic = [] } = thisReport || {};
+    const { traffic: thisTraffic = [], appendTxIds = [] } = thisReport || {};
     if (thisReport == null) {
       // Final report.
       return null;
     }
-    const txs = [...priorTxs];
+    const txs = priorTxs.slice(0, thisTraffic.length);
     const firstTxId: TxId | undefined = txs[0]?.txId;
-    let nextTxId: TxId | undefined;
+    let nextTxId: TxId | undefined = appendTxIds?.[0];
 
     // Iterate backwards through the trafficEntry array, so we can link them via
     // nextTxId.
@@ -352,7 +353,10 @@ const makeTrafficPublishingReducer = ({
     }
     const newFirstTxId = txs[0]?.txId;
     if (newFirstTxId != null && newFirstTxId !== firstTxId) {
-      updateFirstTx(newFirstTxId);
+      updatePhase([...txs.map(tx => tx.txId), ...appendTxIds]);
+    } else if (!newFirstTxId && firstTxId == null && appendTxIds.length) {
+      // Allow phases to advance when only appendTxIds are reported (e.g. CCTP).
+      updatePhase([...appendTxIds]);
     }
     return txs;
   };
@@ -392,7 +396,7 @@ const trackFlow = async (
   detail: FlowDetail,
   progressPowers?: {
     resolverClient: GuestInterface<ResolverKit['client']>;
-    phasesForStep: Map<StepPhase, TxId>[];
+    phasesForStep: Map<TxPhase, TxId[]>[];
   },
 ) => {
   const runTask = async (ix: number, running: number[]) => {
@@ -738,15 +742,15 @@ const stepFlow = async (
     ? { flow: plan }
     : plan;
 
-  const phasesForStep: Map<StepPhase, TxId>[] = moves.map(
-    () => new Map<StepPhase, TxId>(),
+  const phasesForStep: Map<TxPhase, TxId[]>[] = moves.map(
+    () => new Map<TxPhase, TxId[]>(),
   );
   const todo: AssetMovement[] = [];
 
   const publishProvideAccountProgress = (
     progressTracker: ProgressTracker | undefined,
     step: number,
-    phase: StepPhase,
+    phase: TxPhase,
   ) =>
     progressTracker &&
     reduceProgressReports(
@@ -830,7 +834,7 @@ const stepFlow = async (
 
     const { amount } = move;
     const phases =
-      features?.useProgressTracker && ({} as Record<StepPhase, TxId>);
+      features?.useProgressTracker && ({} as Record<TxPhase, TxId>);
     return harden({
       how: way.how,
       amount,
@@ -1148,11 +1152,13 @@ const stepFlow = async (
             const destinationAddress: AccountId = sourceAccountId;
             const { ica } = noble;
 
-            const { result } = ctx.resolverClient.registerTransaction(
+            const { txId, result } = ctx.resolverClient.registerTransaction(
               TxType.CCTP_TO_EVM,
               destinationAddress,
               amount.value,
             );
+            setAppendedTxIds(optsArgs[0]?.progressTracker, [txId]);
+
             const callerAndOptsArgs = (
               optsArgs.length > 0 ? [undefined, ...optsArgs] : []
             ) as [AccountId?, OrchestrationOptions?];

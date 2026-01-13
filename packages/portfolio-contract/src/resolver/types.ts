@@ -6,12 +6,11 @@
  */
 
 import type { TypedPattern } from '@agoric/internal';
-import type { PublishedTx } from '@agoric/portfolio-api';
+import type { PublishedTx, TxId } from '@agoric/portfolio-api';
 import { TxStatus, TxType } from '@agoric/portfolio-api/src/resolver.js';
 import { M } from '@endo/patterns';
 
-// tx for transactions
-export type TxId = `tx${number}`;
+export type { TxId };
 
 export type TransactionSettlementOfferArgs = {
   status: Exclude<TxStatus, 'pending'>;
