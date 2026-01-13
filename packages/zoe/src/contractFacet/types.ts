@@ -220,14 +220,12 @@ export type ContractMeta<
 };
 /**
  * API for a contract start function.
- *
- * CAVEAT: assumes synchronous
  */
 export type ContractStartFn<PF = any, CF = any, CT = any, PA = any> = (
   zcf: ZCF<CT>,
   privateArgs: PA,
   baggage: import('@agoric/vat-data').Baggage,
-) => ContractStartFnResult<PF, CF>;
+) => ERef<ContractStartFnResult<PF, CF>>;
 export type ContractStartFnResult<PF, CF> = {
   publicFacet?: PF;
   creatorFacet?: CF;
