@@ -33,6 +33,7 @@ import {
   type OrchestrationTools,
 } from '@agoric/orchestration';
 import type {
+  FlowConfig,
   PortfolioPublicInvitationMaker,
   TargetAllocation,
 } from '@agoric/portfolio-api';
@@ -40,6 +41,7 @@ import {
   AxelarChain,
   DEFAULT_FLOW_CONFIG,
   YieldProtocol,
+  FlowConfigShape,
 } from '@agoric/portfolio-api/src/constants.js';
 import type {
   PermitDetails,
@@ -159,6 +161,7 @@ export type ERC4626Contracts = {
 export type EVMContractAddresses = {
   aavePool: `0x${string}`;
   compound: `0x${string}`;
+  depositFactory: `0x${string}`;
   factory: `0x${string}`;
   usdc: `0x${string}`;
   tokenMessenger: `0x${string}`;
@@ -296,6 +299,7 @@ export const contract = async (
     storageNode,
     gmpAddresses,
     timerService,
+    defaultFlowConfig = DEFAULT_FLOW_CONFIG,
   } = privateArgs;
   const { brands } = zcf.getTerms();
   const { orchestrateAll, zoeTools, chainHub, vowTools } = tools;
@@ -396,8 +400,7 @@ export const contract = async (
     pKit,
     flowDetail,
     startedFlow,
-    config = DEFAULT_FLOW_CONFIG,
-    options,
+    config = defaultFlowConfig,
   ) =>
     orchFns1.executePlan(
       seat,
@@ -405,8 +408,7 @@ export const contract = async (
       pKit,
       flowDetail,
       startedFlow,
-      config,
-      options,
+      ...flowCfg(config),
     );
   const rebalance: typeof orchFns1.rebalance = (
     seat,
