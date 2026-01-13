@@ -34,8 +34,8 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "devDependencies": {
-    "@graphql-codegen/cli": "^6.0.1",
-    "@graphql-codegen/client-preset": "^5.1.1",
+    "@graphql-codegen/cli": "^6.1.1",
+    "@graphql-codegen/client-preset": "^5.2.2",
     "@graphql-codegen/schema-ast": "^5.0.0",
     "@graphql-codegen/typescript-graphql-request": "patch:@graphql-codegen/typescript-graphql-request@npm%3A6.3.0#~/.yarn/patches/@graphql-codegen-typescript-graphql-request-npm-6.3.0-38043fd4dc.patch",
     "@graphql-inspector/cli": "^5.0.8",
