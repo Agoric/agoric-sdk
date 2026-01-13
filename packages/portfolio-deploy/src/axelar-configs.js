@@ -320,7 +320,7 @@ const depositFactoryAddresses = harden({
     Optimism: '0x9524EEb5F792944a0FE929bb8Efb354438B19F7C', // https://optimistic.etherscan.io/address/0x9524EEb5F792944a0FE929bb8Efb354438B19F7C
   },
   testnet: {
-    Arbitrum: '0x', // https://sepolia.arbiscan.io/address/0x
+    Arbitrum: '0x209Bf441cBADFE6fBc3bB5303409Bf06656FC33c', // https://sepolia.arbiscan.io/address/0x209Bf441cBADFE6fBc3bB5303409Bf06656FC33c
     Avalanche: '0x', // https://testnet.snowtrace.io/address/0x
     Base: '0x', // https://sepolia.basescan.org/address/0x
     Ethereum: '0x209Bf441cBADFE6fBc3bB5303409Bf06656FC33c', // https://sepolia.etherscan.io/address/0x209Bf441cBADFE6fBc3bB5303409Bf06656FC33c
