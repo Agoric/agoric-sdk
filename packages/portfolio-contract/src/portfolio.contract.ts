@@ -161,6 +161,7 @@ export type ERC4626Contracts = {
 export type EVMContractAddresses = {
   aavePool: `0x${string}`;
   compound: `0x${string}`;
+  depositFactory: `0x${string}`;
   factory: `0x${string}`;
   usdc: `0x${string}`;
   tokenMessenger: `0x${string}`;
