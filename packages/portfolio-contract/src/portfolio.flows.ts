@@ -1528,6 +1528,7 @@ export const openPortfolioFromPermit2 = (async (
   if (!fromChain) {
     throw Fail`no Axelar chain for EIP-155 chainId ${depositDetails.chainId}`;
   }
+  assert.equal(depositDetails.spender, ctx.contracts[fromChain].depositFactory);
   if (targetAllocation) {
     madeKit.manager.setTargetAllocation(targetAllocation);
   }

@@ -114,13 +114,14 @@ type ProvideEVMAccountSendCallFactory = (
 // Shared "provide pattern" with a pluggable GMP call, so we can reuse the
 // reservation/resolve/error-handling logic across account-creation variants.
 const makeProvideEVMAccount = ({
+  // XXX getSendCall is awkward given the mode switch
   getSendCall,
   txType,
-  traceLabel,
+  mode,
 }: {
   getSendCall: ProvideEVMAccountSendCallFactory;
   txType: TxType;
-  traceLabel: string;
+  mode: 'makeAccount' | 'createAndDeposit';
 }) => {
   return (
     chainName: AxelarChain,
@@ -141,9 +142,16 @@ const makeProvideEVMAccount = ({
 
     const predictAddress = (owner: Bech32Address) => {
       const contracts = ctx.contracts[chainName];
+      const contractKey = {
+        makeAccount: 'factory',
+        createAndDeposit: 'depositFactory',
+      } as const;
+      const factoryAddress = contracts[contractKey[mode]];
+      traceChain('factory', mode, factoryAddress);
+      assert(factoryAddress);
       const remoteAddress = predictWalletAddress({
         owner,
-        factoryAddress: contracts.factory,
+        factoryAddress,
         gasServiceAddress: contracts.gasService,
         gatewayAddress: contracts.gateway,
         // XXX converting a 9k hex string to bytes for every account is a waste.
@@ -218,12 +226,12 @@ const makeProvideEVMAccount = ({
           trace(txId, 'rejected', err);
         });
 
-        traceChain('await', traceLabel, txId);
+        traceChain('await', mode, txId);
         await result;
 
         pk.manager.resolveAccount(evmAccount);
       } catch (reason) {
-        traceChain('failed to', traceLabel, reason);
+        traceChain('failed to', mode, reason);
         pk.manager.releaseAccount(chainName, reason);
         if (txId) {
           ctx.resolverClient.unsubscribe(txId, `unsubscribe: ${reason}`);
@@ -398,7 +406,7 @@ export const sendMakeAccountCall = async ({
 export const provideEVMAccount = makeProvideEVMAccount({
   getSendCall: () => sendMakeAccountCall,
   txType: TxType.MAKE_ACCOUNT,
-  traceLabel: 'makeAccount',
+  mode: 'makeAccount',
 });
 
 /**
@@ -465,7 +473,7 @@ const makeSendCreateAndDepositCall = (
 const provideEVMAccountWithPermitBase = makeProvideEVMAccount({
   getSendCall: makeSendCreateAndDepositCall,
   txType: TxType.MAKE_ACCOUNT,
-  traceLabel: 'createAndDeposit',
+  mode: 'createAndDeposit',
 });
 
 export const provideEVMAccountWithPermit = (

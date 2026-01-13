@@ -2466,7 +2466,7 @@ test('openPortfolioFromPermit2 with Permit2 provisions account and starts deposi
     chainId: Number(axelarCCTPConfig.Arbitrum.reference),
     token: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', // USCD on Arbitrum
     amount: 1_000_000_000n,
-    spender: '0x3bF3056835f7C25b1f71aff99B734Ad07d644577', // TODO: factory, should be deposit factory, on arbitrum
+    spender: '0x9524EEb5F792944a0FE929bb8Efb354438B19F7C',
     permit2Payload: {
       permit: {
         deadline: 1357923600n,
