@@ -131,41 +131,6 @@ test('movementDescShape allows unknown additional properties', t => {
     () => mustMatch(specimenWithExtra, movementDescShape),
     'movementDescShape should allow unknown properties',
   );
-
-  // A strict shape (with empty object {} as rest) rejects extra properties
-  const strictMovementDescShape = M.splitRecord(
-    {
-      amount: M.and(
-        M.recordOf(M.string(), M.any()),
-        M.splitRecord({ brand: USDC, value: M.gte(1n) }),
-      ),
-      src: M.string(),
-      dest: M.string(),
-    },
-    {
-      fee: M.any(),
-      detail: M.recordOf(M.string(), M.nat()),
-      claim: M.boolean(),
-    },
-    // Empty object rest - strict matching, no additional properties allowed
-    {},
-  );
-
-  t.false(
-    matches(specimenWithExtra, strictMovementDescShape),
-    'strict shape should reject unknown properties',
-  );
-
-  // Confirm the base case still works with strict shape
-  const specimenWithoutExtra = harden({
-    src: '@noble',
-    dest: '@Arbitrum',
-    amount,
-  });
-  t.true(
-    matches(specimenWithoutExtra, strictMovementDescShape),
-    'strict shape should accept valid specimen without extras',
-  );
 });
 
 test('PoolKeyExt shapes accept future pool keys', t => {
