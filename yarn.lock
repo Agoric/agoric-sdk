@@ -340,7 +340,7 @@ __metadata:
     esbuild: "npm:^0.25.2"
     ethers: "npm:^6.13.0"
     graphql: "npm:^16.12.0"
-    graphql-request: "patch:graphql-request@npm%3A7.3.1#~/.yarn/patches/graphql-request-npm-7.3.1-f5bb90bf7e.patch"
+    graphql-request: "npm:^7.4.0"
     json-rpc-2.0: "npm:^1.7.1"
     ky: "npm:^1.13.0"
     nodemon: "npm:^3.1.10"
@@ -13267,25 +13267,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"graphql-request@npm:7.3.1":
-  version: 7.3.1
-  resolution: "graphql-request@npm:7.3.1"
+"graphql-request@npm:^7.4.0":
+  version: 7.4.0
+  resolution: "graphql-request@npm:7.4.0"
   dependencies:
     "@graphql-typed-document-node/core": "npm:^3.2.0"
   peerDependencies:
     graphql: 14 - 16
-  checksum: 10c0/7764cdd965a17d102c1730f627396bf1e57337a4cd6a149d7c24cf0c3a753b79027bfc2f6f592ac655567d650faa954f2272f5bccb05bec84aea9e70a298ac69
-  languageName: node
-  linkType: hard
-
-"graphql-request@patch:graphql-request@npm%3A7.3.1#~/.yarn/patches/graphql-request-npm-7.3.1-f5bb90bf7e.patch":
-  version: 7.3.1
-  resolution: "graphql-request@patch:graphql-request@npm%3A7.3.1#~/.yarn/patches/graphql-request-npm-7.3.1-f5bb90bf7e.patch::version=7.3.1&hash=fb0ac2"
-  dependencies:
-    "@graphql-typed-document-node/core": "npm:^3.2.0"
-  peerDependencies:
-    graphql: 14 - 16
-  checksum: 10c0/a62b6c0094b960d70134f47f3b40d0bafdadb48f583d3bed752d7ee967362df6b0344255cb4ddc48106f8b2a53a612db5455f5df98962c4a391096d9e0f5c1bf
+  checksum: 10c0/066531d70b9c4656251e51c950ce9bee3df05291e12e2b983608d75ac3a70d700efd6488d273b043235dc125658973db38b21eba59e808863831a5a19a6a7b41
   languageName: node
   linkType: hard
 

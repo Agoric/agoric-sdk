@@ -74,7 +74,7 @@
     "chain-registry": "^2.0.44",
     "dotenv": "^17.2.1",
     "ethers": "^6.13.0",
-    "graphql-request": "patch:graphql-request@npm%3A7.3.1#~/.yarn/patches/graphql-request-npm-7.3.1-f5bb90bf7e.patch",
+    "graphql-request": "^7.4.0",
     "json-rpc-2.0": "^1.7.1",
     "ky": "^1.13.0",
     "ts-blank-space": "^0.6.1",
