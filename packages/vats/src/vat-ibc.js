@@ -23,3 +23,5 @@ export function buildRootObject(_vatPowers, _args, baggage) {
     makeCallbacks,
   });
 }
+
+/** @typedef {ReturnType<typeof buildRootObject>} IbcVat */

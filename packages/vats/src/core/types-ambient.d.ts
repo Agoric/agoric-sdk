@@ -22,24 +22,15 @@ type TimerDevice =
 type VatAdminDevice =
   import('@agoric/swingset-vat/src/devices/vat-admin/device-vat-admin.js').VatAdminDevice;
 
-type VattpVat = import('@endo/far').ERef<
-  ReturnType<
-    typeof import('@agoric/swingset-vat/src/vats/vattp/vat-vattp.js').buildRootObject
-  >
->;
+type VattpVat =
+  import('@agoric/swingset-vat/src/vats/vattp/vat-vattp.js').VattpVat;
 
-type VatAdminVat = import('@endo/far').ERef<
-  ReturnType<
-    typeof import('@agoric/swingset-vat/src/vats/vat-admin/vat-vat-admin.js').buildRootObject
-  >
->;
+type VatAdminVat =
+  import('@agoric/swingset-vat/src/vats/vat-admin/vat-vat-admin.js').VatAdminVat;
 
 /** @see deliverToController in packages/SwingSet/src/vats/comms/controller.js */
-type TimerVat = import('@endo/far').ERef<
-  ReturnType<
-    typeof import('@agoric/swingset-vat/src/vats/timer/vat-timer.js').buildRootObject
-  >
->;
+type TimerVat =
+  import('@agoric/swingset-vat/src/vats/timer/vat-timer.js').TimerVat;
 
 type CommsVatRoot = import('@endo/far').ERef<{
   addRemote: (name: string, tx: unknown, rx: unknown) => void;

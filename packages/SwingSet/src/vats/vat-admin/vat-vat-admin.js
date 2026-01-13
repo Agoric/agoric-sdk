@@ -28,6 +28,7 @@ import {
  * @import {Device} from '../../types-external.js';
  * @import {UpgradeID} from '../../devices/vat-admin/device-vat-admin.js';
  * @import {PromiseKit} from '@endo/promise-kit';
+ * @import {ERef} from '@endo/far';
  */
 
 const managerTypes = ['local', 'node-subprocess', 'xsnap', 'xs-worker']; // xs-worker is alias
@@ -614,3 +615,5 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
     upgradeStaticVat,
   });
 }
+
+/** @typedef {ERef<ReturnType<typeof buildRootObject>>} VatAdminVat */

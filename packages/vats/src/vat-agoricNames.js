@@ -14,6 +14,7 @@ import { prepareNameHubKit } from './nameHub.js';
  * @import {Brand} from '@agoric/ertp';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {ERef} from '@agoric/vow';
+ * @import {BoardVat} from './vat-board.js';
  */
 
 /** @param {Zone} zone */
@@ -94,3 +95,5 @@ export const buildRootObject = (_vatPowers, _vatParameters, baggage) => {
       ),
   });
 };
+
+/** @typedef {ReturnType<typeof buildRootObject>} AgoricNamesVat */

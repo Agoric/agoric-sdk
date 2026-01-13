@@ -180,3 +180,5 @@ export function buildRootObject(_vatPowers, _vatParameters, baggage) {
       harden({ namesByAddress: nameHubKit.nameHub, namesByAddressAdmin }),
   });
 }
+
+/** @typedef {ReturnType<typeof buildRootObject>} ProvisioningVat */
