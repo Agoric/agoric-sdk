@@ -311,6 +311,7 @@ const factoryAddresses = harden({
 
 /** @type {AddressesMap} */
 const depositFactoryAddresses = harden({
+  // TODO: These are addresses specific to ymax0 and its current contractAddress
   mainnet: {
     Arbitrum: '0x', // https://arbiscan.io/address/0x
     Avalanche: '0x9524EEb5F792944a0FE929bb8Efb354438B19F7C', // https://snowtrace.io/address/0x9524EEb5F792944a0FE929bb8Efb354438B19F7C
