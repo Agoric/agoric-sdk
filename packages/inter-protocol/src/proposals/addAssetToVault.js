@@ -34,6 +34,8 @@ export * from './startPSM.js';
  * @import {TimerService} from '@agoric/time';
  * @import {Issuer, IssuerKit} from '@agoric/ertp';
  * @import {prepare} from '@agoric/zoe/src/contracts/scaledPriceAuthority.js';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.ts';
+ * @import {StartedInstanceKit} from '@agoric/zoe/src/zoeService/utils.js';
  */
 
 /**
@@ -124,7 +126,7 @@ export const publishInterchainAssetFromBank = async (
 };
 
 /**
- * @param {BootstrapPowers} powers
+ * @param {EconomyBootstrapPowers} powers
  * @param {object} config
  * @param {object} config.options
  * @param {InterchainAssetOptions} config.options.interchainAssetOptions
@@ -234,7 +236,7 @@ export const startScaledPriceAuthority = async (
 };
 
 /**
- * @param {BootstrapPowers} powers
+ * @param {EconomyBootstrapPowers} powers
  * @param {object} config
  * @param {object} config.options
  */
