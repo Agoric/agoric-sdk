@@ -1,7 +1,11 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { protoMsgMockMap } from '@aglocal/boot/tools/ibc/mocks.ts';
-import { AckBehavior } from '@aglocal/boot/tools/supports.ts';
+import {
+  AckBehavior,
+  insistManagerType,
+  makeSwingsetHarness,
+} from '@aglocal/boot/tools/supports.ts';
 import { makeProposalShapes } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import { makeUSDNIBCTraffic } from '@aglocal/portfolio-contract/test/mocks.ts';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
@@ -15,17 +19,33 @@ import {
 import type { ChainInfo } from '@agoric/orchestration';
 import { passStyleOf, type CopyRecord } from '@endo/pass-style';
 import { mustMatch } from '@endo/patterns';
+import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
+import {
+  getPermitWitnessTransferFromData,
+  type TokenPermissions,
+} from '@agoric/orchestration/src/utils/permit2.ts';
+import {
+  getYmaxWitness,
+  type TargetAllocation,
+} from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.ts';
 import type { TestFn } from 'ava';
 import type { PortfolioBootPowers } from '../src/portfolio-start.type.ts';
+import { axelarConfig } from '../src/axelar-configs.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
 } from './walletFactory.ts';
 
-const test: TestFn<WalletFactoryTestContext> = anyTest;
+const test: TestFn<
+  WalletFactoryTestContext & {
+    harness?: ReturnType<typeof makeSwingsetHarness>;
+  }
+> = anyTest;
 
 const beneficiary = 'agoric126sd64qkuag2fva3vy3syavggvw44ca2zfrzyy';
 const controllerAddr = 'agoric1ymax0-admin';
+
+const CURRENT_TIME = 1357920000n;
 
 /** maps between on-chain identites and boardIDs */
 const showValue = (v: string) => defaultMarshaller.fromCapData(JSON.parse(v));
@@ -124,17 +144,31 @@ const exampleDynamicChainInfo = {
   },
 } satisfies Record<string, ChainInfo>;
 
+const {
+  SLOGFILE: slogFile,
+  SWINGSET_WORKER_TYPE: defaultManagerType = 'local',
+} = process.env;
+
 test.before('bootstrap', async t => {
   const config = '@agoric/vm-config/decentral-itest-orchestration-config.json';
   // TODO: impact testing
-  const ctx = await makeWalletFactoryContext(t, config);
+  insistManagerType(defaultManagerType);
+  const harness = ['xs-worker', 'xsnap'].includes(defaultManagerType)
+    ? makeSwingsetHarness()
+    : undefined;
+  const ctx = await makeWalletFactoryContext(t, config, {
+    slogFile,
+    defaultManagerType,
+    harness,
+  });
 
-  t.context = ctx;
+  t.context = { ...ctx, harness };
 });
 test.after.always(t => t.context.shutdown?.());
 
 test.serial('publish chainInfo etc.', async t => {
-  const { buildProposal, evalProposal, runUtils } = t.context;
+  const { buildProposal, evalProposal, runUtils, jumpTimeTo } = t.context;
+  await jumpTimeTo(CURRENT_TIME); // ensure deterministic deadline/nonces
   const materials = buildProposal(
     '@aglocal/portfolio-deploy/src/chain-info.build.js',
     ['--chainInfo', JSON.stringify(exampleDynamicChainInfo)],
@@ -647,7 +681,7 @@ test.serial('invite planner', async t => {
   t.pass();
 });
 
-test.serial('invite evm handler', async t => {
+test.serial('invite evm handler; test open portfolio', async t => {
   const {
     agoricNamesRemotes,
     refreshAgoricNamesRemotes,
@@ -690,6 +724,53 @@ test.serial('invite evm handler', async t => {
     proposal: {},
     saveResult: { name: 'evmWalletHandler' },
   });
+
+  t.log('open portfolio');
+  // TODO: get from context, ambient random
+  const userPrivateKey = generatePrivateKey();
+  const userAccount = privateKeyToAccount(userPrivateKey);
+
+  const deadline = CURRENT_TIME + 3600n;
+  // not a secure nonce, but sufficient for test purposes
+  const nonce = BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER));
+
+  const deposit: TokenPermissions = {
+    token: axelarConfig.Arbitrum.contracts.usdc,
+    amount: 1_000n * 1_000_000n,
+  };
+
+  const allocations: TargetAllocation[] = [
+    { instrument: 'Aave_Arbitrum', portion: 6000n },
+    { instrument: 'Compound_Arbitrum', portion: 4000n },
+  ];
+
+  const witness = getYmaxWitness('OpenPortfolio', { allocations });
+
+  const openPortfolioMessage = getPermitWitnessTransferFromData(
+    {
+      permitted: deposit,
+      // TODO: This should be the address of the owned deposit factory contract
+      spender: axelarConfig.Arbitrum.contracts.factory,
+      nonce,
+      deadline,
+    },
+    '0x000000000022D473030F116dDEE9F6B43aC78BA3', // Arbitrum permit2 address
+    BigInt(axelarConfig.Arbitrum.chainInfo.reference),
+    witness,
+  );
+
+  const signature = await userAccount.signTypedData(openPortfolioMessage);
+
+  t.log('signed message', { ...openPortfolioMessage, signature });
+
+  await evmHandlerWallet.invokeEntry({
+    id: Date.now().toString(),
+    targetName: 'evmWalletHandler',
+    method: 'handleMessage',
+    args: [{ ...openPortfolioMessage, signature } as CopyRecord],
+  });
+
+  // TODO: check portfolio published in vstorage
 
   t.pass();
 });
