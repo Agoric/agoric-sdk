@@ -178,6 +178,8 @@ export const setupTrader = async (
       return harden(txIds);
     },
     drainPending: async (status: Exclude<TxStatus, 'pending'> = 'success') => {
+      // For GMP flows, pair `transmitVTransferEvent('acknowledgementPacket', ...)`
+      // with `drainPending()` to complete the pendingTxs lifecycle.
       const done: `tx${number}`[] = [];
       for (;;) {
         const txIds = await txResolver.findPending();
