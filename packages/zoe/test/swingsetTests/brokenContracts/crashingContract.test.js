@@ -5,7 +5,7 @@ import path from 'path';
 
 import { loadBasedir, buildVatController } from '@agoric/swingset-vat';
 import bundleSource from '@endo/bundle-source';
-import zcfBundle from '../../../bundles/bundle-contractFacet.js';
+import zcfBundle from '@agoric/zoe/bundles/bundle-contractFacet.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 

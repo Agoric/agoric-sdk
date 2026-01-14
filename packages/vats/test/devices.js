@@ -1,5 +1,5 @@
-import centralSupply from '../bundles/bundle-centralSupply.js';
-import mintHolder from '../bundles/bundle-mintHolder.js';
+import centralSupply from '@agoric/vats/bundles/bundle-centralSupply.js';
+import mintHolder from '@agoric/vats/bundles/bundle-mintHolder.js';
 
 export const bundles = {
   centralSupply,
