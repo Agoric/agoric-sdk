@@ -3,6 +3,7 @@ import { E, type ERef } from '@endo/far';
 import { attenuate } from '../src/ses-utils.js';
 import type { Permit, RecordFromTuple, Remote } from '../src/types.js';
 import type { StorageNode } from '../src/lib-chainStorage.js';
+import { keyMirror } from '../src/keyMirror.js';
 
 {
   const makeCoin = (denom: string, amount: bigint) => ({ denom, amount });
@@ -63,4 +64,14 @@ const remoteStorageNode: Remote<StorageNode> = null as any;
   // @ts-expect-error cannot call remote methods directly
   storageNode.getPath();
   expectType<Promise<string>>(E(storageNode).getPath());
+}
+
+{
+  const Bogus = keyMirror({ foo: null, bar: null, baz: 'baz' });
+  expectType<{ foo: 'foo'; bar: 'bar'; baz: 'baz' }>(Bogus);
+  // @ts-expect-error Cannot assign to 'bar' because it is a read-only property.
+  Bogus.bar = 'bar';
+
+  // @ts-expect-error Property 'absent' does not exist on type '{ foo: "foo"; bar: "bar"; baz: "baz"; }'.
+  Bogus.absent;
 }
