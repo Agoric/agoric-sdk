@@ -320,10 +320,10 @@ const depositFactoryAddresses = harden({
     Optimism: '0xBC55023992B5b5d9D8DEBD3c6b78861ed9a48A5d', // https://optimistic.etherscan.io/address/0xBC55023992B5b5d9D8DEBD3c6b78861ed9a48A5d
   },
   testnet: {
-    Arbitrum: '0x209Bf441cBADFE6fBc3bB5303409Bf06656FC33c', // https://sepolia.arbiscan.io/address/0x209Bf441cBADFE6fBc3bB5303409Bf06656FC33c
+    Arbitrum: '0xb730B5f08c30AA0D7870a3579A44ea50AEF7BE7D', // https://sepolia.arbiscan.io/address/0xb730B5f08c30AA0D7870a3579A44ea50AEF7BE7D
     Avalanche: '0x', // https://testnet.snowtrace.io/address/0x
     Base: '0x', // https://sepolia.basescan.org/address/0x
-    Ethereum: '0x209Bf441cBADFE6fBc3bB5303409Bf06656FC33c', // https://sepolia.etherscan.io/address/0x209Bf441cBADFE6fBc3bB5303409Bf06656FC33c
+    Ethereum: '0xb730B5f08c30AA0D7870a3579A44ea50AEF7BE7D', // https://sepolia.etherscan.io/address/0xb730B5f08c30AA0D7870a3579A44ea50AEF7BE7D
     Optimism: '0x',
   },
 });
