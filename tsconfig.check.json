@@ -40,8 +40,10 @@
         "**/*.umd.js"
     ],
     "include": [
-        "./**/*.ts",
-        "./packages/**/*.js",
-        "./services/**/*.js"
+        // .ts/.mts anywhere in the repo
+        "./**/*.*ts",
+        // .js/.mjs only in our packages and services
+        "./packages/**/*.*js",
+        "./services/**/*.*js"
     ]
 }
