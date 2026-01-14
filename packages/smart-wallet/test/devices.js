@@ -3,7 +3,8 @@ import centralSupply from '@agoric/vats/bundles/bundle-centralSupply.js';
 import mintHolder from '@agoric/vats/bundles/bundle-mintHolder.js';
 import provisionPool from '@agoric/vats/bundles/bundle-provisionPool.js';
 
-import walletFactory from '../bundles/bundle-walletFactory.js';
+// eslint-disable-next-line import/no-extraneous-dependencies -- cannot detect self-reference
+import walletFactory from '@agoric/smart-wallet/bundles/bundle-walletFactory.js';
 
 const bundles = {
   centralSupply,

@@ -1,5 +1,7 @@
-import centralSupply from '../bundles/bundle-centralSupply.js';
-import mintHolder from '../bundles/bundle-mintHolder.js';
+// eslint-disable-next-line import/no-extraneous-dependencies -- cannot detect self-reference
+import centralSupply from '@agoric/vats/bundles/bundle-centralSupply.js';
+// eslint-disable-next-line import/no-extraneous-dependencies -- cannot detect self-reference
+import mintHolder from '@agoric/vats/bundles/bundle-mintHolder.js';
 
 export const bundles = {
   centralSupply,

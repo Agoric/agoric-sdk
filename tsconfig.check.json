@@ -11,6 +11,15 @@
         // error is found it suppresses other errors when "incremental: true".
         // We want incremental for speed so filter out import errors.
         "rewriteRelativeImportExtensions": false,
+        "paths": {
+            // Each package to avoid error TS5061: Pattern '@agoric/*/bundles/bundle-*.js' can have at most one '*' character.
+            "@agoric/packages/inter-protocol/bundles/bundle-*.js": [
+                "./types/bundles-stub.d.ts"
+            ],
+            "@agoric/packages/zoe/bundles/bundle-*.js": [
+                "./types/bundles-stub.d.ts"
+            ]
+        },
     },
     "exclude": [
         "multichain-testing", // not relevant for coding loop (and noble-usdn-lab.ts is very slow)
