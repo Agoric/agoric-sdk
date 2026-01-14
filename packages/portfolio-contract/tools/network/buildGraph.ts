@@ -6,8 +6,10 @@ import type { NatAmount } from '@agoric/ertp/src/types.js';
 import { partialMap, typedEntries } from '@agoric/internal/src/js-utils.js';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import {
+  isDepositFromChainRef,
   isInstrumentId,
   isInterChainAccountRef,
+  isWithdrawToChainRef,
 } from '@agoric/portfolio-api/src/type-guards.js';
 
 import { PoolPlaces } from '../../src/type-guards.js';
@@ -103,7 +105,8 @@ const makeGraphBase = (
     if (delta !== 0n) supplies[node] = Number(delta);
   }
 
-  // Ensure non-Agoric intra-chain edges (leaf <-> hub)
+  // Ensure non-Agoric intra-chain edges (leaf <-> hub, limited to one direction
+  // for a deposit or withdraw leaf).
   for (const node of nodes) {
     const chainName = chainOf(node);
     const hub = `@${chainName}` as AssetPlaceRef;
@@ -112,8 +115,12 @@ const makeGraphBase = (
     if (node === hub || hub === '@agoric') continue;
 
     const chainIsEvm = Object.keys(AxelarChain).includes(chainName);
-    addEdge(node, hub, chainIsEvm ? 'poolToEvm' : undefined);
-    addEdge(hub, node, chainIsEvm ? 'evmToPool' : undefined);
+    if (!isWithdrawToChainRef(node)) {
+      addEdge(node, hub, chainIsEvm ? 'poolToEvm' : undefined);
+    }
+    if (!isDepositFromChainRef(node)) {
+      addEdge(hub, node, chainIsEvm ? 'evmToPool' : undefined);
+    }
   }
 
   // Ensure unidirectional <Deposit> -> +agoric -> @agoric -> <Cash>
