@@ -5,6 +5,7 @@
 FROM golang:1.23-bullseye as cosmos-go
 
 WORKDIR /usr/src/agoric-sdk/golang/cosmos
+COPY golang/cometbft ../cometbft
 COPY golang/cosmos/go.mod golang/cosmos/go.sum ./
 RUN go mod download
 
@@ -109,7 +110,7 @@ COPY --link .yarn/patches/* .yarn/patches/
 COPY --link bin bin
 COPY --link packages packages
 COPY --link scripts scripts
-COPY --from=cosmos-package --link /usr/src/agoric-sdk/golang golang
+COPY --from=cosmos-package --link /usr/src/agoric-sdk/golang/cosmos golang/cosmos
 COPY --from=xsnap-package --link /usr/src/agoric-sdk/packages/xsnap packages/xsnap
 
 RUN corepack enable

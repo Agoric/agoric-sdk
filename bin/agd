@@ -3,6 +3,11 @@
 real0=$(readlink "${BASH_SOURCE[0]}" || echo "${BASH_SOURCE[0]}")
 thisdir=$(cd "$(dirname -- "$real0")" > /dev/null && pwd -P)
 
+# Skip an implicit build step, since this release comes pre-built.
+# Can still be explicitly built by running `agd build`.
+# shellcheck disable=SC2034
+NO_BUILD=true
+
 # shellcheck disable=SC1091
 source "$thisdir/../scripts/agd-builder.sh" ${1+"$@"}
 
