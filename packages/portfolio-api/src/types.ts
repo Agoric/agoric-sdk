@@ -179,6 +179,8 @@ export type StatusFor = {
     /** Noble Forwarding Address (NFA) registered by the contract for the `@agoric` address */
     nobleForwardingAddress?: Bech32Address;
     targetAllocation?: TargetAllocation;
+    /** CAIP-10 account ID of the authenticated EVM account that opened this portfolio */
+    sourceAccountId?: AccountId;
     /** incremented by the contract every time the user sends a transaction that the planner should respond to */
     policyVersion: number;
     /** the count of acknowledged submissions [from the planner] associated with the current policyVersion */
