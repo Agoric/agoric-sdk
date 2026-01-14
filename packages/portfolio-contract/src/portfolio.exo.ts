@@ -191,6 +191,7 @@ export const preparePortfolioKit = (
       kit: PortfolioKitCycleBreaker,
       flowDetail: FlowDetail,
       startedFlow?: { stepsP: Vow<MovementDesc[]>; flowId: number },
+      options?: unknown,
     ) => Vow<unknown>;
     onAgoricTransfer: (
       event: VTransferIBCEvent,
@@ -462,6 +463,12 @@ export const preparePortfolioKit = (
             .sub(chainName);
           traceChain('reserveAccount');
           const { accounts, accountsPending } = this.state;
+          if (accountsPending.has(chainName)) {
+            const state = 'pending';
+            traceChain('state', state);
+            const val = accountsPending.get(chainName);
+            return { ready: val.vow as Vow<AccountInfoFor[C]>, state };
+          }
           if (accounts.has(chainName)) {
             const infoAny = accounts.get(chainName);
             assert.equal(infoAny.chainName, chainName);
@@ -470,12 +477,6 @@ export const preparePortfolioKit = (
             traceChain('state', state);
             const ready = vowTools.asVow(async () => info);
             return { ready, state };
-          }
-          if (accountsPending.has(chainName)) {
-            const state = 'pending';
-            traceChain('state', state);
-            const val = accountsPending.get(chainName);
-            return { ready: val.vow as Vow<AccountInfoFor[C]>, state };
           }
           const state = 'new';
           traceChain('state', state);
@@ -607,6 +608,20 @@ export const preparePortfolioKit = (
             accountsPending.delete(chainName);
           }
           this.facets.reporter.publishStatus();
+        },
+      },
+      evmHandler: {
+        getReaderFacet() {
+          return this.facets.reader;
+        },
+        deposit() {
+          throw Error('TODO in a later PR');
+        },
+        rebalance() {
+          throw Error('TODO in a later PR');
+        },
+        withdraw() {
+          throw Error('TODO in a later PR');
         },
       },
       rebalanceHandler: {
