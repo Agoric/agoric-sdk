@@ -9,6 +9,10 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { setupPsm } from './setupPsm.js';
 
+/**
+ * @import {Invitation} from '@agoric/zoe';
+ */
+
 test.before(async t => {
   const bundleCache = await unsafeMakeBundleCache('bundles/');
   t.context = { bundleCache };

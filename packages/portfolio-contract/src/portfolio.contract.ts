@@ -43,7 +43,7 @@ import {
   FlowConfigShape,
 } from '@agoric/portfolio-api/src/constants.js';
 import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
-import type { ContractMeta, ZCF, ZCFSeat } from '@agoric/zoe';
+import type { ContractMeta, Invitation, ZCF, ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/types.js';

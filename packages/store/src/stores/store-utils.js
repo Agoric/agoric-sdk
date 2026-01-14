@@ -36,7 +36,7 @@ export const makeCurrentKeysKit = (
   checkHas,
   compare,
   assertOkToAdd,
-  assertOkToDelete = undefined,
+  assertOkToDelete,
   keyName = 'key',
 ) => {
   let updateCount = 0;

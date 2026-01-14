@@ -95,7 +95,7 @@ export {};
  */
 
 /**
- * @typedef { SimpleIssue | ParamChangeIssue<unknown> | ApiInvocationIssue |
+ * @typedef { SimpleIssue | ParamChangeIssue | ApiInvocationIssue |
  *   OfferFilterIssue } Issue
  */
 
@@ -301,11 +301,6 @@ export {};
  */
 
 /**
- * @callback GetOpenQuestions
- * @returns {Promise<Handle<'Question'>[]>}
- */
-
-/**
  * @callback GetQuestion
  * @param {Handle<'Question'>} h
  * @returns {Promise<Question>}
@@ -314,7 +309,7 @@ export {};
 /**
  * @typedef {object} ElectoratePublic
  * @property {() => Subscriber<QuestionDetails>} getQuestionSubscriber
- * @property {GetOpenQuestions} getOpenQuestions,
+ * @property {() => Promise<Handle<'Question'>[]>} getOpenQuestions
  * @property {() => Instance} getInstance
  * @property {GetQuestion} getQuestion
  */
@@ -396,9 +391,8 @@ export {};
  */
 
 /**
- * @template [P=StandardParamPath] path for a paramManagerRetriever
  * @typedef {object} ParamChangeIssue
- * @property {ParamChangesSpec<P>} spec
+ * @property {ParamChangesSpec} spec
  * @property {Instance<(zcf: ZCF<GovernanceTerms<{}>>) => {}>} contract
  */
 
@@ -423,7 +417,7 @@ export {};
  * @typedef {object} ParamChangeIssueDetails
  *    details for a question that can change a contract parameter
  * @property {ChoiceMethod} method
- * @property {ParamChangeIssue<unknown>} issue
+ * @property {ParamChangeIssue} issue
  * @property {ParamChangePositions} positions
  * @property {ElectionType} electionType
  * @property {number} maxChoices
@@ -556,10 +550,12 @@ export {};
 /**
  * Description of a set of coordinated changes for a ParamManager
  *
- * @template P path for a paramManagerRetriever
- * @typedef {object} ParamChangesSpec<P>
- * @property {P} paramPath
- * @property {Record<string, ParamValue>} changes one or more changes to parameters
+ * paramPath can be any path for a paramManagerRetriever but is hardcoded
+ * here to StandardParamPath to avoid converting this file to .ts.
+ * @typedef {{
+ *   paramPath: StandardParamPath,
+ *   changes: Record<string, ParamValue>
+ * }} ParamChangesSpec
  */
 
 /**
@@ -636,7 +632,7 @@ export {};
  * @callback VoteOnParamChanges
  * @param {Installation} voteCounterInstallation
  * @param {Timestamp} deadline
- * @param {ParamChangesSpec<P>} paramSpec
+ * @param {ParamChangesSpec} paramSpec
  * @returns {Promise<ContractGovernanceVoteResult>}
  */
 

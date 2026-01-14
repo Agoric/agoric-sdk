@@ -26,7 +26,7 @@
  * @property {(value: unknown) => unknown} [renderResult]
  *
  * @typedef {object} RetryPowers
- * @property {typeof global.setTimeout} setTimeout
+ * @property {typeof globalThis.setTimeout} setTimeout
  * @property {(...args: unknown[]) => void} [log]
  *
  * @typedef {RetryOptions & RetryPowers} RetryOptionsAndPowers mixes ocaps with configuration
@@ -157,7 +157,7 @@ const makeGetInstances = follow => async () => {
 /**
  *
  * @param {string} contractName
- * @param {{ log: (message: string) => void, follow: () => object, setTimeout: typeof global.setTimeout }} ambientAuthority
+ * @param {{ log: (message: string) => void, follow: () => object, setTimeout: typeof globalThis.setTimeout }} ambientAuthority
  * @param {WaitUntilOptions} options
  */
 export const waitUntilContractDeployed = (
@@ -197,7 +197,7 @@ const checkCosmosBalance = (balances, threshold) => {
 
 /**
  * @param {string} destAcct
- * @param {{ log?: (message: string) => void, query: () => Promise<object>, setTimeout: typeof global.setTimeout}} io
+ * @param {{ log?: (message: string) => void, query: () => Promise<object>, setTimeout: typeof globalThis.setTimeout}} io
  * @param {{denom: string, value: number}} threshold
  * @param {WaitUntilOptions} options
  */
@@ -246,7 +246,7 @@ const checkOfferState = (offerStatus, waitForPayouts, offerId) => {
  * @param {string} addr
  * @param {string} offerId
  * @param {boolean} waitForPayouts
- * @param {{ log?: typeof console.log, follow: () => object, setTimeout: typeof global.setTimeout }} io
+ * @param {{ log?: typeof console.log, follow: () => object, setTimeout: typeof globalThis.setTimeout }} io
  * @param {WaitUntilOptions} options
  */
 export const waitUntilOfferResult = (
@@ -287,7 +287,7 @@ const checkForInvitation = update => {
 /**
  *
  * @param {string} addr
- * @param {{ follow: () => object, log: typeof console.log, setTimeout: typeof global.setTimeout}} io
+ * @param {{ follow: () => object, log: typeof console.log, setTimeout: typeof globalThis.setTimeout}} io
  * @param {WaitUntilOptions} options
  */
 export const waitUntilInvitationReceived = (addr, io, options) => {
@@ -324,7 +324,7 @@ const checkLiveOffers = (update, offerId) => {
 /**
  * @param {string} addr
  * @param {string} offerId
- * @param {{ follow: () => object, log: typeof console.log, setTimeout: typeof global.setTimeout}} io
+ * @param {{ follow: () => object, log: typeof console.log, setTimeout: typeof globalThis.setTimeout}} io
  * @param {WaitUntilOptions} options
  */
 export const waitUntilOfferExited = async (addr, offerId, io, options) => {
@@ -413,7 +413,7 @@ const checkCommitteeElectionResult = (electionResult, expectedResult) => {
  * @param {{
  *   vstorage: VstorageKit;
  *   log: typeof console.log,
- *   setTimeout: typeof global.setTimeout
+ *   setTimeout: typeof globalThis.setTimeout
  * }} io
  * @param {WaitUntilOptions} options
  */

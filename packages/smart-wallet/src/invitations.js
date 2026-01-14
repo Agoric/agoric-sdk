@@ -7,7 +7,7 @@ import { shape } from './typeGuards.js';
 
 /**
  * @import {OfferId} from './offers.js';
- * @import {InvitationDetails} from '@agoric/zoe';
+ * @import {Invitation, InvitationDetails} from '@agoric/zoe';
  * @import {NameHub} from '@agoric/vats';
  * @import {InvitationMakers} from './types.js';
  */

@@ -1,6 +1,7 @@
 // @ts-check
 
 /** @import {PursesJSONState, RecordMetadata} from './types-ambient.js'; */
+/** @import {Purse} from '@agoric/ertp'; */
 
 /**
  * @typedef {object} PursesAddedState
