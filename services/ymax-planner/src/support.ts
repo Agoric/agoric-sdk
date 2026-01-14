@@ -120,6 +120,7 @@ export const spectrumPoolIdsByCluster: Readonly<
   local: {},
 };
 
+// Not a keyMirror because some values change casing from keys
 export const spectrumProtocols: Readonly<
   Record<PoolPlaceInfo['protocol'], string>
 > = {
