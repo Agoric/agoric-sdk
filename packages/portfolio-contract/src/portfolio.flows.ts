@@ -38,6 +38,7 @@ import {
   type FundsFlowPlan,
   type FlowConfig,
   type TrafficReport,
+  type TxId,
 } from '@agoric/portfolio-api';
 import {
   AxelarChain,
@@ -88,7 +89,6 @@ import {
   type PoolKey,
   type ProposalType,
 } from './type-guards.ts';
-import type { TxId } from './resolver/types.ts';
 
 const { keys, entries, fromEntries } = Object;
 const { reduceProgressReports } = progressTrackerAsyncFlowUtils;
@@ -275,7 +275,7 @@ const makeTrafficPublishingReducer = ({
     }
     const txs = [...priorTxs];
     const firstTxId: TxId | undefined = txs[0]?.txId;
-    let nextTxId: TxId | undefined;
+    let nextTxId: TxId | undefined = thisReport?.tailTxId;
 
     // Iterate backwards through the trafficEntry array, so we can link them via
     // nextTxId.

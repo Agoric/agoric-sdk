@@ -143,7 +143,8 @@ const makeFee = ({
   gas = 20_000, // cosmjs default
   adjustment = 1.0,
   denom = 'ubld',
-  price = 0.01, // ubld. per 2025-11 community discussion
+  // price = 0.01, // ubld. per 2025-11 community discussion
+  price = 0.03, // to prevent insufficient fees on mainnet RPC
 } = {}): StdFee => ({
   gas: `${Math.round(gas * adjustment)}`,
   amount: [{ denom, amount: `${Math.round(gas * adjustment * price)}` }],
@@ -491,8 +492,8 @@ const main = async (
     setTimeout,
     log: trace,
     fresh,
-    // as in: Error#1: out of gas ... gasUsed: 809068
-    fee: makeFee({ gas: 809068, adjustment: 1.4 }),
+    // as in: Error#1: out of gas ... gasUsed: 2115656
+    fee: makeFee({ gas: 2_500_000 }),
   });
 
   if (values.redeem) {

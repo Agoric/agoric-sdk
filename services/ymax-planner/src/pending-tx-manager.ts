@@ -445,10 +445,34 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
   },
 };
 
+const ibcFromAgoricMonitor: PendingTxMonitor = {
+  watch: async (_ctx, tx, log, _opts) => {
+    await null;
+    const { txId } = tx;
+    const logPrefix = `[${txId}]`;
+    log(
+      `${logPrefix} IBC_FROM_AGORIC tx monitor not needed - settled by contract`,
+    );
+  },
+};
+
+const ibcFromRemoteMonitor: PendingTxMonitor = {
+  watch: async (_ctx, tx, log, _opts) => {
+    await null;
+    const { txId } = tx;
+    const logPrefix = `[${txId}]`;
+    log(
+      `${logPrefix} IBC_FROM_REMOTE tx monitor unimplemented - stubbed by contract`,
+    );
+  },
+};
+
 const MONITORS = new Map<TxType, PendingTxMonitor<PendingTx, EvmContext>>([
   [TxType.CCTP_TO_EVM, cctpMonitor],
   [TxType.GMP, gmpMonitor],
   [TxType.MAKE_ACCOUNT, makeAccountMonitor],
+  [TxType.IBC_FROM_AGORIC, ibcFromAgoricMonitor],
+  [TxType.IBC_FROM_REMOTE, ibcFromRemoteMonitor],
 ]);
 
 export type HandlePendingTxOpts = {
