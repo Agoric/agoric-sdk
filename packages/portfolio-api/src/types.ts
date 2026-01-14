@@ -9,7 +9,11 @@ import type {
   ContinuingInvitationSpec,
   ContractInvitationSpec,
 } from '@agoric/smart-wallet/src/invitations.js';
-import type { SupportedChain, YieldProtocol } from './constants.js';
+import type {
+  AxelarChain,
+  SupportedChain,
+  YieldProtocol,
+} from './constants.js';
 import type { InstrumentId } from './instruments.js';
 import type { PublishedTx } from './resolver.js';
 import type { EVMWalletUpdate, PortfolioPath } from './evm/types.ts';
@@ -120,7 +124,7 @@ export type FlowKey = `flow${number}`;
 export type StatusFor = {
   contract: {
     contractAccount: CosmosChainAddress['value'];
-    factoryContractAddress: `0x${string}`;
+    depositFactoryAddresses?: Record<AxelarChain, `0x${string}`>;
   };
   pendingTx: PublishedTx;
   evmWallet: EVMWalletUpdate;
