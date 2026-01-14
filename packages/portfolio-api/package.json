@@ -27,12 +27,12 @@
     "generate:ymax-machine": "npx tsx scripts/gen-ymax-machine.mts"
   },
   "dependencies": {
+    "@agoric/internal": "workspace:*",
     "@agoric/orchestration": "workspace:*",
     "@endo/common": "^1.2.13",
     "@endo/patterns": "^1.7.0"
   },
   "devDependencies": {
-    "@agoric/internal": "workspace:*",
     "@types/js-yaml": "^4",
     "ajv": "^6.12.6",
     "ava": "^5.3.0",
