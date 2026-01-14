@@ -27,10 +27,10 @@ const OUTPUT_PATH = path.resolve(
 const args = process.argv.slice(2);
 const checkMode = args.includes('--check');
 
-const ajv = new Ajv({ allErrors: true, strict: false });
+const ajv = new Ajv({ allErrors: true });
 
 const formatAjvErrors = (errors: ErrorObject[] | null | undefined) =>
-  errors?.map(err => `${err.instancePath || '/'} ${err.message}`).join('; ');
+  errors?.map(err => `${err.dataPath || '/'} ${err.message}`).join('; ');
 
 const validateSpec = async (spec: YmaxSpec) => {
   const schema = await loadYmaxSchema(DEFAULT_YMAX_SCHEMA_PATH);

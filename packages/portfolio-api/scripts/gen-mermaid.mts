@@ -8,9 +8,9 @@ import assert from 'node:assert';
 import {
   ymaxMachine,
   type MachineDefinition,
-  StateNode,
-  TransitionTarget,
-  YmaxSpec,
+  type StateNode,
+  type TransitionTarget,
+  type YmaxSpec,
 } from '../src/model/generated/ymax-machine.js';
 
 const outputDir = '../docs';
