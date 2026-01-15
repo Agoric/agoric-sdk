@@ -3,7 +3,7 @@ import type {
   CctpTxEvidence,
   FeeConfig,
   TransactionRecord,
-} from '@agoric/fast-usdc/src/types.ts';
+} from '@agoric/fast-usdc/src/types.js';
 import {
   makeFeeTools,
   type RepayAmountKWR,
