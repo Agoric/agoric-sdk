@@ -103,6 +103,54 @@ Why the _ prefix? Because without it TS gets confused between the
 import and export symbols. ([h/t](https://stackoverflow.com/a/66588974))
 Note one downside vs ambients is that these types will appear to be on `globalThis`.
 
+## Build
+
+### The `emitDeclarationOnly` constraint
+
+The repo-wide `tsconfig-build-options.json` sets `emitDeclarationOnly: true`. This means `tsc` only generates `.d.ts` declaration files, not `.js` runtime files. This is intentional because:
+
+1. Most source files are `.js` with JSDoc annotations (not `.ts`)
+2. We don't use a separate `dist/` output directory to avoid requiring a build watcher during development
+3. Without `emitDeclarationOnly`, `tsc` would try to write `.js` output for `.js` input files, causing errors like:
+   ```
+   error TS5055: Cannot write file 'src/cli/bin.js' because it would overwrite input file.
+   ```
+
+### When `.ts` files have runtime code
+
+Some `.ts` files contain actual runtime code (functions, constants) rather than just type definitions. Examples include type guard functions, EIP-712 message helpers, etc. These files need corresponding `.js` files when published to npm.
+
+Since `tsc` won't generate `.js` files (due to `emitDeclarationOnly`), we use `build-ts-to-js` to strip types and produce `.js` files.
+
+### Using `build-ts-to-js`
+
+The `build-ts-to-js` script uses `ts-blank-space` to transform `.ts` files into `.js` by replacing type annotations with whitespace. This preserves line numbers (no source maps needed) and is very fast.
+
+Add it to your package's `prepack` script:
+
+```json
+{
+  "scripts": {
+    "prepack": "yarn run -T build-ts-to-js && yarn run -T tsc --build tsconfig.build.json",
+    "postpack": "git clean -f '*.d.ts' '*.d.ts.map' '*.js'"
+  }
+}
+```
+
+The script finds all `.ts` files in `src/` (excluding `.d.ts`) and generates corresponding `.js` files. During `prepack`:
+1. `build-ts-to-js` generates `.js` runtime files from `.ts` sources
+2. `tsc` generates `.d.ts` declaration files for all sources
+
+The `postpack` script cleans up generated files after the package is packed.
+
+### Why not two `tsc` passes?
+
+An alternative would be using two tsconfig files: one with `allowJs: false` to emit `.js` only for `.ts` files, and another for declarations. This was rejected because:
+
+- Requires careful management of `allowJs`/`include`/`exclude` to avoid conflicts
+- More complex to maintain and understand
+- The `build-ts-to-js` approach is simpler: one tool for `.js`, one for `.d.ts`
+
 ## Generating API docs
 
 We use [TypeDoc](https://typedoc.org/) to render API docs in HTML.
