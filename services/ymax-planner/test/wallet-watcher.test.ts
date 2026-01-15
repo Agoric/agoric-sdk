@@ -1,10 +1,13 @@
 import test from 'ava';
-import { id, zeroPadValue, AbiCoder } from 'ethers';
+import { zeroPadValue, AbiCoder } from 'ethers';
 import { createMockPendingTxOpts } from './mocks.ts';
 import { handlePendingTx } from '../src/pending-tx-manager.ts';
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
-import { SMART_WALLET_CREATED_SIGNATURE } from '../src/watchers/wallet-watcher.ts';
+import {
+  SMART_WALLET_CREATED_SIGNATURE,
+  parseSmartWalletCreatedLog,
+} from '../src/watchers/wallet-watcher.ts';
 
 const abiCoder = new AbiCoder();
 
@@ -16,12 +19,8 @@ const createSmartWalletCreatedLog = (
   walletAddr: string,
   owner: string,
   sourceChain: string,
-  sourceAddress: string,
 ) => {
-  const data = abiCoder.encode(
-    ['string', 'string', 'string'],
-    [owner, sourceChain, sourceAddress],
-  );
+  const data = abiCoder.encode(['string', 'string'], [owner, sourceChain]);
 
   return {
     address: factoryAddress,
