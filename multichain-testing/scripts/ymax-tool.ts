@@ -123,8 +123,11 @@ Environment variables:
               either "$subdomain" for using https://$subdomain.agoric.net/network-config or
               "$subdomain,$chainId" or "$fqdn,$chainId" for submitting to $subdomain.rpc.agoric.net
               or $fqdn
-  MNEMONIC:   For the private key used to sign transactions (needed for all operations except
-              --checkStorage and --buildEthOverrides)
+  MNEMONIC:   The private key used to sign transactions (needed for all operations except
+              --checkStorage and --buildEthOverrides). For --evm, this is the EVM wallet mnemonic.
+  MNEMONIC_EVM_MESSAGE_HANDLER:
+              The private key used to sign transactions from the EVM wallet handler
+              (needed for --evm, act as override for --redeem of evmWalletHandler).
 `.trim();
 
 const parseToolArgs = (argv: string[]) =>
@@ -580,6 +583,8 @@ const main = async (
     return;
   }
 
+  // MNEMONIC below is meant to contain the "agoric wallet" mnemonic.
+  // For some operations this may be a user wallet, others an operator wallet.
   let { MNEMONIC } = env;
   if (!MNEMONIC) throw Error(`MNEMONIC not set`);
 
@@ -595,6 +600,15 @@ const main = async (
     MNEMONIC = env.MNEMONIC_EVM_MESSAGE_HANDLER;
     if (!MNEMONIC)
       throw Error(`MNEMONIC_EVM_MESSAGE_HANDLER not set for EVM wallet`);
+  }
+
+  if (values.redeem && values.description.includes('evmWalletHandler')) {
+    if (env.MNEMONIC_EVM_MESSAGE_HANDLER) {
+      console.warn(
+        `Using MNEMONIC_EVM_MESSAGE_HANDLER for evmWalletHandler redemption`,
+      );
+      MNEMONIC = env.MNEMONIC_EVM_MESSAGE_HANDLER;
+    }
   }
 
   const sig = await makeSigningSmartWalletKit(
