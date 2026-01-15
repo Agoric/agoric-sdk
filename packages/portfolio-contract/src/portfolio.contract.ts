@@ -586,7 +586,7 @@ export const contract = async (
 
       // Store the authenticated source EVM account in CAIP-10 format
       const sourceAccountId =
-        `eip155:${depositDetails.chainId}:${depositDetails.permit2Payload.owner}` as AccountId;
+        `eip155:${depositDetails.chainId}:${depositDetails.permit2Payload.owner.toLowerCase()}` as AccountId;
       const kit = makeNextPortfolioKit({ sourceAccountId });
 
       void orchFns2.openPortfolioFromPermit2(
