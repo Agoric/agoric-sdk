@@ -65,7 +65,10 @@ import {
   type OnTransferContext,
   type PortfolioInstanceContext,
 } from '../src/portfolio.flows.ts';
-import { provideEVMAccount } from '../src/pos-gmp.flows.ts';
+import {
+  provideEVMAccount,
+  provideEVMAccountWithPermit,
+} from '../src/pos-gmp.flows.ts';
 import {
   makeSwapLockMessages,
   makeUnlockSwapMessages,
@@ -1846,6 +1849,44 @@ const silent: TraceLogger = Object.assign(() => {}, {
 /** turn boundaries in provideEVMAccount (except awaiting feeAccount and getChainInfo) */
 type EStep = 'predict' | 'send' | 'register' | 'txfr' | 'resolve';
 
+type ProvideEVMAccountFn = (
+  ...args: Parameters<typeof provideEVMAccount>
+) => ReturnType<typeof provideEVMAccount>;
+
+const provideEVMAccountWithPermitStub: ProvideEVMAccountFn = (
+  chainName,
+  chainInfo,
+  gmp,
+  lca,
+  ctx,
+  pk,
+  { orchOpts } = {},
+) =>
+  provideEVMAccountWithPermit(
+    chainName,
+    chainInfo,
+    gmp,
+    lca,
+    ctx,
+    pk,
+    {
+      permit: {
+        permitted: {
+          token: '0x0000000000000000000000000000000000000001',
+          amount: 1n,
+        },
+        nonce: 1n,
+        deadline: 1n,
+      },
+      owner: '0x1111111111111111111111111111111111111111',
+      witness:
+        '0x0000000000000000000000000000000000000000000000000000000000000000',
+      witnessTypeString: 'OpenPortfolioWitness',
+      signature: '0x1234' as `0x${string}`,
+    },
+    orchOpts,
+  );
+
 /**
  * make 2 attempts A, and B, to provideEVMAccount.
  * Give A a headStart and then pause it.
@@ -1854,9 +1895,13 @@ type EStep = 'predict' | 'send' | 'register' | 'txfr' | 'resolve';
  * Otherwise, B should succeed after recovering.
  */
 const makeAccountEVMRace = test.macro({
-  title: (providedTitle = '', _headStart: EStep, _errAt?: EStep) =>
-    `EVM makeAccount race: ${providedTitle}`,
-  async exec(t, headStart: EStep, errAt?: EStep) {
+  title: (
+    providedTitle = '',
+    _provide: ProvideEVMAccountFn,
+    _headStart: EStep,
+    _errAt?: EStep,
+  ) => `EVM makeAccount race: ${providedTitle}`,
+  async exec(t, provide: ProvideEVMAccountFn, headStart: EStep, errAt?: EStep) {
     const { orch, ctx, offer, txResolver } = mocks({});
 
     const pKit = await ctx.makePortfolioKit();
@@ -1868,15 +1913,7 @@ const makeAccountEVMRace = test.macro({
     const gmp = { chain: await orch.getChain('axelar'), fee: 123n };
 
     const attempt = async () => {
-      return provideEVMAccount(
-        chainName,
-        chainInfo,
-        gmp,
-        lca,
-        ctx,
-        pKit,
-        undefined,
-      );
+      return provide(chainName, chainInfo, gmp, lca, ctx, pKit, undefined);
     };
 
     const { log, kinks } = offer;
@@ -1995,14 +2032,97 @@ const makeAccountEVMRace = test.macro({
   },
 });
 
-test('A and B arrive together; A wins the race', makeAccountEVMRace, 'predict');
-test('A pays fee; B arrives', makeAccountEVMRace, 'send');
-test('A fails to pay fee; B arrives', makeAccountEVMRace, 'send', 'send');
-test('A registers txN; B arrives', makeAccountEVMRace, 'register');
-test('A transfers to axelar; B arrives', makeAccountEVMRace, 'txfr');
-test('A times out on axelar; B arrives', makeAccountEVMRace, 'txfr', 'txfr');
-test('A gets rejected txN; B arrives', makeAccountEVMRace, 'txfr', 'resolve');
-test('A finishes before attempt B starts', makeAccountEVMRace, 'resolve');
+test(
+  'A and B arrive together; A wins the race',
+  makeAccountEVMRace,
+  provideEVMAccount,
+  'predict',
+);
+test('A pays fee; B arrives', makeAccountEVMRace, provideEVMAccount, 'send');
+test(
+  'A fails to pay fee; B arrives',
+  makeAccountEVMRace,
+  provideEVMAccount,
+  'send',
+  'send',
+);
+test(
+  'A registers txN; B arrives',
+  makeAccountEVMRace,
+  provideEVMAccount,
+  'register',
+);
+test(
+  'A transfers to axelar; B arrives',
+  makeAccountEVMRace,
+  provideEVMAccount,
+  'txfr',
+);
+test(
+  'A times out on axelar; B arrives',
+  makeAccountEVMRace,
+  provideEVMAccount,
+  'txfr',
+  'txfr',
+);
+test(
+  'A gets rejected txN; B arrives',
+  makeAccountEVMRace,
+  provideEVMAccount,
+  'txfr',
+  'resolve',
+);
+test(
+  'A finishes before attempt B starts',
+  makeAccountEVMRace,
+  provideEVMAccount,
+  'resolve',
+);
+
+test(
+  'withPermit: A and B arrive together; A wins the race',
+  makeAccountEVMRace,
+  provideEVMAccountWithPermitStub,
+  'predict',
+);
+test(
+  'withPermit: A pays fee; B arrives',
+  makeAccountEVMRace,
+  provideEVMAccountWithPermitStub,
+  'send',
+);
+test(
+  'withPermit: A registers txN; B arrives',
+  makeAccountEVMRace,
+  provideEVMAccountWithPermitStub,
+  'register',
+);
+test(
+  'withPermit: A transfers to axelar; B arrives',
+  makeAccountEVMRace,
+  provideEVMAccountWithPermitStub,
+  'txfr',
+);
+test(
+  'withPermit: A times out on axelar; B arrives',
+  makeAccountEVMRace,
+  provideEVMAccountWithPermitStub,
+  'txfr',
+  'txfr',
+);
+test(
+  'withPermit: A gets rejected txN; B arrives',
+  makeAccountEVMRace,
+  provideEVMAccountWithPermitStub,
+  'txfr',
+  'resolve',
+);
+test(
+  'withPermit: A finishes before attempt B starts',
+  makeAccountEVMRace,
+  provideEVMAccountWithPermitStub,
+  'resolve',
+);
 
 test('planner rejects plan and flow fails gracefully', async t => {
   const { orch, ctx, offer, storage } = mocks({});

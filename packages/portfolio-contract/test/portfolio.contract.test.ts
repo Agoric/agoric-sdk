@@ -842,7 +842,7 @@ test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
 
   await eventLoopIteration(); // let IBC message go out
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
-  await common.utils.transmitVTransferEvent('acknowledgementPacket', -6);
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -5);
 
   await txResolver.drainPending();
 

@@ -1089,7 +1089,7 @@ const stepFlow = async (
               agoric.lca,
               ctx,
               kit,
-              ...optsArgs,
+              { orchOpts: optsArgs[0] },
             );
 
             // Finalize only after the account has settled.
