@@ -485,9 +485,9 @@ export const contract = async (
    * NB: this assumes portfolios are never deleted; if deletion is added,
    * a more robust ID generation strategy will be needed.
    */
-  const makeNextPortfolioKit = () => {
+  const makeNextPortfolioKit = (opts?: { sourceAccountId?: AccountId }) => {
     const portfolioId = portfolios.getSize();
-    const kit = makePortfolioKit({ portfolioId });
+    const kit = makePortfolioKit({ portfolioId, ...opts });
     portfolios.init(portfolioId, kit);
     return kit;
   };
@@ -603,7 +603,12 @@ export const contract = async (
       );
 
       const seat = zcf.makeEmptySeatKit().zcfSeat;
-      const kit = makeNextPortfolioKit();
+
+      // Store the authenticated source EVM account in CAIP-10 format
+      const sourceAccountId =
+        `eip155:${depositDetails.chainId}:${depositDetails.permit2Payload.owner.toLowerCase()}` as AccountId;
+      const kit = makeNextPortfolioKit({ sourceAccountId });
+
       void orchFns2.openPortfolioFromPermit2(
         seat,
         depositDetails,

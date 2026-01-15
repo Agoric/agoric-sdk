@@ -1604,7 +1604,7 @@ test('open portfolio from Arbitrum, 1000 USDC deposit', async t => {
         nonce: 1n,
         deadline: 1n,
       },
-      owner: '0x1111111111111111111111111111111111111111',
+      owner: '0x1234567890AbcdEF1234567890aBcdef12345678',
       witness:
         '0x0000000000000000000000000000000000000000000000000000000000000000',
       witnessTypeString: 'OpenPortfolioWitness',
@@ -1694,6 +1694,19 @@ test('open portfolio from Arbitrum, 1000 USDC deposit', async t => {
   );
   t.truthy(status.accountIdByChain?.Arbitrum);
   t.is(status.positionKeys.length, 2);
+  // Verify sourceAccountId is stored in CAIP-10 format
+  const expectedSourceAccountId =
+    `eip155:${chainInfoWithCCTP[evm].reference}:0x1234567890abcdef1234567890abcdef12345678` as const;
+  t.is(
+    status.sourceAccountId,
+    expectedSourceAccountId,
+    'sourceAccountId from vstorage',
+  );
+  t.is(
+    contents[expected.storagePath]?.sourceAccountId,
+    expectedSourceAccountId,
+    'sourceAccountId in storage contents',
+  );
   t.snapshot(contents, 'vstorage');
   await documentStorageSchema(t, common.bootstrap.storage, pendingTxOpts);
 
