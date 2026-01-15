@@ -8,6 +8,7 @@ import {
   makeTracer,
   mustMatch,
   NonNullish,
+  type ERemote,
   type Remote,
   type TypedPattern,
 } from '@agoric/internal';
@@ -244,12 +245,13 @@ harden(meta);
 const marshalData = makeMarshal(_ => Fail`data only`);
 
 const publishStatus = <K extends keyof StatusFor>(
-  node: Remote<StorageNode>,
+  node: ERemote<StorageNode>,
   status: StatusFor[K],
 ) => {
   const capData = marshalData.toCapData(status);
   void E(node).setValue(JSON.stringify(capData));
 };
+export type PublishStatus = typeof publishStatus;
 
 // Until we find a need for on-chain subscribers, this stop-gap will do.
 const inertSubscriber: ResolvedPublicTopic<never>['subscriber'] = {
@@ -657,6 +659,7 @@ export const contract = async (
       vowTools,
       timerService,
       portfolioContractPublicFacet: publicFacet,
+      publishStatus,
     },
   );
 

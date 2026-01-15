@@ -3,7 +3,6 @@
  * and holding portfolios for EVM accounts.
  * @see {@link prepareEVMWalletHandlerKit}
  */
-import { makePassableKit } from '@endo/marshal';
 import { makeTracer, type ERemote, type Remote } from '@agoric/internal';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import type { WithSignature } from '@agoric/orchestration/src/utils/viem.ts';
@@ -14,6 +13,7 @@ import {
   recoverTypedDataAddress,
   validateTypedData,
 } from '@agoric/orchestration/src/vendor/viem/viem-typedData.js';
+import type { StatusFor } from '@agoric/portfolio-api';
 import type {
   YmaxPermitWitnessTransferFromData,
   YmaxStandaloneOperationData,
@@ -30,8 +30,10 @@ import { VowShape, type Vow, type VowTools } from '@agoric/vow';
 import { type Zone } from '@agoric/zone';
 import { Fail, q } from '@endo/errors';
 import { E } from '@endo/far';
+import { makePassableKit } from '@endo/marshal';
 import { M } from '@endo/patterns';
 import type { Address } from 'abitype';
+import type { PublishStatus } from './portfolio.contract.ts';
 import type { PortfolioKit } from './portfolio.exo.ts';
 
 const trace = makeTracer('PEWH');
@@ -130,11 +132,13 @@ export const makeNonceManager = (zone: Zone) => {
 export const prepareEVMPortfolioOperationManager = (
   zone: Zone,
   {
-    vowTools: { asVow, watch },
+    vowTools: { asVow, watch, when },
     portfolioContractPublicFacet,
+    publishStatus,
   }: {
-    vowTools: Pick<VowTools, 'asVow' | 'watch'>;
+    vowTools: Pick<VowTools, 'asVow' | 'watch' | 'when'>;
     portfolioContractPublicFacet: ERemote<PortfolioContractPublicFacet>;
+    publishStatus: PublishStatus;
   },
 ) => {
   const makeOutcomeHandlers = zone.exoClassKit(
@@ -159,11 +163,24 @@ export const prepareEVMPortfolioOperationManager = (
             const portfolioId = await E(reader).getPortfolioId();
             const {
               wallet: { portfolios },
+              storageNode,
             } = this.state;
 
             portfolios.init(BigInt(portfolioId), evmHandler);
 
-            // XXX: Publish to vstorage the portfolio public path
+            const portfolioPaths = await Promise.all(
+              [...portfolios.values()].map(async pHandler => {
+                const pReader = E(pHandler).getReaderFacet();
+                // Vow is fulfilled promptly
+                const path = await when(E(pReader).getStoragePath());
+                return path as StatusFor['evmWalletPortfolios'][number];
+              }),
+            );
+
+            publishStatus<'evmWalletPortfolios'>(
+              E(storageNode).makeChildNode('portfolio'),
+              portfolioPaths,
+            );
 
             return this.facets.BasicOutcomeWatcher.onFulfilled();
           } catch (e) {
@@ -176,11 +193,23 @@ export const prepareEVMPortfolioOperationManager = (
       },
       BasicOutcomeWatcher: {
         onFulfilled() {
-          // XXX: Publish to vstorage that the operation succeeded
+          const { storageNode, nonce } = this.state;
+
+          publishStatus<'evmWallet'>(storageNode, {
+            updated: 'messageUpdate',
+            nonce,
+            status: 'ok',
+          });
         },
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         onRejected(reason: unknown) {
-          // XXX: Publish to vstorage that the operation failed, and rethrow
+          const { storageNode, nonce } = this.state;
+
+          publishStatus<'evmWallet'>(storageNode, {
+            updated: 'messageUpdate',
+            nonce,
+            status: 'error',
+            error: String(reason),
+          });
         },
       },
     },
@@ -194,7 +223,11 @@ export const prepareEVMPortfolioOperationManager = (
     nonce: bigint,
   ): Vow<void> =>
     asVow(async () => {
-      // XXX: Publish to vstorage that the operation is started
+      publishStatus<'evmWallet'>(storageNode, {
+        updated: 'messageUpdate',
+        nonce,
+        status: 'pending',
+      });
 
       const { BasicOutcomeWatcher, OpenOutcomeWatcher } = makeOutcomeHandlers({
         wallet,
@@ -285,11 +318,13 @@ export const prepareEVMWalletHandlerKit = (
     vowTools,
     timerService,
     portfolioContractPublicFacet,
+    publishStatus,
   }: {
     storageNode: ERemote<StorageNode>;
-    vowTools: Pick<VowTools, 'asVow' | 'watch'>;
+    vowTools: Pick<VowTools, 'asVow' | 'watch' | 'when'>;
     timerService: ERemote<TimerService>;
     portfolioContractPublicFacet: ERemote<PortfolioContractPublicFacet>;
+    publishStatus: PublishStatus;
   },
 ) => {
   const { extractOperationDetailsFromSignedData } = makeEVMHandlerUtils({
@@ -314,6 +349,7 @@ export const prepareEVMWalletHandlerKit = (
   const { handleOperation } = prepareEVMPortfolioOperationManager(zone, {
     vowTools,
     portfolioContractPublicFacet,
+    publishStatus,
   });
 
   const MessageHandlerI = M.interface('EVMWalletMessageHandler', {
