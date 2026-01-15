@@ -352,7 +352,25 @@ export const contract = async (
   const contractAccountV = zone.makeOnce('contractAccountV', () => makeLCA());
   void vowTools.when(contractAccountV, acct => {
     const addr = acct.getAddress();
-    publishStatus(storageNode, harden({ contractAccount: addr.value }));
+
+    type DepositFactoryAddresses = NonNullable<
+      StatusFor['contract']['depositFactoryAddresses']
+    >;
+
+    const depositFactoryAddresses = Object.fromEntries(
+      Object.entries(eip155ChainIdToAxelarChain).map(
+        ([chainId, chainName]) =>
+          [
+            chainName satisfies AxelarChain,
+            `eip155:${chainId}:${contracts[chainName].depositFactory}` satisfies DepositFactoryAddresses[AxelarChain],
+          ] as const,
+      ),
+    ) as DepositFactoryAddresses;
+
+    publishStatus(
+      storageNode,
+      harden({ contractAccount: addr.value, depositFactoryAddresses }),
+    );
     trace('published contractAccount', addr.value);
   });
 
