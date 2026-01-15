@@ -14,13 +14,13 @@ per [[https://agents.md/]]
 ## Build, Test, and Development Commands
 
 - `source scripts/use-devenv.sh`: Ensure the required versions of development
-  tools are installed in the current shell. This only needs to be run once in
-  each agent shell, but is harmless to run multiple times.
-- `yarn install`: Set up the repo with the pinned Yarn version and install
-  dependencies.
+  tools are usable in the current shell. This only needs to be run once in each
+  shell instance, but is harmless to run multiple times.
+- `yarn install`: Install or refresh JS package dependencies.
+- `yarn codegen`: Regenerate derived source files across the entire repository.
+  Required when `*.proto` files are changed, or network resources need to be
+  reprocessed (such as chain registry entries or GraphQL schemata).
 - `yarn build`: Build all workspaces (generates kernel bundles where needed).
-- `yarn codegen`: If any `*.proto` files were changed, regenerate derivative
-  files across the entire repository.
 - `yarn test`: Run unit tests across all packages (AVA).
 - `yarn lint` | `yarn lint-fix`: Check or auto-fix lint issues across packages.
 - `yarn run -T tsc --noEmit --incremental`: Fast typecheck; do this after
