@@ -11,8 +11,8 @@
   "bin": "./src/cli/bin.js",
   "scripts": {
     "build": "exit 0",
-    "prepack": "yarn run -T tsc --build tsconfig.build.json",
-    "postpack": "git clean -f '*.d.ts' '*.d.ts.map'",
+    "prepack": "scripts/build-ts-to-js.mjs && yarn run -T tsc --build tsconfig.build.json",
+    "postpack": "git clean -f '*.d.ts' '*.d.ts.map' '*.js'",
     "test": "ava",
     "test:c8": "c8 --all $C8_OPTIONS ava",
     "test:xs": "exit 0",
