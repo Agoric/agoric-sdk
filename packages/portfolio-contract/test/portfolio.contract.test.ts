@@ -1574,7 +1574,7 @@ test('Withdraw from an ERC4626 position', async t => {
 });
 
 // XXX: had to disable this test for some undiagnosed failure
-test.skip('open portfolio from Arbitrum, 1000 USDC deposit', async t => {
+test('open portfolio from Arbitrum, 1000 USDC deposit', async t => {
   const { common, planner1, started, readPublished, txResolver } =
     await setupPlanner(t);
   const { usdc, bld } = common.brands;
@@ -1636,6 +1636,9 @@ test.skip('open portfolio from Arbitrum, 1000 USDC deposit', async t => {
     await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
     await txResolver.drainPending();
     // Ack the second GMP call for the second position.
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await txResolver.drainPending();
+    // Ack the third GMP call for the third position.
     await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   };
 
