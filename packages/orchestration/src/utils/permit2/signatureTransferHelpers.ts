@@ -216,6 +216,10 @@ export const PermitWitnessTransferFromInputComponents = [
   { name: 'witnessTypeString', type: 'string' },
   { name: 'signature', type: 'bytes' },
 ] as const satisfies AbiParameter[];
+export type PermitWitnessTransferFromPayload = AbiParameterToPrimitiveType<{
+  type: 'tuple';
+  components: typeof PermitWitnessTransferFromInputComponents;
+}>;
 
 export const BatchPermitWitnessTransferFromInputComponents = [
   {
@@ -235,6 +239,11 @@ export const BatchPermitWitnessTransferFromInputComponents = [
   { name: 'witnessTypeString', type: 'string' },
   { name: 'signature', type: 'bytes' },
 ] as const satisfies AbiParameter[];
+export type BatchPermitWitnessTransferFromPayload =
+  AbiParameterToPrimitiveType<{
+    type: 'tuple';
+    components: typeof BatchPermitWitnessTransferFromInputComponents;
+  }>;
 
 export const PermitWitnessTransferFromFunctionABIType = {
   name: 'permitWitnessTransferFrom',
