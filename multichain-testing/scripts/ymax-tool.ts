@@ -610,7 +610,10 @@ const main = async (
     );
 
     // XXX generalize to --no-save or some such?
-    if (description === 'resolver') {
+    // For wallets without myStore support, redeem without saving
+    const noSaveDescriptions = ['resolver', 'evmWalletHandler'];
+    const descWithoutDeliver = description.replace(/^deliver /, '');
+    if (noSaveDescriptions.includes(descWithoutDeliver)) {
       const id = `redeem-${fresh()}`;
       await sig.sendBridgeAction({
         method: 'executeOffer',
