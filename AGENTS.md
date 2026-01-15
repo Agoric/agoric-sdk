@@ -13,6 +13,8 @@ per https://agents.md/
 - `yarn build`: Build all workspaces (generates kernel bundles where needed).
 - `yarn test`: Run unit tests across all packages (AVA).
 - `yarn lint` | `yarn lint-fix`: Check or auto-fix lint issues across packages.
+- `yarn run -T tsc --noEmit --incremental`: Fast typecheck; do this after changes.
+    - Watch mode for type errors in active workspaces: run `yarn run -T tsc --noEmit --incremental --watch --preserveWatchOutput` in the workspace(s) being edited, and keep the terminal output visible so Codex can monitor errors.
 - `yarn format`: Format code via Prettier; `yarn lint:format` to check only.
 - `./scripts/env-doctor.sh`: Verify toolchain (Node, Go, compiler) versions.
 - Example, single package: `cd packages/eventual-send && yarn test`.
@@ -33,4 +35,3 @@ per https://agents.md/
 - Branches should reference an issue number (e.g., `123-fix-solo-reconnect`).
 - PRs: link related issues, describe changes and risks; ensure `yarn build`, `yarn test`, and `yarn lint` pass. Prefer “Squash and merge.”
 - Integration tests: use labels `force:integration`/`bypass:integration` when appropriate; otherwise they run as part of the merge queue.
-

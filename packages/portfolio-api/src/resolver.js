@@ -1,3 +1,5 @@
+import { keyMirror } from '@agoric/internal';
+
 /**
  * @import {AccountId} from '@agoric/orchestration';
  */
@@ -35,19 +37,20 @@ harden(TxStatus);
  *
  * @enum {Readonly<(typeof TxType)[keyof typeof TxType]>}
  */
-export const TxType = /** @type {const} */ ({
-  CCTP_TO_EVM: 'CCTP_TO_EVM',
-  GMP: 'GMP',
-  CCTP_TO_AGORIC: 'CCTP_TO_AGORIC',
-  IBC_FROM_AGORIC: 'IBC_FROM_AGORIC',
-  IBC_FROM_REMOTE: 'IBC_FROM_REMOTE',
-  MAKE_ACCOUNT: 'MAKE_ACCOUNT',
+
+export const TxType = keyMirror({
+  CCTP_TO_EVM: null,
+  GMP: null,
+  CCTP_TO_AGORIC: null,
+  IBC_FROM_AGORIC: null,
+  IBC_FROM_REMOTE: null,
+  MAKE_ACCOUNT: null,
   /**
    * Placeholder for ProgressTracker protocols not yet recognized by the
    * resolver, just so they can be published to vstorage, but not processed any
    * further.  If these appear, it means the resolver source code needs to be
    * updated.
    */
-  UNKNOWN: 'UNKNOWN',
+  UNKNOWN: null,
 });
 harden(TxType);

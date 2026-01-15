@@ -112,6 +112,27 @@ test('offerArgs can carry usdnOut', t => {
   t.notThrows(() => mustMatch(specimen, shapes.rebalance));
 });
 
+test('movementDescShape allows unknown additional properties', t => {
+  const shapes = makeOfferArgsShapes(USDC);
+  const { movementDescShape } = shapes;
+  const amount = usdc(200n);
+
+  // Specimen with an unknown future property
+  const specimenWithExtra = harden({
+    src: '@noble',
+    dest: '@Arbitrum',
+    amount,
+    futureField: 'some-value',
+    anotherNewField: 42n,
+  });
+
+  // Current shape allows additional properties
+  t.notThrows(
+    () => mustMatch(specimenWithExtra, movementDescShape),
+    'movementDescShape should allow unknown properties',
+  );
+});
+
 test('PoolKeyExt shapes accept future pool keys', t => {
   // Future pool keys should match the extensible shape
   const futureKeys = ['Aave_Base', 'Compound_Solana', 'NewProtocol_Ethereum'];
