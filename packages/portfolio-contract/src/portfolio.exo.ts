@@ -636,8 +636,33 @@ export const preparePortfolioKit = (
         deposit() {
           throw Error('TODO in a later PR');
         },
+        /**
+         * Initiate a rebalance with a new target allocation.
+         *
+         * Sets the target allocation and starts a rebalance flow.
+         *
+         * @param allocation - Target allocation mapping from InstrumentId to portion
+         */
+        simpleRebalance(allocation: TargetAllocation) {
+          const { manager } = this.facets;
+          manager.setTargetAllocation(allocation);
+          const flowDetail: FlowDetail = { type: 'rebalance' };
+          const startedFlow = manager.startFlow(flowDetail);
+          return `flow${startedFlow.flowId}`;
+        },
+        /**
+         * Initiate a rebalance using the existing target allocation.
+         *
+         * The target allocation must have been previously set via
+         * `reallocate()` or when opening the portfolio.
+         */
         rebalance() {
-          throw Error('TODO in a later PR');
+          const { targetAllocation } = this.state;
+          targetAllocation ||
+            Fail`rebalance requires targetAllocation to be set (use reallocate() instead)`;
+          const flowDetail: FlowDetail = { type: 'rebalance' };
+          const startedFlow = this.facets.manager.startFlow(flowDetail);
+          return `flow${startedFlow.flowId}`;
         },
         /**
          * Initiate a withdrawal to the source EVM account.
