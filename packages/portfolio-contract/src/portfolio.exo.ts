@@ -654,12 +654,12 @@ export const preparePortfolioKit = (
          * Initiate a rebalance using the existing target allocation.
          *
          * The target allocation must have been previously set via
-         * `reallocate()` or when opening the portfolio.
+         * `SimpleRebalance()` or when opening the portfolio.
          */
         rebalance() {
           const { targetAllocation } = this.state;
           targetAllocation ||
-            Fail`rebalance requires targetAllocation to be set (use reallocate() instead)`;
+            Fail`rebalance requires targetAllocation to be set (use SimpleRebalance instead)`;
           const flowDetail: FlowDetail = { type: 'rebalance' };
           const startedFlow = this.facets.manager.startFlow(flowDetail);
           return `flow${startedFlow.flowId}`;
