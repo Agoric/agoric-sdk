@@ -8,15 +8,24 @@ per https://agents.md/
 - Tests reside per package in `packages/<name>/test/`.
 - Utilities, CI and developer tooling scripts are in `scripts/`. Integration assets live in `a3p-integration/` and `multichain-testing/`.
 
+## Environment Setup (Fresh Environments)
+
+For fresh environments (CI, cloud agents, new clones), run:
+```bash
+./scripts/bootstrap.sh
+```
+
+This script checks Node.js version, enables corepack, installs dependencies, and builds if needed. It is idempotent and non-interactive.
+
+For updating/fixing a developer environment, use `./scripts/env-doctor.sh` instead.
+
 ## Build, Test, and Development Commands
-- `corepack enable && yarn install`: Set up the repo with the pinned Yarn version and install dependencies.
 - `yarn build`: Build all workspaces (generates kernel bundles where needed).
 - `yarn test`: Run unit tests across all packages (AVA).
 - `yarn lint` | `yarn lint-fix`: Check or auto-fix lint issues across packages.
 - `yarn run -T tsc --noEmit --incremental`: Fast typecheck; do this after changes.
     - Watch mode for type errors in active workspaces: run `yarn run -T tsc --noEmit --incremental --watch --preserveWatchOutput` in the workspace(s) being edited, and keep the terminal output visible so Codex can monitor errors.
 - `yarn format`: Format code via Prettier; `yarn lint:format` to check only.
-- `./scripts/env-doctor.sh`: Verify toolchain (Node, Go, compiler) versions.
 - Example, single package: `cd packages/eventual-send && yarn test`.
 
 ## Coding Style & Naming Conventions
