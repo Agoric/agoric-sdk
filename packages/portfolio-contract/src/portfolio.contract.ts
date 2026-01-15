@@ -248,7 +248,7 @@ const publishStatus = <K extends keyof StatusFor>(
   node: ERemote<StorageNode>,
   status: StatusFor[K],
 ) => {
-  const capData = marshalData.toCapData(status);
+  const capData = marshalData.toCapData(harden(status));
   void E(node).setValue(JSON.stringify(capData));
 };
 export type PublishStatus = typeof publishStatus;
