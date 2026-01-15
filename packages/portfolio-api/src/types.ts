@@ -4,6 +4,7 @@ import {
   type AccountId,
   type Bech32Address,
   type CosmosChainAddress,
+  type TrafficEntry,
 } from '@agoric/orchestration';
 import type {
   ContinuingInvitationSpec,
@@ -18,6 +19,20 @@ import type { InstrumentId } from './instruments.js';
 import type { PublishedTx } from './resolver.js';
 import type { EVMWalletUpdate, PortfolioPath } from './evm/types.ts';
 
+/**
+ * Feature flags to handle contract upgrade flow compatibility.
+ */
+export type FlowFeatures = {
+  /** Control `ProgressTracker` support. */
+  useProgressTracker?: boolean;
+};
+
+/**
+ * Configuration options for flows.
+ */
+export type FlowConfig = {
+  features?: FlowFeatures;
+};
 export type SeatKeyword = 'Cash' | 'Deposit';
 
 /**
@@ -26,11 +41,34 @@ export type SeatKeyword = 'Cash' | 'Deposit';
  */
 export type LocalChainAccountRef = '+agoric';
 
+/**
+ * Identifies the blockchain hosting an address external to ymax from which
+ * funds for a deposit must be supplied.
+ */
+export type DepositFromChainRef = `+${AxelarChain}`;
+
+/**
+ * Identifies the blockchain hosting an address external to ymax to which
+ * withdrawn funds will be sent.
+ */
+export type WithdrawToChainRef = `-${AxelarChain}`;
+
 export type InterChainAccountRef = `@${SupportedChain}`;
 
+/**
+ * An AssetPlaceRef describes a place where funds can be, either an
+ * {@link InstrumentId} (starting with an ASCII letter), a {@link SeatKeyword}
+ * wrapped in `<...>` angle brackets, or a value consisting of a
+ * single-character punctuator followed by a SupportedChain (that character
+ * being `@` for {@link InterChainAccountRef}, `+` for
+ * {@link LocalChainAccountRef} and {@link DepositFromChainRef}, and `-` for
+ * {@link WithdrawToChainRef}).
+ */
 export type AssetPlaceRef =
   | `<${SeatKeyword}>`
   | LocalChainAccountRef
+  | DepositFromChainRef
+  | WithdrawToChainRef
   | InterChainAccountRef
   | InstrumentId;
 
@@ -65,8 +103,8 @@ export type ProposalType = {
 export type TargetAllocation = Partial<Record<InstrumentId, bigint>>;
 
 export type FlowDetail =
-  | { type: 'withdraw'; amount: NatAmount }
-  | { type: 'deposit'; amount: NatAmount }
+  | { type: 'withdraw'; amount: NatAmount; toChain?: SupportedChain }
+  | { type: 'deposit'; amount: NatAmount; fromChain?: SupportedChain }
   | { type: 'rebalance' }; // aka simpleRebalance
 
 /** linked list of concurrent failures, including dependencies */
@@ -109,6 +147,7 @@ export type FlowStep = {
   amount: NatAmount;
   src: AssetPlaceRef;
   dest: AssetPlaceRef;
+  phases?: Record<string, any>;
   // XXX all parts: fee etc.
 };
 
@@ -116,6 +155,10 @@ export type FundsFlowPlan = {
   flow: MovementDesc[];
   /** default to full order */
   order?: [target: number, prereqs: number[]][];
+};
+
+export type TrafficReport = {
+  traffic: TrafficEntry[];
 };
 
 export type PortfolioKey = `portfolio${number}`;

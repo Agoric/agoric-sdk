@@ -115,7 +115,7 @@ harden(parseStreamCellValue);
 
 export const STALE_RESPONSE = 'STALE_RESPONSE';
 
-type ReadStorageMetaOptions<
+export type ReadStorageMetaOptions<
   MethodName extends 'children' | 'data',
   Result = MethodName extends 'children'
     ? QueryChildrenMetaResponse

@@ -137,6 +137,61 @@ export const BeefyPoolPlaces = {
   },
 } as const satisfies Partial<Record<InstrumentId, PoolPlaceInfo>>;
 
+export const ERC4626PoolPlaces = {
+  ERC4626_vaultU2_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoClearstarHighYieldUsdc_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoClearstarUsdcCore_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoGauntletUsdcRwa_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoSteakhouseHighYieldInstant_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoClearstarInstitutionalUsdc_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoClearstarUsdcReactor_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoAlphaUsdcCore_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoResolvUsdc_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoGauntletUsdcFrontier_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoHyperithmUsdcMidcurve_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoHyperithmUsdcDegen_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoGauntletUsdcCore_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+} as const satisfies Partial<Record<InstrumentId, PoolPlaceInfo>>;
+
 export const PoolPlaces = {
   USDN: { protocol: 'USDN', vault: null, chainName: 'noble' }, // MsgSwap only
   USDNVault: { protocol: 'USDN', vault: 1, chainName: 'noble' }, // MsgSwap, MsgLock
@@ -150,6 +205,7 @@ export const PoolPlaces = {
   Compound_Arbitrum: { protocol: 'Compound', chainName: 'Arbitrum' },
   Compound_Base: { protocol: 'Compound', chainName: 'Base' },
   ...BeefyPoolPlaces,
+  ...ERC4626PoolPlaces,
 } as const satisfies Record<InstrumentId, PoolPlaceInfo>;
 harden(PoolPlaces);
 
@@ -228,15 +284,21 @@ export const portfolioIdOfPath = (path: string | string[]) => {
   );
 };
 
-export const FlowDetailShape: TypedPattern<FlowDetail> = M.or(
-  { type: 'withdraw', amount: AnyNatAmountShape },
-  { type: 'deposit', amount: AnyNatAmountShape },
-  { type: 'rebalance' },
-);
-
 /** ChainNames including those in future upgrades */
 type ChainNameExt = string;
 const ChainNameExtShape: TypedPattern<ChainNameExt> = M.string();
+
+export const FlowDetailShape: TypedPattern<FlowDetail> = M.or(
+  M.splitRecord(
+    { type: 'withdraw', amount: AnyNatAmountShape },
+    { toChain: ChainNameExtShape },
+  ),
+  M.splitRecord(
+    { type: 'deposit', amount: AnyNatAmountShape },
+    { fromChain: ChainNameExtShape },
+  ),
+  { type: 'rebalance' },
+);
 
 export const PortfolioStatusShapeExt: TypedPattern<StatusFor['portfolio']> =
   M.splitRecord(

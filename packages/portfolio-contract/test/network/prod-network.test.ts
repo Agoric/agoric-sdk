@@ -8,7 +8,7 @@ import { makeGraphForFlow } from '../../tools/network/buildGraph.js';
 import type { FlowGraph } from '../../tools/network/buildGraph.js';
 import PROD_NETWORK, {
   PROD_NETWORK as NAMED_PROD,
-} from '../../tools/network/network.prod.js';
+} from '../../tools/network/prod-network.js';
 import { PoolPlaces } from '../../src/type-guards.js';
 import type { AssetPlaceRef } from '../../src/type-guards-steps.js';
 import type {
@@ -60,6 +60,20 @@ const POOLS: ReadonlyArray<PoolKey> = [
   // USDN pools
   'USDN',
   'USDNVault',
+  // ERC4626 vaults
+  'ERC4626_vaultU2_Ethereum',
+  'ERC4626_morphoClearstarHighYieldUsdc_Ethereum',
+  'ERC4626_morphoClearstarUsdcCore_Ethereum',
+  'ERC4626_morphoGauntletUsdcRwa_Ethereum',
+  'ERC4626_morphoSteakhouseHighYieldInstant_Ethereum',
+  'ERC4626_morphoClearstarInstitutionalUsdc_Ethereum',
+  'ERC4626_morphoClearstarUsdcReactor_Ethereum',
+  'ERC4626_morphoAlphaUsdcCore_Ethereum',
+  'ERC4626_morphoResolvUsdc_Ethereum',
+  'ERC4626_morphoGauntletUsdcFrontier_Ethereum',
+  'ERC4626_morphoHyperithmUsdcMidcurve_Ethereum',
+  'ERC4626_morphoHyperithmUsdcDegen_Ethereum',
+  'ERC4626_morphoGauntletUsdcCore_Ethereum',
 ];
 
 // Helpers

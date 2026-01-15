@@ -10,7 +10,7 @@ import * as ws from 'ws';
 import { Fail, q } from '@endo/errors';
 import { isPrimitive } from '@endo/pass-style';
 
-import { PROD_NETWORK } from '@aglocal/portfolio-contract/tools/network/network.prod.js';
+import { PROD_NETWORK } from '@aglocal/portfolio-contract/tools/network/prod-network.js';
 import {
   fetchEnvNetworkConfig,
   getInvocationUpdate,
@@ -47,6 +47,7 @@ import type { MakeAbortController } from './support.ts';
 import { SpectrumClient } from './spectrum-client.ts';
 import { makeGasEstimator } from './gas-estimation.ts';
 import { makeSQLiteKeyValueStore } from './kv-store.ts';
+import { YdsNotifier } from './yds-notifier.ts';
 
 const assertChainId = async (
   rpc: CosmosRPCClient,
@@ -267,11 +268,22 @@ export const main = async (
     trace: () => {},
   });
 
+  const ydsNotifier = config.yds.url
+    ? new YdsNotifier(
+        { fetch, log: console.log.bind(console) },
+        {
+          ydsUrl: config.yds.url,
+          ydsApiKey: config.yds.apiKey as string,
+        },
+      )
+    : undefined;
+
   const powers = {
     evmCtx: {
       kvStore,
       makeAbortController,
       axelarApiUrl: config.axelar.apiUrl,
+      ydsNotifier,
       ...evmCtx,
     },
     rpc,

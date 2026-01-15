@@ -2,8 +2,13 @@
  * Mnemonic IDs for supported financial instruments in which a portfolio can use
  * assets to take a position.
  *
- * Treat these identifers as opaque strings. There are separate data structures
- * to map them to functional interfaces for interoperation.
+ * These identifiers are to be treated as opaque strings, but must not start
+ * with punctuation that could result in them being misinterpreted as any other
+ * kind of {@link AssetPlaceRef} (e.g., a `<`-prefixed {@link SeatKeyword} or
+ * `@`-prefixed {@link InterChainAccountRef}), and in fact must start with an
+ * ASCII letter unless the implementation of {@link isInstrumentId} is relaxed.
+ * There are separate data structures to map them to functional interfaces for
+ * interoperation.
  *
  * @enum {(typeof InstrumentId)[keyof typeof InstrumentId]}
  */
@@ -23,6 +28,29 @@ export const InstrumentId = /** @type {const} */ ({
   Compound_Base: 'Compound_Base',
   Compound_Ethereum: 'Compound_Ethereum',
   Compound_Optimism: 'Compound_Optimism',
+  ERC4626_vaultU2_Ethereum: 'ERC4626_vaultU2_Ethereum',
+  ERC4626_morphoClearstarHighYieldUsdc_Ethereum:
+    'ERC4626_morphoClearstarHighYieldUsdc_Ethereum',
+  ERC4626_morphoClearstarUsdcCore_Ethereum:
+    'ERC4626_morphoClearstarUsdcCore_Ethereum',
+  ERC4626_morphoGauntletUsdcRwa_Ethereum:
+    'ERC4626_morphoGauntletUsdcRwa_Ethereum',
+  ERC4626_morphoSteakhouseHighYieldInstant_Ethereum:
+    'ERC4626_morphoSteakhouseHighYieldInstant_Ethereum',
+  ERC4626_morphoClearstarInstitutionalUsdc_Ethereum:
+    'ERC4626_morphoClearstarInstitutionalUsdc_Ethereum',
+  ERC4626_morphoClearstarUsdcReactor_Ethereum:
+    'ERC4626_morphoClearstarUsdcReactor_Ethereum',
+  ERC4626_morphoAlphaUsdcCore_Ethereum: 'ERC4626_morphoAlphaUsdcCore_Ethereum',
+  ERC4626_morphoResolvUsdc_Ethereum: 'ERC4626_morphoResolvUsdc_Ethereum',
+  ERC4626_morphoGauntletUsdcFrontier_Ethereum:
+    'ERC4626_morphoGauntletUsdcFrontier_Ethereum',
+  ERC4626_morphoHyperithmUsdcMidcurve_Ethereum:
+    'ERC4626_morphoHyperithmUsdcMidcurve_Ethereum',
+  ERC4626_morphoHyperithmUsdcDegen_Ethereum:
+    'ERC4626_morphoHyperithmUsdcDegen_Ethereum',
+  ERC4626_morphoGauntletUsdcCore_Ethereum:
+    'ERC4626_morphoGauntletUsdcCore_Ethereum',
   USDN: 'USDN',
   USDNVault: 'USDNVault',
 });

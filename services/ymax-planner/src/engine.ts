@@ -25,7 +25,6 @@ import {
   TxStatus,
   TxType,
 } from '@aglocal/portfolio-contract/src/resolver/constants.js';
-import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
 import type {
   FlowDetail,
   PoolKey as InstrumentId,
@@ -33,6 +32,7 @@ import type {
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import {
   flowIdFromKey,
+  FlowStatusShape,
   PoolPlaces,
   portfolioIdFromKey,
   PortfolioStatusShapeExt,
@@ -51,8 +51,12 @@ import {
 } from '@agoric/internal';
 import { fromUniqueEntries } from '@agoric/internal/src/ses-utils.js';
 import { makeWorkPool } from '@agoric/internal/src/work-pool.js';
-import type { SupportedChain } from '@agoric/portfolio-api/src/constants.js';
-import type { PortfolioKey, FlowKey } from '@agoric/portfolio-api/src/types.js';
+import type {
+  FlowKey,
+  FundsFlowPlan,
+  PortfolioKey,
+  SupportedChain,
+} from '@agoric/portfolio-api';
 
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
@@ -82,6 +86,7 @@ import {
   vstoragePathIsAncestorOf,
   vstoragePathIsParentOf,
 } from './vstorage-utils.ts';
+import type { ReadStorageMetaOptions } from './vstorage-utils.ts';
 
 const { fromEntries, values } = Object;
 
@@ -277,6 +282,21 @@ export const processPortfolioEvents = async (
     spectrumPoolIds,
     usdcTokensByChain,
   };
+  type ReadVstorageSimpleOpts = Pick<
+    ReadStorageMetaOptions<'data'>,
+    'minBlockHeight' | 'retries'
+  >;
+  const isActiveFlow = async (
+    portfolioKey: PortfolioKey,
+    flowKey: FlowKey,
+    opts?: ReadVstorageSimpleOpts,
+  ) => {
+    const path = `${portfoliosPathPrefix}.${portfolioKey}.flows.${flowKey}`;
+    const capdata = await readStreamCellValue(vstorage, path, opts);
+    const flowStatus = marshaller.fromCapData(capdata);
+    mustMatch(flowStatus, FlowStatusShape, path);
+    return flowStatus.state === 'run';
+  };
   const startFlow = async (
     portfolioStatus: StatusFor['portfolio'],
     portfolioKey: PortfolioKey,
@@ -336,26 +356,35 @@ export const processPortfolioEvents = async (
       gasEstimator,
     };
     try {
-      let steps: MovementDesc[];
+      let plan: FundsFlowPlan;
       const { type } = flowDetail;
       switch (type) {
         case 'deposit':
-          steps = await planDepositToAllocations(plannerContext);
+          plan = await planDepositToAllocations({
+            ...plannerContext,
+            fromChain: flowDetail.fromChain,
+          });
           break;
         case 'rebalance':
-          steps = await planRebalanceToAllocations(plannerContext);
+          plan = await planRebalanceToAllocations(plannerContext);
           break;
         case 'withdraw':
-          steps = await planWithdrawFromAllocations(plannerContext);
+          plan = await planWithdrawFromAllocations({
+            ...plannerContext,
+            toChain: flowDetail.toChain,
+          });
           break;
         default:
           logger.warn(`⚠️  Unknown flow type ${type}`);
           return;
       }
-      (logContext as any).steps = steps;
+      (logContext as any).plan = plan;
 
-      if (steps.length > 0) {
-        await settle('resolvePlan', [...scope, steps, ...versions], { steps });
+      if (plan.flow.length > 0) {
+        const planOrSteps = plan.order ? plan : plan.flow;
+        await settle('resolvePlan', [...scope, planOrSteps, ...versions], {
+          plan,
+        });
       } else {
         const reason = 'Nothing to do for this operation.';
         await settle('rejectPlan', [...scope, reason, ...versions]);
@@ -379,7 +408,10 @@ export const processPortfolioEvents = async (
     if (handledPortfolioKeys.has(portfolioKey)) return;
     handledPortfolioKeys.add(portfolioKey);
     const path = `${portfoliosPathPrefix}.${portfolioKey}`;
-    const readOpts = { minBlockHeight: eventRecord.blockHeight, retries: 4, };
+    const readOpts: ReadVstorageSimpleOpts = {
+      minBlockHeight: eventRecord.blockHeight,
+      retries: 4,
+    };
     await null;
     try {
       const [statusCapdata, flowKeysResp] = await Promise.all([
@@ -408,15 +440,18 @@ export const processPortfolioEvents = async (
         return;
       }
 
-      // If any in-progress flows need activation (as indicated by not having
-      // its own dedicated vstorage data), then find the first such flow and
-      // respond to it. Responding to the rest now is pointless because
-      // acceptance of the first submission would invalidate the others as
-      // stale, but we'll see them again when such acceptance prompts changes
-      // to the portfolio status.
+      // If any in-progress flows need activation (as indicated by lacking a
+      // dedicated vstorage node) and there is not already a running flow, then
+      // find the first such flow and respond to it. Responding to the rest now
+      // is pointless because acceptance of the first submission would
+      // invalidate the others as stale, but we'll see them again when such
+      // acceptance prompts changes to the portfolio status.
       for (const [flowKey, flowDetail] of typedEntries(status.flowsRunning || {})) {
-        // If vstorage has data for this flow then we've already responded.
-        if (flowKeys.has(flowKey)) continue;
+        // If vstorage has a node for this flow then we've already responded.
+        if (flowKeys.has(flowKey)) {
+          if (await isActiveFlow(portfolioKey, flowKey, readOpts)) return;
+          continue;
+        }
         await runWithFlowTrace(
           portfolioKey, flowKey,
           () => startFlow(status, portfolioKey, flowKey, flowDetail),
@@ -486,28 +521,51 @@ export const processPendingTxEvents = async (
     error = () => {},
     log = () => {},
     vstoragePathPrefixes: { pendingTxPathPrefix },
+    pendingTxAbortControllers,
   } = txPowers;
   for (const { path, value: cellJson } of events) {
     const errLabel = `🚨 Failed to process pending tx ${path}`;
     let data;
     try {
       // Extract txId from path (e.g., "published.ymax0.pendingTxs.tx1")
-      const txId = stripPrefix(`${pendingTxPathPrefix}.`, path);
+      const txId = stripPrefix(`${pendingTxPathPrefix}.`, path) as TxId;
       log('Processing pendingTx event', path);
 
       const streamCell = parseStreamCell(cellJson, path);
       const value = parseStreamCellValue(streamCell, -1, path);
       data = marshaller.fromCapData(value);
-      if (
-        data?.status !== TxStatus.PENDING ||
-        data.type === TxType.CCTP_TO_AGORIC
-      )
+
+      // If transaction is no longer PENDING, abort any ongoing watchers
+      if (data.status !== TxStatus.PENDING) {
+        const abortController = pendingTxAbortControllers.get(txId);
+        if (abortController) {
+          const reason = `Aborting watcher for ${txId} - status changed to ${data?.status}`;
+          log(reason);
+          abortController.abort(reason);
+          pendingTxAbortControllers.delete(txId);
+        }
         continue;
+      }
+
+      if (data.type === TxType.CCTP_TO_AGORIC) continue;
+
       mustMatch(data, PublishedTxShape, `${path} index -1`);
       const tx = { txId, ...data } as PendingTx;
       log('New pending tx', tx);
+
+      const abortController = provideLazyMap(
+        pendingTxAbortControllers,
+        txId,
+        () => txPowers.makeAbortController(),
+      );
+
       // Tx resolution is non-blocking.
-      void handlePendingTxFn(tx, txPowers).catch(err => error(errLabel, err));
+      void handlePendingTxFn(tx, {
+        ...txPowers,
+        signal: abortController.signal,
+      }).finally(() => {
+        pendingTxAbortControllers.delete(txId);
+      });
     } catch (err) {
       error(errLabel, data, err);
     }
@@ -538,7 +596,12 @@ export const processInitialPendingTransactions = async (
   txPowers: HandlePendingTxOpts,
   handlePendingTxFn = handlePendingTx,
 ) => {
-  const { error = () => {}, log = () => {}, cosmosRpc } = txPowers;
+  const {
+    error = () => {},
+    log = () => {},
+    cosmosRpc,
+    pendingTxAbortControllers,
+  } = txPowers;
 
   log(`Processing ${initialPendingTxData.length} pending transactions`);
 
@@ -567,11 +630,21 @@ export const processInitialPendingTransactions = async (
     if (timestampMs === undefined) return;
 
     log(`Processing pending tx ${tx.txId} with lookback`);
+
+    const abortController = provideLazyMap(
+      pendingTxAbortControllers,
+      tx.txId,
+      () => txPowers.makeAbortController(),
+    );
+
     // TODO: Optimize blockchain scanning by reusing state across transactions.
     // For details, see: https://github.com/Agoric/agoric-sdk/issues/11945
-    void handlePendingTxFn(tx, txPowers, timestampMs).catch(err => {
-      const msg = ` Failed to process pending tx ${tx.txId} with lookback`;
-      error(msg, pendingTxRecord, err);
+    void handlePendingTxFn(tx, {
+      ...txPowers,
+      txTimestampMs: timestampMs,
+      signal: abortController.signal,
+    }).finally(() => {
+      pendingTxAbortControllers.delete(tx.txId);
     });
   }).done;
 };
@@ -722,6 +795,10 @@ export const startEngine = async (
     );
   }).done;
 
+  // Map to track AbortControllers for each pending transaction
+  // This allows aborting watchers when transactions are manually resolved
+  const pendingTxAbortControllers = new Map<TxId, AbortController>();
+
   const txPowers: HandlePendingTxOpts = Object.freeze({
     ...evmCtx,
     cosmosRest,
@@ -733,6 +810,7 @@ export const startEngine = async (
     now,
     signingSmartWalletKit,
     vstoragePathPrefixes,
+    pendingTxAbortControllers,
   });
   console.warn(`Found ${pendingTxKeys.length} pending transactions`);
 

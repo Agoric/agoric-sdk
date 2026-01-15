@@ -40,6 +40,7 @@ import { isMainThread } from 'node:worker_threads';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import sqlite3 from 'better-sqlite3';
 import { Fail, b, q } from '@endo/errors';
+import * as farExports from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import { objectMap, BridgeId } from '@agoric/internal';
 import { QueuedActionType } from '@agoric/internal/src/action-types.js';
@@ -67,9 +68,7 @@ import { makeCosmicSwingsetTestKit } from './test-kit.js';
  * @import {ManagerType, SwingSetConfig} from '@agoric/swingset-vat';
  * @import {BootstrapManifestPermit} from '@agoric/vats/src/core/lib-boot.js';
  * @import {CoreEvalSDKType} from '@agoric/cosmic-proto/swingset/swingset.js';
- * @import {makeTranscriptStore} from '@agoric/swing-store';
- * @import {makeSnapStore} from '@agoric/swing-store';
- * @import {SnapshotResult} from '@agoric/swing-store';
+ * @import {makeSnapStore, makeTranscriptStore, SnapshotInfo, SnapshotResult} from '@agoric/swing-store';
  */
 
 const useColors = process.stdout?.hasColors?.();
@@ -357,6 +356,19 @@ export const makeHelpers = ({ db, EV }) => {
     return results;
   };
 
+  // Mimic ../../vats/src/core/chain-behaviors.js
+  const coreEvalCompartmentEndowments = {
+    // XXX ...allPowers.modules,
+
+    ...farExports,
+
+    // XXX VatData: ...
+    console,
+    assert: globalThis.assert,
+    Base64: globalThis.Base64,
+    URL: globalThis.URL,
+  };
+
   /**
    * Run a core-eval directly through the controller (i.e., without a block).
    *
@@ -368,7 +380,7 @@ export const makeHelpers = ({ db, EV }) => {
   const runCoreEval = async (fnText, permits = true) => {
     // Fail noisily if fnText does not evaluate to a function.
     // This must be refactored if there is ever a need for such input.
-    const fn = new Compartment().evaluate(fnText);
+    const fn = new Compartment(coreEvalCompartmentEndowments).evaluate(fnText);
     typeof fn === 'function' || Fail`text must evaluate to a function`;
     /** @type {CoreEvalSDKType} */
     const coreEvalDesc = {
@@ -504,7 +516,7 @@ harden(wrapSubstore);
  * functionality into swing-store itself.
  *
  * @param {string} dbPath to a swingstore.sqlite file
- * @param {typeof wrapSubstore} wrapStore a function to replace swing-store sub-stores (kvStore/transcriptStore/etc.)
+ * @param {typeof wrapSubstore} [wrapStore] a function to replace swing-store sub-stores (kvStore/transcriptStore/etc.)
  */
 export const makeSwingStoreOverlay = (dbPath, wrapStore = wrapSubstore) => {
   /** @type {Array<[storeName: string, operation: string, ...args: unknown[]]>} */
@@ -558,19 +570,46 @@ export const makeSwingStoreOverlay = (dbPath, wrapStore = wrapSubstore) => {
         },
         readSpan: (vatID, startPos) => {
           const reader = function* reader() {
-            try {
-              // Read from the base store.
-              yield* transcriptStore.readSpan(vatID, startPos);
-            } catch (_err) {}
-            // Read from the overlay, assuming that any transcripts of vatID
-            // are for the current span.
+            // startPos defaults to the latest value, which will match the base
+            // store unless the overlay includes a rollover.
+            // So read from the base store if startPos is explicit *or* if there
+            // is no such rollover, and then read from the overlay.
             const pendingItems = pendingItemsByVat.get(vatID) || [];
-            for (const { item, startPos: itemStartPos } of pendingItems) {
-              if (startPos !== undefined && itemStartPos !== startPos) break;
-              yield item;
+            const baseOk =
+              startPos !== undefined ||
+              !pendingItems.find(item => item.hash === '<initial>');
+            if (baseOk) {
+              try {
+                yield* transcriptStore.readSpan(vatID, startPos);
+              } catch (_err) {}
+            }
+            if (startPos === undefined) {
+              startPos = pendingItems.at(-1)?.startPos;
+            }
+            for (const { item, startPos: itemStartPos, hash } of pendingItems) {
+              // Skip synthetic rollover markers.
+              if (hash === '<initial>') continue;
+              if (itemStartPos === startPos) yield item;
             }
           };
           return reader();
+        },
+        rolloverIncarnation: vatID => {
+          recordCall('transcriptStore', 'rolloverIncarnation', vatID);
+          if (wrapHelpers.isStale(vatID)) return;
+          const pendingItems = pendingItemsByVat.get(vatID) || [];
+          const { endPos, incarnation } =
+            pendingItems.at(-1) || transcriptStore.getCurrentSpanBounds(vatID);
+          // Indicate the rollover with a synthetic marker.
+          const rolloverMarker = {
+            startPos: endPos,
+            endPos,
+            hash: '<initial>',
+            incarnation: incarnation + 1,
+          };
+          pendingItems.push(rolloverMarker);
+          pendingItemsByVat.set(vatID, pendingItems);
+          return rolloverMarker.incarnation;
         },
       };
       return wrapStore('transcriptStore', transcriptStoreOverride, {
@@ -578,11 +617,15 @@ export const makeSwingStoreOverlay = (dbPath, wrapStore = wrapSubstore) => {
         logAndMark: [
           'initTranscript',
           'rolloverSpan',
-          'rolloverIncarnation',
           'stopUsingTranscript',
           ['deleteVatTranscripts', () => harden({ done: true, cleanups: 0 })],
         ],
-        warnIfStale: ['addItem', 'getCurrentSpanBounds', 'readSpan'],
+        warnIfStale: [
+          'addItem',
+          'getCurrentSpanBounds',
+          'readSpan',
+          'rolloverIncarnation',
+        ],
         allowIfClean: [
           ...storeExportAPI,
           'exportSpan',
@@ -599,34 +642,67 @@ export const makeSwingStoreOverlay = (dbPath, wrapStore = wrapSubstore) => {
     },
     wrapSnapStore: snapStore => {
       const wrapHelpers = makeWrapHelpers();
+      /**
+       * Keep overlay-only snapshots as {info, chunks} records and overlay-only
+       * snapshot abandonment as `null`s.
+       *
+       * @type {Map<string, {info: SnapshotInfo, chunks: Uint8Array[]} | null>}
+       */
+      const pendingSnapshotsByVat = new Map();
       /** @type {ReturnType<makeSnapStore>} */
       const snapStoreOverride = {
         ...snapStore,
         saveSnapshot: async (vatID, snapPos, dataStream) => {
           const entryPrefix = ['snapStore', 'saveSnapshot', vatID, snapPos];
-          wrapHelpers.markStale(vatID);
           await null;
-          let size = 0;
+          /** @type {Uint8Array[]} */
+          const chunks = [];
+          const getSize = () =>
+            chunks.reduce((sum, chunk) => sum + chunk.length, 0);
           try {
-            for await (const chunk of dataStream) size += chunk.length;
+            for await (const chunk of dataStream) chunks.push(chunk);
+            const size = getSize();
             recordCall(...entryPrefix, `<${size} bytes>`);
+            const result = harden({
+              hash: `<snapPos ${snapPos}>`,
+              uncompressedSize: size,
+              compressedSize: size,
+            });
+            const pending = harden({ info: { snapPos, ...result }, chunks });
+            pendingSnapshotsByVat.set(vatID, pending);
+            return /** @type {SnapshotResult} */ (result);
           } catch (err) {
-            recordCall(...entryPrefix, `<error after ${size} bytes>`);
+            recordCall(...entryPrefix, `<error after ${getSize()} bytes>`);
             throw err;
           }
-          return /** @type {SnapshotResult} */ (
-            harden({ uncompressedSize: size })
-          );
+        },
+        stopUsingLastSnapshot: vatID => {
+          recordCall('snapStore', 'stopUsingLastSnapshot', vatID);
+          pendingSnapshotsByVat.set(vatID, null);
+        },
+        getSnapshotInfo: vatID => {
+          const found = pendingSnapshotsByVat.get(vatID);
+          if (found) return found.info;
+          if (found === null) return /** @type {any} */ (undefined);
+          return snapStore.getSnapshotInfo(vatID);
+        },
+        async *loadSnapshot(vatID) {
+          const found = pendingSnapshotsByVat.get(vatID);
+          if (found) {
+            yield* found.chunks;
+            return;
+          }
+          found !== null || Fail`no current snapshot for vat ${q(vatID)}`;
+          yield* snapStore.loadSnapshot(vatID);
         },
       };
       return wrapStore('snapStore', snapStoreOverride, {
         ...wrapHelpers,
-        allow: ['saveSnapshot'],
+        allow: ['saveSnapshot', 'stopUsingLastSnapshot'],
         logAndMark: [
           ['deleteVatSnapshots', () => harden({ done: true, cleanups: 0 })],
-          'stopUsingLastSnapshot',
         ],
-        warnIfStale: ['loadSnapshot', 'getSnapshotInfo', 'hasHash'],
+        warnIfStale: ['getSnapshotInfo', 'hasHash', 'loadSnapshot'],
         allowIfClean: [
           ...storeExportAPI,
           'exportSnapshot',
@@ -906,6 +982,9 @@ Example commands:
 * stable.getRefs('o+10', 'v1');
 * board = await EV.vat('bootstrap').consumeItem('board');
 * obj = await EV(board).getValue('board02963');
+* await (
+    async b => swingStore.kernelStorage.bundleStore.addBundle(\`b1-\${b.endoZipBase64Sha512}\`, b)
+  )( JSON.parse(fs.readFileSync('/path/to/bundle.json')) );
 * await runCoreEval(\`async powers => {
     const ref = await E.get(powers.consume.auctioneerKit).governorAdminFacet;
     console.log(ref);

@@ -5,7 +5,7 @@
 import { defineConfig } from 'tsup';
 
 export default defineConfig({
-  entry: ['src/stubs/viem-abi.ts'],
+  entry: ['src/stubs/viem-abi.ts', 'src/stubs/viem-typedData.ts'],
   format: ['esm'],
   outDir: 'src/vendor/viem',
   target: 'es2020',
@@ -13,5 +13,16 @@ export default defineConfig({
   dts: true,
   bundle: true,
   platform: 'neutral',
-  external: ['stream', 'crypto', 'http', 'https', 'zlib', 'net', 'tls', 'url'],
+  external: [
+    'stream',
+    'crypto',
+    'http',
+    'https',
+    'zlib',
+    'net',
+    'tls',
+    'url',
+    '@noble/hashes',
+    '@noble/curves',
+  ],
 });

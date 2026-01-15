@@ -6,11 +6,12 @@ import type {
   YieldProtocol,
   AxelarChain,
 } from '@agoric/portfolio-api/src/constants.js';
+import { isInterChainAccountRef } from '@agoric/portfolio-api/src/type-guards.js';
 import { throwRedacted as Fail } from '@endo/errors';
 import { objectMap } from '@endo/patterns';
 import type { MovementDesc } from '../src/type-guards-steps.ts';
 import { planRebalanceFlow } from './plan-solve.js';
-import { PROD_NETWORK } from './network/network.prod.js';
+import { PROD_NETWORK } from './network/prod-network.js';
 /**
  * Plan deposit transfers based on the target allocation and current balances.
  *
@@ -126,7 +127,7 @@ export const makePortfolioSteps = async <
   };
 
   // Run the solver to compute movement steps
-  const { steps: raw } = await planRebalanceFlow({
+  const { plan } = await planRebalanceFlow({
     network: PROD_NETWORK,
     current: current as any,
     target: target as any,
@@ -137,7 +138,7 @@ export const makePortfolioSteps = async <
   });
 
   // Inject USDN detail and EVM fees to match existing behavior/tests
-  const steps: MovementDesc[] = raw.map(s => ({ ...s }));
+  const steps: MovementDesc[] = plan.flow.map(s => ({ ...s }));
 
   // USDN detail: 99% min-out of requested USDN
   const usdnAmt = (goal as any).USDN as NatAmount | undefined;
@@ -167,7 +168,7 @@ export const makePortfolioSteps = async <
     if (
       a.src === '@noble' &&
       typeof a.dest === 'string' &&
-      a.dest.startsWith('@')
+      isInterChainAccountRef(a.dest)
     ) {
       const hub = a.dest; // e.g., '@Arbitrum'
       if (b.src === hub && typeof b.dest === 'string') {

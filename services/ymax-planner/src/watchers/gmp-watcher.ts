@@ -15,6 +15,7 @@ import {
   setTxBlockLowerBound,
 } from '../kv-store.ts';
 import { findTxStatusFromAxelarscan } from '../axelarscan-utils.ts';
+import type { GmpWatcherResult, WatcherResult } from '../pending-tx-manager.ts';
 
 // Custom error code for aborted GMP watch
 export const WATCH_GMP_ABORTED = 'WATCH_GMP_ABORTED';
@@ -41,6 +42,15 @@ type AxelarScanOptions = {
   axelarApiUrl: string;
 };
 
+/**
+ * Watches for GMP transaction completion in live mode by listening to MulticallStatus
+ * and MulticallExecuted events. On timeout, queries Axelarscan to detect failures.
+ *
+ * NOTE: This watcher has a different API than other watchers (watchCctpTransfer,
+ * watchSmartWalletTx) because it tracks both success AND failure(via AxelarScan) states.
+ * Other watchers only detect success events. The Axelarscan dependency has been unreliable
+ * and this watcher will be refactored/removed in the future to align with other watchers.
+ */
 export const watchGmp = ({
   provider,
   contractAddress,
@@ -51,10 +61,9 @@ export const watchGmp = ({
   signal,
   axelarApiUrl,
   fetch,
-}: AxelarScanOptions & WatchGmp & WatcherTimeoutOptions): Promise<{
-  found: boolean;
-  rejectionReason?: string;
-}> => {
+}: AxelarScanOptions &
+  WatchGmp &
+  WatcherTimeoutOptions): Promise<GmpWatcherResult> => {
   return new Promise((resolve, reject) => {
     if (signal?.aborted) {
       reject(WATCH_GMP_ABORTED);
@@ -79,7 +88,7 @@ export const watchGmp = ({
     let timeoutId: NodeJS.Timeout;
     let listeners: Array<{ event: any; listener: any }> = [];
 
-    const finish = (result: { found: boolean; rejectionReason?: string }) => {
+    const finish = (result: GmpWatcherResult) => {
       resolve(result);
       if (timeoutId) clearTimeout(timeoutId);
       for (const { event, listener } of listeners) {
@@ -94,7 +103,7 @@ export const watchGmp = ({
       finish({ found: false });
     });
 
-    const listenForStatus = (eventLog: Log) => {
+    const listenForStatus = async (eventLog: Log) => {
       log(
         `MulticallStatus detected: txId=${txId} contract=${contractAddress} tx=${eventLog.transactionHash}`,
       );
@@ -103,13 +112,13 @@ export const watchGmp = ({
       if (eventLog.topics[1] === expectedIdTopic) {
         log(`✓ MulticallStatus matches txId: ${txId}`);
         executionFound = true;
-        finish({ found: true });
+        finish({ found: true, txHash: eventLog.transactionHash });
       } else {
         log(`MulticallStatus txId mismatch for ${txId}`);
       }
     };
 
-    const listenForExecution = (eventLog: Log) => {
+    const listenForExecution = async (eventLog: Log) => {
       log(
         `MulticallExecuted detected: txId=${txId} contract=${contractAddress} tx=${eventLog.transactionHash}`,
       );
@@ -118,7 +127,7 @@ export const watchGmp = ({
       if (eventLog.topics[1] === expectedIdTopic) {
         log(`✓ MulticallExecuted matches txId: ${txId}`);
         executionFound = true;
-        finish({ found: true });
+        finish({ found: true, txHash: eventLog.transactionHash });
       } else {
         log(`MulticallExecuted txId mismatch for ${txId}`);
       }
@@ -179,7 +188,7 @@ export const lookBackGmp = async ({
   publishTimeMs: number;
   chainId: CaipChainId;
   signal?: AbortSignal;
-}): Promise<boolean> => {
+}): Promise<WatcherResult> => {
   await null;
   try {
     const fromBlock = await getBlockNumberBeforeRealTime(
@@ -264,13 +273,13 @@ export const lookBackGmp = async ({
       log(`Found matching event`);
       deleteTxBlockLowerBound(kvStore, txId, EVENTS.MULTICALL_EXECUTED);
       deleteTxBlockLowerBound(kvStore, txId, EVENTS.MULTICALL_STATUS);
-      return true;
+      return { found: true, txHash: matchingEvent.transactionHash };
     }
 
     log(`No matching MulticallStatus or MulticallExecuted found`);
-    return false;
+    return { found: false };
   } catch (error) {
     log(`Error:`, error);
-    return false;
+    return { found: false };
   }
 };

@@ -28,7 +28,8 @@
   },
   "dependencies": {
     "@agoric/orchestration": "workspace:*",
-    "@endo/common": "^1.2.13"
+    "@endo/common": "^1.2.13",
+    "@endo/patterns": "^1.7.0"
   },
   "devDependencies": {
     "@agoric/internal": "workspace:*",

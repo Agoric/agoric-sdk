@@ -1,10 +1,16 @@
-import {
-  PoolPlaces,
-  type PoolKey,
-  type PoolPlaceInfo,
-  type StatusFor,
-  type TargetAllocation,
+import { assert, Fail, q, X } from '@endo/errors';
+
+import { PoolPlaces } from '@aglocal/portfolio-contract/src/type-guards.js';
+import type {
+  PoolKey,
+  PoolPlaceInfo,
+  StatusFor,
+  TargetAllocation,
 } from '@aglocal/portfolio-contract/src/type-guards.js';
+import type { AssetPlaceRef } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
+import type { NetworkSpec } from '@aglocal/portfolio-contract/tools/network/network-spec.js';
+import { planRebalanceFlow } from '@aglocal/portfolio-contract/tools/plan-solve.js';
+import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import type { Brand, NatAmount, NatValue } from '@agoric/ertp/src/types.js';
 import {
@@ -15,17 +21,9 @@ import {
 } from '@agoric/internal';
 import type { AccountId, Caip10Record } from '@agoric/orchestration';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
-import { assert, Fail, q, X } from '@endo/errors';
-// import { TEST_NETWORK } from '@aglocal/portfolio-contract/test/network/test-network.js';
-import type {
-  AssetPlaceRef,
-  MovementDesc,
-} from '@aglocal/portfolio-contract/src/type-guards-steps.js';
-import type { NetworkSpec } from '@aglocal/portfolio-contract/tools/network/network-spec.js';
-import { planRebalanceFlow } from '@aglocal/portfolio-contract/tools/plan-solve.js';
-import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
-import { ACCOUNT_DUST_EPSILON } from '@agoric/portfolio-api';
-import type { SupportedChain } from '@agoric/portfolio-api/src/constants.js';
+import { ACCOUNT_DUST_EPSILON, isInstrumentId } from '@agoric/portfolio-api';
+import type { FundsFlowPlan, SupportedChain } from '@agoric/portfolio-api';
+
 import { USDN, type CosmosRestClient } from './cosmos-rest-client.js';
 import type { ChainAddressTokenBalance } from './graphql/api-spectrum-blockchain/__generated/graphql.ts';
 import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
@@ -43,6 +41,14 @@ const scale6 = (x: number) => {
 const rejectUserInput = (details: ReturnType<typeof X> | string): never =>
   assert.fail(details, ((...args) =>
     Reflect.construct(UserInputError, args)) as ErrorConstructor);
+
+const isDust = (value: bigint): boolean =>
+  -ACCOUNT_DUST_EPSILON < value && value < ACCOUNT_DUST_EPSILON;
+
+const isNonemptyPositionEntry = (entry: [AssetPlaceRef, NatValue]): boolean => {
+  const [place, value] = entry;
+  return isInstrumentId(place) && value > 0n;
+};
 
 // Note the differences in the shape of field `balance` between the two Spectrum
 // APIs (string vs. Record<'USDC' | 'USD' | string, number>).
@@ -309,30 +315,38 @@ export const getNonDustBalances = async (
 /**
  * Derive weighted targets for allocation keys. Additionally, always zero out hub balances
  * (chains; keys starting with '@') that have non-zero current amounts. Returns only entries
- * whose values change compared to current.
+ * whose values change by at least ACCOUNT_DUST_EPSILON compared to current.
  */
 const computeWeightedTargets = (
   brand: Brand<'nat'>,
-  current: Partial<Record<AssetPlaceRef, NatAmount>>,
-  delta: bigint,
+  currentAmounts: Partial<Record<AssetPlaceRef, NatAmount>>,
+  balanceDelta: bigint,
   allocation: TargetAllocation = {},
 ): Partial<Record<AssetPlaceRef, NatAmount>> => {
-  const currentTotal = Object.values(current).reduce(
-    (acc, amount) => acc + amount.value,
+  const currentValues = objectMap(
+    currentAmounts as Required<typeof currentAmounts>,
+    amount => amount.value,
+  );
+  const currentTotal = Object.values(currentValues).reduce(
+    (acc, value) => acc + value,
     0n,
   );
-  const total = currentTotal + delta;
+  const total = currentTotal + balanceDelta;
   total >= 0n || rejectUserInput('Insufficient funds for withdrawal.');
-  const weights = Object.keys(allocation).length
+
+  const weights: [AssetPlaceRef, NatValue][] = Object.keys(allocation).length
     ? typedEntries({
         // Any current balance with no target has an effective weight of 0.
-        ...objectMap(current, () => 0n),
+        ...objectMap(currentValues, () => 0n),
         ...(allocation as Required<typeof allocation>),
       })
-    : // In the absence of target weights, maintain the relative status quo.
-      typedEntries(current as Required<typeof current>).map(
-        ([key, amount]) => [key, amount.value] as [PoolKey, NatValue],
-      );
+    : // In the absence of target weights, maintain the relative status quo but
+      // zero out hubs (chains) if there is anywhere else to deploy their funds.
+      (valueEntries => {
+        return valueEntries.some(isNonemptyPositionEntry)
+          ? valueEntries.map(([p, v]) => [p, isInstrumentId(p) ? v : 0n])
+          : valueEntries;
+      })(typedEntries(currentValues));
   const sumW = weights.reduce<bigint>((acc, entry) => {
     const w = entry[1];
     (typeof w === 'bigint' && w >= 0n) ||
@@ -343,36 +357,50 @@ const computeWeightedTargets = (
   }, 0n);
   sumW > 0n ||
     rejectUserInput('Total target allocation weights must be positive.');
-  const draft: Partial<Record<AssetPlaceRef, NatAmount>> = {};
+
+  // Try to satisfy the weights, leaving any amount otherwise subject to
+  // rounding loss or representing a too-small delta at the highest-weight
+  // place that can accept it.
+  const draft: Partial<Record<AssetPlaceRef, NatValue>> = {};
   let remainder = total;
-  let [maxKey, maxW] = [weights[0][0], -1n];
   for (const [key, w] of weights) {
-    if (w > maxW) {
-      [maxKey, maxW] = [key, w];
-    }
-    const v = (total * w) / sumW;
-    draft[key] = AmountMath.make(brand, v);
+    const a = currentValues[key] || 0n;
+    const b = (total * w) / sumW;
+    const v = isDust(b - a) ? a : b;
+    draft[key] = v;
     remainder -= v;
   }
   if (remainder !== 0n) {
-    const remainderAmount = AmountMath.make(brand, remainder);
-    draft[maxKey] = AmountMath.add(draft[maxKey] as NatAmount, remainderAmount);
+    // eslint-disable-next-line no-nested-ternary
+    weights.sort(([_k1, a], [_k2, b]) => (a < b ? 1 : a > b ? -1 : 0));
+    for (const [key, _w] of weights) {
+      const a = currentValues[key] || 0n;
+      const v = (draft[key] || 0n) + remainder;
+      if (v === a || !isDust(v - a)) {
+        draft[key] = v;
+        remainder = 0n;
+        break;
+      }
+    }
+    remainder === 0n ||
+      rejectUserInput(
+        X`Nowhere to place ${remainder} in update of ${currentValues} to ${draft}`,
+      );
   }
-  // Zero out hubs (chains) with non-zero current balances
-  for (const key of Object.keys(current)) {
-    if (key.startsWith('@')) draft[key] = AmountMath.make(brand, 0n);
-  }
+
   // Delete entries reflecting no change.
   for (const [key, amount] of Object.entries(draft)) {
-    const currentAmount = current[key];
-    if (currentAmount && AmountMath.isEqual(currentAmount, amount)) {
+    if (amount === currentValues[key]) {
       delete draft[key];
     }
   }
-  return draft;
+
+  return {
+    ...objectMap(draft, (value: NatValue) => AmountMath.make(brand, value)),
+  };
 };
 
-type PlannerContext = {
+export type PlannerContext = {
   currentBalances: Partial<Record<AssetPlaceRef, NatAmount>>;
   targetAllocation?: TargetAllocation;
   network: NetworkSpec;
@@ -386,10 +414,11 @@ type PlannerContext = {
  * Computes absolute targets, then plans the corresponding flow.
  */
 export const planDepositToAllocations = async (
-  details: PlannerContext & { amount: NatAmount },
-): Promise<MovementDesc[]> => {
+  details: PlannerContext & { amount: NatAmount; fromChain?: SupportedChain },
+): Promise<FundsFlowPlan> => {
   const { amount, brand, currentBalances, targetAllocation } = details;
-  if (!targetAllocation) return [];
+  const { fromChain = 'agoric' } = details;
+  if (!targetAllocation) return { flow: [] };
   const target = computeWeightedTargets(
     brand,
     currentBalances,
@@ -398,19 +427,23 @@ export const planDepositToAllocations = async (
   );
 
   // The deposit should be distributed.
-  const currentWithDeposit = { ...currentBalances, '<Deposit>': amount };
-  target['<Deposit>'] = AmountMath.make(brand, 0n);
+  const depositFrom =
+    // TODO(#12309): Remove the `<Deposit>` special case in favor of `+agoric`.
+    (fromChain === 'agoric' ? '<Deposit>' : `+${fromChain}`) as AssetPlaceRef;
+  const zeroAmount = AmountMath.make(brand, 0n);
+  const resolvedCurrent = { ...currentBalances, [depositFrom]: amount };
+  const resolvedTarget = { ...target, [depositFrom]: zeroAmount };
 
   const { network, feeBrand, gasEstimator } = details;
   const flowDetail = await planRebalanceFlow({
     network,
-    current: currentWithDeposit,
-    target,
+    current: resolvedCurrent,
+    target: resolvedTarget,
     brand,
     feeBrand,
     gasEstimator,
   });
-  return flowDetail.steps;
+  return flowDetail.plan;
 };
 
 /**
@@ -419,9 +452,9 @@ export const planDepositToAllocations = async (
  */
 export const planRebalanceToAllocations = async (
   details: PlannerContext,
-): Promise<MovementDesc[]> => {
+): Promise<FundsFlowPlan> => {
   const { brand, currentBalances, targetAllocation } = details;
-  if (!targetAllocation) return [];
+  if (!targetAllocation) return { flow: [] };
   const target = computeWeightedTargets(
     brand,
     currentBalances,
@@ -438,7 +471,7 @@ export const planRebalanceToAllocations = async (
     feeBrand,
     gasEstimator,
   });
-  return flowDetail.steps;
+  return flowDetail.plan;
 };
 
 /**
@@ -446,9 +479,10 @@ export const planRebalanceToAllocations = async (
  * Computes absolute targets, then plans the corresponding flow.
  */
 export const planWithdrawFromAllocations = async (
-  details: PlannerContext & { amount: NatAmount },
-): Promise<MovementDesc[]> => {
+  details: PlannerContext & { amount: NatAmount; toChain?: SupportedChain },
+): Promise<FundsFlowPlan> => {
   const { amount, brand, currentBalances, targetAllocation } = details;
+  const { toChain = 'agoric' } = details;
   const target = computeWeightedTargets(
     brand,
     currentBalances,
@@ -456,17 +490,21 @@ export const planWithdrawFromAllocations = async (
     targetAllocation,
   );
 
-  const currentCash = currentBalances['<Cash>'] || AmountMath.make(brand, 0n);
-  target['<Cash>'] = AmountMath.add(currentCash, amount);
+  const withdrawTo =
+    // TODO(#12309): Remove the `<Cash>` special case in favor of `-agoric`.
+    (toChain === 'agoric' ? '<Cash>' : `-${toChain}`) as AssetPlaceRef;
+  const zeroAmount = AmountMath.make(brand, 0n);
+  const resolvedCurrent = { ...currentBalances, [withdrawTo]: zeroAmount };
+  const resolvedTarget = { ...target, [withdrawTo]: amount };
 
   const { network, feeBrand, gasEstimator } = details;
   const flowDetail = await planRebalanceFlow({
     network,
-    current: currentBalances,
-    target,
+    current: resolvedCurrent,
+    target: resolvedTarget,
     brand,
     feeBrand,
     gasEstimator,
   });
-  return flowDetail.steps;
+  return flowDetail.plan;
 };

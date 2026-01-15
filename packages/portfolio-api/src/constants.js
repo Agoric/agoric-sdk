@@ -2,10 +2,29 @@
 
 /// <reference types="ses" />
 
-import { objectMap } from '@endo/common/object-map.js';
+import { M, objectMap } from '@endo/patterns';
 
-/** @import {ClusterName} from '@agoric/internal'; */
-/** @import {CaipChainId} from '@agoric/orchestration'; */
+/**
+ * @import {ClusterName, TypedPattern} from '@agoric/internal';
+ * @import {CaipChainId} from '@agoric/orchestration';
+ * @import {FlowConfig} from './types.js';
+ */
+
+/**
+ * Configuration arguments for newly-created portfolio flows.
+ *
+ * This is only a default so that existing flows continue to behave as before
+ * for replay fidelity.
+ *
+ * @type {FlowConfig | undefined}
+ */
+export const DEFAULT_FLOW_CONFIG = {
+  features: {
+    /** Enable ProgressTracker support in new flows. */
+    useProgressTracker: true,
+  },
+};
+harden(DEFAULT_FLOW_CONFIG);
 
 /**
  * Yield protocols for Proof of Concept.
@@ -17,6 +36,7 @@ export const YieldProtocol = /** @type {const} */ ({
   Compound: 'Compound',
   USDN: 'USDN',
   Beefy: 'Beefy',
+  ERC4626: 'ERC4626',
 });
 harden(YieldProtocol);
 
@@ -170,3 +190,25 @@ harden(RebalanceStrategy);
  * This corresponds to 100 uusdc, i.e., $0.0001 for USDC.
  */
 export const ACCOUNT_DUST_EPSILON = 100n;
+
+/**
+ * Feature flags to handle contract upgrade flow compatibility.
+ * @type {TypedPattern<FlowConfig['features']>}
+ */
+export const FlowFeaturesShape = M.splitRecord(
+  {},
+  {
+    useProgressTracker: M.boolean(),
+  },
+);
+
+/**
+ * Configuration options for flows.
+ * @type {TypedPattern<FlowConfig>}
+ */
+export const FlowConfigShape = M.splitRecord(
+  {},
+  {
+    features: FlowFeaturesShape,
+  },
+);

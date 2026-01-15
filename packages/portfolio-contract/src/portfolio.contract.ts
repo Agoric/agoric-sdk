@@ -32,10 +32,15 @@ import {
   type OrchestrationPowers,
   type OrchestrationTools,
 } from '@agoric/orchestration';
-import type { PortfolioPublicInvitationMaker } from '@agoric/portfolio-api';
+import type {
+  FlowConfig,
+  PortfolioPublicInvitationMaker,
+} from '@agoric/portfolio-api';
 import {
   AxelarChain,
   YieldProtocol,
+  DEFAULT_FLOW_CONFIG,
+  FlowConfigShape,
 } from '@agoric/portfolio-api/src/constants.js';
 import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
 import type { ContractMeta, ZCF, ZCFSeat } from '@agoric/zoe';
@@ -48,6 +53,7 @@ import { E } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
+import { prepareEVMWalletHandlerKit } from './evm-wallet-handler.ts';
 import { preparePlanner } from './planner.exo.ts';
 import { preparePortfolioKit, type PortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
@@ -56,6 +62,7 @@ import { PENDING_TXS_NODE_KEY } from './resolver/types.ts';
 import { makeOfferArgsShapes } from './type-guards-steps.ts';
 import {
   BeefyPoolPlaces,
+  ERC4626PoolPlaces,
   makeProposalShapes,
   type EVMContractAddressesMap,
   type OfferArgsFor,
@@ -109,6 +116,10 @@ export type BeefyContracts = {
   [K in keyof typeof BeefyPoolPlaces]: `0x${string}`;
 };
 
+export type ERC4626Contracts = {
+  [K in keyof typeof ERC4626PoolPlaces]: `0x${string}`;
+};
+
 export type EVMContractAddresses = {
   aavePool: `0x${string}`;
   compound: `0x${string}`;
@@ -120,7 +131,8 @@ export type EVMContractAddresses = {
   compoundRewardsController: `0x${string}`;
   gateway: `0x${string}`;
   gasService: `0x${string}`;
-} & Partial<BeefyContracts>;
+} & Partial<BeefyContracts> &
+  Partial<ERC4626Contracts>;
 
 export type AxelarId = {
   [chain in AxelarChain]: string;
@@ -159,22 +171,30 @@ export type PortfolioPrivateArgs = OrchestrationPowers & {
   contracts: EVMContractAddressesMap;
   walletBytecode: `0x${string}`;
   gmpAddresses: GmpAddresses;
+  defaultFlowConfig?: FlowConfig | null;
 };
 
-export const privateArgsShape: TypedPattern<PortfolioPrivateArgs> = {
-  ...(OrchestrationPowersShape as CopyRecord),
-  marshaller: M.remotable('marshaller'),
-  storageNode: M.remotable('storageNode'),
-  chainInfo: M.and(
-    M.recordOf(M.string(), ChainInfoShape),
-    M.splitRecord({ agoric: M.any(), noble: M.any() }),
-  ),
-  assetInfo: M.arrayOf([M.string(), DenomDetailShape]),
-  axelarIds: AxelarIdShape,
-  contracts: EVMContractAddressesMapShape,
-  walletBytecode: M.string(),
-  gmpAddresses: GmpAddressesShape,
-};
+export const privateArgsShape: TypedPattern<PortfolioPrivateArgs> =
+  M.splitRecord(
+    {
+      ...(OrchestrationPowersShape as CopyRecord),
+      marshaller: M.remotable('marshaller'),
+      storageNode: M.remotable('storageNode'),
+      chainInfo: M.and(
+        M.recordOf(M.string(), ChainInfoShape),
+        M.splitRecord({ agoric: M.any(), noble: M.any() }),
+      ),
+      assetInfo: M.arrayOf([M.string(), DenomDetailShape]),
+      axelarIds: AxelarIdShape,
+      contracts: EVMContractAddressesMapShape,
+      walletBytecode: M.string(),
+      gmpAddresses: GmpAddressesShape,
+    },
+    {
+      defaultFlowConfig: M.or(FlowConfigShape, M.null()),
+    },
+    {},
+  );
 
 export const meta: ContractMeta = {
   privateArgsShape,
@@ -239,6 +259,7 @@ export const contract = async (
     walletBytecode,
     storageNode,
     gmpAddresses,
+    defaultFlowConfig = DEFAULT_FLOW_CONFIG,
   } = privateArgs;
   const { brands } = zcf.getTerms();
   const { orchestrateAll, zoeTools, chainHub, vowTools } = tools;
@@ -289,6 +310,17 @@ export const contract = async (
     invitationMakers: makeResolverInvitationMakers,
   } = resolverZone.makeOnce('resolverKit', () => makeResolverKit());
 
+  /**
+   * Helper to conditionally include FlowConfig argument.
+   *
+   * @param [config] FlowConfig or undefined.  Sentinel of null omits the argument.
+   * @returns Argument tuple for spreading into flow call.
+   */
+  const flowCfg = (config?: FlowConfig | null): readonly [FlowConfig?] => {
+    if (config === null) return [];
+    return [config];
+  };
+
   const { makeLCA } = orchestrateAll({ makeLCA: flows.makeLCA }, {});
   const contractAccountV = zone.makeOnce('contractAccountV', () => makeLCA());
   void vowTools.when(contractAccountV, acct => {
@@ -323,14 +355,42 @@ export const contract = async (
     transferChannels,
   };
 
+  // We wrap all the orchFns1 (and orchFns2) to have replaying flows omit the
+  // `config` argument (which defaults to the original, pre-progressTracker
+  // behavior), but newly-invoked flows get `config = defaultFlowConfig`.
+  //
   // Create rebalance flow first - needed by preparePortfolioKit
-  const { executePlan, rebalance } = orchestrateAll(
+  const orchFns1 = orchestrateAll(
     {
       executePlan: flows.executePlan,
       rebalance: flows.rebalance,
     },
     ctx1,
   );
+  const executePlan: typeof orchFns1.executePlan = (
+    seat,
+    offerArgs,
+    pKit,
+    flowDetail,
+    startedFlow,
+    config = defaultFlowConfig,
+  ) =>
+    orchFns1.executePlan(
+      seat,
+      offerArgs,
+      pKit,
+      flowDetail,
+      startedFlow,
+      ...flowCfg(config),
+    );
+  const rebalance: typeof orchFns1.rebalance = (
+    seat,
+    offerArgs,
+    kit,
+    startedFlow,
+    config = defaultFlowConfig,
+  ) =>
+    orchFns1.rebalance(seat, offerArgs, kit, startedFlow, ...flowCfg(config));
 
   // unused but must be defined for upgrade
   const { parseInboundTransfer: _obsolete } = orchestrateAll(
@@ -368,6 +428,7 @@ export const contract = async (
   });
 
   const portfolios = zone.mapStore<number, PortfolioKit>('portfolios');
+  const getPortfolio = (id: number) => portfolios.get(id);
 
   /**
    * Generate sequential portfolio IDs while keeping the portfolios collection private.
@@ -383,8 +444,13 @@ export const contract = async (
     return kit;
   };
 
-  // Create openPortfolio flow with makePortfolioKit - circular dependency avoided
-  const { openPortfolio } = orchestrateAll(
+  // As per orchFns1, we wrap orchFns2 to have replaying flows omit the `config`
+  // argument (which defaults to the original, pre-progressTracker behavior),
+  // but newly-invoked flows get `config = defaultFlowConfig`.
+  //
+  // Create openPortfolio flow with makePortfolioKit - circular dependency
+  // avoided
+  const orchFns2 = orchestrateAll(
     { openPortfolio: flows.openPortfolio },
     {
       ...ctx1,
@@ -393,6 +459,12 @@ export const contract = async (
       inertSubscriber,
     },
   );
+  const openPortfolio: typeof orchFns2.openPortfolio = (
+    seat,
+    offerArgs,
+    kit,
+    config = defaultFlowConfig,
+  ) => orchFns2.openPortfolio(seat, offerArgs, kit, ...flowCfg(config));
 
   const usedAccessTokens = zone.makeOnce(
     'usedAccessTokens',
@@ -462,18 +534,24 @@ export const contract = async (
     },
   } satisfies Record<PortfolioPublicInvitationMaker, any> & ThisType<any>);
 
-  const makeResolverInvitation = () => {
-    trace('makeResolverInvitation');
-
-    const resolverHandler = (seat: ZCFSeat) => {
-      seat.exit();
-      return harden({ invitationMakers: makeResolverInvitationMakers });
+  const prepareResultOnlyInvitation = <R>(
+    description: string,
+    makeResult: () => R,
+  ): (() => Promise<Invitation<R>>) => {
+    const makeResultOnlyInvitation = () => {
+      trace('makeResultOnlyInvitation', description);
+      return zcf.makeInvitation((seat: ZCFSeat) => {
+        seat.exit();
+        return makeResult();
+      }, description);
     };
-
-    return zcf.makeInvitation(resolverHandler, 'resolver', undefined);
+    return makeResultOnlyInvitation;
   };
 
-  const getPortfolio = (id: number) => portfolios.get(id);
+  const makeResolverInvitation = prepareResultOnlyInvitation('resolver', () =>
+    harden({ invitationMakers: makeResolverInvitationMakers }),
+  );
+
   const makePlanner = preparePlanner(zone.subZone('planner'), {
     zcf,
     rebalance,
@@ -482,11 +560,22 @@ export const contract = async (
     vowTools,
   });
 
-  const makePlannerInvitation = () =>
-    zcf.makeInvitation(seat => {
-      seat.exit();
-      return makePlanner();
-    }, 'planner');
+  const makePlannerInvitation = prepareResultOnlyInvitation('planner', () =>
+    makePlanner(),
+  );
+
+  const { makeEVMWalletMessageHandler } = prepareEVMWalletHandlerKit(
+    zone.subZone('evmWalletHandler'),
+    {
+      storageNode: E(storageNode).makeChildNode('evmWallets'),
+      vowTools,
+    },
+  );
+
+  const makeEVMWalletHandlerInvitation = prepareResultOnlyInvitation(
+    'evmWalletHandler',
+    () => makeEVMWalletMessageHandler(),
+  );
 
   const creatorFacet = zone.exo(
     'PortfolioAdmin',
@@ -498,6 +587,11 @@ export const contract = async (
       ).returns(),
       makePlannerInvitation: M.callWhen().returns(InvitationShape),
       deliverPlannerInvitation: M.callWhen(
+        M.string(),
+        M.remotable('Instance'),
+      ).returns(),
+      makeEVMWalletHandlerInvitation: M.callWhen().returns(InvitationShape),
+      deliverEVMWalletHandlerInvitation: M.callWhen(
         M.string(),
         M.remotable('Instance'),
       ).returns(),
@@ -543,6 +637,25 @@ export const contract = async (
         trace('made planner invitation', invitation);
         await E(pfP).deliverPayment(address, invitation);
         trace('delivered planner invitation');
+      },
+      makeEVMWalletHandlerInvitation() {
+        return makeEVMWalletHandlerInvitation();
+      },
+      /**
+       * @param address - Agoric address where to deliver the invitation
+       * @param instancePS - Postal service instance for delivery
+       */
+      async deliverEVMWalletHandlerInvitation(
+        address: string,
+        instancePS: Instance<() => { publicFacet: PostalServiceI }>,
+      ) {
+        trace('deliverEVMWalletHandlerInvitation');
+        const zoe = zcf.getZoeService();
+        const pfP = E(zoe).getPublicFacet(instancePS);
+        const invitation = await makeEVMWalletHandlerInvitation();
+        trace('made EVM wallet handler invitation', invitation);
+        await E(pfP).deliverPayment(address, invitation);
+        trace('delivered EVM wallet handler invitation');
       },
       /**
        * Withdraw from contractAccount; for example, before terminating the contract

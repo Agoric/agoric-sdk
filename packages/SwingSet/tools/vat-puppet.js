@@ -93,6 +93,20 @@ export const makeReflectionMethods = (vatPowers, baggage, vatParameters) => {
   };
 
   return {
+    baggageHas: key => {
+      return baggage.has(key);
+    },
+    baggageGet: key => {
+      return baggage.get(key);
+    },
+    baggageSet: (key, value) => {
+      if (!baggage.has(key)) {
+        baggage.init(key, value);
+      } else {
+        baggage.set(key, value);
+      }
+    },
+
     /** @type {Die} */
     dieHappy: (completion, finalSend) => {
       vatPowers.exitVat(completion);
@@ -203,7 +217,7 @@ harden(makeReflectionMethods);
 
 export function buildRootObject(vatPowers, vatParameters, baggage) {
   const methods = makeReflectionMethods(vatPowers, baggage, vatParameters);
-  const rootObject = Far('root', methods);
+  const rootObject = Far('root', { ...methods, getVersion: () => 1 });
 
   // Invoke specified methods of the new root object *before* returning,
   // supporting use of previous results as top-level arguments by interpreting
