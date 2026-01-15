@@ -21,13 +21,13 @@ import type {
 import {
   encodeType,
   type WithSignature,
-} from '@agoric/orchestration/src/utils/viem.ts';
+} from '@agoric/orchestration/src/utils/viem.js';
 import {
   extractWitnessFieldFromTypes,
   isPermit2MessageType,
   makeWitnessTypeStringExtractor,
   type PermitWitnessTransferFromInputComponents,
-} from '@agoric/orchestration/src/utils/permit2.ts';
+} from '@agoric/orchestration/src/utils/permit2.js';
 import {
   type OperationTypeNames,
   type YmaxStandaloneOperationData,
