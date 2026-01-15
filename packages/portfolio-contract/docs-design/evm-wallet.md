@@ -212,7 +212,7 @@ sequenceDiagram
   end
   participant A as Arbitrum
   %% Notation: ->> for initial message, -->> for consequences
-  U->>D: withdraw(500$USDC, Arbitrum)
+  U->>D: withdraw(500 USDC, Arbitrum)
   D-->>D: allocate nonce543
   note right of MM: EIP-712 signTypedData
   D->>MM: Withdraw712(500 USDC,“Arbitrum”,nonce543,deadline)
