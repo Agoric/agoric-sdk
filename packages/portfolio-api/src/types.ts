@@ -17,6 +17,7 @@ import type {
 } from './constants.js';
 import type { InstrumentId } from './instruments.js';
 import type { PublishedTx } from './resolver.js';
+import type { EVMWalletUpdate, PortfolioPath } from './evm/types.ts';
 
 /**
  * Feature flags to handle contract upgrade flow compatibility.
@@ -173,8 +174,11 @@ export type FlowKey = `flow${number}`;
 export type StatusFor = {
   contract: {
     contractAccount: CosmosChainAddress['value'];
+    depositFactoryAddresses?: Record<AxelarChain, AccountId>;
   };
   pendingTx: PublishedTx;
+  evmWallet: EVMWalletUpdate;
+  evmWalletPortfolios: PortfolioPath[];
   portfolios: {
     addPortfolio: PortfolioKey;
   };
