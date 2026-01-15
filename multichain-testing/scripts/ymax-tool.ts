@@ -326,7 +326,7 @@ const openPositionsEVM = async ({
 
   const deposit: TokenPermissions = {
     token: axelarChainConfig.contracts.usdc,
-    amount: amount * 1_000_000n,
+    amount: amount,
   };
 
   const witness = getYmaxWitness('OpenPortfolio', { allocations });
@@ -351,7 +351,7 @@ const openPositionsEVM = async ({
     harden({
       method: 'invokeEntry',
       message: {
-        id: Date.now().toString(),
+        id,
         targetName: 'evmWalletHandler',
         method: 'handleMessage',
         args: [{ ...openPortfolioMessage, signature } as CopyRecord],
@@ -360,7 +360,6 @@ const openPositionsEVM = async ({
   );
   if (tx.code !== 0) throw Error(tx.rawLog);
 
-  // result is UNPUBLISHED
   await walletUpdates(sig.query.getLastUpdate, {
     log: trace,
     setTimeout,
@@ -611,7 +610,10 @@ const main = async (
     );
 
     // XXX generalize to --no-save or some such?
-    if (description === 'resolver') {
+    // For wallets without myStore support, redeem without saving
+    const noSaveDescriptions = ['resolver', 'evmWalletHandler'];
+    const descWithoutDeliver = description.replace(/^deliver /, '');
+    if (noSaveDescriptions.includes(descWithoutDeliver)) {
       const id = `redeem-${fresh()}`;
       await sig.sendBridgeAction({
         method: 'executeOffer',

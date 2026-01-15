@@ -35,7 +35,7 @@ import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.j
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import {
   PermitTransferFromComponents,
-  PermitTransferFromInternalType,
+  PermitTransferFromInternalTypeName,
 } from '@agoric/orchestration/src/utils/permit2.ts';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import { fromBech32 } from '@cosmjs/encoding';
@@ -80,12 +80,13 @@ export const CREATE_AND_DEPOSIT_ABI_PARAMS = [
       {
         name: 'permit',
         type: 'tuple',
-        internalType: PermitTransferFromInternalType,
+        internalType: PermitTransferFromInternalTypeName,
         components: PermitTransferFromComponents,
       },
       { name: 'witness', type: 'bytes32' },
       { name: 'witnessTypeString', type: 'string' },
       { name: 'signature', type: 'bytes' },
+      { name: 'expectedWalletAddress', type: 'address' },
     ],
   },
 ] as const satisfies AbiParameter[];
@@ -104,6 +105,7 @@ type ProvideEVMAccountSendCall = (params: {
   contractAccount: LocalAccount;
   gmpChain: Chain<{ chainId: string }>;
   gmpAddresses: GmpAddresses;
+  expectedWalletAddress: EVMT['address'];
   orchOpts?: OrchestrationOptions;
 }) => Promise<EVMT['address']>;
 
@@ -210,6 +212,7 @@ const makeProvideEVMAccount = ({
           gmpAddresses: ctx.gmpAddresses,
           gmpChain: gmp.chain,
           contractAccount,
+          expectedWalletAddress: evmAccount.remoteAddress,
           ...('orchOpts' in opts ? { orchOpts: opts.orchOpts } : {}),
         });
 
@@ -376,13 +379,21 @@ export const sendMakeAccountCall = async ({
   contractAccount: feeAccount,
   gmpAddresses,
   gmpChain,
+  expectedWalletAddress,
   ...optsArgs
 }: Parameters<ProvideEVMAccountSendCall>[0]) => {
   const { AXELAR_GMP, AXELAR_GAS } = gmpAddresses;
+
+  // Encode the expected wallet address as per Factory.sol requirements
+  const abiEncodedAddress = encodeAbiParameters(
+    [{ name: 'expectedWalletAddress', type: 'address' }],
+    [expectedWalletAddress],
+  );
+
   const memo: AxelarGmpOutgoingMemo = {
     destination_chain: dest.axelarId,
     destination_address: dest.factoryAddress,
-    payload: [],
+    payload: Array.from(hexToBytes(abiEncodedAddress.slice(2))),
     type: AxelarGMPMessageType.ContractCall,
     fee: { amount: String(fee.value), recipient: AXELAR_GAS },
   };
@@ -420,6 +431,7 @@ export const sendCreateAndDepositCall = async ({
   permit2Payload,
   gmpAddresses,
   gmpChain,
+  expectedWalletAddress,
   ...optsArgs
 }: Parameters<ProvideEVMAccountSendCall>[0] & {
   permit2Payload: PermitDetails['permit2Payload'];
@@ -443,6 +455,7 @@ export const sendCreateAndDepositCall = async ({
       signature,
       witness,
       witnessTypeString,
+      expectedWalletAddress,
     },
   ]);
 
