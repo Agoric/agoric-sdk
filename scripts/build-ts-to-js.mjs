@@ -1,9 +1,10 @@
-#!/usr/bin/env -S node --import ts-blank-space/register
+#!/usr/bin/env node
 /**
  * @file Transform .ts files to .js using ts-blank-space for NPM publishing.
  *
- * This script finds all .ts files in src/ (excluding .d.ts files) and generates
- * corresponding .js files by stripping TypeScript type annotations.
+ * This script finds all .ts files in the current package's src/ directory
+ * (excluding .d.ts files) and generates corresponding .js files by stripping
+ * TypeScript type annotations.
  *
  * The codebase uses a "type-stripping" approach where TypeScript files contain
  * only erasable syntax (type annotations, not enums or namespaces). This allows
@@ -11,25 +12,28 @@
  * - At development time: via ts-blank-space/register node loader
  * - At publish time: by generating .js files with types stripped
  *
- * Usage:
- *   scripts/build-ts-to-js.mjs
- *   scripts/build-ts-to-js.mjs --check  # verify files are current
+ * Usage (from package directory):
+ *   ../../scripts/build-ts-to-js.mjs
+ *   ../../scripts/build-ts-to-js.mjs --check  # verify files are current
+ *
+ * OR
+ *   yarn run -T build-to-js
  */
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import tsBlankSpace from 'ts-blank-space';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const srcDir = path.resolve(__dirname, '../src');
 
 const args = process.argv.slice(2);
 const checkMode = args.includes('--check');
 
+// Determine package directory: explicit arg, INIT_CWD (set by yarn), or cwd
+const packageDir = args.find(a => !a.startsWith('-')) || process.cwd();
+const srcDir = path.resolve(packageDir, 'src');
+
 /**
  * Recursively find all .ts files in a directory.
  * Excludes .d.ts declaration files.
+ * @param {string} dir
  */
 async function findTsFiles(dir = srcDir) {
   const entries = await fs.readdir(dir, { withFileTypes: true });

@@ -40,6 +40,7 @@
     "prettier": "^3.7.4",
     "prettier-plugin-jsdoc": "~1.8.0",
     "prettier-plugin-sh": "^0.18.0",
+    "ts-blank-space": "^0.6.2",
     "type-coverage": "^2.29.7",
     "typedoc": "^0.26.7",
     "typedoc-plugin-markdown": "^4.2.1",
@@ -113,6 +114,7 @@
     "node": "^20.9 || ^22.11"
   },
   "scripts": {
+    "build-ts-to-js": "node scripts/build-ts-to-js.mjs $INIT_CWD",
     "clean": "yarn lerna run --no-bail clean",
     "docs": "run-s docs:build docs:update-functions-path",
     "docs:build": "typedoc --tsconfig tsconfig.build.json",
