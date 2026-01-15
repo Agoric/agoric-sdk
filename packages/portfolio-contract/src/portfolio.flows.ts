@@ -23,7 +23,6 @@ import {
 import type {
   AccountId,
   BaseChainInfo,
-  CaipChainId,
   CosmosChainAddress,
   Denom,
   DenomAmount,
@@ -36,7 +35,10 @@ import type {
   ProgressTracker,
   TrafficEntry,
 } from '@agoric/orchestration';
-import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
+import {
+  coerceAccountId,
+  parseAccountId,
+} from '@agoric/orchestration/src/utils/address.js';
 import { progressTrackerAsyncFlowUtils } from '@agoric/orchestration/src/utils/progress.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import {
@@ -1078,12 +1080,7 @@ const stepFlow = async (
         if (!sourceAccountId) {
           throw Fail`withdrawToEVM requires sourceAccountId to be set`;
         }
-        // Parse CAIP-10: eip155:{chainId}:{address}
-        const parts = sourceAccountId.split(':');
-        const userAddress = parts[2];
-        if (!userAddress) {
-          throw Fail`invalid sourceAccountId format: ${sourceAccountId}`;
-        }
+        const { accountAddress: userAddress } = parseAccountId(sourceAccountId);
 
         todo.push({
           how: 'withdrawToEVM',
@@ -1103,6 +1100,7 @@ const stepFlow = async (
               ctx.contracts[destChain].usdc,
               ERC20,
             );
+            // userAddress is an EVM address from validated CAIP-10
             usdc.transfer(userAddress as `0x${string}`, amount.value);
             const calls = session.finish();
 
@@ -1127,16 +1125,8 @@ const stepFlow = async (
         if (!sourceAccountId) {
           throw Fail`CCTPtoUser requires sourceAccountId to be set`;
         }
-        // Parse CAIP-10: eip155:{chainId}:{address}
-        // sourceAccountId format: eip155:{chainIdNumber}:{address}
-        // We need chainId as CaipChainId format: eip155:{chainIdNumber}
-        const parts = sourceAccountId.split(':');
-        const [namespace, chainIdNumber, userAddress] = parts;
-        if (!namespace || !chainIdNumber || !userAddress) {
-          throw Fail`invalid sourceAccountId format: ${sourceAccountId}`;
-        }
-        // Construct CaipChainId for destination
-        const caipChainId = `${namespace}:${chainIdNumber}` as CaipChainId;
+        // Validate CAIP-10 format (will throw if malformed)
+        parseAccountId(sourceAccountId);
 
         todo.push({
           how: 'CCTPtoUser',
@@ -1152,10 +1142,10 @@ const stepFlow = async (
               denom: 'uusdc',
               value: amount.value,
             };
-            traceTransfer('transfer', denomAmount, 'to', userAddress);
+            traceTransfer('transfer', denomAmount, 'to', sourceAccountId);
 
-            // Construct destination as CaipChainId:address (AccountId format)
-            const destinationAddress: AccountId = `${caipChainId}:${userAddress}`;
+            // The user's sourceAccountId is already a CAIP-10 AccountId (e.g., eip155:42161:0x...)
+            const destinationAddress: AccountId = sourceAccountId;
             const { ica } = noble;
 
             const { result } = ctx.resolverClient.registerTransaction(
