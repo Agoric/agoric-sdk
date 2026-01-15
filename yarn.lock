@@ -384,6 +384,7 @@ __metadata:
     "@endo/env-options": "npm:^1.1.11"
     "@endo/errors": "npm:^1.2.13"
     "@endo/eventual-send": "npm:^1.3.4"
+    "@endo/init": "npm:^1.1.12"
     "@endo/marshal": "npm:^1.8.0"
     "@endo/pass-style": "npm:^1.6.3"
     "@endo/patterns": "npm:^1.7.0"
@@ -495,6 +496,7 @@ __metadata:
   resolution: "@agoric/client-utils@workspace:packages/client-utils"
   dependencies:
     "@agoric/casting": "workspace:*"
+    "@agoric/client-utils": "workspace:*"
     "@agoric/cosmic-proto": "workspace:*"
     "@agoric/ertp": "workspace:*"
     "@agoric/internal": "workspace:*"
@@ -509,6 +511,7 @@ __metadata:
     "@endo/base64": "npm:^1.0.12"
     "@endo/common": "npm:^1.2.13"
     "@endo/errors": "npm:^1.2.13"
+    "@endo/init": "npm:^1.1.12"
     "@endo/marshal": "npm:^1.8.0"
     "@endo/pass-style": "npm:^1.6.3"
     "@endo/patterns": "npm:^1.7.0"
@@ -524,6 +527,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/cosmic-proto@workspace:packages/cosmic-proto"
   dependencies:
+    "@agoric/cosmic-proto": "workspace:*"
     "@agoric/cosmos": "workspace:*"
     "@ava/typescript": "npm:^5.0.0"
     "@cosmology/telescope": "npm:^1.12.21"
@@ -769,6 +773,7 @@ __metadata:
     "@agoric/base-zone": "workspace:*"
     "@agoric/ertp": "workspace:*"
     "@agoric/governance": "workspace:*"
+    "@agoric/inter-protocol": "workspace:*"
     "@agoric/internal": "workspace:*"
     "@agoric/notifier": "workspace:*"
     "@agoric/smart-wallet": "workspace:*"
@@ -804,6 +809,7 @@ __metadata:
   dependencies:
     "@agoric/base-zone": "workspace:*"
     "@agoric/cosmic-proto": "workspace:*"
+    "@agoric/internal": "workspace:*"
     "@endo/cache-map": "npm:^1.1.0"
     "@endo/common": "npm:^1.2.13"
     "@endo/compartment-mapper": "npm:^1.6.3"
@@ -870,6 +876,7 @@ __metadata:
   dependencies:
     "@agoric/internal": "workspace:*"
     "@agoric/kmarshal": "workspace:*"
+    "@agoric/notifier": "workspace:*"
     "@agoric/swing-store": "workspace:*"
     "@agoric/swingset-liveslots": "workspace:*"
     "@agoric/swingset-vat": "workspace:*"
@@ -896,6 +903,7 @@ __metadata:
     "@agoric/internal": "workspace:*"
     "@agoric/network": "workspace:*"
     "@agoric/notifier": "workspace:*"
+    "@agoric/orchestration": "workspace:*"
     "@agoric/store": "workspace:*"
     "@agoric/swingset-liveslots": "workspace:*"
     "@agoric/time": "workspace:*"
@@ -914,6 +922,7 @@ __metadata:
     "@endo/eventual-send": "npm:^1.3.4"
     "@endo/far": "npm:^1.1.14"
     "@endo/import-bundle": "npm:^1.5.2"
+    "@endo/init": "npm:^1.1.12"
     "@endo/marshal": "npm:^1.8.0"
     "@endo/patterns": "npm:^1.7.0"
     "@endo/promise-kit": "npm:^1.1.13"
@@ -964,6 +973,7 @@ __metadata:
   resolution: "@agoric/pola-io@workspace:packages/pola-io"
   dependencies:
     "@agoric/internal": "workspace:*"
+    "@agoric/pola-io": "workspace:*"
     ava: "npm:^5.3.0"
   languageName: unknown
   linkType: soft
@@ -1045,6 +1055,7 @@ __metadata:
     "@agoric/ertp": "workspace:*"
     "@agoric/internal": "workspace:*"
     "@agoric/notifier": "workspace:*"
+    "@agoric/smart-wallet": "workspace:*"
     "@agoric/store": "workspace:*"
     "@agoric/swingset-vat": "workspace:*"
     "@agoric/vat-data": "workspace:*"
@@ -1224,6 +1235,7 @@ __metadata:
     "@agoric/swingset-xsnap-supervisor": "workspace:*"
     "@agoric/time": "workspace:*"
     "@agoric/vat-data": "workspace:*"
+    "@agoric/xsnap": "workspace:*"
     "@agoric/xsnap-lockdown": "workspace:*"
     "@endo/base64": "npm:^1.0.12"
     "@endo/bundle-source": "npm:^4.1.2"
@@ -1362,6 +1374,7 @@ __metadata:
     "@agoric/swingset-vat": "workspace:*"
     "@agoric/time": "workspace:*"
     "@agoric/vat-data": "workspace:*"
+    "@agoric/vats": "workspace:*"
     "@agoric/vow": "workspace:*"
     "@agoric/zoe": "workspace:*"
     "@agoric/zone": "workspace:*"
@@ -1398,6 +1411,7 @@ __metadata:
     "@agoric/base-zone": "workspace:*"
     "@agoric/internal": "workspace:*"
     "@agoric/swingset-vat": "workspace:*"
+    "@agoric/vow": "workspace:*"
     "@agoric/zone": "workspace:*"
     "@endo/env-options": "npm:^1.1.11"
     "@endo/errors": "npm:^1.2.13"
@@ -1476,7 +1490,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/xsnap@workspace:packages/xsnap":
+"@agoric/xsnap@workspace:*, @agoric/xsnap@workspace:packages/xsnap":
   version: 0.0.0-use.local
   resolution: "@agoric/xsnap@workspace:packages/xsnap"
   dependencies:
@@ -1518,6 +1532,8 @@ __metadata:
     "@agoric/time": "workspace:*"
     "@agoric/vat-data": "workspace:*"
     "@agoric/vow": "workspace:*"
+    "@agoric/xsnap": "workspace:*"
+    "@agoric/zoe": "workspace:*"
     "@agoric/zone": "workspace:*"
     "@endo/bundle-source": "npm:^4.1.2"
     "@endo/captp": "npm:^4.4.8"
@@ -10181,7 +10197,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chokidar@npm:^3.5.2, chokidar@npm:^3.5.3":
+"chokidar@npm:^3.5.2":
   version: 3.6.0
   resolution: "chokidar@npm:3.6.0"
   dependencies:
@@ -10197,6 +10213,25 @@ __metadata:
     fsevents:
       optional: true
   checksum: 10c0/8361dcd013f2ddbe260eacb1f3cb2f2c6f2b0ad118708a343a5ed8158941a39cb8fb1d272e0f389712e74ee90ce8ba864eece9e0e62b9705cb468a2f6d917462
+  languageName: node
+  linkType: hard
+
+"chokidar@npm:^3.5.3":
+  version: 3.5.3
+  resolution: "chokidar@npm:3.5.3"
+  dependencies:
+    anymatch: "npm:~3.1.2"
+    braces: "npm:~3.0.2"
+    fsevents: "npm:~2.3.2"
+    glob-parent: "npm:~5.1.2"
+    is-binary-path: "npm:~2.1.0"
+    is-glob: "npm:~4.0.1"
+    normalize-path: "npm:~3.0.0"
+    readdirp: "npm:~3.6.0"
+  dependenciesMeta:
+    fsevents:
+      optional: true
+  checksum: 10c0/1076953093e0707c882a92c66c0f56ba6187831aa51bb4de878c1fec59ae611a3bf02898f190efec8e77a086b8df61c2b2a3ea324642a0558bdf8ee6c5dc9ca1
   languageName: node
   linkType: hard
 
@@ -12369,7 +12404,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ethers@npm:^6.13.0, ethers@npm:^6.13.4":
+"ethers@npm:^6.13.0":
   version: 6.15.0
   resolution: "ethers@npm:6.15.0"
   dependencies:
@@ -12381,6 +12416,21 @@ __metadata:
     tslib: "npm:2.7.0"
     ws: "npm:8.17.1"
   checksum: 10c0/0a4581b662fe46a889a524d3aba43dc6f0ac59b3ae08dce678ee4b5799aab4906109ab24684c9644deedfc9d6e79b59faccecbeda9b6b7ceb085724d596a49e9
+  languageName: node
+  linkType: hard
+
+"ethers@npm:^6.13.4":
+  version: 6.13.4
+  resolution: "ethers@npm:6.13.4"
+  dependencies:
+    "@adraffy/ens-normalize": "npm:1.10.1"
+    "@noble/curves": "npm:1.2.0"
+    "@noble/hashes": "npm:1.3.2"
+    "@types/node": "npm:22.7.5"
+    aes-js: "npm:4.0.0-beta.5"
+    tslib: "npm:2.7.0"
+    ws: "npm:8.17.1"
+  checksum: 10c0/efcf9f39f841e38af68ec23cdbd745432c239c256aac4929842d1af04e55d7be0ff65e462f1cf3e93586f43f7bdcc0098fd56f2f7234f36d73e466521a5766ce
   languageName: node
   linkType: hard
 
@@ -18192,7 +18242,27 @@ __metadata:
   languageName: node
   linkType: hard
 
-"protobufjs@npm:^7.2.5, protobufjs@npm:^7.2.6, protobufjs@npm:^7.3.0, protobufjs@npm:^7.3.2, protobufjs@npm:^7.4.0, protobufjs@npm:^7.5.3":
+"protobufjs@npm:^7.2.5, protobufjs@npm:^7.3.0, protobufjs@npm:^7.3.2":
+  version: 7.4.0
+  resolution: "protobufjs@npm:7.4.0"
+  dependencies:
+    "@protobufjs/aspromise": "npm:^1.1.2"
+    "@protobufjs/base64": "npm:^1.1.2"
+    "@protobufjs/codegen": "npm:^2.0.4"
+    "@protobufjs/eventemitter": "npm:^1.1.0"
+    "@protobufjs/fetch": "npm:^1.1.0"
+    "@protobufjs/float": "npm:^1.0.2"
+    "@protobufjs/inquire": "npm:^1.1.0"
+    "@protobufjs/path": "npm:^1.1.2"
+    "@protobufjs/pool": "npm:^1.1.0"
+    "@protobufjs/utf8": "npm:^1.1.0"
+    "@types/node": "npm:>=13.7.0"
+    long: "npm:^5.0.0"
+  checksum: 10c0/a5460a63fe596523b9a067cbce39a6b310d1a71750fda261f076535662aada97c24450e18c5bc98a27784f70500615904ff1227e1742183509f0db4fdede669b
+  languageName: node
+  linkType: hard
+
+"protobufjs@npm:^7.2.6, protobufjs@npm:^7.4.0, protobufjs@npm:^7.5.3":
   version: 7.5.4
   resolution: "protobufjs@npm:7.5.4"
   dependencies:
@@ -20696,13 +20766,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:5.1.6 - 5.9.x, typescript@npm:^5.4.5, typescript@npm:^5.9.2, typescript@npm:~5.9.2, typescript@npm:~5.9.3":
+"typescript@npm:5.1.6 - 5.9.x, typescript@npm:^5.9.2, typescript@npm:~5.9.3":
   version: 5.9.3
   resolution: "typescript@npm:5.9.3"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
   checksum: 10c0/6bd7552ce39f97e711db5aa048f6f9995b53f1c52f7d8667c1abdc1700c68a76a308f579cd309ce6b53646deb4e9a1be7c813a93baaf0a28ccd536a30270e1c5
+  languageName: node
+  linkType: hard
+
+"typescript@npm:^5.4.5, typescript@npm:~5.9.2":
+  version: 5.9.2
+  resolution: "typescript@npm:5.9.2"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 10c0/cd635d50f02d6cf98ed42de2f76289701c1ec587a363369255f01ed15aaf22be0813226bff3c53e99d971f9b540e0b3cc7583dbe05faded49b1b0bed2f638a18
   languageName: node
   linkType: hard
 
@@ -20726,13 +20806,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A5.1.6 - 5.9.x#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.4.5#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.9.2#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A~5.9.2#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A~5.9.3#optional!builtin<compat/typescript>":
+"typescript@patch:typescript@npm%3A5.1.6 - 5.9.x#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.9.2#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A~5.9.3#optional!builtin<compat/typescript>":
   version: 5.9.3
   resolution: "typescript@patch:typescript@npm%3A5.9.3#optional!builtin<compat/typescript>::version=5.9.3&hash=5786d5"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
   checksum: 10c0/ad09fdf7a756814dce65bc60c1657b40d44451346858eea230e10f2e95a289d9183b6e32e5c11e95acc0ccc214b4f36289dcad4bf1886b0adb84d711d336a430
+  languageName: node
+  linkType: hard
+
+"typescript@patch:typescript@npm%3A^5.4.5#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A~5.9.2#optional!builtin<compat/typescript>":
+  version: 5.9.2
+  resolution: "typescript@patch:typescript@npm%3A5.9.2#optional!builtin<compat/typescript>::version=5.9.2&hash=5786d5"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 10c0/34d2a8e23eb8e0d1875072064d5e1d9c102e0bdce56a10a25c0b917b8aa9001a9cf5c225df12497e99da107dc379360bc138163c66b55b95f5b105b50578067e
   languageName: node
   linkType: hard
 

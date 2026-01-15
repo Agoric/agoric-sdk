@@ -18,6 +18,7 @@
     "@agoric/internal": "workspace:*"
   },
   "devDependencies": {
+    "@agoric/pola-io": "workspace:*",
     "ava": "^5.3.0"
   },
   "files": [
