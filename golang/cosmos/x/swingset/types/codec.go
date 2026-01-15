@@ -35,7 +35,8 @@ func RegisterCodec(cdc *codec.LegacyAmino) {
 	legacy.RegisterAminoMsg(cdc, &MsgWalletAction{}, ModuleName+"/WalletAction")
 	legacy.RegisterAminoMsg(cdc, &MsgWalletSpendAction{}, ModuleName+"/WalletSpendAction")
 	legacy.RegisterAminoMsg(cdc, &MsgInstallBundle{}, ModuleName+"/InstallBundle")
-	cdc.RegisterConcrete(&CoreEvalProposal{}, ModuleName+"/CoreEvalProposal", nil)
+	legacy.RegisterAminoMsg(cdc, &MsgCoreEval{}, ModuleName+"/CoreEval")
+	legacy.RegisterAminoMsg(cdc, &CoreEvalProposal{}, ModuleName+"/CoreEvalProposal")
 }
 
 // RegisterInterfaces registers the x/swingset interfaces types with the interface registry
@@ -46,6 +47,7 @@ func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 		&MsgWalletAction{},
 		&MsgWalletSpendAction{},
 		&MsgInstallBundle{},
+		&MsgCoreEval{},
 	)
 	registry.RegisterInterface(
 		"cosmos.gov.v1beta1.Content",
