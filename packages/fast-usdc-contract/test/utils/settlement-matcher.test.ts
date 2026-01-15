@@ -7,7 +7,7 @@ import type {
   NobleAddress,
   PendingTx,
   PendingTxStatus,
-} from '@agoric/fast-usdc/src/types.ts';
+} from '@agoric/fast-usdc/src/types.js';
 import { M } from '@endo/patterns';
 import { PendingTxShape } from '@agoric/fast-usdc/src/type-guards.js';
 import { makeSettlementMatcher } from '../../src/utils/settlement-matcher.ts';

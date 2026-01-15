@@ -16,7 +16,7 @@
  */
 
 import type { MapStore } from '@agoric/swingset-liveslots';
-import type { NobleAddress, PendingTx } from '@agoric/fast-usdc/src/types.ts';
+import type { NobleAddress, PendingTx } from '@agoric/fast-usdc/src/types.js';
 import { insertIntoSortedArray } from './store.ts';
 
 /**
