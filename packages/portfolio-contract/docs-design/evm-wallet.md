@@ -182,6 +182,61 @@ sequenceDiagram
   D -->> U: deposit done
 ```
 
+### Withdraw (EVM)
+
+```mermaid
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#f0f8ff',
+    'primaryTextColor': '#2c3e50',
+    'primaryBorderColor': '#7fb2e6',
+    'lineColor': '#7fb2e6',
+    'secondaryColor': '#f6f8fa',
+    'tertiaryColor': '#fff5e6'
+  }
+}}%%
+sequenceDiagram
+  title Withdraw (EVM)
+  autonumber
+  box lightblue User Agent
+    actor U as Ted EVM User
+    participant MM as Metamask<br/>0xED123
+  end
+  participant D as Ymax UI
+  participant EMS as EVM<br/> Message Service
+  %% [Where it runs]
+  box Pink Ymax Contract
+    participant EMH as EVM<br/>Handler
+    participant YC as Ymax<br/>Orchestrator
+  end
+  participant A as Arbitrum
+  %% Notation: ->> for initial message, -->> for consequences
+  U->>D: withdraw(500$USDC, Arbitrum)
+  D-->>D: allocate nonce543
+  note right of MM: EIP-712 signTypedData
+  D->>MM: Withdraw712(500 USDC,“Arbitrum”,nonce543,deadline)
+  MM-->>U: Withdraw712(500 USDC,“Arbitrum”,nonce543,deadline) ok?
+  U->>MM: ok
+  MM-->>D: signature
+  D-->>U: stand by...
+  D -->> EMS: Withdraw712, signature
+  note over EMS: NOT SHOWN:<br/>early validation
+  note right of EMS: using walletFactory invokeEntry
+  EMS -->> EMH: handleMessage(Withdraw712, signature)
+  EMH -->> EMH: check sigs
+  EMH -->> EMH: extract nested operation
+  EMH -->> YC: Withdraw(500 USDC,“Arbitrum”)
+  YC -->> EMH: portfolio123<br/>flow2
+  note over EMH: NOT SHOWN:<br/>vstorage, YDS details
+  EMH -->> D: portfolio123<br/>flow2
+  D -->> U: dashboard
+  note over YC: NOT SHOWN:<br/>Orchestration<br/>to @Arbitrum
+  YC->> A: @Arbitrum.transfer(500, `+Arbitrum`)
+  YC-->> D: flow2 done
+  D -->> U: deposit done
+```
+
 ## Early Validation
 
 The EVM Message Service spends gas to put messages on the Agoric chain -- messages that cause the Ymax contract to spend EVM execution fees. To mitigate spam/DOS risks,
