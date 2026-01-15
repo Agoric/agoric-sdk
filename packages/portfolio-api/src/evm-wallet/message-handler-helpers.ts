@@ -70,7 +70,12 @@ export type FullMessageDetails<
   deadline: bigint;
 };
 
-export const makeEVMHandlerUtils = (powers: {
+/**
+ * EVM Message handler utils that depend on 'viem' utils for their
+ * implementation. Since on-chain we cannot directly import from 'viem',
+ * use a maker pattern to create these utils.
+ */
+export const makeEVMHandlerUtils = (viemUtils: {
   isHex: typeof isHex;
   hashStruct: typeof hashStruct;
   recoverTypedDataAddress: typeof recoverTypedDataAddress;
@@ -83,7 +88,7 @@ export const makeEVMHandlerUtils = (powers: {
     recoverTypedDataAddress,
     validateTypedData,
     encodeType,
-  } = powers;
+  } = viemUtils;
   /**
    * Extract operation type name and data from an EIP-712 standalone Ymax typed data
    *
