@@ -35,7 +35,7 @@ import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.j
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import {
   PermitTransferFromComponents,
-  PermitTransferFromInternalType,
+  PermitTransferFromInternalTypeName,
 } from '@agoric/orchestration/src/utils/permit2.ts';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import { fromBech32 } from '@cosmjs/encoding';
@@ -80,7 +80,7 @@ export const CREATE_AND_DEPOSIT_ABI_PARAMS = [
       {
         name: 'permit',
         type: 'tuple',
-        internalType: PermitTransferFromInternalType,
+        internalType: PermitTransferFromInternalTypeName,
         components: PermitTransferFromComponents,
       },
       { name: 'witness', type: 'bytes32' },
