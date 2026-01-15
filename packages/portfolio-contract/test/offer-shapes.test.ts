@@ -346,10 +346,7 @@ test('vstorage flow detail type matches shape', t => {
   });
 
   for (const [name, flowDetail] of Object.entries(passCases)) {
-    t.notThrows(
-      () => mustMatch(flowDetail, FlowDetailShape),
-      `pass: ${name}`,
-    );
+    t.notThrows(() => mustMatch(flowDetail, FlowDetailShape), `pass: ${name}`);
   }
   for (const [name, flowDetail] of Object.entries(failCases)) {
     t.false(matches(flowDetail, FlowDetailShape), `fail: ${name}`);
