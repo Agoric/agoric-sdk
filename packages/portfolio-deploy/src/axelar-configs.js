@@ -294,11 +294,11 @@ const erc4626VaultAddresses = harden({
 /** @type {AddressesMap} */
 const factoryAddresses = harden({
   mainnet: {
-    Arbitrum: '0x3bF3056835f7C25b1f71aff99B734Ad07d644577', // https://arbiscan.io/address/0x3bF3056835f7C25b1f71aff99B734Ad07d644577
-    Avalanche: '0xdBde53d9EDaE219C7b8e27fbbeDfB9130F637B46', // https://snowtrace.io/address/0xdBde53d9EDaE219C7b8e27fbbeDfB9130F637B46
-    Base: '0x6ca3e8BFe9196A463136cB2442672e46BBe00BCc', // https://basescan.org/address/0x6ca3e8BFe9196A463136cB2442672e46BBe00BCc
-    Ethereum: '0x647Ead1a35dbC2b0160Cbe6e565f25C4915a125F', // https://etherscan.io/address/0x647Ead1a35dbC2b0160Cbe6e565f25C4915a125F
-    Optimism: '0xE0aFf709b7A6Cdf476738b86354D17bd334eB516', // https://optimistic.etherscan.io/address/0xE0aFf709b7A6Cdf476738b86354D17bd334eB516
+    Arbitrum: '0x0Ae32937708852439794858A02c66885d28B641f', // https://arbiscan.io/address/0x0Ae32937708852439794858A02c66885d28B641f
+    Avalanche: '0x0Ae32937708852439794858A02c66885d28B641f', // https://snowtrace.io/address/0x0Ae32937708852439794858A02c66885d28B641f
+    Base: '0x0Ae32937708852439794858A02c66885d28B641f', // https://basescan.org/address/0x0Ae32937708852439794858A02c66885d28B641f
+    Ethereum: '0x0Ae32937708852439794858A02c66885d28B641f', // https://etherscan.io/address/0x0Ae32937708852439794858A02c66885d28B641f
+    Optimism: '0x0Ae32937708852439794858A02c66885d28B641f', // https://optimistic.etherscan.io/address/0x0Ae32937708852439794858A02c66885d28B641f
   },
   testnet: {
     Arbitrum: '0xcD58949D815d25A06560AFa539972bB5B4B28902', // https://sepolia.arbiscan.io/address/0xcD58949D815d25A06560AFa539972bB5B4B28902
