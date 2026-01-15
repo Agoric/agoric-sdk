@@ -173,6 +173,24 @@ const compoundRewardsControllerAddresses = harden({
   },
 });
 
+/** @type {AddressesMap} */
+const walletHelperAddresses = harden({
+  mainnet: {
+    Avalanche: '0x',
+    Ethereum: '0x',
+    Base: '0xE0aFf709b7A6Cdf476738b86354D17bd334eB516',
+    Arbitrum: '0x16e0e17f315eC5F2A1af92bB1A71754D667F8E70',
+    Optimism: '0x',
+  },
+  testnet: {
+    Avalanche: '0x',
+    Ethereum: '0x',
+    Base: '0x',
+    Arbitrum: '0x',
+    Optimism: '0x',
+  },
+});
+
 /** @type {Record<string, AddressesMap>} */
 const beefyVaultAddresses = harden({
   re7: {
@@ -407,6 +425,7 @@ const mainnetContracts = {
     aaveUSDC: aaveUsdcAddresses.mainnet.Avalanche,
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Avalanche,
     Beefy_re7_Avalanche: beefyVaultAddresses.re7.mainnet.Avalanche,
+    walletHelper: walletHelperAddresses.mainnet.Avalanche,
   },
   Ethereum: {
     aavePool: aaveAddresses.mainnet.Ethereum,
@@ -449,6 +468,7 @@ const mainnetContracts = {
       erc4626VaultAddresses.morphoHyperithmUsdcDegen.mainnet.Ethereum,
     ERC4626_morphoGauntletUsdcCore_Ethereum:
       erc4626VaultAddresses.morphoGauntletUsdcCore.mainnet.Ethereum,
+    walletHelper: walletHelperAddresses.mainnet.Ethereum,
   },
   Optimism: {
     aavePool: aaveAddresses.mainnet.Optimism,
@@ -465,6 +485,7 @@ const mainnetContracts = {
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Optimism,
     Beefy_compoundUsdc_Optimism:
       beefyVaultAddresses.compoundUsdc.mainnet.Optimism,
+    walletHelper: walletHelperAddresses.mainnet.Optimism,
   },
   Arbitrum: {
     aavePool: aaveAddresses.mainnet.Arbitrum,
@@ -481,6 +502,7 @@ const mainnetContracts = {
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Arbitrum,
     Beefy_compoundUsdc_Arbitrum:
       beefyVaultAddresses.compoundUsdc.mainnet.Arbitrum,
+    walletHelper: walletHelperAddresses.mainnet.Arbitrum,
   },
   Base: {
     aavePool: aaveAddresses.mainnet.Base,
@@ -496,6 +518,7 @@ const mainnetContracts = {
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Base,
     Beefy_morphoSeamlessUsdc_Base:
       beefyVaultAddresses.morphoSeamlessUsdc.mainnet.Base,
+    walletHelper: walletHelperAddresses.mainnet.Base,
   },
 };
 harden(mainnetContracts);
@@ -533,6 +556,7 @@ const testnetContracts = {
     tokenMessenger: testnetTokenMessenger['Avalanche Fuji'].Address,
     aaveUSDC: aaveUsdcAddresses.testnet.Avalanche,
     aaveRewardsController: aaveRewardsControllerAddresses.testnet.Avalanche,
+    walletHelper: walletHelperAddresses.testnet.Avalanche,
   },
   Base: {
     aavePool: aaveAddresses.testnet.Base,
@@ -546,6 +570,7 @@ const testnetContracts = {
     tokenMessenger: testnetTokenMessenger['Base Sepolia'].Address,
     aaveUSDC: aaveUsdcAddresses.testnet.Base,
     aaveRewardsController: aaveRewardsControllerAddresses.testnet.Base,
+    walletHelper: walletHelperAddresses.testnet.Base,
   },
   Ethereum: {
     aavePool: aaveAddresses.testnet.Ethereum,
@@ -561,6 +586,7 @@ const testnetContracts = {
     aaveUSDC: aaveUsdcAddresses.testnet.Ethereum,
     aaveRewardsController: aaveRewardsControllerAddresses.testnet.Ethereum,
     ERC4626_vaultU2_Ethereum: erc4626VaultAddresses.vaultU2.testnet.Ethereum,
+    walletHelper: walletHelperAddresses.testnet.Ethereum,
   },
   Optimism: {
     aavePool: aaveAddresses.testnet.Optimism,
@@ -575,6 +601,7 @@ const testnetContracts = {
     tokenMessenger: testnetTokenMessenger['OP Sepolia'].Address,
     aaveUSDC: aaveUsdcAddresses.testnet.Optimism,
     aaveRewardsController: aaveRewardsControllerAddresses.testnet.Optimism,
+    walletHelper: walletHelperAddresses.testnet.Optimism,
   },
   Arbitrum: {
     aavePool: aaveAddresses.testnet.Arbitrum,
@@ -589,6 +616,7 @@ const testnetContracts = {
     tokenMessenger: testnetTokenMessenger['Arbitrum Sepolia'].Address,
     aaveUSDC: aaveUsdcAddresses.testnet.Arbitrum,
     aaveRewardsController: aaveRewardsControllerAddresses.testnet.Arbitrum,
+    walletHelper: walletHelperAddresses.testnet.Arbitrum,
   },
 };
 harden(testnetContracts);

@@ -172,6 +172,7 @@ export type EVMContractAddresses = {
   compoundRewardsController: `0x${string}`;
   gateway: `0x${string}`;
   gasService: `0x${string}`;
+  walletHelper: `0x${string}`;
 } & Partial<BeefyContracts> &
   Partial<ERC4626Contracts>;
 

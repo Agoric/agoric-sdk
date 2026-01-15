@@ -7,6 +7,7 @@
 
 import { E } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
+import { keyMirror } from '@agoric/internal';
 import cctpChainInfo from './cctp-chain-info.js';
 import { withChainCapabilities } from './chain-capabilities.js';
 import { HubName, normalizeConnectionInfo } from './exos/chain-hub.js';
@@ -26,10 +27,10 @@ import { ChainInfoShape, CosmosAssetInfoShape } from './typeGuards.js';
  * @enum {(typeof KnownNamespace)[keyof typeof KnownNamespace]}
  * @see {@link https://github.com/ChainAgnostic/CAIPs/blob/c599f7601d0ce83e6dd9f350c6c21d158d56fd6d/CAIPs/caip-2.md}
  */
-export const KnownNamespace = /** @type {const} */ ({
-  cosmos: 'cosmos',
-  eip155: 'eip155',
-  solana: 'solana',
+export const KnownNamespace = keyMirror({
+  cosmos: null,
+  eip155: null,
+  solana: null,
 });
 harden(KnownNamespace);
 

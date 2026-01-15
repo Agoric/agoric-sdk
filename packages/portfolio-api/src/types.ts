@@ -151,10 +151,17 @@ export type FlowStep = {
   // XXX all parts: fee etc.
 };
 
+/**
+ * Each step in the `flow` of a FundsFlowPlan can depend upon any number of
+ * other steps, subject to the complete directed graph being acyclic.
+ * The dependencies are expressed using 0-based indices.
+ */
+type FlowStepDependency = [stepIndex: number, prerequisiteIndexes: number[]];
+
 export type FundsFlowPlan = {
   flow: MovementDesc[];
-  /** default to full order */
-  order?: [target: number, prereqs: number[]][];
+  /** When `order` is absent, default to fully sequential dependencies. */
+  order?: FlowStepDependency[];
 };
 
 export type TrafficReport = {

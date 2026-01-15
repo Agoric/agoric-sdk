@@ -2,6 +2,7 @@
 
 /// <reference types="ses" />
 
+import { keyMirror } from '@agoric/internal';
 import { M, objectMap } from '@endo/patterns';
 
 /**
@@ -31,12 +32,12 @@ harden(DEFAULT_FLOW_CONFIG);
  *
  * @enum {(typeof YieldProtocol)[keyof typeof YieldProtocol]}
  */
-export const YieldProtocol = /** @type {const} */ ({
-  Aave: 'Aave',
-  Compound: 'Compound',
-  USDN: 'USDN',
-  Beefy: 'Beefy',
-  ERC4626: 'ERC4626',
+export const YieldProtocol = keyMirror({
+  Aave: null,
+  Compound: null,
+  USDN: null,
+  Beefy: null,
+  ERC4626: null,
 });
 harden(YieldProtocol);
 
@@ -58,12 +59,12 @@ harden(EvmWalletOperationType);
 /**
  * @enum {(typeof AxelarChain)[keyof typeof AxelarChain]}
  */
-export const AxelarChain = /** @type {const} */ ({
-  Arbitrum: 'Arbitrum',
-  Avalanche: 'Avalanche',
-  Base: 'Base',
-  Ethereum: 'Ethereum',
-  Optimism: 'Optimism',
+export const AxelarChain = keyMirror({
+  Arbitrum: null,
+  Avalanche: null,
+  Base: null,
+  Ethereum: null,
+  Optimism: null,
 });
 harden(AxelarChain);
 
@@ -94,7 +95,7 @@ harden(Eip155ChainIds);
 /**
  * @enum {(typeof SupportedChain)[keyof typeof SupportedChain]}
  */
-export const SupportedChain = /** @type {const} */ ({
+export const SupportedChain = keyMirror({
   // ...AxelarChain works locally but gets lost in .d.ts generation
   Arbitrum: 'Arbitrum',
   Avalanche: 'Avalanche',

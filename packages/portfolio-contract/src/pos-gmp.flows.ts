@@ -699,11 +699,21 @@ export const CompoundProtocol = {
 type BeefyVaultI = {
   deposit: ['uint256'];
   withdraw: ['uint256'];
+  approve: ['address', 'uint256'];
 };
 
 const BeefyVault: BeefyVaultI = {
   deposit: ['uint256'],
   withdraw: ['uint256'],
+  approve: ['address', 'uint256'],
+};
+
+type WalletHelperI = {
+  beefyWithdrawUSDC: ['address', 'uint256'];
+};
+
+const WalletHelper: WalletHelperI = {
+  beefyWithdrawUSDC: ['address', 'uint256'],
 };
 
 export const BeefyProtocol = {
@@ -730,7 +740,13 @@ export const BeefyProtocol = {
       a[poolKey] ||
       assert.fail(X`Beefy pool key ${q(poolKey)} not found in addresses`);
     const vault = session.makeContract(vaultAddress, BeefyVault);
-    vault.withdraw(amount.value);
+    const walletHelper = session.makeContract(a.walletHelper, WalletHelper);
+    // Max possible value for approval
+    const maxUint256 = 2n ** 256n - 1n;
+    // Give infinite approval because we dont know the exact amount the helper will withdraw
+    vault.approve(a.walletHelper, maxUint256);
+    walletHelper.beefyWithdrawUSDC(vaultAddress, amount.value);
+    vault.approve(a.walletHelper, 0n);
     const calls = session.finish();
 
     return sendGMPContractCall(ctx, dest, calls, ...optsArgs);
