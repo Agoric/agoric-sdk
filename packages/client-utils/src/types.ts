@@ -61,17 +61,13 @@ export type TypedPublished<T extends string> = T extends keyof PublishedTypeMap
               ? StatusFor['flow']
               : T extends `ymax${'0' | '1'}.portfolios.portfolio${number}.flows.flow${number}.steps`
                 ? StatusFor['flowSteps']
-                : T extends `ymax${'0' | '1'}.evmWallets.0x${string}`
-                  ? StatusFor['evmWallet']
-                  : T extends `ymax${'0' | '1'}.evmWallets.0x${string}.portfolios`
-                    ? StatusFor['evmWalletPortfolios']
-                    : T extends `committees.${string}.latestQuestion`
-                      ? QuestionDetails
-                      : T extends `committees.${string}.latestOutcome`
-                        ? OutcomeRecord
-                        : T extends `vaultFactory.managers.manager${number}.metrics`
-                          ? VaultDirectorMetrics
-                          : T extends `fastUsdc.txns.${string}`
-                            ? TransactionRecord
-                            : unknown;
+                : T extends `committees.${string}.latestQuestion`
+                  ? QuestionDetails
+                  : T extends `committees.${string}.latestOutcome`
+                    ? OutcomeRecord
+                    : T extends `vaultFactory.managers.manager${number}.metrics`
+                      ? VaultDirectorMetrics
+                      : T extends `fastUsdc.txns.${string}`
+                        ? TransactionRecord
+                        : unknown;
 // static string keys are defined in PublishedTypeMap
