@@ -1151,21 +1151,44 @@ test('evmHandler.rebalance uses existing allocation', async t => {
 });
 
 test('evmHandler.rebalance fails if targetAllocation not set', async t => {
-  const { trader1, common } = await setupTrader(t);
-  const { poc26 } = common.brands;
+  const { started } = await setupTrader(t);
 
-  // Open portfolio via regular method with no target allocation
-  await Promise.all([
-    trader1.openPortfolio(t, { Access: poc26.make(1n) }, {}),
-    ackNFA(common.utils),
-  ]);
+  // Simulate opening a portfolio from EVM with no allocation
+  const permit2Payload = {
+    permit: {
+      permitted: {
+        token: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+        amount: 0n,
+      },
+      nonce: 1n,
+      deadline: 1n,
+    },
+    owner: '0x1111111111111111111111111111111111111111' as `0x${string}`,
+    witness:
+      '0x0000000000000000000000000000000000000000000000000000000000000000' as `0x${string}`,
+    witnessTypeString: 'OpenPortfolioWitness',
+    signature: '0x1234' as `0x${string}`,
+  };
+  const permitDetails = {
+    chainId: 42161,
+    token: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+    amount: 0n,
+    spender: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+    permit2Payload,
+  };
 
-  // Verify no target allocation is set
-  const status = await trader1.getPortfolioStatus();
-  t.is(
-    status.targetAllocation,
-    undefined,
-    'targetAllocation not set for portfolio without allocation',
+  // Open portfolio from EVM with no allocations (so no targetAllocation)
+  const { evmHandler } = await E(started.publicFacet).openPortfolioFromEVM(
+    { allocations: [] },
+    permitDetails,
+  );
+  t.truthy(evmHandler, 'evmHandler is defined');
+
+  // Try to call rebalance and expect it to throw
+  await t.throwsAsync(
+    () => E(evmHandler).rebalance(),
+    { message: /targetAllocation.*not set|no targetAllocation/i },
+    'rebalance should fail if targetAllocation is not set',
   );
 });
 
