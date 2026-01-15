@@ -3,19 +3,290 @@
  * and holding portfolios for EVM accounts.
  * @see {@link prepareEVMWalletHandlerKit}
  */
-import type { RecoverTypedDataAddressParameters, TypedData } from 'viem';
-import { makeTracer, type ERemote } from '@agoric/internal';
+import { makeTracer, type ERemote, type Remote } from '@agoric/internal';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
-import { type Vow, VowShape, type VowTools } from '@agoric/vow';
-import type { Zone } from '@agoric/zone';
+import type { WithSignature } from '@agoric/orchestration/src/utils/viem.ts';
+import {
+  encodeType,
+  hashStruct,
+  isHex,
+  recoverTypedDataAddress,
+  validateTypedData,
+} from '@agoric/orchestration/src/vendor/viem/viem-typedData.js';
+import type { StatusFor } from '@agoric/portfolio-api';
+import type {
+  YmaxPermitWitnessTransferFromData,
+  YmaxStandaloneOperationData,
+} from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.ts';
+import {
+  makeEVMHandlerUtils,
+  type FullMessageDetails,
+  type PermitDetails,
+  type YmaxOperationDetails,
+} from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.ts';
+import { provideLazy } from '@agoric/store';
+import type { TimerService } from '@agoric/time';
+import { VowShape, type Vow, type VowTools } from '@agoric/vow';
+import { type Zone } from '@agoric/zone';
+import { Fail, q } from '@endo/errors';
+import { E } from '@endo/far';
+import { makePassableKit } from '@endo/marshal';
 import { M } from '@endo/patterns';
+import type { Address } from 'abitype';
+import type { PublishStatus } from './portfolio.contract.ts';
+import type { PortfolioKit } from './portfolio.exo.ts';
 
 const trace = makeTracer('PEWH');
 
-export type EIP712Data<
-  typedData extends TypedData | Record<string, unknown> = TypedData,
-  primaryType extends keyof typedData = keyof typedData,
-> = RecoverTypedDataAddressParameters<typedData, primaryType>;
+const MAX_DEADLINE_OFFSET = 60n * 60n * 24n; // 1 day in seconds
+
+type EIP712Data = WithSignature<
+  YmaxStandaloneOperationData | YmaxPermitWitnessTransferFromData
+>;
+
+type PortfolioEVMFacet = PortfolioKit['evmHandler'];
+interface PortfolioContractPublicFacet {
+  openPortfolioFromEVM(
+    data: YmaxOperationDetails<'OpenPortfolio'>['data'],
+    permitDetails: PermitDetails,
+  ): Promise<{
+    evmHandler: PortfolioEVMFacet;
+    storagePath: string;
+  }>;
+}
+
+type EVMWallet = {
+  portfolios: MapStore<bigint, Remote<PortfolioEVMFacet>>;
+};
+
+type NonceKeyData = {
+  walletOwner: Address;
+  nonce: bigint;
+  deadline: bigint;
+};
+
+export const makeNonceManager = (zone: Zone) => {
+  // We must use our own encoder since liveslots collections only accept scalar keys
+  const { decodePassable, encodePassable } = makePassableKit({
+    format: 'compactOrdered',
+  });
+
+  const encodeKeyByDeadline = (key: NonceKeyData): string =>
+    encodePassable(harden([key.deadline, key.walletOwner, key.nonce]));
+
+  const decodeKeyByDeadline = (encoded: string): NonceKeyData => {
+    const [deadline, walletOwner, nonce] = decodePassable(encoded) as [
+      bigint,
+      Address,
+      bigint,
+    ];
+    return { deadline, walletOwner, nonce };
+  };
+
+  const encodeKeyByOwner = (key: NonceKeyData): string =>
+    encodePassable(harden([key.walletOwner, key.nonce, key.deadline]));
+
+  const getByOwnerKeyPrefix = (key: NonceKeyData): string =>
+    encodePassable(harden([key.walletOwner, key.nonce]));
+
+  const noncesByDeadline = zone.setStore<string>('noncesByDeadline', {
+    keyShape: M.string(),
+  });
+  const noncesByOwner = zone.setStore<string>('noncesByOwner', {
+    keyShape: M.string(),
+  });
+
+  const insertNonce = (key: NonceKeyData): void => {
+    const candidatePrefix = getByOwnerKeyPrefix(key);
+    for (const encodedCandidateKey of noncesByOwner.keys(
+      M.gte(candidatePrefix),
+    )) {
+      if (!encodedCandidateKey.startsWith(candidatePrefix)) {
+        break;
+      }
+
+      Fail`Nonce ${q(key.nonce)} for wallet ${q(
+        key.walletOwner,
+      )} already used and not yet expired`;
+    }
+
+    noncesByDeadline.add(encodeKeyByDeadline(key));
+    noncesByOwner.add(encodeKeyByOwner(key));
+  };
+
+  const removeExpiredNonces = (currentTime: bigint): void => {
+    for (const encodedKey of noncesByDeadline.keys()) {
+      const key = decodeKeyByDeadline(encodedKey);
+      if (key.deadline > currentTime) {
+        break;
+      }
+
+      noncesByDeadline.delete(encodeKeyByDeadline(key));
+      noncesByOwner.delete(encodeKeyByOwner(key));
+    }
+  };
+
+  return harden({ insertNonce, removeExpiredNonces });
+};
+
+export const prepareEVMPortfolioOperationManager = (
+  zone: Zone,
+  {
+    vowTools: { asVow, watch, when },
+    portfolioContractPublicFacet,
+    publishStatus,
+  }: {
+    vowTools: Pick<VowTools, 'asVow' | 'watch' | 'when'>;
+    portfolioContractPublicFacet: ERemote<PortfolioContractPublicFacet>;
+    publishStatus: PublishStatus;
+  },
+) => {
+  const makeOutcomeHandlers = zone.exoClassKit(
+    'OperationOutcomeHandlers',
+    /// XXX should have interface guard
+    undefined,
+    (data: {
+      wallet: EVMWallet;
+      storageNode: Remote<StorageNode>;
+      nonce: bigint;
+    }) => data,
+    {
+      OpenOutcomeWatcher: {
+        async onFulfilled({
+          evmHandler,
+        }: Awaited<
+          ReturnType<PortfolioContractPublicFacet['openPortfolioFromEVM']>
+        >) {
+          await null;
+          try {
+            const reader = await E(evmHandler).getReaderFacet();
+            const portfolioId = await E(reader).getPortfolioId();
+            const {
+              wallet: { portfolios },
+              storageNode,
+            } = this.state;
+
+            portfolios.init(BigInt(portfolioId), evmHandler);
+
+            const portfolioPaths = await Promise.all(
+              [...portfolios.values()].map(async pHandler => {
+                const pReader = E(pHandler).getReaderFacet();
+                // Vow is fulfilled promptly
+                const path = await when(E(pReader).getStoragePath());
+                return path as StatusFor['evmWalletPortfolios'][number];
+              }),
+            );
+
+            publishStatus<'evmWalletPortfolios'>(
+              E(storageNode).makeChildNode('portfolio'),
+              portfolioPaths,
+            );
+
+            return this.facets.BasicOutcomeWatcher.onFulfilled();
+          } catch (e) {
+            return this.facets.BasicOutcomeWatcher.onRejected(e);
+          }
+        },
+        onRejected(reason: unknown) {
+          return this.facets.BasicOutcomeWatcher.onRejected(reason);
+        },
+      },
+      BasicOutcomeWatcher: {
+        onFulfilled() {
+          const { storageNode, nonce } = this.state;
+
+          publishStatus<'evmWallet'>(storageNode, {
+            updated: 'messageUpdate',
+            nonce,
+            status: 'ok',
+          });
+        },
+        onRejected(reason: unknown) {
+          const { storageNode, nonce } = this.state;
+
+          publishStatus<'evmWallet'>(storageNode, {
+            updated: 'messageUpdate',
+            nonce,
+            status: 'error',
+            error: String(reason),
+          });
+        },
+      },
+    },
+  );
+
+  const handleOperation = (
+    wallet: EVMWallet,
+    storageNode: Remote<StorageNode>,
+    operationDetails: YmaxOperationDetails &
+      Pick<FullMessageDetails, 'permitDetails'>,
+    nonce: bigint,
+  ): Vow<void> =>
+    asVow(async () => {
+      publishStatus<'evmWallet'>(storageNode, {
+        updated: 'messageUpdate',
+        nonce,
+        status: 'pending',
+      });
+
+      const { BasicOutcomeWatcher, OpenOutcomeWatcher } = makeOutcomeHandlers({
+        wallet,
+        storageNode,
+        nonce,
+      });
+
+      try {
+        switch (operationDetails.operation) {
+          case 'OpenPortfolio': {
+            const { permitDetails, data } = operationDetails;
+            if (!permitDetails) {
+              throw Fail`Missing permit details for OpenPortfolio operation`;
+            }
+            const result = E(portfolioContractPublicFacet).openPortfolioFromEVM(
+              data,
+              permitDetails,
+            );
+
+            return watch(result, OpenOutcomeWatcher);
+          }
+          case 'Rebalance': {
+            const {
+              data: { portfolio: portfolioId },
+            } = operationDetails;
+
+            const portfolio = wallet.portfolios.get(BigInt(portfolioId));
+
+            const result =
+              E(portfolio).rebalance(/* otherData, permitDetails */);
+
+            return watch(result, BasicOutcomeWatcher);
+          }
+          case 'Deposit': {
+            const {
+              permitDetails,
+              data: { portfolio: portfolioId },
+            } = operationDetails;
+            if (!permitDetails) {
+              throw Fail`Missing permit details for Deposit operation`;
+            }
+
+            const portfolio = wallet.portfolios.get(BigInt(portfolioId));
+
+            const result = E(portfolio).deposit(/* otherData, permitDetails */);
+
+            return watch(result, BasicOutcomeWatcher);
+          }
+          default:
+            // @ts-expect-error exhaustiveness check
+            Fail`Unsupported operation: ${q(operationDetails.operation)}`;
+        }
+      } catch (e) {
+        return BasicOutcomeWatcher.onRejected(e);
+      }
+    });
+
+  return harden({ handleOperation });
+};
 
 export const EIP712DataShape = M.splitRecord({
   domain: M.any(),
@@ -43,15 +314,43 @@ export const EIP712DataShape = M.splitRecord({
 export const prepareEVMWalletHandlerKit = (
   zone: Zone,
   {
+    storageNode,
     vowTools,
+    timerService,
+    portfolioContractPublicFacet,
+    publishStatus,
   }: {
     storageNode: ERemote<StorageNode>;
-    vowTools: Pick<VowTools, 'asVow'>;
+    vowTools: Pick<VowTools, 'asVow' | 'watch' | 'when'>;
+    timerService: ERemote<TimerService>;
+    portfolioContractPublicFacet: ERemote<PortfolioContractPublicFacet>;
+    publishStatus: PublishStatus;
   },
 ) => {
+  const { extractOperationDetailsFromSignedData } = makeEVMHandlerUtils({
+    isHex,
+    hashStruct,
+    recoverTypedDataAddress,
+    validateTypedData,
+    encodeType,
+  });
+
   // TODO: key/value shapes?
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const wallets = zone.mapStore('wallets');
+  const walletByAddress = zone.mapStore<Address, EVMWallet>('wallets');
+
+  const getWalletForAddress = (address: Address): EVMWallet =>
+    provideLazy(walletByAddress, address, () =>
+      harden({
+        portfolios: zone.detached().mapStore('portfolios'),
+      }),
+    );
+
+  const { insertNonce, removeExpiredNonces } = makeNonceManager(zone);
+  const { handleOperation } = prepareEVMPortfolioOperationManager(zone, {
+    vowTools,
+    portfolioContractPublicFacet,
+    publishStatus,
+  });
 
   const MessageHandlerI = M.interface('EVMWalletMessageHandler', {
     handleMessage: M.call(EIP712DataShape).returns(VowShape),
@@ -77,7 +376,36 @@ export const prepareEVMWalletHandlerKit = (
       handleMessage(messageData: EIP712Data): Vow<void> {
         return vowTools.asVow(async () => {
           trace('handleMessage', messageData);
-          throw Error('TODO: Not implemented');
+
+          // Resolves immediately on-chain since all deps are bundled
+          const details =
+            await extractOperationDetailsFromSignedData(messageData);
+
+          trace('extracted details', details);
+
+          const { evmWalletAddress, nonce, deadline, ...operationDetails } =
+            details;
+
+          // Resolves promptly
+          const { absValue: localChainTime } =
+            await E(timerService).getCurrentTimestamp();
+          removeExpiredNonces(localChainTime);
+
+          deadline < localChainTime + MAX_DEADLINE_OFFSET ||
+            Fail`Deadline too far in the future: ${q(deadline)} vs ${q(localChainTime)}`;
+          insertNonce({ walletOwner: evmWalletAddress, nonce, deadline });
+
+          const wallet = getWalletForAddress(evmWalletAddress);
+          // Resolves promptly
+          const walletNode: Remote<StorageNode> =
+            await E(storageNode).makeChildNode(evmWalletAddress);
+
+          return handleOperation(
+            wallet,
+            walletNode,
+            harden(operationDetails),
+            nonce,
+          );
         });
       },
     },
