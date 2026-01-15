@@ -20,7 +20,7 @@ import {
   type TestStep,
 } from '@agoric/internal/src/testing-utils.js';
 import { typedEntries } from '@agoric/internal';
-import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.ts';
+import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import type { FundsFlowPlan } from '@agoric/portfolio-api';
 import { deploy as deployWalletFactory } from '@agoric/smart-wallet/tools/wf-tools.js';

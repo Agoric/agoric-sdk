@@ -34,8 +34,8 @@ import type {
   CosmosChainInfo,
 } from '@agoric/orchestration';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
-import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.ts';
-import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.ts';
+import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js';
+import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { heapVowE as VE } from '@agoric/vow';
 import type { Invitation, StandardTerms, ZoeService } from '@agoric/zoe';
 import type {
