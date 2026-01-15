@@ -35,7 +35,8 @@ import {
   chainOfAccount,
 } from '@agoric/orchestration/src/utils/address.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
-import type { FundsFlowPlan } from '@agoric/portfolio-api';
+import type { AxelarChain, FundsFlowPlan } from '@agoric/portfolio-api';
+import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import {
   DEFAULT_FLOW_CONFIG,
   RebalanceStrategy,
@@ -58,6 +59,7 @@ import {
   executePlan as rawExecutePlan,
   makeErrorList,
   onAgoricTransfer,
+  openPortfolioFromPermit2,
   openPortfolio as rawOpenPortfolio,
   provideCosmosAccount,
   rebalance as rawRebalance,
@@ -86,7 +88,10 @@ import {
 } from '../src/type-guards-steps.ts';
 import { makeProposalShapes, type ProposalType } from '../src/type-guards.ts';
 import { makePortfolioSteps } from '../tools/plan-transfers.ts';
-import { decodeFunctionCall } from './abi-utils.ts';
+import {
+  decodeCreateAndDepositPayload,
+  decodeFunctionCall,
+} from './abi-utils.ts';
 import {
   axelarIdsMock,
   contractsMock,
@@ -108,6 +113,7 @@ const executePlan: typeof rawExecutePlan = (
   flowDetail,
   startedFlow,
   config = DEFAULT_FLOW_CONFIG,
+  options,
 ) =>
   rawExecutePlan(
     orch,
@@ -118,6 +124,7 @@ const executePlan: typeof rawExecutePlan = (
     flowDetail,
     startedFlow,
     config,
+    options,
   );
 
 const openPortfolio: typeof rawOpenPortfolio = (
@@ -271,6 +278,12 @@ const mocks = (
     noble: agoricConns[fetchedChainInfo.noble.chainId].transferChannel,
     axelar: agoricConns[fetchedChainInfo.axelar.chainId].transferChannel,
   } as const;
+  const eip155ChainIdToAxelarChain = Object.fromEntries(
+    Object.entries(axelarCCTPConfig).map(([name, info]) => [
+      `${Number(info.reference)}`,
+      name,
+    ]),
+  ) as Record<`${number}`, AxelarChain>;
 
   const chains = new Map();
   const orch = harden({
@@ -298,6 +311,7 @@ const mocks = (
           });
           const account = {
             makeProgressTracker() {
+              // XXX this call should be logged
               return makeProgressTracker();
             },
             getAddress() {
@@ -595,6 +609,7 @@ const mocks = (
     resolverClient,
     contractAccount: orch.getChain('agoric').then(ch => ch.makeAccount()),
     transferChannels,
+    eip155ChainIdToAxelarChain,
   };
 
   const rebalanceHost = (seat, offerArgs, kit) =>
@@ -2499,3 +2514,142 @@ test('withdraw from Beefy position', async t => {
 
   await documentStorageSchema(t, storage, docOpts);
 });
+
+// EVM wallet integration - openPortfolioFromPermit2 flow
+test('openPortfolioFromPermit2 with Permit2 provisions account and starts deposit', async t => {
+  const permitDetails: PermitDetails = {
+    chainId: Number(axelarCCTPConfig.Arbitrum.reference),
+    token: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', // USCD on Arbitrum
+    amount: 1_000_000_000n,
+    spender: '0x9524EEb5F792944a0FE929bb8Efb354438B19F7C',
+    permit2Payload: {
+      permit: {
+        deadline: 1357923600n,
+        nonce: 7115368379195441n,
+        permitted: {
+          amount: 1000000000n,
+          token: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+        },
+      },
+      owner: '0x3e57cE0f7A44572c45dd2B7F0CB945cc918a22a6',
+      witness:
+        '0x756823f5c7bdbad2bf2a6e47b55de7f60d4ad84b0360f929c5a37737b1e14f1e',
+      witnessTypeString:
+        'YmaxV1OpenPortfolio ymaxOpenPortfolio)Allocation(string instrument,uint256 portion)TokenPermissions(address token,uint256 amount)YmaxV1OpenPortfolio(Allocation[] allocations)',
+      signature:
+        '0xc3a89a8ce8852845317084dbbb233c9e6902fc5914a6601c0a51199e9a72a615047089c3a1d837405b49d08b3f650ebbaf411e3e22bcbf22ad7cb4d4f59a04971b',
+    },
+  };
+  const amount = make(USDC, permitDetails.amount);
+  const targetAllocation = {
+    Aave_Arbitrum: 6000n, // 60% in basis points
+    Compound_Arbitrum: 4000n, // 40% in basis points
+  };
+
+  const { orch, ctx, offer, cosmosId, storage, txResolver } = mocks();
+  const { log, seat } = offer;
+  const kit = await ctx.makePortfolioKit();
+  const portfolioId = kit.reader.getPortfolioId();
+  const { getPortfolioStatus, getFlowHistory } = makeStorageTools(storage);
+  let flowNum: number | undefined;
+
+  const webUiDone = openPortfolioFromPermit2(
+    orch,
+    ctx,
+    seat,
+    permitDetails,
+    targetAllocation,
+    kit,
+  );
+
+  const plannerP = (async () => {
+    const { flowsRunning = {} } = await getPortfolioStatus(portfolioId);
+    const [[flowId, detail]] = Object.entries(flowsRunning);
+    if (detail.type !== 'deposit') throw t.fail(detail.type);
+    flowNum = Number(flowId.replace('flow', ''));
+    const fee = make(BLD, 100n);
+    const fromChain = detail.fromChain as AxelarChain;
+    const steps: MovementDesc[] = [
+      { src: `+${fromChain}`, dest: `@${fromChain}`, amount, fee },
+    ];
+    kit.planner.resolveFlowPlan(flowNum, steps);
+
+    // Complete GMP transaction
+    await txResolver.drainPending();
+  })();
+
+  const [webResult, plannerResult] = await Promise.all([
+    webUiDone,
+    plannerP,
+    offer.factoryPK.promise,
+  ]);
+  t.is(webResult, undefined);
+  t.is(plannerResult, undefined);
+
+  await eventLoopIteration();
+  const { flowsRunning = {} } = await getPortfolioStatus(portfolioId);
+  t.deepEqual(flowsRunning, {}, 'flow should be cleaned up after completion');
+  if (flowNum === undefined) {
+    throw new Error('flow number not captured');
+  }
+  const flowHistory = await getFlowHistory(portfolioId, flowNum);
+  t.is(flowHistory.at(-1)?.state, 'done');
+
+  t.log(log.map(msg => msg._method).join(', '));
+  const nobleId = await cosmosId('noble');
+  const axelarId = await cosmosId('axelar');
+  const setupCalls = [
+    { _method: 'monitorTransfers' },
+    { _method: 'transfer', address: { chainId: nobleId } },
+  ];
+  const gmpCalls = [{ _method: 'transfer', address: { chainId: axelarId } }];
+  t.like(log, [...setupCalls, ...gmpCalls, { _method: 'exit', _cap: 'seat' }]);
+  t.snapshot(log, 'call log');
+
+  const axelarTransfer = log.find(
+    (e: any) => e._method === 'transfer' && e.address?.chainId === axelarId,
+  );
+  const rawMemo = axelarTransfer?.opts?.memo;
+  t.truthy(rawMemo);
+  const decodedPayload = decodeCreateAndDepositPayload(rawMemo as string);
+  const lca = kit.reader.getLocalAccount();
+  t.is(decodedPayload.lcaOwner, lca.getAddress().value);
+  t.is(
+    decodedPayload.tokenOwner.toLowerCase(),
+    permitDetails.permit2Payload.owner.toLowerCase(),
+  );
+  t.is(
+    decodedPayload.permit.permitted.token,
+    permitDetails.permit2Payload.permit.permitted.token,
+  );
+  t.is(
+    decodedPayload.permit.permitted.amount,
+    permitDetails.permit2Payload.permit.permitted.amount,
+  );
+  t.is(decodedPayload.permit.nonce, permitDetails.permit2Payload.permit.nonce);
+  t.is(
+    decodedPayload.permit.deadline,
+    permitDetails.permit2Payload.permit.deadline,
+  );
+  t.is(decodedPayload.signature, permitDetails.permit2Payload.signature);
+
+  t.snapshot(decodedPayload, 'decoded payload');
+});
+
+test.todo(
+  'openPortfolioFromPermit2 retries when sendCreateAndDepositCall/Factory.execute fails',
+);
+
+test.todo(
+  'openPortfolioFromPermit2 handles subsequent deposits without skipping +Base -> @Base',
+);
+
+test.todo(
+  'openPortfolioFromPermit2 rejects permit with unexpected token for fromChain',
+);
+
+test.todo('openPortfolioFromPermit2 rejects deposit for unsupported chain');
+
+test.todo('openPortfolioFromPermit2 rejects deposit with wrong spender');
+
+test.todo('openPortfolioFromPermit2 rejects permit with zero amount');

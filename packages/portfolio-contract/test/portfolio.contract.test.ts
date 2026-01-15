@@ -1,4 +1,8 @@
-/** @file YMax portfolio contract tests - user stories */
+/**
+ * @file YMax portfolio contract tests - user stories
+ *
+ * For easier snapshot review, add new tests at the end of this file.
+ */
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
@@ -34,8 +38,8 @@ import {
   simulateAckTransferToAxelar,
   simulateCCTPAck,
 } from './contract-setup.ts';
-import { makeCCTPTraffic, portfolio0lcaOrch } from './mocks.ts';
-import { makeStorageTools } from './supports.ts';
+import { contractsMock, makeCCTPTraffic, portfolio0lcaOrch } from './mocks.ts';
+import { chainInfoWithCCTP, makeStorageTools } from './supports.ts';
 import type { PortfolioPrivateArgs } from '../src/portfolio.contract.ts';
 
 const { fromEntries, keys, values } = Object;
@@ -895,11 +899,8 @@ const setupPlanner = async (
   t,
   overrides: Partial<PortfolioPrivateArgs> = {},
 ) => {
-  const { common, zoe, started, makeFundedTrader, trader1 } = await setupTrader(
-    t,
-    undefined,
-    overrides,
-  );
+  const { common, zoe, started, makeFundedTrader, trader1, txResolver } =
+    await setupTrader(t, undefined, overrides);
   const { storage } = common.bootstrap;
   const { readPublished, readLegible } = makeStorageTools(storage);
   const utils = { ...common.utils, readLegible };
@@ -920,6 +921,7 @@ const setupPlanner = async (
     trader1,
     planner1,
     readPublished,
+    txResolver,
   };
 };
 
@@ -950,11 +952,24 @@ test('redeem, use planner invitation', async t => {
 
 test('address of LCA for fees is published', async t => {
   const { common } = await deploy(t);
-  const { storage } = common.bootstrap;
+  const {
+    bootstrap: { storage },
+    utils: { makePrivateArgs },
+  } = common;
   await eventLoopIteration();
   const info = storage.getDeserialized(`${ROOT_STORAGE_PATH}`).at(-1);
   t.log(info);
-  t.deepEqual(info, { contractAccount: makeTestAddress(0) });
+  const contracts = makePrivateArgs().contracts;
+  t.deepEqual(info, {
+    contractAccount: makeTestAddress(0),
+    depositFactoryAddresses: {
+      Arbitrum: `eip155:42161:${contracts.Arbitrum.depositFactory}`,
+      Avalanche: `eip155:43114:${contracts.Avalanche.depositFactory}`,
+      Base: `eip155:8453:${contracts.Base.depositFactory}`,
+      Ethereum: `eip155:1:${contracts.Ethereum.depositFactory}`,
+      Optimism: `eip155:10:${contracts.Optimism.depositFactory}`,
+    },
+  });
 });
 
 test('request rebalance - send same targetAllocation', async t => {
@@ -1051,7 +1066,6 @@ test('withdraw using planner', async t => {
 
     const plan: FundsFlowPlan = {
       flow: [{ src: '@agoric', dest: '<Cash>', amount }],
-      order: [],
     };
     await E(planner1.stub).resolvePlan(
       pId,
@@ -1175,7 +1189,6 @@ test('deposit using planner', async t => {
 
     const plan: FundsFlowPlan = {
       flow: [{ src: '<Deposit>', dest: '@agoric', amount }],
-      order: [],
     };
     await E(planner1.stub).resolvePlan(
       pId,
@@ -1345,7 +1358,6 @@ const createAndDepositTestMacro = test.macro(
 
           const plan: FundsFlowPlan = {
             flow: [{ src: '<Deposit>', dest: '@agoric', amount }],
-            order: [],
           };
           await E(planner1.stub).resolvePlan(
             pId,
@@ -1559,4 +1571,148 @@ test('Withdraw from an ERC4626 position', async t => {
   const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);
   t.snapshot(contents, 'vstorage');
   t.snapshot(withdraw.payouts, 'refund payouts');
+});
+
+test('open portfolio from Arbitrum, 1000 USDC deposit', async t => {
+  const { common, planner1, started, readPublished, txResolver } =
+    await setupPlanner(t);
+  const { usdc, bld } = common.brands;
+
+  const inputs = {
+    fromChain: 'Arbitrum' as const,
+    depositAmount: usdc.units(1000),
+    allocations: [
+      { instrument: 'Aave_Arbitrum', portion: 6000n },
+      { instrument: 'Compound_Arbitrum', portion: 4000n },
+    ],
+  };
+  const { fromChain: evm, depositAmount, allocations } = inputs;
+
+  const expected = {
+    storagePath: `${ROOT_STORAGE_PATH}.portfolios.portfolio0`,
+    positions: { Aave: usdc.units(600), Compound: usdc.units(400) },
+  };
+
+  const traderDo = async () => {
+    const permit2Payload = {
+      permit: {
+        permitted: {
+          token: contractsMock[evm].usdc,
+          amount: depositAmount.value,
+        },
+        nonce: 1n,
+        deadline: 1n,
+      },
+      owner: '0x1234567890AbcdEF1234567890aBcdef12345678',
+      witness:
+        '0x0000000000000000000000000000000000000000000000000000000000000000',
+      witnessTypeString: 'OpenPortfolioWitness',
+      signature: '0x1234',
+    } as const;
+    const permitDetails = {
+      chainId: Number(chainInfoWithCCTP[evm].reference),
+      token: contractsMock[evm].usdc,
+      amount: depositAmount.value,
+      spender: contractsMock[evm].depositFactory,
+      permit2Payload,
+    } as const;
+
+    // TODO: Use trader1 to exercise real client access once EMS/EMH wiring exists.
+    const { storagePath, evmHandler } = await E(
+      started.publicFacet,
+    ).openPortfolioFromEVM({ allocations }, permitDetails);
+    t.is(storagePath, expected.storagePath);
+    t.is(passStyleOf(evmHandler), 'remotable');
+  };
+
+  /** Simulate chain inputs (acks) for makeAccount + GMP transfers. */
+  const chainDo = async () => {
+    await ackNFA(common.utils);
+    // Ack the makeAccount transfer before settling pending txs.
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
+    await txResolver.drainPending();
+    // Ack the GMP contract call once pending txs are resolved.
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await txResolver.drainPending();
+    // Ack the second GMP call for the second position.
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await txResolver.drainPending();
+    // Ack the third GMP call for the third position.
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  };
+
+  const plannerDo = async () => {
+    const pId = 0;
+    await traderDo;
+    // XXX refactor flow-context extraction (see other planner tests in this file).
+    const status = (await readPublished(
+      `portfolios.portfolio${pId}`,
+    )) as unknown as StatusFor['portfolio'];
+    const { flowsRunning = {}, policyVersion, rebalanceCount } = status;
+    const sync = [policyVersion, rebalanceCount] as const;
+    const [[flowId, detail]] = Object.entries(flowsRunning);
+    const flowNum = Number(flowId.replace('flow', ''));
+    if (detail.type !== 'deposit') throw t.fail(detail.type);
+    t.is(detail.amount.value, depositAmount.value);
+    const planDepositAmount = AmountMath.make(usdc.brand, detail.amount.value);
+    const fee = bld.units(100);
+    const { Aave, Compound } = expected.positions;
+    const plan: FundsFlowPlan = {
+      flow: [
+        { src: `+${evm}`, dest: `@${evm}`, amount: planDepositAmount, fee },
+        { src: `@${evm}`, dest: 'Aave_Arbitrum', amount: Aave, fee },
+        { src: `@${evm}`, dest: 'Compound_Arbitrum', amount: Compound, fee },
+      ],
+    };
+    await E(planner1.stub).resolvePlan(pId, flowNum, plan, ...sync);
+    return flowNum;
+  };
+
+  await planner1.redeem();
+  const [, flowNum] = await Promise.all([traderDo(), plannerDo(), chainDo()]);
+
+  const status = (await readPublished(
+    `portfolios.portfolio0`,
+  )) as unknown as StatusFor['portfolio'];
+
+  const { contents } = getPortfolioInfo(
+    expected.storagePath,
+    common.bootstrap.storage,
+  );
+  const flowHistory = contents[`${expected.storagePath}.flows.flow${flowNum}`];
+
+  t.truthy(
+    Array.isArray(flowHistory) &&
+      flowHistory.some(entry => entry?.state === 'done'),
+    'flow history should include a done entry',
+  );
+  t.deepEqual(
+    status.flowsRunning,
+    {},
+    'flowsRunning should be empty after plan completes',
+  );
+  t.truthy(status.accountIdByChain?.Arbitrum);
+  t.is(status.positionKeys.length, 2);
+  // Verify sourceAccountId is stored in CAIP-10 format
+  const expectedSourceAccountId =
+    `eip155:${chainInfoWithCCTP[evm].reference}:0x1234567890abcdef1234567890abcdef12345678` as const;
+  t.is(
+    status.sourceAccountId,
+    expectedSourceAccountId,
+    'sourceAccountId from vstorage',
+  );
+  t.is(
+    contents[expected.storagePath]?.sourceAccountId,
+    expectedSourceAccountId,
+    'sourceAccountId in storage contents',
+  );
+  t.snapshot(contents, 'vstorage');
+  await documentStorageSchema(t, common.bootstrap.storage, pendingTxOpts);
+
+  const posKey = `${expected.storagePath}.positions`;
+  const posBalances = {
+    Aave: contents[`${posKey}.Aave_Arbitrum`]?.totalIn,
+    Compound: contents[`${posKey}.Compound_Arbitrum`]?.totalIn,
+  };
+  t.deepEqual(posBalances, expected.positions);
 });

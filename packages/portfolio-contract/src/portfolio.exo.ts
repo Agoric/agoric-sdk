@@ -91,6 +91,8 @@ type PortfolioKitState = {
   targetAllocation?: TargetAllocation;
   policyVersion: number;
   rebalanceCount: number;
+  /** CAIP-10 account ID of the authenticated EVM account that opened this portfolio */
+  sourceAccountId?: AccountId;
   /** reserved for future use */
   etc: unknown;
 };
@@ -106,6 +108,7 @@ export const PortfolioStateShape = {
   targetAllocation: M.opt(M.record()),
   policyVersion: M.number(),
   rebalanceCount: M.number(),
+  sourceAccountId: M.opt(M.string()),
   etc: M.any(),
 };
 harden(PortfolioStateShape);
@@ -191,6 +194,7 @@ export const preparePortfolioKit = (
       kit: PortfolioKitCycleBreaker,
       flowDetail: FlowDetail,
       startedFlow?: { stepsP: Vow<MovementDesc[]>; flowId: number },
+      options?: unknown,
     ) => Vow<unknown>;
     onAgoricTransfer: (
       event: VTransferIBCEvent,
@@ -252,7 +256,13 @@ export const preparePortfolioKit = (
       invitationMakers: M.interface('invitationMakers', {
         Rebalance: M.callWhen().returns(InvitationShape),
       })}*/,
-    ({ portfolioId }: { portfolioId: number }): PortfolioKitState => {
+    ({
+      portfolioId,
+      sourceAccountId,
+    }: {
+      portfolioId: number;
+      sourceAccountId?: AccountId;
+    }): PortfolioKitState => {
       return {
         portfolioId,
         nextFlowId: 1,
@@ -277,6 +287,7 @@ export const preparePortfolioKit = (
         targetAllocation: undefined,
         policyVersion: 0,
         rebalanceCount: 0,
+        sourceAccountId,
         etc: undefined,
       };
     },
@@ -340,6 +351,7 @@ export const preparePortfolioKit = (
             accountsPending,
             policyVersion,
             rebalanceCount,
+            sourceAccountId,
           } = this.state;
 
           const agoricAux = (): Pick<
@@ -363,6 +375,7 @@ export const preparePortfolioKit = (
             accountIdByChain: accountIdByChain(accounts),
             ...(accounts.has('agoric') ? agoricAux() : {}),
             ...(targetAllocation && { targetAllocation }),
+            ...(sourceAccountId && { sourceAccountId }),
             accountsPending: [...accountsPending.keys()],
             policyVersion,
             rebalanceCount,
@@ -462,6 +475,12 @@ export const preparePortfolioKit = (
             .sub(chainName);
           traceChain('reserveAccount');
           const { accounts, accountsPending } = this.state;
+          if (accountsPending.has(chainName)) {
+            const state = 'pending';
+            traceChain('state', state);
+            const val = accountsPending.get(chainName);
+            return { ready: val.vow as Vow<AccountInfoFor[C]>, state };
+          }
           if (accounts.has(chainName)) {
             const infoAny = accounts.get(chainName);
             assert.equal(infoAny.chainName, chainName);
@@ -470,12 +489,6 @@ export const preparePortfolioKit = (
             traceChain('state', state);
             const ready = vowTools.asVow(async () => info);
             return { ready, state };
-          }
-          if (accountsPending.has(chainName)) {
-            const state = 'pending';
-            traceChain('state', state);
-            const val = accountsPending.get(chainName);
-            return { ready: val.vow as Vow<AccountInfoFor[C]>, state };
           }
           const state = 'new';
           traceChain('state', state);
@@ -607,6 +620,20 @@ export const preparePortfolioKit = (
             accountsPending.delete(chainName);
           }
           this.facets.reporter.publishStatus();
+        },
+      },
+      evmHandler: {
+        getReaderFacet() {
+          return this.facets.reader;
+        },
+        deposit() {
+          throw Error('TODO in a later PR');
+        },
+        rebalance() {
+          throw Error('TODO in a later PR');
+        },
+        withdraw() {
+          throw Error('TODO in a later PR');
         },
       },
       rebalanceHandler: {

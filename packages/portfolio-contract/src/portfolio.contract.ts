@@ -35,13 +35,18 @@ import {
 import type {
   FlowConfig,
   PortfolioPublicInvitationMaker,
+  TargetAllocation,
 } from '@agoric/portfolio-api';
 import {
   AxelarChain,
-  YieldProtocol,
   DEFAULT_FLOW_CONFIG,
+  YieldProtocol,
   FlowConfigShape,
 } from '@agoric/portfolio-api/src/constants.js';
+import type {
+  PermitDetails,
+  YmaxOperationDetails,
+} from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.ts';
 import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
 import type { ContractMeta, ZCF, ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
@@ -72,6 +77,39 @@ import {
 
 const trace = makeTracer('PortC');
 const { fromEntries, keys } = Object;
+
+const makeTransferChannels = (chainInfo: PortfolioPrivateArgs['chainInfo']) => {
+  const { agoric, axelar, noble } = chainInfo as Record<
+    string,
+    CosmosChainInfo
+  >;
+  const { connections } = agoric;
+
+  const nobleConn = connections![noble.chainId].transferChannel;
+  let axelarConn: IBCConnectionInfo['transferChannel'] | undefined;
+  if ('axelar' in chainInfo) {
+    axelarConn = connections![axelar.chainId].transferChannel;
+  } else {
+    trace('⚠️ no axelar chainInfo; GMP not available', keys(chainInfo));
+  }
+  return harden({ noble: nobleConn, axelar: axelarConn });
+};
+
+const makeEip155ChainIdToAxelarChain = (
+  chainInfo: PortfolioPrivateArgs['chainInfo'],
+) => {
+  const chainIdToChainName: Record<`${number}`, AxelarChain> = {};
+  for (const [name, info] of Object.entries(chainInfo)) {
+    if (info.namespace === 'eip155') {
+      if (!Object.hasOwn(AxelarChain, name)) {
+        trace('⚠️ skipping non-Axelar EVM chain', name);
+        continue;
+      }
+      chainIdToChainName[`${info.reference}`] = name as AxelarChain;
+    }
+  }
+  return harden(chainIdToChainName);
+};
 
 const interfaceTODO = undefined;
 
@@ -279,22 +317,8 @@ export const contract = async (
   }
 
   // Extract transfer channel info synchronously
-  const transferChannels = (() => {
-    const { agoric, axelar, noble } = chainInfo as Record<
-      string,
-      CosmosChainInfo
-    >;
-    const { connections } = agoric;
-
-    const nobleConn = connections![noble.chainId].transferChannel;
-    let axelarConn: IBCConnectionInfo['transferChannel'] | undefined;
-    if ('axelar' in chainInfo) {
-      axelarConn = connections![axelar.chainId].transferChannel;
-    } else {
-      trace('⚠️ no axelar chainInfo; GMP not available', keys(chainInfo));
-    }
-    return harden({ noble: nobleConn, axelar: axelarConn });
-  })();
+  const transferChannels = makeTransferChannels(chainInfo);
+  const eip155ChainIdToAxelarChain = makeEip155ChainIdToAxelarChain(chainInfo);
 
   const proposalShapes = makeProposalShapes(brands.USDC, brands.Access);
   const offerArgsShapes = makeOfferArgsShapes(brands.USDC);
@@ -328,7 +352,25 @@ export const contract = async (
   const contractAccountV = zone.makeOnce('contractAccountV', () => makeLCA());
   void vowTools.when(contractAccountV, acct => {
     const addr = acct.getAddress();
-    publishStatus(storageNode, harden({ contractAccount: addr.value }));
+
+    type DepositFactoryAddresses = NonNullable<
+      StatusFor['contract']['depositFactoryAddresses']
+    >;
+
+    const depositFactoryAddresses = Object.fromEntries(
+      Object.entries(eip155ChainIdToAxelarChain).map(
+        ([chainId, chainName]) =>
+          [
+            chainName satisfies AxelarChain,
+            `eip155:${chainId}:${contracts[chainName].depositFactory}` satisfies DepositFactoryAddresses[AxelarChain],
+          ] as const,
+      ),
+    ) as DepositFactoryAddresses;
+
+    publishStatus(
+      storageNode,
+      harden({ contractAccount: addr.value, depositFactoryAddresses }),
+    );
     trace('published contractAccount', addr.value);
   });
 
@@ -356,6 +398,7 @@ export const contract = async (
     inertSubscriber,
     contractAccount: contractAccountV as any, // XXX Guest...
     transferChannels,
+    eip155ChainIdToAxelarChain,
   };
 
   // We wrap all the orchFns1 (and orchFns2) to have replaying flows omit the
@@ -440,9 +483,9 @@ export const contract = async (
    * NB: this assumes portfolios are never deleted; if deletion is added,
    * a more robust ID generation strategy will be needed.
    */
-  const makeNextPortfolioKit = () => {
+  const makeNextPortfolioKit = (opts?: { sourceAccountId?: AccountId }) => {
     const portfolioId = portfolios.getSize();
-    const kit = makePortfolioKit({ portfolioId });
+    const kit = makePortfolioKit({ portfolioId, ...opts });
     portfolios.init(portfolioId, kit);
     return kit;
   };
@@ -454,7 +497,10 @@ export const contract = async (
   // Create openPortfolio flow with makePortfolioKit - circular dependency
   // avoided
   const orchFns2 = orchestrateAll(
-    { openPortfolio: flows.openPortfolio },
+    {
+      openPortfolio: flows.openPortfolio,
+      openPortfolioFromPermit2: flows.openPortfolioFromPermit2,
+    },
     {
       ...ctx1,
       // Older name maintained for upgrade compatibility
@@ -535,7 +581,49 @@ export const contract = async (
         proposalShapes.openPortfolio,
       );
     },
-  } satisfies Record<PortfolioPublicInvitationMaker, any> & ThisType<any>);
+    /**
+     * Open a portfolio for EVM users with a signed Permit2 deposit.
+     *
+     * @returns storagePath (vstorage) and evmHandler facet
+     *
+     * @see {@link openPortfolioFromPermit2} for the flow implementation
+     */
+    async openPortfolioFromEVM(
+      { allocations }: YmaxOperationDetails<'OpenPortfolio'>['data'],
+      depositDetails: PermitDetails,
+    ): Promise<{
+      storagePath: string;
+      evmHandler: PortfolioKit['evmHandler'];
+    }> {
+      // XXX: validate instruments
+      const targetAllocation: TargetAllocation = Object.fromEntries(
+        allocations.map(({ instrument, portion }) => [instrument, portion]),
+      );
+
+      const seat = zcf.makeEmptySeatKit().zcfSeat;
+
+      // Store the authenticated source EVM account in CAIP-10 format
+      const sourceAccountId =
+        `eip155:${depositDetails.chainId}:${depositDetails.permit2Payload.owner.toLowerCase()}` as AccountId;
+      const kit = makeNextPortfolioKit({ sourceAccountId });
+
+      void orchFns2.openPortfolioFromPermit2(
+        seat,
+        depositDetails,
+        targetAllocation,
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- sensitive to build order
+        // @ts-ignore XXX Guest...
+        kit,
+      );
+      const storagePath = await vowTools.asPromise(kit.reader.getStoragePath());
+      return harden({
+        storagePath,
+        evmHandler: kit.evmHandler,
+      });
+    },
+  } satisfies Record<PortfolioPublicInvitationMaker, any> &
+    Record<'openPortfolioFromEVM', any> &
+    ThisType<any>);
 
   const prepareResultOnlyInvitation = <R>(
     description: string,

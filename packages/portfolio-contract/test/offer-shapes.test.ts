@@ -8,6 +8,7 @@ import { makeOfferArgsShapes } from '../src/type-guards-steps.ts';
 import {
   FlowStatusShape,
   FlowStepsShape,
+  FlowDetailShape,
   makeProposalShapes,
   PoolKeyShapeExt,
   PortfolioStatusShapeExt,
@@ -249,6 +250,14 @@ test('vstorage flow steps type matches shape', t => {
         dest: '@noble',
       },
     ],
+    evmDepositStep: [
+      {
+        how: 'createAndDeposit',
+        amount: usdc(1000n),
+        src: '+Base',
+        dest: '@Base',
+      },
+    ],
     multipleSteps: [
       {
         how: 'transfer',
@@ -303,6 +312,63 @@ test('vstorage flow steps type matches shape', t => {
   for (const [name, flowSteps] of entries(failCases)) {
     t.false(matches(flowSteps, FlowStepsShape), `fail: ${name}`);
   }
+});
+
+test('vstorage flow detail type matches shape', t => {
+  const passCases = harden({
+    depositWithoutFromChain: {
+      type: 'deposit',
+      amount: usdc(1n),
+    },
+    depositWithFromChain: {
+      type: 'deposit',
+      amount: usdc(1n),
+      fromChain: 'Base',
+    },
+    withdrawWithToChain: {
+      type: 'withdraw',
+      amount: usdc(1n),
+      toChain: 'noble',
+    },
+  });
+
+  const failCases = harden({
+    invalidFromChain: {
+      type: 'deposit',
+      amount: usdc(1n),
+      fromChain: 123,
+    },
+    invalidToChain: {
+      type: 'withdraw',
+      amount: usdc(1n),
+      toChain: 123,
+    },
+  });
+
+  for (const [name, flowDetail] of Object.entries(passCases)) {
+    t.notThrows(() => mustMatch(flowDetail, FlowDetailShape), `pass: ${name}`);
+  }
+  for (const [name, flowDetail] of Object.entries(failCases)) {
+    t.false(matches(flowDetail, FlowDetailShape), `fail: ${name}`);
+  }
+});
+
+test('vstorage portfolio status accepts flow detail with fromChain', t => {
+  const status = harden({
+    positionKeys: [],
+    flowCount: 1,
+    accountIdByChain: {},
+    policyVersion: 1,
+    rebalanceCount: 0,
+    flowsRunning: {
+      flow1: {
+        type: 'deposit',
+        amount: usdc(1n),
+        fromChain: 'Base',
+      },
+    },
+  });
+  t.notThrows(() => mustMatch(status, PortfolioStatusShapeExt));
 });
 
 test('vstorage position type matches shape', t => {
