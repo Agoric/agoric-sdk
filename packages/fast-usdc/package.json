@@ -11,8 +11,8 @@
   "bin": "./src/cli/bin.js",
   "scripts": {
     "build": "exit 0",
-    "prepack": "yarn run -T build-ts-to-js && yarn run -T tsc --build tsconfig.build.json",
-    "postpack": "git clean -f '*.d.ts' '*.d.ts.map' '*.js'",
+    "prepack": "yarn run -T build-ts-to-js && yarn run -T tsc --build tsconfig.build.json && find src -name '*.ts' ! -name '*.d.ts' -delete",
+    "postpack": "git checkout -- '*.ts' && git clean -f '*.d.ts' '*.d.ts.map' '*.js'",
     "test": "ava",
     "test:c8": "c8 --all ${C8_OPTIONS:-} ava",
     "test:xs": "exit 0",

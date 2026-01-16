@@ -131,8 +131,8 @@ Add it to your package's `prepack` script:
 ```json
 {
   "scripts": {
-    "prepack": "yarn run -T build-ts-to-js && yarn run -T tsc --build tsconfig.build.json",
-    "postpack": "git clean -f '*.d.ts' '*.d.ts.map' '*.js'"
+    "prepack": "yarn run -T build-ts-to-js && yarn run -T tsc --build tsconfig.build.json && find src -name '*.ts' ! -name '*.d.ts' -delete",
+    "postpack": "git checkout -- '*.ts' && git clean -f '*.d.ts' '*.d.ts.map' '*.js'"
   }
 }
 ```
@@ -140,8 +140,9 @@ Add it to your package's `prepack` script:
 The script finds all `.ts` files in `src/` (excluding `.d.ts`) and generates corresponding `.js` files. During `prepack`:
 1. `build-ts-to-js` generates `.js` runtime files from `.ts` sources
 2. `tsc` generates `.d.ts` declaration files for all sources
+3. Original `.ts` source files are deleted (so only `.js` and `.d.ts` are published)
 
-The `postpack` script cleans up generated files after the package is packed.
+The `postpack` script restores `.ts` files from git and cleans up generated files.
 
 ### Why not two `tsc` passes?
 
