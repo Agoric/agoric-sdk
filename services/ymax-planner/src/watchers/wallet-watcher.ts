@@ -16,7 +16,7 @@ import {
 import type { WatcherResult } from '../pending-tx-manager.ts';
 
 export const SMART_WALLET_CREATED_SIGNATURE = id(
-  'SmartWalletCreated(address,string,string,string)',
+  'SmartWalletCreated(address,string,string)',
 );
 const abiCoder = new AbiCoder();
 
@@ -24,23 +24,19 @@ const extractAddress = topic => {
   return getAddress(`0x${topic.slice(-40)}`);
 };
 
-const parseSmartWalletCreatedLog = (log: any) => {
+export const parseSmartWalletCreatedLog = (log: any) => {
   if (!log.topics || !log.data) {
     throw new Error('Malformed SmartWalletCreated log');
   }
 
   const wallet = extractAddress(log.topics[1]);
 
-  const [owner, sourceChain, sourceAddress] = abiCoder.decode(
-    ['string', 'string', 'string'],
-    log.data,
-  );
+  const [owner, sourceChain] = abiCoder.decode(['string', 'string'], log.data);
 
   return {
     wallet,
     owner,
     sourceChain,
-    sourceAddress,
   };
 };
 

@@ -4,8 +4,6 @@
  */
 import '@endo/init';
 
-import { readFile } from 'node:fs/promises';
-import { createRequire } from 'node:module';
 import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.exo.ts';
 import type { start as YMaxStart } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
 import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.ts';
@@ -21,6 +19,7 @@ import {
   axelarConfig as axelarConfigMainnet,
   axelarConfigTestnet,
   gmpAddresses as gmpConfigs,
+  type AxelarChainConfig,
 } from '@aglocal/portfolio-deploy/src/axelar-configs.js';
 import type { ContractControl } from '@aglocal/portfolio-deploy/src/contract-control.js';
 import { lookupInterchainInfo } from '@aglocal/portfolio-deploy/src/orch.start.js';
@@ -46,7 +45,18 @@ import {
   objectMap,
   type TypedPattern,
 } from '@agoric/internal';
-import { YieldProtocol } from '@agoric/portfolio-api/src/constants.js';
+import {
+  getPermitWitnessTransferFromData,
+  type TokenPermissions,
+} from '@agoric/orchestration/src/utils/permit2.ts';
+import {
+  AxelarChain,
+  YieldProtocol,
+} from '@agoric/portfolio-api/src/constants.js';
+import {
+  getYmaxWitness,
+  type TargetAllocation as Allocation,
+} from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.ts';
 import type { OfferStatus } from '@agoric/smart-wallet/src/offers.js';
 import type { NameHub } from '@agoric/vats';
 import type { EMethods } from '@agoric/vow/src/E.js';
@@ -54,15 +64,20 @@ import type { Instance } from '@agoric/zoe/src/zoeService/types.js';
 import type { StartedInstanceKit as ZStarted } from '@agoric/zoe/src/zoeService/utils.js';
 import { SigningStargateClient } from '@cosmjs/stargate';
 import { E } from '@endo/far';
+import { type CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import { once } from 'node:events';
+import { readFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import repl from 'node:repl';
 import { parseArgs } from 'node:util';
+import type { StdFee } from 'osmojs';
+import type { HDAccount } from 'viem';
+import { mnemonicToAccount } from 'viem/accounts';
 import {
   reflectWalletStore,
   walletUpdates,
 } from '../tools/wallet-store-reflect.ts';
-import type { StdFee } from 'osmojs';
 
 const nodeRequire = createRequire(import.meta.url);
 const asset = (spec: string) => readFile(nodeRequire.resolve(spec), 'utf8');
@@ -76,6 +91,7 @@ Options:
   --exit-success          Exit with success code even if errors occur
   --positions             JSON of opening positions (e.g. '{"USDN":6000,"Aave":4000}')
   --target-allocation     JSON of target allocation (e.g. '{"USDN":6000,"Aave_Arbitrum":4000}')
+  --evm <chainId>         Use an EVM wallet and deposit from the given chain (e.g. 'Ethereum')
   --contract=[ymax0]      Contract key in agoricNames.instance ('ymax0' or 'ymax1'), used for
                           portfolios and invitations
   --description=[planner] For use with --redeem ('planner', 'resolver', or 'evmWalletHandler',
@@ -100,15 +116,18 @@ Operations:
   --redeem                  Redeem invitation per --description
   --submit-for <id>         Submit (empty) plan for portfolio <id>
   --open                    [default operation] Open a new portfolio per --positions and
-                            --target-allocation
+                            --target-allocation. Uses an EVM wallet if --evm
 
 Environment variables:
   AGORIC_NET: Network specifier per https://github.com/Agoric/agoric-sdk/blob/master/docs/env.md ,
               either "$subdomain" for using https://$subdomain.agoric.net/network-config or
               "$subdomain,$chainId" or "$fqdn,$chainId" for submitting to $subdomain.rpc.agoric.net
               or $fqdn
-  MNEMONIC:   For the private key used to sign transactions (needed for all operations except
-              --checkStorage and --buildEthOverrides)
+  MNEMONIC:   The private key used to sign transactions (needed for all operations except
+              --checkStorage and --buildEthOverrides). For --evm, this is the EVM wallet mnemonic.
+  MNEMONIC_EVM_MESSAGE_HANDLER:
+              The private key used to sign transactions from the EVM wallet handler
+              (needed for --evm, act as override for --redeem of evmWalletHandler).
 `.trim();
 
 const parseToolArgs = (argv: string[]) =>
@@ -119,6 +138,7 @@ const parseToolArgs = (argv: string[]) =>
       'skip-poll': { type: 'boolean', default: false },
       'exit-success': { type: 'boolean', default: false },
       'target-allocation': { type: 'string' },
+      evm: { type: 'string', default: '' },
       redeem: { type: 'boolean', default: false },
       contract: { type: 'string', default: 'ymax0' },
       description: { type: 'string', default: 'planner' },
@@ -272,6 +292,95 @@ const openPositions = async (
   return {
     id,
     path,
+    tx: { hash: tx.transactionHash, height: tx.height },
+  };
+};
+
+const openPositionsEVM = async ({
+  targetAllocation,
+  sig,
+  evmAccount,
+  when,
+  axelarChainConfig,
+  axelarChain,
+  id = `open-${new Date(when).toISOString()}`,
+}: {
+  sig: SigningSmartWalletKit;
+  evmAccount: HDAccount;
+  axelarChainConfig: AxelarChainConfig;
+  axelarChain: AxelarChain;
+  when: number;
+  contract?: string;
+  id?: string;
+  targetAllocation: TargetAllocation;
+}) => {
+  const spender = axelarChainConfig.contracts.depositFactory;
+
+  if (!spender || spender.length <= 2) {
+    throw Error(`missing depositFactory contract for ${axelarChain}`);
+  }
+
+  const deadline = BigInt(when) / 1000n + 3600n;
+  // not a secure nonce, but sufficient for command line purposes
+  const nonce = BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER));
+
+  const allocations: Allocation[] = Object.entries(targetAllocation).map(
+    ([instrument, amount]) => ({
+      instrument: instrument,
+      portion: amount,
+    }),
+  );
+
+  const amount = allocations.reduce(
+    (acc, { portion }) => acc + portion,
+    0n,
+  ) as bigint;
+
+  const deposit: TokenPermissions = {
+    token: axelarChainConfig.contracts.usdc,
+    amount: amount,
+  };
+
+  const witness = getYmaxWitness('OpenPortfolio', { allocations });
+
+  const openPortfolioMessage = getPermitWitnessTransferFromData(
+    {
+      permitted: deposit,
+      spender: axelarChainConfig.contracts.depositFactory,
+      nonce,
+      deadline,
+    },
+    '0x000000000022D473030F116dDEE9F6B43aC78BA3', // permit2 address on pretty much all chains
+    BigInt(axelarChainConfig.chainInfo.reference),
+    witness,
+  );
+
+  const signature = await evmAccount.signTypedData(openPortfolioMessage);
+
+  trace(id, 'opening evm portfolio');
+
+  const tx = await sig.sendBridgeAction(
+    harden({
+      method: 'invokeEntry',
+      message: {
+        id,
+        targetName: 'evmWalletHandler',
+        method: 'handleMessage',
+        args: [{ ...openPortfolioMessage, signature } as CopyRecord],
+      },
+    }),
+  );
+  if (tx.code !== 0) throw Error(tx.rawLog);
+
+  await walletUpdates(sig.query.getLastUpdate, {
+    log: trace,
+    setTimeout,
+  }).invocation(id);
+
+  // TODO: figure out the portfolio path from vstorage
+
+  return {
+    id,
     tx: { hash: tx.transactionHash, height: tx.height },
   };
 };
@@ -474,13 +583,34 @@ const main = async (
     return;
   }
 
-  const { MNEMONIC } = env;
+  // MNEMONIC below is meant to contain the "agoric wallet" mnemonic.
+  // For some operations this may be a user wallet, others an operator wallet.
+  let { MNEMONIC } = env;
   if (!MNEMONIC) throw Error(`MNEMONIC not set`);
 
   const delay = ms =>
     new Promise(resolve => setTimeout(resolve, ms)).then(_ => {});
   const walletKit0 = await makeSmartWalletKit({ fetch, delay }, networkConfig);
   const walletKit = values['skip-poll'] ? noPoll(walletKit0) : walletKit0;
+
+  let evmAccount: HDAccount | null = null;
+  if (values.evm) {
+    evmAccount = mnemonicToAccount(MNEMONIC);
+
+    MNEMONIC = env.MNEMONIC_EVM_MESSAGE_HANDLER;
+    if (!MNEMONIC)
+      throw Error(`MNEMONIC_EVM_MESSAGE_HANDLER not set for EVM wallet`);
+  }
+
+  if (values.redeem && values.description.includes('evmWalletHandler')) {
+    if (env.MNEMONIC_EVM_MESSAGE_HANDLER) {
+      console.warn(
+        `Using MNEMONIC_EVM_MESSAGE_HANDLER for evmWalletHandler redemption`,
+      );
+      MNEMONIC = env.MNEMONIC_EVM_MESSAGE_HANDLER;
+    }
+  }
+
   const sig = await makeSigningSmartWalletKit(
     { connectWithSigner, walletUtils: walletKit },
     MNEMONIC,
@@ -503,7 +633,10 @@ const main = async (
     );
 
     // XXX generalize to --no-save or some such?
-    if (description === 'resolver') {
+    // For wallets without myStore support, redeem without saving
+    const noSaveDescriptions = ['resolver', 'evmWalletHandler'];
+    const descWithoutDeliver = description.replace(/^deliver /, '');
+    if (noSaveDescriptions.includes(descWithoutDeliver)) {
       const id = `redeem-${fresh()}`;
       await sig.sendBridgeAction({
         method: 'executeOffer',
@@ -648,28 +781,64 @@ const main = async (
     : undefined;
   console.debug({ positionData, targetAllocation });
   try {
-    const opened = await openPositions(positionData, {
-      sig,
-      when: now(),
-      targetAllocation,
-      contract: values.contract,
-    });
-    trace('opened', opened);
-    const { path } = opened;
-    // XXX would be nice if readPublished allowed ^published.
-    const subPath = path.replace(/^published./, '') as typeof path;
-    const pq = makePortfolioQuery(walletKit.readPublished, subPath);
-    const status = await pq.getPortfolioStatus();
-    trace('status', status);
-    if (status.depositAddress && env.AGORIC_NET === 'devnet') {
-      // XXX devnet explorer seems to support this query
-      const apiAddr = 'https://devnet.explorer.agoric.net';
-      const url = `${apiAddr}/api/cosmos/bank/v1beta1/balances/${status.depositAddress}`;
-      const result = await fetch(url).then(r => r.json());
-      if (result.balances) {
-        console.log(status.depositAddress, result.balances);
-      } else {
-        console.error(url, 'failed', result);
+    if (values.evm) {
+      const { AGORIC_NET: net } = env;
+      if (net !== 'main' && net !== 'devnet') {
+        throw Error(`unsupported/unknown net: ${net}`);
+      }
+      const { axelarConfig } = getNetworkConfig(net);
+
+      if (!(values.evm in axelarConfig)) {
+        throw Error(`unknown/unsupported evm chain: ${values.evm}`);
+      }
+
+      const axelarChain = values.evm as AxelarChain;
+      const axelarChainConfig = axelarConfig[axelarChain];
+
+      if (!targetAllocation) {
+        throw Error(`--target-allocation is required with --evm`);
+      }
+
+      if (Object.keys(positionData).length !== 0) {
+        throw Error(
+          `--positions not supported with --evm, use --target-allocation`,
+        );
+      }
+
+      const opened = await openPositionsEVM({
+        targetAllocation,
+        sig,
+        evmAccount: evmAccount!,
+        when: now(),
+        axelarChainConfig,
+        axelarChain,
+      });
+      trace('opened', opened);
+    } else {
+      const opened = await openPositions(positionData, {
+        sig,
+        when: now(),
+        targetAllocation,
+        contract: values.contract,
+      });
+
+      trace('opened', opened);
+      const { path } = opened;
+      // XXX would be nice if readPublished allowed ^published.
+      const subPath = path.replace(/^published./, '') as typeof path;
+      const pq = makePortfolioQuery(walletKit.readPublished, subPath);
+      const status = await pq.getPortfolioStatus();
+      trace('status', status);
+      if (status.depositAddress && env.AGORIC_NET === 'devnet') {
+        // XXX devnet explorer seems to support this query
+        const apiAddr = 'https://devnet.explorer.agoric.net';
+        const url = `${apiAddr}/api/cosmos/bank/v1beta1/balances/${status.depositAddress}`;
+        const result = await fetch(url).then(r => r.json());
+        if (result.balances) {
+          console.log(status.depositAddress, result.balances);
+        } else {
+          console.error(url, 'failed', result);
+        }
       }
     }
   } catch (err) {

@@ -273,6 +273,7 @@ export const contractsMock: EVMContractAddressesMap = {
   Avalanche: {
     aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    depositFactory: '0x9524EEb5F792944a0FE929bb8Efb354438B19F7C',
     factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
     gateway: '0xC249632c2D40b9001FE907806902f63038B737Ab',
     gasService: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
@@ -287,6 +288,7 @@ export const contractsMock: EVMContractAddressesMap = {
   Ethereum: {
     aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    depositFactory: '0x9524EEb5F792944a0FE929bb8Efb354438B19F7C',
     factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
     gateway: '0xe432150cce91c13a887f7D836923d5597adD8E31',
     gasService: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
@@ -305,6 +307,7 @@ export const contractsMock: EVMContractAddressesMap = {
   Optimism: {
     aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    depositFactory: '0x9524EEb5F792944a0FE929bb8Efb354438B19F7C',
     factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
     gateway: '0xe432150cce91c13a887f7D836923d5597adD8E31',
     gasService: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
@@ -319,6 +322,7 @@ export const contractsMock: EVMContractAddressesMap = {
   Arbitrum: {
     aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    depositFactory: '0x9524EEb5F792944a0FE929bb8Efb354438B19F7C',
     factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
     gateway: '0xe1cE95479C84e9809269227C7F8524aE051Ae77a',
     gasService: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
@@ -341,6 +345,7 @@ export const contractsMock: EVMContractAddressesMap = {
   Base: {
     aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    depositFactory: '0x9524EEb5F792944a0FE929bb8Efb354438B19F7C',
     factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
     gateway: '0xe432150cce91c13a887f7D836923d5597adD8E31',
     gasService: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',

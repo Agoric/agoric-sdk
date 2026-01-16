@@ -190,6 +190,13 @@ export type StatusFor = {
     /** Noble Forwarding Address (NFA) registered by the contract for the `@agoric` address */
     nobleForwardingAddress?: Bech32Address;
     targetAllocation?: TargetAllocation;
+    /**
+     * CAIP-10 account ID of the authenticated EVM account that opened this portfolio.
+     * Derived from `permit2Payload.owner` in `openPortfolioFromEVM()`.
+     * The Permit2 signature is verified on-chain by the `depositFactory` contract
+     * when it receives the GMP call via `sendCreateAndDepositCall()`.
+     */
+    sourceAccountId?: AccountId;
     /** incremented by the contract every time the user sends a transaction that the planner should respond to */
     policyVersion: number;
     /** the count of acknowledged submissions [from the planner] associated with the current policyVersion */

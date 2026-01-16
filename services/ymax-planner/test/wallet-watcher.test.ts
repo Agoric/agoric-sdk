@@ -1,10 +1,13 @@
 import test from 'ava';
-import { id, zeroPadValue, AbiCoder } from 'ethers';
+import { zeroPadValue, AbiCoder } from 'ethers';
 import { createMockPendingTxOpts } from './mocks.ts';
 import { handlePendingTx } from '../src/pending-tx-manager.ts';
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
-import { SMART_WALLET_CREATED_SIGNATURE } from '../src/watchers/wallet-watcher.ts';
+import {
+  SMART_WALLET_CREATED_SIGNATURE,
+  parseSmartWalletCreatedLog,
+} from '../src/watchers/wallet-watcher.ts';
 
 const abiCoder = new AbiCoder();
 
@@ -16,12 +19,8 @@ const createSmartWalletCreatedLog = (
   walletAddr: string,
   owner: string,
   sourceChain: string,
-  sourceAddress: string,
 ) => {
-  const data = abiCoder.encode(
-    ['string', 'string', 'string'],
-    [owner, sourceChain, sourceAddress],
-  );
+  const data = abiCoder.encode(['string', 'string'], [owner, sourceChain]);
 
   return {
     address: factoryAddress,
@@ -34,6 +33,24 @@ const createSmartWalletCreatedLog = (
     blockNumber: 18500000,
   };
 };
+
+test('createSmartWalletCreatedLog followed by parseSmartWalletCreatedLog round-trips', t => {
+  const testWalletAddr = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
+  const testOwner = 'agoric1testowner456';
+  const testSourceChain = 'agoric-3';
+
+  const log = createSmartWalletCreatedLog(
+    testWalletAddr,
+    testOwner,
+    testSourceChain,
+  );
+
+  const parsed = parseSmartWalletCreatedLog(log);
+
+  t.is(parsed.wallet.toLowerCase(), testWalletAddr.toLowerCase());
+  t.is(parsed.owner, testOwner);
+  t.is(parsed.sourceChain, testSourceChain);
+});
 
 test('handlePendingTx processes MAKE_ACCOUNT transaction successfully', async t => {
   const opts = createMockPendingTxOpts();
@@ -58,7 +75,6 @@ test('handlePendingTx processes MAKE_ACCOUNT transaction successfully', async t 
       expectedWalletAddr,
       'agoric1owner123',
       'agoric-3',
-      'agoric1source456',
     );
 
     const filter = {
@@ -112,7 +128,6 @@ test('handlePendingTx logs timeout on MAKE_ACCOUNT transaction with no matching 
       expectedWalletAddr,
       'agoric1owner123',
       'agoric-3',
-      'agoric1source456',
     );
 
     const filter = {
@@ -172,7 +187,6 @@ test('handlePendingTx ignores non-matching wallet addresses', async t => {
       wrongWalletAddrChecksummed,
       'agoric1owner123',
       'agoric-3',
-      'agoric1source456',
     );
 
     const filter = {
@@ -191,7 +205,6 @@ test('handlePendingTx ignores non-matching wallet addresses', async t => {
       expectedWalletAddr,
       'agoric1owner123',
       'agoric-3',
-      'agoric1source456',
     );
 
     const filter = {
