@@ -5,6 +5,7 @@ import type * as _$agoric$swingset$msgs_js from './agoric/swingset/msgs.js';
 import type * as _$agoric$swingset$query_js from './agoric/swingset/query.js';
 import type * as _$agoric$swingset$swingset_js from './agoric/swingset/swingset.js';
 import type * as _$agoric$vbank$genesis_js from './agoric/vbank/genesis.js';
+import type * as _$agoric$vbank$msgs_js from './agoric/vbank/msgs.js';
 import type * as _$agoric$vbank$query_js from './agoric/vbank/query.js';
 import type * as _$agoric$vbank$vbank_js from './agoric/vbank/vbank.js';
 import type * as _$agoric$vibc$msgs_js from './agoric/vibc/msgs.js';
@@ -256,6 +257,8 @@ export type TypeFromUrl = {
   '/agoric.swingset.SwingStoreArtifact': _$agoric$swingset$swingset_js.SwingStoreArtifact;
   '/agoric.swingset.UintMapEntry': _$agoric$swingset$swingset_js.UintMapEntry;
   '/agoric.vbank.GenesisState': _$agoric$vbank$genesis_js.GenesisState;
+  '/agoric.vbank.MsgSetDenomMetadata': _$agoric$vbank$msgs_js.MsgSetDenomMetadata;
+  '/agoric.vbank.MsgSetDenomMetadataResponse': _$agoric$vbank$msgs_js.MsgSetDenomMetadataResponse;
   '/agoric.vbank.QueryParamsRequest': _$agoric$vbank$query_js.QueryParamsRequest;
   '/agoric.vbank.QueryParamsResponse': _$agoric$vbank$query_js.QueryParamsResponse;
   '/agoric.vbank.QueryStateRequest': _$agoric$vbank$query_js.QueryStateRequest;
