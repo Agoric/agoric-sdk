@@ -407,10 +407,7 @@ const testCopingGoodReplay = async (t, zone) => {
   const replayProblem = flow.getOptFatalProblem();
   t.is(replayProblem, undefined);
 
-  t.deepEqual(
-    adminAsyncFlow.getFailures(),
-    makeCopyMap([]),
-  );
+  t.deepEqual(adminAsyncFlow.getFailures(), makeCopyMap([]));
 
   t.log('  testCopingGoodReplay failures', flow.getOptFatalProblem());
   t.log('testCopingGoodReplay done');
