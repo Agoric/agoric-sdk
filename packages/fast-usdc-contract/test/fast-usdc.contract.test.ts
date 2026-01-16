@@ -22,7 +22,7 @@ import {
   buildMsgErrorString,
   buildMsgResponseString,
   buildTxPacketString,
-} from '@agoric/orchestration/tools/ibc-mocks.ts';
+} from '@agoric/orchestration/tools/ibc-mocks.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import type { Installation } from '@agoric/zoe/src/zoeService/utils.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';

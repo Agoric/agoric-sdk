@@ -16,13 +16,13 @@ import type {
   TypedDataToPrimitiveTypes,
 } from 'abitype';
 import type { TypedDataDefinition } from 'viem';
-import type { TypedDataParameter } from '@agoric/orchestration/src/utils/abitype.ts';
+import type { TypedDataParameter } from '@agoric/orchestration/src/utils/abitype.js';
 import {
   type Witness,
   type getPermitWitnessTransferFromData,
   type getPermitBatchWitnessTransferFromData,
   makeWitness,
-} from '@agoric/orchestration/src/utils/permit2.ts';
+} from '@agoric/orchestration/src/utils/permit2.js';
 
 const YMAX_DOMAIN_NAME = 'Ymax';
 const YMAX_DOMAIN_VERSION = '1';
