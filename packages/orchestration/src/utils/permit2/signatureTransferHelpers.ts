@@ -4,7 +4,12 @@
  * This is original code that was adapted for permit2-sdk, unlike @see ./permit2SignatureTransfer.ts
  */
 
-import type { TypedData } from 'viem';
+import type {
+  AbiFunction,
+  AbiParameter,
+  AbiParameterToPrimitiveType,
+  TypedData,
+} from 'abitype';
 import type { TypedDataParameter } from '../abitype.ts';
 import {
   PermitBatchTransferFromTypeParams,
@@ -137,3 +142,121 @@ export const isPermit2MessageType = (type: string) => {
     type === 'PermitWitnessTransferFrom'
   );
 };
+
+export const TokenPermissionsComponents = [
+  { name: 'token', type: 'address' },
+  { name: 'amount', type: 'uint256' },
+] as const satisfies AbiParameter[];
+export const TokenPermissionsInternalTypeName =
+  'struct ISignatureTransfer.TokenPermissions' as const;
+
+export const PermitTransferFromComponents = [
+  {
+    name: 'permitted',
+    type: 'tuple',
+    internalType: TokenPermissionsInternalTypeName,
+    components: TokenPermissionsComponents,
+  },
+  { name: 'nonce', type: 'uint256' },
+  { name: 'deadline', type: 'uint256' },
+] as const satisfies AbiParameter[];
+export const PermitTransferFromInternalTypeName =
+  'struct ISignatureTransfer.PermitTransferFrom' as const;
+export type PermitTransferFromStruct = AbiParameterToPrimitiveType<{
+  type: 'tuple';
+  internalType: typeof PermitTransferFromInternalTypeName;
+  components: typeof PermitTransferFromComponents;
+}>;
+
+export const PermitBatchTransferFromComponents = [
+  {
+    name: 'permitted',
+    type: 'tuple[]',
+    internalType: `${TokenPermissionsInternalTypeName}[]`,
+    components: TokenPermissionsComponents,
+  },
+  { name: 'nonce', type: 'uint256' },
+  { name: 'deadline', type: 'uint256' },
+] as const satisfies AbiParameter[];
+export const PermitBatchTransferFromInternalTypeName =
+  'struct ISignatureTransfer.PermitBatchTransferFrom' as const;
+export type PermitBatchTransferFromStruct = AbiParameterToPrimitiveType<{
+  type: 'tuple';
+  internalType: typeof PermitBatchTransferFromInternalTypeName;
+  components: typeof PermitBatchTransferFromComponents;
+}>;
+
+export const SignatureTransferDetailsComponents = [
+  { name: 'to', type: 'address' },
+  { name: 'requestedAmount', type: 'uint256' },
+] as const satisfies AbiParameter[];
+export const SignatureTransferDetailsInternalTypeName =
+  'struct ISignatureTransfer.SignatureTransferDetails' as const;
+export type SignatureTransferDetailsStruct = AbiParameterToPrimitiveType<{
+  type: 'tuple';
+  internalType: typeof SignatureTransferDetailsInternalTypeName;
+  components: typeof SignatureTransferDetailsComponents;
+}>;
+
+export const PermitWitnessTransferFromInputComponents = [
+  {
+    name: 'permit',
+    type: 'tuple',
+    internalType: PermitTransferFromInternalTypeName,
+    components: PermitTransferFromComponents,
+  },
+  {
+    name: 'transferDetails',
+    type: 'tuple',
+    internalType: SignatureTransferDetailsInternalTypeName,
+    components: SignatureTransferDetailsComponents,
+  },
+  { name: 'owner', type: 'address' },
+  { name: 'witness', type: 'bytes32' },
+  { name: 'witnessTypeString', type: 'string' },
+  { name: 'signature', type: 'bytes' },
+] as const satisfies AbiParameter[];
+export type PermitWitnessTransferFromPayload = AbiParameterToPrimitiveType<{
+  type: 'tuple';
+  components: typeof PermitWitnessTransferFromInputComponents;
+}>;
+
+export const BatchPermitWitnessTransferFromInputComponents = [
+  {
+    name: 'permit',
+    type: 'tuple',
+    internalType: PermitBatchTransferFromInternalTypeName,
+    components: PermitBatchTransferFromComponents,
+  },
+  {
+    name: 'transferDetails',
+    type: 'tuple[]',
+    internalType: `${SignatureTransferDetailsInternalTypeName}[]`,
+    components: SignatureTransferDetailsComponents,
+  },
+  { name: 'owner', type: 'address' },
+  { name: 'witness', type: 'bytes32' },
+  { name: 'witnessTypeString', type: 'string' },
+  { name: 'signature', type: 'bytes' },
+] as const satisfies AbiParameter[];
+export type BatchPermitWitnessTransferFromPayload =
+  AbiParameterToPrimitiveType<{
+    type: 'tuple';
+    components: typeof BatchPermitWitnessTransferFromInputComponents;
+  }>;
+
+export const PermitWitnessTransferFromFunctionABIType = {
+  name: 'permitWitnessTransferFrom',
+  inputs: PermitWitnessTransferFromInputComponents,
+  outputs: [],
+  stateMutability: 'nonpayable',
+  type: 'function',
+} as const satisfies AbiFunction;
+
+export const BatchPermitWitnessTransferFunctionABIType = {
+  name: 'permitWitnessTransferFrom',
+  inputs: BatchPermitWitnessTransferFromInputComponents,
+  outputs: [],
+  stateMutability: 'nonpayable',
+  type: 'function',
+} as const satisfies AbiFunction;

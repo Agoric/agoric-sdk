@@ -206,8 +206,10 @@ __metadata:
     "@agoric/orchestration": "workspace:*"
     "@agoric/portfolio-api": "workspace:*"
     "@agoric/smart-wallet": "workspace:*"
+    "@agoric/store": "workspace:*"
     "@agoric/swingset-liveslots": "workspace:*"
     "@agoric/time": "workspace:*"
+    "@agoric/vat-data": "workspace:*"
     "@agoric/vats": "workspace:*"
     "@agoric/vow": "workspace:*"
     "@agoric/zoe": "workspace:*"
@@ -271,6 +273,7 @@ __metadata:
     execa: "npm:^9.6.0"
     ts-blank-space: "npm:^0.6.2"
     tsd: "npm:^0.33.0"
+    viem: "npm:^2.31.0"
   languageName: unknown
   linkType: soft
 
