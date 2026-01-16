@@ -65,7 +65,7 @@ export const watchSmartWalletTx = ({
   Partial<SmartWalletWatch>): Promise<WatcherResult> => {
   return new Promise(resolve => {
     if (signal?.aborted) {
-      resolve({ found: false });
+      resolve({ settled: false });
       return;
     }
 
@@ -90,7 +90,7 @@ export const watchSmartWalletTx = ({
       listeners = [];
     };
 
-    signal?.addEventListener('abort', () => finish({ found: false }));
+    signal?.addEventListener('abort', () => finish({ settled: false }));
 
     const listenForSmartWalletCreation = async (eventLog: Log) => {
       let eventData;
@@ -109,7 +109,7 @@ export const watchSmartWalletTx = ({
           `✓ Address matches! Expected: ${expectedAddr}, Found: ${normalizedWallet}`,
         );
         walletCreated = true;
-        finish({ found: true, txHash: eventLog.transactionHash });
+        finish({ settled: true, txHash: eventLog.transactionHash });
         return;
       }
       log(
@@ -193,13 +193,13 @@ export const lookBackSmartWalletTx = async ({
 
     if (!matchingEvent) {
       log(`No matching SmartWalletCreated event found`);
-      return { found: false };
+      return { settled: false };
     }
 
     deleteTxBlockLowerBound(kvStore, txId);
-    return { found: true, txHash: matchingEvent.transactionHash };
+    return { settled: true, txHash: matchingEvent.transactionHash };
   } catch (error) {
     log(`Error:`, error);
-    return { found: false };
+    return { settled: false };
   }
 };
