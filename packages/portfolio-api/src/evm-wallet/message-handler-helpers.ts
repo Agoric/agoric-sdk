@@ -99,11 +99,12 @@ export const makeEVMHandlerUtils = (viemUtils: {
     T extends OperationTypeNames,
   >(
     data: YmaxStandaloneOperationData<T>,
+    validContractAddresses?: Record<number | string, Address>,
   ): YmaxOperationDetails<T> => {
     // @ts-expect-error generic/union type compatibility
     const standaloneData: YmaxStandaloneOperationData = data;
 
-    validateYmaxDomain(standaloneData.domain);
+    validateYmaxDomain(standaloneData.domain, validContractAddresses);
     validateYmaxOperationTypeName<T>(standaloneData.primaryType);
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -218,6 +219,7 @@ export const makeEVMHandlerUtils = (viemUtils: {
     signedData: WithSignature<
       YmaxPermitWitnessTransferFromData<T> | YmaxStandaloneOperationData<T>
     >,
+    validStandaloneContractAddresses?: Record<number | string, Address>,
   ): Promise<FullMessageDetails<T>> => {
     const tokenOwner = await recoverTypedDataAddress(
       signedData as RecoverTypedDataAddressParameters,
@@ -250,8 +252,10 @@ export const makeEVMHandlerUtils = (viemUtils: {
     } else {
       const standaloneData =
         signedData as unknown as YmaxStandaloneOperationData<T>;
-      const operationDetails =
-        extractOperationDetailsFromStandaloneData(standaloneData);
+      const operationDetails = extractOperationDetailsFromStandaloneData(
+        standaloneData,
+        validStandaloneContractAddresses,
+      );
 
       return {
         ...operationDetails,

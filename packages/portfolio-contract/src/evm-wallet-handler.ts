@@ -117,7 +117,7 @@ export const makeNonceManager = (zone: Zone) => {
   const removeExpiredNonces = (currentTime: bigint): void => {
     for (const encodedKey of noncesByDeadline.keys()) {
       const key = decodeKeyByDeadline(encodedKey);
-      if (key.deadline > currentTime) {
+      if (currentTime <= key.deadline) {
         break;
       }
 
@@ -319,12 +319,14 @@ export const prepareEVMWalletHandlerKit = (
     timerService,
     portfolioContractPublicFacet,
     publishStatus,
+    validStandaloneContractAddresses,
   }: {
     storageNode: ERemote<StorageNode>;
     vowTools: Pick<VowTools, 'asVow' | 'watch' | 'when'>;
     timerService: ERemote<TimerService>;
     portfolioContractPublicFacet: ERemote<PortfolioContractPublicFacet>;
     publishStatus: PublishStatus;
+    validStandaloneContractAddresses: Record<number | string, Address>;
   },
 ) => {
   const { extractOperationDetailsFromSignedData } = makeEVMHandlerUtils({
@@ -378,8 +380,10 @@ export const prepareEVMWalletHandlerKit = (
           trace('handleMessage', messageData);
 
           // Resolves immediately on-chain since all deps are bundled
-          const details =
-            await extractOperationDetailsFromSignedData(messageData);
+          const details = await extractOperationDetailsFromSignedData(
+            messageData,
+            validStandaloneContractAddresses,
+          );
 
           trace('extracted details', details);
 
@@ -390,6 +394,12 @@ export const prepareEVMWalletHandlerKit = (
           const { absValue: localChainTime } =
             await E(timerService).getCurrentTimestamp();
           removeExpiredNonces(localChainTime);
+
+          if (localChainTime > deadline) {
+            throw Fail`Deadline has already passed: ${q(deadline)} vs ${q(
+              localChainTime,
+            )}`;
+          }
 
           deadline < localChainTime + MAX_DEADLINE_OFFSET ||
             Fail`Deadline too far in the future: ${q(deadline)} vs ${q(localChainTime)}`;
