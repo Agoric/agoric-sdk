@@ -6,10 +6,14 @@
  * on chain and in off-chain services.
  */
 
-import type { Address, TypedDataDomain } from 'abitype';
-import type { Hex } from 'viem';
+import type {
+  AbiParameterToPrimitiveType,
+  Address,
+  TypedDataDomain,
+} from 'abitype';
 import type {
   hashStruct,
+  isHex,
   recoverTypedDataAddress,
   RecoverTypedDataAddressParameters,
   validateTypedData,
@@ -22,7 +26,7 @@ import {
   extractWitnessFieldFromTypes,
   isPermit2MessageType,
   makeWitnessTypeStringExtractor,
-  type PermitTransferFrom,
+  type PermitWitnessTransferFromInputComponents,
 } from '@agoric/orchestration/src/utils/permit2.ts';
 import {
   type OperationTypeNames,
@@ -35,37 +39,56 @@ import {
   getYmaxOperationTypes,
 } from './eip712-messages.ts';
 
-export type YmaxOperationDetails<T extends OperationTypeNames> = {
+export type YmaxOperationDetails<
+  T extends OperationTypeNames = OperationTypeNames,
+> = {
   [P in T]: {
     operation: P;
     data: YmaxOperationType<P>;
   };
 }[T];
 
-export type PermitDataPayload = {
+export type PermitWitnessTransferFromPayload = AbiParameterToPrimitiveType<{
+  type: 'tuple';
+  components: typeof PermitWitnessTransferFromInputComponents;
+}>;
+
+export type PermitDetails = {
   chainId: NonNullable<TypedDataDomain['chainId']>;
-  permit: PermitTransferFrom;
-  witness: Hex;
-  witnessTypeString: string;
+  token: Address;
+  amount: bigint;
+  spender: Address;
+  permit2Payload: Omit<PermitWitnessTransferFromPayload, 'transferDetails'>;
 };
 
 export type FullMessageDetails<
   T extends OperationTypeNames = OperationTypeNames,
 > = YmaxOperationDetails<T> & {
-  permit?: WithSignature<PermitDataPayload>;
+  permitDetails?: PermitDetails;
   evmWalletAddress: Address;
   nonce: bigint;
   deadline: bigint;
 };
 
-export const makeEVMHandlerUtils = (powers: {
+/**
+ * EVM Message handler utils that depend on 'viem' utils for their
+ * implementation. Since on-chain we cannot directly import from 'viem',
+ * use a maker pattern to create these utils.
+ */
+export const makeEVMHandlerUtils = (viemUtils: {
+  isHex: typeof isHex;
   hashStruct: typeof hashStruct;
   recoverTypedDataAddress: typeof recoverTypedDataAddress;
   validateTypedData: typeof validateTypedData;
   encodeType: typeof encodeType;
 }) => {
-  const { hashStruct, recoverTypedDataAddress, validateTypedData, encodeType } =
-    powers;
+  const {
+    isHex,
+    hashStruct,
+    recoverTypedDataAddress,
+    validateTypedData,
+    encodeType,
+  } = viemUtils;
   /**
    * Extract operation type name and data from an EIP-712 standalone Ymax typed data
    *
@@ -128,16 +151,26 @@ export const makeEVMHandlerUtils = (powers: {
    * Extract the data that can be used as partial arguments to permit2's
    * permitWitnessTransferFrom
    *
+   * This does not verify the signature; that is expected to be done by the caller.
+   *
    * @param data permit2 message with witness data to summarize
+   * @param owner address of the permit2 message signer
+   * @param signature signature of the permit2 message
    */
-  const extractPermitData = <T extends OperationTypeNames>(
+  const extractPermitDetails = <T extends OperationTypeNames>(
     data: YmaxPermitWitnessTransferFromData<T>,
-  ): PermitDataPayload => {
+    owner: Address,
+    signature: WithSignature<object>['signature'],
+  ): PermitDetails => {
     const witnessTypeStringExtractor = makeWitnessTypeStringExtractor({
       encodeType,
     });
     // @ts-expect-error generic/union type compatibility
     const permitData: YmaxPermitWitnessTransferFromData = data;
+
+    if (!isHex(signature)) {
+      throw new Error(`Invalid signature format: ${signature}`);
+    }
 
     const witnessField = extractWitnessFieldFromTypes(permitData.types);
     const { [witnessField.name]: witnessData, ...permit } = permitData.message;
@@ -148,14 +181,28 @@ export const makeEVMHandlerUtils = (powers: {
     });
     const witnessTypeString = witnessTypeStringExtractor(permitData.types);
 
-    const payload = {
-      chainId: permitData.domain!.chainId!,
-      permit,
+    const { spender, ...permitStruct } = permit;
+
+    const permit2Payload: Omit<
+      PermitWitnessTransferFromPayload,
+      'transferDetails'
+    > = {
+      permit: permitStruct,
+      owner,
       witness,
       witnessTypeString,
+      signature,
     };
 
-    return payload;
+    const details: PermitDetails = {
+      chainId: permitData.domain!.chainId!,
+      token: permit.permitted.token,
+      amount: permit.permitted.amount,
+      permit2Payload,
+      spender,
+    };
+
+    return details;
   };
 
   /**
@@ -185,16 +232,17 @@ export const makeEVMHandlerUtils = (powers: {
       const permit2Data =
         signedData as unknown as YmaxPermitWitnessTransferFromData<T>;
 
-      const permitPayload = {
-        ...extractPermitData(permit2Data),
-        signature: signedData.signature,
-      };
+      const permitDetails = extractPermitDetails(
+        permit2Data,
+        tokenOwner,
+        signedData.signature,
+      );
       const operationDetails =
         extractOperationDetailsFromPermit2WitnessData(permit2Data);
 
       return {
         ...operationDetails,
-        permit: permitPayload,
+        permitDetails,
         evmWalletAddress: tokenOwner,
         nonce,
         deadline,
@@ -217,7 +265,7 @@ export const makeEVMHandlerUtils = (powers: {
   return {
     extractOperationDetailsFromStandaloneData,
     extractOperationDetailsFromPermit2WitnessData,
-    extractPermitData,
+    extractPermitDetails,
     extractOperationDetailsFromSignedData,
   };
 };

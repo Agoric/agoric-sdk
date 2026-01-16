@@ -40,6 +40,11 @@ export interface Witness<
   witness: TypedDataToPrimitiveTypes<T>[TD['type']];
 }
 
+/**
+ * Helper to help caller check that the `data` matches the inferred witness types
+ *
+ * @see {@link https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-4.html#the-noinfer-utility-type}
+ */
 export function makeWitness<
   T extends TypedData,
   TD extends TypedDataParameter<string, Extract<keyof T, string>>,
