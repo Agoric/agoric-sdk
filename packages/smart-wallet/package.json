@@ -7,8 +7,8 @@
   "scripts": {
     "build": "yarn build:bundles",
     "build:bundles": "node ./scripts/build-bundles.js",
-    "prepack": "yarn run -T build-ts-to-js && yarn run -T tsc --build tsconfig.build.json && find src -name '*.ts' ! -name '*.d.ts' -delete",
-    "postpack": "git checkout -- '*.ts' && git clean -f '*.d.ts' '*.d.ts.map' '*.js'",
+    "prepack": "yarn run -T prepack-package",
+    "postpack": "yarn run -T postpack-package",
     "test": "ava",
     "test:c8": "c8 --all $C8_OPTIONS ava",
     "test:xs": "exit 0",
