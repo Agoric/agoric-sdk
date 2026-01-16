@@ -114,7 +114,8 @@
     "node": "^20.9 || ^22.11"
   },
   "scripts": {
-    "build-ts-to-js": "node scripts/build-ts-to-js.mjs $INIT_CWD",
+    "prepack-package": "scripts/packing/prepack-package.mjs",
+    "postpack-package": "scripts/packing/postpack-package.mjs",
     "clean": "yarn lerna run --no-bail clean",
     "docs": "run-s docs:build docs:update-functions-path",
     "docs:build": "typedoc --tsconfig tsconfig.build.json",

@@ -15,8 +15,8 @@
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
     "lint:types": "yarn run -T tsc",
     "lint:eslint": "yarn run -T eslint .",
-    "prepack": "yarn run -T tsc --build tsconfig.build.json",
-    "postpack": "git clean -f ':!src/types-index.d.ts' '*.d.ts*'"
+    "prepack": "yarn run -T prepack-package",
+    "postpack": "yarn run -T postpack-package"
   },
   "dependencies": {
     "@agoric/internal": "workspace:*",
