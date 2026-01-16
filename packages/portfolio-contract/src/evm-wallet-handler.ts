@@ -24,7 +24,7 @@ import {
   type PermitDetails,
   type YmaxOperationDetails,
 } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.ts';
-import { provideLazy } from '@agoric/store';
+import { provideLazy, type MapStore } from '@agoric/store';
 import type { TimerService } from '@agoric/time';
 import { VowShape, type Vow, type VowTools } from '@agoric/vow';
 import { type Zone } from '@agoric/zone';
