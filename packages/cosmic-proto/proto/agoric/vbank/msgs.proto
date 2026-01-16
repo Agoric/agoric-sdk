@@ -13,15 +13,15 @@ option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types";
 service Msg {
   option (cosmos.msg.v1.service) = true;
 
-  // SetDenomMetaData defines a governance operation for setting the metadata for a denom.
+  // SetDenomMetadata defines a governance operation for setting the metadata for a denom.
   // The authority is defined in the keeper.
-  rpc SetDenomMetaData(MsgSetDenomMetaData) returns (MsgSetDenomMetaDataResponse);
+  rpc SetDenomMetadata(MsgSetDenomMetadata) returns (MsgSetDenomMetadataResponse);
 }
 
-// MsgSetDenomMetaData represents a message to set the metadata for a denom.
-message MsgSetDenomMetaData {
+// MsgSetDenomMetadata represents a message to set the metadata for a denom.
+message MsgSetDenomMetadata {
   option (cosmos.msg.v1.signer) = "authority";
-  option (amino.name)           = "vbank/MsgSetDenomMetaData";
+  option (amino.name)           = "vbank/SetDenomMetadata";
 
   // authority is the address that controls the module (defaults to x/gov unless overwritten).
   string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
@@ -30,5 +30,5 @@ message MsgSetDenomMetaData {
   cosmos.bank.v1beta1.Metadata metadata = 2 [(gogoproto.nullable) = false];
 }
 
-// MsgSetDenomMetaDataResponse is the response type for the Msg/SetDenomMetaData RPC method.
-message MsgSetDenomMetaDataResponse {}
+// MsgSetDenomMetadataResponse is the response type for the Msg/SetDenomMetadata RPC method.
+message MsgSetDenomMetadataResponse {}

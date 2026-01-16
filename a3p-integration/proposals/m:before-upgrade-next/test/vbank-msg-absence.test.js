@@ -1,11 +1,11 @@
 /**
- * Test that vbank/MsgSetDenomMetaData is not available before upgrade
+ * Test that vbank/MsgSetDenomMetadata is not available before upgrade
  */
 import test from 'ava';
 import '@endo/init/debug.js';
 import { execa } from 'execa';
 
-test('vbank/MsgSetDenomMetaData message type should not exist', async t => {
+test('vbank/MsgSetDenomMetadata message type should not exist', async t => {
   // Try to create a proposal with the message type
   // If the message type doesn't exist, agd will reject it during validation
   const proposalPath = '/tmp/test-vbank-setdenommetadata-proposal.json';
@@ -14,7 +14,7 @@ test('vbank/MsgSetDenomMetaData message type should not exist', async t => {
   const proposal = {
     messages: [
       {
-        '@type': '/agoric.vbank.MsgSetDenomMetaData',
+        '@type': '/agoric.vbank.MsgSetDenomMetadata',
         authority: 'agoric10d07y265gmmuvt4z0w9aw880jnsr700j6z2zm3',
         metadata: {
           description: 'Test Token',

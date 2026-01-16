@@ -1,5 +1,5 @@
 /**
- * Test vbank/MsgSetDenomMetaData governance functionality
+ * Test vbank/MsgSetDenomMetadata governance functionality
  */
 import test from 'ava';
 import '@endo/init/debug.js';
@@ -190,7 +190,7 @@ test.serial('can query existing denom metadata', async t => {
 });
 
 test.serial(
-  'can submit and execute vbank/MsgSetDenomMetaData via governance',
+  'can submit and execute vbank/MsgSetDenomMetadata via governance',
   async t => {
     const testDenom = 'utestvbank';
     const proposalPath = '/tmp/vbank-setdenommetadata-proposal.json';
@@ -200,7 +200,7 @@ test.serial(
     const proposal = {
       messages: [
         {
-          '@type': '/agoric.vbank.MsgSetDenomMetaData',
+          '@type': '/agoric.vbank.MsgSetDenomMetadata',
           authority: GOV_MODULE_ADDRESS,
           metadata: {
             description: 'Test VBank Token for governance testing',
@@ -229,7 +229,7 @@ test.serial(
       deposit: '10000000ubld',
       title: 'Set Test VBank Denom Metadata',
       summary:
-        'Test the vbank/MsgSetDenomMetaData governance message by setting metadata for a test denomination',
+        'Test the vbank/MsgSetDenomMetadata governance message by setting metadata for a test denomination',
       expedited: false,
     };
 
@@ -237,7 +237,7 @@ test.serial(
 
     try {
       // Submit the proposal
-      t.log('Submitting vbank/MsgSetDenomMetaData proposal...');
+      t.log('Submitting vbank/MsgSetDenomMetadata proposal...');
       const proposalId = await submitProposal(proposalPath, GOV1ADDR);
       t.log(`Proposal ID: ${proposalId}`);
 
@@ -302,7 +302,7 @@ test.serial(
         'Aliases should match',
       );
 
-      t.pass('vbank/MsgSetDenomMetaData executed successfully via governance');
+      t.pass('vbank/MsgSetDenomMetadata executed successfully via governance');
     } finally {
       await fs.unlink(proposalPath).catch(() => {});
     }
@@ -318,7 +318,7 @@ test.serial('can update existing denom metadata via governance', async t => {
   const initialProposal = {
     messages: [
       {
-        '@type': '/agoric.vbank.MsgSetDenomMetaData',
+        '@type': '/agoric.vbank.MsgSetDenomMetadata',
         authority: GOV_MODULE_ADDRESS,
         metadata: {
           description: 'Initial description',
@@ -371,7 +371,7 @@ test.serial('can update existing denom metadata via governance', async t => {
     const updateProposal = {
       messages: [
         {
-          '@type': '/agoric.vbank.MsgSetDenomMetaData',
+          '@type': '/agoric.vbank.MsgSetDenomMetadata',
           authority: GOV_MODULE_ADDRESS,
           metadata: {
             description: 'Updated description',
@@ -454,7 +454,7 @@ test.serial(
     const invalidProposal = {
       messages: [
         {
-          '@type': '/agoric.vbank.MsgSetDenomMetaData',
+          '@type': '/agoric.vbank.MsgSetDenomMetadata',
           authority: GOV_MODULE_ADDRESS,
           metadata: {
             description: 'Invalid metadata',

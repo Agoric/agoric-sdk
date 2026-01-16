@@ -32,26 +32,26 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// MsgSetDenomMetaData represents a message to set the metadata for a denom.
-type MsgSetDenomMetaData struct {
+// MsgSetDenomMetadata represents a message to set the metadata for a denom.
+type MsgSetDenomMetadata struct {
 	// authority is the address that controls the module (defaults to x/gov unless overwritten).
 	Authority string `protobuf:"bytes,1,opt,name=authority,proto3" json:"authority,omitempty"`
 	// metadata is the bank denom metadata to set.
 	Metadata types.Metadata `protobuf:"bytes,2,opt,name=metadata,proto3" json:"metadata"`
 }
 
-func (m *MsgSetDenomMetaData) Reset()         { *m = MsgSetDenomMetaData{} }
-func (m *MsgSetDenomMetaData) String() string { return proto.CompactTextString(m) }
-func (*MsgSetDenomMetaData) ProtoMessage()    {}
-func (*MsgSetDenomMetaData) Descriptor() ([]byte, []int) {
+func (m *MsgSetDenomMetadata) Reset()         { *m = MsgSetDenomMetadata{} }
+func (m *MsgSetDenomMetadata) String() string { return proto.CompactTextString(m) }
+func (*MsgSetDenomMetadata) ProtoMessage()    {}
+func (*MsgSetDenomMetadata) Descriptor() ([]byte, []int) {
 	return fileDescriptor_4f9d0954f3583404, []int{0}
 }
-func (m *MsgSetDenomMetaData) XXX_Unmarshal(b []byte) error {
+func (m *MsgSetDenomMetadata) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MsgSetDenomMetaData) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MsgSetDenomMetadata) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MsgSetDenomMetaData.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MsgSetDenomMetadata.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -61,48 +61,48 @@ func (m *MsgSetDenomMetaData) XXX_Marshal(b []byte, deterministic bool) ([]byte,
 		return b[:n], nil
 	}
 }
-func (m *MsgSetDenomMetaData) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgSetDenomMetaData.Merge(m, src)
+func (m *MsgSetDenomMetadata) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgSetDenomMetadata.Merge(m, src)
 }
-func (m *MsgSetDenomMetaData) XXX_Size() int {
+func (m *MsgSetDenomMetadata) XXX_Size() int {
 	return m.Size()
 }
-func (m *MsgSetDenomMetaData) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgSetDenomMetaData.DiscardUnknown(m)
+func (m *MsgSetDenomMetadata) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgSetDenomMetadata.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MsgSetDenomMetaData proto.InternalMessageInfo
+var xxx_messageInfo_MsgSetDenomMetadata proto.InternalMessageInfo
 
-func (m *MsgSetDenomMetaData) GetAuthority() string {
+func (m *MsgSetDenomMetadata) GetAuthority() string {
 	if m != nil {
 		return m.Authority
 	}
 	return ""
 }
 
-func (m *MsgSetDenomMetaData) GetMetadata() types.Metadata {
+func (m *MsgSetDenomMetadata) GetMetadata() types.Metadata {
 	if m != nil {
 		return m.Metadata
 	}
 	return types.Metadata{}
 }
 
-// MsgSetDenomMetaDataResponse is the response type for the Msg/SetDenomMetaData RPC method.
-type MsgSetDenomMetaDataResponse struct {
+// MsgSetDenomMetadataResponse is the response type for the Msg/SetDenomMetadata RPC method.
+type MsgSetDenomMetadataResponse struct {
 }
 
-func (m *MsgSetDenomMetaDataResponse) Reset()         { *m = MsgSetDenomMetaDataResponse{} }
-func (m *MsgSetDenomMetaDataResponse) String() string { return proto.CompactTextString(m) }
-func (*MsgSetDenomMetaDataResponse) ProtoMessage()    {}
-func (*MsgSetDenomMetaDataResponse) Descriptor() ([]byte, []int) {
+func (m *MsgSetDenomMetadataResponse) Reset()         { *m = MsgSetDenomMetadataResponse{} }
+func (m *MsgSetDenomMetadataResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgSetDenomMetadataResponse) ProtoMessage()    {}
+func (*MsgSetDenomMetadataResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_4f9d0954f3583404, []int{1}
 }
-func (m *MsgSetDenomMetaDataResponse) XXX_Unmarshal(b []byte) error {
+func (m *MsgSetDenomMetadataResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MsgSetDenomMetaDataResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MsgSetDenomMetadataResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MsgSetDenomMetaDataResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MsgSetDenomMetadataResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -112,51 +112,50 @@ func (m *MsgSetDenomMetaDataResponse) XXX_Marshal(b []byte, deterministic bool) 
 		return b[:n], nil
 	}
 }
-func (m *MsgSetDenomMetaDataResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgSetDenomMetaDataResponse.Merge(m, src)
+func (m *MsgSetDenomMetadataResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgSetDenomMetadataResponse.Merge(m, src)
 }
-func (m *MsgSetDenomMetaDataResponse) XXX_Size() int {
+func (m *MsgSetDenomMetadataResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *MsgSetDenomMetaDataResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgSetDenomMetaDataResponse.DiscardUnknown(m)
+func (m *MsgSetDenomMetadataResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgSetDenomMetadataResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MsgSetDenomMetaDataResponse proto.InternalMessageInfo
+var xxx_messageInfo_MsgSetDenomMetadataResponse proto.InternalMessageInfo
 
 func init() {
-	proto.RegisterType((*MsgSetDenomMetaData)(nil), "agoric.vbank.MsgSetDenomMetaData")
-	proto.RegisterType((*MsgSetDenomMetaDataResponse)(nil), "agoric.vbank.MsgSetDenomMetaDataResponse")
+	proto.RegisterType((*MsgSetDenomMetadata)(nil), "agoric.vbank.MsgSetDenomMetadata")
+	proto.RegisterType((*MsgSetDenomMetadataResponse)(nil), "agoric.vbank.MsgSetDenomMetadataResponse")
 }
 
 func init() { proto.RegisterFile("agoric/vbank/msgs.proto", fileDescriptor_4f9d0954f3583404) }
 
 var fileDescriptor_4f9d0954f3583404 = []byte{
-	// 370 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x92, 0xbf, 0x4f, 0xc2, 0x40,
-	0x14, 0xc7, 0x7b, 0xfe, 0x8a, 0x54, 0x07, 0xad, 0x24, 0x40, 0x0d, 0x15, 0x99, 0x90, 0x48, 0x2f,
-	0x60, 0x62, 0x8c, 0x8b, 0x81, 0xb0, 0x76, 0x29, 0x9b, 0x8b, 0x5e, 0xe9, 0xe5, 0x68, 0xb0, 0x77,
-	0xa4, 0x77, 0x10, 0xd9, 0x8c, 0xa3, 0x93, 0x7f, 0x0a, 0x83, 0xa3, 0x7f, 0x00, 0x23, 0x71, 0x72,
-	0x32, 0x06, 0x06, 0xfe, 0x0d, 0xc3, 0xdd, 0x29, 0x26, 0x92, 0xb8, 0xb4, 0x7d, 0xef, 0xf3, 0x7d,
-	0xdf, 0xbe, 0xbb, 0xf7, 0xcc, 0x0c, 0x22, 0x2c, 0x89, 0xda, 0x70, 0x10, 0x20, 0xda, 0x85, 0x31,
-	0x27, 0xdc, 0xed, 0x25, 0x4c, 0x30, 0x6b, 0x57, 0x01, 0x57, 0x02, 0x7b, 0x1f, 0xc5, 0x11, 0x65,
-	0x50, 0x3e, 0x95, 0xc0, 0xce, 0xb4, 0x19, 0x8f, 0x19, 0x5f, 0xd4, 0xc0, 0x41, 0x75, 0xf1, 0xd2,
-	0xc0, 0xd1, 0x40, 0x3a, 0x0e, 0xaa, 0x01, 0x16, 0xa8, 0x2a, 0x03, 0xcd, 0x73, 0x8a, 0xdf, 0xc8,
-	0x08, 0xaa, 0x40, 0xa3, 0x34, 0x61, 0x84, 0xa9, 0xfc, 0xe2, 0x4b, 0x65, 0x8b, 0xaf, 0xc0, 0x3c,
-	0xf0, 0x38, 0x69, 0x61, 0xd1, 0xc4, 0x94, 0xc5, 0x1e, 0x16, 0xa8, 0x89, 0x04, 0xb2, 0xce, 0xcd,
-	0x14, 0xea, 0x8b, 0x0e, 0x4b, 0x22, 0x31, 0xcc, 0x82, 0x02, 0x28, 0xa5, 0x1a, 0xd9, 0xb7, 0x97,
-	0x4a, 0x5a, 0x5b, 0xd6, 0xc3, 0x30, 0xc1, 0x9c, 0xb7, 0x44, 0x12, 0x51, 0xe2, 0x2f, 0xa5, 0xd6,
-	0x95, 0xb9, 0x1d, 0x63, 0x81, 0x42, 0x24, 0x50, 0x76, 0xad, 0x00, 0x4a, 0x3b, 0xb5, 0xbc, 0xab,
-	0x6b, 0x64, 0x9b, 0xba, 0x67, 0xd7, 0xd3, 0xa2, 0xc6, 0xc6, 0xf8, 0xe3, 0xc8, 0xf0, 0x7f, 0x8a,
-	0x2e, 0x4f, 0x1f, 0xe7, 0xa3, 0xf2, 0xd2, 0xf0, 0x69, 0x3e, 0x2a, 0xe7, 0xd4, 0x05, 0xae, 0x68,
-	0xb3, 0x98, 0x37, 0x0f, 0x57, 0xa4, 0x7d, 0xcc, 0x7b, 0x8c, 0x72, 0x5c, 0xa3, 0xe6, 0xba, 0xc7,
-	0x89, 0x75, 0x6b, 0xee, 0xfd, 0x39, 0xe0, 0xb1, 0xfb, 0x7b, 0x08, 0xee, 0x0a, 0x17, 0xfb, 0xe4,
-	0x5f, 0xc9, 0xf7, 0x8f, 0xec, 0xcd, 0x87, 0xf9, 0xa8, 0x0c, 0x1a, 0xfe, 0x78, 0xea, 0x80, 0xc9,
-	0xd4, 0x01, 0x9f, 0x53, 0x07, 0x3c, 0xcf, 0x1c, 0x63, 0x32, 0x73, 0x8c, 0xf7, 0x99, 0x63, 0x5c,
-	0x5f, 0x90, 0x48, 0x74, 0xfa, 0x81, 0xdb, 0x66, 0x31, 0xac, 0xab, 0xb5, 0x50, 0xe6, 0x15, 0x1e,
-	0x76, 0x21, 0x61, 0x77, 0x88, 0x12, 0x3d, 0x2f, 0x78, 0xaf, 0x37, 0x46, 0x0c, 0x7b, 0x98, 0x07,
-	0x5b, 0x72, 0x50, 0x67, 0x5f, 0x01, 0x00, 0x00, 0xff, 0xff, 0xc9, 0x2f, 0x97, 0x97, 0x4e, 0x02,
-	0x00, 0x00,
+	// 365 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x12, 0x4f, 0x4c, 0xcf, 0x2f,
+	0xca, 0x4c, 0xd6, 0x2f, 0x4b, 0x4a, 0xcc, 0xcb, 0xd6, 0xcf, 0x2d, 0x4e, 0x2f, 0xd6, 0x2b, 0x28,
+	0xca, 0x2f, 0xc9, 0x17, 0xe2, 0x81, 0x48, 0xe8, 0x81, 0x25, 0xa4, 0x04, 0x13, 0x73, 0x33, 0xf3,
+	0xf2, 0xf5, 0xc1, 0x24, 0x44, 0x81, 0x94, 0x78, 0x72, 0x7e, 0x71, 0x6e, 0x7e, 0x31, 0x48, 0x8f,
+	0x7e, 0x99, 0x21, 0x88, 0x82, 0x4a, 0xc8, 0x41, 0x25, 0xc0, 0x26, 0x96, 0x19, 0x26, 0xa5, 0x96,
+	0x24, 0x1a, 0x82, 0x39, 0x50, 0x79, 0x49, 0x88, 0x7c, 0x3c, 0x98, 0xa7, 0x0f, 0xe1, 0x40, 0xa5,
+	0x44, 0xd2, 0xf3, 0xd3, 0xf3, 0x21, 0xe2, 0x20, 0x16, 0x44, 0x54, 0x69, 0x27, 0x23, 0x97, 0xb0,
+	0x6f, 0x71, 0x7a, 0x70, 0x6a, 0x89, 0x4b, 0x6a, 0x5e, 0x7e, 0xae, 0x6f, 0x6a, 0x49, 0x62, 0x4a,
+	0x62, 0x49, 0xa2, 0x90, 0x19, 0x17, 0x67, 0x62, 0x69, 0x49, 0x46, 0x7e, 0x51, 0x66, 0x49, 0xa5,
+	0x04, 0xa3, 0x02, 0xa3, 0x06, 0xa7, 0x93, 0xc4, 0xa5, 0x2d, 0xba, 0x22, 0x50, 0x23, 0x1d, 0x53,
+	0x52, 0x8a, 0x52, 0x8b, 0x8b, 0x83, 0x4b, 0x8a, 0x32, 0xf3, 0xd2, 0x83, 0x10, 0x4a, 0x85, 0xec,
+	0xb9, 0x38, 0x72, 0xa1, 0x66, 0x48, 0x30, 0x29, 0x30, 0x6a, 0x70, 0x1b, 0xc9, 0xea, 0x41, 0xf5,
+	0x80, 0x9d, 0x09, 0x75, 0xb3, 0x1e, 0xcc, 0x22, 0x27, 0x96, 0x13, 0xf7, 0xe4, 0x19, 0x82, 0xe0,
+	0x9a, 0xac, 0x34, 0x9b, 0x9e, 0x6f, 0xd0, 0x42, 0x18, 0xd8, 0xf5, 0x7c, 0x83, 0x96, 0x18, 0x24,
+	0x00, 0xd1, 0xdd, 0xa8, 0x24, 0xcb, 0x25, 0x8d, 0xc5, 0xe9, 0x41, 0xa9, 0xc5, 0x05, 0xf9, 0x79,
+	0xc5, 0xa9, 0x46, 0x79, 0x5c, 0xcc, 0xbe, 0xc5, 0xe9, 0x42, 0x09, 0x5c, 0x02, 0x18, 0xbe, 0x53,
+	0xd4, 0x43, 0x8e, 0x01, 0x3d, 0x2c, 0xa6, 0x48, 0x69, 0x12, 0x54, 0x02, 0xb3, 0x48, 0x8a, 0xb5,
+	0xe1, 0xf9, 0x06, 0x2d, 0x46, 0xa7, 0xa0, 0x13, 0x8f, 0xe4, 0x18, 0x2f, 0x3c, 0x92, 0x63, 0x7c,
+	0xf0, 0x48, 0x8e, 0x71, 0xc2, 0x63, 0x39, 0x86, 0x0b, 0x8f, 0xe5, 0x18, 0x6e, 0x3c, 0x96, 0x63,
+	0x88, 0xb2, 0x48, 0xcf, 0x2c, 0xc9, 0x28, 0x4d, 0xd2, 0x4b, 0xce, 0xcf, 0xd5, 0x77, 0x84, 0xa4,
+	0x09, 0x88, 0xe1, 0xba, 0xc5, 0x29, 0xd9, 0xfa, 0xe9, 0xf9, 0x39, 0x89, 0x79, 0xe9, 0xd0, 0xc8,
+	0xd2, 0xaf, 0x80, 0x26, 0x97, 0x92, 0xca, 0x82, 0xd4, 0xe2, 0x24, 0x36, 0x70, 0x2c, 0x19, 0x03,
+	0x02, 0x00, 0x00, 0xff, 0xff, 0x46, 0xfe, 0xa8, 0xbb, 0x4b, 0x02, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -171,9 +170,9 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MsgClient interface {
-	// SetDenomMetaData defines a governance operation for setting the metadata for a denom.
+	// SetDenomMetadata defines a governance operation for setting the metadata for a denom.
 	// The authority is defined in the keeper.
-	SetDenomMetaData(ctx context.Context, in *MsgSetDenomMetaData, opts ...grpc.CallOption) (*MsgSetDenomMetaDataResponse, error)
+	SetDenomMetadata(ctx context.Context, in *MsgSetDenomMetadata, opts ...grpc.CallOption) (*MsgSetDenomMetadataResponse, error)
 }
 
 type msgClient struct {
@@ -184,9 +183,9 @@ func NewMsgClient(cc grpc1.ClientConn) MsgClient {
 	return &msgClient{cc}
 }
 
-func (c *msgClient) SetDenomMetaData(ctx context.Context, in *MsgSetDenomMetaData, opts ...grpc.CallOption) (*MsgSetDenomMetaDataResponse, error) {
-	out := new(MsgSetDenomMetaDataResponse)
-	err := c.cc.Invoke(ctx, "/agoric.vbank.Msg/SetDenomMetaData", in, out, opts...)
+func (c *msgClient) SetDenomMetadata(ctx context.Context, in *MsgSetDenomMetadata, opts ...grpc.CallOption) (*MsgSetDenomMetadataResponse, error) {
+	out := new(MsgSetDenomMetadataResponse)
+	err := c.cc.Invoke(ctx, "/agoric.vbank.Msg/SetDenomMetadata", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -195,37 +194,37 @@ func (c *msgClient) SetDenomMetaData(ctx context.Context, in *MsgSetDenomMetaDat
 
 // MsgServer is the server API for Msg service.
 type MsgServer interface {
-	// SetDenomMetaData defines a governance operation for setting the metadata for a denom.
+	// SetDenomMetadata defines a governance operation for setting the metadata for a denom.
 	// The authority is defined in the keeper.
-	SetDenomMetaData(context.Context, *MsgSetDenomMetaData) (*MsgSetDenomMetaDataResponse, error)
+	SetDenomMetadata(context.Context, *MsgSetDenomMetadata) (*MsgSetDenomMetadataResponse, error)
 }
 
 // UnimplementedMsgServer can be embedded to have forward compatible implementations.
 type UnimplementedMsgServer struct {
 }
 
-func (*UnimplementedMsgServer) SetDenomMetaData(ctx context.Context, req *MsgSetDenomMetaData) (*MsgSetDenomMetaDataResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SetDenomMetaData not implemented")
+func (*UnimplementedMsgServer) SetDenomMetadata(ctx context.Context, req *MsgSetDenomMetadata) (*MsgSetDenomMetadataResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetDenomMetadata not implemented")
 }
 
 func RegisterMsgServer(s grpc1.Server, srv MsgServer) {
 	s.RegisterService(&_Msg_serviceDesc, srv)
 }
 
-func _Msg_SetDenomMetaData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MsgSetDenomMetaData)
+func _Msg_SetDenomMetadata_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgSetDenomMetadata)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MsgServer).SetDenomMetaData(ctx, in)
+		return srv.(MsgServer).SetDenomMetadata(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/agoric.vbank.Msg/SetDenomMetaData",
+		FullMethod: "/agoric.vbank.Msg/SetDenomMetadata",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).SetDenomMetaData(ctx, req.(*MsgSetDenomMetaData))
+		return srv.(MsgServer).SetDenomMetadata(ctx, req.(*MsgSetDenomMetadata))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -236,15 +235,15 @@ var _Msg_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*MsgServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "SetDenomMetaData",
-			Handler:    _Msg_SetDenomMetaData_Handler,
+			MethodName: "SetDenomMetadata",
+			Handler:    _Msg_SetDenomMetadata_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "agoric/vbank/msgs.proto",
 }
 
-func (m *MsgSetDenomMetaData) Marshal() (dAtA []byte, err error) {
+func (m *MsgSetDenomMetadata) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -254,12 +253,12 @@ func (m *MsgSetDenomMetaData) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *MsgSetDenomMetaData) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgSetDenomMetadata) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgSetDenomMetaData) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgSetDenomMetadata) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -284,7 +283,7 @@ func (m *MsgSetDenomMetaData) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *MsgSetDenomMetaDataResponse) Marshal() (dAtA []byte, err error) {
+func (m *MsgSetDenomMetadataResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -294,12 +293,12 @@ func (m *MsgSetDenomMetaDataResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *MsgSetDenomMetaDataResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgSetDenomMetadataResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgSetDenomMetaDataResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgSetDenomMetadataResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -318,7 +317,7 @@ func encodeVarintMsgs(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-func (m *MsgSetDenomMetaData) Size() (n int) {
+func (m *MsgSetDenomMetadata) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -333,7 +332,7 @@ func (m *MsgSetDenomMetaData) Size() (n int) {
 	return n
 }
 
-func (m *MsgSetDenomMetaDataResponse) Size() (n int) {
+func (m *MsgSetDenomMetadataResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -348,7 +347,7 @@ func sovMsgs(x uint64) (n int) {
 func sozMsgs(x uint64) (n int) {
 	return sovMsgs(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (m *MsgSetDenomMetaData) Unmarshal(dAtA []byte) error {
+func (m *MsgSetDenomMetadata) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -371,10 +370,10 @@ func (m *MsgSetDenomMetaData) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: MsgSetDenomMetaData: wiretype end group for non-group")
+			return fmt.Errorf("proto: MsgSetDenomMetadata: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgSetDenomMetaData: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MsgSetDenomMetadata: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -463,7 +462,7 @@ func (m *MsgSetDenomMetaData) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *MsgSetDenomMetaDataResponse) Unmarshal(dAtA []byte) error {
+func (m *MsgSetDenomMetadataResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -486,10 +485,10 @@ func (m *MsgSetDenomMetaDataResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: MsgSetDenomMetaDataResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: MsgSetDenomMetadataResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgSetDenomMetaDataResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MsgSetDenomMetadataResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		default:

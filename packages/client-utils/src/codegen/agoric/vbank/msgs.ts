@@ -6,40 +6,40 @@ import {
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
-/** MsgSetDenomMetaData represents a message to set the metadata for a denom. */
-export interface MsgSetDenomMetaData {
+/** MsgSetDenomMetadata represents a message to set the metadata for a denom. */
+export interface MsgSetDenomMetadata {
   /** authority is the address that controls the module (defaults to x/gov unless overwritten). */
   authority: string;
   /** metadata is the bank denom metadata to set. */
   metadata: Metadata;
 }
-export interface MsgSetDenomMetaDataProtoMsg {
-  typeUrl: '/agoric.vbank.MsgSetDenomMetaData';
+export interface MsgSetDenomMetadataProtoMsg {
+  typeUrl: '/agoric.vbank.MsgSetDenomMetadata';
   value: Uint8Array;
 }
-/** MsgSetDenomMetaData represents a message to set the metadata for a denom. */
-export interface MsgSetDenomMetaDataSDKType {
+/** MsgSetDenomMetadata represents a message to set the metadata for a denom. */
+export interface MsgSetDenomMetadataSDKType {
   authority: string;
   metadata: MetadataSDKType;
 }
-/** MsgSetDenomMetaDataResponse is the response type for the Msg/SetDenomMetaData RPC method. */
-export interface MsgSetDenomMetaDataResponse {}
-export interface MsgSetDenomMetaDataResponseProtoMsg {
-  typeUrl: '/agoric.vbank.MsgSetDenomMetaDataResponse';
+/** MsgSetDenomMetadataResponse is the response type for the Msg/SetDenomMetadata RPC method. */
+export interface MsgSetDenomMetadataResponse {}
+export interface MsgSetDenomMetadataResponseProtoMsg {
+  typeUrl: '/agoric.vbank.MsgSetDenomMetadataResponse';
   value: Uint8Array;
 }
-/** MsgSetDenomMetaDataResponse is the response type for the Msg/SetDenomMetaData RPC method. */
-export interface MsgSetDenomMetaDataResponseSDKType {}
-function createBaseMsgSetDenomMetaData(): MsgSetDenomMetaData {
+/** MsgSetDenomMetadataResponse is the response type for the Msg/SetDenomMetadata RPC method. */
+export interface MsgSetDenomMetadataResponseSDKType {}
+function createBaseMsgSetDenomMetadata(): MsgSetDenomMetadata {
   return {
     authority: '',
     metadata: Metadata.fromPartial({}),
   };
 }
-export const MsgSetDenomMetaData = {
-  typeUrl: '/agoric.vbank.MsgSetDenomMetaData' as const,
+export const MsgSetDenomMetadata = {
+  typeUrl: '/agoric.vbank.MsgSetDenomMetadata' as const,
   encode(
-    message: MsgSetDenomMetaData,
+    message: MsgSetDenomMetadata,
     writer: BinaryWriter = BinaryWriter.create(),
   ): BinaryWriter {
     if (message.authority !== '') {
@@ -53,11 +53,11 @@ export const MsgSetDenomMetaData = {
   decode(
     input: BinaryReader | Uint8Array,
     length?: number,
-  ): MsgSetDenomMetaData {
+  ): MsgSetDenomMetadata {
     const reader =
       input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseMsgSetDenomMetaData();
+    const message = createBaseMsgSetDenomMetadata();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -74,7 +74,7 @@ export const MsgSetDenomMetaData = {
     }
     return message;
   },
-  fromJSON(object: any): MsgSetDenomMetaData {
+  fromJSON(object: any): MsgSetDenomMetadata {
     return {
       authority: isSet(object.authority) ? String(object.authority) : '',
       metadata: isSet(object.metadata)
@@ -82,7 +82,7 @@ export const MsgSetDenomMetaData = {
         : undefined,
     };
   },
-  toJSON(message: MsgSetDenomMetaData): JsonSafe<MsgSetDenomMetaData> {
+  toJSON(message: MsgSetDenomMetadata): JsonSafe<MsgSetDenomMetadata> {
     const obj: any = {};
     message.authority !== undefined && (obj.authority = message.authority);
     message.metadata !== undefined &&
@@ -91,8 +91,8 @@ export const MsgSetDenomMetaData = {
         : undefined);
     return obj;
   },
-  fromPartial(object: Partial<MsgSetDenomMetaData>): MsgSetDenomMetaData {
-    const message = createBaseMsgSetDenomMetaData();
+  fromPartial(object: Partial<MsgSetDenomMetadata>): MsgSetDenomMetadata {
+    const message = createBaseMsgSetDenomMetadata();
     message.authority = object.authority ?? '';
     message.metadata =
       object.metadata !== undefined && object.metadata !== null
@@ -100,26 +100,26 @@ export const MsgSetDenomMetaData = {
         : undefined;
     return message;
   },
-  fromProtoMsg(message: MsgSetDenomMetaDataProtoMsg): MsgSetDenomMetaData {
-    return MsgSetDenomMetaData.decode(message.value);
+  fromProtoMsg(message: MsgSetDenomMetadataProtoMsg): MsgSetDenomMetadata {
+    return MsgSetDenomMetadata.decode(message.value);
   },
-  toProto(message: MsgSetDenomMetaData): Uint8Array {
-    return MsgSetDenomMetaData.encode(message).finish();
+  toProto(message: MsgSetDenomMetadata): Uint8Array {
+    return MsgSetDenomMetadata.encode(message).finish();
   },
-  toProtoMsg(message: MsgSetDenomMetaData): MsgSetDenomMetaDataProtoMsg {
+  toProtoMsg(message: MsgSetDenomMetadata): MsgSetDenomMetadataProtoMsg {
     return {
-      typeUrl: '/agoric.vbank.MsgSetDenomMetaData',
-      value: MsgSetDenomMetaData.encode(message).finish(),
+      typeUrl: '/agoric.vbank.MsgSetDenomMetadata',
+      value: MsgSetDenomMetadata.encode(message).finish(),
     };
   },
 };
-function createBaseMsgSetDenomMetaDataResponse(): MsgSetDenomMetaDataResponse {
+function createBaseMsgSetDenomMetadataResponse(): MsgSetDenomMetadataResponse {
   return {};
 }
-export const MsgSetDenomMetaDataResponse = {
-  typeUrl: '/agoric.vbank.MsgSetDenomMetaDataResponse' as const,
+export const MsgSetDenomMetadataResponse = {
+  typeUrl: '/agoric.vbank.MsgSetDenomMetadataResponse' as const,
   encode(
-    _: MsgSetDenomMetaDataResponse,
+    _: MsgSetDenomMetadataResponse,
     writer: BinaryWriter = BinaryWriter.create(),
   ): BinaryWriter {
     return writer;
@@ -127,11 +127,11 @@ export const MsgSetDenomMetaDataResponse = {
   decode(
     input: BinaryReader | Uint8Array,
     length?: number,
-  ): MsgSetDenomMetaDataResponse {
+  ): MsgSetDenomMetadataResponse {
     const reader =
       input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseMsgSetDenomMetaDataResponse();
+    const message = createBaseMsgSetDenomMetadataResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -142,35 +142,35 @@ export const MsgSetDenomMetaDataResponse = {
     }
     return message;
   },
-  fromJSON(_: any): MsgSetDenomMetaDataResponse {
+  fromJSON(_: any): MsgSetDenomMetadataResponse {
     return {};
   },
   toJSON(
-    _: MsgSetDenomMetaDataResponse,
-  ): JsonSafe<MsgSetDenomMetaDataResponse> {
+    _: MsgSetDenomMetadataResponse,
+  ): JsonSafe<MsgSetDenomMetadataResponse> {
     const obj: any = {};
     return obj;
   },
   fromPartial(
-    _: Partial<MsgSetDenomMetaDataResponse>,
-  ): MsgSetDenomMetaDataResponse {
-    const message = createBaseMsgSetDenomMetaDataResponse();
+    _: Partial<MsgSetDenomMetadataResponse>,
+  ): MsgSetDenomMetadataResponse {
+    const message = createBaseMsgSetDenomMetadataResponse();
     return message;
   },
   fromProtoMsg(
-    message: MsgSetDenomMetaDataResponseProtoMsg,
-  ): MsgSetDenomMetaDataResponse {
-    return MsgSetDenomMetaDataResponse.decode(message.value);
+    message: MsgSetDenomMetadataResponseProtoMsg,
+  ): MsgSetDenomMetadataResponse {
+    return MsgSetDenomMetadataResponse.decode(message.value);
   },
-  toProto(message: MsgSetDenomMetaDataResponse): Uint8Array {
-    return MsgSetDenomMetaDataResponse.encode(message).finish();
+  toProto(message: MsgSetDenomMetadataResponse): Uint8Array {
+    return MsgSetDenomMetadataResponse.encode(message).finish();
   },
   toProtoMsg(
-    message: MsgSetDenomMetaDataResponse,
-  ): MsgSetDenomMetaDataResponseProtoMsg {
+    message: MsgSetDenomMetadataResponse,
+  ): MsgSetDenomMetadataResponseProtoMsg {
     return {
-      typeUrl: '/agoric.vbank.MsgSetDenomMetaDataResponse',
-      value: MsgSetDenomMetaDataResponse.encode(message).finish(),
+      typeUrl: '/agoric.vbank.MsgSetDenomMetadataResponse',
+      value: MsgSetDenomMetadataResponse.encode(message).finish(),
     };
   },
 };

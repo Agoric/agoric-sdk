@@ -146,10 +146,10 @@ func TestMsgServerTestSuite(t *testing.T) {
 	suite.Run(t, new(MsgServerTestSuite))
 }
 
-// TestSetDenomMetaData_Success tests successful setting of denom metadata
-func (suite *MsgServerTestSuite) TestSetDenomMetaData_Success() {
+// TestSetDenomMetadata_Success tests successful setting of denom metadata
+func (suite *MsgServerTestSuite) TestSetDenomMetadata_Success() {
 	// Create a valid metadata message
-	msg := &types.MsgSetDenomMetaData{
+	msg := &types.MsgSetDenomMetadata{
 		Authority: testAuthority,
 		Metadata: banktypes.Metadata{
 			Description: "USD Coin",
@@ -175,7 +175,7 @@ func (suite *MsgServerTestSuite) TestSetDenomMetaData_Success() {
 	}
 
 	// Execute the message
-	resp, err := suite.msgServer.SetDenomMetaData(suite.ctx, msg)
+	resp, err := suite.msgServer.SetDenomMetadata(suite.ctx, msg)
 
 	// Verify success
 	suite.NoError(err)
@@ -198,9 +198,9 @@ func (suite *MsgServerTestSuite) TestSetDenomMetaData_Success() {
 	suite.Equal(uint32(6), metadata.DenomUnits[1].Exponent)
 }
 
-// TestSetDenomMetaData_InvalidAuthority tests that invalid authority is rejected
-func (suite *MsgServerTestSuite) TestSetDenomMetaData_InvalidAuthority() {
-	msg := &types.MsgSetDenomMetaData{
+// TestSetDenomMetadata_InvalidAuthority tests that invalid authority is rejected
+func (suite *MsgServerTestSuite) TestSetDenomMetadata_InvalidAuthority() {
+	msg := &types.MsgSetDenomMetadata{
 		Authority: "cosmos1invalidauthority",
 		Metadata: banktypes.Metadata{
 			DenomUnits: []*banktypes.DenomUnit{
@@ -213,16 +213,16 @@ func (suite *MsgServerTestSuite) TestSetDenomMetaData_InvalidAuthority() {
 		},
 	}
 
-	resp, err := suite.msgServer.SetDenomMetaData(suite.ctx, msg)
+	resp, err := suite.msgServer.SetDenomMetadata(suite.ctx, msg)
 
 	suite.Error(err)
 	suite.Nil(resp)
 	suite.Contains(err.Error(), "invalid authority")
 }
 
-// TestSetDenomMetaData_MissingBaseDenom tests validation of missing base denom
-func (suite *MsgServerTestSuite) TestSetDenomMetaData_MissingBaseDenom() {
-	msg := &types.MsgSetDenomMetaData{
+// TestSetDenomMetadata_MissingBaseDenom tests validation of missing base denom
+func (suite *MsgServerTestSuite) TestSetDenomMetadata_MissingBaseDenom() {
+	msg := &types.MsgSetDenomMetadata{
 		Authority: testAuthority,
 		Metadata: banktypes.Metadata{
 			Name:   "Test Token",
@@ -237,7 +237,7 @@ func (suite *MsgServerTestSuite) TestSetDenomMetaData_MissingBaseDenom() {
 		},
 	}
 
-	resp, err := suite.msgServer.SetDenomMetaData(suite.ctx, msg)
+	resp, err := suite.msgServer.SetDenomMetadata(suite.ctx, msg)
 
 	suite.Error(err)
 	suite.Nil(resp)
@@ -245,9 +245,9 @@ func (suite *MsgServerTestSuite) TestSetDenomMetaData_MissingBaseDenom() {
 	suite.Contains(err.Error(), "invalid")
 }
 
-// TestSetDenomMetaData_EmptyDenomUnits tests validation of empty denom units
-func (suite *MsgServerTestSuite) TestSetDenomMetaData_EmptyDenomUnits() {
-	msg := &types.MsgSetDenomMetaData{
+// TestSetDenomMetadata_EmptyDenomUnits tests validation of empty denom units
+func (suite *MsgServerTestSuite) TestSetDenomMetadata_EmptyDenomUnits() {
+	msg := &types.MsgSetDenomMetadata{
 		Authority: testAuthority,
 		Metadata: banktypes.Metadata{
 			Name:       "Test Token",
@@ -257,7 +257,7 @@ func (suite *MsgServerTestSuite) TestSetDenomMetaData_EmptyDenomUnits() {
 		},
 	}
 
-	resp, err := suite.msgServer.SetDenomMetaData(suite.ctx, msg)
+	resp, err := suite.msgServer.SetDenomMetadata(suite.ctx, msg)
 
 	suite.Error(err)
 	suite.Nil(resp)
@@ -265,9 +265,9 @@ func (suite *MsgServerTestSuite) TestSetDenomMetaData_EmptyDenomUnits() {
 	suite.Contains(err.Error(), "invalid")
 }
 
-// TestSetDenomMetaData_DuplicateDenomUnits tests validation of duplicate denom units
-func (suite *MsgServerTestSuite) TestSetDenomMetaData_DuplicateDenomUnits() {
-	msg := &types.MsgSetDenomMetaData{
+// TestSetDenomMetadata_DuplicateDenomUnits tests validation of duplicate denom units
+func (suite *MsgServerTestSuite) TestSetDenomMetadata_DuplicateDenomUnits() {
+	msg := &types.MsgSetDenomMetadata{
 		Authority: testAuthority,
 		Metadata: banktypes.Metadata{
 			Name:   "Test Token",
@@ -286,7 +286,7 @@ func (suite *MsgServerTestSuite) TestSetDenomMetaData_DuplicateDenomUnits() {
 		},
 	}
 
-	resp, err := suite.msgServer.SetDenomMetaData(suite.ctx, msg)
+	resp, err := suite.msgServer.SetDenomMetadata(suite.ctx, msg)
 
 	suite.Error(err)
 	suite.Nil(resp)
@@ -294,9 +294,9 @@ func (suite *MsgServerTestSuite) TestSetDenomMetaData_DuplicateDenomUnits() {
 	suite.Contains(err.Error(), "invalid")
 }
 
-// TestSetDenomMetaData_InvalidDisplayDenom tests validation of display denom not in units
-func (suite *MsgServerTestSuite) TestSetDenomMetaData_InvalidDisplayDenom() {
-	msg := &types.MsgSetDenomMetaData{
+// TestSetDenomMetadata_InvalidDisplayDenom tests validation of display denom not in units
+func (suite *MsgServerTestSuite) TestSetDenomMetadata_InvalidDisplayDenom() {
+	msg := &types.MsgSetDenomMetadata{
 		Authority: testAuthority,
 		Metadata: banktypes.Metadata{
 			Name:   "Test Token",
@@ -312,7 +312,7 @@ func (suite *MsgServerTestSuite) TestSetDenomMetaData_InvalidDisplayDenom() {
 		},
 	}
 
-	resp, err := suite.msgServer.SetDenomMetaData(suite.ctx, msg)
+	resp, err := suite.msgServer.SetDenomMetadata(suite.ctx, msg)
 
 	suite.Error(err)
 	suite.Nil(resp)
@@ -320,9 +320,9 @@ func (suite *MsgServerTestSuite) TestSetDenomMetaData_InvalidDisplayDenom() {
 	suite.Contains(err.Error(), "invalid")
 }
 
-// TestSetDenomMetaData_BlankBase tests validation of blank base denom
-func (suite *MsgServerTestSuite) TestSetDenomMetaData_BlankBase() {
-	msg := &types.MsgSetDenomMetaData{
+// TestSetDenomMetadata_BlankBase tests validation of blank base denom
+func (suite *MsgServerTestSuite) TestSetDenomMetadata_BlankBase() {
+	msg := &types.MsgSetDenomMetadata{
 		Authority: testAuthority,
 		Metadata: banktypes.Metadata{
 			Name:   "Test Token",
@@ -337,7 +337,7 @@ func (suite *MsgServerTestSuite) TestSetDenomMetaData_BlankBase() {
 		},
 	}
 
-	resp, err := suite.msgServer.SetDenomMetaData(suite.ctx, msg)
+	resp, err := suite.msgServer.SetDenomMetadata(suite.ctx, msg)
 
 	suite.Error(err)
 	suite.Nil(resp)
@@ -345,11 +345,11 @@ func (suite *MsgServerTestSuite) TestSetDenomMetaData_BlankBase() {
 	suite.Contains(err.Error(), "invalid")
 }
 
-// TestSetDenomMetaData_IBCDenom tests setting metadata for an IBC denom
-func (suite *MsgServerTestSuite) TestSetDenomMetaData_IBCDenom() {
+// TestSetDenomMetadata_IBCDenom tests setting metadata for an IBC denom
+func (suite *MsgServerTestSuite) TestSetDenomMetadata_IBCDenom() {
 	ibcDenom := "ibc/FA7775734CC73176B7425910DE001A1D2AD9B6D9E93129A5D0750EAD13E4E63A"
 
-	msg := &types.MsgSetDenomMetaData{
+	msg := &types.MsgSetDenomMetadata{
 		Authority: testAuthority,
 		Metadata: banktypes.Metadata{
 			Description: "USDC transferred from Noble",
@@ -370,7 +370,7 @@ func (suite *MsgServerTestSuite) TestSetDenomMetaData_IBCDenom() {
 		},
 	}
 
-	resp, err := suite.msgServer.SetDenomMetaData(suite.ctx, msg)
+	resp, err := suite.msgServer.SetDenomMetadata(suite.ctx, msg)
 
 	suite.NoError(err)
 	suite.NotNil(resp)
@@ -383,9 +383,9 @@ func (suite *MsgServerTestSuite) TestSetDenomMetaData_IBCDenom() {
 	suite.Equal("usdc", metadata.Display)
 }
 
-// TestSetDenomMetaData_MultipleAliases tests metadata with multiple aliases
-func (suite *MsgServerTestSuite) TestSetDenomMetaData_MultipleAliases() {
-	msg := &types.MsgSetDenomMetaData{
+// TestSetDenomMetadata_MultipleAliases tests metadata with multiple aliases
+func (suite *MsgServerTestSuite) TestSetDenomMetadata_MultipleAliases() {
+	msg := &types.MsgSetDenomMetadata{
 		Authority: testAuthority,
 		Metadata: banktypes.Metadata{
 			DenomUnits: []*banktypes.DenomUnit{
@@ -412,7 +412,7 @@ func (suite *MsgServerTestSuite) TestSetDenomMetaData_MultipleAliases() {
 		},
 	}
 
-	resp, err := suite.msgServer.SetDenomMetaData(suite.ctx, msg)
+	resp, err := suite.msgServer.SetDenomMetadata(suite.ctx, msg)
 
 	suite.NoError(err)
 	suite.NotNil(resp)

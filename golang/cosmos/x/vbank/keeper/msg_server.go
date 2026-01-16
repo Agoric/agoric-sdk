@@ -22,8 +22,8 @@ func NewMsgServerImpl(keeper Keeper) types.MsgServer {
 
 var _ types.MsgServer = msgServer{}
 
-// SetDenomMetaData implements the Msg/SetDenomMetaData method.
-func (k msgServer) SetDenomMetaData(goCtx context.Context, msg *types.MsgSetDenomMetaData) (*types.MsgSetDenomMetaDataResponse, error) {
+// SetDenomMetadata implements the Msg/SetDenomMetadata method.
+func (k msgServer) SetDenomMetadata(goCtx context.Context, msg *types.MsgSetDenomMetadata) (*types.MsgSetDenomMetadataResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// Verify that the authority is correct
@@ -39,5 +39,5 @@ func (k msgServer) SetDenomMetaData(goCtx context.Context, msg *types.MsgSetDeno
 	// Set the denom metadata
 	k.bankKeeper.SetDenomMetaData(ctx, msg.Metadata)
 
-	return &types.MsgSetDenomMetaDataResponse{}, nil
+	return &types.MsgSetDenomMetadataResponse{}, nil
 }

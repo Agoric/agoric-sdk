@@ -257,8 +257,8 @@ export type TypeFromUrl = {
   '/agoric.swingset.SwingStoreArtifact': _$agoric$swingset$swingset_js.SwingStoreArtifact;
   '/agoric.swingset.UintMapEntry': _$agoric$swingset$swingset_js.UintMapEntry;
   '/agoric.vbank.GenesisState': _$agoric$vbank$genesis_js.GenesisState;
-  '/agoric.vbank.MsgSetDenomMetaData': _$agoric$vbank$msgs_js.MsgSetDenomMetaData;
-  '/agoric.vbank.MsgSetDenomMetaDataResponse': _$agoric$vbank$msgs_js.MsgSetDenomMetaDataResponse;
+  '/agoric.vbank.MsgSetDenomMetadata': _$agoric$vbank$msgs_js.MsgSetDenomMetadata;
+  '/agoric.vbank.MsgSetDenomMetadataResponse': _$agoric$vbank$msgs_js.MsgSetDenomMetadataResponse;
   '/agoric.vbank.QueryParamsRequest': _$agoric$vbank$query_js.QueryParamsRequest;
   '/agoric.vbank.QueryParamsResponse': _$agoric$vbank$query_js.QueryParamsResponse;
   '/agoric.vbank.QueryStateRequest': _$agoric$vbank$query_js.QueryStateRequest;

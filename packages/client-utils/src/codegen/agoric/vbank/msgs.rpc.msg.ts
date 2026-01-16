@@ -1,34 +1,34 @@
 //@ts-nocheck
 import { type Rpc } from '../../helpers.js';
 import { BinaryReader } from '../../binary.js';
-import { MsgSetDenomMetaData, MsgSetDenomMetaDataResponse } from './msgs.js';
+import { MsgSetDenomMetadata, MsgSetDenomMetadataResponse } from './msgs.js';
 /** Msg defines the vbank Msg service. */
 export interface Msg {
   /**
-   * SetDenomMetaData defines a governance operation for setting the metadata for a denom.
+   * SetDenomMetadata defines a governance operation for setting the metadata for a denom.
    * The authority is defined in the keeper.
    */
-  setDenomMetaData(
-    request: MsgSetDenomMetaData,
-  ): Promise<MsgSetDenomMetaDataResponse>;
+  setDenomMetadata(
+    request: MsgSetDenomMetadata,
+  ): Promise<MsgSetDenomMetadataResponse>;
 }
 export class MsgClientImpl implements Msg {
   private readonly rpc: Rpc;
   constructor(rpc: Rpc) {
     this.rpc = rpc;
-    this.setDenomMetaData = this.setDenomMetaData.bind(this);
+    this.setDenomMetadata = this.setDenomMetadata.bind(this);
   }
-  setDenomMetaData(
-    request: MsgSetDenomMetaData,
-  ): Promise<MsgSetDenomMetaDataResponse> {
-    const data = MsgSetDenomMetaData.encode(request).finish();
+  setDenomMetadata(
+    request: MsgSetDenomMetadata,
+  ): Promise<MsgSetDenomMetadataResponse> {
+    const data = MsgSetDenomMetadata.encode(request).finish();
     const promise = this.rpc.request(
       'agoric.vbank.Msg',
-      'SetDenomMetaData',
+      'SetDenomMetadata',
       data,
     );
     return promise.then(data =>
-      MsgSetDenomMetaDataResponse.decode(new BinaryReader(data)),
+      MsgSetDenomMetadataResponse.decode(new BinaryReader(data)),
     );
   }
 }
