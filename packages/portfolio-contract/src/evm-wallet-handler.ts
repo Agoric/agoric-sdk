@@ -117,7 +117,7 @@ export const makeNonceManager = (zone: Zone) => {
   const removeExpiredNonces = (currentTime: bigint): void => {
     for (const encodedKey of noncesByDeadline.keys()) {
       const key = decodeKeyByDeadline(encodedKey);
-      if (key.deadline > currentTime) {
+      if (currentTime <= key.deadline) {
         break;
       }
 
@@ -390,6 +390,12 @@ export const prepareEVMWalletHandlerKit = (
           const { absValue: localChainTime } =
             await E(timerService).getCurrentTimestamp();
           removeExpiredNonces(localChainTime);
+
+          if (localChainTime > deadline) {
+            throw Fail`Deadline has already passed: ${q(deadline)} vs ${q(
+              localChainTime,
+            )}`;
+          }
 
           deadline < localChainTime + MAX_DEADLINE_OFFSET ||
             Fail`Deadline too far in the future: ${q(deadline)} vs ${q(localChainTime)}`;
