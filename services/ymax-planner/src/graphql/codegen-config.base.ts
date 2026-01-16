@@ -87,6 +87,7 @@ export const makeCodegenConfigForFileUrl = (codegenConfigFileUrl: string) => {
         },
       },
     },
+    importExtension: '.js',
   };
   return config;
 };
