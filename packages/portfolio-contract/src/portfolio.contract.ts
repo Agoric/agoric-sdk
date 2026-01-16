@@ -77,7 +77,7 @@ import {
 } from './type-guards.ts';
 
 const trace = makeTracer('PortC');
-const { fromEntries, keys } = Object;
+const { entries, fromEntries, keys } = Object;
 
 const makeTransferChannels = (chainInfo: PortfolioPrivateArgs['chainInfo']) => {
   const { agoric, axelar, noble } = chainInfo as Record<
@@ -666,6 +666,12 @@ export const contract = async (
       timerService,
       portfolioContractPublicFacet: publicFacet,
       publishStatus,
+      validStandaloneContractAddresses: fromEntries(
+        entries(eip155ChainIdToAxelarChain).map(
+          ([chainId, chainName]) =>
+            [chainId, contracts[chainName].depositFactory] as const,
+        ),
+      ),
     },
   );
 

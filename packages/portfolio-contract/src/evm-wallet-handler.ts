@@ -319,12 +319,14 @@ export const prepareEVMWalletHandlerKit = (
     timerService,
     portfolioContractPublicFacet,
     publishStatus,
+    validStandaloneContractAddresses,
   }: {
     storageNode: ERemote<StorageNode>;
     vowTools: Pick<VowTools, 'asVow' | 'watch' | 'when'>;
     timerService: ERemote<TimerService>;
     portfolioContractPublicFacet: ERemote<PortfolioContractPublicFacet>;
     publishStatus: PublishStatus;
+    validStandaloneContractAddresses: Record<number | string, Address>;
   },
 ) => {
   const { extractOperationDetailsFromSignedData } = makeEVMHandlerUtils({
@@ -378,8 +380,10 @@ export const prepareEVMWalletHandlerKit = (
           trace('handleMessage', messageData);
 
           // Resolves immediately on-chain since all deps are bundled
-          const details =
-            await extractOperationDetailsFromSignedData(messageData);
+          const details = await extractOperationDetailsFromSignedData(
+            messageData,
+            validStandaloneContractAddresses,
+          );
 
           trace('extracted details', details);
 
