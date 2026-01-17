@@ -7,6 +7,7 @@ import { prepareBridgeManager } from './bridge.js';
 
 /**
  * @import {ScopedBridgeManager} from './types.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 export function buildRootObject(vatPowers, _args, baggage) {
@@ -52,3 +53,5 @@ export function buildRootObject(vatPowers, _args, baggage) {
     provideManagerForBridge,
   });
 }
+
+/** @typedef {ReturnType<typeof buildRootObject>} BridgeVat */

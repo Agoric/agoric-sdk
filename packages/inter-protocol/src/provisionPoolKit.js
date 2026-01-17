@@ -55,7 +55,13 @@ const FIRST_LOWER_NEAR_KEYWORD = /^[a-z][a-zA-Z0-9_$]*$/;
 // XXX when inferred, error TS2742: cannot be named without a reference to '../../../node_modules/@endo/exo/src/get-interface.js'. This is likely not portable. A type annotation is necessary.
 /**
  * @typedef {{
- *   machine: any;
+ *   machine: {
+ *     addRevivableAddresses: (oldAddresses: string[]) => void;
+ *     getWalletReviver: () => ERef<any>;
+ *     setReferences: (erefs: ProvisionPoolKitReferences) => Promise<void>;
+ *     makeHandler: () => ERef<BridgeHandler>;
+ *     initPSM: (brand: Brand, instance: Instance<typeof psmStart>) => void;
+ *   };
  *   helper: any;
  *   forHandler: any;
  *   public: any;

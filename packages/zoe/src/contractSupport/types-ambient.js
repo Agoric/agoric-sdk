@@ -1,11 +1,15 @@
 // @jessie-check
 
 /// <reference types="ses" />
-/// <reference types="@agoric/zoe/exported.js" />
 
 // XXX filename is still "ambient" but this module is not
 // Make this a module
 export {};
+
+/**
+ * @import {AmountKeywordRecord, IssuerKeywordRecord, Keyword, PaymentPKeywordRecord, ZCF, ZCFSeat} from '@agoric/zoe';
+ * @import {Amount} from '@agoric/ertp';
+ */
 
 /**
  * @typedef {object} SeatGainsLossesRecord

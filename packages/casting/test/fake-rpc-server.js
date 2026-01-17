@@ -10,6 +10,7 @@ import { toAscii, toBase64 } from '@cosmjs/encoding';
 
 /**
  * @import {ExecutionContext} from 'ava';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 const chainName = 'fakeChain';

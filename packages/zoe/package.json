@@ -82,7 +82,6 @@
     "src/",
     "tools/",
     "contractFacet.js",
-    "exported.js",
     "NEWS.md"
   ],
   "ava": {
@@ -98,6 +97,6 @@
     "access": "public"
   },
   "typeCoverage": {
-    "atLeast": 84.77
+    "atLeast": 84.84
   }
 }

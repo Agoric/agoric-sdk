@@ -20,6 +20,7 @@ import { chainFacadeMethods, TypedJsonShape } from '../typeGuards.js';
  * @import {CosmosInterchainService} from './exo-interfaces.js';
  * @import {LocalOrchestrationAccountKit, MakeLocalOrchestrationAccountKit} from './local-orchestration-account.js';
  * @import {Chain, CosmosChainAddress, ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount, OrchestrationOptions} from '../types.js';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 /**

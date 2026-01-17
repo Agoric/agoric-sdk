@@ -1,4 +1,4 @@
-import { AmountMath, type NatAmount } from '@agoric/ertp';
+import { AmountMath, type Brand, type NatAmount } from '@agoric/ertp';
 import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 import { mustMatch, objectMap } from '@agoric/internal';
 import { createRequire } from 'module';

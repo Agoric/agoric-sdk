@@ -1,5 +1,3 @@
-/// <reference types="@agoric/store/exported.js" />
-
 /* eslint-disable import/export -- types files have no named runtime exports */
 export { makeLiveSlots, makeMarshaller } from './liveslots.js';
 

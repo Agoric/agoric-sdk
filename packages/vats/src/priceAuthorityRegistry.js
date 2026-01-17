@@ -15,6 +15,10 @@ import { PriceAuthorityI } from '@agoric/zoe/src/contractSupport/priceAuthority.
 /**
  * @import {Baggage} from '@agoric/vat-data';
  * @import {MutableQuote, PriceAuthority, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {MapStore} from '@agoric/store';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

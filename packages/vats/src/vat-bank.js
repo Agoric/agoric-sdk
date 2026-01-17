@@ -25,6 +25,7 @@ import {
  * @import {Amount, DisplayInfo, Issuer, IssuerKit, Payment} from '@agoric/ertp';
  * @import {Guarded} from '@endo/exo';
  * @import {RemotableObject} from '@endo/pass-style';
+ * @import {EachTopic, IterableEachTopic, LatestTopic, PublicationRecord, PublishKit, Publisher} from '@agoric/notifier';
  * @import {BridgeMessage, BridgeBigInt} from '@agoric/cosmic-swingset/src/types.js';
  * @import {VirtualPurse} from './virtual-purse.js';
  * @import {ScopedBridgeManager} from './types.js';
@@ -32,9 +33,11 @@ import {
  * @import {AtomicProvider} from '@agoric/store/src/stores/store-utils.js';
  * @import {NameHubKit} from './types.js';
  * @import {EOnly} from '@endo/far';
- * @import {DepositFacet} from '@agoric/ertp/src/types.js';
+ * @import {Brand, DepositFacet, Mint, Purse} from '@agoric/ertp/src/types.js';
  * @import {MakeAttenuator} from '@agoric/internal/src/callback.js';
  * @import {NameAdmin} from './types.js';
+ * @import {MapStore} from '@agoric/store';
+ * @import {ERef} from '@agoric/vow';
  */
 
 const { VirtualPurseControllerI } = makeVirtualPurseKitIKit();
@@ -917,3 +920,5 @@ export function buildRootObject(_vatPowers, _args, baggage) {
     },
   });
 }
+
+/** @typedef {ReturnType<typeof buildRootObject>} BankVat */

@@ -4,7 +4,12 @@ import { Fail, X, annotateError, assert, makeError } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 
 /**
+ * @import {AssetKind} from '@agoric/ertp';
  * @import {InvitationHandle} from '../zoe.js';
+ * @import {Instance} from '@agoric/zoe';
+ * @import {Issuer} from '@agoric/ertp';
+ * @import {Payment} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

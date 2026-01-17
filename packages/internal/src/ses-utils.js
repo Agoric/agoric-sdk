@@ -269,9 +269,7 @@ export const withDeferredCleanup = async fn => {
  * Concise way to check values are available from object literal shorthand.
  * Throws error message to specify the missing values.
  *
- * @template {Record<string, unknown>} T
- * @param {T} obj
- * @returns {asserts obj is AllDefined<T>}
+ * @type {<T extends Record<string, unknown>>(obj: T) => asserts obj is AllDefined<T>}
  * @throws if any value in the object entries is not defined
  */
 export const assertAllDefined = obj => {

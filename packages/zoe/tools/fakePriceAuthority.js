@@ -17,9 +17,14 @@ import {
 
 /**
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {NotifierRecord} from '@agoric/notifier';
  * @import {TimerService} from '@agoric/time';
  * @import {RelativeTime} from '@agoric/time';
  * @import {Timestamp} from '@agoric/time';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Mint} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 const { coerceRelativeTimeRecord } = TimeMath;

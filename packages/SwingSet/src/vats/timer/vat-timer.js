@@ -20,6 +20,7 @@ import { TimeMath } from '@agoric/time';
  * @import {Key} from '@endo/patterns';
  * @import {TimerDevice} from '../../devices/timer/device-timer.js';
  * @import {DProxy} from '../../types-external.js';
+ * @import {ERef} from '@endo/far';
  */
 
 // This consumes O(N) RAM only for outstanding promises, via wakeAt(),
@@ -981,3 +982,5 @@ export const debugTools = harden({
   firstWakeup,
   measureInterval,
 });
+
+/** @typedef {ERef<ReturnType<typeof buildRootObject>>} TimerVat */

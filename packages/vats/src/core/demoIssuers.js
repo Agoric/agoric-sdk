@@ -12,8 +12,14 @@ import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only
 import { Stake, Stable } from '@agoric/internal/src/tokens.js';
 
 /**
- * @import {FeeMintAccess, Installation} from '@agoric/zoe'
+ * @import {FeeMintAccess, Installation, ZoeService} from '@agoric/zoe'
  * @import {EconomyBootstrapPowers} from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
+ * @import {Payment} from '@agoric/ertp';
+ * @import {Issuer} from '@agoric/ertp';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
+ * @import {MintsVat} from '../vat-mints.js';
+ * @import {BootstrapSpace} from './types.ts';
  */
 
 const { multiply, floorDivide } = natSafeMath;

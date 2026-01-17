@@ -1,11 +1,18 @@
-/* eslint-disable @agoric/group-jsdoc-imports */
+/**
+ * @import {Installation, Instance} from '@agoric/zoe';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {Issuer} from '@agoric/ertp';
+ * @import {Invitation} from '../types-index.js';
+ * @import {UserSeat} from '../types-index.js';
+ * @import {Brand} from '@agoric/ertp';
+ */
 /**
  * @typedef {object} SellItemsPublicFacet
  * @property {() => Issuer} getItemsIssuer
  * @property {() => Amount} getAvailableItems
  *
  * @typedef {object} SellItemsCreatorOnly
- * @property {() => Promise<import('../types-index.js').Invitation>} makeBuyerInvitation
+ * @property {() => Promise<Invitation>} makeBuyerInvitation
  *
  * @typedef {SellItemsPublicFacet & SellItemsCreatorOnly} SellItemsCreatorFacet
  */
@@ -19,7 +26,7 @@
  * @property {Amount} pricePerItem
  *
  * @typedef {object} SellItemsResult
- * @property {import('../types-index.js').UserSeat} sellItemsCreatorSeat
+ * @property {UserSeat} sellItemsCreatorSeat
  * @property {SellItemsCreatorFacet} sellItemsCreatorFacet
  * @property {Instance} sellItemsInstance
  * @property {SellItemsPublicFacet} sellItemsPublicFacet
@@ -32,22 +39,22 @@
 /**
  * @typedef {object} AutomaticRefundPublicFacet
  * @property {() => bigint} getOffersCount
- * @property {() => Promise<import('../types-index.js').Invitation>} makeInvitation
+ * @property {() => Promise<Invitation>} makeInvitation
  */
 
 /**
  * @typedef {object} AutoswapPublicFacet
- * @property {() => Promise<import('../types-index.js').Invitation>} makeSwapInvitation synonym for
+ * @property {() => Promise<Invitation>} makeSwapInvitation synonym for
  * makeSwapInInvitation
- * @property {() => Promise<import('../types-index.js').Invitation>} makeSwapInInvitation make an invitation
+ * @property {() => Promise<Invitation>} makeSwapInInvitation make an invitation
  * that allows one to do a swap in which the In amount is specified and the Out
  * amount is calculated
- * @property {() => Promise<import('../types-index.js').Invitation>} makeSwapOutInvitation make an invitation
+ * @property {() => Promise<Invitation>} makeSwapOutInvitation make an invitation
  * that allows one to do a swap in which the Out amount is specified and the In
  * amount is calculated
- * @property {() => Promise<import('../types-index.js').Invitation>} makeAddLiquidityInvitation make an
+ * @property {() => Promise<Invitation>} makeAddLiquidityInvitation make an
  * invitation that allows one to add liquidity to the pool.
- * @property {() => Promise<import('../types-index.js').Invitation>} makeRemoveLiquidityInvitation make an
+ * @property {() => Promise<Invitation>} makeRemoveLiquidityInvitation make an
  * invitation that allows one to remove liquidity from the pool.
  * @property {() => Issuer} getLiquidityIssuer
  * @property {() => bigint} getLiquiditySupply get the current value of

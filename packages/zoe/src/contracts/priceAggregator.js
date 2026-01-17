@@ -32,18 +32,23 @@ import {
 /**
  * @import {Remote} from '@agoric/internal';
  * @import {LegacyMap} from '@agoric/store'
+ * @import {Notifier, UpdateRecord} from '@agoric/notifier';
  * @import {ContractOf} from '../zoeService/utils.js';
  * @import {PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
- * @import {Invitation, ZCF, ZCFSeat} from '@agoric/zoe';
+ * @import {Instance, Invitation, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {TimerService} from '@agoric/time';
  * @import {Timestamp} from '@agoric/time';
  * @import {TimerWaker} from '@agoric/time';
  * @import {TimestampRecord} from '@agoric/time';
  * @import {OracleContract} from './oracle.js';
- * @import {Ratio} from '@agoric/ertp';
+ * @import {Amount, Brand, Ratio} from '@agoric/ertp';
  * @import {OracleKey} from './priceAggregatorTypes.js';
  * @import {OracleAdmin} from './priceAggregatorTypes.js';
  * @import {OracleQuery} from './priceAggregatorTypes.js';
+ * @import {Mint} from '@agoric/ertp';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /** @typedef {bigint | number | string} ParsableNumber */

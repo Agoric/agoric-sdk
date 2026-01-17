@@ -11,7 +11,13 @@ import { TimestampShape } from '@agoric/time';
 
 /**
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery, PriceQuoteCreate, PriceAuthorityKit, PriceQuoteTrigger, MutableQuote,} from '@agoric/zoe/tools/types.js';
+ * @import {Notifier} from '@agoric/notifier';
  * @import {TimerService} from '@agoric/time';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {Issuer} from '@agoric/ertp';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {PromiseRecord} from '@endo/promise-kit';
+ * @import {ERef} from '@agoric/vow';
  */
 
 const trace = makeTracer('PA', false);

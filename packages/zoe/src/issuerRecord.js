@@ -2,7 +2,7 @@
 import { Fail } from '@endo/errors';
 
 /**
- * @import {IssuerRecord} from '@agoric/ertp';
+ * @import {AssetKind, Brand, DisplayInfo, Issuer, IssuerRecord} from '@agoric/ertp';
  * @import {ZoeIssuerRecord} from './types-index.js';
  */
 
@@ -26,7 +26,7 @@ export const makeIssuerRecord = (brand, issuer, displayInfo) =>
 
 /**
  * @param {IssuerRecord<any>} issuerRecord
- * @returns {asserts issuerRecord is Required<IssuerRecord>}
+ * @returns {asserts issuerRecord is Required<IssuerRecord<any>>}
  */
 export const assertFullIssuerRecord = issuerRecord => {
   if (!issuerRecord.displayInfo) {

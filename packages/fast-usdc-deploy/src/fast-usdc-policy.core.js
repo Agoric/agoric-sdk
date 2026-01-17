@@ -11,6 +11,8 @@ import { publishFeedPolicy } from './utils/core-eval.js';
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js'
  * @import {LegibleCapData} from './utils/config-marshal.js'
  * @import {FeedPolicy} from '@agoric/fast-usdc/src/types.js'
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
  */
 
 const contractName = 'fastUsdc';

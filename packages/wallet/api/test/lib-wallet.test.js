@@ -22,6 +22,12 @@ import { makeWalletRoot } from '../src/lib-wallet.js';
 /**
  * @import {TestFn} from 'ava';
  * @import {ExecutionContext} from 'ava';
+ * @import {ZoeService} from '@agoric/zoe';
+ * @import {Installation} from '@agoric/zoe';
+ * @import {ERef} from '@agoric/vow';
+ * @import {LatestTopic} from '@agoric/notifier';
+ * @import {Invitation} from '@agoric/zoe';
+ * @import {Issuer} from '@agoric/ertp';
  */
 
 const ZOE_INVITE_PURSE_PETNAME = 'Default Zoe invite purse';

@@ -17,6 +17,9 @@ import { remoteNullMarshaller } from '../utils.js';
  * @import {Timestamp} from '@agoric/time';
  * @import {CommitteeElectorateCreatorFacet} from '../../../src/committee.js';
  * @import {TimerService} from '@agoric/time';
+ * @import {Installation} from '@agoric/zoe';
+ * @import {ZoeService} from '@agoric/zoe';
+ * @import {ERef} from '@agoric/vow';
  */
 
 const makeVoterVat = async (log, vats, zoe) => {

@@ -7,6 +7,7 @@ import type { TransferMiddleware } from '@agoric/vats/src/transfer.js';
 import type { TransferVat } from '@agoric/vats/src/vat-transfer.js';
 import { BridgeId } from '@agoric/internal';
 import { VTRANSFER_IBC_EVENT } from '@agoric/internal/src/action-types.js';
+import type { ERef } from '@agoric/vow';
 import { makeSwingsetTestKit } from '../../tools/supports.js';
 
 const makeDefaultTestContext = async t => {

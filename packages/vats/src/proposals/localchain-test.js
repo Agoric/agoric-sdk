@@ -9,6 +9,8 @@ import { MsgSend as MsgSendType } from '@agoric/cosmic-proto/cosmos/bank/v1beta1
  * @import {LocalChain} from '../localchain.js';
  * @import {ERemote} from '@agoric/internal';
  * @import {TargetApp} from '../bridge-target.js';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {BootstrapPowers} from '../core/types.ts';
  */
 
 const MsgSend = CodecHelper(MsgSendType);

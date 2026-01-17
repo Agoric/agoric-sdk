@@ -1,12 +1,12 @@
-// @ts-nocheck
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { Stable } from '@agoric/internal/src/tokens.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { getInterfaceOf, E } from '@endo/far';
 
 /**
- * @import {EconomyBootstrapPowers} from './econ-behaviors';
+ * @import {EconomyBootstrapPowers} from './econ-behaviors.js';
  * @import {start} from '@agoric/inter-protocol/src/feeDistributor.js';
+ * @import {StartedInstanceKit} from '@agoric/vats/src/core/types.js';
  */
 
 const trace = makeTracer('ReplaceFeeDistributer', true);

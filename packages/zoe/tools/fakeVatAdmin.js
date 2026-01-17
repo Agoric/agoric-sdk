@@ -11,7 +11,7 @@ import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { evalContractBundle } from '../src/contractFacet/evalContractCode.js';
 import { handlePKitWarning } from '../src/handleWarning.js';
 import { makeHandle } from '../src/makeHandle.js';
-import zcfBundle from '../bundles/bundle-contractFacet.js';
+import zcfBundle from '@agoric/zoe/bundles/bundle-contractFacet.js';
 
 /**
  * @import {MapStore} from '@agoric/swingset-liveslots';

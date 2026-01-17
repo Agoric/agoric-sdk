@@ -11,6 +11,10 @@ import { makeScalarBigMapStore } from '@agoric/vat-data';
  * @import {NameAdmin} from '@agoric/vats';
  * @import {ScratchPad} from '@agoric/internal/src/scratch.js';
  * @import {Bundle} from '@agoric/swingset-vat';
+ * @import {Installation} from '@agoric/zoe';
+ * @import {Payment} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
+ * @import {Producer} from '@agoric/vats/src/core/types.js';
  */
 
 /**

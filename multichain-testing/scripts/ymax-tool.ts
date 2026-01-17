@@ -33,7 +33,7 @@ import {
   type SigningSmartWalletKit,
   type VstorageKit,
 } from '@agoric/client-utils';
-import { AmountMath } from '@agoric/ertp';
+import { AmountMath, type Brand } from '@agoric/ertp';
 import {
   multiplyBy,
   parseRatio,

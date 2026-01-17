@@ -34,6 +34,11 @@ import {
  * @import {ContinuingInvitationSpec} from '@agoric/smart-wallet/src/invitations.js';
  * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {start as CommitteeStart} from '@agoric/governance/src/committee.js';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
+ * @import {ChainBootstrapSpace} from '@agoric/vats/src/core/types.js';
+ * @import {NamedVatPowers} from '@agoric/vats/src/core/types.js';
  */
 
 /**
@@ -73,8 +78,6 @@ const makeTestSpace = async (log, bundleCache) => {
   // calling ensureOracleBrands and createPriceFeed
   // ensuring a feed for ATOM-USD
 
-  /** @type {ChainBootstrapSpace & NamedVatPowers} */
-  // @ts-expect-error cast
   const space = psmVatRoot.getPromiseSpace();
   await eventLoopIteration();
 

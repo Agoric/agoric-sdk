@@ -2,6 +2,10 @@ import { Fail } from '@endo/errors';
 import { makeCapTP } from '@endo/captp';
 import { Far } from '@endo/far';
 
+/**
+ * @import {Device} from '../../types-external.js';
+ */
+
 export function buildRootDeviceNode(tools) {
   const { SO, getDeviceState, setDeviceState, endowments } = tools;
   const restart = getDeviceState();
@@ -153,3 +157,5 @@ export function buildRootDeviceNode(tools) {
     },
   });
 }
+
+/** @typedef {Device<ReturnType<typeof buildRootDeviceNode>>} PluginDevice */

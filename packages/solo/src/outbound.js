@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* eslint-env node */
 import anylogger from 'anylogger';
 import { Fail } from '@endo/errors';

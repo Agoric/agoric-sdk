@@ -226,7 +226,7 @@ export const createMockCosmosRestClient = (
   let callCount = 0;
   const balanceResponses = config.balanceResponses ?? DEFAULT_BALANCE_RESPONSES;
   const initialAccount = config.initialAccount ?? DEFAULT_ACCOUNT;
-  let mockAccount = initialAccount;
+  const mockAccount = initialAccount;
 
   return {
     getAccountBalance: async (chainKey, address, denom) => {
@@ -268,6 +268,8 @@ export const createMockPendingTxOpts = (
     'eip155:1': createMockProvider(latestBlock, events),
     'eip155:42161': createMockProvider(latestBlock, events),
   },
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore some resolutions don't expect this on global
   fetch: global.fetch,
   marshaller: boardSlottingMarshaller(),
   signingSmartWalletKit: createMockSigningSmartWalletKit(),

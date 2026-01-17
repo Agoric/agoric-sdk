@@ -19,13 +19,17 @@ import { setUpZoeForTest as generalSetUpZoeForTest } from '@agoric/zoe/tools/set
 import { E } from '@endo/far';
 
 /**
- * @import {FeeMintAccess, SourceBundle} from '@agoric/zoe';
+ * @import {FeeMintAccess, SourceBundle, ZoeService} from '@agoric/zoe';
  * @import {EconomyBootstrapPowers as Space} from '../src/proposals/econ-behaviors.js'
  * @import {TimerService} from '@agoric/time';
+ * @import {StoredSubscriber, StoredSubscription, Subscriber, Subscription} from '@agoric/notifier';
  * @import {start} from '@agoric/vats/src/centralSupply.js';
  * @import {TopicsRecord} from '@agoric/zoe/src/contractSupport/index.js';
  * @import {ExecutionContext} from 'ava';
  * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
+ * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {Payment} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 export { makeMockChainStorageRoot };
@@ -142,7 +146,7 @@ export const mintRunPayment = async (
  * @param {Space} space
  * @param {Record<
  *   keyof Space['installation']['produce'],
- *   Promise<Installation>
+ *   Promise<Installation<any>>
  * >} installations
  */
 export const produceInstallations = (space, installations) => {

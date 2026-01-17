@@ -26,6 +26,7 @@ const charterRoot = './src/econCommitteeCharter.js'; // package relative
  * @import {ZoeManualTimer} from '@agoric/zoe/tools/manualTimer.js';
  * @import {TimerService} from '@agoric/time';
  * @import {EconomyBootstrapPowers} from '../../src/proposals/econ-behaviors.js';
+ * @import {ZoeService} from '@agoric/zoe';
  */
 
 /** @typedef {ReturnType<typeof setUpZoeForTest>} FarZoeKit */
@@ -101,8 +102,8 @@ export const setupPsm = async (
   brand.produce.IST.resolve(istBrand);
   issuer.produce.IST.resolve(istIssuer);
 
-  // @ts-expect-error mock
   space.produce.provisionPoolStartResult.resolve({
+    // @ts-expect-error mock
     creatorFacet: Far('dummy', {
       initPSM: () => {
         t.log('dummy provisionPool.initPSM');

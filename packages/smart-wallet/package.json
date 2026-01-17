@@ -72,7 +72,7 @@
     "access": "public"
   },
   "typeCoverage": {
-    "atLeast": 93.87
+    "atLeast": 94.02
   },
   "engines": {
     "node": "^20.9 || ^22.11"

@@ -1,7 +1,11 @@
-import type { SigningSmartWalletKit } from '@agoric/client-utils';
-import { retryUntilCondition, type RetryOptions } from '@agoric/client-utils';
+import {
+  type SigningSmartWalletKit,
+  retryUntilCondition,
+  type RetryOptions,
+} from '@agoric/client-utils';
 import type { UpdateRecord } from '@agoric/smart-wallet/src/smartWallet.js';
 import type { EMethods } from '@agoric/vow/src/E.js';
+import type { Instance } from '@agoric/zoe';
 import type { StdFee } from '@cosmjs/amino';
 
 export const walletUpdates = (
@@ -73,7 +77,7 @@ export const reflectWalletStore = (
 ) => {
   const up = walletUpdates(sig.query.getLastUpdate, retryOpts);
 
-  let saveResult: { name: string; overwrite?: boolean } | undefined = undefined;
+  let saveResult: { name: string; overwrite?: boolean } | undefined;
   const savingResult = async <T>(name: string, thunk: () => Promise<T>) => {
     assert(!saveResult, 'already saving');
     saveResult = { name, overwrite: true };

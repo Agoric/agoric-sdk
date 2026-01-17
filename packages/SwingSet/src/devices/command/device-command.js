@@ -2,6 +2,10 @@ import { Fail } from '@endo/errors';
 import { Nat } from '@endo/nat';
 import { Far } from '@endo/far';
 
+/**
+ * @import {Device} from '../../types-external.js';
+ */
+
 export function buildRootDeviceNode(tools) {
   const { SO, getDeviceState, setDeviceState, endowments } = tools;
   const { registerInboundCallback, deliverResponse, sendBroadcast } =
@@ -44,3 +48,5 @@ export function buildRootDeviceNode(tools) {
     },
   });
 }
+
+/** @typedef {Device<ReturnType<typeof buildRootDeviceNode>>} CommandDevice */

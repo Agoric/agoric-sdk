@@ -23,6 +23,11 @@ import { withAmountUtils } from '../supports.js';
  * @import {FluxStartFn} from '@agoric/inter-protocol/src/price/fluxAggregatorContract.js';
  * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {ContinuingInvitationSpec} from '@agoric/smart-wallet/src/invitations.js';
+ * @import {CommitteeElectoratePublic} from '@agoric/governance/src/types.js';
+ * @import {Installation} from '@agoric/zoe';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
+ * @import {ChainBootstrapSpace} from '@agoric/vats/src/core/types.ts';
  */
 
 // referenced by TS
@@ -60,8 +65,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
   const bundleCache = await unsafeMakeBundleCache('bundles/');
   const zone = makeHeapZone();
 
-  // @ts-expect-error xxx
-  const { consume, produce, instance } = await makeSpace(log, bundleCache);
+  const { consume, produce } = await makeSpace(log, bundleCache);
   const { agoricNames, zoe } = consume;
 
   await produceDiagnostics({ produce });
@@ -193,8 +197,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     produce.priceAuthorityAdmin.resolve(mockPriceAuthorityAdmin);
 
     await createPriceFeed(
-      // @ts-expect-error xxx
-      { consume, produce, instance },
+      { consume, produce },
       {
         options: {
           priceFeedOptions: {

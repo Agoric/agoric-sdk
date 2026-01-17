@@ -12,6 +12,8 @@ const depositFacetKey = 'depositFacet';
  * @import {Remote} from '@agoric/internal';
  * @import {NameHub} from '@agoric/vats';
  * @import {Baggage} from '@agoric/vat-data';
+ * @import {ZCF} from '@agoric/zoe';
+ * @import {Payment} from '@agoric/ertp';
  */
 
 const privateArgsShape = harden({

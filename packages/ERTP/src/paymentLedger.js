@@ -1,7 +1,5 @@
 // @jessie-check
 
-/// <reference types="@agoric/store/exported.js" />
-
 import { q, Fail, annotateError, X } from '@endo/errors';
 import { isPromise } from '@endo/promise-kit';
 import { mustMatch, M, keyEQ } from '@endo/patterns';
@@ -17,6 +15,8 @@ import { BrandI, makeIssuerInterfaces } from './typeGuards.js';
  * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
  * @import {AmountStore} from './amountStore.js';
  * @import {Amount, AssetKind, DisplayInfo, PaymentLedger, Payment, Brand, RecoverySetsOption, Purse, Issuer, Mint} from './types.js';
+ * @import {WeakMapStore} from '@agoric/store';
+ * @import {SetStore} from '@agoric/store';
  */
 
 /**

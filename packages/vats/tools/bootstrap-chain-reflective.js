@@ -18,7 +18,8 @@ import * as utils from '../src/core/utils.js';
 
 /**
  * @import {Baggage} from '@agoric/vat-data';
- * @import {CreateVatResults, VatPowers} from '@agoric/swingset-vat';
+ * @import {CreateVatResults, DProxy, VatPowers} from '@agoric/swingset-vat';
+ * @import {BundleCap} from '@agoric/swingset-vat';
  */
 
 // Gather up all defined bootstrap behaviors.
@@ -118,7 +119,7 @@ export const buildRootObject = (vatPowers, bootstrapParameters, baggage) => {
 
   /**
    * @param {string} bundleIdOrName
-   * @returns {Promise<import('@agoric/swingset-vat').BundleCap>}
+   * @returns {Promise<BundleCap>}
    */
   const getBundleCapByIdOrName = bundleIdOrName =>
     bundleIdOrName.startsWith('b1-')
@@ -134,7 +135,7 @@ export const buildRootObject = (vatPowers, bootstrapParameters, baggage) => {
    * @returns {Promise<DynamicVatRecord['root']>} root object of the new vat
    */
 
-  /** @type {CreateVat<import('@agoric/swingset-vat').BundleCap>} */
+  /** @type {CreateVat<BundleCap>} */
   const createVat = async (vatName, bundleCap, vatOptions = {}) => {
     const { root, adminNode } = await E(vatAdminP).createVat(bundleCap, {
       vatParameters: {},
@@ -155,7 +156,7 @@ export const buildRootObject = (vatPowers, bootstrapParameters, baggage) => {
 
   /**
    * @type {UpgradeVat<
-   *   import('@agoric/swingset-vat').BundleCap | undefined
+   *   BundleCap | undefined
    * >}
    */
   const upgradeVat = async (vatName, bundleCap, vatOptions = {}) => {

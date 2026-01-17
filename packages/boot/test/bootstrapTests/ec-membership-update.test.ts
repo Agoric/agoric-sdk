@@ -71,7 +71,7 @@ export const makeZoeTestContext = async t => {
 
   const { fromCapData } = makeMarshal(undefined, slotToBoardRemote);
 
-  const getVstorageData = key => {
+  const getVstorageData = (key: string) => {
     const data = unmarshalFromVstorage(storage.data, key, fromCapData, -1);
     return data;
   };

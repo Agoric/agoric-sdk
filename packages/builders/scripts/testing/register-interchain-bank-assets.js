@@ -12,7 +12,14 @@ const { Fail } = assert;
 
 const trace = makeTracer('RegisterInterchainBankAssets', true);
 
-/** @import {Board} from '@agoric/vats'; */
+/**
+ * @import {Board} from '@agoric/vats';
+ * @import {ERef} from '@endo/eventual-send';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {IssuerKit} from '@agoric/ertp';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
+ */
 
 /**
  * @typedef {object} InterchainAssetOptions

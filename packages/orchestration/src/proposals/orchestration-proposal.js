@@ -5,6 +5,9 @@ const trace = makeTracer('CoreEvalOrchestration', true);
 
 /**
  * @import {PortAllocator} from '@agoric/network';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
+ * @import {Producer} from '@agoric/vats/src/core/types.js';
+ * @import {VatSourceRef} from '@agoric/vats/src/core/types.js';
  */
 
 /**

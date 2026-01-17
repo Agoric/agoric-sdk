@@ -26,9 +26,6 @@ export type TagContainer<Token> = {
   readonly [tag]: Token;
 };
 
-let f: TagContainer<'zot'>;
-f['Symbol(tag)'];
-
 type Tag<Token extends PropertyKey, TagMetadata> = TagContainer<{
   [K in Token]: TagMetadata;
 }>;

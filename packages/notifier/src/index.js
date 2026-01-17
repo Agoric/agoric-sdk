@@ -1,5 +1,4 @@
 // @jessie-check
-/// <reference types="@agoric/internal/exported.js" />
 
 export {
   makePublishKit,

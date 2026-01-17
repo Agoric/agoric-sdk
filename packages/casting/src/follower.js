@@ -16,6 +16,7 @@ import { makeCastingSpec } from './casting-spec.js';
  * @import {LeaderOrMaker} from './types.js';
  * @import {FollowerOptions} from './types.js';
  * @import {ValueFollower} from './follower-cosmjs.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

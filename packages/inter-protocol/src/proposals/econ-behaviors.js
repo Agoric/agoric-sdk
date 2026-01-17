@@ -13,7 +13,8 @@ import { makeGovernedTerms as makeGovernedVFTerms } from '../vaultFactory/params
 /**
  * @import {GovernorCreatorFacet, GovernanceFacetKit, GovernorStartedInstallationKit} from '@agoric/governance/src/types.js';
  * @import {StartedInstanceKit} from '@agoric/zoe/src/zoeService/utils.js';
- * @import {AdminFacet} from '@agoric/zoe';
+ * @import {Amount, Brand, NatValue, Payment} from '@agoric/ertp';
+ * @import {AdminFacet, Instance} from '@agoric/zoe';
  * @import {MapStore, SetStore} from '@agoric/store';
  */
 
@@ -56,10 +57,10 @@ export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
  */
 
 /**
- * @typedef {WellKnownSpaces & ChainBootstrapSpace & EconomyBootstrapSpace} EconomyBootstrapPowers
+ * @typedef {import('@agoric/vats/src/core/types.js').WellKnownSpaces & import('@agoric/vats/src/core/types.js').ChainBootstrapSpace & EconomyBootstrapSpace} EconomyBootstrapPowers
  *
  *
- * @typedef {PromiseSpaceOf<{
+ * @typedef {import('@agoric/vats/src/core/types.js').PromiseSpaceOf<{
  *   economicCommitteeKit: CommitteeStartResult;
  *   economicCommitteeCreatorFacet: import('@agoric/governance/src/committee.js').CommitteeElectorateCreatorFacet;
  *   feeDistributorKit: StartedInstanceKit<

@@ -5,6 +5,8 @@ import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';
 
 /**
  * @import {MapStore} from '@agoric/swingset-liveslots';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Amount} from '@agoric/ertp';
  */
 
 export const setup = () => {

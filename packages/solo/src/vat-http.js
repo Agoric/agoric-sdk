@@ -241,3 +241,5 @@ export function buildRootObject(vatPowers) {
     },
   });
 }
+
+/** @typedef {ReturnType<typeof buildRootObject>} HttpVat */

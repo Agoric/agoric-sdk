@@ -3,6 +3,11 @@ import { deeplyFulfilled } from '@endo/marshal';
 import { makeTracer } from '@agoric/internal';
 import { Stake } from '@agoric/internal/src/tokens.js';
 
+/**
+ * @import {BootstrapPowers} from '../core/types.ts';
+ * @import {VatSourceRef} from '../core/types.ts';
+ */
+
 const trace = makeTracer('UpgradeProvisionPool');
 
 /**
@@ -107,7 +112,9 @@ export const upgradeProvisionPool = async (
 
   trace('Setting new bridgeHandler...');
   // @ts-expect-error casting
-  await E(provisionWalletBridgeManager).setHandler(bridgeHandler);
+  await E(/** @type {unknown} */ (provisionWalletBridgeManager)).setHandler(
+    bridgeHandler,
+  );
 
   trace('Null upgrading governor...', {
     economicCommitteeCreatorFacet: electorateCreatorFacet,

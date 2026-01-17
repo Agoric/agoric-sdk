@@ -41,3 +41,5 @@ export function buildRootObject(_vatPowers, _vatParameters, baggage) {
     makeReadOnlyRecorderKit,
   });
 }
+
+/** @typedef {ReturnType<typeof buildRootObject>} BoardVat */

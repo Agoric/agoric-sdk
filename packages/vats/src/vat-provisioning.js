@@ -20,6 +20,11 @@ import {
  * @import {NameHub} from './types.js';
  * @import {MyAddressNameAdmin} from './types.js';
  * @import {Baggage} from '@agoric/vat-data';
+ * @import {ERef} from '@agoric/vow';
+ * @import {ClientCreator} from './core/types.ts';
+ * @import {CommsVatRoot} from './core/types.ts';
+ * @import {VattpVat} from '@agoric/swingset-vat/src/vats/vattp/vat-vattp.js';
+ * @import {ClientFacet} from './core/types.ts';
  */
 
 // This vat contains the controller-side provisioning service. To enable local
@@ -179,3 +184,5 @@ export function buildRootObject(_vatPowers, _vatParameters, baggage) {
       harden({ namesByAddress: nameHubKit.nameHub, namesByAddressAdmin }),
   });
 }
+
+/** @typedef {ReturnType<typeof buildRootObject>} ProvisioningVat */

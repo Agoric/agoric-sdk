@@ -12,6 +12,7 @@ import { deeplyFulfilled } from '@endo/marshal';
 /**
  * @import {AutoStakeItSF} from '@agoric/orchestration/src/examples/auto-stake-it.contract.js';
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
+ * @import {BootstrapPowers, StartUpgradableOpts} from '@agoric/vats/src/core/types.js';
  */
 
 const contractName = 'autoAutoStakeIt';

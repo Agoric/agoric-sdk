@@ -5,7 +5,7 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
 // spawnBundle is built with 'yarn build'
-import spawnBundle from '../bundles/bundle-spawn.js';
+import spawnBundle from '@agoric/spawner/bundles/bundle-spawn.js';
 
 function makeSpawner(vatAdminSvc) {
   return Far('spawner', {

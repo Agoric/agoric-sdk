@@ -5,8 +5,6 @@
  *     agoric run /path/to/$0 [<bootstrap powers produce key> [<label>]]
  */
 
-/// <reference types="@agoric/vats/src/core/types-ambient.js"/>
-
 /* eslint-disable import/no-extraneous-dependencies */
 // dynamic import { makeHelpers } from '@agoric/deploy-script-support';
 // dynamic import { getSpecifier } from '@agoric/internal/src/module-utils.js';
@@ -21,6 +19,8 @@ import { MALLEABLE_NUMBER } from '@agoric/governance/test/swingsetTests/contract
  * @import {EconomyBootstrapPowers} from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
  * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {Installation} from '@agoric/zoe';
+ * @import {ERef} from '@agoric/vow';
  */
 
 const trace = makeTracer('startGovernedInstance', true);

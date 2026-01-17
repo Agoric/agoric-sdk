@@ -74,9 +74,7 @@
     "src/",
     "scripts/",
     "tools/",
-    "*.json",
-    "globals.d.ts",
-    "exported.js"
+    "*.json"
   ],
   "engines": {
     "node": "^20.9 || ^22.11"
@@ -100,6 +98,6 @@
     "workerThreads": false
   },
   "typeCoverage": {
-    "atLeast": 89.77
+    "atLeast": 89.94
   }
 }

@@ -13,8 +13,9 @@ per https://agents.md/
 - `yarn build`: Build all workspaces (generates kernel bundles where needed).
 - `yarn test`: Run unit tests across all packages (AVA).
 - `yarn lint` | `yarn lint-fix`: Check or auto-fix lint issues across packages.
-- `yarn run -T tsc --noEmit --incremental`: Fast typecheck; do this after changes.
+- `yarn run -T tsc --noEmit --incremental`: Fast typecheck within a package; do this after changes.
     - Watch mode for type errors in active workspaces: run `yarn run -T tsc --noEmit --incremental --watch --preserveWatchOutput` in the workspace(s) being edited, and keep the terminal output visible so Codex can monitor errors.
+- `yarn typecheck-quick` to do a fast typecheck over the whole repo (4-7 seconds)
 - `yarn format`: Format code via Prettier; `yarn lint:format` to check only.
 - `./scripts/env-doctor.sh`: Verify toolchain (Node, Go, compiler) versions.
 - Example, single package: `cd packages/eventual-send && yarn test`.

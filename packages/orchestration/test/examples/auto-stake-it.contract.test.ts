@@ -6,6 +6,7 @@ import { heapVowE } from '@agoric/vow/vat.js';
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
+import type { Installation } from '@agoric/zoe';
 import {
   buildMsgResponseString,
   buildVTransferEvent,

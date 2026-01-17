@@ -16,7 +16,7 @@ const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 /**
  * @param {string} basedir
- * @param {string} webport
+ * @param {number | string} webport
  * @param {string} webhost
  * @param {string} _subdir
  * @param {string[]} egresses

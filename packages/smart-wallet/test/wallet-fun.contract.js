@@ -7,6 +7,7 @@ import { M } from '@endo/patterns';
  * @import {Baggage} from '@agoric/swingset-liveslots';
  * @import {SetStore} from '@agoric/store';
  * @import {NatValue} from '@agoric/ertp';
+ * @import {ZCF} from '@agoric/zoe';
  */
 
 const trace = makeTracer('WFun');

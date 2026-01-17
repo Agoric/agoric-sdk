@@ -13,11 +13,16 @@ import {
  * @import {ERemote, Remote} from '@agoric/internal';
  * @import {Instance, StartParams} from '@agoric/zoe/src/zoeService/utils.js'
  * @import {Board} from '@agoric/vats'
+ * @import {Installation} from '@agoric/zoe';
  * @import {ManifestBundleRef} from '@agoric/deploy-script-support/src/externalTypes.js'
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js'
  * @import {LegibleCapData} from './utils/config-marshal.js'
  * @import {FastUsdcSF} from '@aglocal/fast-usdc-contract/src/fast-usdc.contract.ts'
  * @import {FastUSDCConfig} from '@agoric/fast-usdc/src/types.js'
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {ERef} from '@agoric/vow';
+ * @import {BootstrapPowers, PromiseSpaceOf, StartedInstanceKitWithLabel} from '@agoric/vats/src/core/types.js';
  */
 
 const ShareAssetInfo = /** @type {const} */ harden({
@@ -60,11 +65,7 @@ const POOL_METRICS = 'poolMetrics';
  *   brand: PromiseSpaceOf<{ FastLP: Brand }>;
  * }} FastUSDCCorePowers
  *
- * @typedef {StartedInstanceKitWithLabel & {
- *   publicFacet: StartedInstanceKit<FastUsdcSF>['publicFacet'];
- *   creatorFacet: StartedInstanceKit<FastUsdcSF>['creatorFacet'];
- *   privateArgs: StartParams<FastUsdcSF>['privateArgs'];
- * }} FastUSDCKit
+ * @typedef {StartedInstanceKitWithLabel<FastUsdcSF> & { privateArgs: StartParams<FastUsdcSF>['privateArgs'] }} FastUSDCKit
  */
 
 /**

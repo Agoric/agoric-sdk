@@ -5,7 +5,7 @@ import { buildSerializationTools } from '../lib/deviceTools.js';
 import { insistVatID } from '../../lib/id.js';
 
 /**
- * @import { Bundle, BundleCap, BundleID } from '../../types-external.js'
+ * @import { Bundle, BundleCap, BundleID, Device } from '../../types-external.js'
  */
 
 /*
@@ -326,3 +326,5 @@ export function buildDevice(tools, endowments) {
   };
   return dispatch;
 }
+
+/** @typedef {Device<VatAdminRootDeviceNode>} VatAdminDevice */

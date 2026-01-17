@@ -1,6 +1,7 @@
 import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 import { Far } from '@endo/pass-style';
 import test from 'ava';
+import type { Brand } from '@agoric/ertp';
 import {
   grokRebalanceScenarios,
   importText,

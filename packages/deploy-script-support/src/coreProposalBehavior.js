@@ -5,13 +5,7 @@ const t = 'makeCoreProposalBehavior';
  * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {E} from '@endo/far';
  * @import {ManifestBundleRef} from './externalTypes.js';
- */
-
-/**
- * TODO import these from @agoric/vats when the types are better managed
- *
- * @typedef {*} ChainBootstrapSpace
- * @typedef {*} BootstrapPowers
+ * @import {BootstrapPowers, ChainBootstrapSpace} from '@agoric/vats/src/core/types.js';
  */
 
 /**

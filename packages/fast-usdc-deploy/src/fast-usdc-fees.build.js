@@ -9,6 +9,7 @@ import { getManifestForDistributeFees } from './distribute-fees.core.js';
 /**
  * @import {CoreEvalBuilder, DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js'
  * @import {FeeDistributionTerms} from './distribute-fees.core.js'
+ * @import {Brand} from '@agoric/ertp';
  */
 
 const usage =

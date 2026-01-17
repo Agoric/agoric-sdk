@@ -28,6 +28,13 @@ import {
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js'
  * @import {PSMKit} from './econ-behaviors.js';
  * @import {FeeMintAccess} from '@agoric/zoe';
+ * @import {GovernanceSubscriptionState, GovernorStartedInstallationKit} from '@agoric/governance/src/types.js';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Issuer} from '@agoric/ertp';
+ * @import {Mint} from '@agoric/ertp';
+ * @import {MapStore} from '@agoric/store';
+ * @import {ChainStorageVatParams, WellKnownSpaces} from '@agoric/vats/src/core/types.js';
+ * @import {ERef} from '@agoric/vow';
  */
 /** @import {MetricsNotification} from '../psm/psm.js' */
 /** @import {EconomyBootstrapPowers} from './econ-behaviors.js' */

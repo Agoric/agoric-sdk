@@ -1,6 +1,11 @@
 import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
 
+/**
+ * @import {ChainBootstrapSpace} from '@agoric/vats/src/core/types.js';
+ * @import {StartedInstanceKit} from '@agoric/zoe/src/zoeService/utils.js';
+ */
+
 const trace = makeTracer('upgradeScaledPA', true);
 
 /**

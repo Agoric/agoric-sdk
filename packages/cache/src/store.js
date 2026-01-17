@@ -12,6 +12,8 @@ import { withGroundState, makeState } from './state.js';
  * @import {Key, Pattern} from '@endo/patterns';
  * @import {State} from './state.js';
  * @import {Coordinator} from './types.js';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {MapStore} from '@agoric/store';
  */
 
 /**

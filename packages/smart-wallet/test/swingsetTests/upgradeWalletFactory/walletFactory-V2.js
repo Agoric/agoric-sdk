@@ -24,6 +24,8 @@ import {
  * @import {WalletBridgeMsg} from '../../../src/types.js';
  * @import {Bank} from '@agoric/vats/src/vat-bank.js';
  * @import {NameAdmin} from '@agoric/vats/src/types.js';
+ * @import {MapStore} from '@agoric/store';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

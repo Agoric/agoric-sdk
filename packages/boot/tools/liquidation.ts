@@ -254,10 +254,15 @@ function assertManagerType(specimen: string): asserts specimen is ManagerType {
   insistManagerType(specimen);
 }
 
+// Requires an explicit return type because of: error TS2742: The inferred type of 'makeLiquidationTestContext' cannot be named without a reference to '../../../node_modules/@endo/eventual-send/src/E.js'. This is likely not portable. A type annotation is necessary.
+// But since it's deprecated don't bother to define one.
+/**
+ * @deprecated liquidation is no longer supported
+ */
 export const makeLiquidationTestContext = async (
-  t,
+  t: ExecutionContext,
   io: { env?: Record<string, string | undefined> } = {},
-) => {
+): Promise<any> => {
   const { env = {} } = io;
   const {
     SLOGFILE: slogFile,

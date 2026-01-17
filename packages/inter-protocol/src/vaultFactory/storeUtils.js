@@ -7,7 +7,7 @@
 
 /**
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
- * @import {Ratio} from '@agoric/ertp';
+ * @import {Amount, Ratio} from '@agoric/ertp';
  * @import {VaultId} from './types-ambient.js';
  */
 

@@ -51,7 +51,8 @@ import { prepareOfferWatcher, makeWatchOfferOutcomes } from './offerWatcher.js';
  * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  * @import {Amount, Brand, Issuer, Payment, Purse} from '@agoric/ertp';
  * @import {WeakMapStore, MapStore} from '@agoric/store'
- * @import {InvitationAmount, InvitationDetails, PaymentPKeywordRecord, Proposal, UserSeat, SetTestJig} from '@agoric/zoe';
+ * @import {Notifier} from '@agoric/notifier';
+ * @import {InvitationAmount, InvitationDetails, PaymentPKeywordRecord, Proposal, UserSeat, SetTestJig, Invitation, AmountKeywordRecord, ZoeService} from '@agoric/zoe';
  * @import {CopyRecord} from '@endo/pass-style';
  * @import {EReturn} from '@endo/far';
  * @import {OfferId, OfferStatus, OfferSpec, InvokeEntryMessage, ResultPlan} from './offers.js';
@@ -64,6 +65,9 @@ import { prepareOfferWatcher, makeWatchOfferOutcomes } from './offerWatcher.js';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {PublicSubscribers} from './types.js';
  * @import {CapData} from '@endo/marshal';
+ * @import {DisplayInfo} from '@agoric/ertp';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 const trace = makeTracer('SmrtWlt');

@@ -19,7 +19,8 @@ const trace = makeTracer('Vault', true);
 /**
  * @import {Remote} from '@agoric/internal';
  * @import {EReturn} from '@endo/far';
- * @import {Brand} from '@agoric/ertp/src/types.js';
+ * @import {Amount, Brand} from '@agoric/ertp/src/types.js';
+ * @import {Subscriber} from '@agoric/notifier';
  * @import {NormalizedDebt} from './storeUtils.js';
  * @import {AssetState} from './vaultManager.js';
  * @import {GovernedParamGetters} from './vaultManager.js';
@@ -29,6 +30,8 @@ const trace = makeTracer('Vault', true);
  * @import {Ratio} from '@agoric/ertp/src/ratio.js';
  * @import {VaultKit} from './vaultKit.js';
  * @import {MintAndTransfer, VaultId} from './types-ambient.js';
+ * @import {Invitation, ProposalRecord, TransferPart, ZCF, ZCFSeat} from '@agoric/zoe';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 /**

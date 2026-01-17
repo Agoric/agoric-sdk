@@ -27,10 +27,13 @@ import {
  * @import {Bank} from '@agoric/vats/src/vat-bank.js';
  * @import {MetricsNotification} from './provisionPoolKit.js';
  * @import {Baggage} from '@agoric/vat-data';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
-/** @type {ContractMeta} */
+/** @type {ContractMeta<typeof start>} */
 export const meta = {
+  // @ts-expect-error splitRecord loses the property keys
   privateArgsShape: M.splitRecord(
     {
       poolBank: M.eref(M.remotable('bank')),

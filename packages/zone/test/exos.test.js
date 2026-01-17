@@ -23,6 +23,7 @@ import { makeVirtualZone } from '../virtual.js';
 
 /**
  * @import {Assertions} from 'ava';
+ * @import {MapStore} from '@agoric/store';
  */
 
 /**

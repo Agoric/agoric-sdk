@@ -116,6 +116,7 @@ test(expectUnhandled(5), 'vow resolve across upgrade', async t => {
       /** @type {VowResolver} */
       const testVowKitResolver = zone.makeOnce('testVowKit', () => {
         t.fail('testVowKit maker called');
+        // @ts-expect-error the value will come from baggage, not the maker
       }).resolver;
 
       return { testVowKitResolver };

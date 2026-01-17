@@ -22,6 +22,10 @@ import { makePopulatedFakeVatAdmin } from '../tools/boot-test-utils.js';
 
 /**
  * @import {InitMsg} from '@agoric/internal/src/chain-utils.js';
+ * @import {BootstrapPowers} from '../src/core/types.ts';
+ * @import {Producer} from '../src/core/types.ts';
+ * @import {VatLoader} from '../src/core/types.ts';
+ * @import {WellKnownVats} from '../src/core/types.ts';
  */
 
 test('mintInitialSupply, addBankAssets bootstrap actions', async t => {

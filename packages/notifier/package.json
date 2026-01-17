@@ -53,7 +53,6 @@
   },
   "exports": {
     ".": "./src/index.js",
-    "./exported.js": "./exported.js",
     "./subscribe.js": "./subscribe.js",
     "./tools/testSupports.js": "./tools/testSupports.js"
   },

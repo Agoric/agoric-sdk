@@ -15,6 +15,7 @@ import {
  * @import {Passable, RemotableObject} from '@endo/pass-style';
  * @import {Position, ApiGovernor, ApiInvocationIssue, PoserFacet, VoteOnApiInvocation, GovernedApis} from '../types.js';
  * @import {TimerService} from '@agoric/time';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

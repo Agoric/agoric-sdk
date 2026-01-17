@@ -1,8 +1,11 @@
 // @jessie-check
 
-/// <reference types="@agoric/zoe/exported.js" />
-
 import { E } from '@endo/eventual-send';
+
+/**
+ * @import {ZCF, ZCFMint} from '@agoric/zoe';
+ * @import {Amount} from '@agoric/ertp';
+ */
 
 /**
  * @param {ZCF} zcf

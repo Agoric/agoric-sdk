@@ -9,11 +9,12 @@ import { prepareContractGovernorKit } from './contractGovernorKit.js';
 import { ParamChangesQuestionDetailsShape } from './typeGuards.js';
 
 /**
- * @import {ContractMeta, Installation, Instance, Invitation, StandardTerms, ZCF} from '@agoric/zoe';
+ * @import {ContractMeta, Installation, Instance, Invitation, IssuerKeywordRecord, StandardTerms, ZCF, ZoeService} from '@agoric/zoe';
  * @import {GovernableStartFn, GovernorCreatorFacet, GovernorPublic, ParamChangeIssueDetails} from './types.js';
  * @import {TimerService} from '@agoric/time';
  * @import {InvitationParam} from './contractGovernance/typedParamManager.js';
  * @import {Baggage} from '@agoric/vat-data';
+ * @import {ERef} from '@agoric/vow';
  */
 
 const trace = makeTracer('CGov', false);

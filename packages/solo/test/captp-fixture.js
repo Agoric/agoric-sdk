@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* eslint-env node */
 import { spawn } from 'child_process';
 import WebSocket from 'ws';

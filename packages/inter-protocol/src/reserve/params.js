@@ -3,7 +3,7 @@
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 
 /**
- * @import {AdminFacet, ContractOf, InvitationAmount, ZCFMint} from '@agoric/zoe';
+ * @import {AdminFacet, InvitationAmount, ZCFMint} from '@agoric/zoe';
  */
 
 /**

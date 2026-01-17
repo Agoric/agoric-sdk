@@ -23,6 +23,7 @@ import {
  * @import {CosmosInterchainService} from './exo-interfaces.js';
  * @import {prepareCosmosOrchestrationAccount} from './cosmos-orchestration-account.js';
  * @import {CosmosChainInfo, IBCConnectionInfo, CosmosChainAddress, IcaAccount, Chain, ICQConnection, ChainInfo} from '../types.js';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 const trace = makeTracer('RemoteChainFacade');
