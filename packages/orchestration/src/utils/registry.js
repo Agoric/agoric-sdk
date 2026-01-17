@@ -82,8 +82,12 @@ function toConnectionEntry(ibcInfo, name, chainInfo) {
  * Converts the given cosmos chain info to our local config format
  *
  * @param {Pick<ChainRegistryClient, 'chains' | 'ibcData'>} registry
+ * @param {(chainName: string) => string} [canonicalize]
  */
-export const convertChainInfo = async registry => {
+export const convertChainInfo = async (
+  registry,
+  canonicalize = chainName => chainName,
+) => {
   /** @type {Record<string, CosmosChainInfo>} */
   const chainInfo = {};
 
@@ -93,7 +97,7 @@ export const convertChainInfo = async registry => {
       bech32Prefix: chain.bech32_prefix,
       chainId: chain.chain_id,
       // UNTIL https://github.com/Agoric/agoric-sdk/issues/9326
-      icqEnabled: chain.chain_name === 'osmosis',
+      icqEnabled: canonicalize(chain.chain_name) === 'osmosis',
       namespace: 'cosmos',
       reference: chain.chain_id,
       stakingTokens: chain.staking?.staking_tokens,
@@ -117,6 +121,9 @@ export const convertChainInfo = async registry => {
     console.log('processing connections', name);
 
     const ibcData = ibcLookup[name];
+    if (!ibcData) {
+      continue;
+    }
     const connections = Object.fromEntries(
       ibcData
         .map(datum => toConnectionEntry(datum, name, chainInfo))
@@ -128,5 +135,7 @@ export const convertChainInfo = async registry => {
   }
 
   // return object with insertion in alphabetical order of chain name
-  return Object.fromEntries(chainNames.map(name => [name, chainInfo[name]]));
+  return Object.fromEntries(
+    chainNames.map(name => [canonicalize(name), chainInfo[name]]),
+  );
 };
