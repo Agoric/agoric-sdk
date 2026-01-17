@@ -38,6 +38,11 @@ const HISTOGRAM_SECONDS_LATENCY_BOUNDARIES =
 // TODO: Validate these boundaries. We're not going to have 5ms blocks, but
 // we probably care about the difference between 10 vs. 30 seconds.
 export const HISTOGRAM_METRICS = /** @type {const} */ ({
+  heap_snapshot_duration: {
+    boundaries: HISTOGRAM_SECONDS_LATENCY_BOUNDARIES,
+    description: 'Time taken to create a process snapshot, in seconds',
+    unit: 's',
+  },
   swingset_crank_processing_time: {
     description: 'Processing time per crank (ms)',
     unit: 'ms',
@@ -62,6 +67,11 @@ export const HISTOGRAM_METRICS = /** @type {const} */ ({
     description: 'Vat meter usage',
     unit: 'ms',
     boundaries: HISTOGRAM_MS_LATENCY_BOUNDARIES,
+  },
+  syscall_processing_time: {
+    boundaries: HISTOGRAM_SECONDS_LATENCY_BOUNDARIES,
+    description: 'Time taken to ccomplete a syscall, in seconds',
+    unit: 's',
   },
 });
 
