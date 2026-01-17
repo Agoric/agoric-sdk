@@ -1,9 +1,10 @@
 /**
- * @import {ChainHub, ChainInfo, Denom, DenomDetail} from '../types.js';
+ * @import {ChainHub, ChainHubOptions, ChainInfo, Denom, DenomDetail} from '../types.js';
  */
 
 /**
- * Registers chains, connections, assets in the provided chainHub.
+ * Registers chains, connections, assets in the provided chainHub, updating
+ * existing records.
  *
  * If either is not provided, registration will be skipped.
  *
@@ -28,14 +29,18 @@ export const registerChainsAndAssets = (
     return;
   }
 
+  // Always upsert to ensure no conflicts with existing data.
+  /** @type {ChainHubOptions} */
+  const opts = { upsert: true };
+
   const conns = {};
   for (const [chainName, allInfo] of Object.entries(chainInfo)) {
     if (allInfo.namespace === 'cosmos') {
       const { connections, ...info } = allInfo;
-      chainHub.registerChain(chainName, info);
+      chainHub.updateChain(chainName, info, opts);
       if (connections) conns[info.chainId] = connections;
     } else {
-      chainHub.registerChain(chainName, allInfo);
+      chainHub.updateChain(chainName, allInfo, opts);
     }
   }
   const registeredPairs = new Set();
@@ -43,7 +48,7 @@ export const registerChainsAndAssets = (
     for (const [cChainId, connInfo] of Object.entries(connInfos)) {
       const pair = [pChainId, cChainId].sort().join('<->');
       if (!registeredPairs.has(pair)) {
-        chainHub.registerConnection(pChainId, cChainId, connInfo);
+        chainHub.updateConnection(pChainId, cChainId, connInfo, opts);
         registeredPairs.add(pair);
       }
     }
@@ -62,6 +67,6 @@ export const registerChainsAndAssets = (
     const infoWithBrand = brandKey
       ? { ...rest, brand: brands[brandKey] }
       : rest;
-    chainHub.registerAsset(denom, infoWithBrand);
+    chainHub.updateAsset(denom, infoWithBrand, opts);
   }
 };

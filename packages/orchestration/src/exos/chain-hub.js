@@ -18,6 +18,7 @@ import {
 } from '../typeGuards.js';
 import { getBech32Prefix } from '../utils/address.js';
 import { caipIdFromInfo } from '../utils/chain-info.js';
+import { makeStoreWrapper } from '../utils/store.js';
 
 /**
  * @import {NameHub} from '@agoric/vats';
@@ -28,11 +29,17 @@ import { caipIdFromInfo } from '../utils/chain-info.js';
  * @import {AccountId, CosmosChainAddress, ChainInfo, CaipChainId, Denom, DenomAmount, AccountIdArg} from '../orchestration-api.js';
  * @import {Remote, TypedPattern} from '@agoric/internal';
  * @import {Pattern} from '@endo/patterns';
- * @import {MapStore, SetStore} from '@agoric/store';
+ * @import {MapStore} from '@agoric/store';
  */
 
 /** receiver address value for ibc transfers that involve PFM */
 export const PFM_RECEIVER = /** @type {const} */ ('pfm');
+
+/**
+ * @param {ChainHubOptions} opts
+ */
+const makeHubStoreWrapper = ({ upsert = false } = {}) =>
+  makeStoreWrapper(upsert ? 'lax' : 'strict');
 
 /**
  * If K matches a known chain, narrow the type from generic ChainInfo
@@ -210,9 +217,19 @@ export const TransferRouteShape = M.splitRecord(
   {},
 );
 
+/**
+ * @typedef {object} ChainHubOptions
+ * @property {boolean} [upsert] - if true, update or insert entries as required
+ */
+
+/** @type {TypedPattern<ChainHubOptions>} */
+const ChainHubOptionsShape = M.splitRecord({}, { upsert: M.boolean() });
+
 const ChainHubI = M.interface('ChainHub', {
   registerChain: M.call(M.string(), ChainInfoShape).returns(),
-  updateChain: M.call(M.string(), ChainInfoShape).returns(),
+  updateChain: M.call(M.string(), ChainInfoShape)
+    .optional(ChainHubOptionsShape)
+    .returns(),
   getChainInfo: M.call(M.string()).returns(VowShape),
   getChainInfoByChainId: M.call(M.string()).returns(ChainInfoShape),
   registerConnection: M.call(
@@ -220,15 +237,15 @@ const ChainHubI = M.interface('ChainHub', {
     M.string(),
     IBCConnectionInfoShape,
   ).returns(),
-  updateConnection: M.call(
-    M.string(),
-    M.string(),
-    IBCConnectionInfoShape,
-  ).returns(),
+  updateConnection: M.call(M.string(), M.string(), IBCConnectionInfoShape)
+    .optional(ChainHubOptionsShape)
+    .returns(),
   getConnectionInfo: M.call(ChainIdArgShape, ChainIdArgShape).returns(VowShape),
   getChainsAndConnection: M.call(M.string(), M.string()).returns(VowShape),
   registerAsset: M.call(M.string(), DenomDetailShape).returns(),
-  updateAsset: M.call(M.string(), DenomDetailShape).returns(),
+  updateAsset: M.call(M.string(), DenomDetailShape)
+    .optional(ChainHubOptionsShape)
+    .returns(),
   getAsset: M.call(M.string(), M.string()).returns(
     M.or(DenomDetailShape, M.undefined()),
   ),
@@ -452,10 +469,11 @@ export const makeChainHub = (
      * @param {ChainInfo} chainInfo
      */
     registerChain(name, chainInfo) {
-      chainInfos.init(name, chainInfo);
-      chainIdToChainName.init(caipIdFromInfo(chainInfo), name);
+      const $ = makeHubStoreWrapper();
+      $(chainInfos).mustInit(name, chainInfo);
+      $(chainIdToChainName).mustInit(caipIdFromInfo(chainInfo), name);
       if (chainInfo.namespace === 'cosmos' && chainInfo.bech32Prefix) {
-        bech32PrefixToChainName.init(chainInfo.bech32Prefix, name);
+        $(bech32PrefixToChainName).mustInit(chainInfo.bech32Prefix, name);
       }
     },
     /**
@@ -463,29 +481,38 @@ export const makeChainHub = (
      *
      * @param {string} chainName - Name of the chain to update
      * @param {ChainInfo} chainInfo - New chain info
+     * @param {ChainHubOptions} [opts]
      * @throws {Error} If chain not registered
      */
-    updateChain(chainName, chainInfo) {
-      if (!chainInfos.has(chainName)) {
+    updateChain(chainName, chainInfo, opts) {
+      const $ = makeHubStoreWrapper(opts);
+      const oldInfo = $(chainInfos).get(chainName);
+      try {
+        $(chainInfos).mustSet(chainName, chainInfo);
+      } catch (e) {
         throw makeError(`Chain ${q(chainName)} not registered`);
       }
-      const oldInfo = chainInfos.get(chainName);
+      const caipId = caipIdFromInfo(chainInfo);
+      const bech32Prefix = /** @type {CosmosChainInfo} */ (chainInfo)
+        .bech32Prefix;
+      $(chainIdToChainName).set(caipId, chainName);
+      if (bech32Prefix) {
+        $(bech32PrefixToChainName).set(bech32Prefix, chainName);
+      }
+      if (!oldInfo) {
+        return;
+      }
+
+      // Clean up old indexes if they changed
       // defensively check, for older versions which may not have `chainIdToChainName`
-      if (chainIdToChainName.has(caipIdFromInfo(oldInfo))) {
-        chainIdToChainName.delete(caipIdFromInfo(oldInfo));
+      const oldCaipId = caipIdFromInfo(oldInfo);
+      if (oldCaipId !== caipId) {
+        $(chainIdToChainName).delete(oldCaipId);
       }
-      if (/** @type {CosmosChainInfo} */ (oldInfo).bech32Prefix) {
-        bech32PrefixToChainName.delete(
-          /** @type {CosmosChainInfo} */ (oldInfo).bech32Prefix,
-        );
-      }
-      chainInfos.set(chainName, chainInfo);
-      chainIdToChainName.init(caipIdFromInfo(chainInfo), chainName);
-      if (/** @type {CosmosChainInfo} */ (chainInfo).bech32Prefix) {
-        bech32PrefixToChainName.init(
-          /** @type {CosmosChainInfo} */ (chainInfo).bech32Prefix,
-          chainName,
-        );
+      const oldBech32Prefix = /** @type {CosmosChainInfo} */ (oldInfo)
+        .bech32Prefix;
+      if (oldBech32Prefix && oldBech32Prefix !== bech32Prefix) {
+        $(bech32PrefixToChainName).delete(oldBech32Prefix);
       }
     },
     /**
@@ -528,12 +555,13 @@ export const makeChainHub = (
      * @param {IBCConnectionInfo} connectionInfo from primary to counterparty
      */
     registerConnection(primaryChainId, counterpartyChainId, connectionInfo) {
+      const $ = makeHubStoreWrapper();
       const [key, normalized] = normalizeConnectionInfo(
         primaryChainId,
         counterpartyChainId,
         connectionInfo,
       );
-      connectionInfos.init(key, normalized);
+      $(connectionInfos).mustInit(key, normalized);
     },
     /**
      * Update connection info by completely replacing existing entry
@@ -542,21 +570,29 @@ export const makeChainHub = (
      * @param {string} counterpartyChainId - Cosmos chainId of counterparty
      *   chain
      * @param {IBCConnectionInfo} connectionInfo - New connection info
+     * @param {ChainHubOptions} [opts]
      * @throws {Error} If connection not registered
      */
-    updateConnection(primaryChainId, counterpartyChainId, connectionInfo) {
+    updateConnection(
+      primaryChainId,
+      counterpartyChainId,
+      connectionInfo,
+      opts,
+    ) {
+      const $ = makeHubStoreWrapper(opts);
       const key = connectionKey(primaryChainId, counterpartyChainId);
-      if (!connectionInfos.has(key)) {
-        throw makeError(
-          `Connection ${q(primaryChainId)}<->${q(counterpartyChainId)} not registered`,
-        );
-      }
       const [_, normalizedInfo] = normalizeConnectionInfo(
         primaryChainId,
         counterpartyChainId,
         connectionInfo,
       );
-      connectionInfos.set(key, normalizedInfo);
+      try {
+        $(connectionInfos).mustSet(key, normalizedInfo);
+      } catch (e) {
+        throw makeError(
+          `Connection ${q(primaryChainId)}<->${q(counterpartyChainId)} not registered`,
+        );
+      }
     },
     /**
      * @param {string | { chainId: string }} primary the primary chain
@@ -603,6 +639,7 @@ export const makeChainHub = (
      * @param {DenomDetail} detail - chainName and baseName must be registered
      */
     registerAsset(denom, detail) {
+      const $ = makeHubStoreWrapper();
       const { chainName, baseName } = detail;
       chainInfos.has(chainName) ||
         Fail`must register chain ${q(chainName)} first`;
@@ -610,13 +647,15 @@ export const makeChainHub = (
         Fail`must register chain ${q(baseName)} first`;
 
       const denomKey = makeDenomKey(denom, detail.chainName);
-      denomDetails.has(denomKey) &&
+      try {
+        $(denomDetails).mustInit(denomKey, detail);
+      } catch (e) {
         Fail`already registered ${q(denom)} on ${q(chainName)}`;
-      denomDetails.init(denomKey, detail);
+      }
       if (detail.brand) {
         chainName === 'agoric' ||
           Fail`brands only registerable for agoric-held assets`;
-        brandDenoms.init(detail.brand, denom);
+        $(brandDenoms).mustInit(detail.brand, denom);
       }
     },
     /**
@@ -624,15 +663,14 @@ export const makeChainHub = (
      *
      * @param {Denom} denom - Denom on the holding chain
      * @param {DenomDetail} detail - New asset details
+     * @param {ChainHubOptions} [opts]
      * @throws {Error} If asset not registered or referenced chains not
      *   registered
      */
-    updateAsset(denom, detail) {
+    updateAsset(denom, detail, opts) {
+      const $ = makeHubStoreWrapper(opts);
       const { baseName, brand, chainName } = detail;
       const denomKey = makeDenomKey(denom, chainName);
-      if (!denomDetails.has(denomKey)) {
-        throw makeError(`Asset ${q(denom)} on ${q(chainName)} not registered`);
-      }
       if (!chainInfos.has(chainName)) {
         throw makeError(`Chain ${q(chainName)} not registered`);
       }
@@ -645,14 +683,22 @@ export const makeChainHub = (
         }
       }
 
-      const oldDetail = denomDetails.get(denomKey);
-      if (oldDetail.brand) {
-        brandDenoms.delete(oldDetail.brand);
+      const oldDetail = $(denomDetails).get(denomKey);
+      try {
+        $(denomDetails).mustSet(denomKey, detail);
+      } catch (e) {
+        throw makeError(`Asset ${q(denom)} on ${q(chainName)} not registered`);
+      }
+      if (brand) {
+        $(brandDenoms).set(brand, denom);
+      }
+      if (!oldDetail) {
+        return;
       }
 
-      denomDetails.set(denomKey, detail);
-      if (brand) {
-        brandDenoms.init(brand, denom);
+      const oldBrand = oldDetail.brand;
+      if (oldBrand && oldBrand !== brand) {
+        $(brandDenoms).delete(oldBrand);
       }
     },
     /**
