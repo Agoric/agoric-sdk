@@ -409,21 +409,25 @@ const agoricNamesForChainInfo = (vsk: VstorageKit) => {
     const out: [string, unknown][] = [];
     const children = await vstorage.keys(`published.agoricNames.${kind}`);
     for (const child of children) {
-      // console.error('readPublished', kind, child);
-      const value = await readPublished(`agoricNames.${kind}.${child}`);
-      // console.debug(kind, child, value);
-      if (kind === 'chain') {
-        const { chainId, namespace } = value as Record<string, string>;
-        if (namespace !== 'cosmos') {
-          console.warn('namespace?? skipping', kind, child, value);
-          continue;
+      try {
+        // console.error('readPublished', kind, child);
+        const value = await readPublished(`agoricNames.${kind}.${child}`);
+        // console.debug(kind, child, value);
+        if (kind === 'chain') {
+          const { chainId, namespace } = value as Record<string, string>;
+          if (namespace !== 'cosmos') {
+            console.warn('namespace?? skipping', kind, child, value);
+            continue;
+          }
+          if (typeof chainId === 'string') {
+            if (chainId in byChainId) throw Error(`oops! ${child} ${chainId}`);
+            byChainId[chainId] = value;
+          }
         }
-        if (typeof chainId === 'string') {
-          if (chainId in byChainId) throw Error(`oops! ${child} ${chainId}`);
-          byChainId[chainId] = value;
-        }
+        out.push([child, value]);
+      } catch (err) {
+        console.warn('agoricNamesForChainInfo skipping', kind, child, err);
       }
-      out.push([child, value]);
     }
     if (kind === 'chainConnection') {
       const relevantConnections = out.filter(([key, _val]) => {
@@ -572,12 +576,24 @@ const main = async (
     if (net !== 'main' && net !== 'devnet') {
       throw Error(`unsupported/unknown net: ${net}`);
     }
+    const fetchedSuffix = net === 'main' ? '' : '-testnets';
+    const fciUrl = new URL(
+      `../../packages/orchestration/src/fetched-chain-info${fetchedSuffix}.js`,
+      import.meta.url,
+    );
+    const {
+      default: { agoric, axelar, noble },
+    } = await import(fciUrl.href);
     const { axelarConfig, gmpAddresses } = getNetworkConfig(net);
-    const privateArgsOverrides = await overridesForEthChainInfo(
+    const { chainInfo, ...rest } = await overridesForEthChainInfo(
       vsk,
       axelarConfig,
       gmpAddresses,
     );
+    const privateArgsOverrides = {
+      ...rest,
+      chainInfo: { agoric, axelar, noble, ...chainInfo },
+    };
     stdout.write(JSON.stringify(privateArgsOverrides, null, 2));
     stdout.write('\n');
     return;
