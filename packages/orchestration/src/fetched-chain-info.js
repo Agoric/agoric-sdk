@@ -6142,24 +6142,6 @@ export default /** @type {const} } */ ({
           version: 'ics20-1',
         },
       },
-      'titan_18888-1': {
-        id: 'connection-109',
-        client_id: '07-tendermint-114',
-        counterparty: {
-          client_id: '07-tendermint-1',
-          connection_id: 'connection-0',
-        },
-        state: 3,
-        transferChannel: {
-          channelId: 'channel-99',
-          portId: 'transfer',
-          counterPartyChannelId: 'channel-0',
-          counterPartyPortId: 'transfer',
-          ordering: 0,
-          state: 3,
-          version: 'ics20-1',
-        },
-      },
       'umee-1': {
         id: 'connection-74',
         client_id: '07-tendermint-73',
@@ -7096,6 +7078,24 @@ export default /** @type {const} } */ ({
           channelId: 'channel-326',
           portId: 'transfer',
           counterPartyChannelId: 'channel-5',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
+      'taketitan-1': {
+        id: 'connection-10769',
+        client_id: '07-tendermint-3529',
+        counterparty: {
+          client_id: '07-tendermint-0',
+          connection_id: 'connection-0',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-105111',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-0',
           counterPartyPortId: 'transfer',
           ordering: 0,
           state: 3,
@@ -9472,6 +9472,38 @@ export default /** @type {const} } */ ({
       },
     },
   },
+  titan: {
+    bech32Prefix: 'titan',
+    chainId: 'taketitan-1',
+    icqEnabled: false,
+    namespace: 'cosmos',
+    reference: 'taketitan-1',
+    stakingTokens: [
+      {
+        denom: 'utitan',
+      },
+    ],
+    connections: {
+      'osmosis-1': {
+        id: 'connection-0',
+        client_id: '07-tendermint-0',
+        counterparty: {
+          client_id: '07-tendermint-3529',
+          connection_id: 'connection-10769',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-0',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-105111',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
+    },
+  },
   terra2: {
     bech32Prefix: 'terra',
     chainId: 'phoenix-1',
@@ -9820,38 +9852,6 @@ export default /** @type {const} } */ ({
           channelId: 'channel-46',
           portId: 'transfer',
           counterPartyChannelId: 'channel-52',
-          counterPartyPortId: 'transfer',
-          ordering: 0,
-          state: 3,
-          version: 'ics20-1',
-        },
-      },
-    },
-  },
-  titan: {
-    bech32Prefix: 'titan',
-    chainId: 'titan_18888-1',
-    icqEnabled: false,
-    namespace: 'cosmos',
-    reference: 'titan_18888-1',
-    stakingTokens: [
-      {
-        denom: 'atkx',
-      },
-    ],
-    connections: {
-      'noble-1': {
-        id: 'connection-0',
-        client_id: '07-tendermint-1',
-        counterparty: {
-          client_id: '07-tendermint-114',
-          connection_id: 'connection-109',
-        },
-        state: 3,
-        transferChannel: {
-          channelId: 'channel-0',
-          portId: 'transfer',
-          counterPartyChannelId: 'channel-99',
           counterPartyPortId: 'transfer',
           ordering: 0,
           state: 3,
