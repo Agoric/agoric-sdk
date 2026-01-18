@@ -2,7 +2,12 @@
  * NOTE: This is host side code; can't use await.
  */
 import { AmountMath, type Brand } from '@agoric/ertp';
-import { makeTracer, mustMatch, type ERemote } from '@agoric/internal';
+import {
+  makeTracer,
+  mustMatch,
+  NonNullish,
+  type ERemote,
+} from '@agoric/internal';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import type { EMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import {
@@ -24,6 +29,7 @@ import {
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
 import type { YmaxSharedDomain } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.ts';
+import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import type { MapStore } from '@agoric/store';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
@@ -34,7 +40,9 @@ import { Fail, X } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import type { Address } from 'abitype';
+import { hexToBytes } from '@noble/hashes/utils';
 import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
+import { predictWalletAddress } from './utils/evm-orch-factory.js';
 import { type LocalAccount, type NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
 import type { makeOfferArgsShapes, MovementDesc } from './type-guards-steps.js';
@@ -180,6 +188,7 @@ export const preparePortfolioKit = (
     executePlan,
     onAgoricTransfer,
     transferChannels,
+    walletBytecode,
     proposalShapes,
     offerArgsShapes,
     vowTools,
@@ -202,6 +211,7 @@ export const preparePortfolioKit = (
       kit: PortfolioKitCycleBreaker,
       flowDetail: FlowDetail,
       startedFlow?: { stepsP: Vow<MovementDesc[]>; flowId: number },
+      config?: unknown,
       options?: unknown,
     ) => Vow<unknown>;
     onAgoricTransfer: (
@@ -212,6 +222,7 @@ export const preparePortfolioKit = (
       noble: IBCConnectionInfo['transferChannel'];
       axelar?: IBCConnectionInfo['transferChannel'];
     };
+    walletBytecode: `0x${string}`;
     proposalShapes: ReturnType<typeof makeProposalShapes>;
     offerArgsShapes: ReturnType<typeof makeOfferArgsShapes>;
     vowTools: VowTools;
@@ -645,8 +656,86 @@ export const preparePortfolioKit = (
         getReaderFacet() {
           return this.facets.reader;
         },
-        deposit() {
-          throw Error('TODO in a later PR');
+        /**
+         * Initiate a deposit from an EVM account using Permit2.
+         *
+         * Requires that `sourceAccountId` was set when the portfolio was opened
+         * (i.e., the portfolio was opened from EVM via `openPortfolioFromEVM`).
+         *
+         * The permit's owner must match the address portion of `sourceAccountId`,
+         * though the chain can be different (enabling deposits from multiple chains).
+         *
+         * @param depositDetails - The permit2 deposit details including chainId, token, amount, spender, and permit2Payload
+         */
+        deposit(depositDetails: PermitDetails) {
+          const { sourceAccountId: maybeSourceAccountId, accounts } =
+            this.state;
+          maybeSourceAccountId ||
+            Fail`deposit requires sourceAccountId to be set (portfolio must be opened from EVM)`;
+          const sourceAccountId = NonNullish(maybeSourceAccountId);
+
+          // Extract owner address from sourceAccountId (CAIP-10 format: eip155:{chainId}:{address})
+          const sourceParts = sourceAccountId.split(':');
+          const sourceAddress = sourceParts[2];
+          sourceAddress ||
+            Fail`invalid sourceAccountId format: ${sourceAccountId}`;
+
+          const permitOwner = depositDetails.permit2Payload.owner.toLowerCase();
+          permitOwner === sourceAddress.toLowerCase() ||
+            Fail`permit owner ${permitOwner} does not match portfolio source address ${sourceAddress}`;
+
+          const fromChain =
+            eip155ChainIdToAxelarChain[`${Number(depositDetails.chainId)}`];
+          if (!fromChain) {
+            throw Fail`no Axelar chain for EIP-155 chainId ${depositDetails.chainId}`;
+          }
+
+          // For deposits, spender must be the portfolio's smart wallet address.
+          // If the account already exists, use the stored address.
+          // If not, predict the address using `factory` (which will be used to create it).
+          let expectedSpender: string;
+          if (accounts.has(fromChain)) {
+            const gmpInfo = accounts.get(fromChain) as GMPAccountInfo;
+            expectedSpender = gmpInfo.remoteAddress.toLowerCase();
+          } else {
+            // Account doesn't exist yet - predict address using factory
+            // (provideEVMAccount uses 'makeAccount' mode which uses factory)
+            const agoricInfo = accounts.get('agoric') as AgoricAccountInfo;
+            const lcaAddress = agoricInfo.lca.getAddress().value;
+            const chainContracts = contracts[fromChain];
+            expectedSpender = predictWalletAddress({
+              owner: lcaAddress,
+              factoryAddress: chainContracts.factory,
+              gatewayAddress: chainContracts.gateway,
+              gasServiceAddress: chainContracts.gasService,
+              walletBytecode: hexToBytes(walletBytecode.replace(/^0x/, '')),
+            }).toLowerCase();
+          }
+
+          const actualSpender = depositDetails.spender.toLowerCase();
+          actualSpender === expectedSpender ||
+            Fail`permit spender ${actualSpender} does not match portfolio account ${expectedSpender}`;
+
+          // Create an empty seat for the deposit flow
+          const { zcfSeat: seat } = zcf.makeEmptySeatKit();
+
+          // Build the flow detail
+          const amount = AmountMath.make(usdcBrand, depositDetails.amount);
+          const flowDetail: FlowDetail = { type: 'deposit', amount, fromChain };
+          const startedFlow = this.facets.manager.startFlow(flowDetail);
+
+          // Execute the plan with evmDepositDetail
+          void executePlan(
+            seat,
+            {},
+            this.facets,
+            flowDetail,
+            startedFlow,
+            undefined, // config - use default
+            { evmDepositDetail: { ...depositDetails, fromChain } },
+          );
+
+          return `flow${startedFlow.flowId}`;
         },
         rebalance() {
           throw Error('TODO in a later PR');

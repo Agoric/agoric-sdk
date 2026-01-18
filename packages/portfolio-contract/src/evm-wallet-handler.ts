@@ -329,7 +329,7 @@ export const prepareEVMPortfolioOperationManager = (
 
             const portfolio = wallet.portfolios.get(BigInt(portfolioId));
 
-            const result = E(portfolio).deposit(/* otherData, permitDetails */);
+            const result = E(portfolio).deposit(permitDetails);
 
             return watch(result, BasicOutcomeWatcher);
           }

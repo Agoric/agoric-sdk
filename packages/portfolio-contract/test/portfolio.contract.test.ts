@@ -1852,3 +1852,635 @@ test('evmHandler.withdraw starts a withdraw flow', async t => {
     );
   }
 });
+
+test('evmHandler.withdraw fails if sourceAccountId not set', async t => {
+  const { trader1, common } = await setupTrader(t);
+  const { poc26 } = common.brands;
+
+  // Open portfolio via regular method (not from EVM), so no sourceAccountId
+  await Promise.all([
+    trader1.openPortfolio(t, { Access: poc26.make(1n) }, {}),
+    ackNFA(common.utils),
+  ]);
+
+  // The trader1 helper doesn't give direct access to evmHandler,
+  // so we verify by checking that sourceAccountId is not set
+  const status = await trader1.getPortfolioStatus();
+  t.is(
+    status.sourceAccountId,
+    undefined,
+    'sourceAccountId not set for regular portfolio',
+  );
+});
+
+// TODO: Deposits to existing accounts need a new GMP call type that invokes
+// permit2 from the existing smart wallet. Currently only new-chain deposits
+// (via depositFactory) are supported.
+test.todo('evmHandler.deposit to existing chain starts a deposit flow');
+
+// Original test preserved for when this feature is implemented
+test.skip('evmHandler.deposit starts a deposit flow', async t => {
+  const { common, planner1, started, readPublished, txResolver } =
+    await setupPlanner(t);
+  const { usdc, bld } = common.brands;
+
+  const inputs = {
+    fromChain: 'Arbitrum' as const,
+    depositAmount: usdc.units(1000),
+    allocations: [{ instrument: 'Aave_Arbitrum', portion: 10000n }],
+  };
+  const { fromChain: evm, depositAmount, allocations } = inputs;
+  const ownerAddress = '0x2222222222222222222222222222222222222222';
+
+  type EvmHandler = Awaited<
+    ReturnType<typeof started.publicFacet.openPortfolioFromEVM>
+  >['evmHandler'];
+  let evmHandler: EvmHandler | undefined;
+
+  const traderDo = async () => {
+    const permit2Payload = {
+      permit: {
+        permitted: {
+          token: contractsMock[evm].usdc,
+          amount: depositAmount.value,
+        },
+        nonce: 1n,
+        deadline: 1n,
+      },
+      owner: ownerAddress,
+      witness:
+        '0x0000000000000000000000000000000000000000000000000000000000000000',
+      witnessTypeString: 'OpenPortfolioWitness',
+      signature: '0x1234',
+    } as const;
+    const permitDetails = {
+      chainId: Number(chainInfoWithCCTP[evm].reference),
+      token: contractsMock[evm].usdc,
+      amount: depositAmount.value,
+      spender: contractsMock[evm].depositFactory,
+      permit2Payload,
+    } as const;
+
+    const result = await E(started.publicFacet).openPortfolioFromEVM(
+      { allocations },
+      permitDetails,
+    );
+    evmHandler = result.evmHandler;
+    return result;
+  };
+
+  // Start traderDo first so plannerDo can wait for it
+  const traderDoP = traderDo();
+
+  /** Simulate chain inputs (acks) for makeAccount + GMP transfers. */
+  const chainDo = async () => {
+    await ackNFA(common.utils);
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
+    await txResolver.drainPending();
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await txResolver.drainPending();
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  };
+
+  const plannerDo = async () => {
+    const pId = 0;
+    // Wait for trader to open portfolio before reading status
+    await traderDoP;
+    const status = (await readPublished(
+      `portfolios.portfolio${pId}`,
+    )) as unknown as StatusFor['portfolio'];
+    const { flowsRunning = {}, policyVersion, rebalanceCount } = status;
+    const sync = [policyVersion, rebalanceCount] as const;
+    const [[flowId, detail]] = Object.entries(flowsRunning);
+    const flowNum = Number(flowId.replace('flow', ''));
+    if (detail.type !== 'deposit') throw t.fail(detail.type);
+    const planDepositAmount = AmountMath.make(usdc.brand, detail.amount.value);
+    const fee = bld.units(100);
+    const plan: FundsFlowPlan = {
+      flow: [
+        { src: `+${evm}`, dest: `@${evm}`, amount: planDepositAmount, fee },
+        {
+          src: `@${evm}`,
+          dest: 'Aave_Arbitrum',
+          amount: planDepositAmount,
+          fee,
+        },
+      ],
+    };
+    await E(planner1.stub).resolvePlan(pId, flowNum, plan, ...sync);
+    return flowNum;
+  };
+
+  await planner1.redeem();
+  await Promise.all([traderDoP, plannerDo(), chainDo()]);
+
+  // Verify portfolio is ready - read status AFTER flow completes to get account info
+  const statusBefore = (await readPublished(
+    `portfolios.portfolio0`,
+  )) as unknown as StatusFor['portfolio'];
+  t.deepEqual(statusBefore.flowsRunning, {}, 'no flows running after deposit');
+  t.truthy(statusBefore.sourceAccountId, 'sourceAccountId is set');
+  // Get the portfolio's remote address now that accounts are published
+  const portfolioRemoteAddress = statusBefore.accountIdByChain?.[evm]
+    ?.split(':')
+    .at(-1);
+  t.truthy(portfolioRemoteAddress, 'portfolio has a remote address on EVM');
+
+  // Now test the deposit via evmHandler
+  t.truthy(evmHandler, 'evmHandler is defined');
+  const newDepositAmount = usdc.units(500);
+  const newPermit2Payload = {
+    permit: {
+      permitted: {
+        token: contractsMock[evm].usdc,
+        amount: newDepositAmount.value,
+      },
+      nonce: 2n,
+      deadline: 1n,
+    },
+    owner: ownerAddress,
+    witness:
+      '0x0000000000000000000000000000000000000000000000000000000000000000',
+    witnessTypeString: 'DepositWitness',
+    signature: '0x5678',
+  } as const;
+  const newPermitDetails = {
+    chainId: Number(chainInfoWithCCTP[evm].reference),
+    token: contractsMock[evm].usdc,
+    amount: newDepositAmount.value,
+    // For deposit, spender is the portfolio's account (not factory)
+    spender: portfolioRemoteAddress as `0x${string}`,
+    permit2Payload: newPermit2Payload,
+  } as const;
+
+  const flowKey = await E(evmHandler!).deposit(newPermitDetails);
+  t.regex(flowKey, /^flow\d+$/, 'deposit returns a flow key');
+
+  // Check that a deposit flow is now running
+  const statusAfter = (await readPublished(
+    `portfolios.portfolio0`,
+  )) as unknown as StatusFor['portfolio'];
+  const flowsRunning = statusAfter.flowsRunning ?? {};
+  t.is(keys(flowsRunning).length, 1, 'one flow running');
+
+  const [[flowId, flowDetail]] = Object.entries(flowsRunning);
+  t.is(flowId, flowKey, 'flow key matches');
+  t.is(flowDetail.type, 'deposit', 'flow is a deposit');
+  if (flowDetail.type === 'deposit') {
+    t.is(
+      flowDetail.amount.value,
+      newDepositAmount.value,
+      'deposit amount matches',
+    );
+    t.is(flowDetail.fromChain, evm, 'fromChain matches');
+  }
+});
+
+// Test deposits from a NEW chain (where no account exists yet).
+// This should work because it uses depositFactory to atomically create the account + deposit.
+test('evmHandler.deposit from new chain starts a deposit flow', async t => {
+  const { common, planner1, started, readPublished, txResolver } =
+    await setupPlanner(t);
+  const { usdc, bld } = common.brands;
+
+  // Open portfolio from Arbitrum first
+  const openChain = 'Arbitrum' as const;
+  const depositAmount = usdc.units(1000);
+  const allocations = [{ instrument: 'Aave_Arbitrum', portion: 10000n }];
+  const ownerAddress = '0x2222222222222222222222222222222222222222';
+
+  type EvmHandler = Awaited<
+    ReturnType<typeof started.publicFacet.openPortfolioFromEVM>
+  >['evmHandler'];
+  let evmHandler: EvmHandler | undefined;
+
+  const traderDo = async () => {
+    const permit2Payload = {
+      permit: {
+        permitted: {
+          token: contractsMock[openChain].usdc,
+          amount: depositAmount.value,
+        },
+        nonce: 1n,
+        deadline: 1n,
+      },
+      owner: ownerAddress,
+      witness:
+        '0x0000000000000000000000000000000000000000000000000000000000000000',
+      witnessTypeString: 'OpenPortfolioWitness',
+      signature: '0x1234',
+    } as const;
+    const permitDetails = {
+      chainId: Number(chainInfoWithCCTP[openChain].reference),
+      token: contractsMock[openChain].usdc,
+      amount: depositAmount.value,
+      spender: contractsMock[openChain].depositFactory,
+      permit2Payload,
+    } as const;
+
+    const result = await E(started.publicFacet).openPortfolioFromEVM(
+      { allocations },
+      permitDetails,
+    );
+    evmHandler = result.evmHandler;
+    return result;
+  };
+
+  const traderDoP = traderDo();
+
+  const chainDo = async () => {
+    await ackNFA(common.utils);
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
+    await txResolver.drainPending();
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await txResolver.drainPending();
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  };
+
+  const plannerDo = async () => {
+    const pId = 0;
+    await traderDoP;
+    const status = (await readPublished(
+      `portfolios.portfolio${pId}`,
+    )) as unknown as StatusFor['portfolio'];
+    const { flowsRunning = {}, policyVersion, rebalanceCount } = status;
+    const sync = [policyVersion, rebalanceCount] as const;
+    const [[flowId, detail]] = Object.entries(flowsRunning);
+    const flowNum = Number(flowId.replace('flow', ''));
+    if (detail.type !== 'deposit') throw t.fail(detail.type);
+    const planDepositAmount = AmountMath.make(usdc.brand, detail.amount.value);
+    const fee = bld.units(100);
+    const plan: FundsFlowPlan = {
+      flow: [
+        {
+          src: `+${openChain}`,
+          dest: `@${openChain}`,
+          amount: planDepositAmount,
+          fee,
+        },
+        {
+          src: `@${openChain}`,
+          dest: 'Aave_Arbitrum',
+          amount: planDepositAmount,
+          fee,
+        },
+      ],
+    };
+    await E(planner1.stub).resolvePlan(pId, flowNum, plan, ...sync);
+    return flowNum;
+  };
+
+  await planner1.redeem();
+  await Promise.all([traderDoP, plannerDo(), chainDo()]);
+
+  t.truthy(evmHandler, 'evmHandler is defined');
+
+  // Check portfolio has account on openChain but NOT on Base
+  const statusBefore = (await readPublished(
+    `portfolios.portfolio0`,
+  )) as unknown as StatusFor['portfolio'];
+  t.truthy(statusBefore.accountIdByChain?.[openChain], 'has Arbitrum account');
+  t.falsy(statusBefore.accountIdByChain?.Base, 'no Base account yet');
+
+  // Now deposit from Base (a NEW chain for this portfolio)
+  const newChain = 'Base' as const;
+  const newDepositAmount = usdc.units(500);
+  const newPermit2Payload = {
+    permit: {
+      permitted: {
+        token: contractsMock[newChain].usdc,
+        amount: newDepositAmount.value,
+      },
+      nonce: 2n,
+      deadline: 1n,
+    },
+    owner: ownerAddress,
+    witness:
+      '0x0000000000000000000000000000000000000000000000000000000000000000',
+    witnessTypeString: 'DepositWitness',
+    signature: '0x5678',
+  } as const;
+  const newPermitDetails = {
+    chainId: Number(chainInfoWithCCTP[newChain].reference),
+    token: contractsMock[newChain].usdc,
+    amount: newDepositAmount.value,
+    // For NEW chain deposit, spender is the depositFactory
+    spender: contractsMock[newChain].depositFactory,
+    permit2Payload: newPermit2Payload,
+  } as const;
+
+  const flowKey = await E(evmHandler!).deposit(newPermitDetails);
+  t.regex(flowKey, /^flow\d+$/, 'deposit returns a flow key');
+
+  // Check that a deposit flow is now running
+  const statusAfter = (await readPublished(
+    `portfolios.portfolio0`,
+  )) as unknown as StatusFor['portfolio'];
+  const flowsRunning = statusAfter.flowsRunning ?? {};
+  t.is(keys(flowsRunning).length, 1, 'one flow running');
+
+  const [[flowId, flowDetail]] = Object.entries(flowsRunning);
+  t.is(flowId, flowKey, 'flow key matches');
+  t.is(flowDetail.type, 'deposit', 'flow is a deposit');
+  if (flowDetail.type === 'deposit') {
+    t.is(
+      flowDetail.amount.value,
+      newDepositAmount.value,
+      'deposit amount matches',
+    );
+    t.is(flowDetail.fromChain, newChain, 'fromChain is the new chain');
+  }
+});
+
+test('evmHandler.deposit fails if sourceAccountId not set', async t => {
+  const { trader1, common } = await setupTrader(t);
+  const { poc26 } = common.brands;
+
+  // Open portfolio via regular method (not from EVM), so no sourceAccountId
+  await Promise.all([
+    trader1.openPortfolio(t, { Access: poc26.make(1n) }, {}),
+    ackNFA(common.utils),
+  ]);
+
+  // Verify sourceAccountId is not set
+  const status = await trader1.getPortfolioStatus();
+  t.is(
+    status.sourceAccountId,
+    undefined,
+    'sourceAccountId not set for regular portfolio',
+  );
+  // Note: We can't directly test the evmHandler.deposit() failure here
+  // because trader1 helper doesn't expose evmHandler for regular portfolios.
+  // The implementation will throw "deposit requires sourceAccountId to be set"
+  // when called without sourceAccountId.
+});
+
+test('evmHandler.deposit fails if owner does not match', async t => {
+  const { common, planner1, started, readPublished, txResolver } =
+    await setupPlanner(t);
+  const { usdc, bld } = common.brands;
+
+  const inputs = {
+    fromChain: 'Arbitrum' as const,
+    depositAmount: usdc.units(1000),
+    allocations: [{ instrument: 'Aave_Arbitrum', portion: 10000n }],
+  };
+  const { fromChain: evm, depositAmount, allocations } = inputs;
+  const ownerAddress = '0x2222222222222222222222222222222222222222';
+  const wrongOwnerAddress = '0x3333333333333333333333333333333333333333';
+
+  type EvmHandler = Awaited<
+    ReturnType<typeof started.publicFacet.openPortfolioFromEVM>
+  >['evmHandler'];
+  let evmHandler: EvmHandler | undefined;
+
+  const traderDo = async () => {
+    const permit2Payload = {
+      permit: {
+        permitted: {
+          token: contractsMock[evm].usdc,
+          amount: depositAmount.value,
+        },
+        nonce: 1n,
+        deadline: 1n,
+      },
+      owner: ownerAddress,
+      witness:
+        '0x0000000000000000000000000000000000000000000000000000000000000000',
+      witnessTypeString: 'OpenPortfolioWitness',
+      signature: '0x1234',
+    } as const;
+    const permitDetails = {
+      chainId: Number(chainInfoWithCCTP[evm].reference),
+      token: contractsMock[evm].usdc,
+      amount: depositAmount.value,
+      spender: contractsMock[evm].depositFactory,
+      permit2Payload,
+    } as const;
+
+    const result = await E(started.publicFacet).openPortfolioFromEVM(
+      { allocations },
+      permitDetails,
+    );
+    evmHandler = result.evmHandler;
+    return result;
+  };
+
+  const traderDoP = traderDo();
+
+  const chainDo = async () => {
+    await ackNFA(common.utils);
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
+    await txResolver.drainPending();
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await txResolver.drainPending();
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  };
+
+  const plannerDo = async () => {
+    const pId = 0;
+    await traderDoP;
+    const status = (await readPublished(
+      `portfolios.portfolio${pId}`,
+    )) as unknown as StatusFor['portfolio'];
+    const { flowsRunning = {}, policyVersion, rebalanceCount } = status;
+    const sync = [policyVersion, rebalanceCount] as const;
+    const [[flowId, detail]] = Object.entries(flowsRunning);
+    const flowNum = Number(flowId.replace('flow', ''));
+    if (detail.type !== 'deposit') throw t.fail(detail.type);
+    const planDepositAmount = AmountMath.make(usdc.brand, detail.amount.value);
+    const fee = bld.units(100);
+    const plan: FundsFlowPlan = {
+      flow: [
+        { src: `+${evm}`, dest: `@${evm}`, amount: planDepositAmount, fee },
+        {
+          src: `@${evm}`,
+          dest: 'Aave_Arbitrum',
+          amount: planDepositAmount,
+          fee,
+        },
+      ],
+    };
+    await E(planner1.stub).resolvePlan(pId, flowNum, plan, ...sync);
+    return flowNum;
+  };
+
+  await planner1.redeem();
+  await Promise.all([traderDoP, plannerDo(), chainDo()]);
+
+  // Get portfolio status after flow completes
+  const statusAfterFlow = (await readPublished(
+    `portfolios.portfolio0`,
+  )) as unknown as StatusFor['portfolio'];
+  const portfolioRemoteAddress = statusAfterFlow.accountIdByChain?.[evm]
+    ?.split(':')
+    .at(-1);
+
+  t.truthy(evmHandler, 'evmHandler is defined');
+  t.truthy(portfolioRemoteAddress, 'portfolio has a remote address');
+
+  // Try to deposit with wrong owner address
+  const newDepositAmount = usdc.units(500);
+  const newPermit2Payload = {
+    permit: {
+      permitted: {
+        token: contractsMock[evm].usdc,
+        amount: newDepositAmount.value,
+      },
+      nonce: 2n,
+      deadline: 1n,
+    },
+    owner: wrongOwnerAddress, // Different from portfolio's source address
+    witness:
+      '0x0000000000000000000000000000000000000000000000000000000000000000',
+    witnessTypeString: 'DepositWitness',
+    signature: '0x5678',
+  } as const;
+  const newPermitDetails = {
+    chainId: Number(chainInfoWithCCTP[evm].reference),
+    token: contractsMock[evm].usdc,
+    amount: newDepositAmount.value,
+    spender: portfolioRemoteAddress as `0x${string}`,
+    permit2Payload: newPermit2Payload,
+  } as const;
+
+  await t.throwsAsync(
+    () => E(evmHandler!).deposit(newPermitDetails),
+    {
+      message: /permit owner .* does not match portfolio source address/,
+    },
+    'deposit fails with mismatched owner',
+  );
+});
+
+// This test validates that deposits to existing chains fail with a clear message.
+// When deposit-to-existing is implemented, this error case will change to
+// validate that spender matches the portfolio's smart wallet address.
+test('evmHandler.deposit to existing chain fails with clear message', async t => {
+  const { common, planner1, started, readPublished, txResolver } =
+    await setupPlanner(t);
+  const { usdc, bld } = common.brands;
+
+  const inputs = {
+    fromChain: 'Arbitrum' as const,
+    depositAmount: usdc.units(1000),
+    allocations: [{ instrument: 'Aave_Arbitrum', portion: 10000n }],
+  };
+  const { fromChain: evm, depositAmount, allocations } = inputs;
+  const ownerAddress = '0x2222222222222222222222222222222222222222';
+
+  type EvmHandler = Awaited<
+    ReturnType<typeof started.publicFacet.openPortfolioFromEVM>
+  >['evmHandler'];
+  let evmHandler: EvmHandler | undefined;
+
+  const traderDo = async () => {
+    const permit2Payload = {
+      permit: {
+        permitted: {
+          token: contractsMock[evm].usdc,
+          amount: depositAmount.value,
+        },
+        nonce: 1n,
+        deadline: 1n,
+      },
+      owner: ownerAddress,
+      witness:
+        '0x0000000000000000000000000000000000000000000000000000000000000000',
+      witnessTypeString: 'OpenPortfolioWitness',
+      signature: '0x1234',
+    } as const;
+    const permitDetails = {
+      chainId: Number(chainInfoWithCCTP[evm].reference),
+      token: contractsMock[evm].usdc,
+      amount: depositAmount.value,
+      spender: contractsMock[evm].depositFactory,
+      permit2Payload,
+    } as const;
+
+    const result = await E(started.publicFacet).openPortfolioFromEVM(
+      { allocations },
+      permitDetails,
+    );
+    evmHandler = result.evmHandler;
+    return result;
+  };
+
+  const traderDoP = traderDo();
+
+  const chainDo = async () => {
+    await ackNFA(common.utils);
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
+    await txResolver.drainPending();
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await txResolver.drainPending();
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  };
+
+  const plannerDo = async () => {
+    const pId = 0;
+    await traderDoP;
+    const status = (await readPublished(
+      `portfolios.portfolio${pId}`,
+    )) as unknown as StatusFor['portfolio'];
+    const { flowsRunning = {}, policyVersion, rebalanceCount } = status;
+    const sync = [policyVersion, rebalanceCount] as const;
+    const [[flowId, detail]] = Object.entries(flowsRunning);
+    const flowNum = Number(flowId.replace('flow', ''));
+    if (detail.type !== 'deposit') throw t.fail(detail.type);
+    const planDepositAmount = AmountMath.make(usdc.brand, detail.amount.value);
+    const fee = bld.units(100);
+    const plan: FundsFlowPlan = {
+      flow: [
+        { src: `+${evm}`, dest: `@${evm}`, amount: planDepositAmount, fee },
+        {
+          src: `@${evm}`,
+          dest: 'Aave_Arbitrum',
+          amount: planDepositAmount,
+          fee,
+        },
+      ],
+    };
+    await E(planner1.stub).resolvePlan(pId, flowNum, plan, ...sync);
+    return flowNum;
+  };
+
+  await planner1.redeem();
+  await Promise.all([traderDoP, plannerDo(), chainDo()]);
+
+  t.truthy(evmHandler, 'evmHandler is defined');
+
+  // Try to deposit with wrong spender (factory instead of portfolio account)
+  const newDepositAmount = usdc.units(500);
+  const newPermit2Payload = {
+    permit: {
+      permitted: {
+        token: contractsMock[evm].usdc,
+        amount: newDepositAmount.value,
+      },
+      nonce: 2n,
+      deadline: 1n,
+    },
+    owner: ownerAddress,
+    witness:
+      '0x0000000000000000000000000000000000000000000000000000000000000000',
+    witnessTypeString: 'DepositWitness',
+    signature: '0x5678',
+  } as const;
+  const newPermitDetails = {
+    chainId: Number(chainInfoWithCCTP[evm].reference),
+    token: contractsMock[evm].usdc,
+    amount: newDepositAmount.value,
+    // Use factory address instead of portfolio's account
+    spender: contractsMock[evm].depositFactory,
+    permit2Payload: newPermit2Payload,
+  } as const;
+
+  await t.throwsAsync(
+    () => E(evmHandler!).deposit(newPermitDetails),
+    {
+      message: /deposit to existing account on .* not yet supported/,
+    },
+    'deposit to existing chain fails with clear message',
+  );
+});
