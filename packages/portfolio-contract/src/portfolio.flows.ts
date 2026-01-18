@@ -1076,7 +1076,7 @@ const stepFlow = async (
       case 'withdrawToEVM': {
         // Same-chain EVM transfer: from portfolio's smart wallet to user's address
         const destChain = way.dest;
-        const sourceAccountId = kit.manager.getSourceAccountId();
+        const sourceAccountId = kit.reader.getSourceAccountId();
         if (!sourceAccountId) {
           throw Fail`withdrawToEVM requires sourceAccountId to be set`;
         }
@@ -1121,7 +1121,7 @@ const stepFlow = async (
       case 'CCTPtoUser': {
         // Cross-chain from noble to user's EVM address via CCTP
         const destChain = way.dest;
-        const sourceAccountId = kit.manager.getSourceAccountId();
+        const sourceAccountId = kit.reader.getSourceAccountId();
         if (!sourceAccountId) {
           throw Fail`CCTPtoUser requires sourceAccountId to be set`;
         }
