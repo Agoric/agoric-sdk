@@ -1187,7 +1187,7 @@ test('evmHandler.rebalance fails if targetAllocation not set', async t => {
   // Try to call rebalance and expect it to throw
   await t.throwsAsync(
     () => E(evmHandler).rebalance(),
-    { message: /targetAllocation.*not set|no targetAllocation/i },
+    { message: /targetAllocation.* to be set|no targetAllocation/i },
     'rebalance should fail if targetAllocation is not set',
   );
 });
