@@ -50,7 +50,13 @@ export const findOutdated = async vs => {
   /** @type {PruneOpts['toPrune']} */
   const toPrune = {};
 
-  const noData = ['.portfolios', '.flows', '.positions', '.pendingTxs'];
+  const noData = [
+    '.evmWallets',
+    '.portfolios',
+    '.flows',
+    '.positions',
+    '.pendingTxs',
+  ];
   for await (const path of depthFirst(vs, 'published.ymax0')) {
     if (noData.some(tail => path.endsWith(tail))) continue;
     const { blockHeight: age } = await getHeightLast(path);
