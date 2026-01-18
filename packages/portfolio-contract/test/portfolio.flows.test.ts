@@ -2795,7 +2795,10 @@ test('withdrawToEVM sends GMP call with ERC20 transfer to user address', async t
     (entry: any) =>
       entry._method === 'transfer' && entry.address?.chainId === axelarId,
   );
-  t.true(gmpTransfers.length > 0, 'GMP transfer should be made for withdrawToEVM');
+  t.true(
+    gmpTransfers.length > 0,
+    'GMP transfer should be made for withdrawToEVM',
+  );
 
   // Verify the flow completes successfully with exit (not fail)
   const exitCall = log.find((entry: any) => entry._method === 'exit');
