@@ -74,7 +74,6 @@ import {
   CompoundProtocol,
   ERC4626Protocol,
   provideEVMAccount,
-  provideEVMAccountWithPermit,
   sendGMPContractCall,
   type EVMContext,
   type GMPAccountStatus,
@@ -1688,7 +1687,13 @@ const queuePermit2Step = async (
     chainInfo: BaseChainInfo<'eip155'>;
   },
 ) => {
-  const { gmpChain, steps, permit2Payload, fromChain, chainInfo } = details;
+  const {
+    gmpChain,
+    steps,
+    permit2Payload: _permit2Payload,
+    fromChain,
+    chainInfo,
+  } = details;
   const permitStep = steps.find(
     step => step.src === `+${fromChain}` && step.dest === `@${fromChain}`,
   );
@@ -1704,16 +1709,13 @@ const queuePermit2Step = async (
     chain: gmpChain,
     fee: feeAmount.value,
   };
+  // For deposits (not openPortfolio), use provideEVMAccount which creates
+  // the wallet using factory. The permit2 deposit will be a separate GMP call.
   // See stepFlow for resolution of gInfo.ready.
-  provideEVMAccountWithPermit(
-    fromChain,
-    chainInfo,
-    gmp,
-    lca,
-    ctx,
-    pKit,
-    permit2Payload,
-  );
+  provideEVMAccount(fromChain, chainInfo, gmp, lca, ctx, pKit);
+  // TODO: queue the permit2 deposit as a separate step
+  // For now, we just ensure the account exists. The permit2 transfer
+  // needs to be implemented as a GMP call to the wallet.
   return [{ src: permitStep.src, dest: permitStep.dest }];
 };
 
