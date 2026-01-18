@@ -35,7 +35,10 @@ import type {
   ProgressTracker,
   TrafficEntry,
 } from '@agoric/orchestration';
-import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
+import {
+  coerceAccountId,
+  parseAccountId,
+} from '@agoric/orchestration/src/utils/address.js';
 import { progressTrackerAsyncFlowUtils } from '@agoric/orchestration/src/utils/progress.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import {
@@ -72,9 +75,11 @@ import {
   ERC4626Protocol,
   provideEVMAccount,
   provideEVMAccountWithPermit,
+  sendGMPContractCall,
   type EVMContext,
   type GMPAccountStatus,
 } from './pos-gmp.flows.ts';
+import { ERC20, makeEVMSession } from './evm-facade.ts';
 import {
   agoricToNoble,
   nobleToAgoric,
@@ -87,6 +92,7 @@ import { runJob, type Job } from './schedule-order.ts';
 import {
   getChainNameOfPlaceRef,
   getKeywordOfPlaceRef,
+  getWithdrawChainOfPlaceRef,
   type AssetPlaceRef,
   type MovementDesc,
   type OfferArgsFor,
@@ -591,11 +597,12 @@ const setupPortfolioAccounts = async (
 
 const getAssetPlaceRefKind = (
   ref: AssetPlaceRef,
-): 'pos' | 'accountId' | 'depositAddr' | 'seat' => {
+): 'pos' | 'accountId' | 'depositAddr' | 'withdrawAddr' | 'seat' => {
   if (keys(PoolPlaces).includes(ref)) return 'pos';
   if (getKeywordOfPlaceRef(ref)) return 'seat';
   if (getChainNameOfPlaceRef(ref)) return 'accountId';
   if (ref === '+agoric') return 'depositAddr';
+  if (getWithdrawChainOfPlaceRef(ref)) return 'withdrawAddr';
   throw Fail`bad ref: ${ref}`;
 };
 
@@ -607,6 +614,8 @@ type Way =
   | { how: 'IBC'; src: 'noble'; dest: 'agoric' }
   | { how: 'CCTP'; dest: AxelarChain }
   | { how: 'CCTP'; src: AxelarChain }
+  | { how: 'withdrawToEVM'; dest: AxelarChain }
+  | { how: 'CCTPtoUser'; dest: AxelarChain }
   | {
       how: YieldProtocol;
       /** pool we're supplying */
@@ -666,6 +675,18 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
       switch (destKind) {
         case 'seat':
           return { how: 'withdrawToSeat' }; // XXX check that src is agoric
+        case 'withdrawAddr': {
+          const destChain = getWithdrawChainOfPlaceRef(dest);
+          assert(destChain);
+          // Same-chain EVM transfer: @Arbitrum -> -Arbitrum
+          if (srcName === destChain) {
+            return { how: 'withdrawToEVM', dest: destChain };
+          }
+          // Cross-chain from noble: @noble -> -Arbitrum (CCTP to user's address)
+          srcName === 'noble' ||
+            Fail`src for withdraw to ${q(destChain)} must be same chain or noble`;
+          return { how: 'CCTPtoUser', dest: destChain };
+        }
         case 'accountId': {
           const destName = getChainNameOfPlaceRef(dest);
           assert(destName);
@@ -1051,6 +1072,104 @@ const stepFlow = async (
       case 'ERC4626':
         todo.push(makeEVMProtocolStep(way as Way & { how: 'ERC4626' }, move));
         break;
+
+      case 'withdrawToEVM': {
+        // Same-chain EVM transfer: from portfolio's smart wallet to user's address
+        const destChain = way.dest;
+        const sourceAccountId = kit.reader.getSourceAccountId();
+        if (!sourceAccountId) {
+          throw Fail`withdrawToEVM requires sourceAccountId to be set`;
+        }
+        const { accountAddress: userAddress } = parseAccountId(sourceAccountId);
+
+        todo.push({
+          how: 'withdrawToEVM',
+          amount,
+          src: move.src,
+          dest: move.dest,
+          apply: async (
+            { [destChain]: gInfo, agoric },
+            _tracer,
+            ...optsArgs
+          ) => {
+            assert(gInfo && agoric, destChain);
+            await null;
+            // Build ERC20 transfer call
+            const session = makeEVMSession();
+            const usdc = session.makeContract(
+              ctx.contracts[destChain].usdc,
+              ERC20,
+            );
+            // userAddress is an EVM address from validated CAIP-10
+            usdc.transfer(userAddress as `0x${string}`, amount.value);
+            const calls = session.finish();
+
+            // Create EVM context for GMP call
+            const evmCtx = await makeEVMCtx(
+              destChain,
+              move,
+              agoric.lca,
+              ctx.transferChannels.noble.counterPartyChannelId,
+            );
+            await sendGMPContractCall(evmCtx, gInfo, calls, ...optsArgs);
+            return {};
+          },
+        });
+        break;
+      }
+
+      case 'CCTPtoUser': {
+        // Cross-chain from noble to user's EVM address via CCTP
+        const destChain = way.dest;
+        const sourceAccountId = kit.reader.getSourceAccountId();
+        if (!sourceAccountId) {
+          throw Fail`CCTPtoUser requires sourceAccountId to be set`;
+        }
+        // Validate CAIP-10 format (will throw if malformed)
+        parseAccountId(sourceAccountId);
+
+        todo.push({
+          how: 'CCTPtoUser',
+          amount,
+          src: move.src,
+          dest: move.dest,
+          apply: async ({ noble }, _tracer, ...optsArgs) => {
+            assert(noble, 'noble');
+            await null;
+
+            const traceTransfer = traceP.sub('CCTPtoUser').sub(destChain);
+            const denomAmount: DenomAmount = {
+              denom: 'uusdc',
+              value: amount.value,
+            };
+            traceTransfer('transfer', denomAmount, 'to', sourceAccountId);
+
+            // The user's sourceAccountId is already a CAIP-10 AccountId (e.g., eip155:42161:0x...)
+            const destinationAddress: AccountId = sourceAccountId;
+            const { ica } = noble;
+
+            const { result } = ctx.resolverClient.registerTransaction(
+              TxType.CCTP_TO_EVM,
+              destinationAddress,
+              amount.value,
+            );
+            const callerAndOptsArgs = (
+              optsArgs.length > 0 ? [undefined, ...optsArgs] : []
+            ) as [AccountId?, OrchestrationOptions?];
+            await Promise.all([
+              ica.depositForBurn(
+                destinationAddress,
+                denomAmount,
+                ...callerAndOptsArgs,
+              ),
+              result,
+            ]);
+            traceTransfer('transfer complete.');
+            return {};
+          },
+        });
+        break;
+      }
 
       default:
         throw Fail`unreachable: ${way}`;

@@ -1,7 +1,7 @@
 /**
  * NOTE: This is host side code; can't use await.
  */
-import { AmountMath, type Brand } from '@agoric/ertp';
+import { AmountMath, type Brand, type NatAmount } from '@agoric/ertp';
 import { makeTracer, mustMatch, type ERemote } from '@agoric/internal';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import type { EMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
@@ -338,6 +338,13 @@ export const preparePortfolioKit = (
           const { accounts } = this.state;
           return accountIdByChain(accounts);
         },
+        /**
+         * Returns the CAIP-10 account ID of the authenticated EVM account
+         * that opened this portfolio, or undefined if not set.
+         */
+        getSourceAccountId(): AccountId | undefined {
+          return this.state.sourceAccountId;
+        },
       },
       reporter: {
         publishStatus() {
@@ -632,8 +639,33 @@ export const preparePortfolioKit = (
         rebalance() {
           throw Error('TODO in a later PR');
         },
-        withdraw() {
-          throw Error('TODO in a later PR');
+        /**
+         * Initiate a withdrawal to the source EVM account.
+         *
+         * Requires that `sourceAccountId` was set when the portfolio was opened
+         * (i.e., the portfolio was opened from EVM via `openPortfolioFromEVM`).
+         *
+         * @param amount - The amount to withdraw
+         * @param opts - Optional parameters
+         * @param opts.toChain - Override destination chain (defaults to chain from sourceAccountId)
+         */
+        withdraw(amount: NatAmount, opts?: { toChain?: SupportedChain }) {
+          const { sourceAccountId } = this.state;
+          sourceAccountId ||
+            Fail`withdraw requires sourceAccountId to be set (portfolio must be opened from EVM)`;
+
+          // Parse the CAIP-10 ID to extract the destination chain
+          // Format: eip155:{chainId}:{address}
+          // The planner will use this to route the withdrawal
+          const toChain = opts?.toChain;
+
+          const flowDetail: FlowDetail = {
+            type: 'withdraw',
+            amount,
+            ...(toChain && { toChain }),
+          };
+          const startedFlow = this.facets.manager.startFlow(flowDetail);
+          return `flow${startedFlow.flowId}`;
         },
       },
       rebalanceHandler: {
