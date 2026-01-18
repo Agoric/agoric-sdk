@@ -338,6 +338,13 @@ export const preparePortfolioKit = (
           const { accounts } = this.state;
           return accountIdByChain(accounts);
         },
+        /**
+         * Returns the CAIP-10 account ID of the authenticated EVM account
+         * that opened this portfolio, or undefined if not set.
+         */
+        getSourceAccountId(): AccountId | undefined {
+          return this.state.sourceAccountId;
+        },
       },
       reporter: {
         publishStatus() {
@@ -599,13 +606,6 @@ export const preparePortfolioKit = (
           this.state.policyVersion += 1;
           this.state.rebalanceCount = 0;
           this.facets.reporter.publishStatus();
-        },
-        /**
-         * Returns the CAIP-10 account ID of the authenticated EVM account
-         * that opened this portfolio, or undefined if not set.
-         */
-        getSourceAccountId(): AccountId | undefined {
-          return this.state.sourceAccountId;
         },
       },
       accountWatcher: {
