@@ -22,10 +22,12 @@ export type EVMInterface = { [name: string]: Array<keyof EVMT> };
 
 export type ERC20I = {
   approve: ['address', 'uint256'];
+  transfer: ['address', 'uint256'];
 };
 
 export const ERC20: ERC20I = {
   approve: ['address', 'uint256'],
+  transfer: ['address', 'uint256'],
 };
 
 export type EVMParameters<KS extends Array<keyof EVMT>> = {

@@ -1,6 +1,7 @@
 /**
  * @file offerArgs types / shapes - temporarily separate from type-guards.ts
  */
+import { assert } from '@endo/errors';
 import type { Brand } from '@agoric/ertp';
 import type { TypedPattern } from '@agoric/internal';
 import { AnyNatAmountShape } from '@agoric/orchestration';
@@ -27,12 +28,35 @@ const AssetPlaceRefShape = M.or(
   ...seatKeywords.map(kw => `<${kw}>`),
   '+agoric',
   ...values(AxelarChain).map(c => `+${c}`),
+  ...values(AxelarChain).map(c => `-${c}`),
   ...values(SupportedChain).map(c => `@${c}`),
   ...keys(PoolPlaces),
 );
 
 // XXX NEEDSTEST: check that all SupportedChains match; no `@`s etc.
 export const accountRefPattern = /^@(?<chain>\w+)$/;
+
+/**
+ * Pattern to match WithdrawToChainRef like `-Arbitrum`.
+ * Used to identify EVM chains that are destinations for withdrawals.
+ */
+export const withdrawRefPattern = /^-(?<chain>\w+)$/;
+
+/**
+ * Extract the chain name from a WithdrawToChainRef like `-Arbitrum`.
+ * Returns undefined if the ref is not a withdraw destination.
+ */
+export const getWithdrawChainOfPlaceRef = (
+  ref: AssetPlaceRef,
+): AxelarChain | undefined => {
+  const m = ref.match(withdrawRefPattern);
+  const chain = m?.groups?.chain;
+  if (!chain) return undefined;
+  // validation of external data is done by AssetPlaceRefShape
+  // any bad ref that reaches here is a bug
+  assert(keys(AxelarChain).includes(chain), `bad ref: ${ref}`);
+  return chain as AxelarChain;
+};
 
 // XXX Possible to consolidate with {@link chainOf}?
 export const getChainNameOfPlaceRef = (
