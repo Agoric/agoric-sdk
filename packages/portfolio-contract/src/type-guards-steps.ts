@@ -1,6 +1,7 @@
 /**
  * @file offerArgs types / shapes - temporarily separate from type-guards.ts
  */
+import { assert } from '@endo/errors';
 import type { Brand } from '@agoric/ertp';
 import type { TypedPattern } from '@agoric/internal';
 import { AnyNatAmountShape } from '@agoric/orchestration';
