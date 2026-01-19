@@ -140,6 +140,8 @@ export type MovementDesc = {
   claim?: boolean;
 };
 
+export type TxPhase = 'makeSrcAccount' | 'makeDestAccount' | 'apply';
+
 export type FlowStep = {
   /** Human readable description of how the step accomplishes the transfer from `src` to `dest` */
   // Distinct from `Way.how` in the contract
@@ -147,7 +149,7 @@ export type FlowStep = {
   amount: NatAmount;
   src: AssetPlaceRef;
   dest: AssetPlaceRef;
-  phases?: Record<string, any>;
+  phases?: Record<TxPhase, TxId[]>;
   // XXX all parts: fee etc.
 };
 
@@ -169,7 +171,7 @@ export type TxId = `tx${number}`;
 
 export type TrafficReport = {
   traffic: TrafficEntry[];
-  tailTxId?: TxId;
+  appendTxIds?: TxId[];
 };
 
 export type PortfolioKey = `portfolio${number}`;
