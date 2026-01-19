@@ -658,8 +658,8 @@ export const preparePortfolioKit = (
          */
         rebalance() {
           const { targetAllocation } = this.state;
-          targetAllocation ||
-            Fail`rebalance requires targetAllocation to be set (use SimpleRebalance instead)`;
+          (targetAllocation && Object.keys(targetAllocation).length > 0) ||
+            Fail`rebalance requires targetAllocation to be set`;
           const flowDetail: FlowDetail = { type: 'rebalance' };
           const startedFlow = this.facets.manager.startFlow(flowDetail);
           return `flow${startedFlow.flowId}`;

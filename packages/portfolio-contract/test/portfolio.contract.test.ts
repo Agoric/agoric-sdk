@@ -1157,7 +1157,7 @@ test('evmHandler.rebalance fails if targetAllocation not set', async t => {
   const permit2Payload = {
     permit: {
       permitted: {
-        token: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+        token: contractsMock.Arbitrum.usdc,
         amount: 0n,
       },
       nonce: 1n,
@@ -1171,9 +1171,9 @@ test('evmHandler.rebalance fails if targetAllocation not set', async t => {
   };
   const permitDetails = {
     chainId: 42161,
-    token: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+    token: contractsMock.Arbitrum.usdc,
     amount: 0n,
-    spender: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+    spender: contractsMock.Arbitrum.depositFactory,
     permit2Payload,
   };
 
