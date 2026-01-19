@@ -11,7 +11,7 @@ import { M } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
 import type { PortfolioPrivateArgs } from '../src/portfolio.contract.ts';
 import * as contractExports from '../src/portfolio.contract.ts';
-import type { PublishedTx, TxStatus } from '../src/resolver/types.ts';
+import type { PublishedTx, TxStatus, TxId } from '../src/resolver/types.ts';
 import { makeTrader } from '../tools/portfolio-actors.ts';
 import { makeWallet } from '../tools/wallet-offer-tools.ts';
 import {
@@ -168,12 +168,35 @@ export const setupTrader = async (
       const paths = [...storage.data.keys()].filter(k =>
         k.includes('.pendingTxs.'),
       );
-      const txIds: `tx${number}`[] = [];
+      const txIds: TxId[] = [];
+      const txIdToNext: Map<TxId, TxId | undefined> = new Map();
+      const settledTxs: Set<TxId> = new Set();
       for (const p of paths) {
         const info = getDeserialized(p).at(-1) as PublishedTx;
+        const txId = p.split('.').at(-1) as TxId;
+
+        if (info.status === 'success' || info.status === 'failed') {
+          settledTxs.add(txId);
+        }
         if (info.status !== 'pending') continue;
-        const txId = p.split('.').at(-1) as `tx${number}`;
+
+        // IBC_FROM_REMOTE is not yet implemented in resolver.
+        if (info.type === 'IBC_FROM_REMOTE') continue;
+
+        if (info.nextTxId) {
+          // Chain-level support; consider it settled only when its dependents are.
+          txIdToNext.set(txId, info.nextTxId);
+          continue;
+        }
         txIds.push(txId);
+      }
+
+      // See which of the dependencies are now eligible for settlement.
+      for (const [txId, nextId] of txIdToNext.entries()) {
+        // Check if the dependendency is settled.
+        if (!nextId || settledTxs.has(nextId)) {
+          txIds.push(txId);
+        }
       }
       return harden(txIds);
     },

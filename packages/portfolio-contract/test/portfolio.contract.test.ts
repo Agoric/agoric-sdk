@@ -97,7 +97,7 @@ const ackNFA = (utils, ix = 0) =>
   utils.transmitVTransferEvent('acknowledgementPacket', ix);
 
 test('open portfolio with USDN position', async t => {
-  const { trader1, common } = await setupTrader(t);
+  const { trader1, common, txResolver } = await setupTrader(t);
   const { usdc, poc26 } = common.brands;
 
   const amount = usdc.units(3_333.33);
@@ -129,6 +129,9 @@ test('open portfolio with USDN position', async t => {
   t.is(keys(result.publicSubscribers).length, 1);
   const { storagePath } = result.publicSubscribers.portfolio;
   t.log(storagePath);
+
+  // let vstorage settle since our mocks don't fully resolve IBC.
+  await txResolver.drainPending();
   const { storage } = common.bootstrap;
   const { contents, positionPaths } = getPortfolioInfo(storagePath, storage);
   t.snapshot(contents, 'vstorage');
@@ -443,7 +446,7 @@ test('claim rewards on Aave position successfully', async t => {
 });
 
 test('USDN claim fails currently', async t => {
-  const { trader1, common } = await setupTrader(t);
+  const { trader1, common, txResolver } = await setupTrader(t);
   const { usdc, poc26 } = common.brands;
 
   const amount = usdc.units(3_333.33);
@@ -476,6 +479,8 @@ test('USDN claim fails currently', async t => {
   const { storagePath } = result.publicSubscribers.portfolio;
   t.log(storagePath);
 
+  // let vstorage settle since our mocks don't fully resolve IBC.
+  await txResolver.drainPending();
   const { storage } = common.bootstrap;
   const { contents, positionPaths } = getPortfolioInfo(storagePath, storage);
   t.snapshot(contents, 'vstorage');

@@ -81,6 +81,7 @@ import { prepareResolverKit } from '../src/resolver/resolver.exo.js';
 import {
   PENDING_TXS_NODE_KEY,
   type PublishedTx,
+  type TxId,
 } from '../src/resolver/types.ts';
 import {
   makeOfferArgsShapes,
@@ -652,11 +653,20 @@ const mocks = (
       const paths = [...storage.data.keys()].filter(k =>
         k.includes('.pendingTxs.'),
       );
-      const txIds: `tx${number}`[] = [];
+      const txIds: TxId[] = [];
+      const txIdToNext: Map<TxId, TxId | undefined> = new Map();
+      const settledTxs: Set<TxId> = new Set();
       for (const p of paths) {
         const info = getDeserialized(p).at(-1) as PublishedTx;
+        const txId = p.split('.').at(-1) as TxId;
+
+        if (info.status === 'success' || info.status === 'failed') {
+          settledTxs.add(txId);
+        }
         if (info.status !== 'pending') continue;
-        const txId = p.split('.').at(-1) as `tx${number}`;
+
+        // IBC_FROM_REMOTE is not yet implemented in resolver.
+        if (info.type === 'IBC_FROM_REMOTE') continue;
 
         if (info.type === 'CCTP_TO_AGORIC') {
           console.debug('CCTP_TO_AGORIC', txId, info);
@@ -677,7 +687,20 @@ const mocks = (
           continue;
         }
 
+        if (info.type === 'IBC_FROM_AGORIC' && info.nextTxId) {
+          // Chain-level support; consider it settled only when its dependents are.
+          txIdToNext.set(txId, info.nextTxId);
+          continue;
+        }
         txIds.push(txId);
+      }
+
+      // See which of the dependencies are now eligible for settlement.
+      for (const [txId, nextId] of txIdToNext.entries()) {
+        // Check if the dependendency is settled.
+        if (!nextId || settledTxs.has(nextId)) {
+          txIds.push(txId);
+        }
       }
       return harden(txIds);
     },
@@ -704,7 +727,7 @@ const mocks = (
         if (!key.includes('.pendingTxs.')) continue;
         const info = getDeserialized(key).at(-1) as PublishedTx;
         if (info.status !== 'pending') continue;
-        const txId = key.split('.').at(-1) as `tx${number}`;
+        const txId = key.split('.').at(-1) as TxId;
         resolverService.settleTransaction({ txId, status, rejectionReason });
       }
     },
@@ -822,7 +845,7 @@ test('open portfolio with USDN position', async t => {
   const { give, steps } = await makePortfolioSteps({
     USDN: make(USDC, 50_000_000n),
   });
-  const { orch, ctx, offer, storage, cosmosId } = mocks({}, give);
+  const { orch, ctx, offer, storage, cosmosId, txResolver } = mocks({}, give);
   const { log, seat } = offer;
 
   const shapes = makeProposalShapes(USDC);
@@ -841,6 +864,8 @@ test('open portfolio with USDN position', async t => {
   ]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
   t.is(passStyleOf(actual.invitationMakers), 'remotable');
+  // Needed due to an incomplete mock of IBC ack processing.
+  await txResolver.drainPending();
   await documentStorageSchema(t, storage, docOpts);
 
   const { getPortfolioStatus } = makeStorageTools(storage);
@@ -904,9 +929,7 @@ test('open portfolio with Aave position', async t => {
       ],
     }),
     Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
-      // Complete GMP transaction
-      await txResolver.drainPending();
-      // Complete CCTP transaction
+      // Complete transactions.
       await txResolver.drainPending();
     }),
   ]);
@@ -1609,7 +1632,7 @@ test('withdraw in coordination with planner', async t => {
 });
 
 test('deposit in coordination with planner', async t => {
-  const { orch, ctx, offer, storage, cosmosId } = mocks({});
+  const { orch, ctx, offer, storage, cosmosId, txResolver } = mocks({});
 
   const nobleId = await cosmosId('noble');
 
@@ -1656,6 +1679,7 @@ test('deposit in coordination with planner', async t => {
   ]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
 
+  await txResolver.drainPending();
   await documentStorageSchema(t, storage, docOpts);
 });
 
@@ -2374,7 +2398,6 @@ test('open portfolio with ERC4626 position', async t => {
       ],
     }),
     Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
-      await txResolver.drainPending();
       await txResolver.drainPending();
     }),
   ]);
