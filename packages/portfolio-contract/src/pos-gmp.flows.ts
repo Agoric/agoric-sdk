@@ -265,6 +265,19 @@ const TokenMessenger: TokenMessengerI = {
 /** @see {@link https://developers.circle.com/cctp/supported-domains} */
 const nobleDomain = 4;
 
+/**
+ * CCTP domain IDs for EVM chains.
+ * @see {@link https://developers.circle.com/stablecoins/supported-domains}
+ */
+const cctpDomains: Record<AxelarChain, number> = {
+  Ethereum: 0,
+  Avalanche: 1,
+  Optimism: 2,
+  Arbitrum: 3,
+  Base: 6,
+};
+harden(cctpDomains);
+
 const bech32ToBytes32 = (addr: Bech32Address) => {
   if (addr === 'noble1test') {
     trace('XXX replacing test address to convert to bytes32');
@@ -372,11 +385,11 @@ export const CCTPbetweenEVM = {
   how: 'CCTPbetweenEVM',
   connections: keys(AxelarChain).flatMap((src: AxelarChain) =>
     keys(AxelarChain)
-      .filter(dest => dest !== src)
+      .filter((dest): dest is AxelarChain => dest !== src)
       .map(dest => ({ src, dest })),
   ),
   apply: async (
-    ctx: PortfolioInstanceContext,
+    ctx: EVMContext,
     amount,
     src,
     dest,
@@ -387,12 +400,10 @@ export const CCTPbetweenEVM = {
       .sub(`${src.chainName}->${dest.chainName}`);
     traceTransfer('transfer', amount, 'from', src.remoteAddress, 'to', dest.remoteAddress);
     
-    // Get destination domain from chain info
-    const { chainHub } = ctx;
-    const destChainInfo = chainHub.getChainInfoByChainId(dest.chainId);
-    typeof destChainInfo.cctpDestinationDomain === 'number' ||
-      Fail`${q(dest.chainName)} does not have cctpDestinationDomain set`;
-    const destinationDomain = destChainInfo.cctpDestinationDomain;
+    // Get destination domain from static mapping
+    const destinationDomain = cctpDomains[dest.chainName];
+    typeof destinationDomain === 'number' ||
+      Fail`${q(dest.chainName)} does not have CCTP domain mapping`;
     
     const { addresses } = ctx;
     const mintRecipient: `0x${string}` = dest.remoteAddress as `0x${string}`;
