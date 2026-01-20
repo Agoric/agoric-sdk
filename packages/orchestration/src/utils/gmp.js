@@ -61,17 +61,29 @@ export const constructContractCall = ({ target, functionSignature, args }) => {
 /**
  * Builds a GMP payload from an array of contract calls.
  *
- * @param {ContractCall[]} contractCalls - Array of contract call objects.
+ * Accepts either:
+ * - `ContractCall[]` with `functionSignature` and `args` (will be encoded)
+ * - `AbiEncodedContractCall[]` with pre-encoded `data` (used as-is)
+ *
+ * NOTE: Pre-encoded data should only come from trusted internal encoding
+ * (e.g., `encodeFunctionData`), never from external/user input.
+ *
+ * @param {(ContractCall | AbiEncodedContractCall)[]} contractCalls - Array of contract call objects.
  * @param {string} id - Optional message ID for tracing/debugging purposes
  * @returns {number[]} The GMP payload array.
  */
 export const buildGMPPayload = (contractCalls, id = '') => {
   const abiEncodedContractCalls = [];
   for (const call of contractCalls) {
-    const { target, functionSignature, args } = call;
-    abiEncodedContractCalls.push(
-      constructContractCall({ target, functionSignature, args }),
-    );
+    // If 'data' is present, it's already encoded; otherwise encode it
+    if ('data' in call) {
+      abiEncodedContractCalls.push(call);
+    } else {
+      const { target, functionSignature, args } = call;
+      abiEncodedContractCalls.push(
+        constructContractCall({ target, functionSignature, args }),
+      );
+    }
   }
 
   const abiEncodedData = encodeAbiParameters(

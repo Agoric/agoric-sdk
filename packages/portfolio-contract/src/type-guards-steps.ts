@@ -43,6 +43,30 @@ export const accountRefPattern = /^@(?<chain>\w+)$/;
 export const withdrawRefPattern = /^-(?<chain>\w+)$/;
 
 /**
+ * Pattern to match DepositFromChainRef like `+Arbitrum`.
+ * Used to identify EVM chains that are sources for deposits.
+ * Note: `+agoric` is a special case (LocalChainAccountRef).
+ */
+export const depositRefPattern = /^\+(?<chain>\w+)$/;
+
+/**
+ * Extract the chain name from a DepositFromChainRef like `+Arbitrum`.
+ * Returns undefined if the ref is not a deposit source or is `+agoric`.
+ */
+export const getDepositChainOfPlaceRef = (
+  ref: AssetPlaceRef,
+): AxelarChain | undefined => {
+  if (ref === '+agoric') return undefined;
+  const m = ref.match(depositRefPattern);
+  const chain = m?.groups?.chain;
+  if (!chain) return undefined;
+  // validation of external data is done by AssetPlaceRefShape
+  // any bad ref that reaches here is a bug
+  assert(keys(AxelarChain).includes(chain), `bad ref: ${ref}`);
+  return chain as AxelarChain;
+};
+
+/**
  * Extract the chain name from a WithdrawToChainRef like `-Arbitrum`.
  * Returns undefined if the ref is not a withdraw destination.
  */

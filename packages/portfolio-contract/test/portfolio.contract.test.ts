@@ -25,8 +25,10 @@ import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import type { FundsFlowPlan } from '@agoric/portfolio-api';
 import { deploy as deployWalletFactory } from '@agoric/smart-wallet/tools/wf-tools.js';
+import { hexToBytes } from '@noble/hashes/utils';
 import { E, passStyleOf } from '@endo/far';
 import type { AssetPlaceRef } from '../src/type-guards-steps.ts';
+import { predictWalletAddress } from '../src/utils/evm-orch-factory.ts';
 import type {
   OfferArgsFor,
   StatusFor,
@@ -2037,7 +2039,9 @@ test.skip('evmHandler.deposit starts a deposit flow', async t => {
 });
 
 // Test deposits from a NEW chain (where no account exists yet).
-// This should work because it uses depositFactory to atomically create the account + deposit.
+// For deposits to existing portfolios, spender must be the predicted smart wallet address
+// (not depositFactory). The wallet is created via provideEVMAccount first.
+
 test('evmHandler.deposit from new chain starts a deposit flow', async t => {
   const { common, planner1, started, readPublished, txResolver } =
     await setupPlanner(t);
@@ -2142,8 +2146,23 @@ test('evmHandler.deposit from new chain starts a deposit flow', async t => {
   t.truthy(statusBefore.accountIdByChain?.[openChain], 'has Arbitrum account');
   t.falsy(statusBefore.accountIdByChain?.Base, 'no Base account yet');
 
+  // Get the LCA address to predict the wallet address for the new chain
+  const lcaAddress = statusBefore.accountIdByChain?.agoric?.split(':').at(-1);
+  t.truthy(lcaAddress, 'LCA address exists');
+
   // Now deposit from Base (a NEW chain for this portfolio)
   const newChain = 'Base' as const;
+
+  // For deposits to existing portfolios, spender must be the predicted smart wallet address
+  const newChainContracts = contractsMock[newChain];
+  const predictedSpender = predictWalletAddress({
+    owner: lcaAddress!,
+    factoryAddress: newChainContracts.factory,
+    gatewayAddress: newChainContracts.gateway,
+    gasServiceAddress: newChainContracts.gasService,
+    walletBytecode: hexToBytes('1234'), // matches contract-setup.ts
+  });
+
   const newDepositAmount = usdc.units(500);
   const newPermit2Payload = {
     permit: {
@@ -2164,8 +2183,8 @@ test('evmHandler.deposit from new chain starts a deposit flow', async t => {
     chainId: Number(chainInfoWithCCTP[newChain].reference),
     token: contractsMock[newChain].usdc,
     amount: newDepositAmount.value,
-    // For NEW chain deposit, spender is the depositFactory
-    spender: contractsMock[newChain].depositFactory,
+    // For deposits to existing portfolios, spender is the predicted smart wallet address
+    spender: predictedSpender as `0x${string}`,
     permit2Payload: newPermit2Payload,
   } as const;
 
@@ -2479,7 +2498,7 @@ test('evmHandler.deposit to existing chain fails with clear message', async t =>
   await t.throwsAsync(
     () => E(evmHandler!).deposit(newPermitDetails),
     {
-      message: /deposit to existing account on .* not yet supported/,
+      message: /permit spender .* does not match portfolio account/,
     },
     'deposit to existing chain fails with clear message',
   );
