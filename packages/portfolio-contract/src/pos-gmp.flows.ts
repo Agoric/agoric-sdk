@@ -30,12 +30,16 @@ import {
 } from '@agoric/orchestration/src/axelar-types.js';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import { buildGMPPayload } from '@agoric/orchestration/src/utils/gmp.js';
-import { encodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
+import {
+  encodeAbiParameters,
+  encodeFunctionData,
+} from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import {
   PermitTransferFromComponents,
   PermitTransferFromInternalTypeName,
+  PermitWitnessTransferFromInputComponents,
 } from '@agoric/orchestration/src/utils/permit2.ts';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import { fromBech32 } from '@cosmjs/encoding';
@@ -557,6 +561,106 @@ export const sendGMPContractCall = async (
     destination_chain: axelarId,
     destination_address: remoteAddress,
     payload: buildGMPPayload(calls, txId),
+    type: AxelarGMPMessageType.ContractCall,
+    fee: { amount: String(fee.value), recipient: AXELAR_GAS },
+  };
+  const { chainId } = await gmpChain.getChainInfo();
+  const gmp = {
+    chainId,
+    value: AXELAR_GMP,
+    encoding: 'bech32' as const,
+  };
+  await ctx.feeAccount.send(lca.getAddress(), fee, ...optsArgs);
+  await lca.transfer(gmp, fee, {
+    ...optsArgs[0],
+    memo: JSON.stringify(memo),
+  });
+  await result;
+};
+
+/** Canonical Permit2 contract address (same on all EVM chains) */
+const PERMIT2_ADDRESS: EVMT['address'] =
+  '0x000000000022D473030F116dDEE9F6B43aC78BA3';
+
+/**
+ * Sends a GMP call to execute a Permit2 permitWitnessTransferFrom.
+ *
+ * This transfers tokens from the user's EOA to the portfolio's smart wallet
+ * using the user's pre-signed permit2 authorization.
+ *
+ * @param ctx - EVM context with LCA and GMP configuration
+ * @param gmpAcct - Target smart wallet info
+ * @param permit2Payload - The permit2 payload from the user's signature
+ * @param transferAmount - Amount to transfer
+ * @param optsArgs - Optional orchestration options
+ */
+export const sendPermit2GMP = async (
+  ctx: EVMContext,
+  gmpAcct: GMPAccountInfo,
+  permit2Payload: PermitDetails['permit2Payload'],
+  transferAmount: bigint,
+  ...optsArgs: [OrchestrationOptions?]
+) => {
+  const {
+    lca,
+    gmpChain,
+    gmpFee: fee,
+    gmpAddresses,
+    resolverClient,
+    axelarIds,
+  } = ctx;
+  const { chainName, remoteAddress, chainId: gmpChainId } = gmpAcct;
+  const walletAddress = remoteAddress as EVMT['address'];
+  const axelarId = axelarIds[chainName];
+
+  const { permit, owner, witness, witnessTypeString, signature } =
+    permit2Payload;
+
+  // Build the transferDetails - tokens go to the wallet
+  const transferDetails = {
+    to: walletAddress,
+    requestedAmount: transferAmount,
+  };
+
+  // Encode the permitWitnessTransferFrom call
+  const callData = encodeFunctionData({
+    abi: [
+      {
+        name: 'permitWitnessTransferFrom',
+        inputs: PermitWitnessTransferFromInputComponents,
+        outputs: [],
+        stateMutability: 'nonpayable',
+        type: 'function',
+      },
+    ],
+    functionName: 'permitWitnessTransferFrom',
+    args: [
+      permit,
+      transferDetails,
+      owner,
+      witness,
+      witnessTypeString,
+      signature,
+    ],
+  });
+
+  const sourceAddress = coerceAccountId(lca.getAddress());
+  const { result, txId } = resolverClient.registerTransaction(
+    TxType.GMP,
+    `${gmpChainId}:${remoteAddress}`,
+    undefined,
+    undefined,
+    sourceAddress,
+  );
+
+  const { AXELAR_GMP, AXELAR_GAS } = gmpAddresses;
+  const memo: AxelarGmpOutgoingMemo = {
+    destination_chain: axelarId,
+    destination_address: remoteAddress,
+    payload: buildGMPPayload(
+      [{ target: PERMIT2_ADDRESS, data: callData }],
+      txId,
+    ),
     type: AxelarGMPMessageType.ContractCall,
     fee: { amount: String(fee.value), recipient: AXELAR_GAS },
   };
