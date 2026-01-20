@@ -70,6 +70,7 @@ import {
   AaveProtocol,
   BeefyProtocol,
   CCTP,
+  CCTPbetweenEVM,
   CCTPfromEVM,
   CompoundProtocol,
   ERC4626Protocol,
@@ -614,6 +615,7 @@ type Way =
   | { how: 'IBC'; src: 'noble'; dest: 'agoric' }
   | { how: 'CCTP'; dest: AxelarChain }
   | { how: 'CCTP'; src: AxelarChain }
+  | { how: 'CCTPbetweenEVM'; src: AxelarChain; dest: AxelarChain }
   | { how: 'withdrawToEVM'; dest: AxelarChain }
   | { how: 'CCTPtoUser'; dest: AxelarChain }
   | {
@@ -690,15 +692,32 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
         case 'accountId': {
           const destName = getChainNameOfPlaceRef(dest);
           assert(destName);
+          
+          // Direct EVM-to-EVM CCTP transfers
+          if (
+            keys(AxelarChain).includes(srcName) &&
+            keys(AxelarChain).includes(destName)
+          ) {
+            return {
+              how: 'CCTPbetweenEVM',
+              src: srcName as AxelarChain,
+              dest: destName as AxelarChain,
+            };
+          }
+          
+          // EVM to Agoric via Noble
           if (keys(AxelarChain).includes(destName)) {
             srcName === 'noble' || Fail`src for ${q(destName)} must be noble`;
             return { how: 'CCTP', dest: destName as AxelarChain };
           }
+          
+          // Agoric to EVM via Noble
           if (keys(AxelarChain).includes(srcName)) {
             destName === 'agoric' ||
               Fail`dest for ${q(srcName)} must be agoric`;
             return { how: 'CCTP', src: srcName as AxelarChain };
           }
+          
           if (srcName === 'agoric' && destName === 'noble') {
             return { how: 'IBC', src: srcName, dest: destName };
           } else if (srcName === 'noble' && destName === 'agoric') {
@@ -1014,6 +1033,42 @@ const stepFlow = async (
               ctx.transferChannels.noble.counterPartyChannelId,
             );
             await CCTPfromEVM.apply(evmCtx, amount, gInfo, agoric, ...optsArgs);
+            return {};
+          },
+        });
+
+        break;
+      }
+
+      case 'CCTPbetweenEVM': {
+        const { src: srcChain, dest: destChain } = way;
+
+        todo.push({
+          how: way.how,
+          amount,
+          src: move.src,
+          dest: move.dest,
+          apply: async (
+            { [srcChain]: srcInfo, [destChain]: destInfo, agoric },
+            _tracer,
+            ...optsArgs
+          ) => {
+            assert(srcInfo && destInfo && agoric, `${srcChain} and ${destChain}`);
+            await null;
+            // We need to create EVMContext even though we don't use Noble
+            const evmCtx = await makeEVMCtx(
+              srcChain,
+              move,
+              agoric.lca,
+              ctx.transferChannels.noble.counterPartyChannelId,
+            );
+            await CCTPbetweenEVM.apply(
+              evmCtx,
+              amount,
+              srcInfo,
+              destInfo,
+              ...optsArgs,
+            );
             return {};
           },
         });

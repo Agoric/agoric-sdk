@@ -363,6 +363,73 @@ export const CCTP = {
 harden(CCTP);
 
 /**
+ * Direct CCTP transfers between EVM chains without going via Noble.
+ * Uses Circle's CCTP protocol to burn tokens on source chain and mint on destination chain.
+ *
+ * @see {@link https://developers.circle.com/stablecoins/docs/cctp-getting-started}
+ */
+export const CCTPbetweenEVM = {
+  how: 'CCTPbetweenEVM',
+  connections: keys(AxelarChain).flatMap((src: AxelarChain) =>
+    keys(AxelarChain)
+      .filter(dest => dest !== src)
+      .map(dest => ({ src, dest })),
+  ),
+  apply: async (
+    ctx: PortfolioInstanceContext,
+    amount,
+    src,
+    dest,
+    ...optsArgs: [OrchestrationOptions?]
+  ) => {
+    const traceTransfer = trace
+      .sub('CCTPdirect')
+      .sub(`${src.chainName}->${dest.chainName}`);
+    traceTransfer('transfer', amount, 'from', src.remoteAddress, 'to', dest.remoteAddress);
+    
+    // Get destination domain from chain info
+    const { chainHub } = ctx;
+    const destChainInfo = chainHub.getChainInfoByChainId(dest.chainId);
+    typeof destChainInfo.cctpDestinationDomain === 'number' ||
+      Fail`${q(dest.chainName)} does not have cctpDestinationDomain set`;
+    const destinationDomain = destChainInfo.cctpDestinationDomain;
+    
+    const { addresses } = ctx;
+    const mintRecipient: `0x${string}` = dest.remoteAddress as `0x${string}`;
+    
+    // Convert to 32-byte format if needed (CCTP expects bytes32)
+    const paddedRecipient: `0x${string}` = 
+      mintRecipient.length === 42 // 0x + 40 hex chars for standard address
+        ? (`0x${'0'.repeat(24)}${mintRecipient.slice(2)}` as `0x${string}`)
+        : mintRecipient;
+    
+    const session = makeEVMSession();
+    const usdc = session.makeContract(addresses.usdc, ERC20);
+    const tm = session.makeContract(addresses.tokenMessenger, TokenMessenger);
+    usdc.approve(addresses.tokenMessenger, amount.value);
+    tm.depositForBurn(
+      amount.value,
+      destinationDomain,
+      paddedRecipient,
+      addresses.usdc,
+    );
+    const calls = session.finish();
+    
+    const destinationAddress: AccountId = `${dest.chainId}:${dest.remoteAddress}`;
+    const { result } = ctx.resolverClient.registerTransaction(
+      TxType.CCTP_BETWEEN_EVM,
+      destinationAddress,
+      amount.value,
+    );
+    
+    await sendGMPContractCall(ctx, src, calls, ...optsArgs);
+    await result;
+    traceTransfer('transfer complete.');
+  },
+} as const satisfies TransportDetail<'CCTPbetweenEVM', AxelarChain, AxelarChain, EVMContext>;
+harden(CCTPbetweenEVM);
+
+/**
  * Invoke EVM Wallet Factory contract to create a remote account
  * at a predicatble address.
  *
