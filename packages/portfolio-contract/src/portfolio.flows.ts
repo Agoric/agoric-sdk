@@ -615,7 +615,7 @@ type Way =
   | { how: 'IBC'; src: 'noble'; dest: 'agoric' }
   | { how: 'CCTP'; dest: AxelarChain }
   | { how: 'CCTP'; src: AxelarChain }
-  | { how: 'CCTPbetweenEVM'; src: AxelarChain; dest: AxelarChain }
+  | { how: 'CCTP'; src: AxelarChain; dest: AxelarChain }
   | { how: 'withdrawToEVM'; dest: AxelarChain }
   | { how: 'CCTPtoUser'; dest: AxelarChain }
   | {
@@ -699,7 +699,7 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
             keys(AxelarChain).includes(destName)
           ) {
             return {
-              how: 'CCTPbetweenEVM',
+              how: 'CCTP',
               src: srcName as AxelarChain,
               dest: destName as AxelarChain,
             };
@@ -1004,74 +1004,79 @@ const stepFlow = async (
       }
 
       case 'CCTP': {
-        const outbound = 'dest' in way;
-        const { how } = outbound ? CCTP : CCTPfromEVM;
-        const evmChain = outbound ? way.dest : way.src;
+        // Check if this is direct EVM-to-EVM transfer
+        const isDirectEVM = 'src' in way && 'dest' in way && 
+          keys(AxelarChain).includes(way.src) && 
+          keys(AxelarChain).includes(way.dest);
+        
+        if (isDirectEVM) {
+          // Direct EVM-to-EVM CCTP transfer
+          const { src: srcChain, dest: destChain } = way;
 
-        todo.push({
-          how,
-          amount,
-          src: move.src,
-          dest: move.dest,
-          apply: async (
-            { [evmChain]: gInfo, noble, agoric },
-            _tracer,
-            ...optsArgs
-          ) => {
-            // If an EVM account is in a move, it's available
-            // in the accounts arg, along with noble.
-            assert(gInfo && noble, evmChain);
-            await null;
-            if (outbound) {
-              await CCTP.apply(ctx, amount, noble, gInfo, ...optsArgs);
+          todo.push({
+            how: 'CCTPbetweenEVM',
+            amount,
+            src: move.src,
+            dest: move.dest,
+            apply: async (
+              { [srcChain]: srcInfo, [destChain]: destInfo, agoric },
+              _tracer,
+              ...optsArgs
+            ) => {
+              assert(srcInfo && destInfo && agoric, `${srcChain} and ${destChain}`);
+              await null;
+              // We need to create EVMContext even though we don't use Noble
+              const evmCtx = await makeEVMCtx(
+                srcChain,
+                move,
+                agoric.lca,
+                ctx.transferChannels.noble.counterPartyChannelId,
+              );
+              await CCTPbetweenEVM.apply(
+                evmCtx,
+                amount,
+                srcInfo,
+                destInfo,
+                ...optsArgs,
+              );
               return {};
-            }
-            const evmCtx = await makeEVMCtx(
-              evmChain,
-              move,
-              agoric.lca,
-              ctx.transferChannels.noble.counterPartyChannelId,
-            );
-            await CCTPfromEVM.apply(evmCtx, amount, gInfo, agoric, ...optsArgs);
-            return {};
-          },
-        });
+            },
+          });
+        } else {
+          // Traditional CCTP via Noble
+          const outbound = 'dest' in way;
+          const { how } = outbound ? CCTP : CCTPfromEVM;
+          const evmChain = outbound ? way.dest : way.src;
 
-        break;
-      }
-
-      case 'CCTPbetweenEVM': {
-        const { src: srcChain, dest: destChain } = way;
-
-        todo.push({
-          how: way.how,
-          amount,
-          src: move.src,
-          dest: move.dest,
-          apply: async (
-            { [srcChain]: srcInfo, [destChain]: destInfo, agoric },
-            _tracer,
-            ...optsArgs
-          ) => {
-            assert(srcInfo && destInfo && agoric, `${srcChain} and ${destChain}`);
-            await null;
-            // We need to create EVMContext even though we don't use Noble
-            const evmCtx = await makeEVMCtx(
-              srcChain,
-              move,
-              agoric.lca,
-              ctx.transferChannels.noble.counterPartyChannelId,
-            );
-            await CCTPbetweenEVM.apply(
-              evmCtx,
-              amount,
-              srcInfo,
-              destInfo,
-              ...optsArgs,
-            );
-            return {};
-          },
-        });
+          todo.push({
+            how,
+            amount,
+            src: move.src,
+            dest: move.dest,
+            apply: async (
+              { [evmChain]: gInfo, noble, agoric },
+              _tracer,
+              ...optsArgs
+            ) => {
+              // If an EVM account is in a move, it's available
+              // in the accounts arg, along with noble.
+              assert(gInfo && noble, evmChain);
+              await null;
+              if (outbound) {
+                await CCTP.apply(ctx, amount, noble, gInfo, ...optsArgs);
+                return {};
+              }
+              const evmCtx = await makeEVMCtx(
+                evmChain,
+                move,
+                agoric.lca,
+                ctx.transferChannels.noble.counterPartyChannelId,
+              );
+              await CCTPfromEVM.apply(evmCtx, amount, gInfo, agoric, ...optsArgs);
+              return {};
+            },
+          });
+        }
 
         break;
       }

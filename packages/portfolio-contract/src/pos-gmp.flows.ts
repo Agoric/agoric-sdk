@@ -28,7 +28,7 @@ import {
   type AxelarGmpOutgoingMemo,
   type ContractCall,
 } from '@agoric/orchestration/src/axelar-types.js';
-import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
+import { coerceAccountId, accountIdTo32Bytes } from '@agoric/orchestration/src/utils/address.js';
 import { buildGMPPayload } from '@agoric/orchestration/src/utils/gmp.js';
 import { encodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
@@ -379,7 +379,25 @@ harden(CCTP);
  * Direct CCTP transfers between EVM chains without going via Noble.
  * Uses Circle's CCTP protocol to burn tokens on source chain and mint on destination chain.
  *
+ * Circle's Cross-Chain Transfer Protocol (CCTP) v1 supports direct transfers between
+ * all supported EVM chains without requiring an intermediary blockchain. The protocol
+ * uses TokenMessenger.depositForBurn() on the source chain and MessageTransmitter
+ * to mint on the destination chain.
+ *
  * @see {@link https://developers.circle.com/stablecoins/docs/cctp-getting-started}
+ * @see {@link https://github.com/circlefin/evm-cctp-contracts/blob/master/src/TokenMessenger.sol}
+ * @see {@link https://developers.circle.com/stablecoins/supported-domains CCTP Supported Domains}
+ *
+ * Supported chains (as of CCTP v1):
+ * - Ethereum (domain 0)
+ * - Avalanche (domain 1)
+ * - Optimism (domain 2)
+ * - Arbitrum (domain 3)
+ * - Base (domain 6)
+ * - Polygon (domain 7)
+ *
+ * Note: CCTP v1 TokenMessenger interface is sufficient for all EVM-to-EVM transfers.
+ * There is no CCTP v2 for EVM chains as of this implementation.
  */
 export const CCTPbetweenEVM = {
   how: 'CCTPbetweenEVM',
@@ -406,13 +424,11 @@ export const CCTPbetweenEVM = {
       Fail`${q(dest.chainName)} does not have CCTP domain mapping`;
     
     const { addresses } = ctx;
-    const mintRecipient: `0x${string}` = dest.remoteAddress as `0x${string}`;
+    const destinationAddress: AccountId = `${dest.chainId}:${dest.remoteAddress}`;
     
-    // Convert to 32-byte format if needed (CCTP expects bytes32)
-    const paddedRecipient: `0x${string}` = 
-      mintRecipient.length === 42 // 0x + 40 hex chars for standard address
-        ? (`0x${'0'.repeat(24)}${mintRecipient.slice(2)}` as `0x${string}`)
-        : mintRecipient;
+    // Use orchestration utility to convert address to bytes32 format for CCTP
+    const mintRecipientBytes = accountIdTo32Bytes(destinationAddress);
+    const mintRecipient: `0x${string}` = `0x${encodeHex(mintRecipientBytes)}`;
     
     const session = makeEVMSession();
     const usdc = session.makeContract(addresses.usdc, ERC20);
@@ -421,12 +437,11 @@ export const CCTPbetweenEVM = {
     tm.depositForBurn(
       amount.value,
       destinationDomain,
-      paddedRecipient,
+      mintRecipient,
       addresses.usdc,
     );
     const calls = session.finish();
     
-    const destinationAddress: AccountId = `${dest.chainId}:${dest.remoteAddress}`;
     const { result } = ctx.resolverClient.registerTransaction(
       TxType.CCTP_BETWEEN_EVM,
       destinationAddress,

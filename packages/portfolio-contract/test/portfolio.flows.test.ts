@@ -86,6 +86,7 @@ import {
   makeOfferArgsShapes,
   type MovementDesc,
   type OfferArgsFor,
+  type AssetPlaceRef,
 } from '../src/type-guards-steps.ts';
 import { makeProposalShapes, type ProposalType } from '../src/type-guards.ts';
 import { makePortfolioSteps } from '../tools/plan-transfers.ts';
@@ -2837,5 +2838,85 @@ test('withdrawToEVM fails when sourceAccountId is not set', async t => {
     /withdrawToEVM requires sourceAccountId to be set/,
   );
 });
+
+// #region Direct EVM-to-EVM CCTP tests
+
+test('CCTP EVM-to-EVM transfers directly between chains', async t => {
+  const { orch, ctx, offer, storage, txResolver } = mocks({}, {});
+  const { log } = offer;
+
+  const amount = AmountMath.make(USDC, 5_000_000n);
+  const feeCall = AmountMath.make(BLD, 50_000n);
+  const kit = await ctx.makePortfolioKit();
+
+  await Promise.all([
+    rebalance(
+      orch,
+      ctx,
+      offer.seat,
+      { flow: [{ src: '@Arbitrum', dest: '@Base', amount, fee: feeCall }] },
+      kit,
+    ),
+    txResolver.drainPending(),
+  ]);
+
+  t.log(log.map(msg => msg._method).join(', '));
+
+  // Verify transfer was initiated via GMP
+  const transferCalls = log.filter(
+    (entry: any) => entry._method === 'transfer',
+  );
+  t.true(transferCalls.length > 0, 'transfer should be called for GMP');
+
+  t.snapshot(log, 'call log');
+  await documentStorageSchema(t, storage, docOpts);
+});
+
+test('wayFromSrcToDesc routes EVM to EVM as CCTP with src and dest', t => {
+  const moveDesc: MovementDesc = {
+    src: '@Arbitrum',
+    dest: '@Base',
+    amount: AmountMath.make(USDC, 1_000_000n),
+  };
+
+  const way = wayFromSrcToDesc(moveDesc);
+
+  t.is(way.how, 'CCTP', 'should use CCTP transport');
+  if ('src' in way && 'dest' in way) {
+    t.is(way.src, 'Arbitrum', 'source should be Arbitrum');
+    t.is(way.dest, 'Base', 'destination should be Base');
+  }
+});
+
+test('wayFromSrcToDesc routes different EVM pairs correctly', t => {
+  const testCases: Array<{
+    src: AssetPlaceRef;
+    dest: AssetPlaceRef;
+    expectedSrc: AxelarChain;
+    expectedDest: AxelarChain;
+  }> = [
+    { src: '@Ethereum', dest: '@Optimism', expectedSrc: 'Ethereum', expectedDest: 'Optimism' },
+    { src: '@Base', dest: '@Arbitrum', expectedSrc: 'Base', expectedDest: 'Arbitrum' },
+    { src: '@Avalanche', dest: '@Ethereum', expectedSrc: 'Avalanche', expectedDest: 'Ethereum' },
+  ];
+
+  for (const { src, dest, expectedSrc, expectedDest } of testCases) {
+    const moveDesc: MovementDesc = {
+      src,
+      dest,
+      amount: AmountMath.make(USDC, 1_000_000n),
+    };
+
+    const way = wayFromSrcToDesc(moveDesc);
+
+    t.is(way.how, 'CCTP', `${src} to ${dest} should use CCTP`);
+    if ('src' in way && 'dest' in way) {
+      t.is(way.src, expectedSrc, `source should be ${expectedSrc}`);
+      t.is(way.dest, expectedDest, `destination should be ${expectedDest}`);
+    }
+  }
+});
+
+// #endregion Direct EVM-to-EVM CCTP tests
 
 // #endregion
