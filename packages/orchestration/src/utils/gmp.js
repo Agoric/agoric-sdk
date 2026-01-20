@@ -61,7 +61,7 @@ export const constructContractCall = ({ target, functionSignature, args }) => {
 /**
  * Builds a GMP payload from an array of contract calls.
  *
- * @param {ContractCall[]} contractCalls - Array of contract call objects.
+ * @param {(ContractCall)[]} contractCalls - Array of contract call objects.
  * @param {string} id - Optional message ID for tracing/debugging purposes
  * @returns {number[]} The GMP payload array.
  */
@@ -69,6 +69,7 @@ export const buildGMPPayload = (contractCalls, id = '') => {
   const abiEncodedContractCalls = [];
   for (const call of contractCalls) {
     const { target, functionSignature, args } = call;
+
     abiEncodedContractCalls.push(
       constructContractCall({ target, functionSignature, args }),
     );
