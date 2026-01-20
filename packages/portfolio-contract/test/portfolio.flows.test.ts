@@ -2842,7 +2842,7 @@ test('withdrawToEVM fails when sourceAccountId is not set', async t => {
 // #region Direct EVM-to-EVM CCTP tests
 
 test('CCTP EVM-to-EVM transfers directly between chains', async t => {
-  const { orch, ctx, offer, storage, txResolver } = mocks({}, {});
+  const { orch, ctx, offer, txResolver } = mocks({}, {});
   const { log } = offer;
 
   const amount = AmountMath.make(USDC, 5_000_000n);

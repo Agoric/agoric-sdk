@@ -388,13 +388,12 @@ harden(CCTP);
  * @see {@link https://github.com/circlefin/evm-cctp-contracts/blob/master/src/TokenMessenger.sol}
  * @see {@link https://developers.circle.com/stablecoins/supported-domains CCTP Supported Domains}
  *
- * Supported chains (as of CCTP v1):
+ * Supported chains (as of CCTP v1, limited to AxelarChains in portfolio-contract):
  * - Ethereum (domain 0)
  * - Avalanche (domain 1)
  * - Optimism (domain 2)
  * - Arbitrum (domain 3)
  * - Base (domain 6)
- * - Polygon (domain 7)
  *
  * Note: CCTP v1 TokenMessenger interface is sufficient for all EVM-to-EVM transfers.
  * There is no CCTP v2 for EVM chains as of this implementation.
