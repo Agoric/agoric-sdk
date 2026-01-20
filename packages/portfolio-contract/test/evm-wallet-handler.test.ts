@@ -426,11 +426,99 @@ test('handleOperation - openPortfolio requires permitDetails', async t => {
   // Wait for the vow to settle
   await vowTools.when(resultVow);
 
-  t.is(
-    mockWallet.portfolios.getSize(),
-    0,
-    'wallet should have zero portfolios',
-  );
+  t.snapshot([...mockWallet.portfolios.keys()], 'Portfolio IDs');
+  t.snapshot(getCalls(), 'Calls');
+  t.snapshot(getStatuses(), 'Published Statuses');
+});
+
+test('handleOperation invokes withdraw with correct parameters', async t => {
+  const { zone } = t.context;
+  const {
+    vowTools,
+    getCalls,
+    mockWallet,
+    mockStorageNode,
+    getStatuses,
+    handleOperation,
+  } = makeHandleOperationTestSetup(zone, 'vow3', {
+    portfolios: [{ id: 42 }],
+    namePrefix: 'test3_',
+  });
+
+  // Create a Withdraw operation
+  const withdrawOperationDetails: YmaxOperationDetails<'Withdraw'> = {
+    operation: 'Withdraw',
+    domain: {
+      name: 'Ymax',
+      version: '1',
+      chainId: 42161n,
+    },
+    data: {
+      portfolio: 42n,
+      withdraw: {
+        amount: 1_000_000n, // 1 USDC
+        token: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831' as const, // USDC on Arbitrum
+      },
+    },
+  };
+
+  // Call handleOperation
+  const resultVow = handleOperation({
+    wallet: mockWallet,
+    storageNode: mockStorageNode,
+    operationDetails: harden(withdrawOperationDetails),
+    nonce: 123n,
+    deadline: 1700000000n,
+  });
+
+  // Wait for the vow to settle
+  await vowTools.when(resultVow);
+
+  t.snapshot([...mockWallet.portfolios.keys()], 'Portfolio IDs');
+  t.snapshot(getCalls(), 'Calls');
+  t.snapshot(getStatuses(), 'Published Statuses');
+});
+
+test('handleOperation fails for unknown portfolio', async t => {
+  const { zone } = t.context;
+  const {
+    vowTools,
+    getCalls,
+    getStatuses,
+    mockWallet,
+    mockStorageNode,
+    handleOperation,
+  } = makeHandleOperationTestSetup(zone, 'vow4', {
+    portfolios: [], // Empty - no portfolios
+    namePrefix: 'test4_',
+  });
+
+  // Try to withdraw from non-existent portfolio
+  const withdrawOperationDetails: YmaxOperationDetails<'Withdraw'> = {
+    operation: 'Withdraw',
+    domain: {
+      name: 'Ymax',
+      version: '1',
+      chainId: 42161n,
+    },
+    data: {
+      portfolio: 999n, // doesn't exist
+      withdraw: {
+        amount: 1_000_000n,
+        token: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831' as const,
+      },
+    },
+  };
+
+  const resultVow = handleOperation({
+    wallet: mockWallet,
+    storageNode: mockStorageNode,
+    operationDetails: harden(withdrawOperationDetails),
+    nonce: 789n,
+    deadline: 1700000000n,
+  });
+
+  await vowTools.when(resultVow);
 
   t.snapshot([...mockWallet.portfolios.keys()], 'Portfolio IDs');
   t.snapshot(getCalls(), 'Calls');

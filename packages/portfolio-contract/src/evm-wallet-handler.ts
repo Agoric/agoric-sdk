@@ -331,6 +331,21 @@ export const prepareEVMPortfolioOperationManager = (
 
             return watch(result, BasicOutcomeWatcher);
           }
+          case 'Withdraw': {
+            const {
+              data: { portfolio: portfolioId, withdraw: withdrawDetails },
+              domain,
+            } = operationDetails;
+
+            const portfolio = wallet.portfolios.get(BigInt(portfolioId));
+
+            const result = E(portfolio).withdraw({
+              withdrawDetails,
+              domain,
+            });
+
+            return watch(result, BasicOutcomeWatcher);
+          }
           default:
             // @ts-expect-error exhaustiveness check
             Fail`Unsupported operation: ${q(operationDetails.operation)}`;
