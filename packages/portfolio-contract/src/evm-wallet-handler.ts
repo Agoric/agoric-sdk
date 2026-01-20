@@ -55,7 +55,8 @@ interface PortfolioContractPublicFacet {
   }>;
 }
 
-type EVMWallet = {
+/** @private */
+export type EVMWallet = {
   portfolios: MapStore<bigint, Remote<PortfolioEVMFacet>>;
 };
 
@@ -65,6 +66,7 @@ type NonceKeyData = {
   deadline: bigint;
 };
 
+/** @private */
 export const makeNonceManager = (zone: Zone) => {
   // We must use our own encoder since liveslots collections only accept scalar keys
   const { decodePassable, encodePassable } = makePassableKit({
@@ -129,6 +131,7 @@ export const makeNonceManager = (zone: Zone) => {
   return harden({ insertNonce, removeExpiredNonces });
 };
 
+/** @private */
 export const prepareEVMPortfolioOperationManager = (
   zone: Zone,
   {
