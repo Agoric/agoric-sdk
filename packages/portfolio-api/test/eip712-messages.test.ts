@@ -13,6 +13,8 @@ import {
 
 const MOCK_CONTRACT_ADDRESS =
   '0x1234567890123456789012345678901234567890' as const;
+const MOCK_TOKEN_ADDRESS =
+  '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as const;
 
 test('getYmaxStandaloneOperationData for OpenPortfolio', t => {
   const allocations: TargetAllocation[] = [
@@ -52,6 +54,44 @@ test('getYmaxStandaloneOperationData for OpenPortfolio', t => {
   t.deepEqual(result.types.Allocation, [
     { name: 'instrument', type: 'string' },
     { name: 'portion', type: 'uint256' },
+  ]);
+});
+
+test('getYmaxStandaloneOperationData for Withdraw', t => {
+  const data = {
+    portfolio: 42n,
+    withdraw: {
+      amount: 1_000_000n, // 1 USDC (6 decimals)
+      token: MOCK_TOKEN_ADDRESS,
+    },
+    nonce: 5n,
+    deadline: 1700000000n,
+  };
+
+  const result = getYmaxStandaloneOperationData(
+    data,
+    'Withdraw',
+    42161n,
+    MOCK_CONTRACT_ADDRESS,
+  );
+
+  t.is(result.primaryType, 'Withdraw');
+  t.deepEqual(result.domain, {
+    name: 'Ymax',
+    version: '1',
+    chainId: 42161n,
+    verifyingContract: MOCK_CONTRACT_ADDRESS,
+  });
+  t.deepEqual(result.message, data);
+  t.deepEqual(result.types.Withdraw, [
+    { name: 'withdraw', type: 'Asset' },
+    { name: 'portfolio', type: 'uint256' },
+    { name: 'nonce', type: 'uint256' },
+    { name: 'deadline', type: 'uint256' },
+  ]);
+  t.deepEqual(result.types.Asset, [
+    { name: 'token', type: 'address' },
+    { name: 'amount', type: 'uint256' },
   ]);
 });
 
@@ -244,6 +284,7 @@ test('validateYmaxOperationTypeName passes for valid types', t => {
     'OpenPortfolio',
     'Rebalance',
     'Deposit',
+    'Withdraw',
   ];
 
   for (const typeName of validTypes) {
@@ -268,6 +309,13 @@ test('splitWitnessFieldType parses Deposit witness type', t => {
   t.deepEqual(splitWitnessFieldType('YmaxV1Deposit'), {
     domain: { name: 'Ymax', version: '1' },
     primaryType: 'Deposit',
+  });
+});
+
+test('splitWitnessFieldType parses Withdraw witness type', t => {
+  t.deepEqual(splitWitnessFieldType('YmaxV1Withdraw'), {
+    domain: { name: 'Ymax', version: '1' },
+    primaryType: 'Withdraw',
   });
 });
 
@@ -300,6 +348,22 @@ test('YmaxOperationType types are correctly inferred', t => {
     portfolio: 1n,
   };
   t.deepEqual(deposit, { portfolio: 1n });
+
+  // Withdraw type
+  const withdraw: YmaxOperationType<'Withdraw'> = {
+    portfolio: 2n,
+    withdraw: {
+      amount: 1000n,
+      token: MOCK_TOKEN_ADDRESS,
+    },
+  };
+  t.deepEqual(withdraw, {
+    portfolio: 2n,
+    withdraw: {
+      amount: 1000n,
+      token: MOCK_TOKEN_ADDRESS,
+    },
+  });
 
   // Rebalance type
   const rebalance: YmaxOperationType<'Rebalance'> = {
