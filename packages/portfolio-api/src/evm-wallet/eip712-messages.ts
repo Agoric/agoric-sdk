@@ -11,11 +11,13 @@
  */
 
 import type {
+  Address,
   TypedData,
   TypedDataDomain,
   TypedDataToPrimitiveTypes,
 } from 'abitype';
 import type { TypedDataDefinition } from 'viem';
+import { Fail, q } from '@endo/errors';
 import type { TypedDataParameter } from '@agoric/orchestration/src/utils/abitype.ts';
 import {
   type Witness,
@@ -32,12 +34,18 @@ const YMAX_WITNESS_FIELD_NAME_PREFIX = 'ymax';
 const StandaloneDomainTypeParams = [
   { name: 'name', type: 'string' },
   { name: 'version', type: 'string' },
+  { name: 'chainId', type: 'uint256' },
+  { name: 'verifyingContract', type: 'address' },
 ] as const satisfies TypedDataParameter[];
 
-const YmaxStandaloneDomain = {
+const YmaxStandaloneDomainBase = {
   name: YMAX_DOMAIN_NAME,
   version: YMAX_DOMAIN_VERSION,
 } as const satisfies TypedDataDomain;
+export type YmaxStandaloneDomain = typeof YmaxStandaloneDomainBase & {
+  chainId: bigint;
+  verifyingContract: Address;
+};
 
 // A param to designate the portfolio in operations by its `portfolioId`
 const PortfolioIdParam = {
@@ -198,17 +206,28 @@ export const getYmaxWitness = <T extends OperationTypeNames>(
     getYmaxWitnessTypeParam(operation),
   );
 
+export const getYmaxStandaloneDomain = (
+  chainId: bigint | number,
+  verifyingContract: Address,
+): YmaxStandaloneDomain => ({
+  ...YmaxStandaloneDomainBase,
+  chainId: BigInt(chainId),
+  verifyingContract,
+});
+
 export const getYmaxStandaloneOperationData = <T extends OperationTypeNames>(
   data: NoInfer<TypedDataToPrimitiveTypes<YmaxStandaloneTypes>[T]>,
   operation: T,
+  chainId: bigint | number,
+  verifyingContract: Address,
 ): TypedDataDefinition<YmaxStandaloneTypes<T>, T, T> & {
-  domain: typeof YmaxStandaloneDomain;
+  domain: YmaxStandaloneDomain;
 } => {
   const types = getYmaxStandaloneTypes(operation);
 
   // @ts-expect-error some generic inference issue I suppose?
   return {
-    domain: YmaxStandaloneDomain,
+    domain: getYmaxStandaloneDomain(chainId, verifyingContract),
     types,
     primaryType: operation,
     message: data,
@@ -239,7 +258,8 @@ export type YmaxPermitBatchWitnessTransferFromData<
 
 export function validateYmaxDomain(
   domain: TypedDataDomain,
-): asserts domain is typeof YmaxStandaloneDomain {
+  validContractAddresses?: Record<number | string, Address>,
+): asserts domain is YmaxStandaloneDomain {
   if (domain.name !== YMAX_DOMAIN_NAME) {
     throw new Error(
       `Invalid Ymax domain name: ${domain.name} (expected ${YMAX_DOMAIN_NAME})`,
@@ -250,6 +270,19 @@ export function validateYmaxDomain(
       `Invalid Ymax domain version: ${domain.version} (expected ${YMAX_DOMAIN_VERSION})`,
     );
   }
+
+  if (validContractAddresses) {
+    const chainIdStr = String(domain.chainId);
+
+    chainIdStr in validContractAddresses ||
+      Fail`Unknown chain ID in Ymax domain: ${q(domain.chainId)}`;
+
+    domain.verifyingContract === validContractAddresses[chainIdStr] ||
+      Fail`Invalid verifying contract for chain ID ${q(domain.chainId)}: ${q(
+        domain.verifyingContract,
+      )} (expected ${q(validContractAddresses[chainIdStr])})`;
+  }
+
   // XXX: check no extra fields?
 }
 

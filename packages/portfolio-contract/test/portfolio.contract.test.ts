@@ -1716,3 +1716,129 @@ test('open portfolio from Arbitrum, 1000 USDC deposit', async t => {
   };
   t.deepEqual(posBalances, expected.positions);
 });
+
+test('evmHandler.withdraw starts a withdraw flow', async t => {
+  const { common, planner1, started, readPublished, txResolver } =
+    await setupPlanner(t);
+  const { usdc, bld } = common.brands;
+
+  const inputs = {
+    fromChain: 'Arbitrum' as const,
+    depositAmount: usdc.units(1000),
+    allocations: [{ instrument: 'Aave_Arbitrum', portion: 10000n }],
+  };
+  const { fromChain: evm, depositAmount, allocations } = inputs;
+
+  type EvmHandler = Awaited<
+    ReturnType<typeof started.publicFacet.openPortfolioFromEVM>
+  >['evmHandler'];
+  let evmHandler: EvmHandler | undefined;
+
+  const traderDo = async () => {
+    const permit2Payload = {
+      permit: {
+        permitted: {
+          token: contractsMock[evm].usdc,
+          amount: depositAmount.value,
+        },
+        nonce: 1n,
+        deadline: 1n,
+      },
+      owner: '0x2222222222222222222222222222222222222222',
+      witness:
+        '0x0000000000000000000000000000000000000000000000000000000000000000',
+      witnessTypeString: 'OpenPortfolioWitness',
+      signature: '0x1234',
+    } as const;
+    const permitDetails = {
+      chainId: Number(chainInfoWithCCTP[evm].reference),
+      token: contractsMock[evm].usdc,
+      amount: depositAmount.value,
+      spender: contractsMock[evm].depositFactory,
+      permit2Payload,
+    } as const;
+
+    const result = await E(started.publicFacet).openPortfolioFromEVM(
+      { allocations },
+      permitDetails,
+    );
+    evmHandler = result.evmHandler;
+    return result;
+  };
+
+  // Start traderDo first so plannerDo can wait for it
+  const traderDoP = traderDo();
+
+  /** Simulate chain inputs (acks) for makeAccount + GMP transfers. */
+  const chainDo = async () => {
+    await ackNFA(common.utils);
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
+    await txResolver.drainPending();
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await txResolver.drainPending();
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  };
+
+  const plannerDo = async () => {
+    const pId = 0;
+    // Wait for trader to open portfolio before reading status
+    await traderDoP;
+    const status = (await readPublished(
+      `portfolios.portfolio${pId}`,
+    )) as unknown as StatusFor['portfolio'];
+    const { flowsRunning = {}, policyVersion, rebalanceCount } = status;
+    const sync = [policyVersion, rebalanceCount] as const;
+    const [[flowId, detail]] = Object.entries(flowsRunning);
+    const flowNum = Number(flowId.replace('flow', ''));
+    if (detail.type !== 'deposit') throw t.fail(detail.type);
+    const planDepositAmount = AmountMath.make(usdc.brand, detail.amount.value);
+    const fee = bld.units(100);
+    const plan: FundsFlowPlan = {
+      flow: [
+        { src: `+${evm}`, dest: `@${evm}`, amount: planDepositAmount, fee },
+        {
+          src: `@${evm}`,
+          dest: 'Aave_Arbitrum',
+          amount: planDepositAmount,
+          fee,
+        },
+      ],
+    };
+    await E(planner1.stub).resolvePlan(pId, flowNum, plan, ...sync);
+    return flowNum;
+  };
+
+  await planner1.redeem();
+  await Promise.all([traderDoP, plannerDo(), chainDo()]);
+
+  // Verify portfolio is ready
+  const statusBefore = (await readPublished(
+    `portfolios.portfolio0`,
+  )) as unknown as StatusFor['portfolio'];
+  t.deepEqual(statusBefore.flowsRunning, {}, 'no flows running after deposit');
+  t.truthy(statusBefore.sourceAccountId, 'sourceAccountId is set');
+
+  // Now test the withdraw via evmHandler
+  t.truthy(evmHandler, 'evmHandler is defined');
+  const withdrawAmount = usdc.units(500);
+  const flowKey = await E(evmHandler!).withdraw(withdrawAmount);
+  t.regex(flowKey, /^flow\d+$/, 'withdraw returns a flow key');
+
+  // Check that a withdraw flow is now running
+  const statusAfter = (await readPublished(
+    `portfolios.portfolio0`,
+  )) as unknown as StatusFor['portfolio'];
+  const flowsRunning = statusAfter.flowsRunning ?? {};
+  t.is(keys(flowsRunning).length, 1, 'one flow running');
+
+  const [[flowId, flowDetail]] = Object.entries(flowsRunning);
+  t.is(flowId, flowKey, 'flow key matches');
+  t.is(flowDetail.type, 'withdraw', 'flow is a withdraw');
+  if (flowDetail.type === 'withdraw') {
+    t.is(
+      flowDetail.amount.value,
+      withdrawAmount.value,
+      'withdraw amount matches',
+    );
+  }
+});

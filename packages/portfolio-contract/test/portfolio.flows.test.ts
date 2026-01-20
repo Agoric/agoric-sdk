@@ -21,6 +21,7 @@ import {
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import {
   denomHash,
+  type AccountId,
   type Bech32Address,
   type TrafficEntry,
   type Orchestrator,
@@ -630,9 +631,10 @@ const mocks = (
     usdcBrand: USDC,
     ...(null as any),
   });
-  const makePortfolioKitGuest = () =>
+  const makePortfolioKitGuest = (opts?: { sourceAccountId?: AccountId }) =>
     makePortfolioKit({
       portfolioId: 1,
+      sourceAccountId: opts?.sourceAccountId,
     }) as unknown as GuestInterface<PortfolioKit>;
 
   const seat = makeMockSeat(give, undefined, buf);
@@ -2653,3 +2655,187 @@ test.todo('openPortfolioFromPermit2 rejects deposit for unsupported chain');
 test.todo('openPortfolioFromPermit2 rejects deposit with wrong spender');
 
 test.todo('openPortfolioFromPermit2 rejects permit with zero amount');
+
+// #region wayFromSrcToDesc withdraw tests
+
+test('wayFromSrcToDesc handles @Arbitrum -> -Arbitrum (same-chain withdraw)', t => {
+  const amount = AmountMath.make(USDC, 2_000_000n);
+  const actual = wayFromSrcToDesc({
+    src: '@Arbitrum',
+    dest: '-Arbitrum',
+    amount,
+  });
+  t.deepEqual(actual, { how: 'withdrawToEVM', dest: 'Arbitrum' });
+});
+
+test('wayFromSrcToDesc handles @noble -> -Arbitrum (CCTP to user)', t => {
+  const amount = AmountMath.make(USDC, 2_000_000n);
+  const actual = wayFromSrcToDesc({ src: '@noble', dest: '-Arbitrum', amount });
+  t.deepEqual(actual, { how: 'CCTPtoUser', dest: 'Arbitrum' });
+});
+
+test('wayFromSrcToDesc rejects @agoric -> -Arbitrum (invalid src for withdraw)', t => {
+  const amount = AmountMath.make(USDC, 2_000_000n);
+  t.throws(
+    () => wayFromSrcToDesc({ src: '@agoric', dest: '-Arbitrum', amount }),
+    { message: /src for withdraw to "Arbitrum" must be same chain or noble/ },
+  );
+});
+
+// #endregion
+
+// #region CCTPtoUser and withdrawToEVM step execution tests
+
+test('CCTPtoUser sends CCTP depositForBurn to user address from noble', async t => {
+  const { orch, ctx, offer, storage, txResolver } = mocks({}, {});
+  const { log } = offer;
+
+  const amount = AmountMath.make(USDC, 2_000_000n);
+  // Valid checksummed Ethereum address (42161 is Arbitrum chain ID)
+  const sourceAccountId =
+    'eip155:42161:0x1234567890AbcdEF1234567890aBcdef12345678';
+  const kit = await ctx.makePortfolioKit({ sourceAccountId });
+
+  await Promise.all([
+    rebalance(
+      orch,
+      ctx,
+      offer.seat,
+      { flow: [{ src: '@noble', dest: '-Arbitrum', amount }] },
+      kit,
+    ),
+    txResolver.drainPending(),
+  ]);
+
+  t.log(log.map(msg => msg._method).join(', '));
+
+  // Verify depositForBurn was called with user's address
+  const depositForBurnCall = log.find(
+    (entry: any) => entry._method === 'depositForBurn',
+  );
+  t.truthy(depositForBurnCall, 'depositForBurn should be called');
+  t.is(
+    depositForBurnCall?.destinationAddress,
+    'eip155:42161:0x1234567890AbcdEF1234567890aBcdef12345678',
+    'destination should be user address from sourceAccountId',
+  );
+
+  t.like(log, [
+    { _method: 'monitorTransfers' },
+    { _method: 'depositForBurn' },
+    { _method: 'exit', _cap: 'seat' },
+  ]);
+
+  t.snapshot(log, 'call log');
+  await documentStorageSchema(t, storage, docOpts);
+});
+
+test('CCTPtoUser fails when sourceAccountId is not set', async t => {
+  const { orch, ctx, offer } = mocks({}, {});
+  const { log } = offer;
+
+  const amount = AmountMath.make(USDC, 2_000_000n);
+  // Create kit WITHOUT sourceAccountId
+  const kit = await ctx.makePortfolioKit();
+
+  const rebalanceResult = rebalance(
+    orch,
+    ctx,
+    offer.seat,
+    { flow: [{ src: '@noble', dest: '-Arbitrum', amount }] },
+    kit,
+  );
+
+  // The rebalance should fail because sourceAccountId is required
+  await t.notThrowsAsync(rebalanceResult);
+
+  // Check that seat.fail() was called
+  const failCall = log.find((entry: any) => entry._method === 'fail');
+  t.truthy(failCall, 'seat.fail() should be called');
+  t.regex(
+    String(failCall?.reason),
+    /CCTPtoUser requires sourceAccountId to be set/,
+  );
+});
+
+test('withdrawToEVM sends GMP call with ERC20 transfer to user address', async t => {
+  const feeCall = AmountMath.make(BLD, 100n);
+  const { orch, tapPK, ctx, offer, storage, txResolver, cosmosId } = mocks(
+    {},
+    {},
+  );
+  const { log } = offer;
+
+  const amount = AmountMath.make(USDC, 2_000_000n);
+  // Valid checksummed Ethereum address (42161 is Arbitrum chain ID)
+  const sourceAccountId =
+    'eip155:42161:0x1234567890AbcdEF1234567890aBcdef12345678';
+  const kit = await ctx.makePortfolioKit({ sourceAccountId });
+
+  await Promise.all([
+    rebalance(
+      orch,
+      ctx,
+      offer.seat,
+      {
+        flow: [{ src: '@Arbitrum', dest: '-Arbitrum', amount, fee: feeCall }],
+      },
+      kit,
+    ),
+    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
+      await txResolver.drainPending();
+    }),
+  ]);
+
+  t.log(log.map(msg => msg._method).join(', '));
+
+  // Should have GMP transfers for the ERC20 transfer call
+  const axelarId = await cosmosId('axelar');
+  const gmpTransfers = log.filter(
+    (entry: any) =>
+      entry._method === 'transfer' && entry.address?.chainId === axelarId,
+  );
+  t.true(
+    gmpTransfers.length > 0,
+    'GMP transfer should be made for withdrawToEVM',
+  );
+
+  // Verify the flow completes successfully with exit (not fail)
+  const exitCall = log.find((entry: any) => entry._method === 'exit');
+  t.truthy(exitCall, 'seat should exit successfully');
+  const failCall = log.find((entry: any) => entry._method === 'fail');
+  t.falsy(failCall, 'seat should not fail');
+
+  t.snapshot(log, 'call log');
+  await documentStorageSchema(t, storage, docOpts);
+});
+
+test('withdrawToEVM fails when sourceAccountId is not set', async t => {
+  const { orch, ctx, offer } = mocks({}, {});
+  const { log } = offer;
+
+  const amount = AmountMath.make(USDC, 2_000_000n);
+  const feeCall = AmountMath.make(BLD, 100n);
+  // Create kit WITHOUT sourceAccountId
+  const kit = await ctx.makePortfolioKit();
+
+  const rebalanceResult = rebalance(
+    orch,
+    ctx,
+    offer.seat,
+    { flow: [{ src: '@Arbitrum', dest: '-Arbitrum', amount, fee: feeCall }] },
+    kit,
+  );
+
+  await t.notThrowsAsync(rebalanceResult);
+
+  // Check that seat.fail() was called
+  const failCall = log.find((entry: any) => entry._method === 'fail');
+  t.truthy(failCall, 'seat.fail() should be called');
+  t.regex(
+    String(failCall?.reason),
+    /withdrawToEVM requires sourceAccountId to be set/,
+  );
+});
+
+// #endregion

@@ -30,6 +30,7 @@
     "@agoric/internal": "workspace:*",
     "@agoric/orchestration": "workspace:*",
     "@endo/common": "^1.2.13",
+    "@endo/errors": "^1.2.13",
     "@endo/patterns": "^1.7.0"
   },
   "devDependencies": {
@@ -57,6 +58,9 @@
       "@endo/init/debug.js"
     ],
     "timeout": "20m"
+  },
+  "typeCoverage": {
+    "atLeast": 100
   },
   "license": "Apache-2.0",
   "publishConfig": {

@@ -513,12 +513,26 @@ export class TypedDocumentString<TResult, TVariables>
   }
 }
 
-export const GetBalancesDocument = new TypedDocumentString(`query getBalances(\$accounts: [ChainAddressTokenInput!]!) {
-  balances: getAddressBalance(input: \$accounts) {
+export const GetBalancesDocument = new TypedDocumentString(`
+    """
+Get the balances for an arbitrary number of accounts.
+
+Each account is identified by a blockchain (for EVM chains, a
+'0x<upaddedLowercaseHexDigits>' representation of their EIP-155 CHAIN_ID [cf.
+https://chainlist.org/ ]), address, and token (for EVM chains, a
+'0x<hexDigits>' representation of its contract address, visible on e.g.
+https://coinmarketcap.com/ ).
+
+Note that the output 'balance' is a decimal string representing a floating-point
+token balance (e.g., each unit of which is 1e6 micro-units).
+"""
+query getBalances($accounts: [ChainAddressTokenInput!]!) {
+  balances: getAddressBalance(input: $accounts) {
     chain
     address
     token
     balance
     error
   }
-}`) as unknown as TypedDocumentString<GetBalancesQuery, GetBalancesQueryVariables>;
+}
+    `) as unknown as TypedDocumentString<GetBalancesQuery, GetBalancesQueryVariables>;
