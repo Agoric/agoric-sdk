@@ -109,7 +109,11 @@ export const watchSmartWalletTx = ({
           `✓ Address matches! Expected: ${expectedAddr}, Found: ${normalizedWallet}`,
         );
         walletCreated = true;
-        finish({ settled: true, txHash: eventLog.transactionHash });
+        finish({
+          settled: true,
+          txHash: eventLog.transactionHash,
+          success: true,
+        });
         return;
       }
       log(
@@ -197,7 +201,11 @@ export const lookBackSmartWalletTx = async ({
     }
 
     deleteTxBlockLowerBound(kvStore, txId);
-    return { settled: true, txHash: matchingEvent.transactionHash };
+    return {
+      settled: true,
+      txHash: matchingEvent.transactionHash,
+      success: true,
+    };
   } catch (error) {
     log(`Error:`, error);
     return { settled: false };

@@ -39,6 +39,7 @@ export type EvmChain = keyof typeof AxelarChain;
 
 export type WatcherResult = {
   settled: boolean;
+  success?: boolean;
   txHash?: string;
 };
 
@@ -187,11 +188,13 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
       return;
     }
 
-    await resolvePendingTx({
-      signingSmartWalletKit: ctx.signingSmartWalletKit,
-      txId,
-      status: transferResult?.settled ? TxStatus.SUCCESS : TxStatus.FAILED,
-    });
+    transferResult.settled &&
+      (await resolvePendingTx({
+        signingSmartWalletKit: ctx.signingSmartWalletKit,
+        txId,
+        status:
+          transferResult.success !== false ? TxStatus.SUCCESS : TxStatus.FAILED,
+      }));
 
     if (transferResult?.txHash) {
       await ctx.ydsNotifier?.notifySettlement(txId, transferResult.txHash);
@@ -308,11 +311,13 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
       return;
     }
 
-    await resolvePendingTx({
-      signingSmartWalletKit: ctx.signingSmartWalletKit,
-      txId,
-      status: transferResult.settled ? TxStatus.SUCCESS : TxStatus.FAILED,
-    });
+    transferResult.settled &&
+      (await resolvePendingTx({
+        signingSmartWalletKit: ctx.signingSmartWalletKit,
+        txId,
+        status:
+          transferResult.success !== false ? TxStatus.SUCCESS : TxStatus.FAILED,
+      }));
 
     if (transferResult?.txHash) {
       await ctx.ydsNotifier?.notifySettlement(txId, transferResult.txHash);
@@ -415,11 +420,13 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
       return;
     }
 
-    await resolvePendingTx({
-      signingSmartWalletKit: ctx.signingSmartWalletKit,
-      txId,
-      status: walletResult?.settled ? TxStatus.SUCCESS : TxStatus.FAILED,
-    });
+    walletResult.settled &&
+      (await resolvePendingTx({
+        signingSmartWalletKit: ctx.signingSmartWalletKit,
+        txId,
+        status:
+          walletResult.success !== false ? TxStatus.SUCCESS : TxStatus.FAILED,
+      }));
 
     if (walletResult?.txHash) {
       await ctx.ydsNotifier?.notifySettlement(txId, walletResult.txHash);

@@ -117,7 +117,7 @@ export const createMockProvider = (
     | 'emit'
     | 'listeners'
   > & { readyState: number } = {
-    readyState: WebSocket.OPEN,
+    readyState: 1, // OPEN
     on: (...args) => emitter.on(...args),
     once: (...args) => emitter.once(...args),
     off: (...args) => emitter.off(...args),

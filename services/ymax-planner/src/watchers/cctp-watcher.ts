@@ -130,7 +130,11 @@ export const watchCctpTransfer = ({
           `✓ Amount matches! Expected: ${expectedAmount}, Received: ${amount}`,
         );
         transferFound = true;
-        finish({ settled: true, txHash: eventLog.transactionHash });
+        finish({
+          settled: true,
+          txHash: eventLog.transactionHash,
+          success: true,
+        });
         return;
       }
       // Warn and continue watching.
@@ -217,7 +221,11 @@ export const lookBackCctp = async ({
     }
 
     deleteTxBlockLowerBound(kvStore, txId);
-    return { settled: true, txHash: matchingEvent.transactionHash };
+    return {
+      settled: true,
+      txHash: matchingEvent.transactionHash,
+      success: true,
+    };
   } catch (error) {
     log(`Error:`, error);
     return { settled: false };

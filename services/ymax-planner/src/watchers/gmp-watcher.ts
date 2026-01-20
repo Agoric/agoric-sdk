@@ -17,7 +17,8 @@ import {
   setTxBlockLowerBound,
 } from '../kv-store.ts';
 
-// Alchemy alchemy_minedTransactions subscription message types
+//#region Alchemy alchemy_minedTransactions subscription types
+// See https://docs.alchemy.com/reference/alchemy-minedtransactions
 type AlchemyMinedTransaction = {
   blockHash: string;
   blockNumber: string;
@@ -51,6 +52,7 @@ type AlchemySubscriptionMessage = {
     subscription: string;
   };
 };
+//#endregion
 
 const MULTICALL_STATUS_SIGNATURE = ethers.id(
   'MulticallStatus(string,bool,uint256)',
@@ -236,6 +238,12 @@ export const watchGmp = ({
       }
     };
 
+    ws.on('error', onWsError);
+    cleanups.unshift(() => ws.off('error', onWsError));
+
+    ws.on('close', onWsClose);
+    cleanups.unshift(() => ws.off('close', onWsClose));
+
     if (signal) {
       const onAbort = () => finish({ settled: false });
       signal.addEventListener('abort', onAbort);
@@ -291,7 +299,7 @@ export const watchGmp = ({
           log(
             `✅ SUCCESS: txId=${txId} txHash=${txHash} block=${receipt.blockNumber}`,
           );
-          return finish({ settled: true, txHash });
+          return finish({ settled: true, txHash, success: true });
         }
 
         if (receipt.status === 0) {
@@ -307,7 +315,7 @@ export const watchGmp = ({
           log(
             `❌ REVERTED: txId=${txId} txHash=${txHash} block=${receipt.blockNumber} - transaction failed`,
           );
-          return finish({ settled: true, txHash });
+          return finish({ settled: true, txHash, success: false });
         }
       } catch (e) {
         log(
@@ -321,6 +329,10 @@ export const watchGmp = ({
       // Verify liveness.
       await provider.getNetwork();
 
+      // Attach message handler before subscribing to avoid race condition
+      ws.on('message', messageHandler);
+      cleanups.unshift(() => ws.off('message', messageHandler));
+
       subId = await provider.send('eth_subscribe', [
         'alchemy_minedTransactions',
         {
@@ -329,17 +341,7 @@ export const watchGmp = ({
           hashesOnly: false,
         },
       ]);
-
-      ws.on('message', messageHandler);
-      cleanups.unshift(() => ws.off('message', messageHandler));
     };
-
-    // Attach listeners
-    ws.on('error', onWsError);
-    cleanups.unshift(() => ws.off('error', onWsError));
-
-    ws.on('close', onWsClose);
-    cleanups.unshift(() => ws.off('close', onWsClose));
 
     if (ws.readyState === 1) {
       subscribe().catch(fail);
@@ -436,7 +438,11 @@ export const lookBackGmp = async ({
     if (matchingEvent) {
       log(`Found matching event`);
       deleteTxBlockLowerBound(kvStore, txId, MULTICALL_STATUS_EVENT);
-      return { settled: true, txHash: matchingEvent.transactionHash };
+      return {
+        settled: true,
+        txHash: matchingEvent.transactionHash,
+        success: true,
+      };
     }
 
     log(`No matching MulticallStatus or MulticallExecuted found`);
