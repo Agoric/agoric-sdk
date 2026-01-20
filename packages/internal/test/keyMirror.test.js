@@ -47,7 +47,6 @@ test('keyMirror throws on null input', t => {
     },
     { instanceOf: TypeError },
   );
-  // @ts-expect-error error is guaranteed to be defined
   t.is(error.message, 'keyMirror expects a record of string keys.');
 });
 
@@ -60,7 +59,6 @@ test('keyMirror throws on undefined input', t => {
     },
     { instanceOf: TypeError },
   );
-  // @ts-expect-error error is guaranteed to be defined
   t.is(error.message, 'keyMirror expects a record of string keys.');
 });
 
@@ -73,7 +71,6 @@ test('keyMirror throws on string input', t => {
     },
     { instanceOf: TypeError },
   );
-  // @ts-expect-error error is guaranteed to be defined
   t.is(error.message, 'keyMirror expects a record of string keys.');
 });
 
@@ -85,7 +82,6 @@ test('keyMirror throws on number input', t => {
     },
     { instanceOf: TypeError },
   );
-  // @ts-expect-error error is guaranteed to be defined
   t.is(error.message, 'keyMirror expects a record of string keys.');
 });
 
@@ -97,7 +93,6 @@ test('keyMirror throws on boolean input', t => {
     },
     { instanceOf: TypeError },
   );
-  // @ts-expect-error error is guaranteed to be defined
   t.is(error.message, 'keyMirror expects a record of string keys.');
 });
 
@@ -132,7 +127,6 @@ test('keyMirror throws on numeric value', t => {
     },
     { instanceOf: TypeError },
   );
-  // @ts-expect-error error is guaranteed to be defined
   t.regex(error.message, /Value for key "foo" must be null or the key string/);
 });
 
@@ -144,7 +138,6 @@ test('keyMirror throws on object value', t => {
     },
     { instanceOf: TypeError },
   );
-  // @ts-expect-error error is guaranteed to be defined
   t.regex(error.message, /Value for key "foo" must be null or the key string/);
 });
 
@@ -156,7 +149,6 @@ test('keyMirror throws on array value', t => {
     },
     { instanceOf: TypeError },
   );
-  // @ts-expect-error error is guaranteed to be defined
   t.regex(error.message, /Value for key "foo" must be null or the key string/);
 });
 
@@ -168,7 +160,6 @@ test('keyMirror throws on boolean value', t => {
     },
     { instanceOf: TypeError },
   );
-  // @ts-expect-error error is guaranteed to be defined
   t.regex(error.message, /Value for key "foo" must be null or the key string/);
 });
 
@@ -180,7 +171,6 @@ test('keyMirror throws on undefined value', t => {
     },
     { instanceOf: TypeError },
   );
-  // @ts-expect-error error is guaranteed to be defined
   t.regex(error.message, /Value for key "foo" must be null or the key string/);
 });
 
