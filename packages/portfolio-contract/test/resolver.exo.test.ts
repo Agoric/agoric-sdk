@@ -91,7 +91,7 @@ test('resolver updates nodes in chain storage on settleTransaction', async t => 
 
   const { client, service } = makeResolverKit();
 
-  // Register transaction
+  // Register CCTP_TO_AGORIC transaction (should NOT be published to vstorage)
   const tx = client.registerTransaction(
     TxType.CCTP_TO_AGORIC,
     'eip155:56:0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
@@ -99,17 +99,11 @@ test('resolver updates nodes in chain storage on settleTransaction', async t => 
   );
   await eventLoopIteration();
 
-  t.is(Object.keys(nodeUpdates).length, 1, 'updates node on registration');
-  t.deepEqual(
+  t.is(Object.keys(nodeUpdates).length, 0, 'CCTP_TO_AGORIC not published on registration');
+  t.is(
     nodeUpdates['pendingTxs.tx0'],
-    {
-      type: TxType.CCTP_TO_AGORIC,
-      destinationAddress:
-        'eip155:56:0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
-      status: TxStatus.PENDING,
-      amount: 250n,
-    },
-    'sets correct pending status and data',
+    undefined,
+    'CCTP_TO_AGORIC transaction not in vstorage',
   );
 
   // Settle transaction successfully
@@ -119,17 +113,11 @@ test('resolver updates nodes in chain storage on settleTransaction', async t => 
   });
   await eventLoopIteration();
 
-  t.is(Object.keys(nodeUpdates).length, 1, 'updates same node on settlement');
-  t.deepEqual(
+  t.is(Object.keys(nodeUpdates).length, 0, 'CCTP_TO_AGORIC not published on settlement');
+  t.is(
     nodeUpdates['pendingTxs.tx0'],
-    {
-      destinationAddress:
-        'eip155:56:0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
-      type: TxType.CCTP_TO_AGORIC,
-      status: TxStatus.SUCCESS,
-      amount: 250n,
-    },
-    'updates to success status with correct data',
+    undefined,
+    'CCTP_TO_AGORIC transaction still not in vstorage after settlement',
   );
 });
 
@@ -218,16 +206,10 @@ test('resolver creates correct types for different TxTypes', async t => {
     'GMP transaction has correct type and excludes amount',
   );
 
-  t.deepEqual(
+  t.is(
     nodeUpdates['pendingTxs.tx2'],
-    {
-      type: TxType.CCTP_TO_AGORIC,
-      destinationAddress:
-        'eip155:56:0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
-      status: TxStatus.PENDING,
-      amount: 500n,
-    },
-    'CCTP_TO_AGORIC transaction has correct type and includes amount',
+    undefined,
+    'CCTP_TO_AGORIC transaction is not published to vstorage',
   );
 
   t.deepEqual(

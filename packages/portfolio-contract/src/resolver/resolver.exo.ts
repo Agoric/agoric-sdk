@@ -269,6 +269,16 @@ export const prepareResolverKit = (
             }
           }
 
+          /**
+           * CCTP_TO_AGORIC transactions are resolved internally by the contract
+           * when IBC transfers arrive from Noble. They don't need external monitoring,
+           * so we skip publishing them to vstorage.
+           * See https://github.com/Agoric/agoric-sdk/issues/707
+           */
+          if (txMeta?.type === TxType.CCTP_TO_AGORIC) {
+            return;
+          }
+
           const {
             type,
             destinationAddress,
