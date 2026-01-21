@@ -2868,8 +2868,8 @@ test('CCTP EVM-to-EVM transfers directly between chains', async t => {
   );
   t.true(transferCalls.length > 0, 'transfer should be called for GMP');
 
-  // Note: snapshot and documentStorageSchema removed to avoid snapshot issues
-  // The key assertion is that the transfer happens via GMP
+  t.snapshot(log, 'call log');
+  await documentStorageSchema(t, storage, docOpts);
 });
 
 test('wayFromSrcToDesc routes EVM to EVM as CCTP with src and dest', t => {
@@ -2881,11 +2881,11 @@ test('wayFromSrcToDesc routes EVM to EVM as CCTP with src and dest', t => {
 
   const way = wayFromSrcToDesc(moveDesc);
 
-  t.is(way.how, 'CCTP', 'should use CCTP transport');
-  if ('src' in way && 'dest' in way) {
-    t.is(way.src, 'Arbitrum', 'source should be Arbitrum');
-    t.is(way.dest, 'Base', 'destination should be Base');
-  }
+  t.deepEqual(
+    way,
+    { how: 'CCTP', src: 'Arbitrum', dest: 'Base' },
+    'should use CCTP transport with both src and dest',
+  );
 });
 
 test('wayFromSrcToDesc routes different EVM pairs correctly', t => {
@@ -2909,11 +2909,11 @@ test('wayFromSrcToDesc routes different EVM pairs correctly', t => {
 
     const way = wayFromSrcToDesc(moveDesc);
 
-    t.is(way.how, 'CCTP', `${src} to ${dest} should use CCTP`);
-    if ('src' in way && 'dest' in way) {
-      t.is(way.src, expectedSrc, `source should be ${expectedSrc}`);
-      t.is(way.dest, expectedDest, `destination should be ${expectedDest}`);
-    }
+    t.deepEqual(
+      way,
+      { how: 'CCTP', src: expectedSrc, dest: expectedDest },
+      `${src} to ${dest} should use CCTP with both src and dest`,
+    );
   }
 });
 

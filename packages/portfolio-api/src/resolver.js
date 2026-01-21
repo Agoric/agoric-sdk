@@ -45,7 +45,6 @@ export const TxType = keyMirror({
   IBC_FROM_AGORIC: null,
   IBC_FROM_REMOTE: null,
   MAKE_ACCOUNT: null,
-  CCTP_BETWEEN_EVM: null,
   /**
    * Placeholder for ProgressTracker protocols not yet recognized by the
    * resolver, just so they can be published to vstorage, but not processed any

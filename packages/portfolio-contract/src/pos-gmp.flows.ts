@@ -384,6 +384,11 @@ harden(CCTP);
  * uses TokenMessenger.depositForBurn() on the source chain and MessageTransmitter
  * to mint on the destination chain.
  *
+ * CCTP waits for finality on the source chain (~12-15 seconds depending on chain)
+ * before Circle's attestation service processes the burn (~5-10 seconds), then the
+ * destination mint occurs (~10-15 seconds). Typical total latency is 30-40 seconds
+ * for EVM-to-EVM transfers.
+ *
  * @see {@link https://developers.circle.com/stablecoins/docs/cctp-getting-started}
  * @see {@link https://github.com/circlefin/evm-cctp-contracts/blob/master/src/TokenMessenger.sol}
  * @see {@link https://developers.circle.com/stablecoins/supported-domains CCTP Supported Domains}
@@ -441,8 +446,10 @@ export const CCTPbetweenEVM = {
     );
     const calls = session.finish();
     
+    // Use CCTP_TO_EVM since the monitoring is the same - watching for Transfer
+    // event on destination EVM chain USDC contract, regardless of source
     const { result } = ctx.resolverClient.registerTransaction(
-      TxType.CCTP_BETWEEN_EVM,
+      TxType.CCTP_TO_EVM,
       destinationAddress,
       amount.value,
     );
