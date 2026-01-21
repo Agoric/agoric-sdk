@@ -821,10 +821,11 @@ export const startEngine = async (
     let streamCellJson;
     let data;
     try {
-      streamCellJson = await query.vstorage.readStorage(path, {
-        kind: 'data',
+      const metaResponse = await readStorageMeta(query.vstorage, path, 'data', {
+        retries: 4,
       });
-      const streamCell = parseStreamCell(streamCellJson.value, path);
+      streamCellJson = metaResponse.result.value;
+      const streamCell = parseStreamCell(streamCellJson, path);
       const marshalledData = parseStreamCellValue(streamCell, -1, path);
       data = marshaller.fromCapData(marshalledData);
       if (
