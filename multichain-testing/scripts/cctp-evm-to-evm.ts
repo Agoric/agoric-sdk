@@ -215,7 +215,7 @@ type Config = {
 
 type ExternalAuthority = {
   env: Record<string, string | undefined>;
-  console: typeof console;
+  fetch: typeof fetch;
   retryUntilCondition: ReturnType<typeof makeRetryUntilCondition>;
 };
 
@@ -276,7 +276,7 @@ const pollForMint = async (
   messageTransmitterAddress: Address,
   recipientAddress: Address,
   expectedAmount: bigint,
-  { retryUntilCondition, console }: Pick<ExternalAuthority, 'retryUntilCondition' | 'console'>,
+  { retryUntilCondition }: Pick<ExternalAuthority, 'retryUntilCondition'>,
 ): Promise<boolean> => {
   console.log('Polling for mint event on destination chain...');
   console.log(`  Recipient: ${recipientAddress}`);
@@ -334,24 +334,24 @@ const pollForMint = async (
 const main = async (
   authority: ExternalAuthority = {
     env: process.env,
-    console,
+    fetch,
     retryUntilCondition: makeRetryUntilCondition(),
   }
 ) => {
   const config = getConfig(authority.env);
 
-  authority.console.log('Configuration:');
-  authority.console.log(`  Source chain: ${config.srcChain} (domain ${config.srcDomain})`);
-  authority.console.log(`  Dest chain: ${config.destChain} (domain ${config.destDomain})`);
-  authority.console.log(`  Dest address: ${config.destAddress}`);
-  authority.console.log(`  Amount: ${config.amountUsdc} USDC`);
-  authority.console.log(`  RPC URL: ${config.rpcUrl}`);
-  authority.console.log();
+  console.log('Configuration:');
+  console.log(`  Source chain: ${config.srcChain} (domain ${config.srcDomain})`);
+  console.log(`  Dest chain: ${config.destChain} (domain ${config.destDomain})`);
+  console.log(`  Dest address: ${config.destAddress}`);
+  console.log(`  Amount: ${config.amountUsdc} USDC`);
+  console.log(`  RPC URL: ${config.rpcUrl}`);
+  console.log();
 
   // Create account from mnemonic
   const account = mnemonicToAccount(config.mnemonic);
   
-  authority.console.log(`Wallet address: ${account.address}`);
+  console.log(`Wallet address: ${account.address}`);
 
   // Get contract addresses
   const usdcAddress = USDC_ADDRESSES[config.srcChain as keyof typeof USDC_ADDRESSES] as Address;
@@ -361,14 +361,14 @@ const main = async (
     throw new Error(`Contract addresses not found for ${config.srcChain}`);
   }
 
-  // Create clients
+  // Create clients with injected fetch
   const publicClient = createPublicClient({
-    transport: http(config.rpcUrl),
+    transport: http(config.rpcUrl, { fetchOptions: { fetch: authority.fetch } }),
   });
 
   const walletClient = createWalletClient({
     account,
-    transport: http(config.rpcUrl),
+    transport: http(config.rpcUrl, { fetchOptions: { fetch: authority.fetch } }),
   });
 
   // Check balance
@@ -381,7 +381,7 @@ const main = async (
   
   const amountMicroUsdc = parseUnits(config.amountUsdc.toString(), 6);
 
-  authority.console.log(`USDC balance: ${formatUnits(balance, 6)} USDC`);
+  console.log(`USDC balance: ${formatUnits(balance, 6)} USDC`);
 
   if (balance < amountMicroUsdc) {
     throw new Error(
@@ -394,8 +394,8 @@ const main = async (
   const mintRecipientBytes = accountIdTo32Bytes(destAccountId);
   const mintRecipient = `0x${toHex(mintRecipientBytes)}` as `0x${string}`;
 
-  authority.console.log(`Mint recipient (bytes32): ${mintRecipient}`);
-  authority.console.log();
+  console.log(`Mint recipient (bytes32): ${mintRecipient}`);
+  console.log();
 
   // Check/set allowance
   const allowance = await publicClient.readContract({
@@ -406,25 +406,25 @@ const main = async (
   });
   
   if (allowance < amountMicroUsdc) {
-    authority.console.log('Approving TokenMessenger to spend USDC...');
+    console.log('Approving TokenMessenger to spend USDC...');
     const approveTxHash = await walletClient.writeContract({
       address: usdcAddress,
       abi: ERC20_ABI,
       functionName: 'approve',
       args: [tokenMessengerAddress, amountMicroUsdc],
     });
-    authority.console.log(`  Approve tx: ${approveTxHash}`);
+    console.log(`  Approve tx: ${approveTxHash}`);
     await publicClient.waitForTransactionReceipt({ hash: approveTxHash });
-    authority.console.log('  Approved!');
-    authority.console.log();
+    console.log('  Approved!');
+    console.log();
   }
 
   // Execute depositForBurn
-  authority.console.log('Executing depositForBurn...');
-  authority.console.log(`  Amount: ${config.amountUsdc} USDC`);
-  authority.console.log(`  Destination domain: ${config.destDomain}`);
-  authority.console.log(`  Mint recipient: ${mintRecipient}`);
-  authority.console.log(`  Burn token: ${usdcAddress}`);
+  console.log('Executing depositForBurn...');
+  console.log(`  Amount: ${config.amountUsdc} USDC`);
+  console.log(`  Destination domain: ${config.destDomain}`);
+  console.log(`  Mint recipient: ${mintRecipient}`);
+  console.log(`  Burn token: ${usdcAddress}`);
 
   const txHash = await walletClient.writeContract({
     address: tokenMessengerAddress,
@@ -433,26 +433,26 @@ const main = async (
     args: [amountMicroUsdc, config.destDomain, mintRecipient, usdcAddress],
   });
 
-  authority.console.log(`  Transaction hash: ${txHash}`);
-  authority.console.log('  Waiting for confirmation...');
+  console.log(`  Transaction hash: ${txHash}`);
+  console.log('  Waiting for confirmation...');
 
   const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
-  authority.console.log(`  Confirmed in block ${receipt.blockNumber}`);
-  authority.console.log();
+  console.log(`  Confirmed in block ${receipt.blockNumber}`);
+  console.log();
 
-  authority.console.log('✅ CCTP burn transaction successful!');
-  authority.console.log();
+  console.log('✅ CCTP burn transaction successful!');
+  console.log();
 
   // Poll for mint event on destination chain
   const destPublicClient = createPublicClient({
-    transport: http(config.destRpcUrl),
+    transport: http(config.destRpcUrl, { fetchOptions: { fetch: authority.fetch } }),
   });
   
   const messageTransmitterAddress = MESSAGE_TRANSMITTER_ADDRESSES[config.destChain as keyof typeof MESSAGE_TRANSMITTER_ADDRESSES] as Address;
 
   if (!messageTransmitterAddress) {
-    authority.console.log('⚠️  MessageTransmitter address not found for destination chain');
-    authority.console.log('Skipping mint event polling...');
+    console.log('⚠️  MessageTransmitter address not found for destination chain');
+    console.log('Skipping mint event polling...');
   } else {
     const mintFound = await pollForMint(
       destPublicClient,
@@ -463,15 +463,15 @@ const main = async (
     );
 
     if (mintFound) {
-      authority.console.log();
-      authority.console.log('✅ CCTP transfer complete! USDC has been minted on destination chain.');
+      console.log();
+      console.log('✅ CCTP transfer complete! USDC has been minted on destination chain.');
     } else {
-      authority.console.log();
-      authority.console.log('⚠️  Mint event not detected within timeout period.');
-      authority.console.log('The transfer may still complete - check manually:');
-      authority.console.log('1. Monitor Circle Iris API for attestation:');
-      authority.console.log(`   https://iris-api.circle.com/v1/attestations/${receipt.blockNumber}/${txHash}`);
-      authority.console.log(`2. Check destination balance at ${config.destAddress} on ${config.destChain}`);
+      console.log();
+      console.log('⚠️  Mint event not detected within timeout period.');
+      console.log('The transfer may still complete - check manually:');
+      console.log('1. Monitor Circle Iris API for attestation:');
+      console.log(`   https://iris-api.circle.com/v1/attestations/${receipt.blockNumber}/${txHash}`);
+      console.log(`2. Check destination balance at ${config.destAddress} on ${config.destChain}`);
     }
   }
 };
