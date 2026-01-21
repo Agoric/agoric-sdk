@@ -38,7 +38,7 @@
     "@endo/promise-kit": "^1.1.13",
     "@endo/stream": "^1.2.13",
     "@endo/stream-node": "^1.1.13",
-    "glob": "^7.1.6",
+    "glob": "^9.0.0",
     "tmp": "^0.2.1"
   },
   "devDependencies": {
