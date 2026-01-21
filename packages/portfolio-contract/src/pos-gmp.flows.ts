@@ -262,7 +262,10 @@ const TokenMessenger: TokenMessengerI = {
   depositForBurn: ['uint256', 'uint32', 'bytes32', 'address'],
 };
 
-/** @see {@link https://developers.circle.com/cctp/supported-domains} */
+/**
+ * CCTP domain ID for Noble chain (Cosmos-based).
+ * Domain IDs are assigned by Circle during CCTP contract deployment.
+ */
 const nobleDomain = 4;
 
 /**
@@ -270,7 +273,8 @@ const nobleDomain = 4;
  * This mapping is chainId-based (not chain name) because the same chain name
  * (e.g. "Arbitrum") can refer to different networks (mainnet vs testnet).
  * 
- * @see {@link https://developers.circle.com/stablecoins/supported-domains}
+ * Domain IDs are assigned by Circle during CCTP contract deployment and are
+ * hardcoded in the TokenMessenger contract for each chain.
  */
 const cctpDomainsByChainId: Record<string, number> = {
   '1': 0,      // Ethereum mainnet
@@ -400,7 +404,6 @@ harden(CCTP);
  *
  * @see {@link https://developers.circle.com/stablecoins/docs/cctp-getting-started}
  * @see {@link https://github.com/circlefin/evm-cctp-contracts/blob/master/src/TokenMessenger.sol}
- * @see {@link https://developers.circle.com/stablecoins/supported-domains CCTP Supported Domains}
  * @see {@link https://ethereum.org/en/roadmap/single-slot-finality/ Ethereum Finality}
  *
  * Supported chains (limited to AxelarChains in portfolio-contract):

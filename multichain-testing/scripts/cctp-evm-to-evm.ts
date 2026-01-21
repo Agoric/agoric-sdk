@@ -60,7 +60,7 @@ import { mnemonicToAccount } from 'viem/accounts';
 import { makeRetryUntilCondition, type RetryOptions } from '../tools/sleep.ts';
 
 // CCTP domain IDs for EVM chains
-// https://developers.circle.com/stablecoins/supported-domains
+// Domain IDs are assigned by Circle during CCTP contract deployment
 const CCTP_DOMAINS = {
   // Mainnet
   'eip155:1': 0,        // Ethereum
@@ -77,7 +77,7 @@ const CCTP_DOMAINS = {
 } as const;
 
 // MessageTransmitter contract addresses (for watching mint events)
-// https://developers.circle.com/stablecoins/docs/cctp-protocol-contract
+// Deployed by Circle as part of CCTP protocol
 const MESSAGE_TRANSMITTER_ADDRESSES = {
   // Mainnet
   'eip155:1': '0x0a992d191DEeC32aFe36203Ad87D7d289a738F81',
@@ -94,7 +94,7 @@ const MESSAGE_TRANSMITTER_ADDRESSES = {
 } as const;
 
 // TokenMessenger contract addresses on each chain
-// https://developers.circle.com/stablecoins/docs/cctp-protocol-contract
+// Deployed by Circle as part of CCTP protocol
 const TOKEN_MESSENGER_ADDRESSES = {
   // Mainnet
   'eip155:1': '0xBd3fa81B58Ba92a82136038B25aDec7066af3155',

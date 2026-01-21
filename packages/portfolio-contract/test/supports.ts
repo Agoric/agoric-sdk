@@ -117,7 +117,7 @@ export {
  *
  * Sourced from:
  *
- * - https://developers.circle.com/stablecoins/supported-domains
+ * - Circle CCTP contract deployments (domain IDs assigned during deployment)
  * - https://chainlist.org/
  * - https://docs.simplehash.com/reference/supported-chains-testnets (accessed on
  *   4 July 2025)
