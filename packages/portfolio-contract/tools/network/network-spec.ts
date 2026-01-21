@@ -15,6 +15,7 @@ export type TransferProtocol =
   | 'fastusdc'
   | 'cctpReturn'
   | 'cctpSlow'
+  | 'cctpDirect'
   | 'local';
 /**
  * Link to Factory and Wallet contracts:

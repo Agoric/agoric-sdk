@@ -205,3 +205,86 @@ test('planner can reject a plan due to insufficient funds', async t => {
     t.is(rebalanceCount, 1, 'rebalanceCount increments as usual');
   }
 });
+
+test('planner accepts direct EVM-to-EVM CCTP transfer plan', async t => {
+  const zone = makeHeapZone();
+
+  const vt = prepareVowTools(zone);
+  // Mock dependencies with minimal implementation
+  const mockRebalance = (_seat, offerArgs, _kit) => {
+    t.log('rebalance called with', offerArgs);
+    return vt.asVow(() => undefined);
+  };
+
+  const mockZcf = {
+    makeEmptySeatKit: () => ({
+      zcfSeat: null as any,
+    }),
+  } as ZCF;
+
+  const board = makeFakeBoard();
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const { getPortfolioStatus } = makeStorageTools(storage);
+  const marshaller = board.getReadonlyMarshaller();
+  const makePortfolio = preparePortfolioKit(zone, {
+    usdcBrand: USDC,
+    marshaller,
+    portfoliosNode: storage.rootNode
+      .makeChildNode('ymax0')
+      .makeChildNode('portfolios'),
+    vowTools: vt,
+    ...({} as any),
+  });
+  const aPortfolio = makePortfolio({ portfolioId: 1 });
+  const mockGetPortfolio = _id => aPortfolio;
+
+  // Create planner exo
+  const makePlanner = preparePlanner(zone, {
+    rebalance: mockRebalance,
+    zcf: mockZcf,
+    getPortfolio: mockGetPortfolio,
+    shapes: makeOfferArgsShapes(USDC),
+    vowTools: vt,
+  });
+
+  const planner = makePlanner();
+
+  // Test direct EVM-to-EVM CCTP transfer plan
+  // This represents moving USDC from Arbitrum to Base without going via Noble
+  aPortfolio.manager.setTargetAllocation({ Aave_Base: 100n });
+
+  {
+    const { policyVersion, rebalanceCount } = await getPortfolioStatus(1);
+    t.log('targetAllocation', aPortfolio.reader.getTargetAllocation(), {
+      policyVersion,
+      rebalanceCount,
+    });
+    t.deepEqual(
+      { policyVersion, rebalanceCount },
+      { policyVersion: 1, rebalanceCount: 0 },
+      'version 1 after setTargetAllocation',
+    );
+  }
+
+  const portfolioId = 0;
+  const amount = { brand: USDC, value: 100n };
+  // Plan for direct EVM-to-EVM transfer: Arbitrum pool -> Arbitrum hub -> Base hub -> Base pool
+  const plan: MovementDesc[] = [
+    { src: 'Aave_Arbitrum', dest: '@Arbitrum', amount },
+    { src: '@Arbitrum', dest: '@Base', amount },
+    { src: '@Base', dest: 'Aave_Base', amount },
+  ];
+
+  // Planner should accept this direct EVM-to-EVM plan
+  await vt.when(planner.submit(portfolioId, plan, 1, 0));
+
+  {
+    const { policyVersion, rebalanceCount } = await getPortfolioStatus(1);
+    t.log({ policyVersion, rebalanceCount });
+    t.deepEqual(
+      { policyVersion, rebalanceCount },
+      { policyVersion: 1, rebalanceCount: 1 },
+      'rebalanceCount 1 after .submit(plan, ...) with direct EVM-to-EVM transfer',
+    );
+  }
+});
