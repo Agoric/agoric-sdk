@@ -27,7 +27,7 @@ import { leftPadEthAddressTo32Bytes } from '@agoric/orchestration/src/utils/addr
 import {
   buildTxPacketString,
   buildTxResponseString,
-} from '@agoric/orchestration/tools/ibc-mocks.ts';
+} from '@agoric/orchestration/tools/ibc-mocks.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import type { FundsFlowPlan } from '@agoric/portfolio-api';
 import type { VowTools } from '@agoric/vow';

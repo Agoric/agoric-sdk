@@ -56,7 +56,7 @@ import {
   type YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
-import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
+import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.js';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { EVow } from '@agoric/vow';
 import type { ZCFSeat } from '@agoric/zoe';

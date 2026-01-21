@@ -76,8 +76,10 @@ jobs:
       # restored.
       - name: Pack packages without ambient type resolution
         run: |
+          # prepack must be in order to verify type dependency availability
           yarn lerna run --reject-cycles --concurrency 1 prepack
-          yarn lerna run postpack
+          # postpack has to be serial to correctly restore the .js files deleted in prepack
+          yarn lerna run --reject-cycles --concurrency 1 postpack
 
   ##################
   # Lint tests

@@ -1018,6 +1018,7 @@ __metadata:
     prettier: "npm:^3.7.4"
     prettier-plugin-jsdoc: "npm:~1.8.0"
     prettier-plugin-sh: "npm:^0.18.0"
+    ts-blank-space: "npm:^0.6.2"
     type-coverage: "npm:^2.29.7"
     typedoc: "npm:^0.26.7"
     typedoc-plugin-markdown: "npm:^4.2.1"

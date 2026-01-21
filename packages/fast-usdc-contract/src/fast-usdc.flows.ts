@@ -6,7 +6,7 @@ import type {
   EvidenceWithRisk,
   EvmHash,
   FeeConfig,
-} from '@agoric/fast-usdc/src/types.ts';
+} from '@agoric/fast-usdc/src/types.js';
 import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
 import { assertAllDefined, mustMatch } from '@agoric/internal';
 import type {
