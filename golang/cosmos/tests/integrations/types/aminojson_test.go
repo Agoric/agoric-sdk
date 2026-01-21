@@ -40,9 +40,11 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset"
 	swingsettypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank"
+	vbanktypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vtransfer"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 )
 
 func TestAminoJSON_LegacyParity(t *testing.T) {
@@ -107,23 +109,181 @@ func TestAminoJSON_LegacyParity(t *testing.T) {
 		123456789012345678,
 	)
 
+	setDenomMetadataMsg := &vbanktypes.MsgSetDenomMetadata{
+		Authority: addr1.String(),
+		Metadata: banktypes.Metadata{
+			Description: "USD Coin",
+			DenomUnits: []*banktypes.DenomUnit{
+				{
+					Denom:    "uusdc",
+					Exponent: 0,
+					Aliases:  []string{},
+				},
+				{
+					Denom:    "usdc",
+					Exponent: 6,
+					Aliases:  []string{"USDC"},
+				},
+			},
+			Base:    "uusdc",
+			Display: "usdc",
+			Name:    "USDC",
+			Symbol:  "USDC",
+			URI:     "https://www.centre.io/usdc",
+			URIHash: "abc123",
+		},
+	}
+
+	minimalSetDenomMetadataMsg := &vbanktypes.MsgSetDenomMetadata{
+		Authority: addr1.String(),
+		Metadata: banktypes.Metadata{
+			DenomUnits: []*banktypes.DenomUnit{
+				{
+					Denom:    "utest",
+					Exponent: 0,
+					Aliases:  []string{},
+				},
+			},
+			Base: "utest",
+		},
+	}
+
+	emptyAliasesSetDenomMetadataMsg := &vbanktypes.MsgSetDenomMetadata{
+		Authority: addr1.String(),
+		Metadata: banktypes.Metadata{
+			Description: "Test Token",
+			DenomUnits: []*banktypes.DenomUnit{
+				{
+					Denom:    "utest",
+					Exponent: 0,
+					Aliases:  []string{},
+				},
+				{
+					Denom:    "test",
+					Exponent: 6,
+					Aliases:  []string{},
+				},
+			},
+			Base:    "utest",
+			Display: "test",
+			Name:    "Test Token",
+			Symbol:  "TEST",
+		},
+	}
+
+	multiDenomUnitsSetDenomMetadataMsg := &vbanktypes.MsgSetDenomMetadata{
+		Authority: addr1.String(),
+		Metadata: banktypes.Metadata{
+			Description: "Multi-unit Token",
+			DenomUnits: []*banktypes.DenomUnit{
+				{
+					Denom:    "utoken",
+					Exponent: 0,
+					Aliases:  []string{"microtoken"},
+				},
+				{
+					Denom:    "mtoken",
+					Exponent: 3,
+					Aliases:  []string{"millitoken"},
+				},
+				{
+					Denom:    "token",
+					Exponent: 6,
+					Aliases:  []string{"TOKEN", "TKN"},
+				},
+			},
+			Base:    "utoken",
+			Display: "token",
+			Name:    "Multi Token",
+			Symbol:  "MTKN",
+			URI:     "https://example.com/token",
+			URIHash: "hash123",
+		},
+	}
+
+	ibcDenomSetMetadataMsg := &vbanktypes.MsgSetDenomMetadata{
+		Authority: addr1.String(),
+		Metadata: banktypes.Metadata{
+			Description: "IBC transferred token",
+			DenomUnits: []*banktypes.DenomUnit{
+				{
+					Denom:    "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+					Exponent: 0,
+					Aliases:  []string{"uatom"},
+				},
+				{
+					Denom:    "ibc-atom",
+					Exponent: 6,
+					Aliases:  []string{"ATOM"},
+				},
+			},
+			Base:    "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+			Display: "ibc-atom",
+			Name:    "IBC Atom",
+			Symbol:  "ATOM",
+			URI:     "https://cosmos.network",
+			URIHash: "cosmos-hub-hash",
+		},
+	}
+
+	complexMetadataMsg := &vbanktypes.MsgSetDenomMetadata{
+		Authority: addr1.String(),
+		Metadata: banktypes.Metadata{
+			Description: "A complex token with extensive metadata for testing purposes",
+			DenomUnits: []*banktypes.DenomUnit{
+				{
+					Denom:    "unano",
+					Exponent: 0,
+					Aliases:  []string{"nano", "n"},
+				},
+				{
+					Denom:    "umicro",
+					Exponent: 3,
+					Aliases:  []string{"micro", "u"},
+				},
+				{
+					Denom:    "umilli",
+					Exponent: 6,
+					Aliases:  []string{"milli", "m"},
+				},
+				{
+					Denom:    "base",
+					Exponent: 9,
+					Aliases:  []string{"BASE", "B", "standard"},
+				},
+			},
+			Base:    "unano",
+			Display: "base",
+			Name:    "Complex Test Token",
+			Symbol:  "CPLX",
+			URI:     "https://example.com/complex-token",
+			URIHash: "sha256:abcdef1234567890",
+		},
+	}
+
 	cases := map[string]struct {
 		gogo gogoproto.Message
 		// If there are any empty slices, the marshal round trip to bytes will likely transform these into nil slices
 		roundTripUnequal bool
 	}{
-		"swingset/msg_deliver_inbound/normal":    {gogo: swingsettypes.NewMsgDeliverInbound(deliverMessages, addr1)},
-		"swingset/msg_deliver_inbound/empty":     {gogo: swingsettypes.NewMsgDeliverInbound(emptyDeliverMessages, addr1), roundTripUnequal: true},
-		"swingset/msg_deliver_inbound/zero":      {gogo: swingsettypes.NewMsgDeliverInbound(zeroDeliverMessages, addr1)},
-		"swingset/msg_wallet_action":             {gogo: swingsettypes.NewMsgWalletAction(addr1, "{}")},
-		"swingset/msg_wallet_spend_action":       {gogo: swingsettypes.NewMsgWalletSpendAction(addr1, "{}")},
-		"swingset/msg_provision/normal":          {gogo: swingsettypes.NewMsgProvision("foo", addr1, []string{"bar"}, addr1)},
-		"swingset/msg_provision/empty":           {gogo: swingsettypes.NewMsgProvision("foo", addr1, []string{}, addr1), roundTripUnequal: true},
-		"swingset/msg_install_bundle":            {gogo: installBundleMsg},
-		"swingset/msg_install_bundle/compressed": {gogo: compressedInstallBundleMsg},
-		"swingset/gov/core_eval_proposal":        {gogo: coreEvalGovMsg},
-		"swingset/gov/params_change_proposal":    {gogo: paramsChangeGovMsg},
-		"vibc/msg_send_packet":                   {gogo: vibc.NewMsgSendPacket(ibcPacket, addr1)},
+		"swingset/msg_deliver_inbound/normal":            {gogo: swingsettypes.NewMsgDeliverInbound(deliverMessages, addr1)},
+		"swingset/msg_deliver_inbound/empty":             {gogo: swingsettypes.NewMsgDeliverInbound(emptyDeliverMessages, addr1), roundTripUnequal: true},
+		"swingset/msg_deliver_inbound/zero":              {gogo: swingsettypes.NewMsgDeliverInbound(zeroDeliverMessages, addr1)},
+		"swingset/msg_wallet_action":                     {gogo: swingsettypes.NewMsgWalletAction(addr1, "{}")},
+		"swingset/msg_wallet_spend_action":               {gogo: swingsettypes.NewMsgWalletSpendAction(addr1, "{}")},
+		"swingset/msg_provision/normal":                  {gogo: swingsettypes.NewMsgProvision("foo", addr1, []string{"bar"}, addr1)},
+		"swingset/msg_provision/empty":                   {gogo: swingsettypes.NewMsgProvision("foo", addr1, []string{}, addr1), roundTripUnequal: true},
+		"swingset/msg_install_bundle":                    {gogo: installBundleMsg},
+		"swingset/msg_install_bundle/compressed":         {gogo: compressedInstallBundleMsg},
+		"swingset/gov/core_eval_proposal":                {gogo: coreEvalGovMsg},
+		"swingset/gov/params_change_proposal":            {gogo: paramsChangeGovMsg},
+		"vibc/msg_send_packet":                           {gogo: vibc.NewMsgSendPacket(ibcPacket, addr1)},
+		"vbank/msg_set_denom_metadata/full":              {gogo: setDenomMetadataMsg, roundTripUnequal: true},
+		"vbank/msg_set_denom_metadata/minimal":           {gogo: minimalSetDenomMetadataMsg, roundTripUnequal: true},
+		"vbank/msg_set_denom_metadata/empty_aliases":     {gogo: emptyAliasesSetDenomMetadataMsg, roundTripUnequal: true},
+		"vbank/msg_set_denom_metadata/multi_denom_units": {gogo: multiDenomUnitsSetDenomMetadataMsg},
+		"vbank/msg_set_denom_metadata/ibc_denom":         {gogo: ibcDenomSetMetadataMsg},
+		"vbank/msg_set_denom_metadata/complex":           {gogo: complexMetadataMsg},
 	}
 
 	for name, tc := range cases {

@@ -280,6 +280,10 @@ func (b *mockBank) SendCoinsFromModuleToModule(_ context.Context, senderModule, 
 	return nil
 }
 
+func (b *mockBank) SetDenomMetaData(_ context.Context, denomMetaData banktypes.Metadata) {
+	b.record(fmt.Sprintf("SetDenomMetaData %s", denomMetaData.Base))
+}
+
 // makeTestKit creates a minimal Keeper and Context for use in testing.
 func makeTestKit(account types.AccountKeeper, bank types.BankKeeper) (Keeper, sdk.Context) {
 	encodingConfig := params.MakeEncodingConfig()
@@ -308,7 +312,8 @@ func makeTestKit(account types.AccountKeeper, bank types.BankKeeper) (Keeper, sd
 	subspace := pk.Subspace(types.ModuleName)
 	vbankStore := runtime.NewKVStoreService(vbankStoreKey)
 	transientStore := runtime.NewTransientStoreService(paramsTStoreKey)
-	keeper := NewKeeper(cdc, vbankStore, transientStore, subspace, account, bank, "feeCollectorName", pushAction)
+	authority := authtypes.NewModuleAddress("gov").String()
+	keeper := NewKeeper(cdc, vbankStore, transientStore, subspace, account, bank, "feeCollectorName", authority, pushAction)
 
 	db := dbm.NewMemDB()
 	logger := log.NewNopLogger()
