@@ -384,14 +384,20 @@ harden(CCTP);
  * uses TokenMessenger.depositForBurn() on the source chain and MessageTransmitter
  * to mint on the destination chain.
  *
- * CCTP waits for finality on the source chain (~12-15 seconds depending on chain)
- * before Circle's attestation service processes the burn (~5-10 seconds), then the
- * destination mint occurs (~10-15 seconds). Typical total latency is 30-40 seconds
- * for EVM-to-EVM transfers.
+ * CCTP waits for finality on the source chain before Circle's attestation service 
+ * processes the burn. Finality times vary significantly by chain:
+ * - Ethereum: ~15 minutes (2 epochs)
+ * - Optimism/Base: ~1 week (fraud proof window, though Circle may use shorter times)
+ * - Arbitrum: ~1 week (fraud proof window, though Circle may use shorter times)
+ * - Avalanche: ~1-2 seconds (fast finality)
+ * 
+ * After source finality, Circle attestation (~5-10s) and destination mint (~10-15s) occur.
+ * Total transfer time depends primarily on source chain finality requirements.
  *
  * @see {@link https://developers.circle.com/stablecoins/docs/cctp-getting-started}
  * @see {@link https://github.com/circlefin/evm-cctp-contracts/blob/master/src/TokenMessenger.sol}
  * @see {@link https://developers.circle.com/stablecoins/supported-domains CCTP Supported Domains}
+ * @see {@link https://ethereum.org/en/roadmap/single-slot-finality/ Ethereum Finality}
  *
  * Supported chains (as of CCTP v1, limited to AxelarChains in portfolio-contract):
  * - Ethereum (domain 0)

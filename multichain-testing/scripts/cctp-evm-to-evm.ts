@@ -32,6 +32,11 @@
  *   Testnet: Ethereum Sepolia (11155111), Avalanche Fuji (43113), Optimism Sepolia (11155420),
  *            Arbitrum Sepolia (421614), Base Sepolia (84532)
  * 
+ * Note: CCTP waits for source chain finality which varies significantly:
+ *   - Ethereum: ~15 minutes
+ *   - Optimism/Base/Arbitrum: up to 1 week (fraud proof window)
+ *   - Avalanche: ~1-2 seconds
+ * 
  * @see {@link https://developers.circle.com/stablecoins/docs/cctp-getting-started}
  */
 import '@endo/init';
@@ -51,6 +56,7 @@ import {
   type WalletClient,
 } from 'viem';
 import { mnemonicToAccount } from 'viem/accounts';
+import { makeRetryUntilCondition, type RetryOptions } from '../tools/sleep.ts';
 
 // CCTP domain IDs for EVM chains
 // https://developers.circle.com/stablecoins/supported-domains
@@ -210,7 +216,7 @@ type Config = {
 type ExternalAuthority = {
   env: Record<string, string | undefined>;
   console: typeof console;
-  setTimeout: typeof setTimeout;
+  retryUntilCondition: ReturnType<typeof makeRetryUntilCondition>;
 };
 
 /**
@@ -263,62 +269,63 @@ const getConfig = (env: Record<string, string | undefined>): Config => {
 };
 
 /**
- * Poll for MintAndWithdraw event on destination chain
+ * Poll for MintAndWithdraw event on destination chain using retryUntilCondition
  */
 const pollForMint = async (
   publicClient: PublicClient,
   messageTransmitterAddress: Address,
   recipientAddress: Address,
   expectedAmount: bigint,
-  { setTimeout, console }: Pick<ExternalAuthority, 'setTimeout' | 'console'>,
-  timeoutMs = 120_000, // 2 minutes timeout
+  { retryUntilCondition, console }: Pick<ExternalAuthority, 'retryUntilCondition' | 'console'>,
 ): Promise<boolean> => {
-  const startTime = Date.now();
-  const pollInterval = 5_000; // Poll every 5 seconds
-
   console.log('Polling for mint event on destination chain...');
   console.log(`  Recipient: ${recipientAddress}`);
   console.log(`  Expected amount: ${formatUnits(expectedAmount, 6)} USDC`);
 
-  while (Date.now() - startTime < timeoutMs) {
-    try {
-      // Get recent blocks
-      const currentBlock = await publicClient.getBlockNumber();
-      const fromBlock = currentBlock > 1000n ? currentBlock - 1000n : 0n;
+  try {
+    await retryUntilCondition(
+      async () => {
+        // Get recent blocks
+        const currentBlock = await publicClient.getBlockNumber();
+        const fromBlock = currentBlock > 1000n ? currentBlock - 1000n : 0n;
 
-      // Query for MintAndWithdraw events
-      const logs = await publicClient.getLogs({
-        address: messageTransmitterAddress,
-        event: MESSAGE_TRANSMITTER_ABI[0],
-        args: {
-          mintRecipient: recipientAddress,
-        },
-        fromBlock,
-        toBlock: currentBlock,
-      });
+        // Query for MintAndWithdraw events
+        const logs = await publicClient.getLogs({
+          address: messageTransmitterAddress,
+          event: MESSAGE_TRANSMITTER_ABI[0],
+          args: {
+            mintRecipient: recipientAddress,
+          },
+          fromBlock,
+          toBlock: currentBlock,
+        });
 
-      // Check if any event matches our expected amount
-      for (const log of logs) {
-        if (log.args.amount === expectedAmount) {
-          console.log(`✅ Mint event found in block ${log.blockNumber}!`);
-          console.log(`  Transaction: ${log.transactionHash}`);
-          console.log(`  Amount: ${formatUnits(log.args.amount, 6)} USDC`);
-          return true;
+        // Check if any event matches our expected amount
+        for (const log of logs) {
+          if (log.args.amount === expectedAmount) {
+            console.log(`✅ Mint event found in block ${log.blockNumber}!`);
+            console.log(`  Transaction: ${log.transactionHash}`);
+            console.log(`  Amount: ${formatUnits(log.args.amount, 6)} USDC`);
+            return { found: true, log };
+          }
         }
-      }
 
-      // Wait before next poll
-      await new Promise(resolve => setTimeout(resolve, pollInterval));
-      const elapsed = Math.floor((Date.now() - startTime) / 1000);
-      console.log(`  Still waiting... (${elapsed}s elapsed)`);
-    } catch (error: any) {
-      console.warn(`  Poll error: ${error.message}`);
-      await new Promise(resolve => setTimeout(resolve, pollInterval));
-    }
+        return { found: false };
+      },
+      (result) => result.found,
+      'CCTP mint event',
+      {
+        maxRetries: 24, // 24 retries * 5s = 2 minutes
+        retryIntervalMs: 5000,
+        log: console.log,
+      },
+    );
+    
+    return true;
+  } catch (error) {
+    console.log('⏱️  Timeout reached without finding mint event');
+    return false;
   }
-
-  console.log('⏱️  Timeout reached without finding mint event');
-  return false;
 };
 
 /**
@@ -328,7 +335,7 @@ const main = async (
   authority: ExternalAuthority = {
     env: process.env,
     console,
-    setTimeout,
+    retryUntilCondition: makeRetryUntilCondition(),
   }
 ) => {
   const config = getConfig(authority.env);
@@ -469,7 +476,10 @@ const main = async (
   }
 };
 
-main().catch(err => {
-  console.error('Error:', err);
-  process.exit(1);
-});
+// Only use ambient authority at the top level
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch(err => {
+    console.error('Error:', err);
+    process.exit(1);
+  });
+}
