@@ -266,17 +266,21 @@ const TokenMessenger: TokenMessengerI = {
 const nobleDomain = 4;
 
 /**
- * CCTP domain IDs for EVM chains.
+ * CCTP domain IDs mapped by EVM chainId (chainInfo.reference).
+ * This mapping is chainId-based (not chain name) because the same chain name
+ * (e.g. "Arbitrum") can refer to different networks (mainnet vs testnet).
+ * 
  * @see {@link https://developers.circle.com/stablecoins/supported-domains}
  */
-const cctpDomains: Record<AxelarChain, number> = {
-  Ethereum: 0,
-  Avalanche: 1,
-  Optimism: 2,
-  Arbitrum: 3,
-  Base: 6,
+const cctpDomainsByChainId: Record<string, number> = {
+  '1': 0,      // Ethereum mainnet
+  '43114': 1,  // Avalanche C-Chain
+  '10': 2,     // OP Mainnet (Optimism)
+  '42161': 3,  // Arbitrum One
+  '8453': 6,   // Base
+  '137': 7,    // Polygon PoS
 };
-harden(cctpDomains);
+harden(cctpDomainsByChainId);
 
 const bech32ToBytes32 = (addr: Bech32Address) => {
   if (addr === 'noble1test') {
@@ -406,11 +410,11 @@ harden(CCTP);
  * - Arbitrum (domain 3)
  * - Base (domain 6)
  *
- * Note: This implementation uses the standard CCTP TokenMessenger interface which
- * is compatible with both CCTP v1 and v2. Circle has aligned the ecosystem on CCTP v2
- * as the canonical version.
+ * Note: This implementation uses CCTP v2, which is now the canonical version. 
+ * CCTP v2 has a different interface than v1 with additional parameters in depositForBurn.
  * 
- * @see {@link https://www.circle.com/cross-chain-transfer-protocol CCTP v2}
+ * @see {@link https://developers.circle.com/cctp/migration-from-v1-to-v2 CCTP v2 Migration}
+ * @see {@link https://www.circle.com/cross-chain-transfer-protocol CCTP Overview}
  */
 export const CCTPbetweenEVM = {
   how: 'CCTPbetweenEVM',
@@ -431,10 +435,13 @@ export const CCTPbetweenEVM = {
       .sub(`${src.chainName}->${dest.chainName}`);
     traceTransfer('transfer', amount, 'from', src.remoteAddress, 'to', dest.remoteAddress);
     
-    // Get destination domain from static mapping
-    const destinationDomain = cctpDomains[dest.chainName];
+    // Get destination domain from chainId-based mapping
+    // chainId format is "namespace:reference" (e.g., "eip155:42161")
+    const chainIdReference = dest.chainId.split(':')[1];
+    assert(chainIdReference, 'chainId must have reference part');
+    const destinationDomain = cctpDomainsByChainId[chainIdReference];
     typeof destinationDomain === 'number' ||
-      Fail`${q(dest.chainName)} does not have CCTP domain mapping`;
+      Fail`chainId ${q(dest.chainId)} (reference: ${q(chainIdReference)}) does not have CCTP domain mapping`;
     
     const { addresses } = ctx;
     const destinationAddress: AccountId = `${dest.chainId}:${dest.remoteAddress}`;
