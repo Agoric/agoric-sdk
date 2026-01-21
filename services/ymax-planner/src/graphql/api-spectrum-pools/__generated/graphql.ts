@@ -182,27 +182,12 @@ export class TypedDocumentString<TResult, TVariables>
   }
 }
 
-export const GetBalancesDocument = new TypedDocumentString(`
-    """
-Get the balances for an arbitrary number of deployed pool positions.
-
-Each position is identified by a blockchain (for EVM chains, a
-'0x<upaddedLowercaseHexDigits>' representation of their EIP-155 CHAIN_ID [cf.
-https://chainlist.org/ ]), protocol, pool within that protocol (corresponding
-with e.g. an associated token, cf.
-https://spectrumnodes.gitbook.io/docs/developer-guides/apis/pools-api/supported-pools
-), and address.
-
-Note that the output 'balance' is an object, from which you probably want the
-"USDC" property (a floating-point number, each unit of which is 1e6 uudc).
-"""
-query getBalances($positions: [ProtocolPoolUserBalanceInput!]!) {
-  balances: getProtocolPoolUserBalance(input: $positions) {
+export const GetBalancesDocument = new TypedDocumentString(`query getBalances(\$positions: [ProtocolPoolUserBalanceInput!]!) {
+  balances: getProtocolPoolUserBalance(input: \$positions) {
     chain
     protocol
     pool
     balance
     error
   }
-}
-    `) as unknown as TypedDocumentString<GetBalancesQuery, GetBalancesQueryVariables>;
+}`) as unknown as TypedDocumentString<GetBalancesQuery, GetBalancesQueryVariables>;

@@ -4865,27 +4865,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-codegen/visitor-plugin-common@npm:6.1.0":
-  version: 6.1.0
-  resolution: "@graphql-codegen/visitor-plugin-common@npm:6.1.0"
-  dependencies:
-    "@graphql-codegen/plugin-helpers": "npm:^6.0.0"
-    "@graphql-tools/optimize": "npm:^2.0.0"
-    "@graphql-tools/relay-operation-optimizer": "npm:^7.0.0"
-    "@graphql-tools/utils": "npm:^10.0.0"
-    auto-bind: "npm:~4.0.0"
-    change-case-all: "npm:1.0.15"
-    dependency-graph: "npm:^1.0.0"
-    graphql-tag: "npm:^2.11.0"
-    parse-filepath: "npm:^1.0.2"
-    tslib: "npm:~2.6.0"
-  peerDependencies:
-    graphql: ^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
-  checksum: 10c0/120c1a0ad82d179c2ccd16dd6b556d93b658355d80b8fcf2efb55711466705d7fe8401ae020eef33ba57629a39affbf3d7fb84659de7191c07b79b182050126f
-  languageName: node
-  linkType: hard
-
-"@graphql-codegen/visitor-plugin-common@npm:6.2.2, @graphql-codegen/visitor-plugin-common@npm:^6.2.2":
+"@graphql-codegen/visitor-plugin-common@npm:6.2.2":
   version: 6.2.2
   resolution: "@graphql-codegen/visitor-plugin-common@npm:6.2.2"
   dependencies:
@@ -4905,11 +4885,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-codegen/visitor-plugin-common@patch:@graphql-codegen/visitor-plugin-common@npm%3A6.1.0#~/.yarn/patches/@graphql-codegen-visitor-plugin-common-npm-6.1.0-c6f558d634.patch":
-  version: 6.1.0
-  resolution: "@graphql-codegen/visitor-plugin-common@patch:@graphql-codegen/visitor-plugin-common@npm%3A6.1.0#~/.yarn/patches/@graphql-codegen-visitor-plugin-common-npm-6.1.0-c6f558d634.patch::version=6.1.0&hash=b01142"
+"@graphql-codegen/visitor-plugin-common@patch:@graphql-codegen/visitor-plugin-common@npm%3A6.2.2#~/.yarn/patches/@graphql-codegen-visitor-plugin-common-npm-6.2.2-1dfc1601b5.patch":
+  version: 6.2.2
+  resolution: "@graphql-codegen/visitor-plugin-common@patch:@graphql-codegen/visitor-plugin-common@npm%3A6.2.2#~/.yarn/patches/@graphql-codegen-visitor-plugin-common-npm-6.2.2-1dfc1601b5.patch::version=6.2.2&hash=ab1a17"
   dependencies:
-    "@graphql-codegen/plugin-helpers": "npm:^6.0.0"
+    "@graphql-codegen/plugin-helpers": "npm:^6.1.0"
     "@graphql-tools/optimize": "npm:^2.0.0"
     "@graphql-tools/relay-operation-optimizer": "npm:^7.0.0"
     "@graphql-tools/utils": "npm:^10.0.0"
@@ -4921,7 +4901,7 @@ __metadata:
     tslib: "npm:~2.6.0"
   peerDependencies:
     graphql: ^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
-  checksum: 10c0/efaa776ab2614d8435ffa264f78c56857fdf2cd81c828c09146f453897037dbbe84fd06f9369c828bdd98c0cd8d54131e0c463da9639fd991f06e0ce3ea6b6ec
+  checksum: 10c0/6d30a4a9c73beee10cfef222ff0e1ca406ed7600336ed16d1c76eb41aa7f8634a6a47e0e675213fbfe851bc0fe07d1753d57421aa4e1b5c6bbb63656dd84309d
   languageName: node
   linkType: hard
 
