@@ -54,6 +54,7 @@ import {
   type Hash,
   type PublicClient,
   type WalletClient,
+  type TransactionReceipt,
 } from 'viem';
 import { mnemonicToAccount } from 'viem/accounts';
 import { makeRetryUntilCondition, type RetryOptions } from '../tools/sleep.ts';
@@ -450,7 +451,7 @@ const waitForMint = async (
   amountMicroUsdc: bigint,
   authority: ExternalAuthority,
   burnStartTime: number,
-  receipt: any,
+  receipt: TransactionReceipt,
   txHash: `0x${string}`,
 ) => {
   const messageTransmitterAddress = MESSAGE_TRANSMITTER_ADDRESSES[
