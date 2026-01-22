@@ -493,6 +493,8 @@ export const CCTPv2 = {
       TxType.CCTP_V2,
       `${dest.chainId}:${dest.remoteAddress}`,
       amount.value,
+      undefined, // expectedAddr - not used for CCTP_V2
+      `${src.chainId}:${src.remoteAddress}`, // sourceAddress for domain mapping
     );
 
     await sendGMPContractCall(ctx, src, calls, ...optsArgs);

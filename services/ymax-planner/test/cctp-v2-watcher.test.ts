@@ -261,6 +261,59 @@ test('handlePendingTx rejects CCTP_V2 on amount mismatch', async t => {
   );
 });
 
+test('handlePendingTx rejects CCTP_V2 on recipient mismatch', async t => {
+  const opts = createMockPendingTxOpts();
+  const txId = 'tx4' as const;
+  opts.fetch = mockFetch({ txId });
+
+  const destChain = 'eip155:42161';
+  const srcChain = 'eip155:8453';
+  const amount = 1_000_000n;
+  const expectedReceiver = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
+  const wrongReceiver = '0xDeaDBeefDeAdBeEfDeAdBeEfDeAdBeEfDeAdBeEf'; // Wrong recipient
+  const provider = opts.evmProviders[destChain];
+
+  const logMessages: string[] = [];
+  const logger = (...args: unknown[]) => logMessages.push(args.join(' '));
+
+  const cctpV2Tx: PendingTx = {
+    txId,
+    type: TxType.CCTP_V2,
+    status: 'pending',
+    amount,
+    destinationAddress: `${destChain}:${expectedReceiver}`,
+    sourceAddress: `${srcChain}:0x1234567890123456789012345678901234567890`,
+  };
+
+  // Emit event with wrong recipient
+  setTimeout(() => {
+    const mockLog = createMockMessageReceivedLog({
+      sourceDomain: CCTP_DOMAIN.Base,
+      amount,
+      mintRecipient: wrongReceiver, // Wrong recipient!
+    });
+
+    const filter = {
+      address: opts.messageTransmitterV2Address,
+      topics: [MESSAGE_RECEIVED_SIGNATURE],
+    };
+
+    (provider as any).emit(filter, mockLog);
+  }, 50);
+
+  await handlePendingTx(cctpV2Tx, {
+    ...opts,
+    log: logger,
+    timeoutMs: 500,
+  });
+
+  // Should have logged recipient mismatch
+  t.true(
+    logMessages.some(msg => msg.includes('Recipient mismatch')),
+    'Should log recipient mismatch',
+  );
+});
+
 test('CCTP_DOMAIN mapping is correct', t => {
   t.is(CCTP_DOMAIN.Ethereum, 0);
   t.is(CCTP_DOMAIN.Avalanche, 1);

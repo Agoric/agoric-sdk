@@ -10,6 +10,7 @@
  */
 import type { Filter, WebSocketProvider, Log } from 'ethers';
 import { id, ethers, zeroPadValue } from 'ethers';
+import { hexToBigInt, sliceHex, type Hex } from 'viem';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import {
@@ -98,22 +99,23 @@ const parseMessageReceivedLog = (log: Log) => {
 
   const [sourceDomain, nonce, sender, messageBody] = decoded;
 
-  // Parse BurnMessageV2 to extract amount
+  // Parse BurnMessageV2 to extract amount and recipient
   // BurnMessageV2 format (see design doc):
   // - version (4 bytes, uint32) at index 0
   // - burnToken (32 bytes) at index 4
   // - mintRecipient (32 bytes) at index 36
   // - amount (32 bytes, uint256) at index 68
   // ... more fields follow
+  const messageHex = messageBody as Hex;
   const amount =
-    messageBody.length >= 100
-      ? BigInt(`0x${messageBody.slice(2).substring(136, 200)}`) // bytes 68-100
+    messageHex.length >= 202 // 0x + 200 hex chars = 100 bytes
+      ? hexToBigInt(sliceHex(messageHex, 68, 100))
       : 0n;
 
   // Extract mint recipient (bytes 36-68)
   const mintRecipient =
-    messageBody.length >= 68
-      ? `0x${messageBody.slice(2).substring(72, 136)}` // bytes 36-68
+    messageHex.length >= 138 // 0x + 136 hex chars = 68 bytes
+      ? sliceHex(messageHex, 36, 68)
       : null;
 
   return {

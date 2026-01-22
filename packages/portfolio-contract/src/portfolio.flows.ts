@@ -697,6 +697,7 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
           // Otherwise, fall through to existing v1 routing which may be cheaper
           const srcIsEVM = keys(AxelarChain).includes(srcName);
           const destIsEVM = keys(AxelarChain).includes(destName);
+          // TODO HACK don't use magic number 2 for CCTPv2 signal
           if (
             srcIsEVM &&
             destIsEVM &&

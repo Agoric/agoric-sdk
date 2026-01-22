@@ -53,7 +53,7 @@ export const PublishedTxShape: TypedPattern<PublishedTx> = M.or(
   M.splitRecord(
     {
       type: M.or(TxType.CCTP_TO_EVM),
-      destinationAddress: M.string(), // Format: `${chainId}:${chainId}:${remotAddess}`
+      destinationAddress: M.string(), // Format: `${chainId}:${remoteAddress}`
       status: TxStatus.PENDING,
       amount: M.nat(),
     },
@@ -64,8 +64,8 @@ export const PublishedTxShape: TypedPattern<PublishedTx> = M.or(
   M.splitRecord(
     {
       type: M.or(TxType.CCTP_V2),
-      destinationAddress: M.string(), // Format: `${chainId}:${chainId}:${remotAddess}`
-      sourceAddress: M.string(), // Source chain for domain ID mapping
+      destinationAddress: M.string(), // Format: `${chainId}:${remoteAddress}`
+      sourceAddress: M.string(), // Format: `${chainId}:${remoteAddress}`
       status: TxStatus.PENDING,
       amount: M.nat(),
     },
