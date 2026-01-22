@@ -269,6 +269,18 @@ const testnetTokenMessenger = (rows =>
   ['Unichain Sepolia', 10, '0x8ed94B8dAd2Dc5453862ea5e316A8e71AAed9782'],
 ] as [string, number, `0x${string}`][]);
 
+/** CCTPv2 TokenMessenger testnet addresses */
+const testnetTokenMessengerV2 = (rows =>
+  Object.fromEntries(
+    rows.map(([Chain, Domain, Address]) => [Chain, { Domain, Address }]),
+  ))([
+  ['Ethereum Sepolia', 0, '0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA'],
+  ['Avalanche Fuji', 1, '0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA'],
+  ['OP Sepolia', 2, '0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA'],
+  ['Arbitrum Sepolia', 3, '0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA'],
+  ['Base Sepolia', 6, '0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA'],
+] as [string, number, `0x${string}`][]);
+
 export const contractsMock: EVMContractAddressesMap = {
   Avalanche: {
     aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
@@ -279,6 +291,7 @@ export const contractsMock: EVMContractAddressesMap = {
     gasService: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
     usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
     tokenMessenger: testnetTokenMessenger['Avalanche Fuji'].Address,
+    tokenMessengerV2: testnetTokenMessengerV2['Avalanche Fuji'].Address,
     aaveUSDC: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     aaveRewardsController: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     compoundRewardsController: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
@@ -294,6 +307,7 @@ export const contractsMock: EVMContractAddressesMap = {
     gasService: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
     usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
     tokenMessenger: testnetTokenMessenger['Ethereum Sepolia'].Address,
+    tokenMessengerV2: testnetTokenMessengerV2['Ethereum Sepolia'].Address,
     aaveUSDC: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     aaveRewardsController: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     compoundRewardsController: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
@@ -313,6 +327,7 @@ export const contractsMock: EVMContractAddressesMap = {
     gasService: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
     usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
     tokenMessenger: testnetTokenMessenger['OP Sepolia'].Address,
+    tokenMessengerV2: testnetTokenMessengerV2['OP Sepolia'].Address,
     aaveUSDC: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     aaveRewardsController: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     compoundRewardsController: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
@@ -328,6 +343,7 @@ export const contractsMock: EVMContractAddressesMap = {
     gasService: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
     usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
     tokenMessenger: testnetTokenMessenger['Arbitrum Sepolia'].Address,
+    tokenMessengerV2: testnetTokenMessengerV2['Arbitrum Sepolia'].Address,
     aaveUSDC: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     aaveRewardsController: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     compoundRewardsController: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
@@ -351,6 +367,7 @@ export const contractsMock: EVMContractAddressesMap = {
     gasService: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
     usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
     tokenMessenger: testnetTokenMessenger['Base Sepolia'].Address,
+    tokenMessengerV2: testnetTokenMessengerV2['Base Sepolia'].Address,
     aaveUSDC: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     aaveRewardsController: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     compoundRewardsController: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
