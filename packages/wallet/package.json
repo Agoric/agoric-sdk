@@ -2,7 +2,6 @@
   "name": "@agoric/wallet",
   "version": "0.18.3",
   "type": "module",
-  "main": "index.js",
   "license": "Apache-2.0",
   "author": "Agoric",
   "agoric-wallet": {
