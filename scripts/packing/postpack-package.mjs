@@ -4,7 +4,7 @@
  *
  * This script handles cleanup after npm pack completes:
  * 1. Restores .ts files that were deleted during prepack (via git checkout)
- * 2. Removes generated .d.ts, .d.ts.map, and .js files (via git clean)
+ * 2. Removes generated .d.ts, .d.ts.map, .js, and .mts files (via git clean)
  *
  * Usage: yarn run -T postpack-package (from any package directory)
  */
@@ -32,7 +32,7 @@ try {
 // git clean only removes untracked files, so committed files are safe
 console.log('  → cleaning generated files');
 try {
-  execSync("git clean -f '*.d.ts' '*.d.ts.map' '*.js'", {
+  execSync("git clean -f '*.d.ts' '*.d.ts.map' '*.js' '*.mts' '*.d.mts.map' ", {
     cwd: packageDir,
     stdio: 'inherit',
   });
