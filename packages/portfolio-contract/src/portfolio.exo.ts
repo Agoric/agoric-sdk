@@ -43,6 +43,7 @@ import {
   makeFlowStepsPath,
   makePortfolioPath,
   PoolKeyShapeExt,
+  type EVMContractAddressesMap,
   type FlowDetail,
   type makeProposalShapes,
   type PoolKey,
@@ -187,6 +188,7 @@ export const preparePortfolioKit = (
     marshaller,
     usdcBrand,
     eip155ChainIdToAxelarChain,
+    contracts,
   }: {
     rebalance: (
       seat: ZCFSeat,
@@ -220,6 +222,7 @@ export const preparePortfolioKit = (
     eip155ChainIdToAxelarChain: {
       [chainId in `${number | bigint}`]?: AxelarChain;
     };
+    contracts: EVMContractAddressesMap;
   },
 ) => {
   // Ephemeral node cache
@@ -688,7 +691,9 @@ export const preparePortfolioKit = (
             accountAddress.toLowerCase() === address.toLowerCase() ||
             Fail`withdraw address ${address} does not match source account address ${accountAddress}`;
 
-          // TODO: validate withdrawDetails.token is the USDC contract address on the destination chain
+          withdrawDetails.token.toLowerCase() ===
+            contracts[toChain].usdc.toLowerCase() ||
+            Fail`withdraw token address ${withdrawDetails.token} does not match usdc contract address ${contracts[toChain].usdc} for chain ${toChain}`;
           const amount = AmountMath.make(usdcBrand, withdrawDetails.amount);
 
           const flowDetail = {

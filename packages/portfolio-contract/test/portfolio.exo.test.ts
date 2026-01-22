@@ -187,3 +187,5 @@ test.todo('evmHandler withdraw check address');
 test.todo('evmHandler withdraw uses chainId from domain');
 
 test.todo('evmHandler withdraw defaults to source chainId if domain missing');
+
+test.todo('evmHandler withdraw check token address is USDC contract');

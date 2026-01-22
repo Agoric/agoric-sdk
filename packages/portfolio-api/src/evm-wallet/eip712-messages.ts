@@ -79,6 +79,7 @@ const OperationTypes = {
    * Withdraw funds from a portfolio to the source EVM account.
    * The signer of the message must match the portfolio's source EVM account
    * The destination chain is determined from the domain info (chainId).
+   * - token: ERC-20 token contract address (must be USDC contract on the destination chain)
    */
   Withdraw: [{ name: 'withdraw', type: 'Asset' }, PortfolioIdParam],
 } as const satisfies TypedData;

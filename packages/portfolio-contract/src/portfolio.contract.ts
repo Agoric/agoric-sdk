@@ -475,6 +475,7 @@ export const contract = async (
     marshaller: cachingMarshaller,
     usdcBrand: brands.USDC,
     eip155ChainIdToAxelarChain,
+    contracts,
   });
 
   const portfolios = zone.mapStore<number, PortfolioKit>('portfolios');
