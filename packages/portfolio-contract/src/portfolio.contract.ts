@@ -474,6 +474,7 @@ export const contract = async (
     portfoliosNode: E(storageNode).makeChildNode('portfolios'),
     marshaller: cachingMarshaller,
     usdcBrand: brands.USDC,
+    eip155ChainIdToAxelarChain,
   });
 
   const portfolios = zone.mapStore<number, PortfolioKit>('portfolios');

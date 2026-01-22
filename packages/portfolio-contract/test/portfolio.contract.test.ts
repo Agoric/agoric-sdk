@@ -1820,8 +1820,15 @@ test('evmHandler.withdraw starts a withdraw flow', async t => {
 
   // Now test the withdraw via evmHandler
   t.truthy(evmHandler, 'evmHandler is defined');
-  const withdrawAmount = usdc.units(500);
-  const flowKey = await E(evmHandler!).withdraw(withdrawAmount);
+  const withdrawDetails = { token: contractsMock[evm].usdc, amount: 500n };
+  const flowKey = await E(evmHandler!).withdraw({
+    withdrawDetails,
+    domain: {
+      chainId: BigInt(chainInfoWithCCTP[evm].reference),
+      name: 'Ymax',
+      version: '1',
+    },
+  });
   t.regex(flowKey, /^flow\d+$/, 'withdraw returns a flow key');
 
   // Check that a withdraw flow is now running
@@ -1837,7 +1844,7 @@ test('evmHandler.withdraw starts a withdraw flow', async t => {
   if (flowDetail.type === 'withdraw') {
     t.is(
       flowDetail.amount.value,
-      withdrawAmount.value,
+      withdrawDetails.amount,
       'withdraw amount matches',
     );
   }
