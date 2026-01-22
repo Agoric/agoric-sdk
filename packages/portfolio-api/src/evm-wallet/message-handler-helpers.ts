@@ -37,6 +37,7 @@ import {
   validateYmaxDomain,
   validateYmaxOperationTypeName,
   getYmaxOperationTypes,
+  type YmaxSharedDomain,
 } from './eip712-messages.ts';
 
 export type YmaxOperationDetails<
@@ -44,6 +45,7 @@ export type YmaxOperationDetails<
 > = {
   [P in T]: {
     operation: P;
+    domain: YmaxSharedDomain;
     data: YmaxOperationType<P>;
   };
 }[T];
@@ -104,7 +106,13 @@ export const makeEVMHandlerUtils = (viemUtils: {
     // @ts-expect-error generic/union type compatibility
     const standaloneData: YmaxStandaloneOperationData = data;
 
-    validateYmaxDomain(standaloneData.domain, validContractAddresses);
+    const { domain } = standaloneData;
+
+    if (validContractAddresses) {
+      validateYmaxDomain(domain, validContractAddresses);
+    } else {
+      validateYmaxDomain(domain);
+    }
     validateYmaxOperationTypeName<T>(standaloneData.primaryType);
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -117,7 +125,7 @@ export const makeEVMHandlerUtils = (viemUtils: {
       message: operationData,
       primaryType: operation,
     });
-    return { operation, data: operationData };
+    return { operation, domain, data: operationData };
   };
 
   /**
@@ -138,14 +146,16 @@ export const makeEVMHandlerUtils = (viemUtils: {
     const witnessData = permitData.message[
       witnessField.name
     ] as YmaxOperationType<T>;
-    const operation = splitWitnessFieldType(witnessField.type).primaryType as T;
+    const { primaryType, domain } = splitWitnessFieldType(witnessField.type);
+    const chainId = BigInt((data.domain as TypedDataDomain).chainId!);
+    const operation = primaryType as T;
     // @ts-expect-error inference issue
     validateTypedData({
       types: getYmaxOperationTypes(operation),
       message: witnessData,
       primaryType: operation,
     });
-    return { operation, data: witnessData };
+    return { operation, domain: { ...domain, chainId }, data: witnessData };
   };
 
   /**

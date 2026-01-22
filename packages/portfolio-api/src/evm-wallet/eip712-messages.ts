@@ -42,8 +42,10 @@ const YmaxStandaloneDomainBase = {
   name: YMAX_DOMAIN_NAME,
   version: YMAX_DOMAIN_VERSION,
 } as const satisfies TypedDataDomain;
-export type YmaxStandaloneDomain = typeof YmaxStandaloneDomainBase & {
+export type YmaxSharedDomain = typeof YmaxStandaloneDomainBase & {
   chainId: bigint;
+};
+export type YmaxStandaloneDomain = YmaxSharedDomain & {
   verifyingContract: Address;
 };
 
@@ -258,8 +260,16 @@ export type YmaxPermitBatchWitnessTransferFromData<
 
 export function validateYmaxDomain(
   domain: TypedDataDomain,
+  validContractAddresses?: undefined,
+): asserts domain is typeof YmaxStandaloneDomainBase;
+export function validateYmaxDomain(
+  domain: TypedDataDomain,
+  validContractAddresses: Record<number | string, Address>,
+): asserts domain is YmaxStandaloneDomain;
+export function validateYmaxDomain(
+  domain: TypedDataDomain,
   validContractAddresses?: Record<number | string, Address>,
-): asserts domain is YmaxStandaloneDomain {
+) {
   if (domain.name !== YMAX_DOMAIN_NAME) {
     throw new Error(
       `Invalid Ymax domain name: ${domain.name} (expected ${YMAX_DOMAIN_NAME})`,
