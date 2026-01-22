@@ -445,10 +445,21 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
   },
 };
 
-const MONITORS = new Map<TxType, PendingTxMonitor<PendingTx, EvmContext>>([
+const ibcFromAgoricMonitor: PendingTxMonitor = {
+  // CAVEAT: IBC_FROM_AGORIC watch not needed - settled by contract
+  watch: async (_ctx, _tx, _log, _opts) => {
+    // do nothing
+  },
+};
+
+const MONITORS = new Map<
+  TxType,
+  PendingTxMonitor<PendingTx, EvmContext> | null
+>([
   [TxType.CCTP_TO_EVM, cctpMonitor],
   [TxType.GMP, gmpMonitor],
   [TxType.MAKE_ACCOUNT, makeAccountMonitor],
+  [TxType.IBC_FROM_AGORIC, ibcFromAgoricMonitor],
 ]);
 
 export type HandlePendingTxOpts = {
@@ -480,11 +491,22 @@ export const handlePendingTx = async (
 ) => {
   await null;
   const logPrefix = `[${tx.txId}]`;
+
+  const monitor = MONITORS.get(tx.type);
+  if (monitor === null) {
+    // Previously logged as unhandled type, skip silently.
+    return;
+  }
+
   log(`${logPrefix} handling ${tx.type} tx`);
 
-  const monitor =
-    MONITORS.get(tx.type) ||
-    Fail`${logPrefix} No monitor registered for tx type: ${tx.type}`;
+  if (monitor === undefined) {
+    // Only alert once per unhandled type per execution, to reduce
+    // operator fatigue.
+    error(`🚨 ${logPrefix} No monitor registered for tx type: ${tx.type}`);
+    MONITORS.set(tx.type, null);
+    return;
+  }
 
   const watchOpts: Omit<WatchOpts, 'mode'> = { timeoutMs, signal };
   try {
