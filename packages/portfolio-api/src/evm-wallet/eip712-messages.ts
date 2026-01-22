@@ -77,6 +77,7 @@ const OperationTypes = {
   Deposit: [PortfolioIdParam],
   /**
    * Withdraw funds from a portfolio to the source EVM account.
+   * The signer of the message must match the portfolio's source EVM account
    * The destination chain is determined from the domain info (chainId).
    */
   Withdraw: [{ name: 'withdraw', type: 'Asset' }, PortfolioIdParam],

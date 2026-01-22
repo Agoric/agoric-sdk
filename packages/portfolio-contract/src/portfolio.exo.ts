@@ -657,16 +657,19 @@ export const preparePortfolioKit = (
         withdraw({
           withdrawDetails,
           domain,
+          address,
         }: {
           withdrawDetails: { amount: bigint; token: Address };
           domain?: Partial<YmaxSharedDomain>;
+          address?: Address;
         }) {
           const { sourceAccountId } = this.state;
           if (!sourceAccountId) {
             throw Fail`withdraw requires sourceAccountId to be set (portfolio must be opened from EVM)`;
           }
 
-          const { namespace, reference } = parseAccountId(sourceAccountId);
+          const { namespace, reference, accountAddress } =
+            parseAccountId(sourceAccountId);
 
           namespace === 'eip155' ||
             Fail`withdraw sourceAccountId must be in eip155 namespace: ${sourceAccountId}`;
@@ -680,6 +683,10 @@ export const preparePortfolioKit = (
           if (!toChain) {
             throw Fail`destination chainId ${chainIdStr} is not supported for withdraw`;
           }
+
+          !address ||
+            accountAddress.toLowerCase() === address.toLowerCase() ||
+            Fail`withdraw address ${address} does not match source account address ${accountAddress}`;
 
           // TODO: validate withdrawDetails.token is the USDC contract address on the destination chain
           const amount = AmountMath.make(usdcBrand, withdrawDetails.amount);

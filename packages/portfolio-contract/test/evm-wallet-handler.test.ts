@@ -376,6 +376,7 @@ test('handleOperation - openPortfolio', async t => {
   const resultVow = handleOperation({
     wallet: mockWallet,
     storageNode: mockStorageNode,
+    address: openPortfolioOperationDetails.permitDetails.permit2Payload.owner,
     operationDetails: harden(openPortfolioOperationDetails),
     nonce: 123n,
     deadline: 1700000000n,
@@ -419,6 +420,7 @@ test('handleOperation - openPortfolio requires permitDetails', async t => {
   const resultVow = handleOperation({
     wallet: mockWallet,
     storageNode: mockStorageNode,
+    address: '0xEvmWalletAddress',
     operationDetails: harden(openPortfolioOperationDetails),
     nonce: 123n,
     deadline: 1700000000n,
@@ -466,6 +468,7 @@ test('handleOperation invokes withdraw with correct parameters', async t => {
   const resultVow = handleOperation({
     wallet: mockWallet,
     storageNode: mockStorageNode,
+    address: '0xEvmWalletAddress',
     operationDetails: harden(withdrawOperationDetails),
     nonce: 123n,
     deadline: 1700000000n,
@@ -513,6 +516,7 @@ test('handleOperation fails for unknown portfolio', async t => {
   const resultVow = handleOperation({
     wallet: mockWallet,
     storageNode: mockStorageNode,
+    address: '0xEvmWalletAddress',
     operationDetails: harden(withdrawOperationDetails),
     nonce: 789n,
     deadline: 1700000000n,
