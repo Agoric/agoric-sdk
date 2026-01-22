@@ -378,7 +378,7 @@ const CCTP_DOMAINS: Record<AxelarChain, number> = {
  * Convert an EVM address (0x...) to a bytes32 representation.
  * Pads with leading zeros to 32 bytes.
  */
-const evmAddressToBytes32 = (addr: `0x${string}`): `0x${string}` => {
+export const evmAddressToBytes32 = (addr: `0x${string}`): `0x${string}` => {
   // Remove '0x' prefix, get the 40-character hex address
   const hexAddr = addr.slice(2).toLowerCase();
   // Pad with leading zeros to make 64 hex characters (32 bytes)
@@ -386,7 +386,7 @@ const evmAddressToBytes32 = (addr: `0x${string}`): `0x${string}` => {
   return `0x${paddedAddress}`;
 };
 
-type TokenMessengerV2I = {
+export type TokenMessengerV2I = {
   depositForBurn: [
     'uint256', // amount
     'uint32', // destinationDomain
@@ -401,7 +401,7 @@ type TokenMessengerV2I = {
 /**
  * @see {@link https://github.com/circlefin/evm-cctp-contracts/blob/master/src/v2/TokenMessengerV2.sol}
  */
-const TokenMessengerV2: TokenMessengerV2I = {
+export const TokenMessengerV2: TokenMessengerV2I = {
   depositForBurn: [
     'uint256',
     'uint32',
