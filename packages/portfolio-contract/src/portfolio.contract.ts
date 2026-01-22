@@ -167,6 +167,7 @@ export type EVMContractAddresses = {
   factory: `0x${string}`;
   usdc: `0x${string}`;
   tokenMessenger: `0x${string}`;
+  tokenMessengerV2?: `0x${string}`; // CCTPv2 TokenMessenger contract
   aaveUSDC: `0x${string}`;
   aaveRewardsController: `0x${string}`;
   compoundRewardsController: `0x${string}`;
