@@ -3,17 +3,18 @@
  * @file Approve USDC for Permit2 contract on any supported EVM chain
  *
  * Usage:
- *   node scripts/approve-usdc.ts <chain> <amount>
+ *   node scripts/approve-usdc.ts <chain> [amount]
  *
- * The script reads PRIVATE_KEY and AGORIC_NET from:
+ * The script reads PRIVATE_KEY (or MNEMONIC) and AGORIC_NET from:
  *   1. scripts/.env file (if exists)
  *   2. Environment variables (if .env not found or values not set)
  *
  * Examples:
  *   node scripts/approve-usdc.ts Arbitrum 100000000
  *   PRIVATE_KEY=0x... AGORIC_NET=main node scripts/approve-usdc.ts Ethereum 1000000000
+ *   MNEMONIC="..." AGORIC_NET=main node scripts/approve-usdc.ts Ethereum 1000000000
  *
- * Amount is in the smallest unit (6 decimals for USDC):
+ * Amount is in the smallest unit (6 decimals for USDC). Defaults to MaxUint256:
  *   1 USDC = 1_000_000
  *   100 USDC = 100_000_000
  */
@@ -22,6 +23,7 @@ import { readFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { ethers } from 'ethers';
+import { mnemonicToAccount } from 'viem/accounts';
 
 // USDC contract addresses
 const USDC_ADDRESSES = {
@@ -83,6 +85,7 @@ const loadEnv = () => {
 
 // Permit2 contract address (same on all chains)
 const PERMIT2_ADDRESS = '0x000000000022D473030F116dDEE9F6B43aC78BA3';
+const MAX_UINT256 = ethers.MaxUint256;
 
 // ERC20 ABI for approve and allowance
 const ERC20_ABI = [
@@ -143,6 +146,7 @@ const getNetworkConfig = (network: 'main' | 'devnet') => {
  * Format amount with USDC decimals for display
  */
 const formatUSDC = (amount: bigint): string => {
+  if (amount === MAX_UINT256) return 'MAX';
   const decimals = 6n;
   const divisor = 10n ** decimals;
   const whole = amount / divisor;
@@ -239,19 +243,22 @@ const main = async ({ argv = process.argv, env = process.env } = {}) => {
   // Parse arguments
   const [chain, amountStr] = argv.slice(2);
 
-  if (!chain || !amountStr) {
-    console.error(`Usage: ${argv[1]} <chain> <amount>`);
+  if (!chain) {
+    console.error(`Usage: ${argv[1]} <chain> [amount]`);
     console.error(
       '\nSupported chains: Arbitrum, Avalanche, Base, Ethereum, Optimism',
     );
-    console.error('Amount is in smallest unit (6 decimals for USDC)');
+    console.error(
+      'Amount is in smallest unit (6 decimals for USDC); defaults to MaxUint256',
+    );
     console.error('  1 USDC = 1000000');
     console.error('  100 USDC = 100000000');
     console.error('\nConfiguration:');
     console.error(
       '  Reads from scripts/.env file (if exists) or environment variables',
     );
-    console.error('  PRIVATE_KEY - Your wallet private key (required)');
+    console.error('  PRIVATE_KEY - Your wallet private key (preferred)');
+    console.error('  MNEMONIC    - BIP-39 mnemonic (used if PRIVATE_KEY not set)');
     console.error(
       '  AGORIC_NET  - Network to use: "main" or "devnet" (default: devnet)',
     );
@@ -264,9 +271,16 @@ const main = async ({ argv = process.argv, env = process.env } = {}) => {
   }
 
   // Get environment variables
-  const privateKey = env.PRIVATE_KEY;
+  let privateKey = env.PRIVATE_KEY;
   if (!privateKey) {
-    throw new Error('PRIVATE_KEY environment variable is required');
+    const mnemonic = env.MNEMONIC;
+    if (!mnemonic) {
+      throw new Error(
+        'PRIVATE_KEY or MNEMONIC environment variable is required',
+      );
+    }
+    const account = mnemonicToAccount(mnemonic);
+    privateKey = `0x${Buffer.from(account.getHdKey().privKeyBytes).toString('hex')}`;
   }
 
   const network = (env.AGORIC_NET as 'main' | 'devnet') || 'devnet';
@@ -275,7 +289,7 @@ const main = async ({ argv = process.argv, env = process.env } = {}) => {
   }
 
   // Parse amount
-  const amount = BigInt(amountStr);
+  const amount = amountStr ? BigInt(amountStr) : MAX_UINT256;
   if (amount <= 0n) {
     throw new Error('Amount must be positive');
   }
