@@ -13,18 +13,33 @@
  *   node scripts/packing/verify-package-exports.mjs --mode=packed --quiet
  *   (or run via `yarn lerna run` with INIT_CWD set per package)
  */
-import { spawnSync } from 'node:child_process';
 import fs from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
+import spawn from 'nano-spawn';
 
+//#region static config
 // Set of package names to skip verification.
 // Private packages are skipped automatically.
 const unsupportedPackages = new Set([
+  '@agoric/cosmic-swingset', // its tools has some entrypoints that fail
+  '@agoric/create-dapp', // whole thing is an entrypoint
+  '@agoric/governance', // its tools has some entrypoints that fail
+  '@agoric/internal', // Ava issue with ava-force-exit.mjs
+  '@agoric/orchestration', // its vendor dir has some failing dynamic requires
   '@agoric/solo', // its main.js fails on some Endo issue
+  '@agoric/xsnap', // moddable/data files not true JS
+  '@agoric/spawner', // ReferenceError: Compartment is not defined
+  '@agoric/swingset-vat', // its tools has some Ava issues
+  '@agoric/wallet', // nested package weirdness
+  '@agoric/zoe', // its tools has some Ava issues
 ]);
+
+// In CI, 1s was too fast for fast-usdc's cli.js import with @endo/init
+const importTimeoutMs = 2000;
+//#endregion
 
 const scriptsDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptsDir, '..', '..');
@@ -174,6 +189,104 @@ const listFiles = async rootDir => {
   return files;
 };
 
+const hasGlobChars = pattern => /[*?]/.test(pattern);
+
+const normalizeFilesPattern = pattern => {
+  if (pattern.startsWith('./')) return pattern.slice(2);
+  return pattern;
+};
+
+const filePatternToRegex = pattern => {
+  let regex = '';
+  for (let i = 0; i < pattern.length; i += 1) {
+    const ch = pattern[i];
+    if (ch === '*') {
+      if (pattern[i + 1] === '*') {
+        i += 1;
+        if (pattern[i + 1] === '/') {
+          i += 1;
+          regex += '(?:.*\\/)?';
+        } else {
+          regex += '.*';
+        }
+      } else {
+        regex += '[^/]*';
+      }
+      continue;
+    }
+    if (ch === '?') {
+      regex += '[^/]';
+      continue;
+    }
+    regex += ch.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
+  }
+  return new RegExp(`^${regex}$`);
+};
+
+const isJsModuleFile = relPath =>
+  relPath.endsWith('.mjs') || relPath.endsWith('.js');
+
+const collectFileSpecifiers = async (pkgDir, pkgJson) => {
+  const pkgName = pkgJson.name;
+  if (!pkgName) return new Set();
+
+  const filesField = Array.isArray(pkgJson.files) ? pkgJson.files : null;
+  const relFiles = (await listFiles(pkgDir)).map(filePath =>
+    toPosixPath(path.relative(pkgDir, filePath)),
+  );
+
+  let allowed = relFiles;
+  if (filesField) {
+    const includePatterns = [];
+    const excludePatterns = [];
+    for (const rawPattern of filesField) {
+      if (typeof rawPattern !== 'string') continue;
+      const pattern = normalizeFilesPattern(rawPattern.trim());
+      if (!pattern) continue;
+      const isExclude = pattern.startsWith('!');
+      const normalized = isExclude ? pattern.slice(1) : pattern;
+      const patternPath = path.join(pkgDir, normalized);
+      let expanded = normalized;
+      if (normalized.endsWith('/')) {
+        expanded = `${normalized}**`;
+      } else if (!hasGlobChars(normalized)) {
+        try {
+          const stat = await fs.stat(patternPath);
+          if (stat.isDirectory()) {
+            expanded = `${normalized}/**`;
+          }
+        } catch {
+          // ignore missing paths
+        }
+      }
+      const regex = filePatternToRegex(expanded);
+      if (isExclude) {
+        excludePatterns.push(regex);
+      } else {
+        includePatterns.push(regex);
+      }
+    }
+
+    allowed = relFiles.filter(relPath => {
+      const matchesInclude =
+        includePatterns.length === 0 ||
+        includePatterns.some(regex => regex.test(relPath));
+      if (!matchesInclude) return false;
+      if (excludePatterns.some(regex => regex.test(relPath))) return false;
+      return true;
+    });
+  }
+
+  /** @type {Set<string>} */
+  const specifiers = new Set();
+  for (const relPath of allowed) {
+    if (!isJsModuleFile(relPath)) continue;
+    specifiers.add(`${pkgName}/${relPath}`);
+  }
+
+  return specifiers;
+};
+
 const patternToRegex = pattern => {
   const escaped = pattern
     .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
@@ -264,6 +377,10 @@ const collectExportSpecifiers = async (pkgDir, pkgJson) => {
     if (pkgName && mainField) {
       specifiers.add(pkgName);
     }
+    const fileSpecifiers = await collectFileSpecifiers(pkgDir, pkgJson);
+    for (const specifier of fileSpecifiers) {
+      specifiers.add(specifier);
+    }
     return { specifiers, errors };
   }
 
@@ -312,7 +429,7 @@ const collectExportSpecifiers = async (pkgDir, pkgJson) => {
 const needsJsonImport = specifier =>
   specifier.endsWith('.json') || specifier.endsWith('/package.json');
 
-const runImportAttempt = (specifier, cwd, preload, packedArgs) => {
+const runImportAttempt = async (specifier, cwd, preload, packedArgs) => {
   const importOptions = needsJsonImport(specifier)
     ? ', { with: { type: "json" } }'
     : '';
@@ -329,31 +446,27 @@ const runImportAttempt = (specifier, cwd, preload, packedArgs) => {
   }
   args.push('--input-type=module', '-e', code);
 
-  const result = spawnSync(process.execPath, args, {
-    cwd,
-    encoding: 'utf-8',
-  });
-
-  if (result.error) {
-    return { ok: false, error: result.error.message };
-  }
-  if (result.status !== 0) {
-    const output = `${result.stderr || ''}${result.stdout || ''}`.trim();
+  try {
+    await spawn(process.execPath, args, {
+      cwd,
+      stdout: 'pipe',
+      stderr: 'pipe',
+      timeout: importTimeoutMs,
+    });
+    return { ok: true, error: '' };
+  } catch (error) {
+    const output = `${error?.stderr || ''}${error?.stdout || ''}`.trim();
     const lines = output
       .split('\n')
       .map(line => line.trim())
       .filter(Boolean)
       .slice(0, 3);
     const firstLines = lines.join('\n');
-    return {
-      ok: false,
-      error: firstLines || `import failed with exit code ${result.status}`,
-    };
+    return { ok: false, error: firstLines || error?.message || String(error) };
   }
-  return { ok: true, error: '' };
 };
 
-const importSpecifier = (specifier, cwd, packedArgs) => {
+const importSpecifier = async (specifier, cwd, packedArgs) => {
   const attempts = [
     { label: 'plain', preload: null },
     { label: 'with-endo', preload: '@endo/init/debug.js' },
@@ -361,7 +474,7 @@ const importSpecifier = (specifier, cwd, packedArgs) => {
   const errors = [];
 
   for (const attempt of attempts) {
-    const result = runImportAttempt(
+    const result = await runImportAttempt(
       specifier,
       cwd,
       attempt.preload,
@@ -422,16 +535,14 @@ const main = async () => {
     if (unsupportedPackages.has(pkgJson.name)) {
       if (!quiet) {
         console.log(
-          `verify-package-exports: skipped ${pkgJson.name} (unsupported)`,
+          `verify-package-exports: SKIP ${pkgJson.name} (unsupported)`,
         );
       }
       continue;
     }
     if (pkgJson.private) {
       if (!quiet) {
-        console.log(
-          `verify-package-exports: skipped ${pkgJson.name} (private)`,
-        );
+        console.log(`verify-package-exports: SKIP ${pkgJson.name} (private)`);
       }
       continue;
     }
@@ -456,7 +567,11 @@ const main = async () => {
     }
 
     for (const specifier of specifiers) {
-      if (specifier.endsWith('/entrypoint.js')) {
+      // these have side effects and dependence on argv
+      if (
+        specifier.endsWith('entrypoint.js') ||
+        specifier.endsWith('/bin.js')
+      ) {
         const existing = skippedByPackage.get(pkgJson.name) || [];
         existing.push(specifier);
         skippedByPackage.set(pkgJson.name, existing);
@@ -465,7 +580,7 @@ const main = async () => {
       }
       specifierCount += 1;
       try {
-        importSpecifier(specifier, repoRoot, nodePackedArgs);
+        await importSpecifier(specifier, repoRoot, nodePackedArgs);
         const existing = successesByPackage.get(pkgJson.name) || [];
         existing.push(specifier);
         successesByPackage.set(pkgJson.name, existing);
@@ -481,9 +596,9 @@ const main = async () => {
     }
 
     if (!quiet) {
-      const status = failureCount > 0 ? 'failed' : 'ok';
+      const status = failureCount > 0 ? 'FAIL' : 'PASS';
       console.log(
-        `verify-package-exports: finished ${pkgJson.name} (${status}, ${successCount} ok, ${failureCount} failed, ${skippedCount} skipped)`,
+        `verify-package-exports: ${status} ${pkgJson.name} (${successCount} ok, ${failureCount} failed, ${skippedCount} skipped)`,
       );
     }
   }

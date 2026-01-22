@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable @jessie.js/safe-await-separator */
 /**
  * @file Unified prepack script for all packages.
  *
@@ -17,13 +18,17 @@
  *
  * Usage: yarn run -T package-prepack (from any package directory)
  */
-import { execSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import spawn from 'nano-spawn';
 
 const scriptsDir = path.dirname(fileURLToPath(import.meta.url));
 const buildTsToJs = path.join(scriptsDir, 'build-ts-to-js.mjs');
+const rewriteTsImportSpecifiers = path.join(
+  scriptsDir,
+  'rewrite-ts-import-specifiers.mjs',
+);
 
 // Package directory from INIT_CWD (set by yarn) or current directory
 const packageDir = process.env.INIT_CWD || process.cwd();
@@ -55,7 +60,7 @@ console.log(`package-prepack: ${path.basename(packageDir)}`);
 // Step 1: Generate .d.ts declarations (requires tsconfig.build.json)
 if (existsSync(tsconfigPath)) {
   console.log('  → tsc --build tsconfig.build.json');
-  execSync('yarn run -T tsc --build tsconfig.build.json', {
+  await spawn('yarn', ['run', '-T', 'tsc', '--build', 'tsconfig.build.json'], {
     cwd: packageDir,
     stdio: 'inherit',
   });
@@ -69,7 +74,7 @@ if (usesOutDir) {
 } else {
   // Step 2: Generate .js from .ts (no-op if no .ts files exist)
   console.log('  → build-ts-to-js');
-  execSync(buildTsToJs, {
+  await spawn(process.execPath, [buildTsToJs], {
     cwd: packageDir,
     stdio: 'inherit',
   });
@@ -79,13 +84,24 @@ if (usesOutDir) {
   // Tracked .ts files will be restored by git checkout in postpack.
   console.log('  → removing .ts source files from src/');
   try {
-    execSync("find src -name '*.ts' ! -name '*.d.ts' -delete", {
-      cwd: packageDir,
-      stdio: 'inherit',
-    });
+    await spawn(
+      'find',
+      ['src', '-name', '*.ts', '!', '-name', '*.d.ts', '-delete'],
+      {
+        cwd: packageDir,
+        stdio: 'inherit',
+      },
+    );
   } catch {
     // find may fail if src/ doesn't exist, which is fine
   }
 }
+
+// Step 4: Rewrite .ts import specifiers to .js in published artifacts
+console.log('  → rewrite .ts import specifiers');
+await spawn(process.execPath, [rewriteTsImportSpecifiers], {
+  cwd: packageDir,
+  stdio: 'inherit',
+});
 
 console.log('package-prepack: done');
