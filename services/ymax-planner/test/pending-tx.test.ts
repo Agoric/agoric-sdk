@@ -1,6 +1,12 @@
 import test from 'ava';
 import { ethers } from 'ethers';
 import { boardSlottingMarshaller } from '@agoric/client-utils';
+import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
+import type {
+  PendingTx,
+  TxId,
+} from '@aglocal/portfolio-contract/src/resolver/types.ts';
+import { createMockPendingTxData } from '@aglocal/portfolio-contract/tools/mocks.ts';
 import { handlePendingTx } from '../src/pending-tx-manager.ts';
 import {
   processPendingTxEvents,
@@ -13,12 +19,6 @@ import {
   createMockTransferEvent,
   createMockGmpExecutionEvent,
 } from './mocks.ts';
-import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
-import type {
-  PendingTx,
-  TxId,
-} from '@aglocal/portfolio-contract/src/resolver/types.ts';
-import { createMockPendingTxData } from '@aglocal/portfolio-contract/tools/mocks.ts';
 
 const marshaller = boardSlottingMarshaller();
 
@@ -172,7 +172,7 @@ test('processPendingTxEvents handles only pending transactions', async t => {
 });
 
 // --- Unit tests for handlePendingTx ---
-test('handlePendingTx throws error for unsupported transaction type', async t => {
+test('handlePendingTx prints error for unsupported transaction type', async t => {
   const mockLog = () => {};
 
   const unsupportedTx = {
@@ -183,14 +183,19 @@ test('handlePendingTx throws error for unsupported transaction type', async t =>
     destinationAddress: 'eip155:1:0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
   } as any;
 
-  await t.throwsAsync(
-    () =>
-      handlePendingTx(unsupportedTx, {
-        ...createMockPendingTxOpts(),
-        log: mockLog,
-      }),
-    { message: /No monitor registered for tx type: "cctpV2"/ },
-  );
+  const errorLog: Array<any[]> = [];
+  await handlePendingTx(unsupportedTx, {
+    ...createMockPendingTxOpts(),
+    log: mockLog,
+    error: (...args: unknown[]) => {
+      errorLog.push(args);
+    },
+  });
+  t.deepEqual(errorLog, [
+    [
+      `🚨 [${unsupportedTx.txId}] No monitor registered for tx type: ${unsupportedTx.type}`,
+    ],
+  ]);
 });
 
 test('resolves a 31 min old pending CCTP transaction in lookback mode', async t => {
@@ -503,7 +508,7 @@ test('resolves a 10 second old pending GMP transaction in lookback mode', async 
 
   const ctxWithFetch = harden({
     ...opts,
-    fetch: async (url: string) => {
+    fetch: async (_url: string) => {
       return {
         ok: true,
         json: async () => ({
@@ -731,7 +736,7 @@ test('GMP monitor does not resolve transaction twice when live mode completes be
 
   const ctxWithFetch = harden({
     ...opts,
-    fetch: async (url: string) => {
+    fetch: async (_url: string) => {
       // Axelarscan returns executed status
       return {
         ok: true,
