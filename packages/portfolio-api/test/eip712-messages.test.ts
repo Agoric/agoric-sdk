@@ -174,6 +174,25 @@ test('validateYmaxDomain throws for invalid version', t => {
   });
 });
 
+test('validateYmaxDomain passes without verifyingContract when no validContractAddresses provided', t => {
+  const domain = {
+    name: 'Ymax',
+    version: '1',
+    chainId: 42161n,
+  };
+
+  t.notThrows(() => validateYmaxDomain(domain));
+});
+
+test('validateYmaxDomain passes without chainId when no validContractAddresses provided', t => {
+  const domain = {
+    name: 'Ymax',
+    version: '1',
+  };
+
+  t.notThrows(() => validateYmaxDomain(domain));
+});
+
 test('validateYmaxDomain validates contract addresses', t => {
   const validAddresses = {
     '42161': MOCK_CONTRACT_ADDRESS,
