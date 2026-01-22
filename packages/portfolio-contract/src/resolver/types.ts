@@ -60,6 +60,18 @@ export const PublishedTxShape: TypedPattern<PublishedTx> = M.or(
     {},
     {},
   ),
+  // CCTP_V2 requires amount and sourceAddress for domain mapping
+  M.splitRecord(
+    {
+      type: M.or(TxType.CCTP_V2),
+      destinationAddress: M.string(), // Format: `${chainId}:${chainId}:${remotAddess}`
+      sourceAddress: M.string(), // Source chain for domain ID mapping
+      status: TxStatus.PENDING,
+      amount: M.nat(),
+    },
+    {},
+    {},
+  ),
   // GMP has optional amount
   M.splitRecord(
     {

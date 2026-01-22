@@ -561,46 +561,48 @@ export const createCCTPv2Watcher = (config: WatcherConfig) => {
 ### Phase 1: Foundation (Week 1-2)
 
 1. **Update type definitions**
-   - [ ] Add `cctpV2` to `TransferProtocol`
-   - [ ] Add `evmToEvm` to `FeeMode`
-   - [ ] Add `CCTP_V2` to `TxType`
-   - [ ] Add `CCTPv2` Way type
+   - [x] Add `cctpV2` to `TransferProtocol`
+   - [x] Add `evmToEvm` to `FeeMode`
+   - [x] Add `CCTP_V2` to `TxType`
+   - [x] Add `CCTPv2` Way type
 
 2. **Contract addresses configuration**
-   - [ ] Add TokenMessengerV2 addresses per chain
-   - [ ] Add MessageTransmitterV2 addresses per chain
-   - [ ] Update `GmpAddresses` type
+   - [x] Add TokenMessengerV2 addresses per chain
+   - [ ] Add MessageTransmitterV2 addresses per chain (for watcher)
+   - [x] Update `GmpAddresses` type
 
 ### Phase 2: Core Implementation (Week 3-4)
 
 3. **Implement CCTPv2 transport**
-   - [ ] Create `CCTPv2` transport in `pos-gmp.flows.ts`
-   - [ ] Implement `depositForBurnV2` call encoding
-   - [ ] Add domain ID mapping for CCTPv2
+   - [x] Create `CCTPv2` transport in `pos-gmp.flows.ts`
+   - [x] Implement `depositForBurnV2` call encoding
+   - [x] Add domain ID mapping for CCTPv2
 
 4. **Update flow routing**
-   - [ ] Update `wayFromSrcToDesc` for CCTPv2 routes
-   - [ ] Add CCTPv2 case to `doStep` switch
-   - [ ] Update `executeStep` for CCTPv2 handling
+   - [x] Update `wayFromSrcToDesc` for CCTPv2 routes
+   - [x] Add CCTPv2 case to `doStep` switch
+   - [x] Update `executeStep` for CCTPv2 handling
 
 ### Phase 3: Planner Integration (Week 5-6)
 
 5. **Network topology updates**
-   - [ ] Add CCTPv2 links to `prod-network.ts`
+   - [x] Add CCTPv2 links to `prod-network.ts`
    - [ ] Add CCTPv2 links to `test-network.ts`
-   - [ ] Update graph builder for CCTPv2 edges
+   - [x] Update graph builder for CCTPv2 edges (via `evmToEvm` feeMode)
 
 6. **Planner optimization**
-   - [ ] Add CCTPv2 route scoring
-   - [ ] Implement fallback logic (v2 → v1)
-   - [ ] Update gas estimation for CCTPv2
+   - [x] Add CCTPv2 route scoring (via `evmToEvm` case in plan-solve.ts)
+   - [x] Implement explicit opt-in via `detail.transfer = 2n`
+   - [x] Update gas estimation for CCTPv2 (uses DepositForBurn estimate)
 
 ### Phase 4: Monitoring & Resolution (Week 7-8)
 
 7. **Transaction monitoring**
-   - [ ] Implement CCTPv2 watcher
-   - [ ] Add MessageReceivedV2 event parsing
-   - [ ] Update resolver for CCTPv2 transactions
+   - [x] Implement CCTPv2 watcher (`cctp-v2-watcher.ts`)
+   - [x] Add MessageReceived event parsing
+   - [x] Update resolver types for CCTPv2 transactions (`PublishedTxShape`)
+   - [x] Add `cctpV2Monitor` to pending-tx-manager
+   - [x] Add MessageTransmitterV2 addresses to `support.ts`
 
 8. **Error handling**
    - [ ] Add CCTPv2-specific error types
@@ -658,46 +660,478 @@ const canUseCCTPv2 = (src: AxelarChain, dest: AxelarChain): boolean => {
 
 ## 7. Testing Strategy
 
-### Unit Tests
+### 7.1 Unit Tests to Add
+
+#### portfolio-contract/test/cctpv2-routing.test.ts
+
+Tests for `wayFromSrcToDesc` routing logic:
 
 ```typescript
-// packages/portfolio-contract/test/cctpv2.test.ts
-
-test('CCTPv2 routes EVM-to-EVM direct', async t => {
-  const movement = {
+// CCTPv2 only selected when detail.transfer = 2n
+test('wayFromSrcToDesc uses CCTPv2 when detail.transfer is 2n', async t => {
+  const movement: MovementDesc = {
     src: '@Arbitrum',
     dest: '@Base',
-    amount: AmountMath.make(USDC, 100_000_000n),
+    amount: { brand: USDC, value: 100_000_000n },
+    detail: { transfer: 2n },
   };
-  
-  const way = wayFromSrcToDesc(movement);
-  t.deepEqual(way, { how: 'CCTPv2', src: 'Arbitrum', dest: 'Base' });
+  const way = wayFromSrcToDesc(movement, ctx);
+  t.is(way?.how, 'CCTPv2');
 });
 
-test('CCTPv2 falls back to v1 for Noble routes', async t => {
-  const movement = {
+test('wayFromSrcToDesc uses GMP (not CCTPv2) for EVM-to-EVM without explicit opt-in', async t => {
+  const movement: MovementDesc = {
+    src: '@Arbitrum',
+    dest: '@Base',
+    amount: { brand: USDC, value: 100_000_000n },
+  };
+  const way = wayFromSrcToDesc(movement, ctx);
+  t.not(way?.how, 'CCTPv2'); // Falls back to GMP or CCTP via Noble
+});
+
+test('wayFromSrcToDesc uses CCTP v1 for Noble routes regardless of detail', async t => {
+  const movement: MovementDesc = {
     src: '@Arbitrum',
     dest: '@noble',
-    amount: AmountMath.make(USDC, 100_000_000n),
+    amount: { brand: USDC, value: 100_000_000n },
+    detail: { transfer: 2n }, // Should be ignored for Noble
   };
-  
-  const way = wayFromSrcToDesc(movement);
-  t.deepEqual(way, { how: 'CCTP', src: 'Arbitrum' }); // v1 route
+  const way = wayFromSrcToDesc(movement, ctx);
+  t.is(way?.how, 'CCTP'); // v1 route via Noble
 });
 ```
 
-### Integration Tests
+#### portfolio-contract/test/cctpv2-transport.test.ts
 
-- Test CCTPv2 with Starship multichain setup
-- Verify attestation and mint on destination chain
-- Test error scenarios (attestation timeout, invalid recipient)
+Tests for the CCTPv2 transport in `pos-gmp.flows.ts`:
 
-### E2E Test Scenarios
+```typescript
+test('CCTPv2.apply generates correct TokenMessengerV2 calldata', async t => {
+  // Mock the EVM session and verify:
+  // 1. USDC approval to TokenMessengerV2
+  // 2. depositForBurn call with correct params:
+  //    - amount
+  //    - destinationDomain (from CCTP_DOMAIN mapping)
+  //    - mintRecipient (32-byte padded address)
+  //    - burnToken (USDC address)
+  //    - destinationCaller (bytes32(0))
+  //    - maxFee (0n for no limit)
+  //    - minFinalityThreshold (1000 = CONFIRMED)
+});
 
-1. **Happy path**: Arbitrum → Base direct transfer
-2. **Multi-hop**: Arbitrum → Base → Pool supply
-3. **Fallback**: CCTPv2 failure → CCTPv1 retry
-4. **Rebalance**: Pool on Arbitrum → Pool on Ethereum via CCTPv2
+test('CCTPv2.apply uses correct domain ID for each chain', async t => {
+  // Test domain mapping:
+  // Ethereum = 0, Avalanche = 1, Optimism = 2, Arbitrum = 3, Base = 6
+});
+
+test('evmAddressToBytes32 pads addresses correctly', async t => {
+  const addr = '0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64';
+  const bytes32 = evmAddressToBytes32(addr);
+  t.is(bytes32.length, 66); // 0x + 64 hex chars
+  t.true(bytes32.endsWith(addr.slice(2).toLowerCase()));
+});
+```
+
+#### services/ymax-planner/test/cctp-v2-watcher.test.ts
+
+Tests for the CCTPv2 watcher (similar to existing `cctp-watcher.test.ts`):
+
+```typescript
+test('handlePendingTx processes CCTP_V2 transaction successfully', async t => {
+  const opts = createMockPendingTxOpts();
+  const chain = 'eip155:42161'; // Arbitrum destination
+  const srcChain = 'eip155:8453'; // Base source
+  const amount = 1_000_000n;
+  const receiver = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
+
+  const cctpV2Tx: PendingTx = {
+    txId: 'tx1',
+    type: TxType.CCTP_V2,
+    status: 'pending',
+    amount,
+    destinationAddress: `${chain}:${receiver}`,
+    sourceAddress: `${srcChain}:0xSomeSourceAddr`,
+  };
+
+  // Emit MessageReceived event after delay
+  setTimeout(() => {
+    const mockLog = createMockMessageReceivedLog({
+      sourceDomain: CCTP_DOMAIN.Base, // 6
+      amount,
+      mintRecipient: receiver,
+    });
+    provider.emit(messageReceivedFilter, mockLog);
+  }, 50);
+
+  await handlePendingTx(cctpV2Tx, { ...opts, timeoutMs: 3000 });
+  // Verify tx resolved successfully
+});
+
+test('handlePendingTx rejects CCTP_V2 on source domain mismatch', async t => {
+  // Emit event with wrong sourceDomain, verify it's ignored
+});
+
+test('handlePendingTx rejects CCTP_V2 on amount mismatch', async t => {
+  // Emit event with wrong amount, verify it's ignored
+});
+
+test('handlePendingTx rejects CCTP_V2 on recipient mismatch', async t => {
+  // Emit event with wrong mintRecipient, verify it's ignored
+});
+
+test('parseMessageReceivedLog extracts BurnMessageV2 fields correctly', async t => {
+  // Test parsing of messageBody to extract amount and mintRecipient
+});
+
+test('lookBackCctpV2 finds historical MessageReceived events', async t => {
+  // Test lookback mode for catching events that happened during downtime
+});
+```
+
+#### services/ymax-planner/test/plan-solve-cctpv2.test.ts
+
+Tests for planner CCTPv2 route selection:
+
+```typescript
+test('plan-solve selects evmToEvm case for EVM-to-EVM steps', async t => {
+  const step = planStep('Base', 'Arbitrum', 100_000_000n);
+  t.deepEqual(step.detail, { transfer: 2n });
+  t.truthy(step.fee); // Should have fee estimate
+});
+
+test('plan-solve does not use evmToEvm for Noble routes', async t => {
+  const step = planStep('Base', 'noble', 100_000_000n);
+  t.is(step.detail, undefined); // No CCTPv2 detail
+});
+
+test('plan-solve includes correct fee for CCTPv2 transfers', async t => {
+  // Verify GMP fee estimation is used
+});
+```
+
+#### portfolio-contract/test/published-tx-shape.test.ts
+
+Add test for CCTP_V2 transaction shape:
+
+```typescript
+test('PublishedTxShape accepts CCTP_V2 with required fields', t => {
+  const tx = {
+    type: TxType.CCTP_V2,
+    status: TxStatus.PENDING,
+    amount: 1_000_000n,
+    destinationAddress: 'eip155:42161:0x123...',
+    sourceAddress: 'eip155:8453:0x456...',
+  };
+  t.notThrows(() => mustMatch(tx, PublishedTxShape));
+});
+
+test('PublishedTxShape rejects CCTP_V2 without sourceAddress', t => {
+  const tx = {
+    type: TxType.CCTP_V2,
+    status: TxStatus.PENDING,
+    amount: 1_000_000n,
+    destinationAddress: 'eip155:42161:0x123...',
+    // Missing sourceAddress
+  };
+  t.throws(() => mustMatch(tx, PublishedTxShape));
+});
+```
+
+### 7.2 Integration Tests
+
+#### multichain-testing/test/cctp-v2.test.ts
+
+```typescript
+test.serial('CCTPv2 direct transfer: Arbitrum → Base', async t => {
+  // 1. Fund Arbitrum account with USDC
+  // 2. Execute CCTPv2 transfer to Base
+  // 3. Wait for MessageReceived event on Base
+  // 4. Verify USDC balance on Base
+});
+
+test.serial('CCTPv2 with pool deposit: Ethereum → Arbitrum → Aave', async t => {
+  // 1. CCTPv2 transfer Ethereum → Arbitrum
+  // 2. Supply to Aave on Arbitrum
+  // 3. Verify aToken balance
+});
+
+test.serial('Rebalance using CCTPv2 between EVM pools', async t => {
+  // 1. Setup positions on multiple EVM chains
+  // 2. Change target allocation
+  // 3. Verify rebalance uses CCTPv2 for EVM-to-EVM
+  // 4. Verify positions match new allocation
+});
+```
+
+### 7.3 E2E Test Scenarios
+
+| Scenario | Source | Dest | Expected Route |
+|----------|--------|------|----------------|
+| Direct EVM transfer | Arbitrum | Base | CCTPv2 |
+| EVM to Noble | Arbitrum | Noble | CCTP v1 |
+| Noble to EVM | Noble | Arbitrum | CCTP v1 |
+| Multi-hop deposit | Ethereum | Arbitrum Aave | CCTPv2 + Supply |
+| Cross-chain rebalance | Base Compound | Ethereum Aave | CCTPv2 + Withdraw + Supply |
+
+### 7.4 Test Utilities Needed
+
+```typescript
+// services/ymax-planner/test/mocks.ts additions
+
+export const createMockMessageReceivedLog = ({
+  sourceDomain,
+  amount,
+  mintRecipient,
+  nonce = 1n,
+}: {
+  sourceDomain: number;
+  amount: bigint;
+  mintRecipient: string;
+  nonce?: bigint;
+}) => {
+  const abiCoder = ethers.AbiCoder.defaultAbiCoder();
+  
+  // Encode BurnMessageV2 messageBody
+  const messageBody = encodeBurnMessageV2({
+    version: 1,
+    burnToken: USDC_ADDRESS,
+    mintRecipient,
+    amount,
+    messageSender: '0x...',
+  });
+
+  const data = abiCoder.encode(
+    ['uint32', 'uint64', 'bytes32', 'bytes'],
+    [sourceDomain, nonce, '0x' + '0'.repeat(64), messageBody],
+  );
+
+  return {
+    address: MESSAGE_TRANSMITTER_V2_ADDRESS,
+    topics: [MESSAGE_RECEIVED_SIGNATURE, '0x' + '0'.repeat(64)],
+    data,
+    transactionHash: '0x' + 'abc'.repeat(21) + '123',
+    blockNumber: 18500000,
+  };
+};
+```
+
+### 7.5 Test Coverage Checklist
+
+- [ ] `wayFromSrcToDesc` routing with/without `detail.transfer`
+- [ ] CCTPv2 domain ID mapping for all supported chains
+- [ ] `evmAddressToBytes32` encoding
+- [ ] CCTPv2 transport calldata generation
+- [ ] MessageReceived event parsing
+- [ ] BurnMessageV2 messageBody decoding
+- [ ] cctpV2Monitor live watch mode
+- [ ] cctpV2Monitor lookback mode
+- [ ] Source domain validation
+- [ ] Amount validation
+- [ ] Recipient validation
+- [ ] PublishedTxShape for CCTP_V2 type
+- [ ] Plan-solve evmToEvm case
+- [ ] Fee estimation for CCTPv2 routes
+- [ ] Planner route selection (see 7.6)
+
+### 7.6 Planner Route Selection Tests
+
+The planner now has multiple possible paths for EVM-to-EVM transfers. These tests verify
+that the optimal route is selected based on cost and time.
+
+#### services/ymax-planner/test/deposit-tools.test.ts (additions)
+
+```typescript
+// Test: Base → Avalanche should use CCTPv2 direct, not via Noble
+test('planDepositToAllocations prefers CCTPv2 for EVM-to-EVM', async t => {
+  const targetAllocation = {
+    Aave_Avalanche: 100n, // All funds to Avalanche
+  };
+  const currentBalances = {
+    Aave_Base: makeDeposit(10_000_000n), // Starting on Base
+  };
+
+  const plan = await planRebalanceToAllocations({
+    ...plannerContext,
+    currentBalances,
+    targetAllocation,
+    network: PROD_NETWORK,
+  });
+
+  // Should have: Base (withdraw) → @Base → @Avalanche (CCTPv2) → Aave_Avalanche (supply)
+  // NOT: Base → @Base → @noble → @Avalanche → Aave_Avalanche
+  const movements = plan.flow;
+  
+  // Find the cross-chain transfer step
+  const crossChainStep = movements.find(m => 
+    m.src === '@Base' && m.dest === '@Avalanche'
+  );
+  t.truthy(crossChainStep, 'Should have direct Base → Avalanche step');
+  t.deepEqual(crossChainStep?.detail, { transfer: 2n }, 'Should use CCTPv2');
+});
+
+// Test: Base → Noble must use CCTPv1 (no CCTPv2 for Cosmos)
+test('planDepositToAllocations uses CCTPv1 for EVM-to-Noble', async t => {
+  const targetAllocation = {
+    USDN: 100n, // All funds to Noble's USDN
+  };
+  const currentBalances = {
+    Aave_Base: makeDeposit(10_000_000n),
+  };
+
+  const plan = await planRebalanceToAllocations({
+    ...plannerContext,
+    currentBalances,
+    targetAllocation,
+    network: PROD_NETWORK,
+  });
+
+  // Should route via Noble: Base → @noble → USDN
+  const toNobleStep = plan.flow.find(m => m.dest === '@noble');
+  t.truthy(toNobleStep, 'Should route to Noble');
+  // CCTPv1 steps don't have detail.transfer = 2n
+  t.not(toNobleStep?.detail?.transfer, 2n, 'Should NOT use CCTPv2');
+});
+
+// Test: Multi-hop rebalance uses CCTPv2 for EVM legs
+test('planRebalanceToAllocations uses CCTPv2 for multi-EVM rebalance', async t => {
+  const targetAllocation = {
+    Aave_Arbitrum: 25n,
+    Aave_Avalanche: 25n,
+    Aave_Base: 25n,
+    Aave_Ethereum: 25n,
+  };
+  const currentBalances = {
+    Aave_Base: makeDeposit(40_000_000n), // All on Base, need to spread
+  };
+
+  const plan = await planRebalanceToAllocations({
+    ...plannerContext,
+    currentBalances,
+    targetAllocation,
+    network: PROD_NETWORK,
+  });
+
+  // All EVM-to-EVM transfers should use CCTPv2
+  const evmToEvmSteps = plan.flow.filter(m => 
+    m.src.startsWith('@') && m.dest.startsWith('@') &&
+    !['@agoric', '@noble'].includes(m.src) &&
+    !['@agoric', '@noble'].includes(m.dest)
+  );
+  
+  for (const step of evmToEvmSteps) {
+    t.deepEqual(step.detail, { transfer: 2n }, 
+      `Step ${step.src} → ${step.dest} should use CCTPv2`);
+  }
+});
+
+// Test: Verify route selection between chains with multiple paths
+test('planRebalanceToAllocations selects optimal Base → Avalanche → Noble route', async t => {
+  // Starting: Funds on Base
+  // Goal: Split between Avalanche Aave and Noble USDN
+  // Expected: 
+  //   - Base → Avalanche via CCTPv2 (direct, ~60s)
+  //   - Base → Noble via CCTPv1 (via @agoric, ~1080s)
+  // CCTPv2 should NOT be used for the Noble leg
+  
+  const targetAllocation = {
+    Aave_Avalanche: 50n,
+    USDN: 50n,
+  };
+  const currentBalances = {
+    Aave_Base: makeDeposit(20_000_000n),
+  };
+
+  const plan = await planRebalanceToAllocations({
+    ...plannerContext,
+    currentBalances,
+    targetAllocation,
+    network: PROD_NETWORK,
+  });
+
+  // Check Avalanche route uses CCTPv2
+  const toAvalancheStep = plan.flow.find(m => 
+    m.src === '@Base' && m.dest === '@Avalanche'
+  );
+  t.truthy(toAvalancheStep, 'Should have Base → Avalanche step');
+  t.deepEqual(toAvalancheStep?.detail, { transfer: 2n });
+
+  // Check Noble route does NOT use CCTPv2
+  const nobleSteps = plan.flow.filter(m => 
+    m.dest === '@noble' || m.dest === 'USDN'
+  );
+  t.true(nobleSteps.length > 0, 'Should have steps to Noble/USDN');
+  for (const step of nobleSteps) {
+    t.not(step.detail?.transfer, 2n, 
+      `Noble-bound step ${step.src} → ${step.dest} should not use CCTPv2`);
+  }
+});
+
+// Test: Verify time vs cost optimization affects route selection
+test('planRebalanceToAllocations respects mode for route selection', async t => {
+  const allocation = {
+    Aave_Ethereum: 100n,
+  };
+  const balances = {
+    Aave_Arbitrum: makeDeposit(10_000_000n),
+  };
+
+  // Fastest mode should prefer CCTPv2 (60s) over CCTPv1 via Noble (~1080s)
+  const fastPlan = await planRebalanceToAllocations({
+    ...plannerContext,
+    currentBalances: balances,
+    targetAllocation: allocation,
+    network: PROD_NETWORK,
+    mode: 'fastest',
+  });
+
+  const fastCrossChain = fastPlan.flow.find(m => 
+    m.src === '@Arbitrum' && m.dest === '@Ethereum'
+  );
+  t.deepEqual(fastCrossChain?.detail, { transfer: 2n }, 
+    'Fastest mode should use CCTPv2');
+});
+
+// Regression: Ensure existing multi-source rebalance still works with CCTPv2
+test('planRebalanceToAllocations regression - CCTPv2 with multiple sources', async t => {
+  const targetAllocation = {
+    Aave_Arbitrum: 25n,
+    Aave_Avalanche: 25n,
+    Aave_Base: 25n,
+    Aave_Ethereum: 25n,
+  };
+  const currentBalances = {
+    Aave_Base: makeDeposit(5_000_000n),
+    Aave_Optimism: makeDeposit(5_000_000n),
+  };
+
+  const plan = await planRebalanceToAllocations({
+    ...plannerContext,
+    currentBalances,
+    targetAllocation,
+    network: PROD_NETWORK,
+  });
+
+  t.snapshot(plan, 'CCTPv2 multi-source rebalance');
+});
+```
+
+#### Expected Route Selection Logic
+
+| From | To | Expected Route | Reason |
+|------|----|----------------|--------|
+| Base | Avalanche | CCTPv2 direct | Fastest (60s vs 1080s via Noble) |
+| Base | Noble | CCTPv1 via @agoric | CCTPv2 doesn't support Cosmos |
+| Arbitrum | Ethereum | CCTPv2 direct | Direct EVM-to-EVM |
+| Noble | Arbitrum | CCTPv1 | CCTPv2 doesn't support Cosmos source |
+| Base | Aave_Avalanche | CCTPv2 + Supply | Cross-chain then pool operation |
+| Compound_Base | Aave_Ethereum | Withdraw + CCTPv2 + Supply | Full rebalance path |
+
+#### Route Selection Priority
+
+1. **EVM-to-EVM**: Always prefer CCTPv2 (faster, direct)
+2. **EVM-to-Cosmos**: Must use CCTPv1 via Noble/Agoric
+3. **Cosmos-to-EVM**: Must use CCTPv1 from Noble
+4. **Same-chain**: No cross-chain transfer needed
 
 ---
 
@@ -758,33 +1192,31 @@ const SAFE_FINALITY = 2000; // FINALITY_THRESHOLD_FINALIZED
 
 ## Appendix B: Contract Addresses
 
-### CCTPv2 Contract Addresses (Mainnet)
+### CCTPv2 Contract Addresses
 
-CCTPv2 uses CREATE2 for deterministic deployment - addresses are the same across all chains.
+Circle uses **deterministic deployment (CREATE2)** so all CCTPv2 contracts have the **same address across all EVM chains**.
 
-| Chain | TokenMessengerV2 | MessageTransmitterV2 | TokenMinterV2 |
-|-------|------------------|---------------------|---------------|
-| Ethereum | `0x...` | `0x...` | `0x...` |
-| Arbitrum | `0x...` | `0x...` | `0x...` |
-| Base | `0x...` | `0x...` | `0x...` |
-| Optimism | `0x...` | `0x...` | `0x...` |
-| Avalanche | `0x...` | `0x...` | `0x...` |
+Reference: https://developers.circle.com/cctp/references/contract-addresses
 
-> Note: Addresses to be filled in when CCTPv2 contracts are deployed. Use the `PredictCreate2Deployments.s.sol` script from Circle's repository to compute expected addresses.
+#### Mainnet (same on all chains)
 
-### Address Prediction Commands
+| Contract | Address |
+|----------|--------|
+| TokenMessengerV2 | `0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d` |
+| MessageTransmitterV2 | `0x81D40F21F12A8F0E3252Bccb954D722d4c464B64` |
+| TokenMinterV2 | `0xfd78EE919681417d192449715b2594ab58f5D002` |
+| MessageV2 | `0xec546b6B005471ECf012e5aF77FBeC07e0FD8f78` |
 
-```bash
-# Predict MessageTransmitterV2 Implementation
-forge script scripts/v2/PredictCreate2Deployments.s.sol \
-  --sig "messageTransmitterV2Impl(address,uint32,uint32)" \
-  <create2FactoryAddress> <domain> <messageVersion>
+#### Testnet (same on all chains)
 
-# Predict TokenMessengerV2 Proxy
-forge script scripts/v2/PredictCreate2Deployments.s.sol \
-  --sig "tokenMessengerV2Proxy(address)" \
-  <create2FactoryAddress>
-```
+| Contract | Address |
+|----------|--------|
+| TokenMessengerV2 | `0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA` |
+| MessageTransmitterV2 | `0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275` |
+| TokenMinterV2 | `0xb43db544E2c27092c107639Ad201b3dEfAbcF192` |
+| MessageV2 | `0xbaC0179bB358A8936169a63408C8481D582390C4` |
+
+> **Note**: Unlike CCTPv1 contracts (which have different addresses per chain), CCTPv2 uses CREATE2 deterministic deployment, meaning the same bytecode deployed with the same salt produces the same address on every chain.
 
 ---
 
