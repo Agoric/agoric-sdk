@@ -21,8 +21,8 @@ import {
   gmpAddresses as gmpConfigs,
   type AxelarChainConfig,
 } from '@aglocal/portfolio-deploy/src/axelar-configs.js';
+import { makeAssetInfo } from '@aglocal/portfolio-deploy/src/chain-name-service.js';
 import type { ContractControl } from '@aglocal/portfolio-deploy/src/contract-control.js';
-import { lookupInterchainInfo } from '@aglocal/portfolio-deploy/src/orch.start.js';
 import { findOutdated } from '@aglocal/portfolio-deploy/src/vstorage-outdated.js';
 import {
   fetchEnvNetworkConfig,
@@ -45,6 +45,7 @@ import {
   objectMap,
   type TypedPattern,
 } from '@agoric/internal';
+import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import {
   getPermitWitnessTransferFromData,
   type TokenPermissions,
@@ -493,6 +494,29 @@ const getNetworkConfig = (network: 'main' | 'devnet') => {
   }
 };
 
+const objectFilter = <K extends string, V>(
+  obj: Record<K, V>,
+  ok: (k: K) => boolean,
+): Record<K, V> => {
+  const { entries, fromEntries } = Object;
+  const okEntries = (entries(obj) as [K, V][]).filter(([k, _]) => ok(k));
+  const out = fromEntries(okEntries) as Record<K, V>;
+  return harden(out);
+};
+
+const filterCosmosChainInfo = (names = ['agoric', 'noble', 'axelar']) => {
+  const { values } = Object;
+  const infos = objectFilter(fetchedChainInfo, k => names.includes(k));
+  const chainIds = values(infos).map(info => info.chainId);
+  const pruned = objectMap(infos, info => ({
+    ...info,
+    connections: objectFilter(info.connections || {}, k =>
+      chainIds.includes(k),
+    ),
+  }));
+  return pruned;
+};
+
 /**
  * Build privateArgsOverrides sufficient to add new EVM chains.
  *
@@ -509,10 +533,7 @@ const overridesForEthChainInfo = async (
     | typeof gmpConfigs.testnet
     | typeof gmpConfigs.mainnet = gmpConfigs.testnet,
 ) => {
-  const { chainInfo: cosmosChainInfo } = await lookupInterchainInfo(
-    agoricNamesForChainInfo(vsk),
-    { agoric: ['ubld'], noble: ['uusdc'], axelar: ['uaxl'] },
-  );
+  const cosmosChainInfo = filterCosmosChainInfo(['agoric', 'noble', 'axelar']);
   const chainInfo = {
     ...cosmosChainInfo,
     ...objectMap(axelarConfig, info => info.chainInfo),
@@ -622,7 +643,7 @@ const main = async (
     log: trace,
     fresh,
     // as in: Error#1: out of gas ... gasUsed: 809068
-    fee: makeFee({ gas: 809068, adjustment: 1.4 }),
+    fee: makeFee({ gas: 2_500_000, price: 0.03 }),
   });
 
   if (values.redeem) {
@@ -634,7 +655,7 @@ const main = async (
 
     // XXX generalize to --no-save or some such?
     // For wallets without myStore support, redeem without saving
-    const noSaveDescriptions = ['resolver', 'evmWalletHandler'];
+    const noSaveDescriptions = ['resolver'];
     const descWithoutDeliver = description.replace(/^deliver /, '');
     if (noSaveDescriptions.includes(descWithoutDeliver)) {
       const id = `redeem-${fresh()}`;
