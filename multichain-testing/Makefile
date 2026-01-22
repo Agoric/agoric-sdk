@@ -324,3 +324,11 @@ aave-base:
 compound-base:
 	@[ -n "$$MNEMONIC" ] || (echo "trader MNEMONIC not set; see noble-usdn-lab.ts"; false)
 	AGORIC_NET=devnet ./scripts/ymax-tool.ts $(CONTRACT_FLAG) --positions '{"Compound":0.1}' --target-allocation '{"Compound_Base":100}'
+
+evm-onboard-devnet:
+	@[ -n "$$MNEMONIC" ] || (echo "trader MNEMONIC not set; see noble-usdn-lab.ts"; false)
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts $(CONTRACT_FLAG) --target-allocation '{"Aave_Arbitrum":100}' --evm Arbitrum
+
+evm-onboard:
+	@[ -n "$$MNEMONIC" ] || (echo "trader MNEMONIC not set; see noble-usdn-lab.ts"; false)
+	AGORIC_NET=main ./scripts/ymax-tool.ts $(CONTRACT_FLAG) --target-allocation '{"Aave_Arbitrum":100}' --evm Arbitrum

@@ -112,6 +112,14 @@ RESOLVER ?= agoric1y3e3mlnrkuh6j2qcnlrtap42j8mzw240vwr74j
 	tail $@
 	@echo now use resolver MNEMONIC: ymax-tool.ts --redeem
 
+EVM_MESSAGE_HANDLER ?= agoric1y3e3mlnrkuh6j2qcnlrtap42j8mzw240vwr74j
+,inviteEVMMessageHandler-$(CONTRACT): ,creatorFacet-$(CONTRACT) ,account-$(CONTRACT)-$(AGORIC_NET)
+	AGORIC_NET=$(AGORIC_NET) \
+		$(YMAX_TOOL) --inviteOwnerProxy $(EVM_MESSAGE_HANDLER) >$@ || \
+		(rm $@; false)
+	tail $@
+	@echo now use MNEMONIC_EVM_MESSAGE_HANDLER: ymax-tool.ts --redeem
+
 check-vstorage: ,vstorage-outdated-$(AGORIC_NET).json
 
 ,vstorage-outdated-$(AGORIC_NET).json:
@@ -144,8 +152,10 @@ fund-fee-acct: ,$(CONTRACT)-node.json
 
 
 # check that the account we're using matches the contract we're upgrading...
-check-control-account:
-	$(YMAX_TOOL) --repl </dev/null | grep $(YMAX_CONTROL_ADDR)
+check-control-account: ,account-$(CONTRACT)-$(AGORIC_NET)
+
+,account-$(CONTRACT)-$(AGORIC_NET):
+	($(YMAX_TOOL) --repl </dev/null | grep $(YMAX_CONTROL_ADDR) >$@) || (rm $@)
 
 ,$(CONTRACT)-upgraded: ,ymax-bundle-id ,ymax-installed ,privateArgsOverrides.json check-control-account
 	AGORIC_NET=$(AGORIC_NET) \
