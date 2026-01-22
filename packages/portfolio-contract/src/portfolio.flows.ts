@@ -1654,6 +1654,10 @@ export const openPortfolioFromPermit2 = (async (
   await setupPortfolioAccounts(orch, ctx, madeKit, traceP, {
     useProgressTracker: true,
   });
+
+  depositDetails.token.toLowerCase() ===
+    ctx.contracts[fromChain].usdc.toLowerCase() ||
+    Fail`depositDetails token address ${depositDetails.token} does not match usdc contract address ${ctx.contracts[fromChain].usdc} for chain ${fromChain}`;
   const amount = AmountMath.make(ctx.usdc.brand, depositDetails.amount);
   const flowDetail: FlowDetail = { type: 'deposit', amount, fromChain };
   await executePlan(
