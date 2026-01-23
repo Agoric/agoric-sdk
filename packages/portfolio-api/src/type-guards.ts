@@ -28,9 +28,9 @@ export const isInstrumentId = (ref: string): ref is InstrumentId =>
 harden(isInstrumentId);
 
 /**
- * Is the input an ERC4626 InstrumentId
- * (i.e., does it start with 'ERC4626')?
+ * Is the input an ERC-4626 InstrumentId
+ * (i.e., does it start with 'ERC4626_')?
  */
 export const isERC4626InstrumentId = (ref: string): boolean =>
-  ref.startsWith('ERC4626');
+  ref.startsWith('ERC4626_');
 harden(isERC4626InstrumentId);
