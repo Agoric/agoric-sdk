@@ -67,7 +67,7 @@ test('handlePendingTx processes GMP transaction successfully', async t => {
   t.deepEqual(logMessages, [
     `[${txId}] handling ${type} tx`,
     `[${txId}] Watching transaction status for txId: ${txId} at contract: ${contractAddress}`,
-    `[${txId}] ✅ SUCCESS: txId=${txId} txHash=0x123abc block=18500000`,
+    `[${txId}] ✅ SUCCESS (5 confirmations): txId=${txId} txHash=0x123abc block=18500000`,
     `[${txId}] GMP tx resolved`,
   ]);
 });
@@ -130,7 +130,7 @@ test('handlePendingTx logs a time out on a GMP transaction with no matching even
     `[${txId}] handling ${type} tx`,
     `[${txId}] Watching transaction status for txId: ${txId} at contract: ${contractAddress}`,
     `[${txId}] ✗ No transaction status found for txId ${txId} within 0.01 minutes`,
-    `[${txId}] ✅ SUCCESS: txId=${txId} txHash=0x123abc block=18500000`,
+    `[${txId}] ✅ SUCCESS (5 confirmations): txId=${txId} txHash=0x123abc block=18500000`,
     `[${txId}] GMP tx resolved`,
   ]);
 });

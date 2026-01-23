@@ -347,6 +347,34 @@ export const createMockProvider = (
 
       throw Error(`Unrecognized function selector in mock call: ${selector}`);
     },
+    waitForTransaction: async function (
+      this: any,
+      txHash: string,
+      confirmations?: number,
+      _timeout?: number,
+    ) {
+      // Wait for receipt to be available - use getTransactionReceipt to respect test overrides
+      let receipt = await this.getTransactionReceipt(txHash);
+      if (!receipt) {
+        // Poll for receipt (max 10 attempts)
+        for (let i = 0; i < 10 && !receipt; i++) {
+          await new Promise(resolve => setTimeout(resolve, 10));
+          receipt = await this.getTransactionReceipt(txHash);
+        }
+      }
+
+      if (!receipt) return null;
+
+      // Simulate waiting for confirmations by advancing blocks
+      if (confirmations && confirmations > 1) {
+        for (let i = 1; i < confirmations; i++) {
+          await new Promise(resolve => setTimeout(resolve, 1));
+          currentBlock += 1;
+        }
+      }
+
+      return receipt;
+    },
   };
 
   return mockProvider as unknown as WebSocketProvider;
