@@ -12,6 +12,7 @@ import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.t
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import { createMockPendingTxOpts, mockFetch } from './mocks.ts';
 import { handlePendingTx } from '../src/pending-tx-manager.ts';
+import { getConfirmationsRequired } from '../src/support.ts';
 
 test('handlePendingTx processes GMP transaction successfully', async t => {
   const opts = createMockPendingTxOpts();
@@ -64,10 +65,11 @@ test('handlePendingTx processes GMP transaction successfully', async t => {
     });
   });
 
+  const requiredConfirmations = getConfirmationsRequired(chain);
   t.deepEqual(logMessages, [
     `[${txId}] handling ${type} tx`,
     `[${txId}] Watching transaction status for txId: ${txId} at contract: ${contractAddress}`,
-    `[${txId}] ✅ SUCCESS (5 confirmations): txId=${txId} txHash=0x123abc block=18500000`,
+    `[${txId}] ✅ SUCCESS (${requiredConfirmations} confirmations): txId=${txId} txHash=0x123abc block=18500000`,
     `[${txId}] GMP tx resolved`,
   ]);
 });
@@ -126,11 +128,12 @@ test('handlePendingTx logs a time out on a GMP transaction with no matching even
     });
   });
 
+  const requiredConfirmations = getConfirmationsRequired(chain);
   t.deepEqual(logMessages, [
     `[${txId}] handling ${type} tx`,
     `[${txId}] Watching transaction status for txId: ${txId} at contract: ${contractAddress}`,
     `[${txId}] ✗ No transaction status found for txId ${txId} within 0.01 minutes`,
-    `[${txId}] ✅ SUCCESS (5 confirmations): txId=${txId} txHash=0x123abc block=18500000`,
+    `[${txId}] ✅ SUCCESS (${requiredConfirmations} confirmations): txId=${txId} txHash=0x123abc block=18500000`,
     `[${txId}] GMP tx resolved`,
   ]);
 });

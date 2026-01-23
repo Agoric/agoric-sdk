@@ -221,6 +221,47 @@ export const getBlockTimeMs = (chainId: CaipChainId): number => {
 };
 
 /**
+ * Number of block confirmations required before marking a transaction as final.
+ * Higher values provide stronger finality guarantees but increase latency.
+ *
+ * Values are informed by Circle’s blockchain confirmation guidance, which is based
+ * on historical reorg behavior and network architecture.
+ *
+ * Note: For Ethereum and Avalanche, these values directly match Circle’s documented
+ * confirmation requirements. For EVM L2 chains (Arbitrum, Base, Optimism), Circle
+ * expresses finality in terms of Ethereum L1 confirmations ("12 ETH blocks").
+ * Since this watcher only observes L2 chains and does not verify L1 batch inclusion
+ * or Ethereum finality, the L2 values below represent a conservative same-chain
+ * confirmation depth chosen to mitigate typical sequencer reorg risk, rather than
+ * a full implementation of Circle’s L1-anchored finality.
+ *
+ * @see https://developers.circle.com/w3s/blockchain-confirmations
+ */
+
+const blockConfirmationsRequired: Record<CaipChainId, number> = harden({
+  // ========= Mainnet =========
+  'eip155:1': 12, // Ethereum Mainnet
+  'eip155:42161': 20, // Arbitrum One
+  'eip155:43114': 1, // Avalanche C-Chain
+  'eip155:8453': 10, // Base
+  'eip155:10': 10, // Optimism
+
+  // ========= Testnet =========
+  'eip155:11155111': 12, // Ethereum Sepolia
+  'eip155:421614': 20, // Arbitrum Sepolia
+  'eip155:43113': 1, // Avalanche Fuji
+  'eip155:84532': 10, // Base Sepolia
+  'eip155:11155420': 10, // Optimism Sepolia
+});
+
+/**
+ * Get the number of confirmations required for a given chain ID.
+ */
+export const getConfirmationsRequired = (chainId: CaipChainId): number => {
+  return blockConfirmationsRequired[chainId];
+};
+
+/**
  * @deprecated should come from e.g. @agoric/portfolio-api/src/constants.js
  *   or @agoric/orchestration
  */

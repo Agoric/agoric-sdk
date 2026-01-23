@@ -354,15 +354,8 @@ export const createMockProvider = (
       confirmations?: number,
       _timeout?: number,
     ) {
-      // Wait for receipt to be available - use getTransactionReceipt to respect test overrides
-      let receipt = await this.getTransactionReceipt(txHash);
-      if (!receipt) {
-        // Poll for receipt (max 10 attempts)
-        for (let i = 0; i < 10 && !receipt; i++) {
-          await new Promise(resolve => setTimeout(resolve, 10));
-          receipt = await this.getTransactionReceipt(txHash);
-        }
-      }
+      // Get receipt - use getTransactionReceipt to respect test overrides
+      const receipt = await this.getTransactionReceipt(txHash);
 
       if (!receipt) return null;
 

@@ -236,6 +236,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
       contractAddress: accountAddress as `0x${string}`,
       txId,
       expectedSourceAddress: lcaAddress,
+      chainId: caipId,
       log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
     };
 

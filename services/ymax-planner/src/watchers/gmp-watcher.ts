@@ -7,6 +7,7 @@ import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import { tryJsonParse } from '@agoric/internal';
 import {
   getBlockNumberBeforeRealTime,
+  getConfirmationsRequired,
   scanEvmLogsInChunks,
 } from '../support.ts';
 import type { MakeAbortController, WatcherTimeoutOptions } from '../support.ts';
@@ -63,6 +64,7 @@ type WatchGmp = {
   contractAddress: `0x${string}`;
   txId: TxId;
   expectedSourceAddress: string;
+  chainId: CaipChainId;
   log: (...args: unknown[]) => void;
   kvStore: KVStore;
   makeAbortController: MakeAbortController;
@@ -116,6 +118,7 @@ export const watchGmp = ({
   contractAddress,
   txId,
   expectedSourceAddress,
+  chainId,
   timeoutMs = TX_TIMEOUT_MS,
   log = () => {},
   setTimeout = globalThis.setTimeout,
@@ -246,7 +249,7 @@ export const watchGmp = ({
         }
 
         // Wait for confirmations to ensure finality and prevent reorg issues
-        const confirmations = 5;
+        const confirmations = getConfirmationsRequired(chainId);
         const receipt = await provider.waitForTransaction(
           txHash,
           confirmations,
