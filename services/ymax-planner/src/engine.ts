@@ -11,7 +11,8 @@ import { Nat } from '@endo/nat';
 import { reflectWalletStore, getInvocationUpdate } from '@agoric/client-utils';
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import type { RetryOptionsAndPowers } from '@agoric/client-utils/src/sync-tools.js';
-import { AmountMath, type Brand } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
+import type { Brand } from '@agoric/ertp';
 import type { Bech32Address, CaipChainId } from '@agoric/orchestration';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 
@@ -77,7 +78,8 @@ import {
   planWithdrawFromAllocations,
 } from './plan-deposit.ts';
 import type { SpectrumClient } from './spectrum-client.ts';
-import { UserInputError, type EvmProviders } from './support.ts';
+import { UserInputError } from './support.ts';
+import type { EvmProviders } from './support.ts';
 import {
   encodedKeyToPath,
   pathToEncodedKey,
