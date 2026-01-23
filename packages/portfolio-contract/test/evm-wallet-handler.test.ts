@@ -373,12 +373,12 @@ test('handleOperation - openPortfolio', async t => {
   };
 
   // Call handleOperation
-  const resultVow = handleOperation(
-    mockWallet,
-    mockStorageNode,
-    harden(openPortfolioOperationDetails),
-    123n, // nonce
-  );
+  const resultVow = handleOperation({
+    wallet: mockWallet,
+    storageNode: mockStorageNode,
+    operationDetails: harden(openPortfolioOperationDetails),
+    nonce: 123n,
+  });
 
   // Wait for the vow to settle
   await vowTools.when(resultVow);
@@ -415,13 +415,12 @@ test('handleOperation - openPortfolio requires permitDetails', async t => {
   };
 
   // Call handleOperation
-  const resultVow = handleOperation(
-    mockWallet,
-    mockStorageNode,
-    harden(openPortfolioOperationDetails),
-    123n, // nonce
-  );
-
+  const resultVow = handleOperation({
+    wallet: mockWallet,
+    storageNode: mockStorageNode,
+    operationDetails: harden(openPortfolioOperationDetails),
+    nonce: 123n,
+  });
   // Wait for the vow to settle
   await vowTools.when(resultVow);
 

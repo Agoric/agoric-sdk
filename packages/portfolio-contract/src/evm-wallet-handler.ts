@@ -218,13 +218,18 @@ export const prepareEVMPortfolioOperationManager = (
     },
   );
 
-  const handleOperation = (
-    wallet: EVMWallet,
-    storageNode: Remote<StorageNode>,
+  const handleOperation = ({
+    wallet,
+    storageNode,
+    operationDetails,
+    nonce,
+  }: {
+    wallet: EVMWallet;
+    storageNode: Remote<StorageNode>;
     operationDetails: YmaxOperationDetails &
-      Pick<FullMessageDetails, 'permitDetails'>,
-    nonce: bigint,
-  ): Vow<void> =>
+      Pick<FullMessageDetails, 'permitDetails'>;
+    nonce: bigint;
+  }): Vow<void> =>
     asVow(async () => {
       publishStatus<'evmWallet'>(storageNode, {
         updated: 'messageUpdate',
@@ -413,12 +418,14 @@ export const prepareEVMWalletHandlerKit = (
           const walletNode: Remote<StorageNode> =
             await E(storageNode).makeChildNode(evmWalletAddress);
 
-          return handleOperation(
+          harden(operationDetails);
+
+          return handleOperation({
             wallet,
-            walletNode,
-            harden(operationDetails),
+            storageNode: walletNode,
+            operationDetails,
             nonce,
-          );
+          });
         });
       },
     },
