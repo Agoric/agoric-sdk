@@ -185,26 +185,6 @@ export const getCurrentBalances = async (
       errors.push(err);
     }
   }
-  await null;
-
-  // Process any ERC4626 vault queries first. These dont rely on Spectrum.
-  if (erc4626Queries.length) {
-    const erc4626QueryResults = await getERC4626VaultsBalances(
-      erc4626Queries,
-      powers,
-    );
-    for (let i = 0; i < erc4626QueryResults.length; i += 1) {
-      const result = erc4626QueryResults[i];
-      if (result.error) {
-        errors.push(Error(result.error));
-      }
-      if (result.balance === undefined) {
-        balances.set(result.place, undefined);
-      } else {
-        balances.set(result.place, AmountMath.make(brand, result.balance));
-      }
-    }
-  }
 
   const spectrumAccountQueries = accountQueries.map(desc =>
     makeSpectrumAccountQuery(desc, powers),
@@ -213,32 +193,40 @@ export const getCurrentBalances = async (
     makeSpectrumPoolQuery(desc, powers),
   );
 
-  const [accountResult, positionResult] = await Promise.allSettled([
-    spectrumAccountQueries.length
-      ? spectrumBlockchain.getBalances({ accounts: spectrumAccountQueries })
-      : { balances: [] },
-    spectrumPoolQueries.length
-      ? spectrumPools.getBalances({ positions: spectrumPoolQueries })
-      : { balances: [] },
-  ]);
+  const [accountResult, positionResult, erc4626Result] =
+    await Promise.allSettled([
+      spectrumAccountQueries.length
+        ? spectrumBlockchain.getBalances({ accounts: spectrumAccountQueries })
+        : { balances: [] },
+      spectrumPoolQueries.length
+        ? spectrumPools.getBalances({ positions: spectrumPoolQueries })
+        : { balances: [] },
+      erc4626Queries.length
+        ? getERC4626VaultsBalances(erc4626Queries, powers)
+        : { balances: [] },
+    ]);
 
   if (
     accountResult.status !== 'fulfilled' ||
-    positionResult.status !== 'fulfilled'
+    positionResult.status !== 'fulfilled' ||
+    erc4626Result.status !== 'fulfilled'
   ) {
-    const rejections = [accountResult, positionResult].flatMap(settlement =>
-      settlement.status === 'fulfilled' ? [] : [settlement.reason],
+    const rejections = [accountResult, positionResult, erc4626Result].flatMap(
+      settlement =>
+        settlement.status === 'fulfilled' ? [] : [settlement.reason],
     );
     errors.push(...rejections);
     throw AggregateError(errors, 'Could not get balances');
   }
   const accountBalances = accountResult.value.balances;
   const positionBalances = positionResult.value.balances;
+  const erc4626Balances = erc4626Result.value.balances;
   if (
     accountBalances.length !== accountQueries.length ||
-    positionBalances.length !== positionQueries.length
+    positionBalances.length !== positionQueries.length ||
+    erc4626Balances.length !== erc4626Queries.length
   ) {
-    const msg = `Bad balance query response(s), expected [${[accountBalances.length, positionBalances.length]}] results but got [${[accountQueries.length, positionQueries.length]}]`;
+    const msg = `Bad balance query response(s), expected [${[accountBalances.length, positionBalances.length, erc4626Balances.length]}] results but got [${[accountQueries.length, positionQueries.length, erc4626Queries.length]}]`;
     throw AggregateError(errors, msg);
   }
   for (let i = 0; i < accountQueries.length; i += 1) {
@@ -263,6 +251,18 @@ export const getCurrentBalances = async (
     if (result.error) errors.push(Error(result.error));
     balances.set(place, amountFromPositionBalance(brand, result.balance));
   }
+  for (let i = 0; i < erc4626Queries.length; i += 1) {
+    const result = erc4626Balances[i];
+    if (result.error) {
+      errors.push(Error(result.error));
+    }
+    if (result.balance === undefined) {
+      balances.set(result.place, undefined);
+    } else {
+      balances.set(result.place, AmountMath.make(brand, result.balance));
+    }
+  }
+
   if (errors.length) {
     throw AggregateError(errors, 'Could not accept balances');
   }
