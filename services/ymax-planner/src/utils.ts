@@ -24,11 +24,31 @@ export const parseGraphqlEndpoints = (
 ): Record<`api-${string}`, string[]> => {
   const type = typeof jsonText;
   if (type !== 'string') throw Error(`${label} is required`);
-  try {
-    return JSON.parse(jsonText as string);
-  } catch (cause) {
-    throw Error(`${label} must be valid JSON`, { cause });
+  const parsed = (() => {
+    try {
+      return JSON.parse(jsonText as string);
+    } catch (cause) {
+      throw Error(`${label} must be valid JSON`, { cause });
+    }
+  })();
+  if (!parsed || typeof parsed !== 'object') {
+    throw Error(`${label} must encode a string-keyed record`);
   }
+  for (const [dirname, urls] of Object.entries(parsed)) {
+    if (!dirname.startsWith('api-')) {
+      throw Error(`Each ${label} key must start with "api-"`);
+    }
+    if (
+      !Array.isArray(urls) ||
+      !urls.length ||
+      !urls.every(url => URL.canParse(url))
+    ) {
+      throw Error(
+        `${label}[${JSON.stringify(dirname)}] must be a non-empty array of URLs`,
+      );
+    }
+  }
+  return parsed;
 };
 
 /**

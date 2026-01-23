@@ -24,12 +24,24 @@ import type { BaseAccountSDKType } from '@agoric/client-utils/src/codegen/cosmos
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import {
   deeplyFulfilledObject,
+  fromUniqueEntries,
   objectMap,
   objectMetaMap,
+  typedEntries,
   withDeferredCleanup,
 } from '@agoric/internal';
-import { UsdcTokenIds } from '@agoric/portfolio-api/src/constants.js';
+import {
+  CaipChainIds,
+  UsdcTokenIds,
+} from '@agoric/portfolio-api/src/constants.js';
+import { isERC4626InstrumentId } from '@agoric/portfolio-api/src/type-guards.js';
+import {
+  axelarConfig,
+  axelarConfigTestnet,
+} from '@aglocal/portfolio-deploy/src/axelar-configs.js';
+import type { ERC4626InstrumentId } from '@aglocal/portfolio-contract/src/type-guards.ts';
 
+import type { EvmAddress } from '@agoric/fast-usdc';
 import { loadConfig } from './config.ts';
 import { CosmosRestClient } from './cosmos-rest-client.ts';
 import { CosmosRPCClient } from './cosmos-rpc.ts';
@@ -44,7 +56,6 @@ import {
   spectrumPoolIdsByCluster,
 } from './support.ts';
 import type { MakeAbortController } from './support.ts';
-import { SpectrumClient } from './spectrum-client.ts';
 import { makeGasEstimator } from './gas-estimation.ts';
 import { makeSQLiteKeyValueStore } from './kv-store.ts';
 import { YdsNotifier } from './yds-notifier.ts';
@@ -108,6 +119,19 @@ export const main = async (
   const spectrumChainIds = spectrumChainIdsByCluster[clusterName];
   const spectrumPoolIds = spectrumPoolIdsByCluster[clusterName];
   const usdcTokensByChain = UsdcTokenIds[clusterName];
+
+  const axelarCfg =
+    clusterName === 'mainnet' ? axelarConfig : axelarConfigTestnet;
+
+  const isERC4626Entry = ([name, _addr]) => isERC4626InstrumentId(name);
+  const erc4626VaultEntries = typedEntries(axelarCfg).flatMap(
+    ([_chainName, { contracts }]) =>
+      typedEntries(contracts).filter(isERC4626Entry),
+  );
+
+  const erc4626VaultAddresses: Partial<
+    Record<ERC4626InstrumentId, EvmAddress>
+  > = fromUniqueEntries(erc4626VaultEntries);
 
   const networkConfig = await fetchEnvNetworkConfig({
     env: { AGORIC_NET: config.cosmosRest.agoricNetworkSpec },
@@ -214,27 +238,20 @@ export const main = async (
     },
   });
 
-  const spectrum = new SpectrumClient(simplePowers, {
-    baseUrl: config.spectrum.apiUrl,
-    timeout: config.spectrum.timeout,
-    retries: config.spectrum.retries,
-  });
-
-  const makeOptionalGqlSdk = <Sdk>(
+  const makeGqlSdk = <Sdk>(
     makeSdk: (client: GraphQLClient) => Sdk,
-    endpoints?: string[],
-  ): Sdk | undefined => {
-    if (!endpoints) return undefined;
+    endpoints: string[],
+  ): Sdk => {
     const multiClient = makeGraphqlMultiClient(endpoints, simplePowers, {
       requestLimits: config.requestLimits,
     });
     return makeSdk(multiClient);
   };
-  const spectrumBlockchain = makeOptionalGqlSdk(
+  const spectrumBlockchain = makeGqlSdk(
     getSpectrumBlockchainSdk,
     config.spectrumBlockchainEndpoints,
   );
-  const spectrumPools = makeOptionalGqlSdk(
+  const spectrumPools = makeGqlSdk(
     getSpectrumPoolsSdk,
     config.spectrumPoolsEndpoints,
   );
@@ -287,7 +304,6 @@ export const main = async (
       ...evmCtx,
     },
     rpc,
-    spectrum,
     spectrumChainIds,
     spectrumPoolIds,
     spectrumBlockchain,
@@ -304,6 +320,8 @@ export const main = async (
     now,
     gasEstimator,
     usdcTokensByChain,
+    erc4626VaultAddresses,
+    chainNameToChainIdMap: CaipChainIds[clusterName],
   };
 
   await withDeferredCleanup(async addCleanup => {

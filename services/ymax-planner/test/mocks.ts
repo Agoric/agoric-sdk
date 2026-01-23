@@ -3,14 +3,21 @@ import { ethers } from 'ethers';
 import type { WebSocketProvider } from 'ethers';
 
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.ts';
+import type { ERC4626InstrumentId } from '@aglocal/portfolio-contract/src/type-guards.js';
 import { TEST_NETWORK } from '@aglocal/portfolio-contract/tools/network/test-network.js';
 import { boardSlottingMarshaller } from '@agoric/client-utils';
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
-import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
+import {
+  CaipChainIds,
+  type AxelarChain,
+} from '@agoric/portfolio-api/src/constants.js';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
+import type { EvmAddress } from '@agoric/fast-usdc';
 import { makeKVStoreFromMap } from '@agoric/internal/src/kv-store.js';
 import type { Log } from 'ethers/providers';
-import { encodeAbiParameters } from 'viem';
+import { encodeAbiParameters, toFunctionSelector } from 'viem';
+import type { InstrumentId } from '@agoric/portfolio-api';
+import type { CaipChainId } from '@agoric/orchestration';
 import type { CosmosRestClient } from '../src/cosmos-rest-client.ts';
 import type { CosmosRPCClient } from '../src/cosmos-rpc.ts';
 import type { Powers as EnginePowers } from '../src/engine.ts';
@@ -18,6 +25,8 @@ import { makeGasEstimator } from '../src/gas-estimation.ts';
 import type { HandlePendingTxOpts } from '../src/pending-tx-manager.ts';
 import { prepareAbortController } from '../src/support.ts';
 import type { YdsNotifier } from '../src/yds-notifier.ts';
+import type { Sdk as SpectrumBlockchainSdk } from '../src/graphql/api-spectrum-blockchain/__generated/sdk.ts';
+import type { Sdk as SpectrumPoolsSdk } from '../src/graphql/api-spectrum-pools/__generated/sdk.ts';
 
 const PENDING_TX_PATH_PREFIX = 'published.ymax1';
 
@@ -61,22 +70,59 @@ export const makeNotImplemented = (
 export const makeNotImplementedAsync = (key: string | symbol) =>
   makeNotImplemented(key, { async: true });
 
+export const createMockSpectrumBlockchain = (amounts: {
+  [key: string]: number;
+}) =>
+  ({
+    async getBalances({
+      accounts,
+    }: {
+      accounts: {
+        chain: string;
+        address: string;
+        token: string;
+      }[];
+    }) {
+      return {
+        balances: accounts.map(query => {
+          return { balance: String(amounts[query.token] || 0), error: null };
+        }),
+      };
+    },
+  }) as SpectrumBlockchainSdk;
+
+export const createMockSpectrumPools = (amounts: { [key: string]: bigint }) =>
+  ({
+    async getBalances({
+      positions,
+    }: {
+      positions: {
+        chain: string;
+        protocol: string;
+        pool: string;
+        address: string;
+      }[];
+    }) {
+      return {
+        balances: positions.map(query => {
+          const amount = amounts[query.pool];
+          const balance =
+            amount !== undefined ? { USDC: Number(amount) / 1e6 } : null;
+          return {
+            balance,
+            error: null,
+          };
+        }),
+      };
+    },
+  }) as SpectrumPoolsSdk;
+
 /** Return a correctly-typed record lacking significant functionality. */
 export const createMockEnginePowers = (): EnginePowers => ({
-  evmCtx: {
-    usdcAddresses: {},
-    evmProviders: {},
-    kvStore: makeKVStoreFromMap(new Map()),
-    makeAbortController,
-    axelarApiUrl: mockAxelarApiAddress,
-    ydsNotifier: {
-      notifySettlement: async () => true,
-    } as unknown as YdsNotifier,
-  },
+  evmCtx: mockEvmCtx,
   rpc: {} as any,
-  spectrum: {} as any,
-  spectrumBlockchain: undefined,
-  spectrumPools: undefined,
+  spectrumBlockchain: createMockSpectrumBlockchain({}),
+  spectrumPools: createMockSpectrumPools({}),
   spectrumChainIds: {},
   spectrumPoolIds: {},
   cosmosRest: {} as any,
@@ -87,7 +133,16 @@ export const createMockEnginePowers = (): EnginePowers => ({
   now: () => NaN,
   gasEstimator: {} as any,
   usdcTokensByChain: {},
+  erc4626VaultAddresses: {},
+  chainNameToChainIdMap: CaipChainIds.testnet,
 });
+
+export const erc4626VaultsMock: Partial<
+  Record<ERC4626InstrumentId, EvmAddress>
+> = {
+  // @ts-expect-error TS strings don't track length; see https://github.com/microsoft/TypeScript/issues/52243
+  ERC4626_vaultU2_Ethereum: '0xbcc48e14f89f2bff20a7827148b466ae8f2fbc9b',
+};
 
 const mockFetchForGasEstimate = async (_, options?: any) => {
   return {
@@ -267,9 +322,54 @@ export const createMockProvider = (
     getTransactionReceipt: async (txHash: string) => {
       return mockReceipts.get(txHash) || null;
     },
+    call: async (transaction: any) => {
+      // Mock implementation for contract calls like balanceOf and convertToAssets
+      // For testing purposes, we return mock data
+      const { data } = transaction;
+
+      const encodeAmount = (amount: bigint) =>
+        encodeAbiParameters([{ type: 'uint256' }], [amount]);
+
+      if (!data || data === '0x') {
+        throw Error(`No data provided in mock call`);
+      }
+
+      // Parse function selector (first 4 bytes of data)
+      const selector = data.slice(0, 10);
+
+      if (selector === toFunctionSelector('balanceOf(address)')) {
+        return encodeAmount(1000n);
+      }
+
+      if (selector === toFunctionSelector('convertToAssets(uint256)')) {
+        return encodeAmount(3000n);
+      }
+
+      throw Error(`Unrecognized function selector in mock call: ${selector}`);
+    },
   };
 
   return mockProvider as unknown as WebSocketProvider;
+};
+
+const createMockEvmProviders = (
+  latestBlock = 1000,
+  events?: Pick<Log, 'blockNumber' | 'data' | 'topics' | 'transactionHash'>[],
+): Record<CaipChainId, WebSocketProvider> => ({
+  'eip155:1': createMockProvider(latestBlock, events),
+  'eip155:42161': createMockProvider(latestBlock, events),
+  'eip155:11155111': createMockProvider(latestBlock, events),
+});
+
+export const mockEvmCtx = {
+  usdcAddresses: {},
+  evmProviders: createMockEvmProviders(),
+  kvStore: makeKVStoreFromMap(new Map()),
+  makeAbortController,
+  axelarApiUrl: mockAxelarApiAddress,
+  ydsNotifier: {
+    notifySettlement: async () => true,
+  } as unknown as YdsNotifier,
 };
 
 export const createMockSigningSmartWalletKit = (): SigningSmartWalletKit => {
@@ -376,10 +476,7 @@ export const createMockPendingTxOpts = (
 ): HandlePendingTxOpts => ({
   cosmosRest: {} as unknown as CosmosRestClient,
   cosmosRpc: {} as unknown as CosmosRPCClient,
-  evmProviders: {
-    'eip155:1': createMockProvider(latestBlock, events),
-    'eip155:42161': createMockProvider(latestBlock, events),
-  },
+  evmProviders: createMockEvmProviders(latestBlock, events),
   fetch: global.fetch,
   marshaller: boardSlottingMarshaller(),
   signingSmartWalletKit: createMockSigningSmartWalletKit(),

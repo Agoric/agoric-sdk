@@ -192,6 +192,8 @@ export const ERC4626PoolPlaces = {
   },
 } as const satisfies Partial<Record<InstrumentId, PoolPlaceInfo>>;
 
+export type ERC4626InstrumentId = keyof typeof ERC4626PoolPlaces;
+
 export const PoolPlaces = {
   USDN: { protocol: 'USDN', vault: null, chainName: 'noble' }, // MsgSwap only
   USDNVault: { protocol: 'USDN', vault: 1, chainName: 'noble' }, // MsgSwap, MsgLock

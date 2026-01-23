@@ -48,3 +48,11 @@ harden(isInstrumentId);
 export const isWithdrawToChainRef = (ref: string): ref is WithdrawToChainRef =>
   ref.startsWith('-');
 harden(isWithdrawToChainRef);
+
+/**
+ * Is the input an ERC-4626 InstrumentId
+ * (i.e., does it start with 'ERC4626_')?
+ */
+export const isERC4626InstrumentId = (ref: string): boolean =>
+  ref.startsWith('ERC4626_');
+harden(isERC4626InstrumentId);
