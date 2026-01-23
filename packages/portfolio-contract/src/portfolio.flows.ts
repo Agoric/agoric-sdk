@@ -71,6 +71,7 @@ import {
   BeefyProtocol,
   CCTP,
   CCTPfromEVM,
+  CCTPv2,
   CompoundProtocol,
   ERC4626Protocol,
   provideEVMAccount,
@@ -614,6 +615,7 @@ type Way =
   | { how: 'IBC'; src: 'noble'; dest: 'agoric' }
   | { how: 'CCTP'; dest: AxelarChain }
   | { how: 'CCTP'; src: AxelarChain }
+  | { how: 'CCTPv2'; src: AxelarChain; dest: AxelarChain }
   | { how: 'withdrawToEVM'; dest: AxelarChain }
   | { how: 'CCTPtoUser'; dest: AxelarChain }
   | {
@@ -690,11 +692,29 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
         case 'accountId': {
           const destName = getChainNameOfPlaceRef(dest);
           assert(destName);
-          if (keys(AxelarChain).includes(destName)) {
+
+          // Check if planner explicitly requested CCTPv2 (EVM-to-EVM direct)
+          // Otherwise, fall through to existing v1 routing which may be cheaper
+          const srcIsEVM = keys(AxelarChain).includes(srcName);
+          const destIsEVM = keys(AxelarChain).includes(destName);
+          // TODO HACK don't use magic number 2 for CCTPv2 signal
+          if (
+            srcIsEVM &&
+            destIsEVM &&
+            moveDesc.detail?.transfer === BigInt(2) // CCTPv2 explicitly requested
+          ) {
+            return {
+              how: 'CCTPv2',
+              src: srcName as AxelarChain,
+              dest: destName as AxelarChain,
+            };
+          }
+
+          if (destIsEVM) {
             srcName === 'noble' || Fail`src for ${q(destName)} must be noble`;
             return { how: 'CCTP', dest: destName as AxelarChain };
           }
-          if (keys(AxelarChain).includes(srcName)) {
+          if (srcIsEVM) {
             destName === 'agoric' ||
               Fail`dest for ${q(srcName)} must be agoric`;
             return { how: 'CCTP', src: srcName as AxelarChain };
@@ -1014,6 +1034,39 @@ const stepFlow = async (
               ctx.transferChannels.noble.counterPartyChannelId,
             );
             await CCTPfromEVM.apply(evmCtx, amount, gInfo, agoric, ...optsArgs);
+            return {};
+          },
+        });
+
+        break;
+      }
+
+      case 'CCTPv2': {
+        const { src: srcChain, dest: destChain } = way;
+
+        todo.push({
+          how: 'CCTPv2',
+          amount,
+          src: move.src,
+          dest: move.dest,
+          apply: async (
+            { [srcChain]: srcInfo, [destChain]: destInfo, agoric },
+            _tracer,
+            ...optsArgs
+          ) => {
+            assert(
+              srcInfo && destInfo && agoric,
+              `${srcChain} and ${destChain}`,
+            );
+            await null;
+            const evmCtx = await makeEVMCtx(
+              srcChain,
+              move,
+              // Use agoric LCA for paying GMP fees
+              agoric.lca,
+              ctx.transferChannels.noble.counterPartyChannelId,
+            );
+            await CCTPv2.apply(evmCtx, amount, srcInfo, destInfo, ...optsArgs);
             return {};
           },
         });

@@ -42,6 +42,12 @@ export type UsdcAddresses = {
   testnet: Record<CaipChainId, HexAddress>;
 };
 
+/** @see https://developers.circle.com/cctp/references/contract-addresses */
+export type HexAddressByCluster = {
+  mainnet: HexAddress;
+  testnet: HexAddress;
+};
+
 const spectrumChainIds: Record<`${CaipChainId} ${SupportedChain}`, string> = {
   // for mainnet
   'eip155:42161 Arbitrum': '0xa4b1',
@@ -160,6 +166,19 @@ export const usdcAddresses: UsdcAddresses = {
   },
 };
 
+/**
+ * MessageTransmitterV2 contract address for CCTPv2.
+ *
+ * Circle uses deterministic deployment (CREATE2) so all CCTPv2 contracts
+ * have the SAME address across all EVM chains.
+ *
+ * @see https://developers.circle.com/cctp/references/contract-addresses
+ */
+export const MESSAGE_TRANSMITTER_V2_ADDRESS = {
+  mainnet: '0x81D40F21F12A8F0E3252Bccb954D722d4c464B64' as HexAddress,
+  testnet: '0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275' as HexAddress,
+};
+
 export const walletOperationGasLimitEstimates: Record<
   EvmWalletOperationType,
   Partial<Record<YieldProtocol, bigint>>
@@ -270,7 +289,10 @@ export const createEVMContext = async ({
   clusterName,
   alchemyApiKey,
 }: CreateContextParams): Promise<
-  Pick<EvmContext, 'evmProviders' | 'usdcAddresses'>
+  Pick<
+    EvmContext,
+    'evmProviders' | 'usdcAddresses' | 'messageTransmitterV2Address'
+  >
 > => {
   if (clusterName === 'local') clusterName = 'testnet';
   if (!alchemyApiKey) throw Error('missing alchemyApiKey');
@@ -288,6 +310,7 @@ export const createEVMContext = async ({
     // XXX Remove now that @agoric/portfolio-api/src/constants.js
     // defines UsdcTokenIds.
     usdcAddresses: usdcAddresses[clusterName],
+    messageTransmitterV2Address: MESSAGE_TRANSMITTER_V2_ADDRESS[clusterName],
   };
 };
 

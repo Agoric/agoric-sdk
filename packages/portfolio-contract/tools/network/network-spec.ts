@@ -15,6 +15,7 @@ export type TransferProtocol =
   | 'fastusdc'
   | 'cctpReturn'
   | 'cctpSlow'
+  | 'cctpV2'
   | 'local';
 /**
  * Link to Factory and Wallet contracts:
@@ -38,7 +39,8 @@ export type FeeMode =
   | 'makeEvmAccount'
   | 'evmToNoble'
   | 'evmToPool'
-  | 'poolToEvm';
+  | 'poolToEvm'
+  | 'evmToEvm';
 
 // Chains (hubs)
 export interface ChainSpec {

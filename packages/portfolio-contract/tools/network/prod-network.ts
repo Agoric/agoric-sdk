@@ -88,7 +88,7 @@ export const PROD_NETWORK: NetworkSpec = {
       dest: '@agoric',
       transfer: 'cctpSlow',
       variableFeeBps: 0,
-      timeSec: 1080,
+      timeSec: 30, // Avalanche has instant finality (~7 seconds observed)
       feeMode: 'evmToNoble',
     },
     {
@@ -175,6 +175,198 @@ export const PROD_NETWORK: NetworkSpec = {
       transfer: 'ibc',
       variableFeeBps: 0,
       timeSec: 10,
+    },
+
+    // CCTPv2 direct EVM-to-EVM routes (full mesh connectivity)
+    // Estimated time: ~13-60 seconds depending on finality threshold
+    // Note: CCTPv2 contracts must be deployed on both source and destination chains
+
+    // Arbitrum ↔ other EVM chains
+    {
+      src: '@Arbitrum',
+      dest: '@Ethereum',
+      transfer: 'cctpV2',
+      variableFeeBps: 0,
+      timeSec: 60,
+      min: 100_000n,
+      feeMode: 'evmToEvm',
+    },
+    {
+      src: '@Ethereum',
+      dest: '@Arbitrum',
+      transfer: 'cctpV2',
+      variableFeeBps: 0,
+      timeSec: 60,
+      min: 100_000n,
+      feeMode: 'evmToEvm',
+    },
+    {
+      src: '@Arbitrum',
+      dest: '@Base',
+      transfer: 'cctpV2',
+      variableFeeBps: 0,
+      timeSec: 60,
+      min: 100_000n,
+      feeMode: 'evmToEvm',
+    },
+    {
+      src: '@Base',
+      dest: '@Arbitrum',
+      transfer: 'cctpV2',
+      variableFeeBps: 0,
+      timeSec: 60,
+      min: 100_000n,
+      feeMode: 'evmToEvm',
+    },
+    {
+      src: '@Arbitrum',
+      dest: '@Avalanche',
+      transfer: 'cctpV2',
+      variableFeeBps: 0,
+      timeSec: 30, // Avalanche has instant finality
+      min: 100_000n,
+      feeMode: 'evmToEvm',
+    },
+    {
+      src: '@Avalanche',
+      dest: '@Arbitrum',
+      transfer: 'cctpV2',
+      variableFeeBps: 0,
+      timeSec: 60,
+      min: 100_000n,
+      feeMode: 'evmToEvm',
+    },
+    {
+      src: '@Arbitrum',
+      dest: '@Optimism',
+      transfer: 'cctpV2',
+      variableFeeBps: 0,
+      timeSec: 60,
+      min: 100_000n,
+      feeMode: 'evmToEvm',
+    },
+    {
+      src: '@Optimism',
+      dest: '@Arbitrum',
+      transfer: 'cctpV2',
+      variableFeeBps: 0,
+      timeSec: 60,
+      min: 100_000n,
+      feeMode: 'evmToEvm',
+    },
+
+    // Base ↔ other EVM chains (excluding Arbitrum, already defined)
+    {
+      src: '@Base',
+      dest: '@Ethereum',
+      transfer: 'cctpV2',
+      variableFeeBps: 0,
+      timeSec: 60,
+      min: 100_000n,
+      feeMode: 'evmToEvm',
+    },
+    {
+      src: '@Ethereum',
+      dest: '@Base',
+      transfer: 'cctpV2',
+      variableFeeBps: 0,
+      timeSec: 60,
+      min: 100_000n,
+      feeMode: 'evmToEvm',
+    },
+    {
+      src: '@Base',
+      dest: '@Avalanche',
+      transfer: 'cctpV2',
+      variableFeeBps: 0,
+      timeSec: 30, // Avalanche has instant finality
+      min: 100_000n,
+      feeMode: 'evmToEvm',
+    },
+    {
+      src: '@Avalanche',
+      dest: '@Base',
+      transfer: 'cctpV2',
+      variableFeeBps: 0,
+      timeSec: 60,
+      min: 100_000n,
+      feeMode: 'evmToEvm',
+    },
+    {
+      src: '@Base',
+      dest: '@Optimism',
+      transfer: 'cctpV2',
+      variableFeeBps: 0,
+      timeSec: 60,
+      min: 100_000n,
+      feeMode: 'evmToEvm',
+    },
+    {
+      src: '@Optimism',
+      dest: '@Base',
+      transfer: 'cctpV2',
+      variableFeeBps: 0,
+      timeSec: 60,
+      min: 100_000n,
+      feeMode: 'evmToEvm',
+    },
+
+    // Ethereum ↔ other EVM chains (excluding Arbitrum, Base already defined)
+    {
+      src: '@Ethereum',
+      dest: '@Avalanche',
+      transfer: 'cctpV2',
+      variableFeeBps: 0,
+      timeSec: 30, // Avalanche has instant finality
+      min: 100_000n,
+      feeMode: 'evmToEvm',
+    },
+    {
+      src: '@Avalanche',
+      dest: '@Ethereum',
+      transfer: 'cctpV2',
+      variableFeeBps: 0,
+      timeSec: 60,
+      min: 100_000n,
+      feeMode: 'evmToEvm',
+    },
+    {
+      src: '@Ethereum',
+      dest: '@Optimism',
+      transfer: 'cctpV2',
+      variableFeeBps: 0,
+      timeSec: 60,
+      min: 100_000n,
+      feeMode: 'evmToEvm',
+    },
+    {
+      src: '@Optimism',
+      dest: '@Ethereum',
+      transfer: 'cctpV2',
+      variableFeeBps: 0,
+      timeSec: 60,
+      min: 100_000n,
+      feeMode: 'evmToEvm',
+    },
+
+    // Avalanche ↔ Optimism (remaining pair)
+    {
+      src: '@Avalanche',
+      dest: '@Optimism',
+      transfer: 'cctpV2',
+      variableFeeBps: 0,
+      timeSec: 60,
+      min: 100_000n,
+      feeMode: 'evmToEvm',
+    },
+    {
+      src: '@Optimism',
+      dest: '@Avalanche',
+      transfer: 'cctpV2',
+      variableFeeBps: 0,
+      timeSec: 30, // Avalanche has instant finality
+      min: 100_000n,
+      feeMode: 'evmToEvm',
     },
   ],
 };

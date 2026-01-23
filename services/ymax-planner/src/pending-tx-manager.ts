@@ -24,10 +24,15 @@ import { resolvePendingTx } from './resolver.ts';
 import { waitForBlock } from './support.ts';
 import type {
   EvmProviders,
+  HexAddressByCluster,
   MakeAbortController,
   UsdcAddresses,
 } from './support.ts';
 import { lookBackCctp, watchCctpTransfer } from './watchers/cctp-watcher.ts';
+import {
+  lookBackCctpV2,
+  watchCctpV2Transfer,
+} from './watchers/cctp-v2-watcher.ts';
 import {
   lookBackGmp,
   WATCH_GMP_ABORTED,
@@ -53,6 +58,8 @@ export type GmpWatcherResult = WatcherResult & {
 export type EvmContext = {
   cosmosRest: CosmosRestClient;
   usdcAddresses: UsdcAddresses['mainnet' | 'testnet'];
+  /** Same address on all EVM chains (CREATE2 deterministic deployment) */
+  messageTransmitterV2Address: HexAddressByCluster['mainnet' | 'testnet'];
   evmProviders: EvmProviders;
   signingSmartWalletKit: SigningSmartWalletKit;
   fetch: typeof fetch;
@@ -69,6 +76,11 @@ export type GmpTransfer = {
 };
 
 type CctpTx = PendingTx & { type: typeof TxType.CCTP_TO_EVM; amount: bigint };
+type CctpV2Tx = PendingTx & {
+  type: typeof TxType.CCTP_V2;
+  amount: bigint;
+  sourceAddress: string; // Source chain for domain ID mapping
+};
 type GmpTx = PendingTx & { type: typeof TxType.GMP };
 type MakeAccountTx = PendingTx & { type: typeof TxType.MAKE_ACCOUNT };
 
@@ -202,6 +214,137 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
     }
 
     log(`${logPrefix} CCTP tx resolved`);
+  },
+};
+
+/**
+ * CCTP domain IDs for mapping chain IDs to CCTP source domains.
+ * @see https://developers.circle.com/stablecoins/docs/supported-domains
+ */
+const CCTP_DOMAIN_BY_CHAIN: Record<CaipChainId, number> = {
+  // Mainnet
+  'eip155:1': 0, // Ethereum
+  'eip155:43114': 1, // Avalanche
+  'eip155:10': 2, // Optimism
+  'eip155:42161': 3, // Arbitrum
+  'eip155:8453': 6, // Base
+  // Testnet
+  'eip155:11155111': 0, // Ethereum Sepolia
+  'eip155:43113': 1, // Avalanche Fuji
+  'eip155:11155420': 2, // Optimism Sepolia
+  'eip155:421614': 3, // Arbitrum Sepolia
+  'eip155:84532': 6, // Base Sepolia
+};
+
+const cctpV2Monitor: PendingTxMonitor<CctpV2Tx, EvmContext> = {
+  watch: async (ctx, tx, log, opts) => {
+    await null;
+
+    const { txId, destinationAddress, sourceAddress, amount } = tx;
+    const logPrefix = `[${txId}]`;
+
+    if (opts.signal?.aborted) {
+      log(`${logPrefix} CCTPv2 watch aborted before starting`);
+      return;
+    }
+
+    // Parse destinationAddress format: 'eip155:42161:0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092'
+    assert(destinationAddress, `${logPrefix} Missing destinationAddress`);
+    const destParsed = parseAccountId(destinationAddress);
+    const destCaipId: CaipChainId = `${destParsed.namespace}:${destParsed.reference}`;
+
+    // Parse sourceAddress to get source chain
+    assert(sourceAddress, `${logPrefix} Missing sourceAddress`);
+    const srcParsed = parseAccountId(sourceAddress);
+    const srcCaipId: CaipChainId = `${srcParsed.namespace}:${srcParsed.reference}`;
+
+    const sourceDomain = CCTP_DOMAIN_BY_CHAIN[srcCaipId];
+    sourceDomain !== undefined ||
+      Fail`${logPrefix} No CCTP domain ID for source chain: ${srcCaipId}`;
+
+    const messageTransmitterAddress = ctx.messageTransmitterV2Address;
+    const provider =
+      ctx.evmProviders[destCaipId] ||
+      Fail`${logPrefix} No EVM provider for chain: ${destCaipId}`;
+
+    const watchArgs = {
+      messageTransmitterAddress,
+      recipientAddress: destParsed.accountAddress as `0x${string}`,
+      expectedAmount: amount,
+      sourceDomain,
+      provider,
+      log: (msg: unknown, ...args: unknown[]) => log(logPrefix, msg, ...args),
+      kvStore: ctx.kvStore,
+      txId,
+    };
+
+    let transferResult: WatcherResult | undefined;
+
+    if (opts.mode === 'live') {
+      transferResult = await watchCctpV2Transfer({
+        ...watchArgs,
+        timeoutMs: opts.timeoutMs,
+        signal: opts.signal,
+      });
+    } else {
+      // Lookback mode with concurrent live watching
+      const abortController = ctx.makeAbortController(
+        undefined,
+        opts.signal ? [opts.signal] : undefined,
+      );
+
+      const liveResultP = watchCctpV2Transfer({
+        ...watchArgs,
+        timeoutMs: opts.timeoutMs,
+        signal: abortController.signal,
+      });
+      void liveResultP.then(result => {
+        if (result.found) {
+          log(`${logPrefix} Live mode completed`);
+          abortController.abort();
+        }
+      });
+
+      await null;
+      // Wait for at least one block to ensure overlap between lookback and live mode
+      const currentBlock = await provider.getBlockNumber();
+      await waitForBlock(provider, currentBlock + 1);
+
+      // Scan historical blocks
+      transferResult = await lookBackCctpV2({
+        ...watchArgs,
+        publishTimeMs: opts.publishTimeMs,
+        chainId: destCaipId,
+        signal: abortController.signal,
+      });
+
+      if (transferResult.found) {
+        const reason = `${logPrefix} Lookback found transaction`;
+        log(reason);
+        abortController.abort(reason);
+      } else {
+        log(
+          `${logPrefix} Lookback completed without finding transaction, waiting for live mode`,
+        );
+        transferResult = await liveResultP;
+      }
+    }
+
+    if (opts.signal?.aborted) {
+      return;
+    }
+
+    await resolvePendingTx({
+      signingSmartWalletKit: ctx.signingSmartWalletKit,
+      txId,
+      status: transferResult?.found ? TxStatus.SUCCESS : TxStatus.FAILED,
+    });
+
+    if (transferResult?.txHash) {
+      await ctx.ydsNotifier?.notifySettlement(txId, transferResult.txHash);
+    }
+
+    log(`${logPrefix} CCTPv2 tx resolved`);
   },
 };
 
@@ -457,6 +600,7 @@ const MONITORS = new Map<
   PendingTxMonitor<PendingTx, EvmContext> | null
 >([
   [TxType.CCTP_TO_EVM, cctpMonitor],
+  [TxType.CCTP_V2, cctpV2Monitor],
   [TxType.GMP, gmpMonitor],
   [TxType.MAKE_ACCOUNT, makeAccountMonitor],
   [TxType.IBC_FROM_AGORIC, ibcFromAgoricMonitor],

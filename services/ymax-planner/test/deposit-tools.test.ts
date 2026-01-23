@@ -662,3 +662,170 @@ test('planRebalanceToAllocations regression - multiple sources', async t => {
   });
   t.snapshot(plan);
 });
+
+// ============= CCTPv2 Route Selection Tests =============
+
+test('planRebalanceToAllocations prefers CCTPv2 for EVM-to-EVM (Base → Avalanche)', async t => {
+  const targetAllocation = {
+    Aave_Avalanche: 100n, // All funds to Avalanche
+  };
+  const currentBalances = {
+    Aave_Base: makeDeposit(10_000_000n), // Starting on Base
+  };
+
+  const plan = await planRebalanceToAllocations({
+    ...plannerContext,
+    currentBalances,
+    targetAllocation,
+    network: PROD_NETWORK,
+  });
+
+  // Should have: Base (withdraw) → @Base → @Avalanche (CCTPv2) → Aave_Avalanche (supply)
+  // NOT: Base → @Base → @noble → @Avalanche → Aave_Avalanche
+  const movements = plan.flow;
+
+  // Find the cross-chain transfer step
+  const crossChainStep = movements.find(
+    m => m.src === '@Base' && m.dest === '@Avalanche',
+  );
+  t.truthy(crossChainStep, 'Should have direct Base → Avalanche step');
+  t.deepEqual(
+    crossChainStep?.detail,
+    { transfer: 2n },
+    'Should use CCTPv2 (detail.transfer = 2n)',
+  );
+});
+
+test('planRebalanceToAllocations routes to Noble via CCTPv1 (not CCTPv2)', async t => {
+  const targetAllocation = {
+    USDN: 100n, // All funds to Noble's USDN
+  };
+  const currentBalances = {
+    Aave_Base: makeDeposit(10_000_000n),
+  };
+
+  const plan = await planRebalanceToAllocations({
+    ...plannerContext,
+    currentBalances,
+    targetAllocation,
+    network: PROD_NETWORK,
+  });
+
+  // The final step to Noble or USDN should NOT use CCTPv2 (which can't reach Cosmos)
+  // It should use CCTPv1 via @noble or @agoric
+  const toNobleOrUsdn = plan.flow.filter(
+    m => m.dest === '@noble' || m.dest === 'USDN',
+  );
+
+  t.true(toNobleOrUsdn.length > 0, 'Should have steps reaching Noble/USDN');
+
+  for (const step of toNobleOrUsdn) {
+    // Steps to Noble/USDN cannot use CCTPv2 (detail.transfer = 2n)
+    t.not(
+      step.detail?.transfer,
+      2n,
+      `Step ${step.src} → ${step.dest} should not use CCTPv2`,
+    );
+  }
+
+  // Verify at least one step reaches USDN (the final destination)
+  const toUsdn = plan.flow.find(m => m.dest === 'USDN');
+  t.truthy(toUsdn, 'Should have step to USDN');
+});
+
+test('planRebalanceToAllocations uses CCTPv2 for multi-EVM rebalance', async t => {
+  const targetAllocation = {
+    Aave_Arbitrum: 25n,
+    Aave_Avalanche: 25n,
+    Aave_Base: 25n,
+    Aave_Ethereum: 25n,
+  };
+  const currentBalances = {
+    Aave_Base: makeDeposit(40_000_000n), // All on Base, need to spread
+  };
+
+  const plan = await planRebalanceToAllocations({
+    ...plannerContext,
+    currentBalances,
+    targetAllocation,
+    network: PROD_NETWORK,
+  });
+
+  // All EVM-to-EVM transfers should use CCTPv2
+  const evmToEvmSteps = plan.flow.filter(
+    m =>
+      m.src.startsWith('@') &&
+      m.dest.startsWith('@') &&
+      !['@agoric', '@noble'].includes(m.src) &&
+      !['@agoric', '@noble'].includes(m.dest),
+  );
+
+  t.true(evmToEvmSteps.length > 0, 'Should have EVM-to-EVM transfer steps');
+  for (const step of evmToEvmSteps) {
+    t.deepEqual(
+      step.detail,
+      { transfer: 2n },
+      `Step ${step.src} → ${step.dest} should use CCTPv2`,
+    );
+  }
+});
+
+test('planRebalanceToAllocations selects correct routes for Base → Avalanche + Noble split', async t => {
+  // Starting: Funds on Base
+  // Goal: Split between Avalanche Aave and Noble USDN
+  // Expected:
+  //   - Base → Avalanche via CCTPv2 (direct, ~60s)
+  //   - Base → Noble via CCTPv1 (via @agoric, ~1080s)
+  // CCTPv2 should NOT be used for the Noble leg
+
+  const targetAllocation = {
+    Aave_Avalanche: 50n,
+    USDN: 50n,
+  };
+  const currentBalances = {
+    Aave_Base: makeDeposit(20_000_000n),
+  };
+
+  const plan = await planRebalanceToAllocations({
+    ...plannerContext,
+    currentBalances,
+    targetAllocation,
+    network: PROD_NETWORK,
+  });
+
+  // Check Avalanche route uses CCTPv2
+  const toAvalancheStep = plan.flow.find(
+    m => m.src === '@Base' && m.dest === '@Avalanche',
+  );
+  t.truthy(toAvalancheStep, 'Should have Base → Avalanche step');
+  t.deepEqual(
+    toAvalancheStep?.detail,
+    { transfer: 2n },
+    'Avalanche route should use CCTPv2',
+  );
+
+  // Snapshot the full plan for regression tracking
+  t.snapshot(plan, 'Base to Avalanche + Noble split routing');
+});
+
+test('planRebalanceToAllocations regression - CCTPv2 multi-source rebalance', async t => {
+  const targetAllocation = {
+    Aave_Arbitrum: 25n,
+    Aave_Avalanche: 25n,
+    Aave_Base: 25n,
+    Aave_Ethereum: 25n,
+  };
+  const currentBalances = {
+    Aave_Base: makeDeposit(5_000_000n),
+    Aave_Optimism: makeDeposit(5_000_000n),
+  };
+
+  const plan = await planRebalanceToAllocations({
+    ...plannerContext,
+    currentBalances,
+    targetAllocation,
+    network: PROD_NETWORK,
+  });
+
+  t.snapshot(plan, 'CCTPv2 multi-source rebalance');
+});
