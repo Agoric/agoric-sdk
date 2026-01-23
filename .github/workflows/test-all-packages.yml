@@ -16,6 +16,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  AGORIC_AVA_USE_TAP: true
   NODE_V8_COVERAGE: coverage
   TEST_COLLECT: 'tee -a _testoutput.txt'
 

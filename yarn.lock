@@ -8872,7 +8872,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ava@npm:^6.4.1":
+"ava@npm:6.4.1":
   version: 6.4.1
   resolution: "ava@npm:6.4.1"
   dependencies:
@@ -8924,6 +8924,61 @@ __metadata:
   bin:
     ava: entrypoints/cli.mjs
   checksum: 10c0/21972df1031ef46533ea1b7daa132a5fc66841c8a221b6901163d12d2a1cac39bfd8a6d3459da7eb9344fa90fc02f237f2fe2aac8785d04bf5894fa43625be28
+  languageName: node
+  linkType: hard
+
+"ava@patch:ava@npm%3A6.4.1#~/.yarn/patches/ava-npm-6.4.1-be769b2551.patch":
+  version: 6.4.1
+  resolution: "ava@patch:ava@npm%3A6.4.1#~/.yarn/patches/ava-npm-6.4.1-be769b2551.patch::version=6.4.1&hash=a504bf"
+  dependencies:
+    "@vercel/nft": "npm:^0.29.4"
+    acorn: "npm:^8.15.0"
+    acorn-walk: "npm:^8.3.4"
+    ansi-styles: "npm:^6.2.1"
+    arrgv: "npm:^1.0.2"
+    arrify: "npm:^3.0.0"
+    callsites: "npm:^4.2.0"
+    cbor: "npm:^10.0.9"
+    chalk: "npm:^5.4.1"
+    chunkd: "npm:^2.0.1"
+    ci-info: "npm:^4.3.0"
+    ci-parallel-vars: "npm:^1.0.1"
+    cli-truncate: "npm:^4.0.0"
+    code-excerpt: "npm:^4.0.0"
+    common-path-prefix: "npm:^3.0.0"
+    concordance: "npm:^5.0.4"
+    currently-unhandled: "npm:^0.4.1"
+    debug: "npm:^4.4.1"
+    emittery: "npm:^1.2.0"
+    figures: "npm:^6.1.0"
+    globby: "npm:^14.1.0"
+    ignore-by-default: "npm:^2.1.0"
+    indent-string: "npm:^5.0.0"
+    is-plain-object: "npm:^5.0.0"
+    is-promise: "npm:^4.0.0"
+    matcher: "npm:^5.0.0"
+    memoize: "npm:^10.1.0"
+    ms: "npm:^2.1.3"
+    p-map: "npm:^7.0.3"
+    package-config: "npm:^5.0.0"
+    picomatch: "npm:^4.0.2"
+    plur: "npm:^5.1.0"
+    pretty-ms: "npm:^9.2.0"
+    resolve-cwd: "npm:^3.0.0"
+    stack-utils: "npm:^2.0.6"
+    strip-ansi: "npm:^7.1.0"
+    supertap: "npm:^3.0.1"
+    temp-dir: "npm:^3.0.0"
+    write-file-atomic: "npm:^6.0.0"
+    yargs: "npm:^17.7.2"
+  peerDependencies:
+    "@ava/typescript": "*"
+  peerDependenciesMeta:
+    "@ava/typescript":
+      optional: true
+  bin:
+    ava: entrypoints/cli.mjs
+  checksum: 10c0/fa424e813ecb6b26c9082afd194266e830cb16b5fe307963d3c6dfc117c09e3cb5c3fb1acae540eb294f06ceb17bf13bddf98118b65b2ba57d6cc56628f423f5
   languageName: node
   linkType: hard
 
@@ -13292,7 +13347,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"inherits@npm:2, inherits@npm:2.0.4, inherits@npm:^2.0.1, inherits@npm:^2.0.3, inherits@npm:^2.0.4":
+"inherits@npm:2, inherits@npm:2.0.4, inherits@npm:^2.0.3, inherits@npm:^2.0.4":
   version: 2.0.4
   resolution: "inherits@npm:2.0.4"
   checksum: 10c0/4e531f648b29039fb7426fb94075e6545faa1eb9fe83c29f0b6d9e7263aceb4289d2d4557db0d428188eeb449cc7c5e77b0a0b2c4e248ff2a65933a0dee49ef2
@@ -18038,14 +18093,15 @@ __metadata:
   linkType: hard
 
 "sha.js@npm:^2.4.11":
-  version: 2.4.11
-  resolution: "sha.js@npm:2.4.11"
+  version: 2.4.12
+  resolution: "sha.js@npm:2.4.12"
   dependencies:
-    inherits: "npm:^2.0.1"
-    safe-buffer: "npm:^5.0.1"
+    inherits: "npm:^2.0.4"
+    safe-buffer: "npm:^5.2.1"
+    to-buffer: "npm:^1.2.0"
   bin:
-    sha.js: ./bin.js
-  checksum: 10c0/b7a371bca8821c9cc98a0aeff67444a03d48d745cb103f17228b96793f455f0eb0a691941b89ea1e60f6359207e36081d9be193252b0f128e0daf9cfea2815a5
+    sha.js: bin.js
+  checksum: 10c0/9d36bdd76202c8116abbe152a00055ccd8a0099cb28fc17c01fa7bb2c8cffb9ca60e2ab0fe5f274ed6c45dc2633d8c39cf7ab050306c231904512ba9da4d8ab1
   languageName: node
   linkType: hard
 
@@ -19077,6 +19133,17 @@ __metadata:
   version: 1.0.5
   resolution: "tmpl@npm:1.0.5"
   checksum: 10c0/f935537799c2d1922cb5d6d3805f594388f75338fe7a4a9dac41504dd539704ca4db45b883b52e7b0aa5b2fd5ddadb1452bf95cd23a69da2f793a843f9451cc9
+  languageName: node
+  linkType: hard
+
+"to-buffer@npm:^1.2.0":
+  version: 1.2.2
+  resolution: "to-buffer@npm:1.2.2"
+  dependencies:
+    isarray: "npm:^2.0.5"
+    safe-buffer: "npm:^5.2.1"
+    typed-array-buffer: "npm:^1.0.3"
+  checksum: 10c0/56bc56352f14a2c4a0ab6277c5fc19b51e9534882b98eb068b39e14146591e62fa5b06bf70f7fed1626230463d7e60dca81e815096656e5e01c195c593873d12
   languageName: node
   linkType: hard
 
