@@ -8,6 +8,10 @@ import { getOwn } from './utils.ts';
 import type { BalanceQueryPowers, ERC4626VaultQuery } from './plan-deposit.ts';
 
 // Minimal ABI for ERC4626 vault interactions
+// https://ethereum.org/developers/docs/standards/tokens/erc-4626#methods
+// We don't use `maxWithdraw` because Morpho at least doesn't support it as of
+// 2026-01-23:
+// https://github.com/morpho-org/vault-v2/blob/5c4e7207d21aaf466dffd2c7bdb7a78c14e14d03/src/VaultV2.sol#L743-L745
 const ERC4626_MINIMAL_ABI = [
   {
     name: 'balanceOf',
