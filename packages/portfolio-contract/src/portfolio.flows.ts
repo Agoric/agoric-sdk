@@ -65,7 +65,11 @@ import { assert, Fail, q } from '@endo/errors';
 import { makeMarshal } from '@endo/marshal';
 import type { RegisterAccountMemo } from './noble-fwd-calc.js';
 import type { AxelarId, GmpAddresses } from './portfolio.contract.ts';
-import type { AccountInfoFor, PortfolioKit } from './portfolio.exo.ts';
+import type {
+  AccountInfoFor,
+  GMPAccountInfo,
+  PortfolioKit,
+} from './portfolio.exo.ts';
 import {
   AaveProtocol,
   BeefyProtocol,
@@ -228,7 +232,9 @@ type FlowStepPowers = {
 type ExecutePlanOptions = {
   evmDepositDetail?: PermitDetails & { fromChain: AxelarChain };
   // XXX consider using pattern matching for queued steps instead of src/dest.
-  queuedSteps?: Array<Pick<MovementDesc, 'src' | 'dest'>>;
+  queuedSteps?: Array<
+    Pick<MovementDesc, 'src' | 'dest'> & { ready?: Promise<void> }
+  >;
 };
 
 const makeFlowStepPowers = (
@@ -785,8 +791,8 @@ const stepFlow = async (
       [] as PendingTxsEntry[],
     );
 
-  const isQueuedStep = (move: Pick<MovementDesc, 'src' | 'dest'>) =>
-    queuedSteps?.some(step => step.src === move.src && step.dest === move.dest);
+  const getQueuedStep = (move: Pick<MovementDesc, 'src' | 'dest'>) =>
+    queuedSteps?.find(step => step.src === move.src && step.dest === move.dest);
 
   const makeEVMCtx = async (
     chain: AxelarChain,
@@ -889,7 +895,8 @@ const stepFlow = async (
   moves.length > 0 || Fail`moves list must not be empty`;
 
   for (const [i, move] of entries(moves)) {
-    if (isQueuedStep(move)) {
+    const queuedStep = getQueuedStep(move);
+    if (queuedStep) {
       const maybeChain =
         getChainNameOfPlaceRef(move.src) ||
         getChainNameOfPlaceRef(move.dest) ||
@@ -905,6 +912,9 @@ const stepFlow = async (
         apply: async ({ [chainName]: gInfo }) => {
           assert(gInfo, chainName);
           await gInfo.ready;
+          if (queuedStep.ready) {
+            await queuedStep.ready;
+          }
           return {};
         },
       });
@@ -1768,6 +1778,7 @@ const queuePermit2Step = async (
     chainInfo: BaseChainInfo<'eip155'>;
   },
 ) => {
+  await null; // see https://github.com/Agoric/agoric-sdk/wiki/No-Nested-Await
   const { gmpChain, steps, permit2Payload, fromChain, chainInfo } = details;
   const permitStep = steps.find(
     step => step.src === `+${fromChain}` && step.dest === `@${fromChain}`,
