@@ -33,7 +33,8 @@ type ERC4626BalanceResult = {
 
 /**
  * Fetch ERC4626 vault underlying asset balance using ethers provider.
- * Queries the vault token balance, then converts it to underlying assets using convertToAssets.
+ * @returns the count of underlying asset tokens (e.g., uusdc) represented by
+ * the current balance as a count of currently held shares
  */
 export const getERC4626VaultBalance = async (
   vaultAddress: string,
@@ -66,19 +67,22 @@ export const getERC4626VaultBalance = async (
 
 /**
  * Fetch ERC4626 vault balances using ethers provider.
- * Similar interface to spectrumPools.getBalances for consistency.
  */
 export const getERC4626VaultsBalances = async (
   queries: ERC4626VaultQuery[],
   powers: Pick<
     BalanceQueryPowers,
-    'chainNameToChainIdMap' | 'erc4626Vaults' | 'evmProviders'
+    'chainNameToChainIdMap' | 'erc4626VaultAddresses' | 'evmProviders'
   >,
 ): Promise<ERC4626BalanceResult[]> => {
-  const { erc4626Vaults, chainNameToChainIdMap, evmProviders } = powers;
+  const { erc4626VaultAddresses, chainNameToChainIdMap, evmProviders } = powers;
 
   const missingPowers = partialMap(
-    Object.entries({ chainNameToChainIdMap, erc4626Vaults, evmProviders }),
+    Object.entries({
+      chainNameToChainIdMap,
+      erc4626VaultAddresses,
+      evmProviders,
+    }),
     ([key, val]) => (val ? false : key),
   );
   missingPowers.length === 0 ||
@@ -89,7 +93,7 @@ export const getERC4626VaultsBalances = async (
       await null;
       try {
         const vaultAddress =
-          getOwn(erc4626Vaults, place) ||
+          getOwn(erc4626VaultAddresses, place) ||
           Fail`No vault configuration for instrument ${q(place)}`;
 
         const chainId: CaipChainId = chainNameToChainIdMap[chainName];

@@ -34,11 +34,12 @@ import {
   CaipChainIds,
   UsdcTokenIds,
 } from '@agoric/portfolio-api/src/constants.js';
+import { isERC4626InstrumentId } from '@agoric/portfolio-api/src/type-guards.js';
 import {
   axelarConfig,
   axelarConfigTestnet,
 } from '@aglocal/portfolio-deploy/src/axelar-configs.js';
-import type { PoolKey } from '@aglocal/portfolio-contract/src/type-guards.ts';
+import type { ERC4626InstrumentId } from '@aglocal/portfolio-contract/src/type-guards.ts';
 
 import type { EvmAddress } from '@agoric/fast-usdc';
 import { loadConfig } from './config.ts';
@@ -122,14 +123,15 @@ export const main = async (
   const axelarCfg =
     clusterName === 'mainnet' ? axelarConfig : axelarConfigTestnet;
 
-  const isERC4626Entry = ([name, _addr]) => name.startsWith('ERC4626');
+  const isERC4626Entry = ([name, _addr]) => isERC4626InstrumentId(name);
   const erc4626VaultEntries = typedEntries(axelarCfg).flatMap(
     ([_chainName, { contracts }]) =>
       typedEntries(contracts).filter(isERC4626Entry),
   );
 
-  const erc4626Vaults: Partial<Record<PoolKey, EvmAddress>> =
-    fromUniqueEntries(erc4626VaultEntries);
+  const erc4626VaultAddresses: Partial<
+    Record<ERC4626InstrumentId, EvmAddress>
+  > = fromUniqueEntries(erc4626VaultEntries);
 
   const networkConfig = await fetchEnvNetworkConfig({
     env: { AGORIC_NET: config.cosmosRest.agoricNetworkSpec },
@@ -315,7 +317,7 @@ export const main = async (
     now,
     gasEstimator,
     usdcTokensByChain,
-    erc4626Vaults,
+    erc4626VaultAddresses,
     chainNameToChainIdMap: CaipChainIds[clusterName],
   };
 

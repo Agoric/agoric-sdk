@@ -26,3 +26,11 @@ harden(isInterChainAccountRef);
 export const isInstrumentId = (ref: string): ref is InstrumentId =>
   !!ref.match(/^[a-z]/i);
 harden(isInstrumentId);
+
+/**
+ * Is the input an ERC4626 InstrumentId
+ * (i.e., does it start with 'ERC4626')?
+ */
+export const isERC4626InstrumentId = (ref: string): boolean =>
+  ref.startsWith('ERC4626');
+harden(isERC4626InstrumentId);

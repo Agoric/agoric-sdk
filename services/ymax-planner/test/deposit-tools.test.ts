@@ -53,7 +53,7 @@ const emptyPlan = harden({ flow: [], order: undefined });
 const handleDeposit = async (
   portfolioKey: `${string}.portfolios.portfolio${number}`,
   amount: NatAmount,
-  feeBrandName: Brand<'nat'>,
+  feeBrand: Brand<'nat'>,
   powers: {
     readPublished: VstorageKit['readPublished'];
     spectrum: SpectrumClient;
@@ -77,7 +77,7 @@ const handleDeposit = async (
     spectrumChainIds: powers.spectrumChainIds || {},
     spectrumPoolIds: powers.spectrumPoolIds || {},
     usdcTokensByChain: powers.usdcTokensByChain || {},
-    erc4626Vaults: {},
+    erc4626VaultAddresses: {},
     chainNameToChainIdMap: CaipChainIds.testnet,
     evmProviders: mockEvmCtx.evmProviders,
     cosmosRest: powers.cosmosRest || ({} as unknown as CosmosRestClient),
@@ -89,7 +89,7 @@ const handleDeposit = async (
     currentBalances,
     targetAllocation,
     network,
-    feeBrand: feeBrandName,
+    feeBrand,
     gasEstimator: powers.gasEstimator,
   });
   return { policyVersion, rebalanceCount, plan };
@@ -137,7 +137,7 @@ test('getNonDustBalances filters balances at or below the dust epsilon', async t
       Arbitrum: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
       Base: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
     },
-    erc4626Vaults: {},
+    erc4626VaultAddresses: {},
     chainNameToChainIdMap: CaipChainIds.testnet,
     evmProviders: mockEvmCtx.evmProviders,
   });
@@ -178,7 +178,7 @@ test('getNonDustBalances retains noble balances above the dust epsilon', async t
     spectrumChainIds: { noble: 'noble-1' },
     spectrumPoolIds: {},
     usdcTokensByChain: { noble: 'uusdc' },
-    erc4626Vaults: {},
+    erc4626VaultAddresses: {},
     chainNameToChainIdMap: CaipChainIds.testnet,
     evmProviders: mockEvmCtx.evmProviders,
   });
@@ -638,7 +638,7 @@ test('getNonDustBalances works for erc4626 vaults', async t => {
     spectrumChainIds: {},
     spectrumPoolIds: {},
     usdcTokensByChain: {},
-    erc4626Vaults: erc4626VaultsMock,
+    erc4626VaultAddresses: erc4626VaultsMock,
     chainNameToChainIdMap: CaipChainIds.testnet,
     evmProviders: mockEvmCtx.evmProviders,
   });

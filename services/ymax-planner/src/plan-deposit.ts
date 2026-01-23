@@ -1,13 +1,13 @@
 import { assert, Fail, X } from '@endo/errors';
 
-import { PoolPlaces } from '@aglocal/portfolio-contract/src/type-guards.js';
+import type { AssetPlaceRef } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
 import type {
   PoolKey,
   PoolPlaceInfo,
   StatusFor,
   TargetAllocation,
 } from '@aglocal/portfolio-contract/src/type-guards.js';
-import type { AssetPlaceRef } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
+import { PoolPlaces } from '@aglocal/portfolio-contract/src/type-guards.js';
 import type { NetworkSpec } from '@aglocal/portfolio-contract/tools/network/network-spec.js';
 import { planRebalanceFlow } from '@aglocal/portfolio-contract/tools/plan-solve.js';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
@@ -16,27 +16,24 @@ import type { Brand, NatAmount, NatValue } from '@agoric/ertp/src/types.js';
 import { objectMap, objectMetaMap, typedEntries } from '@agoric/internal';
 import type { Caip10Record, CaipChainId } from '@agoric/orchestration';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
+import type { FundsFlowPlan, SupportedChain } from '@agoric/portfolio-api';
 import {
   ACCOUNT_DUST_EPSILON,
   isInstrumentId,
   YieldProtocol,
 } from '@agoric/portfolio-api';
-import type { FundsFlowPlan, SupportedChain } from '@agoric/portfolio-api';
 
-import { type CosmosRestClient } from './cosmos-rest-client.js';
+import type { CosmosRestClient } from './cosmos-rest-client.js';
+import { getERC4626VaultsBalances } from './erc4626-utils.ts';
 import type { ChainAddressTokenBalance } from './graphql/api-spectrum-blockchain/__generated/graphql.ts';
 import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
 import type { ProtocolPoolUserBalanceResult } from './graphql/api-spectrum-pools/__generated/graphql.ts';
 import type { Sdk as SpectrumPoolsSdk } from './graphql/api-spectrum-pools/__generated/sdk.ts';
-import type { SpectrumClient } from './spectrum-client.js';
-import {
-  spectrumProtocols,
-  UserInputError,
-  type EvmProviders,
-} from './support.ts';
-import { getOwn, lookupValueForKey } from './utils.js';
 import type { EvmChain } from './pending-tx-manager.ts';
-import { getERC4626VaultsBalances } from './erc4626-utils.ts';
+import type { SpectrumClient } from './spectrum-client.js';
+import type { EvmProviders } from './support.ts';
+import { spectrumProtocols, UserInputError } from './support.ts';
+import { getOwn, lookupValueForKey } from './utils.js';
 
 const scale6 = (x: number) => {
   assert.typeof(x, 'number');
@@ -82,7 +79,7 @@ export type BalanceQueryPowers = {
   spectrumChainIds: Partial<Record<SupportedChain, string>>;
   spectrumPoolIds: Partial<Record<PoolKey, string>>;
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
-  erc4626Vaults: Partial<Record<PoolKey, `0x${string}`>>;
+  erc4626VaultAddresses: Partial<Record<PoolKey, `0x${string}`>>;
   evmProviders: EvmProviders;
   chainNameToChainIdMap: Partial<Record<EvmChain, CaipChainId>>;
 };
@@ -177,12 +174,11 @@ export const getCurrentBalances = async (
         // USDN Vaults are not "pools" and specifically are not in the Spectrum
         // Pools API.
         accountQueries.push({ place, chainName, address, asset: protocol });
-        continue;
-      }
-
-      if (protocol === YieldProtocol.ERC4626) {
+      } else if (protocol === YieldProtocol.ERC4626) {
+        // ERC-4626 vault queries are issued directly.
         erc4626Queries.push({ place, chainName, protocol, address });
       } else {
+        // Other queries go through the Spectrum Pools API.
         positionQueries.push({ place, chainName, protocol, address });
       }
     } catch (err) {
