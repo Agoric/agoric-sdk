@@ -378,6 +378,7 @@ test('handleOperation - openPortfolio', async t => {
     storageNode: mockStorageNode,
     operationDetails: harden(openPortfolioOperationDetails),
     nonce: 123n,
+    deadline: 1700000000n,
   });
 
   // Wait for the vow to settle
@@ -420,6 +421,7 @@ test('handleOperation - openPortfolio requires permitDetails', async t => {
     storageNode: mockStorageNode,
     operationDetails: harden(openPortfolioOperationDetails),
     nonce: 123n,
+    deadline: 1700000000n,
   });
   // Wait for the vow to settle
   await vowTools.when(resultVow);

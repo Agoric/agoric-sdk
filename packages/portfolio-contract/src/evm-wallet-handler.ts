@@ -152,6 +152,7 @@ export const prepareEVMPortfolioOperationManager = (
       wallet: EVMWallet;
       storageNode: Remote<StorageNode>;
       nonce: bigint;
+      deadline: bigint;
     }) => data,
     {
       OpenOutcomeWatcher: {
@@ -196,20 +197,22 @@ export const prepareEVMPortfolioOperationManager = (
       },
       BasicOutcomeWatcher: {
         onFulfilled() {
-          const { storageNode, nonce } = this.state;
+          const { storageNode, nonce, deadline } = this.state;
 
           publishStatus<'evmWallet'>(storageNode, {
             updated: 'messageUpdate',
             nonce,
+            deadline,
             status: 'ok',
           });
         },
         onRejected(reason: unknown) {
-          const { storageNode, nonce } = this.state;
+          const { storageNode, nonce, deadline } = this.state;
 
           publishStatus<'evmWallet'>(storageNode, {
             updated: 'messageUpdate',
             nonce,
+            deadline,
             status: 'error',
             error: String(reason),
           });
@@ -223,17 +226,20 @@ export const prepareEVMPortfolioOperationManager = (
     storageNode,
     operationDetails,
     nonce,
+    deadline,
   }: {
     wallet: EVMWallet;
     storageNode: Remote<StorageNode>;
     operationDetails: YmaxOperationDetails &
       Pick<FullMessageDetails, 'permitDetails'>;
     nonce: bigint;
+    deadline: bigint;
   }): Vow<void> =>
     asVow(async () => {
       publishStatus<'evmWallet'>(storageNode, {
         updated: 'messageUpdate',
         nonce,
+        deadline,
         status: 'pending',
       });
 
@@ -241,6 +247,7 @@ export const prepareEVMPortfolioOperationManager = (
         wallet,
         storageNode,
         nonce,
+        deadline,
       });
 
       try {
@@ -425,6 +432,7 @@ export const prepareEVMWalletHandlerKit = (
             storageNode: walletNode,
             operationDetails,
             nonce,
+            deadline,
           });
         });
       },
