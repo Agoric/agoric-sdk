@@ -66,7 +66,6 @@ type WatchGmp = {
   log: (...args: unknown[]) => void;
   kvStore: KVStore;
   makeAbortController: MakeAbortController;
-  retryOptions?: RetryOptions;
 };
 
 // AxelarExecutable entrypoint (standard)
@@ -112,49 +111,6 @@ const extractExecuteData = (
   }
 };
 
-export type RetryOptions = {
-  /** Maximum number of retry attempts */
-  limit: number;
-  /** Maximum delay between retries in milliseconds */
-  backoffLimit: number;
-};
-
-export const DEFAULT_RETRY_OPTIONS: RetryOptions = {
-  limit: 5,
-  backoffLimit: 3000,
-};
-
-/**
- * Fetch transaction receipt with retry logic for freshly mined transactions.
- * @param provider - The WebSocket provider
- * @param txHash - Transaction hash
- * @param log - Logging function
- * @param retryOptions - Retry configuration (limit and backoffLimit)
- * @returns Transaction receipt or null if not available after retries
- */
-const fetchReceiptWithRetry = async (
-  provider: WebSocketProvider,
-  txHash: string,
-  log: (...args: unknown[]) => void,
-  retryOptions: RetryOptions = DEFAULT_RETRY_OPTIONS,
-) => {
-  const { limit, backoffLimit } = retryOptions;
-  let receipt = await provider.getTransactionReceipt(txHash);
-  if (!receipt) {
-    log(`Receipt not yet available for txHash=${txHash}, retrying...`);
-    for (let i = 0; i < limit && !receipt; i += 1) {
-      const delay = Math.min(100 * 2 ** i, backoffLimit);
-      await new Promise(resolve => setTimeout(resolve, delay));
-      receipt = await provider.getTransactionReceipt(txHash);
-    }
-
-    if (!receipt) {
-      log(`Failed to get receipt for txHash=${txHash} after ${limit} retries`);
-    }
-  }
-  return receipt;
-};
-
 export const watchGmp = ({
   provider,
   contractAddress,
@@ -164,7 +120,6 @@ export const watchGmp = ({
   log = () => {},
   setTimeout = globalThis.setTimeout,
   signal,
-  retryOptions = DEFAULT_RETRY_OPTIONS,
 }: WatchGmp & WatcherTimeoutOptions): Promise<WatcherResult> => {
   return new Promise((resolve, reject) => {
     if (signal?.aborted) return resolve({ settled: false });
@@ -281,13 +236,16 @@ export const watchGmp = ({
           return;
         }
 
-        const receipt = await fetchReceiptWithRetry(
-          provider,
+        // Wait for confirmations to ensure finality and prevent reorg issues
+        const confirmations = 5;
+        const receipt = await provider.waitForTransaction(
           txHash,
-          log,
-          retryOptions,
+          confirmations,
         );
-        if (!receipt) return;
+        if (!receipt) {
+          log(`Transaction ${txHash} not confirmed after waiting`);
+          return;
+        }
 
         const matchingLog = receipt.logs.find(
           l =>
@@ -297,7 +255,7 @@ export const watchGmp = ({
 
         if (receipt.status === 1 && matchingLog) {
           log(
-            `✅ SUCCESS: txId=${txId} txHash=${txHash} block=${receipt.blockNumber}`,
+            `✅ SUCCESS (${confirmations} confirmations): txId=${txId} txHash=${txHash} block=${receipt.blockNumber}`,
           );
           return finish({ settled: true, txHash, success: true });
         }
@@ -313,7 +271,7 @@ export const watchGmp = ({
            * a genuine failure of the user's operation.
            */
           log(
-            `❌ REVERTED: txId=${txId} txHash=${txHash} block=${receipt.blockNumber} - transaction failed`,
+            `❌ REVERTED (${confirmations} confirmations): txId=${txId} txHash=${txHash} block=${receipt.blockNumber} - transaction failed`,
           );
           return finish({ settled: true, txHash, success: false });
         }
