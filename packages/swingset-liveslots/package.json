@@ -39,7 +39,6 @@
   },
   "files": [
     "src",
-    "test",
     "tools",
     "exported.js"
   ],

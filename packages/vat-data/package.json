@@ -32,6 +32,9 @@
     "ava": "^6.4.1",
     "tsd": "^0.33.0"
   },
+  "files": [
+    "src"
+  ],
   "ava": {
     "require": [
       "@endo/init/debug.js"
