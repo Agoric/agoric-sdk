@@ -11,17 +11,34 @@ import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import { makeKVStoreFromMap } from '@agoric/internal/src/kv-store.js';
 import type { Log } from 'ethers/providers';
 import { encodeAbiParameters } from 'viem';
-import type { GMPTxStatus } from '@axelarjs/api';
 import type { CosmosRestClient } from '../src/cosmos-rest-client.ts';
 import type { CosmosRPCClient } from '../src/cosmos-rpc.ts';
 import type { Powers as EnginePowers } from '../src/engine.ts';
 import { makeGasEstimator } from '../src/gas-estimation.ts';
 import type { HandlePendingTxOpts } from '../src/pending-tx-manager.ts';
 import { prepareAbortController } from '../src/support.ts';
-import { GMP_INPUTS_ABI_JSON } from '../src/axelarscan-utils.ts';
 import type { YdsNotifier } from '../src/yds-notifier.ts';
 
 const PENDING_TX_PATH_PREFIX = 'published.ymax1';
+
+// see: https://github.com/axelarnetwork/axelarjs/blob/3897c548f2e82df7fce98b352bded73329183c96/packages/api/src/gmp/types.ts#L7
+type GMPTxStatus =
+  | 'called'
+  | 'confirming'
+  | 'confirmable'
+  | 'express_executed'
+  | 'confirmed'
+  | 'approving'
+  | 'approvable'
+  | 'approved'
+  | 'executing'
+  | 'executed'
+  | 'error'
+  | 'express_executable'
+  | 'express_executable_without_gas_paid'
+  | 'executable'
+  | 'executable_without_gas_paid'
+  | 'insufficient_fee';
 
 const makeAbortController = prepareAbortController({
   setTimeout,
@@ -395,6 +412,31 @@ export const createMockStreamCell = (values: unknown[]) => ({
   values,
   blockHeight: '1000',
 });
+
+/**
+ * ABI naming convention:
+ * - *_ABI_JSON: JSON ABI representation (objects with type, name, components)
+ * - *_ABI_TEXT: Human-readable string format (Ethers fragment strings)
+ *
+ * @see https://github.com/agoric-labs/agoric-to-axelar-local/blob/b884729ab2d24decabcc4a682f4157f9cf78a08b/packages/axelar-local-dev-cosmos/src/__tests__/contracts/Factory.sol#L26-L29
+ */
+const GMP_INPUTS_ABI_JSON = [
+  {
+    type: 'tuple',
+    name: 'callMessage',
+    components: [
+      { name: 'id', type: 'string' },
+      {
+        name: 'calls',
+        type: 'tuple[]',
+        components: [
+          { name: 'target', type: 'address' },
+          { name: 'data', type: 'bytes' },
+        ],
+      },
+    ],
+  },
+];
 
 const createMockAxelarScanResponse = (
   txId: string,
