@@ -81,7 +81,7 @@ export const watchCctpTransfer = ({
 }: CctpWatch & WatcherTimeoutOptions): Promise<WatcherResult> => {
   return new Promise(resolve => {
     if (signal?.aborted) {
-      resolve({ found: false });
+      resolve({ settled: false });
       return;
     }
 
@@ -107,7 +107,7 @@ export const watchCctpTransfer = ({
       listeners = [];
     };
 
-    signal?.addEventListener('abort', () => finish({ found: false }));
+    signal?.addEventListener('abort', () => finish({ settled: false }));
 
     const listenForTransfer = async (eventLog: Log) => {
       let transferData;
@@ -130,7 +130,11 @@ export const watchCctpTransfer = ({
           `✓ Amount matches! Expected: ${expectedAmount}, Received: ${amount}`,
         );
         transferFound = true;
-        finish({ found: true, txHash: eventLog.transactionHash });
+        finish({
+          settled: true,
+          txHash: eventLog.transactionHash,
+          success: true,
+        });
         return;
       }
       // Warn and continue watching.
@@ -213,13 +217,17 @@ export const lookBackCctp = async ({
 
     if (!matchingEvent) {
       log(`No matching transfer found`);
-      return { found: false };
+      return { settled: false };
     }
 
     deleteTxBlockLowerBound(kvStore, txId);
-    return { found: true, txHash: matchingEvent.transactionHash };
+    return {
+      settled: true,
+      txHash: matchingEvent.transactionHash,
+      success: true,
+    };
   } catch (error) {
     log(`Error:`, error);
-    return { found: false };
+    return { settled: false };
   }
 };
