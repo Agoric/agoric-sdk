@@ -2,6 +2,7 @@ import { ethers } from 'ethers';
 import type { WebSocketProvider } from 'ethers';
 
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.ts';
+import type { ERC4626InstrumentId } from '@aglocal/portfolio-contract/src/type-guards.js';
 import { TEST_NETWORK } from '@aglocal/portfolio-contract/tools/network/test-network.js';
 import { boardSlottingMarshaller } from '@agoric/client-utils';
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
@@ -10,6 +11,7 @@ import {
   type AxelarChain,
 } from '@agoric/portfolio-api/src/constants.js';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
+import type { EvmAddress } from '@agoric/fast-usdc';
 import { makeKVStoreFromMap } from '@agoric/internal/src/kv-store.js';
 import type { Log } from 'ethers/providers';
 import { encodeAbiParameters, toFunctionSelector } from 'viem';
@@ -116,7 +118,10 @@ export const createMockEnginePowers = (): EnginePowers => ({
   chainNameToChainIdMap: CaipChainIds.testnet,
 });
 
-export const erc4626VaultsMock: Partial<Record<InstrumentId, `0x${string}`>> = {
+export const erc4626VaultsMock: Partial<
+  Record<ERC4626InstrumentId, EvmAddress>
+> = {
+  // @ts-expect-error TS strings don't track length; see https://github.com/microsoft/TypeScript/issues/52243
   ERC4626_vaultU2_Ethereum: '0xbcc48e14f89f2bff20a7827148b466ae8f2fbc9b',
 };
 
