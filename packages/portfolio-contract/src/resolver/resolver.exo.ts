@@ -199,6 +199,11 @@ export const prepareResolverKit = (
 
         updateTxMeta(txId: TxId, meta: TxMeta) {
           const { transactionRegistry: registry } = this.state;
+          if (!registry.has(txId)) {
+            // No such transaction to update; ignore while it is still in
+            // flight.
+            return;
+          }
           const { vowKit: vk } = registry.get(txId);
           const entry: TransactionEntry = harden({
             ...meta,
