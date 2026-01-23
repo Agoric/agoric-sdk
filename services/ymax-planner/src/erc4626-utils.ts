@@ -45,27 +45,21 @@ export const getERC4626VaultBalance = async (
   userAddress: string,
   provider: WebSocketProvider,
 ): Promise<bigint> => {
-  await null;
-
-  // Create contract instance with minimal ABI
   const vault = new Contract(vaultAddress, ERC4626_MINIMAL_ABI, provider);
-
+  await null;
   try {
-    // Step 1: Get vault token balance
-    const vaultTokenBalance: bigint = await vault.balanceOf(userAddress);
-
-    // If balance is 0, return 0 immediately
-    if (vaultTokenBalance === 0n) {
+    // Fetch balance as shares.
+    const sharesBalance: bigint = await vault.balanceOf(userAddress);
+    if (sharesBalance === 0n) {
       return 0n;
     }
 
-    // Step 2: Convert vault tokens to underlying assets
+    // Convert shares to underlying asset.
     const underlyingAssetBalance: bigint =
-      await vault.convertToAssets(vaultTokenBalance);
-
+      await vault.convertToAssets(sharesBalance);
     return underlyingAssetBalance;
   } catch (cause) {
-    throw Error(`Failed to fetch ERC4626 vault balance`, { cause });
+    throw Error(`Failed to fetch ERC-4626 vault balance`, { cause });
   }
 };
 
