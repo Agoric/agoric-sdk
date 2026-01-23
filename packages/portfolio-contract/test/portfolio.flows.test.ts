@@ -2521,25 +2521,23 @@ test('withdraw from Beefy position', async t => {
 test('openPortfolioFromPermit2 with Permit2 provisions account and starts deposit', async t => {
   const permitDetails: PermitDetails = {
     chainId: Number(axelarCCTPConfig.Arbitrum.reference),
-    token: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', // USCD on Arbitrum
+    token: contractsMock.Arbitrum.usdc,
     amount: 1_000_000_000n,
-    spender: '0x9524EEb5F792944a0FE929bb8Efb354438B19F7C',
+    spender: contractsMock.Arbitrum.depositFactory,
     permit2Payload: {
       permit: {
         deadline: 1357923600n,
         nonce: 7115368379195441n,
         permitted: {
-          amount: 1000000000n,
-          token: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+          amount: 1_000_000_000n,
+          token: contractsMock.Arbitrum.usdc,
         },
       },
-      owner: '0x3e57cE0f7A44572c45dd2B7F0CB945cc918a22a6',
+      owner: '0x1111111111111111111111111111111111111111',
       witness:
-        '0x756823f5c7bdbad2bf2a6e47b55de7f60d4ad84b0360f929c5a37737b1e14f1e',
-      witnessTypeString:
-        'YmaxV1OpenPortfolio ymaxOpenPortfolio)Allocation(string instrument,uint256 portion)TokenPermissions(address token,uint256 amount)YmaxV1OpenPortfolio(Allocation[] allocations)',
-      signature:
-        '0xc3a89a8ce8852845317084dbbb233c9e6902fc5914a6601c0a51199e9a72a615047089c3a1d837405b49d08b3f650ebbaf411e3e22bcbf22ad7cb4d4f59a04971b',
+        '0x0000000000000000000000000000000000000000000000000000000000000000',
+      witnessTypeString: 'OpenPortfolioWitness',
+      signature: '0x1234' as `0x${string}`,
     },
   };
   const amount = make(USDC, permitDetails.amount);
