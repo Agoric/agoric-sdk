@@ -77,7 +77,6 @@ import {
   planRebalanceToAllocations,
   planWithdrawFromAllocations,
 } from './plan-deposit.ts';
-import type { SpectrumClient } from './spectrum-client.ts';
 import { UserInputError } from './support.ts';
 import type { EvmProviders } from './support.ts';
 import {
@@ -171,7 +170,6 @@ export const makeVstorageEvent = (
 export type Powers = {
   evmCtx: Omit<EvmContext, 'signingSmartWalletKit' | 'fetch' | 'cosmosRest'>;
   rpc: CosmosRPCClient;
-  spectrum: SpectrumClient;
   spectrumBlockchain: SpectrumBlockchainSdk;
   spectrumPools: SpectrumPoolsSdk;
   spectrumChainIds: Partial<Record<SupportedChain, string>>;
@@ -195,7 +193,6 @@ export type ProcessPortfolioPowers = Pick<
   Powers,
   | 'cosmosRest'
   | 'network'
-  | 'spectrum'
   | 'spectrumBlockchain'
   | 'spectrumPools'
   | 'spectrumChainIds'
@@ -255,7 +252,6 @@ export const processPortfolioEvents = async (
     signingSmartWalletKit,
     walletStore,
     getWalletInvocationUpdate,
-    spectrum,
     spectrumBlockchain,
     spectrumPools,
     spectrumChainIds,
@@ -286,7 +282,6 @@ export const processPortfolioEvents = async (
   };
   const balanceQueryPowers: BalanceQueryPowers = {
     cosmosRest,
-    spectrum,
     spectrumBlockchain,
     spectrumPools,
     spectrumChainIds,

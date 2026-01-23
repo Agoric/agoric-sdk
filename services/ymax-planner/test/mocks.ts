@@ -100,7 +100,6 @@ export const createMockSpectrumPools = (amounts: { [key: string]: bigint }) =>
 export const createMockEnginePowers = (): EnginePowers => ({
   evmCtx: mockEvmCtx,
   rpc: {} as any,
-  spectrum: {} as any,
   spectrumBlockchain: createMockSpectrumBlockchain({}),
   spectrumPools: createMockSpectrumPools({}),
   spectrumChainIds: {},

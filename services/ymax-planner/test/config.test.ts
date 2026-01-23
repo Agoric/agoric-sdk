@@ -53,9 +53,6 @@ test('loadConfig accepts valid configuration', async t => {
     MNEMONIC: 'test mnemonic phrase',
     CONTRACT_INSTANCE: 'ymax1',
     ALCHEMY_API_KEY: 'test1234',
-    SPECTRUM_API_URL: 'https://api.spectrum.example.com',
-    SPECTRUM_API_TIMEOUT: '5000',
-    SPECTRUM_API_RETRIES: '2',
     AGORIC_NET: 'devnet,myChainId',
     COSMOS_REST_TIMEOUT: '10000',
     COSMOS_REST_RETRIES: '5',
@@ -69,9 +66,6 @@ test('loadConfig accepts valid configuration', async t => {
   t.is(config.clusterName, 'testnet');
   t.is(config.mnemonic, 'test mnemonic phrase');
   t.is(config.alchemyApiKey, 'test1234');
-  t.is(config.spectrum.apiUrl, 'https://api.spectrum.example.com');
-  t.is(config.spectrum.timeout, 5000);
-  t.is(config.spectrum.retries, 2);
   t.is(config.cosmosRest.agoricNetworkSpec, 'devnet,myChainId');
   t.is(config.cosmosRest.agoricNetSubdomain, 'devnet');
   t.is(config.cosmosRest.timeout, 10000);
@@ -85,9 +79,6 @@ test('loadConfig uses default values when optional fields are missing', async t 
   t.is(config.contractInstance, 'ymax1');
   t.is(config.mnemonic, 'test mnemonic phrase');
   t.is(config.alchemyApiKey, 'test1234');
-  t.is(config.spectrum.apiUrl, undefined);
-  t.is(config.spectrum.timeout, 10000);
-  t.is(config.spectrum.retries, 3);
   t.is(config.cosmosRest.agoricNetworkSpec, 'local');
   t.is(config.cosmosRest.agoricNetSubdomain, 'local');
   t.is(config.cosmosRest.timeout, 10000);
@@ -154,14 +145,8 @@ test('loadConfig defaults CLUSTER from AGORIC_NET', async t => {
 });
 
 test('loadConfig validates positive integers', async t => {
-  await t.throwsAsync(() => callLoadConfig({ SPECTRUM_API_TIMEOUT: '0' }), {
-    message: /"SPECTRUM_API_TIMEOUT" must be a positive integer/,
-  });
-});
-
-test('loadConfig validates URL format', async t => {
-  await t.throwsAsync(() => callLoadConfig({ SPECTRUM_API_URL: 'not-a-url' }), {
-    message: /"SPECTRUM_API_URL" must be a valid URL/,
+  await t.throwsAsync(() => callLoadConfig({ REQUEST_TIMEOUT: '0' }), {
+    message: /"REQUEST_TIMEOUT" must be a positive integer/,
   });
 });
 
