@@ -282,6 +282,7 @@ export const createMockProvider = (
             method: 'eth_subscription',
             params: {
               result: {
+                removed: false,
                 transaction: {
                   hash: log.transactionHash,
                   input: mockCalldata,

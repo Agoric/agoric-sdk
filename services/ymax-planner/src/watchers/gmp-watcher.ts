@@ -220,7 +220,16 @@ export const watchGmp = ({
         if (msg.method !== 'eth_subscription') return;
 
         const tx = msg.params?.result?.transaction;
+        const removed = msg.params?.result?.removed;
         if (!tx) return;
+
+        // Ignore transactions that have been removed from canonical chain (reorged)
+        if (removed === true) {
+          log(
+            `⚠️  REORG: txId=${txId} txHash=${tx.hash} was removed from chain - ignoring`,
+          );
+          return;
+        }
 
         const txHash = tx.hash;
         const txData = tx.input;
@@ -295,7 +304,7 @@ export const watchGmp = ({
         'alchemy_minedTransactions',
         {
           addresses: [{ to: contractAddress }],
-          includeRemoved: false,
+          includeRemoved: true, // Receive reorg notifications
           hashesOnly: false,
         },
       ]);
