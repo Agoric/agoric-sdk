@@ -29,7 +29,6 @@ import type { ChainAddressTokenBalance } from './graphql/api-spectrum-blockchain
 import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
 import type { ProtocolPoolUserBalanceResult } from './graphql/api-spectrum-pools/__generated/graphql.ts';
 import type { Sdk as SpectrumPoolsSdk } from './graphql/api-spectrum-pools/__generated/sdk.ts';
-import type { SpectrumClient } from './spectrum-client.js';
 import type { EvmChain } from './pending-tx-manager.ts';
 import type { EvmProviders } from './support.ts';
 import { spectrumProtocols, UserInputError } from './support.ts';
@@ -73,7 +72,6 @@ const amountFromPositionBalance = (
 
 export type BalanceQueryPowers = {
   cosmosRest: CosmosRestClient;
-  spectrum: SpectrumClient;
   spectrumBlockchain: SpectrumBlockchainSdk;
   spectrumPools: SpectrumPoolsSdk;
   spectrumChainIds: Partial<Record<SupportedChain, string>>;

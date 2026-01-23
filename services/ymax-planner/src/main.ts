@@ -56,7 +56,6 @@ import {
   spectrumPoolIdsByCluster,
 } from './support.ts';
 import type { MakeAbortController } from './support.ts';
-import { SpectrumClient } from './spectrum-client.ts';
 import { makeGasEstimator } from './gas-estimation.ts';
 import { makeSQLiteKeyValueStore } from './kv-store.ts';
 import { YdsNotifier } from './yds-notifier.ts';
@@ -239,12 +238,6 @@ export const main = async (
     },
   });
 
-  const spectrum = new SpectrumClient(simplePowers, {
-    baseUrl: config.spectrum.apiUrl,
-    timeout: config.spectrum.timeout,
-    retries: config.spectrum.retries,
-  });
-
   const makeGqlSdk = <Sdk>(
     makeSdk: (client: GraphQLClient) => Sdk,
     endpoints: string[],
@@ -311,7 +304,6 @@ export const main = async (
       ...evmCtx,
     },
     rpc,
-    spectrum,
     spectrumChainIds,
     spectrumPoolIds,
     spectrumBlockchain,
