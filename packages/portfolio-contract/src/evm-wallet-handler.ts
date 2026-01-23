@@ -31,6 +31,7 @@ import { type Zone } from '@agoric/zone';
 import { Fail, q } from '@endo/errors';
 import { E } from '@endo/far';
 import { makePassableKit } from '@endo/marshal';
+import { passStyleOf, type Passable, type PureData } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import type { Address } from 'abitype';
 import type { PublishStatus } from './portfolio.contract.ts';
@@ -132,6 +133,42 @@ export const makeNonceManager = (zone: Zone) => {
 };
 
 /** @private */
+export const getPublishedResult = (
+  rawResult: unknown,
+): PureData | undefined => {
+  try {
+    const passStyle = passStyleOf(rawResult as Passable);
+
+    switch (passStyle) {
+      case 'bigint':
+      case 'boolean':
+      case 'null':
+      case 'number':
+      case 'string':
+      case 'undefined':
+      case 'symbol':
+      case 'byteArray':
+        // "Atoms"
+        return rawResult as PureData;
+      case 'copyArray':
+      case 'copyRecord':
+      case 'tagged':
+        // XXX: "structures" should be checked for not containing Caps or Errors
+        return rawResult as PureData;
+      case 'error':
+      case 'remotable':
+      case 'promise':
+        return undefined;
+      default:
+        return passStyle ? (rawResult as PureData) : undefined;
+    }
+  } catch {
+    // Non-passable
+    return undefined;
+  }
+};
+
+/** @private */
 export const prepareEVMPortfolioOperationManager = (
   zone: Zone,
   {
@@ -186,7 +223,9 @@ export const prepareEVMPortfolioOperationManager = (
               portfolioPaths,
             );
 
-            return this.facets.BasicOutcomeWatcher.onFulfilled();
+            return this.facets.BasicOutcomeWatcher.onFulfilled(
+              `portfolio${portfolioId}`,
+            );
           } catch (e) {
             return this.facets.BasicOutcomeWatcher.onRejected(e);
           }
@@ -196,7 +235,7 @@ export const prepareEVMPortfolioOperationManager = (
         },
       },
       BasicOutcomeWatcher: {
-        onFulfilled() {
+        onFulfilled(result: unknown) {
           const { storageNode, nonce, deadline } = this.state;
 
           publishStatus<'evmWallet'>(storageNode, {
@@ -204,6 +243,7 @@ export const prepareEVMPortfolioOperationManager = (
             nonce,
             deadline,
             status: 'ok',
+            result: getPublishedResult(result),
           });
         },
         onRejected(reason: unknown) {

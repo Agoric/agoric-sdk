@@ -1,3 +1,5 @@
+import type { PureData } from '@endo/pass-style';
+
 export type PortfolioPath =
   `published.ymax${0 | 1}.portfolios.portfolio${number}`;
 
@@ -18,6 +20,7 @@ export type EIPMessageUpdate = EIPCommonMessageUpdate &
       }
     | {
         status: 'ok';
+        result: PureData;
       }
   );
 
