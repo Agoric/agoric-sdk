@@ -197,14 +197,11 @@ const makeStatusCollector = () => {
   const publishStatus: PublishStatus = (_node: unknown, data: unknown) => {
     const anyData = data as any;
     if (anyData?.updated === 'messageUpdate') {
-      statuses.push({
-        nonce: anyData.nonce,
-        status: anyData.status,
-        error: anyData.error,
-      });
+      statuses.push(anyData);
     }
   };
-  return { statuses, publishStatus };
+  const getStatuses = () => harden([...statuses]);
+  return { publishStatus, getStatuses };
 };
 
 /**
@@ -260,7 +257,7 @@ const makeHandleOperationTestSetup = (
     vowTools,
     getNextPortfolioId,
   });
-  const { statuses, publishStatus } = makeStatusCollector();
+  const { publishStatus, getStatuses } = makeStatusCollector();
 
   const { handleOperation } = prepareEVMPortfolioOperationManager(zone, {
     vowTools,
@@ -268,13 +265,20 @@ const makeHandleOperationTestSetup = (
     publishStatus,
   });
 
+  const getCalls = () =>
+    harden(
+      Object.fromEntries(
+        Object.entries(calls).map(([op, callList]) => [op, [...callList]]),
+      ),
+    );
+
   return {
     vowTools,
     usdcBrand,
-    calls,
+    getCalls,
     mockWallet,
     mockStorageNode,
-    statuses,
+    getStatuses,
     handleOperation,
   };
 };
@@ -325,10 +329,10 @@ test('handleOperation - openPortfolio', async t => {
   const { zone } = t.context;
   const {
     vowTools,
-    calls,
+    getCalls,
     mockWallet,
     mockStorageNode,
-    statuses,
+    getStatuses,
     handleOperation,
   } = makeHandleOperationTestSetup(zone, 'vow1', {
     namePrefix: 'test1_',
@@ -379,44 +383,19 @@ test('handleOperation - openPortfolio', async t => {
   // Wait for the vow to settle
   await vowTools.when(resultVow);
 
-  // Verify openPortfolioFromEVM was called with correct parameters
-  t.is(
-    calls.openPortfolioFromEVM.length,
-    1,
-    'openPortfolioFromEVM should be called once',
-  );
-
-  const [call] = calls.openPortfolioFromEVM;
-  t.deepEqual(
-    call,
-    [
-      openPortfolioOperationDetails.data,
-      openPortfolioOperationDetails.permitDetails,
-    ],
-    'args should match',
-  );
-
-  t.is(mockWallet.portfolios.getSize(), 1, 'wallet should have one portfolio');
-
-  // Verify status was published
-  t.true(
-    statuses.some(s => s.nonce === 123n && s.status === 'pending'),
-    'should publish pending status',
-  );
-  t.true(
-    statuses.some(s => s.nonce === 123n && s.status === 'ok'),
-    'should publish ok status',
-  );
+  t.snapshot([...mockWallet.portfolios.keys()], 'Portfolio IDs');
+  t.snapshot(getCalls(), 'Calls');
+  t.snapshot(getStatuses(), 'Published Statuses');
 });
 
 test('handleOperation - openPortfolio requires permitDetails', async t => {
   const { zone } = t.context;
   const {
     vowTools,
-    calls,
+    getCalls,
     mockWallet,
     mockStorageNode,
-    statuses,
+    getStatuses,
     handleOperation,
   } = makeHandleOperationTestSetup(zone, 'vow2', {
     namePrefix: 'test2_',
@@ -446,21 +425,13 @@ test('handleOperation - openPortfolio requires permitDetails', async t => {
   // Wait for the vow to settle
   await vowTools.when(resultVow);
 
-  // Verify openPortfolioFromEVM was not called
-  t.is(
-    calls.openPortfolioFromEVM.length,
-    0,
-    'openPortfolioFromEVM should not have been called',
-  );
-
   t.is(
     mockWallet.portfolios.getSize(),
     0,
     'wallet should have zero portfolios',
   );
 
-  // Should have published an error status
-  const errors = statuses.filter(s => s.status === 'error');
-  t.is(errors.length, 1, 'should publish one error');
-  t.regex(errors[0].error!, /Missing permit details/);
+  t.snapshot([...mockWallet.portfolios.keys()], 'Portfolio IDs');
+  t.snapshot(getCalls(), 'Calls');
+  t.snapshot(getStatuses(), 'Published Statuses');
 });
