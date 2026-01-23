@@ -264,12 +264,14 @@ export const prepareEVMPortfolioOperationManager = (
   const handleOperation = ({
     wallet,
     storageNode,
+    address,
     operationDetails,
     nonce,
     deadline,
   }: {
     wallet: EVMWallet;
     storageNode: Remote<StorageNode>;
+    address: Address;
     operationDetails: YmaxOperationDetails &
       Pick<FullMessageDetails, 'permitDetails'>;
     nonce: bigint;
@@ -328,6 +330,22 @@ export const prepareEVMPortfolioOperationManager = (
             const portfolio = wallet.portfolios.get(BigInt(portfolioId));
 
             const result = E(portfolio).deposit(/* otherData, permitDetails */);
+
+            return watch(result, BasicOutcomeWatcher);
+          }
+          case 'Withdraw': {
+            const {
+              data: { portfolio: portfolioId, withdraw: withdrawDetails },
+              domain,
+            } = operationDetails;
+
+            const portfolio = wallet.portfolios.get(BigInt(portfolioId));
+
+            const result = E(portfolio).withdraw({
+              withdrawDetails,
+              domain,
+              address,
+            });
 
             return watch(result, BasicOutcomeWatcher);
           }
@@ -470,6 +488,7 @@ export const prepareEVMWalletHandlerKit = (
           return handleOperation({
             wallet,
             storageNode: walletNode,
+            address: evmWalletAddress,
             operationDetails,
             nonce,
             deadline,

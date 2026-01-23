@@ -24,6 +24,7 @@ import {
   type getPermitWitnessTransferFromData,
   type getPermitBatchWitnessTransferFromData,
   makeWitness,
+  TokenPermissionsComponents,
 } from '@agoric/orchestration/src/utils/permit2.js';
 
 const YMAX_DOMAIN_NAME = 'Ymax';
@@ -74,6 +75,13 @@ const OperationTypes = {
   OpenPortfolio: [{ name: 'allocations', type: 'Allocation[]' }],
   Rebalance: [{ name: 'allocations', type: 'Allocation[]' }, PortfolioIdParam],
   Deposit: [PortfolioIdParam],
+  /**
+   * Withdraw funds from a portfolio to the source EVM account.
+   * The signer of the message must match the portfolio's source EVM account
+   * The destination chain is determined from the domain info (chainId).
+   * - token: ERC-20 token contract address (must be USDC contract on the destination chain)
+   */
+  Withdraw: [{ name: 'withdraw', type: 'Asset' }, PortfolioIdParam],
 } as const satisfies TypedData;
 type OperationTypes = typeof OperationTypes;
 export type OperationTypeNames = keyof OperationTypes;
@@ -83,6 +91,7 @@ const OperationSubTypes = {
     { name: 'instrument', type: 'string' },
     { name: 'portion', type: 'uint256' },
   ],
+  Asset: TokenPermissionsComponents,
 } as const satisfies TypedData;
 
 /**

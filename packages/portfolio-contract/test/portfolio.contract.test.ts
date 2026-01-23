@@ -6,6 +6,7 @@
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import type { Address } from 'abitype';
 import { AmountMath } from '@agoric/ertp';
 import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 import {
@@ -1726,8 +1727,9 @@ test('evmHandler.withdraw starts a withdraw flow', async t => {
     fromChain: 'Arbitrum' as const,
     depositAmount: usdc.units(1000),
     allocations: [{ instrument: 'Aave_Arbitrum', portion: 10000n }],
+    owner: '0x2222222222222222222222222222222222222222' as Address,
   };
-  const { fromChain: evm, depositAmount, allocations } = inputs;
+  const { fromChain: evm, depositAmount, allocations, owner } = inputs;
 
   type EvmHandler = Awaited<
     ReturnType<typeof started.publicFacet.openPortfolioFromEVM>
@@ -1744,7 +1746,7 @@ test('evmHandler.withdraw starts a withdraw flow', async t => {
         nonce: 1n,
         deadline: 1n,
       },
-      owner: '0x2222222222222222222222222222222222222222',
+      owner,
       witness:
         '0x0000000000000000000000000000000000000000000000000000000000000000',
       witnessTypeString: 'OpenPortfolioWitness',
@@ -1820,8 +1822,16 @@ test('evmHandler.withdraw starts a withdraw flow', async t => {
 
   // Now test the withdraw via evmHandler
   t.truthy(evmHandler, 'evmHandler is defined');
-  const withdrawAmount = usdc.units(500);
-  const flowKey = await E(evmHandler!).withdraw(withdrawAmount);
+  const withdrawDetails = { token: contractsMock[evm].usdc, amount: 500n };
+  const flowKey = await E(evmHandler!).withdraw({
+    withdrawDetails,
+    address: owner,
+    domain: {
+      chainId: BigInt(chainInfoWithCCTP[evm].reference),
+      name: 'Ymax',
+      version: '1',
+    },
+  });
   t.regex(flowKey, /^flow\d+$/, 'withdraw returns a flow key');
 
   // Check that a withdraw flow is now running
@@ -1837,7 +1847,7 @@ test('evmHandler.withdraw starts a withdraw flow', async t => {
   if (flowDetail.type === 'withdraw') {
     t.is(
       flowDetail.amount.value,
-      withdrawAmount.value,
+      withdrawDetails.amount,
       'withdraw amount matches',
     );
   }

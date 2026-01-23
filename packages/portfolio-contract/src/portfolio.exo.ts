@@ -1,7 +1,7 @@
 /**
  * NOTE: This is host side code; can't use await.
  */
-import { AmountMath, type Brand, type NatAmount } from '@agoric/ertp';
+import { AmountMath, type Brand } from '@agoric/ertp';
 import { makeTracer, mustMatch, type ERemote } from '@agoric/internal';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import type { EMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
@@ -10,7 +10,10 @@ import {
   type CaipChainId,
   type IBCConnectionInfo,
 } from '@agoric/orchestration';
-import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
+import {
+  coerceAccountId,
+  parseAccountId,
+} from '@agoric/orchestration/src/utils/address.js';
 import type {
   FundsFlowPlan,
   PortfolioContinuingInvitationMaker,
@@ -20,6 +23,7 @@ import {
   SupportedChain,
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
+import type { YmaxSharedDomain } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.ts';
 import type { MapStore } from '@agoric/store';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
@@ -29,6 +33,7 @@ import type { Zone } from '@agoric/zone';
 import { Fail, X } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
+import type { Address } from 'abitype';
 import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
 import { type LocalAccount, type NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
@@ -38,6 +43,7 @@ import {
   makeFlowStepsPath,
   makePortfolioPath,
   PoolKeyShapeExt,
+  type EVMContractAddressesMap,
   type FlowDetail,
   type makeProposalShapes,
   type PoolKey,
@@ -181,6 +187,8 @@ export const preparePortfolioKit = (
     portfoliosNode,
     marshaller,
     usdcBrand,
+    eip155ChainIdToAxelarChain,
+    contracts,
   }: {
     rebalance: (
       seat: ZCFSeat,
@@ -211,6 +219,10 @@ export const preparePortfolioKit = (
     portfoliosNode: ERemote<StorageNode>;
     marshaller: ERemote<EMarshaller>;
     usdcBrand: Brand<'nat'>;
+    eip155ChainIdToAxelarChain: {
+      [chainId in `${number | bigint}`]?: AxelarChain;
+    };
+    contracts: EVMContractAddressesMap;
   },
 ) => {
   // Ephemeral node cache
@@ -644,26 +656,51 @@ export const preparePortfolioKit = (
          *
          * Requires that `sourceAccountId` was set when the portfolio was opened
          * (i.e., the portfolio was opened from EVM via `openPortfolioFromEVM`).
-         *
-         * @param amount - The amount to withdraw
-         * @param opts - Optional parameters
-         * @param opts.toChain - Override destination chain (defaults to chain from sourceAccountId)
          */
-        withdraw(amount: NatAmount, opts?: { toChain?: SupportedChain }) {
+        withdraw({
+          withdrawDetails,
+          domain,
+          address,
+        }: {
+          withdrawDetails: { amount: bigint; token: Address };
+          domain?: Partial<YmaxSharedDomain>;
+          address?: Address;
+        }) {
           const { sourceAccountId } = this.state;
-          sourceAccountId ||
-            Fail`withdraw requires sourceAccountId to be set (portfolio must be opened from EVM)`;
+          if (!sourceAccountId) {
+            throw Fail`withdraw requires sourceAccountId to be set (portfolio must be opened from EVM)`;
+          }
 
-          // Parse the CAIP-10 ID to extract the destination chain
-          // Format: eip155:{chainId}:{address}
-          // The planner will use this to route the withdrawal
-          const toChain = opts?.toChain;
+          const { namespace, reference, accountAddress } =
+            parseAccountId(sourceAccountId);
 
-          const flowDetail: FlowDetail = {
+          namespace === 'eip155' ||
+            Fail`withdraw sourceAccountId must be in eip155 namespace: ${sourceAccountId}`;
+
+          const chainIdStr = String(
+            domain?.chainId ?? reference,
+          ) as `${number | bigint}`;
+
+          const toChain = eip155ChainIdToAxelarChain[chainIdStr];
+
+          if (!toChain) {
+            throw Fail`destination chainId ${chainIdStr} is not supported for withdraw`;
+          }
+
+          !address ||
+            accountAddress.toLowerCase() === address.toLowerCase() ||
+            Fail`withdraw address ${address} does not match source account address ${accountAddress}`;
+
+          withdrawDetails.token.toLowerCase() ===
+            contracts[toChain].usdc.toLowerCase() ||
+            Fail`withdraw token address ${withdrawDetails.token} does not match usdc contract address ${contracts[toChain].usdc} for chain ${toChain}`;
+          const amount = AmountMath.make(usdcBrand, withdrawDetails.amount);
+
+          const flowDetail = {
             type: 'withdraw',
             amount,
-            ...(toChain && { toChain }),
-          };
+            toChain,
+          } satisfies FlowDetail;
           const startedFlow = this.facets.manager.startFlow(flowDetail);
           return `flow${startedFlow.flowId}`;
         },

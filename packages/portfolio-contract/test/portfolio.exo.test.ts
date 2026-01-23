@@ -179,3 +179,13 @@ test('capture stateShape to be intentional about changes', t => {
 
   t.snapshot(PositionStateShape, 'PositionStateShape');
 });
+
+test.todo('evmHandler withdraw requires source account');
+
+test.todo('evmHandler withdraw check address');
+
+test.todo('evmHandler withdraw uses chainId from domain');
+
+test.todo('evmHandler withdraw defaults to source chainId if domain missing');
+
+test.todo('evmHandler withdraw check token address is USDC contract');

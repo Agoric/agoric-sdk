@@ -215,8 +215,9 @@ sequenceDiagram
   U->>D: withdraw(500 USDC, Arbitrum)
   D-->>D: allocate nonce543
   note right of MM: EIP-712 signTypedData
-  D->>MM: Withdraw712(500 USDC,“Arbitrum”,nonce543,deadline)
-  MM-->>U: Withdraw712(500 USDC,“Arbitrum”,nonce543,deadline) ok?
+  note right of D: chainId in domain determines<br/>destination chain
+  D->>MM: Withdraw712(500 USDC,nonce543,deadline)<br/>domain.chainId=42161
+  MM-->>U: Withdraw712(500 USDC,nonce543,deadline) ok?
   U->>MM: ok
   MM-->>D: signature
   D-->>U: stand by...
@@ -225,8 +226,8 @@ sequenceDiagram
   note right of EMS: using walletFactory invokeEntry
   EMS -->> EMH: handleMessage(Withdraw712, signature)
   EMH -->> EMH: check sigs
-  EMH -->> EMH: extract nested operation
-  EMH -->> YC: Withdraw(500 USDC,“Arbitrum”)
+  EMH -->> EMH: extract nested operation,<br/>chainId from domain
+  EMH -->> YC: Withdraw(500 USDC, chainId=42161)
   YC -->> EMH: portfolio123<br/>flow2
   note over EMH: NOT SHOWN:<br/>vstorage, YDS details
   EMH -->> D: portfolio123<br/>flow2
