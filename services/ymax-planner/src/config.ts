@@ -36,8 +36,8 @@ export interface YmaxPlannerConfig {
     readonly timeout: number;
     readonly retries: number;
   };
-  readonly spectrumBlockchainEndpoints?: string[];
-  readonly spectrumPoolsEndpoints?: string[];
+  readonly spectrumBlockchainEndpoints: string[];
+  readonly spectrumPoolsEndpoints: string[];
   readonly cosmosRest: {
     readonly agoricNetworkSpec: string;
     readonly agoricNetSubdomain?: string;
@@ -161,8 +161,10 @@ export const loadConfig = async (
 
   const timeout = parsePositiveInteger(env, 'REQUEST_TIMEOUT', 10000);
   const maxRetries = parsePositiveInteger(env, 'REQUEST_RETRIES', 3);
+
+  const graphqlEndpointsString = validateRequired(env, 'GRAPHQL_ENDPOINTS');
   const graphqlEndpoints = parseGraphqlEndpoints(
-    env.GRAPHQL_ENDPOINTS || '{}',
+    graphqlEndpointsString,
     'GRAPHQL_ENDPOINTS',
   );
   const {
@@ -170,7 +172,7 @@ export const loadConfig = async (
     'api-spectrum-pools': spectrumPoolsEndpoints,
   } = graphqlEndpoints;
   if (!spectrumBlockchainEndpoints || !spectrumPoolsEndpoints) {
-    console.warn(
+    throw new Error(
       '⚠️  Missing GRAPHQL_ENDPOINTS configuration for api-spectrum-blockchain and/or api-spectrum-blockchain. SPECTRUM_API_URL is deprecated.',
     );
   }

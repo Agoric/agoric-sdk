@@ -170,8 +170,8 @@ export type Powers = {
   evmCtx: Omit<EvmContext, 'signingSmartWalletKit' | 'fetch' | 'cosmosRest'>;
   rpc: CosmosRPCClient;
   spectrum: SpectrumClient;
-  spectrumBlockchain?: SpectrumBlockchainSdk;
-  spectrumPools?: SpectrumPoolsSdk;
+  spectrumBlockchain: SpectrumBlockchainSdk;
+  spectrumPools: SpectrumPoolsSdk;
   spectrumChainIds: Partial<Record<SupportedChain, string>>;
   spectrumPoolIds: Partial<Record<InstrumentId, string>>;
   cosmosRest: CosmosRestClient;

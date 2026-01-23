@@ -74,8 +74,8 @@ const amountFromPositionBalance = (
 export type BalanceQueryPowers = {
   cosmosRest: CosmosRestClient;
   spectrum: SpectrumClient;
-  spectrumBlockchain?: SpectrumBlockchainSdk;
-  spectrumPools?: SpectrumPoolsSdk;
+  spectrumBlockchain: SpectrumBlockchainSdk;
+  spectrumPools: SpectrumPoolsSdk;
   spectrumChainIds: Partial<Record<SupportedChain, string>>;
   spectrumPoolIds: Partial<Record<PoolKey, string>>;
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
@@ -206,64 +206,62 @@ export const getCurrentBalances = async (
     }
   }
 
-  if (spectrumBlockchain && spectrumPools) {
-    const spectrumAccountQueries = accountQueries.map(desc =>
-      makeSpectrumAccountQuery(desc, powers),
-    );
-    const spectrumPoolQueries = positionQueries.map(desc =>
-      makeSpectrumPoolQuery(desc, powers),
-    );
+  const spectrumAccountQueries = accountQueries.map(desc =>
+    makeSpectrumAccountQuery(desc, powers),
+  );
+  const spectrumPoolQueries = positionQueries.map(desc =>
+    makeSpectrumPoolQuery(desc, powers),
+  );
 
-    const [accountResult, positionResult] = await Promise.allSettled([
-      spectrumAccountQueries.length
-        ? spectrumBlockchain.getBalances({ accounts: spectrumAccountQueries })
-        : { balances: [] },
-      spectrumPoolQueries.length
-        ? spectrumPools.getBalances({ positions: spectrumPoolQueries })
-        : { balances: [] },
-    ]);
+  const [accountResult, positionResult] = await Promise.allSettled([
+    spectrumAccountQueries.length
+      ? spectrumBlockchain.getBalances({ accounts: spectrumAccountQueries })
+      : { balances: [] },
+    spectrumPoolQueries.length
+      ? spectrumPools.getBalances({ positions: spectrumPoolQueries })
+      : { balances: [] },
+  ]);
 
-    if (
-      accountResult.status !== 'fulfilled' ||
-      positionResult.status !== 'fulfilled'
-    ) {
-      const rejections = [accountResult, positionResult].flatMap(settlement =>
-        settlement.status === 'fulfilled' ? [] : [settlement.reason],
-      );
-      errors.push(...rejections);
-      throw AggregateError(errors, 'Could not get balances');
-    }
-    const accountBalances = accountResult.value.balances;
-    const positionBalances = positionResult.value.balances;
-    if (
-      accountBalances.length !== accountQueries.length ||
-      positionBalances.length !== positionQueries.length
-    ) {
-      const msg = `Bad balance query response(s), expected [${[accountBalances.length, positionBalances.length]}] results but got [${[accountQueries.length, positionQueries.length]}]`;
-      throw AggregateError(errors, msg);
-    }
-    for (let i = 0; i < accountQueries.length; i += 1) {
-      const { place, asset } = accountQueries[i];
-      const result = accountBalances[i];
-      if (result.error) errors.push(Error(result.error));
-      const balanceAmount = amountFromAccountBalance(brand, result.balance);
-      balances.set(place, balanceAmount);
-      // XXX as of 2025-11-19, spectrumBlockchain.getBalances returns @agoric
-      // IBC USDC balances in micro-USDC (uusdc) rather than USDC like the rest.
-      if (place === '@agoric' && asset === 'USDC' && result.balance) {
-        if (!result.balance.match(/^[0-9]+$/)) {
-          const msg = `⚠️ Got a non-integer balance ${result.balance} for @agoric USDC; verify scaling with Spectrum`;
-          errors.push(Error(msg));
-        }
-        balances.set(place, AmountMath.make(brand, BigInt(result.balance)));
+  if (
+    accountResult.status !== 'fulfilled' ||
+    positionResult.status !== 'fulfilled'
+  ) {
+    const rejections = [accountResult, positionResult].flatMap(settlement =>
+      settlement.status === 'fulfilled' ? [] : [settlement.reason],
+    );
+    errors.push(...rejections);
+    throw AggregateError(errors, 'Could not get balances');
+  }
+  const accountBalances = accountResult.value.balances;
+  const positionBalances = positionResult.value.balances;
+  if (
+    accountBalances.length !== accountQueries.length ||
+    positionBalances.length !== positionQueries.length
+  ) {
+    const msg = `Bad balance query response(s), expected [${[accountBalances.length, positionBalances.length]}] results but got [${[accountQueries.length, positionQueries.length]}]`;
+    throw AggregateError(errors, msg);
+  }
+  for (let i = 0; i < accountQueries.length; i += 1) {
+    const { place, asset } = accountQueries[i];
+    const result = accountBalances[i];
+    if (result.error) errors.push(Error(result.error));
+    const balanceAmount = amountFromAccountBalance(brand, result.balance);
+    balances.set(place, balanceAmount);
+    // XXX as of 2025-11-19, spectrumBlockchain.getBalances returns @agoric
+    // IBC USDC balances in micro-USDC (uusdc) rather than USDC like the rest.
+    if (place === '@agoric' && asset === 'USDC' && result.balance) {
+      if (!result.balance.match(/^[0-9]+$/)) {
+        const msg = `⚠️ Got a non-integer balance ${result.balance} for @agoric USDC; verify scaling with Spectrum`;
+        errors.push(Error(msg));
       }
+      balances.set(place, AmountMath.make(brand, BigInt(result.balance)));
     }
-    for (let i = 0; i < positionQueries.length; i += 1) {
-      const { place } = positionQueries[i];
-      const result = positionBalances[i];
-      if (result.error) errors.push(Error(result.error));
-      balances.set(place, amountFromPositionBalance(brand, result.balance));
-    }
+  }
+  for (let i = 0; i < positionQueries.length; i += 1) {
+    const { place } = positionQueries[i];
+    const result = positionBalances[i];
+    if (result.error) errors.push(Error(result.error));
+    balances.set(place, amountFromPositionBalance(brand, result.balance));
   }
   if (errors.length) {
     throw AggregateError(errors, 'Could not accept balances');
