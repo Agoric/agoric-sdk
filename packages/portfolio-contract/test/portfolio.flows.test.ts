@@ -150,10 +150,19 @@ const rebalance: typeof rawRebalance = (
 const theExit = harden(() => {}); // for ava comparison
 // @ts-expect-error mock
 const mockZCF: ZCF = Far('MockZCF', {
-  makeEmptySeatKit: () =>
-    ({
-      zcfSeat: Far('MockZCFSeat', { exit: theExit }),
-    }) as unknown as ZCF,
+  makeEmptySeatKit: () => {
+    let exited = false;
+    const exit = () => {
+      exited = true;
+      theExit();
+    };
+    const fail = () => {
+      exited = true;
+    };
+    return ({
+      zcfSeat: Far('MockZCFSeat', { exit, fail, hasExited: () => exited }),
+    }) as unknown as ZCF;
+  },
 });
 
 const { brand: USDC } = makeIssuerKit('USDC');
