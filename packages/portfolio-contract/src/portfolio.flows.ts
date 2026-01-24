@@ -1733,7 +1733,8 @@ export const openPortfolioFromPermit2 = (async (
   if (!fromChain) {
     throw Fail`no Axelar chain for EIP-155 chainId ${depositDetails.chainId}`;
   }
-  assert.equal(depositDetails.spender, ctx.contracts[fromChain].depositFactory);
+  sameEvmAddress(depositDetails.spender, ctx.contracts[fromChain].depositFactory) ||
+    Fail`spender address ${depositDetails.spender} does not match depositFactory address ${ctx.contracts[fromChain].depositFactory} for chain ${fromChain}`;
   if (targetAllocation) {
     madeKit.manager.setTargetAllocation(targetAllocation);
   }
@@ -1846,8 +1847,10 @@ export const executePlan = (async (
       const { fromChain, permit2Payload, spender } = options.evmDepositDetail;
       // Only use queuePermit2Step for openPortfolio (spender = depositFactory).
       // Deposits to existing portfolios use the depositFromEVM case in stepFlow.
-      const isDepositFactory =
-        spender === ctx.contracts[fromChain].depositFactory;
+      const isDepositFactory = sameEvmAddress(
+        spender,
+        ctx.contracts[fromChain].depositFactory,
+      );
       if (isDepositFactory) {
         const gmpChain = await orch.getChain('axelar');
         const chainInfo = await (await orch.getChain(fromChain)).getChainInfo();
