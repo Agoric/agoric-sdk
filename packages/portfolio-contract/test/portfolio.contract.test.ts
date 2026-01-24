@@ -2381,7 +2381,7 @@ test('evmHandler.deposit (Arbitrum -> Base) completes a deposit flow', async t =
   );
 });
 
-test('evmHandler.deposit fails if sourceAccountId not set', async t => {
+test('regular portfolio does not have sourceAccountId', async t => {
   const { trader1, common } = await setupTrader(t);
   const { poc26 } = common.brands;
 
@@ -2391,17 +2391,13 @@ test('evmHandler.deposit fails if sourceAccountId not set', async t => {
     ackNFA(common.utils),
   ]);
 
-  // Verify sourceAccountId is not set
+  // Verify sourceAccountId is not set for regular portfolios
   const status = await trader1.getPortfolioStatus();
   t.is(
     status.sourceAccountId,
     undefined,
     'sourceAccountId not set for regular portfolio',
   );
-  // Note: We can't directly test the evmHandler.deposit() failure here
-  // because trader1 helper doesn't expose evmHandler for regular portfolios.
-  // The implementation will throw "deposit requires sourceAccountId to be set"
-  // when called without sourceAccountId.
 });
 
 test('evmHandler.deposit fails if owner does not match', async t => {
