@@ -2527,7 +2527,7 @@ test('withdraw from Beefy position', async t => {
 });
 
 // EVM wallet integration - openPortfolioFromPermit2 flow
-test('openPortfolioFromPermit2 with Permit2 provisions account and starts deposit', async t => {
+test('openPortfolioFromPermit2 with Permit2 completes a deposit flow', async t => {
   const permitDetails: PermitDetails = {
     chainId: Number(axelarCCTPConfig.Arbitrum.reference),
     token: contractsMock.Arbitrum.usdc,
