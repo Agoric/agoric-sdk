@@ -4,12 +4,16 @@
  */
 import type { NatValue } from '@agoric/ertp';
 import { type ContractCall } from '@agoric/orchestration/src/axelar-types.js';
+import { encodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
 import { assert } from '@endo/errors';
+import { hexToBytes } from '@noble/hashes/utils';
 import type {
   Abi,
   AbiStateMutability,
+  ByteArray,
   ContractFunctionArgs,
   ContractFunctionName,
+  Hex,
 } from 'viem';
 
 export type EVMT = {
@@ -87,6 +91,60 @@ type AbiContract<TAbi extends Abi> = {
   [Name in ContractFunctionName<TAbi, AbiStateMutability>]: (
     ...args: AbiContractArgs<TAbi, Name>
   ) => void;
+};
+
+type GmpBuilder = {
+  makeContract: <TAbi extends Abi>(
+    target: EVMT['address'],
+    abi: TAbi,
+  ) => AbiContract<TAbi>;
+  getPayload: () => ByteArray;
+};
+
+/**
+ * Build an ABI-typed execute payload for Axelar GMP.
+ *
+ * The destination contract is invoked via Axelar's `execute(bytes)` entrypoint,
+ * so this builder encodes the payload bytes (no function selector) using the
+ * ABI inputs of the chosen method.
+ *
+ */
+export const makeGmpBuilder = (): GmpBuilder => {
+  let payloadHex: Hex | undefined;
+
+  const makeContract = <TAbi extends Abi>(
+    _target: EVMT['address'],
+    abi: TAbi,
+  ): AbiContract<TAbi> => {
+    const stubs: Record<string, (...args: unknown[]) => void> = {};
+    for (const item of abi) {
+      if (item.type !== 'function') continue;
+      const inputs = item.inputs ?? [];
+      const fn = (...args: unknown[]) => {
+        if (payloadHex) {
+          assert.fail('Axelar execute payload already set');
+        }
+        payloadHex = encodeAbiParameters(inputs, args);
+      };
+      if (stubs[item.name]) {
+        assert.fail(
+          `ABI overload for ${item.name} requires disambiguation (not supported)`,
+        );
+      }
+      stubs[item.name] = fn;
+    }
+    return harden(stubs) as AbiContract<TAbi>;
+  };
+
+  const getPayload = () => {
+    assert(payloadHex, 'Axelar execute payload must be set');
+    return harden(hexToBytes(payloadHex.slice(2)));
+  };
+
+  return harden({
+    makeContract,
+    getPayload,
+  });
 };
 
 /**
