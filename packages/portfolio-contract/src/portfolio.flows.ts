@@ -1156,10 +1156,12 @@ const stepFlow = async (
         // Validate CAIP-10 format (will throw if malformed)
         parseAccountId(sourceAccountId);
 
-        // Get permit2 details - must be provided for depositFromEVM
-        if (!evmDepositDetail) {
-          throw Fail`depositFromEVM requires evmDepositDetail`;
-        }
+        // Get permit2 details - must be provided for depositFromEVM.
+        // In normal operation, the deposit flow in portfolio.exo.ts always
+        // supplies evmDepositDetail for 'depositFromEVM' moves. This check is
+        // intentionally defensive: if it ever fails, it indicates a bug in
+        // the wiring between the portfolio contract and its orchestration flows.
+        assert(evmDepositDetail, 'depositFromEVM requires evmDepositDetail');
         if (evmDepositDetail.fromChain !== srcChain) {
           throw Fail`depositFromEVM chain mismatch: expected ${srcChain}, got ${evmDepositDetail.fromChain}`;
         }
