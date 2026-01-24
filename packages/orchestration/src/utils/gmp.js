@@ -38,20 +38,26 @@ export const gmpAddresses = {
  * @param {ContractCall} data - The data for the contract call.
  * @returns {AbiEncodedContractCall} The encoded contract call object.
  */
-export const constructContractCall = ({ target, functionSignature, args }) => {
+export const constructContractCall = ({
+  target,
+  functionSignature,
+  args,
+  abi,
+}) => {
   const [name, paramsRaw] = functionSignature.split('(');
   const params = paramsRaw.replace(')', '').split(',').filter(Boolean);
+  const resolvedAbi = abi ?? [
+    {
+      type: 'function',
+      name,
+      inputs: params.map((type, i) => ({ type, name: `arg${i}` })),
+    },
+  ];
 
   return {
     target,
     data: encodeFunctionData({
-      abi: [
-        {
-          type: 'function',
-          name,
-          inputs: params.map((type, i) => ({ type, name: `arg${i}` })),
-        },
-      ],
+      abi: resolvedAbi,
       functionName: name,
       args,
     }),
@@ -61,17 +67,17 @@ export const constructContractCall = ({ target, functionSignature, args }) => {
 /**
  * Builds a GMP payload from an array of contract calls.
  *
- * @param {(ContractCall)[]} contractCalls - Array of contract call objects.
+ * @param {ContractCall[]} contractCalls - Array of contract call objects.
  * @param {string} id - Optional message ID for tracing/debugging purposes
  * @returns {number[]} The GMP payload array.
  */
 export const buildGMPPayload = (contractCalls, id = '') => {
   const abiEncodedContractCalls = [];
   for (const call of contractCalls) {
-    const { target, functionSignature, args } = call;
+    const { target, functionSignature, args, abi } = call;
 
     abiEncodedContractCalls.push(
-      constructContractCall({ target, functionSignature, args }),
+      constructContractCall({ target, functionSignature, args, abi }),
     );
   }
 
