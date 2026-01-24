@@ -754,7 +754,7 @@ test.serial('invite evm handler; test open portfolio', async t => {
       nonce,
       deadline,
     },
-    '0x000000000022D473030F116dDEE9F6B43aC78BA3', // Arbitrum permit2 address
+    axelarConfig.Arbitrum.contracts.permit2,
     BigInt(axelarConfig.Arbitrum.chainInfo.reference),
     witness,
   );
