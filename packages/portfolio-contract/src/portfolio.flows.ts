@@ -68,10 +68,7 @@ import { assert, Fail, q } from '@endo/errors';
 import { makeMarshal } from '@endo/marshal';
 import type { RegisterAccountMemo } from './noble-fwd-calc.js';
 import type { AxelarId, GmpAddresses } from './portfolio.contract.ts';
-import type {
-  AccountInfoFor,
-  PortfolioKit,
-} from './portfolio.exo.ts';
+import type { AccountInfoFor, PortfolioKit } from './portfolio.exo.ts';
 import {
   AaveProtocol,
   BeefyProtocol,
@@ -1739,7 +1736,10 @@ export const openPortfolioFromPermit2 = (async (
   if (!fromChain) {
     throw Fail`no Axelar chain for EIP-155 chainId ${depositDetails.chainId}`;
   }
-  sameEvmAddress(depositDetails.spender, ctx.contracts[fromChain].depositFactory) ||
+  sameEvmAddress(
+    depositDetails.spender,
+    ctx.contracts[fromChain].depositFactory,
+  ) ||
     Fail`spender address ${depositDetails.spender} does not match depositFactory address ${ctx.contracts[fromChain].depositFactory} for chain ${fromChain}`;
   if (targetAllocation) {
     madeKit.manager.setTargetAllocation(targetAllocation);

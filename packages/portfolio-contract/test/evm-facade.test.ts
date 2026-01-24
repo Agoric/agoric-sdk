@@ -63,9 +63,9 @@ test('makeEvmAbiCallBatch records ERC20 calls with ABI info', t => {
 });
 
 test('makeGmpBuilder encodes createAndDeposit payload', t => {
-  const destination_address = '0x00000000000000000000000000000000000000d0';
+  const destinationAddress = '0x00000000000000000000000000000000000000d0';
   const gmp = makeGmpBuilder();
-  const factory = gmp.makeContract(destination_address, depositFactoryABI);
+  const factory = gmp.makeContract(destinationAddress, depositFactoryABI);
 
   const payloadArgs = {
     lcaOwner: 'agoric1owner',

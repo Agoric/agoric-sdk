@@ -161,9 +161,9 @@ const mockZCF: ZCF = Far('MockZCF', {
     const fail = () => {
       exited = true;
     };
-    return ({
+    return {
       zcfSeat: Far('MockZCFSeat', { exit, fail, hasExited: () => exited }),
-    }) as unknown as ZCF;
+    } as unknown as ZCF;
   },
 });
 
@@ -2554,7 +2554,7 @@ test('withdraw from Beefy position', async t => {
 test('openPortfolioFromPermit2 with Permit2 completes a deposit flow', async t => {
   // Use a mixed-case spender to ensure case-insensitive address checks.
   const mixedCaseSpender =
-    ('0x' + contractsMock.Arbitrum.depositFactory.slice(2).toUpperCase()) as Address;
+    contractsMock.Arbitrum.depositFactory.toUpperCase() as Address;
   const permitDetails: PermitDetails = {
     chainId: Number(axelarCCTPConfig.Arbitrum.reference),
     token: contractsMock.Arbitrum.usdc,
