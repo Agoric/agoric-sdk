@@ -2528,11 +2528,14 @@ test('withdraw from Beefy position', async t => {
 
 // EVM wallet integration - openPortfolioFromPermit2 flow
 test('openPortfolioFromPermit2 with Permit2 completes a deposit flow', async t => {
+  // Use a mixed-case spender to ensure case-insensitive address checks.
+  const mixedCaseSpender =
+    '0x' + contractsMock.Arbitrum.depositFactory.slice(2).toUpperCase();
   const permitDetails: PermitDetails = {
     chainId: Number(axelarCCTPConfig.Arbitrum.reference),
     token: contractsMock.Arbitrum.usdc,
     amount: 1_000_000_000n,
-    spender: contractsMock.Arbitrum.depositFactory,
+    spender: mixedCaseSpender,
     permit2Payload: {
       permit: {
         deadline: 1357923600n,
