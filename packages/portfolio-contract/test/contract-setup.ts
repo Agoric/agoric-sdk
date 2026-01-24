@@ -1,5 +1,5 @@
 import type { VstorageKit } from '@agoric/client-utils';
-import { mustMatch } from '@agoric/internal';
+import { mustMatch, type ERemote } from '@agoric/internal';
 import { defaultSerializer } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js';
@@ -9,14 +9,18 @@ import { E } from '@endo/far';
 import { passStyleOf } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
+import { privateKeyToAccount } from 'viem/accounts';
+import type { Hex } from 'viem';
+import type { Invitation, ZoeService } from '@agoric/zoe';
 import type { PortfolioPrivateArgs } from '../src/portfolio.contract.ts';
 import * as contractExports from '../src/portfolio.contract.ts';
 import type { PublishedTx, TxStatus, TxId } from '../src/resolver/types.ts';
-import { makeTrader } from '../tools/portfolio-actors.ts';
+import { makeEvmTrader, makeTrader } from '../tools/portfolio-actors.ts';
 import { makeWallet } from '../tools/wallet-offer-tools.ts';
 import {
   axelarIdsMock,
   contractsMock,
+  evmTrader0PrivateKey,
   gmpAddresses,
   makeCCTPTraffic,
   makeUSDNIBCTraffic,
@@ -27,6 +31,32 @@ import { chainInfoWithCCTP, setupPortfolioTest } from './supports.ts';
 const contractName = 'ymax0';
 type StartFn = typeof contractExports.start;
 const { values } = Object;
+
+const makeReadPublished = (
+  storage: Awaited<
+    ReturnType<typeof setupPortfolioTest>
+  >['bootstrap']['storage'],
+) =>
+  (async subpath => {
+    await eventLoopIteration();
+    const val = storage
+      .getDeserialized(`${ROOT_STORAGE_PATH}.${subpath}`)
+      .at(-1);
+    return val;
+  }) as unknown as VstorageKit['readPublished'];
+
+const makeEvmWalletHandler = async (
+  zoe: ZoeService,
+  creatorFacet: ERemote<{
+    makeEVMWalletHandlerInvitation: () => Promise<unknown>;
+  }>,
+) => {
+  const invitation = (await E(
+    creatorFacet,
+  ).makeEVMWalletHandlerInvitation()) as Invitation;
+  const seat = await E(zoe).offer(invitation, {});
+  return E(seat).getOfferResult();
+};
 
 export const deploy = async (
   t: ExecutionContext,
@@ -119,13 +149,7 @@ export const setupTrader = async (
   const { when } = common.utils.vowTools;
 
   const { storage } = common.bootstrap;
-  const readPublished = (async subpath => {
-    await eventLoopIteration();
-    const val = storage
-      .getDeserialized(`${ROOT_STORAGE_PATH}.${subpath}`)
-      .at(-1);
-    return val;
-  }) as unknown as VstorageKit['readPublished'];
+  const readPublished = makeReadPublished(storage);
 
   const makeFundedTrader = async () => {
     const myBalance = usdc.units(initial);
@@ -218,6 +242,45 @@ export const setupTrader = async (
   });
 
   return { ...deployed, makeFundedTrader, trader1, trader2, txResolver };
+};
+
+export const makeEvmTraderKit = async (
+  deployed: Awaited<ReturnType<typeof deploy>>,
+  {
+    privateKey = evmTrader0PrivateKey,
+  }: {
+    privateKey?: Hex;
+  } = {},
+) => {
+  const { common, zoe, started, timerService } = deployed;
+  const { when } = common.utils.vowTools;
+  const { storage } = common.bootstrap;
+  const readPublished = makeReadPublished(storage);
+  const evmWalletHandler = (await makeEvmWalletHandler(
+    zoe,
+    started.creatorFacet,
+  )) as ERemote<import('../src/evm-wallet-handler.ts').EVMWalletMessageHandler>;
+  const account = privateKeyToAccount(privateKey);
+  const evmTrader = makeEvmTrader({
+    evmWalletHandler,
+    account,
+    contractsByChain: contractsMock,
+    chainInfoByName: chainInfoWithCCTP,
+    timerService,
+    readPublished,
+    when,
+  });
+  return { evmTrader, evmWalletHandler, evmAccount: account, readPublished };
+};
+
+export const setupEvmTrader = async (
+  t: ExecutionContext,
+  overrides: Partial<PortfolioPrivateArgs> = {},
+  options?: Parameters<typeof makeEvmTraderKit>[1],
+) => {
+  const deployed = await deploy(t, overrides);
+  const evmKit = await makeEvmTraderKit(deployed, options);
+  return { ...deployed, ...evmKit };
 };
 
 export const simulateCCTPAck = async utils => {

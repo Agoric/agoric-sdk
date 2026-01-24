@@ -121,6 +121,7 @@ const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
     depositFactory: M.string(),
     factory: M.string(),
     usdc: M.string(),
+    permit2: M.string(),
     gateway: M.string(),
     gasService: M.string(),
   });
@@ -166,6 +167,7 @@ export type EVMContractAddresses = {
   depositFactory: `0x${string}`;
   factory: `0x${string}`;
   usdc: `0x${string}`;
+  permit2: `0x${string}`;
   tokenMessenger: `0x${string}`;
   aaveUSDC: `0x${string}`;
   aaveRewardsController: `0x${string}`;

@@ -105,6 +105,28 @@ const usdcAddresses = harden({
   },
 });
 
+/**
+ * Permit2 contract addresses
+ * @see {@link https://docs.uniswap.org/contracts/v4/deployments}
+ * @type {AddressesMap}
+ */
+const permit2Addresses = harden({
+  mainnet: {
+    Avalanche: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
+    Arbitrum: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
+    Ethereum: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
+    Optimism: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
+    Base: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
+  },
+  testnet: {
+    Avalanche: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
+    Arbitrum: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
+    Ethereum: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
+    Optimism: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
+    Base: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
+  },
+});
+
 /** @type {AddressesMap} */
 const aaveUsdcAddresses = harden({
   mainnet: {
@@ -421,6 +443,7 @@ const mainnetContracts = {
     gateway: gatewayAddresses.mainnet.Avalanche,
     gasService: gasServiceAddresses.mainnet.Avalanche,
     usdc: usdcAddresses.mainnet.Avalanche,
+    permit2: permit2Addresses.mainnet.Avalanche,
     tokenMessenger: mainnetTokenMessenger.Avalanche.Address,
     aaveUSDC: aaveUsdcAddresses.mainnet.Avalanche,
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Avalanche,
@@ -437,6 +460,7 @@ const mainnetContracts = {
     gateway: gatewayAddresses.mainnet.Ethereum,
     gasService: gasServiceAddresses.mainnet.Ethereum,
     usdc: usdcAddresses.mainnet.Ethereum,
+    permit2: permit2Addresses.mainnet.Ethereum,
     tokenMessenger: mainnetTokenMessenger.Ethereum.Address,
     aaveUSDC: aaveUsdcAddresses.mainnet.Ethereum,
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Ethereum,
@@ -480,6 +504,7 @@ const mainnetContracts = {
     gateway: gatewayAddresses.mainnet.Optimism,
     gasService: gasServiceAddresses.mainnet.Optimism,
     usdc: usdcAddresses.mainnet.Optimism,
+    permit2: permit2Addresses.mainnet.Optimism,
     tokenMessenger: mainnetTokenMessenger['OP Mainnet'].Address,
     aaveUSDC: aaveUsdcAddresses.mainnet.Optimism,
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Optimism,
@@ -497,6 +522,7 @@ const mainnetContracts = {
     gateway: gatewayAddresses.mainnet.Arbitrum,
     gasService: gasServiceAddresses.mainnet.Arbitrum,
     usdc: usdcAddresses.mainnet.Arbitrum,
+    permit2: permit2Addresses.mainnet.Arbitrum,
     tokenMessenger: mainnetTokenMessenger.Arbitrum.Address,
     aaveUSDC: aaveUsdcAddresses.mainnet.Arbitrum,
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Arbitrum,
@@ -513,6 +539,7 @@ const mainnetContracts = {
     gateway: gatewayAddresses.mainnet.Base,
     gasService: gasServiceAddresses.mainnet.Base,
     usdc: usdcAddresses.mainnet.Base,
+    permit2: permit2Addresses.mainnet.Base,
     tokenMessenger: mainnetTokenMessenger.Base.Address,
     aaveUSDC: aaveUsdcAddresses.mainnet.Base,
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Base,
@@ -553,6 +580,7 @@ const testnetContracts = {
     gateway: gatewayAddresses.testnet.Avalanche,
     gasService: gasServiceAddresses.testnet.Avalanche,
     usdc: usdcAddresses.testnet.Avalanche,
+    permit2: permit2Addresses.testnet.Avalanche,
     tokenMessenger: testnetTokenMessenger['Avalanche Fuji'].Address,
     aaveUSDC: aaveUsdcAddresses.testnet.Avalanche,
     aaveRewardsController: aaveRewardsControllerAddresses.testnet.Avalanche,
@@ -567,6 +595,7 @@ const testnetContracts = {
     gateway: gatewayAddresses.testnet.Base,
     gasService: gasServiceAddresses.testnet.Base,
     usdc: usdcAddresses.testnet.Base,
+    permit2: permit2Addresses.testnet.Base,
     tokenMessenger: testnetTokenMessenger['Base Sepolia'].Address,
     aaveUSDC: aaveUsdcAddresses.testnet.Base,
     aaveRewardsController: aaveRewardsControllerAddresses.testnet.Base,
@@ -582,6 +611,7 @@ const testnetContracts = {
     gateway: gatewayAddresses.testnet.Ethereum,
     gasService: gasServiceAddresses.testnet.Ethereum,
     usdc: usdcAddresses.testnet.Ethereum,
+    permit2: permit2Addresses.testnet.Ethereum,
     tokenMessenger: testnetTokenMessenger['Ethereum Sepolia'].Address,
     aaveUSDC: aaveUsdcAddresses.testnet.Ethereum,
     aaveRewardsController: aaveRewardsControllerAddresses.testnet.Ethereum,
@@ -598,6 +628,7 @@ const testnetContracts = {
     gateway: gatewayAddresses.testnet.Optimism,
     gasService: gasServiceAddresses.testnet.Optimism,
     usdc: usdcAddresses.testnet.Optimism,
+    permit2: permit2Addresses.testnet.Optimism,
     tokenMessenger: testnetTokenMessenger['OP Sepolia'].Address,
     aaveUSDC: aaveUsdcAddresses.testnet.Optimism,
     aaveRewardsController: aaveRewardsControllerAddresses.testnet.Optimism,
@@ -613,6 +644,7 @@ const testnetContracts = {
     gateway: gatewayAddresses.testnet.Arbitrum,
     gasService: gasServiceAddresses.testnet.Arbitrum,
     usdc: usdcAddresses.testnet.Arbitrum,
+    permit2: permit2Addresses.testnet.Arbitrum,
     tokenMessenger: testnetTokenMessenger['Arbitrum Sepolia'].Address,
     aaveUSDC: aaveUsdcAddresses.testnet.Arbitrum,
     aaveRewardsController: aaveRewardsControllerAddresses.testnet.Arbitrum,

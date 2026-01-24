@@ -6,7 +6,6 @@
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import type { Address } from 'abitype';
 import { AmountMath } from '@agoric/ertp';
 import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 import {
@@ -35,6 +34,7 @@ import type {
 import { plannerClientMock } from '../tools/agents-mock.ts';
 import {
   deploy,
+  makeEvmTraderKit,
   setupTrader,
   simulateAckTransferToAxelar,
   simulateCCTPAck,
@@ -905,8 +905,16 @@ const setupPlanner = async (
   t,
   overrides: Partial<PortfolioPrivateArgs> = {},
 ) => {
-  const { common, zoe, started, makeFundedTrader, trader1, txResolver } =
-    await setupTrader(t, undefined, overrides);
+  const {
+    common,
+    zoe,
+    started,
+    makeFundedTrader,
+    trader1,
+    txResolver,
+    timerService,
+    contractBaggage,
+  } = await setupTrader(t, undefined, overrides);
   const { storage } = common.bootstrap;
   const { readPublished, readLegible } = makeStorageTools(storage);
   const utils = { ...common.utils, readLegible };
@@ -919,6 +927,13 @@ const setupPlanner = async (
   const planner1 = plannerClientMock(walletPlanner, started.instance, () =>
     readPublished(`wallet.agoric1planner`),
   );
+  const { evmTrader, evmAccount } = await makeEvmTraderKit({
+    common,
+    zoe,
+    started,
+    timerService,
+    contractBaggage,
+  });
   return {
     common,
     zoe,
@@ -928,6 +943,8 @@ const setupPlanner = async (
     planner1,
     readPublished,
     txResolver,
+    evmTrader,
+    evmAccount,
   };
 };
 
@@ -1580,7 +1597,7 @@ test('Withdraw from an ERC4626 position', async t => {
 });
 
 test('open portfolio from Arbitrum, 1000 USDC deposit', async t => {
-  const { common, planner1, started, readPublished, txResolver } =
+  const { common, planner1, readPublished, txResolver, evmTrader } =
     await setupPlanner(t);
   const { usdc, bld } = common.brands;
 
@@ -1600,35 +1617,10 @@ test('open portfolio from Arbitrum, 1000 USDC deposit', async t => {
   };
 
   const traderDo = async () => {
-    const permit2Payload = {
-      permit: {
-        permitted: {
-          token: contractsMock[evm].usdc,
-          amount: depositAmount.value,
-        },
-        nonce: 1n,
-        deadline: 1n,
-      },
-      owner: '0x1234567890AbcdEF1234567890aBcdef12345678',
-      witness:
-        '0x0000000000000000000000000000000000000000000000000000000000000000',
-      witnessTypeString: 'OpenPortfolioWitness',
-      signature: '0x1234',
-    } as const;
-    const permitDetails = {
-      chainId: Number(chainInfoWithCCTP[evm].reference),
-      token: contractsMock[evm].usdc,
-      amount: depositAmount.value,
-      spender: contractsMock[evm].depositFactory,
-      permit2Payload,
-    } as const;
-
-    // TODO: Use trader1 to exercise real client access once EMS/EMH wiring exists.
-    const { storagePath, evmHandler } = await E(
-      started.publicFacet,
-    ).openPortfolioFromEVM({ allocations }, permitDetails);
+    const { storagePath } = await evmTrader
+      .forChain(evm)
+      .openPortfolio(allocations, depositAmount.value);
     t.is(storagePath, expected.storagePath);
-    t.is(passStyleOf(evmHandler), 'remotable');
   };
 
   /** Simulate chain inputs (acks) for makeAccount + GMP transfers. */
@@ -1701,7 +1693,7 @@ test('open portfolio from Arbitrum, 1000 USDC deposit', async t => {
   t.is(status.positionKeys.length, 2);
   // Verify sourceAccountId is stored in CAIP-10 format
   const expectedSourceAccountId =
-    `eip155:${chainInfoWithCCTP[evm].reference}:0x1234567890abcdef1234567890abcdef12345678` as const;
+    `eip155:${chainInfoWithCCTP[evm].reference}:${evmTrader.getAddress().toLowerCase()}` as const;
   t.is(
     status.sourceAccountId,
     expectedSourceAccountId,
@@ -1724,7 +1716,7 @@ test('open portfolio from Arbitrum, 1000 USDC deposit', async t => {
 });
 
 test('evmHandler.withdraw starts a withdraw flow', async t => {
-  const { common, planner1, started, readPublished, txResolver } =
+  const { common, planner1, readPublished, txResolver, evmTrader } =
     await setupPlanner(t);
   const { usdc, bld } = common.brands;
 
@@ -1732,44 +1724,13 @@ test('evmHandler.withdraw starts a withdraw flow', async t => {
     fromChain: 'Arbitrum' as const,
     depositAmount: usdc.units(1000),
     allocations: [{ instrument: 'Aave_Arbitrum', portion: 10000n }],
-    owner: '0x2222222222222222222222222222222222222222' as Address,
   };
-  const { fromChain: evm, depositAmount, allocations, owner } = inputs;
-
-  type EvmHandler = Awaited<
-    ReturnType<typeof started.publicFacet.openPortfolioFromEVM>
-  >['evmHandler'];
-  let evmHandler: EvmHandler | undefined;
+  const { fromChain: evm, depositAmount, allocations } = inputs;
 
   const traderDo = async () => {
-    const permit2Payload = {
-      permit: {
-        permitted: {
-          token: contractsMock[evm].usdc,
-          amount: depositAmount.value,
-        },
-        nonce: 1n,
-        deadline: 1n,
-      },
-      owner,
-      witness:
-        '0x0000000000000000000000000000000000000000000000000000000000000000',
-      witnessTypeString: 'OpenPortfolioWitness',
-      signature: '0x1234',
-    } as const;
-    const permitDetails = {
-      chainId: Number(chainInfoWithCCTP[evm].reference),
-      token: contractsMock[evm].usdc,
-      amount: depositAmount.value,
-      spender: contractsMock[evm].depositFactory,
-      permit2Payload,
-    } as const;
-
-    const result = await E(started.publicFacet).openPortfolioFromEVM(
-      { allocations },
-      permitDetails,
-    );
-    evmHandler = result.evmHandler;
+    const result = await evmTrader
+      .forChain(evm)
+      .openPortfolio(allocations, depositAmount.value);
     return result;
   };
 
@@ -1787,9 +1748,7 @@ test('evmHandler.withdraw starts a withdraw flow', async t => {
   };
 
   const plannerDo = async () => {
-    const pId = 0;
-    // Wait for trader to open portfolio before reading status
-    await traderDoP;
+    const { portfolioId: pId } = await traderDoP;
     const status = (await readPublished(
       `portfolios.portfolio${pId}`,
     )) as unknown as StatusFor['portfolio'];
@@ -1826,18 +1785,13 @@ test('evmHandler.withdraw starts a withdraw flow', async t => {
   t.truthy(statusBefore.sourceAccountId, 'sourceAccountId is set');
 
   // Now test the withdraw via evmHandler
-  t.truthy(evmHandler, 'evmHandler is defined');
   const withdrawDetails = { token: contractsMock[evm].usdc, amount: 500n };
-  const flowKey = await E(evmHandler!).withdraw({
-    withdrawDetails,
-    address: owner,
-    domain: {
-      chainId: BigInt(chainInfoWithCCTP[evm].reference),
-      name: 'Ymax',
-      version: '1',
-    },
-  });
-  t.regex(flowKey, /^flow\d+$/, 'withdraw returns a flow key');
+  const flowKey = await evmTrader.forChain(evm).withdraw(withdrawDetails);
+  if (typeof flowKey !== 'string') {
+    throw t.fail('withdraw did not return a flow key');
+  }
+  const flowKeyStr = flowKey;
+  t.regex(flowKeyStr, /^flow\d+$/, 'withdraw returns a flow key');
 
   // Check that a withdraw flow is now running
   const statusAfter = (await readPublished(
@@ -1847,7 +1801,7 @@ test('evmHandler.withdraw starts a withdraw flow', async t => {
   t.is(keys(flowsRunning).length, 1, 'one flow running');
 
   const [[flowId, flowDetail]] = Object.entries(flowsRunning);
-  t.is(flowId, flowKey, 'flow key matches');
+  t.is(flowId, flowKeyStr, 'flow key matches');
   t.is(flowDetail.type, 'withdraw', 'flow is a withdraw');
   if (flowDetail.type === 'withdraw') {
     t.is(
