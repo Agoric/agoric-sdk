@@ -14,6 +14,7 @@ import {
 import {
   coerceAccountId,
   parseAccountId,
+  sameEvmAddress,
 } from '@agoric/orchestration/src/utils/address.js';
 import type {
   FundsFlowPlan,
@@ -678,7 +679,7 @@ export const preparePortfolioKit = (
           }
 
           const owner = depositDetails.permit2Payload.owner;
-          owner.toLowerCase() === accountAddress.toLowerCase() ||
+          sameEvmAddress(owner, accountAddress) ||
             Fail`permit owner ${owner} does not match portfolio source address ${accountAddress}`;
 
           // For deposits, spender must be the portfolio's smart wallet address.
@@ -698,11 +699,10 @@ export const preparePortfolioKit = (
             });
           }
 
-          depositDetails.spender.toLowerCase() === expectedSpender.toLowerCase() ||
+          sameEvmAddress(depositDetails.spender, expectedSpender) ||
             Fail`permit spender ${depositDetails.spender} does not match portfolio account ${expectedSpender}`;
 
-          depositDetails.token.toLowerCase() ===
-            contracts[fromChain].usdc.toLowerCase() ||
+          sameEvmAddress(depositDetails.token, contracts[fromChain].usdc) ||
             Fail`permit token address ${depositDetails.token} does not match usdc contract address ${contracts[fromChain].usdc} for chain ${fromChain}`;
 
           const amount = AmountMath.make(usdcBrand, depositDetails.amount);
@@ -761,11 +761,10 @@ export const preparePortfolioKit = (
           }
 
           !address ||
-            accountAddress.toLowerCase() === address.toLowerCase() ||
+            sameEvmAddress(accountAddress, address) ||
             Fail`withdraw address ${address} does not match source account address ${accountAddress}`;
 
-          withdrawDetails.token.toLowerCase() ===
-            contracts[toChain].usdc.toLowerCase() ||
+          sameEvmAddress(withdrawDetails.token, contracts[toChain].usdc) ||
             Fail`withdraw token address ${withdrawDetails.token} does not match usdc contract address ${contracts[toChain].usdc} for chain ${toChain}`;
           const amount = AmountMath.make(usdcBrand, withdrawDetails.amount);
 

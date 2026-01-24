@@ -38,6 +38,7 @@ import type {
 import {
   coerceAccountId,
   parseAccountId,
+  sameEvmAddress,
 } from '@agoric/orchestration/src/utils/address.js';
 import { progressTrackerAsyncFlowUtils } from '@agoric/orchestration/src/utils/progress.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
@@ -1740,8 +1741,7 @@ export const openPortfolioFromPermit2 = (async (
     useProgressTracker: true,
   });
 
-  depositDetails.token.toLowerCase() ===
-    ctx.contracts[fromChain].usdc.toLowerCase() ||
+  sameEvmAddress(depositDetails.token, ctx.contracts[fromChain].usdc) ||
     Fail`depositDetails token address ${depositDetails.token} does not match usdc contract address ${ctx.contracts[fromChain].usdc} for chain ${fromChain}`;
   const amount = AmountMath.make(ctx.usdc.brand, depositDetails.amount);
   const flowDetail: FlowDetail = { type: 'deposit', amount, fromChain };
