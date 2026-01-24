@@ -749,8 +749,8 @@ test.serial('invite evm handler; test open portfolio', async t => {
   const openPortfolioMessage = getPermitWitnessTransferFromData(
     {
       permitted: deposit,
-      // TODO: This should be the address of the owned deposit factory contract
-      spender: axelarConfig.Arbitrum.contracts.factory,
+      // This is the address of the owned deposit factory contract
+      spender: axelarConfig.Arbitrum.contracts.depositFactory,
       nonce,
       deadline,
     },
@@ -770,9 +770,24 @@ test.serial('invite evm handler; test open portfolio', async t => {
     args: [{ ...openPortfolioMessage, signature } as CopyRecord],
   });
 
-  // TODO: check portfolio published in vstorage
+  const walletUpdate = t.context.readPublished(
+    `ymax0.evmWallets.${userAccount.address}`,
+  );
+  t.like(walletUpdate, {
+    updated: 'messageUpdate',
+    nonce,
+    deadline,
+    status: 'ok',
+  });
 
-  t.pass();
+  // @ts-expect-error t.like doesn't narrow sufficiently
+  const portfolio = walletUpdate.result as `portfolio${number}`;
+
+  const portfolios = t.context.readPublished(
+    `ymax0.evmWallets.${userAccount.address}.portfolio`,
+  );
+
+  t.true(portfolios.some(p => p.endsWith(portfolio)));
 });
 
 test.serial(
