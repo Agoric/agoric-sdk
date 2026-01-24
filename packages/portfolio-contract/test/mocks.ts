@@ -1,3 +1,4 @@
+import type { Hex } from 'viem';
 import type { HostInterface } from '@agoric/async-flow';
 import {
   MsgDepositForBurn,
@@ -39,6 +40,10 @@ import type { EVMContractAddressesMap } from '../src/type-guards.ts';
 
 /** address of orch LCA for portfolio0, after contract/fee LCA */
 export const portfolio0lcaOrch = makeTestAddress(1); // agoric1q...c09z0g';
+
+/** Private key for EVM address 0x3f4ae329c7fb2d39c7a0d786df25c32a45691f88 */
+export const evmTrader0PrivateKey =
+  '0x59c6995e998f97a5a0044966f094538c5f68e0c4e42e20b1e6f8a9a4f9f3d0b0' as Hex;
 
 export const prepareMockOrchAccounts = (
   zone: Zone,

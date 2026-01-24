@@ -150,7 +150,7 @@ export const axelarCCTPConfig = {
     reference: '8453',
     cctpDestinationDomain: 6,
   },
-} satisfies Record<string, BaseChainInfo>;
+} satisfies Record<string, BaseChainInfo<'eip155'>>;
 
 export const chainInfoWithCCTP = {
   ...withChainCapabilities(fetchedChainInfo),
