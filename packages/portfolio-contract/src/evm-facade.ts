@@ -120,7 +120,7 @@ export const makeEvmAbiCallBatch = () => {
         .map(input => input.type)
         .join(',')})`;
       const fn = (...args: unknown[]) => {
-        calls.push({ target, functionSignature: signature, args });
+        calls.push({ target, functionSignature: signature, args, abi: [item] });
       };
       if (stubs[item.name]) {
         assert.fail(
