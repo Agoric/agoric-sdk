@@ -43,6 +43,7 @@ import {
   RebalanceStrategy,
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
+import type { EVMT } from '../src/evm-facade.ts';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { TargetApp } from '@agoric/vats/src/bridge-target.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
@@ -2527,12 +2528,18 @@ test('withdraw from Beefy position', async t => {
 });
 
 // EVM wallet integration - openPortfolioFromPermit2 flow
-test('openPortfolioFromPermit2 with Permit2 provisions account and starts deposit', async t => {
+test('openPortfolioFromPermit2 with Permit2 completes a deposit flow', async t => {
+  // Use a mixed-case spender to ensure case-insensitive address checks.
+  const mixedCaseSpender =
+    ('0x' +
+      contractsMock.Arbitrum.depositFactory
+        .slice(2)
+        .toUpperCase()) as EVMT['address'];
   const permitDetails: PermitDetails = {
     chainId: Number(axelarCCTPConfig.Arbitrum.reference),
     token: contractsMock.Arbitrum.usdc,
     amount: 1_000_000_000n,
-    spender: contractsMock.Arbitrum.depositFactory,
+    spender: mixedCaseSpender,
     permit2Payload: {
       permit: {
         deadline: 1357923600n,
