@@ -32,7 +32,6 @@ import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import { buildGMPPayload } from '@agoric/orchestration/src/utils/gmp.js';
 import {
   encodeAbiParameters,
-  encodeFunctionData,
 } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
@@ -46,7 +45,12 @@ import { fromBech32 } from '@cosmjs/encoding';
 import { Fail, q, X } from '@endo/errors';
 import { hexToBytes } from '@noble/hashes/utils';
 import type { AbiParameter, AbiParameterToPrimitiveType } from 'viem';
-import { ERC20, makeEVMSession, type EVMT } from './evm-facade.ts';
+import {
+  ERC20,
+  makeEVMSession,
+  makeEvmAbiCallBatch,
+  type EVMT,
+} from './evm-facade.ts';
 import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
 import type {
   AxelarId,
@@ -615,27 +619,26 @@ export const sendPermit2GMP = async (
     requestedAmount: transferAmount,
   };
 
-  // Encode the permitWitnessTransferFrom call
-  const callData = encodeFunctionData({
-    abi: [
-      {
-        name: 'permitWitnessTransferFrom',
-        inputs: PermitWitnessTransferFromInputComponents,
-        outputs: [],
-        stateMutability: 'nonpayable',
-        type: 'function',
-      },
-    ],
-    functionName: 'permitWitnessTransferFrom',
-    args: [
-      permit,
-      transferDetails,
-      owner,
-      witness,
-      witnessTypeString,
-      signature,
-    ],
-  });
+  const permit2Abi = [
+    {
+      name: 'permitWitnessTransferFrom',
+      inputs: PermitWitnessTransferFromInputComponents,
+      outputs: [],
+      stateMutability: 'nonpayable',
+      type: 'function',
+    },
+  ] as const;
+  const session = makeEvmAbiCallBatch();
+  const permit2 = session.makeContract(PERMIT2_ADDRESS, permit2Abi);
+  permit2.permitWitnessTransferFrom(
+    permit,
+    transferDetails,
+    owner,
+    witness,
+    witnessTypeString,
+    signature,
+  );
+  const calls = session.finish();
 
   const sourceAddress = coerceAccountId(lca.getAddress());
   const { result, txId } = resolverClient.registerTransaction(
@@ -650,10 +653,7 @@ export const sendPermit2GMP = async (
   const memo: AxelarGmpOutgoingMemo = {
     destination_chain: axelarId,
     destination_address: remoteAddress,
-    payload: buildGMPPayload(
-      [{ target: PERMIT2_ADDRESS, data: callData }],
-      txId,
-    ),
+    payload: buildGMPPayload(calls, txId),
     type: AxelarGMPMessageType.ContractCall,
     fee: { amount: String(fee.value), recipient: AXELAR_GAS },
   };
