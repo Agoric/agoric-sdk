@@ -649,14 +649,15 @@ export const preparePortfolioKit = (
         },
       },
       evmHandler: {
+        /**
+         * Note: evmHandler is only valid for portfolios opened from EVM.
+         * Callers must ensure `sourceAccountId` is set before using this facet.
+         */
         getReaderFacet() {
           return this.facets.reader;
         },
         /**
          * Initiate a deposit from an EVM account using Permit2.
-         *
-         * Requires that `sourceAccountId` was set when the portfolio was opened
-         * (i.e., the portfolio was opened from EVM via `openPortfolioFromEVM`).
          *
          * The permit's owner must match the address portion of `sourceAccountId`,
          * though the chain can be different (enabling deposits from multiple chains).
