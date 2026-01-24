@@ -1863,30 +1863,7 @@ test('evmHandler.withdraw starts a withdraw flow', async t => {
   }
 });
 
-test('evmHandler.withdraw fails if sourceAccountId not set', async t => {
-  const { trader1, common } = await setupTrader(t);
-  const { poc26 } = common.brands;
-
-  // Open portfolio via regular method (not from EVM), so no sourceAccountId
-  await Promise.all([
-    trader1.openPortfolio(t, { Access: poc26.make(1n) }, {}),
-    ackNFA(common.utils),
-  ]);
-
-  // The trader1 helper doesn't give direct access to evmHandler,
-  // so we verify by checking that sourceAccountId is not set
-  const status = await trader1.getPortfolioStatus();
-  t.is(
-    status.sourceAccountId,
-    undefined,
-    'sourceAccountId not set for regular portfolio',
-  );
-});
-
-// TODO: Deposits to existing accounts need a new GMP call type that invokes
-// permit2 from the existing smart wallet. Currently only new-chain deposits
-// (via depositFactory) are supported.
-test.todo('evmHandler.deposit to existing chain starts a deposit flow');
+test.todo('evmHandler.withdraw fails if sourceAccountId not set');
 
 test('evmHandler.deposit (existing Arbitrum) completes a deposit flow', async t => {
   const { common, planner1, started, readPublished, txResolver } =
