@@ -678,7 +678,7 @@ export const preparePortfolioKit = (
 
           const owner = depositDetails.permit2Payload.owner;
           owner.toLowerCase() === accountAddress.toLowerCase() ||
-            Fail`permit owner ${owner} does not match portfolio owner ${accountAddress}`;
+            Fail`permit owner ${owner} does not match portfolio source address ${accountAddress}`;
 
           // For deposits, spender must be the portfolio's smart wallet address.
           // If the account already exists, use the stored address.
@@ -698,7 +698,7 @@ export const preparePortfolioKit = (
           }
 
           depositDetails.spender.toLowerCase() === expectedSpender.toLowerCase() ||
-            Fail`permit spender ${depositDetails.spender} does not match expected ${expectedSpender}`;
+            Fail`permit spender ${depositDetails.spender} does not match portfolio account ${expectedSpender}`;
 
           depositDetails.token.toLowerCase() ===
             contracts[fromChain].usdc.toLowerCase() ||

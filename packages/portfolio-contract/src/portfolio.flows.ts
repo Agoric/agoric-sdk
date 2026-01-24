@@ -67,7 +67,6 @@ import type { RegisterAccountMemo } from './noble-fwd-calc.js';
 import type { AxelarId, GmpAddresses } from './portfolio.contract.ts';
 import type {
   AccountInfoFor,
-  GMPAccountInfo,
   PortfolioKit,
 } from './portfolio.exo.ts';
 import {
