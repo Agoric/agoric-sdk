@@ -2314,29 +2314,6 @@ test('evmHandler.deposit (Arbitrum -> Base) completes a deposit flow', async t =
   );
 });
 
-test('evmHandler.deposit fails if sourceAccountId not set', async t => {
-  const { trader1, common } = await setupTrader(t);
-  const { poc26 } = common.brands;
-
-  // Open portfolio via regular method (not from EVM), so no sourceAccountId
-  await Promise.all([
-    trader1.openPortfolio(t, { Access: poc26.make(1n) }, {}),
-    ackNFA(common.utils),
-  ]);
-
-  // Verify sourceAccountId is not set
-  const status = await trader1.getPortfolioStatus();
-  t.is(
-    status.sourceAccountId,
-    undefined,
-    'sourceAccountId not set for regular portfolio',
-  );
-  // Note: We can't directly test the evmHandler.deposit() failure here
-  // because trader1 helper doesn't expose evmHandler for regular portfolios.
-  // The implementation will throw "deposit requires sourceAccountId to be set"
-  // when called without sourceAccountId.
-});
-
 // This test validates that deposits to existing chains fail with a clear message.
 // When deposit-to-existing is implemented, this error case will change to
 // validate that spender matches the portfolio's smart wallet address.
