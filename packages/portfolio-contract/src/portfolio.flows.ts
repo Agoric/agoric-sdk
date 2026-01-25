@@ -1109,7 +1109,6 @@ const stepFlow = async (
         if (!sourceAccountId) {
           throw Fail`withdrawToEVM requires sourceAccountId to be set`;
         }
-        const { accountAddress: userAddress } = parseAccountId(sourceAccountId);
 
         todo.push({
           how: 'withdrawToEVM',
@@ -1122,14 +1121,15 @@ const stepFlow = async (
             ...optsArgs
           ) => {
             assert(gInfo && agoric, destChain);
-            await null;
+
             // Build ERC20 transfer call
             const session = makeEVMSession();
             const usdc = session.makeContract(
               ctx.contracts[destChain].usdc,
               ERC20,
             );
-            // userAddress is an EVM address from validated CAIP-10
+            const { accountAddress: userAddress } =
+              parseAccountId(sourceAccountId);
             usdc.transfer(userAddress as `0x${string}`, amount.value);
             const calls = session.finish();
 
@@ -1140,6 +1140,7 @@ const stepFlow = async (
               agoric.lca,
               ctx.transferChannels.noble.counterPartyChannelId,
             );
+
             await sendGMPContractCall(evmCtx, gInfo, calls, ...optsArgs);
             return {};
           },
@@ -1150,12 +1151,6 @@ const stepFlow = async (
       case 'depositFromEVM': {
         // EVM deposit: permit2 transfer from user's EOA to portfolio's smart wallet
         const srcChain = way.src;
-        const sourceAccountId = kit.reader.getSourceAccountId();
-        if (!sourceAccountId) {
-          throw Fail`depositFromEVM requires sourceAccountId to be set`;
-        }
-        // Validate CAIP-10 format (will throw if malformed)
-        parseAccountId(sourceAccountId);
 
         // Get permit2 details - must be provided for depositFromEVM
         if (!evmDepositDetail) {
@@ -1178,7 +1173,6 @@ const stepFlow = async (
             ...optsArgs
           ) => {
             assert(gInfo && agoric, srcChain);
-            await null;
             // Wait for the smart wallet to be ready (created via provideEVMAccount)
             await gInfo.ready;
 
@@ -1209,11 +1203,10 @@ const stepFlow = async (
         // Cross-chain from noble to user's EVM address via CCTP
         const destChain = way.dest;
         const sourceAccountId = kit.reader.getSourceAccountId();
+        assert(sourceAccountId);
         if (!sourceAccountId) {
           throw Fail`CCTPtoUser requires sourceAccountId to be set`;
         }
-        // Validate CAIP-10 format (will throw if malformed)
-        parseAccountId(sourceAccountId);
 
         todo.push({
           how: 'CCTPtoUser',
@@ -1784,7 +1777,6 @@ const queuePermit2Step = async (
     chainInfo: BaseChainInfo<'eip155'>;
   },
 ) => {
-  await null; // see https://github.com/Agoric/agoric-sdk/wiki/No-Nested-Await
   const { gmpChain, steps, permit2Payload, fromChain, chainInfo } = details;
   const permitStep = steps.find(
     step => step.src === `+${fromChain}` && step.dest === `@${fromChain}`,

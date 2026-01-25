@@ -11,7 +11,7 @@ import { keccak_256 as keccak256 } from '@noble/hashes/sha3';
 import type { Abi, AbiParameterToPrimitiveType, Hex } from 'viem';
 import { computeCreate2Address, hashInitCode } from './create2.ts';
 
-// TODO: refactor EVMInterface to use { type: 'address', name: '...' }
+// XXX: refactor EVMInterface to use { type: 'address', name: '...' }
 type FactoryI = {
   constructor: ['address', 'address', 'string'];
 };
@@ -196,6 +196,10 @@ export const walletABI = [
   },
 ] as const satisfies Abi;
 
+/**
+ * methods whose payload structure we need, even though
+ * they are not public
+ */
 const walletMulticallABI = [
   {
     type: 'function',

@@ -30,18 +30,18 @@ import {
 } from '@agoric/orchestration/src/axelar-types.js';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import { buildGMPPayload } from '@agoric/orchestration/src/utils/gmp.js';
+import { PermitWitnessTransferFromInputComponents } from '@agoric/orchestration/src/utils/permit2.ts';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
-import { PermitWitnessTransferFromInputComponents } from '@agoric/orchestration/src/utils/permit2.ts';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import { fromBech32 } from '@cosmjs/encoding';
 import { Fail, q, X } from '@endo/errors';
 import { hexToBytes } from '@noble/hashes/utils';
 import {
   ERC20,
+  makeEvmAbiCallBatch,
   makeEVMSession,
   makeGmpBuilder,
-  makeEvmAbiCallBatch,
   type EVMT,
 } from './evm-facade.ts';
 import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
@@ -62,9 +62,9 @@ import type { ResolverKit } from './resolver/resolver.exo.ts';
 import type { TxId } from './resolver/types.ts';
 import type { PoolKey } from './type-guards.ts';
 import {
-  predictWalletAddress,
-  factoryABI,
   depositFactoryABI,
+  factoryABI,
+  predictWalletAddress,
 } from './utils/evm-orch-factory.ts';
 import { setAppendedTxIds } from './utils/traffic.ts';
 
@@ -562,6 +562,8 @@ export const sendGMPContractCall = async (
 const PERMIT2_ADDRESS: EVMT['address'] =
   '0x000000000022D473030F116dDEE9F6B43aC78BA3';
 
+// XXX refactor overlap with PermitWitnessTransferFromFunctionABIType
+// that one results in type errors
 const permit2Abi = [
   {
     name: 'permitWitnessTransferFrom',
@@ -606,6 +608,9 @@ export const sendPermit2GMP = async (
   const { permit, owner, witness, witnessTypeString, signature } =
     permit2Payload;
 
+  transferAmount <= permit.permitted.amount ||
+    Fail`insufficient permitted amount ${q(permit.permitted.amount)} for transferAmount ${q(transferAmount)}`;
+
   // Build the transferDetails - tokens go to the wallet
   const transferDetails = {
     to: walletAddress,
@@ -613,6 +618,7 @@ export const sendPermit2GMP = async (
   };
 
   const session = makeEvmAbiCallBatch();
+  // XXX could get PERMIT2_ADDRESS from privateArgs contract addresses
   const permit2 = session.makeContract(PERMIT2_ADDRESS, permit2Abi);
   permit2.permitWitnessTransferFrom(
     permit,
