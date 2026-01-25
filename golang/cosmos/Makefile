@@ -68,6 +68,20 @@ compile-agd: go.sum
 install-agd: go.sum
 	go install -v $(MOD_READONLY) $(BUILD_FLAGS) -buildmode=exe ./cmd/agd
 
+# Cross-compilation targets for npm distribution
+compile-agd-all: go.sum
+	mkdir -p build/npm-binaries
+	# Linux amd64
+	GOOS=linux GOARCH=amd64 go build -v $(MOD_READONLY) $(BUILD_FLAGS) -buildmode=exe -o build/npm-binaries/agd-linux-amd64 ./cmd/agd
+	# Linux arm64
+	GOOS=linux GOARCH=arm64 go build -v $(MOD_READONLY) $(BUILD_FLAGS) -buildmode=exe -o build/npm-binaries/agd-linux-arm64 ./cmd/agd
+	# macOS amd64
+	GOOS=darwin GOARCH=amd64 go build -v $(MOD_READONLY) $(BUILD_FLAGS) -buildmode=exe -o build/npm-binaries/agd-darwin-amd64 ./cmd/agd
+	# macOS arm64
+	GOOS=darwin GOARCH=arm64 go build -v $(MOD_READONLY) $(BUILD_FLAGS) -buildmode=exe -o build/npm-binaries/agd-darwin-arm64 ./cmd/agd
+	# Windows amd64
+	GOOS=windows GOARCH=amd64 go build -v $(MOD_READONLY) $(BUILD_FLAGS) -buildmode=exe -o build/npm-binaries/agd-windows-amd64.exe ./cmd/agd
+
 # Only run from the package.json build:gyp script.
 compile-gyp:
 	cp binding.gyp.in binding.gyp
