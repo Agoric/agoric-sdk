@@ -262,41 +262,67 @@ export const prepareSettler = (
           assert.typeof(registration, 'object');
           this.state.registration = registration;
         },
-        /** @deprecated to be used only in the CCTP beta release */
+        /**
+         * Remediate minted-early funds by disbursing them to the pool.
+         *
+         * Now that the core settlement matcher uses greedy ascending logic,
+         * this primarily handles clearing out mintedEarly entries that accumulated
+         * before the fix. It matches pending Advanced txs and disburses them.
+         *
+         * @deprecated to be used only in the CCTP beta release
+         */
         remediateMintedEarly(minUusdc: bigint): void {
           const { self } = this.facets;
           const { mintedEarly } = this.state;
           log('remediateMintedEarly', minUusdc, [...mintedEarly.keys()]);
           const batches = mintedEarly.entries();
+
           for (const [key, count] of batches) {
-            const { address, amount } = parseMintedEarlyKey(key);
-            if (amount < minUusdc) {
+            const { address, amount: mintedAmount } = parseMintedEarlyKey(key);
+
+            if (mintedAmount < minUusdc) {
               log('skipping', key, 'less than', minUusdc);
               continue;
             }
-            const allPending = statusManager.lookupPending(address, amount);
-            if (
-              allPending.some(
-                ({ status }) => status !== PendingTxStatus.Advanced,
-              )
-            ) {
-              log('🚨 pending txs included one not advanced', allPending);
-              continue;
-            }
-            // now COMMIT to disbursing all pending txs
+
+            // Process each occurrence in the multiset
             for (let i = 0; i < count; i += 1) {
-              const pendingTxs = statusManager.matchAndDequeueSettlement(
+              // Use the core greedy matcher which now handles ascending partial matches
+              const dequeued = statusManager.matchAndDequeueSettlement(
                 address,
-                amount,
+                mintedAmount,
               );
 
-              // Disburse the funds to the pool for the transaction
-              for (const p of pendingTxs) {
-                const fullValue = AmountMath.make(USDC, p.tx.amount);
-                void self.disburse(p.txHash, fullValue, p.aux.recipientAddress);
+              if (dequeued.length === 0) {
+                log(
+                  '⚠️ no pending txs matched for minted amount',
+                  mintedAmount,
+                );
+              } else {
+                log('disbursing', dequeued.length, 'pending txs for', address);
+
+                // Disburse only the Advanced txs
+                for (const p of dequeued) {
+                  if (p.status === PendingTxStatus.Advanced) {
+                    const fullValue = AmountMath.make(USDC, p.tx.amount);
+                    void self.disburse(
+                      p.txHash,
+                      fullValue,
+                      p.aux.recipientAddress,
+                    );
+                  } else {
+                    log(
+                      '⚠️ unexpected non-Advanced tx in remediation',
+                      p.status,
+                      p.txHash,
+                    );
+                  }
+                }
               }
-              // Remove the minted early key
-              mintedEarly.delete(key);
+
+              // Remove the minted early key to prevent it from remaining stuck
+              // even if nothing matched. This ensures forward progress.
+              asMultiset(mintedEarly).remove(key);
             }
           }
         },
