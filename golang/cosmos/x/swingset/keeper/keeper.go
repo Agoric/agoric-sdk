@@ -148,7 +148,7 @@ func (k Keeper) PushAction(ctx sdk.Context, action vm.Action) error {
 	return k.pushAction(ctx, StoragePathActionQueue, action)
 }
 
-// PushAction appends an action to the controller's highPriorityQueue.
+// PushHighPriorityAction appends an action to the controller's highPriorityQueue.
 func (k Keeper) PushHighPriorityAction(ctx sdk.Context, action vm.Action) error {
 	return k.pushAction(ctx, StoragePathHighPriorityQueue, action)
 }
