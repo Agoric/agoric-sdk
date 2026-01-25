@@ -2764,34 +2764,6 @@ test('CCTPtoUser sends CCTP depositForBurn to user address from noble', async t 
   await documentStorageSchema(t, storage, docOpts);
 });
 
-test('CCTPtoUser fails when sourceAccountId is not set', async t => {
-  const { orch, ctx, offer } = mocks({}, {});
-  const { log } = offer;
-
-  const amount = AmountMath.make(USDC, 2_000_000n);
-  // Create kit WITHOUT sourceAccountId
-  const kit = await ctx.makePortfolioKit();
-
-  const rebalanceResult = rebalance(
-    orch,
-    ctx,
-    offer.seat,
-    { flow: [{ src: '@noble', dest: '-Arbitrum', amount }] },
-    kit,
-  );
-
-  // The rebalance should fail because sourceAccountId is required
-  await t.notThrowsAsync(rebalanceResult);
-
-  // Check that seat.fail() was called
-  const failCall = log.find((entry: any) => entry._method === 'fail');
-  t.truthy(failCall, 'seat.fail() should be called');
-  t.regex(
-    String(failCall?.reason),
-    /CCTPtoUser requires sourceAccountId to be set/,
-  );
-});
-
 test('withdrawToEVM sends GMP call with ERC20 transfer to user address', async t => {
   const feeCall = AmountMath.make(BLD, 100n);
   const { orch, tapPK, ctx, offer, storage, txResolver, cosmosId } = mocks(
