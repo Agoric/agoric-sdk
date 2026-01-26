@@ -237,3 +237,21 @@ test.todo('evmHandler withdraw uses chainId from domain');
 test.todo('evmHandler withdraw defaults to source chainId if domain missing');
 
 test.todo('evmHandler withdraw check token address is USDC contract');
+
+test.todo('evmHandler rebalance requires source account');
+
+test.todo('evmHandler rebalance does not yet support deposit');
+
+test.todo('evmHandler rebalance with allocations sets new target allocation');
+
+test.todo(
+  'evmHandler rebalance with allocations requires non-empty allocations',
+);
+
+test.todo(
+  'evmHandler rebalance without allocations uses current target allocation',
+);
+
+test.todo(
+  'evmHandler rebalance without allocations fails without current target allocation',
+);
