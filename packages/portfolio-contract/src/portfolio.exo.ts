@@ -26,8 +26,11 @@ import {
   SupportedChain,
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
-import type { YmaxSharedDomain } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.ts';
-import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
+import type {
+  YmaxSharedDomain,
+  TargetAllocation as EIP712Allocation,
+} from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.ts';
+import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.ts';
 import type { MapStore } from '@agoric/store';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
@@ -721,8 +724,42 @@ export const preparePortfolioKit = (
           );
           return `flow${startedFlow.flowId}`;
         },
-        rebalance() {
-          throw Error('TODO in a later PR');
+        /**
+         * Initiate a rebalance with an optional target allocation.
+         * If a new allocation is not provided, uses the previously set target allocation.
+         */
+        rebalance(
+          allocations?: readonly EIP712Allocation[] | undefined,
+          depositDetails?: PermitDetails,
+        ) {
+          const { sourceAccountId } = this.state;
+          if (!sourceAccountId) {
+            throw Fail`rebalance requires sourceAccountId to be set (portfolio must be opened from EVM)`;
+          }
+
+          !depositDetails || Fail`rebalance does not yet support deposit`;
+
+          if (allocations) {
+            allocations.length > 0 ||
+              Fail`rebalance with allocations requires non-empty allocations`;
+
+            // XXX: validate instruments
+            const targetAllocation: TargetAllocation = Object.fromEntries(
+              allocations.map(({ instrument, portion }) => [
+                instrument,
+                portion,
+              ]),
+            );
+
+            this.facets.manager.setTargetAllocation(targetAllocation);
+          } else {
+            const { targetAllocation } = this.state;
+            (targetAllocation && Object.keys(targetAllocation).length > 0) ||
+              Fail`rebalance requires targetAllocation to be set`;
+          }
+          const flowDetail: FlowDetail = { type: 'rebalance' };
+          const startedFlow = this.facets.manager.startFlow(flowDetail);
+          return `flow${startedFlow.flowId}`;
         },
         /**
          * Initiate a withdrawal to the source EVM account.

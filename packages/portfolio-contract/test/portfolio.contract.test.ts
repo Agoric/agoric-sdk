@@ -1648,8 +1648,7 @@ test('Withdraw from an ERC4626 position', async t => {
 });
 
 test('open portfolio from Arbitrum, 1000 USDC deposit', async t => {
-  const { common, planner1, readPublished, txResolver, evmTrader } =
-    await setupPlanner(t);
+  const { common, planner1, txResolver, evmTrader } = await setupPlanner(t);
   const { usdc, bld } = common.brands;
 
   const inputs = {
@@ -1663,44 +1662,29 @@ test('open portfolio from Arbitrum, 1000 USDC deposit', async t => {
   const { fromChain: evm, depositAmount, allocations } = inputs;
 
   const expected = {
+    portfolioId: 0,
     storagePath: `${ROOT_STORAGE_PATH}.portfolios.portfolio0`,
     positions: { Aave: usdc.units(600), Compound: usdc.units(400) },
   };
 
-  const traderDo = async () => {
-    const { storagePath } = await evmTrader
+  await planner1.redeem();
+
+  const openResult = await (async () => {
+    const result = await evmTrader
       .forChain(evm)
       .openPortfolio(allocations, depositAmount.value);
-    t.is(storagePath, expected.storagePath);
-  };
-
-  /** Simulate chain inputs (acks) for makeAccount + GMP transfers. */
-  const chainDo = async () => {
+    t.is(result.storagePath, expected.storagePath);
+    t.is(result.portfolioId, expected.portfolioId);
     await ackNFA(common.utils);
-    // Ack the makeAccount transfer before settling pending txs.
-    await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
-    await txResolver.drainPending();
-    // Ack the GMP contract call once pending txs are resolved.
-    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-    await txResolver.drainPending();
-    // Ack the second GMP call for the second position.
-    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-    await txResolver.drainPending();
-    // Ack the third GMP call for the third position.
-    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-  };
+    return result;
+  })();
 
-  const plannerDo = async () => {
-    const pId = 0;
-    await traderDo;
-    // XXX refactor flow-context extraction (see other planner tests in this file).
-    const status = (await readPublished(
-      `portfolios.portfolio${pId}`,
-    )) as unknown as StatusFor['portfolio'];
+  const flowNum = await (async () => {
+    const status = await evmTrader.getPortfolioStatus();
     const { flowsRunning = {}, policyVersion, rebalanceCount } = status;
     const sync = [policyVersion, rebalanceCount] as const;
-    const [[flowId, detail]] = Object.entries(flowsRunning);
-    const flowNum = Number(flowId.replace('flow', ''));
+    const [[flowKey, detail]] = Object.entries(flowsRunning);
+    const flowId = Number(flowKey.replace('flow', ''));
     if (detail.type !== 'deposit') throw t.fail(detail.type);
     t.is(detail.amount.value, depositAmount.value);
     const planDepositAmount = AmountMath.make(usdc.brand, detail.amount.value);
@@ -1713,16 +1697,27 @@ test('open portfolio from Arbitrum, 1000 USDC deposit', async t => {
         { src: `@${evm}`, dest: 'Compound_Arbitrum', amount: Compound, fee },
       ],
     };
-    await E(planner1.stub).resolvePlan(pId, flowNum, plan, ...sync);
-    return flowNum;
-  };
+    await E(planner1.stub).resolvePlan(
+      openResult.portfolioId,
+      flowId,
+      plan,
+      ...sync,
+    );
 
-  await planner1.redeem();
-  const [, flowNum] = await Promise.all([traderDo(), plannerDo(), chainDo()]);
+    // Ack makeAccount (no fee transfer for createAndDeposit)
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await txResolver.drainPending();
+    // Ack the second GMP call for Aave.
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await txResolver.drainPending();
+    // Ack the third GMP call for Compound.
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await txResolver.drainPending();
 
-  const status = (await readPublished(
-    `portfolios.portfolio0`,
-  )) as unknown as StatusFor['portfolio'];
+    return flowId;
+  })();
+
+  const status = await evmTrader.getPortfolioStatus();
 
   const { contents } = getPortfolioInfo(
     expected.storagePath,
@@ -1767,8 +1762,7 @@ test('open portfolio from Arbitrum, 1000 USDC deposit', async t => {
 });
 
 test('evmHandler.withdraw starts a withdraw flow', async t => {
-  const { common, planner1, readPublished, txResolver, evmTrader } =
-    await setupPlanner(t);
+  const { common, planner1, txResolver, evmTrader } = await setupPlanner(t);
   const { usdc, bld } = common.brands;
 
   const inputs = {
@@ -1778,35 +1772,23 @@ test('evmHandler.withdraw starts a withdraw flow', async t => {
   };
   const { fromChain: evm, depositAmount, allocations } = inputs;
 
-  const traderDo = async () => {
+  await planner1.redeem();
+
+  const openResult = await (async () => {
     const result = await evmTrader
       .forChain(evm)
       .openPortfolio(allocations, depositAmount.value);
-    return result;
-  };
-
-  // Start traderDo first so plannerDo can wait for it
-  const traderDoP = traderDo();
-
-  /** Simulate chain inputs (acks) for makeAccount + GMP transfers. */
-  const chainDo = async () => {
     await ackNFA(common.utils);
-    await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
-    await txResolver.drainPending();
-    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-    await txResolver.drainPending();
-    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-  };
+    return result;
+  })();
 
-  const plannerDo = async () => {
-    const { portfolioId: pId } = await traderDoP;
-    const status = (await readPublished(
-      `portfolios.portfolio${pId}`,
-    )) as unknown as StatusFor['portfolio'];
+  await (async () => {
+    const { portfolioId: pId } = openResult;
+    const status = await evmTrader.getPortfolioStatus();
     const { flowsRunning = {}, policyVersion, rebalanceCount } = status;
     const sync = [policyVersion, rebalanceCount] as const;
-    const [[flowId, detail]] = Object.entries(flowsRunning);
-    const flowNum = Number(flowId.replace('flow', ''));
+    const [[flowKey, detail]] = Object.entries(flowsRunning);
+    const flowId = Number(flowKey.replace('flow', ''));
     if (detail.type !== 'deposit') throw t.fail(detail.type);
     const planDepositAmount = AmountMath.make(usdc.brand, detail.amount.value);
     const fee = bld.units(100);
@@ -1821,46 +1803,40 @@ test('evmHandler.withdraw starts a withdraw flow', async t => {
         },
       ],
     };
-    await E(planner1.stub).resolvePlan(pId, flowNum, plan, ...sync);
-    return flowNum;
-  };
+    await E(planner1.stub).resolvePlan(pId, flowId, plan, ...sync);
 
-  await planner1.redeem();
-  await Promise.all([traderDoP, plannerDo(), chainDo()]);
+    // Ack the makeAccount (no fee transfer for createAndDeposit)
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await txResolver.drainPending();
+    // Aave deposit instruction to Arbitrum
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await txResolver.drainPending();
+
+    return flowId;
+  })();
 
   // Verify portfolio is ready
-  const statusBefore = (await readPublished(
-    `portfolios.portfolio0`,
-  )) as unknown as StatusFor['portfolio'];
+  const statusBefore = await evmTrader.getPortfolioStatus();
   t.deepEqual(statusBefore.flowsRunning, {}, 'no flows running after deposit');
   t.truthy(statusBefore.sourceAccountId, 'sourceAccountId is set');
 
-  // Now test the withdraw via evmHandler
+  // Now test the withdraw
   const withdrawDetails = { token: contractsMock[evm].usdc, amount: 500n };
   const flowKey = await evmTrader.forChain(evm).withdraw(withdrawDetails);
-  if (typeof flowKey !== 'string') {
-    throw t.fail('withdraw did not return a flow key');
-  }
-  const flowKeyStr = flowKey;
-  t.regex(flowKeyStr, /^flow\d+$/, 'withdraw returns a flow key');
+  t.regex(flowKey, /^flow\d+$/, 'withdraw returns a flow key');
 
   // Check that a withdraw flow is now running
-  const statusAfter = (await readPublished(
-    `portfolios.portfolio0`,
-  )) as unknown as StatusFor['portfolio'];
-  const flowsRunning = statusAfter.flowsRunning ?? {};
-  t.is(keys(flowsRunning).length, 1, 'one flow running');
-
-  const [[flowId, flowDetail]] = Object.entries(flowsRunning);
-  t.is(flowId, flowKeyStr, 'flow key matches');
-  t.is(flowDetail.type, 'withdraw', 'flow is a withdraw');
-  if (flowDetail.type === 'withdraw') {
-    t.is(
-      flowDetail.amount.value,
-      withdrawDetails.amount,
-      'withdraw amount matches',
-    );
-  }
+  const statusAfter = await evmTrader.getPortfolioStatus();
+  t.like(
+    statusAfter.flowsRunning,
+    {
+      [flowKey]: {
+        type: 'withdraw',
+        amount: { value: withdrawDetails.amount },
+      },
+    },
+    'withdraw flow is running',
+  );
 });
 
 test.todo('evmHandler.withdraw fails if sourceAccountId not set');
@@ -2311,5 +2287,215 @@ test('evmHandler.deposit (Arbitrum -> Base) completes a deposit flow', async t =
     statusDone.flowsRunning,
     {},
     'no flows running after deposit completes',
+  );
+});
+
+test('evmHandler.rebalance with target allocation sets allocation and starts a rebalance flow', async t => {
+  const { common, planner1, txResolver, evmTrader } = await setupPlanner(t);
+  const { usdc, bld } = common.brands;
+
+  const inputs = {
+    fromChain: 'Arbitrum' as const,
+    depositAmount: usdc.units(1000),
+    initialAllocations: [{ instrument: 'Aave_Arbitrum', portion: 10000n }],
+    rebalanceAllocations: [
+      { instrument: 'Aave_Arbitrum', portion: 6000n },
+      { instrument: 'Compound_Arbitrum', portion: 4000n },
+    ],
+  };
+  const {
+    fromChain: evm,
+    depositAmount,
+    initialAllocations,
+    rebalanceAllocations,
+  } = inputs;
+
+  await planner1.redeem();
+
+  const openResult = await (async () => {
+    const result = await evmTrader
+      .forChain(evm)
+      .openPortfolio(initialAllocations, depositAmount.value);
+    await ackNFA(common.utils);
+    return result;
+  })();
+
+  t.like(await evmTrader.getPortfolioStatus(), {
+    policyVersion: 1,
+    rebalanceCount: 0,
+  });
+
+  await (async () => {
+    const status = await evmTrader.getPortfolioStatus();
+    const { flowsRunning = {}, policyVersion, rebalanceCount } = status;
+    const sync = [policyVersion, rebalanceCount] as const;
+    const [[flowKey, detail]] = Object.entries(flowsRunning);
+    const flowId = Number(flowKey.replace('flow', ''));
+    if (detail.type !== 'deposit') throw t.fail(detail.type);
+    const planDepositAmount = AmountMath.make(usdc.brand, detail.amount.value);
+    const fee = bld.units(100);
+    const plan: FundsFlowPlan = {
+      flow: [
+        { src: `+${evm}`, dest: `@${evm}`, amount: planDepositAmount, fee },
+        {
+          src: `@${evm}`,
+          dest: 'Aave_Arbitrum',
+          amount: planDepositAmount,
+          fee,
+        },
+      ],
+    };
+    await E(planner1.stub).resolvePlan(
+      openResult.portfolioId,
+      flowId,
+      plan,
+      ...sync,
+    );
+
+    // Ack the makeAccount (no fee transfer for createAndDeposit)
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await txResolver.drainPending();
+    // Aave deposit instruction to Arbitrum
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await txResolver.drainPending();
+
+    return flowId;
+  })();
+
+  // Verify portfolio is ready
+  const statusBefore = await evmTrader.getPortfolioStatus();
+  t.deepEqual(statusBefore.flowsRunning, {}, 'no flows running after deposit');
+
+  t.like(await evmTrader.getPortfolioStatus(), {
+    policyVersion: 1,
+    rebalanceCount: 1,
+  });
+
+  const rebalanceFlowKey = await evmTrader
+    .forChain(evm)
+    .setTargetAllocation(rebalanceAllocations);
+  t.regex(rebalanceFlowKey, /^flow\d+$/, 'rebalance returns a flow key');
+
+  const statusAfter = await evmTrader.getPortfolioStatus();
+
+  t.like(statusAfter, {
+    policyVersion: 2,
+    rebalanceCount: 0,
+  });
+
+  // Verify the target allocation was updated
+  t.deepEqual(
+    statusAfter.targetAllocation,
+    { Aave_Arbitrum: 6000n, Compound_Arbitrum: 4000n },
+    'target allocation updated',
+  );
+
+  t.like(
+    statusAfter.flowsRunning,
+    { [rebalanceFlowKey]: { type: 'rebalance' } },
+    'rebalance flow running',
+  );
+});
+
+test('evmHandler.rebalance without target allocation uses existing allocation', async t => {
+  const { common, planner1, txResolver, evmTrader } = await setupPlanner(t);
+  const { usdc, bld } = common.brands;
+
+  const inputs = {
+    fromChain: 'Arbitrum' as const,
+    depositAmount: usdc.units(1000),
+    allocations: [
+      { instrument: 'Aave_Arbitrum', portion: 6000n },
+      { instrument: 'Compound_Arbitrum', portion: 4000n },
+    ],
+  };
+  const { fromChain: evm, depositAmount, allocations } = inputs;
+
+  const expected = {
+    positions: { Aave: usdc.units(600), Compound: usdc.units(400) },
+  };
+
+  await planner1.redeem();
+
+  const openResult = await (async () => {
+    const result = await evmTrader
+      .forChain(evm)
+      .openPortfolio(allocations, depositAmount.value);
+    await ackNFA(common.utils);
+    return result;
+  })();
+
+  t.like(await evmTrader.getPortfolioStatus(), {
+    policyVersion: 1,
+    rebalanceCount: 0,
+  });
+
+  await (async () => {
+    const status = await evmTrader.getPortfolioStatus();
+    const { flowsRunning = {}, policyVersion, rebalanceCount } = status;
+    const sync = [policyVersion, rebalanceCount] as const;
+    const [[flowKey, detail]] = Object.entries(flowsRunning);
+    const flowId = Number(flowKey.replace('flow', ''));
+    if (detail.type !== 'deposit') throw t.fail(detail.type);
+    const planDepositAmount = AmountMath.make(usdc.brand, detail.amount.value);
+    const fee = bld.units(100);
+    const { Aave, Compound } = expected.positions;
+    const plan: FundsFlowPlan = {
+      flow: [
+        { src: `+${evm}`, dest: `@${evm}`, amount: planDepositAmount, fee },
+        { src: `@${evm}`, dest: 'Aave_Arbitrum', amount: Aave, fee },
+        { src: `@${evm}`, dest: 'Compound_Arbitrum', amount: Compound, fee },
+      ],
+    };
+    await E(planner1.stub).resolvePlan(
+      openResult.portfolioId,
+      flowId,
+      plan,
+      ...sync,
+    );
+
+    // Ack makeAccount (no fee transfer for createAndDeposit)
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await txResolver.drainPending();
+    // Ack the second GMP call for Aave.
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await txResolver.drainPending();
+    // Ack the third GMP call for Compound.
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await txResolver.drainPending();
+
+    return flowId;
+  })();
+
+  // Verify portfolio is ready
+  const statusBefore = await evmTrader.getPortfolioStatus();
+  t.deepEqual(statusBefore.flowsRunning, {}, 'no flows running after deposit');
+
+  t.like(await evmTrader.getPortfolioStatus(), {
+    policyVersion: 1,
+    rebalanceCount: 1,
+  });
+
+  const rebalanceFlowKey = await evmTrader.forChain(evm).rebalance();
+  t.regex(rebalanceFlowKey, /^flow\d+$/, 'rebalance returns a flow key');
+
+  const statusAfter = await evmTrader.getPortfolioStatus();
+
+  t.like(statusAfter, {
+    policyVersion: 1,
+    rebalanceCount: 1,
+  });
+
+  // Verify the target allocation is the same
+  t.deepEqual(
+    statusAfter.targetAllocation,
+    statusBefore.targetAllocation,
+    'target allocation unchanged',
+  );
+
+  t.like(
+    statusAfter.flowsRunning,
+    { [rebalanceFlowKey]: { type: 'rebalance' } },
+    'rebalance flow running',
   );
 });

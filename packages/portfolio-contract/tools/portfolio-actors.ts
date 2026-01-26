@@ -391,10 +391,10 @@ export const makeEvmTrader = ({
 
           const expectedNonce = nonce;
           await submitMessage(permitMessage);
-          const result = await getMessageResult(expectedNonce, deadline);
-          if (typeof result !== 'string') {
-            assert.fail('missing portfolio result');
-          }
+          const result = (await getMessageResult(
+            expectedNonce,
+            deadline,
+          )) as string;
           const parsedId = Number(result.replace(/^portfolio/, ''));
           Number.isInteger(parsedId) ||
             assert.fail('invalid portfolio id result');
@@ -422,7 +422,7 @@ export const makeEvmTrader = ({
           );
           const expectedNonce = nonce;
           await submitMessage(permitMessage);
-          return getMessageResult(expectedNonce, deadline);
+          return getMessageResult(expectedNonce, deadline) as Promise<string>;
         },
         async withdraw(withdrawDetails: TokenPermissions) {
           const currentPortfolioId = self.getPortfolioId();
@@ -440,7 +440,42 @@ export const makeEvmTrader = ({
           );
           const expectedNonce = nonce;
           await submitMessage(message);
-          return getMessageResult(expectedNonce, deadline);
+          return getMessageResult(expectedNonce, deadline) as Promise<string>;
+        },
+        async rebalance() {
+          const currentPortfolioId = self.getPortfolioId();
+          const deadline = await getDeadline();
+          const message = getYmaxStandaloneOperationData(
+            {
+              portfolio: BigInt(currentPortfolioId),
+              nonce: (nonce += 1n),
+              deadline,
+            },
+            'Rebalance',
+            chainId,
+            depositFactory,
+          );
+          const expectedNonce = nonce;
+          await submitMessage(message);
+          return getMessageResult(expectedNonce, deadline) as Promise<string>;
+        },
+        async setTargetAllocation(allocations: TargetAllocation[]) {
+          const currentPortfolioId = self.getPortfolioId();
+          const deadline = await getDeadline();
+          const message = getYmaxStandaloneOperationData(
+            {
+              allocations,
+              portfolio: BigInt(currentPortfolioId),
+              nonce: (nonce += 1n),
+              deadline,
+            },
+            'SetTargetAllocation',
+            chainId,
+            depositFactory,
+          );
+          const expectedNonce = nonce;
+          await submitMessage(message);
+          return getMessageResult(expectedNonce, deadline) as Promise<string>;
         },
       });
     },

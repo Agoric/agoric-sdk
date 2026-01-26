@@ -250,6 +250,8 @@ export const setupOrchestrationTest = async ({
     );
     // let the bridge handler finish
     await eventLoopIteration();
+
+    return base;
   };
 
   /** A chainHub for Exo tests, distinct from the one a contract makes within `withOrchestration` */

@@ -309,12 +309,24 @@ export const prepareEVMPortfolioOperationManager = (
           case 'Rebalance': {
             const {
               data: { portfolio: portfolioId },
+              permitDetails,
             } = operationDetails;
 
             const portfolio = wallet.portfolios.get(BigInt(portfolioId));
 
-            const result =
-              E(portfolio).rebalance(/* otherData, permitDetails */);
+            const result = E(portfolio).rebalance(undefined, permitDetails);
+
+            return watch(result, BasicOutcomeWatcher);
+          }
+          case 'SetTargetAllocation': {
+            const {
+              data: { portfolio: portfolioId, allocations },
+              permitDetails,
+            } = operationDetails;
+
+            const portfolio = wallet.portfolios.get(BigInt(portfolioId));
+
+            const result = E(portfolio).rebalance(allocations, permitDetails);
 
             return watch(result, BasicOutcomeWatcher);
           }
