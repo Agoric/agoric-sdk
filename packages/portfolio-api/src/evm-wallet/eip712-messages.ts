@@ -73,7 +73,11 @@ const PortfolioStandaloneTypeParams = [
  */
 const OperationTypes = {
   OpenPortfolio: [{ name: 'allocations', type: 'Allocation[]' }],
-  Rebalance: [{ name: 'allocations', type: 'Allocation[]' }, PortfolioIdParam],
+  Rebalance: [PortfolioIdParam],
+  SetTargetAllocation: [
+    { name: 'allocations', type: 'Allocation[]' },
+    PortfolioIdParam,
+  ],
   Deposit: [PortfolioIdParam],
   /**
    * Withdraw funds from a portfolio to the source EVM account.

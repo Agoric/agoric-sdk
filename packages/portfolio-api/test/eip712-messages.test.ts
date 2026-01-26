@@ -119,11 +119,7 @@ test('getYmaxStandaloneOperationData for Deposit', t => {
 });
 
 test('getYmaxStandaloneOperationData for Rebalance', t => {
-  const allocations: TargetAllocation[] = [
-    { instrument: 'Aave_Arbitrum', portion: 10000n },
-  ];
   const data = {
-    allocations,
     portfolio: 0n,
     nonce: 1n,
     deadline: 1700000000n,
@@ -139,6 +135,33 @@ test('getYmaxStandaloneOperationData for Rebalance', t => {
   t.is(result.primaryType, 'Rebalance');
   t.deepEqual(result.message, data);
   t.deepEqual(result.types.Rebalance, [
+    { name: 'portfolio', type: 'uint256' },
+    { name: 'nonce', type: 'uint256' },
+    { name: 'deadline', type: 'uint256' },
+  ]);
+});
+
+test('getYmaxStandaloneOperationData for SetTargetAllocation', t => {
+  const allocations: TargetAllocation[] = [
+    { instrument: 'Aave_Arbitrum', portion: 10000n },
+  ];
+  const data = {
+    allocations,
+    portfolio: 0n,
+    nonce: 1n,
+    deadline: 1700000000n,
+  };
+
+  const result = getYmaxStandaloneOperationData(
+    data,
+    'SetTargetAllocation',
+    42161n,
+    MOCK_CONTRACT_ADDRESS,
+  );
+
+  t.is(result.primaryType, 'SetTargetAllocation');
+  t.deepEqual(result.message, data);
+  t.deepEqual(result.types.SetTargetAllocation, [
     { name: 'allocations', type: 'Allocation[]' },
     { name: 'portfolio', type: 'uint256' },
     { name: 'nonce', type: 'uint256' },
@@ -283,6 +306,7 @@ test('validateYmaxOperationTypeName passes for valid types', t => {
   const validTypes: OperationTypeNames[] = [
     'OpenPortfolio',
     'Rebalance',
+    'SetTargetAllocation',
     'Deposit',
     'Withdraw',
   ];
@@ -323,6 +347,13 @@ test('splitWitnessFieldType parses Rebalance witness type', t => {
   t.deepEqual(splitWitnessFieldType('YmaxV1Rebalance'), {
     domain: { name: 'Ymax', version: '1' },
     primaryType: 'Rebalance',
+  });
+});
+
+test('splitWitnessFieldType parses SetTargetAllocation witness type', t => {
+  t.deepEqual(splitWitnessFieldType('YmaxV1SetTargetAllocation'), {
+    domain: { name: 'Ymax', version: '1' },
+    primaryType: 'SetTargetAllocation',
   });
 });
 
@@ -367,10 +398,18 @@ test('YmaxOperationType types are correctly inferred', t => {
 
   // Rebalance type
   const rebalance: YmaxOperationType<'Rebalance'> = {
-    allocations: [{ instrument: 'test', portion: 100n }],
     portfolio: 0n,
   };
   t.deepEqual(rebalance, {
+    portfolio: 0n,
+  });
+
+  // SetTargetAllocation type
+  const setTargetAllocation: YmaxOperationType<'SetTargetAllocation'> = {
+    allocations: [{ instrument: 'test', portion: 100n }],
+    portfolio: 0n,
+  };
+  t.deepEqual(setTargetAllocation, {
     allocations: [{ instrument: 'test', portion: 100n }],
     portfolio: 0n,
   });

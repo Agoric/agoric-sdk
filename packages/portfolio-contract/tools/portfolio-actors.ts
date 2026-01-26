@@ -442,6 +442,41 @@ export const makeEvmTrader = ({
           await submitMessage(message);
           return getMessageResult(expectedNonce, deadline) as Promise<string>;
         },
+        async rebalance() {
+          const currentPortfolioId = self.getPortfolioId();
+          const deadline = await getDeadline();
+          const message = getYmaxStandaloneOperationData(
+            {
+              portfolio: BigInt(currentPortfolioId),
+              nonce: (nonce += 1n),
+              deadline,
+            },
+            'Rebalance',
+            chainId,
+            depositFactory,
+          );
+          const expectedNonce = nonce;
+          await submitMessage(message);
+          return getMessageResult(expectedNonce, deadline) as Promise<string>;
+        },
+        async setTargetAllocation(allocations: TargetAllocation[]) {
+          const currentPortfolioId = self.getPortfolioId();
+          const deadline = await getDeadline();
+          const message = getYmaxStandaloneOperationData(
+            {
+              allocations,
+              portfolio: BigInt(currentPortfolioId),
+              nonce: (nonce += 1n),
+              deadline,
+            },
+            'SetTargetAllocation',
+            chainId,
+            depositFactory,
+          );
+          const expectedNonce = nonce;
+          await submitMessage(message);
+          return getMessageResult(expectedNonce, deadline) as Promise<string>;
+        },
       });
     },
     getPortfolioPath: () => portfolioPath || assert.fail('no portfolio'),
