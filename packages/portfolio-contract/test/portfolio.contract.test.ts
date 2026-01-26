@@ -1667,33 +1667,21 @@ test('open portfolio from Arbitrum, 1000 USDC deposit', async t => {
     positions: { Aave: usdc.units(600), Compound: usdc.units(400) },
   };
 
-  const traderDo = async () => {
+  const traderDoP = (async () => {
     const { storagePath } = await evmTrader
       .forChain(evm)
       .openPortfolio(allocations, depositAmount.value);
     t.is(storagePath, expected.storagePath);
-  };
+  })();
 
-  /** Simulate chain inputs (acks) for makeAccount + GMP transfers. */
-  const chainDo = async () => {
+  /** Resolve the plan and simulate chain acks in sequence. */
+  const planAndAck = async () => {
+    // Ack NFA registration (can proceed before plan resolution).
     await ackNFA(common.utils);
-    // Ack the makeAccount transfer before settling pending txs.
-    await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
-    await txResolver.drainPending();
-    // Ack the GMP contract call once pending txs are resolved.
-    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-    await txResolver.drainPending();
-    // Ack the second GMP call for the second position.
-    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-    await txResolver.drainPending();
-    // Ack the third GMP call for the third position.
-    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-  };
 
-  const plannerDo = async () => {
+    // Wait for trader, read status, and resolve the plan.
     const pId = 0;
-    await traderDo;
-    // XXX refactor flow-context extraction (see other planner tests in this file).
+    await traderDoP;
     const status = (await readPublished(
       `portfolios.portfolio${pId}`,
     )) as unknown as StatusFor['portfolio'];
@@ -1713,12 +1701,30 @@ test('open portfolio from Arbitrum, 1000 USDC deposit', async t => {
         { src: `@${evm}`, dest: 'Compound_Arbitrum', amount: Compound, fee },
       ],
     };
+    // resolvePlan() initiates the GMP transfers to EVM chains.
+    // After this call, transfers exist and can be acknowledged.
     await E(planner1.stub).resolvePlan(pId, flowNum, plan, ...sync);
+
+    // Ack GMP transfers in the order they were initiated.
+    // Each drainPending() processes the transaction settlement.
+
+    // depositFromEVM setup (fee + makeAccount call to Axelar)
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
+    await txResolver.drainPending();
+    // Aave deposit instruction to Arbitrum
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await txResolver.drainPending();
+    // Compound deposit instruction to Arbitrum
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await txResolver.drainPending();
+    // Final ack for flow completion
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+
     return flowNum;
   };
 
   await planner1.redeem();
-  const [, flowNum] = await Promise.all([traderDo(), plannerDo(), chainDo()]);
+  const [, flowNum] = await Promise.all([traderDoP, planAndAck()]);
 
   const status = (await readPublished(
     `portfolios.portfolio0`,
@@ -1778,27 +1784,30 @@ test('evmHandler.withdraw starts a withdraw flow', async t => {
   };
   const { fromChain: evm, depositAmount, allocations } = inputs;
 
-  const traderDo = async () => {
+  const traderDoP = (async () => {
     const result = await evmTrader
       .forChain(evm)
       .openPortfolio(allocations, depositAmount.value);
     return result;
-  };
+  })();
 
-  // Start traderDo first so plannerDo can wait for it
-  const traderDoP = traderDo();
-
-  /** Simulate chain inputs (acks) for makeAccount + GMP transfers. */
-  const chainDo = async () => {
+  /**
+   * Resolve the plan and simulate chain acks in sequence.
+   *
+   * Why sequencing matters: The contract initiates IBC transfers at specific
+   * points in the flow. We must ack them in the order they're created:
+   * 1. NFA registration transfer - initiated during openPortfolio setup
+   * 2. GMP transfers - initiated only AFTER resolvePlan() is called
+   *
+   * Calling transmitVTransferEvent(-2) before resolvePlan would fail with
+   * "Index -2 out of bounds" because those transfers don't exist yet.
+   */
+  const planAndAck = async () => {
+    // Ack NFA registration transfer (initiated during openPortfolio setup,
+    // before plan resolution). This registers the portfolio's forwarding address.
     await ackNFA(common.utils);
-    await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
-    await txResolver.drainPending();
-    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-    await txResolver.drainPending();
-    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-  };
 
-  const plannerDo = async () => {
+    // Wait for trader's EIP-712 message to be processed, then read status.
     const { portfolioId: pId } = await traderDoP;
     const status = (await readPublished(
       `portfolios.portfolio${pId}`,
@@ -1821,12 +1830,27 @@ test('evmHandler.withdraw starts a withdraw flow', async t => {
         },
       ],
     };
+    // resolvePlan() initiates the GMP transfers to EVM chains.
+    // After this call, transfers exist and can be acknowledged.
     await E(planner1.stub).resolvePlan(pId, flowNum, plan, ...sync);
+
+    // Ack GMP transfers in the order they were initiated.
+    // Each drainPending() processes the transaction settlement.
+
+    // depositFromEVM setup (fee + makeAccount call to Axelar)
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
+    await txResolver.drainPending();
+    // Aave deposit instruction to Arbitrum
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await txResolver.drainPending();
+    // Final ack for flow completion
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+
     return flowNum;
   };
 
   await planner1.redeem();
-  await Promise.all([traderDoP, plannerDo(), chainDo()]);
+  await Promise.all([traderDoP, planAndAck()]);
 
   // Verify portfolio is ready
   const statusBefore = (await readPublished(
@@ -1917,22 +1941,26 @@ test('evmHandler.deposit (existing Arbitrum) completes a deposit flow', async t 
     return result;
   };
 
-  // Start traderDo first so plannerDo can wait for it
   const traderDoP = traderDo();
 
-  /** Simulate chain inputs (acks) for makeAccount + GMP transfers. */
-  const chainDo = async () => {
+  /**
+   * Resolve the plan and simulate chain acks in sequence.
+   *
+   * Why sequencing matters: The contract initiates IBC transfers at specific
+   * points in the flow. We must ack them in the order they're created:
+   * 1. NFA registration transfer - initiated during openPortfolio setup
+   * 2. GMP transfers - initiated only AFTER resolvePlan() is called
+   *
+   * Calling transmitVTransferEvent(-2) before resolvePlan would fail with
+   * "Index -2 out of bounds" because those transfers don't exist yet.
+   */
+  const planAndAck = async () => {
+    // Ack NFA registration transfer (initiated during openPortfolio setup,
+    // before plan resolution). This registers the portfolio's forwarding address.
     await ackNFA(common.utils);
-    await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
-    await txResolver.drainPending();
-    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-    await txResolver.drainPending();
-    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-  };
 
-  const plannerDo = async () => {
+    // Wait for trader's EIP-712 message to be processed, then read status.
     const pId = 0;
-    // Wait for trader to open portfolio before reading status
     await traderDoP;
     const status = (await readPublished(
       `portfolios.portfolio${pId}`,
@@ -1955,12 +1983,27 @@ test('evmHandler.deposit (existing Arbitrum) completes a deposit flow', async t 
         },
       ],
     };
+    // resolvePlan() initiates the GMP transfers to EVM chains.
+    // After this call, transfers exist and can be acknowledged.
     await E(planner1.stub).resolvePlan(pId, flowNum, plan, ...sync);
+
+    // Ack GMP transfers in the order they were initiated.
+    // Each drainPending() processes the transaction settlement.
+
+    // depositFromEVM setup (fee + makeAccount call to Axelar)
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
+    await txResolver.drainPending();
+    // Aave deposit instruction to Arbitrum
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await txResolver.drainPending();
+    // Final ack for flow completion
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+
     return flowNum;
   };
 
   await planner1.redeem();
-  await Promise.all([traderDoP, plannerDo(), chainDo()]);
+  await Promise.all([traderDoP, planAndAck()]);
 
   // Verify portfolio is ready - read status AFTER flow completes to get account info
   const statusBefore = (await readPublished(
@@ -2135,16 +2178,23 @@ test('evmHandler.deposit (Arbitrum -> Base) completes a deposit flow', async t =
 
   const traderDoP = traderDo();
 
-  const chainDo = async () => {
+  /**
+   * Resolve the plan and simulate chain acks in sequence.
+   *
+   * Why sequencing matters: The contract initiates IBC transfers at specific
+   * points in the flow. We must ack them in the order they're created:
+   * 1. NFA registration transfer - initiated during openPortfolio setup
+   * 2. GMP transfers - initiated only AFTER resolvePlan() is called
+   *
+   * Calling transmitVTransferEvent(-2) before resolvePlan would fail with
+   * "Index -2 out of bounds" because those transfers don't exist yet.
+   */
+  const planAndAck = async () => {
+    // Ack NFA registration transfer (initiated during openPortfolio setup,
+    // before plan resolution). This registers the portfolio's forwarding address.
     await ackNFA(common.utils);
-    await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
-    await txResolver.drainPending();
-    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-    await txResolver.drainPending();
-    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-  };
 
-  const plannerDo = async () => {
+    // Wait for trader's EIP-712 message to be processed, then read status.
     const pId = 0;
     await traderDoP;
     const status = (await readPublished(
@@ -2173,12 +2223,27 @@ test('evmHandler.deposit (Arbitrum -> Base) completes a deposit flow', async t =
         },
       ],
     };
+    // resolvePlan() initiates the GMP transfers to EVM chains.
+    // After this call, transfers exist and can be acknowledged.
     await E(planner1.stub).resolvePlan(pId, flowNum, plan, ...sync);
+
+    // Ack GMP transfers in the order they were initiated.
+    // Each drainPending() processes the transaction settlement.
+
+    // depositFromEVM setup (fee + makeAccount call to Axelar)
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
+    await txResolver.drainPending();
+    // Aave deposit instruction to Arbitrum
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await txResolver.drainPending();
+    // Final ack for flow completion
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+
     return flowNum;
   };
 
   await planner1.redeem();
-  await Promise.all([traderDoP, plannerDo(), chainDo()]);
+  await Promise.all([traderDoP, planAndAck()]);
 
   t.truthy(evmHandler, 'evmHandler is defined');
 
