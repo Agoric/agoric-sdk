@@ -140,7 +140,7 @@ runs:
     - shell: bash
       run: |
         set -ex
-        corepack enable
+        "${{ inputs.path }}/scripts/ensure-corepack-yarn.sh" "${{ inputs.path }}"
         mkdir -p "$(yarn config get cacheFolder)"
 
     - uses: actions/setup-node@v4

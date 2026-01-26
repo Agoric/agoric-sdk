@@ -34,9 +34,9 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Enable Corepack and install dependencies
+      - name: Set up yarn and install dependencies
         run: |
-          corepack enable
+          bash scripts/ensure-corepack-yarn.sh
           yarn install
 
       - name: Build project
