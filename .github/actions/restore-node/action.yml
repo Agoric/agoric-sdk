@@ -138,33 +138,9 @@ runs:
     # Before setup-node because that action tries to discover the cache directory.
     # See https://github.com/actions/setup-node/issues/480#issuecomment-1915448139
     - shell: bash
-      env:
-        # The corepack server 500s more than we like so we keep the release in SCM
-        COREPACK_ENABLE_NETWORK: 0
       run: |
         set -ex
-        COREPACK_HOME="${COREPACK_HOME:-$HOME/.cache/node/corepack}"
-        mkdir -p "$COREPACK_HOME/v1/yarn/4.12.0"
-        export COREPACK_YARN_DIR="$COREPACK_HOME/v1/yarn/4.12.0"
-        cp "${{ inputs.path }}/.yarn/releases/yarn-4.12.0.cjs" \
-          "$COREPACK_YARN_DIR/yarn.js"
-        # also provide the metadata that corepack expects
-        node - <<'EOF'
-        const fs = require('fs');
-        const crypto = require('crypto');
-
-        const yarnDir = process.env.COREPACK_YARN_DIR;
-        const yarnPath = `${yarnDir}/yarn.js`;
-        const data = fs.readFileSync(yarnPath);
-        const hash = crypto.createHash('sha512').update(data).digest('base64');
-        const payload = {
-          locator: { name: 'yarn', reference: '4.12.0' },
-          bin: ['yarn', 'yarnpkg'],
-          hash: `sha512.${hash}`,
-        };
-        fs.writeFileSync(`${yarnDir}/.corepack`, JSON.stringify(payload));
-        EOF
-        corepack enable
+        "${{ inputs.path }}/scripts/ensure-corepack-yarn.sh" "${{ inputs.path }}"
         mkdir -p "$(yarn config get cacheFolder)"
 
     - uses: actions/setup-node@v4

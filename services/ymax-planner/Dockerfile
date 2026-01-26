@@ -1,15 +1,15 @@
 # Build stage
 FROM node:22-alpine AS builder
 
-# Enable corepack
-RUN --mount=type=cache,target=/root/.cache/corepack corepack enable
-
 # Set working directory
 WORKDIR /build
 
 # XXX could copy dep graph first for better layer caching
 # Copy repo
 COPY . ./
+
+# Seed corepack from the checked-in Yarn release
+RUN ./scripts/ensure-corepack-yarn.sh /build
 
 # Install just the necessary dependencies
 # `focus` does not support immutability https://github.com/yarnpkg/berry/issues/1803
