@@ -68,6 +68,7 @@ type WatchGmp = {
   log: (...args: unknown[]) => void;
   kvStore: KVStore;
   makeAbortController: MakeAbortController;
+  retryOptions?: RetryOptions;
 };
 
 // AxelarExecutable entrypoint (standard)
@@ -113,6 +114,49 @@ const extractExecuteData = (
   }
 };
 
+export type RetryOptions = {
+  /** Maximum number of retry attempts */
+  limit: number;
+  /** Maximum delay between retries in milliseconds */
+  backoffLimit: number;
+};
+
+export const DEFAULT_RETRY_OPTIONS: RetryOptions = {
+  limit: 5,
+  backoffLimit: 3000,
+};
+
+/**
+ * Fetch transaction receipt with retry logic for freshly mined transactions.
+ * @param provider - The WebSocket provider
+ * @param txHash - Transaction hash
+ * @param log - Logging function
+ * @param retryOptions - Retry configuration (limit and backoffLimit)
+ * @returns Transaction receipt or null if not available after retries
+ */
+const fetchReceiptWithRetry = async (
+  provider: WebSocketProvider,
+  txHash: string,
+  log: (...args: unknown[]) => void,
+  retryOptions: RetryOptions = DEFAULT_RETRY_OPTIONS,
+) => {
+  const { limit, backoffLimit } = retryOptions;
+  let receipt = await provider.getTransactionReceipt(txHash);
+  if (!receipt) {
+    log(`Receipt not yet available for txHash=${txHash}, retrying...`);
+    for (let i = 0; i < limit && !receipt; i += 1) {
+      const delay = Math.min(100 * 2 ** i, backoffLimit);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      receipt = await provider.getTransactionReceipt(txHash);
+    }
+
+    if (!receipt) {
+      log(`Failed to get receipt for txHash=${txHash} after ${limit} retries`);
+    }
+  }
+  return receipt;
+};
+
 export const watchGmp = ({
   provider,
   contractAddress,
@@ -123,6 +167,7 @@ export const watchGmp = ({
   log = () => {},
   setTimeout = globalThis.setTimeout,
   signal,
+  retryOptions = DEFAULT_RETRY_OPTIONS,
 }: WatchGmp & WatcherTimeoutOptions): Promise<WatcherResult> => {
   return new Promise((resolve, reject) => {
     if (signal?.aborted) return resolve({ settled: false });
@@ -248,11 +293,11 @@ export const watchGmp = ({
           return;
         }
 
-        // Wait for confirmations to ensure finality and prevent reorg issues
-        const confirmations = getConfirmationsRequired(chainId);
-        const receipt = await provider.waitForTransaction(
+        const receipt = await fetchReceiptWithRetry(
+          provider,
           txHash,
-          confirmations,
+          log,
+          retryOptions,
         );
         if (!receipt) {
           log(`Transaction ${txHash} not confirmed after waiting`);
@@ -266,8 +311,11 @@ export const watchGmp = ({
         );
 
         if (receipt.status === 1 && matchingLog) {
+          // Success case: return immediately without waiting for any confirmations (0 blocks)
+          // Rationale: Even if a reorg occurs, the transaction will likely succeed again
+          // Waiting for confirmations in success cases would hurt performance unnecessarily
           log(
-            `✅ SUCCESS (${confirmations} confirmations): txId=${txId} txHash=${txHash} block=${receipt.blockNumber}`,
+            `✅ SUCCESS: txId=${txId} txHash=${txHash} block=${receipt.blockNumber}`,
           );
           return finish({ settled: true, txHash, success: true });
         }
@@ -281,11 +329,36 @@ export const watchGmp = ({
            * Note: Spurious executions from unauthorized parties are already filtered
            * out by the sourceAddress check above, so any revert we see here represents
            * a genuine failure of the user's operation.
+           *
+           * For failure cases, we wait for full finality confirmations to ensure the
+           * failure is permanent. A failure that reorgs into a success is very hard
+           * for our system to recover from, so we must be certain of the failure.
            */
-          log(
-            `❌ REVERTED (${confirmations} confirmations): txId=${txId} txHash=${txHash} block=${receipt.blockNumber} - transaction failed`,
+          const confirmations = getConfirmationsRequired(chainId);
+          const confirmedReceipt = await provider.waitForTransaction(
+            txHash,
+            confirmations,
           );
-          return finish({ settled: true, txHash, success: false });
+          if (!confirmedReceipt) {
+            log(
+              `Transaction ${txHash} was not confirmed after waiting for ${confirmations} confirmations (possibly reorged out)`,
+            );
+            return;
+          }
+
+          // Re-check status after confirmations in case of reorg
+          if (confirmedReceipt.status === 0) {
+            log(
+              `❌ REVERTED (${confirmations} confirmations): txId=${txId} txHash=${txHash} block=${confirmedReceipt.blockNumber} - transaction failed`,
+            );
+            return finish({ settled: true, txHash, success: false });
+          } else {
+            // Transaction was reorged and succeeded - treat as success
+            log(
+              `✅ SUCCESS (after reorg, ${confirmations} confirmations): txId=${txId} txHash=${txHash} block=${confirmedReceipt.blockNumber}`,
+            );
+            return finish({ settled: true, txHash, success: true });
+          }
         }
       } catch (e) {
         log(
