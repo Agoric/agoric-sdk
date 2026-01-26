@@ -7,6 +7,7 @@ import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import { tryJsonParse } from '@agoric/internal';
 import {
   getBlockNumberBeforeRealTime,
+  getConfirmationsRequired,
   scanEvmLogsInChunks,
 } from '../support.ts';
 import type { MakeAbortController, WatcherTimeoutOptions } from '../support.ts';
@@ -63,6 +64,7 @@ type WatchGmp = {
   contractAddress: `0x${string}`;
   txId: TxId;
   expectedSourceAddress: string;
+  chainId: CaipChainId;
   log: (...args: unknown[]) => void;
   kvStore: KVStore;
   makeAbortController: MakeAbortController;
@@ -160,6 +162,7 @@ export const watchGmp = ({
   contractAddress,
   txId,
   expectedSourceAddress,
+  chainId,
   timeoutMs = TX_TIMEOUT_MS,
   log = () => {},
   setTimeout = globalThis.setTimeout,
@@ -265,7 +268,16 @@ export const watchGmp = ({
         if (msg.method !== 'eth_subscription') return;
 
         const tx = msg.params?.result?.transaction;
+        const removed = msg.params?.result?.removed;
         if (!tx) return;
+
+        // Ignore transactions that have been removed from canonical chain (reorged)
+        if (removed === true) {
+          log(
+            `⚠️  REORG: txId=${txId} txHash=${tx.hash} was removed from chain - ignoring`,
+          );
+          return;
+        }
 
         const txHash = tx.hash;
         const txData = tx.input;
@@ -287,7 +299,10 @@ export const watchGmp = ({
           log,
           retryOptions,
         );
-        if (!receipt) return;
+        if (!receipt) {
+          log(`Transaction ${txHash} not confirmed after waiting`);
+          return;
+        }
 
         const matchingLog = receipt.logs.find(
           l =>
@@ -296,6 +311,9 @@ export const watchGmp = ({
         );
 
         if (receipt.status === 1 && matchingLog) {
+          // Success case: return immediately without waiting for any confirmations (0 blocks)
+          // Rationale: Even if a reorg occurs, the transaction will likely succeed again
+          // Waiting for confirmations in success cases would hurt performance unnecessarily
           log(
             `✅ SUCCESS: txId=${txId} txHash=${txHash} block=${receipt.blockNumber}`,
           );
@@ -311,11 +329,36 @@ export const watchGmp = ({
            * Note: Spurious executions from unauthorized parties are already filtered
            * out by the sourceAddress check above, so any revert we see here represents
            * a genuine failure of the user's operation.
+           *
+           * For failure cases, we wait for full finality confirmations to ensure the
+           * failure is permanent. A failure that reorgs into a success is very hard
+           * for our system to recover from, so we must be certain of the failure.
            */
-          log(
-            `❌ REVERTED: txId=${txId} txHash=${txHash} block=${receipt.blockNumber} - transaction failed`,
+          const confirmations = getConfirmationsRequired(chainId);
+          const confirmedReceipt = await provider.waitForTransaction(
+            txHash,
+            confirmations,
           );
-          return finish({ settled: true, txHash, success: false });
+          if (!confirmedReceipt) {
+            log(
+              `Transaction ${txHash} was not confirmed after waiting for ${confirmations} confirmations (possibly reorged out)`,
+            );
+            return;
+          }
+
+          // Re-check status after confirmations in case of reorg
+          if (confirmedReceipt.status === 0) {
+            log(
+              `❌ REVERTED (${confirmations} confirmations): txId=${txId} txHash=${txHash} block=${confirmedReceipt.blockNumber} - transaction failed`,
+            );
+            return finish({ settled: true, txHash, success: false });
+          } else {
+            // Transaction was reorged and succeeded - treat as success
+            log(
+              `✅ SUCCESS (after reorg, ${confirmations} confirmations): txId=${txId} txHash=${txHash} block=${confirmedReceipt.blockNumber}`,
+            );
+            return finish({ settled: true, txHash, success: true });
+          }
         }
       } catch (e) {
         log(
@@ -337,7 +380,7 @@ export const watchGmp = ({
         'alchemy_minedTransactions',
         {
           addresses: [{ to: contractAddress }],
-          includeRemoved: false,
+          includeRemoved: true, // Receive reorg notifications
           hashesOnly: false,
         },
       ]);

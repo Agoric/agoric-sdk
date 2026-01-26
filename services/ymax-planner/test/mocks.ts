@@ -282,6 +282,7 @@ export const createMockProvider = (
             method: 'eth_subscription',
             params: {
               result: {
+                removed: false,
                 transaction: {
                   hash: log.transactionHash,
                   input: mockCalldata,
@@ -346,6 +347,27 @@ export const createMockProvider = (
       }
 
       throw Error(`Unrecognized function selector in mock call: ${selector}`);
+    },
+    waitForTransaction: async function (
+      this: any,
+      txHash: string,
+      confirmations?: number,
+      _timeout?: number,
+    ) {
+      // Get receipt - use getTransactionReceipt to respect test overrides
+      const receipt = await this.getTransactionReceipt(txHash);
+
+      if (!receipt) return null;
+
+      // Simulate waiting for confirmations by advancing blocks
+      if (confirmations && confirmations > 1) {
+        for (let i = 1; i < confirmations; i++) {
+          await new Promise(resolve => setTimeout(resolve, 1));
+          currentBlock += 1;
+        }
+      }
+
+      return receipt;
     },
   };
 
