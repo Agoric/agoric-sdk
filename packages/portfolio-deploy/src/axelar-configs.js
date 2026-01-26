@@ -334,11 +334,11 @@ const erc4626VaultAddresses = harden({
 /** @type {AddressesMap} */
 const factoryAddresses = harden({
   mainnet: {
-    Arbitrum: '0x0Ae32937708852439794858A02c66885d28B641f', // https://arbiscan.io/address/0x0Ae32937708852439794858A02c66885d28B641f
-    Avalanche: '0x0Ae32937708852439794858A02c66885d28B641f', // https://snowtrace.io/address/0x0Ae32937708852439794858A02c66885d28B641f
-    Base: '0x0Ae32937708852439794858A02c66885d28B641f', // https://basescan.org/address/0x0Ae32937708852439794858A02c66885d28B641f
-    Ethereum: '0x0Ae32937708852439794858A02c66885d28B641f', // https://etherscan.io/address/0x0Ae32937708852439794858A02c66885d28B641f
-    Optimism: '0x0Ae32937708852439794858A02c66885d28B641f', // https://optimistic.etherscan.io/address/0x0Ae32937708852439794858A02c66885d28B641f
+    Arbitrum: '0x2b9CAc25853Aba64F0D72eDEFE0C603408B61C32', // https://arbiscan.io/address/0x2b9CAc25853Aba64F0D72eDEFE0C603408B61C32
+    Avalanche: '0x2b9CAc25853Aba64F0D72eDEFE0C603408B61C32', // https://snowtrace.io/address/0x2b9CAc25853Aba64F0D72eDEFE0C603408B61C32
+    Base: '0x2b9CAc25853Aba64F0D72eDEFE0C603408B61C32', // https://basescan.org/address/0x2b9CAc25853Aba64F0D72eDEFE0C603408B61C32
+    Ethereum: '0x2b9CAc25853Aba64F0D72eDEFE0C603408B61C32', // https://etherscan.io/address/0x2b9CAc25853Aba64F0D72eDEFE0C603408B61C32
+    Optimism: '0x2b9CAc25853Aba64F0D72eDEFE0C603408B61C32', // https://optimistic.etherscan.io/address/0x2b9CAc25853Aba64F0D72eDEFE0C603408B61C32
   },
   testnet: {
     Arbitrum: '0x3625adB63D9c6c4a1654AF173AA871ce0611769B', // https://sepolia.arbiscan.io/address/0x3625adB63D9c6c4a1654AF173AA871ce0611769B
@@ -353,11 +353,11 @@ const factoryAddresses = harden({
 const depositFactoryAddresses = harden({
   // TODO: These are addresses specific to ymax0 and its current contractAddress
   mainnet: {
-    Arbitrum: '0xBC55023992B5b5d9D8DEBD3c6b78861ed9a48A5d', // https://arbiscan.io/address/0xBC55023992B5b5d9D8DEBD3c6b78861ed9a48A5d
-    Avalanche: '0xBC55023992B5b5d9D8DEBD3c6b78861ed9a48A5d', // https://snowtrace.io/address/0xBC55023992B5b5d9D8DEBD3c6b78861ed9a48A5d
-    Base: '0xBC55023992B5b5d9D8DEBD3c6b78861ed9a48A5d', // https://basescan.org/address/0xBC55023992B5b5d9D8DEBD3c6b78861ed9a48A5d
-    Ethereum: '0xBC55023992B5b5d9D8DEBD3c6b78861ed9a48A5d', // https://etherscan.io/address/0xBC55023992B5b5d9D8DEBD3c6b78861ed9a48A5d
-    Optimism: '0xBC55023992B5b5d9D8DEBD3c6b78861ed9a48A5d', // https://optimistic.etherscan.io/address/0xBC55023992B5b5d9D8DEBD3c6b78861ed9a48A5d
+    Arbitrum: '0x827A7A0bB3D6F2f624a9774C3d84D33d460De44A', // https://arbiscan.io/address/0x827A7A0bB3D6F2f624a9774C3d84D33d460De44A
+    Avalanche: '0x827A7A0bB3D6F2f624a9774C3d84D33d460De44A', // https://snowtrace.io/address/0x827A7A0bB3D6F2f624a9774C3d84D33d460De44A
+    Base: '0x827A7A0bB3D6F2f624a9774C3d84D33d460De44A', // https://basescan.org/address/0x827A7A0bB3D6F2f624a9774C3d84D33d460De44A
+    Ethereum: '0x827A7A0bB3D6F2f624a9774C3d84D33d460De44A', // https://etherscan.io/address/0x827A7A0bB3D6F2f624a9774C3d84D33d460De44A
+    Optimism: '0x827A7A0bB3D6F2f624a9774C3d84D33d460De44A', // https://optimistic.etherscan.io/address/0x827A7A0bB3D6F2f624a9774C3d84D33d460De44A
   },
   testnet: {
     Arbitrum: '0x45F636F03F8570768A7907C0b21BDf791e69B437', // https://sepolia.arbiscan.io/address/0x45F636F03F8570768A7907C0b21BDf791e69B437
