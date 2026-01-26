@@ -41,6 +41,7 @@ ENV YARN_CACHE_FOLDER=/root/.yarn
 WORKDIR /usr/src/agoric-sdk
 COPY --link .yarnrc.yml lerna.json package.json repoconfig.sh tsconfig.json yarn.lock ./
 COPY --link .yarn/patches/* .yarn/patches/
+COPY --link .yarn/releases/* .yarn/releases/
 
 WORKDIR /usr/src/agoric-sdk/golang/cosmos
 COPY --from=cosmos-go --link /usr/src/agoric-sdk/golang/cosmos .
@@ -49,7 +50,7 @@ COPY package.json yarn.lock /usr/src/agoric-sdk/
 
 RUN echo unknown > git-revision.txt
 
-RUN corepack enable
+RUN /usr/src/agoric-sdk/scripts/ensure-corepack-yarn.sh /usr/src/agoric-sdk
 # We allow lockfile mutation here to avoid having to copy all the packages into this image.
 # (Yarn 4's --immutable flag seems to assume no fewer deps than the lockfile.)
 # Other tests ensure that golang/cosmos builds without mutating the lockfile.
@@ -105,6 +106,7 @@ WORKDIR /usr/src/agoric-sdk
 
 # Minimal to build SDK (exclude docs, a3p-integration, etc)
 COPY --link .yarnrc.yml .yarn lerna.json package.json repoconfig.sh tsconfig.json yarn.lock ./
+COPY --link .yarn/releases/* .yarn/releases/
 COPY --link .yarn/patches/* .yarn/patches/
 COPY --link bin bin
 COPY --link packages packages
@@ -112,7 +114,7 @@ COPY --link scripts scripts
 COPY --from=cosmos-package --link /usr/src/agoric-sdk/golang golang
 COPY --from=xsnap-package --link /usr/src/agoric-sdk/packages/xsnap packages/xsnap
 
-RUN corepack enable
+RUN /usr/src/agoric-sdk/scripts/ensure-corepack-yarn.sh /usr/src/agoric-sdk
 # XXX until https://github.com/Agoric/agoric-sdk/issues/9043, then just:
 # RUN --mount=type=cache,target=$YARN_CACHE_FOLDER yarn install --immutable
 RUN --mount=type=cache,target=$YARN_CACHE_FOLDER bash -c \
