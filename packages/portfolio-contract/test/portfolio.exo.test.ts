@@ -4,6 +4,8 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { makeIssuerKit } from '@agoric/ertp';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import type { AxelarChain } from '@agoric/portfolio-api';
+import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.ts';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { prepareVowTools } from '@agoric/vow';
 import { makeHeapZone } from '@agoric/zone';
@@ -11,8 +13,9 @@ import {
   PortfolioStateShape,
   preparePortfolioKit,
 } from '../src/portfolio.exo.ts';
-import type { StatusFor } from '../src/type-guards.ts';
 import { PositionStateShape } from '../src/pos.exo.ts';
+import type { StatusFor } from '../src/type-guards.ts';
+import { axelarCCTPConfig } from './supports.ts';
 
 const { brand: USDC } = makeIssuerKit('USDC');
 
@@ -30,11 +33,19 @@ const makeTestSetup = () => {
     return node;
   };
 
+  const eip155ChainIdToAxelarChain = Object.fromEntries(
+    Object.entries(axelarCCTPConfig).map(([name, info]) => [
+      `${Number(info.reference)}`,
+      name,
+    ]),
+  ) as Record<`${number}`, AxelarChain>;
+
   const makePortfolioKit = preparePortfolioKit(zone, {
     portfoliosNode: makeMockNode('published.ymax0.portfolios'),
     marshaller,
     usdcBrand: USDC,
     vowTools,
+    eip155ChainIdToAxelarChain,
     // rest are not used for this test
     ...({} as any),
   });
@@ -178,6 +189,43 @@ test('capture stateShape to be intentional about changes', t => {
   );
 
   t.snapshot(PositionStateShape, 'PositionStateShape');
+});
+
+test('deposit fails if owner does not match', async t => {
+  const ownerAddress = '0x2222222222222222222222222222222222222222' as const;
+  const wrongOwnerAddress =
+    '0x3333333333333333333333333333333333333333' as const;
+
+  const { makePortfolioKit } = makeTestSetup();
+  const { evmHandler } = makePortfolioKit({
+    portfolioId: 451,
+    sourceAccountId: `eip155:42161:${ownerAddress}`,
+  });
+
+  const permitDetails: PermitDetails = {
+    chainId: 42161n,
+    token: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831' as const,
+    amount: 1_000n,
+    spender: '0xSpenderAddress' as const,
+    permit2Payload: {
+      owner: wrongOwnerAddress,
+      witness: '0xWitnessData' as const,
+      witnessTypeString: 'WitnessTypeString' as const,
+      permit: {
+        permitted: {
+          token: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831' as const,
+          amount: 1_000n,
+        },
+        nonce: 123n,
+        deadline: 1700000000n,
+      },
+      signature: '0xSignatureData' as const,
+    },
+  };
+
+  await t.throws(() => evmHandler.deposit(permitDetails), {
+    message: /permit owner .* does not match portfolio source address/,
+  });
 });
 
 test.todo('evmHandler withdraw requires source account');

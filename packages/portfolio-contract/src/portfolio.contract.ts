@@ -425,6 +425,7 @@ export const contract = async (
     flowDetail,
     startedFlow,
     config = defaultFlowConfig,
+    options?,
   ) =>
     orchFns1.executePlan(
       seat,
@@ -433,6 +434,7 @@ export const contract = async (
       flowDetail,
       startedFlow,
       ...flowCfg(config),
+      options,
     );
   const rebalance: typeof orchFns1.rebalance = (
     seat,
@@ -473,6 +475,7 @@ export const contract = async (
     proposalShapes,
     offerArgsShapes,
     transferChannels,
+    walletBytecode,
     portfoliosNode: E(storageNode).makeChildNode('portfolios'),
     marshaller: cachingMarshaller,
     usdcBrand: brands.USDC,

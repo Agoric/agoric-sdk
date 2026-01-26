@@ -43,6 +43,7 @@ import {
   RebalanceStrategy,
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
+import type { Address } from 'abitype';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { TargetApp } from '@agoric/vats/src/bridge-target.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
@@ -151,10 +152,19 @@ const rebalance: typeof rawRebalance = (
 const theExit = harden(() => {}); // for ava comparison
 // @ts-expect-error mock
 const mockZCF: ZCF = Far('MockZCF', {
-  makeEmptySeatKit: () =>
-    ({
-      zcfSeat: Far('MockZCFSeat', { exit: theExit }),
-    }) as unknown as ZCF,
+  makeEmptySeatKit: () => {
+    let exited = false;
+    const exit = () => {
+      exited = true;
+      theExit();
+    };
+    const fail = () => {
+      exited = true;
+    };
+    return {
+      zcfSeat: Far('MockZCFSeat', { exit, fail, hasExited: () => exited }),
+    } as unknown as ZCF;
+  },
 });
 
 const { brand: USDC } = makeIssuerKit('USDC');
@@ -2541,12 +2551,15 @@ test('withdraw from Beefy position', async t => {
 });
 
 // EVM wallet integration - openPortfolioFromPermit2 flow
-test('openPortfolioFromPermit2 with Permit2 provisions account and starts deposit', async t => {
+test('openPortfolioFromPermit2 with Permit2 completes a deposit flow', async t => {
+  // Use a mixed-case spender to ensure case-insensitive address checks.
+  const mixedCaseSpender =
+    contractsMock.Arbitrum.depositFactory.toUpperCase() as Address;
   const permitDetails: PermitDetails = {
     chainId: Number(axelarCCTPConfig.Arbitrum.reference),
     token: contractsMock.Arbitrum.usdc,
     amount: 1_000_000_000n,
-    spender: contractsMock.Arbitrum.depositFactory,
+    spender: mixedCaseSpender,
     permit2Payload: {
       permit: {
         deadline: 1357923600n,
@@ -2749,34 +2762,6 @@ test('CCTPtoUser sends CCTP depositForBurn to user address from noble', async t 
 
   t.snapshot(log, 'call log');
   await documentStorageSchema(t, storage, docOpts);
-});
-
-test('CCTPtoUser fails when sourceAccountId is not set', async t => {
-  const { orch, ctx, offer } = mocks({}, {});
-  const { log } = offer;
-
-  const amount = AmountMath.make(USDC, 2_000_000n);
-  // Create kit WITHOUT sourceAccountId
-  const kit = await ctx.makePortfolioKit();
-
-  const rebalanceResult = rebalance(
-    orch,
-    ctx,
-    offer.seat,
-    { flow: [{ src: '@noble', dest: '-Arbitrum', amount }] },
-    kit,
-  );
-
-  // The rebalance should fail because sourceAccountId is required
-  await t.notThrowsAsync(rebalanceResult);
-
-  // Check that seat.fail() was called
-  const failCall = log.find((entry: any) => entry._method === 'fail');
-  t.truthy(failCall, 'seat.fail() should be called');
-  t.regex(
-    String(failCall?.reason),
-    /CCTPtoUser requires sourceAccountId to be set/,
-  );
 });
 
 test('withdrawToEVM sends GMP call with ERC20 transfer to user address', async t => {

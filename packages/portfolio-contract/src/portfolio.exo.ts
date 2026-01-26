@@ -5,6 +5,7 @@ import { AmountMath, type Brand } from '@agoric/ertp';
 import { makeTracer, mustMatch, type ERemote } from '@agoric/internal';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import type { EMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
+import { hexToBytes } from '@noble/hashes/utils';
 import {
   type AccountId,
   type CaipChainId,
@@ -13,9 +14,11 @@ import {
 import {
   coerceAccountId,
   parseAccountId,
+  sameEvmAddress,
 } from '@agoric/orchestration/src/utils/address.js';
 import type {
   FundsFlowPlan,
+  FlowConfig,
   PortfolioContinuingInvitationMaker,
 } from '@agoric/portfolio-api';
 import {
@@ -24,6 +27,7 @@ import {
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
 import type { YmaxSharedDomain } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.ts';
+import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import type { MapStore } from '@agoric/store';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
@@ -39,11 +43,11 @@ import { type LocalAccount, type NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
 import type { makeOfferArgsShapes, MovementDesc } from './type-guards-steps.js';
 import {
+  type EVMContractAddressesMap,
   makeFlowPath,
   makeFlowStepsPath,
   makePortfolioPath,
   PoolKeyShapeExt,
-  type EVMContractAddressesMap,
   type FlowDetail,
   type makeProposalShapes,
   type PoolKey,
@@ -51,6 +55,7 @@ import {
   type StatusFor,
   type TargetAllocation,
 } from './type-guards.js';
+import { predictWalletAddress } from './utils/evm-orch-factory.js';
 
 const trace = makeTracer('PortExo');
 
@@ -180,6 +185,7 @@ export const preparePortfolioKit = (
     executePlan,
     onAgoricTransfer,
     transferChannels,
+    walletBytecode,
     proposalShapes,
     offerArgsShapes,
     vowTools,
@@ -202,6 +208,7 @@ export const preparePortfolioKit = (
       kit: PortfolioKitCycleBreaker,
       flowDetail: FlowDetail,
       startedFlow?: { stepsP: Vow<MovementDesc[]>; flowId: number },
+      config?: FlowConfig,
       options?: unknown,
     ) => Vow<unknown>;
     onAgoricTransfer: (
@@ -212,6 +219,7 @@ export const preparePortfolioKit = (
       noble: IBCConnectionInfo['transferChannel'];
       axelar?: IBCConnectionInfo['transferChannel'];
     };
+    walletBytecode: `0x${string}`;
     proposalShapes: ReturnType<typeof makeProposalShapes>;
     offerArgsShapes: ReturnType<typeof makeOfferArgsShapes>;
     vowTools: VowTools;
@@ -642,11 +650,76 @@ export const preparePortfolioKit = (
         },
       },
       evmHandler: {
+        /**
+         * Note: evmHandler is only valid for portfolios opened from EVM.
+         * Callers must ensure `sourceAccountId` is set before using this facet.
+         */
         getReaderFacet() {
           return this.facets.reader;
         },
-        deposit() {
-          throw Error('TODO in a later PR');
+        /**
+         * Initiate a deposit from an EVM account using Permit2.
+         *
+         * The permit's owner must match the address portion of `sourceAccountId`,
+         * though the chain can be different (enabling deposits from multiple chains).
+         *
+         * @param depositDetails - The permit2 deposit details including chainId, token, amount, spender, and permit2Payload
+         */
+        deposit(depositDetails: PermitDetails) {
+          const { sourceAccountId, accounts } = this.state;
+          if (!sourceAccountId) {
+            throw Fail`deposit requires sourceAccountId to be set (portfolio must be opened from EVM)`;
+          }
+          const { accountAddress } = parseAccountId(sourceAccountId);
+
+          const fromChain =
+            eip155ChainIdToAxelarChain[`${Number(depositDetails.chainId)}`];
+          if (!fromChain) {
+            throw Fail`no Axelar chain for EIP-155 chainId ${depositDetails.chainId}`;
+          }
+
+          const owner = depositDetails.permit2Payload.owner;
+          sameEvmAddress(owner, accountAddress as Address) ||
+            Fail`permit owner ${owner} does not match portfolio source address ${accountAddress}`;
+
+          // For deposits, spender must be the portfolio's smart wallet address.
+          // If the account already exists, use the stored address.
+          // If not, predict the address using `factory` (which will be used to create it).
+          let expectedSpender: Address;
+          if (accounts.has(fromChain)) {
+            const gmpInfo = accounts.get(fromChain) as GMPAccountInfo;
+            expectedSpender = gmpInfo.remoteAddress;
+          } else {
+            expectedSpender = predictWalletAddress({
+              owner: this.facets.reader.getLocalAccount().getAddress().value,
+              factoryAddress: contracts[fromChain].factory,
+              gasServiceAddress: contracts[fromChain].gasService,
+              gatewayAddress: contracts[fromChain].gateway,
+              walletBytecode: hexToBytes(walletBytecode.replace(/^0x/, '')),
+            });
+          }
+
+          sameEvmAddress(depositDetails.spender, expectedSpender) ||
+            Fail`permit spender ${depositDetails.spender} does not match portfolio account ${expectedSpender}`;
+
+          sameEvmAddress(depositDetails.token, contracts[fromChain].usdc) ||
+            Fail`permit token address ${depositDetails.token} does not match usdc contract address ${contracts[fromChain].usdc} for chain ${fromChain}`;
+
+          const amount = AmountMath.make(usdcBrand, depositDetails.amount);
+          const flowDetail: FlowDetail = { type: 'deposit', amount, fromChain };
+          const startedFlow = this.facets.manager.startFlow(flowDetail);
+          const seat = zcf.makeEmptySeatKit().zcfSeat;
+
+          void executePlan(
+            seat,
+            {},
+            this.facets,
+            flowDetail,
+            startedFlow,
+            undefined,
+            { evmDepositDetail: { ...depositDetails, fromChain } },
+          );
+          return `flow${startedFlow.flowId}`;
         },
         rebalance() {
           throw Error('TODO in a later PR');
@@ -676,6 +749,7 @@ export const preparePortfolioKit = (
 
           namespace === 'eip155' ||
             Fail`withdraw sourceAccountId must be in eip155 namespace: ${sourceAccountId}`;
+          const evmAddress = accountAddress as Address;
 
           const chainIdStr = String(
             domain?.chainId ?? reference,
@@ -688,11 +762,10 @@ export const preparePortfolioKit = (
           }
 
           !address ||
-            accountAddress.toLowerCase() === address.toLowerCase() ||
-            Fail`withdraw address ${address} does not match source account address ${accountAddress}`;
+            sameEvmAddress(evmAddress, address) ||
+            Fail`withdraw address ${address} does not match source account address ${evmAddress}`;
 
-          withdrawDetails.token.toLowerCase() ===
-            contracts[toChain].usdc.toLowerCase() ||
+          sameEvmAddress(withdrawDetails.token, contracts[toChain].usdc) ||
             Fail`withdraw token address ${withdrawDetails.token} does not match usdc contract address ${contracts[toChain].usdc} for chain ${toChain}`;
           const amount = AmountMath.make(usdcBrand, withdrawDetails.amount);
 
