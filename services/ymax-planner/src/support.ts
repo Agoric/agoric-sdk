@@ -224,34 +224,35 @@ export const getBlockTimeMs = (chainId: CaipChainId): number => {
  * Number of block confirmations required before marking a transaction as final.
  * Higher values provide stronger finality guarantees but increase latency.
  *
- * Values are informed by Circle’s blockchain confirmation guidance, which is based
- * on historical reorg behavior and network architecture.
+ * Note: We use 25 confirmations for all chains as a conservative, uniform approach
+ * that maximizes safety. Since confirmation waits only apply to transaction failures
+ * (success cases return immediately with 0 confirmations), the latency impact is
+ * acceptable and limited to rare failure scenarios.
  *
- * Note: For Ethereum and Avalanche, these values directly match Circle’s documented
- * confirmation requirements. For EVM L2 chains (Arbitrum, Base, Optimism), Circle
- * expresses finality in terms of Ethereum L1 confirmations ("12 ETH blocks").
- * Since this watcher only observes L2 chains and does not verify L1 batch inclusion
- * or Ethereum finality, the L2 values below represent a conservative same-chain
- * confirmation depth chosen to mitigate typical sequencer reorg risk, rather than
- * a full implementation of Circle’s L1-anchored finality.
+ * This value can be reconfigured on a per-chain basis if specific networks require
+ * different confirmation depths based on their consensus mechanisms or reorg risk.
+ *
+ * Background: Circle's blockchain confirmation guidance recommends 12 for Ethereum,
+ * 20 for Arbitrum, 1 for Avalanche, and 10 for Base/Optimism. Our choice of 25
+ * provides additional safety margin beyond these recommendations.
  *
  * @see https://developers.circle.com/w3s/blockchain-confirmations
  */
 
 const blockConfirmationsRequired: Record<CaipChainId, number> = harden({
   // ========= Mainnet =========
-  'eip155:1': 12, // Ethereum Mainnet
-  'eip155:42161': 20, // Arbitrum One
-  'eip155:43114': 1, // Avalanche C-Chain
-  'eip155:8453': 10, // Base
-  'eip155:10': 10, // Optimism
+  'eip155:1': 25, // Ethereum Mainnet
+  'eip155:42161': 25, // Arbitrum One
+  'eip155:43114': 25, // Avalanche C-Chain
+  'eip155:8453': 25, // Base
+  'eip155:10': 25, // Optimism
 
   // ========= Testnet =========
-  'eip155:11155111': 12, // Ethereum Sepolia
-  'eip155:421614': 20, // Arbitrum Sepolia
-  'eip155:43113': 1, // Avalanche Fuji
-  'eip155:84532': 10, // Base Sepolia
-  'eip155:11155420': 10, // Optimism Sepolia
+  'eip155:11155111': 25, // Ethereum Sepolia
+  'eip155:421614': 25, // Arbitrum Sepolia
+  'eip155:43113': 25, // Avalanche Fuji
+  'eip155:84532': 25, // Base Sepolia
+  'eip155:11155420': 25, // Optimism Sepolia
 });
 
 /**
