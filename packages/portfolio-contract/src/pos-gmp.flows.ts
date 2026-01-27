@@ -189,17 +189,6 @@ const makeProvideEVMAccount = ({
         } as const;
         const destinationAddress = contracts[contractKey[mode]];
 
-        await sendCall({
-          dest: { axelarId, address: destinationAddress },
-          portfolioLca: lca,
-          fee,
-          gmpAddresses: ctx.gmpAddresses,
-          gmpChain: gmp.chain,
-          contractAccount,
-          expectedWalletAddress: evmAccount.remoteAddress,
-          ...('orchOpts' in opts ? { orchOpts: opts.orchOpts } : {}),
-        });
-
         // XXX: register before sending?
         const watchTx = ctx.resolverClient.registerTransaction(
           txType,
@@ -215,6 +204,17 @@ const makeProvideEVMAccount = ({
         const result = watchTx.result as unknown as Promise<void>; // XXX host/guest;
         result.catch(err => {
           trace(txId, 'rejected', err);
+        });
+
+        await sendCall({
+          dest: { axelarId, address: destinationAddress },
+          portfolioLca: lca,
+          fee,
+          gmpAddresses: ctx.gmpAddresses,
+          gmpChain: gmp.chain,
+          contractAccount,
+          expectedWalletAddress: evmAccount.remoteAddress,
+          ...('orchOpts' in opts ? { orchOpts: opts.orchOpts } : {}),
         });
 
         traceChain('await', mode, txId);
