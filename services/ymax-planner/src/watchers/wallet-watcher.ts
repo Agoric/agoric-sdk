@@ -15,8 +15,13 @@ import {
 } from '../kv-store.ts';
 import type { WatcherResult } from '../pending-tx-manager.ts';
 
+// New version (3 parameters) - without sourceAddress
 export const SMART_WALLET_CREATED_SIGNATURE = id(
   'SmartWalletCreated(address,string,string)',
+);
+// Old version (4 parameters) - with sourceAddress, for backward compatibility
+export const SMART_WALLET_CREATED_SIGNATURE_V1 = id(
+  'SmartWalletCreated(address,string,string,string)',
 );
 const abiCoder = new AbiCoder();
 
@@ -30,14 +35,30 @@ export const parseSmartWalletCreatedLog = (log: any) => {
   }
 
   const wallet = extractAddress(log.topics[1]);
+  const eventSignature = log.topics[0];
 
-  const [owner, sourceChain] = abiCoder.decode(['string', 'string'], log.data);
-
-  return {
-    wallet,
-    owner,
-    sourceChain,
-  };
+  if (eventSignature === SMART_WALLET_CREATED_SIGNATURE_V1) {
+    const [owner, sourceChain, sourceAddress] = abiCoder.decode(
+      ['string', 'string', 'string'],
+      log.data,
+    );
+    return {
+      wallet,
+      owner,
+      sourceChain,
+      sourceAddress,
+    };
+  } else {
+    const [owner, sourceChain] = abiCoder.decode(
+      ['string', 'string'],
+      log.data,
+    );
+    return {
+      wallet,
+      owner,
+      sourceChain,
+    };
+  }
 };
 
 type SmartWalletWatchBase = {
@@ -70,7 +91,12 @@ export const watchSmartWalletTx = ({
     }
 
     const TO_TOPIC = zeroPadValue(expectedAddr.toLowerCase(), 32);
-    const filter = {
+
+    const filterV1 = {
+      address: factoryAddr,
+      topics: [SMART_WALLET_CREATED_SIGNATURE_V1, TO_TOPIC],
+    };
+    const filterV2 = {
       address: factoryAddr,
       topics: [SMART_WALLET_CREATED_SIGNATURE, TO_TOPIC],
     };
@@ -121,8 +147,12 @@ export const watchSmartWalletTx = ({
       );
     };
 
-    void provider.on(filter, listenForSmartWalletCreation);
-    listeners.push({ event: filter, listener: listenForSmartWalletCreation });
+    void provider.on(filterV1, listenForSmartWalletCreation);
+    void provider.on(filterV2, listenForSmartWalletCreation);
+    listeners.push(
+      { event: filterV1, listener: listenForSmartWalletCreation },
+      { event: filterV2, listener: listenForSmartWalletCreation },
+    );
 
     timeoutId = setTimeout(() => {
       if (!walletCreated) {
@@ -164,36 +194,60 @@ export const lookBackSmartWalletTx = async ({
     );
 
     const toTopic = zeroPadValue(expectedAddr.toLowerCase(), 32);
-    const baseFilter: Filter = {
+
+    const baseFilterV1: Filter = {
+      address: factoryAddr,
+      topics: [SMART_WALLET_CREATED_SIGNATURE_V1, toTopic],
+    };
+    const baseFilterV2: Filter = {
       address: factoryAddr,
       topics: [SMART_WALLET_CREATED_SIGNATURE, toTopic],
     };
 
-    const matchingEvent = await scanEvmLogsInChunks(
-      {
-        provider,
-        baseFilter,
-        fromBlock: savedFromBlock,
-        toBlock,
-        chainId,
-        log,
-        signal,
-        onRejectedChunk: (_, to) => {
-          setTxBlockLowerBound(kvStore, txId, to);
+    const checkMatch = (ev: any) => {
+      try {
+        const t = parseSmartWalletCreatedLog(ev);
+        const normalizedWallet = t.wallet.toLowerCase();
+        log(`Check: addresss=${normalizedWallet}`);
+        return normalizedWallet === expectedAddr;
+      } catch (e) {
+        log(`Parse error:`, e);
+        return false;
+      }
+    };
+
+    const matchingEvent = await Promise.race([
+      scanEvmLogsInChunks(
+        {
+          provider,
+          baseFilter: baseFilterV1,
+          fromBlock: savedFromBlock,
+          toBlock,
+          chainId,
+          log,
+          signal,
+          onRejectedChunk: (_, to) => {
+            setTxBlockLowerBound(kvStore, txId, to);
+          },
         },
-      },
-      ev => {
-        try {
-          const t = parseSmartWalletCreatedLog(ev);
-          const normalizedWallet = t.wallet.toLowerCase();
-          log(`Check: addresss=${normalizedWallet}`);
-          return normalizedWallet === expectedAddr;
-        } catch (e) {
-          log(`Parse error:`, e);
-          return false;
-        }
-      },
-    );
+        checkMatch,
+      ),
+      scanEvmLogsInChunks(
+        {
+          provider,
+          baseFilter: baseFilterV2,
+          fromBlock: savedFromBlock,
+          toBlock,
+          chainId,
+          log,
+          signal,
+          onRejectedChunk: (_, to) => {
+            setTxBlockLowerBound(kvStore, txId, to);
+          },
+        },
+        checkMatch,
+      ),
+    ]);
 
     if (!matchingEvent) {
       log(`No matching SmartWalletCreated event found`);
