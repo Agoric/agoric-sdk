@@ -9,7 +9,9 @@
     ],
     // FIXME: https://github.com/Agoric/agoric-sdk/issues/10351
     "compilerOptions": {
-        "checkJs": false
+        "checkJs": false,
+        "outDir": "build",
+        "tsBuildInfoFile": "build/tsconfig.build.tsbuildinfo"
     },
     "exclude": [
         "tools/bootstrap-chain-reflective.js",

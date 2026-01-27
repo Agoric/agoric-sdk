@@ -1,14 +1,18 @@
 {
-    "extends": [
-        "./tsconfig.json",
-        "../../tsconfig-build-options.json"
-    ],
-    "include": [
-        "src"
-    ],
-    "exclude": [
-        "test",
-        "tools",
-        "scripts"
-    ]
+  "extends": [
+    "./tsconfig.json",
+    "../../tsconfig-build-options.json"
+  ],
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "test",
+    "tools",
+    "scripts"
+  ],
+  "compilerOptions": {
+    "outDir": "build",
+    "tsBuildInfoFile": "build/tsconfig.build.tsbuildinfo"
+  }
 }

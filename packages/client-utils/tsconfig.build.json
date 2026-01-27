@@ -5,8 +5,10 @@
         // "../../tsconfig-build-options.json"
     ],
     "compilerOptions": {
+        "composite": true,
         "noEmit": false,
         "outDir": "dist",
+        "tsBuildInfoFile": "dist/tsconfig.build.tsbuildinfo",
         "emitDeclarationOnly": false,
         "declaration": true,
         "declarationMap": true,
@@ -19,9 +21,9 @@
         ],
         "sourceMap": true,
         "isolatedModules": true,
-        "downlevelIteration": true,
+        "downlevelIteration": true
     },
     "exclude": [
-        "test",
+        "test"
     ]
 }

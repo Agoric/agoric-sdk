@@ -3,12 +3,16 @@
         "./tsconfig.json",
         "../../tsconfig-build-options.json"
     ],
+    "compilerOptions": {
+        "outDir": "build",
+        "tsBuildInfoFile": "build/tsconfig.build.tsbuildinfo"
+    },
     "exclude":[
         "**/types-index.js",
         "**/proposals",
         "**/scripts",
         "**/test",
         "**/src/vendor",
-        "**/src/stubs",
+        "**/src/stubs"
     ]
 }
