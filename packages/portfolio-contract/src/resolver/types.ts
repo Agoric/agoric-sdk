@@ -73,17 +73,18 @@ export const PublishedTxShape: TypedPattern<PublishedTx> = M.or(
     {},
   ),
   // MAKE_ACCOUNT requires expectedAddr (hex)
-  // destinationAddress is either depositFactory or factory (CAIP)
   M.splitRecord(
     {
       type: M.or(TxType.MAKE_ACCOUNT),
+      // destinationAddress is either depositFactory or factory (CAIP)
       destinationAddress: M.string(),
       expectedAddr: M.string(),
-      sourceAddress: M.string(),
-      // Older records don't have this field, in which case the address in the destinationAddress CAIP should be used
       status: TxStatus.PENDING,
     },
+    // Older records don't have these fields
     {
+      sourceAddress: M.string(),
+      // If not available, the destinationAddress CAIP can be used
       factoryAddr: M.string(),
     },
     {},
