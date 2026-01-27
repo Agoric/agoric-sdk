@@ -1,10 +1,11 @@
 /**
- * @import {ChainHub, ChainInfo, Denom, DenomDetail} from '../types.js';
+ * @import {ChainHub, ChainHubOptions, ChainInfo, Denom, DenomDetail} from '../types.js';
  * @import {Brand} from '@agoric/ertp';
  */
 
 /**
- * Registers chains, connections, assets in the provided chainHub.
+ * Registers chains, connections, assets in the provided chainHub, updating
+ * existing records.
  *
  * If either is not provided, registration will be skipped.
  *
@@ -14,29 +15,34 @@
  * @param {Record<string, Brand<'nat'>>} brands
  * @param {Record<string, ChainInfo> | undefined} chainInfo
  * @param {[Denom, DenomDetail & { brandKey?: string }][] | undefined} assetInfo
- * @param {object} opts
+ * @param {object} [opts]
  * @param {Console['log']} [opts.log]
+ * @param {boolean} [opts.upsert=false] - whether to upsert (true) or error on existing (false)
  */
 export const registerChainsAndAssets = (
   chainHub,
   brands,
   chainInfo,
   assetInfo,
-  { log = () => {} } = {},
+  opts,
 ) => {
+  const { log = () => {}, upsert = false } = opts || {};
   log('chainHub: registering chains', Object.keys(chainInfo || {}));
   if (!chainInfo) {
     return;
   }
 
+  /** @type {ChainHubOptions} */
+  const chOpts = { upsert };
+
   const conns = {};
   for (const [chainName, allInfo] of Object.entries(chainInfo)) {
     if (allInfo.namespace === 'cosmos') {
       const { connections, ...info } = allInfo;
-      chainHub.registerChain(chainName, info);
+      chainHub.registerChain(chainName, info, chOpts);
       if (connections) conns[info.chainId] = connections;
     } else {
-      chainHub.registerChain(chainName, allInfo);
+      chainHub.registerChain(chainName, allInfo, chOpts);
     }
   }
   const registeredPairs = new Set();
@@ -44,7 +50,7 @@ export const registerChainsAndAssets = (
     for (const [cChainId, connInfo] of Object.entries(connInfos)) {
       const pair = [pChainId, cChainId].sort().join('<->');
       if (!registeredPairs.has(pair)) {
-        chainHub.registerConnection(pChainId, cChainId, connInfo);
+        chainHub.registerConnection(pChainId, cChainId, connInfo, chOpts);
         registeredPairs.add(pair);
       }
     }
@@ -63,6 +69,6 @@ export const registerChainsAndAssets = (
     const infoWithBrand = brandKey
       ? { ...rest, brand: brands[brandKey] }
       : rest;
-    chainHub.registerAsset(denom, infoWithBrand);
+    chainHub.registerAsset(denom, infoWithBrand, chOpts);
   }
 };
