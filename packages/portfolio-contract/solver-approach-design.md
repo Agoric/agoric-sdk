@@ -34,10 +34,10 @@ Two classes of directed edges:
    - Always present for every non-hub leaf, unidirectional at `@agoric` but bidirectional elsewhere.
    - Attributes: `variableFeeBps=1`, `flatFee=0`, `timeSec=1`, very large capacity.
 2. Inter-chain (hub -> hub) links provided by `NetworkSpec.links`:
-  - CCTP slow (EVM -> Noble): high latency (≈1080s), low/zero variable fee.
-  - CCTP return (Noble -> EVM): low latency (≈20s).
-  - FastUSDC (unidirectional EVM -> Noble): `variableFeeBps≈15` (≈0.15%), `timeSec≈45`.
-  - Noble <-> Agoric IBC: `variableFeeBps≈200` (≈2.00%), `timeSec≈10`.
+   - CCTP to Noble [from EVM]: high latency (≈1080s), low/zero variable fee.
+   - CCTP from Noble [to EVM]: low latency (≈20s).
+   - FastUSDC (unidirectional EVM -> Noble): `variableFeeBps≈15` (≈0.15%), `timeSec≈45`.
+   - Noble <-> Agoric IBC: `variableFeeBps≈200` (≈2.00%), `timeSec≈10`.
 Each link is directional; reverse direction is added explicitly where needed.
 
 Overrides:
@@ -184,7 +184,7 @@ interface LocalPlaceSpec {
 interface LinkSpec {
   src: SupportedChain;            // source chain
   dest: SupportedChain;           // destination chain
-  transfer: 'ibc' | 'fastusdc' | 'cctpReturn' | 'cctpSlow';
+  transfer: 'ibc' | 'fastusdc' | 'cctpFromNoble' | 'cctpToNoble';
   variableFeeBps: number;         // variable fee in basis points of amount
   timeSec: number;                // latency in seconds
   flatFee?: NatValue;             // optional fixed fee (minor units)
@@ -341,7 +341,6 @@ Further non-planner items
 - sanity check the step list
 
 Renames
-- cctpSlow → cctpToNoble and cctpReturn → cctpFromNoble
 - NetworkSpec → NetworkDesc, and probably likewise for ChainSpec/PoolSpec/LocalPlaceSpec/LinkSpec (since we generally use "spec" to describe a string specifier)
 - `src`/`dest` if acceptable alphabetical synonyms can be found (e.g., `source`/`target` or `fromPlace`/`toPlace`)
 
