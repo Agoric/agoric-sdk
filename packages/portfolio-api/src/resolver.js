@@ -12,7 +12,7 @@ import { keyMirror } from '@agoric/internal';
  * @property {TxType} type - The type of transaction (CCTP_TO_EVM, GMP, CCTP_TO_AGORIC, or MAKE_ACCOUNT)
  * @property {bigint} [amount] - Optional transaction amount as a bigint
  * @property {AccountId} [destinationAddress] - The destination account identifier for the transaction
- * @property {AccountId} [sourceAddress] - The source LCA address initiating the transaction (for GMP transactions)
+ * @property {AccountId} [sourceAddress] - The source LCA address initiating the transaction (required for GMP and MAKE_ACCOUNT transactions)
  * @property {string} [expectedAddr] - The expected smart wallet hex address to be created (for MAKE_ACCOUNT only, format: 0x...)
  * @property {string} [factoryAddr] - The smart wallet factory address (for MAKE_ACCOUNT only, format: 0x...)
  * @property {TxStatus} status - Current status of the transaction (pending, success, or failed)

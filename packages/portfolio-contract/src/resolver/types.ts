@@ -79,6 +79,7 @@ export const PublishedTxShape: TypedPattern<PublishedTx> = M.or(
       type: M.or(TxType.MAKE_ACCOUNT),
       destinationAddress: M.string(),
       expectedAddr: M.string(),
+      sourceAddress: M.string(),
       // Older records don't have this field, in which case the address in the destinationAddress CAIP should be used
       status: TxStatus.PENDING,
     },
