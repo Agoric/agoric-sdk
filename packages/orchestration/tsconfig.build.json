@@ -7,6 +7,10 @@
     "outDir": "build",
     "tsBuildInfoFile": "build/tsconfig.build.tsbuildinfo"
   },
+  "include": [
+    "src",
+    "index.js"
+  ],
   "exclude": [
     "**/types-index.js",
     "**/proposals",

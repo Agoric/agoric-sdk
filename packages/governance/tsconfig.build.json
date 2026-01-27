@@ -7,6 +7,14 @@
     "outDir": "build",
     "tsBuildInfoFile": "build/tsconfig.build.tsbuildinfo"
   },
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "test",
+    "tools",
+    "scripts"
+  ],
   "references": [
     {
       "path": "../ERTP/tsconfig.build.json"
