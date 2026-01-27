@@ -36,6 +36,7 @@ interface TransactionEntry extends TxMeta {
 interface TxMeta {
   type: TxType;
   expectedAddr?: `0x${string}`;
+  factoryAddr?: `0x${string}`;
   nextTxId?: TxId;
 }
 
@@ -48,7 +49,7 @@ const PromiseVowShape = M.any();
 
 const ClientFacetI = M.interface('ResolverClient', {
   registerTransaction: M.call(M.or(...Object.values(TxType)), M.string())
-    .optional(M.nat(), M.string(), M.string())
+    .optional(M.nat(), M.string(), M.string(), M.string())
     .returns(M.splitRecord({ result: PromiseVowShape, txId: M.string() })),
   unsubscribe: M.call(M.string(), M.string()).returns(),
   createPendingTx: M.call(
@@ -216,12 +217,6 @@ export const prepareResolverKit = (
 
         /**
          * Register a transaction and return a vow that is fulfilled when the transaction is resolved.
-         *
-         * @param type
-         * @param destinationAddress
-         * @param amountValue
-         * @param expectedAddr
-         * @param sourceAddress
          */
         registerTransaction(
           type: TxType,
@@ -229,12 +224,15 @@ export const prepareResolverKit = (
           amountValue?: NatValue,
           expectedAddr?: `0x${string}`,
           sourceAddress?: AccountId,
+          factoryAddr?: `0x${string}`,
         ): { result: Vow<void>; txId: TxId } {
           const txMeta: TxMeta = {
             type,
             destinationAddress,
             ...(txsWithAmounts.includes(type) ? { amountValue } : {}),
-            ...(type === TxType.MAKE_ACCOUNT ? { expectedAddr } : {}),
+            ...(type === TxType.MAKE_ACCOUNT
+              ? { expectedAddr, factoryAddr }
+              : {}),
             ...(sourceAddress ? { sourceAddress } : {}),
           };
           return this.facets.client.createPendingTx(txMeta);
@@ -280,6 +278,7 @@ export const prepareResolverKit = (
             sourceAddress,
             amountValue: amount,
             expectedAddr,
+            factoryAddr,
             ...rest
           } = txMeta;
 
@@ -289,7 +288,9 @@ export const prepareResolverKit = (
             ...(destinationAddress ? { destinationAddress } : {}),
             ...(sourceAddress ? { sourceAddress } : {}),
             ...(txsWithAmounts.includes(type) ? { amount } : {}),
-            ...(type === TxType.MAKE_ACCOUNT ? { expectedAddr } : {}),
+            ...(type === TxType.MAKE_ACCOUNT
+              ? { expectedAddr, factoryAddr }
+              : {}),
             ...(rejectionReason ? { rejectionReason } : {}),
             status,
           };
@@ -304,13 +305,16 @@ export const prepareResolverKit = (
           type: TxType,
           amount?: NatValue,
           expectedAddr?: `0x${string}`,
+          factoryAddr?: `0x${string}`,
         ) {
           const txMeta: TxMeta = {
             type,
             destinationAddress,
             status: TxStatus.PENDING,
             ...(txsWithAmounts.includes(type) ? { amount } : {}),
-            ...(type === TxType.MAKE_ACCOUNT ? { expectedAddr } : {}),
+            ...(type === TxType.MAKE_ACCOUNT
+              ? { expectedAddr, factoryAddr }
+              : {}),
           };
           return this.facets.reporter.upsertPendingTx(
             txId,
