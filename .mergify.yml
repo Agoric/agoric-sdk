@@ -42,6 +42,7 @@ shared:
 merge_queue:
   max_parallel_checks: 1
   queued_label: null
+  dequeued_label: null
   status_comments: none
 
 priority_rules:
@@ -92,6 +93,9 @@ pull_request_rules:
       - base=master
       - label=automerge:rebase
       - '#commits-behind=0'
+      - '#approved-reviews-by>=1'
+      - '#changes-requested-reviews-by=0'
+      - branch-protection-review-decision=APPROVED
       - or:
           - -linear-history
           - check-failure=no-fixup-commits
