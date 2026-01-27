@@ -556,10 +556,6 @@ export const sendGMPContractCall = async (
   await result;
 };
 
-/** Canonical Permit2 contract address (same on all EVM chains) */
-const PERMIT2_ADDRESS: EVMT['address'] =
-  '0x000000000022D473030F116dDEE9F6B43aC78BA3';
-
 // XXX refactor overlap with PermitWitnessTransferFromFunctionABIType
 // that one results in type errors
 const permit2Abi = [
@@ -598,6 +594,7 @@ export const sendPermit2GMP = async (
     gmpAddresses,
     resolverClient,
     axelarIds,
+    addresses,
   } = ctx;
   const { chainName, remoteAddress, chainId: gmpChainId } = gmpAcct;
   const walletAddress = remoteAddress as EVMT['address'];
@@ -616,8 +613,7 @@ export const sendPermit2GMP = async (
   };
 
   const session = makeEvmAbiCallBatch();
-  // XXX could get PERMIT2_ADDRESS from privateArgs contract addresses
-  const permit2 = session.makeContract(PERMIT2_ADDRESS, permit2Abi);
+  const permit2 = session.makeContract(addresses.permit2, permit2Abi);
   permit2.permitWitnessTransferFrom(
     permit,
     transferDetails,
