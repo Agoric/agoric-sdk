@@ -7,12 +7,7 @@
 
 import type { GuestInterface } from '@agoric/async-flow';
 import { VaultType } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/vaults.js';
-import {
-  AmountMath,
-  type Amount,
-  type Brand,
-  type NatAmount,
-} from '@agoric/ertp';
+import { type Amount, type Brand, type NatAmount } from '@agoric/ertp';
 import {
   deeplyFulfilledObject,
   fromTypedEntries,
@@ -107,7 +102,6 @@ import {
   type FlowDetail,
   type PoolKey,
   type ProposalType,
-  type TargetAllocation,
 } from './type-guards.ts';
 import { setAppendedTxIds } from './utils/traffic.ts';
 
@@ -1619,7 +1613,9 @@ export const onAgoricTransfer = (async (
 }) satisfies OrchestrationFlow;
 
 /**
- * Offer handler to make a portfolio and, optionally, open yield positions.
+ * Handler to make a portfolio and, optionally, open yield positions.
+ * Supports opening from a cosmos or EVM wallet, with the deposit coming from
+ * the Zoe seat or via an EVM-signed Permit2 transfer respectively.
  *
  * **Input Validation**: ASSUME caller validates args
  *
@@ -1637,6 +1633,11 @@ export const openPortfolio = (async (
   offerArgs: OfferArgsFor['openPortfolio'],
   madeKit?: GuestInterface<PortfolioKit>,
   config?: FlowConfig,
+  evmDepositDetails?: {
+    fromChain: AxelarChain;
+    amount: NatAmount;
+    permitDetails: PermitDetails;
+  },
 ) => {
   const features = config?.features;
   await null; // see https://github.com/Agoric/agoric-sdk/wiki/No-Nested-Await
@@ -1661,20 +1662,30 @@ export const openPortfolio = (async (
         await rebalance(orch, ctxI, seat, offerArgs, kit, undefined, config);
       } else if (offerArgs.targetAllocation) {
         kit.manager.setTargetAllocation(offerArgs.targetAllocation);
-        if (give.Deposit) {
+        let depositFlowDetail: FlowDetail | undefined;
+        let depositOptions: ExecutePlanOptions | undefined;
+
+        if (evmDepositDetails) {
+          const { fromChain, amount, permitDetails } = evmDepositDetails;
+          depositFlowDetail = { type: 'deposit', amount, fromChain };
+          depositOptions = {
+            evmDepositDetail: { ...permitDetails, fromChain },
+          };
+        } else if (give.Deposit) {
+          depositFlowDetail = { type: 'deposit', amount: give.Deposit };
+        }
+
+        if (depositFlowDetail) {
           await executePlan(
             orch,
             ctxI,
             seat,
             offerArgs,
             kit,
-            {
-              type: 'deposit',
-              amount: give.Deposit,
-            },
+            depositFlowDetail,
             undefined,
             config,
-            undefined,
+            depositOptions,
           );
         }
       }
@@ -1707,56 +1718,12 @@ export const openPortfolio = (async (
 harden(openPortfolio);
 
 /**
- * Open a portfolio from an EVM-signed Permit2 and execute the initial
- * create+deposit step.
+ * Historical Open a portfolio from an EVM-signed Permit2
+ * See openPortfolio for the replacement
  */
-export const openPortfolioFromPermit2 = (async (
-  orch: Orchestrator,
-  ctx: PortfolioBootstrapContext,
-  seat: ZCFSeat,
-  // XXX subordinate amount/fromChain to depositDetails?
-  depositDetails: PermitDetails,
-  targetAllocation: TargetAllocation | undefined,
-  madeKit: GuestInterface<PortfolioKit>,
-) => {
-  await null; // see https://github.com/Agoric/agoric-sdk/wiki/No-Nested-Await
-  const trace = makeTracer('openPortfolioFromPermit2');
-  const id = madeKit.reader.getPortfolioId();
-  const traceP = trace.sub(`portfolio${id}`);
-  traceP('portfolio opened');
-  const fromChain =
-    ctx.eip155ChainIdToAxelarChain[`${Number(depositDetails.chainId)}`];
-  if (!fromChain) {
-    throw Fail`no Axelar chain for EIP-155 chainId ${depositDetails.chainId}`;
-  }
-  sameEvmAddress(
-    depositDetails.spender,
-    ctx.contracts[fromChain].depositFactory,
-  ) ||
-    Fail`spender address ${depositDetails.spender} does not match depositFactory address ${ctx.contracts[fromChain].depositFactory} for chain ${fromChain}`;
-  if (targetAllocation) {
-    madeKit.manager.setTargetAllocation(targetAllocation);
-  }
-  await setupPortfolioAccounts(orch, ctx, madeKit, traceP, {
-    useProgressTracker: true,
-  });
-
-  sameEvmAddress(depositDetails.token, ctx.contracts[fromChain].usdc) ||
-    Fail`depositDetails token address ${depositDetails.token} does not match usdc contract address ${ctx.contracts[fromChain].usdc} for chain ${fromChain}`;
-  const amount = AmountMath.make(ctx.usdc.brand, depositDetails.amount);
-  const flowDetail: FlowDetail = { type: 'deposit', amount, fromChain };
-  await executePlan(
-    orch,
-    ctx,
-    seat,
-    {},
-    madeKit,
-    flowDetail,
-    undefined,
-    undefined,
-    { evmDepositDetail: { ...depositDetails, fromChain } },
-  );
-  return undefined;
+export const openPortfolioFromPermit2 = (async () => {
+  // Tombstone in favor of openPortfolio with evmDepositDetails
+  return new Promise(() => {});
 }) satisfies OrchestrationFlow;
 harden(openPortfolioFromPermit2);
 
