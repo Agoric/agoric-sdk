@@ -7,7 +7,6 @@ import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import { tryJsonParse } from '@agoric/internal';
 import {
   getBlockNumberBeforeRealTime,
-  getConfirmationsRequired,
   scanEvmLogsInChunks,
 } from '../support.ts';
 import type { MakeAbortController, WatcherTimeoutOptions } from '../support.ts';
@@ -19,6 +18,7 @@ import {
 } from '../kv-store.ts';
 import {
   fetchReceiptWithRetry,
+  handleReceiptStatus,
   DEFAULT_RETRY_OPTIONS,
   type AlchemySubscriptionMessage,
   type RetryOptions,
@@ -236,55 +236,27 @@ export const watchGmp = ({
             l.topics?.[1] === expectedIdTopic,
         );
 
-        if (receipt.status === 1 && matchingLog) {
-          // Success case: return immediately without waiting for any confirmations (0 blocks)
-          // Rationale: Even if a reorg occurs, the transaction will likely succeed again
-          // Waiting for confirmations in success cases would hurt performance unnecessarily
-          log(
-            `✅ SUCCESS: txId=${txId} txHash=${txHash} block=${receipt.blockNumber}`,
-          );
-          return finish({ settled: true, txHash, success: true });
+        // For GMP transactions, only consider those with the expected MulticallStatus event
+        if (!matchingLog) {
+          return;
         }
 
-        if (receipt.status === 0) {
-          /**
-           * Transaction reverted - since we've already validated that the sourceAddress
-           * matches our expected LCA address, this is a legitimate execution attempt
-           * from our own wallet that failed. We treat this as a transaction failure.
-           *
-           * Note: Spurious executions from unauthorized parties are already filtered
-           * out by the sourceAddress check above, so any revert we see here represents
-           * a genuine failure of the user's operation.
-           *
-           * For failure cases, we wait for full finality confirmations to ensure the
-           * failure is permanent. A failure that reorgs into a success is very hard
-           * for our system to recover from, so we must be certain of the failure.
-           */
-          const confirmations = getConfirmationsRequired(chainId);
-          const confirmedReceipt = await provider.waitForTransaction(
-            txHash,
-            confirmations,
-          );
-          if (!confirmedReceipt) {
-            log(
-              `Transaction ${txHash} was not confirmed after waiting for ${confirmations} confirmations (possibly reorged out)`,
-            );
-            return;
-          }
-
-          // Re-check status after confirmations in case of reorg
-          if (confirmedReceipt.status === 0) {
-            log(
-              `❌ REVERTED (${confirmations} confirmations): txId=${txId} txHash=${txHash} block=${confirmedReceipt.blockNumber} - transaction failed`,
-            );
-            return finish({ settled: true, txHash, success: false });
-          } else {
-            // Transaction was reorged and succeeded - treat as success
-            log(
-              `✅ SUCCESS (after reorg, ${confirmations} confirmations): txId=${txId} txHash=${txHash} block=${confirmedReceipt.blockNumber}`,
-            );
-            return finish({ settled: true, txHash, success: true });
-          }
+        /**
+         * Transaction reverted check: Since we've already validated that the sourceAddress
+         * matches our expected LCA address, this is a legitimate execution attempt
+         * from our own wallet. Spurious executions from unauthorized parties are already
+         * filtered out by the sourceAddress check above.
+         */
+        const result = await handleReceiptStatus(
+          receipt,
+          txHash,
+          `txId=${txId}`,
+          chainId,
+          provider,
+          log,
+        );
+        if (result) {
+          return finish(result);
         }
       } catch (e) {
         log(

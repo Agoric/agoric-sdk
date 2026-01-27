@@ -1,4 +1,5 @@
-import type { WebSocketProvider } from 'ethers';
+import type { TransactionReceipt, WebSocketProvider } from 'ethers';
+import { getConfirmationsRequired } from '../support.ts';
 
 //#region Alchemy alchemy_minedTransactions subscription types
 // See https://docs.alchemy.com/reference/alchemy-minedtransactions
@@ -78,4 +79,75 @@ export const fetchReceiptWithRetry = async (
     }
   }
   return receipt;
+};
+
+/**
+ * Handle receipt status for a transaction that has been validated as matching
+ * the watcher's criteria. Returns the result to report to the caller.
+ *
+ * This implements the finality protection pattern:
+ * - Success (status 1): Return immediately without confirmations
+ * - Failure (status 0): Wait for confirmations to ensure failure is permanent
+ *
+ * @param receipt - The transaction receipt to handle
+ * @param txHash - Transaction hash for logging
+ * @param identifier - A string identifier for logging (e.g., "txId=tx1" or "expectedAddr=0x123")
+ * @param chainId - Chain ID to determine confirmation requirements
+ * @param provider - WebSocket provider for waiting for confirmations
+ * @param log - Logging function
+ * @returns Object with settled flag, success status, and transaction hash
+ */
+export const handleReceiptStatus = async (
+  receipt: TransactionReceipt,
+  txHash: string,
+  identifier: string,
+  chainId: `${string}:${string}`,
+  provider: WebSocketProvider,
+  log: (...args: unknown[]) => void,
+): Promise<{ settled: true; txHash: string; success: boolean } | null> => {
+  if (receipt.status === 1) {
+    // Success case: return immediately without waiting for any confirmations (0 blocks)
+    // Rationale: Even if a reorg occurs, the transaction will likely succeed again
+    // Waiting for confirmations in success cases would hurt performance unnecessarily
+    log(
+      `✅ SUCCESS: ${identifier} txHash=${txHash} block=${receipt.blockNumber}`,
+    );
+    return { settled: true, txHash, success: true };
+  }
+
+  if (receipt.status === 0) {
+    /**
+     * Transaction reverted - For failure cases, we wait for full finality
+     * confirmations to ensure the failure is permanent. A failure that reorgs
+     * into a success is very hard for our system to recover from, so we must
+     * be certain of the failure.
+     */
+    const confirmations = getConfirmationsRequired(chainId);
+    const confirmedReceipt = await provider.waitForTransaction(
+      txHash,
+      confirmations,
+    );
+    if (!confirmedReceipt) {
+      log(
+        `Transaction ${txHash} was not confirmed after waiting for ${confirmations} confirmations (possibly reorged out)`,
+      );
+      return null;
+    }
+
+    // Re-check status after confirmations in case of reorg
+    if (confirmedReceipt.status === 0) {
+      log(
+        `❌ REVERTED (${confirmations} confirmations): ${identifier} txHash=${txHash} block=${confirmedReceipt.blockNumber} - transaction failed`,
+      );
+      return { settled: true, txHash, success: false };
+    } else {
+      // Transaction was reorged and succeeded - treat as success
+      log(
+        `✅ SUCCESS (after reorg, ${confirmations} confirmations): ${identifier} txHash=${txHash} block=${confirmedReceipt.blockNumber}`,
+      );
+      return { settled: true, txHash, success: true };
+    }
+  }
+
+  return null;
 };
