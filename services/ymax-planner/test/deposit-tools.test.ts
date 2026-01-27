@@ -12,7 +12,6 @@ import {
   readableSteps,
   readableOrder,
 } from '@aglocal/portfolio-contract/test/supports.js';
-import { PROD_NETWORK } from '@aglocal/portfolio-contract/tools/network/prod-network.ts';
 import { TEST_NETWORK } from '@aglocal/portfolio-contract/tools/network/test-network.js';
 import type {
   NetworkSpec,
@@ -83,7 +82,7 @@ const handleDeposit = async (
     spectrumPoolIds?: Partial<Record<PoolKey, string>>;
     usdcTokensByChain?: Partial<Record<SupportedChain, string>>;
   },
-  network: NetworkSpec = PROD_NETWORK,
+  network: NetworkSpec = TEST_NETWORK,
 ) => {
   const querier = makePortfolioQuery(powers.readPublished, portfolioKey);
   const status = await querier.getPortfolioStatus();
@@ -557,8 +556,7 @@ async function singleSourceRebalanceSteps(scale: number) {
     ...plannerContext,
     currentBalances,
     targetAllocation,
-    // TODO: Refactor this test against a stable network dedicated to testing.
-    network: PROD_NETWORK,
+    network: TEST_NETWORK,
   });
   return plan;
 }
@@ -601,8 +599,7 @@ test('planRebalanceToAllocations regression - multiple sources', async t => {
     ...plannerContext,
     currentBalances,
     targetAllocation,
-    // TODO: Refactor this test against a stable network dedicated to testing.
-    network: PROD_NETWORK,
+    network: TEST_NETWORK,
   });
   t.snapshot(plan && readableSteps(plan.flow, depositBrand), 'steps');
   t.snapshot(plan?.order && readableOrder(plan.order), 'step dependencies');
