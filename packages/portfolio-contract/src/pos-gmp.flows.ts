@@ -189,7 +189,11 @@ const makeProvideEVMAccount = ({
         } as const;
         const destinationAddress = contracts[contractKey[mode]];
 
-        const sourceAddress = coerceAccountId(lca.getAddress());
+        const sourceAddress = coerceAccountId(
+          mode === 'createAndDeposit'
+            ? contractAccount.getAddress()
+            : lca.getAddress(),
+        );
         const watchTx = ctx.resolverClient.registerTransaction(
           txType,
           `${evmAccount.chainId}:${destinationAddress}`,
