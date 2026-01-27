@@ -149,7 +149,19 @@ export type FlowStep = {
   amount: NatAmount;
   src: AssetPlaceRef;
   dest: AssetPlaceRef;
-  phases?: Record<TxPhase, TxId[]>;
+  /**
+   * A single FlowStep can have an arbitrary number of associated pendingTxs
+   * entries. They are tracked by grouping them into "phases", containing an
+   * array of TxIds in order of execution.
+   *
+   * It is valid for the phases record
+   * - to be omitted,
+   * - to have one property,
+   * - to have no properties,
+   * - to have more than one property.
+   * and for each property, to have an array of zero or more TxIds.
+   */
+  phases?: Partial<Record<TxPhase, TxId[]>>;
   // XXX all parts: fee etc.
 };
 

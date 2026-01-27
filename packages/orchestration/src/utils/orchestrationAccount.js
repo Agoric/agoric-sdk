@@ -160,20 +160,20 @@ const finishIbcICA = (
 
   entry.src.length === 1 || Fail`expected source length 1 in ICA traffic entry`;
   entry.src[0] === 'ibc' || Fail`expected ibc source in ICA traffic entry`;
-  const src = [
+  const src = /** @type {const} */ ([
     ...entry.src,
     ['chain', srcChain],
     ['port', srcEndpoint.portID],
     ['channel', srcEndpoint.channelID],
-  ];
+  ]);
 
   entry.dst.length === 2 || Fail`expected dest length 2 in ICA traffic entry`;
   entry.dst[0] === 'ibc' || Fail`expected ibc dest in ICA traffic entry`;
-  const dst = [
+  const dst = /** @type {const} */ ([
     ...entry.dst,
     ['port', dstEndpoint.portID],
     ['channel', dstEndpoint.channelID],
-  ];
+  ]);
   return [
     attachGenericSequence(
       /** @type {TrafficEntry<'ibc'>} */ ({

@@ -6,8 +6,10 @@
  */
 
 import type { TypedPattern } from '@agoric/internal';
+import type { AccountId, HexAddress } from '@agoric/orchestration';
 import type { PublishedTx, TxId } from '@agoric/portfolio-api';
 import { TxStatus, TxType } from '@agoric/portfolio-api/src/resolver.js';
+import type { NetworkBinding, NetworkEndpoint } from '@agoric/vats';
 import { M } from '@endo/patterns';
 
 export type { TxId };
@@ -30,6 +32,19 @@ export const TransactionSettlementOfferArgsShape: TypedPattern<TransactionSettle
     {},
   );
 
+const TxStatusShape: TypedPattern<TxStatus> = M.or(...Object.values(TxStatus));
+
+/** CAIP-10 `${namespace}:${chainId}:${address}` */
+const AccountIdShape: TypedPattern<AccountId> = M.string();
+
+/** Smart contract `0x` hex address. */
+const HexAddressShape: TypedPattern<HexAddress> = M.string();
+
+const NetworkEndpointShape = <Proto extends keyof NetworkBinding>(
+  _proto: Proto = 'ibc' as Proto,
+): TypedPattern<NetworkEndpoint<Proto>> =>
+  M.arrayOf(M.or(M.string(), [M.string(), M.any()]));
+
 /**
  * Collection of all resolver offer argument shapes
  */
@@ -47,56 +62,71 @@ export const PENDING_TXS_NODE_KEY = 'pendingTxs';
  */
 export type PendingTx = { txId: TxId } & PublishedTx;
 
-export const PublishedTxShape: TypedPattern<PublishedTx> = M.or(
-  // CCTP_TO_EVM require amount
-  M.splitRecord(
+const optionalPublishedTxProps = harden({
+  // eslint-disable-next-line @agoric/group-jsdoc-imports
+  /** @deprecated Use {@link import('@agoric/portfolio-api').FlowStep['phases']} arrays instead. */
+  nextTxId: M.string(),
+  rejectionReason: M.string(),
+});
+
+const PublishedTxShapes: Record<string, TypedPattern<PublishedTx>> = harden({
+  // CCTP_TO_EVM requires amount
+  CCTP_TO_EVM: M.splitRecord(
     {
-      type: M.or(TxType.CCTP_TO_EVM),
-      destinationAddress: M.string(), // Format: `${chainId}:${chainId}:${remotAddess}`
-      status: TxStatus.PENDING,
+      type: TxType.CCTP_TO_EVM,
+      destinationAddress: AccountIdShape,
+      status: TxStatusShape,
       amount: M.nat(),
     },
-    {},
+    {
+      ...optionalPublishedTxProps,
+    },
     {},
   ),
   // GMP has optional amount
-  M.splitRecord(
+  GMP: M.splitRecord(
     {
       type: M.or(TxType.GMP),
-      destinationAddress: M.string(),
-      status: TxStatus.PENDING,
-      sourceAddress: M.string(),
+      destinationAddress: AccountIdShape,
+      status: TxStatusShape,
     },
     {
+      ...optionalPublishedTxProps,
+      sourceAddress: AccountIdShape, // not all GMP txs have this
       amount: M.nat(),
     },
     {},
   ),
   // MAKE_ACCOUNT requires expectedAddr (hex)
-  // destinationAddress is either depositFactory or factory (CAIP)
-  M.splitRecord(
+  MAKE_ACCOUNT: M.splitRecord(
     {
       type: M.or(TxType.MAKE_ACCOUNT),
-      destinationAddress: M.string(),
-      expectedAddr: M.string(),
-      // Older records don't have this field, in which case the address in the destinationAddress CAIP should be used
-      status: TxStatus.PENDING,
+      // destinationAddress is a CAIP-10 account_id identifying either
+      // depositFactory or factory.
+      destinationAddress: AccountIdShape,
+      expectedAddr: HexAddressShape,
+      status: TxStatusShape,
     },
+    // Older records don't have these fields
     {
-      sourceAddress: M.string(),
-      factoryAddr: M.string(),
+      ...optionalPublishedTxProps,
+      sourceAddress: AccountIdShape,
+      // If not available, the destinationAddress CAIP can be used
+      factoryAddr: HexAddressShape,
     },
     {},
   ),
-  M.splitRecord(
+  TRAFFIC: M.splitRecord(
     {
       type: M.or(TxType.IBC_FROM_AGORIC, TxType.IBC_FROM_REMOTE),
-      status: TxStatus.PENDING,
+      status: TxStatusShape,
     },
     {
+      ...optionalPublishedTxProps,
+      incomplete: true,
       op: M.string(),
-      src: M.arrayOf(M.or(M.string(), [M.string(), M.any()])),
-      dest: M.arrayOf(M.or(M.string(), [M.string(), M.any()])),
+      src: NetworkEndpointShape(),
+      dest: NetworkEndpointShape(),
       seq: M.or(
         M.nat(),
         M.number(),
@@ -107,6 +137,10 @@ export const PublishedTxShape: TypedPattern<PublishedTx> = M.or(
     },
     {},
   ),
+});
+
+export const PublishedTxShape: TypedPattern<PublishedTx> = M.or(
+  ...Object.values(PublishedTxShapes),
 );
 
 // Backwards compatibility
