@@ -1,5 +1,5 @@
 // @jessie-check
-/* eslint-disable @agoric/group-jsdoc-imports */
+/* eslint-disable @agoric/group-jsdoc-imports -- due to conflicting `start` values */
 
 import { AmountMath } from '@agoric/ertp';
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
@@ -16,14 +16,20 @@ import { makeGovernedTerms as makeGovernedVFTerms } from '../vaultFactory/params
  * @import {Amount, Brand, NatValue, Payment} from '@agoric/ertp';
  * @import {AdminFacet, Instance} from '@agoric/zoe';
  * @import {MapStore, SetStore} from '@agoric/store';
+ * @import {RelativeTime} from '@agoric/time';
+ * @import {WellKnownSpaces} from '@agoric/vats/src/core/types.js';
+ * @import {ChainBootstrapSpace} from '@agoric/vats/src/core/types.js';
+ * @import {PromiseSpaceOf} from '@agoric/vats/src/core/types.js';
+ * @import {CommitteeElectorateCreatorFacet} from '@agoric/governance/src/committee.js';
+ * @import {PeriodicFeeCollector} from '../feeDistributor.js';
  */
 
 // Duplicated from vaultFactory/types-ambient.js to solve a CI problem.
 // Not worth refactoring to DRY because vaultFactory is going away.
 /**
  * @typedef {object} InterestTiming
- * @property {import('@agoric/time').RelativeTime} chargingPeriod in seconds
- * @property {import('@agoric/time').RelativeTime} recordingPeriod in seconds
+ * @property {RelativeTime} chargingPeriod in seconds
+ * @property {RelativeTime} recordingPeriod in seconds
  */
 
 const trace = makeTracer('RunEconBehaviors', true);
@@ -57,19 +63,16 @@ export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
  */
 
 /**
- * @typedef {import('@agoric/vats/src/core/types.js').WellKnownSpaces & import('@agoric/vats/src/core/types.js').ChainBootstrapSpace & EconomyBootstrapSpace} EconomyBootstrapPowers
+ * @typedef {WellKnownSpaces & ChainBootstrapSpace & EconomyBootstrapSpace} EconomyBootstrapPowers
  *
  *
- * @typedef {import('@agoric/vats/src/core/types.js').PromiseSpaceOf<{
+ * @typedef {PromiseSpaceOf<{
  *   economicCommitteeKit: CommitteeStartResult;
- *   economicCommitteeCreatorFacet: import('@agoric/governance/src/committee.js').CommitteeElectorateCreatorFacet;
+ *   economicCommitteeCreatorFacet: CommitteeElectorateCreatorFacet;
  *   feeDistributorKit: StartedInstanceKit<
  *     typeof import('../feeDistributor.js').start
  *   >;
- *   periodicFeeCollectors: MapStore<
- *     number,
- *     import('../feeDistributor.js').PeriodicFeeCollector
- *   >;
+ *   periodicFeeCollectors: MapStore<number, PeriodicFeeCollector>;
  *   psmKit: MapStore<Brand, PSMKit>;
  *   anchorBalancePayments: MapStore<Brand, Payment<'nat'>>;
  *   econCharterKit: EconCharterStartResult;
