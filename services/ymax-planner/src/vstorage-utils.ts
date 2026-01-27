@@ -12,7 +12,7 @@ import {
 import { Fail, q } from '@endo/errors';
 
 // #region vstorage paths, cf. golang/cosmos/x/vstorage/types/path_keys.go
-// TODO: Promote elsewhere, maybe @agoric/internal?
+// XXX: Promote elsewhere, maybe @agoric/internal?
 
 export const EncodedKeySeparator = '\x00';
 export const PathSeparator = '.';

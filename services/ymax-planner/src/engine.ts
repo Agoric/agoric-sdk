@@ -646,8 +646,9 @@ export const processInitialPendingTransactions = async (
       () => txPowers.makeAbortController(),
     );
 
-    // TODO: Optimize blockchain scanning by reusing state across transactions.
-    // For details, see: https://github.com/Agoric/agoric-sdk/issues/11945
+    // XXX: This should optimize blockchain scanning by reusing state across
+    // transactions. For details, see
+    // https://github.com/Agoric/agoric-sdk/issues/11945
     void handlePendingTxFn(tx, {
       ...txPowers,
       txTimestampMs: timestampMs,
@@ -741,8 +742,6 @@ export const startEngine = async (
     portfolioKeysResp.result.children,
   ];
 
-  // TODO: Retry when data is associated with a block height lower than that of
-  //       the first result from `responses`.
   const portfolioKeyForDepositAddr = new Map() as Map<Bech32Address, string>;
   const processPortfolioPowers: ProcessPortfolioPowers = Object.freeze({
     ...powers,

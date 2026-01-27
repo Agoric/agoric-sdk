@@ -545,7 +545,7 @@ async function singleSourceRebalanceSteps(scale: number) {
 }
 
 test('planRebalanceToAllocations regression - single source, 2x', async t => {
-  // TODO: For human comprehensibility, adopt something like `readableSteps`
+  // XXX: For human comprehensibility, adopt something like `readableSteps`
   // from packages/portfolio-contract/test/rebalance.test.ts.
   const plan = await singleSourceRebalanceSteps(2);
   t.snapshot(plan);
