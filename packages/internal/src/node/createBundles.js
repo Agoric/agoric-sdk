@@ -24,7 +24,7 @@ export const createBundlesFromAbsolute = async sourceBundles => {
     }
     const bundle = match[1];
 
-    const args = cacheToArgs.get(cache) || ['--cache-js', cache];
+    const args = cacheToArgs.get(cache) || ['--cache-js', cache, '--condition', 'development'];
     args.push('--elide-comments');
     args.push(srcPath, bundle);
     cacheToArgs.set(cache, args);

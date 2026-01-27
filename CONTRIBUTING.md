@@ -41,6 +41,20 @@ including [unit
 testing](https://github.com/Agoric/agoric-sdk/wiki/agoric-sdk-unit-testing)
 etc.
 
+## Development Mode
+
+The Agoric SDK uses Node's conditional exports to support development without build steps:
+
+- **TypeScript sources**: Packages use TypeScript (`.ts`) files in `src/` for type definitions
+- **Conditional resolution**: With `--conditions=development`, imports resolve to source JavaScript files (`.js`) in `src/`
+- **Type resolution**: TypeScript reads type information from `.ts` files via companion type declaration files
+- **No build required**: During development and testing, packages resolve from `src/` directly without compilation
+- **Publishing**: Existing `prepack` scripts compile `.d.ts` files when packages are published to npm
+
+Test commands automatically run with the development condition, so imports resolve correctly without a build step.
+
+For more details on the TypeScript setup, see the [Type System documentation](https://github.com/Agoric/agoric-sdk/wiki/Type-System).
+
 ## Landing pull requests
 
 The agreement so far is for every change to have a [conventional commit

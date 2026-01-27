@@ -26,4 +26,4 @@ export * from './typeCheck.js';
 export * from './typeGuards.js';
 
 // eslint-disable-next-line import/export -- just types
-export * from './types-index.js';
+export * from './types.js';
