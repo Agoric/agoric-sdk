@@ -1,5 +1,42 @@
 import type { WebSocketProvider } from 'ethers';
 
+//#region Alchemy alchemy_minedTransactions subscription types
+// See https://docs.alchemy.com/reference/alchemy-minedtransactions
+export type AlchemyMinedTransaction = {
+  blockHash: string;
+  blockNumber: string;
+  hash: string;
+  from: string;
+  gas: string;
+  gasPrice: string;
+  input: string;
+  nonce: string;
+  to: string | null;
+  transactionIndex: string;
+  type: string;
+  value: string;
+  // ECDSA signature fields
+  r?: string;
+  s?: string;
+  v?: string;
+  // EIP-1559 fields
+  maxPriorityFeePerGas?: string;
+  maxFeePerGas?: string;
+};
+
+export type AlchemySubscriptionMessage = {
+  jsonrpc: '2.0';
+  method: 'eth_subscription';
+  params: {
+    result: {
+      removed: boolean;
+      transaction: AlchemyMinedTransaction;
+    };
+    subscription: string;
+  };
+};
+//#endregion
+
 export type RetryOptions = {
   /** Maximum number of retry attempts */
   limit: number;

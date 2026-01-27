@@ -20,45 +20,9 @@ import {
 import {
   fetchReceiptWithRetry,
   DEFAULT_RETRY_OPTIONS,
+  type AlchemySubscriptionMessage,
   type RetryOptions,
 } from './watcher-utils.ts';
-
-//#region Alchemy alchemy_minedTransactions subscription types
-// See https://docs.alchemy.com/reference/alchemy-minedtransactions
-type AlchemyMinedTransaction = {
-  blockHash: string;
-  blockNumber: string;
-  hash: string;
-  from: string;
-  gas: string;
-  gasPrice: string;
-  input: string;
-  nonce: string;
-  to: string | null;
-  transactionIndex: string;
-  type: string;
-  value: string;
-  // ECDSA signature fields
-  r?: string;
-  s?: string;
-  v?: string;
-  // EIP-1559 fields
-  maxPriorityFeePerGas?: string;
-  maxFeePerGas?: string;
-};
-
-type AlchemySubscriptionMessage = {
-  jsonrpc: '2.0';
-  method: 'eth_subscription';
-  params: {
-    result: {
-      removed: boolean;
-      transaction: AlchemyMinedTransaction;
-    };
-    subscription: string;
-  };
-};
-//#endregion
 
 const MULTICALL_STATUS_SIGNATURE = ethers.id(
   'MulticallStatus(string,bool,uint256)',
