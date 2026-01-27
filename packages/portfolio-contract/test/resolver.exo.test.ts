@@ -192,7 +192,7 @@ test('resolver creates correct types for different TxTypes', async t => {
     'eip155:42161:0x8B3f9b3d2e0c9c7e8f9d3e0c9c7e8f9d3e0c9c7e',
     undefined,
     '0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
-    undefined,
+    'cosmos:agoric-3:agoric1mockaccountaddress',
     '0x8B3f9b3d2e0c9c7e8f9d3e0c9c7e8f9d3e0c9c7e',
   );
 
@@ -240,6 +240,7 @@ test('resolver creates correct types for different TxTypes', async t => {
         'eip155:42161:0x8B3f9b3d2e0c9c7e8f9d3e0c9c7e8f9d3e0c9c7e',
       status: TxStatus.PENDING,
       expectedAddr: '0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
+      sourceAddress: 'cosmos:agoric-3:agoric1mockaccountaddress',
       factoryAddr: '0x8B3f9b3d2e0c9c7e8f9d3e0c9c7e8f9d3e0c9c7e',
     },
     'MAKE_ACCOUNT transaction has correct type and excludes amount',

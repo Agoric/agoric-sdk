@@ -189,13 +189,13 @@ const makeProvideEVMAccount = ({
         } as const;
         const destinationAddress = contracts[contractKey[mode]];
 
-        // XXX: register before sending?
+        const sourceAddress = coerceAccountId(lca.getAddress());
         const watchTx = ctx.resolverClient.registerTransaction(
           txType,
           `${evmAccount.chainId}:${destinationAddress}`,
           undefined,
           evmAccount.remoteAddress,
-          undefined,
+          sourceAddress,
           contracts.factory,
         );
         txId = watchTx.txId;
