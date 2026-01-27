@@ -332,7 +332,7 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
   watch: async (ctx, tx, log, opts) => {
     await null;
 
-    const { txId, expectedAddr, destinationAddress } = tx;
+    const { txId, expectedAddr, factoryAddr, destinationAddress } = tx;
     const logPrefix = `[${txId}]`;
 
     if (opts.signal?.aborted) {
@@ -346,11 +346,8 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
 
     // Parse destinationAddress format: 'eip155:42161:0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092'
     assert(destinationAddress, `${logPrefix} Missing destinationAddress`);
-    const {
-      namespace,
-      reference,
-      accountAddress: factoryAddr,
-    } = parseAccountId(destinationAddress);
+    const { namespace, reference, accountAddress } =
+      parseAccountId(destinationAddress);
     const caipId: CaipChainId = `${namespace}:${reference}`;
 
     const provider =
@@ -358,7 +355,7 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
       Fail`${logPrefix} No EVM provider for chain: ${caipId}`;
 
     const watchArgs = {
-      factoryAddr: factoryAddr as `0x${string}`,
+      factoryAddr: (factoryAddr || accountAddress) as `0x${string}`,
       provider,
       expectedAddr: expectedAddr as `0x${string}`,
       log: (msg, ...args) => log(logPrefix, msg, ...args),

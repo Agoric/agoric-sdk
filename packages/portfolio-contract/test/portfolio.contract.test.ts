@@ -1953,7 +1953,7 @@ test('evmHandler.deposit (existing Arbitrum) completes a deposit flow', async t 
   t.truthy(lcaAddress, 'LCA address exists');
   const predictedExistingSpender = predictWalletAddress({
     owner: lcaAddress!,
-    factoryAddress: contractsMock[evm].depositFactory,
+    factoryAddress: contractsMock[evm].factory,
     gatewayAddress: contractsMock[evm].gateway,
     gasServiceAddress: contractsMock[evm].gasService,
     walletBytecode: hexToBytes('1234'), // matches contract-setup.ts

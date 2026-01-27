@@ -130,11 +130,7 @@ const makeProvideEVMAccount = ({
 
     const predictAddress = (owner: Bech32Address) => {
       const contracts = ctx.contracts[chainName];
-      const contractKey = {
-        makeAccount: 'factory',
-        createAndDeposit: 'depositFactory',
-      } as const;
-      const factoryAddress = contracts[contractKey[mode]];
+      const factoryAddress = contracts.factory;
       traceChain('factory', mode, factoryAddress);
       assert(factoryAddress);
       const remoteAddress = predictWalletAddress({
@@ -208,6 +204,8 @@ const makeProvideEVMAccount = ({
           `${evmAccount.chainId}:${targetAddress}`,
           undefined,
           evmAccount.remoteAddress,
+          undefined,
+          factoryAddress,
         );
         txId = watchTx.txId;
         setAppendedTxIds(opts.orchOpts?.progressTracker, [txId]);

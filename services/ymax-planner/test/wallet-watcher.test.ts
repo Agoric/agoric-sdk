@@ -68,6 +68,7 @@ test('handlePendingTx processes MAKE_ACCOUNT transaction successfully', async t 
     status: 'pending',
     destinationAddress: `${chain}:${factoryAddress}`,
     expectedAddr: expectedWalletAddr,
+    factoryAddr: factoryAddress,
   };
 
   setTimeout(() => {
@@ -121,6 +122,7 @@ test('handlePendingTx logs timeout on MAKE_ACCOUNT transaction with no matching 
     status: 'pending',
     destinationAddress: `${chain}:${factoryAddress}`,
     expectedAddr: expectedWalletAddr,
+    factoryAddr: factoryAddress,
   };
 
   setTimeout(() => {
@@ -179,6 +181,7 @@ test('handlePendingTx ignores non-matching wallet addresses', async t => {
     status: 'pending',
     destinationAddress: `${chain}:${factoryAddress}`,
     expectedAddr: expectedWalletAddr,
+    factoryAddr: factoryAddress,
   };
 
   // Emit wrong address first

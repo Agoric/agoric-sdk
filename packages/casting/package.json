@@ -45,6 +45,9 @@
     "tsd": "^0.33.0",
     "ws": "^7.2.0"
   },
+  "files": [
+    "src"
+  ],
   "publishConfig": {
     "access": "public"
   },

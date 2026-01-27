@@ -65,9 +65,7 @@
     "import-meta-resolve": "^4.1.0"
   },
   "files": [
-    "scripts",
-    "src/",
-    "NEWS.md"
+    "src"
   ],
   "ava": {
     "files": [
