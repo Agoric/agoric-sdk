@@ -2,6 +2,11 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import {
+  TxStatus,
+  TxType,
+  type PublishedTx,
+} from '@agoric/portfolio-api/src/resolver.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { matches, mustMatch } from '@endo/patterns';
 import { makeOfferArgsShapes } from '../src/type-guards-steps.ts';
@@ -15,6 +20,7 @@ import {
   PositionStatusShape,
   type StatusFor,
 } from '../src/type-guards.ts';
+import { PublishedTxShape } from '../src/resolver/types.ts';
 
 const usdcKit = withAmountUtils(makeIssuerKit('USDC'));
 const usdc = usdcKit.make;
@@ -492,5 +498,70 @@ test('portfolio node includes flowsRunning, nobleForwardingAddress', t => {
   }
   for (const [name, position] of entries(failCases)) {
     t.false(matches(position, PortfolioStatusShapeExt), `fail: ${name}`);
+  }
+});
+
+test('published tx shape accepts nextTxId field', t => {
+  const cctp = {
+    type: TxType.CCTP_TO_EVM,
+    amount: 1n,
+    destinationAddress: 'eip155:42161:0x742d35Cc6635C0532925a3b8D9e5eb2b64',
+    nextTxId: 'tx2',
+  } as const;
+
+  const ibc = {
+    type: TxType.IBC_FROM_AGORIC,
+    dest: [
+      'ibc',
+      ['chain', 'cosmos:noble-1'],
+      ['port', 'transfer'],
+      ['channel', 'channel-21'],
+    ],
+    op: 'transfer',
+    seq: 2,
+    src: [
+      'ibc',
+      ['chain', 'cosmos:agoric-3'],
+      ['port', 'transfer'],
+      ['channel', 'channel-14'],
+    ],
+    nextTxId: 'tx3',
+  } as const;
+
+  const cases = harden({
+    cctpPending: {
+      ...cctp,
+      status: TxStatus.PENDING,
+    },
+    cctpSuccess: {
+      ...cctp,
+      status: TxStatus.SUCCESS,
+    },
+    ibcSetup: {
+      ...ibc,
+      status: TxStatus.SETUP,
+      incomplete: true,
+      seq: { status: 'pending' },
+    },
+    ibcPending: {
+      ...ibc,
+      status: TxStatus.PENDING,
+    },
+    ibcSuccess: {
+      ...ibc,
+      status: TxStatus.SUCCESS,
+    },
+    ibcFailure: {
+      ...ibc,
+      status: TxStatus.FAILED,
+      rejectionReason: 'Some IBC failure reason',
+    },
+  } satisfies Record<string, PublishedTx>);
+
+  for (const [name, specimen] of Object.entries(cases)) {
+    t.notThrows(
+      () => mustMatch(specimen, PublishedTxShape),
+      `${name} with nextTxId should match shape`,
+    );
   }
 });

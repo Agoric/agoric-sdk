@@ -247,9 +247,8 @@ test('resolver creates correct types for different TxTypes', async t => {
   );
 });
 
-// XXX: figure out why failing settlement crashes the entire transaction.
-test.skip('resolver sets status to SUCCESS or FAILED on settlement', async t => {
-  const { nodeUpdates, makeResolverKit } = t.context;
+test('resolver sets status to SUCCESS or FAILED on settlement', async t => {
+  const { nodeUpdates, makeResolverKit, vowTools } = t.context;
 
   const { client, service } = makeResolverKit();
 
@@ -259,11 +258,13 @@ test.skip('resolver sets status to SUCCESS or FAILED on settlement', async t => 
     'eip155:1:0x742d35Cc6631C0532925a3b8D7389D026f2077c3',
     100n,
   );
+  const whenSuccessTxResult = vowTools.when(successTx.result);
 
   const failedTx = client.registerTransaction(
     TxType.GMP,
     'eip155:137:0x9e1028F5F1D5eDE59748FFceC5532509976840E0',
   );
+  const whenFailedTxResult = vowTools.when(failedTx.result);
 
   await eventLoopIteration();
 
@@ -321,11 +322,19 @@ test.skip('resolver sets status to SUCCESS or FAILED on settlement', async t => 
     {
       destinationAddress:
         'eip155:137:0x9e1028F5F1D5eDE59748FFceC5532509976840E0',
+      rejectionReason: 'Network timeout',
       type: TxType.GMP,
       status: TxStatus.FAILED,
     },
     'second transaction settles as failed with correct data',
   );
+
+  await t.throwsAsync(
+    whenFailedTxResult,
+    { message: /Network timeout/ },
+    'failed tx promise rejects with reason',
+  );
+  await t.notThrowsAsync(whenSuccessTxResult, 'successful tx promise resolves');
 });
 
 test('resolver can find incoming CCTP txs by amount', async t => {
