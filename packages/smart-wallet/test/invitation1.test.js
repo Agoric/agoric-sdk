@@ -26,6 +26,11 @@ import { prepareSmartWallet } from '../src/smartWallet.js';
  * @import {BrandDescriptorRegistry} from '../src/smartWallet.js';
  * @import {Bank} from '@agoric/vats/src/vat-bank.js';
  * @import {BridgeAction} from '../src/smartWallet.js';
+ * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Issuer} from '@agoric/ertp';
+ * @import {MapStore} from '@agoric/store';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
  */
 
 /** @type {TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */
@@ -138,10 +143,14 @@ const makeTestContext = async t => {
   const { brand: brandSpace, issuer: issuerSpace } = bootKit.powers;
   /** @type {Issuer<'set'>} */
   // @ts-expect-error cast
-  const invitationIssuer = await issuerSpace.consume.Invitation;
+  const invitationIssuer = /** @type {unknown} */ (
+    await issuerSpace.consume.Invitation
+  );
   /** @type {Brand<'set'>} */
   // @ts-expect-error cast
-  const invitationBrand = await brandSpace.consume.Invitation;
+  const invitationBrand = /** @type {unknown} */ (
+    await brandSpace.consume.Invitation
+  );
   const invitationDisplayInfo = await E(invitationBrand).getDisplayInfo();
   const publicMarshaller = await E(board).getPublishingMarshaller();
   const makeSmartWallet = prepareSmartWallet(swBaggage, {
@@ -164,7 +173,9 @@ test.serial('handle failure to create invitation', async t => {
   const { chainStorage, board } = powers.consume;
   /** @type {Issuer<'set', InvitationDetails>} */
   // @ts-expect-error cast
-  const invitationIssuer = powers.issuer.consume.Invitation;
+  const invitationIssuer = /** @type {unknown} */ (
+    powers.issuer.consume.Invitation
+  );
   const address = 'agoric1234';
 
   // @ts-expect-error Test setup ensures that chainStorage resolution is not undefined. (see #8247)

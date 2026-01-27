@@ -241,7 +241,8 @@ export const privateArgsShape: TypedPattern<PortfolioPrivateArgs> =
     {},
   );
 
-export const meta: ContractMeta = {
+export const meta: ContractMeta<typeof start> = {
+  // @ts-expect-error splitRecord loses the property keys
   privateArgsShape,
 };
 harden(meta);

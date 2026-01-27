@@ -10,6 +10,7 @@ import type {
 } from '@agoric/fast-usdc/src/types.js';
 import { M } from '@endo/patterns';
 import { PendingTxShape } from '@agoric/fast-usdc/src/type-guards.js';
+import type { MapStore } from '@agoric/store';
 import { makeSettlementMatcher } from '../../src/utils/settlement-matcher.ts';
 import { MockCctpTxEvidences } from '../fixtures.ts';
 

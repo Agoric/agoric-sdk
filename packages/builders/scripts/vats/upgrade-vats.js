@@ -24,6 +24,7 @@ export const upgradeVatsProposalBuilder = async (
 
 /**
  * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {VatSourceRef} from '@agoric/vats/src/core/types.js';
  */
 
 /** @type {CoreEvalBuilder} */

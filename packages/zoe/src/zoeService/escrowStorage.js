@@ -13,6 +13,11 @@ import { cleanKeywords } from '../cleanProposal.js';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {CreatePurse, DepositPayments, ProvideLocalPurse} from './internal-types.js';
  * @import {WithdrawPayments} from '../internal-types.js';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Purse} from '@agoric/ertp';
+ * @import {Payment} from '@agoric/ertp';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

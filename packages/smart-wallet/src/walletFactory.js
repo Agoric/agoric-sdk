@@ -24,6 +24,7 @@ import { shape } from './typeGuards.js';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {MapStore} from '@agoric/swingset-liveslots';
  * @import {NameHub} from '@agoric/vats';
+ * @import {IterableEachTopic} from '@agoric/notifier';
  * @import {SmartWallet, SmartWalletTestJig} from './smartWallet.js';
  * @import {NameAdmin} from '@agoric/vats';
  * @import {Petname} from './types.js';
@@ -34,6 +35,11 @@ import { shape } from './typeGuards.js';
  * @import {WalletBridgeMsg} from './types.js';
  * @import {Bank} from '@agoric/vats/src/vat-bank.js';
  * @import {TestJigKit} from '@agoric/zoe/src/contractSupport/testJigHelpers.js';
+ * @import {ZCF} from '@agoric/zoe';
+ * @import {ERef} from '@agoric/vow';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {DisplayInfo} from '@agoric/ertp';
+ * @import {Issuer} from '@agoric/ertp';
  */
 
 const trace = makeTracer('WltFct');

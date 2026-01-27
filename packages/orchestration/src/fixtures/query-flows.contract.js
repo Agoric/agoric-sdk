@@ -13,6 +13,7 @@ import * as flows from './query-flows.flows.js';
  * @import {Remote} from '@agoric/internal';
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  * @import {OrchestrationPowers, OrchestrationTools} from '../utils/start-helper.js';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 /**

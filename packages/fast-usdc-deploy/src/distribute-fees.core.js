@@ -11,6 +11,7 @@ import { fromExternalConfig } from './utils/config-marshal.js';
  * @import {CopyRecord} from '@endo/pass-style'
  * @import {BootstrapManifestPermit} from '@agoric/vats/src/core/lib-boot.js'
  * @import {LegibleCapData} from './utils/config-marshal.js'
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
  */
 
 /**

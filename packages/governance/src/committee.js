@@ -17,12 +17,16 @@ import { ElectorateCreatorI, ElectoratePublicI } from './typeGuards.js';
 import { prepareVoterKit } from './voterKit.js';
 
 /**
+ * @import {Handle} from '@agoric/zoe';
  * @import {Remote} from '@agoric/internal';
+ * @import {StoredPublishKit} from '@agoric/notifier';
  * @import {MapStore} from '@agoric/swingset-liveslots';
  * @import {ContractMeta, Invitation, ZCF} from '@agoric/zoe';
  * @import {ElectorateCreatorFacet, CommitteeElectoratePublic, QuestionDetails, OutcomeRecord, AddQuestion} from './types.js';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {QuestionRecord} from './electorateTools.js';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 /**

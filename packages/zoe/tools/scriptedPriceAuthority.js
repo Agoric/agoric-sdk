@@ -11,9 +11,13 @@ import {
 
 /**
  * @import {Brand} from '@agoric/ertp';
+ * @import {Notifier} from '@agoric/notifier';
  * @import {TimerService, RelativeTime} from '@agoric/time';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery} from '@agoric/zoe/tools/types.js';
  * @import {Timestamp} from '@agoric/time';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {IssuerKit} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

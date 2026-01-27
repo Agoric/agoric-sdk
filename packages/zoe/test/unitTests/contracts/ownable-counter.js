@@ -4,6 +4,7 @@ import { prepareOwnable } from '../../../src/contractSupport/prepare-ownable.js'
 
 /**
  * @import {Baggage} from '@agoric/vat-data';
+ * @import {ZCF} from '@agoric/zoe';
  */
 
 /**

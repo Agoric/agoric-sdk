@@ -19,6 +19,7 @@ import { addSubtract } from '../contractSupport.js';
 /**
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  * @import {Ratio} from '@agoric/ertp';
+ * @import {Amount} from '@agoric/ertp';
  */
 
 /**

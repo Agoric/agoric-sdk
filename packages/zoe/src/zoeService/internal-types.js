@@ -1,5 +1,4 @@
 // @jessie-check
-/// <reference types="@agoric/zoe/exported.js" />
 
 // Make this a module
 export {};
@@ -11,14 +10,17 @@ export {};
  * @import {GetPublicFacet} from './utils.js';
  * @import {GetTerms} from './utils.js';
  * @import {CreateVatResults} from '@agoric/swingset-vat';
+ * @import {Installation, Instance, IssuerKeywordRecord, ProposalRecord, ZCF} from '@agoric/zoe';
  * @import {AnyTerms, BrandKeywordRecord, InvitationHandle} from '../types.ts';
+ * @import {Brand, Issuer, IssuerKit, Purse} from '@agoric/ertp';
  * @import {MakeZoeMint} from '../internal-types.js';
  * @import {RegisterFeeMint} from '../internal-types.js';
- * @import {ZoeInstanceAdminMakeInvitation} from '../internal-types.js';
+ * @import {InstanceAdmin, IssuerRecords, ZoeInstanceAdminMakeInvitation} from '../internal-types.js';
  * @import {GetAssetKindByBrand} from '../internal-types.js';
  * @import {Pattern} from '@agoric/swingset-liveslots';
  * @import {BundleID} from '@agoric/swingset-vat/src/controller/bundle-handler.js';
  * @import {Allocation} from '../types-index.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

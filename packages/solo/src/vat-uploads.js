@@ -12,3 +12,5 @@ export function buildRootObject() {
 
   return Far('root', { getUploads });
 }
+
+/** @typedef {ReturnType<typeof buildRootObject>} UploadsVat */

@@ -23,6 +23,13 @@ import { passStyleOf } from '@endo/pass-style';
 import type { ExecutionContext, TestFn } from 'ava';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
+import type { ZoeService } from '@agoric/zoe';
+import type {
+  WellKnownSpaces,
+  BootstrapSpace,
+  PromiseSpaceOf,
+} from '@agoric/vats/src/core/types.js';
+import type { StartedInstanceKit } from '@agoric/zoe/src/zoeService/utils.js';
 import {
   prepareContractControl,
   type ContractControl,
@@ -342,7 +349,6 @@ test.serial('create from kit', async t => {
   const contractKits = await space.consume.contractKits;
   const instance = await E(agoricNames).lookup('instance', contractName);
 
-  // @ts-expect-error cast from StartedInstanceKit<ContractStartFunction>
   const kit = contractKits.get(instance) as StartedInstanceKit<YMaxStartFn>;
   const initialPrivateArgs = common.commonPrivateArgs;
 

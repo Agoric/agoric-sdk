@@ -7,6 +7,10 @@ import {
   makeLoggingPresence,
 } from '@agoric/smart-wallet/src/marshal-contexts.js';
 
+/**
+ * @import {Payment} from '@agoric/ertp';
+ */
+
 const capData1 = {
   body: '#[["applyMethod","$0.Alleged: purse.actions","deposit",["$1.Alleged: payment"]],["applyFunction","$0",[1,"thing"]]]',
   slots: ['purse:1', 'payment:1'],

@@ -9,6 +9,7 @@ import { defineDurableHandle } from '../makeHandle.js';
 /**
  * @import {LegacyWeakMap, WeakMapStore} from '@agoric/store';
  * @import {MapStore} from '@agoric/swingset-liveslots';
+ * @import {OfferHandler} from '@agoric/zoe';
  * @import {InvitationHandle} from '../types.ts';
  */
 

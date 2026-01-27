@@ -1,4 +1,3 @@
-// @ts-nocheck
 /* eslint-disable @agoric/group-jsdoc-imports */
 
 import { Fail } from '@endo/errors';
@@ -19,8 +18,9 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { withAmountUtils } from '../../supports.js';
 
 /**
- * @import {FeeMintAccess} from '@agoric/zoe';
+ * @import {FeeMintAccess, Installation, ZoeService} from '@agoric/zoe';
  * @import {MetricsNotification} from '../../../src/reserve/assetReserveKit.js';
+ * @import {Subscriber, UpdateRecord} from '@agoric/notifier';
  * @import {PuppetContractGovernorKit} from '@agoric/governance/tools/puppetContractGovernor.js';
  * @import {start} from '../../../src/reserve/assetReserve.js';
  * @import {StartParams} from '@agoric/zoe/src/zoeService/utils.js';
@@ -55,7 +55,7 @@ export const buildRootObject = async () => {
    */
   let metricsRecord;
 
-  /** @type {VatAdminSvc} */
+  /** @type {import('@agoric/swingset-vat').VatAdminSvc} */
   let vatAdmin;
 
   let initialPoserInvitation;
@@ -107,7 +107,7 @@ export const buildRootObject = async () => {
     namesByAddressAdmin,
   };
 
-  /** @param {Amount<'nat'>} amt */
+  /** @param {import('@agoric/ertp').Amount<'nat'>} amt */
   const addCollateral = async amt => {
     const arPublicFacet = await E(governorFacets.creatorFacet).getPublicFacet();
     const seat = E(zoeService).offer(

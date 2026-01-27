@@ -2,7 +2,13 @@
 
 import { prepareIssuerKit } from '@agoric/ertp';
 
-/** @import {Baggage} from '@agoric/vat-data' */
+/**
+ * @import {Baggage} from '@agoric/vat-data'
+ * @import {AssetKind} from '@agoric/ertp'
+ * @import {ZCF} from '@agoric/zoe';
+ * @import {ContractMeta} from '@agoric/zoe';
+ * @import {DisplayInfo} from '@agoric/ertp';
+ */
 
 /**
  * NOTE: "keyword" connotes initial caps constraint, which doesn't apply here.

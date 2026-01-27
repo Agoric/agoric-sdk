@@ -4,6 +4,7 @@ import { Far } from '@endo/far';
 
 /**
  * @import {VowResolver} from '@agoric/vow';
+ * @import {MapStore} from '@agoric/store';
  */
 
 export const buildRootObject = (_vatPowers, _args, baggage) => {

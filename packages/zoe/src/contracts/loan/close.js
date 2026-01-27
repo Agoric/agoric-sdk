@@ -6,6 +6,7 @@ import { Fail } from '@endo/errors';
 import { assertProposalShape } from '../../contractSupport/index.js';
 
 /**
+ * @import {OfferHandler} from '@agoric/zoe';
  * @import {MakeCloseLoanInvitation} from './types-ambient.js';
  */
 

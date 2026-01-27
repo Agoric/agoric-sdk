@@ -1,6 +1,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { Far } from '@endo/far';
 import { heapVowE as E } from '@agoric/vow/vat.js';
+import type { OfferHandler } from '@agoric/zoe';
 import { commonSetup } from '../supports.js';
 import { preparePortfolioHolder } from '../../src/exos/portfolio-holder-kit.js';
 import { prepareMakeTestLOAKit } from './make-test-loa-kit.js';

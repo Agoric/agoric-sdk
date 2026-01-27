@@ -25,6 +25,7 @@ import { headValue, sequenceCurrents, withAmountUtils } from '../supports.js';
  * @import {PurseInvitationSpec} from '@agoric/smart-wallet/src/invitations.js';
  * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {ContinuingInvitationSpec} from '@agoric/smart-wallet/src/invitations.js';
+ * @import {Instance, InvitationAmount} from '@agoric/zoe';
  */
 
 /**

@@ -5,6 +5,8 @@ import { E } from '@endo/far';
 
 /**
  * @import {start} from '../../src/examples/stake-bld.contract.js';
+ * @import {Installation} from '@agoric/zoe';
+ * @import {BootstrapPowers, StartUpgradableOpts} from '@agoric/vats/src/core/types.js';
  */
 
 const trace = makeTracer('StartStakeBld', true);

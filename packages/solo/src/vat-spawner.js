@@ -11,3 +11,5 @@ function buildRootObject() {
 }
 harden(buildRootObject);
 export { buildRootObject };
+
+/** @typedef {ReturnType<typeof buildRootObject>} SpawnerVat */

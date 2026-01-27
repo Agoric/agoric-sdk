@@ -1,7 +1,5 @@
 // @jessie-check
 
-/// <reference types="@agoric/store/exported.js" />
-
 // XXX package factoring debt
 
 // Ensure this is a module.

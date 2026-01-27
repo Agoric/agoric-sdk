@@ -94,6 +94,7 @@ import {
  * @import {AnyType, MsgDepositForBurnType, MsgUndelegateResponseType} from '../utils/codecs.js';
  * @import {SliceDescriptor} from '../utils/orchestrationAccount.js';
  * @import {ProgressReport} from '../utils/progress.js';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 /**

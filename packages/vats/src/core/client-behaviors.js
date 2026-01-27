@@ -7,6 +7,10 @@ import { registerNetworkProtocols } from '../proposals/network-proposal.js';
 import { makeVatsFromBundles } from './basic-behaviors.js';
 
 /**
+ * @import {ERef} from '@agoric/vow';
+ */
+
+/**
  * @typedef SoloVats
  * @property {ERef<
  *   ReturnType<
@@ -41,10 +45,10 @@ function makeVattpFrom(vats) {
 // be in the DApp environment (or only in end-user), but we're not yet
 // making a distinction, so the user also gets them.
 /**
- * @param {SoloVats & SwingsetVats} vats
- * @param {SoloDevices} devices
+ * @param {SoloVats & import('./types.ts').SwingsetVats} vats
+ * @param {import('./types.ts').SoloDevices} devices
  * @param {ERef<import('@agoric/swingset-vat').VatAdminSvc>} vatAdminSvc
- * @param {{ [prop: string]: any; D: DProxy }} vatPowers
+ * @param {{ [prop: string]: any; D: import("@agoric/swingset-vat").DProxy }} vatPowers
  */
 async function createLocalBundle(vats, devices, vatAdminSvc, vatPowers) {
   // This will eventually be a vat spawning service. Only needed by dev
@@ -102,10 +106,10 @@ async function createLocalBundle(vats, devices, vatAdminSvc, vatPowers) {
 }
 
 /**
- * @param {BootDevices<SoloDevices> &
- *   BootstrapSpace & {
- *     vatParameters: BootstrapVatParams;
- *     vats: SwingsetVats & SoloVats;
+ * @param {import('./types.ts').BootDevices<import('./types.ts').SoloDevices> &
+ *   import('./types.ts').BootstrapSpace & {
+ *     vatParameters: import('./types.ts').BootstrapVatParams;
+ *     vats: import('./types.ts').SwingsetVats & SoloVats;
  *     zone: import('@agoric/base-zone').Zone;
  *   }} powers
  */

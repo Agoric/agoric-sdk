@@ -73,7 +73,6 @@
     "bin/vat",
     "src/**/*.js",
     "src/**/*.d.ts",
-    "exported.js",
     "tools"
   ],
   "repository": {

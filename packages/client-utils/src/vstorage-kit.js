@@ -135,12 +135,12 @@ export const makeVstorageKitFromVstorage = ({
 
   /**
    * Read latest at path and unmarshal it
-   * @template T
-   * @type {(path: string) => Promise<T>}
+   * @type {<T extends unknown = any>(path: string) => Promise<T>}
    */
   const readLatestHead = path =>
-    // @ts-expect-error cast
-    vstorage.readLatest(path).then(unserializeHead);
+    /** @type {Promise<any>} */ (
+      vstorage.readLatest(path).then(unserializeHead)
+    );
 
   /**
    * Read latest at published path and unmarshal it.
@@ -153,8 +153,9 @@ export const makeVstorageKitFromVstorage = ({
    * @type {<T extends string>(subpath: T) => Promise<TypedPublished<T>>}
    */
   const readPublished = subpath =>
-    // @ts-expect-error cast
-    readLatestHead(`published.${subpath}`);
+    /** @type {Promise<TypedPublished<any>>} */ (
+      readLatestHead(`published.${subpath}`)
+    );
 
   return {
     fromBoard,

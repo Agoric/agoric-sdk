@@ -1,6 +1,10 @@
 // @jessie-check
 
 /**
+ * @import {PromiseRecord} from '@endo/promise-kit';
+ */
+
+/**
  * Don't trigger Node.js's UnhandledPromiseRejectionWarning.
  * This does not suppress any error messages.
  *

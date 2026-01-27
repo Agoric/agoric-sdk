@@ -8,6 +8,9 @@ import { HubName } from '../exos/chain-hub.js';
 /**
  * @import {NameHubKit} from '@agoric/vats';
  * @import {Remote} from '@agoric/internal';
+ * @import {ERef} from '@agoric/vow';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
  */
 
 const trace = makeTracer('InitChainInfo', true);

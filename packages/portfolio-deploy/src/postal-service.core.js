@@ -9,6 +9,10 @@ const trace = makeTracer('CCtrlCore');
 
 /**
  * @import {start as StartFn} from './postal-service.contract.js';
+ * @import {Installation} from '@agoric/zoe';
+ * @import {Instance} from '@agoric/zoe';
+ * @import {PromiseSpaceOf} from '@agoric/vats/src/core/types.js';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
  */
 /**
  * @typedef {{

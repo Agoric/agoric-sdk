@@ -15,8 +15,7 @@
   },
   "files": [
     "src",
-    "tools",
-    "exported.js"
+    "tools"
   ],
   "scripts": {
     "build": "node ./scripts/get-sdk-package-names.js > src/sdk-package-names.js",

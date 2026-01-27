@@ -7,8 +7,13 @@ import { Far } from '@endo/marshal';
 /**
  * @import {EOnly} from '@endo/eventual-send';
  * @import {MutableQuote, PriceAuthority, PriceQuote, PriceDescription,} from '@agoric/zoe/tools/types.js';
+ * @import {Notifier} from '@agoric/notifier';
  * @import {TimerService} from '@agoric/time';
  * @import {TimestampRecord} from '@agoric/time';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {Mint} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

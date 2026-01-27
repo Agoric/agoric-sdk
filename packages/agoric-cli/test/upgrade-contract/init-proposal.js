@@ -1,6 +1,10 @@
 import { E } from '@endo/far';
 
 /**
+ * @import {BootstrapSpace} from '@agoric/vats/src/core/types.js';
+ */
+
+/**
  * Initialize contractRef the first time.
  *
  * @param {{ [K in keyof BootstrapSpace]: object }} promiseSpace

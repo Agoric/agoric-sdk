@@ -10,6 +10,7 @@ import { fromExternalConfig } from './utils/config-marshal.js';
  * @import {BootstrapManifestPermit} from '@agoric/vats/src/core/lib-boot.js'
  * @import {LegibleCapData} from './utils/config-marshal.js'
  * @import {Bech32Address} from '@agoric/orchestration';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
  */
 
 /**

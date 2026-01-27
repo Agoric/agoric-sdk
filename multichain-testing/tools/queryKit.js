@@ -4,6 +4,13 @@ import { batchVstorageQuery } from './batchQuery.js';
 import { makeClientMarshaller } from './marshalTables.js';
 
 /**
+ * @import {VStorage} from './batchQuery.js';
+ * @import {ERef} from '@agoric/vow';
+ * @import {UpdateRecord} from '@agoric/smart-wallet/src/smartWallet.js';
+ * @import {Marshal} from '@endo/marshal';
+ */
+
+/**
  * Iter tools...
  *
  * @template {Promise<any>} PT
@@ -49,7 +56,7 @@ export async function* mapIter(src, fn) {
 /**
  * @param {string} key
  * @param {object} io
- * @param {import('./batchQuery.js').VStorage} io.vstorage
+ * @param {VStorage} io.vstorage
  * @param {(ms: number, opts?: unknown) => Promise<void>} io.delay
  */
 export async function* eachVstorageUpdate(key, { vstorage, delay }) {
@@ -75,14 +82,14 @@ export async function* eachVstorageUpdate(key, { vstorage, delay }) {
  * @param {string} addr
  * @param {object} powers
  * @param {QueryTool} powers.query
- * @param {import('./batchQuery.js').VStorage} powers.vstorage
+ * @param {VStorage} powers.vstorage
  */
 export const makeWalletView = (addr, { query, vstorage }) => {
   return Far('WalletQuery', {
     current: () => query.queryData(`published.wallet.${addr}.current`),
     /**
      * TODO: visit in chunks by block
-     * @param {ERef<{visit: (r: import('@agoric/smart-wallet/src/smartWallet.js').UpdateRecord) => void}>} visitor
+     * @param {ERef<{visit: (r: UpdateRecord) => void}>} visitor
      * @param {number} [minHeight]
      */
     history: async (visitor, minHeight) => {
@@ -100,8 +107,8 @@ export const makeWalletView = (addr, { query, vstorage }) => {
 /** @typedef {ReturnType<typeof makeWalletView>} WalletView } */
 
 /**
- * @param {import('./batchQuery.js').VStorage} vstorage
- * @param {import('@endo/marshal').Marshal<string | null>} [m]
+ * @param {VStorage} vstorage
+ * @param {Marshal<string | null>} [m]
  */
 export const makeQueryKit = (vstorage, m = makeClientMarshaller()) => {
   /** @param {['children' | 'data', string][]} paths */

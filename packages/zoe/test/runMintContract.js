@@ -3,6 +3,7 @@ import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 
 /**
+ * @import {ZCF} from '@agoric/zoe';
  * @import {FeeMintAccess} from '../src/types-index.js';
  */
 

@@ -1,6 +1,11 @@
 import { AmountMath } from '@agoric/ertp';
 
 /**
+ * @import {ZCF, ZCFSeat} from '@agoric/zoe';
+ * @import {Brand} from '@agoric/ertp';
+ */
+
+/**
  * @param {ZCF} zcf
  * @param {ZCFSeat} sellSeat
  * @param {Array<ZCFSeat>} bidSeats

@@ -3,7 +3,7 @@ import anyTest from '@endo/ses-ava/prepare-endo.js';
 import { sleep } from '@agoric/client-utils';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import type { QueryBalanceResponseSDKType } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
-import { AmountMath } from '@agoric/ertp';
+import { AmountMath, type Brand } from '@agoric/ertp';
 import { divideBy, multiplyBy } from '@agoric/ertp/src/ratio.js';
 import type { USDCProposalShapes } from '@agoric/fast-usdc/src/pool-share-math.js';
 import type { CctpTxEvidence } from '@agoric/fast-usdc/src/types.js';

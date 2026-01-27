@@ -3,6 +3,8 @@ import { orcUtils } from '../utils/orc.js';
 /**
  * @import {LocalTransfer} from '../utils/zoe-tools.js';
  * @import {Orchestrator, CosmosValidatorAddress, OrchestrationFlow} from '../types.js'
+ * @import {ZCFSeat} from '@agoric/zoe';
+ * @import {Amount} from '@agoric/ertp';
  */
 
 // XXX does not actually work. An early illustration that needs to be fixed.

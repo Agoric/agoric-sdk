@@ -8,6 +8,7 @@ import {
   chain as nobleMain,
   assetList as nobleAssetList,
 } from 'chain-registry/mainnet/noble/index.js';
+import type { Asset } from '@chain-registry/types';
 import { chain as agoricMain } from 'chain-registry/mainnet/agoric/index.js';
 import { chain as nobleTest } from 'chain-registry/testnet/nobletestnet/index.js';
 import { chain as agoricTest } from 'chain-registry/testnet/agoricdevnet/index.js'; // agoricdev was named before testnets were a thing
@@ -64,7 +65,8 @@ const CHAIN_CONFIGS: Record<
   },
 };
 
-export const USDN =
+// XXX narrow to the minimal properties to work around breaking change in casing
+export const USDN: Pick<Asset, 'base'> =
   nobleAssetList.assets.find(a => a.symbol === 'USDN') || Fail`no USDN`;
 
 export class CosmosRestClient {

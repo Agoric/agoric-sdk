@@ -59,8 +59,6 @@
     "README.md",
     "src/",
     "tools/",
-    "exported.js",
-    "exported.d.ts",
     "NEWS.md"
   ],
   "ava": {
@@ -76,6 +74,6 @@
     "access": "public"
   },
   "typeCoverage": {
-    "atLeast": 89.47
+    "atLeast": 89.5
   }
 }

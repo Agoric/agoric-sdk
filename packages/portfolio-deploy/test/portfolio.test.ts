@@ -10,7 +10,7 @@ import { makeProposalShapes } from '@aglocal/portfolio-contract/src/type-guards.
 import { makeUSDNIBCTraffic } from '@aglocal/portfolio-contract/test/mocks.ts';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeClientMarshaller } from '@agoric/client-utils';
-import { AmountMath } from '@agoric/ertp';
+import { AmountMath, type Brand } from '@agoric/ertp';
 import { BridgeId } from '@agoric/internal';
 import {
   defaultMarshaller,

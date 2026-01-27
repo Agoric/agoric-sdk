@@ -11,6 +11,7 @@ import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 
 /**
  * @import {start as startOwnableCounter} from './ownable-counter.js';
+ * @import {Installation} from '@agoric/zoe';
  */
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);

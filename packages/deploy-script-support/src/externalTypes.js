@@ -1,9 +1,15 @@
-/* eslint-disable @agoric/group-jsdoc-imports */
 // @ts-check
 export {};
 
 /**
  * @import {NameHub} from '@agoric/vats';
+ * @import {ZoeService} from '@agoric/zoe';
+ * @import {BundleSource} from '@endo/bundle-source';
+ * @import {ERef} from '@agoric/vow';
+ * @import {ScratchPad} from '@agoric/internal/src/scratch.js';
+ * @import {Bank} from '@agoric/vats/src/vat-bank.js';
+ * @import {Board} from '@agoric/vats';
+ * @import {NameAdmin} from '@agoric/vats';
  */
 
 // TODO move this type somewhere better
@@ -55,7 +61,7 @@ export {};
 
 /**
  * @typedef {{
- *  bundleSource: typeof import('@endo/bundle-source').default,
+ *  bundleSource: BundleSource,
  *  cacheDir: string,
  *  lookup: (...path: string[]) => unknown,
  *  now: () => number,
@@ -67,7 +73,7 @@ export {};
 
 /**
  * @typedef {{
- *   scratch: ERef<import('@agoric/internal/src/scratch.js').ScratchPad>,
+ *   scratch: ERef<ScratchPad>,
  * }} CommonHome
  */
 
@@ -75,10 +81,10 @@ export {};
 /**
  * @typedef {CommonHome & {
  * agoricNames: ERef<NameHub>,
- * bank: ERef<import("@agoric/vats/src/vat-bank.js").Bank>,
- * board: ERef<import("@agoric/vats").Board>,
+ * bank: ERef<Bank>,
+ * board: ERef<Board>,
  * faucet: unknown,
- * myAddressNameAdmin: ERef<import("@agoric/vats").NameAdmin>,
+ * myAddressNameAdmin: ERef<NameAdmin>,
  * namesByAddress: ERef<NameHub>,
  * wallet: any,
  * zoe: ERef<ZoeService>,

@@ -45,6 +45,8 @@ import './internal-types.js';
  * @import {ZoeMint} from '../internal-types.js';
  * @import {MakeZoeInstanceStorageManager} from './internal-types.js';
  * @import {UnwrapInstallation} from './internal-types.js';
+ * @import {Issuer} from '@agoric/ertp';
+ * @import {Brand} from '@agoric/ertp';
  */
 
 const { ownKeys } = Reflect;

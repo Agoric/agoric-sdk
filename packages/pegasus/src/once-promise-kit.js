@@ -3,6 +3,10 @@ import { assert } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
 
 /**
+ * @import {PromiseRecord} from '@endo/promise-kit';
+ */
+
+/**
  * Should be
  * at-import {DetailsToken} from '@endo/errors'
  * but somehow @endo/errors is not exporting that type.

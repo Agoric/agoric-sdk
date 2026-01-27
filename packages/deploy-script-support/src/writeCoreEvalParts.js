@@ -12,7 +12,7 @@ import {
 
 /**
  * @import {BundleSource, BundleSourceResult} from '@endo/bundle-source';
- * @import {AgSoloHome, CanonicalHome, CommonHome, CoreEvalBuilder, CoreEvalDescriptor, ManifestBundleRef} from './externalTypes.js';
+ * @import {AgSoloHome, CommonHome, CoreEvalBuilder, CoreEvalDescriptor, ManifestBundleRef} from './externalTypes.js';
  * @import {BundleMaker} from './getBundlerMaker.js';
  * @import {Bundler} from './getBundlerMaker.js';
  */

@@ -27,6 +27,21 @@ import { makeScopedBridge } from '../bridge.js';
  * @import {InitMsg} from '@agoric/internal/src/chain-utils.js';
  * @import {start} from '../centralSupply.js';
  * @import {BootstrapManifest} from './lib-boot.js';
+ * @import {Instance} from '@agoric/zoe';
+ * @import {ZoeService} from '@agoric/zoe';
+ * @import {Installation} from '@agoric/zoe';
+ * @import {IssuerKeywordRecord} from '@agoric/zoe';
+ * @import {MapStore} from '@agoric/store';
+ * @import {IssuerKit} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
+ * @import {BootstrapPowers} from './types.ts';
+ * @import {Producer} from './types.ts';
+ * @import {VatLoader} from './types.ts';
+ * @import {ChainBootstrapSpace} from './types.ts';
+ * @import {BootstrapSpace} from './types.ts';
+ * @import {StartedInstanceKitWithLabel} from './types.ts';
+ * @import {StartUpgradable} from './types.ts';
+ * @import {NamedVatPowers} from './types.ts';
  */
 
 /**
@@ -124,7 +139,7 @@ export const produceStartUpgradable = async ({
   consume: { diagnostics, zoe },
   produce, // startUpgradable, contractKits
 }) => {
-  /** @type {MapStore<Instance, StartedInstanceKitWithLabel>} */
+  /** @type {MapStore<Instance, StartedInstanceKitWithLabel<any>>} */
   const contractKits = zone.mapStore('ContractKits');
 
   /** @type {StartUpgradable} */

@@ -14,6 +14,8 @@ import { FAUCET_ADDRESS, makeFakeBankBridge } from './fake-bridge.js';
  * @import {AssetIssuerKit} from '../src/vat-bank.js';
  * @import {Bank} from '../src/vat-bank.js';
  * @import {Balances} from './fake-bridge.js';
+ * @import {MapStore} from '@agoric/store';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**
