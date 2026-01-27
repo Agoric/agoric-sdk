@@ -358,6 +358,7 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
       factoryAddr: (factoryAddr || accountAddress) as `0x${string}`,
       provider,
       expectedAddr: expectedAddr as `0x${string}`,
+      chainId: caipId,
       log: (msg, ...args) => log(logPrefix, msg, ...args),
     };
 
