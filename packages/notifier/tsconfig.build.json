@@ -14,5 +14,13 @@
   "compilerOptions": {
     "outDir": "build",
     "tsBuildInfoFile": "build/tsconfig.build.tsbuildinfo"
-  }
+  },
+  "references": [
+    {
+      "path": "../internal/tsconfig.build.json"
+    },
+    {
+      "path": "../swingset-liveslots/tsconfig.build.json"
+    }
+  ]
 }

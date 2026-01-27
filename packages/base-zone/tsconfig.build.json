@@ -11,5 +11,10 @@
     "test",
     "scripts",
     "**/exports.js"
+  ],
+  "references": [
+    {
+      "path": "../store/tsconfig.build.json"
+    }
   ]
 }

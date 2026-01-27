@@ -1,29 +1,50 @@
 {
-    "extends": [
-        "./tsconfig.json",
-        // Different build options from other SDK packages because this generates the JavaScript, not just types
-        // "../../tsconfig-build-options.json"
+  "extends": [
+    "./tsconfig.json"
+  ],
+  "compilerOptions": {
+    "composite": true,
+    "noEmit": false,
+    "outDir": "dist",
+    "tsBuildInfoFile": "dist/tsconfig.build.tsbuildinfo",
+    "emitDeclarationOnly": false,
+    "declaration": true,
+    "declarationMap": true,
+    "target": "es2022",
+    "module": "es2022",
+    "moduleResolution": "bundler",
+    "lib": [
+      "es2022",
+      "DOM"
     ],
-    "compilerOptions": {
-        "composite": true,
-        "noEmit": false,
-        "outDir": "dist",
-        "tsBuildInfoFile": "dist/tsconfig.build.tsbuildinfo",
-        "emitDeclarationOnly": false,
-        "declaration": true,
-        "declarationMap": true,
-        "target": "es2022",
-        "module": "es2022",
-        "moduleResolution": "bundler",
-        "lib": [
-            "es2022",
-            "DOM"
-        ],
-        "sourceMap": true,
-        "isolatedModules": true,
-        "downlevelIteration": true
+    "sourceMap": true,
+    "isolatedModules": true,
+    "downlevelIteration": true
+  },
+  "exclude": [
+    "test"
+  ],
+  "references": [
+    {
+      "path": "../casting/tsconfig.build.json"
     },
-    "exclude": [
-        "test"
-    ]
+    {
+      "path": "../cosmic-proto/tsconfig.build.json"
+    },
+    {
+      "path": "../ERTP/tsconfig.build.json"
+    },
+    {
+      "path": "../internal/tsconfig.build.json"
+    },
+    {
+      "path": "../smart-wallet/tsconfig.build.json"
+    },
+    {
+      "path": "../vats/tsconfig.build.json"
+    },
+    {
+      "path": "../zoe/tsconfig.build.json"
+    }
+  ]
 }

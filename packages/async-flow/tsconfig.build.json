@@ -1,15 +1,32 @@
 {
-    "extends": [
-        "./tsconfig.json",
-        "../../tsconfig-build-options.json"
-    ],
-    "compilerOptions": {
-        "outDir": "build",
-        "tsBuildInfoFile": "build/tsconfig.build.tsbuildinfo"
+  "extends": [
+    "./tsconfig.json",
+    "../../tsconfig-build-options.json"
+  ],
+  "compilerOptions": {
+    "outDir": "build",
+    "tsBuildInfoFile": "build/tsconfig.build.tsbuildinfo"
+  },
+  "exclude": [
+    "scripts",
+    "test",
+    "**/exports.js"
+  ],
+  "references": [
+    {
+      "path": "../base-zone/tsconfig.build.json"
     },
-    "exclude": [
-        "scripts",
-        "test",
-        "**/exports.js"
-    ]
+    {
+      "path": "../internal/tsconfig.build.json"
+    },
+    {
+      "path": "../store/tsconfig.build.json"
+    },
+    {
+      "path": "../vow/tsconfig.build.json"
+    },
+    {
+      "path": "../zone/tsconfig.build.json"
+    }
+  ]
 }

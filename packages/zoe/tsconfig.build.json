@@ -15,5 +15,31 @@
     "test",
     "tools",
     "scripts"
+  ],
+  "references": [
+    {
+      "path": "../base-zone/tsconfig.build.json"
+    },
+    {
+      "path": "../ERTP/tsconfig.build.json"
+    },
+    {
+      "path": "../internal/tsconfig.build.json"
+    },
+    {
+      "path": "../notifier/tsconfig.build.json"
+    },
+    {
+      "path": "../store/tsconfig.build.json"
+    },
+    {
+      "path": "../swingset-liveslots/tsconfig.build.json"
+    },
+    {
+      "path": "../vow/tsconfig.build.json"
+    },
+    {
+      "path": "../zone/tsconfig.build.json"
+    }
   ]
 }
