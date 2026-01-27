@@ -65,7 +65,7 @@ export const TEST_NETWORK: NetworkSpec = {
     {
       src: '@Polygon' as AssetPlaceRef,
       dest: '@agoric',
-      transfer: 'cctpSlow',
+      transfer: 'cctpToNoble',
       variableFeeBps: 0,
       timeSec: 1080,
       feeMode: 'evmToNoble',
@@ -73,7 +73,7 @@ export const TEST_NETWORK: NetworkSpec = {
     {
       src: '@Arbitrum',
       dest: '@agoric',
-      transfer: 'cctpSlow',
+      transfer: 'cctpToNoble',
       variableFeeBps: 0,
       timeSec: 1080,
       feeMode: 'evmToNoble',
@@ -81,7 +81,7 @@ export const TEST_NETWORK: NetworkSpec = {
     {
       src: '@Avalanche',
       dest: '@agoric',
-      transfer: 'cctpSlow',
+      transfer: 'cctpToNoble',
       variableFeeBps: 0,
       timeSec: 1080,
       feeMode: 'evmToNoble',
@@ -89,7 +89,7 @@ export const TEST_NETWORK: NetworkSpec = {
     {
       src: '@Base',
       dest: '@agoric',
-      transfer: 'cctpSlow',
+      transfer: 'cctpToNoble',
       variableFeeBps: 0,
       timeSec: 1080,
       feeMode: 'evmToNoble',
@@ -97,7 +97,7 @@ export const TEST_NETWORK: NetworkSpec = {
     {
       src: '@Ethereum',
       dest: '@agoric',
-      transfer: 'cctpSlow',
+      transfer: 'cctpToNoble',
       variableFeeBps: 0,
       timeSec: 1080,
       feeMode: 'evmToNoble',
@@ -105,7 +105,7 @@ export const TEST_NETWORK: NetworkSpec = {
     {
       src: '@Optimism',
       dest: '@agoric',
-      transfer: 'cctpSlow',
+      transfer: 'cctpToNoble',
       variableFeeBps: 0,
       timeSec: 1080,
       feeMode: 'evmToNoble',
@@ -114,7 +114,7 @@ export const TEST_NETWORK: NetworkSpec = {
     {
       src: '@noble',
       dest: '@Arbitrum',
-      transfer: 'cctpReturn',
+      transfer: 'cctpFromNoble',
       variableFeeBps: 0,
       timeSec: 20,
       feeMode: 'makeEvmAccount',
@@ -122,7 +122,7 @@ export const TEST_NETWORK: NetworkSpec = {
     {
       src: '@noble',
       dest: '@Polygon' as AssetPlaceRef,
-      transfer: 'cctpReturn',
+      transfer: 'cctpFromNoble',
       variableFeeBps: 0,
       timeSec: 20,
       feeMode: 'makeEvmAccount',
@@ -130,7 +130,7 @@ export const TEST_NETWORK: NetworkSpec = {
     {
       src: '@noble',
       dest: '@Avalanche',
-      transfer: 'cctpReturn',
+      transfer: 'cctpFromNoble',
       variableFeeBps: 0,
       timeSec: 20,
       feeMode: 'makeEvmAccount',
@@ -138,7 +138,7 @@ export const TEST_NETWORK: NetworkSpec = {
     {
       src: '@noble',
       dest: '@Base',
-      transfer: 'cctpReturn',
+      transfer: 'cctpFromNoble',
       variableFeeBps: 0,
       timeSec: 20,
       feeMode: 'makeEvmAccount',
@@ -146,7 +146,7 @@ export const TEST_NETWORK: NetworkSpec = {
     {
       src: '@noble',
       dest: '@Ethereum',
-      transfer: 'cctpReturn',
+      transfer: 'cctpFromNoble',
       variableFeeBps: 0,
       timeSec: 20,
       feeMode: 'makeEvmAccount',
@@ -154,7 +154,7 @@ export const TEST_NETWORK: NetworkSpec = {
     {
       src: '@noble',
       dest: '@Optimism',
-      transfer: 'cctpReturn',
+      transfer: 'cctpFromNoble',
       variableFeeBps: 0,
       timeSec: 20,
       feeMode: 'makeEvmAccount',

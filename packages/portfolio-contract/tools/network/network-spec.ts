@@ -13,8 +13,8 @@ export type ControlProtocol = 'ibc' | 'axelar' | 'local';
 export type TransferProtocol =
   | 'ibc'
   | 'fastusdc'
-  | 'cctpReturn'
-  | 'cctpSlow'
+  | 'cctpFromNoble'
+  | 'cctpToNoble' // (often to a forwarding address)
   | 'local';
 /**
  * Link to Factory and Wallet contracts:
