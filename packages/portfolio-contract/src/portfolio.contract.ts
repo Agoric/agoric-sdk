@@ -33,6 +33,7 @@ import {
   type OrchestrationPowers,
   type OrchestrationTools,
 } from '@agoric/orchestration';
+import { sameEvmAddress } from '@agoric/orchestration/src/utils/address.js';
 import type {
   FlowConfig,
   PortfolioPublicInvitationMaker,
@@ -596,11 +597,11 @@ export const contract = async (
      *
      * @returns storagePath (vstorage) and evmHandler facet
      *
-     * @see {@link openPortfolioFromPermit2} for the flow implementation
+     * @see {@link openPortfolio} for the flow implementation
      */
     async openPortfolioFromEVM(
       { allocations }: YmaxOperationDetails<'OpenPortfolio'>['data'],
-      depositDetails: PermitDetails,
+      permitDetails: PermitDetails,
     ): Promise<{
       storagePath: string;
       evmHandler: PortfolioKit['evmHandler'];
@@ -610,20 +611,40 @@ export const contract = async (
         allocations.map(({ instrument, portion }) => [instrument, portion]),
       );
 
-      const seat = zcf.makeEmptySeatKit().zcfSeat;
+      const fromChain =
+        eip155ChainIdToAxelarChain[`${Number(permitDetails.chainId)}`];
+      if (!fromChain) {
+        throw Fail`no Axelar chain for EIP-155 chainId ${permitDetails.chainId}`;
+      }
+      sameEvmAddress(
+        permitDetails.spender,
+        contracts[fromChain].depositFactory,
+      ) ||
+        Fail`permit2 spender address ${permitDetails.spender} does not match depositFactory address ${contracts[fromChain].depositFactory} for chain ${fromChain}`;
+
+      sameEvmAddress(permitDetails.token, contracts[fromChain].usdc) ||
+        Fail`permit2 token address ${permitDetails.token} does not match usdc contract address ${contracts[fromChain].usdc} for chain ${fromChain}`;
+      const amount = AmountMath.make(brands.USDC, permitDetails.amount);
 
       // Store the authenticated source EVM account in CAIP-10 format
       const sourceAccountId =
-        `eip155:${depositDetails.chainId}:${depositDetails.permit2Payload.owner.toLowerCase()}` as AccountId;
+        `eip155:${permitDetails.chainId}:${permitDetails.permit2Payload.owner.toLowerCase()}` as AccountId;
       const kit = makeNextPortfolioKit({ sourceAccountId });
 
-      void orchFns2.openPortfolioFromPermit2(
+      const seat = zcf.makeEmptySeatKit().zcfSeat;
+
+      void orchFns2.openPortfolio(
         seat,
-        depositDetails,
-        targetAllocation,
+        { targetAllocation },
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- sensitive to build order
         // @ts-ignore XXX Guest...
         kit,
+        {
+          features: {
+            useProgressTracker: true,
+          },
+        },
+        { fromChain, permitDetails, amount },
       );
       const storagePath = await vowTools.asPromise(kit.reader.getStoragePath());
       return harden({

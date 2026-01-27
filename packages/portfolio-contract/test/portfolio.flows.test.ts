@@ -61,7 +61,6 @@ import {
   executePlan as rawExecutePlan,
   makeErrorList,
   onAgoricTransfer,
-  openPortfolioFromPermit2,
   openPortfolio as rawOpenPortfolio,
   provideCosmosAccount,
   rebalance as rawRebalance,
@@ -137,7 +136,8 @@ const openPortfolio: typeof rawOpenPortfolio = (
   offerArgs,
   madeKit,
   config = DEFAULT_FLOW_CONFIG,
-) => rawOpenPortfolio(orch, ctx, seat, offerArgs, madeKit, config);
+  ...args
+) => rawOpenPortfolio(orch, ctx, seat, offerArgs, madeKit, config, ...args);
 
 const rebalance: typeof rawRebalance = (
   orch,
@@ -2550,8 +2550,8 @@ test('withdraw from Beefy position', async t => {
   await documentStorageSchema(t, storage, docOpts);
 });
 
-// EVM wallet integration - openPortfolioFromPermit2 flow
-test('openPortfolioFromPermit2 with Permit2 completes a deposit flow', async t => {
+// EVM wallet integration flow
+test('openPortfolio from EVM with Permit2 completes a deposit flow', async t => {
   // Use a mixed-case spender to ensure case-insensitive address checks.
   const mixedCaseSpender =
     contractsMock.Arbitrum.depositFactory.toUpperCase() as Address;
@@ -2589,13 +2589,18 @@ test('openPortfolioFromPermit2 with Permit2 completes a deposit flow', async t =
   const { getPortfolioStatus, getFlowHistory } = makeStorageTools(storage);
   let flowNum: number | undefined;
 
-  const webUiDone = openPortfolioFromPermit2(
+  const webUiDone = openPortfolio(
     orch,
     ctx,
     seat,
-    permitDetails,
-    targetAllocation,
+    { targetAllocation },
     kit,
+    {
+      features: {
+        useProgressTracker: true,
+      },
+    },
+    { fromChain: 'Arbitrum', permitDetails, amount },
   );
 
   const plannerP = (async () => {
@@ -2614,13 +2619,7 @@ test('openPortfolioFromPermit2 with Permit2 completes a deposit flow', async t =
     await txResolver.drainPending();
   })();
 
-  const [webResult, plannerResult] = await Promise.all([
-    webUiDone,
-    plannerP,
-    offer.factoryPK.promise,
-  ]);
-  t.is(webResult, undefined);
-  t.is(plannerResult, undefined);
+  await Promise.all([webUiDone, plannerP, offer.factoryPK.promise]);
 
   await eventLoopIteration();
   const { flowsRunning = {} } = await getPortfolioStatus(portfolioId);
@@ -2673,22 +2672,28 @@ test('openPortfolioFromPermit2 with Permit2 completes a deposit flow', async t =
 });
 
 test.todo(
-  'openPortfolioFromPermit2 retries when sendCreateAndDepositCall/Factory.execute fails',
+  'openPortfolio from EVM with Permit2 retries when sendCreateAndDepositCall/Factory.execute fails',
 );
 
 test.todo(
-  'openPortfolioFromPermit2 handles subsequent deposits without skipping +Base -> @Base',
+  'openPortfolio from EVM with Permit2 handles subsequent deposits without skipping +Base -> @Base',
 );
 
 test.todo(
-  'openPortfolioFromPermit2 rejects permit with unexpected token for fromChain',
+  'openPortfolio from EVM with Permit2 rejects permit with unexpected token for fromChain',
 );
 
-test.todo('openPortfolioFromPermit2 rejects deposit for unsupported chain');
+test.todo(
+  'openPortfolio from EVM with Permit2 rejects deposit for unsupported chain',
+);
 
-test.todo('openPortfolioFromPermit2 rejects deposit with wrong spender');
+test.todo(
+  'openPortfolio from EVM with Permit2 rejects deposit with wrong spender',
+);
 
-test.todo('openPortfolioFromPermit2 rejects permit with zero amount');
+test.todo(
+  'openPortfolio from EVM with Permit2 rejects permit with zero amount',
+);
 
 // #region wayFromSrcToDesc withdraw tests
 
