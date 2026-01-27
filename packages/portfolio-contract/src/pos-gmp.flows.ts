@@ -83,8 +83,7 @@ export type GMPAccountStatus = GMPAccountInfo & {
 type ProvideEVMAccountSendCall = (params: {
   dest: {
     axelarId: string;
-    factoryAddress: EVMT['address'];
-    depositFactoryAddress: EVMT['address'];
+    address: EVMT['address'];
   };
   fee: DenomAmount;
   portfolioLca: LocalAccount;
@@ -93,7 +92,7 @@ type ProvideEVMAccountSendCall = (params: {
   gmpAddresses: GmpAddresses;
   expectedWalletAddress: EVMT['address'];
   orchOpts?: OrchestrationOptions;
-}) => Promise<EVMT['address']>;
+}) => Promise<void>;
 
 type ProvideEVMAccountSendCallFactory = (
   sendCallArg?: unknown,
@@ -182,30 +181,22 @@ const makeProvideEVMAccount = ({
         const src = contractAccount.getAddress();
         traceChain('Axelar fee sent from', src.value);
 
-        const {
-          factory: factoryAddress,
-          depositFactory: depositFactoryAddress,
-        } = ctx.contracts[chainName];
+        const contracts = ctx.contracts[chainName];
 
-        const targetAddress = await sendCall({
-          dest: { axelarId, factoryAddress, depositFactoryAddress },
-          portfolioLca: lca,
-          fee,
-          gmpAddresses: ctx.gmpAddresses,
-          gmpChain: gmp.chain,
-          contractAccount,
-          expectedWalletAddress: evmAccount.remoteAddress,
-          ...('orchOpts' in opts ? { orchOpts: opts.orchOpts } : {}),
-        });
+        const contractKey = {
+          makeAccount: 'factory',
+          createAndDeposit: 'depositFactory',
+        } as const;
+        const destinationAddress = contracts[contractKey[mode]];
 
         // XXX: register before sending?
         const watchTx = ctx.resolverClient.registerTransaction(
           txType,
-          `${evmAccount.chainId}:${targetAddress}`,
+          `${evmAccount.chainId}:${destinationAddress}`,
           undefined,
           evmAccount.remoteAddress,
           undefined,
-          factoryAddress,
+          contracts.factory,
         );
         txId = watchTx.txId;
         setAppendedTxIds(opts.orchOpts?.progressTracker, [txId]);
@@ -213,6 +204,17 @@ const makeProvideEVMAccount = ({
         const result = watchTx.result as unknown as Promise<void>; // XXX host/guest;
         result.catch(err => {
           trace(txId, 'rejected', err);
+        });
+
+        await sendCall({
+          dest: { axelarId, address: destinationAddress },
+          portfolioLca: lca,
+          fee,
+          gmpAddresses: ctx.gmpAddresses,
+          gmpChain: gmp.chain,
+          contractAccount,
+          expectedWalletAddress: evmAccount.remoteAddress,
+          ...('orchOpts' in opts ? { orchOpts: opts.orchOpts } : {}),
         });
 
         traceChain('await', mode, txId);
@@ -372,13 +374,13 @@ export const sendMakeAccountCall = async ({
   const { AXELAR_GMP, AXELAR_GAS } = gmpAddresses;
 
   const gmpBuilder = makeGmpBuilder();
-  const factory = gmpBuilder.makeContract(dest.factoryAddress, factoryABI);
+  const factory = gmpBuilder.makeContract(dest.address, factoryABI);
   factory.createSmartWallet(expectedWalletAddress);
   const payload = gmpBuilder.getPayload();
 
   const memo: AxelarGmpOutgoingMemo = {
     destination_chain: dest.axelarId,
-    destination_address: dest.factoryAddress,
+    destination_address: dest.address,
     payload: Array.from(payload),
     type: AxelarGMPMessageType.ContractCall,
     fee: { amount: String(fee.value), recipient: AXELAR_GAS },
@@ -396,8 +398,6 @@ export const sendMakeAccountCall = async ({
     ...optsArgs.orchOpts,
     memo: JSON.stringify(memo),
   });
-
-  return dest.factoryAddress;
 };
 
 export const provideEVMAccount = makeProvideEVMAccount({
@@ -432,10 +432,7 @@ export const sendCreateAndDepositCall = async ({
   } = permit2Payload;
 
   const gmpBuilder = makeGmpBuilder();
-  const factory = gmpBuilder.makeContract(
-    dest.depositFactoryAddress,
-    depositFactoryABI,
-  );
+  const factory = gmpBuilder.makeContract(dest.address, depositFactoryABI);
   factory.createAndDeposit({
     lcaOwner,
     tokenOwner,
@@ -450,7 +447,7 @@ export const sendCreateAndDepositCall = async ({
   const { AXELAR_GMP, AXELAR_GAS } = gmpAddresses;
   const memo: AxelarGmpOutgoingMemo = {
     destination_chain: dest.axelarId,
-    destination_address: dest.depositFactoryAddress,
+    destination_address: dest.address,
     payload: Array.from(payload),
     type: AxelarGMPMessageType.ContractCall,
     fee: { amount: String(fee.value), recipient: AXELAR_GAS },
@@ -462,7 +459,6 @@ export const sendCreateAndDepositCall = async ({
     ...optsArgs.orchOpts,
     memo: JSON.stringify(memo),
   });
-  return dest.depositFactoryAddress;
 };
 
 const makeSendCreateAndDepositCall = (
@@ -556,10 +552,6 @@ export const sendGMPContractCall = async (
   await result;
 };
 
-/** Canonical Permit2 contract address (same on all EVM chains) */
-const PERMIT2_ADDRESS: EVMT['address'] =
-  '0x000000000022D473030F116dDEE9F6B43aC78BA3';
-
 // XXX refactor overlap with PermitWitnessTransferFromFunctionABIType
 // that one results in type errors
 const permit2Abi = [
@@ -598,6 +590,7 @@ export const sendPermit2GMP = async (
     gmpAddresses,
     resolverClient,
     axelarIds,
+    addresses,
   } = ctx;
   const { chainName, remoteAddress, chainId: gmpChainId } = gmpAcct;
   const walletAddress = remoteAddress as EVMT['address'];
@@ -616,8 +609,7 @@ export const sendPermit2GMP = async (
   };
 
   const session = makeEvmAbiCallBatch();
-  // XXX could get PERMIT2_ADDRESS from privateArgs contract addresses
-  const permit2 = session.makeContract(PERMIT2_ADDRESS, permit2Abi);
+  const permit2 = session.makeContract(addresses.permit2, permit2Abi);
   permit2.permitWitnessTransferFrom(
     permit,
     transferDetails,
