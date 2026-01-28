@@ -1,0 +1,80 @@
+diff --git a/src/types.d.ts b/src/types.d.ts
+index 76e50e129f3c2407765b7d974058fcb307018a53..6051a3d918e349d66c753e8d17b362238a43381f 100644
+--- a/src/types.d.ts
++++ b/src/types.d.ts
+@@ -75,7 +75,7 @@ export type PassStyled<S extends PassStyleMarker, I extends InterfaceSpec> = {
+ 
+ export type ExtractStyle<P extends PassStyled<any, any>> = P[typeof PASS_STYLE];
+ 
+-export type PassByCopy = Atom | Error | CopyArray | CopyRecord | CopyTagged;
++export type PassByCopy = Atom | Error | CopyArray | CopyReadonlyArray | CopyRecord | CopyTagged;
+ 
+ export type PassByRef =
+   | RemotableObject
+@@ -114,13 +114,16 @@ export type Passable<
+ 
+ export type Container<PC extends PassableCap, E extends Error> =
+   | CopyArrayInterface<PC, E>
++  | CopyReadonlyArrayInterface<PC, E>
+   | CopyRecordInterface<PC, E>
+   | CopyTaggedInterface<PC, E>;
+-interface CopyArrayInterface<PC extends PassableCap, E extends Error>
++export interface CopyArrayInterface<PC extends PassableCap, E extends Error>
+   extends CopyArray<Passable<PC, E>> {}
+-interface CopyRecordInterface<PC extends PassableCap, E extends Error>
++export interface CopyReadonlyArrayInterface<PC extends PassableCap, E extends Error>
++  extends CopyReadonlyArray<Passable<PC, E>> {}
++export interface CopyRecordInterface<PC extends PassableCap, E extends Error>
+   extends CopyRecord<Passable<PC, E>> {}
+-interface CopyTaggedInterface<PC extends PassableCap, E extends Error>
++export interface CopyTaggedInterface<PC extends PassableCap, E extends Error>
+   extends CopyTagged<string, Passable<PC, E>> {}
+ 
+ export type PassStyleOf = {
+@@ -134,7 +137,7 @@ export type PassStyleOf = {
+   (p: Promise<any>): 'promise';
+   (p: Error): 'error';
+   (p: CopyTagged): 'tagged';
+-  (p: any[]): 'copyArray';
++  (p: readonly any[]): 'copyArray';
+   (p: Iterable<any>): 'remotable';
+   (p: Iterator<any, any, undefined>): 'remotable';
+   <T extends PassStyled<PassStyleMarker, any>>(p: T): ExtractStyle<T>;
+@@ -204,6 +207,11 @@ export type PassableCap =
+  */
+ export type CopyArray<T extends Passable = any> = Array<T>;
+ 
++/**
++ * A Passable and Readonly sequence of Passable values.
++ */
++export type CopyReadonlyArray<T extends Passable = any> = ReadonlyArray<T>;
++
+ /**
+  * A hardened immutable ArrayBuffer.
+  */
+@@ -236,22 +244,7 @@ export type CopyTagged<
+ export type InterfaceSpec = string;
+ 
+ /**
+- * Internal to a useful pattern for writing checking logic
+- * (a "checkFoo" function) that can be used to implement a predicate
+- * (an "isFoo" function) or a validator (an "assertFoo" function).
+- *
+- *  * A predicate ideally only returns `true` or `false` and rarely throws.
+- *  * A validator throws an informative diagnostic when the predicate
+- *    would have returned `false`, and simply returns `undefined` normally
+- *    when the predicate would have returned `true`.
+- *  * The internal checking function that they share is parameterized by a
+- *    `Checker` that determines how to proceed with a failure condition.
+- *    Predicates pass in an identity function as checker. Validators
+- *    pass in `assertChecker` which is a trivial wrapper around `assert`.
+- *
+- * See the various uses for good examples.
++ * Consider this export deprecated.
++ * Import `Checker` directly from `'@endo/common/ident-checker.js'` instead.
+  */
+-export type Checker = (
+-  cond: boolean,
+-  details?: import('ses').Details | undefined,
+-) => boolean;
++export type { Checker } from '@endo/common/ident-checker.js';
