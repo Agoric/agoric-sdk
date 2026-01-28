@@ -812,6 +812,9 @@ export const preparePortfolioKit = (
             toChain,
           } satisfies FlowDetail;
           const startedFlow = this.facets.manager.startFlow(flowDetail);
+          const seat = zcf.makeEmptySeatKit().zcfSeat;
+
+          void executePlan(seat, {}, this.facets, flowDetail, startedFlow);
           return `flow${startedFlow.flowId}`;
         },
       },
