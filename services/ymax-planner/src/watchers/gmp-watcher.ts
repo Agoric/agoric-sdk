@@ -7,7 +7,6 @@ import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import { tryJsonParse } from '@agoric/internal';
 import {
   getBlockNumberBeforeRealTime,
-  getConfirmationsRequired,
   scanEvmLogsInChunks,
 } from '../support.ts';
 import type { MakeAbortController, WatcherTimeoutOptions } from '../support.ts';
@@ -17,43 +16,14 @@ import {
   getTxBlockLowerBound,
   setTxBlockLowerBound,
 } from '../kv-store.ts';
-
-//#region Alchemy alchemy_minedTransactions subscription types
-// See https://docs.alchemy.com/reference/alchemy-minedtransactions
-type AlchemyMinedTransaction = {
-  blockHash: string;
-  blockNumber: string;
-  hash: string;
-  from: string;
-  gas: string;
-  gasPrice: string;
-  input: string;
-  nonce: string;
-  to: string | null;
-  transactionIndex: string;
-  type: string;
-  value: string;
-  // ECDSA signature fields
-  r?: string;
-  s?: string;
-  v?: string;
-  // EIP-1559 fields
-  maxPriorityFeePerGas?: string;
-  maxFeePerGas?: string;
-};
-
-type AlchemySubscriptionMessage = {
-  jsonrpc: '2.0';
-  method: 'eth_subscription';
-  params: {
-    result: {
-      removed: boolean;
-      transaction: AlchemyMinedTransaction;
-    };
-    subscription: string;
-  };
-};
-//#endregion
+import {
+  fetchReceiptWithRetry,
+  extractGmpExecuteData,
+  DEFAULT_RETRY_OPTIONS,
+  type AlchemySubscriptionMessage,
+  type RetryOptions,
+  handleTxRevert,
+} from './watcher-utils.ts';
 
 const MULTICALL_STATUS_SIGNATURE = ethers.id(
   'MulticallStatus(string,bool,uint256)',
@@ -69,92 +39,6 @@ type WatchGmp = {
   kvStore: KVStore;
   makeAbortController: MakeAbortController;
   retryOptions?: RetryOptions;
-};
-
-// AxelarExecutable entrypoint (standard)
-// See https://docs.axelar.dev/dev/general-message-passing/executable
-// Note: Using _ABI_TEXT suffix for human-readable string format
-const WALLET_EXECUTE_CONTRACT_ABI_TEXT = [
-  'function execute(bytes32 commandId, string sourceChain, string sourceAddress, bytes payload) external',
-];
-const walletExecuteIface = new ethers.Interface(
-  WALLET_EXECUTE_CONTRACT_ABI_TEXT,
-);
-const abiCoder = ethers.AbiCoder.defaultAbiCoder();
-
-/**
- * Decode Wallet.execute(...) calldata and extract CallMessage.id from the payload
- * and sourceAddress from the execute() parameters.
- *
- * @returns Object with txId and sourceAddress, or null if parsing fails
- */
-const extractExecuteData = (
-  data: string,
-): { txId: string; sourceAddress: string } | null => {
-  try {
-    const parsed = walletExecuteIface.parseTransaction({ data });
-    if (!parsed) return null;
-
-    // execute(bytes32 commandId, string sourceChain, string sourceAddress, bytes payload)
-    const [_commandId, _sourceChain, sourceAddress, payload] = parsed.args;
-    if (!sourceAddress || !payload) return null;
-
-    // CallMessage { string id; ContractCalls[] calls; }
-    const [decoded] = abiCoder.decode(
-      ['tuple(string id, tuple(address target, bytes data)[] calls)'],
-      payload,
-    );
-
-    const txId = decoded?.id;
-    if (typeof txId !== 'string') return null;
-
-    return { txId, sourceAddress };
-  } catch {
-    return null;
-  }
-};
-
-export type RetryOptions = {
-  /** Maximum number of retry attempts */
-  limit: number;
-  /** Maximum delay between retries in milliseconds */
-  backoffLimit: number;
-};
-
-export const DEFAULT_RETRY_OPTIONS: RetryOptions = {
-  limit: 5,
-  backoffLimit: 3000,
-};
-
-/**
- * Fetch transaction receipt with retry logic for freshly mined transactions.
- * @param provider - The WebSocket provider
- * @param txHash - Transaction hash
- * @param log - Logging function
- * @param retryOptions - Retry configuration (limit and backoffLimit)
- * @returns Transaction receipt or null if not available after retries
- */
-const fetchReceiptWithRetry = async (
-  provider: WebSocketProvider,
-  txHash: string,
-  log: (...args: unknown[]) => void,
-  retryOptions: RetryOptions = DEFAULT_RETRY_OPTIONS,
-) => {
-  const { limit, backoffLimit } = retryOptions;
-  let receipt = await provider.getTransactionReceipt(txHash);
-  if (!receipt) {
-    log(`Receipt not yet available for txHash=${txHash}, retrying...`);
-    for (let i = 0; i < limit && !receipt; i += 1) {
-      const delay = Math.min(100 * 2 ** i, backoffLimit);
-      await new Promise(resolve => setTimeout(resolve, delay));
-      receipt = await provider.getTransactionReceipt(txHash);
-    }
-
-    if (!receipt) {
-      log(`Failed to get receipt for txHash=${txHash} after ${limit} retries`);
-    }
-  }
-  return receipt;
 };
 
 export const watchGmp = ({
@@ -283,7 +167,7 @@ export const watchGmp = ({
         const txData = tx.input;
         if (!txHash || !txData) return;
 
-        const executeData = extractExecuteData(txData);
+        const executeData = extractGmpExecuteData(txData);
         if (!executeData || executeData.txId !== txId) return;
 
         if (executeData.sourceAddress !== expectedSourceAddress) {
@@ -298,6 +182,7 @@ export const watchGmp = ({
           txHash,
           log,
           retryOptions,
+          setTimeout,
         );
         if (!receipt) {
           log(`Transaction ${txHash} not confirmed after waiting`);
@@ -320,45 +205,22 @@ export const watchGmp = ({
           return finish({ settled: true, txHash, success: true });
         }
 
-        if (receipt.status === 0) {
-          /**
-           * Transaction reverted - since we've already validated that the sourceAddress
-           * matches our expected LCA address, this is a legitimate execution attempt
-           * from our own wallet that failed. We treat this as a transaction failure.
-           *
-           * Note: Spurious executions from unauthorized parties are already filtered
-           * out by the sourceAddress check above, so any revert we see here represents
-           * a genuine failure of the user's operation.
-           *
-           * For failure cases, we wait for full finality confirmations to ensure the
-           * failure is permanent. A failure that reorgs into a success is very hard
-           * for our system to recover from, so we must be certain of the failure.
-           */
-          const confirmations = getConfirmationsRequired(chainId);
-          const confirmedReceipt = await provider.waitForTransaction(
-            txHash,
-            confirmations,
-          );
-          if (!confirmedReceipt) {
-            log(
-              `Transaction ${txHash} was not confirmed after waiting for ${confirmations} confirmations (possibly reorged out)`,
-            );
-            return;
-          }
-
-          // Re-check status after confirmations in case of reorg
-          if (confirmedReceipt.status === 0) {
-            log(
-              `❌ REVERTED (${confirmations} confirmations): txId=${txId} txHash=${txHash} block=${confirmedReceipt.blockNumber} - transaction failed`,
-            );
-            return finish({ settled: true, txHash, success: false });
-          } else {
-            // Transaction was reorged and succeeded - treat as success
-            log(
-              `✅ SUCCESS (after reorg, ${confirmations} confirmations): txId=${txId} txHash=${txHash} block=${confirmedReceipt.blockNumber}`,
-            );
-            return finish({ settled: true, txHash, success: true });
-          }
+        /**
+         * Transaction reverted check: Since we've already validated that the sourceAddress
+         * matches our expected LCA address, this is a legitimate execution attempt
+         * from our own wallet. Spurious executions from unauthorized parties are already
+         * filtered out by the sourceAddress check above.
+         */
+        const result = await handleTxRevert(
+          receipt,
+          txHash,
+          `txId=${txId}`,
+          chainId,
+          provider,
+          log,
+        );
+        if (result) {
+          return finish(result);
         }
       } catch (e) {
         log(

@@ -16,7 +16,6 @@ import type { EvmAddress } from '@agoric/fast-usdc';
 import { makeKVStoreFromMap } from '@agoric/internal/src/kv-store.js';
 import type { Log } from 'ethers/providers';
 import { encodeAbiParameters, toFunctionSelector } from 'viem';
-import type { InstrumentId } from '@agoric/portfolio-api';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { CosmosRestClient } from '../src/cosmos-rest-client.ts';
 import type { CosmosRPCClient } from '../src/cosmos-rpc.ts';
@@ -243,28 +242,35 @@ export const createMockProvider = (
         log.transactionHash &&
         eventOrFilter.topics
       ) {
-        // Tests can include txId in the log object for websocket simulation
+        // Tests can include txId or expectedWalletAddress in the log object for websocket simulation
         const txId = (log as any).txId;
+        const expectedWalletAddress = (log as any).expectedWalletAddress;
+        const sourceAddress = 'agoric1test';
 
-        if (txId) {
-          // Create proper Wallet.execute() calldata with the txId
-          const walletExecuteIface = new ethers.Interface([
+        if (txId || expectedWalletAddress) {
+          const axelarExecuteIface = new ethers.Interface([
             'function execute(bytes32 commandId, string sourceChain, string sourceAddress, bytes payload) external',
           ]);
           const abiCoder = ethers.AbiCoder.defaultAbiCoder();
 
-          // Encode CallMessage payload with txId
-          const payload = abiCoder.encode(
-            ['tuple(string id, tuple(address target, bytes data)[] calls)'],
-            [[txId, []]], // CallMessage with txId and empty calls array
-          );
+          let payload: string;
+          if (txId) {
+            // GMP watcher: Encode CallMessage payload with txId
+            payload = abiCoder.encode(
+              ['tuple(string id, tuple(address target, bytes data)[] calls)'],
+              [[txId, []]], // CallMessage with txId and empty calls array
+            );
+          } else {
+            // Wallet watcher: Encode address payload
+            payload = abiCoder.encode(['address'], [expectedWalletAddress]);
+          }
 
-          const mockCalldata = walletExecuteIface.encodeFunctionData(
+          const mockCalldata = axelarExecuteIface.encodeFunctionData(
             'execute',
             [
               ethers.hexlify(ethers.randomBytes(32)), // commandId
               'agoric', // sourceChain
-              'agoric1test', // sourceAddress
+              sourceAddress,
               payload,
             ],
           );
