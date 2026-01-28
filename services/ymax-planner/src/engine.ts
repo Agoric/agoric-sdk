@@ -724,7 +724,7 @@ export const startEngine = async (
   }
   // console.log('subscribed to events', subscriptionFilters);
 
-  // TODO: Verify consumption of paginated data.
+  // TODO(#12391): Verify consumption of paginated data.
   const [pendingTxKeysResp, portfolioKeysResp] = await Promise.all(
     [pendingTxPathPrefix, portfoliosPathPrefix].map(async vstoragePath => {
       const opts = { kind: 'children' } as const;
