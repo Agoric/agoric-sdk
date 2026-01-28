@@ -290,6 +290,16 @@ test('handlePendingTx aborts GMP watcher in lookback mode when signal is aborted
   const ctxWithFetch = harden({
     ...opts,
     fetch: async (url: string) => {
+      if (Object.values(opts.rpcUrls).includes(url)) {
+        return {
+          ok: true,
+          json: async () => [
+            {
+              result: [],
+            },
+          ],
+        } as Response;
+      }
       return {
         ok: true,
         json: async () => ({

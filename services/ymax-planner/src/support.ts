@@ -312,7 +312,7 @@ export const createEVMContext = async ({
   clusterName,
   alchemyApiKey,
 }: CreateContextParams): Promise<
-  Pick<EvmContext, 'evmProviders' | 'usdcAddresses'>
+  Pick<EvmContext, 'evmProviders' | 'usdcAddresses' | 'rpcUrls'>
 > => {
   if (clusterName === 'local') clusterName = 'testnet';
   if (!alchemyApiKey) throw Error('missing alchemyApiKey');
@@ -325,11 +325,13 @@ export const createEVMContext = async ({
     ]),
   ) as EvmProviders;
 
+  const rpcMap = objectMap(urls, url => url.replace('wss://', 'https://'));
   return {
     evmProviders,
     // XXX Remove now that @agoric/portfolio-api/src/constants.js
     // defines UsdcTokenIds.
     usdcAddresses: usdcAddresses[clusterName],
+    rpcUrls: rpcMap,
   };
 };
 
@@ -439,19 +441,64 @@ type ScanOpts = {
   toAddress?: string;
   verifyFailedTx?: (
     tx: TransactionResponse,
-    receipt: BlockReceiptsResponse[number],
+    receipt: BlockReceipt,
   ) => boolean | Promise<boolean>;
   onRejectedChunk?: (
     startBlock: number,
     endBlock: number,
   ) => Promise<void> | void;
+  rpcUrl?: string;
+  fetch?: typeof fetch;
 };
 
-type BlockReceiptsResponse = Array<{
+type BlockReceipt = {
   transactionHash: `0x${string}`;
   status: `0x${string}` | null;
   to: `0x${string}` | null;
+};
+
+type BlockReceiptsResponse = Array<{
+  id: number;
+  jsonrpc: '2.0';
+  result: Array<BlockReceipt>;
+  error?: object;
 }>;
+
+/**
+ * Fetches block receipts in batch using eth_getBlockReceipts RPC method.
+ * This function needs to use fetch instead of an ethers provider because
+ * ethers does not support batching of this method.
+ * @param blockNumbers - Array of block numbers in hex format (e.g., '0x1a4')
+ * @param opts - Options for the request
+ * @param opts.fetch - Fetch function to use for HTTP requests
+ * @param opts.rpcUrl - RPC URL to send the request to
+ * @returns Array of BlockReceipt objects for the requested blocks
+ * @throws Error if the HTTP request fails or if there are RPC errors
+ */
+const getBlockReceiptsBatch = async (blockNumbers, { fetch, rpcUrl }) => {
+  const payload = blockNumbers.map((bn, i) => ({
+    jsonrpc: '2.0',
+    id: i + 1,
+    method: 'eth_getBlockReceipts',
+    params: [bn],
+  }));
+
+  const res = await fetch(rpcUrl, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+
+  const json: BlockReceiptsResponse = await res.json();
+
+  const errors = json.filter(r => r.error);
+  if (errors.length > 0) {
+    throw new Error(`RPC errors: ${JSON.stringify(errors)}`);
+  }
+  return json.flatMap(r => r.result).flat();
+};
 
 /**
  * Generic chunked log scanner: scans [fromBlock, toBlock] in CHUNK_SIZE windows,
@@ -475,6 +522,8 @@ export const scanEvmLogsInChunks = async (
     signal,
     toAddress,
     verifyFailedTx,
+    rpcUrl,
+    fetch,
   } = opts;
 
   await null;
@@ -499,45 +548,42 @@ export const scanEvmLogsInChunks = async (
       continue; // Retry this chunk after waiting
     }
 
-    if (toAddress && verifyFailedTx) {
+    if (toAddress && verifyFailedTx && rpcUrl && fetch) {
       // Check for failed transactions in the block range using eth_getBlockReceipts.
-      for (let blockNumber = start; blockNumber <= end; blockNumber += 1) {
-        if (signal?.aborted) {
-          log('[LogScan] Aborted');
-          return { log: undefined, failedTx: undefined };
-        }
-        try {
-          const blockTag = toBeHex(blockNumber);
-          const receipts = (await provider.send('eth_getBlockReceipts', [
-            blockTag,
-          ])) as BlockReceiptsResponse;
-          for (const receipt of receipts) {
-            const { transactionHash, status, to } = receipt;
-            if (!to || to.toLowerCase() !== toAddress.toLowerCase()) {
-              continue;
-            }
-            const statusValue = status
-              ? Number.parseInt(status, 16)
-              : undefined;
+      try {
+        const blockNumbers = Array.from({ length: end - start + 1 }, (_, i) =>
+          toBeHex(start + i),
+        );
+        const receipts = await getBlockReceiptsBatch(blockNumbers, {
+          fetch,
+          rpcUrl,
+        });
 
-            if (statusValue === 0) {
-              const tx = await provider.getTransaction(transactionHash);
-              if (!tx) {
-                throw new Error(
-                  `Transaction ${transactionHash} not found for failed receipt`,
-                );
-              }
-              // Verify if this is indeed a failed transaction we care about
-              if (await verifyFailedTx(tx, receipt))
-                return { log: undefined, failedTx: tx };
-            }
+        for (const receipt of receipts) {
+          const { transactionHash, status, to } = receipt;
+          // Verify if the tx is to our target contract
+          if (!to || to.toLowerCase() !== toAddress.toLowerCase()) {
+            continue;
           }
-        } catch (err) {
-          log(
-            `[LogScan] Error checking block ${blockNumber} for failures:`,
-            err,
-          );
+          const statusValue = status ? Number.parseInt(status, 16) : undefined;
+
+          if (statusValue === 0) {
+            const tx = await provider.getTransaction(transactionHash);
+            if (!tx) {
+              throw new Error(
+                `Transaction ${transactionHash} not found for failed receipt`,
+              );
+            }
+            // Verify if this is indeed a failed transaction we care about
+            if (await verifyFailedTx(tx, receipt))
+              return { log: undefined, failedTx: tx };
+          }
         }
+      } catch (err) {
+        log(
+          `[LogScan] Error checking block ${start} -> ${end} for failures:`,
+          err,
+        );
       }
     }
 
