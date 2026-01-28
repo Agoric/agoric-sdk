@@ -330,7 +330,7 @@ export const lookBackGmp = async ({
       signal: sharedSignal,
     };
 
-    const matchingEvent = await scanEvmLogsInChunks(
+    const { log: matchingEvent, failedTx } = await scanEvmLogsInChunks(
       {
         ...baseScanOpts,
         baseFilter: statusFilter,
@@ -355,6 +355,16 @@ export const lookBackGmp = async ({
         settled: true,
         txHash: matchingEvent.transactionHash,
         success: true,
+      };
+    }
+
+    if (failedTx) {
+      log(`Found matching failed transaction`);
+      deleteTxBlockLowerBound(kvStore, txId, MULTICALL_STATUS_EVENT);
+      return {
+        settled: true,
+        txHash: failedTx.hash,
+        success: false,
       };
     }
 
