@@ -358,6 +358,152 @@ export const CCTP = {
 harden(CCTP);
 
 /**
+ * CCTPv2 domain IDs (unchanged from v1)
+ * @see {@link https://developers.circle.com/cctp/supported-domains}
+ */
+const CCTP_DOMAINS: Record<AxelarChain, number> = {
+  Ethereum: 0,
+  Avalanche: 1,
+  Optimism: 2,
+  Arbitrum: 3,
+  Base: 6,
+};
+
+/**
+ * Convert an EVM address (0x...) to a bytes32 representation.
+ * Pads with leading zeros to 32 bytes.
+ */
+const evmAddressToBytes32 = (addr: `0x${string}`): `0x${string}` => {
+  // Remove '0x' prefix, get the 40-character hex address
+  const hexAddr = addr.slice(2).toLowerCase();
+  // Pad with leading zeros to make 64 hex characters (32 bytes)
+  const paddedAddress = '0'.repeat(64 - hexAddr.length) + hexAddr;
+  return `0x${paddedAddress}`;
+};
+
+type TokenMessengerV2I = {
+  depositForBurn: [
+    'uint256', // amount
+    'uint32', // destinationDomain
+    'bytes32', // mintRecipient
+    'address', // burnToken
+    'bytes32', // destinationCaller
+    'uint256', // maxFee
+    'uint32', // minFinalityThreshold
+  ];
+};
+
+/**
+ * @see {@link https://github.com/circlefin/evm-cctp-contracts/blob/master/src/v2/TokenMessengerV2.sol}
+ */
+const TokenMessengerV2: TokenMessengerV2I = {
+  depositForBurn: [
+    'uint256',
+    'uint32',
+    'bytes32',
+    'address',
+    'bytes32',
+    'uint256',
+    'uint32',
+  ],
+};
+
+/**
+ * Finality thresholds for CCTPv2 attestation.
+ * Lower threshold = faster but potentially less secure.
+ * Higher threshold = slower but fully finalized.
+ */
+const FINALITY_THRESHOLD = {
+  /** Fast attestation with confirmed blocks */
+  CONFIRMED: 1000,
+  /** Slower attestation with fully finalized blocks */
+  FINALIZED: 2000,
+} as const;
+
+/**
+ * CCTPv2 transport for direct EVM-to-EVM USDC transfers.
+ *
+ * CCTPv2 enables direct cross-chain transfers between EVM chains
+ * without routing through Noble. This provides:
+ * - Faster transfers (~13-60 seconds vs ~18 minutes)
+ * - Lower costs (single hop vs two hops)
+ * - Configurable finality/speed tradeoffs via minFinalityThreshold
+ *
+ * @see {@link https://developers.circle.com/cctp/docs/cctp-v2}
+ */
+export const CCTPv2 = {
+  how: 'CCTPv2',
+  connections: keys(AxelarChain).flatMap((src: AxelarChain) =>
+    keys(AxelarChain)
+      .filter(dest => dest !== src)
+      .map((dest: AxelarChain) => ({ src, dest })),
+  ),
+  apply: async (ctx, amount, src, dest, ...optsArgs) => {
+    const traceTransfer = trace
+      .sub('CCTPv2')
+      .sub(`${src.chainName}->${dest.chainName}`);
+    traceTransfer('transfer', amount);
+
+    const { addresses } = ctx;
+    const tokenMessengerV2 = addresses.tokenMessengerV2;
+    if (!tokenMessengerV2) {
+      throw Fail`CCTPv2 not available on ${q(src.chainName)}: tokenMessengerV2 address not configured`;
+    }
+
+    const destDomain = CCTP_DOMAINS[dest.chainName];
+    if (destDomain === undefined) {
+      throw Fail`CCTPv2 destination domain not found for ${q(dest.chainName)}`;
+    }
+    const mintRecipient = evmAddressToBytes32(dest.remoteAddress);
+
+    // maxFee: set to 0 for no fee limit, or calculate based on gas estimates
+    // In practice, this should be estimated based on destination chain gas costs
+    // The relayer will deduct actual fees from the minted amount
+    const maxFee = 0n;
+
+    // Use CONFIRMED threshold for faster attestation; can be made configurable
+    const minFinalityThreshold = FINALITY_THRESHOLD.CONFIRMED;
+
+    // bytes32(0) - any caller allowed on destination
+    const ZERO_BYTES32: `0x${string}` = `0x${'0'.repeat(64)}`;
+
+    const session = makeEVMSession();
+    const usdc = session.makeContract(addresses.usdc, ERC20);
+    const tm = session.makeContract(tokenMessengerV2, TokenMessengerV2);
+
+    usdc.approve(tokenMessengerV2, amount.value);
+    tm.depositForBurn(
+      amount.value,
+      destDomain,
+      mintRecipient,
+      addresses.usdc,
+      ZERO_BYTES32, // destinationCaller: bytes32(0) = any caller allowed
+      maxFee,
+      minFinalityThreshold,
+    );
+
+    const calls = session.finish();
+
+    const { result } = ctx.resolverClient.registerTransaction(
+      TxType.CCTP_V2,
+      `${dest.chainId}:${dest.remoteAddress}`,
+      amount.value,
+    );
+
+    await sendGMPContractCall(ctx, src, calls, ...optsArgs);
+    await result;
+
+    traceTransfer('transfer complete');
+  },
+} as const satisfies TransportDetail<
+  'CCTPv2',
+  AxelarChain,
+  AxelarChain,
+  EVMContext
+>;
+harden(CCTPv2);
+
+/**
  * Invoke EVM Wallet Factory contract to create a remote account
  * at a predicatble address.
  *
