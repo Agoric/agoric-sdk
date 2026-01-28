@@ -3,7 +3,7 @@
 This document describes the current balance rebalancing solver used in **[plan-solve.ts](../portfolio-contract/tools/plan-solve.ts)** and the surrounding graph/diagnostics utilities.
 
 ## Domain & Graph Structure
-We model a multi-chain, multi-place asset distribution problem as a directed flow network, starting with static information from [`PROD_NETWORK`](portfolio-contract/tools/network/prod-network.ts) or some other NetworkSpec and dynamically adding information specific to the balances and targets of a single portfolio.
+We model a multi-chain, multi-place asset distribution problem as a directed flow network, starting with static information from [`PROD_NETWORK`](../portfolio-contract/tools/network/prod-network.ts) or some other NetworkSpec and dynamically adding information specific to the balances and targets of a single portfolio.
 
 ## Graph Nodes
 Each node (vertex) is an [AssetPlaceRef](../portfolio-api/src/types.ts):
@@ -11,7 +11,7 @@ Node (vertex) types (all implement AssetPlaceRef):
 - Chain hubs: `@${chainName}` (e.g. `@Arbitrum`, `@Avalanche`, `@Ethereum`, `@noble`, `@agoric`). A single hub per chain collects and redistributes flow for that chain.
 - Per-instrument leaves: `${yieldProtocol}_${chainName}` identifiers (e.g. `Aave_Arbitrum`, `Beefy_re7_Avalanche`, `Compound_Ethereum`). Each is attached to exactly one hub (its chain).
 - Places not under system control (`+${chainName}` for deposit sources, `-${chainName}` for withdrawal targets).
-- Local Agoric constract seats and accounts (until [#12309](https://github.com/Agoric/agoric-sdk/issues/12309)): `<Deposit>` [deposit source seat], `<Cash>` [withdrawal target seat], and `+agoric` [originally a staging account used to accumulate new deposits before deployment, now unused]. Each is a leaf on the `@agoric` hub.
+- Local Agoric contract seats and accounts (until [#12309](https://github.com/Agoric/agoric-sdk/issues/12309)): `<Deposit>` [deposit source seat], `<Cash>` [withdrawal target seat], and `+agoric` [originally a staging account used to accumulate new deposits before deployment, now unused]. Each is a leaf on the `@agoric` hub.
 
 Instrument-to-chain affiliation is sourced from [`PoolPlaces`](../portfolio-contract/src/type-guards.ts) at build time. Hubs are not auto-added from PoolPlaces; only pools whose hub is already present in the NetworkSpec are auto-included. When a pool id isn't found, `chainOf(x)` falls back to parsing the suffix of `${yieldProtocol}_${chainName}`.
 
