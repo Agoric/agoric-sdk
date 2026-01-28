@@ -2729,6 +2729,74 @@ test('wayFromSrcToDesc rejects @agoric -> -Arbitrum (invalid src for withdraw)',
 
 // #endregion
 
+// #region evmHandler.rebalance tests
+
+test('evmHandler.rebalance completes a rebalance flow', async t => {
+  const amount = AmountMath.make(USDC, 1_000_000n);
+  const fee = AmountMath.make(BLD, 100n);
+
+  // Valid checksummed Ethereum address (42161 is Arbitrum chain ID)
+  const sourceAccountId =
+    'eip155:42161:0x1234567890AbcdEF1234567890aBcdef12345678';
+
+  const { ctx, offer, storage, txResolver } = mocks({}, {});
+  const { log } = offer;
+  const kit = await ctx.makePortfolioKit({ sourceAccountId });
+  const portfolioId = kit.reader.getPortfolioId();
+  const { getPortfolioStatus, getFlowHistory } = makeStorageTools(storage);
+  let flowNum: number | undefined;
+
+  // Invoke rebalance via evmHandler with target allocation
+  const allocations = [
+    { instrument: 'Aave_Arbitrum', portion: 60n },
+    { instrument: 'Compound_Arbitrum', portion: 40n },
+  ];
+  const flowKey = kit.evmHandler.rebalance(allocations);
+  t.regex(flowKey, /^flow\d+$/);
+
+  // Planner provides a rebalance plan
+  const plannerP = (async () => {
+    const { flowsRunning = {} } = await getPortfolioStatus(portfolioId);
+    const [[flowId, detail]] = Object.entries(flowsRunning);
+    if (detail.type !== 'rebalance') throw t.fail(`expected rebalance, got ${detail.type}`);
+    flowNum = Number(flowId.replace('flow', ''));
+
+    // Simple rebalance: move from one position to another
+    const steps: MovementDesc[] = [
+      { src: 'Aave_Arbitrum', dest: '@Arbitrum', amount, fee },
+      { src: '@Arbitrum', dest: 'Compound_Arbitrum', amount, fee },
+    ];
+    kit.planner.resolveFlowPlan(flowNum, steps);
+    await txResolver.drainPending();
+  })();
+
+  await plannerP;
+  await eventLoopIteration();
+
+  t.log(log.map(msg => msg._method).join(', '));
+
+  // Verify the flow completed and was cleaned up
+  const { flowsRunning = {} } = await getPortfolioStatus(portfolioId);
+  t.deepEqual(flowsRunning, {}, 'flow should be cleaned up after completion');
+  if (flowNum === undefined) throw new Error('flow number not captured');
+  const flowHistory = await getFlowHistory(portfolioId, flowNum);
+  t.is(flowHistory.at(-1)?.state, 'done');
+});
+
+test('evmHandler.rebalance rejects when sourceAccountId is not set', async t => {
+  const { ctx } = mocks({}, {});
+
+  // Create kit WITHOUT sourceAccountId
+  const kit = await ctx.makePortfolioKit();
+
+  t.throws(
+    () => kit.evmHandler.rebalance([{ instrument: 'Aave_Arbitrum', portion: 100n }]),
+    { message: /rebalance requires sourceAccountId to be set/ },
+  );
+});
+
+// #endregion evmHandler.rebalance tests
+
 // #region evmHandler.withdraw step execution tests
 
 test('evmHandler.withdraw via CCTPtoUser sends depositForBurn to user address', async t => {
