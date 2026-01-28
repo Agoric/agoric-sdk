@@ -2731,6 +2731,9 @@ test('wayFromSrcToDesc rejects @agoric -> -Arbitrum (invalid src for withdraw)',
 
 // #region evmHandler.rebalance tests
 
+// XXX: These tests should exercise the flows directly without evmHandler
+//      `portfolio.exos.test.ts` should test that executePlan gets called
+
 test('evmHandler.rebalance completes a rebalance flow', async t => {
   const amount = AmountMath.make(USDC, 1_000_000n);
   const fee = AmountMath.make(BLD, 100n);
@@ -2798,6 +2801,9 @@ test('evmHandler.rebalance rejects when sourceAccountId is not set', async t => 
 // #endregion evmHandler.rebalance tests
 
 // #region evmHandler.withdraw step execution tests
+
+// XXX: These tests should exercise the flows directly without evmHandler
+//      portfolio.exos.test.ts should test that executePlan gets called
 
 test('evmHandler.withdraw via CCTPtoUser sends depositForBurn to user address', async t => {
   const withdrawAmount = 2_000_000n;
