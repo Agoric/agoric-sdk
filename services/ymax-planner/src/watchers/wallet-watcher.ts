@@ -1,4 +1,4 @@
-import type { Filter, WebSocketProvider, Log } from 'ethers';
+import type { Filter, WebSocketProvider } from 'ethers';
 import { id, zeroPadValue, getAddress, AbiCoder } from 'ethers';
 import type { WebSocket } from 'ws';
 import type { CaipChainId } from '@agoric/orchestration';
@@ -18,10 +18,11 @@ import {
 import type { WatcherResult } from '../pending-tx-manager.ts';
 import {
   fetchReceiptWithRetry,
-  handleReceiptStatus,
+  extractFactoryExecuteData,
   DEFAULT_RETRY_OPTIONS,
   type AlchemySubscriptionMessage,
   type RetryOptions,
+  handleTxRevert,
 } from './watcher-utils.ts';
 
 // New version (3 parameters) - without sourceAddress
@@ -74,6 +75,7 @@ type SmartWalletWatchBase = {
   factoryAddr: `0x${string}`;
   provider: WebSocketProvider;
   expectedAddr: `0x${string}`;
+  expectedSourceAddress: string;
   chainId: CaipChainId;
   log?: (...args: unknown[]) => void;
   retryOptions?: RetryOptions;
@@ -88,6 +90,7 @@ export const watchSmartWalletTx = ({
   factoryAddr,
   provider,
   expectedAddr,
+  expectedSourceAddress,
   chainId,
   timeoutMs = TX_TIMEOUT_MS,
   log = () => {},
@@ -205,7 +208,22 @@ export const watchSmartWalletTx = ({
         }
 
         const txHash = tx.hash;
-        if (!txHash) return;
+        const txData = tx.input;
+        if (!txHash || !txData) return;
+
+        // Extract sourceAddress and expectedWalletAddress from Factory.execute() calldata
+        const executeData = extractFactoryExecuteData(txData);
+        if (!executeData) return;
+
+        const { sourceAddress, expectedWalletAddress } = executeData;
+
+        // Check sourceAddress matches
+        if (
+          sourceAddress !== expectedSourceAddress ||
+          getAddress(expectedWalletAddress) !== getAddress(expectedAddr)
+        ) {
+          return;
+        }
 
         // Fetch receipt to check for SmartWalletCreated event
         const receipt = await fetchReceiptWithRetry(
@@ -213,6 +231,7 @@ export const watchSmartWalletTx = ({
           txHash,
           log,
           retryOptions,
+          setTimeout,
         );
         if (!receipt) {
           log(`Transaction ${txHash} not confirmed after waiting`);
@@ -238,20 +257,17 @@ export const watchSmartWalletTx = ({
           }
         });
 
-        if (!matchingLog) {
-          // This transaction to the factory doesn't create our expected wallet
-          return;
+        if (receipt.status === 1 && matchingLog) {
+          // Success case: return immediately without waiting for any confirmations (0 blocks)
+          // Rationale: Even if a reorg occurs, the transaction will likely succeed again
+          // Waiting for confirmations in success cases would hurt performance unnecessarily
+          log(
+            `✅ SUCCESS: expectedAddr=${expectedAddr} txHash=${txHash} block=${receipt.blockNumber}`,
+          );
+          return finish({ settled: true, txHash, success: true });
         }
 
-        log(
-          `✓ Found SmartWalletCreated event for expectedAddr=${expectedAddr} in txHash=${txHash}`,
-        );
-
-        /**
-         * Transaction status check: We found the SmartWalletCreated event in the logs.
-         * Now check if the transaction succeeded or reverted.
-         */
-        const result = await handleReceiptStatus(
+        const result = await handleTxRevert(
           receipt,
           txHash,
           `expectedAddr=${expectedAddr}`,
@@ -294,7 +310,6 @@ export const watchSmartWalletTx = ({
       ws.once('open', () => subscribe().catch(fail));
     }
 
-    // Intentional: does not resolve/reject; only logs on timeout
     timeoutId = setTimeout(() => {
       if (!done) {
         log(

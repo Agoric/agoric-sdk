@@ -1,5 +1,82 @@
 import type { TransactionReceipt, WebSocketProvider } from 'ethers';
+import { Interface, AbiCoder, getAddress } from 'ethers';
 import { getConfirmationsRequired } from '../support.ts';
+
+//#region Axelar execute calldata extraction
+// AxelarExecutable entrypoint (standard)
+// See https://docs.axelar.dev/dev/general-message-passing/executable
+// Note: Using _ABI_TEXT suffix for human-readable string format
+const AXELAR_EXECUTE_ABI_TEXT = [
+  'function execute(bytes32 commandId, string sourceChain, string sourceAddress, bytes payload) external',
+];
+const axelarExecuteIface = new Interface(AXELAR_EXECUTE_ABI_TEXT);
+
+/**
+ * Extract data from GMP Wallet.execute() calldata.
+ * Payload structure: CallMessage { string id; ContractCalls[] calls; }
+ *
+ * @param data - Transaction input data (calldata)
+ * @param abiCoder - AbiCoder instance for decoding payload
+ * @returns Object with txId and sourceAddress, or null if parsing fails
+ */
+export const extractGmpExecuteData = (
+  data: string,
+  abiCoder: AbiCoder = new AbiCoder(),
+): { txId: string; sourceAddress: string } | null => {
+  try {
+    const parsed = axelarExecuteIface.parseTransaction({ data });
+    if (!parsed) return null;
+
+    const [_commandId, _sourceChain, sourceAddress, payload] = parsed.args;
+    if (!sourceAddress || !payload) return null;
+
+    // Decode CallMessage payload: tuple(string id, tuple(address target, bytes data)[] calls)
+    const [decoded] = abiCoder.decode(
+      ['tuple(string id, tuple(address target, bytes data)[] calls)'],
+      payload,
+    );
+
+    const txId = decoded?.id;
+    if (typeof txId !== 'string') return null;
+
+    return { txId, sourceAddress };
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Extract data from Factory.execute() calldata.
+ * Payload structure: address (expected wallet address)
+ *
+ * @param data - Transaction input data (calldata)
+ * @param abiCoder - AbiCoder instance for decoding payload
+ * @returns Object with expectedWalletAddress and sourceAddress, or null if parsing fails
+ */
+export const extractFactoryExecuteData = (
+  data: string,
+  abiCoder: AbiCoder = new AbiCoder(),
+): { expectedWalletAddress: string; sourceAddress: string } | null => {
+  try {
+    const parsed = axelarExecuteIface.parseTransaction({ data });
+    if (!parsed) return null;
+
+    const [_commandId, _sourceChain, sourceAddress, payload] = parsed.args;
+    if (!sourceAddress || !payload) return null;
+
+    // Decode address payload
+    const [expectedWalletAddress] = abiCoder.decode(['address'], payload);
+    if (!expectedWalletAddress) return null;
+
+    return {
+      expectedWalletAddress: getAddress(expectedWalletAddress),
+      sourceAddress,
+    };
+  } catch {
+    return null;
+  }
+};
+//#endregion
 
 //#region Alchemy alchemy_minedTransactions subscription types
 // See https://docs.alchemy.com/reference/alchemy-minedtransactions
@@ -56,6 +133,7 @@ export const DEFAULT_RETRY_OPTIONS: RetryOptions = {
  * @param txHash - Transaction hash
  * @param log - Logging function
  * @param retryOptions - Retry configuration (limit and backoffLimit)
+ * @param setTimeout - setTimeout function (injected to avoid ambient authority)
  * @returns Transaction receipt or null if not available after retries
  */
 export const fetchReceiptWithRetry = async (
@@ -63,6 +141,7 @@ export const fetchReceiptWithRetry = async (
   txHash: string,
   log: (...args: unknown[]) => void,
   retryOptions: RetryOptions = DEFAULT_RETRY_OPTIONS,
+  setTimeout: typeof globalThis.setTimeout = globalThis.setTimeout,
 ) => {
   const { limit, backoffLimit } = retryOptions;
   let receipt = await provider.getTransactionReceipt(txHash);
@@ -97,7 +176,7 @@ export const fetchReceiptWithRetry = async (
  * @param log - Logging function
  * @returns Object with settled flag, success status, and transaction hash
  */
-export const handleReceiptStatus = async (
+export const handleTxRevert = async (
   receipt: TransactionReceipt,
   txHash: string,
   identifier: string,
@@ -105,49 +184,38 @@ export const handleReceiptStatus = async (
   provider: WebSocketProvider,
   log: (...args: unknown[]) => void,
 ): Promise<{ settled: true; txHash: string; success: boolean } | null> => {
-  if (receipt.status === 1) {
-    // Success case: return immediately without waiting for any confirmations (0 blocks)
-    // Rationale: Even if a reorg occurs, the transaction will likely succeed again
-    // Waiting for confirmations in success cases would hurt performance unnecessarily
+  await null;
+  if (receipt.status !== 0) return null;
+
+  /**
+   * Transaction reverted - For failure cases, we wait for full finality
+   * confirmations to ensure the failure is permanent. A failure that reorgs
+   * into a success is very hard for our system to recover from, so we must
+   * be certain of the failure.
+   */
+  const confirmations = getConfirmationsRequired(chainId);
+  const confirmedReceipt = await provider.waitForTransaction(
+    txHash,
+    confirmations,
+  );
+  if (!confirmedReceipt) {
     log(
-      `✅ SUCCESS: ${identifier} txHash=${txHash} block=${receipt.blockNumber}`,
+      `Transaction ${txHash} was not confirmed after waiting for ${confirmations} confirmations (possibly reorged out)`,
+    );
+    return null;
+  }
+
+  // Re-check status after confirmations in case of reorg
+  if (confirmedReceipt.status === 0) {
+    log(
+      `❌ REVERTED (${confirmations} confirmations): ${identifier} txHash=${txHash} block=${confirmedReceipt.blockNumber} - transaction failed`,
+    );
+    return { settled: true, txHash, success: false };
+  } else {
+    // Transaction was reorged and succeeded - treat as success
+    log(
+      `✅ SUCCESS (after reorg, ${confirmations} confirmations): ${identifier} txHash=${txHash} block=${confirmedReceipt.blockNumber}`,
     );
     return { settled: true, txHash, success: true };
   }
-
-  if (receipt.status === 0) {
-    /**
-     * Transaction reverted - For failure cases, we wait for full finality
-     * confirmations to ensure the failure is permanent. A failure that reorgs
-     * into a success is very hard for our system to recover from, so we must
-     * be certain of the failure.
-     */
-    const confirmations = getConfirmationsRequired(chainId);
-    const confirmedReceipt = await provider.waitForTransaction(
-      txHash,
-      confirmations,
-    );
-    if (!confirmedReceipt) {
-      log(
-        `Transaction ${txHash} was not confirmed after waiting for ${confirmations} confirmations (possibly reorged out)`,
-      );
-      return null;
-    }
-
-    // Re-check status after confirmations in case of reorg
-    if (confirmedReceipt.status === 0) {
-      log(
-        `❌ REVERTED (${confirmations} confirmations): ${identifier} txHash=${txHash} block=${confirmedReceipt.blockNumber} - transaction failed`,
-      );
-      return { settled: true, txHash, success: false };
-    } else {
-      // Transaction was reorged and succeeded - treat as success
-      log(
-        `✅ SUCCESS (after reorg, ${confirmations} confirmations): ${identifier} txHash=${txHash} block=${confirmedReceipt.blockNumber}`,
-      );
-      return { settled: true, txHash, success: true };
-    }
-  }
-
-  return null;
 };

@@ -18,10 +18,11 @@ import {
 } from '../kv-store.ts';
 import {
   fetchReceiptWithRetry,
-  handleReceiptStatus,
+  extractGmpExecuteData,
   DEFAULT_RETRY_OPTIONS,
   type AlchemySubscriptionMessage,
   type RetryOptions,
+  handleTxRevert,
 } from './watcher-utils.ts';
 
 const MULTICALL_STATUS_SIGNATURE = ethers.id(
@@ -38,49 +39,6 @@ type WatchGmp = {
   kvStore: KVStore;
   makeAbortController: MakeAbortController;
   retryOptions?: RetryOptions;
-};
-
-// AxelarExecutable entrypoint (standard)
-// See https://docs.axelar.dev/dev/general-message-passing/executable
-// Note: Using _ABI_TEXT suffix for human-readable string format
-const WALLET_EXECUTE_CONTRACT_ABI_TEXT = [
-  'function execute(bytes32 commandId, string sourceChain, string sourceAddress, bytes payload) external',
-];
-const walletExecuteIface = new ethers.Interface(
-  WALLET_EXECUTE_CONTRACT_ABI_TEXT,
-);
-const abiCoder = ethers.AbiCoder.defaultAbiCoder();
-
-/**
- * Decode Wallet.execute(...) calldata and extract CallMessage.id from the payload
- * and sourceAddress from the execute() parameters.
- *
- * @returns Object with txId and sourceAddress, or null if parsing fails
- */
-const extractExecuteData = (
-  data: string,
-): { txId: string; sourceAddress: string } | null => {
-  try {
-    const parsed = walletExecuteIface.parseTransaction({ data });
-    if (!parsed) return null;
-
-    // execute(bytes32 commandId, string sourceChain, string sourceAddress, bytes payload)
-    const [_commandId, _sourceChain, sourceAddress, payload] = parsed.args;
-    if (!sourceAddress || !payload) return null;
-
-    // CallMessage { string id; ContractCalls[] calls; }
-    const [decoded] = abiCoder.decode(
-      ['tuple(string id, tuple(address target, bytes data)[] calls)'],
-      payload,
-    );
-
-    const txId = decoded?.id;
-    if (typeof txId !== 'string') return null;
-
-    return { txId, sourceAddress };
-  } catch {
-    return null;
-  }
 };
 
 export const watchGmp = ({
@@ -209,7 +167,7 @@ export const watchGmp = ({
         const txData = tx.input;
         if (!txHash || !txData) return;
 
-        const executeData = extractExecuteData(txData);
+        const executeData = extractGmpExecuteData(txData);
         if (!executeData || executeData.txId !== txId) return;
 
         if (executeData.sourceAddress !== expectedSourceAddress) {
@@ -224,6 +182,7 @@ export const watchGmp = ({
           txHash,
           log,
           retryOptions,
+          setTimeout,
         );
         if (!receipt) {
           log(`Transaction ${txHash} not confirmed after waiting`);
@@ -236,9 +195,14 @@ export const watchGmp = ({
             l.topics?.[1] === expectedIdTopic,
         );
 
-        // For GMP transactions, only consider those with the expected MulticallStatus event
-        if (!matchingLog) {
-          return;
+        if (receipt.status === 1 && matchingLog) {
+          // Success case: return immediately without waiting for any confirmations (0 blocks)
+          // Rationale: Even if a reorg occurs, the transaction will likely succeed again
+          // Waiting for confirmations in success cases would hurt performance unnecessarily
+          log(
+            `✅ SUCCESS: txId=${txId} txHash=${txHash} block=${receipt.blockNumber}`,
+          );
+          return finish({ settled: true, txHash, success: true });
         }
 
         /**
@@ -247,7 +211,7 @@ export const watchGmp = ({
          * from our own wallet. Spurious executions from unauthorized parties are already
          * filtered out by the sourceAddress check above.
          */
-        const result = await handleReceiptStatus(
+        const result = await handleTxRevert(
           receipt,
           txHash,
           `txId=${txId}`,
