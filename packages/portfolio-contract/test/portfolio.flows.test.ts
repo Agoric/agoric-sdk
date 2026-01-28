@@ -627,8 +627,26 @@ const mocks = (
   const rebalanceHost = (seat, offerArgs, kit) =>
     rebalance(orch, ctx1, seat, offerArgs, kit);
 
-  const executePlanHost = (seat, offerArgs, kit, flowDetail, startedFlow, config, options) =>
-    executePlan(orch, ctx1, seat, offerArgs, kit, flowDetail, startedFlow, config, options);
+  const executePlanHost = (
+    seat,
+    offerArgs,
+    kit,
+    flowDetail,
+    startedFlow,
+    config,
+    options,
+  ) =>
+    executePlan(
+      orch,
+      ctx1,
+      seat,
+      offerArgs,
+      kit,
+      flowDetail,
+      startedFlow,
+      config,
+      options,
+    );
 
   const makePortfolioKit = preparePortfolioKit(zone, {
     zcf: mockZCF,
@@ -2761,7 +2779,8 @@ test('evmHandler.rebalance completes a rebalance flow', async t => {
   const plannerP = (async () => {
     const { flowsRunning = {} } = await getPortfolioStatus(portfolioId);
     const [[flowId, detail]] = Object.entries(flowsRunning);
-    if (detail.type !== 'rebalance') throw t.fail(`expected rebalance, got ${detail.type}`);
+    if (detail.type !== 'rebalance')
+      throw t.fail(`expected rebalance, got ${detail.type}`);
     flowNum = Number(flowId.replace('flow', ''));
 
     // Simple rebalance: move from one position to another
@@ -2793,7 +2812,10 @@ test('evmHandler.rebalance rejects when sourceAccountId is not set', async t => 
   const kit = await ctx.makePortfolioKit();
 
   t.throws(
-    () => kit.evmHandler.rebalance([{ instrument: 'Aave_Arbitrum', portion: 100n }]),
+    () =>
+      kit.evmHandler.rebalance([
+        { instrument: 'Aave_Arbitrum', portion: 100n },
+      ]),
     { message: /rebalance requires sourceAccountId to be set/ },
   );
 });
@@ -2858,10 +2880,7 @@ test('evmHandler.withdraw via CCTPtoUser sends depositForBurn to user address', 
     'destination should be user address from sourceAccountId',
   );
 
-  t.like(log, [
-    { _method: 'monitorTransfers' },
-    { _method: 'depositForBurn' },
-  ]);
+  t.like(log, [{ _method: 'monitorTransfers' }, { _method: 'depositForBurn' }]);
 
   t.snapshot(log, 'call log');
   await documentStorageSchema(t, storage, docOpts);
@@ -2897,7 +2916,8 @@ test('evmHandler.withdraw via GMP sends ERC20 transfer to user address', async t
   const plannerP = (async () => {
     const { flowsRunning = {} } = await getPortfolioStatus(portfolioId);
     const [[flowId, detail]] = Object.entries(flowsRunning);
-    if (detail.type !== 'withdraw') throw t.fail(`expected withdraw, got ${detail.type}`);
+    if (detail.type !== 'withdraw')
+      throw t.fail(`expected withdraw, got ${detail.type}`);
     flowNum = Number(flowId.replace('flow', ''));
     t.is(detail.toChain, 'Arbitrum', 'toChain should be Arbitrum');
     t.deepEqual(detail.amount, amount, 'amount should match');
@@ -2920,7 +2940,10 @@ test('evmHandler.withdraw via GMP sends ERC20 transfer to user address', async t
     (entry: any) =>
       entry._method === 'transfer' && entry.address?.chainId === axelarId,
   );
-  t.true(gmpTransfers.length > 0, 'GMP transfer should be made for withdrawToEVM');
+  t.true(
+    gmpTransfers.length > 0,
+    'GMP transfer should be made for withdrawToEVM',
+  );
 
   // Verify the flow completes successfully (no fail call)
   const failCall = log.find((entry: any) => entry._method === 'fail');
