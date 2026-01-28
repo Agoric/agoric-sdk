@@ -460,7 +460,10 @@ type BlockReceiptsResponse = Array<{
 export const scanEvmLogsInChunks = async (
   opts: ScanOpts,
   predicate: LogPredicate,
-): Promise<Log | undefined> => {
+): Promise<{
+  log: Log | undefined;
+  failedTx: TransactionResponse | undefined;
+}> => {
   const {
     provider,
     baseFilter,
@@ -478,7 +481,7 @@ export const scanEvmLogsInChunks = async (
   for (let start = fromBlock; start <= toBlock; ) {
     if (signal?.aborted) {
       log('[LogScan] Aborted');
-      return undefined;
+      return { log: undefined, failedTx: undefined };
     }
     const end = Math.min(start + chunkSize - 1, toBlock);
     const currentBlock = await provider.getBlockNumber();
@@ -501,7 +504,7 @@ export const scanEvmLogsInChunks = async (
       for (let blockNumber = start; blockNumber <= end; blockNumber += 1) {
         if (signal?.aborted) {
           log('[LogScan] Aborted');
-          return undefined;
+          return { log: undefined, failedTx: undefined };
         }
         try {
           const blockTag = toBeHex(blockNumber);
@@ -525,7 +528,8 @@ export const scanEvmLogsInChunks = async (
                 );
               }
               // Verify if this is indeed a failed transaction we care about
-              if (!(await verifyFailedTx(tx, receipt))) continue;
+              if (await verifyFailedTx(tx, receipt))
+                return { log: undefined, failedTx: tx };
             }
           }
         } catch (err) {
@@ -550,7 +554,7 @@ export const scanEvmLogsInChunks = async (
       for (const evt of logs) {
         if (await predicate(evt)) {
           log(`[LogScan] Match in tx=${evt.transactionHash}`);
-          return evt;
+          return { log: evt, failedTx: undefined };
         }
       }
       await opts.onRejectedChunk?.(start, end);
@@ -561,7 +565,7 @@ export const scanEvmLogsInChunks = async (
 
     start += chunkSize;
   }
-  return undefined;
+  return { log: undefined, failedTx: undefined };
 };
 
 export const waitForBlock = async (
