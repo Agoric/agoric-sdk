@@ -318,7 +318,7 @@ const makeTrafficPublishingReducer = ({
           break;
         }
         default: {
-          // TODO: handle other traffic types.
+          // XXX: handle other traffic types.
           type = TxType.UNKNOWN;
           break;
         }
@@ -451,8 +451,6 @@ const trackFlow = async (
       if (destPos) {
         destPos.recordTransferIn(amount);
       }
-
-      // TODO(#NNNN): delete the flow storage node
     } catch (err) {
       traceFlow('⚠️ step', step, 'failed', err);
       const failure = moves[step - 1];
@@ -650,7 +648,7 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
         throw Fail`src pos must have account as dest ${q(moveDesc)}`;
       const poolKey = src as PoolKey;
       const { protocol } = PoolPlaces[poolKey];
-      // TODO move this into metadata
+      // XXX move this into metadata
       const feeRequired = ['Compound', 'Aave', 'Beefy', 'ERC4626'];
       moveDesc.fee ||
         !feeRequired.includes(protocol) ||

@@ -252,8 +252,8 @@ export const makePortfolioPath = (id: number): [`portfolio${number}`] => [
  * segment).
  */
 export const portfolioIdFromKey = (portfolioKey: `portfolio${number}`) => {
-  // TODO: const strId = stripPrefix('portfolio', portfolioKey);
-  // TODO: const id = Number(strId);
+  // XXX: const strId = stripPrefix('portfolio', portfolioKey);
+  // XXX: const id = Number(strId);
   const id = Number(portfolioKey.replace(/^portfolio/, ''));
   isNat(id) || Fail`bad key: ${portfolioKey}`;
   return id;
