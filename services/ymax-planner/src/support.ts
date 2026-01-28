@@ -1,5 +1,5 @@
-import { WebSocketProvider, Log } from 'ethers';
-import type { Filter } from 'ethers';
+import { WebSocketProvider, Log, toBeHex } from 'ethers';
+import type { Filter, TransactionResponse } from 'ethers';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { ClusterName } from '@agoric/internal';
 import { fromTypedEntries, objectMap, typedEntries } from '@agoric/internal';
@@ -436,11 +436,22 @@ type ScanOpts = {
   chunkSize?: number;
   log?: (...args: unknown[]) => void;
   signal?: AbortSignal;
+  toAddress?: string;
+  verifyFailedTx?: (
+    tx: TransactionResponse,
+    receipt: BlockReceiptsResponse[number],
+  ) => boolean | Promise<boolean>;
   onRejectedChunk?: (
     startBlock: number,
     endBlock: number,
   ) => Promise<void> | void;
 };
+
+type BlockReceiptsResponse = Array<{
+  transactionHash: `0x${string}`;
+  status: `0x${string}` | null;
+  to: `0x${string}` | null;
+}>;
 
 /**
  * Generic chunked log scanner: scans [fromBlock, toBlock] in CHUNK_SIZE windows,
@@ -459,6 +470,8 @@ export const scanEvmLogsInChunks = async (
     chunkSize = 10,
     log = () => {},
     signal,
+    toAddress,
+    verifyFailedTx,
   } = opts;
 
   await null;
@@ -481,6 +494,47 @@ export const scanEvmLogsInChunks = async (
       );
       await new Promise(resolve => setTimeout(resolve, waitTimeMs));
       continue; // Retry this chunk after waiting
+    }
+
+    if (toAddress && verifyFailedTx) {
+      // Check for failed transactions in the block range using eth_getBlockReceipts.
+      for (let blockNumber = start; blockNumber <= end; blockNumber += 1) {
+        if (signal?.aborted) {
+          log('[LogScan] Aborted');
+          return undefined;
+        }
+        try {
+          const blockTag = toBeHex(blockNumber);
+          const receipts = (await provider.send('eth_getBlockReceipts', [
+            blockTag,
+          ])) as BlockReceiptsResponse;
+          for (const receipt of receipts) {
+            const { transactionHash, status, to } = receipt;
+            if (!to || to.toLowerCase() !== toAddress.toLowerCase()) {
+              continue;
+            }
+            const statusValue = status
+              ? Number.parseInt(status, 16)
+              : undefined;
+
+            if (statusValue === 0) {
+              const tx = await provider.getTransaction(transactionHash);
+              if (!tx) {
+                throw new Error(
+                  `Transaction ${transactionHash} not found for failed receipt`,
+                );
+              }
+              // Verify if this is indeed a failed transaction we care about
+              if (!(await verifyFailedTx(tx, receipt))) continue;
+            }
+          }
+        } catch (err) {
+          log(
+            `[LogScan] Error checking block ${blockNumber} for failures:`,
+            err,
+          );
+        }
+      }
     }
 
     const chunkFilter: Filter = {

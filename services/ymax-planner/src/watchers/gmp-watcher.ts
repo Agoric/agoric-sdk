@@ -280,6 +280,7 @@ export const lookBackGmp = async ({
   signal,
   kvStore,
   makeAbortController,
+  expectedSourceAddress,
 }: WatchGmp & {
   publishTimeMs: number;
   chainId: CaipChainId;
@@ -335,6 +336,12 @@ export const lookBackGmp = async ({
         baseFilter: statusFilter,
         fromBlock: statusEventLowerBound,
         onRejectedChunk: updateStatusEventLowerBound,
+        toAddress: contractAddress,
+        verifyFailedTx: tx => {
+          const data = extractExecuteData(tx.data);
+          if (data?.sourceAddress === expectedSourceAddress) return true;
+          return false;
+        },
       },
       isMatch,
     );
