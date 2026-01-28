@@ -389,9 +389,16 @@ const createMockEvmProviders = (
   'eip155:11155111': createMockProvider(latestBlock, events),
 });
 
+const createMockRpcUrls = (): Record<CaipChainId, string> => ({
+  'eip155:1': 'https://mock-ethereum-rpc.example',
+  'eip155:42161': 'https://mock-arbitrum-rpc.example',
+  'eip155:11155111': 'https://mock-sepolia-rpc.example',
+});
+
 export const mockEvmCtx = {
   usdcAddresses: {},
   evmProviders: createMockEvmProviders(),
+  rpcUrls: createMockRpcUrls(),
   kvStore: makeKVStoreFromMap(new Map()),
   makeAbortController,
   axelarApiUrl: mockAxelarApiAddress,
@@ -498,6 +505,18 @@ export const createMockCosmosRestClient = (
   } as any;
 };
 
+const mockGlobalFetch = url => {
+  if (Object.values(createMockRpcUrls()).includes(url)) {
+    return {
+      ok: true,
+      json: async () => [
+        {
+          result: [],
+        },
+      ],
+    } as Response;
+  }
+};
 export const createMockPendingTxOpts = (
   latestBlock = 1000,
   events?: Pick<Log, 'blockNumber' | 'data' | 'topics' | 'transactionHash'>[],
@@ -505,9 +524,10 @@ export const createMockPendingTxOpts = (
   cosmosRest: {} as unknown as CosmosRestClient,
   cosmosRpc: {} as unknown as CosmosRPCClient,
   evmProviders: createMockEvmProviders(latestBlock, events),
+  rpcUrls: createMockRpcUrls(),
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore some resolutions don't expect this on global
-  fetch: global.fetch,
+  fetch: mockGlobalFetch,
   marshaller: boardSlottingMarshaller(),
   signingSmartWalletKit: createMockSigningSmartWalletKit(),
   ydsNotifier: {

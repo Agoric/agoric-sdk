@@ -270,8 +270,17 @@ export const watchGmp = ({
 
 export const MULTICALL_STATUS_EVENT = 'status';
 
+type WatchGmpLookback = {
+  publishTimeMs: number;
+  chainId: CaipChainId;
+  signal?: AbortSignal;
+  fetch: typeof fetch;
+  rpcUrl: string;
+};
+
 export const lookBackGmp = async ({
   provider,
+  rpcUrl,
   contractAddress,
   txId,
   publishTimeMs,
@@ -280,12 +289,8 @@ export const lookBackGmp = async ({
   signal,
   kvStore,
   makeAbortController,
-  expectedSourceAddress,
-}: WatchGmp & {
-  publishTimeMs: number;
-  chainId: CaipChainId;
-  signal?: AbortSignal;
-}): Promise<WatcherResult> => {
+  fetch,
+}: WatchGmp & WatchGmpLookback): Promise<WatcherResult> => {
   await null;
   try {
     const fromBlock = await getBlockNumberBeforeRealTime(
@@ -324,10 +329,12 @@ export const lookBackGmp = async ({
     );
     const baseScanOpts = {
       provider,
+      rpcUrl,
       toBlock,
       chainId,
       log,
       signal: sharedSignal,
+      fetch,
     };
 
     const { log: matchingEvent, failedTx } = await scanEvmLogsInChunks(
@@ -339,7 +346,7 @@ export const lookBackGmp = async ({
         toAddress: contractAddress,
         verifyFailedTx: tx => {
           const data = extractExecuteData(tx.data);
-          if (data?.sourceAddress === expectedSourceAddress) return true;
+          if (data?.txId === txId) return true;
           return false;
         },
       },
