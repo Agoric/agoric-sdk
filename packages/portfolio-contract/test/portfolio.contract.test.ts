@@ -1837,6 +1837,8 @@ test('evmHandler.withdraw starts a withdraw flow', async t => {
     },
     'withdraw flow is running',
   );
+
+  // XXX should test the whole flow, not just the start
 });
 
 test.todo('evmHandler.withdraw fails if sourceAccountId not set');
@@ -2395,6 +2397,8 @@ test('evmHandler.rebalance with target allocation sets allocation and starts a r
     { [rebalanceFlowKey]: { type: 'rebalance' } },
     'rebalance flow running',
   );
+
+  // XXX should test the whole flow, not just the start
 });
 
 test('evmHandler.rebalance without target allocation uses existing allocation', async t => {
@@ -2498,4 +2502,6 @@ test('evmHandler.rebalance without target allocation uses existing allocation', 
     { [rebalanceFlowKey]: { type: 'rebalance' } },
     'rebalance flow running',
   );
+
+  // XXX should test the whole flow, not just the start
 });

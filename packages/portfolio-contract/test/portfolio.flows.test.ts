@@ -627,6 +627,27 @@ const mocks = (
   const rebalanceHost = (seat, offerArgs, kit) =>
     rebalance(orch, ctx1, seat, offerArgs, kit);
 
+  const executePlanHost = (
+    seat,
+    offerArgs,
+    kit,
+    flowDetail,
+    startedFlow,
+    config,
+    options,
+  ) =>
+    executePlan(
+      orch,
+      ctx1,
+      seat,
+      offerArgs,
+      kit,
+      flowDetail,
+      startedFlow,
+      config,
+      options,
+    );
+
   const makePortfolioKit = preparePortfolioKit(zone, {
     zcf: mockZCF,
     axelarIds: axelarIdsMock,
@@ -634,12 +655,15 @@ const mocks = (
     vowTools,
     transferChannels,
     rebalance: rebalanceHost as any,
+    executePlan: executePlanHost as any,
     onAgoricTransfer: onAgoricTransferHost as any,
     proposalShapes: makeProposalShapes(USDC, BLD),
     offerArgsShapes: makeOfferArgsShapes(USDC),
     marshaller,
     portfoliosNode,
     usdcBrand: USDC,
+    eip155ChainIdToAxelarChain,
+    contracts: contractsMock,
     ...(null as any),
   });
   const makePortfolioKitGuest = (opts?: { sourceAccountId?: AccountId }) =>
@@ -2723,28 +2747,125 @@ test('wayFromSrcToDesc rejects @agoric -> -Arbitrum (invalid src for withdraw)',
 
 // #endregion
 
-// #region CCTPtoUser and withdrawToEVM step execution tests
+// #region evmHandler.rebalance tests
 
-test('CCTPtoUser sends CCTP depositForBurn to user address from noble', async t => {
-  const { orch, ctx, offer, storage, txResolver } = mocks({}, {});
-  const { log } = offer;
+// XXX: These tests should exercise the flows directly without evmHandler
+//      `portfolio.exos.test.ts` should test that executePlan gets called
 
-  const amount = AmountMath.make(USDC, 2_000_000n);
+test('evmHandler.rebalance completes a rebalance flow', async t => {
+  const amount = AmountMath.make(USDC, 1_000_000n);
+  const fee = AmountMath.make(BLD, 100n);
+
   // Valid checksummed Ethereum address (42161 is Arbitrum chain ID)
   const sourceAccountId =
     'eip155:42161:0x1234567890AbcdEF1234567890aBcdef12345678';
-  const kit = await ctx.makePortfolioKit({ sourceAccountId });
 
-  await Promise.all([
-    rebalance(
-      orch,
-      ctx,
-      offer.seat,
-      { flow: [{ src: '@noble', dest: '-Arbitrum', amount }] },
-      kit,
-    ),
-    txResolver.drainPending(),
-  ]);
+  const { ctx, offer, storage, txResolver } = mocks({}, {});
+  const { log } = offer;
+  const kit = await ctx.makePortfolioKit({ sourceAccountId });
+  const portfolioId = kit.reader.getPortfolioId();
+  const { getPortfolioStatus, getFlowHistory } = makeStorageTools(storage);
+  let flowNum: number | undefined;
+
+  // Invoke rebalance via evmHandler with target allocation
+  const allocations = [
+    { instrument: 'Aave_Arbitrum', portion: 60n },
+    { instrument: 'Compound_Arbitrum', portion: 40n },
+  ];
+  const flowKey = kit.evmHandler.rebalance(allocations);
+  t.regex(flowKey, /^flow\d+$/);
+
+  // Planner provides a rebalance plan
+  const plannerP = (async () => {
+    const { flowsRunning = {} } = await getPortfolioStatus(portfolioId);
+    const [[flowId, detail]] = Object.entries(flowsRunning);
+    if (detail.type !== 'rebalance')
+      throw t.fail(`expected rebalance, got ${detail.type}`);
+    flowNum = Number(flowId.replace('flow', ''));
+
+    // Simple rebalance: move from one position to another
+    const steps: MovementDesc[] = [
+      { src: 'Aave_Arbitrum', dest: '@Arbitrum', amount, fee },
+      { src: '@Arbitrum', dest: 'Compound_Arbitrum', amount, fee },
+    ];
+    kit.planner.resolveFlowPlan(flowNum, steps);
+    await txResolver.drainPending();
+  })();
+
+  await plannerP;
+  await eventLoopIteration();
+
+  t.log(log.map(msg => msg._method).join(', '));
+
+  // Verify the flow completed and was cleaned up
+  const { flowsRunning = {} } = await getPortfolioStatus(portfolioId);
+  t.deepEqual(flowsRunning, {}, 'flow should be cleaned up after completion');
+  if (flowNum === undefined) throw new Error('flow number not captured');
+  const flowHistory = await getFlowHistory(portfolioId, flowNum);
+  t.is(flowHistory.at(-1)?.state, 'done');
+});
+
+test('evmHandler.rebalance rejects when sourceAccountId is not set', async t => {
+  const { ctx } = mocks({}, {});
+
+  // Create kit WITHOUT sourceAccountId
+  const kit = await ctx.makePortfolioKit();
+
+  t.throws(
+    () =>
+      kit.evmHandler.rebalance([
+        { instrument: 'Aave_Arbitrum', portion: 100n },
+      ]),
+    { message: /rebalance requires sourceAccountId to be set/ },
+  );
+});
+
+// #endregion evmHandler.rebalance tests
+
+// #region evmHandler.withdraw step execution tests
+
+// XXX: These tests should exercise the flows directly without evmHandler
+//      portfolio.exos.test.ts should test that executePlan gets called
+
+test('evmHandler.withdraw via CCTPtoUser sends depositForBurn to user address', async t => {
+  const withdrawAmount = 2_000_000n;
+  const amount = AmountMath.make(USDC, withdrawAmount);
+
+  // Valid checksummed Ethereum address (42161 is Arbitrum chain ID)
+  const sourceAccountId =
+    'eip155:42161:0x1234567890AbcdEF1234567890aBcdef12345678';
+
+  const { ctx, offer, storage, txResolver } = mocks({}, {});
+  const { log } = offer;
+  const kit = await ctx.makePortfolioKit({ sourceAccountId });
+  const portfolioId = kit.reader.getPortfolioId();
+  const { getPortfolioStatus } = makeStorageTools(storage);
+
+  // Invoke withdraw via evmHandler
+  const flowKey = kit.evmHandler.withdraw({
+    withdrawDetails: {
+      amount: withdrawAmount,
+      token: contractsMock.Arbitrum.usdc,
+    },
+    domain: { chainId: 42161n },
+  });
+  t.regex(flowKey, /^flow\d+$/);
+
+  // Planner provides a CCTPtoUser step (funds routed through Noble)
+  const plannerP = (async () => {
+    const { flowsRunning = {} } = await getPortfolioStatus(portfolioId);
+    const [[flowId]] = Object.entries(flowsRunning);
+    const flowNum = Number(flowId.replace('flow', ''));
+
+    const steps: MovementDesc[] = [
+      { src: '@noble', dest: '-Arbitrum', amount },
+    ];
+    kit.planner.resolveFlowPlan(flowNum, steps);
+    await txResolver.drainPending();
+  })();
+
+  await plannerP;
+  await eventLoopIteration();
 
   t.log(log.map(msg => msg._method).join(', '));
 
@@ -2755,48 +2876,61 @@ test('CCTPtoUser sends CCTP depositForBurn to user address from noble', async t 
   t.truthy(depositForBurnCall, 'depositForBurn should be called');
   t.is(
     depositForBurnCall?.destinationAddress,
-    'eip155:42161:0x1234567890AbcdEF1234567890aBcdef12345678',
+    sourceAccountId,
     'destination should be user address from sourceAccountId',
   );
 
-  t.like(log, [
-    { _method: 'monitorTransfers' },
-    { _method: 'depositForBurn' },
-    { _method: 'exit', _cap: 'seat' },
-  ]);
+  t.like(log, [{ _method: 'monitorTransfers' }, { _method: 'depositForBurn' }]);
 
   t.snapshot(log, 'call log');
   await documentStorageSchema(t, storage, docOpts);
 });
 
-test('withdrawToEVM sends GMP call with ERC20 transfer to user address', async t => {
-  const feeCall = AmountMath.make(BLD, 100n);
-  const { orch, tapPK, ctx, offer, storage, txResolver, cosmosId } = mocks(
-    {},
-    {},
-  );
-  const { log } = offer;
+test('evmHandler.withdraw via GMP sends ERC20 transfer to user address', async t => {
+  const withdrawAmount = 2_000_000n;
+  const amount = AmountMath.make(USDC, withdrawAmount);
+  const fee = AmountMath.make(BLD, 100n);
 
-  const amount = AmountMath.make(USDC, 2_000_000n);
   // Valid checksummed Ethereum address (42161 is Arbitrum chain ID)
   const sourceAccountId =
     'eip155:42161:0x1234567890AbcdEF1234567890aBcdef12345678';
-  const kit = await ctx.makePortfolioKit({ sourceAccountId });
 
-  await Promise.all([
-    rebalance(
-      orch,
-      ctx,
-      offer.seat,
-      {
-        flow: [{ src: '@Arbitrum', dest: '-Arbitrum', amount, fee: feeCall }],
-      },
-      kit,
-    ),
-    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
-      await txResolver.drainPending();
-    }),
-  ]);
+  const { ctx, offer, storage, txResolver, cosmosId } = mocks({}, {});
+  const { log } = offer;
+  const kit = await ctx.makePortfolioKit({ sourceAccountId });
+  const portfolioId = kit.reader.getPortfolioId();
+  const { getPortfolioStatus, getFlowHistory } = makeStorageTools(storage);
+  let flowNum: number | undefined;
+
+  // Invoke withdraw via evmHandler
+  const flowKey = kit.evmHandler.withdraw({
+    withdrawDetails: {
+      amount: withdrawAmount,
+      token: contractsMock.Arbitrum.usdc,
+    },
+    domain: { chainId: 42161n },
+  });
+  t.regex(flowKey, /^flow\d+$/);
+
+  // Planner provides a GMP withdrawToEVM step (same-chain withdraw)
+  const plannerP = (async () => {
+    const { flowsRunning = {} } = await getPortfolioStatus(portfolioId);
+    const [[flowId, detail]] = Object.entries(flowsRunning);
+    if (detail.type !== 'withdraw')
+      throw t.fail(`expected withdraw, got ${detail.type}`);
+    flowNum = Number(flowId.replace('flow', ''));
+    t.is(detail.toChain, 'Arbitrum', 'toChain should be Arbitrum');
+    t.deepEqual(detail.amount, amount, 'amount should match');
+
+    const steps: MovementDesc[] = [
+      { src: '@Arbitrum', dest: '-Arbitrum', amount, fee },
+    ];
+    kit.planner.resolveFlowPlan(flowNum, steps);
+    await txResolver.drainPending();
+  })();
+
+  await plannerP;
+  await eventLoopIteration();
 
   t.log(log.map(msg => msg._method).join(', '));
 
@@ -2811,42 +2945,38 @@ test('withdrawToEVM sends GMP call with ERC20 transfer to user address', async t
     'GMP transfer should be made for withdrawToEVM',
   );
 
-  // Verify the flow completes successfully with exit (not fail)
-  const exitCall = log.find((entry: any) => entry._method === 'exit');
-  t.truthy(exitCall, 'seat should exit successfully');
+  // Verify the flow completes successfully (no fail call)
   const failCall = log.find((entry: any) => entry._method === 'fail');
   t.falsy(failCall, 'seat should not fail');
+
+  // Verify the flow completed and was cleaned up
+  const { flowsRunning = {} } = await getPortfolioStatus(portfolioId);
+  t.deepEqual(flowsRunning, {}, 'flow should be cleaned up after completion');
+  if (flowNum === undefined) throw new Error('flow number not captured');
+  const flowHistory = await getFlowHistory(portfolioId, flowNum);
+  t.is(flowHistory.at(-1)?.state, 'done');
 
   t.snapshot(log, 'call log');
   await documentStorageSchema(t, storage, docOpts);
 });
 
-test('withdrawToEVM fails when sourceAccountId is not set', async t => {
-  const { orch, ctx, offer } = mocks({}, {});
-  const { log } = offer;
+test('evmHandler.withdraw rejects when sourceAccountId is not set', async t => {
+  const { ctx } = mocks({}, {});
 
-  const amount = AmountMath.make(USDC, 2_000_000n);
-  const feeCall = AmountMath.make(BLD, 100n);
   // Create kit WITHOUT sourceAccountId
   const kit = await ctx.makePortfolioKit();
 
-  const rebalanceResult = rebalance(
-    orch,
-    ctx,
-    offer.seat,
-    { flow: [{ src: '@Arbitrum', dest: '-Arbitrum', amount, fee: feeCall }] },
-    kit,
-  );
-
-  await t.notThrowsAsync(rebalanceResult);
-
-  // Check that seat.fail() was called
-  const failCall = log.find((entry: any) => entry._method === 'fail');
-  t.truthy(failCall, 'seat.fail() should be called');
-  t.regex(
-    String(failCall?.reason),
-    /withdrawToEVM requires sourceAccountId to be set/,
+  t.throws(
+    () =>
+      kit.evmHandler.withdraw({
+        withdrawDetails: {
+          amount: 2_000_000n,
+          token: contractsMock.Arbitrum.usdc,
+        },
+        domain: { chainId: 42161n },
+      }),
+    { message: /withdraw requires sourceAccountId to be set/ },
   );
 });
 
-// #endregion
+// #endregion evmHandler.withdraw tests
