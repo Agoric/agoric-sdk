@@ -118,6 +118,18 @@ jobs:
 
       - run: yarn constraints
 
+      - name: Check TS project references are up to date
+        run: |
+          node scripts/update-ts-references.mjs
+          changes=$(git status --porcelain)
+          if [ -n "$changes" ]; then
+            echo "TS project references are out of date:"
+            echo "$changes"
+            echo ""
+            echo "Please run 'node scripts/update-ts-references.mjs' and commit the result."
+            exit 1
+          fi
+
       # Check some of a3p-integration in this job that runs on PRs instead of
       # waiting for the slow integration test that by default only runs in the
       # master merge check

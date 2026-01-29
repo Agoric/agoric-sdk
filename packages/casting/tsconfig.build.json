@@ -1,6 +1,24 @@
 {
-    "extends": [
-        "./tsconfig.json",
-        "../../tsconfig-build-options.json"
-    ]
+  "extends": [
+    "./tsconfig.json",
+    "../../tsconfig-build-options.json"
+  ],
+  "compilerOptions": {
+    "outDir": "build",
+    "tsBuildInfoFile": "build/tsconfig.build.tsbuildinfo"
+  },
+  "references": [
+    {
+      "path": "../cosmic-proto/tsconfig.build.json"
+    },
+    {
+      "path": "../internal/tsconfig.build.json"
+    },
+    {
+      "path": "../notifier/tsconfig.build.json"
+    },
+    {
+      "path": "../store/tsconfig.build.json"
+    }
+  ]
 }

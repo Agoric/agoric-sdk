@@ -1,6 +1,52 @@
 {
-    "extends": [
-        "./tsconfig.json",
-        "../../tsconfig-build-options.json"
-    ]
+  "extends": [
+    "./tsconfig.json",
+    "../../tsconfig-build-options.json"
+  ],
+  "compilerOptions": {
+    "outDir": "build",
+    "tsBuildInfoFile": "build/tsconfig.build.tsbuildinfo"
+  },
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "test",
+    "scripts"
+  ],
+  "references": [
+    {
+      "path": "../base-zone/tsconfig.build.json"
+    },
+    {
+      "path": "../ERTP/tsconfig.build.json"
+    },
+    {
+      "path": "../governance/tsconfig.build.json"
+    },
+    {
+      "path": "../internal/tsconfig.build.json"
+    },
+    {
+      "path": "../notifier/tsconfig.build.json"
+    },
+    {
+      "path": "../smart-wallet/tsconfig.build.json"
+    },
+    {
+      "path": "../store/tsconfig.build.json"
+    },
+    {
+      "path": "../swingset-liveslots/tsconfig.build.json"
+    },
+    {
+      "path": "../vats/tsconfig.build.json"
+    },
+    {
+      "path": "../zoe/tsconfig.build.json"
+    },
+    {
+      "path": "../zone/tsconfig.build.json"
+    }
+  ]
 }

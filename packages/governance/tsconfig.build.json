@@ -1,6 +1,35 @@
 {
-    "extends": [
-        "./tsconfig.json",
-        "../../tsconfig-build-options.json"
-    ]
+  "extends": [
+    "./tsconfig.json",
+    "../../tsconfig-build-options.json"
+  ],
+  "compilerOptions": {
+    "outDir": "build",
+    "tsBuildInfoFile": "build/tsconfig.build.tsbuildinfo"
+  },
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "test",
+    "tools",
+    "scripts"
+  ],
+  "references": [
+    {
+      "path": "../ERTP/tsconfig.build.json"
+    },
+    {
+      "path": "../internal/tsconfig.build.json"
+    },
+    {
+      "path": "../notifier/tsconfig.build.json"
+    },
+    {
+      "path": "../store/tsconfig.build.json"
+    },
+    {
+      "path": "../zoe/tsconfig.build.json"
+    }
+  ]
 }

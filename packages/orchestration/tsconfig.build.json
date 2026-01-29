@@ -1,14 +1,60 @@
 {
-    "extends": [
-        "./tsconfig.json",
-        "../../tsconfig-build-options.json"
-    ],
-    "exclude":[
-        "**/types-index.js",
-        "**/proposals",
-        "**/scripts",
-        "**/test",
-        "**/src/vendor",
-        "**/src/stubs",
-    ]
+  "extends": [
+    "./tsconfig.json",
+    "../../tsconfig-build-options.json"
+  ],
+  "compilerOptions": {
+    "outDir": "build",
+    "tsBuildInfoFile": "build/tsconfig.build.tsbuildinfo"
+  },
+  "include": [
+    "src",
+    "index.js"
+  ],
+  "exclude": [
+    "**/types-index.js",
+    "**/proposals",
+    "**/scripts",
+    "**/test",
+    "**/src/vendor",
+    "**/src/stubs"
+  ],
+  "references": [
+    {
+      "path": "../async-flow/tsconfig.build.json"
+    },
+    {
+      "path": "../cosmic-proto/tsconfig.build.json"
+    },
+    {
+      "path": "../ERTP/tsconfig.build.json"
+    },
+    {
+      "path": "../internal/tsconfig.build.json"
+    },
+    {
+      "path": "../network/tsconfig.build.json"
+    },
+    {
+      "path": "../notifier/tsconfig.build.json"
+    },
+    {
+      "path": "../store/tsconfig.build.json"
+    },
+    {
+      "path": "../swingset-liveslots/tsconfig.build.json"
+    },
+    {
+      "path": "../vats/tsconfig.build.json"
+    },
+    {
+      "path": "../vow/tsconfig.build.json"
+    },
+    {
+      "path": "../zoe/tsconfig.build.json"
+    },
+    {
+      "path": "../zone/tsconfig.build.json"
+    }
+  ]
 }

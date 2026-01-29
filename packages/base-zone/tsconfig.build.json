@@ -3,9 +3,18 @@
     "./tsconfig.json",
     "../../tsconfig-build-options.json"
   ],
+  "compilerOptions": {
+    "outDir": "build",
+    "tsBuildInfoFile": "build/tsconfig.build.tsbuildinfo"
+  },
   "exclude": [
     "test",
     "scripts",
-    "**/exports.js",
+    "**/exports.js"
+  ],
+  "references": [
+    {
+      "path": "../store/tsconfig.build.json"
+    }
   ]
 }
