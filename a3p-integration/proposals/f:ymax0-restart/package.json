@@ -6,6 +6,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/client-utils": "dev",
+    "@agoric/deploy-script-support": "dev",
     "@agoric/synthetic-chain": "^0.6.1",
     "@endo/far": "^1.1.14",
     "@endo/init": "^1.1.12",
