@@ -76,6 +76,43 @@ export const extractFactoryExecuteData = (
     return null;
   }
 };
+
+/**
+ * Extract data from DepositFactory.execute() calldata.
+ * Payload structure: CreateAndDepositPayload struct
+ *
+ * @param data - Transaction input data (calldata)
+ * @param abiCoder - AbiCoder instance for decoding payload
+ * @returns Object with expectedWalletAddress and sourceAddress, or null if parsing fails
+ */
+export const extractDepositFactoryExecuteData = (
+  data: string,
+  abiCoder: AbiCoder = new AbiCoder(),
+): { expectedWalletAddress: string; sourceAddress: string } | null => {
+  try {
+    const parsed = axelarExecuteIface.parseTransaction({ data });
+    if (!parsed) return null;
+
+    const [_commandId, _sourceChain, sourceAddress, payload] = parsed.args;
+    if (!sourceAddress || !payload) return null;
+
+    // Decode CreateAndDepositPayload struct
+    const [decoded] = abiCoder.decode(
+      [
+        'tuple(string lcaOwner, address tokenOwner, tuple(tuple(address token, uint256 amount) permitted, uint256 nonce, uint256 deadline) permit, bytes32 witness, string witnessTypeString, bytes signature, address expectedWalletAddress)',
+      ],
+      payload,
+    );
+    if (!decoded?.expectedWalletAddress) return null;
+
+    return {
+      expectedWalletAddress: getAddress(decoded.expectedWalletAddress),
+      sourceAddress,
+    };
+  } catch {
+    return null;
+  }
+};
 //#endregion
 
 //#region Alchemy alchemy_minedTransactions subscription types
