@@ -19,6 +19,7 @@ import type { WatcherResult } from '../pending-tx-manager.ts';
 import {
   fetchReceiptWithRetry,
   extractFactoryExecuteData,
+  extractDepositFactoryExecuteData,
   DEFAULT_RETRY_OPTIONS,
   type AlchemySubscriptionMessage,
   type RetryOptions,
@@ -73,6 +74,7 @@ export const parseSmartWalletCreatedLog = (log: any) => {
 
 type SmartWalletWatchBase = {
   factoryAddr: `0x${string}`;
+  subscribeToAddr: `0x${string}`;
   provider: WebSocketProvider;
   expectedAddr: `0x${string}`;
   expectedSourceAddress: string;
@@ -88,6 +90,7 @@ type SmartWalletWatch = SmartWalletWatchBase & {
 
 export const watchSmartWalletTx = ({
   factoryAddr,
+  subscribeToAddr,
   provider,
   expectedAddr,
   expectedSourceAddress,
@@ -104,7 +107,7 @@ export const watchSmartWalletTx = ({
     if (signal?.aborted) return resolve({ settled: false });
 
     log(
-      `Watching for wallet creation at factory ${factoryAddr} for expectedAddr ${expectedAddr}`,
+      `Watching for wallet creation: subscribing to ${subscribeToAddr}, expecting event from ${factoryAddr}, expectedAddr ${expectedAddr}`,
     );
 
     let done = false;
@@ -209,15 +212,20 @@ export const watchSmartWalletTx = ({
 
         const txHash = tx.hash;
         const txData = tx.input;
-        if (!txHash || !txData) return;
+        const txTo = tx.to;
+        if (!txHash || !txData || !txTo) return;
 
-        // Extract sourceAddress and expectedWalletAddress from Factory.execute() calldata
-        const executeData = extractFactoryExecuteData(txData);
+        // Determine which contract is being called and use appropriate parser
+        const isFactoryPath = getAddress(txTo) === getAddress(factoryAddr);
+        const executeData = isFactoryPath
+          ? extractFactoryExecuteData(txData)
+          : extractDepositFactoryExecuteData(txData);
+
         if (!executeData) return;
 
         const { sourceAddress, expectedWalletAddress } = executeData;
 
-        // Check sourceAddress matches
+        // Check sourceAddress and expectedWalletAddress match
         if (
           sourceAddress !== expectedSourceAddress ||
           getAddress(expectedWalletAddress) !== getAddress(expectedAddr)
@@ -294,14 +302,16 @@ export const watchSmartWalletTx = ({
       ws.on('message', messageHandler);
       cleanups.unshift(() => ws.off('message', messageHandler));
 
+      log(`Attempting to subscribe to ${subscribeToAddr}...`);
       subId = await provider.send('eth_subscribe', [
         'alchemy_minedTransactions',
         {
-          addresses: [{ to: factoryAddr }],
+          addresses: [{ to: subscribeToAddr }],
           includeRemoved: true, // Receive reorg notifications
           hashesOnly: false,
         },
       ]);
+      log(`✓ Subscribed to ${subscribeToAddr} (subscription ID: ${subId})`);
     };
 
     if (ws.readyState === 1) {

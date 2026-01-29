@@ -363,8 +363,18 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
       Fail`${logPrefix} No EVM provider for chain: ${caipId}`;
 
     const lcaAddress = parseAccountId(sourceAddress).accountAddress;
+
+    // For wallet creation, we need to handle two different transaction paths:
+    // - makeAccount mode: transaction sent to Factory (factoryAddr === accountAddress)
+    // - createAndDeposit mode: transaction sent to DepositFactory (factoryAddr !== accountAddress)
+    // The Factory always emits the SmartWalletCreated event in both cases.
+    // In live mode: subscribe to accountAddress (the actual transaction destination)
+    // In lookback mode: search for events from factoryAddr (the Factory contract)
+    const subscribeToAddr = accountAddress as `0x${string}`;
+
     const watchArgs = {
-      factoryAddr: (factoryAddr || accountAddress) as `0x${string}`,
+      factoryAddr: factoryAddr || (accountAddress as `0x${string}`),
+      subscribeToAddr,
       provider,
       expectedAddr: expectedAddr as `0x${string}`,
       expectedSourceAddress: lcaAddress,
