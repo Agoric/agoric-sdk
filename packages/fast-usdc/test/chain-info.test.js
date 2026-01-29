@@ -2,20 +2,24 @@ import test from 'ava';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
 
+/**
+ * @import {Macro} from 'ava';
+ */
+
 // List of chains to test to ensure an IBC connection exists from noble to them
 // XXX: Some missing connections.
-const fastUsdcDestinationChains = [
-  // 'archway', // Connection in chain registry but not tagged as 'preferred'
+const fastUsdcDestinationChains = /** @type {const} */ ([
+  { name: 'archway', mapOfZones: true, chainRegistry: 'not-preferred' },
   'beezee',
-  // 'carbon', // Connection in mapofzones but not chain registry
-  // 'celestia', // No connection in mapofzones or chain registry
+  { name: 'carbon', mapOfZones: true, chainRegistry: false },
+  { name: 'celestia', mapOfZones: false, chainRegistry: false },
   'coreum',
   'cosmoshub',
   'crescent',
   'doravota',
   'dydx',
   'dymension',
-  // 'empowerchain', // No connection in mapofzones or chain registry
+  { name: 'empowerchain', mapOfZones: false, chainRegistry: false },
   'evmos',
   'haqq',
   'injective',
@@ -25,35 +29,56 @@ const fastUsdcDestinationChains = [
   'lava',
   'migaloo',
   'neutron',
-  // 'nibiru', // Connection in chain registry but not tagged as 'preferred'
-  // 'nolus', // Connection in mapofzones but not chain registry
+  { name: 'nibiru', mapOfZones: false, chainRegistry: false },
+  { name: 'nolus', mapOfZones: true, chainRegistry: false },
   'omniflixhub',
   'osmosis',
   'persistence',
   'planq',
   'provenance',
   'pryzm',
-  // 'quicksilver', // No connection in mapofzones or chain registry
+  { name: 'quicksilver', mapOfZones: false, chainRegistry: false },
   'secretnetwork',
   'sei',
   'shido',
-  // 'sifchain', // Connection in mapofzones but not chain registry
+  { name: 'sifchain', mapOfZones: true, chainRegistry: false },
   'stargaze',
-  // 'stride', // No connection in mapofzones or chain registry
+  { name: 'stride', mapOfZones: false, chainRegistry: false },
   'terra2',
-  'titan',
+  { name: 'titan', mapOfZones: false, chainRegistry: false },
   'umee',
-];
+]);
 
+/** @type {Macro<[string | { name: string, mapOfZones: boolean, chainRegistry: boolean | 'not-preferred' }]>} */
 const testNobleConnection = test.macro({
   exec(t, input) {
-    const info = fetchedChainInfo[input];
+    const name = typeof input === 'string' ? input : input.name;
+    const info = fetchedChainInfo[name];
     const { chainId } = info;
     const connection = fetchedChainInfo.noble.connections[chainId];
-    t.truthy(connection);
+
+    const { chainRegistry, mapOfZones } =
+      typeof input === 'string'
+        ? { chainRegistry: true, mapOfZones: true }
+        : input;
+
+    if (!chainRegistry || chainRegistry === 'not-preferred') {
+      t.falsy(connection, `expected ${name} not preferred in chain registry`);
+    } else if (!mapOfZones) {
+      t.truthy(
+        connection,
+        `expected ${name} connection to exist, though not in mapOfZones`,
+      );
+    } else {
+      t.truthy(connection, `expected ${name} connection to exist`);
+    }
   },
   title(_, input) {
-    return `Connection from noble to ${input}`;
+    const name = typeof input === 'string' ? input : input.name;
+    if (typeof input === 'string' || input.chainRegistry === true) {
+      return `Connection in chain registry from noble to ${name}`;
+    }
+    return `No preferred connection in chain registry from noble to ${name}`;
   },
 });
 
