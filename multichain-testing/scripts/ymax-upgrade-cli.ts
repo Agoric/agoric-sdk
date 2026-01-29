@@ -9,13 +9,19 @@
  * 1. Verify bundle is installed on-chain
  * 2. Build privateArgsOverrides (EVM chain configs)
  * 3. Verify control account matches expected address
- * 4. Invoke ymaxControl.upgrade(bundleId, overrides)
+ * 4. Invoke ${YMAX_CONTROL_WALLET_KEY}.upgrade(bundleId, overrides)
  * 5. Monitor transaction completion
  * 6. Verify upgrade success
  */
 import '@endo/init/debug.js';
 
 import { fetchEnvNetworkConfig, makeVstorageKit } from '@agoric/client-utils';
+import {
+  CONTROL_ADDRESSES,
+  PORTFOLIO_CONTRACT_NAMES,
+  YMAX_CONTROL_WALLET_KEY,
+  getControlAddress,
+} from '@agoric/portfolio-api/src/portfolio-constants.js';
 import { makeTracer } from '@agoric/internal';
 import { execa } from 'execa';
 import { readFile } from 'node:fs/promises';
@@ -39,12 +45,12 @@ OPTIONS:
   --json                  Output results as JSON
 
 ENVIRONMENT VARIABLES:
-  MNEMONIC                Required: ymaxControl wallet mnemonic
+  MNEMONIC                Required: ${YMAX_CONTROL_WALLET_KEY} wallet mnemonic
   AGORIC_NET              Network override (same as --net)
 
 EXAMPLES:
   # Upgrade ymax0 on devnet with bundle from file
-  export MNEMONIC="<ymaxControl mnemonic>"
+  export MNEMONIC="<${YMAX_CONTROL_WALLET_KEY} mnemonic>"
   ymax-upgrade-cli.ts b1-abc123... --net=devnet
 
   # Dry run to see what would happen
@@ -57,7 +63,7 @@ EXAMPLES:
 
 PREREQUISITES:
   1. Bundle must be installed on-chain first (via governance)
-  2. MNEMONIC environment variable must be set to ymaxControl mnemonic
+  2. MNEMONIC environment variable must be set to ${YMAX_CONTROL_WALLET_KEY} mnemonic
   3. For devnet: get mnemonic from 1password "gov keys"
 
 See multichain-testing/ymax-ops/Makefile for the underlying workflow.
@@ -99,34 +105,22 @@ const parseCliArgs = (argv: string[]): CliOptions => {
   }
 
   const contract = values.contract as string;
-  if (contract !== 'ymax0' && contract !== 'ymax1') {
-    throw new Error(`Invalid --contract: ${contract}. Must be 'ymax0' or 'ymax1'`);
+  if (!PORTFOLIO_CONTRACT_NAMES.includes(contract as any)) {
+    throw new Error(
+      `Invalid --contract: ${contract}. Must be one of: ${PORTFOLIO_CONTRACT_NAMES.join(', ')}`,
+    );
   }
 
   return {
     bundleId: positionals[0],
     net: net as 'devnet' | 'main',
-    contract: contract as 'ymax0' | 'ymax1',
+    contract: contract as (typeof PORTFOLIO_CONTRACT_NAMES)[number],
     dryRun: values['dry-run'] as boolean,
     quiet: values.quiet as boolean,
     verbose: values.verbose as boolean,
     json: values.json as boolean,
   };
 };
-
-/**
- * Expected control account addresses per network/contract
- */
-const CONTROL_ADDRESSES = {
-  ymax0: {
-    main: 'agoric1e80twfutmrm3wrk3fysjcnef4j82mq8dn6nmcq',
-    devnet: 'agoric10utru593dspjwfewcgdak8lvp9tkz0xttvcnxv',
-  },
-  ymax1: {
-    main: 'agoric18dx5f8ck5xy2dgkgeyp2w478dztxv3z2mnz928',
-    devnet: 'agoric18dx5f8ck5xy2dgkgeyp2w478dztxv3z2mnz928', // TODO: verify devnet address
-  },
-} as const;
 
 /**
  * Read bundle ID from ymax-ops directory if not provided
@@ -354,7 +348,7 @@ const main = async (argv = process.argv) => {
     if (!opts.quiet && !opts.json) {
       console.log(`[5/6] Verifying control account...`);
     }
-    const expectedAddress = CONTROL_ADDRESSES[opts.contract][opts.net];
+    const expectedAddress = getControlAddress(opts.contract, opts.net);
     const accountValid = await verifyControlAccount(expectedAddress, opts.net);
     if (!accountValid) {
       throw new Error(
