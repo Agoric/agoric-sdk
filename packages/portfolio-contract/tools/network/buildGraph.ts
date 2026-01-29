@@ -56,6 +56,10 @@ export const chainOf = (id: AssetPlaceRef): string => {
   throw Fail`Cannot determine chain for ${id}`;
 };
 
+const evmChainNames = new Set(Object.keys(AxelarChain));
+const chainIsEvm = (chainName: string): chainName is AxelarChain =>
+  evmChainNames.has(chainName);
+
 const localFlowEdgeBase: Omit<FlowEdge, 'src' | 'dest' | 'id'> = {
   variableFeeBps: 1,
   flatFee: 0n,
@@ -74,7 +78,9 @@ const makeGraphBase = (
   current: Partial<Record<AssetPlaceRef, NatAmount>>,
   target: Partial<Record<AssetPlaceRef, NatAmount>>,
 ): FlowGraph => {
-  const nodes = new Set<AssetPlaceRef>();
+  const nodes = new Set<AssetPlaceRef>(
+    placeRefs.flatMap(ref => [ref, `@${chainOf(ref)}`] as AssetPlaceRef[]),
+  );
   const supplies: SupplyMap = {};
   const edges: FlowEdge[] = [];
   const addEdge = (
@@ -85,13 +91,6 @@ const makeGraphBase = (
     const overrides = feeMode && { feeMode };
     edges.push({ id: 'TBD', src, dest, ...localFlowEdgeBase, ...overrides });
   };
-
-  // Collect chains needed
-  for (const ref of placeRefs) {
-    nodes.add(ref);
-    const chain = chainOf(ref);
-    nodes.add(`@${chain}` as AssetPlaceRef);
-  }
 
   // Build supplies (signed deltas)
   for (const node of nodes) {
@@ -114,12 +113,12 @@ const makeGraphBase = (
     // Skip hubs and agoric-local places (which are connected unidirectionally).
     if (node === hub || hub === '@agoric') continue;
 
-    const chainIsEvm = Object.keys(AxelarChain).includes(chainName);
+    const isEvm = chainIsEvm(chainName);
     if (!isWithdrawToChainRef(node)) {
-      addEdge(node, hub, chainIsEvm ? 'poolToEvm' : undefined);
+      addEdge(node, hub, isEvm ? 'poolToEvm' : undefined);
     }
     if (!isDepositFromChainRef(node)) {
-      addEdge(hub, node, chainIsEvm ? 'evmToPool' : undefined);
+      addEdge(hub, node, isEvm ? 'evmToPool' : undefined);
     }
   }
 
