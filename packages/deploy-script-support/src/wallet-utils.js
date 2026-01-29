@@ -16,7 +16,6 @@ import { YMAX_CONTROL_WALLET_KEY } from '@agoric/portfolio-api/src/portfolio-con
  * @import {BridgeAction} from '@agoric/smart-wallet/src/smartWallet.js';
  */
 
-
 /**
  * Helper to wait for specific wallet updates
  *

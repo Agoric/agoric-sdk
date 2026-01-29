@@ -606,11 +606,14 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/deploy-script-support@workspace:packages/deploy-script-support"
   dependencies:
+    "@agoric/client-utils": "workspace:*"
     "@agoric/ertp": "workspace:*"
     "@agoric/import-manager": "workspace:*"
     "@agoric/internal": "workspace:*"
     "@agoric/notifier": "workspace:*"
     "@agoric/pola-io": "workspace:*"
+    "@agoric/portfolio-api": "workspace:*"
+    "@agoric/smart-wallet": "workspace:*"
     "@agoric/store": "workspace:*"
     "@agoric/time": "workspace:*"
     "@agoric/vats": "workspace:*"
