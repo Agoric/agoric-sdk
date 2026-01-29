@@ -8,7 +8,10 @@ import {
   type StatusFor,
 } from '@agoric/portfolio-api';
 import { planUSDNDeposit } from '@aglocal/portfolio-contract/test/mocks.js';
-import { PROD_NETWORK } from '@aglocal/portfolio-contract/tools/network/prod-network.ts';
+import {
+  readableSteps,
+  readableOrder,
+} from '@aglocal/portfolio-contract/test/supports.js';
 import { TEST_NETWORK } from '@aglocal/portfolio-contract/tools/network/test-network.js';
 import type {
   NetworkSpec,
@@ -79,7 +82,7 @@ const handleDeposit = async (
     spectrumPoolIds?: Partial<Record<PoolKey, string>>;
     usdcTokensByChain?: Partial<Record<SupportedChain, string>>;
   },
-  network: NetworkSpec = PROD_NETWORK,
+  network: NetworkSpec = TEST_NETWORK,
 ) => {
   const querier = makePortfolioQuery(powers.readPublished, portfolioKey);
   const status = await querier.getPortfolioStatus();
@@ -376,7 +379,10 @@ test('handleDeposit handles different position types correctly', async t => {
     },
     TEST_NETWORK,
   );
-  t.snapshot(result?.plan);
+  const plan = result?.plan;
+  t.snapshot(plan && readableSteps(plan.flow, depositBrand), 'steps');
+  t.snapshot(plan?.order && readableOrder(plan.order), 'step dependencies');
+  t.snapshot(plan, 'raw plan');
 });
 
 test('planRebalanceToAllocations emits an empty plan when already balanced', async t => {
@@ -424,7 +430,9 @@ test('planRebalanceToAllocations moves funds when needed', async t => {
     },
     currentBalances: { USDN: makeDeposit(1000n) },
   });
-  t.snapshot(plan);
+  t.snapshot(plan && readableSteps(plan.flow, depositBrand), 'steps');
+  t.snapshot(plan?.order && readableOrder(plan.order), 'step dependencies');
+  t.snapshot(plan, 'raw plan');
 });
 
 test('planWithdrawFromAllocations withdraws and rebalances', async t => {
@@ -434,7 +442,9 @@ test('planWithdrawFromAllocations withdraws and rebalances', async t => {
     currentBalances: { USDN: makeDeposit(2000n) },
     amount: makeDeposit(1000n),
   });
-  t.snapshot(plan);
+  t.snapshot(plan && readableSteps(plan.flow, depositBrand), 'steps');
+  t.snapshot(plan?.order && readableOrder(plan.order), 'step dependencies');
+  t.snapshot(plan, 'raw plan');
 });
 
 test('planWithdrawFromAllocations can withdraw to an EVM account', async t => {
@@ -445,7 +455,9 @@ test('planWithdrawFromAllocations can withdraw to an EVM account', async t => {
     amount: makeDeposit(1000n),
     toChain: 'Ethereum',
   });
-  t.snapshot(plan);
+  t.snapshot(plan && readableSteps(plan.flow, depositBrand), 'steps');
+  t.snapshot(plan?.order && readableOrder(plan.order), 'step dependencies');
+  t.snapshot(plan, 'raw plan');
 });
 
 test('planWithdrawFromAllocations considers former allocation targets', async t => {
@@ -458,7 +470,9 @@ test('planWithdrawFromAllocations considers former allocation targets', async t 
     },
     amount: makeDeposit(1200n),
   });
-  t.snapshot(plan);
+  t.snapshot(plan && readableSteps(plan.flow, depositBrand), 'steps');
+  t.snapshot(plan?.order && readableOrder(plan.order), 'step dependencies');
+  t.snapshot(plan, 'raw plan');
 });
 
 test('planWithdrawFromAllocations with no target preserves relative positions', async t => {
@@ -473,7 +487,9 @@ test('planWithdrawFromAllocations with no target preserves relative positions', 
     },
     amount: makeDeposit(1200n),
   });
-  t.snapshot(plan);
+  t.snapshot(plan && readableSteps(plan.flow, depositBrand), 'steps');
+  t.snapshot(plan?.order && readableOrder(plan.order), 'step dependencies');
+  t.snapshot(plan, 'raw plan');
 });
 
 test('planWithdrawFromAllocations with no target and no positions preserves relative amounts', async t => {
@@ -486,7 +502,9 @@ test('planWithdrawFromAllocations with no target and no positions preserves rela
     },
     amount: makeDeposit(1000n),
   });
-  t.snapshot(plan);
+  t.snapshot(plan && readableSteps(plan.flow, depositBrand), 'steps');
+  t.snapshot(plan?.order && readableOrder(plan.order), 'step dependencies');
+  t.snapshot(plan, 'raw plan');
 });
 
 test('planDepositToAllocations produces plan expected by contract', async t => {
@@ -538,22 +556,23 @@ async function singleSourceRebalanceSteps(scale: number) {
     ...plannerContext,
     currentBalances,
     targetAllocation,
-    // TODO: Refactor this test against a stable network dedicated to testing.
-    network: PROD_NETWORK,
+    network: TEST_NETWORK,
   });
   return plan;
 }
 
 test('planRebalanceToAllocations regression - single source, 2x', async t => {
-  // TODO: For human comprehensibility, adopt something like `readableSteps`
-  // from packages/portfolio-contract/test/rebalance.test.ts.
   const plan = await singleSourceRebalanceSteps(2);
-  t.snapshot(plan);
+  t.snapshot(plan && readableSteps(plan.flow, depositBrand), 'steps');
+  t.snapshot(plan?.order && readableOrder(plan.order), 'step dependencies');
+  t.snapshot(plan, 'raw plan');
 });
 
 test('planRebalanceToAllocations regression - single source, 10x', async t => {
   const plan = await singleSourceRebalanceSteps(10);
-  t.snapshot(plan);
+  t.snapshot(plan && readableSteps(plan.flow, depositBrand), 'steps');
+  t.snapshot(plan?.order && readableOrder(plan.order), 'step dependencies');
+  t.snapshot(plan, 'raw plan');
 });
 
 test('planRebalanceToAllocations regression - multiple sources', async t => {
@@ -580,10 +599,11 @@ test('planRebalanceToAllocations regression - multiple sources', async t => {
     ...plannerContext,
     currentBalances,
     targetAllocation,
-    // TODO: Refactor this test against a stable network dedicated to testing.
-    network: PROD_NETWORK,
+    network: TEST_NETWORK,
   });
-  t.snapshot(plan);
+  t.snapshot(plan && readableSteps(plan.flow, depositBrand), 'steps');
+  t.snapshot(plan?.order && readableOrder(plan.order), 'step dependencies');
+  t.snapshot(plan, 'raw plan');
 });
 
 test('getNonDustBalances works for erc4626 vaults', async t => {

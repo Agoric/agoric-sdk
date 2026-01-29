@@ -555,6 +555,7 @@ export const rebalanceMinCostFlowSteps = async (
     gasEstimator: GasEstimator;
   },
 ): Promise<FundsFlowPlan> => {
+  // XXX Assuming flow values are integer, this filter seems pointless.
   const filteredFlows = flows.filter(f => f.flow > FLOW_EPS);
   const initialSupplies = new Map(
     typedEntries(graph.supplies).filter(([_place, amount]) => amount > 0),

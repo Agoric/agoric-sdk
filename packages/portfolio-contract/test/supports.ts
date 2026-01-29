@@ -1,6 +1,7 @@
 import type { VstorageKit } from '@agoric/client-utils';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { makeIssuerKit } from '@agoric/ertp';
+import type { Brand, NatAmount } from '@agoric/ertp';
 import {
   defaultMarshaller,
   defaultSerializer,
@@ -23,12 +24,57 @@ import {
 } from '@agoric/orchestration/tools/contract-tests.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
+import type { FundsFlowPlan } from '@agoric/portfolio-api';
 import { makeNameHubKit } from '@agoric/vats';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
 import type { StatusFor } from '../src/type-guards.ts';
+import type { MovementDesc } from '../src/type-guards-steps.js';
+
+// Use realistic flow values (e.g., millions of uUSDC) but format for
+// readability (e.g., in full USDC).
+export const USCALE = 1_000_000n;
+
+export const formatAmount = (
+  { brand, value }: NatAmount,
+  depositBrand?: Brand<'nat'>,
+) => {
+  const intPart = Number(value / USCALE);
+  const fracPart = Number(value - BigInt(intPart) * USCALE) / Number(USCALE);
+  const scaledValue = intPart + fracPart;
+  if (brand === depositBrand) return `$${scaledValue}`;
+  const prettyBrand = brand[Symbol.toStringTag].replace(/^Alleged: /, '');
+  return `${scaledValue} ${prettyBrand}`;
+};
+
+/** Like MovementDesc, but with a broader set of `src`/`dest` values. */
+export type MockMovementDesc = Omit<MovementDesc, 'src' | 'dest'> & {
+  src: string;
+  dest: string;
+};
+
+/** Map movement descriptors into human-friendly strings. */
+export const readableSteps = (
+  steps: MockMovementDesc[],
+  depositBrand?: Brand<'nat'>,
+): string[] =>
+  steps.map(step => {
+    const { src, dest, amount, fee } = step;
+    const prettyAmount = formatAmount(amount, depositBrand);
+    const feeSuffix = fee ? ` [fee ${formatAmount(fee, depositBrand)}]` : '';
+    return `${src} -> ${dest} ${prettyAmount}${feeSuffix}`;
+  });
+
+/** Map movement dependencies into human-friendly strings. */
+export const readableOrder = (
+  order: Required<FundsFlowPlan>['order'],
+): string[] =>
+  order.map(
+    ([stepIndex, prerequisiteIndexes]) =>
+      `step ${stepIndex} depends upon step(s) ${prerequisiteIndexes.join(' and ')}`,
+  );
 
 export const makeIncomingVTransferEvent = ({
   sender = makeTestAddress(),

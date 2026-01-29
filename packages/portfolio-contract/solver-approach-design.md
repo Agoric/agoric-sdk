@@ -1,66 +1,59 @@
 # Rebalance Solver Overview
 
-This document describes the current balance rebalancing solver used in `plan-solve.ts` and the surrounding graph/diagnostics utilities.
+This document describes the current balance rebalancing solver used in **[plan-solve.ts](../portfolio-contract/tools/plan-solve.ts)** and the surrounding graph/diagnostics utilities.
 
-## 1. Domain & Graph Structure
-We model a multi-chain, multi-place asset distribution problem as a directed flow network.
+## Domain & Graph Structure
+We model a multi-chain, multi-place asset distribution problem as a directed flow network, starting with static information from [`PROD_NETWORK`](../portfolio-contract/tools/network/prod-network.ts) or some other NetworkSpec and dynamically adding information specific to the balances and targets of a single portfolio.
 
+## Graph Nodes
+Each node (vertex) is an [AssetPlaceRef](../portfolio-api/src/types.ts):
 Node (vertex) types (all implement AssetPlaceRef):
 - Chain hubs: `@${chainName}` (e.g. `@Arbitrum`, `@Avalanche`, `@Ethereum`, `@noble`, `@agoric`). A single hub per chain collects and redistributes flow for that chain.
 - Per-instrument leaves: `${yieldProtocol}_${chainName}` identifiers (e.g. `Aave_Arbitrum`, `Beefy_re7_Avalanche`, `Compound_Ethereum`). Each is attached to exactly one hub (its chain).
-- Local Agoric seats and accounts: `<Cash>`, `<Deposit>`, and `+agoric`. Each is a leaf on the `@agoric` hub.
+- Places not under system control (`+${chainName}` for deposit sources, `-${chainName}` for withdrawal targets).
+- Local Agoric contract seats and accounts (until [#12309](https://github.com/Agoric/agoric-sdk/issues/12309)): `<Deposit>` [deposit source seat], `<Cash>` [withdrawal target seat], and `+agoric` [originally a staging account used to accumulate new deposits before deployment, now unused]. Each is a leaf on the `@agoric` hub.
 
-Notes:
-- Pool-to-chain affiliation is sourced from PoolPlaces (typed map) at build time. Hubs are not auto-added from PoolPlaces; only pools whose hub is already present in the NetworkSpec are auto-included. When a pool id isn't found, `chainOf(x)` falls back to parsing the suffix of `${yieldProtocol}_${chainName}`.
-- `+agoric` is a staging account on `@agoric`, used to accumulate new deposits before distribution; for deposit planning it must end at 0 in the final targets.
+Instrument-to-chain affiliation is sourced from [`PoolPlaces`](../portfolio-contract/src/type-guards.ts) at build time. Hubs are not auto-added from PoolPlaces; only pools whose hub is already present in the NetworkSpec are auto-included. When a pool id isn't found, `chainOf(x)` falls back to parsing the suffix of `${yieldProtocol}_${chainName}`.
 
-Supply (net position) per node:
-```
-netSupply(node) = current[node] - target[node]
-> 0 : surplus (must send out)
-< 0 : deficit (must receive)
-= 0 : balanced
-```
-Upstream data prep filters out balances at or below `ACCOUNT_DUST_EPSILON`
-(currently 100 uusdc = 0.0001 USDC) via `getNonDustBalances` so the solver
-never sees dust-only accounts. Once a place clears that threshold the graph
-records its full delta (no additional epsilon trimming inside the solver).
+### Supplies
+Each node has "supply" data indicating the amount by which its current balance exceeds its target balance (negative if it is a net receiver, positive if it is a net supplier).
 
-Sum of all supplies must be zero for feasibility.
+Upstream data prep clears any balance at or below
+[`ACCOUNT_DUST_EPSILON`](../portfolio-api/src/constants.js) (currently 100 uusdc = 0.0001 USDC)
+via [`getNonDustBalances`](../../services/ymax-planner/src/plan-deposit.ts) so the solver
+never sees dust-only balances. But there is no additional epsilon trimming inside the solver.
 
-## 2. Edges
-Two classes of directed edges:
-1. Intra-chain (leaf <-> hub)
-   - Always present for every non-hub leaf, unidirectional at `@agoric` but bidirectional elsewhere.
-   - Attributes: `variableFeeBps=1`, `flatFee=0`, `timeSec=1`, very large capacity.
-2. Inter-chain (hub -> hub) links provided by `NetworkSpec.links`:
-  - CCTP slow (EVM -> Noble): high latency (≈1080s), low/zero variable fee.
-  - CCTP return (Noble -> EVM): low latency (≈20s).
-  - FastUSDC (unidirectional EVM -> Noble): `variableFeeBps≈15` (≈0.15%), `timeSec≈45`.
-  - Noble <-> Agoric IBC: `variableFeeBps≈200` (≈2.00%), `timeSec≈10`.
-Each link is directional; reverse direction is added explicitly where needed.
+**Conservation rule**: total supplies must sum to zero.
 
-Overrides:
-- Explicit inter-hub links from the `NetworkSpec` supersede any auto-added base edge with the same `src -> dest`. This lets the definition supply real pricing/latency.
+## Edges
+There are two classes of directed edges:
+* Intra-chain (leaf <-> hub)
+  - Always present for every non-hub leaf, bidirectional for instruments but unidirectional for deposit/withdrawal-dedicated places (`+${chainName}`, `-${chainName}`, `<Cash>`, `<Deposit>`).
+  - Attributes: `variableFeeBps=1`, `flatFee=0`, `timeSec=1`, very large capacity.
+* Inter-chain (hub -> hub)
+  - CCTP to Noble [from EVM]: high latency (≈1080s), low/zero variable fee.
+  - CCTP from Noble [to EVM]: low latency (≈20s).
+  - FastUSDC (EVM -> Noble): latency ≈ 45s, 15 bps fee (0.15%).
+  - IBC (Noble <-> Agoric): latency ≈ 10s, 200 bps fee (2%).
 
 Edge attributes used by optimizer:
+- `min` (lower bound on flow).
 - `capacity` (upper bound on flow) – large default for intra-chain.
-- `variableFeeBps` (linear cost coefficient per unit flow) – used in Cheapest mode.
-- `flatFee` (flat activation cost) – triggers binary var only if >0 in Cheapest mode.
-- `timeSec` (activation latency metric) – triggers binary var only if >0 in Fastest mode.
+- `variableFeeBps` (cost per major unit [e.g., per USDC] in basis points).
+- `flatFee` (flat activation cost).
+- `timeSec` (expected latency).
 
-## 3. Optimization Modes
+Each edge is given an id `e0` through `e${n}` in insertion order (to stabilize solver behavior and tests), normalized to fixed-width with leading zeros for readability.
+
+## Optimization Modes
 Two primary objectives, with optional secondary tie-breaks:
-- Cheapest (primary): Minimize Σ (flatFee_e * picked_e + variableFeeBps_e * through_e)
-- Fastest (primary): Minimize Σ (timeSec_e * picked_e)
+- Cheapest: Minimize Σ (flatFee_e + variableFeeBps_e * through_e) over picked edges
+- Fastest: Minimize Σ timeSec_e over picked edges
 
-Secondary (tie-break) options:
-1) Two-pass lexicographic (not currently enabled):
-   - Solve primary, fix the optimum within ±ε as a constraint, then re-solve minimizing the secondary.
-2) Composite objective (implemented):
-   - Minimize Primary + ε · Secondary, where ε is chosen dynamically small enough not to perturb the primary optimum.
+Secondary optimization is implemented as a composite objective Primary + ε × Secondary, where ε is chosen dynamically small enough to not perturb the primary optimum.
+But it should also be possible to use a two-pass approach, re-solving against the secondary objective with the primary optimum is treated as a ±ε constraint.
 
-## 4. Constraints
+## Constraints
 For every edge e:
 - through_e ≥ min_e (default 0)
 - through_e ≤ capacity_e (default infinite)
@@ -73,7 +66,7 @@ Flow conservation for every node v:
 ```
 A supply node exports exactly its excess; a sink node imports exactly its shortfall.
 
-## 5. Model Representation and Solver (javascript-lp-solver)
+## Model Representation and Solver (javascript-lp-solver)
 We build an LP/MIP object with:
 - `variables`: one per flow variable `via_edgeId`, each holding coefficients into every node constraint and capacity constraint; plus binary usage vars `pick_edgeId` when required.
 - `constraints`:
@@ -94,154 +87,28 @@ The model is solved using [javascript-lp-solver](https://www.npmjs.com/package/j
 - Flow extraction: Values from `via_edgeId` variables are rounded to nearest integer (jsLPSolver returns floating-point values)
 - Filtering: Only flows > FLOW_EPS (1e-6) are included in the final solution
 
-No scaling: amounts, fees, and times are used directly (inputs are within safe numeric ranges: amounts up to millions, fees up to ~0.2 variable or a few dollars fixed, latencies minutes/hours).
+[`solveRebalance`](../portfolio-contract/tools/plan-solve.ts) performs two passes (dodging some IEEE 754 rounding issues):
+1. Solve against an initial model using major-unit floating-point amount values to identify selected edges.
+2. Solve against a clone of that model after pruning away unused edges and updating to minor-unit *integer* amount values to identify exact flow values.
 
-## 6. Solution Decoding and Validation
-After solving we extract active edges where `flow > ε` (ε=1e-6). Flow values from javascript-lp-solver are rounded to the nearest integer before use. These positive-flow edges are then scheduled using the deterministic algorithm in Section 9 to produce an ordered list of executable steps. Each step is emitted as `MovementDesc { src, dest, amount }` with amount reconstructed as bigint.
+Finally, it rounds flow values to the nearest integer as a normalization guarantee.
 
-### Post-Solve Validation
-When `graph.debug` is enabled, an optional validation pass runs after scheduling to verify solution consistency:
-- **Supply Conservation**: Verifies total supply sums to 0 (all sources and sinks balance)
-- **Flow Execution**: Simulates executing all flows in scheduled order to ensure:
-  - Each flow has sufficient balance at its source when executed
-  - No scheduling deadlocks occur
-- **Hub Balance**: Warns if hub chains don't end at ~0 balance (indicating routing issues)
-
-Validation complexity: O(N+F) where N = number of nodes, F = number of flows.
-
-The validation runs after scheduling but before returning the final steps, catching any inconsistencies that might arise from floating-point rounding or solver quirks.
-
-## 7. Example (Conceptual)
-If Aave_Arbitrum has surplus 30 and Beefy_re7_Avalanche has deficit 30, optimal Cheapest path may produce steps:
-```
-Aave_Arbitrum -> @Arbitrum -> @noble -> @Avalanche -> Beefy_re7_Avalanche
-```
-Reflected as four MovementDescs (one per edge used) with amount 30.
-
-## 8. Extensibility Notes
-- Additional cost dimensions (e.g. risk scores) can be integrated by augmenting objective coefficients.
-- Scaling can be reintroduced if future magnitudes exceed safe integer precision.
-- Multi-objective (lexicographic) could wrap two solves (first fastest then cheapest among fastest solutions) if required.
-
-## 9. Execution Ordering (Deterministic Scheduling)
-The emitted MovementDescs follow a dependency-based schedule ensuring every step is feasible with currently available funds:
-
-1. **Initialization**: Any node with positive netSupply provides initial available liquidity.
-
-2. **Candidate selection loop**:
-   - At each iteration, consider unscheduled positive-flow edges whose source node currently has sufficient available units.
-   - If multiple candidates exist, prefer edges whose originating chain (derived from the source node) matches the chain of the previously scheduled edge (chain grouping heuristic). This groups sequential operations per chain, especially helpful for EVM-origin flows.
-   - If still multiple, choose the edge with smallest numeric edge id (stable deterministic tiebreaker).
-
-3. **Availability update**: After scheduling an edge (src->dest, flow f), decrease availability at src by f and increase availability at dest by f.
-
-4. **Deadlock detection**: If no edge is currently fundable (no remaining edges have sufficient source balance), throw an error describing the deadlock with diagnostics showing all remaining flows and their shortages.
-
-Resulting guarantees:
-- No step requires funds that have not yet been made available by a prior step.
-- Tolerances prevent false deadlocks from floating-point rounding errors.
-- Order is fully deterministic given the solved flows.
-- Movements are naturally grouped by chain where possible, improving readability for execution planning.
-- Any true deadlock (circular dependency or solver bug) is detected and reported with full diagnostics.
-
----
-
-## 10. NetworkSpec Schema & Validation
-
-Schema Summary (TypeScript interfaces):
-```
-// Chains (hubs)
-interface ChainSpec {
-  name: SupportedChain;           // e.g., 'agoric' | 'noble' | 'Arbitrum'
-  chainId?: string;               // cosmos chain-id or network id
-  evmChainId?: number;            // EVM numeric chain id if applicable
-  bech32Prefix?: string;          // for Cosmos chains
-  axelarKey?: AxelarChain;        // Axelar registry key if differs from name
-  feeDenom?: string;              // e.g., 'ubld', 'uusdc'
-  gasDenom?: string;              // if distinct from feeDenom
-  control: 'ibc' | 'axelar' | 'local'; // how Agoric reaches this chain
-}
-
-// Pools (leaves)
-interface PoolSpec {
-  pool: PoolKey;                  // 'Aave_Arbitrum', 'USDNVault', ...
-  chain: SupportedChain;          // host chain of the pool
-  protocol: YieldProtocol;        // protocol identifier
-}
-
-// Local places: seats (<Deposit>, <Cash>) and local accounts (+agoric)
-interface LocalPlaceSpec {
-  id: AssetPlaceRef;              // '<Deposit>' | '<Cash>' | '+agoric' | PoolKey
-  chain: SupportedChain;          // typically 'agoric'
-  variableFeeBps?: number;        // optional local edge variable fee (bps)
-  flatFee?: NatValue;             // optional flat fee in local units
-  timeSec?: number;               // optional local latency
-  capacity?: NatValue;            // optional local capacity
-  enabled?: boolean;
-}
-
-// Directed inter-hub link
-interface LinkSpec {
-  src: SupportedChain;            // source chain
-  dest: SupportedChain;           // destination chain
-  transfer: 'ibc' | 'fastusdc' | 'cctpReturn' | 'cctpSlow';
-  variableFeeBps: number;         // variable fee in basis points of amount
-  timeSec: number;                // latency in seconds
-  flatFee?: NatValue;             // optional fixed fee (minor units)
-  capacity?: NatValue;            // optional throughput cap
-  min?: NatValue;                 // optional minimum transfer size
-  priority?: number;              // optional tie-break hint
-  enabled?: boolean;              // admin toggle
-}
-
-interface NetworkSpec {
-  debug?: boolean;                // enable extra diagnostics/debug
-  environment?: 'dev' | 'test' | 'prod';
-  chains: ChainSpec[];
-  pools: PoolSpec[];
-  localPlaces?: LocalPlaceSpec[];
-  links: LinkSpec[];              // inter-hub links only
-}
-```
-
-Builder & translation to solver:
-- Hubs come from `spec.chains`. Hubs are not auto-added from PoolPlaces.
-- Leaves include `spec.pools`, `spec.localPlaces.id`, known PoolPlaces whose hub is present, and any nodes mentioned in `current`/`target` (validated to avoid implicitly adding hubs).
-- Intra-chain leaf<->hub edges are auto-added with large capacity and base costs (`variableFeeBps=1`, `timeSec=1`).
-- Agoric-local edges are auto-added: `<Deposit>` -> `+agoric` -> `@agoric` -> `<Cash>` and `<Deposit>` -> `@agoric` (`variableFeeBps=1`, `timeSec=1`)
-- Inter-hub links from `spec.links` are added hub->hub. If an auto-added edge exists with the same `src` and `dest`, the explicit link replaces it (override precedence).
-
-Determinism:
-- After applying all edges, edge IDs are normalized to `e00` through `e${n}` in insertion order to stabilize solver behavior and tests.
-
-Validation:
-- Minimal validation ensures link `src`/`dest` chains are declared in `spec.chains`.
-- Dynamic nodes (from `current`/`target`) must not introduce undeclared hubs; known pools require their host hub to be present.
-- Additional post-failure checks are performed by `preflightValidateNetworkPlan` (see below).
-
-### 10.1 PoolPlaces integration and chain inference
-- PoolPlaces provides the canonical mapping from pool ids to chain hubs used by the builder. Hubs are not implicitly added from this mapping.
-- `chainOf(x)` resolves a node's chain via PoolPlaces; if not found and `x` matches `Protocol_Chain`, it falls back to using the `_Chain` suffix.
-
-### 10.2 Diagnostics and failure analysis
+### Diagnostics and failure analysis
 Error handling on infeasible solves is designed for clarity with minimal overhead when things work:
 - Normal operation: on success, no extra diagnostics are computed.
-- On solver infeasibility: if `graph.debug` is true (from `NetworkSpec.debug`), the solver emits a concise error plus diagnostic details to aid triage. Otherwise, it throws a terse error message.
-- After any infeasible solve, a post-failure preflight validator runs: it checks for unsupported position keys and missing inter-hub reachability required by the requested flows. If it finds a clearer root cause, it throws a targeted error explaining the issue.
+- On solver infeasibility: if `graph.debug` is true, the solver emits a concise error plus diagnostic details to aid triage. Otherwise, it throws a terse error message.
+- After any infeasible solve, a [`preflightValidateNetworkPlan`](../portfolio-contract/tools/graph-diagnose.ts) is run to check for unsupported position keys and missing inter-hub reachability required by the requested flows. If it finds a clearer root cause, it throws a targeted error explaining the issue.
 
 Implementation notes:
-- Diagnostics live in `graph-diagnose.ts` (`diagnoseInfeasible`, `preflightValidateNetworkPlan`).
-- Enable by setting `debug: true` in your `NetworkSpec`.
+- Diagnostics live in **[graph-diagnose.ts](../portfolio-contract/tools/graph-diagnose.ts)** (`diagnoseInfeasible`, `preflightValidateNetworkPlan`).
+- Enable by setting `debug: true` in the NetworkSpec.
 - Typical diagnostic output includes: supply balance summary, stranded sources/sinks, hub connectivity and inter-hub links, and a suggested set of missing edges.
 
----
-
-### 10.3 Path explanations and near-miss analysis
-
-When a particular route is suspected to be viable but the solver reports infeasible, it helps to check a candidate path hop-by-hop and to summarize “almost works” pairs. Two helpers are available in `graph-diagnose.ts`:
+### Path explanations and near-miss analysis
+When a particular route is suspected to be viable but the solver reports infeasible, it helps to check a candidate path hop-by-hop and to summarize “almost works” pairs. Two helpers are available in **[graph-diagnose.ts](../portfolio-contract/tools/graph-diagnose.ts)**:
 
 - `explainPath(graph, path: string[])`
-  - Validates each hop in the given path array (e.g., `['+agoric', '@agoric', '@noble', 'USDNVault']`).
+  - Validates each hop in the given path array (e.g., `['<Deposit>', '@agoric', '@noble', 'USDNVault']`).
   - Returns `{ ok: true }` if every hop exists and has positive capacity; otherwise returns the first failing hop with a reason and suggestion:
     - `missing-node`: node isn’t in `graph.nodes`.
     - `missing-edge`: no `src -> dest` edge exists.
@@ -251,7 +118,7 @@ When a particular route is suspected to be viable but the solver reports infeasi
 - `diagnoseNearMisses(graph)`
   - Looks at all positive-supply sources to negative-supply sinks and classifies why each unreachable pair fails.
   - Categories include `no-directed-path` and `capacity-blocked`, with an optional hint (e.g., “consider adding inter-hub @agoric->@Avalanche”).
-  - This runs automatically (and is appended to the thrown message) when `NetworkDefinition.debug` is true and the solver returns infeasible.
+  - This runs automatically (and is appended to the thrown message) when `debug` is true and the solver returns infeasible.
 
 Example usage (TypeScript):
 
@@ -315,22 +182,46 @@ Notes:
 - These checks are purely topological/capacity-driven and independent of the optimize mode (cheapest/fastest).
 - They’re inexpensive (BFS over a small graph) and run only when requested or when `debug` is enabled and the solve is infeasible.
 
+## Execution Ordering (Deterministic Scheduling)
+[`rebalanceMinCostFlowSteps`](../portfolio-contract/tools/plan-solve.ts) deterministically schedules the unordered flows into a sequence of [MovementDesc](../portfolio-api/src/types.ts) steps with corresponding dependency information defining a partial order (i.e., supporting parallel execution).
 
-## 11. Todo
-Critical
-- Typed Node/Edge aliases to enforce pool↔hub pairing at compile time.
-- add USDN and USDNVault to PROD_NETWORK; override the fee
-- use teh fee to compute 
+1. **Initialization**: Any node with positive netSupply provides initial available liquidity.
 
+2. **Candidate selection loop**:
+   - At each iteration, consider unscheduled positive-flow edges whose source node currently has sufficient available units.
+   - If multiple candidates exist, prefer edges whose originating chain (derived from the source node) matches the chain of the previously scheduled edge (chain affinity grouping heuristic). This groups sequential operations per chain, especially helpful for EVM-origin flows.
+   - If still multiple, choose the edge with smallest numeric edge id (stable deterministic tiebreaker).
+   - If no candidates exist, throw an error describing the deadlock with diagnostics showing all remaining flows and their shortages.
+
+3. **Partial ordering**: Identify which inflows to consume (partially or completely), marking as a prerequisite any inflow contributing to the selected edge and updating the unclaimed amount of each relevant inflow.
+
+4. **Availability update**: After scheduling an edge (`src`->`dest` with flow amount `x`), decrease available supply at `src` by `x` and increase available supply at `dest` by `x`.
+
+Resulting guarantees:
+- No step requires funds that have not yet been made available by a prior step.
+- Order is fully deterministic given the solved flows.
+- Movements are naturally grouped by chain where possible, improving readability for execution planning.
+- Any true deadlock (circular dependency or solver bug) is detected and reported with full diagnostics.
+
+### Post-Solve Validation
+When `graph.debug` is enabled, an optional validation pass runs after scheduling to verify solution consistency:
+- **Supply Conservation**: Verifies total supply sums to 0 (all sources and sinks balance)
+- **Flow Execution**: Simulates executing all flows in scheduled order to ensure:
+  - Each flow has sufficient balance at its source when executed
+  - No scheduling deadlocks occur
+- **Hub Balance**: Warns if hub chains don't end at ~0 balance (indicating routing issues)
+
+Validation complexity: O(N+F) where N = number of nodes, F = number of flows.
+
+The validation runs after scheduling but before returning the final steps, catching any inconsistencies that might arise from floating-point rounding or solver quirks.
+
+## Future work
+This last section is the living plan. As details are settled (schemas, invariants, design choices), they should be promoted into the relevant sections above, keeping this section focused on the remaining work and sequencing.
 
 Further items for solver
 - support additions of dynamic constraints (e.g., when route price changes)
 - add fee information and time to moves
-- add minimimums to links
-- add capacity limits to links
-  - test them
 - rename "timeSec" to "time"?
-- add details.evmGas
 
 Further non-planner items
 - add withdraw offer handling
@@ -341,7 +232,6 @@ Further non-planner items
 - sanity check the step list
 
 Renames
-- cctpSlow → cctpToNoble and cctpReturn → cctpFromNoble
 - NetworkSpec → NetworkDesc, and probably likewise for ChainSpec/PoolSpec/LocalPlaceSpec/LinkSpec (since we generally use "spec" to describe a string specifier)
 - `src`/`dest` if acceptable alphabetical synonyms can be found (e.g., `source`/`target` or `fromPlace`/`toPlace`)
 
@@ -354,52 +244,25 @@ Later
 Future things to try:
 - enable disabling/enabling some links (e.g., if they go down) and replanning 
 - add liquidity pool
-- optimize withdraw for "fastest money to <Cash> seat.
+- optimize withdraw for "fastest money to destination"
   - accelerate withdraw with a liquidity pool
 - add operation (like `supply`) so that we can have actual gwei estimates associated with them in the graph
 - support multiple currencies explicitly
 
-## 12. Current Plan
-This last section is the living plan. As details are settled (schemas, invariants, design choices), they should be promoted into the relevant sections above, keeping this section focused on the remaining work and sequencing.
-
-Status as of 2025-09-14:
-- Phase 1: Complete — types, builder, and prod/test configs added; `planRebalanceFlow` accepts a network.
-- Phase 2: Complete — unit tests migrated to use the test network; legacy LINKS removed in this package.
-- Phase 3: Complete — deposit routing is being refactored to derive paths via the generic graph; downstream services updated incrementally. Post-failure preflight validation and solver diagnostics are integrated and controlled by `graph.debug`. Composite objective for secondary tie-breaks implemented.
-- Phase 4: Pending — finalize docs and remove remaining legacy references elsewhere.
-
-Phases:
-- Phase 3 next steps:
-  - Deprecate / remove `planTransfer` & `planTransferPath` after callers migrate.
-- Phase 4:
-  - Documentation updates: ensure this document reflects finalized schema and behavior (this doc now includes PoolPlaces integration, edge override precedence, and diagnostics flow).
-  - Add/extend validation and tooling as needed; remove remaining legacy references in downstream packages.
-
----
-
 ## Appendix A: Solver History and HiGHS Experience
 
 ### Initial Implementation with HiGHS
-The initial solver implementation used **HiGHS** (High-performance Interior point Solver), a state-of-the-art open-source optimization solver for large-scale linear programming (LP), mixed-integer programming (MIP), and quadratic programming (QP) problems.
+The initial solver implementation used **HiGHS**, a state-of-the-art open-source optimization solver for large-scale linear programming (LP), mixed-integer programming (MIP), and quadratic programming (QP) problems, via npm package [highs](https://www.npmjs.com/package/highs) exposing a JavaScript API for its WebAssembly compilation of C++ source code.
 
 **Advantages of HiGHS:**
 - Industrial-strength performance and accuracy
 - Extensive configuration options for tolerances and presolve
-- Native code (C++) with WebAssembly bindings for JavaScript
+- Not constrained by JavaScript performance
 - Well-suited for large, complex optimization problems
 
 **Implementation approach:**
-- Models were translated to CPLEX LP format using `toCplexLpText()`
-- HiGHS was invoked with custom options:
-  ```typescript
-  {
-    presolve: 'on',
-    primal_feasibility_tolerance: 1e-8,
-    dual_feasibility_tolerance: 1e-8,
-    mip_feasibility_tolerance: 1e-7,
-  }
-  ```
-- Results were extracted from the `Columns[varName].Primal` field
+- Models were translated to CPLEX LP format using [`toCplexLpText`](https://github.com/Agoric/agoric-sdk/blob/6f98cc5ddb6bdf297840d84ef05d7d0394f90a3e/packages/portfolio-contract/tools/plan-solve.ts#L287)
+- Flow amounts were extracted from the `Columns[varName].Primal` field
 
 ### Precision Issues Encountered
 During testing, we discovered that **HiGHS returns floating-point flow values with insufficient precision** for our use case:
@@ -435,8 +298,8 @@ Given the precision issues and the need for integer rounding regardless of solve
 - Adjusted feasibility checking (jsLPSolver uses `feasible` boolean property)
 
 **Outcome:**
-- All 28 out of 29 rebalance tests pass
-- The one failing test (`solver differentiates cheapest vs. fastest`) exercises variation that is not currently needed
+- 28 out of 29 rebalance tests pass
+- The one failing test (`solver differentiates cheapest vs. fastest`) exercises variation that is not currently needed, and was ultimately fixed by the two-pass approach described in [Solver Implementation](#solver-implementation)
 - Solutions are deterministic and correct
 - Simpler codebase without external binary dependencies
 
