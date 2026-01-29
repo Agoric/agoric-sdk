@@ -113,7 +113,7 @@ harden(SupportedChain);
 const caipChainIdFromEip155 = chainId => `eip155:${chainId}`;
 
 /**
- * cf. https://chainagnostic.org/CAIPs/caip-2
+ * cf. https://standards.chainagnostic.org/CAIPs/caip-2
  * Please keep in sync with ../../../services/ymax-planner/src/support.ts `spectrumChainIds`
  *
  * XXX this probably belongs in @agoric/orchestration
