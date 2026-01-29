@@ -25,12 +25,14 @@ import type { ContractControl } from '@aglocal/portfolio-deploy/src/contract-con
 import { YMAX_CONTROL_WALLET_KEY } from '@agoric/portfolio-api/src/portfolio-constants.js';
 import { lookupInterchainInfo } from '@aglocal/portfolio-deploy/src/orch.start.js';
 import { findOutdated } from '@aglocal/portfolio-deploy/src/vstorage-outdated.js';
+import { walletUpdates } from '@agoric/deploy-script-support/src/wallet-utils.js';
 import {
   fetchEnvNetworkConfig,
   makeSigningSmartWalletKit,
   makeSmartWalletKit,
   makeVStorage,
   makeVstorageKit,
+  reflectWalletStore,
   type SigningSmartWalletKit,
   type VstorageKit,
 } from '@agoric/client-utils';
@@ -75,10 +77,6 @@ import { parseArgs } from 'node:util';
 import type { StdFee } from 'osmojs';
 import type { HDAccount } from 'viem';
 import { mnemonicToAccount } from 'viem/accounts';
-import {
-  reflectWalletStore,
-  walletUpdates,
-} from '../tools/wallet-store-reflect.ts';
 
 const nodeRequire = createRequire(import.meta.url);
 const asset = (spec: string) => readFile(nodeRequire.resolve(spec), 'utf8');
@@ -621,7 +619,7 @@ const main = async (
   const walletStore = reflectWalletStore(sig, {
     setTimeout,
     log: trace,
-    fresh,
+    makeNonce: fresh,
     // as in: Error#1: out of gas ... gasUsed: 809068
     fee: makeFee({ gas: 809068, adjustment: 1.4 }),
   });

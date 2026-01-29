@@ -15,7 +15,7 @@ const agd = makeAgd({ execFileSync }).withOpts({
 });
 
 /**
- * @import {BridgeAction} from '@agoric/smart-wallet/src/smartWallet';
+ * @import {BridgeAction} from '@agoric/smart-wallet/src/smartWallet.js';
  */
 
 const { fromEntries } = Object;

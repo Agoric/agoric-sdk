@@ -22,7 +22,7 @@ const wup = walletUpdates(
 const boardId = x => x.getBoardId();
 
 /**
- * @import {BridgeAction} from '@agoric/smart-wallet/src/smartWallet';
+ * @import {BridgeAction} from '@agoric/smart-wallet/src/smartWallet.js';
  */
 
 /**
