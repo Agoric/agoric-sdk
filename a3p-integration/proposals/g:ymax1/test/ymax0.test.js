@@ -13,7 +13,7 @@ import { redeemInvitation, submitYmaxControl } from '../ymax-util.js';
 import { makeActionId, sendWalletAction } from '../wallet-util.js';
 
 /**
- * @import {BridgeAction} from '@agoric/smart-wallet/src/smartWallet';
+ * @import {BridgeAction} from '@agoric/smart-wallet/src/smartWallet.js';
  */
 
 const { fromEntries } = Object;

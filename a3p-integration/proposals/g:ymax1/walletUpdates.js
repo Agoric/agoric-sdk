@@ -2,7 +2,7 @@
 import { retryUntilCondition } from '@agoric/client-utils';
 
 /**
- * @import {UpdateRecord as UpdateRecord0} from '@agoric/smart-wallet/src/smartWallet';
+ * @import {UpdateRecord as UpdateRecord0} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {RetryOptions} from '@agoric/client-utils';
  */
 
