@@ -73,6 +73,7 @@ export const parseSmartWalletCreatedLog = (log: any) => {
 
 type SmartWalletWatchBase = {
   factoryAddr: `0x${string}`;
+  subscribeToAddr: `0x${string}`;
   provider: WebSocketProvider;
   expectedAddr: `0x${string}`;
   expectedSourceAddress: string;
@@ -88,6 +89,7 @@ type SmartWalletWatch = SmartWalletWatchBase & {
 
 export const watchSmartWalletTx = ({
   factoryAddr,
+  subscribeToAddr,
   provider,
   expectedAddr,
   expectedSourceAddress,
@@ -104,7 +106,7 @@ export const watchSmartWalletTx = ({
     if (signal?.aborted) return resolve({ settled: false });
 
     log(
-      `Watching for wallet creation at factory ${factoryAddr} for expectedAddr ${expectedAddr}`,
+      `Watching for wallet creation: subscribing to ${subscribeToAddr}, expecting event from ${factoryAddr}, expectedAddr ${expectedAddr}`,
     );
 
     let done = false;
@@ -297,7 +299,7 @@ export const watchSmartWalletTx = ({
       subId = await provider.send('eth_subscribe', [
         'alchemy_minedTransactions',
         {
-          addresses: [{ to: factoryAddr }],
+          addresses: [{ to: subscribeToAddr }],
           includeRemoved: true, // Receive reorg notifications
           hashesOnly: false,
         },
