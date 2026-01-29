@@ -1,6 +1,8 @@
 import test from 'ava';
 import { ethers } from 'ethers';
 import { boardSlottingMarshaller } from '@agoric/client-utils';
+import { objectMap } from '@endo/patterns';
+import type { WebSocketProvider } from 'ethers';
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type {
   PendingTx,
@@ -508,7 +510,17 @@ test('resolves a 10 second old pending GMP transaction in lookback mode', async 
 
   const ctxWithFetch = harden({
     ...opts,
-    fetch: async (_url: string) => {
+    fetch: async (url: string) => {
+      if (Object.values(opts.rpcUrls).includes(url)) {
+        return {
+          ok: true,
+          json: async () => [
+            {
+              result: [],
+            },
+          ],
+        } as Response;
+      }
       return {
         ok: true,
         json: async () => ({
@@ -799,4 +811,103 @@ test('GMP monitor does not resolve transaction twice when live mode completes be
       t.log(`  Call ${index + 1}:`, call.offerArgs);
     });
   }
+});
+
+test('find a failed tx in lookback mode', async t => {
+  const logs: string[] = [];
+  const mockLog = (...args: unknown[]) => logs.push(args.join(' '));
+
+  const contractAddress = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
+  const destinationAddress = `eip155:42161:${contractAddress}`;
+  const txId = 'tx553' as `tx${number}`;
+
+  const gmpTx = createMockPendingTxData({
+    type: TxType.GMP,
+    destinationAddress,
+  });
+
+  const chainId = 'eip155:42161';
+  const opts = createMockPendingTxOpts();
+  const mockProvider = opts.evmProviders[chainId] as any;
+
+  const currentTimeMs = 1700000000; // 2023-11-14T22:13:20Z
+  const txTimestampMs = currentTimeMs - 10 * 1000; // 10 seconds ago
+  const avgBlockTimeMs = 300; // 300 ms per block on eip155:42161
+
+  const latestBlock = 1_450_031;
+  mockProvider.getBlockNumber = async () => latestBlock;
+
+  mockProvider.getBlock = async (blockNumber: number) => {
+    const blocksAgo = latestBlock - blockNumber;
+    const ts = currentTimeMs - blocksAgo * avgBlockTimeMs;
+    return { timestamp: Math.floor(ts / 1000) };
+  };
+
+  // Trigger block event to resolve waitForBlock
+  setTimeout(() => mockProvider.emit('block', latestBlock + 1), 10);
+
+  const event = createMockGmpStatusEvent(txId, latestBlock);
+  mockProvider.getLogs = async () => [event];
+
+  // Providers that will return our failed tx
+  const newEvmProviders = objectMap(
+    opts.evmProviders,
+    provider =>
+      ({
+        ...provider,
+        getTransaction: async _ => {
+          return {
+            // from: https://arbiscan.io/tx/0xfbafaf0a9949fa657c9a040b0afa0ce0b09299c18e7c395ad8e651aa1c207174
+            data: '0x4916065815265253afd6756fd6267d42728a7e9826de81fab3245a183b3ea57beeaa8100000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000000661676f7269630000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004161676f72696331386434377263666a30673472376a37797679706d34346b71637a6c346a72667436757032333370397a7639357038757434396d71756667687a680000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002c000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000057478353533000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000100000000000000000000000000af88d065e77c8cc2239327c5edb3a432268e583100000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000044095ea7b300000000000000000000000019330d10d9cc8751218eaf51e8885d058642e08a00000000000000000000000000000000000000000000000000000000002059400000000000000000000000000000000000000000000000000000000000000000000000000000000019330d10d9cc8751218eaf51e8885d058642e08a000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000846fd3504e000000000000000000000000000000000000000000000000000000000020594000000000000000000000000000000000000000000000000000000000000000040000000000000000000000001cd706e62703fa99ce0b3f477fad138cb1954cd0000000000000000000000000af88d065e77c8cc2239327c5edb3a432268e583100000000000000000000000000000000000000000000000000000000',
+          };
+        },
+      }) as WebSocketProvider,
+  );
+
+  const ctxWithFetch = harden({
+    ...opts,
+    evmProviders: newEvmProviders,
+    fetch: async (url: string) => {
+      // Return receipt with failed status
+      if (Object.values(opts.rpcUrls).includes(url)) {
+        return {
+          ok: true,
+          json: async () => [
+            {
+              result: [
+                {
+                  transactionHash: '0x123123213',
+                  status: '0x0',
+                  to: contractAddress,
+                },
+              ],
+            },
+          ],
+        } as Response;
+      }
+      return {} as Response;
+    },
+  });
+
+  await handlePendingTx(
+    { txId, ...gmpTx },
+    {
+      ...ctxWithFetch,
+      log: mockLog,
+      txTimestampMs,
+    },
+  );
+
+  const currentBlock = await mockProvider.getBlockNumber();
+  const fromBlock = 1449000;
+  const toBlock = currentBlock;
+
+  t.deepEqual(logs, [
+    `[${txId}] handling ${TxType.GMP} tx`,
+    `[${txId}] Watching transaction status for txId: ${txId} at contract: ${contractAddress}`,
+    `[${txId}] Searching blocks ${fromBlock} → ${toBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
+    `[${txId}] Found matching failed transaction`,
+    `[${txId}] Lookback found transaction`,
+    `[${txId}] GMP tx resolved`,
+  ]);
 });
