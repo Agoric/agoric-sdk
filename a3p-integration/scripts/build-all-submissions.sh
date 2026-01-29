@@ -14,6 +14,10 @@ IFS=$'\n'
 
 for proposal in ./proposals/?:*; do
   echo >&2 "Building $proposal ..."
+
+  # Copy local packages if specified in vendorPackages
+  "$SCRIPT_DIR"/copy-local-packages.sh "$proposal"
+
   cd $proposal
   while read -r line; do
     IFS=' ' parts=($line)

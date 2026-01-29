@@ -9,9 +9,16 @@
     ],
     "type": "/agoric.swingset.CoreEvalProposal"
   },
+  "vendorPackages": [
+    "@agoric/deploy-script-support",
+    "@agoric/portfolio-api",
+    "@aglocal/portfolio-contract",
+    "@aglocal/portfolio-deploy"
+  ],
   "type": "module",
   "license": "Apache-2.0",
   "dependencies": {
+    "@aglocal/portfolio-deploy": "dev",
     "@agoric/client-utils": "dev",
     "@agoric/deploy-script-support": "dev",
     "@agoric/synthetic-chain": "patch:@agoric/synthetic-chain@npm%3A0.6.1#~/.yarn/patches/@agoric-synthetic-chain-npm-0.6.1-f801222832.patch",
@@ -21,6 +28,10 @@
     "ava": "^6.4.1"
   },
   "resolutions": {
+    "@agoric/deploy-script-support": "portal:./local-packages/deploy-script-support",
+    "@agoric/portfolio-api": "portal:./local-packages/portfolio-api",
+    "@aglocal/portfolio-contract": "portal:./local-packages/portfolio-contract",
+    "@aglocal/portfolio-deploy": "portal:./local-packages/portfolio-deploy",
     "@cosmjs/amino": "^0.36.0",
     "@cosmjs/encoding": "^0.36.0",
     "@cosmjs/proto-signing": "^0.36.0",

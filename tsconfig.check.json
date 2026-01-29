@@ -22,6 +22,7 @@
         },
     },
     "exclude": [
+        "a3p-integration", // vendored package problems
         "multichain-testing", // not relevant for coding loop (and noble-usdn-lab.ts is very slow)
         "packages/benchmark",
         "packages/create-dapp",
