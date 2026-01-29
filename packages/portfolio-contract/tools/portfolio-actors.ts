@@ -410,7 +410,7 @@ export const makeEvmTrader = ({
                 token: usdcToken,
                 amount: depositAmount,
               },
-              // TODO: spender for deposit more should be the remote account for the chain
+              // XXX: spender for deposit more should be the remote account for the chain
               // (if already published), or copied from the remote account of the portfolio source chain
               spender: depositFactory,
               nonce: (nonce += 1n),

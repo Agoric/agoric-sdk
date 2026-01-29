@@ -113,7 +113,7 @@ const makeEip155ChainIdToAxelarChain = (
   return harden(chainIdToChainName);
 };
 
-const interfaceTODO = undefined;
+const interfaceTODO = undefined; // https://github.com/Agoric/agoric-private/issues/339
 
 const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
   M.splitRecord({

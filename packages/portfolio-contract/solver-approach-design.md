@@ -316,7 +316,7 @@ Notes:
 - They’re inexpensive (BFS over a small graph) and run only when requested or when `debug` is enabled and the solve is infeasible.
 
 
-## 11. Todo
+## 11. XXX (see https://github.com/Agoric/agoric-sdk/pull/12392/files )
 Critical
 - Typed Node/Edge aliases to enforce pool↔hub pairing at compile time.
 - add USDN and USDNVault to PROD_NETWORK; override the fee
