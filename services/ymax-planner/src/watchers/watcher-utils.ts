@@ -1,5 +1,7 @@
 import type { TransactionReceipt, WebSocketProvider } from 'ethers';
 import { Interface, AbiCoder, getAddress } from 'ethers';
+import { depositFactoryCreateAndDepositInputs } from '@aglocal/portfolio-contract/src/utils/evm-orch-factory.ts';
+import { decodeAbiParameters } from 'viem';
 import { getConfirmationsRequired } from '../support.ts';
 
 //#region Axelar execute calldata extraction
@@ -81,13 +83,13 @@ export const extractFactoryExecuteData = (
  * Extract data from DepositFactory.execute() calldata.
  * Payload structure: CreateAndDepositPayload struct
  *
+ * Uses shared ABI definition from portfolio-contract to ensure consistency.
+ *
  * @param data - Transaction input data (calldata)
- * @param abiCoder - AbiCoder instance for decoding payload
  * @returns Object with expectedWalletAddress and sourceAddress, or null if parsing fails
  */
 export const extractDepositFactoryExecuteData = (
   data: string,
-  abiCoder: AbiCoder = new AbiCoder(),
 ): { expectedWalletAddress: string; sourceAddress: string } | null => {
   try {
     const parsed = axelarExecuteIface.parseTransaction({ data });
@@ -96,11 +98,9 @@ export const extractDepositFactoryExecuteData = (
     const [_commandId, _sourceChain, sourceAddress, payload] = parsed.args;
     if (!sourceAddress || !payload) return null;
 
-    // Decode CreateAndDepositPayload struct
-    const [decoded] = abiCoder.decode(
-      [
-        'tuple(string lcaOwner, address tokenOwner, tuple(tuple(address token, uint256 amount) permitted, uint256 nonce, uint256 deadline) permit, bytes32 witness, string witnessTypeString, bytes signature, address expectedWalletAddress)',
-      ],
+    // Decode CreateAndDepositPayload using shared ABI definition
+    const [decoded] = decodeAbiParameters(
+      depositFactoryCreateAndDepositInputs,
       payload,
     );
     if (!decoded?.expectedWalletAddress) return null;
