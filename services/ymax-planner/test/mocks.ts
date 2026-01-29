@@ -243,8 +243,11 @@ export const createMockProvider = (
         eventOrFilter.topics
       ) {
         // Tests can include txId or expectedWalletAddress in the log object for websocket simulation
-        const txId = (log as any).txId;
-        const expectedWalletAddress = (log as any).expectedWalletAddress;
+        const txId = log.txId;
+        const expectedWalletAddress = log.expectedWalletAddress;
+        const useDepositFactoryFormat = log.useDepositFactoryFormat;
+        // Allow specifying a different transaction destination than the log emitter
+        const txDestination = log.txDestination || log.address;
         const sourceAddress = 'agoric1test';
 
         if (txId || expectedWalletAddress) {
@@ -260,8 +263,32 @@ export const createMockProvider = (
               ['tuple(string id, tuple(address target, bytes data)[] calls)'],
               [[txId, []]], // CallMessage with txId and empty calls array
             );
+          } else if (useDepositFactoryFormat) {
+            // Wallet watcher: Encode CreateAndDepositPayload for DepositFactory
+            // Simplified version with just the fields we need for the test
+            const dummyPermit = {
+              permitted: { token: ethers.ZeroAddress, amount: 0n },
+              nonce: 0n,
+              deadline: 0n,
+            };
+            payload = abiCoder.encode(
+              [
+                'tuple(string lcaOwner, address tokenOwner, tuple(tuple(address token, uint256 amount) permitted, uint256 nonce, uint256 deadline) permit, bytes32 witness, string witnessTypeString, bytes signature, address expectedWalletAddress)',
+              ],
+              [
+                [
+                  sourceAddress, // lcaOwner
+                  ethers.ZeroAddress, // tokenOwner
+                  dummyPermit, // permit
+                  ethers.ZeroHash, // witness
+                  '', // witnessTypeString
+                  '0x', // signature
+                  expectedWalletAddress,
+                ],
+              ],
+            );
           } else {
-            // Wallet watcher: Encode address payload
+            // Wallet watcher: Encode address payload for Factory
             payload = abiCoder.encode(['address'], [expectedWalletAddress]);
           }
 
@@ -292,7 +319,7 @@ export const createMockProvider = (
                 transaction: {
                   hash: log.transactionHash,
                   input: mockCalldata,
-                  to: log.address,
+                  to: txDestination,
                   from: '0x0000000000000000000000000000000000000000',
                   value: '0x0',
                   gasLimit: '0x186a0',
