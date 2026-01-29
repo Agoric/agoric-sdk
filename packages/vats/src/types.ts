@@ -5,6 +5,7 @@ import type { PacketSDKType } from '@agoric/cosmic-proto/ibc/core/channel/v1/cha
 import type { BridgeId, Remote } from '@agoric/internal';
 import type { Bytes } from '@agoric/network';
 import type { Guarded } from '@endo/exo';
+import type { CaipChainId } from '@agoric/orchestration';
 import type { TargetApp } from './bridge-target.js';
 import type { LocalChainAccount } from './localchain.js';
 
@@ -152,10 +153,10 @@ export type IBCPacket = JsonSafe<{
 
 /**
  * The network host is the tuple type that identifies the system providing a
- * NetworkBinding. We currently only support chain-based Caip10 hosts, but
+ * NetworkBinding. We currently only support chain-based CAIP-2 hosts, but
  * others may be added later.
  */
-export type NetworkHost = [['chain', `${string}:${string}`]];
+export type NetworkHost = readonly [readonly ['chain', CaipChainId]];
 
 /**
  * A network binding is the protocol-specific minimal information needed to
@@ -163,18 +164,19 @@ export type NetworkHost = [['chain', `${string}:${string}`]];
  * it has been bound.
  */
 export interface NetworkBinding {
-  ibc: [['port', IBCPortID], ['channel', IBCChannelID]];
+  ibc: readonly [
+    readonly ['port', IBCPortID],
+    readonly ['channel', IBCChannelID],
+  ];
 }
 
 /**
  * A network endpoint is a tuple that identifies a specific network location,
  * including the protocol, host, and any protocol-specific binding information.
  */
-export type NetworkEndpoint<Proto extends keyof NetworkBinding> = [
-  Proto,
-  ...(NetworkHost | []),
-  ...(NetworkBinding[Proto] | []),
-];
+export type NetworkEndpoint<Proto extends keyof NetworkBinding> = Readonly<
+  [Proto, ...(NetworkHost | []), ...(NetworkBinding[Proto] | [])]
+>;
 
 export type IBCCounterParty = {
   port_id: IBCPortID;

@@ -105,6 +105,11 @@ export type CaipChainId = `${string}:${string}`;
 export type AccountId = `${CaipChainId}:${string}`;
 
 /**
+ * Rough approximation for `/0x([0-9a-fA-F]{2})+/`
+ */
+export type HexAddress = `0x${string}`;
+
+/**
  * Specific to Cosmos chains
  * @see {AccountId} for universal account identifier
  */

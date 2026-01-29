@@ -1,7 +1,7 @@
 /**
  * @import {AxelarChain} from '@agoric/portfolio-api/src/constants.js';
  * @import {EVMContractAddresses} from '@aglocal/portfolio-contract/src/portfolio.contract.js';
- * @import {BaseChainInfo, Bech32Address} from '@agoric/orchestration'
+ * @import {BaseChainInfo, Bech32Address, HexAddress} from '@agoric/orchestration'
  * @import {EVMContractAddressesMap} from '@aglocal/portfolio-contract/src/type-guards.js';
  */
 
@@ -50,7 +50,6 @@ export const AxelarChainIdMap = harden({
 // XXX: Ideally this should be Record<keyof typeof AxelarChain, HexAddress>.
 // Currently using a looser type to work around compile-time errors.
 /**
- * @typedef {`0x${string}`} HexAddress
  * @typedef {Record<string, HexAddress>} EvmAddressesMap
  * @typedef {{ mainnet: EvmAddressesMap, testnet: EvmAddressesMap }} AddressesMap
  */
