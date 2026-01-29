@@ -20,10 +20,9 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 import { prepareTestAsyncFlowTools } from './_utils.js';
 
 /**
- * @import {AsyncFlow} from '../src/async-flow.js'
- * @import {Vow, VowTools} from '@agoric/vow'
- * @import {PromiseKit} from '@endo/promise-kit'
- * @import {Zone} from '@agoric/base-zone'
+ * @import {AsyncFlow} from '../src/async-flow.js';
+ * @import {Vow} from '@agoric/vow';
+ * @import {Zone} from '@agoric/base-zone';
  */
 
 /**
@@ -103,8 +102,8 @@ const testFirstPlay = async (t, zone) => {
   const wrapperFunc = asyncFlow(zone, 'AsyncFlow1', guestMethod);
 
   const outcomeV = zone.makeOnce('outcomeV', () => wrapperFunc(hOrch7, v1, v3));
-
   t.true(isVow(outcomeV));
+
   r1.resolve('x');
 
   const flow = zone.makeOnce('flow', () =>
@@ -142,11 +141,29 @@ const testBadReplay = async (t, zone) => {
   const { asyncFlow, adminAsyncFlow } = prepareTestAsyncFlowTools(t, zone, {
     vowTools,
     panicHandler: e => {
+      // The order of properties should not be significant. But unfortunately,
+      // the way we're using it to test means the order needs to match that
+      // observed in the test.
+      const expectedMsgFault = {
+        actualEntry: [
+          'checkCall',
+          '[Alleged: Orchestra guest wrapper]',
+          'scale',
+          [4],
+          3,
+        ],
+        expectedEntry: ['checkCall', '[Seen]', 'scale', [3], 3],
+        generation: 0,
+        label: 'replay call',
+        logIndex: 4,
+      };
       t.throws(
         () => {
           throw e;
         },
-        { message: /^replay 3:/ },
+        {
+          message: `Fault handler declined to handle fault ${JSON.stringify(expectedMsgFault)}`,
+        },
       );
     },
   });
@@ -174,11 +191,13 @@ const testBadReplay = async (t, zone) => {
   // by ignoring the returned wrapper function. If the wrapper function is
   // invoked, that would be a *new* activation with a new outcome and
   // flow, and would have nothing to do with the existing one.
-  asyncFlow(zone, 'AsyncFlow1', guestMethod);
+  void asyncFlow(zone, 'AsyncFlow1', guestMethod);
 
   const outcomeV = /** @type {Vow} */ (
     zone.makeOnce('outcomeV', () => Fail`need outcomeV`)
   );
+  t.true(isVow(outcomeV));
+
   const flow = /** @type {AsyncFlow} */ (
     zone.makeOnce('flow', () => Fail`need flow`)
   );
@@ -264,6 +283,8 @@ const testGoodReplay = async (t, zone) => {
   const outcomeV = /** @type {Vow} */ (
     zone.makeOnce('outcomeV', () => Fail`need outcomeV`)
   );
+  t.true(isVow(outcomeV));
+
   const flow = /** @type {AsyncFlow} */ (
     zone.makeOnce('flow', () => Fail`need flow`)
   );
@@ -372,19 +393,16 @@ test.serial('test durable async-flow', async t => {
   await testFirstPlay(t, zone1);
 
   await eventLoopIteration();
-
   nextLife();
   const zone2 = makeDurableZone(getBaggage(), 'durableRoot');
   await testBadReplay(t, zone2);
 
   await eventLoopIteration();
-
   nextLife();
   const zone3 = makeDurableZone(getBaggage(), 'durableRoot');
   await testGoodReplay(t, zone3);
 
   await eventLoopIteration();
-
   nextLife();
   const zone4 = makeDurableZone(getBaggage(), 'durableRoot');
   return testAfterPlay(t, zone4);
