@@ -12,6 +12,7 @@
     "lint": "run-s --continue-on-error 'lint:*'",
     "lint:types": "find proposals -maxdepth 2 -name package.json -type f -exec ../node_modules/.bin/tsc -p '{}'/.. ';'",
     "lint:eslint": "eslint .",
+    "pretest": "./scripts/prepare-test.sh",
     "test": "yarn synthetic-chain test",
     "doctor": "yarn synthetic-chain doctor"
   },
