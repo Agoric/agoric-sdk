@@ -10,6 +10,7 @@
     "type": "/agoric.swingset.CoreEvalProposal"
   },
   "vendorPackages": [
+    "@agoric/client-utils",
     "@agoric/deploy-script-support",
     "@agoric/portfolio-api",
     "@aglocal/portfolio-contract",
@@ -28,6 +29,7 @@
     "ava": "^6.4.1"
   },
   "resolutions": {
+    "@agoric/client-utils": "portal:./local-packages/client-utils",
     "@agoric/deploy-script-support": "portal:./local-packages/deploy-script-support",
     "@agoric/portfolio-api": "portal:./local-packages/portfolio-api",
     "@aglocal/portfolio-contract": "portal:./local-packages/portfolio-contract",

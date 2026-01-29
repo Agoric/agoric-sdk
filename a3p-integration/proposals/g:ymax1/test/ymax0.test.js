@@ -1,19 +1,24 @@
 // @ts-check
 import '@endo/init/debug.js';
 
-import { LOCAL_CONFIG, makeVstorageKit } from '@agoric/client-utils';
+import {
+  LOCAL_CONFIG,
+  makeVstorageKit,
+  reflectWalletStore,
+} from '@agoric/client-utils';
 import {
   getVatInfoFromID,
   getDetailsMatchingVats,
 } from '@agoric/synthetic-chain';
 import anyTest from 'ava';
-import { walletUpdates } from '../walletUpdates.js';
+import { YMAX_CONTROL_WALLET_KEY } from '@agoric/portfolio-api/src/portfolio-constants.js';
 import { bundleId, ymax0ControlAddr as ymaxControlAddr } from './consts.js';
 import { redeemInvitation, submitYmaxControl } from '../ymax-util.js';
-import { makeActionId, sendWalletAction } from '../wallet-util.js';
+import { makeSyntheticWalletKit } from '../synthetic-wallet-kit.js';
 
 /**
- * @import {BridgeAction} from '@agoric/smart-wallet/src/smartWallet.js';
+ * @import {TestFn} from 'ava';
+ * @import {ExecutionContext} from 'ava';
  */
 
 const { fromEntries } = Object;
@@ -28,20 +33,25 @@ const privateArgsOverrides = harden({
 });
 
 const vsc = makeVstorageKit({ fetch }, LOCAL_CONFIG);
-const wup = walletUpdates(
-  () => vsc.readPublished(`wallet.${ymaxControlAddr}`),
-  { setTimeout, log: () => {} },
-);
+
+// Create synthetic wallet kit and wallet store
+const syntheticWallet = makeSyntheticWalletKit({
+  address: ymaxControlAddr,
+  vstorageKit: vsc,
+});
+const walletStore = reflectWalletStore(syntheticWallet, {
+  setTimeout,
+  log: () => {},
+  makeNonce: () => String(Date.now()),
+});
 
 /** @param {any} x */
 const boardId = x => x.getBoardId();
 
 const test =
-  /** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */ (
-    anyTest
-  );
+  /** @type {TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */ (anyTest);
 
-/** @param {import('ava').ExecutionContext} t */
+/** @param {ExecutionContext} t */
 const makeTestContext = async t => {
   const { [contractName]: instance } = fromEntries(
     await vsc.readPublished(`agoricNames.instance`),
@@ -66,28 +76,9 @@ const makeTestContext = async t => {
 test.before(async t => (t.context = await makeTestContext(t)));
 
 test.serial('null upgrade existing instance with args override', async t => {
-  const id = makeActionId('upgrade');
-
-  /** @type {BridgeAction} */
-  const invokeAction = {
-    // @ts-expect-error old type from npm
-    method: 'invokeEntry',
-    message: {
-      id,
-      targetName: 'ymaxControl',
-      method: 'upgrade',
-      args: [
-        {
-          bundleId,
-          privateArgsOverrides,
-        },
-      ],
-    },
-  };
-
-  await sendWalletAction(vsc, ymaxControlAddr, invokeAction);
-
-  t.deepEqual(await wup.invocation(id), { passStyle: 'copyRecord' });
+  // Get contract control from wallet store and call upgrade directly
+  const yc = walletStore.get(YMAX_CONTROL_WALLET_KEY);
+  await yc.upgrade({ bundleId, privateArgsOverrides });
 
   const { [contractName]: instance } = fromEntries(
     await vsc.readPublished(`agoricNames.instance`),
@@ -110,23 +101,11 @@ test.serial('null upgrade existing instance with args override', async t => {
 });
 
 test.serial('revoke contract control', async t => {
-  const id = makeActionId('revoke');
+  // Get contract control from wallet store and call revoke directly
+  const yc = walletStore.get(YMAX_CONTROL_WALLET_KEY);
+  await yc.revoke();
 
-  /** @type {BridgeAction} */
-  const invokeAction = {
-    // @ts-expect-error old type from npm
-    method: 'invokeEntry',
-    message: {
-      id,
-      targetName: 'ymaxControl',
-      method: 'revoke',
-      args: [],
-    },
-  };
-
-  await sendWalletAction(vsc, ymaxControlAddr, invokeAction);
-
-  t.deepEqual(await wup.invocation(id), { passStyle: 'undefined' });
+  t.pass('Contract control revoked');
 });
 
 test.serial('get new contract control', async t => {

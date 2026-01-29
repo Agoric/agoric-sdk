@@ -17,6 +17,18 @@ import { YMAX_CONTROL_WALLET_KEY } from '@agoric/portfolio-api/src/portfolio-con
  */
 
 /**
+ * @typedef {object} MinimalWalletKit
+ * Minimal interface needed by reflectWalletStore to enable wallet operations.
+ * This allows synthetic-chain tests and other environments to provide a compatible
+ * implementation without needing the full SigningSmartWalletKit.
+ *
+ * @property {(action: BridgeAction, fee?: unknown) => Promise<{code: number, rawLog?: string}>} sendBridgeAction
+ *   Send a bridge action (like invokeEntry) to the wallet and return the transaction result
+ * @property {{getLastUpdate: () => Promise<UpdateRecord>}} query
+ *   Query interface to get the last wallet update for waiting on invocations
+ */
+
+/**
  * Helper to wait for specific wallet updates
  *
  * This provides a higher-level API over retryUntilCondition for common
