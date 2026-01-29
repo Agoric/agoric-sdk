@@ -373,7 +373,7 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
     const subscribeToAddr = accountAddress as `0x${string}`;
 
     const watchArgs = {
-      factoryAddr: factoryAddr as `0x${string}`,
+      factoryAddr: factoryAddr || (accountAddress as `0x${string}`),
       subscribeToAddr,
       provider,
       expectedAddr: expectedAddr as `0x${string}`,
