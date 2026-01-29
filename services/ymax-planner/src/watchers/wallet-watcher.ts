@@ -302,6 +302,7 @@ export const watchSmartWalletTx = ({
       ws.on('message', messageHandler);
       cleanups.unshift(() => ws.off('message', messageHandler));
 
+      log(`Attempting to subscribe to ${subscribeToAddr}...`);
       subId = await provider.send('eth_subscribe', [
         'alchemy_minedTransactions',
         {
@@ -310,6 +311,7 @@ export const watchSmartWalletTx = ({
           hashesOnly: false,
         },
       ]);
+      log(`✓ Subscribed to ${subscribeToAddr} (subscription ID: ${subId})`);
     };
 
     if (ws.readyState === 1) {

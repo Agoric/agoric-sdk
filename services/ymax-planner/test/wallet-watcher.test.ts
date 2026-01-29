@@ -106,6 +106,8 @@ test('handlePendingTx processes MAKE_ACCOUNT transaction successfully', async t 
   t.deepEqual(logMessages, [
     `[${txId}] handling ${type} tx`,
     `[${txId}] Watching for wallet creation: subscribing to ${factoryAddress}, expecting event from ${factoryAddress}, expectedAddr ${expectedWalletAddr}`,
+    `[${txId}] Attempting to subscribe to ${factoryAddress}...`,
+    `[${txId}] ✓ Subscribed to ${factoryAddress} (subscription ID: mock-subscription-id)`,
     `[${txId}] ✅ SUCCESS: expectedAddr=${expectedWalletAddr} txHash=${mockLog.transactionHash} block=${mockLog.blockNumber}`,
     `[${txId}] MAKE_ACCOUNT tx resolved`,
   ]);
@@ -162,6 +164,8 @@ test('handlePendingTx logs timeout on MAKE_ACCOUNT transaction with no matching 
   t.deepEqual(logMessages, [
     `[${txId}] handling ${type} tx`,
     `[${txId}] Watching for wallet creation: subscribing to ${factoryAddress}, expecting event from ${factoryAddress}, expectedAddr ${expectedWalletAddr}`,
+    `[${txId}] Attempting to subscribe to ${factoryAddress}...`,
+    `[${txId}] ✓ Subscribed to ${factoryAddress} (subscription ID: mock-subscription-id)`,
     `[${txId}] ✗ No wallet creation found for expectedAddr ${expectedWalletAddr} within 0.05 minutes`,
     `[${txId}] ✅ SUCCESS: expectedAddr=${expectedWalletAddr} txHash=0x123abc block=18500000`,
     `[${txId}] MAKE_ACCOUNT tx resolved`,
@@ -246,6 +250,8 @@ test('handlePendingTx ignores non-matching wallet addresses', async t => {
   t.deepEqual(logMessages, [
     `[${txId}] handling ${type} tx`,
     `[${txId}] Watching for wallet creation: subscribing to ${factoryAddress}, expecting event from ${factoryAddress}, expectedAddr ${expectedWalletAddr}`,
+    `[${txId}] Attempting to subscribe to ${factoryAddress}...`,
+    `[${txId}] ✓ Subscribed to ${factoryAddress} (subscription ID: mock-subscription-id)`,
     `[${txId}] ✅ SUCCESS: expectedAddr=${expectedWalletAddr} txHash=${correctTxHash} block=18500000`,
     `[${txId}] MAKE_ACCOUNT tx resolved`,
   ]);
