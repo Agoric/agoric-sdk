@@ -324,9 +324,9 @@ export const prepareVaultManagerKit = (
       }),
       helper: M.interface(
         'helper',
-        // not exposed so sloppy okay
+        // not exposed so using `defaultGuards` is fine.
         {},
-        { sloppy: true },
+        { defaultGuards: 'passable' },
       ),
       manager: M.interface('manager', {
         getGovernedParams: M.call().returns(M.remotable('governedParams')),
