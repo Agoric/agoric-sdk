@@ -22,6 +22,7 @@ import {
   type AxelarChainConfig,
 } from '@aglocal/portfolio-deploy/src/axelar-configs.js';
 import type { ContractControl } from '@aglocal/portfolio-deploy/src/contract-control.js';
+import { YMAX_CONTROL_WALLET_KEY } from '@agoric/portfolio-api/src/portfolio-constants.js';
 import { lookupInterchainInfo } from '@aglocal/portfolio-deploy/src/orch.start.js';
 import { findOutdated } from '@aglocal/portfolio-deploy/src/vstorage-outdated.js';
 import {
@@ -99,12 +100,12 @@ Options:
 
 Operations:
   -h, --help                Show this help message
-  --repl                    Start a repl with walletStore and ymaxControl bound
+  --repl                    Start a repl with walletStore and ${YMAX_CONTROL_WALLET_KEY} bound
   --checkStorage            Report outdated ymax0 vstorage nodes (older than agoricNames.instance)
   --pruneStorage            Prune vstorage nodes read from Record<ParentPath, ChildPathSegment[]>
                             stdin
   --buildEthOverrides       Build privateArgsOverrides sufficient to add new EVM chains
-  --getCreatorFacet         Read the creator facet read from wallet store entry 'ymaxControl' and
+  --getCreatorFacet         Read the creator facet read from wallet store entry '${YMAX_CONTROL_WALLET_KEY}' and
                             save the result in a new entry ('creatorFacet' for contract 'ymax0',
                             otherwise \`creatorFacet-\${contract}\`)
   --installAndStart <id>    Start a contract with bundleId <id> and privateArgsOverrides from stdin
@@ -659,7 +660,7 @@ const main = async (
     return;
   }
 
-  const yc = walletStore.get<ContractControl<YMaxStartFn>>('ymaxControl');
+  const yc = walletStore.get<ContractControl<YMaxStartFn>>(YMAX_CONTROL_WALLET_KEY);
 
   if (values.repl) {
     const tools = {
@@ -669,7 +670,7 @@ const main = async (
       walletKit,
       signing: sig,
       walletStore,
-      ymaxControl: yc,
+      [YMAX_CONTROL_WALLET_KEY]: yc,
     };
     console.error('bindings:', Object.keys(tools).join(', '));
     const session = repl.start({ prompt: 'ymax> ', useGlobal: true });

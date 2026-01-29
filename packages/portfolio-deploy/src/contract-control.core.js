@@ -7,6 +7,7 @@ import { makeHeapZone } from '@agoric/zone';
 // import { objectMap } from '@endo/patterns';
 // import { passStyleOf } from '@endo/pass-style';
 import { prepareContractControl } from './contract-control.js';
+import { YMAX_CONTROL_WALLET_KEY } from '@agoric/portfolio-api/src/portfolio-constants.js';
 
 /**
  * @import {ContractStartFunction} from '@agoric/zoe/src/zoeService/utils.js';
@@ -100,7 +101,7 @@ export const produceDeliverContractControl = async permitted => {
       E(postalSvcPub).deliverPrize(
         controlAddress,
         contractControl,
-        'ymaxControl',
+        YMAX_CONTROL_WALLET_KEY,
       ),
       () => trace('control received'),
     );
