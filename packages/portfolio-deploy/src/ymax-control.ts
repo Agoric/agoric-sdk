@@ -105,18 +105,6 @@ export const makeWalletStoreFromSigner = (
     fee,
   });
 
-export const makeYmaxControlEntries = (
-  walletStore: ReturnType<typeof reflectWalletStore>,
-) => {
-  const ymaxControl = walletStore.get<ContractControl<YMaxStartFn>>(
-    YMAX_CONTROL_WALLET_KEY,
-  );
-  const ymaxControlForSaving = walletStore.getForSavingResults<
-    ContractControl<YMaxStartFn>
-  >(YMAX_CONTROL_WALLET_KEY);
-  return { ymaxControl, ymaxControlForSaving };
-};
-
 export const makeYmaxControlKitForChain = async (
   {
     env,
@@ -168,8 +156,9 @@ export const makeYmaxControlKitForChain = async (
     log,
   });
 
-  const { ymaxControl, ymaxControlForSaving } =
-    makeYmaxControlEntries(walletStore);
+  const ymaxControl = walletStore.get<ContractControl<YMaxStartFn>>(
+    YMAX_CONTROL_WALLET_KEY,
+  );
 
   return {
     networkConfig: effectiveNetworkConfig,
@@ -177,7 +166,6 @@ export const makeYmaxControlKitForChain = async (
     signer,
     walletStore,
     ymaxControl,
-    ymaxControlForSaving,
   } satisfies YmaxControlKit;
 };
 
@@ -208,23 +196,21 @@ export const makeYmaxControlKitForSynthetic = (
     fee,
     log,
   });
-  const { ymaxControl, ymaxControlForSaving } =
-    makeYmaxControlEntries(walletStore);
+  const ymaxControl = walletStore.get<ContractControl<YMaxStartFn>>(
+    YMAX_CONTROL_WALLET_KEY,
+  );
+
   return {
     signer,
     walletStore,
     ymaxControl,
-    ymaxControlForSaving,
   } satisfies YmaxControlKit;
 };
 
 export interface YmaxControlKit {
   signer: WalletStoreSigner;
   walletStore: ReturnType<typeof reflectWalletStore>;
-  ymaxControl: ReturnType<typeof makeYmaxControlEntries>['ymaxControl'];
-  ymaxControlForSaving: ReturnType<
-    typeof makeYmaxControlEntries
-  >['ymaxControlForSaving'];
+  ymaxControl: WalletStoreEntryProxy<ContractControl<YMaxStartFn>>;
   walletKit?: SmartWalletKit;
   networkConfig?: Parameters<typeof makeSmartWalletKit>[1];
 }
