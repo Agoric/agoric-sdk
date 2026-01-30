@@ -1,7 +1,11 @@
 // @ts-check
 import '@endo/init/debug.js';
 
-import { LOCAL_CONFIG, makeVstorageKit, reflectWalletStore } from '@agoric/client-utils';
+import {
+  LOCAL_CONFIG,
+  makeVstorageKit,
+  reflectWalletStore,
+} from '@agoric/client-utils';
 import {
   getVatInfoFromID,
   getDetailsMatchingVats,
@@ -13,7 +17,8 @@ import { redeemInvitation, submitYmaxControl } from '../ymax-util.js';
 import { makeSyntheticWalletKit } from '../synthetic-wallet-kit.js';
 
 /**
- * @import {BridgeAction} from '@agoric/smart-wallet/src/smartWallet.js';
+ * @import {TestFn} from 'ava';
+ * @import {ExecutionContext} from 'ava';
  */
 
 const { fromEntries } = Object;
@@ -37,18 +42,16 @@ const syntheticWallet = makeSyntheticWalletKit({
 const walletStore = reflectWalletStore(syntheticWallet, {
   setTimeout,
   log: () => {},
-  makeNonce: () => Date.now(),
+  makeNonce: () => String(Date.now()),
 });
 
 /** @param {any} x */
 const boardId = x => x.getBoardId();
 
 const test =
-  /** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */ (
-    anyTest
-  );
+  /** @type {TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */ (anyTest);
 
-/** @param {import('ava').ExecutionContext} t */
+/** @param {ExecutionContext} t */
 const makeTestContext = async t => {
   const { [contractName]: instance } = fromEntries(
     await vsc.readPublished(`agoricNames.instance`),

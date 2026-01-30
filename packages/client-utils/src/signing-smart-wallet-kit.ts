@@ -311,6 +311,8 @@ export const reflectWalletStore = (
      * await tx output from `sendBridgeAction`, and will also wait for
      * confirmation in vstorage when sent with an `id` (e.g., derived from a
      * `makeNonce` option) unless overridden by a `sendOnly: true` option.
+     *
+     * @param name The wallet store name of the saved entry to retrieve.
      */
     get: <T>(name: string, options?: Partial<TxOptions>) =>
       makeEntryProxy(name, options, false) as WalletStoreEntryProxy<T, false>,
@@ -323,6 +325,8 @@ export const reflectWalletStore = (
      * confirmation in vstorage unless overridden by a `sendOnly: true` option
      * (but note that when so overridden, the returned `result` is not yet
      * usable).
+     *
+     * @param name The wallet store name of the saved entry to retrieve.
      */
     getForSavingResults: <T>(name: string, options?: Partial<TxOptions>) =>
       makeEntryProxy(name, options, true) as WalletStoreEntryProxy<T, true>,
