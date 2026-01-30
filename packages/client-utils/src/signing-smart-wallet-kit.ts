@@ -37,7 +37,7 @@ type TxOptions = RetryOptionsAndPowers & {
  * results also include a WalletStoreEntryProxy `result` representing those
  * results.
  */
-type WalletStoreEntryProxy<T, Recursive extends true | false = false> = {
+export type WalletStoreEntryProxy<T, Recursive extends true | false = false> = {
   readonly [M in keyof T]: T[M] extends (...args: infer P) => infer R
     ? Recursive extends false
       ? ECallable<(...args: P) => { id?: string; tx: DeliverTxResponse }>
@@ -204,10 +204,25 @@ export type SigningSmartWalletKit = EReturn<typeof makeSigningSmartWalletKit>;
 export type { SmartWalletKit };
 
 /**
+ * Minimal interface needed by reflectWalletStore to enable wallet operations.
+ *
+ * This allows synthetic-chain tests and other environments to provide a compatible
+ * implementation without needing the full SigningSmartWalletKit.
+ *
+ * @alpha
+ */
+export type WalletStoreSigner = Pick<
+  SigningSmartWalletKit,
+  'sendBridgeAction'
+> & {
+  query: Pick<SigningSmartWalletKit['query'], 'getLastUpdate'>;
+};
+
+/**
  * @alpha
  */
 export const reflectWalletStore = (
-  sswk: SigningSmartWalletKit,
+  sswk: WalletStoreSigner,
   baseTxOpts?: Partial<TxOptions>,
 ) => {
   baseTxOpts = { log: () => {}, ...baseTxOpts };

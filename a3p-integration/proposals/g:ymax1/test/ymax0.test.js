@@ -1,17 +1,13 @@
 // @ts-check
 import '@endo/init/debug.js';
 
-import {
-  LOCAL_CONFIG,
-  makeVstorageKit,
-  reflectWalletStore,
-} from '@agoric/client-utils';
+import { LOCAL_CONFIG, makeVstorageKit } from '@agoric/client-utils';
 import {
   getVatInfoFromID,
   getDetailsMatchingVats,
 } from '@agoric/synthetic-chain';
 import anyTest from 'ava';
-import { YMAX_CONTROL_WALLET_KEY } from '@agoric/portfolio-api/src/portfolio-constants.js';
+import { makeYmaxControlKitForSynthetic } from '@aglocal/portfolio-deploy/src/ymax-control.js';
 import { bundleId, ymax0ControlAddr as ymaxControlAddr } from './consts.js';
 import { redeemInvitation, submitYmaxControl } from '../ymax-util.js';
 import { makeSyntheticWalletKit } from '../synthetic-wallet-kit.js';
@@ -39,11 +35,14 @@ const syntheticWallet = makeSyntheticWalletKit({
   address: ymaxControlAddr,
   vstorageKit: vsc,
 });
-const walletStore = reflectWalletStore(syntheticWallet, {
-  setTimeout,
-  log: () => {},
-  makeNonce: () => String(Date.now()),
-});
+const { ymaxControl } = makeYmaxControlKitForSynthetic(
+  { setTimeout },
+  {
+    signer: syntheticWallet,
+    log: () => {},
+    makeNonce: () => String(Date.now()),
+  },
+);
 
 /** @param {any} x */
 const boardId = x => x.getBoardId();
@@ -77,7 +76,7 @@ test.before(async t => (t.context = await makeTestContext(t)));
 
 test.serial('null upgrade existing instance with args override', async t => {
   // Get contract control from wallet store and call upgrade directly
-  const yc = walletStore.get(YMAX_CONTROL_WALLET_KEY);
+  const yc = ymaxControl;
   await yc.upgrade({ bundleId, privateArgsOverrides });
 
   const { [contractName]: instance } = fromEntries(
@@ -102,7 +101,7 @@ test.serial('null upgrade existing instance with args override', async t => {
 
 test.serial('revoke contract control', async t => {
   // Get contract control from wallet store and call revoke directly
-  const yc = walletStore.get(YMAX_CONTROL_WALLET_KEY);
+  const yc = ymaxControl;
   await yc.revoke();
 
   t.pass('Contract control revoked');

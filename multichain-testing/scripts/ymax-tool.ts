@@ -27,21 +27,18 @@ import {
   gmpAddresses as gmpConfigs,
   type AxelarChainConfig,
 } from '@aglocal/portfolio-deploy/src/axelar-configs.js';
-import type { ContractControl } from '@agoric/deploy-script-support/src/control/contract-control.contract.js';
-import { YMAX_CONTROL_WALLET_KEY } from '@agoric/portfolio-api/src/portfolio-constants.js';
 import { lookupInterchainInfo } from '@aglocal/portfolio-deploy/src/orch.start.js';
 import { findOutdated } from '@aglocal/portfolio-deploy/src/vstorage-outdated.js';
-import { walletUpdates } from '@agoric/deploy-script-support/src/wallet-utils.js';
+import { makeYmaxControlKitForChain } from '@aglocal/portfolio-deploy/src/ymax-control.js';
 import {
   fetchEnvNetworkConfig,
-  makeSigningSmartWalletKit,
-  makeSmartWalletKit,
   makeVStorage,
   makeVstorageKit,
-  reflectWalletStore,
+  type makeSmartWalletKit,
   type SigningSmartWalletKit,
   type VstorageKit,
 } from '@agoric/client-utils';
+import type { ContractControl } from '@agoric/deploy-script-support/src/control/contract-control.contract.js';
 import { AmountMath, type Brand } from '@agoric/ertp';
 import {
   multiplyBy,
@@ -66,23 +63,24 @@ import {
   getYmaxWitness,
   type TargetAllocation as Allocation,
 } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.ts';
+import { YMAX_CONTROL_WALLET_KEY } from '@agoric/portfolio-api/src/portfolio-constants.js';
 import type { OfferStatus } from '@agoric/smart-wallet/src/offers.js';
+import { M } from '@agoric/store';
 import type { NameHub } from '@agoric/vats';
 import type { EMethods } from '@agoric/vow/src/E.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/types.js';
 import type { StartedInstanceKit as ZStarted } from '@agoric/zoe/src/zoeService/utils.js';
-import { SigningStargateClient } from '@cosmjs/stargate';
+import type { StdFee } from '@cosmjs/stargate';
 import { E } from '@endo/far';
-import { type CopyRecord } from '@endo/pass-style';
-import { M } from '@endo/patterns';
+import type { CopyRecord } from '@endo/pass-style';
 import { once } from 'node:events';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import repl from 'node:repl';
 import { parseArgs } from 'node:util';
-import type { StdFee } from 'osmojs';
 import type { HDAccount } from 'viem';
 import { mnemonicToAccount } from 'viem/accounts';
+import { walletUpdates } from '../tools/wallet-store-reflect.ts';
 
 const nodeRequire = createRequire(import.meta.url);
 const asset = (spec: string) => readFile(nodeRequire.resolve(spec), 'utf8');
@@ -547,8 +545,6 @@ const main = async (
   env = process.env,
   {
     fetch = globalThis.fetch,
-    setTimeout = globalThis.setTimeout,
-    connectWithSigner = SigningStargateClient.connectWithSigner,
     now = Date.now,
     stdin = process.stdin,
     stdout = process.stdout,
@@ -593,11 +589,6 @@ const main = async (
   let { MNEMONIC } = env;
   if (!MNEMONIC) throw Error(`MNEMONIC not set`);
 
-  const delay = ms =>
-    new Promise(resolve => setTimeout(resolve, ms)).then(_ => {});
-  const walletKit0 = await makeSmartWalletKit({ fetch, delay }, networkConfig);
-  const walletKit = values['skip-poll'] ? noPoll(walletKit0) : walletKit0;
-
   let evmAccount: HDAccount | null = null;
   if (values.evm) {
     evmAccount = mnemonicToAccount(MNEMONIC);
@@ -616,19 +607,25 @@ const main = async (
     }
   }
 
-  const sig = await makeSigningSmartWalletKit(
-    { connectWithSigner, walletUtils: walletKit },
-    MNEMONIC,
+  const fresh = () => new Date(now()).toISOString();
+  const {
+    walletKit,
+    signer: sig,
+    walletStore,
+    ymaxControl,
+    ymaxControlForSaving,
+  } = await makeYmaxControlKitForChain(
+    { env, fetch, setTimeout, now },
+    {
+      mnemonic: MNEMONIC,
+      networkConfig,
+      walletKitTransform: values['skip-poll'] ? wk => noPoll(wk) : undefined,
+      log: trace,
+      makeNonce: fresh,
+      fee: makeFee({ gas: 809068, adjustment: 1.4 }),
+    },
   );
   trace('address', sig.address);
-  const fresh = () => new Date(now()).toISOString();
-  const walletStore = reflectWalletStore(sig, {
-    setTimeout,
-    log: trace,
-    makeNonce: fresh,
-    // as in: Error#1: out of gas ... gasUsed: 809068
-    fee: makeFee({ gas: 809068, adjustment: 1.4 }),
-  });
 
   if (values.redeem) {
     const { contract, description } = values;
@@ -688,8 +685,7 @@ const main = async (
   if (values.getCreatorFacet) {
     const { contract } = values;
     const creatorFacetKey = getCreatorFacetKey(contract);
-
-    await walletStore.savingResult(creatorFacetKey, () => yc.getCreatorFacet());
+    await ymaxControlForSaving.getCreatorFacet({ name: creatorFacetKey });
     return;
   }
 
@@ -764,6 +760,7 @@ const main = async (
     const creatorFacet = walletStore.get<CFMethods>(creatorFacetKey);
     const instances = await walletKit.readPublished('agoricNames.instance');
     const { postalService } = fromEntries(instances);
+    // @ts-expect-error xxx PASS_STYLE
     await inviter(creatorFacet, postalService, addr);
     return;
   }
