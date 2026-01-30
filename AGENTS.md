@@ -25,6 +25,7 @@ per https://agents.md/
 - Prettier enforced with single quotes; 2-space indentation.
 - ESLint configured via `eslint.config.mjs` (includes AVA, TypeScript, JSDoc, and repository-specific rules).
 - Package names: publishable packages use `@agoric/*`; private/local packages use `@aglocal/*` (verify with `yarn lint:package-names`).
+- `@aglocal` packages are private and never published; `@agoric` packages are published and may only depend on published packages, so `@agoric` packages must never import `@aglocal` packages.
 
 ## Testing Guidelines
 - Framework: AVA. Test files follow `**/test/**/*.test.*` within each package.
