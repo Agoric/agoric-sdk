@@ -27,7 +27,7 @@ import {
   gmpAddresses as gmpConfigs,
   type AxelarChainConfig,
 } from '@aglocal/portfolio-deploy/src/axelar-configs.js';
-import type { ContractControl } from '@aglocal/portfolio-deploy/src/contract-control.js';
+import type { ContractControl } from '@agoric/deploy-script-support/src/control/contract-control.contract.js';
 import { YMAX_CONTROL_WALLET_KEY } from '@agoric/portfolio-api/src/portfolio-constants.js';
 import { lookupInterchainInfo } from '@aglocal/portfolio-deploy/src/orch.start.js';
 import { findOutdated } from '@aglocal/portfolio-deploy/src/vstorage-outdated.js';
@@ -688,6 +688,7 @@ const main = async (
   if (values.getCreatorFacet) {
     const { contract } = values;
     const creatorFacetKey = getCreatorFacetKey(contract);
+
     await walletStore.savingResult(creatorFacetKey, () => yc.getCreatorFacet());
     return;
   }

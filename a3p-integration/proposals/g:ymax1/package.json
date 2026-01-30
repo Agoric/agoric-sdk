@@ -2,8 +2,8 @@
   "agoricProposal": {
     "source": "subdir",
     "sdk-generate": [
-      "../../portfolio-deploy/src/contract-control.build.js submission",
-      "../../portfolio-deploy/src/get-upgrade-kit.build.js submission",
+      "../../deploy-script-support/src/control/contract-control.build.js submission",
+      "../../deploy-script-support/src/control/get-upgrade-kit.build.js submission",
       "../../portfolio-deploy/src/portfolio-control.build.js submission --contractName=ymax0 --ymaxControlAddress=agoric15u29seyj3c9rdwg7gwkc97uttrk6j9fl4jkuyh",
       "../../portfolio-deploy/src/portfolio-control.build.js submission --contractName=ymax1 --ymaxControlAddress=agoric1c0eq3m8sze9cj8lxr7h66fu3jgqtevqxv8svcm"
     ],

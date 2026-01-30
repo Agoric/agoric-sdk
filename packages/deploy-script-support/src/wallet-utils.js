@@ -1,3 +1,4 @@
+/* global globalThis */
 /**
  * @file Reusable wallet utilities for portfolio contract testing and operations
  *

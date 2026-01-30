@@ -33,7 +33,7 @@ import type { StartedInstanceKit } from '@agoric/zoe/src/zoeService/utils.js';
 import {
   prepareContractControl,
   type ContractControl,
-} from '../src/contract-control.js';
+} from '@agoric/deploy-script-support/src/control/contract-control.contract.js';
 
 const nodeRequire = createRequire(import.meta.url);
 const asset = (spec: string) => readFile(nodeRequire.resolve(spec), 'utf8');

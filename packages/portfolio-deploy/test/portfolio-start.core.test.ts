@@ -29,9 +29,12 @@ import { passStyleOf, type CopyRecord } from '@endo/pass-style';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import type { BootstrapPowers } from '@agoric/vats/src/core/types.js';
-import { produceAttenuatedDeposit } from '../src/attenuated-deposit.core.js';
+import { produceAttenuatedDeposit } from '@agoric/deploy-script-support/src/control/attenuated-deposit.core.js';
+import type { ChainInfoPowers } from '@agoric/deploy-script-support/src/control/chain-info.core.js';
+import { deployPostalService } from '@agoric/deploy-script-support/src/control/postal-service.core.js';
+import { produceDeliverContractControl } from '@agoric/deploy-script-support/src/control/contract-control.core.js';
+import { produceGetUpgradeKit } from '@agoric/deploy-script-support/src/control/get-upgrade-kit.core.js';
 import { axelarConfig } from '../src/axelar-configs.js';
-import type { ChainInfoPowers } from '../src/chain-info.core.js';
 import { toExternalConfig } from '../src/config-marshal.js';
 import { delegatePortfolioContract } from '../src/portfolio-control.core.js';
 import {
@@ -44,10 +47,7 @@ import type {
   StartFn,
 } from '../src/portfolio-start.type.ts';
 import { name as contractName } from '../src/portfolio.contract.permit.js';
-import * as postalServiceExports from '../src/postal-service.contract.js';
-import { deployPostalService } from '../src/postal-service.core.js';
-import { produceDeliverContractControl } from '../src/contract-control.core.js';
-import { produceGetUpgradeKit } from '../src/get-upgrade-kit.core.js';
+import * as postalServiceExports from '../src/control/postal-service.contract.js';
 
 const { entries, keys } = Object;
 

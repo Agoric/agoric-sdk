@@ -7,7 +7,7 @@ import {
 import type { ChainInfo, IBCConnectionInfo } from '@agoric/orchestration';
 import { HubName } from '@agoric/orchestration/src/exos/chain-hub.js';
 import { objectMap } from '@endo/patterns';
-import { HubName as HubNameCopy } from '../src/chain-info.core.js';
+import { HubName as HubNameCopy } from '@agoric/deploy-script-support/src/control/chain-info.core.js';
 import { makeAssetInfo } from '../src/chain-name-service.js';
 import { mixConnections } from '../src/orch.start.js';
 

@@ -8,16 +8,18 @@ const contractName = 'postalService';
 const trace = makeTracer('CCtrlCore');
 
 /**
- * @import {start as StartFn} from './postal-service.contract.js';
  * @import {Installation} from '@agoric/zoe';
  * @import {Instance} from '@agoric/zoe';
  * @import {PromiseSpaceOf} from '@agoric/vats/src/core/types.js';
  * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
+ * @import {start} from '@aglocal/portfolio-deploy/src/control/postal-service.contract.js';
  */
 /**
+ * @typedef {typeof start} PostalServiceStartFn
+ *
  * @typedef {{
- *   installation: PromiseSpaceOf<{ postalService: Installation<StartFn>}>;
- *   instance: PromiseSpaceOf<{ postalService: Instance<StartFn>}>;
+ *   installation: PromiseSpaceOf<{ postalService: Installation<PostalServiceStartFn>}>;
+ *   instance: PromiseSpaceOf<{ postalService: Instance<PostalServiceStartFn>}>;
  * }} PostalServiceBoot
  */
 

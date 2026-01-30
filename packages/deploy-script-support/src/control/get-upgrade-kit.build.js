@@ -2,10 +2,11 @@
  * @import { CoreEvalBuilder, DeployScriptFunction } from '@agoric/deploy-script-support/src/externalTypes.js';
  */
 
-import { makeHelpers } from '@agoric/deploy-script-support';
+import { makeHelpers } from '../helpers.js';
 import { getManifestForGetUpgradeKit } from './get-upgrade-kit.core.js';
 
-const sourceSpec = './get-upgrade-kit.core.js';
+const sourceSpec =
+  '@agoric/deploy-script-support/src/control/get-upgrade-kit.core.js';
 
 /**
  * @satisfies {CoreEvalBuilder}
