@@ -32,6 +32,14 @@ per https://agents.md/
 - Run all: `yarn test`. Per-package: `yarn test` from that package directory.
 - Coverage: in a package, run `yarn test:c8` and open `coverage/html/index.html` after `yarn c8 report --reporter=html-spa` if needed.
 
+## A3P Container & Proposal Build Notes
+- A3P tests run inside a Docker container built from an agoric-sdk checkout, so the container can access the full repo filesystem, not just published npm packages.
+- The container’s canonical agoric-sdk checkout is based on the last formal release, so any workspace updates needed by A3P must be copied into the image and resolved correctly.
+- A3P supports building proposals from agoric-sdk `HEAD` and copying the artifacts into the image
+   - this avoids copying all sources needed to build proposals.
+   - it's configured by `agoricProposal.sdk-generate` in the proposal package.json
+   - it's performed by `a3p-integration/build-submission.sh`
+
 ## Commit & Pull Request Guidelines
 - Use Conventional Commits in titles and commits (e.g., `feat(swingstore): add snapshot…`).
 - Branches should reference an issue number (e.g., `123-fix-solo-reconnect`).
