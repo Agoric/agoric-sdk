@@ -2,7 +2,7 @@
 /**
  * @file Adapter to make synthetic-chain wallet compatible with reflectWalletStore
  *
- * This creates a MinimalWalletKit from synthetic-chain's agoric wallet commands,
+ * This creates a WalletStoreSigner from synthetic-chain's agoric wallet commands,
  * allowing a3p tests to use reflectWalletStore without a full SigningSmartWalletKit.
  */
 
@@ -13,11 +13,11 @@ import { writeFile } from 'node:fs/promises';
  * @import {BridgeAction} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {UpdateRecord} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {VstorageKit} from '@agoric/client-utils';
- * @import {MinimalWalletKit} from '@agoric/deploy-script-support/src/wallet-utils.js';
+ * @import {WalletStoreSigner} from '@agoric/deploy-script-support/src/wallet-utils.js';
  */
 
 /**
- * Create a MinimalWalletKit for a synthetic-chain wallet address
+ * Create a WalletStoreSigner for a synthetic-chain wallet address
  *
  * This adapts the synthetic-chain's `agoric wallet` commands to work with
  * reflectWalletStore, enabling direct method calls on wallet store entries.
@@ -25,13 +25,13 @@ import { writeFile } from 'node:fs/promises';
  * @param {object} options
  * @param {string} options.address - Wallet address (e.g., 'agoric15u29...')
  * @param {VstorageKit} options.vstorageKit - Vstorage kit for reading wallet updates
- * @returns {MinimalWalletKit}
+ * @returns {WalletStoreSigner}
  */
 export const makeSyntheticWalletKit = ({ address, vstorageKit }) => {
   /**
    * Send a bridge action using synthetic-chain's wallet command
    *
-   * @type {MinimalWalletKit['sendBridgeAction']}
+   * @type {WalletStoreSigner['sendBridgeAction']}
    */
   const sendBridgeAction = async (action, _fee) => {
     const capData = vstorageKit.marshaller.toCapData(harden(action));

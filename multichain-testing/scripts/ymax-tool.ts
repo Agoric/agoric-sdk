@@ -12,7 +12,6 @@ import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.e
 import type { start as YMaxStart } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
 import { TargetAllocationShape } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.ts';
-import type { ContractControl } from '@agoric/deploy-script-support/src/control/contract-control.contract.js';
 import {
   GoalDataShape,
   getCreatorFacetKey,
@@ -24,22 +23,19 @@ import {
   overridesForEthChainInfo,
   parseTypedJSON,
 } from '@aglocal/portfolio-deploy/src/ymax-tool-lib.js';
+import { makeYmaxControlKitForChain } from '@aglocal/portfolio-deploy/src/ymax-control.js';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import { YMAX_CONTROL_WALLET_KEY } from '@agoric/portfolio-api/src/portfolio-constants.js';
 import { findOutdated } from '@aglocal/portfolio-deploy/src/vstorage-outdated.js';
 import {
   fetchEnvNetworkConfig,
-  makeSigningSmartWalletKit,
-  makeSmartWalletKit,
   makeVStorage,
   makeVstorageKit,
-  reflectWalletStore,
 } from '@agoric/client-utils';
 import { makeTracer } from '@agoric/internal';
 import type { EMethods } from '@agoric/vow/src/E.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/types.js';
 import type { StartedInstanceKit as ZStarted } from '@agoric/zoe/src/zoeService/utils.js';
-import { SigningStargateClient } from '@cosmjs/stargate';
 import { E } from '@endo/far';
 import { once } from 'node:events';
 import { readFile } from 'node:fs/promises';
@@ -210,16 +206,6 @@ const main = async (argv = process.argv, env = process.env) => {
     let { MNEMONIC } = env;
     if (!MNEMONIC) throw Error(`MNEMONIC not set`);
 
-    const delay: (ms: number) => Promise<void> = ms =>
-      new Promise(resolve => setTimeout(() => resolve(), ms));
-    const walletKit0 = await makeSmartWalletKit(
-      { fetch, delay },
-      networkConfig,
-    );
-    const walletKit = values['skip-poll']
-      ? noPoll(walletKit0, trace)
-      : walletKit0;
-
     let evmAccount: HDAccount | null = null;
     if (values.evm) {
       evmAccount = mnemonicToAccount(MNEMONIC);
@@ -238,22 +224,27 @@ const main = async (argv = process.argv, env = process.env) => {
       }
     }
 
-    const sig = await makeSigningSmartWalletKit(
+    const fresh = () => new Date(now()).toISOString();
+    const {
+      walletKit,
+      signer: sig,
+      walletStore,
+      ymaxControl,
+      ymaxControlForSaving,
+    } = await makeYmaxControlKitForChain(
+      { env, fetch, setTimeout, now },
       {
-        connectWithSigner: SigningStargateClient.connectWithSigner,
-        walletUtils: walletKit,
+        mnemonic: MNEMONIC,
+        networkConfig,
+        walletKitTransform: values['skip-poll']
+          ? wk => noPoll(wk, trace)
+          : undefined,
+        log: trace,
+        makeNonce: fresh,
+        fee: makeFee({ gas: 809068, adjustment: 1.4 }),
       },
-      MNEMONIC,
     );
     trace('address', sig.address);
-    const fresh = () => new Date(now()).toISOString();
-    const walletStore = reflectWalletStore(sig, {
-      setTimeout,
-      log: trace,
-      makeNonce: fresh,
-      // as in: Error#1: out of gas ... gasUsed: 809068
-      fee: makeFee({ gas: 809068, adjustment: 1.4 }),
-    });
 
     if (values.redeem) {
       const { contract, description } = values;
@@ -289,9 +280,7 @@ const main = async (argv = process.argv, env = process.env) => {
       return;
     }
 
-    const yc = walletStore.get<ContractControl<YMaxStartFn>>(
-      YMAX_CONTROL_WALLET_KEY,
-    );
+    const yc = ymaxControl;
 
     if (values.repl) {
       const tools = {
@@ -313,10 +302,7 @@ const main = async (argv = process.argv, env = process.env) => {
     if (values.getCreatorFacet) {
       const { contract } = values;
       const creatorFacetKey = getCreatorFacetKey(contract);
-      const ycs = walletStore.getForSavingResults<ContractControl<YMaxStartFn>>(
-        YMAX_CONTROL_WALLET_KEY,
-      );
-      await ycs.getCreatorFacet({ name: creatorFacetKey });
+      await ymaxControlForSaving.getCreatorFacet({ name: creatorFacetKey });
       return;
     }
 

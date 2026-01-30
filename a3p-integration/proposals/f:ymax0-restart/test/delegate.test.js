@@ -1,13 +1,9 @@
 // @ts-check
 import '@endo/init/debug.js';
 
-import {
-  LOCAL_CONFIG,
-  makeVstorageKit,
-  reflectWalletStore,
-} from '@agoric/client-utils';
+import { LOCAL_CONFIG, makeVstorageKit } from '@agoric/client-utils';
 import { walletUpdates } from '@agoric/deploy-script-support/src/wallet-utils.js';
-import { YMAX_CONTROL_WALLET_KEY } from '@agoric/portfolio-api/src/portfolio-constants.js';
+import { makeYmaxControlKitForSynthetic } from '@aglocal/portfolio-deploy/src/ymax-control.js';
 import { agoric, mkTemp } from '@agoric/synthetic-chain';
 import test from 'ava';
 import { writeFile } from 'node:fs/promises';
@@ -35,11 +31,14 @@ const syntheticWallet = makeSyntheticWalletKit({
   address: ymaxControlAddr,
   vstorageKit: vsc,
 });
-const walletStore = reflectWalletStore(syntheticWallet, {
-  setTimeout,
-  log: () => {},
-  makeNonce: () => String(Date.now()),
-});
+const { ymaxControl, ymaxControlForSaving } = makeYmaxControlKitForSynthetic(
+  { setTimeout },
+  {
+    signer: syntheticWallet,
+    log: () => {},
+    makeNonce: () => String(Date.now()),
+  },
+);
 
 /** @param {any} x */
 const boardId = x => x.getBoardId();
@@ -73,8 +72,7 @@ test.before('get current ymax0 instance', async t => {
 });
 
 test.serial('terminate existing instance', async t => {
-  /** @type {ContractControl<YMaxStartFn>} */
-  const yc = walletStore.get(YMAX_CONTROL_WALLET_KEY);
+  const yc = ymaxControl;
   await yc.terminate({ message: 'terminate in order to restart the contract' });
 
   t.pass('Contract terminated');
@@ -83,12 +81,10 @@ test.serial('terminate existing instance', async t => {
 test.serial('invoke ymaxControl showing no instance', async t => {
   // TODO test this invokation id?
   const id = 'getCreatorFacet.1';
-  /** @type {ContractControl<YMaxStartFn>} */
-  const yc = walletStore.getForSavingResults(YMAX_CONTROL_WALLET_KEY);
 
   await t.throwsAsync(
     // @ts-expect-error FIX types for getForSavingResults
-    yc.getCreatorFacet({ name: 'creatorFacet', overwrite: true }),
+    ymaxControlForSaving.getCreatorFacet({ name: 'creatorFacet', overwrite: true }),
     {
       message: /no StartedInstanceKit/,
     },
@@ -139,17 +135,15 @@ test.serial('start using ymaxControl', async t => {
     },
   };
 
-  const yc = walletStore.get(YMAX_CONTROL_WALLET_KEY);
+  const yc = ymaxControl;
   await yc.start({ installation, issuers, privateArgsOverrides });
 
   t.pass('Contract started');
 });
 
 test.serial('invoke ymaxControl to getCreatorFacet', async t => {
-  /** @type {ContractControl<YMaxStartFn>} */
-  const yc = walletStore.getForSavingResults(YMAX_CONTROL_WALLET_KEY);
   // @ts-expect-error FIX types for getForSavingResults
-  const cf = await yc.getCreatorFacet({
+  const cf = await ymaxControlForSaving.getCreatorFacet({
     name: 'creatorFacet',
     overwrite: true,
   });

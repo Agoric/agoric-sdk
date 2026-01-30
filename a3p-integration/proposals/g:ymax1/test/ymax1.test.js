@@ -1,17 +1,13 @@
 // @ts-check
 import '@endo/init/debug.js';
 
-import {
-  LOCAL_CONFIG,
-  makeVstorageKit,
-  reflectWalletStore,
-} from '@agoric/client-utils';
+import { LOCAL_CONFIG, makeVstorageKit } from '@agoric/client-utils';
 import { walletUpdates } from '@agoric/deploy-script-support/src/wallet-utils.js';
-import { YMAX_CONTROL_WALLET_KEY } from '@agoric/portfolio-api/src/portfolio-constants.js';
 import {
   getDetailsMatchingVats,
   getVatInfoFromID,
 } from '@agoric/synthetic-chain';
+import { makeYmaxControlKitForSynthetic } from '@aglocal/portfolio-deploy/src/ymax-control.js';
 import anyTest from 'ava';
 import { makeSyntheticWalletKit } from '../synthetic-wallet-kit.js';
 import { makeActionId, sendWalletAction } from '../wallet-util.js';
@@ -50,11 +46,14 @@ const syntheticWallet = makeSyntheticWalletKit({
   address: ymaxControlAddr,
   vstorageKit: vsc,
 });
-const walletStore = reflectWalletStore(syntheticWallet, {
-  setTimeout,
-  log: () => {},
-  makeNonce: () => String(Date.now()),
-});
+const { ymaxControl, ymaxControlForSaving } = makeYmaxControlKitForSynthetic(
+  { setTimeout },
+  {
+    signer: syntheticWallet,
+    log: () => {},
+    makeNonce: () => String(Date.now()),
+  },
+);
 
 /** @param {any} x */
 const boardId = x => x.getBoardId();
@@ -91,7 +90,7 @@ test.serial('no instance currently deployed', async t => {
 });
 
 test.serial('invoke ymaxControl showing no instance', async t => {
-  const yc = walletStore.getForSavingResults(YMAX_CONTROL_WALLET_KEY);
+  const yc = ymaxControlForSaving;
 
   // @ts-expect-error FIX types for getForSavingResults
   await t.throwsAsync(yc.getCreatorFacet({ name: 'creatorFacet' }), {
@@ -106,7 +105,7 @@ test.serial('installAndStart using ymaxControl', async t => {
 
   const issuers = harden({ USDC, Access: PoC26, BLD, Fee: BLD });
 
-  const yc = walletStore.get(YMAX_CONTROL_WALLET_KEY);
+  const yc = ymaxControl;
   await yc.installAndStart({
     bundleId,
     issuers,
@@ -136,7 +135,7 @@ test.serial('installAndStart using ymaxControl', async t => {
 });
 
 test.serial('invoke ymaxControl to getCreatorFacet', async t => {
-  const yc = walletStore.getForSavingResults(YMAX_CONTROL_WALLET_KEY);
+  const yc = ymaxControlForSaving;
   // @ts-expect-error FIX types for getForSavingResults
   const { result } = await yc.getCreatorFacet({ name: 'creatorFacet' });
 
@@ -172,7 +171,7 @@ test.serial('ymax told zoe that Access token is required', async t => {
 });
 
 test.serial('null upgrade existing instance with args override', async t => {
-  const yc = walletStore.get(YMAX_CONTROL_WALLET_KEY);
+  const yc = ymaxControl;
   await yc.upgrade({ bundleId, privateArgsOverrides });
 
   const { [contractName]: instance } = fromEntries(
@@ -198,7 +197,7 @@ test.serial('null upgrade existing instance with args override', async t => {
 });
 
 test.serial('revoke contract control', async t => {
-  const yc = walletStore.get(YMAX_CONTROL_WALLET_KEY);
+  const yc = ymaxControl;
   await yc.revoke();
 
   t.pass('Contract control revoked');
@@ -212,7 +211,7 @@ test.serial('get new contract control and upgrade', async t => {
   const result = await redeemInvitation(ymaxControlAddr);
   t.deepEqual(result, { name: 'ymaxControl', passStyle: 'remotable' });
 
-  const yc = walletStore.get(YMAX_CONTROL_WALLET_KEY);
+  const yc = ymaxControl;
   await yc.upgrade({ bundleId });
 
   const { [contractName]: instance } = fromEntries(
@@ -239,7 +238,7 @@ test.serial('get new contract control and upgrade', async t => {
 });
 
 test.serial('terminate', async t => {
-  const yc = walletStore.get(YMAX_CONTROL_WALLET_KEY);
+  const yc = ymaxControl;
   await yc.terminate({ message: 'terminate to leave state as we found it' });
 
   const { [contractName]: instance } = fromEntries(
