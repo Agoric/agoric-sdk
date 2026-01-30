@@ -1,20 +1,18 @@
 /** @file core eval to deliver control of a contract to a smartWallet */
 
 import { makeTracer } from '@agoric/internal/src/debug.js';
-import { E } from '@endo/eventual-send';
-import { Fail } from '@endo/errors';
 import { makeHeapZone } from '@agoric/zone';
-// import { objectMap } from '@endo/patterns';
-// import { passStyleOf } from '@endo/pass-style';
-import { prepareContractControl } from './contract-control.js';
+import { Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 import { YMAX_CONTROL_WALLET_KEY } from '@agoric/portfolio-api/src/portfolio-constants.js';
+import { prepareContractControl } from './contract-control.contract.js';
 
 /**
  * @import {ContractStartFunction} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {ChainStoragePresent} from './chain-info.core.js'
  * @import {PostalServiceBoot} from './postal-service.core.js';
  * @import {AttenuatedDepositPowers} from './attenuated-deposit.core.js';
- * @import {ContractControlOpts, ContractControl, UpdatePrivateArgs} from './contract-control.js';
+ * @import {ContractControlOpts, ContractControl, UpdatePrivateArgs} from './contract-control.contract.js';
  * @import {PromiseSpaceOf} from '@agoric/vats/src/core/types.js';
  * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
  */

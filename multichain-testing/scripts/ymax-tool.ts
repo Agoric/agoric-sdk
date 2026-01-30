@@ -12,7 +12,7 @@ import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.e
 import type { start as YMaxStart } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
 import { TargetAllocationShape } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.ts';
-import type { ContractControl } from '@aglocal/portfolio-deploy/src/contract-control.js';
+import type { ContractControl } from '@agoric/deploy-script-support/src/control/contract-control.contract.js';
 import {
   GoalDataShape,
   getCreatorFacetKey,

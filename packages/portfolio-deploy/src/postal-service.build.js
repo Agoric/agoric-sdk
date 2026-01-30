@@ -3,9 +3,10 @@
  */
 
 import { makeHelpers } from '@agoric/deploy-script-support';
-import { getManifestForPostalService } from './postal-service.core.js';
+import { getManifestForPostalService } from '@agoric/deploy-script-support/src/control/postal-service.core.js';
 
-const sourceSpec = './postal-service.core.js';
+const sourceSpec =
+  '@agoric/deploy-script-support/src/control/postal-service.core.js';
 
 /**
  * @param {Parameters<CoreEvalBuilder>[0]} tools
@@ -18,7 +19,9 @@ const defaultProposalBuilder = async ({ publishRef, install }) => {
       getManifestForPostalService.name,
       {
         installKeys: {
-          postalService: publishRef(install('./postal-service.contract.js')),
+          postalService: publishRef(
+            install('./control/postal-service.contract.js'),
+          ),
         },
       },
     ],

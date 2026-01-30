@@ -10,7 +10,7 @@ import { makeMarshal } from '@endo/marshal';
  * @import {Remote, ERemote} from '@agoric/internal';
  * @import {ChainInfo} from '@agoric/orchestration';
  * @import {NameHub, NameAdmin} from '@agoric/vats';
- * @import {AxelarChainConfigMap} from './axelar-configs.js';
+ * @typedef {Record<string, { chainInfo: ChainInfo }>} AxelarChainConfigMap
  * @import {ERef} from '@endo/eventual-send';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {PromiseSpaceOf} from '@agoric/vats/src/core/types.js';

@@ -2,7 +2,7 @@
  * @import { CoreEvalBuilder, DeployScriptFunction } from '@agoric/deploy-script-support/src/externalTypes.js';
  */
 
-import { makeHelpers } from '@agoric/deploy-script-support';
+import { makeHelpers } from '../helpers.js';
 import { getManifestForDeliverContractControl } from './contract-control.core.js';
 
 const sourceSpec = './contract-control.core.js';
@@ -23,5 +23,5 @@ const build = async (homeP, endowments) => {
 
   await writeCoreEval('eval-contract-control', () => defaultProposalBuilder());
 };
-
+harden(build);
 export default build;

@@ -3,9 +3,10 @@
  */
 
 import { makeHelpers } from '@agoric/deploy-script-support';
-import { getManifestForGetUpgradeKit } from './get-upgrade-kit.core.js';
+import { getManifestForGetUpgradeKit } from '@agoric/deploy-script-support/src/control/get-upgrade-kit.core.js';
 
-const sourceSpec = './get-upgrade-kit.core.js';
+const sourceSpec =
+  '@agoric/deploy-script-support/src/control/get-upgrade-kit.core.js';
 
 /**
  * @satisfies {CoreEvalBuilder}

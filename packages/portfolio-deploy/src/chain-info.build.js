@@ -16,7 +16,8 @@ const { keys } = Object;
 
 // TODO: factor out overlap with builders/scripts/orchestration/write-chain-info.js
 
-const sourceSpec = '@aglocal/portfolio-deploy/src/chain-info.core.js';
+const sourceSpec =
+  '@agoric/deploy-script-support/src/control/chain-info.core.js';
 
 /**
  * @import {ParseArgsConfig} from 'node:util';

@@ -17,9 +17,8 @@ const trace = makeTracer('CCtrl');
  * @import {Remote} from '@agoric/internal';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {Board, NameHubKit} from '@agoric/vats';
- * @import {UpgradeKit} from './get-upgrade-kit.core.js';
  * @import {ERef} from '@agoric/vow';
- * @import {StartUpgradable} from '@agoric/vats/src/core/types.js';
+ * @import {StartedInstanceKitWithLabel, StartUpgradable} from '@agoric/vats/src/core/types.js';
  * @import {StartedInstanceKit} from '@agoric/vats/src/core/types.js';
  */
 
@@ -168,7 +167,7 @@ export const prepareContractControl = (zone, svcs) => {
             //   terms: customTerms,
             privateArgs,
           });
-          /** @type {UpgradeKit<SF>} */
+          /** @type {StartedInstanceKitWithLabel<SF>} */
           const fullKit = harden({ ...kit, privateArgs });
           trace(name, 'started', objectMap(fullKit, passStyleOf));
           this.state.kit = fullKit;
@@ -363,6 +362,7 @@ export const prepareContractControl = (zone, svcs) => {
 
   return makeContractControl;
 };
+harden(prepareContractControl);
 
 /**
  * @template {ContractStartFunction} [SF=ContractStartFunction]
@@ -381,5 +381,6 @@ export const prepareContractControl = (zone, svcs) => {
 const maker = /** @type {MakeContractControl} */ (
   /** @type {unknown} */ (undefined)
 );
+harden(maker);
 
 /** @template {ContractStartFunction} [SF=ContractStartFunction] @typedef {ReturnType<typeof maker<SF>>} ContractControl */
