@@ -1,5 +1,14 @@
-version: v1
+version: v2
 plugins:
-  - name: swagger
+  - local:
+      [
+        "go",
+        "tool",
+        "protoc-gen-openapiv2",
+      ]
     out: ../tmp-swagger-gen
-    opt: logtostderr=true,fqn_for_swagger_name=true,simple_operation_ids=true
+    opt:
+      - logtostderr=true
+      - openapi_naming_strategy=fqn
+      - json_names_for_fields=false
+      - generate_unbound_methods=true
