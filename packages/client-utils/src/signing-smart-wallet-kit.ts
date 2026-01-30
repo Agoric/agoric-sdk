@@ -37,25 +37,19 @@ type TxOptions = RetryOptionsAndPowers & {
  * results also include a WalletStoreEntryProxy `result` representing those
  * results.
  */
-type WalletStoreEntryProxy<T, Recursive extends true | false = false> = {
+type WalletStoreEntryProxy<T> = {
   readonly [M in keyof T]: T[M] extends (...args: infer P) => infer R
-    ? Recursive extends false
-      ? ECallable<(...args: P) => { id?: string; tx: DeliverTxResponse }>
-      : ECallable<
-          <SaveToName extends string | undefined>(
-            options: SaveToName extends string
-              ? { name: SaveToName; overwrite?: boolean }
-              : undefined | Record<PropertyKey, never>,
-            ...args: P
-          ) => {
-            id?: string;
-            tx: DeliverTxResponse;
-            result: SaveToName extends string
-              ? WalletStoreEntryProxy<EUnwrap<R>, true>
-              : undefined;
-          }
-        >
+    ? ECallable<
+        (...args: P) => {
+          id?: string;
+          tx: DeliverTxResponse;
+          result?: WalletStoreEntryProxy<EUnwrap<R>>;
+        }
+      >
     : never;
+} & {
+  saving: (name: string) => WalletStoreEntryProxy<T>;
+  overwrite: (name: string) => WalletStoreEntryProxy<T>;
 };
 
 /**
@@ -230,12 +224,12 @@ export const reflectWalletStore = (
   const makeEntryProxy = (
     targetName: string,
     overrides?: Partial<TxOptions>,
-    forSavingResults?: boolean,
+    saveTo?: { name: string; overwrite: boolean },
   ) => {
     const combinedOpts = { ...baseTxOpts, ...overrides } as TxOptions;
     combinedOpts.setTimeout || Fail`missing setTimeout`;
     const { fee, sendOnly, makeNonce, ...retryOpts } = combinedOpts;
-    if (forSavingResults && !makeNonce && !sendOnly) {
+    if (saveTo && !makeNonce && !sendOnly) {
       throw Fail`makeNonce is required without sendOnly: true (to create an awaitable message id)`;
     }
     const { log = () => {} } = combinedOpts;
@@ -247,18 +241,24 @@ export const reflectWalletStore = (
       get(_t, method, _rx) {
         assert.typeof(method, 'string');
         method !== 'then' || Fail`unsupported method name "then"`;
+        if (method === 'save') {
+          return harden((name: string) =>
+            makeEntryProxy(targetName, overrides, { name, overwrite: false }),
+          );
+        }
+        if (method === 'overwrite') {
+          return harden((name: string) =>
+            makeEntryProxy(targetName, overrides, { name, overwrite: true }),
+          );
+        }
         const boundMethod = async (...args) => {
-          const options = forSavingResults ? args.shift() : {};
-          const { name, overwrite = true } = options;
-          const saveResult =
-            forSavingResults && name ? { name, overwrite } : undefined;
           const id = makeNonce ? `${method}.${makeNonce()}` : undefined;
           const message = logged('invoke', {
             id,
             targetName,
             method,
             args,
-            ...(saveResult ? { saveResult } : undefined),
+            ...(saveTo ? { saveResult: saveTo } : undefined),
           });
           const tx = await sswk.sendBridgeAction(
             { method: 'invokeEntry', message },
@@ -271,9 +271,9 @@ export const reflectWalletStore = (
             await getInvocationUpdate(id, sswk.query.getLastUpdate, retryOpts);
           }
           const ret = { id, tx };
-          if (forSavingResults) {
-            const result = name
-              ? makeEntryProxy(name, overrides, forSavingResults)
+          if (saveTo) {
+            const result = saveTo.name
+              ? makeEntryProxy(saveTo.name, overrides)
               : undefined;
             return { ...ret, result };
           }
@@ -327,24 +327,13 @@ export const reflectWalletStore = (
      * confirmation in vstorage when sent with an `id` (e.g., derived from a
      * `makeNonce` option) unless overridden by a `sendOnly: true` option.
      *
-     * @param name The wallet store name of the saved entry to retrieve.
-     */
-    get: <T>(name: string, options?: Partial<TxOptions>) =>
-      makeEntryProxy(name, options, false) as WalletStoreEntryProxy<T, false>,
-    /**
-     * Return a previously-saved result as a remote object with type-aware
-     * methods that map to "invokeEntry" submissions, each having an additional
-     * initial { name?: string, overwrite?: boolean } parameter for specifying
-     * how (or if) to save results in the wallet store. The methods will always
-     * await tx output from `sendBridgeAction`, and will also wait for
-     * confirmation in vstorage unless overridden by a `sendOnly: true` option
-     * (but note that when so overridden, the returned `result` is not yet
-     * usable).
+     * Use `.save(name)` or `.overwrite(name)` to persist a method result
+     * without changing the method's argument signature.
      *
      * @param name The wallet store name of the saved entry to retrieve.
      */
-    getForSavingResults: <T>(name: string, options?: Partial<TxOptions>) =>
-      makeEntryProxy(name, options, true) as WalletStoreEntryProxy<T, true>,
+    get: <T>(name: string, options?: Partial<TxOptions>) =>
+      makeEntryProxy(name, options) as WalletStoreEntryProxy<T>,
     /**
      * Execute the offer specified by { instance, description } and save the
      * result in the wallet store with the specified name (default to match the

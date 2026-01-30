@@ -31,7 +31,7 @@ const syntheticWallet = makeSyntheticWalletKit({
   address: ymaxControlAddr,
   vstorageKit: vsc,
 });
-const { ymaxControl, ymaxControlForSaving } = makeYmaxControlKitForSynthetic(
+const { ymaxControl } = makeYmaxControlKitForSynthetic(
   { setTimeout },
   {
     signer: syntheticWallet,
@@ -82,13 +82,9 @@ test.serial('invoke ymaxControl showing no instance', async t => {
   // TODO test this invokation id?
   const id = 'getCreatorFacet.1';
 
-  await t.throwsAsync(
-    // @ts-expect-error FIX types for getForSavingResults
-    ymaxControlForSaving.getCreatorFacet({ name: 'creatorFacet', overwrite: true }),
-    {
-      message: /no StartedInstanceKit/,
-    },
-  );
+  await t.throwsAsync(ymaxControl.overwrite('creatorFacet').getCreatorFacet(), {
+    message: /no StartedInstanceKit/,
+  });
 });
 
 test.serial('start using ymaxControl', async t => {
@@ -142,11 +138,7 @@ test.serial('start using ymaxControl', async t => {
 });
 
 test.serial('invoke ymaxControl to getCreatorFacet', async t => {
-  // @ts-expect-error FIX types for getForSavingResults
-  const cf = await ymaxControlForSaving.getCreatorFacet({
-    name: 'creatorFacet',
-    overwrite: true,
-  });
+  const cf = await ymaxControl.overwrite('creatorFacet').getCreatorFacet();
 
   t.truthy(cf, 'Creator facet saved to wallet store');
 });

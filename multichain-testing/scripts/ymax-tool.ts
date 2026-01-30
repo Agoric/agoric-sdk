@@ -230,7 +230,6 @@ const main = async (argv = process.argv, env = process.env) => {
       signer: sig,
       walletStore,
       ymaxControl,
-      ymaxControlForSaving,
     } = await makeYmaxControlKitForChain(
       { env, fetch, setTimeout, now },
       {
@@ -302,7 +301,7 @@ const main = async (argv = process.argv, env = process.env) => {
     if (values.getCreatorFacet) {
       const { contract } = values;
       const creatorFacetKey = getCreatorFacetKey(contract);
-      await ymaxControlForSaving.getCreatorFacet({ name: creatorFacetKey });
+      await ymaxControl.saving(creatorFacetKey).getCreatorFacet();
       return;
     }
 

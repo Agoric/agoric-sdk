@@ -342,7 +342,7 @@ export const processPortfolioEvents = async (
     ) => {
       const txOpts = { sendOnly: true };
       const planReceiver = walletStore.get<PortfolioPlanner>('planner', txOpts);
-      const { tx, id } = await planReceiver[methodName]!(...args);
+      const { tx, id } = await planReceiver[methodName]!(...(args as any[]));
       // tx has been submitted, but we won't know its fate until a future block.
       if (!isDryRun) {
         void getWalletInvocationUpdate(id as any).catch(err => {
