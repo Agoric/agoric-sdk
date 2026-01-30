@@ -26,6 +26,10 @@ per https://agents.md/
 - ESLint configured via `eslint.config.mjs` (includes AVA, TypeScript, JSDoc, and repository-specific rules).
 - Package names: publishable packages use `@agoric/*`; private/local packages use `@aglocal/*` (verify with `yarn lint:package-names`).
 - `@aglocal` packages are private and never published; `@agoric` packages are published and may only depend on published packages, so `@agoric` packages must never import `@aglocal` packages.
+- Entrypoints vs modules
+    - Keep ambient authority (e.g., `process.env`, `console`, filesystem, network) in entrypoints
+    - pass explicit capabilities (e.g., `io.console`) into shared JS modules.
+    - Never `@endo/init` in modules; best practice is at the beginning of an entrypoint
 
 ## Testing Guidelines
 - Framework: AVA. Test files follow `**/test/**/*.test.*` within each package.
