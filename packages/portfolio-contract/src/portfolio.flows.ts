@@ -105,7 +105,7 @@ import {
 } from './type-guards.ts';
 import { setAppendedTxIds } from './utils/traffic.ts';
 
-const { keys, entries, fromEntries } = Object;
+const { keys, fromEntries } = Object;
 const { reduceProgressReports } = progressTrackerAsyncFlowUtils;
 
 export type LocalAccount = OrchestrationAccount<{ chainId: 'agoric-any' }>;
@@ -225,7 +225,9 @@ type ExecutePlanOptions = {
   evmDepositDetail?: PermitDetails & { fromChain: AxelarChain };
   // XXX consider using pattern matching for queued steps instead of src/dest.
   queuedSteps?: Array<
-    Pick<MovementDesc, 'src' | 'dest'> & { ready?: Promise<void> }
+    Pick<MovementDesc, 'src' | 'dest'> & {
+      progressTracker?: ProgressTracker;
+    }
   >;
 };
 
@@ -763,7 +765,7 @@ const stepFlow = async (
   const publishProvideAccountProgress = (
     progressTracker: ProgressTracker | undefined,
     step: number,
-    phase: TxPhase,
+    phase: 'makeSrcAccount' | 'makeDestAccount',
   ) =>
     progressTracker &&
     reduceProgressReports(
@@ -889,7 +891,7 @@ const stepFlow = async (
   traceFlow('checking', moves.length, 'moves');
   moves.length > 0 || Fail`moves list must not be empty`;
 
-  for (const [i, move] of entries(moves)) {
+  for (const [i, move] of moves.entries()) {
     const queuedStep = getQueuedStep(move);
     if (queuedStep) {
       const maybeChain =
@@ -904,12 +906,27 @@ const stepFlow = async (
         amount: move.amount,
         src: move.src,
         dest: move.dest,
-        apply: async ({ [chainName]: gInfo }) => {
+        apply: async ({ [chainName]: gInfo }, _tracer, opts) => {
           assert(gInfo, chainName);
-          await gInfo.ready;
-          if (queuedStep.ready) {
-            await queuedStep.ready;
+          await null;
+
+          // Copy background queued progress to our 'apply' phase
+          // `opts.progressTracker`.
+          const progressTracker = opts?.progressTracker;
+          const queuedProgressTracker = queuedStep.progressTracker;
+          if (progressTracker && queuedProgressTracker) {
+            // Transfer all the queued progress reports.
+            await reduceProgressReports(
+              queuedProgressTracker,
+              (value, accum) => {
+                value == null || progressTracker.update(value);
+                return accum;
+              },
+              true,
+            );
           }
+
+          await gInfo.ready;
           return {};
         },
       });
@@ -1742,6 +1759,7 @@ const queuePermit2Step = async (
     permit2Payload: PermitDetails['permit2Payload'];
     fromChain: AxelarChain;
     chainInfo: BaseChainInfo<'eip155'>;
+    config?: FlowConfig;
   },
 ) => {
   const { gmpChain, steps, permit2Payload, fromChain, chainInfo } = details;
@@ -1761,8 +1779,12 @@ const queuePermit2Step = async (
     fee: feeAmount.value,
   };
 
+  const progressTracker = details.config?.features?.useProgressTracker
+    ? lca.makeProgressTracker()
+    : undefined;
+
   // For openPortfolio: atomic createAndDeposit via depositFactory
-  provideEVMAccountWithPermit(
+  const acct = provideEVMAccountWithPermit(
     fromChain,
     chainInfo,
     gmp,
@@ -1770,8 +1792,20 @@ const queuePermit2Step = async (
     ctx,
     pKit,
     permit2Payload,
+    { progressTracker },
   );
-  return [{ src: permitStep.src, dest: permitStep.dest }];
+
+  // We made the progressTracker above, so we must finalize it.
+  if (progressTracker) {
+    void acct.ready.finally(() => progressTracker.finish());
+  }
+  return [
+    {
+      src: permitStep.src,
+      dest: permitStep.dest,
+      ...(progressTracker ? { progressTracker } : {}),
+    },
+  ];
 };
 
 // XXX too many args. should use named properties
@@ -1825,6 +1859,7 @@ export const executePlan = (async (
           permit2Payload,
           fromChain,
           chainInfo,
+          config,
         });
       }
     }
