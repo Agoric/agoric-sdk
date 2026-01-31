@@ -12,7 +12,9 @@ import type {
   AbiParameterToPrimitiveType,
   TypedData,
 } from 'abitype';
+import { keyMirror } from '@agoric/internal/src/keyMirror.js';
 import type { TypedDataParameter } from '../abitype.ts';
+import type { encodeType } from '../viem-utils/hashTypedData.ts';
 import {
   PermitBatchTransferFromTypeParams,
   permitBatchWitnessTransferFromTypes,
@@ -20,21 +22,20 @@ import {
   permitWitnessTransferFromTypes,
 } from './signatureTransfer.ts';
 
+const PrimaryTypes = keyMirror({
+  PermitBatchWitnessTransferFrom: null,
+  PermitWitnessTransferFrom: null,
+});
+type PrimaryTypeName = keyof typeof PrimaryTypes;
+
 /**
  * Make a function for returning the `witnessTypeString` argument to use in a
  * `permitWitnessTransferFrom` call.
  */
-export const makeWitnessTypeStringExtractor = ({
-  encodeType,
-}: {
-  encodeType: ({
-    primaryType,
-    types,
-  }: {
-    primaryType: string;
-    types: TypedData;
-  }) => string;
+export const makeWitnessTypeStringExtractor = (powers: {
+  encodeType: typeof encodeType;
 }) => {
+  const { encodeType } = powers;
   const baseTypeStrings = Object.fromEntries(
     Object.entries({
       PermitBatchWitnessTransferFrom: permitBatchWitnessTransferFromTypes,
@@ -127,7 +128,7 @@ export const extractWitnessFieldFromTypes = <
 
   const matchingTypes = Object.keys(types).filter(
     type => type in baseTypes,
-  ) as (keyof typeof baseTypes)[];
+  ) as PrimaryTypeName[];
 
   if (matchingTypes.length !== 1) {
     throw new Error(
@@ -160,7 +161,7 @@ export const extractWitnessFieldFromTypes = <
   return candidateType[candidateType.length - 1] as T;
 };
 
-export const isPermit2MessageType = (type: string) => {
+export const isPermit2MessageType = (type: string): type is PrimaryTypeName => {
   return (
     type === 'PermitBatchWitnessTransferFrom' ||
     type === 'PermitWitnessTransferFrom'
