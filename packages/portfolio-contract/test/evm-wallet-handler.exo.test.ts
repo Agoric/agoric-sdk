@@ -16,7 +16,7 @@ import {
   makeNonceManager,
   prepareEVMPortfolioOperationManager,
   type EVMWallet,
-} from '../src/evm-wallet-handler.ts';
+} from '../src/evm-wallet-handler.exo.ts';
 import type { PortfolioKit } from '../src/portfolio.exo.ts';
 import type { contract, PublishStatus } from '../src/portfolio.contract.ts';
 
