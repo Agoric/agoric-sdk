@@ -28,6 +28,19 @@ const PrimaryTypes = keyMirror({
 });
 type PrimaryTypeName = keyof typeof PrimaryTypes;
 
+export const isPermit2MessageType = (type: string): type is PrimaryTypeName =>
+  type in PrimaryTypes;
+
+const getPrimaryType = (types: TypedData): PrimaryTypeName => {
+  const found = Object.keys(types).filter(isPermit2MessageType);
+  if (found.length !== 1) {
+    throw new Error(
+      `Exactly one of the following types must be defined: ${Object.keys(PrimaryTypes).join(', ')}`,
+    );
+  }
+  return found[0];
+};
+
 /**
  * Make a function for returning the `witnessTypeString` argument to use in a
  * `permitWitnessTransferFrom` call.
@@ -61,17 +74,7 @@ export const makeWitnessTypeStringExtractor = (powers: {
    * type that starts with its witness field.
    */
   const getWitnessTypeString = (types: TypedData) => {
-    const matchingTypes = Object.keys(types).filter(
-      type => type in baseTypeStrings,
-    );
-
-    if (matchingTypes.length !== 1) {
-      throw new Error(
-        `TypedData must have exactly one of the following types: ${Object.keys(baseTypeStrings).join(', ')}`,
-      );
-    }
-
-    const primaryType = matchingTypes[0];
+    const primaryType = getPrimaryType(types);
     const encodedType = encodeType({
       primaryType,
       types,
@@ -126,17 +129,7 @@ export const extractWitnessFieldFromTypes = <
     PermitWitnessTransferFrom: PermitTransferFromTypeParams,
   };
 
-  const matchingTypes = Object.keys(types).filter(
-    type => type in baseTypes,
-  ) as PrimaryTypeName[];
-
-  if (matchingTypes.length !== 1) {
-    throw new Error(
-      `TypedData must have exactly one of the following types: ${Object.keys(baseTypes).join(', ')}`,
-    );
-  }
-
-  const primaryType = matchingTypes[0];
+  const primaryType = getPrimaryType(types);
   const candidateType = (types as MapUnion<typeof types>)[primaryType];
   const referenceType = baseTypes[primaryType];
   // `candidateType` must match the expected reference type with a single extra
@@ -160,9 +153,6 @@ export const extractWitnessFieldFromTypes = <
 
   return candidateType[candidateType.length - 1] as T;
 };
-
-export const isPermit2MessageType = (type: string): type is PrimaryTypeName =>
-  type in PrimaryTypes;
 
 export const TokenPermissionsComponents = [
   { name: 'token', type: 'address' },
