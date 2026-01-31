@@ -1,5 +1,7 @@
 /**
- * @file Helpers for working with permit2 signature transfer witness types
+ * @file Helpers for working with Uniswap Permit2 SignatureTransfer
+ * `permitWitnessTransferFrom`.
+ * @see {@link https://docs.uniswap.org/contracts/permit2/reference/signature-transfer}
  *
  * This is original code that was adapted for permit2-sdk, unlike @see ./permit2SignatureTransfer.ts
  */
@@ -18,6 +20,10 @@ import {
   permitWitnessTransferFromTypes,
 } from './signatureTransfer.ts';
 
+/**
+ * Make a function for returning the `witnessTypeString` argument to use in a
+ * `permitWitnessTransferFrom` call.
+ */
 export const makeWitnessTypeStringExtractor = ({
   encodeType,
 }: {
@@ -45,7 +51,15 @@ export const makeWitnessTypeStringExtractor = ({
     }),
   );
 
-  return function getWitnessTypeString(types: TypedData) {
+  /**
+   * Return the `witnessTypeString` argument for a `permitWitnessTransferFrom`
+   * call using the provided EIP-712 `types` record.
+   * Note that `types` must define either a valid "PermitWitnessTransferFrom" or
+   * a valid "PermitBatchWitnessTransferFrom", but not both.
+   * The returned string is the suffix of the EIP-712 encoding of that primary
+   * type that starts with its witness field.
+   */
+  const getWitnessTypeString = (types: TypedData) => {
     const matchingTypes = Object.keys(types).filter(
       type => type in baseTypeStrings,
     );
@@ -71,6 +85,7 @@ export const makeWitnessTypeStringExtractor = ({
 
     return encodedType.substring(baseTypeString.length);
   };
+  return getWitnessTypeString;
 };
 
 type MapUnion<U> = {
@@ -81,6 +96,13 @@ type MapUnion<U> = {
     : never;
 };
 
+/**
+ * Confirm that the input is a EIP-712 `types` record with a single struct
+ * definition for the first argument to a `permitWitnessTransferFrom` call
+ * (i.e., named either "PermitWitnessTransferFrom" for a single-token transfer
+ * or "PermitBatchWitnessTransferFrom" for a multi-token transfer), and return
+ * the TypedDataParameter describing the witness field of that definition.
+ */
 export const extractWitnessFieldFromTypes = <
   T extends Readonly<TypedDataParameter>,
 >(
@@ -116,6 +138,8 @@ export const extractWitnessFieldFromTypes = <
   const primaryType = matchingTypes[0];
   const candidateType = (types as MapUnion<typeof types>)[primaryType];
   const referenceType = baseTypes[primaryType];
+  // `candidateType` must match the expected reference type with a single extra
+  // field for witness data.
   if (candidateType.length !== referenceType.length + 1) {
     throw new Error(
       `TypedData has an invalid number of fields for ${primaryType}`,
