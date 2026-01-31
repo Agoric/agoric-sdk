@@ -60,7 +60,7 @@ export const makeWitnessTypeStringExtractor = (powers: {
   encodeType: typeof encodeType;
 }) => {
   const { encodeType } = powers;
-  const baseTypeStrings = objectMapMutable(
+  const encodedTypePrefixes = objectMapMutable(
     typeMakers,
     (makeTypes, primaryType) => {
       // Each EIP-712 `types` record produced by `makeTypes` differs only in the
@@ -91,19 +91,16 @@ export const makeWitnessTypeStringExtractor = (powers: {
    */
   const getWitnessTypeString = (types: TypedData) => {
     const primaryType = getPrimaryType(types);
-    const encodedType = encodeType({
-      primaryType,
-      types,
-    });
+    const encodedType = encodeType({ primaryType, types });
 
-    const baseTypeString = baseTypeStrings[primaryType];
-    if (!encodedType.startsWith(baseTypeString)) {
+    const prefix = encodedTypePrefixes[primaryType];
+    if (!encodedType.startsWith(prefix)) {
       throw new Error(
         `TypedData has an invalid type string for ${primaryType}`,
       );
     }
 
-    return encodedType.substring(baseTypeString.length);
+    return encodedType.substring(prefix.length);
   };
   return getWitnessTypeString;
 };
@@ -133,30 +130,26 @@ export const extractWitnessFieldFromTypes = <
     >;
   }[PrimaryTypeName],
 ): T => {
+  const primaryTypeName = getPrimaryType(types);
+  const fieldDefs = (types as MapUnion<typeof types>)[primaryTypeName];
 
-  const primaryType = getPrimaryType(types);
-  const candidateType = (types as MapUnion<typeof types>)[primaryType];
-  const referenceType = permit2BaseTypeParams[primaryType];
-  // `candidateType` must match the expected reference type with a single extra
-  // field for witness data.
-  if (candidateType.length !== referenceType.length + 1) {
+  // `fieldDefs` must match the expected base type with a single extra field for
+  // witness data.
+  const baseFieldDefs = permit2BaseTypeParams[primaryTypeName];
+  if (fieldDefs.length !== baseFieldDefs.length + 1) {
     throw new Error(
       `TypedData has an invalid number of fields for ${primaryType}`,
     );
   }
-
-  for (const [i, field] of referenceType.entries()) {
-    if (
-      candidateType[i].name !== field.name ||
-      candidateType[i].type !== field.type
-    ) {
+  for (const [i, { name, type }] of baseFieldDefs.entries()) {
+    if (fieldDefs[i].name !== name || fieldDefs[i].type !== type) {
       throw new Error(
         `TypedData has an invalid field at index ${i} for ${primaryType}`,
       );
     }
   }
 
-  return candidateType[candidateType.length - 1] as T;
+  return fieldDefs[fieldDefs.length - 1] as T;
 };
 
 export const TokenPermissionsComponents = [
