@@ -5,7 +5,6 @@ import { AmountMath, type Brand } from '@agoric/ertp';
 import { makeTracer, mustMatch, type ERemote } from '@agoric/internal';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import type { EMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
-import { hexToBytes } from '@noble/hashes/utils';
 import {
   type AccountId,
   type CaipChainId,
@@ -17,8 +16,8 @@ import {
   sameEvmAddress,
 } from '@agoric/orchestration/src/utils/address.js';
 import type {
-  FundsFlowPlan,
   FlowConfig,
+  FundsFlowPlan,
   PortfolioContinuingInvitationMaker,
 } from '@agoric/portfolio-api';
 import {
@@ -27,8 +26,8 @@ import {
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
 import type {
-  YmaxSharedDomain,
   TargetAllocation as EIP712Allocation,
+  YmaxSharedDomain,
 } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.ts';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.ts';
 import type { MapStore } from '@agoric/store';
@@ -39,18 +38,20 @@ import type { ZCF, ZCFSeat } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
 import { Fail, X } from '@endo/errors';
 import { E } from '@endo/far';
+import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
+import { hexToBytes } from '@noble/hashes/utils';
 import type { Address } from 'abitype';
 import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
 import { type LocalAccount, type NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
 import type { makeOfferArgsShapes, MovementDesc } from './type-guards-steps.js';
 import {
-  type EVMContractAddressesMap,
   makeFlowPath,
   makeFlowStepsPath,
   makePortfolioPath,
   PoolKeyShapeExt,
+  type EVMContractAddressesMap,
   type FlowDetail,
   type makeProposalShapes,
   type PoolKey,
@@ -69,6 +70,7 @@ export type GMPAccountInfo = {
   err?: string;
   chainId: CaipChainId;
   remoteAddress: `0x${string}`;
+  // TODO: confirm useRouter on whole portfolio meets requirements
 };
 type AgoricAccountInfo = {
   namespace: 'cosmos';
@@ -107,6 +109,7 @@ type PortfolioKitState = {
   rebalanceCount: number;
   /** CAIP-10 account ID of the authenticated EVM account that opened this portfolio */
   sourceAccountId?: AccountId;
+  useRouter?: boolean;
   /** reserved for future use */
   etc: unknown;
 };
@@ -123,8 +126,9 @@ export const PortfolioStateShape = {
   policyVersion: M.number(),
   rebalanceCount: M.number(),
   sourceAccountId: M.opt(M.string()),
+  useRouter: M.opt(M.boolean()),
   etc: M.any(),
-};
+} satisfies CopyRecord;
 harden(PortfolioStateShape);
 
 /**
