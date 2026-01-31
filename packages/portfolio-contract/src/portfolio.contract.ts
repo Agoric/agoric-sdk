@@ -60,7 +60,7 @@ import { E } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
-import { prepareEVMWalletHandlerKit } from './evm-wallet-handler.ts';
+import { prepareEVMWalletHandlerKit } from './evm-wallet-handler.exo.ts';
 import { preparePlanner } from './planner.exo.ts';
 import { preparePortfolioKit, type PortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
