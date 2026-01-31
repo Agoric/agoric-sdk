@@ -322,7 +322,9 @@ export function validateYmaxOperationTypeName<T extends OperationTypeNames>(
 export const splitWitnessFieldType = <T extends OperationTypeNames>(
   fieldName: `${typeof YMAX_DOMAIN_NAME}V${typeof YMAX_DOMAIN_VERSION}${T}`,
 ) => {
-  const match = fieldName.match(/^YmaxV(\d+)(\w+)$/u);
+  const match =
+    fieldName.startsWith(YMAX_DOMAIN_NAME) &&
+    fieldName.substring(YMAX_DOMAIN_NAME.length).match(/^V(\d+)(\w+)$/u);
   if (!match) {
     throw new Error(`Invalid witness field type name: ${fieldName}`);
   }
