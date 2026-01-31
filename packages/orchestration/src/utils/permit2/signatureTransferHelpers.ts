@@ -161,12 +161,8 @@ export const extractWitnessFieldFromTypes = <
   return candidateType[candidateType.length - 1] as T;
 };
 
-export const isPermit2MessageType = (type: string): type is PrimaryTypeName => {
-  return (
-    type === 'PermitBatchWitnessTransferFrom' ||
-    type === 'PermitWitnessTransferFrom'
-  );
-};
+export const isPermit2MessageType = (type: string): type is PrimaryTypeName =>
+  type in PrimaryTypes;
 
 export const TokenPermissionsComponents = [
   { name: 'token', type: 'address' },
