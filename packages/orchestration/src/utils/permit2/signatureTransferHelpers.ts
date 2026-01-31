@@ -95,9 +95,7 @@ export const makeWitnessTypeStringExtractor = (powers: {
 
     const prefix = encodedTypePrefixes[primaryType];
     if (!encodedType.startsWith(prefix)) {
-      throw new Error(
-        `TypedData has an invalid type string for ${primaryType}`,
-      );
+      throw new Error(`${primaryType} must start with expected base fields`);
     }
 
     return encodedType.substring(prefix.length);
@@ -138,13 +136,13 @@ export const extractWitnessFieldFromTypes = <
   const baseFieldDefs = permit2BaseTypeParams[primaryTypeName];
   if (fieldDefs.length !== baseFieldDefs.length + 1) {
     throw new Error(
-      `TypedData has an invalid number of fields for ${primaryType}`,
+      `${primaryTypeName} must have ${baseFieldDefs.length + 1} fields`,
     );
   }
   for (const [i, { name, type }] of baseFieldDefs.entries()) {
     if (fieldDefs[i].name !== name || fieldDefs[i].type !== type) {
       throw new Error(
-        `TypedData has an invalid field at index ${i} for ${primaryType}`,
+        `${primaryTypeName} field at index ${i} must be \`${type} ${name}\``,
       );
     }
   }
