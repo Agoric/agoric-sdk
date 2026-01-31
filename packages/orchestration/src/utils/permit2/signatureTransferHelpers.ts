@@ -13,6 +13,7 @@ import type {
   TypedData,
 } from 'abitype';
 import { keyMirror } from '@agoric/internal/src/keyMirror.js';
+import { objectMapMutable } from '@agoric/internal/src/js-utils.js';
 import type { TypedDataParameter } from '../abitype.ts';
 import type { encodeType } from '../viem-utils/hashTypedData.ts';
 import {
@@ -41,6 +42,16 @@ const getPrimaryType = (types: TypedData): PrimaryTypeName => {
   return found[0];
 };
 
+const permit2BaseTypeParams = {
+  PermitBatchWitnessTransferFrom: PermitBatchTransferFromTypeParams,
+  PermitWitnessTransferFrom: PermitTransferFromTypeParams,
+} satisfies Record<PrimaryTypeName, TypedDataParameter[]>;
+
+const typeMakers = {
+  PermitBatchWitnessTransferFrom: permitBatchWitnessTransferFromTypes,
+  PermitWitnessTransferFrom: permitWitnessTransferFromTypes,
+} satisfies Record<PrimaryTypeName, (witness: any) => TypedData>;
+
 /**
  * Make a function for returning the `witnessTypeString` argument to use in a
  * `permitWitnessTransferFrom` call.
@@ -49,20 +60,25 @@ export const makeWitnessTypeStringExtractor = (powers: {
   encodeType: typeof encodeType;
 }) => {
   const { encodeType } = powers;
-  const baseTypeStrings = Object.fromEntries(
-    Object.entries({
-      PermitBatchWitnessTransferFrom: permitBatchWitnessTransferFromTypes,
-      PermitWitnessTransferFrom: permitWitnessTransferFromTypes,
-    }).map(([typeName, typeFunc]) => {
-      const encoded = encodeType({
-        primaryType: typeName,
-        // @ts-expect-error undefined is not allowed in types but supported in implementation
-        types: typeFunc(undefined),
-      });
-
-      const prefix = encoded.substring(0, encoded.indexOf(')'));
-      return [typeName, `${prefix},`];
-    }),
+  const baseTypeStrings = objectMapMutable(
+    typeMakers,
+    (makeTypes, primaryType) => {
+      // Each EIP-712 `types` record produced by `makeTypes` differs only in the
+      // fields of the struct identified by `primaryType` and any dependencies
+      // of its witness field, so the string encoding of any such struct will
+      // have a common prefix (e.g.,
+      // `PermitWitnessTransferFrom(TokenPermissions permitted,...,uint256 deadline,`,
+      // where what follows that last comma is the witness field).
+      // We construct that prefix by calling `makeTypes` with *no* witness,
+      // which is in violation of its static typing information but implemented
+      // to return types in which `primaryType` has no witness field and
+      // therefore encodes to a string with a `)` where the witness field
+      // belongs.
+      // @ts-expect-error undefined witness
+      const baseTypes = makeTypes(undefined);
+      const encoded = encodeType({ primaryType, types: baseTypes });
+      return encoded.substring(0, encoded.indexOf(')'));
+    },
   );
 
   /**
@@ -110,28 +126,17 @@ type MapUnion<U> = {
 export const extractWitnessFieldFromTypes = <
   T extends Readonly<TypedDataParameter>,
 >(
-  types:
-    | {
-        PermitBatchWitnessTransferFrom: readonly [
-          ...typeof PermitBatchTransferFromTypeParams,
-          T,
-        ];
-      }
-    | {
-        PermitWitnessTransferFrom: readonly [
-          ...typeof PermitTransferFromTypeParams,
-          T,
-        ];
-      },
+  types: {
+    [K in PrimaryTypeName]: Record<
+      K,
+      readonly [...(typeof permit2BaseTypeParams)[K], T]
+    >;
+  }[PrimaryTypeName],
 ): T => {
-  const baseTypes = {
-    PermitBatchWitnessTransferFrom: PermitBatchTransferFromTypeParams,
-    PermitWitnessTransferFrom: PermitTransferFromTypeParams,
-  };
 
   const primaryType = getPrimaryType(types);
   const candidateType = (types as MapUnion<typeof types>)[primaryType];
-  const referenceType = baseTypes[primaryType];
+  const referenceType = permit2BaseTypeParams[primaryType];
   // `candidateType` must match the expected reference type with a single extra
   // field for witness data.
   if (candidateType.length !== referenceType.length + 1) {
