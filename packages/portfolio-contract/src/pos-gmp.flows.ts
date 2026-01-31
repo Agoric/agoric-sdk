@@ -44,6 +44,7 @@ import {
   makeGmpBuilder,
   type EVMT,
 } from './evm-facade.ts';
+import { depositFactoryABI, factoryABI } from './interfaces/orch-factory.ts';
 import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
 import type {
   AxelarId,
@@ -61,11 +62,7 @@ import { TxType } from './resolver/constants.js';
 import type { ResolverKit } from './resolver/resolver.exo.ts';
 import type { TxId } from './resolver/types.ts';
 import type { PoolKey } from './type-guards.ts';
-import {
-  depositFactoryABI,
-  factoryABI,
-  predictWalletAddress,
-} from './utils/evm-orch-factory.ts';
+import { predictWalletAddress } from './utils/evm-orch-factory.ts';
 import { setAppendedTxIds } from './utils/traffic.ts';
 
 const trace = makeTracer('GMPF');

@@ -6,10 +6,8 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { hexToBytes } from '@noble/hashes/utils';
 import { type Abi } from 'viem';
 import { makeEvmAbiCallBatch, makeGmpBuilder } from '../src/evm-facade.ts';
-import {
-  depositFactoryABI,
-  depositFactoryCreateAndDepositInputs,
-} from '../src/utils/evm-orch-factory.ts';
+import { depositFactoryABI } from '../src/interfaces/orch-factory.ts';
+import { depositFactoryCreateAndDepositInputs } from '../src/utils/evm-orch-factory.ts';
 
 const erc20Abi = [
   {
