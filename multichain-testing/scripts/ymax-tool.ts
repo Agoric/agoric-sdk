@@ -5,7 +5,10 @@
 import '@endo/init';
 
 import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.exo.ts';
-import type { start as YMaxStart } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
+import type {
+  start as YMaxStart,
+  PortfolioPrivateArgs,
+} from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
 import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.ts';
 import {
   TargetAllocationShape,
@@ -66,7 +69,7 @@ import { SigningStargateClient } from '@cosmjs/stargate';
 import { E } from '@endo/far';
 import { type CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
-import { once } from 'node:events';
+import { on, once } from 'node:events';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import repl from 'node:repl';
@@ -78,6 +81,7 @@ import {
   reflectWalletStore,
   walletUpdates,
 } from '../tools/wallet-store-reflect.ts';
+import type { CosmosChainInfo } from '@agoric/orchestration';
 
 const nodeRequire = createRequire(import.meta.url);
 const asset = (spec: string) => readFile(nodeRequire.resolve(spec), 'utf8');
@@ -159,11 +163,26 @@ const parseToolArgs = (argv: string[]) =>
     allowPositionals: false,
   });
 
+const getNetworkGasPrice = (net: string): { denom: string; amount: number } => {
+  switch (net) {
+    case 'main':
+      // price in ubld per 2025-12 observed mainnet RPC nodes.
+      return { denom: 'ubld', amount: 0.03 };
+
+    case 'devnet':
+    default:
+      // price in ubld per 2025-11 community discussion.
+      return { denom: 'ubld', amount: 0.01 };
+  }
+};
+
 const makeFee = ({
   gas = 20_000, // cosmjs default
   adjustment = 1.0,
-  denom = 'ubld',
-  price = 0.01, // ubld. per 2025-11 community discussion
+  net = 'main',
+  gasPrice = getNetworkGasPrice(net),
+  price = gasPrice.amount ?? 0.01,
+  denom = gasPrice.denom ?? 'ubld',
 } = {}): StdFee => ({
   gas: `${Math.round(gas * adjustment)}`,
   amount: [{ denom, amount: `${Math.round(gas * adjustment * price)}` }],
@@ -409,21 +428,25 @@ const agoricNamesForChainInfo = (vsk: VstorageKit) => {
     const out: [string, unknown][] = [];
     const children = await vstorage.keys(`published.agoricNames.${kind}`);
     for (const child of children) {
-      // console.error('readPublished', kind, child);
-      const value = await readPublished(`agoricNames.${kind}.${child}`);
-      // console.debug(kind, child, value);
-      if (kind === 'chain') {
-        const { chainId, namespace } = value as Record<string, string>;
-        if (namespace !== 'cosmos') {
-          console.warn('namespace?? skipping', kind, child, value);
-          continue;
+      try {
+        // console.error('readPublished', kind, child);
+        const value = await readPublished(`agoricNames.${kind}.${child}`);
+        // console.debug(kind, child, value);
+        if (kind === 'chain') {
+          const { chainId, namespace } = value as Record<string, string>;
+          if (namespace !== 'cosmos') {
+            console.warn('namespace?? skipping', kind, child, value);
+            continue;
+          }
+          if (typeof chainId === 'string') {
+            if (chainId in byChainId) throw Error(`oops! ${child} ${chainId}`);
+            byChainId[chainId] = value;
+          }
         }
-        if (typeof chainId === 'string') {
-          if (chainId in byChainId) throw Error(`oops! ${child} ${chainId}`);
-          byChainId[chainId] = value;
-        }
+        out.push([child, value]);
+      } catch (err) {
+        console.warn('agoricNamesForChainInfo skipping', kind, child, err);
       }
-      out.push([child, value]);
     }
     if (kind === 'chainConnection') {
       const relevantConnections = out.filter(([key, _val]) => {
@@ -497,11 +520,13 @@ const getNetworkConfig = (network: 'main' | 'devnet') => {
  * Build privateArgsOverrides sufficient to add new EVM chains.
  *
  * @param vsk
+ * @param cosmosChainInfo
  * @param axelarConfig
  * @param gmpAddresses
  */
 const overridesForEthChainInfo = async (
   vsk: VstorageKit,
+  cosmosChainInfo: Record<'agoric' | 'noble' | 'axelar', CosmosChainInfo>,
   axelarConfig:
     | typeof axelarConfigTestnet
     | typeof axelarConfigMainnet = axelarConfigTestnet,
@@ -509,18 +534,14 @@ const overridesForEthChainInfo = async (
     | typeof gmpConfigs.testnet
     | typeof gmpConfigs.mainnet = gmpConfigs.testnet,
 ) => {
-  const { chainInfo: cosmosChainInfo } = await lookupInterchainInfo(
-    agoricNamesForChainInfo(vsk),
-    { agoric: ['ubld'], noble: ['uusdc'], axelar: ['uaxl'] },
-  );
   const chainInfo = {
     ...cosmosChainInfo,
     ...objectMap(axelarConfig, info => info.chainInfo),
   };
 
   const privateArgsOverrides: Pick<
-    Parameters<YMaxStartFn>[1],
-    'axelarIds' | 'chainInfo' | 'contracts' | 'gmpAddresses'
+    PortfolioPrivateArgs,
+    'axelarIds' | 'contracts' | 'chainInfo' | 'gmpAddresses' | 'walletBytecode'
   > = harden({
     axelarIds: objectMap(axelarConfig, c => c.axelarId),
     contracts: objectMap(axelarConfig, c => c.contracts),
@@ -556,6 +577,7 @@ const main = async (
     return;
   }
 
+  const { AGORIC_NET: net } = env;
   const networkConfig = await fetchEnvNetworkConfig({ env, fetch });
   if (values.checkStorage) {
     console.error('finding outdated vstorage...');
@@ -568,13 +590,21 @@ const main = async (
 
   if (values.buildEthOverrides) {
     const vsk = makeVstorageKit({ fetch }, networkConfig);
-    const { AGORIC_NET: net } = env;
     if (net !== 'main' && net !== 'devnet') {
       throw Error(`unsupported/unknown net: ${net}`);
     }
     const { axelarConfig, gmpAddresses } = getNetworkConfig(net);
+
+    const fetchedSuffix = net === 'main' ? '' : '-testnets';
+    const chainInfoModule = `@agoric/orchestration/src/fetched-chain-info${fetchedSuffix}.js`;
+    const {
+      default: { agoric, axelar, noble },
+    } = await import(chainInfoModule);
+    const cosmosChainInfo = harden({ agoric, noble, axelar });
+
     const privateArgsOverrides = await overridesForEthChainInfo(
       vsk,
+      cosmosChainInfo,
       axelarConfig,
       gmpAddresses,
     );
@@ -621,8 +651,9 @@ const main = async (
     setTimeout,
     log: trace,
     fresh,
-    // as in: Error#1: out of gas ... gasUsed: 809068
-    fee: makeFee({ gas: 809068, adjustment: 1.4 }),
+    // use generous gas limit for portfolio-contract,
+    // and a gas price as observed on the RPC node we use on this network.
+    fee: makeFee({ gas: 2_500_000, net }),
   });
 
   if (values.redeem) {
