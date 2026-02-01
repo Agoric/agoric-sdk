@@ -116,6 +116,10 @@ export const PermitBatchTransferFromTypes = {
   TokenPermissions: TokenPermissionTypeParams,
 } as const satisfies TypedData;
 
+/**
+ * Generate an EIP-712 `types` record for a single-token
+ * `permitWitnessTransferFrom` call.
+ */
 export function permitWitnessTransferFromTypes<
   T extends TypedData,
   TD extends TypedDataParameter<string, Extract<keyof T, string>> =
@@ -125,7 +129,13 @@ export function permitWitnessTransferFromTypes<
     EIP712Domain: Permit2DomainTypeParams,
     PermitWitnessTransferFrom: [
       ...PermitTransferFromTypeParams,
-      // Enable runtime type to accept undefined field for base type extraction
+      // `witness` is required by static typing, but when it is undefined at
+      // runtime, this emits types in which PermitWitnessTransferFrom is
+      // truncated just before where a witness field belongs.
+      // Doing so simplifies the function returned by
+      // {@link makeWitnessTypeStringExtractor}, because the EIP-712 string
+      // encoding of that type has its first `)` at that position (i.e.,
+      // `PermitWitnessTransferFrom(TokenPermissions permitted,...,uint256 deadline)TokenPermissions(...)`).
       ...((witness ? [witness.witnessField] : []) as [TD]),
     ],
     TokenPermissions: TokenPermissionTypeParams,
@@ -133,6 +143,10 @@ export function permitWitnessTransferFromTypes<
   } as const satisfies TypedData;
 }
 
+/**
+ * Generate an EIP-712 `types` record for a multi-token
+ * `permitWitnessTransferFrom` call.
+ */
 export function permitBatchWitnessTransferFromTypes<
   T extends TypedData,
   TD extends TypedDataParameter<string, Extract<keyof T, string>> =
@@ -142,7 +156,13 @@ export function permitBatchWitnessTransferFromTypes<
     EIP712Domain: Permit2DomainTypeParams,
     PermitBatchWitnessTransferFrom: [
       ...PermitBatchTransferFromTypeParams,
-      // Enable runtime type to accept undefined field for base type extraction
+      // `witness` is required by static typing, but when it is undefined at
+      // runtime, this emits types in which PermitBatchWitnessTransferFrom is
+      // truncated just before where a witness field belongs.
+      // Doing so simplifies the function returned by
+      // {@link makeWitnessTypeStringExtractor}, because the EIP-712 string
+      // encoding of that type has its first `)` at that position (i.e.,
+      // `PermitBatchWitnessTransferFrom(TokenPermissions[] permitted,...,uint256 deadline)TokenPermissions(...)`).
       ...((witness ? [witness.witnessField] : []) as [TD]),
     ],
     TokenPermissions: TokenPermissionTypeParams,

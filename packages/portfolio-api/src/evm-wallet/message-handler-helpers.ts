@@ -91,6 +91,11 @@ export const makeEVMHandlerUtils = (viemUtils: {
     validateTypedData,
     encodeType,
   } = viemUtils;
+
+  const getPermit2WitnessTypeString = makeWitnessTypeStringExtractor({
+    encodeType,
+  });
+
   /**
    * Extract operation type name and data from an EIP-712 standalone Ymax typed data
    *
@@ -173,9 +178,6 @@ export const makeEVMHandlerUtils = (viemUtils: {
     owner: Address,
     signature: WithSignature<object>['signature'],
   ): PermitDetails => {
-    const witnessTypeStringExtractor = makeWitnessTypeStringExtractor({
-      encodeType,
-    });
     // @ts-expect-error generic/union type compatibility
     const permitData: YmaxPermitWitnessTransferFromData = data;
 
@@ -190,7 +192,7 @@ export const makeEVMHandlerUtils = (viemUtils: {
       types: permitData.types,
       data: witnessData,
     });
-    const witnessTypeString = witnessTypeStringExtractor(permitData.types);
+    const witnessTypeString = getPermit2WitnessTypeString(permitData.types);
 
     const { spender, ...permitStruct } = permit;
 

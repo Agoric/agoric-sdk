@@ -11,6 +11,10 @@ type MessageTypeProperty = {
   type: string;
 };
 
+/**
+ * Serialize an EIP-712 struct definition to a string per
+ * https://eips.ethereum.org/EIPS/eip-712#definition-of-encodetype
+ */
 export function encodeType({
   primaryType,
   types,
