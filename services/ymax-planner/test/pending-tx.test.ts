@@ -26,7 +26,7 @@ const makeMockHandlePendingTx = () => {
   const handledTxs: PendingTx[] = [];
   const mockHandlePendingTx = async (
     tx: PendingTx,
-    { log: any, ...evmCtx }: any,
+    { log: _log, ..._evmCtx }: any,
   ) => {
     handledTxs.push(tx);
   };
