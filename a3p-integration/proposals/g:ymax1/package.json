@@ -17,7 +17,7 @@
     "@endo/far": "^1.1.14",
     "@endo/init": "^1.1.12",
     "@endo/pass-style": "^1.6.3",
-    "ava": "^5.3.1"
+    "ava": "^6.4.1"
   },
   "resolutions": {
     "@cosmjs/amino": "^0.36.0",
@@ -32,6 +32,14 @@
     "files": [
       "test/**/*.test.*",
       "!submission"
+    ],
+    "extensions": {
+      "js": true,
+      "ts": "module"
+    },
+    "nodeArguments": [
+      "--import=ts-blank-space/register",
+      "--no-warnings"
     ]
   },
   "scripts": {

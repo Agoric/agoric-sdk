@@ -11,7 +11,7 @@
     "@endo/init": "^1.1.12",
     "@endo/pass-style": "^1.6.3",
     "agoric": "dev",
-    "ava": "^5.3.1"
+    "ava": "^6.4.1"
   },
   "ava": {
     "concurrency": 1,
@@ -19,10 +19,21 @@
     "files": [
       "test/**/*.test.*",
       "!submission"
+    ],
+    "extensions": {
+      "js": true,
+      "ts": "module"
+    },
+    "nodeArguments": [
+      "--import=ts-blank-space/register",
+      "--no-warnings"
     ]
   },
   "scripts": {
     "agops": "yarn --cwd /usr/src/agoric-sdk/ agops"
   },
-  "packageManager": "yarn@4.12.0"
+  "packageManager": "yarn@4.12.0",
+  "devDependencies": {
+    "ts-blank-space": "^0.7.0"
+  }
 }
