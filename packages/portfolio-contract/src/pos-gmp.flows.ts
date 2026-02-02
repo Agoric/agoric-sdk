@@ -44,6 +44,8 @@ import {
   makeGmpBuilder,
   type EVMT,
 } from './evm-facade.ts';
+import { aavePoolABI, aaveRewardsControllerABI } from './interfaces/aave.ts';
+import { erc20ABI } from './interfaces/erc20.ts';
 import { depositFactoryABI, factoryABI } from './interfaces/orch-factory.ts';
 import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
 import type {
@@ -665,28 +667,6 @@ export type EVMContext = {
   nobleForwardingChannel: `channel-${number}`;
 };
 
-type AaveI = {
-  supply: ['address', 'uint256', 'address', 'uint16'];
-  withdraw: ['address', 'uint256', 'address'];
-};
-
-const Aave: AaveI = {
-  supply: ['address', 'uint256', 'address', 'uint16'],
-  withdraw: ['address', 'uint256', 'address'],
-};
-
-/**
- * see {@link https://github.com/aave/aave-v3-periphery/blob/master/contracts/rewards/RewardsController.sol }
- * 8f3380d Aug 2023
- */
-type AaveRewardsControllerI = {
-  claimAllRewardsToSelf: ['address[]'];
-};
-
-const AaveRewardsController: AaveRewardsControllerI = {
-  claimAllRewardsToSelf: ['address[]'],
-};
-
 export const AaveProtocol = {
   protocol: 'Aave',
   chains: keys(AxelarChain) as AxelarChain[],
@@ -694,9 +674,9 @@ export const AaveProtocol = {
     const { remoteAddress } = src;
     const { addresses: a } = ctx;
 
-    const session = makeEVMSession();
-    const usdc = session.makeContract(a.usdc, ERC20);
-    const aave = session.makeContract(a.aavePool, Aave);
+    const session = makeEvmAbiCallBatch();
+    const usdc = session.makeContract(a.usdc, erc20ABI);
+    const aave = session.makeContract(a.aavePool, aavePoolABI);
     usdc.approve(a.aavePool, amount.value);
     aave.supply(a.usdc, amount.value, remoteAddress, 0);
     const calls = session.finish();
@@ -707,15 +687,15 @@ export const AaveProtocol = {
     const { remoteAddress } = dest;
     const { addresses: a } = ctx;
 
-    const session = makeEVMSession();
+    const session = makeEvmAbiCallBatch();
     if (claim) {
       const aaveRewardsController = session.makeContract(
         a.aaveRewardsController,
-        AaveRewardsController,
+        aaveRewardsControllerABI,
       );
       aaveRewardsController.claimAllRewardsToSelf([a.aaveUSDC]);
     }
-    const aave = session.makeContract(a.aavePool, Aave);
+    const aave = session.makeContract(a.aavePool, aavePoolABI);
     aave.withdraw(a.usdc, amount.value, remoteAddress);
     const calls = session.finish();
 
