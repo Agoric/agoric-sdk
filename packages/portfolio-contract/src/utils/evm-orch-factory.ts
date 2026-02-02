@@ -5,19 +5,14 @@
 import { assert } from '@endo/errors';
 import { keccak_256 as keccak256 } from '@noble/hashes/sha3';
 import type { AbiParameterToPrimitiveType, Hex } from 'viem';
-import { computeCreate2Address, hashInitCode } from './create2.ts';
 import {
   depositFactoryABI,
+  walletABI,
   walletMulticallABI,
 } from '../interfaces/orch-factory.ts';
+import { computeCreate2Address, hashInitCode } from './create2.ts';
 
-// XXX: refactor EVMInterface to use { type: 'address', name: '...' }
-type FactoryI = {
-  constructor: ['address', 'address', 'string'];
-};
-const Factory: FactoryI = {
-  constructor: ['address', 'address', 'string'],
-} as const;
+const walletConstructor = walletABI[0];
 
 const toUtf8 = (() => {
   // TextEncoder has state. encapsulate it.
@@ -42,7 +37,7 @@ export const predictWalletAddress = ({
   const salt = keccak256(toUtf8(owner));
   const initCodeHash = hashInitCode(
     walletBytecode,
-    Factory.constructor,
+    walletConstructor.inputs,
   )([gatewayAddress, gasServiceAddress, owner]);
 
   const out = computeCreate2Address({

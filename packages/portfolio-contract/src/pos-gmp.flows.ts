@@ -37,24 +37,19 @@ import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message
 import { fromBech32 } from '@cosmjs/encoding';
 import { Fail, q, X } from '@endo/errors';
 import { hexToBytes } from '@noble/hashes/utils';
-import {
-  ERC20,
-  makeEvmAbiCallBatch,
-  makeEVMSession,
-  makeGmpBuilder,
-  type EVMT,
-} from './evm-facade.ts';
+import type { Address } from 'viem';
+import { makeEvmAbiCallBatch, makeGmpBuilder } from './evm-facade.ts';
 import { aavePoolABI, aaveRewardsControllerABI } from './interfaces/aave.ts';
+import { beefyVaultABI } from './interfaces/beefy.ts';
 import {
   compoundABI,
   compoundRewardsControllerABI,
 } from './interfaces/compound.ts';
 import { erc20ABI } from './interfaces/erc20.ts';
-import { tokenMessengerABI } from './interfaces/token-messenger.ts';
-import { beefyVaultABI } from './interfaces/beefy.ts';
-import { walletHelperABI } from './interfaces/wallet-helper.ts';
 import { erc4626ABI } from './interfaces/erc4626.ts';
 import { depositFactoryABI, factoryABI } from './interfaces/orch-factory.ts';
+import { tokenMessengerABI } from './interfaces/token-messenger.ts';
+import { walletHelperABI } from './interfaces/wallet-helper.ts';
 import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
 import type {
   AxelarId,
@@ -90,14 +85,14 @@ export type GMPAccountStatus = GMPAccountInfo & {
 type ProvideEVMAccountSendCall = (params: {
   dest: {
     axelarId: string;
-    address: EVMT['address'];
+    address: Address;
   };
   fee: DenomAmount;
   portfolioLca: LocalAccount;
   contractAccount: LocalAccount;
   gmpChain: Chain<{ chainId: string }>;
   gmpAddresses: GmpAddresses;
-  expectedWalletAddress: EVMT['address'];
+  expectedWalletAddress: Address;
   orchOpts?: OrchestrationOptions;
 }) => Promise<void>;
 
@@ -284,7 +279,10 @@ export const CCTPfromEVM = {
 
     const session = makeEvmAbiCallBatch();
     const usdc = session.makeContract(addresses.usdc, erc20ABI);
-    const tm = session.makeContract(addresses.tokenMessenger, tokenMessengerABI);
+    const tm = session.makeContract(
+      addresses.tokenMessenger,
+      tokenMessengerABI,
+    );
     usdc.approve(addresses.tokenMessenger, amount.value);
     tm.depositForBurn(amount.value, nobleDomain, mintRecipient, addresses.usdc);
     const calls = session.finish();
@@ -592,7 +590,7 @@ export const sendPermit2GMP = async (
     addresses,
   } = ctx;
   const { chainName, remoteAddress, chainId: gmpChainId } = gmpAcct;
-  const walletAddress = remoteAddress as EVMT['address'];
+  const walletAddress = remoteAddress as Address;
   const axelarId = axelarIds[chainName];
 
   const { permit, owner, witness, witnessTypeString, signature } =
