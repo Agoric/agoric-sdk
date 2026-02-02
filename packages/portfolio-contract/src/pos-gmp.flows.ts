@@ -53,6 +53,7 @@ import { erc20ABI } from './interfaces/erc20.ts';
 import { tokenMessengerABI } from './interfaces/token-messenger.ts';
 import { beefyVaultABI } from './interfaces/beefy.ts';
 import { walletHelperABI } from './interfaces/wallet-helper.ts';
+import { erc4626ABI } from './interfaces/erc4626.ts';
 import { depositFactoryABI, factoryABI } from './interfaces/orch-factory.ts';
 import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
 import type {
@@ -771,32 +772,18 @@ export const BeefyProtocol = {
   EVMContext & { poolKey: PoolKey }
 >;
 
-/**
- * see {@link https://eips.ethereum.org/EIPS/eip-4626 }
- * ERC-4626: Tokenized Vault Standard
- */
-type ERC4626I = {
-  deposit: ['uint256', 'address'];
-  withdraw: ['uint256', 'address', 'address'];
-};
-
-const ERC4626: ERC4626I = {
-  deposit: ['uint256', 'address'],
-  withdraw: ['uint256', 'address', 'address'],
-};
-
 export const ERC4626Protocol = {
   protocol: 'ERC4626',
   chains: keys(AxelarChain) as AxelarChain[],
   supply: async (ctx, amount, src, ...optsArgs) => {
     const { addresses: a, poolKey } = ctx;
     const { remoteAddress } = src;
-    const session = makeEVMSession();
-    const usdc = session.makeContract(a.usdc, ERC20);
+    const session = makeEvmAbiCallBatch();
+    const usdc = session.makeContract(a.usdc, erc20ABI);
     const vaultAddress =
       a[poolKey] ||
       assert.fail(X`ERC4626 pool key ${q(poolKey)} not found in addresses`);
-    const vault = session.makeContract(vaultAddress, ERC4626);
+    const vault = session.makeContract(vaultAddress, erc4626ABI);
     usdc.approve(vaultAddress, amount.value);
     vault.deposit(amount.value, remoteAddress);
     const calls = session.finish();
@@ -806,11 +793,11 @@ export const ERC4626Protocol = {
   withdraw: async (ctx, amount, dest, _claim, ...optsArgs) => {
     const { addresses: a, poolKey } = ctx;
     const { remoteAddress } = dest;
-    const session = makeEVMSession();
+    const session = makeEvmAbiCallBatch();
     const vaultAddress =
       a[poolKey] ||
       assert.fail(X`ERC4626 pool key ${q(poolKey)} not found in addresses`);
-    const vault = session.makeContract(vaultAddress, ERC4626);
+    const vault = session.makeContract(vaultAddress, erc4626ABI);
     vault.withdraw(amount.value, remoteAddress, remoteAddress);
     const calls = session.finish();
 
