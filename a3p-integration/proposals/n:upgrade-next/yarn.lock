@@ -4960,6 +4960,10 @@ __metadata:
     "@agoric/internal": "npm:dev"
     "@agoric/synthetic-chain": "npm:^0.6.1"
     "@agoric/zoe": "npm:dev"
+    "@cosmjs/encoding": "npm:^0.36.0"
+    "@cosmjs/proto-signing": "npm:^0.36.0"
+    "@cosmjs/stargate": "npm:^0.36.0"
+    "@endo/bundle-source": "npm:^4.1.2"
     "@endo/errors": "npm:^1.2.13"
     "@endo/init": "npm:^1.1.12"
     "@endo/marshal": "npm:^1.8.0"
@@ -4968,6 +4972,7 @@ __metadata:
     eslint: "npm:^8.57.0"
     execa: "npm:9.1.0"
     npm-run-all: "npm:^4.1.5"
+    ts-blank-space: "npm:^0.6.2"
     typescript: "npm:~5.9.2"
   languageName: unknown
   linkType: soft
@@ -5697,6 +5702,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"ts-blank-space@npm:^0.6.2":
+  version: 0.6.2
+  resolution: "ts-blank-space@npm:0.6.2"
+  dependencies:
+    typescript: "npm:5.1.6 - 5.9.x"
+  checksum: 10c0/fcc0fca1f2d8a711d8abdad26335d3dd86eef54a2c853a1703d2f9a4adb79de0b2ef1bb3dc38b4417cb74786fbc4f1c8096cc32acf0aaad868e91bba9bf9cc77
+  languageName: node
+  linkType: hard
+
 "tslib@npm:^2.1.0":
   version: 2.8.1
   resolution: "tslib@npm:2.8.1"
@@ -5806,6 +5820,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"typescript@npm:5.1.6 - 5.9.x":
+  version: 5.9.3
+  resolution: "typescript@npm:5.9.3"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 10c0/6bd7552ce39f97e711db5aa048f6f9995b53f1c52f7d8667c1abdc1700c68a76a308f579cd309ce6b53646deb4e9a1be7c813a93baaf0a28ccd536a30270e1c5
+  languageName: node
+  linkType: hard
+
 "typescript@npm:~5.9.2":
   version: 5.9.2
   resolution: "typescript@npm:5.9.2"
@@ -5823,6 +5847,16 @@ __metadata:
     tsc: bin/tsc
     tsserver: bin/tsserver
   checksum: 10c0/6fd7e0ed3bf23a81246878c613423730c40e8bdbfec4c6e4d7bf1b847cbb39076e56ad5f50aa9d7ebd89877999abaee216002d3f2818885e41c907caaa192cc4
+  languageName: node
+  linkType: hard
+
+"typescript@patch:typescript@npm%3A5.1.6 - 5.9.x#optional!builtin<compat/typescript>":
+  version: 5.9.3
+  resolution: "typescript@patch:typescript@npm%3A5.9.3#optional!builtin<compat/typescript>::version=5.9.3&hash=5786d5"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 10c0/ad09fdf7a756814dce65bc60c1657b40d44451346858eea230e10f2e95a289d9183b6e32e5c11e95acc0ccc214b4f36289dcad4bf1886b0adb84d711d336a430
   languageName: node
   linkType: hard
 
