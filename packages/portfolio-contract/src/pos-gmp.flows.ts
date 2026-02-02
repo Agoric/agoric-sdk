@@ -50,6 +50,7 @@ import {
   compoundRewardsControllerABI,
 } from './interfaces/compound.ts';
 import { erc20ABI } from './interfaces/erc20.ts';
+import { tokenMessengerABI } from './interfaces/token-messenger.ts';
 import { depositFactoryABI, factoryABI } from './interfaces/orch-factory.ts';
 import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
 import type {
@@ -245,18 +246,6 @@ const makeProvideEVMAccount = ({
   };
 };
 
-type TokenMessengerI = {
-  depositForBurn: ['uint256', 'uint32', 'bytes32', 'address'];
-};
-
-/**
- * @see {@link https://github.com/circlefin/evm-cctp-contracts/blob/master/src/TokenMessenger.sol}
- * 1ddc505 Dec 2022
- */
-const TokenMessenger: TokenMessengerI = {
-  depositForBurn: ['uint256', 'uint32', 'bytes32', 'address'],
-};
-
 /** @see {@link https://developers.circle.com/cctp/supported-domains} */
 const nobleDomain = 4;
 
@@ -290,9 +279,9 @@ export const CCTPfromEVM = {
     traceTransfer('Noble forwarding address', fwdAddr);
     const mintRecipient = bech32ToBytes32(fwdAddr); // XXX we generate bech32 only to go back to bytes
 
-    const session = makeEVMSession();
-    const usdc = session.makeContract(addresses.usdc, ERC20);
-    const tm = session.makeContract(addresses.tokenMessenger, TokenMessenger);
+    const session = makeEvmAbiCallBatch();
+    const usdc = session.makeContract(addresses.usdc, erc20ABI);
+    const tm = session.makeContract(addresses.tokenMessenger, tokenMessengerABI);
     usdc.approve(addresses.tokenMessenger, amount.value);
     tm.depositForBurn(amount.value, nobleDomain, mintRecipient, addresses.usdc);
     const calls = session.finish();
