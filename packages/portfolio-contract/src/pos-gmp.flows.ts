@@ -51,6 +51,8 @@ import {
 } from './interfaces/compound.ts';
 import { erc20ABI } from './interfaces/erc20.ts';
 import { tokenMessengerABI } from './interfaces/token-messenger.ts';
+import { beefyVaultABI } from './interfaces/beefy.ts';
+import { walletHelperABI } from './interfaces/wallet-helper.ts';
 import { depositFactoryABI, factoryABI } from './interfaces/orch-factory.ts';
 import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
 import type {
@@ -728,41 +730,17 @@ export const CompoundProtocol = {
   },
 } as const satisfies ProtocolDetail<'Compound', AxelarChain, EVMContext>;
 
-/**
- * see {@link https://github.com/beefyfinance/beefy-contracts/blob/master/contracts/BIFI/vaults/BeefyVaultV7.sol }
- * 0878a68 Nov 2022
- */
-type BeefyVaultI = {
-  deposit: ['uint256'];
-  withdraw: ['uint256'];
-  approve: ['address', 'uint256'];
-};
-
-const BeefyVault: BeefyVaultI = {
-  deposit: ['uint256'],
-  withdraw: ['uint256'],
-  approve: ['address', 'uint256'],
-};
-
-type WalletHelperI = {
-  beefyWithdrawUSDC: ['address', 'uint256'];
-};
-
-const WalletHelper: WalletHelperI = {
-  beefyWithdrawUSDC: ['address', 'uint256'],
-};
-
 export const BeefyProtocol = {
   protocol: 'Beefy',
   chains: keys(AxelarChain) as AxelarChain[],
   supply: async (ctx, amount, src, ...optsArgs) => {
     const { addresses: a, poolKey } = ctx;
-    const session = makeEVMSession();
-    const usdc = session.makeContract(a.usdc, ERC20);
+    const session = makeEvmAbiCallBatch();
+    const usdc = session.makeContract(a.usdc, erc20ABI);
     const vaultAddress =
       a[poolKey] ||
       assert.fail(X`Beefy pool key ${q(poolKey)} not found in addresses`);
-    const vault = session.makeContract(vaultAddress, BeefyVault);
+    const vault = session.makeContract(vaultAddress, beefyVaultABI);
     usdc.approve(vaultAddress, amount.value);
     vault.deposit(amount.value);
     const calls = session.finish();
@@ -771,12 +749,12 @@ export const BeefyProtocol = {
   },
   withdraw: async (ctx, amount, dest, _claim, ...optsArgs) => {
     const { addresses: a, poolKey } = ctx;
-    const session = makeEVMSession();
+    const session = makeEvmAbiCallBatch();
     const vaultAddress =
       a[poolKey] ||
       assert.fail(X`Beefy pool key ${q(poolKey)} not found in addresses`);
-    const vault = session.makeContract(vaultAddress, BeefyVault);
-    const walletHelper = session.makeContract(a.walletHelper, WalletHelper);
+    const vault = session.makeContract(vaultAddress, beefyVaultABI);
+    const walletHelper = session.makeContract(a.walletHelper, walletHelperABI);
     // Max possible value for approval
     const maxUint256 = 2n ** 256n - 1n;
     // Give infinite approval because we dont know the exact amount the helper will withdraw
