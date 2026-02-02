@@ -1,6 +1,12 @@
 #!/usr/bin/env -S node --import ts-blank-space/register
 /**
  * @file tools for integration testing for ymax proof of concept.
+ *
+ * Not fully supported. It has zero test coverage and some parts are already known to have bit-rotted.
+ *
+ * Scope: CLI ergonomics and IO/ambient authority (console, env, repl, stdin/stdout).
+ * This entrypoint maps shell arguments to intent and delegates execution to
+ * reusable lib functions.
  */
 import '@endo/init';
 
@@ -658,7 +664,9 @@ const main = async (
     return;
   }
 
-  const yc = walletStore.get<ContractControl<YMaxStartFn>>(YMAX_CONTROL_WALLET_KEY);
+  const yc = walletStore.get<ContractControl<YMaxStartFn>>(
+    YMAX_CONTROL_WALLET_KEY,
+  );
 
   if (values.repl) {
     const tools = {
