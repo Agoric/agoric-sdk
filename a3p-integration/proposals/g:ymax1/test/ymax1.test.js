@@ -28,12 +28,14 @@ const { fromEntries } = Object;
 
 const contractName = 'ymax1';
 
-const privateArgsOverrides = harden({
-  gmpAddresses: {
-    AXELAR_GAS: 'axelar1gasnew',
-    AXELAR_GMP: 'axelar1gmpnew',
-  },
-});
+const privateArgsOverrides = harden(
+  /** @type {const} */ ({
+    gmpAddresses: {
+      AXELAR_GAS: 'axelar1gasnew',
+      AXELAR_GMP: 'axelar1gmpnew',
+    },
+  }),
+);
 
 const vsc = makeVstorageKit({ fetch }, LOCAL_CONFIG);
 const wup = walletUpdates(
