@@ -1,8 +1,7 @@
 import { encodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
 import { keccak_256 as keccak256 } from '@noble/hashes/sha3';
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
-import type { Hex } from 'viem';
-import type { EVMParameters, EVMT } from '../evm-facade.ts';
+import type { AbiParameter, Hex } from 'viem';
 
 const toHex = (bytes: Uint8Array): Hex => `0x${bytesToHex(bytes)}`;
 
@@ -51,9 +50,8 @@ export const computeCreate2Address = ({
 };
 
 export const hashInitCode =
-  <CTSig extends Array<keyof EVMT>>(byteCode: Uint8Array, sig: CTSig) =>
-  (values: EVMParameters<CTSig>) => {
-    const params = sig.map(type => ({ type }));
+  (byteCode: Uint8Array, params: readonly AbiParameter[]) =>
+  (values: readonly unknown[]) => {
     const constructorArgs = encodeAbiParameters(params, values as any);
     const initCodeBytes = concatBytes(byteCode, toBytes(constructorArgs));
     return keccak256(initCodeBytes);
