@@ -45,6 +45,10 @@ import {
   type EVMT,
 } from './evm-facade.ts';
 import { aavePoolABI, aaveRewardsControllerABI } from './interfaces/aave.ts';
+import {
+  compoundABI,
+  compoundRewardsControllerABI,
+} from './interfaces/compound.ts';
 import { erc20ABI } from './interfaces/erc20.ts';
 import { depositFactoryABI, factoryABI } from './interfaces/orch-factory.ts';
 import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
@@ -703,36 +707,14 @@ export const AaveProtocol = {
   },
 } as const satisfies ProtocolDetail<'Aave', AxelarChain, EVMContext>;
 
-type CompoundI = {
-  supply: ['address', 'uint256'];
-  withdraw: ['address', 'uint256'];
-};
-
-const Compound: CompoundI = {
-  supply: ['address', 'uint256'],
-  withdraw: ['address', 'uint256'],
-};
-
-/**
- * see {@link https://github.com/compound-finance/comet/blob/main/contracts/CometRewards.sol }
- * d7b414d May 2023
- */
-type CompoundRewardsControllerI = {
-  claim: ['address', 'address', 'bool'];
-};
-
-const CompoundRewardsController: CompoundRewardsControllerI = {
-  claim: ['address', 'address', 'bool'],
-};
-
 export const CompoundProtocol = {
   protocol: 'Compound',
   chains: keys(AxelarChain) as AxelarChain[],
   supply: async (ctx, amount, src, ...optsArgs) => {
     const { addresses: a } = ctx;
-    const session = makeEVMSession();
-    const usdc = session.makeContract(a.usdc, ERC20);
-    const compound = session.makeContract(a.compound, Compound);
+    const session = makeEvmAbiCallBatch();
+    const usdc = session.makeContract(a.usdc, erc20ABI);
+    const compound = session.makeContract(a.compound, compoundABI);
     usdc.approve(a.compound, amount.value);
     compound.supply(a.usdc, amount.value);
     const calls = session.finish();
@@ -741,15 +723,15 @@ export const CompoundProtocol = {
   },
   withdraw: async (ctx, amount, dest, claim, ...optsArgs) => {
     const { addresses: a } = ctx;
-    const session = makeEVMSession();
+    const session = makeEvmAbiCallBatch();
     if (claim) {
       const compoundRewardsController = session.makeContract(
         a.compoundRewardsController,
-        CompoundRewardsController,
+        compoundRewardsControllerABI,
       );
       compoundRewardsController.claim(a.compound, dest.remoteAddress, true);
     }
-    const compound = session.makeContract(a.compound, Compound);
+    const compound = session.makeContract(a.compound, compoundABI);
     compound.withdraw(a.usdc, amount.value);
     const calls = session.finish();
 
