@@ -7,9 +7,11 @@ import type {
 import { makeTracer } from '@agoric/internal';
 import type { Bech32Address } from '@agoric/orchestration';
 import type { StartedInstanceKit as ZStarted } from '@agoric/zoe/src/zoeService/utils.js';
-// import type { E } from '@endo/eventual-send';
+import type { Details } from 'ses';
 
-// #region move to deploy-scripts-support?
+const Usage = `invite-ems ymax1 | ymax0`;
+
+// #region move to deploy-scripts-support
 export type SigningSmartWalletKitWithStore = SigningSmartWalletKit & {
   store: ReturnType<typeof reflectWalletStore>;
 };
@@ -23,23 +25,35 @@ export interface RunTools {
 }
 // #endregion
 
+// #region import from portfolio-deploy
 type CFMethods = ZStarted<typeof YMaxStart>['creatorFacet'];
 
-const Usage = `invite-ems ymax1 | ymax0`;
+type YmaxContractName = 'ymax0' | 'ymax1';
+
+function assertYmaxContractName(
+  specimen: unknown,
+  details?: Details,
+): asserts specimen is YmaxContractName {
+  assert(specimen === 'ymax0' || specimen === 'ymax1', details);
+}
+
+const EVM_WALLET_HANDLER_KEY = 'evmWalletHandler';
+// #endregion
 
 const trace = makeTracer('invite-ems');
 
 const inviteEMS = async ({ scriptArgs, makeAccount, walletKit }: RunTools) => {
   const [contract] = scriptArgs;
-  if (!(contract === 'ymax0' || contract === 'ymax1')) throw Usage;
-  const traceC = trace.sub(contract);
-  const prefix = contract.toLocaleUpperCase();
+  assertYmaxContractName(contract, Usage);
 
-  const instances = Object.fromEntries(
+  const traceC = trace.sub(contract);
+  const prefix = contract.toUpperCase();
+
+  const { postalService, ...instances } = Object.fromEntries(
     await walletKit.readPublished('agoricNames.instance'),
   );
 
-  const invite = async (emsAddr: Bech32Address) => {
+  const deliverInvitation = async (emsAddr: Bech32Address) => {
     const ctrlAcct = await makeAccount(`${prefix}_CTRL`);
     traceC.sub('ymaxControl')(ctrlAcct.address);
 
@@ -48,25 +62,31 @@ const inviteEMS = async ({ scriptArgs, makeAccount, walletKit }: RunTools) => {
     traceC('deliver EMS invitation to', emsAddr);
     await creatorFacet.deliverEVMWalletHandlerInvitation(
       emsAddr,
-      instances.postalService,
+      postalService,
     );
   };
 
-  const go = async (description = 'ems') => {
+  const makeEMS = async () => {
     const emsAcct = await makeAccount(`${prefix}_EMS`);
     traceC.sub('EMS')(emsAcct.address);
-    await invite(emsAcct.address as Bech32Address);
 
-    const instance = instances[contract];
-    const saveTo = description.replace(/^deliver /, '');
-    const result = await emsAcct.store.saveOfferResult(
-      { instance, description },
-      saveTo,
-    );
-    traceC('redeem result', result);
+    return harden({
+      getAddress: () => emsAcct.address,
+      redeem: async (description = EVM_WALLET_HANDLER_KEY) => {
+        const instance = instances[contract];
+        const saveTo = description.replace(/^deliver /, '');
+        const result = await emsAcct.store.saveOfferResult(
+          { instance, description },
+          saveTo,
+        );
+        traceC('redeem result', result);
+      },
+    });
   };
 
-  await go();
+  const ems = await makeEMS();
+  await deliverInvitation(ems.getAddress() as Bech32Address);
+  await ems.redeem();
 };
 
 export default inviteEMS;
