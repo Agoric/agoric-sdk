@@ -3,7 +3,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
-import type { Callable } from '@agoric/internal';
+import { fromTypedEntries, typedEntries, type Callable } from '@agoric/internal';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { AxelarChain } from '@agoric/portfolio-api';
@@ -32,16 +32,19 @@ const makeSpies = <T extends Record<string, Callable>>(
   spies: T;
   log: { [P in keyof T]: [P, ...Parameters<T[P]>] }[keyof T][];
 } => {
-  const log: [keyof T, ...unknown[]][] = [];
+  const log: { [P in keyof T]: [P, ...Parameters<T[P]>] }[keyof T][] = [];
 
-  const spies = Object.fromEntries(
-    Object.entries(stubs).map(([k, stub]) => [
-      k,
-      (...args) => {
-        log.push([k, ...args]);
-        return stub(...args);
-      },
-    ]),
+  const spies = fromTypedEntries(
+    typedEntries(stubs).map(([k, stub]) => {
+      const key = k as keyof T;
+      type Stub = (typeof stubs)[typeof k];
+      const wrapped = ((...args: Parameters<Stub>) => {  
+        log.push([key, ...args] as [typeof key, ...Parameters<Stub>]);  
+        // `stub` is a Callable, so this cast is safe with respect to `T[keyof T]`  
+        return (stub as Callable)(...args);  
+      }) as Stub;
+      return [key, wrapped];
+    }),
   );
 
   // @ts-expect-error generics
@@ -54,10 +57,10 @@ const makeTestSetup = () => {
   const marshaller = board.getReadonlyMarshaller();
   const vowTools = prepareVowTools(zone);
 
-  const depStubs = {
-    rebalance: () => vowTools.asVow(() => {}),
-    executePlan: () => vowTools.asVow(() => {}),
-  } as Pick<PortfolioKitDeps, 'rebalance' | 'executePlan'>;
+  const depStubs: Pick<PortfolioKitDeps, 'rebalance' | 'executePlan'> = {
+    rebalance: (..._args: Parameters<PortfolioKitDeps['rebalance']>) => vowTools.asVow(() => {}),
+    executePlan: (..._args: Parameters<PortfolioKitDeps['executePlan']>) => vowTools.asVow(() => {}),
+  };
 
   const { spies, log: callLog } = makeSpies(depStubs);
 
@@ -69,8 +72,8 @@ const makeTestSetup = () => {
     return node;
   };
 
-  const eip155ChainIdToAxelarChain = Object.fromEntries(
-    Object.entries(axelarCCTPConfig).map(([name, info]) => [
+  const eip155ChainIdToAxelarChain = fromTypedEntries(
+    typedEntries(axelarCCTPConfig).map(([name, info]) => [
       `${Number(info.reference)}`,
       name,
     ]),
