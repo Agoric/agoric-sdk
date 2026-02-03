@@ -130,6 +130,10 @@ jobs:
         run: yarn run build:submissions
         working-directory: a3p-integration
 
+      # run the typecheck-quick that local dev can rely on for fast feedback
+      - name: typecheck-quick
+        run: yarn typecheck-quick
+
       # Attempt the doc generation to catch build errors before
       # landing on master
       - name: build API docs

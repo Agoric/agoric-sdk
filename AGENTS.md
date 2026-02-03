@@ -25,11 +25,24 @@ per https://agents.md/
 - Prettier enforced with single quotes; 2-space indentation.
 - ESLint configured via `eslint.config.mjs` (includes AVA, TypeScript, JSDoc, and repository-specific rules).
 - Package names: publishable packages use `@agoric/*`; private/local packages use `@aglocal/*` (verify with `yarn lint:package-names`).
+- `@aglocal` packages are private and never published; `@agoric` packages are published and may only depend on published packages, so `@agoric` packages must never import `@aglocal` packages.
+- Entrypoints vs modules
+    - Keep ambient authority (e.g., `process.env`, `console`, filesystem, network) in entrypoints
+    - pass explicit capabilities (e.g., `io.console`) into shared JS modules.
+    - Never `@endo/init` in modules; best practice is at the beginning of an entrypoint
 
 ## Testing Guidelines
 - Framework: AVA. Test files follow `**/test/**/*.test.*` within each package.
 - Run all: `yarn test`. Per-package: `yarn test` from that package directory.
 - Coverage: in a package, run `yarn test:c8` and open `coverage/html/index.html` after `yarn c8 report --reporter=html-spa` if needed.
+
+## A3P Container & Proposal Build Notes
+- A3P tests run inside a Docker container built from an agoric-sdk checkout, so the container can access the full repo filesystem, not just published npm packages.
+- The container’s canonical agoric-sdk checkout is based on the last formal release, so any workspace updates needed by A3P must be copied into the image and resolved correctly.
+- A3P supports building proposals from agoric-sdk `HEAD` and copying the artifacts into the image
+   - this avoids copying all sources needed to build proposals.
+   - it's configured by `agoricProposal.sdk-generate` in the proposal package.json
+   - it's performed by `a3p-integration/build-submission.sh`
 
 ## Commit & Pull Request Guidelines
 - Use Conventional Commits in titles and commits (e.g., `feat(swingstore): add snapshot…`).

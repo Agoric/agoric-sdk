@@ -1,6 +1,12 @@
 #!/usr/bin/env -S node --import ts-blank-space/register
 /**
  * @file tools for integration testing for ymax proof of concept.
+ *
+ * Not fully supported. It has zero test coverage and some parts are already known to have bit-rotted.
+ *
+ * Scope: CLI ergonomics and IO/ambient authority (console, env, repl, stdin/stdout).
+ * This entrypoint maps shell arguments to intent and delegates execution to
+ * reusable lib functions.
  */
 import '@endo/init';
 
@@ -21,18 +27,18 @@ import {
   gmpAddresses as gmpConfigs,
   type AxelarChainConfig,
 } from '@aglocal/portfolio-deploy/src/axelar-configs.js';
-import type { ContractControl } from '@aglocal/portfolio-deploy/src/contract-control.js';
 import { lookupInterchainInfo } from '@aglocal/portfolio-deploy/src/orch.start.js';
 import { findOutdated } from '@aglocal/portfolio-deploy/src/vstorage-outdated.js';
+import { makeYmaxControlKitForChain } from '@aglocal/portfolio-deploy/src/ymax-control.js';
 import {
   fetchEnvNetworkConfig,
-  makeSigningSmartWalletKit,
-  makeSmartWalletKit,
   makeVStorage,
   makeVstorageKit,
+  type makeSmartWalletKit,
   type SigningSmartWalletKit,
   type VstorageKit,
 } from '@agoric/client-utils';
+import type { ContractControl } from '@agoric/deploy-script-support/src/control/contract-control.contract.js';
 import { AmountMath, type Brand } from '@agoric/ertp';
 import {
   multiplyBy,
@@ -57,27 +63,24 @@ import {
   getYmaxWitness,
   type TargetAllocation as Allocation,
 } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.ts';
+import { YMAX_CONTROL_WALLET_KEY } from '@agoric/portfolio-api/src/portfolio-constants.js';
 import type { OfferStatus } from '@agoric/smart-wallet/src/offers.js';
+import { M } from '@agoric/store';
 import type { NameHub } from '@agoric/vats';
 import type { EMethods } from '@agoric/vow/src/E.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/types.js';
 import type { StartedInstanceKit as ZStarted } from '@agoric/zoe/src/zoeService/utils.js';
-import { SigningStargateClient } from '@cosmjs/stargate';
+import type { StdFee } from '@cosmjs/stargate';
 import { E } from '@endo/far';
-import { type CopyRecord } from '@endo/pass-style';
-import { M } from '@endo/patterns';
+import type { CopyRecord } from '@endo/pass-style';
 import { once } from 'node:events';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import repl from 'node:repl';
 import { parseArgs } from 'node:util';
-import type { StdFee } from 'osmojs';
 import type { HDAccount } from 'viem';
 import { mnemonicToAccount } from 'viem/accounts';
-import {
-  reflectWalletStore,
-  walletUpdates,
-} from '../tools/wallet-store-reflect.ts';
+import { walletUpdates } from '../tools/wallet-store-reflect.ts';
 
 const nodeRequire = createRequire(import.meta.url);
 const asset = (spec: string) => readFile(nodeRequire.resolve(spec), 'utf8');
@@ -99,12 +102,12 @@ Options:
 
 Operations:
   -h, --help                Show this help message
-  --repl                    Start a repl with walletStore and ymaxControl bound
+  --repl                    Start a repl with walletStore and ${YMAX_CONTROL_WALLET_KEY} bound
   --checkStorage            Report outdated ymax0 vstorage nodes (older than agoricNames.instance)
   --pruneStorage            Prune vstorage nodes read from Record<ParentPath, ChildPathSegment[]>
                             stdin
   --buildEthOverrides       Build privateArgsOverrides sufficient to add new EVM chains
-  --getCreatorFacet         Read the creator facet read from wallet store entry 'ymaxControl' and
+  --getCreatorFacet         Read the creator facet read from wallet store entry '${YMAX_CONTROL_WALLET_KEY}' and
                             save the result in a new entry ('creatorFacet' for contract 'ymax0',
                             otherwise \`creatorFacet-\${contract}\`)
   --installAndStart <id>    Start a contract with bundleId <id> and privateArgsOverrides from stdin
@@ -542,8 +545,6 @@ const main = async (
   env = process.env,
   {
     fetch = globalThis.fetch,
-    setTimeout = globalThis.setTimeout,
-    connectWithSigner = SigningStargateClient.connectWithSigner,
     now = Date.now,
     stdin = process.stdin,
     stdout = process.stdout,
@@ -588,11 +589,6 @@ const main = async (
   let { MNEMONIC } = env;
   if (!MNEMONIC) throw Error(`MNEMONIC not set`);
 
-  const delay = ms =>
-    new Promise(resolve => setTimeout(resolve, ms)).then(_ => {});
-  const walletKit0 = await makeSmartWalletKit({ fetch, delay }, networkConfig);
-  const walletKit = values['skip-poll'] ? noPoll(walletKit0) : walletKit0;
-
   let evmAccount: HDAccount | null = null;
   if (values.evm) {
     evmAccount = mnemonicToAccount(MNEMONIC);
@@ -611,19 +607,24 @@ const main = async (
     }
   }
 
-  const sig = await makeSigningSmartWalletKit(
-    { connectWithSigner, walletUtils: walletKit },
-    MNEMONIC,
+  const fresh = () => new Date(now()).toISOString();
+  const {
+    walletKit,
+    signer: sig,
+    walletStore,
+    ymaxControl,
+  } = await makeYmaxControlKitForChain(
+    { env, fetch, setTimeout, now },
+    {
+      mnemonic: MNEMONIC,
+      networkConfig,
+      walletKitTransform: values['skip-poll'] ? wk => noPoll(wk) : undefined,
+      log: trace,
+      makeNonce: fresh,
+      fee: makeFee({ gas: 809068, adjustment: 1.4 }),
+    },
   );
   trace('address', sig.address);
-  const fresh = () => new Date(now()).toISOString();
-  const walletStore = reflectWalletStore(sig, {
-    setTimeout,
-    log: trace,
-    fresh,
-    // as in: Error#1: out of gas ... gasUsed: 809068
-    fee: makeFee({ gas: 809068, adjustment: 1.4 }),
-  });
 
   if (values.redeem) {
     const { contract, description } = values;
@@ -659,7 +660,9 @@ const main = async (
     return;
   }
 
-  const yc = walletStore.get<ContractControl<YMaxStartFn>>('ymaxControl');
+  const yc = walletStore.get<ContractControl<YMaxStartFn>>(
+    YMAX_CONTROL_WALLET_KEY,
+  );
 
   if (values.repl) {
     const tools = {
@@ -669,7 +672,7 @@ const main = async (
       walletKit,
       signing: sig,
       walletStore,
-      ymaxControl: yc,
+      [YMAX_CONTROL_WALLET_KEY]: yc,
     };
     console.error('bindings:', Object.keys(tools).join(', '));
     const session = repl.start({ prompt: 'ymax> ', useGlobal: true });
@@ -681,7 +684,7 @@ const main = async (
   if (values.getCreatorFacet) {
     const { contract } = values;
     const creatorFacetKey = getCreatorFacetKey(contract);
-    await walletStore.savingResult(creatorFacetKey, () => yc.getCreatorFacet());
+    await ymaxControl.saveAs(creatorFacetKey).getCreatorFacet();
     return;
   }
 
@@ -756,6 +759,7 @@ const main = async (
     const creatorFacet = walletStore.get<CFMethods>(creatorFacetKey);
     const instances = await walletKit.readPublished('agoricNames.instance');
     const { postalService } = fromEntries(instances);
+    // @ts-expect-error xxx PASS_STYLE
     await inviter(creatorFacet, postalService, addr);
     return;
   }

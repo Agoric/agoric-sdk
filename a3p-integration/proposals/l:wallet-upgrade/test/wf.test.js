@@ -16,7 +16,7 @@ import test from 'ava';
 import { writeFile } from 'node:fs/promises';
 
 /**
- * @import {BridgeAction} from '@agoric/smart-wallet/src/smartWallet';
+ * @import {BridgeAction} from '@agoric/smart-wallet/src/smartWallet.js';
  */
 
 test(`walletFactory incarnation reflects invokeEntry on existing wallets`, async t => {
