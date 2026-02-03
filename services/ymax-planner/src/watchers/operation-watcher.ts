@@ -14,6 +14,7 @@ import {
   setTxBlockLowerBound,
 } from '../kv-store.ts';
 import type { WatcherResult } from '../pending-tx-manager.ts';
+import { handleOperationFailure } from './watcher-utils.ts';
 
 /**
  * The Keccak256 hash (event signature) of the PortfolioRouter `OperationResult` event.
@@ -30,6 +31,7 @@ type OperationResultWatch = {
   routerAddress: `0x${string}`;
   provider: WebSocketProvider;
   expectedId: string;
+  chainId: CaipChainId;
   log?: (...args: unknown[]) => void;
   kvStore: KVStore;
   txId: `tx${number}`;
@@ -71,6 +73,7 @@ export const watchOperationResult = ({
   routerAddress,
   provider,
   expectedId,
+  chainId,
   timeoutMs = TX_TIMEOUT_MS,
   log = () => {},
   setTimeout = globalThis.setTimeout,
@@ -112,22 +115,42 @@ export const watchOperationResult = ({
       try {
         const { idHash, success, reason } = parseOperationResultLog(eventLog);
 
-        if (idHash === expectedIdHash) {
-          log(
-            `✓ ID matches! Expected: ${expectedId} (hash: ${expectedIdHash}) idHash=${idHash} success=${success} reason=${reason} tx=${eventLog.transactionHash}`,
-          );
-          resultFound = true;
-          finish({
-            settled: true,
-            txHash: eventLog.transactionHash,
-            success,
-          });
+        if (idHash !== expectedIdHash) {
+          log(`ID hash mismatch. Expected: ${expectedIdHash}, Got: ${idHash}`);
           return;
         }
-        log(`ID hash mismatch. Expected: ${expectedIdHash}, Got: ${idHash}`);
+
+        const txHash = eventLog.transactionHash;
+        log(
+          `✓ ID matches! expectedId=${expectedId} idHash=${idHash} success=${success} reason=${reason} tx=${txHash}`,
+        );
+
+        if (success) {
+          // Success case: return immediately without waiting for confirmations
+          // Rationale: Even if a reorg occurs, the transaction will likely succeed again
+          log(`✅ SUCCESS: expectedId=${expectedId} txHash=${txHash}`);
+          resultFound = true;
+          finish({ settled: true, txHash, success: true });
+          return;
+        }
+
+        // Failure case: wait for confirmations before declaring failure
+        const result = await handleOperationFailure(
+          eventLog,
+          filter,
+          parseOperationResultLog,
+          `expectedId=${expectedId}`,
+          chainId,
+          provider,
+          log,
+        );
+
+        if (result) {
+          resultFound = true;
+          finish(result);
+        }
       } catch (error: any) {
         log(`Error:`, error);
-        return;
       }
     };
 
@@ -162,7 +185,6 @@ export const lookBackOperationResult = async ({
   txId,
 }: OperationResultWatch & {
   publishTimeMs: number;
-  chainId: CaipChainId;
   signal?: AbortSignal;
 }): Promise<WatcherResult> => {
   await null;
@@ -222,13 +244,28 @@ export const lookBackOperationResult = async ({
     }
 
     const parsed = parseOperationResultLog(matchingEvent, abiCoder);
+    const txHash = matchingEvent.transactionHash;
 
+    if (parsed.success) {
+      // Success case: return immediately
+      log(`✅ SUCCESS: expectedId=${expectedId} txHash=${txHash}`);
+      deleteTxBlockLowerBound(kvStore, txId);
+      return { settled: true, txHash, success: true };
+    }
+
+    // Failure case: wait for confirmations before declaring failure
+    const result = await handleOperationFailure(
+      matchingEvent,
+      baseFilter,
+      log => parseOperationResultLog(log, abiCoder),
+      `expectedId=${expectedId}`,
+      chainId,
+      provider,
+      log,
+    );
     deleteTxBlockLowerBound(kvStore, txId);
-    return {
-      settled: true,
-      txHash: matchingEvent.transactionHash,
-      success: parsed.success,
-    };
+
+    return result ?? { settled: false };
   } catch (error) {
     log(`Error:`, error);
     return { settled: false };
