@@ -207,14 +207,20 @@ export const preparePortfolioKit = (
       seat: ZCFSeat,
       offerArgs: unknown,
       kit: PortfolioKitCycleBreaker,
-      startedFlow?: { stepsP: Vow<MovementDesc[]>; flowId: number },
+      startedFlow?: {
+        stepsP: Vow<MovementDesc[] | FundsFlowPlan>;
+        flowId: number;
+      },
     ) => Vow<unknown>;
     executePlan: (
       seat: ZCFSeat,
       offerArgs: unknown,
       kit: PortfolioKitCycleBreaker,
       flowDetail: FlowDetail,
-      startedFlow?: { stepsP: Vow<MovementDesc[]>; flowId: number },
+      startedFlow?: {
+        stepsP: Vow<MovementDesc[] | FundsFlowPlan>;
+        flowId: number;
+      },
       config?: FlowConfig,
       options?: unknown,
     ) => Vow<unknown>;
@@ -598,7 +604,8 @@ export const preparePortfolioKit = (
         startFlow(detail: FlowDetail, steps?: MovementDesc[]) {
           const { nextFlowId: flowId, flowsRunning } = this.state;
           this.state.nextFlowId = flowId + 1;
-          const sync: VowKit<MovementDesc[]> = vowTools.makeVowKit();
+          const sync: VowKit<MovementDesc[] | FundsFlowPlan> =
+            vowTools.makeVowKit();
           if (steps) sync.resolver.resolve(steps);
           flowsRunning.init(flowId, harden({ sync, ...detail }));
           this.facets.reporter.publishStatus();

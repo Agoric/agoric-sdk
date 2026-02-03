@@ -222,7 +222,8 @@ type FlowStepPowers = {
   updatePhase: (txIds: TxId[]) => void;
 };
 
-type ExecutePlanOptions = {
+// XXX should hoist for sharing with exec-plan.flows.ts
+export type ExecutePlanOptions = {
   evmDepositDetail?: PermitDetails & { fromChain: AxelarChain };
   // XXX consider using pattern matching for queued steps instead of src/dest.
   queuedSteps?: Array<
