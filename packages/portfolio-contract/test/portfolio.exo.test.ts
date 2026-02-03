@@ -7,6 +7,7 @@ import { fromTypedEntries, typedEntries, type Callable } from '@agoric/internal'
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { AxelarChain } from '@agoric/portfolio-api';
+import { ALLOW_EVM_DEPOSIT_FACTORY_IS_SPENDER } from '@agoric/portfolio-api';
 import type { TargetAllocation as EIP712Allocation } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.ts';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.ts';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
@@ -340,6 +341,58 @@ test('evmHandler deposit rejects unknown chainId', t => {
   });
 });
 
+test('evmHandler deposit handles factoryContract spender', t => {
+  const ownerAddress = '0x6666666666666666666666666666666666666666' as const;
+  const { makePortfolioKit } = makeTestSetup();
+  const { evmHandler, manager } = makePortfolioKit({
+    portfolioId: 454,
+    sourceAccountId: `eip155:42161:${ownerAddress}`,
+  });
+
+  manager.resolveAccount({
+    namespace: 'eip155',
+    chainName: 'Arbitrum',
+    chainId: 'eip155:42161',
+    remoteAddress: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+  } as any);
+
+  const permitDetails: PermitDetails = {
+    chainId: 42161n,
+    token: contractsMock.Arbitrum.usdc as Address,
+    amount: 1_000n,
+    spender: contractsMock.Arbitrum.depositFactory as Address,
+    permit2Payload: {
+      owner: ownerAddress,
+      witness: '0xWitnessData' as const,
+      witnessTypeString: 'WitnessTypeString' as const,
+      permit: {
+        permitted: {
+          token: contractsMock.Arbitrum.usdc as Address,
+          amount: 1_000n,
+        },
+        nonce: 123n,
+        deadline: 1700000000n,
+      },
+      signature: '0xSignatureData' as const,
+    },
+  };
+
+  if (ALLOW_EVM_DEPOSIT_FACTORY_IS_SPENDER) {
+    t.notThrows(
+      () => evmHandler.deposit(permitDetails),
+      'evmHandler deposit accepts depositFactory spender',
+    );
+  } else {
+    t.throws(
+      () => evmHandler.deposit(permitDetails),
+      {
+        message: /permit spender .* does not match expected account/,
+      },
+      'evmHandler deposit rejects depositFactory spender',
+    );
+  }
+});
+
 test('evmHandler deposit rejects spender mismatch', t => {
   const ownerAddress = '0x6666666666666666666666666666666666666666' as const;
   const { makePortfolioKit } = makeTestSetup();
@@ -377,7 +430,7 @@ test('evmHandler deposit rejects spender mismatch', t => {
   };
 
   t.throws(() => evmHandler.deposit(permitDetails), {
-    message: /permit spender .* does not match portfolio account/,
+    message: /permit spender .* does not match expected account/,
   });
 });
 
