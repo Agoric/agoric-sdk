@@ -11,6 +11,7 @@ import {
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { AxelarChain } from '@agoric/portfolio-api';
+import { ALLOW_EVM_DEPOSIT_FACTORY_IS_SPENDER } from '@agoric/portfolio-api';
 import type { TargetAllocation as EIP712Allocation } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.ts';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.ts';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
@@ -407,6 +408,10 @@ test('evmHandler deposit handles factoryContract spender', t => {
       },
     ],
   ]);
+  t.notThrows(
+    () => evmHandler.deposit(permitDetails),
+    'evmHandler deposit accepts depositFactory spender',
+  );
 });
 
 test('evmHandler deposit rejects spender mismatch', t => {
@@ -446,7 +451,7 @@ test('evmHandler deposit rejects spender mismatch', t => {
   };
 
   t.throws(() => evmHandler.deposit(permitDetails), {
-    message: /permit spender .* does not match portfolio account/,
+    message: /permit spender .* does not match expected account/,
   });
 });
 
