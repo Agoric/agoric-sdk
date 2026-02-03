@@ -223,7 +223,11 @@ export const prepareFluxAggregatorKit = async (
     baggage,
     'fluxAggregator',
     {
-      creator: M.interface('fluxAggregator creatorFacet', {}, { sloppy: true }),
+      creator: M.interface(
+        'fluxAggregator creatorFacet',
+        {},
+        { defaultGuards: 'passable' },
+      ),
       public: M.interface('fluxAggregator publicFacet', {
         getPriceAuthority: M.call().returns(M.any()),
         getPublicTopics: M.call().returns({
