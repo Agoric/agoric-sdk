@@ -3,7 +3,11 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
-import { fromTypedEntries, typedEntries, type Callable } from '@agoric/internal';
+import {
+  fromTypedEntries,
+  typedEntries,
+  type Callable,
+} from '@agoric/internal';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { AxelarChain } from '@agoric/portfolio-api';
@@ -38,10 +42,10 @@ const makeSpies = <T extends Record<string, Callable>>(
     typedEntries(stubs).map(([k, stub]) => {
       const key = k as keyof T;
       type Stub = (typeof stubs)[typeof k];
-      const wrapped = ((...args: Parameters<Stub>) => {  
-        log.push([key, ...args] as [typeof key, ...Parameters<Stub>]);  
-        // `stub` is a Callable, so this cast is safe with respect to `T[keyof T]`  
-        return (stub as Callable)(...args);  
+      const wrapped = ((...args: Parameters<Stub>) => {
+        log.push([key, ...args] as [typeof key, ...Parameters<Stub>]);
+        // `stub` is a Callable, so this cast is safe with respect to `T[keyof T]`
+        return (stub as Callable)(...args);
       }) as Stub;
       return [key, wrapped];
     }),
@@ -58,8 +62,10 @@ const makeTestSetup = () => {
   const vowTools = prepareVowTools(zone);
 
   const depStubs: Pick<PortfolioKitDeps, 'rebalance' | 'executePlan'> = {
-    rebalance: (..._args: Parameters<PortfolioKitDeps['rebalance']>) => vowTools.asVow(() => {}),
-    executePlan: (..._args: Parameters<PortfolioKitDeps['executePlan']>) => vowTools.asVow(() => {}),
+    rebalance: (..._args: Parameters<PortfolioKitDeps['rebalance']>) =>
+      vowTools.asVow(() => {}),
+    executePlan: (..._args: Parameters<PortfolioKitDeps['executePlan']>) =>
+      vowTools.asVow(() => {}),
   };
 
   const { spies, log: callLog } = makeSpies(depStubs);
