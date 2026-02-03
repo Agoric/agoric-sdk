@@ -21,8 +21,8 @@
     },
     "./package.json": "./package.json",
     "./json-safe": {
-      "types": "./src/codegen/json-safe.d.ts",
-      "default": "./src/codegen/json-safe.js"
+      "types": "./dist/codegen/json-safe.d.ts",
+      "default": "./dist/codegen/json-safe.js"
     },
     "./address-hooks.js": {
       "types": "./dist/address-hooks.d.ts",
