@@ -407,6 +407,10 @@ test('evmHandler deposit handles factoryContract spender', t => {
       },
     ],
   ]);
+  t.notThrows(
+    () => evmHandler.deposit(permitDetails),
+    'evmHandler deposit accepts depositFactory spender',
+  );
 });
 
 test('evmHandler deposit rejects spender mismatch', t => {
@@ -446,7 +450,7 @@ test('evmHandler deposit rejects spender mismatch', t => {
   };
 
   t.throws(() => evmHandler.deposit(permitDetails), {
-    message: /permit spender .* does not match portfolio account/,
+    message: /permit spender .* does not match expected account/,
   });
 });
 

@@ -2211,21 +2211,22 @@ test('evmHandler.deposit (Arbitrum -> Base) completes a deposit flow', async t =
         chainId: Number(chainInfoWithCCTP[newChain].reference),
         token: contractsMock[newChain].usdc,
         amount: newDepositAmount.value,
-        // Wrong spender: should be predicted wallet address, not depositFactory.
-        spender: contractsMock[newChain].depositFactory,
+        // Wrong spender: should be predicted wallet address, not something bad.
+        spender: `${predictedSpender}BaDZ`,
         permit2Payload: newPermit2Payload,
       }),
     {
-      message: /permit spender .* does not match portfolio account/,
+      message: /permit spender .* does not match expected account/,
     },
-    'deposit rejects depositFactory spender for new chain',
+    'deposit rejects bad spender for new chain',
   );
+
   const newPermitDetails = {
     chainId: Number(chainInfoWithCCTP[newChain].reference),
     token: contractsMock[newChain].usdc,
     amount: newDepositAmount.value,
     // For deposits to existing portfolios, spender is the predicted smart wallet address
-    spender: predictedSpender as `0x${string}`,
+    spender: predictedSpender,
     permit2Payload: newPermit2Payload,
   } as const;
 
