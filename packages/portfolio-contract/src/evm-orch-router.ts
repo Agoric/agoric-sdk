@@ -93,7 +93,7 @@ export const makePortfolioRouter = (
   pk: GuestInterface<PortfolioKit>,
   ctx: PortfolioInstanceContext,
   infoByChain: Record<AxelarChain, BaseChainInfo<'eip155'>>,
-  // TODO/WIP axelar: Chain<{ chainId: string }>,
+  _axelar: Chain<{ chainId: string }>,
 ) => {
   const pId = pk.reader.getPortfolioId();
   const lca = pk.reader.getLocalAccount();
