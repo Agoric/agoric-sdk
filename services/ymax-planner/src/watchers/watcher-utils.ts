@@ -1,5 +1,11 @@
-import type { TransactionReceipt, WebSocketProvider } from 'ethers';
+import type {
+  TransactionReceipt,
+  WebSocketProvider,
+  Filter,
+  Log,
+} from 'ethers';
 import { Interface, AbiCoder, getAddress } from 'ethers';
+import type { CaipChainId } from '@agoric/orchestration';
 import { depositFactoryCreateAndDepositInputs } from '@aglocal/portfolio-contract/src/utils/evm-orch-factory.ts';
 import { decodeAbiParameters } from 'viem';
 import { getConfirmationsRequired } from '../support.ts';
@@ -260,4 +266,87 @@ export const handleTxRevert = async (
     );
     return { settled: true, txHash, success: true };
   }
+};
+
+/**
+ * Handle event-level failure with finality protection.
+ *
+ * This is for cases where the transaction succeeded (status 1) but the
+ * business logic failed (e.g., OperationResult event with success=false).
+ * We wait for confirmations and re-verify the event to ensure the failure
+ * is permanent before reporting it.
+ *
+ * @param eventLog - The event log containing the failure
+ * @param filter - Filter to re-fetch the event after confirmations
+ * @param parseEvent - Function to parse the event and return its success status
+ * @param identifier - A string identifier for logging
+ * @param chainId - Chain ID to determine confirmation requirements
+ * @param provider - WebSocket provider for waiting for confirmations
+ * @param log - Logging function
+ * @returns Object with settled flag, success status, and transaction hash, or null if reorged
+ */
+export const handleOperationFailure = async <T extends { success: boolean }>(
+  eventLog: Log,
+  filter: Filter,
+  parseEvent: (log: Log) => T,
+  identifier: string,
+  chainId: CaipChainId,
+  provider: WebSocketProvider,
+  log: (...args: unknown[]) => void,
+): Promise<{ settled: true; txHash: string; success: boolean } | null> => {
+  await null;
+  const txHash = eventLog.transactionHash;
+  const eventBlock = eventLog.blockNumber;
+
+  const confirmations = getConfirmationsRequired(chainId);
+  const currentBlock = await provider.getBlockNumber();
+  const confirmedBlocks = currentBlock - eventBlock;
+
+  if (confirmedBlocks < confirmations) {
+    log(
+      `⏳ FAILURE detected, waiting for ${confirmations} confirmations (have ${confirmedBlocks}): ${identifier} txHash=${txHash}`,
+    );
+
+    const confirmedReceipt = await provider.waitForTransaction(
+      txHash,
+      confirmations,
+    );
+
+    if (!confirmedReceipt) {
+      log(
+        `Transaction ${txHash} was not confirmed after waiting (possibly reorged out)`,
+      );
+      return null;
+    }
+  }
+
+  // Re-fetch the logs to verify the failure is still present
+  const confirmedLogs = await provider.getLogs({
+    ...filter,
+    fromBlock: eventBlock,
+    toBlock: eventBlock,
+  });
+
+  const confirmedEvent = confirmedLogs.find(l => l.transactionHash === txHash);
+
+  if (!confirmedEvent) {
+    log(
+      `Event not found after ${confirmations} confirmations (possibly reorged): ${identifier}`,
+    );
+    return null;
+  }
+
+  const confirmedParsed = parseEvent(confirmedEvent);
+
+  if (confirmedParsed.success) {
+    log(
+      `✅ SUCCESS (after reorg, ${confirmations} confirmations): ${identifier} txHash=${txHash}`,
+    );
+    return { settled: true, txHash, success: true };
+  }
+
+  log(
+    `❌ FAILURE (${confirmations} confirmations): ${identifier} txHash=${txHash}`,
+  );
+  return { settled: true, txHash, success: false };
 };
