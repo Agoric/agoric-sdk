@@ -11,6 +11,9 @@ import { M, objectMap } from '@endo/patterns';
  * @import {FlowConfig} from './types.js';
  */
 
+/** Whether the spender is allowed to be deposit factory for EVM chains */
+export const ALLOW_EVM_DEPOSIT_FACTORY_IS_SPENDER = true;
+
 /**
  * Configuration arguments for newly-created portfolio flows.
  *

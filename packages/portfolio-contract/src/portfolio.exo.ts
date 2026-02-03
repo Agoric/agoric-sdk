@@ -22,6 +22,7 @@ import type {
   PortfolioContinuingInvitationMaker,
 } from '@agoric/portfolio-api';
 import {
+  ALLOW_EVM_DEPOSIT_FACTORY_IS_SPENDER,
   AxelarChain,
   SupportedChain,
   YieldProtocol,
@@ -685,11 +686,22 @@ export const preparePortfolioKit = (
           sameEvmAddress(owner, accountAddress as Address) ||
             Fail`permit owner ${owner} does not match portfolio source address ${accountAddress}`;
 
-          // For deposits, spender must be the portfolio's smart wallet address.
+          // For deposits:
+          // If ALLOW_EVM_DEPOSIT_FACTORY_IS_SPENDER, then the spender may be
+          // the chain's well-known depositFactory address.
+          // Otherwise, spender must be the portfolio's smart wallet address.
           // If the account already exists, use the stored address.
           // If not, predict the address using `factory` (which will be used to create it).
           let expectedSpender: Address;
-          if (accounts.has(fromChain)) {
+
+          const depositFactoryAddress = contracts[fromChain].depositFactory;
+          if (
+            ALLOW_EVM_DEPOSIT_FACTORY_IS_SPENDER &&
+            sameEvmAddress(depositDetails.spender, depositFactoryAddress)
+          ) {
+            // The spender is the allowed wallet factory address, so accept it.
+            expectedSpender = depositFactoryAddress;
+          } else if (accounts.has(fromChain)) {
             const gmpInfo = accounts.get(fromChain) as GMPAccountInfo;
             expectedSpender = gmpInfo.remoteAddress;
           } else {
@@ -703,7 +715,7 @@ export const preparePortfolioKit = (
           }
 
           sameEvmAddress(depositDetails.spender, expectedSpender) ||
-            Fail`permit spender ${depositDetails.spender} does not match portfolio account ${expectedSpender}`;
+            Fail`permit spender ${depositDetails.spender} does not match expected account ${expectedSpender}`;
 
           sameEvmAddress(depositDetails.token, contracts[fromChain].usdc) ||
             Fail`permit token address ${depositDetails.token} does not match usdc contract address ${contracts[fromChain].usdc} for chain ${fromChain}`;
