@@ -56,10 +56,11 @@ const parseOperationResultLog = (
   const idHash = log.topics[1];
   const [success, reason] = abiCoder.decode(['bool', 'bytes'], log.data);
 
+  // XXX: decode the reason bytes into a human-readable error message
   return {
     idHash,
     success,
-    reason: reason.length > 0 ? `0x${Buffer.from(reason).toString('hex')}` : '',
+    reason: reason.length > 0 ? reason : '',
   };
 };
 
@@ -112,6 +113,7 @@ export const watchOperationResult = ({
     signal?.addEventListener('abort', () => finish({ settled: false }));
 
     const listenForOperationResult = async (eventLog: Log) => {
+      await null;
       try {
         const { idHash, success, reason } = parseOperationResultLog(eventLog);
 
@@ -257,7 +259,7 @@ export const lookBackOperationResult = async ({
     const result = await handleOperationFailure(
       matchingEvent,
       baseFilter,
-      log => parseOperationResultLog(log, abiCoder),
+      logEntry => parseOperationResultLog(logEntry, abiCoder),
       `expectedId=${expectedId}`,
       chainId,
       provider,
