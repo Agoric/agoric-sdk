@@ -1,4 +1,19 @@
 #!/usr/bin/env -S node --import ts-blank-space/register
+/**
+ * @file DEPRECATED: CoreEval-based deployment for local Starship testing
+ *
+ * ⚠️ WARNING: This script uses the CoreEval deployment method which
+ * DESTROYS the existing contract instance. It should ONLY be used for:
+ * - Fresh deployments to local Starship test environments
+ * - Non-production testing
+ *
+ * DO NOT USE for production deployments (devnet/mainnet)!
+ *
+ * For portfolio-contract (ymax) upgrades, use the safe upgrade workflow:
+ * - See multichain-testing/ymax-ops/Makefile
+ * - Use ymax-tool.ts --upgrade for in-place upgrades
+ * - Preserves existing contract state and instances
+ */
 import '@endo/init/debug.js';
 
 import { execa } from 'execa';

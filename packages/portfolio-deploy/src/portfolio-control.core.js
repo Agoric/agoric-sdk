@@ -6,10 +6,10 @@ import { objectMap } from '@endo/patterns';
 import { E, passStyleOf, getInterfaceOf } from '@endo/far';
 
 /**
- * @import {ContractControlPowers, DeliverContractControl} from './contract-control.core.js';
+ * @import {ContractControlPowers, DeliverContractControl} from '@agoric/deploy-script-support/src/control/contract-control.core.js';
  * @import {PortfolioBootPowers} from './portfolio-start.type.ts';
  * @import {StartFn} from './portfolio-start.type.ts';
- * @import {UpgradeKit, GetUpgradeKitPowers} from './get-upgrade-kit.core.js';
+ * @import {UpgradeKit, GetUpgradeKitPowers} from '@agoric/deploy-script-support/src/control/get-upgrade-kit.core.js';
  * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
  */
 

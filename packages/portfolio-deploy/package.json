@@ -14,7 +14,7 @@
     "build:nomin": "esbuild ../portfolio-contract/src/portfolio.contract.ts --bundle --platform=neutral --main-fields=main --outfile=dist/portfolio.contract.bundle.js --metafile=dist/portfolio.contract.meta.json",
     "build:bundle": "npx bundle-source --cache-json dist/ ./dist/portfolio.contract.bundle.js ymax0",
     "build:bundle-id": "sh -c '(printf b1-; jq -r .endoZipBase64Sha512 ./dist/bundle-ymax0.json) >./dist/ymax0.bundleId'",
-    "deploy:devnet": "yarn build && scripts/deploy-cli.ts src/portfolio.build.js --net=devnet",
+    "deploy:devnet": "echo '❌ deploy:devnet removed - it used dangerous CoreEval method that destroys the contract' && echo '✅ Use the safe upgrade workflow instead: see README.md or multichain-testing/ymax-ops/Makefile' && exit 1",
     "test": "yarn build && ava",
     "test:c8": "c8 --all $C8_OPTIONS ava",
     "test:xs": "exit 0",
@@ -40,6 +40,7 @@
     "@agoric/vow": "workspace:*",
     "@agoric/zoe": "workspace:*",
     "@agoric/zone": "workspace:*",
+    "@cosmjs/stargate": "^0.36.0",
     "@endo/errors": "^1.2.13",
     "@endo/eventual-send": "^1.3.4",
     "@endo/far": "^1.1.14",
@@ -48,7 +49,8 @@
     "@endo/pass-style": "^1.6.3",
     "@endo/patterns": "^1.7.0",
     "@endo/promise-kit": "^1.1.13",
-    "execa": "^9.6.0"
+    "execa": "^9.6.0",
+    "viem": "^2.31.0"
   },
   "devDependencies": {
     "@aglocal/boot": "workspace:*",
@@ -60,8 +62,7 @@
     "c8": "^10.1.3",
     "esbuild": "^0.25.2",
     "ts-blank-space": "^0.6.2",
-    "tsd": "^0.33.0",
-    "viem": "^2.31.0"
+    "tsd": "^0.33.0"
   },
   "ava": {
     "extensions": {

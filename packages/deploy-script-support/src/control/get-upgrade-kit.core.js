@@ -6,7 +6,7 @@ import { E } from '@endo/eventual-send';
 
 /**
  * @import {ContractStartFunction, Instance} from '@agoric/zoe/src/zoeService/utils.js';
- * @import {StartedInstanceKit} from '@agoric/vats/src/core/types.js';
+ * @import {StartedInstanceKit, StartedInstanceKitWithLabel} from '@agoric/vats/src/core/types.js';
  * @import {PromiseSpaceOf} from '@agoric/vats/src/core/types.js';
  * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
  */
@@ -14,6 +14,9 @@ import { E } from '@endo/eventual-send';
 const trace = (...args) => console.log('---- GetUpgradeKit', ...args);
 
 /**
+ * Similar to StartedInstanceKit, but with label and optional privateArgs
+ * managed by ContractControl.
+ *
  * @template {ContractStartFunction} SF
  * @typedef {StartedInstanceKit<SF> & {
  *   label: string;
@@ -26,7 +29,7 @@ const trace = (...args) => console.log('---- GetUpgradeKit', ...args);
  * the contract's name, without giving full access to the underlying stores.
  *
  * @typedef {PromiseSpaceOf<{
- *   getUpgradeKit: <SF extends ContractStartFunction>(name: string) => Promise<UpgradeKit<SF>>
+ *   getUpgradeKit: <SF extends ContractStartFunction>(name: string) => Promise<StartedInstanceKitWithLabel<SF>>
  * }>} GetUpgradeKitPowers
  */
 
@@ -44,7 +47,7 @@ export const produceGetUpgradeKit = async powers => {
   /**
    * @template {ContractStartFunction} SF
    * @param {string} name
-   * @returns {Promise<UpgradeKit<SF>>}
+   * @returns {Promise<StartedInstanceKitWithLabel<SF>>}
    */
   const getUpgradeKit = async name => {
     trace('getting instance for', name);

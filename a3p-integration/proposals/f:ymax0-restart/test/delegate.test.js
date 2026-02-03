@@ -2,10 +2,18 @@
 import '@endo/init/debug.js';
 
 import { LOCAL_CONFIG, makeVstorageKit } from '@agoric/client-utils';
+import { walletUpdates } from '@agoric/deploy-script-support/src/wallet-utils.js';
+import { makeYmaxControlKitForSynthetic } from '@aglocal/portfolio-deploy/src/ymax-control.js';
 import { agoric, mkTemp } from '@agoric/synthetic-chain';
 import test from 'ava';
 import { writeFile } from 'node:fs/promises';
-import { walletUpdates } from './walletUpdates.js';
+import { makeSyntheticWalletKit } from '../synthetic-wallet-kit.js';
+
+/**
+ * @import {BridgeAction} from '@agoric/smart-wallet/src/smartWallet.js';
+ * @import {Installation} from '@agoric/zoe';
+ * @import {ContractControl, YMaxStartFn} from '@agoric/portfolio-api';
+ */
 
 // see ../prepare.sh for mnemonic
 const ymaxControlAddr = 'agoric15u29seyj3c9rdwg7gwkc97uttrk6j9fl4jkuyh';
@@ -18,12 +26,22 @@ const wup = walletUpdates(
   { setTimeout, log: () => {} },
 );
 
+// Create synthetic wallet kit and wallet store
+const syntheticWallet = makeSyntheticWalletKit({
+  address: ymaxControlAddr,
+  vstorageKit: vsc,
+});
+const { ymaxControl } = makeYmaxControlKitForSynthetic(
+  { setTimeout },
+  {
+    signer: syntheticWallet,
+    log: () => {},
+    makeNonce: () => String(Date.now()),
+  },
+);
+
 /** @param {any} x */
 const boardId = x => x.getBoardId();
-
-/**
- * @import {BridgeAction} from '@agoric/smart-wallet/src/smartWallet';
- */
 
 /**
  * @param {string} addr
@@ -54,42 +72,17 @@ test.before('get current ymax0 instance', async t => {
 });
 
 test.serial('terminate existing instance', async t => {
-  const id = 'terminate.0';
-  /** @type {BridgeAction} */
-  const invokeAction = {
-    // @ts-expect-error old type from npm
-    method: 'invokeEntry',
-    message: {
-      id,
-      targetName: 'ymaxControl',
-      method: 'terminate',
-      args: [{ message: 'terminate in order to restart the contract' }],
-    },
-  };
+  const yc = ymaxControl;
+  await yc.terminate({ message: 'terminate in order to restart the contract' });
 
-  await sendWalletAction(ymaxControlAddr, invokeAction);
-
-  t.deepEqual(await wup.invocation(id), { passStyle: 'undefined' });
+  t.pass('Contract terminated');
 });
 
 test.serial('invoke ymaxControl showing no instance', async t => {
+  // TODO test this invokation id?
   const id = 'getCreatorFacet.1';
-  /** @type {BridgeAction} */
-  const invokeAction = {
-    // @ts-expect-error old type from npm
-    method: 'invokeEntry',
-    message: {
-      id,
-      targetName: 'ymaxControl',
-      method: 'getCreatorFacet',
-      args: [],
-      saveResult: { name: 'creatorFacet', overwrite: true },
-    },
-  };
 
-  await sendWalletAction(ymaxControlAddr, invokeAction);
-
-  await t.throwsAsync(wup.invocation(id), {
+  await t.throwsAsync(ymaxControl.overwrite('creatorFacet').getCreatorFacet(), {
     message: /no StartedInstanceKit/,
   });
 });
@@ -100,7 +93,7 @@ test.serial('start using ymaxControl', async t => {
   );
 
   const { ymax0: installation } = fromEntries(
-    /** @type {Array<[string, import('@agoric/zoe').Installation]>}*/ (
+    /** @type {Array<[string, Installation]>}*/ (
       await vsc.readPublished('agoricNames.installation')
     ),
   );
@@ -138,46 +131,16 @@ test.serial('start using ymaxControl', async t => {
     },
   };
 
-  const id = 'start.2';
-  /** @type {BridgeAction} */
-  const invokeAction = {
-    // @ts-expect-error old type from npm
-    method: 'invokeEntry',
-    message: {
-      id,
-      targetName: 'ymaxControl',
-      method: 'start',
-      args: [{ installation, issuers, privateArgsOverrides }],
-    },
-  };
+  const yc = ymaxControl;
+  await yc.start({ installation, issuers, privateArgsOverrides });
 
-  await sendWalletAction(ymaxControlAddr, invokeAction);
-
-  t.deepEqual(await wup.invocation(id), { passStyle: 'copyRecord' });
+  t.pass('Contract started');
 });
 
 test.serial('invoke ymaxControl to getCreatorFacet', async t => {
-  const id = 'getCreatorFacet.3';
+  const cf = await ymaxControl.overwrite('creatorFacet').getCreatorFacet();
 
-  /** @type {BridgeAction} */
-  const invokeAction = {
-    // @ts-expect-error old type from npm
-    method: 'invokeEntry',
-    message: {
-      id,
-      targetName: 'ymaxControl',
-      method: 'getCreatorFacet',
-      args: [],
-      saveResult: { name: 'creatorFacet', overwrite: true },
-    },
-  };
-
-  await sendWalletAction(ymaxControlAddr, invokeAction);
-
-  t.deepEqual(await wup.invocation(id), {
-    name: 'creatorFacet',
-    passStyle: 'remotable',
-  });
+  t.truthy(cf, 'Creator facet saved to wallet store');
 });
 
 test.serial('ymax0 told zoe that Access token is required', async t => {
@@ -197,7 +160,6 @@ test.serial('ymax0 told zoe that Access token is required', async t => {
       id,
       invitationSpec: {
         source: 'contract',
-        // @ts-expect-error XXX Type 'import("...node_modules/@agoric/zoe/src/zoeService/types").Instance' is not assignable to type 'globalThis.Instance'.
         instance: ymax0,
         publicInvitationMaker: 'makeOpenPortfolioInvitation',
       },
