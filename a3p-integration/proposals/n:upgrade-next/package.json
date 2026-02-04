@@ -21,7 +21,7 @@
     "@endo/init": "^1.1.12",
     "@endo/marshal": "^1.8.0",
     "agoric": "dev",
-    "ava": "^5.3.1",
+    "ava": "^6.4.1",
     "execa": "9.1.0"
   },
   "resolutions": {
@@ -64,8 +64,16 @@
   "ava": {
     "concurrency": 1,
     "timeout": "2m",
+    "extensions": {
+      "js": true,
+      "ts": "module"
+    },
     "files": [
-      "!submission"
+      "test/**/*.test.*"
+    ],
+    "nodeArguments": [
+      "--loader=ts-blank-space/register",
+      "--no-warnings"
     ]
   },
   "scripts": {
