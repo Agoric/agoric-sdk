@@ -80,7 +80,6 @@ __metadata:
     "@agoric/ertp": "workspace:*"
     "@agoric/internal": "workspace:*"
     "@agoric/smart-wallet": "workspace:*"
-    "@agoric/vats": "workspace:*"
     "@cosmjs/crypto": "npm:^0.36.0"
     "@cosmjs/proto-signing": "npm:^0.36.0"
     "@cosmjs/stargate": "npm:^0.36.0"
