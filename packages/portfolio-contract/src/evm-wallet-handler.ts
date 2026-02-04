@@ -422,7 +422,7 @@ export const prepareEVMWalletHandlerKit = (
     encodeType,
   });
 
-  // TODO: key/value shapes?
+  // XXX: key/value shapes?
   const walletByAddress = zone.mapStore<Address, EVMWallet>('wallets');
 
   const getWalletForAddress = (address: Address): EVMWallet =>

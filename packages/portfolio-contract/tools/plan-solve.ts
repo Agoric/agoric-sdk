@@ -690,7 +690,7 @@ export const planRebalanceFlow = async (opts: {
     mode = 'fastest',
     gasEstimator,
   } = opts;
-  // TODO remove "automatic" values that should be static
+  // XXX remove "automatic" values that should be static
   const graph = makeGraphForFlow(network, current, target);
   const model = buildLPModel(graph, mode);
   let result;
