@@ -17,12 +17,12 @@ import type {
   CurrentWalletRecord,
   UpdateRecord,
 } from '@agoric/smart-wallet/src/smartWallet.js';
-import type { AssetInfo } from './board-utils.js';
 import type { StatusFor } from '@aglocal/portfolio-contract/src/type-guards.js';
 import type {
   Installation,
   Instance,
 } from '@agoric/zoe/src/zoeService/types.js';
+import type { AssetInfo } from './board-utils.js';
 
 // For static string key types. String template matching has to be in the ternary below.
 type PublishedTypeMap = {

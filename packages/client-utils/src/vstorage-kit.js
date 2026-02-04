@@ -1,5 +1,5 @@
-import { boardSlottingMarshaller, makeBoardRemote } from './board-utils.js';
 import { assertAllDefined, tryNow } from '@agoric/internal';
+import { boardSlottingMarshaller, makeBoardRemote } from './board-utils.js';
 import { makeVStorage } from './vstorage.js';
 
 export { boardSlottingMarshaller };
