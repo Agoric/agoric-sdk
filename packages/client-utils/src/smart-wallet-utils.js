@@ -74,7 +74,9 @@ export const makeWalletStateCoalescer = (invitationBrand = undefined) => {
               acceptedIn: status.id,
             });
           } else {
-            throw Error(`no record of invitation in offerStatus ${status}`);
+            throw Error(
+              `no record of invitation in offerStatus ${JSON.stringify(status)}`,
+            );
           }
         }
         break;
@@ -112,6 +114,7 @@ const findUpdate = (id, getLastUpdate, retryOpts, isMatch) =>
  * @returns {Promise<(UpdateRecord & { updated: 'invocation' })['result']>}
  */
 export const getInvocationUpdate = async (id, getLastUpdate, retryOpts) => {
+  /** @type {(update: UpdateRecord) => boolean} */
   const isMatch = update =>
     update.updated === 'invocation' &&
     update.id === id &&
@@ -138,6 +141,7 @@ harden(getInvocationUpdate);
 export const getOfferResult = async (id, getLastUpdate, retryOpts) => {
   // "walletAction" indicates an error, "offerStatus" with the right id and
   // either `result` or `error` indicates settlement.
+  /** @type {(update: UpdateRecord) => boolean} */
   const isMatch = update =>
     update.updated === 'walletAction' ||
     (update.updated === 'offerStatus' &&
@@ -170,12 +174,17 @@ harden(getOfferResult);
  */
 export const getOfferWantsSatisfied = async (id, getLastUpdate, retryOpts) => {
   // "walletAction" indicates an error, "offerStatus" with the right id and
-  // either `result` or `error` indicates settlement.
+  // either `result`, `error`, or `numWantsSatisfied` indicates settlement.
+  /** @type {(update: UpdateRecord) => boolean} */
   const isMatch = update =>
     update.updated === 'walletAction' ||
     (update.updated === 'offerStatus' &&
       update.status.id === id &&
-      !!(update.status.error || 'numWantsSatisfied' in update.status));
+      !!(
+        update.status.error ||
+        update.status.result ||
+        'numWantsSatisfied' in update.status
+      ));
   const found =
     /** @type {UpdateRecord & { updated: 'walletAction' | 'offerStatus' }} */ (
       await findUpdate(id, getLastUpdate, retryOpts, isMatch)
@@ -185,7 +194,9 @@ export const getOfferWantsSatisfied = async (id, getLastUpdate, retryOpts) => {
   }
   const { error, result } = found.status;
   !error || Fail`${q(id)} offerStatus failure: ${q(error)}`;
-  result || Fail`${q(id)} offerStatus missing result`;
+  result ||
+    'numWantsSatisfied' in found.status ||
+    Fail`${q(id)} offerStatus missing result`;
   return found.status;
 };
 harden(getOfferWantsSatisfied);
