@@ -7,12 +7,14 @@ import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import type { EMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import {
   type AccountId,
+  type Caip10Record,
   type CaipChainId,
   type IBCConnectionInfo,
 } from '@agoric/orchestration';
 import {
   coerceAccountId,
   parseAccountId,
+  parseAccountIdArg,
   sameEvmAddress,
 } from '@agoric/orchestration/src/utils/address.js';
 import type {
@@ -41,7 +43,7 @@ import { E } from '@endo/far';
 import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import { hexToBytes } from '@noble/hashes/utils';
-import type { Address } from 'abitype';
+import type { Address as EVMAddress } from 'abitype';
 import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
 import { type LocalAccount, type NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
@@ -69,7 +71,11 @@ export type GMPAccountInfo = {
   chainName: AxelarChain;
   err?: string;
   chainId: CaipChainId;
-  remoteAddress: `0x${string}`;
+  remoteAddress: EVMAddress;
+  // routerAddress only present if useRouter set on portfolio
+  routerAddress?: EVMAddress;
+  // transferringFromRouter only present while router ownership transfer in progress
+  transferringFromRouter?: EVMAddress;
   // TODO: confirm useRouter on whole portfolio meets requirements
 };
 type AgoricAccountInfo = {
@@ -109,7 +115,7 @@ type PortfolioKitState = {
   rebalanceCount: number;
   /** CAIP-10 account ID of the authenticated EVM account that opened this portfolio */
   sourceAccountId?: AccountId;
-  useRouter?: boolean;
+  // useRouter?: boolean;
   /** reserved for future use */
   etc: unknown;
 };
@@ -136,8 +142,8 @@ harden(PortfolioStateShape);
  */
 const accountIdByChain = (
   accounts: PortfolioKitState['accounts'],
-): Partial<Record<SupportedChain, AccountId>> => {
-  const byChain = {};
+): StatusFor['portfolio']['accountIdByChain'] => {
+  const byChain: Partial<Record<SupportedChain, AccountId>> = {};
   for (const [n, info] of accounts.entries()) {
     switch (info.namespace) {
       case 'cosmos':
@@ -157,6 +163,66 @@ const accountIdByChain = (
         break;
       default:
         assert.fail(X`no such type: ${info}`);
+    }
+  }
+  return harden(byChain);
+};
+
+/**
+ * For publishing, represent accounts collection using accountId values
+ */
+const accountStateByChain = (
+  accounts: PortfolioKitState['accounts'],
+  pending: PortfolioKitState['accountsPending'],
+): StatusFor['portfolio']['accountStateByChain'] => {
+  const byChain: StatusFor['portfolio']['accountStateByChain'] = {};
+  for (const [n, info] of accounts.entries()) {
+    let accountDetails:
+      | { chainId: CaipChainId; address: string; router?: EVMAddress }
+      | undefined;
+
+    switch (info.namespace) {
+      case 'cosmos': {
+        let cosmosAccountDetails: Caip10Record | undefined;
+        switch (info.chainName) {
+          case 'agoric':
+            cosmosAccountDetails = parseAccountIdArg(info.lca.getAddress());
+            break;
+          case 'noble':
+            cosmosAccountDetails = parseAccountIdArg(info.ica.getAddress());
+            break;
+          default:
+            trace('skipping: unexpected chainName', info);
+        }
+        if (cosmosAccountDetails) {
+          accountDetails = {
+            chainId: `${cosmosAccountDetails.namespace}:${cosmosAccountDetails.reference}`,
+            address: cosmosAccountDetails.accountAddress,
+          };
+        }
+        break;
+      }
+      case 'eip155': {
+        const { chainId, remoteAddress, routerAddress } = info;
+        accountDetails = {
+          chainId,
+          address: remoteAddress,
+          router: routerAddress,
+        };
+        break;
+      }
+      default:
+        assert.fail(X`no such type: ${info}`);
+    }
+
+    const isPending = pending.has(n);
+
+    if (accountDetails) {
+      // XXX: handle transferring state
+      byChain[n] = {
+        state: isPending ? 'provisioning' : 'active',
+        ...accountDetails,
+      };
     }
   }
   return harden(byChain);
@@ -193,6 +259,7 @@ export const preparePortfolioKit = (
     onAgoricTransfer,
     transferChannels,
     walletBytecode,
+    remoteAccountBytecodeHash,
     proposalShapes,
     offerArgsShapes,
     vowTools,
@@ -233,6 +300,7 @@ export const preparePortfolioKit = (
       axelar?: IBCConnectionInfo['transferChannel'];
     };
     walletBytecode: `0x${string}`;
+    remoteAccountBytecodeHash: `0x${string}`;
     proposalShapes: ReturnType<typeof makeProposalShapes>;
     offerArgsShapes: ReturnType<typeof makeOfferArgsShapes>;
     vowTools: VowTools;
@@ -371,6 +439,10 @@ export const preparePortfolioKit = (
           const { accounts } = this.state;
           return accountIdByChain(accounts);
         },
+        accountStateByChain() {
+          const { accounts, accountsPending } = this.state;
+          return accountStateByChain(accounts, accountsPending);
+        },
         /**
          * Returns the CAIP-10 account ID of the authenticated EVM account
          * that opened this portfolio, or undefined if not set.
@@ -392,6 +464,7 @@ export const preparePortfolioKit = (
             policyVersion,
             rebalanceCount,
             sourceAccountId,
+            // useRouter,
           } = this.state;
 
           const agoricAux = (): Pick<
@@ -413,13 +486,21 @@ export const preparePortfolioKit = (
             flowCount: nextFlowId - 1,
             flowsRunning: makeFlowsRunningRecord(flowsRunning),
             accountIdByChain: accountIdByChain(accounts),
+            ...(true
+              ? {
+                  accountStateByChain: accountStateByChain(
+                    accounts,
+                    accountsPending,
+                  ),
+                }
+              : {}),
             ...(accounts.has('agoric') ? agoricAux() : {}),
             ...(targetAllocation && { targetAllocation }),
             ...(sourceAccountId && { sourceAccountId }),
             accountsPending: [...accountsPending.keys()],
             policyVersion,
             rebalanceCount,
-          });
+          } satisfies StatusFor['portfolio']);
         },
         finishFlow(flowId) {
           const { flowsRunning } = this.state;
@@ -507,7 +588,7 @@ export const preparePortfolioKit = (
         reserveAccountState<C extends SupportedChain>(
           chainName: C,
         ): {
-          state: 'new' | 'pending' | 'ok' | 'failed';
+          state: 'new' | 'pending' | 'transferring' | 'ok' | 'failed';
           ready: Vow<AccountInfoFor[C]>;
         } {
           const traceChain = trace
@@ -515,6 +596,9 @@ export const preparePortfolioKit = (
             .sub(chainName);
           traceChain('reserveAccount');
           const { accounts, accountsPending } = this.state;
+          // XXX: where does transferring fit here ?
+          // We could (should?) create a pending vow while
+          // transfer in progress
           if (accountsPending.has(chainName)) {
             const state = 'pending';
             traceChain('state', state);
@@ -557,6 +641,7 @@ export const preparePortfolioKit = (
          * Valid only when the caller holds the reservation.
          */
         resolveAccount(info: AccountInfo) {
+          /// XXX: how to resolver pending transfer?
           const { accounts, accountsPending, portfolioId } = this.state;
           const traceChain = trace
             .sub(`portfolio${portfolioId}`)
@@ -583,6 +668,7 @@ export const preparePortfolioKit = (
          * Valid only when the caller holds the reservation.
          */
         releaseAccount(chainName: SupportedChain, reason: unknown) {
+          /// XXX: How to rollback / restore router on failed transfer
           trace('releaseAccount', chainName, reason);
           const { accounts, accountsPending } = this.state;
           if (accounts.has(chainName)) {
@@ -693,16 +779,25 @@ export const preparePortfolioKit = (
           }
 
           const owner = depositDetails.permit2Payload.owner;
-          sameEvmAddress(owner, accountAddress as Address) ||
+          sameEvmAddress(owner, accountAddress as EVMAddress) ||
             Fail`permit owner ${owner} does not match portfolio source address ${accountAddress}`;
+
+          // TODO: define when we use router, when we use deposit factory,
+          // when we use remote account for deposit?
 
           // For deposits, spender must be the portfolio's smart wallet address.
           // If the account already exists, use the stored address.
           // If not, predict the address using `factory` (which will be used to create it).
-          let expectedSpender: Address;
+          let expectedSpender: EVMAddress;
           if (accounts.has(fromChain)) {
             const gmpInfo = accounts.get(fromChain) as GMPAccountInfo;
-            expectedSpender = gmpInfo.remoteAddress;
+            if (gmpInfo.routerAddress) {
+              // When using router, signature should be for new router
+              // since we would lazily transfer ownership of remote account to new router
+              expectedSpender = contracts[fromChain].remoteAccountRouter;
+            } else {
+              expectedSpender = gmpInfo.remoteAddress;
+            }
           } else {
             expectedSpender = predictWalletAddress({
               owner: this.facets.reader.getLocalAccount().getAddress().value,
@@ -786,9 +881,9 @@ export const preparePortfolioKit = (
           domain,
           address,
         }: {
-          withdrawDetails: { amount: bigint; token: Address };
+          withdrawDetails: { amount: bigint; token: EVMAddress };
           domain?: Partial<YmaxSharedDomain>;
-          address?: Address;
+          address?: EVMAddress;
         }) {
           const { sourceAccountId } = this.state;
           if (!sourceAccountId) {
@@ -800,7 +895,7 @@ export const preparePortfolioKit = (
 
           namespace === 'eip155' ||
             Fail`withdraw sourceAccountId must be in eip155 namespace: ${sourceAccountId}`;
-          const evmAddress = accountAddress as Address;
+          const evmAddress = accountAddress as EVMAddress;
 
           const chainIdStr = String(
             domain?.chainId ?? reference,

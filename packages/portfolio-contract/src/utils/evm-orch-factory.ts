@@ -17,7 +17,7 @@ const factoryConstructorParams = [
   { type: 'string' },
 ] as const;
 
-const toUtf8 = (() => {
+export const toUtf8 = (() => {
   // TextEncoder has state. encapsulate it.
   const textEncoder = new TextEncoder();
   return (s: string) => textEncoder.encode(s);

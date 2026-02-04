@@ -84,6 +84,7 @@ const PublishedTxShapes: Record<string, TypedPattern<PublishedTx>> = harden({
     {},
   ),
   // GMP has optional amount
+  // TODO: support router
   GMP: M.splitRecord(
     {
       type: M.or(TxType.GMP),
@@ -98,6 +99,7 @@ const PublishedTxShapes: Record<string, TypedPattern<PublishedTx>> = harden({
     {},
   ),
   // MAKE_ACCOUNT requires expectedAddr (hex)
+  // TODO: support router as well
   MAKE_ACCOUNT: M.splitRecord(
     {
       type: M.or(TxType.MAKE_ACCOUNT),

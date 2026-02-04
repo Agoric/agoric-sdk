@@ -6,28 +6,28 @@ import {
   PermitTransferFromComponents,
   PermitTransferFromInternalTypeName,
 } from '@agoric/orchestration/src/utils/permit2.ts';
-import type { Abi, AbiParameterToPrimitiveType } from 'viem';
+import type { Abi, AbiParameter, AbiParameterToPrimitiveType } from 'viem';
 
 /**
- * @see {@link https://github.com/agoric-labs/agoric-to-axelar-local/blob/rs-setup-router/packages/axelar-local-dev-cosmos/src/contracts/interfaces/IRemoteAccount.sol}
+ * @see {@link https://github.com/agoric-labs/agoric-to-axelar-local/blob/mhofman/setup-router/packages/axelar-local-dev-cosmos/src/contracts/interfaces/IRemoteAccount.sol}
  */
 export const contractCallComponents = [
   { name: 'target', type: 'address' },
   { name: 'data', type: 'bytes' },
-] as const;
+] as const satisfies AbiParameter[];
 
 const contractCallParam = {
   name: 'call',
   type: 'tuple',
   components: contractCallComponents,
-} as const;
+} as const satisfies AbiParameter;
 harden(contractCallParam); // avoid unused-vars
 export type ContractCall = AbiParameterToPrimitiveType<
   typeof contractCallParam
 >;
 
 /**
- * @see {@link https://github.com/agoric-labs/agoric-to-axelar-local/blob/rs-setup-router/packages/axelar-local-dev-cosmos/src/contracts/interfaces/IPortfolioRouter.sol}
+ * @see {@link https://github.com/agoric-labs/agoric-to-axelar-local/blob/mhofman/setup-router/packages/axelar-local-dev-cosmos/src/contracts/interfaces/IRemoteAccountRouter.sol}
  */
 export const depositPermitComponents = [
   { name: 'tokenOwner', type: 'address' },
@@ -40,29 +40,27 @@ export const depositPermitComponents = [
   { name: 'witness', type: 'bytes32' },
   { name: 'witnessTypeString', type: 'string' },
   { name: 'signature', type: 'bytes' },
-] as const;
+] as const satisfies AbiParameter[];
 
 const depositPermitParam = {
   name: 'depositPermit',
   type: 'tuple',
   components: depositPermitComponents,
-} as const;
+} as const satisfies AbiParameter;
 harden(depositPermitParam);
 export type DepositPermit = AbiParameterToPrimitiveType<
   typeof depositPermitParam
 >;
 
 /**
- * @see {@link https://github.com/agoric-labs/agoric-to-axelar-local/blob/rs-setup-router/packages/axelar-local-dev-cosmos/src/contracts/interfaces/IPortfolioRouter.sol}
+ * @see {@link https://github.com/agoric-labs/agoric-to-axelar-local/blob/mhofman/setup-router/packages/axelar-local-dev-cosmos/src/contracts/interfaces/IRemoteAccountRouter.sol}
  */
-export const routerPayloadComponents = [
-  {
-    name: 'id',
-    type: 'string',
-  },
-  { name: 'portfolioLCA', type: 'string' },
-  { name: 'remoteAccountAddress', type: 'address' },
-  { name: 'provideAccount', type: 'bool' },
+export const routerInstructionBaseComponents = [
+  { name: 'id', type: 'string' },
+  { name: 'expectedAccountAddress', type: 'address' },
+] as const satisfies AbiParameter[];
+
+export const routerRemoteAccountInstructionComponents = [
   {
     name: 'depositPermit',
     type: 'tuple[]',
@@ -73,34 +71,31 @@ export const routerPayloadComponents = [
     type: 'tuple[]',
     components: contractCallComponents,
   },
-] as const;
+] as const satisfies AbiParameter[];
 
 /**
  * ABI inputs for encoding RouterPayload with encodeAbiParameters.
  */
-export const routerPayloadInputs = [
+export const processInstructionInputs = [
+  { name: 'sourceAddress', type: 'string' },
   {
-    name: 'payload',
+    name: 'instruction',
     type: 'tuple',
-    components: routerPayloadComponents,
+    components: [
+      ...routerInstructionBaseComponents,
+      ...routerRemoteAccountInstructionComponents,
+    ],
   },
-] as const;
+] as const satisfies AbiParameter[];
 
-export type RouterPayload = AbiParameterToPrimitiveType<
-  (typeof routerPayloadInputs)[number]
+export type RouterInstruction = AbiParameterToPrimitiveType<
+  (typeof processInstructionInputs)[1]
 >;
 
 /**
- * @see {@link https://github.com/agoric-labs/agoric-to-axelar-local/blob/rs-setup-router/packages/axelar-local-dev-cosmos/src/contracts/interfaces/IPortfolioRouter.sol}
+ * @see {@link https://github.com/agoric-labs/agoric-to-axelar-local/blob/mhofman/setup-router/packages/axelar-local-dev-cosmos/src/contracts/interfaces/IRemoteAccountRouter.sol}
  */
-export const portfolioRouterABI = [
-  {
-    type: 'function',
-    name: 'agoricLCA',
-    inputs: [],
-    outputs: [{ name: '', type: 'string' }],
-    stateMutability: 'view',
-  },
+export const remoteAccountAxelarRouterABI = [
   {
     type: 'function',
     name: 'factory',
@@ -115,17 +110,40 @@ export const portfolioRouterABI = [
     outputs: [{ name: '', type: 'address' }],
     stateMutability: 'view',
   },
+  {
+    type: 'function',
+    name: 'execute',
+    inputs: [
+      { name: 'commandId', type: 'bytes32' },
+      { name: 'sourceChain', type: 'string' },
+      { name: 'sourceAddress', type: 'string' },
+      { name: 'payload', type: 'bytes' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'processInstruction',
+    inputs: processInstructionInputs,
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
 ] as const satisfies Abi;
 
 /**
- * @see {@link https://github.com/agoric-labs/agoric-to-axelar-local/blob/rs-setup-router/packages/axelar-local-dev-cosmos/src/contracts/interfaces/IRemoteAccount.sol}
+ * @see {@link https://github.com/agoric-labs/agoric-to-axelar-local/blob/mhofman/setup-router/packages/axelar-local-dev-cosmos/src/contracts/interfaces/IRemoteAccount.sol}
  */
 export const remoteAccountABI = [
+  {
+    type: 'constructor',
+    inputs: [],
+    stateMutability: 'nonpayable',
+  },
   {
     type: 'function',
     name: 'executeCalls',
     inputs: [
-      { name: 'portfolioLCA', type: 'string' },
       {
         name: 'calls',
         type: 'tuple[]',
@@ -135,26 +153,30 @@ export const remoteAccountABI = [
     outputs: [],
     stateMutability: 'nonpayable',
   },
-  {
-    type: 'function',
-    name: 'controller',
-    inputs: [],
-    outputs: [{ name: '', type: 'string' }],
-    stateMutability: 'view',
-  },
 ] as const satisfies Abi;
 
 /**
- * @see {@link https://github.com/agoric-labs/agoric-to-axelar-local/blob/rs-setup-router/packages/axelar-local-dev-cosmos/src/contracts/interfaces/IRemoteAccountFactory.sol}
+ * @see {@link https://github.com/agoric-labs/agoric-to-axelar-local/blob/mhofman/setup-router/packages/axelar-local-dev-cosmos/src/contracts/interfaces/IRemoteAccountFactory.sol}
  */
 export const remoteAccountFactoryABI = [
   {
     type: 'function',
     name: 'provide',
     inputs: [
-      { name: 'portfolioLCA', type: 'string' },
+      { name: 'principalAccount', type: 'string' },
+      { name: 'expectedRouter', type: 'address' },
       { name: 'expectedAddress', type: 'address' },
-      { name: 'routerAddress', type: 'address' },
+    ],
+    outputs: [{ name: '', type: 'bool' }],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'provideForRouter',
+    inputs: [
+      { name: 'principalAccount', type: 'string' },
+      { name: 'router', type: 'address' },
+      { name: 'expectedAddress', type: 'address' },
     ],
     outputs: [{ name: '', type: 'bool' }],
     stateMutability: 'nonpayable',

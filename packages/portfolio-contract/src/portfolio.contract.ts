@@ -5,6 +5,7 @@
  */
 import { AmountMath, type Payment } from '@agoric/ertp';
 import {
+  fromTypedEntries,
   makeTracer,
   mustMatch,
   NonNullish,
@@ -113,6 +114,23 @@ const makeEip155ChainIdToAxelarChain = (
   return harden(chainIdToChainName);
 };
 
+const extractContractAddresses = <T extends keyof EVMContractAddresses>(
+  chainIdToAxelarChain: ReturnType<typeof makeEip155ChainIdToAxelarChain>,
+  contracts: EVMContractAddressesMap,
+  key: T,
+): Record<AxelarChain, AccountId> => {
+  const addresses = fromTypedEntries(
+    Object.entries(chainIdToAxelarChain).map(
+      ([chainId, chainName]) =>
+        [
+          chainName satisfies AxelarChain,
+          `eip155:${chainId}:${contracts[chainName][key]}` satisfies AccountId,
+        ] as const,
+    ),
+  ) satisfies Record<AxelarChain, AccountId>;
+  return addresses;
+};
+
 const interfaceTODO = undefined;
 
 const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
@@ -121,6 +139,8 @@ const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
     compound: M.string(),
     depositFactory: M.string(),
     factory: M.string(),
+    remoteAccountFactory: M.string(),
+    remoteAccountRouter: M.string(),
     usdc: M.string(),
     permit2: M.string(),
     gateway: M.string(),
@@ -167,6 +187,8 @@ export type EVMContractAddresses = {
   compound: `0x${string}`;
   depositFactory: `0x${string}`;
   factory: `0x${string}`;
+  remoteAccountFactory: `0x${string}`;
+  remoteAccountRouter: `0x${string}`;
   usdc: `0x${string}`;
   permit2: `0x${string}`;
   tokenMessenger: `0x${string}`;
@@ -215,6 +237,7 @@ export type PortfolioPrivateArgs = OrchestrationPowers & {
   axelarIds: AxelarId;
   contracts: EVMContractAddressesMap;
   walletBytecode: `0x${string}`;
+  remoteAccountBytecodeHash: `0x${string}`;
   gmpAddresses: GmpAddresses;
   defaultFlowConfig?: FlowConfig | null;
 };
@@ -233,6 +256,7 @@ export const privateArgsShape: TypedPattern<PortfolioPrivateArgs> =
       axelarIds: AxelarIdShape,
       contracts: EVMContractAddressesMapShape,
       walletBytecode: M.string(),
+      remoteAccountBytecodeHash: M.string(),
       gmpAddresses: GmpAddressesShape,
     },
     {
@@ -304,6 +328,7 @@ export const contract = async (
     axelarIds,
     contracts,
     walletBytecode,
+    remoteAccountBytecodeHash,
     storageNode,
     gmpAddresses,
     timerService,
@@ -360,23 +385,33 @@ export const contract = async (
   void vowTools.when(contractAccountV, acct => {
     const addr = acct.getAddress();
 
-    type DepositFactoryAddresses = NonNullable<
-      StatusFor['contract']['depositFactoryAddresses']
-    >;
-
-    const depositFactoryAddresses = Object.fromEntries(
-      Object.entries(eip155ChainIdToAxelarChain).map(
-        ([chainId, chainName]) =>
-          [
-            chainName satisfies AxelarChain,
-            `eip155:${chainId}:${contracts[chainName].depositFactory}` satisfies DepositFactoryAddresses[AxelarChain],
-          ] as const,
-      ),
-    ) as DepositFactoryAddresses;
+    const depositFactoryAddresses = extractContractAddresses(
+      eip155ChainIdToAxelarChain,
+      contracts,
+      'depositFactory',
+    );
+    const currentRouterAddresses = extractContractAddresses(
+      eip155ChainIdToAxelarChain,
+      contracts,
+      'remoteAccountRouter',
+    );
+    const factoryAddresses = extractContractAddresses(
+      eip155ChainIdToAxelarChain,
+      contracts,
+      'remoteAccountFactory',
+    );
 
     publishStatus(
       storageNode,
-      harden({ contractAccount: addr.value, depositFactoryAddresses }),
+      harden({
+        contractAccount: addr.value,
+        depositFactoryAddresses,
+        evmRemoteAccountRouterConfig: {
+          currentRouterAddresses,
+          factoryAddresses,
+          remoteAccountBytecodeHash,
+        },
+      } satisfies StatusFor['contract']),
     );
     trace('published contractAccount', addr.value);
   });
@@ -400,6 +435,7 @@ export const contract = async (
     axelarIds,
     contracts,
     walletBytecode,
+    remoteAccountBytecodeHash,
     gmpAddresses,
     resolverClient,
     inertSubscriber,
@@ -478,6 +514,7 @@ export const contract = async (
     offerArgsShapes,
     transferChannels,
     walletBytecode,
+    remoteAccountBytecodeHash,
     portfoliosNode: E(storageNode).makeChildNode('portfolios'),
     marshaller: cachingMarshaller,
     usdcBrand: brands.USDC,
@@ -617,6 +654,9 @@ export const contract = async (
       if (!fromChain) {
         throw Fail`no Axelar chain for EIP-155 chainId ${permitDetails.chainId}`;
       }
+
+      // TODO: spender should now be remoteAccountRouter
+
       sameEvmAddress(
         permitDetails.spender,
         contracts[fromChain].depositFactory,
@@ -695,6 +735,10 @@ export const contract = async (
       timerService,
       portfolioContractPublicFacet: publicFacet,
       publishStatus,
+      // TODO: depositFactory or remoteAccountFactory, based on use Router ?
+      // This may be tricky to support both with current plumbing
+      // consider removing verifying account checks from upstream and instead rely on domain
+      // returned from extraction? May need tweaks from the helper
       validStandaloneContractAddresses: fromEntries(
         entries(eip155ChainIdToAxelarChain).map(
           ([chainId, chainName]) =>

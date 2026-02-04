@@ -14,6 +14,7 @@ import type {
 } from '@agoric/orchestration';
 import { AxelarChain, type TxId } from '@agoric/portfolio-api';
 import { hexToBytes } from '@noble/hashes/utils';
+import { keccak_256 as keccak256 } from '@noble/hashes/sha3';
 import {
   encodeFunctionData,
   type Abi,
@@ -23,7 +24,10 @@ import {
   type ContractFunctionName,
   type Hex,
 } from 'viem';
-import type { DepositPermit, RouterPayload } from './interfaces/orch-router.ts';
+import type {
+  DepositPermit,
+  RouterInstruction,
+} from './interfaces/orch-router.ts';
 import type {
   AxelarId,
   EVMContractAddresses,
@@ -32,10 +36,23 @@ import type {
 import type { GMPAccountInfo, PortfolioKit } from './portfolio.exo.ts';
 import type { PortfolioInstanceContext } from './portfolio.flows.ts';
 import type { EVMContractAddressesMap } from './type-guards.ts';
-import { predictWalletAddress } from './utils/evm-orch-factory.ts';
+import { toUtf8 } from './utils/evm-orch-factory.ts';
+import { computeCreate2Address } from './utils/create2.ts';
 
 const { keys } = Object;
 const trace = makeTracer('OrchRouter');
+
+// TODO: use remoteAccountBytecodeHash for address prediction,
+// along factory address and lca hash as salt
+
+// TODO: use portfolio LCA to send GMP calls to router
+
+// TODO: when registering transaction, must add some field indicating resolver
+// should use the new OperationResult event (which relies on txId)
+// See https://github.com/Agoric/agoric-sdk/pull/12414
+
+// TODO: as a first step, issue separate calls for makeAccount (with deposit optional)
+// and multicalls to match whatever high level flow logic already exists
 
 const collectChainInfo = async (
   orch: Orchestrator,
@@ -58,7 +75,7 @@ export const makeAxelarChainHub = (details: {
   gmpFeeInfo: { brand: Brand<'nat'>; denom: string };
   axelarIds: AxelarId;
   contracts: EVMContractAddressesMap;
-  walletBytecode: Hex;
+  remoteAccountBytecodeHash: Hex;
   gmpAddresses: GmpAddresses;
 }) => {
   const { orch } = details;
@@ -105,24 +122,32 @@ export const makePortfolioRouter = (
     contracts: EVMContractAddresses,
   ) => {
     const traceChain = trace.sub(`portfolio${pId}`).sub(chainName);
-    const factoryAddress = contracts.factory;
+    const factoryAddress = contracts.remoteAccountFactory;
     traceChain('factory', factoryAddress);
     assert(factoryAddress);
-    const remoteAddress = predictWalletAddress({
-      owner,
-      factoryAddress,
-      gasServiceAddress: contracts.gasService,
-      gatewayAddress: contracts.gateway,
-      // XXX converting a 9k hex string to bytes for every account is a waste.
-      // But Uint8Array is not Passable. Pass it via prepareXYZ()?
-      walletBytecode: hexToBytes(ctx.walletBytecode.replace(/^0x/, '')),
+
+    assert(owner.length > 0);
+    const salt = keccak256(toUtf8(owner));
+
+    // TODO: old flow may not have bytecode in ctx?
+
+    const initCodeHash = hexToBytes(
+      ctx.remoteAccountBytecodeHash.replace(/^0x/, ''),
+    );
+
+    const remoteAddress = computeCreate2Address({
+      deployer: factoryAddress,
+      salt,
+      initCodeHash,
     });
+
     const chainInfo = infoByChain[chainName];
     const info: GMPAccountInfo = {
       namespace: 'eip155',
       chainName,
       chainId: `${chainInfo.namespace}:${chainInfo.reference}`,
       remoteAddress,
+      routerAddress: contracts.remoteAccountRouter,
     };
     traceChain('CREATE2', info.remoteAddress, 'for', owner);
     return info;
@@ -183,7 +208,7 @@ export const makePortfolioRouter = (
       addr: Address,
       contracts: EVMContractAddresses,
     ) => void,
-  ): RouterPayload => {
+  ): RouterInstruction => {
     const { chainName } = config;
     const contracts = ctx.contracts[chainName];
 
@@ -199,15 +224,12 @@ export const makePortfolioRouter = (
     thunk({ makeContract }, remoteAccountAddress, contracts);
     const multiCalls = finish();
 
-    const provideAccount = true; // TODO
     const { id, depositPermit } = config;
     return {
       id,
-      portfolioLCA,
-      remoteAccountAddress,
+      expectedAccountAddress: remoteAccountAddress,
       depositPermit: depositPermit ? [depositPermit] : [],
       multiCalls,
-      provideAccount,
     };
   };
 

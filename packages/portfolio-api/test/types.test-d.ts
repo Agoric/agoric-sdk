@@ -143,6 +143,23 @@ const status: StatusFor = {
       Ethereum: `eip155:1:0x3333`,
       Optimism: `eip155:10:0x4444`,
     },
+    evmRemoteAccountRouterConfig: {
+      currentRouterAddresses: {
+        Arbitrum: `eip155:1234:0xabcd`,
+        Avalanche: `eip155:4321:0xfedc`,
+        Base: `eip155:1111:0xbbbb`,
+        Ethereum: `eip155:1:0xcccc`,
+        Optimism: `eip155:10:0xdddd`,
+      },
+      factoryAddresses: {
+        Arbitrum: `eip155:1234:0x1a2b`,
+        Avalanche: `eip155:4321:0x9f8e`,
+        Base: `eip155:1111:0x2b2b`,
+        Ethereum: `eip155:1:0x3c3c`,
+        Optimism: `eip155:10:0x4d4d`,
+      },
+      remoteAccountBytecodeHash: `0x1234567890abcdef`,
+    },
   },
   evmWallet: {
     updated: 'messageUpdate',

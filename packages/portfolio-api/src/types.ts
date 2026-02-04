@@ -3,6 +3,7 @@ import type { NatAmount } from '@agoric/ertp';
 import {
   type AccountId,
   type Bech32Address,
+  type CaipChainId,
   type CosmosChainAddress,
   type TrafficEntry,
 } from '@agoric/orchestration';
@@ -10,6 +11,7 @@ import type {
   ContinuingInvitationSpec,
   ContractInvitationSpec,
 } from '@agoric/smart-wallet/src/invitations.js';
+import type { Address as EVMAddress } from 'abitype';
 import type {
   AxelarChain,
   SupportedChain,
@@ -189,10 +191,48 @@ export type TrafficReport = {
 export type PortfolioKey = `portfolio${number}`;
 export type FlowKey = `flow${number}`;
 
+export type PortfolioRemoteAccountCommonStates = 'provisioning' | 'active';
+
+export type PortfolioGenericRemoteAccountState = {
+  chainId: CaipChainId;
+  address: string;
+  state: PortfolioRemoteAccountCommonStates;
+};
+
+export type PortfolioEVMRemoteAccountState = {
+  chainId: `eip155:${number | bigint | string}`;
+  address: EVMAddress;
+  router: EVMAddress;
+} & (
+  | {
+      state: PortfolioRemoteAccountCommonStates;
+    }
+  | {
+      state: 'transferring';
+      fromRouter: EVMAddress;
+    }
+);
+
+export type PortfolioCosmosRemoteAccountState = {
+  chainId: `cosmos:${string}`;
+  address: Bech32Address;
+  state: PortfolioRemoteAccountCommonStates;
+};
+
+export type PortfolioRemoteAccountState =
+  | PortfolioEVMRemoteAccountState
+  | PortfolioCosmosRemoteAccountState
+  | PortfolioGenericRemoteAccountState;
+
 export type StatusFor = {
   contract: {
     contractAccount: CosmosChainAddress['value'];
     depositFactoryAddresses?: Record<AxelarChain, AccountId>;
+    evmRemoteAccountRouterConfig?: {
+      factoryAddresses: Record<AxelarChain, AccountId>;
+      currentRouterAddresses: Record<AxelarChain, AccountId>;
+      remoteAccountBytecodeHash?: `0x${string}`;
+    };
   };
   pendingTx: PublishedTx;
   evmWallet: EVMWalletUpdate;
@@ -204,6 +244,9 @@ export type StatusFor = {
     positionKeys: InstrumentId[];
     accountIdByChain: Partial<Record<SupportedChain, AccountId>>;
     accountsPending?: SupportedChain[];
+    accountStateByChain?: Partial<
+      Record<SupportedChain, PortfolioRemoteAccountState>
+    >;
     depositAddress?: Bech32Address;
     /** Noble Forwarding Address (NFA) registered by the contract for the `@agoric` address */
     nobleForwardingAddress?: Bech32Address;

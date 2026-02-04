@@ -118,6 +118,7 @@ export type PortfolioInstanceContext = {
   axelarIds: AxelarId;
   contracts: EVMContractAddressesMap;
   walletBytecode: `0x${string}`;
+  remoteAccountBytecodeHash?: `0x${string}`;
   gmpAddresses: GmpAddresses;
   usdc: { brand: Brand<'nat'>; denom: Denom };
   gmpFeeInfo: { brand: Brand<'nat'>; denom: Denom };
@@ -1786,6 +1787,7 @@ const queuePermit2Step = async (
     : undefined;
 
   // For openPortfolio: atomic createAndDeposit via depositFactory
+  // TODO: possibly update to support router based provide
   const acct = provideEVMAccountWithPermit(
     fromChain,
     chainInfo,
@@ -1846,6 +1848,7 @@ export const executePlan = (async (
     let queuedSteps: ExecutePlanOptions['queuedSteps'];
     if (options?.evmDepositDetail) {
       const { fromChain, permit2Payload, spender } = options.evmDepositDetail;
+      // TODO: how does this work with the router also existing?
       // Only use queuePermit2Step for openPortfolio (spender = depositFactory).
       // Deposits to existing portfolios use the depositFromEVM case in stepFlow.
       const isDepositFactory = sameEvmAddress(
