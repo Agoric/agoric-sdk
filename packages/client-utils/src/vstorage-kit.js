@@ -1,7 +1,4 @@
-import {
-  boardSlottingMarshaller,
-  makeBoardRemote,
-} from '@agoric/vats/tools/board-utils.js';
+import { boardSlottingMarshaller, makeBoardRemote } from './board-utils.js';
 import { assertAllDefined, tryNow } from '@agoric/internal';
 import { makeVStorage } from './vstorage.js';
 
@@ -12,8 +9,8 @@ export { boardSlottingMarshaller };
  * @import {MinimalNetworkConfig} from './network-config.js';
  * @import {TypedPublished} from './types.js';
  * @import {VStorage} from './vstorage.js';
- * @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js';
- * @import {BoardRemote} from '@agoric/vats/tools/board-utils.js';
+ * @import {AgoricNamesRemotes} from './board-utils.js';
+ * @import {BoardRemote} from './board-utils.js';
  */
 
 /** @deprecated */

@@ -17,7 +17,7 @@ import type {
   CurrentWalletRecord,
   UpdateRecord,
 } from '@agoric/smart-wallet/src/smartWallet.js';
-import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
+import type { AssetInfo } from './board-utils.js';
 import type { StatusFor } from '@aglocal/portfolio-contract/src/type-guards.js';
 import type {
   Installation,

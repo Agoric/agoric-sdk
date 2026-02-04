@@ -25,6 +25,8 @@
     "lint:types": "yarn run -T tsc"
   },
   "devDependencies": {
+    "@agoric/smart-wallet": "workspace:*",
+    "@agoric/vats": "workspace:*",
     "@agoric/zoe": "workspace:*",
     "@cosmology/telescope": "^1.12.21",
     "ava": "^6.4.1",
@@ -37,8 +39,6 @@
     "@agoric/cosmic-proto": "workspace:*",
     "@agoric/ertp": "workspace:*",
     "@agoric/internal": "workspace:*",
-    "@agoric/smart-wallet": "workspace:*",
-    "@agoric/vats": "workspace:*",
     "@cosmjs/crypto": "^0.36.0",
     "@cosmjs/proto-signing": "^0.36.0",
     "@cosmjs/stargate": "^0.36.0",
