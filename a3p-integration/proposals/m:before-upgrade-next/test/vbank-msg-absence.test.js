@@ -62,7 +62,8 @@ test('vbank/MsgSetDenomMetadata message type should not exist', async t => {
       output.includes('not found') ||
       output.includes('unrecognized') ||
       output.includes('no message handler') ||
-      output.includes('invalid message');
+      output.includes('invalid message') ||
+      output.includes('unable to resolve type URL');
 
     if (!hasExpectedError) {
       t.log('Unexpected output:', output);
