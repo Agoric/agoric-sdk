@@ -14,10 +14,10 @@ import * as _26 from './cctp/v1/sending_and_receiving_messages_paused.js';
 import * as _27 from './cctp/v1/signature_threshold.js';
 import * as _28 from './cctp/v1/token_pair.js';
 import * as _29 from './cctp/v1/tx.js';
-import * as _231 from './cctp/v1/query.rpc.Query.js';
-import * as _232 from './cctp/v1/tx.rpc.msg.js';
-import * as _291 from './rpc.query.js';
-import * as _292 from './rpc.tx.js';
+import * as _232 from './cctp/v1/query.rpc.Query.js';
+import * as _233 from './cctp/v1/tx.rpc.msg.js';
+import * as _292 from './rpc.query.js';
+import * as _293 from './rpc.tx.js';
 export namespace circle {
   export namespace cctp {
     export const v1 = {
@@ -36,12 +36,12 @@ export namespace circle {
       ..._27,
       ..._28,
       ..._29,
-      ..._231,
       ..._232,
+      ..._233,
     };
   }
   export const ClientFactory = {
-    ..._291,
     ..._292,
+    ..._293,
   };
 }
