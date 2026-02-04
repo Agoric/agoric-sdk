@@ -18,14 +18,19 @@ This generates TypeScript code from proto files and ensures consistency.
 
 ### 2. Update Package Locks (if changing package.json)
 
-If you modify any `package.json` files, you **must** update all yarn.lock files:
+If you modify any `package.json` files, you **must** run the lock file update script:
 
 ```bash
 # From repository root
 scripts/update-package-locks.sh
 ```
 
-This ensures all lock files across the monorepo stay in sync with dependency changes.
+This updates all yarn.lock files across the repository. This is critical because:
+- Several different yarn projects in the repo depend on the root yarn project's dependency graph
+- These projects use the "portal" protocol which creates dependencies on the monorepo structure
+- Changes to any package.json can affect lock files in other parts of the repository
+
+**Always run this script even if you think only local changes were made.**
 
 ### 3. Format Code with Prettier
 
