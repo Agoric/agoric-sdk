@@ -259,7 +259,9 @@ export const makeEvmTraderKit = async (
   const evmWalletHandler = (await makeEvmWalletHandler(
     zoe,
     started.creatorFacet,
-  )) as ERemote<import('../src/evm-wallet-handler.ts').EVMWalletMessageHandler>;
+  )) as ERemote<
+    import('../src/evm-wallet-handler.exo.ts').EVMWalletMessageHandler
+  >;
   const account = privateKeyToAccount(privateKey);
   const evmTrader = makeEvmTrader({
     evmWalletHandler,
