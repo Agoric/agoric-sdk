@@ -428,6 +428,20 @@ const mainnetTokenMessenger = (rows =>
   ]),
 );
 
+/** @see {@link https://developers.circle.com/cctp/references/contract-addresses#tokenmessengerv2} */
+const mainnetTokenMessengerV2 = (rows =>
+  Object.fromEntries(
+    rows.map(([Chain, Domain, Address]) => [Chain, { Domain, Address }]),
+  ))(
+  /** @type {[string, number, `0x${string}`][]} */ ([
+    ['Ethereum', 0, '0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d'],
+    ['Avalanche', 1, '0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d'],
+    ['OP Mainnet', 2, '0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d'],
+    ['Arbitrum', 3, '0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d'],
+    ['Base', 6, '0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d'],
+  ]),
+);
+
 /**
  * Mainnet configuration with real contract addresses
  * @type {EVMContractAddressesMap}
@@ -444,6 +458,7 @@ const mainnetContracts = {
     usdc: usdcAddresses.mainnet.Avalanche,
     permit2: permit2Addresses.mainnet.Avalanche,
     tokenMessenger: mainnetTokenMessenger.Avalanche.Address,
+    tokenMessengerV2: mainnetTokenMessengerV2.Avalanche.Address,
     aaveUSDC: aaveUsdcAddresses.mainnet.Avalanche,
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Avalanche,
     Beefy_re7_Avalanche: beefyVaultAddresses.re7.mainnet.Avalanche,
@@ -461,6 +476,7 @@ const mainnetContracts = {
     usdc: usdcAddresses.mainnet.Ethereum,
     permit2: permit2Addresses.mainnet.Ethereum,
     tokenMessenger: mainnetTokenMessenger.Ethereum.Address,
+    tokenMessengerV2: mainnetTokenMessengerV2.Ethereum.Address,
     aaveUSDC: aaveUsdcAddresses.mainnet.Ethereum,
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Ethereum,
     Beefy_morphoGauntletUsdc_Ethereum:
@@ -505,6 +521,7 @@ const mainnetContracts = {
     usdc: usdcAddresses.mainnet.Optimism,
     permit2: permit2Addresses.mainnet.Optimism,
     tokenMessenger: mainnetTokenMessenger['OP Mainnet'].Address,
+    tokenMessengerV2: mainnetTokenMessengerV2['OP Mainnet'].Address,
     aaveUSDC: aaveUsdcAddresses.mainnet.Optimism,
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Optimism,
     Beefy_compoundUsdc_Optimism:
@@ -523,6 +540,7 @@ const mainnetContracts = {
     usdc: usdcAddresses.mainnet.Arbitrum,
     permit2: permit2Addresses.mainnet.Arbitrum,
     tokenMessenger: mainnetTokenMessenger.Arbitrum.Address,
+    tokenMessengerV2: mainnetTokenMessengerV2.Arbitrum.Address,
     aaveUSDC: aaveUsdcAddresses.mainnet.Arbitrum,
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Arbitrum,
     Beefy_compoundUsdc_Arbitrum:
@@ -540,6 +558,7 @@ const mainnetContracts = {
     usdc: usdcAddresses.mainnet.Base,
     permit2: permit2Addresses.mainnet.Base,
     tokenMessenger: mainnetTokenMessenger.Base.Address,
+    tokenMessengerV2: mainnetTokenMessengerV2.Base.Address,
     aaveUSDC: aaveUsdcAddresses.mainnet.Base,
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Base,
     Beefy_morphoSeamlessUsdc_Base:
@@ -564,6 +583,20 @@ const testnetTokenMessenger = (rows =>
   ]),
 );
 
+/** @see {@link https://developers.circle.com/cctp/references/contract-addresses#tokenmessengerv2-2} */
+const testnetTokenMessengerV2 = (rows =>
+  Object.fromEntries(
+    rows.map(([Chain, Domain, Address]) => [Chain, { Domain, Address }]),
+  ))(
+  /** @type {[string, number, `0x${string}`][]} */ ([
+    ['Ethereum Sepolia', 0, '0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA'],
+    ['Avalanche Fuji', 1, '0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA'],
+    ['OP Sepolia', 2, '0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA'],
+    ['Arbitrum Sepolia', 3, '0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA'],
+    ['Base Sepolia', 6, '0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA'],
+  ]),
+);
+
 // XXX turn these inside out? contract.chain.address
 /**
  * Testnet configuration with testnet contract addresses
@@ -581,6 +614,7 @@ const testnetContracts = {
     usdc: usdcAddresses.testnet.Avalanche,
     permit2: permit2Addresses.testnet.Avalanche,
     tokenMessenger: testnetTokenMessenger['Avalanche Fuji'].Address,
+    tokenMessengerV2: testnetTokenMessengerV2['Avalanche Fuji'].Address,
     aaveUSDC: aaveUsdcAddresses.testnet.Avalanche,
     aaveRewardsController: aaveRewardsControllerAddresses.testnet.Avalanche,
     walletHelper: walletHelperAddresses.testnet.Avalanche,
@@ -596,6 +630,7 @@ const testnetContracts = {
     usdc: usdcAddresses.testnet.Base,
     permit2: permit2Addresses.testnet.Base,
     tokenMessenger: testnetTokenMessenger['Base Sepolia'].Address,
+    tokenMessengerV2: testnetTokenMessengerV2['Base Sepolia'].Address,
     aaveUSDC: aaveUsdcAddresses.testnet.Base,
     aaveRewardsController: aaveRewardsControllerAddresses.testnet.Base,
     walletHelper: walletHelperAddresses.testnet.Base,
@@ -612,6 +647,7 @@ const testnetContracts = {
     usdc: usdcAddresses.testnet.Ethereum,
     permit2: permit2Addresses.testnet.Ethereum,
     tokenMessenger: testnetTokenMessenger['Ethereum Sepolia'].Address,
+    tokenMessengerV2: testnetTokenMessengerV2['Ethereum Sepolia'].Address,
     aaveUSDC: aaveUsdcAddresses.testnet.Ethereum,
     aaveRewardsController: aaveRewardsControllerAddresses.testnet.Ethereum,
     ERC4626_vaultU2_Ethereum: erc4626VaultAddresses.vaultU2.testnet.Ethereum,
@@ -629,6 +665,7 @@ const testnetContracts = {
     usdc: usdcAddresses.testnet.Optimism,
     permit2: permit2Addresses.testnet.Optimism,
     tokenMessenger: testnetTokenMessenger['OP Sepolia'].Address,
+    tokenMessengerV2: testnetTokenMessengerV2['OP Sepolia'].Address,
     aaveUSDC: aaveUsdcAddresses.testnet.Optimism,
     aaveRewardsController: aaveRewardsControllerAddresses.testnet.Optimism,
     walletHelper: walletHelperAddresses.testnet.Optimism,
@@ -645,6 +682,7 @@ const testnetContracts = {
     usdc: usdcAddresses.testnet.Arbitrum,
     permit2: permit2Addresses.testnet.Arbitrum,
     tokenMessenger: testnetTokenMessenger['Arbitrum Sepolia'].Address,
+    tokenMessengerV2: testnetTokenMessengerV2['Arbitrum Sepolia'].Address,
     aaveUSDC: aaveUsdcAddresses.testnet.Arbitrum,
     aaveRewardsController: aaveRewardsControllerAddresses.testnet.Arbitrum,
     walletHelper: walletHelperAddresses.testnet.Arbitrum,
