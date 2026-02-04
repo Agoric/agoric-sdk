@@ -1,118 +1,22 @@
 /* global globalThis */
-import { Fail, q } from '@endo/errors';
-import { makeWalletStateCoalescer } from '@agoric/smart-wallet/src/utils.js';
-import { retryUntilCondition } from './sync-tools.js';
 import { makeAgoricNames, makeVstorageKit } from './vstorage-kit.js';
+import {
+  getOfferResult,
+  getOfferWantsSatisfied,
+  makeWalletStateCoalescer,
+} from './smart-wallet-utils.js';
 
 /**
  * @import {EReturn} from '@endo/far';
  * @import {Amount, Brand} from '@agoric/ertp/src/types.js'
- * @import {OfferStatus} from '@agoric/smart-wallet/src/offers.js';
+ * @import {OfferId, OfferStatus} from '@agoric/smart-wallet/src/offers.js';
  * @import {CurrentWalletRecord, UpdateRecord} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {MinimalNetworkConfig} from './network-config.js';
  * @import {RetryOptionsAndPowers} from './sync-tools.js';
  * @import {VstorageKit} from './vstorage-kit.js';
  * @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js';
+ * @import {Instance, InvitationDetails} from '@agoric/zoe';
  */
-
-/**
- * @param {string | number} id
- * @param {() => Promise<UpdateRecord>} getLastUpdate
- * @param {RetryOptionsAndPowers} retryOpts
- * @param {(update: UpdateRecord) => boolean} isMatch
- * @returns {Promise<UpdateRecord>}
- */
-const findUpdate = (id, getLastUpdate, retryOpts, isMatch) =>
-  retryUntilCondition(getLastUpdate, isMatch, `${id}`, retryOpts);
-
-/**
- * Wait for an update indicating settlement of the specified invocation and
- * return its result or throw its error.
- * @alpha
- *
- * @param {string | number} id
- * @param {() => Promise<UpdateRecord>} getLastUpdate
- * @param {RetryOptionsAndPowers} retryOpts
- * @returns {Promise<(UpdateRecord & { updated: 'invocation' })['result']>}
- */
-export const getInvocationUpdate = async (id, getLastUpdate, retryOpts) => {
-  const isMatch = update =>
-    update.updated === 'invocation' &&
-    update.id === id &&
-    !!(update.error || update.result);
-  const found = /** @type {UpdateRecord & { updated: 'invocation' }} */ (
-    await findUpdate(id, getLastUpdate, retryOpts, isMatch)
-  );
-  if (found.error) throw Error(found.error);
-  return found.result;
-};
-harden(getInvocationUpdate);
-
-/**
- * Wait for an update indicating settlement of the specified offer and return
- * its status or throw its error.
- * Used internally but not yet considered public.
- * @alpha
- *
- * @param {string | number} id
- * @param {() => Promise<UpdateRecord>} getLastUpdate
- * @param {RetryOptionsAndPowers} retryOpts
- * @returns {Promise<OfferStatus>}
- */
-export const getOfferResult = async (id, getLastUpdate, retryOpts) => {
-  // "walletAction" indicates an error, "offerStatus" with the right id and
-  // either `result` or `error` indicates settlement.
-  const isMatch = update =>
-    update.updated === 'walletAction' ||
-    (update.updated === 'offerStatus' &&
-      update.status.id === id &&
-      !!(update.status.error || update.status.result));
-  const found =
-    /** @type {UpdateRecord & { updated: 'walletAction' | 'offerStatus' }} */ (
-      await findUpdate(id, getLastUpdate, retryOpts, isMatch)
-    );
-  if (found.updated !== 'offerStatus') {
-    throw Fail`${q(id)} ${q(found.updated)} failure: ${q(found.status?.error)}`;
-  }
-  const { error, result } = found.status;
-  !error || Fail`${q(id)} offerStatus failure: ${q(error)}`;
-  result || Fail`${q(id)} offerStatus missing result`;
-  return found.status;
-};
-harden(getOfferResult);
-
-/**
- * Wait for an update indicating untilNumWantsSatisfied of the specified offer
- * and return its status or throw its error.
- * Used internally but not yet considered public.
- * @alpha
- *
- * @param {string | number} id
- * @param {() => Promise<UpdateRecord>} getLastUpdate
- * @param {RetryOptionsAndPowers} retryOpts
- * @returns {Promise<OfferStatus>}
- */
-export const getOfferWantsSatisfied = async (id, getLastUpdate, retryOpts) => {
-  // "walletAction" indicates an error, "offerStatus" with the right id and
-  // either `result` or `error` indicates settlement.
-  const isMatch = update =>
-    update.updated === 'walletAction' ||
-    (update.updated === 'offerStatus' &&
-      update.status.id === id &&
-      !!(update.status.error || 'numWantsSatisfied' in update.status));
-  const found =
-    /** @type {UpdateRecord & { updated: 'walletAction' | 'offerStatus' }} */ (
-      await findUpdate(id, getLastUpdate, retryOpts, isMatch)
-    );
-  if (found.updated !== 'offerStatus') {
-    throw Fail`${q(id)} ${q(found.updated)} failure: ${q(found.status?.error)}`;
-  }
-  const { error, result } = found.status;
-  !error || Fail`${q(id)} offerStatus failure: ${q(error)}`;
-  result || Fail`${q(id)} offerStatus missing result`;
-  return found.status;
-};
-harden(getOfferWantsSatisfied);
 
 /**
  * Augment VstorageKit with additional convenience methods for working with

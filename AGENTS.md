@@ -62,7 +62,6 @@ per [[https://agents.md/]]
 - Use Conventional Commits in titles and commits (e.g.,
   `feat(swingstore): add snapshot…`).
 - Branches should reference an issue number (e.g., `123-fix-solo-reconnect`).
-- PRs: link related issues, describe changes and risks; ensure `yarn build`,
-  `yarn test`, and `yarn lint` pass. Prefer “Squash and merge.”
-- Integration tests: use labels `force:integration`/`bypass:integration` when
-  appropriate; otherwise they run as part of the merge queue.
+- PRs: link related issues, describe changes and risks; ensure `yarn build`, `yarn test`, and `yarn lint` pass. Prefer “Squash and merge.”
+- Integration tests: use labels `force:integration`/`bypass:integration` when appropriate; otherwise they run as part of the merge queue.
+- Commit hygiene (codegen, lockfile updates, formatting, linting, tests): see `docs/commit-hygiene.md`.

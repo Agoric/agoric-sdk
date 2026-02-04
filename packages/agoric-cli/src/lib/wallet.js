@@ -2,8 +2,10 @@
 /* eslint-env node */
 
 import { iterateReverse } from '@agoric/casting';
-import { boardSlottingMarshaller } from '@agoric/client-utils';
-import { makeWalletStateCoalescer } from '@agoric/smart-wallet/src/utils.js';
+import {
+  boardSlottingMarshaller,
+  makeWalletStateCoalescer,
+} from '@agoric/client-utils';
 import { Fail } from '@endo/errors';
 import { execSwingsetTransaction, pollTx } from './chain.js';
 

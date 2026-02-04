@@ -1,7 +1,7 @@
 import {
   boardSlottingMarshaller,
   makeBoardRemote,
-} from '@agoric/vats/tools/board-utils.js';
+} from '@agoric/internal/src/marshal/board-client-utils.js';
 import { assertAllDefined, tryNow } from '@agoric/internal';
 import { makeVStorage } from './vstorage.js';
 
