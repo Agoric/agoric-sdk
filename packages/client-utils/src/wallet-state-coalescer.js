@@ -52,7 +52,9 @@ export const makeWalletStateCoalescer = invitationBrand => {
         // last record wins
         balances.set(currentAmount.brand, currentAmount);
         if (!invitationBrand) {
-          trace('balance update without invitationBrand known may be an invitation');
+          trace(
+            'balance update without invitationBrand known may be an invitation',
+          );
         }
         if (currentAmount.brand === invitationBrand) {
           for (const invitation of /** @type {any} */ (currentAmount.value)) {
