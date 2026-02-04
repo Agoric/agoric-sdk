@@ -151,8 +151,9 @@ export type FlowStep = {
   dest: AssetPlaceRef;
   /**
    * A single FlowStep can have an arbitrary number of associated pendingTxs
-   * entries. They are tracked by grouping them into "phases", containing an
-   * array of TxIds in order of execution.
+   * entries. They are tracked by grouping them into "phases", each phase
+   * containing a sequence of TxIds in order of execution and with no implied
+   * relative sequencing constraints across phases.
    *
    * It is valid for the phases record
    * - to be omitted,
