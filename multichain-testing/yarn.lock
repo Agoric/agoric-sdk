@@ -79,7 +79,6 @@ __metadata:
     "@agoric/cosmic-proto": "workspace:*"
     "@agoric/ertp": "workspace:*"
     "@agoric/internal": "workspace:*"
-    "@agoric/smart-wallet": "workspace:*"
     "@cosmjs/crypto": "npm:^0.36.0"
     "@cosmjs/proto-signing": "npm:^0.36.0"
     "@cosmjs/stargate": "npm:^0.36.0"
@@ -270,29 +269,6 @@ __metadata:
     "@endo/promise-kit": "npm:^1.1.13"
     "@noble/hashes": "npm:~1.5.0"
     bs58: "npm:^6.0.0"
-  languageName: node
-  linkType: soft
-
-"@agoric/smart-wallet@portal:../packages/smart-wallet::locator=root-workspace-0b6124%40workspace%3A.":
-  version: 0.0.0-use.local
-  resolution: "@agoric/smart-wallet@portal:../packages/smart-wallet::locator=root-workspace-0b6124%40workspace%3A."
-  dependencies:
-    "@agoric/ertp": "workspace:*"
-    "@agoric/internal": "workspace:*"
-    "@agoric/notifier": "workspace:*"
-    "@agoric/store": "workspace:*"
-    "@agoric/vat-data": "workspace:*"
-    "@agoric/vats": "workspace:*"
-    "@agoric/vow": "workspace:*"
-    "@agoric/zoe": "workspace:*"
-    "@agoric/zone": "workspace:*"
-    "@endo/errors": "npm:^1.2.13"
-    "@endo/eventual-send": "npm:^1.3.4"
-    "@endo/far": "npm:^1.1.14"
-    "@endo/marshal": "npm:^1.8.0"
-    "@endo/nat": "npm:^5.1.3"
-    "@endo/patterns": "npm:^1.7.0"
-    "@endo/promise-kit": "npm:^1.1.13"
   languageName: node
   linkType: soft
 
