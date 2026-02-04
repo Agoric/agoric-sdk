@@ -18,10 +18,10 @@ import { calculateInterest, makeDebtCalculator } from './updateDebt.js';
 
 /**
  * @import {OfferHandler} from '@agoric/zoe';
- * @import {MakeBorrowInvitation} from './types-ambient.js';
- * @import {DebtCalculatorConfig} from './types-ambient.js';
- * @import {LoanConfigWithBorrower} from './types-ambient.js';
- * @import {BorrowFacet} from './types-ambient.js';
+ * @import {MakeBorrowInvitation} from './types.js';
+ * @import {DebtCalculatorConfig} from './types.js';
+ * @import {LoanConfigWithBorrower} from './types.js';
+ * @import {BorrowFacet} from './types.js';
  * @import {Brand} from '@agoric/ertp';
  */
 

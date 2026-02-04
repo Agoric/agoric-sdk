@@ -24,7 +24,7 @@ import { makeGovernedTerms as makeGovernedVFTerms } from '../vaultFactory/params
  * @import {PeriodicFeeCollector} from '../feeDistributor.js';
  */
 
-// Duplicated from vaultFactory/types-ambient.js to solve a CI problem.
+// Duplicated from vaultFactory/types.js to solve a CI problem.
 // Not worth refactoring to DRY because vaultFactory is going away.
 /**
  * @typedef {object} InterestTiming

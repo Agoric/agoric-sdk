@@ -2,7 +2,6 @@
 
 /// <reference types="ses" />
 
-// XXX filename is still "ambient" but this module is not
 // Make this a module
 export {};
 

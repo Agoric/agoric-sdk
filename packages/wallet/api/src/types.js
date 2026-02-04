@@ -1,5 +1,4 @@
 // @ts-check
-// @file @deprecated, not ambient anymore
 
 /**
  * @import {Coordinator} from '@agoric/cache';

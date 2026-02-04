@@ -1,7 +1,6 @@
 /* eslint-disable @agoric/group-jsdoc-imports */
 // @jessie-check
 
-// XXX filename is still "ambient" but this module is not
 // Make this a module
 export {};
 
@@ -95,7 +94,7 @@ export {};
 
 /**
  * @typedef {object} LiquidationStrategy
- * @property {() => import('@agoric/zoe/src/contractSupport/types-ambient.js').KeywordKeywordRecord} keywordMapping
+ * @property {() => import('@agoric/zoe/src/contractSupport/types.js').KeywordKeywordRecord} keywordMapping
  * @property {(
  *   collateral: Amount,
  *   run: Amount,

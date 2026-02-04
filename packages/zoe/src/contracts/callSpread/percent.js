@@ -3,8 +3,8 @@
 import { makeRatio } from '../../contractSupport/index.js';
 
 /**
- * @import {Make100Percent} from './types-ambient.js';
- * @import {Make0Percent} from './types-ambient.js';
+ * @import {Make100Percent} from './types.js';
+ * @import {Make0Percent} from './types.js';
  */
 
 const BASIS_POINTS = 10000n;

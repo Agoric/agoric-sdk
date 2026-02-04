@@ -29,7 +29,7 @@ const trace = makeTracer('Vault', true);
  * @import {MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {Ratio} from '@agoric/ertp/src/ratio.js';
  * @import {VaultKit} from './vaultKit.js';
- * @import {MintAndTransfer, VaultId} from './types-ambient.js';
+ * @import {MintAndTransfer, VaultId} from './types.js';
  * @import {Invitation, ProposalRecord, TransferPart, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  */
