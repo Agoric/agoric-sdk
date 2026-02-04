@@ -346,6 +346,69 @@ test('evmHandler deposit rejects unknown chainId', t => {
   });
 });
 
+test('evmHandler deposit handles factoryContract spender', t => {
+  const ownerAddress = '0x6666666666666666666666666666666666666666' as const;
+  const { makePortfolioKit, getCallLog } = makeTestSetup();
+  const { evmHandler, manager } = makePortfolioKit({
+    portfolioId: 454,
+    sourceAccountId: `eip155:42161:${ownerAddress}`,
+  });
+
+  manager.resolveAccount({
+    namespace: 'eip155',
+    chainName: 'Arbitrum',
+    chainId: 'eip155:42161',
+    remoteAddress: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+  } as any);
+
+  const permitDetails: PermitDetails = {
+    chainId: 42161n,
+    token: contractsMock.Arbitrum.usdc as Address,
+    amount: 1_000n,
+    spender: contractsMock.Arbitrum.depositFactory as Address,
+    permit2Payload: {
+      owner: ownerAddress,
+      witness: '0xWitnessData' as const,
+      witnessTypeString: 'WitnessTypeString' as const,
+      permit: {
+        permitted: {
+          token: contractsMock.Arbitrum.usdc as Address,
+          amount: 1_000n,
+        },
+        nonce: 123n,
+        deadline: 1700000000n,
+      },
+      signature: '0xSignatureData' as const,
+    },
+  };
+
+  t.notThrows(
+    () => evmHandler.deposit(permitDetails),
+    'evmHandler deposit accepts depositFactory spender',
+  );
+  t.like(getCallLog(), [
+    [
+      'executePlan',
+      ,
+      {},
+      ,
+      {
+        type: 'deposit',
+        amount: AmountMath.make(USDC, 1_000n),
+        fromChain: 'Arbitrum',
+      },
+      { flowId: 1 },
+      ,
+      {
+        evmDepositDetail: {
+          fromChain: 'Arbitrum',
+          ...permitDetails,
+        },
+      },
+    ],
+  ]);
+});
+
 test('evmHandler deposit rejects spender mismatch', t => {
   const ownerAddress = '0x6666666666666666666666666666666666666666' as const;
   const { makePortfolioKit } = makeTestSetup();
