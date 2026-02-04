@@ -3,8 +3,11 @@ package types
 import (
 	"fmt"
 	"strings"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+var _ sdk.Msg = &MsgSetDenomMetadata{}
 const RouterKey = ModuleName // this was defined in your key.go file
 
 // ValidateBasic performs basic validation of MsgSetDenomMetadata

@@ -29,7 +29,7 @@ func init() {
 
 // RegisterCodec registers concrete types on the Amino codec
 func RegisterCodec(cdc *codec.LegacyAmino) {
-	legacy.RegisterAminoMsg(cdc, &MsgSetDenomMetadata{}, "vbank/SetDenomMetadata")
+	legacy.RegisterAminoMsg(cdc, &MsgSetDenomMetadata{}, ModuleName+"/SetDenomMetadata")
 }
 
 // RegisterInterfaces registers the x/vbank interfaces types with the interface registry

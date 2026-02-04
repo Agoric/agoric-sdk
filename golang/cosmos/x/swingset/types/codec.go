@@ -20,6 +20,7 @@ var (
 	// The actual codec used for serialization should be provided to x/swingset and
 	// defined at the application level.
 	ModuleAminoCdc = codec.NewAminoCodec(amino)
+	ModuleCdc 	= codec.NewProtoCodec(cdctypes.NewInterfaceRegistry())
 )
 
 func init() {
