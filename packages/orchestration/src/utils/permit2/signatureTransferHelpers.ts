@@ -1,5 +1,7 @@
 /**
- * @file Helpers for working with permit2 signature transfer witness types
+ * @file Helpers for working with Uniswap Permit2 SignatureTransfer
+ * `permitWitnessTransferFrom`.
+ * @see {@link https://docs.uniswap.org/contracts/permit2/reference/signature-transfer}
  *
  * This is original code that was adapted for permit2-sdk, unlike @see ./permit2SignatureTransfer.ts
  */
@@ -10,7 +12,10 @@ import type {
   AbiParameterToPrimitiveType,
   TypedData,
 } from 'abitype';
+import { keyMirror } from '@agoric/internal/src/keyMirror.js';
+import { objectMapMutable } from '@agoric/internal/src/js-utils.js';
 import type { TypedDataParameter } from '../abitype.ts';
+import type { encodeType } from '../viem-utils/hashTypedData.ts';
 import {
   PermitBatchTransferFromTypeParams,
   permitBatchWitnessTransferFromTypes,
@@ -18,59 +23,84 @@ import {
   permitWitnessTransferFromTypes,
 } from './signatureTransfer.ts';
 
-export const makeWitnessTypeStringExtractor = ({
-  encodeType,
-}: {
-  encodeType: ({
-    primaryType,
-    types,
-  }: {
-    primaryType: string;
-    types: TypedData;
-  }) => string;
-}) => {
-  const baseTypeStrings = Object.fromEntries(
-    Object.entries({
-      PermitBatchWitnessTransferFrom: permitBatchWitnessTransferFromTypes,
-      PermitWitnessTransferFrom: permitWitnessTransferFromTypes,
-    }).map(([typeName, typeFunc]) => {
-      const encoded = encodeType({
-        primaryType: typeName,
-        // @ts-expect-error undefined is not allowed in types but supported in implementation
-        types: typeFunc(undefined),
-      });
+const PrimaryTypes = keyMirror({
+  PermitBatchWitnessTransferFrom: null,
+  PermitWitnessTransferFrom: null,
+});
+type PrimaryTypeName = keyof typeof PrimaryTypes;
 
-      const prefix = encoded.substring(0, encoded.indexOf(')'));
-      return [typeName, `${prefix},`];
-    }),
+export const isPermit2MessageType = (type: string): type is PrimaryTypeName =>
+  type in PrimaryTypes;
+
+const getPrimaryType = (types: TypedData): PrimaryTypeName => {
+  const found = Object.keys(types).filter(isPermit2MessageType);
+  if (found.length !== 1) {
+    throw new Error(
+      `Exactly one of the following types must be defined: ${Object.keys(PrimaryTypes).join(', ')}`,
+    );
+  }
+  return found[0];
+};
+
+const permit2BaseTypeParams = {
+  PermitBatchWitnessTransferFrom: PermitBatchTransferFromTypeParams,
+  PermitWitnessTransferFrom: PermitTransferFromTypeParams,
+} satisfies Record<PrimaryTypeName, TypedDataParameter[]>;
+
+const typeMakers = {
+  PermitBatchWitnessTransferFrom: permitBatchWitnessTransferFromTypes,
+  PermitWitnessTransferFrom: permitWitnessTransferFromTypes,
+} satisfies Record<PrimaryTypeName, (witness: any) => TypedData>;
+
+/**
+ * Make a function for returning the `witnessTypeString` argument to use in a
+ * `permitWitnessTransferFrom` call.
+ */
+export const makeWitnessTypeStringExtractor = (powers: {
+  encodeType: typeof encodeType;
+}) => {
+  const { encodeType } = powers;
+  const encodedTypePrefixes = objectMapMutable(
+    typeMakers,
+    (makeTypes, primaryType) => {
+      // Each EIP-712 `types` record produced by `makeTypes` differs only in the
+      // fields of the struct identified by `primaryType` and any dependencies
+      // of its witness field, so the string encoding of any such struct will
+      // have a common prefix (e.g.,
+      // `PermitWitnessTransferFrom(TokenPermissions permitted,...,uint256 deadline,`,
+      // where what follows that last comma is the witness field).
+      // We construct that prefix by calling `makeTypes` with *no* witness,
+      // which is in violation of its static typing information but implemented
+      // to return types in which `primaryType` has no witness field and
+      // therefore encodes to a string with a `)` where the witness field
+      // belongs.
+      // @ts-expect-error undefined witness
+      const baseTypes = makeTypes(undefined);
+      const encoded = encodeType({ primaryType, types: baseTypes });
+      return encoded.substring(0, encoded.indexOf(')'));
+    },
   );
 
-  return function getWitnessTypeString(types: TypedData) {
-    const matchingTypes = Object.keys(types).filter(
-      type => type in baseTypeStrings,
-    );
+  /**
+   * Return the `witnessTypeString` argument for a `permitWitnessTransferFrom`
+   * call using the provided EIP-712 `types` record.
+   * Note that `types` must define either a valid "PermitWitnessTransferFrom" or
+   * a valid "PermitBatchWitnessTransferFrom", but not both.
+   * The returned string is the suffix of the EIP-712 encoding of that primary
+   * type that starts with its witness field.
+   */
+  const getWitnessTypeString = (types: TypedData) => {
+    const primaryType = getPrimaryType(types);
+    const encodedType = encodeType({ primaryType, types });
 
-    if (matchingTypes.length !== 1) {
-      throw new Error(
-        `TypedData must have exactly one of the following types: ${Object.keys(baseTypeStrings).join(', ')}`,
-      );
+    const prefix = encodedTypePrefixes[primaryType];
+    if (!encodedType.startsWith(prefix)) {
+      throw new Error(`${primaryType} must start with expected base fields`);
     }
 
-    const primaryType = matchingTypes[0];
-    const encodedType = encodeType({
-      primaryType,
-      types,
-    });
-
-    const baseTypeString = baseTypeStrings[primaryType];
-    if (!encodedType.startsWith(baseTypeString)) {
-      throw new Error(
-        `TypedData has an invalid type string for ${primaryType}`,
-      );
-    }
-
-    return encodedType.substring(baseTypeString.length);
+    return encodedType.substring(prefix.length);
   };
+  return getWitnessTypeString;
 };
 
 type MapUnion<U> = {
@@ -81,66 +111,43 @@ type MapUnion<U> = {
     : never;
 };
 
+/**
+ * Confirm that the input is a EIP-712 `types` record with a single struct
+ * definition for the first argument to a `permitWitnessTransferFrom` call
+ * (i.e., named either "PermitWitnessTransferFrom" for a single-token transfer
+ * or "PermitBatchWitnessTransferFrom" for a multi-token transfer), and return
+ * the TypedDataParameter describing the witness field of that definition.
+ */
 export const extractWitnessFieldFromTypes = <
   T extends Readonly<TypedDataParameter>,
 >(
-  types:
-    | {
-        PermitBatchWitnessTransferFrom: readonly [
-          ...typeof PermitBatchTransferFromTypeParams,
-          T,
-        ];
-      }
-    | {
-        PermitWitnessTransferFrom: readonly [
-          ...typeof PermitTransferFromTypeParams,
-          T,
-        ];
-      },
+  types: {
+    [K in PrimaryTypeName]: Record<
+      K,
+      readonly [...(typeof permit2BaseTypeParams)[K], T]
+    >;
+  }[PrimaryTypeName],
 ): T => {
-  const baseTypes = {
-    PermitBatchWitnessTransferFrom: PermitBatchTransferFromTypeParams,
-    PermitWitnessTransferFrom: PermitTransferFromTypeParams,
-  };
+  const primaryTypeName = getPrimaryType(types);
+  const fieldDefs = (types as MapUnion<typeof types>)[primaryTypeName];
 
-  const matchingTypes = Object.keys(types).filter(
-    type => type in baseTypes,
-  ) as (keyof typeof baseTypes)[];
-
-  if (matchingTypes.length !== 1) {
+  // `fieldDefs` must match the expected base type with a single extra field for
+  // witness data.
+  const baseFieldDefs = permit2BaseTypeParams[primaryTypeName];
+  if (fieldDefs.length !== baseFieldDefs.length + 1) {
     throw new Error(
-      `TypedData must have exactly one of the following types: ${Object.keys(baseTypes).join(', ')}`,
+      `${primaryTypeName} must have ${baseFieldDefs.length + 1} fields`,
     );
   }
-
-  const primaryType = matchingTypes[0];
-  const candidateType = (types as MapUnion<typeof types>)[primaryType];
-  const referenceType = baseTypes[primaryType];
-  if (candidateType.length !== referenceType.length + 1) {
-    throw new Error(
-      `TypedData has an invalid number of fields for ${primaryType}`,
-    );
-  }
-
-  for (const [i, field] of referenceType.entries()) {
-    if (
-      candidateType[i].name !== field.name ||
-      candidateType[i].type !== field.type
-    ) {
+  for (const [i, { name, type }] of baseFieldDefs.entries()) {
+    if (fieldDefs[i].name !== name || fieldDefs[i].type !== type) {
       throw new Error(
-        `TypedData has an invalid field at index ${i} for ${primaryType}`,
+        `${primaryTypeName} field at index ${i} must be \`${type} ${name}\``,
       );
     }
   }
 
-  return candidateType[candidateType.length - 1] as T;
-};
-
-export const isPermit2MessageType = (type: string) => {
-  return (
-    type === 'PermitBatchWitnessTransferFrom' ||
-    type === 'PermitWitnessTransferFrom'
-  );
+  return fieldDefs[fieldDefs.length - 1] as T;
 };
 
 export const TokenPermissionsComponents = [

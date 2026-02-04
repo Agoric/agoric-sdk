@@ -221,6 +221,48 @@ export const getBlockTimeMs = (chainId: CaipChainId): number => {
 };
 
 /**
+ * Number of block confirmations required before marking a transaction as final.
+ * Higher values provide stronger finality guarantees but increase latency.
+ *
+ * Note: We use 25 confirmations for all chains as a conservative, uniform approach
+ * that maximizes safety. Since confirmation waits only apply to transaction failures
+ * (success cases return immediately with 0 confirmations), the latency impact is
+ * acceptable and limited to rare failure scenarios.
+ *
+ * This value can be reconfigured on a per-chain basis if specific networks require
+ * different confirmation depths based on their consensus mechanisms or reorg risk.
+ *
+ * Background: Circle's blockchain confirmation guidance recommends 12 for Ethereum,
+ * 20 for Arbitrum, 1 for Avalanche, and 10 for Base/Optimism. Our choice of 25
+ * provides additional safety margin beyond these recommendations.
+ *
+ * @see https://developers.circle.com/w3s/blockchain-confirmations
+ */
+
+const blockConfirmationsRequired: Record<CaipChainId, number> = harden({
+  // ========= Mainnet =========
+  'eip155:1': 25, // Ethereum Mainnet
+  'eip155:42161': 25, // Arbitrum One
+  'eip155:43114': 25, // Avalanche C-Chain
+  'eip155:8453': 25, // Base
+  'eip155:10': 25, // Optimism
+
+  // ========= Testnet =========
+  'eip155:11155111': 25, // Ethereum Sepolia
+  'eip155:421614': 25, // Arbitrum Sepolia
+  'eip155:43113': 25, // Avalanche Fuji
+  'eip155:84532': 25, // Base Sepolia
+  'eip155:11155420': 25, // Optimism Sepolia
+});
+
+/**
+ * Get the number of confirmations required for a given chain ID.
+ */
+export const getConfirmationsRequired = (chainId: CaipChainId): number => {
+  return blockConfirmationsRequired[chainId];
+};
+
+/**
  * @deprecated should come from e.g. @agoric/portfolio-api/src/constants.js
  *   or @agoric/orchestration
  */

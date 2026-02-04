@@ -71,7 +71,7 @@ export const makeZoeTestContext = async t => {
 
   const { fromCapData } = makeMarshal(undefined, slotToBoardRemote);
 
-  const getVstorageData = key => {
+  const getVstorageData = (key: string) => {
     const data = unmarshalFromVstorage(storage.data, key, fromCapData, -1);
     return data;
   };
@@ -104,6 +104,8 @@ const test = anyTest as TestFn<Awaited<ReturnType<typeof makeZoeTestContext>>>;
 test.before(async t => {
   t.context = await makeZoeTestContext(t);
 });
+
+test.after.always(t => t.context.shutdown?.());
 
 test.serial('normal running of committee', async t => {
   const { advanceTimeBy, storage, getVstorageData, governanceDriver } =

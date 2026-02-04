@@ -15,6 +15,7 @@ const trace = makeTracer('AutoStakeItTap');
  * @import {CosmosChainAddress, CosmosValidatorAddress, Denom, OrchestrationAccount, StakingAccountActions} from '@agoric/orchestration';
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
  * @import {TypedPattern} from '@agoric/internal';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

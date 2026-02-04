@@ -9,8 +9,10 @@ import * as centralSupply from '../src/centralSupply.js';
 import { feeIssuerConfig } from '../src/core/utils.js';
 
 /**
- * @import {FeeMintAccess, Installation} from '@agoric/zoe'
+ * @import {FeeMintAccess, Installation, ZoeService} from '@agoric/zoe'
  * @import {ExecutionContext} from 'ava';
+ * @import {Issuer} from '@agoric/ertp';
+ * @import {Brand} from '@agoric/ertp';
  */
 /**
  * @typedef {ExecutionContext<{

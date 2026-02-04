@@ -18,13 +18,14 @@ import type {
 } from 'abitype';
 import type { TypedDataDefinition } from 'viem';
 import { Fail, q } from '@endo/errors';
-import type { TypedDataParameter } from '@agoric/orchestration/src/utils/abitype.ts';
+import type { TypedDataParameter } from '@agoric/orchestration/src/utils/abitype.js';
 import {
   type Witness,
   type getPermitWitnessTransferFromData,
   type getPermitBatchWitnessTransferFromData,
   makeWitness,
-} from '@agoric/orchestration/src/utils/permit2.ts';
+  TokenPermissionsComponents,
+} from '@agoric/orchestration/src/utils/permit2.js';
 
 const YMAX_DOMAIN_NAME = 'Ymax';
 const YMAX_DOMAIN_VERSION = '1';
@@ -42,8 +43,10 @@ const YmaxStandaloneDomainBase = {
   name: YMAX_DOMAIN_NAME,
   version: YMAX_DOMAIN_VERSION,
 } as const satisfies TypedDataDomain;
-export type YmaxStandaloneDomain = typeof YmaxStandaloneDomainBase & {
+export type YmaxSharedDomain = typeof YmaxStandaloneDomainBase & {
   chainId: bigint;
+};
+export type YmaxStandaloneDomain = YmaxSharedDomain & {
   verifyingContract: Address;
 };
 
@@ -70,8 +73,19 @@ const PortfolioStandaloneTypeParams = [
  */
 const OperationTypes = {
   OpenPortfolio: [{ name: 'allocations', type: 'Allocation[]' }],
-  Rebalance: [{ name: 'allocations', type: 'Allocation[]' }, PortfolioIdParam],
+  Rebalance: [PortfolioIdParam],
+  SetTargetAllocation: [
+    { name: 'allocations', type: 'Allocation[]' },
+    PortfolioIdParam,
+  ],
   Deposit: [PortfolioIdParam],
+  /**
+   * Withdraw funds from a portfolio to the source EVM account.
+   * The signer of the message must match the portfolio's source EVM account
+   * The destination chain is determined from the domain info (chainId).
+   * - token: ERC-20 token contract address (must be USDC contract on the destination chain)
+   */
+  Withdraw: [{ name: 'withdraw', type: 'Asset' }, PortfolioIdParam],
 } as const satisfies TypedData;
 type OperationTypes = typeof OperationTypes;
 export type OperationTypeNames = keyof OperationTypes;
@@ -81,6 +95,7 @@ const OperationSubTypes = {
     { name: 'instrument', type: 'string' },
     { name: 'portion', type: 'uint256' },
   ],
+  Asset: TokenPermissionsComponents,
 } as const satisfies TypedData;
 
 /**
@@ -258,8 +273,16 @@ export type YmaxPermitBatchWitnessTransferFromData<
 
 export function validateYmaxDomain(
   domain: TypedDataDomain,
+  validContractAddresses?: undefined,
+): asserts domain is typeof YmaxStandaloneDomainBase;
+export function validateYmaxDomain(
+  domain: TypedDataDomain,
+  validContractAddresses: Record<number | string, Address>,
+): asserts domain is YmaxStandaloneDomain;
+export function validateYmaxDomain(
+  domain: TypedDataDomain,
   validContractAddresses?: Record<number | string, Address>,
-): asserts domain is YmaxStandaloneDomain {
+) {
   if (domain.name !== YMAX_DOMAIN_NAME) {
     throw new Error(
       `Invalid Ymax domain name: ${domain.name} (expected ${YMAX_DOMAIN_NAME})`,
@@ -299,7 +322,9 @@ export function validateYmaxOperationTypeName<T extends OperationTypeNames>(
 export const splitWitnessFieldType = <T extends OperationTypeNames>(
   fieldName: `${typeof YMAX_DOMAIN_NAME}V${typeof YMAX_DOMAIN_VERSION}${T}`,
 ) => {
-  const match = fieldName.match(/^YmaxV(\d+)(\w+)$/u);
+  const match =
+    fieldName.startsWith(YMAX_DOMAIN_NAME) &&
+    fieldName.substring(YMAX_DOMAIN_NAME.length).match(/^V(\d+)(\w+)$/u);
   if (!match) {
     throw new Error(`Invalid witness field type name: ${fieldName}`);
   }

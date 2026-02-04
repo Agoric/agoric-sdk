@@ -1,6 +1,5 @@
 // @ts-check
 
-/// <reference types="@agoric/store/exported.js" />
 /// <reference path="./types.js" />
 
 import { Fail } from '@endo/errors';
@@ -14,6 +13,7 @@ import { Shape } from './shapes.js';
  * @import {PromiseVow, Remote, VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/base-zone';
  * @import {Powers} from './network.js';
+ * @import {MapStore} from '@agoric/store';
  */
 
 /**

@@ -11,6 +11,8 @@ import { DEFAULT_PREFIX } from '@agoric/vats/src/lib-board.js';
  * @import {Key} from '@endo/patterns';
  * @import {MapStore} from '@agoric/swingset-liveslots';
  * @import {BoardId} from '@agoric/vats/src/lib-board.js';
+ * @import {Purse} from '@agoric/ertp';
+ * @import {Payment} from '@agoric/ertp';
  */
 
 /**

@@ -16,7 +16,7 @@ import { makeZcfTools } from './zcf-tools.js';
 
 /**
  * @import {ERemote} from '@agoric/internal';
- * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {Marshaller, StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {TimerService} from '@agoric/time';
@@ -26,6 +26,7 @@ import { makeZcfTools } from './zcf-tools.js';
  * @import {Zone} from '@agoric/zone';
  * @import {Pattern} from '@endo/patterns';
  * @import {CosmosInterchainService} from '../exos/exo-interfaces.js';
+ * @import {ZCF} from '@agoric/zoe';
  */
 
 /**

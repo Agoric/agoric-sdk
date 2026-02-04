@@ -4,8 +4,11 @@ import { M, mustMatch } from '@agoric/store';
 import { E, getInterfaceOf } from '@endo/far';
 
 /**
- * @import {AdminFacet, ContractOf, InvitationAmount, ZCFMint} from '@agoric/zoe';
+ * @import {AdminFacet, ZCFMint} from '@agoric/zoe';
  * @import {EconomyBootstrapSpace} from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
+ * @import {Instance} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {ERef} from '@endo/far';
+ * @import {BootstrapPowers} from '../core/types.ts';
  */
 
 const trace = makeTracer('RV');
@@ -60,7 +63,7 @@ export const restartVats = async ({ consume }, { options }) => {
   const failures = [];
   /**
    * @param {string} debugName
-   * @param {Instance} instance
+   * @param {Instance<any>} instance
    * @param {ERef<AdminFacet>} adminFacet
    */
   const tryRestartContract = async (debugName, instance, adminFacet) => {

@@ -19,6 +19,7 @@ import { ChainInfoShape, CosmosAssetInfoShape } from './typeGuards.js';
  * @import {NameAdmin} from '@agoric/vats';
  * @import {ChainInfo} from './orchestration-api.js';
  * @import {NameHubKit} from '@agoric/vats';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

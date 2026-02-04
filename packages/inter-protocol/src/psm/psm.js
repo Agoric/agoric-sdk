@@ -1,6 +1,4 @@
 // @jessie-check
-/// <reference types="@agoric/governance/exported.js" />
-/// <reference types="@agoric/zoe/exported.js" />
 
 import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
@@ -48,8 +46,13 @@ import { makeNatAmountShape } from '../contractSupport.js';
  * @import {EReturn} from '@endo/far';
  * @import {TypedPattern, Remote} from '@agoric/internal';
  * @import {Baggage} from '@agoric/vat-data'
- * @import {ContractMeta, FeeMintAccess, Installation} from '@agoric/zoe';
+ * @import {ContractMeta, FeeMintAccess, Invitation, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {Ratio} from '@agoric/ertp';
+ * @import {GovernanceTerms} from '@agoric/governance/src/types.js';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 /**
@@ -67,7 +70,7 @@ import { makeNatAmountShape } from '../contractSupport.js';
  *   given by this contract
  */
 
-/** @type {ContractMeta} */
+/** @type {ContractMeta<typeof start>} */
 export const meta = {
   upgradability: 'canUpgrade',
   customTermsShape: {
@@ -90,6 +93,7 @@ export const meta = {
       MintLimit: { type: ParamTypes.AMOUNT, value: AmountShape },
     },
   },
+  // @ts-expect-error splitRecord loses the property keys
   privateArgsShape: M.splitRecord(
     {
       marshaller: M.remotable('Marshaller'),

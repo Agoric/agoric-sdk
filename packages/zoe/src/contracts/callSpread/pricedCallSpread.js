@@ -17,8 +17,11 @@ import { Position } from './position.js';
 
 /**
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {PositionKind} from './types-ambient.js';
  * @import {PayoffHandler} from './types-ambient.js';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {PromiseRecord} from '@endo/promise-kit';
  */
 
 const PERCENT_BASE = 100n;

@@ -1,6 +1,12 @@
 import test from 'ava';
 import { ethers } from 'ethers';
 import { boardSlottingMarshaller } from '@agoric/client-utils';
+import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
+import type {
+  PendingTx,
+  TxId,
+} from '@aglocal/portfolio-contract/src/resolver/types.ts';
+import { createMockPendingTxData } from '@aglocal/portfolio-contract/tools/mocks.ts';
 import { handlePendingTx } from '../src/pending-tx-manager.ts';
 import {
   processPendingTxEvents,
@@ -11,14 +17,8 @@ import {
   createMockPendingTxEvent,
   createMockStreamCell,
   createMockTransferEvent,
-  createMockGmpExecutionEvent,
+  createMockGmpStatusEvent,
 } from './mocks.ts';
-import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
-import type {
-  PendingTx,
-  TxId,
-} from '@aglocal/portfolio-contract/src/resolver/types.ts';
-import { createMockPendingTxData } from '@aglocal/portfolio-contract/tools/mocks.ts';
 
 const marshaller = boardSlottingMarshaller();
 
@@ -26,7 +26,7 @@ const makeMockHandlePendingTx = () => {
   const handledTxs: PendingTx[] = [];
   const mockHandlePendingTx = async (
     tx: PendingTx,
-    { log: any, ...evmCtx }: any,
+    { log: _log, ..._evmCtx }: any,
   ) => {
     handledTxs.push(tx);
   };
@@ -172,7 +172,7 @@ test('processPendingTxEvents handles only pending transactions', async t => {
 });
 
 // --- Unit tests for handlePendingTx ---
-test('handlePendingTx throws error for unsupported transaction type', async t => {
+test('handlePendingTx prints error for unsupported transaction type', async t => {
   const mockLog = () => {};
 
   const unsupportedTx = {
@@ -183,14 +183,19 @@ test('handlePendingTx throws error for unsupported transaction type', async t =>
     destinationAddress: 'eip155:1:0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
   } as any;
 
-  await t.throwsAsync(
-    () =>
-      handlePendingTx(unsupportedTx, {
-        ...createMockPendingTxOpts(),
-        log: mockLog,
-      }),
-    { message: /No monitor registered for tx type: "cctpV2"/ },
-  );
+  const errorLog: Array<any[]> = [];
+  await handlePendingTx(unsupportedTx, {
+    ...createMockPendingTxOpts(),
+    log: mockLog,
+    error: (...args: unknown[]) => {
+      errorLog.push(args);
+    },
+  });
+  t.deepEqual(errorLog, [
+    [
+      `🚨 [${unsupportedTx.txId}] No monitor registered for tx type: ${unsupportedTx.type}`,
+    ],
+  ]);
 });
 
 test('resolves a 31 min old pending CCTP transaction in lookback mode', async t => {
@@ -498,12 +503,12 @@ test('resolves a 10 second old pending GMP transaction in lookback mode', async 
   // Trigger block event to resolve waitForBlock
   setTimeout(() => mockProvider.emit('block', latestBlock + 1), 10);
 
-  const event = createMockGmpExecutionEvent(txId, latestBlock);
+  const event = createMockGmpStatusEvent(txId, latestBlock);
   mockProvider.getLogs = async () => [event];
 
   const ctxWithFetch = harden({
     ...opts,
-    fetch: async (url: string) => {
+    fetch: async (_url: string) => {
       return {
         ok: true,
         json: async () => ({
@@ -545,11 +550,9 @@ test('resolves a 10 second old pending GMP transaction in lookback mode', async 
 
   t.deepEqual(logs, [
     `[${txId}] handling ${TxType.GMP} tx`,
-    `[${txId}] Watching for MulticallStatus and MulticallExecuted events for txId: ${txId} at contract: ${contractAddress}`,
-    `[${txId}] Searching blocks ${fromBlock}/${fromBlock} → ${toBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
+    `[${txId}] Watching transaction status for txId: ${txId} at contract: ${contractAddress}`,
+    `[${txId}] Searching blocks ${fromBlock} → ${toBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
     `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,
-    `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,
-    `[${txId}] [LogScan] Match in tx=${event.transactionHash}`,
     `[${txId}] [LogScan] Match in tx=${event.transactionHash}`,
     `[${txId}] Found matching event`,
     `[${txId}] Lookback found transaction`,
@@ -715,14 +718,26 @@ test('GMP monitor does not resolve transaction twice when live mode completes be
   // Make lookback return nothing (simulate not finding the transaction)
   mockProvider.getLogs = async () => [];
 
+  // Create event for MulticallStatus
+  const expectedIdTopic = ethers.keccak256(ethers.toUtf8Bytes(txId));
+  const event = {
+    address: contractAddress,
+    topics: [
+      ethers.id('MulticallStatus(string,bool,uint256)'),
+      expectedIdTopic,
+    ],
+    data: '0x',
+    blockNumber: latestBlock + 2,
+    transactionHash: '0x1234567890abcdef1234567890abcdef12345678',
+    txId, // Include txId for websocket message simulation
+  };
+
   // Simulate live mode finding the transaction quickly (before lookback completes)
-  const event = createMockGmpExecutionEvent(txId, latestBlock + 2);
   setTimeout(() => {
-    const expectedIdTopic = ethers.keccak256(ethers.toUtf8Bytes(txId));
     const filter = {
       address: contractAddress,
       topics: [
-        ethers.id('MulticallExecuted(string,(bool,bytes)[])'),
+        ethers.id('MulticallStatus(string,bool,uint256)'),
         expectedIdTopic,
       ],
     };
@@ -731,7 +746,7 @@ test('GMP monitor does not resolve transaction twice when live mode completes be
 
   const ctxWithFetch = harden({
     ...opts,
-    fetch: async (url: string) => {
+    fetch: async (_url: string) => {
       // Axelarscan returns executed status
       return {
         ok: true,

@@ -26,10 +26,10 @@ export type InstallationStart<I> =
   I extends Installation<infer SF> ? SF : never;
 
 export type ContractStartFunction = (
-  zcf?: ZCF<any>,
+  zcf: ZCF<any>,
   privateArgs?: object,
   baggage?: Baggage,
-) => ERef<{ creatorFacet?: object; publicFacet?: object }>;
+) => import('@endo/far').ERef<{ creatorFacet?: object; publicFacet?: object }>;
 
 export type AdminFacet<SF extends ContractStartFunction> = FarRef<{
   // Completion, which is currently any

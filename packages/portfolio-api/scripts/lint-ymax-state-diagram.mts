@@ -10,7 +10,7 @@
 import {
   ymaxMachine,
   type StateNode,
-  YmaxSpec,
+  type YmaxSpec,
 } from '../src/model/generated/ymax-machine.js';
 
 // ANSI color codes for terminal output

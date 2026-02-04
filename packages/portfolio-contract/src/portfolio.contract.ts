@@ -33,6 +33,7 @@ import {
   type OrchestrationPowers,
   type OrchestrationTools,
 } from '@agoric/orchestration';
+import { sameEvmAddress } from '@agoric/orchestration/src/utils/address.js';
 import type {
   FlowConfig,
   PortfolioPublicInvitationMaker,
@@ -48,8 +49,8 @@ import type {
   PermitDetails,
   YmaxOperationDetails,
 } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.ts';
-import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
-import type { ContractMeta, ZCF, ZCFSeat } from '@agoric/zoe';
+import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.js';
+import type { ContractMeta, Invitation, ZCF, ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/types.js';
@@ -121,6 +122,7 @@ const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
     depositFactory: M.string(),
     factory: M.string(),
     usdc: M.string(),
+    permit2: M.string(),
     gateway: M.string(),
     gasService: M.string(),
   });
@@ -166,6 +168,7 @@ export type EVMContractAddresses = {
   depositFactory: `0x${string}`;
   factory: `0x${string}`;
   usdc: `0x${string}`;
+  permit2: `0x${string}`;
   tokenMessenger: `0x${string}`;
   aaveUSDC: `0x${string}`;
   aaveRewardsController: `0x${string}`;
@@ -238,7 +241,8 @@ export const privateArgsShape: TypedPattern<PortfolioPrivateArgs> =
     {},
   );
 
-export const meta: ContractMeta = {
+export const meta: ContractMeta<typeof start> = {
+  // @ts-expect-error splitRecord loses the property keys
   privateArgsShape,
 };
 harden(meta);
@@ -423,6 +427,7 @@ export const contract = async (
     flowDetail,
     startedFlow,
     config = defaultFlowConfig,
+    options?,
   ) =>
     orchFns1.executePlan(
       seat,
@@ -431,6 +436,7 @@ export const contract = async (
       flowDetail,
       startedFlow,
       ...flowCfg(config),
+      options,
     );
   const rebalance: typeof orchFns1.rebalance = (
     seat,
@@ -471,9 +477,12 @@ export const contract = async (
     proposalShapes,
     offerArgsShapes,
     transferChannels,
+    walletBytecode,
     portfoliosNode: E(storageNode).makeChildNode('portfolios'),
     marshaller: cachingMarshaller,
     usdcBrand: brands.USDC,
+    eip155ChainIdToAxelarChain,
+    contracts,
   });
 
   const portfolios = zone.mapStore<number, PortfolioKit>('portfolios');
@@ -589,11 +598,11 @@ export const contract = async (
      *
      * @returns storagePath (vstorage) and evmHandler facet
      *
-     * @see {@link openPortfolioFromPermit2} for the flow implementation
+     * @see {@link openPortfolio} for the flow implementation
      */
     async openPortfolioFromEVM(
       { allocations }: YmaxOperationDetails<'OpenPortfolio'>['data'],
-      depositDetails: PermitDetails,
+      permitDetails: PermitDetails,
     ): Promise<{
       storagePath: string;
       evmHandler: PortfolioKit['evmHandler'];
@@ -603,20 +612,40 @@ export const contract = async (
         allocations.map(({ instrument, portion }) => [instrument, portion]),
       );
 
-      const seat = zcf.makeEmptySeatKit().zcfSeat;
+      const fromChain =
+        eip155ChainIdToAxelarChain[`${Number(permitDetails.chainId)}`];
+      if (!fromChain) {
+        throw Fail`no Axelar chain for EIP-155 chainId ${permitDetails.chainId}`;
+      }
+      sameEvmAddress(
+        permitDetails.spender,
+        contracts[fromChain].depositFactory,
+      ) ||
+        Fail`permit2 spender address ${permitDetails.spender} does not match depositFactory address ${contracts[fromChain].depositFactory} for chain ${fromChain}`;
+
+      sameEvmAddress(permitDetails.token, contracts[fromChain].usdc) ||
+        Fail`permit2 token address ${permitDetails.token} does not match usdc contract address ${contracts[fromChain].usdc} for chain ${fromChain}`;
+      const amount = AmountMath.make(brands.USDC, permitDetails.amount);
 
       // Store the authenticated source EVM account in CAIP-10 format
       const sourceAccountId =
-        `eip155:${depositDetails.chainId}:${depositDetails.permit2Payload.owner.toLowerCase()}` as AccountId;
+        `eip155:${permitDetails.chainId}:${permitDetails.permit2Payload.owner.toLowerCase()}` as AccountId;
       const kit = makeNextPortfolioKit({ sourceAccountId });
 
-      void orchFns2.openPortfolioFromPermit2(
+      const seat = zcf.makeEmptySeatKit().zcfSeat;
+
+      void orchFns2.openPortfolio(
         seat,
-        depositDetails,
-        targetAllocation,
+        { targetAllocation },
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- sensitive to build order
         // @ts-ignore XXX Guest...
         kit,
+        {
+          features: {
+            useProgressTracker: true,
+          },
+        },
+        { fromChain, permitDetails, amount },
       );
       const storagePath = await vowTools.asPromise(kit.reader.getStoragePath());
       return harden({

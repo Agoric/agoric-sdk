@@ -18,3 +18,5 @@ export function buildRootObject(_vatPowers, _vatParams, baggage) {
   const registry = providePriceAuthorityRegistry(baggage);
   return Far('root', { getRegistry: () => registry });
 }
+
+/** @typedef {ReturnType<typeof buildRootObject>} PriceAuthorityVat */

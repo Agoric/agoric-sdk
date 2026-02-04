@@ -8,6 +8,8 @@ import { ECON_COMMITTEE_MANIFEST } from './startEconCommittee.js';
  * @import {EconomyBootstrapPowers} from './econ-behaviors.js';
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js';
  * @import {BootstrapManifestPermit} from '@agoric/vats/src/core/lib-boot.js';
+ * @import {Instance} from '@agoric/zoe';
+ * @import {MapStore} from '@agoric/store';
  */
 
 export * from './econ-behaviors.js';

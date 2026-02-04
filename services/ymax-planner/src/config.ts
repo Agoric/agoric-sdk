@@ -31,13 +31,8 @@ export interface YmaxPlannerConfig {
   readonly mnemonic: string;
   readonly alchemyApiKey: string;
   readonly requestLimits: Partial<RequestLimits>;
-  readonly spectrum: {
-    readonly apiUrl?: string;
-    readonly timeout: number;
-    readonly retries: number;
-  };
-  readonly spectrumBlockchainEndpoints?: string[];
-  readonly spectrumPoolsEndpoints?: string[];
+  readonly spectrumBlockchainEndpoints: string[];
+  readonly spectrumPoolsEndpoints: string[];
   readonly cosmosRest: {
     readonly agoricNetworkSpec: string;
     readonly agoricNetSubdomain?: string;
@@ -165,19 +160,17 @@ export const loadConfig = async (
 
   const timeout = parsePositiveInteger(env, 'REQUEST_TIMEOUT', 10000);
   const maxRetries = parsePositiveInteger(env, 'REQUEST_RETRIES', 3);
+
   const graphqlEndpoints = parseGraphqlEndpoints(
-    env.GRAPHQL_ENDPOINTS || '{}',
+    env.GRAPHQL_ENDPOINTS as string,
     'GRAPHQL_ENDPOINTS',
   );
   const {
     'api-spectrum-blockchain': spectrumBlockchainEndpoints,
     'api-spectrum-pools': spectrumPoolsEndpoints,
   } = graphqlEndpoints;
-  if (!spectrumBlockchainEndpoints || !spectrumPoolsEndpoints) {
-    console.warn(
-      '⚠️  Missing GRAPHQL_ENDPOINTS configuration for api-spectrum-blockchain and/or api-spectrum-blockchain. SPECTRUM_API_URL is deprecated.',
-    );
-  }
+  (spectrumBlockchainEndpoints && spectrumPoolsEndpoints) ||
+    Fail`GRAPHQL_ENDPOINTS configuration for api-spectrum-blockchain and api-spectrum-pools is required`;
   const sqliteDbPath = validateRequired(env, 'SQLITE_DB_PATH');
 
   const ydsUrl = validateUrl(env, 'YDS_URL', undefined);
@@ -190,11 +183,6 @@ export const loadConfig = async (
     mnemonic,
     alchemyApiKey: validateRequired(env, 'ALCHEMY_API_KEY'),
     requestLimits: { timeout, maxRetries },
-    spectrum: {
-      apiUrl: validateUrl(env, 'SPECTRUM_API_URL', undefined),
-      timeout: parsePositiveInteger(env, 'SPECTRUM_API_TIMEOUT', timeout),
-      retries: parsePositiveInteger(env, 'SPECTRUM_API_RETRIES', maxRetries),
-    },
     spectrumBlockchainEndpoints,
     spectrumPoolsEndpoints,
     cosmosRest: {

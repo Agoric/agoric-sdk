@@ -22,6 +22,10 @@ const { make } = AmountMath;
  * @import {FastUSDCCorePowers} from './start-fast-usdc.core.js';
  * @import {LegibleCapData} from './utils/config-marshal.js'
  * @import {FeeConfig} from '@agoric/fast-usdc';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
  */
 
 const { keys } = Object;

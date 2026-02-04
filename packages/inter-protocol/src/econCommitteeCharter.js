@@ -1,6 +1,4 @@
 // @jessie-check
-/// <reference types="@agoric/governance/exported.js" />
-/// <reference types="@agoric/zoe/exported.js" />
 
 import { M, mustMatch } from '@agoric/store';
 import { TimestampShape } from '@agoric/time';
@@ -15,6 +13,8 @@ import { E } from '@endo/far';
  * @import {MapStore, SetStore} from '@agoric/store';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {TimestampValue} from '@agoric/time';
+ * @import {ContractMeta, Installation, Instance, ZCF, ZCFSeat} from '@agoric/zoe';
+ * @import {GovernorCreatorFacet} from '@agoric/governance/src/types.js';
  */
 
 /**

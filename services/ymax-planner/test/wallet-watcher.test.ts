@@ -14,6 +14,8 @@ const abiCoder = new AbiCoder();
 const factoryAddress = '0x51e589D94b51d01B75442AE1504cD8c50d6127C9';
 // address posted on vstorage is in lowercase
 const expectedWalletAddr = '0x8cb4b25e77844fc0632aca14f1f9b23bdd654ebf';
+const walletOwner = 'agoric1test';
+const sourceAddress = `cosmos:agoric-3:${walletOwner}`;
 
 const createSmartWalletCreatedLog = (
   walletAddr: string,
@@ -68,15 +70,20 @@ test('handlePendingTx processes MAKE_ACCOUNT transaction successfully', async t 
     status: 'pending',
     destinationAddress: `${chain}:${factoryAddress}`,
     expectedAddr: expectedWalletAddr,
+    factoryAddr: factoryAddress,
+    sourceAddress,
   };
 
-  setTimeout(() => {
-    const mockLog = createSmartWalletCreatedLog(
-      expectedWalletAddr,
-      'agoric1owner123',
-      'agoric-3',
-    );
+  // Create mockLog outside setTimeout so we can reference it in assertions
+  const mockLog = createSmartWalletCreatedLog(
+    expectedWalletAddr,
+    walletOwner,
+    'agoric-3',
+  );
+  // Add metadata for mock WebSocket simulation
+  (mockLog as any).expectedWalletAddress = expectedWalletAddr;
 
+  setTimeout(() => {
     const filter = {
       address: factoryAddress,
       topics: [
@@ -98,9 +105,10 @@ test('handlePendingTx processes MAKE_ACCOUNT transaction successfully', async t 
 
   t.deepEqual(logMessages, [
     `[${txId}] handling ${type} tx`,
-    `[${txId}] Watching SmartWalletCreated events emitted by ${factoryAddress}`,
-    `[${txId}] SmartWalletCreated event detected: wallet:${expectedWalletAddr}`,
-    `[${txId}] ✓ Address matches! Expected: ${expectedWalletAddr}, Found: ${expectedWalletAddr}`,
+    `[${txId}] Watching for wallet creation: subscribing to ${factoryAddress}, expecting event from ${factoryAddress}, expectedAddr ${expectedWalletAddr}`,
+    `[${txId}] Attempting to subscribe to ${factoryAddress}...`,
+    `[${txId}] ✓ Subscribed to ${factoryAddress} (subscription ID: mock-subscription-id)`,
+    `[${txId}] ✅ SUCCESS: expectedAddr=${expectedWalletAddr} txHash=${mockLog.transactionHash} block=${mockLog.blockNumber}`,
     `[${txId}] MAKE_ACCOUNT tx resolved`,
   ]);
 });
@@ -121,14 +129,18 @@ test('handlePendingTx logs timeout on MAKE_ACCOUNT transaction with no matching 
     status: 'pending',
     destinationAddress: `${chain}:${factoryAddress}`,
     expectedAddr: expectedWalletAddr,
+    factoryAddr: factoryAddress,
+    sourceAddress,
   };
 
   setTimeout(() => {
     const mockLog = createSmartWalletCreatedLog(
       expectedWalletAddr,
-      'agoric1owner123',
+      walletOwner,
       'agoric-3',
     );
+    // Add metadata for mock WebSocket simulation (though this arrives after timeout)
+    (mockLog as any).expectedWalletAddress = expectedWalletAddr;
 
     const filter = {
       address: factoryAddress,
@@ -151,10 +163,11 @@ test('handlePendingTx logs timeout on MAKE_ACCOUNT transaction with no matching 
 
   t.deepEqual(logMessages, [
     `[${txId}] handling ${type} tx`,
-    `[${txId}] Watching SmartWalletCreated events emitted by ${factoryAddress}`,
-    `[${txId}] ✗ No matching SmartWalletCreated event found within 0.05 minutes`,
-    `[${txId}] SmartWalletCreated event detected: wallet:${expectedWalletAddr}`,
-    `[${txId}] ✓ Address matches! Expected: ${expectedWalletAddr}, Found: ${expectedWalletAddr}`,
+    `[${txId}] Watching for wallet creation: subscribing to ${factoryAddress}, expecting event from ${factoryAddress}, expectedAddr ${expectedWalletAddr}`,
+    `[${txId}] Attempting to subscribe to ${factoryAddress}...`,
+    `[${txId}] ✓ Subscribed to ${factoryAddress} (subscription ID: mock-subscription-id)`,
+    `[${txId}] ✗ No wallet creation found for expectedAddr ${expectedWalletAddr} within 0.05 minutes`,
+    `[${txId}] ✅ SUCCESS: expectedAddr=${expectedWalletAddr} txHash=0x123abc block=18500000`,
     `[${txId}] MAKE_ACCOUNT tx resolved`,
   ]);
 });
@@ -168,7 +181,7 @@ test('handlePendingTx ignores non-matching wallet addresses', async t => {
 
   // Use a different address - getAddress normalizes it to checksummed format
   const wrongWalletAddrChecksummed =
-    '0x742d35cc6635c0532925a3b8d9deb1c9e5eb2b64';
+    '0x742d35cC6635C0532925a3b8D9deB1c9E5eb2B64';
 
   const logMessages: string[] = [];
   const logger = (...args: any[]) => logMessages.push(args.join(' '));
@@ -179,21 +192,25 @@ test('handlePendingTx ignores non-matching wallet addresses', async t => {
     status: 'pending',
     destinationAddress: `${chain}:${factoryAddress}`,
     expectedAddr: expectedWalletAddr,
+    factoryAddr: factoryAddress,
+    sourceAddress,
   };
 
   // Emit wrong address first
   setTimeout(() => {
     const mockLog = createSmartWalletCreatedLog(
       wrongWalletAddrChecksummed,
-      'agoric1owner123',
+      walletOwner,
       'agoric-3',
     );
+    // Add metadata for mock WebSocket simulation with wrong expected address
+    (mockLog as any).expectedWalletAddress = wrongWalletAddrChecksummed;
 
     const filter = {
       address: factoryAddress,
       topics: [
         SMART_WALLET_CREATED_SIGNATURE,
-        zeroPadValue(expectedWalletAddr, 32),
+        zeroPadValue(wrongWalletAddrChecksummed, 32),
       ],
     };
 
@@ -203,9 +220,11 @@ test('handlePendingTx ignores non-matching wallet addresses', async t => {
   setTimeout(() => {
     const mockLog = createSmartWalletCreatedLog(
       expectedWalletAddr,
-      'agoric1owner123',
+      walletOwner,
       'agoric-3',
     );
+    // Add metadata for mock WebSocket simulation with correct expected address
+    (mockLog as any).expectedWalletAddress = expectedWalletAddr;
 
     const filter = {
       address: factoryAddress,
@@ -226,13 +245,14 @@ test('handlePendingTx ignores non-matching wallet addresses', async t => {
     });
   });
 
+  const correctTxHash = '0x123abc'; // Both use the same hash from createSmartWalletCreatedLog
+
   t.deepEqual(logMessages, [
     `[${txId}] handling ${type} tx`,
-    `[${txId}] Watching SmartWalletCreated events emitted by ${factoryAddress}`,
-    `[${txId}] SmartWalletCreated event detected: wallet:${wrongWalletAddrChecksummed}`,
-    `[${txId}] Address mismatch. Expected: ${expectedWalletAddr}, Found: ${wrongWalletAddrChecksummed}`,
-    `[${txId}] SmartWalletCreated event detected: wallet:${expectedWalletAddr}`,
-    `[${txId}] ✓ Address matches! Expected: ${expectedWalletAddr}, Found: ${expectedWalletAddr}`,
+    `[${txId}] Watching for wallet creation: subscribing to ${factoryAddress}, expecting event from ${factoryAddress}, expectedAddr ${expectedWalletAddr}`,
+    `[${txId}] Attempting to subscribe to ${factoryAddress}...`,
+    `[${txId}] ✓ Subscribed to ${factoryAddress} (subscription ID: mock-subscription-id)`,
+    `[${txId}] ✅ SUCCESS: expectedAddr=${expectedWalletAddr} txHash=${correctTxHash} block=18500000`,
     `[${txId}] MAKE_ACCOUNT tx resolved`,
   ]);
 });

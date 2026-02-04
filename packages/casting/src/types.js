@@ -7,6 +7,7 @@ export {};
  * @import {Notifier, Subscription} from '@agoric/notifier';
  * @import {Marshal} from '@endo/marshal';
  * @import {FarRef} from '@endo/far';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

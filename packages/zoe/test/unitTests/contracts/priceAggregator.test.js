@@ -28,8 +28,9 @@ import buildManualTimer from '../../../tools/manualTimer.js';
 import { start } from '../../../src/contracts/priceAggregator.js';
 
 /**
- * @import {FeeIssuerConfig, ZoeService} from '@agoric/zoe';
+ * @import {FeeIssuerConfig, Installation, ZCF, ZoeService} from '@agoric/zoe';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {UpdateRecord} from '@agoric/notifier';
  * @import {ZoeManualTimer} from '../../../tools/manualTimer.js';
  * @import {Instance} from '../../../src/zoeService/utils.js';
  * @import {MockChainStorageRoot} from '@agoric/internal/src/storage-test-utils.js';
@@ -39,6 +40,15 @@ import { start } from '../../../src/contracts/priceAggregator.js';
  * @import {OracleKit} from '../../../src/contracts/priceAggregatorTypes.js';
  * @import {PriceAggregatorKit} from '../../../src/contracts/priceAggregatorTypes.js';
  * @import {OracleHandler} from '../../../src/contracts/priceAggregatorTypes.js';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {Mint} from '@agoric/ertp';
+ * @import {IssuerKit} from '@agoric/ertp';
+ * @import {Issuer} from '@agoric/ertp';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {PromiseRecord} from '@endo/promise-kit';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

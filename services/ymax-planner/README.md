@@ -175,9 +175,6 @@ Environment variables:
 - `COSMOS_REST_TIMEOUT`: Overrides `REQUEST_TIMEOUT` for Agoric/Noble/etc. Cosmos REST APIs (optional)
 - `COSMOS_REST_RETRIES`: Overrides `REQUEST_RETRIES` for Agoric/Noble/etc. Cosmos REST APIs (optional)
 - `GRAPHQL_ENDPOINTS`: JSON text for a Record\<dirname, url[]> object describing endpoints associated with each api-\* GraphQL API directory under [graphql](./src/graphql) (optional)
-- `SPECTRUM_API_URL`: URL for the [Spectrum](https://spectrumnodes.com/) API (default "https://pools-api.spectrumnodes.com")
-- `SPECTRUM_API_TIMEOUT`: Overrides `REQUEST_TIMEOUT` for the Spectrum REST API (optional)
-- `SPECTRUM_API_RETRIES`: Overrides `REQUEST_RETRIES` for the Spectrum REST API (optional)
 - `SQLITE_DB_PATH`: The path where the SQLiteDB used by the resolver should be created. While a relative path can be provided (relative to the cwd),
 an absolute path is recommended
 - `YDS_URL`: Base URL of the YMax Data Service API, for sending transaction settlement notifications (optional)

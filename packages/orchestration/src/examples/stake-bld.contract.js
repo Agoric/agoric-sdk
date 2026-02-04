@@ -23,6 +23,9 @@ import { prepareProgressTracker } from '../utils/progress.js';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {ZCF} from '@agoric/zoe';
  * @import {Baggage} from '@agoric/vat-data';
+ * @import {Payment} from '@agoric/ertp';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 const trace = makeTracer('StakeBld');

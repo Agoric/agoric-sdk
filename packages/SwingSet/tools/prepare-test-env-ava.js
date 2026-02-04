@@ -15,5 +15,4 @@ export const test = wrapTest(rawTest);
 
 // Does not import from a module because we're testing the global env
 /* global globalThis */
-export const VatData = globalThis.VatData;
-assert(VatData);
+assert(globalThis.VatData, 'VatData is present on globalThis');

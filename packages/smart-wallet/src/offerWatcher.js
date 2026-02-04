@@ -27,6 +27,8 @@ import { UNPUBLISHED_RESULT } from './offers.js';
  * @import {InvitationMakers} from './types.js';
  * @import {PublicSubscribers} from './types.js';
  * @import {UpgradeDisconnection} from '@agoric/internal/src/upgrade-api.js';
+ * @import {Payment} from '@agoric/ertp';
+ * @import {Amount} from '@agoric/ertp';
  */
 
 /**

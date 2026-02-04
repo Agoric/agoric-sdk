@@ -1,13 +1,20 @@
-// @ts-nocheck
 // eslint-disable-next-line import/order
-import { test, VatData } from '../tools/prepare-test-env-ava.js';
+import { test } from '../tools/prepare-test-env-ava.js';
 
 import bundleSource from '@endo/bundle-source';
 import { initSwingStore } from '@agoric/swing-store';
 import { buildVatController } from '../src/index.js';
 
+/**
+ * @import {SwingSetConfig} from '../src/types-external.js';
+ */
+
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore some resolutions don't expect this on global
+const { harden, VatData } = global;
+
 test('harden from SES is in the test environment', t => {
-  harden();
+  harden({});
   t.pass();
 });
 
@@ -66,7 +73,7 @@ test('store makers are in the test environment', t => {
 });
 
 async function testForExpectedGlobals(t, workerType) {
-  /** @type {SwingSetConfig} */
+  /** @satisfies {SwingSetConfig} */
   const config = {
     bootstrap: 'bootstrap',
     vats: {

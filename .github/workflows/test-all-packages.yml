@@ -76,8 +76,14 @@ jobs:
       # restored.
       - name: Pack packages without ambient type resolution
         run: |
+          # Check that all exports work before packing
+          scripts/packing/verify-package-exports.mjs --quiet --mode=scm
+          # prepack must be in order to verify type dependency availability
           yarn lerna run --reject-cycles --concurrency 1 prepack
-          yarn lerna run postpack
+          # check for broken exports in the packed builds
+          scripts/packing/verify-package-exports.mjs --quiet --mode=packed
+          # postpack has to be serial to correctly restore the .js files deleted in prepack
+          yarn lerna run --reject-cycles --concurrency 1 postpack
 
   ##################
   # Lint tests
@@ -116,11 +122,17 @@ jobs:
       # waiting for the slow integration test that by default only runs in the
       # master merge check
       - name: Lint a3p-integration
-        run: yarn install && yarn lint && yarn doctor
+        # FIXME restore `yarn lint` once client-utils in NPM is compatible with HEAD
+        # (after this change merges to master and the `dev` version is published)
+        run: yarn install && yarn doctor
         working-directory: a3p-integration
       - name: build A3P submissions
         run: yarn run build:submissions
         working-directory: a3p-integration
+
+      # run the typecheck-quick that local dev can rely on for fast feedback
+      - name: typecheck-quick
+        run: yarn typecheck-quick
 
       # Attempt the doc generation to catch build errors before
       # landing on master
@@ -167,7 +179,6 @@ jobs:
         id: vars
         run: |
           echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
-          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
 
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
@@ -293,7 +304,6 @@ jobs:
         id: vars
         run: |
           echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
-          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
@@ -429,7 +439,6 @@ jobs:
         id: vars
         run: |
           echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
-          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
@@ -468,7 +477,6 @@ jobs:
         id: vars
         run: |
           echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
-          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
@@ -507,7 +515,6 @@ jobs:
         id: vars
         run: |
           echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
-          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
@@ -546,7 +553,6 @@ jobs:
         id: vars
         run: |
           echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
-          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
@@ -585,7 +591,6 @@ jobs:
         id: vars
         run: |
           echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
-          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
 
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
@@ -628,7 +633,6 @@ jobs:
         id: vars
         run: |
           echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
-          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
@@ -669,7 +673,6 @@ jobs:
         id: vars
         run: |
           echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
-          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
           echo "CI_NODE_INDEX=${{ matrix.node_index }}" >> $GITHUB_ENV
           echo "CI_NODE_TOTAL=${{ matrix.total_nodes }}" >> $GITHUB_ENV
 
@@ -713,7 +716,6 @@ jobs:
         id: vars
         run: |
           echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
-          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
           echo "CI_NODE_INDEX=${{ matrix.node_index }}" >> $GITHUB_ENV
           echo "CI_NODE_TOTAL=${{ matrix.total_nodes }}" >> $GITHUB_ENV
 
@@ -762,7 +764,6 @@ jobs:
         # XXX test:xs-unit is deprecated branch protection still expects it
         run: |
           echo "test=${{ matrix.engine == 'xs' && 'test:xs-unit' || 'test:unit' }}" >> $GITHUB_OUTPUT
-          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
         # BEGIN-TEST-BOILERPLATE
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
@@ -803,7 +804,6 @@ jobs:
         # END-TEST-BOILERPLATE
         run: |
           echo "test=${{ matrix.engine == 'xs' && 'test:xs-worker' || 'test:swingset' }}" >> $GITHUB_OUTPUT
-          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
         # BEGIN-TEST-BOILERPLATE
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node

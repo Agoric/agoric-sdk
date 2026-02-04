@@ -31,8 +31,11 @@ export * from './startPSM.js';
 
 /**
  * @import {EconomyBootstrapPowers} from './econ-behaviors.js'
- * @import {FullSchedule} from '../auction/scheduler.js';
  * @import {TimerService} from '@agoric/time';
+ * @import {Issuer, IssuerKit} from '@agoric/ertp';
+ * @import {prepare} from '@agoric/zoe/src/contracts/scaledPriceAuthority.js';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.ts';
+ * @import {StartedInstanceKit} from '@agoric/zoe/src/zoeService/utils.js';
  */
 
 /**
@@ -123,7 +126,7 @@ export const publishInterchainAssetFromBank = async (
 };
 
 /**
- * @param {BootstrapPowers} powers
+ * @param {EconomyBootstrapPowers} powers
  * @param {object} config
  * @param {object} config.options
  * @param {InterchainAssetOptions} config.options.interchainAssetOptions
@@ -215,6 +218,7 @@ export const startScaledPriceAuthority = async (
 
   const label = scaledPriceFeedName(issuerName);
 
+  /** @type {StartedInstanceKit<prepare>} */
   const spaKit = await E(startUpgradable)({
     installation: scaledPriceAuthority,
     label,
@@ -222,7 +226,6 @@ export const startScaledPriceAuthority = async (
   });
 
   await E(priceAuthorityAdmin).registerPriceAuthority(
-    // @ts-expect-error The public facet should have getPriceAuthority
     E(spaKit.publicFacet).getPriceAuthority(),
     interchainBrand,
     stableBrand,
@@ -233,7 +236,7 @@ export const startScaledPriceAuthority = async (
 };
 
 /**
- * @param {BootstrapPowers} powers
+ * @param {EconomyBootstrapPowers} powers
  * @param {object} config
  * @param {object} config.options
  */

@@ -20,8 +20,8 @@ import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import {
   ROOT_STORAGE_PATH,
   setupOrchestrationTest,
-} from '@agoric/orchestration/tools/contract-tests.ts';
-import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.ts';
+} from '@agoric/orchestration/tools/contract-tests.js';
+import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { makeNameHubKit } from '@agoric/vats';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
@@ -150,7 +150,7 @@ export const axelarCCTPConfig = {
     reference: '8453',
     cctpDestinationDomain: 6,
   },
-} satisfies Record<string, BaseChainInfo>;
+} satisfies Record<string, BaseChainInfo<'eip155'>>;
 
 export const chainInfoWithCCTP = {
   ...withChainCapabilities(fetchedChainInfo),

@@ -22,6 +22,7 @@ import { remoteNullMarshaller } from '../swingsetTests/utils.js';
  * @import {SimpleIssue} from '../../src/types.js';
  * @import {start} from '../../src/binaryVoteCounter.js';
  * @import {CommitteeStartResult} from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
+ * @import {Installation} from '@agoric/zoe';
  */
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);

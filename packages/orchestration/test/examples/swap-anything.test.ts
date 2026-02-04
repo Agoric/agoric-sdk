@@ -4,6 +4,7 @@ import { E } from '@endo/far';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { NonNullish } from '@agoric/internal';
+import type { Installation } from '@agoric/zoe';
 import * as contractExports from '../../src/examples/swap-anything.contract.js';
 import { commonSetup } from '../supports.js';
 import { buildVTransferEvent } from '../../tools/ibc-mocks.js';

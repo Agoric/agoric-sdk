@@ -1,9 +1,11 @@
+/** @file deprecated, no longer ambient */
 /**
  * @typedef {'long' | 'short'} PositionKind
  */
 
 /**
- * @import {Ratio} from '@agoric/ertp';
+ * @import {Amount, Brand, Ratio} from '@agoric/ertp';
+ * @import {Invitation} from '@agoric/zoe';
  */
 
 /**

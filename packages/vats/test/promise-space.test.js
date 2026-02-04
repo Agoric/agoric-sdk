@@ -3,6 +3,10 @@ import { makeScalarBigMapStore } from '@agoric/vat-data';
 
 import { makePromiseSpace } from '../src/core/promise-space.js';
 
+/**
+ * @import {MapStore} from '@agoric/store';
+ */
+
 test('makePromiseSpace', async t => {
   const { produce, consume } = makePromiseSpace();
 

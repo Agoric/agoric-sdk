@@ -15,8 +15,7 @@
   },
   "files": [
     "src",
-    "tools",
-    "exported.js"
+    "tools"
   ],
   "scripts": {
     "build": "node ./scripts/get-sdk-package-names.js > src/sdk-package-names.js",
@@ -32,7 +31,7 @@
   "devDependencies": {
     "@agoric/cosmic-swingset": "workspace:*",
     "@agoric/deploy-script-support": "workspace:*",
-    "ava": "^5.3.0",
+    "ava": "^6.4.1",
     "c8": "^10.1.2"
   },
   "dependencies": {
@@ -95,8 +94,7 @@
     "files": [
       "test/**/*.test.*"
     ],
-    "timeout": "2m",
-    "workerThreads": false
+    "timeout": "2m"
   },
   "typeCoverage": {
     "atLeast": 77.09

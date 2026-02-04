@@ -1,6 +1,13 @@
 // @ts-check
 
-/** @import {PursesJSONState, RecordMetadata} from './types-ambient.js'; */
+/**
+ * @import {PursesJSONState, RecordMetadata} from './types-ambient.js';
+ * @import {ERef} from '@agoric/vow';
+ * @import {LegacyWeakMap} from '@agoric/store';
+ * @import {WeakMapStore} from '@agoric/store';
+ * @import {MapStore} from '@agoric/store';
+ */
+/** @import {Purse} from '@agoric/ertp'; */
 
 /**
  * @typedef {object} PursesAddedState
@@ -13,7 +20,7 @@
  * @import {Key} from '@endo/patterns';
  * @import {Coordinator} from '@agoric/cache';
  * @import {Petname} from '@agoric/deploy-script-support/src/externalTypes.js';
- * @import {AmountValue} from '@agoric/ertp/src/types.js';
+ * @import {Amount, AmountValue, Brand, Issuer, Payment} from '@agoric/ertp/src/types.js';
  * @import {ZoeIssuerRecord} from '@agoric/zoe';
  * @import {WalletRoot} from './lib-wallet.js';
  */

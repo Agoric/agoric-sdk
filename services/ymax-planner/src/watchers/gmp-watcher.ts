@@ -1,29 +1,30 @@
 import { ethers } from 'ethers';
-import type { Filter, WebSocketProvider, Log } from 'ethers';
+import type { Filter, WebSocketProvider } from 'ethers';
+import type { WebSocket } from 'ws';
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.js';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { KVStore } from '@agoric/internal/src/kv-store.js';
+import { tryJsonParse } from '@agoric/internal';
 import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
 } from '../support.ts';
 import type { MakeAbortController, WatcherTimeoutOptions } from '../support.ts';
-import { TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
+import { TX_TIMEOUT_MS, type WatcherResult } from '../pending-tx-manager.ts';
 import {
   deleteTxBlockLowerBound,
   getTxBlockLowerBound,
   setTxBlockLowerBound,
 } from '../kv-store.ts';
-import { findTxStatusFromAxelarscan } from '../axelarscan-utils.ts';
-import type { GmpWatcherResult, WatcherResult } from '../pending-tx-manager.ts';
+import {
+  fetchReceiptWithRetry,
+  extractGmpExecuteData,
+  DEFAULT_RETRY_OPTIONS,
+  type AlchemySubscriptionMessage,
+  type RetryOptions,
+  handleTxRevert,
+} from './watcher-utils.ts';
 
-// Custom error code for aborted GMP watch
-export const WATCH_GMP_ABORTED = 'WATCH_GMP_ABORTED';
-
-// TODO: Remove once all contracts are upgraded to emit MulticallStatus
-const MULTICALL_EXECUTED_SIGNATURE = ethers.id(
-  'MulticallExecuted(string,(bool,bytes)[])',
-);
 const MULTICALL_STATUS_SIGNATURE = ethers.id(
   'MulticallStatus(string,bool,uint256)',
 );
@@ -32,147 +33,241 @@ type WatchGmp = {
   provider: WebSocketProvider;
   contractAddress: `0x${string}`;
   txId: TxId;
+  expectedSourceAddress: string;
+  chainId: CaipChainId;
   log: (...args: unknown[]) => void;
   kvStore: KVStore;
   makeAbortController: MakeAbortController;
+  retryOptions?: RetryOptions;
 };
 
-type AxelarScanOptions = {
-  fetch: typeof fetch;
-  axelarApiUrl: string;
-};
-
-/**
- * Watches for GMP transaction completion in live mode by listening to MulticallStatus
- * and MulticallExecuted events. On timeout, queries Axelarscan to detect failures.
- *
- * NOTE: This watcher has a different API than other watchers (watchCctpTransfer,
- * watchSmartWalletTx) because it tracks both success AND failure(via AxelarScan) states.
- * Other watchers only detect success events. The Axelarscan dependency has been unreliable
- * and this watcher will be refactored/removed in the future to align with other watchers.
- */
 export const watchGmp = ({
   provider,
   contractAddress,
   txId,
+  expectedSourceAddress,
+  chainId,
   timeoutMs = TX_TIMEOUT_MS,
   log = () => {},
   setTimeout = globalThis.setTimeout,
   signal,
-  axelarApiUrl,
-  fetch,
-}: AxelarScanOptions &
-  WatchGmp &
-  WatcherTimeoutOptions): Promise<GmpWatcherResult> => {
+  retryOptions = DEFAULT_RETRY_OPTIONS,
+}: WatchGmp & WatcherTimeoutOptions): Promise<WatcherResult> => {
   return new Promise((resolve, reject) => {
-    if (signal?.aborted) {
-      reject(WATCH_GMP_ABORTED);
-      return;
-    }
-
-    const expectedIdTopic = ethers.keccak256(ethers.toUtf8Bytes(txId));
-    const statusFilter = {
-      address: contractAddress,
-      topics: [MULTICALL_STATUS_SIGNATURE, expectedIdTopic],
-    };
-    const executedFilter = {
-      address: contractAddress,
-      topics: [MULTICALL_EXECUTED_SIGNATURE, expectedIdTopic],
-    };
+    if (signal?.aborted) return resolve({ settled: false });
 
     log(
-      `Watching for MulticallStatus and MulticallExecuted events for txId: ${txId} at contract: ${contractAddress}`,
+      `Watching transaction status for txId: ${txId} at contract: ${contractAddress}`,
     );
 
-    let executionFound = false;
-    let timeoutId: NodeJS.Timeout;
-    let listeners: Array<{ event: any; listener: any }> = [];
+    let done = false;
+    let timeoutId: NodeJS.Timeout | undefined;
+    let subId: string | null = null;
+    const cleanups: (() => void)[] = [];
 
-    const finish = (result: GmpWatcherResult) => {
-      resolve(result);
+    const ws = provider.websocket as WebSocket;
+
+    // Precompute expected topic for txId
+    const expectedIdTopic = ethers.keccak256(ethers.toUtf8Bytes(txId));
+
+    const finish = (res: WatcherResult) => {
+      if (done) return;
+      done = true;
+
       if (timeoutId) clearTimeout(timeoutId);
-      for (const { event, listener } of listeners) {
-        void provider.off(event, listener);
+
+      resolve(res);
+      if (subId) {
+        void provider
+          .send('eth_unsubscribe', [subId])
+          .catch(e => log('Failed to unsubscribe:', e));
       }
-      listeners = [];
+      for (const cleanup of cleanups) cleanup();
     };
 
-    signal?.addEventListener('abort', () => {
-      // Explicitly reject before finishing to avoid resolving the promise
-      reject(WATCH_GMP_ABORTED);
-      finish({ found: false });
-    });
+    /**
+     * Cleanup and reject with error.
+     * Used for fatal errors where we cannot continue watching (e.g., WebSocket failure,
+     * subscription failure). This indicates the WATCHING failed, not that the transaction
+     * failed.
+     */
+    const fail = (err: unknown) => {
+      if (done) return;
+      done = true;
 
-    const listenForStatus = async (eventLog: Log) => {
-      log(
-        `MulticallStatus detected: txId=${txId} contract=${contractAddress} tx=${eventLog.transactionHash}`,
-      );
+      if (timeoutId) clearTimeout(timeoutId);
 
-      // Check if this log matches our expected txId
-      if (eventLog.topics[1] === expectedIdTopic) {
-        log(`✓ MulticallStatus matches txId: ${txId}`);
-        executionFound = true;
-        finish({ found: true, txHash: eventLog.transactionHash });
-      } else {
-        log(`MulticallStatus txId mismatch for ${txId}`);
+      reject(err);
+      if (subId) {
+        void provider
+          .send('eth_unsubscribe', [subId])
+          .catch(error =>
+            log('Failed to unsubscribe during error cleanup:', error),
+          );
       }
+      for (const cleanup of cleanups) cleanup();
     };
 
-    const listenForExecution = async (eventLog: Log) => {
-      log(
-        `MulticallExecuted detected: txId=${txId} contract=${contractAddress} tx=${eventLog.transactionHash}`,
-      );
-
-      // Check if this log matches our expected txId
-      if (eventLog.topics[1] === expectedIdTopic) {
-        log(`✓ MulticallExecuted matches txId: ${txId}`);
-        executionFound = true;
-        finish({ found: true, txHash: eventLog.transactionHash });
-      } else {
-        log(`MulticallExecuted txId mismatch for ${txId}`);
-      }
+    const onWsError = (e: any) => {
+      const errorMsg = e?.message || String(e);
+      log(`WebSocket error during GMP watch for txId=${txId}: ${errorMsg}`);
+      fail(new Error(`WebSocket connection error: ${errorMsg}`));
     };
 
-    void provider.on(statusFilter, listenForStatus);
-    void provider.on(executedFilter, listenForExecution);
-    listeners.push({ event: statusFilter, listener: listenForStatus });
-    listeners.push({ event: executedFilter, listener: listenForExecution });
-    timeoutId = setTimeout(async () => {
-      await null;
-      if (!executionFound) {
+    const onWsClose = (code?: number, reason?: any) => {
+      if (!done) {
         log(
-          `✗ No MulticallStatus or MulticallExecuted found for txId ${txId} within ${timeoutMs / 60000} minutes`,
+          `WebSocket closed during GMP watch for txId=${txId} (code=${code}, reason=${reason})`,
         );
-        const { status, errorMessage } = await findTxStatusFromAxelarscan(
-          txId,
-          contractAddress,
-          {
-            axelarApiUrl,
-            fetch,
-          },
+        fail(
+          new Error(`WebSocket closed unexpectedly: ${reason} (code=${code})`),
+        );
+      }
+    };
+
+    ws.on('error', onWsError);
+    cleanups.unshift(() => ws.off('error', onWsError));
+
+    ws.on('close', onWsClose);
+    cleanups.unshift(() => ws.off('close', onWsClose));
+
+    if (signal) {
+      const onAbort = () => finish({ settled: false });
+      signal.addEventListener('abort', onAbort);
+      cleanups.unshift(() => {
+        signal.removeEventListener('abort', onAbort);
+      });
+    }
+
+    const messageHandler = async (data: any) => {
+      await null;
+      if (done) return;
+
+      try {
+        const msg = tryJsonParse(
+          data.toString(),
+          'alchemy_minedTransactions subscription response',
+        ) as AlchemySubscriptionMessage;
+
+        if (msg.method !== 'eth_subscription') return;
+
+        const tx = msg.params?.result?.transaction;
+        const removed = msg.params?.result?.removed;
+        if (!tx) return;
+
+        // Ignore transactions that have been removed from canonical chain (reorged)
+        if (removed === true) {
+          log(
+            `⚠️  REORG: txId=${txId} txHash=${tx.hash} was removed from chain - ignoring`,
+          );
+          return;
+        }
+
+        const txHash = tx.hash;
+        const txData = tx.input;
+        if (!txHash || !txData) return;
+
+        const executeData = extractGmpExecuteData(txData);
+        if (!executeData || executeData.txId !== txId) return;
+
+        if (executeData.sourceAddress !== expectedSourceAddress) {
+          log(
+            `⚠️  IGNORED: txId=${txId} txHash=${txHash} - sourceAddress mismatch (expected ${expectedSourceAddress}, got ${executeData.sourceAddress})`,
+          );
+          return;
+        }
+
+        const receipt = await fetchReceiptWithRetry(
+          provider,
+          txHash,
+          log,
+          retryOptions,
+          setTimeout,
+        );
+        if (!receipt) {
+          log(`Transaction ${txHash} not confirmed after waiting`);
+          return;
+        }
+
+        const matchingLog = receipt.logs.find(
+          l =>
+            l.topics?.[0] === MULTICALL_STATUS_SIGNATURE &&
+            l.topics?.[1] === expectedIdTopic,
         );
 
-        if (status === 'error') {
-          const rejectionReason =
-            errorMessage || 'failed to execute on destination chain';
-          log(`Error: ${rejectionReason}`);
-          finish({ found: false, rejectionReason });
+        if (receipt.status === 1 && matchingLog) {
+          // Success case: return immediately without waiting for any confirmations (0 blocks)
+          // Rationale: Even if a reorg occurs, the transaction will likely succeed again
+          // Waiting for confirmations in success cases would hurt performance unnecessarily
+          log(
+            `✅ SUCCESS: txId=${txId} txHash=${txHash} block=${receipt.blockNumber}`,
+          );
+          return finish({ settled: true, txHash, success: true });
         }
+
+        /**
+         * Transaction reverted check: Since we've already validated that the sourceAddress
+         * matches our expected LCA address, this is a legitimate execution attempt
+         * from our own wallet. Spurious executions from unauthorized parties are already
+         * filtered out by the sourceAddress check above.
+         */
+        const result = await handleTxRevert(
+          receipt,
+          txHash,
+          `txId=${txId}`,
+          chainId,
+          provider,
+          log,
+        );
+        if (result) {
+          return finish(result);
+        }
+      } catch (e) {
+        log(
+          `Error processing WebSocket message for txId=${txId}:`,
+          e instanceof Error ? e.message : String(e),
+        );
+      }
+    };
+
+    const subscribe = async () => {
+      // Verify liveness.
+      await provider.getNetwork();
+
+      // Attach message handler before subscribing to avoid race condition
+      ws.on('message', messageHandler);
+      cleanups.unshift(() => ws.off('message', messageHandler));
+
+      subId = await provider.send('eth_subscribe', [
+        'alchemy_minedTransactions',
+        {
+          addresses: [{ to: contractAddress }],
+          includeRemoved: true, // Receive reorg notifications
+          hashesOnly: false,
+        },
+      ]);
+    };
+
+    if (ws.readyState === 1) {
+      subscribe().catch(fail);
+    } else {
+      ws.once('open', () => subscribe().catch(fail));
+    }
+
+    // Intentional: does not resolve/reject; only logs on timeout
+    timeoutId = setTimeout(() => {
+      if (!done) {
+        log(
+          `✗ No transaction status found for txId ${txId} within ${
+            timeoutMs / 60000
+          } minutes`,
+        );
       }
     }, timeoutMs);
   });
 };
 
-// We search separately for MulticallExecuted vs. MulticallStatus events
-// indicating resolution of any given transaction.
-// XXX It should be possible to combine them per
-// https://docs.ethers.org/v6/api/providers/#TopicFilter , but we only search
-// for the former to maintain backwards compatibility and so have not pursued
-// such an approach.
-export const EVENTS = {
-  MULTICALL_EXECUTED: 'executed',
-  MULTICALL_STATUS: 'status',
-};
+export const MULTICALL_STATUS_EVENT = 'status';
 
 export const lookBackGmp = async ({
   provider,
@@ -197,16 +292,11 @@ export const lookBackGmp = async ({
     );
     const toBlock = await provider.getBlockNumber();
 
-    // We don't know whether resolution will take the form of "executed" or
-    // "status", so we look for both and track progress separately.
     const statusEventLowerBound =
-      getTxBlockLowerBound(kvStore, txId, EVENTS.MULTICALL_STATUS) || fromBlock;
-    const executedEventLowerBound =
-      getTxBlockLowerBound(kvStore, txId, EVENTS.MULTICALL_EXECUTED) ||
-      fromBlock;
+      getTxBlockLowerBound(kvStore, txId, MULTICALL_STATUS_EVENT) || fromBlock;
 
     log(
-      `Searching blocks ${statusEventLowerBound}/${executedEventLowerBound} → ${toBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
+      `Searching blocks ${statusEventLowerBound} → ${toBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
     );
     const expectedIdTopic = ethers.keccak256(ethers.toUtf8Bytes(txId));
     const isMatch = ev => ev.topics[1] === expectedIdTopic;
@@ -220,16 +310,8 @@ export const lookBackGmp = async ({
       topics: [MULTICALL_STATUS_SIGNATURE, expectedIdTopic],
     };
 
-    const executedFilter: Filter = {
-      address: contractAddress,
-      topics: [MULTICALL_EXECUTED_SIGNATURE, expectedIdTopic],
-    };
-
     const updateStatusEventLowerBound = (_from: number, to: number) =>
-      setTxBlockLowerBound(kvStore, txId, to, EVENTS.MULTICALL_STATUS);
-
-    const updateExecutedEventLowerBound = (_from: number, to: number) =>
-      setTxBlockLowerBound(kvStore, txId, to, EVENTS.MULTICALL_EXECUTED);
+      setTxBlockLowerBound(kvStore, txId, to, MULTICALL_STATUS_EVENT);
 
     // Options shared by both scans (including an abort signal that is triggered
     // by a match from either).
@@ -246,40 +328,32 @@ export const lookBackGmp = async ({
       signal: sharedSignal,
     };
 
-    const matchingEvent = await Promise.race([
-      scanEvmLogsInChunks(
-        {
-          ...baseScanOpts,
-          baseFilter: statusFilter,
-          fromBlock: statusEventLowerBound,
-          onRejectedChunk: updateStatusEventLowerBound,
-        },
-        isMatch,
-      ),
-      scanEvmLogsInChunks(
-        {
-          ...baseScanOpts,
-          baseFilter: executedFilter,
-          fromBlock: executedEventLowerBound,
-          onRejectedChunk: updateExecutedEventLowerBound,
-        },
-        isMatch,
-      ),
-    ]);
+    const matchingEvent = await scanEvmLogsInChunks(
+      {
+        ...baseScanOpts,
+        baseFilter: statusFilter,
+        fromBlock: statusEventLowerBound,
+        onRejectedChunk: updateStatusEventLowerBound,
+      },
+      isMatch,
+    );
 
     abortScans();
 
     if (matchingEvent) {
       log(`Found matching event`);
-      deleteTxBlockLowerBound(kvStore, txId, EVENTS.MULTICALL_EXECUTED);
-      deleteTxBlockLowerBound(kvStore, txId, EVENTS.MULTICALL_STATUS);
-      return { found: true, txHash: matchingEvent.transactionHash };
+      deleteTxBlockLowerBound(kvStore, txId, MULTICALL_STATUS_EVENT);
+      return {
+        settled: true,
+        txHash: matchingEvent.transactionHash,
+        success: true,
+      };
     }
 
     log(`No matching MulticallStatus or MulticallExecuted found`);
-    return { found: false };
+    return { settled: false };
   } catch (error) {
     log(`Error:`, error);
-    return { found: false };
+    return { settled: false };
   }
 };

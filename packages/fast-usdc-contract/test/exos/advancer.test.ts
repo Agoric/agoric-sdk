@@ -10,7 +10,7 @@ import { CctpTxEvidenceShape } from '@agoric/fast-usdc/src/type-guards.js';
 import type {
   CctpTxEvidence,
   EvidenceWithRisk,
-} from '@agoric/fast-usdc/src/types.ts';
+} from '@agoric/fast-usdc/src/types.js';
 import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
 import {
   MockCctpTxEvidences,

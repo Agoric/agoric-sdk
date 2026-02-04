@@ -9,6 +9,10 @@ import { E } from '@endo/far';
  * @import {BridgeHandler} from './types.js';
  * @import {ScopedBridgeManager} from './types.js';
  * @import {Zone} from '@agoric/zone';
+ * @import {MapStore} from '@agoric/store';
+ * @import {ERef} from '@agoric/vow';
+ * @import {DProxy} from '@agoric/swingset-vat';
+ * @import {BridgeDevice} from '@agoric/swingset-vat/src/devices/bridge/device-bridge.js';
  */
 
 /**

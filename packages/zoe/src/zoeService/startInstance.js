@@ -23,6 +23,7 @@ import { makeInstanceAdminMaker } from './instanceAdminStorage.js';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {WeakMapStore} from '@agoric/store';
  * @import {BundleCap} from '@agoric/swingset-vat';
+ * @import {Handle} from '@agoric/zoe';
  * @import {StartInstance} from './utils.js';
  * @import {PromiseWatcher} from '@agoric/swingset-liveslots';
  * @import {VatAdminFacet} from '@agoric/swingset-vat';
@@ -33,6 +34,7 @@ import { makeInstanceAdminMaker } from './instanceAdminStorage.js';
  * @import {ZCFRoot} from '../internal-types.js';
  * @import {InstanceAdmin} from '../internal-types.js';
  * @import {ZoeInstanceAdmin} from '../internal-types.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

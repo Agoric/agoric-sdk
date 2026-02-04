@@ -13,7 +13,7 @@ import { parseVatSlot } from './parseVatSlots.js';
  * @import {VirtualObjectManager} from './virtualObjectManager.js';
  * @import {ConvertValToSlot} from '@endo/marshal';
  * @import {ConvertSlotToVal} from '@endo/marshal';
- * @import {DurableKindHandle} from './vatDataTypes.js';
+ * @import {DurableKindHandle, MapStore} from './vatDataTypes.js';
  */
 
 /**

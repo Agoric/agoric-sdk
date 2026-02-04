@@ -7,6 +7,8 @@ import { Fail } from '@endo/errors';
 import { makeTagged } from '@endo/marshal';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import type { IssuerKit } from '@agoric/ertp/src/types.js';
+import type { BankVat } from '@agoric/vats/src/vat-bank.js';
+import type { PriceAuthorityVat } from '@agoric/vats/src/vat-priceAuthority.js';
 import { matchAmount, matchIter, matchRef } from '../../tools/supports.js';
 
 import type { buildRootObject as buildTestMintVat } from './vat-mint.js';

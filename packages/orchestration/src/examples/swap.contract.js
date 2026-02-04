@@ -14,6 +14,12 @@ import { ChainInfoShape, DenomDetailShape } from '../typeGuards.js';
  * @import {Zone} from '@agoric/zone';
  * @import {OrchestrationTools} from '../utils/start-helper.js';
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
+ * @import {ContractMeta} from '@agoric/zoe';
+ * @import {ZCF} from '@agoric/zoe';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {NatValue} from '@agoric/ertp';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 /** @type {ContractMeta<typeof start>} */

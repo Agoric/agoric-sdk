@@ -13,6 +13,10 @@ import { makeZoeForTest } from '../../../tools/setup-zoe.js';
 
 import { defaultAcceptanceMsg } from '../../../src/contractSupport/index.js';
 
+/**
+ * @import {Amount} from '@agoric/ertp';
+ */
+
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const mintAndSellNFTRoot = `${dirname}/../../../src/contracts/mintAndSellNFT.js`;

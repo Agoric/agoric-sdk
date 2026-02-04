@@ -3,6 +3,7 @@ Dockerfile
 docker-bake.*
 upgrade-test-scripts
 *submission/
+proposals/*/local-packages/
 
 # Yarn (https://yarnpkg.com/getting-started/qa#which-files-should-be-gitignored)
 .pnp.*

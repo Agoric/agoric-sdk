@@ -9,10 +9,12 @@ import { TimeMath } from '@agoric/time';
 /**
  * @import {Timestamp} from '@agoric/time'
  * @import {RelativeTime} from '@agoric/time'
- * @import {AdminFacet, InvitationAmount, ZCFMint} from '@agoric/zoe';
- * @import {Ratio} from '@agoric/ertp';
+ * @import {AdminFacet, InvitationAmount, Keyword, ZCFMint, ZCFSeat} from '@agoric/zoe';
+ * @import {AssetKind, Ratio} from '@agoric/ertp';
  * @import {Calculate, CalculatorKit} from './vaultFactory/types-ambient.js';
  * @import {MintAndTransfer} from './vaultFactory/types-ambient.js';
+ * @import {NatValue} from '@agoric/ertp';
+ * @import {Amount} from '@agoric/ertp';
  */
 
 export const SECONDS_PER_YEAR = 60n * 60n * 24n * 365n;

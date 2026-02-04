@@ -7,6 +7,7 @@ import { makeNotifierKit } from '@agoric/notifier';
 /**
  * @import {Purse} from './types.js';
  * @import {NotifierRecord} from '@agoric/notifier';
+ * @import {WeakMapStore} from '@agoric/store';
  */
 
 // Note: Virtual for high cardinality, but *not* durable, and so

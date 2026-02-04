@@ -20,6 +20,7 @@ import {
  * @import {SwingSetCapData} from '@agoric/swingset-vat';
  * @import {Message} from '@agoric/swingset-vat';
  * @import {KernelSyscallObject} from '@agoric/swingset-vat';
+ * @import {LegacyMap} from '@agoric/store';
  */
 /** @import {SpanContext, SpanOptions} from '@opentelemetry/api' */
 

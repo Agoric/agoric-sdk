@@ -1,0 +1,50 @@
+// Top-level tsconfig for validation across the repo
+{
+    "extends": [
+        "./tsconfig.json"
+    ],
+    "compilerOptions": {
+        "allowSyntheticDefaultImports": true,
+        "incremental": true,
+        "noEmit": true,
+        // Must be false because we have non-relative .ts imports and when that
+        // error is found it suppresses other errors when "incremental: true".
+        // We want incremental for speed so filter out import errors.
+        "rewriteRelativeImportExtensions": false,
+        "paths": {
+            // Each package to avoid error TS5061: Pattern '@agoric/*/bundles/bundle-*.js' can have at most one '*' character.
+            "@agoric/packages/inter-protocol/bundles/bundle-*.js": [
+                "./types/bundles-stub.d.ts"
+            ],
+            "@agoric/packages/zoe/bundles/bundle-*.js": [
+                "./types/bundles-stub.d.ts"
+            ]
+        },
+    },
+    "exclude": [
+        "a3p-integration", // vendored package problems
+        "multichain-testing", // not relevant for coding loop (and noble-usdn-lab.ts is very slow)
+        "packages/benchmark",
+        "packages/create-dapp",
+        "packages/solo",
+        "packages/stat-logger",
+        "packages/swingset-runner",
+        "packages/xsnap/moddable",
+        "packages/xsnap/xsnap-native",
+        "packages/xsnap-lockdown",
+        "**/build",
+        "**/bundles",
+        "**/coverage",
+        "**/dist",
+        "**/docs",
+        "**/vendor",
+        "**/*.umd.js"
+    ],
+    "include": [
+        // .ts/.mts anywhere in the repo
+        "./**/*.*ts",
+        // .js/.mjs only in our packages and services
+        "./packages/**/*.*js",
+        "./services/**/*.*js"
+    ]
+}

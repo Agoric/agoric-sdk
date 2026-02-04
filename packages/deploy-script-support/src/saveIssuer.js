@@ -5,6 +5,7 @@ import { E } from '@endo/far';
  * @import {Petname} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {Amount, Brand, Issuer, Payment} from '@agoric/ertp';
  * @import {IssuerManager} from './startInstance.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

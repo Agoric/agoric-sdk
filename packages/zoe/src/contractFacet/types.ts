@@ -202,10 +202,7 @@ export type OfferHandler<OR = unknown, OA = never> =
   | {
       handle: HandleOffer<OR, OA>;
     };
-export type ContractMeta<
-  SF extends // import inline to maintain ambient mode
-    ContractStartFunction = ContractStartFunction,
-> = {
+export type ContractMeta<SF extends ContractStartFunction> = {
   customTermsShape?: Record<
     Parameters<SF>[0] extends ZCF<infer CT> ? keyof CT : never,
     Pattern
@@ -220,14 +217,12 @@ export type ContractMeta<
 };
 /**
  * API for a contract start function.
- *
- * CAVEAT: assumes synchronous
  */
 export type ContractStartFn<PF = any, CF = any, CT = any, PA = any> = (
   zcf: ZCF<CT>,
   privateArgs: PA,
   baggage: import('@agoric/vat-data').Baggage,
-) => ContractStartFnResult<PF, CF>;
+) => ERef<ContractStartFnResult<PF, CF>>;
 export type ContractStartFnResult<PF, CF> = {
   publicFacet?: PF;
   creatorFacet?: CF;

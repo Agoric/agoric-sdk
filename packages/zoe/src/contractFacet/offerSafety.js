@@ -1,6 +1,10 @@
 import { AmountMath } from '@agoric/ertp';
 
 /**
+ * @import {AmountKeywordRecord, ProposalRecord} from '@agoric/zoe';
+ */
+
+/**
  * Helper to perform satisfiesWant and satisfiesGive. Is
  * allocationAmount greater than or equal to requiredAmount for every
  * keyword of giveOrWant?

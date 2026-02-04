@@ -5,7 +5,8 @@
  */
 
 /**
- * @import {ChainStoragePresent} from './chain-info.core.js'
+ * @import {ChainStoragePresent} from '@agoric/deploy-script-support/src/control/chain-info.core.js'
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
  */
 
 import { makeTracer, zip } from '@agoric/internal';

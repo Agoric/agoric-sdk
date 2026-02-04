@@ -89,7 +89,7 @@ export type AmountArg = DenomAmount | Amount<'nat'>;
  * and they use `chain_id`/`chainId` for what CAIP-2 calls the `reference`. We
  * qualify the term here to avoid confusion.
  *
- * @see {@link https://chainagnostic.org/CAIPs/caip-2}
+ * @see {@link https://standards.chainagnostic.org/CAIPs/caip-2}
  */
 export type CaipChainId = `${string}:${string}`;
 
@@ -100,9 +100,14 @@ export type CaipChainId = `${string}:${string}`;
  *   chain_id:          [-a-z0-9]{3,8}:[-_a-zA-Z0-9]{1,32} (See [CAIP-2][])
  *   account_address:   [-.%a-zA-Z0-9]{1,128}
  *
- * @see {@link https://chainagnostic.org/CAIPs/caip-10}
+ * @see {@link https://standards.chainagnostic.org/CAIPs/caip-10}
  */
 export type AccountId = `${CaipChainId}:${string}`;
+
+/**
+ * Rough approximation for `/0x([0-9a-fA-F]{2})+/`
+ */
+export type HexAddress = `0x${string}`;
 
 /**
  * Specific to Cosmos chains
@@ -118,7 +123,7 @@ export type CosmosChainAddress = {
 
 /**
  * Info used to identify blockchains across ecosystems
- * @see {@link https://chainagnostic.org/CAIPs/caip-2}
+ * @see {@link https://standards.chainagnostic.org/CAIPs/caip-2}
  */
 export interface BaseChainInfo<N extends KnownNamespace = KnownNamespace> {
   /** CAIP-2 namespace, e.g. 'cosmos', 'eip155' */

@@ -1,22 +1,27 @@
+import type { PureData } from '@endo/pass-style';
+
 export type PortfolioPath =
   `published.ymax${0 | 1}.portfolios.portfolio${number}`;
 
-export type EIPMessageUpdate =
-  | {
-      updated: 'messageUpdate';
-      nonce: bigint;
-      status: 'pending';
-    }
-  | {
-      updated: 'messageUpdate';
-      nonce: bigint;
-      error: string;
-      status: 'error';
-    }
-  | {
-      updated: 'messageUpdate';
-      nonce: bigint;
-      status: 'ok';
-    };
+type EIPCommonMessageUpdate = {
+  updated: 'messageUpdate';
+  nonce: bigint;
+  deadline: bigint;
+};
+
+export type EIPMessageUpdate = EIPCommonMessageUpdate &
+  (
+    | {
+        status: 'pending';
+      }
+    | {
+        status: 'error';
+        error: string;
+      }
+    | {
+        status: 'ok';
+        result: PureData;
+      }
+  );
 
 export type EVMWalletUpdate = EIPMessageUpdate | never;

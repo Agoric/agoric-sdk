@@ -8,11 +8,8 @@ import { createMockPendingTxData } from '@aglocal/portfolio-contract/tools/mocks
 import type { AccountId, CaipChainId } from '@agoric/orchestration';
 import { getTxBlockLowerBound, setTxBlockLowerBound } from '../src/kv-store.ts';
 import { handlePendingTx } from '../src/pending-tx-manager.ts';
-import { EVENTS } from '../src/watchers/gmp-watcher.ts';
-import {
-  createMockGmpExecutionEvent,
-  createMockPendingTxOpts,
-} from './mocks.ts';
+import { MULTICALL_STATUS_EVENT } from '../src/watchers/gmp-watcher.ts';
+import { createMockGmpStatusEvent, createMockPendingTxOpts } from './mocks.ts';
 
 /**
  * Sets up a test environment for testing transaction block lower bound functionality.
@@ -44,7 +41,7 @@ const setupEnvironment = ({
     destinationAddress,
   });
 
-  const event = createMockGmpExecutionEvent(txId, blockWithEvent);
+  const event = createMockGmpStatusEvent(txId, blockWithEvent);
   const opts = createMockPendingTxOpts(latestBlock, [event]);
   const mockProvider = opts.evmProviders[chainId];
 
@@ -74,18 +71,12 @@ test('updates lower bound when a pending tx is being searched', async t => {
     blockWithEvent: 99,
   });
 
-  const initialExecutedBlockSaved = await getTxBlockLowerBound(
-    ctx.kvStore,
-    txId,
-    EVENTS.MULTICALL_EXECUTED,
-  );
   const initialStatusBlockSaved = await getTxBlockLowerBound(
     ctx.kvStore,
     txId,
-    EVENTS.MULTICALL_STATUS,
+    MULTICALL_STATUS_EVENT,
   );
 
-  t.is(initialExecutedBlockSaved, undefined);
   t.is(initialStatusBlockSaved, undefined);
 
   await handlePendingTx(
@@ -97,19 +88,13 @@ test('updates lower bound when a pending tx is being searched', async t => {
     },
   );
 
-  const finalExecutedBlockSaved = await getTxBlockLowerBound(
-    ctx.kvStore,
-    txId,
-    EVENTS.MULTICALL_EXECUTED,
-  );
   const finalStatusBlockSaved = await getTxBlockLowerBound(
     ctx.kvStore,
     txId,
-    EVENTS.MULTICALL_STATUS,
+    MULTICALL_STATUS_EVENT,
   );
 
   // final blocks saved in kvstore should be deleted after success
-  t.is(finalExecutedBlockSaved, undefined);
   t.is(finalStatusBlockSaved, undefined);
 });
 
@@ -125,20 +110,13 @@ test('begins searching from the lower bound block number stored in kv store', as
     txId,
   });
 
-  // Arbitrarty different starting lower bounds
-  const executedLowerBound = 83;
+  // Set starting lower bound for status events
   const statusLowerBound = 87;
   await setTxBlockLowerBound(
     ctx.kvStore,
     txId,
-    executedLowerBound,
-    EVENTS.MULTICALL_EXECUTED,
-  );
-  await setTxBlockLowerBound(
-    ctx.kvStore,
-    txId,
     statusLowerBound,
-    EVENTS.MULTICALL_STATUS,
+    MULTICALL_STATUS_EVENT,
   );
 
   await handlePendingTx(
@@ -150,40 +128,29 @@ test('begins searching from the lower bound block number stored in kv store', as
     },
   );
 
-  const finalExecutedBlockSaved = await getTxBlockLowerBound(
-    ctx.kvStore,
-    txId,
-    EVENTS.MULTICALL_EXECUTED,
-  );
   const finalStatusBlockSaved = await getTxBlockLowerBound(
     ctx.kvStore,
     txId,
-    EVENTS.MULTICALL_STATUS,
+    MULTICALL_STATUS_EVENT,
   );
 
   // handlePendingTx will search in chunks of 10 blocks
   // since the expected event should be found in the second block we search,
   // The final block saved should be the tail of the previous chunk
-  const executedFinalBlock = executedLowerBound + 9;
   const statusFinalBlock = statusLowerBound + 9;
 
   // final blocks saved in kvstore should be deleted after success
-  t.is(finalExecutedBlockSaved, undefined);
   t.is(finalStatusBlockSaved, undefined);
 
   // latestBlock has incremented by one in this entire process
   const newLatestBlock = latestBlock + 1;
   t.deepEqual(logs, [
     `[${txId}] handling GMP tx`,
-    `[${txId}] Watching for MulticallStatus and MulticallExecuted events for txId: ${txId} at contract: ${contractAddress}`,
-    `[${txId}] Searching blocks ${statusLowerBound}/${executedLowerBound} → ${newLatestBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
+    `[${txId}] Watching transaction status for txId: ${txId} at contract: ${contractAddress}`,
+    `[${txId}] Searching blocks ${statusLowerBound} → ${newLatestBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
     `[${txId}] [LogScan] Searching chunk ${statusLowerBound} → ${statusFinalBlock}`,
-    `[${txId}] [LogScan] Searching chunk ${executedLowerBound} → ${executedFinalBlock}`,
     // Next chunk start one after where the previous chunk ended
     `[${txId}] [LogScan] Searching chunk ${statusFinalBlock + 1} → ${newLatestBlock}`,
-    `[${txId}] [LogScan] Searching chunk ${executedFinalBlock + 1} → ${newLatestBlock}`,
-    // Our mock event matches both, so we expect to find a match in each
-    `[${txId}] [LogScan] Match in tx=0x1234567890abcdef1234567890abcdef12345678`,
     `[${txId}] [LogScan] Match in tx=0x1234567890abcdef1234567890abcdef12345678`,
     `[${txId}] Found matching event`,
     `[${txId}] Lookback found transaction`,

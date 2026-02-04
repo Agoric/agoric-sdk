@@ -3,6 +3,7 @@ import { E, Far } from '@endo/far';
 /**
  * @import {Follower} from './types.js';
  * @import {IterateEachOptions} from './types.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 export { subscribeEach, subscribeLatest } from '@agoric/notifier/subscribe.js';

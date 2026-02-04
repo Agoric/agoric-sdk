@@ -7,6 +7,8 @@ import { makeLegacyMap, makeScalarMapStore } from '@agoric/store';
 /**
  * @import {Petname} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {Mapping} from './internal-types.js';
+ * @import {MapStore} from '@agoric/store';
+ * @import {LegacyMap} from '@agoric/store';
  */
 
 /**

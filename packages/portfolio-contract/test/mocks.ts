@@ -1,3 +1,4 @@
+import type { Hex } from 'viem';
 import type { HostInterface } from '@agoric/async-flow';
 import {
   MsgDepositForBurn,
@@ -27,7 +28,7 @@ import { leftPadEthAddressTo32Bytes } from '@agoric/orchestration/src/utils/addr
 import {
   buildTxPacketString,
   buildTxResponseString,
-} from '@agoric/orchestration/tools/ibc-mocks.ts';
+} from '@agoric/orchestration/tools/ibc-mocks.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import type { FundsFlowPlan } from '@agoric/portfolio-api';
 import type { VowTools } from '@agoric/vow';
@@ -39,6 +40,10 @@ import type { EVMContractAddressesMap } from '../src/type-guards.ts';
 
 /** address of orch LCA for portfolio0, after contract/fee LCA */
 export const portfolio0lcaOrch = makeTestAddress(1); // agoric1q...c09z0g';
+
+/** Private key for EVM address 0x3f4ae329c7fb2d39c7a0d786df25c32a45691f88 */
+export const evmTrader0PrivateKey =
+  '0x59c6995e998f97a5a0044966f094538c5f68e0c4e42e20b1e6f8a9a4f9f3d0b0' as Hex;
 
 export const prepareMockOrchAccounts = (
   zone: Zone,
@@ -278,6 +283,7 @@ export const contractsMock: EVMContractAddressesMap = {
     gateway: '0xC249632c2D40b9001FE907806902f63038B737Ab',
     gasService: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
     usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
+    permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
     tokenMessenger: testnetTokenMessenger['Avalanche Fuji'].Address,
     aaveUSDC: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     aaveRewardsController: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
@@ -293,6 +299,7 @@ export const contractsMock: EVMContractAddressesMap = {
     gateway: '0xe432150cce91c13a887f7D836923d5597adD8E31',
     gasService: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
     usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
+    permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
     tokenMessenger: testnetTokenMessenger['Ethereum Sepolia'].Address,
     aaveUSDC: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     aaveRewardsController: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
@@ -312,6 +319,7 @@ export const contractsMock: EVMContractAddressesMap = {
     gateway: '0xe432150cce91c13a887f7D836923d5597adD8E31',
     gasService: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
     usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
+    permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
     tokenMessenger: testnetTokenMessenger['OP Sepolia'].Address,
     aaveUSDC: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     aaveRewardsController: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
@@ -327,6 +335,7 @@ export const contractsMock: EVMContractAddressesMap = {
     gateway: '0xe1cE95479C84e9809269227C7F8524aE051Ae77a',
     gasService: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
     usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
+    permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
     tokenMessenger: testnetTokenMessenger['Arbitrum Sepolia'].Address,
     aaveUSDC: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     aaveRewardsController: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
@@ -350,6 +359,7 @@ export const contractsMock: EVMContractAddressesMap = {
     gateway: '0xe432150cce91c13a887f7D836923d5597adD8E31',
     gasService: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
     usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
+    permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
     tokenMessenger: testnetTokenMessenger['Base Sepolia'].Address,
     aaveUSDC: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     aaveRewardsController: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',

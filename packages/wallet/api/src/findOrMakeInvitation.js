@@ -5,6 +5,10 @@ import { AmountMath } from '@agoric/ertp';
 
 /**
  * @import {Board} from '@agoric/vats';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {ZoeService} from '@agoric/zoe';
+ * @import {Invitation} from '@agoric/zoe';
+ * @import {Instance} from '@agoric/zoe';
  */
 
 export const makeId = (dappOrigin, rawId) => `${dappOrigin}#${rawId}`;

@@ -20,8 +20,9 @@ import { name, permit } from './portfolio.contract.permit.js';
  * @import {AxelarChainConfigMap} from './axelar-configs.js';
  * @import {EVMContractAddressesMap} from '@aglocal/portfolio-contract/src/type-guards.ts';
  * @import { TypedPattern, Remote } from '@agoric/internal';
- * @import { ChainInfoPowers } from './chain-info.core.js';
+ * @import { ChainInfoPowers } from '@agoric/deploy-script-support/src/control/chain-info.core.js';
  * @import { Bech32Address } from '@agoric/orchestration';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
  */
 
 const trace = makeTracer(`YMX-Start`, true);

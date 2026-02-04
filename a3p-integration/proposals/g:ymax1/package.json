@@ -2,24 +2,38 @@
   "agoricProposal": {
     "source": "subdir",
     "sdk-generate": [
-      "../../portfolio-deploy/src/contract-control.build.js submission",
-      "../../portfolio-deploy/src/get-upgrade-kit.build.js submission",
+      "../../deploy-script-support/src/control/contract-control.build.js submission",
+      "../../deploy-script-support/src/control/get-upgrade-kit.build.js submission",
       "../../portfolio-deploy/src/portfolio-control.build.js submission --contractName=ymax0 --ymaxControlAddress=agoric15u29seyj3c9rdwg7gwkc97uttrk6j9fl4jkuyh",
       "../../portfolio-deploy/src/portfolio-control.build.js submission --contractName=ymax1 --ymaxControlAddress=agoric1c0eq3m8sze9cj8lxr7h66fu3jgqtevqxv8svcm"
     ],
     "type": "/agoric.swingset.CoreEvalProposal"
   },
+  "vendorPackages": [
+    "@agoric/client-utils",
+    "@agoric/deploy-script-support",
+    "@agoric/portfolio-api",
+    "@aglocal/portfolio-contract",
+    "@aglocal/portfolio-deploy"
+  ],
   "type": "module",
   "license": "Apache-2.0",
   "dependencies": {
+    "@aglocal/portfolio-deploy": "dev",
     "@agoric/client-utils": "dev",
+    "@agoric/deploy-script-support": "dev",
     "@agoric/synthetic-chain": "patch:@agoric/synthetic-chain@npm%3A0.6.1#~/.yarn/patches/@agoric-synthetic-chain-npm-0.6.1-f801222832.patch",
     "@endo/far": "^1.1.14",
     "@endo/init": "^1.1.12",
     "@endo/pass-style": "^1.6.3",
-    "ava": "^5.3.1"
+    "ava": "^6.4.1"
   },
   "resolutions": {
+    "@agoric/client-utils": "portal:./local-packages/client-utils",
+    "@agoric/deploy-script-support": "portal:./local-packages/deploy-script-support",
+    "@agoric/portfolio-api": "portal:./local-packages/portfolio-api",
+    "@aglocal/portfolio-contract": "portal:./local-packages/portfolio-contract",
+    "@aglocal/portfolio-deploy": "portal:./local-packages/portfolio-deploy",
     "@cosmjs/amino": "^0.36.0",
     "@cosmjs/encoding": "^0.36.0",
     "@cosmjs/proto-signing": "^0.36.0",
@@ -32,6 +46,14 @@
     "files": [
       "test/**/*.test.*",
       "!submission"
+    ],
+    "extensions": {
+      "js": true,
+      "ts": "module"
+    },
+    "nodeArguments": [
+      "--import=ts-blank-space/register",
+      "--no-warnings"
     ]
   },
   "scripts": {

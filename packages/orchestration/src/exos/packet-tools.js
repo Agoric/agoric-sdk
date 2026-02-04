@@ -20,7 +20,7 @@ const just = obj => {
 
 /**
  * @import {Pattern} from '@endo/patterns';
- * @import {EVow, Remote, Vow, VowKit, VowResolver, VowTools} from '@agoric/vow';
+ * @import {ERef, EVow, Remote, Vow, VowKit, VowResolver, VowTools} from '@agoric/vow';
  * @import {LocalChainAccount} from '@agoric/vats/src/localchain.js';
  * @import {ProgressTracker} from '../types.js';
  * @import {IBCEvent, VTransferIBCEvent} from '@agoric/vats';

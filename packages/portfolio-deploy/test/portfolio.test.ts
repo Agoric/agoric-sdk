@@ -10,7 +10,7 @@ import { makeProposalShapes } from '@aglocal/portfolio-contract/src/type-guards.
 import { makeUSDNIBCTraffic } from '@aglocal/portfolio-contract/test/mocks.ts';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeClientMarshaller } from '@agoric/client-utils';
-import { AmountMath } from '@agoric/ertp';
+import { AmountMath, type Brand } from '@agoric/ertp';
 import { BridgeId } from '@agoric/internal';
 import {
   defaultMarshaller,
@@ -305,8 +305,12 @@ test.serial('delegate control', async t => {
   // This used to be a single builder but has now been split up
   const materials = Promise.all([
     buildProposal('@aglocal/portfolio-deploy/src/postal-service.build.js'),
-    buildProposal('@aglocal/portfolio-deploy/src/contract-control.build.js'),
-    buildProposal('@aglocal/portfolio-deploy/src/get-upgrade-kit.build.js'),
+    buildProposal(
+      '@agoric/deploy-script-support/src/control/contract-control.build.js',
+    ),
+    buildProposal(
+      '@agoric/deploy-script-support/src/control/get-upgrade-kit.build.js',
+    ),
     buildProposal('@aglocal/portfolio-deploy/src/portfolio-control.build.js', [
       '--ymaxControlAddress',
       controllerAddr,
@@ -749,12 +753,12 @@ test.serial('invite evm handler; test open portfolio', async t => {
   const openPortfolioMessage = getPermitWitnessTransferFromData(
     {
       permitted: deposit,
-      // TODO: This should be the address of the owned deposit factory contract
-      spender: axelarConfig.Arbitrum.contracts.factory,
+      // This is the address of the owned deposit factory contract
+      spender: axelarConfig.Arbitrum.contracts.depositFactory,
       nonce,
       deadline,
     },
-    '0x000000000022D473030F116dDEE9F6B43aC78BA3', // Arbitrum permit2 address
+    axelarConfig.Arbitrum.contracts.permit2,
     BigInt(axelarConfig.Arbitrum.chainInfo.reference),
     witness,
   );
@@ -770,9 +774,24 @@ test.serial('invite evm handler; test open portfolio', async t => {
     args: [{ ...openPortfolioMessage, signature } as CopyRecord],
   });
 
-  // TODO: check portfolio published in vstorage
+  const walletUpdate = t.context.readPublished(
+    `ymax0.evmWallets.${userAccount.address}`,
+  );
+  t.like(walletUpdate, {
+    updated: 'messageUpdate',
+    nonce,
+    deadline,
+    status: 'ok',
+  });
 
-  t.pass();
+  // @ts-expect-error t.like doesn't narrow sufficiently
+  const portfolio = walletUpdate.result as `portfolio${number}`;
+
+  const portfolios = t.context.readPublished(
+    `ymax0.evmWallets.${userAccount.address}.portfolio`,
+  );
+
+  t.true(portfolios.some(p => p.endsWith(portfolio)));
 });
 
 test.serial(

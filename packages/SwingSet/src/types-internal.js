@@ -111,7 +111,7 @@ export {};
  * @typedef {{ state: 'fulfilled' | 'rejected', refCount: number,
  *             data: SwingSetCapData,
  *          }} SettledPromiseRecord
- * @typedef {UnresolvedPromiseRecord | SettledPromiseRecord} PromiseRecord
+ * @typedef {UnresolvedPromiseRecord | SettledPromiseRecord} SwingsetPromiseRecord
  */
 
 /**

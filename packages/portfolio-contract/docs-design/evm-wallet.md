@@ -1,5 +1,8 @@
 ## Preface: Invite EVM Messenger Service
 
+
+
+
 Much like we invite the Planner and Resolver, we start by inviting the EVM Messenger Service, and redeeming the invitation.
 
 <details><summary>Sequence Diagram: Invite EVM Messenger Service</summary>
@@ -182,6 +185,29 @@ sequenceDiagram
   D -->> U: deposit done
 ```
 
+### Permit2 Spender Address
+
+The `spender` field in Permit2 messages identifies who is authorized to execute the `permitWitnessTransferFrom` call:
+
+- **Open Portfolio with Deposit**: The spender is the **depositFactory** contract. The factory creates the portfolio's smart wallet and executes the permit2 transfer in one atomic transaction.
+
+- **Deposit to Existing Portfolio (`depositFromEVM`)**: The spender is the **portfolio's smart wallet** on the target chain. Even if the wallet doesn't exist yet on that chain, we predict its CREATE2 address. The contract ensures the wallet exists before executing the permit2 transfer, using the same `provideEVMAccount` pathway as other EVM operations.
+
+This distinction matters because:
+1. The depositFactory can atomically create + deposit, avoiding race conditions during initial portfolio creation
+2. For existing portfolios, the smart wallet address is deterministic (CREATE2) and can directly receive permit2 transfers
+3. The spender must match what the user signed, so the UI must compute the predicted wallet address
+
+### depositFromEVM Flow
+
+The `depositFromEVM` flow (`+Arbitrum` → `@Arbitrum`) is parallel to `withdrawToEVM` (`@Arbitrum` → `-Arbitrum`):
+
+1. **Planning Phase**: The planner includes a step with `src: '+Arbitrum'` and `dest: '@Arbitrum'`
+2. **Wallet Provisioning**: `stepFlow` detects the EVM chain in the step and calls `provideEVMAccount` to ensure the smart wallet exists (same pathway as other EVM operations)
+3. **Permit2 Execution**: A GMP call is sent to the smart wallet to execute `permitWitnessTransferFrom`, transferring tokens from the user's EOA to the wallet
+
+The permit details are passed via `ExecutePlanOptions.evmDepositDetail` (not in `FlowDetail`, which is for planner info only).
+
 ### Withdraw (EVM)
 
 ```mermaid
@@ -215,8 +241,9 @@ sequenceDiagram
   U->>D: withdraw(500 USDC, Arbitrum)
   D-->>D: allocate nonce543
   note right of MM: EIP-712 signTypedData
-  D->>MM: Withdraw712(500 USDC,“Arbitrum”,nonce543,deadline)
-  MM-->>U: Withdraw712(500 USDC,“Arbitrum”,nonce543,deadline) ok?
+  note right of D: chainId in domain determines<br/>destination chain
+  D->>MM: Withdraw712(500 USDC,nonce543,deadline)<br/>domain.chainId=42161
+  MM-->>U: Withdraw712(500 USDC,nonce543,deadline) ok?
   U->>MM: ok
   MM-->>D: signature
   D-->>U: stand by...
@@ -225,8 +252,8 @@ sequenceDiagram
   note right of EMS: using walletFactory invokeEntry
   EMS -->> EMH: handleMessage(Withdraw712, signature)
   EMH -->> EMH: check sigs
-  EMH -->> EMH: extract nested operation
-  EMH -->> YC: Withdraw(500 USDC,“Arbitrum”)
+  EMH -->> EMH: extract nested operation,<br/>chainId from domain
+  EMH -->> YC: Withdraw(500 USDC, chainId=42161)
   YC -->> EMH: portfolio123<br/>flow2
   note over EMH: NOT SHOWN:<br/>vstorage, YDS details
   EMH -->> D: portfolio123<br/>flow2

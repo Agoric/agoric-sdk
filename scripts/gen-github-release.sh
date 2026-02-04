@@ -181,7 +181,7 @@ Unlike typical cosmos-sdk chains where the daemon is a single executable file, A
 
 ### Troubleshooting `yarn: command not found` or `error This project's package.json defines "packageManager": "yarn@4.9.x". However the current global version of Yarn is 1.22.22`
 
-Generally, running `corepack enable` before running `yarn install` will resolve this issue. But if the issue persists, following `corepack enable` with `corepack prepare yarn@4.9.x --activate` helps resolve the issue. Replace `4.9.x` with the actual version.
+Run `./scripts/ensure-corepack-yarn.sh` before `yarn install`. This seeds Corepack from the checked-in Yarn release and avoids downloading from the network. If the issue persists, verify that `.yarn/releases/yarn-<version>.cjs` exists and matches `package.json#packageManager`.
 
 ### Troubleshooting `Cannot find dependency ...` in systemd
 

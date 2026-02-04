@@ -11,8 +11,9 @@ import { Nat } from '@endo/nat';
 import { reflectWalletStore, getInvocationUpdate } from '@agoric/client-utils';
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import type { RetryOptionsAndPowers } from '@agoric/client-utils/src/sync-tools.js';
-import { AmountMath, type Brand } from '@agoric/ertp';
-import type { Bech32Address } from '@agoric/orchestration';
+import { AmountMath } from '@agoric/ertp';
+import type { Brand } from '@agoric/ertp';
+import type { Bech32Address, CaipChainId } from '@agoric/orchestration';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 
 import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.exo.ts';
@@ -26,6 +27,7 @@ import {
   TxType,
 } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type {
+  ERC4626InstrumentId,
   FlowDetail,
   PoolKey as InstrumentId,
   StatusFor,
@@ -33,7 +35,6 @@ import type {
 import {
   flowIdFromKey,
   FlowStatusShape,
-  PoolPlaces,
   portfolioIdFromKey,
   PortfolioStatusShapeExt,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
@@ -43,7 +44,6 @@ import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.
 import {
   mustMatch,
   naturalCompare,
-  partialMap,
   provideLazyMap,
   stripPrefix,
   tryNow,
@@ -57,24 +57,28 @@ import type {
   PortfolioKey,
   SupportedChain,
 } from '@agoric/portfolio-api';
+import type { EvmAddress } from '@agoric/fast-usdc';
 
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
 import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
 import type { Sdk as SpectrumPoolsSdk } from './graphql/api-spectrum-pools/__generated/sdk.ts';
 import { logger, runWithFlowTrace } from './logger.ts';
-import type { EvmContext, HandlePendingTxOpts } from './pending-tx-manager.ts';
+import type {
+  EvmChain,
+  EvmContext,
+  HandlePendingTxOpts,
+} from './pending-tx-manager.ts';
 import { handlePendingTx } from './pending-tx-manager.ts';
 import type { BalanceQueryPowers } from './plan-deposit.ts';
 import {
-  getCurrentBalance,
   getNonDustBalances,
   planDepositToAllocations,
   planRebalanceToAllocations,
   planWithdrawFromAllocations,
 } from './plan-deposit.ts';
-import type { SpectrumClient } from './spectrum-client.ts';
 import { UserInputError } from './support.ts';
+import type { EvmProviders } from './support.ts';
 import {
   encodedKeyToPath,
   pathToEncodedKey,
@@ -88,7 +92,7 @@ import {
 } from './vstorage-utils.ts';
 import type { ReadStorageMetaOptions } from './vstorage-utils.ts';
 
-const { fromEntries, values } = Object;
+const { values } = Object;
 
 // eslint-disable-next-line no-nested-ternary
 const compareBigints = (a: bigint, b: bigint) => (a > b ? 1 : a < b ? -1 : 0);
@@ -101,8 +105,6 @@ const inspectForStdout = (obj: unknown, options?: InspectOptions) =>
   inspect(obj, { ...inspectOptsForStdout, ...options });
 const inspectForStderr = (obj: unknown, options?: InspectOptions) =>
   inspect(obj, { ...inspectOptsForStderr, ...options });
-
-const knownErrorProps = harden(['cause', 'errors', 'message', 'name', 'stack']);
 
 type CosmosEvent = {
   type: string;
@@ -168,9 +170,8 @@ export const makeVstorageEvent = (
 export type Powers = {
   evmCtx: Omit<EvmContext, 'signingSmartWalletKit' | 'fetch' | 'cosmosRest'>;
   rpc: CosmosRPCClient;
-  spectrum: SpectrumClient;
-  spectrumBlockchain?: SpectrumBlockchainSdk;
-  spectrumPools?: SpectrumPoolsSdk;
+  spectrumBlockchain: SpectrumBlockchainSdk;
+  spectrumPools: SpectrumPoolsSdk;
   spectrumChainIds: Partial<Record<SupportedChain, string>>;
   spectrumPoolIds: Partial<Record<InstrumentId, string>>;
   cosmosRest: CosmosRestClient;
@@ -184,13 +185,14 @@ export type Powers = {
   now: typeof Date.now;
   gasEstimator: GasEstimator;
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
+  erc4626VaultAddresses: Partial<Record<ERC4626InstrumentId, EvmAddress>>;
+  chainNameToChainIdMap: Partial<Record<EvmChain, CaipChainId>>;
 };
 
 export type ProcessPortfolioPowers = Pick<
   Powers,
   | 'cosmosRest'
   | 'network'
-  | 'spectrum'
   | 'spectrumBlockchain'
   | 'spectrumPools'
   | 'spectrumChainIds'
@@ -200,6 +202,8 @@ export type ProcessPortfolioPowers = Pick<
   | 'getWalletInvocationUpdate'
   | 'gasEstimator'
   | 'usdcTokensByChain'
+  | 'erc4626VaultAddresses'
+  | 'chainNameToChainIdMap'
 > & {
   isDryRun?: boolean;
   depositBrand: Brand<'nat'>;
@@ -208,6 +212,7 @@ export type ProcessPortfolioPowers = Pick<
   vstoragePathPrefixes: {
     portfoliosPathPrefix: string;
   };
+  evmProviders: EvmProviders;
 };
 
 export type PortfoliosMemory = {
@@ -247,13 +252,15 @@ export const processPortfolioEvents = async (
     signingSmartWalletKit,
     walletStore,
     getWalletInvocationUpdate,
-    spectrum,
     spectrumBlockchain,
     spectrumPools,
     spectrumChainIds,
     spectrumPoolIds,
     usdcTokensByChain,
     vstoragePathPrefixes,
+    erc4626VaultAddresses,
+    evmProviders,
+    chainNameToChainIdMap,
 
     portfolioKeyForDepositAddr,
   }: ProcessPortfolioPowers,
@@ -275,12 +282,14 @@ export const processPortfolioEvents = async (
   };
   const balanceQueryPowers: BalanceQueryPowers = {
     cosmosRest,
-    spectrum,
     spectrumBlockchain,
     spectrumPools,
     spectrumChainIds,
     spectrumPoolIds,
     usdcTokensByChain,
+    erc4626VaultAddresses,
+    evmProviders,
+    chainNameToChainIdMap,
   };
   type ReadVstorageSimpleOpts = Pick<
     ReadStorageMetaOptions<'data'>,
@@ -333,7 +342,7 @@ export const processPortfolioEvents = async (
     ) => {
       const txOpts = { sendOnly: true };
       const planReceiver = walletStore.get<PortfolioPlanner>('planner', txOpts);
-      const { tx, id } = await planReceiver[methodName]!(...args);
+      const { tx, id } = await planReceiver[methodName]!(...(args as any[]));
       // tx has been submitted, but we won't know its fate until a future block.
       if (!isDryRun) {
         void getWalletInvocationUpdate(id as any).catch(err => {
@@ -669,38 +678,6 @@ export const startEngine = async (
   await null;
   const { query, marshaller } = signingSmartWalletKit;
 
-  // Test balance querying (using dummy addresses for now).
-  {
-    const poolPlaceInfoByProtocol = new Map(
-      values(PoolPlaces).map(info => [info.protocol, info]),
-    );
-    await Promise.all(
-      [...poolPlaceInfoByProtocol.values()].map(async info => {
-        await null;
-        try {
-          const { chainName } = info;
-          const dummyAddress =
-            chainName === 'noble'
-              ? 'cosmos:testnoble:noble1xw2j23rcwrkg02yxdn5ha2d2x868cuk6370s9y'
-              : (([caipChainId, addr]) => `${caipChainId}:${addr}`)(
-                  typedEntries(evmCtx.usdcAddresses)[0],
-                );
-          const accountIdByChain = { [chainName]: dummyAddress } as any;
-          await getCurrentBalance(info, accountIdByChain, powers);
-        } catch (err) {
-          const expandos = partialMap(Reflect.ownKeys(err), key =>
-            knownErrorProps.includes(key as any) ? false : [key, err[key]],
-          );
-          console.warn(
-            `⚠️ Could not query ${info.protocol} balance`,
-            err,
-            ...(expandos.length ? [fromEntries(expandos)] : []),
-          );
-        }
-      }),
-    );
-  }
-
   const vbankAssets: AssetInfo[] = (
     await query.readPublished('agoricNames.vbankAsset')
   ).map(([_ibcDenom, asset]) => asset);
@@ -774,6 +751,7 @@ export const startEngine = async (
     feeBrand: feeAsset.brand as Brand<'nat'>,
     vstoragePathPrefixes,
     portfolioKeyForDepositAddr,
+    evmProviders: evmCtx.evmProviders,
   });
   await makeWorkPool(portfolioKeys, undefined, async portfolioKey => {
     const { streamCellJson, event } = makeVstorageEvent(
@@ -821,10 +799,11 @@ export const startEngine = async (
     let streamCellJson;
     let data;
     try {
-      streamCellJson = await query.vstorage.readStorage(path, {
-        kind: 'data',
+      const metaResponse = await readStorageMeta(query.vstorage, path, 'data', {
+        retries: 4,
       });
-      const streamCell = parseStreamCell(streamCellJson.value, path);
+      streamCellJson = metaResponse.result.value;
+      const streamCell = parseStreamCell(streamCellJson, path);
       const marshalledData = parseStreamCellValue(streamCell, -1, path);
       data = marshaller.fromCapData(marshalledData);
       if (

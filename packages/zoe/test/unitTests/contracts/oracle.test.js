@@ -13,11 +13,13 @@ import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import { makeZoeForTest } from '../../../tools/setup-zoe.js';
 
 /**
- * @import {ZoeService} from '@agoric/zoe';
+ * @import {Installation, ZoeService} from '@agoric/zoe';
  * @import {ExecutionContext} from 'ava';
  * @import {OracleStart} from '../../../src/contracts/oracle.js';
  * @import {OracleKit} from '../../../src/contracts/priceAggregatorTypes.js';
  * @import {OracleHandler} from '../../../src/contracts/priceAggregatorTypes.js';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {IssuerKit} from '@agoric/ertp';
  */
 
 /**

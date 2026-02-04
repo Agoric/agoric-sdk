@@ -2,6 +2,10 @@
 import { Fail } from '@endo/errors';
 
 /**
+ * @import {Database} from 'better-sqlite3';
+ */
+
+/**
  * @template [T=string]
  * @typedef {{
  *   has: (key: string) => boolean;
@@ -13,7 +17,7 @@ import { Fail } from '@endo/errors';
  */
 
 /**
- * @param {object} db The SQLite database connection.
+ * @param {Database} db The SQLite database connection.
  * @param {() => void} beforeMutation Called before mutating methods to
  *   establish a DB transaction if needed
  * @param {(...args: string[]) => void} trace Called after set/delete to record
@@ -47,7 +51,7 @@ export function makeKVStore(db, beforeMutation, trace) {
    */
   function get(key) {
     typeof key === 'string' || Fail`key must be a string`;
-    return sqlKVGet.get(key);
+    return /** @type {string | undefined} */ (sqlKVGet.get(key));
   }
 
   const sqlKVGetNextKey = db.prepare(`
@@ -89,7 +93,7 @@ export function makeKVStore(db, beforeMutation, trace) {
 
   function getNextKey(previousKey) {
     typeof previousKey === 'string' || Fail`previousKey must be a string`;
-    return sqlKVGetNextKey.get(previousKey);
+    return /** @type {string | undefined} */ (sqlKVGetNextKey.get(previousKey));
   }
 
   /**

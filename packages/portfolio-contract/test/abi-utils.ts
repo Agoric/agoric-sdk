@@ -1,5 +1,5 @@
 import { decodeAbiParameters, decodeFunctionData } from 'viem';
-import { CREATE_AND_DEPOSIT_ABI_PARAMS } from '../src/pos-gmp.flows.ts';
+import { depositFactoryCreateAndDepositInputs } from '../src/utils/evm-orch-factory.ts';
 
 export const decodeFunctionCall = (
   memo: string,
@@ -62,7 +62,7 @@ export const decodeCreateAndDepositPayload = (memo: string) => {
       ? Buffer.from(parsedMemo.payload, 'base64')
       : Buffer.from(parsedMemo.payload);
   const decodedPayload = decodeAbiParameters(
-    CREATE_AND_DEPOSIT_ABI_PARAMS,
+    depositFactoryCreateAndDepositInputs,
     `0x${payloadBytes.toString('hex')}`,
   );
   return decodedPayload[0];

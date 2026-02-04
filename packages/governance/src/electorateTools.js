@@ -3,10 +3,13 @@ import { E } from '@endo/eventual-send';
 import { deeplyFulfilled, Far } from '@endo/marshal';
 
 /**
+ * @import {Handle} from '@agoric/zoe';
  * @import {MapStore} from '@agoric/swingset-liveslots';
+ * @import {Publisher} from '@agoric/notifier';
  * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
  * @import {VoteCounterCreatorFacet, VoteCounterPublicFacet, QuestionSpec, OutcomeRecord, AddQuestion, AddQuestionReturn} from './types.js';
  * @import {Timestamp} from '@agoric/time';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

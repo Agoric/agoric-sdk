@@ -64,9 +64,8 @@ jobs:
           echo "/home/runner/bin" >> $GITHUB_PATH
         working-directory: ./agoric-sdk
 
-      - name: Enable Corepack
-        run: corepack enable
-        working-directory: ./agoric-sdk/multichain-testing
+      - name: Set up yarn
+        run: bash ./agoric-sdk/scripts/ensure-corepack-yarn.sh ./agoric-sdk
 
       # Before multichain-testing deps because that project portals into SDK
       # but only the SDK postinstall script will runs its package patching.

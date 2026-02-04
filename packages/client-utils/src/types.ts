@@ -61,10 +61,10 @@ export type TypedPublished<T extends string> = T extends keyof PublishedTypeMap
               ? StatusFor['flow']
               : T extends `ymax${'0' | '1'}.portfolios.portfolio${number}.flows.flow${number}.steps`
                 ? StatusFor['flowSteps']
-                : T extends `ymax${'0' | '1'}.evmWallets.0x${string}`
-                  ? StatusFor['evmWallet']
-                  : T extends `ymax${'0' | '1'}.evmWallets.0x${string}.portfolios`
-                    ? StatusFor['evmWalletPortfolios']
+                : T extends `ymax${'0' | '1'}.evmWallets.0x${string}.portfolio`
+                  ? StatusFor['evmWalletPortfolios']
+                  : T extends `ymax${'0' | '1'}.evmWallets.0x${string}`
+                    ? StatusFor['evmWallet']
                     : T extends `committees.${string}.latestQuestion`
                       ? QuestionDetails
                       : T extends `committees.${string}.latestOutcome`

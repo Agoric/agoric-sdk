@@ -13,8 +13,11 @@ import { Position } from './position.js';
 
 /**
  * @import {PriceAuthority} from '@agoric/zoe/tools/types.js';
+ * @import {OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {PositionKind} from './types-ambient.js';
  * @import {PayoffHandler} from './types-ambient.js';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {PromiseRecord} from '@endo/promise-kit';
  */
 
 /**

@@ -7,12 +7,7 @@
 
 import type { GuestInterface } from '@agoric/async-flow';
 import { VaultType } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/vaults.js';
-import {
-  AmountMath,
-  type Amount,
-  type Brand,
-  type NatAmount,
-} from '@agoric/ertp';
+import { type Amount, type Brand, type NatAmount } from '@agoric/ertp';
 import {
   deeplyFulfilledObject,
   fromTypedEntries,
@@ -38,6 +33,7 @@ import type {
 import {
   coerceAccountId,
   parseAccountId,
+  sameEvmAddress,
 } from '@agoric/orchestration/src/utils/address.js';
 import { progressTrackerAsyncFlowUtils } from '@agoric/orchestration/src/utils/progress.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
@@ -49,6 +45,8 @@ import {
   type FlowStep,
   type FundsFlowPlan,
   type TrafficReport,
+  type TxId,
+  type TxPhase,
 } from '@agoric/portfolio-api';
 import {
   AxelarChain,
@@ -56,7 +54,7 @@ import {
   type YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
-import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
+import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.js';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { EVow } from '@agoric/vow';
 import type { ZCFSeat } from '@agoric/zoe';
@@ -76,6 +74,7 @@ import {
   provideEVMAccount,
   provideEVMAccountWithPermit,
   sendGMPContractCall,
+  sendPermit2GMP,
   type EVMContext,
   type GMPAccountStatus,
 } from './pos-gmp.flows.ts';
@@ -87,10 +86,10 @@ import {
 } from './pos-usdn.flows.ts';
 import type { Position } from './pos.exo.ts';
 import type { ResolverKit } from './resolver/resolver.exo.js';
-import type { TxId } from './resolver/types.ts';
 import { runJob, type Job } from './schedule-order.ts';
 import {
   getChainNameOfPlaceRef,
+  getDepositChainOfPlaceRef,
   getKeywordOfPlaceRef,
   getWithdrawChainOfPlaceRef,
   type AssetPlaceRef,
@@ -103,17 +102,16 @@ import {
   type FlowDetail,
   type PoolKey,
   type ProposalType,
-  type TargetAllocation,
 } from './type-guards.ts';
+import { setAppendedTxIds } from './utils/traffic.ts';
 
-const { keys, entries, fromEntries } = Object;
+const { keys, fromEntries } = Object;
 const { reduceProgressReports } = progressTrackerAsyncFlowUtils;
 
 export type LocalAccount = OrchestrationAccount<{ chainId: 'agoric-any' }>;
 export type NobleAccount = OrchestrationAccount<{ chainId: 'noble-any' }>;
 
 const SETUP_STEP = 0;
-type StepPhase = 'makeSrcAccount' | 'makeDestAccount' | 'apply' | 'undo';
 
 export type PortfolioInstanceContext = {
   axelarIds: AxelarId;
@@ -220,13 +218,17 @@ const deepEqual = (a: any, b: any): boolean =>
 type FlowStepPowers = {
   createPendingTx: ResolverKit['client']['createPendingTx'];
   updateTxMeta: ResolverKit['client']['updateTxMeta'];
-  updateFirstTx: (txId: TxId) => void;
+  updatePhase: (txIds: TxId[]) => void;
 };
 
 type ExecutePlanOptions = {
   evmDepositDetail?: PermitDetails & { fromChain: AxelarChain };
   // XXX consider using pattern matching for queued steps instead of src/dest.
-  queuedSteps?: Array<Pick<MovementDesc, 'src' | 'dest'>>;
+  queuedSteps?: Array<
+    Pick<MovementDesc, 'src' | 'dest'> & {
+      progressTracker?: ProgressTracker;
+    }
+  >;
 };
 
 const makeFlowStepPowers = (
@@ -238,7 +240,7 @@ const makeFlowStepPowers = (
   }: {
     flowId: number;
     step: number;
-    phase: StepPhase;
+    phase: TxPhase;
     assetMoves?: AssetMovement[];
     moveDescs?: MovementDesc[];
   },
@@ -249,15 +251,15 @@ const makeFlowStepPowers = (
   }: {
     reporter: GuestInterface<PortfolioKit['reporter']>;
     resolverClient: GuestInterface<ResolverKit['client']>;
-    phasesForStep: Map<StepPhase, TxId>[];
+    phasesForStep: Map<TxPhase, TxId[]>[];
   },
 ): FlowStepPowers => ({
   createPendingTx: (txMeta: PendingTxMeta) =>
     resolverClient.createPendingTx(txMeta),
   updateTxMeta: (txId: TxId, txMeta: PendingTxMeta) =>
     resolverClient.updateTxMeta(txId, txMeta),
-  updateFirstTx: (txId: TxId) => {
-    phasesForStep[step - 1].set(phase, txId);
+  updatePhase: (txIds: TxId[]) => {
+    phasesForStep[step - 1].set(phase, txIds);
     if (!assetMoves) {
       // XXX what can we publish before AssetMovements are initialized?
       return;
@@ -265,7 +267,7 @@ const makeFlowStepPowers = (
     // Publish each move with updated step phase information.
     const movesWithPhases = assetMoves.map((m, i) => ({
       ...moveStatus(m),
-      phases: Object.fromEntries(phasesForStep[i].entries()),
+      phases: fromTypedEntries([...phasesForStep[i].entries()]),
     }));
     reporter.publishFlowSteps(flowId, movesWithPhases);
   },
@@ -288,17 +290,17 @@ type PendingTxsEntry = {
 const makeTrafficPublishingReducer = ({
   createPendingTx,
   updateTxMeta,
-  updateFirstTx,
+  updatePhase,
 }: FlowStepPowers) => {
   return async (thisReport: TrafficReport, priorTxs: PendingTxsEntry[]) => {
-    const { traffic: thisTraffic = [] } = thisReport || {};
+    const { traffic: thisTraffic = [], appendTxIds = [] } = thisReport || {};
     if (thisReport == null) {
       // Final report.
       return null;
     }
-    const txs = [...priorTxs];
+    const txs = priorTxs.slice(0, thisTraffic.length);
     const firstTxId: TxId | undefined = txs[0]?.txId;
-    let nextTxId: TxId | undefined;
+    let nextTxId: TxId | undefined = appendTxIds?.[0];
 
     // Iterate backwards through the trafficEntry array, so we can link them via
     // nextTxId.
@@ -352,7 +354,10 @@ const makeTrafficPublishingReducer = ({
     }
     const newFirstTxId = txs[0]?.txId;
     if (newFirstTxId != null && newFirstTxId !== firstTxId) {
-      updateFirstTx(newFirstTxId);
+      updatePhase([...txs.map(tx => tx.txId), ...appendTxIds]);
+    } else if (!newFirstTxId && firstTxId == null && appendTxIds.length) {
+      // Allow phases to advance when only appendTxIds are reported (e.g. CCTP).
+      updatePhase([...appendTxIds]);
     }
     return txs;
   };
@@ -392,7 +397,7 @@ const trackFlow = async (
   detail: FlowDetail,
   progressPowers?: {
     resolverClient: GuestInterface<ResolverKit['client']>;
-    phasesForStep: Map<StepPhase, TxId>[];
+    phasesForStep: Map<TxPhase, TxId[]>[];
   },
 ) => {
   const runTask = async (ix: number, running: number[]) => {
@@ -601,7 +606,8 @@ const getAssetPlaceRefKind = (
   if (keys(PoolPlaces).includes(ref)) return 'pos';
   if (getKeywordOfPlaceRef(ref)) return 'seat';
   if (getChainNameOfPlaceRef(ref)) return 'accountId';
-  if (ref === '+agoric') return 'depositAddr';
+  // +agoric or +Arbitrum etc. - all deposit sources
+  if (ref.startsWith('+')) return 'depositAddr';
   if (getWithdrawChainOfPlaceRef(ref)) return 'withdrawAddr';
   throw Fail`bad ref: ${ref}`;
 };
@@ -614,6 +620,7 @@ type Way =
   | { how: 'IBC'; src: 'noble'; dest: 'agoric' }
   | { how: 'CCTP'; dest: AxelarChain }
   | { how: 'CCTP'; src: AxelarChain }
+  | { how: 'depositFromEVM'; src: AxelarChain }
   | { how: 'withdrawToEVM'; dest: AxelarChain }
   | { how: 'CCTPtoUser'; dest: AxelarChain }
   | {
@@ -664,9 +671,20 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
         Fail`src seat must have agoric account as dest ${q(moveDesc)}`;
       return { how: 'localTransfer' };
 
-    case 'depositAddr':
-      dest === '@agoric' || Fail`src +agoric must have dest @agoric`;
-      return { how: 'send' };
+    case 'depositAddr': {
+      // +agoric -> @agoric uses 'send' (lcaIn to lca)
+      // +Arbitrum -> @Arbitrum uses 'depositFromEVM' (permit2 transfer)
+      if (src === '+agoric') {
+        dest === '@agoric' || Fail`src +agoric must have dest @agoric`;
+        return { how: 'send' };
+      }
+      const srcChain = getDepositChainOfPlaceRef(src);
+      assert(srcChain);
+      const destName = getChainNameOfPlaceRef(dest);
+      srcChain === destName ||
+        Fail`depositFromEVM src ${q(src)} must match dest chain ${q(dest)}`;
+      return { how: 'depositFromEVM', src: srcChain };
+    }
 
     case 'accountId': {
       const srcName = getChainNameOfPlaceRef(src);
@@ -731,22 +749,23 @@ const stepFlow = async (
   flowId: number,
   flowDetail: FlowDetail,
   config?: FlowConfig,
-  queuedSteps?: ExecutePlanOptions['queuedSteps'],
+  options?: Pick<ExecutePlanOptions, 'queuedSteps' | 'evmDepositDetail'>,
 ) => {
   const features = config?.features;
+  const { queuedSteps, evmDepositDetail } = options ?? {};
   const { flow: moves, order: maybeOrder } = Array.isArray(plan)
     ? { flow: plan }
     : plan;
 
-  const phasesForStep: Map<StepPhase, TxId>[] = moves.map(
-    () => new Map<StepPhase, TxId>(),
+  const phasesForStep: Map<TxPhase, TxId[]>[] = moves.map(
+    () => new Map<TxPhase, TxId[]>(),
   );
   const todo: AssetMovement[] = [];
 
   const publishProvideAccountProgress = (
     progressTracker: ProgressTracker | undefined,
     step: number,
-    phase: StepPhase,
+    phase: 'makeSrcAccount' | 'makeDestAccount',
   ) =>
     progressTracker &&
     reduceProgressReports(
@@ -769,8 +788,8 @@ const stepFlow = async (
       [] as PendingTxsEntry[],
     );
 
-  const isQueuedStep = (move: Pick<MovementDesc, 'src' | 'dest'>) =>
-    queuedSteps?.some(step => step.src === move.src && step.dest === move.dest);
+  const getQueuedStep = (move: Pick<MovementDesc, 'src' | 'dest'>) =>
+    queuedSteps?.find(step => step.src === move.src && step.dest === move.dest);
 
   const makeEVMCtx = async (
     chain: AxelarChain,
@@ -830,7 +849,7 @@ const stepFlow = async (
 
     const { amount } = move;
     const phases =
-      features?.useProgressTracker && ({} as Record<StepPhase, TxId>);
+      features?.useProgressTracker && ({} as Record<TxPhase, TxId>);
     return harden({
       how: way.how,
       amount,
@@ -872,10 +891,13 @@ const stepFlow = async (
   traceFlow('checking', moves.length, 'moves');
   moves.length > 0 || Fail`moves list must not be empty`;
 
-  for (const [i, move] of entries(moves)) {
-    if (isQueuedStep(move)) {
+  for (const [i, move] of moves.entries()) {
+    const queuedStep = getQueuedStep(move);
+    if (queuedStep) {
       const maybeChain =
-        getChainNameOfPlaceRef(move.src) || getChainNameOfPlaceRef(move.dest);
+        getChainNameOfPlaceRef(move.src) ||
+        getChainNameOfPlaceRef(move.dest) ||
+        getDepositChainOfPlaceRef(move.src);
       assert(maybeChain);
       assert(keys(AxelarChain).includes(maybeChain));
       const chainName = maybeChain as AxelarChain;
@@ -884,8 +906,26 @@ const stepFlow = async (
         amount: move.amount,
         src: move.src,
         dest: move.dest,
-        apply: async ({ [chainName]: gInfo }) => {
+        apply: async ({ [chainName]: gInfo }, _tracer, opts) => {
           assert(gInfo, chainName);
+          await null;
+
+          // Copy background queued progress to our 'apply' phase
+          // `opts.progressTracker`.
+          const progressTracker = opts?.progressTracker;
+          const queuedProgressTracker = queuedStep.progressTracker;
+          if (progressTracker && queuedProgressTracker) {
+            // Transfer all the queued progress reports.
+            await reduceProgressReports(
+              queuedProgressTracker,
+              (value, accum) => {
+                value == null || progressTracker.update(value);
+                return accum;
+              },
+              true,
+            );
+          }
+
           await gInfo.ready;
           return {};
         },
@@ -1080,7 +1120,6 @@ const stepFlow = async (
         if (!sourceAccountId) {
           throw Fail`withdrawToEVM requires sourceAccountId to be set`;
         }
-        const { accountAddress: userAddress } = parseAccountId(sourceAccountId);
 
         todo.push({
           how: 'withdrawToEVM',
@@ -1093,14 +1132,15 @@ const stepFlow = async (
             ...optsArgs
           ) => {
             assert(gInfo && agoric, destChain);
-            await null;
+
             // Build ERC20 transfer call
             const session = makeEVMSession();
             const usdc = session.makeContract(
               ctx.contracts[destChain].usdc,
               ERC20,
             );
-            // userAddress is an EVM address from validated CAIP-10
+            const { accountAddress: userAddress } =
+              parseAccountId(sourceAccountId);
             usdc.transfer(userAddress as `0x${string}`, amount.value);
             const calls = session.finish();
 
@@ -1111,7 +1151,59 @@ const stepFlow = async (
               agoric.lca,
               ctx.transferChannels.noble.counterPartyChannelId,
             );
+
             await sendGMPContractCall(evmCtx, gInfo, calls, ...optsArgs);
+            return {};
+          },
+        });
+        break;
+      }
+
+      case 'depositFromEVM': {
+        // EVM deposit: permit2 transfer from user's EOA to portfolio's smart wallet
+        const srcChain = way.src;
+
+        // Get permit2 details - must be provided for depositFromEVM
+        if (!evmDepositDetail) {
+          throw Fail`depositFromEVM requires evmDepositDetail`;
+        }
+        if (evmDepositDetail.fromChain !== srcChain) {
+          throw Fail`depositFromEVM chain mismatch: expected ${srcChain}, got ${evmDepositDetail.fromChain}`;
+        }
+
+        const { permit2Payload } = evmDepositDetail;
+
+        todo.push({
+          how: 'depositFromEVM',
+          amount,
+          src: move.src,
+          dest: move.dest,
+          apply: async (
+            { [srcChain]: gInfo, agoric },
+            _tracer,
+            ...optsArgs
+          ) => {
+            assert(gInfo && agoric, srcChain);
+            // Wait for the smart wallet to be ready (created via provideEVMAccount)
+            await gInfo.ready;
+
+            // Create EVM context for GMP call
+            const evmCtx = await makeEVMCtx(
+              srcChain,
+              move,
+              agoric.lca,
+              ctx.transferChannels.noble.counterPartyChannelId,
+            );
+
+            // Execute permit2 transfer: wallet calls Permit2.permitWitnessTransferFrom
+            // to transfer tokens from user's EOA to the wallet
+            await sendPermit2GMP(
+              evmCtx,
+              gInfo,
+              permit2Payload,
+              amount.value,
+              ...optsArgs,
+            );
             return {};
           },
         });
@@ -1122,11 +1214,10 @@ const stepFlow = async (
         // Cross-chain from noble to user's EVM address via CCTP
         const destChain = way.dest;
         const sourceAccountId = kit.reader.getSourceAccountId();
+        assert(sourceAccountId);
         if (!sourceAccountId) {
           throw Fail`CCTPtoUser requires sourceAccountId to be set`;
         }
-        // Validate CAIP-10 format (will throw if malformed)
-        parseAccountId(sourceAccountId);
 
         todo.push({
           how: 'CCTPtoUser',
@@ -1148,11 +1239,13 @@ const stepFlow = async (
             const destinationAddress: AccountId = sourceAccountId;
             const { ica } = noble;
 
-            const { result } = ctx.resolverClient.registerTransaction(
+            const { txId, result } = ctx.resolverClient.registerTransaction(
               TxType.CCTP_TO_EVM,
               destinationAddress,
               amount.value,
             );
+            setAppendedTxIds(optsArgs[0]?.progressTracker, [txId]);
+
             const callerAndOptsArgs = (
               optsArgs.length > 0 ? [undefined, ...optsArgs] : []
             ) as [AccountId?, OrchestrationOptions?];
@@ -1537,7 +1630,9 @@ export const onAgoricTransfer = (async (
 }) satisfies OrchestrationFlow;
 
 /**
- * Offer handler to make a portfolio and, optionally, open yield positions.
+ * Handler to make a portfolio and, optionally, open yield positions.
+ * Supports opening from a cosmos or EVM wallet, with the deposit coming from
+ * the Zoe seat or via an EVM-signed Permit2 transfer respectively.
  *
  * **Input Validation**: ASSUME caller validates args
  *
@@ -1555,6 +1650,11 @@ export const openPortfolio = (async (
   offerArgs: OfferArgsFor['openPortfolio'],
   madeKit?: GuestInterface<PortfolioKit>,
   config?: FlowConfig,
+  evmDepositDetails?: {
+    fromChain: AxelarChain;
+    amount: NatAmount;
+    permitDetails: PermitDetails;
+  },
 ) => {
   const features = config?.features;
   await null; // see https://github.com/Agoric/agoric-sdk/wiki/No-Nested-Await
@@ -1579,20 +1679,30 @@ export const openPortfolio = (async (
         await rebalance(orch, ctxI, seat, offerArgs, kit, undefined, config);
       } else if (offerArgs.targetAllocation) {
         kit.manager.setTargetAllocation(offerArgs.targetAllocation);
-        if (give.Deposit) {
+        let depositFlowDetail: FlowDetail | undefined;
+        let depositOptions: ExecutePlanOptions | undefined;
+
+        if (evmDepositDetails) {
+          const { fromChain, amount, permitDetails } = evmDepositDetails;
+          depositFlowDetail = { type: 'deposit', amount, fromChain };
+          depositOptions = {
+            evmDepositDetail: { ...permitDetails, fromChain },
+          };
+        } else if (give.Deposit) {
+          depositFlowDetail = { type: 'deposit', amount: give.Deposit };
+        }
+
+        if (depositFlowDetail) {
           await executePlan(
             orch,
             ctxI,
             seat,
             offerArgs,
             kit,
-            {
-              type: 'deposit',
-              amount: give.Deposit,
-            },
+            depositFlowDetail,
             undefined,
             config,
-            undefined,
+            depositOptions,
           );
         }
       }
@@ -1625,49 +1735,12 @@ export const openPortfolio = (async (
 harden(openPortfolio);
 
 /**
- * Open a portfolio from an EVM-signed Permit2 and execute the initial
- * create+deposit step.
+ * Historical Open a portfolio from an EVM-signed Permit2
+ * See openPortfolio for the replacement
  */
-export const openPortfolioFromPermit2 = (async (
-  orch: Orchestrator,
-  ctx: PortfolioBootstrapContext,
-  seat: ZCFSeat,
-  // XXX subordinate amount/fromChain to depositDetails?
-  depositDetails: PermitDetails,
-  targetAllocation: TargetAllocation | undefined,
-  madeKit: GuestInterface<PortfolioKit>,
-) => {
-  await null; // see https://github.com/Agoric/agoric-sdk/wiki/No-Nested-Await
-  const trace = makeTracer('openPortfolioFromPermit2');
-  const id = madeKit.reader.getPortfolioId();
-  const traceP = trace.sub(`portfolio${id}`);
-  traceP('portfolio opened');
-  const fromChain =
-    ctx.eip155ChainIdToAxelarChain[`${Number(depositDetails.chainId)}`];
-  if (!fromChain) {
-    throw Fail`no Axelar chain for EIP-155 chainId ${depositDetails.chainId}`;
-  }
-  assert.equal(depositDetails.spender, ctx.contracts[fromChain].depositFactory);
-  if (targetAllocation) {
-    madeKit.manager.setTargetAllocation(targetAllocation);
-  }
-  await setupPortfolioAccounts(orch, ctx, madeKit, traceP, {
-    useProgressTracker: true,
-  });
-  const amount = AmountMath.make(ctx.usdc.brand, depositDetails.amount);
-  const flowDetail: FlowDetail = { type: 'deposit', amount, fromChain };
-  await executePlan(
-    orch,
-    ctx,
-    seat,
-    {},
-    madeKit,
-    flowDetail,
-    undefined,
-    undefined,
-    { evmDepositDetail: { ...depositDetails, fromChain } },
-  );
-  return undefined;
+export const openPortfolioFromPermit2 = (async () => {
+  // Tombstone in favor of openPortfolio with evmDepositDetails
+  return new Promise(() => {});
 }) satisfies OrchestrationFlow;
 harden(openPortfolioFromPermit2);
 
@@ -1686,6 +1759,7 @@ const queuePermit2Step = async (
     permit2Payload: PermitDetails['permit2Payload'];
     fromChain: AxelarChain;
     chainInfo: BaseChainInfo<'eip155'>;
+    config?: FlowConfig;
   },
 ) => {
   const { gmpChain, steps, permit2Payload, fromChain, chainInfo } = details;
@@ -1704,8 +1778,13 @@ const queuePermit2Step = async (
     chain: gmpChain,
     fee: feeAmount.value,
   };
-  // See stepFlow for resolution of gInfo.ready.
-  provideEVMAccountWithPermit(
+
+  const progressTracker = details.config?.features?.useProgressTracker
+    ? lca.makeProgressTracker()
+    : undefined;
+
+  // For openPortfolio: atomic createAndDeposit via depositFactory
+  const acct = provideEVMAccountWithPermit(
     fromChain,
     chainInfo,
     gmp,
@@ -1713,8 +1792,20 @@ const queuePermit2Step = async (
     ctx,
     pKit,
     permit2Payload,
+    { progressTracker },
   );
-  return [{ src: permitStep.src, dest: permitStep.dest }];
+
+  // We made the progressTracker above, so we must finalize it.
+  if (progressTracker) {
+    void acct.ready.finally(() => progressTracker.finish());
+  }
+  return [
+    {
+      src: permitStep.src,
+      dest: permitStep.dest,
+      ...(progressTracker ? { progressTracker } : {}),
+    },
+  ];
 };
 
 // XXX too many args. should use named properties
@@ -1752,16 +1843,25 @@ export const executePlan = (async (
     const steps = Array.isArray(plan) ? plan : plan.flow;
     let queuedSteps: ExecutePlanOptions['queuedSteps'];
     if (options?.evmDepositDetail) {
-      const { fromChain, permit2Payload } = options.evmDepositDetail;
-      const gmpChain = await orch.getChain('axelar');
-      const chainInfo = await (await orch.getChain(fromChain)).getChainInfo();
-      queuedSteps = await queuePermit2Step(pKit, ctx, {
-        gmpChain,
-        steps,
-        permit2Payload,
-        fromChain,
-        chainInfo,
-      });
+      const { fromChain, permit2Payload, spender } = options.evmDepositDetail;
+      // Only use queuePermit2Step for openPortfolio (spender = depositFactory).
+      // Deposits to existing portfolios use the depositFromEVM case in stepFlow.
+      const isDepositFactory = sameEvmAddress(
+        spender,
+        ctx.contracts[fromChain].depositFactory,
+      );
+      if (isDepositFactory) {
+        const gmpChain = await orch.getChain('axelar');
+        const chainInfo = await (await orch.getChain(fromChain)).getChainInfo();
+        queuedSteps = await queuePermit2Step(pKit, ctx, {
+          gmpChain,
+          steps,
+          permit2Payload,
+          fromChain,
+          chainInfo,
+          config,
+        });
+      }
     }
     if (steps.length === 0) {
       traceFlow('no steps to execute');
@@ -1778,7 +1878,7 @@ export const executePlan = (async (
       flowId,
       flowDetail,
       config,
-      queuedSteps,
+      { queuedSteps, evmDepositDetail: options?.evmDepositDetail },
     );
     return `flow${flowId}`;
   } catch (err) {

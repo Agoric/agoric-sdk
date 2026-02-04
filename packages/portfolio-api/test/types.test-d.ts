@@ -147,7 +147,9 @@ const status: StatusFor = {
   evmWallet: {
     updated: 'messageUpdate',
     nonce: 1n,
+    deadline: 1700000000n,
     status: 'ok',
+    result: 'foo',
   },
   evmWalletPortfolios: [`published.ymax0.portfolios.portfolio123`],
   pendingTx: publishedTx,

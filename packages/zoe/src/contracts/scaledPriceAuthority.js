@@ -14,6 +14,7 @@ import { makePriceAuthorityTransform } from '../contractSupport/priceAuthorityTr
  * @import {ZCF} from '@agoric/zoe';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {Ratio} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

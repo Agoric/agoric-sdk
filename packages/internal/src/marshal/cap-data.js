@@ -8,8 +8,7 @@ import { Fail } from '@endo/errors';
 /**
  * Assert that this is CapData
  *
- * @param {unknown} data
- * @returns {asserts data is CapData<unknown>}
+ * @type {(data: unknown) => asserts data is CapData<unknown>}
  */
 export const assertCapData = data => {
   assert.typeof(data, 'object');

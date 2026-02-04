@@ -18,6 +18,7 @@ import { FeeMintAccessShape } from '../typeGuards.js';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
  * @import {FeeIssuerConfig} from './types.js';
+ * @import {IssuerKit} from '@agoric/ertp';
  */
 
 /** @deprecated Redundant. Just omit it. */

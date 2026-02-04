@@ -12,6 +12,7 @@ export * from './smart-wallet-with-sequence.js';
 export * from './sync-tools.js';
 export * from './vstorage-kit.js';
 export * from './vstorage.js';
+export * from './wallet-store.js';
 export * from './wallet-utils.js';
 
 // Does not use types-index because this is built to a dist folder

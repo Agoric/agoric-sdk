@@ -5,6 +5,9 @@ import { provideDurableMapStore } from '@agoric/vat-data';
  * @import {EOnly} from '@endo/eventual-send';
  * @import {MutableQuote, PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  * @import {Baggage} from '@agoric/vat-data';
+ * @import {Mint} from '@agoric/ertp';
+ * @import {IssuerKit} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

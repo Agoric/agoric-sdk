@@ -6,8 +6,13 @@ import { E } from '@endo/far';
  * @import {OfferId, OfferStatus} from './offers.js';
  * @import {UpdateRecord} from './smartWallet.js';
  * @import {Follower} from '@agoric/casting';
+ * @import {Subscriber} from '@agoric/notifier';
  * @import {PublicSubscribers} from './types.js';
  * @import {TopicsRecord} from '@agoric/zoe/src/contractSupport/index.js';
+ * @import {Instance} from '@agoric/zoe';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 export const NO_SMART_WALLET_ERROR = 'no smart wallet';

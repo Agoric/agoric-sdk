@@ -55,6 +55,9 @@ import {
 /**
  * @import {EconomyBootstrapSpace} from '@agoric/inter-protocol/src/proposals/econ-behaviors.js'
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js';
+ * @import {BootstrapSpace, WellKnownSpaces} from '@agoric/vats/src/core/types.js';
+ * @import {DProxy} from '@agoric/swingset-vat';
+ * @import {ChainBootstrapSpace} from '@agoric/vats/src/core/types.js';
  */
 
 /** @param {BootstrapSpace & EconomyBootstrapSpace} powers */
@@ -345,7 +348,7 @@ export const buildRootObject = async (vatPowers, vatParameters) => {
       assert.typeof(name, 'string');
       return consume[name];
     },
-    /** @type {() => ChainBootstrapSpace} */
+    /** @type {() => ChainBootstrapSpace & WellKnownSpaces} */
     // @ts-expect-error cast
     getPromiseSpace: () => ({ consume, produce, ...spaces }),
   });

@@ -24,13 +24,14 @@ import {
   type PermitDetails,
   type YmaxOperationDetails,
 } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.ts';
-import { provideLazy } from '@agoric/store';
+import { provideLazy, type MapStore } from '@agoric/store';
 import type { TimerService } from '@agoric/time';
 import { VowShape, type Vow, type VowTools } from '@agoric/vow';
 import { type Zone } from '@agoric/zone';
 import { Fail, q } from '@endo/errors';
 import { E } from '@endo/far';
 import { makePassableKit } from '@endo/marshal';
+import { passStyleOf, type Passable, type PureData } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import type { Address } from 'abitype';
 import type { PublishStatus } from './portfolio.contract.ts';
@@ -55,7 +56,8 @@ interface PortfolioContractPublicFacet {
   }>;
 }
 
-type EVMWallet = {
+/** @private */
+export type EVMWallet = {
   portfolios: MapStore<bigint, Remote<PortfolioEVMFacet>>;
 };
 
@@ -65,6 +67,7 @@ type NonceKeyData = {
   deadline: bigint;
 };
 
+/** @private */
 export const makeNonceManager = (zone: Zone) => {
   // We must use our own encoder since liveslots collections only accept scalar keys
   const { decodePassable, encodePassable } = makePassableKit({
@@ -129,6 +132,43 @@ export const makeNonceManager = (zone: Zone) => {
   return harden({ insertNonce, removeExpiredNonces });
 };
 
+/** @private */
+export const getPublishedResult = (
+  rawResult: unknown,
+): PureData | undefined => {
+  try {
+    const passStyle = passStyleOf(rawResult as Passable);
+
+    switch (passStyle) {
+      case 'bigint':
+      case 'boolean':
+      case 'null':
+      case 'number':
+      case 'string':
+      case 'undefined':
+      case 'symbol':
+      case 'byteArray':
+        // "Atoms"
+        return rawResult as PureData;
+      case 'copyArray':
+      case 'copyRecord':
+      case 'tagged':
+        // XXX: "structures" should be checked for not containing Caps or Errors
+        return rawResult as PureData;
+      case 'error':
+      case 'remotable':
+      case 'promise':
+        return undefined;
+      default:
+        return passStyle ? (rawResult as PureData) : undefined;
+    }
+  } catch {
+    // Non-passable
+    return undefined;
+  }
+};
+
+/** @private */
 export const prepareEVMPortfolioOperationManager = (
   zone: Zone,
   {
@@ -149,6 +189,7 @@ export const prepareEVMPortfolioOperationManager = (
       wallet: EVMWallet;
       storageNode: Remote<StorageNode>;
       nonce: bigint;
+      deadline: bigint;
     }) => data,
     {
       OpenOutcomeWatcher: {
@@ -182,7 +223,9 @@ export const prepareEVMPortfolioOperationManager = (
               portfolioPaths,
             );
 
-            return this.facets.BasicOutcomeWatcher.onFulfilled();
+            return this.facets.BasicOutcomeWatcher.onFulfilled(
+              `portfolio${portfolioId}`,
+            );
           } catch (e) {
             return this.facets.BasicOutcomeWatcher.onRejected(e);
           }
@@ -192,21 +235,24 @@ export const prepareEVMPortfolioOperationManager = (
         },
       },
       BasicOutcomeWatcher: {
-        onFulfilled() {
-          const { storageNode, nonce } = this.state;
+        onFulfilled(result: unknown) {
+          const { storageNode, nonce, deadline } = this.state;
 
           publishStatus<'evmWallet'>(storageNode, {
             updated: 'messageUpdate',
             nonce,
+            deadline,
             status: 'ok',
+            result: getPublishedResult(result),
           });
         },
         onRejected(reason: unknown) {
-          const { storageNode, nonce } = this.state;
+          const { storageNode, nonce, deadline } = this.state;
 
           publishStatus<'evmWallet'>(storageNode, {
             updated: 'messageUpdate',
             nonce,
+            deadline,
             status: 'error',
             error: String(reason),
           });
@@ -215,17 +261,27 @@ export const prepareEVMPortfolioOperationManager = (
     },
   );
 
-  const handleOperation = (
-    wallet: EVMWallet,
-    storageNode: Remote<StorageNode>,
+  const handleOperation = ({
+    wallet,
+    storageNode,
+    address,
+    operationDetails,
+    nonce,
+    deadline,
+  }: {
+    wallet: EVMWallet;
+    storageNode: Remote<StorageNode>;
+    address: Address;
     operationDetails: YmaxOperationDetails &
-      Pick<FullMessageDetails, 'permitDetails'>,
-    nonce: bigint,
-  ): Vow<void> =>
+      Pick<FullMessageDetails, 'permitDetails'>;
+    nonce: bigint;
+    deadline: bigint;
+  }): Vow<void> =>
     asVow(async () => {
       publishStatus<'evmWallet'>(storageNode, {
         updated: 'messageUpdate',
         nonce,
+        deadline,
         status: 'pending',
       });
 
@@ -233,6 +289,7 @@ export const prepareEVMPortfolioOperationManager = (
         wallet,
         storageNode,
         nonce,
+        deadline,
       });
 
       try {
@@ -252,12 +309,24 @@ export const prepareEVMPortfolioOperationManager = (
           case 'Rebalance': {
             const {
               data: { portfolio: portfolioId },
+              permitDetails,
             } = operationDetails;
 
             const portfolio = wallet.portfolios.get(BigInt(portfolioId));
 
-            const result =
-              E(portfolio).rebalance(/* otherData, permitDetails */);
+            const result = E(portfolio).rebalance(undefined, permitDetails);
+
+            return watch(result, BasicOutcomeWatcher);
+          }
+          case 'SetTargetAllocation': {
+            const {
+              data: { portfolio: portfolioId, allocations },
+              permitDetails,
+            } = operationDetails;
+
+            const portfolio = wallet.portfolios.get(BigInt(portfolioId));
+
+            const result = E(portfolio).rebalance(allocations, permitDetails);
 
             return watch(result, BasicOutcomeWatcher);
           }
@@ -272,7 +341,23 @@ export const prepareEVMPortfolioOperationManager = (
 
             const portfolio = wallet.portfolios.get(BigInt(portfolioId));
 
-            const result = E(portfolio).deposit(/* otherData, permitDetails */);
+            const result = E(portfolio).deposit(permitDetails);
+
+            return watch(result, BasicOutcomeWatcher);
+          }
+          case 'Withdraw': {
+            const {
+              data: { portfolio: portfolioId, withdraw: withdrawDetails },
+              domain,
+            } = operationDetails;
+
+            const portfolio = wallet.portfolios.get(BigInt(portfolioId));
+
+            const result = E(portfolio).withdraw({
+              withdrawDetails,
+              domain,
+              address,
+            });
 
             return watch(result, BasicOutcomeWatcher);
           }
@@ -410,12 +495,16 @@ export const prepareEVMWalletHandlerKit = (
           const walletNode: Remote<StorageNode> =
             await E(storageNode).makeChildNode(evmWalletAddress);
 
-          return handleOperation(
+          harden(operationDetails);
+
+          return handleOperation({
             wallet,
-            walletNode,
-            harden(operationDetails),
+            storageNode: walletNode,
+            address: evmWalletAddress,
+            operationDetails,
             nonce,
-          );
+            deadline,
+          });
         });
       },
     },
