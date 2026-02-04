@@ -36,7 +36,11 @@ import {
   chainOfAccount,
 } from '@agoric/orchestration/src/utils/address.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
-import type { AxelarChain, FundsFlowPlan } from '@agoric/portfolio-api';
+import {
+  ALLOW_EVM_DEPOSIT_FACTORY_IS_SPENDER,
+  type AxelarChain,
+  type FundsFlowPlan,
+} from '@agoric/portfolio-api';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import {
   DEFAULT_FLOW_CONFIG,
@@ -2980,3 +2984,107 @@ test('evmHandler.withdraw rejects when sourceAccountId is not set', async t => {
 });
 
 // #endregion evmHandler.withdraw tests
+
+// #region evmHandler.deposit tests
+
+test('evmHandler.deposit via Permit2 with unknown spender is rejected', async t => {
+  const permitDetails = makePermitDetails({
+    spender: '0x0000000000000000000000000000000000009999' as Address,
+  });
+  const { orch, ctx } = mocks({}, {});
+  const sourceAccountId =
+    `eip155:${permitDetails.chainId}:${permitDetails.permit2Payload.owner.toLowerCase()}` as AccountId;
+  const kit = await ctx.makePortfolioKit({ sourceAccountId });
+  await provideCosmosAccount(orch, 'agoric', kit, silent);
+
+  t.throws(() => kit.evmHandler.deposit(permitDetails), {
+    message: /permit spender .* does not match expected account/,
+  });
+});
+
+/**
+ * This test depends on the ALLOW_EVM_DEPOSIT_FACTORY_IS_SPENDER feature flag
+ * being enabled, as it uses the factory contract as the spender address.
+ * If the flag is enabled, the flow should complete successfully.
+ * If the flag is disabled, the flow should be rejected.
+ */
+test('evmHandler.deposit via Permit2 with factoryContract as spender needs feature flag', async t => {
+  const permitDetails = makePermitDetails({
+    spender: contractsMock.Arbitrum.depositFactory as Address,
+  });
+  const { orch, ctx, storage, txResolver } = mocks({}, {});
+  const sourceAccountId =
+    `eip155:${permitDetails.chainId}:${permitDetails.permit2Payload.owner.toLowerCase()}` as AccountId;
+  const kit = await ctx.makePortfolioKit({ sourceAccountId });
+  await provideCosmosAccount(orch, 'agoric', kit, silent);
+
+  if (!ALLOW_EVM_DEPOSIT_FACTORY_IS_SPENDER) {
+    t.throws(() => kit.evmHandler.deposit(permitDetails), {
+      message: /permit spender .* does not match expected account/,
+    });
+    return;
+  }
+
+  const flowKey = kit.evmHandler.deposit(permitDetails);
+  t.regex(flowKey, /^flow\d+$/);
+  const flowNum = Number(flowKey.replace('flow', ''));
+  const portfolioId = kit.reader.getPortfolioId();
+  const { getPortfolioStatus, getFlowStatus } = makeStorageTools(storage);
+  const { flowsRunning = {} } = await getPortfolioStatus(portfolioId);
+  const detail = flowsRunning[flowKey];
+  if (!detail || detail.type !== 'deposit') {
+    throw t.fail('missing deposit flow detail');
+  }
+  const fromChain = detail.fromChain as AxelarChain;
+  const fee = make(BLD, 100n);
+  const steps: MovementDesc[] = [
+    { src: `+${fromChain}`, dest: `@${fromChain}`, amount: detail.amount, fee },
+  ];
+  kit.planner.resolveFlowPlan(flowNum, steps);
+  await txResolver.drainPending();
+  await eventLoopIteration();
+
+  const flowStatus = await getFlowStatus(portfolioId, flowNum);
+  t.is(flowStatus?.state, 'done');
+});
+
+test('evmHandler.deposit via Permit2 with existing wallet as spender succeeds', async t => {
+  const existingWallet =
+    '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as Address;
+  const permitDetails = makePermitDetails({ spender: existingWallet });
+  const { orch, ctx, storage, txResolver } = mocks({}, {});
+  const sourceAccountId =
+    `eip155:${permitDetails.chainId}:${permitDetails.permit2Payload.owner.toLowerCase()}` as AccountId;
+  const kit = await ctx.makePortfolioKit({ sourceAccountId });
+  await provideCosmosAccount(orch, 'agoric', kit, silent);
+  kit.manager.resolveAccount({
+    namespace: 'eip155',
+    chainName: 'Arbitrum',
+    chainId: 'eip155:42161',
+    remoteAddress: existingWallet,
+  });
+
+  const flowKey = kit.evmHandler.deposit(permitDetails);
+  t.regex(flowKey, /^flow\d+$/);
+  const flowNum = Number(flowKey.replace('flow', ''));
+  const portfolioId = kit.reader.getPortfolioId();
+  const { getPortfolioStatus, getFlowStatus } = makeStorageTools(storage);
+  const { flowsRunning = {} } = await getPortfolioStatus(portfolioId);
+  const detail = flowsRunning[flowKey];
+  if (!detail || detail.type !== 'deposit') {
+    throw t.fail('missing deposit flow detail');
+  }
+  const fee = make(BLD, 100n);
+  const fromChain = detail.fromChain as AxelarChain;
+  const steps: MovementDesc[] = [
+    { src: `+${fromChain}`, dest: `@${fromChain}`, amount: detail.amount, fee },
+  ];
+  kit.planner.resolveFlowPlan(flowNum, steps);
+  await txResolver.drainPending();
+  await eventLoopIteration();
+
+  const flowStatus = await getFlowStatus(portfolioId, flowNum);
+  t.is(flowStatus?.state, 'done');
+});
+
+// #endregion evmHandler.deposit tests
