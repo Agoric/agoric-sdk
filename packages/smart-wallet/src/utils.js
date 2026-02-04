@@ -1,11 +1,10 @@
-import { deeplyFulfilledObject, objectMap, makeTracer } from '@agoric/internal';
+import { deeplyFulfilledObject, makeTracer, objectMap } from '@agoric/internal';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 import { E } from '@endo/far';
 
 /**
  * @import {OfferId, OfferStatus} from './offers.js';
  * @import {UpdateRecord} from './smartWallet.js';
- * @import {Follower} from '@agoric/casting';
  * @import {Subscriber} from '@agoric/notifier';
  * @import {PublicSubscribers} from './types.js';
  * @import {TopicsRecord} from '@agoric/zoe/src/contractSupport/index.js';
@@ -14,8 +13,6 @@ import { E } from '@endo/far';
  * @import {Amount} from '@agoric/ertp';
  * @import {ERef} from '@agoric/vow';
  */
-
-export const NO_SMART_WALLET_ERROR = 'no smart wallet';
 
 const trace = makeTracer('WUTIL', false);
 
@@ -125,21 +122,6 @@ export const coalesceUpdates = (updates, invitationBrand) => {
     },
   });
   return coalescer.state;
-};
-
-/**
- * @param {Follower<any>} follower
- * @throws if there is no first height
- */
-export const assertHasData = async follower => {
-  const eachIterable = E(follower).getReverseIterable();
-  const iterator = await E(eachIterable)[Symbol.asyncIterator]();
-  const el = await iterator.next();
-
-  // done before we started
-  if (el.done && !el.value) {
-    assert.fail(NO_SMART_WALLET_ERROR);
-  }
 };
 
 /**
