@@ -20,7 +20,7 @@ export const NO_SMART_WALLET_ERROR = 'no smart wallet';
 const trace = makeTracer('WUTIL', false);
 
 /** @param {Brand<'set'>} [invitationBrand] */
-export const makeWalletStateCoalescer = (invitationBrand = undefined) => {
+const makeCoalescer = (invitationBrand = undefined) => {
   /** @type {Map<OfferId, OfferStatus>} */
   const offerStatuses = new Map();
   /** @type {Map<Brand, Amount>} */
@@ -32,7 +32,7 @@ export const makeWalletStateCoalescer = (invitationBrand = undefined) => {
    * @type {Map<
    *   string,
    *   {
-   *     acceptedIn: OfferId;
+   *     acceptedIn?: OfferId;
    *     description: string;
    *     instance: Instance;
    *   }
@@ -105,7 +105,6 @@ export const makeWalletStateCoalescer = (invitationBrand = undefined) => {
     update,
   };
 };
-/** @typedef {ReturnType<typeof makeWalletStateCoalescer>['state']} CoalescedWalletState */
 
 /**
  * Coalesce updates from a wallet UpdateRecord publication feed. Note that local
@@ -118,7 +117,7 @@ export const makeWalletStateCoalescer = (invitationBrand = undefined) => {
  * @param {Brand<'set'>} [invitationBrand]
  */
 export const coalesceUpdates = (updates, invitationBrand) => {
-  const coalescer = makeWalletStateCoalescer(invitationBrand);
+  const coalescer = makeCoalescer(invitationBrand);
 
   void observeIteration(subscribeEach(updates), {
     updateState: updateRecord => {

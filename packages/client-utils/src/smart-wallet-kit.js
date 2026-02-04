@@ -1,19 +1,98 @@
 /* global globalThis */
 import { Fail, q } from '@endo/errors';
-import { makeWalletStateCoalescer } from '@agoric/smart-wallet/src/utils.js';
 import { retryUntilCondition } from './sync-tools.js';
 import { makeAgoricNames, makeVstorageKit } from './vstorage-kit.js';
 
 /**
  * @import {EReturn} from '@endo/far';
  * @import {Amount, Brand} from '@agoric/ertp/src/types.js'
- * @import {OfferStatus} from '@agoric/smart-wallet/src/offers.js';
+ * @import {OfferId, OfferStatus} from '@agoric/smart-wallet/src/offers.js';
  * @import {CurrentWalletRecord, UpdateRecord} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {MinimalNetworkConfig} from './network-config.js';
  * @import {RetryOptionsAndPowers} from './sync-tools.js';
  * @import {VstorageKit} from './vstorage-kit.js';
  * @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js';
+ * @import {Instance, InvitationDetails} from '@agoric/zoe';
  */
+
+/** @param {Brand<'set'>} [invitationBrand] */
+export const makeWalletStateCoalescer = (invitationBrand = undefined) => {
+  /** @type {Map<OfferId, OfferStatus>} */
+  const offerStatuses = new Map();
+  /** @type {Map<Brand, Amount>} */
+  const balances = new Map();
+
+  /**
+   * keyed by description; xxx assumes unique
+   *
+   * @type {Map<
+   *   string,
+   *   {
+   *     acceptedIn?: OfferId;
+   *     description: string;
+   *     instance: Instance;
+   *   }
+   * >}
+   */
+  const invitationsReceived = new Map();
+
+  /**
+   * @param {UpdateRecord | {}} updateRecord newer than previous
+   */
+  const update = updateRecord => {
+    if (!('updated' in updateRecord)) {
+      return;
+    }
+    const { updated } = updateRecord;
+    switch (updateRecord.updated) {
+      case 'balance': {
+        const { currentAmount } = updateRecord;
+        // last record wins
+        balances.set(currentAmount.brand, currentAmount);
+        if (currentAmount.brand === invitationBrand) {
+          const invvitationBalnce =
+            /** @type {Amount<'set', InvitationDetails>} */ (currentAmount);
+          for (const invitation of invvitationBalnce.value) {
+            invitationsReceived.set(invitation.description, invitation);
+          }
+        }
+        break;
+      }
+      case 'offerStatus': {
+        const { status } = updateRecord;
+        const lastStatus = offerStatuses.get(status.id);
+        // merge records
+        offerStatuses.set(status.id, { ...lastStatus, ...status });
+        if (
+          status.invitationSpec.source === 'purse' &&
+          status.numWantsSatisfied === 1
+        ) {
+          // record acceptance of invitation
+          // xxx matching only by description
+          const { description } = status.invitationSpec;
+          const receptionRecord = invitationsReceived.get(description);
+          if (receptionRecord) {
+            invitationsReceived.set(description, {
+              ...receptionRecord,
+              acceptedIn: status.id,
+            });
+          } else {
+            throw Error(`no record of invitation in offerStatus ${status}`);
+          }
+        }
+        break;
+      }
+      default:
+        throw Error(`unknown record updated ${updated}`);
+    }
+  };
+
+  return {
+    state: { invitationsReceived, offerStatuses, balances },
+    update,
+  };
+};
+/** @typedef {ReturnType<typeof makeWalletStateCoalescer>['state']} CoalescedWalletState */
 
 /**
  * @param {string | number} id
