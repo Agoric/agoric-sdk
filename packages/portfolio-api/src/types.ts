@@ -184,7 +184,7 @@ export type TxId = `tx${number}`;
 
 export type TrafficReport = {
   traffic: TrafficEntry[];
-  appendTxIds?: TxId[];
+  appendedTxIds?: TxId[];
 };
 
 export type PortfolioKey = `portfolio${number}`;
