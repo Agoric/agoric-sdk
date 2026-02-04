@@ -44,7 +44,7 @@
     "@agoric/builders": "portal:../../agoric-sdk/packages/builders",
     "@agoric/cache": "portal:../../agoric-sdk/packages/cache",
     "@agoric/casting": "portal:../../agoric-sdk/packages/casting",
-    "@agoric/client-utils": "dev",
+    "@agoric/client-utils": "portal:../../agoric-sdk/packages/client-utils",
     "@agoric/cosmic-proto": "portal:../../agoric-sdk/packages/cosmic-proto",
     "@agoric/cosmic-swingset": "portal:../../agoric-sdk/packages/cosmic-swingset",
     "@agoric/create-dapp": "portal:../../agoric-sdk/packages/create-dapp",

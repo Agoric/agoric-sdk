@@ -1,6 +1,6 @@
 /* global globalThis */
 import { Fail, q } from '@endo/errors';
-import { makeWalletStateCoalescer } from '@agoric/smart-wallet/src/utils.js';
+import { makeWalletStateCoalescer } from './wallet-state-coalescer.js';
 import { retryUntilCondition } from './sync-tools.js';
 import { makeAgoricNames, makeVstorageKit } from './vstorage-kit.js';
 
@@ -12,7 +12,7 @@ import { makeAgoricNames, makeVstorageKit } from './vstorage-kit.js';
  * @import {MinimalNetworkConfig} from './network-config.js';
  * @import {RetryOptionsAndPowers} from './sync-tools.js';
  * @import {VstorageKit} from './vstorage-kit.js';
- * @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js';
+ * @import {AgoricNamesRemotes} from './board-utils.js';
  */
 
 /**

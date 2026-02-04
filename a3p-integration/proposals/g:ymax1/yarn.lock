@@ -152,8 +152,6 @@ __metadata:
     "@agoric/cosmic-proto": "npm:dev"
     "@agoric/ertp": "npm:dev"
     "@agoric/internal": "npm:dev"
-    "@agoric/smart-wallet": "npm:dev"
-    "@agoric/vats": "npm:dev"
     "@cosmjs/crypto": "npm:^0.36.0"
     "@cosmjs/proto-signing": "npm:^0.36.0"
     "@cosmjs/stargate": "npm:^0.36.0"
