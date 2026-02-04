@@ -18,7 +18,7 @@ export const NO_SMART_WALLET_ERROR = 'no smart wallet';
 const trace = makeTracer('WUTIL', false);
 
 /** @param {Brand<'set'>} [invitationBrand] */
-export const makeWalletStateCoalescer = (invitationBrand = undefined) => {
+export const makeWalletStateCoalescer = invitationBrand => {
   /** @type {Map<OfferId, OfferStatus>} */
   const offerStatuses = new Map();
   /** @type {Map<Brand, Amount>} */
@@ -52,9 +52,7 @@ export const makeWalletStateCoalescer = (invitationBrand = undefined) => {
         // last record wins
         balances.set(currentAmount.brand, currentAmount);
         if (!invitationBrand) {
-          trace(
-            'balance update without invitationBrand known may be an invitation',
-          );
+          trace('balance update without invitationBrand known may be an invitation');
         }
         if (currentAmount.brand === invitationBrand) {
           for (const invitation of /** @type {any} */ (currentAmount.value)) {
