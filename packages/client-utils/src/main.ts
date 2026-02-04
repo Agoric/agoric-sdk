@@ -9,6 +9,7 @@ export * from './signing-client.js';
 export * from './signing-smart-wallet-kit.js';
 export * from './smart-wallet-kit.js';
 export * from './smart-wallet-with-sequence.js';
+export * from './smart-wallet-utils.js';
 export * from './sync-tools.js';
 export * from './vstorage-kit.js';
 export * from './vstorage.js';

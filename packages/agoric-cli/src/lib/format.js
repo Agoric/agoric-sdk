@@ -5,7 +5,7 @@ import { makeBoardRemote } from '@agoric/vats/tools/board-utils.js';
  * @import {Amount, Brand} from '@agoric/ertp'
  * @import {AgoricNamesRemotes, BoardRemote, VBankAssetDetail} from '@agoric/vats/tools/board-utils.js';
  * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
- * @import {CoalescedWalletState} from '@agoric/client-utils/src/smart-wallet-kit.js';
+ * @import {CoalescedWalletState} from '@agoric/client-utils/src/smart-wallet-utils.js';
  */
 
 // TODO Move to packages/internal.
