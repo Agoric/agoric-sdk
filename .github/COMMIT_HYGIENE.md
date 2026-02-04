@@ -16,7 +16,18 @@ yarn codegen
 
 This generates TypeScript code from proto files and ensures consistency.
 
-### 2. Format Code with Prettier
+### 2. Update Package Locks (if changing package.json)
+
+If you modify any `package.json` files, you **must** update all yarn.lock files:
+
+```bash
+# From repository root
+scripts/update-package-locks.sh
+```
+
+This ensures all lock files across the monorepo stay in sync with dependency changes.
+
+### 3. Format Code with Prettier
 
 Always run Prettier to ensure code style compliance:
 
@@ -31,7 +42,7 @@ Or format specific files:
 yarn run -T prettier --write path/to/file.js
 ```
 
-### 3. Run Linting
+### 4. Run Linting
 
 Ensure your changes pass linting:
 
@@ -43,7 +54,7 @@ yarn lint
 yarn lint-fix
 ```
 
-### 4. Run Tests
+### 5. Run Tests
 
 Run tests in the affected package:
 
@@ -55,7 +66,7 @@ yarn test
 yarn build
 ```
 
-### 5. Build Before Testing
+### 6. Build Before Testing
 
 Some packages require building before tests will pass:
 
@@ -79,6 +90,7 @@ Check the package's `package.json` for available scripts and follow similar patt
 ## Why These Requirements Matter
 
 - **Codegen**: Ensures generated code is in sync with proto definitions
+- **Package Locks**: Keeps all yarn.lock files synchronized across the monorepo, preventing version conflicts
 - **Formatting**: Maintains consistent code style across the codebase
 - **Linting**: Catches common errors and enforces code quality standards
 - **Testing**: Prevents regressions and ensures functionality
