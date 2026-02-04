@@ -37,13 +37,19 @@ import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message
 import { fromBech32 } from '@cosmjs/encoding';
 import { Fail, q, X } from '@endo/errors';
 import { hexToBytes } from '@noble/hashes/utils';
+import type { Address } from 'viem';
+import { makeEvmAbiCallBatch, makeGmpBuilder } from './evm-facade.ts';
+import { aavePoolABI, aaveRewardsControllerABI } from './interfaces/aave.ts';
+import { beefyVaultABI } from './interfaces/beefy.ts';
 import {
-  ERC20,
-  makeEvmAbiCallBatch,
-  makeEVMSession,
-  makeGmpBuilder,
-  type EVMT,
-} from './evm-facade.ts';
+  compoundABI,
+  compoundRewardsControllerABI,
+} from './interfaces/compound.ts';
+import { erc20ABI } from './interfaces/erc20.ts';
+import { erc4626ABI } from './interfaces/erc4626.ts';
+import { depositFactoryABI, factoryABI } from './interfaces/orch-factory.ts';
+import { tokenMessengerABI } from './interfaces/token-messenger.ts';
+import { walletHelperABI } from './interfaces/wallet-helper.ts';
 import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
 import type {
   AxelarId,
@@ -61,11 +67,7 @@ import { TxType } from './resolver/constants.js';
 import type { ResolverKit } from './resolver/resolver.exo.ts';
 import type { TxId } from './resolver/types.ts';
 import type { PoolKey } from './type-guards.ts';
-import {
-  depositFactoryABI,
-  factoryABI,
-  predictWalletAddress,
-} from './utils/evm-orch-factory.ts';
+import { predictWalletAddress } from './utils/evm-orch-factory.ts';
 import { setAppendedTxIds } from './utils/traffic.ts';
 
 const trace = makeTracer('GMPF');
@@ -83,14 +85,14 @@ export type GMPAccountStatus = GMPAccountInfo & {
 type ProvideEVMAccountSendCall = (params: {
   dest: {
     axelarId: string;
-    address: EVMT['address'];
+    address: Address;
   };
   fee: DenomAmount;
   portfolioLca: LocalAccount;
   contractAccount: LocalAccount;
   gmpChain: Chain<{ chainId: string }>;
   gmpAddresses: GmpAddresses;
-  expectedWalletAddress: EVMT['address'];
+  expectedWalletAddress: Address;
   orchOpts?: OrchestrationOptions;
 }) => Promise<void>;
 
@@ -242,18 +244,6 @@ const makeProvideEVMAccount = ({
   };
 };
 
-type TokenMessengerI = {
-  depositForBurn: ['uint256', 'uint32', 'bytes32', 'address'];
-};
-
-/**
- * @see {@link https://github.com/circlefin/evm-cctp-contracts/blob/master/src/TokenMessenger.sol}
- * 1ddc505 Dec 2022
- */
-const TokenMessenger: TokenMessengerI = {
-  depositForBurn: ['uint256', 'uint32', 'bytes32', 'address'],
-};
-
 /** @see {@link https://developers.circle.com/cctp/supported-domains} */
 const nobleDomain = 4;
 
@@ -287,9 +277,12 @@ export const CCTPfromEVM = {
     traceTransfer('Noble forwarding address', fwdAddr);
     const mintRecipient = bech32ToBytes32(fwdAddr); // XXX we generate bech32 only to go back to bytes
 
-    const session = makeEVMSession();
-    const usdc = session.makeContract(addresses.usdc, ERC20);
-    const tm = session.makeContract(addresses.tokenMessenger, TokenMessenger);
+    const session = makeEvmAbiCallBatch();
+    const usdc = session.makeContract(addresses.usdc, erc20ABI);
+    const tm = session.makeContract(
+      addresses.tokenMessenger,
+      tokenMessengerABI,
+    );
     usdc.approve(addresses.tokenMessenger, amount.value);
     tm.depositForBurn(amount.value, nobleDomain, mintRecipient, addresses.usdc);
     const calls = session.finish();
@@ -597,7 +590,7 @@ export const sendPermit2GMP = async (
     addresses,
   } = ctx;
   const { chainName, remoteAddress, chainId: gmpChainId } = gmpAcct;
-  const walletAddress = remoteAddress as EVMT['address'];
+  const walletAddress = remoteAddress as Address;
   const axelarId = axelarIds[chainName];
 
   const { permit, owner, witness, witnessTypeString, signature } =
@@ -668,28 +661,6 @@ export type EVMContext = {
   nobleForwardingChannel: `channel-${number}`;
 };
 
-type AaveI = {
-  supply: ['address', 'uint256', 'address', 'uint16'];
-  withdraw: ['address', 'uint256', 'address'];
-};
-
-const Aave: AaveI = {
-  supply: ['address', 'uint256', 'address', 'uint16'],
-  withdraw: ['address', 'uint256', 'address'],
-};
-
-/**
- * see {@link https://github.com/aave/aave-v3-periphery/blob/master/contracts/rewards/RewardsController.sol }
- * 8f3380d Aug 2023
- */
-type AaveRewardsControllerI = {
-  claimAllRewardsToSelf: ['address[]'];
-};
-
-const AaveRewardsController: AaveRewardsControllerI = {
-  claimAllRewardsToSelf: ['address[]'],
-};
-
 export const AaveProtocol = {
   protocol: 'Aave',
   chains: keys(AxelarChain) as AxelarChain[],
@@ -697,9 +668,9 @@ export const AaveProtocol = {
     const { remoteAddress } = src;
     const { addresses: a } = ctx;
 
-    const session = makeEVMSession();
-    const usdc = session.makeContract(a.usdc, ERC20);
-    const aave = session.makeContract(a.aavePool, Aave);
+    const session = makeEvmAbiCallBatch();
+    const usdc = session.makeContract(a.usdc, erc20ABI);
+    const aave = session.makeContract(a.aavePool, aavePoolABI);
     usdc.approve(a.aavePool, amount.value);
     aave.supply(a.usdc, amount.value, remoteAddress, 0);
     const calls = session.finish();
@@ -710,15 +681,15 @@ export const AaveProtocol = {
     const { remoteAddress } = dest;
     const { addresses: a } = ctx;
 
-    const session = makeEVMSession();
+    const session = makeEvmAbiCallBatch();
     if (claim) {
       const aaveRewardsController = session.makeContract(
         a.aaveRewardsController,
-        AaveRewardsController,
+        aaveRewardsControllerABI,
       );
       aaveRewardsController.claimAllRewardsToSelf([a.aaveUSDC]);
     }
-    const aave = session.makeContract(a.aavePool, Aave);
+    const aave = session.makeContract(a.aavePool, aavePoolABI);
     aave.withdraw(a.usdc, amount.value, remoteAddress);
     const calls = session.finish();
 
@@ -726,36 +697,14 @@ export const AaveProtocol = {
   },
 } as const satisfies ProtocolDetail<'Aave', AxelarChain, EVMContext>;
 
-type CompoundI = {
-  supply: ['address', 'uint256'];
-  withdraw: ['address', 'uint256'];
-};
-
-const Compound: CompoundI = {
-  supply: ['address', 'uint256'],
-  withdraw: ['address', 'uint256'],
-};
-
-/**
- * see {@link https://github.com/compound-finance/comet/blob/main/contracts/CometRewards.sol }
- * d7b414d May 2023
- */
-type CompoundRewardsControllerI = {
-  claim: ['address', 'address', 'bool'];
-};
-
-const CompoundRewardsController: CompoundRewardsControllerI = {
-  claim: ['address', 'address', 'bool'],
-};
-
 export const CompoundProtocol = {
   protocol: 'Compound',
   chains: keys(AxelarChain) as AxelarChain[],
   supply: async (ctx, amount, src, ...optsArgs) => {
     const { addresses: a } = ctx;
-    const session = makeEVMSession();
-    const usdc = session.makeContract(a.usdc, ERC20);
-    const compound = session.makeContract(a.compound, Compound);
+    const session = makeEvmAbiCallBatch();
+    const usdc = session.makeContract(a.usdc, erc20ABI);
+    const compound = session.makeContract(a.compound, compoundABI);
     usdc.approve(a.compound, amount.value);
     compound.supply(a.usdc, amount.value);
     const calls = session.finish();
@@ -764,15 +713,15 @@ export const CompoundProtocol = {
   },
   withdraw: async (ctx, amount, dest, claim, ...optsArgs) => {
     const { addresses: a } = ctx;
-    const session = makeEVMSession();
+    const session = makeEvmAbiCallBatch();
     if (claim) {
       const compoundRewardsController = session.makeContract(
         a.compoundRewardsController,
-        CompoundRewardsController,
+        compoundRewardsControllerABI,
       );
       compoundRewardsController.claim(a.compound, dest.remoteAddress, true);
     }
-    const compound = session.makeContract(a.compound, Compound);
+    const compound = session.makeContract(a.compound, compoundABI);
     compound.withdraw(a.usdc, amount.value);
     const calls = session.finish();
 
@@ -780,41 +729,17 @@ export const CompoundProtocol = {
   },
 } as const satisfies ProtocolDetail<'Compound', AxelarChain, EVMContext>;
 
-/**
- * see {@link https://github.com/beefyfinance/beefy-contracts/blob/master/contracts/BIFI/vaults/BeefyVaultV7.sol }
- * 0878a68 Nov 2022
- */
-type BeefyVaultI = {
-  deposit: ['uint256'];
-  withdraw: ['uint256'];
-  approve: ['address', 'uint256'];
-};
-
-const BeefyVault: BeefyVaultI = {
-  deposit: ['uint256'],
-  withdraw: ['uint256'],
-  approve: ['address', 'uint256'],
-};
-
-type WalletHelperI = {
-  beefyWithdrawUSDC: ['address', 'uint256'];
-};
-
-const WalletHelper: WalletHelperI = {
-  beefyWithdrawUSDC: ['address', 'uint256'],
-};
-
 export const BeefyProtocol = {
   protocol: 'Beefy',
   chains: keys(AxelarChain) as AxelarChain[],
   supply: async (ctx, amount, src, ...optsArgs) => {
     const { addresses: a, poolKey } = ctx;
-    const session = makeEVMSession();
-    const usdc = session.makeContract(a.usdc, ERC20);
+    const session = makeEvmAbiCallBatch();
+    const usdc = session.makeContract(a.usdc, erc20ABI);
     const vaultAddress =
       a[poolKey] ||
       assert.fail(X`Beefy pool key ${q(poolKey)} not found in addresses`);
-    const vault = session.makeContract(vaultAddress, BeefyVault);
+    const vault = session.makeContract(vaultAddress, beefyVaultABI);
     usdc.approve(vaultAddress, amount.value);
     vault.deposit(amount.value);
     const calls = session.finish();
@@ -823,12 +748,12 @@ export const BeefyProtocol = {
   },
   withdraw: async (ctx, amount, dest, _claim, ...optsArgs) => {
     const { addresses: a, poolKey } = ctx;
-    const session = makeEVMSession();
+    const session = makeEvmAbiCallBatch();
     const vaultAddress =
       a[poolKey] ||
       assert.fail(X`Beefy pool key ${q(poolKey)} not found in addresses`);
-    const vault = session.makeContract(vaultAddress, BeefyVault);
-    const walletHelper = session.makeContract(a.walletHelper, WalletHelper);
+    const vault = session.makeContract(vaultAddress, beefyVaultABI);
+    const walletHelper = session.makeContract(a.walletHelper, walletHelperABI);
     // Max possible value for approval
     const maxUint256 = 2n ** 256n - 1n;
     // Give infinite approval because we dont know the exact amount the helper will withdraw
@@ -845,32 +770,18 @@ export const BeefyProtocol = {
   EVMContext & { poolKey: PoolKey }
 >;
 
-/**
- * see {@link https://eips.ethereum.org/EIPS/eip-4626 }
- * ERC-4626: Tokenized Vault Standard
- */
-type ERC4626I = {
-  deposit: ['uint256', 'address'];
-  withdraw: ['uint256', 'address', 'address'];
-};
-
-const ERC4626: ERC4626I = {
-  deposit: ['uint256', 'address'],
-  withdraw: ['uint256', 'address', 'address'],
-};
-
 export const ERC4626Protocol = {
   protocol: 'ERC4626',
   chains: keys(AxelarChain) as AxelarChain[],
   supply: async (ctx, amount, src, ...optsArgs) => {
     const { addresses: a, poolKey } = ctx;
     const { remoteAddress } = src;
-    const session = makeEVMSession();
-    const usdc = session.makeContract(a.usdc, ERC20);
+    const session = makeEvmAbiCallBatch();
+    const usdc = session.makeContract(a.usdc, erc20ABI);
     const vaultAddress =
       a[poolKey] ||
       assert.fail(X`ERC4626 pool key ${q(poolKey)} not found in addresses`);
-    const vault = session.makeContract(vaultAddress, ERC4626);
+    const vault = session.makeContract(vaultAddress, erc4626ABI);
     usdc.approve(vaultAddress, amount.value);
     vault.deposit(amount.value, remoteAddress);
     const calls = session.finish();
@@ -880,11 +791,11 @@ export const ERC4626Protocol = {
   withdraw: async (ctx, amount, dest, _claim, ...optsArgs) => {
     const { addresses: a, poolKey } = ctx;
     const { remoteAddress } = dest;
-    const session = makeEVMSession();
+    const session = makeEvmAbiCallBatch();
     const vaultAddress =
       a[poolKey] ||
       assert.fail(X`ERC4626 pool key ${q(poolKey)} not found in addresses`);
-    const vault = session.makeContract(vaultAddress, ERC4626);
+    const vault = session.makeContract(vaultAddress, erc4626ABI);
     vault.withdraw(amount.value, remoteAddress, remoteAddress);
     const calls = session.finish();
 

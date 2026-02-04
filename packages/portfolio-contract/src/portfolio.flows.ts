@@ -78,7 +78,8 @@ import {
   type EVMContext,
   type GMPAccountStatus,
 } from './pos-gmp.flows.ts';
-import { ERC20, makeEVMSession } from './evm-facade.ts';
+import { makeEvmAbiCallBatch } from './evm-facade.ts';
+import { erc20ABI } from './interfaces/erc20.ts';
 import {
   agoricToNoble,
   nobleToAgoric,
@@ -1134,10 +1135,10 @@ const stepFlow = async (
             assert(gInfo && agoric, destChain);
 
             // Build ERC20 transfer call
-            const session = makeEVMSession();
+            const session = makeEvmAbiCallBatch();
             const usdc = session.makeContract(
               ctx.contracts[destChain].usdc,
-              ERC20,
+              erc20ABI,
             );
             const { accountAddress: userAddress } =
               parseAccountId(sourceAccountId);

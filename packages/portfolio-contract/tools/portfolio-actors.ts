@@ -48,7 +48,7 @@ import type { ERemote } from '@agoric/internal';
 import { E } from '@endo/far';
 import type { TypedDataDefinition } from 'viem';
 import type { PrivateKeyAccount } from 'viem/accounts';
-import type { EVMWalletMessageHandler } from '../src/evm-wallet-handler.ts';
+import type { EVMWalletMessageHandler } from '../src/evm-wallet-handler.exo.ts';
 
 const { fromEntries } = Object;
 
