@@ -1,8 +1,5 @@
 /**
- * @file flows for Aave, Compound, Beefy, and ERC4626 protocols on EVM chains
- *
- * Since Axelar GMP (General Message Passing) is used in both cases,
- * we use "gmp" in the filename.
+ * @file flows for interacting with Wallet contracts on EVM chains
  *
  * @see {@link provideEVMAccount}
  * @see {@link CCTP}
