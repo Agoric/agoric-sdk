@@ -32,11 +32,13 @@
     "@endo/promise-kit": "^1.1.13"
   },
   "devDependencies": {
+    "@agoric/base-zone": "workspace:*",
     "@agoric/swingset-liveslots": "workspace:*",
     "@agoric/swingset-vat": "workspace:*",
     "@agoric/vow": "workspace:*",
     "@agoric/zone": "workspace:*",
     "@endo/bundle-source": "^4.1.2",
+    "@endo/exo": "^1.5.12",
     "ava": "^6.4.1",
     "c8": "^10.1.3"
   },
