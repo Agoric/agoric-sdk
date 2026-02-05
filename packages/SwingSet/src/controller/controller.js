@@ -1,10 +1,10 @@
 /* global globalThis, WeakRef, FinalizationRegistry */
 
-import process from 'process';
-import crypto from 'crypto';
-import { performance } from 'perf_hooks';
-import { spawn as ambientSpawn } from 'child_process';
-import fs from 'fs';
+import process from 'node:process';
+import crypto from 'node:crypto';
+import { performance } from 'node:perf_hooks';
+import { spawn as ambientSpawn } from 'node:child_process';
+import fs from 'node:fs';
 import { tmpName } from 'tmp';
 import anylogger from 'anylogger';
 import microtime from 'microtime';
