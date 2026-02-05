@@ -60,7 +60,16 @@
     "@endo/zip": "^1.0.11"
   },
   "devDependencies": {
+    "@aglocal/portfolio-deploy": "workspace:*",
+    "@agoric/async-flow": "workspace:*",
+    "@agoric/base-zone": "workspace:*",
+    "@agoric/deploy-script-support": "workspace:*",
+    "@agoric/ertp": "workspace:*",
+    "@agoric/orchestration": "workspace:*",
+    "@agoric/smart-wallet": "workspace:*",
     "@agoric/vats": "workspace:*",
+    "@agoric/vow": "workspace:*",
+    "@agoric/zone": "workspace:*",
     "@endo/init": "^1.1.12",
     "ava": "^6.4.1",
     "import-meta-resolve": "^4.1.0"
