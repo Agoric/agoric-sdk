@@ -1,9 +1,10 @@
 /* eslint-disable max-classes-per-file */
 import type { ERef, RemotableBrand } from '@endo/eventual-send';
 import type { Primitive, RemotableObject } from '@endo/pass-style';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- used in JSDoc
-import type { mustMatch as endoMustMatch, Pattern } from '@endo/patterns';
+import type { Pattern } from '@endo/patterns';
 import type { Callable } from './ses-utils.js';
+
+export type { MustMatch } from '@agoric/store';
 
 /**
  * A mapping of a tuple type (as from `Parameters<...>`) into a corresponding
@@ -153,20 +154,5 @@ export type TypedPattern<T> = Pattern & { [validatedType]?: T };
 
 export declare type PatternType<TM extends TypedPattern<any>> =
   TM extends TypedPattern<infer T> ? T : never;
-
-// TODO make Endo's mustMatch do this
-/**
- * Returning normally indicates success. Match failure is indicated by
- * throwing.
- *
- * Note: remotables can only be matched as "remotable", not the specific kind.
- *
- * @see {endoMustMatch} for the implementation. This one has a type annotation to narrow if the pattern is a TypedPattern.
- */
-export declare type MustMatch = <P extends Pattern>(
-  specimen: unknown,
-  pattern: P,
-  label?: string | number,
-) => asserts specimen is P extends TypedPattern<any> ? PatternType<P> : unknown;
 
 export type { TraceLogger } from './debug.js';
