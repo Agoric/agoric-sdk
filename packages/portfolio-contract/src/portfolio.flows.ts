@@ -78,7 +78,7 @@ import {
   sendPermit2GMP,
   type EVMContext,
   type GMPAccountStatus,
-} from './pos-gmp.flows.ts';
+} from './pos-evm.flows.ts';
 import { makeEvmAbiCallBatch } from './evm-facade.ts';
 import { erc20ABI } from './interfaces/erc20.ts';
 import {

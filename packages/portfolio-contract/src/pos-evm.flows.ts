@@ -1,8 +1,8 @@
 /**
  * @file flows for Aave, Compound, Beefy, and ERC4626 protocols on EVM chains
  *
- * Since Axelar GMP (General Message Passing) is used in both cases,
- * we use "gmp" in the filename.
+ * Uses either a legacy Wallet contract or a new router based remote account.
+ * In both cases uses Axelar GMP.
  *
  * @see {@link provideEVMAccount}
  * @see {@link CCTP}

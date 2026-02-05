@@ -82,7 +82,7 @@ import {
   sendGMPContractCall,
   sendPermit2GMP,
   type EVMContext,
-} from '../src/pos-gmp.flows.ts';
+} from '../src/pos-evm.flows.ts';
 import {
   makeSwapLockMessages,
   makeUnlockSwapMessages,
