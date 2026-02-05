@@ -539,7 +539,8 @@ func (k Keeper) AddPendingBundleInstall(ctx sdk.Context, msg *types.MsgInstallBu
 	chunkedArtifactId := state.LastChunkedArtifactId
 	k.SetPendingBundleInstall(ctx, chunkedArtifactId, msg)
 
-	// Attach the pending install node to the linked list.
+	// Create and store the pending install node. The list is non-circular;
+	// PrevId/NextId use 0 to indicate the start/end, and State tracks endpoints.
 	node := &types.ChunkedArtifactNode{
 		ChunkedArtifactId: chunkedArtifactId,
 		StartTimeUnix:     ctx.BlockTime().Unix(),

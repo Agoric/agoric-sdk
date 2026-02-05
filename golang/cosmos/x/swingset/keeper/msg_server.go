@@ -278,7 +278,7 @@ func (keeper msgServer) InstallBundle(goCtx context.Context, msg *types.MsgInsta
 		}
 		ci := *chunk
 		if ci.State != types.ChunkState_CHUNK_STATE_UNSPECIFIED {
-			return nil, fmt.Errorf("chunk %d state is not unspecified", i)
+			return nil, fmt.Errorf("chunk %d state must be unspecified", i)
 		}
 		ci.State = types.ChunkState_CHUNK_STATE_IN_FLIGHT
 		chunks[i] = &ci
@@ -358,7 +358,7 @@ func (keeper msgServer) SendChunk(goCtx context.Context, msg *types.MsgSendChunk
 	}
 
 	if ca.Chunks[msg.ChunkIndex].State != types.ChunkState_CHUNK_STATE_IN_FLIGHT {
-		return nil, fmt.Errorf("chunk %d is not in flight for chunked artifact id %d", msg.ChunkIndex, msg.ChunkedArtifactId)
+		return nil, fmt.Errorf("chunk %d must be in flight for chunked artifact id %d", msg.ChunkIndex, msg.ChunkedArtifactId)
 	}
 
 	// Verify the chunk data.
