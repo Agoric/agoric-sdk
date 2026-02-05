@@ -35,6 +35,7 @@
   },
   "devDependencies": {
     "@agoric/kmarshal": "workspace:*",
+    "@agoric/swingset-liveslots": "workspace:*",
     "ava": "^6.4.1"
   },
   "files": [

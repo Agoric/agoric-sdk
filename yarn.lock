@@ -814,6 +814,7 @@ __metadata:
     "@agoric/base-zone": "workspace:*"
     "@agoric/cosmic-proto": "workspace:*"
     "@agoric/internal": "workspace:*"
+    "@agoric/store": "workspace:*"
     "@endo/cache-map": "npm:^1.1.0"
     "@endo/common": "npm:^1.2.13"
     "@endo/compartment-mapper": "npm:^1.6.3"
@@ -830,9 +831,14 @@ __metadata:
     "@endo/ses-ava": "npm:^1.3.2"
     "@endo/stream": "npm:^1.2.13"
     "@fast-check/ava": "npm:^2.0.1"
+    "@opentelemetry/api": "npm:^1.0.0"
     ava: "npm:^6.4.1"
+    better-sqlite3: "npm:^8.0.1"
+    fast-check: "npm:^3.0.0"
     import-meta-resolve: "npm:^4.1.0"
     jessie.js: "npm:^0.3.4"
+    ses: "npm:^1.14.0"
+    tmp: "npm:^0.2.1"
     tsd: "npm:^0.33.0"
   languageName: unknown
   linkType: soft
@@ -1179,6 +1185,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/store@workspace:packages/store"
   dependencies:
+    "@agoric/store": "workspace:*"
     "@endo/errors": "npm:^1.2.13"
     "@endo/exo": "npm:^1.5.12"
     "@endo/init": "npm:^1.1.12"
@@ -1187,6 +1194,7 @@ __metadata:
     "@endo/patterns": "npm:^1.7.0"
     "@endo/ses-ava": "npm:^1.3.2"
     ava: "npm:^6.4.1"
+    ses: "npm:^1.14.0"
   languageName: unknown
   linkType: soft
 
@@ -1218,6 +1226,7 @@ __metadata:
     "@agoric/internal": "workspace:*"
     "@agoric/kmarshal": "workspace:*"
     "@agoric/store": "workspace:*"
+    "@agoric/swingset-liveslots": "workspace:*"
     "@endo/env-options": "npm:^1.1.11"
     "@endo/errors": "npm:^1.2.13"
     "@endo/eventual-send": "npm:^1.3.4"
@@ -1289,6 +1298,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/swingset-xsnap-supervisor@workspace:packages/swingset-xsnap-supervisor"
   dependencies:
+    "@agoric/swingset-liveslots": "workspace:*"
     "@endo/bundle-source": "npm:^4.1.2"
     "@endo/import-bundle": "npm:^1.5.2"
     "@endo/init": "npm:^1.1.12"
@@ -1296,7 +1306,6 @@ __metadata:
     ava: "npm:^6.4.1"
     c8: "npm:^10.1.3"
   peerDependencies:
-    "@agoric/swingset-liveslots": "workspace:*"
     "@endo/errors": ^1.2.13
     "@endo/import-bundle": ^1.5.2
     "@endo/promise-kit": ^1.1.13
@@ -1360,9 +1369,11 @@ __metadata:
     "@endo/exo": "npm:^1.5.12"
     "@endo/far": "npm:^1.1.14"
     "@endo/init": "npm:^1.1.12"
+    "@endo/pass-style": "npm:^1.6.3"
     "@endo/patterns": "npm:^1.7.0"
     "@endo/ses-ava": "npm:^1.3.2"
     ava: "npm:^6.4.1"
+    ses: "npm:^1.14.0"
     tsd: "npm:^0.33.0"
   languageName: unknown
   linkType: soft
@@ -1574,6 +1585,8 @@ __metadata:
   resolution: "@agoric/zone@workspace:packages/zone"
   dependencies:
     "@agoric/base-zone": "workspace:*"
+    "@agoric/store": "workspace:*"
+    "@agoric/swingset-liveslots": "workspace:*"
     "@agoric/swingset-vat": "workspace:*"
     "@agoric/vat-data": "workspace:*"
     "@endo/errors": "npm:^1.2.13"
@@ -7165,7 +7178,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/api@npm:^1.3.0, @opentelemetry/api@npm:~1.9.0":
+"@opentelemetry/api@npm:^1.0.0, @opentelemetry/api@npm:^1.3.0, @opentelemetry/api@npm:~1.9.0":
   version: 1.9.0
   resolution: "@opentelemetry/api@npm:1.9.0"
   checksum: 10c0/9aae2fe6e8a3a3eeb6c1fdef78e1939cf05a0f37f8a4fae4d6bf2e09eb1e06f966ece85805626e01ba5fab48072b94f19b835449e58b6d26720ee19a58298add
@@ -9425,6 +9438,17 @@ __metadata:
     node-gyp: "npm:latest"
     prebuild-install: "npm:^7.1.1"
   checksum: 10c0/3c858214b8b6f0c3f536759a863dfc79b11c52cecd6061525fb7707d950ea2ef369280276d8cc62d504119514b7d32ea4aab134d260f6b5a0419a8119d613a67
+  languageName: node
+  linkType: hard
+
+"better-sqlite3@npm:^8.0.1":
+  version: 8.7.0
+  resolution: "better-sqlite3@npm:8.7.0"
+  dependencies:
+    bindings: "npm:^1.5.0"
+    node-gyp: "npm:latest"
+    prebuild-install: "npm:^7.1.1"
+  checksum: 10c0/2583401b08531eee74c083c73f3a5902bc142b0e1c16de5b9caa92ee94f544e2cb512c214de2f762a6c83e593f26f70013214344a9ea66ace6d0619efbf04a1e
   languageName: node
   linkType: hard
 
