@@ -67,6 +67,7 @@
     "yargs-parser": "^21.1.1"
   },
   "devDependencies": {
+    "@agoric/base-zone": "workspace:*",
     "@agoric/kmarshal": "workspace:*",
     "@agoric/zoe": "workspace:*",
     "@endo/init": "^1.1.12",
