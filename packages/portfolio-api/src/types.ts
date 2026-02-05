@@ -237,7 +237,14 @@ export type PortfolioRemoteAccountState =
 export type StatusFor = {
   contract: {
     contractAccount: CosmosChainAddress['value'];
-    depositFactoryAddresses?: Record<AxelarChain, AccountId>;
+    depositFactoryAddresses?: Partial<Record<AxelarChain, AccountId>>;
+    evmRemoteAccountConfig?: {
+      remoteAccountImplementationAddresses: Partial<
+        Record<AxelarChain, AccountId>
+      >;
+      factoryAddresses: Partial<Record<AxelarChain, AccountId>>;
+      currentRouterAddresses: Partial<Record<AxelarChain, AccountId>>;
+    };
   };
   pendingTx: PublishedTx;
   evmWallet: EVMWalletUpdate;

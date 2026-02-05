@@ -57,7 +57,7 @@ import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/types.js';
 import type { Zone } from '@agoric/zone';
-import { Fail } from '@endo/errors';
+import { Fail, q } from '@endo/errors';
 import { E } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import type { CopyRecord } from '@endo/pass-style';
@@ -103,7 +103,7 @@ const makeTransferChannels = (chainInfo: PortfolioPrivateArgs['chainInfo']) => {
   return harden({ noble: nobleConn, axelar: axelarConn });
 };
 
-const makeEip155ChainIdToAxelarChain = (
+export const makeEip155ChainIdToAxelarChain = (
   chainInfo: PortfolioPrivateArgs['chainInfo'],
 ) => {
   const chainIdToChainName: Record<`${number}`, AxelarChain> = {};
@@ -123,32 +123,90 @@ const extractContractAddresses = <T extends keyof EVMContractAddresses>(
   chainIdToAxelarChain: ReturnType<typeof makeEip155ChainIdToAxelarChain>,
   contracts: EVMContractAddressesMap,
   key: T,
-): Record<AxelarChain, AccountId> => {
+): Partial<Record<AxelarChain, AccountId>> => {
   const addresses = fromTypedEntries(
-    Object.entries(chainIdToAxelarChain).map(
-      ([chainId, chainName]) =>
-        [
-          chainName satisfies AxelarChain,
-          `eip155:${chainId}:${contracts[chainName][key]}` satisfies AccountId,
-        ] as const,
+    Object.entries(chainIdToAxelarChain).flatMap(([chainId, chainName]) =>
+      contracts[chainName][key]
+        ? contracts[chainName][key].length > 2
+          ? ([
+              [
+                chainName satisfies AxelarChain,
+                `eip155:${chainId}:${contracts[chainName][key]}` satisfies AccountId,
+              ],
+            ] as const)
+          : []
+        : Fail`missing ${key} address for chain ${chainName}`,
     ),
-  ) satisfies Record<AxelarChain, AccountId>;
+  ) satisfies Partial<Record<AxelarChain, AccountId>>;
   return addresses;
+};
+
+export const extractEvmRemoteAccountConfig = (
+  chainIdToAxelarChain: ReturnType<typeof makeEip155ChainIdToAxelarChain>,
+  contracts: EVMContractAddressesMap,
+): StatusFor['contract']['evmRemoteAccountConfig'] | undefined => {
+  let currentRouterAddresses: Partial<Record<AxelarChain, AccountId>>;
+  try {
+    currentRouterAddresses = extractContractAddresses(
+      chainIdToAxelarChain,
+      contracts,
+      'remoteAccountRouter',
+    );
+  } catch (err) {
+    trace('Router based evm accounts not configured', err);
+    return undefined;
+  }
+
+  const factoryAddresses = extractContractAddresses(
+    chainIdToAxelarChain,
+    contracts,
+    'remoteAccountFactory',
+  );
+  const remoteAccountImplementationAddresses = extractContractAddresses(
+    chainIdToAxelarChain,
+    contracts,
+    'remoteAccountImplementation',
+  );
+
+  const missingFactoryAddresses = Object.keys(currentRouterAddresses).filter(
+    chain => !(chain in factoryAddresses),
+  );
+  const missingImplementationAddresses = Object.keys(factoryAddresses).filter(
+    chain => !(chain in remoteAccountImplementationAddresses),
+  );
+
+  missingFactoryAddresses.length === 0 ||
+    Fail`Missing addresses from ${q('remoteAccountFactory')}: ${q(missingFactoryAddresses)}`;
+  missingImplementationAddresses.length === 0 ||
+    Fail`Missing addresses from ${q('remoteAccountImplementation')}: ${q(missingImplementationAddresses)}`;
+
+  return {
+    currentRouterAddresses,
+    factoryAddresses,
+    remoteAccountImplementationAddresses,
+  };
 };
 
 const interfaceTODO = undefined;
 
 const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
-  M.splitRecord({
-    aavePool: M.string(),
-    compound: M.string(),
-    depositFactory: M.string(),
-    factory: M.string(),
-    usdc: M.string(),
-    permit2: M.string(),
-    gateway: M.string(),
-    gasService: M.string(),
-  });
+  M.splitRecord(
+    {
+      aavePool: M.string(),
+      compound: M.string(),
+      depositFactory: M.string(),
+      factory: M.string(), // legacy factory
+      usdc: M.string(),
+      permit2: M.string(),
+      gateway: M.string(),
+      gasService: M.string(),
+    },
+    {
+      remoteAccountFactory: M.string(),
+      remoteAccountRouter: M.string(),
+      remoteAccountImplementation: M.string(),
+    },
+  );
 
 export type AxelarConfig = {
   [chain in AxelarChain]: {
@@ -190,6 +248,9 @@ export type EVMContractAddresses = {
   compound: `0x${string}`;
   depositFactory: `0x${string}`;
   factory: `0x${string}`;
+  remoteAccountImplementation?: `0x${string}`;
+  remoteAccountFactory?: `0x${string}`;
+  remoteAccountRouter?: `0x${string}`;
   usdc: `0x${string}`;
   permit2: `0x${string}`;
   tokenMessenger: `0x${string}`;
@@ -351,6 +412,11 @@ export const contract = async (
   const transferChannels = makeTransferChannels(chainInfo);
   const eip155ChainIdToAxelarChain = makeEip155ChainIdToAxelarChain(chainInfo);
 
+  const evmRemoteAccountConfig = extractEvmRemoteAccountConfig(
+    eip155ChainIdToAxelarChain,
+    contracts,
+  );
+
   const proposalShapes = makeProposalShapes(brands.USDC, brands.Access);
   const offerArgsShapes = makeOfferArgsShapes(brands.USDC);
 
@@ -392,7 +458,11 @@ export const contract = async (
 
     publishStatus(
       storageNode,
-      harden({ contractAccount: addr.value, depositFactoryAddresses }),
+      harden({
+        contractAccount: addr.value,
+        depositFactoryAddresses,
+        ...(evmRemoteAccountConfig ? { evmRemoteAccountConfig } : {}),
+      } satisfies StatusFor['contract']),
     );
     trace('published contractAccount', addr.value);
   });
