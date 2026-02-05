@@ -34,6 +34,8 @@
     "@endo/pass-style": "^1.6.3"
   },
   "devDependencies": {
+    "@agoric/store": "workspace:*",
+    "@agoric/swingset-liveslots": "workspace:*",
     "@agoric/swingset-vat": "workspace:*",
     "@endo/patterns": "^1.7.0",
     "ava": "^6.4.1"
