@@ -47,10 +47,13 @@
     "@agoric/swing-store": "workspace:*",
     "@agoric/swingset-liveslots": "workspace:*",
     "@agoric/swingset-vat": "workspace:*",
+    "@agoric/vow": "workspace:*",
     "@endo/init": "^1.1.12",
+    "@endo/pass-style": "^1.6.3",
     "@endo/ses-ava": "^1.3.2",
     "ava": "^6.4.1",
-    "c8": "^10.1.3"
+    "c8": "^10.1.3",
+    "ses": "^1.14.0"
   },
   "exports": {
     ".": "./src/index.js",

@@ -22,7 +22,10 @@
     "lint:eslint": "yarn run -T eslint ."
   },
   "devDependencies": {
+    "@agoric/swingset-vat": "workspace:*",
+    "@agoric/telemetry": "workspace:*",
     "@agoric/xsnap": "workspace:*",
+    "@endo/exo": "^1.5.12",
     "@types/better-sqlite3": "^7.6.13",
     "@types/microtime": "^2.1.0",
     "@types/tmp": "^0.2.0",
