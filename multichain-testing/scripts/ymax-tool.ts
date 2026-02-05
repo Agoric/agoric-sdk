@@ -81,6 +81,7 @@ import { createRequire } from 'node:module';
 import repl from 'node:repl';
 import { parseArgs } from 'node:util';
 import type { HDAccount } from 'viem';
+import { keccak256 } from 'viem/utils';
 import { mnemonicToAccount } from 'viem/accounts';
 import { walletUpdates } from '../tools/wallet-store-reflect.ts';
 
@@ -188,6 +189,10 @@ const { make } = AmountMath;
 
 const { bytecode: walletBytecode } = JSON.parse(
   await asset('@aglocal/portfolio-deploy/tools/evm-orch/Wallet.json'),
+);
+
+const { bytecode: remoteAccountBytecode } = JSON.parse(
+  await asset('@aglocal/portfolio-deploy/tools/evm-orch/RemoteAccount.json'),
 );
 
 const parseTypedJSON = <T>(
@@ -535,6 +540,7 @@ const overridesForEthChainInfo = async (
     chainInfo,
     gmpAddresses,
     walletBytecode,
+    remoteAccountBytecodeHash: keccak256(remoteAccountBytecode),
   });
   return privateArgsOverrides;
 };

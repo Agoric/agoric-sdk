@@ -3,6 +3,7 @@ import { makeHelpers } from '@agoric/deploy-script-support';
 import { parseArgs } from 'node:util';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
+import { keccak256 } from 'viem/utils';
 import {
   axelarConfigTestnet,
   axelarConfig as axelarMainnetConfig,
@@ -66,6 +67,11 @@ const build = async (homeP, endowments) => {
     await asset('@aglocal/portfolio-deploy/tools/evm-orch/Wallet.json'),
   );
 
+  const { bytecode: remoteAccountBytecode } = JSON.parse(
+    await asset('@aglocal/portfolio-deploy/tools/evm-orch/RemoteAccount.json'),
+  );
+  const remoteAccountBytecodeHash = keccak256(remoteAccountBytecode);
+
   /** @type {{ mainnet: PortfolioDeployConfig, testnet: PortfolioDeployConfig }} */
   const configs = harden({
     mainnet: {
@@ -75,6 +81,7 @@ const build = async (homeP, endowments) => {
       },
       oldBoardId: boardId || '',
       walletBytecode,
+      remoteAccountBytecodeHash,
       defaultFlowConfig,
     },
     testnet: {
@@ -84,6 +91,7 @@ const build = async (homeP, endowments) => {
       },
       oldBoardId: boardId || '',
       walletBytecode,
+      remoteAccountBytecodeHash,
       defaultFlowConfig,
     },
   });

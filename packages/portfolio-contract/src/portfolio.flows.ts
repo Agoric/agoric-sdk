@@ -119,6 +119,7 @@ export type PortfolioInstanceContext = {
   axelarIds: AxelarId;
   contracts: EVMContractAddressesMap;
   walletBytecode: `0x${string}`;
+  remoteAccountBytecodeHash?: `0x${string}`;
   gmpAddresses: GmpAddresses;
   usdc: { brand: Brand<'nat'>; denom: Denom };
   gmpFeeInfo: { brand: Brand<'nat'>; denom: Denom };

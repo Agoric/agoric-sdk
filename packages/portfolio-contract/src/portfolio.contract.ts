@@ -143,7 +143,9 @@ const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
     aavePool: M.string(),
     compound: M.string(),
     depositFactory: M.string(),
-    factory: M.string(),
+    factory: M.string(), // legacy factory
+    remoteAccountFactory: M.string(),
+    remoteAccountRouter: M.string(),
     usdc: M.string(),
     permit2: M.string(),
     gateway: M.string(),
@@ -190,6 +192,8 @@ export type EVMContractAddresses = {
   compound: `0x${string}`;
   depositFactory: `0x${string}`;
   factory: `0x${string}`;
+  remoteAccountFactory: `0x${string}`;
+  remoteAccountRouter: `0x${string}`;
   usdc: `0x${string}`;
   permit2: `0x${string}`;
   tokenMessenger: `0x${string}`;
@@ -239,6 +243,7 @@ export type PortfolioPrivateArgs = OrchestrationPowers & {
   axelarIds: AxelarId;
   contracts: EVMContractAddressesMap;
   walletBytecode: `0x${string}`;
+  remoteAccountBytecodeHash: `0x${string}`;
   gmpAddresses: GmpAddresses;
   defaultFlowConfig?: FlowConfig | null;
 };
@@ -257,6 +262,7 @@ export const privateArgsShape: TypedPattern<PortfolioPrivateArgs> =
       axelarIds: AxelarIdShape,
       contracts: EVMContractAddressesMapShape,
       walletBytecode: M.string(),
+      remoteAccountBytecodeHash: M.string(),
       gmpAddresses: GmpAddressesShape,
     },
     {
@@ -328,6 +334,7 @@ export const contract = async (
     axelarIds,
     contracts,
     walletBytecode,
+    remoteAccountBytecodeHash,
     storageNode,
     gmpAddresses,
     timerService,
@@ -389,10 +396,28 @@ export const contract = async (
       contracts,
       'depositFactory',
     );
+    const currentRouterAddresses = extractContractAddresses(
+      eip155ChainIdToAxelarChain,
+      contracts,
+      'remoteAccountRouter',
+    );
+    const factoryAddresses = extractContractAddresses(
+      eip155ChainIdToAxelarChain,
+      contracts,
+      'remoteAccountFactory',
+    );
 
     publishStatus(
       storageNode,
-      harden({ contractAccount: addr.value, depositFactoryAddresses }),
+      harden({
+        contractAccount: addr.value,
+        depositFactoryAddresses,
+        evmRemoteAccountConfig: {
+          currentRouterAddresses,
+          factoryAddresses,
+          remoteAccountBytecodeHash,
+        },
+      } satisfies StatusFor['contract']),
     );
     trace('published contractAccount', addr.value);
   });
@@ -422,6 +447,7 @@ export const contract = async (
     axelarIds,
     contracts,
     walletBytecode,
+    remoteAccountBytecodeHash,
     gmpAddresses,
     resolverClient,
     inertSubscriber,
@@ -500,6 +526,7 @@ export const contract = async (
     offerArgsShapes,
     transferChannels,
     walletBytecode,
+    remoteAccountBytecodeHash,
     portfoliosNode: E(storageNode).makeChildNode('portfolios'),
     marshaller: cachingMarshaller,
     usdcBrand: brands.USDC,
