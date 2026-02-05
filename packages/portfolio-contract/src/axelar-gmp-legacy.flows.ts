@@ -1,5 +1,5 @@
 /**
- * @file flows for interacting with Wallet contracts on EVM chains
+ * @file flows for interacting with legacy Wallet contracts on EVM chains
  *
  * @see {@link provideEVMAccount}
  * @see {@link makeAccount}
