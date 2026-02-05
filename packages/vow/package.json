@@ -31,6 +31,7 @@
   },
   "devDependencies": {
     "@agoric/internal": "workspace:*",
+    "@agoric/store": "workspace:*",
     "@agoric/swingset-vat": "workspace:*",
     "@agoric/vow": "workspace:*",
     "@agoric/zone": "workspace:*",
