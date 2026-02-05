@@ -55,6 +55,11 @@ export const AxelarChainIdMap = harden({
  */
 
 /**
+ * @typedef {Record<string, HexAddress> | Partial<Record<string, undefined>>} OptionalEvmAddressesMap
+ * @typedef {{ mainnet: OptionalEvmAddressesMap, testnet: OptionalEvmAddressesMap }} OptionalAddressesMap
+ */
+
+/**
  * @typedef {object} AxelarChainConfig
  * @property {string} axelarId
  * @property {BaseChainInfo<"eip155">} chainInfo
@@ -406,6 +411,62 @@ const depositFactoryAddresses = harden({
   },
 });
 
+/** @type {OptionalAddressesMap} */
+const remoteAccountImplementation = harden({
+  mainnet: {
+    Arbitrum: undefined, // https://arbiscan.io/address/0x
+    Avalanche: undefined, // https://snowtrace.io/address/0x
+    Base: undefined, // https://basescan.org/address/0x
+    Ethereum: undefined, // https://etherscan.io/address/0x
+    Optimism: undefined, // https://optimistic.etherscan.io/address/0x
+  },
+  testnet: {
+    Arbitrum: undefined, // https://sepolia.arbiscan.io/address/0x
+    Avalanche: undefined, // https://testnet.snowtrace.io/address/0x
+    Base: undefined, // https://sepolia.basescan.org/address/0x
+    Ethereum: undefined, // https://sepolia.etherscan.io/address/0x
+    Optimism: undefined, // https://sepolia-optimism.etherscan.io/address/0x
+  },
+});
+
+/** @type {OptionalAddressesMap} */
+const remoteAccountFactory = harden({
+  // TODO: These are addresses specific to ymax0 and its current contractAddress
+  mainnet: {
+    Arbitrum: undefined, // https://arbiscan.io/address/0x
+    Avalanche: undefined, // https://snowtrace.io/address/0x
+    Base: undefined, // https://basescan.org/address/0x
+    Ethereum: undefined, // https://etherscan.io/address/0x
+    Optimism: undefined, // https://optimistic.etherscan.io/address/0x
+  },
+  testnet: {
+    Arbitrum: undefined, // https://sepolia.arbiscan.io/address/0x
+    Avalanche: undefined, // https://testnet.snowtrace.io/address/0x
+    Base: undefined, // https://sepolia.basescan.org/address/0x
+    Ethereum: undefined, // https://sepolia.etherscan.io/address/0x
+    Optimism: undefined, // https://sepolia-optimism.etherscan.io/address/0x
+  },
+});
+
+/** @type {OptionalAddressesMap} */
+const remoteAccountRouter = harden({
+  // TODO: These are addresses specific to ymax0 and its current contractAddress
+  mainnet: {
+    Arbitrum: undefined, // https://arbiscan.io/address/0x
+    Avalanche: undefined, // https://snowtrace.io/address/0x
+    Base: undefined, // https://basescan.org/address/0x
+    Ethereum: undefined, // https://etherscan.io/address/0x
+    Optimism: undefined, // https://optimistic.etherscan.io/address/0x
+  },
+  testnet: {
+    Arbitrum: undefined, // https://sepolia.arbiscan.io/address/0x
+    Avalanche: undefined,
+    Base: undefined, // https://sepolia.basescan.org/address/0x
+    Ethereum: undefined, // https://sepolia.etherscan.io/address/0x
+    Optimism: undefined,
+  },
+});
+
 /**
  * Axelar Gateway contract addresses
  * @see {@link https://docs.axelar.dev/dev/reference/mainnet-contract-addresses/}
@@ -492,6 +553,9 @@ const mainnetContracts = {
     compoundRewardsController: '0x', // TODO
     depositFactory: depositFactoryAddresses.mainnet.Avalanche,
     factory: factoryAddresses.mainnet.Avalanche,
+    remoteAccountImplementation: remoteAccountImplementation.mainnet.Avalanche,
+    remoteAccountFactory: remoteAccountFactory.mainnet.Avalanche,
+    remoteAccountRouter: remoteAccountRouter.mainnet.Avalanche,
     gateway: gatewayAddresses.mainnet.Avalanche,
     gasService: gasServiceAddresses.mainnet.Avalanche,
     usdc: usdcAddresses.mainnet.Avalanche,
@@ -510,6 +574,9 @@ const mainnetContracts = {
       compoundRewardsControllerAddresses.mainnet.Ethereum,
     depositFactory: depositFactoryAddresses.mainnet.Ethereum,
     factory: factoryAddresses.mainnet.Ethereum,
+    remoteAccountImplementation: remoteAccountImplementation.mainnet.Ethereum,
+    remoteAccountFactory: remoteAccountFactory.mainnet.Ethereum,
+    remoteAccountRouter: remoteAccountRouter.mainnet.Ethereum,
     gateway: gatewayAddresses.mainnet.Ethereum,
     gasService: gasServiceAddresses.mainnet.Ethereum,
     usdc: usdcAddresses.mainnet.Ethereum,
@@ -555,6 +622,9 @@ const mainnetContracts = {
       compoundRewardsControllerAddresses.mainnet.Optimism,
     depositFactory: depositFactoryAddresses.mainnet.Optimism,
     factory: factoryAddresses.mainnet.Optimism,
+    remoteAccountImplementation: remoteAccountImplementation.mainnet.Optimism,
+    remoteAccountFactory: remoteAccountFactory.mainnet.Optimism,
+    remoteAccountRouter: remoteAccountRouter.mainnet.Optimism,
     gateway: gatewayAddresses.mainnet.Optimism,
     gasService: gasServiceAddresses.mainnet.Optimism,
     usdc: usdcAddresses.mainnet.Optimism,
@@ -576,6 +646,9 @@ const mainnetContracts = {
       compoundRewardsControllerAddresses.mainnet.Arbitrum,
     depositFactory: depositFactoryAddresses.mainnet.Arbitrum,
     factory: factoryAddresses.mainnet.Arbitrum,
+    remoteAccountImplementation: remoteAccountImplementation.mainnet.Arbitrum,
+    remoteAccountFactory: remoteAccountFactory.mainnet.Arbitrum,
+    remoteAccountRouter: remoteAccountRouter.mainnet.Arbitrum,
     gateway: gatewayAddresses.mainnet.Arbitrum,
     gasService: gasServiceAddresses.mainnet.Arbitrum,
     usdc: usdcAddresses.mainnet.Arbitrum,
@@ -600,6 +673,9 @@ const mainnetContracts = {
     compoundRewardsController: compoundRewardsControllerAddresses.mainnet.Base,
     depositFactory: depositFactoryAddresses.mainnet.Base,
     factory: factoryAddresses.mainnet.Base,
+    remoteAccountImplementation: remoteAccountImplementation.mainnet.Base,
+    remoteAccountFactory: remoteAccountFactory.mainnet.Base,
+    remoteAccountRouter: remoteAccountRouter.mainnet.Base,
     gateway: gatewayAddresses.mainnet.Base,
     gasService: gasServiceAddresses.mainnet.Base,
     usdc: usdcAddresses.mainnet.Base,
@@ -664,6 +740,9 @@ const testnetContracts = {
     compoundRewardsController: '0x',
     depositFactory: depositFactoryAddresses.testnet.Avalanche,
     factory: factoryAddresses.testnet.Avalanche,
+    remoteAccountImplementation: remoteAccountImplementation.testnet.Avalanche,
+    remoteAccountFactory: remoteAccountFactory.testnet.Avalanche,
+    remoteAccountRouter: remoteAccountRouter.testnet.Avalanche,
     gateway: gatewayAddresses.testnet.Avalanche,
     gasService: gasServiceAddresses.testnet.Avalanche,
     usdc: usdcAddresses.testnet.Avalanche,
@@ -680,6 +759,9 @@ const testnetContracts = {
     compoundRewardsController: compoundRewardsControllerAddresses.testnet.Base,
     depositFactory: depositFactoryAddresses.testnet.Base,
     factory: factoryAddresses.testnet.Base,
+    remoteAccountImplementation: remoteAccountImplementation.testnet.Base,
+    remoteAccountFactory: remoteAccountFactory.testnet.Base,
+    remoteAccountRouter: remoteAccountRouter.testnet.Base,
     gateway: gatewayAddresses.testnet.Base,
     gasService: gasServiceAddresses.testnet.Base,
     usdc: usdcAddresses.testnet.Base,
@@ -697,6 +779,9 @@ const testnetContracts = {
       compoundRewardsControllerAddresses.testnet.Ethereum,
     depositFactory: depositFactoryAddresses.testnet.Ethereum,
     factory: factoryAddresses.testnet.Ethereum,
+    remoteAccountImplementation: remoteAccountImplementation.testnet.Ethereum,
+    remoteAccountFactory: remoteAccountFactory.testnet.Ethereum,
+    remoteAccountRouter: remoteAccountRouter.testnet.Ethereum,
     gateway: gatewayAddresses.testnet.Ethereum,
     gasService: gasServiceAddresses.testnet.Ethereum,
     usdc: usdcAddresses.testnet.Ethereum,
@@ -715,6 +800,9 @@ const testnetContracts = {
       compoundRewardsControllerAddresses.testnet.Optimism,
     depositFactory: depositFactoryAddresses.testnet.Optimism,
     factory: factoryAddresses.testnet.Optimism,
+    remoteAccountImplementation: remoteAccountImplementation.testnet.Optimism,
+    remoteAccountFactory: remoteAccountFactory.testnet.Optimism,
+    remoteAccountRouter: remoteAccountRouter.testnet.Optimism,
     gateway: gatewayAddresses.testnet.Optimism,
     gasService: gasServiceAddresses.testnet.Optimism,
     usdc: usdcAddresses.testnet.Optimism,
@@ -732,6 +820,9 @@ const testnetContracts = {
       compoundRewardsControllerAddresses.testnet.Arbitrum,
     depositFactory: depositFactoryAddresses.testnet.Arbitrum,
     factory: factoryAddresses.testnet.Arbitrum,
+    remoteAccountImplementation: remoteAccountImplementation.testnet.Arbitrum,
+    remoteAccountFactory: remoteAccountFactory.testnet.Arbitrum,
+    remoteAccountRouter: remoteAccountRouter.testnet.Arbitrum,
     gateway: gatewayAddresses.testnet.Arbitrum,
     gasService: gasServiceAddresses.testnet.Arbitrum,
     usdc: usdcAddresses.testnet.Arbitrum,
