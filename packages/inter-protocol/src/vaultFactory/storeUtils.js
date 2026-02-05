@@ -8,7 +8,7 @@
 /**
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  * @import {Amount, Ratio} from '@agoric/ertp';
- * @import {VaultId} from './types-ambient.js';
+ * @import {VaultId} from './types.js';
  */
 
 // XXX importing these that are declared to be used only for testing

@@ -1,7 +1,7 @@
 // @ts-check
 
 /**
- * @import {PursesJSONState, RecordMetadata} from './types-ambient.js';
+ * @import {PursesJSONState, RecordMetadata} from './types.js';
  * @import {ERef} from '@agoric/vow';
  * @import {LegacyWeakMap} from '@agoric/store';
  * @import {WeakMapStore} from '@agoric/store';

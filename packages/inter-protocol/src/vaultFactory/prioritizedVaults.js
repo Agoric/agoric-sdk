@@ -18,7 +18,7 @@ import {
  * @import {Vault} from './vault.js';
  * @import {NormalizedDebt} from './storeUtils.js';
  * @import {Ratio} from '@agoric/ertp';
- * @import {VaultId} from './types-ambient.js';
+ * @import {VaultId} from './types.js';
  * @import {Amount} from '@agoric/ertp';
  */
 
