@@ -28,6 +28,8 @@
   },
   "devDependencies": {
     "@agoric/zoe": "workspace:*",
+    "@endo/pass-style": "^1.6.3",
+    "@endo/patterns": "^1.7.0",
     "ava": "^6.4.1",
     "c8": "^10.1.3"
   },

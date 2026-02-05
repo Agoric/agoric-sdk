@@ -456,6 +456,8 @@ __metadata:
     "@agoric/zoe": "workspace:*"
     "@endo/far": "npm:^1.1.14"
     "@endo/marshal": "npm:^1.8.0"
+    "@endo/pass-style": "npm:^1.6.3"
+    "@endo/patterns": "npm:^1.7.0"
     ava: "npm:^6.4.1"
     c8: "npm:^10.1.3"
   languageName: unknown
