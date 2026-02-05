@@ -3195,7 +3195,7 @@ test('move Aave position Base -> Optimism via CCTPv2', async t => {
         dest: '@Optimism',
         amount,
         fee: feeGmp,
-        detail: { cctpVersion: 2n },
+        detail: { cctpVersion: 2n, maxFee: 3n, minFinalityThreshold: 1000n },
       },
       { src: '@Optimism', dest: 'Aave_Optimism', amount, fee: feeCall },
     ];

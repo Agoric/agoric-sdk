@@ -836,6 +836,7 @@ const stepFlow = async (
       resolverClient: ctx.resolverClient,
       feeAccount,
       nobleForwardingChannel,
+      ...(move.detail ? { detail: move.detail } : {}),
     });
     return evmCtx;
   };

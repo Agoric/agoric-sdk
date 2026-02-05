@@ -35,6 +35,7 @@ import {
 import { buildGMPPayload } from '@agoric/orchestration/src/utils/gmp.js';
 import { PermitWitnessTransferFromInputComponents } from '@agoric/orchestration/src/utils/permit2.ts';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
+import type { MovementDesc } from '@agoric/portfolio-api';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import { fromBech32 } from '@cosmjs/encoding';
@@ -421,10 +422,12 @@ export const CCTPv2 = {
     const usdc = session.makeContract(addresses.usdc, erc20ABI);
     const tm = session.makeContract(tokenMessengerV2, tokenMessengerV2ABI);
 
-    // XXX postponed: estimated based on destination chain gas costs
-    // "If maxFee is less than the minimum Standard Transfer fee, the burn reverts onchain."
-    // -- https://developers.circle.com/cctp/references/technical-guide#fees
-    const maxFee = 0n;
+    const { detail } = ctx;
+    const maxFee = detail?.maxFee || 0n;
+    const minFinalityThreshold =
+      Number(detail?.minFinalityThreshold) === FINALITY_THRESHOLD.CONFIRMED
+        ? FINALITY_THRESHOLD.CONFIRMED
+        : FINALITY_THRESHOLD.FINALIZED;
 
     usdc.approve(tokenMessengerV2, amount.value);
     tm.depositForBurn(
@@ -435,8 +438,7 @@ export const CCTPv2 = {
       // destinationCaller: bytes32(0) = any caller allowed
       ZERO_BYTES32,
       maxFee,
-      // Use CONFIRMED threshold for faster attestation; can be made configurable
-      FINALITY_THRESHOLD.CONFIRMED,
+      minFinalityThreshold,
     );
 
     const calls = session.finish();
@@ -773,6 +775,7 @@ export type EVMContext = {
   poolKey?: PoolKey;
   resolverClient: GuestInterface<ResolverKit['client']>;
   nobleForwardingChannel: `channel-${number}`;
+  detail?: MovementDesc['detail'];
 };
 
 export const AaveProtocol = {
