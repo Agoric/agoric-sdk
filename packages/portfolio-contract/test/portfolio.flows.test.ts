@@ -64,7 +64,7 @@ import {
   openPortfolio as rawOpenPortfolio,
   provideCosmosAccount,
   rebalance as rawRebalance,
-  wayFromSrcToDesc,
+  wayFromSrcToDest,
   type OnTransferContext,
   type PortfolioInstanceContext,
 } from '../src/portfolio.flows.ts';
@@ -997,7 +997,7 @@ test('open portfolio with Aave position', async t => {
 test.skip('reject missing fee before committing anything', t => {
   const amount = AmountMath.make(USDC, 300n);
   t.throws(() =>
-    wayFromSrcToDesc({ src: '@Arbitrum', dest: 'Compound_Arbitrum', amount }),
+    wayFromSrcToDest({ src: '@Arbitrum', dest: 'Compound_Arbitrum', amount }),
   );
 });
 
@@ -1356,9 +1356,9 @@ test('open portfolio with Beefy position', async t => {
   t.snapshot(decodedCalls, 'decoded calls');
 });
 
-test('wayFromSrcToDesc handles +agoric -> @agoric', t => {
+test('wayFromSrcToDest handles +agoric -> @agoric', t => {
   const amount = AmountMath.make(USDC, 2_000_000n);
-  const actual = wayFromSrcToDesc({ src: '+agoric', dest: '@agoric', amount });
+  const actual = wayFromSrcToDest({ src: '+agoric', dest: '@agoric', amount });
   t.deepEqual(actual, { how: 'send' });
 });
 
@@ -2782,11 +2782,11 @@ test.todo(
   'openPortfolio from EVM with Permit2 rejects permit with zero amount',
 );
 
-// #region wayFromSrcToDesc withdraw tests
+// #region wayFromSrcToDest withdraw tests
 
-test('wayFromSrcToDesc handles @Arbitrum -> -Arbitrum (same-chain withdraw)', t => {
+test('wayFromSrcToDest handles @Arbitrum -> -Arbitrum (same-chain withdraw)', t => {
   const amount = AmountMath.make(USDC, 2_000_000n);
-  const actual = wayFromSrcToDesc({
+  const actual = wayFromSrcToDest({
     src: '@Arbitrum',
     dest: '-Arbitrum',
     amount,
@@ -2794,16 +2794,16 @@ test('wayFromSrcToDesc handles @Arbitrum -> -Arbitrum (same-chain withdraw)', t 
   t.deepEqual(actual, { how: 'withdrawToEVM', dest: 'Arbitrum' });
 });
 
-test('wayFromSrcToDesc handles @noble -> -Arbitrum (CCTP to user)', t => {
+test('wayFromSrcToDest handles @noble -> -Arbitrum (CCTP to user)', t => {
   const amount = AmountMath.make(USDC, 2_000_000n);
-  const actual = wayFromSrcToDesc({ src: '@noble', dest: '-Arbitrum', amount });
+  const actual = wayFromSrcToDest({ src: '@noble', dest: '-Arbitrum', amount });
   t.deepEqual(actual, { how: 'CCTPtoUser', dest: 'Arbitrum' });
 });
 
-test('wayFromSrcToDesc rejects @agoric -> -Arbitrum (invalid src for withdraw)', t => {
+test('wayFromSrcToDest rejects @agoric -> -Arbitrum (invalid src for withdraw)', t => {
   const amount = AmountMath.make(USDC, 2_000_000n);
   t.throws(
-    () => wayFromSrcToDesc({ src: '@agoric', dest: '-Arbitrum', amount }),
+    () => wayFromSrcToDest({ src: '@agoric', dest: '-Arbitrum', amount }),
     { message: /src for withdraw to "Arbitrum" must be same chain or noble/ },
   );
 });

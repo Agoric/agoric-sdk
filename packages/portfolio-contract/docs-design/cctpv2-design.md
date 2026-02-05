@@ -368,11 +368,11 @@ export type FeeMode =
   | 'evmToEvm';    // NEW: CCTPv2 direct transfer fee mode
 ```
 
-### 4.6 wayFromSrcToDesc Update
+### 4.6 wayFromSrcToDest Update
 
 **File:** `packages/portfolio-contract/src/portfolio.flows.ts`
 
-The `wayFromSrcToDesc` function determines the transfer mechanism based on the `MovementDesc`. Since there can be multiple mechanisms for EVM-to-EVM transfers (CCTPv1 via Noble may be cheaper in some circumstances), the planner must explicitly indicate when CCTPv2 should be used.
+The `wayFromSrcToDest` function determines the transfer mechanism based on the `MovementDesc`. Since there can be multiple mechanisms for EVM-to-EVM transfers (CCTPv1 via Noble may be cheaper in some circumstances), the planner must explicitly indicate when CCTPv2 should be used.
 
 **Design Decision:** CCTPv2 is only used when the planner explicitly requests it via `detail.cctpVersion = 2n`. Otherwise, existing CCTPv1 routing applies (EVM → Noble → EVM). This allows the planner to make cost/speed tradeoffs:
 
@@ -382,7 +382,7 @@ The `wayFromSrcToDesc` function determines the transfer mechanism based on the `
 > **Rationale:** `detail.cctpVersion = 2n` keeps the existing `detail: Record<string, bigint>` shape, avoids broader interface changes, and still makes the v1/v2 distinction explicit. More invasive schema changes (explicit `how`/`mechanism` fields or a discriminated union) add design risk and compatibility costs not required for CCTPv2.
 
 ```typescript
-export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
+export const wayFromSrcToDest = (moveDesc: MovementDesc): Way => {
   const { src, dest } = moveDesc;
   
   // ... existing cases ...
@@ -530,7 +530,7 @@ export const createCCTPv2Watcher = (config: WatcherConfig) => {
    - [x] Add domain ID mapping for CCTPv2
 
 4. **Update flow routing**
-   - [x] Update `wayFromSrcToDesc` for CCTPv2 routes
+   - [x] Update `wayFromSrcToDest` for CCTPv2 routes
    - [x] Add CCTPv2 case to `doStep` switch
    - [x] Update `executeStep` for CCTPv2 handling
 
@@ -615,39 +615,39 @@ const canUseCCTPv2 = (src: AxelarChain, dest: AxelarChain): boolean => {
 
 #### portfolio-contract/test/cctpv2-routing.test.ts
 
-Tests for `wayFromSrcToDesc` routing logic:
+Tests for `wayFromSrcToDest` routing logic:
 
 ```typescript
 // CCTPv2 only selected when detail.cctpVersion = 2n
-test('wayFromSrcToDesc uses CCTPv2 when detail.cctpVersion is 2n', async t => {
+test('wayFromSrcToDest uses CCTPv2 when detail.cctpVersion is 2n', async t => {
   const movement: MovementDesc = {
     src: '@Arbitrum',
     dest: '@Base',
     amount: { brand: USDC, value: 100_000_000n },
     detail: { cctpVersion: 2n },
   };
-  const way = wayFromSrcToDesc(movement, ctx);
+  const way = wayFromSrcToDest(movement, ctx);
   t.is(way?.how, 'CCTPv2');
 });
 
-test('wayFromSrcToDesc uses GMP (not CCTPv2) for EVM-to-EVM without explicit opt-in', async t => {
+test('wayFromSrcToDest uses GMP (not CCTPv2) for EVM-to-EVM without explicit opt-in', async t => {
   const movement: MovementDesc = {
     src: '@Arbitrum',
     dest: '@Base',
     amount: { brand: USDC, value: 100_000_000n },
   };
-  const way = wayFromSrcToDesc(movement, ctx);
+  const way = wayFromSrcToDest(movement, ctx);
   t.not(way?.how, 'CCTPv2'); // Falls back to GMP or CCTP via Noble
 });
 
-test('wayFromSrcToDesc uses CCTP v1 for Noble routes regardless of detail', async t => {
+test('wayFromSrcToDest uses CCTP v1 for Noble routes regardless of detail', async t => {
   const movement: MovementDesc = {
     src: '@Arbitrum',
     dest: '@noble',
     amount: { brand: USDC, value: 100_000_000n },
     detail: { cctpVersion: 2n }, // Should be ignored for Noble
   };
-  const way = wayFromSrcToDesc(movement, ctx);
+  const way = wayFromSrcToDest(movement, ctx);
   t.is(way?.how, 'CCTP'); // v1 route via Noble
 });
 ```
@@ -790,7 +790,7 @@ export const createMockMessageReceivedLog = ({
 
 ### 7.5 Test Coverage Checklist
 
-- [ ] `wayFromSrcToDesc` routing with/without `detail.cctpVersion`
+- [ ] `wayFromSrcToDest` routing with/without `detail.cctpVersion`
 - [ ] CCTPv2 domain ID mapping for all supported chains
 - [ ] `evmAddressToBytes32` encoding
 - [ ] CCTPv2 transport calldata generation

@@ -643,7 +643,7 @@ type Way =
     };
 
 // exported only for testing
-export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
+export const wayFromSrcToDest = (moveDesc: MovementDesc): Way => {
   const { src } = moveDesc;
   const { dest } = moveDesc;
 
@@ -856,7 +856,7 @@ const stepFlow = async (
     way: Way & { how: P },
     move: MovementDesc,
   ): AssetMovement => {
-    // XXX move this check up to wayFromSrcToDesc
+    // XXX move this check up to wayFromSrcToDest
     const chainName = 'src' in way ? way.src : way.dest;
     assert(keys(AxelarChain).includes(chainName));
     const evmChain = chainName as AxelarChain;
@@ -954,7 +954,7 @@ const stepFlow = async (
       continue;
     }
     const traceMove = traceFlow.sub(`move${i}`);
-    const way = wayFromSrcToDesc(move);
+    const way = wayFromSrcToDest(move);
     traceMove('plan', { move, way });
     const { amount } = move;
     switch (way.how) {
@@ -1009,7 +1009,7 @@ const stepFlow = async (
         assert(
           (way.src === 'agoric' && way.dest === 'noble') ||
             (way.src === 'noble' && way.dest === 'agoric'),
-          `bug in wayFromSrcToDesc`,
+          `bug in wayFromSrcToDest`,
         );
         const { how } = way.src === 'agoric' ? agoricToNoble : nobleToAgoric;
         const ctxI = { usdc: ctx.usdc };
