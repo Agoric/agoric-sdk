@@ -36,7 +36,7 @@ import {
   chainOfAccount,
 } from '@agoric/orchestration/src/utils/address.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
-import type { AxelarChain, FundsFlowPlan } from '@agoric/portfolio-api';
+import { type AxelarChain, type FundsFlowPlan } from '@agoric/portfolio-api';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import {
   DEFAULT_FLOW_CONFIG,
@@ -664,6 +664,7 @@ const mocks = (
     usdcBrand: USDC,
     eip155ChainIdToAxelarChain,
     contracts: contractsMock,
+    walletBytecode: ctx1.walletBytecode,
     ...(null as any),
   });
   const makePortfolioKitGuest = (opts?: { sourceAccountId?: AccountId }) =>
@@ -2574,6 +2575,68 @@ test('withdraw from Beefy position', async t => {
   await documentStorageSchema(t, storage, docOpts);
 });
 
+type Permit2PermitOverrides = Partial<
+  Omit<PermitDetails['permit2Payload'], 'permit'>
+> & {
+  permit?: Partial<PermitDetails['permit2Payload']['permit']> & {
+    permitted?: Partial<PermitDetails['permit2Payload']['permit']['permitted']>;
+  };
+};
+
+type Permit2Overrides = Partial<
+  Omit<PermitDetails, 'permit2Payload'> & {
+    permit2Payload: Permit2PermitOverrides;
+  } & {
+    chain: AxelarChain;
+  }
+>;
+
+const makePermitDetails = (overrides: Permit2Overrides = {}): PermitDetails => {
+  const chain = overrides.chain ?? 'Arbitrum';
+  const amount = overrides.amount ?? 1_000_000_000n;
+  const token = overrides.token ?? contractsMock[chain].usdc;
+  const spender = overrides.spender ?? contractsMock[chain].depositFactory;
+  const chainId =
+    overrides.chainId ?? Number(axelarCCTPConfig[chain].reference);
+
+  const basePayload: PermitDetails['permit2Payload'] = {
+    permit: {
+      permitted: {
+        token,
+        amount,
+      },
+      nonce: 7115368379195441n,
+      deadline: 1357923600n,
+    },
+    owner: '0x1111111111111111111111111111111111111111',
+    witness:
+      '0x0000000000000000000000000000000000000000000000000000000000000000',
+    witnessTypeString: 'OpenPortfolioWitness',
+    signature: '0x1234' as `0x${string}`,
+  };
+
+  const permit2Payload = {
+    ...basePayload,
+    ...overrides.permit2Payload,
+    permit: {
+      ...basePayload.permit,
+      ...overrides.permit2Payload?.permit,
+      permitted: {
+        ...basePayload.permit.permitted,
+        ...overrides.permit2Payload?.permit?.permitted,
+      },
+    },
+  };
+
+  return {
+    chainId,
+    token,
+    amount,
+    spender,
+    permit2Payload,
+  };
+};
+
 // EVM wallet integration flow
 test('openPortfolio from EVM with Permit2 completes a deposit flow', async t => {
   // Use a mixed-case spender to ensure case-insensitive address checks.
@@ -2980,3 +3043,97 @@ test('evmHandler.withdraw rejects when sourceAccountId is not set', async t => {
 });
 
 // #endregion evmHandler.withdraw tests
+
+// #region evmHandler.deposit tests
+
+test('evmHandler.deposit via Permit2 with unknown spender is rejected', async t => {
+  const permitDetails = makePermitDetails({
+    spender: '0x0000000000000000000000000000000000009999' as Address,
+  });
+  const { orch, ctx } = mocks({}, {});
+  const sourceAccountId =
+    `eip155:${permitDetails.chainId}:${permitDetails.permit2Payload.owner.toLowerCase()}` as AccountId;
+  const kit = await ctx.makePortfolioKit({ sourceAccountId });
+  await provideCosmosAccount(orch, 'agoric', kit, silent);
+
+  t.throws(() => kit.evmHandler.deposit(permitDetails), {
+    message: /permit spender .* does not match expected account/,
+  });
+});
+
+/**
+ * This test uses the factory contract as the spender address.
+ */
+test('evmHandler.deposit via Permit2 with factoryContract as spender succeeds', async t => {
+  const permitDetails = makePermitDetails({
+    spender: contractsMock.Arbitrum.depositFactory as Address,
+  });
+  const { orch, ctx, storage, txResolver } = mocks({}, {});
+  const sourceAccountId =
+    `eip155:${permitDetails.chainId}:${permitDetails.permit2Payload.owner.toLowerCase()}` as AccountId;
+  const kit = await ctx.makePortfolioKit({ sourceAccountId });
+  await provideCosmosAccount(orch, 'agoric', kit, silent);
+
+  const flowKey = kit.evmHandler.deposit(permitDetails);
+  t.regex(flowKey, /^flow\d+$/);
+  const flowNum = Number(flowKey.replace('flow', ''));
+  const portfolioId = kit.reader.getPortfolioId();
+  const { getPortfolioStatus, getFlowStatus } = makeStorageTools(storage);
+  const { flowsRunning = {} } = await getPortfolioStatus(portfolioId);
+  const detail = flowsRunning[flowKey];
+  if (!detail || detail.type !== 'deposit') {
+    throw t.fail('missing deposit flow detail');
+  }
+  const fromChain = detail.fromChain as AxelarChain;
+  const fee = make(BLD, 100n);
+  const steps: MovementDesc[] = [
+    { src: `+${fromChain}`, dest: `@${fromChain}`, amount: detail.amount, fee },
+  ];
+  kit.planner.resolveFlowPlan(flowNum, steps);
+  await txResolver.drainPending();
+  await eventLoopIteration();
+
+  const flowStatus = await getFlowStatus(portfolioId, flowNum);
+  t.is(flowStatus?.state, 'done');
+});
+
+test('evmHandler.deposit via Permit2 with existing wallet as spender succeeds', async t => {
+  const existingWallet =
+    '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as Address;
+  const permitDetails = makePermitDetails({ spender: existingWallet });
+  const { orch, ctx, storage, txResolver } = mocks({}, {});
+  const sourceAccountId =
+    `eip155:${permitDetails.chainId}:${permitDetails.permit2Payload.owner.toLowerCase()}` as AccountId;
+  const kit = await ctx.makePortfolioKit({ sourceAccountId });
+  await provideCosmosAccount(orch, 'agoric', kit, silent);
+  kit.manager.resolveAccount({
+    namespace: 'eip155',
+    chainName: 'Arbitrum',
+    chainId: 'eip155:42161',
+    remoteAddress: existingWallet,
+  });
+
+  const flowKey = kit.evmHandler.deposit(permitDetails);
+  t.regex(flowKey, /^flow\d+$/);
+  const flowNum = Number(flowKey.replace('flow', ''));
+  const portfolioId = kit.reader.getPortfolioId();
+  const { getPortfolioStatus, getFlowStatus } = makeStorageTools(storage);
+  const { flowsRunning = {} } = await getPortfolioStatus(portfolioId);
+  const detail = flowsRunning[flowKey];
+  if (!detail || detail.type !== 'deposit') {
+    throw t.fail('missing deposit flow detail');
+  }
+  const fee = make(BLD, 100n);
+  const fromChain = detail.fromChain as AxelarChain;
+  const steps: MovementDesc[] = [
+    { src: `+${fromChain}`, dest: `@${fromChain}`, amount: detail.amount, fee },
+  ];
+  kit.planner.resolveFlowPlan(flowNum, steps);
+  await txResolver.drainPending();
+  await eventLoopIteration();
+
+  const flowStatus = await getFlowStatus(portfolioId, flowNum);
+  t.is(flowStatus?.state, 'done');
+});
+
+// #endregion evmHandler.deposit tests

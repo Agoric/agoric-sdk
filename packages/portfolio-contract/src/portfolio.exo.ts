@@ -685,11 +685,18 @@ export const preparePortfolioKit = (
           sameEvmAddress(owner, accountAddress as Address) ||
             Fail`permit owner ${owner} does not match portfolio source address ${accountAddress}`;
 
-          // For deposits, spender must be the portfolio's smart wallet address.
+          // For deposits:
+          // The spender may be the chain's well-known depositFactory address.
+          // Otherwise, spender must be the portfolio's smart wallet address.
           // If the account already exists, use the stored address.
           // If not, predict the address using `factory` (which will be used to create it).
           let expectedSpender: Address;
-          if (accounts.has(fromChain)) {
+
+          const depositFactoryAddress = contracts[fromChain].depositFactory;
+          if (sameEvmAddress(depositDetails.spender, depositFactoryAddress)) {
+            // The spender is the allowed wallet factory address, so accept it.
+            expectedSpender = depositFactoryAddress;
+          } else if (accounts.has(fromChain)) {
             const gmpInfo = accounts.get(fromChain) as GMPAccountInfo;
             expectedSpender = gmpInfo.remoteAddress;
           } else {
@@ -703,7 +710,7 @@ export const preparePortfolioKit = (
           }
 
           sameEvmAddress(depositDetails.spender, expectedSpender) ||
-            Fail`permit spender ${depositDetails.spender} does not match portfolio account ${expectedSpender}`;
+            Fail`permit spender ${depositDetails.spender} does not match expected account ${expectedSpender}`;
 
           sameEvmAddress(depositDetails.token, contracts[fromChain].usdc) ||
             Fail`permit token address ${depositDetails.token} does not match usdc contract address ${contracts[fromChain].usdc} for chain ${fromChain}`;
