@@ -71,7 +71,7 @@ import {
 import {
   provideEVMAccount,
   provideEVMAccountWithPermit,
-} from '../src/pos-gmp.flows.ts';
+} from '../src/pos-evm.flows.ts';
 import {
   makeSwapLockMessages,
   makeUnlockSwapMessages,
