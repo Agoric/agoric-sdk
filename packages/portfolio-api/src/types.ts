@@ -231,6 +231,11 @@ export type StatusFor = {
   contract: {
     contractAccount: CosmosChainAddress['value'];
     depositFactoryAddresses?: Record<AxelarChain, AccountId>;
+    evmRemoteAccountConfig?: {
+      remoteAccountBytecodeHash?: `0x${string}`;
+      factoryAddresses: Record<AxelarChain, AccountId>;
+      currentRouterAddresses: Record<AxelarChain, AccountId>;
+    };
   };
   pendingTx: PublishedTx;
   evmWallet: EVMWalletUpdate;

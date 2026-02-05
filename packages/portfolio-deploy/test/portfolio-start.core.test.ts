@@ -28,6 +28,7 @@ import { E } from '@endo/far';
 import { passStyleOf, type CopyRecord } from '@endo/pass-style';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
+import { keccak256 } from 'viem/utils';
 import type { BootstrapPowers } from '@agoric/vats/src/core/types.js';
 import { produceAttenuatedDeposit } from '@agoric/deploy-script-support/src/control/attenuated-deposit.core.js';
 import type { ChainInfoPowers } from '@agoric/deploy-script-support/src/control/chain-info.core.js';
@@ -57,6 +58,11 @@ const asset = (spec: string) => readFile(nodeRequire.resolve(spec), 'utf8');
 const { bytecode: walletBytecode } = JSON.parse(
   await asset('@aglocal/portfolio-deploy/tools/evm-orch/Wallet.json'),
 );
+
+const { bytecode: remoteAccountBytecode } = JSON.parse(
+  await asset('@aglocal/portfolio-deploy/tools/evm-orch/RemoteAccount.json'),
+);
+const remoteAccountBytecodeHash = keccak256(remoteAccountBytecode);
 
 const docOpts = {
   note: 'YMax VStorage Schema',
@@ -160,6 +166,7 @@ const ymaxOptions = toExternalConfig(
     axelarConfig,
     gmpAddresses,
     walletBytecode,
+    remoteAccountBytecodeHash,
   } as PortfolioDeployConfig),
   {},
   portfolioDeployConfigShape,
@@ -337,6 +344,7 @@ test('delegate ymax control; invite planner; submit plan', async t => {
       contracts: privateArgs.contracts,
       gmpAddresses: privateArgs.gmpAddresses,
       walletBytecode,
+      remoteAccountBytecodeHash,
     } as CopyRecord;
 
     await E(E(walletCtrl).getInvokeFacet()).invokeEntry({

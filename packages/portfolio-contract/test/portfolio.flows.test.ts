@@ -613,6 +613,8 @@ const mocks = (
     axelarIds: axelarIdsMock,
     contracts: contractsMock,
     walletBytecode: '0x1234',
+    remoteAccountBytecodeHash:
+      '0x24ea336fcf84934abf4d7be919b1c8917bd8a51cd25fcb43c50e4184eda29c13',
     gmpAddresses,
     usdc: { brand: USDC, denom },
     gmpFeeInfo: { brand: BLD, denom: 'uaxl' },
@@ -665,6 +667,7 @@ const mocks = (
     eip155ChainIdToAxelarChain,
     contracts: contractsMock,
     walletBytecode: ctx1.walletBytecode,
+    remoteAccountBytecodeHash: ctx1.remoteAccountBytecodeHash,
     ...(null as any),
   });
   const makePortfolioKitGuest = (opts?: { sourceAccountId?: AccountId }) =>

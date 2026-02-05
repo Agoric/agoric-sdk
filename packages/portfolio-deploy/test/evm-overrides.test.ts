@@ -1,4 +1,5 @@
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { test as rawTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import type { TestFn } from 'ava';
 
 import { privateArgsShape } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
 import { mustMatch } from '@agoric/internal';
@@ -6,6 +7,7 @@ import { type CosmosChainInfo } from '@agoric/orchestration';
 import { Far } from '@endo/pass-style';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
+import { keccak256 } from 'viem/utils';
 import { makeAssetInfo } from '../src/chain-name-service.js';
 import {
   chainInfoDevNet,
@@ -82,6 +84,20 @@ const complementConnections = (chainInfo: Record<string, CosmosChainInfo>) => {
   return harden(bidirectional);
 };
 
+const makeContext = async () => {
+  const { bytecode: remoteAccountBytecode } = JSON.parse(
+    await asset('@aglocal/portfolio-deploy/tools/evm-orch/RemoteAccount.json'),
+  );
+  const remoteAccountBytecodeHash = keccak256(remoteAccountBytecode);
+  return { remoteAccountBytecodeHash };
+};
+
+const test = rawTest as TestFn<Awaited<ReturnType<typeof makeContext>>>;
+
+test.before(async t => {
+  t.context = await makeContext();
+});
+
 test('devnet assetInfo has USDC, BLD', t => {
   const bidirectional = complementConnections(chainInfoDevNet);
   const assetInfo = harden(fromEntries(makeAssetInfo(bidirectional, tokenMap)));
@@ -132,6 +148,7 @@ test('devnet overrides match ymax privateArgsShape', async t => {
   const { bytecode: walletBytecode } = JSON.parse(
     await asset('@aglocal/portfolio-deploy/tools/evm-orch/Wallet.json'),
   );
+  const { remoteAccountBytecodeHash } = t.context;
   const bidirectional = complementConnections(chainInfoDevNet);
   const assetInfo = makeAssetInfo(bidirectional, tokenMap);
 
@@ -142,6 +159,7 @@ test('devnet overrides match ymax privateArgsShape', async t => {
     chainInfo,
     assetInfo,
     walletBytecode,
+    remoteAccountBytecodeHash,
   };
   t.notThrows(() =>
     mustMatch(harden({ ...stubPowers, ...privateArgsData }), privateArgsShape),
@@ -157,6 +175,7 @@ test('mainnet overrides match ymax privateArgsShape', async t => {
   const { bytecode: walletBytecode } = JSON.parse(
     await asset('@aglocal/portfolio-deploy/tools/evm-orch/Wallet.json'),
   );
+  const { remoteAccountBytecodeHash } = t.context;
   const bidirectional = complementConnections(chainInfoProposal100);
   const assetInfo = makeAssetInfo(bidirectional, tokenMap);
 
@@ -167,6 +186,7 @@ test('mainnet overrides match ymax privateArgsShape', async t => {
     chainInfo,
     assetInfo,
     walletBytecode,
+    remoteAccountBytecodeHash,
   };
   t.notThrows(() =>
     mustMatch(harden({ ...stubPowers, ...privateArgsData }), privateArgsShape),
