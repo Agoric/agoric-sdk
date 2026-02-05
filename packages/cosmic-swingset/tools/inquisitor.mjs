@@ -253,8 +253,9 @@ export const makeHelpers = ({ db, EV }) => {
       ORDER BY vat.rank, vat.idx
     `);
     for (const dbRecord of vatQuery.iterate()) {
-      // @ts-expect-error extract from unknown
-      const { vatID, rank, sourceText, optionsText } = dbRecord;
+      const { vatID, rank, sourceText, optionsText } = /** @type {any} */ (
+        dbRecord
+      );
       const isStatic = rank === 1;
       const source = sourceText ? JSON.parse(sourceText) : undefined;
       const options = optionsText ? JSON.parse(optionsText) : undefined;
@@ -336,7 +337,6 @@ export const makeHelpers = ({ db, EV }) => {
         const value = kvGet(`${vatID}.c.${kref}`);
         if (!value) continue;
         const [_value, _reachabilityFlag, vref] =
-          // @ts-expect-error may not be string
           value.match(krefToVrefValuePatt) ||
           Fail`unexpected c-list value ${value}`;
         const result = { vatID, kref, vref };

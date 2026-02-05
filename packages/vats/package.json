@@ -45,12 +45,22 @@
     "jessie.js": "^0.3.4"
   },
   "devDependencies": {
+    "@agoric/base-zone": "workspace:*",
+    "@agoric/cosmic-swingset": "workspace:*",
+    "@agoric/deploy-script-support": "workspace:*",
+    "@agoric/inter-protocol": "workspace:*",
+    "@agoric/orchestration": "workspace:*",
+    "@agoric/smart-wallet": "workspace:*",
+    "@agoric/solo": "workspace:*",
+    "@agoric/spawner": "workspace:*",
     "@agoric/swingset-liveslots": "workspace:*",
     "@agoric/vats": "workspace:*",
     "@endo/bundle-source": "^4.1.2",
+    "@endo/exo": "^1.5.12",
     "@endo/init": "^1.1.12",
     "ava": "^6.4.1",
-    "c8": "^10.1.3"
+    "c8": "^10.1.3",
+    "tsd": "^0.33.0"
   },
   "files": [
     "CHANGELOG.md",

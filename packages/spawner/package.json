@@ -4,6 +4,13 @@
   "description": "Wrapper for JavaScript map",
   "type": "module",
   "main": "./src/contractHost.js",
+  "typesVersions": {
+    "*": {
+      "bundles/bundle-spawn.js": [
+        "bundles/bundle-spawn.js.d.ts"
+      ]
+    }
+  },
   "engines": {
     "node": "^20.9 || ^22.11"
   },
@@ -36,6 +43,7 @@
   },
   "devDependencies": {
     "@agoric/internal": "workspace:*",
+    "@agoric/spawner": "workspace:*",
     "@agoric/swingset-vat": "workspace:*",
     "@endo/bundle-source": "^4.1.2",
     "@endo/init": "^1.1.12",
