@@ -39,6 +39,8 @@ func (lt ListTools) Delete(key ListKey) {
 	lt.nodeStore.Delete(key.keyBytes)
 }
 
+// Unlink removes a node from a non-circular list where PrevId == 0 indicates
+// the head and NextId == 0 indicates the tail.
 func (lt ListTools) Unlink(victim *ChunkedArtifactNode, updateEnds func(first, last *uint64)) {
 	if victim == nil {
 		return
