@@ -2,8 +2,10 @@ import type { NatAmount } from '@agoric/ertp';
 import type {
   AccountId,
   Bech32Address,
+  CaipChainId,
   CosmosChainAddress,
 } from '@agoric/orchestration';
+import type { Address as EVMAddress } from 'abitype';
 import { expectAssignable, expectNotAssignable, expectType } from 'tsd';
 import type { SupportedChain, YieldProtocol } from '../src/constants.js';
 import { AxelarChain } from '../src/constants.js';
@@ -25,7 +27,9 @@ import type {
 } from '../src/types.js';
 
 declare const natAmount: NatAmount;
+declare const chainId: CaipChainId;
 declare const accountId: AccountId;
+declare const address: EVMAddress;
 declare const bech32Address: Bech32Address;
 declare const cosmosAddress: CosmosChainAddress;
 declare const publishedTx: PublishedTx;
@@ -160,6 +164,13 @@ const status: StatusFor = {
     positionKeys: [instrumentId],
     accountIdByChain: { [supportedChain]: accountId },
     accountsPending: [supportedChain],
+    accountStateByChain: {
+      [supportedChain]: {
+        chainId,
+        address,
+        state: 'provisioning',
+      },
+    },
     depositAddress: bech32Address,
     nobleForwardingAddress: bech32Address,
     targetAllocation,
