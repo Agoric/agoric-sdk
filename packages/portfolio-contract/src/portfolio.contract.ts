@@ -5,6 +5,7 @@
  */
 import { AmountMath, type Payment } from '@agoric/ertp';
 import {
+  fromTypedEntries,
   makeTracer,
   mustMatch,
   NonNullish,
@@ -111,6 +112,23 @@ const makeEip155ChainIdToAxelarChain = (
     }
   }
   return harden(chainIdToChainName);
+};
+
+const extractContractAddresses = <T extends keyof EVMContractAddresses>(
+  chainIdToAxelarChain: ReturnType<typeof makeEip155ChainIdToAxelarChain>,
+  contracts: EVMContractAddressesMap,
+  key: T,
+): Record<AxelarChain, AccountId> => {
+  const addresses = fromTypedEntries(
+    Object.entries(chainIdToAxelarChain).map(
+      ([chainId, chainName]) =>
+        [
+          chainName satisfies AxelarChain,
+          `eip155:${chainId}:${contracts[chainName][key]}` satisfies AccountId,
+        ] as const,
+    ),
+  ) satisfies Record<AxelarChain, AccountId>;
+  return addresses;
 };
 
 const interfaceTODO = undefined;
@@ -361,19 +379,11 @@ export const contract = async (
   void vowTools.when(contractAccountV, acct => {
     const addr = acct.getAddress();
 
-    type DepositFactoryAddresses = NonNullable<
-      StatusFor['contract']['depositFactoryAddresses']
-    >;
-
-    const depositFactoryAddresses = Object.fromEntries(
-      Object.entries(eip155ChainIdToAxelarChain).map(
-        ([chainId, chainName]) =>
-          [
-            chainName satisfies AxelarChain,
-            `eip155:${chainId}:${contracts[chainName].depositFactory}` satisfies DepositFactoryAddresses[AxelarChain],
-          ] as const,
-      ),
-    ) as DepositFactoryAddresses;
+    const depositFactoryAddresses = extractContractAddresses(
+      eip155ChainIdToAxelarChain,
+      contracts,
+      'depositFactory',
+    );
 
     publishStatus(
       storageNode,
