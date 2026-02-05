@@ -30,6 +30,7 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/base-zone": "workspace:*",
+    "@agoric/cosmic-swingset": "workspace:*",
     "@agoric/ertp": "workspace:*",
     "@agoric/governance": "workspace:*",
     "@agoric/internal": "workspace:*",
@@ -38,6 +39,7 @@
     "@agoric/time": "workspace:*",
     "@agoric/vat-data": "workspace:*",
     "@agoric/vats": "workspace:*",
+    "@agoric/vow": "workspace:*",
     "@agoric/zoe": "workspace:*",
     "@agoric/zone": "workspace:*",
     "@endo/captp": "^4.4.8",
@@ -46,6 +48,7 @@
     "@endo/far": "^1.1.14",
     "@endo/marshal": "^1.8.0",
     "@endo/nat": "^5.1.3",
+    "@endo/patterns": "^1.7.0",
     "@endo/promise-kit": "^1.1.13",
     "jessie.js": "^0.3.4"
   },
