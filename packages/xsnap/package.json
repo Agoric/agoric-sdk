@@ -42,11 +42,13 @@
     "tmp": "^0.2.1"
   },
   "devDependencies": {
+    "@agoric/xsnap": "workspace:*",
     "@endo/base64": "^1.0.12",
     "@endo/nat": "^5.1.3",
     "ava": "^6.4.1",
     "c8": "^10.1.3",
-    "execa": "^9.5.2"
+    "execa": "^9.5.2",
+    "ses": "^1.4.0"
   },
   "files": [
     "LICENSE*",

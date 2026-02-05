@@ -646,6 +646,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/ertp@workspace:packages/ERTP"
   dependencies:
+    "@agoric/internal": "workspace:*"
     "@agoric/notifier": "workspace:*"
     "@agoric/store": "workspace:*"
     "@agoric/swingset-vat": "workspace:*"
@@ -1434,6 +1435,7 @@ __metadata:
   dependencies:
     "@agoric/base-zone": "workspace:*"
     "@agoric/internal": "workspace:*"
+    "@agoric/store": "workspace:*"
     "@agoric/swingset-vat": "workspace:*"
     "@agoric/vow": "workspace:*"
     "@agoric/zone": "workspace:*"
@@ -1519,6 +1521,7 @@ __metadata:
   resolution: "@agoric/xsnap@workspace:packages/xsnap"
   dependencies:
     "@agoric/internal": "workspace:*"
+    "@agoric/xsnap": "workspace:*"
     "@agoric/xsnap-lockdown": "workspace:*"
     "@endo/base64": "npm:^1.0.12"
     "@endo/bundle-source": "npm:^4.1.2"
@@ -1534,6 +1537,7 @@ __metadata:
     c8: "npm:^10.1.3"
     execa: "npm:^9.5.2"
     glob: "npm:^7.1.6"
+    ses: "npm:^1.4.0"
     tmp: "npm:^0.2.1"
   bin:
     ava-xs: ./src/ava-xs.js
@@ -1594,6 +1598,7 @@ __metadata:
     "@endo/pass-style": "npm:^1.6.3"
     "@endo/patterns": "npm:^1.7.0"
     ava: "npm:^6.4.1"
+    ses: "npm:^1.14.0"
   languageName: unknown
   linkType: soft
 
@@ -18434,7 +18439,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ses@npm:^1.14.0":
+"ses@npm:^1.14.0, ses@npm:^1.4.0":
   version: 1.14.0
   resolution: "ses@npm:1.14.0"
   dependencies:
