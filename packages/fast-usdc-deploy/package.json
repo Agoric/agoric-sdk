@@ -20,7 +20,12 @@
     "lint:types": "yarn run -T tsc"
   },
   "devDependencies": {
+    "@aglocal/boot": "workspace:*",
+    "@aglocal/fast-usdc-contract": "workspace:*",
+    "@aglocal/fast-usdc-deploy": "workspace:*",
+    "@agoric/smart-wallet": "workspace:*",
     "@agoric/swing-store": "workspace:*",
+    "@agoric/swingset-vat": "workspace:*",
     "@agoric/vats": "workspace:*",
     "@endo/promise-kit": "^1.1.13",
     "ava": "^6.4.1",
