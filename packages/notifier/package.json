@@ -42,11 +42,8 @@
     "@endo/promise-kit": "^1.1.13"
   },
   "devDependencies": {
-    "@agoric/kmarshal": "workspace:*",
     "@agoric/notifier": "workspace:*",
-    "@agoric/swing-store": "workspace:*",
     "@agoric/swingset-liveslots": "workspace:*",
-    "@agoric/swingset-vat": "workspace:*",
     "@agoric/vow": "workspace:*",
     "@endo/init": "^1.1.12",
     "@endo/pass-style": "^1.6.3",
