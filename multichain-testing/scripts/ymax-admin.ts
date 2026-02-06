@@ -15,6 +15,7 @@ import { makeTracer } from '@agoric/internal';
 import { makeFileRW } from '@agoric/pola-io/src/file.js';
 import { SigningStargateClient, type StdFee } from '@cosmjs/stargate';
 import { Fail } from '@endo/errors';
+import { E } from '@endo/far';
 import fsp from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import path from 'node:path';
