@@ -71,7 +71,11 @@ import {
 import {
   provideEVMAccount,
   provideEVMAccountWithPermit,
-} from '../src/pos-evm.flows.ts';
+} from '../src/axelar-gmp-legacy.flows.ts';
+import {
+  provideEVMAccount as provideEVMRoutedAccount,
+  provideEVMAccountWithPermit as provideEVMRoutedAccountWithPermit,
+} from '../src/axelar-gmp-router.flows.ts';
 import {
   makeSwapLockMessages,
   makeUnlockSwapMessages,
@@ -1933,39 +1937,41 @@ type ProvideEVMAccountFn = (
   ...args: Parameters<typeof provideEVMAccount>
 ) => ReturnType<typeof provideEVMAccount>;
 
-const provideEVMAccountWithPermitStub: ProvideEVMAccountFn = (
-  chainName,
-  chainInfo,
-  gmp,
-  lca,
-  ctx,
-  pk,
-  { orchOpts } = {},
-) =>
-  provideEVMAccountWithPermit(
-    chainName,
-    chainInfo,
-    gmp,
-    lca,
-    ctx,
-    pk,
-    {
-      permit: {
-        permitted: {
-          token: '0x0000000000000000000000000000000000000001',
-          amount: 1n,
+const makeProvideEVMAccountWithPermitStub =
+  (
+    provideEVMWithPermit: typeof provideEVMAccountWithPermit,
+  ): ProvideEVMAccountFn =>
+  (chainName, chainInfo, gmp, lca, ctx, pk, { orchOpts } = {}) =>
+    provideEVMWithPermit(
+      chainName,
+      chainInfo,
+      gmp,
+      lca,
+      ctx,
+      pk,
+      {
+        permit: {
+          permitted: {
+            token: '0x0000000000000000000000000000000000000001',
+            amount: 1n,
+          },
+          nonce: 1n,
+          deadline: 1n,
         },
-        nonce: 1n,
-        deadline: 1n,
+        owner: '0x1111111111111111111111111111111111111111',
+        witness:
+          '0x0000000000000000000000000000000000000000000000000000000000000000',
+        witnessTypeString: 'OpenPortfolioWitness',
+        signature: '0x1234' as `0x${string}`,
       },
-      owner: '0x1111111111111111111111111111111111111111',
-      witness:
-        '0x0000000000000000000000000000000000000000000000000000000000000000',
-      witnessTypeString: 'OpenPortfolioWitness',
-      signature: '0x1234' as `0x${string}`,
-    },
-    orchOpts,
-  );
+      orchOpts,
+    );
+
+const provideEVMAccountWithPermitStub = makeProvideEVMAccountWithPermitStub(
+  provideEVMAccountWithPermit,
+);
+const provideEVMRoutedAccountWithPermitStub =
+  makeProvideEVMAccountWithPermitStub(provideEVMRoutedAccountWithPermit);
 
 /**
  * make 2 attempts A, and B, to provideEVMAccount.
@@ -2203,6 +2209,96 @@ test(
   'withPermit: A finishes before attempt B starts',
   makeAccountEVMRace,
   provideEVMAccountWithPermitStub,
+  'resolve',
+);
+
+test(
+  'routed: A and B arrive together; A wins the race',
+  makeAccountEVMRace,
+  provideEVMRoutedAccount,
+  'predict',
+);
+test(
+  'routed: A pays fee; B arrives',
+  makeAccountEVMRace,
+  provideEVMRoutedAccount,
+  'send',
+);
+test(
+  'routed: A registers txN; B arrives',
+  makeAccountEVMRace,
+  provideEVMRoutedAccount,
+  'register',
+);
+test(
+  'routed: A transfers to axelar; B arrives',
+  makeAccountEVMRace,
+  provideEVMRoutedAccount,
+  'txfr',
+);
+test(
+  'routed: A times out on axelar; B arrives',
+  makeAccountEVMRace,
+  provideEVMRoutedAccount,
+  'txfr',
+  'txfr',
+);
+test(
+  'routed: A gets rejected txN; B arrives',
+  makeAccountEVMRace,
+  provideEVMRoutedAccount,
+  'txfr',
+  'resolve',
+);
+test(
+  'routed: A finishes before attempt B starts',
+  makeAccountEVMRace,
+  provideEVMRoutedAccount,
+  'resolve',
+);
+
+test(
+  'routed: withPermit: A and B arrive together; A wins the race',
+  makeAccountEVMRace,
+  provideEVMRoutedAccountWithPermitStub,
+  'predict',
+);
+test(
+  'routed: withPermit: A pays fee; B arrives',
+  makeAccountEVMRace,
+  provideEVMRoutedAccountWithPermitStub,
+  'send',
+);
+test(
+  'routed: withPermit: A registers txN; B arrives',
+  makeAccountEVMRace,
+  provideEVMRoutedAccountWithPermitStub,
+  'register',
+);
+test(
+  'routed: withPermit: A transfers to axelar; B arrives',
+  makeAccountEVMRace,
+  provideEVMRoutedAccountWithPermitStub,
+  'txfr',
+);
+test(
+  'routed: withPermit: A times out on axelar; B arrives',
+  makeAccountEVMRace,
+  provideEVMRoutedAccountWithPermitStub,
+  'txfr',
+  'txfr',
+);
+test(
+  'routed: withPermit: A gets rejected txN; B arrives',
+  makeAccountEVMRace,
+  provideEVMRoutedAccountWithPermitStub,
+  'txfr',
+  'resolve',
+);
+test(
+  'routed: withPermit: A finishes before attempt B starts',
+  makeAccountEVMRace,
+  provideEVMRoutedAccountWithPermitStub,
   'resolve',
 );
 
