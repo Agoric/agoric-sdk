@@ -655,11 +655,11 @@ export const contract = async (
       if (!fromChain) {
         throw Fail`no Axelar chain for EIP-155 chainId ${permitDetails.chainId}`;
       }
-      sameEvmAddress(
-        permitDetails.spender,
-        contracts[fromChain].depositFactory,
-      ) ||
-        Fail`permit2 spender address ${permitDetails.spender} does not match depositFactory address ${contracts[fromChain].depositFactory} for chain ${fromChain}`;
+      const expectedSpender =
+        contracts[fromChain].remoteAccountRouter ||
+        contracts[fromChain].depositFactory;
+      sameEvmAddress(permitDetails.spender, expectedSpender) ||
+        Fail`permit2 spender address ${permitDetails.spender} does not match ${contracts[fromChain].remoteAccountRouter ? 'router' : 'depositFactory'} address ${expectedSpender} for chain ${fromChain}`;
 
       sameEvmAddress(permitDetails.token, contracts[fromChain].usdc) ||
         Fail`permit2 token address ${permitDetails.token} does not match usdc contract address ${contracts[fromChain].usdc} for chain ${fromChain}`;
@@ -733,10 +733,22 @@ export const contract = async (
       timerService,
       portfolioContractPublicFacet: publicFacet,
       publishStatus,
+      // The router / depositFactory represents the identity of this ymax
+      // instance on EVM chains.
+      // For standalone messages it is only used to ensure a signed message
+      // will be rejected by other ymax contract instances (replay attack).
+      // Even if a router address is configured and the user is in fact
+      // interacting with a legacy remote account, since the EVM side is not
+      // verifying this, the router is a valid representative (and without one,
+      // so is the depositFactory).
       validStandaloneContractAddresses: fromEntries(
         entries(eip155ChainIdToAxelarChain).map(
           ([chainId, chainName]) =>
-            [chainId, contracts[chainName].depositFactory] as const,
+            [
+              chainId,
+              contracts[chainName].remoteAccountRouter ||
+                contracts[chainName].depositFactory,
+            ] as const,
         ),
       ),
     },

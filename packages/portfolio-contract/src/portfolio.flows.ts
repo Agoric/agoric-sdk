@@ -1900,13 +1900,18 @@ export const executePlan = (async (
     let queuedSteps: ExecutePlanOptions['queuedSteps'];
     if (options?.evmDepositDetail) {
       const { fromChain, permit2Payload, spender } = options.evmDepositDetail;
-      // Only use queuePermit2Step for openPortfolio (spender = depositFactory).
+      // Only use queuePermit2Step for openPortfolio (spender = depositFactory/router).
       // Deposits to existing portfolios use the depositFromEVM case in stepFlow.
-      const isDepositFactory = sameEvmAddress(
+
+      const contractRepresentativeSpender =
+        ctx.contracts[fromChain].remoteAccountRouter ||
+        ctx.contracts[fromChain].depositFactory;
+
+      const isRepresentativeSpender = sameEvmAddress(
         spender,
-        ctx.contracts[fromChain].depositFactory,
+        contractRepresentativeSpender,
       );
-      if (isDepositFactory) {
+      if (isRepresentativeSpender) {
         const gmpChain = await orch.getChain('axelar');
         const chainInfo = await (await orch.getChain(fromChain)).getChainInfo();
         queuedSteps = await queuePermit2Step(pKit, ctx, {

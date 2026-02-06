@@ -61,6 +61,10 @@ import {
   type TargetAllocation,
 } from './type-guards.js';
 import { predictWalletAddress } from './utils/evm-orch-factory.js';
+import {
+  predictRemoteAccountAddress,
+  toInitCodeHash,
+} from './utils/evm-orch-router.ts';
 
 const trace = makeTracer('PortExo');
 
@@ -255,6 +259,7 @@ export const preparePortfolioKit = (
     onAgoricTransfer,
     transferChannels,
     walletBytecode,
+    remoteAccountBytecodeHash,
     proposalShapes,
     offerArgsShapes,
     vowTools,
@@ -757,32 +762,50 @@ export const preparePortfolioKit = (
           sameEvmAddress(owner, accountAddress as EVMAddress) ||
             Fail`permit owner ${owner} does not match portfolio source address ${accountAddress}`;
 
-          // For deposits:
-          // The spender may be the chain's well-known depositFactory address.
-          // Otherwise, spender must be the portfolio's smart wallet address.
-          // If the account already exists, use the stored address.
-          // If not, predict the address using `factory` (which will be used to create it).
-          let expectedSpender: EVMAddress;
+          // For deposits, spender should be the current remote account router
+          // if available, or the deposit factory otherwise.
+          // A non current router can never be used as spender, even if the
+          // remote account hasn't been transferred to the new router yet.
+          // The depositFactory is not a valid spender if a router is configured.
+          // We also support the remote account itself as spender. This allows
+          // legacy remote accounts to continue to be used for deposits.
+          // We also support remote accounts as spender when the remote account
+          // does not yet exist and will be created, either by the remote account
+          // factory through the router, or by the deposit factory.
+          let remoteAccountAddress: EVMAddress;
+          let contractRepresentativeAddress: EVMAddress =
+            contracts[fromChain].remoteAccountRouter;
+          let contractRepresentativeName: string = 'router';
 
-          const depositFactoryAddress = contracts[fromChain].depositFactory;
-          if (sameEvmAddress(depositDetails.spender, depositFactoryAddress)) {
-            // The spender is the allowed wallet factory address, so accept it.
-            expectedSpender = depositFactoryAddress;
-          } else if (accounts.has(fromChain)) {
+          if (accounts.has(fromChain)) {
             const gmpInfo = accounts.get(fromChain) as GMPAccountInfo;
-            expectedSpender = gmpInfo.remoteAddress;
+            remoteAccountAddress = gmpInfo.remoteAddress;
+          } else if (contractRepresentativeAddress) {
+            remoteAccountAddress = predictRemoteAccountAddress({
+              owner: this.facets.reader.getLocalAccount().getAddress().value,
+              factoryAddress: contracts[fromChain].remoteAccountFactory,
+              remoteAccountInitCodeHash: toInitCodeHash(
+                remoteAccountBytecodeHash,
+              ),
+            });
           } else {
-            expectedSpender = predictWalletAddress({
+            remoteAccountAddress = predictWalletAddress({
               owner: this.facets.reader.getLocalAccount().getAddress().value,
               factoryAddress: contracts[fromChain].factory,
               gasServiceAddress: contracts[fromChain].gasService,
               gatewayAddress: contracts[fromChain].gateway,
               walletBytecode: hexToBytes(walletBytecode.replace(/^0x/, '')),
             });
+            contractRepresentativeAddress = contracts[fromChain].depositFactory;
+            contractRepresentativeName = 'deposit factory';
           }
 
-          sameEvmAddress(depositDetails.spender, expectedSpender) ||
-            Fail`permit spender ${depositDetails.spender} does not match expected account ${expectedSpender}`;
+          sameEvmAddress(
+            depositDetails.spender,
+            contractRepresentativeAddress,
+          ) ||
+            sameEvmAddress(depositDetails.spender, remoteAccountAddress) ||
+            Fail`permit spender ${depositDetails.spender} does not match portfolio account ${remoteAccountAddress} or ${contractRepresentativeName} ${contractRepresentativeAddress} for chain ${fromChain}`;
 
           sameEvmAddress(depositDetails.token, contracts[fromChain].usdc) ||
             Fail`permit token address ${depositDetails.token} does not match usdc contract address ${contracts[fromChain].usdc} for chain ${fromChain}`;

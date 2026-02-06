@@ -243,8 +243,6 @@ export const makeProvideEVMAccount =
         ? predictAccountInfo({ ...ctx, trace: traceChain }, principalAccount)
         : pk.reader.getGMPInfo(chainName);
 
-      assert(evmAccount.routerAddress);
-
       if (['pending', 'ok'].includes(reserve.state)) {
         return {
           ...evmAccount,
@@ -257,6 +255,9 @@ export const makeProvideEVMAccount =
       if (isNew) {
         pk.manager.initAccountInfo(evmAccount);
       }
+
+      // TODO: how to handle provide of failed account that was attempted
+      // on deposit factory?
 
       const routerPayload = {
         txType: TxType.MAKE_ACCOUNT,

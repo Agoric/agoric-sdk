@@ -60,20 +60,20 @@ import type { ResolverKit } from './resolver/resolver.exo.ts';
 import type { PoolKey } from './type-guards.ts';
 import { appendTxIds } from './utils/traffic.ts';
 import {
-  provideEVMAccount,
-  provideEVMAccountWithPermit,
-  sendGMPContractCall,
-  sendPermit2GMP,
+  provideEVMAccount as provideEVMLegacyAccount,
+  provideEVMAccountWithPermit as provideEVMLegacyAccountWithPermit,
+  sendGMPContractCall as sendLegacyGMPContractCall,
+  sendPermit2GMP as sendLegacyPermit2GMP,
   type GMPAccountStatus,
 } from './axelar-gmp-legacy.flows.ts';
+import {
+  provideEVMAccount as provideEVMRoutedAccount,
+  provideEVMAccountWithPermit as provideEVMRoutedAccountWithPermit,
+  sendGMPContractCall as sendRoutedGMPContractCall,
+  sendPermit2GMP as sendRoutedPermit2GMP,
+} from './axelar-gmp-router.flows.ts';
 
-export {
-  provideEVMAccount,
-  provideEVMAccountWithPermit,
-  sendGMPContractCall,
-  sendPermit2GMP,
-  type GMPAccountStatus,
-};
+export type { GMPAccountStatus };
 
 export type EVMContext = {
   feeAccount: LocalAccount;
@@ -91,6 +91,49 @@ export type EVMContext = {
 
 const trace = makeTracer('GMPF');
 const { keys } = Object;
+
+export const sendGMPContractCall: typeof sendLegacyGMPContractCall = async (
+  ctx,
+  gmpAcct,
+  ...args
+) =>
+  gmpAcct.routerAddress
+    ? sendRoutedGMPContractCall(ctx, gmpAcct, ...args)
+    : sendLegacyGMPContractCall(ctx, gmpAcct, ...args);
+
+export const sendPermit2GMP: typeof sendLegacyPermit2GMP = async (
+  ctx,
+  gmpAcct,
+  ...args
+) =>
+  gmpAcct.routerAddress
+    ? sendRoutedPermit2GMP(ctx, gmpAcct, ...args)
+    : sendLegacyPermit2GMP(ctx, gmpAcct, ...args);
+
+export const provideEVMAccount: typeof provideEVMLegacyAccount = async (
+  ...args
+) => {
+  const chainName = args[0];
+  const { contracts } = args[4];
+  const addresses = contracts[chainName];
+  if (addresses.remoteAccountRouter) {
+    return provideEVMRoutedAccount(...args);
+  } else {
+    return provideEVMLegacyAccount(...args);
+  }
+};
+
+export const provideEVMAccountWithPermit: typeof provideEVMLegacyAccountWithPermit =
+  async (...args) => {
+    const chainName = args[0];
+    const { contracts } = args[4];
+    const addresses = contracts[chainName];
+    if (addresses.remoteAccountRouter) {
+      return provideEVMRoutedAccountWithPermit(...args);
+    } else {
+      return provideEVMLegacyAccountWithPermit(...args);
+    }
+  };
 
 /** @see {@link https://developers.circle.com/cctp/supported-domains} */
 const nobleDomain = 4;
