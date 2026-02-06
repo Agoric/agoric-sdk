@@ -241,12 +241,16 @@ builder
     fixTypeImport('./src/codegen', gnuSed);
     console.log('🔧 type keyword added');
 
-    // top-level to get the root prettier config
+    const repoRoot = path.join(__dirname, '..', '..', '..');
+    const srcFromRoot = path.relative(
+      repoRoot,
+      path.join(__dirname, '..', 'src'),
+    );
     const prettierResult = spawnSync(
       'yarn',
-      ['run', '--top-level', 'prettier', '--write', 'src'],
+      ['run', '-T', 'prettier', '--write', srcFromRoot],
       {
-        cwd: path.join(__dirname, '..'),
+        cwd: repoRoot,
         stdio: 'inherit',
       },
     );
