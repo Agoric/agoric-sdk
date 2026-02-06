@@ -4,7 +4,6 @@ import path from 'path';
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
 import bundleSource from '@endo/bundle-source';
 
-// eslint-disable-next-line import/no-extraneous-dependencies -- cannot detect self-reference
 import zcfBundle from '@agoric/zoe/bundles/bundle-contractFacet.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
