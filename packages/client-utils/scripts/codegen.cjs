@@ -150,8 +150,8 @@ telescope({
     console.log('🔧 type keyword added');
 
     const prettierResult = spawnSync(
-      process.execPath,
-      [prettierBin, '--write', 'src'],
+      'yarn',
+      ['run', '--top-level', 'prettier', '--write', 'src/codegen'],
       {
         cwd: path.join(__dirname, '..'),
         stdio: 'inherit',

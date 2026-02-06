@@ -246,9 +246,10 @@ builder
       repoRoot,
       path.join(__dirname, '..', 'src'),
     );
+    const codegenFromRoot = path.join(srcFromRoot, 'codegen');
     const prettierResult = spawnSync(
       'yarn',
-      ['run', '-T', 'prettier', '--write', srcFromRoot],
+      ['run', '-T', 'prettier', '--write', codegenFromRoot],
       {
         cwd: repoRoot,
         stdio: 'inherit',
