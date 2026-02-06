@@ -22,13 +22,15 @@
     "test:c8": "c8 --all ${C8_OPTIONS:-} ava",
     "test:xs": "exit 0"
   },
+  "dependencies": {
+    "@agoric/swingset-liveslots": "workspace:*"
+  },
   "peerDependencies": {
     "@endo/errors": "^1.2.13",
     "@endo/import-bundle": "^1.5.2",
     "@endo/promise-kit": "^1.1.13"
   },
   "devDependencies": {
-    "@agoric/swingset-liveslots": "workspace:*",
     "@endo/bundle-source": "^4.1.2",
     "@endo/errors": "^1.2.13",
     "@endo/import-bundle": "^1.5.2",
