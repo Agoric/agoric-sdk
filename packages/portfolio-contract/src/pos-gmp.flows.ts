@@ -166,11 +166,19 @@ const makeProvideEVMAccount = ({
         ? predictAddress(lca.getAddress().value)
         : pk.reader.getGMPInfo(chainName);
 
+    // Bail out early if another caller created the account, and not a deposit.
     if (['pending', 'ok'].includes(reserve.state)) {
-      return {
-        ...evmAccount,
-        ready: reserve.ready as unknown as Promise<void>,
-      };
+      if (mode !== 'createAndDeposit') {
+        return {
+          ...evmAccount,
+          ready: reserve.ready as unknown as Promise<void>,
+        };
+      }
+      // We're using GMP for the side effect of depositing to the account, so we
+      // still want to send the deposit even if the account already exists. But
+      // use a different TxType for tracking since it's not a "make account"
+      // transaction.
+      txType = TxType.GMP;
     }
 
     if (reserve.state === 'new') {
@@ -212,14 +220,13 @@ const makeProvideEVMAccount = ({
           contracts.factory,
         );
         txId = watchTx.txId;
-        appendTxIds(opts.orchOpts?.progressTracker, [txId]);
 
         const result = watchTx.result as unknown as Promise<void>; // XXX host/guest;
         result.catch(err => {
           trace(txId, 'rejected', err);
         });
 
-        await sendCall({
+        const sent = sendCall({
           dest: { axelarId, address: destinationAddress },
           portfolioLca: lca,
           fee,
@@ -229,6 +236,8 @@ const makeProvideEVMAccount = ({
           expectedWalletAddress: evmAccount.remoteAddress,
           ...('orchOpts' in opts ? { orchOpts: opts.orchOpts } : {}),
         });
+        appendTxIds(opts.orchOpts?.progressTracker, [txId]);
+        await sent;
 
         traceChain('await', mode, txId);
         await result;
@@ -242,11 +251,11 @@ const makeProvideEVMAccount = ({
         }
       }
     };
-    void installContract();
+    const installed = installContract();
 
     return {
       ...evmAccount,
-      ready: reserve.ready as unknown as Promise<void>, // XXX host/guest
+      ready: installed as unknown as Promise<void>, // XXX host/guest
     };
   };
 };
