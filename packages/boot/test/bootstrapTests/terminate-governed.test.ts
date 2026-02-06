@@ -39,7 +39,7 @@ test(`Create a contract via core-eval and kill it via core-eval by boardID `, as
 
   // Create a contract via core-eval.
   const creatorProposal = buildProposal(
-    '@agoric/governance/test/swingsetTests/contractGovernor/add-governedContract.js',
+    '../test/swingsetTests/contractGovernor/add-governedContract.js',
     [TEST_CONTRACT_LABEL],
   );
   await evalProposal(creatorProposal);
