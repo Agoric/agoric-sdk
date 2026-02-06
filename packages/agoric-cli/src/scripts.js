@@ -3,8 +3,10 @@
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/captp';
 
+import fs from 'fs';
 import { createRequire } from 'module';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
 /**
  * @import {ModuleFormat} from '@endo/bundle-source';
@@ -13,8 +15,98 @@ import path from 'path';
  */
 
 const require = createRequire(import.meta.url);
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 
 const PATH_SEP_RE = new RegExp(`${path.sep.replace(/\\/g, '\\\\')}`, 'g');
+
+/**
+ * @returns {Map<string, string>}
+ */
+const getWorkspacePackageDirs = (() => {
+  /** @type {Map<string, string> | undefined} */
+  let cache;
+  return () => {
+    if (cache) {
+      return cache;
+    }
+    /** @type {Map<string, string>} */
+    const packageDirs = new Map();
+    const rootPkgPath = path.join(repoRoot, 'package.json');
+    const rootPkg = JSON.parse(fs.readFileSync(rootPkgPath, 'utf8'));
+    const workspaces = Array.isArray(rootPkg.workspaces) ? rootPkg.workspaces : [];
+    for (const pattern of workspaces) {
+      if (typeof pattern !== 'string') {
+        continue;
+      }
+      if (pattern.endsWith('/*')) {
+        const prefix = pattern.slice(0, -2);
+        const parentDir = path.join(repoRoot, prefix);
+        if (!fs.existsSync(parentDir)) {
+          continue;
+        }
+        for (const dirent of fs.readdirSync(parentDir, { withFileTypes: true })) {
+          if (!dirent.isDirectory()) {
+            continue;
+          }
+          const pkgDir = path.join(parentDir, dirent.name);
+          const pkgPath = path.join(pkgDir, 'package.json');
+          if (!fs.existsSync(pkgPath)) {
+            continue;
+          }
+          const pkgJson = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+          if (typeof pkgJson.name === 'string') {
+            packageDirs.set(pkgJson.name, pkgDir);
+          }
+        }
+      } else {
+        const pkgDir = path.join(repoRoot, pattern);
+        const pkgPath = path.join(pkgDir, 'package.json');
+        if (!fs.existsSync(pkgPath)) {
+          continue;
+        }
+        const pkgJson = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+        if (typeof pkgJson.name === 'string') {
+          packageDirs.set(pkgJson.name, pkgDir);
+        }
+      }
+    }
+    cache = packageDirs;
+    return packageDirs;
+  };
+})();
+
+/**
+ * @param {string} sourceSpec
+ * @returns {string | undefined}
+ */
+const resolveWorkspaceModule = sourceSpec => {
+  if (sourceSpec.startsWith('.') || sourceSpec.startsWith('/')) {
+    return undefined;
+  }
+  const parts = sourceSpec.split('/');
+  const packageName =
+    sourceSpec.startsWith('@') && parts.length > 1
+      ? `${parts[0]}/${parts[1]}`
+      : parts[0];
+  const subpath = sourceSpec.startsWith('@')
+    ? parts.slice(2).join('/')
+    : parts.slice(1).join('/');
+  const pkgDir = getWorkspacePackageDirs().get(packageName);
+  if (!pkgDir || !subpath) {
+    return undefined;
+  }
+  const candidate = path.join(pkgDir, subpath);
+  if (fs.existsSync(candidate)) {
+    return candidate;
+  }
+  for (const ext of ['.js', '.mjs', '.cjs', '.json']) {
+    const candidateWithExt = `${candidate}${ext}`;
+    if (fs.existsSync(candidateWithExt)) {
+      return candidateWithExt;
+    }
+  }
+  return undefined;
+};
 
 export const makeLookup =
   bootP =>
@@ -80,21 +172,28 @@ export const makeScriptLoader =
     for await (const script of scripts) {
       const moduleFile = path.resolve(process.cwd(), script);
       const pathResolve = (...paths) => {
-        const fileName = paths.pop();
+        const fileName = /** @type {string} */ (paths.pop());
         try {
           return require.resolve(fileName, {
             paths: [
               path.resolve(path.dirname(moduleFile), ...paths),
               path.dirname(moduleFile),
+              process.cwd(),
             ],
           });
         } catch (e) {
-          try {
-            // Fall back to the CLI's own dependency graph for bare specifiers.
-            return require.resolve(fileName);
-          } catch (_e) {
+          const workspaceModule = resolveWorkspaceModule(fileName);
+          if (workspaceModule) {
+            return workspaceModule;
+          }
+          const isBareSpecifier =
+            !fileName.startsWith('.') &&
+            !fileName.startsWith('/') &&
+            !path.isAbsolute(fileName);
+          if (!isBareSpecifier || paths.length > 0) {
             return path.resolve(path.dirname(moduleFile), ...paths, fileName);
           }
+          throw e;
         }
       };
       console.warn('running', moduleFile);
