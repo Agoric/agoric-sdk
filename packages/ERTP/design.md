@@ -227,12 +227,12 @@ graph LR
     AssetKind[Asset Kinds]
     
     AssetKind --> NAT[NAT - Fungible<br/>bigint value<br/>e.g., currency]
-    AssetKind --> SET[SET - Non-fungible deprecated<br/>array of keys<br/>e.g., unique tickets]
+    AssetKind --> SET["⚠️ SET - Non-fungible (DEPRECATED)<br/>array of keys<br/>Use COPY_SET instead"]
     AssetKind --> COPY_SET[COPY_SET - Non-fungible<br/>CopySet of keys<br/>e.g., unique tickets]
     AssetKind --> COPY_BAG[COPY_BAG - Semi-fungible<br/>CopyBag of keys<br/>e.g., ticket types with quantities]
     
     style NAT fill:#e8f5e9,stroke:#4caf50
-    style SET fill:#fff3e0,stroke:#ff9800
+    style SET fill:#ffebee,stroke:#d32f2f,stroke-dasharray: 5 5
     style COPY_SET fill:#f3e5f5,stroke:#9c27b0
     style COPY_BAG fill:#e1f5ff,stroke:#2196f3
 ```
@@ -249,6 +249,7 @@ sequenceDiagram
     participant Payment1
     participant Purse
     participant Payment2
+    participant Payment3
     participant Issuer
     
     User->>Mint: mintPayment(amount)
@@ -270,8 +271,8 @@ sequenceDiagram
     User->>Issuer: claim(payment2)
     Issuer->>PaymentLedger: claim(payment2)
     PaymentLedger->>Payment2: burn
-    PaymentLedger->>Payment1: create new payment
-    Payment1-->>User: fresh payment
+    PaymentLedger->>Payment3: create new payment
+    Payment3-->>User: fresh payment
 ```
 
 ### 4.3 Amount Structure
