@@ -22,6 +22,9 @@
     "lint:types": "yarn run -T tsc"
   },
   "devDependencies": {
+    "@agoric/fast-usdc": "workspace:*",
+    "@agoric/smart-wallet": "workspace:*",
+    "@agoric/vats": "workspace:*",
     "@fast-check/ava": "^2.0.1",
     "ava": "^6.4.1",
     "c8": "^10.1.3",
