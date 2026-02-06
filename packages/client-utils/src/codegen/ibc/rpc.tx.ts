@@ -76,16 +76,12 @@ export const createRPCMsgClient = async ({ rpc }: { rpc: Rpc }) => ({
       interchain_accounts: {
         controller: {
           v1: new (
-            await import(
-              './applications/interchain_accounts/controller/v1/tx.rpc.msg.js'
-            )
+            await import('./applications/interchain_accounts/controller/v1/tx.rpc.msg.js')
           ).MsgClientImpl(rpc),
         },
         host: {
           v1: new (
-            await import(
-              './applications/interchain_accounts/host/v1/tx.rpc.msg.js'
-            )
+            await import('./applications/interchain_accounts/host/v1/tx.rpc.msg.js')
           ).MsgClientImpl(rpc),
         },
       },
