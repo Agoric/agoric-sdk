@@ -5,23 +5,26 @@
  *   https://www.typescriptlang.org/docs/handbook/jsdoc-supported-types.html
  */
 
-import type { start as assetReserveStart } from '@agoric/inter-protocol/src/reserve/assetReserve.js';
 import { expectNotType, expectType } from 'tsd';
 
-import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
 import type { WellKnownSpaces } from '../src/core/types.js';
 
 const mock = null as any;
 
 const spaces: WellKnownSpaces = mock;
 
-expectType<Instance<typeof assetReserveStart>>(
-  await spaces.instance.consume.reserve,
-);
-expectType<Instance<typeof assetReserveStart>>(
-  // @ts-expect-error to check against `any` Instance
+type ReserveInstance = Awaited<
+  WellKnownSpaces['instance']['consume']['reserve']
+>;
+type ProvisionPoolInstance = Awaited<
+  WellKnownSpaces['instance']['consume']['provisionPool']
+>;
+
+expectType<ReserveInstance>(await spaces.instance.consume.reserve);
+expectType<never>(
+  // @ts-expect-error keep check that reserve/provisionPool are not identical
   await spaces.instance.consume.provisionPool,
 );
-expectNotType<Instance<typeof assetReserveStart>>(
+expectNotType<ReserveInstance & ProvisionPoolInstance>(
   await spaces.instance.consume.provisionPool,
 );
