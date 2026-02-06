@@ -19,7 +19,6 @@
     "lint:types": "yarn run -T tsc"
   },
   "devDependencies": {
-    "@aglocal/boot": "workspace:*",
     "@aglocal/portfolio-contract": "workspace:*",
     "@agoric/async-flow": "workspace:*",
     "@agoric/client-utils": "workspace:*",
