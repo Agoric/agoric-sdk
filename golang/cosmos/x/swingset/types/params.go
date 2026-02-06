@@ -220,9 +220,14 @@ func validateChunkSizeLimitBytes(i interface{}) error {
 }
 
 // UpdateParams appends any missing params, configuring them to their defaults,
-// then returning the updated params or an error. Existing params are not
+// then returning the updated params or an error.
+// Existing params are not
 // modified, regardless of their value, and they are not removed if they no
 // longer appear in the defaults.
+// UpdateParams appends missing entries and fills defaults. Note that
+// InstallationDeadlineBlocks and InstallationDeadlineSeconds treat 0 as
+// "unset" and will be replaced with DefaultInstallationDeadlineBlocks and
+// DefaultInstallationDeadlineSeconds, respectively.
 func UpdateParams(params Params) (Params, error) {
 	newBpu, err := appendMissingDefaults(params.BeansPerUnit, DefaultBeansPerUnit())
 	if err != nil {

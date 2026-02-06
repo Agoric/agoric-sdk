@@ -329,7 +329,7 @@ type State struct {
 	// The allowed number of items to add to queues, as determined by SwingSet.
 	// Transactions which attempt to enqueue more should be rejected.
 	QueueAllowed []QueueSize `protobuf:"bytes,1,rep,name=queue_allowed,json=queueAllowed,proto3" json:"queue_allowed"`
-	// Doubly-linked list in order of start block and time.
+	// Doubly-linked list in order of ascending start block and time.
 	FirstChunkedArtifactId uint64 `protobuf:"varint,2,opt,name=first_chunked_artifact_id,json=firstChunkedArtifactId,proto3" json:"first_chunked_artifact_id" yaml:"first_chunked_artifact_id"`
 	// The last chunked artifact id that has not expired nor completed.
 	LastChunkedArtifactId uint64 `protobuf:"varint,3,opt,name=last_chunked_artifact_id,json=lastChunkedArtifactId,proto3" json:"last_chunked_artifact_id" yaml:"last_chunked_artifact_id"`
@@ -725,12 +725,12 @@ func (m *SwingStoreArtifact) GetData() []byte {
 // multiple transactions, in chunks, as when using InstallBundle to submit
 // chunks.
 type ChunkedArtifact struct {
-	// The SHA-512 hash of the entire bundle file's contents.
+	// The SHA-512 hash of the entire artifact's contents.
 	Sha512 string `protobuf:"bytes,1,opt,name=sha512,proto3" json:"sha512" yaml:"sha512"`
-	// The size of the final bundle artifact in bytes.
+	// The size of the final artifact in bytes.
 	SizeBytes uint64 `protobuf:"varint,2,opt,name=size_bytes,json=sizeBytes,proto3" json:"size_bytes" yaml:"size_bytes"`
 	// Information about the chunks that will be concatenated to form this
-	// bundle.
+	// artifact.
 	Chunks []*ChunkInfo `protobuf:"bytes,3,rep,name=chunks,proto3" json:"chunks" yaml:"chunks"`
 }
 
@@ -788,7 +788,7 @@ func (m *ChunkedArtifact) GetChunks() []*ChunkInfo {
 	return nil
 }
 
-// Information about a chunk of a bundle.
+// Information about a chunk of an artifact.
 type ChunkInfo struct {
 	// The SHA-512 hash of the chunk contents.
 	Sha512 string `protobuf:"bytes,1,opt,name=sha512,proto3" json:"sha512" yaml:"sha512"`
@@ -852,14 +852,19 @@ func (m *ChunkInfo) GetState() ChunkState {
 	return ChunkState_CHUNK_STATE_UNSPECIFIED
 }
 
-// A node in a doubly-linked-list of chunks of a chunked artifact, as used for
-// chunked bundle installation, in order of ascending block time.
-// The keeper uses this to expediently expire stale chunks.
+// A node in a doubly-linked-list of chunked artifacts, as used for chunked
+// bundle installation, in order of ascending block time.
+// This list is not circular and has no sentinel head node; the start and end
+// are indicated by prev_id/next_id being 0.
+// The keeper uses this to expediently expire stale incomplete artifacts.
 type ChunkedArtifactNode struct {
 	// The id of the pending bundle installation.
 	ChunkedArtifactId uint64 `protobuf:"varint,1,opt,name=chunked_artifact_id,json=chunkedArtifactId,proto3" json:"chunkedArtifactId" yaml:"chunkedArtifactId"`
-	// Doubly-linked list.
+	// The ID of the next chunked artifact in the list.
+	// A value of 0 indicates the end of the list.
 	NextId uint64 `protobuf:"varint,2,opt,name=next_id,json=nextId,proto3" json:"nextId" yaml:"nextId"`
+	// The ID of the previous chunked artifact in the list.
+	// A value of 0 indicates the start of the list.
 	PrevId uint64 `protobuf:"varint,3,opt,name=prev_id,json=prevId,proto3" json:"prevId" yaml:"prevId"`
 	// The time at which the pending installation began, in UNIX epoch seconds.
 	StartTimeUnix int64 `protobuf:"varint,4,opt,name=start_time_unix,json=startTimeUnix,proto3" json:"startTimeUnix" yaml:"startTimeUnix"`
