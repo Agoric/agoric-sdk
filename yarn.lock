@@ -578,7 +578,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/cosmic-swingset@workspace:packages/cosmic-swingset"
   dependencies:
-    "@agoric/builders": "workspace:*"
     "@agoric/cosmic-proto": "workspace:*"
     "@agoric/cosmos": "workspace:*"
     "@agoric/deploy-script-support": "workspace:*"
@@ -646,16 +645,12 @@ __metadata:
   dependencies:
     "@agoric/async-flow": "workspace:*"
     "@agoric/base-zone": "workspace:*"
-    "@agoric/client-utils": "workspace:*"
     "@agoric/deploy-script-support": "workspace:*"
     "@agoric/ertp": "workspace:*"
     "@agoric/import-manager": "workspace:*"
     "@agoric/internal": "workspace:*"
     "@agoric/notifier": "workspace:*"
-    "@agoric/orchestration": "workspace:*"
     "@agoric/pola-io": "workspace:*"
-    "@agoric/portfolio-api": "workspace:*"
-    "@agoric/smart-wallet": "workspace:*"
     "@agoric/store": "workspace:*"
     "@agoric/time": "workspace:*"
     "@agoric/vats": "workspace:*"
@@ -782,10 +777,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/governance@workspace:packages/governance"
   dependencies:
-    "@agoric/deploy-script-support": "workspace:*"
     "@agoric/ertp": "workspace:*"
     "@agoric/governance": "workspace:*"
-    "@agoric/inter-protocol": "workspace:*"
     "@agoric/internal": "workspace:*"
     "@agoric/notifier": "workspace:*"
     "@agoric/store": "workspace:*"
@@ -1172,7 +1165,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/solo@workspace:*, @agoric/solo@workspace:packages/solo":
+"@agoric/solo@workspace:packages/solo":
   version: 0.0.0-use.local
   resolution: "@agoric/solo@workspace:packages/solo"
   dependencies:
@@ -1476,17 +1469,11 @@ __metadata:
   dependencies:
     "@agoric/base-zone": "workspace:*"
     "@agoric/cosmic-proto": "workspace:*"
-    "@agoric/cosmic-swingset": "workspace:*"
-    "@agoric/deploy-script-support": "workspace:*"
     "@agoric/ertp": "workspace:*"
     "@agoric/governance": "workspace:*"
-    "@agoric/inter-protocol": "workspace:*"
     "@agoric/internal": "workspace:*"
     "@agoric/network": "workspace:*"
     "@agoric/notifier": "workspace:*"
-    "@agoric/orchestration": "workspace:*"
-    "@agoric/smart-wallet": "workspace:*"
-    "@agoric/solo": "workspace:*"
     "@agoric/spawner": "workspace:*"
     "@agoric/store": "workspace:*"
     "@agoric/swingset-liveslots": "workspace:*"
