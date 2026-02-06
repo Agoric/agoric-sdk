@@ -148,9 +148,9 @@ fund-fee-acct: ,$(CONTRACT)-node.json
 check-control-account:
 	$(YMAX_TOOL) --repl </dev/null | grep $(YMAX_CONTROL_ADDR)
 
-,$(CONTRACT)-upgraded: ,ymax-bundle-id ,ymax-installed ,privateArgsOverrides.json check-control-account
+,$(CONTRACT)-upgraded: ,ymax-bundle-id ,ymax-installed ,privateArgsOverrides.json
 	AGORIC_NET=$(AGORIC_NET) \
-		$(YMAX_ADMIN) $(DEPLOY)/src/ymax-upgrade.ts --overrides ,privateArgsOverrides.json --bundle $$(cat ,ymax-bundle-id) >$@ || (rm $@; false)
+		$(YMAX_ADMIN) $(DEPLOY)/src/ymax-upgrade.ts --overrides ,privateArgsOverrides.json --bundle "$$(cat ,ymax-bundle-id)" >$@ || (rm $@; false)
 
 ,$(CONTRACT)-upgraded-repl: ,ymax-upgrade.js ,ymax-installed
 	AGORIC_NET=$(AGORIC_NET) \
