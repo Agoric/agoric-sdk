@@ -48,7 +48,6 @@ const Agoric = {
 const hdPath = (coinType = 118, account = 0) =>
   stringToPath(`m/44'/${coinType}'/${account}'/0/0`);
 
-// @ts-expect-error difference in private property _push
 const registry = new Registry([
   ...defaultRegistryTypes,
   [Agoric.proto.swingset.InstallBundle.typeUrl, MsgInstallBundle],
