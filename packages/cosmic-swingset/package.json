@@ -22,7 +22,6 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/builders": "workspace:*",
     "@agoric/cosmos": "workspace:*",
     "@agoric/deploy-script-support": "workspace:*",
     "@agoric/internal": "workspace:*",
