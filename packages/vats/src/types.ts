@@ -5,9 +5,10 @@ import type { PacketSDKType } from '@agoric/cosmic-proto/ibc/core/channel/v1/cha
 import type { BridgeId, Remote } from '@agoric/internal';
 import type { Bytes } from '@agoric/network';
 import type { Guarded } from '@endo/exo';
-import type { CaipChainId } from '@agoric/orchestration';
 import type { TargetApp } from './bridge-target.js';
 import type { LocalChainAccount } from './localchain.js';
+
+type CaipChainId = string;
 
 export type Board = ReturnType<
   ReturnType<typeof import('./lib-board.js').prepareBoardKit>

@@ -23,7 +23,6 @@ import { makeScopedBridge } from '../bridge.js';
  * @import {GovernableStartFn, GovernanceFacetKit} from '@agoric/governance/src/types.js';
  * @import {Zone} from '@agoric/zone';
  * @import {TimerService} from '@agoric/time';
- * @import {EconomyBootstrapPowers} from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
  * @import {InitMsg} from '@agoric/internal/src/chain-utils.js';
  * @import {start} from '../centralSupply.js';
  * @import {BootstrapManifest} from './lib-boot.js';
@@ -43,6 +42,8 @@ import { makeScopedBridge } from '../bridge.js';
  * @import {StartUpgradable} from './types.ts';
  * @import {NamedVatPowers} from './types.ts';
  */
+
+/** @typedef {any} EconomyBootstrapPowers */
 
 /**
  * TODO: review behaviors carefully for powers that go out of scope, since we

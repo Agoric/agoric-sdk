@@ -46,12 +46,6 @@
   },
   "devDependencies": {
     "@agoric/base-zone": "workspace:*",
-    "@agoric/cosmic-swingset": "workspace:*",
-    "@agoric/deploy-script-support": "workspace:*",
-    "@agoric/inter-protocol": "workspace:*",
-    "@agoric/orchestration": "workspace:*",
-    "@agoric/smart-wallet": "workspace:*",
-    "@agoric/solo": "workspace:*",
     "@agoric/spawner": "workspace:*",
     "@agoric/swingset-liveslots": "workspace:*",
     "@agoric/vats": "workspace:*",

@@ -10,24 +10,18 @@ import { makeVatsFromBundles } from './basic-behaviors.js';
  * @import {ERef} from '@agoric/vow';
  */
 
+/** @typedef {object} SoloSpawnerVat */
+/** @typedef {object} SoloHttpVat */
+/** @typedef {object} SoloUploadsVat */
+
 /**
  * @typedef SoloVats
- * @property {ERef<
- *   ReturnType<
- *     typeof import('@agoric/solo/src/vat-spawner.js').buildRootObject
- *   >
- * >} spawner
- * @property {ERef<
- *   ReturnType<typeof import('@agoric/solo/src/vat-http.js').buildRootObject>
- * >} http
+ * @property {ERef<SoloSpawnerVat>} spawner
+ * @property {ERef<SoloHttpVat>} http
  * @property {ERef<
  *   ReturnType<typeof import('../vat-network.js').buildRootObject>
  * >} network
- * @property {ERef<
- *   ReturnType<
- *     typeof import('@agoric/solo/src/vat-uploads.js').buildRootObject
- *   >
- * >} uploads
+ * @property {ERef<SoloUploadsVat>} uploads
  */
 
 const PROVISIONER_INDEX = 1;
