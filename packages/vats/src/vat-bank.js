@@ -37,6 +37,8 @@ import {
  * @import {NameAdmin} from './types.js';
  * @import {MapStore} from '@agoric/store';
  * @import {ERef} from '@agoric/vow';
+ * @import {Subscriber} from '@agoric/notifier';
+ * @import {ForkableAsyncIterable} from '@agoric/notifier';
  */
 
 /** @typedef {bigint | number | string} BridgeBigInt */
@@ -270,6 +272,7 @@ harden(concatAsyncIterables);
  * @template T
  * @param {AsyncIterable<T>} asyncIterable
  * @param {(value: T, prior?: T) => unknown} skipValue
+ * @returns {Subscriber<T> & ForkableAsyncIterable<T>}
  */
 const makeSubscriberFromAsyncIterable = (
   asyncIterable,
