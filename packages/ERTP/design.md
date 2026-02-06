@@ -237,6 +237,8 @@ graph LR
     style COPY_BAG fill:#e1f5ff,stroke:#2196f3
 ```
 
+**Note on SET deprecation**: The SET asset kind (using plain arrays) is deprecated in favor of COPY_SET (using proper CopySet data structures). The SET representation had issues with duplicate detection and consistency. New code should use COPY_SET for non-fungible assets. The SET kind remains supported for backward compatibility with existing assets.
+
 ### 4.2 Payment Lifecycle
 
 ```mermaid
