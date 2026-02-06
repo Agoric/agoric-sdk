@@ -206,7 +206,7 @@ export interface State {
    * Transactions which attempt to enqueue more should be rejected.
    */
   queueAllowed: QueueSize[];
-  /** Doubly-linked list in order of start block and time. */
+  /** Doubly-linked list in order of ascending start block and time. */
   firstChunkedArtifactId: bigint;
   /** The last chunked artifact id that has not expired nor completed. */
   lastChunkedArtifactId: bigint;
@@ -345,13 +345,13 @@ export interface SwingStoreArtifactSDKType {
  * chunks.
  */
 export interface ChunkedArtifact {
-  /** The SHA-512 hash of the entire bundle file's contents. */
+  /** The SHA-512 hash of the entire artifact's contents. */
   sha512: string;
-  /** The size of the final bundle artifact in bytes. */
+  /** The size of the final artifact in bytes. */
   sizeBytes: bigint;
   /**
    * Information about the chunks that will be concatenated to form this
-   * bundle.
+   * artifact.
    */
   chunks: ChunkInfo[];
 }
@@ -369,7 +369,7 @@ export interface ChunkedArtifactSDKType {
   size_bytes: bigint;
   chunks: ChunkInfoSDKType[];
 }
-/** Information about a chunk of a bundle. */
+/** Information about a chunk of an artifact. */
 export interface ChunkInfo {
   /** The SHA-512 hash of the chunk contents. */
   sha512: string;
@@ -382,22 +382,31 @@ export interface ChunkInfoProtoMsg {
   typeUrl: '/agoric.swingset.ChunkInfo';
   value: Uint8Array;
 }
-/** Information about a chunk of a bundle. */
+/** Information about a chunk of an artifact. */
 export interface ChunkInfoSDKType {
   sha512: string;
   size_bytes: bigint;
   state: ChunkState;
 }
 /**
- * A node in a doubly-linked-list of chunks of a chunked artifact, as used for
- * chunked bundle installation, in order of ascending block time.
- * The keeper uses this to expediently expire stale chunks.
+ * A node in a doubly-linked-list of chunked artifacts, as used for chunked
+ * bundle installation, in order of ascending block time.
+ * This list is not circular and has no sentinel head node; the start and end
+ * are indicated by prev_id/next_id being 0.
+ * The keeper uses this to expediently expire stale incomplete artifacts.
  */
 export interface ChunkedArtifactNode {
   /** The id of the pending bundle installation. */
   chunkedArtifactId: bigint;
-  /** Doubly-linked list. */
+  /**
+   * The ID of the next chunked artifact in the list.
+   * A value of 0 indicates the end of the list.
+   */
   nextId: bigint;
+  /**
+   * The ID of the previous chunked artifact in the list.
+   * A value of 0 indicates the start of the list.
+   */
   prevId: bigint;
   /** The time at which the pending installation began, in UNIX epoch seconds. */
   startTimeUnix: bigint;
@@ -409,9 +418,11 @@ export interface ChunkedArtifactNodeProtoMsg {
   value: Uint8Array;
 }
 /**
- * A node in a doubly-linked-list of chunks of a chunked artifact, as used for
- * chunked bundle installation, in order of ascending block time.
- * The keeper uses this to expediently expire stale chunks.
+ * A node in a doubly-linked-list of chunked artifacts, as used for chunked
+ * bundle installation, in order of ascending block time.
+ * This list is not circular and has no sentinel head node; the start and end
+ * are indicated by prev_id/next_id being 0.
+ * The keeper uses this to expediently expire stale incomplete artifacts.
  */
 export interface ChunkedArtifactNodeSDKType {
   chunked_artifact_id: bigint;
