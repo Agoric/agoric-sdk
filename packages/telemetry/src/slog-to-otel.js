@@ -17,12 +17,70 @@ import {
 /**
  * @import {Span, Link as SpanLink} from '@opentelemetry/api'
  * @import {Tracer} from '@opentelemetry/api';
- * @import {SwingSetCapData} from '@agoric/swingset-vat';
- * @import {Message} from '@agoric/swingset-vat';
- * @import {KernelSyscallObject} from '@agoric/swingset-vat';
  * @import {LegacyMap} from '@agoric/store';
  */
 /** @import {SpanContext, SpanOptions} from '@opentelemetry/api' */
+
+/**
+ * @typedef {import('@endo/marshal').CapData<string>} SwingSetCapData
+ *
+ * @typedef {{
+ *   methargs: SwingSetCapData;
+ *   result?: string | undefined | null;
+ * }} SwingSetMessage
+ *
+ * @typedef {[
+ *   tag: 'send',
+ *   target: string,
+ *   msg: SwingSetMessage,
+ * ] | [
+ *   tag: 'invoke',
+ *   target: string,
+ *   method: string,
+ *   args: SwingSetCapData,
+ * ] | [
+ *   tag: 'subscribe',
+ *   vatID: string,
+ *   kpid: string,
+ * ] | [
+ *   tag: 'resolve',
+ *   vatID: string,
+ *   resolutions: Array<[kpid: string, rejected: boolean, data: SwingSetCapData]>,
+ * ] | [
+ *   tag: 'exit',
+ *   vatID: string,
+ *   isFailure: boolean,
+ *   info: SwingSetCapData,
+ * ] | [
+ *   tag: 'vatstoreGet',
+ *   vatID: string,
+ *   key: string,
+ * ] | [
+ *   tag: 'vatstoreGetNextKey',
+ *   vatID: string,
+ *   priorKey: string,
+ * ] | [
+ *   tag: 'vatstoreSet',
+ *   vatID: string,
+ *   key: string,
+ *   data: string,
+ * ] | [
+ *   tag: 'vatstoreDelete',
+ *   vatID: string,
+ *   key: string,
+ * ] | [
+ *   tag: 'dropImports' | 'retireImports' | 'retireExports',
+ *   krefs: string[],
+ * ] | [
+ *   tag: 'abandonExports',
+ *   vatID: string,
+ *   krefs: string[],
+ * ] | [
+ *   tag: 'callKernelHook',
+ *   hookName: string,
+ *   args: SwingSetCapData,
+ * ]} KernelSyscallObject
+ */
 
 const { assign } = Object;
 
@@ -168,7 +226,7 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
    * }} OldMessage
    */
   /** @typedef {ReturnType<typeof parseMsg>} ParsedMessage */
-  /** @param {Message | OldMessage} msg */
+  /** @param {SwingSetMessage | OldMessage} msg */
   const parseMsg = msg => {
     /** @type {string | symbol | null} */
     let method = null;

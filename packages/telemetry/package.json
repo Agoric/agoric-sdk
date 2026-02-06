@@ -43,7 +43,6 @@
     "tmp": "^0.2.1"
   },
   "devDependencies": {
-    "@agoric/swingset-vat": "workspace:*",
     "@endo/far": "^1.1.14",
     "@endo/lockdown": "^1.0.18",
     "@endo/ses-ava": "^1.3.2",
