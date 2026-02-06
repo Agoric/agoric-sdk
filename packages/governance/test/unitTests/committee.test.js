@@ -26,6 +26,19 @@ import { remoteNullMarshaller } from '../swingsetTests/utils.js';
  * @import {StartedInstanceKit} from '@agoric/zoe/src/zoeService/utils.js';
  */
 
+/**
+ * Local substitute for a test-only imported type.
+ * @typedef {{
+ *   creatorFacet: any,
+ *   publicFacet: {
+ *     getOpenQuestions: () => Promise<any[]>,
+ *     getQuestion: (id: any) => {
+ *       getDetails: () => Promise<{ issue: unknown }>,
+ *     },
+ *   },
+ * }} CommitteeStartResult
+ */
+
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const electorateRoot = `${dirname}/../../src/committee.js`;
