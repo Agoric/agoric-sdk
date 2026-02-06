@@ -153,7 +153,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@aglocal/fast-usdc-deploy@workspace:packages/fast-usdc-deploy"
   dependencies:
-    "@aglocal/boot": "workspace:*"
     "@aglocal/fast-usdc-contract": "workspace:*"
     "@aglocal/fast-usdc-deploy": "workspace:*"
     "@agoric/client-utils": "workspace:*"
@@ -243,7 +242,6 @@ __metadata:
   resolution: "@aglocal/portfolio-deploy@workspace:packages/portfolio-deploy"
   dependencies:
     "@aglocal/boot": "workspace:*"
-    "@aglocal/fast-usdc-contract": "workspace:*"
     "@aglocal/portfolio-contract": "workspace:*"
     "@agoric/client-utils": "workspace:*"
     "@agoric/cosmic-proto": "workspace:*"
@@ -646,7 +644,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/deploy-script-support@workspace:packages/deploy-script-support"
   dependencies:
-    "@aglocal/portfolio-deploy": "workspace:*"
     "@agoric/async-flow": "workspace:*"
     "@agoric/base-zone": "workspace:*"
     "@agoric/client-utils": "workspace:*"
@@ -830,7 +827,6 @@ __metadata:
   resolution: "@agoric/inter-protocol@workspace:packages/inter-protocol"
   dependencies:
     "@agoric/base-zone": "workspace:*"
-    "@agoric/cosmic-swingset": "workspace:*"
     "@agoric/ertp": "workspace:*"
     "@agoric/governance": "workspace:*"
     "@agoric/inter-protocol": "workspace:*"

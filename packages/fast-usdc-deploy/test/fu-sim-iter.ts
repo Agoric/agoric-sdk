@@ -1,7 +1,7 @@
 /** @file exercise Fast USDC contract in iterations; see chain-impact.test.ts */
 import type { ExecutionContext } from 'ava';
 
-import { AckBehavior } from '@aglocal/boot/tools/supports.js';
+import { AckBehavior } from '../../boot/tools/supports.js';
 import {
   encodeAddressHook,
   encodeBech32,

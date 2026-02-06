@@ -60,7 +60,6 @@
     "@endo/zip": "^1.0.11"
   },
   "devDependencies": {
-    "@aglocal/portfolio-deploy": "workspace:*",
     "@agoric/async-flow": "workspace:*",
     "@agoric/base-zone": "workspace:*",
     "@agoric/deploy-script-support": "workspace:*",
