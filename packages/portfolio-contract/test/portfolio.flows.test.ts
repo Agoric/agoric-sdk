@@ -2437,6 +2437,15 @@ test('routed: A pays fee; B adopts', makeAccountEVMRace, {
   provide: provideEVMRoutedAccount,
   headStart: 'send',
 });
+test(
+  'routed: A fails to pay fee; B arrives and recovers',
+  expectUnhandled(1, makeAccountEVMRace),
+  {
+    provide: provideEVMRoutedAccount,
+    headStart: 'send',
+    errAt: 'send',
+  },
+);
 test('routed: A registers txN; B adopts', makeAccountEVMRace, {
   provide: provideEVMRoutedAccount,
   headStart: 'register',
