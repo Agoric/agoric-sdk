@@ -4,18 +4,17 @@
  */
 import '@endo/init';
 
+import type { RunTools } from '@aglocal/portfolio-deploy/src/wallet-admin-types.ts';
 import {
   fetchEnvNetworkConfig,
   makeSigningSmartWalletKit,
   makeSmartWalletKit,
   reflectWalletStore,
-  type SigningSmartWalletKit,
 } from '@agoric/client-utils';
 import { makeTracer } from '@agoric/internal';
-import { makeFileRW, type FileRW } from '@agoric/pola-io/src/file.js';
+import { makeFileRW } from '@agoric/pola-io/src/file.js';
 import { SigningStargateClient, type StdFee } from '@cosmjs/stargate';
 import { Fail } from '@endo/errors';
-import { E } from '@endo/far';
 import fsp from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import path from 'node:path';
@@ -34,19 +33,7 @@ const makeFee = ({
   amount: [{ denom, amount: `${Math.round(gas * adjustment * price)}` }],
 });
 
-export type SigningSmartWalletKitWithStore = SigningSmartWalletKit & {
-  store: ReturnType<typeof reflectWalletStore>;
-};
-
-export interface RunTools {
-  scriptArgs: string[];
-  makeAccount(name: string): Promise<SigningSmartWalletKitWithStore>;
-  E: typeof E;
-  harden: typeof harden;
-  cwd: FileRW;
-}
-
-const main = async (
+export const main = async (
   argv = process.argv,
   env = process.env,
   {
