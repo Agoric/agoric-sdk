@@ -234,6 +234,8 @@ export const prepareResolverKit = (
               ? { expectedAddr, factoryAddr }
               : {}),
             ...(sourceAddress ? { sourceAddress } : {}),
+            // The initial registration is incomplete (lacks payloadHash)
+            ...(type === TxType.ROUTED_GMP ? { incomplete: true } : {}),
           };
           return this.facets.client.createPendingTx(txMeta);
         },
@@ -273,24 +275,17 @@ export const prepareResolverKit = (
           }
 
           const {
-            type,
-            destinationAddress,
-            sourceAddress,
+            rejectionReason: _rr,
+            status: _st,
             amountValue: amount,
-            expectedAddr,
-            factoryAddr,
-            ...rest
+            ...txMetaBase
           } = txMeta;
 
+          // @ts-expect-error - XXX reconcile TxMeta and PublishedTx
           const value: PublishedTx = {
-            type,
-            ...rest,
-            ...(destinationAddress ? { destinationAddress } : {}),
-            ...(sourceAddress ? { sourceAddress } : {}),
-            ...(txsWithAmounts.includes(type) ? { amount } : {}),
-            ...(type === TxType.MAKE_ACCOUNT
-              ? { expectedAddr, factoryAddr }
-              : {}),
+            ...txMetaBase,
+
+            ...(txsWithAmounts.includes(txMetaBase.type) ? { amount } : {}),
             ...(rejectionReason ? { rejectionReason } : {}),
             status,
           };
@@ -299,6 +294,7 @@ export const prepareResolverKit = (
           writeToNode(node, value);
         },
 
+        // XXX: this seems unused in current code
         insertPendingTransaction(
           txId: TxId,
           destinationAddress: AccountId,

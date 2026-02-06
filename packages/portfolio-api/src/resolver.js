@@ -1,8 +1,10 @@
 import { keyMirror } from '@agoric/internal';
 
 /**
+ * @import {PureData} from '@endo/pass-style';
  * @import {AccountId, HexAddress, TrafficEntry} from '@agoric/orchestration';
  * @import {TxId} from './types.js';
+ * @import {SupportedInstructions} from '@aglocal/portfolio-contract/src/interfaces/orch-router.js';
  */
 
 /**
@@ -29,6 +31,7 @@ harden(TxStatus);
 export const TxType = keyMirror({
   CCTP_TO_EVM: null,
   GMP: null,
+  ROUTED_GMP: null,
   CCTP_TO_AGORIC: null,
   IBC_FROM_AGORIC: null,
   IBC_FROM_REMOTE: null,
@@ -60,7 +63,7 @@ harden(TxType);
  * with its type, optional amount, destination, and status.
  *
  * @typedef {object} PublishedPortfolioTxDetails
- * @property {Exclude<TxType, PublishedTrafficTxDetails['type']>} type - The type of
+ * @property {Exclude<TxType, PublishedTrafficTxDetails['type'] | 'ROUTED_GMP'>} type - The type of
  * transaction (CCTP_TO_EVM, GMP, CCTP_TO_AGORIC, or MAKE_ACCOUNT)
  * @property {bigint} [amount] - Optional transaction amount as a bigint, currently in micro-USDC (6 decimal fixed-point)
  * @property {AccountId} [destinationAddress] - The destination account
@@ -74,6 +77,31 @@ harden(TxType);
  * "MAKE_ACCOUNT")
  */
 
+/**
+ * Core debugging details that every pending ROUTED_GMP transaction publish
+ *
+ * @typedef {object} RoutedGMPTxBaseDetails
+ * @property {`0x${string}`} instructionSelector - The 4-byte function selector of the process instruction function
+ * @property {SupportedInstructions} instructionType - The routed instruction type
+ * @property {HexAddress} expectedRemoteAddress - The EVM address corresponding to the source LCA address
+ */
+
+/**
+ * Specialized case of a transaction published in vstorage at
+ * `published.${contractInstance}.pendingTxs.tx${number}`
+ * for the ROUTED_GMP type.
+ *
+ * @typedef {object} PublishedRoutedGMPTxDetails
+ * @property {TxType & ('ROUTED_GMP')} type - The type of
+ * transaction (CCTP_TO_EVM, GMP, CCTP_TO_AGORIC, or MAKE_ACCOUNT)
+ * @property {AccountId} destinationAddress - The router account handling this transaction
+ * @property {AccountId} sourceAddress - The source LCA address initiating the
+ * transaction (either portfolio or contract)
+ * @property {true} [incomplete] - Flag indicating that the initial transaction registration is incomplete and awaiting payloadHash and details update
+ * @property {`0x${string}`} [payloadHash] - The hash of the GMP Payload
+ * @property {RoutedGMPTxBaseDetails & Record<string, PureData>} [details] - Debugging details
+ */
+
 // eslint-disable-next-line @agoric/group-jsdoc-imports
 /**
  * @typedef {object} PublishedTxBase
@@ -84,5 +112,5 @@ harden(TxType);
  */
 
 /**
- * @typedef {PublishedTxBase & (PublishedTrafficTxDetails | PublishedPortfolioTxDetails)} PublishedTx
+ * @typedef {PublishedTxBase & (PublishedTrafficTxDetails | PublishedPortfolioTxDetails | PublishedRoutedGMPTxDetails)} PublishedTx
  */

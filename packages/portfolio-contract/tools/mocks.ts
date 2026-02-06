@@ -1,7 +1,17 @@
 /// <reference types="ses" />
 import type { AccountId } from '@agoric/orchestration';
 
-import { TxType, type TxStatus } from '../src/resolver/constants.js';
+import {
+  TxType,
+  type PublishedTx,
+  type TxStatus,
+} from '../src/resolver/constants.js';
+
+const TxTypesWithSourceAddress: TxType[] = harden([
+  TxType.GMP,
+  TxType.MAKE_ACCOUNT,
+  TxType.ROUTED_GMP,
+]);
 
 export const createMockPendingTxData = ({
   type = TxType.CCTP_TO_EVM,
@@ -12,14 +22,14 @@ export const createMockPendingTxData = ({
 }: {
   type?: TxType;
   status?: TxStatus;
-  amount?: bigint;
+  amount?: bigint | null;
   destinationAddress?: AccountId;
   sourceAddress?: AccountId;
 } = {}) =>
   harden({
     type,
     status,
-    amount,
+    ...(amount != null ? { amount } : {}),
     destinationAddress,
-    ...(type === TxType.GMP ? { sourceAddress } : {}),
-  });
+    ...(TxTypesWithSourceAddress.includes(type) ? { sourceAddress } : {}),
+  } as PublishedTx);
