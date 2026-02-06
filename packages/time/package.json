@@ -38,7 +38,6 @@
   },
   "devDependencies": {
     "@agoric/internal": "workspace:*",
-    "@agoric/notifier": "workspace:*",
     "@endo/eventual-send": "^1.3.4",
     "@endo/far": "^1.1.14",
     "@endo/init": "^1.1.12",
