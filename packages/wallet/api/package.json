@@ -12,10 +12,13 @@
     "lint:eslint": "yarn run -T eslint ."
   },
   "devDependencies": {
+    "@agoric/deploy-script-support": "workspace:*",
     "@agoric/vats": "workspace:*",
+    "@agoric/vow": "workspace:*",
     "@endo/bundle-source": "^4.1.2",
     "@endo/far": "^1.1.14",
     "@endo/init": "^1.1.12",
+    "@endo/patterns": "^1.7.0",
     "ava": "^6.4.1"
   },
   "dependencies": {
