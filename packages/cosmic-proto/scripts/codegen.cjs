@@ -2,7 +2,7 @@
 // @ts-check
 
 /* eslint-env node */
-const { exec, execSync, spawnSync } = require('child_process');
+const { execSync, spawnSync } = require('child_process');
 const fsp = require('fs/promises');
 const path = require('path');
 const assert = require('node:assert/strict');
@@ -28,15 +28,7 @@ function fixTypeImport(directory, gnuSed) {
     -e 's/\\([{,]\\) \\([[:alnum:]_]*SDKType\\)/\\1 type \\2/g' {} +
   `;
 
-  exec(command, (error, stdout, stderr) => {
-    if (error) {
-      console.error(`Error during replacement: ${error.message}`);
-      return;
-    }
-    if (stderr) {
-      console.error(`Standard error: ${stderr}`);
-    }
-  });
+  execSync(command, { stdio: 'inherit' });
 }
 
 /**
