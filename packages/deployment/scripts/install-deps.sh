@@ -2,7 +2,7 @@
 set -ueo pipefail
 
 # Install Terraform.
-TERRAFORM_VERSION=0.11.14
+TERRAFORM_VERSION=0.12.31
 
 uname_s=$(uname -s | tr '[:upper:]' '[:lower:]')
 
@@ -13,23 +13,30 @@ esac
 uname_m=$(uname -m)
 case $uname_m in
   x86_64) TERRAFORM_ARCH=amd64 ;;
-  aarch64 | arm64) TERRAFORM_ARCH=arm ;;
+  aarch64 | arm64)
+    case "$TERRAFORM_OS" in
+      linux) TERRAFORM_ARCH=arm64 ;;
+      darwin) TERRAFORM_ARCH=amd64 ;; #FIXME: there is no darwin arm64 terraform binary yet
+      *) TERRAFORM_ARCH=arm ;;
+    esac
+    ;;
   *) TERRAFORM_ARCH=$uname_m ;;
 esac
 
 TERRAFORM_RELEASE=terraform_${TERRAFORM_VERSION}_${TERRAFORM_OS}_${TERRAFORM_ARCH}
 TERRAFORM_URL=https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/${TERRAFORM_RELEASE}.zip
 
-# Extract, then delete temporary file.
-[ -f /usr/local/bin/terraform ] && (
-  /usr/local/bin/terraform -version
-  true
-) | head -1 | grep -q "v$TERRAFORM_VERSION" || (
-  trap 'echo "Removing $terraform_zip"; rm -f "$terraform_zip"' EXIT
-  terraform_zip=$(mktemp -t terraformXXXXXX)
-  curl "$TERRAFORM_URL" > "$terraform_zip"
-  unzip -od /usr/local/bin/ "$terraform_zip"
-)
+if [ ! -x /usr/local/bin/terraform ] || ! {
+    /usr/local/bin/terraform -version | head -1 | grep -q "v$TERRAFORM_VERSION"
+}; then
+  # Extract, then delete temporary file.
+  (
+    #trap 'echo "Removing $terraform_zip"; rm -f "$terraform_zip"' EXIT
+    terraform_zip=$(mktemp -t terraformXXXXXX)
+    curl "$TERRAFORM_URL" > "$terraform_zip"
+    unzip -od /usr/local/bin/ "$terraform_zip"
+  )
+fi
 
 VERSION_CODENAME_RAW="$(cat /etc/os-release | grep VERSION_CODENAME)"
 VERSION_CODENAME=${VERSION_CODENAME_RAW#VERSION_CODENAME=}
@@ -51,6 +58,9 @@ case $VERSION_CODENAME in
     ;;
   bookworm)
     VERSION_CODENAME=jammy
+    ;;
+  trixie)
+    VERSION_CODENAME=noble
     ;;
 esac
 
