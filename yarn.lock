@@ -933,11 +933,8 @@ __metadata:
   resolution: "@agoric/notifier@workspace:packages/notifier"
   dependencies:
     "@agoric/internal": "workspace:*"
-    "@agoric/kmarshal": "workspace:*"
     "@agoric/notifier": "workspace:*"
-    "@agoric/swing-store": "workspace:*"
     "@agoric/swingset-liveslots": "workspace:*"
-    "@agoric/swingset-vat": "workspace:*"
     "@agoric/vat-data": "workspace:*"
     "@agoric/vow": "workspace:*"
     "@endo/errors": "npm:^1.2.13"
@@ -1321,6 +1318,7 @@ __metadata:
   dependencies:
     "@agoric/internal": "workspace:*"
     "@agoric/kmarshal": "workspace:*"
+    "@agoric/notifier": "workspace:*"
     "@agoric/store": "workspace:*"
     "@agoric/swing-store": "workspace:*"
     "@agoric/swingset-liveslots": "workspace:*"

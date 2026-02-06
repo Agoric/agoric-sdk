@@ -22,6 +22,7 @@
     "lint:eslint": "yarn run -T eslint ."
   },
   "devDependencies": {
+    "@agoric/notifier": "workspace:*",
     "@agoric/swingset-vat": "workspace:*",
     "@agoric/telemetry": "workspace:*",
     "@agoric/xsnap": "workspace:*",
