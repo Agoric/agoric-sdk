@@ -15,12 +15,10 @@ import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { MALLEABLE_NUMBER } from '@agoric/governance/test/swingsetTests/contractGovernor/governedContract.js';
 
 /**
- * @import {ManifestBundleRef} from '@agoric/deploy-script-support/src/externalTypes.js';
- * @import {EconomyBootstrapPowers} from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
- * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
- * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {Installation} from '@agoric/zoe';
  * @import {ERef} from '@agoric/vow';
+ * @import {DeployScriptFunction, CoreEvalBuilder, ManifestBundleRef} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {EconomyBootstrapPowers} from '@agoric/vats/src/core/basic-behaviors.js';
  */
 
 const trace = makeTracer('startGovernedInstance', true);
@@ -199,7 +197,6 @@ export const defaultProposalBuilder = async (
 /** @type {DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { scriptArgs } = endowments;
-  // Dynamic import to avoid inclusion in the proposal bundle.
   const { makeHelpers } = await import('@agoric/deploy-script-support');
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
   await writeCoreEval(startGovernedInstance.name, utils =>

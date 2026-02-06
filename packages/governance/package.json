@@ -47,9 +47,7 @@
     "import-meta-resolve": "^4.1.0"
   },
   "devDependencies": {
-    "@agoric/deploy-script-support": "workspace:*",
     "@agoric/governance": "workspace:*",
-    "@agoric/inter-protocol": "workspace:*",
     "@agoric/swingset-liveslots": "workspace:*",
     "@agoric/swingset-vat": "workspace:*",
     "@agoric/vow": "workspace:*",
