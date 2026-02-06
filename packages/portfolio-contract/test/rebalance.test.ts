@@ -9,7 +9,7 @@ import type {
 } from '@agoric/portfolio-api/src/constants.js';
 import { Far } from '@endo/marshal';
 import type { PoolKey } from '../src/type-guards.js';
-import type { AssetPlaceRef, MovementDesc } from '../src/type-guards-steps.js';
+import type { AssetPlaceRef } from '../src/type-guards-steps.js';
 import type {
   NetworkSpec,
   TransferProtocol,
@@ -19,6 +19,8 @@ import { TEST_NETWORK } from '../tools/network/test-network.js';
 import { planRebalanceFlow } from '../tools/plan-solve.js';
 import type { RebalanceMode } from '../tools/plan-solve.js';
 import { gasEstimator } from './mocks.js';
+import { readableSteps } from './supports.js';
+import type { MockMovementDesc } from './supports.js';
 
 // eslint-disable-next-line no-nested-ternary
 const strcmp = (a: string, b: string) => (a > b ? 1 : a < b ? -1 : 0);
@@ -42,15 +44,6 @@ const subtract5bps = (scaled: bigint) =>
   // See https://github.com/Agoric/agoric-private/issues/415
   (scaled * USCALE * 9995n) / 10000n - 1n;
 
-const formatAmount = ({ brand, value }) => {
-  const intPart = Number(value / USCALE);
-  const fracPart = Number(value - BigInt(intPart) * USCALE) / Number(USCALE);
-  const scaledValue = intPart + fracPart;
-  if (brand === TOK_BRAND) return `$${scaledValue}`;
-  const prettyBrand = brand[Symbol.toStringTag].replace(/^Alleged: /, '');
-  return `${scaledValue} ${prettyBrand}`;
-};
-
 // Pools
 const A = 'Aave_Arbitrum';
 const B = 'Beefy_re7_Avalanche';
@@ -59,18 +52,6 @@ const C = 'Compound_Ethereum';
 // Helper to build current map (use shared token)
 const balances = (rec: Record<string, bigint>) => objectMap(rec, v => token(v));
 
-// Helper for comprehensible ava outputs.
-const readableSteps = steps =>
-  steps.map(step => {
-    const { src, dest, amount, fee } = step;
-    const prettyAmount = formatAmount(amount);
-    const feeSuffix = fee ? ` [fee ${formatAmount(fee)}]` : '';
-    return `${src} -> ${dest} ${prettyAmount}${feeSuffix}`;
-  });
-type MockMovementDesc = Omit<MovementDesc, 'src' | 'dest'> & {
-  src: string;
-  dest: string;
-};
 const assertSteps = async (
   t: ExecutionContext,
   actual: MockMovementDesc[],
@@ -84,7 +65,10 @@ const assertSteps = async (
   // Try for a simple diff, but if that doesn't exhibit the failure then commit
   // to the full result after all.
   const summaryResult = await t.try(tt =>
-    tt.deepEqual(readableSteps(actual), readableSteps(expected)),
+    tt.deepEqual(
+      readableSteps(actual, TOK_BRAND),
+      readableSteps(expected, TOK_BRAND),
+    ),
   );
   if (!summaryResult.passed) {
     fullResult.discard();

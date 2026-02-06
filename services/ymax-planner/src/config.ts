@@ -80,7 +80,7 @@ const parsePositiveInteger = (
   const value = env[fieldName];
   if (value === undefined) return defaultValue;
 
-  // TODO: Copy `parseNumber` from @endo/cli into @agoric/internal.
+  // XXX: Similar to @endo/cli `parseNumber`, candidate for @agoric/internal.
   const number = /[0-9]/.test(value) ? Number(value) : NaN;
   if (!Number.isInteger(number) || number <= 0) {
     throw Fail`${q(fieldName)} must be a positive integer, got: ${value}`;

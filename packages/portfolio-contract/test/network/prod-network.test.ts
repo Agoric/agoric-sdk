@@ -167,18 +167,18 @@ test('PROD_NETWORK has the right connections', t => {
   // Each EVM hub should have compressed inbound links directly to @agoric (either slow CCTP or fastusdc)
   for (const hub of EVM_HUBS) {
     t.true(
-      hasEdge(edges, hub, '@agoric', 'cctpSlow') ||
+      hasEdge(edges, hub, '@agoric', 'cctpToNoble') ||
         hasEdge(edges, hub, '@agoric', 'fastusdc'),
       `no inbound EVM->@agoric compressed link for ${hub}`,
     );
     // Return path still originates at @noble
     t.true(
-      hasEdge(edges, '@noble', hub, 'cctpReturn'),
+      hasEdge(edges, '@noble', hub, 'cctpFromNoble'),
       `no @noble->${hub} return link`,
     );
     // Ensure legacy inbound to @noble was removed
     t.false(
-      hasEdge(edges, hub, '@noble', 'cctpSlow') ||
+      hasEdge(edges, hub, '@noble', 'cctpToNoble') ||
         hasEdge(edges, hub, '@noble', 'fastusdc'),
       `legacy inbound EVM->@noble edge still present for ${hub}`,
     );
