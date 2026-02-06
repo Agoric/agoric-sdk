@@ -1,29 +1,14 @@
+/**
+ * @file for use with ymax-admin
+ */
 import type { start as YMaxStart } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
-import type {
-  reflectWalletStore,
-  SigningSmartWalletKit,
-  SmartWalletKit,
-} from '@agoric/client-utils';
 import { makeTracer } from '@agoric/internal';
 import type { Bech32Address } from '@agoric/orchestration';
 import type { StartedInstanceKit as ZStarted } from '@agoric/zoe/src/zoeService/utils.js';
 import type { Details } from 'ses';
+import type { RunTools } from './wallet-admin-types.ts';
 
 const Usage = `invite-ems ymax1 | ymax0`;
-
-// #region move to deploy-scripts-support
-export type SigningSmartWalletKitWithStore = SigningSmartWalletKit & {
-  store: ReturnType<typeof reflectWalletStore>;
-};
-
-export interface RunTools {
-  scriptArgs: string[];
-  makeAccount(name: string): Promise<SigningSmartWalletKitWithStore>;
-  walletKit: SmartWalletKit;
-  //   E: typeof E;
-  harden: typeof harden;
-}
-// #endregion
 
 // #region import from portfolio-deploy
 type CFMethods = ZStarted<typeof YMaxStart>['creatorFacet'];
