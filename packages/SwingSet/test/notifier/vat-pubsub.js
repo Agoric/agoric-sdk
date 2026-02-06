@@ -4,7 +4,7 @@ import {
   prepareDurablePublishKit,
   subscribeEach,
   subscribeLatest,
-} from '../../src/index.js';
+} from '@agoric/notifier';
 
 export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
   const makeDurablePublishKit = prepareDurablePublishKit(
@@ -21,11 +21,9 @@ export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
 
   return Far('root', {
     getVersion: () => version,
-    getParameters: () => vatParameters,
     getSubscriber: () => subscriber,
     subscribeEach: topic => subscribeEach(topic),
     subscribeLatest: topic => subscribeLatest(topic),
-    makeDurablePublishKit: (...args) => makeDurablePublishKit(...args),
     publish: value => publisher.publish(value),
     finish: finalValue => publisher.finish(finalValue),
     fail: reason => publisher.fail(reason),
