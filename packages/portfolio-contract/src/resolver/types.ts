@@ -7,7 +7,11 @@
 
 import type { TypedPattern } from '@agoric/internal';
 import type { AccountId, HexAddress } from '@agoric/orchestration';
-import type { PublishedTx, TxId } from '@agoric/portfolio-api';
+import type {
+  PublishedRoutedGMPTxDetails,
+  PublishedTx,
+  TxId,
+} from '@agoric/portfolio-api';
 import { TxStatus, TxType } from '@agoric/portfolio-api/src/resolver.js';
 import type { NetworkBinding, NetworkEndpoint } from '@agoric/vats';
 import { M } from '@endo/patterns';
@@ -40,6 +44,9 @@ const AccountIdShape: TypedPattern<AccountId> = M.string();
 /** Smart contract `0x` hex address. */
 const HexAddressShape: TypedPattern<HexAddress> = M.string();
 
+/** EVM bytes encoded as `0x` hex string */
+const HexBytesShape: TypedPattern<`0x${string}`> = M.string();
+
 const NetworkEndpointShape = <Proto extends keyof NetworkBinding>(
   _proto: Proto = 'ibc' as Proto,
 ): TypedPattern<NetworkEndpoint<Proto>> =>
@@ -67,6 +74,13 @@ const optionalPublishedTxProps = harden({
   /** @deprecated Use {@link import('@agoric/portfolio-api').FlowStep['phases']} arrays instead. */
   nextTxId: M.string(),
   rejectionReason: M.string(),
+});
+
+const RoutedGMPBase = harden({
+  type: M.or(TxType.ROUTED_GMP),
+  status: TxStatusShape,
+  destinationAddress: AccountIdShape,
+  sourceAddress: AccountIdShape,
 });
 
 const PublishedTxShapes: Record<string, TypedPattern<PublishedTx>> = harden({
@@ -116,6 +130,24 @@ const PublishedTxShapes: Record<string, TypedPattern<PublishedTx>> = harden({
       factoryAddr: HexAddressShape,
     },
     {},
+  ),
+  ROUTED_GMP: M.or(
+    M.splitRecord(
+      { ...RoutedGMPBase, incomplete: true },
+      { ...optionalPublishedTxProps },
+      {},
+    ),
+    M.splitRecord(
+      // Should be provided as an update to the TxMeta once computed
+      { ...RoutedGMPBase, payloadHash: HexBytesShape },
+      {
+        ...optionalPublishedTxProps,
+        details: M.record() as TypedPattern<
+          NonNullable<PublishedRoutedGMPTxDetails['details']>
+        >,
+      },
+      {},
+    ),
   ),
   TRAFFIC: M.splitRecord(
     {
