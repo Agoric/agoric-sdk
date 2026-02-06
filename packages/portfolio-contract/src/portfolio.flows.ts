@@ -1251,6 +1251,9 @@ const stepFlow = async (
               ctx.transferChannels.noble.counterPartyChannelId,
             );
 
+            // TODO: sendPermit2GMP could possibly support the spender being the
+            // deposit factory or router, and issue a provide call instead?
+
             // Execute permit2 transfer: wallet calls Permit2.permitWitnessTransferFrom
             // to transfer tokens from user's EOA to the wallet
             await sendPermit2GMP(
@@ -1425,6 +1428,7 @@ const stepFlow = async (
               moveIndex + 1,
               isDest ? 'makeDestAccount' : 'makeSrcAccount',
             );
+            // XXX: why are we not redeeming the permit here instead for create?
             const acctInfo = await provideEVMAccount(
               chain,
               infoFor[chain],
@@ -1900,8 +1904,13 @@ export const executePlan = (async (
     let queuedSteps: ExecutePlanOptions['queuedSteps'];
     if (options?.evmDepositDetail) {
       const { fromChain, permit2Payload, spender } = options.evmDepositDetail;
-      // Only use queuePermit2Step for openPortfolio (spender = depositFactory/router).
-      // Deposits to existing portfolios use the depositFromEVM case in stepFlow.
+      // TODO: using provideEVMAccount will not work to redeem the permit if the
+      // account already exists. That's because provideEVMAccountWithPermit
+      // will skip actual account creation.
+      // To allow deposit more using the representative as spender, we must
+      // either force make account if permit exists or detect we have an
+      // account already and adjust the depositFromEVM flow.
+      // For now, this should only be used for openPortfolio.
 
       const contractRepresentativeSpender =
         ctx.contracts[fromChain].remoteAccountRouter ||

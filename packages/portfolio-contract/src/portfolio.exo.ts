@@ -775,7 +775,7 @@ export const preparePortfolioKit = (
           let remoteAccountAddress: EVMAddress;
           let contractRepresentativeAddress: EVMAddress =
             contracts[fromChain].remoteAccountRouter;
-          let contractRepresentativeName: string = 'router';
+          // let contractRepresentativeName: string = 'router';
 
           if (accounts.has(fromChain)) {
             const gmpInfo = accounts.get(fromChain) as GMPAccountInfo;
@@ -797,15 +797,15 @@ export const preparePortfolioKit = (
               walletBytecode: hexToBytes(walletBytecode.replace(/^0x/, '')),
             });
             contractRepresentativeAddress = contracts[fromChain].depositFactory;
-            contractRepresentativeName = 'deposit factory';
+            // contractRepresentativeName = 'deposit factory';
           }
 
-          sameEvmAddress(
-            depositDetails.spender,
-            contractRepresentativeAddress,
-          ) ||
-            sameEvmAddress(depositDetails.spender, remoteAccountAddress) ||
-            Fail`permit spender ${depositDetails.spender} does not match portfolio account ${remoteAccountAddress} or ${contractRepresentativeName} ${contractRepresentativeAddress} for chain ${fromChain}`;
+          // sameEvmAddress(
+          //   depositDetails.spender,
+          //   contractRepresentativeAddress,
+          // ) ||
+          sameEvmAddress(depositDetails.spender, remoteAccountAddress) ||
+            Fail`permit spender ${depositDetails.spender} does not match portfolio account ${remoteAccountAddress}`; // or ${contractRepresentativeName} ${contractRepresentativeAddress} for chain ${fromChain}`;
 
           sameEvmAddress(depositDetails.token, contracts[fromChain].usdc) ||
             Fail`permit token address ${depositDetails.token} does not match usdc contract address ${contracts[fromChain].usdc} for chain ${fromChain}`;
