@@ -37,6 +37,7 @@
   },
   "dependencies": {
     "@agoric/access-token": "workspace:*",
+    "@agoric/builders": "workspace:*",
     "@agoric/cache": "workspace:*",
     "@agoric/casting": "workspace:*",
     "@agoric/client-utils": "workspace:*",

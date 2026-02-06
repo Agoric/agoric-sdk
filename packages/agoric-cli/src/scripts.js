@@ -89,7 +89,12 @@ export const makeScriptLoader =
             ],
           });
         } catch (e) {
-          return path.resolve(path.dirname(moduleFile), ...paths, fileName);
+          try {
+            // Fall back to the CLI's own dependency graph for bare specifiers.
+            return require.resolve(fileName);
+          } catch (_e) {
+            return path.resolve(path.dirname(moduleFile), ...paths, fileName);
+          }
         }
       };
       console.warn('running', moduleFile);
