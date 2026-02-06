@@ -1,5 +1,4 @@
 import { makeTracer } from '@agoric/internal';
-import { registerChain } from '@agoric/orchestration/src/chain-info.js';
 import { Fail } from '@endo/errors';
 import { E, Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
@@ -8,8 +7,28 @@ import { makeMarshal } from '@endo/marshal';
 
 /**
  * @import {Remote, ERemote} from '@agoric/internal';
- * @import {ChainInfo} from '@agoric/orchestration';
  * @import {NameHub, NameAdmin} from '@agoric/vats';
+ * @typedef {{
+ *   chainId?: string;
+ *   connections?: Record<string, {
+ *     id: string;
+ *     client_id: string;
+ *     state: unknown;
+ *     counterparty: {
+ *       client_id: string;
+ *       connection_id: string;
+ *     };
+ *     transferChannel: {
+ *       channelId: string;
+ *       counterPartyChannelId: string;
+ *       portId: string;
+ *       counterPartyPortId: string;
+ *       [name: string]: unknown;
+ *     };
+ *     [name: string]: unknown;
+ *   }>;
+ *   [name: string]: unknown;
+ * }} ChainInfo
  * @typedef {Record<string, { chainInfo: ChainInfo }>} AxelarChainConfigMap
  * @import {ERef} from '@endo/eventual-send';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
@@ -27,6 +46,120 @@ export const HubName = {
   Chain: 'chain',
   ChainConnection: 'chainConnection',
   ChainAssets: 'chainAssets',
+};
+
+const CHAIN_ID_SEPARATOR = '_';
+
+/**
+ * @param {string} chainId
+ */
+const encodeChainId = chainId =>
+  chainId.replaceAll(
+    CHAIN_ID_SEPARATOR,
+    `${CHAIN_ID_SEPARATOR}${CHAIN_ID_SEPARATOR}`,
+  );
+
+/**
+ * @param {string} chainId1
+ * @param {string} chainId2
+ */
+const connectionKey = (chainId1, chainId2) =>
+  [encodeChainId(chainId1), encodeChainId(chainId2)]
+    .sort()
+    .join(CHAIN_ID_SEPARATOR);
+
+/**
+ * @param {NonNullable<NonNullable<ChainInfo['connections']>[string]>} connInfo
+ */
+const reverseConnInfo = connInfo => {
+  const { transferChannel } = connInfo;
+  return harden({
+    id: connInfo.counterparty.connection_id,
+    client_id: connInfo.counterparty.client_id,
+    counterparty: {
+      client_id: connInfo.client_id,
+      connection_id: connInfo.id,
+    },
+    state: connInfo.state,
+    transferChannel: {
+      ...transferChannel,
+      channelId: transferChannel.counterPartyChannelId,
+      counterPartyChannelId: transferChannel.channelId,
+      portId: transferChannel.counterPartyPortId,
+      counterPartyPortId: transferChannel.portId,
+    },
+  });
+};
+
+/**
+ * @param {string} primaryChainId
+ * @param {string} counterChainId
+ * @param {NonNullable<NonNullable<ChainInfo['connections']>[string]>} connInfo
+ * @returns {[string, NonNullable<NonNullable<ChainInfo['connections']>[string]>]}
+ */
+const normalizeConnectionInfo = (primaryChainId, counterChainId, connInfo) => {
+  const key = connectionKey(primaryChainId, counterChainId);
+  if (primaryChainId < counterChainId) {
+    return [key, connInfo];
+  }
+  return [key, reverseConnInfo(connInfo)];
+};
+
+/**
+ * local copy of orchestration's chain registration so deploy-script-support
+ * does not depend on orchestration internals.
+ *
+ * @param {ERef<NameAdmin>} agoricNamesAdmin
+ * @param {string} name
+ * @param {ChainInfo} chainInfo
+ * @param {(...messages: string[]) => void} [log]
+ * @param {Set<string>} [handledConnections]
+ */
+const registerChain = async (
+  agoricNamesAdmin,
+  name,
+  chainInfo,
+  log = () => {},
+  handledConnections = new Set(),
+) => {
+  const { nameAdmin } = await E(agoricNamesAdmin).provideChild(HubName.Chain);
+  const { nameAdmin: connAdmin } = await E(agoricNamesAdmin).provideChild(
+    HubName.ChainConnection,
+  );
+
+  const { connections = {}, ...vertex } = chainInfo;
+  const promises = [
+    E(nameAdmin)
+      .update(name, vertex)
+      .then(() => log(`registered agoricNames chain.${name}`)),
+  ];
+
+  const { chainId } = chainInfo;
+  if (Object.keys(connections).length && !chainId) {
+    Fail`chainInfo missing chainId for ${name}`;
+  }
+
+  for (const [counterChainId, connInfo] of Object.entries(connections)) {
+    if (!chainId) {
+      break;
+    }
+    const [key, connectionInfo] = normalizeConnectionInfo(
+      chainId,
+      counterChainId,
+      connInfo,
+    );
+    if (handledConnections.has(key)) {
+      continue;
+    }
+
+    promises.push(
+      E(connAdmin)
+        .update(key, connectionInfo)
+        .then(() => log(`registering agoricNames chainConnection.${key}`)),
+    );
+    handledConnections.add(key);
+  }
+  await Promise.all(promises);
 };
 
 /**
