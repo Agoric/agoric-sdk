@@ -521,7 +521,6 @@ __metadata:
     "@agoric/client-utils": "workspace:*"
     "@agoric/cosmic-proto": "workspace:*"
     "@agoric/ertp": "workspace:*"
-    "@agoric/fast-usdc": "workspace:*"
     "@agoric/governance": "workspace:*"
     "@agoric/inter-protocol": "workspace:*"
     "@agoric/internal": "workspace:*"

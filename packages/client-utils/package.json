@@ -26,7 +26,6 @@
   },
   "devDependencies": {
     "@agoric/client-utils": "workspace:*",
-    "@agoric/fast-usdc": "workspace:*",
     "@agoric/governance": "workspace:*",
     "@agoric/inter-protocol": "workspace:*",
     "@agoric/portfolio-api": "workspace:*",
