@@ -44,7 +44,6 @@
   "devDependencies": {
     "@agoric/notifier": "workspace:*",
     "@agoric/swingset-liveslots": "workspace:*",
-    "@agoric/vow": "workspace:*",
     "@endo/init": "^1.1.12",
     "@endo/pass-style": "^1.6.3",
     "@endo/ses-ava": "^1.3.2",
