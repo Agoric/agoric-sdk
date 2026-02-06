@@ -28,10 +28,14 @@ import {
   type AxelarGmpOutgoingMemo,
   type ContractCall,
 } from '@agoric/orchestration/src/axelar-types.js';
-import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
+import {
+  coerceAccountId,
+  leftPadEthAddressTo32Bytes,
+} from '@agoric/orchestration/src/utils/address.js';
 import { buildGMPPayload } from '@agoric/orchestration/src/utils/gmp.js';
 import { PermitWitnessTransferFromInputComponents } from '@agoric/orchestration/src/utils/permit2.ts';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
+import type { MovementDesc } from '@agoric/portfolio-api';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import { fromBech32 } from '@cosmjs/encoding';
@@ -48,7 +52,10 @@ import {
 import { erc20ABI } from './interfaces/erc20.ts';
 import { erc4626ABI } from './interfaces/erc4626.ts';
 import { depositFactoryABI, factoryABI } from './interfaces/orch-factory.ts';
-import { tokenMessengerABI } from './interfaces/token-messenger.ts';
+import {
+  tokenMessengerABI,
+  tokenMessengerV2ABI,
+} from './interfaces/token-messenger.ts';
 import { walletHelperABI } from './interfaces/wallet-helper.ts';
 import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
 import type {
@@ -68,7 +75,7 @@ import type { ResolverKit } from './resolver/resolver.exo.ts';
 import type { TxId } from './resolver/types.ts';
 import type { PoolKey } from './type-guards.ts';
 import { predictWalletAddress } from './utils/evm-orch-factory.ts';
-import { setAppendedTxIds } from './utils/traffic.ts';
+import { appendTxIds } from './utils/traffic.ts';
 
 const trace = makeTracer('GMPF');
 const { keys } = Object;
@@ -205,7 +212,7 @@ const makeProvideEVMAccount = ({
           contracts.factory,
         );
         txId = watchTx.txId;
-        setAppendedTxIds(opts.orchOpts?.progressTracker, [txId]);
+        appendTxIds(opts.orchOpts?.progressTracker, [txId]);
 
         const result = watchTx.result as unknown as Promise<void>; // XXX host/guest;
         result.catch(err => {
@@ -292,9 +299,10 @@ export const CCTPfromEVM = {
       coerceAccountId(dest.lca.getAddress()),
       amount.value,
     );
-    setAppendedTxIds(optsArgs[0]?.progressTracker, [txId]);
 
-    await sendGMPContractCall(ctx, src, calls, ...optsArgs);
+    const sent = sendGMPContractCall(ctx, src, calls, ...optsArgs);
+    appendTxIds(optsArgs[0]?.progressTracker, [txId]);
+    await sent;
     await result;
   },
 } as const satisfies TransportDetail<'CCTP', AxelarChain, 'agoric', EVMContext>;
@@ -334,7 +342,7 @@ export const CCTP = {
       destinationAddress,
       amount.value,
     );
-    setAppendedTxIds(optsArgs[0]?.progressTracker, [txId]);
+    appendTxIds(optsArgs[0]?.progressTracker, [txId]);
 
     // XXX depositForBurn optional `caller` argument needs to be `undefined` if
     // we're adding any optsArgs.
@@ -349,6 +357,114 @@ export const CCTP = {
   },
 } as const satisfies TransportDetail<'CCTP', 'noble', AxelarChain>;
 harden(CCTP);
+
+/**
+ * CCTPv2 domain IDs (unchanged from v1)
+ * @see {@link https://developers.circle.com/cctp/supported-domains}
+ */
+const CCTP_DOMAINS: Record<AxelarChain, number> = {
+  Ethereum: 0,
+  Avalanche: 1,
+  Optimism: 2,
+  Arbitrum: 3,
+  Base: 6,
+};
+
+/**
+ * Finality thresholds for CCTPv2 attestation.
+ * Lower threshold = faster but potentially less secure.
+ * Higher threshold = slower but fully finalized.
+ */
+const FINALITY_THRESHOLD = {
+  /** Fast attestation with confirmed blocks */
+  CONFIRMED: 1000,
+  /** Slower attestation with fully finalized blocks */
+  FINALIZED: 2000,
+} as const;
+
+const ZERO_BYTES32: `0x${string}` = `0x${'0'.repeat(64)}`;
+
+/**
+ * CCTPv2 transport for direct EVM-to-EVM USDC transfers.
+ *
+ * CCTPv2 enables direct cross-chain transfers between EVM chains
+ * without routing through Noble. This provides:
+ * - Faster transfers (~13-60 seconds vs ~18 minutes)
+ * - Lower costs (single hop vs two hops)
+ * - Configurable finality/speed tradeoffs via minFinalityThreshold
+ *
+ * @see {@link https://developers.circle.com/cctp/docs/cctp-v2}
+ */
+export const CCTPv2 = {
+  how: 'CCTPv2',
+  connections: keys(AxelarChain).flatMap((src: AxelarChain) =>
+    keys(AxelarChain)
+      .filter(dest => dest !== src)
+      .map((dest: AxelarChain) => ({ src, dest })),
+  ),
+  apply: async (ctx, amount, src, dest, ...optsArgs) => {
+    const traceTransfer = trace
+      .sub('CCTPv2')
+      .sub(`${src.chainName}->${dest.chainName}`);
+    traceTransfer('transfer', amount);
+
+    const { addresses } = ctx;
+    const tokenMessengerV2 = addresses.tokenMessengerV2;
+    if (!tokenMessengerV2) {
+      throw Fail`CCTPv2 not available on ${q(src.chainName)}: tokenMessengerV2 address not configured`;
+    }
+
+    const destDomain = CCTP_DOMAINS[dest.chainName];
+    const mintRecipient =
+      `0x${encodeHex(leftPadEthAddressTo32Bytes(dest.remoteAddress))}` as const;
+
+    const session = makeEvmAbiCallBatch();
+    const usdc = session.makeContract(addresses.usdc, erc20ABI);
+    const tm = session.makeContract(tokenMessengerV2, tokenMessengerV2ABI);
+
+    const { detail } = ctx;
+    const maxFee = detail?.maxFee || 0n;
+    const minFinalityThreshold =
+      Number(detail?.minFinalityThreshold) === FINALITY_THRESHOLD.CONFIRMED
+        ? FINALITY_THRESHOLD.CONFIRMED
+        : FINALITY_THRESHOLD.FINALIZED;
+
+    usdc.approve(tokenMessengerV2, amount.value);
+    tm.depositForBurn(
+      amount.value,
+      destDomain,
+      mintRecipient,
+      addresses.usdc,
+      // destinationCaller: bytes32(0) = any caller allowed
+      ZERO_BYTES32,
+      maxFee,
+      minFinalityThreshold,
+    );
+
+    const calls = session.finish();
+
+    const { txId, result } = ctx.resolverClient.registerTransaction(
+      TxType.CCTP_TO_EVM,
+      `${dest.chainId}:${dest.remoteAddress}`,
+      amount.value,
+      undefined, // expectedAddr - not used for CCTP_V2
+      `${src.chainId}:${src.remoteAddress}`, // sourceAddress for domain mapping
+    );
+
+    const sent = sendGMPContractCall(ctx, src, calls, ...optsArgs);
+    appendTxIds(optsArgs[0]?.progressTracker, [txId]);
+    await sent;
+    await result;
+
+    traceTransfer('transfer complete');
+  },
+} as const satisfies TransportDetail<
+  'CCTPv2',
+  AxelarChain,
+  AxelarChain,
+  EVMContext
+>;
+harden(CCTPv2);
 
 /**
  * Invoke EVM Wallet Factory contract to create a remote account
@@ -525,7 +641,7 @@ export const sendGMPContractCall = async (
     undefined,
     sourceAddress,
   );
-  setAppendedTxIds(optsArgs[0]?.progressTracker, [txId]);
+  appendTxIds(optsArgs[0]?.progressTracker, [txId]);
 
   const { AXELAR_GMP, AXELAR_GAS } = gmpAddresses;
   const memo: AxelarGmpOutgoingMemo = {
@@ -659,6 +775,7 @@ export type EVMContext = {
   poolKey?: PoolKey;
   resolverClient: GuestInterface<ResolverKit['client']>;
   nobleForwardingChannel: `channel-${number}`;
+  detail?: MovementDesc['detail'];
 };
 
 export const AaveProtocol = {

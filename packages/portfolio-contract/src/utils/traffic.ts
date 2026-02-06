@@ -3,8 +3,10 @@ import type { TxId } from '@agoric/portfolio-api';
 
 /**
  * Add the given txIds at the end of progressTracker's updated progress report.
+ *
+ * Take care to append in causal order.
  */
-export const setAppendedTxIds = (
+export const appendTxIds = (
   progressTracker: ProgressTracker | undefined,
   txIds: TxId[],
 ) => {
@@ -14,9 +16,10 @@ export const setAppendedTxIds = (
   }
 
   const progressReport = progressTracker.getCurrentProgressReport();
+  const { appendedTxIds: current } = progressReport;
   const newReport = {
     ...progressReport,
-    appendTxIds: txIds,
+    appendedTxIds: [...(current || []), ...txIds],
   };
   progressTracker.update(newReport);
 };
