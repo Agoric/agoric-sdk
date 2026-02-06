@@ -100,15 +100,6 @@ export type RelativeTime = RelativeTimeRecord | RelativeTimeValue;
  */
 export type CancelToken = object;
 
-export type TimeUpdateRecord<T> = {
-  value: T;
-  updateCount?: bigint | undefined;
-};
-
-export type TimeNotifier<T> = {
-  getUpdateSince: (updateCount?: bigint | number) => Promise<TimeUpdateRecord<T>>;
-};
-
 /**
  * Gives the ability to get the current time,
  * schedule a single wake() call, create a repeater that will allow scheduling
@@ -174,7 +165,7 @@ export interface TimerServiceCommon {
     delay: RelativeTime,
     interval: RelativeTime,
     cancelToken?: CancelToken,
-  ) => TimeNotifier<TimestampRecord>;
+  ) => import('@agoric/notifier').Notifier<TimestampRecord>;
   /**
    * Cancel a previously-established wakeup or repeater.
    */

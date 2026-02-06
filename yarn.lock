@@ -1427,6 +1427,7 @@ __metadata:
   resolution: "@agoric/time@workspace:packages/time"
   dependencies:
     "@agoric/internal": "workspace:*"
+    "@agoric/notifier": "workspace:*"
     "@agoric/store": "workspace:*"
     "@endo/errors": "npm:^1.2.13"
     "@endo/eventual-send": "npm:^1.3.4"
