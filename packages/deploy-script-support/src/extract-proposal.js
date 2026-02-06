@@ -65,10 +65,25 @@ const pathResolve = (...paths) => {
   }
 };
 
-const findModule = (initDir, srcSpec) =>
-  srcSpec.match(/^(\.\.?)?\//)
-    ? pathResolve(initDir, srcSpec)
-    : req.resolve(srcSpec);
+const findModule = (initDir, srcSpec) => {
+  if (srcSpec.match(/^(\.\.?)?\//)) {
+    return pathResolve(initDir, srcSpec);
+  }
+
+  // Resolve module specifiers in the caller's workspace context so metadata
+  // packages (e.g. vm-config) don't need to depend on implementation packages.
+  for (const base of [initDir, process.cwd()]) {
+    try {
+      return req.resolve(srcSpec, { paths: [base] });
+    } catch (e) {
+      if (e.code !== 'MODULE_NOT_FOUND') {
+        throw e;
+      }
+    }
+  }
+
+  return req.resolve(srcSpec);
+};
 
 /**
  * @param {{ bundleID?: string, bundleName?: string }} handle - mutated then hardened

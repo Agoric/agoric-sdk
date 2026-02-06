@@ -175,14 +175,40 @@ export function loadBasedir(basedir, options = {}) {
  *    determined.
  */
 async function resolveSpecFromConfig(referrer, specPath) {
+  const isBareModuleSpecifier =
+    !specPath.startsWith('./') &&
+    !specPath.startsWith('../') &&
+    !specPath.startsWith('/') &&
+    !specPath.startsWith('file:');
+
+  const tryResolveFrom = async fromReferrer => {
+    await null;
+    try {
+      return new URL(await importMetaResolve(specPath, fromReferrer)).pathname;
+    } catch (e) {
+      if (e.code !== 'MODULE_NOT_FOUND' && e.code !== 'ERR_MODULE_NOT_FOUND') {
+        throw e;
+      }
+      return null;
+    }
+  };
+
   await null;
-  try {
-    return new URL(await importMetaResolve(specPath, referrer)).pathname;
-  } catch (e) {
-    if (e.code !== 'MODULE_NOT_FOUND' && e.code !== 'ERR_MODULE_NOT_FOUND') {
-      throw e;
+  const fromConfig = await tryResolveFrom(referrer);
+  if (fromConfig) {
+    return fromConfig;
+  }
+
+  // Config packages are intentionally metadata-only; when they contain module
+  // specifiers, resolve them in the caller's workspace context.
+  if (isBareModuleSpecifier) {
+    const callerReferrer = new URL(`file://${process.cwd()}/`).href;
+    const fromCaller = await tryResolveFrom(callerReferrer);
+    if (fromCaller) {
+      return fromCaller;
     }
   }
+
   return new URL(specPath, referrer).pathname;
 }
 
