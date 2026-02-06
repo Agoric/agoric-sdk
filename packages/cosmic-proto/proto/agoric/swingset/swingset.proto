@@ -112,7 +112,7 @@ message State {
   // Transactions which attempt to enqueue more should be rejected.
   repeated QueueSize queue_allowed = 1 [(gogoproto.nullable) = false];
 
-  // Doubly-linked list in order of start block and time.
+  // Doubly-linked list in order of ascending start block and time.
   uint64 first_chunked_artifact_id = 2
       [(gogoproto.jsontag) = "first_chunked_artifact_id", (gogoproto.moretags) = "yaml:\"first_chunked_artifact_id\""];
 
@@ -199,14 +199,14 @@ message SwingStoreArtifact {
 // multiple transactions, in chunks, as when using InstallBundle to submit
 // chunks.
 message ChunkedArtifact {
-  // The SHA-512 hash of the entire bundle file's contents.
+  // The SHA-512 hash of the entire artifact's contents.
   string sha512 = 1 [(gogoproto.jsontag) = "sha512", (gogoproto.moretags) = "yaml:\"sha512\""];
 
-  // The size of the final bundle artifact in bytes.
+  // The size of the final artifact in bytes.
   uint64 size_bytes = 2 [(gogoproto.jsontag) = "size_bytes", (gogoproto.moretags) = "yaml:\"size_bytes\""];
 
   // Information about the chunks that will be concatenated to form this
-  // bundle.
+  // artifact.
   repeated ChunkInfo chunks = 3 [(gogoproto.jsontag) = "chunks", (gogoproto.moretags) = "yaml:\"chunks\""];
 }
 
@@ -225,7 +225,7 @@ enum ChunkState {
   CHUNK_STATE_PROCESSED = 3;
 };
 
-// Information about a chunk of a bundle.
+// Information about a chunk of an artifact.
 message ChunkInfo {
   // The SHA-512 hash of the chunk contents.
   string sha512 = 1 [(gogoproto.jsontag) = "sha512", (gogoproto.moretags) = "yaml:\"sha512\""];
@@ -237,17 +237,22 @@ message ChunkInfo {
   ChunkState state = 3 [(gogoproto.jsontag) = "state", (gogoproto.moretags) = "yaml:\"state\""];
 }
 
-// A node in a doubly-linked-list of chunks of a chunked artifact, as used for
-// chunked bundle installation, in order of ascending block time.
-// The keeper uses this to expediently expire stale chunks.
+// A node in a doubly-linked-list of chunked artifacts, as used for chunked
+// bundle installation, in order of ascending block time.
+// This list is not circular and has no sentinel head node; the start and end
+// are indicated by prev_id/next_id being 0.
+// The keeper uses this to expediently expire stale incomplete artifacts.
 message ChunkedArtifactNode {
   // The id of the pending bundle installation.
   uint64 chunked_artifact_id = 1
       [(gogoproto.jsontag) = "chunkedArtifactId", (gogoproto.moretags) = "yaml:\"chunkedArtifactId\""];
 
-  // Doubly-linked list.
+  // The ID of the next chunked artifact in the list.
+  // A value of 0 indicates the end of the list.
   uint64 next_id = 2 [(gogoproto.jsontag) = "nextId", (gogoproto.moretags) = "yaml:\"nextId\""];
 
+  // The ID of the previous chunked artifact in the list.
+  // A value of 0 indicates the start of the list.
   uint64 prev_id = 3 [(gogoproto.jsontag) = "prevId", (gogoproto.moretags) = "yaml:\"prevId\""];
 
   // The time at which the pending installation began, in UNIX epoch seconds.
