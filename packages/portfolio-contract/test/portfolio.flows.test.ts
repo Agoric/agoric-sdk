@@ -3148,7 +3148,7 @@ test('evmHandler.deposit via Permit2 with unknown spender is rejected', async t 
 /**
  * This test uses the depositFactory contract as the spender address.
  */
-test('evmHandler.deposit via Permit2 with depositFactory as spender succeeds', async t => {
+test('evmHandler.deposit via Permit2 to missing and existing wallet with depositFactory as spender succeeds', async t => {
   const { orch, ctx, storage, txResolver } = mocks({}, {});
   const { getPortfolioStatus } = makeStorageTools(storage);
 
@@ -3169,6 +3169,8 @@ test('evmHandler.deposit via Permit2 with depositFactory as spender succeeds', a
   // Only agoric, no Arbitrum account yet since we haven't done any flows
   t.deepEqual(Object.keys(byChainBefore), ['agoric']);
 
+  // Do an initial deposit, then do another deposit with the same permit details
+  // to ensure we can use the `createAndDeposit` logic on an existing account.
   await doDeposit({ t, kit, orch, ctx, storage, txResolver, permitDetails });
   t.like(
     storage.getDeserialized('published.ymax0.pendingTxs.tx0').at(-1),
@@ -3186,6 +3188,20 @@ test('evmHandler.deposit via Permit2 with depositFactory as spender succeeds', a
     await getPortfolioStatus(kit.reader.getPortfolioId());
   t.deepEqual(Object.keys(byChainAfter), ['Arbitrum', 'agoric', 'noble']);
   t.deepEqual(accountsPending, []);
+
+  await doDeposit({ t, kit, orch, ctx, storage, txResolver, permitDetails });
+  t.like(
+    storage.getDeserialized('published.ymax0.pendingTxs.tx2').at(-1),
+    {
+      type: 'MAKE_ACCOUNT',
+      status: 'success',
+      sourceAddress: contractAccountId,
+      destinationAddress: depositFactoryAccountId,
+      factoryAddr: contractsMock.Arbitrum.factory,
+      expectedAddr: byChainAfter.Arbitrum!.split(':').at(-1),
+    },
+    'check second deposit goes through same flow and hits the depositFactory address again',
+  );
 
   await documentStorageSchema(t, storage, docOpts);
 });
