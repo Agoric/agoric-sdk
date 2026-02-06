@@ -37,7 +37,7 @@ const tfStringify = obj => {
     ret += '{';
     let sep = '';
     for (const key of Object.keys(obj).sort()) {
-      ret += `${sep}${JSON.stringify(key)}=${tfStringify(obj[key])}`;
+      ret += `${sep}${JSON.stringify(key)} = ${tfStringify(obj[key])}`;
       sep = ',';
     }
     ret += '}';
@@ -124,12 +124,10 @@ const makeProviders = ({ env, inquirer, wr, setup, fetch }) => ({
           .split(',')
           .filter(vol => vol.trim())
           .map(vol => vol.split(':'))
-          /* eslint-disable camelcase */
-          .map(([host_path, container_path]) => ({
-            host_path,
-            container_path,
+          .map(([host, container]) => ({
+            host_path: host,
+            container_path: container,
           })),
-        /* eslint-enable */
       };
     },
     askDatacenter: async (provider, PLACEMENT, dcs, placement) => {
@@ -155,11 +153,11 @@ const makeProviders = ({ env, inquirer, wr, setup, fetch }) => ({
 module "${PLACEMENT}" {
     source           = "${setup.SETUP_DIR}/terraform/${provider.value}"
     CLUSTER_NAME     = "${PREFIX}\${var.NETWORK_NAME}-${PLACEMENT}"
-    OFFSET           = "\${var.OFFSETS["${PLACEMENT}"]}"
+    OFFSET           = var.OFFSETS["${PLACEMENT}"]
     SSH_KEY_FILE     = "${PLACEMENT}-\${var.SSH_KEY_FILE}"
-    ROLE             = "\${var.ROLES["${PLACEMENT}"]}"
-    SERVERS          = "\${length(var.DATACENTERS["${PLACEMENT}"])}"
-    VOLUMES          = "\${var.VOLUMES["${PLACEMENT}"]}"
+    ROLE             = var.ROLES["${PLACEMENT}"]
+    SERVERS          = length(var.DATACENTERS["${PLACEMENT}"])
+    VOLUMES          = var.VOLUMES["${PLACEMENT}"]
 }
 `,
       ),
@@ -191,13 +189,13 @@ module "${PLACEMENT}" {
 module "${PLACEMENT}" {
     source           = "${setup.SETUP_DIR}/terraform/${provider.value}"
     CLUSTER_NAME     = "${PREFIX}\${var.NETWORK_NAME}-${PLACEMENT}"
-    OFFSET           = "\${var.OFFSETS["${PLACEMENT}"]}"
-    REGIONS          = "\${var.DATACENTERS["${PLACEMENT}"]}"
-    ROLE             = "\${var.ROLES["${PLACEMENT}"]}"
+    OFFSET           = var.OFFSETS["${PLACEMENT}"]
+    REGIONS          = var.DATACENTERS["${PLACEMENT}"]
+    ROLE             = var.ROLES["${PLACEMENT}"]
     # TODO: DigitalOcean provider module doesn't allow reuse of SSH public keys.
     SSH_KEY_FILE     = "${PLACEMENT}-\${var.SSH_KEY_FILE}"
-    DO_API_TOKEN     = "\${var.API_KEYS["${PLACEMENT}"]}"
-    SERVERS          = "\${length(var.DATACENTERS["${PLACEMENT}"])}"
+    DO_API_TOKEN     = var.API_KEYS["${PLACEMENT}"]
+    SERVERS          = length(var.DATACENTERS["${PLACEMENT}"])
 }
 `,
       ),
@@ -557,17 +555,17 @@ output "public_ips" {
   value = {
 ${Object.keys(config.DATACENTERS)
   .sort()
-  .map(p => `    ${p} = "\${module.${p}.public_ips}"`)
+  .map(p => `    ${p} = module.${p}.public_ips`)
   .join('\n')}
   }
 }
 
 output "roles" {
-  value = "\${var.ROLES}"
+  value = var.ROLES
 }
 
 output "offsets" {
-  value = "\${var.OFFSETS}"
+  value = var.OFFSETS
 }
 `,
     );

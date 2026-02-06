@@ -37,7 +37,7 @@ variable "agoric_app_name" {
 
 variable "agoric_instance" {
     description = "Instance for differentiating ag-chain-cosmos applications"
-    default = "1"
+    default = 1
 }
 
 variable "agoric_git_url" {

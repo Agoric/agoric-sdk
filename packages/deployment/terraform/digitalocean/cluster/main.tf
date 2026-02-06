@@ -1,36 +1,39 @@
 resource "digitalocean_tag" "cluster" {
-  name = "${var.name}"
+  name = var.name
 }
 
 resource "digitalocean_ssh_key" "cluster" {
-  name       = "${var.name}"
-  public_key = "${file(var.ssh_key)}"
+  name       = var.name
+  public_key = file(var.ssh_key)
 }
 
 resource "digitalocean_droplet" "cluster" {
-  name = "${var.name}-${var.role}${var.offset + count.index}"
-  image = "debian-10-x64"
-  size = "${var.instance_size}"
-  region = "${element(var.regions, count.index)}"
-  ssh_keys = ["${digitalocean_ssh_key.cluster.id}"]
-  count = "${var.servers}"
-  tags = ["${digitalocean_tag.cluster.id}"]
+  name     = "${var.name}-${var.role}${var.offset + count.index}"
+  image    = "debian-12-x64"
+  size     = var.instance_size
+  region   = element(var.regions, count.index)
+  ssh_keys = [digitalocean_ssh_key.cluster.id]
+  count    = var.servers
+  tags     = [digitalocean_tag.cluster.id]
 
-  lifecycle = {
-	  prevent_destroy = false
+  lifecycle {
+    prevent_destroy = false
   }
 
   connection {
+    host = self.ipv4_address
+    type = "ssh"
     timeout = "30s"
   }
 
-  volume_ids = ["${digitalocean_volume.cluster.*.id[count.index]}"]
+  volume_ids = [digitalocean_volume.cluster[count.index].id]
 }
 
 resource "digitalocean_volume" "cluster" {
-  name = "${var.name}-volume${var.offset + count.index}"
-  region = "${element(var.regions, count.index)}"
-  size = "${var.volume_size}"
-  count = "${var.servers}"
-  tags = ["${digitalocean_tag.cluster.id}"]
+  name   = "${var.name}-volume${var.offset + count.index}"
+  region = element(var.regions, count.index)
+  size   = var.volume_size
+  count  = var.servers
+  tags   = [digitalocean_tag.cluster.id]
 }
+
