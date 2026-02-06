@@ -100,7 +100,7 @@ fund-provision-pool:
 
 register-bank-assets:
 	scripts/fetch-starship-chain-info.ts && \
-	scripts/deploy-cli.ts src/register-interchain-bank-assets.builder.js \
+	scripts/deploy-cli.ts ../packages/builders/scripts/orchestration/register-interchain-bank-assets.build.js \
 		assets="$$(scripts/make-bank-asset-info.ts)"
 
 ADDR=agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce
