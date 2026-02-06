@@ -2225,6 +2225,13 @@ test(
   'send',
 );
 test(
+  'routed: A fails to pay fee; B arrives',
+  makeAccountEVMRace,
+  provideEVMRoutedAccount,
+  'send',
+  'send',
+);
+test(
   'routed: A registers txN; B arrives',
   makeAccountEVMRace,
   provideEVMRoutedAccount,

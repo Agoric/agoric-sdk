@@ -259,14 +259,23 @@ export const makeProvideEVMAccount =
       }
 
       const routerPayload = {
-        instructionType: 'Deposit',
-        instruction: {
-          depositPermit: permit2Payload ? [permit2Payload] : [],
-          expectedAccountAddress: evmAccount.remoteAddress,
-          principalAccount,
-        } satisfies DepositInstruction,
         txType: TxType.MAKE_ACCOUNT,
-      } as const;
+        ...(permit2Payload
+          ? ({
+              instructionType: 'Deposit',
+              instruction: {
+                depositPermit: [permit2Payload],
+                expectedAccountAddress: evmAccount.remoteAddress,
+                principalAccount,
+              } satisfies DepositInstruction,
+            } as const)
+          : ({
+              instructionType: 'RemoteAccount',
+              instruction: {
+                multiCalls: [],
+              },
+            } as const)),
+      };
 
       const contractRemoteAccount: GMPAccountInfo = {
         namespace: 'eip155',
@@ -276,11 +285,14 @@ export const makeProvideEVMAccount =
         routerAddress: addresses.remoteAccountRouter,
       };
 
+      const remoteAccount = permit2Payload ? contractRemoteAccount : evmAccount;
+      const sourceAccount = permit2Payload ? contractAccount : lca;
+
       void sendGMP(
         {
           ...ctx,
-          remoteAccount: contractRemoteAccount,
-          lca: contractAccount,
+          remoteAccount,
+          lca: sourceAccount,
           trace: traceChain,
         },
         routerPayload,
