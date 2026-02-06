@@ -210,6 +210,7 @@ export const setupReserve = async ({
  * @param {object} [config.options]
  * @param {string} [config.options.referencedUi]
  * @param {Amount<'nat'>} minInitialDebt
+ * @returns {Promise<{ vaultFactoryTerms: object, vaultFactoryPrivateArgs: object }>}
  */
 export const setupVaultFactoryArguments = async (
   consume,

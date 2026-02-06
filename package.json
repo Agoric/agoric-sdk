@@ -138,10 +138,13 @@
     "test:xs": "yarn workspaces foreach --all run test:xs",
     "typecheck-all": "yarn workspaces foreach --all --parallel --verbose exec sh -c 'rg -q \"\\\"lint:types\\\"\" package.json || exit 0; yarn run -T tsc --noEmit --incremental'",
     "typecheck-quick": "yarn run -T tsc -p tsconfig.check.json",
+    "typecheck-refs": "yarn run -T tsc --build tsconfig.refs.json",
     "build": "yarn workspaces foreach --all --topological run build && scripts/agd-builder.sh stamp yarn-built",
     "postinstall": "scripts/agd-builder.sh stamp yarn-installed",
     "build-lockfiles": "./scripts/update-package-locks.sh",
+    "ts:sync-references": "node ./scripts/update-ts-references.mjs",
     "build-ts": "tsc --build tsconfig.build.json",
+    "build-ts:refs": "yarn ts:sync-references && tsc --build tsconfig.refs.json",
     "build-xs-worker": "cd packages/xs-vat-worker && yarn build:xs-lin"
   },
   "ava": {

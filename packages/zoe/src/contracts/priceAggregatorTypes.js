@@ -42,7 +42,7 @@
 /**
  * @callback OracleCreatorFacetMakeWithdrawInvitation
  * @param {boolean} [total]
- * @returns {ERef<Invitation>}
+ * @returns {ERef<Invitation<string>>}
  */
 
 /**

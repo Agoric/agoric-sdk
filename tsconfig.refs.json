@@ -1,0 +1,74 @@
+{
+  "files": [],
+  "references": [
+    {
+      "path": "packages/store/tsconfig.build.json"
+    },
+    {
+      "path": "packages/base-zone/tsconfig.build.json"
+    },
+    {
+      "path": "packages/cosmic-proto/tsconfig.build.json"
+    },
+    {
+      "path": "packages/internal/tsconfig.build.json"
+    },
+    {
+      "path": "packages/swingset-liveslots/tsconfig.build.json"
+    },
+    {
+      "path": "packages/notifier/tsconfig.build.json"
+    },
+    {
+      "path": "packages/zone/tsconfig.build.json"
+    },
+    {
+      "path": "packages/ERTP/tsconfig.build.json"
+    },
+    {
+      "path": "packages/vow/tsconfig.build.json"
+    },
+    {
+      "path": "packages/async-flow/tsconfig.build.json"
+    },
+    {
+      "path": "packages/casting/tsconfig.build.json"
+    },
+    {
+      "path": "packages/zoe/tsconfig.build.json"
+    },
+    {
+      "path": "packages/governance/tsconfig.build.json"
+    },
+    {
+      "path": "packages/network/tsconfig.build.json"
+    },
+    {
+      "path": "packages/vats/tsconfig.build.json"
+    },
+    {
+      "path": "packages/smart-wallet/tsconfig.build.json"
+    },
+    {
+      "path": "packages/client-utils/tsconfig.build.json"
+    },
+    {
+      "path": "packages/inter-protocol/tsconfig.build.json"
+    },
+    {
+      "path": "packages/orchestration/tsconfig.build.json"
+    },
+    {
+      "path": "packages/builders/tsconfig.build.json"
+    },
+    {
+      "path": "packages/fast-usdc/tsconfig.build.json"
+    },
+    {
+      "path": "packages/portfolio-api/tsconfig.build.json"
+    },
+    {
+      "path": "packages/vm-config/tsconfig.build.json"
+    }
+  ]
+}
