@@ -1,8 +1,9 @@
 #!/usr/bin/env -S node --import ts-blank-space/register
 /**
- * @file tools for smart wallet stores @@@@@TODO
+ * @file tools for smart wallet stores, e.g. ymaxControl
  */
 import '@endo/init';
+
 import {
   fetchEnvNetworkConfig,
   makeSigningSmartWalletKit,
@@ -11,17 +12,17 @@ import {
   type SigningSmartWalletKit,
 } from '@agoric/client-utils';
 import { makeTracer } from '@agoric/internal';
+import { makeFileRW, type FileRW } from '@agoric/pola-io/src/file.js';
 import { SigningStargateClient, type StdFee } from '@cosmjs/stargate';
 import { Fail } from '@endo/errors';
-import { createRequire } from 'node:module';
 import { E } from '@endo/far';
+import fsp from 'node:fs/promises';
+import { createRequire } from 'node:module';
+import path from 'node:path';
 
 const Usage = `tool.ts MODULE ...args`;
-// import type { start as YMaxStart } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
-// import type { ContractControl } from '@agoric/deploy-script-support/src/control/contract-control.contract.js';
-// type YMaxStartFn = typeof YMaxStart;
 
-const trace = makeTracer('ag-run2');
+const trace = makeTracer('ymax-admin');
 
 const makeFee = ({
   gas = 20_000, // cosmjs default
@@ -39,9 +40,10 @@ export type SigningSmartWalletKitWithStore = SigningSmartWalletKit & {
 
 export interface RunTools {
   scriptArgs: string[];
-  makeAccount(name: string): SigningSmartWalletKitWithStore;
+  makeAccount(name: string): Promise<SigningSmartWalletKitWithStore>;
   E: typeof E;
   harden: typeof harden;
+  cwd: FileRW;
 }
 
 const main = async (
@@ -52,8 +54,6 @@ const main = async (
     setTimeout = globalThis.setTimeout,
     connectWithSigner = SigningStargateClient.connectWithSigner,
     now = Date.now,
-    // stdin = process.stdin,
-    // stdout = process.stdout,
     cwd = process.cwd,
   } = {},
 ) => {
@@ -89,22 +89,26 @@ const main = async (
   };
 
   const [_node, _script, specifier, ...scriptArgs] = argv;
+
   if (!specifier) throw Usage;
+  const cwdPath = `${cwd()}/`;
+  const nodeRequire = createRequire(cwdPath);
+  const modPath = nodeRequire.resolve(specifier);
+  const mod = await import(modPath);
+  const fn: (tools: Partial<RunTools>) => Promise<void> = mod.default;
+  if (!fn) {
+    throw Error(`no default export from ${specifier}`);
+  }
+
+  const cwdIO = makeFileRW(cwdPath, { fsp, path });
   const tools = {
     E,
     harden,
     scriptArgs,
     walletKit,
     makeAccount,
+    cwd: cwdIO,
   };
-
-  const nodeRequire = createRequire(`${cwd()}/`);
-  const modPath = nodeRequire.resolve(specifier);
-  const mod = await import(modPath);
-  const fn = mod.default;
-  if (!fn) {
-    throw Error(`no default export from ${specifier}`);
-  }
   await fn(tools);
 };
 
