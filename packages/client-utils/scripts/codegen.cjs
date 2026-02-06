@@ -154,7 +154,7 @@ telescope({
     });
     const prettierResult = spawnSync(
       process.execPath,
-      [prettierBin, '--write', 'src'],
+      [prettierBin, '--write', 'src/codegen'],
       {
         cwd: path.join(__dirname, '..'),
         stdio: 'inherit',
