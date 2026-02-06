@@ -29,6 +29,7 @@
     "@agoric/fast-usdc": "workspace:*",
     "@agoric/governance": "workspace:*",
     "@agoric/inter-protocol": "workspace:*",
+    "@agoric/portfolio-api": "workspace:*",
     "@agoric/smart-wallet": "workspace:*",
     "@agoric/vats": "workspace:*",
     "@agoric/vow": "workspace:*",
