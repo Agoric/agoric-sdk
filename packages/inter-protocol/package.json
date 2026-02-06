@@ -30,7 +30,6 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/base-zone": "workspace:*",
-    "@agoric/cosmic-swingset": "workspace:*",
     "@agoric/ertp": "workspace:*",
     "@agoric/governance": "workspace:*",
     "@agoric/internal": "workspace:*",
