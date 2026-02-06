@@ -17,6 +17,11 @@ await createBundles(
       '@agoric/inter-protocol/src/price/fluxAggregatorContract.js',
       '../bundles/bundle-fluxAggregatorKit.js',
     ],
+    // TODO end inter-package filesystem references https://github.com/Agoric/agoric-sdk/issues/8178
+    [
+      '@agoric/inter-protocol/src/provisionPool.js',
+      '../../vats/bundles/bundle-provisionPool.js',
+    ],
   ],
   dirname,
 );

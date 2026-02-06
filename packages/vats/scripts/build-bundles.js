@@ -5,16 +5,11 @@ import url from 'url';
 
 const dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
-// TODO end inter-package filesystem references https://github.com/Agoric/agoric-sdk/issues/8178
-
 const sourceToBundle = [
   ['@agoric/vats/src/centralSupply.js', '../bundles/bundle-centralSupply.js'],
   ['@agoric/vats/src/mintHolder.js', '../bundles/bundle-mintHolder.js'],
-  [
-    // XXX creates cyclic dependency
-    '@agoric/inter-protocol/src/provisionPool.js',
-    '../bundles/bundle-provisionPool.js',
-  ],
+  // NB: vats/bundles/bundle-provisionPool.js is built by inter-protocol for
+  // proper package layering but we keep this output to avoid breaking existing references
 ];
 
 await createBundles(sourceToBundle, dirname);
