@@ -1,9 +1,5 @@
 /* eslint-env node */
 
-// XXX the JSON configs specify that launching the chain requires @agoric/builders,
-// so let the JS tooling know about it by importing it here.
-import '@agoric/builders';
-
 import anylogger from '@agoric/internal/vendor/anylogger.js';
 
 import bundleSource from '@endo/bundle-source';
