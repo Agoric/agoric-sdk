@@ -1,3 +1,7 @@
+provider "docker" {
+  host = var.DOCKER_HOST
+}
+
 variable "DOCKER_HOST" {
   description = "Address of Docker host"
   default     = "unix:///var/run/docker.sock"
@@ -31,11 +35,6 @@ variable "OFFSET" {
 variable "VOLUMES" {
   description = "Volumes to mount"
   default     = []
-}
-
-provider "docker" {
-  host    = var.DOCKER_HOST
-  version = "~> 2.7"
 }
 
 module "cluster" {

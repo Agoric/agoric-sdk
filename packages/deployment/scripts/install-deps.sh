@@ -2,7 +2,7 @@
 set -ueo pipefail
 
 # Install Terraform.
-TERRAFORM_VERSION=0.12.31
+TERRAFORM_VERSION=0.13.7
 
 uname_s=$(uname -s | tr '[:upper:]' '[:lower:]')
 
@@ -32,7 +32,7 @@ if [ ! -x /usr/local/bin/terraform ] || ! {
   # Extract, then delete temporary file.
   (
     #trap 'echo "Removing $terraform_zip"; rm -f "$terraform_zip"' EXIT
-    terraform_zip=$(mktemp -t terraformXXXXXX)
+    terraform_zip=$(mktemp -t terraformXXXXXX).zip
     curl "$TERRAFORM_URL" > "$terraform_zip"
     unzip -od /usr/local/bin/ "$terraform_zip"
   )
