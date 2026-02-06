@@ -431,10 +431,12 @@ func (m *MsgProvisionResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_MsgProvisionResponse proto.InternalMessageInfo
 
 // MsgInstallBundle carries a signed bundle to SwingSet.
-// Of the fields bundle, compressed_bundle, and chunked_artifact, exactly one
-// must be present: bundle if complete and uncompressed, compressed_bundle if
-// complete and compressed, or chunked_artifact for a manifest of chunks to be
-// submitted in subsequent messages.
+// The fields `bundle`, `compressed_bundle`, and `chunked_artifact` are mutually
+// exclusive, and exactly one must be present based on what is being submitted:
+//   - `bundle` for a complete and uncompressed bundle
+//   - `compressed_bundle` for a complete and compressed bundle
+//   - `chunked_artifact` for a manifest of chunks to be submitted in subsequent
+//     messages.
 type MsgInstallBundle struct {
 	Bundle    string                                        `protobuf:"bytes,1,opt,name=bundle,proto3" json:"bundle" yaml:"bundle"`
 	Submitter github_com_cosmos_cosmos_sdk_types.AccAddress `protobuf:"bytes,2,opt,name=submitter,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"submitter" yaml:"submitter"`
@@ -629,9 +631,9 @@ func (m *MsgCoreEvalResponse) GetResult() string {
 
 // MsgInstallBundleResponse is either an empty acknowledgement that a bundle
 // installation message has been queued for the SwingSet kernel's
-// consideration, or for MsgInstallBundle requests that have a chunked artifact
-// manifest instead of a compressed or uncompressed bundle: the identifier
-// assigned for the chunked artifact for reference in subsequent MsgSendChunk
+// consideration, or (for MsgInstallBundle requests that have a chunked artifact
+// manifest instead of a compressed or uncompressed bundle) a container for the
+// chunked artifact identifier to be included in subsequent MsgSendChunk
 // messages.
 type MsgInstallBundleResponse struct {
 	// The assigned identifier for a chunked artifact, if the caller is expected
@@ -928,7 +930,7 @@ const _ = grpc.SupportPackageIsVersion4
 type MsgClient interface {
 	// Install a JavaScript sources bundle on the chain's SwingSet controller.
 	InstallBundle(ctx context.Context, in *MsgInstallBundle, opts ...grpc.CallOption) (*MsgInstallBundleResponse, error)
-	// Send a chunk of a bundle to tolerate RPC message size limits.
+	// Send a chunk of a bundle (or other artifact) to tolerate RPC message size limits.
 	SendChunk(ctx context.Context, in *MsgSendChunk, opts ...grpc.CallOption) (*MsgSendChunkResponse, error)
 	// Send inbound messages.
 	DeliverInbound(ctx context.Context, in *MsgDeliverInbound, opts ...grpc.CallOption) (*MsgDeliverInboundResponse, error)
@@ -1017,7 +1019,7 @@ func (c *msgClient) CoreEval(ctx context.Context, in *MsgCoreEval, opts ...grpc.
 type MsgServer interface {
 	// Install a JavaScript sources bundle on the chain's SwingSet controller.
 	InstallBundle(context.Context, *MsgInstallBundle) (*MsgInstallBundleResponse, error)
-	// Send a chunk of a bundle to tolerate RPC message size limits.
+	// Send a chunk of a bundle (or other artifact) to tolerate RPC message size limits.
 	SendChunk(context.Context, *MsgSendChunk) (*MsgSendChunkResponse, error)
 	// Send inbound messages.
 	DeliverInbound(context.Context, *MsgDeliverInbound) (*MsgDeliverInboundResponse, error)
