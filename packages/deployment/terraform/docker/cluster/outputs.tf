@@ -12,4 +12,3 @@ output "instances" {
 output "public_ips" {
   value = [docker_container.cluster.*.ip_address]
 }
-

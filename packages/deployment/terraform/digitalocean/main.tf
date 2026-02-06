@@ -1,5 +1,9 @@
 #Terraform Configuration
 
+provider "digitalocean" {
+  token = var.DO_API_TOKEN
+}
+
 variable "DO_API_TOKEN" {
   description = "DigitalOcean Access Token"
 }
@@ -33,11 +37,6 @@ variable "REGIONS" {
   description = "Regions to launch in (indexed by instance number)"
   type        = list(string)
   default     = ["AMS3", "FRA1", "LON1", "NYC3", "SFO2", "SGP1", "TOR1"]
-}
-
-provider "digitalocean" {
-  version = "~> 1.4"
-  token   = var.DO_API_TOKEN
 }
 
 module "cluster" {

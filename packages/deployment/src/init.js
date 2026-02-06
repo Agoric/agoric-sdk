@@ -206,9 +206,9 @@ const askPlacement =
   ({ inquirer }) =>
   async (PLACEMENTS, ROLES) => {
     let total = 0;
-    PLACEMENTS.forEach(
-      ([_PLACEMENT, placement]) => (total += calculateTotal(placement)),
-    );
+    for (const [_PLACEMENT, placement] of PLACEMENTS) {
+      total += calculateTotal(placement);
+    }
     const count = nodeCount(total, true);
     const DONE = { name: `Done with allocation${count}`, value: '' };
     const NEW = { name: `Initialize new placement`, value: 'NEW' };
@@ -324,11 +324,11 @@ const doInit =
       DATACENTERS: {},
       PROVIDER_NEXT_INDEX: {},
     };
-    Object.entries(defaultConfigs).forEach(([key, dflt]) => {
+    for (const [key, dflt] of Object.entries(defaultConfigs)) {
       if (!(key in config)) {
         config[key] = dflt;
       }
-    });
+    }
     config.NETWORK_NAME = overrideNetworkName;
 
     while (!noninteractive) {
@@ -404,10 +404,12 @@ const doInit =
       if (dcs) {
         // Add our choices to the list.
         const already = { ...placement };
-        dcs.forEach(nv => delete already[nv.value]);
-        Object.entries(already).forEach(([dc]) => {
+        for (const nv of dcs) {
+          delete already[nv.value];
+        }
+        for (const [dc] of Object.entries(already)) {
           dcs.push({ name: dc, value: dc });
-        });
+        }
         dcs.sort((nva, nvb) => {
           if (nva.name < nvb.name) {
             return -1;
@@ -455,9 +457,9 @@ const doInit =
 
     // Collate the placement information.
     const ROLE_INSTANCE = {};
-    Object.values(config.ROLES).forEach(role => {
+    for (const role of Object.values(config.ROLES)) {
       ROLE_INSTANCE[role] = 0;
-    });
+    }
     for (const [PLACEMENT, placement] of config.PLACEMENTS) {
       let instance = ROLE_INSTANCE[config.ROLES[PLACEMENT]];
       const offset = instance;
@@ -485,6 +487,33 @@ const doInit =
     }
     Object.values(ROLE_INSTANCE).some(i => i > 0) ||
       Fail`Aborting due to no nodes configured! (${ROLE_INSTANCE})`;
+
+    await wr.createFile(
+      'versions.tf',
+      `\
+terraform {
+  required_version = ">= 0.13"
+  required_providers {
+    heroku = {
+      source = "heroku/heroku"
+      version = "~> 5.0"
+    }
+    external = {
+      source = "hashicorp/external"
+      version = "~> 2.0"
+    }
+    docker = {
+      source = "kreuzwerker/docker"
+      version = "~> 2.25.0"
+    }
+    digitalocean = {
+      version = "~> 2.75.0"
+      source = "digitalocean/digitalocean"
+    }
+  }
+}
+`,
+    );
 
     await wr.createFile(
       `vars.tf`,
