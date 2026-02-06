@@ -98,6 +98,8 @@ export const addLPCommands = (
 
       const usdcAmount = parseUSDCAmount(opts.amount, usdc);
 
+      /** @type {import('../types.ts').PoolMetrics} */
+      // @ts-expect-error TODO: parameterize vstorage-kit so readPublished works for this without importing everything into client-utils
       const metrics = await swk.readPublished('fastUsdc.poolMetrics');
       const fastLPAmount = floorDivideBy(usdcAmount, metrics.shareWorth);
 
@@ -141,6 +143,8 @@ export const addLPCommands = (
 
       const usdcAmount = parseUSDCAmount(opts.amount, usdc);
 
+      /** @type {import('../types.ts').PoolMetrics} */
+      // @ts-expect-error TODO: parameterize vstorage-kit so readPublished works for this without importing everything into client-utils
       const metrics = await swk.readPublished('fastUsdc.poolMetrics');
       const fastLPAmount = ceilDivideBy(usdcAmount, metrics.shareWorth);
 
