@@ -53,7 +53,6 @@
   },
   "devDependencies": {
     "@aglocal/boot": "workspace:*",
-    "@aglocal/fast-usdc-contract": "workspace:*",
     "@agoric/client-utils": "workspace:*",
     "@agoric/portfolio-api": "workspace:*",
     "@agoric/smart-wallet": "workspace:*",
