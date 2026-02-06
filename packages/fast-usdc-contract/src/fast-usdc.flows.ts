@@ -234,7 +234,7 @@ export const advanceFunds = (async (
     log(`decoded EUD: ${EUD}`);
 
     // throws if it's neither CAIP-10 nor bare bech32.
-    const destination = chainHubTools.resolveAccountId(EUD);
+    const destination = chainHubTools.resolveAccountId(EUD as AccountId);
     const accountId = parseAccountId(destination);
 
     // Dest must be a Cosmos account or support CCTP
