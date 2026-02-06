@@ -2,7 +2,7 @@
 // @ts-check
 
 /* eslint-env node */
-const { exec, execSync, spawnSync } = require('child_process');
+const { execSync, spawnSync } = require('child_process');
 const fsp = require('fs/promises');
 const path = require('path');
 const assert = require('node:assert/strict');
@@ -22,21 +22,14 @@ rimraf(outPath);
  */
 function fixTypeImport(directory, gnuSed) {
   const fullPath = path.resolve(directory);
+  const quotedPath = JSON.stringify(fullPath);
   const command = `
-    find ${fullPath} -type f -exec ${gnuSed ? 'sed -i' : 'sed -i ""'} \
+    find ${quotedPath} -type f -exec ${gnuSed ? 'sed -i' : 'sed -i ""'} \
     -e 's/import { JsonSafe/import {type JsonSafe/g' \
     -e 's/\\([{,]\\) \\([[:alnum:]_]*SDKType\\)/\\1 type \\2/g' {} +
   `;
 
-  exec(command, (error, stdout, stderr) => {
-    if (error) {
-      console.error(`Error during replacement: ${error.message}`);
-      return;
-    }
-    if (stderr) {
-      console.error(`Standard error: ${stderr}`);
-    }
-  });
+  execSync(command, { stdio: 'inherit' });
 }
 
 /**
@@ -255,6 +248,9 @@ builder
         stdio: 'inherit',
       },
     );
+    if (prettierResult.error) {
+      throw prettierResult.error;
+    }
     assert.equal(prettierResult.status, 0);
     console.log('💅 code formatted by Prettier');
 
