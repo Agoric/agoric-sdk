@@ -487,12 +487,48 @@ const importSpecifier = async (specifier, cwd, packedArgs) => {
   throw new Error(errors.join('\n'));
 };
 
+const shouldSkipSpecifier = specifier =>
+  specifier.endsWith('entrypoint.js') ||
+  specifier.endsWith('/bin.js') ||
+  specifier.includes('/src/cli/') ||
+  specifier.includes('/scripts/');
+
 const isPackageDir = candidateDir => {
   if (!candidateDir) return false;
   const rel = path.relative(packagesRoot, candidateDir);
   if (rel.startsWith('..') || rel.startsWith(path.sep)) return false;
   if (rel.split(path.sep).length !== 1) return false;
   return existsSync(path.join(candidateDir, 'package.json'));
+};
+
+const splitPackageName = packageName => {
+  if (packageName.startsWith('@')) {
+    const [scope, name] = packageName.split('/');
+    return { scope, name };
+  }
+  return { scope: null, name: packageName };
+};
+
+const ensureSelfPackageLink = async (pkgDir, pkgName) => {
+  const { scope, name } = splitPackageName(pkgName);
+  const nodeModulesDir = path.join(pkgDir, 'node_modules');
+  const scopeDir = scope ? path.join(nodeModulesDir, scope) : nodeModulesDir;
+  const linkPath = path.join(scopeDir, name);
+
+  if (existsSync(linkPath)) {
+    return async () => {};
+  }
+
+  await fs.mkdir(scopeDir, { recursive: true });
+  await fs.symlink(pkgDir, linkPath, 'dir');
+
+  return async () => {
+    try {
+      await fs.unlink(linkPath);
+    } catch {
+      // best effort cleanup
+    }
+  };
 };
 
 const listPackages = async () => {
@@ -548,6 +584,7 @@ const main = async () => {
     }
 
     packageCount += 1;
+    const cleanupSelfLink = await ensureSelfPackageLink(pkgDir, pkgJson.name);
     let successCount = 0;
     let failureCount = 0;
     let skippedCount = 0;
@@ -568,10 +605,7 @@ const main = async () => {
 
     for (const specifier of specifiers) {
       // these have side effects and dependence on argv
-      if (
-        specifier.endsWith('entrypoint.js') ||
-        specifier.endsWith('/bin.js')
-      ) {
+      if (shouldSkipSpecifier(specifier)) {
         const existing = skippedByPackage.get(pkgJson.name) || [];
         existing.push(specifier);
         skippedByPackage.set(pkgJson.name, existing);
@@ -579,8 +613,12 @@ const main = async () => {
         continue;
       }
       specifierCount += 1;
+      // With nodeLinker: pnpm, workspace package names are not guaranteed to be
+      // resolvable from the monorepo root. Resolve each package's own exports
+      // from that package directory so self-references work consistently.
+      const importCwd = pkgDir;
       try {
-        await importSpecifier(specifier, repoRoot, nodePackedArgs);
+        await importSpecifier(specifier, importCwd, nodePackedArgs);
         const existing = successesByPackage.get(pkgJson.name) || [];
         existing.push(specifier);
         successesByPackage.set(pkgJson.name, existing);
@@ -594,6 +632,7 @@ const main = async () => {
         failureCount += 1;
       }
     }
+    await cleanupSelfLink();
 
     if (!quiet) {
       const status = failureCount > 0 ? 'FAIL' : 'PASS';
