@@ -792,6 +792,7 @@ const mocks = (
     resolverClient,
     resolverService,
     cosmosId,
+    progressTracker: makeProgressTracker(),
   };
 };
 
@@ -1981,7 +1982,7 @@ const makeAccountEVMRace = test.macro({
     _errAt?: EStep,
   ) => `EVM makeAccount race: ${providedTitle}`,
   async exec(t, provide: ProvideEVMAccountFn, headStart: EStep, errAt?: EStep) {
-    const { orch, ctx, offer, txResolver } = mocks({});
+    const { orch, ctx, offer, txResolver, progressTracker } = mocks({});
 
     const pKit = await ctx.makePortfolioKit();
     await provideCosmosAccount(orch, 'agoric', pKit, silent);
@@ -1992,7 +1993,9 @@ const makeAccountEVMRace = test.macro({
     const gmp = { chain: await orch.getChain('axelar'), fee: 123n };
 
     const attempt = async () => {
-      return provide(chainName, chainInfo, gmp, lca, ctx, pKit, undefined);
+      return provide(chainName, chainInfo, gmp, lca, ctx, pKit, {
+        orchOpts: { progressTracker },
+      });
     };
 
     const { log, kinks } = offer;
