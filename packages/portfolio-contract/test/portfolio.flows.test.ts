@@ -19,6 +19,8 @@ import {
   makeFakeStorageKit,
 } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { makeExpectUnhandledRejectionMacro } from '@agoric/internal/src/lib-nodejs/ava-unhandled-rejection.js';
+
 import {
   denomHash,
   type AccountId,
@@ -105,6 +107,11 @@ import {
   makeIncomingVTransferEvent,
   makeStorageTools,
 } from './supports.ts';
+
+const expectUnhandled = makeExpectUnhandledRejectionMacro({
+  test,
+  importMetaUrl: import.meta.url,
+});
 
 const executePlan: typeof rawExecutePlan = (
   orch,
@@ -1479,92 +1486,98 @@ test('handle failure in provideCosmosAccount makeAccount', async t => {
   }
 });
 
-test('handle failure in provideEVMAccount sendMakeAccountCall', async t => {
-  const unlucky = make(BLD, 13n);
-  const { give, steps } = await makePortfolioSteps(
-    { Compound: make(USDC, 2_000_000n) },
-    {
-      fees: { Compound: { Account: unlucky, Call: make(BLD, 100n) } },
-      evm: 'Arbitrum',
-    },
-  );
-  const { orch, ctx, offer, storage, tapPK, txResolver } = mocks(
-    { send: Error('Insufficient funds - piggy bank sprang a leak') },
-    give,
-  );
-  const { log } = offer;
-
-  // Create portfolio once for both attempts
-  const pKit = await ctx.makePortfolioKit();
-
-  // First attempt - will fail when trying to send 13n BLD (unlucky amount)
-  const seat1 = makeMockSeat(give, undefined, log);
-
-  const attempt1P = rebalance(orch, ctx, seat1, { flow: steps }, pKit);
-  const testDonePK = makePromiseKit();
-  void txResolver.settleUntil(testDonePK.promise);
-  t.is(await attempt1P, undefined);
-
-  const seatFails = log.find(e => e._method === 'fail' && e._cap === 'seat');
-  t.like(
-    seatFails?.reason,
-    {
-      error: 'Insufficient funds - piggy bank sprang a leak',
-      how: 'Compound',
-      step: 4,
-    },
-    'rebalance should fail when EVM account creation fails',
-  );
-
-  const { getPortfolioStatus, getFlowStatus } = makeStorageTools(storage);
-
-  {
-    const { accountIdByChain: byChain, accountsPending } =
-      await getPortfolioStatus(1);
-    // addresses of all requested accounts are available
-    t.deepEqual(Object.keys(byChain), ['Arbitrum', 'agoric', 'noble']);
-    // attempt to install Arbitrum account is no longer pending
-    t.deepEqual(accountsPending, []);
-
-    const fs = await getFlowStatus(1, 1);
-    t.log(fs);
-    t.deepEqual(
-      fs,
+test(
+  'handle failure in provideEVMAccount sendMakeAccountCall',
+  expectUnhandled(1),
+  async t => {
+    const unlucky = make(BLD, 13n);
+    const { give, steps } = await makePortfolioSteps(
+      { Compound: make(USDC, 2_000_000n) },
       {
-        type: 'rebalance',
-        state: 'fail',
-        step: 4,
-        how: 'Compound',
-        error: 'Insufficient funds - piggy bank sprang a leak',
-        next: undefined,
+        fees: { Compound: { Account: unlucky, Call: make(BLD, 100n) } },
+        evm: 'Arbitrum',
       },
-      '"Insufficient funds" error should be visible in vstorage',
     );
-  }
+    const { orch, ctx, offer, storage, tapPK, txResolver } = mocks(
+      { send: Error('Insufficient funds - piggy bank sprang a leak') },
+      give,
+    );
+    const { log } = offer;
 
-  // Recovery attempt - avoid the unlucky 13n fee using same portfolio
-  const { give: giveGood, steps: stepsGood } = await makePortfolioSteps(
-    { Compound: make(USDC, 2_000_000n) },
-    { fees: { Compound: { Account: make(BLD, 300n), Call: make(BLD, 100n) } } },
-  );
-  const seat2 = makeMockSeat(giveGood, undefined, log);
-  const attempt2P = rebalance(orch, ctx, seat2, { flow: stepsGood }, pKit);
+    // Create portfolio once for both attempts
+    const pKit = await ctx.makePortfolioKit();
 
-  await Promise.all([
-    attempt2P,
-    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
-      await txResolver.drainPending();
-    }),
-  ]);
-  t.truthy(log.find(entry => entry._method === 'exit'));
+    // First attempt - will fail when trying to send 13n BLD (unlucky amount)
+    const seat1 = makeMockSeat(give, undefined, log);
 
-  {
-    const { accountIdByChain: byChain } = await getPortfolioStatus(1);
-    t.deepEqual(Object.keys(byChain), ['Arbitrum', 'agoric', 'noble']);
-  }
+    const attempt1P = rebalance(orch, ctx, seat1, { flow: steps }, pKit);
+    const testDonePK = makePromiseKit();
+    void txResolver.settleUntil(testDonePK.promise);
+    t.is(await attempt1P, undefined);
 
-  testDonePK.resolve(undefined);
-});
+    const seatFails = log.find(e => e._method === 'fail' && e._cap === 'seat');
+    t.like(
+      seatFails?.reason,
+      {
+        error: 'Insufficient funds - piggy bank sprang a leak',
+        how: 'Compound',
+        step: 4,
+      },
+      'rebalance should fail when EVM account creation fails',
+    );
+
+    const { getPortfolioStatus, getFlowStatus } = makeStorageTools(storage);
+
+    {
+      const { accountIdByChain: byChain, accountsPending } =
+        await getPortfolioStatus(1);
+      // addresses of all requested accounts are available
+      t.deepEqual(Object.keys(byChain), ['Arbitrum', 'agoric', 'noble']);
+      // attempt to install Arbitrum account is no longer pending
+      t.deepEqual(accountsPending, []);
+
+      const fs = await getFlowStatus(1, 1);
+      t.log(fs);
+      t.deepEqual(
+        fs,
+        {
+          type: 'rebalance',
+          state: 'fail',
+          step: 4,
+          how: 'Compound',
+          error: 'Insufficient funds - piggy bank sprang a leak',
+          next: undefined,
+        },
+        '"Insufficient funds" error should be visible in vstorage',
+      );
+    }
+
+    // Recovery attempt - avoid the unlucky 13n fee using same portfolio
+    const { give: giveGood, steps: stepsGood } = await makePortfolioSteps(
+      { Compound: make(USDC, 2_000_000n) },
+      {
+        fees: { Compound: { Account: make(BLD, 300n), Call: make(BLD, 100n) } },
+      },
+    );
+    const seat2 = makeMockSeat(giveGood, undefined, log);
+    const attempt2P = rebalance(orch, ctx, seat2, { flow: stepsGood }, pKit);
+
+    await Promise.all([
+      attempt2P,
+      Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
+        await txResolver.drainPending();
+      }),
+    ]);
+    t.truthy(log.find(entry => entry._method === 'exit'));
+
+    {
+      const { accountIdByChain: byChain } = await getPortfolioStatus(1);
+      t.deepEqual(Object.keys(byChain), ['Arbitrum', 'agoric', 'noble']);
+    }
+
+    testDonePK.resolve(undefined);
+  },
+);
 
 test.todo('recover from send step');
 
@@ -2117,7 +2130,7 @@ test(
 test('A pays fee; B arrives', makeAccountEVMRace, provideEVMAccount, 'send');
 test(
   'A fails to pay fee; B arrives',
-  makeAccountEVMRace,
+  expectUnhandled(1, makeAccountEVMRace),
   provideEVMAccount,
   'send',
   'send',
@@ -2136,14 +2149,14 @@ test(
 );
 test(
   'A times out on axelar; B arrives',
-  makeAccountEVMRace,
+  expectUnhandled(1, makeAccountEVMRace),
   provideEVMAccount,
   'txfr',
   'txfr',
 );
 test(
   'A gets rejected txN; B arrives',
-  makeAccountEVMRace,
+  expectUnhandled(1, makeAccountEVMRace),
   provideEVMAccount,
   'txfr',
   'resolve',
@@ -2181,14 +2194,14 @@ test(
 );
 test(
   'withPermit: A times out on axelar; B arrives',
-  makeAccountEVMRace,
+  expectUnhandled(1, makeAccountEVMRace),
   provideEVMAccountWithPermitStub,
   'txfr',
   'txfr',
 );
 test(
   'withPermit: A gets rejected txN; B arrives',
-  makeAccountEVMRace,
+  expectUnhandled(1, makeAccountEVMRace),
   provideEVMAccountWithPermitStub,
   'txfr',
   'resolve',
@@ -2255,7 +2268,7 @@ test('planner rejects plan and flow fails gracefully', async t => {
 
   t.truthy(failCall, 'seat.fail() should be called when plan is rejected');
   t.falsy(exitCall, 'seat.exit() should not be called when plan is rejected');
-  t.deepEqual(
+  t.is(
     `${failCall?.reason}`,
     'Error: insufficient funds for this operation',
     'failure reason should match rejection message',
@@ -2342,7 +2355,7 @@ test('makeErrorList collects any number of errors', t => {
       [{ status: 'fulfilled', value: undefined }],
       [],
     );
-    t.deepEqual(fromNoRejections, undefined, 'no errors');
+    t.is(fromNoRejections, undefined, 'no errors');
   }
 
   {
@@ -3064,43 +3077,80 @@ test('evmHandler.deposit via Permit2 with unknown spender is rejected', async t 
 /**
  * This test uses the factory contract as the spender address.
  */
-test('evmHandler.deposit via Permit2 with factoryContract as spender succeeds', async t => {
+test('evmHandler.deposit via Permit2 to missing and existing wallet with depositFactory as spender succeeds', async t => {
   const permitDetails = makePermitDetails({
     spender: contractsMock.Arbitrum.depositFactory as Address,
   });
   const { orch, ctx, storage, txResolver } = mocks({}, {});
+  const depositFactoryAccountId =
+    `eip155:${permitDetails.chainId}:${contractsMock.Arbitrum.depositFactory}` as AccountId;
   const sourceAccountId =
     `eip155:${permitDetails.chainId}:${permitDetails.permit2Payload.owner.toLowerCase()}` as AccountId;
   const kit = await ctx.makePortfolioKit({ sourceAccountId });
   await provideCosmosAccount(orch, 'agoric', kit, silent);
 
-  const flowKey = kit.evmHandler.deposit(permitDetails);
-  t.regex(flowKey, /^flow\d+$/);
-  const flowNum = Number(flowKey.replace('flow', ''));
-  const portfolioId = kit.reader.getPortfolioId();
-  const { getPortfolioStatus, getFlowStatus } = makeStorageTools(storage);
-  const { flowsRunning = {} } = await getPortfolioStatus(portfolioId);
-  const detail = flowsRunning[flowKey];
-  if (!detail || detail.type !== 'deposit') {
-    throw t.fail('missing deposit flow detail');
-  }
-  const fromChain = detail.fromChain as AxelarChain;
-  const fee = make(BLD, 100n);
-  const steps: MovementDesc[] = [
-    { src: `+${fromChain}`, dest: `@${fromChain}`, amount: detail.amount, fee },
-  ];
-  kit.planner.resolveFlowPlan(flowNum, steps);
-  await txResolver.drainPending();
-  await eventLoopIteration();
+  const doDeposit = async () => {
+    const flowKey = kit.evmHandler.deposit(permitDetails);
+    t.regex(flowKey, /^flow\d+$/);
+    const flowNum = Number(flowKey.replace('flow', ''));
+    const portfolioId = kit.reader.getPortfolioId();
+    const { getPortfolioStatus, getFlowStatus } = makeStorageTools(storage);
+    const { flowsRunning = {} } = await getPortfolioStatus(portfolioId);
+    const detail = flowsRunning[flowKey];
+    if (!detail || detail.type !== 'deposit') {
+      throw t.fail('missing deposit flow detail');
+    }
+    const fromChain = detail.fromChain as AxelarChain;
+    const fee = make(BLD, 100n);
+    const steps: MovementDesc[] = [
+      {
+        src: `+${fromChain}`,
+        dest: `@${fromChain}`,
+        amount: detail.amount,
+        fee,
+      },
+    ];
+    kit.planner.resolveFlowPlan(flowNum, steps);
+    await txResolver.drainPending();
+    await eventLoopIteration();
 
-  const flowStatus = await getFlowStatus(portfolioId, flowNum);
-  t.is(flowStatus?.state, 'done');
+    const flowStatus = await getFlowStatus(portfolioId, flowNum);
+    t.is(flowStatus?.state, 'done');
+  };
+
+  // Do an initial deposit, then do another deposit with the same permit details
+  // to ensure the flow can be reused.
+  await doDeposit();
+  t.like(
+    storage.getDeserialized('published.ymax0.pendingTxs.tx0').at(-1),
+    {
+      type: 'MAKE_ACCOUNT',
+      status: 'success',
+      destinationAddress: depositFactoryAccountId,
+    },
+    'check first deposit creates and deposits via the depositFactory',
+  );
+
+  await doDeposit();
+  t.like(
+    storage.getDeserialized('published.ymax0.pendingTxs.tx2').at(-1),
+    {
+      type: 'GMP',
+      status: 'success',
+      destinationAddress: depositFactoryAccountId,
+    },
+    'check second deposit goes through same flow and hits the factory address again',
+  );
+
+  await documentStorageSchema(t, storage, docOpts);
 });
 
 test('evmHandler.deposit via Permit2 with existing wallet as spender succeeds', async t => {
   const existingWallet =
     '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as Address;
   const permitDetails = makePermitDetails({ spender: existingWallet });
+  const existingWalletAccountId =
+    `eip155:${permitDetails.chainId}:${existingWallet}` as AccountId;
   const { orch, ctx, storage, txResolver } = mocks({}, {});
   const sourceAccountId =
     `eip155:${permitDetails.chainId}:${permitDetails.permit2Payload.owner.toLowerCase()}` as AccountId;
@@ -3113,27 +3163,49 @@ test('evmHandler.deposit via Permit2 with existing wallet as spender succeeds', 
     remoteAddress: existingWallet,
   });
 
-  const flowKey = kit.evmHandler.deposit(permitDetails);
-  t.regex(flowKey, /^flow\d+$/);
-  const flowNum = Number(flowKey.replace('flow', ''));
-  const portfolioId = kit.reader.getPortfolioId();
-  const { getPortfolioStatus, getFlowStatus } = makeStorageTools(storage);
-  const { flowsRunning = {} } = await getPortfolioStatus(portfolioId);
-  const detail = flowsRunning[flowKey];
-  if (!detail || detail.type !== 'deposit') {
-    throw t.fail('missing deposit flow detail');
-  }
-  const fee = make(BLD, 100n);
-  const fromChain = detail.fromChain as AxelarChain;
-  const steps: MovementDesc[] = [
-    { src: `+${fromChain}`, dest: `@${fromChain}`, amount: detail.amount, fee },
-  ];
-  kit.planner.resolveFlowPlan(flowNum, steps);
-  await txResolver.drainPending();
-  await eventLoopIteration();
+  const doDeposit = async () => {
+    const flowKey = kit.evmHandler.deposit(permitDetails);
+    t.regex(flowKey, /^flow\d+$/);
+    const flowNum = Number(flowKey.replace('flow', ''));
+    const portfolioId = kit.reader.getPortfolioId();
+    const { getPortfolioStatus, getFlowStatus } = makeStorageTools(storage);
+    const { flowsRunning = {} } = await getPortfolioStatus(portfolioId);
+    const detail = flowsRunning[flowKey];
+    if (!detail || detail.type !== 'deposit') {
+      throw t.fail('missing deposit flow detail');
+    }
+    const fromChain = detail.fromChain as AxelarChain;
+    const fee = make(BLD, 100n);
+    const steps: MovementDesc[] = [
+      {
+        src: `+${fromChain}`,
+        dest: `@${fromChain}`,
+        amount: detail.amount,
+        fee,
+      },
+    ];
+    kit.planner.resolveFlowPlan(flowNum, steps);
+    await txResolver.drainPending();
+    await eventLoopIteration();
 
-  const flowStatus = await getFlowStatus(portfolioId, flowNum);
-  t.is(flowStatus?.state, 'done');
+    const flowStatus = await getFlowStatus(portfolioId, flowNum);
+    t.is(flowStatus?.state, 'done');
+  };
+
+  // Do just one deposit to ensure it deposits to the existing wallet address
+  // and doesn't try to reuse the factory address
+  await doDeposit();
+  t.like(
+    storage.getDeserialized('published.ymax0.pendingTxs.tx0').at(-1),
+    {
+      type: 'GMP',
+      status: 'success',
+      destinationAddress: existingWalletAccountId,
+    },
+    'check first deposit creates and deposits via the existing wallet',
+  );
+
+  await documentStorageSchema(t, storage, docOpts);
 });
 
 // #endregion evmHandler.deposit tests
