@@ -2058,7 +2058,7 @@ const makeAccountEVMRace = test.macro({
 
     const { log, kinks } = offer;
     type Kink = typeof kinks extends Set<infer U> ? U : never;
-    const { info: A, progressTracker: AProgressTracker } = attempt();
+    const { info: Ap, progressTracker: AProgressTracker } = attempt();
 
     const resolveAfterBStarts: ((r: unknown) => void)[] = [];
     const removeKink = (kink: Kink) => {
@@ -2187,6 +2187,7 @@ const makeAccountEVMRace = test.macro({
         throw Error(`unexpected errAt value: ${errAt}`);
     }
 
+    const A = await Ap;
     const { remoteAddress } = A;
     t.log('promptly available address', remoteAddress);
 
@@ -2195,12 +2196,13 @@ const makeAccountEVMRace = test.macro({
     const methodsBeforeB = getMethods();
     t.log('calls before B:', methodsBeforeB.join(', '));
 
-    const { info: B, progressTracker: BProgressTracker } = attempt(provideB);
+    const { info: Bp, progressTracker: BProgressTracker } = attempt(provideB);
 
     for (const resolve of resolveAfterBStarts) {
       resolve(null);
     }
 
+    const B = await Bp;
     t.is(B.remoteAddress, remoteAddress, 'same address for both racers');
 
     const AErr = await (errAt
