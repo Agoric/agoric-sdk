@@ -21,7 +21,7 @@ import {
 export interface Msg {
   /** Install a JavaScript sources bundle on the chain's SwingSet controller. */
   installBundle(request: MsgInstallBundle): Promise<MsgInstallBundleResponse>;
-  /** Send a chunk of a bundle to tolerate RPC message size limits. */
+  /** Send a chunk of a bundle (or other artifact) to tolerate RPC message size limits. */
   sendChunk(request: MsgSendChunk): Promise<MsgSendChunkResponse>;
   /** Send inbound messages. */
   deliverInbound(
