@@ -35,16 +35,19 @@
   },
   "devDependencies": {
     "@agoric/ertp": "workspace:*",
+    "@agoric/portfolio-api": "workspace:*",
     "@agoric/smart-wallet": "workspace:*",
     "@endo/pass-style": "^1.6.3",
     "@types/js-yaml": "^4",
+    "abitype": "^1.2.3",
     "ajv": "^6.12.6",
     "ava": "^6.4.1",
     "c8": "^10.1.3",
     "js-yaml": "^4.1.1",
     "ses": "^1.14.0",
     "ts-blank-space": "^0.6.2",
-    "tsd": "^0.33.0"
+    "tsd": "^0.33.0",
+    "viem": "^2.31.0"
   },
   "ava": {
     "extensions": {
