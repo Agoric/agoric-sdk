@@ -341,20 +341,30 @@ export const makeProvideEVMAccount =
       }
 
       const payload = {
-        instructionType: 'ProvideRemoteAccount',
-        instruction: {
-          depositPermit: permit2Payload ? [permit2Payload] : [],
-          expectedAccountAddress: evmAccount.remoteAddress,
-          principalAccount,
-        } satisfies ProvideRemoteAccountInstruction,
-        sendFromContract: true,
-        debuggingDetails: permit2Payload
-          ? {
-              depositFrom: permit2Payload.owner,
-              depositAmount: permit2Payload.permit.permitted.amount,
-            }
-          : undefined,
-      } as const;
+        ...(permit2Payload
+          ? ({
+              instructionType: 'ProvideRemoteAccount',
+              instruction: {
+                depositPermit: [permit2Payload],
+                expectedAccountAddress: evmAccount.remoteAddress,
+                principalAccount,
+              } satisfies ProvideRemoteAccountInstruction,
+              sendFromContract: true,
+              debuggingDetails: {
+                depositFrom: permit2Payload.owner,
+                depositAmount: permit2Payload.permit.permitted.amount,
+              },
+            } as const)
+          : ({
+              instructionType: 'RemoteAccountExecute',
+              instruction: {
+                multiCalls: [],
+              },
+              debuggingDetails: {
+                stepType: 'ProvideRemoteAccount',
+              },
+            } as const)),
+      };
 
       const send = async () => {
         await null;
