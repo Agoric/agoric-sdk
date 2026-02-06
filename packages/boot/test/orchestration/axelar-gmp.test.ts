@@ -92,7 +92,7 @@ test.before(async t => {
   // Register AXL in vbankAssets
   await evalProposal(
     buildProposal(
-      '../../../multichain-testing/src/register-interchain-bank-assets.builder.js',
+      `${buildersScriptsDir}orchestration/register-interchain-bank-assets.build.js`,
       [
         '--assets',
         JSON.stringify([
