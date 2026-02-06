@@ -1,14 +1,14 @@
 /** @file build privateArgsOverrides for main | devnet from static info */
 import type { PortfolioPrivateArgs } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
-import {
-  axelarConfig as axelarConfigMainnet,
-  axelarConfigTestnet,
-  gmpAddresses as gmpConfigs,
-} from '@aglocal/portfolio-deploy/src/axelar-configs.js';
 import { objectMap } from '@agoric/internal';
 import type { CosmosChainInfo } from '@agoric/orchestration';
 import { readFile as readFileAmbient } from 'fs/promises';
 import { createRequire } from 'module';
+import {
+  axelarConfig as axelarConfigMainnet,
+  axelarConfigTestnet,
+  gmpAddresses as gmpConfigs,
+} from './axelar-configs.js';
 import type { RunTools } from './wallet-admin-types.ts';
 
 const WalletBytecodeModule =
@@ -78,6 +78,6 @@ const buildOverrides = async ({ scriptArgs, cwd, walletKit }: RunTools) => {
 
   const overrides = overridesForEthChainInfo(cosmosChainInfo, net, bytecode);
 
-  await cwd.join(outPath).writeText(JSON.stringify(overrides));
+  await cwd.join(outPath).writeText(JSON.stringify(overrides, null, 2));
 };
 export default buildOverrides;
