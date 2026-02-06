@@ -1840,7 +1840,7 @@ const queuePermit2Step = async (
     : undefined;
 
   // For openPortfolio: atomic createAndDeposit via depositFactory
-  const acct = provideEVMAccountWithPermit(
+  const acct = await provideEVMAccountWithPermit(
     fromChain,
     chainInfo,
     gmp,

@@ -83,7 +83,7 @@ const makeProvideEVMAccount = ({
   txType: TxType;
   mode: 'makeAccount' | 'createAndDeposit';
 }) => {
-  return (
+  return async (
     chainName: AxelarChain,
     chainInfo: BaseChainInfo,
     gmp: {
@@ -94,7 +94,7 @@ const makeProvideEVMAccount = ({
     ctx: PortfolioInstanceContext,
     pk: GuestInterface<PortfolioKit>,
     opts: { orchOpts?: OrchestrationOptions; sendCallArg?: unknown } = {},
-  ): GMPAccountStatus => {
+  ): Promise<GMPAccountStatus> => {
     // sendCall is either sendMakeAccountCall or sendCreateAndDepositCall
     const sendCall = getSendCall(opts.sendCallArg);
     const pId = pk.reader.getPortfolioId();
@@ -347,7 +347,7 @@ export const provideEVMAccountWithPermit = (
   pk: GuestInterface<PortfolioKit>,
   permit2Payload: PermitDetails['permit2Payload'],
   orchOpts?: OrchestrationOptions,
-): GMPAccountStatus =>
+): Promise<GMPAccountStatus> =>
   provideEVMAccountWithPermitBase(chainName, chainInfo, gmp, lca, ctx, pk, {
     orchOpts,
     sendCallArg: permit2Payload,
