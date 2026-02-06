@@ -11,6 +11,8 @@
   "type": "module",
   "packageManager": "yarn@4.12.0",
   "devDependencies": {
+    "@agoric/eslint-config": "workspace:*",
+    "@agoric/eslint-plugin": "workspace:*",
     "@endo/eslint-plugin": "^2.4.0",
     "@eslint/compat": "^1.3.1",
     "@eslint/eslintrc": "^3.3.1",
