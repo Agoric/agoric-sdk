@@ -31,8 +31,8 @@ const { Vow$ } = NetworkShape;
  * @import {IBCEvent, IBCPacket, ScopedBridgeManager} from './types.js';
  * @import {TransferMiddleware} from './transfer.js';
  * @import {Zone} from '@agoric/base-zone';
- * @import {Bech32Address} from '@agoric/orchestration';
  * @import {WeakMapStore} from '@agoric/store';
+ * @typedef {string} Bech32Address
  */
 
 /**
