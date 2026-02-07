@@ -41,8 +41,8 @@ shared:
 
 merge_queue:
   max_parallel_checks: 1
-  queued_label: null
-  dequeued_label: null
+  queued_label:
+  dequeued_label:
   status_comments: none
 
 priority_rules:
@@ -58,8 +58,6 @@ queue_rules:
     merge_conditions: *merge-conditions
     merge_method: merge
     update_method: rebase
-    autosquash: true
-
   - name: merge
     commit_message_template: *commit-message-template
     queue_conditions: *queue-conditions
@@ -101,5 +99,4 @@ pull_request_rules:
           - check-failure=no-fixup-commits
       - -draft
     actions:
-      rebase:
-        autosquash: true
+      rebase: {}
