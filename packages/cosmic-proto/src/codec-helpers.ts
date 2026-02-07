@@ -128,8 +128,10 @@ export const Codec = <TU = string, MT = MessageBody<TU>>(
   });
   return cdc;
 };
-export interface Proto3CodecHelper<TU = string, MT = MessageBody<TU>>
-  extends Proto3Codec<TU, MT, Partial<MT>> {
+export interface Proto3CodecHelper<
+  TU = string,
+  MT = MessageBody<TU>,
+> extends Proto3Codec<TU, MT, Partial<MT>> {
   typedJson(message: Partial<MT>): TypedJson<TU>;
   typedAmino(message: Partial<MT>): TypedAmino<TU, MT>;
   typedEncode(message: Partial<MT>): EncodeObject<TU>;
