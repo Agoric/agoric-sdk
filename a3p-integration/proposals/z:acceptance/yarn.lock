@@ -10,7 +10,6 @@ __metadata:
   resolution: "@agoric/access-token@portal:../../agoric-sdk/packages/access-token::locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
     "@agoric/internal": "workspace:*"
-    n-readlines: "npm:^1.0.0"
     proper-lockfile: "npm:^4.1.2"
     tmp: "npm:^0.2.1"
   languageName: node
@@ -334,7 +333,6 @@ __metadata:
     microtime: "npm:^3.1.0"
     semver: "npm:^6.3.0"
     tmp: "npm:^0.2.1"
-    yargs-parser: "npm:^21.1.1"
   peerDependencies:
     "@agoric/xsnap": "workspace:*"
     ava: ^5.3.0 || ^6.0.0
@@ -4174,13 +4172,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"n-readlines@npm:^1.0.0":
-  version: 1.0.3
-  resolution: "n-readlines@npm:1.0.3"
-  checksum: 10c0/436c27ac071409314093da35dc3a4c5198c94fb10ad12b1c4d2b3e44bdb634da0a7a8ab0c107c1f4815788cbf5e0c7c180e3037ba3d974f34637cab363a95a74
-  languageName: node
-  linkType: hard
-
 "napi-build-utils@npm:^1.0.1":
   version: 1.0.2
   resolution: "napi-build-utils@npm:1.0.2"
@@ -4241,7 +4232,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"node-gyp-build@npm:^4.2.2, node-gyp-build@npm:^4.4.0":
+"node-gyp-build@npm:^4.2.2":
   version: 4.8.2
   resolution: "node-gyp-build@npm:4.8.2"
   bin:
@@ -4249,6 +4240,17 @@ __metadata:
     node-gyp-build-optional: optional.js
     node-gyp-build-test: build-test.js
   checksum: 10c0/d816b43974d31d6257b6e87d843f2626c72389a285208394bc57a7766b210454d2642860a5e5b5c333d8ecabaeabad3b31b94f58cf8ca1aabdef0c320d02baaa
+  languageName: node
+  linkType: hard
+
+"node-gyp-build@npm:^4.4.0":
+  version: 4.8.4
+  resolution: "node-gyp-build@npm:4.8.4"
+  bin:
+    node-gyp-build: bin.js
+    node-gyp-build-optional: optional.js
+    node-gyp-build-test: build-test.js
+  checksum: 10c0/444e189907ece2081fe60e75368784f7782cfddb554b60123743dfb89509df89f1f29c03bbfa16b3a3e0be3f48799a4783f487da6203245fa5bed239ba7407e1
   languageName: node
   linkType: hard
 
