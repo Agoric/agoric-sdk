@@ -56,8 +56,8 @@ RUN /usr/src/agoric-sdk/scripts/ensure-corepack-yarn.sh /usr/src/agoric-sdk
 # Other tests ensure that golang/cosmos builds without mutating the lockfile.
 # XXX until https://github.com/Agoric/agoric-sdk/issues/9043, then just:
 # RUN yarn install
-RUN bash -c \
-  "for i in {1..3}; do yarn install --network-timeout 1000000 && exit 0 || (echo retrying; sleep 15;) done; exit 1"
+RUN --mount=type=cache,target=/usr/src/agoric-sdk/.yarn/cache bash -c \
+  "for i in {1..3}; do YARN_ENABLE_GLOBAL_CACHE=0 YARN_CACHE_FOLDER=/usr/src/agoric-sdk/.yarn/cache yarn install --network-timeout 1000000 && exit 0 || (echo retrying; sleep 15;) done; exit 1"
 RUN yarn build:gyp
 
 # Remove dev dependencies.
@@ -117,9 +117,9 @@ COPY --from=xsnap-package --link /usr/src/agoric-sdk/packages/xsnap packages/xsn
 RUN /usr/src/agoric-sdk/scripts/ensure-corepack-yarn.sh /usr/src/agoric-sdk
 # XXX until https://github.com/Agoric/agoric-sdk/issues/9043, then just:
 # RUN --mount=type=cache,target=$YARN_CACHE_FOLDER yarn install --immutable
-RUN --mount=type=cache,target=$YARN_CACHE_FOLDER bash -c \
+RUN --mount=type=cache,target=/usr/src/agoric-sdk/.yarn/cache bash -c \
   # FIXME restore --immutable
-  "for i in {1..3}; do yarn install --network-timeout 1000000 && exit 0 || (echo retrying; sleep 15;) done; exit 1"
+  "for i in {1..3}; do YARN_ENABLE_GLOBAL_CACHE=0 YARN_CACHE_FOLDER=/usr/src/agoric-sdk/.yarn/cache yarn install --network-timeout 1000000 && exit 0 || (echo retrying; sleep 15;) done; exit 1"
 
 # build everything except xsnap, built above. 'cosmos' was also built above but
 # it's safe to include here because its package "build" script is "exit 0".
