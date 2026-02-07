@@ -44,7 +44,7 @@ const test: TestFn<
   }
 > = anyTest;
 
-const config = '@agoric/vm-config/decentral-itest-orchestration-config.json';
+const config = '@agoric/cosmic-swingset/src/vm-config/decentral-itest-orchestration-config.json';
 
 /**
  * Contracts such as Fast USDC may delay cleanup of some state.

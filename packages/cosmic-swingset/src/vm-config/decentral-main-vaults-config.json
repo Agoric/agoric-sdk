@@ -1,0 +1,232 @@
+{
+  "$comment": "This SwingSet config file (see loadSwingsetConfigFile) is designed to bring up vaults in a decentralized networks in an automated fashion. It includes coreProposals to start vaults. It has no testing facilities.",
+  "bootstrap": "bootstrap",
+  "defaultReapInterval": 1000,
+  "coreProposals": [
+    "@agoric/builders/scripts/vats/init-core.js",
+    "@agoric/builders/scripts/vats/init-network.js",
+    "@agoric/builders/scripts/vats/init-localchain.js",
+    "@agoric/builders/scripts/vats/init-transfer.js",
+    {
+      "module": "@agoric/builders/scripts/inter-protocol/init-core.js",
+      "entrypoint": "defaultProposalBuilder",
+      "args": [
+        {
+          "econCommitteeOptions": {
+            "committeeSize": 6
+          },
+          "referencedUi": "NO REFERENCED UI",
+          "minInitialPoolLiquidity": "0"
+        }
+      ]
+    },
+    {
+      "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
+      "entrypoint": "defaultProposalBuilder",
+      "args": [
+        {
+          "debtLimitValue": 0,
+          "interchainAssetOptions": {
+            "denom": "ibc/BA313C4A19DFBF943586C0387E6B11286F9E416B4DD27574E6909CABE0E342FA",
+            "decimalPlaces": 6,
+            "keyword": "ATOM",
+            "oracleBrand": "ATOM",
+            "proposedName": "ATOM"
+          }
+        }
+      ]
+    },
+    {
+      "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
+      "entrypoint": "psmProposalBuilder",
+      "args": [
+        {
+          "anchorOptions": {
+            "denom": "ibc/295548A78785A1007F232DE286149A6FF512F180AF5657780FC89C009E2C348F",
+            "decimalPlaces": 6,
+            "keyword": "USDC_axl",
+            "proposedName": "USD Coin"
+          }
+        }
+      ]
+    },
+    {
+      "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
+      "entrypoint": "psmProposalBuilder",
+      "args": [
+        {
+          "anchorOptions": {
+            "denom": "ibc/6831292903487E58BF9A195FDDC8A2E626B3DF39B88F4E7F41C935CADBAF54AC",
+            "decimalPlaces": 6,
+            "keyword": "USDC_grv",
+            "proposedName": "USC Coin"
+          }
+        }
+      ]
+    },
+    {
+      "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
+      "entrypoint": "psmProposalBuilder",
+      "args": [
+        {
+          "anchorOptions": {
+            "denom": "ibc/F2331645B9683116188EF36FC04A809C28BD36B54555E8705A37146D0182F045",
+            "decimalPlaces": 6,
+            "keyword": "USDT_axl",
+            "proposedName": "Tether USD"
+          }
+        }
+      ]
+    },
+    {
+      "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
+      "entrypoint": "psmProposalBuilder",
+      "args": [
+        {
+          "anchorOptions": {
+            "denom": "ibc/386D09AE31DA7C0C93091BB45D08CB7A0730B1F697CD813F06A5446DCF02EEB2",
+            "decimalPlaces": 6,
+            "keyword": "USDT_grv",
+            "proposedName": "Tether USD"
+          }
+        }
+      ]
+    },
+    {
+      "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
+      "entrypoint": "psmProposalBuilder",
+      "args": [
+        {
+          "anchorOptions": {
+            "denom": "ibc/3914BDEF46F429A26917E4D8D434620EC4817DC6B6E68FB327E190902F1E9242",
+            "decimalPlaces": 18,
+            "keyword": "DAI_axl",
+            "proposedName": "DAI"
+          }
+        }
+      ]
+    },
+    {
+      "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
+      "entrypoint": "psmProposalBuilder",
+      "args": [
+        {
+          "anchorOptions": {
+            "denom": "ibc/3D5291C23D776C3AA7A7ABB34C7B023193ECD2BC42EA19D3165B2CF9652117E7",
+            "decimalPlaces": 18,
+            "keyword": "DAI_grv",
+            "proposedName": "DAI"
+          }
+        }
+      ]
+    },
+    {
+      "module": "@agoric/builders/scripts/inter-protocol/price-feed-core.js",
+      "entrypoint": "defaultProposalBuilder",
+      "args": [
+        {
+          "contractTerms": {
+            "POLL_INTERVAL": 30,
+            "maxSubmissionCount": 1000,
+            "minSubmissionCount": 3,
+            "restartDelay": 1,
+            "timeout": 10,
+            "minSubmissionValue": 1,
+            "maxSubmissionValue": 9007199254740991
+          },
+          "AGORIC_INSTANCE_NAME": "ATOM-USD price feed",
+          "oracleAddresses": [
+            "agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr",
+            "agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8",
+            "agoric144rrhh4m09mh7aaffhm6xy223ym76gve2x7y78",
+            "agoric19d6gnr9fyp6hev4tlrg87zjrzsd5gzr5qlfq2p",
+            "agoric1n4fcxsnkxe4gj6e24naec99hzmc4pjfdccy5nj"
+          ],
+          "IN_BRAND_LOOKUP": [
+            "agoricNames",
+            "oracleBrand",
+            "ATOM"
+          ],
+          "IN_BRAND_DECIMALS": 6,
+          "OUT_BRAND_LOOKUP": [
+            "agoricNames",
+            "oracleBrand",
+            "USD"
+          ],
+          "OUT_BRAND_DECIMALS": 4
+        }
+      ]
+    },
+    {
+      "module": "@agoric/builders/scripts/inter-protocol/invite-committee-core.js",
+      "entrypoint": "defaultProposalBuilder",
+      "args": [
+        {
+          "voterAddresses": {
+            "Jason Potts": "agoric1gx9uu7y6c90rqruhesae2t7c2vlw4uyyxlqxrx",
+            "Chloe White": "agoric1d4228cvelf8tj65f4h7n2td90sscavln2283h5",
+            "Thibault Schrepel": "agoric14543m33dr28x7qhwc558hzlj9szwhzwzpcmw6a",
+            "Chris Berg": "agoric13p9adwk0na5npfq64g22l6xucvqdmu3xqe70wq",
+            "Youssef Amrani": "agoric1el6zqs8ggctj5vwyukyk4fh50wcpdpwgugd5l5",
+            "Joe Clark": "agoric1zayxg4e9vd0es9c9jlpt36qtth255txjp6a8yc"
+          }
+        }
+      ]
+    }
+  ],
+  "vats": {
+    "bootstrap": {
+      "sourceSpec": "@agoric/vats/src/core/boot-chain.js",
+      "creationOptions": {
+        "critical": true
+      }
+    }
+  },
+  "clearStorageSubtrees": [
+    "published"
+  ],
+  "exportStorageSubtrees": [
+    "published.psm.IST",
+    "published.wallet",
+    "published.provisionPool.metrics"
+  ],
+  "bundles": {
+    "agoricNames": {
+      "sourceSpec": "@agoric/vats/src/vat-agoricNames.js"
+    },
+    "bank": {
+      "sourceSpec": "@agoric/vats/src/vat-bank.js"
+    },
+    "board": {
+      "sourceSpec": "@agoric/vats/src/vat-board.js"
+    },
+    "bridge": {
+      "sourceSpec": "@agoric/vats/src/vat-bridge.js"
+    },
+    "centralSupply": {
+      "sourceSpec": "@agoric/vats/src/centralSupply.js"
+    },
+    "mintHolder": {
+      "sourceSpec": "@agoric/vats/src/mintHolder.js"
+    },
+    "priceAuthority": {
+      "sourceSpec": "@agoric/vats/src/vat-priceAuthority.js"
+    },
+    "provisionPool": {
+      "sourceSpec": "@agoric/inter-protocol/src/provisionPool.js"
+    },
+    "provisioning": {
+      "sourceSpec": "@agoric/vats/src/vat-provisioning.js"
+    },
+    "walletFactory": {
+      "sourceSpec": "@agoric/smart-wallet/src/walletFactory.js"
+    },
+    "zcf": {
+      "sourceSpec": "@agoric/zoe/contractFacet.js"
+    },
+    "zoe": {
+      "sourceSpec": "@agoric/vats/src/vat-zoe.js"
+    }
+  },
+  "defaultManagerType": "xs-worker"
+}

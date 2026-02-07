@@ -54,6 +54,7 @@
   "devDependencies": {
     "@aglocal/boot": "workspace:*",
     "@agoric/client-utils": "workspace:*",
+    "@agoric/cosmic-swingset": "workspace:*",
     "@agoric/portfolio-api": "workspace:*",
     "@agoric/smart-wallet": "workspace:*",
     "@noble/hashes": "~1.5.0",
