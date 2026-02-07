@@ -41,6 +41,7 @@
     "import-meta-resolve": "^4.1.0"
   },
   "devDependencies": {
+    "@agoric/cosmic-swingset": "workspace:*",
     "@agoric/deploy-script-support": "workspace:*",
     "@agoric/governance": "workspace:*",
     "@agoric/inter-protocol": "workspace:*",

@@ -90,7 +90,7 @@ const testPrometheusMetrics = async t => {
     OTEL_EXPORTER_PROMETHEUS_PORT,
     SLOGSENDER_AGENT_OTEL_EXPORTER_PROMETHEUS_PORT,
     SLOGSENDER_AGENT: 'process',
-    CHAIN_BOOTSTRAP_VAT_CONFIG: '@agoric/vm-config/decentral-core-config.json',
+    CHAIN_BOOTSTRAP_VAT_CONFIG: './vm-config/decentral-core-config.json',
   };
   const testKit = await makeCosmicSwingsetTestKit(receiveBridgeSend, { env });
   const { pushCoreEval, runNextBlock, shutdown } = testKit;

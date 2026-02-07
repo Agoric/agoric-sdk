@@ -70,7 +70,7 @@ const {
 } = fetchedChainInfo.agoric.connections['noble-1'].transferChannel;
 
 test.before('bootstrap', async t => {
-  const config = '@agoric/vm-config/decentral-itest-orchestration-config.json';
+  const config = '@agoric/cosmic-swingset/src/vm-config/decentral-itest-orchestration-config.json';
   insistManagerType(defaultManagerType);
   const harness = ['xs-worker', 'xsnap'].includes(defaultManagerType)
     ? makeSwingsetHarness()

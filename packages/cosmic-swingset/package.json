@@ -30,7 +30,6 @@
     "@agoric/swing-store": "workspace:*",
     "@agoric/swingset-vat": "workspace:*",
     "@agoric/telemetry": "workspace:*",
-    "@agoric/vm-config": "workspace:*",
     "@endo/bundle-source": "^4.1.2",
     "@endo/env-options": "^1.1.11",
     "@endo/errors": "^1.2.13",

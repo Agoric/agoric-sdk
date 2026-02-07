@@ -49,7 +49,7 @@ if [ -n "$LOADGEN" ]; then
   solodir="$LOADGEN"/_agstate/agoric-servers/testnet-8000
   "$thisdir/../../solo/bin/ag-solo" init "$solodir" --webport=8000
   SOLO_ADDR=$(cat "$solodir/ag-cosmos-helper-address")
-  VAT_CONFIG="@agoric/vm-config/decentral-demo-config.json"
+  VAT_CONFIG="@agoric/cosmic-swingset/src/vm-config/decentral-demo-config.json"
 fi
 
 "$thisdir/docker-deployment.cjs" > deployment.json

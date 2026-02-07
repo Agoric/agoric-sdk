@@ -154,6 +154,7 @@ __metadata:
   dependencies:
     "@agoric/client-utils": "workspace:*"
     "@agoric/cosmic-proto": "workspace:*"
+    "@agoric/cosmic-swingset": "workspace:*"
     "@agoric/deploy-script-support": "workspace:*"
     "@agoric/ertp": "workspace:*"
     "@agoric/fast-usdc": "workspace:*"
@@ -237,6 +238,7 @@ __metadata:
     "@aglocal/portfolio-contract": "workspace:*"
     "@agoric/client-utils": "workspace:*"
     "@agoric/cosmic-proto": "workspace:*"
+    "@agoric/cosmic-swingset": "workspace:*"
     "@agoric/deploy-script-support": "workspace:*"
     "@agoric/ertp": "workspace:*"
     "@agoric/internal": "workspace:*"
@@ -299,6 +301,25 @@ __metadata:
     import-meta-resolve: "npm:^4.1.0"
     n-readlines: "npm:^1.0.1"
     yargs: "npm:^16.1.0"
+  languageName: unknown
+  linkType: soft
+
+"@aglocal/vats-integration@workspace:packages/vats-integration":
+  version: 0.0.0-use.local
+  resolution: "@aglocal/vats-integration@workspace:packages/vats-integration"
+  dependencies:
+    "@agoric/internal": "workspace:*"
+    "@agoric/notifier": "workspace:*"
+    "@agoric/swingset-vat": "workspace:*"
+    "@agoric/vat-data": "workspace:*"
+    "@agoric/vats": "workspace:*"
+    "@agoric/zoe": "workspace:*"
+    "@agoric/zone": "workspace:*"
+    "@endo/far": "npm:^1.1.14"
+    "@endo/init": "npm:^1.1.12"
+    "@endo/promise-kit": "npm:^1.1.13"
+    ava: "npm:^6.4.1"
+    c8: "npm:^10.1.3"
   languageName: unknown
   linkType: soft
 
@@ -411,6 +432,7 @@ __metadata:
   resolution: "@agoric/builders@workspace:packages/builders"
   dependencies:
     "@agoric/client-utils": "workspace:*"
+    "@agoric/cosmic-swingset": "workspace:*"
     "@agoric/deploy-script-support": "workspace:*"
     "@agoric/ertp": "workspace:*"
     "@agoric/governance": "workspace:*"
@@ -551,7 +573,6 @@ __metadata:
     "@agoric/swing-store": "workspace:*"
     "@agoric/swingset-vat": "workspace:*"
     "@agoric/telemetry": "workspace:*"
-    "@agoric/vm-config": "workspace:*"
     "@endo/bundle-source": "npm:^4.1.2"
     "@endo/env-options": "npm:^1.1.11"
     "@endo/errors": "npm:^1.2.13"

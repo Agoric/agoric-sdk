@@ -7,7 +7,7 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
  * @import {TestFn} from 'ava';
  */
 
-const configSpecifier = '@agoric/vm-config/decentral-itest-vaults-config.json';
+const configSpecifier = '@agoric/cosmic-swingset/src/vm-config/decentral-itest-vaults-config.json';
 const noop = harden(() => {});
 
 /** @type {TestFn<ReturnType<typeof makeTestContext>>} */

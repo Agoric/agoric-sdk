@@ -1,0 +1,157 @@
+{
+  "$comment": "This SwingSet config file (see loadSwingsetConfigFile) includes non-production facilities such as a faucet. It is used by the sim chain (agoric start dev) and testnet-load-generator (aka loadgen).",
+  "bootstrap": "bootstrap",
+  "defaultReapInterval": 1000,
+  "snapshotInterval": 1000,
+  "coreProposals": [
+    "@agoric/builders/scripts/vats/init-core.js",
+    "@agoric/builders/scripts/vats/init-network.js",
+    "@agoric/builders/scripts/vats/init-localchain.js",
+    "@agoric/builders/scripts/vats/init-transfer.js",
+    {
+      "module": "@agoric/builders/scripts/inter-protocol/init-core.js",
+      "entrypoint": "defaultProposalBuilder",
+      "args": [
+        {
+          "econCommitteeOptions": {
+            "committeeSize": 3
+          }
+        }
+      ]
+    },
+    {
+      "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
+      "entrypoint": "defaultProposalBuilder",
+      "args": [
+        {
+          "interchainAssetOptions": {
+            "denom": "ibc/toyatom",
+            "decimalPlaces": 6,
+            "initialPrice": 12.34,
+            "keyword": "ATOM",
+            "oracleBrand": "ATOM",
+            "proposedName": "ATOM"
+          }
+        }
+      ]
+    },
+    {
+      "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
+      "entrypoint": "psmProposalBuilder",
+      "args": [
+        {
+          "anchorOptions": {
+            "denom": "ibc/toyusdc",
+            "decimalPlaces": 6,
+            "keyword": "USDC_axl",
+            "proposedName": "USD Coin"
+          }
+        }
+      ]
+    },
+    {
+      "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
+      "entrypoint": "psmProposalBuilder",
+      "args": [
+        {
+          "anchorOptions": {
+            "denom": "ibc/toyellie",
+            "decimalPlaces": 6,
+            "keyword": "AUSD",
+            "proposedName": "Anchor USD"
+          }
+        }
+      ]
+    },
+    {
+      "module": "@agoric/builders/scripts/inter-protocol/price-feed-core.js",
+      "entrypoint": "defaultProposalBuilder",
+      "args": [
+        {
+          "AGORIC_INSTANCE_NAME": "ATOM-USD price feed",
+          "oracleAddresses": [
+            "agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce",
+            "agoric140dmkrz2e42ergjj7gyvejhzmjzurvqeq82ang"
+          ],
+          "IN_BRAND_LOOKUP": [
+            "agoricNames",
+            "oracleBrand",
+            "ATOM"
+          ],
+          "IN_BRAND_DECIMALS": 6,
+          "OUT_BRAND_LOOKUP": [
+            "agoricNames",
+            "oracleBrand",
+            "USD"
+          ],
+          "OUT_BRAND_DECIMALS": 4
+        }
+      ]
+    },
+    {
+      "module": "@agoric/builders/scripts/inter-protocol/invite-committee-core.js",
+      "entrypoint": "defaultProposalBuilder",
+      "args": [
+        {
+          "voterAddresses": {
+            "gov1": "agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce",
+            "gov2": "agoric140dmkrz2e42ergjj7gyvejhzmjzurvqeq82ang",
+            "gov3": "agoric1w8wktaur4zf8qmmtn3n7x3r0jhsjkjntcm3u6h"
+          }
+        }
+      ]
+    }
+  ],
+  "vats": {
+    "bootstrap": {
+      "sourceSpec": "@agoric/vats/src/core/boot-sim.js",
+      "creationOptions": {
+        "critical": true
+      }
+    }
+  },
+  "clearStorageSubtrees": [
+    "published"
+  ],
+  "exportStorageSubtrees": [
+    "published.psm.IST",
+    "published.wallet",
+    "published.provisionPool.metrics"
+  ],
+  "bundles": {
+    "agoricNames": {
+      "sourceSpec": "@agoric/vats/src/vat-agoricNames.js"
+    },
+    "bank": {
+      "sourceSpec": "@agoric/vats/src/vat-bank.js"
+    },
+    "centralSupply": {
+      "sourceSpec": "@agoric/vats/src/centralSupply.js"
+    },
+    "bridge": {
+      "sourceSpec": "@agoric/vats/src/vat-bridge.js"
+    },
+    "mintHolder": {
+      "sourceSpec": "@agoric/vats/src/mintHolder.js"
+    },
+    "mints": {
+      "sourceSpec": "@agoric/vats/src/vat-mints.js"
+    },
+    "board": {
+      "sourceSpec": "@agoric/vats/src/vat-board.js"
+    },
+    "priceAuthority": {
+      "sourceSpec": "@agoric/vats/src/vat-priceAuthority.js"
+    },
+    "provisioning": {
+      "sourceSpec": "@agoric/vats/src/vat-provisioning.js"
+    },
+    "zcf": {
+      "sourceSpec": "@agoric/zoe/contractFacet.js"
+    },
+    "zoe": {
+      "sourceSpec": "@agoric/vats/src/vat-zoe.js"
+    }
+  },
+  "defaultManagerType": "xs-worker"
+}

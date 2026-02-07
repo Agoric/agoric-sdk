@@ -9,6 +9,7 @@ export default [
   "@aglocal/portfolio-contract",
   "@aglocal/portfolio-deploy",
   "@aglocal/swingset-runner",
+  "@aglocal/vats-integration",
   "@aglocal/ymax-planner",
   "@agoric/access-token",
   "@agoric/async-flow",
