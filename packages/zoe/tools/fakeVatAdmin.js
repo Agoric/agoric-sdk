@@ -7,7 +7,6 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { Far } from '@endo/marshal';
 import { makeScalarMapStore } from '@agoric/store';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
-// eslint-disable-next-line import/no-extraneous-dependencies -- cannot detect self-reference
 import zcfBundle from '@agoric/zoe/bundles/bundle-contractFacet.js';
 
 import { evalContractBundle } from '../src/contractFacet/evalContractCode.js';

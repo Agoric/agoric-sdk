@@ -10,7 +10,6 @@ import type { VatAdminVat } from '@agoric/swingset-vat/src/vats/vat-admin/vat-va
 /** @see deliverToController in packages/SwingSet/src/vats/comms/controller.js */
 import type { TimerVat } from '@agoric/swingset-vat/src/vats/timer/vat-timer.js';
 import type { Issuer, Brand, Payment, Mint } from '@agoric/ertp';
-import type { OrchestrationVat } from '@agoric/orchestration';
 import type { ERef } from 'jessie.js';
 import type { LocalChainVat } from '../vat-localchain.js';
 import type { TransferVat } from '../vat-transfer.js';
@@ -192,21 +191,24 @@ export type ContractInstancePromises<
   >;
 };
 
+type InterProtocolStart = any;
+type OrchestrationVat = any;
+type CosmosInterchainService = any;
+
 export type WellKnownContracts = {
   centralSupply: typeof import('@agoric/vats/src/centralSupply.js').start;
   committee: typeof import('@agoric/governance/src/committee.js').start;
   contractGovernor: typeof import('@agoric/governance/src/contractGovernor.js').start;
-  econCommitteeCharter: typeof import('@agoric/inter-protocol/src/econCommitteeCharter.js').start;
-  feeDistributor: typeof import('@agoric/inter-protocol/src/feeDistributor.js').start;
+  econCommitteeCharter: InterProtocolStart;
+  feeDistributor: InterProtocolStart;
   mintHolder: typeof import('@agoric/vats/src/mintHolder.js').start;
-  psm: typeof import('@agoric/inter-protocol/src/psm/psm.js').start;
-  provisionPool: typeof import('@agoric/inter-protocol/src/provisionPool.js').start;
-  priceAggregator: typeof import('@agoric/inter-protocol/src/price/fluxAggregatorContract.js').start;
-  reserve: typeof import('@agoric/inter-protocol/src/reserve/assetReserve.js').start;
+  psm: InterProtocolStart;
+  provisionPool: InterProtocolStart;
+  priceAggregator: InterProtocolStart;
+  reserve: InterProtocolStart;
   reserveGovernor: typeof import('@agoric/governance/src/contractGovernor.js').start;
-  VaultFactory: typeof import('@agoric/inter-protocol/src/vaultFactory/vaultFactory.js').start;
-  // no typeof because walletFactory is exporting `start` as a type
-  walletFactory: import('@agoric/smart-wallet/src/walletFactory.js').start;
+  VaultFactory: InterProtocolStart;
+  walletFactory: any;
 };
 
 export type WellKnownSpaces = {
@@ -334,7 +336,7 @@ export type ChainBootstrapSpaceT = {
   client: ClientManager;
   clientCreator: any;
   coreEvalBridgeHandler: import('../types.js').BridgeHandler;
-  cosmosInterchainService: import('@agoric/orchestration').CosmosInterchainService;
+  cosmosInterchainService: CosmosInterchainService;
   /** Utilities to support debugging */
   diagnostics: {
     /**
@@ -364,7 +366,7 @@ export type ChainBootstrapSpaceT = {
   namesByAddress: import('../types.js').NameHub;
   namesByAddressAdmin: import('../types.js').NamesByAddressAdmin;
   networkVat: NetworkVat;
-  orchestration?: import('@agoric/orchestration').CosmosInterchainService;
+  orchestration?: CosmosInterchainService;
   pegasusConnections: import('@agoric/vats').NameHubKit;
   pegasusConnectionsAdmin: import('@agoric/vats').NameAdmin;
   powerStore: import('@agoric/store').MapStore;
@@ -407,9 +409,7 @@ export type ChainBootstrapSpaceT = {
     | import('../types.js').ScopedBridgeManager<'wallet'>
     | undefined;
   walletFactoryStartResult: import('./startWalletFactory.js').WalletFactoryStartResult;
-  provisionPoolStartResult: import('@agoric/governance').GovernanceFacetKit<
-    typeof import('@agoric/inter-protocol/src/provisionPool.js').start
-  >;
+  provisionPoolStartResult: import('@agoric/governance').GovernanceFacetKit<any>;
   vatStore: import('./utils.js').VatStore;
   vatUpgradeInfo: import('@agoric/store').MapStore;
   zoe: import('@agoric/zoe').ZoeService;

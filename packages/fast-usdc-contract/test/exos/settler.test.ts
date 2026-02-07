@@ -38,6 +38,7 @@ import {
 } from '../fixtures.js';
 import { makeTestLogger, prepareMockOrchAccounts } from '../mocks.js';
 import { setupFastUsdcTest } from '../supports.js';
+import type { AccountId, Bech32Address } from '@agoric/orchestration';
 
 const mockZcf = (zone: Zone) => {
   const callLog = [] as any[];
@@ -160,7 +161,7 @@ const makeTestContext = async t => {
         txHash,
         forwardingAddress,
         fullAmount: usdc.make(amount),
-        destination: chainHub.resolveAccountId(EUD),
+        destination: chainHub.resolveAccountId(EUD as AccountId),
       });
     };
 

@@ -7,10 +7,11 @@ import assert from 'node:assert';
 
 /**
  * @import {IBCChannelID, IBCConnectionID} from '@agoric/vats';
- * @import {Chain, IBCInfo} from '@chain-registry/types';
+ * @import {Chain} from '@chain-registry/client';
  * @import {ChainRegistryClient} from '@chain-registry/client';
  * @import {CosmosChainInfo, IBCConnectionInfo} from '../cosmos-api.js';
  */
+/** @typedef {any} IBCInfo */
 
 /**
  * @param {IBCInfo} ibcInfo
@@ -26,10 +27,7 @@ function toConnectionEntry(ibcInfo, name, chainInfo) {
     : [ibcInfo.chain_2, ibcInfo.chain_1];
   assert.equal(from.chain_name, name);
   const transferChannels = ibcInfo.channels.filter(
-    c =>
-      c.chain_1.port_id === 'transfer' &&
-      // @ts-expect-error tags does not specify keys
-      c.tags?.preferred,
+    c => c.chain_1.port_id === 'transfer' && c.tags?.preferred,
   );
   if (transferChannels.length === 0) {
     console.warn(

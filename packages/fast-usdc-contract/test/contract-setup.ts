@@ -457,7 +457,7 @@ export const makeCustomer = (
         ? { value: evidence.tx.amount }
         : feeTools.calculateAdvance(
             AmountMath.make(USDC, evidence.tx.amount),
-            chainHub.resolveAccountId(EUD),
+            chainHub.resolveAccountId(EUD as Bech32Address),
           );
 
       if (forward) {

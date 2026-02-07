@@ -17,10 +17,8 @@ import {
  * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  * @import {EReturn} from '@endo/far';
  * @import {AdminFacet, InvitationAmount, ZCFMint, ZoeService} from '@agoric/zoe';
- * @import {start as StartWalletFactory} from '@agoric/smart-wallet/src/walletFactory.js';
  * @import {CommitteeElectorateCreatorFacet} from '@agoric/governance/src/committee.js';
  * @import {ScopedBridgeManager} from '../types.js';
- * @import {start} from '@agoric/inter-protocol/src/econCommitteeCharter.js';
  * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {ERef} from '@agoric/vow';
@@ -34,7 +32,7 @@ const trace = makeTracer('StartWF', 'verbose');
 
 /**
  * @param {ERef<ZoeService>} zoe
- * @param {Installation<StartWalletFactory>} inst
+ * @param {Installation<any>} inst
  *
  * @typedef {EReturn<typeof startFactoryInstance>} WalletFactoryStartResult
  */
@@ -79,7 +77,7 @@ const publishRevivableWalletState = async (
  *   PromiseSpaceOf<{
  *     economicCommitteeCreatorFacet: CommitteeElectorateCreatorFacet;
  *     econCharterKit: {
- *       creatorFacet: Awaited<ReturnType<typeof start>>['creatorFacet'];
+ *       creatorFacet: any;
  *       adminFacet: AdminFacet;
  *     };
  *     walletBridgeManager: ScopedBridgeManager<'wallet'>;
@@ -199,7 +197,7 @@ export const startWalletFactory = async (
   // eslint-disable-next-line @agoric/group-jsdoc-imports
   /**
    * XXX the type is being lost without this annotation
-   * @type {Promise<GovernanceFacetKit<import('@agoric/inter-protocol/src/provisionPool.js').start>>}
+   * @type {Promise<GovernanceFacetKit<any>>}
    */
   const ppFacetsP = E(startGovernedUpgradable)({
     installation: provisionPool,

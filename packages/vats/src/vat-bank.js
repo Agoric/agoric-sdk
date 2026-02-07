@@ -26,7 +26,6 @@ import {
  * @import {Guarded} from '@endo/exo';
  * @import {RemotableObject} from '@endo/pass-style';
  * @import {EachTopic, IterableEachTopic, LatestTopic, PublicationRecord, PublishKit, Publisher} from '@agoric/notifier';
- * @import {BridgeMessage, BridgeBigInt} from '@agoric/cosmic-swingset/src/types.js';
  * @import {VirtualPurse} from './virtual-purse.js';
  * @import {ScopedBridgeManager} from './types.js';
  * @import {Zone} from '@agoric/zone';
@@ -38,6 +37,20 @@ import {
  * @import {NameAdmin} from './types.js';
  * @import {MapStore} from '@agoric/store';
  * @import {ERef} from '@agoric/vow';
+ * @import {Subscriber} from '@agoric/notifier';
+ * @import {ForkableAsyncIterable} from '@agoric/notifier';
+ */
+
+/** @typedef {bigint | number | string} BridgeBigInt */
+/**
+ * @typedef {{
+ *   type: 'VBANK_BALANCE_UPDATE',
+ *   nonce?: BridgeBigInt,
+ *   updated: Array<{ address: string, denom: string, amount: string }>,
+ * } | {
+ *   type: string,
+ *   [key: string]: unknown,
+ * }} BridgeMessage
  */
 
 const { VirtualPurseControllerI } = makeVirtualPurseKitIKit();
@@ -204,7 +217,9 @@ const prepareBankChannelHandler = zone =>
         switch (obj?.type) {
           case 'VBANK_BALANCE_UPDATE': {
             const { denomToAddressUpdater } = this.state;
-            for (const update of obj.updated) {
+            const updates = Array.isArray(obj.updated) ? obj.updated : [];
+            const nonce = /** @type {BridgeBigInt | undefined} */ (obj.nonce);
+            for (const update of updates) {
               const { address, denom, amount } = update;
               /** @type {BalanceUpdater | undefined} */
               let updater;
@@ -218,7 +233,7 @@ const prepareBankChannelHandler = zone =>
               }
               if (updater) {
                 try {
-                  updater.update(amount, obj.nonce);
+                  updater.update(amount, nonce);
                 } catch (e) {
                   // ??? Is this an invariant that should complain louder?
 
@@ -257,6 +272,7 @@ harden(concatAsyncIterables);
  * @template T
  * @param {AsyncIterable<T>} asyncIterable
  * @param {(value: T, prior?: T) => unknown} skipValue
+ * @returns {Subscriber<T> & ForkableAsyncIterable<T>}
  */
 const makeSubscriberFromAsyncIterable = (
   asyncIterable,

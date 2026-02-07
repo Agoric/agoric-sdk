@@ -10,12 +10,13 @@ const trace = makeTracer('CCtrlCore');
 /**
  * @import {Installation} from '@agoric/zoe';
  * @import {Instance} from '@agoric/zoe';
+ * @import {ContractStartFunction} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {PromiseSpaceOf} from '@agoric/vats/src/core/types.js';
  * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
- * @import {start} from '@aglocal/portfolio-deploy/src/control/postal-service.contract.js';
  */
 /**
- * @typedef {typeof start} PostalServiceStartFn
+ * Avoid a workspace edge to @aglocal/portfolio-deploy for this type-only use.
+ * @typedef {ContractStartFunction} PostalServiceStartFn
  *
  * @typedef {{
  *   installation: PromiseSpaceOf<{ postalService: Installation<PostalServiceStartFn>}>;

@@ -1,5 +1,6 @@
 // @ts-check
 import fs from 'fs';
+import { createRequire } from 'module';
 import { E } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
 
@@ -9,6 +10,8 @@ import {
   makeCoreProposalBehavior,
   permits as defaultPermits,
 } from './coreProposalBehavior.js';
+
+const req = createRequire(import.meta.url);
 
 /**
  * @import {BundleSource, BundleSourceResult} from '@endo/bundle-source';
@@ -60,6 +63,25 @@ export const makeWriteCoreEval = (
   },
 ) => {
   const { bundleSource, pathResolve } = endowments;
+  const modulePathFromSpec = sourceSpec => {
+    if (sourceSpec.match(/^(\.\.?)?\//)) {
+      return pathResolve(sourceSpec);
+    }
+    const fromCaller = pathResolve(sourceSpec);
+    if (fs.existsSync(fromCaller)) {
+      return fromCaller;
+    }
+    for (const base of [process.cwd()]) {
+      try {
+        return req.resolve(sourceSpec, { paths: [base] });
+      } catch (e) {
+        if (e.code !== 'MODULE_NOT_FOUND') {
+          throw e;
+        }
+      }
+    }
+    return req.resolve(sourceSpec);
+  };
 
   let bundlerCache;
   /** @returns {Bundler} */
@@ -84,7 +106,7 @@ export const makeWriteCoreEval = (
       getManifestCall: [manifestGetterName, ...manifestGetterArgs],
     } = coreEval;
 
-    const moduleNamespace = await import(pathResolve(sourceSpec));
+    const moduleNamespace = await import(modulePathFromSpec(sourceSpec));
 
     // We only care about the manifest, not any restoreRef calls.
     const { manifest } = await moduleNamespace[manifestGetterName](

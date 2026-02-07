@@ -4,8 +4,8 @@ import { makeTracer } from '@agoric/internal/src/debug.js';
 import { makeHeapZone } from '@agoric/zone';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
-import { YMAX_CONTROL_WALLET_KEY } from '@agoric/portfolio-api/src/portfolio-constants.js';
 import { prepareContractControl } from './contract-control.contract.js';
+import { CONTRACT_CONTROL_WALLET_KEY } from './wallet-constants.js';
 
 /**
  * @import {ContractStartFunction} from '@agoric/zoe/src/zoeService/utils.js';
@@ -28,6 +28,16 @@ import { prepareContractControl } from './contract-control.contract.js';
 
 /**
  * @typedef {PromiseSpaceOf<{ deliverContractControl: DeliverContractControl}>} ContractControlPowers
+ */
+
+/**
+ * @typedef {{
+ *   deliverPrize: (
+ *     controlAddress: string,
+ *     contractControl: unknown,
+ *     walletKey: string,
+ *   ) => Promise<unknown>;
+ * }} PostalServicePublicFacet
  */
 
 /**
@@ -94,12 +104,18 @@ export const produceDeliverContractControl = async permitted => {
     await E(getDepositFacet)(controlAddress);
 
     trace(`delivering control`, controlAddress, contractControl);
+    const postalSvc = /** @type {PostalServicePublicFacet | undefined} */ (
+      await postalSvcPub
+    );
+    if (!postalSvc || typeof postalSvc.deliverPrize !== 'function') {
+      throw Error('postalService public facet not available');
+    }
     // don't block on the recipient's offer
     const delivered = E.when(
-      E(postalSvcPub).deliverPrize(
+      E(postalSvc).deliverPrize(
         controlAddress,
         contractControl,
-        YMAX_CONTROL_WALLET_KEY,
+        CONTRACT_CONTROL_WALLET_KEY,
       ),
       () => trace('control received'),
     );

@@ -11,11 +11,20 @@ import { buildRootObject } from '../src/vat-bank.js';
 /**
  * @import {Remote} from '@agoric/internal';
  * @import {BridgeHandler, ScopedBridgeManager} from '../src/types.js';
- * @import {VbankBalanceUpdateAction} from '@agoric/cosmic-swingset/src/types.js';
  * @import {Brand} from '@agoric/ertp';
  * @import {Issuer} from '@agoric/ertp';
  * @import {Payment} from '@agoric/ertp';
  * @import {ERef} from '@agoric/vow';
+ */
+
+/**
+ * @typedef {{
+ *   type: 'VBANK_BALANCE_UPDATE',
+ *   blockHeight?: bigint | number | string,
+ *   blockTime?: bigint | number | string,
+ *   nonce: bigint | number | string,
+ *   updated: Array<{ address: string, denom: string, amount: string }>,
+ * }} VbankBalanceUpdateAction
  */
 
 const { fakeVomKit } = reincarnate({ relaxDurabilityRules: false });

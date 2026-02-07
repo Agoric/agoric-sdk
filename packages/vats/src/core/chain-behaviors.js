@@ -21,7 +21,6 @@ import { agoricNamesReserved, callProperties, extractPowers } from './utils.js';
 import { makeScopedBridge } from '../bridge.js';
 
 /**
- * @import {BridgeMessage} from '@agoric/cosmic-swingset/src/types.js';
  * @import {BootstrapManifest} from './lib-boot.js';
  * @import {BundleCap} from '@agoric/swingset-vat';
  * @import {SubscriptionRecord} from '@agoric/notifier';
@@ -34,6 +33,20 @@ import { makeScopedBridge } from '../bridge.js';
  * @import {BootDevices} from './types.ts';
  * @import {ChainDevices} from './types.ts';
  * @import {NamedVatPowers} from './types.ts';
+ */
+
+/**
+ * @typedef {{
+ *   type: 'CORE_EVAL',
+ *   evals: Array<{ json_permits: string, js_code: string }>,
+ * } | {
+ *   type: 'PLEASE_PROVISION',
+ *   address: string,
+ *   powerFlags: string[],
+ * } | {
+ *   type: string,
+ *   [key: string]: unknown,
+ * }} BridgeMessage
  */
 
 const { keys } = Object;
@@ -77,7 +90,7 @@ export const bridgeCoreEval = async allPowers => {
     async fromBridge(obj) {
       switch (obj.type) {
         case 'CORE_EVAL': {
-          const { evals } = obj;
+          const evals = Array.isArray(obj.evals) ? obj.evals : [];
           return Promise.all(
             evals.map(({ json_permits: jsonPermit, js_code: code }) =>
               // Run in a new turn to avoid crosstalk of the evaluations.
@@ -171,8 +184,18 @@ export const bridgeProvisioner = async ({
         async fromBridge(obj) {
           switch (obj.type) {
             case 'PLEASE_PROVISION': {
-              const { nickname, address, powerFlags: rawPowerFlags } = obj;
-              const powerFlags = rawPowerFlags || [];
+              const {
+                nickname,
+                address,
+                powerFlags: rawPowerFlags,
+              } = /** @type {{
+               *   nickname: string;
+               *   address: string;
+               *   powerFlags?: string[];
+               * }} */ (/** @type {unknown} */ (obj));
+              const powerFlags = Array.isArray(rawPowerFlags)
+                ? rawPowerFlags
+                : [];
               let provisionP;
               if (powerFlags.includes(PowerFlags.SMART_WALLET)) {
                 // Only provision a smart wallet.

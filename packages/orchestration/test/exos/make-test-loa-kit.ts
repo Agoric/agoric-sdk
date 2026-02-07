@@ -64,7 +64,7 @@ export const prepareMakeTestLOAKit = (
     const { holder: account } = makeLocalOrchestrationAccountKit({
       account: lca,
       address: harden({
-        value: address,
+        value: address as `${string}1${string}`,
         chainId: 'agoric-3',
         encoding: 'bech32',
       }),
