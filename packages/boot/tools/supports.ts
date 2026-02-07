@@ -713,6 +713,9 @@ export const makeSwingsetTestKit = async (
     : undefined;
 
   const mailboxStorage = new Map();
+  const swingsetEnv = {
+    DEBUG: 'label-instances',
+  };
   const { controller, timer, bridgeInbound } = await buildSwingset(
     // @ts-expect-error missing method 'getNextKey'
     mailboxStorage,
@@ -720,7 +723,7 @@ export const makeSwingsetTestKit = async (
     kernelStorage,
     configPath,
     [],
-    {},
+    swingsetEnv,
     {
       callerWillEvaluateCoreProposals: false,
       debugName: 'TESTBOOT',
