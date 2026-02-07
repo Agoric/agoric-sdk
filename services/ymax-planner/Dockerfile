@@ -18,8 +18,8 @@ RUN ./scripts/ensure-corepack-yarn.sh /build
 # We could use `yarn workspaces focus @aglocal/ymax-planner` but there is a ghost dependency
 # of `@agoric/vats` on provisionPool.js in inter-protocol.
 # So for now we just build everything and don't expect immutability.
-# `yarn config` shows `enableGlobalCache: true` and `cacheFolder: '/root/.yarn/berry/cache'`
-RUN --mount=type=cache,target=/root/.yarn/berry/cache yarn install --mode=skip-build
+# Keep cache in-project so hardlink-based installs can run on a single filesystem in Docker.
+RUN --mount=type=cache,target=/build/.yarn/cache YARN_ENABLE_GLOBAL_CACHE=0 YARN_CACHE_FOLDER=/build/.yarn/cache yarn install --mode=skip-build
 
 # Build the service and its dependencies
 # XXX manual list of dependencies is brittle
