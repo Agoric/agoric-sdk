@@ -6,7 +6,6 @@ GIT_COMMIT = $(shell hash=`git rev-parse --short HEAD 2>/dev/null`; if test -n "
 PR_TARGET_REPO = https://github.com/Agoric/agoric-sdk.git
 # TODO: figure out how to handle other branches like pismo-release
 PR_TARGET_BRANCH = master
-DOCKER := $(shell which docker)
 
 default: all
 
@@ -91,24 +90,21 @@ endif
 ###                           Protobuf                                    ###
 ###############################################################################
 
-protoVer=0.15.3
-protoImageName=ghcr.io/cosmos/proto-builder:$(protoVer)
-protoImage=$(DOCKER) run --rm -v $(CURDIR):/workspace --workdir /workspace $(protoImageName)
-
+BUF_CMD = go tool buf
 proto-all: proto-format proto-lint proto-gen
 
 proto-gen:
 	@echo "Generating Protobuf files"
-	@$(protoImage) sh ./scripts/protocgen.sh
+	sh ./scripts/protocgen.sh
 
 proto-format:
-	@$(protoImage) find ./proto -name "*.proto" -exec clang-format -i {} \;
+	find ./proto -name "*.proto" -exec clang-format -i {} \;
 
 proto-lint:
-	@$(protoImage) buf lint --error-format=json ./proto
+	$(BUF_CMD) lint --error-format=json ./proto
 
 proto-check-breaking:
-	@$(protoImage) buf breaking --against $(PR_TARGET_REPO)#branch=$(PR_TARGET_BRANCH),subdir=golang/cosmos
+	$(BUF_CMD) breaking --against $(PR_TARGET_REPO)#branch=$(PR_TARGET_BRANCH),subdir=golang/cosmos
 
 GOGO_PROTO_URL = file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/gogoproto)
 # GOOGLE_API_URL = file://$(shell go list -m -f '{{ .Dir }}' github.com/googleapis/googleapis)/google/api
@@ -187,4 +183,4 @@ test:
 
 mocks:
 	@echo "Generating mocks"
-	@./scripts/mockgen.sh
+	./scripts/mockgen.sh
