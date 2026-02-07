@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /* eslint-env node */
-const { exec, execSync, spawnSync } = require('node:child_process');
+const { execSync, spawnSync } = require('node:child_process');
 const path = require('node:path');
 const assert = require('node:assert/strict');
 const process = require('node:process');
@@ -27,15 +27,7 @@ function fixTypeImport(directory, gnuSed) {
     -e 's/\\([{,]\\) \\([[:alnum:]_]*SDKType\\)/\\1 type \\2/g' {} +
   `;
 
-  exec(command, (error, stdout, stderr) => {
-    if (error) {
-      console.error(`Error during replacement: ${error.message}`);
-      return;
-    }
-    if (stderr) {
-      console.error(`Standard error: ${stderr}`);
-    }
-  });
+  execSync(command, { stdio: 'inherit' });
 }
 
 // XXX copied from cosmic-proto's codegen
@@ -149,10 +141,12 @@ telescope({
     fixTypeImport('./src/codegen', gnuSed);
     console.log('🔧 type keyword added');
 
-    // top-level to get the root prettier config
+    const prettierBin = require.resolve('prettier/bin/prettier.cjs', {
+      paths: [path.join(__dirname, '..')],
+    });
     const prettierResult = spawnSync(
-      'yarn',
-      ['run', '--top-level', 'prettier', '--write', 'src'],
+      process.execPath,
+      [prettierBin, '--write', 'src/codegen'],
       {
         cwd: path.join(__dirname, '..'),
         stdio: 'inherit',
