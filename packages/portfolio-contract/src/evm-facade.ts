@@ -3,7 +3,10 @@
  * @see {@link makeEvmAbiCallBatch} for creating contract call batches
  */
 import { type ContractCall } from '@agoric/orchestration/src/axelar-types.js';
-import { encodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
+import {
+  encodeAbiParameters,
+  encodeFunctionData,
+} from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
 import { assert } from '@endo/errors';
 import { hexToBytes } from '@noble/hashes/utils';
 import type {
@@ -28,10 +31,10 @@ type AbiContractArgs<
     ? ContractFunctionArgs<TAbi, AbiStateMutability, Name>
     : readonly unknown[];
 
-type AbiContract<TAbi extends Abi> = {
+export type AbiContract<TAbi extends Abi, R = void> = {
   [Name in ContractFunctionName<TAbi, AbiStateMutability>]: (
     ...args: AbiContractArgs<TAbi, Name>
-  ) => void;
+  ) => R;
 };
 
 type GmpBuilder = {
@@ -40,6 +43,33 @@ type GmpBuilder = {
     abi: TAbi,
   ) => AbiContract<TAbi>;
   getPayload: () => ByteArray;
+};
+
+/**
+ * Build a proxy from a contract ABI whose method returns the ABI encoded call data.
+ */
+export const makeEvmContract = <TAbi extends Abi>(
+  abi: TAbi,
+): AbiContract<TAbi, Hex> => {
+  const stubs: Record<string, (...args: unknown[]) => Hex> = {};
+  for (const item of abi) {
+    if (item.type !== 'function') continue;
+    // XXX: add and use prepareEncodeFunctionData to vendored viem
+    const fn = (...args: unknown[]) => {
+      // @ts-expect-error generic
+      return encodeFunctionData({ abi, functionName: item.name, args });
+    };
+    if (stubs[item.name]) {
+      // `encodeFunctionData` support overloads in most cases, but we need to
+      // test disambiguation when the signature has the same number of
+      // parameters (but different types).
+      assert.fail(
+        `ABI overload for ${item.name} requires disambiguation (not supported)`,
+      );
+    }
+    stubs[item.name] = fn;
+  }
+  return harden(stubs) as AbiContract<TAbi, Hex>;
 };
 
 /**

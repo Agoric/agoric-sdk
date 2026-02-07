@@ -34,6 +34,7 @@ import {
   prepareContractControl,
   type ContractControl,
 } from '@agoric/deploy-script-support/src/control/contract-control.contract.js';
+import { keccak256 } from 'viem/utils';
 
 const nodeRequire = createRequire(import.meta.url);
 const asset = (spec: string) => readFile(nodeRequire.resolve(spec), 'utf8');
@@ -86,6 +87,10 @@ const makeTestContext = async (t: ExecutionContext) => {
     await asset('@aglocal/portfolio-deploy/tools/evm-orch/Wallet.json'),
   );
 
+  const { bytecode: remoteAccountBytecode } = JSON.parse(
+    await asset('@aglocal/portfolio-deploy/tools/evm-orch/RemoteAccount.json'),
+  );
+
   return {
     common,
     zoe,
@@ -93,14 +98,18 @@ const makeTestContext = async (t: ExecutionContext) => {
     startUpgradable,
     makeContractControl,
     space,
-    walletBytecode,
+    walletBytecode: walletBytecode as `0x${string}`,
+    remoteAccountBytecodeHash: keccak256(remoteAccountBytecode),
   };
 };
 
 test.before(async t => (t.context = await makeTestContext(t)));
 
 const contractName = 'ymax0';
-const makeYmaxDataPrivateArgs = (walletBytecode: string) =>
+const makeYmaxDataPrivateArgs = (
+  walletBytecode: string,
+  remoteAccountBytecodeHash: string,
+) =>
   harden({
     chainInfo: Object.fromEntries(
       // XXX factor out of contract-setup.ts?
@@ -119,15 +128,25 @@ const makeYmaxDataPrivateArgs = (walletBytecode: string) =>
     contracts: contractsMock,
     gmpAddresses,
     walletBytecode,
+    remoteAccountBytecodeHash,
   });
 
 test.serial('make, deliver ContractControl for ymax', async t => {
-  const { common, makeContractControl, space, walletBytecode } = t.context;
+  const {
+    common,
+    makeContractControl,
+    space,
+    walletBytecode,
+    remoteAccountBytecodeHash,
+  } = t.context;
 
   const { rootNode: chainStorage } = common.bootstrap.storage;
   const storageNode = await E(chainStorage).makeChildNode(contractName);
 
-  const ymaxDataPrivateArgs = makeYmaxDataPrivateArgs(walletBytecode);
+  const ymaxDataPrivateArgs = makeYmaxDataPrivateArgs(
+    walletBytecode,
+    remoteAccountBytecodeHash,
+  );
   const initialPrivateArgs = {
     ...ymaxDataPrivateArgs,
     // @ts-expect-error some commonPrivateArgs types are sus

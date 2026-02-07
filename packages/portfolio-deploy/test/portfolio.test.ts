@@ -608,6 +608,7 @@ test.serial('remove old contract; start new contract', async t => {
     contracts: privateArgs.contracts,
     gmpAddresses: privateArgs.gmpAddresses,
     walletBytecode: privateArgs.walletBytecode,
+    remoteAccountBytecodeHash: privateArgs.remoteAccountBytecodeHash,
   }) satisfies CopyRecord;
   t.is(passStyleOf(privateArgsOverrides), 'copyRecord');
 
@@ -750,11 +751,13 @@ test.serial('invite evm handler; test open portfolio', async t => {
 
   const witness = getYmaxWitness('OpenPortfolio', { allocations });
 
+  const addresses = axelarConfig.Arbitrum.contracts;
+
   const openPortfolioMessage = getPermitWitnessTransferFromData(
     {
       permitted: deposit,
       // This is the address of the owned deposit factory contract
-      spender: axelarConfig.Arbitrum.contracts.depositFactory,
+      spender: addresses.remoteAccountRouter || addresses.depositFactory,
       nonce,
       deadline,
     },

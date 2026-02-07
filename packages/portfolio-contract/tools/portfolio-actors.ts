@@ -357,7 +357,8 @@ export const makeEvmTrader = ({
     return {
       chainId: BigInt(chainInfo.reference),
       usdcToken: contracts.usdc,
-      depositFactory: contracts.depositFactory,
+      contractRepresentative:
+        contracts.remoteAccountRouter || contracts.depositFactory,
       permit2Address: contracts.permit2,
     };
   };
@@ -365,7 +366,7 @@ export const makeEvmTrader = ({
   const self = harden({
     getAddress: () => account.address,
     forChain: (chain: AxelarChain) => {
-      const { chainId, usdcToken, depositFactory, permit2Address } =
+      const { chainId, usdcToken, contractRepresentative, permit2Address } =
         getChainConfig(chain);
       return harden({
         async openPortfolio(
@@ -380,7 +381,7 @@ export const makeEvmTrader = ({
                 token: usdcToken,
                 amount: depositAmount,
               },
-              spender: depositFactory,
+              spender: contractRepresentative,
               nonce: (nonce += 1n),
               deadline,
             },
@@ -412,7 +413,7 @@ export const makeEvmTrader = ({
               },
               // TODO: spender for deposit more should be the remote account for the chain
               // (if already published), or copied from the remote account of the portfolio source chain
-              spender: depositFactory,
+              spender: contractRepresentative,
               nonce: (nonce += 1n),
               deadline,
             },
@@ -436,7 +437,7 @@ export const makeEvmTrader = ({
             },
             'Withdraw',
             chainId,
-            depositFactory,
+            contractRepresentative,
           );
           const expectedNonce = nonce;
           await submitMessage(message);
@@ -453,7 +454,7 @@ export const makeEvmTrader = ({
             },
             'Rebalance',
             chainId,
-            depositFactory,
+            contractRepresentative,
           );
           const expectedNonce = nonce;
           await submitMessage(message);
@@ -471,7 +472,7 @@ export const makeEvmTrader = ({
             },
             'SetTargetAllocation',
             chainId,
-            depositFactory,
+            contractRepresentative,
           );
           const expectedNonce = nonce;
           await submitMessage(message);

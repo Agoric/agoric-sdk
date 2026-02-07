@@ -2,12 +2,18 @@
  * @file Tests for EVM call batch facade helpers.
  */
 import { encodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
+import { constructContractCall } from '@agoric/orchestration/src/utils/gmp.js';
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { hexToBytes } from '@noble/hashes/utils';
 import { type Abi } from 'viem';
-import { makeEvmAbiCallBatch, makeGmpBuilder } from '../src/evm-facade.ts';
+import {
+  makeEvmAbiCallBatch,
+  makeGmpBuilder,
+  makeEvmContract,
+} from '../src/evm-facade.ts';
 import { depositFactoryABI } from '../src/interfaces/orch-factory.ts';
 import { depositFactoryCreateAndDepositInputs } from '../src/utils/evm-orch-factory.ts';
+import { contractWithTarget } from '../src/utils/evm-orch-router.ts';
 
 const erc20Abi = [
   {
@@ -58,6 +64,31 @@ test('makeEvmAbiCallBatch records ERC20 calls with ABI info', t => {
       abi: [erc20Abi[1]],
     },
   ]);
+});
+
+test('makeEvmContract is equivalent to makeEvmAbiCallBatch and encodes calls', t => {
+  const tokenAddress = '0x00000000000000000000000000000000000000a0';
+  const spender = '0x00000000000000000000000000000000000000b0';
+  const recipient = '0x00000000000000000000000000000000000000c0';
+
+  const batch = makeEvmAbiCallBatch();
+  const token = batch.makeContract(tokenAddress, erc20Abi);
+
+  token.approve(spender, 123n);
+  token.transfer(recipient, 456n);
+
+  const expectedCalls = batch
+    .finish()
+    .map(callData => constructContractCall(callData));
+
+  const erc20Contract = makeEvmContract(erc20Abi);
+  const token2 = contractWithTarget(erc20Contract, tokenAddress);
+  const calls = [
+    token2.approve(spender, 123n),
+    token2.transfer(recipient, 456n),
+  ];
+
+  t.deepEqual(calls, expectedCalls);
 });
 
 test('makeGmpBuilder encodes createAndDeposit payload', t => {

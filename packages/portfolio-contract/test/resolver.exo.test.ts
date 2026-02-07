@@ -196,6 +196,38 @@ test('resolver creates correct types for different TxTypes', async t => {
     '0x8B3f9b3d2e0c9c7e8f9d3e0c9c7e8f9d3e0c9c7e',
   );
 
+  // legacy GMP ignores expectedAddr and factoryAddr
+  client.registerTransaction(
+    TxType.GMP,
+    'eip155:137:0x9e1028F5F1D5eDE59748FFceC5532509976840E0',
+    undefined,
+    '0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
+    'cosmos:agoric-3:agoric1mockaccountaddress',
+    '0x8B3f9b3d2e0c9c7e8f9d3e0c9c7e8f9d3e0c9c7e',
+  );
+
+  // GMP with useResultEvent=true includes expectedAddr and factoryAddr in meta
+  client.registerTransaction(
+    TxType.GMP,
+    'eip155:137:0x9e1028F5F1D5eDE59748FFceC5532509976840E0',
+    undefined,
+    '0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
+    'cosmos:agoric-3:agoric1mockaccountaddress',
+    '0x8B3f9b3d2e0c9c7e8f9d3e0c9c7e8f9d3e0c9c7e',
+    true,
+  );
+
+  // MAKE_ACCOUNT with useResultEvent=true
+  client.registerTransaction(
+    TxType.MAKE_ACCOUNT,
+    'eip155:42161:0x8B3f9b3d2e0c9c7e8f9d3e0c9c7e8f9d3e0c9c7e',
+    undefined,
+    '0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
+    'cosmos:agoric-3:agoric1mockaccountaddress',
+    '0x8B3f9b3d2e0c9c7e8f9d3e0c9c7e8f9d3e0c9c7e',
+    true,
+  );
+
   await eventLoopIteration();
 
   t.deepEqual(
@@ -244,6 +276,48 @@ test('resolver creates correct types for different TxTypes', async t => {
       factoryAddr: '0x8B3f9b3d2e0c9c7e8f9d3e0c9c7e8f9d3e0c9c7e',
     },
     'MAKE_ACCOUNT transaction has correct type and excludes amount',
+  );
+
+  t.deepEqual(
+    nodeUpdates['pendingTxs.tx4'],
+    {
+      type: TxType.GMP,
+      destinationAddress:
+        'eip155:137:0x9e1028F5F1D5eDE59748FFceC5532509976840E0',
+      status: TxStatus.PENDING,
+      sourceAddress: 'cosmos:agoric-3:agoric1mockaccountaddress',
+    },
+    'GMP legacy does not include expectedAddr and factoryAddr',
+  );
+
+  t.deepEqual(
+    nodeUpdates['pendingTxs.tx5'],
+    {
+      type: TxType.GMP,
+      destinationAddress:
+        'eip155:137:0x9e1028F5F1D5eDE59748FFceC5532509976840E0',
+      status: TxStatus.PENDING,
+      expectedAddr: '0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
+      sourceAddress: 'cosmos:agoric-3:agoric1mockaccountaddress',
+      factoryAddr: '0x8B3f9b3d2e0c9c7e8f9d3e0c9c7e8f9d3e0c9c7e',
+      useResultEvent: true,
+    },
+    'GMP with useResultEvent includes expectedAddr and factoryAddr',
+  );
+
+  t.deepEqual(
+    nodeUpdates['pendingTxs.tx6'],
+    {
+      type: TxType.MAKE_ACCOUNT,
+      destinationAddress:
+        'eip155:42161:0x8B3f9b3d2e0c9c7e8f9d3e0c9c7e8f9d3e0c9c7e',
+      status: TxStatus.PENDING,
+      expectedAddr: '0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
+      sourceAddress: 'cosmos:agoric-3:agoric1mockaccountaddress',
+      factoryAddr: '0x8B3f9b3d2e0c9c7e8f9d3e0c9c7e8f9d3e0c9c7e',
+      useResultEvent: true,
+    },
+    'MAKE_ACCOUNT router based has useResultEvent true',
   );
 });
 

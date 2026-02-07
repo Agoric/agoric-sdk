@@ -78,7 +78,7 @@ import {
   sendPermit2GMP,
   type EVMContext,
   type GMPAccountStatus,
-} from './pos-gmp.flows.ts';
+} from './pos-evm.flows.ts';
 import { makeEvmAbiCallBatch } from './evm-facade.ts';
 import { erc20ABI } from './interfaces/erc20.ts';
 import {
@@ -119,6 +119,7 @@ export type PortfolioInstanceContext = {
   axelarIds: AxelarId;
   contracts: EVMContractAddressesMap;
   walletBytecode: `0x${string}`;
+  remoteAccountBytecodeHash?: `0x${string}`;
   gmpAddresses: GmpAddresses;
   usdc: { brand: Brand<'nat'>; denom: Denom };
   gmpFeeInfo: { brand: Brand<'nat'>; denom: Denom };
@@ -1250,6 +1251,9 @@ const stepFlow = async (
               ctx.transferChannels.noble.counterPartyChannelId,
             );
 
+            // TODO: sendPermit2GMP could possibly support the spender being the
+            // deposit factory or router, and issue a provide call instead?
+
             // Execute permit2 transfer: wallet calls Permit2.permitWitnessTransferFrom
             // to transfer tokens from user's EOA to the wallet
             await sendPermit2GMP(
@@ -1424,6 +1428,7 @@ const stepFlow = async (
               moveIndex + 1,
               isDest ? 'makeDestAccount' : 'makeSrcAccount',
             );
+            // XXX: why are we not redeeming the permit here instead for create?
             const acctInfo = await provideEVMAccount(
               chain,
               infoFor[chain],
@@ -1839,7 +1844,7 @@ const queuePermit2Step = async (
     : undefined;
 
   // For openPortfolio: atomic createAndDeposit via depositFactory
-  const acct = provideEVMAccountWithPermit(
+  const acct = await provideEVMAccountWithPermit(
     fromChain,
     chainInfo,
     gmp,
@@ -1899,13 +1904,23 @@ export const executePlan = (async (
     let queuedSteps: ExecutePlanOptions['queuedSteps'];
     if (options?.evmDepositDetail) {
       const { fromChain, permit2Payload, spender } = options.evmDepositDetail;
-      // Only use queuePermit2Step for openPortfolio (spender = depositFactory).
-      // Deposits to existing portfolios use the depositFromEVM case in stepFlow.
-      const isDepositFactory = sameEvmAddress(
+      // TODO: using provideEVMAccount will not work to redeem the permit if the
+      // account already exists. That's because provideEVMAccountWithPermit
+      // will skip actual account creation.
+      // To allow deposit more using the representative as spender, we must
+      // either force make account if permit exists or detect we have an
+      // account already and adjust the depositFromEVM flow.
+      // For now, this should only be used for openPortfolio.
+
+      const contractRepresentativeSpender =
+        ctx.contracts[fromChain].remoteAccountRouter ||
+        ctx.contracts[fromChain].depositFactory;
+
+      const isRepresentativeSpender = sameEvmAddress(
         spender,
-        ctx.contracts[fromChain].depositFactory,
+        contractRepresentativeSpender,
       );
-      if (isDepositFactory) {
+      if (isRepresentativeSpender) {
         const gmpChain = await orch.getChain('axelar');
         const chainInfo = await (await orch.getChain(fromChain)).getChainInfo();
         queuedSteps = await queuePermit2Step(pKit, ctx, {
