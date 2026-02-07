@@ -174,6 +174,25 @@ export const TEST_NETWORK: NetworkSpec = {
       variableFeeBps: 0,
       timeSec: 10,
     },
+    // CCTPv2 direct EVM-to-EVM routes (subset for tests)
+    {
+      src: '@Base',
+      dest: '@Avalanche',
+      transfer: 'cctpV2',
+      variableFeeBps: 0,
+      timeSec: 30,
+      min: 100_000n,
+      feeMode: 'evmToEvm',
+    },
+    {
+      src: '@Base',
+      dest: '@Arbitrum',
+      transfer: 'cctpV2',
+      variableFeeBps: 0,
+      timeSec: 60,
+      min: 100_000n,
+      feeMode: 'evmToEvm',
+    },
   ],
 };
 

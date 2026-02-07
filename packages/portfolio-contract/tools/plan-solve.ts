@@ -639,6 +639,19 @@ export const rebalanceMinCostFlowSteps = async (
             (BigInt(flow) * (10000n - BigInt(variableFeeBps))) / 10000n - 1n;
           return { ...stepBase, detail: { usdnOut } };
         }
+        case 'evmToEvm': {
+          // CCTPv2 direct EVM-to-EVM transfer
+          // Set detail.cctpVersion = 2n to indicate CCTPv2 to wayFromSrcToDest
+          const feeValue = await gasEstimator.getWalletEstimate(
+            chainOf(src) as AxelarChain,
+            EvmWalletOperationType.DepositForBurn,
+          );
+          return {
+            ...stepBase,
+            detail: { cctpVersion: 2n },
+            fee: makeGmpFeeAmount(feeValue),
+          };
+        }
         default:
           return stepBase;
       }
