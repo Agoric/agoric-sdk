@@ -43,6 +43,7 @@ import {
   makeArchiveSnapshot,
   makeArchiveTranscript,
 } from '@agoric/swing-store';
+import anylogger from 'anylogger';
 import {
   makeBufferedStorage,
   makeReadCachingStorage,
@@ -59,6 +60,8 @@ import {
   validateImporterOptions,
 } from './import-kernel-db.js';
 
+import { setLogFormat } from './anylogger-agd.js';
+
 /**
  * @import {EReturn} from '@endo/far';
  * @import {KVStore} from '@agoric/internal/src/kv-store.js';
@@ -66,6 +69,8 @@ import {
  * @import {StateSyncExporter} from './export-kernel-db.js';
  * @import {ERef} from '@endo/far';
  */
+
+const console = anylogger('chain-main');
 
 const ignore = () => {};
 
@@ -454,6 +459,7 @@ export const makeLaunchChain = (
     const slogSender = await (providedSlogSender ||
       makeSlogSender({
         stateDir: stateDBDir,
+        console: anylogger('slog-sender'),
         env,
         serviceName: TELEMETRY_SERVICE_NAME,
         otelMeterName: 'ag-chain-cosmos',
@@ -587,6 +593,9 @@ export default async function main(
   // TODO: use the 'basedir' pattern
 
   const processValue = makeProcessValue({ env, args });
+
+  const logFormat = processValue.getFlag('log_format') || 'plain';
+  setLogFormat(logFormat);
 
   // We try to find the actual cosmos state directory (default=~/.ag-chain-cosmos), which
   // is better than scribbling into the current directory.
