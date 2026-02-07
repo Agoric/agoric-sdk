@@ -50,3 +50,4 @@ per https://agents.md/
 - PRs: link related issues, describe changes and risks; ensure `yarn build`, `yarn test`, and `yarn lint` pass. Prefer “Squash and merge.”
 - Integration tests: use labels `force:integration`/`bypass:integration` when appropriate; otherwise they run as part of the merge queue.
 - Commit hygiene (codegen, lockfile updates, formatting, linting, tests): see `docs/commit-hygiene.md`.
+- When adding a new workspace/package, MUST regenerate `packages/agoric-cli/src/sdk-package-names.js` via `yarn workspace agoric build` (or `node packages/agoric-cli/scripts/get-sdk-package-names.js > packages/agoric-cli/src/sdk-package-names.js`) and commit the updated generated file.
