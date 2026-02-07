@@ -250,7 +250,6 @@ func TestQuery(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		ctx := sdk.UnwrapSDKContext(cctx)
 		t.Run(tc.name, func(t *testing.T) {
 			msgGetBalances := `{"type":"VLOCALCHAIN_QUERY_MANY","messages":[{"@type":"/cosmos.bank.v1beta1.QueryAllBalancesRequest","address":"` + tc.addr + `"}]}`
@@ -408,7 +407,6 @@ func TestExecuteTx(t *testing.T) {
 		{"unauth", alreadyAddr, addr, alreadyAddr, "required signer cosmos1uupflqrldlpkktssnzgp3r03ff6kz4u4kzd92pjgsfddye7grrlqt9rmmt does not match actual signer"},
 	}
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 
 			// create a new message
