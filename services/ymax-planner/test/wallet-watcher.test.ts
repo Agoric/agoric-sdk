@@ -256,3 +256,68 @@ test('handlePendingTx ignores non-matching wallet addresses', async t => {
     `[${txId}] MAKE_ACCOUNT tx resolved`,
   ]);
 });
+
+test('handlePendingTx processes MAKE_ACCOUNT when subscription address differs from factory', async t => {
+  const opts = createMockPendingTxOpts();
+  const txId = 'tx4';
+  const chain = 'eip155:42161'; // Arbitrum
+  const provider = opts.evmProviders[chain];
+  const type = TxType.MAKE_ACCOUNT;
+
+  // DepositFactory address (where we subscribe and send the transaction)
+  const depositFactoryAddress = '0x9A8f92a830A5cB89a3816e3D267CB7791c16b04D';
+
+  const logMessages: string[] = [];
+  const logger = (...args: any[]) => logMessages.push(args.join(' '));
+
+  const makeAccountTx: PendingTx = {
+    txId,
+    type,
+    status: 'pending',
+    destinationAddress: `${chain}:${depositFactoryAddress}`,
+    expectedAddr: expectedWalletAddr,
+    factoryAddr: factoryAddress, // The actual Factory that emits SmartWalletCreated
+    sourceAddress,
+  };
+
+  // The key scenario: transaction goes to DepositFactory, but Factory emits the event
+  const mockLog = createSmartWalletCreatedLog(
+    expectedWalletAddr,
+    walletOwner,
+    'agoric-3',
+  );
+  // mockLog.address is factoryAddress (the contract that emits SmartWalletCreated)
+  // but the transaction destination is depositFactoryAddress
+  (mockLog as any).expectedWalletAddress = expectedWalletAddr;
+  (mockLog as any).useDepositFactoryFormat = true; // Transaction uses DepositFactory payload
+  (mockLog as any).txDestination = depositFactoryAddress; // Transaction goes to DepositFactory
+
+  setTimeout(() => {
+    const filter = {
+      address: depositFactoryAddress,
+      topics: [
+        SMART_WALLET_CREATED_SIGNATURE,
+        zeroPadValue(expectedWalletAddr, 32),
+      ],
+    };
+
+    (provider as any).emit(filter, mockLog);
+  }, 50);
+
+  await t.notThrowsAsync(async () => {
+    await handlePendingTx(makeAccountTx, {
+      ...opts,
+      log: logger,
+      timeoutMs: 3000,
+    });
+  });
+
+  t.deepEqual(logMessages, [
+    `[${txId}] handling ${type} tx`,
+    `[${txId}] Watching for wallet creation: subscribing to ${depositFactoryAddress}, expecting event from ${factoryAddress}, expectedAddr ${expectedWalletAddr}`,
+    `[${txId}] Attempting to subscribe to ${depositFactoryAddress}...`,
+    `[${txId}] ✓ Subscribed to ${depositFactoryAddress} (subscription ID: mock-subscription-id)`,
+    `[${txId}] ✅ SUCCESS: expectedAddr=${expectedWalletAddr} txHash=${mockLog.transactionHash} block=${mockLog.blockNumber}`,
+    `[${txId}] MAKE_ACCOUNT tx resolved`,
+  ]);
+});
