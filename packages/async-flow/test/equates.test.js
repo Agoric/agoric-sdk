@@ -16,7 +16,7 @@ import { makeVirtualZone } from '@agoric/zone/virtual.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 
 import { prepareBijection } from '../src/bijection.js';
-import { makeEquate } from '../src/equate.js';
+import { makeEquatesKit } from '../src/equates.js';
 
 /**
  * @import {Zone} from '@agoric/base-zone'
@@ -27,22 +27,22 @@ import { makeEquate } from '../src/equate.js';
  * @param {Zone} zone
  * @param {boolean} [showOnConsole]
  */
-const testEquate = (t, zone, showOnConsole = false) => {
+const testEquates = (t, zone, showOnConsole = false) => {
   const { makeVowKit } = prepareVowTools(zone);
   const makeBijection = prepareBijection(zone);
   const bij = zone.makeOnce('bij', makeBijection);
 
-  t.throws(() => zone.makeOnce('equate', () => makeEquate(bij)), {
-    message: 'maker return value "[Function equate]" is not storable',
+  t.throws(() => zone.makeOnce('equates', () => makeEquatesKit(bij).equates), {
+    message: 'maker return value "[Function equates]" is not storable',
   });
 
-  const equate = makeEquate(bij);
+  const { equates, mustEquate } = makeEquatesKit(bij);
 
-  equate(8, 8);
-  t.throws(() => equate(8, 9), {
+  t.true(equates(8, 8));
+  t.false(equates(8, 9));
+  t.throws(() => mustEquate(8, 9), {
     message: 'unequal 8 vs 9',
   });
-
   const h1 = zone.exo('h1', undefined, {});
   const h2 = zone.makeOnce('h2', () => makeVowKit().vow);
   t.true(isVow(h2));
@@ -50,42 +50,41 @@ const testEquate = (t, zone, showOnConsole = false) => {
   const g1 = Far('g1', {});
   const g2 = harden(Promise.resolve('g2'));
 
-  t.throws(() => equate(g1, h1), {
+  t.throws(() => equates(g1, h1), {
     message:
       'cannot yet send guest remotables to host "[Alleged: g1]" vs "[Alleged: h1]"',
   });
   bij.unwrapInit(g1, h1);
-  t.notThrows(() => equate(g1, h1));
-  t.throws(() => equate(g1, h2), {
+  t.true(equates(g1, h1));
+  t.false(equates(g1, h2));
+  t.throws(() => mustEquate(g1, h2), {
     message: 'unequal passStyles "remotable" vs "tagged"',
   });
-  t.throws(() => equate(g2, h1), {
+
+  t.throws(() => mustEquate(g2, h1), {
     message: 'unequal passStyles "promise" vs "remotable"',
   });
   bij.unwrapInit(g2, h2);
-  equate(g2, h2);
+  t.true(equates(g2, h2));
 
-  t.throws(() => equate(g1, h2), {
+  t.throws(() => mustEquate(g1, h2), {
     message: 'unequal passStyles "remotable" vs "tagged"',
   });
-  t.throws(() => equate(g2, h1), {
+  t.throws(() => mustEquate(g2, h1), {
     message: 'unequal passStyles "promise" vs "remotable"',
   });
-
-  equate(harden([g1, g2]), harden([h1, h2]));
-  t.throws(() => equate(harden([g1, g2]), harden([h1, h1])), {
+  t.true(equates(harden([g1, g2]), harden([h1, h2])));
+  t.throws(() => mustEquate(harden([g1, g2]), harden([h1, h1])), {
     message: '[1]: unequal passStyles "promise" vs "remotable"',
   });
-
   const gErr1 = harden(makeError(X`error ${'redacted message'}`, URIError));
   const hErr1 = harden(makeError(X`another message`, URIError));
   const gErr2 = harden(makeError(X`another error`, TypeError));
 
-  equate(gErr1, hErr1);
-  t.throws(() => equate(gErr2, hErr1), {
+  t.true(equates(gErr1, hErr1));
+  t.throws(() => mustEquate(gErr2, hErr1), {
     message: 'error name: unequal "TypeError" vs "URIError"',
   });
-
   if (showOnConsole) {
     // To see the annotation chain. Once we're synced with the next ses-ava,
     // change this to a t.log, so we will see the annotation chain in context.
@@ -93,28 +92,28 @@ const testEquate = (t, zone, showOnConsole = false) => {
   }
 };
 
-test('test heap equate', t => {
+test('test heap equates', t => {
   const zone = makeHeapZone('heapRoot');
-  testEquate(t, zone, asyncFlowVerbose());
+  testEquates(t, zone, asyncFlowVerbose());
 });
 
-test.serial('test virtual equate', t => {
+test.serial('test virtual equates', t => {
   annihilate();
   const zone = makeVirtualZone('virtualRoot');
-  testEquate(t, zone);
+  testEquates(t, zone);
 });
 
-test.serial('test durable equate', t => {
+test.serial('test durable equates', t => {
   annihilate();
 
   nextLife();
   const zone1 = makeDurableZone(getBaggage(), 'durableRoot');
-  testEquate(t, zone1);
+  testEquates(t, zone1);
 
-  // equate keeps its state only in the bijection,
+  // equates keeps its state only in the bijection,
   // which loses all its memory between incarnations.
 
   nextLife();
   const zone2 = makeDurableZone(getBaggage(), 'durableRoot');
-  testEquate(t, zone2);
+  testEquates(t, zone2);
 });

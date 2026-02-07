@@ -4,20 +4,23 @@ import { M } from '@endo/patterns';
 import { makeScalarWeakMapStore } from '@agoric/store';
 import { PromiseWatcherI } from '@agoric/base-zone';
 import { prepareVowTools, toPassableCap, VowShape } from '@agoric/vow';
-import { makeReplayMembrane } from './replay-membrane.js';
+import { makeReplayMembraneKit } from './replay-membrane.js';
 import { prepareLogStore } from './log-store.js';
 import { prepareBijection } from './bijection.js';
 import { prepareEndowmentTools } from './endowments.js';
 import { LogEntryShape, FlowStateShape } from './type-guards.js';
 
 /**
- * @import {WeakMapStore, MapStore} from '@agoric/store'
- * @import {Zone} from '@agoric/base-zone'
- * @import {FlowState, GuestAsyncFunc, HostAsyncFuncWrapper, HostOf, PreparationOptions} from '../src/types.js'
- * @import {ReplayMembrane} from '../src/replay-membrane.js'
+ * @import {WeakMapStore} from '@agoric/store';
+ * @import {Zone} from '@agoric/base-zone';
+ * @import {AsyncFlowOptions, FlowState, GuestAsyncFunc, HostOf, PreparationOptions} from './types.js';
+ * @import {ReplayMembrane} from './replay-membrane.js';
+ * @import {LogStore} from './log-store.js';
+ * @import {Bijection} from './bijection.js';
  */
 
 const { defineProperties } = Object;
+const { apply } = Reflect;
 
 const AsyncFlowIKit = harden({
   flow: M.interface('Flow', {
@@ -94,13 +97,15 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
    * @param {Zone} zone
    * @param {string} tag
    * @param {GuestAsyncFunc} guestAsyncFunc
-   * @param {{ startEager?: boolean }} [options]
+   * @param {AsyncFlowOptions} [options]
    */
   const prepareAsyncFlowKit = (zone, tag, guestAsyncFunc, options = {}) => {
     typeof guestAsyncFunc === 'function' ||
       Fail`guestAsyncFunc must be a callable function ${guestAsyncFunc}`;
     const {
-      // May change default to false, once instances reliably wake up
+      // May change default to false, once instances reliably wake up.
+      // TODO `startEager: false` may not yet be reliably supported, in which
+      // case, we should make asking for it an error until then.
       startEager = true,
     } = options;
 
@@ -109,7 +114,9 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
       AsyncFlowIKit,
       activationArgs => {
         harden(activationArgs);
+        /** @type {LogStore} */
         const log = makeLogStore();
+        /** @type {Bijection} */
         const bijection = makeBijection();
 
         return {
@@ -192,7 +199,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
               watch(vowish, wakeWatcher);
             };
             const panic = err => admin.panic(err);
-            const membrane = makeReplayMembrane({
+            const { membrane, narrator } = makeReplayMembraneKit({
               log,
               bijection,
               vowTools,
@@ -221,8 +228,16 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
             // data in this internal flow instance -- the host activationArgs
             // and the host outcome vow kit.
             const guestResultP = (async () =>
-              // async IFFE ensures guestResultP is a fresh promise
-              guestAsyncFunc(...guestArgs))();
+              // async IFFE ensures guestResultP is a fresh promise.
+              apply(
+                guestAsyncFunc,
+                // The narrator is passed in a record in case we want to enhance
+                // that record to seem like the `this` binding of a guest method,
+                // i.e., a context object, such as `{state, self}` or
+                // `{state, facets}`.
+                harden({ narrator }),
+                guestArgs,
+              ))();
 
             if (flow.getFlowState() !== 'Failed') {
               // If the flow fails, that resets the bijection. Without this
@@ -482,7 +497,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
    * @param {Zone} zone
    * @param {string} tag
    * @param {F} guestFunc
-   * @param {{ startEager?: boolean }} [options]
+   * @param {AsyncFlowOptions} [options]
    * @returns {HostOf<F>}
    */
   const asyncFlow = (zone, tag, guestFunc, options = undefined) => {
@@ -492,6 +507,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
     const wrapperFunc = /** @type {HostOf<F>} */ (
       {
         [hostFuncName](...args) {
+          this === undefined || Fail`asyncFlow this-binding not yet supported`;
           const { flow } = makeAsyncFlowKit(args);
           return flow.getOutcome();
         },
@@ -542,20 +558,8 @@ harden(prepareAsyncFlowTools);
 
 /**
  * @typedef {ReturnType<typeof prepareAsyncFlowTools>} AsyncFlowTools
- */
-
-/**
  * @typedef {AsyncFlowTools['adminAsyncFlow']} AdminAsyncFlow
- */
-
-/**
  * @typedef {ReturnType<AsyncFlowTools['prepareAsyncFlowKit']>} MakeAsyncFlowKit
- */
-
-/**
  * @typedef {ReturnType<MakeAsyncFlowKit>} AsyncFlowKit
- */
-
-/**
  * @typedef {AsyncFlowKit['flow']} AsyncFlow
  */
