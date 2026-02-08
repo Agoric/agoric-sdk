@@ -344,6 +344,10 @@ export const prepareResolverKit = (
           const { transactionRegistry } = this.state;
           const { status, txId, rejectionReason } = args;
 
+          if (!transactionRegistry.has(txId)) {
+            // No such transaction to settle; ignore while it is still in flight.
+            return;
+          }
           const registryEntry = transactionRegistry.get(txId);
 
           switch (status) {

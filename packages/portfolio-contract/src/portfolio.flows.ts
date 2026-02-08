@@ -1852,7 +1852,7 @@ const queuePermit2Step = async (
 
   // We made the progressTracker above, so we must finalize it.
   if (progressTracker) {
-    void acct.ready.finally(() => progressTracker.finish());
+    void acct.done.finally(() => progressTracker.finish());
   }
   return [
     {
