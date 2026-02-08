@@ -33,12 +33,6 @@
   "publishConfig": {
     "access": "public"
   },
-  "ava": {
-    "files": [
-      "test/**/*.test.*"
-    ],
-    "timeout": "2m"
-  },
   "engines": {
     "node": "^20.9 || ^22.11"
   }

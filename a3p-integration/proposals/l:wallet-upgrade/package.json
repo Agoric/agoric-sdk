@@ -22,14 +22,6 @@
     "@cosmjs/stargate": "^0.36.0",
     "@cosmjs/tendermint-rpc": "^0.36.0"
   },
-  "ava": {
-    "concurrency": 1,
-    "timeout": "2m",
-    "files": [
-      "test/**/*.test.*",
-      "!submission"
-    ]
-  },
   "scripts": {
     "agops": "yarn --cwd /usr/src/agoric-sdk/ agops"
   },

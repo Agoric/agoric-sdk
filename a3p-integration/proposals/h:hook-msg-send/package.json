@@ -15,14 +15,6 @@
     "agoric": "dev",
     "ava": "^5.3.1"
   },
-  "ava": {
-    "concurrency": 1,
-    "timeout": "2m",
-    "files": [
-      "test/**/*.test.*",
-      "!submission"
-    ]
-  },
   "scripts": {
     "agops": "yarn --cwd /usr/src/agoric-sdk/ agops"
   },

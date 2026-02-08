@@ -61,13 +61,6 @@
     "@agoric/zoe": "portal:../../agoric-sdk/packages/zoe",
     "@agoric/zone": "portal:../../agoric-sdk/packages/zone"
   },
-  "ava": {
-    "concurrency": 1,
-    "timeout": "2m",
-    "files": [
-      "!submission"
-    ]
-  },
   "scripts": {
     "agops": "yarn --cwd /usr/src/agoric-sdk/ agops"
   },

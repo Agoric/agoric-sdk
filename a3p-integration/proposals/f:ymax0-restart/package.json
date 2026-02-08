@@ -30,22 +30,6 @@
     "@aglocal/portfolio-contract": "portal:./local-packages/portfolio-contract",
     "@aglocal/portfolio-deploy": "portal:./local-packages/portfolio-deploy"
   },
-  "ava": {
-    "concurrency": 1,
-    "timeout": "2m",
-    "files": [
-      "test/**/*.test.*",
-      "!submission"
-    ],
-    "extensions": {
-      "js": true,
-      "ts": "module"
-    },
-    "nodeArguments": [
-      "--import=ts-blank-space/register",
-      "--no-warnings"
-    ]
-  },
   "scripts": {
     "agops": "yarn --cwd /usr/src/agoric-sdk/ agops"
   },
