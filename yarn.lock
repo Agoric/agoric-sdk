@@ -18846,13 +18846,13 @@ __metadata:
 
 "supertap@patch:supertap@npm%3A3.0.1#~/.yarn/patches/supertap-npm-3.0.1-d7c04bcbf0.patch":
   version: 3.0.1
-  resolution: "supertap@patch:supertap@npm%3A3.0.1#~/.yarn/patches/supertap-npm-3.0.1-d7c04bcbf0.patch::version=3.0.1&hash=729334"
+  resolution: "supertap@patch:supertap@npm%3A3.0.1#~/.yarn/patches/supertap-npm-3.0.1-d7c04bcbf0.patch::version=3.0.1&hash=9b051d"
   dependencies:
     indent-string: "npm:^5.0.0"
     js-yaml: "npm:^3.14.1"
     serialize-error: "npm:^7.0.1"
     strip-ansi: "npm:^7.0.1"
-  checksum: 10c0/72e0198565e327b8f7f9103eff1dccafd9e2aa5753036f7998ca64156e582c1a011da63a7f95290abb63749118d6630b72b68e7d516c454f93dcb156898b72fa
+  checksum: 10c0/6bd063596b73df3a3eca4432e51f4a3ab65d0040dca38628651ade218bc35d9e82d949621363547e75e819ee795f5c52f3e077f495aaede7a392787eaf3576d4
   languageName: node
   linkType: hard
 

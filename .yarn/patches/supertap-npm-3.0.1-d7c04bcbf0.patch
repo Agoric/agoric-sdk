@@ -2,10 +2,18 @@ diff --git a/dist/index.js b/dist/index.js
 index ab236cc5173801c1efc330642ec112339786b779..18f91b9c58a227b9c0efa19fb3e8fdb459c0ed50 100644
 --- a/dist/index.js
 +++ b/dist/index.js
-@@ -2,6 +2,74 @@ import { serializeError } from 'serialize-error';
+@@ -2,6 +2,81 @@ import { serializeError } from 'serialize-error';
  import indentString from 'indent-string';
  import stripAnsi from 'strip-ansi';
  import yaml from 'js-yaml';
++const defineProp = (obj, key, value) => {
++    Object.defineProperty(obj, key, {
++        value,
++        writable: true,
++        enumerable: true,
++        configurable: true,
++    });
++};
 +const makeYamlSafe = (value) => {
 +    const seen = new WeakSet();
 +    const sanitize = (val) => {
@@ -35,18 +43,17 @@ index ab236cc5173801c1efc330642ec112339786b779..18f91b9c58a227b9c0efa19fb3e8fdb4
 +            return val.toString();
 +        }
 +        if (val instanceof Error) {
-+            const out = {
-+                name: val.name,
-+                message: val.message,
-+            };
++            const out = {};
++            defineProp(out, 'name', val.name);
++            defineProp(out, 'message', val.message);
 +            if (val.stack) {
-+                out.stack = val.stack;
++                defineProp(out, 'stack', val.stack);
 +            }
 +            for (const key of Object.getOwnPropertyNames(val)) {
 +                if (key === 'name' || key === 'message' || key === 'stack') {
 +                    continue;
 +                }
-+                out[key] = sanitize(val[key]);
++                defineProp(out, key, sanitize(val[key]));
 +            }
 +            return out;
 +        }
@@ -66,7 +73,7 @@ index ab236cc5173801c1efc330642ec112339786b779..18f91b9c58a227b9c0efa19fb3e8fdb4
 +            }
 +            const out = {};
 +            for (const [key, child] of Object.entries(val)) {
-+                out[key] = sanitize(child);
++                defineProp(out, key, sanitize(child));
 +            }
 +            return out;
 +        }
