@@ -39,7 +39,7 @@ import type { MovementDesc } from '@agoric/portfolio-api';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import { fromBech32 } from '@cosmjs/encoding';
-import { Fail, q, X } from '@endo/errors';
+import { Fail, makeError, q, X } from '@endo/errors';
 import { hexToBytes } from '@noble/hashes/utils';
 import type { Address } from 'viem';
 import { makeEvmAbiCallBatch, makeGmpBuilder } from './evm-facade.ts';
@@ -141,17 +141,11 @@ const makeProvideEVMAccount = ({
     const contracts = ctx.contracts[chainName];
     contracts || Fail`missing contracts for ${chainName}`;
 
-    const factoryAddress = contracts.depositFactory;
-    factoryAddress ||
-      Fail`missing factory contract address for depositFactory on ${chainName}`;
+    const factoryAddress = contracts.factory;
+    assert(factoryAddress);
 
-    // For both makeAccount and createAndDeposit, the destination for the GMP
-    // message is the factory contract, which will create the wallet and then
-    // forward the deposit if applicable.
-    const destinationAddress = factoryAddress;
     const predictAddress = (owner: Bech32Address) => {
-      traceChain('depositFactory', mode, factoryAddress);
-      assert(factoryAddress);
+      traceChain('factory', mode, factoryAddress);
       const remoteAddress = predictWalletAddress({
         owner,
         factoryAddress,
@@ -190,14 +184,29 @@ const makeProvideEVMAccount = ({
           done: readyP,
         };
       }
-      // We're using GMP for the side effect of depositing to the account, so we
-      // still want to send the deposit even if the account already exists. But
-      // use a different TxType for tracking since it's not a "make account"
-      // transaction.
-      txType = TxType.GMP;
     }
 
-    manager?.initAccountInfo(evmAccount);
+    if (manager) {
+      manager.initAccountInfo(evmAccount);
+    } else {
+      const expectedAddress = predictAddress(
+        lca.getAddress().value,
+      ).remoteAddress;
+
+      if (evmAccount.remoteAddress !== expectedAddress) {
+        const done = Promise.reject(
+          makeError(
+            `account already exists at ${evmAccount.remoteAddress}, factory expects ${expectedAddress}`,
+          ),
+        );
+
+        return {
+          ...evmAccount,
+          ready: readyP,
+          done,
+        };
+      }
+    }
 
     const installContractWithDeposit = async () => {
       let txId: TxId | undefined;
@@ -211,6 +220,12 @@ const makeProvideEVMAccount = ({
 
         const src = contractAccount.getAddress();
         traceChain('Axelar fee sent from', src.value);
+
+        const contractKey = {
+          makeAccount: 'factory',
+          createAndDeposit: 'depositFactory',
+        } as const;
+        const destinationAddress = contracts[contractKey[mode]];
 
         const sourceAddress = coerceAccountId(
           mode === 'createAndDeposit'

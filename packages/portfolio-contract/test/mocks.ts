@@ -227,7 +227,7 @@ export const makeCCTPTraffic = (
   from = 'noble1test',
   money = `${3_333.33 * 1000000}`,
   // This default matches the predicted addresss computed during tests
-  dest = '0xcca226dae0e923fb0b4fb12e38936b769793079e',
+  dest = '0x8fcc8340520552c3cc861acaaa752e2d38bff2bb',
 ) => ({
   depositForBurn: {
     msg: buildTxPacketString([

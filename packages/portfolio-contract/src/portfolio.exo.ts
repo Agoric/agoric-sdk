@@ -685,31 +685,38 @@ export const preparePortfolioKit = (
           sameEvmAddress(owner, accountAddress as Address) ||
             Fail`permit owner ${owner} does not match portfolio source address ${accountAddress}`;
 
-          const factoryContractKey = 'depositFactory' as const;
-          const factoryAddress = contracts[fromChain][factoryContractKey];
-          factoryAddress ||
-            Fail`no contract address found for factoryContractKey ${factoryContractKey} on chain ${fromChain}`;
-
-          // FIXME: Determine router key based on another parameter instead
-          // of hardcoding it to be the same as factory key.
-          const routerContractKey = factoryContractKey;
-          const routerAddress = contracts[fromChain][routerContractKey];
-          routerAddress ||
-            Fail`no contract address found for routerContractKey ${routerContractKey} on chain ${fromChain}`;
-
           // For deposits:
-          // The spender may be a well-known entrypoint address.
+          // The spender may be the chain's well-known depositFactory address,
+          // in which case if an account already exists, it must match the
+          // factory-predicted address.
           // Otherwise, spender must be the portfolio's smart wallet address.
           // If the account already exists, use the stored address.
-          // If not, predict the address using `factory` (which will be used to create it).
+          // If not, predict the address using `factory` (which will be used to
+          // create it).
           let expectedSpender: Address;
+
+          const depositFactoryAddress = contracts[fromChain].depositFactory;
+          const getPredictedAddress = () =>
+            predictWalletAddress({
+              owner: this.facets.reader.getLocalAccount().getAddress().value,
+              factoryAddress: contracts[fromChain].factory,
+              gasServiceAddress: contracts[fromChain].gasService,
+              gatewayAddress: contracts[fromChain].gateway,
+              walletBytecode: hexToBytes(walletBytecode.replace(/^0x/, '')),
+            });
+
           if (
-            ['depositFactory'].includes(routerContractKey) &&
-            sameEvmAddress(depositDetails.spender, routerAddress)
+            depositFactoryAddress &&
+            sameEvmAddress(depositDetails.spender, depositFactoryAddress)
           ) {
-            // This is a well-known entrypoint that we can use instead of the
-            // individual account address.
-            expectedSpender = routerAddress;
+            if (accounts.has(fromChain)) {
+              const info = accounts.get(fromChain) as GMPAccountInfo;
+              info.remoteAddress === getPredictedAddress() ||
+                Fail`existing account remote address ${info.remoteAddress} does not match factory predicted address ${getPredictedAddress()} for chain ${fromChain}`;
+            }
+            // If the factory predicted address match, the spender is the allowed
+            // to be the deposit factory address.
+            expectedSpender = depositFactoryAddress;
           } else if (accounts.has(fromChain)) {
             // The account exists, so we can check the expected spender against
             // the stored remote address.
@@ -717,13 +724,7 @@ export const preparePortfolioKit = (
             expectedSpender = gmpInfo.remoteAddress;
           } else {
             // The account doesn't exist yet, but it is expected to become the spender.
-            expectedSpender = predictWalletAddress({
-              owner: this.facets.reader.getLocalAccount().getAddress().value,
-              factoryAddress,
-              gasServiceAddress: contracts[fromChain].gasService,
-              gatewayAddress: contracts[fromChain].gateway,
-              walletBytecode: hexToBytes(walletBytecode.replace(/^0x/, '')),
-            });
+            expectedSpender = getPredictedAddress();
           }
 
           sameEvmAddress(depositDetails.spender, expectedSpender) ||
@@ -744,9 +745,7 @@ export const preparePortfolioKit = (
             flowDetail,
             startedFlow,
             undefined,
-            {
-              evmDepositDetail: { ...depositDetails, fromChain },
-            },
+            { evmDepositDetail: { ...depositDetails, fromChain } },
           );
           return `flow${startedFlow.flowId}`;
         },

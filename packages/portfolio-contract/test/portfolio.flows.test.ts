@@ -3064,16 +3064,21 @@ test('evmHandler.withdraw rejects when sourceAccountId is not set', async t => {
 
 // #region evmHandler.deposit tests
 
+/**
+ * Execute an EVM Permit2 deposit flow and wait for completion.
+ */
 const doDeposit = async ({
   t,
   kit,
   storage,
   txResolver,
   permitDetails,
+  expectedFlowOutcome = 'done',
 }: Pick<Mocks, 'txResolver' | 'storage'> & {
   t: Assertions;
   kit: GuestInterface<PortfolioKit>;
   permitDetails: PermitDetails;
+  expectedFlowOutcome?: 'done' | 'fail';
 }) => {
   const flowKey = kit.evmHandler.deposit(permitDetails);
   t.regex(flowKey, /^flow\d+$/);
@@ -3100,7 +3105,7 @@ const doDeposit = async ({
   await eventLoopIteration();
 
   const flowStatus = await getFlowStatus(portfolioId, flowNum);
-  t.is(flowStatus?.state, 'done');
+  t.is(flowStatus?.state, expectedFlowOutcome);
 };
 
 test('evmHandler.deposit via Permit2 with unknown spender is rejected', async t => {
@@ -3119,17 +3124,28 @@ test('evmHandler.deposit via Permit2 with unknown spender is rejected', async t 
 });
 
 /**
- * This test uses the factory contract as the spender address.
+ * This test uses the depositFactory contract as the spender address.
  */
 test('evmHandler.deposit via Permit2 to missing and existing wallet with depositFactory as spender succeeds', async t => {
-  const permitDetails = makePermitDetails();
   const { orch, ctx, storage, txResolver } = mocks({}, {});
+  const { getPortfolioStatus } = makeStorageTools(storage);
+
+  const permitDetails = makePermitDetails();
   const depositFactoryAccountId =
     `eip155:${permitDetails.chainId}:${contractsMock.Arbitrum.depositFactory}` as AccountId;
   const sourceAccountId =
     `eip155:${permitDetails.chainId}:${permitDetails.permit2Payload.owner.toLowerCase()}` as AccountId;
   const kit = await ctx.makePortfolioKit({ sourceAccountId });
   await provideCosmosAccount(orch, 'agoric', kit, silent);
+  const contractAddress = (await ctx.contractAccount).getAddress();
+  const contractAccountId =
+    `cosmos:${contractAddress.chainId}:${contractAddress.value}` as AccountId;
+
+  const { accountIdByChain: byChainBefore } = await getPortfolioStatus(
+    kit.reader.getPortfolioId(),
+  );
+  // Only agoric, no Arbitrum account yet since we haven't done any flows
+  t.deepEqual(Object.keys(byChainBefore), ['agoric']);
 
   // Do an initial deposit, then do another deposit with the same permit details
   // to ensure we can use the `createAndDeposit` logic on an existing account.
@@ -3139,18 +3155,28 @@ test('evmHandler.deposit via Permit2 to missing and existing wallet with deposit
     {
       type: 'MAKE_ACCOUNT',
       status: 'success',
+      sourceAddress: contractAccountId,
       destinationAddress: depositFactoryAccountId,
+      factoryAddr: contractsMock.Arbitrum.factory,
     },
     'check first deposit creates and deposits via the depositFactory',
   );
+
+  const { accountIdByChain: byChainAfter, accountsPending } =
+    await getPortfolioStatus(kit.reader.getPortfolioId());
+  t.deepEqual(Object.keys(byChainAfter), ['Arbitrum', 'agoric', 'noble']);
+  t.deepEqual(accountsPending, []);
 
   await doDeposit({ t, kit, storage, txResolver, permitDetails });
   t.like(
     storage.getDeserialized('published.ymax0.pendingTxs.tx2').at(-1),
     {
-      type: 'GMP',
+      type: 'MAKE_ACCOUNT',
       status: 'success',
+      sourceAddress: contractAccountId,
       destinationAddress: depositFactoryAccountId,
+      factoryAddr: contractsMock.Arbitrum.factory,
+      expectedAddr: byChainAfter.Arbitrum!.split(':').at(-1),
     },
     'check second deposit goes through same flow and hits the depositFactory address again',
   );
@@ -3159,6 +3185,9 @@ test('evmHandler.deposit via Permit2 to missing and existing wallet with deposit
 });
 
 test('evmHandler.deposit via Permit2 to existing spender wallet succeeds', async t => {
+  const { orch, ctx, storage, txResolver } = mocks({}, {});
+  const { getPortfolioStatus } = makeStorageTools(storage);
+
   const existingWallet =
     '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as Address;
   const permitDetails = makePermitDetails({
@@ -3166,29 +3195,43 @@ test('evmHandler.deposit via Permit2 to existing spender wallet succeeds', async
   });
   const existingWalletAccountId =
     `eip155:${permitDetails.chainId}:${existingWallet}` as AccountId;
-  const { orch, ctx, storage, txResolver } = mocks({}, {});
   const sourceAccountId =
     `eip155:${permitDetails.chainId}:${permitDetails.permit2Payload.owner.toLowerCase()}` as AccountId;
   const kit = await ctx.makePortfolioKit({ sourceAccountId });
   await provideCosmosAccount(orch, 'agoric', kit, silent);
+  const lcaAddress = kit.reader.getLocalAccount().getAddress();
+  const lcaAccountId =
+    `cosmos:${lcaAddress.chainId}:${lcaAddress.value}` as AccountId;
+
+  assert(
+    axelarCCTPConfig.Arbitrum.reference === `${permitDetails.chainId}`,
+    'chainId should match axelarCCTPConfig',
+  );
   kit.manager.resolveAccount({
     namespace: 'eip155',
     chainName: 'Arbitrum',
-    chainId: 'eip155:42161',
+    chainId: `eip155:${permitDetails.chainId}`,
     remoteAddress: existingWallet,
   });
 
+  const { accountIdByChain: byChain } = await getPortfolioStatus(
+    kit.reader.getPortfolioId(),
+  );
+  // agoric and Arbitrum account have been pre-created
+  t.deepEqual(Object.keys(byChain), ['Arbitrum', 'agoric']);
+
   // Do just one deposit to ensure it deposits to the existing wallet address
-  // and doesn't try to reuse the factory address
+  // through the remote account directly, without any factory interaction.
   await doDeposit({ t, kit, storage, txResolver, permitDetails });
   t.like(
     storage.getDeserialized('published.ymax0.pendingTxs.tx0').at(-1),
     {
       type: 'GMP',
       status: 'success',
+      sourceAddress: lcaAccountId,
       destinationAddress: existingWalletAccountId,
     },
-    'check first deposit creates and deposits via the existing wallet',
+    'check deposits via the existing wallet',
   );
 
   await documentStorageSchema(t, storage, docOpts);
@@ -3196,15 +3239,23 @@ test('evmHandler.deposit via Permit2 to existing spender wallet succeeds', async
 
 test('evmHandler.deposit via Permit2 to a nonexisting (predicted) spender wallet succeeds', async t => {
   const { orch, ctx, storage, txResolver } = mocks({}, {});
+  const { getPortfolioStatus } = makeStorageTools(storage);
+
+  const {
+    chainId,
+    permit2Payload: { owner },
+  } = makePermitDetails();
+  const sourceAccountId =
+    `eip155:${chainId}:${owner.toLowerCase()}` as AccountId;
   const kit = await ctx.makePortfolioKit({
-    sourceAccountId: 'eip155:42161:0x1111111111111111111111111111111111111111',
+    sourceAccountId,
   });
   await provideCosmosAccount(orch, 'agoric', kit, silent);
 
   const lcaAddress = kit.reader.getLocalAccount().getAddress();
   const nonexistingWallet = predictWalletAddress({
     owner: lcaAddress.value,
-    factoryAddress: contractsMock.Arbitrum.depositFactory,
+    factoryAddress: contractsMock.Arbitrum.factory,
     gatewayAddress: contractsMock.Arbitrum.gateway,
     gasServiceAddress: contractsMock.Arbitrum.gasService,
     walletBytecode: hexToBytes(ctx.walletBytecode.replace(/^0x/, '')),
@@ -3221,8 +3272,14 @@ test('evmHandler.deposit via Permit2 to a nonexisting (predicted) spender wallet
     `cosmos:${lcaAddress.chainId}:${lcaAddress.value}` as AccountId;
   const nonexistingWalletAccountId =
     `eip155:${permitDetails.chainId}:${nonexistingWallet}` as AccountId;
-  const depositFactoryAccountId =
-    `eip155:${permitDetails.chainId}:${contractsMock.Arbitrum.depositFactory}` as AccountId;
+  const factoryAccountId =
+    `eip155:${permitDetails.chainId}:${contractsMock.Arbitrum.factory}` as AccountId;
+
+  const { accountIdByChain: byChainBefore } = await getPortfolioStatus(
+    kit.reader.getPortfolioId(),
+  );
+  // Only agoric, no Arbitrum account yet since we haven't done any flows
+  t.deepEqual(Object.keys(byChainBefore), ['agoric']);
 
   await doDeposit({ t, kit, storage, txResolver, permitDetails });
   t.deepEqual(
@@ -3231,11 +3288,11 @@ test('evmHandler.deposit via Permit2 to a nonexisting (predicted) spender wallet
       type: 'MAKE_ACCOUNT',
       status: 'success',
       sourceAddress: lcaAccountId,
-      destinationAddress: depositFactoryAccountId,
-      factoryAddr: contractsMock.Arbitrum.depositFactory,
+      destinationAddress: factoryAccountId,
+      factoryAddr: contractsMock.Arbitrum.factory,
       expectedAddr: nonexistingWallet,
     },
-    'createAndDeposit dispatches to the factory for predicted wallets',
+    'create dispatches to the factory for predicted wallets',
   );
 
   // Check that the deposit GMP was also performed.
@@ -3247,17 +3304,64 @@ test('evmHandler.deposit via Permit2 to a nonexisting (predicted) spender wallet
       sourceAddress: lcaAccountId,
       destinationAddress: nonexistingWalletAccountId,
     },
-    'createAndDeposit flow should also perform GMP to the predicted wallet address',
+    'deposit flow should also perform GMP to the predicted wallet address',
   );
 
   const portfolioId = kit.reader.getPortfolioId();
-  const { getPortfolioStatus } = makeStorageTools(storage);
-  const { accountIdByChain: byChain } = await getPortfolioStatus(portfolioId);
+  const { accountIdByChain: byChainAfter } =
+    await getPortfolioStatus(portfolioId);
+  t.deepEqual(Object.keys(byChainAfter), ['Arbitrum', 'agoric', 'noble']);
   t.is(
-    byChain?.Arbitrum,
+    byChainAfter.Arbitrum,
     nonexistingWalletAccountId,
     'predicted wallet is recorded',
   );
+
+  await documentStorageSchema(t, storage, docOpts);
+});
+
+test.skip('evmHandler.deposit via Permit2 with depositFactory as spender to existing wallet fails when expected address mismatch', async t => {
+  const { orch, ctx, storage, txResolver } = mocks({}, {});
+  const { getPortfolioStatus } = makeStorageTools(storage);
+
+  const existingWallet =
+    '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as Address;
+  const permitDetails = makePermitDetails();
+  const sourceAccountId =
+    `eip155:${permitDetails.chainId}:${permitDetails.permit2Payload.owner.toLowerCase()}` as AccountId;
+  const kit = await ctx.makePortfolioKit({ sourceAccountId });
+  await provideCosmosAccount(orch, 'agoric', kit, silent);
+
+  assert(
+    axelarCCTPConfig.Arbitrum.reference === `${permitDetails.chainId}`,
+    'chainId should match axelarCCTPConfig',
+  );
+  kit.manager.resolveAccount({
+    namespace: 'eip155',
+    chainName: 'Arbitrum',
+    chainId: `eip155:${permitDetails.chainId}`,
+    remoteAddress: existingWallet,
+  });
+
+  const { accountIdByChain: byChain } = await getPortfolioStatus(
+    kit.reader.getPortfolioId(),
+  );
+  // agoric and Arbitrum account have been pre-created
+  t.deepEqual(Object.keys(byChain), ['agoric', 'Arbitrum']);
+
+  // Do just one deposit to ensure it deposits to the existing wallet address
+  // through the remote account directly, without any factory interaction.
+
+  // TODO: since this uses the evmHandler instead of execute plans, we can't
+  // test the expected address mismatch logic from the flow.
+  await doDeposit({
+    t,
+    kit,
+    storage,
+    txResolver,
+    permitDetails,
+    expectedFlowOutcome: 'fail',
+  });
 
   await documentStorageSchema(t, storage, docOpts);
 });
