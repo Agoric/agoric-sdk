@@ -269,8 +269,17 @@ export const watchGmp = ({
 
 export const MULTICALL_STATUS_EVENT = 'status';
 
+type WatchGmpLookback = {
+  publishTimeMs: number;
+  chainId: CaipChainId;
+  signal?: AbortSignal;
+  fetch: typeof fetch;
+  rpcUrl: string;
+};
+
 export const lookBackGmp = async ({
   provider,
+  rpcUrl,
   contractAddress,
   txId,
   publishTimeMs,
@@ -279,11 +288,8 @@ export const lookBackGmp = async ({
   signal,
   kvStore,
   makeAbortController,
-}: WatchGmp & {
-  publishTimeMs: number;
-  chainId: CaipChainId;
-  signal?: AbortSignal;
-}): Promise<WatcherResult> => {
+  fetch,
+}: WatchGmp & WatchGmpLookback): Promise<WatcherResult> => {
   await null;
   try {
     const fromBlock = await getBlockNumberBeforeRealTime(
@@ -322,18 +328,26 @@ export const lookBackGmp = async ({
     );
     const baseScanOpts = {
       provider,
+      rpcUrl,
       toBlock,
       chainId,
       log,
       signal: sharedSignal,
+      fetch,
     };
 
-    const matchingEvent = await scanEvmLogsInChunks(
+    const { log: matchingEvent, failedTx } = await scanEvmLogsInChunks(
       {
         ...baseScanOpts,
         baseFilter: statusFilter,
         fromBlock: statusEventLowerBound,
         onRejectedChunk: updateStatusEventLowerBound,
+        toAddress: contractAddress,
+        verifyFailedTx: tx => {
+          const data = extractExecuteData(tx.data);
+          if (data?.txId === txId) return true;
+          return false;
+        },
       },
       isMatch,
     );
@@ -347,6 +361,16 @@ export const lookBackGmp = async ({
         settled: true,
         txHash: matchingEvent.transactionHash,
         success: true,
+      };
+    }
+
+    if (failedTx) {
+      log(`Found matching failed transaction`);
+      deleteTxBlockLowerBound(kvStore, txId, MULTICALL_STATUS_EVENT);
+      return {
+        settled: true,
+        txHash: failedTx.hash,
+        success: false,
       };
     }
 

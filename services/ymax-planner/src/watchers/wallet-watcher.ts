@@ -384,7 +384,7 @@ export const lookBackSmartWalletTx = async ({
       }
     };
 
-    const matchingEvent = await Promise.race([
+    const { log: matchingEvent } = await Promise.race([
       scanEvmLogsInChunks(
         {
           provider,

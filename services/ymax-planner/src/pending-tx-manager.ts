@@ -57,6 +57,7 @@ export type EvmContext = {
   makeAbortController: MakeAbortController;
   axelarApiUrl: string;
   ydsNotifier?: YdsNotifier;
+  rpcUrls: Record<CaipChainId, string>;
 };
 
 export type GmpTransfer = {
@@ -227,17 +228,20 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
       Fail`${logPrefix} No EVM provider for chain: ${caipId}`;
 
     const provider = ctx.evmProviders[caipId] as WebSocketProvider;
+    const rpcUrl = ctx.rpcUrls[caipId];
 
     // Extract the address portion from sourceAddress (format: 'cosmos:agoric-3:agoric1...')
     const lcaAddress = parseAccountId(sourceAddress).accountAddress;
 
     const watchArgs = {
       provider,
+      rpcUrl,
       contractAddress: accountAddress as `0x${string}`,
       txId,
       expectedSourceAddress: lcaAddress,
       chainId: caipId,
       log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
+      fetch: ctx.fetch,
     };
 
     let transferResult: GmpWatcherResult | undefined;
