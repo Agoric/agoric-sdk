@@ -103,6 +103,9 @@ const makeCoalescer = (invitationBrand = undefined) => {
   };
 };
 
+// For backwards compatibility, we export the same function under the old name.
+export { makeCoalescer as makeWalletStateCoalescer };
+
 /**
  * Coalesce updates from a wallet UpdateRecord publication feed. Note that local
  * state may not reflect the wallet's state if the initial updates are missed.
