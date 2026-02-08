@@ -83,6 +83,8 @@ const { keys } = Object;
 export type GMPAccountStatus = GMPAccountInfo & {
   /** created and ready to accept GMP messages */
   ready: Promise<unknown>;
+  /** completely finished the makeAccount/createAndDeposit transaction */
+  done: Promise<unknown>;
 };
 
 /**
@@ -136,10 +138,19 @@ const makeProvideEVMAccount = ({
     const pId = pk.reader.getPortfolioId();
     const traceChain = trace.sub(`portfolio${pId}`).sub(chainName);
 
+    const contracts = ctx.contracts[chainName];
+    contracts || Fail`missing contracts for ${chainName}`;
+
+    const factoryAddress = contracts.depositFactory;
+    factoryAddress ||
+      Fail`missing factory contract address for depositFactory on ${chainName}`;
+
+    // For both makeAccount and createAndDeposit, the destination for the GMP
+    // message is the factory contract, which will create the wallet and then
+    // forward the deposit if applicable.
+    const destinationAddress = factoryAddress;
     const predictAddress = (owner: Bech32Address) => {
-      const contracts = ctx.contracts[chainName];
-      const factoryAddress = contracts.factory;
-      traceChain('factory', mode, factoryAddress);
+      traceChain('depositFactory', mode, factoryAddress);
       assert(factoryAddress);
       const remoteAddress = predictWalletAddress({
         owner,
@@ -160,24 +171,35 @@ const makeProvideEVMAccount = ({
       return info;
     };
     const reserve = pk.manager.reserveAccountState(chainName);
+    const readyP = reserve.ready as unknown as Promise<void>; // XXX host/guest
+    readyP.catch(() => {});
 
-    const evmAccount =
-      reserve.state === 'new'
-        ? predictAddress(lca.getAddress().value)
-        : pk.reader.getGMPInfo(chainName);
+    // Only use the account manager if we're creating a new account.
+    const manager = reserve.state === 'new' ? pk.manager : undefined;
 
+    const evmAccount = manager
+      ? predictAddress(lca.getAddress().value)
+      : pk.reader.getGMPInfo(chainName);
+
+    // Bail out early if another caller created the account, and not a deposit.
     if (['pending', 'ok'].includes(reserve.state)) {
-      return {
-        ...evmAccount,
-        ready: reserve.ready as unknown as Promise<void>,
-      };
+      if (mode !== 'createAndDeposit') {
+        return {
+          ...evmAccount,
+          ready: readyP,
+          done: readyP,
+        };
+      }
+      // We're using GMP for the side effect of depositing to the account, so we
+      // still want to send the deposit even if the account already exists. But
+      // use a different TxType for tracking since it's not a "make account"
+      // transaction.
+      txType = TxType.GMP;
     }
 
-    if (reserve.state === 'new') {
-      pk.manager.initAccountInfo(evmAccount);
-    }
+    manager?.initAccountInfo(evmAccount);
 
-    const installContract = async () => {
+    const installContractWithDeposit = async () => {
       let txId: TxId | undefined;
       await null;
       try {
@@ -190,14 +212,6 @@ const makeProvideEVMAccount = ({
         const src = contractAccount.getAddress();
         traceChain('Axelar fee sent from', src.value);
 
-        const contracts = ctx.contracts[chainName];
-
-        const contractKey = {
-          makeAccount: 'factory',
-          createAndDeposit: 'depositFactory',
-        } as const;
-        const destinationAddress = contracts[contractKey[mode]];
-
         const sourceAddress = coerceAccountId(
           mode === 'createAndDeposit'
             ? contractAccount.getAddress()
@@ -209,7 +223,7 @@ const makeProvideEVMAccount = ({
           undefined,
           evmAccount.remoteAddress,
           sourceAddress,
-          contracts.factory,
+          factoryAddress,
         );
         txId = watchTx.txId;
         appendTxIds(opts.orchOpts?.progressTracker, [txId]);
@@ -233,20 +247,21 @@ const makeProvideEVMAccount = ({
         traceChain('await', mode, txId);
         await result;
 
-        pk.manager.resolveAccount(evmAccount);
+        manager?.resolveAccount(evmAccount);
       } catch (reason) {
         traceChain('failed to', mode, reason);
-        pk.manager.releaseAccount(chainName, reason);
+        manager?.releaseAccount(chainName, reason);
         if (txId) {
           ctx.resolverClient.unsubscribe(txId, `unsubscribe: ${reason}`);
         }
       }
     };
-    void installContract();
 
+    const installed = installContractWithDeposit();
     return {
       ...evmAccount,
-      ready: reserve.ready as unknown as Promise<void>, // XXX host/guest
+      ready: readyP,
+      done: installed.then(() => readyP),
     };
   };
 };

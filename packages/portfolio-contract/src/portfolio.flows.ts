@@ -224,7 +224,9 @@ type FlowStepPowers = {
 };
 
 type ExecutePlanOptions = {
-  evmDepositDetail?: PermitDetails & { fromChain: AxelarChain };
+  evmDepositDetail?: PermitDetails & {
+    fromChain: AxelarChain;
+  };
   // XXX consider using pattern matching for queued steps instead of src/dest.
   queuedSteps?: Array<
     Pick<MovementDesc, 'src' | 'dest'> & {
@@ -1852,7 +1854,7 @@ const queuePermit2Step = async (
 
   // We made the progressTracker above, so we must finalize it.
   if (progressTracker) {
-    void acct.ready.finally(() => progressTracker.finish());
+    void acct.done.finally(() => progressTracker.finish());
   }
   return [
     {
