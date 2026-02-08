@@ -224,7 +224,9 @@ type FlowStepPowers = {
 };
 
 type ExecutePlanOptions = {
-  evmDepositDetail?: PermitDetails & { fromChain: AxelarChain };
+  evmDepositDetail?: PermitDetails & {
+    fromChain: AxelarChain;
+  };
   // XXX consider using pattern matching for queued steps instead of src/dest.
   queuedSteps?: Array<
     Pick<MovementDesc, 'src' | 'dest'> & {

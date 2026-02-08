@@ -138,10 +138,19 @@ const makeProvideEVMAccount = ({
     const pId = pk.reader.getPortfolioId();
     const traceChain = trace.sub(`portfolio${pId}`).sub(chainName);
 
+    const contracts = ctx.contracts[chainName];
+    contracts || Fail`missing contracts for ${chainName}`;
+
+    const factoryAddress = contracts.depositFactory;
+    factoryAddress ||
+      Fail`missing factory contract address for depositFactory on ${chainName}`;
+
+    // For both makeAccount and createAndDeposit, the destination for the GMP
+    // message is the factory contract, which will create the wallet and then
+    // forward the deposit if applicable.
+    const destinationAddress = factoryAddress;
     const predictAddress = (owner: Bech32Address) => {
-      const contracts = ctx.contracts[chainName];
-      const factoryAddress = contracts.factory;
-      traceChain('factory', mode, factoryAddress);
+      traceChain('depositFactory', mode, factoryAddress);
       assert(factoryAddress);
       const remoteAddress = predictWalletAddress({
         owner,
@@ -203,14 +212,6 @@ const makeProvideEVMAccount = ({
         const src = contractAccount.getAddress();
         traceChain('Axelar fee sent from', src.value);
 
-        const contracts = ctx.contracts[chainName];
-
-        const contractKey = {
-          makeAccount: 'factory',
-          createAndDeposit: 'depositFactory',
-        } as const;
-        const destinationAddress = contracts[contractKey[mode]];
-
         const sourceAddress = coerceAccountId(
           mode === 'createAndDeposit'
             ? contractAccount.getAddress()
@@ -222,7 +223,7 @@ const makeProvideEVMAccount = ({
           undefined,
           evmAccount.remoteAddress,
           sourceAddress,
-          contracts.factory,
+          factoryAddress,
         );
         txId = watchTx.txId;
         appendTxIds(opts.orchOpts?.progressTracker, [txId]);
