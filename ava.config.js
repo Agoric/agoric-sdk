@@ -20,9 +20,6 @@ export default {
     js: true,
     ts: 'module',
   },
-  nodeArguments: [
-    `--import=${initEndo}`,
-    '--import=ts-blank-space/register',
-    '--no-warnings',
-  ],
+  require: [initEndo],
+  nodeArguments: ['--import=ts-blank-space/register', '--no-warnings'],
 };

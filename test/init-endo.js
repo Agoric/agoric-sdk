@@ -2,9 +2,10 @@
  * Monorepo AVA preloader for Endo lockdown initialization.
  *
  * How this works:
- * - Root `ava.config.js` passes `--import=<repo>/test/init-endo.js` in
- *   AVA `nodeArguments`, so every AVA worker process imports this module first.
- * - The import mode is selected with `AGORIC_AVA_LOCKDOWN`.
+ * - Root `ava.config.js` passes this file using AVA's `require` option.
+ * - AVA loads required modules before running tests, which applies Endo setup
+ *   without relying on Node's global `--import` process hook.
+ * - The mode is selected with `AGORIC_AVA_LOCKDOWN`.
  *
  * Who sets AGORIC_AVA_LOCKDOWN:
  * - Default local/CI runs should not set it (defaults to `strict`).
