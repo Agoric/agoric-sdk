@@ -26,8 +26,6 @@ if (mode === 'off' || mode === 'false' || mode === '0') {
   // Explicit opt-out for incompatible tests.
 } else if (mode === 'legacy') {
   await import('@endo/init/legacy.js');
-} else if (mode === 'debug') {
-  await import('@endo/init/debug.js');
 } else {
-  await import('@endo/init');
+  await import('@endo/init/debug.js');
 }
