@@ -1,0 +1,88 @@
+diff --git a/dist/index.js b/dist/index.js
+index ab236cc5173801c1efc330642ec112339786b779..18f91b9c58a227b9c0efa19fb3e8fdb459c0ed50 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -2,6 +2,74 @@ import { serializeError } from 'serialize-error';
+ import indentString from 'indent-string';
+ import stripAnsi from 'strip-ansi';
+ import yaml from 'js-yaml';
++const makeYamlSafe = (value) => {
++    const seen = new WeakSet();
++    const sanitize = (val) => {
++        if (val === null) {
++            return null;
++        }
++        const type = typeof val;
++        if (type === 'string' || type === 'number' || type === 'boolean') {
++            return val;
++        }
++        if (type === 'bigint') {
++            return `${val}n`;
++        }
++        if (type === 'symbol') {
++            return val.toString();
++        }
++        if (type === 'function') {
++            return `[Function${val.name ? `: ${val.name}` : ''}]`;
++        }
++        if (type === 'undefined') {
++            return null;
++        }
++        if (val instanceof Date) {
++            return val.toISOString();
++        }
++        if (val instanceof RegExp) {
++            return val.toString();
++        }
++        if (val instanceof Error) {
++            const out = {
++                name: val.name,
++                message: val.message,
++            };
++            if (val.stack) {
++                out.stack = val.stack;
++            }
++            for (const key of Object.getOwnPropertyNames(val)) {
++                if (key === 'name' || key === 'message' || key === 'stack') {
++                    continue;
++                }
++                out[key] = sanitize(val[key]);
++            }
++            return out;
++        }
++        if (typeof val === 'object') {
++            if (seen.has(val)) {
++                return '[Circular]';
++            }
++            seen.add(val);
++            if (Array.isArray(val)) {
++                return val.map(sanitize);
++            }
++            if (val instanceof Map) {
++                return Array.from(val.entries()).map(([k, v]) => [sanitize(k), sanitize(v)]);
++            }
++            if (val instanceof Set) {
++                return Array.from(val.values()).map(sanitize);
++            }
++            const out = {};
++            for (const [key, child] of Object.entries(val)) {
++                out[key] = sanitize(child);
++            }
++            return out;
++        }
++        return String(val);
++    };
++    return sanitize(value);
++};
+ const serializeErrorForTap = (error) => {
+     var _a;
+     const object = serializeError(error);
+@@ -43,7 +111,7 @@ export const test = (title, options) => {
+     ];
+     if (error) {
+         const object = error instanceof Error ? serializeErrorForTap(error) : error;
+-        output.push(['  ---', indentString(yaml.safeDump(object).trim(), 4), '  ...'].join('\n'));
++        output.push(['  ---', indentString(yaml.safeDump(makeYamlSafe(object)).trim(), 4), '  ...'].join('\n'));
+     }
+     return output.filter(Boolean).join('\n');
+ };
