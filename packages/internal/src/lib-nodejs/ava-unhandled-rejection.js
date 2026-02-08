@@ -121,7 +121,7 @@ export const countUnhandled = async (work, { gcAndFinalize }) => {
 /**
  * @param {string} name parent test name
  * @param {number} expectedUnhandled how many unhandled rejections this subtest should expect
- * @returns name for a subtest that expects the given number of unhandled rejections
+ * @returns {string} name for a subtest that expects the given number of unhandled rejections
  */
 export const subtest = (name, expectedUnhandled) =>
   `(${expectedUnhandled} rejection subtest) ${name}`;
