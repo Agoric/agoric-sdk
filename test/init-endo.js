@@ -1,9 +1,16 @@
 /**
  * Monorepo AVA preloader for Endo lockdown initialization.
  *
- * This file is intended to be loaded once by a centralized AVA config.
- * Default is strict lockdown. Opt-out/relaxation is controlled explicitly by
- * environment variable so tests can declare intent.
+ * How this works:
+ * - Root `ava.config.js` passes `--import=<repo>/test/init-endo.js` in
+ *   AVA `nodeArguments`, so every AVA worker process imports this module first.
+ * - The import mode is selected with `AGORIC_AVA_LOCKDOWN`.
+ *
+ * Who sets AGORIC_AVA_LOCKDOWN:
+ * - Default local/CI runs should not set it (defaults to `strict`).
+ * - A developer, CI job, or targeted test command may set it explicitly when
+ *   diagnosing compatibility issues (for example `AGORIC_AVA_LOCKDOWN=debug`).
+ * - Test modules should not mutate this at runtime; choose mode at invocation.
  *
  * AGORIC_AVA_LOCKDOWN modes:
  * - strict (default): import '@endo/init'

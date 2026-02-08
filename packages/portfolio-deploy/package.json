@@ -14,7 +14,7 @@
     "build:nomin": "esbuild ../portfolio-contract/src/portfolio.contract.ts --bundle --platform=neutral --main-fields=main --outfile=dist/portfolio.contract.bundle.js --metafile=dist/portfolio.contract.meta.json",
     "build:bundle": "npx bundle-source --cache-json dist/ ./dist/portfolio.contract.bundle.js ymax0",
     "build:bundle-id": "sh -c '(printf b1-; jq -r .endoZipBase64Sha512 ./dist/bundle-ymax0.json) >./dist/ymax0.bundleId'",
-    "deploy:devnet": "echo '\u274c deploy:devnet removed - it used dangerous CoreEval method that destroys the contract' && echo '\u2705 Use the safe upgrade workflow instead: see README.md or multichain-testing/ymax-ops/Makefile' && exit 1",
+    "deploy:devnet": "echo '❌ deploy:devnet removed - it used dangerous CoreEval method that destroys the contract' && echo '✅ Use the safe upgrade workflow instead: see README.md or multichain-testing/ymax-ops/Makefile' && exit 1",
     "test": "yarn build && ava",
     "test:c8": "c8 --all $C8_OPTIONS ava",
     "test:xs": "exit 0",
