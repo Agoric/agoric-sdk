@@ -858,7 +858,7 @@ test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
   const addr2 = {
     lca: makeTestAddress(3), // agoric1q...rytxkw
     nobleICA: 'noble1test1',
-    evm: '0x9d935c48219d075735ea090130045d8693e6273f',
+    evm: '0xa558ec1eb26f06787bbc9e5aaf79dcabfd09e114',
   } as const;
   const amount = usdc.units(3_333.33);
 
@@ -1955,7 +1955,7 @@ test('evmHandler.deposit (existing Arbitrum) completes a deposit flow', async t 
   t.truthy(lcaAddress, 'LCA address exists');
   const predictedExistingSpender = predictWalletAddress({
     owner: lcaAddress!,
-    factoryAddress: contractsMock[evm].factory,
+    factoryAddress: contractsMock[evm].depositFactory,
     gatewayAddress: contractsMock[evm].gateway,
     gasServiceAddress: contractsMock[evm].gasService,
     walletBytecode: hexToBytes('1234'), // matches contract-setup.ts
@@ -2182,7 +2182,7 @@ test('evmHandler.deposit (Arbitrum -> Base) completes a deposit flow', async t =
   const newChainContracts = contractsMock[newChain];
   const predictedSpender = predictWalletAddress({
     owner: lcaAddress!,
-    factoryAddress: newChainContracts.factory,
+    factoryAddress: newChainContracts.depositFactory,
     gatewayAddress: newChainContracts.gateway,
     gasServiceAddress: newChainContracts.gasService,
     walletBytecode: hexToBytes('1234'), // matches contract-setup.ts
