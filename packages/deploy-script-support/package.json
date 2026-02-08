@@ -69,14 +69,6 @@
     "src",
     "NEWS.md"
   ],
-  "ava": {
-    "files": [
-      "test/**/*.test.*"
-    ],
-    "require": [
-      "@endo/init/debug.js"
-    ]
-  },
   "publishConfig": {
     "access": "public"
   },
