@@ -53,23 +53,6 @@
     "commander": "^12.1.0",
     "ethers": "^6.13.4"
   },
-  "ava": {
-    "extensions": {
-      "js": true,
-      "ts": "module"
-    },
-    "files": [
-      "test/**/*.test.*"
-    ],
-    "nodeArguments": [
-      "--import=ts-blank-space/register",
-      "--no-warnings"
-    ],
-    "require": [
-      "@endo/init/debug.js"
-    ],
-    "timeout": "20m"
-  },
   "typeCoverage": {
     "atLeast": 97.49
   },

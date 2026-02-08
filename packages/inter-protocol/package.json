@@ -67,15 +67,6 @@
   "files": [
     "src"
   ],
-  "ava": {
-    "files": [
-      "test/**/*.test.*"
-    ],
-    "require": [
-      "@endo/init/debug.js"
-    ],
-    "timeout": "10m"
-  },
   "publishConfig": {
     "access": "public"
   },

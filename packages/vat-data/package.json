@@ -35,14 +35,6 @@
   "files": [
     "src"
   ],
-  "ava": {
-    "require": [
-      "@endo/init/debug.js"
-    ],
-    "files": [
-      "test/**/*.test.*"
-    ]
-  },
   "publishConfig": {
     "access": "public"
   },
