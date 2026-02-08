@@ -19,6 +19,8 @@ import {
   makeFakeStorageKit,
 } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { makeExpectUnhandledRejectionMacro } from '@agoric/internal/src/lib-nodejs/ava-unhandled-rejection.js';
+
 import {
   denomHash,
   type AccountId,
@@ -112,6 +114,11 @@ import {
   makeIncomingVTransferEvent,
   makeStorageTools,
 } from './supports.ts';
+
+const expectUnhandled = makeExpectUnhandledRejectionMacro({
+  test,
+  importMetaUrl: import.meta.url,
+});
 
 const executePlan: typeof rawExecutePlan = (
   orch,
@@ -1488,92 +1495,98 @@ test('handle failure in provideCosmosAccount makeAccount', async t => {
   }
 });
 
-test('handle failure in provideEVMAccount sendMakeAccountCall', async t => {
-  const unlucky = make(BLD, 13n);
-  const { give, steps } = await makePortfolioSteps(
-    { Compound: make(USDC, 2_000_000n) },
-    {
-      fees: { Compound: { Account: unlucky, Call: make(BLD, 100n) } },
-      evm: 'Arbitrum',
-    },
-  );
-  const { orch, ctx, offer, storage, tapPK, txResolver } = mocks(
-    { send: Error('Insufficient funds - piggy bank sprang a leak') },
-    give,
-  );
-  const { log } = offer;
-
-  // Create portfolio once for both attempts
-  const pKit = await ctx.makePortfolioKit();
-
-  // First attempt - will fail when trying to send 13n BLD (unlucky amount)
-  const seat1 = makeMockSeat(give, undefined, log);
-
-  const attempt1P = rebalance(orch, ctx, seat1, { flow: steps }, pKit);
-  const testDonePK = makePromiseKit();
-  void txResolver.settleUntil(testDonePK.promise);
-  t.is(await attempt1P, undefined);
-
-  const seatFails = log.find(e => e._method === 'fail' && e._cap === 'seat');
-  t.like(
-    seatFails?.reason,
-    {
-      error: 'Insufficient funds - piggy bank sprang a leak',
-      how: 'Compound',
-      step: 4,
-    },
-    'rebalance should fail when EVM account creation fails',
-  );
-
-  const { getPortfolioStatus, getFlowStatus } = makeStorageTools(storage);
-
-  {
-    const { accountIdByChain: byChain, accountsPending } =
-      await getPortfolioStatus(1);
-    // addresses of all requested accounts are available
-    t.deepEqual(Object.keys(byChain), ['Arbitrum', 'agoric', 'noble']);
-    // attempt to install Arbitrum account is no longer pending
-    t.deepEqual(accountsPending, []);
-
-    const fs = await getFlowStatus(1, 1);
-    t.log(fs);
-    t.deepEqual(
-      fs,
+test(
+  'handle failure in provideEVMAccount sendMakeAccountCall',
+  expectUnhandled(1),
+  async t => {
+    const unlucky = make(BLD, 13n);
+    const { give, steps } = await makePortfolioSteps(
+      { Compound: make(USDC, 2_000_000n) },
       {
-        type: 'rebalance',
-        state: 'fail',
-        step: 4,
-        how: 'Compound',
-        error: 'Insufficient funds - piggy bank sprang a leak',
-        next: undefined,
+        fees: { Compound: { Account: unlucky, Call: make(BLD, 100n) } },
+        evm: 'Arbitrum',
       },
-      '"Insufficient funds" error should be visible in vstorage',
     );
-  }
+    const { orch, ctx, offer, storage, tapPK, txResolver } = mocks(
+      { send: Error('Insufficient funds - piggy bank sprang a leak') },
+      give,
+    );
+    const { log } = offer;
 
-  // Recovery attempt - avoid the unlucky 13n fee using same portfolio
-  const { give: giveGood, steps: stepsGood } = await makePortfolioSteps(
-    { Compound: make(USDC, 2_000_000n) },
-    { fees: { Compound: { Account: make(BLD, 300n), Call: make(BLD, 100n) } } },
-  );
-  const seat2 = makeMockSeat(giveGood, undefined, log);
-  const attempt2P = rebalance(orch, ctx, seat2, { flow: stepsGood }, pKit);
+    // Create portfolio once for both attempts
+    const pKit = await ctx.makePortfolioKit();
 
-  await Promise.all([
-    attempt2P,
-    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
-      await txResolver.drainPending();
-    }),
-  ]);
-  t.truthy(log.find(entry => entry._method === 'exit'));
+    // First attempt - will fail when trying to send 13n BLD (unlucky amount)
+    const seat1 = makeMockSeat(give, undefined, log);
 
-  {
-    const { accountIdByChain: byChain } = await getPortfolioStatus(1);
-    t.deepEqual(Object.keys(byChain), ['Arbitrum', 'agoric', 'noble']);
-  }
+    const attempt1P = rebalance(orch, ctx, seat1, { flow: steps }, pKit);
+    const testDonePK = makePromiseKit();
+    void txResolver.settleUntil(testDonePK.promise);
+    t.is(await attempt1P, undefined);
 
-  testDonePK.resolve(undefined);
-});
+    const seatFails = log.find(e => e._method === 'fail' && e._cap === 'seat');
+    t.like(
+      seatFails?.reason,
+      {
+        error: 'Insufficient funds - piggy bank sprang a leak',
+        how: 'Compound',
+        step: 4,
+      },
+      'rebalance should fail when EVM account creation fails',
+    );
+
+    const { getPortfolioStatus, getFlowStatus } = makeStorageTools(storage);
+
+    {
+      const { accountIdByChain: byChain, accountsPending } =
+        await getPortfolioStatus(1);
+      // addresses of all requested accounts are available
+      t.deepEqual(Object.keys(byChain), ['Arbitrum', 'agoric', 'noble']);
+      // attempt to install Arbitrum account is no longer pending
+      t.deepEqual(accountsPending, []);
+
+      const fs = await getFlowStatus(1, 1);
+      t.log(fs);
+      t.deepEqual(
+        fs,
+        {
+          type: 'rebalance',
+          state: 'fail',
+          step: 4,
+          how: 'Compound',
+          error: 'Insufficient funds - piggy bank sprang a leak',
+          next: undefined,
+        },
+        '"Insufficient funds" error should be visible in vstorage',
+      );
+    }
+
+    // Recovery attempt - avoid the unlucky 13n fee using same portfolio
+    const { give: giveGood, steps: stepsGood } = await makePortfolioSteps(
+      { Compound: make(USDC, 2_000_000n) },
+      {
+        fees: { Compound: { Account: make(BLD, 300n), Call: make(BLD, 100n) } },
+      },
+    );
+    const seat2 = makeMockSeat(giveGood, undefined, log);
+    const attempt2P = rebalance(orch, ctx, seat2, { flow: stepsGood }, pKit);
+
+    await Promise.all([
+      attempt2P,
+      Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
+        await txResolver.drainPending();
+      }),
+    ]);
+    t.truthy(log.find(entry => entry._method === 'exit'));
+
+    {
+      const { accountIdByChain: byChain } = await getPortfolioStatus(1);
+      t.deepEqual(Object.keys(byChain), ['Arbitrum', 'agoric', 'noble']);
+    }
+
+    testDonePK.resolve(undefined);
+  },
+);
 
 test.todo('recover from send step');
 
@@ -2126,7 +2139,7 @@ test(
 test('A pays fee; B arrives', makeAccountEVMRace, provideEVMAccount, 'send');
 test(
   'A fails to pay fee; B arrives',
-  makeAccountEVMRace,
+  expectUnhandled(1, makeAccountEVMRace),
   provideEVMAccount,
   'send',
   'send',
@@ -2145,14 +2158,14 @@ test(
 );
 test(
   'A times out on axelar; B arrives',
-  makeAccountEVMRace,
+  expectUnhandled(1, makeAccountEVMRace),
   provideEVMAccount,
   'txfr',
   'txfr',
 );
 test(
   'A gets rejected txN; B arrives',
-  makeAccountEVMRace,
+  expectUnhandled(1, makeAccountEVMRace),
   provideEVMAccount,
   'txfr',
   'resolve',
@@ -2190,14 +2203,14 @@ test(
 );
 test(
   'withPermit: A times out on axelar; B arrives',
-  makeAccountEVMRace,
+  expectUnhandled(1, makeAccountEVMRace),
   provideEVMAccountWithPermitStub,
   'txfr',
   'txfr',
 );
 test(
   'withPermit: A gets rejected txN; B arrives',
-  makeAccountEVMRace,
+  expectUnhandled(1, makeAccountEVMRace),
   provideEVMAccountWithPermitStub,
   'txfr',
   'resolve',

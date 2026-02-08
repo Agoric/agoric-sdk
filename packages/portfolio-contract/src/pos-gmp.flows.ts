@@ -83,6 +83,8 @@ const { keys } = Object;
 export type GMPAccountStatus = GMPAccountInfo & {
   /** created and ready to accept GMP messages */
   ready: Promise<unknown>;
+  /** completely finished the makeAccount/createAndDeposit transaction */
+  done: Promise<unknown>;
 };
 
 /**
@@ -160,21 +162,26 @@ const makeProvideEVMAccount = ({
       return info;
     };
     const reserve = pk.manager.reserveAccountState(chainName);
+    const readyP = reserve.ready as unknown as Promise<void>; // XXX host/guest
+    readyP.catch(() => {});
 
-    const evmAccount =
-      reserve.state === 'new'
-        ? predictAddress(lca.getAddress().value)
-        : pk.reader.getGMPInfo(chainName);
+    // Only use the account manager if we're creating a new account.
+    const manager = reserve.state === 'new' ? pk.manager : undefined;
+
+    const evmAccount = manager
+      ? predictAddress(lca.getAddress().value)
+      : pk.reader.getGMPInfo(chainName);
 
     if (['pending', 'ok'].includes(reserve.state)) {
       return {
         ...evmAccount,
-        ready: reserve.ready as unknown as Promise<void>,
+        ready: readyP,
+        done: readyP,
       };
     }
 
-    if (reserve.state === 'new') {
-      pk.manager.initAccountInfo(evmAccount);
+    if (manager) {
+      manager.initAccountInfo(evmAccount);
     }
 
     const installContract = async () => {
@@ -233,20 +240,22 @@ const makeProvideEVMAccount = ({
         traceChain('await', mode, txId);
         await result;
 
-        pk.manager.resolveAccount(evmAccount);
+        manager?.resolveAccount(evmAccount);
       } catch (reason) {
         traceChain('failed to', mode, reason);
-        pk.manager.releaseAccount(chainName, reason);
+        manager?.releaseAccount(chainName, reason);
         if (txId) {
           ctx.resolverClient.unsubscribe(txId, `unsubscribe: ${reason}`);
         }
+        throw reason;
       }
     };
-    void installContract();
 
+    const installed = installContract();
     return {
       ...evmAccount,
-      ready: reserve.ready as unknown as Promise<void>, // XXX host/guest
+      ready: readyP,
+      done: installed.then(() => readyP),
     };
   };
 };
