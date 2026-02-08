@@ -77,20 +77,6 @@
     "tsup": "^8.5.0",
     "viem": "^2.31.0"
   },
-  "ava": {
-    "extensions": {
-      "js": true,
-      "ts": "module"
-    },
-    "files": [
-      "test/**/*.test.*"
-    ],
-    "nodeArguments": [
-      "--loader=ts-blank-space/register",
-      "--no-warnings"
-    ],
-    "timeout": "20m"
-  },
   "files": [
     "*.js",
     "*.ts",

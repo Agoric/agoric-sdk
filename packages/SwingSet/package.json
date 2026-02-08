@@ -88,13 +88,6 @@
   "directories": {
     "example": "examples"
   },
-  "ava": {
-    "workerThreads": false,
-    "files": [
-      "test/**/*.test.*"
-    ],
-    "timeout": "20m"
-  },
   "publishConfig": {
     "access": "public"
   },

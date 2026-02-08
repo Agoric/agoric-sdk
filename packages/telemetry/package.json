@@ -59,12 +59,6 @@
   "engines": {
     "node": "^20.9 || ^22.11"
   },
-  "ava": {
-    "files": [
-      "test/**/*.test.*"
-    ],
-    "timeout": "20m"
-  },
   "typeCoverage": {
     "atLeast": 89.28
   }

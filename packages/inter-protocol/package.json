@@ -67,12 +67,6 @@
   "files": [
     "src"
   ],
-  "ava": {
-    "files": [
-      "test/**/*.test.*"
-    ],
-    "timeout": "10m"
-  },
   "publishConfig": {
     "access": "public"
   },
