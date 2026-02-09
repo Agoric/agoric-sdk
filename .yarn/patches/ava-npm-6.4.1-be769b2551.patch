@@ -13,3 +13,49 @@ index 4e13084d47742dbb16a5882ee3f2efdebb297742..61b0601fa2b77efc3b40ef0bcc01eb62
  
  	for (const flag of Object.keys(FLAGS)) {
  		if (flag === 'no-worker-threads' && Object.hasOwn(argv, 'worker-threads')) {
+diff --git a/lib/reporters/tap.js b/lib/reporters/tap.js
+index 6396301c4de6858ed56bcfd643f9fab0e9e7ce84..c5be7ec7462c0c8f84bca75ce8fa4f4a15a9cc50 100644
+--- a/lib/reporters/tap.js
++++ b/lib/reporters/tap.js
+@@ -16,6 +16,7 @@ function dumpError({
+ 	name,
+ 	originalError, // A structured clone, so some details are missing.
+ 	stack,
++	message,
+ 	type,
+ }, sanitizeStackOutput) {
+ 	if (type === 'unknown') {
+@@ -25,13 +26,17 @@ function dumpError({
+ 		};
+ 	}
+ 
+-	originalError.name = name; // Restore the original name.
++	const cleanMessage = formattedError ? stripAnsi(formattedError) : message;
++	const serializableError = originalError ?? {message: cleanMessage};
++
++	serializableError.name = name; // Restore the original name.
+ 
+ 	if (type === 'ava') {
+ 		if (assertion) {
+-			originalError.assertion = assertion;
++			serializableError.assertion = assertion;
+ 		}
+ 
++		formattedDetails ??= [];
+ 		if (formattedDetails.length > 0) {
+-			originalError.details = Object.fromEntries(formattedDetails.map(({label, formatted}) => [
++			serializableError.details = Object.fromEntries(formattedDetails.map(({label, formatted}) => [
+ 				stripAnsi(label),
+ 				stripAnsi(formatted),
+ 			]));
+@@ -39,9 +44,9 @@ function dumpError({
+ 	}
+ 
+-	originalError.stack = sanitizeStackOutput?.(stack || originalError.stack) ?? (stack || originalError.stack);
++	serializableError.stack = sanitizeStackOutput?.(stack || serializableError.stack) ?? (stack || serializableError.stack);
+ 
+-	return originalError;
++	return serializableError;
+ }
+ 
+ export default class TapReporter {
