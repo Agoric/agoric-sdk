@@ -47,7 +47,7 @@ import { makePaymentActions } from './actions.js';
  * @import {Handle, UserSeat, ZoeService} from '@agoric/zoe';
  * @import {Purse} from '@agoric/ertp';
  * @import {BrandRecord, Contact, DappRecord, Mapping, PaymentRecord, PursesFullState} from './internal-types.js';
- * @import {InstallationManager, InstanceManager, IssuerManager, OfferState, PursesJSONState, RecordMetadata} from './types-ambient.js';
+ * @import {InstallationManager, InstanceManager, IssuerManager, OfferState, PursesJSONState, RecordMetadata} from './types.js';
  * @import {ERef} from '@agoric/vow';
  * @import {Brand} from '@agoric/ertp';
  * @import {Instance} from '@agoric/zoe/src/zoeService/utils.js';

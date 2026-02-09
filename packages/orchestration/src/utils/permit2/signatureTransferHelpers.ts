@@ -77,7 +77,8 @@ export const makeWitnessTypeStringExtractor = (powers: {
       // @ts-expect-error undefined witness
       const baseTypes = makeTypes(undefined);
       const encoded = encodeType({ primaryType, types: baseTypes });
-      return encoded.substring(0, encoded.indexOf(')'));
+      const prefix = encoded.substring(0, encoded.indexOf(')'));
+      return `${prefix},`;
     },
   );
 

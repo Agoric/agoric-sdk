@@ -8,7 +8,10 @@ import {
   type StatusFor,
 } from '@agoric/portfolio-api';
 import { planUSDNDeposit } from '@aglocal/portfolio-contract/test/mocks.js';
-import { PROD_NETWORK } from '@aglocal/portfolio-contract/tools/network/prod-network.ts';
+import {
+  readableSteps,
+  readableOrder,
+} from '@aglocal/portfolio-contract/test/supports.js';
 import { TEST_NETWORK } from '@aglocal/portfolio-contract/tools/network/test-network.js';
 import type {
   NetworkSpec,
@@ -40,6 +43,7 @@ import {
 } from './mocks.ts';
 import type { Sdk as SpectrumBlockchainSdk } from '../src/graphql/api-spectrum-blockchain/__generated/sdk.ts';
 import type { Sdk as SpectrumPoolsSdk } from '../src/graphql/api-spectrum-pools/__generated/sdk.ts';
+import PROD_NETWORK from '@aglocal/portfolio-contract/tools/network/prod-network.ts';
 
 const depositBrand = Far('mock brand') as Brand<'nat'>;
 const makeDeposit = value => AmountMath.make(depositBrand, value);
@@ -79,7 +83,7 @@ const handleDeposit = async (
     spectrumPoolIds?: Partial<Record<PoolKey, string>>;
     usdcTokensByChain?: Partial<Record<SupportedChain, string>>;
   },
-  network: NetworkSpec = PROD_NETWORK,
+  network: NetworkSpec = TEST_NETWORK,
 ) => {
   const querier = makePortfolioQuery(powers.readPublished, portfolioKey);
   const status = await querier.getPortfolioStatus();
@@ -376,7 +380,10 @@ test('handleDeposit handles different position types correctly', async t => {
     },
     TEST_NETWORK,
   );
-  t.snapshot(result?.plan);
+  const plan = result?.plan;
+  t.snapshot(plan && readableSteps(plan.flow, depositBrand), 'steps');
+  t.snapshot(plan?.order && readableOrder(plan.order), 'step dependencies');
+  t.snapshot(plan, 'raw plan');
 });
 
 test('planRebalanceToAllocations emits an empty plan when already balanced', async t => {
@@ -424,7 +431,9 @@ test('planRebalanceToAllocations moves funds when needed', async t => {
     },
     currentBalances: { USDN: makeDeposit(1000n) },
   });
-  t.snapshot(plan);
+  t.snapshot(plan && readableSteps(plan.flow, depositBrand), 'steps');
+  t.snapshot(plan?.order && readableOrder(plan.order), 'step dependencies');
+  t.snapshot(plan, 'raw plan');
 });
 
 test('planWithdrawFromAllocations withdraws and rebalances', async t => {
@@ -434,7 +443,9 @@ test('planWithdrawFromAllocations withdraws and rebalances', async t => {
     currentBalances: { USDN: makeDeposit(2000n) },
     amount: makeDeposit(1000n),
   });
-  t.snapshot(plan);
+  t.snapshot(plan && readableSteps(plan.flow, depositBrand), 'steps');
+  t.snapshot(plan?.order && readableOrder(plan.order), 'step dependencies');
+  t.snapshot(plan, 'raw plan');
 });
 
 test('planWithdrawFromAllocations can withdraw to an EVM account', async t => {
@@ -445,7 +456,9 @@ test('planWithdrawFromAllocations can withdraw to an EVM account', async t => {
     amount: makeDeposit(1000n),
     toChain: 'Ethereum',
   });
-  t.snapshot(plan);
+  t.snapshot(plan && readableSteps(plan.flow, depositBrand), 'steps');
+  t.snapshot(plan?.order && readableOrder(plan.order), 'step dependencies');
+  t.snapshot(plan, 'raw plan');
 });
 
 test('planWithdrawFromAllocations considers former allocation targets', async t => {
@@ -458,7 +471,9 @@ test('planWithdrawFromAllocations considers former allocation targets', async t 
     },
     amount: makeDeposit(1200n),
   });
-  t.snapshot(plan);
+  t.snapshot(plan && readableSteps(plan.flow, depositBrand), 'steps');
+  t.snapshot(plan?.order && readableOrder(plan.order), 'step dependencies');
+  t.snapshot(plan, 'raw plan');
 });
 
 test('planWithdrawFromAllocations with no target preserves relative positions', async t => {
@@ -473,7 +488,9 @@ test('planWithdrawFromAllocations with no target preserves relative positions', 
     },
     amount: makeDeposit(1200n),
   });
-  t.snapshot(plan);
+  t.snapshot(plan && readableSteps(plan.flow, depositBrand), 'steps');
+  t.snapshot(plan?.order && readableOrder(plan.order), 'step dependencies');
+  t.snapshot(plan, 'raw plan');
 });
 
 test('planWithdrawFromAllocations with no target and no positions preserves relative amounts', async t => {
@@ -486,7 +503,9 @@ test('planWithdrawFromAllocations with no target and no positions preserves rela
     },
     amount: makeDeposit(1000n),
   });
-  t.snapshot(plan);
+  t.snapshot(plan && readableSteps(plan.flow, depositBrand), 'steps');
+  t.snapshot(plan?.order && readableOrder(plan.order), 'step dependencies');
+  t.snapshot(plan, 'raw plan');
 });
 
 test('planDepositToAllocations produces plan expected by contract', async t => {
@@ -538,22 +557,23 @@ async function singleSourceRebalanceSteps(scale: number) {
     ...plannerContext,
     currentBalances,
     targetAllocation,
-    // TODO: Refactor this test against a stable network dedicated to testing.
-    network: PROD_NETWORK,
+    network: TEST_NETWORK,
   });
   return plan;
 }
 
 test('planRebalanceToAllocations regression - single source, 2x', async t => {
-  // TODO: For human comprehensibility, adopt something like `readableSteps`
-  // from packages/portfolio-contract/test/rebalance.test.ts.
   const plan = await singleSourceRebalanceSteps(2);
-  t.snapshot(plan);
+  t.snapshot(plan && readableSteps(plan.flow, depositBrand), 'steps');
+  t.snapshot(plan?.order && readableOrder(plan.order), 'step dependencies');
+  t.snapshot(plan, 'raw plan');
 });
 
 test('planRebalanceToAllocations regression - single source, 10x', async t => {
   const plan = await singleSourceRebalanceSteps(10);
-  t.snapshot(plan);
+  t.snapshot(plan && readableSteps(plan.flow, depositBrand), 'steps');
+  t.snapshot(plan?.order && readableOrder(plan.order), 'step dependencies');
+  t.snapshot(plan, 'raw plan');
 });
 
 test('planRebalanceToAllocations regression - multiple sources', async t => {
@@ -580,10 +600,11 @@ test('planRebalanceToAllocations regression - multiple sources', async t => {
     ...plannerContext,
     currentBalances,
     targetAllocation,
-    // TODO: Refactor this test against a stable network dedicated to testing.
-    network: PROD_NETWORK,
+    network: TEST_NETWORK,
   });
-  t.snapshot(plan);
+  t.snapshot(plan && readableSteps(plan.flow, depositBrand), 'steps');
+  t.snapshot(plan?.order && readableOrder(plan.order), 'step dependencies');
+  t.snapshot(plan, 'raw plan');
 });
 
 test('getNonDustBalances works for erc4626 vaults', async t => {
@@ -630,4 +651,167 @@ test('getNonDustBalances works for erc4626 vaults', async t => {
 
   t.deepEqual(Object.keys(balances), ['ERC4626_vaultU2_Ethereum']);
   t.is(balances.ERC4626_vaultU2_Ethereum!.value, 3000n);
+});
+
+// ============= CCTPv2 Route Selection Tests =============
+
+test('planRebalanceToAllocations prefers CCTPv2 for EVM-to-EVM (Base → Avalanche)', async t => {
+  const targetAllocation = {
+    Aave_Avalanche: 100n, // All funds to Avalanche
+  };
+  const currentBalances = {
+    Aave_Base: makeDeposit(10_000_000n), // Starting on Base
+  };
+
+  const plan = await planRebalanceToAllocations({
+    ...plannerContext,
+    currentBalances,
+    targetAllocation,
+  });
+
+  // Should have: Base (withdraw) → @Base → @Avalanche (CCTPv2) → Aave_Avalanche (supply)
+  // NOT: Base → @Base → @noble → @Avalanche → Aave_Avalanche
+  const movements = plan.flow;
+
+  // Find the cross-chain transfer step
+  const crossChainStep = movements.find(
+    m => m.src === '@Base' && m.dest === '@Avalanche',
+  );
+  t.truthy(crossChainStep, 'Should have direct Base → Avalanche step');
+  t.deepEqual(
+    crossChainStep?.detail,
+    { cctpVersion: 2n },
+    'Should use CCTPv2 (detail.cctpVersion = 2n)',
+  );
+});
+
+test('planRebalanceToAllocations routes to Noble via CCTPv1 (not CCTPv2)', async t => {
+  const targetAllocation = {
+    USDN: 100n, // All funds to Noble's USDN
+  };
+  const currentBalances = {
+    Aave_Base: makeDeposit(10_000_000n),
+  };
+
+  const plan = await planRebalanceToAllocations({
+    ...plannerContext,
+    currentBalances,
+    targetAllocation,
+  });
+
+  // The final step to Noble or USDN should NOT use CCTPv2 (which can't reach Cosmos)
+  // It should use CCTPv1 via @noble or @agoric
+  const toNobleOrUsdn = plan.flow.filter(
+    m => m.dest === '@noble' || m.dest === 'USDN',
+  );
+
+  t.true(toNobleOrUsdn.length > 0, 'Should have steps reaching Noble/USDN');
+
+  for (const step of toNobleOrUsdn) {
+    // Steps to Noble/USDN cannot use CCTPv2 (detail.cctpVersion = 2n)
+    t.not(
+      step.detail?.cctpVersion,
+      2n,
+      `Step ${step.src} → ${step.dest} should not use CCTPv2`,
+    );
+  }
+
+  // Verify at least one step reaches USDN (the final destination)
+  const toUsdn = plan.flow.find(m => m.dest === 'USDN');
+  t.truthy(toUsdn, 'Should have step to USDN');
+});
+
+test('planRebalanceToAllocations uses CCTPv2 for multi-EVM rebalance', async t => {
+  const targetAllocation = {
+    Aave_Arbitrum: 25n,
+    Aave_Avalanche: 25n,
+    Aave_Base: 25n,
+    Aave_Ethereum: 25n,
+  };
+  const currentBalances = {
+    Aave_Base: makeDeposit(40_000_000n), // All on Base, need to spread
+  };
+
+  const plan = await planRebalanceToAllocations({
+    ...plannerContext,
+    currentBalances,
+    targetAllocation,
+  });
+
+  // All EVM-to-EVM transfers should use CCTPv2
+  const evmToEvmSteps = plan.flow.filter(
+    m =>
+      m.src.startsWith('@') &&
+      m.dest.startsWith('@') &&
+      !['@agoric', '@noble'].includes(m.src) &&
+      !['@agoric', '@noble'].includes(m.dest),
+  );
+
+  t.true(evmToEvmSteps.length > 0, 'Should have EVM-to-EVM transfer steps');
+  for (const step of evmToEvmSteps) {
+    t.deepEqual(
+      step.detail,
+      { cctpVersion: 2n },
+      `Step ${step.src} → ${step.dest} should use CCTPv2`,
+    );
+  }
+});
+
+test('planRebalanceToAllocations selects correct routes for Base → Avalanche + Noble split', async t => {
+  // Starting: Funds on Base
+  // Goal: Split between Avalanche Aave and Noble USDN
+  // Expected:
+  //   - Base → Avalanche via CCTPv2 (direct, ~60s)
+  //   - Base → Noble via CCTPv1 (via @agoric, ~1080s)
+  // CCTPv2 should NOT be used for the Noble leg
+
+  const targetAllocation = {
+    Aave_Avalanche: 50n,
+    USDN: 50n,
+  };
+  const currentBalances = {
+    Aave_Base: makeDeposit(20_000_000n),
+  };
+
+  const plan = await planRebalanceToAllocations({
+    ...plannerContext,
+    currentBalances,
+    targetAllocation,
+    network: PROD_NETWORK, // XXX why doesn't this work with the test net???
+  });
+
+  // Check Avalanche route uses CCTPv2
+  const toAvalancheStep = plan.flow.find(
+    m => m.src === '@Base' && m.dest === '@Avalanche',
+  );
+  t.truthy(toAvalancheStep, 'Should have Base → Avalanche step');
+  t.deepEqual(
+    toAvalancheStep?.detail,
+    { cctpVersion: 2n },
+    'Avalanche route should use CCTPv2',
+  );
+
+  // Snapshot the full plan for regression tracking
+  t.snapshot(plan, 'Base to Avalanche + Noble split routing');
+});
+
+test('planRebalanceToAllocations regression - CCTPv2 multi-source rebalance', async t => {
+  const targetAllocation = {
+    Aave_Arbitrum: 25n,
+    Aave_Avalanche: 25n,
+    Aave_Base: 25n,
+    Aave_Ethereum: 25n,
+  };
+  const currentBalances = {
+    Aave_Base: makeDeposit(5_000_000n),
+    Aave_Optimism: makeDeposit(5_000_000n),
+  };
+
+  const plan = await planRebalanceToAllocations({
+    ...plannerContext,
+    currentBalances,
+    targetAllocation,
+  });
+
+  t.snapshot(plan, 'CCTPv2 multi-source rebalance');
 });

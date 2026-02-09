@@ -79,7 +79,7 @@ import { Phase, prepareVault } from './vault.js';
  * @import {Ratio} from '@agoric/ertp';
  * @import {Vault} from './vault.js';
  * @import {VaultPhase} from './vault.js';
- * @import {MintAndTransfer, VaultId} from './types-ambient.js';
+ * @import {MintAndTransfer, VaultId} from './types.js';
  * @import {Amount} from '@agoric/ertp';
  * @import {Brand} from '@agoric/ertp';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';

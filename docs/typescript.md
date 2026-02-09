@@ -10,14 +10,6 @@ Our use of TypeScript has to accommodate both .js development in agoric-sdk (whi
 - package entrypoint(s) exports explicit types
 - use `/** @import ` comments to import types without getting the runtime module
 
-### Ambient types
-
-- `.d.ts` for modules defining ambient types
-- import types using [triple-slash reference](https://www.typescriptlang.org/docs/handbook/triple-slash-directives.html#-reference-types-)
-- for packages upon which other packages expect ambient types:
-  - `exported.js` supplies ambients
-- don't use runtime imports to get types ([issue](https://github.com/Agoric/agoric-sdk/issues/6512))
-
 ## .ts modules
 
 We cannot use `.ts` files in any modules that are transitively imported into an Endo bundle. The reason is that the Endo bundler doesn't understand `.ts` syntax and we don't want it to until we have sufficient auditability of the transformation. Moreover we've tried to avoid a build step in order to import a module. (The one exception so far is `@agoric/cosmic-proto` because we codegen the types. Those modules are written in `.ts` syntax and build to `.js` by a build step that creates `dist`, which is the package export.)
@@ -67,41 +59,6 @@ The `types.js` file either defines the types itself or is an empty file (describ
 One option considered is having the conditional package `"exports"` include `"types"` but that has to be a .d.ts file. That could be generated from a `.ts` but it would require a build step, which we've so far avoided.
 
 Once we have [JSDoc export type support](https://github.com/microsoft/TypeScript/issues/48104) we'll be able instead to keep the `index.js` entrypoint and have it export the types from `.ts` files without a runtime import of the module containing them.
-
-## exported.js
-
-The `exported.js` re-exports types into global namespace, for consumers that expect these to
-be ambient. This could be called "ambient.js" but we retain the filename for backwards compatibility.
-
-The pattern is to make these two files like this at package root:
-
-`exported.js`
-
-```ts
-// Dummy file for .d.ts twin to declare ambients
-export {};
-```
-
-`exported.d.ts`
-
-```ts
-/** @file Ambient exports until https://github.com/Agoric/agoric-sdk/issues/6512 */
-/** @see {@link /docs/typescript.md} */
-/* eslint-disable -- doesn't understand .d.ts */
-import {
-  SomeType as _SomeType,
-} from './src/types.js';
-
-declare global {
-  export {
-    _SomeType as SomeType,
-  };
-}
-```
-
-Why the _ prefix? Because without it TS gets confused between the
-import and export symbols. ([h/t](https://stackoverflow.com/a/66588974))
-Note one downside vs ambients is that these types will appear to be on `globalThis`.
 
 ## Build
 

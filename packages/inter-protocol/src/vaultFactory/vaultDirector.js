@@ -49,9 +49,9 @@ import {
  * @import {MakeERecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {VaultManager} from './vaultManager.js';
  * @import {VaultManagerParamOverrides} from './params.js';
- * @import {BurnDebt, VaultManagerParamValues} from './types-ambient.js';
- * @import {MintAndTransfer} from './types-ambient.js';
- * @import {VaultFactoryParamPath} from './types-ambient.js';
+ * @import {BurnDebt, VaultManagerParamValues} from './types.js';
+ * @import {MintAndTransfer} from './types.js';
+ * @import {VaultFactoryParamPath} from './types.js';
  * @import {GovernedApis} from '@agoric/governance/src/types.js';
  * @import {Brand} from '@agoric/ertp';
  * @import {Amount} from '@agoric/ertp';
