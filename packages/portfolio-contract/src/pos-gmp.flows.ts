@@ -31,6 +31,7 @@ import {
 import {
   coerceAccountId,
   leftPadEthAddressTo32Bytes,
+  sameEvmAddress,
 } from '@agoric/orchestration/src/utils/address.js';
 import { buildGMPPayload } from '@agoric/orchestration/src/utils/gmp.js';
 import { PermitWitnessTransferFromInputComponents } from '@agoric/orchestration/src/utils/permit2.ts';
@@ -39,7 +40,7 @@ import type { MovementDesc } from '@agoric/portfolio-api';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import { fromBech32 } from '@cosmjs/encoding';
-import { Fail, q, X } from '@endo/errors';
+import { Fail, makeError, q, X } from '@endo/errors';
 import { hexToBytes } from '@noble/hashes/utils';
 import type { Address } from 'viem';
 import { makeEvmAbiCallBatch, makeGmpBuilder } from './evm-facade.ts';
@@ -83,6 +84,8 @@ const { keys } = Object;
 export type GMPAccountStatus = GMPAccountInfo & {
   /** created and ready to accept GMP messages */
   ready: Promise<unknown>;
+  /** completely finished the makeAccount/createAndDeposit transaction */
+  done: Promise<unknown>;
 };
 
 /**
@@ -136,11 +139,12 @@ const makeProvideEVMAccount = ({
     const pId = pk.reader.getPortfolioId();
     const traceChain = trace.sub(`portfolio${pId}`).sub(chainName);
 
+    const contracts = ctx.contracts[chainName];
+    const factoryAddress = contracts.factory;
+    assert(factoryAddress);
+
     const predictAddress = (owner: Bech32Address) => {
-      const contracts = ctx.contracts[chainName];
-      const factoryAddress = contracts.factory;
       traceChain('factory', mode, factoryAddress);
-      assert(factoryAddress);
       const remoteAddress = predictWalletAddress({
         owner,
         factoryAddress,
@@ -160,24 +164,50 @@ const makeProvideEVMAccount = ({
       return info;
     };
     const reserve = pk.manager.reserveAccountState(chainName);
+    const readyP = reserve.ready as unknown as Promise<void>; // XXX host/guest
 
-    const evmAccount =
-      reserve.state === 'new'
-        ? predictAddress(lca.getAddress().value)
-        : pk.reader.getGMPInfo(chainName);
+    // Only use the account manager if we're creating a new account.
+    const manager = reserve.state === 'new' ? pk.manager : undefined;
 
-    if (['pending', 'ok'].includes(reserve.state)) {
+    const evmAccount = manager
+      ? predictAddress(lca.getAddress().value)
+      : pk.reader.getGMPInfo(chainName);
+
+    // Bail out early if another caller created the account, and this is not a deposit.
+    if (
+      ['pending', 'ok'].includes(reserve.state) &&
+      mode !== 'createAndDeposit'
+    ) {
       return {
         ...evmAccount,
-        ready: reserve.ready as unknown as Promise<void>,
+        ready: readyP,
+        done: readyP,
       };
     }
 
-    if (reserve.state === 'new') {
-      pk.manager.initAccountInfo(evmAccount);
+    if (manager) {
+      manager.initAccountInfo(evmAccount);
+    } else {
+      const expectedAddress = predictAddress(
+        lca.getAddress().value,
+      ).remoteAddress;
+
+      if (!sameEvmAddress(evmAccount.remoteAddress, expectedAddress)) {
+        const done = Promise.reject(
+          makeError(
+            `account already exists at ${evmAccount.remoteAddress}, factory expects ${expectedAddress}`,
+          ),
+        );
+
+        return {
+          ...evmAccount,
+          ready: readyP,
+          done,
+        };
+      }
     }
 
-    const installContract = async () => {
+    const installContractWithDeposit = async () => {
       let txId: TxId | undefined;
       await null;
       try {
@@ -189,8 +219,6 @@ const makeProvideEVMAccount = ({
 
         const src = contractAccount.getAddress();
         traceChain('Axelar fee sent from', src.value);
-
-        const contracts = ctx.contracts[chainName];
 
         const contractKey = {
           makeAccount: 'factory',
@@ -209,7 +237,7 @@ const makeProvideEVMAccount = ({
           undefined,
           evmAccount.remoteAddress,
           sourceAddress,
-          contracts.factory,
+          factoryAddress,
         );
         txId = watchTx.txId;
         appendTxIds(opts.orchOpts?.progressTracker, [txId]);
@@ -233,20 +261,22 @@ const makeProvideEVMAccount = ({
         traceChain('await', mode, txId);
         await result;
 
-        pk.manager.resolveAccount(evmAccount);
+        manager?.resolveAccount(evmAccount);
       } catch (reason) {
         traceChain('failed to', mode, reason);
-        pk.manager.releaseAccount(chainName, reason);
+        manager?.releaseAccount(chainName, reason);
         if (txId) {
           ctx.resolverClient.unsubscribe(txId, `unsubscribe: ${reason}`);
         }
+        throw reason;
       }
     };
-    void installContract();
 
+    const installed = installContractWithDeposit();
     return {
       ...evmAccount,
-      ready: reserve.ready as unknown as Promise<void>, // XXX host/guest
+      ready: readyP,
+      done: installed.then(() => readyP),
     };
   };
 };
