@@ -532,7 +532,7 @@ test('published tx shape accepts nextTxId field', t => {
     hasSource: {
       ...cctp,
       status: TxStatus.PENDING,
-      sourceAddress: 'comsos:agoric:agoric123lkjsdlj',
+      sourceAddress: 'cosmos:agoric:agoric123lkjsdlj',
     },
     cctpPending: {
       ...cctp,
