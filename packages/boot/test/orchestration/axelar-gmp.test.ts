@@ -1,3 +1,5 @@
+import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
 import { makeWalletFactoryContext } from '@aglocal/fast-usdc-deploy/test/walletFactory.js';
 import { BridgeId } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
@@ -5,7 +7,6 @@ import { buildGMPPayload } from '@agoric/orchestration/src/utils/gmp.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import type { ContinuingInvitationSpec } from '@agoric/smart-wallet/src/invitations.js';
-import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { ExecutionContext, TestFn } from 'ava';
 import { encodeAbiParameters } from 'viem';
 import { makeReceiveUpCallPayload } from '../../tools/axelar-supports.js';
