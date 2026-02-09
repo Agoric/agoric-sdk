@@ -512,6 +512,54 @@ test('evmHandler deposit handles depositFactory spender with existing remote acc
   ]);
 });
 
+test('evmHandler deposit rejects depositFactory spender if existing remote account is not factory generated', t => {
+  const ownerAddress = '0x6666666666666666666666666666666666666666' as Address;
+  const { makePortfolioKit, makeMockLCA } = makeTestSetup();
+  const { evmHandler, manager } = makePortfolioKit({
+    portfolioId: 454,
+    sourceAccountId: `eip155:42161:${ownerAddress}`,
+  });
+  const agoricInfo: AccountInfoFor['agoric'] = {
+    namespace: 'cosmos',
+    chainName: 'agoric',
+    lca: makeMockLCA(),
+    lcaIn: makeMockLCA(),
+    reg: undefined as any,
+  };
+  manager.resolveAccount(agoricInfo);
+
+  const arbitrumInfo: AccountInfoFor['Arbitrum'] = {
+    namespace: 'eip155',
+    chainName: 'Arbitrum',
+    chainId: 'eip155:42161',
+    remoteAddress: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+  };
+  manager.resolveAccount(arbitrumInfo);
+
+  const permitDetails: PermitDetails = {
+    chainId: 42161n,
+    token: contractsMock.Arbitrum.usdc,
+    amount: 1_000n,
+    spender: contractsMock.Arbitrum.depositFactory,
+    permit2Payload: {
+      owner: ownerAddress,
+      witness: '0xWitnessData',
+      witnessTypeString: 'WitnessTypeString',
+      permit: {
+        permitted: {
+          token: contractsMock.Arbitrum.usdc,
+          amount: 1_000n,
+        },
+        nonce: 123n,
+        deadline: 1700000000n,
+      },
+      signature: '0xSignatureData',
+    },
+  };
+
+  t.throws(() => evmHandler.deposit(permitDetails));
+});
+
 test('evmHandler deposit handles remote account spender', t => {
   const ownerAddress = '0x8888888888888888888888888888888888888888' as const;
   const { makePortfolioKit, getCallLog } = makeTestSetup();

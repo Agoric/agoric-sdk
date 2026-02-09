@@ -31,6 +31,7 @@ import {
 import {
   coerceAccountId,
   leftPadEthAddressTo32Bytes,
+  sameEvmAddress,
 } from '@agoric/orchestration/src/utils/address.js';
 import { buildGMPPayload } from '@agoric/orchestration/src/utils/gmp.js';
 import { PermitWitnessTransferFromInputComponents } from '@agoric/orchestration/src/utils/permit2.ts';
@@ -39,7 +40,7 @@ import type { MovementDesc } from '@agoric/portfolio-api';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import { fromBech32 } from '@cosmjs/encoding';
-import { Fail, q, X } from '@endo/errors';
+import { Fail, makeError, q, X } from '@endo/errors';
 import { hexToBytes } from '@noble/hashes/utils';
 import type { Address } from 'viem';
 import { makeEvmAbiCallBatch, makeGmpBuilder } from './evm-facade.ts';
@@ -186,6 +187,24 @@ const makeProvideEVMAccount = ({
 
     if (manager) {
       manager.initAccountInfo(evmAccount);
+    } else {
+      const expectedAddress = predictAddress(
+        lca.getAddress().value,
+      ).remoteAddress;
+
+      if (!sameEvmAddress(evmAccount.remoteAddress, expectedAddress)) {
+        const done = Promise.reject(
+          makeError(
+            `account already exists at ${evmAccount.remoteAddress}, factory expects ${expectedAddress}`,
+          ),
+        );
+
+        return {
+          ...evmAccount,
+          ready: readyP,
+          done,
+        };
+      }
     }
 
     const installContractWithDeposit = async () => {

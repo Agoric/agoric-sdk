@@ -3338,6 +3338,49 @@ test('evmHandler.deposit via Permit2 to a nonexisting (predicted) spender wallet
   await documentStorageSchema(t, storage, docOpts);
 });
 
+test('evmHandler.deposit via Permit2 with depositFactory as spender to existing wallet fails when expected address mismatch', async t => {
+  const { orch, ctx, storage, txResolver } = mocks({}, {});
+  const { getPortfolioStatus } = makeStorageTools(storage);
+
+  const existingWallet =
+    '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as Address;
+  const permitDetails = makePermitDetails();
+  const sourceAccountId =
+    `eip155:${permitDetails.chainId}:${permitDetails.permit2Payload.owner.toLowerCase()}` as AccountId;
+  const kit = await ctx.makePortfolioKit({ sourceAccountId });
+  await provideCosmosAccount(orch, 'agoric', kit, silent);
+
+  assert(
+    axelarCCTPConfig.Arbitrum.reference === `${permitDetails.chainId}`,
+    'chainId should match axelarCCTPConfig',
+  );
+  kit.manager.resolveAccount({
+    namespace: 'eip155',
+    chainName: 'Arbitrum',
+    chainId: `eip155:${permitDetails.chainId}`,
+    remoteAddress: existingWallet,
+  });
+
+  const { accountIdByChain: byChain } = await getPortfolioStatus(
+    kit.reader.getPortfolioId(),
+  );
+  // agoric and Arbitrum account have been pre-created
+  t.deepEqual(Object.keys(byChain), ['Arbitrum', 'agoric']);
+
+  await doDeposit({
+    t,
+    kit,
+    orch,
+    ctx,
+    storage,
+    txResolver,
+    permitDetails,
+    expectedFlowOutcome: 'fail',
+  });
+
+  await documentStorageSchema(t, storage, docOpts);
+});
+
 // #endregion evmHandler.deposit tests
 
 test('move Aave position Base -> Optimism via CCTPv2', async t => {
