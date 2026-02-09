@@ -22,7 +22,29 @@
 
 const mode = (process.env.AGORIC_AVA_LOCKDOWN || 'strict').toLowerCase();
 
-if (mode === 'off' || mode === 'false' || mode === '0') {
+const { fileURLToPath, pathToFileURL } = await import('node:url');
+const { dirname, resolve } = await import('node:path');
+// Resolve AVA entrypoint, then locate the internal options module by path.
+const avaEntryUrl = await import.meta.resolve('ava');
+const avaEntryPath = fileURLToPath(avaEntryUrl);
+const avaRoot = resolve(dirname(avaEntryPath), '..');
+const optionsPath = resolve(avaRoot, 'lib', 'worker', 'options.cjs');
+const { get } = await import(pathToFileURL(optionsPath));
+const testFile = get().file;
+if (!testFile) {
+  throw new Error(
+    'AVA worker options did not provide a test file path. ' +
+      'Unable to select Endo lockdown mode safely.',
+  );
+}
+
+const isNoEndoTest = testFile.includes('.test-noendo.');
+
+// No global coordination: each AVA worker handles one test file.
+
+if (isNoEndoTest) {
+  // Tests marked with `.test-noendo.` handle Endo lockdown themselves.
+} else if (mode === 'off' || mode === 'false' || mode === '0') {
   // Explicit opt-out for incompatible tests.
 } else if (mode === 'legacy') {
   await import('@endo/init/legacy.js');
