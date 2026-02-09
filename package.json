@@ -143,11 +143,5 @@
     "build-lockfiles": "./scripts/update-package-locks.sh",
     "build-ts": "tsc --build tsconfig.build.json",
     "build-xs-worker": "cd packages/xs-vat-worker && yarn build:xs-lin"
-  },
-  "ava": {
-    "files": [
-      "packages/*/test/**/*.test.*"
-    ],
-    "timeout": "30m"
   }
 }
