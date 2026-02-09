@@ -4,7 +4,7 @@
 import childProcessAmbient from 'node:child_process';
 import { promises as fsAmbientPromises } from 'node:fs';
 import { createRequire } from 'node:module';
-import { basename, join } from 'node:path';
+import { basename, delimiter, join, resolve } from 'node:path';
 import { inspect } from 'node:util';
 import tmp from 'tmp';
 
@@ -261,7 +261,15 @@ export const makeProposalExtractor = (
       const agoricRunOutput = childProcess.execFileSync(
         importSpec('agoric/src/entrypoint.js'),
         ['run', scriptPath, ...args],
-        { cwd: builtDir },
+        {
+          cwd: builtDir,
+          env: {
+            ...process.env,
+            NODE_PATH: [resolve('node_modules'), process.env.NODE_PATH]
+              .filter(Boolean)
+              .join(delimiter),
+          },
+        },
       );
       const built = parseProposalParts(agoricRunOutput.toString());
 
