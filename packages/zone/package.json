@@ -35,6 +35,7 @@
   },
   "devDependencies": {
     "@agoric/swingset-vat": "workspace:*",
+    "@endo/init": "^1.1.12",
     "@endo/patterns": "^1.7.0",
     "ava": "^6.4.1"
   },
