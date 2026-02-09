@@ -32,6 +32,7 @@ per https://agents.md/
 - Package names: publishable packages use `@agoric/*`; private/local packages use `@aglocal/*` (verify with `yarn lint:package-names`).
 - `@aglocal` packages are private and never published; `@agoric` packages are published and may only depend on published packages, so `@agoric` packages must never import `@aglocal` packages.
 - For elapsed duration measurement (benchmarks, latency logs, monotonic timeout windows), prefer `performance.now()` over `Date.now()`. Use `Date.now()` for wall-clock timestamps, IDs, and protocol deadlines.
+- `packages/agoric-cli` is published to npm. Its runtime behavior (especially `agoric run`) must not assume this monorepo, Yarn workspaces, or a Git checkout; it must work in standalone installs.
 - Entrypoints vs modules
     - Keep ambient authority (e.g., `process.env`, `console`, filesystem, network) in entrypoints
     - pass explicit capabilities (e.g., `io.console`) into shared JS modules.

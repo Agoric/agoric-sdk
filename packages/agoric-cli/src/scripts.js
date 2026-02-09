@@ -80,16 +80,24 @@ export const makeScriptLoader =
     for await (const script of scripts) {
       const moduleFile = path.resolve(process.cwd(), script);
       const pathResolve = (...paths) => {
-        const fileName = paths.pop();
+        const fileName = /** @type {string} */ (paths.pop());
         try {
           return require.resolve(fileName, {
             paths: [
               path.resolve(path.dirname(moduleFile), ...paths),
               path.dirname(moduleFile),
+              process.cwd(),
             ],
           });
         } catch (e) {
-          return path.resolve(path.dirname(moduleFile), ...paths, fileName);
+          const isBareSpecifier =
+            !fileName.startsWith('.') &&
+            !fileName.startsWith('/') &&
+            !path.isAbsolute(fileName);
+          if (!isBareSpecifier || paths.length > 0) {
+            return path.resolve(path.dirname(moduleFile), ...paths, fileName);
+          }
+          throw e;
         }
       };
       console.warn('running', moduleFile);
