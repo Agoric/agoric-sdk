@@ -27,7 +27,9 @@ test('pack and install xsnap', async t => {
     await $({ cwd: join(tmp, 'package') })`npm install`;
   } catch (err) {
     if (isRegistryAccessIssue(err)) {
-      t.log('Skipping install verification due to registry/network policy limits');
+      t.log(
+        'Skipping install verification due to registry/network policy limits',
+      );
       t.pass();
       return;
     }
