@@ -274,7 +274,7 @@ const testnetTokenMessenger = (rows =>
   ['Unichain Sepolia', 10, '0x8ed94B8dAd2Dc5453862ea5e316A8e71AAed9782'],
 ] as [string, number, `0x${string}`][]);
 
-export const contractsMock: EVMContractAddressesMap = {
+export const contractsMock = {
   Avalanche: {
     aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
@@ -369,7 +369,7 @@ export const contractsMock: EVMContractAddressesMap = {
     Beefy_morphoSeamlessUsdc_Base: '0xF3C4Db91F380963e00CaA4AC1f0508259C9a3d3A',
     walletHelper: '0xF3C4Db91F380963e00CaA4AC1f0508259C9a3d3A',
   },
-} as const;
+} as const satisfies EVMContractAddressesMap;
 
 export const axelarIdsMock: AxelarId = {
   Avalanche: 'Avalanche',
