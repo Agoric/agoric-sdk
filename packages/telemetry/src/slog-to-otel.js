@@ -18,11 +18,12 @@ import {
  * @import {Span, Link as SpanLink} from '@opentelemetry/api'
  * @import {Tracer} from '@opentelemetry/api';
  * @import {LegacyMap} from '@agoric/store';
+ * @import {CapData} from '@endo/marshal';
  */
 /** @import {SpanContext, SpanOptions} from '@opentelemetry/api' */
 
 /**
- * @typedef {import('@endo/marshal').CapData<string>} SwingSetCapData
+ * @typedef {CapData<string>} SwingSetCapData
  *
  * @typedef {{
  *   methargs: SwingSetCapData;

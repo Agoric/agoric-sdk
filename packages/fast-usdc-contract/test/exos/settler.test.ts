@@ -11,6 +11,7 @@ import type { CctpTxEvidence } from '@agoric/fast-usdc/src/types.js';
 import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
 import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import type { AccountId } from '@agoric/orchestration';
 import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
@@ -38,7 +39,6 @@ import {
 } from '../fixtures.js';
 import { makeTestLogger, prepareMockOrchAccounts } from '../mocks.js';
 import { setupFastUsdcTest } from '../supports.js';
-import type { AccountId, Bech32Address } from '@agoric/orchestration';
 
 const mockZcf = (zone: Zone) => {
   const callLog = [] as any[];

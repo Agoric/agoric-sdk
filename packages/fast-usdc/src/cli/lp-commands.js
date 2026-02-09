@@ -6,6 +6,7 @@
  * @import {ExecuteOfferAction} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {USDCProposalShapes} from '../pool-share-math.js';
  * @import {SmartWalletKit} from '@agoric/client-utils';
+ * @import {PoolMetrics} from '../types.ts';
  */
 
 import {
@@ -98,7 +99,7 @@ export const addLPCommands = (
 
       const usdcAmount = parseUSDCAmount(opts.amount, usdc);
 
-      /** @type {import('../types.ts').PoolMetrics} */
+      /** @type {PoolMetrics} */
       // @ts-expect-error TODO: parameterize vstorage-kit so readPublished works for this without importing everything into client-utils
       const metrics = await swk.readPublished('fastUsdc.poolMetrics');
       const fastLPAmount = floorDivideBy(usdcAmount, metrics.shareWorth);
@@ -143,7 +144,7 @@ export const addLPCommands = (
 
       const usdcAmount = parseUSDCAmount(opts.amount, usdc);
 
-      /** @type {import('../types.ts').PoolMetrics} */
+      /** @type {PoolMetrics} */
       // @ts-expect-error TODO: parameterize vstorage-kit so readPublished works for this without importing everything into client-utils
       const metrics = await swk.readPublished('fastUsdc.poolMetrics');
       const fastLPAmount = ceilDivideBy(usdcAmount, metrics.shareWorth);
