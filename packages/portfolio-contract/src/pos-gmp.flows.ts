@@ -166,8 +166,10 @@ const makeProvideEVMAccount = ({
     const reserve = pk.manager.reserveAccountState(chainName);
     const readyP = reserve.ready as unknown as Promise<void>; // XXX host/guest
 
-    // Only use the account manager if we're creating a new account.
-    const manager = reserve.state === 'new' ? pk.manager : undefined;
+    // Only use the account manager if we're responsible to resolveAccount(...).
+    const manager = ['new', 'failed'].includes(reserve.state)
+      ? pk.manager
+      : undefined;
 
     const evmAccount = manager
       ? predictAddress(lca.getAddress().value)
@@ -185,8 +187,8 @@ const makeProvideEVMAccount = ({
       };
     }
 
-    if (manager) {
-      manager.initAccountInfo(evmAccount);
+    if (reserve.state === 'new') {
+      manager!.initAccountInfo(evmAccount);
     } else {
       const expectedAddress = predictAddress(
         lca.getAddress().value,
