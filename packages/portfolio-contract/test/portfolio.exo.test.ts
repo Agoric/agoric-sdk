@@ -10,21 +10,27 @@ import {
 } from '@agoric/internal';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import type { AxelarChain } from '@agoric/portfolio-api';
 import type { TargetAllocation as EIP712Allocation } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.ts';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.ts';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { prepareVowTools } from '@agoric/vow';
 import { makeHeapZone } from '@agoric/zone';
+import { Far } from '@endo/pass-style';
+import { hexToBytes } from '@noble/hashes/utils';
 import type { Address } from 'abitype';
 import {
   PortfolioStateShape,
   preparePortfolioKit,
+  type AccountInfoFor,
 } from '../src/portfolio.exo.ts';
 import { PositionStateShape } from '../src/pos.exo.ts';
 import type { StatusFor } from '../src/type-guards.ts';
 import { contractsMock } from './mocks.ts';
 import { axelarCCTPConfig } from './supports.ts';
+import type { LocalAccount } from '../src/portfolio.flows.ts';
+import { predictWalletAddress } from '../src/utils/evm-orch-factory.ts';
 
 const { brand: USDC } = makeIssuerKit('USDC');
 
@@ -85,6 +91,38 @@ const makeTestSetup = () => {
     ]),
   ) as Record<`${number}`, AxelarChain>;
 
+  let lcaNonce = 0;
+  const makeMockLCA = (): LocalAccount => {
+    const addr = harden({
+      chainId: 'cosmos:agoric-3',
+      value: `agoric1${1000 + 7 * (lcaNonce += 2)}`,
+      encoding: 'bech32',
+    } as const);
+
+    const lca = Far('AgoricAccount', {
+      getAddress: () => addr,
+    }) satisfies Partial<LocalAccount>;
+
+    return lca as any;
+  };
+
+  const walletBytecode = '0x1234';
+
+  const predictMockAddress = (lca: LocalAccount) =>
+    predictWalletAddress({
+      owner: lca.getAddress().value,
+      factoryAddress: contractsMock.Arbitrum.factory,
+      gatewayAddress: contractsMock.Arbitrum.gateway,
+      gasServiceAddress: contractsMock.Arbitrum.gasService,
+      walletBytecode: hexToBytes(walletBytecode.replace(/^0x/, '')),
+    });
+
+  const agoricConns = fetchedChainInfo.agoric.connections;
+  const transferChannels = {
+    noble: agoricConns[fetchedChainInfo.noble.chainId].transferChannel,
+    axelar: agoricConns[fetchedChainInfo.axelar.chainId].transferChannel,
+  } as const;
+
   const makePortfolioKit = preparePortfolioKit(zone, {
     portfoliosNode: makeMockNode('published.ymax0.portfolios'),
     marshaller,
@@ -96,12 +134,16 @@ const makeTestSetup = () => {
       makeEmptySeatKit: () => ({ zcfSeat: harden({}) }),
     } as any,
     contracts: contractsMock,
+    walletBytecode,
+    transferChannels,
     // rest are not used for this test
     ...({} as any),
   });
 
   return {
     makePortfolioKit,
+    makeMockLCA,
+    predictMockAddress,
     vowTools,
     getCallLog: () => callLog.slice(),
   };
@@ -246,9 +288,9 @@ test('capture stateShape to be intentional about changes', t => {
 });
 
 test('evmHandler deposit fails if owner does not match', async t => {
-  const ownerAddress = '0x2222222222222222222222222222222222222222' as const;
+  const ownerAddress = '0x2222222222222222222222222222222222222222' as Address;
   const wrongOwnerAddress =
-    '0x3333333333333333333333333333333333333333' as const;
+    '0x3333333333333333333333333333333333333333' as Address;
 
   const { makePortfolioKit } = makeTestSetup();
   const { evmHandler } = makePortfolioKit({
@@ -258,22 +300,22 @@ test('evmHandler deposit fails if owner does not match', async t => {
 
   const permitDetails: PermitDetails = {
     chainId: 42161n,
-    token: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831' as const,
+    token: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
     amount: 1_000n,
-    spender: '0xSpenderAddress' as const,
+    spender: '0xSpenderAddress',
     permit2Payload: {
       owner: wrongOwnerAddress,
-      witness: '0xWitnessData' as const,
-      witnessTypeString: 'WitnessTypeString' as const,
+      witness: '0xWitnessData',
+      witnessTypeString: 'WitnessTypeString',
       permit: {
         permitted: {
-          token: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831' as const,
+          token: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
           amount: 1_000n,
         },
         nonce: 123n,
         deadline: 1700000000n,
       },
-      signature: '0xSignatureData' as const,
+      signature: '0xSignatureData',
     },
   };
 
@@ -288,22 +330,22 @@ test('evmHandler deposit requires source account', t => {
 
   const permitDetails: PermitDetails = {
     chainId: 42161n,
-    token: contractsMock.Arbitrum.usdc as Address,
+    token: contractsMock.Arbitrum.usdc,
     amount: 1_000n,
-    spender: '0xSpenderAddress000000000000000000000000000000' as Address,
+    spender: '0xSpenderAddress000000000000000000000000000000',
     permit2Payload: {
-      owner: '0x4444444444444444444444444444444444444444' as Address,
-      witness: '0xWitnessData' as const,
-      witnessTypeString: 'WitnessTypeString' as const,
+      owner: '0x4444444444444444444444444444444444444444',
+      witness: '0xWitnessData',
+      witnessTypeString: 'WitnessTypeString',
       permit: {
         permitted: {
-          token: contractsMock.Arbitrum.usdc as Address,
+          token: contractsMock.Arbitrum.usdc,
           amount: 1_000n,
         },
         nonce: 123n,
         deadline: 1700000000n,
       },
-      signature: '0xSignatureData' as const,
+      signature: '0xSignatureData',
     },
   };
 
@@ -313,7 +355,7 @@ test('evmHandler deposit requires source account', t => {
 });
 
 test('evmHandler deposit rejects unknown chainId', t => {
-  const ownerAddress = '0x5555555555555555555555555555555555555555' as const;
+  const ownerAddress = '0x5555555555555555555555555555555555555555' as Address;
   const { makePortfolioKit } = makeTestSetup();
   const { evmHandler } = makePortfolioKit({
     portfolioId: 453,
@@ -322,22 +364,22 @@ test('evmHandler deposit rejects unknown chainId', t => {
 
   const permitDetails: PermitDetails = {
     chainId: 999999n,
-    token: contractsMock.Arbitrum.usdc as Address,
+    token: contractsMock.Arbitrum.usdc,
     amount: 1_000n,
-    spender: '0xSpenderAddress000000000000000000000000000000' as Address,
+    spender: '0xSpenderAddress000000000000000000000000000000',
     permit2Payload: {
       owner: ownerAddress,
-      witness: '0xWitnessData' as const,
-      witnessTypeString: 'WitnessTypeString' as const,
+      witness: '0xWitnessData',
+      witnessTypeString: 'WitnessTypeString',
       permit: {
         permitted: {
-          token: contractsMock.Arbitrum.usdc as Address,
+          token: contractsMock.Arbitrum.usdc,
           amount: 1_000n,
         },
         nonce: 123n,
         deadline: 1700000000n,
       },
-      signature: '0xSignatureData' as const,
+      signature: '0xSignatureData',
     },
   };
 
@@ -346,46 +388,36 @@ test('evmHandler deposit rejects unknown chainId', t => {
   });
 });
 
-test('evmHandler deposit handles factoryContract spender', t => {
-  const ownerAddress = '0x6666666666666666666666666666666666666666' as const;
+test('evmHandler deposit handles depositFactory spender without existing remote account', t => {
+  const ownerAddress = '0x6666666666666666666666666666666666666666' as Address;
   const { makePortfolioKit, getCallLog } = makeTestSetup();
-  const { evmHandler, manager } = makePortfolioKit({
+  const { evmHandler } = makePortfolioKit({
     portfolioId: 454,
     sourceAccountId: `eip155:42161:${ownerAddress}`,
   });
 
-  manager.resolveAccount({
-    namespace: 'eip155',
-    chainName: 'Arbitrum',
-    chainId: 'eip155:42161',
-    remoteAddress: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-  } as any);
-
   const permitDetails: PermitDetails = {
     chainId: 42161n,
-    token: contractsMock.Arbitrum.usdc as Address,
+    token: contractsMock.Arbitrum.usdc,
     amount: 1_000n,
-    spender: contractsMock.Arbitrum.depositFactory as Address,
+    spender: contractsMock.Arbitrum.depositFactory,
     permit2Payload: {
       owner: ownerAddress,
-      witness: '0xWitnessData' as const,
-      witnessTypeString: 'WitnessTypeString' as const,
+      witness: '0xWitnessData',
+      witnessTypeString: 'WitnessTypeString',
       permit: {
         permitted: {
-          token: contractsMock.Arbitrum.usdc as Address,
+          token: contractsMock.Arbitrum.usdc,
           amount: 1_000n,
         },
         nonce: 123n,
         deadline: 1700000000n,
       },
-      signature: '0xSignatureData' as const,
+      signature: '0xSignatureData',
     },
   };
 
-  t.notThrows(
-    () => evmHandler.deposit(permitDetails),
-    'evmHandler deposit accepts depositFactory spender',
-  );
+  t.is(evmHandler.deposit(permitDetails), 'flow1');
   t.like(getCallLog(), [
     [
       'executePlan',
@@ -407,95 +439,80 @@ test('evmHandler deposit handles factoryContract spender', t => {
       },
     ],
   ]);
-  t.notThrows(
-    () => evmHandler.deposit(permitDetails),
-    'evmHandler deposit accepts depositFactory spender',
-  );
 });
 
-test('evmHandler deposit rejects spender mismatch', t => {
-  const ownerAddress = '0x6666666666666666666666666666666666666666' as const;
-  const { makePortfolioKit } = makeTestSetup();
+test('evmHandler deposit handles depositFactory spender with existing remote account', t => {
+  const ownerAddress = '0x6666666666666666666666666666666666666666' as Address;
+  const { makePortfolioKit, makeMockLCA, predictMockAddress, getCallLog } =
+    makeTestSetup();
   const { evmHandler, manager } = makePortfolioKit({
     portfolioId: 454,
     sourceAccountId: `eip155:42161:${ownerAddress}`,
   });
+  const agoricInfo: AccountInfoFor['agoric'] = {
+    namespace: 'cosmos',
+    chainName: 'agoric',
+    lca: makeMockLCA(),
+    lcaIn: makeMockLCA(),
+    reg: undefined as any,
+  };
+  manager.resolveAccount(agoricInfo);
 
-  manager.resolveAccount({
+  const expectedRemoteAddress = predictMockAddress(agoricInfo.lca);
+  const arbitrumInfo: AccountInfoFor['Arbitrum'] = {
     namespace: 'eip155',
     chainName: 'Arbitrum',
     chainId: 'eip155:42161',
-    remoteAddress: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-  } as any);
+    remoteAddress: expectedRemoteAddress,
+  };
+  manager.resolveAccount(arbitrumInfo);
 
   const permitDetails: PermitDetails = {
     chainId: 42161n,
-    token: contractsMock.Arbitrum.usdc as Address,
+    token: contractsMock.Arbitrum.usdc,
     amount: 1_000n,
-    spender: '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' as Address,
+    spender: contractsMock.Arbitrum.depositFactory,
     permit2Payload: {
       owner: ownerAddress,
-      witness: '0xWitnessData' as const,
-      witnessTypeString: 'WitnessTypeString' as const,
+      witness: '0xWitnessData',
+      witnessTypeString: 'WitnessTypeString',
       permit: {
         permitted: {
-          token: contractsMock.Arbitrum.usdc as Address,
+          token: contractsMock.Arbitrum.usdc,
           amount: 1_000n,
         },
         nonce: 123n,
         deadline: 1700000000n,
       },
-      signature: '0xSignatureData' as const,
+      signature: '0xSignatureData',
     },
   };
 
-  t.throws(() => evmHandler.deposit(permitDetails), {
-    message: /permit spender .* does not match expected account/,
-  });
-});
-
-test('evmHandler deposit rejects token mismatch', t => {
-  const ownerAddress = '0x7777777777777777777777777777777777777777' as const;
-  const { makePortfolioKit } = makeTestSetup();
-  const { evmHandler, manager } = makePortfolioKit({
-    portfolioId: 455,
-    sourceAccountId: `eip155:42161:${ownerAddress}`,
-  });
-
-  manager.resolveAccount({
-    namespace: 'eip155',
-    chainName: 'Arbitrum',
-    chainId: 'eip155:42161',
-    remoteAddress: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-  } as any);
-
-  const permitDetails: PermitDetails = {
-    chainId: 42161n,
-    token: contractsMock.Arbitrum.permit2 as Address,
-    amount: 1_000n,
-    spender: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as Address,
-    permit2Payload: {
-      owner: ownerAddress,
-      witness: '0xWitnessData' as const,
-      witnessTypeString: 'WitnessTypeString' as const,
-      permit: {
-        permitted: {
-          token: contractsMock.Arbitrum.permit2 as Address,
-          amount: 1_000n,
-        },
-        nonce: 123n,
-        deadline: 1700000000n,
+  t.is(evmHandler.deposit(permitDetails), 'flow1');
+  t.like(getCallLog(), [
+    [
+      'executePlan',
+      ,
+      {},
+      ,
+      {
+        type: 'deposit',
+        amount: AmountMath.make(USDC, 1_000n),
+        fromChain: 'Arbitrum',
       },
-      signature: '0xSignatureData' as const,
-    },
-  };
-
-  t.throws(() => evmHandler.deposit(permitDetails), {
-    message: /permit token address .* does not match usdc contract address/,
-  });
+      { flowId: 1 },
+      ,
+      {
+        evmDepositDetail: {
+          fromChain: 'Arbitrum',
+          ...permitDetails,
+        },
+      },
+    ],
+  ]);
 });
 
-test('evmHandler deposit starts flow and calls executePlan', t => {
+test('evmHandler deposit handles remote account spender', t => {
   const ownerAddress = '0x8888888888888888888888888888888888888888' as const;
   const { makePortfolioKit, getCallLog } = makeTestSetup();
   const { evmHandler, manager } = makePortfolioKit({
@@ -503,31 +520,31 @@ test('evmHandler deposit starts flow and calls executePlan', t => {
     sourceAccountId: `eip155:42161:${ownerAddress}`,
   });
 
-  manager.resolveAccount({
+  const arbitrumInfo: AccountInfoFor['Arbitrum'] = {
     namespace: 'eip155',
     chainName: 'Arbitrum',
     chainId: 'eip155:42161',
     remoteAddress: '0x9999999999999999999999999999999999999999',
-  } as any);
-
+  };
+  manager.resolveAccount(arbitrumInfo);
   const permitDetails: PermitDetails = {
     chainId: 42161n,
-    token: contractsMock.Arbitrum.usdc as Address,
+    token: contractsMock.Arbitrum.usdc,
     amount: 2_500n,
-    spender: '0x9999999999999999999999999999999999999999' as Address,
+    spender: arbitrumInfo.remoteAddress,
     permit2Payload: {
       owner: ownerAddress,
-      witness: '0xWitnessData' as const,
-      witnessTypeString: 'WitnessTypeString' as const,
+      witness: '0xWitnessData',
+      witnessTypeString: 'WitnessTypeString',
       permit: {
         permitted: {
-          token: contractsMock.Arbitrum.usdc as Address,
+          token: contractsMock.Arbitrum.usdc,
           amount: 2_500n,
         },
         nonce: 456n,
         deadline: 1700000000n,
       },
-      signature: '0xSignatureData' as const,
+      signature: '0xSignatureData',
     },
   };
 
@@ -554,6 +571,90 @@ test('evmHandler deposit starts flow and calls executePlan', t => {
       },
     ],
   ]);
+});
+
+test('evmHandler deposit rejects spender mismatch', t => {
+  const ownerAddress = '0x6666666666666666666666666666666666666666' as const;
+  const { makePortfolioKit } = makeTestSetup();
+  const { evmHandler, manager } = makePortfolioKit({
+    portfolioId: 454,
+    sourceAccountId: `eip155:42161:${ownerAddress}`,
+  });
+
+  const arbitrumInfo: AccountInfoFor['Arbitrum'] = {
+    namespace: 'eip155',
+    chainName: 'Arbitrum',
+    chainId: 'eip155:42161',
+    remoteAddress: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+  };
+  manager.resolveAccount(arbitrumInfo);
+
+  const permitDetails: PermitDetails = {
+    chainId: 42161n,
+    token: contractsMock.Arbitrum.usdc,
+    amount: 1_000n,
+    spender: '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+    permit2Payload: {
+      owner: ownerAddress,
+      witness: '0xWitnessData',
+      witnessTypeString: 'WitnessTypeString',
+      permit: {
+        permitted: {
+          token: contractsMock.Arbitrum.usdc,
+          amount: 1_000n,
+        },
+        nonce: 123n,
+        deadline: 1700000000n,
+      },
+      signature: '0xSignatureData',
+    },
+  };
+
+  t.throws(() => evmHandler.deposit(permitDetails), {
+    message: /permit spender .* does not match expected account/,
+  });
+});
+
+test('evmHandler deposit rejects token mismatch', t => {
+  const ownerAddress = '0x7777777777777777777777777777777777777777' as Address;
+  const { makePortfolioKit } = makeTestSetup();
+  const { evmHandler, manager } = makePortfolioKit({
+    portfolioId: 455,
+    sourceAccountId: `eip155:42161:${ownerAddress}`,
+  });
+
+  const arbitrumInfo: AccountInfoFor['Arbitrum'] = {
+    namespace: 'eip155',
+    chainName: 'Arbitrum',
+    chainId: 'eip155:42161',
+    remoteAddress: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+  };
+  manager.resolveAccount(arbitrumInfo);
+
+  const permitDetails: PermitDetails = {
+    chainId: 42161n,
+    token: contractsMock.Arbitrum.permit2,
+    amount: 1_000n,
+    spender: arbitrumInfo.remoteAddress,
+    permit2Payload: {
+      owner: ownerAddress,
+      witness: '0xWitnessData',
+      witnessTypeString: 'WitnessTypeString',
+      permit: {
+        permitted: {
+          token: contractsMock.Arbitrum.permit2,
+          amount: 1_000n,
+        },
+        nonce: 123n,
+        deadline: 1700000000n,
+      },
+      signature: '0xSignatureData',
+    },
+  };
+
+  t.throws(() => evmHandler.deposit(permitDetails), {
+    message: /permit token address .* does not match usdc contract address/,
+  });
 });
 
 test('evmHandler withdraw requires source account', t => {
