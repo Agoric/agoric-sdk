@@ -5,7 +5,6 @@
  *     agoric run /path/to/$0 [<bootstrap powers produce key> [<label>]]
  */
 
-/* eslint-disable import/no-extraneous-dependencies */
 // dynamic import { makeHelpers } from '@agoric/deploy-script-support';
 // dynamic import { getSpecifier } from '@agoric/internal/src/module-utils.js';
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';

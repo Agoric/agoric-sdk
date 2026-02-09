@@ -194,7 +194,7 @@ export const startWalletFactory = async (
   // startGovernedUpgradable may potentially only fulfil after the
   // inter-protocol init-core.js is settled.
   //
-  // eslint-disable-next-line @agoric/group-jsdoc-imports
+
   /**
    * XXX the type is being lost without this annotation
    * @type {Promise<GovernanceFacetKit<any>>}

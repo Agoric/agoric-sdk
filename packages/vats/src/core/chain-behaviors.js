@@ -188,11 +188,12 @@ export const bridgeProvisioner = async ({
                 nickname,
                 address,
                 powerFlags: rawPowerFlags,
-              } = /** @type {{
-               *   nickname: string;
-               *   address: string;
-               *   powerFlags?: string[];
-               * }} */ (/** @type {unknown} */ (obj));
+              } = /**
+                   * @type {{
+                   *   nickname: string;
+                   *   address: string;
+                   *   powerFlags?: string[];
+                    }} */ (/** @type {unknown} */ (obj));
               const powerFlags = Array.isArray(rawPowerFlags)
                 ? rawPowerFlags
                 : [];

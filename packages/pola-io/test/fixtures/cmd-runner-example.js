@@ -1,4 +1,3 @@
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { makeCmdRunner } from '@agoric/pola-io';
 import { execFile as execFileNode } from 'node:child_process';
 import { promisify } from 'node:util';
