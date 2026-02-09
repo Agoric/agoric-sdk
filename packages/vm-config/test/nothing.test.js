@@ -1,5 +1,3 @@
-import '@endo/init/debug.js';
-
 import test from 'ava';
 
 /* here just to allow `yarn test` to pass */
