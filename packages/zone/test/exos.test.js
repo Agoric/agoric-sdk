@@ -1,3 +1,5 @@
+import '@endo/init/debug.js';
+
 import { M } from '@endo/patterns';
 import {
   annihilate,

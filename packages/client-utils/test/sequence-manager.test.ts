@@ -1,3 +1,5 @@
+import '@endo/init/legacy.js';
+
 import test from 'ava';
 import { makeTxSequencer } from '../src/sequence-manager.js';
 import { createMockFetchAccount } from './mocks.js';

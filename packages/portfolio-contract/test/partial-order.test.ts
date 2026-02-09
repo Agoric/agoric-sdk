@@ -1,3 +1,5 @@
+import '@endo/init/debug.js';
+
 import test from 'ava';
 import type { AssetPlaceRef } from '../src/type-guards-steps.js';
 import {

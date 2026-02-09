@@ -1,5 +1,7 @@
 // @ts-check
 
+import '@endo/init/debug.js';
+
 import path from 'path';
 import test from 'ava';
 import sqlite3 from 'better-sqlite3';

@@ -1,5 +1,7 @@
 /* eslint-env node */
 // @ts-check
+import '@endo/init/legacy.js';
+
 import test from 'ava';
 import { makeVStorage } from '../src/vstorage.js';
 

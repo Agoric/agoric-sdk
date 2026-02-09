@@ -1,3 +1,5 @@
+import '@endo/init/legacy.js';
+
 import test from 'ava';
 
 import { reflectWalletStore } from '../src/wallet-store.js';

@@ -1,5 +1,7 @@
 /* global globalThis */
 // eslint-disable-next-line import/order
+import '@endo/init/debug.js';
+
 import { annihilate, startLife } from '../tools/prepare-strict-test-env.js';
 
 import test from 'ava';

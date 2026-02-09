@@ -1,4 +1,6 @@
 // @ts-check
+import '@endo/init/debug.js';
+
 import anyTest from 'ava';
 
 // Use ambient authority only in test.before()
