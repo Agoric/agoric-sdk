@@ -1,3 +1,5 @@
+import '@endo/init/debug.js';
+
 import { makeRatio } from '@agoric/ertp/src/ratio.js';
 import type { EReturn } from '@endo/far';
 import { Far, makeMarshal } from '@endo/marshal';

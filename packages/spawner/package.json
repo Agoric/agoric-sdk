@@ -56,9 +56,6 @@
     "files": [
       "test/**/*.test.*"
     ],
-    "require": [
-      "@endo/init/debug.js"
-    ],
     "workerThreads": false,
     "timeout": "2m"
   },

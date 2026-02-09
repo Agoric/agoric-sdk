@@ -63,9 +63,6 @@
       "--import=ts-blank-space/register",
       "--no-warnings"
     ],
-    "require": [
-      "@endo/init/legacy.js"
-    ],
     "timeout": "20m"
   },
   "typeCoverage": {

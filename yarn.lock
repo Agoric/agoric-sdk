@@ -980,6 +980,7 @@ __metadata:
     "@agoric/orchestration": "workspace:*"
     "@endo/common": "npm:^1.2.13"
     "@endo/errors": "npm:^1.2.13"
+    "@endo/init": "npm:^1.1.12"
     "@endo/patterns": "npm:^1.7.0"
     "@types/js-yaml": "npm:^4"
     ajv: "npm:^6.12.6"
