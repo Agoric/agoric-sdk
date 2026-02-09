@@ -51,6 +51,18 @@ export const InstrumentId = /** @type {const} */ ({
     'ERC4626_morphoHyperithmUsdcDegen_Ethereum',
   ERC4626_morphoGauntletUsdcCore_Ethereum:
     'ERC4626_morphoGauntletUsdcCore_Ethereum',
+  ERC4626_morphoSteakhousePrimeUsdc_Base:
+    'ERC4626_morphoSteakhousePrimeUsdc_Base',
+  ERC4626_morphoSteakhouseUsdc_Base: 'ERC4626_morphoSteakhouseUsdc_Base',
+  ERC4626_morphoGauntletUsdcPrime_Base: 'ERC4626_morphoGauntletUsdcPrime_Base',
+  ERC4626_morphoSeamlessUsdcVault_Base: 'ERC4626_morphoSeamlessUsdcVault_Base',
+  ERC4626_morphoSteakhouseHighYieldUsdc_Arbitrum:
+    'ERC4626_morphoSteakhouseHighYieldUsdc_Arbitrum',
+  ERC4626_morphoGauntletUsdcCore_Arbitrum:
+    'ERC4626_morphoGauntletUsdcCore_Arbitrum',
+  ERC4626_morphoHyperithmUsdc_Arbitrum: 'ERC4626_morphoHyperithmUsdc_Arbitrum',
+  ERC4626_morphoGauntletUsdcPrime_Optimism:
+    'ERC4626_morphoGauntletUsdcPrime_Optimism',
   USDN: 'USDN',
   USDNVault: 'USDNVault',
 });
