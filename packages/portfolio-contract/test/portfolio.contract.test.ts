@@ -1033,7 +1033,7 @@ test('address of LCA for fees is published', async t => {
   await eventLoopIteration();
   const info = storage.getDeserialized(`${ROOT_STORAGE_PATH}`).at(-1);
   t.log(info);
-  const contracts = makePrivateArgs().contracts;
+  const { contracts, remoteAccountBytecodeHash } = makePrivateArgs();
   t.deepEqual(info, {
     contractAccount: makeTestAddress(0),
     depositFactoryAddresses: {
@@ -1042,6 +1042,23 @@ test('address of LCA for fees is published', async t => {
       Base: `eip155:8453:${contracts.Base.depositFactory}`,
       Ethereum: `eip155:1:${contracts.Ethereum.depositFactory}`,
       Optimism: `eip155:10:${contracts.Optimism.depositFactory}`,
+    },
+    evmRemoteAccountConfig: {
+      currentRouterAddresses: {
+        Arbitrum: `eip155:42161:${contracts.Arbitrum.remoteAccountRouter}`,
+        Avalanche: `eip155:43114:${contracts.Avalanche.remoteAccountRouter}`,
+        Base: `eip155:8453:${contracts.Base.remoteAccountRouter}`,
+        Ethereum: `eip155:1:${contracts.Ethereum.remoteAccountRouter}`,
+        Optimism: `eip155:10:${contracts.Optimism.remoteAccountRouter}`,
+      },
+      factoryAddresses: {
+        Arbitrum: `eip155:42161:${contracts.Arbitrum.remoteAccountFactory}`,
+        Avalanche: `eip155:43114:${contracts.Avalanche.remoteAccountFactory}`,
+        Base: `eip155:8453:${contracts.Base.remoteAccountFactory}`,
+        Ethereum: `eip155:1:${contracts.Ethereum.remoteAccountFactory}`,
+        Optimism: `eip155:10:${contracts.Optimism.remoteAccountFactory}`,
+      },
+      remoteAccountBytecodeHash,
     },
   });
 });

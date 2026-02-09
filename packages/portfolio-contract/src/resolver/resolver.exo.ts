@@ -37,10 +37,36 @@ interface TxMeta {
   type: TxType;
   expectedAddr?: `0x${string}`;
   factoryAddr?: `0x${string}`;
+  useResultEvent?: boolean;
   nextTxId?: TxId;
 }
 
 const txsWithAmounts: TxType[] = [TxType.CCTP_TO_AGORIC, TxType.CCTP_TO_EVM];
+
+const getGMPRelevantMeta = (params: {
+  type: TxType;
+  expectedAddr?: `0x${string}`;
+  sourceAddress?: AccountId;
+  factoryAddr?: `0x${string}`;
+  routerBased?: boolean;
+}) => {
+  const { type, expectedAddr, sourceAddress, factoryAddr, routerBased } =
+    params;
+
+  if (routerBased) {
+    return {
+      expectedAddr,
+      sourceAddress,
+      factoryAddr,
+      useResultEvent: true,
+    };
+  }
+
+  return {
+    ...(type === TxType.MAKE_ACCOUNT ? { expectedAddr, factoryAddr } : {}),
+    ...(sourceAddress ? { sourceAddress } : {}),
+  };
+};
 
 const trace = makeTracer('Resolver');
 
@@ -49,7 +75,7 @@ const PromiseVowShape = M.any();
 
 const ClientFacetI = M.interface('ResolverClient', {
   registerTransaction: M.call(M.or(...Object.values(TxType)), M.string())
-    .optional(M.nat(), M.string(), M.string(), M.string())
+    .optional(M.nat(), M.string(), M.string(), M.string(), M.boolean())
     .returns(M.splitRecord({ result: PromiseVowShape, txId: M.string() })),
   unsubscribe: M.call(M.string(), M.string()).returns(),
   createPendingTx: M.call(
@@ -225,15 +251,19 @@ export const prepareResolverKit = (
           expectedAddr?: `0x${string}`,
           sourceAddress?: AccountId,
           factoryAddr?: `0x${string}`,
+          routerBased?: boolean,
         ): { result: Vow<void>; txId: TxId } {
           const txMeta: TxMeta = {
             type,
             destinationAddress,
             ...(txsWithAmounts.includes(type) ? { amountValue } : {}),
-            ...(type === TxType.MAKE_ACCOUNT
-              ? { expectedAddr, factoryAddr }
-              : {}),
-            ...(sourceAddress ? { sourceAddress } : {}),
+            ...getGMPRelevantMeta({
+              type,
+              expectedAddr,
+              sourceAddress,
+              factoryAddr,
+              routerBased,
+            }),
           };
           return this.facets.client.createPendingTx(txMeta);
         },
@@ -279,6 +309,7 @@ export const prepareResolverKit = (
             amountValue: amount,
             expectedAddr,
             factoryAddr,
+            useResultEvent,
             ...rest
           } = txMeta;
 
@@ -286,11 +317,14 @@ export const prepareResolverKit = (
             type,
             ...rest,
             ...(destinationAddress ? { destinationAddress } : {}),
-            ...(sourceAddress ? { sourceAddress } : {}),
             ...(txsWithAmounts.includes(type) ? { amount } : {}),
-            ...(type === TxType.MAKE_ACCOUNT
-              ? { expectedAddr, factoryAddr }
-              : {}),
+            ...getGMPRelevantMeta({
+              type,
+              expectedAddr,
+              sourceAddress,
+              factoryAddr,
+              routerBased: useResultEvent,
+            }),
             ...(rejectionReason ? { rejectionReason } : {}),
             status,
           };
@@ -299,22 +333,20 @@ export const prepareResolverKit = (
           writeToNode(node, value);
         },
 
+        // XXX: this seems unused in current code
         insertPendingTransaction(
           txId: TxId,
           destinationAddress: AccountId,
           type: TxType,
           amount?: NatValue,
           expectedAddr?: `0x${string}`,
-          factoryAddr?: `0x${string}`,
         ) {
           const txMeta: TxMeta = {
             type,
             destinationAddress,
             status: TxStatus.PENDING,
             ...(txsWithAmounts.includes(type) ? { amount } : {}),
-            ...(type === TxType.MAKE_ACCOUNT
-              ? { expectedAddr, factoryAddr }
-              : {}),
+            ...(type === TxType.MAKE_ACCOUNT ? { expectedAddr } : {}),
           };
           return this.facets.reporter.upsertPendingTx(
             txId,

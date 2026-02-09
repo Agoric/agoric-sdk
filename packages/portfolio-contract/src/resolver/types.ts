@@ -94,6 +94,10 @@ const PublishedTxShapes: Record<string, TypedPattern<PublishedTx>> = harden({
       ...optionalPublishedTxProps,
       sourceAddress: AccountIdShape, // not all GMP txs have this
       amount: M.nat(),
+      // router based GMP have these set
+      factoryAddr: HexAddressShape,
+      expectedAddr: HexAddressShape,
+      useResultEvent: M.boolean(),
     },
     {},
   ),
@@ -113,6 +117,8 @@ const PublishedTxShapes: Record<string, TypedPattern<PublishedTx>> = harden({
       sourceAddress: AccountIdShape,
       // If not available, the destinationAddress CAIP can be used
       factoryAddr: HexAddressShape,
+      // Implies factoryAddr is present
+      useResultEvent: M.boolean(),
     },
     {},
   ),

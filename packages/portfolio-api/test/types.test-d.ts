@@ -2,8 +2,10 @@ import type { NatAmount } from '@agoric/ertp';
 import type {
   AccountId,
   Bech32Address,
+  CaipChainId,
   CosmosChainAddress,
 } from '@agoric/orchestration';
+import type { Address as EVMAddress } from 'abitype';
 import { expectAssignable, expectNotAssignable, expectType } from 'tsd';
 import type { SupportedChain, YieldProtocol } from '../src/constants.js';
 import { AxelarChain } from '../src/constants.js';
@@ -25,7 +27,9 @@ import type {
 } from '../src/types.js';
 
 declare const natAmount: NatAmount;
+declare const chainId: CaipChainId;
 declare const accountId: AccountId;
+declare const address: EVMAddress;
 declare const bech32Address: Bech32Address;
 declare const cosmosAddress: CosmosChainAddress;
 declare const publishedTx: PublishedTx;
@@ -143,6 +147,23 @@ const status: StatusFor = {
       Ethereum: `eip155:1:0x3333`,
       Optimism: `eip155:10:0x4444`,
     },
+    evmRemoteAccountConfig: {
+      currentRouterAddresses: {
+        Arbitrum: `eip155:1234:0xabcd`,
+        Avalanche: `eip155:4321:0xfedc`,
+        Base: `eip155:1111:0xbbbb`,
+        Ethereum: `eip155:1:0xcccc`,
+        Optimism: `eip155:10:0xdddd`,
+      },
+      factoryAddresses: {
+        Arbitrum: `eip155:1234:0x1a2b`,
+        Avalanche: `eip155:4321:0x9f8e`,
+        Base: `eip155:1111:0x2b2b`,
+        Ethereum: `eip155:1:0x3c3c`,
+        Optimism: `eip155:10:0x4d4d`,
+      },
+      remoteAccountBytecodeHash: `0x1234567890abcdef`,
+    },
   },
   evmWallet: {
     updated: 'messageUpdate',
@@ -160,6 +181,13 @@ const status: StatusFor = {
     positionKeys: [instrumentId],
     accountIdByChain: { [supportedChain]: accountId },
     accountsPending: [supportedChain],
+    accountStateByChain: {
+      [supportedChain]: {
+        chainId,
+        address,
+        state: 'provisioning',
+      },
+    },
     depositAddress: bech32Address,
     nobleForwardingAddress: bech32Address,
     targetAllocation,

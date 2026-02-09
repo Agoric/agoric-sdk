@@ -7,7 +7,7 @@ import type { Abi } from 'viem';
 /**
  * Beefy-specific helper invoked by the portfolio smart wallet to perform
  * a withdraw flow that is awkward to express as raw multicall steps.
- * @see {@link ../pos-gmp.flows.ts}
+ * @see {@link ../pos-evm.flows.ts}
  */
 export const walletHelperABI = [
   {

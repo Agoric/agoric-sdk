@@ -72,6 +72,8 @@ harden(TxType);
  * @property {HexAddress} [factoryAddr] - The address of the EVM smart wallet
  * factory contract responsible for creating the smart wallet (only for type
  * "MAKE_ACCOUNT")
+ * @property {boolean} [useResultEvent] - listen for an OperationResult event (true).
+ * Only for GMP and MAKE_ACCOUNT transactions
  */
 
 // eslint-disable-next-line @agoric/group-jsdoc-imports
