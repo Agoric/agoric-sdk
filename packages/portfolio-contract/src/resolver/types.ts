@@ -79,6 +79,7 @@ const PublishedTxShapes: Record<string, TypedPattern<PublishedTx>> = harden({
       amount: M.nat(),
     },
     {
+      sourceAddress: AccountIdShape,
       ...optionalPublishedTxProps,
     },
     {},
