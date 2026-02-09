@@ -1,9 +1,9 @@
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { CodecHelper } from '@agoric/cosmic-proto';
 import { MsgDelegateResponse as MsgDelegateResponseType } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { IBCEvent } from '@agoric/vats';
 import { heapVowE } from '@agoric/vow/vat.js';
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
 import type { Installation } from '@agoric/zoe';
