@@ -422,6 +422,7 @@ __metadata:
     "@agoric/store": "workspace:*"
     "@agoric/swing-store": "workspace:*"
     "@agoric/swingset-liveslots": "workspace:*"
+    "@agoric/swingset-vat": "workspace:*"
     "@agoric/time": "workspace:*"
     "@agoric/vat-data": "workspace:*"
     "@agoric/vats": "workspace:*"
