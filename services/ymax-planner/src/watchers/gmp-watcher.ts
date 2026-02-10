@@ -382,12 +382,21 @@ export const lookBackGmp = async ({
 
     if (failedTx) {
       log(`Found matching failed transaction`);
-      deleteTxBlockLowerBound(kvStore, txId, MULTICALL_STATUS_EVENT);
-      return {
-        settled: true,
-        txHash: failedTx.hash,
-        success: false,
-      };
+      const receipt = await provider.getTransactionReceipt(failedTx.hash);
+      if (receipt) {
+        const result = await handleTxRevert(
+          receipt,
+          failedTx.hash,
+          `txId=${txId}`,
+          chainId,
+          provider,
+          log,
+        );
+        if (result) {
+          deleteTxBlockLowerBound(kvStore, txId, MULTICALL_STATUS_EVENT);
+          return result;
+        }
+      }
     }
 
     log(
