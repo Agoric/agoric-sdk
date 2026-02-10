@@ -269,33 +269,34 @@ export const getConfirmationsRequired = (chainId: CaipChainId): number => {
 export const getEvmRpcMap = (
   clusterName: ClusterName,
   alchemyApiKey: string,
+  protocol: 'wss' | 'https' = 'wss',
 ): Record<CaipChainId, string> => {
   switch (clusterName) {
     case 'mainnet':
       return {
         // Source: https://www.alchemy.com/rpc/ethereum
-        'eip155:1': `wss://eth-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:1': `${protocol}://eth-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/avalanche
-        'eip155:43114': `wss://avax-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
-        // Source:  https://www.alchemy.com/rpc/arbitrum
-        'eip155:42161': `wss://arb-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:43114': `${protocol}://avax-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
+        // Source: https://www.alchemy.com/rpc/arbitrum
+        'eip155:42161': `${protocol}://arb-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/optimism
-        'eip155:10': `wss://opt-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:10': `${protocol}://opt-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/base
-        'eip155:8453': `wss://base-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:8453': `${protocol}://base-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
       };
     case 'testnet':
       return {
         // Source: https://www.alchemy.com/rpc/ethereum-sepolia
-        'eip155:11155111': `wss://eth-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:11155111': `${protocol}://eth-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/avalanche-fuji
-        'eip155:43113': `wss://avax-fuji.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:43113': `${protocol}://avax-fuji.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/arbitrum-sepolia
-        'eip155:421614': `wss://arb-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:421614': `${protocol}://arb-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/optimism-sepolia
-        'eip155:11155420': `wss://opt-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:11155420': `${protocol}://opt-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/base-sepolia
-        'eip155:84532': `wss://base-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:84532': `${protocol}://base-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
       };
     default:
       throw Error(`Unsupported cluster name ${clusterName}`);
@@ -317,21 +318,21 @@ export const createEVMContext = async ({
   if (clusterName === 'local') clusterName = 'testnet';
   if (!alchemyApiKey) throw Error('missing alchemyApiKey');
 
-  const urls = getEvmRpcMap(clusterName, alchemyApiKey);
+  const wssUrls = getEvmRpcMap(clusterName, alchemyApiKey, 'wss');
+  const httpsUrls = getEvmRpcMap(clusterName, alchemyApiKey, 'https');
   const evmProviders = Object.fromEntries(
-    Object.entries(urls).map(([caip, wsUrl]) => [
+    Object.entries(wssUrls).map(([caip, wsUrl]) => [
       caip,
       new WebSocketProvider(wsUrl),
     ]),
   ) as EvmProviders;
 
-  const rpcMap = objectMap(urls, url => url.replace('wss://', 'https://'));
   return {
     evmProviders,
     // XXX Remove now that @agoric/portfolio-api/src/constants.js
     // defines UsdcTokenIds.
     usdcAddresses: usdcAddresses[clusterName],
-    rpcUrls: rpcMap,
+    rpcUrls: httpsUrls,
   };
 };
 
