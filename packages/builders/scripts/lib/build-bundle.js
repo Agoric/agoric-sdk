@@ -6,6 +6,8 @@ import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js'
 
 /** @type {Map<string, Promise<Awaited<ReturnType<typeof unsafeMakeBundleCache>>>>} */
 const bundleCaches = new Map();
+/** @type {Map<string, Promise<string>>} */
+const bundlePathCache = new Map();
 
 /**
  * @typedef {{
@@ -60,16 +62,26 @@ export const buildBundlePath = async (
   }
 
   const bundleDir = pathResolve(fromDir, bundleDirRel);
-
-  if (!bundleCaches.has(bundleDir)) {
-    bundleCaches.set(bundleDir, unsafeMakeBundleCache(bundleDir));
+  // Use '\0' to avoid ambiguity between key components.
+  const cacheKey = [bundleDir, sourceSpec, resolvedBundleName].join('\0');
+  const cached = bundlePathCache.get(cacheKey);
+  if (cached) {
+    return cached;
   }
-  const bundleCacheP = bundleCaches.get(bundleDir);
-  assert(bundleCacheP, `missing bundle cache for ${bundleDir}`);
-  const bundleCache = await bundleCacheP;
-  const { bundleFileName } = await bundleCache.validateOrAdd(
-    sourceSpec,
-    resolvedBundleName,
-  );
-  return pathResolve(bundleDir, bundleFileName);
+
+  const bundlePathP = (async () => {
+    if (!bundleCaches.has(bundleDir)) {
+      bundleCaches.set(bundleDir, unsafeMakeBundleCache(bundleDir));
+    }
+    const bundleCacheP = bundleCaches.get(bundleDir);
+    assert(bundleCacheP, `missing bundle cache for ${bundleDir}`);
+    const bundleCache = await bundleCacheP;
+    const { bundleFileName } = await bundleCache.validateOrAdd(
+      sourceSpec,
+      resolvedBundleName,
+    );
+    return pathResolve(bundleDir, bundleFileName);
+  })();
+  bundlePathCache.set(cacheKey, bundlePathP);
+  return bundlePathP;
 };

@@ -1,7 +1,9 @@
 import { makeNodeBundleCache as wrappedMaker } from '@endo/bundle-source/cache.js';
 import styles from 'ansi-styles'; // less authority than 'chalk'
+import { mkdir, rm } from 'fs/promises';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import { setTimeout as delay } from 'timers/promises';
 
 /**
  * @import {EReturn} from '@endo/far';
@@ -62,31 +64,117 @@ export const makeNodeBundleCache = async (dest, options, loadModule, pid) => {
   };
 
   const log = (...args) => {
+    const joined = args.map(arg => String(arg)).join(' ');
+    const isCacheHit = joined.includes(' valid:');
+    const phase = isCacheHit
+      ? '[cache-hit]'
+      : joined.includes(' add:') || joined.includes(' bundled ')
+        ? '[rebuilt]'
+        : '[check]';
+    if (isCacheHit) {
+      return;
+    }
+    let phase = '[check]';
+    if (joined.includes(' add:') || joined.includes(' bundled ')) {
+      phase = '[rebuilt]';
+    }
     const flattened = args.map(arg =>
       // Don't print stack traces.
       arg instanceof Error ? arg.message : arg,
     );
     console.log(
       // Make all messages prefixed and dim.
-      `${styles.dim.open}[bundleTool]`,
+      `${styles.dim.open}[bundleTool]${phase}`,
       ...flattened,
       styles.dim.close,
     );
   };
-  const rawCache = await wrappedMaker(dest, { log, ...options }, loadModule, pid);
+  const rawCache = await wrappedMaker(
+    dest,
+    { log, ...options },
+    loadModule,
+    pid,
+  );
+  const lockRoot = path.resolve(dest, '.bundle-locks');
+  /** @type {Map<string, Promise<unknown>>} */
+  const inProcessLoads = new Map();
+
+  /**
+   * @param {string} targetName
+   * @param {() => Promise<any>} duringLock
+   */
+  const withBundleLock = async (targetName, duringLock) => {
+    const lockName = `${encodeURIComponent(targetName)}.lock`;
+    const lockPath = path.resolve(lockRoot, lockName);
+    await mkdir(lockRoot, { recursive: true });
+
+    // Cross-process lock via mkdir(). Retriable on EEXIST.
+    for (;;) {
+      try {
+        await mkdir(lockPath);
+        break;
+      } catch (e) {
+        if (e && typeof e === 'object' && 'code' in e && e.code === 'EEXIST') {
+          await delay(20);
+          continue;
+        }
+        throw e;
+      }
+    }
+
+    try {
+      return await duringLock();
+    } finally {
+      await rm(lockPath, { recursive: true, force: true });
+    }
+  };
+
   const cache = harden({
     ...rawCache,
-    add: (rootPath, targetName, log0, options0) =>
-      rawCache.add(canonicalizeSourceSpec(rootPath), targetName, log0, options0),
+    add: (rootPath, targetName, log0, options0) => {
+      const canonicalRootPath = canonicalizeSourceSpec(rootPath);
+      const resolvedTargetName =
+        targetName || path.basename(canonicalRootPath, '.js');
+      return withBundleLock(resolvedTargetName, () =>
+        rawCache.add(canonicalRootPath, resolvedTargetName, log0, options0),
+      );
+    },
     validateOrAdd: (rootPath, targetName, log0, options0) =>
-      rawCache.validateOrAdd(
-        canonicalizeSourceSpec(rootPath),
-        targetName,
-        log0,
-        options0,
+      withBundleLock(
+        targetName || path.basename(canonicalizeSourceSpec(rootPath), '.js'),
+        () =>
+          rawCache.validateOrAdd(
+            canonicalizeSourceSpec(rootPath),
+            targetName ||
+              path.basename(canonicalizeSourceSpec(rootPath), '.js'),
+            log0,
+            options0,
+          ),
       ),
-    load: (rootPath, targetName, log0, options0) =>
-      rawCache.load(canonicalizeSourceSpec(rootPath), targetName, log0, options0),
+    load: async (rootPath, targetName, log0, options0) => {
+      const canonicalRootPath = canonicalizeSourceSpec(rootPath);
+      const resolvedTargetName =
+        targetName || path.basename(canonicalRootPath, '.js');
+      const key = `${resolvedTargetName}:${canonicalRootPath}:${JSON.stringify(
+        options0 || {},
+      )}`;
+      const found = inProcessLoads.get(key);
+      if (found) {
+        return found;
+      }
+      const pending = withBundleLock(resolvedTargetName, async () => {
+        const { bundleFileName } = await rawCache.validateOrAdd(
+          canonicalRootPath,
+          resolvedTargetName,
+          log0,
+          options0,
+        );
+        const bundlePath = path.resolve(dest, bundleFileName);
+        return import(bundlePath).then(m => harden(m.default));
+      });
+      inProcessLoads.set(key, pending);
+      return pending;
+    },
   });
   /**
    * Load all entries in a source-spec registry.
