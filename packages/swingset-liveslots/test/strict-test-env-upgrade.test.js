@@ -1,10 +1,9 @@
 /* global globalThis */
-import '@endo/init/debug.js';
+import { annihilate, startLife } from '../tools/prepare-strict-test-env.js';
 
 import test from 'ava';
 
 import { makeUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
-import { annihilate, startLife } from '../tools/prepare-strict-test-env.js';
 import { makeExoUtils } from './exo-utils.js';
 
 test.serial('kind redefinition enforced', async t => {
