@@ -1393,6 +1393,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/vm-config@workspace:packages/vm-config"
   dependencies:
+    "@agoric/builders": "workspace:*"
+    "@agoric/inter-protocol": "workspace:*"
+    "@agoric/smart-wallet": "workspace:*"
+    "@agoric/vats": "workspace:*"
+    "@agoric/zoe": "workspace:*"
     ava: "npm:^6.4.1"
     c8: "npm:^10.1.3"
   languageName: unknown
