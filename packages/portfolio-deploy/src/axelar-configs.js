@@ -248,6 +248,7 @@ const beefyVaultAddresses = harden({
   },
 });
 
+// XXX move to a new morpho-config.js https://github.com/Agoric/agoric-sdk/pull/12438#discussion_r2783437249
 /** @type {Record<string, AddressesMap>} */
 const erc4626VaultAddresses = harden({
   vaultU2: {
@@ -324,7 +325,45 @@ const erc4626VaultAddresses = harden({
   },
   morphoGauntletUsdcCore: {
     mainnet: {
+      Arbitrum: '0x7e97fa6893871A2751B5fE961978DCCb2c201E65', // https://app.morpho.org/arbitrum/vault/0x7e97fa6893871A2751B5fE961978DCCb2c201E65/gauntlet-usdc-core
       Ethereum: '0x8eB67A509616cd6A7c1B3c8C21D48FF57df3d458', // https://app.morpho.org/ethereum/vault/0x8eB67A509616cd6A7c1B3c8C21D48FF57df3d458/gauntlet-usdc-core
+    },
+    testnet: {},
+  },
+  morphoSteakhousePrimeUsdc: {
+    mainnet: {
+      Base: '0xBEEFE94c8aD530842bfE7d8B397938fFc1cb83b2', // https://app.morpho.org/base/vault/0xBEEFE94c8aD530842bfE7d8B397938fFc1cb83b2/steakhouse-prime-usdc
+    },
+    testnet: {},
+  },
+  morphoSteakhouseUsdc: {
+    mainnet: {
+      Base: '0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183', // https://app.morpho.org/base/vault/0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183/steakhouse-usdc
+    },
+    testnet: {},
+  },
+  morphoGauntletUsdcPrime: {
+    mainnet: {
+      Base: '0xeE8F4eC5672F09119b96Ab6fB59C27E1b7e44b61', // https://app.morpho.org/base/vault/0xeE8F4eC5672F09119b96Ab6fB59C27E1b7e44b61/gauntlet-usdc-prime
+      Optimism: '0xC30ce6A5758786e0F640cC5f881Dd96e9a1C5C59', // https://app.morpho.org/opmainnet/vault/0xC30ce6A5758786e0F640cC5f881Dd96e9a1C5C59/gauntlet-usdc-prime
+    },
+    testnet: {},
+  },
+  morphoSeamlessUsdcVault: {
+    mainnet: {
+      Base: '0x616a4E1db48e22028f6bbf20444Cd3b8e3273738', // https://app.morpho.org/base/vault/0x616a4E1db48e22028f6bbf20444Cd3b8e3273738/seamless-usdc-vault
+    },
+    testnet: {},
+  },
+  morphoSteakhouseHighYieldUsdc: {
+    mainnet: {
+      Arbitrum: '0x5c0C306Aaa9F877de636f4d5822cA9F2E81563BA', // https://app.morpho.org/arbitrum/vault/0x5c0C306Aaa9F877de636f4d5822cA9F2E81563BA/steakhouse-high-yield-usdc
+    },
+    testnet: {},
+  },
+  morphoHyperithmUsdc: {
+    mainnet: {
+      Arbitrum: '0x4B6F1C9E5d470b97181786b26da0d0945A7cf027', // https://app.morpho.org/arbitrum/vault/0x4B6F1C9E5d470b97181786b26da0d0945A7cf027/hyperithm-usdc
     },
     testnet: {},
   },
@@ -527,6 +566,8 @@ const mainnetContracts = {
     Beefy_compoundUsdc_Optimism:
       beefyVaultAddresses.compoundUsdc.mainnet.Optimism,
     walletHelper: walletHelperAddresses.mainnet.Optimism,
+    ERC4626_morphoGauntletUsdcPrime_Optimism:
+      erc4626VaultAddresses.morphoGauntletUsdcPrime.mainnet.Optimism,
   },
   Arbitrum: {
     aavePool: aaveAddresses.mainnet.Arbitrum,
@@ -546,6 +587,12 @@ const mainnetContracts = {
     Beefy_compoundUsdc_Arbitrum:
       beefyVaultAddresses.compoundUsdc.mainnet.Arbitrum,
     walletHelper: walletHelperAddresses.mainnet.Arbitrum,
+    ERC4626_morphoSteakhouseHighYieldUsdc_Arbitrum:
+      erc4626VaultAddresses.morphoSteakhouseHighYieldUsdc.mainnet.Arbitrum,
+    ERC4626_morphoGauntletUsdcCore_Arbitrum:
+      erc4626VaultAddresses.morphoGauntletUsdcCore.mainnet.Arbitrum,
+    ERC4626_morphoHyperithmUsdc_Arbitrum:
+      erc4626VaultAddresses.morphoHyperithmUsdc.mainnet.Arbitrum,
   },
   Base: {
     aavePool: aaveAddresses.mainnet.Base,
@@ -564,6 +611,14 @@ const mainnetContracts = {
     Beefy_morphoSeamlessUsdc_Base:
       beefyVaultAddresses.morphoSeamlessUsdc.mainnet.Base,
     walletHelper: walletHelperAddresses.mainnet.Base,
+    ERC4626_morphoSteakhousePrimeUsdc_Base:
+      erc4626VaultAddresses.morphoSteakhousePrimeUsdc.mainnet.Base,
+    ERC4626_morphoSteakhouseUsdc_Base:
+      erc4626VaultAddresses.morphoSteakhouseUsdc.mainnet.Base,
+    ERC4626_morphoGauntletUsdcPrime_Base:
+      erc4626VaultAddresses.morphoGauntletUsdcPrime.mainnet.Base,
+    ERC4626_morphoSeamlessUsdcVault_Base:
+      erc4626VaultAddresses.morphoSeamlessUsdcVault.mainnet.Base,
   },
 };
 harden(mainnetContracts);
