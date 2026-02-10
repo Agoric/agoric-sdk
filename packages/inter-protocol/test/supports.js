@@ -44,17 +44,12 @@ export { makeMockChainStorageRoot };
 export const DENOM_UNIT = 1_000_000n;
 
 /**
- * @param {any} t
+ * @param {ExecutionContext} t
  * @param {string} sourceRoot
  * @param {string} bundleName
  * @returns {Promise<SourceBundle>}
  */
 export const provideBundle = (t, sourceRoot, bundleName) => {
-  assert(
-    t.context && t.context.bundleCache,
-    'must set t.context.bundleCache in test.before()',
-  );
-  const { bundleCache } = t.context;
   return bundleCache.load(sourceRoot, bundleName);
 };
 harden(provideBundle);
@@ -72,7 +67,7 @@ export const setUpZoeForTest = async (setJig = () => {}) =>
 harden(setUpZoeForTest);
 
 /**
- * @param {any} t
+ * @param {ExecutionContext<any>} t
  * @param {TimerService} [optTimer]
  */
 export const setupBootstrap = async (t, optTimer) => {
