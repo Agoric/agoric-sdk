@@ -1,6 +1,7 @@
 import { makeNodeBundleCache as wrappedMaker } from '@endo/bundle-source/cache.js';
 import styles from 'ansi-styles'; // less authority than 'chalk'
 import { fileURLToPath } from 'url';
+import path from 'path';
 
 /**
  * @import {EReturn} from '@endo/far';
@@ -37,6 +38,29 @@ import { fileURLToPath } from 'url';
  * @returns {Promise<BundleCache>}
  */
 export const makeNodeBundleCache = async (dest, options, loadModule, pid) => {
+  /** @param {string} sourceSpec */
+  const canonicalizeSourceSpec = sourceSpec => {
+    if (sourceSpec.startsWith('file:')) {
+      return fileURLToPath(sourceSpec);
+    }
+    if (sourceSpec.startsWith('./') || sourceSpec.startsWith('../')) {
+      return path.resolve(sourceSpec);
+    }
+    if (path.isAbsolute(sourceSpec)) {
+      // On Windows, URL-style paths like '/C:/x/y.js' are absolute but need
+      // the leading slash stripped to become a valid local path.
+      if (path.sep === '\\' && /^\/[a-zA-Z]:\//.test(sourceSpec)) {
+        return path.normalize(sourceSpec.slice(1));
+      }
+      return path.normalize(sourceSpec);
+    }
+    try {
+      return fileURLToPath(import.meta.resolve(sourceSpec));
+    } catch {
+      return sourceSpec;
+    }
+  };
+
   const log = (...args) => {
     const flattened = args.map(arg =>
       // Don't print stack traces.
@@ -49,7 +73,21 @@ export const makeNodeBundleCache = async (dest, options, loadModule, pid) => {
       styles.dim.close,
     );
   };
-  const cache = await wrappedMaker(dest, { log, ...options }, loadModule, pid);
+  const rawCache = await wrappedMaker(dest, { log, ...options }, loadModule, pid);
+  const cache = harden({
+    ...rawCache,
+    add: (rootPath, targetName, log0, options0) =>
+      rawCache.add(canonicalizeSourceSpec(rootPath), targetName, log0, options0),
+    validateOrAdd: (rootPath, targetName, log0, options0) =>
+      rawCache.validateOrAdd(
+        canonicalizeSourceSpec(rootPath),
+        targetName,
+        log0,
+        options0,
+      ),
+    load: (rootPath, targetName, log0, options0) =>
+      rawCache.load(canonicalizeSourceSpec(rootPath), targetName, log0, options0),
+  });
   /**
    * Load all entries in a source-spec registry.
    * Each returned property is named `${key}Bundle`.
