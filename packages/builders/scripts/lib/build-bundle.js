@@ -21,14 +21,15 @@ const bundleCaches = new Map();
  * @param {string} fromMetaUrl
  * @param {string | BundleRegistryEntry} moduleSpecifierOrEntry
  * @param {string} [bundleName]
- * @param {string} [bundleDirRel]
+ * @param {{ bundleDirRel?: string }} [options]
  */
 export const buildBundlePath = async (
   fromMetaUrl,
   moduleSpecifierOrEntry,
   bundleName = undefined,
-  bundleDirRel = '../bundles',
+  options = {},
 ) => {
+  const { bundleDirRel = '../bundles' } = options;
   const fromDir = dirname(fileURLToPath(fromMetaUrl));
   /** @type {string | undefined} */
   let sourceSpec;
@@ -51,9 +52,6 @@ export const buildBundlePath = async (
       sourceSpec0 ||
       (packagePath && fileURLToPath(import.meta.resolve(packagePath)));
     resolvedBundleName = entryBundleName;
-    if (bundleName) {
-      bundleDirRel = bundleName;
-    }
   }
   if (!sourceSpec || !resolvedBundleName) {
     throw TypeError(
@@ -67,9 +65,7 @@ export const buildBundlePath = async (
     bundleCaches.set(bundleDir, unsafeMakeBundleCache(bundleDir));
   }
   const bundleCacheP = bundleCaches.get(bundleDir);
-  if (!bundleCacheP) {
-    throw Error(`missing bundle cache for ${bundleDir}`);
-  }
+  assert(bundleCacheP, `missing bundle cache for ${bundleDir}`);
   const bundleCache = await bundleCacheP;
   const { bundleFileName } = await bundleCache.validateOrAdd(
     sourceSpec,

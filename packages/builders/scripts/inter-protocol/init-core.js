@@ -51,6 +51,36 @@ const installKeyGroups = {
  * @param {object} opts
  * @param {(i: I) => R} opts.publishRef
  * @param {(m: string, b: string, opts?: any) => I} opts.install
+ * @param {Record<string, BundleRegistryEntry>} opts.group
+ * @param {boolean} [opts.persist]
+ */
+const publishInstallGroup = async ({ publishRef, install, group, persist }) =>
+  Object.fromEntries(
+    // eslint-disable-next-line @jessie.js/safe-await-separator
+    await Promise.all(
+      Object.entries(group).map(async ([key, entry]) => {
+        const bundlePath = await buildBundlePath(import.meta.url, entry);
+        assert(entry.packagePath, `${key} missing packagePath`);
+        return [
+          key,
+          publishRef(
+            install(
+              entry.packagePath,
+              bundlePath,
+              persist === undefined ? undefined : { persist },
+            ),
+          ),
+        ];
+      }),
+    ),
+  );
+
+/**
+ * @template I
+ * @template R
+ * @param {object} opts
+ * @param {(i: I) => R} opts.publishRef
+ * @param {(m: string, b: string, opts?: any) => I} opts.install
  * @param {<T>(f: T) => T} [opts.wrapInstall]
  * @param {object} [options]
  * @param {{ committeeName?: string; committeeSize?: number }} [options.econCommitteeOptions]
@@ -60,23 +90,12 @@ export const committeeProposalBuilder = async (
   { econCommitteeOptions } = {},
 ) => {
   const install = wrapInstall ? wrapInstall(install0) : install0;
-
-  /** @param {Record<string, BundleRegistryEntry>} group */
-  const publishGroup = async group =>
-    Object.fromEntries(
-      await Promise.all(
-        Object.entries(group).map(async ([key, entry]) => {
-          const bundlePath = await buildBundlePath(import.meta.url, entry);
-          assert(entry.packagePath, `${key} missing packagePath`);
-          return [
-            key,
-            publishRef(install(entry.packagePath, bundlePath, { persist: true })),
-          ];
-        }),
-      ),
-    );
-
-  const econCommitteeInstallKeys = await publishGroup(installKeyGroups.econCommittee);
+  const econCommitteeInstallKeys = await publishInstallGroup({
+    publishRef,
+    install,
+    group: installKeyGroups.econCommittee,
+    persist: true,
+  });
   return harden({
     sourceSpec: '@agoric/inter-protocol/src/proposals/core-proposal.js',
     getManifestCall: [
@@ -107,20 +126,12 @@ export const mainProposalBuilder = async ({
   const { VAULT_FACTORY_CONTROLLER_ADDR } = process.env;
 
   const install = wrapInstall ? wrapInstall(install0) : install0;
-
-  const persist = true;
-  /** @param {Record<string, BundleRegistryEntry>} group */
-  const publishGroup = async group =>
-    Object.fromEntries(
-      await Promise.all(
-        Object.entries(group).map(async ([key, entry]) => {
-          const bundlePath = await buildBundlePath(import.meta.url, entry);
-          assert(entry.packagePath, `${key} missing packagePath`);
-          return [key, publishRef(install(entry.packagePath, bundlePath, { persist }))];
-        }),
-      ),
-    );
-  const mainInstallKeys = await publishGroup(installKeyGroups.main);
+  const mainInstallKeys = await publishInstallGroup({
+    publishRef,
+    install,
+    group: installKeyGroups.main,
+    persist: true,
+  });
   return harden({
     sourceSpec: '@agoric/inter-protocol/src/proposals/core-proposal.js',
     getManifestCall: [
@@ -160,18 +171,6 @@ export const defaultProposalBuilder = async (
     } = {},
   } = options;
 
-  /** @param {Record<string, BundleRegistryEntry>} group */
-  const publishGroup = async group =>
-    Object.fromEntries(
-      await Promise.all(
-        Object.entries(group).map(async ([key, entry]) => {
-          const bundlePath = await buildBundlePath(import.meta.url, entry);
-          assert(entry.packagePath, `${key} missing packagePath`);
-          return [key, publishRef(install(entry.packagePath, bundlePath))];
-        }),
-      ),
-    );
-
   const anchorOptions = anchorDenom && {
     denom: anchorDenom,
     decimalPlaces: parseInt(anchorDecimalPlaces, 10),
@@ -183,8 +182,16 @@ export const defaultProposalBuilder = async (
   const econCommitteeOptions = {
     committeeSize: parseInt(econCommitteeSize, 10),
   };
-  const econCommitteeInstallKeys = await publishGroup(installKeyGroups.econCommittee);
-  const mainInstallKeys = await publishGroup(installKeyGroups.main);
+  const econCommitteeInstallKeys = await publishInstallGroup({
+    publishRef,
+    install,
+    group: installKeyGroups.econCommittee,
+  });
+  const mainInstallKeys = await publishInstallGroup({
+    publishRef,
+    install,
+    group: installKeyGroups.main,
+  });
 
   return harden({
     sourceSpec: '@agoric/inter-protocol/src/proposals/core-proposal.js',
