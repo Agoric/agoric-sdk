@@ -5,7 +5,36 @@ import styles from 'ansi-styles'; // less authority than 'chalk'
  * @import {EReturn} from '@endo/far';
  */
 
-/** @type {typeof wrappedMaker} */
+/** @typedef {EReturn<typeof wrappedMaker>} WrappedBundleCache */
+/**
+ * @typedef {{
+ *   sourceSpec?: string;
+ *   packagePath?: string;
+ *   bundleName?: string;
+ * }} BundleRegistryEntry
+ */
+/**
+ * @typedef {Awaited<ReturnType<WrappedBundleCache['load']>>} LoadedBundle
+ */
+/**
+ * @template {Record<string, BundleRegistryEntry>} T
+ * @typedef {{
+ *   [K in keyof T as `${K & string}Bundle`]: LoadedBundle
+ * }} LoadedRegistryBundles
+ */
+/**
+ * @typedef {WrappedBundleCache & {
+ *   loadRegistry: <T extends Record<string, BundleRegistryEntry>>(registry: T) => Promise<LoadedRegistryBundles<T>>;
+ * }} BundleCache
+ */
+
+/**
+ * @param {string} dest
+ * @param {Parameters<typeof wrappedMaker>[1]} options
+ * @param {Parameters<typeof wrappedMaker>[2]} loadModule
+ * @param {number} [pid]
+ * @returns {Promise<BundleCache>}
+ */
 export const makeNodeBundleCache = async (dest, options, loadModule, pid) => {
   const log = (...args) => {
     const flattened = args.map(arg =>
@@ -19,9 +48,40 @@ export const makeNodeBundleCache = async (dest, options, loadModule, pid) => {
       styles.dim.close,
     );
   };
-  return wrappedMaker(dest, { log, ...options }, loadModule, pid);
+  const cache = await wrappedMaker(dest, { log, ...options }, loadModule, pid);
+  /**
+   * Load all entries in a source-spec registry.
+   * Each returned property is named `${key}Bundle`.
+   *
+   * @template {Record<string, BundleRegistryEntry>} T
+   * @param {T} registry
+   * @returns {Promise<LoadedRegistryBundles<T>>}
+   */
+  const loadRegistry = async registry => {
+    const loaded = await Promise.all(
+      Object.entries(registry).map(async ([key, spec]) => {
+        const sourceSpec = spec.sourceSpec || spec.packagePath;
+        if (typeof sourceSpec !== 'string') {
+          throw TypeError(
+            `registry.${key} must include sourceSpec or packagePath`,
+          );
+        }
+        const bundleName = spec.bundleName || key;
+        const bundle = await cache.load(sourceSpec, bundleName);
+        return [`${key}Bundle`, bundle];
+      }),
+    );
+    return /** @type {LoadedRegistryBundles<T>} */ (
+      harden(Object.fromEntries(loaded))
+    );
+  };
+  return /** @type {BundleCache} */ (
+    harden({
+      ...cache,
+      loadRegistry,
+    })
+  );
 };
-/** @typedef {EReturn<typeof makeNodeBundleCache>} BundleCache */
 
 /** @type {Map<string, Promise<BundleCache>>} */
 const providedCaches = new Map();
