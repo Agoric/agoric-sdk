@@ -5,6 +5,7 @@ import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.js';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import { tryJsonParse } from '@agoric/internal';
+import { PendingTxCode } from '../pending-tx-manager.ts';
 import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
@@ -258,7 +259,7 @@ export const watchGmp = ({
     timeoutId = setTimeout(() => {
       if (!done) {
         log(
-          `✗ No transaction status found for txId ${txId} within ${
+          `[${PendingTxCode.GMP_TX_NOT_FOUND}] ✗ No transaction status found for txId ${txId} within ${
             timeoutMs / 60000
           } minutes`,
         );
@@ -350,7 +351,9 @@ export const lookBackGmp = async ({
       };
     }
 
-    log(`No matching MulticallStatus or MulticallExecuted found`);
+    log(
+      `[${PendingTxCode.GMP_TX_NOT_FOUND}] No matching MulticallStatus or MulticallExecuted found`,
+    );
     return { settled: false };
   } catch (error) {
     log(`Error:`, error);

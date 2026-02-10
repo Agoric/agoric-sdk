@@ -164,7 +164,7 @@ test('handlePendingTx keeps tx pending on amount mismatch until timeout and then
     `[${txId}] Watching for ERC-20 transfers to: ${receiver} with amount: ${expectedAmount}`,
     `[${txId}] Transfer detected: token=${usdcAddress} from=0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 to=${receiver} amount=${notExpectedAmt} tx=0x123abc`,
     `[${txId}] Amount mismatch. Expected: ${expectedAmount}, Received: ${notExpectedAmt}`,
-    `[${txId}] ✗ No matching transfer found within 0.05 minutes`,
+    `[${txId}] [CCTP_TX_NOT_FOUND] ✗ No matching transfer found within 0.05 minutes`,
     `[${txId}] Transfer detected: token=${usdcAddress} from=0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 to=${receiver} amount=${amount} tx=0x123abc`,
     `[${txId}] ✓ Amount matches! Expected: ${amount}, Received: ${amount}`,
     `[${txId}] CCTP tx resolved`,
