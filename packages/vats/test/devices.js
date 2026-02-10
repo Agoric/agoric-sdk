@@ -1,7 +1,9 @@
-// eslint-disable-next-line import/no-extraneous-dependencies -- cannot detect self-reference
-import centralSupply from '@agoric/vats/bundles/bundle-centralSupply.js';
-// eslint-disable-next-line import/no-extraneous-dependencies -- cannot detect self-reference
-import mintHolder from '@agoric/vats/bundles/bundle-mintHolder.js';
+import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { vatsSourceSpecRegistry } from '../source-spec-registry.js';
+
+const bundleCache = await unsafeMakeBundleCache('bundles/');
+const { centralSupplyBundle: centralSupply, mintHolderBundle: mintHolder } =
+  await bundleCache.loadRegistry(vatsSourceSpecRegistry);
 
 export const bundles = {
   centralSupply,

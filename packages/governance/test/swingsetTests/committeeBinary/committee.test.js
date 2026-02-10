@@ -2,9 +2,10 @@
 
 import test from 'ava';
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
+import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import bundleSource from '@endo/bundle-source';
-import zcfBundle from '@agoric/zoe/bundles/bundle-contractFacet.js';
 import path from 'path';
+import { zoeSourceSpecRegistry } from '@agoric/zoe/source-spec-registry.js';
 
 const CONTRACT_FILES = ['committee', 'binaryVoteCounter'];
 
@@ -13,6 +14,8 @@ const dirname = path.dirname(new URL(import.meta.url).pathname);
 test.before(async t => {
   const start = Date.now();
   const kernelBundles = await buildKernelBundles();
+  const bundleCache = await unsafeMakeBundleCache('bundles/');
+  const { zcfBundle } = await bundleCache.loadRegistry(zoeSourceSpecRegistry);
   const step2 = Date.now();
   const contractBundles = {};
   await Promise.all(

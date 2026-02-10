@@ -1,7 +1,3 @@
-import binaryVoteCounterBundle from '@agoric/governance/bundles/bundle-binaryVoteCounter.js';
-import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
-import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
-import puppetContractGovernorBundle from '@agoric/governance/bundles/bundle-puppetContractGovernor.js';
 import { makeTracer } from '@agoric/internal';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
@@ -17,6 +13,16 @@ import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { setUpZoeForTest as generalSetUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
+import { governanceSourceSpecRegistry } from '@agoric/governance/source-spec-registry.js';
+import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+
+const bundleCache = await unsafeMakeBundleCache('bundles/');
+const {
+  binaryVoteCounterBundle,
+  committeeBundle,
+  contractGovernorBundle,
+  puppetContractGovernorBundle,
+} = await bundleCache.loadRegistry(governanceSourceSpecRegistry);
 
 /**
  * @import {FeeMintAccess, SourceBundle, ZoeService} from '@agoric/zoe';

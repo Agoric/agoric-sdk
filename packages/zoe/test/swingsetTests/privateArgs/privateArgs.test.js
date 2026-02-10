@@ -1,10 +1,9 @@
 import anyTest from 'ava';
 import path from 'path';
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
+import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import bundleSource from '@endo/bundle-source';
-
-// eslint-disable-next-line import/no-extraneous-dependencies -- cannot detect self-reference
-import zcfBundle from '@agoric/zoe/bundles/bundle-contractFacet.js';
+import { zoeSourceSpecRegistry } from '../../../source-spec-registry.js';
 
 /**
  * @import {TestFn} from 'ava';
@@ -20,6 +19,8 @@ const test = anyTest;
 test.before(async t => {
   const start = Date.now();
   const kernelBundles = await buildKernelBundles();
+  const bundleCache = await unsafeMakeBundleCache('bundles/');
+  const { zcfBundle } = await bundleCache.loadRegistry(zoeSourceSpecRegistry);
   const step2 = Date.now();
   const contractBundles = {};
   await Promise.all(

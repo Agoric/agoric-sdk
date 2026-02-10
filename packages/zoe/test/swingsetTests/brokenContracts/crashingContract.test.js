@@ -4,15 +4,20 @@ import test from 'ava';
 import path from 'path';
 
 import { loadBasedir, buildVatController } from '@agoric/swingset-vat';
+import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import bundleSource from '@endo/bundle-source';
-
-// eslint-disable-next-line import/no-extraneous-dependencies -- cannot detect self-reference
-import zcfBundle from '@agoric/zoe/bundles/bundle-contractFacet.js';
+import { zoeSourceSpecRegistry } from '../../../source-spec-registry.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const CONTRACT_FILES = ['crashingAutoRefund'];
 const contractBundles = {};
+const zcfBundleP = (async () => {
+  const bundleCache = await unsafeMakeBundleCache('bundles/');
+  const { zcfBundle } =
+    await bundleCache.loadRegistry(zoeSourceSpecRegistry);
+  return zcfBundle;
+})();
 const generateBundlesP = Promise.all(
   CONTRACT_FILES.map(async contract => {
     const bundle = await bundleSource(`${dirname}/${contract}`);
@@ -26,6 +31,7 @@ async function main(argv) {
     sourceSpec: `${dirname}/../../../../vats/src/vat-zoe.js`,
   };
   config.defaultManagerType = 'xs-worker';
+  const zcfBundle = await zcfBundleP;
   await generateBundlesP;
   config.bundles = { zcf: { bundle: zcfBundle }, ...contractBundles };
   config.relaxDurabilityRules = true;

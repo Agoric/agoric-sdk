@@ -7,8 +7,8 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { Far } from '@endo/marshal';
 import { makeScalarMapStore } from '@agoric/store';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
-// eslint-disable-next-line import/no-extraneous-dependencies -- cannot detect self-reference
-import zcfBundle from '@agoric/zoe/bundles/bundle-contractFacet.js';
+import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { zoeSourceSpecRegistry } from '../source-spec-registry.js';
 
 import { evalContractBundle } from '../src/contractFacet/evalContractCode.js';
 import { handlePKitWarning } from '../src/handleWarning.js';
@@ -18,6 +18,9 @@ import { makeHandle } from '../src/makeHandle.js';
  * @import {MapStore} from '@agoric/swingset-liveslots';
  * @import {BundleCap, BundleID, EndoZipBase64Bundle, TestBundle} from '@agoric/swingset-vat';
  */
+
+const bundleCache = await unsafeMakeBundleCache('bundles/');
+const { zcfBundle } = await bundleCache.loadRegistry(zoeSourceSpecRegistry);
 
 // this simulates a bundlecap, which is normally a swingset "device node"
 /** @type {() => BundleCap} */
