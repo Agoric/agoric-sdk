@@ -345,7 +345,7 @@ export const lookBackGmp = async ({
         onRejectedChunk: updateStatusEventLowerBound,
         toAddress: contractAddress,
         verifyFailedTx: tx => {
-          const data = extractExecuteData(tx.data);
+          const data = extractGmpExecuteData(tx.data);
           if (data?.txId === txId) return true;
           return false;
         },
