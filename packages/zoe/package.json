@@ -8,8 +8,6 @@
     "node": "^20.9 || ^22.11"
   },
   "scripts": {
-    "build": "yarn build:bundles",
-    "build:bundles": "node scripts/build-bundles.js",
     "prepack": "yarn run -T prepack-package",
     "postpack": "yarn run -T postpack-package",
     "test": "ava --verbose",
@@ -19,7 +17,6 @@
     "test:xs": "yarn test:xs-worker",
     "test:xs-unit": "exit 0",
     "test:xs-worker": "SWINGSET_WORKER_TYPE=xs-worker ava -c 2 'test/swingsetTests'",
-    "build-zcfBundle": "yarn build:bundles",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
     "lint:eslint": "yarn run -T eslint .",
