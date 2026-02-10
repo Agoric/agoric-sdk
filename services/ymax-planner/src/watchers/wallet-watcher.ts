@@ -4,12 +4,12 @@ import type { WebSocket } from 'ws';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import { tryJsonParse } from '@agoric/internal';
+import { PendingTxCode, TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
 import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
   type WatcherTimeoutOptions,
 } from '../support.ts';
-import { TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
 import {
   deleteTxBlockLowerBound,
   getTxBlockLowerBound,
@@ -323,7 +323,7 @@ export const watchSmartWalletTx = ({
     timeoutId = setTimeout(() => {
       if (!done) {
         log(
-          `✗ No wallet creation found for expectedAddr ${expectedAddr} within ${
+          `[${PendingTxCode.WALLET_TX_NOT_FOUND}] ✗ No wallet creation found for expectedAddr ${expectedAddr} within ${
             timeoutMs / 60000
           } minutes`,
         );
@@ -418,7 +418,9 @@ export const lookBackSmartWalletTx = async ({
     ]);
 
     if (!matchingEvent) {
-      log(`No matching SmartWalletCreated event found`);
+      log(
+        `[${PendingTxCode.WALLET_TX_NOT_FOUND}] No matching SmartWalletCreated event found`,
+      );
       return { settled: false };
     }
 

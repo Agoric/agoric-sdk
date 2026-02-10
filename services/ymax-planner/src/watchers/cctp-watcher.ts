@@ -2,12 +2,12 @@ import type { Filter, WebSocketProvider, Log } from 'ethers';
 import { id, zeroPadValue, getAddress, ethers } from 'ethers';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { KVStore } from '@agoric/internal/src/kv-store.js';
+import { PendingTxCode, TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
 import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
   type WatcherTimeoutOptions,
 } from '../support.ts';
-import { TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
 import {
   deleteTxBlockLowerBound,
   getTxBlockLowerBound,
@@ -146,7 +146,9 @@ export const watchCctpTransfer = ({
 
     timeoutId = setTimeout(() => {
       if (!transferFound) {
-        log(`✗ No matching transfer found within ${timeoutMs / 60000} minutes`);
+        log(
+          `[${PendingTxCode.CCTP_TX_NOT_FOUND}] ✗ No matching transfer found within ${timeoutMs / 60000} minutes`,
+        );
       }
     }, timeoutMs);
   });
@@ -216,7 +218,7 @@ export const lookBackCctp = async ({
     );
 
     if (!matchingEvent) {
-      log(`No matching transfer found`);
+      log(`[${PendingTxCode.CCTP_TX_NOT_FOUND}] No matching transfer found`);
       return { settled: false };
     }
 

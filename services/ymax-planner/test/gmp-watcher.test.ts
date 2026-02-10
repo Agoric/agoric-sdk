@@ -129,7 +129,7 @@ test('handlePendingTx logs a time out on a GMP transaction with no matching even
   t.deepEqual(logMessages, [
     `[${txId}] handling ${type} tx`,
     `[${txId}] Watching transaction status for txId: ${txId} at contract: ${contractAddress}`,
-    `[${txId}] ✗ No transaction status found for txId ${txId} within 0.01 minutes`,
+    `[${txId}] [GMP_TX_NOT_FOUND] ✗ No transaction status found for txId ${txId} within 0.01 minutes`,
     `[${txId}] ✅ SUCCESS: txId=${txId} txHash=0x123abc block=18500000`,
     `[${txId}] GMP tx resolved`,
   ]);
