@@ -1,7 +1,7 @@
 import anyTest from 'ava';
 import path from 'path';
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
-import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import bundleSource from '@endo/bundle-source';
 import { zoeSourceSpecRegistry } from '../../../source-spec-registry.js';
 
@@ -22,7 +22,7 @@ const test = anyTest;
 test.before(async t => {
   const start = Date.now();
   const kernelBundles = await buildKernelBundles();
-  const bundleCache = await unsafeMakeBundleCache('bundles/');
+  const bundleCache = await unsafeSharedBundleCache;
   const { zcfBundle } = await bundleCache.loadRegistry(zoeSourceSpecRegistry);
   const step2 = Date.now();
   const contractBundles = {};

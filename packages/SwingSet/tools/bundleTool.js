@@ -1,5 +1,6 @@
 import { makeNodeBundleCache as wrappedMaker } from '@endo/bundle-source/cache.js';
 import styles from 'ansi-styles'; // less authority than 'chalk'
+import { fileURLToPath } from 'url';
 
 /**
  * @import {EReturn} from '@endo/far';
@@ -118,3 +119,11 @@ harden(provideBundleCache);
  */
 export const unsafeMakeBundleCache = dest =>
   makeNodeBundleCache(dest, {}, s => import(s));
+
+const sharedBundleCachePath = fileURLToPath(
+  new URL('../../../bundles', import.meta.url),
+);
+
+export const unsafeSharedBundleCache = unsafeMakeBundleCache(
+  sharedBundleCachePath,
+);

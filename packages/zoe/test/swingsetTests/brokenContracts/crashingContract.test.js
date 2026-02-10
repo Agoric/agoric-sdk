@@ -4,12 +4,12 @@ import test from 'ava';
 import path from 'path';
 
 import { buildVatController, loadBasedir } from '@agoric/swingset-vat';
-import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { zoeSourceSpecRegistry } from '../../../source-spec-registry.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
-const bundleCache = await unsafeMakeBundleCache('bundles/');
+const bundleCache = await unsafeSharedBundleCache;
 
 async function main(argv) {
   const config = await loadBasedir(dirname);

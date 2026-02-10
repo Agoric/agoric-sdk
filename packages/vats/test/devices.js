@@ -1,7 +1,7 @@
-import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { vatsSourceSpecRegistry } from '../source-spec-registry.js';
 
-const bundleCache = await unsafeMakeBundleCache('bundles/');
+const bundleCache = await unsafeSharedBundleCache;
 const { centralSupplyBundle: centralSupply, mintHolderBundle: mintHolder } =
   await bundleCache.loadRegistry(vatsSourceSpecRegistry);
 

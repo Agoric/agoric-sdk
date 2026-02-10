@@ -3,7 +3,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeFakeMarshaller } from '@agoric/notifier/tools/testSupports.js';
-import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
@@ -14,7 +14,7 @@ import { setupPsm } from './setupPsm.js';
  */
 
 test.before(async t => {
-  const bundleCache = await unsafeMakeBundleCache('bundles/');
+  const bundleCache = await unsafeSharedBundleCache;
   t.context = { bundleCache };
 });
 

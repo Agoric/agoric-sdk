@@ -7,7 +7,7 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { Far } from '@endo/marshal';
 import { makeScalarMapStore } from '@agoric/store';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
-import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { zoeSourceSpecRegistry } from '../source-spec-registry.js';
 
 import { evalContractBundle } from '../src/contractFacet/evalContractCode.js';
@@ -19,7 +19,7 @@ import { makeHandle } from '../src/makeHandle.js';
  * @import {BundleCap, BundleID, EndoZipBase64Bundle, TestBundle} from '@agoric/swingset-vat';
  */
 
-const bundleCache = await unsafeMakeBundleCache('bundles/');
+const bundleCache = await unsafeSharedBundleCache;
 const { zcfBundle } = await bundleCache.loadRegistry(zoeSourceSpecRegistry);
 
 // this simulates a bundlecap, which is normally a swingset "device node"

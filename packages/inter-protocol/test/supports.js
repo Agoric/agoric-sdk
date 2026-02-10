@@ -14,9 +14,9 @@ import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { setUpZoeForTest as generalSetUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
 import { governanceSourceSpecRegistry } from '@agoric/governance/source-spec-registry.js';
-import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 
-const bundleCache = await unsafeMakeBundleCache('bundles/');
+const bundleCache = await unsafeSharedBundleCache;
 const {
   binaryVoteCounterBundle,
   committeeBundle,

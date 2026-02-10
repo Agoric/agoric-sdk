@@ -1,6 +1,6 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
 import { smartWalletSourceSpecRegistry } from '../source-spec-registry.js';
@@ -25,7 +25,7 @@ const makeTestContext = async () => {
   const { zoe } = consume;
 
   //#region Installs
-  const bundleCache = await unsafeMakeBundleCache('bundles/');
+  const bundleCache = await unsafeSharedBundleCache;
   const { walletFactoryBundle: bundle } = await bundleCache.loadRegistry(
     smartWalletSourceSpecRegistry,
   );

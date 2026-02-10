@@ -1,7 +1,7 @@
 import { BridgeId, deeplyFulfilledObject } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
-import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import {
   produceStartUpgradable,
   produceStartGovernedUpgradable,
@@ -65,7 +65,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
   // To debug, pass t.log instead of null logger
   const log = () => null;
 
-  const bundleCache = await unsafeMakeBundleCache('bundles/');
+  const bundleCache = await unsafeSharedBundleCache;
   const zone = makeHeapZone();
 
   const { consume, produce, instance } = await makeSpace(log, bundleCache);

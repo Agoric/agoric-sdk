@@ -1,5 +1,5 @@
 import { BridgeId, deeplyFulfilledObject } from '@agoric/internal';
-import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
 import { makeScopedBridge } from '@agoric/vats';
@@ -24,7 +24,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
   const { agoricNames, zoe } = consume;
 
   //#region Installs
-  const bundleCache = await unsafeMakeBundleCache('bundles/');
+  const bundleCache = await unsafeSharedBundleCache;
   const { walletFactoryBundle: bundle } = await bundleCache.loadRegistry(
     smartWalletSourceSpecRegistry,
   );

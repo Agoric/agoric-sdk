@@ -1,10 +1,10 @@
-import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { vatsSourceSpecRegistry } from '@agoric/vats/source-spec-registry.js';
 import { governanceSourceSpecRegistry } from '@agoric/governance/source-spec-registry.js';
 import { smartWalletSourceSpecRegistry } from '@agoric/smart-wallet/source-spec-registry.js';
 import { interProtocolBundleSpecs } from '../../source-spec-registry.js';
 
-const bundleCache = await unsafeMakeBundleCache('bundles/');
+const bundleCache = await unsafeSharedBundleCache;
 const {
   binaryVoteCounterBundle: binaryVoteCounter,
   committeeBundle: committee,

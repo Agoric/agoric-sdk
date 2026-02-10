@@ -6,7 +6,7 @@ import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { WalletName } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { publishDepositFacet } from '@agoric/smart-wallet/src/walletFactory.js';
-import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
 import { vatsSourceSpecRegistry } from '@agoric/vats/source-spec-registry.js';
 import { PowerFlags } from '@agoric/vats/src/walletFlags.js';
@@ -52,7 +52,7 @@ const MINT_LIMIT = scale6(20_000_000);
 const test = unknownTest;
 
 const makeTestContext = async () => {
-  const bundleCache = await unsafeMakeBundleCache('bundles/');
+  const bundleCache = await unsafeSharedBundleCache;
   const { psmBundle, provisionPoolBundle: policyBundle } =
     await bundleCache.loadRegistry(interProtocolBundleSpecs);
   const { committeeBundle } = await bundleCache.loadRegistry(
