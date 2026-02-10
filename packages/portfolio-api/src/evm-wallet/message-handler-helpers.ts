@@ -37,7 +37,7 @@ import {
   validateYmaxDomain,
   validateYmaxOperationTypeName,
   getYmaxOperationTypes,
-  type YmaxSharedDomain,
+  type YmaxFullDomain,
 } from './eip712-messages.ts';
 
 export type YmaxOperationDetails<
@@ -45,7 +45,7 @@ export type YmaxOperationDetails<
 > = {
   [P in T]: {
     operation: P;
-    domain: YmaxSharedDomain;
+    domain: YmaxFullDomain;
     data: YmaxOperationType<P>;
   };
 }[T];
@@ -100,6 +100,7 @@ export const makeEVMHandlerUtils = (viemUtils: {
    * Extract operation type name and data from an EIP-712 standalone Ymax typed data
    *
    * @param data - The EIP-712 typed data of a standalone message
+   * @param validContractAddresses - *Deprecated*
    * @returns The operation type name and associated data
    */
   const extractOperationDetailsFromStandaloneData = <
@@ -113,11 +114,7 @@ export const makeEVMHandlerUtils = (viemUtils: {
 
     const { domain } = standaloneData;
 
-    if (validContractAddresses) {
-      validateYmaxDomain(domain, validContractAddresses);
-    } else {
-      validateYmaxDomain(domain);
-    }
+    validateYmaxDomain(domain, validContractAddresses);
     validateYmaxOperationTypeName<T>(standaloneData.primaryType);
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -160,7 +157,12 @@ export const makeEVMHandlerUtils = (viemUtils: {
       message: witnessData,
       primaryType: operation,
     });
-    return { operation, domain: { ...domain, chainId }, data: witnessData };
+    const spender = permitData.message.spender;
+    return {
+      operation,
+      domain: { ...domain, chainId, verifyingContract: spender },
+      data: witnessData,
+    };
   };
 
   /**
@@ -223,7 +225,7 @@ export const makeEVMHandlerUtils = (viemUtils: {
    * optionally with permit data.
    *
    * @param signedData
-   * @returns
+   * @param validStandaloneContractAddresses *Deprecated*
    */
   const extractOperationDetailsFromSignedData = async <
     T extends OperationTypeNames = OperationTypeNames,

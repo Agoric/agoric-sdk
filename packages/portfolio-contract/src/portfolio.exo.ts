@@ -30,7 +30,7 @@ import {
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
 import type {
-  YmaxSharedDomain,
+  YmaxFullDomain,
   TargetAllocation as EIP712Allocation,
 } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
@@ -898,7 +898,7 @@ export const preparePortfolioKit = (
           address,
         }: {
           withdrawDetails: { amount: bigint; token: EVMAddress };
-          domain?: Partial<YmaxSharedDomain>;
+          domain?: Partial<YmaxFullDomain>;
           address?: EVMAddress;
         }) {
           const { sourceAccountId } = this.state;
