@@ -80,6 +80,7 @@
   "files": [
     "bundles/",
     "src/",
+    "source-spec-registry.*",
     "tools/",
     "contractFacet.js",
     "NEWS.md"

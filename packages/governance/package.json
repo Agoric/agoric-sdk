@@ -58,6 +58,7 @@
   "files": [
     "README.md",
     "src/",
+    "source-spec-registry.*",
     "tools/",
     "NEWS.md"
   ],

@@ -46,7 +46,8 @@
     "@endo/promise-kit": "^1.1.13"
   },
   "files": [
-    "src/"
+    "src/",
+    "source-spec-registry.*"
   ],
   "keywords": [],
   "repository": {

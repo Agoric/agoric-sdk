@@ -57,6 +57,7 @@
     "CHANGELOG.md",
     "src/",
     "scripts/",
+    "source-spec-registry.*",
     "tools/",
     "index.*"
   ],
