@@ -490,7 +490,10 @@ type BlockReceiptsResponse = Array<{
  * @returns Array of BlockReceipt objects for the requested blocks
  * @throws Error if the HTTP request fails or if there are RPC errors
  */
-const getBlockReceiptsBatch = async (blockNumbers, { fetch, rpcUrl }) => {
+const getBlockReceiptsBatch = async (
+  blockNumbers: string[],
+  { fetch, rpcUrl }: { fetch: typeof globalThis.fetch; rpcUrl: string },
+): Promise<BlockReceipt[]> => {
   const payload = blockNumbers.map((bn, i) => ({
     jsonrpc: '2.0',
     id: i + 1,
@@ -512,7 +515,7 @@ const getBlockReceiptsBatch = async (blockNumbers, { fetch, rpcUrl }) => {
   if (errors.length > 0) {
     throw new Error(`RPC errors: ${JSON.stringify(errors)}`);
   }
-  return json.flatMap(r => r.result).flat();
+  return json.flatMap(r => r.result ?? []);
 };
 
 /**

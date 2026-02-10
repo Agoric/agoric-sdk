@@ -505,7 +505,7 @@ export const createMockCosmosRestClient = (
   } as any;
 };
 
-const mockGlobalFetch = url => {
+const mockGlobalFetch = (url: string) => {
   if (Object.values(createMockRpcUrls()).includes(url)) {
     return {
       ok: true,
@@ -516,6 +516,7 @@ const mockGlobalFetch = url => {
       ],
     } as Response;
   }
+  throw new Error(`mockGlobalFetch: unrecognized URL: ${url}`);
 };
 export const createMockPendingTxOpts = (
   latestBlock = 1000,

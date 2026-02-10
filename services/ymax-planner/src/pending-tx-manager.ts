@@ -228,7 +228,8 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
       Fail`${logPrefix} No EVM provider for chain: ${caipId}`;
 
     const provider = ctx.evmProviders[caipId] as WebSocketProvider;
-    const rpcUrl = ctx.rpcUrls[caipId];
+    const rpcUrl =
+      ctx.rpcUrls[caipId] || Fail`${logPrefix} No RPC URL for chain: ${caipId}`;
 
     // Extract the address portion from sourceAddress (format: 'cosmos:agoric-3:agoric1...')
     const lcaAddress = parseAccountId(sourceAddress).accountAddress;
@@ -365,6 +366,8 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
     const provider =
       ctx.evmProviders[caipId] ||
       Fail`${logPrefix} No EVM provider for chain: ${caipId}`;
+    const rpcUrl =
+      ctx.rpcUrls[caipId] || Fail`${logPrefix} No RPC URL for chain: ${caipId}`;
 
     const lcaAddress = parseAccountId(sourceAddress).accountAddress;
 
@@ -426,7 +429,7 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
         publishTimeMs: opts.publishTimeMs,
         chainId: caipId,
         signal: abortController.signal,
-        rpcUrl: ctx.rpcUrls[caipId],
+        rpcUrl,
         fetch: ctx.fetch,
         makeAbortController: ctx.makeAbortController,
       });
