@@ -263,6 +263,34 @@ export const getConfirmationsRequired = (chainId: CaipChainId): number => {
 };
 
 /**
+ * Chains where Alchemy supports the `trace_filter` RPC method for
+ * server-side filtering of transaction traces. On these chains we prefer
+ * trace_filter over eth_getBlockReceipts because it filters by toAddress
+ * server-side and includes calldata, avoiding extra RPC round-trips.
+ *
+ * Cost comparison (10-block scan):
+ * - eth_getBlockReceipts: 200 CU + 5,000 Throughput CU + 20 CU/match
+ * - trace_filter:          40 CU +    40 Throughput CU (calldata included)
+ *
+ * Not supported: Arbitrum (arbtrace_filter is pre-Nitro only, < block
+ * 22,207,815), Avalanche.
+ *
+ * @see https://www.alchemy.com/docs/reference/compute-unit-costs
+ * @see https://www.alchemy.com/docs/reference/what-is-trace_filter
+ */
+const traceFilterSupportedChains: ReadonlySet<CaipChainId> = new Set([
+  // ========= Mainnet =========
+  'eip155:1', // Ethereum
+  'eip155:8453', // Base
+  'eip155:10', // Optimism
+
+  // ========= Testnet =========
+  'eip155:11155111', // Ethereum Sepolia
+  'eip155:84532', // Base Sepolia
+  'eip155:11155420', // Optimism Sepolia
+]);
+
+/**
  * @deprecated should come from e.g. @agoric/portfolio-api/src/constants.js
  *   or @agoric/orchestration
  */
@@ -430,9 +458,8 @@ export const getBlockNumberBeforeRealTime = async (
 
 type LogPredicate = (log: Log) => boolean | Promise<boolean>;
 
-type LogScanOpts = {
+type ScanOptsBase = {
   provider: WebSocketProvider;
-  baseFilter: Omit<Filter, 'fromBlock' | 'toBlock'> & Partial<Filter>;
   fromBlock: number;
   toBlock: number;
   chainId: CaipChainId;
@@ -445,18 +472,12 @@ type LogScanOpts = {
   ) => Promise<void> | void;
 };
 
-type FailedTxScanOpts = {
-  provider: WebSocketProvider;
-  fromBlock: number;
-  toBlock: number;
-  chainId: CaipChainId;
-  chunkSize?: number;
-  log?: (...args: unknown[]) => void;
-  signal?: AbortSignal;
-  onRejectedChunk?: (
-    startBlock: number,
-    endBlock: number,
-  ) => Promise<void> | void;
+type LogScanOpts = ScanOptsBase & {
+  baseFilter: Omit<Filter, 'fromBlock' | 'toBlock'> & Partial<Filter>;
+  predicate: LogPredicate;
+};
+
+type FailedTxScanOpts = ScanOptsBase & {
   toAddress: string;
   verifyFailedTx: (
     tx: TransactionResponse,
@@ -478,6 +499,32 @@ type BlockReceiptsResponse = Array<{
   result: Array<BlockReceipt>;
   error?: object;
 }>;
+
+type TraceAction = {
+  from: `0x${string}`;
+  to: `0x${string}`;
+  input: `0x${string}`;
+  value: `0x${string}`;
+  gas: `0x${string}`;
+  callType: string;
+};
+
+type TraceResult = {
+  action: TraceAction;
+  blockNumber: number;
+  transactionHash: `0x${string}`;
+  error?: string;
+  type: string;
+  subtraces: number;
+  traceAddress: number[];
+};
+
+type TraceFilterResponse = {
+  id: number;
+  jsonrpc: '2.0';
+  result: TraceResult[];
+  error?: object;
+};
 
 /**
  * Fetches block receipts in batch using eth_getBlockReceipts RPC method.
@@ -524,7 +571,6 @@ const getBlockReceiptsBatch = async (
  */
 export const scanEvmLogsInChunks = async (
   opts: LogScanOpts,
-  predicate: LogPredicate,
 ): Promise<Log | undefined> => {
   const {
     provider,
@@ -535,6 +581,7 @@ export const scanEvmLogsInChunks = async (
     chunkSize = 10,
     log = () => {},
     signal,
+    predicate,
   } = opts;
 
   await null;
@@ -587,10 +634,157 @@ export const scanEvmLogsInChunks = async (
 };
 
 /**
- * Chunked scanner for failed transactions: scans [fromBlock, toBlock] in
- * CHUNK_SIZE windows using `eth_getBlockReceipts`, filters by `toAddress`
- * and `status === 0`, and calls `verifyFailedTx` on each candidate.
- * Returns the first matching `TransactionResponse` or undefined.
+ * Fetches failed transaction traces using trace_filter RPC method.
+ * Filters by toAddress server-side and includes calldata in the response,
+ * avoiding extra getTransaction round-trips.
+ */
+const getTraceFilter = async (
+  fromBlock: string,
+  toBlock: string,
+  toAddress: string,
+  { fetch, rpcUrl }: { fetch: typeof globalThis.fetch; rpcUrl: string },
+): Promise<TraceResult[]> => {
+  const payload = {
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'trace_filter',
+    params: [{ fromBlock, toBlock, toAddress: [toAddress] }],
+  };
+
+  const res = await fetch(rpcUrl, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+
+  const json: TraceFilterResponse = await res.json();
+
+  if (json.error) {
+    throw new Error(`RPC error: ${JSON.stringify(json.error)}`);
+  }
+  return json.result ?? [];
+};
+
+/**
+ * Scan a chunk using eth_getBlockReceipts.
+ *
+ * Used where Alchemy does not support trace_filter (as of 2026-02, Arbitrum and
+ * Avalanche).
+ * Downloads ALL receipts for each block, filters client-side by toAddress
+ * and status, then makes a separate getTransaction call to retrieve
+ * calldata for verification.
+ *
+ * Cost per 10-block chunk: 200 CU + 5,000 Throughput CU + 20 CU/match.
+ */
+const scanChunkWithBlockReceipts = async (
+  start: number,
+  end: number,
+  opts: FailedTxScanOpts,
+): Promise<TransactionResponse | undefined> => {
+  const { provider, toAddress, verifyFailedTx, rpcUrl, fetch } = opts;
+
+  const blockNumbers = Array.from({ length: end - start + 1 }, (_, i) =>
+    toBeHex(start + i),
+  );
+  const receipts = await getBlockReceiptsBatch(blockNumbers, { fetch, rpcUrl });
+
+  for (const receipt of receipts) {
+    const { transactionHash, status, to } = receipt;
+    if (!to || to.toLowerCase() !== toAddress.toLowerCase()) {
+      continue;
+    }
+    const statusValue = status ? Number.parseInt(status, 16) : undefined;
+
+    if (statusValue === 0) {
+      const tx = await provider.getTransaction(transactionHash);
+      if (!tx) {
+        opts.log?.(
+          `[FailedTxScan] tx ${transactionHash} not found (possible reorg), skipping`,
+        );
+        continue;
+      }
+      if (await verifyFailedTx(tx, receipt)) return tx;
+    }
+  }
+  return undefined;
+};
+
+/**
+ * Scan a chunk using trace_filter.
+ *
+ * Used where Alchemy supports trace_filter (as of 2026-02, Ethereum, Base, and
+ * Optimism).
+ * Filters by toAddress server-side and includes calldata (action.input)
+ * in the response, so no separate getTransaction call is needed.
+ *
+ * Cost per call: 40 CU + 40 Throughput CU (covers the entire chunk range).
+ */
+const scanChunkWithTraceFilter = async (
+  start: number,
+  end: number,
+  opts: FailedTxScanOpts,
+): Promise<TransactionResponse | undefined> => {
+  const { toAddress, verifyFailedTx, rpcUrl, fetch } = opts;
+
+  const traces = await getTraceFilter(toBeHex(start), toBeHex(end), toAddress, {
+    fetch,
+    rpcUrl,
+  });
+
+  for (const trace of traces) {
+    // Only top-level calls (not internal sub-calls) with errors
+    if (trace.traceAddress.length !== 0 || !trace.error) {
+      continue;
+    }
+
+    // Construct objects compatible with the verifyFailedTx callback.
+    // Callers only access .hash, .to, and .data on the tx object.
+    const syntheticTx = {
+      hash: trace.transactionHash,
+      to: trace.action.to,
+      data: trace.action.input,
+    } as TransactionResponse;
+
+    const syntheticReceipt: BlockReceipt = {
+      transactionHash: trace.transactionHash,
+      status: '0x0',
+      to: trace.action.to,
+    };
+
+    if (await verifyFailedTx(syntheticTx, syntheticReceipt)) {
+      return syntheticTx;
+    }
+  }
+  return undefined;
+};
+
+const TRACE_FILTER_CHUNK_SIZE = 100;
+const BLOCK_RECEIPTS_CHUNK_SIZE = 10;
+
+/**
+ * Chunked scanner for failed transactions.
+ *
+ * Scans [fromBlock, toBlock] in chunk windows looking for reverted
+ * transactions sent to `toAddress`, then validates each candidate with
+ * the caller-supplied `verifyFailedTx` predicate.
+ *
+ * Two strategies are used depending on chain support:
+ *
+ * | Strategy             | Chains (as of 2026-02)        | CU (10 blocks) | Throughput CU |
+ * |----------------------|-------------------------------|----------------|---------------|
+ * | trace_filter         | Ethereum, Base, Optimism      | 40             | 40            |
+ * | eth_getBlockReceipts | Arbitrum, Avalanche           | 200            | 5,000         |
+ *
+ * trace_filter is preferred where available because it filters by toAddress
+ * server-side and includes calldata, avoiding per-block receipt downloads
+ * and extra getTransaction round-trips. Arbitrum's arbtrace_filter only
+ * covers pre-Nitro blocks (< 22,207,815) so is not usable for recent
+ * transaction scanning. Avalanche has no trace_filter support.
+ *
+ * @see https://www.alchemy.com/docs/reference/compute-unit-costs
+ * @see https://www.alchemy.com/docs/reference/what-is-trace_filter
  */
 export const scanFailedTxsInChunks = async (
   opts: FailedTxScanOpts,
@@ -600,25 +794,29 @@ export const scanFailedTxsInChunks = async (
     fromBlock,
     toBlock,
     chainId,
-    chunkSize = 10,
+    chunkSize: requestedChunkSize,
     log = () => {},
     signal,
-    toAddress,
-    verifyFailedTx,
-    rpcUrl,
-    fetch,
   } = opts;
 
-  await null;
+  const useTraceFilter = traceFilterSupportedChains.has(chainId);
+  const chunkSize =
+    requestedChunkSize ??
+    (useTraceFilter ? TRACE_FILTER_CHUNK_SIZE : BLOCK_RECEIPTS_CHUNK_SIZE);
+  const scanChunk = useTraceFilter
+    ? scanChunkWithTraceFilter
+    : scanChunkWithBlockReceipts;
+
+  let currentBlock = await provider.getBlockNumber();
   for (let start = fromBlock; start <= toBlock; ) {
     if (signal?.aborted) {
       log('[FailedTxScan] Aborted');
       return undefined;
     }
     const end = Math.min(start + chunkSize - 1, toBlock);
-    const currentBlock = await provider.getBlockNumber();
 
     // Wait for the chain to catch up if end block doesn't exist yet
+    if (end > currentBlock) currentBlock = await provider.getBlockNumber();
     if (end > currentBlock) {
       const blockTimeMs = getBlockTimeMs(chainId);
       const blocksToWait = Math.max(50, chunkSize);
@@ -632,31 +830,8 @@ export const scanFailedTxsInChunks = async (
     }
 
     try {
-      const blockNumbers = Array.from({ length: end - start + 1 }, (_, i) =>
-        toBeHex(start + i),
-      );
-      const receipts = await getBlockReceiptsBatch(blockNumbers, {
-        fetch,
-        rpcUrl,
-      });
-
-      for (const receipt of receipts) {
-        const { transactionHash, status, to } = receipt;
-        if (!to || to.toLowerCase() !== toAddress.toLowerCase()) {
-          continue;
-        }
-        const statusValue = status ? Number.parseInt(status, 16) : undefined;
-
-        if (statusValue === 0) {
-          const tx = await provider.getTransaction(transactionHash);
-          if (!tx) {
-            throw new Error(
-              `Transaction ${transactionHash} not found for failed receipt`,
-            );
-          }
-          if (await verifyFailedTx(tx, receipt)) return tx;
-        }
-      }
+      const result = await scanChunk(start, end, opts);
+      if (result) return result;
       await opts.onRejectedChunk?.(start, end);
     } catch (err) {
       log(

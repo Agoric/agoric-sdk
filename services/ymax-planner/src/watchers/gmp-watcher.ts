@@ -301,8 +301,11 @@ export const lookBackGmp = async ({
     );
     const toBlock = await provider.getBlockNumber();
 
+    const FAILED_TX_SCOPE = 'failedTx';
     const statusEventLowerBound =
       getTxBlockLowerBound(kvStore, txId, MULTICALL_STATUS_EVENT) || fromBlock;
+    const failedTxLowerBound =
+      getTxBlockLowerBound(kvStore, txId, FAILED_TX_SCOPE) || fromBlock;
 
     log(
       `Searching blocks ${statusEventLowerBound} → ${toBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
@@ -322,8 +325,8 @@ export const lookBackGmp = async ({
     const updateStatusEventLowerBound = (_from: number, to: number) =>
       setTxBlockLowerBound(kvStore, txId, to, MULTICALL_STATUS_EVENT);
 
-    // Both scans share an abort signal so that whichever finishes first
-    // causes the other to stop on its next iteration.
+    // Options shared by both scans (including an abort signal that is triggered
+    // by whichever finishes first to stop the other).
     // see `prepareAbortController` in services/ymax-planner/src/main.ts
     const { abort: abortScans, signal: sharedSignal } = makeAbortController(
       undefined,
@@ -338,27 +341,28 @@ export const lookBackGmp = async ({
     };
 
     const [matchingEvent, failedTx] = await Promise.all([
-      scanEvmLogsInChunks(
-        {
-          ...sharedOpts,
-          baseFilter: statusFilter,
-          fromBlock: statusEventLowerBound,
-          onRejectedChunk: updateStatusEventLowerBound,
-        },
-        isMatch,
-      ).then(result => {
+      scanEvmLogsInChunks({
+        ...sharedOpts,
+        baseFilter: statusFilter,
+        fromBlock: statusEventLowerBound,
+        onRejectedChunk: updateStatusEventLowerBound,
+        predicate: isMatch,
+      }).then(result => {
         if (result) abortScans();
         return result;
       }),
       scanFailedTxsInChunks({
         ...sharedOpts,
-        fromBlock: statusEventLowerBound,
+        fromBlock: failedTxLowerBound,
         toAddress: contractAddress,
         verifyFailedTx: tx => {
           const data = extractGmpExecuteData(tx.data);
           return (
             data?.txId === txId && data.sourceAddress === expectedSourceAddress
           );
+        },
+        onRejectedChunk: (_, to) => {
+          setTxBlockLowerBound(kvStore, txId, to, FAILED_TX_SCOPE);
         },
         rpcUrl,
         fetch,
@@ -373,6 +377,7 @@ export const lookBackGmp = async ({
     if (matchingEvent) {
       log(`Found matching event`);
       deleteTxBlockLowerBound(kvStore, txId, MULTICALL_STATUS_EVENT);
+      deleteTxBlockLowerBound(kvStore, txId, FAILED_TX_SCOPE);
       return {
         settled: true,
         txHash: matchingEvent.transactionHash,
@@ -394,6 +399,7 @@ export const lookBackGmp = async ({
         );
         if (result) {
           deleteTxBlockLowerBound(kvStore, txId, MULTICALL_STATUS_EVENT);
+          deleteTxBlockLowerBound(kvStore, txId, FAILED_TX_SCOPE);
           return result;
         }
       }

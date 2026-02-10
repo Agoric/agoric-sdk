@@ -929,3 +929,128 @@ test('find a failed tx in lookback mode', async t => {
     `[${txId}] GMP tx resolved`,
   ]);
 });
+
+test('find a failed tx in lookback mode via trace_filter (Base)', async t => {
+  const logs: string[] = [];
+  const mockLog = (...args: unknown[]) => logs.push(args.join(' '));
+
+  const contractAddress = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
+  const destinationAddress = `eip155:8453:${contractAddress}`;
+  const txId = 'tx554' as `tx${number}`;
+  const failedTxHash = '0xdeadbeeftrace';
+
+  // Same calldata from the eth_getBlockReceipts test
+  const calldata =
+    '0x4916065815265253afd6756fd6267d42728a7e9826de81fab3245a183b3ea57beeaa8100000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000000661676f7269630000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004161676f72696331386434377263666a30673472376a37797679706d34346b71637a6c346a72667436757032333370397a7639357038757434396d71756667687a680000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002c000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000057478353534000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000100000000000000000000000000af88d065e77c8cc2239327c5edb3a432268e583100000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000044095ea7b300000000000000000000000019330d10d9cc8751218eaf51e8885d058642e08a00000000000000000000000000000000000000000000000000000000002059400000000000000000000000000000000000000000000000000000000000000000000000000000000019330d10d9cc8751218eaf51e8885d058642e08a000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000846fd3504e000000000000000000000000000000000000000000000000000000000020594000000000000000000000000000000000000000000000000000000000000000040000000000000000000000001cd706e62703fa99ce0b3f477fad138cb1954cd0000000000000000000000000af88d065e77c8cc2239327c5edb3a432268e583100000000000000000000000000000000000000000000000000000000';
+
+  const gmpTx = createMockPendingTxData({
+    type: TxType.GMP,
+    destinationAddress,
+    sourceAddress:
+      'cosmos:agoric-3:agoric18d47rcfj0g4r7j7yvypm44kqczl4jrft6up233p9zv95p8ut49mqufghzh',
+  });
+
+  const chainId = 'eip155:8453';
+  const opts = createMockPendingTxOpts();
+  const mockProvider = opts.evmProviders[chainId] as any;
+
+  const currentTimeMs = 1700000000;
+  const txTimestampMs = currentTimeMs - 10 * 1000;
+  const avgBlockTimeMs = 2500; // Base block time
+
+  const latestBlock = 1_450_031;
+  mockProvider.getBlockNumber = async () => latestBlock;
+
+  mockProvider.getBlock = async (blockNumber: number) => {
+    const blocksAgo = latestBlock - blockNumber;
+    const ts = currentTimeMs - blocksAgo * avgBlockTimeMs;
+    return { timestamp: Math.floor(ts / 1000) };
+  };
+
+  // Trigger block event to resolve waitForBlock
+  setTimeout(() => mockProvider.emit('block', latestBlock + 1), 10);
+
+  let getTransactionCalled = false;
+
+  const newEvmProviders = objectMap(
+    opts.evmProviders,
+    provider =>
+      ({
+        ...provider,
+        getLogs: async () => [],
+        getTransaction: async () => {
+          getTransactionCalled = true;
+          return { hash: failedTxHash, data: calldata };
+        },
+        getTransactionReceipt: async () => ({
+          status: 0,
+          blockNumber: latestBlock,
+          transactionHash: failedTxHash,
+        }),
+      }) as unknown as WebSocketProvider,
+  );
+
+  const ctxWithFetch = harden({
+    ...opts,
+    evmProviders: newEvmProviders,
+    fetch: async (url: string, init?: RequestInit) => {
+      if (!Object.values(opts.rpcUrls).includes(url)) {
+        return {} as Response;
+      }
+      // Distinguish by RPC method in request body
+      const body = JSON.parse(init?.body as string);
+      if (body.method === 'trace_filter') {
+        return {
+          ok: true,
+          json: async () => ({
+            id: 1,
+            jsonrpc: '2.0',
+            result: [
+              {
+                action: {
+                  from: '0x0000000000000000000000000000000000000000',
+                  to: contractAddress.toLowerCase(),
+                  input: calldata,
+                  value: '0x0',
+                  gas: '0x186a0',
+                  callType: 'call',
+                },
+                blockNumber: latestBlock,
+                transactionHash: failedTxHash,
+                error: 'Reverted',
+                type: 'call',
+                subtraces: 0,
+                traceAddress: [],
+              },
+            ],
+          }),
+        } as Response;
+      }
+      // eth_getBlockReceipts fallback (should NOT be called for Base)
+      return {
+        ok: true,
+        json: async () => [{ result: [] }],
+      } as Response;
+    },
+  });
+
+  await handlePendingTx(
+    { txId, ...gmpTx },
+    {
+      ...ctxWithFetch,
+      log: mockLog,
+      txTimestampMs,
+    },
+  );
+
+  // trace_filter provides calldata directly — getTransaction should NOT be called
+  t.false(
+    getTransactionCalled,
+    'getTransaction should not be called with trace_filter',
+  );
+
+  // Verify the failed tx was found and handled
+  t.true(logs.some(l => l.includes('Found matching failed transaction')));
+  t.true(logs.some(l => l.includes('REVERTED')));
+  t.true(logs.some(l => l.includes('GMP tx resolved')));
+});

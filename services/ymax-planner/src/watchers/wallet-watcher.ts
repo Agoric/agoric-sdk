@@ -368,7 +368,10 @@ export const lookBackSmartWalletTx = async ({
     );
     const toBlock = await provider.getBlockNumber();
 
+    const FAILED_TX_SCOPE = 'failedTx';
     const savedFromBlock = getTxBlockLowerBound(kvStore, txId) || fromBlock;
+    const savedFailedTxFromBlock =
+      getTxBlockLowerBound(kvStore, txId, FAILED_TX_SCOPE) || fromBlock;
 
     log(
       `Searching blocks ${savedFromBlock} → ${toBlock} for SmartWalletCreated events emitted by ${factoryAddr}`,
@@ -397,8 +400,8 @@ export const lookBackSmartWalletTx = async ({
       }
     };
 
-    // Both scans share an abort signal so that whichever finishes first
-    // causes the other to stop on its next iteration.
+    // Options shared by all scans (including an abort signal that is triggered
+    // by whichever finishes first to stop the others).
     const { abort: abortScans, signal: sharedSignal } = makeAbortController(
       undefined,
       signal ? [signal] : [],
@@ -413,35 +416,31 @@ export const lookBackSmartWalletTx = async ({
 
     const [matchingEvent, failedTx] = await Promise.all([
       Promise.race([
-        scanEvmLogsInChunks(
-          {
-            ...sharedOpts,
-            baseFilter: baseFilterV1,
-            fromBlock: savedFromBlock,
-            onRejectedChunk: (_, to) => {
-              setTxBlockLowerBound(kvStore, txId, to);
-            },
+        scanEvmLogsInChunks({
+          ...sharedOpts,
+          baseFilter: baseFilterV1,
+          fromBlock: savedFromBlock,
+          onRejectedChunk: (_, to) => {
+            setTxBlockLowerBound(kvStore, txId, to);
           },
-          checkMatch,
-        ),
-        scanEvmLogsInChunks(
-          {
-            ...sharedOpts,
-            baseFilter: baseFilterV2,
-            fromBlock: savedFromBlock,
-            onRejectedChunk: (_, to) => {
-              setTxBlockLowerBound(kvStore, txId, to);
-            },
+          predicate: checkMatch,
+        }),
+        scanEvmLogsInChunks({
+          ...sharedOpts,
+          baseFilter: baseFilterV2,
+          fromBlock: savedFromBlock,
+          onRejectedChunk: (_, to) => {
+            setTxBlockLowerBound(kvStore, txId, to);
           },
-          checkMatch,
-        ),
+          predicate: checkMatch,
+        }),
       ]).then(result => {
         if (result) abortScans();
         return result;
       }),
       scanFailedTxsInChunks({
         ...sharedOpts,
-        fromBlock: savedFromBlock,
+        fromBlock: savedFailedTxFromBlock,
         toAddress: subscribeToAddr,
         verifyFailedTx: tx => {
           if (!tx.to) return false;
@@ -456,6 +455,9 @@ export const lookBackSmartWalletTx = async ({
             data.sourceAddress === expectedSourceAddress
           );
         },
+        onRejectedChunk: (_, to) => {
+          setTxBlockLowerBound(kvStore, txId, to, FAILED_TX_SCOPE);
+        },
         rpcUrl,
         fetch,
       }).then(result => {
@@ -469,6 +471,7 @@ export const lookBackSmartWalletTx = async ({
     if (matchingEvent) {
       log(`Found matching SmartWalletCreated event`);
       deleteTxBlockLowerBound(kvStore, txId);
+      deleteTxBlockLowerBound(kvStore, txId, FAILED_TX_SCOPE);
       return {
         settled: true,
         txHash: matchingEvent.transactionHash,
@@ -490,6 +493,7 @@ export const lookBackSmartWalletTx = async ({
         );
         if (result) {
           deleteTxBlockLowerBound(kvStore, txId);
+          deleteTxBlockLowerBound(kvStore, txId, FAILED_TX_SCOPE);
           return result;
         }
       }

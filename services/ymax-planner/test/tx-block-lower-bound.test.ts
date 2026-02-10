@@ -152,6 +152,7 @@ test('begins searching from the lower bound block number stored in kv store', as
     // Next chunk start one after where the previous chunk ended
     `[${txId}] [LogScan] Searching chunk ${statusFinalBlock + 1} → ${newLatestBlock}`,
     `[${txId}] [LogScan] Match in tx=0x1234567890abcdef1234567890abcdef12345678`,
+    `[${txId}] [FailedTxScan] Aborted`,
     `[${txId}] Found matching event`,
     `[${txId}] Lookback found transaction`,
     `[${txId}] GMP tx resolved`,
