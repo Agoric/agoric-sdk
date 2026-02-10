@@ -8,6 +8,8 @@ import { PendingTxCode, TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
 import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
+  scanFailedTxsInChunks,
+  type MakeAbortController,
   type WatcherTimeoutOptions,
 } from '../support.ts';
 import {
@@ -332,21 +334,32 @@ export const watchSmartWalletTx = ({
   });
 };
 
+type SmartWalletLookback = {
+  publishTimeMs: number;
+  chainId: CaipChainId;
+  signal?: AbortSignal;
+  rpcUrl: string;
+  fetch: typeof fetch;
+  subscribeToAddr: `0x${string}`;
+  makeAbortController: MakeAbortController;
+};
+
 export const lookBackSmartWalletTx = async ({
   factoryAddr,
   provider,
   expectedAddr,
+  expectedSourceAddress,
   publishTimeMs,
   chainId,
   log = () => {},
   signal,
   kvStore,
   txId,
-}: SmartWalletWatch & {
-  publishTimeMs: number;
-  chainId: CaipChainId;
-  signal?: AbortSignal;
-}): Promise<WatcherResult> => {
+  rpcUrl,
+  fetch,
+  subscribeToAddr,
+  makeAbortController,
+}: SmartWalletWatch & SmartWalletLookback): Promise<WatcherResult> => {
   await null;
   try {
     const fromBlock = await getBlockNumberBeforeRealTime(
@@ -384,52 +397,108 @@ export const lookBackSmartWalletTx = async ({
       }
     };
 
-    const matchingEvent = await Promise.race([
-      scanEvmLogsInChunks(
-        {
-          provider,
-          baseFilter: baseFilterV1,
-          fromBlock: savedFromBlock,
-          toBlock,
-          chainId,
-          log,
-          signal,
-          onRejectedChunk: (_, to) => {
-            setTxBlockLowerBound(kvStore, txId, to);
+    // Both scans share an abort signal so that whichever finishes first
+    // causes the other to stop on its next iteration.
+    const { abort: abortScans, signal: sharedSignal } = makeAbortController(
+      undefined,
+      signal ? [signal] : [],
+    );
+    const sharedOpts = {
+      provider,
+      toBlock,
+      chainId,
+      log,
+      signal: sharedSignal,
+    };
+
+    const [matchingEvent, failedTx] = await Promise.all([
+      Promise.race([
+        scanEvmLogsInChunks(
+          {
+            ...sharedOpts,
+            baseFilter: baseFilterV1,
+            fromBlock: savedFromBlock,
+            onRejectedChunk: (_, to) => {
+              setTxBlockLowerBound(kvStore, txId, to);
+            },
           },
-        },
-        checkMatch,
-      ),
-      scanEvmLogsInChunks(
-        {
-          provider,
-          baseFilter: baseFilterV2,
-          fromBlock: savedFromBlock,
-          toBlock,
-          chainId,
-          log,
-          signal,
-          onRejectedChunk: (_, to) => {
-            setTxBlockLowerBound(kvStore, txId, to);
+          checkMatch,
+        ),
+        scanEvmLogsInChunks(
+          {
+            ...sharedOpts,
+            baseFilter: baseFilterV2,
+            fromBlock: savedFromBlock,
+            onRejectedChunk: (_, to) => {
+              setTxBlockLowerBound(kvStore, txId, to);
+            },
           },
+          checkMatch,
+        ),
+      ]).then(result => {
+        if (result) abortScans();
+        return result;
+      }),
+      scanFailedTxsInChunks({
+        ...sharedOpts,
+        fromBlock: savedFromBlock,
+        toAddress: subscribeToAddr,
+        verifyFailedTx: tx => {
+          if (!tx.to) return false;
+          const isFactoryPath = getAddress(tx.to) === getAddress(factoryAddr);
+          const data = isFactoryPath
+            ? extractFactoryExecuteData(tx.data)
+            : extractDepositFactoryExecuteData(tx.data);
+          return (
+            !!data &&
+            getAddress(data.expectedWalletAddress) ===
+              getAddress(expectedAddr) &&
+            data.sourceAddress === expectedSourceAddress
+          );
         },
-        checkMatch,
-      ),
+        rpcUrl,
+        fetch,
+      }).then(result => {
+        if (result) abortScans();
+        return result;
+      }),
     ]);
 
-    if (!matchingEvent) {
-      log(
-        `[${PendingTxCode.WALLET_TX_NOT_FOUND}] No matching SmartWalletCreated event found`,
-      );
-      return { settled: false };
+    abortScans();
+
+    if (matchingEvent) {
+      log(`Found matching SmartWalletCreated event`);
+      deleteTxBlockLowerBound(kvStore, txId);
+      return {
+        settled: true,
+        txHash: matchingEvent.transactionHash,
+        success: true,
+      };
     }
 
-    deleteTxBlockLowerBound(kvStore, txId);
-    return {
-      settled: true,
-      txHash: matchingEvent.transactionHash,
-      success: true,
-    };
+    if (failedTx) {
+      log(`Found matching failed transaction`);
+      const receipt = await provider.getTransactionReceipt(failedTx.hash);
+      if (receipt) {
+        const result = await handleTxRevert(
+          receipt,
+          failedTx.hash,
+          `expectedAddr=${expectedAddr}`,
+          chainId,
+          provider,
+          log,
+        );
+        if (result) {
+          deleteTxBlockLowerBound(kvStore, txId);
+          return result;
+        }
+      }
+    }
+
+    log(
+      `[${PendingTxCode.WALLET_TX_NOT_FOUND}] No matching SmartWalletCreated event found`,
+    );
+    return { settled: false };
   } catch (error) {
     log(`Error:`, error);
     return { settled: false };

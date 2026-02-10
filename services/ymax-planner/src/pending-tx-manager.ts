@@ -426,6 +426,9 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
         publishTimeMs: opts.publishTimeMs,
         chainId: caipId,
         signal: abortController.signal,
+        rpcUrl: ctx.rpcUrls[caipId],
+        fetch: ctx.fetch,
+        makeAbortController: ctx.makeAbortController,
       });
 
       if (walletResult.settled) {
