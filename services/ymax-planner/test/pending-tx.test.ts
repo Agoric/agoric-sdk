@@ -825,6 +825,8 @@ test('find a failed tx in lookback mode', async t => {
   const gmpTx = createMockPendingTxData({
     type: TxType.GMP,
     destinationAddress,
+    sourceAddress:
+      'cosmos:agoric-3:agoric18d47rcfj0g4r7j7yvypm44kqczl4jrft6up233p9zv95p8ut49mqufghzh',
   });
 
   const chainId = 'eip155:42161';

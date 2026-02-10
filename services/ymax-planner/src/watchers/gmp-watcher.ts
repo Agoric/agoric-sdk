@@ -284,6 +284,7 @@ export const lookBackGmp = async ({
   rpcUrl,
   contractAddress,
   txId,
+  expectedSourceAddress,
   publishTimeMs,
   chainId,
   log = () => {},
@@ -355,8 +356,9 @@ export const lookBackGmp = async ({
         toAddress: contractAddress,
         verifyFailedTx: tx => {
           const data = extractGmpExecuteData(tx.data);
-          if (data?.txId === txId) return true;
-          return false;
+          return (
+            data?.txId === txId && data.sourceAddress === expectedSourceAddress
+          );
         },
         rpcUrl,
         fetch,
