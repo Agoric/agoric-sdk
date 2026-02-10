@@ -40,7 +40,7 @@ import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
 import { type Vow, type VowKit, type VowTools } from '@agoric/vow';
 import type { ZCF, ZCFSeat } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
-import { Fail, X } from '@endo/errors';
+import { Fail, X, bare } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import type { Address as EVMAddress } from 'abitype';
@@ -129,6 +129,25 @@ export const PortfolioStateShape = {
   etc: M.any(),
 };
 harden(PortfolioStateShape);
+
+export const makeValidateOpenMessageRepresentativeInfo =
+  (
+    eip155ChainIdToAxelarChain: {
+      [chainId in `${number | bigint}`]?: AxelarChain;
+    },
+    contracts: EVMContractAddressesMap,
+  ) =>
+  (chainId: number | bigint, representativeContract: EVMAddress) => {
+    const fromChain = eip155ChainIdToAxelarChain[`${chainId}`];
+    if (!fromChain) {
+      throw Fail`no Axelar chain for EIP-155 chainId ${chainId}`;
+    }
+    sameEvmAddress(
+      representativeContract,
+      contracts[fromChain].depositFactory,
+    ) ||
+      Fail`${representativeContract} does not match depositFactory address ${contracts[fromChain].depositFactory} for chain ${fromChain}`;
+  };
 
 /**
  * For publishing, represent accounts collection using accountId values
@@ -757,6 +776,77 @@ export const preparePortfolioKit = (
           return this.facets.reader;
         },
         /**
+         * Validate that the representative EVM contract information corresponds
+         * to this portfolio. For deposits, performs stricter checks to ensure
+         * the deposit's permit is redeemable.
+         *
+         * @param chainId the EVM chainId of the representative contract
+         * @param representativeContract the domain verifying contract or deposit permit spender address
+         * @param strictForDeposit validate that any existing remote account matches the factory-predicted address
+         */
+        validateRepresentativeInfo(
+          chainId: bigint | number,
+          representativeContract: EVMAddress,
+          strictForDeposit: boolean = false,
+        ) {
+          const { accounts } = this.state;
+
+          const fromChain = eip155ChainIdToAxelarChain[`${chainId}`];
+          if (!fromChain) {
+            throw Fail`no Axelar chain for EIP-155 chainId ${chainId}`;
+          }
+
+          const addresses = contracts[fromChain];
+
+          // The representative contract may be the chain's well-known
+          // depositFactory address, in which case if an account already exists,
+          // it must match the factory-predicted address for deposit operations.
+          // Otherwise, the representative contract must be the portfolio's
+          // remote account address.
+          // If the account already exists, use the stored address.
+          // If not, predict the address using `factory`.
+          let expectedRepresentativeContract: EVMAddress;
+
+          const depositFactoryAddress = addresses.depositFactory;
+          const getPredictedAddress = () =>
+            predictWalletAddress({
+              owner: this.facets.reader.getLocalAccount().getAddress().value,
+              factoryAddress: addresses.factory,
+              gasServiceAddress: addresses.gasService,
+              gatewayAddress: addresses.gateway,
+              walletBytecode: hexToBytes(walletBytecode.replace(/^0x/, '')),
+            });
+
+          if (
+            depositFactoryAddress &&
+            sameEvmAddress(representativeContract, depositFactoryAddress)
+          ) {
+            if (accounts.has(fromChain) && strictForDeposit) {
+              const info = accounts.get(fromChain) as GMPAccountInfo;
+              const predictedAddress = getPredictedAddress();
+              sameEvmAddress(info.remoteAddress, predictedAddress) ||
+                Fail`existing remote account address ${info.remoteAddress} does not match factory predicted address ${predictedAddress} for chain ${fromChain}`;
+            }
+            // If the factory predicted address match, the representative contract is allowed
+            // to be the deposit factory address.
+            expectedRepresentativeContract = depositFactoryAddress;
+          } else if (accounts.has(fromChain)) {
+            // The account exists, so we can check the expected representative contract against
+            // the stored remote account address.
+            const gmpInfo = accounts.get(fromChain) as GMPAccountInfo;
+            expectedRepresentativeContract = gmpInfo.remoteAddress;
+          } else {
+            // The account doesn't exist yet, but it is expected to become the representative contract.
+            expectedRepresentativeContract = getPredictedAddress();
+          }
+
+          sameEvmAddress(
+            representativeContract,
+            expectedRepresentativeContract,
+          ) ||
+            Fail`${bare(strictForDeposit ? 'permit spender' : 'verifying contract')} ${representativeContract} does not match expected representative ${expectedRepresentativeContract}`;
+        },
+        /**
          * Initiate a deposit from an EVM account using Permit2.
          *
          * The permit's owner must match the address portion of `sourceAccountId`,
@@ -765,67 +855,27 @@ export const preparePortfolioKit = (
          * @param depositDetails - The permit2 deposit details including chainId, token, amount, spender, and permit2Payload
          */
         deposit(depositDetails: PermitDetails) {
-          const { sourceAccountId, accounts } = this.state;
+          const { sourceAccountId } = this.state;
           if (!sourceAccountId) {
             throw Fail`deposit requires sourceAccountId to be set (portfolio must be opened from EVM)`;
           }
           const { accountAddress } = parseAccountId(sourceAccountId);
 
-          const fromChain =
-            eip155ChainIdToAxelarChain[`${Number(depositDetails.chainId)}`];
-          if (!fromChain) {
-            throw Fail`no Axelar chain for EIP-155 chainId ${depositDetails.chainId}`;
-          }
-
           const owner = depositDetails.permit2Payload.owner;
           sameEvmAddress(owner, accountAddress as EVMAddress) ||
             Fail`permit owner ${owner} does not match portfolio source address ${accountAddress}`;
 
-          // For deposits:
-          // The spender may be the chain's well-known depositFactory address,
-          // in which case if an account already exists, it must match the
-          // factory-predicted address.
-          // Otherwise, spender must be the portfolio's smart wallet address.
-          // If the account already exists, use the stored address.
-          // If not, predict the address using `factory` (which will be used to
-          // create it).
-          let expectedSpender: EVMAddress;
+          this.facets.evmHandler.validateRepresentativeInfo(
+            depositDetails.chainId,
+            depositDetails.spender,
+            true,
+          );
 
-          const depositFactoryAddress = contracts[fromChain].depositFactory;
-          const getPredictedAddress = () =>
-            predictWalletAddress({
-              owner: this.facets.reader.getLocalAccount().getAddress().value,
-              factoryAddress: contracts[fromChain].factory,
-              gasServiceAddress: contracts[fromChain].gasService,
-              gatewayAddress: contracts[fromChain].gateway,
-              walletBytecode: hexToBytes(walletBytecode.replace(/^0x/, '')),
-            });
-
-          if (
-            depositFactoryAddress &&
-            sameEvmAddress(depositDetails.spender, depositFactoryAddress)
-          ) {
-            if (accounts.has(fromChain)) {
-              const info = accounts.get(fromChain) as GMPAccountInfo;
-              const predictedAddress = getPredictedAddress();
-              sameEvmAddress(info.remoteAddress, predictedAddress) ||
-                Fail`existing account remote address ${info.remoteAddress} does not match factory predicted address ${predictedAddress} for chain ${fromChain}`;
-            }
-            // If the factory predicted address match, the spender is the allowed
-            // to be the deposit factory address.
-            expectedSpender = depositFactoryAddress;
-          } else if (accounts.has(fromChain)) {
-            // The account exists, so we can check the expected spender against
-            // the stored remote address.
-            const gmpInfo = accounts.get(fromChain) as GMPAccountInfo;
-            expectedSpender = gmpInfo.remoteAddress;
-          } else {
-            // The account doesn't exist yet, but it is expected to become the spender.
-            expectedSpender = getPredictedAddress();
+          const fromChain =
+            eip155ChainIdToAxelarChain[`${depositDetails.chainId}`];
+          if (!fromChain) {
+            throw Fail`no Axelar chain for EIP-155 chainId ${depositDetails.chainId}`;
           }
-
-          sameEvmAddress(depositDetails.spender, expectedSpender) ||
-            Fail`permit spender ${depositDetails.spender} does not match expected account ${expectedSpender}`;
 
           sameEvmAddress(depositDetails.token, contracts[fromChain].usdc) ||
             Fail`permit token address ${depositDetails.token} does not match usdc contract address ${contracts[fromChain].usdc} for chain ${fromChain}`;

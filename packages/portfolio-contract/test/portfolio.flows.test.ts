@@ -3351,7 +3351,7 @@ test('evmHandler.deposit via Permit2 with unknown spender is rejected', async t 
   await provideCosmosAccount(orch, 'agoric', kit, silent);
 
   t.throws(() => kit.evmHandler.deposit(permitDetails), {
-    message: /permit spender .* does not match expected account/,
+    message: /permit spender .* does not match/,
   });
 });
 

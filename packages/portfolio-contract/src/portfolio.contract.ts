@@ -46,6 +46,7 @@ import {
   YieldProtocol,
   FlowConfigShape,
 } from '@agoric/portfolio-api/src/constants.js';
+import type { YmaxFullDomain } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.ts';
 import type {
   PermitDetails,
   YmaxOperationDetails,
@@ -63,7 +64,11 @@ import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import { prepareEVMWalletHandlerKit } from './evm-wallet-handler.exo.ts';
 import { preparePlanner } from './planner.exo.ts';
-import { preparePortfolioKit, type PortfolioKit } from './portfolio.exo.ts';
+import {
+  makeValidateOpenMessageRepresentativeInfo,
+  preparePortfolioKit,
+  type PortfolioKit,
+} from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
 import { prepareResolverKit } from './resolver/resolver.exo.js';
 import { PENDING_TXS_NODE_KEY } from './resolver/types.ts';
@@ -79,7 +84,7 @@ import {
 } from './type-guards.ts';
 
 const trace = makeTracer('PortC');
-const { entries, fromEntries, keys } = Object;
+const { fromEntries, keys } = Object;
 
 const makeTransferChannels = (chainInfo: PortfolioPrivateArgs['chainInfo']) => {
   const { agoric, axelar, noble } = chainInfo as Record<
@@ -392,6 +397,12 @@ export const contract = async (
     trace('published contractAccount', addr.value);
   });
 
+  const validateOpenMessageRepresentativeInfo =
+    makeValidateOpenMessageRepresentativeInfo(
+      eip155ChainIdToAxelarChain,
+      contracts,
+    );
+
   const ctx1: flows.PortfolioInstanceContext = {
     zoeTools: zoeTools as any, // XXX Guest...
     usdc: {
@@ -622,6 +633,11 @@ export const contract = async (
       storagePath: string;
       evmHandler: PortfolioKit['evmHandler'];
     }> {
+      validateOpenMessageRepresentativeInfo(
+        permitDetails.chainId,
+        permitDetails.spender,
+      );
+
       // XXX: validate instruments
       const targetAllocation: TargetAllocation = Object.fromEntries(
         allocations.map(({ instrument, portion }) => [instrument, portion]),
@@ -632,12 +648,6 @@ export const contract = async (
       if (!fromChain) {
         throw Fail`no Axelar chain for EIP-155 chainId ${permitDetails.chainId}`;
       }
-      sameEvmAddress(
-        permitDetails.spender,
-        contracts[fromChain].depositFactory,
-      ) ||
-        Fail`permit2 spender address ${permitDetails.spender} does not match depositFactory address ${contracts[fromChain].depositFactory} for chain ${fromChain}`;
-
       sameEvmAddress(permitDetails.token, contracts[fromChain].usdc) ||
         Fail`permit2 token address ${permitDetails.token} does not match usdc contract address ${contracts[fromChain].usdc} for chain ${fromChain}`;
       const amount = AmountMath.make(brands.USDC, permitDetails.amount);
@@ -668,8 +678,25 @@ export const contract = async (
         evmHandler: kit.evmHandler,
       });
     },
+    async validateEVMMessageDomain(
+      domain: YmaxFullDomain,
+      portfolio?: Remote<PortfolioKit['evmHandler']>,
+    ) {
+      await null;
+      if (portfolio) {
+        await E(portfolio).validateRepresentativeInfo(
+          domain.chainId,
+          domain.verifyingContract,
+        );
+      } else {
+        validateOpenMessageRepresentativeInfo(
+          domain.chainId,
+          domain.verifyingContract,
+        );
+      }
+    },
   } satisfies Record<PortfolioPublicInvitationMaker, any> &
-    Record<'openPortfolioFromEVM', any> &
+    Record<'openPortfolioFromEVM' | 'validateEVMMessageDomain', any> &
     ThisType<any>);
 
   const prepareResultOnlyInvitation = <R>(
@@ -710,12 +737,6 @@ export const contract = async (
       timerService,
       portfolioContractPublicFacet: publicFacet,
       publishStatus,
-      validStandaloneContractAddresses: fromEntries(
-        entries(eip155ChainIdToAxelarChain).map(
-          ([chainId, chainName]) =>
-            [chainId, contracts[chainName].depositFactory] as const,
-        ),
-      ),
     },
   );
 
