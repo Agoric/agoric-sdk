@@ -21,6 +21,8 @@ permissions:
 jobs:
   deploy-ymax1-planner:
     runs-on: ubuntu-latest
+    environment:
+      name: ymax1-mainnet
 
     steps:
       - uses: actions/checkout@v4
