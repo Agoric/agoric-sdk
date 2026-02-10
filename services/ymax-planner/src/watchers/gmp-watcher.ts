@@ -9,6 +9,7 @@ import { PendingTxCode } from '../pending-tx-manager.ts';
 import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
+  scanFailedTxsInChunks,
 } from '../support.ts';
 import type { MakeAbortController, WatcherTimeoutOptions } from '../support.ts';
 import { TX_TIMEOUT_MS, type WatcherResult } from '../pending-tx-manager.ts';
@@ -320,38 +321,50 @@ export const lookBackGmp = async ({
     const updateStatusEventLowerBound = (_from: number, to: number) =>
       setTxBlockLowerBound(kvStore, txId, to, MULTICALL_STATUS_EVENT);
 
-    // Options shared by both scans (including an abort signal that is triggered
-    // by a match from either).
+    // Both scans share an abort signal so that whichever finishes first
+    // causes the other to stop on its next iteration.
     // see `prepareAbortController` in services/ymax-planner/src/main.ts
     const { abort: abortScans, signal: sharedSignal } = makeAbortController(
       undefined,
       signal ? [signal] : [],
     );
-    const baseScanOpts = {
+    const sharedOpts = {
       provider,
-      rpcUrl,
       toBlock,
       chainId,
       log,
       signal: sharedSignal,
-      fetch,
     };
 
-    const { log: matchingEvent, failedTx } = await scanEvmLogsInChunks(
-      {
-        ...baseScanOpts,
-        baseFilter: statusFilter,
+    const [matchingEvent, failedTx] = await Promise.all([
+      scanEvmLogsInChunks(
+        {
+          ...sharedOpts,
+          baseFilter: statusFilter,
+          fromBlock: statusEventLowerBound,
+          onRejectedChunk: updateStatusEventLowerBound,
+        },
+        isMatch,
+      ).then(result => {
+        if (result) abortScans();
+        return result;
+      }),
+      scanFailedTxsInChunks({
+        ...sharedOpts,
         fromBlock: statusEventLowerBound,
-        onRejectedChunk: updateStatusEventLowerBound,
         toAddress: contractAddress,
         verifyFailedTx: tx => {
           const data = extractGmpExecuteData(tx.data);
           if (data?.txId === txId) return true;
           return false;
         },
-      },
-      isMatch,
-    );
+        rpcUrl,
+        fetch,
+      }).then(result => {
+        if (result) abortScans();
+        return result;
+      }),
+    ]);
 
     abortScans();
 

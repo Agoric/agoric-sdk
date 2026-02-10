@@ -429,7 +429,7 @@ export const getBlockNumberBeforeRealTime = async (
 
 type LogPredicate = (log: Log) => boolean | Promise<boolean>;
 
-type ScanOpts = {
+type LogScanOpts = {
   provider: WebSocketProvider;
   baseFilter: Omit<Filter, 'fromBlock' | 'toBlock'> & Partial<Filter>;
   fromBlock: number;
@@ -438,17 +438,31 @@ type ScanOpts = {
   chunkSize?: number;
   log?: (...args: unknown[]) => void;
   signal?: AbortSignal;
-  toAddress?: string;
-  verifyFailedTx?: (
-    tx: TransactionResponse,
-    receipt: BlockReceipt,
-  ) => boolean | Promise<boolean>;
   onRejectedChunk?: (
     startBlock: number,
     endBlock: number,
   ) => Promise<void> | void;
-  rpcUrl?: string;
-  fetch?: typeof fetch;
+};
+
+type FailedTxScanOpts = {
+  provider: WebSocketProvider;
+  fromBlock: number;
+  toBlock: number;
+  chainId: CaipChainId;
+  chunkSize?: number;
+  log?: (...args: unknown[]) => void;
+  signal?: AbortSignal;
+  onRejectedChunk?: (
+    startBlock: number,
+    endBlock: number,
+  ) => Promise<void> | void;
+  toAddress: string;
+  verifyFailedTx: (
+    tx: TransactionResponse,
+    receipt: BlockReceipt,
+  ) => boolean | Promise<boolean>;
+  rpcUrl: string;
+  fetch: typeof fetch;
 };
 
 type BlockReceipt = {
@@ -505,12 +519,9 @@ const getBlockReceiptsBatch = async (blockNumbers, { fetch, rpcUrl }) => {
  * runs `predicate` on each log, and returns the first matching log or undefined.
  */
 export const scanEvmLogsInChunks = async (
-  opts: ScanOpts,
+  opts: LogScanOpts,
   predicate: LogPredicate,
-): Promise<{
-  log: Log | undefined;
-  failedTx: TransactionResponse | undefined;
-}> => {
+): Promise<Log | undefined> => {
   const {
     provider,
     baseFilter,
@@ -520,17 +531,13 @@ export const scanEvmLogsInChunks = async (
     chunkSize = 10,
     log = () => {},
     signal,
-    toAddress,
-    verifyFailedTx,
-    rpcUrl,
-    fetch,
   } = opts;
 
   await null;
   for (let start = fromBlock; start <= toBlock; ) {
     if (signal?.aborted) {
       log('[LogScan] Aborted');
-      return { log: undefined, failedTx: undefined };
+      return undefined;
     }
     const end = Math.min(start + chunkSize - 1, toBlock);
     const currentBlock = await provider.getBlockNumber();
@@ -548,45 +555,6 @@ export const scanEvmLogsInChunks = async (
       continue; // Retry this chunk after waiting
     }
 
-    if (toAddress && verifyFailedTx && rpcUrl && fetch) {
-      // Check for failed transactions in the block range using eth_getBlockReceipts.
-      try {
-        const blockNumbers = Array.from({ length: end - start + 1 }, (_, i) =>
-          toBeHex(start + i),
-        );
-        const receipts = await getBlockReceiptsBatch(blockNumbers, {
-          fetch,
-          rpcUrl,
-        });
-
-        for (const receipt of receipts) {
-          const { transactionHash, status, to } = receipt;
-          // Verify if the tx is to our target contract
-          if (!to || to.toLowerCase() !== toAddress.toLowerCase()) {
-            continue;
-          }
-          const statusValue = status ? Number.parseInt(status, 16) : undefined;
-
-          if (statusValue === 0) {
-            const tx = await provider.getTransaction(transactionHash);
-            if (!tx) {
-              throw new Error(
-                `Transaction ${transactionHash} not found for failed receipt`,
-              );
-            }
-            // Verify if this is indeed a failed transaction we care about
-            if (await verifyFailedTx(tx, receipt))
-              return { log: undefined, failedTx: tx };
-          }
-        }
-      } catch (err) {
-        log(
-          `[LogScan] Error checking block ${start} -> ${end} for failures:`,
-          err,
-        );
-      }
-    }
-
     const chunkFilter: Filter = {
       // baseFilter represents core filter configuration (address, topics, etc.) without block range
       ...baseFilter,
@@ -600,7 +568,7 @@ export const scanEvmLogsInChunks = async (
       for (const evt of logs) {
         if (await predicate(evt)) {
           log(`[LogScan] Match in tx=${evt.transactionHash}`);
-          return { log: evt, failedTx: undefined };
+          return evt;
         }
       }
       await opts.onRejectedChunk?.(start, end);
@@ -611,7 +579,91 @@ export const scanEvmLogsInChunks = async (
 
     start += chunkSize;
   }
-  return { log: undefined, failedTx: undefined };
+  return undefined;
+};
+
+/**
+ * Chunked scanner for failed transactions: scans [fromBlock, toBlock] in
+ * CHUNK_SIZE windows using `eth_getBlockReceipts`, filters by `toAddress`
+ * and `status === 0`, and calls `verifyFailedTx` on each candidate.
+ * Returns the first matching `TransactionResponse` or undefined.
+ */
+export const scanFailedTxsInChunks = async (
+  opts: FailedTxScanOpts,
+): Promise<TransactionResponse | undefined> => {
+  const {
+    provider,
+    fromBlock,
+    toBlock,
+    chainId,
+    chunkSize = 10,
+    log = () => {},
+    signal,
+    toAddress,
+    verifyFailedTx,
+    rpcUrl,
+    fetch,
+  } = opts;
+
+  await null;
+  for (let start = fromBlock; start <= toBlock; ) {
+    if (signal?.aborted) {
+      log('[FailedTxScan] Aborted');
+      return undefined;
+    }
+    const end = Math.min(start + chunkSize - 1, toBlock);
+    const currentBlock = await provider.getBlockNumber();
+
+    // Wait for the chain to catch up if end block doesn't exist yet
+    if (end > currentBlock) {
+      const blockTimeMs = getBlockTimeMs(chainId);
+      const blocksToWait = Math.max(50, chunkSize);
+      const waitTimeMs = blocksToWait * blockTimeMs;
+      const blocksBehind = end - currentBlock;
+      log(
+        `[FailedTxScan] Chain ${blocksBehind} blocks behind (need ${end}, at ${currentBlock}). Waiting ${waitTimeMs}ms (${blocksToWait} blocks @ ${blockTimeMs}ms/block)`,
+      );
+      await new Promise(resolve => setTimeout(resolve, waitTimeMs));
+      continue; // Retry this chunk after waiting
+    }
+
+    try {
+      const blockNumbers = Array.from({ length: end - start + 1 }, (_, i) =>
+        toBeHex(start + i),
+      );
+      const receipts = await getBlockReceiptsBatch(blockNumbers, {
+        fetch,
+        rpcUrl,
+      });
+
+      for (const receipt of receipts) {
+        const { transactionHash, status, to } = receipt;
+        if (!to || to.toLowerCase() !== toAddress.toLowerCase()) {
+          continue;
+        }
+        const statusValue = status ? Number.parseInt(status, 16) : undefined;
+
+        if (statusValue === 0) {
+          const tx = await provider.getTransaction(transactionHash);
+          if (!tx) {
+            throw new Error(
+              `Transaction ${transactionHash} not found for failed receipt`,
+            );
+          }
+          if (await verifyFailedTx(tx, receipt)) return tx;
+        }
+      }
+      await opts.onRejectedChunk?.(start, end);
+    } catch (err) {
+      log(
+        `[FailedTxScan] Error checking block ${start} -> ${end} for failures:`,
+        err,
+      );
+    }
+
+    start += chunkSize;
+  }
+  return undefined;
 };
 
 export const waitForBlock = async (

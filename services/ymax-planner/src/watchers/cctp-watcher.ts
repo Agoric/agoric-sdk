@@ -192,7 +192,7 @@ export const lookBackCctp = async ({
 
     // XXX: Consider async iteration pattern for more flexible log scanning
     // See: https://github.com/Agoric/agoric-sdk/pull/11915#discussion_r2353872425
-    const { log: matchingEvent } = await scanEvmLogsInChunks(
+    const matchingEvent = await scanEvmLogsInChunks(
       {
         provider,
         baseFilter,
