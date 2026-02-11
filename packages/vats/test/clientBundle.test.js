@@ -56,9 +56,10 @@ test('connectFaucet produces payments', async t => {
   produce.agoricNames.resolve(agoricNames);
   produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 
+  const { vatAdminService } = await makePopulatedFakeVatAdmin();
   const { zoe, feeMintAccessP, vatAdminSvc } = await setUpZoeForTest({
     feeIssuerConfig,
-    vatAdminSvc: makePopulatedFakeVatAdmin().vatAdminService,
+    vatAdminSvc: vatAdminService,
   });
   produce.zoe.resolve(zoe);
   const fma = await feeMintAccessP;

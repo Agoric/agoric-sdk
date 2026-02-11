@@ -63,7 +63,7 @@ const testBootstrap = (label, entryPoint, doCoreProposals) => {
   };
 
   test(`test manifest permits: ${label} gov: ${doCoreProposals}`, async t => {
-    const mock = makeMock(t.log);
+    const mock = await makeMock(t.log);
     const vatPowers = {
       D: mockDProxy,
       logger: t.log,
@@ -74,7 +74,7 @@ const testBootstrap = (label, entryPoint, doCoreProposals) => {
     };
     const baggage = makeScalarBigMapStore('test-baggage', { durable: true });
     const root = entryPoint(vatPowers, vatParameters, baggage);
-    const vats = mockSwingsetVats(mock);
+    const vats = await mockSwingsetVats(mock);
     await t.notThrowsAsync(E(root).bootstrap(vats, mock.devices));
   });
 };
