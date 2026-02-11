@@ -520,13 +520,6 @@ type TraceResult = {
   traceAddress: number[];
 };
 
-type TraceFilterResponse = {
-  id: number;
-  jsonrpc: '2.0';
-  result: TraceResult[];
-  error?: object;
-};
-
 /**
  * Fetches block receipts in batch using eth_getBlockReceipts RPC method.
  * This function needs to use fetch instead of an ethers provider because
@@ -643,29 +636,12 @@ const getTraceFilter = async (
   fromBlock: string,
   toBlock: string,
   toAddress: string,
-  { fetch, rpcUrl }: { fetch: typeof globalThis.fetch; rpcUrl: string },
+  provider: WebSocketProvider,
 ): Promise<TraceResult[]> => {
-  const payload = {
-    jsonrpc: '2.0',
-    id: 1,
-    method: 'trace_filter',
-    params: [{ fromBlock, toBlock, toAddress: [toAddress] }],
-  };
-
-  const res = await fetch(rpcUrl, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-
-  if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
-
-  const json: TraceFilterResponse = await res.json();
-
-  if (json.error) {
-    throw new Error(`RPC error: ${JSON.stringify(json.error)}`);
-  }
-  return json.result ?? [];
+  const result: TraceResult[] | null = await provider.send('trace_filter', [
+    { fromBlock, toBlock, toAddress: [toAddress] },
+  ]);
+  return result ?? [];
 };
 
 /**
@@ -678,7 +654,7 @@ const getTraceFilter = async (
  * and status, then makes a separate getTransaction call to retrieve
  * calldata for verification.
  *
- * Cost per 10-block chunk: 200 CU + 5,000 Throughput CU + 20 CU/match.
+ * Cost per 10-block chunk: 200 CU + 20 CU/match.
  */
 const scanChunkWithBlockReceipts = async (
   start: number,
@@ -733,19 +709,21 @@ const scanChunkWithBlockReceipts = async (
  * Filters by toAddress server-side and includes calldata (action.input)
  * in the response, so no separate getTransaction call is needed.
  *
- * Cost per call: 40 CU + 40 Throughput CU (covers the entire chunk range).
+ * Cost per call: 40 CU (covers the entire chunk range).
  */
 const scanChunkWithTraceFilter = async (
   start: number,
   end: number,
   opts: FailedTxScanOpts,
 ): Promise<TransactionResponse | undefined> => {
-  const { toAddress, verifyFailedTx, rpcUrl, fetch } = opts;
+  const { provider, toAddress, verifyFailedTx } = opts;
 
-  const traces = await getTraceFilter(toBeHex(start), toBeHex(end), toAddress, {
-    fetch,
-    rpcUrl,
-  });
+  const traces = await getTraceFilter(
+    toBeHex(start),
+    toBeHex(end),
+    toAddress,
+    provider,
+  );
 
   for (const trace of traces) {
     // Only top-level calls (not internal sub-calls) with errors
@@ -786,10 +764,10 @@ const BLOCK_RECEIPTS_CHUNK_SIZE = 10;
  *
  * Two strategies are used depending on chain support:
  *
- * | Strategy             | Chains (as of 2026-02)        | CU (10 blocks) | Throughput CU |
- * |----------------------|-------------------------------|----------------|---------------|
- * | trace_filter         | Ethereum, Base, Optimism      | 40             | 40            |
- * | eth_getBlockReceipts | Arbitrum, Avalanche           | 200            | 5,000         |
+ * | Strategy             | Chains (as of 2026-02)        | CU (10 blocks) |
+ * |----------------------|-------------------------------|----------------|
+ * | trace_filter         | Ethereum, Base, Optimism      | 40             |
+ * | eth_getBlockReceipts | Arbitrum, Avalanche           | 200 + 20/match |
  *
  * trace_filter is preferred where available because it filters by toAddress
  * server-side and includes calldata, avoiding per-block receipt downloads
