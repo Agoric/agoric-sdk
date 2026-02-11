@@ -1,13 +1,9 @@
 // @ts-check
 
 /**
- * @import { execFileSync } from 'child_process';
- */
-
-/**
  * Omits the root
  *
- * @param {{ execFileSync: execFileSync }} io
+ * @param {{ execFileSync: typeof import('child_process').execFileSync }} io
  * @param {string} [root]
  * @returns {Array<{ location: string, name: string }>}
  */
