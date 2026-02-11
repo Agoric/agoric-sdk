@@ -413,27 +413,17 @@ export const lookBackSmartWalletTx = async ({
       log,
       signal: sharedSignal,
     };
+    const logScanOpts = {
+      ...sharedOpts,
+      fromBlock: savedFromBlock,
+      onRejectedChunk: (_, to) => setTxBlockLowerBound(kvStore, txId, to),
+      predicate: checkMatch,
+    };
 
     const [matchingEvent, failedTx] = await Promise.all([
       Promise.race([
-        scanEvmLogsInChunks({
-          ...sharedOpts,
-          baseFilter: baseFilterV1,
-          fromBlock: savedFromBlock,
-          onRejectedChunk: (_, to) => {
-            setTxBlockLowerBound(kvStore, txId, to);
-          },
-          predicate: checkMatch,
-        }),
-        scanEvmLogsInChunks({
-          ...sharedOpts,
-          baseFilter: baseFilterV2,
-          fromBlock: savedFromBlock,
-          onRejectedChunk: (_, to) => {
-            setTxBlockLowerBound(kvStore, txId, to);
-          },
-          predicate: checkMatch,
-        }),
+        scanEvmLogsInChunks({ ...logScanOpts, baseFilter: baseFilterV1 }),
+        scanEvmLogsInChunks({ ...logScanOpts, baseFilter: baseFilterV2 }),
       ]).then(result => {
         if (result) abortScans();
         return result;

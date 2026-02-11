@@ -3,6 +3,7 @@ import type { Filter, TransactionResponse } from 'ethers';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { ClusterName } from '@agoric/internal';
 import { fromTypedEntries, objectMap, typedEntries } from '@agoric/internal';
+import { makeWorkPool } from '@agoric/internal/src/work-pool.js';
 import {
   CaipChainIds,
   EvmWalletOperationType,
@@ -668,7 +669,8 @@ const getTraceFilter = async (
 };
 
 /**
- * Scan a chunk using eth_getBlockReceipts.
+ * Scan a block range for reverted transactions to `toAddress` using
+ * eth_getBlockReceipts, returning the first one accepted by `verifyFailedTx`.
  *
  * Used where Alchemy does not support trace_filter (as of 2026-02, Arbitrum and
  * Avalanche).
@@ -690,29 +692,41 @@ const scanChunkWithBlockReceipts = async (
   );
   const receipts = await getBlockReceiptsBatch(blockNumbers, { fetch, rpcUrl });
 
-  for (const receipt of receipts) {
+  const { promise, resolve, reject } = Promise.withResolvers<
+    TransactionResponse | undefined
+  >();
+  let isDone = false;
+  const scanner = makeWorkPool(receipts, undefined, async receipt => {
+    if (isDone) return;
     const { transactionHash, status, to } = receipt;
-    if (!to || to.toLowerCase() !== toAddress.toLowerCase()) {
-      continue;
-    }
-    const statusValue = status ? Number.parseInt(status, 16) : undefined;
 
-    if (statusValue === 0) {
-      const tx = await provider.getTransaction(transactionHash);
-      if (!tx) {
-        opts.log?.(
-          `[FailedTxScan] tx ${transactionHash} not found (possible reorg), skipping`,
-        );
-        continue;
-      }
-      if (await verifyFailedTx(tx, receipt)) return tx;
+    if (!to || to.toLowerCase() !== toAddress.toLowerCase()) return;
+
+    const statusValue = status ? Number.parseInt(status, 16) : undefined;
+    if (statusValue !== 0) return;
+
+    const tx = await provider.getTransaction(transactionHash);
+    if (!tx) {
+      opts.log?.(
+        `[FailedTxScan] tx ${transactionHash} not found (possible reorg), skipping`,
+      );
+      return;
     }
-  }
-  return undefined;
+    if (await verifyFailedTx(tx, receipt)) {
+      resolve(tx);
+      isDone = true;
+    }
+  });
+  scanner.done.then(
+    () => resolve(undefined),
+    err => reject(err),
+  );
+  return promise;
 };
 
 /**
- * Scan a chunk using trace_filter.
+ * Scan a block range for reverted transactions to `toAddress` using
+ * trace_filter, returning the first one accepted by `verifyFailedTx`.
  *
  * Used where Alchemy supports trace_filter (as of 2026-02, Ethereum, Base, and
  * Optimism).

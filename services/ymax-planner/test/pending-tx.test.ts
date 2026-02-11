@@ -922,6 +922,7 @@ test('find a failed tx in lookback mode', async t => {
     `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,
     `[${txId}] [LogScan] Searching chunk ${fromBlock + 10} → ${expectedChunkEnd + 10}`,
     `[${txId}] [LogScan] Searching chunk ${fromBlock + 20} → ${expectedChunkEnd + 20}`,
+    `[${txId}] [LogScan] Searching chunk ${fromBlock + 30} → ${expectedChunkEnd + 30}`,
     `[${txId}] [LogScan] Aborted`,
     `[${txId}] Found matching failed transaction`,
     `[${txId}] ❌ REVERTED (25 confirmations): txId=${txId} txHash=0x123123213 block=${latestBlock} - transaction failed`,
