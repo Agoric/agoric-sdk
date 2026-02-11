@@ -2,7 +2,7 @@
 set -ueo pipefail
 
 # Install Terraform.
-TERRAFORM_VERSION=0.13.7
+TERRAFORM_VERSION=0.14.11
 
 uname_s=$(uname -s | tr '[:upper:]' '[:lower:]')
 
