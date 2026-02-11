@@ -4,14 +4,17 @@ import type { WebSocket } from 'ws';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import { tryJsonParse } from '@agoric/internal';
-import { PendingTxCode, TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
+import type {
+  JsonRpcBatchClient,
+  MakeAbortController,
+  WatcherTimeoutOptions,
+} from '../support.ts';
 import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
   scanFailedTxsInChunks,
-  type MakeAbortController,
-  type WatcherTimeoutOptions,
 } from '../support.ts';
+import { PendingTxCode, TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
 import {
   deleteTxBlockLowerBound,
   getTxBlockLowerBound,
@@ -339,8 +342,7 @@ type SmartWalletLookback = {
   publishTimeMs: number;
   chainId: CaipChainId;
   signal?: AbortSignal;
-  rpcUrl: string;
-  fetch: typeof fetch;
+  rpcClient: JsonRpcBatchClient;
   subscribeToAddr: `0x${string}`;
   makeAbortController: MakeAbortController;
 };
@@ -356,8 +358,7 @@ export const lookBackSmartWalletTx = async ({
   signal,
   kvStore,
   txId,
-  rpcUrl,
-  fetch,
+  rpcClient,
   subscribeToAddr,
   makeAbortController,
 }: SmartWalletWatch & SmartWalletLookback): Promise<WatcherResult> => {
@@ -448,8 +449,7 @@ export const lookBackSmartWalletTx = async ({
         onRejectedChunk: (_, to) => {
           setTxBlockLowerBound(kvStore, txId, to, FAILED_TX_SCOPE);
         },
-        rpcUrl,
-        fetch,
+        rpcClient,
       }).then(result => {
         if (result) abortScans();
         return result;

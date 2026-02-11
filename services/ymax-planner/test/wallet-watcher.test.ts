@@ -385,6 +385,8 @@ test('find a failed tx in MAKE_ACCOUNT lookback mode', async t => {
     `[${txId}] [LogScan] Searching chunk ${fromBlock + 20} → ${expectedChunkEnd + 20}`,
     `[${txId}] [LogScan] Searching chunk ${fromBlock + 30} → ${expectedChunkEnd + 30}`,
     `[${txId}] [LogScan] Searching chunk ${fromBlock + 30} → ${expectedChunkEnd + 30}`,
+    `[${txId}] [LogScan] Searching chunk ${fromBlock + 40} → ${expectedChunkEnd + 40}`,
+    `[${txId}] [LogScan] Searching chunk ${fromBlock + 40} → ${expectedChunkEnd + 40}`,
     `[${txId}] [LogScan] Aborted`,
     `[${txId}] [LogScan] Aborted`,
     `[${txId}] Found matching failed transaction`,

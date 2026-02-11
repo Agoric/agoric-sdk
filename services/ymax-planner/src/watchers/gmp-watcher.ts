@@ -11,7 +11,11 @@ import {
   scanEvmLogsInChunks,
   scanFailedTxsInChunks,
 } from '../support.ts';
-import type { MakeAbortController, WatcherTimeoutOptions } from '../support.ts';
+import type {
+  JsonRpcBatchClient,
+  MakeAbortController,
+  WatcherTimeoutOptions,
+} from '../support.ts';
 import { TX_TIMEOUT_MS, type WatcherResult } from '../pending-tx-manager.ts';
 import {
   deleteTxBlockLowerBound,
@@ -276,13 +280,12 @@ type WatchGmpLookback = {
   publishTimeMs: number;
   chainId: CaipChainId;
   signal?: AbortSignal;
-  fetch: typeof fetch;
-  rpcUrl: string;
+  rpcClient: JsonRpcBatchClient;
 };
 
 export const lookBackGmp = async ({
   provider,
-  rpcUrl,
+  rpcClient,
   contractAddress,
   txId,
   expectedSourceAddress,
@@ -292,7 +295,6 @@ export const lookBackGmp = async ({
   signal,
   kvStore,
   makeAbortController,
-  fetch,
 }: WatchGmp & WatchGmpLookback): Promise<WatcherResult> => {
   await null;
   try {
@@ -364,8 +366,7 @@ export const lookBackGmp = async ({
         onRejectedChunk: (_, to) => {
           setTxBlockLowerBound(kvStore, txId, to, FAILED_TX_SCOPE);
         },
-        rpcUrl,
-        fetch,
+        rpcClient,
       }).then(result => {
         if (result) abortScans();
         return result;

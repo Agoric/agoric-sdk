@@ -21,6 +21,21 @@ import {
 import type { EvmContext } from './pending-tx-manager.ts';
 import { lookupValueForKey } from './utils.ts';
 
+/**
+ * Narrow interface for a JSON-RPC 2.0 batch client.
+ *
+ * We define a custom interface rather than importing {@link JSONRPCClient}
+ * from `json-rpc-2.0` because the test lockdown (`overrideTaming: 'min'`)
+ * is incompatible with that library's compiled `__extends`
+ * (see `src/lockdown.js`).  The custom type still limits the power surface
+ * passed to downstream functions.
+ */
+export type JsonRpcBatchClient = {
+  batchCall: (
+    requests: Array<{ method: string; params: unknown[] }>,
+  ) => Promise<Array<{ result?: unknown }>>;
+};
+
 export const UserInputError = class extends Error {} as ErrorConstructor;
 harden(UserInputError);
 
@@ -484,8 +499,7 @@ type FailedTxScanOpts = ScanOptsBase & {
     tx: TransactionResponse,
     receipt: BlockReceipt,
   ) => boolean | Promise<boolean>;
-  rpcUrl: string;
-  fetch: typeof fetch;
+  rpcClient: JsonRpcBatchClient;
 };
 
 type BlockReceipt = {
@@ -493,13 +507,6 @@ type BlockReceipt = {
   status: `0x${string}` | null;
   to: `0x${string}` | null;
 };
-
-type BlockReceiptsResponse = Array<{
-  id: number;
-  jsonrpc: '2.0';
-  result: Array<BlockReceipt>;
-  error?: object;
-}>;
 
 type TraceAction = {
   from: `0x${string}`;
@@ -521,47 +528,53 @@ type TraceResult = {
 };
 
 /**
+ * Create a {@link JsonRpcBatchClient} backed by HTTP POST via the given `fetch`.
+ *
+ * Use this instead of passing raw `fetch` + `rpcUrl` to downstream functions
+ * so that callees only receive the constrained JSON-RPC interface.
+ */
+export const makeJsonRpcClient = (
+  fetch: typeof globalThis.fetch,
+  rpcUrl: string,
+): JsonRpcBatchClient => ({
+  batchCall: async requests => {
+    const payload = requests.map((req, i) => ({
+      jsonrpc: '2.0',
+      id: i + 1,
+      method: req.method,
+      params: req.params,
+    }));
+    const res = await fetch(rpcUrl, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+    return res.json();
+  },
+});
+
+/**
  * Fetches block receipts in batch using eth_getBlockReceipts RPC method.
- * This function needs to use fetch instead of an ethers provider because
- * ethers does not support batching of this method.
+ * This function cannot use an ethers provider because ethers does not support
+ * batching of this method.
+ *
  * @param start - Start block number (inclusive)
  * @param end - End block number (inclusive)
- * @param opts - Options for the request
- * @param opts.fetch - Fetch function to use for HTTP requests
- * @param opts.rpcUrl - RPC URL to send the request to
+ * @param client - JSON-RPC batch client
  * @returns Array of BlockReceipt objects for the requested blocks
- * @throws Error if the HTTP request fails or if there are RPC errors
  */
 const getBlockReceiptsBatch = async (
   start: number,
   end: number,
-  { fetch, rpcUrl }: { fetch: typeof globalThis.fetch; rpcUrl: string },
+  client: JsonRpcBatchClient,
 ): Promise<BlockReceipt[]> => {
-  const blockNumbers = Array.from({ length: end - start + 1 }, (_, i) =>
-    toBeHex(start + i),
-  );
-  const payload = blockNumbers.map((bn, i) => ({
-    jsonrpc: '2.0',
-    id: i + 1,
+  const requests = Array.from({ length: end - start + 1 }, (_, i) => ({
     method: 'eth_getBlockReceipts',
-    params: [bn],
+    params: [toBeHex(start + i)] as unknown[],
   }));
-
-  const res = await fetch(rpcUrl, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-
-  if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
-
-  const json: BlockReceiptsResponse = await res.json();
-
-  const errors = json.filter(r => r.error);
-  if (errors.length > 0) {
-    throw new Error(`RPC errors: ${JSON.stringify(errors)}`);
-  }
-  return json.flatMap(r => r.result ?? []);
+  const responses = await client.batchCall(requests);
+  return responses.flatMap(r => (r.result ?? []) as BlockReceipt[]);
 };
 
 /**
@@ -666,9 +679,9 @@ const scanChunkWithBlockReceipts = async (
   end: number,
   opts: FailedTxScanOpts,
 ): Promise<TransactionResponse | undefined> => {
-  const { provider, toAddress, verifyFailedTx, rpcUrl, fetch } = opts;
+  const { provider, toAddress, verifyFailedTx, rpcClient } = opts;
 
-  const receipts = await getBlockReceiptsBatch(start, end, { fetch, rpcUrl });
+  const receipts = await getBlockReceiptsBatch(start, end, rpcClient);
 
   const { promise, resolve, reject } = Promise.withResolvers<
     TransactionResponse | undefined

@@ -21,7 +21,7 @@ import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import type { CosmosRPCClient } from './cosmos-rpc.ts';
 import { resolvePendingTx } from './resolver.ts';
-import { waitForBlock } from './support.ts';
+import { makeJsonRpcClient, waitForBlock } from './support.ts';
 import type {
   EvmProviders,
   MakeAbortController,
@@ -230,19 +230,19 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
     const provider = ctx.evmProviders[caipId] as WebSocketProvider;
     const rpcUrl =
       ctx.rpcUrls[caipId] || Fail`${logPrefix} No RPC URL for chain: ${caipId}`;
+    const rpcClient = makeJsonRpcClient(ctx.fetch, rpcUrl);
 
     // Extract the address portion from sourceAddress (format: 'cosmos:agoric-3:agoric1...')
     const lcaAddress = parseAccountId(sourceAddress).accountAddress;
 
     const watchArgs = {
       provider,
-      rpcUrl,
+      rpcClient,
       contractAddress: accountAddress as `0x${string}`,
       txId,
       expectedSourceAddress: lcaAddress,
       chainId: caipId,
       log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
-      fetch: ctx.fetch,
     };
 
     let transferResult: GmpWatcherResult | undefined;
@@ -368,6 +368,7 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
       Fail`${logPrefix} No EVM provider for chain: ${caipId}`;
     const rpcUrl =
       ctx.rpcUrls[caipId] || Fail`${logPrefix} No RPC URL for chain: ${caipId}`;
+    const rpcClient = makeJsonRpcClient(ctx.fetch, rpcUrl);
 
     const lcaAddress = parseAccountId(sourceAddress).accountAddress;
 
@@ -429,8 +430,7 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
         publishTimeMs: opts.publishTimeMs,
         chainId: caipId,
         signal: abortController.signal,
-        rpcUrl,
-        fetch: ctx.fetch,
+        rpcClient,
         makeAbortController: ctx.makeAbortController,
       });
 

@@ -838,14 +838,6 @@ const FAILED_TX_BASE_CALLDATA =
 const makeFailedTxCalldata = (txId: string): string =>
   FAILED_TX_BASE_CALLDATA.replace(asciiToHex('tx553'), asciiToHex(txId));
 
-type FailedTxFetchInfo = {
-  rpcUrls: Record<string, string>;
-  contractAddress: string;
-  calldata: string;
-  failedTxHash: `0x${string}`;
-  latestBlock: number;
-};
-
 /**
  * Build the shared test context for a failed-tx lookback test.
  *
@@ -864,7 +856,11 @@ const makeFailedTxTestContext = ({
   txId: `tx${number}`;
   avgBlockTimeMs: number;
   failedTxHash: `0x${string}`;
-  makeFetchMock: (info: FailedTxFetchInfo) => typeof globalThis.fetch;
+  /** Build a mock `fetch` placed on the test context.  `pending-tx-manager`
+   *  feeds it to `makeJsonRpcClient`, so responses must be JSON-RPC 2.0. */
+  makeFetchMock: (info: {
+    failedTxHash: `0x${string}`;
+  }) => typeof globalThis.fetch;
   providerOverrides?: (info: {
     calldata: string;
     failedTxHash: `0x${string}`;
@@ -917,13 +913,7 @@ const makeFailedTxTestContext = ({
   const ctxWithFetch = harden({
     ...opts,
     evmProviders: newEvmProviders,
-    fetch: makeFetchMock({
-      rpcUrls: opts.rpcUrls as Record<string, string>,
-      contractAddress: FAILED_TX_CONTRACT,
-      calldata,
-      failedTxHash,
-      latestBlock: FAILED_TX_LATEST_BLOCK,
-    }),
+    fetch: makeFetchMock({ failedTxHash }),
   });
 
   return {
@@ -947,25 +937,24 @@ test('find a failed tx in lookback mode via getBlockReceipts', async t => {
         getTransaction: async (_: any) => ({ hash: fth, data: calldata }),
       }),
       makeFetchMock:
-        ({ rpcUrls, failedTxHash: fth }) =>
-        async (url: string) => {
-          if (Object.values(rpcUrls).includes(url)) {
-            return {
-              ok: true,
-              json: async () => [
-                {
-                  result: [
-                    {
-                      transactionHash: fth,
-                      status: '0x0',
-                      to: FAILED_TX_CONTRACT,
-                    },
-                  ],
-                },
-              ],
-            } as Response;
-          }
-          return {} as Response;
+        ({ failedTxHash: fth }) =>
+        async (_url: string, init?: RequestInit) => {
+          const batch = JSON.parse(init?.body as string);
+          return {
+            ok: true,
+            json: async () =>
+              batch.map((req: any) => ({
+                jsonrpc: '2.0',
+                id: req.id,
+                result: [
+                  {
+                    transactionHash: fth,
+                    status: '0x0',
+                    to: FAILED_TX_CONTRACT,
+                  },
+                ],
+              })),
+          } as Response;
         },
     });
 
@@ -985,6 +974,7 @@ test('find a failed tx in lookback mode via getBlockReceipts', async t => {
     `[${txId}] [LogScan] Searching chunk ${fromBlock + 10} → ${expectedChunkEnd + 10}`,
     `[${txId}] [LogScan] Searching chunk ${fromBlock + 20} → ${expectedChunkEnd + 20}`,
     `[${txId}] [LogScan] Searching chunk ${fromBlock + 30} → ${expectedChunkEnd + 30}`,
+    `[${txId}] [LogScan] Searching chunk ${fromBlock + 40} → ${expectedChunkEnd + 40}`,
     `[${txId}] [LogScan] Aborted`,
     `[${txId}] Found matching failed transaction`,
     `[${txId}] ❌ REVERTED (25 confirmations): txId=${txId} txHash=0x123123213 block=${FAILED_TX_LATEST_BLOCK} - transaction failed`,
