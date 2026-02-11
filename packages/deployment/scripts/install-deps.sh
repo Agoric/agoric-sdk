@@ -2,7 +2,7 @@
 set -ueo pipefail
 
 # Install Terraform.
-TERRAFORM_VERSION=0.14.11
+TERRAFORM_VERSION=1.0.11
 
 uname_s=$(uname -s | tr '[:upper:]' '[:lower:]')
 
@@ -15,8 +15,7 @@ case $uname_m in
   x86_64) TERRAFORM_ARCH=amd64 ;;
   aarch64 | arm64)
     case "$TERRAFORM_OS" in
-      linux) TERRAFORM_ARCH=arm64 ;;
-      darwin) TERRAFORM_ARCH=amd64 ;; #FIXME: there is no darwin arm64 terraform binary yet
+      linux | darwin) TERRAFORM_ARCH=arm64 ;;
       *) TERRAFORM_ARCH=arm ;;
     esac
     ;;
