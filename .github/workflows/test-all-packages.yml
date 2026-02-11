@@ -506,7 +506,7 @@ jobs:
 
   test-portfolio-contract:
     # BEGIN-TEST-BOILERPLATE
-    timeout-minutes: 30
+    timeout-minutes: 40
     needs: build
     runs-on: ubuntu-latest
     strategy:

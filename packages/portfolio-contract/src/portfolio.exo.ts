@@ -62,8 +62,26 @@ import {
   type TargetAllocation,
 } from './type-guards.js';
 import { predictWalletAddress } from './utils/evm-orch-factory.js';
+import { predictRemoteAccountAddress } from './utils/evm-orch-router.ts';
+import type { EVMContractAddresses } from './portfolio.contract.ts';
 
 const trace = makeTracer('PortExo');
+
+const DEFAULT_TO_ROUTER = false;
+
+const useRouter = (addresses: EVMContractAddresses) => {
+  if (
+    !addresses.remoteAccountRouter ||
+    !(addresses.remoteAccountRouter.length > 2)
+  ) {
+    return false;
+  }
+  if (!addresses.depositFactory || !(addresses.depositFactory.length > 2)) {
+    return true;
+  }
+
+  return DEFAULT_TO_ROUTER;
+};
 
 export type AccountInfo = GMPAccountInfo | AgoricAccountInfo | NobleAccountInfo;
 export type GMPAccountInfo = {
@@ -146,11 +164,15 @@ export const makeValidateOpenMessageRepresentativeInfo =
     if (!fromChain) {
       throw Fail`no Axelar chain for EIP-155 chainId ${chainId}`;
     }
-    sameEvmAddress(
-      representativeContract,
-      contracts[fromChain].depositFactory,
-    ) ||
-      Fail`${representativeContract} does not match depositFactory address ${contracts[fromChain].depositFactory} for chain ${fromChain}`;
+    const addresses = contracts[fromChain];
+
+    (addresses.remoteAccountRouter &&
+      addresses.remoteAccountRouter.length > 2 &&
+      sameEvmAddress(representativeContract, addresses.remoteAccountRouter)) ||
+      (addresses.depositFactory &&
+        addresses.depositFactory.length > 2 &&
+        sameEvmAddress(representativeContract, addresses.depositFactory)) ||
+      Fail`${representativeContract} does not match any supported representative address ${[addresses.remoteAccountRouter, addresses.depositFactory].filter(address => address && address.length > 2)} for chain ${fromChain}`;
   };
 
 /**
@@ -447,6 +469,31 @@ export const preparePortfolioKit = (
         getGMPInfo(chainName: AxelarChain) {
           const { accounts } = this.state;
           return accounts.get(chainName) as GMPAccountInfo;
+        },
+        useRouterForChain(chainName: AxelarChain) {
+          const { accounts } = this.state;
+          if (accounts.has(chainName)) {
+            // There is already a remote account, must keep the same interaction kind
+            const info = accounts.get(chainName) as GMPAccountInfo;
+            return !!info.routerAddress;
+          }
+
+          const addresses = contracts[chainName];
+
+          // Consider the presence of a router based remote account as opt-in
+          // if the chain supports router based accounts.
+          const chainSupportsRouter =
+            addresses.remoteAccountRouter &&
+            addresses.remoteAccountRouter.length > 2;
+          const hasRoutedAccount = [...accounts.entries()].some(
+            ([chain, info]) =>
+              chain in AxelarChain && (info as GMPAccountInfo).routerAddress,
+          );
+          if (chainSupportsRouter && hasRoutedAccount) {
+            return true;
+          }
+
+          return useRouter(addresses);
         },
         getTargetAllocation() {
           return this.state.targetAllocation;
@@ -804,53 +851,125 @@ export const preparePortfolioKit = (
 
           const addresses = contracts[fromChain];
 
-          // The representative contract may be the chain's well-known
-          // depositFactory address, in which case if an account already exists,
-          // it must match the factory-predicted address for deposit operations.
-          // Otherwise, the representative contract must be the portfolio's
-          // remote account address.
-          // If the account already exists, use the stored address.
-          // If not, predict the address using `factory`.
-          let expectedRepresentativeContract: EVMAddress;
+          // The representative contract of the portfolio manager on the EVM
+          // chain should be the current remote account router or the deposit
+          // factory, if configured. It can also be the remote account itself.
+          // For deposits, the representative contract will also be the permit's
+          // redeemer. If a remote account already exists, its address must
+          // match the address that the representative's factory would create.
+          // That implies that if the representative is not the remote account,
+          // the deposit factory can only be a valid representative if the
+          // remote account is not router based, and vice-versa.
+          // A non current router can never be used as representative, even if
+          // the remote account hasn't been transferred to the new router yet.
+          // Allowing the remote account itself as representative supports
+          // legacy remote accounts being used for deposits, and in the future
+          // lets us remove the deposit factory as a supported representative.
+          // We also support remote accounts as representative when the remote
+          // account does not yet exist and will be created, either by the
+          // remote account factory through the router, or by the deposit factory.
+          type RepresentativeConfig = {
+            name: string;
+            address: EVMAddress;
+            predictAddress: () => EVMAddress;
+          };
 
-          const depositFactoryAddress = addresses.depositFactory;
-          const getPredictedAddress = () =>
-            predictWalletAddress({
-              owner: this.facets.reader.getLocalAccount().getAddress().value,
-              factoryAddress: addresses.factory,
-              gasServiceAddress: addresses.gasService,
-              gatewayAddress: addresses.gateway,
-              walletBytecode: hexToBytes(walletBytecode.replace(/^0x/, '')),
-            });
+          const hasRouterConfig =
+            !!addresses.remoteAccountRouter &&
+            addresses.remoteAccountRouter.length > 2 &&
+            !!addresses.remoteAccountFactory &&
+            addresses.remoteAccountFactory.length > 2 &&
+            !!addresses.remoteAccountImplementation &&
+            addresses.remoteAccountImplementation.length > 2;
 
-          if (
-            depositFactoryAddress &&
-            sameEvmAddress(representativeContract, depositFactoryAddress)
-          ) {
-            if (accounts.has(fromChain) && strictForDeposit) {
-              const info = accounts.get(fromChain) as GMPAccountInfo;
-              const predictedAddress = getPredictedAddress();
-              sameEvmAddress(info.remoteAddress, predictedAddress) ||
-                Fail`existing remote account address ${info.remoteAddress} does not match factory predicted address ${predictedAddress} for chain ${fromChain}`;
-            }
-            // If the factory predicted address match, the representative contract is allowed
-            // to be the deposit factory address.
-            expectedRepresentativeContract = depositFactoryAddress;
-          } else if (accounts.has(fromChain)) {
-            // The account exists, so we can check the expected representative contract against
-            // the stored remote account address.
+          const routerConfig: RepresentativeConfig | undefined = hasRouterConfig
+            ? {
+                name: 'router',
+                address: addresses.remoteAccountRouter!,
+                predictAddress: () =>
+                  predictRemoteAccountAddress({
+                    owner: this.facets.reader.getLocalAccount().getAddress()
+                      .value,
+                    factoryAddress: addresses.remoteAccountFactory!,
+                    implementationAddress:
+                      addresses.remoteAccountImplementation!,
+                  }),
+              }
+            : undefined;
+
+          const depositFactoryConfig: RepresentativeConfig | undefined =
+            addresses.depositFactory && addresses.depositFactory.length > 2
+              ? {
+                  name: 'deposit factory',
+                  address: addresses.depositFactory,
+                  predictAddress: () =>
+                    predictWalletAddress({
+                      owner: this.facets.reader.getLocalAccount().getAddress()
+                        .value,
+                      factoryAddress: addresses.factory,
+                      gasServiceAddress: addresses.gasService,
+                      gatewayAddress: addresses.gateway,
+                      walletBytecode: hexToBytes(
+                        walletBytecode.replace(/^0x/, ''),
+                      ),
+                    }),
+                }
+              : undefined;
+
+          let remoteAccountAddress: EVMAddress;
+          let representativeConfig: RepresentativeConfig | undefined;
+          if (accounts.has(fromChain)) {
             const gmpInfo = accounts.get(fromChain) as GMPAccountInfo;
-            expectedRepresentativeContract = gmpInfo.remoteAddress;
+            remoteAccountAddress = gmpInfo.remoteAddress;
+
+            // If the account exists, we must use its matching representative
+            representativeConfig = gmpInfo.routerAddress
+              ? routerConfig
+              : depositFactoryConfig;
+
+            // If the deposit into the existing remote account is through the representative,
+            // the remote account address must match what the representative's factory would create.
+            // If the remote account is legacy, its address won't match.
+            // If the remote account is router-based, the router is always involved and the address must match.
+            if (
+              strictForDeposit &&
+              representativeConfig &&
+              (representativeConfig === routerConfig ||
+                sameEvmAddress(
+                  representativeContract,
+                  representativeConfig.address,
+                ))
+            ) {
+              const expectedAddress = representativeConfig.predictAddress();
+              sameEvmAddress(gmpInfo.remoteAddress, expectedAddress) ||
+                Fail`account address ${gmpInfo.remoteAddress} does not match ${representativeConfig.name} generated address ${expectedAddress} for chain ${fromChain}`;
+            }
           } else {
-            // The account doesn't exist yet, but it is expected to become the representative contract.
-            expectedRepresentativeContract = getPredictedAddress();
+            // This is only used to provide a diagnostic for the expected remote account address
+            // if the spender doesn't match either representative.
+            const defaultRepresentativeConfig =
+              this.facets.reader.useRouterForChain(fromChain)
+                ? routerConfig
+                : depositFactoryConfig;
+
+            representativeConfig =
+              [routerConfig, depositFactoryConfig].find(
+                c => c && sameEvmAddress(representativeContract, c.address),
+              ) ?? defaultRepresentativeConfig;
+
+            if (!representativeConfig) {
+              throw Fail`no representative available for chain ${fromChain}`;
+            }
+
+            remoteAccountAddress = representativeConfig.predictAddress();
           }
 
           sameEvmAddress(
             representativeContract,
-            expectedRepresentativeContract,
+            representativeConfig?.address,
           ) ||
-            Fail`${bare(strictForDeposit ? 'permit spender' : 'verifying contract')} ${representativeContract} does not match expected representative ${expectedRepresentativeContract}`;
+            sameEvmAddress(representativeContract, remoteAccountAddress) ||
+            Fail`${bare(strictForDeposit ? 'permit spender' : 'verifying contract')} ${representativeContract} does not match remote account ${remoteAccountAddress} or ${bare(representativeConfig?.name ?? 'missing representative')} ${representativeConfig?.address ?? '0x'} for chain ${fromChain}`;
         },
         /**
          * Initiate a deposit from an EVM account using Permit2.

@@ -280,6 +280,7 @@ type EvmTraderConfig = {
   timerService: ERemote<TimerService>;
   readPublished: VstorageKit<PortfolioPublishedPathTypes>['readPublished'];
   when: VowTools['when'];
+  useRouter?: boolean;
 };
 
 export const makeEvmTrader = ({
@@ -290,6 +291,7 @@ export const makeEvmTrader = ({
   timerService,
   readPublished,
   when,
+  useRouter = false,
 }: EvmTraderConfig) => {
   let nonce = 0n;
   let portfolioPath: string | undefined;
@@ -362,21 +364,27 @@ export const makeEvmTrader = ({
     return {
       chainId: BigInt(chainInfo.reference),
       usdcToken: contracts.usdc,
-      depositFactory: contracts.depositFactory,
+      contractRepresentative: useRouter
+        ? contracts.remoteAccountRouter
+        : contracts.depositFactory,
       permit2Address: contracts.permit2,
     };
   };
 
   const self = harden({
     getAddress: () => account.address,
-    forChain: (chain: AxelarChain) => {
-      const { chainId, usdcToken, depositFactory, permit2Address } =
+    forChain: (chain: AxelarChain, verifyingContract?: `0x${string}`) => {
+      const { chainId, usdcToken, contractRepresentative, permit2Address } =
         getChainConfig(chain);
+      const standaloneVerifyingContract =
+        verifyingContract ?? contractRepresentative;
+      assert(standaloneVerifyingContract, 'missing verifying contract');
       return harden({
         async openPortfolio(
           allocations: TargetAllocation[],
           depositAmount: bigint,
         ) {
+          assert(contractRepresentative, 'missing contract representative');
           const witness = getYmaxWitness('OpenPortfolio', { allocations });
           const deadline = await getDeadline();
           const permitMessage = getPermitWitnessTransferFromData(
@@ -385,7 +393,7 @@ export const makeEvmTrader = ({
                 token: usdcToken,
                 amount: depositAmount,
               },
-              spender: depositFactory,
+              spender: contractRepresentative,
               nonce: (nonce += 1n),
               deadline,
             },
@@ -406,7 +414,8 @@ export const makeEvmTrader = ({
           const storagePath = await updatePortfolioPath(parsedId);
           return harden({ storagePath, portfolioId: parsedId });
         },
-        async deposit(depositAmount: bigint, spender = depositFactory) {
+        async deposit(depositAmount: bigint, spender = contractRepresentative) {
+          assert(spender, 'missing spender');
           const currentPortfolioId = self.getPortfolioId();
           const witness = getYmaxWitness('Deposit', {
             portfolio: BigInt(currentPortfolioId),
@@ -442,7 +451,7 @@ export const makeEvmTrader = ({
             },
             'Withdraw',
             chainId,
-            depositFactory,
+            standaloneVerifyingContract,
           );
           const expectedNonce = nonce;
           await submitMessage(message);
@@ -459,7 +468,7 @@ export const makeEvmTrader = ({
             },
             'Rebalance',
             chainId,
-            depositFactory,
+            standaloneVerifyingContract,
           );
           const expectedNonce = nonce;
           await submitMessage(message);
@@ -477,7 +486,7 @@ export const makeEvmTrader = ({
             },
             'SetTargetAllocation',
             chainId,
-            depositFactory,
+            standaloneVerifyingContract,
           );
           const expectedNonce = nonce;
           await submitMessage(message);

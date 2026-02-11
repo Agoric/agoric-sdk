@@ -1,6 +1,7 @@
 /** @file tests for PortfolioKit exo */
 /* eslint-disable no-sparse-arrays */
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import type { ThrowsExpectation } from 'ava';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import {
@@ -31,6 +32,7 @@ import { contractsMock } from './mocks.ts';
 import { axelarCCTPConfig } from './supports.ts';
 import type { LocalAccount } from '../src/portfolio.flows.ts';
 import { predictWalletAddress } from '../src/utils/evm-orch-factory.ts';
+import { predictRemoteAccountAddress } from '../src/utils/evm-orch-router.ts';
 
 const { brand: USDC } = makeIssuerKit('USDC');
 
@@ -108,13 +110,20 @@ const makeTestSetup = () => {
 
   const walletBytecode = '0x1234';
 
-  const predictMockAddress = (lca: LocalAccount) =>
+  const predictMockWalletAddress = (lca: LocalAccount) =>
     predictWalletAddress({
       owner: lca.getAddress().value,
       factoryAddress: contractsMock.Arbitrum.factory,
       gatewayAddress: contractsMock.Arbitrum.gateway,
       gasServiceAddress: contractsMock.Arbitrum.gasService,
       walletBytecode: hexToBytes(walletBytecode.replace(/^0x/, '')),
+    });
+
+  const predictMockRemoteAccountAddress = (lca: LocalAccount) =>
+    predictRemoteAccountAddress({
+      factoryAddress: contractsMock.Arbitrum.remoteAccountFactory,
+      implementationAddress: contractsMock.Arbitrum.remoteAccountImplementation,
+      owner: lca.getAddress().value,
     });
 
   const agoricConns = fetchedChainInfo.agoric.connections;
@@ -143,7 +152,8 @@ const makeTestSetup = () => {
   return {
     makePortfolioKit,
     makeMockLCA,
-    predictMockAddress,
+    predictMockWalletAddress,
+    predictMockRemoteAccountAddress,
     vowTools,
     getCallLog: () => callLog.slice(),
   };
@@ -421,280 +431,288 @@ test('evmHandler deposit rejects unknown chainId', t => {
   });
 });
 
-test('evmHandler deposit handles depositFactory spender without existing remote account', t => {
-  const ownerAddress = '0x6666666666666666666666666666666666666666' as Address;
-  const { makePortfolioKit, getCallLog } = makeTestSetup();
-  const { evmHandler } = makePortfolioKit({
-    portfolioId: 454,
-    sourceAccountId: `eip155:42161:${ownerAddress}`,
-  });
+type EVMDepositRemoteAccountConfig = {
+  remoteAddress: Address | 'deriveDepositFactory' | 'deriveRouter';
+  routerAddress?: Address;
+};
 
-  const permitDetails: PermitDetails = {
-    chainId: 42161n,
-    token: contractsMock.Arbitrum.usdc,
-    amount: 1_000n,
-    spender: contractsMock.Arbitrum.depositFactory,
-    permit2Payload: {
-      owner: ownerAddress,
-      witness: '0xWitnessData',
-      witnessTypeString: 'WitnessTypeString',
-      permit: {
-        permitted: {
-          token: contractsMock.Arbitrum.usdc,
-          amount: 1_000n,
-        },
-        nonce: 123n,
-        deadline: 1700000000n,
-      },
-      signature: '0xSignatureData',
+const doEVMDeposit = test.macro(
+  (
+    t,
+    params: {
+      remoteAccount?: EVMDepositRemoteAccountConfig | undefined;
+      otherRemoteAccount?: EVMDepositRemoteAccountConfig | undefined;
+      spender?: Address | 'deriveDepositFactory' | 'deriveRouter';
+      expectFail?: ThrowsExpectation<any> | boolean;
     },
-  };
+  ) => {
+    const ownerAddress =
+      '0x6666666666666666666666666666666666666666' as Address;
+    const {
+      makePortfolioKit,
+      makeMockLCA,
+      predictMockWalletAddress,
+      predictMockRemoteAccountAddress,
+      getCallLog,
+    } = makeTestSetup();
+    const { evmHandler, manager, reader } = makePortfolioKit({
+      portfolioId: 454,
+      sourceAccountId: `eip155:42161:${ownerAddress}`,
+    });
+    const agoricInfo: AccountInfoFor['agoric'] = {
+      namespace: 'cosmos',
+      chainName: 'agoric',
+      lca: makeMockLCA(),
+      lcaIn: makeMockLCA(),
+      reg: undefined as any,
+    };
+    manager.resolveAccount(agoricInfo);
 
-  t.is(evmHandler.deposit(permitDetails), 'flow1');
-  t.like(getCallLog(), [
-    [
-      'executePlan',
-      ,
-      {},
-      ,
-      {
-        type: 'deposit',
-        amount: AmountMath.make(USDC, 1_000n),
-        fromChain: 'Arbitrum',
+    const expectedRemoteAccountAddress = predictMockRemoteAccountAddress(
+      agoricInfo.lca,
+    );
+    const expectedWalletAddress = predictMockWalletAddress(agoricInfo.lca);
+
+    if (params.remoteAccount) {
+      const { remoteAddress, ...otherRemoteAccountInfo } = params.remoteAccount;
+      const resolvedRemoteAddress =
+        remoteAddress === 'deriveDepositFactory'
+          ? expectedWalletAddress
+          : remoteAddress === 'deriveRouter'
+            ? expectedRemoteAccountAddress
+            : remoteAddress;
+
+      const arbitrumInfo: AccountInfoFor['Arbitrum'] = {
+        namespace: 'eip155',
+        chainName: 'Arbitrum',
+        chainId: 'eip155:42161',
+        remoteAddress: resolvedRemoteAddress,
+        ...otherRemoteAccountInfo,
+      };
+      manager.resolveAccount(arbitrumInfo);
+    }
+
+    if (params.otherRemoteAccount) {
+      const { remoteAddress, ...otherRemoteAccountInfo } =
+        params.otherRemoteAccount;
+      const resolvedRemoteAddress =
+        remoteAddress === 'deriveDepositFactory'
+          ? expectedWalletAddress
+          : remoteAddress === 'deriveRouter'
+            ? expectedRemoteAccountAddress
+            : remoteAddress;
+
+      const baseInfo: AccountInfoFor['Base'] = {
+        namespace: 'eip155',
+        chainName: 'Base',
+        chainId: 'eip155:8453',
+        remoteAddress: resolvedRemoteAddress,
+        ...otherRemoteAccountInfo,
+      };
+      manager.resolveAccount(baseInfo);
+    }
+
+    const permitDetails: PermitDetails = {
+      chainId: 42161n,
+      token: contractsMock.Arbitrum.usdc,
+      amount: 1_000n,
+      spender:
+        params.spender === 'deriveDepositFactory'
+          ? expectedWalletAddress
+          : params.spender === 'deriveRouter'
+            ? expectedRemoteAccountAddress
+            : (params.spender ?? reader.getGMPInfo('Arbitrum').remoteAddress),
+      permit2Payload: {
+        owner: ownerAddress,
+        witness: '0xWitnessData',
+        witnessTypeString: 'WitnessTypeString',
+        permit: {
+          permitted: {
+            token: contractsMock.Arbitrum.usdc,
+            amount: 1_000n,
+          },
+          nonce: 123n,
+          deadline: 1700000000n,
+        },
+        signature: '0xSignatureData',
       },
-      { flowId: 1 },
-      ,
-      {
-        evmDepositDetail: {
+    };
+
+    if (params.expectFail) {
+      const assertion =
+        params.expectFail === true ? undefined : params.expectFail;
+      t.throws(() => evmHandler.deposit(permitDetails), assertion);
+      return;
+    }
+
+    t.is(evmHandler.deposit(permitDetails), 'flow1');
+    t.like(getCallLog(), [
+      [
+        'executePlan',
+        ,
+        {},
+        ,
+        {
+          type: 'deposit',
+          amount: AmountMath.make(USDC, 1_000n),
           fromChain: 'Arbitrum',
-          ...permitDetails,
         },
-      },
-    ],
-  ]);
-});
+        { flowId: 1 },
+        ,
+        {
+          evmDepositDetail: {
+            fromChain: 'Arbitrum',
+            ...permitDetails,
+          },
+        },
+      ],
+    ]);
+  },
+);
 
-test('evmHandler deposit handles depositFactory spender with existing remote account', t => {
-  const ownerAddress = '0x6666666666666666666666666666666666666666' as Address;
-  const { makePortfolioKit, makeMockLCA, predictMockAddress, getCallLog } =
-    makeTestSetup();
-  const { evmHandler, manager } = makePortfolioKit({
-    portfolioId: 454,
-    sourceAccountId: `eip155:42161:${ownerAddress}`,
-  });
-  const agoricInfo: AccountInfoFor['agoric'] = {
-    namespace: 'cosmos',
-    chainName: 'agoric',
-    lca: makeMockLCA(),
-    lcaIn: makeMockLCA(),
-    reg: undefined as any,
-  };
-  manager.resolveAccount(agoricInfo);
+test(
+  'evmHandler deposit handles depositFactory spender without existing remote account',
+  doEVMDeposit,
+  { spender: contractsMock.Arbitrum.depositFactory },
+);
 
-  const expectedRemoteAddress = predictMockAddress(agoricInfo.lca);
-  const arbitrumInfo: AccountInfoFor['Arbitrum'] = {
-    namespace: 'eip155',
-    chainName: 'Arbitrum',
-    chainId: 'eip155:42161',
-    remoteAddress: expectedRemoteAddress,
-  };
-  manager.resolveAccount(arbitrumInfo);
+test(
+  'evmHandler deposit handles router spender without existing remote account',
+  doEVMDeposit,
+  { spender: contractsMock.Arbitrum.remoteAccountRouter },
+);
 
-  const permitDetails: PermitDetails = {
-    chainId: 42161n,
-    token: contractsMock.Arbitrum.usdc,
-    amount: 1_000n,
+test(
+  'evmHandler deposit handles depositFactory spender with existing remote account',
+  doEVMDeposit,
+  {
     spender: contractsMock.Arbitrum.depositFactory,
-    permit2Payload: {
-      owner: ownerAddress,
-      witness: '0xWitnessData',
-      witnessTypeString: 'WitnessTypeString',
-      permit: {
-        permitted: {
-          token: contractsMock.Arbitrum.usdc,
-          amount: 1_000n,
-        },
-        nonce: 123n,
-        deadline: 1700000000n,
-      },
-      signature: '0xSignatureData',
+    remoteAccount: { remoteAddress: 'deriveDepositFactory' },
+  },
+);
+
+test(
+  'evmHandler deposit handles router spender with existing remote account',
+  doEVMDeposit,
+  {
+    spender: contractsMock.Arbitrum.remoteAccountRouter,
+    remoteAccount: {
+      remoteAddress: 'deriveRouter',
+      routerAddress: contractsMock.Arbitrum.remoteAccountRouter,
     },
-  };
+  },
+);
 
-  t.is(evmHandler.deposit(permitDetails), 'flow1');
-  t.like(getCallLog(), [
-    [
-      'executePlan',
-      ,
-      {},
-      ,
-      {
-        type: 'deposit',
-        amount: AmountMath.make(USDC, 1_000n),
-        fromChain: 'Arbitrum',
-      },
-      { flowId: 1 },
-      ,
-      {
-        evmDepositDetail: {
-          fromChain: 'Arbitrum',
-          ...permitDetails,
-        },
-      },
-    ],
-  ]);
-});
-
-test('evmHandler deposit rejects depositFactory spender if existing remote account is not factory generated', t => {
-  const ownerAddress = '0x6666666666666666666666666666666666666666' as Address;
-  const { makePortfolioKit, makeMockLCA } = makeTestSetup();
-  const { evmHandler, manager } = makePortfolioKit({
-    portfolioId: 454,
-    sourceAccountId: `eip155:42161:${ownerAddress}`,
-  });
-  const agoricInfo: AccountInfoFor['agoric'] = {
-    namespace: 'cosmos',
-    chainName: 'agoric',
-    lca: makeMockLCA(),
-    lcaIn: makeMockLCA(),
-    reg: undefined as any,
-  };
-  manager.resolveAccount(agoricInfo);
-
-  const arbitrumInfo: AccountInfoFor['Arbitrum'] = {
-    namespace: 'eip155',
-    chainName: 'Arbitrum',
-    chainId: 'eip155:42161',
-    remoteAddress: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-  };
-  manager.resolveAccount(arbitrumInfo);
-
-  const permitDetails: PermitDetails = {
-    chainId: 42161n,
-    token: contractsMock.Arbitrum.usdc,
-    amount: 1_000n,
+test(
+  'evmHandler deposit rejects depositFactory spender if existing remote account is not factory generated',
+  doEVMDeposit,
+  {
     spender: contractsMock.Arbitrum.depositFactory,
-    permit2Payload: {
-      owner: ownerAddress,
-      witness: '0xWitnessData',
-      witnessTypeString: 'WitnessTypeString',
-      permit: {
-        permitted: {
-          token: contractsMock.Arbitrum.usdc,
-          amount: 1_000n,
-        },
-        nonce: 123n,
-        deadline: 1700000000n,
-      },
-      signature: '0xSignatureData',
+    remoteAccount: {
+      remoteAddress: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
     },
-  };
+    expectFail: true,
+  },
+);
 
-  t.throws(() => evmHandler.deposit(permitDetails));
-});
-
-test('evmHandler deposit handles remote account spender', t => {
-  const ownerAddress = '0x8888888888888888888888888888888888888888' as const;
-  const { makePortfolioKit, getCallLog } = makeTestSetup();
-  const { evmHandler, manager } = makePortfolioKit({
-    portfolioId: 456,
-    sourceAccountId: `eip155:42161:${ownerAddress}`,
-  });
-
-  const arbitrumInfo: AccountInfoFor['Arbitrum'] = {
-    namespace: 'eip155',
-    chainName: 'Arbitrum',
-    chainId: 'eip155:42161',
-    remoteAddress: '0x9999999999999999999999999999999999999999',
-  };
-  manager.resolveAccount(arbitrumInfo);
-  const permitDetails: PermitDetails = {
-    chainId: 42161n,
-    token: contractsMock.Arbitrum.usdc,
-    amount: 2_500n,
-    spender: arbitrumInfo.remoteAddress,
-    permit2Payload: {
-      owner: ownerAddress,
-      witness: '0xWitnessData',
-      witnessTypeString: 'WitnessTypeString',
-      permit: {
-        permitted: {
-          token: contractsMock.Arbitrum.usdc,
-          amount: 2_500n,
-        },
-        nonce: 456n,
-        deadline: 1700000000n,
-      },
-      signature: '0xSignatureData',
+test(
+  'evmHandler deposit rejects router spender if existing remote account is not factory generated',
+  doEVMDeposit,
+  {
+    spender: contractsMock.Arbitrum.remoteAccountRouter,
+    remoteAccount: {
+      remoteAddress: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
     },
-  };
+    expectFail: true,
+  },
+);
 
-  t.is(evmHandler.deposit(permitDetails), 'flow1');
+test(
+  'evmHandler deposit handles non-router based arbitrary remote account spender',
+  doEVMDeposit,
+  {
+    remoteAccount: {
+      remoteAddress: '0x9999999999999999999999999999999999999999',
+    },
+  },
+);
 
-  t.like(getCallLog(), [
-    [
-      'executePlan',
-      ,
-      {},
-      ,
-      {
-        type: 'deposit',
-        amount: AmountMath.make(USDC, 2_500n),
-        fromChain: 'Arbitrum',
-      },
-      { flowId: 1 },
-      ,
-      {
-        evmDepositDetail: {
-          fromChain: 'Arbitrum',
-          ...permitDetails,
-        },
-      },
-    ],
-  ]);
-});
+test(
+  'evmHandler deposit handles deposit factory derived remote account spender',
+  doEVMDeposit,
+  { remoteAccount: { remoteAddress: 'deriveDepositFactory' } },
+);
 
-test('evmHandler deposit rejects spender mismatch', t => {
-  const ownerAddress = '0x6666666666666666666666666666666666666666' as const;
-  const { makePortfolioKit } = makeTestSetup();
-  const { evmHandler, manager } = makePortfolioKit({
-    portfolioId: 454,
-    sourceAccountId: `eip155:42161:${ownerAddress}`,
-  });
+test(
+  'evmHandler deposit handles router-based remote account spender',
+  doEVMDeposit,
+  {
+    remoteAccount: {
+      remoteAddress: 'deriveRouter',
+      routerAddress: contractsMock.Arbitrum.remoteAccountRouter,
+    },
+  },
+);
 
-  const arbitrumInfo: AccountInfoFor['Arbitrum'] = {
-    namespace: 'eip155',
-    chainName: 'Arbitrum',
-    chainId: 'eip155:42161',
-    remoteAddress: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-  };
-  manager.resolveAccount(arbitrumInfo);
+test(
+  'evmHandler deposit rejects misconfigured router based remote account spender',
+  doEVMDeposit,
+  {
+    remoteAccount: {
+      remoteAddress: '0x9999999999999999999999999999999999999999',
+      routerAddress: contractsMock.Arbitrum.remoteAccountRouter,
+    },
+    expectFail: true,
+  },
+);
 
-  const permitDetails: PermitDetails = {
-    chainId: 42161n,
-    token: contractsMock.Arbitrum.usdc,
-    amount: 1_000n,
+test(
+  'evmHandler deposit rejects spender mismatch with non-router based remote account',
+  doEVMDeposit,
+  {
+    remoteAccount: {
+      remoteAddress: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    },
     spender: '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
-    permit2Payload: {
-      owner: ownerAddress,
-      witness: '0xWitnessData',
-      witnessTypeString: 'WitnessTypeString',
-      permit: {
-        permitted: {
-          token: contractsMock.Arbitrum.usdc,
-          amount: 1_000n,
-        },
-        nonce: 123n,
-        deadline: 1700000000n,
-      },
-      signature: '0xSignatureData',
+    expectFail: true,
+  },
+);
+test(
+  'evmHandler deposit rejects spender mismatch with router based remote account',
+  doEVMDeposit,
+  {
+    remoteAccount: {
+      remoteAddress: 'deriveRouter',
+      routerAddress: contractsMock.Arbitrum.remoteAccountRouter,
     },
-  };
+    spender: '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+    expectFail: {
+      message: /permit spender .* does not match/,
+    },
+  },
+);
 
-  t.throws(() => evmHandler.deposit(permitDetails), {
-    message: /permit spender .* does not match expected/,
-  });
-});
+test(
+  'evmHandler deposit rejects spender mismatch with expected deposit factory derived remote account',
+  doEVMDeposit,
+  {
+    spender: 'deriveRouter',
+    expectFail: true,
+  },
+);
+
+test(
+  'evmHandler deposit rejects spender mismatch with expected router based remote account',
+  doEVMDeposit,
+  {
+    otherRemoteAccount: {
+      remoteAddress: 'deriveRouter',
+      routerAddress: contractsMock.Base.remoteAccountRouter,
+    },
+    spender: 'deriveDepositFactory',
+    expectFail: true,
+  },
+);
 
 test('evmHandler deposit rejects token mismatch', t => {
   const ownerAddress = '0x7777777777777777777777777777777777777777' as Address;
