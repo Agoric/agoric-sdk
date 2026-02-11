@@ -269,9 +269,9 @@ export const getConfirmationsRequired = (chainId: CaipChainId): number => {
  * trace_filter over eth_getBlockReceipts because it filters by toAddress
  * server-side and includes calldata, avoiding extra RPC round-trips.
  *
- * Cost comparison (10-block scan):
- * - eth_getBlockReceipts: 200 CU + 5,000 Throughput CU + 20 CU/match
- * - trace_filter:          40 CU +    40 Throughput CU (calldata included)
+ * Cost comparison (10-block scan, CU = Compute Units):
+ * - eth_getBlockReceipts: 200 CU + 20 CU/match (for eth_getTransactionByHash)
+ * - trace_filter:          40 CU (calldata included, no extra calls needed)
  *
  * Not supported: Arbitrum (arbtrace_filter is pre-Nitro only, < block
  * 22,207,815), Avalanche.
@@ -585,6 +585,7 @@ export const scanEvmLogsInChunks = async (
     predicate,
   } = opts;
 
+  const blockTimeMs = getBlockTimeMs(chainId);
   await null;
   for (let start = fromBlock; start <= toBlock; ) {
     if (signal?.aborted) {
@@ -596,7 +597,6 @@ export const scanEvmLogsInChunks = async (
 
     // Wait for the chain to catch up if end block doesn't exist yet
     if (end > currentBlock) {
-      const blockTimeMs = getBlockTimeMs(chainId);
       const blocksToWait = Math.max(50, chunkSize);
       const waitTimeMs = blocksToWait * blockTimeMs;
       const blocksBehind = end - currentBlock;
@@ -814,6 +814,7 @@ export const scanFailedTxsInChunks = async (
   } = opts;
 
   const useTraceFilter = traceFilterSupportedChains.has(chainId);
+  const blockTimeMs = getBlockTimeMs(chainId);
   const chunkSize =
     requestedChunkSize ??
     (useTraceFilter ? TRACE_FILTER_CHUNK_SIZE : BLOCK_RECEIPTS_CHUNK_SIZE);
@@ -832,7 +833,6 @@ export const scanFailedTxsInChunks = async (
     // Wait for the chain to catch up if end block doesn't exist yet
     if (end > currentBlock) currentBlock = await provider.getBlockNumber();
     if (end > currentBlock) {
-      const blockTimeMs = getBlockTimeMs(chainId);
       const blocksToWait = Math.max(50, chunkSize);
       const waitTimeMs = blocksToWait * blockTimeMs;
       const blocksBehind = end - currentBlock;
