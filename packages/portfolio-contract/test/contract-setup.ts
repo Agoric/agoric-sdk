@@ -281,6 +281,7 @@ export const makeEvmTraderKit = async (
     timerService,
     readPublished,
     when,
+    useRouter: true,
   });
   return { evmTrader, evmWalletHandler, evmAccount: account, readPublished };
 };

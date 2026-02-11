@@ -827,7 +827,11 @@ export const axelarConfig = harden({
       reference: '42161',
       cctpDestinationDomain: 3,
     },
-    contracts: { ...mainnetContracts.Arbitrum },
+    contracts: {
+      ...mainnetContracts.Arbitrum,
+      remoteAccountFactory: '0x7F649a200382A9b909989168A7fF5a87B8aea189',
+      remoteAccountRouter: '0x4028686122Ae547e6B551C85962C5dA52db69743',
+    },
   },
   Avalanche: {
     axelarId: AxelarChainIdMap.Avalanche.mainnet,
@@ -836,7 +840,11 @@ export const axelarConfig = harden({
       reference: '43114',
       cctpDestinationDomain: 1,
     },
-    contracts: { ...mainnetContracts.Avalanche },
+    contracts: {
+      ...mainnetContracts.Avalanche,
+      remoteAccountFactory: '0x7F649a200382A9b909989168A7fF5a87B8aea189',
+      remoteAccountRouter: '0x4028686122Ae547e6B551C85962C5dA52db69743',
+    },
   },
   Base: {
     axelarId: AxelarChainIdMap.Base.mainnet,
@@ -845,7 +853,11 @@ export const axelarConfig = harden({
       reference: '8453',
       cctpDestinationDomain: 6,
     },
-    contracts: { ...mainnetContracts.Base },
+    contracts: {
+      ...mainnetContracts.Base,
+      remoteAccountFactory: '0x7F649a200382A9b909989168A7fF5a87B8aea189',
+      remoteAccountRouter: '0x4028686122Ae547e6B551C85962C5dA52db69743',
+    },
   },
   Ethereum: {
     axelarId: AxelarChainIdMap.Ethereum.mainnet,
@@ -854,7 +866,11 @@ export const axelarConfig = harden({
       reference: '1',
       cctpDestinationDomain: 0,
     },
-    contracts: { ...mainnetContracts.Ethereum },
+    contracts: {
+      ...mainnetContracts.Ethereum,
+      remoteAccountFactory: '0x7F649a200382A9b909989168A7fF5a87B8aea189',
+      remoteAccountRouter: '0x4028686122Ae547e6B551C85962C5dA52db69743',
+    },
   },
   Optimism: {
     axelarId: AxelarChainIdMap.Optimism.mainnet,
@@ -863,7 +879,11 @@ export const axelarConfig = harden({
       reference: '10',
       cctpDestinationDomain: 2,
     },
-    contracts: { ...mainnetContracts.Optimism },
+    contracts: {
+      ...mainnetContracts.Optimism,
+      remoteAccountFactory: '0x7F649a200382A9b909989168A7fF5a87B8aea189',
+      remoteAccountRouter: '0x4028686122Ae547e6B551C85962C5dA52db69743',
+    },
   },
 });
 
