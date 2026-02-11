@@ -130,6 +130,7 @@
     "lint:format": "dprint check",
     "lint-fix": "yarn lerna run --no-bail lint-fix",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
+    "lint:oxlint": "yarn dlx oxlint@latest --config .oxlintrc.json --type-aware .",
     "lint:packages": "yarn lerna run --no-bail lint",
     "lint:package-names": "./scripts/verify-package-names.js",
     "lint:types": "tsc",

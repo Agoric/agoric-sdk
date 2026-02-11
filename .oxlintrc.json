@@ -1,0 +1,242 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "import", "unicorn", "jsdoc", "node"],
+  "categories": {
+    "correctness": "warn",
+    "suspicious": "warn",
+    "pedantic": "off",
+    "perf": "warn",
+    "restriction": "warn",
+    "style": "off",
+    "nursery": "warn"
+  },
+  "env": {
+    "es2024": true,
+    "node": true
+  },
+  "ignorePatterns": [
+    "**/__generated",
+    "**/codegen",
+    "**/coverage/",
+    "**/node_modules/",
+    "**/dist/",
+    "**/output/",
+    "**/build/",
+    "**/bundles/",
+    "**/bundle-*",
+    "examples/",
+    "packages/orchestration/src/vendor/",
+    "packages/orchestration/src/stubs/",
+    "test262/",
+    "**/*.html",
+    "**/ava*.config.js",
+    "**/.ava*.config.js",
+    "**/tsup.config.ts",
+    "*/vendor/**",
+    "yarn.config.cjs",
+    "packages/client-utils/scripts/",
+    "packages/cosmic-proto/proto/",
+    "packages/cosmic-proto/scripts/",
+    "packages/cosmic-swingset/t[0-9]/",
+    "packages/cosmic-swingset/t[0-9].*/",
+    "a3p-integration/agoric-sdk/"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "packages/*/src/**/*.js",
+        "packages/*/tools/**/*.js",
+        "packages/*/tools/**/*.mjs",
+        "packages/*/*.js",
+        "packages/wallet/api/src/**/*.js"
+      ],
+      "rules": {
+        "no-restricted-syntax": [
+          "warn",
+          {
+            "selector": "Literal[value=/currency/i]",
+            "message": "Use 'brand, asset or another descriptor' instead of deprecated 'currency'"
+          },
+          {
+            "selector": "TemplateElement[value.raw=/currency/i]",
+            "message": "Use 'brand, asset or another descriptor' instead of deprecated 'currency'"
+          },
+          {
+            "selector": "Identifier[name=/currency/i]",
+            "message": "Use 'brand, asset or another descriptor' instead of deprecated 'currency'"
+          },
+          {
+            "selector": "Literal[value=/blacklist/i]",
+            "message": "Use 'denylist' instead of deprecated 'blacklist'"
+          },
+          {
+            "selector": "TemplateElement[value.raw=/blacklist/i]",
+            "message": "Use 'denylist' instead of deprecated 'blacklist'"
+          },
+          {
+            "selector": "Identifier[name=/blacklist/i]",
+            "message": "Use 'denylist' instead of deprecated 'blacklist'"
+          },
+          {
+            "selector": "Literal[value=/whitelist/i]",
+            "message": "Use 'allowlist' instead of deprecated 'whitelist'"
+          },
+          {
+            "selector": "TemplateElement[value.raw=/whitelist/i]",
+            "message": "Use 'allowlist' instead of deprecated 'whitelist'"
+          },
+          {
+            "selector": "Identifier[name=/whitelist/i]",
+            "message": "Use 'allowlist' instead of deprecated 'whitelist'"
+          },
+          {
+            "selector": "Literal[value=/RUN/]",
+            "message": "Use 'IST' instead of deprecated 'RUN'"
+          },
+          {
+            "selector": "TemplateElement[value.raw=/RUN/]",
+            "message": "Use 'IST' instead of deprecated 'RUN'"
+          },
+          {
+            "selector": "Identifier[name=/RUN/]",
+            "message": "Use 'IST' instead of deprecated 'RUN'"
+          },
+          {
+            "selector": "Literal[value=/loan/i]",
+            "message": "Use 'debt' instead of deprecated 'loan'"
+          },
+          {
+            "selector": "TemplateElement[value.raw=/loan/i]",
+            "message": "Use 'debt' instead of deprecated 'loan'"
+          },
+          {
+            "selector": "Identifier[name=/loan/i]",
+            "message": "Use 'debt' instead of deprecated 'loan'"
+          },
+          {
+            "selector": "CallExpression[callee.object.name=\"Object\"][callee.property.name=\"fromEntries\"] > CallExpression.arguments[callee.object.name=\"Object\"][callee.property.name=\"entries\"]",
+            "message": "Prefer objectMap over Object.fromEntries(Object.entries(...))"
+          }
+        ]
+      }
+    },
+    {
+      "files": ["packages/zoe/src/contracts/loan/*.js"],
+      "rules": {
+        "no-restricted-syntax": [
+          "warn",
+          {
+            "selector": "Literal[value=/currency/i]",
+            "message": "Use 'brand, asset or another descriptor' instead of deprecated 'currency'"
+          },
+          {
+            "selector": "TemplateElement[value.raw=/currency/i]",
+            "message": "Use 'brand, asset or another descriptor' instead of deprecated 'currency'"
+          },
+          {
+            "selector": "Identifier[name=/currency/i]",
+            "message": "Use 'brand, asset or another descriptor' instead of deprecated 'currency'"
+          },
+          {
+            "selector": "Literal[value=/blacklist/i]",
+            "message": "Use 'denylist' instead of deprecated 'blacklist'"
+          },
+          {
+            "selector": "TemplateElement[value.raw=/blacklist/i]",
+            "message": "Use 'denylist' instead of deprecated 'blacklist'"
+          },
+          {
+            "selector": "Identifier[name=/blacklist/i]",
+            "message": "Use 'denylist' instead of deprecated 'blacklist'"
+          },
+          {
+            "selector": "Literal[value=/whitelist/i]",
+            "message": "Use 'allowlist' instead of deprecated 'whitelist'"
+          },
+          {
+            "selector": "TemplateElement[value.raw=/whitelist/i]",
+            "message": "Use 'allowlist' instead of deprecated 'whitelist'"
+          },
+          {
+            "selector": "Identifier[name=/whitelist/i]",
+            "message": "Use 'allowlist' instead of deprecated 'whitelist'"
+          },
+          {
+            "selector": "Literal[value=/RUN/]",
+            "message": "Use 'IST' instead of deprecated 'RUN'"
+          },
+          {
+            "selector": "TemplateElement[value.raw=/RUN/]",
+            "message": "Use 'IST' instead of deprecated 'RUN'"
+          },
+          {
+            "selector": "Identifier[name=/RUN/]",
+            "message": "Use 'IST' instead of deprecated 'RUN'"
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "packages/**/demo/**/*.js",
+        "packages/*/test/**/*.*s",
+        "packages/*/test/**/*.test.*s",
+        "packages/wallet/api/test/**/*.js"
+      ],
+      "rules": {
+        "no-lone-blocks": "off",
+        "no-restricted-properties": [
+          "warn",
+          {
+            "object": "test",
+            "property": "only",
+            "message": "Do not commit .only tests - they prevent other tests from running"
+          }
+        ]
+      }
+    },
+    {
+      "files": ["packages/boot/test/**/*.test.*s"],
+      "rules": {
+        "no-restricted-imports": ["warn", { "paths": ["@endo/eventual-send", "@endo/far"] }]
+      }
+    },
+    {
+      "files": ["packages/*/src/exos/**"],
+      "rules": {
+        "no-restricted-syntax": [
+          "warn",
+          {
+            "selector": "FunctionExpression[async=true]:not(Property[key.name=/^(connectionHandler|tap)$/] > ObjectExpression > Property[key.name=/^(onOpen|onClose|receiveUpcall)$/] > FunctionExpression[async=true])",
+            "message": "Non-immediate functions must return vows, not promises"
+          },
+          {
+            "selector": "ArrowFunctionExpression[async=true]",
+            "message": "Non-immediate arrow functions must return vows, not promises"
+          },
+          {
+            "selector": "Identifier[name='callWhen']",
+            "message": "callWhen wraps the function in a promise; instead immediately return a vow"
+          },
+          {
+            "selector": "Identifier[name='heapVowE']",
+            "message": "heapVowE shortens vows to promises; instead use `E` from `@endo/far` with `watch` from durable vowTools"
+          },
+          {
+            "selector": "Identifier[name='heapVowTools']",
+            "message": "heapVowTools are not durable; instead use `prepareVowTools` with a durable zone"
+          }
+        ]
+      }
+    }
+  ],
+  "rules": {
+    "typescript/no-floating-promises": "warn",
+    "typescript/no-unused-expressions": "off",
+    "typescript/no-empty-object-type": "warn",
+    "typescript/no-unnecessary-type-constraint": "warn",
+    "typescript/no-wrapper-object-types": "warn",
+    "no-void": ["warn", { "allowAsStatement": true }],
+    "no-use-before-define": "off"
+  }
+}
