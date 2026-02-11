@@ -226,6 +226,12 @@ const filePatternToRegex = pattern => {
 const isJsModuleFile = relPath =>
   relPath.endsWith('.mjs') || relPath.endsWith('.js');
 
+/**
+ * Collect export specifiers from the package's files and "files" field.
+ *  @param {string} pkgDir
+ *  @param {Record<string, any>} pkgJson
+ *  @returns {Promise<Set<string>>}
+ */
 const collectFileSpecifiers = async (pkgDir, pkgJson) => {
   const pkgName = pkgJson.name;
   if (!pkgName) return new Set();
