@@ -422,10 +422,11 @@ export const lookBackSmartWalletTx = async ({
     };
 
     const [matchingEvent, failedTx] = await Promise.all([
-      Promise.race([
+      Promise.all([
         scanEvmLogsInChunks({ ...logScanOpts, baseFilter: baseFilterV1 }),
         scanEvmLogsInChunks({ ...logScanOpts, baseFilter: baseFilterV2 }),
-      ]).then(result => {
+      ]).then(([v1Result, v2Result]) => {
+        const result = v1Result || v2Result;
         if (result) abortScans();
         return result;
       }),
