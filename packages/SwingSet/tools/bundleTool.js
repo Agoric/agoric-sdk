@@ -1,6 +1,6 @@
 import { makeNodeBundleCache as wrappedMaker } from '@endo/bundle-source/cache.js';
 import styles from 'ansi-styles'; // less authority than 'chalk'
-import { mkdir, rm } from 'fs/promises';
+import { mkdir, readFile, rm, stat, writeFile } from 'fs/promises';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { setTimeout as delay } from 'timers/promises';
@@ -39,7 +39,15 @@ import { setTimeout as delay } from 'timers/promises';
  * @param {number} [pid]
  * @returns {Promise<BundleCache>}
  */
+const BUNDLE_LOCK_ACQUIRE_TIMEOUT_MS = 5 * 60_000;
+
 export const makeNodeBundleCache = async (dest, options, loadModule, pid) => {
+  const parsedStaleLockMs = Number(process.env.AGORIC_BUNDLE_STALE_LOCK_MS);
+  const staleLockMs =
+    Number.isFinite(parsedStaleLockMs) && parsedStaleLockMs > 0
+      ? parsedStaleLockMs
+      : 60_000;
+
   /** @param {string} sourceSpec */
   const canonicalizeSourceSpec = sourceSpec => {
     if (sourceSpec.startsWith('file:')) {
@@ -66,11 +74,6 @@ export const makeNodeBundleCache = async (dest, options, loadModule, pid) => {
   const log = (...args) => {
     const joined = args.map(arg => String(arg)).join(' ');
     const isCacheHit = joined.includes(' valid:');
-    const phase = isCacheHit
-      ? '[cache-hit]'
-      : joined.includes(' add:') || joined.includes(' bundled ')
-        ? '[rebuilt]'
-        : '[check]';
     if (isCacheHit) {
       return;
     }
@@ -106,15 +109,77 @@ export const makeNodeBundleCache = async (dest, options, loadModule, pid) => {
   const withBundleLock = async (targetName, duringLock) => {
     const lockName = `${encodeURIComponent(targetName)}.lock`;
     const lockPath = path.resolve(lockRoot, lockName);
+    const ownerPath = path.resolve(lockPath, 'owner.json');
     await mkdir(lockRoot, { recursive: true });
+    const started = Date.now();
+
+    const isPidAlive = lockPid => {
+      if (!Number.isInteger(lockPid) || lockPid <= 0) {
+        return false;
+      }
+      try {
+        process.kill(lockPid, 0);
+        return true;
+      } catch {
+        return false;
+      }
+    };
+
+    const maybeBreakStaleLock = async () => {
+      const ownerTxt = await readFile(ownerPath, 'utf8').catch(() => undefined);
+      let lockInfo;
+      if (typeof ownerTxt === 'string') {
+        try {
+          lockInfo = JSON.parse(ownerTxt);
+        } catch {
+          // Another process may be in the middle of writing owner.json.
+          // Treat malformed data as unknown owner and rely on age checks below.
+          lockInfo = undefined;
+        }
+      }
+      if (
+        lockInfo &&
+        Number.isInteger(lockInfo.pid) &&
+        !isPidAlive(lockInfo.pid)
+      ) {
+        await rm(lockPath, { recursive: true, force: true });
+        return true;
+      }
+      try {
+        const st = await stat(lockPath);
+        const ageMs = Date.now() - st.mtimeMs;
+        if (ageMs >= staleLockMs) {
+          await rm(lockPath, { recursive: true, force: true });
+          return true;
+        }
+      } catch {
+        return true;
+      }
+      return false;
+    };
 
     // Cross-process lock via mkdir(). Retriable on EEXIST.
     for (;;) {
       try {
         await mkdir(lockPath);
+        await writeFile(
+          ownerPath,
+          JSON.stringify({ pid: process.pid, createdAt: Date.now() }),
+          'utf8',
+        );
         break;
       } catch (e) {
         if (e && typeof e === 'object' && 'code' in e && e.code === 'EEXIST') {
+          const brokeStaleLock = await maybeBreakStaleLock();
+          if (brokeStaleLock) {
+            continue;
+          }
+          const waitedMs = Date.now() - started;
+          if (waitedMs >= BUNDLE_LOCK_ACQUIRE_TIMEOUT_MS) {
+            throw Error(
+              `Timed out waiting for bundle lock ${lockPath} after ${waitedMs}ms`,
+            );
+          }
           await delay(20);
           continue;
         }
@@ -139,18 +204,19 @@ export const makeNodeBundleCache = async (dest, options, loadModule, pid) => {
         rawCache.add(canonicalRootPath, resolvedTargetName, log0, options0),
       );
     },
-    validateOrAdd: (rootPath, targetName, log0, options0) =>
-      withBundleLock(
-        targetName || path.basename(canonicalizeSourceSpec(rootPath), '.js'),
-        () =>
-          rawCache.validateOrAdd(
-            canonicalizeSourceSpec(rootPath),
-            targetName ||
-              path.basename(canonicalizeSourceSpec(rootPath), '.js'),
-            log0,
-            options0,
-          ),
-      ),
+    validateOrAdd: (rootPath, targetName, log0, options0) => {
+      const canonicalRootPath = canonicalizeSourceSpec(rootPath);
+      const resolvedTargetName =
+        targetName || path.basename(canonicalRootPath, '.js');
+      return withBundleLock(resolvedTargetName, () =>
+        rawCache.validateOrAdd(
+          canonicalRootPath,
+          resolvedTargetName,
+          log0,
+          options0,
+        ),
+      );
+    },
     load: async (rootPath, targetName, log0, options0) => {
       const canonicalRootPath = canonicalizeSourceSpec(rootPath);
       const resolvedTargetName =
@@ -173,6 +239,10 @@ export const makeNodeBundleCache = async (dest, options, loadModule, pid) => {
         return import(bundlePath).then(m => harden(m.default));
       });
       inProcessLoads.set(key, pending);
+      void pending.then(
+        () => inProcessLoads.delete(key),
+        () => inProcessLoads.delete(key),
+      );
       return pending;
     },
   });
@@ -185,22 +255,32 @@ export const makeNodeBundleCache = async (dest, options, loadModule, pid) => {
    * @returns {Promise<LoadedRegistryBundles<T>>}
    */
   const loadRegistry = async registry => {
-    const loaded = await Promise.all(
-      Object.entries(registry).map(async ([key, spec]) => {
-        const sourceSpec = spec.sourceSpec || spec.packagePath;
-        if (typeof sourceSpec !== 'string') {
-          throw TypeError(
-            `registry.${key} must include sourceSpec or packagePath`,
-          );
-        }
-        const bundleName = spec.bundleName || key;
-        const bundle = await cache.load(sourceSpec, bundleName);
-        return [`${key}Bundle`, bundle];
-      }),
-    );
-    return /** @type {LoadedRegistryBundles<T>} */ (
-      harden(Object.fromEntries(loaded))
-    );
+    const started = Date.now();
+    await null;
+    try {
+      const loaded = await Promise.all(
+        Object.entries(registry).map(async ([key, spec]) => {
+          const sourceSpec = spec.sourceSpec || spec.packagePath;
+          if (typeof sourceSpec !== 'string') {
+            throw TypeError(
+              `registry.${key} must include sourceSpec or packagePath`,
+            );
+          }
+          const bundleName = spec.bundleName || key;
+          const bundle = await cache.load(sourceSpec, bundleName);
+          return [`${key}Bundle`, bundle];
+        }),
+      );
+      return /** @type {LoadedRegistryBundles<T>} */ (
+        harden(Object.fromEntries(loaded))
+      );
+    } finally {
+      const elapsedMs = Date.now() - started;
+      console.log(
+        `${styles.dim.open}[bundleTool][registry] loaded ${Object.keys(registry).length} bundle(s) in ${elapsedMs}ms`,
+        styles.dim.close,
+      );
+    }
   };
   return /** @type {BundleCache} */ (
     harden({
