@@ -1,4 +1,4 @@
-#!/usr/bin/env -S node --experimental-strip-types
+#!/usr/bin/env -S node --import ts-blank-space/register
 /* eslint-disable @jessie.js/safe-await-separator */
 
 import { execFileSync } from 'node:child_process';
