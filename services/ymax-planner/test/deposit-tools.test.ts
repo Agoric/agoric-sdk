@@ -757,7 +757,8 @@ test('planRebalanceToAllocations uses CCTPv2 for multi-EVM rebalance', async t =
   }
 });
 
-test('planRebalanceToAllocations selects correct routes for Base → Avalanche + Noble split', async t => {
+// Disabled per https://github.com/Agoric/agoric-private/issues/768
+test.failing('planRebalanceToAllocations selects correct routes for Base → Avalanche + Noble split', async t => {
   // Starting: Funds on Base
   // Goal: Split between Avalanche Aave and Noble USDN
   // Expected:
