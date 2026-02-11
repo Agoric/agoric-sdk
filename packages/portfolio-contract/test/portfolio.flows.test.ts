@@ -3636,6 +3636,87 @@ test('evmHandler.deposit via Permit2 to missing and existing wallet with deposit
   await documentStorageSchema(t, storage, docOpts);
 });
 
+/**
+ * This test uses the router contract as the spender address.
+ */
+test('evmHandler.deposit via Permit2 to missing and existing wallet with router as spender succeeds', async t => {
+  const { orch, ctx, storage, txResolver } = mocks({}, {});
+  const { getPortfolioStatus } = makeStorageTools(storage);
+
+  const permitDetails = makePermitDetails({
+    spender: contractsMock.Arbitrum.remoteAccountRouter,
+  });
+  const destinationAccountId =
+    `eip155:${permitDetails.chainId}:${contractsMock.Arbitrum.remoteAccountRouter}` as AccountId;
+  const sourceAccountId =
+    `eip155:${permitDetails.chainId}:${permitDetails.permit2Payload.owner.toLowerCase()}` as AccountId;
+  const kit = await ctx.makePortfolioKit({ sourceAccountId });
+  await provideCosmosAccount(orch, 'agoric', kit, silent);
+  const contractAddress = (await ctx.contractAccount).getAddress();
+  const contractAccountId =
+    `cosmos:${contractAddress.chainId}:${contractAddress.value}` as AccountId;
+
+  const { accountIdByChain: byChainBefore } = await getPortfolioStatus(
+    kit.reader.getPortfolioId(),
+  );
+  // Only agoric, no Arbitrum account yet since we haven't done any flows
+  t.deepEqual(Object.keys(byChainBefore), ['agoric']);
+
+  const lca = kit.reader.getLocalAccount();
+  const principalAccount = lca.getAddress().value;
+
+  // Do an initial deposit, then do another deposit with the same permit details
+  // to ensure we can use the provide with permit logic on an existing account.
+  await doDeposit({ t, kit, orch, ctx, storage, txResolver, permitDetails });
+  t.like(
+    storage.getDeserialized('published.ymax0.pendingTxs.tx0').at(-1),
+    {
+      type: 'ROUTED_GMP',
+      status: 'success',
+      sourceAddress: contractAccountId,
+      destinationAddress: destinationAccountId,
+      details: {
+        instructionType: 'ProvideRemoteAccount',
+        expectedRemoteAddress: contractsMock.Arbitrum.remoteAccountFactory,
+        principalAccount,
+      },
+    },
+    'check first deposit creates and deposits via the router',
+  );
+
+  const {
+    accountIdByChain: byChainAfter,
+    accountsPending,
+    accountStateByChain = {},
+  } = await getPortfolioStatus(kit.reader.getPortfolioId());
+  t.deepEqual(Object.keys(byChainAfter), ['Arbitrum', 'agoric', 'noble']);
+  t.deepEqual(accountsPending, []);
+  t.like(accountStateByChain.Arbitrum, {
+    state: 'active',
+    router: contractsMock.Arbitrum.remoteAccountRouter,
+  });
+
+  await doDeposit({ t, kit, orch, ctx, storage, txResolver, permitDetails });
+  t.like(
+    storage.getDeserialized('published.ymax0.pendingTxs.tx2').at(-1),
+    {
+      type: 'ROUTED_GMP',
+      status: 'success',
+      sourceAddress: contractAccountId,
+      destinationAddress: destinationAccountId,
+      details: {
+        instructionType: 'ProvideRemoteAccount',
+        expectedRemoteAddress: contractsMock.Arbitrum.remoteAccountFactory,
+        principalAccount,
+        remoteAccountAddress: accountStateByChain.Arbitrum!.address,
+      },
+    },
+    'check second deposit goes through same flow and hits the router address again',
+  );
+
+  await documentStorageSchema(t, storage, docOpts);
+});
+
 test('evmHandler.deposit via Permit2 with existing remote account as spender succeeds', async t => {
   const { orch, ctx, storage, txResolver } = mocks({}, {});
   const { getPortfolioStatus } = makeStorageTools(storage);
