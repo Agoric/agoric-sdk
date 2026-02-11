@@ -38,11 +38,6 @@
     "ava": "^6.4.1",
     "tsd": "^0.33.0"
   },
-  "ava": {
-    "files": [
-      "test/**/*.test.*"
-    ]
-  },
   "author": "Agoric",
   "license": "Apache-2.0",
   "files": [

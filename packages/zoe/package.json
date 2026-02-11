@@ -84,12 +84,6 @@
     "contractFacet.js",
     "NEWS.md"
   ],
-  "ava": {
-    "files": [
-      "test/**/*.test.*"
-    ],
-    "timeout": "20m"
-  },
   "publishConfig": {
     "access": "public"
   },

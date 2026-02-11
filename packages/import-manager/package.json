@@ -38,11 +38,6 @@
     "src/",
     "NEWS.md"
   ],
-  "ava": {
-    "files": [
-      "test/**/*.test.*"
-    ]
-  },
   "publishConfig": {
     "access": "public"
   },

@@ -35,12 +35,6 @@
   "publishConfig": {
     "access": "public"
   },
-  "ava": {
-    "files": [
-      "test/**/*.test.*"
-    ],
-    "timeout": "2m"
-  },
   "typeCoverage": {
     "atLeast": 83.57
   },

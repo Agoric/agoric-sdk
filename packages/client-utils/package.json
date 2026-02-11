@@ -52,20 +52,6 @@
     "@endo/patterns": "^1.7.0",
     "@endo/promise-kit": "^1.1.13"
   },
-  "ava": {
-    "extensions": {
-      "js": true,
-      "ts": "module"
-    },
-    "files": [
-      "test/**/*.test.*"
-    ],
-    "nodeArguments": [
-      "--import=ts-blank-space/register",
-      "--no-warnings"
-    ],
-    "timeout": "20m"
-  },
   "typeCoverage": {
     "atLeast": 94
   },

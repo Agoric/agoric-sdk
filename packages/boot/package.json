@@ -79,20 +79,6 @@
   "engines": {
     "node": "^20.9 || ^22.11"
   },
-  "ava": {
-    "extensions": {
-      "js": true,
-      "ts": "module"
-    },
-    "files": [
-      "test/**/*.test.*"
-    ],
-    "nodeArguments": [
-      "--loader=ts-blank-space/register",
-      "--no-warnings"
-    ],
-    "timeout": "20m"
-  },
   "typeCoverage": {
     "atLeast": 89.91
   }

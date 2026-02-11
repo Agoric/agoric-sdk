@@ -51,13 +51,6 @@
     "url": "https://github.com/Agoric/agoric-sdk/issues"
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
-  "ava": {
-    "files": [
-      "test/**/*.test.*"
-    ],
-    "workerThreads": false,
-    "timeout": "20m"
-  },
   "publishConfig": {
     "access": "public"
   },

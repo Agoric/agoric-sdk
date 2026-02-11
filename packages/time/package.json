@@ -41,11 +41,6 @@
     "@endo/init": "^1.1.12",
     "ava": "^6.4.1"
   },
-  "ava": {
-    "files": [
-      "test/**/*.test.*"
-    ]
-  },
   "files": [
     "*.js",
     "NEWS.md",
