@@ -306,9 +306,6 @@ test('find a failed tx in MAKE_ACCOUNT lookback mode', async t => {
     return { timestamp: Math.floor(ts / 1000) };
   };
 
-  // Trigger block event to resolve waitForBlock
-  setTimeout(() => mockProvider.emit('block', latestBlock + 1), 10);
-
   // Providers: getLogs returns [] so the event scanner finds nothing.
   // The failed-tx scanner is the one that produces the result.
   const newEvmProviders = objectMap(
@@ -317,6 +314,12 @@ test('find a failed tx in MAKE_ACCOUNT lookback mode', async t => {
       ({
         ...provider,
         getLogs: async () => [],
+        // Emit the correct block number so waitForBlock resolves deterministically
+        on: (event: any, listener: Function) => {
+          if (event === 'block') {
+            queueMicrotask(() => listener(latestBlock + 1));
+          }
+        },
         getTransaction: async () => ({
           hash: failedTxHash,
           to: factoryAddress,

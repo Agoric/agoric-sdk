@@ -846,9 +846,6 @@ test('find a failed tx in lookback mode', async t => {
     return { timestamp: Math.floor(ts / 1000) };
   };
 
-  // Trigger block event to resolve waitForBlock
-  setTimeout(() => mockProvider.emit('block', latestBlock + 1), 10);
-
   const event = createMockGmpStatusEvent(txId, latestBlock);
   mockProvider.getLogs = async () => [event];
 
@@ -861,6 +858,12 @@ test('find a failed tx in lookback mode', async t => {
       ({
         ...provider,
         getLogs: async () => [],
+        // Emit the correct block number so waitForBlock resolves deterministically
+        on: (event: any, listener: Function) => {
+          if (event === 'block') {
+            queueMicrotask(() => listener(latestBlock + 1));
+          }
+        },
         getTransaction: async _ => {
           return {
             hash: '0x123123213',
@@ -938,7 +941,7 @@ test('find a failed tx in lookback mode via trace_filter (Base)', async t => {
   const contractAddress = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
   const destinationAddress = `eip155:8453:${contractAddress}`;
   const txId = 'tx554' as `tx${number}`;
-  const failedTxHash = '0xdeadbeeftrace';
+  const failedTxHash = '0xdeadbeeftrace' as `0x${string}`;
 
   // Same calldata from the eth_getBlockReceipts test
   const calldata =
@@ -968,9 +971,6 @@ test('find a failed tx in lookback mode via trace_filter (Base)', async t => {
     return { timestamp: Math.floor(ts / 1000) };
   };
 
-  // Trigger block event to resolve waitForBlock
-  setTimeout(() => mockProvider.emit('block', latestBlock + 1), 10);
-
   let getTransactionCalled = false;
 
   const newEvmProviders = objectMap(
@@ -979,6 +979,12 @@ test('find a failed tx in lookback mode via trace_filter (Base)', async t => {
       ({
         ...provider,
         getLogs: async () => [],
+        // Emit the correct block number so waitForBlock resolves deterministically
+        on: (event: any, listener: Function) => {
+          if (event === 'block') {
+            queueMicrotask(() => listener(latestBlock + 1));
+          }
+        },
         getTransaction: async () => {
           getTransactionCalled = true;
           return { hash: failedTxHash, data: calldata };
