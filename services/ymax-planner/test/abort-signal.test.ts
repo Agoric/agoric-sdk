@@ -246,7 +246,7 @@ test('handlePendingTx aborts CCTP watcher in lookback mode when signal is aborte
     `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${fromBlock + 9}`,
     '[TEST] Aborting signal',
     `[${txId}] [LogScan] Aborted`,
-    `[${txId}] No matching transfer found`,
+    `[${txId}] [CCTP_TX_NOT_FOUND] No matching transfer found`,
     `[${txId}] Lookback completed without finding transaction, waiting for live mode`,
   ]);
 });
@@ -329,7 +329,7 @@ test('handlePendingTx aborts GMP watcher in lookback mode when signal is aborted
     `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${fromBlock + 9}`,
     '[TEST] Aborting signal',
     `[${txId}] [LogScan] Aborted`,
-    `[${txId}] No matching MulticallStatus or MulticallExecuted found`,
+    `[${txId}] [GMP_TX_NOT_FOUND] No matching MulticallStatus or MulticallExecuted found`,
     `[${txId}] Lookback completed without finding transaction, waiting for live mode`,
   ]);
 });

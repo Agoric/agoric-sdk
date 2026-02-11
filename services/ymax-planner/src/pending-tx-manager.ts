@@ -487,6 +487,17 @@ export type HandlePendingTxOpts = {
   pendingTxAbortControllers: Map<TxId, AbortController>;
 } & EvmContext;
 
+/**
+ * Stable error codes prefixed to watcher timeout and lookback not-found log
+ * messages. Ops alerting in #ops-ymax-resolver matches on these codes so that
+ * alert patterns don't break when log message text is updated.
+ */
+export const PendingTxCode = {
+  GMP_TX_NOT_FOUND: 'GMP_TX_NOT_FOUND',
+  WALLET_TX_NOT_FOUND: 'WALLET_TX_NOT_FOUND',
+  CCTP_TX_NOT_FOUND: 'CCTP_TX_NOT_FOUND',
+} as const;
+
 export const TX_TIMEOUT_MS = 30 * 60 * 1000; // 30 min
 export const handlePendingTx = async (
   tx: PendingTx,

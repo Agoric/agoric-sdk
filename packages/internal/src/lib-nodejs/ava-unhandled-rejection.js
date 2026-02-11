@@ -6,13 +6,15 @@ import engineGC from './engine-gc.js';
 import { makeGcAndFinalize } from './gc-and-finalize.js';
 
 /**
- * @import {ExecutionContext, Macro, TestFn} from 'ava';
+ * @import {ExecutionContext, ImplementationFn, Macro, MacroDeclarationOptions,TestFn} from 'ava';
  */
 
-export const AVA_EXPECT_UNHANDLED_REJECTIONS =
+/** Not an official AVA feature, so prefix with `AGORIC_` */
+export const AGORIC_AVA_EXPECT_UNHANDLED_REJECTIONS =
   'AGORIC_AVA_EXPECT_UNHANDLED_REJECTIONS';
-
-export const SUBTEST_PREFIX = '(unhandled rejection subprocess): ';
+/** Backwards compatibility... */
+export const AVA_EXPECT_UNHANDLED_REJECTIONS =
+  AGORIC_AVA_EXPECT_UNHANDLED_REJECTIONS;
 
 const delayTurn = () => new Promise(resolve => setImmediate(resolve));
 const settleUnhandled = async () => {
@@ -117,51 +119,68 @@ export const countUnhandled = async (work, { gcAndFinalize }) => {
 };
 
 /**
+ * @deprecated Use `makeExpectUnhandledRejectionMacro` instead, which uses the
+ * test's first argument title instead of an explicit `name`, and can
+ * optionally wrap an inner `Macro`.
+ *
  * @template C
  * @param {object} powers
  * @param {TestFn<C>} powers.test
+ * @param {boolean} [powers.sameWorker]
  * @param {string} powers.importMetaUrl
- * @returns {(
- *   expectedUnhandled: number,
- * ) => Macro<[name: string, impl: (t: ExecutionContext<C>) => any], C>}
+ * @returns {( expectedUnhandled: number) => Macro<[name: string, impl: (t:
+ *   ExecutionContext<C>) => any], C>}
  */
-export const makeExpectUnhandledRejection = ({ test, importMetaUrl }) => {
+export const makeExpectUnhandledRejection = ({
+  test,
+  sameWorker = false,
+  importMetaUrl,
+}) => {
   const self = fileURLToPath(importMetaUrl);
   const gcAndFinalize = makeGcAndFinalize(engineGC);
 
-  if (process.env[AVA_EXPECT_UNHANDLED_REJECTIONS]) {
+  if (sameWorker || process.env[AVA_EXPECT_UNHANDLED_REJECTIONS]) {
+    let mutex = Promise.resolve();
     return expectedUnhandled =>
       test.macro({
-        title: (_, name, _impl) => SUBTEST_PREFIX + name,
+        title: (_providedTitle = '', name, _impl) => name,
         exec: async (t, _name, impl) => {
           const rawExpected =
-            process.env[AVA_EXPECT_UNHANDLED_REJECTIONS] ?? expectedUnhandled;
+            (sameWorker
+              ? undefined
+              : process.env[AVA_EXPECT_UNHANDLED_REJECTIONS]) ||
+            expectedUnhandled;
           const expected = Number(rawExpected);
           if (!Number.isSafeInteger(expected) || expected < 0) {
             t.fail(
               `expected unhandled rejection count to be a natural number, got ${rawExpected}`,
             );
           }
-          const { unhandled, pending, seenUnhandled } = await countUnhandled(
-            () => impl(t),
-            { gcAndFinalize },
-          );
-          const totalUnhandled = unhandled + pending;
-          if (totalUnhandled !== expected) {
-            t.fail(
-              `expected ${expected} unhandled promise rejections, got ${totalUnhandled} (of ${seenUnhandled} seen, ${pending} pending finalization)`,
+          const nextP = mutex.then(async () => {
+            const { unhandled, pending, seenUnhandled } = await countUnhandled(
+              () => impl(t),
+              { gcAndFinalize },
             );
-          }
+            const totalUnhandled = unhandled + pending;
+            if (totalUnhandled !== expected) {
+              t.fail(
+                `expected ${expected} unhandled promise rejections, got ${totalUnhandled} (of ${seenUnhandled} seen, ${pending} pending finalization)`,
+              );
+            }
+          });
+          mutex = nextP.catch(() => {}); // don't let a failure block the next test
+          await nextP;
         },
       });
   }
 
   return expectedUnhandled =>
     test.macro({
-      title: (_, name, _impl) => name,
+      title: (_providedTitle = '', name, _impl) =>
+        `${name} (unhandled: ${expectedUnhandled})`,
       exec: async (t, name, _impl) =>
         new Promise((resolve, reject) => {
-          const ps = spawn('ava', [self, '-m', SUBTEST_PREFIX + name], {
+          const ps = spawn('ava', [self, '--match', name], {
             env: {
               ...process.env,
               [AVA_EXPECT_UNHANDLED_REJECTIONS]: `${expectedUnhandled}`,
@@ -176,4 +195,63 @@ export const makeExpectUnhandledRejection = ({ test, importMetaUrl }) => {
           ps.on('error', reject);
         }),
     });
+};
+
+/**
+ * @template [C=unknown]
+ * @param {object} powers
+ * @param {TestFn<C>} powers.test
+ * @param {boolean} [powers.sameWorker] defaults to require in-process execution
+ * @param {string} powers.importMetaUrl
+ */
+export const makeExpectUnhandledRejectionMacro = ({
+  test,
+  sameWorker = true,
+  importMetaUrl,
+}) => {
+  const expectUnhandledRejection = makeExpectUnhandledRejection({
+    test,
+    sameWorker,
+    importMetaUrl,
+  });
+  /**
+   * @template {any[]} [A=[ImplementationFn<any[], any>, ...any[]]]
+   * @param {number} numUnhandled
+   * @param {Macro<A, C>} [innerMacro]
+   * @returns {Macro<A, C>}
+   */
+  return (numUnhandled, innerMacro) => {
+    const expector = expectUnhandledRejection(numUnhandled);
+
+    /**
+     * @param {ExecutionContext<C>} _t
+     * @param {A} args
+     * @returns {(t: ExecutionContext<C>) => any}
+     */
+    const makeImpl = (_t, args) =>
+      innerMacro
+        ? async t => innerMacro.exec(t, ...args)
+        : t => (0, args[0])(t, ...args);
+
+    /** @type {string} */
+    return test.macro(
+      /** @type {MacroDeclarationOptions<A, C>} */ ({
+        title(providedTitle = '', ...args) {
+          let expectorName =
+            innerMacro?.title?.(providedTitle, ...args) ?? providedTitle;
+          const impl = () => {};
+          if (process.env[AVA_EXPECT_UNHANDLED_REJECTIONS]) {
+            expectorName =
+              expector.title?.(expectorName, expectorName, impl) ??
+              expectorName;
+          }
+          return expectorName;
+        },
+        async exec(t, ...args) {
+          const impl = makeImpl(t, args);
+          return expector.exec(t, t.title, impl);
+        },
+      }),
+    );
+  };
 };

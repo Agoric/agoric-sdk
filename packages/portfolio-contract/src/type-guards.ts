@@ -190,6 +190,38 @@ export const ERC4626PoolPlaces = {
     protocol: 'ERC4626',
     chainName: 'Ethereum',
   },
+  ERC4626_morphoSteakhousePrimeUsdc_Base: {
+    protocol: 'ERC4626',
+    chainName: 'Base',
+  },
+  ERC4626_morphoSteakhouseUsdc_Base: {
+    protocol: 'ERC4626',
+    chainName: 'Base',
+  },
+  ERC4626_morphoGauntletUsdcPrime_Base: {
+    protocol: 'ERC4626',
+    chainName: 'Base',
+  },
+  ERC4626_morphoSeamlessUsdcVault_Base: {
+    protocol: 'ERC4626',
+    chainName: 'Base',
+  },
+  ERC4626_morphoSteakhouseHighYieldUsdc_Arbitrum: {
+    protocol: 'ERC4626',
+    chainName: 'Arbitrum',
+  },
+  ERC4626_morphoGauntletUsdcCore_Arbitrum: {
+    protocol: 'ERC4626',
+    chainName: 'Arbitrum',
+  },
+  ERC4626_morphoHyperithmUsdc_Arbitrum: {
+    protocol: 'ERC4626',
+    chainName: 'Arbitrum',
+  },
+  ERC4626_morphoGauntletUsdcPrime_Optimism: {
+    protocol: 'ERC4626',
+    chainName: 'Optimism',
+  },
 } as const satisfies Partial<Record<InstrumentId, PoolPlaceInfo>>;
 
 export type ERC4626InstrumentId = keyof typeof ERC4626PoolPlaces;

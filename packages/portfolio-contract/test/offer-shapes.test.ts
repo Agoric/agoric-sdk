@@ -529,6 +529,11 @@ test('published tx shape accepts nextTxId field', t => {
   } as const;
 
   const cases = harden({
+    hasSource: {
+      ...cctp,
+      status: TxStatus.PENDING,
+      sourceAddress: 'comsos:agoric:agoric123lkjsdlj',
+    },
     cctpPending: {
       ...cctp,
       status: TxStatus.PENDING,

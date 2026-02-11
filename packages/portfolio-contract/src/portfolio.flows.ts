@@ -229,6 +229,7 @@ type ExecutePlanOptions = {
   queuedSteps?: Array<
     Pick<MovementDesc, 'src' | 'dest'> & {
       progressTracker?: ProgressTracker;
+      done?: Promise<unknown>;
     }
   >;
 };
@@ -949,6 +950,7 @@ const stepFlow = async (
           }
 
           await gInfo.ready;
+          await queuedStep.done;
           return {};
         },
       });
@@ -1851,13 +1853,15 @@ const queuePermit2Step = async (
   );
 
   // We made the progressTracker above, so we must finalize it.
-  if (progressTracker) {
-    void acct.ready.finally(() => progressTracker.finish());
-  }
+  const done = progressTracker
+    ? acct.done.finally(() => progressTracker.finish())
+    : acct.done;
+
   return [
     {
       src: permitStep.src,
       dest: permitStep.dest,
+      done,
       ...(progressTracker ? { progressTracker } : {}),
     },
   ];

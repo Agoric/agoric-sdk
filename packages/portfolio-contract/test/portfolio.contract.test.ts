@@ -2059,7 +2059,7 @@ test('evmHandler.deposit (existing Arbitrum) completes a deposit flow', async t 
 
 // Test deposits from a NEW chain (where no account exists yet).
 // For deposits to existing portfolios, spender must be the predicted smart wallet address
-// (not depositFactory). The wallet is created via provideEVMAccount first.
+// (or depositFactory). The wallet is created via provideEVMAccount first.
 
 test('evmHandler.deposit (Arbitrum -> Base) completes a deposit flow', async t => {
   const { common, planner1, started, readPublished, txResolver } =

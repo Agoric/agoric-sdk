@@ -166,7 +166,7 @@ test('handlePendingTx logs timeout on MAKE_ACCOUNT transaction with no matching 
     `[${txId}] Watching for wallet creation: subscribing to ${factoryAddress}, expecting event from ${factoryAddress}, expectedAddr ${expectedWalletAddr}`,
     `[${txId}] Attempting to subscribe to ${factoryAddress}...`,
     `[${txId}] ✓ Subscribed to ${factoryAddress} (subscription ID: mock-subscription-id)`,
-    `[${txId}] ✗ No wallet creation found for expectedAddr ${expectedWalletAddr} within 0.05 minutes`,
+    `[${txId}] [WALLET_TX_NOT_FOUND] ✗ No wallet creation found for expectedAddr ${expectedWalletAddr} within 0.05 minutes`,
     `[${txId}] ✅ SUCCESS: expectedAddr=${expectedWalletAddr} txHash=0x123abc block=18500000`,
     `[${txId}] MAKE_ACCOUNT tx resolved`,
   ]);
