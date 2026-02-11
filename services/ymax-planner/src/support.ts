@@ -524,7 +524,8 @@ type TraceResult = {
  * Fetches block receipts in batch using eth_getBlockReceipts RPC method.
  * This function needs to use fetch instead of an ethers provider because
  * ethers does not support batching of this method.
- * @param blockNumbers - Array of block numbers in hex format (e.g., '0x1a4')
+ * @param start - Start block number (inclusive)
+ * @param end - End block number (inclusive)
  * @param opts - Options for the request
  * @param opts.fetch - Fetch function to use for HTTP requests
  * @param opts.rpcUrl - RPC URL to send the request to
@@ -532,9 +533,13 @@ type TraceResult = {
  * @throws Error if the HTTP request fails or if there are RPC errors
  */
 const getBlockReceiptsBatch = async (
-  blockNumbers: string[],
+  start: number,
+  end: number,
   { fetch, rpcUrl }: { fetch: typeof globalThis.fetch; rpcUrl: string },
 ): Promise<BlockReceipt[]> => {
+  const blockNumbers = Array.from({ length: end - start + 1 }, (_, i) =>
+    toBeHex(start + i),
+  );
   const payload = blockNumbers.map((bn, i) => ({
     jsonrpc: '2.0',
     id: i + 1,
@@ -663,10 +668,7 @@ const scanChunkWithBlockReceipts = async (
 ): Promise<TransactionResponse | undefined> => {
   const { provider, toAddress, verifyFailedTx, rpcUrl, fetch } = opts;
 
-  const blockNumbers = Array.from({ length: end - start + 1 }, (_, i) =>
-    toBeHex(start + i),
-  );
-  const receipts = await getBlockReceiptsBatch(blockNumbers, { fetch, rpcUrl });
+  const receipts = await getBlockReceiptsBatch(start, end, { fetch, rpcUrl });
 
   const { promise, resolve, reject } = Promise.withResolvers<
     TransactionResponse | undefined

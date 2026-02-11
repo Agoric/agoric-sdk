@@ -936,7 +936,7 @@ const makeFailedTxTestContext = ({
   };
 };
 
-test('find a failed tx in lookback mode', async t => {
+test('find a failed tx in lookback mode via getBlockReceipts', async t => {
   const { logs, mockLog, txId, gmpTx, ctxWithFetch, txTimestampMs } =
     makeFailedTxTestContext({
       chainId: 'eip155:42161',

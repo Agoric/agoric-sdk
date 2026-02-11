@@ -4,6 +4,9 @@ import { depositFactoryCreateAndDepositInputs } from '@aglocal/portfolio-contrac
 import { decodeAbiParameters } from 'viem';
 import { getConfirmationsRequired } from '../support.ts';
 
+/** Scope tag for failed-transaction lookback searches. */
+export const FAILED_TX_SCOPE = 'failedTx';
+
 //#region Axelar execute calldata extraction
 // AxelarExecutable entrypoint (standard)
 // See https://docs.axelar.dev/dev/general-message-passing/executable

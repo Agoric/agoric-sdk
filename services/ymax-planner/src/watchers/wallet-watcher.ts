@@ -23,6 +23,7 @@ import {
   extractFactoryExecuteData,
   extractDepositFactoryExecuteData,
   DEFAULT_RETRY_OPTIONS,
+  FAILED_TX_SCOPE,
   type AlchemySubscriptionMessage,
   type RetryOptions,
   handleTxRevert,
@@ -368,7 +369,6 @@ export const lookBackSmartWalletTx = async ({
     );
     const toBlock = await provider.getBlockNumber();
 
-    const FAILED_TX_SCOPE = 'failedTx';
     const savedFromBlock = getTxBlockLowerBound(kvStore, txId) || fromBlock;
     const savedFailedTxFromBlock =
       getTxBlockLowerBound(kvStore, txId, FAILED_TX_SCOPE) || fromBlock;

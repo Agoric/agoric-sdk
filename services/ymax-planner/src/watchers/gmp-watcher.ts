@@ -22,6 +22,7 @@ import {
   fetchReceiptWithRetry,
   extractGmpExecuteData,
   DEFAULT_RETRY_OPTIONS,
+  FAILED_TX_SCOPE,
   type AlchemySubscriptionMessage,
   type RetryOptions,
   handleTxRevert,
@@ -301,7 +302,6 @@ export const lookBackGmp = async ({
     );
     const toBlock = await provider.getBlockNumber();
 
-    const FAILED_TX_SCOPE = 'failedTx';
     const statusEventLowerBound =
       getTxBlockLowerBound(kvStore, txId, MULTICALL_STATUS_EVENT) || fromBlock;
     const failedTxLowerBound =
