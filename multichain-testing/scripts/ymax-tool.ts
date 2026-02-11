@@ -327,6 +327,8 @@ const openPositionsEVM = async ({
   id?: string;
   targetAllocation: TargetAllocation;
 }) => {
+  // TODO: support router
+
   const spender = axelarChainConfig.contracts.depositFactory;
 
   if (!spender || spender.length <= 2) {

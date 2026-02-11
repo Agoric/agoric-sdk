@@ -753,11 +753,13 @@ test.serial('invite evm handler; test open portfolio', async t => {
 
   const witness = getYmaxWitness('OpenPortfolio', { allocations });
 
+  const addresses = axelarConfig.Arbitrum.contracts;
+
   const openPortfolioMessage = getPermitWitnessTransferFromData(
     {
       permitted: deposit,
-      // This is the address of the owned deposit factory contract
-      spender: axelarConfig.Arbitrum.contracts.depositFactory,
+      // TODO: test both router and deposit factory
+      spender: addresses.remoteAccountRouter || addresses.depositFactory,
       nonce,
       deadline,
     },

@@ -122,10 +122,10 @@ export const getBech32Prefix = address => {
  * Compare two EVM addresses for equality, case-insensitive.
  *
  * @param {EvmAddress} a
- * @param {EvmAddress} b
+ * @param {EvmAddress | undefined} b
  * @returns {boolean}
  */
-export const sameEvmAddress = (a, b) => a.toLowerCase() === b.toLowerCase();
+export const sameEvmAddress = (a, b) => a.toLowerCase() === b?.toLowerCase();
 harden(sameEvmAddress);
 
 /**
