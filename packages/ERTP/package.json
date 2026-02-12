@@ -54,6 +54,7 @@
   "devDependencies": {
     "@agoric/swingset-vat": "workspace:*",
     "@endo/bundle-source": "^4.1.2",
+    "@endo/init": "^1.1.12",
     "@fast-check/ava": "^1.1.5",
     "ava": "^6.4.1",
     "tsd": "^0.33.0"

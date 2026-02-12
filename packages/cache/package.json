@@ -4,7 +4,10 @@
   "description": "Agoric's simple cache interface",
   "type": "module",
   "main": "src/main.js",
-  "repository": "https://github.com/Agoric/agoric-sdk",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agoric/agoric-sdk.git"
+  },
   "scripts": {
     "build": "exit 0",
     "test": "ava",
@@ -28,6 +31,7 @@
   },
   "devDependencies": {
     "@agoric/zoe": "workspace:*",
+    "@endo/init": "^1.1.12",
     "ava": "^6.4.1",
     "c8": "^10.1.3"
   },

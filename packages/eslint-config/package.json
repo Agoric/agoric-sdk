@@ -40,5 +40,8 @@
   },
   "engines": {
     "node": "^20.9 || ^22.11"
+  },
+  "devDependencies": {
+    "@endo/init": "^1.1.12"
   }
 }
