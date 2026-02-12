@@ -36,6 +36,7 @@ import type {
   TargetAllocation,
 } from '../src/type-guards.ts';
 import { plannerClientMock } from '../tools/agents-mock.ts';
+import { makeWallet } from '../tools/wallet-offer-tools.ts';
 import {
   deploy,
   makeEvmTraderKit,
@@ -2505,4 +2506,39 @@ test('evmHandler.rebalance without target allocation uses existing allocation', 
   );
 
   // XXX should test the whole flow, not just the start
+});
+
+test('open portfolio does not require Access token when Access issuer is present', async t => {
+  const { common, zoe, started } = await deploy(t);
+  const { usdc, bld, poc26 } = common.brands;
+  const { when } = common.utils.vowTools;
+
+  const { mint: _usdcMint, ...usdcSansMint } = usdc;
+  const { mint: _bldMint, ...bldSansMint } = bld;
+  const { mint: _poc26Mint, ...poc26SansMint } = poc26;
+
+  const wallet = makeWallet(
+    { USDC: usdcSansMint, BLD: bldSansMint, Access: poc26SansMint },
+    zoe,
+    when,
+  );
+
+  const done = await wallet.executePublicOffer({
+    id: 'open-no-access',
+    invitationSpec: {
+      source: 'contract',
+      instance: started.instance,
+      publicInvitationMaker: 'makeOpenPortfolioInvitation',
+    },
+    proposal: { give: {} },
+    offerArgs: {},
+  });
+
+  t.is(passStyleOf(done.result.invitationMakers), 'remotable');
+  t.like(done.result.publicSubscribers, {
+    portfolio: {
+      description: 'Portfolio',
+      storagePath: `${ROOT_STORAGE_PATH}.portfolios.portfolio0`,
+    },
+  });
 });
