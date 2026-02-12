@@ -23,17 +23,6 @@ const setupFixture = async t => {
   return { bundlesDir, sourcePath };
 };
 
-const withStaleLockMs = async (ms, fn) => {
-  const prev = process.env.AGORIC_BUNDLE_STALE_LOCK_MS;
-  process.env.AGORIC_BUNDLE_STALE_LOCK_MS = String(ms);
-  try {
-    return await fn();
-  } finally {
-    if (prev === undefined) delete process.env.AGORIC_BUNDLE_STALE_LOCK_MS;
-    else process.env.AGORIC_BUNDLE_STALE_LOCK_MS = prev;
-  }
-};
-
 test.serial('load() breaks stale lock from dead owner pid', async t => {
   const { bundlesDir, sourcePath } = await setupFixture(t);
   const lockRoot = path.join(bundlesDir, '.bundle-locks');
@@ -58,17 +47,15 @@ test.serial('failed load does not poison later load for same key', async t => {
   const fixtureSource = await readFile(fixtureSourcePath, 'utf8');
   await rm(sourcePath, { force: true });
 
-  await withStaleLockMs(1, async () => {
-    const cache = await makeNodeBundleCache(bundlesDir, {}, s => import(s));
-    await t.throwsAsync(() => cache.load(sourcePath, 'toy'), {
-      message:
-        /no such file or directory|Cannot find module|Failed to load module|Cannot find file/i,
-    });
-    await writeFile(sourcePath, fixtureSource, 'utf8');
-
-    const loaded = await cache.load(sourcePath, 'toy');
-    t.truthy(loaded);
+  const cache = await makeNodeBundleCache(bundlesDir, {}, s => import(s));
+  await t.throwsAsync(() => cache.load(sourcePath, 'toy'), {
+    message:
+      /no such file or directory|Cannot find module|Failed to load module|Cannot find file/i,
   });
+  await writeFile(sourcePath, fixtureSource, 'utf8');
+
+  const loaded = await cache.load(sourcePath, 'toy');
+  t.truthy(loaded);
 });
 
 test('provideBundleCache returns same promise for same key', async t => {

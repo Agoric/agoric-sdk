@@ -40,14 +40,9 @@ import { setTimeout as delay } from 'timers/promises';
  * @returns {Promise<BundleCache>}
  */
 const BUNDLE_LOCK_ACQUIRE_TIMEOUT_MS = 5 * 60_000;
+const BUNDLE_STALE_LOCK_MS = 60_000;
 
 export const makeNodeBundleCache = async (dest, options, loadModule, pid) => {
-  const parsedStaleLockMs = Number(process.env.AGORIC_BUNDLE_STALE_LOCK_MS);
-  const staleLockMs =
-    Number.isFinite(parsedStaleLockMs) && parsedStaleLockMs > 0
-      ? parsedStaleLockMs
-      : 60_000;
-
   /** @param {string} sourceSpec */
   const canonicalizeSourceSpec = sourceSpec => {
     if (sourceSpec.startsWith('file:')) {
@@ -148,7 +143,7 @@ export const makeNodeBundleCache = async (dest, options, loadModule, pid) => {
       try {
         const st = await stat(lockPath);
         const ageMs = Date.now() - st.mtimeMs;
-        if (ageMs >= staleLockMs) {
+        if (ageMs >= BUNDLE_STALE_LOCK_MS) {
           await rm(lockPath, { recursive: true, force: true });
           return true;
         }
