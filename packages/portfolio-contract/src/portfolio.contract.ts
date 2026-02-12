@@ -532,10 +532,15 @@ export const contract = async (
     'usedAccessTokens',
     () => zcf.makeEmptySeatKit().zcfSeat,
   );
+  // Access token gating has been removed; if provided, consume one for backward compatibility.
   const consumeAccessToken = brands.Access
     ? (seat: ZCFSeat) => {
+        const {
+          give: { Access: offeredAccess },
+        } = seat.getProposal() as ProposalType['openPortfolio'];
+        if (!offeredAccess) return;
         const Access = AmountMath.make(brands.Access, 1n);
-        zcf.atomicRearrange([[seat, usedAccessTokens, { Access }]]);
+        zcf.atomicRearrange(harden([[seat, usedAccessTokens, { Access }]]));
       }
     : () => {};
 
@@ -548,8 +553,7 @@ export const contract = async (
      * The resulting portfolio can be rebalanced via continuing invitations.
      *
      * @see {@link ProposalType.openPortfolio} for proposal structure.
-     *   Note that if the contract is started with an `Access` issuer,
-     *   a non-empty amount of that token is required.
+     *   Access token, if present in terms, is accepted but not required.
      *
      * @see {@link OfferArgsFor.openPortfolio} for offer arguments
      * @see {@link openPortfolio} for the underlying flow implementation

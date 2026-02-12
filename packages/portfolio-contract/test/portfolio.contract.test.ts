@@ -2513,7 +2513,7 @@ test('open portfolio does not require Access token when Access issuer is present
   const { usdc, bld, poc26 } = common.brands;
   const { when } = common.utils.vowTools;
 
-  const { mint: _usdcMint, ...usdcSansMint } = usdc;
+  const usdcSansMint = usdc;
   const { mint: _bldMint, ...bldSansMint } = bld;
   const { mint: _poc26Mint, ...poc26SansMint } = poc26;
 
@@ -2523,7 +2523,7 @@ test('open portfolio does not require Access token when Access issuer is present
     when,
   );
 
-  const done = await wallet.executePublicOffer({
+  const doneP = wallet.executePublicOffer({
     id: 'open-no-access',
     invitationSpec: {
       source: 'contract',
@@ -2533,6 +2533,9 @@ test('open portfolio does not require Access token when Access issuer is present
     proposal: { give: {} },
     offerArgs: {},
   });
+  const done = await Promise.all([doneP, ackNFA(common.utils)]).then(
+    ([result]) => result,
+  );
 
   t.is(passStyleOf(done.result.invitationMakers), 'remotable');
   t.like(done.result.publicSubscribers, {
