@@ -13,7 +13,7 @@ import { makeWalletFactoryDriver } from '@aglocal/boot/tools/drivers.js';
 // XXX same as packages/boot/test/bootstrapTests/walletFactory.ts
 export const makeWalletFactoryContext = async (
   t,
-  configSpecifier = '@agoric/vm-config/decentral-main-vaults-config.json',
+  configSpecifier = '@agoric/cosmic-swingset/src/vm-config/decentral-main-vaults-config.json',
   opts = {},
 ) => {
   const swingsetTestKit = await makeSwingsetTestKit(t.log, undefined, {

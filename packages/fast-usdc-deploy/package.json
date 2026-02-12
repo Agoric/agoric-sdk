@@ -20,6 +20,7 @@
     "lint:types": "yarn run -T tsc"
   },
   "devDependencies": {
+    "@agoric/cosmic-swingset": "workspace:*",
     "@agoric/swing-store": "workspace:*",
     "@agoric/vats": "workspace:*",
     "@endo/promise-kit": "^1.1.13",

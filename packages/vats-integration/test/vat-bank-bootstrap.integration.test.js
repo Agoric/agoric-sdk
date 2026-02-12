@@ -8,24 +8,24 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { makeZoeKitForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { observeIteration } from '@agoric/notifier';
 import { makeHeapZone } from '@agoric/zone';
-import { buildRootObject } from '../src/vat-bank.js';
+import { buildRootObject } from '@agoric/vats/src/vat-bank.js';
 import {
   mintInitialSupply,
   addBankAssets,
   installBootContracts,
   produceStartUpgradable,
   produceDiagnostics,
-} from '../src/core/basic-behaviors.js';
-import { makeAgoricNamesAccess } from '../src/core/utils.js';
-import { makePromiseSpace } from '../src/core/promise-space.js';
-import { makePopulatedFakeVatAdmin } from '../tools/boot-test-utils.js';
+} from '@agoric/vats/src/core/basic-behaviors.js';
+import { makeAgoricNamesAccess } from '@agoric/vats/src/core/utils.js';
+import { makePromiseSpace } from '@agoric/vats/src/core/promise-space.js';
+import { makePopulatedFakeVatAdmin } from '@agoric/vats/tools/boot-test-utils.js';
 
 /**
  * @import {InitMsg} from '@agoric/internal/src/chain-utils.js';
- * @import {BootstrapPowers} from '../src/core/types.ts';
- * @import {Producer} from '../src/core/types.ts';
- * @import {VatLoader} from '../src/core/types.ts';
- * @import {WellKnownVats} from '../src/core/types.ts';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.ts';
+ * @import {Producer} from '@agoric/vats/src/core/types.ts';
+ * @import {VatLoader} from '@agoric/vats/src/core/types.ts';
+ * @import {WellKnownVats} from '@agoric/vats/src/core/types.ts';
  */
 
 test('mintInitialSupply, addBankAssets bootstrap actions', async t => {

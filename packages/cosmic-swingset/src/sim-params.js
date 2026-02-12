@@ -77,7 +77,7 @@ export const defaultBeansPerUnit = [
 ];
 
 const defaultBootstrapVatConfig =
-  '@agoric/vm-config/decentral-demo-config.json';
+  './vm-config/decentral-demo-config.json';
 
 /** @type {PowerFlagFeeSDKType[]} */
 export const defaultPowerFlagFees = [

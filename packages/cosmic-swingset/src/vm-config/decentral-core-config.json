@@ -1,0 +1,63 @@
+{
+  "$comment": "This SwingSet config file (see loadSwingsetConfigFile) is minimal; it has no proposals. It is used by ../cosmic-swingset/Makefile and `agoric start`, which add proposals to it.",
+  "bootstrap": "bootstrap",
+  "defaultReapInterval": 1000,
+  "vats": {
+    "bootstrap": {
+      "sourceSpec": "@agoric/vats/src/core/boot-chain.js",
+      "creationOptions": {
+        "critical": true
+      }
+    }
+  },
+  "clearStorageSubtrees": [
+    "published"
+  ],
+  "exportStorageSubtrees": [
+    "published.psm.IST",
+    "published.wallet",
+    "published.provisionPool.metrics"
+  ],
+  "bundles": {
+    "agoricNames": {
+      "sourceSpec": "@agoric/vats/src/vat-agoricNames.js"
+    },
+    "centralSupply": {
+      "sourceSpec": "@agoric/vats/src/centralSupply.js"
+    },
+    "mintHolder": {
+      "sourceSpec": "@agoric/vats/src/mintHolder.js"
+    },
+    "zcf": {
+      "sourceSpec": "@agoric/zoe/contractFacet.js"
+    },
+    "bank": {
+      "sourceSpec": "@agoric/vats/src/vat-bank.js"
+    },
+    "board": {
+      "sourceSpec": "@agoric/vats/src/vat-board.js"
+    },
+    "bridge": {
+      "sourceSpec": "@agoric/vats/src/vat-bridge.js"
+    },
+    "mints": {
+      "sourceSpec": "@agoric/vats/src/vat-mints.js"
+    },
+    "priceAuthority": {
+      "sourceSpec": "@agoric/vats/src/vat-priceAuthority.js"
+    },
+    "provisionPool": {
+      "sourceSpec": "@agoric/inter-protocol/src/provisionPool.js"
+    },
+    "provisioning": {
+      "sourceSpec": "@agoric/vats/src/vat-provisioning.js"
+    },
+    "walletFactory": {
+      "sourceSpec": "@agoric/smart-wallet/src/walletFactory.js"
+    },
+    "zoe": {
+      "sourceSpec": "@agoric/vats/src/vat-zoe.js"
+    }
+  },
+  "defaultManagerType": "xs-worker"
+}
