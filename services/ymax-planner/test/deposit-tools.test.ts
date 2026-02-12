@@ -794,9 +794,10 @@ test.failing(
       'Avalanche route should use CCTPv2',
     );
 
-  // Snapshot the full plan for regression tracking
-  t.snapshot(plan, 'Base to Avalanche + Noble split routing');
-});
+    // Snapshot the full plan for regression tracking
+    t.snapshot(plan, 'Base to Avalanche + Noble split routing');
+  },
+);
 
 test('planRebalanceToAllocations regression - CCTPv2 multi-source rebalance', async t => {
   const targetAllocation = {
