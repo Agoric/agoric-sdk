@@ -148,6 +148,9 @@
     "files": [
       "packages/*/test/**/*.test.*"
     ],
-    "timeout": "30m"
+    "timeout": "30m",
+    "require": [
+      "@endo/init/debug.js"
+    ]
   }
 }

@@ -37,7 +37,10 @@
     "files": [
       "test/**/*.test.*"
     ],
-    "timeout": "2m"
+    "timeout": "2m",
+    "require": [
+      "@endo/init/debug.js"
+    ]
   },
   "engines": {
     "node": "^20.9 || ^22.11"
