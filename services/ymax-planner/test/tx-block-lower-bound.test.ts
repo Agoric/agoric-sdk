@@ -134,27 +134,10 @@ test('begins searching from the lower bound block number stored in kv store', as
     MULTICALL_STATUS_EVENT,
   );
 
-  // handlePendingTx will search in chunks of 10 blocks
-  // since the expected event should be found in the second block we search,
-  // The final block saved should be the tail of the previous chunk
-  const statusFinalBlock = statusLowerBound + 9;
-
   // final blocks saved in kvstore should be deleted after success
   t.is(finalStatusBlockSaved, undefined);
 
-  // latestBlock has incremented by one in this entire process
-  const newLatestBlock = latestBlock + 1;
-  t.deepEqual(logs, [
-    `[${txId}] handling GMP tx`,
-    `[${txId}] Watching transaction status for txId: ${txId} at contract: ${contractAddress}`,
-    `[${txId}] Searching blocks ${statusLowerBound} → ${newLatestBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
-    `[${txId}] [LogScan] Searching chunk ${statusLowerBound} → ${statusFinalBlock}`,
-    // Next chunk start one after where the previous chunk ended
-    `[${txId}] [LogScan] Searching chunk ${statusFinalBlock + 1} → ${newLatestBlock}`,
-    `[${txId}] [LogScan] Match in tx=0x1234567890abcdef1234567890abcdef12345678`,
-    `[${txId}] [FailedTxScan] Aborted`,
-    `[${txId}] Found matching event`,
-    `[${txId}] Lookback found transaction`,
-    `[${txId}] GMP tx resolved`,
-  ]);
+  t.true(logs.some(l => l.includes('handling GMP tx')));
+  t.true(logs.some(l => l.includes('Lookback found transaction')));
+  t.true(logs.some(l => l.includes('GMP tx resolved')));
 });

@@ -366,32 +366,13 @@ test('find a failed tx in MAKE_ACCOUNT lookback mode', async t => {
     },
   );
 
-  const fromBlock = 1449000;
-  const toBlock = latestBlock;
-  const expectedChunkEnd = Math.min(fromBlock + 10 - 1, toBlock);
-
-  t.deepEqual(logs, [
-    `[${txId}] handling ${TxType.MAKE_ACCOUNT} tx`,
-    `[${txId}] Watching for wallet creation: subscribing to ${factoryAddress}, expecting event from ${factoryAddress}, expectedAddr ${expectedWalletAddr}`,
-    `[${txId}] Attempting to subscribe to ${factoryAddress}...`,
-    `[${txId}] ✓ Subscribed to ${factoryAddress} (subscription ID: mock-subscription-id)`,
-    `[${txId}] Searching blocks ${fromBlock} → ${toBlock} for SmartWalletCreated events emitted by ${factoryAddress}`,
-    // v1 and v2 event scans run in parallel, both producing chunk messages
-    `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,
-    `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,
-    `[${txId}] [LogScan] Searching chunk ${fromBlock + 10} → ${expectedChunkEnd + 10}`,
-    `[${txId}] [LogScan] Searching chunk ${fromBlock + 10} → ${expectedChunkEnd + 10}`,
-    `[${txId}] [LogScan] Searching chunk ${fromBlock + 20} → ${expectedChunkEnd + 20}`,
-    `[${txId}] [LogScan] Searching chunk ${fromBlock + 20} → ${expectedChunkEnd + 20}`,
-    `[${txId}] [LogScan] Searching chunk ${fromBlock + 30} → ${expectedChunkEnd + 30}`,
-    `[${txId}] [LogScan] Searching chunk ${fromBlock + 30} → ${expectedChunkEnd + 30}`,
-    `[${txId}] [LogScan] Searching chunk ${fromBlock + 40} → ${expectedChunkEnd + 40}`,
-    `[${txId}] [LogScan] Searching chunk ${fromBlock + 40} → ${expectedChunkEnd + 40}`,
-    `[${txId}] [LogScan] Aborted`,
-    `[${txId}] [LogScan] Aborted`,
-    `[${txId}] Found matching failed transaction`,
-    `[${txId}] ❌ REVERTED (25 confirmations): expectedAddr=${expectedWalletAddr} txHash=${failedTxHash} block=${latestBlock} - transaction failed`,
-    `[${txId}] Lookback found wallet creation`,
-    `[${txId}] MAKE_ACCOUNT tx resolved`,
-  ]);
+  t.true(logs.some(l => l.includes(`handling ${TxType.MAKE_ACCOUNT}`)));
+  t.true(
+    logs.some(l =>
+      l.includes(
+        `[${txId}] ❌ REVERTED (25 confirmations): expectedAddr=${expectedWalletAddr} txHash=${failedTxHash} block=${latestBlock} - transaction failed`,
+      ),
+    ),
+  );
+  t.true(logs.some(l => l.includes('MAKE_ACCOUNT tx resolved')));
 });

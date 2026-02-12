@@ -24,11 +24,9 @@ import { lookupValueForKey } from './utils.ts';
 /**
  * Narrow interface for a JSON-RPC 2.0 batch client.
  *
- * We define a custom interface rather than importing {@link JSONRPCClient}
- * from `json-rpc-2.0` because the test lockdown (`overrideTaming: 'min'`)
- * is incompatible with that library's compiled `__extends`
- * (see `src/lockdown.js`).  The custom type still limits the power surface
- * passed to downstream functions.
+ * XXX Replace with {@link JSONRPCClient} from `json-rpc-2.0` once
+ * test mocks are updated to return proper JSON-RPC `id` fields
+ * (required by `JSONRPCClient.receive()`).
  */
 export type JsonRpcBatchClient = {
   batchCall: (
@@ -619,7 +617,7 @@ export const scanEvmLogsInChunks = async (
   const blockTimeMs = getBlockTimeMs(chainId);
   await null;
   let rateLimitRetries = 0;
-  for (let start = fromBlock; start <= toBlock; ) {
+  for (let currentBlock = -Infinity, start = fromBlock; start <= toBlock; ) {
     if (signal?.aborted) {
       log('[LogScan] Aborted');
       return undefined;
@@ -627,9 +625,8 @@ export const scanEvmLogsInChunks = async (
     const end = Math.min(start + chunkSize - 1, toBlock);
 
     try {
-      const currentBlock = await provider.getBlockNumber();
-
       // Wait for the chain to catch up if end block doesn't exist yet
+      if (end > currentBlock) currentBlock = await provider.getBlockNumber();
       if (end > currentBlock) {
         const blocksToWait = Math.max(50, chunkSize);
         const waitTimeMs = blocksToWait * blockTimeMs;
@@ -706,7 +703,7 @@ const getTraceFilter = async (
  *
  * Cost per 10-block chunk: 200 CU + 20 CU/match.
  */
-const scanChunkWithBlockReceipts = async (
+const scanFailedChunkWithBlockReceipts = async (
   start: number,
   end: number,
   opts: FailedTxScanOpts,
@@ -766,7 +763,7 @@ const scanChunkWithBlockReceipts = async (
  *
  * Cost per call: 40 CU (covers the entire chunk range).
  */
-const scanChunkWithTraceFilter = async (
+const scanFailedChunkWithTraceFilter = async (
   start: number,
   end: number,
   opts: FailedTxScanOpts,
@@ -807,8 +804,16 @@ const scanChunkWithTraceFilter = async (
       to: trace.action.to,
     };
 
+    opts.log?.(
+      `[FailedTxScan] Candidate failed tx ${trace.transactionHash} (error=${trace.error})`,
+    );
+
     if (await verifyFailedTx(syntheticTx, syntheticReceipt)) {
       return syntheticTx;
+    } else {
+      opts.log?.(
+        `[FailedTxScan] tx ${trace.transactionHash} failed verifyFailedTx check`,
+      );
     }
   }
   return undefined;
@@ -843,6 +848,8 @@ const BLOCK_RECEIPTS_CHUNK_SIZE = 10;
 export const scanFailedTxsInChunks = async (
   opts: FailedTxScanOpts,
 ): Promise<TransactionResponse | undefined> => {
+  await null;
+
   const {
     provider,
     fromBlock,
@@ -859,16 +866,15 @@ export const scanFailedTxsInChunks = async (
     requestedChunkSize ??
     (useTraceFilter ? TRACE_FILTER_CHUNK_SIZE : BLOCK_RECEIPTS_CHUNK_SIZE);
   const scanChunk = useTraceFilter
-    ? scanChunkWithTraceFilter
-    : scanChunkWithBlockReceipts;
+    ? scanFailedChunkWithTraceFilter
+    : scanFailedChunkWithBlockReceipts;
 
   log(
     `[FailedTxScan] Scanning ${fromBlock} → ${toBlock} using ${useTraceFilter ? 'trace_filter' : 'eth_getBlockReceipts'} (chunk=${chunkSize})`,
   );
 
-  let currentBlock: number | undefined;
   let rateLimitRetries = 0;
-  for (let start = fromBlock; start <= toBlock; ) {
+  for (let currentBlock = -Infinity, start = fromBlock; start <= toBlock; ) {
     if (signal?.aborted) {
       log('[FailedTxScan] Aborted');
       return undefined;
@@ -877,9 +883,7 @@ export const scanFailedTxsInChunks = async (
 
     try {
       // Wait for the chain to catch up if end block doesn't exist yet
-      if (currentBlock === undefined || end > currentBlock) {
-        currentBlock = await provider.getBlockNumber();
-      }
+      if (end > currentBlock) currentBlock = await provider.getBlockNumber();
       if (end > currentBlock) {
         const blocksToWait = Math.max(50, chunkSize);
         const waitTimeMs = blocksToWait * blockTimeMs;

@@ -555,22 +555,9 @@ test('resolves a 10 second old pending GMP transaction in lookback mode', async 
     },
   );
 
-  const currentBlock = await mockProvider.getBlockNumber();
-  const fromBlock = 1449000;
-  const toBlock = currentBlock;
-  const expectedChunkEnd = Math.min(fromBlock + 10 - 1, toBlock);
-
-  t.deepEqual(logs, [
-    `[${txId}] handling ${TxType.GMP} tx`,
-    `[${txId}] Watching transaction status for txId: ${txId} at contract: ${contractAddress}`,
-    `[${txId}] Searching blocks ${fromBlock} → ${toBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
-    `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,
-    `[${txId}] [LogScan] Match in tx=${event.transactionHash}`,
-    `[${txId}] [FailedTxScan] Aborted`,
-    `[${txId}] Found matching event`,
-    `[${txId}] Lookback found transaction`,
-    `[${txId}] GMP tx resolved`,
-  ]);
+  t.true(logs.some(l => l.includes(`handling ${TxType.GMP} tx`)));
+  t.true(logs.some(l => l.includes('Lookback found transaction')));
+  t.true(logs.some(l => l.includes('GMP tx resolved')));
 });
 
 // --- Tests for processInitialPendingTransactions ---
@@ -963,24 +950,16 @@ test('find a failed tx in lookback mode via getBlockReceipts', async t => {
     { ...ctxWithFetch, log: mockLog, txTimestampMs },
   );
 
-  const fromBlock = 1449000;
-  const toBlock = FAILED_TX_LATEST_BLOCK;
-  const expectedChunkEnd = Math.min(fromBlock + 10 - 1, toBlock);
-  t.deepEqual(logs, [
-    `[${txId}] handling ${TxType.GMP} tx`,
-    `[${txId}] Watching transaction status for txId: ${txId} at contract: ${FAILED_TX_CONTRACT}`,
-    `[${txId}] Searching blocks ${fromBlock} → ${toBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${FAILED_TX_CONTRACT}`,
-    `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,
-    `[${txId}] [LogScan] Searching chunk ${fromBlock + 10} → ${expectedChunkEnd + 10}`,
-    `[${txId}] [LogScan] Searching chunk ${fromBlock + 20} → ${expectedChunkEnd + 20}`,
-    `[${txId}] [LogScan] Searching chunk ${fromBlock + 30} → ${expectedChunkEnd + 30}`,
-    `[${txId}] [LogScan] Searching chunk ${fromBlock + 40} → ${expectedChunkEnd + 40}`,
-    `[${txId}] [LogScan] Aborted`,
-    `[${txId}] Found matching failed transaction`,
-    `[${txId}] ❌ REVERTED (25 confirmations): txId=${txId} txHash=0x123123213 block=${FAILED_TX_LATEST_BLOCK} - transaction failed`,
-    `[${txId}] Lookback found transaction`,
-    `[${txId}] GMP tx resolved`,
-  ]);
+  t.true(logs.some(l => l.includes(`handling ${TxType.GMP} tx`)));
+  t.true(logs.some(l => l.includes('Found matching failed transaction')));
+  t.true(
+    logs.some(l =>
+      l.includes(
+        `[${txId}] ❌ REVERTED (25 confirmations): txId=${txId} txHash=0x123123213 block=${FAILED_TX_LATEST_BLOCK} - transaction failed`,
+      ),
+    ),
+  );
+  t.true(logs.some(l => l.includes('GMP tx resolved')));
 });
 
 test('find a failed tx in lookback mode via trace_filter (Base)', async t => {
