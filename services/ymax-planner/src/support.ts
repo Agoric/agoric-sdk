@@ -1,4 +1,4 @@
-import { WebSocketProvider, Log, toBeHex } from 'ethers';
+import { WebSocketProvider, Log, toQuantity } from 'ethers';
 import type { Filter, TransactionResponse } from 'ethers';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { ClusterName } from '@agoric/internal';
@@ -472,6 +472,16 @@ export const getBlockNumberBeforeRealTime = async (
   return blockNumber;
 };
 
+/**
+ * Detect Alchemy 429 "compute units per second" rate-limit errors
+ * surfaced by ethers as `UNKNOWN_ERROR` with a `"code": 429` payload.
+ */
+const isRateLimitError = (err: unknown): boolean =>
+  err instanceof Error && err.message.includes('"code": 429');
+
+const RATE_LIMIT_BACKOFF_MS = 1_000;
+const MAX_RATE_LIMIT_RETRIES = 3;
+
 type LogPredicate = (log: Log) => boolean | Promise<boolean>;
 
 type ScanOptsBase = {
@@ -568,12 +578,22 @@ const getBlockReceiptsBatch = async (
   start: number,
   end: number,
   client: JsonRpcBatchClient,
+  log?: (...args: unknown[]) => void,
 ): Promise<BlockReceipt[]> => {
   const requests = Array.from({ length: end - start + 1 }, (_, i) => ({
     method: 'eth_getBlockReceipts',
-    params: [toBeHex(start + i)] as unknown[],
+    params: [toQuantity(start + i)] as unknown[],
   }));
   const responses = await client.batchCall(requests);
+
+  const errors = responses.filter(r => 'error' in r && r.error);
+  if (errors.length > 0) {
+    log?.(
+      `[FailedTxScan] eth_getBlockReceipts returned ${errors.length}/${responses.length} errors for blocks ${start}–${end}:`,
+      errors[0],
+    );
+  }
+
   return responses.flatMap(r => (r.result ?? []) as BlockReceipt[]);
 };
 
@@ -598,34 +618,36 @@ export const scanEvmLogsInChunks = async (
 
   const blockTimeMs = getBlockTimeMs(chainId);
   await null;
+  let rateLimitRetries = 0;
   for (let start = fromBlock; start <= toBlock; ) {
     if (signal?.aborted) {
       log('[LogScan] Aborted');
       return undefined;
     }
     const end = Math.min(start + chunkSize - 1, toBlock);
-    const currentBlock = await provider.getBlockNumber();
-
-    // Wait for the chain to catch up if end block doesn't exist yet
-    if (end > currentBlock) {
-      const blocksToWait = Math.max(50, chunkSize);
-      const waitTimeMs = blocksToWait * blockTimeMs;
-      const blocksBehind = end - currentBlock;
-      log(
-        `[LogScan] Chain ${blocksBehind} blocks behind (need ${end}, at ${currentBlock}). Waiting ${waitTimeMs}ms (${blocksToWait} blocks @ ${blockTimeMs}ms/block)`,
-      );
-      await new Promise(resolve => setTimeout(resolve, waitTimeMs));
-      continue; // Retry this chunk after waiting
-    }
-
-    const chunkFilter: Filter = {
-      // baseFilter represents core filter configuration (address, topics, etc.) without block range
-      ...baseFilter,
-      fromBlock: start,
-      toBlock: end,
-    };
 
     try {
+      const currentBlock = await provider.getBlockNumber();
+
+      // Wait for the chain to catch up if end block doesn't exist yet
+      if (end > currentBlock) {
+        const blocksToWait = Math.max(50, chunkSize);
+        const waitTimeMs = blocksToWait * blockTimeMs;
+        const blocksBehind = end - currentBlock;
+        log(
+          `[LogScan] Chain ${blocksBehind} blocks behind (need ${end}, at ${currentBlock}). Waiting ${waitTimeMs}ms (${blocksToWait} blocks @ ${blockTimeMs}ms/block)`,
+        );
+        await new Promise(resolve => setTimeout(resolve, waitTimeMs));
+        continue; // Retry this chunk after waiting
+      }
+
+      const chunkFilter: Filter = {
+        // baseFilter represents core filter configuration (address, topics, etc.) without block range
+        ...baseFilter,
+        fromBlock: start,
+        toBlock: end,
+      };
+
       log(`[LogScan] Searching chunk ${start} → ${end}`);
       const logs = await provider.getLogs(chunkFilter);
       for (const evt of logs) {
@@ -635,9 +657,19 @@ export const scanEvmLogsInChunks = async (
         }
       }
       await opts.onRejectedChunk?.(start, end);
+      rateLimitRetries = 0;
     } catch (err) {
+      if (isRateLimitError(err) && rateLimitRetries < MAX_RATE_LIMIT_RETRIES) {
+        rateLimitRetries += 1;
+        const backoffMs = RATE_LIMIT_BACKOFF_MS * rateLimitRetries;
+        log(
+          `[LogScan] Rate limited on chunk ${start}–${end}, retry ${rateLimitRetries}/${MAX_RATE_LIMIT_RETRIES} after ${backoffMs}ms`,
+        );
+        await new Promise(resolve => setTimeout(resolve, backoffMs));
+        continue; // Retry same chunk
+      }
       log(`[LogScan] Error searching chunk ${start}–${end}:`, err);
-      // continue
+      rateLimitRetries = 0;
     }
 
     start += chunkSize;
@@ -681,7 +713,7 @@ const scanChunkWithBlockReceipts = async (
 ): Promise<TransactionResponse | undefined> => {
   const { provider, toAddress, verifyFailedTx, rpcClient } = opts;
 
-  const receipts = await getBlockReceiptsBatch(start, end, rpcClient);
+  const receipts = await getBlockReceiptsBatch(start, end, rpcClient, opts.log);
 
   const { promise, resolve, reject } = Promise.withResolvers<
     TransactionResponse | undefined
@@ -696,6 +728,10 @@ const scanChunkWithBlockReceipts = async (
     const statusValue = status ? Number.parseInt(status, 16) : undefined;
     if (statusValue !== 0) return;
 
+    opts.log?.(
+      `[FailedTxScan] Candidate failed tx ${transactionHash} (status=${status})`,
+    );
+
     const tx = await provider.getTransaction(transactionHash);
     if (!tx) {
       opts.log?.(
@@ -706,6 +742,10 @@ const scanChunkWithBlockReceipts = async (
     if (await verifyFailedTx(tx, receipt)) {
       resolve(tx);
       isDone = true;
+    } else {
+      opts.log?.(
+        `[FailedTxScan] tx ${transactionHash} failed verifyFailedTx check`,
+      );
     }
   });
   scanner.done.then(
@@ -734,10 +774,17 @@ const scanChunkWithTraceFilter = async (
   const { provider, toAddress, verifyFailedTx } = opts;
 
   const traces = await getTraceFilter(
-    toBeHex(start),
-    toBeHex(end),
+    toQuantity(start),
+    toQuantity(end),
     toAddress,
     provider,
+  );
+
+  const failedTopLevel = traces.filter(
+    t => t.traceAddress.length === 0 && t.error,
+  );
+  opts.log?.(
+    `[FailedTxScan] blocks ${start}–${end}: ${traces.length} traces, ${failedTopLevel.length} failed top-level to ${toAddress}`,
   );
 
   for (const trace of traces) {
@@ -815,7 +862,12 @@ export const scanFailedTxsInChunks = async (
     ? scanChunkWithTraceFilter
     : scanChunkWithBlockReceipts;
 
-  let currentBlock = await provider.getBlockNumber();
+  log(
+    `[FailedTxScan] Scanning ${fromBlock} → ${toBlock} using ${useTraceFilter ? 'trace_filter' : 'eth_getBlockReceipts'} (chunk=${chunkSize})`,
+  );
+
+  let currentBlock: number | undefined;
+  let rateLimitRetries = 0;
   for (let start = fromBlock; start <= toBlock; ) {
     if (signal?.aborted) {
       log('[FailedTxScan] Aborted');
@@ -823,28 +875,45 @@ export const scanFailedTxsInChunks = async (
     }
     const end = Math.min(start + chunkSize - 1, toBlock);
 
-    // Wait for the chain to catch up if end block doesn't exist yet
-    if (end > currentBlock) currentBlock = await provider.getBlockNumber();
-    if (end > currentBlock) {
-      const blocksToWait = Math.max(50, chunkSize);
-      const waitTimeMs = blocksToWait * blockTimeMs;
-      const blocksBehind = end - currentBlock;
-      log(
-        `[FailedTxScan] Chain ${blocksBehind} blocks behind (need ${end}, at ${currentBlock}). Waiting ${waitTimeMs}ms (${blocksToWait} blocks @ ${blockTimeMs}ms/block)`,
-      );
-      await new Promise(resolve => setTimeout(resolve, waitTimeMs));
-      continue; // Retry this chunk after waiting
-    }
-
     try {
+      // Wait for the chain to catch up if end block doesn't exist yet
+      if (currentBlock === undefined || end > currentBlock) {
+        currentBlock = await provider.getBlockNumber();
+      }
+      if (end > currentBlock) {
+        const blocksToWait = Math.max(50, chunkSize);
+        const waitTimeMs = blocksToWait * blockTimeMs;
+        const blocksBehind = end - currentBlock;
+        log(
+          `[FailedTxScan] Chain ${blocksBehind} blocks behind (need ${end}, at ${currentBlock}). Waiting ${waitTimeMs}ms (${blocksToWait} blocks @ ${blockTimeMs}ms/block)`,
+        );
+        await new Promise(resolve => setTimeout(resolve, waitTimeMs));
+        continue; // Retry this chunk after waiting
+      }
+
+      log(`[FailedTxScan] Searching chunk ${start} → ${end}`);
       const result = await scanChunk(start, end, opts);
-      if (result) return result;
+      if (result) {
+        log(`[FailedTxScan] Match in tx=${result.hash}`);
+        return result;
+      }
       await opts.onRejectedChunk?.(start, end);
+      rateLimitRetries = 0;
     } catch (err) {
+      if (isRateLimitError(err) && rateLimitRetries < MAX_RATE_LIMIT_RETRIES) {
+        rateLimitRetries += 1;
+        const backoffMs = RATE_LIMIT_BACKOFF_MS * rateLimitRetries;
+        log(
+          `[FailedTxScan] Rate limited on chunk ${start}–${end}, retry ${rateLimitRetries}/${MAX_RATE_LIMIT_RETRIES} after ${backoffMs}ms`,
+        );
+        await new Promise(resolve => setTimeout(resolve, backoffMs));
+        continue; // Retry same chunk
+      }
       log(
         `[FailedTxScan] Error checking block ${start} -> ${end} for failures:`,
         err,
       );
+      rateLimitRetries = 0;
     }
 
     start += chunkSize;
