@@ -14,10 +14,12 @@ import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { makeRatio } from '@agoric/ertp/src/ratio.js';
 import { PaymentPKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
+import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
-import { scale6, withAmountUtils } from '../../supports.js';
+
+const scale6 = x => BigInt(Math.round(x * 1_000_000));
 
 /**
  * @import {FeeMintAccess, Installation, ZoeService} from '@agoric/zoe';

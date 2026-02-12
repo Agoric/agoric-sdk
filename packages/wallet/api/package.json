@@ -4,8 +4,6 @@
   "description": "Wallet backend",
   "type": "module",
   "scripts": {
-    "build": "yarn build:bundles",
-    "build:bundles": "node scripts/build-bundles.js",
     "test": "ava",
     "test:xs": "exit 0",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",

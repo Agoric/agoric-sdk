@@ -1,7 +1,3 @@
-import binaryVoteCounterBundle from '@agoric/governance/bundles/bundle-binaryVoteCounter.js';
-import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
-import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
-import puppetContractGovernorBundle from '@agoric/governance/bundles/bundle-puppetContractGovernor.js';
 import { makeTracer } from '@agoric/internal';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
@@ -17,6 +13,16 @@ import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { setUpZoeForTest as generalSetUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
+import { governanceSourceSpecRegistry } from '@agoric/governance/source-spec-registry.js';
+import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+
+const bundleCache = await unsafeSharedBundleCache;
+const {
+  binaryVoteCounterBundle,
+  committeeBundle,
+  contractGovernorBundle,
+  puppetContractGovernorBundle,
+} = await bundleCache.loadRegistry(governanceSourceSpecRegistry);
 
 /**
  * @import {FeeMintAccess, SourceBundle, ZoeService} from '@agoric/zoe';
@@ -38,17 +44,12 @@ export { makeMockChainStorageRoot };
 export const DENOM_UNIT = 1_000_000n;
 
 /**
- * @param {any} t
+ * @param {ExecutionContext} t
  * @param {string} sourceRoot
  * @param {string} bundleName
  * @returns {Promise<SourceBundle>}
  */
 export const provideBundle = (t, sourceRoot, bundleName) => {
-  assert(
-    t.context && t.context.bundleCache,
-    'must set t.context.bundleCache in test.before()',
-  );
-  const { bundleCache } = t.context;
   return bundleCache.load(sourceRoot, bundleName);
 };
 harden(provideBundle);
@@ -66,7 +67,7 @@ export const setUpZoeForTest = async (setJig = () => {}) =>
 harden(setUpZoeForTest);
 
 /**
- * @param {any} t
+ * @param {ExecutionContext<any>} t
  * @param {TimerService} [optTimer]
  */
 export const setupBootstrap = async (t, optTimer) => {

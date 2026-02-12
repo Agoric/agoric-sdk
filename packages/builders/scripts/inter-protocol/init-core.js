@@ -5,7 +5,8 @@
  *   governance votes (n/a on sim-chain).
  */
 import { makeHelpers } from '@agoric/deploy-script-support';
-import { objectMap } from '@agoric/internal';
+import { governanceSourceSpecRegistry } from '@agoric/governance/source-spec-registry.js';
+import { interProtocolBundleSpecs } from '@agoric/inter-protocol/source-spec-registry.js';
 
 import {
   getManifestForInterProtocol,
@@ -13,6 +14,7 @@ import {
   getManifestForMain,
 } from '@agoric/inter-protocol/src/proposals/core-proposal.js';
 import { makeInstallCache } from '@agoric/inter-protocol/src/proposals/utils.js';
+import { buildBundlePath } from '../lib/build-bundle.js';
 
 /**
  * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
@@ -21,37 +23,57 @@ import { makeInstallCache } from '@agoric/inter-protocol/src/proposals/utils.js'
 
 // TODO end inter-package filesystem references https://github.com/Agoric/agoric-sdk/issues/8178
 
-/** @type {Record<string, Record<string, [string, string]>>} */
+/**
+ * @typedef {{
+ *   sourceSpec?: string;
+ *   packagePath?: string;
+ *   bundleName?: string;
+ * }} BundleRegistryEntry
+ */
+
+/** @type {Record<string, Record<string, BundleRegistryEntry>>} */
 const installKeyGroups = {
   econCommittee: {
-    contractGovernor: [
-      '@agoric/governance/src/contractGovernor.js',
-      '../../governance/bundles/bundle-contractGovernor.js',
-    ],
-    committee: [
-      '@agoric/governance/src/committee.js',
-      '../../governance/bundles/bundle-committee.js',
-    ],
-    binaryVoteCounter: [
-      '@agoric/governance/src/binaryVoteCounter.js',
-      '../../governance/bundles/bundle-binaryVoteCounter.js',
-    ],
+    contractGovernor: governanceSourceSpecRegistry.contractGovernor,
+    committee: governanceSourceSpecRegistry.committee,
+    binaryVoteCounter: governanceSourceSpecRegistry.binaryVoteCounter,
   },
   main: {
-    vaultFactory: [
-      '@agoric/inter-protocol/src/vaultFactory/vaultFactory.js',
-      '../../inter-protocol/bundles/bundle-vaultFactory.js',
-    ],
-    feeDistributor: [
-      '@agoric/inter-protocol/src/feeDistributor.js',
-      '../../inter-protocol/bundles/bundle-feeDistributor.js',
-    ],
-    reserve: [
-      '@agoric/inter-protocol/src/reserve/assetReserve.js',
-      '../../inter-protocol/bundles/bundle-reserve.js',
-    ],
+    vaultFactory: interProtocolBundleSpecs.vaultFactory,
+    feeDistributor: interProtocolBundleSpecs.feeDistributor,
+    reserve: interProtocolBundleSpecs.reserve,
   },
 };
+
+/**
+ * @template I
+ * @template R
+ * @param {object} opts
+ * @param {(i: I) => R} opts.publishRef
+ * @param {(m: string, b: string, opts?: any) => I} opts.install
+ * @param {Record<string, BundleRegistryEntry>} opts.group
+ * @param {boolean} [opts.persist]
+ */
+const publishInstallGroup = async ({ publishRef, install, group, persist }) =>
+  Object.fromEntries(
+    // eslint-disable-next-line @jessie.js/safe-await-separator
+    await Promise.all(
+      Object.entries(group).map(async ([key, entry]) => {
+        const bundlePath = await buildBundlePath(import.meta.url, entry);
+        assert(entry.packagePath, `${key} missing packagePath`);
+        return [
+          key,
+          publishRef(
+            install(
+              entry.packagePath,
+              bundlePath,
+              persist === undefined ? undefined : { persist },
+            ),
+          ),
+        ];
+      }),
+    ),
+  );
 
 /**
  * @template I
@@ -68,12 +90,12 @@ export const committeeProposalBuilder = async (
   { econCommitteeOptions } = {},
 ) => {
   const install = wrapInstall ? wrapInstall(install0) : install0;
-
-  /** @param {Record<string, [string, string]>} group */
-  const publishGroup = group =>
-    objectMap(group, ([mod, bundle]) =>
-      publishRef(install(mod, bundle, { persist: true })),
-    );
+  const econCommitteeInstallKeys = await publishInstallGroup({
+    publishRef,
+    install,
+    group: installKeyGroups.econCommittee,
+    persist: true,
+  });
   return harden({
     sourceSpec: '@agoric/inter-protocol/src/proposals/core-proposal.js',
     getManifestCall: [
@@ -81,7 +103,7 @@ export const committeeProposalBuilder = async (
       {
         econCommitteeOptions,
         installKeys: {
-          ...publishGroup(installKeyGroups.econCommittee),
+          ...econCommitteeInstallKeys,
         },
       },
     ],
@@ -104,13 +126,12 @@ export const mainProposalBuilder = async ({
   const { VAULT_FACTORY_CONTROLLER_ADDR } = process.env;
 
   const install = wrapInstall ? wrapInstall(install0) : install0;
-
-  const persist = true;
-  /** @param {Record<string, [string, string]>} group */
-  const publishGroup = group =>
-    objectMap(group, ([mod, bundle]) =>
-      publishRef(install(mod, bundle, { persist })),
-    );
+  const mainInstallKeys = await publishInstallGroup({
+    publishRef,
+    install,
+    group: installKeyGroups.main,
+    persist: true,
+  });
   return harden({
     sourceSpec: '@agoric/inter-protocol/src/proposals/core-proposal.js',
     getManifestCall: [
@@ -118,7 +139,7 @@ export const mainProposalBuilder = async ({
       {
         vaultFactoryControllerAddress: VAULT_FACTORY_CONTROLLER_ADDR,
         installKeys: {
-          ...publishGroup(installKeyGroups.main),
+          ...mainInstallKeys,
         },
       },
     ],
@@ -150,10 +171,6 @@ export const defaultProposalBuilder = async (
     } = {},
   } = options;
 
-  /** @param {Record<string, [string, string]>} group */
-  const publishGroup = group =>
-    objectMap(group, ([mod, bundle]) => publishRef(install(mod, bundle)));
-
   const anchorOptions = anchorDenom && {
     denom: anchorDenom,
     decimalPlaces: parseInt(anchorDecimalPlaces, 10),
@@ -165,6 +182,16 @@ export const defaultProposalBuilder = async (
   const econCommitteeOptions = {
     committeeSize: parseInt(econCommitteeSize, 10),
   };
+  const econCommitteeInstallKeys = await publishInstallGroup({
+    publishRef,
+    install,
+    group: installKeyGroups.econCommittee,
+  });
+  const mainInstallKeys = await publishInstallGroup({
+    publishRef,
+    install,
+    group: installKeyGroups.main,
+  });
 
   return harden({
     sourceSpec: '@agoric/inter-protocol/src/proposals/core-proposal.js',
@@ -177,8 +204,8 @@ export const defaultProposalBuilder = async (
         anchorOptions,
         econCommitteeOptions,
         installKeys: {
-          ...publishGroup(installKeyGroups.econCommittee),
-          ...publishGroup(installKeyGroups.main),
+          ...econCommitteeInstallKeys,
+          ...mainInstallKeys,
         },
       },
     ],

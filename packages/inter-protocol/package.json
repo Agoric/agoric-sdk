@@ -8,8 +8,6 @@
     "node": "^20.9 || ^22.11"
   },
   "scripts": {
-    "build": "yarn build:bundles",
-    "build:bundles": "node ./scripts/build-bundles.js",
     "prepack": "yarn run -T prepack-package",
     "postpack": "yarn run -T postpack-package",
     "test": "ava",
@@ -65,7 +63,8 @@
     "import-meta-resolve": "^4.1.0"
   },
   "files": [
-    "src"
+    "src",
+    "source-spec-registry.*"
   ],
   "ava": {
     "files": [

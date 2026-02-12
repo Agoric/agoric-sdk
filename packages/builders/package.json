@@ -48,6 +48,7 @@
     "@agoric/store": "workspace:*",
     "@agoric/swing-store": "workspace:*",
     "@agoric/swingset-liveslots": "workspace:*",
+    "@agoric/swingset-vat": "workspace:*",
     "@agoric/time": "workspace:*",
     "@endo/errors": "^1.2.13",
     "ava": "^6.4.1",

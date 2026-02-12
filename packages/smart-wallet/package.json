@@ -5,8 +5,6 @@
   "type": "module",
   "main": "src/index.js",
   "scripts": {
-    "build": "yarn build:bundles",
-    "build:bundles": "node ./scripts/build-bundles.js",
     "prepack": "yarn run -T prepack-package",
     "postpack": "yarn run -T postpack-package",
     "test": "ava",
@@ -46,7 +44,8 @@
     "@endo/promise-kit": "^1.1.13"
   },
   "files": [
-    "src/"
+    "src/",
+    "source-spec-registry.*"
   ],
   "keywords": [],
   "repository": {

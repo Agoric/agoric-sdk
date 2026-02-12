@@ -14,7 +14,9 @@
  *     agoric run replace-electorate-core.js MAINNET
  */
 import { makeHelpers } from '@agoric/deploy-script-support';
+import { governanceSourceSpecRegistry } from '@agoric/governance/source-spec-registry.js';
 import { getManifestForReplaceAllElectorates } from '@agoric/inter-protocol/src/proposals/replaceElectorate.js';
+import { buildBundlePath } from '../lib/build-bundle.js';
 
 /**
  * @import {replaceAllElectorates} from '@agoric/inter-protocol/src/proposals/replaceElectorate.js';
@@ -108,6 +110,11 @@ export const defaultProposalBuilder = async ({ publishRef, install }, opts) => {
     throw Error(error);
   }
   const { committeeName, voterAddresses, highPrioritySendersConfig } = config;
+  const committee = governanceSourceSpecRegistry.committee;
+  const economicCommitteePath = await buildBundlePath(
+    import.meta.url,
+    committee,
+  );
   console.log(
     'Generating replace committee proposal with config',
     JSON.stringify({
@@ -125,10 +132,7 @@ export const defaultProposalBuilder = async ({ publishRef, install }, opts) => {
         voterAddresses,
         highPrioritySendersConfig,
         economicCommitteeRef: publishRef(
-          install(
-            '@agoric/governance/src/committee.js',
-            '../bundles/bundle-committee.js',
-          ),
+          install(committee.packagePath, economicCommitteePath),
         ),
       },
     ],

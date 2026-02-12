@@ -18,6 +18,13 @@
   "keywords": [],
   "author": "Agoric",
   "license": "Apache-2.0",
+  "dependencies": {
+    "@agoric/builders": "workspace:*",
+    "@agoric/inter-protocol": "workspace:*",
+    "@agoric/smart-wallet": "workspace:*",
+    "@agoric/vats": "workspace:*",
+    "@agoric/zoe": "workspace:*"
+  },
   "devDependencies": {
     "ava": "^6.4.1",
     "c8": "^10.1.3"

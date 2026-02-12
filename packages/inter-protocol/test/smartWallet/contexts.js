@@ -1,7 +1,7 @@
 import { BridgeId, deeplyFulfilledObject } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
-import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import {
   produceStartUpgradable,
   produceStartGovernedUpgradable,
@@ -9,8 +9,10 @@ import {
 } from '@agoric/vats/src/core/basic-behaviors.js';
 import { makeHeapZone } from '@agoric/zone';
 import { E } from '@endo/far';
-import path from 'path';
 import { makeScopedBridge } from '@agoric/vats';
+import { smartWalletSourceSpecRegistry } from '@agoric/smart-wallet/source-spec-registry.js';
+import { governanceSourceSpecRegistry } from '@agoric/governance/source-spec-registry.js';
+import { interProtocolBundleSpecs } from '../../source-spec-registry.js';
 import { oracleBrandFeedName } from '../../src/proposals/utils.js';
 import { createPriceFeed } from '../../src/proposals/price-feed-proposal.js';
 import { withAmountUtils } from '../supports.js';
@@ -34,8 +36,9 @@ import { withAmountUtils } from '../supports.js';
 coalesceUpdates;
 
 const bundlesToCache = harden({
-  psm: './src/psm/psm.js',
-  econCommitteeCharter: './src/econCommitteeCharter.js',
+  psm: interProtocolBundleSpecs.psm.sourceSpec,
+  econCommitteeCharter:
+    interProtocolBundleSpecs.econCommitteeCharter.sourceSpec,
 });
 
 export const importBootTestUtils = async (log, bundleCache) => {
@@ -62,7 +65,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
   // To debug, pass t.log instead of null logger
   const log = () => null;
 
-  const bundleCache = await unsafeMakeBundleCache('bundles/');
+  const bundleCache = await unsafeSharedBundleCache;
   const zone = makeHeapZone();
 
   const { consume, produce, instance } = await makeSpace(log, bundleCache);
@@ -75,21 +78,16 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
   await produceStartUpgradable({ zone, consume, produce });
 
   //#region Installs
-  const pathname = new URL(import.meta.url).pathname;
-  const dirname = path.dirname(pathname);
-
-  const bundle = await bundleCache.load(
-    `${dirname}/../../../smart-wallet/src/walletFactory.js`,
-    'walletFactory',
+  const { walletFactoryBundle: bundle } = await bundleCache.loadRegistry(
+    smartWalletSourceSpecRegistry,
   );
   /**
    * @type {Promise<Installation<StartWalletFactory>>}
    */
   const installation = E(zoe).install(bundle);
 
-  const contractGovernorBundle = await bundleCache.load(
-    `${dirname}/../../../governance/src/contractGovernor.js`,
-    'contractGovernor',
+  const { contractGovernorBundle } = await bundleCache.loadRegistry(
+    governanceSourceSpecRegistry,
   );
 
   const contractGovernor = E(zoe).install(contractGovernorBundle);
@@ -179,9 +177,8 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     const installAdmin = E(consume.agoricNamesAdmin).lookupAdmin(
       'installation',
     );
-    const paBundle = await bundleCache.load(
-      '../inter-protocol/src/price/fluxAggregatorContract.js',
-      'priceAggregator',
+    const { priceAggregatorBundle: paBundle } = await bundleCache.loadRegistry(
+      interProtocolBundleSpecs,
     );
     /**
      * @type {Promise<Installation<FluxStartFn>>}

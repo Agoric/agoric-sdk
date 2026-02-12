@@ -2,6 +2,8 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
 
 import { getManifestForInviteCommittee } from '@agoric/inter-protocol/src/proposals/committee-proposal.js';
+import { interProtocolBundleSpecs } from '@agoric/inter-protocol/source-spec-registry.js';
+import { buildBundlePath } from '../lib/build-bundle.js';
 
 /**
  * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
@@ -21,6 +23,12 @@ export const defaultProposalBuilder = async (
 
   assert(voterAddresses, 'ECON_COMMITTEE_ADDRESSES is required');
 
+  const econCommitteeCharter = interProtocolBundleSpecs.econCommitteeCharter;
+  const econCommitteeCharterPath = await buildBundlePath(
+    import.meta.url,
+    econCommitteeCharter,
+  );
+
   return harden({
     sourceSpec: '@agoric/inter-protocol/src/proposals/committee-proposal.js',
     getManifestCall: [
@@ -28,13 +36,9 @@ export const defaultProposalBuilder = async (
       {
         voterAddresses,
         econCommitteeCharterRef: publishRef(
-          install(
-            '@agoric/inter-protocol/src/econCommitteeCharter.js',
-            '../bundles/bundle-econCommitteeCharter.js',
-            {
-              persist: true,
-            },
-          ),
+          install(econCommitteeCharter.packagePath, econCommitteeCharterPath, {
+            persist: true,
+          }),
         ),
       },
     ],
