@@ -74,7 +74,7 @@ async function run() {
   let blocksInThisPeriod = 0;
   let startOfLastPeriod = 0;
 
-  let lastTime = Date.now();
+  let lastTime = performance.now();
   let lineCount = 0;
 
   const stats = async flush => {
@@ -109,7 +109,7 @@ async function run() {
       progress.lastSlogTime = obj.time;
     }
 
-    let now = Date.now();
+    let now = performance.now();
     await maybeUpdateStats(now);
 
     if (!update) {
@@ -128,7 +128,7 @@ async function run() {
       maybeWait = new Promise(resolve => setTimeout(resolve, delayMS));
     }
     await maybeWait;
-    now = Date.now();
+    now = performance.now();
 
     if (now - startOfLastPeriod >= PROCESSING_PERIOD) {
       startOfLastPeriod = now;
@@ -152,7 +152,7 @@ async function run() {
     linesProcessedThisPeriod += 1;
     if (isAfterCommit) {
       blocksInThisPeriod += 1;
-      lastTime = Date.now();
+      lastTime = performance.now();
       await stats(true);
     }
   }

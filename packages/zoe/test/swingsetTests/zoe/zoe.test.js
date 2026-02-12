@@ -24,11 +24,11 @@ const CONTRACT_FILES = [
 ];
 
 test.before(async t => {
-  const start = Date.now();
+  const start = performance.now();
   const kernelBundles = await buildKernelBundles();
   const bundleCache = await unsafeSharedBundleCache;
   const { zcfBundle } = await bundleCache.loadRegistry(zoeSourceSpecRegistry);
-  const step2 = Date.now();
+  const step2 = performance.now();
   const contractBundles = {};
   const contractNames = [];
   await Promise.all(
@@ -48,7 +48,7 @@ test.before(async t => {
     }),
   );
   const bundles = { zcf: { bundle: zcfBundle }, ...contractBundles };
-  const step3 = Date.now();
+  const step3 = performance.now();
 
   const vats = {};
   await Promise.all(
@@ -70,7 +70,7 @@ test.before(async t => {
   config.defaultManagerType = 'xs-worker';
   config.relaxDurabilityRules = true;
 
-  const step4 = Date.now();
+  const step4 = performance.now();
   const ktime = `${(step2 - start) / 1000}s kernel`;
   const ctime = `${(step3 - step2) / 1000}s contracts`;
   const vtime = `${(step4 - step3) / 1000}s vats`;
