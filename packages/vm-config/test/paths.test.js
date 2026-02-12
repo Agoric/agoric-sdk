@@ -40,13 +40,13 @@ const allowedBuilderModules = new Set([
  * @param {string} currentPath
  */
 const walk = (node, onSourceSpec, onModule, currentPath = '$') => {
+  if (!node || typeof node !== 'object') {
+    return;
+  }
   if (Array.isArray(node)) {
     node.forEach((child, i) =>
       walk(child, onSourceSpec, onModule, `${currentPath}[${i}]`),
     );
-    return;
-  }
-  if (!node || typeof node !== 'object') {
     return;
   }
   const record = /** @type {Record<string, unknown>} */ (node);
