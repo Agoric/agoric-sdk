@@ -79,10 +79,6 @@ const makeFakeBridgeManager = () =>
   Far('fakeBridgeManager', {
     register(bridgeId, handler) {
       return Far('scopedBridgeManager', {
-        // @ts-expect-error TypeScript 6 stricter about generic type inference with bridgeId
-        getBridgeId() {
-          return bridgeId;
-        },
         fromBridge(_obj) {
           assert.fail(`expected fromBridge`);
         },
