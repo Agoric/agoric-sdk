@@ -6,7 +6,7 @@ import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import type {
   FullMessageDetails,
   YmaxOperationDetails,
-} from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.ts';
+} from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import { makeScalarBigMapStore, type Baggage } from '@agoric/vat-data';
 import type { VowTools } from '@agoric/vow';
 import { prepareVowTools } from '@agoric/vow/vat.js';

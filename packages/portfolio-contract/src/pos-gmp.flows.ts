@@ -34,7 +34,7 @@ import {
   sameEvmAddress,
 } from '@agoric/orchestration/src/utils/address.js';
 import { buildGMPPayload } from '@agoric/orchestration/src/utils/gmp.js';
-import { PermitWitnessTransferFromInputComponents } from '@agoric/orchestration/src/utils/permit2.ts';
+import { PermitWitnessTransferFromInputComponents } from '@agoric/orchestration/src/utils/permit2.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import type { MovementDesc } from '@agoric/portfolio-api';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
