@@ -8,6 +8,22 @@
     "skipLibCheck": true,
     "allowJs": true,
     "checkJs": true,
+    // Strictness audit 2026-02-24 by scripts/maintenance/typecheck-flag-report.mjs
+    //  alwaysStrict                           27 errors
+    //  strictPropertyInitialization           29 errors
+    //  noFallthroughCasesInSwitch             30 errors
+    //  noImplicitOverride                     30 errors
+    //  strictBindCallApply                    32 errors
+    //  noImplicitReturns                      47 errors
+    //  useUnknownInCatchVariables            128 errors
+    //  noUnusedParameters                    175 errors
+    //  exactOptionalPropertyTypes            221 errors
+    //  noUnusedLocals                        590 errors
+    //  noPropertyAccessFromIndexSignature    983 errors
+    //  noUncheckedIndexedAccess             1584 errors
+    //  strictFunctionTypes                  1717 errors
+    //  noImplicitAny                        8869 errors
+    //  strict                              10594 errors
     "strict": false,
     "strictNullChecks": true,
     "noImplicitThis": true,
