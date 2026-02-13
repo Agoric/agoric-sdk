@@ -8,7 +8,7 @@
  * makers for ongoing operations like rebalancing.
  *
  * **Proposals and Offer Args**
- * - {@link ProposalType.openPortfolio}: Initial funding with USDC, Access tokens, and protocol allocations
+ * - {@link ProposalType.openPortfolio}: Initial funding with USDC and protocol allocations
  * - {@link ProposalType.rebalance}: Add funds (give) or withdraw funds (want) from protocols
  * - {@link OfferArgsFor}: Cross-chain parameters like `destinationEVMChain` for EVM operations
  *
@@ -69,13 +69,14 @@ export const makeProposalShapes = (
   accessBrand?: Brand<'nat'>,
 ) => {
   const $Shape = makeNatAmountShape(usdcBrand);
-  const accessShape = harden({
+  const openOptionalGive = harden({
+    Deposit: $Shape,
     ...(accessBrand && { Access: makeNatAmountShape(accessBrand, 1n) }),
   });
 
   const openPortfolio = M.splitRecord(
     {
-      give: M.splitRecord(accessShape, { Deposit: $Shape }, {}),
+      give: M.splitRecord({}, openOptionalGive, {}),
     },
     { want: {}, exit: M.any() },
     {},
