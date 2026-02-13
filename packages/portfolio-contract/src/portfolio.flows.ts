@@ -949,8 +949,7 @@ const stepFlow = async (
             );
           }
 
-          await gInfo.ready;
-          await queuedStep.done;
+          await Promise.all([gInfo.ready, queuedStep.done]);
           return {};
         },
       });

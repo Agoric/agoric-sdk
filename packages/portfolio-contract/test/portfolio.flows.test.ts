@@ -2270,7 +2270,7 @@ const makeAccountEVMRace = test.macro({
           }
         }
 
-        await t.notThrowsAsync(B.ready);
+        await t.notThrowsAsync(Promise.all([B.ready, B.done]));
       }
 
       t.is(pKit.reader.getGMPInfo(chainName).err, undefined, 'account is ok');
