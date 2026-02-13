@@ -652,6 +652,7 @@ export const sendGMPContractCall = async (
   calls: ContractCall[],
   ...optsArgs: [OrchestrationOptions?]
 ) => {
+  await null;
   const {
     lca,
     gmpChain,
@@ -671,27 +672,32 @@ export const sendGMPContractCall = async (
     undefined,
     sourceAddress,
   );
-  appendTxIds(optsArgs[0]?.progressTracker, [txId]);
+  try {
+    appendTxIds(optsArgs[0]?.progressTracker, [txId]);
 
-  const { AXELAR_GMP, AXELAR_GAS } = gmpAddresses;
-  const memo: AxelarGmpOutgoingMemo = {
-    destination_chain: axelarId,
-    destination_address: remoteAddress,
-    payload: buildGMPPayload(calls, txId),
-    type: AxelarGMPMessageType.ContractCall,
-    fee: { amount: String(fee.value), recipient: AXELAR_GAS },
-  };
-  const { chainId } = await gmpChain.getChainInfo();
-  const gmp = {
-    chainId,
-    value: AXELAR_GMP,
-    encoding: 'bech32' as const,
-  };
-  await ctx.feeAccount.send(lca.getAddress(), fee, ...optsArgs);
-  await lca.transfer(gmp, fee, {
-    ...optsArgs[0],
-    memo: JSON.stringify(memo),
-  });
+    const { AXELAR_GMP, AXELAR_GAS } = gmpAddresses;
+    const memo: AxelarGmpOutgoingMemo = {
+      destination_chain: axelarId,
+      destination_address: remoteAddress,
+      payload: buildGMPPayload(calls, txId),
+      type: AxelarGMPMessageType.ContractCall,
+      fee: { amount: String(fee.value), recipient: AXELAR_GAS },
+    };
+    const { chainId } = await gmpChain.getChainInfo();
+    const gmp = {
+      chainId,
+      value: AXELAR_GMP,
+      encoding: 'bech32' as const,
+    };
+    await ctx.feeAccount.send(lca.getAddress(), fee, ...optsArgs);
+    await lca.transfer(gmp, fee, {
+      ...optsArgs[0],
+      memo: JSON.stringify(memo),
+    });
+  } catch (reason) {
+    resolverClient.unsubscribe(txId, `unsubscribe: ${reason}`);
+    throw reason;
+  }
   await result;
 };
 
@@ -726,6 +732,7 @@ export const sendPermit2GMP = async (
   transferAmount: bigint,
   ...optsArgs: [OrchestrationOptions?]
 ) => {
+  await null;
   const {
     lca,
     gmpChain,
@@ -771,26 +778,30 @@ export const sendPermit2GMP = async (
     undefined,
     sourceAddress,
   );
-
-  const { AXELAR_GMP, AXELAR_GAS } = gmpAddresses;
-  const memo: AxelarGmpOutgoingMemo = {
-    destination_chain: axelarId,
-    destination_address: remoteAddress,
-    payload: buildGMPPayload(calls, txId),
-    type: AxelarGMPMessageType.ContractCall,
-    fee: { amount: String(fee.value), recipient: AXELAR_GAS },
-  };
-  const { chainId } = await gmpChain.getChainInfo();
-  const gmp = {
-    chainId,
-    value: AXELAR_GMP,
-    encoding: 'bech32' as const,
-  };
-  await ctx.feeAccount.send(lca.getAddress(), fee, ...optsArgs);
-  await lca.transfer(gmp, fee, {
-    ...optsArgs[0],
-    memo: JSON.stringify(memo),
-  });
+  try {
+    const { AXELAR_GMP, AXELAR_GAS } = gmpAddresses;
+    const memo: AxelarGmpOutgoingMemo = {
+      destination_chain: axelarId,
+      destination_address: remoteAddress,
+      payload: buildGMPPayload(calls, txId),
+      type: AxelarGMPMessageType.ContractCall,
+      fee: { amount: String(fee.value), recipient: AXELAR_GAS },
+    };
+    const { chainId } = await gmpChain.getChainInfo();
+    const gmp = {
+      chainId,
+      value: AXELAR_GMP,
+      encoding: 'bech32' as const,
+    };
+    await ctx.feeAccount.send(lca.getAddress(), fee, ...optsArgs);
+    await lca.transfer(gmp, fee, {
+      ...optsArgs[0],
+      memo: JSON.stringify(memo),
+    });
+  } catch (reason) {
+    resolverClient.unsubscribe(txId, `unsubscribe: ${reason}`);
+    throw reason;
+  }
   await result;
 };
 
