@@ -28,9 +28,9 @@ export class CosmosRPCClient extends JSONRPCClient {
 
   #closedPK: PromiseWithResolvers<CloseEvent>;
 
-  #isClosed: boolean;
+  #isClosed = false;
 
-  #lastSentId: number;
+  #lastSentId = -1;
 
   #ws: WebSocket;
 
@@ -57,8 +57,6 @@ export class CosmosRPCClient extends JSONRPCClient {
     this.#subscriptions = new Map();
     this.#openedPK = Promise.withResolvers();
     this.#closedPK = Promise.withResolvers();
-    this.#isClosed = false;
-    this.#lastSentId = -1;
 
     ws.addEventListener('close', event => {
       this.#closedPK.resolve(event);
@@ -126,12 +124,12 @@ export class CosmosRPCClient extends JSONRPCClient {
     });
   }
 
-  async send(payload: any) {
+  override async send(payload: any) {
     if (this.#isClosed) throw Error('already closed');
     return super.send(payload);
   }
 
-  receive(response: JSONRPCResponse) {
+  override receive(response: JSONRPCResponse) {
     // console.log('Received RPC response:', response);
     return super.receive(response);
   }

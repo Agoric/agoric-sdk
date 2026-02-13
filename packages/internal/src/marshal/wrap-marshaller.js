@@ -33,7 +33,7 @@ const { slotToWrapper, wrapperToSlot } = (() => {
   /** @template [Slot=unknown] */
   class SlotWrapper {
     /** @type {InterfaceSpec} */
-    [Symbol.toStringTag];
+    [Symbol.toStringTag] = 'Alleged: SlotWrapper';
 
     /**
      * @param {Slot} slot

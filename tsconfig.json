@@ -9,11 +9,6 @@
     "allowJs": true,
     "checkJs": true,
     // Strictness audit 2026-02-03 by scripts/maintenance/typecheck-flag-report.mjs
-    // alwaysStrict: 0
-    // strictPropertyInitialization: 2
-    // noFallthroughCasesInSwitch: 3
-    // noImplicitOverride: 3
-    // strictBindCallApply: 5
     // noImplicitReturns: 19
     // useUnknownInCatchVariables: 101
     // noUnusedParameters: 149
@@ -27,6 +22,11 @@
     "strict": false,
     "strictNullChecks": true,
     "noImplicitThis": true,
+    "alwaysStrict": true,
+    "strictPropertyInitialization": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "strictBindCallApply": true,
     "noUncheckedSideEffectImports": true,
     "erasableSyntaxOnly": true,
     "verbatimModuleSyntax": true,
