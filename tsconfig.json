@@ -10,7 +10,6 @@
     "checkJs": true,
     "allowSyntheticDefaultImports": true,
     "strict": false,
-    "downlevelIteration": true,
     "strictNullChecks": true,
     "noImplicitThis": true,
     "noUncheckedSideEffectImports": true,
