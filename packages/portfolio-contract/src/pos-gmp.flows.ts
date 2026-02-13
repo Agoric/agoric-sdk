@@ -687,11 +687,16 @@ export const sendGMPContractCall = async (
     value: AXELAR_GMP,
     encoding: 'bech32' as const,
   };
-  await ctx.feeAccount.send(lca.getAddress(), fee, ...optsArgs);
-  await lca.transfer(gmp, fee, {
-    ...optsArgs[0],
-    memo: JSON.stringify(memo),
-  });
+  try {
+    await ctx.feeAccount.send(lca.getAddress(), fee, ...optsArgs);
+    await lca.transfer(gmp, fee, {
+      ...optsArgs[0],
+      memo: JSON.stringify(memo),
+    });
+  } catch (reason) {
+    resolverClient.unsubscribe(txId, `unsubscribe: ${reason}`);
+    throw reason;
+  }
   await result;
 };
 
@@ -786,11 +791,16 @@ export const sendPermit2GMP = async (
     value: AXELAR_GMP,
     encoding: 'bech32' as const,
   };
-  await ctx.feeAccount.send(lca.getAddress(), fee, ...optsArgs);
-  await lca.transfer(gmp, fee, {
-    ...optsArgs[0],
-    memo: JSON.stringify(memo),
-  });
+  try {
+    await ctx.feeAccount.send(lca.getAddress(), fee, ...optsArgs);
+    await lca.transfer(gmp, fee, {
+      ...optsArgs[0],
+      memo: JSON.stringify(memo),
+    });
+  } catch (reason) {
+    resolverClient.unsubscribe(txId, `unsubscribe: ${reason}`);
+    throw reason;
+  }
   await result;
 };
 
