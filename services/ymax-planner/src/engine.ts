@@ -791,7 +791,6 @@ export const startEngine = async (
     log: console.warn.bind(console),
     error: console.error.bind(console),
     marshaller,
-    now,
     signingSmartWalletKit,
     vstoragePathPrefixes,
     pendingTxAbortControllers,

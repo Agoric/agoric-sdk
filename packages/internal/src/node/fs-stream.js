@@ -60,7 +60,16 @@ export const makeFsStreamWriter = async filePath => {
     return { handle: fh, stream: fh.createWriteStream({ flush: true }) };
   })();
   await fsStreamReady(stream);
-  const writeAsync = promisify(stream.write.bind(stream));
+  const writeAsync = data =>
+    new Promise((resolve, reject) => {
+      const waitForDrain = !stream.write(data, err => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve(waitForDrain);
+      });
+    });
   const closeAsync =
     useStdout || !(/** @type {any} */ (stream).close)
       ? undefined
