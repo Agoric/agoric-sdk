@@ -17,7 +17,7 @@ import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js
 import {
   getPermitWitnessTransferFromData,
   type TokenPermissions,
-} from '@agoric/orchestration/src/utils/permit2.ts';
+} from '@agoric/orchestration/src/utils/permit2.js';
 import type { VowTools } from '@agoric/vow';
 import type { InvitationSpec } from '@agoric/smart-wallet/src/invitations.js';
 import type { Instance } from '@agoric/zoe';
@@ -41,8 +41,8 @@ import type {
 import {
   getYmaxStandaloneOperationData,
   getYmaxWitness,
-} from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.ts';
-import type { TargetAllocation } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.ts';
+} from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
+import type { TargetAllocation } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import type { TimerService } from '@agoric/time';
 import type { ERemote } from '@agoric/internal';
 import { E } from '@endo/far';

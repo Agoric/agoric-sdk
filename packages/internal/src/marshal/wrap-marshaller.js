@@ -27,6 +27,7 @@ const { slotToWrapper, wrapperToSlot } = (() => {
   /** @typedef {'Remotable' | `Alleged: ${string}`} InterfaceSpec */
 
   /** @template [Slot=unknown] */
+  // @ts-expect-error TypeScript 6 stricter: exported class cannot have private/protected properties
   class SlotWrapper {
     /** @type {Slot} */
     #slot;

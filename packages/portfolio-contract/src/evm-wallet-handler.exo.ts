@@ -5,7 +5,7 @@
  */
 import { makeTracer, type ERemote, type Remote } from '@agoric/internal';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
-import type { WithSignature } from '@agoric/orchestration/src/utils/viem.ts';
+import type { WithSignature } from '@agoric/orchestration/src/utils/viem.js';
 import {
   encodeType,
   hashStruct,
@@ -17,13 +17,13 @@ import type { StatusFor } from '@agoric/portfolio-api';
 import type {
   YmaxPermitWitnessTransferFromData,
   YmaxStandaloneOperationData,
-} from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.ts';
+} from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import {
   makeEVMHandlerUtils,
   type FullMessageDetails,
   type PermitDetails,
   type YmaxOperationDetails,
-} from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.ts';
+} from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import { provideLazy, type MapStore } from '@agoric/store';
 import type { TimerService } from '@agoric/time';
 import { VowShape, type Vow, type VowTools } from '@agoric/vow';
