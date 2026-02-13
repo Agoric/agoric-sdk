@@ -80,6 +80,7 @@ import {
   provideEVMAccount,
   provideEVMAccountWithPermit,
   sendGMPContractCall,
+  sendPermit2GMP,
   type EVMContext,
 } from '../src/pos-gmp.flows.ts';
 import {
@@ -3512,6 +3513,67 @@ test(
     await t.throwsAsync(() => sendGMPContractCall(ctx, gmpAcct, calls), {
       message: 'fee send failed',
     });
+
+    await eventLoopIteration();
+    const values = storage.getDeserialized('published.ymax0.pendingTxs.tx0');
+    const last = values.at(-1) as any;
+    t.is(last.status, 'failed', 'transaction settled as failed');
+    t.truthy(last.rejectionReason, 'includes rejection reason');
+  },
+);
+
+test(
+  'sendPermit2GMP unsubscribes resolver on send failure',
+  expectUnhandled(1),
+  async t => {
+    const { resolverClient, storage } = mocks({});
+    const lcaAddress = harden({ chainId: 'agoric-3', value: 'agoric1test' });
+    const ctx = {
+      feeAccount: {
+        getAddress: () => lcaAddress,
+        send: async () => {
+          throw Error('fee send failed');
+        },
+      },
+      lca: { getAddress: () => lcaAddress, transfer: async () => {} },
+      gmpFee: { denom: 'uaxl', value: 100n },
+      gmpChain: {
+        getChainInfo: async () => ({ chainId: 'axelar-testnet-lisbon-3' }),
+      },
+      gmpAddresses,
+      resolverClient,
+      axelarIds: axelarIdsMock,
+      addresses: contractsMock.Avalanche,
+      nobleForwardingChannel: 'channel-0',
+    } as unknown as EVMContext;
+
+    const gmpAcct = {
+      namespace: 'eip155',
+      chainName: 'Avalanche',
+      remoteAddress: '0x1234567890AbcdEF1234567890aBcdef12345678',
+      chainId: 'eip155:43114',
+    } as const;
+
+    const permit2Payload = {
+      permit: {
+        permitted: {
+          token: contractsMock.Avalanche.usdc,
+          amount: 1_000_000_000n,
+        },
+        nonce: 7115368379195441n,
+        deadline: 1357923600n,
+      },
+      owner: '0x1111111111111111111111111111111111111111' as `0x${string}`,
+      witness:
+        '0x0000000000000000000000000000000000000000000000000000000000000000' as `0x${string}`,
+      witnessTypeString: 'OpenPortfolioWitness',
+      signature: '0x1234' as `0x${string}`,
+    };
+
+    await t.throwsAsync(
+      () => sendPermit2GMP(ctx, gmpAcct, permit2Payload, 1_000_000n),
+      { message: 'fee send failed' },
+    );
 
     await eventLoopIteration();
     const values = storage.getDeserialized('published.ymax0.pendingTxs.tx0');

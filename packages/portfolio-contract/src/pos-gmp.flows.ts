@@ -652,6 +652,7 @@ export const sendGMPContractCall = async (
   calls: ContractCall[],
   ...optsArgs: [OrchestrationOptions?]
 ) => {
+  await null;
   const {
     lca,
     gmpChain,
@@ -731,6 +732,7 @@ export const sendPermit2GMP = async (
   transferAmount: bigint,
   ...optsArgs: [OrchestrationOptions?]
 ) => {
+  await null;
   const {
     lca,
     gmpChain,
