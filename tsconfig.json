@@ -8,7 +8,6 @@
     "skipLibCheck": true,
     "allowJs": true,
     "checkJs": true,
-    "allowSyntheticDefaultImports": true,
     "strict": false,
     "strictNullChecks": true,
     "noImplicitThis": true,
