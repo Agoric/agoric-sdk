@@ -429,7 +429,7 @@ export const processPortfolioEvents = async (
       ]);
       const status = marshaller.fromCapData(statusCapdata);
       mustMatch(status, PortfolioStatusShapeExt, path);
-      const flowKeys = new Set(flowKeysResp.result.children);
+      const flowKeys = new Set(flowKeysResp.result.children as string[]);
 
       const { depositAddress } = status;
       if (depositAddress) {

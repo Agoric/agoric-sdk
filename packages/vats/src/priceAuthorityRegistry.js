@@ -173,6 +173,7 @@ export const providePriceAuthorityRegistry = baggage => {
   );
 
   /** @type {PriceAuthorityRegistryAdmin} */
+  // @ts-expect-error TypeScript 6 stricter about async/sync mismatch - typedef says Promise<Deleter> but implementation is sync
   const adminFacet = prepareExo(
     baggage,
     'price authority admin facet',
@@ -206,7 +207,6 @@ export const providePriceAuthorityRegistry = baggage => {
         }
 
         return Far('deleter', {
-          // @ts-expect-error XXX callWhen
           delete() {
             (priceStore.has(brandOut) && priceStore.get(brandOut) === record) ||
               Fail`Price authority already dropped`;

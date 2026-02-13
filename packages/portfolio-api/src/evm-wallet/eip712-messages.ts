@@ -213,7 +213,6 @@ export const getYmaxWitness = <T extends OperationTypeNames>(
     TypedDataToPrimitiveTypes<YmaxWitnessTypes>[YmaxWitnessTypeName<T>]
   >,
 ): Witness<YmaxWitnessTypes<T>, YmaxWitnessMappedTypeParam<T>> =>
-  // @ts-expect-error some generic inference issue I suppose?
   makeWitness(
     // @ts-expect-error some generic inference issue I suppose?
     data,
