@@ -2289,7 +2289,7 @@ test('A pays fee; B adopts', makeAccountEVMRace, {
   provide: provideEVMAccount,
   headStart: 'send',
 });
-test.failing(
+test(
   'A fails to pay fee; B arrives and recovers',
   expectUnhandled(1, makeAccountEVMRace),
   {
@@ -2311,7 +2311,7 @@ test(
   expectUnhandled(1, makeAccountEVMRace),
   { provide: provideEVMAccount, headStart: 'register', errAt: 'txfr' },
 );
-test.failing(
+test(
   'A times out on axelar; B arrives and recovers',
   expectUnhandled(1, makeAccountEVMRace),
   { provide: provideEVMAccount, headStart: 'txfr', errAt: 'txfr' },
@@ -2321,7 +2321,7 @@ test('A gets rejected txN; B adopts', expectUnhandled(1, makeAccountEVMRace), {
   headStart: 'txfr',
   errAt: 'resolve',
 });
-test.failing(
+test(
   'A gets rejected txN; B arrives and recovers',
   expectUnhandled(1, makeAccountEVMRace),
   {
@@ -2364,7 +2364,7 @@ test(
     errAt: 'txfr',
   },
 );
-test.failing(
+test(
   'withPermit: A times out on axelar; B arrives and recovers',
   expectUnhandled(1, makeAccountEVMRace),
   {
@@ -2384,7 +2384,7 @@ test(
     errAt: 'resolve',
   },
 );
-test.failing(
+test(
   'withPermit: A gets rejected txN; B arrives and recovers',
   expectUnhandled(1, makeAccountEVMRace),
   {

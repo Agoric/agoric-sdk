@@ -166,118 +166,126 @@ const makeProvideEVMAccount = ({
     const reserve = pk.manager.reserveAccountState(chainName);
     const readyP = reserve.ready as unknown as Promise<void>; // XXX host/guest
 
-    // Only use the account manager if we're creating a new account.
-    const manager = reserve.state === 'new' ? pk.manager : undefined;
+    // Only use the account manager if we're responsible for resolving the account info.
+    const isNewAccount = reserve.state === 'new';
+    const manager =
+      isNewAccount || reserve.state === 'failed' ? pk.manager : undefined;
 
-    const evmAccount = manager
-      ? predictAddress(lca.getAddress().value)
-      : pk.reader.getGMPInfo(chainName);
+    const handleFail = (reason: unknown) => {
+      traceChain('failed to', mode, reason);
+      manager?.releaseAccount(chainName, reason);
+    };
 
-    // Bail out early if another caller created the account, and this is not a deposit.
-    if (
-      ['pending', 'ok'].includes(reserve.state) &&
-      mode !== 'createAndDeposit'
-    ) {
-      return {
-        ...evmAccount,
-        ready: readyP,
-        done: readyP,
-      };
-    }
+    try {
+      const principalAccount = lca.getAddress().value;
+      const evmAccount = isNewAccount
+        ? predictAddress(principalAccount)
+        : pk.reader.getGMPInfo(chainName);
 
-    if (manager) {
-      manager.initAccountInfo(evmAccount);
-    } else {
-      const expectedAddress = predictAddress(
-        lca.getAddress().value,
-      ).remoteAddress;
-
-      if (!sameEvmAddress(evmAccount.remoteAddress, expectedAddress)) {
-        const done = Promise.reject(
-          makeError(
-            `account already exists at ${evmAccount.remoteAddress}, factory expects ${expectedAddress}`,
-          ),
-        );
-
+      // Bail out early if another caller created the account, and this is not a deposit.
+      if (!manager && mode !== 'createAndDeposit') {
         return {
           ...evmAccount,
           ready: readyP,
-          done,
+          done: readyP,
         };
       }
-    }
 
-    const installContractWithDeposit = async () => {
-      let txId: TxId | undefined;
-      await null;
-      try {
-        const axelarId = ctx.axelarIds[chainName];
-        const fee = { denom: ctx.gmpFeeInfo.denom, value: gmp.fee };
-        fee.value > 0n || Fail`axelar makeAccount requires > 0 fee`;
+      if (isNewAccount) {
+        manager!.initAccountInfo(evmAccount);
+      } else {
+        const expectedAddress = predictAddress(principalAccount).remoteAddress;
 
-        const contractAccount = await ctx.contractAccount;
+        if (!sameEvmAddress(evmAccount.remoteAddress, expectedAddress)) {
+          const reason = makeError(
+            `account already exists at ${evmAccount.remoteAddress}, factory expects ${expectedAddress}`,
+          );
+          const done = Promise.reject(reason);
+          handleFail(reason);
 
-        const src = contractAccount.getAddress();
-        traceChain('Axelar fee sent from', src.value);
-
-        const contractKey = {
-          makeAccount: 'factory',
-          createAndDeposit: 'depositFactory',
-        } as const;
-        const destinationAddress = contracts[contractKey[mode]];
-
-        const sourceAddress = coerceAccountId(
-          mode === 'createAndDeposit'
-            ? contractAccount.getAddress()
-            : lca.getAddress(),
-        );
-        const watchTx = ctx.resolverClient.registerTransaction(
-          txType,
-          `${evmAccount.chainId}:${destinationAddress}`,
-          undefined,
-          evmAccount.remoteAddress,
-          sourceAddress,
-          factoryAddress,
-        );
-        txId = watchTx.txId;
-        appendTxIds(opts.orchOpts?.progressTracker, [txId]);
-
-        const result = watchTx.result as unknown as Promise<void>; // XXX host/guest;
-        result.catch(err => {
-          trace(txId, 'rejected', err);
-        });
-
-        await sendCall({
-          dest: { axelarId, address: destinationAddress },
-          portfolioLca: lca,
-          fee,
-          gmpAddresses: ctx.gmpAddresses,
-          gmpChain: gmp.chain,
-          contractAccount,
-          expectedWalletAddress: evmAccount.remoteAddress,
-          ...('orchOpts' in opts ? { orchOpts: opts.orchOpts } : {}),
-        });
-
-        traceChain('await', mode, txId);
-        await result;
-
-        manager?.resolveAccount(evmAccount);
-      } catch (reason) {
-        traceChain('failed to', mode, reason);
-        manager?.releaseAccount(chainName, reason);
-        if (txId) {
-          ctx.resolverClient.unsubscribe(txId, `unsubscribe: ${reason}`);
+          return {
+            ...evmAccount,
+            ready: readyP,
+            done,
+          };
         }
-        throw reason;
       }
-    };
 
-    const installed = installContractWithDeposit();
-    return {
-      ...evmAccount,
-      ready: readyP,
-      done: installed.then(() => readyP),
-    };
+      const installContractWithDeposit = async () => {
+        let txId: TxId | undefined;
+        await null;
+        try {
+          const axelarId = ctx.axelarIds[chainName];
+          const fee = { denom: ctx.gmpFeeInfo.denom, value: gmp.fee };
+          fee.value > 0n || Fail`axelar makeAccount requires > 0 fee`;
+
+          const contractAccount = await ctx.contractAccount;
+
+          const src = contractAccount.getAddress();
+          traceChain('Axelar fee sent from', src.value);
+
+          const contractKey = {
+            makeAccount: 'factory',
+            createAndDeposit: 'depositFactory',
+          } as const;
+          const destinationAddress = contracts[contractKey[mode]];
+
+          const sourceAddress = coerceAccountId(
+            mode === 'createAndDeposit'
+              ? contractAccount.getAddress()
+              : lca.getAddress(),
+          );
+          const watchTx = ctx.resolverClient.registerTransaction(
+            txType,
+            `${evmAccount.chainId}:${destinationAddress}`,
+            undefined,
+            evmAccount.remoteAddress,
+            sourceAddress,
+            factoryAddress,
+          );
+          txId = watchTx.txId;
+          appendTxIds(opts.orchOpts?.progressTracker, [txId]);
+
+          const result = watchTx.result as unknown as Promise<void>; // XXX host/guest;
+          result.catch(err => {
+            trace(txId, 'rejected', err);
+          });
+
+          await sendCall({
+            dest: { axelarId, address: destinationAddress },
+            portfolioLca: lca,
+            fee,
+            gmpAddresses: ctx.gmpAddresses,
+            gmpChain: gmp.chain,
+            contractAccount,
+            expectedWalletAddress: evmAccount.remoteAddress,
+            ...('orchOpts' in opts ? { orchOpts: opts.orchOpts } : {}),
+          });
+
+          traceChain('await', mode, txId);
+          await result;
+
+          manager?.resolveAccount(evmAccount);
+        } catch (reason) {
+          handleFail(reason);
+          if (txId) {
+            ctx.resolverClient.unsubscribe(txId, `unsubscribe: ${reason}`);
+          }
+          throw reason;
+        }
+        await readyP;
+      };
+
+      const done = installContractWithDeposit();
+      return {
+        ...evmAccount,
+        ready: readyP,
+        done,
+      };
+    } catch (reason) {
+      handleFail(reason);
+      throw reason;
+    }
   };
 };
 
