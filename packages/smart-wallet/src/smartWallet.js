@@ -1295,6 +1295,7 @@ export const prepareSmartWallet = (baggage, shared, setTestJig) => {
                 // but leave async rejections alone because the offer handler recorded them
                 // with greater detail
                 recordError(err);
+                return undefined;
               }
             },
             // record errors in the unserialize and leave the rejection handled

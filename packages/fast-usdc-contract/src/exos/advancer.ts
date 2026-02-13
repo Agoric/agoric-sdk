@@ -259,7 +259,7 @@ export const prepareAdvancerKit = (
               );
             } else {
               // This is supposed to be caught in handleTransactionEvent()
-              Fail`🚨 can only transfer to Agoric addresses, via IBC, or via CCTP`;
+              throw Fail`🚨 can only transfer to Agoric addresses, via IBC, or via CCTP`;
             }
           });
         },

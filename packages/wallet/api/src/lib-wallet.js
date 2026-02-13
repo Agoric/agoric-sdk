@@ -1249,6 +1249,7 @@ export function makeWalletRoot({
           if (!exited) {
             return subscribeToUpdates(id, seat);
           }
+          return undefined;
         });
 
       const offerResultP = E(seat).getOfferResult();

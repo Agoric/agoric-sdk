@@ -1580,7 +1580,7 @@ const prepareFinalizer = (zone, { watch }) => {
     },
     finalize(obj) {
       if (!objToFinalizerInfo.has(obj)) {
-        return;
+        return undefined;
       }
       const disposeInfo = objToFinalizerInfo.get(obj);
       if ('conn' in disposeInfo) {
@@ -1594,6 +1594,7 @@ const prepareFinalizer = (zone, { watch }) => {
         objToFinalizerInfo.delete(obj);
         return watch(E(closer).close());
       }
+      return undefined;
     },
     unpin(obj) {
       objToFinalizerInfo.delete(obj);

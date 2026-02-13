@@ -59,7 +59,7 @@ test('makeHelpers', async t => {
       default:
         break;
     }
-    Fail`port ${q(destPortName)} not implemented for message ${msg}`;
+    throw Fail`port ${q(destPortName)} not implemented for message ${msg}`;
   };
   const testKit = await makeCosmicSwingsetTestKit(receiveBridgeSend);
   const { pushCoreEval, runNextBlock, swingStore, shutdown } = testKit;
@@ -134,7 +134,7 @@ test('vat lifecycle', async t => {
       default:
         break;
     }
-    Fail`port ${q(destPortName)} not implemented for message ${msg}`;
+    throw Fail`port ${q(destPortName)} not implemented for message ${msg}`;
   };
 
   // Launch the swingset and make a vat with some state.
