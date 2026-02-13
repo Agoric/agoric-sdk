@@ -10,7 +10,7 @@ import { makeInaccessibleVal } from './inaccessible-val.js';
 /**
  * @import {WeakMapAPI} from '@endo/cache-map';
  * @import {EOnly} from '@endo/eventual-send';
- * @import {RemotableObject, Simplify} from '@endo/pass-style';
+ * @import {PassStyled, Simplify} from '@endo/pass-style';
  * @import {CapData, Passable, Marshal, MakeMarshalOptions} from '@endo/marshal';
  * @import {ERemote} from '../types.js';
  */
@@ -23,70 +23,62 @@ import { makeInaccessibleVal } from './inaccessible-val.js';
  * @typedef {Simplify<EOnly<Marshal<Slot>>>} EMarshaller
  */
 
-const { slotToWrapper, wrapperToSlot } = (() => {
-  /** @typedef {'Remotable' | `Alleged: ${string}`} InterfaceSpec */
+/** @typedef {'Remotable' | `Alleged: ${string}`} InterfaceSpec */
 
-  /** @template [Slot=unknown] */
-  // @ts-expect-error TypeScript 6 stricter: exported class cannot have private/protected properties
-  class SlotWrapper {
-    /** @type {Slot} */
-    #slot;
+/** @template [Slot=unknown] */
+class SlotWrapper {
+  /** @type {Slot} */
+  #slot;
 
-    /** @type {InterfaceSpec} */
-    [Symbol.toStringTag];
-
-    /**
-     * @param {Slot} slot
-     * @param {string} [iface]
-     */
-    constructor(slot, iface) {
-      if (iface == null || iface === 'Remotable') {
-        iface = 'Remotable';
-      } else if (!iface.startsWith('Alleged: ')) {
-        iface = `Alleged: ${iface}`;
-      }
-      this.#slot = slot;
-      this[Symbol.toStringTag] = /** @type {InterfaceSpec} */ (iface);
-    }
-
-    /** @param {SlotWrapper} wrapper */
-    static getSlot(wrapper) {
-      return wrapper.#slot;
-    }
-  }
-  Object.defineProperties(SlotWrapper.prototype, {
-    [PASS_STYLE]: { value: 'remotable' },
-    [Symbol.toStringTag]: { value: 'Alleged: SlotWrapper' },
-  });
-  Reflect.deleteProperty(SlotWrapper.prototype, 'constructor');
-  harden(SlotWrapper);
+  /** @type {InterfaceSpec} */
+  [Symbol.toStringTag];
 
   /**
-   * @type {<Slot = unknown>(
-   *   wrapper: SlotWrapper<Slot> & RemotableObject<InterfaceSpec>,
-   * ) => Slot}
+   * @param {Slot} slot
+   * @param {string} [iface]
    */
-  const getSlot = SlotWrapper.getSlot;
+  constructor(slot, iface) {
+    if (iface == null || iface === 'Remotable') {
+      iface = 'Remotable';
+    } else if (!iface.startsWith('Alleged: ')) {
+      iface = `Alleged: ${iface}`;
+    }
+    this.#slot = slot;
+    this[Symbol.toStringTag] = /** @type {InterfaceSpec} */ (iface);
+  }
 
-  return {
-    /**
-     * @template [Slot=unknown]
-     * @param {Slot} slot
-     * @param {string} [iface]
-     */
-    slotToWrapper: (slot, iface) =>
-      /** @type {SlotWrapper<Slot> & RemotableObject<InterfaceSpec>} */ (
-        harden(new SlotWrapper(slot, iface))
-      ),
-
-    wrapperToSlot: getSlot,
-  };
-})();
+  /**
+   * @template [Slot=unknown]
+   * @param {SlotWrapper<Slot>} wrapper
+   * @returns {Slot}
+   */
+  static getSlot(wrapper) {
+    return wrapper.#slot;
+  }
+}
+Object.defineProperties(SlotWrapper.prototype, {
+  [PASS_STYLE]: { value: 'remotable' },
+  [Symbol.toStringTag]: { value: 'Alleged: SlotWrapper' },
+});
+Reflect.deleteProperty(SlotWrapper.prototype, 'constructor');
+harden(SlotWrapper);
 
 /**
- * @template [Slot=unknown] @typedef {ReturnType<typeof slotToWrapper<Slot>>}
- *   SlotWrapper
+ * @template [Slot=unknown]
+ * @typedef {SlotWrapper<Slot> & PassStyled<'remotable', InterfaceSpec>} RemotableSlotWrapper
  */
+
+/**
+ * @template [Slot=unknown]
+ * @param {Slot} slot
+ * @param {string} [iface]
+ */
+const slotToWrapper = (slot, iface) =>
+  /** @type {RemotableSlotWrapper<Slot>} */ (
+    harden(new SlotWrapper(slot, iface))
+  );
+
+const wrapperToSlot = SlotWrapper.getSlot;
 
 const capacityOfDefaultCache = 50;
 
@@ -161,7 +153,7 @@ export const wrapRemoteMarshallerSendSlotsOnly = (
     marshalOptions,
   );
 
-  /** @type {Map<Slot, SlotWrapper<NonNullable<Slot>>>} */
+  /** @type {Map<Slot, RemotableSlotWrapper<NonNullable<Slot>>>} */
   const currentSlotToWrapper = new Map();
 
   const convertWrapperToSlot = /** @type {typeof wrapperToSlot<Slot>} */ (
@@ -201,13 +193,13 @@ export const wrapRemoteMarshallerSendSlotsOnly = (
    * marshaller to recreate the passable data.
    *
    * @param {Slot[]} slots
-   * @param {(index: number) => SlotWrapper<NonNullable<Slot>>} getWrapper
+   * @param {(index: number) => RemotableSlotWrapper<NonNullable<Slot>>} getWrapper
    * @returns {Promise<(object | null)[]>}
    */
   const mapSlotsToCaps = async (slots, getWrapper) => {
     let hasRemoteCap = false;
     const { length } = slots;
-    /** @type {(SlotWrapper<NonNullable<Slot>> | null | undefined)[]} */
+    /** @type {(RemotableSlotWrapper<NonNullable<Slot>> | null | undefined)[]} */
     const slotWrapperMappedSlots = Array.from({ length });
     /** @type {(object | null | undefined)[]} */
     const locallyResolvedCapSlots = Array.from({ length });
@@ -305,7 +297,7 @@ export const wrapRemoteMarshallerSendSlotsOnly = (
       const remotelyResolvedSlotsCapData =
         await E(marshaller).toCapData(remoteCapsToResolve);
       try {
-        /** @type {(SlotWrapper<Slot> | null | undefined)[]} */
+        /** @type {(RemotableSlotWrapper<Slot> | null | undefined)[]} */
         const slotWrapperMappedSlots = slotWrapperMarshaller.fromCapData(
           remotelyResolvedSlotsCapData,
         );
