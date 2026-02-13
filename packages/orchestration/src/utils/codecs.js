@@ -166,7 +166,8 @@ export { MsgTransferType, MsgTransferResponseType };
 const AnyRawHelper = CodecHelper(AnyType);
 const AnyToJSON = {
   /**
-   * @template {string} [TU=keyof TypeFromUrl]
+   * TypeScript 6 note: Removed {string} constraint on TU as keyof infers to string | number | symbol
+   * @template [TU=keyof TypeFromUrl]
    * @param {Partial<Omit<AnyType, 'typeUrl'> & { typeUrl: TU }>} msg
    */
   toJSON: msg => {

@@ -107,6 +107,7 @@ export const makeScalarWeakMapStore = (
   tag = 'key',
   { longLived = true, keyShape = undefined, valueShape = undefined } = {},
 ) => {
+  // @ts-expect-error TypeScript 6 doesn't support union constructor expressions
   const jsmap = new (longLived ? WeakMap : Map)();
   if (keyShape !== undefined) {
     assertPattern(keyShape);
