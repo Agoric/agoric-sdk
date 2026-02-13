@@ -671,23 +671,23 @@ export const sendGMPContractCall = async (
     undefined,
     sourceAddress,
   );
-  appendTxIds(optsArgs[0]?.progressTracker, [txId]);
-
-  const { AXELAR_GMP, AXELAR_GAS } = gmpAddresses;
-  const memo: AxelarGmpOutgoingMemo = {
-    destination_chain: axelarId,
-    destination_address: remoteAddress,
-    payload: buildGMPPayload(calls, txId),
-    type: AxelarGMPMessageType.ContractCall,
-    fee: { amount: String(fee.value), recipient: AXELAR_GAS },
-  };
-  const { chainId } = await gmpChain.getChainInfo();
-  const gmp = {
-    chainId,
-    value: AXELAR_GMP,
-    encoding: 'bech32' as const,
-  };
   try {
+    appendTxIds(optsArgs[0]?.progressTracker, [txId]);
+
+    const { AXELAR_GMP, AXELAR_GAS } = gmpAddresses;
+    const memo: AxelarGmpOutgoingMemo = {
+      destination_chain: axelarId,
+      destination_address: remoteAddress,
+      payload: buildGMPPayload(calls, txId),
+      type: AxelarGMPMessageType.ContractCall,
+      fee: { amount: String(fee.value), recipient: AXELAR_GAS },
+    };
+    const { chainId } = await gmpChain.getChainInfo();
+    const gmp = {
+      chainId,
+      value: AXELAR_GMP,
+      encoding: 'bech32' as const,
+    };
     await ctx.feeAccount.send(lca.getAddress(), fee, ...optsArgs);
     await lca.transfer(gmp, fee, {
       ...optsArgs[0],
@@ -776,22 +776,21 @@ export const sendPermit2GMP = async (
     undefined,
     sourceAddress,
   );
-
-  const { AXELAR_GMP, AXELAR_GAS } = gmpAddresses;
-  const memo: AxelarGmpOutgoingMemo = {
-    destination_chain: axelarId,
-    destination_address: remoteAddress,
-    payload: buildGMPPayload(calls, txId),
-    type: AxelarGMPMessageType.ContractCall,
-    fee: { amount: String(fee.value), recipient: AXELAR_GAS },
-  };
-  const { chainId } = await gmpChain.getChainInfo();
-  const gmp = {
-    chainId,
-    value: AXELAR_GMP,
-    encoding: 'bech32' as const,
-  };
   try {
+    const { AXELAR_GMP, AXELAR_GAS } = gmpAddresses;
+    const memo: AxelarGmpOutgoingMemo = {
+      destination_chain: axelarId,
+      destination_address: remoteAddress,
+      payload: buildGMPPayload(calls, txId),
+      type: AxelarGMPMessageType.ContractCall,
+      fee: { amount: String(fee.value), recipient: AXELAR_GAS },
+    };
+    const { chainId } = await gmpChain.getChainInfo();
+    const gmp = {
+      chainId,
+      value: AXELAR_GMP,
+      encoding: 'bech32' as const,
+    };
     await ctx.feeAccount.send(lca.getAddress(), fee, ...optsArgs);
     await lca.transfer(gmp, fee, {
       ...optsArgs[0],
