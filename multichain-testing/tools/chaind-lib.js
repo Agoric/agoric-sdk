@@ -224,6 +224,7 @@ export const makeAgd = ({ execFileSync }) => {
         } catch (e) {
           console.error(e);
           console.info('output:', out);
+          throw e;
         }
       },
     });
@@ -284,6 +285,7 @@ export const makeAgd = ({ execFileSync }) => {
         } catch (e) {
           console.error(e);
           console.info('output:', out);
+          throw e;
         }
       },
       ...ro,

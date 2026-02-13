@@ -61,7 +61,7 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
         return handleVstorage(msg);
       }
       default:
-        Fail`port ${q(destPortName)} not implemented for message ${msg}`;
+        throw Fail`port ${q(destPortName)} not implemented for message ${msg}`;
     }
   };
   const options = {

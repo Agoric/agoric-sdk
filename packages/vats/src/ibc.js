@@ -651,6 +651,7 @@ export const prepareIBCProtocol = (zone, powers) => {
               console.error('Unexpected IBC_EVENT', obj.event);
               assert.fail(X`unrecognized method ${obj.event}`, TypeError);
           }
+          return undefined;
         },
       },
       util: {
@@ -830,6 +831,7 @@ export const prepareIBCProtocol = (zone, powers) => {
                 `${channelKey}: async negotiated version was ${negotiatedVersion} but synchronous version was ${version}`,
               );
             }
+            return undefined;
           } catch (e) {
             // Clean up after our failed attempt.
             channelKeyToAttempt.delete(channelKey);

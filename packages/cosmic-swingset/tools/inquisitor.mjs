@@ -810,7 +810,7 @@ const main = async (argv, options = {}, powers = {}) => {
         return handleVstorage(msg);
       }
       default:
-        Fail`[inquisitor] bridge port ${q(destPort)} not implemented for message ${msg}`;
+        throw Fail`[inquisitor] bridge port ${q(destPort)} not implemented for message ${msg}`;
     }
   };
   const config = {

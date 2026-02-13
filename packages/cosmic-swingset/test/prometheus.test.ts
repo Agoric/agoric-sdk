@@ -83,7 +83,7 @@ const testPrometheusMetrics = async t => {
       default:
         break;
     }
-    Fail`port ${q(destPortName)} not implemented for message ${msg}`;
+    throw Fail`port ${q(destPortName)} not implemented for message ${msg}`;
   };
   const env = {
     ...process.env,
