@@ -1283,7 +1283,6 @@ const stepFlow = async (
           dest: move.dest,
           apply: async ({ noble }, _tracer, ...optsArgs) => {
             assert(noble, 'noble');
-            await null;
 
             const traceTransfer = traceP.sub('CCTPtoUser').sub(destChain);
             const denomAmount: DenomAmount = {
@@ -1302,6 +1301,7 @@ const stepFlow = async (
               amount.value,
             );
             appendTxIds(optsArgs[0]?.progressTracker, [txId]);
+            await null;
 
             const callerAndOptsArgs = (
               optsArgs.length > 0 ? [undefined, ...optsArgs] : []
