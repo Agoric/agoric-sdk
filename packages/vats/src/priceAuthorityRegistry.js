@@ -33,7 +33,7 @@ import { PriceAuthorityI } from '@agoric/zoe/src/contractSupport/priceAuthority.
  *   brandIn: Brand,
  *   brandOut: Brand,
  *   force?: boolean,
- * ) => Promise<Deleter>} registerPriceAuthority
+ * ) => ERef<Deleter>} registerPriceAuthority
  *   Add a unique price authority for a given pair
  */
 
@@ -173,7 +173,6 @@ export const providePriceAuthorityRegistry = baggage => {
   );
 
   /** @type {PriceAuthorityRegistryAdmin} */
-  // @ts-expect-error TypeScript 6 stricter about async/sync mismatch - typedef says Promise<Deleter> but implementation is sync
   const adminFacet = prepareExo(
     baggage,
     'price authority admin facet',
