@@ -501,39 +501,44 @@ type LogScanOpts = ScanOptsBase & {
   predicate: LogPredicate;
 };
 
+// https://www.alchemy.com/docs/chains/ethereum/ethereum-api-endpoints/eth-get-block-receipts
+type TxReceipt = {
+  transactionHash: `0x${string}`;
+  status: '0x0' | '0x1' | null;
+  to: HexAddress | null;
+};
+
 type FailedTxScanOpts = ScanOptsBase & {
   toAddress: string;
   verifyFailedTx: (
     tx: TransactionResponse,
-    receipt: BlockReceipt,
+    receipt: TxReceipt,
   ) => boolean | Promise<boolean>;
   rpcClient: JsonRpcBatchClient;
 };
 
-type BlockReceipt = {
-  transactionHash: `0x${string}`;
-  status: `0x${string}` | null;
-  to: `0x${string}` | null;
-};
-
-type TraceAction = {
-  from: `0x${string}`;
-  to: `0x${string}`;
-  input: `0x${string}`;
-  value: `0x${string}`;
-  gas: `0x${string}`;
-  callType: string;
-};
-
-type TraceResult = {
-  action: TraceAction;
+// https://www.alchemy.com/docs/reference/what-are-evm-traces#the-solution-evm-traces
+type TraceResultBase = {
+  type: string;
+  action: unknown;
   blockNumber: number;
   transactionHash: `0x${string}`;
   error?: string;
-  type: string;
   subtraces: number;
   traceAddress: number[];
 };
+
+// https://www.alchemy.com/docs/reference/what-are-evm-traces#call
+type CallTraceAction = {
+  from: HexAddress;
+  to: HexAddress;
+  input: `0x${string}`;
+  value: `0x${string}`;
+  gas: `0x${string}`;
+  callType: 'call' | 'delegatecall' | 'callcode' | 'staticcall';
+};
+
+type TraceResult = TraceResultBase & { type: 'call'; action: CallTraceAction };
 
 /**
  * Create a {@link JsonRpcBatchClient} backed by HTTP POST via the given `fetch`.
@@ -570,14 +575,14 @@ export const makeJsonRpcClient = (
  * @param start - Start block number (inclusive)
  * @param end - End block number (inclusive)
  * @param client - JSON-RPC batch client
- * @returns Array of BlockReceipt objects for the requested blocks
+ * @returns Array of TxReceipt objects for the requested blocks
  */
-const getBlockReceiptsBatch = async (
+const getTxReceiptsBatch = async (
   start: number,
   end: number,
   client: JsonRpcBatchClient,
   log?: (...args: unknown[]) => void,
-): Promise<BlockReceipt[]> => {
+): Promise<TxReceipt[]> => {
   const requests = Array.from({ length: end - start + 1 }, (_, i) => ({
     method: 'eth_getBlockReceipts',
     params: [toQuantity(start + i)] as unknown[],
@@ -592,26 +597,43 @@ const getBlockReceiptsBatch = async (
     );
   }
 
-  return responses.flatMap(r => (r.result ?? []) as BlockReceipt[]);
+  return responses.flatMap(r => (r.result ?? []) as TxReceipt[]);
+};
+
+type ScanInChunksOpts<T> = {
+  provider: WebSocketProvider;
+  fromBlock: number;
+  toBlock: number;
+  chainId: CaipChainId;
+  chunkSize: number;
+  scanChunk: (start: number, end: number) => Promise<T | undefined>;
+  label: string;
+  log?: (...args: unknown[]) => void;
+  signal?: AbortSignal;
+  onRejectedChunk?: (
+    startBlock: number,
+    endBlock: number,
+  ) => Promise<void> | void;
 };
 
 /**
- * Generic chunked log scanner: scans [fromBlock, toBlock] in CHUNK_SIZE windows,
- * runs `predicate` on each log, and returns the first matching log or undefined.
+ * Generic chunked block scanner: scans [fromBlock, toBlock] in chunkSize
+ * windows, delegating per-chunk work to the caller-supplied `scanChunk`
+ * callback. Handles chain-wait, rate-limit retry, and abort signals.
  */
-export const scanEvmLogsInChunks = async (
-  opts: LogScanOpts,
-): Promise<Log | undefined> => {
+const scanEvmBlocksInChunks = async <T>(
+  opts: ScanInChunksOpts<T>,
+): Promise<T | undefined> => {
   const {
     provider,
-    baseFilter,
     fromBlock,
     toBlock,
     chainId,
-    chunkSize = 10,
+    chunkSize,
+    scanChunk,
+    label,
     log = () => {},
     signal,
-    predicate,
   } = opts;
 
   const blockTimeMs = getBlockTimeMs(chainId);
@@ -619,7 +641,7 @@ export const scanEvmLogsInChunks = async (
   let rateLimitRetries = 0;
   for (let currentBlock = -Infinity, start = fromBlock; start <= toBlock; ) {
     if (signal?.aborted) {
-      log('[LogScan] Aborted');
+      log(`[${label}] Aborted`);
       return undefined;
     }
     const end = Math.min(start + chunkSize - 1, toBlock);
@@ -632,27 +654,15 @@ export const scanEvmLogsInChunks = async (
         const waitTimeMs = blocksToWait * blockTimeMs;
         const blocksBehind = end - currentBlock;
         log(
-          `[LogScan] Chain ${blocksBehind} blocks behind (need ${end}, at ${currentBlock}). Waiting ${waitTimeMs}ms (${blocksToWait} blocks @ ${blockTimeMs}ms/block)`,
+          `[${label}] Chain ${blocksBehind} blocks behind (need ${end}, at ${currentBlock}). Waiting ${waitTimeMs}ms (${blocksToWait} blocks @ ${blockTimeMs}ms/block)`,
         );
         await new Promise(resolve => setTimeout(resolve, waitTimeMs));
         continue; // Retry this chunk after waiting
       }
 
-      const chunkFilter: Filter = {
-        // baseFilter represents core filter configuration (address, topics, etc.) without block range
-        ...baseFilter,
-        fromBlock: start,
-        toBlock: end,
-      };
-
-      log(`[LogScan] Searching chunk ${start} → ${end}`);
-      const logs = await provider.getLogs(chunkFilter);
-      for (const evt of logs) {
-        if (await predicate(evt)) {
-          log(`[LogScan] Match in tx=${evt.transactionHash}`);
-          return evt;
-        }
-      }
+      log(`[${label}] Searching chunk ${start} → ${end}`);
+      const result = await scanChunk(start, end);
+      if (result) return result;
       await opts.onRejectedChunk?.(start, end);
       rateLimitRetries = 0;
     } catch (err) {
@@ -660,12 +670,12 @@ export const scanEvmLogsInChunks = async (
         rateLimitRetries += 1;
         const backoffMs = RATE_LIMIT_BACKOFF_MS * rateLimitRetries;
         log(
-          `[LogScan] Rate limited on chunk ${start}–${end}, retry ${rateLimitRetries}/${MAX_RATE_LIMIT_RETRIES} after ${backoffMs}ms`,
+          `[${label}] Rate limited on chunk ${start}–${end}, retry ${rateLimitRetries}/${MAX_RATE_LIMIT_RETRIES} after ${backoffMs}ms`,
         );
         await new Promise(resolve => setTimeout(resolve, backoffMs));
         continue; // Retry same chunk
       }
-      log(`[LogScan] Error searching chunk ${start}–${end}:`, err);
+      log(`[${label}] Error in chunk ${start}–${end}:`, err);
       rateLimitRetries = 0;
     }
 
@@ -675,11 +685,52 @@ export const scanEvmLogsInChunks = async (
 };
 
 /**
- * Fetches failed transaction traces using trace_filter RPC method.
- * Filters by toAddress server-side and includes calldata in the response,
- * avoiding extra getTransaction round-trips.
+ * Chunked log scanner: scans [fromBlock, toBlock] in windows of size chunkSize,
+ * runs `predicate` on each log, and returns the first matching log or undefined.
  */
-const getTraceFilter = async (
+export const scanEvmLogsInChunks = async (
+  opts: LogScanOpts,
+): Promise<Log | undefined> => {
+  const {
+    provider,
+    baseFilter,
+    chunkSize = 10,
+    log = () => {},
+    predicate,
+    ...rest
+  } = opts;
+
+  return scanEvmBlocksInChunks<Log>({
+    ...rest,
+    provider,
+    chunkSize,
+    log,
+    label: 'LogScan',
+    scanChunk: async (start, end) => {
+      const chunkFilter: Filter = {
+        ...baseFilter,
+        fromBlock: start,
+        toBlock: end,
+      };
+      const logs = await provider.getLogs(chunkFilter);
+      for (const evt of logs) {
+        if (await predicate(evt)) {
+          log(`[LogScan] Match in tx=${evt.transactionHash}`);
+          return evt;
+        }
+      }
+    },
+  });
+};
+
+/**
+ * Efficiently fetches traces for EVM transactions regardless of their
+ * success/failure status.
+ * Uses the `trace_filter` RPC method, which employs server-side filtering and
+ * includes calldata in the response, avoiding extra round-trips.
+ * https://www.alchemy.com/docs/reference/what-is-trace_filter
+ */
+const getTraces = async (
   fromBlock: string,
   toBlock: string,
   toAddress: string,
@@ -703,14 +754,14 @@ const getTraceFilter = async (
  *
  * Cost per 10-block chunk: 200 CU + 20 CU/match.
  */
-const scanFailedChunkWithBlockReceipts = async (
+const scanFailedChunkWithTxReceipts = async (
   start: number,
   end: number,
   opts: FailedTxScanOpts,
 ): Promise<TransactionResponse | undefined> => {
   const { provider, toAddress, verifyFailedTx, rpcClient } = opts;
 
-  const receipts = await getBlockReceiptsBatch(start, end, rpcClient, opts.log);
+  const receipts = await getTxReceiptsBatch(start, end, rpcClient, opts.log);
 
   const { promise, resolve, reject } = Promise.withResolvers<
     TransactionResponse | undefined
@@ -770,7 +821,7 @@ const scanFailedChunkWithTraceFilter = async (
 ): Promise<TransactionResponse | undefined> => {
   const { provider, toAddress, verifyFailedTx } = opts;
 
-  const traces = await getTraceFilter(
+  const traces = await getTraces(
     toQuantity(start),
     toQuantity(end),
     toAddress,
@@ -784,12 +835,7 @@ const scanFailedChunkWithTraceFilter = async (
     `[FailedTxScan] blocks ${start}–${end}: ${traces.length} traces, ${failedTopLevel.length} failed top-level to ${toAddress}`,
   );
 
-  for (const trace of traces) {
-    // Only top-level calls (not internal sub-calls) with errors
-    if (trace.traceAddress.length !== 0 || !trace.error) {
-      continue;
-    }
-
+  for (const trace of failedTopLevel) {
     // Construct objects compatible with the verifyFailedTx callback.
     // Callers only access .hash, .to, and .data on the tx object.
     const syntheticTx = {
@@ -798,7 +844,7 @@ const scanFailedChunkWithTraceFilter = async (
       data: trace.action.input,
     } as TransactionResponse;
 
-    const syntheticReceipt: BlockReceipt = {
+    const syntheticReceipt: TxReceipt = {
       transactionHash: trace.transactionHash,
       status: '0x0',
       to: trace.action.to,
@@ -851,78 +897,38 @@ export const scanFailedTxsInChunks = async (
   await null;
 
   const {
-    provider,
-    fromBlock,
-    toBlock,
     chainId,
     chunkSize: requestedChunkSize,
     log = () => {},
-    signal,
+    ...rest
   } = opts;
 
   const useTraceFilter = traceFilterSupportedChains.has(chainId);
-  const blockTimeMs = getBlockTimeMs(chainId);
   const chunkSize =
     requestedChunkSize ??
     (useTraceFilter ? TRACE_FILTER_CHUNK_SIZE : BLOCK_RECEIPTS_CHUNK_SIZE);
-  const scanChunk = useTraceFilter
+  const innerScanChunk = useTraceFilter
     ? scanFailedChunkWithTraceFilter
-    : scanFailedChunkWithBlockReceipts;
+    : scanFailedChunkWithTxReceipts;
 
   log(
-    `[FailedTxScan] Scanning ${fromBlock} → ${toBlock} using ${useTraceFilter ? 'trace_filter' : 'eth_getBlockReceipts'} (chunk=${chunkSize})`,
+    `[FailedTxScan] Scanning ${rest.fromBlock} → ${rest.toBlock} using ${useTraceFilter ? 'trace_filter' : 'eth_getTxReceipts'} (chunk=${chunkSize})`,
   );
 
-  let rateLimitRetries = 0;
-  for (let currentBlock = -Infinity, start = fromBlock; start <= toBlock; ) {
-    if (signal?.aborted) {
-      log('[FailedTxScan] Aborted');
-      return undefined;
-    }
-    const end = Math.min(start + chunkSize - 1, toBlock);
-
-    try {
-      // Wait for the chain to catch up if end block doesn't exist yet
-      if (end > currentBlock) currentBlock = await provider.getBlockNumber();
-      if (end > currentBlock) {
-        const blocksToWait = Math.max(50, chunkSize);
-        const waitTimeMs = blocksToWait * blockTimeMs;
-        const blocksBehind = end - currentBlock;
-        log(
-          `[FailedTxScan] Chain ${blocksBehind} blocks behind (need ${end}, at ${currentBlock}). Waiting ${waitTimeMs}ms (${blocksToWait} blocks @ ${blockTimeMs}ms/block)`,
-        );
-        await new Promise(resolve => setTimeout(resolve, waitTimeMs));
-        continue; // Retry this chunk after waiting
-      }
-
-      log(`[FailedTxScan] Searching chunk ${start} → ${end}`);
-      const result = await scanChunk(start, end, opts);
+  return scanEvmBlocksInChunks<TransactionResponse>({
+    ...rest,
+    chainId,
+    chunkSize,
+    log,
+    label: 'FailedTxScan',
+    scanChunk: async (start, end) => {
+      const result = await innerScanChunk(start, end, opts);
       if (result) {
         log(`[FailedTxScan] Match in tx=${result.hash}`);
-        return result;
       }
-      await opts.onRejectedChunk?.(start, end);
-      rateLimitRetries = 0;
-    } catch (err) {
-      if (isRateLimitError(err) && rateLimitRetries < MAX_RATE_LIMIT_RETRIES) {
-        rateLimitRetries += 1;
-        const backoffMs = RATE_LIMIT_BACKOFF_MS * rateLimitRetries;
-        log(
-          `[FailedTxScan] Rate limited on chunk ${start}–${end}, retry ${rateLimitRetries}/${MAX_RATE_LIMIT_RETRIES} after ${backoffMs}ms`,
-        );
-        await new Promise(resolve => setTimeout(resolve, backoffMs));
-        continue; // Retry same chunk
-      }
-      log(
-        `[FailedTxScan] Error checking block ${start} -> ${end} for failures:`,
-        err,
-      );
-      rateLimitRetries = 0;
-    }
-
-    start += chunkSize;
-  }
-  return undefined;
+      return result;
+    },
+  });
 };
 
 export const waitForBlock = async (
