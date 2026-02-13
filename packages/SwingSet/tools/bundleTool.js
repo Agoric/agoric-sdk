@@ -106,7 +106,7 @@ export const makeNodeBundleCache = async (dest, options, loadModule, pid) => {
     const lockPath = path.resolve(lockRoot, lockName);
     const ownerPath = path.resolve(lockPath, 'owner.json');
     await mkdir(lockRoot, { recursive: true });
-    const started = Date.now();
+    const started = performance.now();
 
     const isPidAlive = lockPid => {
       if (!Number.isInteger(lockPid) || lockPid <= 0) {
@@ -169,7 +169,7 @@ export const makeNodeBundleCache = async (dest, options, loadModule, pid) => {
           if (brokeStaleLock) {
             continue;
           }
-          const waitedMs = Date.now() - started;
+          const waitedMs = performance.now() - started;
           if (waitedMs >= BUNDLE_LOCK_ACQUIRE_TIMEOUT_MS) {
             throw Error(
               `Timed out waiting for bundle lock ${lockPath} after ${waitedMs}ms`,
@@ -250,7 +250,7 @@ export const makeNodeBundleCache = async (dest, options, loadModule, pid) => {
    * @returns {Promise<LoadedRegistryBundles<T>>}
    */
   const loadRegistry = async registry => {
-    const started = Date.now();
+    const started = performance.now();
     await null;
     try {
       const loaded = await Promise.all(
@@ -270,7 +270,7 @@ export const makeNodeBundleCache = async (dest, options, loadModule, pid) => {
         harden(Object.fromEntries(loaded))
       );
     } finally {
-      const elapsedMs = Date.now() - started;
+      const elapsedMs = performance.now() - started;
       console.log(
         `${styles.dim.open}[bundleTool][registry] loaded ${Object.keys(registry).length} bundle(s) in ${elapsedMs}ms`,
         styles.dim.close,
