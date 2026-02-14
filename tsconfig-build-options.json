@@ -1,5 +1,8 @@
 {
     "compilerOptions": {
+        "composite": true,
+        "incremental": true,
+        // outDir and tsBuildInfoFile must be set per-package (paths resolve relative to this file, not the extending file)
         "noEmit": false,
         "declaration": true,
         "emitDeclarationOnly": true,
@@ -10,6 +13,7 @@
         "**/types-index.js",
         "**/proposals",
         "**/scripts",
+        "**/tools",
         "**/test",
     ]
 }

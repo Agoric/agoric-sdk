@@ -234,13 +234,19 @@ export type ContractStartFnResult<PF, CF> = {
  */
 export type AdminFacet = import('../zoeService/utils.js').AdminFacet<any>;
 
-declare const OfferReturn: unique symbol;
-declare const OfferArgs: unique symbol;
+// Type-level brands for Invitation generics (avoids TS9006 declaration emit issues)
+declare const OfferReturnBrand: unique symbol;
+declare const OfferArgsBrand: unique symbol;
+/** @internal */
+export type OfferReturnTag = { readonly [OfferReturnBrand]?: unknown };
+/** @internal */
+export type OfferArgsTag = { readonly [OfferArgsBrand]?: unknown };
+
 export type Invitation<R = unknown, A = undefined> = Payment<
   'set',
   InvitationDetails
 > & {
-  // because TS is structural, without this the generic is ignored
-  [OfferReturn]?: R;
-  [OfferArgs]?: A;
+  // Type-level branding to make the generics non-structural
+  /** @internal */ __offerReturn?: R & OfferReturnTag;
+  /** @internal */ __offerArgs?: A & OfferArgsTag;
 };

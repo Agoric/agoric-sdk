@@ -1,6 +1,26 @@
 {
-    "extends": [
-        "./tsconfig.json",
-        "../../tsconfig-build-options.json"
-    ]
+  "extends": [
+    "./tsconfig.json",
+    "../../tsconfig-build-options.json"
+  ],
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "test",
+    "tools",
+    "scripts"
+  ],
+  "compilerOptions": {
+    "outDir": "build",
+    "tsBuildInfoFile": "build/tsconfig.build.tsbuildinfo"
+  },
+  "references": [
+    {
+      "path": "../internal/tsconfig.build.json"
+    },
+    {
+      "path": "../swingset-liveslots/tsconfig.build.json"
+    }
+  ]
 }

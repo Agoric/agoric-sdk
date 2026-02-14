@@ -1,11 +1,20 @@
 {
-    "extends": [
-        "./tsconfig.json",
-        "../../tsconfig-build-options.json"
-    ],
-    "exclude": [
-        "scripts",
-        "test",
-        "**/exports.js",
-    ]
+  "extends": [
+    "./tsconfig.json",
+    "../../tsconfig-build-options.json"
+  ],
+  "compilerOptions": {
+    "outDir": "build",
+    "tsBuildInfoFile": "build/tsconfig.build.tsbuildinfo"
+  },
+  "exclude": [
+    "scripts",
+    "test",
+    "**/exports.js"
+  ],
+  "references": [
+    {
+      "path": "../base-zone/tsconfig.build.json"
+    }
+  ]
 }
