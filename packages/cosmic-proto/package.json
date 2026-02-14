@@ -202,17 +202,6 @@
     "bech32": "^2.0.0",
     "query-string": "^9.1.1"
   },
-  "ava": {
-    "typescript": {
-      "rewritePaths": {
-        "src/": "dist/"
-      },
-      "compile": false
-    },
-    "files": [
-      "test/**/*.test.*"
-    ]
-  },
   "engines": {
     "node": "^20.9 || ^22.11"
   }

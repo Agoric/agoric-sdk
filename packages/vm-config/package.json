@@ -42,15 +42,6 @@
   "engines": {
     "node": "^20.9 || ^22.11"
   },
-  "ava": {
-    "files": [
-      "test/**/*.test.*"
-    ],
-    "require": [
-      "@endo/init/debug.js"
-    ],
-    "timeout": "20m"
-  },
   "typeCoverage": {
     "atLeast": 100
   }

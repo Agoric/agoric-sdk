@@ -50,15 +50,6 @@
     "url": "https://github.com/Agoric/agoric/issues"
   },
   "homepage": "https://github.com/Agoric/agoric#readme",
-  "ava": {
-    "files": [
-      "test/**/*.test.*"
-    ],
-    "require": [
-      "@endo/init/debug.js"
-    ],
-    "timeout": "2m"
-  },
   "publishConfig": {
     "access": "public"
   },

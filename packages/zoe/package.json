@@ -82,15 +82,6 @@
     "contractFacet.js",
     "NEWS.md"
   ],
-  "ava": {
-    "files": [
-      "test/**/*.test.*"
-    ],
-    "require": [
-      "@endo/init/debug.js"
-    ],
-    "timeout": "20m"
-  },
   "publishConfig": {
     "access": "public"
   },

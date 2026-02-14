@@ -59,23 +59,6 @@
     "javascript-lp-solver": "^0.4.24",
     "viem": "^2.31.0"
   },
-  "ava": {
-    "extensions": {
-      "js": true,
-      "ts": "module"
-    },
-    "files": [
-      "test/**/*.test.*"
-    ],
-    "nodeArguments": [
-      "--import=ts-blank-space/register",
-      "--no-warnings"
-    ],
-    "require": [
-      "@endo/init/debug.js"
-    ],
-    "timeout": "20m"
-  },
   "typeCoverage": {
     "atLeast": 97.61
   },
