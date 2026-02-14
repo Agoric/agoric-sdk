@@ -1016,7 +1016,7 @@ __metadata:
     eslint: "npm:^9.39.1"
     eslint-config-airbnb-base: "npm:^15.0.0"
     eslint-config-jessie: "npm:^0.0.6"
-    eslint-config-prettier: "npm:^10.0.2"
+    eslint-config-prettier: "npm:^10.1.8"
     eslint-plugin-ava: "npm:^15.1.0"
     eslint-plugin-github: "npm:^5.1.6"
     eslint-plugin-import: "npm:^2.31.0"
@@ -1024,7 +1024,7 @@ __metadata:
     eslint-plugin-require-extensions: "npm:^0.1.3"
     execa: "npm:^9.6.0"
     npm-run-all: "npm:^4.1.5"
-    prettier: "npm:^3.7.4"
+    prettier: "npm:^3.8.1"
     prettier-plugin-jsdoc: "npm:~1.8.0"
     prettier-plugin-sh: "npm:^0.18.0"
     ts-blank-space: "npm:^0.6.2"
@@ -11341,7 +11341,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-config-prettier@npm:>=8.0.0, eslint-config-prettier@npm:^10.0.2":
+"eslint-config-prettier@npm:>=8.0.0":
   version: 10.1.2
   resolution: "eslint-config-prettier@npm:10.1.2"
   peerDependencies:
@@ -11349,6 +11349,17 @@ __metadata:
   bin:
     eslint-config-prettier: bin/cli.js
   checksum: 10c0/c22c8e29193cc8fd70becf1c2dd072513f2b3004a175c2a49404c79d1745ba4dc0edc2afd00d16b0e26d24f95813a0469e7445a25104aec218f6d84cdb1697e9
+  languageName: node
+  linkType: hard
+
+"eslint-config-prettier@npm:^10.1.8":
+  version: 10.1.8
+  resolution: "eslint-config-prettier@npm:10.1.8"
+  peerDependencies:
+    eslint: ">=7.0.0"
+  bin:
+    eslint-config-prettier: bin/cli.js
+  checksum: 10c0/e1bcfadc9eccd526c240056b1e59c5cd26544fe59feb85f38f4f1f116caed96aea0b3b87868e68b3099e55caaac3f2e5b9f58110f85db893e83a332751192682
   languageName: node
   linkType: hard
 
@@ -17093,6 +17104,15 @@ __metadata:
   bin:
     prettier: bin/prettier.cjs
   checksum: 10c0/9675d2cd08eacb1faf1d1a2dbfe24bfab6a912b059fc9defdb380a408893d88213e794a40a2700bd29b140eb3172e0b07c852853f6e22f16f3374659a1a13389
+  languageName: node
+  linkType: hard
+
+"prettier@npm:^3.8.1":
+  version: 3.8.1
+  resolution: "prettier@npm:3.8.1"
+  bin:
+    prettier: bin/prettier.cjs
+  checksum: 10c0/33169b594009e48f570471271be7eac7cdcf88a209eed39ac3b8d6d78984039bfa9132f82b7e6ba3b06711f3bfe0222a62a1bfb87c43f50c25a83df1b78a2c42
   languageName: node
   linkType: hard
 
