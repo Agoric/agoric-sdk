@@ -22,7 +22,7 @@ import {
  * @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js';
  * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {VstorageKit} from '@agoric/client-utils';
- * @import {Logger} from 'anylogger';
+ * @import {Logger} from '@agoric/internal/vendor/anylogger.js';
  * @import {Writable} from 'stream';
  */
 

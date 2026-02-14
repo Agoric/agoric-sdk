@@ -34,7 +34,6 @@
     "@endo/patterns": "^1.7.0",
     "@endo/promise-kit": "^1.1.13",
     "@endo/stream": "^1.2.13",
-    "anylogger": "^0.21.0",
     "import-meta-resolve": "^4.1.0",
     "jessie.js": "^0.3.4"
   },
@@ -58,7 +57,8 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "files": [
-    "src"
+    "src",
+    "vendor"
   ],
   "publishConfig": {
     "access": "public"

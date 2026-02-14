@@ -1,6 +1,13 @@
 // TypeScript shim for anylogger so NodeNext resolution picks up the default export.
-// Derived from the upstream anylogger v0.21.0 definitions.
+// Now pointing to our vendored anylogger in @agoric/internal.
+// The vendored code is from https://github.com/Download/anylogger master branch
+// commit 7133f8eca403b98b582bab68e2300066c54ed8af (1.1.0-beta.0)
+// which includes PR #22 (ESM/TypeScript support) not yet in any released version.
 declare module 'anylogger' {
+  export * from '@agoric/internal/src/anylogger.js';
+}
+
+declare module '@agoric/internal/src/anylogger.js' {
   export type BaseLevels = {
     error: 1;
     warn: 2;
@@ -47,7 +54,7 @@ declare module 'anylogger' {
     levels: L & { [name: string]: number };
 
     /** Construct a new logger function that delegates to `anylogger.log`. */
-    new (name: string, config?: object | undefined): T;
+    new(name: string, config?: object | undefined): T;
 
     /** Log with the given level and data. */
     log(name: string, level: keyof L, message?: any, ...args: any[]): void;

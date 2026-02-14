@@ -3,10 +3,10 @@ import {
   getEnvironmentOptionsList,
   getEnvironmentOption,
 } from '@endo/env-options';
-import anylogger from 'anylogger';
+import anylogger from '@agoric/internal/vendor/anylogger.js';
 import { defineName } from '@agoric/internal/src/js-utils.js';
 
-/** @import {BaseLevels} from 'anylogger'; */
+/** @import {BaseLevels} from '@agoric/internal/vendor/anylogger.js'; */
 /** @typedef {keyof BaseLevels} LogLevel; */
 
 const VAT_LOGGER_PREFIXES = Object.freeze([
@@ -42,14 +42,14 @@ const maxActiveLevelCode = /** @type {number} */ (
 
 const oldExt = anylogger.ext;
 anylogger.ext = logger => {
-  logger = oldExt(logger);
+  const extended = oldExt(logger);
 
   /** @type {(level: LogLevel) => boolean} */
   const enabledFor = level => anylogger.levels[level] <= maxActiveLevelCode;
-  logger.enabledFor = enabledFor;
+  extended.enabledFor = enabledFor;
 
-  const nameColon = `${logger.name}:`;
-  const label = logger.name.replaceAll(':', ': ');
+  const nameColon = `${extended.name}:`;
+  const label = extended.name.replaceAll(':', ': ');
 
   // Vat logs are suppressed unless matched by a prefix in DEBUG_LIST.
   const suppressed =
@@ -58,9 +58,9 @@ anylogger.ext = logger => {
 
   const levels = /** @type {LogLevel[]} */ (Object.keys(anylogger.levels));
   for (const level of levels) {
-    const impl = logger[level];
+    const impl = extended[level];
     const disabled = !impl || suppressed || !enabledFor(level);
-    logger[level] = disabled
+    extended[level] = disabled
       ? defineName(`dummy ${level}`, () => {})
       : defineName(level, (...args) => {
           // Prepend a timestamp and label.
@@ -68,5 +68,5 @@ anylogger.ext = logger => {
           impl(`${timestamp} ${label}:`, ...args);
         });
   }
-  return logger;
+  return extended;
 };

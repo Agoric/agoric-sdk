@@ -9,7 +9,7 @@ import { promisify } from 'util';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 // import { createHash } from 'crypto';
 
-import anylogger from 'anylogger';
+import anylogger from '@agoric/internal/vendor/anylogger.js';
 
 // import connect from 'lotion-connect';
 // import djson from 'deterministic-json';
