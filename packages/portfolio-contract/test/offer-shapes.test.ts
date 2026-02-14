@@ -35,12 +35,19 @@ test('ProposalShapes', t => {
   const cases = harden({
     openPortfolio: {
       pass: {
+        noGive: { give: {} },
         noPositions: { give: { Access: poc26(1n) } },
         withDeposit: { give: { Deposit: usdc(123n), Access: poc26(1n) } },
+        withDepositNoAccess: { give: { Deposit: usdc(123n) } },
         aaveGMPFeePaidByContract: {
           give: {
             Deposit: usdc(6123n),
             Access: poc26(1n),
+          },
+        },
+        aaveGMPFeePaidByContractNoAccess: {
+          give: {
+            Deposit: usdc(6123n),
           },
         },
         withDepositAndAccess: {
