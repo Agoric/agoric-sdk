@@ -338,7 +338,7 @@ func (m *QueryChunkedArtifactStatusRequest) GetChunkedArtifactId() uint64 {
 	return 0
 }
 
-// QueryChunkedArtifactStatuslResponse is the response type for the Query/ChunkedArtifact RPC method.
+// QueryChunkedArtifactStatusResponse is the response type for the Query/ChunkedArtifact RPC method.
 type QueryChunkedArtifactStatusResponse struct {
 	ChunkedArtifactId uint64           `protobuf:"varint,1,opt,name=chunked_artifact_id,json=chunkedArtifactId,proto3" json:"chunkedArtifactId" yaml:"chunkedArtifactId"`
 	ChunkedArtifact   *ChunkedArtifact `protobuf:"bytes,2,opt,name=chunked_artifact,json=chunkedArtifact,proto3" json:"chunkedArtifact" yaml:"chunkedArtifact"`

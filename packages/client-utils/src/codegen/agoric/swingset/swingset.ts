@@ -174,7 +174,7 @@ export interface Params {
    * unlimited.
    */
   installationDeadlineSeconds: bigint;
-  /** The maximum size of of a bundle (0 implies default 10MB) */
+  /** The maximum size of a bundle (0 implies default 10MB) */
   bundleUncompressedSizeLimitBytes: bigint;
   /** The maximum size of a bundle or artifact chunk (0 implies default 512KB) */
   chunkSizeLimitBytes: bigint;
@@ -207,6 +207,8 @@ export interface State {
   firstChunkedArtifactId: bigint;
   /** The last chunked artifact id that has not expired nor completed. */
   lastChunkedArtifactId: bigint;
+  /** The next monotonically increasing chunked artifact id to allocate. */
+  nextChunkedArtifactId: bigint;
 }
 export interface StateProtoMsg {
   typeUrl: '/agoric.swingset.State';
@@ -217,6 +219,7 @@ export interface StateSDKType {
   queue_allowed: QueueSizeSDKType[];
   first_chunked_artifact_id: bigint;
   last_chunked_artifact_id: bigint;
+  next_chunked_artifact_id: bigint;
 }
 /** Map element of a string key to a Nat bean count. */
 export interface StringBeans {
@@ -836,6 +839,7 @@ function createBaseState(): State {
     queueAllowed: [],
     firstChunkedArtifactId: BigInt(0),
     lastChunkedArtifactId: BigInt(0),
+    nextChunkedArtifactId: BigInt(0),
   };
 }
 export const State = {
@@ -852,6 +856,9 @@ export const State = {
     }
     if (message.lastChunkedArtifactId !== BigInt(0)) {
       writer.uint32(24).uint64(message.lastChunkedArtifactId);
+    }
+    if (message.nextChunkedArtifactId !== BigInt(0)) {
+      writer.uint32(32).uint64(message.nextChunkedArtifactId);
     }
     return writer;
   },
@@ -872,6 +879,9 @@ export const State = {
         case 3:
           message.lastChunkedArtifactId = reader.uint64();
           break;
+        case 4:
+          message.nextChunkedArtifactId = reader.uint64();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -889,6 +899,9 @@ export const State = {
         : BigInt(0),
       lastChunkedArtifactId: isSet(object.lastChunkedArtifactId)
         ? BigInt(object.lastChunkedArtifactId.toString())
+        : BigInt(0),
+      nextChunkedArtifactId: isSet(object.nextChunkedArtifactId)
+        ? BigInt(object.nextChunkedArtifactId.toString())
         : BigInt(0),
     };
   },
@@ -909,6 +922,10 @@ export const State = {
       (obj.lastChunkedArtifactId = (
         message.lastChunkedArtifactId || BigInt(0)
       ).toString());
+    message.nextChunkedArtifactId !== undefined &&
+      (obj.nextChunkedArtifactId = (
+        message.nextChunkedArtifactId || BigInt(0)
+      ).toString());
     return obj;
   },
   fromPartial(object: Partial<State>): State {
@@ -924,6 +941,11 @@ export const State = {
       object.lastChunkedArtifactId !== undefined &&
       object.lastChunkedArtifactId !== null
         ? BigInt(object.lastChunkedArtifactId.toString())
+        : BigInt(0);
+    message.nextChunkedArtifactId =
+      object.nextChunkedArtifactId !== undefined &&
+      object.nextChunkedArtifactId !== null
+        ? BigInt(object.nextChunkedArtifactId.toString())
         : BigInt(0);
     return message;
   },

@@ -73,7 +73,7 @@ message QueryChunkedArtifactStatusRequest {
       [(gogoproto.jsontag) = "chunkedArtifactId", (gogoproto.moretags) = "yaml:\"chunkedArtifactId\""];
 }
 
-// QueryChunkedArtifactStatuslResponse is the response type for the Query/ChunkedArtifact RPC method.
+// QueryChunkedArtifactStatusResponse is the response type for the Query/ChunkedArtifact RPC method.
 message QueryChunkedArtifactStatusResponse {
   uint64 chunked_artifact_id = 1
       [(gogoproto.jsontag) = "chunkedArtifactId", (gogoproto.moretags) = "yaml:\"chunkedArtifactId\""];

@@ -533,14 +533,19 @@ func (k Keeper) GetPendingBundleInstall(ctx sdk.Context, chunkedArtifactId uint6
 
 func (k Keeper) AddPendingBundleInstall(ctx sdk.Context, msg *types.MsgInstallBundle) uint64 {
 	state := k.GetState(ctx)
-	state.LastChunkedArtifactId++
+	if state.NextChunkedArtifactId < state.LastChunkedArtifactId {
+		// Handle legacy state that predates the monotonic counter.
+		state.NextChunkedArtifactId = state.LastChunkedArtifactId
+	}
+	state.NextChunkedArtifactId++
+	chunkedArtifactId := state.NextChunkedArtifactId
+	state.LastChunkedArtifactId = chunkedArtifactId
 	k.SetState(ctx, state)
-
-	chunkedArtifactId := state.LastChunkedArtifactId
 	k.SetPendingBundleInstall(ctx, chunkedArtifactId, msg)
 
 	// Create and store the pending install node. The list is non-circular;
-	// PrevId/NextId use 0 to indicate the start/end, and State tracks endpoints.
+	// PrevId/NextId use 0 to indicate the start/end, and State tracks endpoints
+	// separately from the monotonically increasing allocation counter.
 	node := &types.ChunkedArtifactNode{
 		ChunkedArtifactId: chunkedArtifactId,
 		StartTimeUnix:     ctx.BlockTime().Unix(),

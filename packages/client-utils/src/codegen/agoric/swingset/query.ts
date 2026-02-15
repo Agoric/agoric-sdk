@@ -93,7 +93,7 @@ export interface QueryChunkedArtifactStatusRequestProtoMsg {
 export interface QueryChunkedArtifactStatusRequestSDKType {
   chunked_artifact_id: bigint;
 }
-/** QueryChunkedArtifactStatuslResponse is the response type for the Query/ChunkedArtifact RPC method. */
+/** QueryChunkedArtifactStatusResponse is the response type for the Query/ChunkedArtifact RPC method. */
 export interface QueryChunkedArtifactStatusResponse {
   chunkedArtifactId: bigint;
   chunkedArtifact?: ChunkedArtifact;
@@ -105,7 +105,7 @@ export interface QueryChunkedArtifactStatusResponseProtoMsg {
   typeUrl: '/agoric.swingset.QueryChunkedArtifactStatusResponse';
   value: Uint8Array;
 }
-/** QueryChunkedArtifactStatuslResponse is the response type for the Query/ChunkedArtifact RPC method. */
+/** QueryChunkedArtifactStatusResponse is the response type for the Query/ChunkedArtifact RPC method. */
 export interface QueryChunkedArtifactStatusResponseSDKType {
   chunked_artifact_id: bigint;
   chunked_artifact?: ChunkedArtifactSDKType;
