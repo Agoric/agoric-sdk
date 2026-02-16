@@ -5,17 +5,14 @@ import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.js';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import { tryJsonParse } from '@agoric/internal';
+import type { JSONRPCClient } from 'json-rpc-2.0';
 import { PendingTxCode } from '../pending-tx-manager.ts';
 import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
   scanFailedTxsInChunks,
 } from '../support.ts';
-import type {
-  JsonRpcBatchClient,
-  MakeAbortController,
-  WatcherTimeoutOptions,
-} from '../support.ts';
+import type { MakeAbortController, WatcherTimeoutOptions } from '../support.ts';
 import { TX_TIMEOUT_MS, type WatcherResult } from '../pending-tx-manager.ts';
 import {
   deleteTxBlockLowerBound,
@@ -280,7 +277,7 @@ type WatchGmpLookback = {
   publishTimeMs: number;
   chainId: CaipChainId;
   signal?: AbortSignal;
-  rpcClient: JsonRpcBatchClient;
+  rpcClient: JSONRPCClient;
 };
 
 export const lookBackGmp = async ({

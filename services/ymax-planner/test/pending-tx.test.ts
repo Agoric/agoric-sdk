@@ -510,15 +510,17 @@ test('resolves a 10 second old pending GMP transaction in lookback mode', async 
 
   const ctxWithFetch = harden({
     ...opts,
-    fetch: async (url: string) => {
+    fetch: async (url: string, init?: RequestInit) => {
       if (Object.values(opts.rpcUrls).includes(url)) {
+        const batch = JSON.parse(init?.body as string);
         return {
           ok: true,
-          json: async () => [
-            {
+          json: async () =>
+            batch.map((req: any) => ({
+              jsonrpc: '2.0',
+              id: req.id,
               result: [],
-            },
-          ],
+            })),
         } as Response;
       }
       return {
@@ -746,7 +748,19 @@ test('GMP monitor does not resolve transaction twice when live mode completes be
 
   const ctxWithFetch = harden({
     ...opts,
-    fetch: async (_url: string) => {
+    fetch: async (url: string, init?: RequestInit) => {
+      if (Object.values(opts.rpcUrls).includes(url)) {
+        const batch = JSON.parse(init?.body as string);
+        return {
+          ok: true,
+          json: async () =>
+            batch.map((req: any) => ({
+              jsonrpc: '2.0',
+              id: req.id,
+              result: [],
+            })),
+        } as Response;
+      }
       // Axelarscan returns executed status
       return {
         ok: true,

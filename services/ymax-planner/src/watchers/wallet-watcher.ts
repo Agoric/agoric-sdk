@@ -4,11 +4,8 @@ import type { WebSocket } from 'ws';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import { tryJsonParse } from '@agoric/internal';
-import type {
-  JsonRpcBatchClient,
-  MakeAbortController,
-  WatcherTimeoutOptions,
-} from '../support.ts';
+import type { JSONRPCClient } from 'json-rpc-2.0';
+import type { MakeAbortController, WatcherTimeoutOptions } from '../support.ts';
 import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
@@ -342,7 +339,7 @@ type SmartWalletLookback = {
   publishTimeMs: number;
   chainId: CaipChainId;
   signal?: AbortSignal;
-  rpcClient: JsonRpcBatchClient;
+  rpcClient: JSONRPCClient;
   subscribeToAddr: `0x${string}`;
   makeAbortController: MakeAbortController;
 };

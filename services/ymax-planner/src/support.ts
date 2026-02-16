@@ -18,21 +18,10 @@ import {
   aaveRewardsControllerAddresses,
   compoundAddresses,
 } from '@aglocal/portfolio-deploy/src/axelar-configs.js';
+import { JSONRPCClient, createJSONRPCRequest } from 'json-rpc-2.0';
+import type { JSONRPCResponse } from 'json-rpc-2.0';
 import type { EvmContext } from './pending-tx-manager.ts';
 import { lookupValueForKey } from './utils.ts';
-
-/**
- * Narrow interface for a JSON-RPC 2.0 batch client.
- *
- * XXX Replace with {@link JSONRPCClient} from `json-rpc-2.0` once
- * test mocks are updated to return proper JSON-RPC `id` fields
- * (required by `JSONRPCClient.receive()`).
- */
-export type JsonRpcBatchClient = {
-  batchCall: (
-    requests: Array<{ method: string; params: unknown[] }>,
-  ) => Promise<Array<{ result?: unknown }>>;
-};
 
 export const UserInputError = class extends Error {} as ErrorConstructor;
 harden(UserInputError);
@@ -519,7 +508,7 @@ type TxReceipt = {
 type FailedTxScanOpts = ScanOptsBase & {
   toAddress: string;
   verifyFailedTx: FailedTxPredicate;
-  rpcClient: JsonRpcBatchClient;
+  rpcClient: JSONRPCClient;
 };
 
 // https://www.alchemy.com/docs/reference/what-are-evm-traces#the-solution-evm-traces
@@ -547,7 +536,7 @@ type CallTraceAction = {
 type TraceResult = TraceResultBase & { type: 'call'; action: CallTraceAction };
 
 /**
- * Create a {@link JsonRpcBatchClient} backed by HTTP POST via the given `fetch`.
+ * Create a {@link JSONRPCClient} backed by HTTP POST via the given `fetch`.
  *
  * Use this instead of passing raw `fetch` + `rpcUrl` to downstream functions
  * so that callees only receive the constrained JSON-RPC interface.
@@ -555,23 +544,18 @@ type TraceResult = TraceResultBase & { type: 'call'; action: CallTraceAction };
 export const makeJsonRpcClient = (
   fetch: typeof globalThis.fetch,
   rpcUrl: string,
-): JsonRpcBatchClient => ({
-  batchCall: async requests => {
-    const payload = requests.map((req, i) => ({
-      jsonrpc: '2.0',
-      id: i + 1,
-      method: req.method,
-      params: req.params,
-    }));
+): JSONRPCClient => {
+  const client: JSONRPCClient = new JSONRPCClient(async payload => {
     const res = await fetch(rpcUrl, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
-    return res.json();
-  },
-});
+    client.receive(await res.json());
+  });
+  return client;
+};
 
 /**
  * Fetches block receipts in batch using eth_getBlockReceipts RPC method.
@@ -586,16 +570,17 @@ export const makeJsonRpcClient = (
 const getTxReceiptsBatch = async (
   start: number,
   end: number,
-  client: JsonRpcBatchClient,
+  client: JSONRPCClient,
   log?: (...args: unknown[]) => void,
 ): Promise<TxReceipt[]> => {
-  const requests = Array.from({ length: end - start + 1 }, (_, i) => ({
-    method: 'eth_getBlockReceipts',
-    params: [toQuantity(start + i)] as unknown[],
-  }));
-  const responses = await client.batchCall(requests);
+  const requests = Array.from({ length: end - start + 1 }, (_, i) =>
+    createJSONRPCRequest(i + 1, 'eth_getBlockReceipts', [
+      toQuantity(start + i),
+    ]),
+  );
+  const responses: JSONRPCResponse[] = await client.requestAdvanced(requests);
 
-  const errors = responses.filter(r => 'error' in r && r.error);
+  const errors = responses.filter(r => r.error);
   if (errors.length > 0) {
     log?.(
       `[FailedTxScan] eth_getBlockReceipts returned ${errors.length}/${responses.length} errors for blocks ${start}–${end}:`,

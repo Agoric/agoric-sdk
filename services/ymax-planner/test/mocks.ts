@@ -507,15 +507,13 @@ export const createMockCosmosRestClient = (
   } as any;
 };
 
-const mockGlobalFetch = (url: string) => {
+const mockGlobalFetch = (url: string, init?: RequestInit) => {
   if (Object.values(createMockRpcUrls()).includes(url)) {
+    const batch = JSON.parse(init?.body as string);
     return {
       ok: true,
-      json: async () => [
-        {
-          result: [],
-        },
-      ],
+      json: async () =>
+        batch.map((req: any) => ({ jsonrpc: '2.0', id: req.id, result: [] })),
     } as Response;
   }
   throw new Error(`mockGlobalFetch: unrecognized URL: ${url}`);
