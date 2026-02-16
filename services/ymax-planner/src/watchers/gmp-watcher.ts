@@ -334,6 +334,10 @@ export const lookBackGmp = async ({
       undefined,
       signal ? [signal] : [],
     );
+    const passthroughWithAbort = result => {
+      if (result) abortScans();
+      return result;
+    };
     const sharedOpts = {
       provider,
       toBlock,
@@ -349,10 +353,7 @@ export const lookBackGmp = async ({
         fromBlock: statusEventLowerBound,
         onRejectedChunk: updateStatusEventLowerBound,
         predicate: isMatch,
-      }).then(result => {
-        if (result) abortScans();
-        return result;
-      }),
+      }).then(passthroughWithAbort),
       scanFailedTxsInChunks({
         ...sharedOpts,
         fromBlock: failedTxLowerBound,
@@ -367,10 +368,7 @@ export const lookBackGmp = async ({
           setTxBlockLowerBound(kvStore, txId, to, FAILED_TX_SCOPE);
         },
         rpcClient,
-      }).then(result => {
-        if (result) abortScans();
-        return result;
-      }),
+      }).then(passthroughWithAbort),
     ]);
 
     abortScans();

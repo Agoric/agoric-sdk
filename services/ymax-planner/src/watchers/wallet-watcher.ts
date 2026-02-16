@@ -407,6 +407,10 @@ export const lookBackSmartWalletTx = async ({
       undefined,
       signal ? [signal] : [],
     );
+    const passthroughWithAbort = result => {
+      if (result) abortScans();
+      return result;
+    };
     const sharedOpts = {
       provider,
       toBlock,
@@ -451,10 +455,7 @@ export const lookBackSmartWalletTx = async ({
           setTxBlockLowerBound(kvStore, txId, to, FAILED_TX_SCOPE);
         },
         rpcClient,
-      }).then(result => {
-        if (result) abortScans();
-        return result;
-      }),
+      }).then(passthroughWithAbort),
     ]);
 
     abortScans();
