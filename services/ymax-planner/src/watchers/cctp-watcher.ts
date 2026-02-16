@@ -7,7 +7,7 @@ import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
   type WatcherTimeoutOptions,
-} from '../support.ts';
+} from '../evm-scanner.ts';
 import {
   deleteTxBlockLowerBound,
   getTxBlockLowerBound,

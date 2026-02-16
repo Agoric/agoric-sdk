@@ -5,12 +5,13 @@ import type { CaipChainId } from '@agoric/orchestration';
 import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import { tryJsonParse } from '@agoric/internal';
 import type { JSONRPCClient } from 'json-rpc-2.0';
-import type { MakeAbortController, WatcherTimeoutOptions } from '../support.ts';
+import type { MakeAbortController } from '../support.ts';
 import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
   scanFailedTxsInChunks,
-} from '../support.ts';
+  type WatcherTimeoutOptions,
+} from '../evm-scanner.ts';
 import { PendingTxCode, TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
 import {
   deleteTxBlockLowerBound,

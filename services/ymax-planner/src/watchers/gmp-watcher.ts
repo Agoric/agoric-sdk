@@ -11,8 +11,9 @@ import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
   scanFailedTxsInChunks,
-} from '../support.ts';
-import type { MakeAbortController, WatcherTimeoutOptions } from '../support.ts';
+  type WatcherTimeoutOptions,
+} from '../evm-scanner.ts';
+import type { MakeAbortController } from '../support.ts';
 import { TX_TIMEOUT_MS, type WatcherResult } from '../pending-tx-manager.ts';
 import {
   deleteTxBlockLowerBound,

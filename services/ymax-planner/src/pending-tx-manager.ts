@@ -21,7 +21,7 @@ import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import type { CosmosRPCClient } from './cosmos-rpc.ts';
 import { resolvePendingTx } from './resolver.ts';
-import { makeJsonRpcClient, waitForBlock } from './support.ts';
+import { makeJsonRpcClient, waitForBlock } from './evm-scanner.ts';
 import type {
   EvmProviders,
   MakeAbortController,
