@@ -225,6 +225,8 @@ export const handleTxRevert = async (
   log: (...args: unknown[]) => void,
 ): Promise<{ settled: true; txHash: string; success: boolean } | null> => {
   await null;
+  // TODO: also wait for confirmations on success cases — a reorg can flip
+  // success → failure just as it can flip failure → success.
   if (receipt.status !== 0) return null;
 
   /**

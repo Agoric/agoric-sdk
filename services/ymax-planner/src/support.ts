@@ -1,4 +1,4 @@
-import { WebSocketProvider, Log, toQuantity } from 'ethers';
+import { WebSocketProvider, Log, toQuantity, isError } from 'ethers';
 import type { Filter, TransactionResponse } from 'ethers';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { ClusterName } from '@agoric/internal';
@@ -473,14 +473,22 @@ export const getBlockNumberBeforeRealTime = async (
 /**
  * Detect Alchemy 429 "compute units per second" rate-limit errors
  * surfaced by ethers as `UNKNOWN_ERROR` with a `"code": 429` payload.
+ *
+ * @see https://docs.alchemy.com/reference/throughput
  */
 const isRateLimitError = (err: unknown): boolean =>
-  err instanceof Error && err.message.includes('"code": 429');
+  isError(err, 'UNKNOWN_ERROR') &&
+  (err as { error?: { code?: number } }).error?.code === 429;
 
 const RATE_LIMIT_BACKOFF_MS = 1_000;
 const MAX_RATE_LIMIT_RETRIES = 3;
 
 type LogPredicate = (log: Log) => boolean | Promise<boolean>;
+
+type FailedTxPredicate = (
+  tx: TransactionResponse,
+  receipt: TxReceipt,
+) => boolean | Promise<boolean>;
 
 type ScanOptsBase = {
   provider: WebSocketProvider;
@@ -510,14 +518,12 @@ type TxReceipt = {
 
 type FailedTxScanOpts = ScanOptsBase & {
   toAddress: string;
-  verifyFailedTx: (
-    tx: TransactionResponse,
-    receipt: TxReceipt,
-  ) => boolean | Promise<boolean>;
+  verifyFailedTx: FailedTxPredicate;
   rpcClient: JsonRpcBatchClient;
 };
 
 // https://www.alchemy.com/docs/reference/what-are-evm-traces#the-solution-evm-traces
+// https://reth.rs/jsonrpc/trace/
 type TraceResultBase = {
   type: string;
   action: unknown;
@@ -754,7 +760,7 @@ const getTraces = async (
  *
  * Cost per 10-block chunk: 200 CU + 20 CU/match.
  */
-const scanFailedChunkWithTxReceipts = async (
+const scanChunkTxReceiptsForFailedTx = async (
   start: number,
   end: number,
   opts: FailedTxScanOpts,
@@ -773,8 +779,8 @@ const scanFailedChunkWithTxReceipts = async (
 
     if (!to || to.toLowerCase() !== toAddress.toLowerCase()) return;
 
-    const statusValue = status ? Number.parseInt(status, 16) : undefined;
-    if (statusValue !== 0) return;
+    // We only care about failed transactions.
+    if (status !== '0x0') return;
 
     opts.log?.(
       `[FailedTxScan] Candidate failed tx ${transactionHash} (status=${status})`,
@@ -814,7 +820,7 @@ const scanFailedChunkWithTxReceipts = async (
  *
  * Cost per call: 40 CU (covers the entire chunk range).
  */
-const scanFailedChunkWithTraceFilter = async (
+const scanChunkTracesForFailedTx = async (
   start: number,
   end: number,
   opts: FailedTxScanOpts,
@@ -908,8 +914,8 @@ export const scanFailedTxsInChunks = async (
     requestedChunkSize ??
     (useTraceFilter ? TRACE_FILTER_CHUNK_SIZE : BLOCK_RECEIPTS_CHUNK_SIZE);
   const innerScanChunk = useTraceFilter
-    ? scanFailedChunkWithTraceFilter
-    : scanFailedChunkWithTxReceipts;
+    ? scanChunkTracesForFailedTx
+    : scanChunkTxReceiptsForFailedTx;
 
   log(
     `[FailedTxScan] Scanning ${rest.fromBlock} → ${rest.toBlock} using ${useTraceFilter ? 'trace_filter' : 'eth_getTxReceipts'} (chunk=${chunkSize})`,

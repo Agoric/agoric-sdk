@@ -326,6 +326,8 @@ export const lookBackGmp = async ({
 
     const updateStatusEventLowerBound = (_from: number, to: number) =>
       setTxBlockLowerBound(kvStore, txId, to, MULTICALL_STATUS_EVENT);
+    const updateFailedTxLowerBound = (_from: number, to: number) =>
+      setTxBlockLowerBound(kvStore, txId, to, FAILED_TX_SCOPE);
 
     // Options shared by both scans (including an abort signal that is triggered
     // by whichever finishes first to stop the other).
@@ -364,9 +366,7 @@ export const lookBackGmp = async ({
             data?.txId === txId && data.sourceAddress === expectedSourceAddress
           );
         },
-        onRejectedChunk: (_, to) => {
-          setTxBlockLowerBound(kvStore, txId, to, FAILED_TX_SCOPE);
-        },
+        onRejectedChunk: updateFailedTxLowerBound,
         rpcClient,
       }).then(passthroughWithAbort),
     ]);
