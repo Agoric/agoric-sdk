@@ -2281,16 +2281,16 @@ const makeAccountEVMRace = test.macro({
   },
 });
 
-test('A and B arrive together; A wins the race', makeAccountEVMRace, {
+test('A and B arrive together; A wins the race; B adopts', makeAccountEVMRace, {
   provide: provideEVMAccount,
   headStart: 'predict',
 });
-test('A pays fee; B arrives', makeAccountEVMRace, {
+test('A pays fee; B adopts', makeAccountEVMRace, {
   provide: provideEVMAccount,
   headStart: 'send',
 });
 test.failing(
-  'A fails to pay fee; B arrives',
+  'A fails to pay fee; B arrives and recovers',
   expectUnhandled(1, makeAccountEVMRace),
   {
     provide: provideEVMAccount,
@@ -2298,31 +2298,45 @@ test.failing(
     errAt: 'send',
   },
 );
-test('A registers txN; B arrives', makeAccountEVMRace, {
+test('A registers txN; B adopts', makeAccountEVMRace, {
   provide: provideEVMAccount,
   headStart: 'register',
 });
-test('A transfers to axelar; B arrives', makeAccountEVMRace, {
+test('A transfers to axelar; B adopts', makeAccountEVMRace, {
   provide: provideEVMAccount,
   headStart: 'txfr',
 });
+test(
+  'A times out on axelar; B adopts',
+  expectUnhandled(1, makeAccountEVMRace),
+  { provide: provideEVMAccount, headStart: 'register', errAt: 'txfr' },
+);
 test.failing(
-  'A times out on axelar; B arrives',
+  'A times out on axelar; B arrives and recovers',
   expectUnhandled(1, makeAccountEVMRace),
   { provide: provideEVMAccount, headStart: 'txfr', errAt: 'txfr' },
 );
-test('A gets rejected txN; B arrives', expectUnhandled(1, makeAccountEVMRace), {
+test('A gets rejected txN; B adopts', expectUnhandled(1, makeAccountEVMRace), {
   provide: provideEVMAccount,
   headStart: 'txfr',
   errAt: 'resolve',
 });
+test.failing(
+  'A gets rejected txN; B arrives and recovers',
+  expectUnhandled(1, makeAccountEVMRace),
+  {
+    provide: provideEVMAccount,
+    headStart: 'resolve',
+    errAt: 'resolve',
+  },
+);
 test('A finishes before attempt B starts', makeAccountEVMRace, {
   provide: provideEVMAccount,
   headStart: 'resolve',
 });
 
 test(
-  'withPermit: A and B arrive together; A wins the race',
+  'withPermit: A and B arrive together; A wins the race; B adopts',
   makeAccountEVMRace,
   {
     provide: provideEVMAccountWithPermitStub,
@@ -2330,23 +2344,28 @@ test(
     headStart: 'predict',
   },
 );
-test('withPermit: A pays fee; B arrives', makeAccountEVMRace, {
-  provide: provideEVMAccountWithPermitStub,
-  provideB: provideEVMAccount,
-  headStart: 'send',
-});
-test('withPermit: A registers txN; B arrives', makeAccountEVMRace, {
+test('withPermit: A registers txN; B adopts', makeAccountEVMRace, {
   provide: provideEVMAccountWithPermitStub,
   provideB: provideEVMAccount,
   headStart: 'register',
 });
-test('withPermit: A transfers to axelar; B arrives', makeAccountEVMRace, {
+test('withPermit: A transfers to axelar; B adopts', makeAccountEVMRace, {
   provide: provideEVMAccountWithPermitStub,
   provideB: provideEVMAccount,
   headStart: 'txfr',
 });
+test(
+  'withPermit: A times out on axelar; B adopts',
+  expectUnhandled(1, makeAccountEVMRace),
+  {
+    provide: provideEVMAccountWithPermitStub,
+    provideB: provideEVMAccount,
+    headStart: 'register',
+    errAt: 'txfr',
+  },
+);
 test.failing(
-  'withPermit: A times out on axelar; B arrives',
+  'withPermit: A times out on axelar; B arrives and recovers',
   expectUnhandled(1, makeAccountEVMRace),
   {
     provide: provideEVMAccountWithPermitStub,
@@ -2356,13 +2375,23 @@ test.failing(
   },
 );
 test(
-  'withPermit: A gets rejected txN; B arrives',
+  'withPermit: A gets rejected txN; B adopts',
   expectUnhandled(1, makeAccountEVMRace),
   {
     provide: provideEVMAccountWithPermitStub,
     provideB: provideEVMAccount,
     headStart: 'txfr',
     errAt: 'resolve',
+  },
+);
+test.failing(
+  'withPermit: A gets rejected txN; B arrives and recovers',
+  expectUnhandled(1, makeAccountEVMRace),
+  {
+    provide: provideEVMAccountWithPermitStub,
+    headStart: 'resolve',
+    errAt: 'resolve',
+    BHasDeposit: true,
   },
 );
 test('withPermit: A finishes before attempt B starts', makeAccountEVMRace, {
