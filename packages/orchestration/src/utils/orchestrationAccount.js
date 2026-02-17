@@ -232,7 +232,11 @@ export const finishTrafficEntries = (
   const slice = sliceDescriptor ?? { start: 0, end: entries.length };
 
   const toTransform = harden(entries.slice(slice.start, slice.end));
-  toTransform.length > 0 || Fail`no traffic entries to finish`;
+  // Allow finishing with no traffic entries (e.g., when progressTracker.finish()
+  // is called without any transfers, or when a transfer fails before adding entries)
+  if (toTransform.length === 0) {
+    return entries;
+  }
 
   const transformed = harden(finisher(toTransform));
   transformed.length === toTransform.length ||
