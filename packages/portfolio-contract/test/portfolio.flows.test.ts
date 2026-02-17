@@ -865,6 +865,11 @@ test('Noble Dollar Swap, Lock messages', async t => {
       5_000n * 1_000_000n,
       { vault: 1 },
     );
+    t.is(
+      actual.msgLock?.amount,
+      '5000000000',
+      'vaulted parity swap should not encode MsgLock amount as "undefined"',
+    );
     t.snapshot(actual, 'swap 5K USDC at parity');
   }
 
