@@ -6,9 +6,10 @@
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { AmountMath } from '@agoric/ertp';
 import type { Brand, NatAmount } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
+import { typedEntries } from '@agoric/internal';
 import {
   defaultSerializer,
   documentStorageSchema,
@@ -20,21 +21,21 @@ import {
   testInterruptedSteps,
   type TestStep,
 } from '@agoric/internal/src/testing-utils.js';
-import { typedEntries } from '@agoric/internal';
-import type { ExecutionContext } from 'ava';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import type { FundsFlowPlan } from '@agoric/portfolio-api';
 import { deploy as deployWalletFactory } from '@agoric/smart-wallet/tools/wf-tools.js';
-import { hexToBytes } from '@noble/hashes/utils';
 import { E, passStyleOf } from '@endo/far';
+import { hexToBytes } from '@noble/hashes/utils';
+import type { ExecutionContext } from 'ava';
+import type { PortfolioPrivateArgs } from '../src/portfolio.contract.ts';
 import type { AssetPlaceRef } from '../src/type-guards-steps.ts';
-import { predictWalletAddress } from '../src/utils/evm-orch-factory.ts';
 import type {
   OfferArgsFor,
   StatusFor,
   TargetAllocation,
 } from '../src/type-guards.ts';
+import { predictWalletAddress } from '../src/utils/evm-orch-factory.ts';
 import { plannerClientMock } from '../tools/agents-mock.ts';
 import {
   deploy,
@@ -45,7 +46,6 @@ import {
 } from './contract-setup.ts';
 import { contractsMock, makeCCTPTraffic, portfolio0lcaOrch } from './mocks.ts';
 import { chainInfoWithCCTP, makeStorageTools } from './supports.ts';
-import type { PortfolioPrivateArgs } from '../src/portfolio.contract.ts';
 
 const { fromEntries, keys, values } = Object;
 
