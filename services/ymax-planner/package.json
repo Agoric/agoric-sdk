@@ -96,7 +96,7 @@
       "@endo/init/pre-remoting.js",
       "./src/lockdown.js"
     ],
-    "timeout": "60s"
+    "timeout": "30s"
   },
   "typeCoverage": {
     "atLeast": 93.19

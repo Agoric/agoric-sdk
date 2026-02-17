@@ -2,6 +2,7 @@ import { WebSocketProvider, Log, toQuantity, isError } from 'ethers';
 import type { Filter, TransactionResponse } from 'ethers';
 import type { CaipChainId } from '@agoric/orchestration';
 import { makeWorkPool } from '@agoric/internal/src/work-pool.js';
+import { makePromiseKit } from '@endo/promise-kit';
 import { JSONRPCClient, createJSONRPCRequest } from 'json-rpc-2.0';
 import type { JSONRPCResponse } from 'json-rpc-2.0';
 import { getBlockTimeMs, type HexAddress } from './support.ts';
@@ -427,7 +428,7 @@ const scanChunkTxReceiptsForFailedTx = async (
 
   const receipts = await getTxReceiptsBatch(start, end, rpcClient, opts.log);
 
-  const { promise, resolve, reject } = Promise.withResolvers<
+  const { promise, resolve, reject } = makePromiseKit<
     TransactionResponse | undefined
   >();
   let isDone = false;
