@@ -21,9 +21,11 @@ import {
   testInterruptedSteps,
   type TestStep,
 } from '@agoric/internal/src/testing-utils.js';
+import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import type { FundsFlowPlan } from '@agoric/portfolio-api';
+import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.ts';
 import { deploy as deployWalletFactory } from '@agoric/smart-wallet/tools/wf-tools.js';
 import { E, passStyleOf } from '@endo/far';
 import { hexToBytes } from '@noble/hashes/utils';
@@ -45,6 +47,7 @@ import {
   simulateCCTPAck,
 } from './contract-setup.ts';
 import { contractsMock, makeCCTPTraffic, portfolio0lcaOrch } from './mocks.ts';
+import { getResolverMakers } from './resolver-helpers.ts';
 import { chainInfoWithCCTP, makeStorageTools } from './supports.ts';
 
 const { fromEntries, keys, values } = Object;
@@ -1856,7 +1859,8 @@ test('evmHandler.deposit (existing Arbitrum) completes a deposit flow', async t 
     allocations: [{ instrument: 'Aave_Arbitrum', portion: 10000n }],
   };
   const { fromChain: evm, depositAmount, allocations } = inputs;
-  const ownerAddress = '0x2222222222222222222222222222222222222222';
+  const ownerAddress =
+    '0x2222222222222222222222222222222222222222' as `0x${string}`;
 
   type EvmHandler = Awaited<
     ReturnType<typeof started.publicFacet.openPortfolioFromEVM>
@@ -2504,4 +2508,169 @@ test('evmHandler.rebalance without target allocation uses existing allocation', 
   );
 
   // XXX should test the whole flow, not just the start
+});
+
+test('reproduces tx1997f-style unsubscribe after prior failed make-account flow', async t => {
+  const { common, planner1, started, readPublished, txResolver, zoe } =
+    await setupPlanner(t);
+  const { usdc, bld } = common.brands;
+  const fromChain = 'Base' as const;
+  const ownerAddress = '0x2222222222222222222222222222222222222222';
+
+  const makePermitDetails = (
+    amount: bigint,
+    nonce: bigint,
+    spender: `0x${string}`,
+  ): PermitDetails => ({
+    chainId: Number(chainInfoWithCCTP[fromChain].reference),
+    token: contractsMock[fromChain].usdc,
+    amount,
+    spender,
+    permit2Payload: {
+      permit: {
+        permitted: {
+          token: contractsMock[fromChain].usdc,
+          amount,
+        },
+        nonce,
+        deadline: 1n,
+      },
+      owner: ownerAddress,
+      witness:
+        '0x0000000000000000000000000000000000000000000000000000000000000000' as `0x${string}`,
+      witnessTypeString: 'OpenPortfolioWitness',
+      signature: '0x1234' as `0x${string}`,
+    },
+  });
+
+  await planner1.redeem();
+
+  const openAmount = usdc.units(1000);
+  const opened = await E(started.publicFacet).openPortfolioFromEVM(
+    { allocations: [{ instrument: 'Aave_Base', portion: 10000n }] },
+    makePermitDetails(
+      openAmount.value,
+      1n,
+      contractsMock[fromChain].depositFactory,
+    ),
+  );
+  const pId = 0;
+  const { evmHandler, storagePath } = opened;
+  const publishedPath = storagePath.replace(`${ROOT_STORAGE_PATH}.`, '');
+  await ackNFA(common.utils);
+
+  const flow1Status = (await readPublished(
+    publishedPath,
+  )) as unknown as StatusFor['portfolio'];
+  const {
+    flowsRunning: flows1 = {},
+    policyVersion: pv1,
+    rebalanceCount: rc1,
+  } = flow1Status;
+  const [[flow1Key, flow1Detail]] = Object.entries(flows1);
+  if (flow1Detail?.type !== 'deposit') throw t.fail(flow1Detail?.type);
+  const flow1Num = Number(flow1Key.replace('flow', ''));
+  const flow1Amount = AmountMath.make(usdc.brand, flow1Detail.amount.value);
+  const fee = bld.units(100);
+  await E(planner1.stub).resolvePlan(
+    pId,
+    flow1Num,
+    {
+      flow: [
+        { src: '+Base', dest: '@Base', amount: flow1Amount, fee },
+        { src: '@Base', dest: 'Aave_Base', amount: flow1Amount, fee },
+      ],
+    },
+    pv1,
+    rc1,
+  );
+
+  // Drive flow1 until make-account pending tx is visible, then fail it.
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  await eventLoopIteration();
+  const [flow1TxId] = await txResolver.findPending();
+  t.truthy(flow1TxId, 'flow1 has pending make-account tx');
+  const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
+  const settleInvitation = await E(resolverMakers).SettleTransaction();
+  const settleSeat = await E(zoe).offer(settleInvitation, {}, undefined, {
+    txId: flow1TxId,
+    status: 'failed',
+    rejectionReason: 'permit2 deadline passed',
+  });
+  await E(settleSeat).getOfferResult();
+
+  // Start flow2 from same chain/account context.
+  const statusAfterFlow1 = (await readPublished(
+    publishedPath,
+  )) as unknown as StatusFor['portfolio'];
+  const lcaAddress = statusAfterFlow1.accountIdByChain?.agoric
+    ? parseAccountId(statusAfterFlow1.accountIdByChain.agoric).accountAddress
+    : undefined;
+  t.truthy(lcaAddress, 'LCA address exists');
+  const predictedSpender = predictWalletAddress({
+    owner: lcaAddress!,
+    factoryAddress: contractsMock[fromChain].factory,
+    gatewayAddress: contractsMock[fromChain].gateway,
+    gasServiceAddress: contractsMock[fromChain].gasService,
+    walletBytecode: hexToBytes('1234'),
+  });
+  const flow2Amount = usdc.units(500);
+  const flow2Key = await E(evmHandler).deposit(
+    makePermitDetails(flow2Amount.value, 2n, predictedSpender),
+  );
+  t.regex(flow2Key, /^flow\d+$/, 'flow2 starts');
+
+  const flow2Status = (await readPublished(
+    publishedPath,
+  )) as unknown as StatusFor['portfolio'];
+  const {
+    flowsRunning: flows2 = {},
+    policyVersion: pv2,
+    rebalanceCount: rc2,
+  } = flow2Status;
+  const [[flow2Id, flow2Detail]] = Object.entries(flows2);
+  if (flow2Detail?.type !== 'deposit') throw t.fail(flow2Detail?.type);
+  const flow2Num = Number(flow2Id.replace('flow', ''));
+  const flow2PlanAmount = AmountMath.make(usdc.brand, flow2Detail.amount.value);
+  await E(planner1.stub).resolvePlan(
+    pId,
+    flow2Num,
+    {
+      flow: [
+        { src: '+Base', dest: '@Base', amount: flow2PlanAmount, fee },
+        { src: '@Base', dest: 'Aave_Base', amount: flow2PlanAmount, fee },
+      ],
+    },
+    pv2,
+    rc2,
+  );
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+
+  const findFailedUnsubscribe = () => {
+    const paths = [...common.bootstrap.storage.data.keys()].filter(path =>
+      path.includes('.pendingTxs.tx'),
+    );
+    return paths
+      .map(path => {
+        const tx = common.bootstrap.storage.getDeserialized(path).at(-1) as any;
+        return { txId: path.split('.').at(-1), ...tx };
+      })
+      .find(
+        tx =>
+          tx?.status === 'failed' &&
+          `${tx?.rejectionReason}`.includes(
+            'unsubscribe: Error: no traffic entries to finish',
+          ),
+      );
+  };
+
+  let failedUnsubscribe = findFailedUnsubscribe();
+  for (let i = 0; i < 20 && !failedUnsubscribe; i += 1) {
+    await eventLoopIteration();
+    failedUnsubscribe = findFailedUnsubscribe();
+  }
+  t.truthy(
+    failedUnsubscribe,
+    'flow2 records failed pending tx with unsubscribe/no-traffic reason',
+  );
 });
