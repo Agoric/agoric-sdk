@@ -1207,7 +1207,7 @@ test('forward not attempted: unsupported destination', async t => {
   ]);
 });
 
-test.failing('forward via cctp failed (MsgTransfer)', async t => {
+test('forward via cctp failed (MsgTransfer)', async t => {
   const {
     common,
     makeSettler,
