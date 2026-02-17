@@ -52,11 +52,12 @@ export const makeSwapLockMessages = (
     usdnOut = undefined as bigint | undefined,
   } = {},
 ) => {
+  const usdnAmount = usdnOut ?? usdcIn;
   const msgSwap = MsgSwap.fromPartial({
     signer: nobleAddr.value,
     amount: { denom, amount: `${usdcIn}` },
     routes: [{ poolId, denomTo }],
-    min: { denom: denomTo, amount: `${usdnOut || usdcIn}` },
+    min: { denom: denomTo, amount: `${usdnAmount}` },
   });
   if (vault === undefined) {
     const protoMessages = [Any.toJSON(MsgSwap.toProtoMsg(msgSwap))];
@@ -65,7 +66,7 @@ export const makeSwapLockMessages = (
   const msgLock = MsgLock.fromPartial({
     signer: nobleAddr.value,
     vault,
-    amount: `${usdnOut}`,
+    amount: `${usdnAmount}`,
   });
   const protoMessages = [
     Any.toJSON(MsgSwap.toProtoMsg(msgSwap)),

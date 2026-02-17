@@ -886,6 +886,24 @@ test('Noble Dollar Swap, Lock messages', async t => {
   }
 });
 
+test('makeSwapLockMessages uses parity amount for MsgLock when usdnOut is omitted', async t => {
+  const { cosmosId } = mocks();
+  const nobleId = await cosmosId('noble');
+
+  const actual = makeSwapLockMessages(
+    { value: 'noble1test', chainId: nobleId, encoding: 'bech32' },
+    5_000n * 1_000_000n,
+    { vault: 1 },
+  );
+
+  t.is(actual.msgSwap.min?.amount, '5000000000');
+  t.is(
+    actual.msgLock?.amount,
+    '5000000000',
+    'vaulted parity swap should not encode MsgLock amount as "undefined"',
+  );
+});
+
 test('makePortfolioSteps for USDN position', async t => {
   const actual = await makePortfolioSteps({
     USDN: make(USDC, 50n * 1_000_000n),
