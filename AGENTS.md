@@ -37,6 +37,13 @@ per https://agents.md/
 - Run all: `yarn test`. Per-package: `yarn test` from that package directory.
 - Coverage: in a package, run `yarn test:c8` and open `coverage/html/index.html` after `yarn c8 report --reporter=html-spa` if needed.
 
+## Async-Flow Model Notes
+- Async-flow runs each invocation as an activation with durable lifecycle states: `Running`, `Sleeping`, `Replaying`, `Failed`, `Done`.
+- Upgrade-safe behavior depends on deterministic replay of prior host interactions; divergence during replay or invalid interactions can move an activation to `Failed`.
+- `Done` means the activation outcome is settled and replay bookkeeping is dropped; logic that assumes continued activation state after completion is erroneous. Once the async-flow is done, any promises not yet settled will never see their reactions run. That's because the vow settling on the host side no longer translates into a settlement of the guest promise.
+- For `*.flows.*` modules, keep replay behavior in mind and prefer code that is explicit about lifecycle boundaries and awaited dependencies.
+- When reviewing `*.flows.*` modules, read `packages/async-flow/docs/async-flow-states.md`.
+
 ## A3P Container & Proposal Build Notes
 - A3P tests run inside a Docker container built from an agoric-sdk checkout, so the container can access the full repo filesystem, not just published npm packages.
 - The container’s canonical agoric-sdk checkout is based on the last formal release, so any workspace updates needed by A3P must be copied into the image and resolved correctly.
