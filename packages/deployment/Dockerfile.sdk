@@ -83,7 +83,7 @@ COPY --link packages/xsnap packages/xsnap
 COPY --link scripts scripts
 
 WORKDIR /usr/src/agoric-sdk/packages/xsnap
-# Check out the specified submodule versions.
+# Fetch the specified pinned source archives.
 # When changing/adding entries here, make sure to search the whole project for
 # `@@AGORIC_DOCKER_SUBMODULES@@`
 RUN \
