@@ -19,6 +19,8 @@ import {
   makeFakeStorageKit,
 } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { makeExpectUnhandledRejectionMacro } from '@agoric/internal/src/lib-nodejs/ava-unhandled-rejection.js';
+
 import {
   denomHash,
   type AccountId,
@@ -36,7 +38,11 @@ import {
   chainOfAccount,
 } from '@agoric/orchestration/src/utils/address.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
-import type { AxelarChain, FundsFlowPlan } from '@agoric/portfolio-api';
+import {
+  type AxelarChain,
+  type FlowDetail,
+  type FundsFlowPlan,
+} from '@agoric/portfolio-api';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import {
   DEFAULT_FLOW_CONFIG,
@@ -53,6 +59,8 @@ import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics
 import { makeHeapZone } from '@agoric/zone';
 import { Far, passStyleOf } from '@endo/pass-style';
 import { makePromiseKit } from '@endo/promise-kit';
+import { hexToBytes } from '@noble/hashes/utils';
+import type { Assertions } from 'ava';
 import {
   preparePortfolioKit,
   type PortfolioKit,
@@ -64,13 +72,16 @@ import {
   openPortfolio as rawOpenPortfolio,
   provideCosmosAccount,
   rebalance as rawRebalance,
-  wayFromSrcToDesc,
+  wayFromSrcToDest,
   type OnTransferContext,
   type PortfolioInstanceContext,
 } from '../src/portfolio.flows.ts';
 import {
   provideEVMAccount,
   provideEVMAccountWithPermit,
+  sendGMPContractCall,
+  sendPermit2GMP,
+  type EVMContext,
 } from '../src/pos-gmp.flows.ts';
 import {
   makeSwapLockMessages,
@@ -90,6 +101,7 @@ import {
 } from '../src/type-guards-steps.ts';
 import { makeProposalShapes, type ProposalType } from '../src/type-guards.ts';
 import { makePortfolioSteps } from '../tools/plan-transfers.ts';
+import { predictWalletAddress } from '../src/utils/evm-orch-factory.ts';
 import {
   decodeCreateAndDepositPayload,
   decodeFunctionCall,
@@ -105,6 +117,11 @@ import {
   makeIncomingVTransferEvent,
   makeStorageTools,
 } from './supports.ts';
+
+const expectUnhandled = makeExpectUnhandledRejectionMacro({
+  test,
+  importMetaUrl: import.meta.url,
+});
 
 const executePlan: typeof rawExecutePlan = (
   orch,
@@ -269,7 +286,7 @@ const mocks = (
   const log = (ev: MockLogEvent) => {
     buf.push(ev);
   };
-  const kinks: Array<(ev: MockLogEvent) => Promise<void>> = [];
+  const kinks: Set<(ev: MockLogEvent) => Promise<void>> = new Set();
   const record = async (ev: MockLogEvent) => {
     for (const kink of kinks) {
       await kink(ev);
@@ -664,6 +681,7 @@ const mocks = (
     usdcBrand: USDC,
     eip155ChainIdToAxelarChain,
     contracts: contractsMock,
+    walletBytecode: ctx1.walletBytecode,
     ...(null as any),
   });
   const makePortfolioKitGuest = (opts?: { sourceAccountId?: AccountId }) =>
@@ -682,6 +700,10 @@ const mocks = (
   };
 
   const txResolver = harden({
+    getPublished: (txId: TxId) =>
+      getDeserialized(`published.ymax0.pendingTxs.${txId}`).at(-1) as
+        | PublishedTx
+        | undefined,
     findPending: async () => {
       await eventLoopIteration();
       const paths = [...storage.data.keys()].filter(k =>
@@ -785,11 +807,14 @@ const mocks = (
     },
     vowTools,
     txResolver,
+    makeProgressTracker,
     resolverClient,
     resolverService,
     cosmosId,
   };
 };
+
+type Mocks = Awaited<ReturnType<typeof mocks>>;
 
 /* eslint-disable no-underscore-dangle */
 /* We use _method to get it to sort before other properties. */
@@ -996,7 +1021,7 @@ test('open portfolio with Aave position', async t => {
 test.skip('reject missing fee before committing anything', t => {
   const amount = AmountMath.make(USDC, 300n);
   t.throws(() =>
-    wayFromSrcToDesc({ src: '@Arbitrum', dest: 'Compound_Arbitrum', amount }),
+    wayFromSrcToDest({ src: '@Arbitrum', dest: 'Compound_Arbitrum', amount }),
   );
 });
 
@@ -1355,9 +1380,9 @@ test('open portfolio with Beefy position', async t => {
   t.snapshot(decodedCalls, 'decoded calls');
 });
 
-test('wayFromSrcToDesc handles +agoric -> @agoric', t => {
+test('wayFromSrcToDest handles +agoric -> @agoric', t => {
   const amount = AmountMath.make(USDC, 2_000_000n);
-  const actual = wayFromSrcToDesc({ src: '+agoric', dest: '@agoric', amount });
+  const actual = wayFromSrcToDest({ src: '+agoric', dest: '@agoric', amount });
   t.deepEqual(actual, { how: 'send' });
 });
 
@@ -1478,92 +1503,98 @@ test('handle failure in provideCosmosAccount makeAccount', async t => {
   }
 });
 
-test('handle failure in provideEVMAccount sendMakeAccountCall', async t => {
-  const unlucky = make(BLD, 13n);
-  const { give, steps } = await makePortfolioSteps(
-    { Compound: make(USDC, 2_000_000n) },
-    {
-      fees: { Compound: { Account: unlucky, Call: make(BLD, 100n) } },
-      evm: 'Arbitrum',
-    },
-  );
-  const { orch, ctx, offer, storage, tapPK, txResolver } = mocks(
-    { send: Error('Insufficient funds - piggy bank sprang a leak') },
-    give,
-  );
-  const { log } = offer;
-
-  // Create portfolio once for both attempts
-  const pKit = await ctx.makePortfolioKit();
-
-  // First attempt - will fail when trying to send 13n BLD (unlucky amount)
-  const seat1 = makeMockSeat(give, undefined, log);
-
-  const attempt1P = rebalance(orch, ctx, seat1, { flow: steps }, pKit);
-  const testDonePK = makePromiseKit();
-  void txResolver.settleUntil(testDonePK.promise);
-  t.is(await attempt1P, undefined);
-
-  const seatFails = log.find(e => e._method === 'fail' && e._cap === 'seat');
-  t.like(
-    seatFails?.reason,
-    {
-      error: 'Insufficient funds - piggy bank sprang a leak',
-      how: 'Compound',
-      step: 4,
-    },
-    'rebalance should fail when EVM account creation fails',
-  );
-
-  const { getPortfolioStatus, getFlowStatus } = makeStorageTools(storage);
-
-  {
-    const { accountIdByChain: byChain, accountsPending } =
-      await getPortfolioStatus(1);
-    // addresses of all requested accounts are available
-    t.deepEqual(Object.keys(byChain), ['Arbitrum', 'agoric', 'noble']);
-    // attempt to install Arbitrum account is no longer pending
-    t.deepEqual(accountsPending, []);
-
-    const fs = await getFlowStatus(1, 1);
-    t.log(fs);
-    t.deepEqual(
-      fs,
+test(
+  'handle failure in provideEVMAccount sendMakeAccountCall',
+  expectUnhandled(1),
+  async t => {
+    const unlucky = make(BLD, 13n);
+    const { give, steps } = await makePortfolioSteps(
+      { Compound: make(USDC, 2_000_000n) },
       {
-        type: 'rebalance',
-        state: 'fail',
-        step: 4,
-        how: 'Compound',
-        error: 'Insufficient funds - piggy bank sprang a leak',
-        next: undefined,
+        fees: { Compound: { Account: unlucky, Call: make(BLD, 100n) } },
+        evm: 'Arbitrum',
       },
-      '"Insufficient funds" error should be visible in vstorage',
     );
-  }
+    const { orch, ctx, offer, storage, tapPK, txResolver } = mocks(
+      { send: Error('Insufficient funds - piggy bank sprang a leak') },
+      give,
+    );
+    const { log } = offer;
 
-  // Recovery attempt - avoid the unlucky 13n fee using same portfolio
-  const { give: giveGood, steps: stepsGood } = await makePortfolioSteps(
-    { Compound: make(USDC, 2_000_000n) },
-    { fees: { Compound: { Account: make(BLD, 300n), Call: make(BLD, 100n) } } },
-  );
-  const seat2 = makeMockSeat(giveGood, undefined, log);
-  const attempt2P = rebalance(orch, ctx, seat2, { flow: stepsGood }, pKit);
+    // Create portfolio once for both attempts
+    const pKit = await ctx.makePortfolioKit();
 
-  await Promise.all([
-    attempt2P,
-    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
-      await txResolver.drainPending();
-    }),
-  ]);
-  t.truthy(log.find(entry => entry._method === 'exit'));
+    // First attempt - will fail when trying to send 13n BLD (unlucky amount)
+    const seat1 = makeMockSeat(give, undefined, log);
 
-  {
-    const { accountIdByChain: byChain } = await getPortfolioStatus(1);
-    t.deepEqual(Object.keys(byChain), ['Arbitrum', 'agoric', 'noble']);
-  }
+    const attempt1P = rebalance(orch, ctx, seat1, { flow: steps }, pKit);
+    const testDonePK = makePromiseKit();
+    void txResolver.settleUntil(testDonePK.promise);
+    t.is(await attempt1P, undefined);
 
-  testDonePK.resolve(undefined);
-});
+    const seatFails = log.find(e => e._method === 'fail' && e._cap === 'seat');
+    t.like(
+      seatFails?.reason,
+      {
+        error: 'Insufficient funds - piggy bank sprang a leak',
+        how: 'Compound',
+        step: 4,
+      },
+      'rebalance should fail when EVM account creation fails',
+    );
+
+    const { getPortfolioStatus, getFlowStatus } = makeStorageTools(storage);
+
+    {
+      const { accountIdByChain: byChain, accountsPending } =
+        await getPortfolioStatus(1);
+      // addresses of all requested accounts are available
+      t.deepEqual(Object.keys(byChain), ['Arbitrum', 'agoric', 'noble']);
+      // attempt to install Arbitrum account is no longer pending
+      t.deepEqual(accountsPending, []);
+
+      const fs = await getFlowStatus(1, 1);
+      t.log(fs);
+      t.deepEqual(
+        fs,
+        {
+          type: 'rebalance',
+          state: 'fail',
+          step: 4,
+          how: 'Compound',
+          error: 'Insufficient funds - piggy bank sprang a leak',
+          next: undefined,
+        },
+        '"Insufficient funds" error should be visible in vstorage',
+      );
+    }
+
+    // Recovery attempt - avoid the unlucky 13n fee using same portfolio
+    const { give: giveGood, steps: stepsGood } = await makePortfolioSteps(
+      { Compound: make(USDC, 2_000_000n) },
+      {
+        fees: { Compound: { Account: make(BLD, 300n), Call: make(BLD, 100n) } },
+      },
+    );
+    const seat2 = makeMockSeat(giveGood, undefined, log);
+    const attempt2P = rebalance(orch, ctx, seat2, { flow: stepsGood }, pKit);
+
+    await Promise.all([
+      attempt2P,
+      Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
+        await txResolver.drainPending();
+      }),
+    ]);
+    t.truthy(log.find(entry => entry._method === 'exit'));
+
+    {
+      const { accountIdByChain: byChain } = await getPortfolioStatus(1);
+      t.deepEqual(Object.keys(byChain), ['Arbitrum', 'agoric', 'noble']);
+    }
+
+    testDonePK.resolve(undefined);
+  },
+);
 
 test.todo('recover from send step');
 
@@ -1922,7 +1953,17 @@ const silent: TraceLogger = Object.assign(() => {}, {
 });
 
 /** turn boundaries in provideEVMAccount (except awaiting feeAccount and getChainInfo) */
-type EStep = 'predict' | 'send' | 'register' | 'txfr' | 'resolve';
+const ProvideSteps = [
+  'predict',
+  'send',
+  'register',
+  'txfr',
+  'resolve',
+] as const;
+type EStep = (typeof ProvideSteps)[number];
+const ProvideStepsOrder = Object.fromEntries(
+  ProvideSteps.map((s, i) => [s, i]),
+) as { [K in EStep]: number };
 
 type ProvideEVMAccountFn = (
   ...args: Parameters<typeof provideEVMAccount>
@@ -1962,6 +2003,14 @@ const provideEVMAccountWithPermitStub: ProvideEVMAccountFn = (
     orchOpts,
   );
 
+type MakeAccountEVMRaceParams = {
+  provide: ProvideEVMAccountFn;
+  provideB?: ProvideEVMAccountFn;
+  headStart: EStep;
+  errAt?: Exclude<EStep, 'predict' | 'register'>;
+  BHasDeposit?: boolean;
+};
+
 /**
  * make 2 attempts A, and B, to provideEVMAccount.
  * Give A a headStart and then pause it.
@@ -1970,14 +2019,26 @@ const provideEVMAccountWithPermitStub: ProvideEVMAccountFn = (
  * Otherwise, B should succeed after recovering.
  */
 const makeAccountEVMRace = test.macro({
-  title: (
-    providedTitle = '',
-    _provide: ProvideEVMAccountFn,
-    _headStart: EStep,
-    _errAt?: EStep,
-  ) => `EVM makeAccount race: ${providedTitle}`,
-  async exec(t, provide: ProvideEVMAccountFn, headStart: EStep, errAt?: EStep) {
-    const { orch, ctx, offer, txResolver } = mocks({});
+  title: (providedTitle = '', _params: MakeAccountEVMRaceParams) =>
+    `EVM makeAccount race: ${providedTitle}`,
+  async exec(
+    t,
+    {
+      provide,
+      provideB,
+      headStart,
+      errAt,
+      BHasDeposit,
+    }: MakeAccountEVMRaceParams,
+  ) {
+    const {
+      orch,
+      ctx,
+      offer,
+      txResolver,
+      resolverService,
+      makeProgressTracker,
+    } = mocks({});
 
     const pKit = await ctx.makePortfolioKit();
     await provideCosmosAccount(orch, 'agoric', pKit, silent);
@@ -1987,30 +2048,23 @@ const makeAccountEVMRace = test.macro({
     const { [chainName]: chainInfo } = axelarCCTPConfig;
     const gmp = { chain: await orch.getChain('axelar'), fee: 123n };
 
-    const attempt = async () => {
-      return provide(chainName, chainInfo, gmp, lca, ctx, pKit, undefined);
+    const attempt = (p: ProvideEVMAccountFn = provide) => {
+      const progressTracker = makeProgressTracker();
+      const info = p(chainName, chainInfo, gmp, lca, ctx, pKit, {
+        orchOpts: { progressTracker },
+      });
+      return { info, progressTracker };
     };
 
     const { log, kinks } = offer;
-    type Kink = (typeof kinks)[0];
-    const A = attempt();
-    const Aready = A.then(status => status.ready);
-    const Asettled = Aready.catch(_ => {});
-
-    const startSettlingPK = makePromiseKit();
-    const [txStatus, txReason] =
-      errAt === 'resolve'
-        ? (['failed', 'oops!'] as const)
-        : (['success', undefined] as const);
-    void startSettlingPK.promise.then(() =>
-      txResolver.settleUntil(Asettled, txStatus, txReason),
-    );
+    type Kink = typeof kinks extends Set<infer U> ? U : never;
+    const { info: A, progressTracker: AProgressTracker } = attempt();
 
     const resolveAfterBStarts: ((r: unknown) => void)[] = [];
     const removeKink = (kink: Kink) => {
-      const ix = kinks.indexOf(kink);
-      t.log('remove kink at', ix, kink.name);
-      kinks.splice(ix);
+      const removed = kinks.delete(kink);
+      if (!removed) throw Error('kink not found');
+      t.log('removed kink', kink.name);
     };
     const waitDuring = (method: string) => {
       const sync = makePromiseKit();
@@ -2022,7 +2076,7 @@ const makeAccountEVMRace = test.macro({
           await sync.promise;
         }
       };
-      kinks.push(waitKink);
+      kinks.add(waitKink);
     };
     const failedMethods: string[] = [];
     const failDuring = (method: string, msg = 'no joy') => {
@@ -2034,50 +2088,106 @@ const makeAccountEVMRace = test.macro({
           throw Error(msg);
         }
       };
-      kinks.push(failKink);
+      kinks.add(failKink);
     };
+
+    const startSettlingPK = makePromiseKit();
+    const doSettle = async () => {
+      await startSettlingPK.promise;
+      t.log('settle A txs');
+      const [txStatus, txReason] =
+        errAt === 'resolve'
+          ? (['failed', 'oops!'] as const)
+          : (['success', undefined] as const);
+
+      const txIds = AProgressTracker.getCurrentProgressReport().appendedTxIds;
+      for (const txId of txIds) {
+        const tx = txResolver.getPublished(txId);
+        if (tx?.status === 'pending') {
+          resolverService.settleTransaction({
+            txId,
+            status: txStatus,
+            rejectionReason: txReason,
+          });
+        }
+      }
+    };
+
+    const settleKink: Kink = async ev => {
+      if (ev._method === 'transfer') {
+        removeKink(settleKink);
+        void doSettle();
+      }
+    };
+
+    const ASettledAt = errAt ?? 'resolve';
+    const BOverlapsA =
+      ProvideStepsOrder[headStart] < ProvideStepsOrder[ASettledAt];
+
+    if (ASettledAt === 'resolve') {
+      kinks.add(settleKink);
+    }
+
+    if (BOverlapsA && BHasDeposit) {
+      throw new Error(
+        'Invalid test configuration: B cannot have a deposit if it overlaps with A',
+      );
+    }
 
     switch (headStart) {
       case 'predict': {
         waitDuring('send');
-        startSettlingPK.resolve(null);
+        resolveAfterBStarts.push(startSettlingPK.resolve);
         break;
       }
 
       case 'send': {
         waitDuring('transfer');
-        if (errAt === 'send') {
-          failDuring('send', 'insufficient funds: need moar!');
-        }
-        startSettlingPK.resolve(null);
+        resolveAfterBStarts.push(startSettlingPK.resolve);
         break;
       }
 
       case 'register': {
         waitDuring('transfer');
-        startSettlingPK.resolve(null);
+        resolveAfterBStarts.push(startSettlingPK.resolve);
         break;
       }
 
       case 'txfr':
-        if (errAt === 'txfr') {
-          failDuring('transfer', 'timeout: coach is not happy');
-        } else {
-          kinks.push(async ev => {
-            if (ev._method === 'transfer') startSettlingPK.resolve(null);
-          });
-        }
+        resolveAfterBStarts.push(startSettlingPK.resolve);
         break;
 
       case 'resolve': {
-        startSettlingPK.resolve(null);
+        void eventLoopIteration().then(() => {
+          startSettlingPK.resolve(null);
+        });
         break;
       }
+
       default:
         throw Error('unreachable');
     }
 
-    const { remoteAddress } = await A;
+    switch (errAt) {
+      case 'send': {
+        failDuring('send', 'insufficient funds: need moar!');
+        break;
+      }
+      case 'txfr': {
+        failDuring('transfer', 'timeout: coach is not happy');
+        break;
+      }
+      case 'resolve': {
+        // handled by doSettle
+        break;
+      }
+      case undefined:
+        break;
+      default:
+        throw Error(`unexpected errAt value: ${errAt}`);
+    }
+
+    const { remoteAddress } = A;
     t.log('promptly available address', remoteAddress);
 
     await eventLoopIteration(); // A runs until paused
@@ -2085,119 +2195,206 @@ const makeAccountEVMRace = test.macro({
     const methodsBeforeB = getMethods();
     t.log('calls before B:', methodsBeforeB.join(', '));
 
-    const B = attempt();
+    const { info: B, progressTracker: BProgressTracker } = attempt(provideB);
+
     for (const resolve of resolveAfterBStarts) {
       resolve(null);
     }
 
-    const statusB = await B;
-    t.is(statusB.remoteAddress, remoteAddress, 'same address for both racers');
+    t.is(B.remoteAddress, remoteAddress, 'same address for both racers');
 
-    await (errAt ? t.throwsAsync(Aready) : t.notThrowsAsync(Aready));
+    const AErr = await (errAt
+      ? t.throwsAsync(A.ready)
+      : t.notThrowsAsync(A.ready));
     t.snapshot(
       { methodsBeforeB, failedMethods },
-      JSON.stringify({ headStart, errAt }),
+      JSON.stringify({ headStart, errAt, BHasDeposit, BOverlapsA }),
     );
 
     t.log('calls after A:', getMethods().join(', '));
-    await t.notThrowsAsync(B.then(status => status.ready));
+
+    // If A fails:
+    // - overlap should expect failure of B
+    // - no overlap should expect recovery
+    // NB: deposit in B is not expected and disallowed by test config if there is overlap.
+
+    if (BOverlapsA && errAt) {
+      const BErr = await t.throwsAsync(B.ready);
+      t.is(BErr, AErr as Error);
+      t.not(
+        pKit.reader.getGMPInfo(chainName).err,
+        undefined,
+        'account is failed',
+      );
+    } else {
+      await eventLoopIteration(); // B runs until any resolve;
+
+      const BShouldRecover = !!errAt;
+      const BHasWorkToDo = BHasDeposit || BShouldRecover;
+      const readyRaceResult = Promise.race([
+        B.ready.then(() => false),
+        Promise.resolve().then(() => true),
+      ]);
+      await t.notThrowsAsync(readyRaceResult);
+
+      t.is(
+        await readyRaceResult,
+        BShouldRecover,
+        'B should be ready immediately iif it does not have to recover',
+      );
+
+      if (!BHasWorkToDo) {
+        // XXX: can we assert somehow that B doesn't do any work if there is an overlap?
+        if (!BOverlapsA) {
+          t.deepEqual(
+            methodsBeforeB,
+            getMethods(),
+            'B should do no work if not a deposit and A succeeded',
+          );
+        }
+      } else {
+        t.log('settle B txs');
+        await eventLoopIteration();
+        const txIds = BProgressTracker.getCurrentProgressReport().appendedTxIds;
+        for (const txId of txIds) {
+          const tx = txResolver.getPublished(txId);
+          if (tx?.status === 'pending') {
+            resolverService.settleTransaction({
+              txId,
+              status: 'success',
+            });
+          }
+        }
+
+        await t.notThrowsAsync(Promise.all([B.ready, B.done]));
+      }
+
+      t.is(pKit.reader.getGMPInfo(chainName).err, undefined, 'account is ok');
+    }
 
     t.log('calls after A,B:', getMethods().join(', '));
     t.snapshot(getMethods(), 'total sequence of completed methods');
   },
 });
 
+test('A and B arrive together; A wins the race; B adopts', makeAccountEVMRace, {
+  provide: provideEVMAccount,
+  headStart: 'predict',
+});
+test('A pays fee; B adopts', makeAccountEVMRace, {
+  provide: provideEVMAccount,
+  headStart: 'send',
+});
 test(
-  'A and B arrive together; A wins the race',
-  makeAccountEVMRace,
-  provideEVMAccount,
-  'predict',
+  'A fails to pay fee; B arrives and recovers',
+  expectUnhandled(1, makeAccountEVMRace),
+  {
+    provide: provideEVMAccount,
+    headStart: 'send',
+    errAt: 'send',
+  },
 );
-test('A pays fee; B arrives', makeAccountEVMRace, provideEVMAccount, 'send');
+test('A registers txN; B adopts', makeAccountEVMRace, {
+  provide: provideEVMAccount,
+  headStart: 'register',
+});
+test('A transfers to axelar; B adopts', makeAccountEVMRace, {
+  provide: provideEVMAccount,
+  headStart: 'txfr',
+});
 test(
-  'A fails to pay fee; B arrives',
-  makeAccountEVMRace,
-  provideEVMAccount,
-  'send',
-  'send',
-);
-test(
-  'A registers txN; B arrives',
-  makeAccountEVMRace,
-  provideEVMAccount,
-  'register',
-);
-test(
-  'A transfers to axelar; B arrives',
-  makeAccountEVMRace,
-  provideEVMAccount,
-  'txfr',
-);
-test(
-  'A times out on axelar; B arrives',
-  makeAccountEVMRace,
-  provideEVMAccount,
-  'txfr',
-  'txfr',
+  'A times out on axelar; B adopts',
+  expectUnhandled(1, makeAccountEVMRace),
+  { provide: provideEVMAccount, headStart: 'register', errAt: 'txfr' },
 );
 test(
-  'A gets rejected txN; B arrives',
-  makeAccountEVMRace,
-  provideEVMAccount,
-  'txfr',
-  'resolve',
+  'A times out on axelar; B arrives and recovers',
+  expectUnhandled(1, makeAccountEVMRace),
+  { provide: provideEVMAccount, headStart: 'txfr', errAt: 'txfr' },
 );
+test('A gets rejected txN; B adopts', expectUnhandled(1, makeAccountEVMRace), {
+  provide: provideEVMAccount,
+  headStart: 'txfr',
+  errAt: 'resolve',
+});
 test(
-  'A finishes before attempt B starts',
-  makeAccountEVMRace,
-  provideEVMAccount,
-  'resolve',
+  'A gets rejected txN; B arrives and recovers',
+  expectUnhandled(1, makeAccountEVMRace),
+  {
+    provide: provideEVMAccount,
+    headStart: 'resolve',
+    errAt: 'resolve',
+  },
 );
+test('A finishes before attempt B starts', makeAccountEVMRace, {
+  provide: provideEVMAccount,
+  headStart: 'resolve',
+});
 
 test(
-  'withPermit: A and B arrive together; A wins the race',
+  'withPermit: A and B arrive together; A wins the race; B adopts',
   makeAccountEVMRace,
-  provideEVMAccountWithPermitStub,
-  'predict',
+  {
+    provide: provideEVMAccountWithPermitStub,
+    provideB: provideEVMAccount,
+    headStart: 'predict',
+  },
+);
+test('withPermit: A registers txN; B adopts', makeAccountEVMRace, {
+  provide: provideEVMAccountWithPermitStub,
+  provideB: provideEVMAccount,
+  headStart: 'register',
+});
+test('withPermit: A transfers to axelar; B adopts', makeAccountEVMRace, {
+  provide: provideEVMAccountWithPermitStub,
+  provideB: provideEVMAccount,
+  headStart: 'txfr',
+});
+test(
+  'withPermit: A times out on axelar; B adopts',
+  expectUnhandled(1, makeAccountEVMRace),
+  {
+    provide: provideEVMAccountWithPermitStub,
+    provideB: provideEVMAccount,
+    headStart: 'register',
+    errAt: 'txfr',
+  },
 );
 test(
-  'withPermit: A pays fee; B arrives',
-  makeAccountEVMRace,
-  provideEVMAccountWithPermitStub,
-  'send',
+  'withPermit: A times out on axelar; B arrives and recovers',
+  expectUnhandled(1, makeAccountEVMRace),
+  {
+    provide: provideEVMAccountWithPermitStub,
+    headStart: 'txfr',
+    errAt: 'txfr',
+    BHasDeposit: true,
+  },
 );
 test(
-  'withPermit: A registers txN; B arrives',
-  makeAccountEVMRace,
-  provideEVMAccountWithPermitStub,
-  'register',
+  'withPermit: A gets rejected txN; B adopts',
+  expectUnhandled(1, makeAccountEVMRace),
+  {
+    provide: provideEVMAccountWithPermitStub,
+    provideB: provideEVMAccount,
+    headStart: 'txfr',
+    errAt: 'resolve',
+  },
 );
 test(
-  'withPermit: A transfers to axelar; B arrives',
-  makeAccountEVMRace,
-  provideEVMAccountWithPermitStub,
-  'txfr',
+  'withPermit: A gets rejected txN; B arrives and recovers',
+  expectUnhandled(1, makeAccountEVMRace),
+  {
+    provide: provideEVMAccountWithPermitStub,
+    headStart: 'resolve',
+    errAt: 'resolve',
+    BHasDeposit: true,
+  },
 );
-test(
-  'withPermit: A times out on axelar; B arrives',
-  makeAccountEVMRace,
-  provideEVMAccountWithPermitStub,
-  'txfr',
-  'txfr',
-);
-test(
-  'withPermit: A gets rejected txN; B arrives',
-  makeAccountEVMRace,
-  provideEVMAccountWithPermitStub,
-  'txfr',
-  'resolve',
-);
-test(
-  'withPermit: A finishes before attempt B starts',
-  makeAccountEVMRace,
-  provideEVMAccountWithPermitStub,
-  'resolve',
-);
+test('withPermit: A finishes before attempt B starts', makeAccountEVMRace, {
+  provide: provideEVMAccountWithPermitStub,
+  headStart: 'resolve',
+  BHasDeposit: true,
+});
 
 test('planner rejects plan and flow fails gracefully', async t => {
   const { orch, ctx, offer, storage } = mocks({});
@@ -2254,7 +2451,7 @@ test('planner rejects plan and flow fails gracefully', async t => {
 
   t.truthy(failCall, 'seat.fail() should be called when plan is rejected');
   t.falsy(exitCall, 'seat.exit() should not be called when plan is rejected');
-  t.deepEqual(
+  t.is(
     `${failCall?.reason}`,
     'Error: insufficient funds for this operation',
     'failure reason should match rejection message',
@@ -2341,7 +2538,7 @@ test('makeErrorList collects any number of errors', t => {
       [{ status: 'fulfilled', value: undefined }],
       [],
     );
-    t.deepEqual(fromNoRejections, undefined, 'no errors');
+    t.is(fromNoRejections, undefined, 'no errors');
   }
 
   {
@@ -2574,6 +2771,68 @@ test('withdraw from Beefy position', async t => {
   await documentStorageSchema(t, storage, docOpts);
 });
 
+type Permit2PermitOverrides = Partial<
+  Omit<PermitDetails['permit2Payload'], 'permit'>
+> & {
+  permit?: Partial<PermitDetails['permit2Payload']['permit']> & {
+    permitted?: Partial<PermitDetails['permit2Payload']['permit']['permitted']>;
+  };
+};
+
+type Permit2Overrides = Partial<
+  Omit<PermitDetails, 'permit2Payload'> & {
+    permit2Payload: Permit2PermitOverrides;
+  } & {
+    chain: AxelarChain;
+  }
+>;
+
+const makePermitDetails = (overrides: Permit2Overrides = {}): PermitDetails => {
+  const chain = overrides.chain ?? 'Arbitrum';
+  const amount = overrides.amount ?? 1_000_000_000n;
+  const token = overrides.token ?? contractsMock[chain].usdc;
+  const spender = overrides.spender ?? contractsMock[chain].depositFactory;
+  const chainId =
+    overrides.chainId ?? Number(axelarCCTPConfig[chain].reference);
+
+  const basePayload: PermitDetails['permit2Payload'] = {
+    permit: {
+      permitted: {
+        token,
+        amount,
+      },
+      nonce: 7115368379195441n,
+      deadline: 1357923600n,
+    },
+    owner: '0x1111111111111111111111111111111111111111',
+    witness:
+      '0x0000000000000000000000000000000000000000000000000000000000000000',
+    witnessTypeString: 'OpenPortfolioWitness',
+    signature: '0x1234' as `0x${string}`,
+  };
+
+  const permit2Payload = {
+    ...basePayload,
+    ...overrides.permit2Payload,
+    permit: {
+      ...basePayload.permit,
+      ...overrides.permit2Payload?.permit,
+      permitted: {
+        ...basePayload.permit.permitted,
+        ...overrides.permit2Payload?.permit?.permitted,
+      },
+    },
+  };
+
+  return {
+    chainId,
+    token,
+    amount,
+    spender,
+    permit2Payload,
+  };
+};
+
 // EVM wallet integration flow
 test('openPortfolio from EVM with Permit2 completes a deposit flow', async t => {
   // Use a mixed-case spender to ensure case-insensitive address checks.
@@ -2715,212 +2974,15 @@ test.todo(
   'openPortfolio from EVM with Permit2 rejects deposit with wrong spender',
 );
 
-test('executePlan does not settle while progress publishing is blocked (12467 pattern)', async t => {
-  const amount = make(USDC, 1_000_000n);
-  const steps: MovementDesc[] = [
-    { src: '<Deposit>', dest: '@agoric', amount },
-    { src: '@agoric', dest: '@noble', amount },
-  ];
-
-  const { orch, ctx, offer, resolverClient } = mocks();
-  const kit = await ctx.makePortfolioKit();
-  const seat = makeMockSeat({ Deposit: amount }, {}, offer.log);
-
-  const createStarted = makePromiseKit<void>();
-  const releaseCreate = makePromiseKit<void>();
-  let createReturned = false;
-  let started = false;
-
-  const delayedResolverClient: typeof resolverClient = Far(
-    'DelayedResolverClient',
-    {
-      createPendingTx: async txMeta => {
-        if (!started) {
-          started = true;
-          createStarted.resolve();
-        }
-        await releaseCreate.promise;
-        const result = await resolverClient.createPendingTx(txMeta);
-        createReturned = true;
-        return result;
-      },
-      updateTxMeta: (txId, txMeta) => resolverClient.updateTxMeta(txId, txMeta),
-      registerTransaction: (...args) =>
-        // @ts-expect-error mock
-        resolverClient.registerTransaction(...args),
-      unsubscribe: (...args) =>
-        // @ts-expect-error mock
-        resolverClient.unsubscribe(...args),
-    },
-  ) as unknown as typeof resolverClient;
-
-  const delayedCtx = {
-    ...ctx,
-    resolverClient: delayedResolverClient,
-  } as PortfolioInstanceContext;
-
-  const runP = executePlan(
-    orch,
-    delayedCtx,
-    seat,
-    { flow: steps },
-    kit,
-    { type: 'deposit', amount },
-    undefined,
-    { features: { useProgressTracker: true } },
-  );
-
-  await createStarted.promise;
-
-  let settled = false;
-  void runP.then(() => {
-    settled = true;
-  });
-  await eventLoopIteration();
-
-  t.false(
-    settled,
-    'executePlan must remain pending while createPendingTx (progress reducer path) is blocked',
-  );
-  t.false(
-    createReturned,
-    'createPendingTx should still be blocked before release',
-  );
-
-  releaseCreate.resolve();
-  await runP;
-});
-
-test('flow5-like ordered plan does not settle while progress publishing is blocked (12467 pattern)', async t => {
-  const { orch, ctx, offer, resolverClient, storage, txResolver } = mocks();
-  const kit = await ctx.makePortfolioKit();
-  const seat = makeMockSeat({}, {}, offer.log);
-  const portfolioId = kit.reader.getPortfolioId();
-  const { getPortfolioStatus } = makeStorageTools(storage);
-
-  const createStarted = makePromiseKit<void>();
-  const releaseCreate = makePromiseKit<void>();
-  let createReturned = false;
-  let started = false;
-
-  const delayedResolverClient: typeof resolverClient = Far(
-    'DelayedResolverClientFlow5Like',
-    {
-      createPendingTx: async txMeta => {
-        if (!started) {
-          started = true;
-          createStarted.resolve();
-        }
-        await releaseCreate.promise;
-        const result = await resolverClient.createPendingTx(txMeta);
-        createReturned = true;
-        return result;
-      },
-      updateTxMeta: (txId, txMeta) => resolverClient.updateTxMeta(txId, txMeta),
-      registerTransaction: (...args) =>
-        // @ts-expect-error mock
-        resolverClient.registerTransaction(...args),
-      unsubscribe: (...args) =>
-        // @ts-expect-error mock
-        resolverClient.unsubscribe(...args),
-    },
-  ) as unknown as typeof resolverClient;
-
-  const delayedCtx = {
-    ...ctx,
-    resolverClient: delayedResolverClient,
-  } as PortfolioInstanceContext;
-
-  const runP = executePlan(
-    orch,
-    delayedCtx,
-    seat,
-    {},
-    kit,
-    { type: 'rebalance' },
-    undefined,
-    { features: { useProgressTracker: true } },
-  );
-
-  const plannerP = (async () => {
-    const { flowsRunning = {} } = await getPortfolioStatus(portfolioId);
-    const [[flowId, detail]] = Object.entries(flowsRunning);
-    if (detail.type !== 'rebalance') throw t.fail(detail.type);
-    const flowNum = Number(flowId.replace('flow', ''));
-    const flow: MovementDesc[] = [
-      {
-        src: '@Base',
-        dest: 'Aave_Base',
-        amount: make(USDC, 2_599_999n),
-        fee: make(BLD, 6_156_495n),
-      },
-      {
-        src: '@Base',
-        dest: '@agoric',
-        amount: make(USDC, 6_000_001n),
-        fee: make(BLD, 5_869_190n),
-      },
-      {
-        src: '@agoric',
-        dest: '@noble',
-        amount: make(USDC, 6_000_001n),
-      },
-      {
-        src: '@noble',
-        dest: '@Optimism',
-        amount: make(USDC, 6_000_001n),
-        fee: make(BLD, 5_000_000n),
-        detail: { evmGas: 66_950_939_676_851n },
-      },
-      {
-        src: '@Optimism',
-        dest: 'Compound_Optimism',
-        amount: make(USDC, 6_000_001n),
-        fee: make(BLD, 5_000_000n),
-      },
-    ];
-    const plan: FundsFlowPlan = {
-      flow,
-      order: [
-        [2, [1]],
-        [3, [2]],
-        [4, [3]],
-      ],
-    };
-    kit.planner.resolveFlowPlan(flowNum, plan);
-  })();
-
-  const resolverP = txResolver.settleUntil(runP);
-  await createStarted.promise;
-
-  let settled = false;
-  void runP.then(() => {
-    settled = true;
-  });
-  await eventLoopIteration();
-
-  t.false(
-    settled,
-    'flow5-like executePlan must remain pending while createPendingTx (progress reducer path) is blocked',
-  );
-  t.false(
-    createReturned,
-    'createPendingTx should still be blocked before release',
-  );
-
-  releaseCreate.resolve();
-  await Promise.all([runP, plannerP, resolverP]);
-});
-
 test.todo(
   'openPortfolio from EVM with Permit2 rejects permit with zero amount',
 );
 
-// #region wayFromSrcToDesc withdraw tests
+// #region wayFromSrcToDest withdraw tests
 
-test('wayFromSrcToDesc handles @Arbitrum -> -Arbitrum (same-chain withdraw)', t => {
+test('wayFromSrcToDest handles @Arbitrum -> -Arbitrum (same-chain withdraw)', t => {
   const amount = AmountMath.make(USDC, 2_000_000n);
-  const actual = wayFromSrcToDesc({
+  const actual = wayFromSrcToDest({
     src: '@Arbitrum',
     dest: '-Arbitrum',
     amount,
@@ -2928,16 +2990,16 @@ test('wayFromSrcToDesc handles @Arbitrum -> -Arbitrum (same-chain withdraw)', t 
   t.deepEqual(actual, { how: 'withdrawToEVM', dest: 'Arbitrum' });
 });
 
-test('wayFromSrcToDesc handles @noble -> -Arbitrum (CCTP to user)', t => {
+test('wayFromSrcToDest handles @noble -> -Arbitrum (CCTP to user)', t => {
   const amount = AmountMath.make(USDC, 2_000_000n);
-  const actual = wayFromSrcToDesc({ src: '@noble', dest: '-Arbitrum', amount });
+  const actual = wayFromSrcToDest({ src: '@noble', dest: '-Arbitrum', amount });
   t.deepEqual(actual, { how: 'CCTPtoUser', dest: 'Arbitrum' });
 });
 
-test('wayFromSrcToDesc rejects @agoric -> -Arbitrum (invalid src for withdraw)', t => {
+test('wayFromSrcToDest rejects @agoric -> -Arbitrum (invalid src for withdraw)', t => {
   const amount = AmountMath.make(USDC, 2_000_000n);
   t.throws(
-    () => wayFromSrcToDesc({ src: '@agoric', dest: '-Arbitrum', amount }),
+    () => wayFromSrcToDest({ src: '@agoric', dest: '-Arbitrum', amount }),
     { message: /src for withdraw to "Arbitrum" must be same chain or noble/ },
   );
 });
@@ -3177,3 +3239,517 @@ test('evmHandler.withdraw rejects when sourceAccountId is not set', async t => {
 });
 
 // #endregion evmHandler.withdraw tests
+
+// #region evmHandler.deposit tests
+
+/**
+ * Execute an EVM Permit2 deposit flow and wait for completion.
+ */
+const doDeposit = async ({
+  t,
+  kit,
+  storage,
+  txResolver,
+  permitDetails,
+  orch,
+  ctx,
+  expectedFlowOutcome = 'done',
+}: Pick<Mocks, 'txResolver' | 'storage'> & {
+  t: Assertions;
+  kit: GuestInterface<PortfolioKit>;
+  orch: Orchestrator;
+  ctx: PortfolioInstanceContext;
+  permitDetails: PermitDetails;
+  expectedFlowOutcome?: 'done' | 'fail';
+}) => {
+  const fromChain = 'Arbitrum';
+  // XXX: Support arbistrary chain
+  assert(`${permitDetails.chainId}` === axelarCCTPConfig[fromChain].reference);
+
+  const amount = AmountMath.make(USDC, permitDetails.amount);
+  const flowDetail: FlowDetail = { type: 'deposit', amount, fromChain };
+  const startedFlow = kit.manager.startFlow(flowDetail);
+  const seat = mockZCF.makeEmptySeatKit().zcfSeat;
+
+  void executePlan(
+    orch,
+    ctx,
+    seat,
+    {},
+    kit,
+    flowDetail,
+    startedFlow,
+    undefined,
+    { evmDepositDetail: { ...permitDetails, fromChain } },
+  ).catch(() => {}); // check outcome through flowStatus
+
+  const flowNum = startedFlow.flowId;
+  const portfolioId = kit.reader.getPortfolioId();
+  const { getFlowStatus } = makeStorageTools(storage);
+
+  const fee = make(BLD, 100n);
+  const steps: MovementDesc[] = [
+    {
+      src: `+${fromChain}`,
+      dest: `@${fromChain}`,
+      amount,
+      fee,
+    },
+  ];
+  kit.planner.resolveFlowPlan(flowNum, steps);
+  await txResolver.drainPending();
+  await eventLoopIteration();
+
+  const flowStatus = await getFlowStatus(portfolioId, flowNum);
+  t.is(flowStatus?.state, expectedFlowOutcome);
+};
+
+test('evmHandler.deposit via Permit2 with unknown spender is rejected', async t => {
+  const permitDetails = makePermitDetails({
+    spender: '0x0000000000000000000000000000000000009999' as Address,
+  });
+  const { orch, ctx } = mocks({}, {});
+  const sourceAccountId =
+    `eip155:${permitDetails.chainId}:${permitDetails.permit2Payload.owner.toLowerCase()}` as AccountId;
+  const kit = await ctx.makePortfolioKit({ sourceAccountId });
+  await provideCosmosAccount(orch, 'agoric', kit, silent);
+
+  t.throws(() => kit.evmHandler.deposit(permitDetails), {
+    message: /permit spender .* does not match expected account/,
+  });
+});
+
+/**
+ * This test uses the depositFactory contract as the spender address.
+ */
+test('evmHandler.deposit via Permit2 to missing and existing wallet with depositFactory as spender succeeds', async t => {
+  const { orch, ctx, storage, txResolver } = mocks({}, {});
+  const { getPortfolioStatus } = makeStorageTools(storage);
+
+  const permitDetails = makePermitDetails();
+  const depositFactoryAccountId =
+    `eip155:${permitDetails.chainId}:${contractsMock.Arbitrum.depositFactory}` as AccountId;
+  const sourceAccountId =
+    `eip155:${permitDetails.chainId}:${permitDetails.permit2Payload.owner.toLowerCase()}` as AccountId;
+  const kit = await ctx.makePortfolioKit({ sourceAccountId });
+  await provideCosmosAccount(orch, 'agoric', kit, silent);
+  const contractAddress = (await ctx.contractAccount).getAddress();
+  const contractAccountId =
+    `cosmos:${contractAddress.chainId}:${contractAddress.value}` as AccountId;
+
+  const { accountIdByChain: byChainBefore } = await getPortfolioStatus(
+    kit.reader.getPortfolioId(),
+  );
+  // Only agoric, no Arbitrum account yet since we haven't done any flows
+  t.deepEqual(Object.keys(byChainBefore), ['agoric']);
+
+  // Do an initial deposit, then do another deposit with the same permit details
+  // to ensure we can use the `createAndDeposit` logic on an existing account.
+  await doDeposit({ t, kit, orch, ctx, storage, txResolver, permitDetails });
+  t.like(
+    storage.getDeserialized('published.ymax0.pendingTxs.tx0').at(-1),
+    {
+      type: 'MAKE_ACCOUNT',
+      status: 'success',
+      sourceAddress: contractAccountId,
+      destinationAddress: depositFactoryAccountId,
+      factoryAddr: contractsMock.Arbitrum.factory,
+    },
+    'check first deposit creates and deposits via the depositFactory',
+  );
+
+  const { accountIdByChain: byChainAfter, accountsPending } =
+    await getPortfolioStatus(kit.reader.getPortfolioId());
+  t.deepEqual(Object.keys(byChainAfter), ['Arbitrum', 'agoric', 'noble']);
+  t.deepEqual(accountsPending, []);
+
+  await doDeposit({ t, kit, orch, ctx, storage, txResolver, permitDetails });
+  t.like(
+    storage.getDeserialized('published.ymax0.pendingTxs.tx2').at(-1),
+    {
+      type: 'MAKE_ACCOUNT',
+      status: 'success',
+      sourceAddress: contractAccountId,
+      destinationAddress: depositFactoryAccountId,
+      factoryAddr: contractsMock.Arbitrum.factory,
+      expectedAddr: byChainAfter.Arbitrum!.split(':').at(-1),
+    },
+    'check second deposit goes through same flow and hits the depositFactory address again',
+  );
+
+  await documentStorageSchema(t, storage, docOpts);
+});
+
+test('evmHandler.deposit via Permit2 with existing remote account as spender succeeds', async t => {
+  const { orch, ctx, storage, txResolver } = mocks({}, {});
+  const { getPortfolioStatus } = makeStorageTools(storage);
+
+  const existingWallet =
+    '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as Address;
+  const permitDetails = makePermitDetails({
+    spender: existingWallet,
+  });
+  const existingWalletAccountId =
+    `eip155:${permitDetails.chainId}:${existingWallet}` as AccountId;
+  const sourceAccountId =
+    `eip155:${permitDetails.chainId}:${permitDetails.permit2Payload.owner.toLowerCase()}` as AccountId;
+  const kit = await ctx.makePortfolioKit({ sourceAccountId });
+  await provideCosmosAccount(orch, 'agoric', kit, silent);
+  const lcaAddress = kit.reader.getLocalAccount().getAddress();
+  const lcaAccountId =
+    `cosmos:${lcaAddress.chainId}:${lcaAddress.value}` as AccountId;
+
+  kit.manager.resolveAccount({
+    namespace: 'eip155',
+    chainName: 'Arbitrum',
+    chainId: `eip155:${permitDetails.chainId}`,
+    remoteAddress: existingWallet,
+  });
+
+  const { accountIdByChain: byChain } = await getPortfolioStatus(
+    kit.reader.getPortfolioId(),
+  );
+  // agoric and Arbitrum account have been pre-created
+  t.deepEqual(Object.keys(byChain), ['Arbitrum', 'agoric']);
+
+  // Do one deposit and ensure it deposits to the existing wallet address
+  // through the remote account directly, without any factory interaction.
+  await doDeposit({ t, kit, orch, ctx, storage, txResolver, permitDetails });
+  t.like(
+    storage.getDeserialized('published.ymax0.pendingTxs.tx0').at(-1),
+    {
+      type: 'GMP',
+      status: 'success',
+      sourceAddress: lcaAccountId,
+      destinationAddress: existingWalletAccountId,
+    },
+    'check deposits via the existing wallet',
+  );
+
+  await documentStorageSchema(t, storage, docOpts);
+});
+
+test('evmHandler.deposit via Permit2 to a nonexisting (predicted) spender wallet succeeds', async t => {
+  const { orch, ctx, storage, txResolver } = mocks({}, {});
+  const { getPortfolioStatus } = makeStorageTools(storage);
+
+  const {
+    chainId,
+    permit2Payload: { owner },
+  } = makePermitDetails();
+  const sourceAccountId =
+    `eip155:${chainId}:${owner.toLowerCase()}` as AccountId;
+  const kit = await ctx.makePortfolioKit({
+    sourceAccountId,
+  });
+  await provideCosmosAccount(orch, 'agoric', kit, silent);
+
+  const lcaAddress = kit.reader.getLocalAccount().getAddress();
+  const nonexistingWallet = predictWalletAddress({
+    owner: lcaAddress.value,
+    factoryAddress: contractsMock.Arbitrum.factory,
+    gatewayAddress: contractsMock.Arbitrum.gateway,
+    gasServiceAddress: contractsMock.Arbitrum.gasService,
+    walletBytecode: hexToBytes(ctx.walletBytecode.replace(/^0x/, '')),
+  });
+
+  const permitDetails = makePermitDetails({
+    spender: nonexistingWallet,
+    permit2Payload: {
+      signature: '0x5678',
+    },
+  });
+
+  const lcaAccountId =
+    `cosmos:${lcaAddress.chainId}:${lcaAddress.value}` as AccountId;
+  const nonexistingWalletAccountId =
+    `eip155:${permitDetails.chainId}:${nonexistingWallet}` as AccountId;
+  const factoryAccountId =
+    `eip155:${permitDetails.chainId}:${contractsMock.Arbitrum.factory}` as AccountId;
+
+  const { accountIdByChain: byChainBefore } = await getPortfolioStatus(
+    kit.reader.getPortfolioId(),
+  );
+  // Only agoric, no Arbitrum account yet since we haven't done any flows
+  t.deepEqual(Object.keys(byChainBefore), ['agoric']);
+
+  await doDeposit({ t, kit, orch, ctx, storage, txResolver, permitDetails });
+  t.deepEqual(
+    storage.getDeserialized('published.ymax0.pendingTxs.tx0').at(-1),
+    {
+      type: 'MAKE_ACCOUNT',
+      status: 'success',
+      sourceAddress: lcaAccountId,
+      destinationAddress: factoryAccountId,
+      factoryAddr: contractsMock.Arbitrum.factory,
+      expectedAddr: nonexistingWallet,
+    },
+    'create dispatches to the factory for predicted wallets',
+  );
+
+  // Check that the deposit GMP was also performed.
+  t.deepEqual(
+    storage.getDeserialized('published.ymax0.pendingTxs.tx2').at(-1),
+    {
+      type: 'GMP',
+      status: 'success',
+      sourceAddress: lcaAccountId,
+      destinationAddress: nonexistingWalletAccountId,
+    },
+    'deposit flow should also perform GMP to the predicted wallet address',
+  );
+
+  const portfolioId = kit.reader.getPortfolioId();
+  const { accountIdByChain: byChainAfter } =
+    await getPortfolioStatus(portfolioId);
+  t.deepEqual(Object.keys(byChainAfter), ['Arbitrum', 'agoric', 'noble']);
+  t.is(
+    byChainAfter.Arbitrum,
+    nonexistingWalletAccountId,
+    'predicted wallet is recorded',
+  );
+
+  await documentStorageSchema(t, storage, docOpts);
+});
+
+test('evmHandler.deposit via Permit2 with depositFactory as spender to existing wallet fails when expected address mismatch', async t => {
+  const { orch, ctx, storage, txResolver } = mocks({}, {});
+  const { getPortfolioStatus } = makeStorageTools(storage);
+
+  const existingWallet =
+    '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as Address;
+  const permitDetails = makePermitDetails();
+  const sourceAccountId =
+    `eip155:${permitDetails.chainId}:${permitDetails.permit2Payload.owner.toLowerCase()}` as AccountId;
+  const kit = await ctx.makePortfolioKit({ sourceAccountId });
+  await provideCosmosAccount(orch, 'agoric', kit, silent);
+
+  assert(
+    axelarCCTPConfig.Arbitrum.reference === `${permitDetails.chainId}`,
+    'chainId should match axelarCCTPConfig',
+  );
+  kit.manager.resolveAccount({
+    namespace: 'eip155',
+    chainName: 'Arbitrum',
+    chainId: `eip155:${permitDetails.chainId}`,
+    remoteAddress: existingWallet,
+  });
+
+  const { accountIdByChain: byChain } = await getPortfolioStatus(
+    kit.reader.getPortfolioId(),
+  );
+  // agoric and Arbitrum account have been pre-created
+  t.deepEqual(Object.keys(byChain), ['Arbitrum', 'agoric']);
+
+  await doDeposit({
+    t,
+    kit,
+    orch,
+    ctx,
+    storage,
+    txResolver,
+    permitDetails,
+    expectedFlowOutcome: 'fail',
+  });
+
+  await documentStorageSchema(t, storage, docOpts);
+});
+
+// #endregion evmHandler.deposit tests
+
+test('move Aave position Base -> Optimism via CCTPv2', async t => {
+  const { orch, ctx, offer, storage, tapPK, txResolver } = mocks({});
+  const { getPortfolioStatus } = makeStorageTools(storage);
+
+  const kit = await ctx.makePortfolioKit();
+  const portfolioId = kit.reader.getPortfolioId();
+
+  // Seed a Base Aave position.
+  {
+    const amount = make(USDC, 50_000_000n);
+    const seat = makeMockSeat({ Aave: amount }, {}, offer.log);
+    const feeAcct = AmountMath.make(BLD, 50n);
+    const feeCall = AmountMath.make(BLD, 100n);
+    const depositP = rebalance(
+      orch,
+      ctx,
+      seat,
+      {
+        flow: [
+          { src: '<Deposit>', dest: '@agoric', amount },
+          { src: '@agoric', dest: '@noble', amount },
+          { src: '@noble', dest: '@Base', amount, fee: feeAcct },
+          { src: '@Base', dest: 'Aave_Base', amount, fee: feeCall },
+        ],
+      },
+      kit,
+    );
+    await Promise.all([
+      depositP,
+      Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
+        await txResolver.drainPending();
+      }),
+    ]);
+  }
+
+  const webUiDone = (async () => {
+    const seat = makeMockSeat({}, {}, offer.log);
+    await executePlan(orch, ctx, seat, {}, kit, { type: 'rebalance' });
+  })();
+
+  const plannerP = (async () => {
+    const { flowsRunning = {} } = await getPortfolioStatus(portfolioId);
+    const [[flowId, detail]] = Object.entries(flowsRunning);
+    t.log('planner found', { portfolioId, flowId, detail });
+
+    if (detail.type !== 'rebalance') throw t.fail(detail.type);
+
+    const amount = make(USDC, 20_000_000n);
+    const feeCall = AmountMath.make(BLD, 100n);
+    const feeGmp = AmountMath.make(BLD, 50n);
+    const steps: MovementDesc[] = [
+      { src: 'Aave_Base', dest: '@Base', amount, fee: feeCall },
+      {
+        src: '@Base',
+        dest: '@Optimism',
+        amount,
+        fee: feeGmp,
+        detail: { cctpVersion: 2n, maxFee: 3n, minFinalityThreshold: 1000n },
+      },
+      { src: '@Optimism', dest: 'Aave_Optimism', amount, fee: feeCall },
+    ];
+
+    t.deepEqual(wayFromSrcToDest(steps[1]), {
+      how: 'CCTPv2',
+      src: 'Base',
+      dest: 'Optimism',
+    });
+
+    kit.planner.resolveFlowPlan(Number(flowId.replace('flow', '')), steps);
+  })();
+
+  await Promise.all([webUiDone, plannerP, txResolver.drainPending()]);
+
+  const { log } = offer;
+  t.log('calls:', log.map(msg => msg._method).join(', '));
+  t.snapshot(log, 'call log');
+  await documentStorageSchema(t, storage, docOpts);
+});
+
+test(
+  'sendGMPContractCall unsubscribes resolver on send failure',
+  expectUnhandled(1),
+  async t => {
+    const { resolverClient, storage } = mocks({});
+    const lcaAddress = harden({ chainId: 'agoric-3', value: 'agoric1test' });
+    const ctx = {
+      feeAccount: {
+        getAddress: () => lcaAddress,
+        send: async () => {
+          throw Error('fee send failed');
+        },
+      },
+      lca: { getAddress: () => lcaAddress, transfer: async () => {} },
+      gmpFee: { denom: 'uaxl', value: 100n },
+      gmpChain: {
+        getChainInfo: async () => ({ chainId: 'axelar-testnet-lisbon-3' }),
+      },
+      gmpAddresses,
+      resolverClient,
+      axelarIds: axelarIdsMock,
+      addresses: contractsMock.Avalanche,
+      nobleForwardingChannel: 'channel-0',
+    } as unknown as EVMContext;
+
+    const gmpAcct = {
+      namespace: 'eip155',
+      chainName: 'Avalanche',
+      remoteAddress: '0x1234567890AbcdEF1234567890aBcdef12345678',
+      chainId: 'eip155:43114',
+    } as const;
+
+    const calls = [
+      {
+        target: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2' as const,
+        functionSignature: 'supply(address,uint256,address,uint16)',
+        args: [
+          '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
+          1_000_000n,
+          '0x1234567890AbcdEF1234567890aBcdef12345678',
+          0,
+        ],
+      },
+    ];
+
+    await t.throwsAsync(() => sendGMPContractCall(ctx, gmpAcct, calls), {
+      message: 'fee send failed',
+    });
+
+    await eventLoopIteration();
+    const values = storage.getDeserialized('published.ymax0.pendingTxs.tx0');
+    const last = values.at(-1) as any;
+    t.is(last.status, 'failed', 'transaction settled as failed');
+    t.truthy(last.rejectionReason, 'includes rejection reason');
+  },
+);
+
+test(
+  'sendPermit2GMP unsubscribes resolver on send failure',
+  expectUnhandled(1),
+  async t => {
+    const { resolverClient, storage } = mocks({});
+    const lcaAddress = harden({ chainId: 'agoric-3', value: 'agoric1test' });
+    const ctx = {
+      feeAccount: {
+        getAddress: () => lcaAddress,
+        send: async () => {
+          throw Error('fee send failed');
+        },
+      },
+      lca: { getAddress: () => lcaAddress, transfer: async () => {} },
+      gmpFee: { denom: 'uaxl', value: 100n },
+      gmpChain: {
+        getChainInfo: async () => ({ chainId: 'axelar-testnet-lisbon-3' }),
+      },
+      gmpAddresses,
+      resolverClient,
+      axelarIds: axelarIdsMock,
+      addresses: contractsMock.Avalanche,
+      nobleForwardingChannel: 'channel-0',
+    } as unknown as EVMContext;
+
+    const gmpAcct = {
+      namespace: 'eip155',
+      chainName: 'Avalanche',
+      remoteAddress: '0x1234567890AbcdEF1234567890aBcdef12345678',
+      chainId: 'eip155:43114',
+    } as const;
+
+    const permit2Payload = {
+      permit: {
+        permitted: {
+          token: contractsMock.Avalanche.usdc,
+          amount: 1_000_000_000n,
+        },
+        nonce: 7115368379195441n,
+        deadline: 1357923600n,
+      },
+      owner: '0x1111111111111111111111111111111111111111' as `0x${string}`,
+      witness:
+        '0x0000000000000000000000000000000000000000000000000000000000000000' as `0x${string}`,
+      witnessTypeString: 'OpenPortfolioWitness',
+      signature: '0x1234' as `0x${string}`,
+    };
+
+    await t.throwsAsync(
+      () => sendPermit2GMP(ctx, gmpAcct, permit2Payload, 1_000_000n),
+      { message: 'fee send failed' },
+    );
+
+    await eventLoopIteration();
+    const values = storage.getDeserialized('published.ymax0.pendingTxs.tx0');
+    const last = values.at(-1) as any;
+    t.is(last.status, 'failed', 'transaction settled as failed');
+    t.truthy(last.rejectionReason, 'includes rejection reason');
+  },
+);

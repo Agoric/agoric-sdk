@@ -511,16 +511,21 @@ export const preparePortfolioKit = (
             const val = accountsPending.get(chainName);
             return { ready: val.vow as Vow<AccountInfoFor[C]>, state };
           }
+          let state: 'new' | 'failed' | 'ok';
           if (accounts.has(chainName)) {
             const infoAny = accounts.get(chainName);
             assert.equal(infoAny.chainName, chainName);
             const info = infoAny as AccountInfoFor[C];
-            const state = info.err ? 'failed' : 'ok';
-            traceChain('state', state);
-            const ready = vowTools.asVow(async () => info);
-            return { ready, state };
+            if (!info.err) {
+              state = 'ok';
+              traceChain('state', state);
+              const ready = vowTools.asVow(async () => info);
+              return { ready, state };
+            }
+            state = 'failed';
+          } else {
+            state = 'new';
           }
-          const state = 'new';
           traceChain('state', state);
           const pending: VowKit<AccountInfoFor[C]> = vowTools.makeVowKit();
           vowTools.watch(pending.vow, this.facets.accountWatcher, chainName);

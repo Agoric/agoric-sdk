@@ -21,15 +21,15 @@ import {
   testInterruptedSteps,
   type TestStep,
 } from '@agoric/internal/src/testing-utils.js';
+import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
-import type { FundsFlowPlan } from '@agoric/portfolio-api';
+import { TxType, type FundsFlowPlan } from '@agoric/portfolio-api';
 import { deploy as deployWalletFactory } from '@agoric/smart-wallet/tools/wf-tools.js';
 import { E, passStyleOf } from '@endo/far';
 import { hexToBytes } from '@noble/hashes/utils';
 import type { ExecutionContext } from 'ava';
 import type { PortfolioPrivateArgs } from '../src/portfolio.contract.ts';
-import type { PublishedTx, TxId } from '../src/resolver/types.ts';
 import type { AssetPlaceRef } from '../src/type-guards-steps.ts';
 import type {
   OfferArgsFor,
@@ -38,6 +38,7 @@ import type {
 } from '../src/type-guards.ts';
 import { predictWalletAddress } from '../src/utils/evm-orch-factory.ts';
 import { plannerClientMock } from '../tools/agents-mock.ts';
+import { makeWallet } from '../tools/wallet-offer-tools.ts';
 import {
   deploy,
   makeEvmTraderKit,
@@ -1857,7 +1858,8 @@ test('evmHandler.deposit (existing Arbitrum) completes a deposit flow', async t 
     allocations: [{ instrument: 'Aave_Arbitrum', portion: 10000n }],
   };
   const { fromChain: evm, depositAmount, allocations } = inputs;
-  const ownerAddress = '0x2222222222222222222222222222222222222222';
+  const ownerAddress =
+    '0x2222222222222222222222222222222222222222' as `0x${string}`;
 
   type EvmHandler = Awaited<
     ReturnType<typeof started.publicFacet.openPortfolioFromEVM>
@@ -2060,7 +2062,7 @@ test('evmHandler.deposit (existing Arbitrum) completes a deposit flow', async t 
 
 // Test deposits from a NEW chain (where no account exists yet).
 // For deposits to existing portfolios, spender must be the predicted smart wallet address
-// (not depositFactory). The wallet is created via provideEVMAccount first.
+// (or depositFactory). The wallet is created via provideEVMAccount first.
 
 test('evmHandler.deposit (Arbitrum -> Base) completes a deposit flow', async t => {
   const { common, planner1, started, readPublished, txResolver } =
@@ -2212,21 +2214,22 @@ test('evmHandler.deposit (Arbitrum -> Base) completes a deposit flow', async t =
         chainId: Number(chainInfoWithCCTP[newChain].reference),
         token: contractsMock[newChain].usdc,
         amount: newDepositAmount.value,
-        // Wrong spender: should be predicted wallet address, not depositFactory.
-        spender: contractsMock[newChain].depositFactory,
+        // Wrong spender: should be predicted wallet address, not something bad.
+        spender: `${predictedSpender}BaDZ`,
         permit2Payload: newPermit2Payload,
       }),
     {
-      message: /permit spender .* does not match portfolio account/,
+      message: /permit spender .* does not match expected account/,
     },
-    'deposit rejects depositFactory spender for new chain',
+    'deposit rejects bad spender for new chain',
   );
+
   const newPermitDetails = {
     chainId: Number(chainInfoWithCCTP[newChain].reference),
     token: contractsMock[newChain].usdc,
     amount: newDepositAmount.value,
     // For deposits to existing portfolios, spender is the predicted smart wallet address
-    spender: predictedSpender as `0x${string}`,
+    spender: predictedSpender,
     permit2Payload: newPermit2Payload,
   } as const;
 
@@ -2507,97 +2510,90 @@ test('evmHandler.rebalance without target allocation uses existing allocation', 
   // XXX should test the whole flow, not just the start
 });
 
-test.failing(
-  'rebalance should not finish until makeAccount step completes',
-  async t => {
-  const { common, planner1, txResolver, evmTrader, started } =
+test('open portfolio does not require Access token when Access issuer is present', async t => {
+  const { common, zoe, started } = await deploy(t);
+  const { usdc, bld, poc26 } = common.brands;
+  const { when } = common.utils.vowTools;
+
+  const usdcSansMint = usdc;
+  const { mint: _bldMint, ...bldSansMint } = bld;
+  const { mint: _poc26Mint, ...poc26SansMint } = poc26;
+
+  const wallet = makeWallet(
+    { USDC: usdcSansMint, BLD: bldSansMint, Access: poc26SansMint },
+    zoe,
+    when,
+  );
+
+  const doneP = wallet.executePublicOffer({
+    id: 'open-no-access',
+    invitationSpec: {
+      source: 'contract',
+      instance: started.instance,
+      publicInvitationMaker: 'makeOpenPortfolioInvitation',
+    },
+    proposal: { give: {} },
+    offerArgs: {},
+  });
+  const done = await Promise.all([doneP, ackNFA(common.utils)]).then(
+    ([result]) => result,
+  );
+
+  t.is(passStyleOf(done.result.invitationMakers), 'remotable');
+  t.like(done.result.publicSubscribers, {
+    portfolio: {
+      description: 'Portfolio',
+      storagePath: `${ROOT_STORAGE_PATH}.portfolios.portfolio0`,
+    },
+  });
+});
+
+test('verifies fix for p772: make-account recovery after prior failed make-account flow', async t => {
+  const { common, planner1, readPublished, txResolver, evmTrader } =
     await setupPlanner(t);
   const { usdc, bld } = common.brands;
-  const { storage } = common.bootstrap;
-  const portfolioStoragePath = `${ROOT_STORAGE_PATH}.portfolios.portfolio0`;
 
-  const readFlowSteps = (flowKey: string) => {
-    const path = `${portfolioStoragePath}.flows.${flowKey}.steps`;
-    return storage.getDeserialized(path).at(-1) as Array<{
-      src: string;
-      dest: string;
-      how: string;
-      phases?: Record<string, string[]>;
-    }>;
+  const inputs = {
+    fromChain: 'Base' as const,
+    depositAmount: usdc.units(1000),
+    allocations: [{ instrument: 'Aave_Base', portion: 10000n }],
   };
-  let eventLoopCalls = 0;
-  const loopOnce = async () => {
-    eventLoopCalls += 1;
-    await eventLoopIteration();
-  };
-  const waitUntil = async (
-    label: string,
-    predicate: () => Promise<boolean>,
-    advance: () => Promise<void>,
-    maxSteps = 50,
-  ) => {
-    for (let steps = 0; steps < maxSteps; steps += 1) {
-      if (await predicate()) return;
-      await advance();
-    }
-    t.fail(`waitUntil timeout: ${label}`);
-  };
+  const { fromChain: evm, depositAmount, allocations } = inputs;
 
-  const settlePending = async (
-    shouldSettle: (tx: PublishedTx) => boolean = _tx => true,
-  ) => {
-    for (;;) {
-      await eventLoopIteration();
-      const paths = [...storage.data.keys()].filter(k =>
-        k.includes('.pendingTxs.'),
-      );
-      let progressed = false;
-      for (const p of paths) {
-        const info = storage
-          .getValues(p)
-          .map(defaultSerializer.parse)
-          .at(-1) as PublishedTx;
-        if (info.status !== 'pending') continue;
-        if (!shouldSettle(info)) continue;
-        const txId = p.split('.').at(-1) as TxId;
-        await txResolver.settleTransaction(txId, 'success');
-        progressed = true;
-      }
-      if (!progressed) break;
-    }
+  const expected = {
+    portfolioId: 0,
+    storagePath: `${ROOT_STORAGE_PATH}.portfolios.portfolio0`,
+    positions: { Aave: usdc.units(1000) },
   };
 
   await planner1.redeem();
 
-  const openResult = await evmTrader
-    .forChain('Arbitrum')
-    .openPortfolio(
-      [{ instrument: 'Aave_Arbitrum', portion: 10000n }],
-      usdc.units(1000).value,
-    );
-  await ackNFA(common.utils);
+  const openResult = await (async () => {
+    const result = await evmTrader
+      .forChain(evm)
+      .openPortfolio(allocations, depositAmount.value);
+    t.is(result.storagePath, expected.storagePath);
+    t.is(result.portfolioId, expected.portfolioId);
+    await ackNFA(common.utils);
+    return result;
+  })();
 
-  // Complete the initial deposit flow so we can start a rebalance.
-  {
+  const submitDepositPlan = async (expectedValue: bigint) => {
     const status = await evmTrader.getPortfolioStatus();
     const { flowsRunning = {}, policyVersion, rebalanceCount } = status;
     const sync = [policyVersion, rebalanceCount] as const;
     const [[flowKey, detail]] = Object.entries(flowsRunning);
     const flowId = Number(flowKey.replace('flow', ''));
     if (detail.type !== 'deposit') throw t.fail(detail.type);
+    t.is(detail.amount.value, expectedValue);
     const planDepositAmount = AmountMath.make(usdc.brand, detail.amount.value);
     const fee = bld.units(100);
     const plan: FundsFlowPlan = {
       flow: [
+        { src: `+${evm}`, dest: `@${evm}`, amount: planDepositAmount, fee },
         {
-          src: '+Arbitrum',
-          dest: '@Arbitrum',
-          amount: planDepositAmount,
-          fee,
-        },
-        {
-          src: '@Arbitrum',
-          dest: 'Aave_Arbitrum',
+          src: `@${evm}`,
+          dest: `Aave_${evm}`,
           amount: planDepositAmount,
           fee,
         },
@@ -2609,146 +2605,324 @@ test.failing(
       plan,
       ...sync,
     );
-    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-    await txResolver.drainPending();
-    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-    await txResolver.drainPending();
-  }
-
-  t.deepEqual(
-    (await evmTrader.getPortfolioStatus()).flowsRunning,
-    {},
-    'no flows running after initial deposit',
-  );
-
-  const rebalanceFlowKey = await evmTrader
-    .forChain('Arbitrum')
-    .setTargetAllocation([
-      { instrument: 'Aave_Base', portion: 26n },
-      { instrument: 'Compound_Optimism', portion: 74n },
-      {
-        instrument: 'ERC4626_morphoClearstarHighYieldUsdc_Ethereum',
-        portion: 0n,
-      },
-    ]);
-
-  const rebalanceStatus = await evmTrader.getPortfolioStatus();
-  const { flowsRunning = {}, policyVersion, rebalanceCount } = rebalanceStatus;
-  const sync = [policyVersion, rebalanceCount] as const;
-  const [[flowKey, detail]] = Object.entries(flowsRunning);
-  const flowId = Number(flowKey.replace('flow', ''));
-  if (detail.type !== 'rebalance') throw t.fail(detail.type);
-
-  const flowAmount1 = usdc.units(2.599999);
-  const flowAmount2 = usdc.units(6.000001);
-  const fee1 = bld.make(6_156_495n);
-  const fee2 = bld.make(5_869_190n);
-  const plan: FundsFlowPlan = {
-    flow: [
-      { src: '@Base', dest: 'Aave_Base', amount: flowAmount1, fee: fee1 },
-      { src: '@Base', dest: '@agoric', amount: flowAmount2, fee: fee2 },
-      { src: '@agoric', dest: '@noble', amount: flowAmount2 },
-    ],
-    order: [[2, [1]]],
+    return flowId;
   };
-  await E(planner1.stub).resolvePlan(
-    openResult.portfolioId,
-    flowId,
-    plan,
-    ...sync,
+
+  const flow1Num = await submitDepositPlan(depositAmount.value);
+
+  // Drive flow1 until make-account pending tx is visible, then fail it.
+  const flow1TxId = await (async () => {
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await eventLoopIteration();
+    const [flowTxId] = await txResolver.findPending();
+    const flowInfo = (await readPublished(
+      `pendingTxs.${flowTxId}`,
+    )) as StatusFor['pendingTx'];
+    t.is(
+      flowInfo.type,
+      TxType.MAKE_ACCOUNT,
+      'flow1 has pending make-account tx',
+    );
+    await txResolver.settleTransaction(flowTxId, 'failed');
+
+    return flowTxId;
+  })();
+
+  const statusAfterFlow1 = await evmTrader.getPortfolioStatus();
+
+  const { contents: contentsAfterFlow1 } = getPortfolioInfo(
+    openResult.storagePath!,
+    common.bootstrap.storage,
   );
 
-  // Timeline checkpoint: Base account exists and is pending when rebalance
-  // step1 starts (`@Base -> Aave_Base`).
-  const statusDuringFlow = await evmTrader.getPortfolioStatus();
-  t.truthy(statusDuringFlow.accountIdByChain?.Base, 'Base account id exists');
-  t.true(
-    statusDuringFlow.accountsPending?.includes('Base') ?? false,
-    'Base account is pending',
-  );
+  t.snapshot(contentsAfterFlow1, 'after flow 1');
+  await documentStorageSchema(t, common.bootstrap.storage, pendingTxOpts);
 
-  const stepsBeforeSettlement = readFlowSteps(rebalanceFlowKey);
-  t.like(stepsBeforeSettlement[0], {
-    src: '@Base',
-    dest: 'Aave_Base',
-    how: 'Aave',
-  });
-  t.falsy(
-    stepsBeforeSettlement[0]?.phases?.apply,
-    'step1 has no apply tx phases yet',
-  );
+  const flow1History =
+    contentsAfterFlow1[`${openResult.storagePath}.flows.flow${flow1Num}`];
 
-  // Let rebalance start; settle everything except MAKE_ACCOUNT.
-  await settlePending(tx => tx.type !== 'MAKE_ACCOUNT');
-  await loopOnce();
-
-  const stepsAfterPeerSettlement = readFlowSteps(rebalanceFlowKey);
   t.truthy(
-    (stepsAfterPeerSettlement[1]?.phases?.apply?.length ?? 0) > 0,
-    'step2 publishes tx phases',
+    Array.isArray(flow1History) &&
+      flow1History.some(entry => entry?.state === 'fail'),
+    'flow history should include a failed entry',
   );
-  t.like(stepsAfterPeerSettlement[2], {
-    src: '@agoric',
-    dest: '@noble',
-    how: 'IBC to Noble',
-  });
   t.deepEqual(
-    stepsAfterPeerSettlement[0]?.phases?.apply ?? [],
-    [],
-    'step1 remains without apply tx phases while Base MAKE_ACCOUNT is unresolved',
+    statusAfterFlow1.flowsRunning,
+    {},
+    'flowsRunning should be empty after flow1 fails',
   );
 
-  t.like(
-    (await evmTrader.getPortfolioStatus()).flowsRunning ?? {},
-    { [rebalanceFlowKey]: { type: 'rebalance' } },
-    'flow remains running while Base MAKE_ACCOUNT is unresolved',
+  // Start flow2 from same chain/account context.
+  const remoteAddress = statusAfterFlow1.accountIdByChain[evm]
+    ? (parseAccountId(statusAfterFlow1.accountIdByChain[evm])
+        .accountAddress as `0x${string}`)
+    : undefined;
+  t.truthy(remoteAddress, 'Remote address exists');
+
+  const flow2Amount = usdc.units(500);
+  const flow2Key = await evmTrader
+    .forChain(evm)
+    .deposit(flow2Amount.value, remoteAddress);
+  t.regex(flow2Key, /^flow\d+$/, 'deposit returns a flow key');
+
+  await submitDepositPlan(flow2Amount.value);
+
+  const findFailedMakeAccount = () => {
+    const paths = [...common.bootstrap.storage.data.keys()].filter(path =>
+      path.includes('.pendingTxs.tx'),
+    );
+    return paths
+      .map(path => {
+        const tx = common.bootstrap.storage.getDeserialized(path).at(-1) as any;
+        return { txId: path.split('.').at(-1), ...tx };
+      })
+      .filter(
+        tx => tx?.status === 'failed' && tx?.type === TxType.MAKE_ACCOUNT,
+      );
+  };
+
+  await eventLoopIteration();
+  const failedMakeAccount = findFailedMakeAccount();
+  t.is(failedMakeAccount.length, 1, 'only original make-account failed tx');
+  t.like(failedMakeAccount[0], { txId: flow1TxId });
+
+  await (async () => {
+    // Acknowledge Axelar makeAccount
+    await simulateAckTransferToAxelar(common.utils);
+    await txResolver.drainPending();
+    await eventLoopIteration();
+
+    // Acknowledge depositFromEVM GMP call to Axelar
+    await simulateAckTransferToAxelar(common.utils);
+    await txResolver.drainPending();
+    await eventLoopIteration();
+
+    // Acknowledge Aave GMP call to Axelar
+    await simulateAckTransferToAxelar(common.utils);
+    await txResolver.drainPending();
+    await eventLoopIteration();
+  })();
+
+  const statusAfterFlow2 = await evmTrader.getPortfolioStatus();
+
+  const { contents: contentsAfterFlow2 } = getPortfolioInfo(
+    openResult.storagePath!,
+    common.bootstrap.storage,
   );
 
-  // Timeline checkpoint: after settling remaining pending txs, flow reaches done.
-  const loopCallsBeforeDoneWait = eventLoopCalls;
-  await waitUntil(
-    'flow reaches done state',
-    async () => {
+  t.snapshot(contentsAfterFlow2, 'after flow 2');
+  await documentStorageSchema(t, common.bootstrap.storage, pendingTxOpts);
+
+  const flow2History =
+    contentsAfterFlow2[`${openResult.storagePath}.flows.${flow2Key}`];
+
+  t.truthy(
+    Array.isArray(flow2History) &&
+      flow2History.some(entry => entry?.state === 'done'),
+    'flow history should include a done entry',
+  );
+  t.deepEqual(
+    statusAfterFlow2.flowsRunning,
+    {},
+    'flowsRunning should be empty after flow2 succeeds',
+  );
+
+  // XXX: At this level we cannot (yet) check that account is no longer failed
+  // we could observe that another flow does not trigger another make-account.
+});
+
+test.failing(
+  'rebalance should not finish until makeAccount step completes',
+  async t => {
+    const { common, planner1, txResolver, evmTrader } = await setupPlanner(t);
+    const { usdc, bld } = common.brands;
+    const { storage } = common.bootstrap;
+    const portfolioStoragePath = `${ROOT_STORAGE_PATH}.portfolios.portfolio0`;
+
+    const readFlowSteps = (flowKey: string) => {
+      const path = `${portfolioStoragePath}.flows.${flowKey}.steps`;
+      return storage.getDeserialized(path).at(-1) as Array<{
+        src: string;
+        dest: string;
+        how: string;
+        phases?: Record<string, string[]>;
+      }>;
+    };
+
+    let eventLoopCalls = 0;
+    const loopOnce = async () => {
+      eventLoopCalls += 1;
+      await eventLoopIteration();
+    };
+    const waitUntil = async (
+      label: string,
+      predicate: () => Promise<boolean>,
+      advance: () => Promise<void>,
+      maxSteps = 50,
+    ) => {
+      for (let steps = 0; steps < maxSteps; steps += 1) {
+        if (await predicate()) return;
+        await advance();
+      }
+      t.fail(`waitUntil timeout: ${label}`);
+    };
+
+    const settlePending = async (
+      shouldSettle: (tx: StatusFor['pendingTx']) => boolean = _tx => true,
+    ) => {
+      for (;;) {
+        await eventLoopIteration();
+        const paths = [...storage.data.keys()].filter(k =>
+          k.includes('.pendingTxs.'),
+        );
+        let progressed = false;
+        for (const p of paths) {
+          const info = storage
+            .getValues(p)
+            .map(defaultSerializer.parse)
+            .at(-1) as StatusFor['pendingTx'];
+          if (info.status !== 'pending') continue;
+          if (!shouldSettle(info)) continue;
+          const txId = p.split('.').at(-1) as `tx${number}`;
+          await txResolver.settleTransaction(txId, 'success');
+          progressed = true;
+        }
+        if (!progressed) break;
+      }
+    };
+
+    await planner1.redeem();
+
+    const openResult = await evmTrader
+      .forChain('Arbitrum')
+      .openPortfolio(
+        [{ instrument: 'Aave_Arbitrum', portion: 10000n }],
+        usdc.units(1000).value,
+      );
+    await ackNFA(common.utils);
+
+    // Complete initial deposit so rebalance can be started.
+    {
       const status = await evmTrader.getPortfolioStatus();
-      return keys(status.flowsRunning ?? {}).length === 0;
-    },
-    async () => {
+      const { flowsRunning = {}, policyVersion, rebalanceCount } = status;
+      const sync = [policyVersion, rebalanceCount] as const;
+      const [[flowKey, detail]] = Object.entries(flowsRunning);
+      const flowId = Number(flowKey.replace('flow', ''));
+      if (detail.type !== 'deposit') throw t.fail(detail.type);
+      const planDepositAmount = AmountMath.make(usdc.brand, detail.amount.value);
+      const fee = bld.units(100);
+      const plan: FundsFlowPlan = {
+        flow: [
+          {
+            src: '+Arbitrum',
+            dest: '@Arbitrum',
+            amount: planDepositAmount,
+            fee,
+          },
+          {
+            src: '@Arbitrum',
+            dest: 'Aave_Arbitrum',
+            amount: planDepositAmount,
+            fee,
+          },
+        ],
+      };
+      await E(planner1.stub).resolvePlan(
+        openResult.portfolioId,
+        flowId,
+        plan,
+        ...sync,
+      );
       await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
       await txResolver.drainPending();
-      await loopOnce();
-    },
-  );
-  t.log(
-    'eventLoopIteration calls to reach done:',
-    eventLoopCalls - loopCallsBeforeDoneWait,
-  );
+      await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+      await txResolver.drainPending();
+    }
 
-  t.deepEqual(
-    (await evmTrader.getPortfolioStatus()).flowsRunning ?? {},
-    {},
-    'flow eventually reaches done state',
-  );
+    t.deepEqual(
+      (await evmTrader.getPortfolioStatus()).flowsRunning,
+      {},
+      'no flows running after initial deposit',
+    );
 
-  const stepsAtDone = readFlowSteps(rebalanceFlowKey);
-  t.truthy(
-    (stepsAtDone[0]?.phases?.apply?.length ?? 0) > 0,
-    'at done, step1 should have apply tx phases',
-  );
-  t.truthy(
-    (stepsAtDone[1]?.phases?.apply?.length ?? 0) > 0,
-    'at done, downstream steps have apply tx phases',
-  );
+    const rebalanceFlowKey = await evmTrader
+      .forChain('Arbitrum')
+      .setTargetAllocation([
+        { instrument: 'Aave_Base', portion: 26n },
+        { instrument: 'Compound_Optimism', portion: 74n },
+        {
+          instrument: 'ERC4626_morphoClearstarHighYieldUsdc_Ethereum',
+          portion: 0n,
+        },
+      ]);
 
-  const { contents } = getPortfolioInfo(portfolioStoragePath, storage);
-  const aaveBasePosition = contents[
-    `${portfolioStoragePath}.positions.Aave_Base`
-  ] as StatusFor['position'] | undefined;
-  t.truthy(aaveBasePosition, 'Aave_Base position is published');
-  t.is(aaveBasePosition?.totalIn.value, flowAmount1.value, 'Aave_Base totalIn');
-  t.is(
-    aaveBasePosition?.totalOut.value,
-    0n,
-    'Aave_Base totalOut',
-  );
+    const rebalanceStatus = await evmTrader.getPortfolioStatus();
+    const { flowsRunning = {}, policyVersion, rebalanceCount } = rebalanceStatus;
+    const sync = [policyVersion, rebalanceCount] as const;
+    const [[flowKey, detail]] = Object.entries(flowsRunning);
+    const flowId = Number(flowKey.replace('flow', ''));
+    if (detail.type !== 'rebalance') throw t.fail(detail.type);
+
+    const flowAmount1 = usdc.units(2.599999);
+    const flowAmount2 = usdc.units(6.000001);
+    const fee1 = bld.make(6_156_495n);
+    const fee2 = bld.make(5_869_190n);
+    const plan: FundsFlowPlan = {
+      flow: [
+        { src: '@Base', dest: 'Aave_Base', amount: flowAmount1, fee: fee1 },
+        { src: '@Base', dest: '@agoric', amount: flowAmount2, fee: fee2 },
+        { src: '@agoric', dest: '@noble', amount: flowAmount2 },
+      ],
+      order: [[2, [1]]],
+    };
+    await E(planner1.stub).resolvePlan(
+      openResult.portfolioId,
+      flowId,
+      plan,
+      ...sync,
+    );
+
+    // Let rebalance start; settle everything except MAKE_ACCOUNT.
+    await settlePending(tx => tx.type !== 'MAKE_ACCOUNT');
+    await loopOnce();
+
+    t.like(
+      (await evmTrader.getPortfolioStatus()).flowsRunning ?? {},
+      { [rebalanceFlowKey]: { type: 'rebalance' } },
+      'flow remains running while Base MAKE_ACCOUNT is unresolved',
+    );
+
+    // After settling remaining pending txs, flow reaches done.
+    const loopCallsBeforeDoneWait = eventLoopCalls;
+    await waitUntil(
+      'flow reaches done state',
+      async () => {
+        const status = await evmTrader.getPortfolioStatus();
+        return keys(status.flowsRunning ?? {}).length === 0;
+      },
+      async () => {
+        await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+        await txResolver.drainPending();
+        await loopOnce();
+      },
+    );
+    t.log(
+      'eventLoopIteration calls to reach done:',
+      eventLoopCalls - loopCallsBeforeDoneWait,
+    );
+
+    const stepsAtDone = readFlowSteps(rebalanceFlowKey);
+    t.truthy(
+      (stepsAtDone[0]?.phases?.apply?.length ?? 0) > 0,
+      'at done, step1 should have apply tx phases',
+    );
+
+    const { contents } = getPortfolioInfo(portfolioStoragePath, storage);
+    const aaveBasePosition = contents[
+      `${portfolioStoragePath}.positions.Aave_Base`
+    ] as StatusFor['position'] | undefined;
+    t.truthy(aaveBasePosition, 'Aave_Base position is published');
+    t.is(aaveBasePosition?.totalIn.value, flowAmount1.value, 'Aave_Base totalIn');
+    t.is(aaveBasePosition?.totalOut.value, 0n, 'Aave_Base totalOut');
   },
 );
