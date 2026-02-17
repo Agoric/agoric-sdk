@@ -1,3 +1,19 @@
+/**
+ * @file cosmic-swingset anylogger adapter.
+ *
+ * Use this module for cosmic-swingset/runtime logging, where output is consumed
+ * as service logs rather than interactive CLI output.
+ *
+ * Runtime-focused behavior:
+ * - Reads `DEBUG` selectors (`agoric`, `agoric:<level>`, `agoric:none`).
+ * - Adds ISO timestamps and stable labels to emitted messages.
+ * - Suppresses high-volume vat/liveslots logs unless explicitly selected.
+ *
+ * Why this file exists alongside `packages/agoric-cli/src/anylogger-agoric.js`:
+ * - This adapter enforces production/runtime log policy.
+ * - The CLI adapter is tuned for terminal UX (e.g., colored prefixes) and does
+ *   not apply cosmic-swingset suppression semantics.
+ */
 /* eslint-env node */
 import {
   getEnvironmentOptionsList,

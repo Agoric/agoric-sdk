@@ -1,3 +1,21 @@
+/**
+ * @file agoric-cli anylogger adapter.
+ *
+ * Use this module as a side-effect import from CLI entrypoints when you want
+ * Agoric-prefixed loggers to respect `DEBUG` and emit styled output.
+ *
+ * How it works:
+ * - Reads `DEBUG` values like `agoric` or `agoric:<level>`.
+ * - Overrides `anylogger.ext` to enable/disable levels consistently.
+ * - Wraps enabled log methods with an `agoric`-style prefix.
+ *
+ * Why this file exists alongside `packages/cosmic-swingset/src/anylogger-agoric.js`:
+ * - This CLI adapter is optimized for interactive terminal UX (colored labels).
+ * - Cosmic-swingset logging targets chain/runtime service logs (timestamps,
+ *   vat-prefix suppression, and `agoric:none` semantics).
+ * - Keeping separate adapters avoids coupling CLI output behavior to
+ *   cosmic-swingset operational logging requirements.
+ */
 /* eslint-env node */
 import {
   getEnvironmentOption,
