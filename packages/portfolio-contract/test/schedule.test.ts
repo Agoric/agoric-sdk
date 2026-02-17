@@ -304,3 +304,166 @@ test('diamond', checkAllStarted, {
     [3, [1]],
   ],
 });
+
+const parseSchedulerLine = (line: string) => {
+  const m = line.match(
+    /\b(started|done)\s+(\d+)(?:\s+running\s+(\d+(?:\s+\d+)*))?$/,
+  );
+  if (!m) throw Error(`unable to parse scheduler line: ${line}`);
+  const [, kind, ixRaw, runningRaw] = m;
+  return harden({
+    kind,
+    ix: Number(ixRaw),
+    running: runningRaw ? runningRaw.split(/\s+/).map(n => Number(n)) : undefined,
+  });
+};
+
+const flow5SchedulerEvidence = harden({
+  raw: {
+    checkingLine: "rebalance.portfolio96.flow5,3997  checking 5 moves",
+    planOrderLine:
+      "PPLN.portfolio96.flow5,3996  TODO(#11782): vet plan { ... order: [ [ 2, [ 1 ] ], [ 3, [ 2 ] ], [ 4, [ 3 ] ] ] }",
+    schedulerLines: [
+      "rebalance.portfolio96.flow5,3997  started 0 running 0",
+      "rebalance.portfolio96.flow5,3997  started 1 running 0 1",
+      "rebalance.portfolio96.flow5,3997  done 1",
+      "rebalance.portfolio96.flow5,3997  started 2 running 0 2",
+      "rebalance.portfolio96.flow5,3997  done 2",
+      "rebalance.portfolio96.flow5,3997  started 3 running 0 3",
+      "rebalance.portfolio96.flow5,3997  done 3",
+      "rebalance.portfolio96.flow5,3997  started 4 running 0 4",
+      "rebalance.portfolio96.flow5,3997  done 4",
+    ],
+  },
+  parsed: {
+    taskQty: 5,
+    order: [
+      [2, [1]],
+      [3, [2]],
+      [4, [3]],
+    ] as Job['order'],
+    scheduler: [
+      { kind: 'started', ix: 0, running: [0] },
+      { kind: 'started', ix: 1, running: [0, 1] },
+      { kind: 'done', ix: 1, running: undefined },
+      { kind: 'started', ix: 2, running: [0, 2] },
+      { kind: 'done', ix: 2, running: undefined },
+      { kind: 'started', ix: 3, running: [0, 3] },
+      { kind: 'done', ix: 3, running: undefined },
+      { kind: 'started', ix: 4, running: [0, 4] },
+      { kind: 'done', ix: 4, running: undefined },
+    ],
+  },
+});
+
+test('portfolio96.flow5 parser output matches concrete scheduler data', t => {
+  const { raw, parsed } = flow5SchedulerEvidence;
+  const qtyMatch = raw.checkingLine.match(/checking\s+(\d+)\s+moves/);
+  t.truthy(qtyMatch);
+  t.deepEqual(Number(qtyMatch?.[1]), parsed.taskQty);
+
+  const orderPairs = [
+    ...raw.planOrderLine.matchAll(/\[\s*(\d+)\s*,\s*\[\s*(\d+)\s*\]\s*\]/g),
+  ];
+  const order = orderPairs.map(([, dep, pred]) => [Number(dep), [Number(pred)]]);
+  t.deepEqual(order, parsed.order);
+
+  const scheduler = raw.schedulerLines.map(parseSchedulerLine);
+  t.deepEqual(scheduler, parsed.scheduler);
+});
+
+test('runJob trace shape matches portfolio96.flow5 scheduler logs', async t => {
+
+  const formatRunJobTrace = (args: unknown[]) => {
+    const [kind, ix, maybeRunning, ...rest] = args;
+    if (kind === 'started' && maybeRunning === 'running') {
+      return `started ${ix} running ${rest.join(' ')}`;
+    }
+    if (kind === 'done') {
+      return `done ${ix}`;
+    }
+    return null;
+  };
+
+  const waitFor = async (
+    predicate: () => boolean,
+    message: string,
+    maxTurns = 200,
+  ) => {
+    for (let i = 0; i < maxTurns; i += 1) {
+      if (predicate()) return;
+      await Promise.resolve();
+    }
+    t.fail(message);
+  };
+
+  const expectedTrace = flow5SchedulerEvidence.parsed.scheduler;
+
+  const controls = {
+    aaveSupplyBase: withResolvers<void>(),
+    cctpBaseToAgoric: withResolvers<void>(),
+    ibcAgoricToNoble: withResolvers<void>(),
+    cctpNobleToOptimism: withResolvers<void>(),
+    compoundSupplyOptimism: withResolvers<void>(),
+  };
+  const controlKeys = Object.keys(controls) as Array<keyof typeof controls>;
+
+  const actualTrace: ReturnType<typeof parseSchedulerLine>[] = [];
+  const runTask = async (ix: number): Promise<void> =>
+    controls[controlKeys[ix]].promise;
+  let settled = false;
+
+  const resultsP = runJob(
+    {
+      taskQty: flow5SchedulerEvidence.parsed.taskQty,
+      order: flow5SchedulerEvidence.parsed.order,
+    },
+    runTask,
+    (...args: unknown[]) => {
+      const line = formatRunJobTrace(args);
+      if (!line) return;
+      actualTrace.push(parseSchedulerLine(line));
+    },
+  );
+  void resultsP.then(() => {
+    settled = true;
+  });
+
+  // First runnable tasks from parsed order are 0 and 1.
+  await waitFor(
+    () => actualTrace.length >= 2,
+    'expected first two scheduler trace lines',
+  );
+  t.deepEqual(actualTrace, expectedTrace.slice(0, 2));
+
+  // Replay observed completions from logs: 1 -> 2 -> 3 -> 4.
+  const expectedLengthAfterResolve = {
+    cctpBaseToAgoric: 4,
+    ibcAgoricToNoble: 6,
+    cctpNobleToOptimism: 8,
+    compoundSupplyOptimism: 9,
+  } as const;
+  const resolveSequence = [
+    'cctpBaseToAgoric',
+    'ibcAgoricToNoble',
+    'cctpNobleToOptimism',
+    'compoundSupplyOptimism',
+  ] as const;
+  for (const stepId of resolveSequence) {
+    controls[stepId].resolve();
+    await waitFor(
+      () => actualTrace.length >= expectedLengthAfterResolve[stepId],
+      `expected scheduler trace to advance after resolving ${stepId}`,
+    );
+  }
+
+  t.deepEqual(actualTrace, expectedTrace);
+  t.false(
+    settled,
+    'job should remain pending while step 0 stays unresolved (as in logs)',
+  );
+
+  controls.aaveSupplyBase.resolve();
+  const results = await resultsP;
+  t.true(results.every(r => r.status === 'fulfilled'));
+});
