@@ -2236,16 +2236,12 @@ const makeAccountEVMRace = test.macro({
         Promise.resolve().then(() => true),
       ]);
       await t.notThrowsAsync(readyRaceResult);
-      // Right now because we're not marking failed account back as pending,
-      // ready is resolved immediately, and any Error in B's tx are not
-      // surfaced within the flow.
-      // TODO: restore unconditional assertion when fixed
-      !BShouldRecover &&
-        t.is(
-          await readyRaceResult,
-          BShouldRecover,
-          'B should be ready immediately iif it does not have to recover',
-        );
+
+      t.is(
+        await readyRaceResult,
+        BShouldRecover,
+        'B should be ready immediately iif it does not have to recover',
+      );
 
       if (!BHasWorkToDo) {
         // XXX: can we assert somehow that B doesn't do any work if there is an overlap?

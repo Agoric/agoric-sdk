@@ -10,7 +10,6 @@ import type { Brand, NatAmount } from '@agoric/ertp';
 import { AmountMath } from '@agoric/ertp';
 import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 import { typedEntries } from '@agoric/internal';
-import { makeExpectUnhandledRejectionMacro } from '@agoric/internal/src/lib-nodejs/ava-unhandled-rejection.js';
 import {
   defaultSerializer,
   documentStorageSchema,
@@ -49,11 +48,6 @@ import {
 } from './contract-setup.ts';
 import { contractsMock, makeCCTPTraffic, portfolio0lcaOrch } from './mocks.ts';
 import { chainInfoWithCCTP, makeStorageTools } from './supports.ts';
-
-const expectUnhandled = makeExpectUnhandledRejectionMacro({
-  test,
-  importMetaUrl: import.meta.url,
-});
 
 const { fromEntries, keys, values } = Object;
 
@@ -2554,150 +2548,185 @@ test('open portfolio does not require Access token when Access issuer is present
   });
 });
 
-test(
-  'reproduces tx1997f-style unsubscribe after prior failed make-account flow',
-  expectUnhandled(2),
-  async t => {
-    const { common, planner1, readPublished, txResolver, evmTrader } =
-      await setupPlanner(t);
-    const { usdc, bld } = common.brands;
+test('verifies fix for p772: make-account recovery after prior failed make-account flow', async t => {
+  const { common, planner1, readPublished, txResolver, evmTrader } =
+    await setupPlanner(t);
+  const { usdc, bld } = common.brands;
 
-    const inputs = {
-      fromChain: 'Base' as const,
-      depositAmount: usdc.units(1000),
-      allocations: [{ instrument: 'Aave_Base', portion: 10000n }],
-    };
-    const { fromChain: evm, depositAmount, allocations } = inputs;
+  const inputs = {
+    fromChain: 'Base' as const,
+    depositAmount: usdc.units(1000),
+    allocations: [{ instrument: 'Aave_Base', portion: 10000n }],
+  };
+  const { fromChain: evm, depositAmount, allocations } = inputs;
 
-    const expected = {
-      portfolioId: 0,
-      storagePath: `${ROOT_STORAGE_PATH}.portfolios.portfolio0`,
-      positions: { Aave: usdc.units(1000) },
-    };
+  const expected = {
+    portfolioId: 0,
+    storagePath: `${ROOT_STORAGE_PATH}.portfolios.portfolio0`,
+    positions: { Aave: usdc.units(1000) },
+  };
 
-    await planner1.redeem();
+  await planner1.redeem();
 
-    const openResult = await (async () => {
-      const result = await evmTrader
-        .forChain(evm)
-        .openPortfolio(allocations, depositAmount.value);
-      t.is(result.storagePath, expected.storagePath);
-      t.is(result.portfolioId, expected.portfolioId);
-      await ackNFA(common.utils);
-      return result;
-    })();
-
-    const submitDepositPlan = async (expectedValue: bigint) => {
-      const status = await evmTrader.getPortfolioStatus();
-      const { flowsRunning = {}, policyVersion, rebalanceCount } = status;
-      const sync = [policyVersion, rebalanceCount] as const;
-      const [[flowKey, detail]] = Object.entries(flowsRunning);
-      const flowId = Number(flowKey.replace('flow', ''));
-      if (detail.type !== 'deposit') throw t.fail(detail.type);
-      t.is(detail.amount.value, expectedValue);
-      const planDepositAmount = AmountMath.make(
-        usdc.brand,
-        detail.amount.value,
-      );
-      const fee = bld.units(100);
-      const plan: FundsFlowPlan = {
-        flow: [
-          { src: `+${evm}`, dest: `@${evm}`, amount: planDepositAmount, fee },
-          {
-            src: `@${evm}`,
-            dest: `Aave_${evm}`,
-            amount: planDepositAmount,
-            fee,
-          },
-        ],
-      };
-      await E(planner1.stub).resolvePlan(
-        openResult.portfolioId,
-        flowId,
-        plan,
-        ...sync,
-      );
-      return flowId;
-    };
-
-    const flow1Num = await submitDepositPlan(depositAmount.value);
-
-    // Drive flow1 until make-account pending tx is visible, then fail it.
-    await (async () => {
-      await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-      await eventLoopIteration();
-      const [flowTxId] = await txResolver.findPending();
-      const flowInfo = (await readPublished(
-        `pendingTxs.${flowTxId}`,
-      )) as StatusFor['pendingTx'];
-      t.is(
-        flowInfo.type,
-        TxType.MAKE_ACCOUNT,
-        'flow1 has pending make-account tx',
-      );
-      await txResolver.settleTransaction(flowTxId, 'failed');
-    })();
-
-    const statusAfterFlow1 = await evmTrader.getPortfolioStatus();
-
-    const { contents: contentsAfterFlow1 } = getPortfolioInfo(
-      openResult.storagePath!,
-      common.bootstrap.storage,
-    );
-    const flow1History =
-      contentsAfterFlow1[`${openResult.storagePath}.flows.flow${flow1Num}`];
-
-    t.truthy(
-      Array.isArray(flow1History) &&
-        flow1History.some(entry => entry?.state === 'fail'),
-      'flow history should include a failed entry',
-    );
-    t.deepEqual(
-      statusAfterFlow1.flowsRunning,
-      {},
-      'flowsRunning should be empty after flow1 fails',
-    );
-
-    // Start flow2 from same chain/account context.
-    const remoteAddress = statusAfterFlow1.accountIdByChain[evm]
-      ? (parseAccountId(statusAfterFlow1.accountIdByChain[evm])
-          .accountAddress as `0x${string}`)
-      : undefined;
-    t.truthy(remoteAddress, 'Remote address exists');
-
-    const flow2Amount = usdc.units(500);
-    const flow2Key = await evmTrader
+  const openResult = await (async () => {
+    const result = await evmTrader
       .forChain(evm)
-      .deposit(flow2Amount.value, remoteAddress);
-    t.regex(flow2Key, /^flow\d+$/, 'deposit returns a flow key');
+      .openPortfolio(allocations, depositAmount.value);
+    t.is(result.storagePath, expected.storagePath);
+    t.is(result.portfolioId, expected.portfolioId);
+    await ackNFA(common.utils);
+    return result;
+  })();
 
-    await submitDepositPlan(flow2Amount.value);
-
-    const findFailedUnsubscribe = () => {
-      const paths = [...common.bootstrap.storage.data.keys()].filter(path =>
-        path.includes('.pendingTxs.tx'),
-      );
-      return paths
-        .map(path => {
-          const tx = common.bootstrap.storage
-            .getDeserialized(path)
-            .at(-1) as any;
-          return { txId: path.split('.').at(-1), ...tx };
-        })
-        .find(
-          tx =>
-            tx?.status === 'failed' &&
-            `${tx?.rejectionReason}`.includes(
-              'unsubscribe: Error: no traffic entries to finish',
-            ),
-        );
+  const submitDepositPlan = async (expectedValue: bigint) => {
+    const status = await evmTrader.getPortfolioStatus();
+    const { flowsRunning = {}, policyVersion, rebalanceCount } = status;
+    const sync = [policyVersion, rebalanceCount] as const;
+    const [[flowKey, detail]] = Object.entries(flowsRunning);
+    const flowId = Number(flowKey.replace('flow', ''));
+    if (detail.type !== 'deposit') throw t.fail(detail.type);
+    t.is(detail.amount.value, expectedValue);
+    const planDepositAmount = AmountMath.make(usdc.brand, detail.amount.value);
+    const fee = bld.units(100);
+    const plan: FundsFlowPlan = {
+      flow: [
+        { src: `+${evm}`, dest: `@${evm}`, amount: planDepositAmount, fee },
+        {
+          src: `@${evm}`,
+          dest: `Aave_${evm}`,
+          amount: planDepositAmount,
+          fee,
+        },
+      ],
     };
-
-    await eventLoopIteration();
-    const failedUnsubscribe = findFailedUnsubscribe();
-    t.truthy(
-      failedUnsubscribe,
-      'flow2 records failed pending tx with unsubscribe/no-traffic reason',
+    await E(planner1.stub).resolvePlan(
+      openResult.portfolioId,
+      flowId,
+      plan,
+      ...sync,
     );
-  },
-);
+    return flowId;
+  };
+
+  const flow1Num = await submitDepositPlan(depositAmount.value);
+
+  // Drive flow1 until make-account pending tx is visible, then fail it.
+  const flow1TxId = await (async () => {
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await eventLoopIteration();
+    const [flowTxId] = await txResolver.findPending();
+    const flowInfo = (await readPublished(
+      `pendingTxs.${flowTxId}`,
+    )) as StatusFor['pendingTx'];
+    t.is(
+      flowInfo.type,
+      TxType.MAKE_ACCOUNT,
+      'flow1 has pending make-account tx',
+    );
+    await txResolver.settleTransaction(flowTxId, 'failed');
+
+    return flowTxId;
+  })();
+
+  const statusAfterFlow1 = await evmTrader.getPortfolioStatus();
+
+  const { contents: contentsAfterFlow1 } = getPortfolioInfo(
+    openResult.storagePath!,
+    common.bootstrap.storage,
+  );
+
+  t.snapshot(contentsAfterFlow1, 'after flow 1');
+  await documentStorageSchema(t, common.bootstrap.storage, pendingTxOpts);
+
+  const flow1History =
+    contentsAfterFlow1[`${openResult.storagePath}.flows.flow${flow1Num}`];
+
+  t.truthy(
+    Array.isArray(flow1History) &&
+      flow1History.some(entry => entry?.state === 'fail'),
+    'flow history should include a failed entry',
+  );
+  t.deepEqual(
+    statusAfterFlow1.flowsRunning,
+    {},
+    'flowsRunning should be empty after flow1 fails',
+  );
+
+  // Start flow2 from same chain/account context.
+  const remoteAddress = statusAfterFlow1.accountIdByChain[evm]
+    ? (parseAccountId(statusAfterFlow1.accountIdByChain[evm])
+        .accountAddress as `0x${string}`)
+    : undefined;
+  t.truthy(remoteAddress, 'Remote address exists');
+
+  const flow2Amount = usdc.units(500);
+  const flow2Key = await evmTrader
+    .forChain(evm)
+    .deposit(flow2Amount.value, remoteAddress);
+  t.regex(flow2Key, /^flow\d+$/, 'deposit returns a flow key');
+
+  await submitDepositPlan(flow2Amount.value);
+
+  const findFailedMakeAccount = () => {
+    const paths = [...common.bootstrap.storage.data.keys()].filter(path =>
+      path.includes('.pendingTxs.tx'),
+    );
+    return paths
+      .map(path => {
+        const tx = common.bootstrap.storage.getDeserialized(path).at(-1) as any;
+        return { txId: path.split('.').at(-1), ...tx };
+      })
+      .filter(
+        tx => tx?.status === 'failed' && tx?.type === TxType.MAKE_ACCOUNT,
+      );
+  };
+
+  await eventLoopIteration();
+  const failedMakeAccount = findFailedMakeAccount();
+  t.is(failedMakeAccount.length, 1, 'only original make-account failed tx');
+  t.like(failedMakeAccount[0], { txId: flow1TxId });
+
+  await (async () => {
+    // Acknowledge Axelar makeAccount
+    await simulateAckTransferToAxelar(common.utils);
+    await txResolver.drainPending();
+    await eventLoopIteration();
+
+    // Acknowledge depositFromEVM GMP call to Axelar
+    await simulateAckTransferToAxelar(common.utils);
+    await txResolver.drainPending();
+    await eventLoopIteration();
+
+    // Acknowledge Aave GMP call to Axelar
+    await simulateAckTransferToAxelar(common.utils);
+    await txResolver.drainPending();
+    await eventLoopIteration();
+  })();
+
+  const statusAfterFlow2 = await evmTrader.getPortfolioStatus();
+
+  const { contents: contentsAfterFlow2 } = getPortfolioInfo(
+    openResult.storagePath!,
+    common.bootstrap.storage,
+  );
+
+  t.snapshot(contentsAfterFlow2, 'after flow 2');
+  await documentStorageSchema(t, common.bootstrap.storage, pendingTxOpts);
+
+  const flow2History =
+    contentsAfterFlow2[`${openResult.storagePath}.flows.${flow2Key}`];
+
+  t.truthy(
+    Array.isArray(flow2History) &&
+      flow2History.some(entry => entry?.state === 'done'),
+    'flow history should include a done entry',
+  );
+  t.deepEqual(
+    statusAfterFlow2.flowsRunning,
+    {},
+    'flowsRunning should be empty after flow2 succeeds',
+  );
+
+  // XXX: At this level we cannot (yet) check that account is no longer failed
+  // we could observe that another flow does not trigger another make-account.
+});
