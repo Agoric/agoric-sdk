@@ -40,7 +40,7 @@ per https://agents.md/
 ## Async-Flow Model Notes
 - Async-flow runs each invocation as an activation with durable lifecycle states: `Running`, `Sleeping`, `Replaying`, `Failed`, `Done`.
 - Upgrade-safe behavior depends on deterministic replay of prior host interactions; divergence during replay or invalid interactions can move an activation to `Failed`.
-- `Done` means the activation outcome is settled and replay bookkeeping is dropped; logic that assumes continued activation state after completion is fragile.
+- `Done` means the activation outcome is settled and replay bookkeeping is dropped; logic that assumes continued activation state after completion is erroneous. Once the async-flow is done, any promises not yet settled will never see their reactions run. That's because the vow settling on the host side no longer translates into a settlement of the guest promise.
 - For `*.flows.*` modules, keep replay behavior in mind and prefer code that is explicit about lifecycle boundaries and awaited dependencies.
 - When reviewing `*.flows.*` modules, read `packages/async-flow/docs/async-flow-states.md`.
 
