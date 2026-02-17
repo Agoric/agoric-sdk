@@ -48,19 +48,25 @@ const globalCode = selectedCode === undefined ? -Infinity : selectedCode;
 const oldExt = anylogger.ext;
 /** @type {typeof anylogger.ext} */
 anylogger.ext = (l, ...rest) => {
-  l = oldExt(l, ...rest);
-  l.enabledFor = lvl => globalCode >= anylogger.levels[lvl];
+  const logger = oldExt(l, ...rest);
+  logger.enabledFor = lvl =>
+    lvl !== undefined && globalCode >= anylogger.levels[lvl];
 
-  const prefix = l.name.replace(/:/g, ': ');
+  const prefix = logger.name.replace(/:/g, ': ');
+  const fallbackSink = console.log.bind(console);
   for (const [level, code] of Object.entries(anylogger.levels)) {
     if (globalCode >= code) {
       // Enable the printing with a prefix.
-      const doLog = l[level] || (() => {});
-      l[level] = (...args) => doLog(chalk.bold.blue(`${prefix}:`), ...args);
+      const doLog =
+        (typeof console[level] === 'function' &&
+          console[level].bind(console)) ||
+        fallbackSink;
+      logger[level] = (...args) =>
+        doLog(chalk.bold.blue(`${prefix}:`), ...args);
     } else {
       // Disable printing.
-      l[level] = () => {};
+      logger[level] = () => {};
     }
   }
-  return l;
+  return logger;
 };

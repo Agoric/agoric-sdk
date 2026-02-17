@@ -66,6 +66,7 @@ anylogger.ext = logger => {
 
   const nameColon = `${extended.name}:`;
   const label = extended.name.replaceAll(':', ': ');
+  const fallbackSink = console.log.bind(console);
 
   // Vat logs are suppressed unless matched by a prefix in DEBUG_LIST.
   const suppressed =
@@ -74,8 +75,10 @@ anylogger.ext = logger => {
 
   const levels = /** @type {LogLevel[]} */ (Object.keys(anylogger.levels));
   for (const level of levels) {
-    const impl = extended[level];
-    const disabled = !impl || suppressed || !enabledFor(level);
+    const impl =
+      (typeof console[level] === 'function' && console[level].bind(console)) ||
+      fallbackSink;
+    const disabled = suppressed || !enabledFor(level);
     extended[level] = disabled
       ? defineName(`dummy ${level}`, () => {})
       : defineName(level, (...args) => {
