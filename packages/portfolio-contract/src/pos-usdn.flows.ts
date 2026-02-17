@@ -31,6 +31,16 @@ const MsgSwap = CodecHelper(MsgSwapType);
 
 const trace = makeTracer('USDNF');
 
+/**
+ * Build Noble `MsgSwap` and optional `MsgLock` payloads for a USDN supply step.
+ *
+ * If `vault` is omitted, returns only the swap message (USDC -> USDN).
+ * If `vault` is set, returns both swap and lock messages to stake the swapped USDN.
+ *
+ * @param nobleAddr - Noble account that signs/executes the messages.
+ * @param usdcIn - Input USDC amount in `uusdc`.
+ * @param opts - Optional swap/lock tuning parameters.
+ */
 export const makeSwapLockMessages = (
   nobleAddr: CosmosChainAddress,
   usdcIn: bigint,
@@ -65,6 +75,16 @@ export const makeSwapLockMessages = (
   return { msgSwap, msgLock, protoMessages };
 };
 
+/**
+ * Build Noble `MsgUnlock` and `MsgSwap` payloads for a USDN withdraw step.
+ *
+ * If `usdnOut` is omitted, returns only swap (USDN -> USDC) at `usdcOut`.
+ * If `usdnOut` is provided, unlocks that USDN amount first, then swaps to USDC.
+ *
+ * @param nobleAddr - Noble account that signs/executes the messages.
+ * @param usdcOut - Target USDC amount in `uusdc`.
+ * @param opts - Optional unlock/swap parameters.
+ */
 export const makeUnlockSwapMessages = (
   nobleAddr: CosmosChainAddress,
   usdcOut: bigint,
@@ -104,6 +124,7 @@ export const makeUnlockSwapMessages = (
 export const protocolUSDN = {
   protocol: 'USDN',
   chains: ['noble'],
+  /** Supply USDC into USDN: swap and optionally lock into a Noble vault. */
   supply: async (ctx, amount, src, ...optsArgs) => {
     const { usdnOut, vault } = ctx;
     const { ica } = src;
@@ -119,6 +140,7 @@ export const protocolUSDN = {
     const result = await ica.executeEncodedTx(protoMessages, ...optsArgs);
     trace('supply result', result);
   },
+  /** Withdraw from USDN: optionally unlock vault position, then swap USDN to USDC. */
   withdraw: async (ctx, amount, dest, claim, ...optsArgs) => {
     if (claim) {
       throw new Error('claiming USDN is not supported');
@@ -145,6 +167,7 @@ harden(protocolUSDN);
 export const agoricToNoble = {
   how: 'IBC to Noble',
   connections: [{ src: 'agoric', dest: 'noble' }],
+  /** Transfer USDC from Agoric local account to Noble ICA over IBC. */
   apply: async (ctx, amount, src, dest, ...optsArgs) => {
     const { denom } = ctx.usdc;
     const denomAmount = { value: amount.value, denom };
@@ -161,6 +184,7 @@ harden(agoricToNoble);
 export const nobleToAgoric = {
   how: 'IBC from Noble',
   connections: [{ src: 'noble', dest: 'agoric' }],
+  /** Transfer USDC from Noble ICA back to Agoric local account over IBC. */
   apply: async (ctx, amount, src, dest, ...optsArgs) => {
     const nobleAmount = { value: amount.value, denom: 'uusdc' };
     await src.ica.transfer(dest.lca.getAddress(), nobleAmount, ...optsArgs);
