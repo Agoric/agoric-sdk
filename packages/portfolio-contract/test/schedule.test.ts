@@ -382,3 +382,78 @@ test('runJob does not finish while a started task is still running', async t => 
   const results = await resultsP;
   t.true(results.every(r => r.status === 'fulfilled'));
 });
+
+test('runJob handles synchronous runTask throws as task rejection', async t => {
+  const results = await runJob(
+    {
+      taskQty: 2,
+      order: [[1, [0]]],
+    },
+    ix => {
+      if (ix === 0) {
+        throw new Error('sync boom');
+      }
+      return Promise.resolve();
+    },
+    t.log,
+  );
+
+  t.is(results[0]?.status, 'rejected');
+  t.is(results[1]?.status, 'rejected');
+  if (results[0]?.status === 'rejected') {
+    t.regex(String(results[0].reason), /sync boom/);
+  }
+});
+
+test('runJob passes running list without duplicate self index', async t => {
+  const seen: number[][] = [];
+  await runJob(
+    { taskQty: 1, order: [] },
+    async (_ix, running) => {
+      seen.push(running);
+    },
+    t.log,
+  );
+  t.deepEqual(seen, [[0]]);
+});
+
+test('runJob failure cascade marks each task at most once', async t => {
+  const failTrace: number[] = [];
+  const results = await runJob(
+    {
+      taskQty: 4,
+      order: [
+        [1, [0]],
+        [2, [0]],
+        [3, [1, 2]],
+      ],
+    },
+    async ix => {
+      if (ix === 0) {
+        throw new Error('root fail');
+      }
+    },
+    (...args: unknown[]) => {
+      const [kind, ix] = args;
+      if (kind === 'fail' && typeof ix === 'number') {
+        failTrace.push(ix);
+      }
+    },
+  );
+
+  t.true(results.every(r => r.status === 'rejected'));
+
+  const failCounts = new Map<number, number>();
+  for (const ix of failTrace) {
+    failCounts.set(ix, (failCounts.get(ix) ?? 0) + 1);
+  }
+  t.deepEqual(
+    [...failCounts.entries()].sort(([a], [b]) => a - b),
+    [
+      [0, 1],
+      [1, 1],
+      [2, 1],
+      [3, 1],
+    ],
+  );
+});

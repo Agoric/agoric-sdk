@@ -122,7 +122,15 @@ export const runJob = async (
       throw Error('Job dependency loop prevents completion.');
     }
     for (const ix of runnable) {
-      const done = runTask(ix, [...running.keys(), ix])
+      const runningNow = [...running.keys(), ix];
+      let taskP: Promise<void>;
+      try {
+        taskP = runTask(ix, runningNow);
+      } catch (reason) {
+        failTaskAndAncestors(ix, reason);
+        taskP = Promise.resolve();
+      }
+      const done = Promise.resolve(taskP)
         .then(() => {
           trace('done', ix);
           return ix;
