@@ -186,6 +186,14 @@ export const setupTrader = async (
     return storage.getValues(path).map(defaultSerializer.parse);
   };
 
+  const settleTx = async (
+    txId: TxId,
+    status: Exclude<TxStatus, 'pending'> = 'success',
+  ) => {
+    const txNum = Number(txId.replace(/^tx/, ''));
+    await settleTransaction(zoe, resolverMakers, txNum, status);
+  };
+
   const txResolver = harden({
     findPending: async () => {
       await eventLoopIteration();
@@ -232,13 +240,13 @@ export const setupTrader = async (
         const txIds = await txResolver.findPending();
         if (!txIds.length) break;
         for (const txId of txIds) {
-          const txNum = Number(txId.replace(/^tx/, ''));
-          await settleTransaction(zoe, resolverMakers, txNum, status);
+          await settleTx(txId, status);
           done.push(txId);
         }
       }
       return harden(done);
     },
+    settleTransaction: settleTx,
   });
 
   return { ...deployed, makeFundedTrader, trader1, trader2, txResolver };
