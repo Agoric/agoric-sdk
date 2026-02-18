@@ -10,7 +10,7 @@
  * the first time it is accessed, it is initialized from `reinit(self)`.
  * The ephemeral state can be dropped explicitly during an incarnation
  * with `eph.resetFor(self)`, in which case the `eph.for(self)` will
- * call it to be reinitialized again from `reinit(self)`.
+ * cause it to be reinitialized again from `reinit(self)`.
  *
  * TODO consolidate with `makeEphemeraProvider` from `@agoric/zoe`, since
  * they are serving similar purposes in similar ways.
