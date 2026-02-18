@@ -1,11 +1,12 @@
 import { WebSocketProvider, Log, toQuantity, isError } from 'ethers';
 import type { Filter, TransactionResponse } from 'ethers';
+import type { Address as EvmAddress } from 'viem';
 import type { CaipChainId } from '@agoric/orchestration';
 import { makeWorkPool } from '@agoric/internal/src/work-pool.js';
 import { makePromiseKit } from '@endo/promise-kit';
 import { JSONRPCClient, createJSONRPCRequest } from 'json-rpc-2.0';
 import type { JSONRPCResponse } from 'json-rpc-2.0';
-import { getBlockTimeMs, type HexAddress } from './support.ts';
+import { getBlockTimeMs } from './support.ts';
 
 export type WatcherTimeoutOptions = {
   timeoutMs?: number;
@@ -166,7 +167,7 @@ type ScanOptsBase = {
 type TxReceipt = {
   transactionHash: `0x${string}`;
   status: '0x0' | '0x1' | null;
-  to: HexAddress | null;
+  to: EvmAddress | null;
 };
 
 /**
@@ -205,8 +206,8 @@ type CallTraceResultBase = {
 
 // https://www.alchemy.com/docs/reference/what-are-evm-traces#call
 type CallTraceAction = {
-  from: HexAddress;
-  to: HexAddress;
+  from: EvmAddress;
+  to: EvmAddress;
   input: `0x${string}`;
   value: `0x${string}`;
   gas: `0x${string}`;

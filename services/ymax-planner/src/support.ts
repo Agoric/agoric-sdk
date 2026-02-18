@@ -1,4 +1,5 @@
 import { WebSocketProvider } from 'ethers';
+import type { Address as EvmAddress } from 'viem';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { ClusterName } from '@agoric/internal';
 import { fromTypedEntries, objectMap, typedEntries } from '@agoric/internal';
@@ -24,15 +25,13 @@ harden(UserInputError);
 
 type ROPartial<K extends string, V> = Readonly<Partial<Record<K, V>>>;
 
-export type HexAddress = `0x${string}`;
-
 /**
  * @deprecated should come from e.g. @agoric/portfolio-api/src/constants.js
  *   or @agoric/orchestration
  */
 export type UsdcAddresses = {
-  mainnet: Record<CaipChainId, HexAddress>;
-  testnet: Record<CaipChainId, HexAddress>;
+  mainnet: Record<CaipChainId, EvmAddress>;
+  testnet: Record<CaipChainId, EvmAddress>;
 };
 
 const spectrumChainIds: Record<`${CaipChainId} ${SupportedChain}`, string> = {
