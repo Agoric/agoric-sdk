@@ -197,11 +197,11 @@ export const makeReplayMembraneKitForTesting = ({
     /** @type {GuestFaultHandlingChoice} */
     const handlingChoice = apply(
       guestReplayFaultHandler,
-      // The narrator is passed in a record in case we want to enhance
+      // The flowInspector is passed in a record in case we want to enhance
       // that record to seem like the `this` binding of a guest method,
       // i.e., a context object, such as `{state, self}` or
       // `{state, facets}`.
-      harden({ narrator }),
+      harden({ flowInspector }),
       [replayFault],
     );
     const { kind, actualOutcome = undefined } = handlingChoice;
@@ -752,7 +752,7 @@ export const makeReplayMembraneKitForTesting = ({
       stopped = true;
     },
   });
-  const narrator = Far('narrator', {
+  const flowInspector = Far('flowInspector', {
     registerFaultHandler(handler) {
       guestReplayFaultHandler = handler;
     },
