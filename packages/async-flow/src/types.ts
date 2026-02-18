@@ -166,9 +166,11 @@ export type GuestFaultHandlingChoiceKind =
 export type GuestFaultHandlingChoice =
   | {
       kind: 'decline';
+      actualOutcome?: undefined;
     }
   | {
       kind: 'ignoreExpected';
+      actualOutcome?: undefined;
     }
   | {
       kind: 'ignoreDifference';
