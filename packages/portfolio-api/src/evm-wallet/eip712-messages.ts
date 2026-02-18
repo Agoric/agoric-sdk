@@ -239,7 +239,7 @@ export const getYmaxStandaloneDomain = (
 });
 
 export const getYmaxStandaloneOperationData = <T extends OperationTypeNames>(
-  data: NoInfer<TypedDataToPrimitiveTypes<YmaxStandaloneTypes>[T]>,
+  data: NoInfer<YmaxStandaloneData<T>>,
   operation: T,
   chainId: bigint | number,
   verifyingContract: Address,
@@ -248,12 +248,13 @@ export const getYmaxStandaloneOperationData = <T extends OperationTypeNames>(
 } => {
   const types = getYmaxStandaloneTypes(operation);
 
-  // @ts-expect-error some generic inference issue I suppose?
   return {
     domain: getYmaxStandaloneDomain(chainId, verifyingContract),
     types,
     primaryType: operation,
-    message: data,
+    message: data as TypedDataToPrimitiveTypes<YmaxStandaloneTypes<T>>[T],
+  } as TypedDataDefinition<YmaxStandaloneTypes<T>, T, T> & {
+    domain: YmaxStandaloneDomain;
   };
 };
 
