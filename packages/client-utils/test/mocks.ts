@@ -80,8 +80,8 @@ export class MockSigningSmartWalletKit {
 
     this.sendBridgeAction = async (
       action: any,
-      fee: any,
-      memo: any,
+      _fee: any,
+      _memo: any,
       signerData: any,
     ): Promise<SubmitTxResponse> => {
       // Simulate network delay

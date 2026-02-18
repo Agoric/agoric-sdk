@@ -228,7 +228,7 @@ export function makeSnapStore(
         await measureSeconds(async () => {
           const snapReader = Readable.from(snapshotStream);
           const destroyReader = promisify(snapReader.destroy.bind(snapReader));
-          addCleanup(() => destroyReader(null));
+          addCleanup(() => destroyReader(undefined));
           snapReader.on('data', chunk => {
             uncompressedSize += chunk.length;
           });

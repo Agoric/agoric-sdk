@@ -48,7 +48,7 @@ import {
 import type {
   PermitDetails,
   YmaxOperationDetails,
-} from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.ts';
+} from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.js';
 import type { ContractMeta, Invitation, ZCF, ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';

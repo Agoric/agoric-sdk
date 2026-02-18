@@ -42,7 +42,7 @@ export const makeArchiveSnapshot = (dirPath, powers) => {
       const writer = fs.createWriteStream('', { fd, flush: true });
       const reader = Readable.from(gzData);
       const destroyReader = promisify(reader.destroy.bind(reader));
-      addCleanup(() => destroyReader(null));
+      addCleanup(() => destroyReader(undefined));
       reader.pipe(writer);
       await streamFinished(writer);
       fs.renameSync(tmpName, destPath);

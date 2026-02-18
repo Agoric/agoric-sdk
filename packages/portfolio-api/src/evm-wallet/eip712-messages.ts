@@ -110,6 +110,12 @@ const OperationSubTypes = {
 export type TargetAllocation = TypedDataToPrimitiveTypes<
   typeof OperationSubTypes
 >['Allocation'];
+type YmaxOperationTypesWithSubTypes<
+  T extends string,
+  P extends readonly TypedDataParameter[],
+> = {
+  [K in T]: P;
+} & typeof OperationSubTypes;
 
 /**
  * In the wrapped case, the domain is fixed by permit2, so we can't choose name/version there.
@@ -125,6 +131,11 @@ const getYmaxWitnessFieldName = <T extends OperationTypeNames>(operation: T) =>
 type YmaxWitnessFieldName<T extends OperationTypeNames> = ReturnType<
   typeof getYmaxWitnessFieldName<T>
 >;
+type YmaxWitnessMappedTypeParam<T extends OperationTypeNames> =
+  TypedDataParameter<
+    YmaxWitnessFieldName<T>,
+    Extract<keyof YmaxWitnessOperationTypes<T>, string>
+  >;
 
 /**
  * showing a field named "witness" in the wallet signing UI is... boring
@@ -132,13 +143,15 @@ type YmaxWitnessFieldName<T extends OperationTypeNames> = ReturnType<
  */
 const getYmaxWitnessTypeParam = <T extends OperationTypeNames>(
   operation: T,
-): YmaxWitnessTypeParam<T> => ({
+): YmaxWitnessMappedTypeParam<T> => ({
   name: getYmaxWitnessFieldName(operation),
-  type: getYmaxWitnessTypeName(operation),
+  type: getYmaxWitnessTypeName(
+    operation,
+  ) as YmaxWitnessMappedTypeParam<T>['type'],
 });
 export type YmaxWitnessTypeParam<
   T extends OperationTypeNames = OperationTypeNames,
-> = TypedDataParameter<YmaxWitnessFieldName<T>, YmaxWitnessTypeName<T>>;
+> = YmaxWitnessMappedTypeParam<T>;
 
 // TODO: Filter operation types to only those needed for witness/standalone
 type YmaxWitnessOperationTypes<
@@ -169,53 +182,52 @@ type YmaxStandaloneTypes<T extends OperationTypeNames = OperationTypeNames> =
 export type YmaxOperationType<T extends OperationTypeNames> =
   TypedDataToPrimitiveTypes<OperationTypes & typeof OperationSubTypes>[T];
 
-// Hack to satisfy TypeScript limitations with generic inference in complex types
-// Equivalent to `YmaxWitnessTypeParam`
-type YmaxWitnessMappedTypeParam<T extends OperationTypeNames> =
-  TypedDataParameter<
-    YmaxWitnessFieldName<T>,
-    Extract<keyof YmaxWitnessOperationTypes<T>, string>
-  >;
+type YmaxWitnessData<T extends OperationTypeNames> = TypedDataToPrimitiveTypes<
+  YmaxWitnessTypes<T>
+>[YmaxWitnessMappedTypeParam<T>['type']];
+type YmaxStandaloneData<T extends OperationTypeNames> =
+  TypedDataToPrimitiveTypes<YmaxStandaloneTypes<T>>[T];
+
+const getYmaxOperationAndSubTypes = <
+  T extends string,
+  P extends readonly TypedDataParameter[],
+>(
+  operation: T,
+  params: P,
+) =>
+  ({
+    [operation]: params,
+    ...OperationSubTypes,
+  }) as YmaxOperationTypesWithSubTypes<T, P> satisfies TypedData;
 
 const getYmaxWitnessTypes = <T extends OperationTypeNames>(operation: T) =>
-  ({
-    [getYmaxWitnessTypeName(operation)]: [
-      ...OperationTypes[operation],
-      ...SharedPortfolioTypeParams,
-    ],
-    ...OperationSubTypes,
-  }) as YmaxWitnessTypes<T> satisfies TypedData;
+  getYmaxOperationAndSubTypes(getYmaxWitnessTypeName(operation), [
+    ...OperationTypes[operation],
+    ...SharedPortfolioTypeParams,
+  ]) as YmaxWitnessTypes<T> satisfies TypedData;
 
 const getYmaxStandaloneTypes = <T extends OperationTypeNames>(operation: T) =>
   ({
     EIP712Domain: StandaloneDomainTypeParams,
-    [operation]: [
+    ...getYmaxOperationAndSubTypes(operation, [
       ...OperationTypes[operation],
       ...SharedPortfolioTypeParams,
       ...PortfolioStandaloneTypeParams,
-    ],
-    ...OperationSubTypes,
+    ]),
   }) as YmaxStandaloneTypes<T> satisfies TypedData;
 
 export const getYmaxOperationTypes = <T extends OperationTypeNames>(
   operation: T,
 ) =>
-  ({
-    [operation]: OperationTypes[operation],
-    ...OperationSubTypes,
-  }) as {
+  getYmaxOperationAndSubTypes(operation, OperationTypes[operation]) as {
     [K in T]: OperationTypes[K];
   } & typeof OperationSubTypes satisfies TypedData;
 
 export const getYmaxWitness = <T extends OperationTypeNames>(
   operation: T,
-  data: NoInfer<
-    TypedDataToPrimitiveTypes<YmaxWitnessTypes>[YmaxWitnessTypeName<T>]
-  >,
+  data: NoInfer<YmaxWitnessData<T>>,
 ): Witness<YmaxWitnessTypes<T>, YmaxWitnessMappedTypeParam<T>> =>
-  // @ts-expect-error some generic inference issue I suppose?
-  makeWitness(
-    // @ts-expect-error some generic inference issue I suppose?
+  makeWitness<YmaxWitnessTypes<T>, YmaxWitnessMappedTypeParam<T>>(
     data,
     getYmaxWitnessTypes(operation),
     getYmaxWitnessTypeParam(operation),
@@ -231,7 +243,7 @@ export const getYmaxStandaloneDomain = (
 });
 
 export const getYmaxStandaloneOperationData = <T extends OperationTypeNames>(
-  data: NoInfer<TypedDataToPrimitiveTypes<YmaxStandaloneTypes>[T]>,
+  data: NoInfer<YmaxStandaloneData<T>>,
   operation: T,
   chainId: bigint | number,
   verifyingContract: Address,
@@ -240,12 +252,13 @@ export const getYmaxStandaloneOperationData = <T extends OperationTypeNames>(
 } => {
   const types = getYmaxStandaloneTypes(operation);
 
-  // @ts-expect-error some generic inference issue I suppose?
   return {
     domain: getYmaxStandaloneDomain(chainId, verifyingContract),
     types,
     primaryType: operation,
-    message: data,
+    message: data as TypedDataToPrimitiveTypes<YmaxStandaloneTypes<T>>[T],
+  } as TypedDataDefinition<YmaxStandaloneTypes<T>, T, T> & {
+    domain: YmaxStandaloneDomain;
   };
 };
 

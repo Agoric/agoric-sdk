@@ -29,8 +29,8 @@ import {
 import type {
   YmaxSharedDomain,
   TargetAllocation as EIP712Allocation,
-} from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.ts';
-import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.ts';
+} from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
+import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import type { MapStore } from '@agoric/store';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';

@@ -99,13 +99,13 @@ export const startFakeServer = (t, fakeValues, options = {}) => {
       next();
     });
     app.use(express.json());
-    app.get('/bad-network-config', (req, res) => {
+    app.get('/bad-network-config', (_req, res) => {
       res.json({
         chainName,
         rpcAddrs: 'not an array',
       });
     });
-    app.get('/network-config', (req, res) => {
+    app.get('/network-config', (_req, res) => {
       res.json({
         chainName,
         rpcAddrs: [`http://localhost:${PORT}/tendermint-rpc`],

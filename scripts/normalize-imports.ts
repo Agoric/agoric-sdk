@@ -76,6 +76,7 @@ const languageService = ts.createLanguageService(
 
 const project = new Project({
   tsConfigFilePath: tsConfigPath,
+  // @ts-expect-error ts-morph types not yet updated for TypeScript 6
   compilerOptions,
   // skipAddingFilesFromTsConfig: true,
 });

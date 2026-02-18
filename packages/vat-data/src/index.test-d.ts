@@ -49,7 +49,7 @@ type SingleCounterContext = {
   state: SingleCounterState;
   self: KindFacet<typeof counterBehavior>;
 };
-const initCounter = (name: string, str: string): SingleCounterState => ({
+const initCounter = (name: string, _str: string): SingleCounterState => ({
   counter: 0,
   name,
 });
@@ -106,7 +106,7 @@ const facetedCounterBehavior = {
   },
   other: {
     emptyFn: () => null,
-    echo: (context: MultiCounterContext, toEcho: string) => toEcho,
+    echo: (_context: MultiCounterContext, toEcho: string) => toEcho,
   },
 };
 

@@ -19,6 +19,11 @@ per https://agents.md/
 - `yarn format`: Format code via Prettier; `yarn lint:format` to check only.
 - `./scripts/env-doctor.sh`: Verify toolchain (Node, Go, compiler) versions.
 - Example, single package: `cd packages/eventual-send && yarn test`.
+- Packing/debugging workflow:
+  - Full sequential prepack pass across publishable packages: `yarn lerna run --reject-cycles --concurrency 1 prepack`
+  - If a package fails, fix it and verify locally in that package with `yarn postpack && yarn prepack`
+  - Resume from the failed package and include dependents needed for validation: `yarn lerna run prepack --since <failed-package-name> --include-dependencies --concurrency 1 --reject-cycles`
+  - After any prepack run, clean generated artifacts and restore package trees with: `yarn lerna run --reject-cycles --concurrency 1 postpack`
 
 ## Coding Style & Naming Conventions
 - ESM by default; JS and TypeScript both used. Target Node ^20.9 or ^22.11.

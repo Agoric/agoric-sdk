@@ -107,7 +107,8 @@ export const makeScalarWeakMapStore = (
   tag = 'key',
   { longLived = true, keyShape = undefined, valueShape = undefined } = {},
 ) => {
-  const jsmap = new (longLived ? WeakMap : Map)();
+  /** @type {WeakMap<K & object, V>} */
+  const jsmap = longLived ? new WeakMap() : new Map();
   if (keyShape !== undefined) {
     assertPattern(keyShape);
   }

@@ -5,7 +5,7 @@ import { kunser } from '@agoric/kmarshal';
 import { M } from '@agoric/store';
 import { setupTestLiveslots } from './liveslots-helpers.js';
 
-function buildRootObject(vatPowers, vatParameters, baggage) {
+function buildRootObject(vatPowers, _vatParameters, baggage) {
   const vd = vatPowers.VatData;
 
   let vinstance1;

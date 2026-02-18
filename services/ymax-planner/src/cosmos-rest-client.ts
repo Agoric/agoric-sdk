@@ -275,7 +275,7 @@ class CosmosApiError extends Error {
 
   public readonly url: string;
 
-  public readonly cause?: Error;
+  public override readonly cause?: Error;
 
   constructor(
     message: string,

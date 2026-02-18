@@ -28,7 +28,7 @@ function fixTypeImport(directory, gnuSed) {
     -e 's/\\([{,]\\) \\([[:alnum:]_]*SDKType\\)/\\1 type \\2/g' {} +
   `;
 
-  exec(command, (error, stdout, stderr) => {
+  exec(command, (error, _stdout, stderr) => {
     if (error) {
       console.error(`Error during replacement: ${error.message}`);
       return;

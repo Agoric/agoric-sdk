@@ -82,7 +82,7 @@ export const checkExportDataMode = (mode, isImport = false) => {
       if (isImport) {
         break;
       }
-      // Fall through
+      throw Fail`Invalid value ${q(mode)} for "export-data-mode"`;
     }
     default:
       throw Fail`Invalid value ${q(mode)} for "export-data-mode"`;

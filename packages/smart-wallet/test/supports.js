@@ -79,9 +79,6 @@ const makeFakeBridgeManager = () =>
   Far('fakeBridgeManager', {
     register(bridgeId, handler) {
       return Far('scopedBridgeManager', {
-        getBridgeId() {
-          return bridgeId;
-        },
         fromBridge(_obj) {
           assert.fail(`expected fromBridge`);
         },

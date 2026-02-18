@@ -25,14 +25,15 @@ import { makeInaccessibleVal } from './inaccessible-val.js';
 
 const { slotToWrapper, wrapperToSlot } = (() => {
   /** @typedef {'Remotable' | `Alleged: ${string}`} InterfaceSpec */
+  // Keep slot state out-of-class: TS6 declaration emit errors with TS4094 when
+  // an exported anonymous class type carries a private/protected field (#slot).
+  /** @type {WeakMap<object, unknown>} */
+  const slotByWrapper = new WeakMap();
 
   /** @template [Slot=unknown] */
   class SlotWrapper {
-    /** @type {Slot} */
-    #slot;
-
     /** @type {InterfaceSpec} */
-    [Symbol.toStringTag];
+    [Symbol.toStringTag] = 'Alleged: SlotWrapper';
 
     /**
      * @param {Slot} slot
@@ -44,13 +45,8 @@ const { slotToWrapper, wrapperToSlot } = (() => {
       } else if (!iface.startsWith('Alleged: ')) {
         iface = `Alleged: ${iface}`;
       }
-      this.#slot = slot;
+      slotByWrapper.set(this, slot);
       this[Symbol.toStringTag] = /** @type {InterfaceSpec} */ (iface);
-    }
-
-    /** @param {SlotWrapper} wrapper */
-    static getSlot(wrapper) {
-      return wrapper.#slot;
     }
   }
   Object.defineProperties(SlotWrapper.prototype, {
@@ -65,7 +61,7 @@ const { slotToWrapper, wrapperToSlot } = (() => {
    *   wrapper: SlotWrapper<Slot> & RemotableObject<InterfaceSpec>,
    * ) => Slot}
    */
-  const getSlot = SlotWrapper.getSlot;
+  const getSlot = /** @type {any} */ (wrapper => slotByWrapper.get(wrapper));
 
   return {
     /**

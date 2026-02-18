@@ -44,12 +44,12 @@ export { makeMockChainStorageRoot };
 export const DENOM_UNIT = 1_000_000n;
 
 /**
- * @param {ExecutionContext} t
+ * @param {ExecutionContext} _t
  * @param {string} sourceRoot
  * @param {string} bundleName
  * @returns {Promise<SourceBundle>}
  */
-export const provideBundle = (t, sourceRoot, bundleName) => {
+export const provideBundle = (_t, sourceRoot, bundleName) => {
   return bundleCache.load(sourceRoot, bundleName);
 };
 harden(provideBundle);

@@ -16,11 +16,11 @@ import {
 const sourceSpec = './portfolio-control.core.js';
 
 /**
- * @param {Parameters<CoreEvalBuilder>[0]} tools
+ * @param {Parameters<CoreEvalBuilder>[0]} _tools
  * @param {DelegatePortfolioOptions} config
  * @satisfies {CoreEvalBuilder}
  */
-const defaultProposalBuilder = async (tools, config) => {
+const defaultProposalBuilder = async (_tools, config) => {
   return harden({
     sourceSpec,
     getManifestCall: [

@@ -105,7 +105,7 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
       },
       get: ({ state }) => D(vatAdminDev).getMeter(state.meterID), // returns BigInts
       // getNotifier: ({ state }) => state.notifier, // XXX RESTORE
-      getNotifier: ({ _self }) => Fail`not implemented, see #7234`, // XXX TEMP
+      getNotifier: () => Fail`not implemented, see #7234`, // XXX TEMP
     },
     { finish: finishMeter },
   );
@@ -124,7 +124,7 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
       setThreshold(_context, _newThreshold) {},
       get: () => harden({ remaining: 'unlimited', threshold: 0 }),
       // getNotifier: ({ state }) => state.notifier, // will never fire // XXX RESTORE
-      getNotifier: ({ _self }) => Fail`not implemented, see #7234`, // XXX TEMP
+      getNotifier: () => Fail`not implemented, see #7234`, // XXX TEMP
     },
     { finish: finishMeter },
   );
@@ -565,7 +565,7 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
 
   // XXX TEMP
   // eslint-disable-next-line no-unused-vars
-  function meterCrossedThreshold(meterID, remaining) {
+  function meterCrossedThreshold(_meterID, _remaining) {
     // const { updater } = meterByID.get(meterID); // XXX RESTORE
     // updater.updateState(remaining); // XXX RESTORE
   }

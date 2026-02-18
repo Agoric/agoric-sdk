@@ -6,7 +6,7 @@ export function buildRootObject(vatPowers, vatParameters) {
   const { D } = vatPowers;
   const log = vatPowers.testLog;
   return Far('root', {
-    async bootstrap(vats, devices) {
+    async bootstrap(_vats, devices) {
       const { argv } = vatParameters;
       if (argv[0] === 'timer') {
         log(`starting wake test`);

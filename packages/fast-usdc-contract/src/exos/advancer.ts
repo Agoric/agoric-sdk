@@ -219,7 +219,7 @@ export const prepareAdvancerKit = (
          * @throws {never} WARNING: this function must not throw, because user funds are at risk
          */
         onFulfilled(
-          result: undefined,
+          _result: undefined,
           ctx: OldAdvancerVowCtx & { tmpSeat: ZCFSeat },
         ) {
           return asVow(() => {
@@ -259,7 +259,7 @@ export const prepareAdvancerKit = (
               );
             } else {
               // This is supposed to be caught in handleTransactionEvent()
-              Fail`🚨 can only transfer to Agoric addresses, via IBC, or via CCTP`;
+              throw Fail`🚨 can only transfer to Agoric addresses, via IBC, or via CCTP`;
             }
           });
         },
@@ -303,7 +303,7 @@ export const prepareAdvancerKit = (
          * @param {OldAdvancerVowCtx} ctx
          * @throws {never} WARNING: this function must not throw, because user funds are at risk
          */
-        onFulfilled(result: undefined, ctx: AdvancerVowCtx) {
+        onFulfilled(_result: undefined, ctx: AdvancerVowCtx) {
           const { notifier } = this.state;
           const { advanceAmount, destination, ...detail } = ctx;
           log('Advance succeeded', { advanceAmount, destination });
@@ -335,7 +335,7 @@ export const prepareAdvancerKit = (
          * @param ctx
          * @throws {never} WARNING: this function must not throw, because user funds are at risk
          */
-        onFulfilled(result: undefined, ctx: OldAdvancerVowCtx) {
+        onFulfilled(_result: undefined, ctx: OldAdvancerVowCtx) {
           const { advanceAmount } = ctx;
           // assets are on noble, transfer to dest.
           const intermediaryAccount = getNobleICA();
@@ -358,7 +358,7 @@ export const prepareAdvancerKit = (
          * @throws {never} WARNING: this function must not throw, because user funds are at risk
          */
         onFulfilled(
-          result: undefined,
+          _result: undefined,
           {
             advanceAmount,
             tmpReturnSeat,

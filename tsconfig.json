@@ -8,15 +8,30 @@
     "skipLibCheck": true,
     "allowJs": true,
     "checkJs": true,
-    "allowSyntheticDefaultImports": true,
+    // Strictness audit 2026-02-03 by scripts/maintenance/typecheck-flag-report.mjs
+    // useUnknownInCatchVariables: 101
+    // exactOptionalPropertyTypes: 200
+    // noUnusedLocals: 563
+    // noPropertyAccessFromIndexSignature: 948
+    // noUncheckedIndexedAccess: 1539
+    // strictFunctionTypes: 1684
+    // noImplicitAny: 8833
+    // strict: 10636
     "strict": false,
-    "downlevelIteration": true,
     "strictNullChecks": true,
     "noImplicitThis": true,
+    "alwaysStrict": true,
+    "strictPropertyInitialization": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noUnusedParameters": true,
+    "strictBindCallApply": true,
+    "noImplicitReturns": true,
     "noUncheckedSideEffectImports": true,
     "erasableSyntaxOnly": true,
     "verbatimModuleSyntax": true,
-    "typeRoots": ["./types", "./node_modules/@types"],
+    "types": ["node"],
+    "typeRoots": ["./node_modules/@types"],
     // .ts and rewriting relative paths allow us to include in bundles
     // files that are JS executable (with TS chars blanked) but end in .ts
     "allowImportingTsExtensions": true,
@@ -27,6 +42,5 @@
     "eslint.config.mjs",
     "dist",
     "scripts",
-    "types/**/*.d.ts"
   ]
 }
