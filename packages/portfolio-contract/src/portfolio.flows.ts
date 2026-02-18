@@ -416,23 +416,25 @@ const trackFlow = async (
     const progressTracker =
       progressPowers && accounts.agoric.lca.makeProgressTracker();
     const optsArgs = progressTracker ? [{ progressTracker }] : [];
-    const progressReduction =
-      progressTracker &&
-      reduceProgressReports(
-        progressTracker,
-        makeTrafficPublishingReducer(
-          makeFlowStepPowers(
-            { flowId, assetMoves: moves, step, phase: 'apply' },
-            { reporter, ...progressPowers },
-          ),
-        ),
-        [] as PendingTxsEntry[],
-      );
+    let progressReduction;
 
     await null;
     try {
       traceStep('starting', moveStatus(move));
       const { amount, how } = move;
+
+      progressReduction =
+        progressTracker &&
+        reduceProgressReports(
+          progressTracker,
+          makeTrafficPublishingReducer(
+            makeFlowStepPowers(
+              { flowId, assetMoves: moves, step, phase: 'apply' },
+              { reporter, ...progressPowers },
+            ),
+          ),
+          [] as PendingTxsEntry[],
+        );
 
       // Wait for the move to complete.
       const { srcPos, destPos } = await move.apply(
