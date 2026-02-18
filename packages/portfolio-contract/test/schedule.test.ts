@@ -323,6 +323,7 @@ const flow5SchedulerEvidence = harden({
     checkingLine: "rebalance.portfolio96.flow5,3997  checking 5 moves",
     planOrderLine:
       "PPLN.portfolio96.flow5,3996  TODO(#11782): vet plan { ... order: [ [ 2, [ 1 ] ], [ 3, [ 2 ] ], [ 4, [ 3 ] ] ] }",
+    flowDoneLine: "rebalance.portfolio96.flow5,3997  stepFlow done",
     schedulerLines: [
       "rebalance.portfolio96.flow5,3997  started 0 running 0",
       "rebalance.portfolio96.flow5,3997  started 1 running 0 1",
