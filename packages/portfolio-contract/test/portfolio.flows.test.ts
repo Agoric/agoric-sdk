@@ -2715,7 +2715,7 @@ test.todo(
   'openPortfolio from EVM with Permit2 rejects deposit with wrong spender',
 );
 
-test('executePlan settles while detached progress publishing is still blocked (12467 pattern)', async t => {
+test('executePlan does not settle while progress publishing is blocked (12467 pattern)', async t => {
   const amount = make(USDC, 1_000_000n);
   const steps: MovementDesc[] = [
     { src: '<Deposit>', dest: '@agoric', amount },
@@ -2739,7 +2739,7 @@ test('executePlan settles while detached progress publishing is still blocked (1
           started = true;
           createStarted.resolve();
         }
-      await releaseCreate.promise;
+        await releaseCreate.promise;
         const result = await resolverClient.createPendingTx(txMeta);
         createReturned = true;
         return result;
@@ -2778,20 +2778,20 @@ test('executePlan settles while detached progress publishing is still blocked (1
   });
   await eventLoopIteration();
 
-  t.true(
+  t.false(
     settled,
-    'executePlan settled while createPendingTx (from detached progress reducer) was still blocked',
+    'executePlan must remain pending while createPendingTx (progress reducer path) is blocked',
   );
   t.false(
     createReturned,
-    'detached side-effecting promise remained in flight after executePlan settled',
+    'createPendingTx should still be blocked before release',
   );
 
   releaseCreate.resolve();
   await runP;
 });
 
-test('flow5-like ordered plan settles while detached progress publishing is blocked (12467 pattern)', async t => {
+test('flow5-like ordered plan does not settle while progress publishing is blocked (12467 pattern)', async t => {
   const { orch, ctx, offer, resolverClient, storage, txResolver } = mocks();
   const kit = await ctx.makePortfolioKit();
   const seat = makeMockSeat({}, {}, offer.log);
@@ -2899,13 +2899,13 @@ test('flow5-like ordered plan settles while detached progress publishing is bloc
   });
   await eventLoopIteration();
 
-  t.true(
+  t.false(
     settled,
-    'flow5-like executePlan settled while createPendingTx (detached progress reducer path) was blocked',
+    'flow5-like executePlan must remain pending while createPendingTx (progress reducer path) is blocked',
   );
   t.false(
     createReturned,
-    'detached progress side-effect remained in flight after flow settled',
+    'createPendingTx should still be blocked before release',
   );
 
   releaseCreate.resolve();
