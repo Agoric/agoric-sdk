@@ -277,6 +277,7 @@ export const MULTICALL_STATUS_EVENT = 'status';
 type WatchGmpLookback = {
   publishTimeMs: number;
   chainId: CaipChainId;
+  setTimeout: typeof globalThis.setTimeout;
   signal?: AbortSignal;
   rpcClient: JSONRPCClient;
 };
@@ -289,6 +290,7 @@ export const lookBackGmp = async ({
   expectedSourceAddress,
   publishTimeMs,
   chainId,
+  setTimeout,
   log = () => {},
   signal,
   kvStore,
@@ -342,6 +344,7 @@ export const lookBackGmp = async ({
       provider,
       toBlock,
       chainId,
+      setTimeout,
       log,
       signal: sharedSignal,
     };

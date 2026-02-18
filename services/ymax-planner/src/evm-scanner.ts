@@ -158,6 +158,7 @@ type ScanOptsBase = {
   fromBlock: number;
   toBlock: number;
   chainId: CaipChainId;
+  setTimeout: typeof globalThis.setTimeout;
   chunkSize?: number;
   log?: (...args: unknown[]) => void;
   signal?: AbortSignal;
@@ -187,7 +188,7 @@ type FailedTxScanOpts = ScanOptsBase & {
 
 // https://www.alchemy.com/docs/reference/what-are-evm-traces#the-solution-evm-traces
 // https://reth.rs/jsonrpc/trace/
-type TraceResultBase = {
+type CallTraceResultBase = {
   type: string;
   action: unknown;
   blockNumber: number;
@@ -207,7 +208,10 @@ type CallTraceAction = {
   callType: 'call' | 'delegatecall' | 'callcode' | 'staticcall';
 };
 
-type TraceResult = TraceResultBase & { type: 'call'; action: CallTraceAction };
+type CallTraceResult = CallTraceResultBase & {
+  type: 'call';
+  action: CallTraceAction;
+};
 
 /**
  * Create a {@link JSONRPCClient} backed by HTTP POST via the given `fetch`.
@@ -265,11 +269,31 @@ const getTxReceiptsBatch = async (
   return responses.flatMap(r => (r.result ?? []) as TxReceipt[]);
 };
 
+/**
+ * Efficiently fetches traces for EVM transactions regardless of their
+ * success/failure status.
+ * Uses the `trace_filter` RPC method, which employs server-side filtering and
+ * includes calldata in the response, avoiding extra round-trips.
+ * https://www.alchemy.com/docs/reference/what-is-trace_filter
+ */
+const getTraces = async (
+  fromBlock: string,
+  toBlock: string,
+  toAddress: string,
+  provider: WebSocketProvider,
+): Promise<CallTraceResult[]> => {
+  const result: CallTraceResult[] | null = await provider.send('trace_filter', [
+    { fromBlock, toBlock, toAddress: [toAddress] },
+  ]);
+  return result ?? [];
+};
+
 type ScanInChunksOpts<T> = {
   provider: WebSocketProvider;
   fromBlock: number;
   toBlock: number;
   chainId: CaipChainId;
+  setTimeout: typeof globalThis.setTimeout;
   chunkSize: number;
   scanChunk: (start: number, end: number) => Promise<T | undefined>;
   label: string;
@@ -294,6 +318,7 @@ const scanEvmBlocksInChunks = async <T>(
     fromBlock,
     toBlock,
     chainId,
+    setTimeout,
     chunkSize,
     scanChunk,
     label,
@@ -386,25 +411,6 @@ export const scanEvmLogsInChunks = async (
       }
     },
   });
-};
-
-/**
- * Efficiently fetches traces for EVM transactions regardless of their
- * success/failure status.
- * Uses the `trace_filter` RPC method, which employs server-side filtering and
- * includes calldata in the response, avoiding extra round-trips.
- * https://www.alchemy.com/docs/reference/what-is-trace_filter
- */
-const getTraces = async (
-  fromBlock: string,
-  toBlock: string,
-  toAddress: string,
-  provider: WebSocketProvider,
-): Promise<TraceResult[]> => {
-  const result: TraceResult[] | null = await provider.send('trace_filter', [
-    { fromBlock, toBlock, toAddress: [toAddress] },
-  ]);
-  return result ?? [];
 };
 
 /**

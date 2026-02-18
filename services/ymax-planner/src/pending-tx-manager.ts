@@ -53,6 +53,7 @@ export type EvmContext = {
   evmProviders: EvmProviders;
   signingSmartWalletKit: SigningSmartWalletKit;
   fetch: typeof fetch;
+  setTimeout: typeof globalThis.setTimeout;
   kvStore: KVStore;
   makeAbortController: MakeAbortController;
   axelarApiUrl: string;
@@ -166,6 +167,7 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
         ...watchArgs,
         publishTimeMs: opts.publishTimeMs,
         chainId: caipId,
+        setTimeout: ctx.setTimeout,
         signal: abortController.signal,
         kvStore: ctx.kvStore,
         txId,
@@ -292,6 +294,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
         ...watchArgs,
         publishTimeMs: opts.publishTimeMs,
         chainId: caipId,
+        setTimeout: ctx.setTimeout,
         signal: abortController.signal,
         kvStore: ctx.kvStore,
         makeAbortController: ctx.makeAbortController,
@@ -429,6 +432,7 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
         txId,
         publishTimeMs: opts.publishTimeMs,
         chainId: caipId,
+        setTimeout: ctx.setTimeout,
         signal: abortController.signal,
         rpcClient,
         makeAbortController: ctx.makeAbortController,

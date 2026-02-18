@@ -339,6 +339,7 @@ export const watchSmartWalletTx = ({
 type SmartWalletLookback = {
   publishTimeMs: number;
   chainId: CaipChainId;
+  setTimeout: typeof globalThis.setTimeout;
   signal?: AbortSignal;
   rpcClient: JSONRPCClient;
   subscribeToAddr: `0x${string}`;
@@ -352,6 +353,7 @@ export const lookBackSmartWalletTx = async ({
   expectedSourceAddress,
   publishTimeMs,
   chainId,
+  setTimeout,
   log = () => {},
   signal,
   kvStore,
@@ -413,6 +415,7 @@ export const lookBackSmartWalletTx = async ({
       provider,
       toBlock,
       chainId,
+      setTimeout,
       log,
       signal: sharedSignal,
     };

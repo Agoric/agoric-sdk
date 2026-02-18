@@ -402,6 +402,7 @@ export const mockEvmCtx = {
   evmProviders: createMockEvmProviders(),
   rpcUrls: createMockRpcUrls(),
   kvStore: makeKVStoreFromMap(new Map()),
+  setTimeout: globalThis.setTimeout,
   makeAbortController,
   axelarApiUrl: mockAxelarApiAddress,
   ydsNotifier: {
@@ -529,6 +530,7 @@ export const createMockPendingTxOpts = (
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore some resolutions don't expect this on global
   fetch: mockGlobalFetch,
+  setTimeout: globalThis.setTimeout,
   marshaller: boardSlottingMarshaller(),
   signingSmartWalletKit: createMockSigningSmartWalletKit(),
   ydsNotifier: {

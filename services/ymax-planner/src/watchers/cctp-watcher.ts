@@ -161,6 +161,7 @@ export const lookBackCctp = async ({
   expectedAmount,
   publishTimeMs,
   chainId,
+  setTimeout,
   log = () => {},
   signal,
   kvStore,
@@ -168,6 +169,7 @@ export const lookBackCctp = async ({
 }: CctpWatch & {
   publishTimeMs: number;
   chainId: CaipChainId;
+  setTimeout: typeof globalThis.setTimeout;
   signal?: AbortSignal;
 }): Promise<WatcherResult> => {
   await null;
@@ -198,6 +200,7 @@ export const lookBackCctp = async ({
       fromBlock: savedFromBlock,
       toBlock,
       chainId,
+      setTimeout,
       log,
       signal,
       onRejectedChunk: async (_, to) => {
