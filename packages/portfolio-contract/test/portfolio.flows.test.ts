@@ -2715,6 +2715,75 @@ test.todo(
   'openPortfolio from EVM with Permit2 rejects deposit with wrong spender',
 );
 
+test('executePlan settles while detached progress publishing is still blocked (12467 pattern)', async t => {
+  const amount = make(USDC, 1_000_000n);
+  const steps: MovementDesc[] = [
+    { src: '<Deposit>', dest: '@agoric', amount },
+    { src: '@agoric', dest: '@noble', amount },
+  ];
+
+  const { orch, ctx, offer, resolverClient } = mocks();
+  const kit = await ctx.makePortfolioKit();
+  const seat = makeMockSeat({ Deposit: amount }, {}, offer.log);
+
+  const createStarted = makePromiseKit<void>();
+  const releaseCreate = makePromiseKit<void>();
+  let createReturned = false;
+  let started = false;
+
+  const delayedResolverClient = Far('DelayedResolverClient', {
+    createPendingTx: async txMeta => {
+      if (!started) {
+        started = true;
+        createStarted.resolve();
+      }
+      await releaseCreate.promise;
+      const result = await resolverClient.createPendingTx(txMeta);
+      createReturned = true;
+      return result;
+    },
+    updateTxMeta: (txId, txMeta) => resolverClient.updateTxMeta(txId, txMeta),
+  });
+
+  const delayedCtx = {
+    ...ctx,
+    resolverClient: delayedResolverClient,
+  };
+
+  const runP = executePlan(
+    orch,
+    delayedCtx,
+    seat,
+    { flow: steps },
+    kit,
+    { type: 'deposit', amount },
+    undefined,
+    { features: { useProgressTracker: true } },
+  );
+
+  await createStarted.promise;
+
+  let settled = false;
+  void runP.then(() => {
+    settled = true;
+  });
+  for (let i = 0; i < 50 && !settled; i += 1) {
+    await eventLoopIteration();
+  }
+
+  t.true(
+    settled,
+    'executePlan settled while createPendingTx (from detached progress reducer) was still blocked',
+  );
+  t.false(
+    createReturned,
+    'detached side-effecting promise remained in flight after executePlan settled',
+  );
+
+  releaseCreate.resolve();
+  await runP;
+});
+
 test.todo(
   'openPortfolio from EVM with Permit2 rejects permit with zero amount',
 );
