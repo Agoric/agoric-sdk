@@ -1,5 +1,9 @@
 import test from 'ava';
 
+import {
+  mapOsArchToTarget,
+  targetToBuildPlatform,
+} from '../src/install-prebuilt.js';
 import { resolveXsnapWorkerPath } from '../src/xsnap.js';
 
 test('resolveXsnapWorkerPath uses default release path', t => {
@@ -58,4 +62,14 @@ test('resolveXsnapWorkerPath rejects unsupported platform', t => {
   );
 
   t.regex(err.message, /does not support platform/);
+});
+
+test('mapOsArchToTarget maps supported host tuple', t => {
+  t.is(mapOsArchToTarget('Linux', 'x64'), 'linux-x64');
+  t.is(mapOsArchToTarget('Darwin', 'arm64'), 'darwin-arm64');
+});
+
+test('targetToBuildPlatform maps target to moddable platform', t => {
+  t.is(targetToBuildPlatform('linux-arm64'), 'lin');
+  t.is(targetToBuildPlatform('darwin-x64'), 'mac');
 });
