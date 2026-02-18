@@ -186,9 +186,9 @@ export const makeReplayMembraneKitForTesting = ({
       actualEntry: guestEntry,
       label,
 
-      // The expectedOutcome is not yet implemented. It should be implemented
-      // for calls by peeking ahead for the corresponding `doReturn` or
-      // `doThrow`. For sends, it should be the returned guest promise.
+      // TODO implement expectedOutcome
+      // See https://github.com/Agoric/agoric-sdk/issues/12480
+      //
       // expectedOutcome
     });
 
