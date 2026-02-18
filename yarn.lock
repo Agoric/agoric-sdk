@@ -27,6 +27,7 @@ __metadata:
     "@agoric/cosmic-swingset": "workspace:*"
     "@agoric/inter-protocol": "workspace:*"
     "@agoric/internal": "workspace:*"
+    "@agoric/swingset-vat": "workspace:*"
     "@agoric/vats": "workspace:*"
     "@agoric/zoe": "workspace:*"
     "@endo/errors": "npm:^1.2.13"
