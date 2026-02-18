@@ -16,7 +16,7 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 import { forwardingMethods, prepareEndowmentTools } from '../src/endowments.js';
 import { makeConvertKit } from '../src/convert.js';
 import { prepareBijection } from '../src/bijection.js';
-import { makeEquate } from '../src/equate.js';
+import { makeEquatesKit } from '../src/equates.js';
 
 const { ownKeys } = Reflect;
 
@@ -132,14 +132,14 @@ const testEndowmentPlay = async (t, zone, gen, isDurable) => {
   t.is(typeof unwrapped.state, 'object');
   t.is(unwrapped.state[`${gen}_foo`], `${gen} foo`);
 
-  const equate = makeEquate(bij);
+  const { equates } = makeEquatesKit(bij);
 
   const { state: _1, ...passableUnwrapped } = unwrapped;
   const { state: _2, ...passableWrapped } = wrapped;
 
-  t.notThrows(() => equate(harden(passableUnwrapped), harden(passableWrapped)));
+  t.true(equates(harden(passableUnwrapped), harden(passableWrapped)));
   for (const [hostWrapped, guestWrapped] of guestWrappers) {
-    t.notThrows(() => equate(guestWrapped, hostWrapped));
+    t.true(equates(guestWrapped, hostWrapped));
   }
 };
 

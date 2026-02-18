@@ -19,9 +19,7 @@ import { prepareBijection } from '../src/bijection.js';
 import { makeReplayMembrane } from '../src/replay-membrane.js';
 
 /**
- * @import {PromiseKit} from '@endo/promise-kit'
- * @import {Zone} from '@agoric/base-zone'
- * @import {MapStore} from '@agoric/store';
+ * @import {Zone} from '@agoric/base-zone';
  * @import {LogStore} from '../src/log-store.js';
  * @import {Bijection} from '../src/bijection.js';
  */
@@ -174,8 +172,26 @@ const testBadReplay = async (t, zone) => {
   t.true(bijection.has(gOrch7, hOrch7));
 
   // failure of guest to reproduce behavior from previous incarnations
+  //
+  // The order of properties should not be significant. But unfortunately,
+  // the way we're using it to test means the order needs to match that
+  // observed in the test.
+  // TODO sort the keys both at the throw site and here.
+  const expectedMsgFault = {
+    actualEntry: [
+      'checkCall',
+      '[Alleged: Orchestra guest wrapper]',
+      'scale',
+      [4],
+      1,
+    ],
+    expectedEntry: ['checkCall', '[Seen]', 'scale', [3], 1],
+    generation: 0,
+    label: 'replay call',
+    logIndex: 2,
+  };
   t.throws(() => gOrch7.scale(4), {
-    message: /^panic over "\[Error: replay/,
+    message: `panic over ${JSON.stringify(`[Error: Fault handler declined to handle fault ${JSON.stringify(expectedMsgFault)}]`)}`,
   });
 };
 

@@ -15,6 +15,8 @@ import { LogEntryShape, FlowStateShape } from './type-guards.js';
  * @import {Zone} from '@agoric/base-zone';
  * @import {AsyncFlowOptions, FlowState, GuestAsyncFunc, HostOf, PreparationOptions} from './types.js';
  * @import {ReplayMembrane} from './replay-membrane.js';
+ * @import {LogStore} from './log-store.js';
+ * @import {Bijection} from './bijection.js';
  */
 
 const { defineProperties } = Object;
@@ -101,7 +103,9 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
     typeof guestAsyncFunc === 'function' ||
       Fail`guestAsyncFunc must be a callable function ${guestAsyncFunc}`;
     const {
-      // May change default to false, once instances reliably wake up
+      // May change default to false, once instances reliably wake up.
+      // TODO `startEager: false` may not yet be reliably supported, in which
+      // case, we should make asking for it an error until then.
       startEager = true,
     } = options;
 
@@ -110,7 +114,9 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
       AsyncFlowIKit,
       activationArgs => {
         harden(activationArgs);
+        /** @type {LogStore} */
         const log = makeLogStore();
+        /** @type {Bijection} */
         const bijection = makeBijection();
 
         return {
