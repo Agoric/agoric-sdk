@@ -28,8 +28,8 @@ const testPlay = async (t, zone) => {
 
   const { guestFunc } = {
     async guestFunc() {
-      // @ts-expect-error TS doesn't yet know about guest context objects,
-      const { flowInspector, self, state, facets } = this;
+      // @ts-expect-error TS does not yet understand guest contexts
+      const { narrator, self, state, facets } = this;
       t.is(self, undefined);
       t.is(state, undefined);
       t.is(facets, undefined);
