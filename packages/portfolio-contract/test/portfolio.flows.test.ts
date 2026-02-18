@@ -2793,6 +2793,129 @@ test('executePlan settles while detached progress publishing is still blocked (1
   await runP;
 });
 
+test('flow5-like ordered plan settles while detached progress publishing is blocked (12467 pattern)', async t => {
+  const { orch, ctx, offer, resolverClient, storage, txResolver } = mocks();
+  const kit = await ctx.makePortfolioKit();
+  const seat = makeMockSeat({}, {}, offer.log);
+  const portfolioId = kit.reader.getPortfolioId();
+  const { getPortfolioStatus } = makeStorageTools(storage);
+
+  const createStarted = makePromiseKit<void>();
+  const releaseCreate = makePromiseKit<void>();
+  let createReturned = false;
+  let started = false;
+
+  const delayedResolverClient: typeof resolverClient = Far(
+    'DelayedResolverClientFlow5Like',
+    {
+      createPendingTx: async txMeta => {
+        if (!started) {
+          started = true;
+          createStarted.resolve();
+        }
+        await releaseCreate.promise;
+        const result = await resolverClient.createPendingTx(txMeta);
+        createReturned = true;
+        return result;
+      },
+      updateTxMeta: (txId, txMeta) => resolverClient.updateTxMeta(txId, txMeta),
+      registerTransaction: (...args) =>
+        // @ts-expect-error mock
+        resolverClient.registerTransaction(...args),
+      unsubscribe: (...args) =>
+        // @ts-expect-error mock
+        resolverClient.unsubscribe(...args),
+    },
+  ) as unknown as typeof resolverClient;
+
+  const delayedCtx = {
+    ...ctx,
+    resolverClient: delayedResolverClient,
+  } as PortfolioInstanceContext;
+
+  const runP = executePlan(
+    orch,
+    delayedCtx,
+    seat,
+    {},
+    kit,
+    { type: 'rebalance' },
+    undefined,
+    { features: { useProgressTracker: true } },
+  );
+
+  const plannerP = (async () => {
+    const { flowsRunning = {} } = await getPortfolioStatus(portfolioId);
+    const [[flowId, detail]] = Object.entries(flowsRunning);
+    if (detail.type !== 'rebalance') throw t.fail(detail.type);
+    const flowNum = Number(flowId.replace('flow', ''));
+    const flow: MovementDesc[] = [
+      {
+        src: '@Base',
+        dest: 'Aave_Base',
+        amount: make(USDC, 2_599_999n),
+        fee: make(BLD, 6_156_495n),
+      },
+      {
+        src: '@Base',
+        dest: '@agoric',
+        amount: make(USDC, 6_000_001n),
+        fee: make(BLD, 5_869_190n),
+      },
+      {
+        src: '@agoric',
+        dest: '@noble',
+        amount: make(USDC, 6_000_001n),
+      },
+      {
+        src: '@noble',
+        dest: '@Optimism',
+        amount: make(USDC, 6_000_001n),
+        fee: make(BLD, 5_000_000n),
+        detail: { evmGas: 66_950_939_676_851n },
+      },
+      {
+        src: '@Optimism',
+        dest: 'Compound_Optimism',
+        amount: make(USDC, 6_000_001n),
+        fee: make(BLD, 5_000_000n),
+      },
+    ];
+    const plan: FundsFlowPlan = {
+      flow,
+      order: [
+        [2, [1]],
+        [3, [2]],
+        [4, [3]],
+      ],
+    };
+    kit.planner.resolveFlowPlan(flowNum, plan);
+  })();
+
+  const resolverP = txResolver.settleUntil(runP);
+  await createStarted.promise;
+
+  let settled = false;
+  void runP.then(() => {
+    settled = true;
+  });
+  for (let i = 0; i < 80 && !settled; i += 1) {
+    await eventLoopIteration();
+  }
+
+  t.true(
+    settled,
+    'flow5-like executePlan settled while createPendingTx (detached progress reducer path) was blocked',
+  );
+  t.false(
+    createReturned,
+    'detached progress side-effect remained in flight after flow settled',
+  );
+
+  releaseCreate.resolve();
+  await Promise.all([runP, plannerP, resolverP]);
+});
+
 test.todo(
   'openPortfolio from EVM with Permit2 rejects permit with zero amount',
 );
