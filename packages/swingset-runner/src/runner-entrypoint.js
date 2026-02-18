@@ -9,6 +9,7 @@
  */
 
 import '@endo/init/pre-bundle-source.js';
+import './anylogger-legacy.js';
 
 // Now do lockdown.
 import '@endo/init';

@@ -181,7 +181,6 @@ __metadata:
     "@endo/patterns": "npm:^1.7.0"
     "@endo/promise-kit": "npm:^1.1.13"
     "@endo/stream": "npm:^1.2.13"
-    anylogger: "npm:^0.21.0"
     import-meta-resolve: "npm:^4.1.0"
     jessie.js: "npm:^0.3.4"
   languageName: node
@@ -328,7 +327,6 @@ __metadata:
     "@endo/stream": "npm:^1.2.13"
     "@endo/zip": "npm:^1.0.11"
     ansi-styles: "npm:^6.2.1"
-    anylogger: "npm:^0.21.0"
     better-sqlite3: "npm:^10.1.0"
     import-meta-resolve: "npm:^4.1.0"
     microtime: "npm:^3.1.0"

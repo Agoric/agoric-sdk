@@ -68,7 +68,7 @@ export default [
       '**/ava*.config.js',
       '**/.ava*.config.js',
       '**/tsup.config.ts',
-      '*/vendor/**',
+      '**/vendor/**',
       'yarn.config.cjs',
       'packages/client-utils/scripts/',
       'packages/cosmic-proto/proto/',
