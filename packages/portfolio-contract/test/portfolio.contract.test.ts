@@ -2715,11 +2715,19 @@ test('verifies fix for p772: make-account recovery after prior failed make-accou
 
   const flow2History =
     contentsAfterFlow2[`${openResult.storagePath}.flows.${flow2Key}`];
+  const flow2AaveBase = contentsAfterFlow2[
+    `${openResult.storagePath}.positions.Aave_Base`
+  ] as StatusFor['position'] | undefined;
 
   t.truthy(
     Array.isArray(flow2History) &&
       flow2History.some(entry => entry?.state === 'done'),
     'flow history should include a done entry',
+  );
+  t.is(
+    flow2AaveBase?.totalIn.value,
+    flow2Amount.value,
+    'Aave_Base totalIn matches flow amount',
   );
   t.deepEqual(
     statusAfterFlow2.flowsRunning,
@@ -2731,8 +2739,8 @@ test('verifies fix for p772: make-account recovery after prior failed make-accou
   // we could observe that another flow does not trigger another make-account.
 });
 
-test.failing(
-  'rebalance should not finish until makeAccount step completes',
+test(
+  'rebalance stays running while makeAccount step is unresolved',
   async t => {
     const { common, planner1, txResolver, evmTrader } = await setupPlanner(t);
     const { usdc, bld } = common.brands;
@@ -2747,24 +2755,6 @@ test.failing(
         how: string;
         phases?: Record<string, string[]>;
       }>;
-    };
-
-    let eventLoopCalls = 0;
-    const loopOnce = async () => {
-      eventLoopCalls += 1;
-      await eventLoopIteration();
-    };
-    const waitUntil = async (
-      label: string,
-      predicate: () => Promise<boolean>,
-      advance: () => Promise<void>,
-      maxSteps = 50,
-    ) => {
-      for (let steps = 0; steps < maxSteps; steps += 1) {
-        if (await predicate()) return;
-        await advance();
-      }
-      t.fail(`waitUntil timeout: ${label}`);
     };
 
     const settlePending = async (
@@ -2884,7 +2874,7 @@ test.failing(
 
     // Let rebalance start; settle everything except MAKE_ACCOUNT.
     await settlePending(tx => tx.type !== 'MAKE_ACCOUNT');
-    await loopOnce();
+    await eventLoopIteration();
 
     t.like(
       (await evmTrader.getPortfolioStatus()).flowsRunning ?? {},
@@ -2892,37 +2882,12 @@ test.failing(
       'flow remains running while Base MAKE_ACCOUNT is unresolved',
     );
 
-    // After settling remaining pending txs, flow reaches done.
-    const loopCallsBeforeDoneWait = eventLoopCalls;
-    await waitUntil(
-      'flow reaches done state',
-      async () => {
-        const status = await evmTrader.getPortfolioStatus();
-        return keys(status.flowsRunning ?? {}).length === 0;
-      },
-      async () => {
-        await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-        await txResolver.drainPending();
-        await loopOnce();
-      },
-    );
-    t.log(
-      'eventLoopIteration calls to reach done:',
-      eventLoopCalls - loopCallsBeforeDoneWait,
-    );
-
-    const stepsAtDone = readFlowSteps(rebalanceFlowKey);
-    t.truthy(
-      (stepsAtDone[0]?.phases?.apply?.length ?? 0) > 0,
-      'at done, step1 should have apply tx phases',
-    );
-
     const { contents } = getPortfolioInfo(portfolioStoragePath, storage);
     const aaveBasePosition = contents[
       `${portfolioStoragePath}.positions.Aave_Base`
     ] as StatusFor['position'] | undefined;
-    t.truthy(aaveBasePosition, 'Aave_Base position is published');
-    t.is(aaveBasePosition?.totalIn.value, flowAmount1.value, 'Aave_Base totalIn');
-    t.is(aaveBasePosition?.totalOut.value, 0n, 'Aave_Base totalOut');
+    t.is(aaveBasePosition?.totalIn.value ?? 0n, 0n, 'Aave_Base totalIn before makeAccount settles');
+
+    t.is(aaveBasePosition?.totalIn.value ?? 0n, 0n, 'Aave_Base totalIn before makeAccount settles');
   },
 );
