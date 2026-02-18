@@ -2776,9 +2776,7 @@ test('executePlan settles while detached progress publishing is still blocked (1
   void runP.then(() => {
     settled = true;
   });
-  for (let i = 0; i < 50 && !settled; i += 1) {
-    await eventLoopIteration();
-  }
+  await eventLoopIteration();
 
   t.true(
     settled,
@@ -2899,9 +2897,7 @@ test('flow5-like ordered plan settles while detached progress publishing is bloc
   void runP.then(() => {
     settled = true;
   });
-  for (let i = 0; i < 80 && !settled; i += 1) {
-    await eventLoopIteration();
-  }
+  await eventLoopIteration();
 
   t.true(
     settled,
