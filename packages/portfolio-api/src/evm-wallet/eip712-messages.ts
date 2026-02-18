@@ -132,9 +132,11 @@ type YmaxWitnessFieldName<T extends OperationTypeNames> = ReturnType<
  */
 const getYmaxWitnessTypeParam = <T extends OperationTypeNames>(
   operation: T,
-): YmaxWitnessTypeParam<T> => ({
+): YmaxWitnessMappedTypeParam<T> => ({
   name: getYmaxWitnessFieldName(operation),
-  type: getYmaxWitnessTypeName(operation),
+  type: getYmaxWitnessTypeName(
+    operation,
+  ) as YmaxWitnessMappedTypeParam<T>['type'],
 });
 export type YmaxWitnessTypeParam<
   T extends OperationTypeNames = OperationTypeNames,
@@ -176,6 +178,9 @@ type YmaxWitnessMappedTypeParam<T extends OperationTypeNames> =
     YmaxWitnessFieldName<T>,
     Extract<keyof YmaxWitnessOperationTypes<T>, string>
   >;
+type YmaxWitnessData<T extends OperationTypeNames> = TypedDataToPrimitiveTypes<
+  YmaxWitnessTypes<T>
+>[YmaxWitnessMappedTypeParam<T>['type']];
 
 const getYmaxWitnessTypes = <T extends OperationTypeNames>(operation: T) =>
   ({
@@ -209,12 +214,9 @@ export const getYmaxOperationTypes = <T extends OperationTypeNames>(
 
 export const getYmaxWitness = <T extends OperationTypeNames>(
   operation: T,
-  data: NoInfer<
-    TypedDataToPrimitiveTypes<YmaxWitnessTypes>[YmaxWitnessTypeName<T>]
-  >,
+  data: NoInfer<YmaxWitnessData<T>>,
 ): Witness<YmaxWitnessTypes<T>, YmaxWitnessMappedTypeParam<T>> =>
-  makeWitness(
-    // @ts-expect-error some generic inference issue I suppose?
+  makeWitness<YmaxWitnessTypes<T>, YmaxWitnessMappedTypeParam<T>>(
     data,
     getYmaxWitnessTypes(operation),
     getYmaxWitnessTypeParam(operation),
