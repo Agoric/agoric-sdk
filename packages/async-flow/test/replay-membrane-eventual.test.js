@@ -17,7 +17,7 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 
 import { prepareLogStore } from '../src/log-store.js';
 import { prepareBijection } from '../src/bijection.js';
-import { makeReplayMembraneForTesting } from '../src/replay-membrane.js';
+import { makeReplayMembraneKitForTesting } from '../src/replay-membrane.js';
 
 /**
  * @import {Zone} from '@agoric/base-zone'
@@ -64,7 +64,7 @@ const testFirstPlay = async (t, zone, mode = testMode.normal) => {
   const log = zone.makeOnce('log', () => makeLogStore());
   const bijection = zone.makeOnce('bij', makeBijection);
 
-  const mem = makeReplayMembraneForTesting({
+  const { membrane } = makeReplayMembraneKitForTesting({
     log,
     bijection,
     vowTools,
@@ -85,11 +85,11 @@ const testFirstPlay = async (t, zone, mode = testMode.normal) => {
     initialDump.push(...beforeSend);
   }
 
-  const p1 = mem.hostToGuest(v1);
+  const p1 = membrane.hostToGuest(v1);
   t.deepEqual(log.dump(), initialDump);
 
   /** @type {Pingee} */
-  const guestPingee = mem.hostToGuest(pingee);
+  const guestPingee = membrane.hostToGuest(pingee);
   t.deepEqual(log.dump(), initialDump);
 
   const p = E(guestPingee).ping('send');
@@ -174,7 +174,7 @@ const testReplay = async (t, zone, mode = testMode.normal) => {
   const initialDump = beforeY;
   t.deepEqual(dump, initialDump);
 
-  const mem = makeReplayMembraneForTesting({
+  const { membrane } = makeReplayMembraneKitForTesting({
     log,
     bijection,
     vowTools,
@@ -185,13 +185,13 @@ const testReplay = async (t, zone, mode = testMode.normal) => {
   t.true(log.isReplaying());
   t.is(log.getIndex(), 0);
 
-  const guestPingee = mem.hostToGuest(pingee);
-  const p2 = mem.hostToGuest(v2);
+  const guestPingee = membrane.hostToGuest(pingee);
+  const p2 = membrane.hostToGuest(v2);
   // @ts-expect-error TS doesn't know that r2 is a resolver
   r2.resolve('y');
 
-  const p1 = mem.hostToGuest(v1);
-  mem.wake();
+  const p1 = membrane.hostToGuest(v1);
+  membrane.wake();
   t.true(log.isReplaying());
   t.is(log.getIndex(), 0);
   t.deepEqual(log.dump(), initialDump);
