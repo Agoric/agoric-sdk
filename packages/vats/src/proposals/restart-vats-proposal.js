@@ -5,11 +5,12 @@ import { E, getInterfaceOf } from '@endo/far';
 
 /**
  * @import {AdminFacet, ZCFMint} from '@agoric/zoe';
- * @import {EconomyBootstrapSpace} from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
  * @import {Instance} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {ERef} from '@endo/far';
  * @import {BootstrapPowers} from '../core/types.ts';
  */
+
+/** @typedef {any} EconomyBootstrapSpace */
 
 const trace = makeTracer('RV');
 

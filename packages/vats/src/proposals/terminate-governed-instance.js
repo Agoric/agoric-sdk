@@ -15,10 +15,14 @@ import { makeTracer } from '@agoric/internal/src/debug.js';
 import { isAbandonedError } from '@agoric/internal/src/upgrade-api.js';
 
 /**
- * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
- * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {Instance} from '@agoric/zoe';
  * @import {BootstrapPowers} from '../core/types.ts';
+ */
+
+// XXX lax copies of types from deploy-script-support
+/**
+ * @typedef {(utils: any, targetSpecifiers?: string[]) => Promise<any>} CoreEvalBuilder
+ * @typedef {(homeP: Promise<any>, endowments: any) => Promise<void>} DeployScriptFunction
  */
 
 const USAGE = `Usage: agoric run /path/to/terminate-governed-instance.js \\
@@ -233,7 +237,7 @@ export default async (homeP, endowments) => {
   const { scriptArgs } = endowments;
   parseTargets(scriptArgs, makeUsageError);
 
-  // Dynamic import to avoid inclusion in the proposal bundle.
+  // XXX avoid a static dependency cycle
   const { makeHelpers } = await import('@agoric/deploy-script-support');
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
   await writeCoreEval(terminateGoverned.name, utils =>

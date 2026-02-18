@@ -3,7 +3,7 @@ import { Fail } from '@endo/errors';
 
 /**
  * @import {Stores} from './types.js';
- * @import {MapStore} from '@agoric/swingset-liveslots';
+ * @import {MapStore} from '@agoric/store';
  */
 
 /** @param {string} label */

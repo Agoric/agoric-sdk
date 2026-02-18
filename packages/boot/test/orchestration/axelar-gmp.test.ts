@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { makeWalletFactoryContext } from '@aglocal/fast-usdc-deploy/test/walletFactory.js';
 import { BridgeId } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
@@ -58,6 +59,9 @@ const axelarToAgoricChannel = 'channel-41';
 let evmTransactionCounter = 0;
 let previousOffer = '';
 let lcaAddress = '';
+const buildersScriptsDir = fileURLToPath(
+  new URL('../../../builders/scripts/', import.meta.url),
+);
 
 const makeEVMTransaction = async ({
   wallet,
@@ -92,7 +96,7 @@ test.before(async t => {
   // Register AXL in vbankAssets
   await evalProposal(
     buildProposal(
-      '../../../multichain-testing/src/register-interchain-bank-assets.builder.js',
+      `${buildersScriptsDir}orchestration/register-interchain-bank-assets.build.js`,
       [
         '--assets',
         JSON.stringify([
@@ -108,10 +112,12 @@ test.before(async t => {
   );
 
   await evalProposal(
-    buildProposal(
-      '@agoric/builders/scripts/orchestration/axelar-gmp.build.js',
-      ['--net', 'bootstrap', '--peer', 'axelar:connection-0:channel-41:uaxl'],
-    ),
+    buildProposal(`${buildersScriptsDir}orchestration/axelar-gmp.build.js`, [
+      '--net',
+      'bootstrap',
+      '--peer',
+      'axelar:connection-0:channel-41:uaxl',
+    ]),
   );
 });
 
@@ -455,7 +461,7 @@ test.serial('restart axelarGmp', async t => {
 
   const { evalProposal, buildProposal, wallet } = t.context;
   await evalProposal(
-    buildProposal('@agoric/builders/scripts/testing/restart-axelar-gmp.js'),
+    buildProposal(`${buildersScriptsDir}testing/restart-axelar-gmp.js`),
   );
 
   t.log(

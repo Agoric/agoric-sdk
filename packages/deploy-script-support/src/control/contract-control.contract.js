@@ -377,7 +377,7 @@ harden(prepareContractControl);
 
 // Hack to allow extracting the generic result of MakeContractControl
 // See https://github.com/microsoft/TypeScript/issues/62524
-// eslint-disable-next-line
+
 const maker = /** @type {MakeContractControl} */ (
   /** @type {unknown} */ (undefined)
 );

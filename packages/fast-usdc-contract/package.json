@@ -19,6 +19,7 @@
     "lint:types": "yarn run -T tsc"
   },
   "devDependencies": {
+    "@agoric/async-flow": "workspace:*",
     "@agoric/swingset-liveslots": "workspace:*",
     "@agoric/vats": "workspace:*",
     "@agoric/zone": "workspace:*",

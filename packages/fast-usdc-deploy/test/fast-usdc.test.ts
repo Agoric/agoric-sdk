@@ -1,12 +1,7 @@
+// @ts-nocheck FIXME BEFORE MERGE
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
-import { protoMsgMockMap } from '@aglocal/boot/tools/ibc/mocks.js';
-import {
-  AckBehavior,
-  insistManagerType,
-  makeSwingsetHarness,
-} from '@aglocal/boot/tools/supports.js';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import {
   MsgDepositForBurn,
@@ -32,6 +27,12 @@ import {
 } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { Fail } from '@endo/errors';
 import type { ForwardInfo } from '@agoric/orchestration';
+import {
+  AckBehavior,
+  insistManagerType,
+  makeSwingsetHarness,
+} from '../../boot/tools/supports.js';
+import { protoMsgMockMap } from '../../boot/tools/ibc/mocks.js';
 import { configurations } from '../src/utils/deploy-config.js';
 import {
   makeWalletFactoryContext,

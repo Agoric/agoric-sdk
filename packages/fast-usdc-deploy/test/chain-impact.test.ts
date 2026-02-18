@@ -13,8 +13,6 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
-import { makeSwingsetHarness } from '@aglocal/boot/tools/supports.js';
-
 import type { CoreEvalSDKType } from '@agoric/cosmic-proto/agoric/swingset/swingset.js';
 import { makeArchiveSnapshot, type SnapStoreDebug } from '@agoric/swing-store';
 import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
@@ -25,6 +23,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import tmp from 'tmp';
+import { makeSwingsetHarness } from '../../boot/tools/supports.js';
 import { makeSimulation } from './fu-sim-iter.js';
 import {
   makeWalletFactoryContext,

@@ -80,11 +80,12 @@ const decodeEventPacket = (
     return { error: ['unexpected denom', { actual, expected: remoteDenom }] };
   }
 
-  let EUD: Bech32Address;
+  let EUD: AccountId;
   try {
     const decoded = decodeAddressHook(tx.receiver);
     mustMatch(decoded, AddressHookShape);
 
+    // @ts-expect-error unchecked cast
     ({ EUD } = decoded.query);
   } catch {
     return { error: ['no query params', tx.receiver] };

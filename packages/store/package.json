@@ -39,9 +39,11 @@
     "@endo/patterns": "^1.7.0"
   },
   "devDependencies": {
+    "@agoric/store": "workspace:*",
     "@endo/init": "^1.1.12",
     "@endo/ses-ava": "^1.3.2",
-    "ava": "^6.4.1"
+    "ava": "^6.4.1",
+    "ses": "^1.14.0"
   },
   "files": [
     "src/",

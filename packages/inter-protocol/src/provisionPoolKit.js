@@ -26,7 +26,6 @@ import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 
 /**
  * @import {EReturn} from '@endo/far';
- * @import {BridgeMessage} from '@agoric/cosmic-swingset/src/types.js';
  * @import {Amount, Brand, Payment, Purse} from '@agoric/ertp';
  * @import {ERemote, Remote} from '@agoric/internal';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
@@ -44,6 +43,20 @@ import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
  * @import {RecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {BridgeHandler} from '@agoric/vats';
  * @import {AssetDescriptor} from '@agoric/vats/src/vat-bank.js';
+ */
+
+/**
+ * Minimal bridge message shape used by this module.
+ * @typedef {{
+ *   type: string,
+ *   [key: string]: unknown,
+ * }} BridgeMessage
+ *
+ * @typedef {{
+ *   type: 'PLEASE_PROVISION',
+ *   address: string,
+ *   powerFlags: string[],
+ * }} PleaseProvisionBridgeMessage
  */
 
 const trace = makeTracer('ProvPool');
@@ -119,7 +132,8 @@ export const prepareBridgeProvisionTool = zone =>
         if (obj.type !== 'PLEASE_PROVISION')
           throw Fail`Unrecognized request ${obj.type}`;
         trace('PLEASE_PROVISION', obj);
-        const { address, powerFlags } = obj;
+        const { address, powerFlags } =
+          /** @type {PleaseProvisionBridgeMessage} */ (obj);
         // XXX expects powerFlags to be an array, but if it's a string then
         // this allows a string that has 'SMART_WALLET' in it.
         powerFlags.includes(PowerFlags.SMART_WALLET) ||

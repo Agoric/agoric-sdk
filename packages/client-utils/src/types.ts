@@ -2,12 +2,12 @@
 // NB: this doesn't follow best practices for TS in JS because this package will likely soon be written in TS
 
 import type { Brand, Issuer } from '@agoric/ertp';
-import type {
-  ContractRecord,
-  FeeConfig,
-  PoolMetrics,
-  TransactionRecord,
-} from '@agoric/fast-usdc';
+// import type {
+//   ContractRecord,
+//   FeeConfig,
+//   PoolMetrics,
+//   TransactionRecord,
+// } from '@agoric/fast-usdc';
 import type {
   OutcomeRecord,
   QuestionDetails,
@@ -18,7 +18,7 @@ import type {
   UpdateRecord,
 } from '@agoric/smart-wallet/src/smartWallet.js';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
-import type { StatusFor } from '@aglocal/portfolio-contract/src/type-guards.js';
+import type { StatusFor } from '@agoric/portfolio-api';
 import type {
   Installation,
   Instance,
@@ -32,9 +32,10 @@ type PublishedTypeMap = {
   'agoricNames.brand': Array<[string, Brand]>;
   'agoricNames.issuer': Array<[string, Issuer]>;
   'agoricNames.vbankAsset': Array<[string, AssetInfo]>;
-  fastUsdc: ContractRecord;
-  'fastUsdc.feeConfig': FeeConfig;
-  'fastUsdc.poolMetrics': PoolMetrics;
+  // TODO: parameterize vstorage-kit so readPublished works for this without importing everything into client-utils
+  // fastUsdc: ContractRecord;
+  // 'fastUsdc.feeConfig': FeeConfig;
+  // 'fastUsdc.poolMetrics': PoolMetrics;
   ymax0: StatusFor['contract'];
   ymax1: StatusFor['contract'];
   'ymax0.portfolios': StatusFor['portfolios'];
@@ -71,7 +72,7 @@ export type TypedPublished<T extends string> = T extends keyof PublishedTypeMap
                         ? OutcomeRecord
                         : T extends `vaultFactory.managers.manager${number}.metrics`
                           ? VaultDirectorMetrics
-                          : T extends `fastUsdc.txns.${string}`
-                            ? TransactionRecord
-                            : unknown;
+                          : // : T extends `fastUsdc.txns.${string}`
+                            //   ? TransactionRecord
+                            unknown;
 // static string keys are defined in PublishedTypeMap

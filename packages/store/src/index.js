@@ -1,5 +1,5 @@
 /**
- * @import {MustMatch} from '@agoric/internal';
+ * @import {MustMatch} from './types-index.js';
  */
 import { mustMatch as typelessMustMatch } from '@endo/patterns';
 
