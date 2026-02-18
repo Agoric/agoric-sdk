@@ -38,6 +38,17 @@ This sets:
 The script verifies SHA256 digests against the release manifest before writing
 the env file.
 
+## Package install behavior
+
+`@agoric/xsnap` postinstall now installs prebuilt binaries from GitHub releases
+instead of compiling native sources locally.
+
+Optional environment overrides:
+
+- `XSNAP_BINARY_VERSION` (default: package version)
+- `XSNAP_BINARY_REPO` (default: `Agoric/xsnap-worker-binaries`)
+- `XSNAP_BINARY_BASE_URL` (advanced override)
+
 Some time later, possibly on a different computer…
 
 ```js

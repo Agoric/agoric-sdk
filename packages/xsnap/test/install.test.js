@@ -15,6 +15,12 @@ test('pack and install xsnap', async t => {
   const filename = join(tmp, 'package.tgz');
   await $`yarn pack --out ${filename}`;
   await $({ cwd: tmp })`tar xvf ${resolve(filename)}`;
-  await $({ cwd: join(tmp, 'package') })`npm install`;
+  await $({
+    cwd: join(tmp, 'package'),
+    env: {
+      ...process.env,
+      XSNAP_WORKER: process.execPath,
+    },
+  })`npm install`;
   t.pass();
 });
