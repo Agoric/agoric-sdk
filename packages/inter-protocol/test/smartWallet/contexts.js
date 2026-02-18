@@ -58,10 +58,10 @@ export const importBootTestUtils = async (log, bundleCache) => {
 };
 
 /**
- * @param {ExecutionContext} t
+ * @param {ExecutionContext} _t
  * @param {(logger, cache) => Promise<ChainBootstrapSpace & WellKnownSpaces>} makeSpace
  */
-export const makeDefaultTestContext = async (t, makeSpace) => {
+export const makeDefaultTestContext = async (_t, makeSpace) => {
   // To debug, pass t.log instead of null logger
   const log = () => null;
 

@@ -160,7 +160,7 @@ harden(agoricToNoble);
 export const nobleToAgoric = {
   how: 'IBC from Noble',
   connections: [{ src: 'noble', dest: 'agoric' }],
-  apply: async (ctx, amount, src, dest, ...optsArgs) => {
+  apply: async (_ctx, amount, src, dest, ...optsArgs) => {
     const nobleAmount = { value: amount.value, denom: 'uusdc' };
     await src.ica.transfer(dest.lca.getAddress(), nobleAmount, ...optsArgs);
   },

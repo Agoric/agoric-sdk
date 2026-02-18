@@ -55,10 +55,10 @@ harden(meta);
 
 /**
  * @param {ZCF<{ binaryVoteCounterInstallation: Installation }>} zcf
- * @param {undefined} privateArgs
+ * @param {undefined} _privateArgs
  * @param {Baggage} baggage
  */
-export const start = async (zcf, privateArgs, baggage) => {
+export const start = async (zcf, _privateArgs, baggage) => {
   const { binaryVoteCounterInstallation: counter } = zcf.getTerms();
   /** @type {MapStore<Instance<unknown>, GovernorCreatorFacet<any>>} */
   const instanceToGovernor = provideDurableMapStore(

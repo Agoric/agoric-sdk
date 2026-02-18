@@ -1,7 +1,7 @@
 import { AmountMath } from '@agoric/ertp';
 import { Fail } from '@endo/errors';
 
-export const assertBidSeat = (zcf, sellSeat, bidSeat) => {
+export const assertBidSeat = (_zcf, sellSeat, bidSeat) => {
   const minBid = sellSeat.getProposal().want.Ask;
   const bid = bidSeat.getAmountAllocated('Bid', minBid.brand);
   AmountMath.isGTE(bid, minBid) ||

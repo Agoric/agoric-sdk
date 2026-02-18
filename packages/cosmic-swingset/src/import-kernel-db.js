@@ -168,7 +168,7 @@ export const performStateSyncImport = async (
         .pipe(
           new Transform({
             objectMode: true,
-            transform(data, encoding, callback) {
+            transform(data, _encoding, callback) {
               try {
                 callback(null, JSON.parse(data));
               } catch (error) {

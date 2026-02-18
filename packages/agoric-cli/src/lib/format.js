@@ -23,10 +23,10 @@ export const parseFiniteNumber = input => {
 /**
  * JSON.stringify replacer to handle bigint
  *
- * @param {unknown} k
+ * @param {unknown} _k
  * @param {unknown} v
  */
-export const bigintReplacer = (k, v) => (typeof v === 'bigint' ? `${v}` : v);
+export const bigintReplacer = (_k, v) => (typeof v === 'bigint' ? `${v}` : v);
 
 /** @type {Partial<VBankAssetDetail>} */
 // eslint-disable-next-line no-unused-vars

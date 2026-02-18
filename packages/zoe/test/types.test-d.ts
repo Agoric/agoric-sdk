@@ -121,8 +121,8 @@ const mock = null as any;
 
 {
   const start = async (
-    zcf: ZCF<{ anchorBrand: Brand<'nat'> }>,
-    privateArgs: {
+    _zcf: ZCF<{ anchorBrand: Brand<'nat'> }>,
+    _privateArgs: {
       storageNode: StorageNode;
       marshaller: Marshaller;
       feeMintAccess?: FeeMintAccess;

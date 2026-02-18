@@ -552,7 +552,7 @@ test('partialMap', t => {
   // Manually map input to its reverse, expecting absence of false/undefined.
   const input = [true, false, undefined, null, 0, 0n, '', [], {}, Symbol('')];
   const expect = [true, ...input.slice(3)].reverse();
-  const output = partialMap(input, (value, idx, arr) => {
+  const output = partialMap(input, (_value, idx, arr) => {
     t.is(arr, input);
     return arr.at(-(idx + 1));
   });

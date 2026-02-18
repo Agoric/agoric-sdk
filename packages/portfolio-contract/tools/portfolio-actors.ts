@@ -164,7 +164,7 @@ export const makeTrader = (
      * This enables ongoing portfolio management after initial creation.
      */
     async rebalance(
-      t: ExecutionContext,
+      _t: ExecutionContext,
       proposal: ProposalType['rebalance'],
       offerArgs: OfferArgsFor['rebalance'],
     ) {
@@ -186,7 +186,7 @@ export const makeTrader = (
       });
     },
     async simpleRebalance(
-      t: ExecutionContext,
+      _t: ExecutionContext,
       proposal: ProposalType['rebalance'],
       offerArgs: OfferArgsFor['rebalance'],
     ) {
@@ -207,7 +207,7 @@ export const makeTrader = (
         offerArgs,
       });
     },
-    async withdraw(t: ExecutionContext, Cash: NatAmount) {
+    async withdraw(_t: ExecutionContext, Cash: NatAmount) {
       if (!openId) throw Error('not open');
       const invitationMakerName: PortfolioContinuingInvitationMaker =
         'Withdraw';
@@ -221,7 +221,7 @@ export const makeTrader = (
       const proposal: ProposalType['withdraw'] = { give: {}, want: { Cash } };
       return wallet.executeContinuingOffer({ id, invitationSpec, proposal });
     },
-    async deposit(t: ExecutionContext, Deposit: NatAmount) {
+    async deposit(_t: ExecutionContext, Deposit: NatAmount) {
       if (!openId) throw Error('not open');
       const invitationMakerName: PortfolioContinuingInvitationMaker = 'Deposit';
       const id = `Deposit-${(nonce += 1)}`;
