@@ -163,6 +163,7 @@ const testConflictingGoodReplay = async (t, zone) => {
       // The order of properties should not be significant. But unfortunately,
       // the way we're using it to test means the order needs to match that
       // observed in the test.
+      // TODO sort the keys both at the throw site and here.
       const expectedMsgFault = {
         actualEntry: [
           'checkCall',
