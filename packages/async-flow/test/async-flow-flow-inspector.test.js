@@ -23,7 +23,7 @@ import { prepareTestAsyncFlowTools } from './_utils.js';
  * @import {Vow} from '@agoric/vow';
  * @import {Zone} from '@agoric/base-zone';
  * @import {AsyncFlow} from '../src/async-flow.js';
- * @import {Narrator} from '../src/replay-membrane.js';
+ * @import {FlowInspector} from '../src/replay-membrane.js';
  * @import {GuestReplayFaultHandler} from '../src/types.ts';
  */
 
@@ -79,39 +79,39 @@ const testFirstBuggyPlay = async (t, zone) => {
 
   const { guestMethod } = {
     async guestMethod(gCountBy3) {
-      /** @type {{narrator: Narrator}} */
+      /** @type {{flowInspector: FlowInspector}} */
       // @ts-expect-error TS does not yet understand guest contexts
-      const { narrator } = this;
+      const { flowInspector } = this;
       t.log('  testFirstBuggyPlay');
-      t.deepEqual(narrator.getLogDump(), []);
-      t.is(narrator.getGeneration(), undefined);
-      t.is(narrator.getLogIndex(), 0);
-      t.false(narrator.isReplaying());
+      t.deepEqual(flowInspector.getLogDump(), []);
+      t.is(flowInspector.getGeneration(), undefined);
+      t.is(flowInspector.getLogIndex(), 0);
+      t.false(flowInspector.isReplaying());
 
       // When we author later upgrades, say we consider this call with `2`
       // to be a bug, where later upgrades corrects it to call with `1`.
       t.is(gCountBy3.incr(2), 6);
 
-      t.deepEqual(narrator.getLogDump(), [
-        // the narrator returns the guest view of the log
+      t.deepEqual(flowInspector.getLogDump(), [
+        // the flowInspector returns the guest view of the log
         ['checkCall', gCountBy3, 'incr', [2], 0],
         ['doReturn', 0, 6],
       ]);
-      t.is(narrator.getGeneration(), undefined);
-      t.is(narrator.getLogIndex(), 2);
-      t.false(narrator.isReplaying());
+      t.is(flowInspector.getGeneration(), undefined);
+      t.is(flowInspector.getLogIndex(), 2);
+      t.false(flowInspector.isReplaying());
 
       const p = gCountBy3.vow();
-      t.deepEqual(narrator.getLogDump(), [
-        // the narrator returns the guest view of the log
+      t.deepEqual(flowInspector.getLogDump(), [
+        // the flowInspector returns the guest view of the log
         ['checkCall', gCountBy3, 'incr', [2], 0],
         ['doReturn', 0, 6],
         ['checkCall', gCountBy3, 'vow', [], 2],
         ['doReturn', 2, p],
       ]);
-      t.is(narrator.getGeneration(), undefined);
-      t.is(narrator.getLogIndex(), 4);
-      t.false(narrator.isReplaying());
+      t.is(flowInspector.getGeneration(), undefined);
+      t.is(flowInspector.getLogIndex(), 4);
+      t.false(flowInspector.isReplaying());
 
       resolveStep(true);
       t.log('testFirstBuggyPlay to hang awaiting a future incarnation');
@@ -197,15 +197,15 @@ const testConflictingGoodReplay = async (t, zone) => {
 
   const { guestMethod } = {
     async guestMethod(gCountBy3) {
-      /** @type {{narrator: Narrator}} */
+      /** @type {{flowInspector: FlowInspector}} */
       // @ts-expect-error TS does not yet understand guest contexts
-      const { narrator } = this;
+      const { flowInspector } = this;
       t.log('  testConflictingGoodReplay');
 
-      const gDump = narrator.getLogDump();
+      const gDump = flowInspector.getLogDump();
       const p = gDump[3][2];
       t.deepEqual(gDump, [
-        // the narrator returns the guest view of the log
+        // the flowInspector returns the guest view of the log
         ['checkCall', gCountBy3, 'incr', [2], 0],
         ['doReturn', 0, 6],
         ['checkCall', gCountBy3, 'vow', [], 2],
@@ -217,9 +217,9 @@ const testConflictingGoodReplay = async (t, zone) => {
         // was not in the log.
         ['doReturn', 2, p],
       ]);
-      t.is(narrator.getGeneration(), 0);
-      t.is(narrator.getLogIndex(), 0);
-      t.true(narrator.isReplaying());
+      t.is(flowInspector.getGeneration(), 0);
+      t.is(flowInspector.getLogIndex(), 0);
+      t.true(flowInspector.isReplaying());
 
       resolveStep(true);
       t.log('  testConflictingGoodReplay about to fault');
@@ -301,16 +301,16 @@ const testCopingGoodReplay = async (t, zone) => {
 
   const { guestMethod } = {
     async guestMethod(gCountBy3) {
-      /** @type {{narrator: Narrator}} */
+      /** @type {{flowInspector: FlowInspector}} */
       // @ts-expect-error TS does not yet understand guest contexts
-      const { narrator } = this;
+      const { flowInspector } = this;
       t.log('  testCopingGoodReplay');
 
       /** @type {GuestReplayFaultHandler} */
       const faultHandler = fault => {
         // @ts-expect-error TS does not yet understand guest contexts
-        const { narrator: n } = this;
-        t.is(narrator, n);
+        const { flowInspector: n } = this;
+        t.is(flowInspector, n);
         if (
           matches(
             fault,
@@ -324,12 +324,12 @@ const testCopingGoodReplay = async (t, zone) => {
         }
         return harden({ kind: 'decline' });
       };
-      narrator.registerFaultHandler(faultHandler);
+      flowInspector.registerFaultHandler(faultHandler);
 
-      const gDump = narrator.getLogDump();
+      const gDump = flowInspector.getLogDump();
       const p = gDump[3][2];
       t.deepEqual(gDump, [
-        // the narrator returns the guest view of the log
+        // the flowInspector returns the guest view of the log
         ['checkCall', gCountBy3, 'incr', [2], 0],
         ['doReturn', 0, 6],
         ['checkCall', gCountBy3, 'vow', [], 2],
@@ -341,9 +341,9 @@ const testCopingGoodReplay = async (t, zone) => {
         // was not in the log.
         ['doReturn', 2, p],
       ]);
-      t.is(narrator.getGeneration(), 0);
-      t.is(narrator.getLogIndex(), 0);
-      t.true(narrator.isReplaying());
+      t.is(flowInspector.getGeneration(), 0);
+      t.is(flowInspector.getLogIndex(), 0);
+      t.true(flowInspector.isReplaying());
 
       t.log('  testCopingGoodReplay about to fault');
       // This is a replay fault, which is now considered correct code
