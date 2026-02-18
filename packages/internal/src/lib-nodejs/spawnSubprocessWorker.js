@@ -20,7 +20,7 @@ import {
 
 // eslint-disable-next-line no-unused-vars
 function parentLog(_first, ..._args) {
-  // console.error(`--parent: ${first}`, ...args);
+  // console.error(`--parent: ${_first}`, ..._args);
 }
 
 // we send on fd3, and receive on fd4. We pass fd1/2 (stdout/err) through, so

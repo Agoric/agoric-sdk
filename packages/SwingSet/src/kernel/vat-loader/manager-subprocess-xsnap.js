@@ -30,7 +30,7 @@ import {
 
 // eslint-disable-next-line no-unused-vars
 function parentLog(_first, ..._args) {
-  // console.error(`--parent: ${first}`, ...args);
+  // console.error(`--parent: ${_first}`, ..._args);
 }
 
 const encoder = new TextEncoder();

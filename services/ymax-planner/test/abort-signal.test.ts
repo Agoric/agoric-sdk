@@ -1,8 +1,8 @@
 import test from 'ava';
-import { handlePendingTx } from '../src/pending-tx-manager.ts';
-import { createMockPendingTxOpts } from './mocks.ts';
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import { createMockPendingTxData } from '@aglocal/portfolio-contract/tools/mocks.ts';
+import { handlePendingTx } from '../src/pending-tx-manager.ts';
+import { createMockPendingTxOpts } from './mocks.ts';
 
 test('handlePendingTx aborts CCTP watcher in live mode when signal is aborted', async t => {
   const logs: string[] = [];

@@ -128,13 +128,12 @@ harden(makeSmartWalletKitFromVstorageKit);
 export const makeSmartWalletKit = async (
   {
     fetch,
-    // eslint-disable-next-line no-unused-vars -- keep for removing ambient authority
+    // unused but keep for eventually removing ambient authority
     delay: _delay,
     names = true,
   },
   networkConfig,
 ) => {
-  void _delay;
   const vsk = makeVstorageKit({ fetch }, networkConfig);
   return makeSmartWalletKitFromVstorageKit(vsk, { names });
 };

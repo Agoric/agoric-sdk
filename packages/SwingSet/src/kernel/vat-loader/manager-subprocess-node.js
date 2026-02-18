@@ -15,7 +15,7 @@ import { makeManagerKit } from './manager-helper.js';
 
 // eslint-disable-next-line no-unused-vars
 function parentLog(_first, ..._args) {
-  // console.error(`--parent: ${first}`, ...args);
+  // console.error(`--parent: ${_first}`, ..._args);
 }
 
 export function makeNodeSubprocessFactory(tools) {

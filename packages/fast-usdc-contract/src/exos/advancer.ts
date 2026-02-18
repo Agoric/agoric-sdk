@@ -214,7 +214,7 @@ export const prepareAdvancerKit = (
       /* c8 ignore start */
       depositHandler: {
         /**
-         * @param result
+         * @param _result
          * @param ctx
          * @throws {never} WARNING: this function must not throw, because user funds are at risk
          */
@@ -299,7 +299,7 @@ export const prepareAdvancerKit = (
       },
       transferHandler: {
         /**
-         * @param {undefined} result
+         * @param {undefined} _result
          * @param {OldAdvancerVowCtx} ctx
          * @throws {never} WARNING: this function must not throw, because user funds are at risk
          */
@@ -331,7 +331,7 @@ export const prepareAdvancerKit = (
       },
       transferCctpHandler: {
         /**
-         * @param result
+         * @param _result
          * @param ctx
          * @throws {never} WARNING: this function must not throw, because user funds are at risk
          */
