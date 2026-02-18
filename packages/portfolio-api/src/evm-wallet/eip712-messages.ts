@@ -110,6 +110,12 @@ const OperationSubTypes = {
 export type TargetAllocation = TypedDataToPrimitiveTypes<
   typeof OperationSubTypes
 >['Allocation'];
+type YmaxOperationTypesWithSubTypes<
+  T extends string,
+  P extends readonly TypedDataParameter[],
+> = {
+  [K in T]: P;
+} & typeof OperationSubTypes;
 
 /**
  * In the wrapped case, the domain is fixed by permit2, so we can't choose name/version there.
@@ -125,6 +131,12 @@ const getYmaxWitnessFieldName = <T extends OperationTypeNames>(operation: T) =>
 type YmaxWitnessFieldName<T extends OperationTypeNames> = ReturnType<
   typeof getYmaxWitnessFieldName<T>
 >;
+export type YmaxWitnessTypeParam<
+  T extends OperationTypeNames = OperationTypeNames,
+> = TypedDataParameter<
+  YmaxWitnessFieldName<T>,
+  Extract<keyof YmaxWitnessOperationTypes<T>, string>
+>;
 
 /**
  * showing a field named "witness" in the wallet signing UI is... boring
@@ -136,9 +148,6 @@ const getYmaxWitnessTypeParam = <T extends OperationTypeNames>(
   name: getYmaxWitnessFieldName(operation),
   type: getYmaxWitnessTypeName(operation) as YmaxWitnessTypeParam<T>['type'],
 });
-export type YmaxWitnessTypeParam<
-  T extends OperationTypeNames = OperationTypeNames,
-> = TypedDataParameter<YmaxWitnessFieldName<T>, YmaxWitnessTypeName<T>>;
 
 // TODO: Filter operation types to only those needed for witness/standalone
 type YmaxWitnessOperationTypes<
@@ -169,44 +178,44 @@ type YmaxStandaloneTypes<T extends OperationTypeNames = OperationTypeNames> =
 export type YmaxOperationType<T extends OperationTypeNames> =
   TypedDataToPrimitiveTypes<OperationTypes & typeof OperationSubTypes>[T];
 
-// Hack to satisfy TypeScript limitations with generic inference in complex types
-// Equivalent to `YmaxWitnessTypeParam`
-type YmaxWitnessMappedTypeParam<T extends OperationTypeNames> =
-  TypedDataParameter<
-    YmaxWitnessFieldName<T>,
-    Extract<keyof YmaxWitnessOperationTypes<T>, string>
-  >;
 type YmaxWitnessData<T extends OperationTypeNames> = TypedDataToPrimitiveTypes<
   YmaxWitnessTypes<T>
->[YmaxWitnessMappedTypeParam<T>['type']];
+>[YmaxWitnessTypeParam<T>['type']];
+type YmaxStandaloneData<T extends OperationTypeNames> =
+  TypedDataToPrimitiveTypes<YmaxStandaloneTypes<T>>[T];
+
+const getYmaxOperationAndSubTypes = <
+  T extends string,
+  P extends readonly TypedDataParameter[],
+>(
+  operation: T,
+  params: P,
+) =>
+  ({
+    [operation]: params,
+    ...OperationSubTypes,
+  }) as YmaxOperationTypesWithSubTypes<T, P> satisfies TypedData;
 
 const getYmaxWitnessTypes = <T extends OperationTypeNames>(operation: T) =>
-  ({
-    [getYmaxWitnessTypeName(operation)]: [
-      ...OperationTypes[operation],
-      ...SharedPortfolioTypeParams,
-    ],
-    ...OperationSubTypes,
-  }) as YmaxWitnessTypes<T> satisfies TypedData;
+  getYmaxOperationAndSubTypes(getYmaxWitnessTypeName(operation), [
+    ...OperationTypes[operation],
+    ...SharedPortfolioTypeParams,
+  ]) as YmaxWitnessTypes<T> satisfies TypedData;
 
 const getYmaxStandaloneTypes = <T extends OperationTypeNames>(operation: T) =>
   ({
     EIP712Domain: StandaloneDomainTypeParams,
-    [operation]: [
+    ...getYmaxOperationAndSubTypes(operation, [
       ...OperationTypes[operation],
       ...SharedPortfolioTypeParams,
       ...PortfolioStandaloneTypeParams,
-    ],
-    ...OperationSubTypes,
+    ]),
   }) as YmaxStandaloneTypes<T> satisfies TypedData;
 
 export const getYmaxOperationTypes = <T extends OperationTypeNames>(
   operation: T,
 ) =>
-  ({
-    [operation]: OperationTypes[operation],
-    ...OperationSubTypes,
-  }) as {
+  getYmaxOperationAndSubTypes(operation, OperationTypes[operation]) as {
     [K in T]: OperationTypes[K];
   } & typeof OperationSubTypes satisfies TypedData;
 
