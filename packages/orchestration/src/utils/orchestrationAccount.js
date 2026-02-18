@@ -63,7 +63,7 @@ export const orchestrationAccountMethods = {
 /**
  * @param {CaipChainId} srcChain
  * @param {CaipChainId} dstChain
- * @param {IBCConnectionInfo['transferChannel']} ibcChannel
+ * @param {Pick<IBCConnectionInfo['transferChannel'], 'portId' | 'channelId' | 'counterPartyPortId' | 'counterPartyChannelId'>} ibcChannel
  * @returns {(TrafficEntry<'ibc'> & { incomplete: true })[]}
  */
 const startIbcTransfer = (srcChain, dstChain, ibcChannel) =>
@@ -218,10 +218,18 @@ export const addTrafficEntries = (priorTraffic, newEntries) => {
 harden(addTrafficEntries);
 
 /**
- * @param {TrafficEntry[] | undefined} priorTraffic
- * @param {SliceDescriptor | undefined} sliceDescriptor
- * @param {(entries: TrafficEntry[]) => TrafficEntry[]} finisher
- * @returns {TrafficEntry[]}
+ * Call finisher on the specified slice of priorTraffic, replacing that
+ * (potentially zero-length) slice with the result.
+ *
+ * @param {TrafficEntry[] | undefined} priorTraffic the traffic entries to
+ * edit, or undefined to indicate no prior traffic
+ * @param {SliceDescriptor | undefined} sliceDescriptor the slice of
+ * priorTraffic to update, or undefined to indicate the entire prior traffic
+ * @param {(entries: TrafficEntry[]) => TrafficEntry[]} finisher called with the
+ * (possibly empty) slice of priorTraffic, to return an updated slice of the
+ * same length
+ * @returns {TrafficEntry[]} the priorTraffic with the specified slice replaced
+ * by the finisher's result
  */
 export const finishTrafficEntries = (
   priorTraffic,
@@ -232,11 +240,6 @@ export const finishTrafficEntries = (
   const slice = sliceDescriptor ?? { start: 0, end: entries.length };
 
   const toTransform = harden(entries.slice(slice.start, slice.end));
-  // Allow finishing with no traffic entries (e.g., when progressTracker.finish()
-  // is called without any transfers, or when a transfer fails before adding entries)
-  if (toTransform.length === 0) {
-    return entries;
-  }
 
   const transformed = harden(finisher(toTransform));
   transformed.length === toTransform.length ||
