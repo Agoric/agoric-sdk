@@ -146,13 +146,7 @@ const isRateLimitError = (err: unknown): boolean =>
 const RATE_LIMIT_BACKOFF_MS = 1_000;
 const MAX_RATE_LIMIT_RETRIES = 3;
 
-type LogPredicate = (log: Log) => boolean | Promise<boolean>;
-
-type FailedTxPredicate = (
-  tx: TransactionResponse,
-  receipt: TxReceipt,
-) => boolean | Promise<boolean>;
-
+/** Common configuration for all chunk-based EVM chain scanning. */
 type ScanOptsBase = {
   provider: WebSocketProvider;
   fromBlock: number;
@@ -168,11 +162,6 @@ type ScanOptsBase = {
   ) => Promise<void> | void;
 };
 
-type LogScanOpts = ScanOptsBase & {
-  baseFilter: Omit<Filter, 'fromBlock' | 'toBlock'> & Partial<Filter>;
-  predicate: LogPredicate;
-};
-
 // https://www.alchemy.com/docs/chains/ethereum/ethereum-api-endpoints/eth-get-block-receipts
 type TxReceipt = {
   transactionHash: `0x${string}`;
@@ -180,9 +169,25 @@ type TxReceipt = {
   to: HexAddress | null;
 };
 
+/**
+ * LogScanOpts relies upon eth_getFilterLogs and a Log-matching predicate.
+ * https://ethereum.github.io/execution-apis/api/methods/eth_getLogs
+ */
+type LogScanOpts = ScanOptsBase & {
+  baseFilter: Partial<Omit<Filter, 'fromBlock' | 'toBlock'>>;
+  predicate: (log: Log) => boolean | Promise<boolean>;
+};
+
+/**
+ * FailedTxScanOpts is limited to a particular recipient address and a
+ * transaction-matching predicate.
+ */
 type FailedTxScanOpts = ScanOptsBase & {
   toAddress: string;
-  verifyFailedTx: FailedTxPredicate;
+  verifyFailedTx: (
+    tx: TransactionResponse,
+    receipt: TxReceipt,
+  ) => boolean | Promise<boolean>;
   rpcClient: JSONRPCClient;
 };
 
@@ -288,21 +293,14 @@ const getTraces = async (
   return result ?? [];
 };
 
-type ScanInChunksOpts<T> = {
-  provider: WebSocketProvider;
-  fromBlock: number;
-  toBlock: number;
-  chainId: CaipChainId;
-  setTimeout: typeof globalThis.setTimeout;
+/**
+ * Running a scan requires chunkSize and a concrete
+ * implementation for processing each [start, end] chunk.
+ */
+type ScanInChunksOpts<T> = ScanOptsBase & {
   chunkSize: number;
   scanChunk: (start: number, end: number) => Promise<T | undefined>;
   label: string;
-  log?: (...args: unknown[]) => void;
-  signal?: AbortSignal;
-  onRejectedChunk?: (
-    startBlock: number,
-    endBlock: number,
-  ) => Promise<void> | void;
 };
 
 /**
