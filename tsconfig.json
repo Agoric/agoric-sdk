@@ -15,7 +15,7 @@
     "erasableSyntaxOnly": true,
     "verbatimModuleSyntax": true,
     "types": ["node"],
-    "typeRoots": ["./types", "./node_modules/@types"],
+    "typeRoots": ["./node_modules/@types"],
     // .ts and rewriting relative paths allow us to include in bundles
     // files that are JS executable (with TS chars blanked) but end in .ts
     "allowImportingTsExtensions": true,
