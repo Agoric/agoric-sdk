@@ -401,8 +401,11 @@ export const makeEvmTrader = ({
           const storagePath = await updatePortfolioPath(parsedId);
           return harden({ storagePath, portfolioId: parsedId });
         },
-        async deposit(portfolio: bigint, depositAmount: bigint) {
-          const witness = getYmaxWitness('Deposit', { portfolio });
+        async deposit(depositAmount: bigint, spender = depositFactory) {
+          const currentPortfolioId = self.getPortfolioId();
+          const witness = getYmaxWitness('Deposit', {
+            portfolio: BigInt(currentPortfolioId),
+          });
           const deadline = await getDeadline();
           const permitMessage = getPermitWitnessTransferFromData(
             {
@@ -410,9 +413,7 @@ export const makeEvmTrader = ({
                 token: usdcToken,
                 amount: depositAmount,
               },
-              // TODO: spender for deposit more should be the remote account for the chain
-              // (if already published), or copied from the remote account of the portfolio source chain
-              spender: depositFactory,
+              spender,
               nonce: (nonce += 1n),
               deadline,
             },
