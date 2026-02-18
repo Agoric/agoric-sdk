@@ -19,7 +19,7 @@ import {
 // JSON-serializable data.
 
 // eslint-disable-next-line no-unused-vars
-function parentLog(first, ...args) {
+function parentLog(_first, ..._args) {
   // console.error(`--parent: ${first}`, ...args);
 }
 

@@ -1,6 +1,6 @@
 import { Far } from '@endo/far';
 
-export function buildRootObject(vatPowers, vatParameters, baggage) {
+export function buildRootObject(vatPowers, _vatParameters, baggage) {
   let ephemeralCounter = 0;
   return Far('root', {
     count() {

@@ -10,7 +10,6 @@
     "checkJs": true,
     // Strictness audit 2026-02-24 by scripts/maintenance/typecheck-flag-report.mjs
     //  useUnknownInCatchVariables            128 errors
-    //  noUnusedParameters                    175 errors
     //  exactOptionalPropertyTypes            221 errors
     //  noUnusedLocals                        590 errors
     //  noPropertyAccessFromIndexSignature    983 errors
@@ -25,6 +24,7 @@
     "strictPropertyInitialization": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitOverride": true,
+    "noUnusedParameters": true,
     "strictBindCallApply": true,
     "noImplicitReturns": true,
     "noUncheckedSideEffectImports": true,

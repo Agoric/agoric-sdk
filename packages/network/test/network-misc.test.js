@@ -302,7 +302,7 @@ test('loopback protocol', async t => {
       undefined,
       () => ({}),
       {
-        async onReceive(c, packet, _connectionHandler) {
+        async onReceive(_c, packet, _connectionHandler) {
           t.is(`${packet}`, 'ping', 'expected ping');
           return 'pingack';
         },

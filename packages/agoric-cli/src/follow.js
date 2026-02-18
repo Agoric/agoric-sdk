@@ -47,7 +47,7 @@ const makeCapDataToQclass = () => {
   return capDataToQclass;
 };
 
-export default async function followerMain(progname, rawArgs, powers, opts) {
+export default async function followerMain(_progname, rawArgs, powers, opts) {
   const { anylogger } = powers;
   const console = anylogger('agoric:follower');
 

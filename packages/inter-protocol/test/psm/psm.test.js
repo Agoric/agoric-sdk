@@ -743,7 +743,7 @@ const makeMockBankManager = t => {
       Far('depositFacet', {
         receive: () => /** @type {any} */ (null),
       }),
-    addAsset: async (denom, keyword, proposedName, kit) => {
+    addAsset: async (denom, keyword, _proposedName, kit) => {
       t.log('addAsset', { denom, keyword, issuer: `${kit.issuer}` });
       t.truthy(kit.mint);
     },

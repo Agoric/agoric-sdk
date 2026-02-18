@@ -840,7 +840,7 @@ function build(
 
   function DeviceHandler(slot) {
     return {
-      get(target, prop) {
+      get(_target, prop) {
         if (typeof prop !== 'string' && typeof prop !== 'symbol') {
           return undefined;
         }

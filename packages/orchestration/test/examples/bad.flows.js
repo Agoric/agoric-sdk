@@ -26,7 +26,7 @@ export async function notHardened() {
   console.log('This function is the most minimal flow, but it’s not hardened');
 }
 
-export const usesE = async (orch, { someEref }) => {
+export const usesE = async (_orch, { someEref }) => {
   // eslint-disable-next-line no-restricted-syntax -- intentional for test
   await E(someEref).foo();
 };

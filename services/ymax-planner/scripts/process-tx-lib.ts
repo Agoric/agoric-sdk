@@ -51,7 +51,7 @@ export const processTx = async (
     env = process.env,
     fetch = globalThis.fetch,
     generateInterval = timersPromises.setInterval,
-    now = Date.now,
+    _now = Date.now,
     setTimeout = globalThis.setTimeout,
     connectWithSigner = SigningStargateClient.connectWithSigner,
     AbortController = globalThis.AbortController,
@@ -59,6 +59,7 @@ export const processTx = async (
     WebSocket = ws.WebSocket,
   } = {},
 ) => {
+  void _now;
   console.log(`\n🔍 Resolving transaction: ${txId}\n`);
 
   const maybeOpts = cliArgs;

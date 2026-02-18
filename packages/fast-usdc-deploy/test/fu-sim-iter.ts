@@ -39,7 +39,7 @@ const nobleAgoricChannelId = 'channel-21';
 
 const makeTxOracle = (
   ctx: WalletFactoryTestContext,
-  name: string,
+  _name: string,
   addr: string,
 ) => {
   const { agoricNamesRemotes, walletFactoryDriver: wfd } = ctx;

@@ -4,7 +4,7 @@ import { makePspawn, getSDKBinaries } from './helpers.js';
 
 const filename = new URL(import.meta.url).pathname;
 
-export default async function cosmosMain(progname, rawArgs, powers, opts) {
+export default async function cosmosMain(_progname, rawArgs, powers, opts) {
   const IMAGE = `ghcr.io/agoric/agoric-sdk`;
   const { anylogger, fs, spawn, process } = powers;
   const log = anylogger('agoric:cosmos');

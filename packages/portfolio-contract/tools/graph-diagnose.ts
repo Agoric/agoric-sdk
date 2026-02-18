@@ -359,7 +359,7 @@ export const diagnoseNearMisses = (graph: FlowGraph) => {
 
 /** Build a canonical leaf/hub -> hub/leaf path skeleton between two nodes. */
 export const canonicalPathBetween = (
-  graph: FlowGraph,
+  _graph: FlowGraph,
   src: string,
   dest: string,
 ): string[] => {

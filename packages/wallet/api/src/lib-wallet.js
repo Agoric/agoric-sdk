@@ -591,7 +591,7 @@ export function makeWalletRoot({
 
   // handle the update, which has already resolved to a record. The update means
   // the offer is 'done'.
-  function updateOrResubscribe(id, seat, update) {
+  function updateOrResubscribe(id, _seat, update) {
     const { updateCount } = update;
     assert(updateCount === undefined);
     idToSeat.delete(id);

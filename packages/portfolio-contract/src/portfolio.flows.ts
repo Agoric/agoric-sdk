@@ -1644,7 +1644,7 @@ const resolveCCTPIn = (
  * Prompt.
  */
 export const onAgoricTransfer = (async (
-  orch: Orchestrator,
+  _orch: Orchestrator,
   ctx: OnTransferContext,
   event: VTransferIBCEvent,
   pKit: PortfolioKit,

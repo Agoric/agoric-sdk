@@ -47,7 +47,7 @@ harden(makeAccount);
 
 /**
  * @satisfies {OrchestrationFlow}
- * @param {Orchestrator} orch
+ * @param {Orchestrator} _orch
  * @param {object} ctx
  * @param {GuestInterface<ChainHub>} ctx.chainHub
  * @param {Promise<GuestInterface<LocalOrchestrationAccountKit['holder']>>} ctx.sharedLocalAccountP
@@ -58,7 +58,7 @@ harden(makeAccount);
  * @returns {Promise<void>}
  */
 export const depositAndDelegate = async (
-  orch,
+  _orch,
   { chainHub, sharedLocalAccountP, zoeTools },
   account,
   seat,
@@ -96,8 +96,8 @@ harden(depositAndDelegate);
 
 /**
  * @satisfies {OrchestrationFlow}
- * @param {Orchestrator} orch
- * @param {object} ctx
+ * @param {Orchestrator} _orch
+ * @param {object} _ctx
  * @param {GuestInterface<CosmosOrchestrationAccount>} account
  * @param {{
  *   delegations: { amount: AmountArg; validator: CosmosValidatorAddress }[];
@@ -106,8 +106,8 @@ harden(depositAndDelegate);
  * @returns {Promise<void>}
  */
 export const undelegateAndTransfer = async (
-  orch,
-  ctx,
+  _orch,
+  _ctx,
   account,
   { delegations, destination },
 ) => {

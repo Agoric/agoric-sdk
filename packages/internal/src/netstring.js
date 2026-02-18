@@ -21,11 +21,11 @@ export function encode(data) {
 export function netstringEncoderStream() {
   /**
    * @param {Buffer} chunk
-   * @param {BufferEncoding} encoding
+   * @param {BufferEncoding} _encoding
    * @param {any} callback
    * @this {{ push: (b: Buffer) => void }}
    */
-  function transform(chunk, encoding, callback) {
+  function transform(chunk, _encoding, callback) {
     if (!Buffer.isBuffer(chunk)) {
       throw Error('stream requires Buffers');
     }
@@ -93,11 +93,11 @@ export function netstringDecoderStream(optMaxChunkSize) {
   let buffered = Buffer.from('');
   /**
    * @param {Buffer} chunk
-   * @param {BufferEncoding} encoding
+   * @param {BufferEncoding} _encoding
    * @param {any} callback
    * @this {{ push: (b: Buffer) => void }}
    */
-  function transform(chunk, encoding, callback) {
+  function transform(chunk, _encoding, callback) {
     if (!Buffer.isBuffer(chunk)) {
       throw Error('stream requires Buffers');
     }

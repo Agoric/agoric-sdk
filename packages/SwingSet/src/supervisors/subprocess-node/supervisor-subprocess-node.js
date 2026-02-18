@@ -32,7 +32,7 @@ import {
  */
 
 // eslint-disable-next-line no-unused-vars
-function workerLog(first, ...args) {
+function workerLog(_first, ..._args) {
   // console.error(`---worker: ${first}`, ...args);
 }
 

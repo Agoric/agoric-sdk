@@ -30,6 +30,7 @@ const makeMockHandlePendingTx = () => {
     tx: PendingTx,
     { log: _log, ..._evmCtx }: any,
   ) => {
+    void _evmCtx;
     handledTxs.push(tx);
   };
   return { mockHandlePendingTx, handledTxs };

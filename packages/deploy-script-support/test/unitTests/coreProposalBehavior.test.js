@@ -53,7 +53,7 @@ test('coreProposalBehavior', async t => {
       t.is(bcap, bundleCap);
       return {
         fromInstallation,
-        getManifestForTest: (powers, ...args) => {
+        getManifestForTest: (_powers, ...args) => {
           t.deepEqual(args, ['arg1', 'arg2']);
           return {
             manifest: {

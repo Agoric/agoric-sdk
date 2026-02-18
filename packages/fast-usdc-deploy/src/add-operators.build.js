@@ -30,7 +30,7 @@ const crossVatContext = /** @type {const} */ ({
 
 /** @type {CoreEvalBuilder} */
 export const defaultProposalBuilder = async (
-  powers,
+  _powers,
   /** @type {FastUSDCConfig} */ config,
 ) => {
   return harden({

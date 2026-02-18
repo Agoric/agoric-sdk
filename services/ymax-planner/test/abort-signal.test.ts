@@ -99,7 +99,7 @@ test('handlePendingTx aborts GMP watcher in live mode when signal is aborted', a
 
   const ctxWithFetch = harden({
     ...opts,
-    fetch: async (url: string) => {
+    fetch: async (_url: string) => {
       return {
         ok: true,
         json: async () => ({

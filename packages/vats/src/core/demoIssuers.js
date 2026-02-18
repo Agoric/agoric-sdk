@@ -69,7 +69,7 @@ const separators = whole => {
   // ack: https://stackoverflow.com/a/45950572/7963, https://regex101.com/
   const revStr = s => s.split('').reverse().join('');
   const lohi = revStr(`${whole}`);
-  const s = lohi.replace(/(?=\d{4})(\d{3})/g, (m, p1) => `${p1}${sep}`);
+  const s = lohi.replace(/(?=\d{4})(\d{3})/g, (_m, p1) => `${p1}${sep}`);
   return revStr(s);
 };
 
