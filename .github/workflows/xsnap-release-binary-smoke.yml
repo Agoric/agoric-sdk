@@ -1,0 +1,39 @@
+name: xsnap-release-binary-smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: xsnap-worker-binaries release version
+        required: true
+      repo:
+        description: Release repo (owner/name)
+        required: true
+        default: Agoric/xsnap-worker-binaries
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Download and verify xsnap release binaries
+        working-directory: packages/xsnap
+        env:
+          XSNAP_BINARY_REPO: ${{ inputs.repo }}
+        run: ./scripts/use-github-release-binary.sh "${{ inputs.version }}" /tmp/xsnap-release-assets
+
+      - name: Run focused xsnap smoke test with override binaries
+        working-directory: packages/xsnap
+        run: |
+          source /tmp/xsnap-release-assets/xsnap-binary.env
+          XSNAP_WORKER="$XSNAP_WORKER" \
+          XSNAP_WORKER_DEBUG="$XSNAP_WORKER_DEBUG" \
+          yarn test test/xsnap.test.js --match 'evaluate and issueCommand'
