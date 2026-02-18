@@ -31,7 +31,6 @@ const ModdableSDK = {
   platforms: {
     Linux: { path: 'lin' },
     Darwin: { path: 'mac' },
-    Windows_NT: { path: 'win', make: 'nmake' },
   },
   buildGoals: ['release', 'debug'],
 };
@@ -101,130 +100,119 @@ function makeCLI(command, { spawn }) {
   });
 }
 
+/** @param {string} repoUrl */
+const canonicalRepoUrl = repoUrl =>
+  repoUrl.replace(/\/+$/, '').replace(/\.git$/, '');
+
 /**
- * @param {string} path
  * @param {string} repoUrl
- * @param {{ git: ReturnType<typeof makeCLI> }} io
+ * @param {string} commitHash
  */
-const makeSubmodule = (path, repoUrl, { git }) => {
-  return freeze({
-    path,
-    clone: async () => git.run(['clone', repoUrl, path]),
-    /** @param {string} commitHash */
-    checkout: async commitHash =>
-      git.run(['checkout', commitHash], { cwd: path }),
-    init: async () => git.run(['submodule', 'update', '--init', '--checkout']),
-    status: async () => {
-      const line = await git.pipe(['submodule', 'status', path]);
-      // From `git submodule --help`:
-      // status [--cached] [--recursive] [--] [<path>...]
-      //     Show the status of the submodules. This will print the SHA-1 of the
-      //     currently checked out commit for each submodule, along with the
-      //     submodule path and the output of git describe for the SHA-1. Each
-      //     SHA-1 will possibly be prefixed with - if the submodule is not
-      //     initialized, + if the currently checked out submodule commit does
-      //     not match the SHA-1 found in the index of the containing repository
-      //     and U if the submodule has merge conflicts.
-      //
-      // We discovered that in other cases, the prefix is a single space.
-      const prefix = line[0];
-      const [hash, statusPath, ...describe] = line.slice(1).split(' ');
-      return {
-        prefix,
-        hash,
-        path: statusPath,
-        describe: describe.join(' '),
-      };
-    },
-    /**
-     * Read a specific configuration value for this submodule (e.g., "path" or
-     * "url") from the top-level .gitmodules.
-     *
-     * @param {string} leaf
-     */
-    config: async leaf => {
-      // git rev-parse --show-toplevel
-      const repoRoot = await git.pipe(['rev-parse', '--show-toplevel']);
-      if (!path.startsWith(`${repoRoot}/`)) {
-        throw Error(
-          `Expected submodule path ${path} to be a subdirectory of repository ${repoRoot}`,
-        );
-      }
-      const relativePath = path.slice(repoRoot.length + 1);
-      // git config -f ../../.gitmodules --get submodule.${relativePath}.${leaf}
-      const value = await git.pipe([
-        'config',
-        '-f',
-        `${repoRoot}/.gitmodules`,
-        '--get',
-        `submodule.${relativePath}.${leaf}`,
-      ]);
-      return value;
-    },
-  });
+const defaultArchiveUrl = (repoUrl, commitHash) =>
+  `${canonicalRepoUrl(repoUrl)}/archive/${commitHash}.tar.gz`;
+
+const SOURCE_STAMP_FILE = '.agoric-source-stamp.json';
+
+/**
+ * @param {string} text
+ * @returns {Record<string, string>}
+ */
+const parseEnvText = text => {
+  /** @type {Record<string, string>} */
+  const envMap = {};
+  for (const line of text.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const index = trimmed.indexOf('=');
+    if (index <= 0) continue;
+    const key = trimmed.slice(0, index);
+    const value = trimmed.slice(index + 1);
+    envMap[key] = value;
+  }
+  return envMap;
 };
 
 /**
  * @typedef {{
  *   url: string,
  *   path: string,
- *   commitHash?: string,
+ *   commitHash: string,
+ *   archiveUrl: string,
  *   envPrefix: string,
- * }} SubmoduleDescriptor
+ * }} SourceDescriptor
  */
 
 /**
- * @param {SubmoduleDescriptor[]} submodules
+ * @param {SourceDescriptor[]} sources
  * @param {{
- *   git: ReturnType<typeof makeCLI>,
  *   stdout: typeof process.stdout,
  * }} io
  */
-const showEnv = async (submodules, { git, stdout }) => {
+const showEnv = async (sources, { stdout }) => {
   await null;
-  for (const desc of submodules) {
-    const { path, envPrefix } = desc;
-    let { url, commitHash } = desc;
-    if (!commitHash) {
-      // We need to glean the commitHash and url from Git.
-      const submodule = makeSubmodule(path, '?', { git });
-      const [{ hash }, gitUrl] = await Promise.all([
-        submodule.status(),
-        submodule.config('url'),
-      ]);
-      commitHash = hash;
-      url = gitUrl;
-    }
+  for (const { envPrefix, url, commitHash, archiveUrl } of sources) {
     stdout.write(`${envPrefix}URL=${url}\n`);
     stdout.write(`${envPrefix}COMMIT_HASH=${commitHash}\n`);
+    const defaultUrl = defaultArchiveUrl(url, commitHash);
+    if (archiveUrl && archiveUrl !== defaultUrl) {
+      stdout.write(`${envPrefix}ARCHIVE_URL=${archiveUrl}\n`);
+    }
   }
 };
 
 /**
- * @param {SubmoduleDescriptor[]} submodules
+ * @param {SourceDescriptor[]} sources
  * @param {{
- *   fs: Pick<typeof import('fs'), 'existsSync' | 'rmdirSync'>,
- *   git: ReturnType<typeof makeCLI>,
+ *   fs: Pick<typeof import('fs'), 'existsSync'> &
+ *     Pick<typeof promises, 'mkdir' | 'rm' | 'readFile' | 'writeFile' | 'rename'>,
+ *   curl: ReturnType<typeof makeCLI>,
+ *   tar: ReturnType<typeof makeCLI>,
  * }} io
  */
-const updateSubmodules = async (submodules, { fs, git }) => {
+const updateSources = async (sources, { fs, curl, tar }) => {
   await null;
-  for (const { url, path, commitHash } of submodules) {
-    const submodule = makeSubmodule(path, url, { git });
+  for (const { archiveUrl, path, commitHash, url } of sources) {
+    const stamp = JSON.stringify({ url, commitHash, archiveUrl }, null, 2);
+    const tmpPath = `${path}.tmp.${process.pid}.${Date.now()}`;
+    const oldPath = `${path}.old.${process.pid}.${Date.now()}`;
+    const archivePath = `${tmpPath}.tar.gz`;
+    const hadExistingPath = fs.existsSync(path);
 
-    if (!commitHash) {
-      await submodule.init();
-    } else {
-      // Do the moral equivalent of submodule update when explicitly overriding.
+    await fs.rm(tmpPath, { recursive: true, force: true });
+    await fs.rm(oldPath, { recursive: true, force: true });
+    await fs.mkdir(tmpPath, { recursive: true });
+
+    try {
+      await curl.run(['-fsSL', archiveUrl, '-o', archivePath]);
+      await tar.run([
+        '-xzf',
+        archivePath,
+        '--strip-components=1',
+        '-C',
+        tmpPath,
+      ]);
+      await fs.writeFile(`${tmpPath}/${SOURCE_STAMP_FILE}`, `${stamp}\n`);
+
+      if (hadExistingPath) {
+        await fs.rename(path, oldPath);
+      }
+
       try {
-        fs.rmdirSync(submodule.path);
-      } catch (_e) {
-        // ignore
+        await fs.rename(tmpPath, path);
+      } catch (err) {
+        if (hadExistingPath && fs.existsSync(oldPath)) {
+          await fs.rename(oldPath, path);
+        }
+        throw err;
       }
-      if (!fs.existsSync(submodule.path)) {
-        await submodule.clone();
-      }
-      await submodule.checkout(commitHash);
+    } catch (err) {
+      throw Error(
+        `Failed to fetch archive for ${path} @ ${commitHash} from ${archiveUrl}: ${err}`,
+      );
+    } finally {
+      await fs.rm(archivePath, { force: true });
+      await fs.rm(tmpPath, { recursive: true, force: true });
+      await fs.rm(oldPath, { recursive: true, force: true });
     }
   }
 };
@@ -282,8 +270,8 @@ const buildXsnap = async (platform, force, { fs, make }) => {
  *   env: Record<string, string | undefined>,
  *   stdout: typeof process.stdout,
  *   spawn: typeof spawn,
- *   fs: Pick<typeof import('fs'), 'existsSync' | 'rmdirSync'> &
- *     Pick<typeof promises, 'readFile' | 'writeFile'>,
+ *   fs: Pick<typeof import('fs'), 'existsSync'> &
+ *     Pick<typeof promises, 'readFile' | 'writeFile' | 'mkdir' | 'rm' | 'rename'>,
  *   os: Pick<typeof import('os'), 'type'>,
  * }} io
  */
@@ -298,60 +286,156 @@ async function main(args, { env, stdout, spawn, fs, os }) {
     throw Error(`xsnap does not support OS ${osType}`);
   }
 
-  const git = makeCLI('git', { spawn });
+  const curl = makeCLI('curl', { spawn });
+  const tar = makeCLI('tar', { spawn });
   const make = makeCLI(platform.make || 'make', { spawn });
 
+  /** @type {Record<string, string>} */
+  let pinnedEnvFromFile = {};
+  let hasPinnedEnvFile = false;
+  try {
+    const text = await fs.readFile(asset('../build.env'), 'utf-8');
+    pinnedEnvFromFile = parseEnvText(text);
+    hasPinnedEnvFile = true;
+  } catch (_err) {
+    // Allow explicit environment overrides to run without a checked-in build.env.
+  }
+
+  const moddableUrl =
+    env.MODDABLE_URL ||
+    pinnedEnvFromFile.MODDABLE_URL ||
+    'https://github.com/agoric-labs/moddable.git';
+  const moddableCommitHash =
+    env.MODDABLE_COMMIT_HASH || pinnedEnvFromFile.MODDABLE_COMMIT_HASH;
+  if (!moddableCommitHash) {
+    throw Error(
+      'Missing MODDABLE_COMMIT_HASH; set it in env or packages/xsnap/build.env',
+    );
+  }
+
+  const xsnapNativeUrl =
+    env.XSNAP_NATIVE_URL ||
+    pinnedEnvFromFile.XSNAP_NATIVE_URL ||
+    'https://github.com/agoric-labs/xsnap-pub';
+  const xsnapNativeCommitHash =
+    env.XSNAP_NATIVE_COMMIT_HASH || pinnedEnvFromFile.XSNAP_NATIVE_COMMIT_HASH;
+  if (!xsnapNativeCommitHash) {
+    throw Error(
+      'Missing XSNAP_NATIVE_COMMIT_HASH; set it in env or packages/xsnap/build.env',
+    );
+  }
+
   // When changing/adding entries here, make sure to search the whole project
-  // for `@@AGORIC_DOCKER_SUBMODULES@@`
-  const submodules = [
+  // for `@@AGORIC_DOCKER_SUBMODULES@@` in container build wiring.
+  /** @type {SourceDescriptor[]} */
+  const sources = [
     {
-      url: env.MODDABLE_URL || 'https://github.com/agoric-labs/moddable.git',
+      url: moddableUrl,
       path: ModdableSDK.MODDABLE,
-      commitHash: env.MODDABLE_COMMIT_HASH,
+      commitHash: moddableCommitHash,
+      archiveUrl:
+        env.MODDABLE_ARCHIVE_URL ||
+        defaultArchiveUrl(moddableUrl, moddableCommitHash),
       envPrefix: 'MODDABLE_',
     },
     {
-      url:
-        env.XSNAP_NATIVE_URL || 'https://github.com/agoric-labs/xsnap-pub.git',
+      url: xsnapNativeUrl,
       path: asset('../xsnap-native'),
-      commitHash: env.XSNAP_NATIVE_COMMIT_HASH,
+      commitHash: xsnapNativeCommitHash,
+      archiveUrl:
+        env.XSNAP_NATIVE_ARCHIVE_URL ||
+        defaultArchiveUrl(xsnapNativeUrl, xsnapNativeCommitHash),
       envPrefix: 'XSNAP_NATIVE_',
     },
   ];
 
   // We build both release and debug executables, so checking for only the
   // former is fine.
-  // XXX This will need to account for the .exe extension if we recover support
-  // for Windows.
   const bin = asset(
     `../xsnap-native/xsnap/build/bin/${platform.path}/release/xsnap-worker`,
   );
+  /** @type {Map<string, SourceDescriptor>} */
+  const sourceByPrefix = new Map(
+    sources.map(source => [source.envPrefix, source]),
+  );
+
+  /**
+   * @param {SourceDescriptor} source
+   * @returns {Promise<boolean>} whether the source needs to be refreshed from
+   *   its archive URL based on whether the existing source stamp matches the
+   *   expected URL and commit hash
+   * @throws if the source stamp exists but cannot be read or parsed
+   */
+  const needsSourceRefresh = async source => {
+    await null;
+    try {
+      const stampText = await fs.readFile(
+        `${source.path}/${SOURCE_STAMP_FILE}`,
+        'utf-8',
+      );
+      const stamp = JSON.parse(stampText);
+      return (
+        stamp.url !== source.url ||
+        stamp.commitHash !== source.commitHash ||
+        stamp.archiveUrl !== source.archiveUrl
+      );
+    } catch {
+      return true;
+    }
+  };
+
   const hasBin = fs.existsSync(bin);
   const hasSource = fs.existsSync(asset('../moddable/xs/includes/xs.h'));
-  const hasGit = fs.existsSync(asset('../moddable/.git'));
+  const hasRepoGit = fs.existsSync(asset('../../../.git'));
+  const hasExplicitOverride = prefix => {
+    const source = sourceByPrefix.get(prefix);
+    if (!source) return false;
+    const urlKey = `${prefix}URL`;
+    const hashKey = `${prefix}COMMIT_HASH`;
+    const archiveKey = `${prefix}ARCHIVE_URL`;
+    const fileUrl = pinnedEnvFromFile[urlKey];
+    const fileHash = pinnedEnvFromFile[hashKey];
+    const fileArchive =
+      pinnedEnvFromFile[archiveKey] ||
+      defaultArchiveUrl(source.url, source.commitHash);
+    const envUrl = env[urlKey];
+    const envHash = env[hashKey];
+    const envArchive = env[archiveKey];
+    return (
+      (typeof envUrl === 'string' &&
+        envUrl !== '' &&
+        (!hasPinnedEnvFile || envUrl !== fileUrl)) ||
+      (typeof envHash === 'string' &&
+        envHash !== '' &&
+        (!hasPinnedEnvFile || envHash !== fileHash)) ||
+      (typeof envArchive === 'string' &&
+        envArchive !== '' &&
+        (!hasPinnedEnvFile || envArchive !== fileArchive))
+    );
+  };
 
-  // If a git submodule is present or source files and prebuilt executables are
-  // both absent, consider ourselves to be in an active git checkout (as opposed
-  // to e.g. an extracted npm tarball).
-  const isWorkingCopy = hasGit || (!hasSource && !hasBin);
+  const hasSourceOverride =
+    hasExplicitOverride('MODDABLE_') || hasExplicitOverride('XSNAP_NATIVE_');
+  const needsPinnedRefresh =
+    hasRepoGit &&
+    (await Promise.all(sources.map(needsSourceRefresh))).some(needed => needed);
+  const shouldFetchSources =
+    hasSourceOverride || needsPinnedRefresh || (!hasSource && !hasBin);
 
-  // --show-env reports submodule status without making changes.
+  // --show-env reports effective URL/hash pins without making changes.
   if (args.includes('--show-env')) {
-    if (!isWorkingCopy) {
-      throw Error('XSnap requires a working copy and git to --show-env');
-    }
-    await showEnv(submodules, { git, stdout });
+    await showEnv(sources, { stdout });
     return;
   }
 
-  // Fetch/update source files via `git submodule` as appropriate.
-  if (isWorkingCopy) {
-    await updateSubmodules(submodules, { fs, git });
+  // Fetch/update source files via pinned source archives as appropriate.
+  if (shouldFetchSources) {
+    await updateSources(sources, { fs, curl, tar });
   }
 
   // If we now have source files, (re)build from them.
   // Otherwise, require presence of a previously-built executable.
-  if (hasSource || isWorkingCopy) {
+  if (hasSource || shouldFetchSources) {
     // Force a rebuild if for some reason the binary is out of date
     // since the make checks may not always detect that situation.
     const npm = makeCLI('npm', { spawn });
@@ -374,9 +458,11 @@ const run = () =>
     spawn: childProcessTop.spawn,
     fs: {
       existsSync: fsTop.existsSync,
-      rmdirSync: fsTop.rmdirSync,
       readFile: fsTop.promises.readFile,
       writeFile: fsTop.promises.writeFile,
+      mkdir: fsTop.promises.mkdir,
+      rm: fsTop.promises.rm,
+      rename: fsTop.promises.rename,
     },
     os: {
       type: osTop.type,
