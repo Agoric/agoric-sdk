@@ -459,10 +459,18 @@ test('runJob trace shape matches portfolio96.flow5 scheduler logs', async t => {
   }
 
   t.deepEqual(actualTrace, expectedTrace);
-  t.false(
-    settled,
+  // Yield a turn so a wrongly-resolved runJob cannot hide behind microtask timing.
+  await Promise.resolve();
+  const completionProbe = Promise.race([
+    resultsP.then(() => 'done'),
+    Promise.resolve('pending'),
+  ]);
+  t.is(
+    await completionProbe,
+    'pending',
     'job should remain pending while step 0 stays unresolved (as in logs)',
   );
+  t.false(settled);
 
   controls.aaveSupplyBase.resolve();
   const results = await resultsP;
