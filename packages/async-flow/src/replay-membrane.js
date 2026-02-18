@@ -178,6 +178,8 @@ export const makeReplayMembraneKitForTesting = ({
     if (equates(guestEntry, hostEntry, label)) {
       return;
     }
+    // TODO sort keys of replayFault to make it easier for test code to compare
+    // with a JSON stringification of the error message.
     /** @type {GuestReplayFault} */
     const replayFault = harden({
       generation,
