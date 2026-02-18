@@ -202,7 +202,6 @@ export const makeReplayMembraneKitForTesting = ({
       harden({ narrator }),
       [replayFault],
     );
-    // @ts-expect-error actualOutcome is only on some branches, which is fine.
     const { kind, actualOutcome = undefined } = handlingChoice;
     actualOutcome === undefined ||
       Fail`fault choice actualOutcome not yet implemented: ${replayFault} => ${handlingChoice}`;
