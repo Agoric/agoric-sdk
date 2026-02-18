@@ -2731,24 +2731,33 @@ test('executePlan settles while detached progress publishing is still blocked (1
   let createReturned = false;
   let started = false;
 
-  const delayedResolverClient = Far('DelayedResolverClient', {
-    createPendingTx: async txMeta => {
-      if (!started) {
-        started = true;
-        createStarted.resolve();
-      }
+  const delayedResolverClient: typeof resolverClient = Far(
+    'DelayedResolverClient',
+    {
+      createPendingTx: async txMeta => {
+        if (!started) {
+          started = true;
+          createStarted.resolve();
+        }
       await releaseCreate.promise;
-      const result = await resolverClient.createPendingTx(txMeta);
-      createReturned = true;
-      return result;
+        const result = await resolverClient.createPendingTx(txMeta);
+        createReturned = true;
+        return result;
+      },
+      updateTxMeta: (txId, txMeta) => resolverClient.updateTxMeta(txId, txMeta),
+      registerTransaction: (...args) =>
+        // @ts-expect-error mock
+        resolverClient.registerTransaction(...args),
+      unsubscribe: (...args) =>
+        // @ts-expect-error mock
+        resolverClient.unsubscribe(...args),
     },
-    updateTxMeta: (txId, txMeta) => resolverClient.updateTxMeta(txId, txMeta),
-  });
+  ) as unknown as typeof resolverClient;
 
   const delayedCtx = {
     ...ctx,
     resolverClient: delayedResolverClient,
-  };
+  } as PortfolioInstanceContext;
 
   const runP = executePlan(
     orch,
