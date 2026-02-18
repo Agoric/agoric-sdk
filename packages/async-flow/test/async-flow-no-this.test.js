@@ -41,7 +41,7 @@ const testPlay = async (t, zone) => {
 
   await wrapperFunc();
   // Demonstrates that even if something is passed as `this` to the wrapperFunc,
-  // the wrapperFunc with throw an error that this feature is not yet
+  // the wrapperFunc will throw an error that this feature is not yet
   // supported. This is in order to reserve the use of the this-binding of
   // the guest function and the wrapperFunc as async menthods of host exos.
   // In that case, `wrapperFunc` will be called with a this-binding of
