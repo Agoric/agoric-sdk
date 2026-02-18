@@ -717,7 +717,7 @@ export const makeReplayMembraneKitForTesting = ({
       stopped = true;
     },
   });
-  const narrator = Far('narrator', {
+  const flowInspector = Far('flowInspector', {
     getLogDump() {
       return hostToGuest(log.dump());
     },
@@ -731,12 +731,12 @@ export const makeReplayMembraneKitForTesting = ({
       return log.isReplaying();
     },
   });
-  return { membrane, narrator };
+  return { membrane, flowInspector };
 };
 harden(makeReplayMembraneKitForTesting);
 
 /**
  * @typedef {ReturnType<typeof makeReplayMembraneKitForTesting>} ReplayMembraneKit
  * @typedef {ReplayMembraneKit['membrane']} ReplayMembrane
- * @typedef {ReplayMembraneKit['narrator']} Narrator
+ * @typedef {ReplayMembraneKit['flowInspector']} FlowInspector
  */

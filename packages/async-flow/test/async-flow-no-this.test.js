@@ -29,11 +29,11 @@ const testPlay = async (t, zone) => {
   const { guestFunc } = {
     async guestFunc() {
       // @ts-expect-error TS doesn't yet know about guest context objects,
-      const { narrator, self, state, facets } = this;
+      const { flowInspector, self, state, facets } = this;
       t.is(self, undefined);
       t.is(state, undefined);
       t.is(facets, undefined);
-      t.is(passStyleOf(narrator), 'remotable');
+      t.is(passStyleOf(flowInspector), 'remotable');
     },
   };
 
@@ -46,10 +46,10 @@ const testPlay = async (t, zone) => {
   // the guest function and the wrapperFunc as async menthods of host exos.
   // In that case, `wrapperFunc` will be called with a this-binding of
   // `{ state, self }` or `{ state, facets }`. The guest will be invoked with
-  // a guest analog of the context object, but with an additional `narrator`
+  // a guest analog of the context object, but with an additional `flowInspector`
   // propoerty. To prepare for that, the wrapper must be called with a
   // this-binding of `undefined`, in which case the guest function is called
-  // with a this-binding of `{ narrator }`.
+  // with a this-binding of `{ flowInspector }`.
   t.throws(() => apply(wrapperFunc, 'bogus', []), {
     message: 'asyncFlow this-binding not yet supported',
   });

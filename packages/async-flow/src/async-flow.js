@@ -193,7 +193,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
               watch(vowish, wakeWatcher);
             };
             const panic = err => admin.panic(err);
-            const { membrane, narrator } = makeReplayMembraneKit({
+            const { membrane, flowInspector } = makeReplayMembraneKit({
               log,
               bijection,
               vowTools,
@@ -225,11 +225,11 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
               // async IFFE ensures guestResultP is a fresh promise.
               apply(
                 guestAsyncFunc,
-                // The narrator is passed in a record in case we want to enhance
+                // The flowInspector is passed in a record in case we want to enhance
                 // that record to seem like the `this` binding of a guest method,
                 // i.e., a context object, such as `{state, self}` or
                 // `{state, facets}`.
-                harden({ narrator }),
+                harden({ flowInspector }),
                 guestArgs,
               ))();
 
