@@ -1,4 +1,4 @@
-/* globals process */
+/* globals process globalThis */
 import {
   BasicTracerProvider,
   BatchSpanProcessor,
@@ -16,11 +16,10 @@ export const SPAN_MAX_QUEUE_SIZE = 100_000;
 export const SPAN_EXPORT_DELAY_MS = 1_000;
 
 /**
- * @param {object} opts
- * @param {Record<string, string>} opts.env
+ * @param {import('./index.js').MakeSlogSenderCommonOptions} opts
  */
 export const makeOtelTracingProvider = opts => {
-  const { env = process.env } = opts || {};
+  const { env = process.env, console = globalThis.console } = opts || {};
 
   // https://opentelemetry.io/docs/concepts/signals/
   // https://opentelemetry.io/docs/specs/otel/protocol/exporter/#endpoint-urls-for-otlphttp
@@ -55,6 +54,9 @@ export const makeOtelTracingProvider = opts => {
   return provider;
 };
 
+/**
+ * @param {import('./index.js').MakeSlogSenderOptions & { version?: string }} opts
+ */
 export const makeSlogSender = async opts => {
   const tracingProvider =
     makeOtelTracingProvider(opts) || new BasicTracerProvider();
@@ -62,7 +64,7 @@ export const makeSlogSender = async opts => {
   tracingProvider.register();
   const tracer = tracingProvider.getTracer('slog-trace', opts.version);
 
-  const { slogSender, finish } = makeSlogToOtelKit(tracer);
+  const { slogSender, finish } = makeSlogToOtelKit(tracer, undefined, opts);
 
   // Cleanly shutdown if possible.
   const { registerShutdown } = makeShutdown();

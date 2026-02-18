@@ -26,8 +26,6 @@ import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
-const logger = anylogger('slog-sender-pipe');
-
 const sink = () => {};
 
 /**
@@ -71,7 +69,7 @@ const withMutex = operation => {
 
 /** @param {MakeSlogSenderOptions} options */
 export const makeSlogSender = async options => {
-  const { env = {} } = options;
+  const { env = {}, console = anylogger('slog-sender-pipe') } = options;
   const { registerShutdown } = makeShutdown();
 
   const cp = fork(path.join(dirname, 'slog-sender-pipe-entrypoint.js'), [], {
@@ -79,7 +77,7 @@ export const makeSlogSender = async options => {
     serialization: 'advanced',
     env,
   });
-  // logger.log('done fork');
+  // console.log('done fork');
 
   const exitKit = makePromiseKit();
   cp.on('error', error => {
@@ -130,9 +128,9 @@ export const makeSlogSender = async options => {
 
   /** @param {PipeReply} msg */
   const onMessage = msg => {
-    // logger.log('received', msg);
+    // console.log('received', msg);
     if (!msg || msg.type !== `${sendWaitType}Reply`) {
-      logger.warn('Received unexpected message', msg);
+      console.warn('Received unexpected message', msg);
       return;
     }
 
@@ -145,7 +143,7 @@ export const makeSlogSender = async options => {
   };
 
   const shutdown = async () => {
-    // logger.log('shutdown');
+    // console.log('shutdown');
     if (!cp.connected) return;
 
     await flush();
