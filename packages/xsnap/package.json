@@ -12,10 +12,7 @@
   },
   "scripts": {
     "repl": "node src/xsrepl.js",
-    "build:bin": "/bin/sh -c 'if test -d ./test; then node src/build.js; else yarn build:from-env; fi'",
     "install:prebuilt": "node src/install-prebuilt.js",
-    "build:env": "/bin/sh -c 'node src/build.js --show-env > build.env.new && mv build.env.new build.env'",
-    "build:from-env": "{ cat build.env; echo node src/build.js; } | xargs env",
     "build": "yarn install:prebuilt",
     "check-version": "/bin/sh -c 'if test \"${npm_package_version}\" != \"$(./scripts/get_xsnap_version.sh)\"; then echo \"xsnap version mismatch; expected '${npm_package_version}'\"; exit 1; fi'",
     "postinstall": "npm run install:prebuilt",
@@ -52,16 +49,8 @@
   "files": [
     "LICENSE*",
     "api.js",
-    "build.env",
-    "moddable/modules/data/**",
-    "moddable/xs/includes/**",
-    "moddable/xs/makefiles/**",
-    "moddable/xs/sources/**",
-    "moddable/xs/platforms/*.h",
     "scripts/**",
-    "src/**",
-    "xsnap-native/xsnap/makefiles/**",
-    "xsnap-native/xsnap/sources/**"
+    "src/**"
   ],
   "publishConfig": {
     "access": "public"
