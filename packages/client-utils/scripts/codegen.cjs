@@ -141,12 +141,9 @@ telescope({
     fixTypeImport('./src/codegen', gnuSed);
     console.log('🔧 type keyword added');
 
-    const prettierBin = require.resolve('prettier/bin/prettier.cjs', {
-      paths: [path.join(__dirname, '..')],
-    });
     const prettierResult = spawnSync(
-      process.execPath,
-      [prettierBin, '--write', 'src/codegen'],
+      'yarn',
+      ['run', '--top-level', 'prettier', '--write', 'src/codegen'],
       {
         cwd: path.join(__dirname, '..'),
         stdio: 'inherit',
