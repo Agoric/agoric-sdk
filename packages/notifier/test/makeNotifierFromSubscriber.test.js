@@ -107,15 +107,15 @@ test('makeNotifierFromSubscriber(fails) - for-await-of iteration', async t => {
   initialize();
 
   const results = [];
-  try {
-    for await (const result of notifier) {
-      results.push(result);
-      publishNextBatch();
-    }
-    throw Error('for-await-of completed successfully');
-  } catch (err) {
-    t.is(err, failure, 'for-await-of should throw the failure value');
-  }
+  await t.throwsAsync(
+    async () => {
+      for await (const result of notifier) {
+        results.push(result);
+        publishNextBatch();
+      }
+    },
+    { is: failure },
+  );
 
   t.deepEqual(
     results,
@@ -135,21 +135,21 @@ test('makeNotifierFromSubscriber(fails) - getUpdateSince', async t => {
 
   const results = [];
   let updateCount;
-  try {
-    while (true) {
-      const result = await notifier.getUpdateSince(updateCount);
-      ({ updateCount } = result);
-      results.push(result.value);
-      t.deepEqual(await notifier.getUpdateSince(), result);
-      if (updateCount === undefined) {
-        break;
+  await t.throwsAsync(
+    async () => {
+      while (true) {
+        const result = await notifier.getUpdateSince(updateCount);
+        ({ updateCount } = result);
+        results.push(result.value);
+        t.deepEqual(await notifier.getUpdateSince(), result);
+        if (updateCount === undefined) {
+          break;
+        }
+        await publishNextBatch();
       }
-      await publishNextBatch();
-    }
-    throw Error('for-await-of completed successfully');
-  } catch (err) {
-    t.is(err, failure, 'await should throw the failure value');
-  }
+    },
+    { is: failure },
+  );
 
   t.deepEqual(
     results,
