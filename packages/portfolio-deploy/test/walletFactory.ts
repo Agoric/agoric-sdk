@@ -6,8 +6,8 @@ import {
 import {
   fetchCoreEvalRelease,
   makeSwingsetTestKit,
-} from '@aglocal/boot/tools/supports.js';
-import { makeWalletFactoryDriver } from '@aglocal/boot/tools/drivers.js';
+} from '@aglocal/boot/src/supports.js';
+import { makeWalletFactoryDriver } from '@aglocal/boot/src/drivers.js';
 
 // XXX same as fast-usdc-deploy/test/walletFactory.ts and
 // XXX same as packages/boot/test/bootstrapTests/walletFactory.ts

@@ -9,15 +9,15 @@ import '@agoric/cosmic-swingset/src/launch-chain.js';
 import { Fail } from '@endo/errors';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
-import { makeSwingsetTestKit } from '@aglocal/boot/tools/supports.js';
+import { makeSwingsetTestKit } from '@aglocal/boot/src/supports.js';
 import {
   makeWalletFactoryDriver,
   makeGovernanceDriver,
-} from '@aglocal/boot/tools/drivers.js';
-import { makeLiquidationTestKit } from '@aglocal/boot/tools/liquidation.js';
+} from '@aglocal/boot/src/drivers.js';
+import { makeLiquidationTestKit } from '@aglocal/boot/src/liquidation.js';
 
 /**
- * @import {SmartWalletDriver} from '@aglocal/boot/tools/drivers.ts';
+ * @import {SmartWalletDriver} from '@aglocal/boot/src/drivers.js';
  * @import {ManagerType} from '@agoric/swingset-vat';
  */
 

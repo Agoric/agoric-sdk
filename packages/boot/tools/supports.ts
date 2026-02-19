@@ -52,7 +52,6 @@ import {
 
 import type { ExecutionContext as AvaT } from 'ava';
 
-import type { FastUSDCCorePowers } from '@aglocal/fast-usdc-deploy/src/start-fast-usdc.core.js';
 import type { CoreEvalSDKType } from '@agoric/cosmic-proto/swingset/swingset.js';
 import { computronCounter } from '@agoric/cosmic-swingset/src/computron-counter.js';
 import { defaultBeansPerVatCreation } from '@agoric/cosmic-swingset/src/sim-params.js';
@@ -80,11 +79,9 @@ export const fetchCached = NodeFetchCache.create({
 
 type ConsumeBootrapItem = <N extends string>(
   name: N,
-) => N extends keyof FastUSDCCorePowers['consume']
-  ? FastUSDCCorePowers['consume'][N]
-  : N extends keyof EconomyBootstrapPowers['consume']
-    ? EconomyBootstrapPowers['consume'][N]
-    : unknown;
+) => N extends keyof EconomyBootstrapPowers['consume']
+  ? EconomyBootstrapPowers['consume'][N]
+  : any;
 
 // XXX should satisfy EVProxy from run-utils.js but that's failing to import
 /**
