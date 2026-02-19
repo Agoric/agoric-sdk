@@ -4,6 +4,15 @@
   "private": true,
   "description": "Config and utilities to bootstrap an Agoric chain",
   "type": "module",
+  "exports": {
+    ".": "./index.js",
+    "./supports.js": "./src/supports.js",
+    "./drivers.js": "./src/drivers.js",
+    "./liquidation.js": "./src/liquidation.js",
+    "./walletFactoryContext.js": "./src/walletFactoryContext.js",
+    "./ibc/mocks.js": "./src/ibc/mocks.js",
+    "./package.json": "./package.json"
+  },
   "repository": "https://github.com/Agoric/agoric-sdk",
   "scripts": {
     "build": "exit 0",

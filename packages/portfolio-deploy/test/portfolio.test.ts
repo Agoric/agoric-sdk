@@ -1,11 +1,11 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { protoMsgMockMap } from '@aglocal/boot/src/ibc/mocks.js';
+import { protoMsgMockMap } from '@aglocal/boot/ibc/mocks.js';
 import {
   AckBehavior,
   insistManagerType,
   makeSwingsetHarness,
-} from '@aglocal/boot/src/supports.js';
+} from '@aglocal/boot/supports.js';
 import { makeProposalShapes } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import { makeUSDNIBCTraffic } from '@aglocal/portfolio-contract/test/mocks.ts';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';

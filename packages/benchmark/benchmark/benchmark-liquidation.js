@@ -2,7 +2,7 @@
 import { bench } from '../src/benchmarkerator.js';
 
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
-import { scale6 } from '@aglocal/boot/src/liquidation.js';
+import { scale6 } from '@aglocal/boot/liquidation.js';
 
 const setupData = {
   vaults: [

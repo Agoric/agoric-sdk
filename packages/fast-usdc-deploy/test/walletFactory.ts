@@ -1,4 +1,4 @@
-import { makeWalletFactoryContext as makeWalletFactoryContextShared } from '@aglocal/boot/src/walletFactoryContext.js';
+import { makeWalletFactoryContext as makeWalletFactoryContextShared } from '@aglocal/boot/walletFactoryContext.js';
 
 export const makeWalletFactoryContext = makeWalletFactoryContextShared;
 
