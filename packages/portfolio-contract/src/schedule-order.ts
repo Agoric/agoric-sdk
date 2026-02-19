@@ -100,6 +100,7 @@ export const runJob = async (
   const results = taskIxs.map(_ => ok);
 
   const failTaskAndAncestors = (ix: Ix, reason: unknown) => {
+    if (results[ix]?.status === 'rejected') return;
     trace('fail', ix, reason);
     todo.delete(ix);
     results[ix] = { status: 'rejected', reason };
