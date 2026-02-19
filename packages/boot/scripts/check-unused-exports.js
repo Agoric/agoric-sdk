@@ -2,9 +2,17 @@
 import { execSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 
-const files = execSync('rg --files tools -g "*.ts" -g "*.js"', {
-  encoding: 'utf-8',
-})
+const exec = (command, options = {}) =>
+  execSync(command, { encoding: 'utf-8', ...options });
+const execMaybe = (command, options = {}) => {
+  try {
+    return exec(command, options);
+  } catch {
+    return '';
+  }
+};
+
+const files = exec('rg --files tools -g "*.ts" -g "*.js"')
   .trim()
   .split('\n')
   .filter(Boolean);
@@ -27,13 +35,9 @@ const maybeUnused = [];
 
 for (const { file, name } of exported) {
   const refs = Number(
-    execSync(
-      `rg -n "\\\\b${name}\\\\b" packages --glob '!**/dist/**' | wc -l`,
-      {
-        encoding: 'utf-8',
-        cwd: '../..',
-      },
-    ).trim(),
+    exec(`rg -n "\\\\b${name}\\\\b" packages --glob '!**/dist/**' | wc -l`, {
+      cwd: '../..',
+    }).trim(),
   );
   if (refs <= 1) {
     maybeUnused.push({ file, name, refs });
@@ -45,6 +49,20 @@ if (maybeUnused.length) {
   for (const item of maybeUnused) {
     console.error(`- ${item.file}: export ${item.name} (refs=${item.refs})`);
   }
+  process.exit(1);
+}
+
+const tsImportMatches = execMaybe(
+  `rg -n "@aglocal/boot/.+\\\\.ts" packages --glob '!packages/boot/**'`,
+  {
+    cwd: '../..',
+  },
+).trim();
+if (tsImportMatches) {
+  console.error(
+    'Found non-runtime @aglocal/boot .ts imports outside packages/boot:',
+  );
+  console.error(tsImportMatches);
   process.exit(1);
 }
 
