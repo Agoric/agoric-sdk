@@ -310,7 +310,12 @@ export const installBundle = async (
       ({ chunkedArtifactId } = MsgInstallBundleResponse.decode(
         installBundleResponse.value,
       ));
-      if (chunkedArtifactId === undefined) {
+      if (
+        chunkedArtifactId === null ||
+        chunkedArtifactId === undefined ||
+        chunkedArtifactId === 0n ||
+        chunkedArtifactId === 0
+      ) {
         throw new Error(
           `No chunked artifact identifier found in manifest submission transaction response for bundle ${endoZipBase64Sha512}. This is a software defect. Please report.`,
         );
@@ -330,9 +335,14 @@ export const installBundle = async (
       );
     }
 
-    if (chunkedArtifactId === undefined) {
+    if (
+      chunkedArtifactId === null ||
+      chunkedArtifactId === undefined ||
+      chunkedArtifactId === 0n ||
+      chunkedArtifactId === 0
+    ) {
       throw new Error(
-        'No chunked artifact identifier found in transaction response. This is a software defect. Please report.',
+        `No chunked artifact identifier found in manifest submission transaction response for bundle ${endoZipBase64Sha512}. This is a software defect. Please report.`,
       );
     }
 

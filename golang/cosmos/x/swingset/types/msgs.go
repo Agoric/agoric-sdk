@@ -6,6 +6,7 @@ import (
 	"crypto/sha512"
 	"encoding/json"
 	"io"
+	"math"
 	"regexp"
 	"strings"
 
@@ -544,6 +545,9 @@ func (bc ChunkedArtifact) ValidateBasic() error {
 	}
 	var totalSize uint64
 	for i, chunk := range bc.Chunks {
+		if totalSize > math.MaxUint64-chunk.SizeBytes {
+			return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "bundle size overflows uint64 at chunk %d", i)
+		}
 		totalSize += chunk.SizeBytes
 		if len(chunk.Sha512) != sha512.Size*2 {
 			return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Chunk %d hash must be %d characters", i, sha512.Size*2)

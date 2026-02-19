@@ -373,9 +373,13 @@ func (keeper msgServer) SendChunk(goCtx context.Context, msg *types.MsgSendChunk
 	}
 
 	actualSha512 := sha512.Sum512(msg.ChunkData)
-	// TODO Remove debug case
-	if len(actualSha512) != len(expectedSha512) {
-		return nil, fmt.Errorf("chunk %d hash length mismatch; expected %d, got %d", msg.ChunkIndex, len(expectedSha512), len(actualSha512))
+	if len(expectedSha512) != sha512.Size {
+		return nil, fmt.Errorf(
+			"chunk %d hash length mismatch; expected %d, got %d",
+			msg.ChunkIndex,
+			sha512.Size,
+			len(expectedSha512),
+		)
 	}
 	if !bytes.Equal(actualSha512[:], expectedSha512) {
 		return nil, fmt.Errorf("chunk %d hash mismatch; expected %x, got %x", msg.ChunkIndex, expectedSha512, actualSha512)
