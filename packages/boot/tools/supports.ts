@@ -73,7 +73,7 @@ const trace = makeTracer('BSTSupport', false);
 // Doesn't help in CI but speeds up local development.
 // CI is on Github Actions, so fetching is reliable.
 // Files appear in a .cache directory.
-export const fetchCached = NodeFetchCache.create({
+const fetchCached = NodeFetchCache.create({
   cache: new FileSystemCache(),
 }) as unknown as typeof globalThis.fetch;
 
@@ -149,7 +149,7 @@ export const keyArrayEqual = (
    `defaultManagerType`)
  * @returns Path to the generated config file
  */
-export const getNodeTestVaultsConfig = async ({
+const getNodeTestVaultsConfig = async ({
   bundleDir,
   configPath,
   defaultManagerType = 'local' as ManagerType,
@@ -337,7 +337,7 @@ export const matchAmount = (
  * @param value - Value object to test
  * @param ref - Reference value object to compare against
  */
-export const matchValue = (t: AvaT, value, ref) => {
+const matchValue = (t: AvaT, value, ref) => {
   matchRef(t, value.brand, ref.brand);
   t.is(value.denom, ref.denom);
   matchRef(t, value.issuer, ref.issuer);
