@@ -70,15 +70,6 @@ export const scale6 = x => BigInt(Math.round(x * 1_000_000));
 
 const DebtLimitValue = scale6(100_000);
 
-export const likePayouts = ({ Bid, Collateral }) => ({
-  Collateral: {
-    value: scale6(Collateral),
-  },
-  Bid: {
-    value: scale6(Bid),
-  },
-});
-
 /**
  * @deprecated liquidation is no longer supported
  */
