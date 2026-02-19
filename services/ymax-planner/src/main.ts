@@ -330,6 +330,7 @@ export const main = async (
     });
     await startEngine(powers, {
       isDryRun,
+      featureFlags: config.featureFlags,
       contractInstance: config.contractInstance,
       depositBrandName: env.DEPOSIT_BRAND_NAME || 'USDC',
       feeBrandName: env.FEE_BRAND_NAME || 'BLD',

@@ -25,9 +25,12 @@ export type RequestLimits = {
   maxBackoff: number;
 };
 
+export type FeatureFlag = 'no-planner' | 'no-resolver';
+
 export interface YmaxPlannerConfig {
   readonly clusterName: ClusterName;
   readonly contractInstance: string;
+  readonly featureFlags?: FeatureFlag[];
   readonly mnemonic: string;
   readonly alchemyApiKey: string;
   readonly requestLimits: Partial<RequestLimits>;
@@ -137,6 +140,13 @@ export const loadConfig = async (
     clusterName ||= 'testnet';
   }
 
+  const featureFlags = (env.FEATURE_FLAGS?.split(',').filter(x => x) ||
+    []) as FeatureFlag[];
+  const invalidFlags = featureFlags.filter(
+    flag => flag !== 'no-planner' && flag !== 'no-resolver',
+  );
+  invalidFlags.length === 0 || Fail`Invalid feature flags: ${invalidFlags}`;
+
   const gcpProjectId = env.GCP_PROJECT_ID?.trim() || 'simulationlab';
   const gcpSecretName = env.GCP_SECRET_NAME?.trim() || 'YMAX_CONTROL_MNEMONIC';
   const mnemonic =
@@ -180,6 +190,7 @@ export const loadConfig = async (
   const config: YmaxPlannerConfig = harden({
     clusterName,
     contractInstance,
+    featureFlags,
     mnemonic,
     alchemyApiKey: validateRequired(env, 'ALCHEMY_API_KEY'),
     requestLimits: { timeout, maxRetries },
