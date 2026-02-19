@@ -386,13 +386,23 @@ const createMockEvmProviders = (
 ): Record<CaipChainId, WebSocketProvider> => ({
   'eip155:1': createMockProvider(latestBlock, events),
   'eip155:42161': createMockProvider(latestBlock, events),
+  'eip155:8453': createMockProvider(latestBlock, events),
   'eip155:11155111': createMockProvider(latestBlock, events),
+});
+
+const createMockRpcUrls = (): Record<CaipChainId, string> => ({
+  'eip155:1': 'https://mock-ethereum-rpc.example',
+  'eip155:42161': 'https://mock-arbitrum-rpc.example',
+  'eip155:8453': 'https://mock-base-rpc.example',
+  'eip155:11155111': 'https://mock-sepolia-rpc.example',
 });
 
 export const mockEvmCtx = {
   usdcAddresses: {},
   evmProviders: createMockEvmProviders(),
+  rpcUrls: createMockRpcUrls(),
   kvStore: makeKVStoreFromMap(new Map()),
+  setTimeout: globalThis.setTimeout,
   makeAbortController,
   axelarApiUrl: mockAxelarApiAddress,
   ydsNotifier: {
@@ -498,6 +508,17 @@ export const createMockCosmosRestClient = (
   } as any;
 };
 
+const mockGlobalFetch = (url: string, init?: RequestInit) => {
+  if (Object.values(createMockRpcUrls()).includes(url)) {
+    const batch = JSON.parse(init?.body as string);
+    return {
+      ok: true,
+      json: async () =>
+        batch.map((req: any) => ({ jsonrpc: '2.0', id: req.id, result: [] })),
+    } as Response;
+  }
+  throw new Error(`mockGlobalFetch: unrecognized URL: ${url}`);
+};
 export const createMockPendingTxOpts = (
   latestBlock = 1000,
   events?: Pick<Log, 'blockNumber' | 'data' | 'topics' | 'transactionHash'>[],
@@ -505,9 +526,11 @@ export const createMockPendingTxOpts = (
   cosmosRest: {} as unknown as CosmosRestClient,
   cosmosRpc: {} as unknown as CosmosRPCClient,
   evmProviders: createMockEvmProviders(latestBlock, events),
+  rpcUrls: createMockRpcUrls(),
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore some resolutions don't expect this on global
-  fetch: global.fetch,
+  fetch: mockGlobalFetch,
+  setTimeout: globalThis.setTimeout,
   marshaller: boardSlottingMarshaller(),
   signingSmartWalletKit: createMockSigningSmartWalletKit(),
   ydsNotifier: {

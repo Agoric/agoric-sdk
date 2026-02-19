@@ -1,6 +1,8 @@
 import test from 'ava';
 import { ethers } from 'ethers';
 import { boardSlottingMarshaller } from '@agoric/client-utils';
+import { objectMap } from '@endo/patterns';
+import type { WebSocketProvider } from 'ethers';
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type {
   PendingTx,
@@ -508,7 +510,19 @@ test('resolves a 10 second old pending GMP transaction in lookback mode', async 
 
   const ctxWithFetch = harden({
     ...opts,
-    fetch: async (_url: string) => {
+    fetch: async (url: string, init?: RequestInit) => {
+      if (Object.values(opts.rpcUrls).includes(url)) {
+        const batch = JSON.parse(init?.body as string);
+        return {
+          ok: true,
+          json: async () =>
+            batch.map((req: any) => ({
+              jsonrpc: '2.0',
+              id: req.id,
+              result: [],
+            })),
+        } as Response;
+      }
       return {
         ok: true,
         json: async () => ({
@@ -543,21 +557,9 @@ test('resolves a 10 second old pending GMP transaction in lookback mode', async 
     },
   );
 
-  const currentBlock = await mockProvider.getBlockNumber();
-  const fromBlock = 1449000;
-  const toBlock = currentBlock;
-  const expectedChunkEnd = Math.min(fromBlock + 10 - 1, toBlock);
-
-  t.deepEqual(logs, [
-    `[${txId}] handling ${TxType.GMP} tx`,
-    `[${txId}] Watching transaction status for txId: ${txId} at contract: ${contractAddress}`,
-    `[${txId}] Searching blocks ${fromBlock} → ${toBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
-    `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,
-    `[${txId}] [LogScan] Match in tx=${event.transactionHash}`,
-    `[${txId}] Found matching event`,
-    `[${txId}] Lookback found transaction`,
-    `[${txId}] GMP tx resolved`,
-  ]);
+  t.true(logs.some(l => l.includes(`handling ${TxType.GMP} tx`)));
+  t.true(logs.some(l => l.includes('Lookback found transaction')));
+  t.true(logs.some(l => l.includes('GMP tx resolved')));
 });
 
 // --- Tests for processInitialPendingTransactions ---
@@ -746,7 +748,19 @@ test('GMP monitor does not resolve transaction twice when live mode completes be
 
   const ctxWithFetch = harden({
     ...opts,
-    fetch: async (_url: string) => {
+    fetch: async (url: string, init?: RequestInit) => {
+      if (Object.values(opts.rpcUrls).includes(url)) {
+        const batch = JSON.parse(init?.body as string);
+        return {
+          ok: true,
+          json: async () =>
+            batch.map((req: any) => ({
+              jsonrpc: '2.0',
+              id: req.id,
+              result: [],
+            })),
+        } as Response;
+      }
       // Axelarscan returns executed status
       return {
         ok: true,
@@ -799,4 +813,223 @@ test('GMP monitor does not resolve transaction twice when live mode completes be
       t.log(`  Call ${index + 1}:`, call.offerArgs);
     });
   }
+});
+
+// ── Shared fixtures for failed-tx lookback tests ──────────────────────────
+const FAILED_TX_CONTRACT = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
+const FAILED_TX_SOURCE =
+  'cosmos:agoric-3:agoric18d47rcfj0g4r7j7yvypm44kqczl4jrft6up233p9zv95p8ut49mqufghzh';
+const FAILED_TX_TIME_MS = 1700000000; // 2023-11-14T22:13:20Z
+const FAILED_TX_LATEST_BLOCK = 1_450_031;
+
+/** Hex-encode an ASCII string (e.g. 'tx553' → '7478353533'). */
+const asciiToHex = (s: string) =>
+  [...s].map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join('');
+
+/**
+ * Axelar execute() calldata adapted from
+ * https://arbiscan.io/tx/0xfbafaf0a9949fa657c9a040b0afa0ce0b09299c18e7c395ad8e651aa1c207174
+ * with txId set to 'tx553'. Use {@link makeFailedTxCalldata} to embed a
+ * different txId.
+ */
+const FAILED_TX_BASE_CALLDATA =
+  '0x4916065815265253afd6756fd6267d42728a7e9826de81fab3245a183b3ea57beeaa8100000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000000661676f7269630000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004161676f72696331386434377263666a30673472376a37797679706d34346b71637a6c346a72667436757032333370397a7639357038757434396d71756667687a680000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002c000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000057478353533000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000100000000000000000000000000af88d065e77c8cc2239327c5edb3a432268e583100000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000044095ea7b300000000000000000000000019330d10d9cc8751218eaf51e8885d058642e08a00000000000000000000000000000000000000000000000000000000002059400000000000000000000000000000000000000000000000000000000000000000000000000000000019330d10d9cc8751218eaf51e8885d058642e08a000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000846fd3504e000000000000000000000000000000000000000000000000000000000020594000000000000000000000000000000000000000000000000000000000000000040000000000000000000000001cd706e62703fa99ce0b3f477fad138cb1954cd0000000000000000000000000af88d065e77c8cc2239327c5edb3a432268e583100000000000000000000000000000000000000000000000000000000';
+
+/** Return a copy of {@link FAILED_TX_BASE_CALLDATA} with the embedded txId replaced. */
+const makeFailedTxCalldata = (txId: string): string =>
+  FAILED_TX_BASE_CALLDATA.replace(asciiToHex('tx553'), asciiToHex(txId));
+
+/**
+ * Build the shared test context for a failed-tx lookback test.
+ *
+ * Providers return `getLogs: []` so the parallel log scanner finds nothing
+ * and the failed-tx scanner is the one that produces the result.
+ */
+const makeFailedTxTestContext = ({
+  chainId,
+  txId,
+  avgBlockTimeMs,
+  failedTxHash,
+  makeFetchMock,
+  providerOverrides,
+}: {
+  chainId: `${string}:${string}`;
+  txId: `tx${number}`;
+  avgBlockTimeMs: number;
+  failedTxHash: `0x${string}`;
+  /** Build a mock `fetch` placed on the test context.  `pending-tx-manager`
+   *  feeds it to `makeJsonRpcClient`, so responses must be JSON-RPC 2.0. */
+  makeFetchMock: (info: {
+    failedTxHash: `0x${string}`;
+  }) => typeof globalThis.fetch;
+  providerOverrides?: (info: {
+    calldata: string;
+    failedTxHash: `0x${string}`;
+  }) => Record<string, unknown>;
+}) => {
+  const logs: string[] = [];
+  const mockLog = (...args: unknown[]) => logs.push(args.join(' '));
+
+  const calldata = makeFailedTxCalldata(txId);
+  const destinationAddress: `${string}:${string}:${string}` = `${chainId}:${FAILED_TX_CONTRACT}`;
+
+  const gmpTx = createMockPendingTxData({
+    type: TxType.GMP,
+    destinationAddress,
+    sourceAddress: FAILED_TX_SOURCE,
+  });
+
+  const opts = createMockPendingTxOpts();
+  const mockProvider = opts.evmProviders[chainId] as any;
+
+  mockProvider.getBlockNumber = async () => FAILED_TX_LATEST_BLOCK;
+  mockProvider.getBlock = async (blockNumber: number) => {
+    const blocksAgo = FAILED_TX_LATEST_BLOCK - blockNumber;
+    const ts = FAILED_TX_TIME_MS - blocksAgo * avgBlockTimeMs;
+    return { timestamp: Math.floor(ts / 1000) };
+  };
+
+  const extra = providerOverrides?.({ calldata, failedTxHash }) ?? {};
+  const newEvmProviders = objectMap(
+    opts.evmProviders,
+    provider =>
+      ({
+        ...provider,
+        getLogs: async () => [],
+        // Emit the correct block number so waitForBlock resolves deterministically
+        on: (evt: any, listener: Function) => {
+          if (evt === 'block') {
+            queueMicrotask(() => listener(FAILED_TX_LATEST_BLOCK + 1));
+          }
+        },
+        getTransactionReceipt: async () => ({
+          status: 0,
+          blockNumber: FAILED_TX_LATEST_BLOCK,
+          transactionHash: failedTxHash,
+        }),
+        ...extra,
+      }) as unknown as WebSocketProvider,
+  );
+
+  const ctxWithFetch = harden({
+    ...opts,
+    evmProviders: newEvmProviders,
+    fetch: makeFetchMock({ failedTxHash }),
+  });
+
+  return {
+    logs,
+    mockLog,
+    txId,
+    gmpTx,
+    ctxWithFetch,
+    txTimestampMs: FAILED_TX_TIME_MS - 10_000,
+  };
+};
+
+test('find a failed tx in lookback mode via getBlockReceipts', async t => {
+  const { logs, mockLog, txId, gmpTx, ctxWithFetch, txTimestampMs } =
+    makeFailedTxTestContext({
+      chainId: 'eip155:42161',
+      txId: 'tx553' as `tx${number}`,
+      avgBlockTimeMs: 300,
+      failedTxHash: '0x123123213' as `0x${string}`,
+      providerOverrides: ({ calldata, failedTxHash: fth }) => ({
+        getTransaction: async (_: any) => ({ hash: fth, data: calldata }),
+      }),
+      makeFetchMock:
+        ({ failedTxHash: fth }) =>
+        async (_url: string, init?: RequestInit) => {
+          const batch = JSON.parse(init?.body as string);
+          return {
+            ok: true,
+            json: async () =>
+              batch.map((req: any) => ({
+                jsonrpc: '2.0',
+                id: req.id,
+                result: [
+                  {
+                    transactionHash: fth,
+                    status: '0x0',
+                    to: FAILED_TX_CONTRACT,
+                  },
+                ],
+              })),
+          } as Response;
+        },
+    });
+
+  await handlePendingTx(
+    { txId, ...gmpTx },
+    { ...ctxWithFetch, log: mockLog, txTimestampMs },
+  );
+
+  t.true(logs.some(l => l.includes(`handling ${TxType.GMP} tx`)));
+  t.true(logs.some(l => l.includes('Found matching failed transaction')));
+  t.true(
+    logs.some(l =>
+      l.includes(
+        `[${txId}] ❌ REVERTED (25 confirmations): txId=${txId} txHash=0x123123213 block=${FAILED_TX_LATEST_BLOCK} - transaction failed`,
+      ),
+    ),
+  );
+  t.true(logs.some(l => l.includes('GMP tx resolved')));
+});
+
+test('find a failed tx in lookback mode via trace_filter (Base)', async t => {
+  let getTransactionCalled = false;
+  const { logs, mockLog, txId, gmpTx, ctxWithFetch, txTimestampMs } =
+    makeFailedTxTestContext({
+      chainId: 'eip155:8453',
+      txId: 'tx554' as `tx${number}`,
+      avgBlockTimeMs: 2500,
+      failedTxHash: '0xdeadbeeftrace' as `0x${string}`,
+      providerOverrides: ({ calldata, failedTxHash: fth }) => ({
+        getTransaction: async () => {
+          getTransactionCalled = true;
+          return { hash: fth, data: calldata };
+        },
+        // trace_filter now uses provider.send() instead of fetch
+        send: async (method: string, _params: unknown[]) => {
+          if (method === 'trace_filter') {
+            return [
+              {
+                action: {
+                  from: '0x0000000000000000000000000000000000000000',
+                  to: FAILED_TX_CONTRACT.toLowerCase(),
+                  input: calldata,
+                  value: '0x0',
+                  gas: '0x186a0',
+                  callType: 'call',
+                },
+                blockNumber: FAILED_TX_LATEST_BLOCK,
+                transactionHash: fth,
+                error: 'Reverted',
+                type: 'call',
+                subtraces: 0,
+                traceAddress: [],
+              },
+            ];
+          }
+          return null;
+        },
+      }),
+      makeFetchMock: () => async () => ({}) as Response,
+    });
+
+  await handlePendingTx(
+    { txId, ...gmpTx },
+    { ...ctxWithFetch, log: mockLog, txTimestampMs },
+  );
+
+  // trace_filter provides calldata directly — getTransaction should NOT be called
+  t.false(
+    getTransactionCalled,
+    'getTransaction should not be called with trace_filter',
+  );
+
+  // Verify the failed tx was found and handled
+  t.true(logs.some(l => l.includes('Found matching failed transaction')));
+  t.true(logs.some(l => l.includes('REVERTED')));
+  t.true(logs.some(l => l.includes('GMP tx resolved')));
 });

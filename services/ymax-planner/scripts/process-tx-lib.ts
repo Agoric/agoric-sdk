@@ -181,6 +181,7 @@ export const processTx = async (
         cosmosRest,
         cosmosRpc: rpc,
         fetch,
+        setTimeout,
         kvStore,
         makeAbortController,
         log: (...args) => console.log('[TX]', ...args),

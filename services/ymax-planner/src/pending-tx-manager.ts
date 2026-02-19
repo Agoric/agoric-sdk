@@ -21,7 +21,7 @@ import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import type { CosmosRPCClient } from './cosmos-rpc.ts';
 import { resolvePendingTx } from './resolver.ts';
-import { waitForBlock } from './support.ts';
+import { makeJsonRpcClient, waitForBlock } from './evm-scanner.ts';
 import type {
   EvmProviders,
   MakeAbortController,
@@ -53,10 +53,12 @@ export type EvmContext = {
   evmProviders: EvmProviders;
   signingSmartWalletKit: SigningSmartWalletKit;
   fetch: typeof fetch;
+  setTimeout: typeof globalThis.setTimeout;
   kvStore: KVStore;
   makeAbortController: MakeAbortController;
   axelarApiUrl: string;
   ydsNotifier?: YdsNotifier;
+  rpcUrls: Record<CaipChainId, string>;
 };
 
 export type GmpTransfer = {
@@ -165,6 +167,7 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
         ...watchArgs,
         publishTimeMs: opts.publishTimeMs,
         chainId: caipId,
+        setTimeout: ctx.setTimeout,
         signal: abortController.signal,
         kvStore: ctx.kvStore,
         txId,
@@ -227,12 +230,16 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
       Fail`${logPrefix} No EVM provider for chain: ${caipId}`;
 
     const provider = ctx.evmProviders[caipId] as WebSocketProvider;
+    const rpcUrl =
+      ctx.rpcUrls[caipId] || Fail`${logPrefix} No RPC URL for chain: ${caipId}`;
+    const rpcClient = makeJsonRpcClient(ctx.fetch, rpcUrl);
 
     // Extract the address portion from sourceAddress (format: 'cosmos:agoric-3:agoric1...')
     const lcaAddress = parseAccountId(sourceAddress).accountAddress;
 
     const watchArgs = {
       provider,
+      rpcClient,
       contractAddress: accountAddress as `0x${string}`,
       txId,
       expectedSourceAddress: lcaAddress,
@@ -287,6 +294,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
         ...watchArgs,
         publishTimeMs: opts.publishTimeMs,
         chainId: caipId,
+        setTimeout: ctx.setTimeout,
         signal: abortController.signal,
         kvStore: ctx.kvStore,
         makeAbortController: ctx.makeAbortController,
@@ -361,6 +369,9 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
     const provider =
       ctx.evmProviders[caipId] ||
       Fail`${logPrefix} No EVM provider for chain: ${caipId}`;
+    const rpcUrl =
+      ctx.rpcUrls[caipId] || Fail`${logPrefix} No RPC URL for chain: ${caipId}`;
+    const rpcClient = makeJsonRpcClient(ctx.fetch, rpcUrl);
 
     const lcaAddress = parseAccountId(sourceAddress).accountAddress;
 
@@ -421,7 +432,10 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
         txId,
         publishTimeMs: opts.publishTimeMs,
         chainId: caipId,
+        setTimeout: ctx.setTimeout,
         signal: abortController.signal,
+        rpcClient,
+        makeAbortController: ctx.makeAbortController,
       });
 
       if (walletResult.settled) {
