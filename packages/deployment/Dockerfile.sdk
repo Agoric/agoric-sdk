@@ -88,12 +88,10 @@ RUN /usr/src/agoric-sdk/scripts/ensure-corepack-yarn.sh /usr/src/agoric-sdk
 RUN --mount=type=cache,target=$YARN_CACHE_FOLDER bash -c \
   # FIXME restore --immutable
   "for i in {1..3}; do yarn install --network-timeout 1000000 && exit 0 || (echo retrying; sleep 15;) done; exit 1"
-# enableScripts is disabled in .yarnrc.yml, so install prebuilt xsnap binaries explicitly.
-RUN yarn workspace @agoric/xsnap run install:prebuilt
 
-# build everything except xsnap. 'cosmos' was built above but
+# 'cosmos' was built above but
 # it's safe to include here because its package "build" script is "exit 0".
-RUN yarn lerna run --ignore "@agoric/xsnap" build
+RUN yarn lerna run build
 
 ###############################
 # The install container.
