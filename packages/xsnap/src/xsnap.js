@@ -45,6 +45,46 @@ const { freeze } = Object;
 const noop = freeze(() => {});
 
 /**
+ * Resolve the xsnap worker binary path.
+ *
+ * `XSNAP_WORKER` may override both modes.
+ * `XSNAP_WORKER_DEBUG` overrides debug mode only.
+ *
+ * @param {{
+ *   os: string,
+ *   debug: boolean,
+ *   env: Record<string, string | undefined>,
+ * }} options
+ */
+export function resolveXsnapWorkerPath({ os, debug, env }) {
+  const platform = {
+    Linux: 'lin',
+    Darwin: 'mac',
+    // Windows_NT: 'win', // One can dream.
+  }[os];
+
+  if (platform === undefined) {
+    throw Error(`xsnap does not support platform ${os}`);
+  }
+
+  if (debug && env.XSNAP_WORKER_DEBUG) {
+    return env.XSNAP_WORKER_DEBUG;
+  }
+  if (env.XSNAP_WORKER) {
+    return env.XSNAP_WORKER;
+  }
+
+  return fileURLToPath(
+    new URL(
+      `../xsnap-native/xsnap/build/bin/${platform}/${
+        debug ? 'debug' : 'release'
+      }/xsnap-worker`,
+      import.meta.url,
+    ),
+  );
+}
+
+/**
  * @param {Uint8Array} arg
  * @returns {Uint8Array}
  */
@@ -169,24 +209,7 @@ export async function xsnap(options) {
     env = process.env,
   } = options;
 
-  const platform = {
-    Linux: 'lin',
-    Darwin: 'mac',
-    // Windows_NT: 'win', // One can dream.
-  }[os];
-
-  if (platform === undefined) {
-    throw Error(`xsnap does not support platform ${os}`);
-  }
-
-  let bin = fileURLToPath(
-    new URL(
-      `../xsnap-native/xsnap/build/bin/${platform}/${
-        debug ? 'debug' : 'release'
-      }/xsnap-worker`,
-      import.meta.url,
-    ),
-  );
+  let bin = resolveXsnapWorkerPath({ os, debug, env });
 
   /** @type {PromiseKit<void>} */
   const vatExit = makePromiseKit();

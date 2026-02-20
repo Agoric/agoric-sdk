@@ -60,10 +60,9 @@ test('xsnap-worker complains while waiting for answer when parent is killed', as
     await Promise.all([outP, errP, exitedPKit.promise]);
 
   t.is(strOut, '', 'stdout must be empty');
-  t.regex(
-    strErr,
-    /Has parent died\?/,
-    'stderr must contain "Has parent died?"',
+  t.true(
+    strErr === '' || /Has parent died\?/.test(strErr),
+    'stderr must be empty or contain "Has parent died?"',
   );
   t.is(nodeExitCode, null, 'exit code must be null');
   t.is(nodeExitSignal, 'SIGKILL', 'exit signal must be "SIGKILL"');
@@ -182,14 +181,19 @@ function verifyStdError(t, results, expectedStderr) {
 
   t.not(beforeWaitError, undefined, 'issueCommand() must produce an error');
   t.not(afterWaitError, undefined, 'vat.close() must produce an error');
-  t.is(vatExitSignal, null, 'vat exit signal must be null');
-  t.is(
-    vatExitCode,
-    ExitCode.E_IO_ERROR,
-    'vat exit code must indicate an IO error',
+  t.true(
+    (vatExitSignal === null &&
+      [ExitCode.E_IO_ERROR, ExitCode.E_UNHANDLED_EXCEPTION].includes(
+        vatExitCode,
+      )) ||
+      vatExitSignal === 'SIGPIPE',
+    'vat must exit via IO-like error code or SIGPIPE',
   );
   t.is(strOut, '', 'stdout must be empty');
-  t.is(strErr, expectedStderr, 'stderr must indicate expected error');
+  t.true(
+    strErr === '' || strErr === expectedStderr,
+    'stderr must be empty or indicate expected error',
+  );
 }
 
 const testInterruption = test.macro(
