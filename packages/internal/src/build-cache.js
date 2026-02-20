@@ -162,6 +162,8 @@ export const makeDirectoryLock = powers => {
 };
 harden(makeDirectoryLock);
 
+let atomicWriteSequence = 0;
+
 /**
  * @param {{
  *   fs: Pick<import('node:fs/promises'), 'rename' | 'writeFile'>;
@@ -174,7 +176,8 @@ harden(makeDirectoryLock);
  *   or the atomic rename fails.
  */
 export const writeFileAtomic = async ({ fs, filePath, data, now, pid }) => {
-  const tempPath = `${filePath}.${pid}.${now()}.tmp`;
+  atomicWriteSequence += 1;
+  const tempPath = `${filePath}.${pid}.${now()}.${atomicWriteSequence}.tmp`;
   await fs.writeFile(tempPath, data, { flag: 'wx' });
   await fs.rename(tempPath, filePath);
 };
