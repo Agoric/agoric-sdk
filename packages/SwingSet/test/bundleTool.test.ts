@@ -18,6 +18,15 @@ const watchIgnoredTmpRoot = path.join(
 const testPowers = makeAmbientBundleToolPowers({
   eventSink: { onBundleToolEvent: () => {} },
 });
+const makeEventSink = () => {
+  const events: Array<{ type: string; reason?: string }> = [];
+  return {
+    events,
+    powers: makeAmbientBundleToolPowers({
+      eventSink: { onBundleToolEvent: event => events.push(event) },
+    }),
+  };
+};
 
 const setupFixture = async (t: ExecutionContext) => {
   await mkdir(watchIgnoredTmpRoot, { recursive: true });
@@ -310,4 +319,24 @@ test.serial('loadRegistry() loads bundles and validates entries', async t => {
       message: /must include sourceSpec or packagePath/i,
     },
   );
+});
+
+test.serial('event sink captures lock and registry events', async t => {
+  const { bundlesDir, sourcePath } = await setupFixture(t);
+  const { events, powers } = makeEventSink();
+  const cache = await makeNodeBundleCache(
+    bundlesDir,
+    {},
+    s => import(s),
+    powers,
+  );
+
+  await cache.load(sourcePath, 'toy-events');
+  await cache.loadRegistry({
+    demo: { sourceSpec: sourcePath, bundleName: 'toy-reg-events' },
+  });
+
+  t.true(events.some(event => event.type === 'lock-acquired'));
+  t.true(events.some(event => event.type === 'lock-released'));
+  t.true(events.some(event => event.type === 'registry-loaded'));
 });
