@@ -1,0 +1,81 @@
+name: Daily Test Coverage Improver - Coverage Steps
+description: >
+  Builds the Agoric SDK, runs tests with coverage collection, generates an HTML
+  coverage report, and uploads it as an artifact called "coverage".
+  Each step appends its output to coverage-steps.log in the repo root.
+  Coverage report is generated at coverage/html/ using c8 + AVA.
+
+runs:
+  using: composite
+  steps:
+    # Step 1: Set up Node.js (Node 22 matches CI node-new)
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+
+    # Step 2: Enable corepack so the pinned Yarn version from package.json is used
+    - name: Enable corepack
+      shell: bash
+      run: |
+        echo "=== Enable corepack ===" | tee -a coverage-steps.log
+        corepack enable 2>&1 | tee -a coverage-steps.log
+        echo "Yarn version: $(yarn --version)" | tee -a coverage-steps.log
+
+    # Step 3: Install dependencies using the pinned Yarn version
+    - name: Install dependencies
+      shell: bash
+      run: |
+        echo "=== Install dependencies ===" | tee -a coverage-steps.log
+        yarn install --immutable 2>&1 | tee -a coverage-steps.log
+
+    # Step 4: Build all packages (generates kernel bundles and compiled TypeScript)
+    - name: Build packages
+      shell: bash
+      run: |
+        echo "=== Build packages ===" | tee -a coverage-steps.log
+        yarn build 2>&1 | tee -a coverage-steps.log
+
+    # Step 5: Run tests for all packages with V8 coverage collection.
+    #   - NODE_V8_COVERAGE points to a temp dir where raw coverage JSON is written
+    #   - C8_OPTIONS=--clean=false lets coverage accumulate across all packages
+    #   - NODE_OPTIONS increases heap for memory-intensive packages
+    #   - --no-bail ensures all packages run even if some fail
+    - name: Run tests with coverage
+      shell: bash
+      run: |
+        echo "=== Run tests with coverage ===" | tee -a coverage-steps.log
+        export NODE_V8_COVERAGE="$PWD/coverage/tmp"
+        export C8_OPTIONS="--clean=false"
+        export NODE_OPTIONS="--max-old-space-size=8192"
+        rm -rf "$NODE_V8_COVERAGE"
+        mkdir -p "$NODE_V8_COVERAGE"
+        # lerna run is used (vs yarn workspaces foreach) because it handles missing scripts gracefully
+        yarn lerna run test:c8 --no-bail 2>&1 | tee -a coverage-steps.log
+        echo "Test run complete (exit $?)" | tee -a coverage-steps.log
+
+    # Step 6: Generate a combined HTML coverage report over all packages' src and tools directories.
+    #   Coverage report is written to coverage/html/
+    - name: Generate coverage report
+      shell: bash
+      run: |
+        echo "=== Generate coverage report ===" | tee -a coverage-steps.log
+        export NODE_V8_COVERAGE="$PWD/coverage/tmp"
+        yarn c8 report \
+          --all \
+          --include 'packages/*/{src,tools}' \
+          --reporter=html-spa \
+          --reporter=text-summary \
+          --reports-dir=coverage/html \
+          2>&1 | tee -a coverage-steps.log
+        echo "Coverage report generated at coverage/html/" | tee -a coverage-steps.log
+
+    # Step 7: Upload coverage report and log as a GitHub Actions artifact called "coverage"
+    - name: Upload coverage artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage
+        path: |
+          coverage/html/
+          coverage-steps.log
+        if-no-files-found: warn
