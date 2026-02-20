@@ -8,10 +8,10 @@ import { Fail } from '@endo/errors';
 
 /**
  * @param {string} cacheDir
- * @param {{ now: typeof Date.now, fs: promises, pathResolve: typeof resolve }} param1
+ * @param {{ now: typeof Date.now, fs: promises, pathResolve: typeof resolve, pid?: number }} param1
  */
 export const makeCacheAndGetBundleSpec =
-  (cacheDir, { now, fs, pathResolve }) =>
+  (cacheDir, { now, fs, pathResolve, pid = process.pid }) =>
   /**
    * @param {Promise<BundleSourceResult<'endoZipBase64'>>} bundleP
    */
@@ -30,8 +30,7 @@ export const makeCacheAndGetBundleSpec =
       if (e.code !== 'ENOENT') {
         throw e;
       }
-      // FIXME: We could take a hard dependency on `tmp` here, but is it worth it?
-      const tmpFile = `${cacheFile}.${now()}`;
+      const tmpFile = `${cacheFile}.${pid}.${now()}.${Math.random().toString(16).slice(2)}.tmp`;
       await fs.writeFile(tmpFile, JSON.stringify(bundle, null, 2), {
         flag: 'wx',
       });
