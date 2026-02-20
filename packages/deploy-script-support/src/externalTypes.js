@@ -64,10 +64,12 @@ export {};
  *  bundleSource: BundleSource,
  *  cacheDir: string,
  *  lookup: (...path: string[]) => unknown,
+ *  log?: typeof console.log,
  *  now: () => number,
  *  pathResolve: (...path: string[]) => string,
  *  publishBundle: PublishBundleRef,
  *  scriptArgs?: string[],
+ *  writeFile?: import('node:fs/promises').writeFile,
  * }} DeployScriptEndownments
  */
 
