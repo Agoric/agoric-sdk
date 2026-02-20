@@ -1,9 +1,12 @@
 /* eslint-env node */
+// @ts-check
+/** @import { TelescopeInput } from '@hyperweb/telescope' */
 
 /**
  * Shared Telescope options for Agoric codegen packages.
  * Consumers can override nested fields after calling this factory.
  */
+/** @type {TelescopeInput['options']} */
 const baseTelescopeOptions = {
   useInterchainJs: true,
   // for ESM compatibility

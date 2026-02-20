@@ -7,7 +7,9 @@ const process = require('node:process');
 const fsp = require('node:fs/promises');
 const telescope = require('@hyperweb/telescope').default;
 const rimraf = require('rimraf').rimrafSync;
-const { getBaseTelescopeOptions } = require('../../cosmic-proto/tools/telescope-options.cjs');
+const {
+  getBaseTelescopeOptions,
+} = require('../../cosmic-proto/tools/telescope-options.cjs');
 const {
   applyTelescopeFixes,
   detectGnuSed,
@@ -52,7 +54,9 @@ const dedupeCodegenSupportModules = async directory => {
         continue;
       }
 
-      const relativePath = path.relative(directory, fullPath).replaceAll('\\', '/');
+      const relativePath = path
+        .relative(directory, fullPath)
+        .replaceAll('\\', '/');
       if (
         relativePath === 'index.ts' ||
         entry.name === 'bundle.ts' ||
@@ -77,8 +81,7 @@ export * from '@agoric/cosmic-proto/codegen/${modulePath}';
 };
 
 const options = getBaseTelescopeOptions();
-options.interfaces.enabled = false;
-options.rpcClients.enabled = true;
+options.rpcClients = { ...options.rpcClients, enabled: true };
 options.stargateClients = { enabled: true };
 
 // XXX copied from cosmic-proto's codegen

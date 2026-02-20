@@ -186,7 +186,7 @@ export interface QueryBuilderOptions<TReq, TRes> {`,
       );
     }
     next = next.replace(
-      /    \/\/register all related encoders and converters\n    client\.addEncoders\?\.\(toEncoders\(opts\.msg\)\);\n    client\.addConverters\?\.\(toConverters\(opts\.msg\)\);\n/,
+      /\s{4}\/\/\s*register all related encoders and converters\n\s{4}client\.addEncoders\?\.\(toEncoders\(opts\.msg\)\);\n\s{4}client\.addConverters\?\.\(toConverters\(opts\.msg\)\);\n/,
       `    // register all related encoders and converters
     const { toConverters, toEncoders } = await getInterchainTxHelpers();
     client.addEncoders?.(toEncoders(opts.msg));
@@ -212,7 +212,6 @@ async function fixRpcTypeImports(outPath) {
     for (const entry of entries) {
       const entryPath = path.join(dirPath, entry.name);
       if (entry.isDirectory()) {
-        // eslint-disable-next-line no-await-in-loop
         await walk(entryPath);
         continue;
       }
@@ -223,7 +222,6 @@ async function fixRpcTypeImports(outPath) {
       ) {
         continue;
       }
-      // eslint-disable-next-line no-await-in-loop
       const didChange = await rewriteFile(entryPath, source => {
         let next = source;
         if (entry.name === 'query.rpc.Query.ts') {
@@ -291,11 +289,12 @@ async function applyTelescopeFixes({
 
   /** @type {string[]} */
   const changed = [];
-  for (const target of targets) {
-    // eslint-disable-next-line no-await-in-loop
-    const didChange = await target.fix(target.filePath);
+  const targetResults = await Promise.all(
+    targets.map(target => target.fix(target.filePath)),
+  );
+  for (const [index, didChange] of targetResults.entries()) {
     if (didChange) {
-      changed.push(target.filePath);
+      changed.push(targets[index].filePath);
     }
   }
 
