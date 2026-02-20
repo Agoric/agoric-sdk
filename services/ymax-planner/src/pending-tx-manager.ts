@@ -255,7 +255,6 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
         timeoutMs: opts.timeoutMs,
         signal: opts.signal,
         kvStore: ctx.kvStore,
-        makeAbortController: ctx.makeAbortController,
       });
     } else {
       // Lookback mode with concurrent live watching
@@ -270,7 +269,6 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
         timeoutMs: opts.timeoutMs,
         signal: abortController.signal,
         kvStore: ctx.kvStore,
-        makeAbortController: ctx.makeAbortController,
       });
 
       // Attach handler to abort lookback if live mode completes first with
@@ -297,7 +295,6 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
         setTimeout: ctx.setTimeout,
         signal: abortController.signal,
         kvStore: ctx.kvStore,
-        makeAbortController: ctx.makeAbortController,
       });
 
       // Determine which result to use based on what completed successfully
@@ -435,7 +432,6 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
         setTimeout: ctx.setTimeout,
         signal: abortController.signal,
         rpcClient,
-        makeAbortController: ctx.makeAbortController,
       });
 
       if (walletResult.settled) {
