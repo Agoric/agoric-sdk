@@ -74,11 +74,53 @@ func setupKeeperTestEnv(t *testing.T) *keeperTestEnv {
 func TestChunkedArtifactIdMonotonicAfterRemoval(t *testing.T) {
 	env := setupKeeperTestEnv(t)
 
-	first := env.keeper.AddPendingBundleInstall(env.ctx, &swingsettypes.MsgInstallBundle{Submitter: submitAddr})
-	env.keeper.SetPendingBundleInstall(env.ctx, first, nil)
-	second := env.keeper.AddPendingBundleInstall(env.ctx, &swingsettypes.MsgInstallBundle{Submitter: submitAddr})
+	first, err := env.keeper.AddPendingBundleInstall(env.ctx, &swingsettypes.MsgInstallBundle{Submitter: submitAddr})
+	if err != nil {
+		t.Fatalf("AddPendingBundleInstall failed: %v", err)
+	}
+	if first == 0 {
+		t.Fatalf("allocated chunked artifact id must not be 0")
+	}
+	if err := env.keeper.SetPendingBundleInstall(env.ctx, first, nil); err != nil {
+		t.Fatalf("SetPendingBundleInstall failed: %v", err)
+	}
+	second, err := env.keeper.AddPendingBundleInstall(env.ctx, &swingsettypes.MsgInstallBundle{Submitter: submitAddr})
+	if err != nil {
+		t.Fatalf("AddPendingBundleInstall failed: %v", err)
+	}
 
 	if second != first+1 {
 		t.Fatalf("expected chunked artifact id to be monotonic after removal: got %d, want %d", second, first+1)
+	}
+}
+
+func TestPruneExpiredBundleInstallsClearsLastWhenEmpty(t *testing.T) {
+	env := setupKeeperTestEnv(t)
+
+	params := env.keeper.GetParams(env.ctx)
+	params.InstallationDeadlineSeconds = 0
+	params.InstallationDeadlineBlocks = 0
+	env.keeper.SetParams(env.ctx, params)
+
+	chunkedArtifactId, err := env.keeper.AddPendingBundleInstall(env.ctx, &swingsettypes.MsgInstallBundle{Submitter: submitAddr})
+	if err != nil {
+		t.Fatalf("AddPendingBundleInstall failed: %v", err)
+	}
+
+	state := env.keeper.GetState(env.ctx)
+	state.FirstChunkedArtifactId = chunkedArtifactId
+	state.LastChunkedArtifactId = chunkedArtifactId
+	env.keeper.SetState(env.ctx, state)
+
+	if err := env.keeper.PruneExpiredBundleInstalls(env.ctx); err != nil {
+		t.Fatalf("PruneExpiredBundleInstalls failed: %v", err)
+	}
+
+	state = env.keeper.GetState(env.ctx)
+	if state.FirstChunkedArtifactId != 0 {
+		t.Fatalf("expected first chunked artifact id to be cleared, got %d", state.FirstChunkedArtifactId)
+	}
+	if state.LastChunkedArtifactId != 0 {
+		t.Fatalf("expected last chunked artifact id to be cleared, got %d", state.LastChunkedArtifactId)
 	}
 }

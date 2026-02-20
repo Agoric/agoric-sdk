@@ -531,7 +531,7 @@ func (k Keeper) GetPendingBundleInstall(ctx sdk.Context, chunkedArtifactId uint6
 	return msg
 }
 
-func (k Keeper) AddPendingBundleInstall(ctx sdk.Context, msg *types.MsgInstallBundle) uint64 {
+func (k Keeper) AddPendingBundleInstall(ctx sdk.Context, msg *types.MsgInstallBundle) (uint64, error) {
 	state := k.GetState(ctx)
 	if state.NextChunkedArtifactId < state.LastChunkedArtifactId {
 		// Handle legacy state that predates the monotonic counter.
@@ -541,7 +541,9 @@ func (k Keeper) AddPendingBundleInstall(ctx sdk.Context, msg *types.MsgInstallBu
 	chunkedArtifactId := state.NextChunkedArtifactId
 	state.LastChunkedArtifactId = chunkedArtifactId
 	k.SetState(ctx, state)
-	k.SetPendingBundleInstall(ctx, chunkedArtifactId, msg)
+	if err := k.SetPendingBundleInstall(ctx, chunkedArtifactId, msg); err != nil {
+		return 0, err
+	}
 
 	// Create and store the pending install node. The list is non-circular;
 	// PrevId/NextId use 0 to indicate the start/end, and State tracks endpoints
@@ -558,12 +560,12 @@ func (k Keeper) AddPendingBundleInstall(ctx sdk.Context, msg *types.MsgInstallBu
 	bz := k.cdc.MustMarshal(node)
 	startStore.Set(key, bz)
 
-	return chunkedArtifactId
+	return chunkedArtifactId, nil
 }
 
 // PruneExpiredBundleInstalls removes pending bundle installs that have passed
 // their deadline, as set by the keeper parameters.
-func (k Keeper) PruneExpiredBundleInstalls(ctx sdk.Context) {
+func (k Keeper) PruneExpiredBundleInstalls(ctx sdk.Context) error {
 	params := k.GetParams(ctx)
 	currentSeconds := ctx.BlockTime().Unix()
 	currentBlocks := ctx.BlockHeight()
@@ -590,13 +592,19 @@ func (k Keeper) PruneExpiredBundleInstalls(ctx sdk.Context) {
 		}
 
 		// This pending bundle install is dead.  Remove it.
-		k.SetPendingBundleInstall(ctx, chunkedArtifactId, nil)
+		if err := k.SetPendingBundleInstall(ctx, chunkedArtifactId, nil); err != nil {
+			return err
+		}
 
 		// Advance to the next node.
 		state.FirstChunkedArtifactId = node.NextId
+		if node.NextId == 0 {
+			state.LastChunkedArtifactId = 0
+		}
 	}
 
 	k.SetState(ctx, state)
+	return nil
 }
 
 func (k Keeper) makeListTools(ctx sdk.Context) *types.ListTools {
@@ -606,7 +614,7 @@ func (k Keeper) makeListTools(ctx sdk.Context) *types.ListTools {
 	return types.NewListTools(ctx, listStore, k.cdc)
 }
 
-func (k Keeper) SetPendingBundleInstall(ctx sdk.Context, chunkedArtifactId uint64, newMsg *types.MsgInstallBundle) {
+func (k Keeper) SetPendingBundleInstall(ctx sdk.Context, chunkedArtifactId uint64, newMsg *types.MsgInstallBundle) error {
 	kvstore := k.storeService.OpenKVStore(ctx)
 	store := runtime.KVStoreAdapter(kvstore)
 	pendingStore := prefix.NewStore(store, []byte(pendingBundleInstallKeyPrefix))
@@ -615,7 +623,7 @@ func (k Keeper) SetPendingBundleInstall(ctx sdk.Context, chunkedArtifactId uint6
 	if newMsg != nil {
 		bz := k.cdc.MustMarshal(newMsg)
 		pendingStore.Set(key, bz)
-		return
+		return nil
 	}
 
 	var msg types.MsgInstallBundle
@@ -629,19 +637,25 @@ func (k Keeper) SetPendingBundleInstall(ctx sdk.Context, chunkedArtifactId uint6
 	pendingStore.Delete(key)
 
 	// Remove auxilliary data structure entries.
-	k.RemoveChunkedArtifactNode(ctx, chunkedArtifactId)
+	if err := k.RemoveChunkedArtifactNode(ctx, chunkedArtifactId); err != nil {
+		return err
+	}
+	return nil
 }
 
 // RemoveChunkedArtifactNode removes this pending install from the keeper's
 // ordered linked list structures, and deletes it from the store.
-func (k Keeper) RemoveChunkedArtifactNode(ctx sdk.Context, chunkedArtifactId uint64) {
+func (k Keeper) RemoveChunkedArtifactNode(ctx sdk.Context, chunkedArtifactId uint64) error {
 	lt := k.makeListTools(ctx)
 
 	victimKey := lt.Key(chunkedArtifactId)
 	victimNode := lt.Fetch(victimKey)
+	if victimNode == nil {
+		return fmt.Errorf("missing chunked artifact node id=%d during unlink", chunkedArtifactId)
+	}
 
 	// Remove the victim from the linked list, keeping the structure intact.
-	lt.Unlink(victimNode, func(firstp, lastp *uint64) {
+	if err := lt.Unlink(victimNode, func(firstp, lastp *uint64) {
 		state := k.GetState(ctx)
 		if firstp != nil {
 			state.FirstChunkedArtifactId = *firstp
@@ -650,10 +664,13 @@ func (k Keeper) RemoveChunkedArtifactNode(ctx sdk.Context, chunkedArtifactId uin
 			state.LastChunkedArtifactId = *lastp
 		}
 		k.SetState(ctx, state)
-	})
+	}); err != nil {
+		return err
+	}
 
 	// Finally, delete the victim node's storage.
 	lt.Delete(victimKey)
+	return nil
 }
 
 func (k Keeper) GetChunkedArtifactNode(ctx sdk.Context, chunkedArtifactId uint64) *types.ChunkedArtifactNode {

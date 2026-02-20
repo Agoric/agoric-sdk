@@ -240,7 +240,7 @@ export const installBundle = async (
   const compressedSize = compressedBundleBytes.byteLength;
   const uncompressedSize = uncompressedBundleBytes.byteLength;
 
-  const shouldChunk = bundleJson.length > chunkSizeLimit;
+  const shouldChunk = compressedBundleBytes.byteLength > chunkSizeLimit;
   onProgress?.({
     type: 'preflight',
     bundleHash: endoZipBase64Sha512,

@@ -203,26 +203,31 @@ func validateVatCleanupBudget(i interface{}) error {
 
 func validateBundleUncompressedSizeLimitBytes(i interface{}) error {
 	if value, ok := i.(int64); !ok {
-		return fmt.Errorf("bundle_uncompressed_size_limit_bytes must be int64, got %#v", value)
-	} else if value < 0 {
-		return fmt.Errorf("bundle_uncompressed_size_limit_bytes must be positive, got %d", value)
+		return fmt.Errorf("bundle_uncompressed_size_limit_bytes must be int64, got %#v", i)
+	} else if value <= 0 {
+		return fmt.Errorf("bundle_uncompressed_size_limit_bytes must be positive (>0), got %d", value)
 	}
 	return nil
 }
 
 func validateChunkSizeLimitBytes(i interface{}) error {
 	if value, ok := i.(int64); !ok {
-		return fmt.Errorf("chunk_size_limit_bytes must be int64, got %#v", value)
-	} else if value < 0 {
-		return fmt.Errorf("chunk_size_limit_bytes must be positive, got %d", value)
+		return fmt.Errorf("chunk_size_limit_bytes must be int64, got %#v", i)
+	} else if value <= 0 {
+		return fmt.Errorf("chunk_size_limit_bytes must be positive (>0), got %d", value)
 	}
 	return nil
 }
 
 // UpdateParams appends any missing params, configuring them to their defaults,
-// then returning the updated params or an error. Existing params are not
+// then returning the updated params or an error.
+// Existing params are not
 // modified, regardless of their value, and they are not removed if they no
 // longer appear in the defaults.
+// UpdateParams appends missing entries and fills defaults. Note that
+// InstallationDeadlineBlocks and InstallationDeadlineSeconds treat 0 as
+// "unset" and will be replaced with DefaultInstallationDeadlineBlocks and
+// DefaultInstallationDeadlineSeconds, respectively.
 func UpdateParams(params Params) (Params, error) {
 	newBpu, err := appendMissingDefaults(params.BeansPerUnit, DefaultBeansPerUnit())
 	if err != nil {
@@ -246,6 +251,7 @@ func UpdateParams(params Params) (Params, error) {
 	params.QueueMax = newQm
 	params.VatCleanupBudget = newVcb
 
+	// 0 is treated as unset for these fields.
 	if params.InstallationDeadlineBlocks == 0 {
 		params.InstallationDeadlineBlocks = DefaultInstallationDeadlineBlocks
 	}

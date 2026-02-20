@@ -3,9 +3,11 @@ package keeper_test
 import (
 	"bytes"
 	"compress/gzip"
+	"crypto/sha512"
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/mock/gomock"
 
@@ -295,6 +297,72 @@ func TestInstallBundleAtSizeLimit(t *testing.T) {
 	}
 }
 
+func TestInstallBundleChunkCountAtLimit(t *testing.T) {
+	env := setupMsgServerTest(t, false)
+	defer env.ctrl.Finish()
+
+	params := types.DefaultParams()
+	chunkIndexLimit := types.MaxArtifactChunksCount(
+		params.BundleUncompressedSizeLimitBytes,
+		params.ChunkSizeLimitBytes,
+	)
+	chunkedArtifact := makeChunkedArtifact(t, chunkIndexLimit)
+
+	msg := &types.MsgInstallBundle{
+		Submitter:       submitAddr,
+		ChunkedArtifact: chunkedArtifact,
+	}
+
+	_, err := env.msgServer.InstallBundle(env.ctx, msg)
+	if err != nil {
+		t.Fatalf("bundle with max chunk count should be accepted, got %v", err)
+	}
+}
+
+func TestInstallBundleChunkCountOverLimit(t *testing.T) {
+	env := setupMsgServerTest(t, false)
+	defer env.ctrl.Finish()
+
+	params := types.DefaultParams()
+	chunkIndexLimit := types.MaxArtifactChunksCount(
+		params.BundleUncompressedSizeLimitBytes,
+		params.ChunkSizeLimitBytes,
+	)
+	chunkedArtifact := makeChunkedArtifact(t, chunkIndexLimit+1)
+
+	msg := &types.MsgInstallBundle{
+		Submitter:       submitAddr,
+		ChunkedArtifact: chunkedArtifact,
+	}
+
+	_, err := env.msgServer.InstallBundle(env.ctx, msg)
+	if err == nil {
+		t.Fatal("expected error for bundle with too many chunks")
+	}
+	if !strings.Contains(err.Error(), "Number of bundle chunks must be less than") {
+		t.Fatalf("unexpected error for chunk count over limit: %v", err)
+	}
+}
+
+func TestSendChunkUsesWrappedContext(t *testing.T) {
+	env := setupMsgServerTest(t, false)
+	defer env.ctrl.Finish()
+
+	chunkData := make([]byte, int(types.DefaultChunkSizeLimitBytes)+1)
+	msg := &types.MsgSendChunk{
+		ChunkedArtifactId: 1,
+		Submitter:         submitAddr,
+		ChunkIndex:        0,
+		ChunkData:         chunkData,
+	}
+
+	require.NotPanics(t, func() {
+		_, err := env.msgServer.SendChunk(env.ctx, msg)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "Chunk size must be at most")
+	})
+}
+
 func TestInstallBundleOverSizeLimit(t *testing.T) {
 	env := setupMsgServerTest(t, false)
 	defer env.ctrl.Finish()
@@ -317,5 +385,27 @@ func TestInstallBundleOverSizeLimit(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "Uncompressed size out of range") {
 		t.Errorf("Expected 'Uncompressed size out of range' error, got: %v", err)
+	}
+}
+
+func makeChunkedArtifact(t *testing.T, chunkCount int64) *types.ChunkedArtifact {
+	t.Helper()
+	if chunkCount <= 0 {
+		t.Fatalf("chunkCount must be positive, got %d", chunkCount)
+	}
+
+	hash := strings.Repeat("0", sha512.Size*2)
+	chunks := make([]*types.ChunkInfo, int(chunkCount))
+	for i := range chunks {
+		chunks[i] = &types.ChunkInfo{
+			SizeBytes: 1,
+			Sha512:    hash,
+		}
+	}
+
+	return &types.ChunkedArtifact{
+		Sha512:    hash,
+		SizeBytes: uint64(chunkCount),
+		Chunks:    chunks,
 	}
 }

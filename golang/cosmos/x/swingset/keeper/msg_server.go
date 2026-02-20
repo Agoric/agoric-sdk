@@ -232,7 +232,7 @@ func (keeper msgServer) validateChunkedArtifact(goCtx context.Context, msg *type
 		return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Bundle size out of range")
 	}
 	chunkIndexLimit := types.MaxArtifactChunksCount(params.BundleUncompressedSizeLimitBytes, params.ChunkSizeLimitBytes)
-	if int64(len(msg.Chunks)) >= chunkIndexLimit {
+	if int64(len(msg.Chunks)) > chunkIndexLimit {
 		return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Number of bundle chunks must be less than %d", chunkIndexLimit)
 	}
 	for i, chunk := range msg.Chunks {
@@ -286,7 +286,10 @@ func (keeper msgServer) InstallBundle(goCtx context.Context, msg *types.MsgInsta
 	ca.Chunks = chunks
 	msg.ChunkedArtifact = &ca
 
-	chunkedArtifactId := keeper.AddPendingBundleInstall(ctx, msg)
+	chunkedArtifactId, err := keeper.AddPendingBundleInstall(ctx, msg)
+	if err != nil {
+		return nil, err
+	}
 	return &types.MsgInstallBundleResponse{ChunkedArtifactId: chunkedArtifactId}, nil
 }
 
@@ -342,7 +345,7 @@ func (k msgServer) CoreEval(goCtx context.Context, msg *types.MsgCoreEval) (*typ
 func (keeper msgServer) SendChunk(goCtx context.Context, msg *types.MsgSendChunk) (*types.MsgSendChunkResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	if err := keeper.validateMsgSendChunk(ctx, msg); err != nil {
+	if err := keeper.validateMsgSendChunk(goCtx, msg); err != nil {
 		return nil, err
 	}
 
@@ -353,7 +356,7 @@ func (keeper msgServer) SendChunk(goCtx context.Context, msg *types.MsgSendChunk
 
 	ca := inst.ChunkedArtifact
 
-	if msg.ChunkIndex < 0 || msg.ChunkIndex >= uint64(len(ca.Chunks)) {
+	if msg.ChunkIndex >= uint64(len(ca.Chunks)) {
 		return nil, fmt.Errorf("chunk index %d out of range for chunked artifact identifier %d", msg.ChunkIndex, msg.ChunkedArtifactId)
 	}
 
@@ -390,7 +393,9 @@ func (keeper msgServer) SendChunk(goCtx context.Context, msg *types.MsgSendChunk
 
 	// Mark the chunk as received, and store the pending installation.
 	ci.State = types.ChunkState_CHUNK_STATE_RECEIVED
-	keeper.SetPendingBundleInstall(ctx, msg.ChunkedArtifactId, inst)
+	if err := keeper.SetPendingBundleInstall(ctx, msg.ChunkedArtifactId, inst); err != nil {
+		return nil, err
+	}
 
 	err = keeper.MaybeFinalizeBundle(ctx, msg.ChunkedArtifactId)
 	if err != nil {
@@ -444,7 +449,9 @@ func (keeper msgServer) MaybeFinalizeBundle(ctx sdk.Context, chunkedArtifactId u
 
 	// Clean up the pending installation state.
 	msg.ChunkedArtifact = nil
-	keeper.SetPendingBundleInstall(ctx, chunkedArtifactId, nil)
+	if err := keeper.SetPendingBundleInstall(ctx, chunkedArtifactId, nil); err != nil {
+		return err
+	}
 
 	// Install the bundle now that all the chunks are processed.
 	_, err = keeper.InstallFinishedBundle(ctx, msg)

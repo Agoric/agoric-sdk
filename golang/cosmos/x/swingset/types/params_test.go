@@ -158,15 +158,35 @@ func TestUpdateParamsFromExisting(t *testing.T) {
 	}
 }
 
-func TestValidateParams(t *testing.T) {
-	params := Params{
-		BeansPerUnit:       DefaultBeansPerUnit(),
-		BootstrapVatConfig: "foo",
-		FeeUnitPrice:       sdk.NewCoins(sdk.NewInt64Coin("denom", 789)),
-		PowerFlagFees:      DefaultPowerFlagFees,
-		QueueMax:           DefaultQueueMax,
-		VatCleanupBudget:   DefaultVatCleanupBudget,
+func TestUpdateParamsTreatsZeroDeadlinesAsUnset(t *testing.T) {
+	in := DefaultParams()
+	in.InstallationDeadlineBlocks = 0
+	in.InstallationDeadlineSeconds = 0
+
+	got, err := UpdateParams(in)
+	if err != nil {
+		t.Fatalf("UpdateParam error %v", err)
 	}
+	if got.InstallationDeadlineBlocks != DefaultInstallationDeadlineBlocks {
+		t.Fatalf(
+			"expected InstallationDeadlineBlocks to default when set to 0: got %d, want %d",
+			got.InstallationDeadlineBlocks,
+			DefaultInstallationDeadlineBlocks,
+		)
+	}
+	if got.InstallationDeadlineSeconds != DefaultInstallationDeadlineSeconds {
+		t.Fatalf(
+			"expected InstallationDeadlineSeconds to default when set to 0: got %d, want %d",
+			got.InstallationDeadlineSeconds,
+			DefaultInstallationDeadlineSeconds,
+		)
+	}
+}
+
+func TestValidateParams(t *testing.T) {
+	params := DefaultParams()
+	params.BootstrapVatConfig = "foo"
+	params.FeeUnitPrice = sdk.NewCoins(sdk.NewInt64Coin("denom", 789))
 	err := params.ValidateBasic()
 	if err != nil {
 		t.Errorf("unexpected ValidateBasic() error with default params: %v", err)

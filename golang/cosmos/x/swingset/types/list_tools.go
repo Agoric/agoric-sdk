@@ -1,6 +1,8 @@
 package types
 
 import (
+	"fmt"
+
 	storetypes "cosmossdk.io/store"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -41,9 +43,9 @@ func (lt ListTools) Delete(key ListKey) {
 
 // Unlink removes a node from a non-circular list where PrevId == 0 indicates
 // the head and NextId == 0 indicates the tail.
-func (lt ListTools) Unlink(victim *ChunkedArtifactNode, updateEnds func(first, last *uint64)) {
+func (lt ListTools) Unlink(victim *ChunkedArtifactNode, updateEnds func(first, last *uint64)) error {
 	if victim == nil {
-		return
+		return fmt.Errorf("missing chunked artifact node during unlink")
 	}
 
 	if updateEnds != nil && (victim.PrevId == 0 || victim.NextId == 0) {
@@ -61,26 +63,36 @@ func (lt ListTools) Unlink(victim *ChunkedArtifactNode, updateEnds func(first, l
 		updateEnds(firstp, lastp)
 	}
 
-	updateNode := func(id uint64, mutate func(*ChunkedArtifactNode)) {
+	updateNode := func(id uint64, op string, mutate func(*ChunkedArtifactNode)) error {
 		key := lt.Key(id)
 		node := lt.Fetch(key)
+		if node == nil {
+			return fmt.Errorf("missing chunked artifact node id=%d during %s", id, op)
+		}
 		mutate(node)
 		lt.Store(key, node)
+		return nil
 	}
 
 	if victim.PrevId != 0 {
 		// Look up the previous node, set its next to the victim node's next.
-		updateNode(victim.PrevId, func(prevNode *ChunkedArtifactNode) {
+		if err := updateNode(victim.PrevId, "unlink prev", func(prevNode *ChunkedArtifactNode) {
 			prevNode.NextId = victim.NextId
-		})
+		}); err != nil {
+			return err
+		}
 	}
 
 	if victim.NextId != 0 {
 		// Look up the next node, set its previous to the victim node's previous.
-		updateNode(victim.NextId, func(nextNode *ChunkedArtifactNode) {
+		if err := updateNode(victim.NextId, "unlink next", func(nextNode *ChunkedArtifactNode) {
 			nextNode.PrevId = victim.PrevId
-		})
+		}); err != nil {
+			return err
+		}
 	}
+
+	return nil
 }
 
 func NewListTools(ctx sdk.Context, nodeStore storetypes.KVStore, cdc codec.Codec) *ListTools {
