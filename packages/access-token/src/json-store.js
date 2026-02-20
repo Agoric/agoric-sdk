@@ -1,9 +1,9 @@
 // @ts-check
-import fs from 'fs';
-import path from 'path';
-import process from 'process';
+import fs, { createReadStream } from 'node:fs';
+import path from 'node:path';
+import process from 'node:process';
+import { createInterface } from 'node:readline';
 import lockfile from 'proper-lockfile';
-import Readlines from 'n-readlines';
 
 /**
  * @import {LockOptions} from 'proper-lockfile';
@@ -197,22 +197,25 @@ async function makeJSONStore(
     if (forceReset) {
       safeUnlink(storeFile);
     } else {
-      let lines;
       try {
-        lines = new Readlines(storeFile);
+        // Read file line by line using node:readline (replacement for .split('\n'))
+        const fileStream = createReadStream(storeFile);
+        const rl = createInterface({
+          input: fileStream,
+          crlfDelay: Infinity,
+        });
+
+        for await (const line of rl) {
+          if (line.trim()) {
+            const [key, value] = JSON.parse(line);
+            storage.set(key, value);
+          }
+        }
       } catch (e) {
         // storeFile will be missing the first time we try to use it.  That's OK;
         // commit will create it.
         if (e.code !== 'ENOENT') {
           throw e;
-        }
-      }
-      if (lines) {
-        let line = lines.next();
-        while (line) {
-          const [key, value] = JSON.parse(line.toString());
-          storage.set(key, value);
-          line = lines.next();
         }
       }
     }

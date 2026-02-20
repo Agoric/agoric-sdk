@@ -2,20 +2,20 @@
 
 /* global WeakRef FinalizationRegistry */
 
-import fs from 'fs';
+import fs from 'node:fs';
 import '@agoric/internal/src/install-ses-debug.js';
 
-import zlib from 'zlib';
-import readline from 'readline';
-import process from 'process';
-import { spawn } from 'child_process';
-import { promisify } from 'util';
-import { createHash } from 'crypto';
-import { Readable, finished as finishedCallback } from 'stream';
-import { performance } from 'perf_hooks';
+import zlib from 'node:zlib';
+import readline from 'node:readline';
+import process from 'node:process';
+import { spawn } from 'node:child_process';
+import { promisify } from 'node:util';
+import { createHash } from 'node:crypto';
+import { Readable, finished as finishedCallback } from 'node:stream';
+import { performance } from 'node:perf_hooks';
 import { tmpName, dirSync as tmpDirSync } from 'tmp';
 import sqlite3 from 'better-sqlite3';
-import yargsParser from 'yargs-parser';
+import { parseArgs } from 'node:util';
 import { makeMeasureSeconds } from '@agoric/internal';
 import { makeWithQueue } from '@agoric/internal/src/queue.js';
 import { makeSnapStore } from '@agoric/swing-store';
@@ -47,111 +47,93 @@ import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
 const finished = promisify(finishedCallback);
 
 // TODO: switch to full yargs for documenting output
-const argv = yargsParser(process.argv.slice(2), {
-  boolean: [
+const { values: argv, positionals } = parseArgs({
+  args: process.argv.slice(2),
+  options: {
     // Use built bundles from the current SDK
     // Disable if bundles were previously extracted form a Kernel DB.
-    'useSdkBundles',
+    useSdkBundles: { type: 'boolean', default: false },
 
     // Enable to continue if snapshot hash doesn't match hash in transcript's
     // 'save', or when the hash of the concurrent workers snapshots don't all
     // match each other.
-    'ignoreSnapshotHashDifference',
+    ignoreSnapshotHashDifference: { type: 'boolean', default: true },
 
     // Enable to continue if concurrent workers do not produce the exact same
     // set of syscalls for a delivery. With special virtual collection syscall
     // handling (see below), all workers would normally have to diverge from
     // the transcript in the same way for the delivery to be considered valid.
-    'ignoreConcurrentWorkerDivergences',
+    ignoreConcurrentWorkerDivergences: { type: 'boolean', default: true },
 
     // If a snapshot of a worker is taken, create a new worker from that
     // snapshot, even if no explicit snapshot load instruction is found in the
     // input transcript.
-    'forcedReloadFromSnapshot',
+    forcedReloadFromSnapshot: { type: 'boolean', default: true },
 
     // Mark workers loaded from an explicit transcript load instruction as
     // being ineligible from being reaped.
-    'keepWorkerExplicitLoad',
+    keepWorkerExplicitLoad: { type: 'boolean', default: true },
 
     // When `forcedReloadFromSnapshot` is enabled, if the hash of the/ snapshot
     // had differences (see `ignoreSnapshotHashDifference`), mark the worker(s)
     // created for this/these snapshot(s) as being ineligible from being reaped.
-    'keepWorkerHashDifference',
+    keepWorkerHashDifference: { type: 'boolean', default: true },
 
     // Ignore Virtual Collection metadata syscalls that were recorded in the
     // transcript but which are not performed by the worker.
-    'skipExtraVcSyscalls',
+    skipExtraVcSyscalls: { type: 'boolean', default: true },
 
     // Simulate Virtual Collection metadata syscalls which were not recorded in
     // the transcript but which are performed by the worker. This only works if
     // previous syscalls for the same metadata were recorded.
-    'simulateVcSyscalls',
+    simulateVcSyscalls: { type: 'boolean', default: true },
 
     // Use a simplified snapstore which derives the snapshot filename from the
     // transcript and doesn't compress the snapshot
-    'useCustomSnapStore',
+    useCustomSnapStore: { type: 'boolean', default: false },
 
     // Enable to output xsnap debug traces corresponding to the transcript replay
-    'recordXsnapTrace',
+    recordXsnapTrace: { type: 'boolean', default: false },
 
     // Use the debug version of the xsnap worker
-    'useXsnapDebug',
-  ],
-  number: [
+    useXsnapDebug: { type: 'boolean', default: false },
+
     // Force making a snapshot after the "initial" deliveryNum, and every
     // "interval" delivery after. The default Swingset config is after delivery
     // 2 and every 1000 deliveries after (1002, 2002, etc.)
-    'forcedSnapshotInitial',
-    'forcedSnapshotInterval',
+    forcedSnapshotInitial: { type: 'string', default: '2' },
+    forcedSnapshotInterval: { type: 'string', default: '1000' },
 
     // Do not reap the first n "initial" and m "recent" workers.
     // This may keep less workers than the first n or m * forcedSnapshotInterval
     // if there are snapshots with different hashes taken for the same delivery
-    'keepWorkerInitial',
-    'keepWorkerRecent',
+    keepWorkerInitial: { type: 'string', default: '0' },
+    keepWorkerRecent: { type: 'string', default: '10' },
 
     // Keep all workers which are made at deliveryNum which are a multiple of
     // n * forcedSnapshotInterval from the first transcript delivery replayed.
     // For example if the value of this option is 10, the snapshot interval is
     // the default of 1000, and the first transcript loaded is 52002, then all
     // workers loaded from delivery 62002, 72002, etc. won't be reaped.
-    'keepWorkerInterval',
-  ],
-  array: [
-    {
-      // Keep all workers which are made at the explicitly provided deliveryNum
-      key: 'keepWorkerTransactionNums',
-      number: true,
-    },
-  ],
-  default: {
-    useSdkBundles: false,
-    ignoreSnapshotHashDifference: true,
-    ignoreConcurrentWorkerDivergences: true,
-    forcedSnapshotInitial: 2,
-    forcedSnapshotInterval: 1000,
-    forcedReloadFromSnapshot: true,
-    keepWorkerInitial: 0,
-    keepWorkerRecent: 10,
-    keepWorkerInterval: 10,
-    keepWorkerExplicitLoad: true,
-    keepWorkerHashDifference: true,
-    keepWorkerTransactionNums: [],
-    skipExtraVcSyscalls: true,
-    simulateVcSyscalls: true,
-    useCustomSnapStore: false,
-    recordXsnapTrace: false,
-    useXsnapDebug: false,
+    keepWorkerInterval: { type: 'string', default: '10' },
+
+    // Keep all workers which are made at the explicitly provided deliveryNum
+    keepWorkerTransactionNums: { type: 'string', multiple: true, default: [] },
   },
-  config: {
-    config: true,
-  },
-  configuration: {
-    'duplicate-arguments-array': false,
-    'flatten-duplicate-arrays': false,
-    'greedy-arrays': true,
-  },
+  allowPositionals: true,
+  strict: false,
 });
+
+// Convert string numbers to actual numbers
+argv.forcedSnapshotInitial = Number(argv.forcedSnapshotInitial);
+argv.forcedSnapshotInterval = Number(argv.forcedSnapshotInterval);
+argv.keepWorkerInitial = Number(argv.keepWorkerInitial);
+argv.keepWorkerRecent = Number(argv.keepWorkerRecent);
+argv.keepWorkerInterval = Number(argv.keepWorkerInterval);
+argv.keepWorkerTransactionNums = argv.keepWorkerTransactionNums.map(Number);
+
+// Add positionals to argv for compatibility
+argv._ = positionals;
 
 const measureSeconds = makeMeasureSeconds(performance.now.bind(performance));
 
