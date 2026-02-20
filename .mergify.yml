@@ -56,9 +56,10 @@ priority_rules:
 defaults:
   actions:
     rebase:
-      bot_account: "{% if '[bot]' in author %}mergify[bot]{% else %}{{ author }}{% endif %}"
+      # Copilot's commits are "copilot-swe-agent[bot]" but apparently the GH Author is "Copilot"
+      bot_account: "{% if '[bot]' in author or author == 'Copilot' %}mergify[bot]{% else %}{{ author }}{% endif %}"
   queue_rule:
-    update_bot_account: "{% if '[bot]' in author %}mergify[bot]{% else %}{{ author }}{% endif %}"
+    update_bot_account: "{% if '[bot]' in author or author == 'Copilot' %}mergify[bot]{% else %}{{ author }}{% endif %}"
     merge_bot_account: 'mergify[bot]'
     draft_bot_account: 'mergify[bot]'
 
