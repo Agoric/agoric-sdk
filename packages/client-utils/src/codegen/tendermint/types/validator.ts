@@ -1,6 +1,7 @@
 //@ts-nocheck
 import { PublicKey, type PublicKeySDKType } from '../crypto/keys.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
+import { GlobalDecoderRegistry } from '../../registry.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
@@ -138,6 +139,24 @@ function createBaseValidatorSet(): ValidatorSet {
  */
 export const ValidatorSet = {
   typeUrl: '/tendermint.types.ValidatorSet' as const,
+  is(o: any): o is ValidatorSet {
+    return (
+      o &&
+      (o.$typeUrl === ValidatorSet.typeUrl ||
+        (Array.isArray(o.validators) &&
+          (!o.validators.length || Validator.is(o.validators[0])) &&
+          typeof o.totalVotingPower === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is ValidatorSetSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ValidatorSet.typeUrl ||
+        (Array.isArray(o.validators) &&
+          (!o.validators.length || Validator.isSDK(o.validators[0])) &&
+          typeof o.total_voting_power === 'bigint'))
+    );
+  },
   encode(
     message: ValidatorSet,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -235,6 +254,12 @@ export const ValidatorSet = {
       value: ValidatorSet.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(ValidatorSet.typeUrl)) {
+      return;
+    }
+    Validator.registerTypeUrl();
+  },
 };
 function createBaseValidator(): Validator {
   return {
@@ -251,6 +276,26 @@ function createBaseValidator(): Validator {
  */
 export const Validator = {
   typeUrl: '/tendermint.types.Validator' as const,
+  is(o: any): o is Validator {
+    return (
+      o &&
+      (o.$typeUrl === Validator.typeUrl ||
+        ((o.address instanceof Uint8Array || typeof o.address === 'string') &&
+          PublicKey.is(o.pubKey) &&
+          typeof o.votingPower === 'bigint' &&
+          typeof o.proposerPriority === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is ValidatorSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Validator.typeUrl ||
+        ((o.address instanceof Uint8Array || typeof o.address === 'string') &&
+          PublicKey.isSDK(o.pub_key) &&
+          typeof o.voting_power === 'bigint' &&
+          typeof o.proposer_priority === 'bigint'))
+    );
+  },
   encode(
     message: Validator,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -359,6 +404,12 @@ export const Validator = {
       value: Validator.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(Validator.typeUrl)) {
+      return;
+    }
+    PublicKey.registerTypeUrl();
+  },
 };
 function createBaseSimpleValidator(): SimpleValidator {
   return {
@@ -373,6 +424,20 @@ function createBaseSimpleValidator(): SimpleValidator {
  */
 export const SimpleValidator = {
   typeUrl: '/tendermint.types.SimpleValidator' as const,
+  is(o: any): o is SimpleValidator {
+    return (
+      o &&
+      (o.$typeUrl === SimpleValidator.typeUrl ||
+        typeof o.votingPower === 'bigint')
+    );
+  },
+  isSDK(o: any): o is SimpleValidatorSDKType {
+    return (
+      o &&
+      (o.$typeUrl === SimpleValidator.typeUrl ||
+        typeof o.voting_power === 'bigint')
+    );
+  },
   encode(
     message: SimpleValidator,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -449,5 +514,13 @@ export const SimpleValidator = {
       typeUrl: '/tendermint.types.SimpleValidator',
       value: SimpleValidator.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(SimpleValidator.typeUrl)
+    ) {
+      return;
+    }
+    PublicKey.registerTypeUrl();
   },
 };

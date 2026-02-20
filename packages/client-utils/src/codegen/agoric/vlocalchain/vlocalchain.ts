@@ -2,6 +2,7 @@
 import { Any, type AnySDKType } from '../../google/protobuf/any.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { type JsonSafe } from '../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../registry.js';
 import { isSet } from '../../helpers.js';
 /**
  * CosmosTx contains a list of sdk.Msg's. It should be used when sending
@@ -115,6 +116,22 @@ function createBaseCosmosTx(): CosmosTx {
  */
 export const CosmosTx = {
   typeUrl: '/agoric.vlocalchain.CosmosTx' as const,
+  is(o: any): o is CosmosTx {
+    return (
+      o &&
+      (o.$typeUrl === CosmosTx.typeUrl ||
+        (Array.isArray(o.messages) &&
+          (!o.messages.length || Any.is(o.messages[0]))))
+    );
+  },
+  isSDK(o: any): o is CosmosTxSDKType {
+    return (
+      o &&
+      (o.$typeUrl === CosmosTx.typeUrl ||
+        (Array.isArray(o.messages) &&
+          (!o.messages.length || Any.isSDK(o.messages[0]))))
+    );
+  },
   encode(
     message: CosmosTx,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -175,6 +192,7 @@ export const CosmosTx = {
       value: CosmosTx.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryRequest(): QueryRequest {
   return {
@@ -191,6 +209,20 @@ function createBaseQueryRequest(): QueryRequest {
  */
 export const QueryRequest = {
   typeUrl: '/agoric.vlocalchain.QueryRequest' as const,
+  is(o: any): o is QueryRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryRequest.typeUrl ||
+        (typeof o.fullMethod === 'string' && typeof o.replyType === 'string'))
+    );
+  },
+  isSDK(o: any): o is QueryRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryRequest.typeUrl ||
+        (typeof o.full_method === 'string' && typeof o.reply_type === 'string'))
+    );
+  },
   encode(
     message: QueryRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -267,6 +299,7 @@ export const QueryRequest = {
       value: QueryRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryResponse(): QueryResponse {
   return {
@@ -283,6 +316,20 @@ function createBaseQueryResponse(): QueryResponse {
  */
 export const QueryResponse = {
   typeUrl: '/agoric.vlocalchain.QueryResponse' as const,
+  is(o: any): o is QueryResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryResponse.typeUrl ||
+        (typeof o.height === 'bigint' && typeof o.error === 'string'))
+    );
+  },
+  isSDK(o: any): o is QueryResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryResponse.typeUrl ||
+        (typeof o.height === 'bigint' && typeof o.error === 'string'))
+    );
+  },
   encode(
     message: QueryResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -365,6 +412,7 @@ export const QueryResponse = {
       value: QueryResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryResponses(): QueryResponses {
   return {
@@ -379,6 +427,22 @@ function createBaseQueryResponses(): QueryResponses {
  */
 export const QueryResponses = {
   typeUrl: '/agoric.vlocalchain.QueryResponses' as const,
+  is(o: any): o is QueryResponses {
+    return (
+      o &&
+      (o.$typeUrl === QueryResponses.typeUrl ||
+        (Array.isArray(o.responses) &&
+          (!o.responses.length || QueryResponse.is(o.responses[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryResponsesSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryResponses.typeUrl ||
+        (Array.isArray(o.responses) &&
+          (!o.responses.length || QueryResponse.isSDK(o.responses[0]))))
+    );
+  },
   encode(
     message: QueryResponses,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -441,5 +505,13 @@ export const QueryResponses = {
       typeUrl: '/agoric.vlocalchain.QueryResponses',
       value: QueryResponses.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(QueryResponses.typeUrl)
+    ) {
+      return;
+    }
+    QueryResponse.registerTypeUrl();
   },
 };

@@ -7,6 +7,7 @@ import {
   orderToJSON,
 } from './channel.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
+import { GlobalDecoderRegistry } from '../../../../registry.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
 /**
@@ -124,6 +125,25 @@ function createBaseUpgrade(): Upgrade {
  */
 export const Upgrade = {
   typeUrl: '/ibc.core.channel.v1.Upgrade' as const,
+  aminoType: 'cosmos-sdk/Upgrade' as const,
+  is(o: any): o is Upgrade {
+    return (
+      o &&
+      (o.$typeUrl === Upgrade.typeUrl ||
+        (UpgradeFields.is(o.fields) &&
+          Timeout.is(o.timeout) &&
+          typeof o.nextSequenceSend === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is UpgradeSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Upgrade.typeUrl ||
+        (UpgradeFields.isSDK(o.fields) &&
+          Timeout.isSDK(o.timeout) &&
+          typeof o.next_sequence_send === 'bigint'))
+    );
+  },
   encode(
     message: Upgrade,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -220,6 +240,13 @@ export const Upgrade = {
       value: Upgrade.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(Upgrade.typeUrl)) {
+      return;
+    }
+    UpgradeFields.registerTypeUrl();
+    Timeout.registerTypeUrl();
+  },
 };
 function createBaseUpgradeFields(): UpgradeFields {
   return {
@@ -237,6 +264,29 @@ function createBaseUpgradeFields(): UpgradeFields {
  */
 export const UpgradeFields = {
   typeUrl: '/ibc.core.channel.v1.UpgradeFields' as const,
+  aminoType: 'cosmos-sdk/UpgradeFields' as const,
+  is(o: any): o is UpgradeFields {
+    return (
+      o &&
+      (o.$typeUrl === UpgradeFields.typeUrl ||
+        (isSet(o.ordering) &&
+          Array.isArray(o.connectionHops) &&
+          (!o.connectionHops.length ||
+            typeof o.connectionHops[0] === 'string') &&
+          typeof o.version === 'string'))
+    );
+  },
+  isSDK(o: any): o is UpgradeFieldsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === UpgradeFields.typeUrl ||
+        (isSet(o.ordering) &&
+          Array.isArray(o.connection_hops) &&
+          (!o.connection_hops.length ||
+            typeof o.connection_hops[0] === 'string') &&
+          typeof o.version === 'string'))
+    );
+  },
   encode(
     message: UpgradeFields,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -316,6 +366,7 @@ export const UpgradeFields = {
       value: UpgradeFields.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseErrorReceipt(): ErrorReceipt {
   return {
@@ -333,6 +384,21 @@ function createBaseErrorReceipt(): ErrorReceipt {
  */
 export const ErrorReceipt = {
   typeUrl: '/ibc.core.channel.v1.ErrorReceipt' as const,
+  aminoType: 'cosmos-sdk/ErrorReceipt' as const,
+  is(o: any): o is ErrorReceipt {
+    return (
+      o &&
+      (o.$typeUrl === ErrorReceipt.typeUrl ||
+        (typeof o.sequence === 'bigint' && typeof o.message === 'string'))
+    );
+  },
+  isSDK(o: any): o is ErrorReceiptSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ErrorReceipt.typeUrl ||
+        (typeof o.sequence === 'bigint' && typeof o.message === 'string'))
+    );
+  },
   encode(
     message: ErrorReceipt,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -402,4 +468,5 @@ export const ErrorReceipt = {
       value: ErrorReceipt.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

@@ -3,6 +3,7 @@ import { Coin, type CoinSDKType } from '../../cosmos/base/v1beta1/coin.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../registry.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
 /**
@@ -14,6 +15,7 @@ import { encodeBase64 as base64FromBytes } from '@endo/base64';
  * @see proto type: agoric.swingset.CoreEvalProposal
  */
 export interface CoreEvalProposal {
+  $typeUrl?: '/agoric.swingset.CoreEvalProposal';
   title: string;
   description: string;
   /**
@@ -35,6 +37,7 @@ export interface CoreEvalProposalProtoMsg {
  * @see proto type: agoric.swingset.CoreEvalProposal
  */
 export interface CoreEvalProposalSDKType {
+  $typeUrl?: '/agoric.swingset.CoreEvalProposal';
   title: string;
   description: string;
   evals: CoreEvalSDKType[];
@@ -353,6 +356,7 @@ export interface SwingStoreArtifactSDKType {
 }
 function createBaseCoreEvalProposal(): CoreEvalProposal {
   return {
+    $typeUrl: '/agoric.swingset.CoreEvalProposal',
     title: '',
     description: '',
     evals: [],
@@ -368,6 +372,27 @@ function createBaseCoreEvalProposal(): CoreEvalProposal {
  */
 export const CoreEvalProposal = {
   typeUrl: '/agoric.swingset.CoreEvalProposal' as const,
+  aminoType: 'swingset/CoreEvalProposal' as const,
+  is(o: any): o is CoreEvalProposal {
+    return (
+      o &&
+      (o.$typeUrl === CoreEvalProposal.typeUrl ||
+        (typeof o.title === 'string' &&
+          typeof o.description === 'string' &&
+          Array.isArray(o.evals) &&
+          (!o.evals.length || CoreEval.is(o.evals[0]))))
+    );
+  },
+  isSDK(o: any): o is CoreEvalProposalSDKType {
+    return (
+      o &&
+      (o.$typeUrl === CoreEvalProposal.typeUrl ||
+        (typeof o.title === 'string' &&
+          typeof o.description === 'string' &&
+          Array.isArray(o.evals) &&
+          (!o.evals.length || CoreEval.isSDK(o.evals[0]))))
+    );
+  },
   encode(
     message: CoreEvalProposal,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -447,6 +472,19 @@ export const CoreEvalProposal = {
       value: CoreEvalProposal.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(CoreEvalProposal.typeUrl)
+    ) {
+      return;
+    }
+    GlobalDecoderRegistry.register(CoreEvalProposal.typeUrl, CoreEvalProposal);
+    GlobalDecoderRegistry.registerAminoProtoMapping(
+      CoreEvalProposal.aminoType,
+      CoreEvalProposal.typeUrl,
+    );
+    CoreEval.registerTypeUrl();
+  },
 };
 function createBaseCoreEval(): CoreEval {
   return {
@@ -463,6 +501,20 @@ function createBaseCoreEval(): CoreEval {
  */
 export const CoreEval = {
   typeUrl: '/agoric.swingset.CoreEval' as const,
+  is(o: any): o is CoreEval {
+    return (
+      o &&
+      (o.$typeUrl === CoreEval.typeUrl ||
+        (typeof o.jsonPermits === 'string' && typeof o.jsCode === 'string'))
+    );
+  },
+  isSDK(o: any): o is CoreEvalSDKType {
+    return (
+      o &&
+      (o.$typeUrl === CoreEval.typeUrl ||
+        (typeof o.json_permits === 'string' && typeof o.js_code === 'string'))
+    );
+  },
   encode(
     message: CoreEval,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -527,6 +579,7 @@ export const CoreEval = {
       value: CoreEval.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseParams(): Params {
   return {
@@ -546,6 +599,44 @@ function createBaseParams(): Params {
  */
 export const Params = {
   typeUrl: '/agoric.swingset.Params' as const,
+  is(o: any): o is Params {
+    return (
+      o &&
+      (o.$typeUrl === Params.typeUrl ||
+        (Array.isArray(o.beansPerUnit) &&
+          (!o.beansPerUnit.length || StringBeans.is(o.beansPerUnit[0])) &&
+          Array.isArray(o.feeUnitPrice) &&
+          (!o.feeUnitPrice.length || Coin.is(o.feeUnitPrice[0])) &&
+          typeof o.bootstrapVatConfig === 'string' &&
+          Array.isArray(o.powerFlagFees) &&
+          (!o.powerFlagFees.length || PowerFlagFee.is(o.powerFlagFees[0])) &&
+          Array.isArray(o.queueMax) &&
+          (!o.queueMax.length || QueueSize.is(o.queueMax[0])) &&
+          Array.isArray(o.vatCleanupBudget) &&
+          (!o.vatCleanupBudget.length ||
+            UintMapEntry.is(o.vatCleanupBudget[0]))))
+    );
+  },
+  isSDK(o: any): o is ParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Params.typeUrl ||
+        (Array.isArray(o.beans_per_unit) &&
+          (!o.beans_per_unit.length ||
+            StringBeans.isSDK(o.beans_per_unit[0])) &&
+          Array.isArray(o.fee_unit_price) &&
+          (!o.fee_unit_price.length || Coin.isSDK(o.fee_unit_price[0])) &&
+          typeof o.bootstrap_vat_config === 'string' &&
+          Array.isArray(o.power_flag_fees) &&
+          (!o.power_flag_fees.length ||
+            PowerFlagFee.isSDK(o.power_flag_fees[0])) &&
+          Array.isArray(o.queue_max) &&
+          (!o.queue_max.length || QueueSize.isSDK(o.queue_max[0])) &&
+          Array.isArray(o.vat_cleanup_budget) &&
+          (!o.vat_cleanup_budget.length ||
+            UintMapEntry.isSDK(o.vat_cleanup_budget[0]))))
+    );
+  },
   encode(
     message: Params,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -699,6 +790,16 @@ export const Params = {
       value: Params.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(Params.typeUrl)) {
+      return;
+    }
+    StringBeans.registerTypeUrl();
+    Coin.registerTypeUrl();
+    PowerFlagFee.registerTypeUrl();
+    QueueSize.registerTypeUrl();
+    UintMapEntry.registerTypeUrl();
+  },
 };
 function createBaseState(): State {
   return {
@@ -713,6 +814,22 @@ function createBaseState(): State {
  */
 export const State = {
   typeUrl: '/agoric.swingset.State' as const,
+  is(o: any): o is State {
+    return (
+      o &&
+      (o.$typeUrl === State.typeUrl ||
+        (Array.isArray(o.queueAllowed) &&
+          (!o.queueAllowed.length || QueueSize.is(o.queueAllowed[0]))))
+    );
+  },
+  isSDK(o: any): o is StateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === State.typeUrl ||
+        (Array.isArray(o.queue_allowed) &&
+          (!o.queue_allowed.length || QueueSize.isSDK(o.queue_allowed[0]))))
+    );
+  },
   encode(
     message: State,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -776,6 +893,12 @@ export const State = {
       value: State.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(State.typeUrl)) {
+      return;
+    }
+    QueueSize.registerTypeUrl();
+  },
 };
 function createBaseStringBeans(): StringBeans {
   return {
@@ -791,6 +914,20 @@ function createBaseStringBeans(): StringBeans {
  */
 export const StringBeans = {
   typeUrl: '/agoric.swingset.StringBeans' as const,
+  is(o: any): o is StringBeans {
+    return (
+      o &&
+      (o.$typeUrl === StringBeans.typeUrl ||
+        (typeof o.key === 'string' && typeof o.beans === 'string'))
+    );
+  },
+  isSDK(o: any): o is StringBeansSDKType {
+    return (
+      o &&
+      (o.$typeUrl === StringBeans.typeUrl ||
+        (typeof o.key === 'string' && typeof o.beans === 'string'))
+    );
+  },
   encode(
     message: StringBeans,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -854,6 +991,7 @@ export const StringBeans = {
       value: StringBeans.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBasePowerFlagFee(): PowerFlagFee {
   return {
@@ -869,6 +1007,24 @@ function createBasePowerFlagFee(): PowerFlagFee {
  */
 export const PowerFlagFee = {
   typeUrl: '/agoric.swingset.PowerFlagFee' as const,
+  is(o: any): o is PowerFlagFee {
+    return (
+      o &&
+      (o.$typeUrl === PowerFlagFee.typeUrl ||
+        (typeof o.powerFlag === 'string' &&
+          Array.isArray(o.fee) &&
+          (!o.fee.length || Coin.is(o.fee[0]))))
+    );
+  },
+  isSDK(o: any): o is PowerFlagFeeSDKType {
+    return (
+      o &&
+      (o.$typeUrl === PowerFlagFee.typeUrl ||
+        (typeof o.power_flag === 'string' &&
+          Array.isArray(o.fee) &&
+          (!o.fee.length || Coin.isSDK(o.fee[0]))))
+    );
+  },
   encode(
     message: PowerFlagFee,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -938,6 +1094,12 @@ export const PowerFlagFee = {
       value: PowerFlagFee.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(PowerFlagFee.typeUrl)) {
+      return;
+    }
+    Coin.registerTypeUrl();
+  },
 };
 function createBaseQueueSize(): QueueSize {
   return {
@@ -954,6 +1116,20 @@ function createBaseQueueSize(): QueueSize {
  */
 export const QueueSize = {
   typeUrl: '/agoric.swingset.QueueSize' as const,
+  is(o: any): o is QueueSize {
+    return (
+      o &&
+      (o.$typeUrl === QueueSize.typeUrl ||
+        (typeof o.key === 'string' && typeof o.size === 'number'))
+    );
+  },
+  isSDK(o: any): o is QueueSizeSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueueSize.typeUrl ||
+        (typeof o.key === 'string' && typeof o.size === 'number'))
+    );
+  },
   encode(
     message: QueueSize,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1017,6 +1193,7 @@ export const QueueSize = {
       value: QueueSize.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseUintMapEntry(): UintMapEntry {
   return {
@@ -1034,6 +1211,20 @@ function createBaseUintMapEntry(): UintMapEntry {
  */
 export const UintMapEntry = {
   typeUrl: '/agoric.swingset.UintMapEntry' as const,
+  is(o: any): o is UintMapEntry {
+    return (
+      o &&
+      (o.$typeUrl === UintMapEntry.typeUrl ||
+        (typeof o.key === 'string' && typeof o.value === 'string'))
+    );
+  },
+  isSDK(o: any): o is UintMapEntrySDKType {
+    return (
+      o &&
+      (o.$typeUrl === UintMapEntry.typeUrl ||
+        (typeof o.key === 'string' && typeof o.value === 'string'))
+    );
+  },
   encode(
     message: UintMapEntry,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1097,6 +1288,7 @@ export const UintMapEntry = {
       value: UintMapEntry.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseEgress(): Egress {
   return {
@@ -1113,6 +1305,26 @@ function createBaseEgress(): Egress {
  */
 export const Egress = {
   typeUrl: '/agoric.swingset.Egress' as const,
+  is(o: any): o is Egress {
+    return (
+      o &&
+      (o.$typeUrl === Egress.typeUrl ||
+        (typeof o.nickname === 'string' &&
+          (o.peer instanceof Uint8Array || typeof o.peer === 'string') &&
+          Array.isArray(o.powerFlags) &&
+          (!o.powerFlags.length || typeof o.powerFlags[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is EgressSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Egress.typeUrl ||
+        (typeof o.nickname === 'string' &&
+          (o.peer instanceof Uint8Array || typeof o.peer === 'string') &&
+          Array.isArray(o.power_flags) &&
+          (!o.power_flags.length || typeof o.power_flags[0] === 'string')))
+    );
+  },
   encode(
     message: Egress,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1196,6 +1408,7 @@ export const Egress = {
       value: Egress.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseSwingStoreArtifact(): SwingStoreArtifact {
   return {
@@ -1214,6 +1427,22 @@ function createBaseSwingStoreArtifact(): SwingStoreArtifact {
  */
 export const SwingStoreArtifact = {
   typeUrl: '/agoric.swingset.SwingStoreArtifact' as const,
+  is(o: any): o is SwingStoreArtifact {
+    return (
+      o &&
+      (o.$typeUrl === SwingStoreArtifact.typeUrl ||
+        (typeof o.name === 'string' &&
+          (o.data instanceof Uint8Array || typeof o.data === 'string')))
+    );
+  },
+  isSDK(o: any): o is SwingStoreArtifactSDKType {
+    return (
+      o &&
+      (o.$typeUrl === SwingStoreArtifact.typeUrl ||
+        (typeof o.name === 'string' &&
+          (o.data instanceof Uint8Array || typeof o.data === 'string')))
+    );
+  },
   encode(
     message: SwingStoreArtifact,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1285,4 +1514,5 @@ export const SwingStoreArtifact = {
       value: SwingStoreArtifact.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

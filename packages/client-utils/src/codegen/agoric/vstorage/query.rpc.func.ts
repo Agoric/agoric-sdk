@@ -19,6 +19,7 @@ export const getData = buildQuery<QueryDataRequest, QueryDataResponse>({
   decode: QueryDataResponse.decode,
   service: 'agoric.vstorage.Query',
   method: 'Data',
+  deps: [QueryDataRequest, QueryDataResponse],
 });
 /**
  * Return a formatted representation of a vstorage datum that must be
@@ -33,6 +34,7 @@ export const getCapData = buildQuery<QueryCapDataRequest, QueryCapDataResponse>(
     decode: QueryCapDataResponse.decode,
     service: 'agoric.vstorage.Query',
     method: 'CapData',
+    deps: [QueryCapDataRequest, QueryCapDataResponse],
   },
 );
 /**
@@ -49,4 +51,5 @@ export const getChildren = buildQuery<
   decode: QueryChildrenResponse.decode,
   service: 'agoric.vstorage.Query',
   method: 'Children',
+  deps: [QueryChildrenRequest, QueryChildrenResponse],
 });

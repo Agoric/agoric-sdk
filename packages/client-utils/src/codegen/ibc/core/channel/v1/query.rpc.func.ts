@@ -48,6 +48,7 @@ export const getChannel = buildQuery<QueryChannelRequest, QueryChannelResponse>(
     decode: QueryChannelResponse.decode,
     service: 'ibc.core.channel.v1.Query',
     method: 'Channel',
+    deps: [QueryChannelRequest, QueryChannelResponse],
   },
 );
 /**
@@ -64,6 +65,7 @@ export const getChannels = buildQuery<
   decode: QueryChannelsResponse.decode,
   service: 'ibc.core.channel.v1.Query',
   method: 'Channels',
+  deps: [QueryChannelsRequest, QueryChannelsResponse],
 });
 /**
  * ConnectionChannels queries all the channels associated with a connection
@@ -80,6 +82,7 @@ export const getConnectionChannels = buildQuery<
   decode: QueryConnectionChannelsResponse.decode,
   service: 'ibc.core.channel.v1.Query',
   method: 'ConnectionChannels',
+  deps: [QueryConnectionChannelsRequest, QueryConnectionChannelsResponse],
 });
 /**
  * ChannelClientState queries for the client state for the channel associated
@@ -96,6 +99,7 @@ export const getChannelClientState = buildQuery<
   decode: QueryChannelClientStateResponse.decode,
   service: 'ibc.core.channel.v1.Query',
   method: 'ChannelClientState',
+  deps: [QueryChannelClientStateRequest, QueryChannelClientStateResponse],
 });
 /**
  * ChannelConsensusState queries for the consensus state for the channel
@@ -112,6 +116,7 @@ export const getChannelConsensusState = buildQuery<
   decode: QueryChannelConsensusStateResponse.decode,
   service: 'ibc.core.channel.v1.Query',
   method: 'ChannelConsensusState',
+  deps: [QueryChannelConsensusStateRequest, QueryChannelConsensusStateResponse],
 });
 /**
  * PacketCommitment queries a stored packet commitment hash.
@@ -127,6 +132,7 @@ export const getPacketCommitment = buildQuery<
   decode: QueryPacketCommitmentResponse.decode,
   service: 'ibc.core.channel.v1.Query',
   method: 'PacketCommitment',
+  deps: [QueryPacketCommitmentRequest, QueryPacketCommitmentResponse],
 });
 /**
  * PacketCommitments returns all the packet commitments hashes associated
@@ -143,6 +149,7 @@ export const getPacketCommitments = buildQuery<
   decode: QueryPacketCommitmentsResponse.decode,
   service: 'ibc.core.channel.v1.Query',
   method: 'PacketCommitments',
+  deps: [QueryPacketCommitmentsRequest, QueryPacketCommitmentsResponse],
 });
 /**
  * PacketReceipt queries if a given packet sequence has been received on the
@@ -159,6 +166,7 @@ export const getPacketReceipt = buildQuery<
   decode: QueryPacketReceiptResponse.decode,
   service: 'ibc.core.channel.v1.Query',
   method: 'PacketReceipt',
+  deps: [QueryPacketReceiptRequest, QueryPacketReceiptResponse],
 });
 /**
  * PacketAcknowledgement queries a stored packet acknowledgement hash.
@@ -174,6 +182,7 @@ export const getPacketAcknowledgement = buildQuery<
   decode: QueryPacketAcknowledgementResponse.decode,
   service: 'ibc.core.channel.v1.Query',
   method: 'PacketAcknowledgement',
+  deps: [QueryPacketAcknowledgementRequest, QueryPacketAcknowledgementResponse],
 });
 /**
  * PacketAcknowledgements returns all the packet acknowledgements associated
@@ -190,6 +199,10 @@ export const getPacketAcknowledgements = buildQuery<
   decode: QueryPacketAcknowledgementsResponse.decode,
   service: 'ibc.core.channel.v1.Query',
   method: 'PacketAcknowledgements',
+  deps: [
+    QueryPacketAcknowledgementsRequest,
+    QueryPacketAcknowledgementsResponse,
+  ],
 });
 /**
  * UnreceivedPackets returns all the unreceived IBC packets associated with a
@@ -206,6 +219,7 @@ export const getUnreceivedPackets = buildQuery<
   decode: QueryUnreceivedPacketsResponse.decode,
   service: 'ibc.core.channel.v1.Query',
   method: 'UnreceivedPackets',
+  deps: [QueryUnreceivedPacketsRequest, QueryUnreceivedPacketsResponse],
 });
 /**
  * UnreceivedAcks returns all the unreceived IBC acknowledgements associated
@@ -222,6 +236,7 @@ export const getUnreceivedAcks = buildQuery<
   decode: QueryUnreceivedAcksResponse.decode,
   service: 'ibc.core.channel.v1.Query',
   method: 'UnreceivedAcks',
+  deps: [QueryUnreceivedAcksRequest, QueryUnreceivedAcksResponse],
 });
 /**
  * NextSequenceReceive returns the next receive sequence for a given channel.
@@ -237,6 +252,7 @@ export const getNextSequenceReceive = buildQuery<
   decode: QueryNextSequenceReceiveResponse.decode,
   service: 'ibc.core.channel.v1.Query',
   method: 'NextSequenceReceive',
+  deps: [QueryNextSequenceReceiveRequest, QueryNextSequenceReceiveResponse],
 });
 /**
  * NextSequenceSend returns the next send sequence for a given channel.
@@ -252,6 +268,7 @@ export const getNextSequenceSend = buildQuery<
   decode: QueryNextSequenceSendResponse.decode,
   service: 'ibc.core.channel.v1.Query',
   method: 'NextSequenceSend',
+  deps: [QueryNextSequenceSendRequest, QueryNextSequenceSendResponse],
 });
 /**
  * UpgradeError returns the error receipt if the upgrade handshake failed.
@@ -267,6 +284,7 @@ export const getUpgradeError = buildQuery<
   decode: QueryUpgradeErrorResponse.decode,
   service: 'ibc.core.channel.v1.Query',
   method: 'UpgradeError',
+  deps: [QueryUpgradeErrorRequest, QueryUpgradeErrorResponse],
 });
 /**
  * Upgrade returns the upgrade for a given port and channel id.
@@ -280,6 +298,7 @@ export const getUpgrade = buildQuery<QueryUpgradeRequest, QueryUpgradeResponse>(
     decode: QueryUpgradeResponse.decode,
     service: 'ibc.core.channel.v1.Query',
     method: 'Upgrade',
+    deps: [QueryUpgradeRequest, QueryUpgradeResponse],
   },
 );
 /**
@@ -296,4 +315,5 @@ export const getChannelParams = buildQuery<
   decode: QueryChannelParamsResponse.decode,
   service: 'ibc.core.channel.v1.Query',
   method: 'ChannelParams',
+  deps: [QueryChannelParamsRequest, QueryChannelParamsResponse],
 });

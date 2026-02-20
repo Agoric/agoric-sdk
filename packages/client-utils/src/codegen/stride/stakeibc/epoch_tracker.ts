@@ -43,6 +43,26 @@ function createBaseEpochTracker(): EpochTracker {
  */
 export const EpochTracker = {
   typeUrl: '/stride.stakeibc.EpochTracker' as const,
+  is(o: any): o is EpochTracker {
+    return (
+      o &&
+      (o.$typeUrl === EpochTracker.typeUrl ||
+        (typeof o.epochIdentifier === 'string' &&
+          typeof o.epochNumber === 'bigint' &&
+          typeof o.nextEpochStartTime === 'bigint' &&
+          typeof o.duration === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is EpochTrackerSDKType {
+    return (
+      o &&
+      (o.$typeUrl === EpochTracker.typeUrl ||
+        (typeof o.epoch_identifier === 'string' &&
+          typeof o.epoch_number === 'bigint' &&
+          typeof o.next_epoch_start_time === 'bigint' &&
+          typeof o.duration === 'bigint'))
+    );
+  },
   encode(
     message: EpochTracker,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -148,4 +168,5 @@ export const EpochTracker = {
       value: EpochTracker.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

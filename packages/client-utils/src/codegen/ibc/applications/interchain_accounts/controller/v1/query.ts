@@ -3,6 +3,7 @@ import { Params, type ParamsSDKType } from './controller.js';
 import { BinaryReader, BinaryWriter } from '../../../../../binary.js';
 import { isSet } from '../../../../../helpers.js';
 import { type JsonSafe } from '../../../../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../../../../registry.js';
 /**
  * QueryInterchainAccountRequest is the request type for the Query/InterchainAccount RPC method.
  * @name QueryInterchainAccountRequest
@@ -107,6 +108,21 @@ function createBaseQueryInterchainAccountRequest(): QueryInterchainAccountReques
 export const QueryInterchainAccountRequest = {
   typeUrl:
     '/ibc.applications.interchain_accounts.controller.v1.QueryInterchainAccountRequest' as const,
+  aminoType: 'cosmos-sdk/QueryInterchainAccountRequest' as const,
+  is(o: any): o is QueryInterchainAccountRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryInterchainAccountRequest.typeUrl ||
+        (typeof o.owner === 'string' && typeof o.connectionId === 'string'))
+    );
+  },
+  isSDK(o: any): o is QueryInterchainAccountRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryInterchainAccountRequest.typeUrl ||
+        (typeof o.owner === 'string' && typeof o.connection_id === 'string'))
+    );
+  },
   encode(
     message: QueryInterchainAccountRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -185,6 +201,7 @@ export const QueryInterchainAccountRequest = {
       value: QueryInterchainAccountRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryInterchainAccountResponse(): QueryInterchainAccountResponse {
   return {
@@ -200,6 +217,21 @@ function createBaseQueryInterchainAccountResponse(): QueryInterchainAccountRespo
 export const QueryInterchainAccountResponse = {
   typeUrl:
     '/ibc.applications.interchain_accounts.controller.v1.QueryInterchainAccountResponse' as const,
+  aminoType: 'cosmos-sdk/QueryInterchainAccountResponse' as const,
+  is(o: any): o is QueryInterchainAccountResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryInterchainAccountResponse.typeUrl ||
+        typeof o.address === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryInterchainAccountResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryInterchainAccountResponse.typeUrl ||
+        typeof o.address === 'string')
+    );
+  },
   encode(
     message: QueryInterchainAccountResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -266,6 +298,7 @@ export const QueryInterchainAccountResponse = {
       value: QueryInterchainAccountResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryParamsRequest(): QueryParamsRequest {
   return {};
@@ -279,6 +312,13 @@ function createBaseQueryParamsRequest(): QueryParamsRequest {
 export const QueryParamsRequest = {
   typeUrl:
     '/ibc.applications.interchain_accounts.controller.v1.QueryParamsRequest' as const,
+  aminoType: 'cosmos-sdk/QueryParamsRequest' as const,
+  is(o: any): o is QueryParamsRequest {
+    return o && o.$typeUrl === QueryParamsRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryParamsRequestSDKType {
+    return o && o.$typeUrl === QueryParamsRequest.typeUrl;
+  },
   encode(
     _: QueryParamsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -327,6 +367,7 @@ export const QueryParamsRequest = {
       value: QueryParamsRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryParamsResponse(): QueryParamsResponse {
   return {
@@ -342,6 +383,13 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
 export const QueryParamsResponse = {
   typeUrl:
     '/ibc.applications.interchain_accounts.controller.v1.QueryParamsResponse' as const,
+  aminoType: 'cosmos-sdk/QueryParamsResponse' as const,
+  is(o: any): o is QueryParamsResponse {
+    return o && o.$typeUrl === QueryParamsResponse.typeUrl;
+  },
+  isSDK(o: any): o is QueryParamsResponseSDKType {
+    return o && o.$typeUrl === QueryParamsResponse.typeUrl;
+  },
   encode(
     message: QueryParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -403,5 +451,15 @@ export const QueryParamsResponse = {
         '/ibc.applications.interchain_accounts.controller.v1.QueryParamsResponse',
       value: QueryParamsResponse.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryParamsResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Params.registerTypeUrl();
   },
 };

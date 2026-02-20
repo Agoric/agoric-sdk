@@ -1,5 +1,6 @@
 //@ts-nocheck
 import { BinaryReader, BinaryWriter } from '../../binary.js';
+import { GlobalDecoderRegistry } from '../../registry.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
 /**
@@ -50,6 +51,12 @@ function createBaseStakeibcPacketData(): StakeibcPacketData {
  */
 export const StakeibcPacketData = {
   typeUrl: '/stride.stakeibc.StakeibcPacketData' as const,
+  is(o: any): o is StakeibcPacketData {
+    return o && o.$typeUrl === StakeibcPacketData.typeUrl;
+  },
+  isSDK(o: any): o is StakeibcPacketDataSDKType {
+    return o && o.$typeUrl === StakeibcPacketData.typeUrl;
+  },
   encode(
     message: StakeibcPacketData,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -111,6 +118,14 @@ export const StakeibcPacketData = {
       value: StakeibcPacketData.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(StakeibcPacketData.typeUrl)
+    ) {
+      return;
+    }
+    NoData.registerTypeUrl();
+  },
 };
 function createBaseNoData(): NoData {
   return {};
@@ -122,6 +137,12 @@ function createBaseNoData(): NoData {
  */
 export const NoData = {
   typeUrl: '/stride.stakeibc.NoData' as const,
+  is(o: any): o is NoData {
+    return o && o.$typeUrl === NoData.typeUrl;
+  },
+  isSDK(o: any): o is NoDataSDKType {
+    return o && o.$typeUrl === NoData.typeUrl;
+  },
   encode(
     _: NoData,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -166,4 +187,5 @@ export const NoData = {
       value: NoData.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

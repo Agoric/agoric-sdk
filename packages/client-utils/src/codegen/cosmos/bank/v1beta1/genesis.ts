@@ -9,6 +9,7 @@ import {
 } from './bank.js';
 import { Coin, type CoinSDKType } from '../../base/v1beta1/coin.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
+import { GlobalDecoderRegistry } from '../../../registry.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
 /**
@@ -108,6 +109,37 @@ function createBaseGenesisState(): GenesisState {
  */
 export const GenesisState = {
   typeUrl: '/cosmos.bank.v1beta1.GenesisState' as const,
+  aminoType: 'cosmos-sdk/GenesisState' as const,
+  is(o: any): o is GenesisState {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Params.is(o.params) &&
+          Array.isArray(o.balances) &&
+          (!o.balances.length || Balance.is(o.balances[0])) &&
+          Array.isArray(o.supply) &&
+          (!o.supply.length || Coin.is(o.supply[0])) &&
+          Array.isArray(o.denomMetadata) &&
+          (!o.denomMetadata.length || Metadata.is(o.denomMetadata[0])) &&
+          Array.isArray(o.sendEnabled) &&
+          (!o.sendEnabled.length || SendEnabled.is(o.sendEnabled[0]))))
+    );
+  },
+  isSDK(o: any): o is GenesisStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Params.isSDK(o.params) &&
+          Array.isArray(o.balances) &&
+          (!o.balances.length || Balance.isSDK(o.balances[0])) &&
+          Array.isArray(o.supply) &&
+          (!o.supply.length || Coin.isSDK(o.supply[0])) &&
+          Array.isArray(o.denom_metadata) &&
+          (!o.denom_metadata.length || Metadata.isSDK(o.denom_metadata[0])) &&
+          Array.isArray(o.send_enabled) &&
+          (!o.send_enabled.length || SendEnabled.isSDK(o.send_enabled[0]))))
+    );
+  },
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -234,6 +266,16 @@ export const GenesisState = {
       value: GenesisState.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(GenesisState.typeUrl)) {
+      return;
+    }
+    Params.registerTypeUrl();
+    Balance.registerTypeUrl();
+    Coin.registerTypeUrl();
+    Metadata.registerTypeUrl();
+    SendEnabled.registerTypeUrl();
+  },
 };
 function createBaseBalance(): Balance {
   return {
@@ -250,6 +292,25 @@ function createBaseBalance(): Balance {
  */
 export const Balance = {
   typeUrl: '/cosmos.bank.v1beta1.Balance' as const,
+  aminoType: 'cosmos-sdk/Balance' as const,
+  is(o: any): o is Balance {
+    return (
+      o &&
+      (o.$typeUrl === Balance.typeUrl ||
+        (typeof o.address === 'string' &&
+          Array.isArray(o.coins) &&
+          (!o.coins.length || Coin.is(o.coins[0]))))
+    );
+  },
+  isSDK(o: any): o is BalanceSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Balance.typeUrl ||
+        (typeof o.address === 'string' &&
+          Array.isArray(o.coins) &&
+          (!o.coins.length || Coin.isSDK(o.coins[0]))))
+    );
+  },
   encode(
     message: Balance,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -318,5 +379,11 @@ export const Balance = {
       typeUrl: '/cosmos.bank.v1beta1.Balance',
       value: Balance.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(Balance.typeUrl)) {
+      return;
+    }
+    Coin.registerTypeUrl();
   },
 };

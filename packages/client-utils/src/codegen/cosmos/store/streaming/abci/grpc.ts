@@ -12,6 +12,7 @@ import {
   type StoreKVPairSDKType,
 } from '../../v1beta1/listening.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
+import { GlobalDecoderRegistry } from '../../../../registry.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
 /**
@@ -117,6 +118,13 @@ function createBaseListenFinalizeBlockRequest(): ListenFinalizeBlockRequest {
  */
 export const ListenFinalizeBlockRequest = {
   typeUrl: '/cosmos.store.streaming.abci.ListenFinalizeBlockRequest' as const,
+  aminoType: 'cosmos-sdk/ListenFinalizeBlockRequest' as const,
+  is(o: any): o is ListenFinalizeBlockRequest {
+    return o && o.$typeUrl === ListenFinalizeBlockRequest.typeUrl;
+  },
+  isSDK(o: any): o is ListenFinalizeBlockRequestSDKType {
+    return o && o.$typeUrl === ListenFinalizeBlockRequest.typeUrl;
+  },
   encode(
     message: ListenFinalizeBlockRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -213,6 +221,17 @@ export const ListenFinalizeBlockRequest = {
       value: ListenFinalizeBlockRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        ListenFinalizeBlockRequest.typeUrl,
+      )
+    ) {
+      return;
+    }
+    RequestFinalizeBlock.registerTypeUrl();
+    ResponseFinalizeBlock.registerTypeUrl();
+  },
 };
 function createBaseListenFinalizeBlockResponse(): ListenFinalizeBlockResponse {
   return {};
@@ -225,6 +244,13 @@ function createBaseListenFinalizeBlockResponse(): ListenFinalizeBlockResponse {
  */
 export const ListenFinalizeBlockResponse = {
   typeUrl: '/cosmos.store.streaming.abci.ListenFinalizeBlockResponse' as const,
+  aminoType: 'cosmos-sdk/ListenFinalizeBlockResponse' as const,
+  is(o: any): o is ListenFinalizeBlockResponse {
+    return o && o.$typeUrl === ListenFinalizeBlockResponse.typeUrl;
+  },
+  isSDK(o: any): o is ListenFinalizeBlockResponseSDKType {
+    return o && o.$typeUrl === ListenFinalizeBlockResponse.typeUrl;
+  },
   encode(
     _: ListenFinalizeBlockResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -280,6 +306,7 @@ export const ListenFinalizeBlockResponse = {
       value: ListenFinalizeBlockResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseListenCommitRequest(): ListenCommitRequest {
   return {
@@ -296,6 +323,25 @@ function createBaseListenCommitRequest(): ListenCommitRequest {
  */
 export const ListenCommitRequest = {
   typeUrl: '/cosmos.store.streaming.abci.ListenCommitRequest' as const,
+  aminoType: 'cosmos-sdk/ListenCommitRequest' as const,
+  is(o: any): o is ListenCommitRequest {
+    return (
+      o &&
+      (o.$typeUrl === ListenCommitRequest.typeUrl ||
+        (typeof o.blockHeight === 'bigint' &&
+          Array.isArray(o.changeSet) &&
+          (!o.changeSet.length || StoreKVPair.is(o.changeSet[0]))))
+    );
+  },
+  isSDK(o: any): o is ListenCommitRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ListenCommitRequest.typeUrl ||
+        (typeof o.block_height === 'bigint' &&
+          Array.isArray(o.change_set) &&
+          (!o.change_set.length || StoreKVPair.isSDK(o.change_set[0]))))
+    );
+  },
   encode(
     message: ListenCommitRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -390,6 +436,17 @@ export const ListenCommitRequest = {
       value: ListenCommitRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        ListenCommitRequest.typeUrl,
+      )
+    ) {
+      return;
+    }
+    ResponseCommit.registerTypeUrl();
+    StoreKVPair.registerTypeUrl();
+  },
 };
 function createBaseListenCommitResponse(): ListenCommitResponse {
   return {};
@@ -402,6 +459,13 @@ function createBaseListenCommitResponse(): ListenCommitResponse {
  */
 export const ListenCommitResponse = {
   typeUrl: '/cosmos.store.streaming.abci.ListenCommitResponse' as const,
+  aminoType: 'cosmos-sdk/ListenCommitResponse' as const,
+  is(o: any): o is ListenCommitResponse {
+    return o && o.$typeUrl === ListenCommitResponse.typeUrl;
+  },
+  isSDK(o: any): o is ListenCommitResponseSDKType {
+    return o && o.$typeUrl === ListenCommitResponse.typeUrl;
+  },
   encode(
     _: ListenCommitResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -449,4 +513,5 @@ export const ListenCommitResponse = {
       value: ListenCommitResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

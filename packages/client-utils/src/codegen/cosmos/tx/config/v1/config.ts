@@ -48,6 +48,23 @@ function createBaseConfig(): Config {
  */
 export const Config = {
   typeUrl: '/cosmos.tx.config.v1.Config' as const,
+  aminoType: 'cosmos-sdk/Config' as const,
+  is(o: any): o is Config {
+    return (
+      o &&
+      (o.$typeUrl === Config.typeUrl ||
+        (typeof o.skipAnteHandler === 'boolean' &&
+          typeof o.skipPostHandler === 'boolean'))
+    );
+  },
+  isSDK(o: any): o is ConfigSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Config.typeUrl ||
+        (typeof o.skip_ante_handler === 'boolean' &&
+          typeof o.skip_post_handler === 'boolean'))
+    );
+  },
   encode(
     message: Config,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -117,4 +134,5 @@ export const Config = {
       value: Config.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

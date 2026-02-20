@@ -36,6 +36,7 @@ export const getClientState = buildQuery<
   decode: QueryClientStateResponse.decode,
   service: 'ibc.core.client.v1.Query',
   method: 'ClientState',
+  deps: [QueryClientStateRequest, QueryClientStateResponse],
 });
 /**
  * ClientStates queries all the IBC light clients of a chain.
@@ -51,6 +52,7 @@ export const getClientStates = buildQuery<
   decode: QueryClientStatesResponse.decode,
   service: 'ibc.core.client.v1.Query',
   method: 'ClientStates',
+  deps: [QueryClientStatesRequest, QueryClientStatesResponse],
 });
 /**
  * ConsensusState queries a consensus state associated with a client state at
@@ -67,6 +69,7 @@ export const getConsensusState = buildQuery<
   decode: QueryConsensusStateResponse.decode,
   service: 'ibc.core.client.v1.Query',
   method: 'ConsensusState',
+  deps: [QueryConsensusStateRequest, QueryConsensusStateResponse],
 });
 /**
  * ConsensusStates queries all the consensus state associated with a given
@@ -83,6 +86,7 @@ export const getConsensusStates = buildQuery<
   decode: QueryConsensusStatesResponse.decode,
   service: 'ibc.core.client.v1.Query',
   method: 'ConsensusStates',
+  deps: [QueryConsensusStatesRequest, QueryConsensusStatesResponse],
 });
 /**
  * ConsensusStateHeights queries the height of every consensus states associated with a given client.
@@ -98,6 +102,7 @@ export const getConsensusStateHeights = buildQuery<
   decode: QueryConsensusStateHeightsResponse.decode,
   service: 'ibc.core.client.v1.Query',
   method: 'ConsensusStateHeights',
+  deps: [QueryConsensusStateHeightsRequest, QueryConsensusStateHeightsResponse],
 });
 /**
  * Status queries the status of an IBC client.
@@ -113,6 +118,7 @@ export const getClientStatus = buildQuery<
   decode: QueryClientStatusResponse.decode,
   service: 'ibc.core.client.v1.Query',
   method: 'ClientStatus',
+  deps: [QueryClientStatusRequest, QueryClientStatusResponse],
 });
 /**
  * ClientParams queries all parameters of the ibc client submodule.
@@ -128,6 +134,7 @@ export const getClientParams = buildQuery<
   decode: QueryClientParamsResponse.decode,
   service: 'ibc.core.client.v1.Query',
   method: 'ClientParams',
+  deps: [QueryClientParamsRequest, QueryClientParamsResponse],
 });
 /**
  * UpgradedClientState queries an Upgraded IBC light client.
@@ -143,6 +150,7 @@ export const getUpgradedClientState = buildQuery<
   decode: QueryUpgradedClientStateResponse.decode,
   service: 'ibc.core.client.v1.Query',
   method: 'UpgradedClientState',
+  deps: [QueryUpgradedClientStateRequest, QueryUpgradedClientStateResponse],
 });
 /**
  * UpgradedConsensusState queries an Upgraded IBC consensus state.
@@ -158,6 +166,10 @@ export const getUpgradedConsensusState = buildQuery<
   decode: QueryUpgradedConsensusStateResponse.decode,
   service: 'ibc.core.client.v1.Query',
   method: 'UpgradedConsensusState',
+  deps: [
+    QueryUpgradedConsensusStateRequest,
+    QueryUpgradedConsensusStateResponse,
+  ],
 });
 /**
  * VerifyMembership queries an IBC light client for proof verification of a value at a given key path.
@@ -173,4 +185,5 @@ export const getVerifyMembership = buildQuery<
   decode: QueryVerifyMembershipResponse.decode,
   service: 'ibc.core.client.v1.Query',
   method: 'VerifyMembership',
+  deps: [QueryVerifyMembershipRequest, QueryVerifyMembershipResponse],
 });

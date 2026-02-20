@@ -3,6 +3,7 @@ import { Coin, type CoinSDKType } from '../../cosmos/base/v1beta1/coin.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../registry.js';
 export enum DepositRecord_Status {
   /** TRANSFER_QUEUE - in transfer queue to be sent to the delegation ICA */
   TRANSFER_QUEUE = 0,
@@ -407,6 +408,34 @@ function createBaseUserRedemptionRecord(): UserRedemptionRecord {
  */
 export const UserRedemptionRecord = {
   typeUrl: '/stride.records.UserRedemptionRecord' as const,
+  is(o: any): o is UserRedemptionRecord {
+    return (
+      o &&
+      (o.$typeUrl === UserRedemptionRecord.typeUrl ||
+        (typeof o.id === 'string' &&
+          typeof o.receiver === 'string' &&
+          typeof o.nativeTokenAmount === 'string' &&
+          typeof o.denom === 'string' &&
+          typeof o.hostZoneId === 'string' &&
+          typeof o.epochNumber === 'bigint' &&
+          typeof o.claimIsPending === 'boolean' &&
+          typeof o.stTokenAmount === 'string'))
+    );
+  },
+  isSDK(o: any): o is UserRedemptionRecordSDKType {
+    return (
+      o &&
+      (o.$typeUrl === UserRedemptionRecord.typeUrl ||
+        (typeof o.id === 'string' &&
+          typeof o.receiver === 'string' &&
+          typeof o.native_token_amount === 'string' &&
+          typeof o.denom === 'string' &&
+          typeof o.host_zone_id === 'string' &&
+          typeof o.epoch_number === 'bigint' &&
+          typeof o.claim_is_pending === 'boolean' &&
+          typeof o.st_token_amount === 'string'))
+    );
+  },
   encode(
     message: UserRedemptionRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -542,6 +571,7 @@ export const UserRedemptionRecord = {
       value: UserRedemptionRecord.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseDepositRecord(): DepositRecord {
   return {
@@ -562,6 +592,34 @@ function createBaseDepositRecord(): DepositRecord {
  */
 export const DepositRecord = {
   typeUrl: '/stride.records.DepositRecord' as const,
+  is(o: any): o is DepositRecord {
+    return (
+      o &&
+      (o.$typeUrl === DepositRecord.typeUrl ||
+        (typeof o.id === 'bigint' &&
+          typeof o.amount === 'string' &&
+          typeof o.denom === 'string' &&
+          typeof o.hostZoneId === 'string' &&
+          isSet(o.status) &&
+          typeof o.depositEpochNumber === 'bigint' &&
+          isSet(o.source) &&
+          typeof o.delegationTxsInProgress === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is DepositRecordSDKType {
+    return (
+      o &&
+      (o.$typeUrl === DepositRecord.typeUrl ||
+        (typeof o.id === 'bigint' &&
+          typeof o.amount === 'string' &&
+          typeof o.denom === 'string' &&
+          typeof o.host_zone_id === 'string' &&
+          isSet(o.status) &&
+          typeof o.deposit_epoch_number === 'bigint' &&
+          isSet(o.source) &&
+          typeof o.delegation_txs_in_progress === 'bigint'))
+    );
+  },
   encode(
     message: DepositRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -706,6 +764,7 @@ export const DepositRecord = {
       value: DepositRecord.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseHostZoneUnbonding(): HostZoneUnbonding {
   return {
@@ -729,6 +788,44 @@ function createBaseHostZoneUnbonding(): HostZoneUnbonding {
  */
 export const HostZoneUnbonding = {
   typeUrl: '/stride.records.HostZoneUnbonding' as const,
+  is(o: any): o is HostZoneUnbonding {
+    return (
+      o &&
+      (o.$typeUrl === HostZoneUnbonding.typeUrl ||
+        (typeof o.stTokenAmount === 'string' &&
+          typeof o.nativeTokenAmount === 'string' &&
+          typeof o.stTokensToBurn === 'string' &&
+          typeof o.nativeTokensToUnbond === 'string' &&
+          typeof o.claimableNativeTokens === 'string' &&
+          typeof o.undelegationTxsInProgress === 'bigint' &&
+          typeof o.denom === 'string' &&
+          typeof o.hostZoneId === 'string' &&
+          typeof o.unbondingTime === 'bigint' &&
+          isSet(o.status) &&
+          Array.isArray(o.userRedemptionRecords) &&
+          (!o.userRedemptionRecords.length ||
+            typeof o.userRedemptionRecords[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is HostZoneUnbondingSDKType {
+    return (
+      o &&
+      (o.$typeUrl === HostZoneUnbonding.typeUrl ||
+        (typeof o.st_token_amount === 'string' &&
+          typeof o.native_token_amount === 'string' &&
+          typeof o.st_tokens_to_burn === 'string' &&
+          typeof o.native_tokens_to_unbond === 'string' &&
+          typeof o.claimable_native_tokens === 'string' &&
+          typeof o.undelegation_txs_in_progress === 'bigint' &&
+          typeof o.denom === 'string' &&
+          typeof o.host_zone_id === 'string' &&
+          typeof o.unbonding_time === 'bigint' &&
+          isSet(o.status) &&
+          Array.isArray(o.user_redemption_records) &&
+          (!o.user_redemption_records.length ||
+            typeof o.user_redemption_records[0] === 'string')))
+    );
+  },
   encode(
     message: HostZoneUnbonding,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -913,6 +1010,7 @@ export const HostZoneUnbonding = {
       value: HostZoneUnbonding.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseEpochUnbondingRecord(): EpochUnbondingRecord {
   return {
@@ -927,6 +1025,26 @@ function createBaseEpochUnbondingRecord(): EpochUnbondingRecord {
  */
 export const EpochUnbondingRecord = {
   typeUrl: '/stride.records.EpochUnbondingRecord' as const,
+  is(o: any): o is EpochUnbondingRecord {
+    return (
+      o &&
+      (o.$typeUrl === EpochUnbondingRecord.typeUrl ||
+        (typeof o.epochNumber === 'bigint' &&
+          Array.isArray(o.hostZoneUnbondings) &&
+          (!o.hostZoneUnbondings.length ||
+            HostZoneUnbonding.is(o.hostZoneUnbondings[0]))))
+    );
+  },
+  isSDK(o: any): o is EpochUnbondingRecordSDKType {
+    return (
+      o &&
+      (o.$typeUrl === EpochUnbondingRecord.typeUrl ||
+        (typeof o.epoch_number === 'bigint' &&
+          Array.isArray(o.host_zone_unbondings) &&
+          (!o.host_zone_unbondings.length ||
+            HostZoneUnbonding.isSDK(o.host_zone_unbondings[0]))))
+    );
+  },
   encode(
     message: EpochUnbondingRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1013,6 +1131,16 @@ export const EpochUnbondingRecord = {
       value: EpochUnbondingRecord.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        EpochUnbondingRecord.typeUrl,
+      )
+    ) {
+      return;
+    }
+    HostZoneUnbonding.registerTypeUrl();
+  },
 };
 function createBaseLSMTokenDeposit(): LSMTokenDeposit {
   return {
@@ -1034,6 +1162,36 @@ function createBaseLSMTokenDeposit(): LSMTokenDeposit {
  */
 export const LSMTokenDeposit = {
   typeUrl: '/stride.records.LSMTokenDeposit' as const,
+  is(o: any): o is LSMTokenDeposit {
+    return (
+      o &&
+      (o.$typeUrl === LSMTokenDeposit.typeUrl ||
+        (typeof o.depositId === 'string' &&
+          typeof o.chainId === 'string' &&
+          typeof o.denom === 'string' &&
+          typeof o.ibcDenom === 'string' &&
+          typeof o.stakerAddress === 'string' &&
+          typeof o.validatorAddress === 'string' &&
+          typeof o.amount === 'string' &&
+          Coin.is(o.stToken) &&
+          isSet(o.status)))
+    );
+  },
+  isSDK(o: any): o is LSMTokenDepositSDKType {
+    return (
+      o &&
+      (o.$typeUrl === LSMTokenDeposit.typeUrl ||
+        (typeof o.deposit_id === 'string' &&
+          typeof o.chain_id === 'string' &&
+          typeof o.denom === 'string' &&
+          typeof o.ibc_denom === 'string' &&
+          typeof o.staker_address === 'string' &&
+          typeof o.validator_address === 'string' &&
+          typeof o.amount === 'string' &&
+          Coin.isSDK(o.st_token) &&
+          isSet(o.status)))
+    );
+  },
   encode(
     message: LSMTokenDeposit,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1176,5 +1334,13 @@ export const LSMTokenDeposit = {
       typeUrl: '/stride.records.LSMTokenDeposit',
       value: LSMTokenDeposit.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(LSMTokenDeposit.typeUrl)
+    ) {
+      return;
+    }
+    Coin.registerTypeUrl();
   },
 };

@@ -48,6 +48,25 @@ function createBaseGenesisState(): GenesisState {
  */
 export const GenesisState = {
   typeUrl: '/cosmos.auth.v1beta1.GenesisState' as const,
+  aminoType: 'cosmos-sdk/GenesisState' as const,
+  is(o: any): o is GenesisState {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Params.is(o.params) &&
+          Array.isArray(o.accounts) &&
+          (!o.accounts.length || Any.is(o.accounts[0]))))
+    );
+  },
+  isSDK(o: any): o is GenesisStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Params.isSDK(o.params) &&
+          Array.isArray(o.accounts) &&
+          (!o.accounts.length || Any.isSDK(o.accounts[0]))))
+    );
+  },
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -121,4 +140,5 @@ export const GenesisState = {
       value: GenesisState.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

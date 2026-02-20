@@ -41,6 +41,26 @@ function createBaseGenesisState(): GenesisState {
  */
 export const GenesisState = {
   typeUrl: '/agoric.vtransfer.GenesisState' as const,
+  is(o: any): o is GenesisState {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Array.isArray(o.watchedAddresses) &&
+          (!o.watchedAddresses.length ||
+            o.watchedAddresses[0] instanceof Uint8Array ||
+            typeof o.watchedAddresses[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is GenesisStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Array.isArray(o.watched_addresses) &&
+          (!o.watched_addresses.length ||
+            o.watched_addresses[0] instanceof Uint8Array ||
+            typeof o.watched_addresses[0] === 'string')))
+    );
+  },
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -103,4 +123,5 @@ export const GenesisState = {
       value: GenesisState.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

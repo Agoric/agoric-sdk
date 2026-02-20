@@ -132,6 +132,13 @@ function createBaseConfigRequest(): ConfigRequest {
  */
 export const ConfigRequest = {
   typeUrl: '/cosmos.base.node.v1beta1.ConfigRequest' as const,
+  aminoType: 'cosmos-sdk/ConfigRequest' as const,
+  is(o: any): o is ConfigRequest {
+    return o && o.$typeUrl === ConfigRequest.typeUrl;
+  },
+  isSDK(o: any): o is ConfigRequestSDKType {
+    return o && o.$typeUrl === ConfigRequest.typeUrl;
+  },
   encode(
     _: ConfigRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -176,6 +183,7 @@ export const ConfigRequest = {
       value: ConfigRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseConfigResponse(): ConfigResponse {
   return {
@@ -193,6 +201,27 @@ function createBaseConfigResponse(): ConfigResponse {
  */
 export const ConfigResponse = {
   typeUrl: '/cosmos.base.node.v1beta1.ConfigResponse' as const,
+  aminoType: 'cosmos-sdk/ConfigResponse' as const,
+  is(o: any): o is ConfigResponse {
+    return (
+      o &&
+      (o.$typeUrl === ConfigResponse.typeUrl ||
+        (typeof o.minimumGasPrice === 'string' &&
+          typeof o.pruningKeepRecent === 'string' &&
+          typeof o.pruningInterval === 'string' &&
+          typeof o.haltHeight === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is ConfigResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ConfigResponse.typeUrl ||
+        (typeof o.minimum_gas_price === 'string' &&
+          typeof o.pruning_keep_recent === 'string' &&
+          typeof o.pruning_interval === 'string' &&
+          typeof o.halt_height === 'bigint'))
+    );
+  },
   encode(
     message: ConfigResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -289,6 +318,7 @@ export const ConfigResponse = {
       value: ConfigResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseStatusRequest(): StatusRequest {
   return {};
@@ -301,6 +331,13 @@ function createBaseStatusRequest(): StatusRequest {
  */
 export const StatusRequest = {
   typeUrl: '/cosmos.base.node.v1beta1.StatusRequest' as const,
+  aminoType: 'cosmos-sdk/StatusRequest' as const,
+  is(o: any): o is StatusRequest {
+    return o && o.$typeUrl === StatusRequest.typeUrl;
+  },
+  isSDK(o: any): o is StatusRequestSDKType {
+    return o && o.$typeUrl === StatusRequest.typeUrl;
+  },
   encode(
     _: StatusRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -345,6 +382,7 @@ export const StatusRequest = {
       value: StatusRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseStatusResponse(): StatusResponse {
   return {
@@ -363,6 +401,30 @@ function createBaseStatusResponse(): StatusResponse {
  */
 export const StatusResponse = {
   typeUrl: '/cosmos.base.node.v1beta1.StatusResponse' as const,
+  aminoType: 'cosmos-sdk/StatusResponse' as const,
+  is(o: any): o is StatusResponse {
+    return (
+      o &&
+      (o.$typeUrl === StatusResponse.typeUrl ||
+        (typeof o.earliestStoreHeight === 'bigint' &&
+          typeof o.height === 'bigint' &&
+          (o.appHash instanceof Uint8Array || typeof o.appHash === 'string') &&
+          (o.validatorHash instanceof Uint8Array ||
+            typeof o.validatorHash === 'string')))
+    );
+  },
+  isSDK(o: any): o is StatusResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === StatusResponse.typeUrl ||
+        (typeof o.earliest_store_height === 'bigint' &&
+          typeof o.height === 'bigint' &&
+          (o.app_hash instanceof Uint8Array ||
+            typeof o.app_hash === 'string') &&
+          (o.validator_hash instanceof Uint8Array ||
+            typeof o.validator_hash === 'string')))
+    );
+  },
   encode(
     message: StatusResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -486,4 +548,5 @@ export const StatusResponse = {
       value: StatusResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

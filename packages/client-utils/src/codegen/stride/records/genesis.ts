@@ -11,6 +11,7 @@ import {
   type LSMTokenDepositSDKType,
 } from './records.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
+import { GlobalDecoderRegistry } from '../../registry.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
 /**
@@ -69,6 +70,50 @@ function createBaseGenesisState(): GenesisState {
  */
 export const GenesisState = {
   typeUrl: '/stride.records.GenesisState' as const,
+  is(o: any): o is GenesisState {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Params.is(o.params) &&
+          typeof o.portId === 'string' &&
+          Array.isArray(o.userRedemptionRecordList) &&
+          (!o.userRedemptionRecordList.length ||
+            UserRedemptionRecord.is(o.userRedemptionRecordList[0])) &&
+          typeof o.userRedemptionRecordCount === 'bigint' &&
+          Array.isArray(o.epochUnbondingRecordList) &&
+          (!o.epochUnbondingRecordList.length ||
+            EpochUnbondingRecord.is(o.epochUnbondingRecordList[0])) &&
+          Array.isArray(o.depositRecordList) &&
+          (!o.depositRecordList.length ||
+            DepositRecord.is(o.depositRecordList[0])) &&
+          typeof o.depositRecordCount === 'bigint' &&
+          Array.isArray(o.lsmTokenDepositList) &&
+          (!o.lsmTokenDepositList.length ||
+            LSMTokenDeposit.is(o.lsmTokenDepositList[0]))))
+    );
+  },
+  isSDK(o: any): o is GenesisStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Params.isSDK(o.params) &&
+          typeof o.port_id === 'string' &&
+          Array.isArray(o.user_redemption_record_list) &&
+          (!o.user_redemption_record_list.length ||
+            UserRedemptionRecord.isSDK(o.user_redemption_record_list[0])) &&
+          typeof o.user_redemption_record_count === 'bigint' &&
+          Array.isArray(o.epoch_unbonding_record_list) &&
+          (!o.epoch_unbonding_record_list.length ||
+            EpochUnbondingRecord.isSDK(o.epoch_unbonding_record_list[0])) &&
+          Array.isArray(o.deposit_record_list) &&
+          (!o.deposit_record_list.length ||
+            DepositRecord.isSDK(o.deposit_record_list[0])) &&
+          typeof o.deposit_record_count === 'bigint' &&
+          Array.isArray(o.lsm_token_deposit_list) &&
+          (!o.lsm_token_deposit_list.length ||
+            LSMTokenDeposit.isSDK(o.lsm_token_deposit_list[0]))))
+    );
+  },
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -262,5 +307,15 @@ export const GenesisState = {
       typeUrl: '/stride.records.GenesisState',
       value: GenesisState.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(GenesisState.typeUrl)) {
+      return;
+    }
+    Params.registerTypeUrl();
+    UserRedemptionRecord.registerTypeUrl();
+    EpochUnbondingRecord.registerTypeUrl();
+    DepositRecord.registerTypeUrl();
+    LSMTokenDeposit.registerTypeUrl();
   },
 };

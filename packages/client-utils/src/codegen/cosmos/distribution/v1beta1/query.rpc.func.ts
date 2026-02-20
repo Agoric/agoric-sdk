@@ -33,6 +33,7 @@ export const getParams = buildQuery<QueryParamsRequest, QueryParamsResponse>({
   decode: QueryParamsResponse.decode,
   service: 'cosmos.distribution.v1beta1.Query',
   method: 'Params',
+  deps: [QueryParamsRequest, QueryParamsResponse],
 });
 /**
  * ValidatorDistributionInfo queries validator commission and self-delegation rewards for validator
@@ -48,6 +49,10 @@ export const getValidatorDistributionInfo = buildQuery<
   decode: QueryValidatorDistributionInfoResponse.decode,
   service: 'cosmos.distribution.v1beta1.Query',
   method: 'ValidatorDistributionInfo',
+  deps: [
+    QueryValidatorDistributionInfoRequest,
+    QueryValidatorDistributionInfoResponse,
+  ],
 });
 /**
  * ValidatorOutstandingRewards queries rewards of a validator address.
@@ -63,6 +68,10 @@ export const getValidatorOutstandingRewards = buildQuery<
   decode: QueryValidatorOutstandingRewardsResponse.decode,
   service: 'cosmos.distribution.v1beta1.Query',
   method: 'ValidatorOutstandingRewards',
+  deps: [
+    QueryValidatorOutstandingRewardsRequest,
+    QueryValidatorOutstandingRewardsResponse,
+  ],
 });
 /**
  * ValidatorCommission queries accumulated commission for a validator.
@@ -78,6 +87,7 @@ export const getValidatorCommission = buildQuery<
   decode: QueryValidatorCommissionResponse.decode,
   service: 'cosmos.distribution.v1beta1.Query',
   method: 'ValidatorCommission',
+  deps: [QueryValidatorCommissionRequest, QueryValidatorCommissionResponse],
 });
 /**
  * ValidatorSlashes queries slash events of a validator.
@@ -93,6 +103,7 @@ export const getValidatorSlashes = buildQuery<
   decode: QueryValidatorSlashesResponse.decode,
   service: 'cosmos.distribution.v1beta1.Query',
   method: 'ValidatorSlashes',
+  deps: [QueryValidatorSlashesRequest, QueryValidatorSlashesResponse],
 });
 /**
  * DelegationRewards queries the total rewards accrued by a delegation.
@@ -108,6 +119,7 @@ export const getDelegationRewards = buildQuery<
   decode: QueryDelegationRewardsResponse.decode,
   service: 'cosmos.distribution.v1beta1.Query',
   method: 'DelegationRewards',
+  deps: [QueryDelegationRewardsRequest, QueryDelegationRewardsResponse],
 });
 /**
  * DelegationTotalRewards queries the total rewards accrued by each
@@ -124,6 +136,10 @@ export const getDelegationTotalRewards = buildQuery<
   decode: QueryDelegationTotalRewardsResponse.decode,
   service: 'cosmos.distribution.v1beta1.Query',
   method: 'DelegationTotalRewards',
+  deps: [
+    QueryDelegationTotalRewardsRequest,
+    QueryDelegationTotalRewardsResponse,
+  ],
 });
 /**
  * DelegatorValidators queries the validators of a delegator.
@@ -139,6 +155,7 @@ export const getDelegatorValidators = buildQuery<
   decode: QueryDelegatorValidatorsResponse.decode,
   service: 'cosmos.distribution.v1beta1.Query',
   method: 'DelegatorValidators',
+  deps: [QueryDelegatorValidatorsRequest, QueryDelegatorValidatorsResponse],
 });
 /**
  * DelegatorWithdrawAddress queries withdraw address of a delegator.
@@ -154,6 +171,10 @@ export const getDelegatorWithdrawAddress = buildQuery<
   decode: QueryDelegatorWithdrawAddressResponse.decode,
   service: 'cosmos.distribution.v1beta1.Query',
   method: 'DelegatorWithdrawAddress',
+  deps: [
+    QueryDelegatorWithdrawAddressRequest,
+    QueryDelegatorWithdrawAddressResponse,
+  ],
 });
 /**
  * CommunityPool queries the community pool coins.
@@ -169,4 +190,5 @@ export const getCommunityPool = buildQuery<
   decode: QueryCommunityPoolResponse.decode,
   service: 'cosmos.distribution.v1beta1.Query',
   method: 'CommunityPool',
+  deps: [QueryCommunityPoolRequest, QueryCommunityPoolResponse],
 });

@@ -9,6 +9,7 @@ import { Grant, type GrantSDKType } from './feegrant.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../../registry.js';
 /**
  * QueryAllowanceRequest is the request type for the Query/Allowance RPC method.
  * @name QueryAllowanceRequest
@@ -200,6 +201,21 @@ function createBaseQueryAllowanceRequest(): QueryAllowanceRequest {
  */
 export const QueryAllowanceRequest = {
   typeUrl: '/cosmos.feegrant.v1beta1.QueryAllowanceRequest' as const,
+  aminoType: 'cosmos-sdk/QueryAllowanceRequest' as const,
+  is(o: any): o is QueryAllowanceRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllowanceRequest.typeUrl ||
+        (typeof o.granter === 'string' && typeof o.grantee === 'string'))
+    );
+  },
+  isSDK(o: any): o is QueryAllowanceRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllowanceRequest.typeUrl ||
+        (typeof o.granter === 'string' && typeof o.grantee === 'string'))
+    );
+  },
   encode(
     message: QueryAllowanceRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -266,6 +282,7 @@ export const QueryAllowanceRequest = {
       value: QueryAllowanceRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryAllowanceResponse(): QueryAllowanceResponse {
   return {
@@ -280,6 +297,13 @@ function createBaseQueryAllowanceResponse(): QueryAllowanceResponse {
  */
 export const QueryAllowanceResponse = {
   typeUrl: '/cosmos.feegrant.v1beta1.QueryAllowanceResponse' as const,
+  aminoType: 'cosmos-sdk/QueryAllowanceResponse' as const,
+  is(o: any): o is QueryAllowanceResponse {
+    return o && o.$typeUrl === QueryAllowanceResponse.typeUrl;
+  },
+  isSDK(o: any): o is QueryAllowanceResponseSDKType {
+    return o && o.$typeUrl === QueryAllowanceResponse.typeUrl;
+  },
   encode(
     message: QueryAllowanceResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -347,6 +371,16 @@ export const QueryAllowanceResponse = {
       value: QueryAllowanceResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryAllowanceResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Grant.registerTypeUrl();
+  },
 };
 function createBaseQueryAllowancesRequest(): QueryAllowancesRequest {
   return {
@@ -362,6 +396,21 @@ function createBaseQueryAllowancesRequest(): QueryAllowancesRequest {
  */
 export const QueryAllowancesRequest = {
   typeUrl: '/cosmos.feegrant.v1beta1.QueryAllowancesRequest' as const,
+  aminoType: 'cosmos-sdk/QueryAllowancesRequest' as const,
+  is(o: any): o is QueryAllowancesRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllowancesRequest.typeUrl ||
+        typeof o.grantee === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryAllowancesRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllowancesRequest.typeUrl ||
+        typeof o.grantee === 'string')
+    );
+  },
   encode(
     message: QueryAllowancesRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -438,6 +487,16 @@ export const QueryAllowancesRequest = {
       value: QueryAllowancesRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryAllowancesRequest.typeUrl,
+      )
+    ) {
+      return;
+    }
+    PageRequest.registerTypeUrl();
+  },
 };
 function createBaseQueryAllowancesResponse(): QueryAllowancesResponse {
   return {
@@ -453,6 +512,23 @@ function createBaseQueryAllowancesResponse(): QueryAllowancesResponse {
  */
 export const QueryAllowancesResponse = {
   typeUrl: '/cosmos.feegrant.v1beta1.QueryAllowancesResponse' as const,
+  aminoType: 'cosmos-sdk/QueryAllowancesResponse' as const,
+  is(o: any): o is QueryAllowancesResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllowancesResponse.typeUrl ||
+        (Array.isArray(o.allowances) &&
+          (!o.allowances.length || Grant.is(o.allowances[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryAllowancesResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllowancesResponse.typeUrl ||
+        (Array.isArray(o.allowances) &&
+          (!o.allowances.length || Grant.isSDK(o.allowances[0]))))
+    );
+  },
   encode(
     message: QueryAllowancesResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -545,6 +621,17 @@ export const QueryAllowancesResponse = {
       value: QueryAllowancesResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryAllowancesResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Grant.registerTypeUrl();
+    PageResponse.registerTypeUrl();
+  },
 };
 function createBaseQueryAllowancesByGranterRequest(): QueryAllowancesByGranterRequest {
   return {
@@ -562,6 +649,21 @@ function createBaseQueryAllowancesByGranterRequest(): QueryAllowancesByGranterRe
  */
 export const QueryAllowancesByGranterRequest = {
   typeUrl: '/cosmos.feegrant.v1beta1.QueryAllowancesByGranterRequest' as const,
+  aminoType: 'cosmos-sdk/QueryAllowancesByGranterRequest' as const,
+  is(o: any): o is QueryAllowancesByGranterRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllowancesByGranterRequest.typeUrl ||
+        typeof o.granter === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryAllowancesByGranterRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllowancesByGranterRequest.typeUrl ||
+        typeof o.granter === 'string')
+    );
+  },
   encode(
     message: QueryAllowancesByGranterRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -644,6 +746,16 @@ export const QueryAllowancesByGranterRequest = {
       value: QueryAllowancesByGranterRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryAllowancesByGranterRequest.typeUrl,
+      )
+    ) {
+      return;
+    }
+    PageRequest.registerTypeUrl();
+  },
 };
 function createBaseQueryAllowancesByGranterResponse(): QueryAllowancesByGranterResponse {
   return {
@@ -661,6 +773,23 @@ function createBaseQueryAllowancesByGranterResponse(): QueryAllowancesByGranterR
  */
 export const QueryAllowancesByGranterResponse = {
   typeUrl: '/cosmos.feegrant.v1beta1.QueryAllowancesByGranterResponse' as const,
+  aminoType: 'cosmos-sdk/QueryAllowancesByGranterResponse' as const,
+  is(o: any): o is QueryAllowancesByGranterResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllowancesByGranterResponse.typeUrl ||
+        (Array.isArray(o.allowances) &&
+          (!o.allowances.length || Grant.is(o.allowances[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryAllowancesByGranterResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllowancesByGranterResponse.typeUrl ||
+        (Array.isArray(o.allowances) &&
+          (!o.allowances.length || Grant.isSDK(o.allowances[0]))))
+    );
+  },
   encode(
     message: QueryAllowancesByGranterResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -754,5 +883,16 @@ export const QueryAllowancesByGranterResponse = {
       typeUrl: '/cosmos.feegrant.v1beta1.QueryAllowancesByGranterResponse',
       value: QueryAllowancesByGranterResponse.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryAllowancesByGranterResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Grant.registerTypeUrl();
+    PageResponse.registerTypeUrl();
   },
 };

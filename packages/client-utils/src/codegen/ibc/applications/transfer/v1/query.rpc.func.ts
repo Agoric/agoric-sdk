@@ -28,6 +28,7 @@ export const getDenomTraces = buildQuery<
   decode: QueryDenomTracesResponse.decode,
   service: 'ibc.applications.transfer.v1.Query',
   method: 'DenomTraces',
+  deps: [QueryDenomTracesRequest, QueryDenomTracesResponse],
 });
 /**
  * DenomTrace queries a denomination trace information.
@@ -43,6 +44,7 @@ export const getDenomTrace = buildQuery<
   decode: QueryDenomTraceResponse.decode,
   service: 'ibc.applications.transfer.v1.Query',
   method: 'DenomTrace',
+  deps: [QueryDenomTraceRequest, QueryDenomTraceResponse],
 });
 /**
  * Params queries all parameters of the ibc-transfer module.
@@ -55,6 +57,7 @@ export const getParams = buildQuery<QueryParamsRequest, QueryParamsResponse>({
   decode: QueryParamsResponse.decode,
   service: 'ibc.applications.transfer.v1.Query',
   method: 'Params',
+  deps: [QueryParamsRequest, QueryParamsResponse],
 });
 /**
  * DenomHash queries a denomination hash information.
@@ -70,6 +73,7 @@ export const getDenomHash = buildQuery<
   decode: QueryDenomHashResponse.decode,
   service: 'ibc.applications.transfer.v1.Query',
   method: 'DenomHash',
+  deps: [QueryDenomHashRequest, QueryDenomHashResponse],
 });
 /**
  * EscrowAddress returns the escrow address for a particular port and channel id.
@@ -85,6 +89,7 @@ export const getEscrowAddress = buildQuery<
   decode: QueryEscrowAddressResponse.decode,
   service: 'ibc.applications.transfer.v1.Query',
   method: 'EscrowAddress',
+  deps: [QueryEscrowAddressRequest, QueryEscrowAddressResponse],
 });
 /**
  * TotalEscrowForDenom returns the total amount of tokens in escrow based on the denom.
@@ -100,4 +105,5 @@ export const getTotalEscrowForDenom = buildQuery<
   decode: QueryTotalEscrowForDenomResponse.decode,
   service: 'ibc.applications.transfer.v1.Query',
   method: 'TotalEscrowForDenom',
+  deps: [QueryTotalEscrowForDenomRequest, QueryTotalEscrowForDenomResponse],
 });

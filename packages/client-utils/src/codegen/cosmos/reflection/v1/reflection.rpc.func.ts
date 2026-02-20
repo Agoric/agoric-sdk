@@ -19,4 +19,5 @@ export const getFileDescriptors = buildQuery<
   decode: FileDescriptorsResponse.decode,
   service: 'cosmos.reflection.v1.ReflectionService',
   method: 'FileDescriptors',
+  deps: [FileDescriptorsRequest, FileDescriptorsResponse],
 });

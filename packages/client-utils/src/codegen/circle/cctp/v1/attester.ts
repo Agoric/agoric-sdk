@@ -40,6 +40,16 @@ function createBaseAttester(): Attester {
  */
 export const Attester = {
   typeUrl: '/circle.cctp.v1.Attester' as const,
+  is(o: any): o is Attester {
+    return (
+      o && (o.$typeUrl === Attester.typeUrl || typeof o.attester === 'string')
+    );
+  },
+  isSDK(o: any): o is AttesterSDKType {
+    return (
+      o && (o.$typeUrl === Attester.typeUrl || typeof o.attester === 'string')
+    );
+  },
   encode(
     message: Attester,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -94,4 +104,5 @@ export const Attester = {
       value: Attester.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

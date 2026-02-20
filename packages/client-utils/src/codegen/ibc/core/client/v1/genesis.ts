@@ -8,6 +8,7 @@ import {
   type ParamsSDKType,
 } from './client.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
+import { GlobalDecoderRegistry } from '../../../../registry.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
@@ -140,6 +141,41 @@ function createBaseGenesisState(): GenesisState {
  */
 export const GenesisState = {
   typeUrl: '/ibc.core.client.v1.GenesisState' as const,
+  aminoType: 'cosmos-sdk/GenesisState' as const,
+  is(o: any): o is GenesisState {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Array.isArray(o.clients) &&
+          (!o.clients.length || IdentifiedClientState.is(o.clients[0])) &&
+          Array.isArray(o.clientsConsensus) &&
+          (!o.clientsConsensus.length ||
+            ClientConsensusStates.is(o.clientsConsensus[0])) &&
+          Array.isArray(o.clientsMetadata) &&
+          (!o.clientsMetadata.length ||
+            IdentifiedGenesisMetadata.is(o.clientsMetadata[0])) &&
+          Params.is(o.params) &&
+          typeof o.createLocalhost === 'boolean' &&
+          typeof o.nextClientSequence === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is GenesisStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Array.isArray(o.clients) &&
+          (!o.clients.length || IdentifiedClientState.isSDK(o.clients[0])) &&
+          Array.isArray(o.clients_consensus) &&
+          (!o.clients_consensus.length ||
+            ClientConsensusStates.isSDK(o.clients_consensus[0])) &&
+          Array.isArray(o.clients_metadata) &&
+          (!o.clients_metadata.length ||
+            IdentifiedGenesisMetadata.isSDK(o.clients_metadata[0])) &&
+          Params.isSDK(o.params) &&
+          typeof o.create_localhost === 'boolean' &&
+          typeof o.next_client_sequence === 'bigint'))
+    );
+  },
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -295,6 +331,15 @@ export const GenesisState = {
       value: GenesisState.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(GenesisState.typeUrl)) {
+      return;
+    }
+    IdentifiedClientState.registerTypeUrl();
+    ClientConsensusStates.registerTypeUrl();
+    IdentifiedGenesisMetadata.registerTypeUrl();
+    Params.registerTypeUrl();
+  },
 };
 function createBaseGenesisMetadata(): GenesisMetadata {
   return {
@@ -311,6 +356,23 @@ function createBaseGenesisMetadata(): GenesisMetadata {
  */
 export const GenesisMetadata = {
   typeUrl: '/ibc.core.client.v1.GenesisMetadata' as const,
+  aminoType: 'cosmos-sdk/GenesisMetadata' as const,
+  is(o: any): o is GenesisMetadata {
+    return (
+      o &&
+      (o.$typeUrl === GenesisMetadata.typeUrl ||
+        ((o.key instanceof Uint8Array || typeof o.key === 'string') &&
+          (o.value instanceof Uint8Array || typeof o.value === 'string')))
+    );
+  },
+  isSDK(o: any): o is GenesisMetadataSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GenesisMetadata.typeUrl ||
+        ((o.key instanceof Uint8Array || typeof o.key === 'string') &&
+          (o.value instanceof Uint8Array || typeof o.value === 'string')))
+    );
+  },
   encode(
     message: GenesisMetadata,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -382,6 +444,7 @@ export const GenesisMetadata = {
       value: GenesisMetadata.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseIdentifiedGenesisMetadata(): IdentifiedGenesisMetadata {
   return {
@@ -398,6 +461,27 @@ function createBaseIdentifiedGenesisMetadata(): IdentifiedGenesisMetadata {
  */
 export const IdentifiedGenesisMetadata = {
   typeUrl: '/ibc.core.client.v1.IdentifiedGenesisMetadata' as const,
+  aminoType: 'cosmos-sdk/IdentifiedGenesisMetadata' as const,
+  is(o: any): o is IdentifiedGenesisMetadata {
+    return (
+      o &&
+      (o.$typeUrl === IdentifiedGenesisMetadata.typeUrl ||
+        (typeof o.clientId === 'string' &&
+          Array.isArray(o.clientMetadata) &&
+          (!o.clientMetadata.length ||
+            GenesisMetadata.is(o.clientMetadata[0]))))
+    );
+  },
+  isSDK(o: any): o is IdentifiedGenesisMetadataSDKType {
+    return (
+      o &&
+      (o.$typeUrl === IdentifiedGenesisMetadata.typeUrl ||
+        (typeof o.client_id === 'string' &&
+          Array.isArray(o.client_metadata) &&
+          (!o.client_metadata.length ||
+            GenesisMetadata.isSDK(o.client_metadata[0]))))
+    );
+  },
   encode(
     message: IdentifiedGenesisMetadata,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -482,5 +566,15 @@ export const IdentifiedGenesisMetadata = {
       typeUrl: '/ibc.core.client.v1.IdentifiedGenesisMetadata',
       value: IdentifiedGenesisMetadata.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        IdentifiedGenesisMetadata.typeUrl,
+      )
+    ) {
+      return;
+    }
+    GenesisMetadata.registerTypeUrl();
   },
 };

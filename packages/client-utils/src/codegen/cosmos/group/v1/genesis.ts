@@ -14,6 +14,7 @@ import {
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../../registry.js';
 /**
  * GenesisState defines the group module's genesis state.
  * @name GenesisState
@@ -97,6 +98,46 @@ function createBaseGenesisState(): GenesisState {
  */
 export const GenesisState = {
   typeUrl: '/cosmos.group.v1.GenesisState' as const,
+  aminoType: 'cosmos-sdk/GenesisState' as const,
+  is(o: any): o is GenesisState {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (typeof o.groupSeq === 'bigint' &&
+          Array.isArray(o.groups) &&
+          (!o.groups.length || GroupInfo.is(o.groups[0])) &&
+          Array.isArray(o.groupMembers) &&
+          (!o.groupMembers.length || GroupMember.is(o.groupMembers[0])) &&
+          typeof o.groupPolicySeq === 'bigint' &&
+          Array.isArray(o.groupPolicies) &&
+          (!o.groupPolicies.length || GroupPolicyInfo.is(o.groupPolicies[0])) &&
+          typeof o.proposalSeq === 'bigint' &&
+          Array.isArray(o.proposals) &&
+          (!o.proposals.length || Proposal.is(o.proposals[0])) &&
+          Array.isArray(o.votes) &&
+          (!o.votes.length || Vote.is(o.votes[0]))))
+    );
+  },
+  isSDK(o: any): o is GenesisStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (typeof o.group_seq === 'bigint' &&
+          Array.isArray(o.groups) &&
+          (!o.groups.length || GroupInfo.isSDK(o.groups[0])) &&
+          Array.isArray(o.group_members) &&
+          (!o.group_members.length || GroupMember.isSDK(o.group_members[0])) &&
+          typeof o.group_policy_seq === 'bigint' &&
+          Array.isArray(o.group_policies) &&
+          (!o.group_policies.length ||
+            GroupPolicyInfo.isSDK(o.group_policies[0])) &&
+          typeof o.proposal_seq === 'bigint' &&
+          Array.isArray(o.proposals) &&
+          (!o.proposals.length || Proposal.isSDK(o.proposals[0])) &&
+          Array.isArray(o.votes) &&
+          (!o.votes.length || Vote.isSDK(o.votes[0]))))
+    );
+  },
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -276,5 +317,15 @@ export const GenesisState = {
       typeUrl: '/cosmos.group.v1.GenesisState',
       value: GenesisState.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(GenesisState.typeUrl)) {
+      return;
+    }
+    GroupInfo.registerTypeUrl();
+    GroupMember.registerTypeUrl();
+    GroupPolicyInfo.registerTypeUrl();
+    Proposal.registerTypeUrl();
+    Vote.registerTypeUrl();
   },
 };

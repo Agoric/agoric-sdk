@@ -4,6 +4,7 @@ import { isSet } from '../../helpers.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
 import { type JsonSafe } from '../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../registry.js';
 /**
  * @name Proof
  * @package tendermint.crypto
@@ -149,6 +150,34 @@ function createBaseProof(): Proof {
  */
 export const Proof = {
   typeUrl: '/tendermint.crypto.Proof' as const,
+  is(o: any): o is Proof {
+    return (
+      o &&
+      (o.$typeUrl === Proof.typeUrl ||
+        (typeof o.total === 'bigint' &&
+          typeof o.index === 'bigint' &&
+          (o.leafHash instanceof Uint8Array ||
+            typeof o.leafHash === 'string') &&
+          Array.isArray(o.aunts) &&
+          (!o.aunts.length ||
+            o.aunts[0] instanceof Uint8Array ||
+            typeof o.aunts[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is ProofSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Proof.typeUrl ||
+        (typeof o.total === 'bigint' &&
+          typeof o.index === 'bigint' &&
+          (o.leaf_hash instanceof Uint8Array ||
+            typeof o.leaf_hash === 'string') &&
+          Array.isArray(o.aunts) &&
+          (!o.aunts.length ||
+            o.aunts[0] instanceof Uint8Array ||
+            typeof o.aunts[0] === 'string')))
+    );
+  },
   encode(
     message: Proof,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -251,6 +280,7 @@ export const Proof = {
       value: Proof.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseValueOp(): ValueOp {
   return {
@@ -265,6 +295,22 @@ function createBaseValueOp(): ValueOp {
  */
 export const ValueOp = {
   typeUrl: '/tendermint.crypto.ValueOp' as const,
+  is(o: any): o is ValueOp {
+    return (
+      o &&
+      (o.$typeUrl === ValueOp.typeUrl ||
+        o.key instanceof Uint8Array ||
+        typeof o.key === 'string')
+    );
+  },
+  isSDK(o: any): o is ValueOpSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ValueOp.typeUrl ||
+        o.key instanceof Uint8Array ||
+        typeof o.key === 'string')
+    );
+  },
   encode(
     message: ValueOp,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -335,6 +381,12 @@ export const ValueOp = {
       value: ValueOp.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(ValueOp.typeUrl)) {
+      return;
+    }
+    Proof.registerTypeUrl();
+  },
 };
 function createBaseDominoOp(): DominoOp {
   return {
@@ -350,6 +402,24 @@ function createBaseDominoOp(): DominoOp {
  */
 export const DominoOp = {
   typeUrl: '/tendermint.crypto.DominoOp' as const,
+  is(o: any): o is DominoOp {
+    return (
+      o &&
+      (o.$typeUrl === DominoOp.typeUrl ||
+        (typeof o.key === 'string' &&
+          typeof o.input === 'string' &&
+          typeof o.output === 'string'))
+    );
+  },
+  isSDK(o: any): o is DominoOpSDKType {
+    return (
+      o &&
+      (o.$typeUrl === DominoOp.typeUrl ||
+        (typeof o.key === 'string' &&
+          typeof o.input === 'string' &&
+          typeof o.output === 'string'))
+    );
+  },
   encode(
     message: DominoOp,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -422,6 +492,7 @@ export const DominoOp = {
       value: DominoOp.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseProofOp(): ProofOp {
   return {
@@ -440,6 +511,24 @@ function createBaseProofOp(): ProofOp {
  */
 export const ProofOp = {
   typeUrl: '/tendermint.crypto.ProofOp' as const,
+  is(o: any): o is ProofOp {
+    return (
+      o &&
+      (o.$typeUrl === ProofOp.typeUrl ||
+        (typeof o.type === 'string' &&
+          (o.key instanceof Uint8Array || typeof o.key === 'string') &&
+          (o.data instanceof Uint8Array || typeof o.data === 'string')))
+    );
+  },
+  isSDK(o: any): o is ProofOpSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ProofOp.typeUrl ||
+        (typeof o.type === 'string' &&
+          (o.key instanceof Uint8Array || typeof o.key === 'string') &&
+          (o.data instanceof Uint8Array || typeof o.data === 'string')))
+    );
+  },
   encode(
     message: ProofOp,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -520,6 +609,7 @@ export const ProofOp = {
       value: ProofOp.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseProofOps(): ProofOps {
   return {
@@ -534,6 +624,20 @@ function createBaseProofOps(): ProofOps {
  */
 export const ProofOps = {
   typeUrl: '/tendermint.crypto.ProofOps' as const,
+  is(o: any): o is ProofOps {
+    return (
+      o &&
+      (o.$typeUrl === ProofOps.typeUrl ||
+        (Array.isArray(o.ops) && (!o.ops.length || ProofOp.is(o.ops[0]))))
+    );
+  },
+  isSDK(o: any): o is ProofOpsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ProofOps.typeUrl ||
+        (Array.isArray(o.ops) && (!o.ops.length || ProofOp.isSDK(o.ops[0]))))
+    );
+  },
   encode(
     message: ProofOps,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -593,5 +697,11 @@ export const ProofOps = {
       typeUrl: '/tendermint.crypto.ProofOps',
       value: ProofOps.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(ProofOps.typeUrl)) {
+      return;
+    }
+    ProofOp.registerTypeUrl();
   },
 };

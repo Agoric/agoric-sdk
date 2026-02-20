@@ -5,6 +5,7 @@ import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { Decimal } from '../../decimals.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../registry.js';
 export enum AuthzPermissionChange {
   /** GRANT - Grant the address trade permissions */
   GRANT = 0,
@@ -1222,6 +1223,26 @@ function createBaseMsgUpdateInnerRedemptionRateBounds(): MsgUpdateInnerRedemptio
  */
 export const MsgUpdateInnerRedemptionRateBounds = {
   typeUrl: '/stride.stakeibc.MsgUpdateInnerRedemptionRateBounds' as const,
+  is(o: any): o is MsgUpdateInnerRedemptionRateBounds {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpdateInnerRedemptionRateBounds.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.chainId === 'string' &&
+          typeof o.minInnerRedemptionRate === 'string' &&
+          typeof o.maxInnerRedemptionRate === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgUpdateInnerRedemptionRateBoundsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpdateInnerRedemptionRateBounds.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.chain_id === 'string' &&
+          typeof o.min_inner_redemption_rate === 'string' &&
+          typeof o.max_inner_redemption_rate === 'string'))
+    );
+  },
   encode(
     message: MsgUpdateInnerRedemptionRateBounds,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1334,6 +1355,7 @@ export const MsgUpdateInnerRedemptionRateBounds = {
       value: MsgUpdateInnerRedemptionRateBounds.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgUpdateInnerRedemptionRateBoundsResponse(): MsgUpdateInnerRedemptionRateBoundsResponse {
   return {};
@@ -1346,6 +1368,16 @@ function createBaseMsgUpdateInnerRedemptionRateBoundsResponse(): MsgUpdateInnerR
 export const MsgUpdateInnerRedemptionRateBoundsResponse = {
   typeUrl:
     '/stride.stakeibc.MsgUpdateInnerRedemptionRateBoundsResponse' as const,
+  is(o: any): o is MsgUpdateInnerRedemptionRateBoundsResponse {
+    return (
+      o && o.$typeUrl === MsgUpdateInnerRedemptionRateBoundsResponse.typeUrl
+    );
+  },
+  isSDK(o: any): o is MsgUpdateInnerRedemptionRateBoundsResponseSDKType {
+    return (
+      o && o.$typeUrl === MsgUpdateInnerRedemptionRateBoundsResponse.typeUrl
+    );
+  },
   encode(
     _: MsgUpdateInnerRedemptionRateBoundsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1402,6 +1434,7 @@ export const MsgUpdateInnerRedemptionRateBoundsResponse = {
         MsgUpdateInnerRedemptionRateBoundsResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgLiquidStake(): MsgLiquidStake {
   return {
@@ -1417,6 +1450,24 @@ function createBaseMsgLiquidStake(): MsgLiquidStake {
  */
 export const MsgLiquidStake = {
   typeUrl: '/stride.stakeibc.MsgLiquidStake' as const,
+  is(o: any): o is MsgLiquidStake {
+    return (
+      o &&
+      (o.$typeUrl === MsgLiquidStake.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.amount === 'string' &&
+          typeof o.hostDenom === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgLiquidStakeSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgLiquidStake.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.amount === 'string' &&
+          typeof o.host_denom === 'string'))
+    );
+  },
   encode(
     message: MsgLiquidStake,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1489,6 +1540,7 @@ export const MsgLiquidStake = {
       value: MsgLiquidStake.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgLiquidStakeResponse(): MsgLiquidStakeResponse {
   return {
@@ -1502,6 +1554,17 @@ function createBaseMsgLiquidStakeResponse(): MsgLiquidStakeResponse {
  */
 export const MsgLiquidStakeResponse = {
   typeUrl: '/stride.stakeibc.MsgLiquidStakeResponse' as const,
+  is(o: any): o is MsgLiquidStakeResponse {
+    return (
+      o && (o.$typeUrl === MsgLiquidStakeResponse.typeUrl || Coin.is(o.stToken))
+    );
+  },
+  isSDK(o: any): o is MsgLiquidStakeResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgLiquidStakeResponse.typeUrl || Coin.isSDK(o.st_token))
+    );
+  },
   encode(
     message: MsgLiquidStakeResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1569,6 +1632,16 @@ export const MsgLiquidStakeResponse = {
       value: MsgLiquidStakeResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        MsgLiquidStakeResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Coin.registerTypeUrl();
+  },
 };
 function createBaseMsgLSMLiquidStake(): MsgLSMLiquidStake {
   return {
@@ -1584,6 +1657,24 @@ function createBaseMsgLSMLiquidStake(): MsgLSMLiquidStake {
  */
 export const MsgLSMLiquidStake = {
   typeUrl: '/stride.stakeibc.MsgLSMLiquidStake' as const,
+  is(o: any): o is MsgLSMLiquidStake {
+    return (
+      o &&
+      (o.$typeUrl === MsgLSMLiquidStake.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.amount === 'string' &&
+          typeof o.lsmTokenIbcDenom === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgLSMLiquidStakeSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgLSMLiquidStake.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.amount === 'string' &&
+          typeof o.lsm_token_ibc_denom === 'string'))
+    );
+  },
   encode(
     message: MsgLSMLiquidStake,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1659,6 +1750,7 @@ export const MsgLSMLiquidStake = {
       value: MsgLSMLiquidStake.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgLSMLiquidStakeResponse(): MsgLSMLiquidStakeResponse {
   return {
@@ -1672,6 +1764,20 @@ function createBaseMsgLSMLiquidStakeResponse(): MsgLSMLiquidStakeResponse {
  */
 export const MsgLSMLiquidStakeResponse = {
   typeUrl: '/stride.stakeibc.MsgLSMLiquidStakeResponse' as const,
+  is(o: any): o is MsgLSMLiquidStakeResponse {
+    return (
+      o &&
+      (o.$typeUrl === MsgLSMLiquidStakeResponse.typeUrl ||
+        typeof o.transactionComplete === 'boolean')
+    );
+  },
+  isSDK(o: any): o is MsgLSMLiquidStakeResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgLSMLiquidStakeResponse.typeUrl ||
+        typeof o.transaction_complete === 'boolean')
+    );
+  },
   encode(
     message: MsgLSMLiquidStakeResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1740,6 +1846,7 @@ export const MsgLSMLiquidStakeResponse = {
       value: MsgLSMLiquidStakeResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgClearBalance(): MsgClearBalance {
   return {
@@ -1756,6 +1863,26 @@ function createBaseMsgClearBalance(): MsgClearBalance {
  */
 export const MsgClearBalance = {
   typeUrl: '/stride.stakeibc.MsgClearBalance' as const,
+  is(o: any): o is MsgClearBalance {
+    return (
+      o &&
+      (o.$typeUrl === MsgClearBalance.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.chainId === 'string' &&
+          typeof o.amount === 'string' &&
+          typeof o.channel === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgClearBalanceSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgClearBalance.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.chain_id === 'string' &&
+          typeof o.amount === 'string' &&
+          typeof o.channel === 'string'))
+    );
+  },
   encode(
     message: MsgClearBalance,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1837,6 +1964,7 @@ export const MsgClearBalance = {
       value: MsgClearBalance.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgClearBalanceResponse(): MsgClearBalanceResponse {
   return {};
@@ -1848,6 +1976,12 @@ function createBaseMsgClearBalanceResponse(): MsgClearBalanceResponse {
  */
 export const MsgClearBalanceResponse = {
   typeUrl: '/stride.stakeibc.MsgClearBalanceResponse' as const,
+  is(o: any): o is MsgClearBalanceResponse {
+    return o && o.$typeUrl === MsgClearBalanceResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgClearBalanceResponseSDKType {
+    return o && o.$typeUrl === MsgClearBalanceResponse.typeUrl;
+  },
   encode(
     _: MsgClearBalanceResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1899,6 +2033,7 @@ export const MsgClearBalanceResponse = {
       value: MsgClearBalanceResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgRedeemStake(): MsgRedeemStake {
   return {
@@ -1915,6 +2050,26 @@ function createBaseMsgRedeemStake(): MsgRedeemStake {
  */
 export const MsgRedeemStake = {
   typeUrl: '/stride.stakeibc.MsgRedeemStake' as const,
+  is(o: any): o is MsgRedeemStake {
+    return (
+      o &&
+      (o.$typeUrl === MsgRedeemStake.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.amount === 'string' &&
+          typeof o.hostZone === 'string' &&
+          typeof o.receiver === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgRedeemStakeSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgRedeemStake.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.amount === 'string' &&
+          typeof o.host_zone === 'string' &&
+          typeof o.receiver === 'string'))
+    );
+  },
   encode(
     message: MsgRedeemStake,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1996,6 +2151,7 @@ export const MsgRedeemStake = {
       value: MsgRedeemStake.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgRedeemStakeResponse(): MsgRedeemStakeResponse {
   return {};
@@ -2007,6 +2163,12 @@ function createBaseMsgRedeemStakeResponse(): MsgRedeemStakeResponse {
  */
 export const MsgRedeemStakeResponse = {
   typeUrl: '/stride.stakeibc.MsgRedeemStakeResponse' as const,
+  is(o: any): o is MsgRedeemStakeResponse {
+    return o && o.$typeUrl === MsgRedeemStakeResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgRedeemStakeResponseSDKType {
+    return o && o.$typeUrl === MsgRedeemStakeResponse.typeUrl;
+  },
   encode(
     _: MsgRedeemStakeResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2056,6 +2218,7 @@ export const MsgRedeemStakeResponse = {
       value: MsgRedeemStakeResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgRegisterHostZone(): MsgRegisterHostZone {
   return {
@@ -2081,6 +2244,42 @@ function createBaseMsgRegisterHostZone(): MsgRegisterHostZone {
  */
 export const MsgRegisterHostZone = {
   typeUrl: '/stride.stakeibc.MsgRegisterHostZone' as const,
+  is(o: any): o is MsgRegisterHostZone {
+    return (
+      o &&
+      (o.$typeUrl === MsgRegisterHostZone.typeUrl ||
+        (typeof o.connectionId === 'string' &&
+          typeof o.bech32prefix === 'string' &&
+          typeof o.hostDenom === 'string' &&
+          typeof o.ibcDenom === 'string' &&
+          typeof o.creator === 'string' &&
+          typeof o.transferChannelId === 'string' &&
+          typeof o.unbondingPeriod === 'bigint' &&
+          typeof o.minRedemptionRate === 'string' &&
+          typeof o.maxRedemptionRate === 'string' &&
+          typeof o.lsmLiquidStakeEnabled === 'boolean' &&
+          typeof o.communityPoolTreasuryAddress === 'string' &&
+          typeof o.maxMessagesPerIcaTx === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is MsgRegisterHostZoneSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgRegisterHostZone.typeUrl ||
+        (typeof o.connection_id === 'string' &&
+          typeof o.bech32prefix === 'string' &&
+          typeof o.host_denom === 'string' &&
+          typeof o.ibc_denom === 'string' &&
+          typeof o.creator === 'string' &&
+          typeof o.transfer_channel_id === 'string' &&
+          typeof o.unbonding_period === 'bigint' &&
+          typeof o.min_redemption_rate === 'string' &&
+          typeof o.max_redemption_rate === 'string' &&
+          typeof o.lsm_liquid_stake_enabled === 'boolean' &&
+          typeof o.community_pool_treasury_address === 'string' &&
+          typeof o.max_messages_per_ica_tx === 'bigint'))
+    );
+  },
   encode(
     message: MsgRegisterHostZone,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2284,6 +2483,7 @@ export const MsgRegisterHostZone = {
       value: MsgRegisterHostZone.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgRegisterHostZoneResponse(): MsgRegisterHostZoneResponse {
   return {};
@@ -2295,6 +2495,12 @@ function createBaseMsgRegisterHostZoneResponse(): MsgRegisterHostZoneResponse {
  */
 export const MsgRegisterHostZoneResponse = {
   typeUrl: '/stride.stakeibc.MsgRegisterHostZoneResponse' as const,
+  is(o: any): o is MsgRegisterHostZoneResponse {
+    return o && o.$typeUrl === MsgRegisterHostZoneResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgRegisterHostZoneResponseSDKType {
+    return o && o.$typeUrl === MsgRegisterHostZoneResponse.typeUrl;
+  },
   encode(
     _: MsgRegisterHostZoneResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2350,6 +2556,7 @@ export const MsgRegisterHostZoneResponse = {
       value: MsgRegisterHostZoneResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgClaimUndelegatedTokens(): MsgClaimUndelegatedTokens {
   return {
@@ -2366,6 +2573,26 @@ function createBaseMsgClaimUndelegatedTokens(): MsgClaimUndelegatedTokens {
  */
 export const MsgClaimUndelegatedTokens = {
   typeUrl: '/stride.stakeibc.MsgClaimUndelegatedTokens' as const,
+  is(o: any): o is MsgClaimUndelegatedTokens {
+    return (
+      o &&
+      (o.$typeUrl === MsgClaimUndelegatedTokens.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.hostZoneId === 'string' &&
+          typeof o.epoch === 'bigint' &&
+          typeof o.receiver === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgClaimUndelegatedTokensSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgClaimUndelegatedTokens.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.host_zone_id === 'string' &&
+          typeof o.epoch === 'bigint' &&
+          typeof o.receiver === 'string'))
+    );
+  },
   encode(
     message: MsgClaimUndelegatedTokens,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2462,6 +2689,7 @@ export const MsgClaimUndelegatedTokens = {
       value: MsgClaimUndelegatedTokens.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgClaimUndelegatedTokensResponse(): MsgClaimUndelegatedTokensResponse {
   return {};
@@ -2473,6 +2701,12 @@ function createBaseMsgClaimUndelegatedTokensResponse(): MsgClaimUndelegatedToken
  */
 export const MsgClaimUndelegatedTokensResponse = {
   typeUrl: '/stride.stakeibc.MsgClaimUndelegatedTokensResponse' as const,
+  is(o: any): o is MsgClaimUndelegatedTokensResponse {
+    return o && o.$typeUrl === MsgClaimUndelegatedTokensResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgClaimUndelegatedTokensResponseSDKType {
+    return o && o.$typeUrl === MsgClaimUndelegatedTokensResponse.typeUrl;
+  },
   encode(
     _: MsgClaimUndelegatedTokensResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2528,6 +2762,7 @@ export const MsgClaimUndelegatedTokensResponse = {
       value: MsgClaimUndelegatedTokensResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgRebalanceValidators(): MsgRebalanceValidators {
   return {
@@ -2543,6 +2778,24 @@ function createBaseMsgRebalanceValidators(): MsgRebalanceValidators {
  */
 export const MsgRebalanceValidators = {
   typeUrl: '/stride.stakeibc.MsgRebalanceValidators' as const,
+  is(o: any): o is MsgRebalanceValidators {
+    return (
+      o &&
+      (o.$typeUrl === MsgRebalanceValidators.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.hostZone === 'string' &&
+          typeof o.numRebalance === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is MsgRebalanceValidatorsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgRebalanceValidators.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.host_zone === 'string' &&
+          typeof o.num_rebalance === 'bigint'))
+    );
+  },
   encode(
     message: MsgRebalanceValidators,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2626,6 +2879,7 @@ export const MsgRebalanceValidators = {
       value: MsgRebalanceValidators.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgRebalanceValidatorsResponse(): MsgRebalanceValidatorsResponse {
   return {};
@@ -2637,6 +2891,12 @@ function createBaseMsgRebalanceValidatorsResponse(): MsgRebalanceValidatorsRespo
  */
 export const MsgRebalanceValidatorsResponse = {
   typeUrl: '/stride.stakeibc.MsgRebalanceValidatorsResponse' as const,
+  is(o: any): o is MsgRebalanceValidatorsResponse {
+    return o && o.$typeUrl === MsgRebalanceValidatorsResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgRebalanceValidatorsResponseSDKType {
+    return o && o.$typeUrl === MsgRebalanceValidatorsResponse.typeUrl;
+  },
   encode(
     _: MsgRebalanceValidatorsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2692,6 +2952,7 @@ export const MsgRebalanceValidatorsResponse = {
       value: MsgRebalanceValidatorsResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgAddValidators(): MsgAddValidators {
   return {
@@ -2707,6 +2968,26 @@ function createBaseMsgAddValidators(): MsgAddValidators {
  */
 export const MsgAddValidators = {
   typeUrl: '/stride.stakeibc.MsgAddValidators' as const,
+  is(o: any): o is MsgAddValidators {
+    return (
+      o &&
+      (o.$typeUrl === MsgAddValidators.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.hostZone === 'string' &&
+          Array.isArray(o.validators) &&
+          (!o.validators.length || Validator.is(o.validators[0]))))
+    );
+  },
+  isSDK(o: any): o is MsgAddValidatorsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgAddValidators.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.host_zone === 'string' &&
+          Array.isArray(o.validators) &&
+          (!o.validators.length || Validator.isSDK(o.validators[0]))))
+    );
+  },
   encode(
     message: MsgAddValidators,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2788,6 +3069,14 @@ export const MsgAddValidators = {
       value: MsgAddValidators.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(MsgAddValidators.typeUrl)
+    ) {
+      return;
+    }
+    Validator.registerTypeUrl();
+  },
 };
 function createBaseMsgAddValidatorsResponse(): MsgAddValidatorsResponse {
   return {};
@@ -2799,6 +3088,12 @@ function createBaseMsgAddValidatorsResponse(): MsgAddValidatorsResponse {
  */
 export const MsgAddValidatorsResponse = {
   typeUrl: '/stride.stakeibc.MsgAddValidatorsResponse' as const,
+  is(o: any): o is MsgAddValidatorsResponse {
+    return o && o.$typeUrl === MsgAddValidatorsResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgAddValidatorsResponseSDKType {
+    return o && o.$typeUrl === MsgAddValidatorsResponse.typeUrl;
+  },
   encode(
     _: MsgAddValidatorsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2850,6 +3145,7 @@ export const MsgAddValidatorsResponse = {
       value: MsgAddValidatorsResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseValidatorWeight(): ValidatorWeight {
   return {
@@ -2864,6 +3160,20 @@ function createBaseValidatorWeight(): ValidatorWeight {
  */
 export const ValidatorWeight = {
   typeUrl: '/stride.stakeibc.ValidatorWeight' as const,
+  is(o: any): o is ValidatorWeight {
+    return (
+      o &&
+      (o.$typeUrl === ValidatorWeight.typeUrl ||
+        (typeof o.address === 'string' && typeof o.weight === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is ValidatorWeightSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ValidatorWeight.typeUrl ||
+        (typeof o.address === 'string' && typeof o.weight === 'bigint'))
+    );
+  },
   encode(
     message: ValidatorWeight,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2933,6 +3243,7 @@ export const ValidatorWeight = {
       value: ValidatorWeight.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgChangeValidatorWeights(): MsgChangeValidatorWeights {
   return {
@@ -2948,6 +3259,28 @@ function createBaseMsgChangeValidatorWeights(): MsgChangeValidatorWeights {
  */
 export const MsgChangeValidatorWeights = {
   typeUrl: '/stride.stakeibc.MsgChangeValidatorWeights' as const,
+  is(o: any): o is MsgChangeValidatorWeights {
+    return (
+      o &&
+      (o.$typeUrl === MsgChangeValidatorWeights.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.hostZone === 'string' &&
+          Array.isArray(o.validatorWeights) &&
+          (!o.validatorWeights.length ||
+            ValidatorWeight.is(o.validatorWeights[0]))))
+    );
+  },
+  isSDK(o: any): o is MsgChangeValidatorWeightsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgChangeValidatorWeights.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.host_zone === 'string' &&
+          Array.isArray(o.validator_weights) &&
+          (!o.validator_weights.length ||
+            ValidatorWeight.isSDK(o.validator_weights[0]))))
+    );
+  },
   encode(
     message: MsgChangeValidatorWeights,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3042,6 +3375,16 @@ export const MsgChangeValidatorWeights = {
       value: MsgChangeValidatorWeights.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        MsgChangeValidatorWeights.typeUrl,
+      )
+    ) {
+      return;
+    }
+    ValidatorWeight.registerTypeUrl();
+  },
 };
 function createBaseMsgChangeValidatorWeightsResponse(): MsgChangeValidatorWeightsResponse {
   return {};
@@ -3053,6 +3396,12 @@ function createBaseMsgChangeValidatorWeightsResponse(): MsgChangeValidatorWeight
  */
 export const MsgChangeValidatorWeightsResponse = {
   typeUrl: '/stride.stakeibc.MsgChangeValidatorWeightsResponse' as const,
+  is(o: any): o is MsgChangeValidatorWeightsResponse {
+    return o && o.$typeUrl === MsgChangeValidatorWeightsResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgChangeValidatorWeightsResponseSDKType {
+    return o && o.$typeUrl === MsgChangeValidatorWeightsResponse.typeUrl;
+  },
   encode(
     _: MsgChangeValidatorWeightsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3108,6 +3457,7 @@ export const MsgChangeValidatorWeightsResponse = {
       value: MsgChangeValidatorWeightsResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgDeleteValidator(): MsgDeleteValidator {
   return {
@@ -3123,6 +3473,24 @@ function createBaseMsgDeleteValidator(): MsgDeleteValidator {
  */
 export const MsgDeleteValidator = {
   typeUrl: '/stride.stakeibc.MsgDeleteValidator' as const,
+  is(o: any): o is MsgDeleteValidator {
+    return (
+      o &&
+      (o.$typeUrl === MsgDeleteValidator.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.hostZone === 'string' &&
+          typeof o.valAddr === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgDeleteValidatorSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgDeleteValidator.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.host_zone === 'string' &&
+          typeof o.val_addr === 'string'))
+    );
+  },
   encode(
     message: MsgDeleteValidator,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3198,6 +3566,7 @@ export const MsgDeleteValidator = {
       value: MsgDeleteValidator.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgDeleteValidatorResponse(): MsgDeleteValidatorResponse {
   return {};
@@ -3209,6 +3578,12 @@ function createBaseMsgDeleteValidatorResponse(): MsgDeleteValidatorResponse {
  */
 export const MsgDeleteValidatorResponse = {
   typeUrl: '/stride.stakeibc.MsgDeleteValidatorResponse' as const,
+  is(o: any): o is MsgDeleteValidatorResponse {
+    return o && o.$typeUrl === MsgDeleteValidatorResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgDeleteValidatorResponseSDKType {
+    return o && o.$typeUrl === MsgDeleteValidatorResponse.typeUrl;
+  },
   encode(
     _: MsgDeleteValidatorResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3262,6 +3637,7 @@ export const MsgDeleteValidatorResponse = {
       value: MsgDeleteValidatorResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgRestoreInterchainAccount(): MsgRestoreInterchainAccount {
   return {
@@ -3278,6 +3654,26 @@ function createBaseMsgRestoreInterchainAccount(): MsgRestoreInterchainAccount {
  */
 export const MsgRestoreInterchainAccount = {
   typeUrl: '/stride.stakeibc.MsgRestoreInterchainAccount' as const,
+  is(o: any): o is MsgRestoreInterchainAccount {
+    return (
+      o &&
+      (o.$typeUrl === MsgRestoreInterchainAccount.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.chainId === 'string' &&
+          typeof o.connectionId === 'string' &&
+          typeof o.accountOwner === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgRestoreInterchainAccountSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgRestoreInterchainAccount.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.chain_id === 'string' &&
+          typeof o.connection_id === 'string' &&
+          typeof o.account_owner === 'string'))
+    );
+  },
   encode(
     message: MsgRestoreInterchainAccount,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3376,6 +3772,7 @@ export const MsgRestoreInterchainAccount = {
       value: MsgRestoreInterchainAccount.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgRestoreInterchainAccountResponse(): MsgRestoreInterchainAccountResponse {
   return {};
@@ -3387,6 +3784,12 @@ function createBaseMsgRestoreInterchainAccountResponse(): MsgRestoreInterchainAc
  */
 export const MsgRestoreInterchainAccountResponse = {
   typeUrl: '/stride.stakeibc.MsgRestoreInterchainAccountResponse' as const,
+  is(o: any): o is MsgRestoreInterchainAccountResponse {
+    return o && o.$typeUrl === MsgRestoreInterchainAccountResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgRestoreInterchainAccountResponseSDKType {
+    return o && o.$typeUrl === MsgRestoreInterchainAccountResponse.typeUrl;
+  },
   encode(
     _: MsgRestoreInterchainAccountResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3442,6 +3845,7 @@ export const MsgRestoreInterchainAccountResponse = {
       value: MsgRestoreInterchainAccountResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgCloseDelegationChannel(): MsgCloseDelegationChannel {
   return {
@@ -3456,6 +3860,20 @@ function createBaseMsgCloseDelegationChannel(): MsgCloseDelegationChannel {
  */
 export const MsgCloseDelegationChannel = {
   typeUrl: '/stride.stakeibc.MsgCloseDelegationChannel' as const,
+  is(o: any): o is MsgCloseDelegationChannel {
+    return (
+      o &&
+      (o.$typeUrl === MsgCloseDelegationChannel.typeUrl ||
+        (typeof o.creator === 'string' && typeof o.chainId === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgCloseDelegationChannelSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgCloseDelegationChannel.typeUrl ||
+        (typeof o.creator === 'string' && typeof o.chain_id === 'string'))
+    );
+  },
   encode(
     message: MsgCloseDelegationChannel,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3530,6 +3948,7 @@ export const MsgCloseDelegationChannel = {
       value: MsgCloseDelegationChannel.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgCloseDelegationChannelResponse(): MsgCloseDelegationChannelResponse {
   return {};
@@ -3541,6 +3960,12 @@ function createBaseMsgCloseDelegationChannelResponse(): MsgCloseDelegationChanne
  */
 export const MsgCloseDelegationChannelResponse = {
   typeUrl: '/stride.stakeibc.MsgCloseDelegationChannelResponse' as const,
+  is(o: any): o is MsgCloseDelegationChannelResponse {
+    return o && o.$typeUrl === MsgCloseDelegationChannelResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgCloseDelegationChannelResponseSDKType {
+    return o && o.$typeUrl === MsgCloseDelegationChannelResponse.typeUrl;
+  },
   encode(
     _: MsgCloseDelegationChannelResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3596,6 +4021,7 @@ export const MsgCloseDelegationChannelResponse = {
       value: MsgCloseDelegationChannelResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgUpdateValidatorSharesExchRate(): MsgUpdateValidatorSharesExchRate {
   return {
@@ -3611,6 +4037,24 @@ function createBaseMsgUpdateValidatorSharesExchRate(): MsgUpdateValidatorSharesE
  */
 export const MsgUpdateValidatorSharesExchRate = {
   typeUrl: '/stride.stakeibc.MsgUpdateValidatorSharesExchRate' as const,
+  is(o: any): o is MsgUpdateValidatorSharesExchRate {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpdateValidatorSharesExchRate.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.chainId === 'string' &&
+          typeof o.valoper === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgUpdateValidatorSharesExchRateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpdateValidatorSharesExchRate.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.chain_id === 'string' &&
+          typeof o.valoper === 'string'))
+    );
+  },
   encode(
     message: MsgUpdateValidatorSharesExchRate,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3694,6 +4138,7 @@ export const MsgUpdateValidatorSharesExchRate = {
       value: MsgUpdateValidatorSharesExchRate.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgUpdateValidatorSharesExchRateResponse(): MsgUpdateValidatorSharesExchRateResponse {
   return {};
@@ -3705,6 +4150,12 @@ function createBaseMsgUpdateValidatorSharesExchRateResponse(): MsgUpdateValidato
  */
 export const MsgUpdateValidatorSharesExchRateResponse = {
   typeUrl: '/stride.stakeibc.MsgUpdateValidatorSharesExchRateResponse' as const,
+  is(o: any): o is MsgUpdateValidatorSharesExchRateResponse {
+    return o && o.$typeUrl === MsgUpdateValidatorSharesExchRateResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgUpdateValidatorSharesExchRateResponseSDKType {
+    return o && o.$typeUrl === MsgUpdateValidatorSharesExchRateResponse.typeUrl;
+  },
   encode(
     _: MsgUpdateValidatorSharesExchRateResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3760,6 +4211,7 @@ export const MsgUpdateValidatorSharesExchRateResponse = {
       value: MsgUpdateValidatorSharesExchRateResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgCalibrateDelegation(): MsgCalibrateDelegation {
   return {
@@ -3775,6 +4227,24 @@ function createBaseMsgCalibrateDelegation(): MsgCalibrateDelegation {
  */
 export const MsgCalibrateDelegation = {
   typeUrl: '/stride.stakeibc.MsgCalibrateDelegation' as const,
+  is(o: any): o is MsgCalibrateDelegation {
+    return (
+      o &&
+      (o.$typeUrl === MsgCalibrateDelegation.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.chainId === 'string' &&
+          typeof o.valoper === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgCalibrateDelegationSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgCalibrateDelegation.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.chain_id === 'string' &&
+          typeof o.valoper === 'string'))
+    );
+  },
   encode(
     message: MsgCalibrateDelegation,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3852,6 +4322,7 @@ export const MsgCalibrateDelegation = {
       value: MsgCalibrateDelegation.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgCalibrateDelegationResponse(): MsgCalibrateDelegationResponse {
   return {};
@@ -3863,6 +4334,12 @@ function createBaseMsgCalibrateDelegationResponse(): MsgCalibrateDelegationRespo
  */
 export const MsgCalibrateDelegationResponse = {
   typeUrl: '/stride.stakeibc.MsgCalibrateDelegationResponse' as const,
+  is(o: any): o is MsgCalibrateDelegationResponse {
+    return o && o.$typeUrl === MsgCalibrateDelegationResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgCalibrateDelegationResponseSDKType {
+    return o && o.$typeUrl === MsgCalibrateDelegationResponse.typeUrl;
+  },
   encode(
     _: MsgCalibrateDelegationResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3918,6 +4395,7 @@ export const MsgCalibrateDelegationResponse = {
       value: MsgCalibrateDelegationResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgResumeHostZone(): MsgResumeHostZone {
   return {
@@ -3932,6 +4410,20 @@ function createBaseMsgResumeHostZone(): MsgResumeHostZone {
  */
 export const MsgResumeHostZone = {
   typeUrl: '/stride.stakeibc.MsgResumeHostZone' as const,
+  is(o: any): o is MsgResumeHostZone {
+    return (
+      o &&
+      (o.$typeUrl === MsgResumeHostZone.typeUrl ||
+        (typeof o.creator === 'string' && typeof o.chainId === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgResumeHostZoneSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgResumeHostZone.typeUrl ||
+        (typeof o.creator === 'string' && typeof o.chain_id === 'string'))
+    );
+  },
   encode(
     message: MsgResumeHostZone,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3995,6 +4487,7 @@ export const MsgResumeHostZone = {
       value: MsgResumeHostZone.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgResumeHostZoneResponse(): MsgResumeHostZoneResponse {
   return {};
@@ -4006,6 +4499,12 @@ function createBaseMsgResumeHostZoneResponse(): MsgResumeHostZoneResponse {
  */
 export const MsgResumeHostZoneResponse = {
   typeUrl: '/stride.stakeibc.MsgResumeHostZoneResponse' as const,
+  is(o: any): o is MsgResumeHostZoneResponse {
+    return o && o.$typeUrl === MsgResumeHostZoneResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgResumeHostZoneResponseSDKType {
+    return o && o.$typeUrl === MsgResumeHostZoneResponse.typeUrl;
+  },
   encode(
     _: MsgResumeHostZoneResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4059,6 +4558,7 @@ export const MsgResumeHostZoneResponse = {
       value: MsgResumeHostZoneResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgCreateTradeRoute(): MsgCreateTradeRoute {
   return {
@@ -4089,6 +4589,53 @@ function createBaseMsgCreateTradeRoute(): MsgCreateTradeRoute {
  */
 export const MsgCreateTradeRoute = {
   typeUrl: '/stride.stakeibc.MsgCreateTradeRoute' as const,
+  aminoType: 'stride/x/stakeibc/MsgCreateTradeRoute' as const,
+  is(o: any): o is MsgCreateTradeRoute {
+    return (
+      o &&
+      (o.$typeUrl === MsgCreateTradeRoute.typeUrl ||
+        (typeof o.authority === 'string' &&
+          typeof o.hostChainId === 'string' &&
+          typeof o.strideToRewardConnectionId === 'string' &&
+          typeof o.strideToTradeConnectionId === 'string' &&
+          typeof o.hostToRewardTransferChannelId === 'string' &&
+          typeof o.rewardToTradeTransferChannelId === 'string' &&
+          typeof o.tradeToHostTransferChannelId === 'string' &&
+          typeof o.rewardDenomOnHost === 'string' &&
+          typeof o.rewardDenomOnReward === 'string' &&
+          typeof o.rewardDenomOnTrade === 'string' &&
+          typeof o.hostDenomOnTrade === 'string' &&
+          typeof o.hostDenomOnHost === 'string' &&
+          typeof o.poolId === 'bigint' &&
+          typeof o.maxAllowedSwapLossRate === 'string' &&
+          typeof o.minSwapAmount === 'string' &&
+          typeof o.maxSwapAmount === 'string' &&
+          typeof o.minTransferAmount === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgCreateTradeRouteSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgCreateTradeRoute.typeUrl ||
+        (typeof o.authority === 'string' &&
+          typeof o.host_chain_id === 'string' &&
+          typeof o.stride_to_reward_connection_id === 'string' &&
+          typeof o.stride_to_trade_connection_id === 'string' &&
+          typeof o.host_to_reward_transfer_channel_id === 'string' &&
+          typeof o.reward_to_trade_transfer_channel_id === 'string' &&
+          typeof o.trade_to_host_transfer_channel_id === 'string' &&
+          typeof o.reward_denom_on_host === 'string' &&
+          typeof o.reward_denom_on_reward === 'string' &&
+          typeof o.reward_denom_on_trade === 'string' &&
+          typeof o.host_denom_on_trade === 'string' &&
+          typeof o.host_denom_on_host === 'string' &&
+          typeof o.pool_id === 'bigint' &&
+          typeof o.max_allowed_swap_loss_rate === 'string' &&
+          typeof o.min_swap_amount === 'string' &&
+          typeof o.max_swap_amount === 'string' &&
+          typeof o.min_transfer_amount === 'string'))
+    );
+  },
   encode(
     message: MsgCreateTradeRoute,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4347,6 +4894,7 @@ export const MsgCreateTradeRoute = {
       value: MsgCreateTradeRoute.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgCreateTradeRouteResponse(): MsgCreateTradeRouteResponse {
   return {};
@@ -4358,6 +4906,12 @@ function createBaseMsgCreateTradeRouteResponse(): MsgCreateTradeRouteResponse {
  */
 export const MsgCreateTradeRouteResponse = {
   typeUrl: '/stride.stakeibc.MsgCreateTradeRouteResponse' as const,
+  is(o: any): o is MsgCreateTradeRouteResponse {
+    return o && o.$typeUrl === MsgCreateTradeRouteResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgCreateTradeRouteResponseSDKType {
+    return o && o.$typeUrl === MsgCreateTradeRouteResponse.typeUrl;
+  },
   encode(
     _: MsgCreateTradeRouteResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4413,6 +4967,7 @@ export const MsgCreateTradeRouteResponse = {
       value: MsgCreateTradeRouteResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgDeleteTradeRoute(): MsgDeleteTradeRoute {
   return {
@@ -4429,6 +4984,25 @@ function createBaseMsgDeleteTradeRoute(): MsgDeleteTradeRoute {
  */
 export const MsgDeleteTradeRoute = {
   typeUrl: '/stride.stakeibc.MsgDeleteTradeRoute' as const,
+  aminoType: 'stride/x/stakeibc/MsgDeleteTradeRoute' as const,
+  is(o: any): o is MsgDeleteTradeRoute {
+    return (
+      o &&
+      (o.$typeUrl === MsgDeleteTradeRoute.typeUrl ||
+        (typeof o.authority === 'string' &&
+          typeof o.rewardDenom === 'string' &&
+          typeof o.hostDenom === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgDeleteTradeRouteSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgDeleteTradeRoute.typeUrl ||
+        (typeof o.authority === 'string' &&
+          typeof o.reward_denom === 'string' &&
+          typeof o.host_denom === 'string'))
+    );
+  },
   encode(
     message: MsgDeleteTradeRoute,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4505,6 +5079,7 @@ export const MsgDeleteTradeRoute = {
       value: MsgDeleteTradeRoute.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgDeleteTradeRouteResponse(): MsgDeleteTradeRouteResponse {
   return {};
@@ -4516,6 +5091,12 @@ function createBaseMsgDeleteTradeRouteResponse(): MsgDeleteTradeRouteResponse {
  */
 export const MsgDeleteTradeRouteResponse = {
   typeUrl: '/stride.stakeibc.MsgDeleteTradeRouteResponse' as const,
+  is(o: any): o is MsgDeleteTradeRouteResponse {
+    return o && o.$typeUrl === MsgDeleteTradeRouteResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgDeleteTradeRouteResponseSDKType {
+    return o && o.$typeUrl === MsgDeleteTradeRouteResponse.typeUrl;
+  },
   encode(
     _: MsgDeleteTradeRouteResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4571,6 +5152,7 @@ export const MsgDeleteTradeRouteResponse = {
       value: MsgDeleteTradeRouteResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgUpdateTradeRoute(): MsgUpdateTradeRoute {
   return {
@@ -4592,6 +5174,35 @@ function createBaseMsgUpdateTradeRoute(): MsgUpdateTradeRoute {
  */
 export const MsgUpdateTradeRoute = {
   typeUrl: '/stride.stakeibc.MsgUpdateTradeRoute' as const,
+  aminoType: 'stride/x/stakeibc/MsgUpdateTradeRoute' as const,
+  is(o: any): o is MsgUpdateTradeRoute {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpdateTradeRoute.typeUrl ||
+        (typeof o.authority === 'string' &&
+          typeof o.rewardDenom === 'string' &&
+          typeof o.hostDenom === 'string' &&
+          typeof o.poolId === 'bigint' &&
+          typeof o.maxAllowedSwapLossRate === 'string' &&
+          typeof o.minSwapAmount === 'string' &&
+          typeof o.maxSwapAmount === 'string' &&
+          typeof o.minTransferAmount === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgUpdateTradeRouteSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpdateTradeRoute.typeUrl ||
+        (typeof o.authority === 'string' &&
+          typeof o.reward_denom === 'string' &&
+          typeof o.host_denom === 'string' &&
+          typeof o.pool_id === 'bigint' &&
+          typeof o.max_allowed_swap_loss_rate === 'string' &&
+          typeof o.min_swap_amount === 'string' &&
+          typeof o.max_swap_amount === 'string' &&
+          typeof o.min_transfer_amount === 'string'))
+    );
+  },
   encode(
     message: MsgUpdateTradeRoute,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4731,6 +5342,7 @@ export const MsgUpdateTradeRoute = {
       value: MsgUpdateTradeRoute.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgUpdateTradeRouteResponse(): MsgUpdateTradeRouteResponse {
   return {};
@@ -4742,6 +5354,12 @@ function createBaseMsgUpdateTradeRouteResponse(): MsgUpdateTradeRouteResponse {
  */
 export const MsgUpdateTradeRouteResponse = {
   typeUrl: '/stride.stakeibc.MsgUpdateTradeRouteResponse' as const,
+  is(o: any): o is MsgUpdateTradeRouteResponse {
+    return o && o.$typeUrl === MsgUpdateTradeRouteResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgUpdateTradeRouteResponseSDKType {
+    return o && o.$typeUrl === MsgUpdateTradeRouteResponse.typeUrl;
+  },
   encode(
     _: MsgUpdateTradeRouteResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4797,6 +5415,7 @@ export const MsgUpdateTradeRouteResponse = {
       value: MsgUpdateTradeRouteResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgSetCommunityPoolRebate(): MsgSetCommunityPoolRebate {
   return {
@@ -4815,6 +5434,27 @@ function createBaseMsgSetCommunityPoolRebate(): MsgSetCommunityPoolRebate {
  */
 export const MsgSetCommunityPoolRebate = {
   typeUrl: '/stride.stakeibc.MsgSetCommunityPoolRebate' as const,
+  aminoType: 'stride/x/stakeibc/MsgSetCommunityPoolRebate' as const,
+  is(o: any): o is MsgSetCommunityPoolRebate {
+    return (
+      o &&
+      (o.$typeUrl === MsgSetCommunityPoolRebate.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.chainId === 'string' &&
+          typeof o.rebateRate === 'string' &&
+          typeof o.liquidStakedStTokenAmount === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgSetCommunityPoolRebateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgSetCommunityPoolRebate.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.chain_id === 'string' &&
+          typeof o.rebate_rate === 'string' &&
+          typeof o.liquid_staked_st_token_amount === 'string'))
+    );
+  },
   encode(
     message: MsgSetCommunityPoolRebate,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4915,6 +5555,7 @@ export const MsgSetCommunityPoolRebate = {
       value: MsgSetCommunityPoolRebate.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgSetCommunityPoolRebateResponse(): MsgSetCommunityPoolRebateResponse {
   return {};
@@ -4926,6 +5567,12 @@ function createBaseMsgSetCommunityPoolRebateResponse(): MsgSetCommunityPoolRebat
  */
 export const MsgSetCommunityPoolRebateResponse = {
   typeUrl: '/stride.stakeibc.MsgSetCommunityPoolRebateResponse' as const,
+  is(o: any): o is MsgSetCommunityPoolRebateResponse {
+    return o && o.$typeUrl === MsgSetCommunityPoolRebateResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgSetCommunityPoolRebateResponseSDKType {
+    return o && o.$typeUrl === MsgSetCommunityPoolRebateResponse.typeUrl;
+  },
   encode(
     _: MsgSetCommunityPoolRebateResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4981,6 +5628,7 @@ export const MsgSetCommunityPoolRebateResponse = {
       value: MsgSetCommunityPoolRebateResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgToggleTradeController(): MsgToggleTradeController {
   return {
@@ -4999,6 +5647,29 @@ function createBaseMsgToggleTradeController(): MsgToggleTradeController {
  */
 export const MsgToggleTradeController = {
   typeUrl: '/stride.stakeibc.MsgToggleTradeController' as const,
+  aminoType: 'stride/x/stakeibc/MsgToggleTradeController' as const,
+  is(o: any): o is MsgToggleTradeController {
+    return (
+      o &&
+      (o.$typeUrl === MsgToggleTradeController.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.chainId === 'string' &&
+          isSet(o.permissionChange) &&
+          typeof o.address === 'string' &&
+          typeof o.legacy === 'boolean'))
+    );
+  },
+  isSDK(o: any): o is MsgToggleTradeControllerSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgToggleTradeController.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.chain_id === 'string' &&
+          isSet(o.permission_change) &&
+          typeof o.address === 'string' &&
+          typeof o.legacy === 'boolean'))
+    );
+  },
   encode(
     message: MsgToggleTradeController,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -5105,6 +5776,7 @@ export const MsgToggleTradeController = {
       value: MsgToggleTradeController.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgToggleTradeControllerResponse(): MsgToggleTradeControllerResponse {
   return {};
@@ -5116,6 +5788,12 @@ function createBaseMsgToggleTradeControllerResponse(): MsgToggleTradeControllerR
  */
 export const MsgToggleTradeControllerResponse = {
   typeUrl: '/stride.stakeibc.MsgToggleTradeControllerResponse' as const,
+  is(o: any): o is MsgToggleTradeControllerResponse {
+    return o && o.$typeUrl === MsgToggleTradeControllerResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgToggleTradeControllerResponseSDKType {
+    return o && o.$typeUrl === MsgToggleTradeControllerResponse.typeUrl;
+  },
   encode(
     _: MsgToggleTradeControllerResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -5171,6 +5849,7 @@ export const MsgToggleTradeControllerResponse = {
       value: MsgToggleTradeControllerResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgUpdateHostZoneParams(): MsgUpdateHostZoneParams {
   return {
@@ -5187,6 +5866,25 @@ function createBaseMsgUpdateHostZoneParams(): MsgUpdateHostZoneParams {
  */
 export const MsgUpdateHostZoneParams = {
   typeUrl: '/stride.stakeibc.MsgUpdateHostZoneParams' as const,
+  aminoType: 'stride/x/stakeibc/MsgUpdateHostZoneParams' as const,
+  is(o: any): o is MsgUpdateHostZoneParams {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpdateHostZoneParams.typeUrl ||
+        (typeof o.authority === 'string' &&
+          typeof o.chainId === 'string' &&
+          typeof o.maxMessagesPerIcaTx === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is MsgUpdateHostZoneParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpdateHostZoneParams.typeUrl ||
+        (typeof o.authority === 'string' &&
+          typeof o.chain_id === 'string' &&
+          typeof o.max_messages_per_ica_tx === 'bigint'))
+    );
+  },
   encode(
     message: MsgUpdateHostZoneParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -5277,6 +5975,7 @@ export const MsgUpdateHostZoneParams = {
       value: MsgUpdateHostZoneParams.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgUpdateHostZoneParamsResponse(): MsgUpdateHostZoneParamsResponse {
   return {};
@@ -5288,6 +5987,12 @@ function createBaseMsgUpdateHostZoneParamsResponse(): MsgUpdateHostZoneParamsRes
  */
 export const MsgUpdateHostZoneParamsResponse = {
   typeUrl: '/stride.stakeibc.MsgUpdateHostZoneParamsResponse' as const,
+  is(o: any): o is MsgUpdateHostZoneParamsResponse {
+    return o && o.$typeUrl === MsgUpdateHostZoneParamsResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgUpdateHostZoneParamsResponseSDKType {
+    return o && o.$typeUrl === MsgUpdateHostZoneParamsResponse.typeUrl;
+  },
   encode(
     _: MsgUpdateHostZoneParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -5343,4 +6048,5 @@ export const MsgUpdateHostZoneParamsResponse = {
       value: MsgUpdateHostZoneParamsResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

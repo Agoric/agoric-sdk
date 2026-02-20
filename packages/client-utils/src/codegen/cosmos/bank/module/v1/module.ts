@@ -57,6 +57,33 @@ function createBaseModule(): Module {
  */
 export const Module = {
   typeUrl: '/cosmos.bank.module.v1.Module' as const,
+  aminoType: 'cosmos-sdk/Module' as const,
+  is(o: any): o is Module {
+    return (
+      o &&
+      (o.$typeUrl === Module.typeUrl ||
+        (Array.isArray(o.blockedModuleAccountsOverride) &&
+          (!o.blockedModuleAccountsOverride.length ||
+            typeof o.blockedModuleAccountsOverride[0] === 'string') &&
+          typeof o.authority === 'string' &&
+          Array.isArray(o.restrictionsOrder) &&
+          (!o.restrictionsOrder.length ||
+            typeof o.restrictionsOrder[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is ModuleSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Module.typeUrl ||
+        (Array.isArray(o.blocked_module_accounts_override) &&
+          (!o.blocked_module_accounts_override.length ||
+            typeof o.blocked_module_accounts_override[0] === 'string') &&
+          typeof o.authority === 'string' &&
+          Array.isArray(o.restrictions_order) &&
+          (!o.restrictions_order.length ||
+            typeof o.restrictions_order[0] === 'string')))
+    );
+  },
   encode(
     message: Module,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -145,4 +172,5 @@ export const Module = {
       value: Module.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

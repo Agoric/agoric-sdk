@@ -118,6 +118,31 @@ function createBaseMsgDepositForBurn(): MsgDepositForBurn {
  */
 export const MsgDepositForBurn = {
   typeUrl: '/circle.cctp.v1.MsgDepositForBurn' as const,
+  aminoType: 'cctp/DepositForBurn' as const,
+  is(o: any): o is MsgDepositForBurn {
+    return (
+      o &&
+      (o.$typeUrl === MsgDepositForBurn.typeUrl ||
+        (typeof o.from === 'string' &&
+          typeof o.amount === 'string' &&
+          typeof o.destinationDomain === 'number' &&
+          (o.mintRecipient instanceof Uint8Array ||
+            typeof o.mintRecipient === 'string') &&
+          typeof o.burnToken === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgDepositForBurnSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgDepositForBurn.typeUrl ||
+        (typeof o.from === 'string' &&
+          typeof o.amount === 'string' &&
+          typeof o.destination_domain === 'number' &&
+          (o.mint_recipient instanceof Uint8Array ||
+            typeof o.mint_recipient === 'string') &&
+          typeof o.burn_token === 'string'))
+    );
+  },
   encode(
     message: MsgDepositForBurn,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -218,6 +243,7 @@ export const MsgDepositForBurn = {
       value: MsgDepositForBurn.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgDepositForBurnResponse(): MsgDepositForBurnResponse {
   return {
@@ -231,6 +257,20 @@ function createBaseMsgDepositForBurnResponse(): MsgDepositForBurnResponse {
  */
 export const MsgDepositForBurnResponse = {
   typeUrl: '/circle.cctp.v1.MsgDepositForBurnResponse' as const,
+  is(o: any): o is MsgDepositForBurnResponse {
+    return (
+      o &&
+      (o.$typeUrl === MsgDepositForBurnResponse.typeUrl ||
+        typeof o.nonce === 'bigint')
+    );
+  },
+  isSDK(o: any): o is MsgDepositForBurnResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgDepositForBurnResponse.typeUrl ||
+        typeof o.nonce === 'bigint')
+    );
+  },
   encode(
     message: MsgDepositForBurnResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -300,6 +340,7 @@ export const MsgDepositForBurnResponse = {
       value: MsgDepositForBurnResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgDepositForBurnWithCaller(): MsgDepositForBurnWithCaller {
   return {
@@ -318,6 +359,35 @@ function createBaseMsgDepositForBurnWithCaller(): MsgDepositForBurnWithCaller {
  */
 export const MsgDepositForBurnWithCaller = {
   typeUrl: '/circle.cctp.v1.MsgDepositForBurnWithCaller' as const,
+  aminoType: 'cctp/DepositForBurnWithCaller' as const,
+  is(o: any): o is MsgDepositForBurnWithCaller {
+    return (
+      o &&
+      (o.$typeUrl === MsgDepositForBurnWithCaller.typeUrl ||
+        (typeof o.from === 'string' &&
+          typeof o.amount === 'string' &&
+          typeof o.destinationDomain === 'number' &&
+          (o.mintRecipient instanceof Uint8Array ||
+            typeof o.mintRecipient === 'string') &&
+          typeof o.burnToken === 'string' &&
+          (o.destinationCaller instanceof Uint8Array ||
+            typeof o.destinationCaller === 'string')))
+    );
+  },
+  isSDK(o: any): o is MsgDepositForBurnWithCallerSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgDepositForBurnWithCaller.typeUrl ||
+        (typeof o.from === 'string' &&
+          typeof o.amount === 'string' &&
+          typeof o.destination_domain === 'number' &&
+          (o.mint_recipient instanceof Uint8Array ||
+            typeof o.mint_recipient === 'string') &&
+          typeof o.burn_token === 'string' &&
+          (o.destination_caller instanceof Uint8Array ||
+            typeof o.destination_caller === 'string')))
+    );
+  },
   encode(
     message: MsgDepositForBurnWithCaller,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -445,6 +515,7 @@ export const MsgDepositForBurnWithCaller = {
       value: MsgDepositForBurnWithCaller.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgDepositForBurnWithCallerResponse(): MsgDepositForBurnWithCallerResponse {
   return {
@@ -458,6 +529,20 @@ function createBaseMsgDepositForBurnWithCallerResponse(): MsgDepositForBurnWithC
  */
 export const MsgDepositForBurnWithCallerResponse = {
   typeUrl: '/circle.cctp.v1.MsgDepositForBurnWithCallerResponse' as const,
+  is(o: any): o is MsgDepositForBurnWithCallerResponse {
+    return (
+      o &&
+      (o.$typeUrl === MsgDepositForBurnWithCallerResponse.typeUrl ||
+        typeof o.nonce === 'bigint')
+    );
+  },
+  isSDK(o: any): o is MsgDepositForBurnWithCallerResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgDepositForBurnWithCallerResponse.typeUrl ||
+        typeof o.nonce === 'bigint')
+    );
+  },
   encode(
     message: MsgDepositForBurnWithCallerResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -527,4 +612,5 @@ export const MsgDepositForBurnWithCallerResponse = {
       value: MsgDepositForBurnWithCallerResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

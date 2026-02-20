@@ -44,6 +44,7 @@ export const getGroupInfo = buildQuery<
   decode: QueryGroupInfoResponse.decode,
   service: 'cosmos.group.v1.Query',
   method: 'GroupInfo',
+  deps: [QueryGroupInfoRequest, QueryGroupInfoResponse],
 });
 /**
  * GroupPolicyInfo queries group policy info based on account address of group policy.
@@ -59,6 +60,7 @@ export const getGroupPolicyInfo = buildQuery<
   decode: QueryGroupPolicyInfoResponse.decode,
   service: 'cosmos.group.v1.Query',
   method: 'GroupPolicyInfo',
+  deps: [QueryGroupPolicyInfoRequest, QueryGroupPolicyInfoResponse],
 });
 /**
  * GroupMembers queries members of a group by group id.
@@ -74,6 +76,7 @@ export const getGroupMembers = buildQuery<
   decode: QueryGroupMembersResponse.decode,
   service: 'cosmos.group.v1.Query',
   method: 'GroupMembers',
+  deps: [QueryGroupMembersRequest, QueryGroupMembersResponse],
 });
 /**
  * GroupsByAdmin queries groups by admin address.
@@ -89,6 +92,7 @@ export const getGroupsByAdmin = buildQuery<
   decode: QueryGroupsByAdminResponse.decode,
   service: 'cosmos.group.v1.Query',
   method: 'GroupsByAdmin',
+  deps: [QueryGroupsByAdminRequest, QueryGroupsByAdminResponse],
 });
 /**
  * GroupPoliciesByGroup queries group policies by group id.
@@ -104,6 +108,7 @@ export const getGroupPoliciesByGroup = buildQuery<
   decode: QueryGroupPoliciesByGroupResponse.decode,
   service: 'cosmos.group.v1.Query',
   method: 'GroupPoliciesByGroup',
+  deps: [QueryGroupPoliciesByGroupRequest, QueryGroupPoliciesByGroupResponse],
 });
 /**
  * GroupPoliciesByAdmin queries group policies by admin address.
@@ -119,6 +124,7 @@ export const getGroupPoliciesByAdmin = buildQuery<
   decode: QueryGroupPoliciesByAdminResponse.decode,
   service: 'cosmos.group.v1.Query',
   method: 'GroupPoliciesByAdmin',
+  deps: [QueryGroupPoliciesByAdminRequest, QueryGroupPoliciesByAdminResponse],
 });
 /**
  * Proposal queries a proposal based on proposal id.
@@ -134,6 +140,7 @@ export const getProposal = buildQuery<
   decode: QueryProposalResponse.decode,
   service: 'cosmos.group.v1.Query',
   method: 'Proposal',
+  deps: [QueryProposalRequest, QueryProposalResponse],
 });
 /**
  * ProposalsByGroupPolicy queries proposals based on account address of group policy.
@@ -149,6 +156,10 @@ export const getProposalsByGroupPolicy = buildQuery<
   decode: QueryProposalsByGroupPolicyResponse.decode,
   service: 'cosmos.group.v1.Query',
   method: 'ProposalsByGroupPolicy',
+  deps: [
+    QueryProposalsByGroupPolicyRequest,
+    QueryProposalsByGroupPolicyResponse,
+  ],
 });
 /**
  * VoteByProposalVoter queries a vote by proposal id and voter.
@@ -164,6 +175,7 @@ export const getVoteByProposalVoter = buildQuery<
   decode: QueryVoteByProposalVoterResponse.decode,
   service: 'cosmos.group.v1.Query',
   method: 'VoteByProposalVoter',
+  deps: [QueryVoteByProposalVoterRequest, QueryVoteByProposalVoterResponse],
 });
 /**
  * VotesByProposal queries a vote by proposal id.
@@ -179,6 +191,7 @@ export const getVotesByProposal = buildQuery<
   decode: QueryVotesByProposalResponse.decode,
   service: 'cosmos.group.v1.Query',
   method: 'VotesByProposal',
+  deps: [QueryVotesByProposalRequest, QueryVotesByProposalResponse],
 });
 /**
  * VotesByVoter queries a vote by voter.
@@ -194,6 +207,7 @@ export const getVotesByVoter = buildQuery<
   decode: QueryVotesByVoterResponse.decode,
   service: 'cosmos.group.v1.Query',
   method: 'VotesByVoter',
+  deps: [QueryVotesByVoterRequest, QueryVotesByVoterResponse],
 });
 /**
  * GroupsByMember queries groups by member address.
@@ -209,6 +223,7 @@ export const getGroupsByMember = buildQuery<
   decode: QueryGroupsByMemberResponse.decode,
   service: 'cosmos.group.v1.Query',
   method: 'GroupsByMember',
+  deps: [QueryGroupsByMemberRequest, QueryGroupsByMemberResponse],
 });
 /**
  * TallyResult returns the tally result of a proposal. If the proposal is
@@ -228,6 +243,7 @@ export const getTallyResult = buildQuery<
   decode: QueryTallyResultResponse.decode,
   service: 'cosmos.group.v1.Query',
   method: 'TallyResult',
+  deps: [QueryTallyResultRequest, QueryTallyResultResponse],
 });
 /**
  * Groups queries all groups in state.
@@ -242,4 +258,5 @@ export const getGroups = buildQuery<QueryGroupsRequest, QueryGroupsResponse>({
   decode: QueryGroupsResponse.decode,
   service: 'cosmos.group.v1.Query',
   method: 'Groups',
+  deps: [QueryGroupsRequest, QueryGroupsResponse],
 });

@@ -2,6 +2,7 @@
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../../registry.js';
 /**
  * ModuleDescriptor describes an app module.
  * @name ModuleDescriptor
@@ -155,6 +156,31 @@ function createBaseModuleDescriptor(): ModuleDescriptor {
  */
 export const ModuleDescriptor = {
   typeUrl: '/cosmos.app.v1alpha1.ModuleDescriptor' as const,
+  aminoType: 'cosmos-sdk/ModuleDescriptor' as const,
+  is(o: any): o is ModuleDescriptor {
+    return (
+      o &&
+      (o.$typeUrl === ModuleDescriptor.typeUrl ||
+        (typeof o.goImport === 'string' &&
+          Array.isArray(o.usePackage) &&
+          (!o.usePackage.length || PackageReference.is(o.usePackage[0])) &&
+          Array.isArray(o.canMigrateFrom) &&
+          (!o.canMigrateFrom.length ||
+            MigrateFromInfo.is(o.canMigrateFrom[0]))))
+    );
+  },
+  isSDK(o: any): o is ModuleDescriptorSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ModuleDescriptor.typeUrl ||
+        (typeof o.go_import === 'string' &&
+          Array.isArray(o.use_package) &&
+          (!o.use_package.length || PackageReference.isSDK(o.use_package[0])) &&
+          Array.isArray(o.can_migrate_from) &&
+          (!o.can_migrate_from.length ||
+            MigrateFromInfo.isSDK(o.can_migrate_from[0]))))
+    );
+  },
   encode(
     message: ModuleDescriptor,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -249,6 +275,15 @@ export const ModuleDescriptor = {
       value: ModuleDescriptor.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(ModuleDescriptor.typeUrl)
+    ) {
+      return;
+    }
+    PackageReference.registerTypeUrl();
+    MigrateFromInfo.registerTypeUrl();
+  },
 };
 function createBasePackageReference(): PackageReference {
   return {
@@ -264,6 +299,21 @@ function createBasePackageReference(): PackageReference {
  */
 export const PackageReference = {
   typeUrl: '/cosmos.app.v1alpha1.PackageReference' as const,
+  aminoType: 'cosmos-sdk/PackageReference' as const,
+  is(o: any): o is PackageReference {
+    return (
+      o &&
+      (o.$typeUrl === PackageReference.typeUrl ||
+        (typeof o.name === 'string' && typeof o.revision === 'number'))
+    );
+  },
+  isSDK(o: any): o is PackageReferenceSDKType {
+    return (
+      o &&
+      (o.$typeUrl === PackageReference.typeUrl ||
+        (typeof o.name === 'string' && typeof o.revision === 'number'))
+    );
+  },
   encode(
     message: PackageReference,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -328,6 +378,7 @@ export const PackageReference = {
       value: PackageReference.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMigrateFromInfo(): MigrateFromInfo {
   return {
@@ -343,6 +394,19 @@ function createBaseMigrateFromInfo(): MigrateFromInfo {
  */
 export const MigrateFromInfo = {
   typeUrl: '/cosmos.app.v1alpha1.MigrateFromInfo' as const,
+  aminoType: 'cosmos-sdk/MigrateFromInfo' as const,
+  is(o: any): o is MigrateFromInfo {
+    return (
+      o &&
+      (o.$typeUrl === MigrateFromInfo.typeUrl || typeof o.module === 'string')
+    );
+  },
+  isSDK(o: any): o is MigrateFromInfoSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MigrateFromInfo.typeUrl || typeof o.module === 'string')
+    );
+  },
   encode(
     message: MigrateFromInfo,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -397,4 +461,5 @@ export const MigrateFromInfo = {
       value: MigrateFromInfo.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

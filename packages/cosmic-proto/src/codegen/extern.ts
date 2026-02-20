@@ -5,11 +5,20 @@
  * and run the transpile command or npm scripts command that is used to regenerate this bundle.
  */
 
-import { HttpEndpoint } from '@interchainjs/types';
-import { Rpc } from './helpers';
-import { ClientOptions, createCosmosQueryClient } from '@interchainjs/cosmos';
+import type { HttpEndpoint } from '@interchainjs/types';
+import type { Rpc } from './helpers.js';
+import type { ClientOptions } from '@interchainjs/cosmos';
 
 const _rpcClients: Record<string, Rpc> = {};
+
+let _createCosmosQueryClient;
+const getCreateCosmosQueryClient = async () => {
+  if (!_createCosmosQueryClient) {
+    ({ createCosmosQueryClient: _createCosmosQueryClient } =
+      await import('@interchainjs/cosmos'));
+  }
+  return _createCosmosQueryClient;
+};
 
 export const getRpcEndpointKey = (rpcEndpoint: string | HttpEndpoint) => {
   if (typeof rpcEndpoint === 'string') {
@@ -36,6 +45,7 @@ export const createRpcClient = async (
   options?: ClientOptions,
 ) => {
   if (typeof rpcEndpoint === 'string') {
+    const createCosmosQueryClient = await getCreateCosmosQueryClient();
     return createCosmosQueryClient(rpcEndpoint, options);
   } else {
     const endpointStr = rpcEndpoint.url;
@@ -44,6 +54,7 @@ export const createRpcClient = async (
       headers: rpcEndpoint.headers,
     };
 
+    const createCosmosQueryClient = await getCreateCosmosQueryClient();
     return createCosmosQueryClient(endpointStr, clientOptions);
   }
 };

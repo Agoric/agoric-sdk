@@ -18,6 +18,7 @@ export const getParams = buildQuery<QueryParamsRequest, QueryParamsResponse>({
   decode: QueryParamsResponse.decode,
   service: 'cosmos.params.v1beta1.Query',
   method: 'Params',
+  deps: [QueryParamsRequest, QueryParamsResponse],
 });
 /**
  * Subspaces queries for all registered subspaces and all keys for a subspace.
@@ -35,4 +36,5 @@ export const getSubspaces = buildQuery<
   decode: QuerySubspacesResponse.decode,
   service: 'cosmos.params.v1beta1.Query',
   method: 'Subspaces',
+  deps: [QuerySubspacesRequest, QuerySubspacesResponse],
 });

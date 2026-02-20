@@ -5,8 +5,8 @@
  * and run the transpile command or npm scripts command that is used to regenerate this bundle.
  */
 
-import { type HttpEndpoint } from '@interchainjs/types';
-import { type Rpc } from './helpers';
+import { HttpEndpoint } from '@interchainjs/types';
+import { Rpc } from './helpers';
 import { ClientOptions, createCosmosQueryClient } from '@interchainjs/cosmos';
 
 const _rpcClients: Record<string, Rpc> = {};

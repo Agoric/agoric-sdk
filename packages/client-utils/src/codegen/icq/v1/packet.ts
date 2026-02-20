@@ -10,6 +10,7 @@ import { isSet } from '../../helpers.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
 import { type JsonSafe } from '../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../registry.js';
 /**
  * InterchainQueryPacketData is comprised of raw query.
  * @name InterchainQueryPacketData
@@ -117,6 +118,22 @@ function createBaseInterchainQueryPacketData(): InterchainQueryPacketData {
  */
 export const InterchainQueryPacketData = {
   typeUrl: '/icq.v1.InterchainQueryPacketData' as const,
+  is(o: any): o is InterchainQueryPacketData {
+    return (
+      o &&
+      (o.$typeUrl === InterchainQueryPacketData.typeUrl ||
+        ((o.data instanceof Uint8Array || typeof o.data === 'string') &&
+          typeof o.memo === 'string'))
+    );
+  },
+  isSDK(o: any): o is InterchainQueryPacketDataSDKType {
+    return (
+      o &&
+      (o.$typeUrl === InterchainQueryPacketData.typeUrl ||
+        ((o.data instanceof Uint8Array || typeof o.data === 'string') &&
+          typeof o.memo === 'string'))
+    );
+  },
   encode(
     message: InterchainQueryPacketData,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -196,6 +213,7 @@ export const InterchainQueryPacketData = {
       value: InterchainQueryPacketData.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseInterchainQueryPacketAck(): InterchainQueryPacketAck {
   return {
@@ -210,6 +228,22 @@ function createBaseInterchainQueryPacketAck(): InterchainQueryPacketAck {
  */
 export const InterchainQueryPacketAck = {
   typeUrl: '/icq.v1.InterchainQueryPacketAck' as const,
+  is(o: any): o is InterchainQueryPacketAck {
+    return (
+      o &&
+      (o.$typeUrl === InterchainQueryPacketAck.typeUrl ||
+        o.data instanceof Uint8Array ||
+        typeof o.data === 'string')
+    );
+  },
+  isSDK(o: any): o is InterchainQueryPacketAckSDKType {
+    return (
+      o &&
+      (o.$typeUrl === InterchainQueryPacketAck.typeUrl ||
+        o.data instanceof Uint8Array ||
+        typeof o.data === 'string')
+    );
+  },
   encode(
     message: InterchainQueryPacketAck,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -280,6 +314,7 @@ export const InterchainQueryPacketAck = {
       value: InterchainQueryPacketAck.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseCosmosQuery(): CosmosQuery {
   return {
@@ -294,6 +329,22 @@ function createBaseCosmosQuery(): CosmosQuery {
  */
 export const CosmosQuery = {
   typeUrl: '/icq.v1.CosmosQuery' as const,
+  is(o: any): o is CosmosQuery {
+    return (
+      o &&
+      (o.$typeUrl === CosmosQuery.typeUrl ||
+        (Array.isArray(o.requests) &&
+          (!o.requests.length || RequestQuery.is(o.requests[0]))))
+    );
+  },
+  isSDK(o: any): o is CosmosQuerySDKType {
+    return (
+      o &&
+      (o.$typeUrl === CosmosQuery.typeUrl ||
+        (Array.isArray(o.requests) &&
+          (!o.requests.length || RequestQuery.isSDK(o.requests[0]))))
+    );
+  },
   encode(
     message: CosmosQuery,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -357,6 +408,12 @@ export const CosmosQuery = {
       value: CosmosQuery.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(CosmosQuery.typeUrl)) {
+      return;
+    }
+    RequestQuery.registerTypeUrl();
+  },
 };
 function createBaseCosmosResponse(): CosmosResponse {
   return {
@@ -371,6 +428,22 @@ function createBaseCosmosResponse(): CosmosResponse {
  */
 export const CosmosResponse = {
   typeUrl: '/icq.v1.CosmosResponse' as const,
+  is(o: any): o is CosmosResponse {
+    return (
+      o &&
+      (o.$typeUrl === CosmosResponse.typeUrl ||
+        (Array.isArray(o.responses) &&
+          (!o.responses.length || ResponseQuery.is(o.responses[0]))))
+    );
+  },
+  isSDK(o: any): o is CosmosResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === CosmosResponse.typeUrl ||
+        (Array.isArray(o.responses) &&
+          (!o.responses.length || ResponseQuery.isSDK(o.responses[0]))))
+    );
+  },
   encode(
     message: CosmosResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -433,5 +506,13 @@ export const CosmosResponse = {
       typeUrl: '/icq.v1.CosmosResponse',
       value: CosmosResponse.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(CosmosResponse.typeUrl)
+    ) {
+      return;
+    }
+    ResponseQuery.registerTypeUrl();
   },
 };

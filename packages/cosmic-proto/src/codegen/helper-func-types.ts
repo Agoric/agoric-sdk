@@ -5,18 +5,28 @@
  * and run the transpile command or npm scripts command that is used to regenerate this bundle.
  */
 
-import { HttpEndpoint } from '@interchainjs/types';
-import { BinaryReader, BinaryWriter } from './binary.js';
+import type { HttpEndpoint } from '@interchainjs/types';
+import type { BinaryReader, BinaryWriter } from './binary.js';
 import { getRpcClient } from './extern.js';
-import { isRpc, Rpc } from './helpers.js';
-import {
+import { isRpc } from './helpers.js';
+import type { Rpc } from './helpers.js';
+import type {
   TelescopeGeneratedCodec,
   DeliverTxResponse,
   Message,
   StdFee,
 } from './types.js';
-import { toConverters, toEncoders } from '@interchainjs/cosmos';
-import { ISigningClient } from '@interchainjs/cosmos';
+import type { ISigningClient } from '@interchainjs/cosmos';
+
+let _toConverters;
+let _toEncoders;
+const getInterchainTxHelpers = async () => {
+  if (!_toConverters || !_toEncoders) {
+    ({ toConverters: _toConverters, toEncoders: _toEncoders } =
+      await import('@interchainjs/cosmos'));
+  }
+  return { toConverters: _toConverters, toEncoders: _toEncoders };
+};
 
 export interface QueryBuilderOptions<TReq, TRes> {
   encode: (request: TReq, writer?: BinaryWriter) => BinaryWriter;
@@ -71,7 +81,8 @@ export function buildTx<TMsg>(opts: TxBuilderOptions) {
   ): Promise<DeliverTxResponse> => {
     if (!client) throw new Error('SigningClient is not initialized');
 
-    //register all related encoders and converters
+    // register all related encoders and converters
+    const { toConverters, toEncoders } = await getInterchainTxHelpers();
     client.addEncoders?.(toEncoders(opts.msg));
     client.addConverters?.(toConverters(opts.msg));
 

@@ -42,6 +42,12 @@ function createBasePublicKey(): PublicKey {
  */
 export const PublicKey = {
   typeUrl: '/tendermint.crypto.PublicKey' as const,
+  is(o: any): o is PublicKey {
+    return o && o.$typeUrl === PublicKey.typeUrl;
+  },
+  isSDK(o: any): o is PublicKeySDKType {
+    return o && o.$typeUrl === PublicKey.typeUrl;
+  },
   encode(
     message: PublicKey,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -117,4 +123,5 @@ export const PublicKey = {
       value: PublicKey.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

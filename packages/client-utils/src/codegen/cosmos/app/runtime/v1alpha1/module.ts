@@ -2,6 +2,7 @@
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../../../registry.js';
 /**
  * Module is the config object for the runtime module.
  * @name Module
@@ -135,6 +136,61 @@ function createBaseModule(): Module {
  */
 export const Module = {
   typeUrl: '/cosmos.app.runtime.v1alpha1.Module' as const,
+  aminoType: 'cosmos-sdk/Module' as const,
+  is(o: any): o is Module {
+    return (
+      o &&
+      (o.$typeUrl === Module.typeUrl ||
+        (typeof o.appName === 'string' &&
+          Array.isArray(o.beginBlockers) &&
+          (!o.beginBlockers.length || typeof o.beginBlockers[0] === 'string') &&
+          Array.isArray(o.endBlockers) &&
+          (!o.endBlockers.length || typeof o.endBlockers[0] === 'string') &&
+          Array.isArray(o.initGenesis) &&
+          (!o.initGenesis.length || typeof o.initGenesis[0] === 'string') &&
+          Array.isArray(o.exportGenesis) &&
+          (!o.exportGenesis.length || typeof o.exportGenesis[0] === 'string') &&
+          Array.isArray(o.overrideStoreKeys) &&
+          (!o.overrideStoreKeys.length ||
+            StoreKeyConfig.is(o.overrideStoreKeys[0])) &&
+          Array.isArray(o.orderMigrations) &&
+          (!o.orderMigrations.length ||
+            typeof o.orderMigrations[0] === 'string') &&
+          Array.isArray(o.precommiters) &&
+          (!o.precommiters.length || typeof o.precommiters[0] === 'string') &&
+          Array.isArray(o.prepareCheckStaters) &&
+          (!o.prepareCheckStaters.length ||
+            typeof o.prepareCheckStaters[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is ModuleSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Module.typeUrl ||
+        (typeof o.app_name === 'string' &&
+          Array.isArray(o.begin_blockers) &&
+          (!o.begin_blockers.length ||
+            typeof o.begin_blockers[0] === 'string') &&
+          Array.isArray(o.end_blockers) &&
+          (!o.end_blockers.length || typeof o.end_blockers[0] === 'string') &&
+          Array.isArray(o.init_genesis) &&
+          (!o.init_genesis.length || typeof o.init_genesis[0] === 'string') &&
+          Array.isArray(o.export_genesis) &&
+          (!o.export_genesis.length ||
+            typeof o.export_genesis[0] === 'string') &&
+          Array.isArray(o.override_store_keys) &&
+          (!o.override_store_keys.length ||
+            StoreKeyConfig.isSDK(o.override_store_keys[0])) &&
+          Array.isArray(o.order_migrations) &&
+          (!o.order_migrations.length ||
+            typeof o.order_migrations[0] === 'string') &&
+          Array.isArray(o.precommiters) &&
+          (!o.precommiters.length || typeof o.precommiters[0] === 'string') &&
+          Array.isArray(o.prepare_check_staters) &&
+          (!o.prepare_check_staters.length ||
+            typeof o.prepare_check_staters[0] === 'string')))
+    );
+  },
   encode(
     message: Module,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -314,6 +370,12 @@ export const Module = {
       value: Module.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(Module.typeUrl)) {
+      return;
+    }
+    StoreKeyConfig.registerTypeUrl();
+  },
 };
 function createBaseStoreKeyConfig(): StoreKeyConfig {
   return {
@@ -330,6 +392,22 @@ function createBaseStoreKeyConfig(): StoreKeyConfig {
  */
 export const StoreKeyConfig = {
   typeUrl: '/cosmos.app.runtime.v1alpha1.StoreKeyConfig' as const,
+  aminoType: 'cosmos-sdk/StoreKeyConfig' as const,
+  is(o: any): o is StoreKeyConfig {
+    return (
+      o &&
+      (o.$typeUrl === StoreKeyConfig.typeUrl ||
+        (typeof o.moduleName === 'string' && typeof o.kvStoreKey === 'string'))
+    );
+  },
+  isSDK(o: any): o is StoreKeyConfigSDKType {
+    return (
+      o &&
+      (o.$typeUrl === StoreKeyConfig.typeUrl ||
+        (typeof o.module_name === 'string' &&
+          typeof o.kv_store_key === 'string'))
+    );
+  },
   encode(
     message: StoreKeyConfig,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -393,4 +471,5 @@ export const StoreKeyConfig = {
       value: StoreKeyConfig.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

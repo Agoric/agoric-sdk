@@ -3,6 +3,7 @@ import { ParamChange, type ParamChangeSDKType } from './params.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../../registry.js';
 /**
  * QueryParamsRequest is request type for the Query/Params RPC method.
  * @name QueryParamsRequest
@@ -154,6 +155,21 @@ function createBaseQueryParamsRequest(): QueryParamsRequest {
  */
 export const QueryParamsRequest = {
   typeUrl: '/cosmos.params.v1beta1.QueryParamsRequest' as const,
+  aminoType: 'cosmos-sdk/QueryParamsRequest' as const,
+  is(o: any): o is QueryParamsRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryParamsRequest.typeUrl ||
+        (typeof o.subspace === 'string' && typeof o.key === 'string'))
+    );
+  },
+  isSDK(o: any): o is QueryParamsRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryParamsRequest.typeUrl ||
+        (typeof o.subspace === 'string' && typeof o.key === 'string'))
+    );
+  },
   encode(
     message: QueryParamsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -220,6 +236,7 @@ export const QueryParamsRequest = {
       value: QueryParamsRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryParamsResponse(): QueryParamsResponse {
   return {
@@ -234,6 +251,19 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
  */
 export const QueryParamsResponse = {
   typeUrl: '/cosmos.params.v1beta1.QueryParamsResponse' as const,
+  aminoType: 'cosmos-sdk/QueryParamsResponse' as const,
+  is(o: any): o is QueryParamsResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryParamsResponse.typeUrl || ParamChange.is(o.param))
+    );
+  },
+  isSDK(o: any): o is QueryParamsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryParamsResponse.typeUrl || ParamChange.isSDK(o.param))
+    );
+  },
   encode(
     message: QueryParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -299,6 +329,16 @@ export const QueryParamsResponse = {
       value: QueryParamsResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryParamsResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    ParamChange.registerTypeUrl();
+  },
 };
 function createBaseQuerySubspacesRequest(): QuerySubspacesRequest {
   return {};
@@ -314,6 +354,13 @@ function createBaseQuerySubspacesRequest(): QuerySubspacesRequest {
  */
 export const QuerySubspacesRequest = {
   typeUrl: '/cosmos.params.v1beta1.QuerySubspacesRequest' as const,
+  aminoType: 'cosmos-sdk/QuerySubspacesRequest' as const,
+  is(o: any): o is QuerySubspacesRequest {
+    return o && o.$typeUrl === QuerySubspacesRequest.typeUrl;
+  },
+  isSDK(o: any): o is QuerySubspacesRequestSDKType {
+    return o && o.$typeUrl === QuerySubspacesRequest.typeUrl;
+  },
   encode(
     _: QuerySubspacesRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -361,6 +408,7 @@ export const QuerySubspacesRequest = {
       value: QuerySubspacesRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQuerySubspacesResponse(): QuerySubspacesResponse {
   return {
@@ -378,6 +426,23 @@ function createBaseQuerySubspacesResponse(): QuerySubspacesResponse {
  */
 export const QuerySubspacesResponse = {
   typeUrl: '/cosmos.params.v1beta1.QuerySubspacesResponse' as const,
+  aminoType: 'cosmos-sdk/QuerySubspacesResponse' as const,
+  is(o: any): o is QuerySubspacesResponse {
+    return (
+      o &&
+      (o.$typeUrl === QuerySubspacesResponse.typeUrl ||
+        (Array.isArray(o.subspaces) &&
+          (!o.subspaces.length || Subspace.is(o.subspaces[0]))))
+    );
+  },
+  isSDK(o: any): o is QuerySubspacesResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QuerySubspacesResponse.typeUrl ||
+        (Array.isArray(o.subspaces) &&
+          (!o.subspaces.length || Subspace.isSDK(o.subspaces[0]))))
+    );
+  },
   encode(
     message: QuerySubspacesResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -446,6 +511,16 @@ export const QuerySubspacesResponse = {
       value: QuerySubspacesResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QuerySubspacesResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Subspace.registerTypeUrl();
+  },
 };
 function createBaseSubspace(): Subspace {
   return {
@@ -464,6 +539,25 @@ function createBaseSubspace(): Subspace {
  */
 export const Subspace = {
   typeUrl: '/cosmos.params.v1beta1.Subspace' as const,
+  aminoType: 'cosmos-sdk/Subspace' as const,
+  is(o: any): o is Subspace {
+    return (
+      o &&
+      (o.$typeUrl === Subspace.typeUrl ||
+        (typeof o.subspace === 'string' &&
+          Array.isArray(o.keys) &&
+          (!o.keys.length || typeof o.keys[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is SubspaceSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Subspace.typeUrl ||
+        (typeof o.subspace === 'string' &&
+          Array.isArray(o.keys) &&
+          (!o.keys.length || typeof o.keys[0] === 'string')))
+    );
+  },
   encode(
     message: Subspace,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -533,4 +627,5 @@ export const Subspace = {
       value: Subspace.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

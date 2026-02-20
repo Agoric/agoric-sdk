@@ -14,6 +14,7 @@ import {
   type TallyParamsSDKType,
 } from './gov.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
+import { GlobalDecoderRegistry } from '../../../registry.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
 /**
@@ -90,6 +91,39 @@ function createBaseGenesisState(): GenesisState {
  */
 export const GenesisState = {
   typeUrl: '/cosmos.gov.v1beta1.GenesisState' as const,
+  aminoType: 'cosmos-sdk/GenesisState' as const,
+  is(o: any): o is GenesisState {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (typeof o.startingProposalId === 'bigint' &&
+          Array.isArray(o.deposits) &&
+          (!o.deposits.length || Deposit.is(o.deposits[0])) &&
+          Array.isArray(o.votes) &&
+          (!o.votes.length || Vote.is(o.votes[0])) &&
+          Array.isArray(o.proposals) &&
+          (!o.proposals.length || Proposal.is(o.proposals[0])) &&
+          DepositParams.is(o.depositParams) &&
+          VotingParams.is(o.votingParams) &&
+          TallyParams.is(o.tallyParams)))
+    );
+  },
+  isSDK(o: any): o is GenesisStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (typeof o.starting_proposal_id === 'bigint' &&
+          Array.isArray(o.deposits) &&
+          (!o.deposits.length || Deposit.isSDK(o.deposits[0])) &&
+          Array.isArray(o.votes) &&
+          (!o.votes.length || Vote.isSDK(o.votes[0])) &&
+          Array.isArray(o.proposals) &&
+          (!o.proposals.length || Proposal.isSDK(o.proposals[0])) &&
+          DepositParams.isSDK(o.deposit_params) &&
+          VotingParams.isSDK(o.voting_params) &&
+          TallyParams.isSDK(o.tally_params)))
+    );
+  },
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -262,5 +296,16 @@ export const GenesisState = {
       typeUrl: '/cosmos.gov.v1beta1.GenesisState',
       value: GenesisState.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(GenesisState.typeUrl)) {
+      return;
+    }
+    Deposit.registerTypeUrl();
+    Vote.registerTypeUrl();
+    Proposal.registerTypeUrl();
+    DepositParams.registerTypeUrl();
+    VotingParams.registerTypeUrl();
+    TallyParams.registerTypeUrl();
   },
 };

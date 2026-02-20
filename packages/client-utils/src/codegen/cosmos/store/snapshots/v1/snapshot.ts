@@ -1,5 +1,6 @@
 //@ts-nocheck
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
+import { GlobalDecoderRegistry } from '../../../../registry.js';
 import { isSet } from '../../../../helpers.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
@@ -226,6 +227,29 @@ function createBaseSnapshot(): Snapshot {
  */
 export const Snapshot = {
   typeUrl: '/cosmos.store.snapshots.v1.Snapshot' as const,
+  aminoType: 'cosmos-sdk/Snapshot' as const,
+  is(o: any): o is Snapshot {
+    return (
+      o &&
+      (o.$typeUrl === Snapshot.typeUrl ||
+        (typeof o.height === 'bigint' &&
+          typeof o.format === 'number' &&
+          typeof o.chunks === 'number' &&
+          (o.hash instanceof Uint8Array || typeof o.hash === 'string') &&
+          Metadata.is(o.metadata)))
+    );
+  },
+  isSDK(o: any): o is SnapshotSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Snapshot.typeUrl ||
+        (typeof o.height === 'bigint' &&
+          typeof o.format === 'number' &&
+          typeof o.chunks === 'number' &&
+          (o.hash instanceof Uint8Array || typeof o.hash === 'string') &&
+          Metadata.isSDK(o.metadata)))
+    );
+  },
   encode(
     message: Snapshot,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -335,6 +359,12 @@ export const Snapshot = {
       value: Snapshot.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(Snapshot.typeUrl)) {
+      return;
+    }
+    Metadata.registerTypeUrl();
+  },
 };
 function createBaseMetadata(): Metadata {
   return {
@@ -349,6 +379,27 @@ function createBaseMetadata(): Metadata {
  */
 export const Metadata = {
   typeUrl: '/cosmos.store.snapshots.v1.Metadata' as const,
+  aminoType: 'cosmos-sdk/Metadata' as const,
+  is(o: any): o is Metadata {
+    return (
+      o &&
+      (o.$typeUrl === Metadata.typeUrl ||
+        (Array.isArray(o.chunkHashes) &&
+          (!o.chunkHashes.length ||
+            o.chunkHashes[0] instanceof Uint8Array ||
+            typeof o.chunkHashes[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is MetadataSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Metadata.typeUrl ||
+        (Array.isArray(o.chunk_hashes) &&
+          (!o.chunk_hashes.length ||
+            o.chunk_hashes[0] instanceof Uint8Array ||
+            typeof o.chunk_hashes[0] === 'string')))
+    );
+  },
   encode(
     message: Metadata,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -411,6 +462,7 @@ export const Metadata = {
       value: Metadata.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseSnapshotItem(): SnapshotItem {
   return {
@@ -430,6 +482,13 @@ function createBaseSnapshotItem(): SnapshotItem {
  */
 export const SnapshotItem = {
   typeUrl: '/cosmos.store.snapshots.v1.SnapshotItem' as const,
+  aminoType: 'cosmos-sdk/SnapshotItem' as const,
+  is(o: any): o is SnapshotItem {
+    return o && o.$typeUrl === SnapshotItem.typeUrl;
+  },
+  isSDK(o: any): o is SnapshotItemSDKType {
+    return o && o.$typeUrl === SnapshotItem.typeUrl;
+  },
   encode(
     message: SnapshotItem,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -558,6 +617,15 @@ export const SnapshotItem = {
       value: SnapshotItem.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(SnapshotItem.typeUrl)) {
+      return;
+    }
+    SnapshotStoreItem.registerTypeUrl();
+    SnapshotIAVLItem.registerTypeUrl();
+    SnapshotExtensionMeta.registerTypeUrl();
+    SnapshotExtensionPayload.registerTypeUrl();
+  },
 };
 function createBaseSnapshotStoreItem(): SnapshotStoreItem {
   return {
@@ -574,6 +642,19 @@ function createBaseSnapshotStoreItem(): SnapshotStoreItem {
  */
 export const SnapshotStoreItem = {
   typeUrl: '/cosmos.store.snapshots.v1.SnapshotStoreItem' as const,
+  aminoType: 'cosmos-sdk/SnapshotStoreItem' as const,
+  is(o: any): o is SnapshotStoreItem {
+    return (
+      o &&
+      (o.$typeUrl === SnapshotStoreItem.typeUrl || typeof o.name === 'string')
+    );
+  },
+  isSDK(o: any): o is SnapshotStoreItemSDKType {
+    return (
+      o &&
+      (o.$typeUrl === SnapshotStoreItem.typeUrl || typeof o.name === 'string')
+    );
+  },
   encode(
     message: SnapshotStoreItem,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -628,6 +709,7 @@ export const SnapshotStoreItem = {
       value: SnapshotStoreItem.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseSnapshotIAVLItem(): SnapshotIAVLItem {
   return {
@@ -647,6 +729,27 @@ function createBaseSnapshotIAVLItem(): SnapshotIAVLItem {
  */
 export const SnapshotIAVLItem = {
   typeUrl: '/cosmos.store.snapshots.v1.SnapshotIAVLItem' as const,
+  aminoType: 'cosmos-sdk/SnapshotIAVLItem' as const,
+  is(o: any): o is SnapshotIAVLItem {
+    return (
+      o &&
+      (o.$typeUrl === SnapshotIAVLItem.typeUrl ||
+        ((o.key instanceof Uint8Array || typeof o.key === 'string') &&
+          (o.value instanceof Uint8Array || typeof o.value === 'string') &&
+          typeof o.version === 'bigint' &&
+          typeof o.height === 'number'))
+    );
+  },
+  isSDK(o: any): o is SnapshotIAVLItemSDKType {
+    return (
+      o &&
+      (o.$typeUrl === SnapshotIAVLItem.typeUrl ||
+        ((o.key instanceof Uint8Array || typeof o.key === 'string') &&
+          (o.value instanceof Uint8Array || typeof o.value === 'string') &&
+          typeof o.version === 'bigint' &&
+          typeof o.height === 'number'))
+    );
+  },
   encode(
     message: SnapshotIAVLItem,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -742,6 +845,7 @@ export const SnapshotIAVLItem = {
       value: SnapshotIAVLItem.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseSnapshotExtensionMeta(): SnapshotExtensionMeta {
   return {
@@ -759,6 +863,21 @@ function createBaseSnapshotExtensionMeta(): SnapshotExtensionMeta {
  */
 export const SnapshotExtensionMeta = {
   typeUrl: '/cosmos.store.snapshots.v1.SnapshotExtensionMeta' as const,
+  aminoType: 'cosmos-sdk/SnapshotExtensionMeta' as const,
+  is(o: any): o is SnapshotExtensionMeta {
+    return (
+      o &&
+      (o.$typeUrl === SnapshotExtensionMeta.typeUrl ||
+        (typeof o.name === 'string' && typeof o.format === 'number'))
+    );
+  },
+  isSDK(o: any): o is SnapshotExtensionMetaSDKType {
+    return (
+      o &&
+      (o.$typeUrl === SnapshotExtensionMeta.typeUrl ||
+        (typeof o.name === 'string' && typeof o.format === 'number'))
+    );
+  },
   encode(
     message: SnapshotExtensionMeta,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -825,6 +944,7 @@ export const SnapshotExtensionMeta = {
       value: SnapshotExtensionMeta.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseSnapshotExtensionPayload(): SnapshotExtensionPayload {
   return {
@@ -841,6 +961,23 @@ function createBaseSnapshotExtensionPayload(): SnapshotExtensionPayload {
  */
 export const SnapshotExtensionPayload = {
   typeUrl: '/cosmos.store.snapshots.v1.SnapshotExtensionPayload' as const,
+  aminoType: 'cosmos-sdk/SnapshotExtensionPayload' as const,
+  is(o: any): o is SnapshotExtensionPayload {
+    return (
+      o &&
+      (o.$typeUrl === SnapshotExtensionPayload.typeUrl ||
+        o.payload instanceof Uint8Array ||
+        typeof o.payload === 'string')
+    );
+  },
+  isSDK(o: any): o is SnapshotExtensionPayloadSDKType {
+    return (
+      o &&
+      (o.$typeUrl === SnapshotExtensionPayload.typeUrl ||
+        o.payload instanceof Uint8Array ||
+        typeof o.payload === 'string')
+    );
+  },
   encode(
     message: SnapshotExtensionPayload,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -911,4 +1048,5 @@ export const SnapshotExtensionPayload = {
       value: SnapshotExtensionPayload.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

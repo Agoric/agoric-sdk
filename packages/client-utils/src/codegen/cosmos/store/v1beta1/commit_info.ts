@@ -6,6 +6,7 @@ import {
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet, fromJsonTimestamp, fromTimestamp } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../../registry.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
 /**
@@ -104,6 +105,27 @@ function createBaseCommitInfo(): CommitInfo {
  */
 export const CommitInfo = {
   typeUrl: '/cosmos.store.v1beta1.CommitInfo' as const,
+  aminoType: 'cosmos-sdk/CommitInfo' as const,
+  is(o: any): o is CommitInfo {
+    return (
+      o &&
+      (o.$typeUrl === CommitInfo.typeUrl ||
+        (typeof o.version === 'bigint' &&
+          Array.isArray(o.storeInfos) &&
+          (!o.storeInfos.length || StoreInfo.is(o.storeInfos[0])) &&
+          Timestamp.is(o.timestamp)))
+    );
+  },
+  isSDK(o: any): o is CommitInfoSDKType {
+    return (
+      o &&
+      (o.$typeUrl === CommitInfo.typeUrl ||
+        (typeof o.version === 'bigint' &&
+          Array.isArray(o.store_infos) &&
+          (!o.store_infos.length || StoreInfo.isSDK(o.store_infos[0])) &&
+          Timestamp.isSDK(o.timestamp)))
+    );
+  },
   encode(
     message: CommitInfo,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -197,6 +219,12 @@ export const CommitInfo = {
       value: CommitInfo.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(CommitInfo.typeUrl)) {
+      return;
+    }
+    StoreInfo.registerTypeUrl();
+  },
 };
 function createBaseStoreInfo(): StoreInfo {
   return {
@@ -213,6 +241,21 @@ function createBaseStoreInfo(): StoreInfo {
  */
 export const StoreInfo = {
   typeUrl: '/cosmos.store.v1beta1.StoreInfo' as const,
+  aminoType: 'cosmos-sdk/StoreInfo' as const,
+  is(o: any): o is StoreInfo {
+    return (
+      o &&
+      (o.$typeUrl === StoreInfo.typeUrl ||
+        (typeof o.name === 'string' && CommitID.is(o.commitId)))
+    );
+  },
+  isSDK(o: any): o is StoreInfoSDKType {
+    return (
+      o &&
+      (o.$typeUrl === StoreInfo.typeUrl ||
+        (typeof o.name === 'string' && CommitID.isSDK(o.commit_id)))
+    );
+  },
   encode(
     message: StoreInfo,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -284,6 +327,12 @@ export const StoreInfo = {
       value: StoreInfo.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(StoreInfo.typeUrl)) {
+      return;
+    }
+    CommitID.registerTypeUrl();
+  },
 };
 function createBaseCommitID(): CommitID {
   return {
@@ -300,6 +349,23 @@ function createBaseCommitID(): CommitID {
  */
 export const CommitID = {
   typeUrl: '/cosmos.store.v1beta1.CommitID' as const,
+  aminoType: 'cosmos-sdk/CommitID' as const,
+  is(o: any): o is CommitID {
+    return (
+      o &&
+      (o.$typeUrl === CommitID.typeUrl ||
+        (typeof o.version === 'bigint' &&
+          (o.hash instanceof Uint8Array || typeof o.hash === 'string')))
+    );
+  },
+  isSDK(o: any): o is CommitIDSDKType {
+    return (
+      o &&
+      (o.$typeUrl === CommitID.typeUrl ||
+        (typeof o.version === 'bigint' &&
+          (o.hash instanceof Uint8Array || typeof o.hash === 'string')))
+    );
+  },
   encode(
     message: CommitID,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -374,4 +440,5 @@ export const CommitID = {
       value: CommitID.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

@@ -60,6 +60,29 @@ function createBaseModule(): Module {
  */
 export const Module = {
   typeUrl: '/cosmos.staking.module.v1.Module' as const,
+  aminoType: 'cosmos-sdk/Module' as const,
+  is(o: any): o is Module {
+    return (
+      o &&
+      (o.$typeUrl === Module.typeUrl ||
+        (Array.isArray(o.hooksOrder) &&
+          (!o.hooksOrder.length || typeof o.hooksOrder[0] === 'string') &&
+          typeof o.authority === 'string' &&
+          typeof o.bech32PrefixValidator === 'string' &&
+          typeof o.bech32PrefixConsensus === 'string'))
+    );
+  },
+  isSDK(o: any): o is ModuleSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Module.typeUrl ||
+        (Array.isArray(o.hooks_order) &&
+          (!o.hooks_order.length || typeof o.hooks_order[0] === 'string') &&
+          typeof o.authority === 'string' &&
+          typeof o.bech32_prefix_validator === 'string' &&
+          typeof o.bech32_prefix_consensus === 'string'))
+    );
+  },
   encode(
     message: Module,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -153,4 +176,5 @@ export const Module = {
       value: Module.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

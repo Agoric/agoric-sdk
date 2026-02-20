@@ -18,6 +18,7 @@ import {
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../../../registry.js';
 /**
  * QueryDenomTraceRequest is the request type for the Query/DenomTrace RPC
  * method
@@ -341,6 +342,21 @@ function createBaseQueryDenomTraceRequest(): QueryDenomTraceRequest {
  */
 export const QueryDenomTraceRequest = {
   typeUrl: '/ibc.applications.transfer.v1.QueryDenomTraceRequest' as const,
+  aminoType: 'cosmos-sdk/QueryDenomTraceRequest' as const,
+  is(o: any): o is QueryDenomTraceRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryDenomTraceRequest.typeUrl ||
+        typeof o.hash === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryDenomTraceRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryDenomTraceRequest.typeUrl ||
+        typeof o.hash === 'string')
+    );
+  },
   encode(
     message: QueryDenomTraceRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -400,6 +416,7 @@ export const QueryDenomTraceRequest = {
       value: QueryDenomTraceRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryDenomTraceResponse(): QueryDenomTraceResponse {
   return {
@@ -415,6 +432,13 @@ function createBaseQueryDenomTraceResponse(): QueryDenomTraceResponse {
  */
 export const QueryDenomTraceResponse = {
   typeUrl: '/ibc.applications.transfer.v1.QueryDenomTraceResponse' as const,
+  aminoType: 'cosmos-sdk/QueryDenomTraceResponse' as const,
+  is(o: any): o is QueryDenomTraceResponse {
+    return o && o.$typeUrl === QueryDenomTraceResponse.typeUrl;
+  },
+  isSDK(o: any): o is QueryDenomTraceResponseSDKType {
+    return o && o.$typeUrl === QueryDenomTraceResponse.typeUrl;
+  },
   encode(
     message: QueryDenomTraceResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -486,6 +510,16 @@ export const QueryDenomTraceResponse = {
       value: QueryDenomTraceResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryDenomTraceResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    DenomTrace.registerTypeUrl();
+  },
 };
 function createBaseQueryDenomTracesRequest(): QueryDenomTracesRequest {
   return {
@@ -501,6 +535,13 @@ function createBaseQueryDenomTracesRequest(): QueryDenomTracesRequest {
  */
 export const QueryDenomTracesRequest = {
   typeUrl: '/ibc.applications.transfer.v1.QueryDenomTracesRequest' as const,
+  aminoType: 'cosmos-sdk/QueryDenomTracesRequest' as const,
+  is(o: any): o is QueryDenomTracesRequest {
+    return o && o.$typeUrl === QueryDenomTracesRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryDenomTracesRequestSDKType {
+    return o && o.$typeUrl === QueryDenomTracesRequest.typeUrl;
+  },
   encode(
     message: QueryDenomTracesRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -572,6 +613,16 @@ export const QueryDenomTracesRequest = {
       value: QueryDenomTracesRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryDenomTracesRequest.typeUrl,
+      )
+    ) {
+      return;
+    }
+    PageRequest.registerTypeUrl();
+  },
 };
 function createBaseQueryDenomTracesResponse(): QueryDenomTracesResponse {
   return {
@@ -588,6 +639,23 @@ function createBaseQueryDenomTracesResponse(): QueryDenomTracesResponse {
  */
 export const QueryDenomTracesResponse = {
   typeUrl: '/ibc.applications.transfer.v1.QueryDenomTracesResponse' as const,
+  aminoType: 'cosmos-sdk/QueryDenomTracesResponse' as const,
+  is(o: any): o is QueryDenomTracesResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryDenomTracesResponse.typeUrl ||
+        (Array.isArray(o.denomTraces) &&
+          (!o.denomTraces.length || DenomTrace.is(o.denomTraces[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryDenomTracesResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryDenomTracesResponse.typeUrl ||
+        (Array.isArray(o.denom_traces) &&
+          (!o.denom_traces.length || DenomTrace.isSDK(o.denom_traces[0]))))
+    );
+  },
   encode(
     message: QueryDenomTracesResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -682,6 +750,17 @@ export const QueryDenomTracesResponse = {
       value: QueryDenomTracesResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryDenomTracesResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    DenomTrace.registerTypeUrl();
+    PageResponse.registerTypeUrl();
+  },
 };
 function createBaseQueryParamsRequest(): QueryParamsRequest {
   return {};
@@ -694,6 +773,13 @@ function createBaseQueryParamsRequest(): QueryParamsRequest {
  */
 export const QueryParamsRequest = {
   typeUrl: '/ibc.applications.transfer.v1.QueryParamsRequest' as const,
+  aminoType: 'cosmos-sdk/QueryParamsRequest' as const,
+  is(o: any): o is QueryParamsRequest {
+    return o && o.$typeUrl === QueryParamsRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryParamsRequestSDKType {
+    return o && o.$typeUrl === QueryParamsRequest.typeUrl;
+  },
   encode(
     _: QueryParamsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -741,6 +827,7 @@ export const QueryParamsRequest = {
       value: QueryParamsRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryParamsResponse(): QueryParamsResponse {
   return {
@@ -755,6 +842,13 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
  */
 export const QueryParamsResponse = {
   typeUrl: '/ibc.applications.transfer.v1.QueryParamsResponse' as const,
+  aminoType: 'cosmos-sdk/QueryParamsResponse' as const,
+  is(o: any): o is QueryParamsResponse {
+    return o && o.$typeUrl === QueryParamsResponse.typeUrl;
+  },
+  isSDK(o: any): o is QueryParamsResponseSDKType {
+    return o && o.$typeUrl === QueryParamsResponse.typeUrl;
+  },
   encode(
     message: QueryParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -816,6 +910,16 @@ export const QueryParamsResponse = {
       value: QueryParamsResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryParamsResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Params.registerTypeUrl();
+  },
 };
 function createBaseQueryDenomHashRequest(): QueryDenomHashRequest {
   return {
@@ -831,6 +935,21 @@ function createBaseQueryDenomHashRequest(): QueryDenomHashRequest {
  */
 export const QueryDenomHashRequest = {
   typeUrl: '/ibc.applications.transfer.v1.QueryDenomHashRequest' as const,
+  aminoType: 'cosmos-sdk/QueryDenomHashRequest' as const,
+  is(o: any): o is QueryDenomHashRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryDenomHashRequest.typeUrl ||
+        typeof o.trace === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryDenomHashRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryDenomHashRequest.typeUrl ||
+        typeof o.trace === 'string')
+    );
+  },
   encode(
     message: QueryDenomHashRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -888,6 +1007,7 @@ export const QueryDenomHashRequest = {
       value: QueryDenomHashRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryDenomHashResponse(): QueryDenomHashResponse {
   return {
@@ -903,6 +1023,21 @@ function createBaseQueryDenomHashResponse(): QueryDenomHashResponse {
  */
 export const QueryDenomHashResponse = {
   typeUrl: '/ibc.applications.transfer.v1.QueryDenomHashResponse' as const,
+  aminoType: 'cosmos-sdk/QueryDenomHashResponse' as const,
+  is(o: any): o is QueryDenomHashResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryDenomHashResponse.typeUrl ||
+        typeof o.hash === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryDenomHashResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryDenomHashResponse.typeUrl ||
+        typeof o.hash === 'string')
+    );
+  },
   encode(
     message: QueryDenomHashResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -962,6 +1097,7 @@ export const QueryDenomHashResponse = {
       value: QueryDenomHashResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryEscrowAddressRequest(): QueryEscrowAddressRequest {
   return {
@@ -977,6 +1113,21 @@ function createBaseQueryEscrowAddressRequest(): QueryEscrowAddressRequest {
  */
 export const QueryEscrowAddressRequest = {
   typeUrl: '/ibc.applications.transfer.v1.QueryEscrowAddressRequest' as const,
+  aminoType: 'cosmos-sdk/QueryEscrowAddressRequest' as const,
+  is(o: any): o is QueryEscrowAddressRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryEscrowAddressRequest.typeUrl ||
+        (typeof o.portId === 'string' && typeof o.channelId === 'string'))
+    );
+  },
+  isSDK(o: any): o is QueryEscrowAddressRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryEscrowAddressRequest.typeUrl ||
+        (typeof o.port_id === 'string' && typeof o.channel_id === 'string'))
+    );
+  },
   encode(
     message: QueryEscrowAddressRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1051,6 +1202,7 @@ export const QueryEscrowAddressRequest = {
       value: QueryEscrowAddressRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryEscrowAddressResponse(): QueryEscrowAddressResponse {
   return {
@@ -1065,6 +1217,21 @@ function createBaseQueryEscrowAddressResponse(): QueryEscrowAddressResponse {
  */
 export const QueryEscrowAddressResponse = {
   typeUrl: '/ibc.applications.transfer.v1.QueryEscrowAddressResponse' as const,
+  aminoType: 'cosmos-sdk/QueryEscrowAddressResponse' as const,
+  is(o: any): o is QueryEscrowAddressResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryEscrowAddressResponse.typeUrl ||
+        typeof o.escrowAddress === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryEscrowAddressResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryEscrowAddressResponse.typeUrl ||
+        typeof o.escrow_address === 'string')
+    );
+  },
   encode(
     message: QueryEscrowAddressResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1133,6 +1300,7 @@ export const QueryEscrowAddressResponse = {
       value: QueryEscrowAddressResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryTotalEscrowForDenomRequest(): QueryTotalEscrowForDenomRequest {
   return {
@@ -1148,6 +1316,21 @@ function createBaseQueryTotalEscrowForDenomRequest(): QueryTotalEscrowForDenomRe
 export const QueryTotalEscrowForDenomRequest = {
   typeUrl:
     '/ibc.applications.transfer.v1.QueryTotalEscrowForDenomRequest' as const,
+  aminoType: 'cosmos-sdk/QueryTotalEscrowForDenomRequest' as const,
+  is(o: any): o is QueryTotalEscrowForDenomRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryTotalEscrowForDenomRequest.typeUrl ||
+        typeof o.denom === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryTotalEscrowForDenomRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryTotalEscrowForDenomRequest.typeUrl ||
+        typeof o.denom === 'string')
+    );
+  },
   encode(
     message: QueryTotalEscrowForDenomRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1213,6 +1396,7 @@ export const QueryTotalEscrowForDenomRequest = {
       value: QueryTotalEscrowForDenomRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryTotalEscrowForDenomResponse(): QueryTotalEscrowForDenomResponse {
   return {
@@ -1228,6 +1412,21 @@ function createBaseQueryTotalEscrowForDenomResponse(): QueryTotalEscrowForDenomR
 export const QueryTotalEscrowForDenomResponse = {
   typeUrl:
     '/ibc.applications.transfer.v1.QueryTotalEscrowForDenomResponse' as const,
+  aminoType: 'cosmos-sdk/QueryTotalEscrowForDenomResponse' as const,
+  is(o: any): o is QueryTotalEscrowForDenomResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryTotalEscrowForDenomResponse.typeUrl ||
+        Coin.is(o.amount))
+    );
+  },
+  isSDK(o: any): o is QueryTotalEscrowForDenomResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryTotalEscrowForDenomResponse.typeUrl ||
+        Coin.isSDK(o.amount))
+    );
+  },
   encode(
     message: QueryTotalEscrowForDenomResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1296,5 +1495,15 @@ export const QueryTotalEscrowForDenomResponse = {
       typeUrl: '/ibc.applications.transfer.v1.QueryTotalEscrowForDenomResponse',
       value: QueryTotalEscrowForDenomResponse.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryTotalEscrowForDenomResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Coin.registerTypeUrl();
   },
 };

@@ -9,6 +9,7 @@ import {
 } from './types.js';
 import { EvidenceList, type EvidenceListSDKType } from './evidence.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
+import { GlobalDecoderRegistry } from '../../registry.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
 /**
@@ -52,6 +53,22 @@ function createBaseBlock(): Block {
  */
 export const Block = {
   typeUrl: '/tendermint.types.Block' as const,
+  is(o: any): o is Block {
+    return (
+      o &&
+      (o.$typeUrl === Block.typeUrl ||
+        (Header.is(o.header) && Data.is(o.data) && EvidenceList.is(o.evidence)))
+    );
+  },
+  isSDK(o: any): o is BlockSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Block.typeUrl ||
+        (Header.isSDK(o.header) &&
+          Data.isSDK(o.data) &&
+          EvidenceList.isSDK(o.evidence)))
+    );
+  },
   encode(
     message: Block,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -156,5 +173,14 @@ export const Block = {
       typeUrl: '/tendermint.types.Block',
       value: Block.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(Block.typeUrl)) {
+      return;
+    }
+    Header.registerTypeUrl();
+    Data.registerTypeUrl();
+    EvidenceList.registerTypeUrl();
+    Commit.registerTypeUrl();
   },
 };

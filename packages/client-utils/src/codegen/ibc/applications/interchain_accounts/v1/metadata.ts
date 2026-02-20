@@ -74,6 +74,31 @@ function createBaseMetadata(): Metadata {
  */
 export const Metadata = {
   typeUrl: '/ibc.applications.interchain_accounts.v1.Metadata' as const,
+  aminoType: 'cosmos-sdk/Metadata' as const,
+  is(o: any): o is Metadata {
+    return (
+      o &&
+      (o.$typeUrl === Metadata.typeUrl ||
+        (typeof o.version === 'string' &&
+          typeof o.controllerConnectionId === 'string' &&
+          typeof o.hostConnectionId === 'string' &&
+          typeof o.address === 'string' &&
+          typeof o.encoding === 'string' &&
+          typeof o.txType === 'string'))
+    );
+  },
+  isSDK(o: any): o is MetadataSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Metadata.typeUrl ||
+        (typeof o.version === 'string' &&
+          typeof o.controller_connection_id === 'string' &&
+          typeof o.host_connection_id === 'string' &&
+          typeof o.address === 'string' &&
+          typeof o.encoding === 'string' &&
+          typeof o.tx_type === 'string'))
+    );
+  },
   encode(
     message: Metadata,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -179,4 +204,5 @@ export const Metadata = {
       value: Metadata.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

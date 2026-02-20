@@ -145,6 +145,20 @@ function createBaseInterfaceDescriptor(): InterfaceDescriptor {
  */
 export const InterfaceDescriptor = {
   typeUrl: '/cosmos_proto.InterfaceDescriptor' as const,
+  is(o: any): o is InterfaceDescriptor {
+    return (
+      o &&
+      (o.$typeUrl === InterfaceDescriptor.typeUrl ||
+        (typeof o.name === 'string' && typeof o.description === 'string'))
+    );
+  },
+  isSDK(o: any): o is InterfaceDescriptorSDKType {
+    return (
+      o &&
+      (o.$typeUrl === InterfaceDescriptor.typeUrl ||
+        (typeof o.name === 'string' && typeof o.description === 'string'))
+    );
+  },
   encode(
     message: InterfaceDescriptor,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -212,6 +226,7 @@ export const InterfaceDescriptor = {
       value: InterfaceDescriptor.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseScalarDescriptor(): ScalarDescriptor {
   return {
@@ -234,6 +249,24 @@ function createBaseScalarDescriptor(): ScalarDescriptor {
  */
 export const ScalarDescriptor = {
   typeUrl: '/cosmos_proto.ScalarDescriptor' as const,
+  is(o: any): o is ScalarDescriptor {
+    return (
+      o &&
+      (o.$typeUrl === ScalarDescriptor.typeUrl ||
+        (typeof o.name === 'string' &&
+          typeof o.description === 'string' &&
+          Array.isArray(o.fieldType)))
+    );
+  },
+  isSDK(o: any): o is ScalarDescriptorSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ScalarDescriptor.typeUrl ||
+        (typeof o.name === 'string' &&
+          typeof o.description === 'string' &&
+          Array.isArray(o.field_type)))
+    );
+  },
   encode(
     message: ScalarDescriptor,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -322,4 +355,5 @@ export const ScalarDescriptor = {
       value: ScalarDescriptor.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

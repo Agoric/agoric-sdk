@@ -4,6 +4,7 @@ import {
   type PacketSDKType,
 } from '../../ibc/core/channel/v1/channel.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
+import { GlobalDecoderRegistry } from '../../registry.js';
 import { isSet } from '../../helpers.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
@@ -64,6 +65,23 @@ function createBaseMsgSendPacket(): MsgSendPacket {
  */
 export const MsgSendPacket = {
   typeUrl: '/agoric.vibc.MsgSendPacket' as const,
+  aminoType: 'vibc/SendPacket' as const,
+  is(o: any): o is MsgSendPacket {
+    return (
+      o &&
+      (o.$typeUrl === MsgSendPacket.typeUrl ||
+        (Packet.is(o.packet) &&
+          (o.sender instanceof Uint8Array || typeof o.sender === 'string')))
+    );
+  },
+  isSDK(o: any): o is MsgSendPacketSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgSendPacket.typeUrl ||
+        (Packet.isSDK(o.packet) &&
+          (o.sender instanceof Uint8Array || typeof o.sender === 'string')))
+    );
+  },
   encode(
     message: MsgSendPacket,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -136,6 +154,12 @@ export const MsgSendPacket = {
       value: MsgSendPacket.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(MsgSendPacket.typeUrl)) {
+      return;
+    }
+    Packet.registerTypeUrl();
+  },
 };
 function createBaseMsgSendPacketResponse(): MsgSendPacketResponse {
   return {};
@@ -148,6 +172,12 @@ function createBaseMsgSendPacketResponse(): MsgSendPacketResponse {
  */
 export const MsgSendPacketResponse = {
   typeUrl: '/agoric.vibc.MsgSendPacketResponse' as const,
+  is(o: any): o is MsgSendPacketResponse {
+    return o && o.$typeUrl === MsgSendPacketResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgSendPacketResponseSDKType {
+    return o && o.$typeUrl === MsgSendPacketResponse.typeUrl;
+  },
   encode(
     _: MsgSendPacketResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -195,4 +225,5 @@ export const MsgSendPacketResponse = {
       value: MsgSendPacketResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

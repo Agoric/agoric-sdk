@@ -59,6 +59,36 @@ function createBaseValidator(): Validator {
  */
 export const Validator = {
   typeUrl: '/stride.stakeibc.Validator' as const,
+  is(o: any): o is Validator {
+    return (
+      o &&
+      (o.$typeUrl === Validator.typeUrl ||
+        (typeof o.name === 'string' &&
+          typeof o.address === 'string' &&
+          typeof o.weight === 'bigint' &&
+          typeof o.delegation === 'string' &&
+          typeof o.slashQueryProgressTracker === 'string' &&
+          typeof o.slashQueryCheckpoint === 'string' &&
+          typeof o.sharesToTokensRate === 'string' &&
+          typeof o.delegationChangesInProgress === 'bigint' &&
+          typeof o.slashQueryInProgress === 'boolean'))
+    );
+  },
+  isSDK(o: any): o is ValidatorSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Validator.typeUrl ||
+        (typeof o.name === 'string' &&
+          typeof o.address === 'string' &&
+          typeof o.weight === 'bigint' &&
+          typeof o.delegation === 'string' &&
+          typeof o.slash_query_progress_tracker === 'string' &&
+          typeof o.slash_query_checkpoint === 'string' &&
+          typeof o.shares_to_tokens_rate === 'string' &&
+          typeof o.delegation_changes_in_progress === 'bigint' &&
+          typeof o.slash_query_in_progress === 'boolean'))
+    );
+  },
   encode(
     message: Validator,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -217,4 +247,5 @@ export const Validator = {
       value: Validator.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

@@ -1,6 +1,7 @@
 //@ts-nocheck
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { type JsonSafe } from '../../../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../../../registry.js';
 import { isSet } from '../../../../helpers.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
@@ -67,6 +68,23 @@ function createBaseGenesisState(): GenesisState {
  */
 export const GenesisState = {
   typeUrl: '/ibc.lightclients.wasm.v1.GenesisState' as const,
+  aminoType: 'cosmos-sdk/GenesisState' as const,
+  is(o: any): o is GenesisState {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Array.isArray(o.contracts) &&
+          (!o.contracts.length || Contract.is(o.contracts[0]))))
+    );
+  },
+  isSDK(o: any): o is GenesisStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Array.isArray(o.contracts) &&
+          (!o.contracts.length || Contract.isSDK(o.contracts[0]))))
+    );
+  },
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -130,6 +148,12 @@ export const GenesisState = {
       value: GenesisState.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(GenesisState.typeUrl)) {
+      return;
+    }
+    Contract.registerTypeUrl();
+  },
 };
 function createBaseContract(): Contract {
   return {
@@ -144,6 +168,23 @@ function createBaseContract(): Contract {
  */
 export const Contract = {
   typeUrl: '/ibc.lightclients.wasm.v1.Contract' as const,
+  aminoType: 'cosmos-sdk/Contract' as const,
+  is(o: any): o is Contract {
+    return (
+      o &&
+      (o.$typeUrl === Contract.typeUrl ||
+        o.codeBytes instanceof Uint8Array ||
+        typeof o.codeBytes === 'string')
+    );
+  },
+  isSDK(o: any): o is ContractSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Contract.typeUrl ||
+        o.code_bytes instanceof Uint8Array ||
+        typeof o.code_bytes === 'string')
+    );
+  },
   encode(
     message: Contract,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -203,4 +244,5 @@ export const Contract = {
       value: Contract.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

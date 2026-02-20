@@ -8,7 +8,7 @@
 import { IBinaryReader, IBinaryWriter } from './binary.js';
 import { Any } from './google/protobuf/any.js';
 import { OfflineSigner } from '@cosmjs/proto-signing';
-import { type HttpEndpoint } from '@cosmjs/tendermint-rpc';
+import { HttpEndpoint } from '@cosmjs/tendermint-rpc';
 
 export type ProtoMsg = Omit<Any, 'typeUrl'> & { typeUrl: any };
 

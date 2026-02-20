@@ -61,6 +61,12 @@ function createBaseData(): Data {
  */
 export const Data = {
   typeUrl: '/agoric.vstorage.Data' as const,
+  is(o: any): o is Data {
+    return o && (o.$typeUrl === Data.typeUrl || typeof o.value === 'string');
+  },
+  isSDK(o: any): o is DataSDKType {
+    return o && (o.$typeUrl === Data.typeUrl || typeof o.value === 'string');
+  },
   encode(
     message: Data,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -115,6 +121,7 @@ export const Data = {
       value: Data.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseChildren(): Children {
   return {
@@ -130,6 +137,22 @@ function createBaseChildren(): Children {
  */
 export const Children = {
   typeUrl: '/agoric.vstorage.Children' as const,
+  is(o: any): o is Children {
+    return (
+      o &&
+      (o.$typeUrl === Children.typeUrl ||
+        (Array.isArray(o.children) &&
+          (!o.children.length || typeof o.children[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is ChildrenSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Children.typeUrl ||
+        (Array.isArray(o.children) &&
+          (!o.children.length || typeof o.children[0] === 'string')))
+    );
+  },
   encode(
     message: Children,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -190,4 +213,5 @@ export const Children = {
       value: Children.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

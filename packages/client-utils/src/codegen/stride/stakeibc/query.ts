@@ -17,6 +17,7 @@ import { TradeRoute, type TradeRouteSDKType } from './trade_route.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../registry.js';
 /**
  * QueryInterchainAccountFromAddressRequest is the request type for the
  * Query/InterchainAccountAddress RPC
@@ -481,6 +482,20 @@ function createBaseQueryInterchainAccountFromAddressRequest(): QueryInterchainAc
  */
 export const QueryInterchainAccountFromAddressRequest = {
   typeUrl: '/stride.stakeibc.QueryInterchainAccountFromAddressRequest' as const,
+  is(o: any): o is QueryInterchainAccountFromAddressRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryInterchainAccountFromAddressRequest.typeUrl ||
+        (typeof o.owner === 'string' && typeof o.connectionId === 'string'))
+    );
+  },
+  isSDK(o: any): o is QueryInterchainAccountFromAddressRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryInterchainAccountFromAddressRequest.typeUrl ||
+        (typeof o.owner === 'string' && typeof o.connection_id === 'string'))
+    );
+  },
   encode(
     message: QueryInterchainAccountFromAddressRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -558,6 +573,7 @@ export const QueryInterchainAccountFromAddressRequest = {
       value: QueryInterchainAccountFromAddressRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryInterchainAccountFromAddressResponse(): QueryInterchainAccountFromAddressResponse {
   return {
@@ -574,6 +590,20 @@ function createBaseQueryInterchainAccountFromAddressResponse(): QueryInterchainA
 export const QueryInterchainAccountFromAddressResponse = {
   typeUrl:
     '/stride.stakeibc.QueryInterchainAccountFromAddressResponse' as const,
+  is(o: any): o is QueryInterchainAccountFromAddressResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryInterchainAccountFromAddressResponse.typeUrl ||
+        typeof o.interchainAccountAddress === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryInterchainAccountFromAddressResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryInterchainAccountFromAddressResponse.typeUrl ||
+        typeof o.interchain_account_address === 'string')
+    );
+  },
   encode(
     message: QueryInterchainAccountFromAddressResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -642,6 +672,7 @@ export const QueryInterchainAccountFromAddressResponse = {
       value: QueryInterchainAccountFromAddressResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryParamsRequest(): QueryParamsRequest {
   return {};
@@ -654,6 +685,12 @@ function createBaseQueryParamsRequest(): QueryParamsRequest {
  */
 export const QueryParamsRequest = {
   typeUrl: '/stride.stakeibc.QueryParamsRequest' as const,
+  is(o: any): o is QueryParamsRequest {
+    return o && o.$typeUrl === QueryParamsRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryParamsRequestSDKType {
+    return o && o.$typeUrl === QueryParamsRequest.typeUrl;
+  },
   encode(
     _: QueryParamsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -701,6 +738,7 @@ export const QueryParamsRequest = {
       value: QueryParamsRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryParamsResponse(): QueryParamsResponse {
   return {
@@ -715,6 +753,17 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
  */
 export const QueryParamsResponse = {
   typeUrl: '/stride.stakeibc.QueryParamsResponse' as const,
+  is(o: any): o is QueryParamsResponse {
+    return (
+      o && (o.$typeUrl === QueryParamsResponse.typeUrl || Params.is(o.params))
+    );
+  },
+  isSDK(o: any): o is QueryParamsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryParamsResponse.typeUrl || Params.isSDK(o.params))
+    );
+  },
   encode(
     message: QueryParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -776,6 +825,16 @@ export const QueryParamsResponse = {
       value: QueryParamsResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryParamsResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Params.registerTypeUrl();
+  },
 };
 function createBaseQueryGetValidatorsRequest(): QueryGetValidatorsRequest {
   return {
@@ -789,6 +848,20 @@ function createBaseQueryGetValidatorsRequest(): QueryGetValidatorsRequest {
  */
 export const QueryGetValidatorsRequest = {
   typeUrl: '/stride.stakeibc.QueryGetValidatorsRequest' as const,
+  is(o: any): o is QueryGetValidatorsRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetValidatorsRequest.typeUrl ||
+        typeof o.chainId === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryGetValidatorsRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetValidatorsRequest.typeUrl ||
+        typeof o.chain_id === 'string')
+    );
+  },
   encode(
     message: QueryGetValidatorsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -854,6 +927,7 @@ export const QueryGetValidatorsRequest = {
       value: QueryGetValidatorsRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryGetValidatorsResponse(): QueryGetValidatorsResponse {
   return {
@@ -867,6 +941,22 @@ function createBaseQueryGetValidatorsResponse(): QueryGetValidatorsResponse {
  */
 export const QueryGetValidatorsResponse = {
   typeUrl: '/stride.stakeibc.QueryGetValidatorsResponse' as const,
+  is(o: any): o is QueryGetValidatorsResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetValidatorsResponse.typeUrl ||
+        (Array.isArray(o.validators) &&
+          (!o.validators.length || Validator.is(o.validators[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryGetValidatorsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetValidatorsResponse.typeUrl ||
+        (Array.isArray(o.validators) &&
+          (!o.validators.length || Validator.isSDK(o.validators[0]))))
+    );
+  },
   encode(
     message: QueryGetValidatorsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -941,6 +1031,16 @@ export const QueryGetValidatorsResponse = {
       value: QueryGetValidatorsResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryGetValidatorsResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Validator.registerTypeUrl();
+  },
 };
 function createBaseQueryGetHostZoneRequest(): QueryGetHostZoneRequest {
   return {
@@ -954,6 +1054,20 @@ function createBaseQueryGetHostZoneRequest(): QueryGetHostZoneRequest {
  */
 export const QueryGetHostZoneRequest = {
   typeUrl: '/stride.stakeibc.QueryGetHostZoneRequest' as const,
+  is(o: any): o is QueryGetHostZoneRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetHostZoneRequest.typeUrl ||
+        typeof o.chainId === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryGetHostZoneRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetHostZoneRequest.typeUrl ||
+        typeof o.chain_id === 'string')
+    );
+  },
   encode(
     message: QueryGetHostZoneRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1017,6 +1131,7 @@ export const QueryGetHostZoneRequest = {
       value: QueryGetHostZoneRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryGetHostZoneResponse(): QueryGetHostZoneResponse {
   return {
@@ -1030,6 +1145,20 @@ function createBaseQueryGetHostZoneResponse(): QueryGetHostZoneResponse {
  */
 export const QueryGetHostZoneResponse = {
   typeUrl: '/stride.stakeibc.QueryGetHostZoneResponse' as const,
+  is(o: any): o is QueryGetHostZoneResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetHostZoneResponse.typeUrl ||
+        HostZone.is(o.hostZone))
+    );
+  },
+  isSDK(o: any): o is QueryGetHostZoneResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetHostZoneResponse.typeUrl ||
+        HostZone.isSDK(o.host_zone))
+    );
+  },
   encode(
     message: QueryGetHostZoneResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1103,6 +1232,16 @@ export const QueryGetHostZoneResponse = {
       value: QueryGetHostZoneResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryGetHostZoneResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    HostZone.registerTypeUrl();
+  },
 };
 function createBaseQueryAllHostZoneRequest(): QueryAllHostZoneRequest {
   return {
@@ -1116,6 +1255,12 @@ function createBaseQueryAllHostZoneRequest(): QueryAllHostZoneRequest {
  */
 export const QueryAllHostZoneRequest = {
   typeUrl: '/stride.stakeibc.QueryAllHostZoneRequest' as const,
+  is(o: any): o is QueryAllHostZoneRequest {
+    return o && o.$typeUrl === QueryAllHostZoneRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryAllHostZoneRequestSDKType {
+    return o && o.$typeUrl === QueryAllHostZoneRequest.typeUrl;
+  },
   encode(
     message: QueryAllHostZoneRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1187,6 +1332,16 @@ export const QueryAllHostZoneRequest = {
       value: QueryAllHostZoneRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryAllHostZoneRequest.typeUrl,
+      )
+    ) {
+      return;
+    }
+    PageRequest.registerTypeUrl();
+  },
 };
 function createBaseQueryAllHostZoneResponse(): QueryAllHostZoneResponse {
   return {
@@ -1201,6 +1356,22 @@ function createBaseQueryAllHostZoneResponse(): QueryAllHostZoneResponse {
  */
 export const QueryAllHostZoneResponse = {
   typeUrl: '/stride.stakeibc.QueryAllHostZoneResponse' as const,
+  is(o: any): o is QueryAllHostZoneResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllHostZoneResponse.typeUrl ||
+        (Array.isArray(o.hostZone) &&
+          (!o.hostZone.length || HostZone.is(o.hostZone[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryAllHostZoneResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllHostZoneResponse.typeUrl ||
+        (Array.isArray(o.host_zone) &&
+          (!o.host_zone.length || HostZone.isSDK(o.host_zone[0]))))
+    );
+  },
   encode(
     message: QueryAllHostZoneResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1294,6 +1465,17 @@ export const QueryAllHostZoneResponse = {
       value: QueryAllHostZoneResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryAllHostZoneResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    HostZone.registerTypeUrl();
+    PageResponse.registerTypeUrl();
+  },
 };
 function createBaseQueryModuleAddressRequest(): QueryModuleAddressRequest {
   return {
@@ -1307,6 +1489,20 @@ function createBaseQueryModuleAddressRequest(): QueryModuleAddressRequest {
  */
 export const QueryModuleAddressRequest = {
   typeUrl: '/stride.stakeibc.QueryModuleAddressRequest' as const,
+  is(o: any): o is QueryModuleAddressRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryModuleAddressRequest.typeUrl ||
+        typeof o.name === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryModuleAddressRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryModuleAddressRequest.typeUrl ||
+        typeof o.name === 'string')
+    );
+  },
   encode(
     message: QueryModuleAddressRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1372,6 +1568,7 @@ export const QueryModuleAddressRequest = {
       value: QueryModuleAddressRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryModuleAddressResponse(): QueryModuleAddressResponse {
   return {
@@ -1385,6 +1582,20 @@ function createBaseQueryModuleAddressResponse(): QueryModuleAddressResponse {
  */
 export const QueryModuleAddressResponse = {
   typeUrl: '/stride.stakeibc.QueryModuleAddressResponse' as const,
+  is(o: any): o is QueryModuleAddressResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryModuleAddressResponse.typeUrl ||
+        typeof o.addr === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryModuleAddressResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryModuleAddressResponse.typeUrl ||
+        typeof o.addr === 'string')
+    );
+  },
   encode(
     message: QueryModuleAddressResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1450,6 +1661,7 @@ export const QueryModuleAddressResponse = {
       value: QueryModuleAddressResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryGetEpochTrackerRequest(): QueryGetEpochTrackerRequest {
   return {
@@ -1463,6 +1675,20 @@ function createBaseQueryGetEpochTrackerRequest(): QueryGetEpochTrackerRequest {
  */
 export const QueryGetEpochTrackerRequest = {
   typeUrl: '/stride.stakeibc.QueryGetEpochTrackerRequest' as const,
+  is(o: any): o is QueryGetEpochTrackerRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetEpochTrackerRequest.typeUrl ||
+        typeof o.epochIdentifier === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryGetEpochTrackerRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetEpochTrackerRequest.typeUrl ||
+        typeof o.epoch_identifier === 'string')
+    );
+  },
   encode(
     message: QueryGetEpochTrackerRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1531,6 +1757,7 @@ export const QueryGetEpochTrackerRequest = {
       value: QueryGetEpochTrackerRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryGetEpochTrackerResponse(): QueryGetEpochTrackerResponse {
   return {
@@ -1544,6 +1771,20 @@ function createBaseQueryGetEpochTrackerResponse(): QueryGetEpochTrackerResponse 
  */
 export const QueryGetEpochTrackerResponse = {
   typeUrl: '/stride.stakeibc.QueryGetEpochTrackerResponse' as const,
+  is(o: any): o is QueryGetEpochTrackerResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetEpochTrackerResponse.typeUrl ||
+        EpochTracker.is(o.epochTracker))
+    );
+  },
+  isSDK(o: any): o is QueryGetEpochTrackerResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetEpochTrackerResponse.typeUrl ||
+        EpochTracker.isSDK(o.epoch_tracker))
+    );
+  },
   encode(
     message: QueryGetEpochTrackerResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1620,6 +1861,16 @@ export const QueryGetEpochTrackerResponse = {
       value: QueryGetEpochTrackerResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryGetEpochTrackerResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    EpochTracker.registerTypeUrl();
+  },
 };
 function createBaseQueryAllEpochTrackerRequest(): QueryAllEpochTrackerRequest {
   return {};
@@ -1631,6 +1882,12 @@ function createBaseQueryAllEpochTrackerRequest(): QueryAllEpochTrackerRequest {
  */
 export const QueryAllEpochTrackerRequest = {
   typeUrl: '/stride.stakeibc.QueryAllEpochTrackerRequest' as const,
+  is(o: any): o is QueryAllEpochTrackerRequest {
+    return o && o.$typeUrl === QueryAllEpochTrackerRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryAllEpochTrackerRequestSDKType {
+    return o && o.$typeUrl === QueryAllEpochTrackerRequest.typeUrl;
+  },
   encode(
     _: QueryAllEpochTrackerRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1686,6 +1943,7 @@ export const QueryAllEpochTrackerRequest = {
       value: QueryAllEpochTrackerRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryAllEpochTrackerResponse(): QueryAllEpochTrackerResponse {
   return {
@@ -1699,6 +1957,22 @@ function createBaseQueryAllEpochTrackerResponse(): QueryAllEpochTrackerResponse 
  */
 export const QueryAllEpochTrackerResponse = {
   typeUrl: '/stride.stakeibc.QueryAllEpochTrackerResponse' as const,
+  is(o: any): o is QueryAllEpochTrackerResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllEpochTrackerResponse.typeUrl ||
+        (Array.isArray(o.epochTracker) &&
+          (!o.epochTracker.length || EpochTracker.is(o.epochTracker[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryAllEpochTrackerResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllEpochTrackerResponse.typeUrl ||
+        (Array.isArray(o.epoch_tracker) &&
+          (!o.epoch_tracker.length || EpochTracker.isSDK(o.epoch_tracker[0]))))
+    );
+  },
   encode(
     message: QueryAllEpochTrackerResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1775,6 +2049,16 @@ export const QueryAllEpochTrackerResponse = {
       value: QueryAllEpochTrackerResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryAllEpochTrackerResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    EpochTracker.registerTypeUrl();
+  },
 };
 function createBaseQueryGetNextPacketSequenceRequest(): QueryGetNextPacketSequenceRequest {
   return {
@@ -1789,6 +2073,20 @@ function createBaseQueryGetNextPacketSequenceRequest(): QueryGetNextPacketSequen
  */
 export const QueryGetNextPacketSequenceRequest = {
   typeUrl: '/stride.stakeibc.QueryGetNextPacketSequenceRequest' as const,
+  is(o: any): o is QueryGetNextPacketSequenceRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetNextPacketSequenceRequest.typeUrl ||
+        (typeof o.channelId === 'string' && typeof o.portId === 'string'))
+    );
+  },
+  isSDK(o: any): o is QueryGetNextPacketSequenceRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetNextPacketSequenceRequest.typeUrl ||
+        (typeof o.channel_id === 'string' && typeof o.port_id === 'string'))
+    );
+  },
   encode(
     message: QueryGetNextPacketSequenceRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1863,6 +2161,7 @@ export const QueryGetNextPacketSequenceRequest = {
       value: QueryGetNextPacketSequenceRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryGetNextPacketSequenceResponse(): QueryGetNextPacketSequenceResponse {
   return {
@@ -1876,6 +2175,20 @@ function createBaseQueryGetNextPacketSequenceResponse(): QueryGetNextPacketSeque
  */
 export const QueryGetNextPacketSequenceResponse = {
   typeUrl: '/stride.stakeibc.QueryGetNextPacketSequenceResponse' as const,
+  is(o: any): o is QueryGetNextPacketSequenceResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetNextPacketSequenceResponse.typeUrl ||
+        typeof o.sequence === 'bigint')
+    );
+  },
+  isSDK(o: any): o is QueryGetNextPacketSequenceResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetNextPacketSequenceResponse.typeUrl ||
+        typeof o.sequence === 'bigint')
+    );
+  },
   encode(
     message: QueryGetNextPacketSequenceResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1947,6 +2260,7 @@ export const QueryGetNextPacketSequenceResponse = {
       value: QueryGetNextPacketSequenceResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryAddressUnbondings(): QueryAddressUnbondings {
   return {
@@ -1960,6 +2274,20 @@ function createBaseQueryAddressUnbondings(): QueryAddressUnbondings {
  */
 export const QueryAddressUnbondings = {
   typeUrl: '/stride.stakeibc.QueryAddressUnbondings' as const,
+  is(o: any): o is QueryAddressUnbondings {
+    return (
+      o &&
+      (o.$typeUrl === QueryAddressUnbondings.typeUrl ||
+        typeof o.address === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryAddressUnbondingsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryAddressUnbondings.typeUrl ||
+        typeof o.address === 'string')
+    );
+  },
   encode(
     message: QueryAddressUnbondings,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2019,6 +2347,7 @@ export const QueryAddressUnbondings = {
       value: QueryAddressUnbondings.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryAddressUnbondingsResponse(): QueryAddressUnbondingsResponse {
   return {
@@ -2032,6 +2361,24 @@ function createBaseQueryAddressUnbondingsResponse(): QueryAddressUnbondingsRespo
  */
 export const QueryAddressUnbondingsResponse = {
   typeUrl: '/stride.stakeibc.QueryAddressUnbondingsResponse' as const,
+  is(o: any): o is QueryAddressUnbondingsResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryAddressUnbondingsResponse.typeUrl ||
+        (Array.isArray(o.addressUnbondings) &&
+          (!o.addressUnbondings.length ||
+            AddressUnbonding.is(o.addressUnbondings[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryAddressUnbondingsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryAddressUnbondingsResponse.typeUrl ||
+        (Array.isArray(o.address_unbondings) &&
+          (!o.address_unbondings.length ||
+            AddressUnbonding.isSDK(o.address_unbondings[0]))))
+    );
+  },
   encode(
     message: QueryAddressUnbondingsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2108,6 +2455,16 @@ export const QueryAddressUnbondingsResponse = {
       value: QueryAddressUnbondingsResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryAddressUnbondingsResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    AddressUnbonding.registerTypeUrl();
+  },
 };
 function createBaseQueryAllTradeRoutes(): QueryAllTradeRoutes {
   return {};
@@ -2119,6 +2476,12 @@ function createBaseQueryAllTradeRoutes(): QueryAllTradeRoutes {
  */
 export const QueryAllTradeRoutes = {
   typeUrl: '/stride.stakeibc.QueryAllTradeRoutes' as const,
+  is(o: any): o is QueryAllTradeRoutes {
+    return o && o.$typeUrl === QueryAllTradeRoutes.typeUrl;
+  },
+  isSDK(o: any): o is QueryAllTradeRoutesSDKType {
+    return o && o.$typeUrl === QueryAllTradeRoutes.typeUrl;
+  },
   encode(
     _: QueryAllTradeRoutes,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2166,6 +2529,7 @@ export const QueryAllTradeRoutes = {
       value: QueryAllTradeRoutes.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryAllTradeRoutesResponse(): QueryAllTradeRoutesResponse {
   return {
@@ -2179,6 +2543,22 @@ function createBaseQueryAllTradeRoutesResponse(): QueryAllTradeRoutesResponse {
  */
 export const QueryAllTradeRoutesResponse = {
   typeUrl: '/stride.stakeibc.QueryAllTradeRoutesResponse' as const,
+  is(o: any): o is QueryAllTradeRoutesResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllTradeRoutesResponse.typeUrl ||
+        (Array.isArray(o.tradeRoutes) &&
+          (!o.tradeRoutes.length || TradeRoute.is(o.tradeRoutes[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryAllTradeRoutesResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllTradeRoutesResponse.typeUrl ||
+        (Array.isArray(o.trade_routes) &&
+          (!o.trade_routes.length || TradeRoute.isSDK(o.trade_routes[0]))))
+    );
+  },
   encode(
     message: QueryAllTradeRoutesResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2252,5 +2632,15 @@ export const QueryAllTradeRoutesResponse = {
       typeUrl: '/stride.stakeibc.QueryAllTradeRoutesResponse',
       value: QueryAllTradeRoutesResponse.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryAllTradeRoutesResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    TradeRoute.registerTypeUrl();
   },
 };

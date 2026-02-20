@@ -327,6 +327,33 @@ function createBaseMsgDeliverInbound(): MsgDeliverInbound {
  */
 export const MsgDeliverInbound = {
   typeUrl: '/agoric.swingset.MsgDeliverInbound' as const,
+  aminoType: 'swingset/DeliverInbound' as const,
+  is(o: any): o is MsgDeliverInbound {
+    return (
+      o &&
+      (o.$typeUrl === MsgDeliverInbound.typeUrl ||
+        (Array.isArray(o.messages) &&
+          (!o.messages.length || typeof o.messages[0] === 'string') &&
+          Array.isArray(o.nums) &&
+          (!o.nums.length || typeof o.nums[0] === 'bigint') &&
+          typeof o.ack === 'bigint' &&
+          (o.submitter instanceof Uint8Array ||
+            typeof o.submitter === 'string')))
+    );
+  },
+  isSDK(o: any): o is MsgDeliverInboundSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgDeliverInbound.typeUrl ||
+        (Array.isArray(o.messages) &&
+          (!o.messages.length || typeof o.messages[0] === 'string') &&
+          Array.isArray(o.nums) &&
+          (!o.nums.length || typeof o.nums[0] === 'bigint') &&
+          typeof o.ack === 'bigint' &&
+          (o.submitter instanceof Uint8Array ||
+            typeof o.submitter === 'string')))
+    );
+  },
   encode(
     message: MsgDeliverInbound,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -438,6 +465,7 @@ export const MsgDeliverInbound = {
       value: MsgDeliverInbound.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgDeliverInboundResponse(): MsgDeliverInboundResponse {
   return {};
@@ -450,6 +478,12 @@ function createBaseMsgDeliverInboundResponse(): MsgDeliverInboundResponse {
  */
 export const MsgDeliverInboundResponse = {
   typeUrl: '/agoric.swingset.MsgDeliverInboundResponse' as const,
+  is(o: any): o is MsgDeliverInboundResponse {
+    return o && o.$typeUrl === MsgDeliverInboundResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgDeliverInboundResponseSDKType {
+    return o && o.$typeUrl === MsgDeliverInboundResponse.typeUrl;
+  },
   encode(
     _: MsgDeliverInboundResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -503,6 +537,7 @@ export const MsgDeliverInboundResponse = {
       value: MsgDeliverInboundResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgWalletAction(): MsgWalletAction {
   return {
@@ -520,6 +555,23 @@ function createBaseMsgWalletAction(): MsgWalletAction {
  */
 export const MsgWalletAction = {
   typeUrl: '/agoric.swingset.MsgWalletAction' as const,
+  aminoType: 'swingset/WalletAction' as const,
+  is(o: any): o is MsgWalletAction {
+    return (
+      o &&
+      (o.$typeUrl === MsgWalletAction.typeUrl ||
+        ((o.owner instanceof Uint8Array || typeof o.owner === 'string') &&
+          typeof o.action === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgWalletActionSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgWalletAction.typeUrl ||
+        ((o.owner instanceof Uint8Array || typeof o.owner === 'string') &&
+          typeof o.action === 'string'))
+    );
+  },
   encode(
     message: MsgWalletAction,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -588,6 +640,7 @@ export const MsgWalletAction = {
       value: MsgWalletAction.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgWalletActionResponse(): MsgWalletActionResponse {
   return {};
@@ -600,6 +653,12 @@ function createBaseMsgWalletActionResponse(): MsgWalletActionResponse {
  */
 export const MsgWalletActionResponse = {
   typeUrl: '/agoric.swingset.MsgWalletActionResponse' as const,
+  is(o: any): o is MsgWalletActionResponse {
+    return o && o.$typeUrl === MsgWalletActionResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgWalletActionResponseSDKType {
+    return o && o.$typeUrl === MsgWalletActionResponse.typeUrl;
+  },
   encode(
     _: MsgWalletActionResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -651,6 +710,7 @@ export const MsgWalletActionResponse = {
       value: MsgWalletActionResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgWalletSpendAction(): MsgWalletSpendAction {
   return {
@@ -668,6 +728,23 @@ function createBaseMsgWalletSpendAction(): MsgWalletSpendAction {
  */
 export const MsgWalletSpendAction = {
   typeUrl: '/agoric.swingset.MsgWalletSpendAction' as const,
+  aminoType: 'swingset/WalletSpendAction' as const,
+  is(o: any): o is MsgWalletSpendAction {
+    return (
+      o &&
+      (o.$typeUrl === MsgWalletSpendAction.typeUrl ||
+        ((o.owner instanceof Uint8Array || typeof o.owner === 'string') &&
+          typeof o.spendAction === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgWalletSpendActionSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgWalletSpendAction.typeUrl ||
+        ((o.owner instanceof Uint8Array || typeof o.owner === 'string') &&
+          typeof o.spend_action === 'string'))
+    );
+  },
   encode(
     message: MsgWalletSpendAction,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -740,6 +817,7 @@ export const MsgWalletSpendAction = {
       value: MsgWalletSpendAction.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgWalletSpendActionResponse(): MsgWalletSpendActionResponse {
   return {};
@@ -752,6 +830,12 @@ function createBaseMsgWalletSpendActionResponse(): MsgWalletSpendActionResponse 
  */
 export const MsgWalletSpendActionResponse = {
   typeUrl: '/agoric.swingset.MsgWalletSpendActionResponse' as const,
+  is(o: any): o is MsgWalletSpendActionResponse {
+    return o && o.$typeUrl === MsgWalletSpendActionResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgWalletSpendActionResponseSDKType {
+    return o && o.$typeUrl === MsgWalletSpendActionResponse.typeUrl;
+  },
   encode(
     _: MsgWalletSpendActionResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -807,6 +891,7 @@ export const MsgWalletSpendActionResponse = {
       value: MsgWalletSpendActionResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgProvision(): MsgProvision {
   return {
@@ -824,6 +909,31 @@ function createBaseMsgProvision(): MsgProvision {
  */
 export const MsgProvision = {
   typeUrl: '/agoric.swingset.MsgProvision' as const,
+  aminoType: 'swingset/Provision' as const,
+  is(o: any): o is MsgProvision {
+    return (
+      o &&
+      (o.$typeUrl === MsgProvision.typeUrl ||
+        (typeof o.nickname === 'string' &&
+          (o.address instanceof Uint8Array || typeof o.address === 'string') &&
+          Array.isArray(o.powerFlags) &&
+          (!o.powerFlags.length || typeof o.powerFlags[0] === 'string') &&
+          (o.submitter instanceof Uint8Array ||
+            typeof o.submitter === 'string')))
+    );
+  },
+  isSDK(o: any): o is MsgProvisionSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgProvision.typeUrl ||
+        (typeof o.nickname === 'string' &&
+          (o.address instanceof Uint8Array || typeof o.address === 'string') &&
+          Array.isArray(o.power_flags) &&
+          (!o.power_flags.length || typeof o.power_flags[0] === 'string') &&
+          (o.submitter instanceof Uint8Array ||
+            typeof o.submitter === 'string')))
+    );
+  },
   encode(
     message: MsgProvision,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -921,6 +1031,7 @@ export const MsgProvision = {
       value: MsgProvision.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgProvisionResponse(): MsgProvisionResponse {
   return {};
@@ -933,6 +1044,12 @@ function createBaseMsgProvisionResponse(): MsgProvisionResponse {
  */
 export const MsgProvisionResponse = {
   typeUrl: '/agoric.swingset.MsgProvisionResponse' as const,
+  is(o: any): o is MsgProvisionResponse {
+    return o && o.$typeUrl === MsgProvisionResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgProvisionResponseSDKType {
+    return o && o.$typeUrl === MsgProvisionResponse.typeUrl;
+  },
   encode(
     _: MsgProvisionResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -980,6 +1097,7 @@ export const MsgProvisionResponse = {
       value: MsgProvisionResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgInstallBundle(): MsgInstallBundle {
   return {
@@ -997,6 +1115,31 @@ function createBaseMsgInstallBundle(): MsgInstallBundle {
  */
 export const MsgInstallBundle = {
   typeUrl: '/agoric.swingset.MsgInstallBundle' as const,
+  aminoType: 'swingset/InstallBundle' as const,
+  is(o: any): o is MsgInstallBundle {
+    return (
+      o &&
+      (o.$typeUrl === MsgInstallBundle.typeUrl ||
+        (typeof o.bundle === 'string' &&
+          (o.submitter instanceof Uint8Array ||
+            typeof o.submitter === 'string') &&
+          (o.compressedBundle instanceof Uint8Array ||
+            typeof o.compressedBundle === 'string') &&
+          typeof o.uncompressedSize === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is MsgInstallBundleSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgInstallBundle.typeUrl ||
+        (typeof o.bundle === 'string' &&
+          (o.submitter instanceof Uint8Array ||
+            typeof o.submitter === 'string') &&
+          (o.compressed_bundle instanceof Uint8Array ||
+            typeof o.compressed_bundle === 'string') &&
+          typeof o.uncompressed_size === 'bigint'))
+    );
+  },
   encode(
     message: MsgInstallBundle,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1098,6 +1241,7 @@ export const MsgInstallBundle = {
       value: MsgInstallBundle.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgInstallBundleResponse(): MsgInstallBundleResponse {
   return {};
@@ -1111,6 +1255,12 @@ function createBaseMsgInstallBundleResponse(): MsgInstallBundleResponse {
  */
 export const MsgInstallBundleResponse = {
   typeUrl: '/agoric.swingset.MsgInstallBundleResponse' as const,
+  is(o: any): o is MsgInstallBundleResponse {
+    return o && o.$typeUrl === MsgInstallBundleResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgInstallBundleResponseSDKType {
+    return o && o.$typeUrl === MsgInstallBundleResponse.typeUrl;
+  },
   encode(
     _: MsgInstallBundleResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1162,6 +1312,7 @@ export const MsgInstallBundleResponse = {
       value: MsgInstallBundleResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgCoreEval(): MsgCoreEval {
   return {
@@ -1178,6 +1329,25 @@ function createBaseMsgCoreEval(): MsgCoreEval {
  */
 export const MsgCoreEval = {
   typeUrl: '/agoric.swingset.MsgCoreEval' as const,
+  aminoType: 'cosmos-sdk/x/swingset/MsgCoreEval' as const,
+  is(o: any): o is MsgCoreEval {
+    return (
+      o &&
+      (o.$typeUrl === MsgCoreEval.typeUrl ||
+        (typeof o.authority === 'string' &&
+          typeof o.jsonPermits === 'string' &&
+          typeof o.jsCode === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgCoreEvalSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgCoreEval.typeUrl ||
+        (typeof o.authority === 'string' &&
+          typeof o.json_permits === 'string' &&
+          typeof o.js_code === 'string'))
+    );
+  },
   encode(
     message: MsgCoreEval,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1251,6 +1421,7 @@ export const MsgCoreEval = {
       value: MsgCoreEval.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgCoreEvalResponse(): MsgCoreEvalResponse {
   return {
@@ -1265,6 +1436,20 @@ function createBaseMsgCoreEvalResponse(): MsgCoreEvalResponse {
  */
 export const MsgCoreEvalResponse = {
   typeUrl: '/agoric.swingset.MsgCoreEvalResponse' as const,
+  is(o: any): o is MsgCoreEvalResponse {
+    return (
+      o &&
+      (o.$typeUrl === MsgCoreEvalResponse.typeUrl ||
+        typeof o.result === 'string')
+    );
+  },
+  isSDK(o: any): o is MsgCoreEvalResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgCoreEvalResponse.typeUrl ||
+        typeof o.result === 'string')
+    );
+  },
   encode(
     message: MsgCoreEvalResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1322,4 +1507,5 @@ export const MsgCoreEvalResponse = {
       value: MsgCoreEvalResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

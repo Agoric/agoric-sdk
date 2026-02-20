@@ -4,6 +4,7 @@ import { HostZone, type HostZoneSDKType } from './host_zone.js';
 import { EpochTracker, type EpochTrackerSDKType } from './epoch_tracker.js';
 import { TradeRoute, type TradeRouteSDKType } from './trade_route.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
+import { GlobalDecoderRegistry } from '../../registry.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
 /**
@@ -53,6 +54,36 @@ function createBaseGenesisState(): GenesisState {
  */
 export const GenesisState = {
   typeUrl: '/stride.stakeibc.GenesisState' as const,
+  is(o: any): o is GenesisState {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Params.is(o.params) &&
+          typeof o.portId === 'string' &&
+          Array.isArray(o.hostZoneList) &&
+          (!o.hostZoneList.length || HostZone.is(o.hostZoneList[0])) &&
+          Array.isArray(o.epochTrackerList) &&
+          (!o.epochTrackerList.length ||
+            EpochTracker.is(o.epochTrackerList[0])) &&
+          Array.isArray(o.tradeRoutes) &&
+          (!o.tradeRoutes.length || TradeRoute.is(o.tradeRoutes[0]))))
+    );
+  },
+  isSDK(o: any): o is GenesisStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Params.isSDK(o.params) &&
+          typeof o.port_id === 'string' &&
+          Array.isArray(o.host_zone_list) &&
+          (!o.host_zone_list.length || HostZone.isSDK(o.host_zone_list[0])) &&
+          Array.isArray(o.epoch_tracker_list) &&
+          (!o.epoch_tracker_list.length ||
+            EpochTracker.isSDK(o.epoch_tracker_list[0])) &&
+          Array.isArray(o.trade_routes) &&
+          (!o.trade_routes.length || TradeRoute.isSDK(o.trade_routes[0]))))
+    );
+  },
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -175,5 +206,14 @@ export const GenesisState = {
       typeUrl: '/stride.stakeibc.GenesisState',
       value: GenesisState.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(GenesisState.typeUrl)) {
+      return;
+    }
+    Params.registerTypeUrl();
+    HostZone.registerTypeUrl();
+    EpochTracker.registerTypeUrl();
+    TradeRoute.registerTypeUrl();
   },
 };

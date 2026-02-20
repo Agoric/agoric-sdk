@@ -1,6 +1,7 @@
 //@ts-nocheck
 import { Height, type HeightSDKType } from '../../../core/client/v1/client.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
+import { GlobalDecoderRegistry } from '../../../../registry.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
 /**
@@ -41,6 +42,17 @@ function createBaseClientState(): ClientState {
  */
 export const ClientState = {
   typeUrl: '/ibc.lightclients.localhost.v2.ClientState' as const,
+  aminoType: 'cosmos-sdk/ClientState' as const,
+  is(o: any): o is ClientState {
+    return (
+      o && (o.$typeUrl === ClientState.typeUrl || Height.is(o.latestHeight))
+    );
+  },
+  isSDK(o: any): o is ClientStateSDKType {
+    return (
+      o && (o.$typeUrl === ClientState.typeUrl || Height.isSDK(o.latest_height))
+    );
+  },
   encode(
     message: ClientState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -102,5 +114,11 @@ export const ClientState = {
       typeUrl: '/ibc.lightclients.localhost.v2.ClientState',
       value: ClientState.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(ClientState.typeUrl)) {
+      return;
+    }
+    Height.registerTypeUrl();
   },
 };

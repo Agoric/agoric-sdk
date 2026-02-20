@@ -19,6 +19,7 @@ export const getParams = buildQuery<QueryParamsRequest, QueryParamsResponse>({
   decode: QueryParamsResponse.decode,
   service: 'cosmos.mint.v1beta1.Query',
   method: 'Params',
+  deps: [QueryParamsRequest, QueryParamsResponse],
 });
 /**
  * Inflation returns the current minting inflation value.
@@ -34,6 +35,7 @@ export const getInflation = buildQuery<
   decode: QueryInflationResponse.decode,
   service: 'cosmos.mint.v1beta1.Query',
   method: 'Inflation',
+  deps: [QueryInflationRequest, QueryInflationResponse],
 });
 /**
  * AnnualProvisions current minting annual provisions value.
@@ -49,4 +51,5 @@ export const getAnnualProvisions = buildQuery<
   decode: QueryAnnualProvisionsResponse.decode,
   service: 'cosmos.mint.v1beta1.Query',
   method: 'AnnualProvisions',
+  deps: [QueryAnnualProvisionsRequest, QueryAnnualProvisionsResponse],
 });

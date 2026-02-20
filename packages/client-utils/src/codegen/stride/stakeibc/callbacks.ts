@@ -14,6 +14,7 @@ import {
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../registry.js';
 /**
  * @name SplitDelegation
  * @package stride.stakeibc
@@ -364,6 +365,20 @@ function createBaseSplitDelegation(): SplitDelegation {
  */
 export const SplitDelegation = {
   typeUrl: '/stride.stakeibc.SplitDelegation' as const,
+  is(o: any): o is SplitDelegation {
+    return (
+      o &&
+      (o.$typeUrl === SplitDelegation.typeUrl ||
+        (typeof o.validator === 'string' && typeof o.amount === 'string'))
+    );
+  },
+  isSDK(o: any): o is SplitDelegationSDKType {
+    return (
+      o &&
+      (o.$typeUrl === SplitDelegation.typeUrl ||
+        (typeof o.validator === 'string' && typeof o.amount === 'string'))
+    );
+  },
   encode(
     message: SplitDelegation,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -427,6 +442,7 @@ export const SplitDelegation = {
       value: SplitDelegation.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseSplitUndelegation(): SplitUndelegation {
   return {
@@ -441,6 +457,22 @@ function createBaseSplitUndelegation(): SplitUndelegation {
  */
 export const SplitUndelegation = {
   typeUrl: '/stride.stakeibc.SplitUndelegation' as const,
+  is(o: any): o is SplitUndelegation {
+    return (
+      o &&
+      (o.$typeUrl === SplitUndelegation.typeUrl ||
+        (typeof o.validator === 'string' &&
+          typeof o.nativeTokenAmount === 'string'))
+    );
+  },
+  isSDK(o: any): o is SplitUndelegationSDKType {
+    return (
+      o &&
+      (o.$typeUrl === SplitUndelegation.typeUrl ||
+        (typeof o.validator === 'string' &&
+          typeof o.native_token_amount === 'string'))
+    );
+  },
   encode(
     message: SplitUndelegation,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -507,6 +539,7 @@ export const SplitUndelegation = {
       value: SplitUndelegation.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseDelegateCallback(): DelegateCallback {
   return {
@@ -522,6 +555,28 @@ function createBaseDelegateCallback(): DelegateCallback {
  */
 export const DelegateCallback = {
   typeUrl: '/stride.stakeibc.DelegateCallback' as const,
+  is(o: any): o is DelegateCallback {
+    return (
+      o &&
+      (o.$typeUrl === DelegateCallback.typeUrl ||
+        (typeof o.hostZoneId === 'string' &&
+          typeof o.depositRecordId === 'bigint' &&
+          Array.isArray(o.splitDelegations) &&
+          (!o.splitDelegations.length ||
+            SplitDelegation.is(o.splitDelegations[0]))))
+    );
+  },
+  isSDK(o: any): o is DelegateCallbackSDKType {
+    return (
+      o &&
+      (o.$typeUrl === DelegateCallback.typeUrl ||
+        (typeof o.host_zone_id === 'string' &&
+          typeof o.deposit_record_id === 'bigint' &&
+          Array.isArray(o.split_delegations) &&
+          (!o.split_delegations.length ||
+            SplitDelegation.isSDK(o.split_delegations[0]))))
+    );
+  },
   encode(
     message: DelegateCallback,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -611,6 +666,14 @@ export const DelegateCallback = {
       value: DelegateCallback.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(DelegateCallback.typeUrl)
+    ) {
+      return;
+    }
+    SplitDelegation.registerTypeUrl();
+  },
 };
 function createBaseClaimCallback(): ClaimCallback {
   return {
@@ -626,6 +689,24 @@ function createBaseClaimCallback(): ClaimCallback {
  */
 export const ClaimCallback = {
   typeUrl: '/stride.stakeibc.ClaimCallback' as const,
+  is(o: any): o is ClaimCallback {
+    return (
+      o &&
+      (o.$typeUrl === ClaimCallback.typeUrl ||
+        (typeof o.userRedemptionRecordId === 'string' &&
+          typeof o.chainId === 'string' &&
+          typeof o.epochNumber === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is ClaimCallbackSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ClaimCallback.typeUrl ||
+        (typeof o.user_redemption_record_id === 'string' &&
+          typeof o.chain_id === 'string' &&
+          typeof o.epoch_number === 'bigint'))
+    );
+  },
   encode(
     message: ClaimCallback,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -707,6 +788,7 @@ export const ClaimCallback = {
       value: ClaimCallback.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseReinvestCallback(): ReinvestCallback {
   return {
@@ -721,6 +803,20 @@ function createBaseReinvestCallback(): ReinvestCallback {
  */
 export const ReinvestCallback = {
   typeUrl: '/stride.stakeibc.ReinvestCallback' as const,
+  is(o: any): o is ReinvestCallback {
+    return (
+      o &&
+      (o.$typeUrl === ReinvestCallback.typeUrl ||
+        (Coin.is(o.reinvestAmount) && typeof o.hostZoneId === 'string'))
+    );
+  },
+  isSDK(o: any): o is ReinvestCallbackSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ReinvestCallback.typeUrl ||
+        (Coin.isSDK(o.reinvest_amount) && typeof o.host_zone_id === 'string'))
+    );
+  },
   encode(
     message: ReinvestCallback,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -792,6 +888,14 @@ export const ReinvestCallback = {
       value: ReinvestCallback.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(ReinvestCallback.typeUrl)
+    ) {
+      return;
+    }
+    Coin.registerTypeUrl();
+  },
 };
 function createBaseUndelegateCallback(): UndelegateCallback {
   return {
@@ -807,6 +911,32 @@ function createBaseUndelegateCallback(): UndelegateCallback {
  */
 export const UndelegateCallback = {
   typeUrl: '/stride.stakeibc.UndelegateCallback' as const,
+  is(o: any): o is UndelegateCallback {
+    return (
+      o &&
+      (o.$typeUrl === UndelegateCallback.typeUrl ||
+        (typeof o.hostZoneId === 'string' &&
+          Array.isArray(o.splitUndelegations) &&
+          (!o.splitUndelegations.length ||
+            SplitUndelegation.is(o.splitUndelegations[0])) &&
+          Array.isArray(o.epochUnbondingRecordIds) &&
+          (!o.epochUnbondingRecordIds.length ||
+            typeof o.epochUnbondingRecordIds[0] === 'bigint')))
+    );
+  },
+  isSDK(o: any): o is UndelegateCallbackSDKType {
+    return (
+      o &&
+      (o.$typeUrl === UndelegateCallback.typeUrl ||
+        (typeof o.host_zone_id === 'string' &&
+          Array.isArray(o.split_undelegations) &&
+          (!o.split_undelegations.length ||
+            SplitUndelegation.isSDK(o.split_undelegations[0])) &&
+          Array.isArray(o.epoch_unbonding_record_ids) &&
+          (!o.epoch_unbonding_record_ids.length ||
+            typeof o.epoch_unbonding_record_ids[0] === 'bigint')))
+    );
+  },
   encode(
     message: UndelegateCallback,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -914,6 +1044,14 @@ export const UndelegateCallback = {
       value: UndelegateCallback.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(UndelegateCallback.typeUrl)
+    ) {
+      return;
+    }
+    SplitUndelegation.registerTypeUrl();
+  },
 };
 function createBaseRedemptionCallback(): RedemptionCallback {
   return {
@@ -928,6 +1066,26 @@ function createBaseRedemptionCallback(): RedemptionCallback {
  */
 export const RedemptionCallback = {
   typeUrl: '/stride.stakeibc.RedemptionCallback' as const,
+  is(o: any): o is RedemptionCallback {
+    return (
+      o &&
+      (o.$typeUrl === RedemptionCallback.typeUrl ||
+        (typeof o.hostZoneId === 'string' &&
+          Array.isArray(o.epochUnbondingRecordIds) &&
+          (!o.epochUnbondingRecordIds.length ||
+            typeof o.epochUnbondingRecordIds[0] === 'bigint')))
+    );
+  },
+  isSDK(o: any): o is RedemptionCallbackSDKType {
+    return (
+      o &&
+      (o.$typeUrl === RedemptionCallback.typeUrl ||
+        (typeof o.host_zone_id === 'string' &&
+          Array.isArray(o.epoch_unbonding_record_ids) &&
+          (!o.epoch_unbonding_record_ids.length ||
+            typeof o.epoch_unbonding_record_ids[0] === 'bigint')))
+    );
+  },
   encode(
     message: RedemptionCallback,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1012,6 +1170,7 @@ export const RedemptionCallback = {
       value: RedemptionCallback.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseRebalancing(): Rebalancing {
   return {
@@ -1027,6 +1186,24 @@ function createBaseRebalancing(): Rebalancing {
  */
 export const Rebalancing = {
   typeUrl: '/stride.stakeibc.Rebalancing' as const,
+  is(o: any): o is Rebalancing {
+    return (
+      o &&
+      (o.$typeUrl === Rebalancing.typeUrl ||
+        (typeof o.srcValidator === 'string' &&
+          typeof o.dstValidator === 'string' &&
+          typeof o.amt === 'string'))
+    );
+  },
+  isSDK(o: any): o is RebalancingSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Rebalancing.typeUrl ||
+        (typeof o.src_validator === 'string' &&
+          typeof o.dst_validator === 'string' &&
+          typeof o.amt === 'string'))
+    );
+  },
   encode(
     message: Rebalancing,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1105,6 +1282,7 @@ export const Rebalancing = {
       value: Rebalancing.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseRebalanceCallback(): RebalanceCallback {
   return {
@@ -1119,6 +1297,24 @@ function createBaseRebalanceCallback(): RebalanceCallback {
  */
 export const RebalanceCallback = {
   typeUrl: '/stride.stakeibc.RebalanceCallback' as const,
+  is(o: any): o is RebalanceCallback {
+    return (
+      o &&
+      (o.$typeUrl === RebalanceCallback.typeUrl ||
+        (typeof o.hostZoneId === 'string' &&
+          Array.isArray(o.rebalancings) &&
+          (!o.rebalancings.length || Rebalancing.is(o.rebalancings[0]))))
+    );
+  },
+  isSDK(o: any): o is RebalanceCallbackSDKType {
+    return (
+      o &&
+      (o.$typeUrl === RebalanceCallback.typeUrl ||
+        (typeof o.host_zone_id === 'string' &&
+          Array.isArray(o.rebalancings) &&
+          (!o.rebalancings.length || Rebalancing.isSDK(o.rebalancings[0]))))
+    );
+  },
   encode(
     message: RebalanceCallback,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1193,6 +1389,14 @@ export const RebalanceCallback = {
       value: RebalanceCallback.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(RebalanceCallback.typeUrl)
+    ) {
+      return;
+    }
+    Rebalancing.registerTypeUrl();
+  },
 };
 function createBaseDetokenizeSharesCallback(): DetokenizeSharesCallback {
   return {
@@ -1206,6 +1410,12 @@ function createBaseDetokenizeSharesCallback(): DetokenizeSharesCallback {
  */
 export const DetokenizeSharesCallback = {
   typeUrl: '/stride.stakeibc.DetokenizeSharesCallback' as const,
+  is(o: any): o is DetokenizeSharesCallback {
+    return o && o.$typeUrl === DetokenizeSharesCallback.typeUrl;
+  },
+  isSDK(o: any): o is DetokenizeSharesCallbackSDKType {
+    return o && o.$typeUrl === DetokenizeSharesCallback.typeUrl;
+  },
   encode(
     message: DetokenizeSharesCallback,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1282,6 +1492,16 @@ export const DetokenizeSharesCallback = {
       value: DetokenizeSharesCallback.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        DetokenizeSharesCallback.typeUrl,
+      )
+    ) {
+      return;
+    }
+    LSMTokenDeposit.registerTypeUrl();
+  },
 };
 function createBaseLSMLiquidStake(): LSMLiquidStake {
   return {
@@ -1297,6 +1517,12 @@ function createBaseLSMLiquidStake(): LSMLiquidStake {
  */
 export const LSMLiquidStake = {
   typeUrl: '/stride.stakeibc.LSMLiquidStake' as const,
+  is(o: any): o is LSMLiquidStake {
+    return o && o.$typeUrl === LSMLiquidStake.typeUrl;
+  },
+  isSDK(o: any): o is LSMLiquidStakeSDKType {
+    return o && o.$typeUrl === LSMLiquidStake.typeUrl;
+  },
   encode(
     message: LSMLiquidStake,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1396,6 +1622,16 @@ export const LSMLiquidStake = {
       value: LSMLiquidStake.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(LSMLiquidStake.typeUrl)
+    ) {
+      return;
+    }
+    LSMTokenDeposit.registerTypeUrl();
+    HostZone.registerTypeUrl();
+    Validator.registerTypeUrl();
+  },
 };
 function createBaseValidatorSharesToTokensQueryCallback(): ValidatorSharesToTokensQueryCallback {
   return {
@@ -1409,6 +1645,12 @@ function createBaseValidatorSharesToTokensQueryCallback(): ValidatorSharesToToke
  */
 export const ValidatorSharesToTokensQueryCallback = {
   typeUrl: '/stride.stakeibc.ValidatorSharesToTokensQueryCallback' as const,
+  is(o: any): o is ValidatorSharesToTokensQueryCallback {
+    return o && o.$typeUrl === ValidatorSharesToTokensQueryCallback.typeUrl;
+  },
+  isSDK(o: any): o is ValidatorSharesToTokensQueryCallbackSDKType {
+    return o && o.$typeUrl === ValidatorSharesToTokensQueryCallback.typeUrl;
+  },
   encode(
     message: ValidatorSharesToTokensQueryCallback,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1488,6 +1730,16 @@ export const ValidatorSharesToTokensQueryCallback = {
       value: ValidatorSharesToTokensQueryCallback.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        ValidatorSharesToTokensQueryCallback.typeUrl,
+      )
+    ) {
+      return;
+    }
+    LSMLiquidStake.registerTypeUrl();
+  },
 };
 function createBaseDelegatorSharesQueryCallback(): DelegatorSharesQueryCallback {
   return {
@@ -1501,6 +1753,20 @@ function createBaseDelegatorSharesQueryCallback(): DelegatorSharesQueryCallback 
  */
 export const DelegatorSharesQueryCallback = {
   typeUrl: '/stride.stakeibc.DelegatorSharesQueryCallback' as const,
+  is(o: any): o is DelegatorSharesQueryCallback {
+    return (
+      o &&
+      (o.$typeUrl === DelegatorSharesQueryCallback.typeUrl ||
+        typeof o.initialValidatorDelegation === 'string')
+    );
+  },
+  isSDK(o: any): o is DelegatorSharesQueryCallbackSDKType {
+    return (
+      o &&
+      (o.$typeUrl === DelegatorSharesQueryCallback.typeUrl ||
+        typeof o.initial_validator_delegation === 'string')
+    );
+  },
   encode(
     message: DelegatorSharesQueryCallback,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1570,6 +1836,7 @@ export const DelegatorSharesQueryCallback = {
       value: DelegatorSharesQueryCallback.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseCommunityPoolBalanceQueryCallback(): CommunityPoolBalanceQueryCallback {
   return {
@@ -1584,6 +1851,20 @@ function createBaseCommunityPoolBalanceQueryCallback(): CommunityPoolBalanceQuer
  */
 export const CommunityPoolBalanceQueryCallback = {
   typeUrl: '/stride.stakeibc.CommunityPoolBalanceQueryCallback' as const,
+  is(o: any): o is CommunityPoolBalanceQueryCallback {
+    return (
+      o &&
+      (o.$typeUrl === CommunityPoolBalanceQueryCallback.typeUrl ||
+        (isSet(o.icaType) && typeof o.denom === 'string'))
+    );
+  },
+  isSDK(o: any): o is CommunityPoolBalanceQueryCallbackSDKType {
+    return (
+      o &&
+      (o.$typeUrl === CommunityPoolBalanceQueryCallback.typeUrl ||
+        (isSet(o.ica_type) && typeof o.denom === 'string'))
+    );
+  },
   encode(
     message: CommunityPoolBalanceQueryCallback,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1661,6 +1942,7 @@ export const CommunityPoolBalanceQueryCallback = {
       value: CommunityPoolBalanceQueryCallback.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseTradeRouteCallback(): TradeRouteCallback {
   return {
@@ -1675,6 +1957,21 @@ function createBaseTradeRouteCallback(): TradeRouteCallback {
  */
 export const TradeRouteCallback = {
   typeUrl: '/stride.stakeibc.TradeRouteCallback' as const,
+  is(o: any): o is TradeRouteCallback {
+    return (
+      o &&
+      (o.$typeUrl === TradeRouteCallback.typeUrl ||
+        (typeof o.rewardDenom === 'string' && typeof o.hostDenom === 'string'))
+    );
+  },
+  isSDK(o: any): o is TradeRouteCallbackSDKType {
+    return (
+      o &&
+      (o.$typeUrl === TradeRouteCallback.typeUrl ||
+        (typeof o.reward_denom === 'string' &&
+          typeof o.host_denom === 'string'))
+    );
+  },
   encode(
     message: TradeRouteCallback,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1742,4 +2039,5 @@ export const TradeRouteCallback = {
       value: TradeRouteCallback.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

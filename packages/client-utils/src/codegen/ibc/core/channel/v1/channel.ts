@@ -1,7 +1,8 @@
 //@ts-nocheck
 import { Height, type HeightSDKType } from '../../client/v1/client.js';
-import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
+import { BinaryReader, BinaryWriter } from '../../../../binary.js';
+import { GlobalDecoderRegistry } from '../../../../registry.js';
 import { type JsonSafe } from '../../../../json-safe.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
@@ -539,6 +540,35 @@ function createBaseChannel(): Channel {
  */
 export const Channel = {
   typeUrl: '/ibc.core.channel.v1.Channel' as const,
+  aminoType: 'cosmos-sdk/Channel' as const,
+  is(o: any): o is Channel {
+    return (
+      o &&
+      (o.$typeUrl === Channel.typeUrl ||
+        (isSet(o.state) &&
+          isSet(o.ordering) &&
+          Counterparty.is(o.counterparty) &&
+          Array.isArray(o.connectionHops) &&
+          (!o.connectionHops.length ||
+            typeof o.connectionHops[0] === 'string') &&
+          typeof o.version === 'string' &&
+          typeof o.upgradeSequence === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is ChannelSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Channel.typeUrl ||
+        (isSet(o.state) &&
+          isSet(o.ordering) &&
+          Counterparty.isSDK(o.counterparty) &&
+          Array.isArray(o.connection_hops) &&
+          (!o.connection_hops.length ||
+            typeof o.connection_hops[0] === 'string') &&
+          typeof o.version === 'string' &&
+          typeof o.upgrade_sequence === 'bigint'))
+    );
+  },
   encode(
     message: Channel,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -662,6 +692,12 @@ export const Channel = {
       value: Channel.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(Channel.typeUrl)) {
+      return;
+    }
+    Counterparty.registerTypeUrl();
+  },
 };
 function createBaseIdentifiedChannel(): IdentifiedChannel {
   return {
@@ -684,6 +720,39 @@ function createBaseIdentifiedChannel(): IdentifiedChannel {
  */
 export const IdentifiedChannel = {
   typeUrl: '/ibc.core.channel.v1.IdentifiedChannel' as const,
+  aminoType: 'cosmos-sdk/IdentifiedChannel' as const,
+  is(o: any): o is IdentifiedChannel {
+    return (
+      o &&
+      (o.$typeUrl === IdentifiedChannel.typeUrl ||
+        (isSet(o.state) &&
+          isSet(o.ordering) &&
+          Counterparty.is(o.counterparty) &&
+          Array.isArray(o.connectionHops) &&
+          (!o.connectionHops.length ||
+            typeof o.connectionHops[0] === 'string') &&
+          typeof o.version === 'string' &&
+          typeof o.portId === 'string' &&
+          typeof o.channelId === 'string' &&
+          typeof o.upgradeSequence === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is IdentifiedChannelSDKType {
+    return (
+      o &&
+      (o.$typeUrl === IdentifiedChannel.typeUrl ||
+        (isSet(o.state) &&
+          isSet(o.ordering) &&
+          Counterparty.isSDK(o.counterparty) &&
+          Array.isArray(o.connection_hops) &&
+          (!o.connection_hops.length ||
+            typeof o.connection_hops[0] === 'string') &&
+          typeof o.version === 'string' &&
+          typeof o.port_id === 'string' &&
+          typeof o.channel_id === 'string' &&
+          typeof o.upgrade_sequence === 'bigint'))
+    );
+  },
   encode(
     message: IdentifiedChannel,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -825,6 +894,14 @@ export const IdentifiedChannel = {
       value: IdentifiedChannel.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(IdentifiedChannel.typeUrl)
+    ) {
+      return;
+    }
+    Counterparty.registerTypeUrl();
+  },
 };
 function createBaseCounterparty(): Counterparty {
   return {
@@ -840,6 +917,21 @@ function createBaseCounterparty(): Counterparty {
  */
 export const Counterparty = {
   typeUrl: '/ibc.core.channel.v1.Counterparty' as const,
+  aminoType: 'cosmos-sdk/Counterparty' as const,
+  is(o: any): o is Counterparty {
+    return (
+      o &&
+      (o.$typeUrl === Counterparty.typeUrl ||
+        (typeof o.portId === 'string' && typeof o.channelId === 'string'))
+    );
+  },
+  isSDK(o: any): o is CounterpartySDKType {
+    return (
+      o &&
+      (o.$typeUrl === Counterparty.typeUrl ||
+        (typeof o.port_id === 'string' && typeof o.channel_id === 'string'))
+    );
+  },
   encode(
     message: Counterparty,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -903,6 +995,7 @@ export const Counterparty = {
       value: Counterparty.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBasePacket(): Packet {
   return {
@@ -924,6 +1017,35 @@ function createBasePacket(): Packet {
  */
 export const Packet = {
   typeUrl: '/ibc.core.channel.v1.Packet' as const,
+  aminoType: 'cosmos-sdk/Packet' as const,
+  is(o: any): o is Packet {
+    return (
+      o &&
+      (o.$typeUrl === Packet.typeUrl ||
+        (typeof o.sequence === 'bigint' &&
+          typeof o.sourcePort === 'string' &&
+          typeof o.sourceChannel === 'string' &&
+          typeof o.destinationPort === 'string' &&
+          typeof o.destinationChannel === 'string' &&
+          (o.data instanceof Uint8Array || typeof o.data === 'string') &&
+          Height.is(o.timeoutHeight) &&
+          typeof o.timeoutTimestamp === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is PacketSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Packet.typeUrl ||
+        (typeof o.sequence === 'bigint' &&
+          typeof o.source_port === 'string' &&
+          typeof o.source_channel === 'string' &&
+          typeof o.destination_port === 'string' &&
+          typeof o.destination_channel === 'string' &&
+          (o.data instanceof Uint8Array || typeof o.data === 'string') &&
+          Height.isSDK(o.timeout_height) &&
+          typeof o.timeout_timestamp === 'bigint'))
+    );
+  },
   encode(
     message: Packet,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1077,6 +1199,12 @@ export const Packet = {
       value: Packet.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(Packet.typeUrl)) {
+      return;
+    }
+    Height.registerTypeUrl();
+  },
 };
 function createBasePacketState(): PacketState {
   return {
@@ -1097,6 +1225,27 @@ function createBasePacketState(): PacketState {
  */
 export const PacketState = {
   typeUrl: '/ibc.core.channel.v1.PacketState' as const,
+  aminoType: 'cosmos-sdk/PacketState' as const,
+  is(o: any): o is PacketState {
+    return (
+      o &&
+      (o.$typeUrl === PacketState.typeUrl ||
+        (typeof o.portId === 'string' &&
+          typeof o.channelId === 'string' &&
+          typeof o.sequence === 'bigint' &&
+          (o.data instanceof Uint8Array || typeof o.data === 'string')))
+    );
+  },
+  isSDK(o: any): o is PacketStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === PacketState.typeUrl ||
+        (typeof o.port_id === 'string' &&
+          typeof o.channel_id === 'string' &&
+          typeof o.sequence === 'bigint' &&
+          (o.data instanceof Uint8Array || typeof o.data === 'string')))
+    );
+  },
   encode(
     message: PacketState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1189,6 +1338,7 @@ export const PacketState = {
       value: PacketState.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBasePacketId(): PacketId {
   return {
@@ -1207,6 +1357,25 @@ function createBasePacketId(): PacketId {
  */
 export const PacketId = {
   typeUrl: '/ibc.core.channel.v1.PacketId' as const,
+  aminoType: 'cosmos-sdk/PacketId' as const,
+  is(o: any): o is PacketId {
+    return (
+      o &&
+      (o.$typeUrl === PacketId.typeUrl ||
+        (typeof o.portId === 'string' &&
+          typeof o.channelId === 'string' &&
+          typeof o.sequence === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is PacketIdSDKType {
+    return (
+      o &&
+      (o.$typeUrl === PacketId.typeUrl ||
+        (typeof o.port_id === 'string' &&
+          typeof o.channel_id === 'string' &&
+          typeof o.sequence === 'bigint'))
+    );
+  },
   encode(
     message: PacketId,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1285,6 +1454,7 @@ export const PacketId = {
       value: PacketId.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseAcknowledgement(): Acknowledgement {
   return {
@@ -1306,6 +1476,13 @@ function createBaseAcknowledgement(): Acknowledgement {
  */
 export const Acknowledgement = {
   typeUrl: '/ibc.core.channel.v1.Acknowledgement' as const,
+  aminoType: 'cosmos-sdk/Acknowledgement' as const,
+  is(o: any): o is Acknowledgement {
+    return o && o.$typeUrl === Acknowledgement.typeUrl;
+  },
+  isSDK(o: any): o is AcknowledgementSDKType {
+    return o && o.$typeUrl === Acknowledgement.typeUrl;
+  },
   encode(
     message: Acknowledgement,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1373,6 +1550,7 @@ export const Acknowledgement = {
       value: Acknowledgement.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseTimeout(): Timeout {
   return {
@@ -1390,6 +1568,21 @@ function createBaseTimeout(): Timeout {
  */
 export const Timeout = {
   typeUrl: '/ibc.core.channel.v1.Timeout' as const,
+  aminoType: 'cosmos-sdk/Timeout' as const,
+  is(o: any): o is Timeout {
+    return (
+      o &&
+      (o.$typeUrl === Timeout.typeUrl ||
+        (Height.is(o.height) && typeof o.timestamp === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is TimeoutSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Timeout.typeUrl ||
+        (Height.isSDK(o.height) && typeof o.timestamp === 'bigint'))
+    );
+  },
   encode(
     message: Timeout,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1463,6 +1656,12 @@ export const Timeout = {
       value: Timeout.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(Timeout.typeUrl)) {
+      return;
+    }
+    Height.registerTypeUrl();
+  },
 };
 function createBaseParams(): Params {
   return {
@@ -1477,6 +1676,15 @@ function createBaseParams(): Params {
  */
 export const Params = {
   typeUrl: '/ibc.core.channel.v1.Params' as const,
+  aminoType: 'cosmos-sdk/Params' as const,
+  is(o: any): o is Params {
+    return o && (o.$typeUrl === Params.typeUrl || Timeout.is(o.upgradeTimeout));
+  },
+  isSDK(o: any): o is ParamsSDKType {
+    return (
+      o && (o.$typeUrl === Params.typeUrl || Timeout.isSDK(o.upgrade_timeout))
+    );
+  },
   encode(
     message: Params,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1538,5 +1746,11 @@ export const Params = {
       typeUrl: '/ibc.core.channel.v1.Params',
       value: Params.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(Params.typeUrl)) {
+      return;
+    }
+    Timeout.registerTypeUrl();
   },
 };

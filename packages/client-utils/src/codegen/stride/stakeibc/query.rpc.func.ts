@@ -35,6 +35,7 @@ export const getParams = buildQuery<QueryParamsRequest, QueryParamsResponse>({
   decode: QueryParamsResponse.decode,
   service: 'stride.stakeibc.Query',
   method: 'Params',
+  deps: [QueryParamsRequest, QueryParamsResponse],
 });
 /**
  * Queries a Validator by host zone.
@@ -50,6 +51,7 @@ export const getValidators = buildQuery<
   decode: QueryGetValidatorsResponse.decode,
   service: 'stride.stakeibc.Query',
   method: 'Validators',
+  deps: [QueryGetValidatorsRequest, QueryGetValidatorsResponse],
 });
 /**
  * Queries a HostZone by id.
@@ -65,6 +67,7 @@ export const getHostZone = buildQuery<
   decode: QueryGetHostZoneResponse.decode,
   service: 'stride.stakeibc.Query',
   method: 'HostZone',
+  deps: [QueryGetHostZoneRequest, QueryGetHostZoneResponse],
 });
 /**
  * Queries a list of HostZone items.
@@ -80,6 +83,7 @@ export const getHostZoneAll = buildQuery<
   decode: QueryAllHostZoneResponse.decode,
   service: 'stride.stakeibc.Query',
   method: 'HostZoneAll',
+  deps: [QueryAllHostZoneRequest, QueryAllHostZoneResponse],
 });
 /**
  * Queries a list of ModuleAddress items.
@@ -95,6 +99,7 @@ export const getModuleAddress = buildQuery<
   decode: QueryModuleAddressResponse.decode,
   service: 'stride.stakeibc.Query',
   method: 'ModuleAddress',
+  deps: [QueryModuleAddressRequest, QueryModuleAddressResponse],
 });
 /**
  * QueryInterchainAccountFromAddress returns the interchain account for given
@@ -111,6 +116,10 @@ export const getInterchainAccountFromAddress = buildQuery<
   decode: QueryInterchainAccountFromAddressResponse.decode,
   service: 'stride.stakeibc.Query',
   method: 'InterchainAccountFromAddress',
+  deps: [
+    QueryInterchainAccountFromAddressRequest,
+    QueryInterchainAccountFromAddressResponse,
+  ],
 });
 /**
  * Queries a EpochTracker by index.
@@ -126,6 +135,7 @@ export const getEpochTracker = buildQuery<
   decode: QueryGetEpochTrackerResponse.decode,
   service: 'stride.stakeibc.Query',
   method: 'EpochTracker',
+  deps: [QueryGetEpochTrackerRequest, QueryGetEpochTrackerResponse],
 });
 /**
  * Queries a list of EpochTracker items.
@@ -141,6 +151,7 @@ export const getEpochTrackerAll = buildQuery<
   decode: QueryAllEpochTrackerResponse.decode,
   service: 'stride.stakeibc.Query',
   method: 'EpochTrackerAll',
+  deps: [QueryAllEpochTrackerRequest, QueryAllEpochTrackerResponse],
 });
 /**
  * Queries the next packet sequence for one for a given channel
@@ -156,6 +167,7 @@ export const getNextPacketSequence = buildQuery<
   decode: QueryGetNextPacketSequenceResponse.decode,
   service: 'stride.stakeibc.Query',
   method: 'NextPacketSequence',
+  deps: [QueryGetNextPacketSequenceRequest, QueryGetNextPacketSequenceResponse],
 });
 /**
  * Queries an address's unbondings
@@ -171,6 +183,7 @@ export const getAddressUnbondings = buildQuery<
   decode: QueryAddressUnbondingsResponse.decode,
   service: 'stride.stakeibc.Query',
   method: 'AddressUnbondings',
+  deps: [QueryAddressUnbondings, QueryAddressUnbondingsResponse],
 });
 /**
  * Queries all trade routes
@@ -186,4 +199,5 @@ export const getAllTradeRoutes = buildQuery<
   decode: QueryAllTradeRoutesResponse.decode,
   service: 'stride.stakeibc.Query',
   method: 'AllTradeRoutes',
+  deps: [QueryAllTradeRoutes, QueryAllTradeRoutesResponse],
 });

@@ -50,6 +50,7 @@ export const getRoles = buildQuery<QueryRolesRequest, QueryRolesResponse>({
   decode: QueryRolesResponse.decode,
   service: 'circle.cctp.v1.Query',
   method: 'Roles',
+  deps: [QueryRolesRequest, QueryRolesResponse],
 });
 /**
  * Queries an Attester by index
@@ -65,6 +66,7 @@ export const getAttester = buildQuery<
   decode: QueryGetAttesterResponse.decode,
   service: 'circle.cctp.v1.Query',
   method: 'Attester',
+  deps: [QueryGetAttesterRequest, QueryGetAttesterResponse],
 });
 /**
  * Queries a list of Attesters
@@ -80,6 +82,7 @@ export const getAttesters = buildQuery<
   decode: QueryAllAttestersResponse.decode,
   service: 'circle.cctp.v1.Query',
   method: 'Attesters',
+  deps: [QueryAllAttestersRequest, QueryAllAttestersResponse],
 });
 /**
  * Queries a PerMessageBurnLimit by index
@@ -95,6 +98,10 @@ export const getPerMessageBurnLimit = buildQuery<
   decode: QueryGetPerMessageBurnLimitResponse.decode,
   service: 'circle.cctp.v1.Query',
   method: 'PerMessageBurnLimit',
+  deps: [
+    QueryGetPerMessageBurnLimitRequest,
+    QueryGetPerMessageBurnLimitResponse,
+  ],
 });
 /**
  * Queries a list of PerMessageBurnLimits
@@ -110,6 +117,10 @@ export const getPerMessageBurnLimits = buildQuery<
   decode: QueryAllPerMessageBurnLimitsResponse.decode,
   service: 'circle.cctp.v1.Query',
   method: 'PerMessageBurnLimits',
+  deps: [
+    QueryAllPerMessageBurnLimitsRequest,
+    QueryAllPerMessageBurnLimitsResponse,
+  ],
 });
 /**
  * Queries BurningAndMintingPaused
@@ -125,6 +136,10 @@ export const getBurningAndMintingPaused = buildQuery<
   decode: QueryGetBurningAndMintingPausedResponse.decode,
   service: 'circle.cctp.v1.Query',
   method: 'BurningAndMintingPaused',
+  deps: [
+    QueryGetBurningAndMintingPausedRequest,
+    QueryGetBurningAndMintingPausedResponse,
+  ],
 });
 /**
  * Queries SendingAndReceivingPaused
@@ -140,6 +155,10 @@ export const getSendingAndReceivingMessagesPaused = buildQuery<
   decode: QueryGetSendingAndReceivingMessagesPausedResponse.decode,
   service: 'circle.cctp.v1.Query',
   method: 'SendingAndReceivingMessagesPaused',
+  deps: [
+    QueryGetSendingAndReceivingMessagesPausedRequest,
+    QueryGetSendingAndReceivingMessagesPausedResponse,
+  ],
 });
 /**
  * Queries the MaxMessageBodySize
@@ -155,6 +174,7 @@ export const getMaxMessageBodySize = buildQuery<
   decode: QueryGetMaxMessageBodySizeResponse.decode,
   service: 'circle.cctp.v1.Query',
   method: 'MaxMessageBodySize',
+  deps: [QueryGetMaxMessageBodySizeRequest, QueryGetMaxMessageBodySizeResponse],
 });
 /**
  * Queries the NextAvailableNonce
@@ -170,6 +190,7 @@ export const getNextAvailableNonce = buildQuery<
   decode: QueryGetNextAvailableNonceResponse.decode,
   service: 'circle.cctp.v1.Query',
   method: 'NextAvailableNonce',
+  deps: [QueryGetNextAvailableNonceRequest, QueryGetNextAvailableNonceResponse],
 });
 /**
  * Queries the SignatureThreshold
@@ -185,6 +206,7 @@ export const getSignatureThreshold = buildQuery<
   decode: QueryGetSignatureThresholdResponse.decode,
   service: 'circle.cctp.v1.Query',
   method: 'SignatureThreshold',
+  deps: [QueryGetSignatureThresholdRequest, QueryGetSignatureThresholdResponse],
 });
 /**
  * Queries a TokenPair by index
@@ -200,6 +222,7 @@ export const getTokenPair = buildQuery<
   decode: QueryGetTokenPairResponse.decode,
   service: 'circle.cctp.v1.Query',
   method: 'TokenPair',
+  deps: [QueryGetTokenPairRequest, QueryGetTokenPairResponse],
 });
 /**
  * Queries a list of TokenPair
@@ -215,6 +238,7 @@ export const getTokenPairs = buildQuery<
   decode: QueryAllTokenPairsResponse.decode,
   service: 'circle.cctp.v1.Query',
   method: 'TokenPairs',
+  deps: [QueryAllTokenPairsRequest, QueryAllTokenPairsResponse],
 });
 /**
  * Queries a UsedNonce by index
@@ -230,6 +254,7 @@ export const getUsedNonce = buildQuery<
   decode: QueryGetUsedNonceResponse.decode,
   service: 'circle.cctp.v1.Query',
   method: 'UsedNonce',
+  deps: [QueryGetUsedNonceRequest, QueryGetUsedNonceResponse],
 });
 /**
  * Queries a list of UsedNonces
@@ -245,6 +270,7 @@ export const getUsedNonces = buildQuery<
   decode: QueryAllUsedNoncesResponse.decode,
   service: 'circle.cctp.v1.Query',
   method: 'UsedNonces',
+  deps: [QueryAllUsedNoncesRequest, QueryAllUsedNoncesResponse],
 });
 /**
  * Query the RemoteTokenMessenger of a specific domain.
@@ -260,6 +286,7 @@ export const getRemoteTokenMessenger = buildQuery<
   decode: QueryRemoteTokenMessengerResponse.decode,
   service: 'circle.cctp.v1.Query',
   method: 'RemoteTokenMessenger',
+  deps: [QueryRemoteTokenMessengerRequest, QueryRemoteTokenMessengerResponse],
 });
 /**
  * Query all RemoteTokenMessenger's.
@@ -275,6 +302,7 @@ export const getRemoteTokenMessengers = buildQuery<
   decode: QueryRemoteTokenMessengersResponse.decode,
   service: 'circle.cctp.v1.Query',
   method: 'RemoteTokenMessengers',
+  deps: [QueryRemoteTokenMessengersRequest, QueryRemoteTokenMessengersResponse],
 });
 /**
  * @name getBurnMessageVersion
@@ -289,6 +317,7 @@ export const getBurnMessageVersion = buildQuery<
   decode: QueryBurnMessageVersionResponse.decode,
   service: 'circle.cctp.v1.Query',
   method: 'BurnMessageVersion',
+  deps: [QueryBurnMessageVersionRequest, QueryBurnMessageVersionResponse],
 });
 /**
  * @name getLocalMessageVersion
@@ -303,6 +332,7 @@ export const getLocalMessageVersion = buildQuery<
   decode: QueryLocalMessageVersionResponse.decode,
   service: 'circle.cctp.v1.Query',
   method: 'LocalMessageVersion',
+  deps: [QueryLocalMessageVersionRequest, QueryLocalMessageVersionResponse],
 });
 /**
  * @name getLocalDomain
@@ -317,4 +347,5 @@ export const getLocalDomain = buildQuery<
   decode: QueryLocalDomainResponse.decode,
   service: 'circle.cctp.v1.Query',
   method: 'LocalDomain',
+  deps: [QueryLocalDomainRequest, QueryLocalDomainResponse],
 });

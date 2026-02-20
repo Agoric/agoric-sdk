@@ -10,6 +10,7 @@ import {
   type ABCIParamsSDKType,
 } from '../../../tendermint/types/params.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
+import { GlobalDecoderRegistry } from '../../../registry.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
 /**
@@ -92,6 +93,21 @@ function createBaseMsgUpdateParams(): MsgUpdateParams {
  */
 export const MsgUpdateParams = {
   typeUrl: '/cosmos.consensus.v1.MsgUpdateParams' as const,
+  aminoType: 'cosmos-sdk/x/consensus/MsgUpdateParams' as const,
+  is(o: any): o is MsgUpdateParams {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpdateParams.typeUrl ||
+        typeof o.authority === 'string')
+    );
+  },
+  isSDK(o: any): o is MsgUpdateParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpdateParams.typeUrl ||
+        typeof o.authority === 'string')
+    );
+  },
   encode(
     message: MsgUpdateParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -216,6 +232,17 @@ export const MsgUpdateParams = {
       value: MsgUpdateParams.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(MsgUpdateParams.typeUrl)
+    ) {
+      return;
+    }
+    BlockParams.registerTypeUrl();
+    EvidenceParams.registerTypeUrl();
+    ValidatorParams.registerTypeUrl();
+    ABCIParams.registerTypeUrl();
+  },
 };
 function createBaseMsgUpdateParamsResponse(): MsgUpdateParamsResponse {
   return {};
@@ -229,6 +256,13 @@ function createBaseMsgUpdateParamsResponse(): MsgUpdateParamsResponse {
  */
 export const MsgUpdateParamsResponse = {
   typeUrl: '/cosmos.consensus.v1.MsgUpdateParamsResponse' as const,
+  aminoType: 'cosmos-sdk/MsgUpdateParamsResponse' as const,
+  is(o: any): o is MsgUpdateParamsResponse {
+    return o && o.$typeUrl === MsgUpdateParamsResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgUpdateParamsResponseSDKType {
+    return o && o.$typeUrl === MsgUpdateParamsResponse.typeUrl;
+  },
   encode(
     _: MsgUpdateParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -280,4 +314,5 @@ export const MsgUpdateParamsResponse = {
       value: MsgUpdateParamsResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

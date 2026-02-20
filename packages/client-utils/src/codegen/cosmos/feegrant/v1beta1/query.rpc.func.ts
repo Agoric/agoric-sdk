@@ -22,6 +22,7 @@ export const getAllowance = buildQuery<
   decode: QueryAllowanceResponse.decode,
   service: 'cosmos.feegrant.v1beta1.Query',
   method: 'Allowance',
+  deps: [QueryAllowanceRequest, QueryAllowanceResponse],
 });
 /**
  * Allowances returns all the grants for the given grantee address.
@@ -37,6 +38,7 @@ export const getAllowances = buildQuery<
   decode: QueryAllowancesResponse.decode,
   service: 'cosmos.feegrant.v1beta1.Query',
   method: 'Allowances',
+  deps: [QueryAllowancesRequest, QueryAllowancesResponse],
 });
 /**
  * AllowancesByGranter returns all the grants given by an address
@@ -54,4 +56,5 @@ export const getAllowancesByGranter = buildQuery<
   decode: QueryAllowancesByGranterResponse.decode,
   service: 'cosmos.feegrant.v1beta1.Query',
   method: 'AllowancesByGranter',
+  deps: [QueryAllowancesByGranterRequest, QueryAllowancesByGranterResponse],
 });

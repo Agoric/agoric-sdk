@@ -139,6 +139,29 @@ function createBasePageRequest(): PageRequest {
  */
 export const PageRequest = {
   typeUrl: '/cosmos.base.query.v1beta1.PageRequest' as const,
+  aminoType: 'cosmos-sdk/PageRequest' as const,
+  is(o: any): o is PageRequest {
+    return (
+      o &&
+      (o.$typeUrl === PageRequest.typeUrl ||
+        ((o.key instanceof Uint8Array || typeof o.key === 'string') &&
+          typeof o.offset === 'bigint' &&
+          typeof o.limit === 'bigint' &&
+          typeof o.countTotal === 'boolean' &&
+          typeof o.reverse === 'boolean'))
+    );
+  },
+  isSDK(o: any): o is PageRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === PageRequest.typeUrl ||
+        ((o.key instanceof Uint8Array || typeof o.key === 'string') &&
+          typeof o.offset === 'bigint' &&
+          typeof o.limit === 'bigint' &&
+          typeof o.count_total === 'boolean' &&
+          typeof o.reverse === 'boolean'))
+    );
+  },
   encode(
     message: PageRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -242,6 +265,7 @@ export const PageRequest = {
       value: PageRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBasePageResponse(): PageResponse {
   return {
@@ -263,6 +287,23 @@ function createBasePageResponse(): PageResponse {
  */
 export const PageResponse = {
   typeUrl: '/cosmos.base.query.v1beta1.PageResponse' as const,
+  aminoType: 'cosmos-sdk/PageResponse' as const,
+  is(o: any): o is PageResponse {
+    return (
+      o &&
+      (o.$typeUrl === PageResponse.typeUrl ||
+        ((o.nextKey instanceof Uint8Array || typeof o.nextKey === 'string') &&
+          typeof o.total === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is PageResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === PageResponse.typeUrl ||
+        ((o.next_key instanceof Uint8Array || typeof o.next_key === 'string') &&
+          typeof o.total === 'bigint'))
+    );
+  },
   encode(
     message: PageResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -335,4 +376,5 @@ export const PageResponse = {
       value: PageResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

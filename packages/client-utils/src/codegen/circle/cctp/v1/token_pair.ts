@@ -63,6 +63,26 @@ function createBaseTokenPair(): TokenPair {
  */
 export const TokenPair = {
   typeUrl: '/circle.cctp.v1.TokenPair' as const,
+  is(o: any): o is TokenPair {
+    return (
+      o &&
+      (o.$typeUrl === TokenPair.typeUrl ||
+        (typeof o.remoteDomain === 'number' &&
+          (o.remoteToken instanceof Uint8Array ||
+            typeof o.remoteToken === 'string') &&
+          typeof o.localToken === 'string'))
+    );
+  },
+  isSDK(o: any): o is TokenPairSDKType {
+    return (
+      o &&
+      (o.$typeUrl === TokenPair.typeUrl ||
+        (typeof o.remote_domain === 'number' &&
+          (o.remote_token instanceof Uint8Array ||
+            typeof o.remote_token === 'string') &&
+          typeof o.local_token === 'string'))
+    );
+  },
   encode(
     message: TokenPair,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -145,4 +165,5 @@ export const TokenPair = {
       value: TokenPair.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

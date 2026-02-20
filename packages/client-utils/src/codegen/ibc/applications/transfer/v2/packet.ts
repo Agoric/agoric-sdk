@@ -70,6 +70,29 @@ function createBaseFungibleTokenPacketData(): FungibleTokenPacketData {
  */
 export const FungibleTokenPacketData = {
   typeUrl: '/ibc.applications.transfer.v2.FungibleTokenPacketData' as const,
+  aminoType: 'cosmos-sdk/FungibleTokenPacketData' as const,
+  is(o: any): o is FungibleTokenPacketData {
+    return (
+      o &&
+      (o.$typeUrl === FungibleTokenPacketData.typeUrl ||
+        (typeof o.denom === 'string' &&
+          typeof o.amount === 'string' &&
+          typeof o.sender === 'string' &&
+          typeof o.receiver === 'string' &&
+          typeof o.memo === 'string'))
+    );
+  },
+  isSDK(o: any): o is FungibleTokenPacketDataSDKType {
+    return (
+      o &&
+      (o.$typeUrl === FungibleTokenPacketData.typeUrl ||
+        (typeof o.denom === 'string' &&
+          typeof o.amount === 'string' &&
+          typeof o.sender === 'string' &&
+          typeof o.receiver === 'string' &&
+          typeof o.memo === 'string'))
+    );
+  },
   encode(
     message: FungibleTokenPacketData,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -169,4 +192,5 @@ export const FungibleTokenPacketData = {
       value: FungibleTokenPacketData.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

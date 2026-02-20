@@ -30,6 +30,12 @@ function createBaseParams(): Params {
  */
 export const Params = {
   typeUrl: '/stride.records.Params' as const,
+  is(o: any): o is Params {
+    return o && o.$typeUrl === Params.typeUrl;
+  },
+  isSDK(o: any): o is ParamsSDKType {
+    return o && o.$typeUrl === Params.typeUrl;
+  },
   encode(
     _: Params,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -74,4 +80,5 @@ export const Params = {
       value: Params.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

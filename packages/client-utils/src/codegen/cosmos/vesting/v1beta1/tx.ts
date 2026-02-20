@@ -4,6 +4,7 @@ import { Period, type PeriodSDKType } from './vesting.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../../registry.js';
 /**
  * MsgCreateVestingAccount defines a message that enables creating a vesting
  * account.
@@ -372,6 +373,31 @@ function createBaseMsgCreateVestingAccount(): MsgCreateVestingAccount {
  */
 export const MsgCreateVestingAccount = {
   typeUrl: '/cosmos.vesting.v1beta1.MsgCreateVestingAccount' as const,
+  aminoType: 'cosmos-sdk/MsgCreateVestingAccount' as const,
+  is(o: any): o is MsgCreateVestingAccount {
+    return (
+      o &&
+      (o.$typeUrl === MsgCreateVestingAccount.typeUrl ||
+        (typeof o.fromAddress === 'string' &&
+          typeof o.toAddress === 'string' &&
+          Array.isArray(o.amount) &&
+          (!o.amount.length || Coin.is(o.amount[0])) &&
+          typeof o.endTime === 'bigint' &&
+          typeof o.delayed === 'boolean'))
+    );
+  },
+  isSDK(o: any): o is MsgCreateVestingAccountSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgCreateVestingAccount.typeUrl ||
+        (typeof o.from_address === 'string' &&
+          typeof o.to_address === 'string' &&
+          Array.isArray(o.amount) &&
+          (!o.amount.length || Coin.isSDK(o.amount[0])) &&
+          typeof o.end_time === 'bigint' &&
+          typeof o.delayed === 'boolean'))
+    );
+  },
   encode(
     message: MsgCreateVestingAccount,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -484,6 +510,16 @@ export const MsgCreateVestingAccount = {
       value: MsgCreateVestingAccount.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        MsgCreateVestingAccount.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Coin.registerTypeUrl();
+  },
 };
 function createBaseMsgCreateVestingAccountResponse(): MsgCreateVestingAccountResponse {
   return {};
@@ -496,6 +532,13 @@ function createBaseMsgCreateVestingAccountResponse(): MsgCreateVestingAccountRes
  */
 export const MsgCreateVestingAccountResponse = {
   typeUrl: '/cosmos.vesting.v1beta1.MsgCreateVestingAccountResponse' as const,
+  aminoType: 'cosmos-sdk/MsgCreateVestingAccountResponse' as const,
+  is(o: any): o is MsgCreateVestingAccountResponse {
+    return o && o.$typeUrl === MsgCreateVestingAccountResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgCreateVestingAccountResponseSDKType {
+    return o && o.$typeUrl === MsgCreateVestingAccountResponse.typeUrl;
+  },
   encode(
     _: MsgCreateVestingAccountResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -551,6 +594,7 @@ export const MsgCreateVestingAccountResponse = {
       value: MsgCreateVestingAccountResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgCreatePermanentLockedAccount(): MsgCreatePermanentLockedAccount {
   return {
@@ -570,6 +614,27 @@ function createBaseMsgCreatePermanentLockedAccount(): MsgCreatePermanentLockedAc
  */
 export const MsgCreatePermanentLockedAccount = {
   typeUrl: '/cosmos.vesting.v1beta1.MsgCreatePermanentLockedAccount' as const,
+  aminoType: 'cosmos-sdk/MsgCreatePermLockedAccount' as const,
+  is(o: any): o is MsgCreatePermanentLockedAccount {
+    return (
+      o &&
+      (o.$typeUrl === MsgCreatePermanentLockedAccount.typeUrl ||
+        (typeof o.fromAddress === 'string' &&
+          typeof o.toAddress === 'string' &&
+          Array.isArray(o.amount) &&
+          (!o.amount.length || Coin.is(o.amount[0]))))
+    );
+  },
+  isSDK(o: any): o is MsgCreatePermanentLockedAccountSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgCreatePermanentLockedAccount.typeUrl ||
+        (typeof o.from_address === 'string' &&
+          typeof o.to_address === 'string' &&
+          Array.isArray(o.amount) &&
+          (!o.amount.length || Coin.isSDK(o.amount[0]))))
+    );
+  },
   encode(
     message: MsgCreatePermanentLockedAccount,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -660,6 +725,16 @@ export const MsgCreatePermanentLockedAccount = {
       value: MsgCreatePermanentLockedAccount.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        MsgCreatePermanentLockedAccount.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Coin.registerTypeUrl();
+  },
 };
 function createBaseMsgCreatePermanentLockedAccountResponse(): MsgCreatePermanentLockedAccountResponse {
   return {};
@@ -675,6 +750,13 @@ function createBaseMsgCreatePermanentLockedAccountResponse(): MsgCreatePermanent
 export const MsgCreatePermanentLockedAccountResponse = {
   typeUrl:
     '/cosmos.vesting.v1beta1.MsgCreatePermanentLockedAccountResponse' as const,
+  aminoType: 'cosmos-sdk/MsgCreatePermanentLockedAccountResponse' as const,
+  is(o: any): o is MsgCreatePermanentLockedAccountResponse {
+    return o && o.$typeUrl === MsgCreatePermanentLockedAccountResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgCreatePermanentLockedAccountResponseSDKType {
+    return o && o.$typeUrl === MsgCreatePermanentLockedAccountResponse.typeUrl;
+  },
   encode(
     _: MsgCreatePermanentLockedAccountResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -731,6 +813,7 @@ export const MsgCreatePermanentLockedAccountResponse = {
       value: MsgCreatePermanentLockedAccountResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgCreatePeriodicVestingAccount(): MsgCreatePeriodicVestingAccount {
   return {
@@ -752,6 +835,31 @@ function createBaseMsgCreatePeriodicVestingAccount(): MsgCreatePeriodicVestingAc
  */
 export const MsgCreatePeriodicVestingAccount = {
   typeUrl: '/cosmos.vesting.v1beta1.MsgCreatePeriodicVestingAccount' as const,
+  aminoType: 'cosmos-sdk/MsgCreatePeriodVestAccount' as const,
+  is(o: any): o is MsgCreatePeriodicVestingAccount {
+    return (
+      o &&
+      (o.$typeUrl === MsgCreatePeriodicVestingAccount.typeUrl ||
+        (typeof o.fromAddress === 'string' &&
+          typeof o.toAddress === 'string' &&
+          typeof o.startTime === 'bigint' &&
+          Array.isArray(o.vestingPeriods) &&
+          (!o.vestingPeriods.length || Period.is(o.vestingPeriods[0])) &&
+          typeof o.merge === 'boolean'))
+    );
+  },
+  isSDK(o: any): o is MsgCreatePeriodicVestingAccountSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgCreatePeriodicVestingAccount.typeUrl ||
+        (typeof o.from_address === 'string' &&
+          typeof o.to_address === 'string' &&
+          typeof o.start_time === 'bigint' &&
+          Array.isArray(o.vesting_periods) &&
+          (!o.vesting_periods.length || Period.isSDK(o.vesting_periods[0])) &&
+          typeof o.merge === 'boolean'))
+    );
+  },
   encode(
     message: MsgCreatePeriodicVestingAccount,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -869,6 +977,16 @@ export const MsgCreatePeriodicVestingAccount = {
       value: MsgCreatePeriodicVestingAccount.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        MsgCreatePeriodicVestingAccount.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Period.registerTypeUrl();
+  },
 };
 function createBaseMsgCreatePeriodicVestingAccountResponse(): MsgCreatePeriodicVestingAccountResponse {
   return {};
@@ -885,6 +1003,13 @@ function createBaseMsgCreatePeriodicVestingAccountResponse(): MsgCreatePeriodicV
 export const MsgCreatePeriodicVestingAccountResponse = {
   typeUrl:
     '/cosmos.vesting.v1beta1.MsgCreatePeriodicVestingAccountResponse' as const,
+  aminoType: 'cosmos-sdk/MsgCreatePeriodicVestingAccountResponse' as const,
+  is(o: any): o is MsgCreatePeriodicVestingAccountResponse {
+    return o && o.$typeUrl === MsgCreatePeriodicVestingAccountResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgCreatePeriodicVestingAccountResponseSDKType {
+    return o && o.$typeUrl === MsgCreatePeriodicVestingAccountResponse.typeUrl;
+  },
   encode(
     _: MsgCreatePeriodicVestingAccountResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -941,6 +1066,7 @@ export const MsgCreatePeriodicVestingAccountResponse = {
       value: MsgCreatePeriodicVestingAccountResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgCreateClawbackVestingAccount(): MsgCreateClawbackVestingAccount {
   return {
@@ -960,6 +1086,35 @@ function createBaseMsgCreateClawbackVestingAccount(): MsgCreateClawbackVestingAc
  */
 export const MsgCreateClawbackVestingAccount = {
   typeUrl: '/cosmos.vesting.v1beta1.MsgCreateClawbackVestingAccount' as const,
+  aminoType: 'cosmos-sdk/MsgCreateClawbackVestingAccount' as const,
+  is(o: any): o is MsgCreateClawbackVestingAccount {
+    return (
+      o &&
+      (o.$typeUrl === MsgCreateClawbackVestingAccount.typeUrl ||
+        (typeof o.fromAddress === 'string' &&
+          typeof o.toAddress === 'string' &&
+          typeof o.startTime === 'bigint' &&
+          Array.isArray(o.lockupPeriods) &&
+          (!o.lockupPeriods.length || Period.is(o.lockupPeriods[0])) &&
+          Array.isArray(o.vestingPeriods) &&
+          (!o.vestingPeriods.length || Period.is(o.vestingPeriods[0])) &&
+          typeof o.merge === 'boolean'))
+    );
+  },
+  isSDK(o: any): o is MsgCreateClawbackVestingAccountSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgCreateClawbackVestingAccount.typeUrl ||
+        (typeof o.from_address === 'string' &&
+          typeof o.to_address === 'string' &&
+          typeof o.start_time === 'bigint' &&
+          Array.isArray(o.lockup_periods) &&
+          (!o.lockup_periods.length || Period.isSDK(o.lockup_periods[0])) &&
+          Array.isArray(o.vesting_periods) &&
+          (!o.vesting_periods.length || Period.isSDK(o.vesting_periods[0])) &&
+          typeof o.merge === 'boolean'))
+    );
+  },
   encode(
     message: MsgCreateClawbackVestingAccount,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1095,6 +1250,16 @@ export const MsgCreateClawbackVestingAccount = {
       value: MsgCreateClawbackVestingAccount.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        MsgCreateClawbackVestingAccount.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Period.registerTypeUrl();
+  },
 };
 function createBaseMsgCreateClawbackVestingAccountResponse(): MsgCreateClawbackVestingAccountResponse {
   return {};
@@ -1108,6 +1273,13 @@ function createBaseMsgCreateClawbackVestingAccountResponse(): MsgCreateClawbackV
 export const MsgCreateClawbackVestingAccountResponse = {
   typeUrl:
     '/cosmos.vesting.v1beta1.MsgCreateClawbackVestingAccountResponse' as const,
+  aminoType: 'cosmos-sdk/MsgCreateClawbackVestingAccountResponse' as const,
+  is(o: any): o is MsgCreateClawbackVestingAccountResponse {
+    return o && o.$typeUrl === MsgCreateClawbackVestingAccountResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgCreateClawbackVestingAccountResponseSDKType {
+    return o && o.$typeUrl === MsgCreateClawbackVestingAccountResponse.typeUrl;
+  },
   encode(
     _: MsgCreateClawbackVestingAccountResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1164,6 +1336,7 @@ export const MsgCreateClawbackVestingAccountResponse = {
       value: MsgCreateClawbackVestingAccountResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgClawback(): MsgClawback {
   return {
@@ -1180,6 +1353,25 @@ function createBaseMsgClawback(): MsgClawback {
  */
 export const MsgClawback = {
   typeUrl: '/cosmos.vesting.v1beta1.MsgClawback' as const,
+  aminoType: 'cosmos-sdk/MsgClawback' as const,
+  is(o: any): o is MsgClawback {
+    return (
+      o &&
+      (o.$typeUrl === MsgClawback.typeUrl ||
+        (typeof o.funderAddress === 'string' &&
+          typeof o.address === 'string' &&
+          typeof o.destAddress === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgClawbackSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgClawback.typeUrl ||
+        (typeof o.funder_address === 'string' &&
+          typeof o.address === 'string' &&
+          typeof o.dest_address === 'string'))
+    );
+  },
   encode(
     message: MsgClawback,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1256,6 +1448,7 @@ export const MsgClawback = {
       value: MsgClawback.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgClawbackResponse(): MsgClawbackResponse {
   return {};
@@ -1268,6 +1461,13 @@ function createBaseMsgClawbackResponse(): MsgClawbackResponse {
  */
 export const MsgClawbackResponse = {
   typeUrl: '/cosmos.vesting.v1beta1.MsgClawbackResponse' as const,
+  aminoType: 'cosmos-sdk/MsgClawbackResponse' as const,
+  is(o: any): o is MsgClawbackResponse {
+    return o && o.$typeUrl === MsgClawbackResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgClawbackResponseSDKType {
+    return o && o.$typeUrl === MsgClawbackResponse.typeUrl;
+  },
   encode(
     _: MsgClawbackResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1315,6 +1515,7 @@ export const MsgClawbackResponse = {
       value: MsgClawbackResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgReturnGrants(): MsgReturnGrants {
   return {
@@ -1333,6 +1534,19 @@ function createBaseMsgReturnGrants(): MsgReturnGrants {
  */
 export const MsgReturnGrants = {
   typeUrl: '/cosmos.vesting.v1beta1.MsgReturnGrants' as const,
+  aminoType: 'cosmos-sdk/MsgReturnGrants' as const,
+  is(o: any): o is MsgReturnGrants {
+    return (
+      o &&
+      (o.$typeUrl === MsgReturnGrants.typeUrl || typeof o.address === 'string')
+    );
+  },
+  isSDK(o: any): o is MsgReturnGrantsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgReturnGrants.typeUrl || typeof o.address === 'string')
+    );
+  },
   encode(
     message: MsgReturnGrants,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1387,6 +1601,7 @@ export const MsgReturnGrants = {
       value: MsgReturnGrants.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgReturnGrantsResponse(): MsgReturnGrantsResponse {
   return {};
@@ -1399,6 +1614,13 @@ function createBaseMsgReturnGrantsResponse(): MsgReturnGrantsResponse {
  */
 export const MsgReturnGrantsResponse = {
   typeUrl: '/cosmos.vesting.v1beta1.MsgReturnGrantsResponse' as const,
+  aminoType: 'cosmos-sdk/MsgReturnGrantsResponse' as const,
+  is(o: any): o is MsgReturnGrantsResponse {
+    return o && o.$typeUrl === MsgReturnGrantsResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgReturnGrantsResponseSDKType {
+    return o && o.$typeUrl === MsgReturnGrantsResponse.typeUrl;
+  },
   encode(
     _: MsgReturnGrantsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1450,4 +1672,5 @@ export const MsgReturnGrantsResponse = {
       value: MsgReturnGrantsResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

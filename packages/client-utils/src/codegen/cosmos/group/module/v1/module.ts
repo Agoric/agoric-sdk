@@ -52,6 +52,23 @@ function createBaseModule(): Module {
  */
 export const Module = {
   typeUrl: '/cosmos.group.module.v1.Module' as const,
+  aminoType: 'cosmos-sdk/Module' as const,
+  is(o: any): o is Module {
+    return (
+      o &&
+      (o.$typeUrl === Module.typeUrl ||
+        (Duration.is(o.maxExecutionPeriod) &&
+          typeof o.maxMetadataLen === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is ModuleSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Module.typeUrl ||
+        (Duration.isSDK(o.max_execution_period) &&
+          typeof o.max_metadata_len === 'bigint'))
+    );
+  },
   encode(
     message: Module,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -133,4 +150,5 @@ export const Module = {
       value: Module.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

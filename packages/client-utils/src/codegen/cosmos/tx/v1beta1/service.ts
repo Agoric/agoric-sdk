@@ -19,8 +19,9 @@ import {
   type BlockIDSDKType,
 } from '../../../tendermint/types/types.js';
 import { Block, type BlockSDKType } from '../../../tendermint/types/block.js';
-import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
+import { BinaryReader, BinaryWriter } from '../../../binary.js';
+import { GlobalDecoderRegistry } from '../../../registry.js';
 import { type JsonSafe } from '../../../json-safe.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
@@ -755,6 +756,31 @@ function createBaseGetTxsEventRequest(): GetTxsEventRequest {
  */
 export const GetTxsEventRequest = {
   typeUrl: '/cosmos.tx.v1beta1.GetTxsEventRequest' as const,
+  aminoType: 'cosmos-sdk/GetTxsEventRequest' as const,
+  is(o: any): o is GetTxsEventRequest {
+    return (
+      o &&
+      (o.$typeUrl === GetTxsEventRequest.typeUrl ||
+        (Array.isArray(o.events) &&
+          (!o.events.length || typeof o.events[0] === 'string') &&
+          isSet(o.orderBy) &&
+          typeof o.page === 'bigint' &&
+          typeof o.limit === 'bigint' &&
+          typeof o.query === 'string'))
+    );
+  },
+  isSDK(o: any): o is GetTxsEventRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GetTxsEventRequest.typeUrl ||
+        (Array.isArray(o.events) &&
+          (!o.events.length || typeof o.events[0] === 'string') &&
+          isSet(o.order_by) &&
+          typeof o.page === 'bigint' &&
+          typeof o.limit === 'bigint' &&
+          typeof o.query === 'string'))
+    );
+  },
   encode(
     message: GetTxsEventRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -880,6 +906,14 @@ export const GetTxsEventRequest = {
       value: GetTxsEventRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(GetTxsEventRequest.typeUrl)
+    ) {
+      return;
+    }
+    PageRequest.registerTypeUrl();
+  },
 };
 function createBaseGetTxsEventResponse(): GetTxsEventResponse {
   return {
@@ -898,6 +932,29 @@ function createBaseGetTxsEventResponse(): GetTxsEventResponse {
  */
 export const GetTxsEventResponse = {
   typeUrl: '/cosmos.tx.v1beta1.GetTxsEventResponse' as const,
+  aminoType: 'cosmos-sdk/GetTxsEventResponse' as const,
+  is(o: any): o is GetTxsEventResponse {
+    return (
+      o &&
+      (o.$typeUrl === GetTxsEventResponse.typeUrl ||
+        (Array.isArray(o.txs) &&
+          (!o.txs.length || Tx.is(o.txs[0])) &&
+          Array.isArray(o.txResponses) &&
+          (!o.txResponses.length || TxResponse.is(o.txResponses[0])) &&
+          typeof o.total === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is GetTxsEventResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GetTxsEventResponse.typeUrl ||
+        (Array.isArray(o.txs) &&
+          (!o.txs.length || Tx.isSDK(o.txs[0])) &&
+          Array.isArray(o.tx_responses) &&
+          (!o.tx_responses.length || TxResponse.isSDK(o.tx_responses[0])) &&
+          typeof o.total === 'bigint'))
+    );
+  },
   encode(
     message: GetTxsEventResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1012,6 +1069,18 @@ export const GetTxsEventResponse = {
       value: GetTxsEventResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        GetTxsEventResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Tx.registerTypeUrl();
+    TxResponse.registerTypeUrl();
+    PageResponse.registerTypeUrl();
+  },
 };
 function createBaseBroadcastTxRequest(): BroadcastTxRequest {
   return {
@@ -1028,6 +1097,23 @@ function createBaseBroadcastTxRequest(): BroadcastTxRequest {
  */
 export const BroadcastTxRequest = {
   typeUrl: '/cosmos.tx.v1beta1.BroadcastTxRequest' as const,
+  aminoType: 'cosmos-sdk/BroadcastTxRequest' as const,
+  is(o: any): o is BroadcastTxRequest {
+    return (
+      o &&
+      (o.$typeUrl === BroadcastTxRequest.typeUrl ||
+        ((o.txBytes instanceof Uint8Array || typeof o.txBytes === 'string') &&
+          isSet(o.mode)))
+    );
+  },
+  isSDK(o: any): o is BroadcastTxRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === BroadcastTxRequest.typeUrl ||
+        ((o.tx_bytes instanceof Uint8Array || typeof o.tx_bytes === 'string') &&
+          isSet(o.mode)))
+    );
+  },
   encode(
     message: BroadcastTxRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1100,6 +1186,7 @@ export const BroadcastTxRequest = {
       value: BroadcastTxRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseBroadcastTxResponse(): BroadcastTxResponse {
   return {
@@ -1115,6 +1202,13 @@ function createBaseBroadcastTxResponse(): BroadcastTxResponse {
  */
 export const BroadcastTxResponse = {
   typeUrl: '/cosmos.tx.v1beta1.BroadcastTxResponse' as const,
+  aminoType: 'cosmos-sdk/BroadcastTxResponse' as const,
+  is(o: any): o is BroadcastTxResponse {
+    return o && o.$typeUrl === BroadcastTxResponse.typeUrl;
+  },
+  isSDK(o: any): o is BroadcastTxResponseSDKType {
+    return o && o.$typeUrl === BroadcastTxResponse.typeUrl;
+  },
   encode(
     message: BroadcastTxResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1180,6 +1274,16 @@ export const BroadcastTxResponse = {
       value: BroadcastTxResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        BroadcastTxResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    TxResponse.registerTypeUrl();
+  },
 };
 function createBaseSimulateRequest(): SimulateRequest {
   return {
@@ -1196,6 +1300,23 @@ function createBaseSimulateRequest(): SimulateRequest {
  */
 export const SimulateRequest = {
   typeUrl: '/cosmos.tx.v1beta1.SimulateRequest' as const,
+  aminoType: 'cosmos-sdk/SimulateRequest' as const,
+  is(o: any): o is SimulateRequest {
+    return (
+      o &&
+      (o.$typeUrl === SimulateRequest.typeUrl ||
+        o.txBytes instanceof Uint8Array ||
+        typeof o.txBytes === 'string')
+    );
+  },
+  isSDK(o: any): o is SimulateRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === SimulateRequest.typeUrl ||
+        o.tx_bytes instanceof Uint8Array ||
+        typeof o.tx_bytes === 'string')
+    );
+  },
   encode(
     message: SimulateRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1268,6 +1389,14 @@ export const SimulateRequest = {
       value: SimulateRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(SimulateRequest.typeUrl)
+    ) {
+      return;
+    }
+    Tx.registerTypeUrl();
+  },
 };
 function createBaseSimulateResponse(): SimulateResponse {
   return {
@@ -1284,6 +1413,13 @@ function createBaseSimulateResponse(): SimulateResponse {
  */
 export const SimulateResponse = {
   typeUrl: '/cosmos.tx.v1beta1.SimulateResponse' as const,
+  aminoType: 'cosmos-sdk/SimulateResponse' as const,
+  is(o: any): o is SimulateResponse {
+    return o && o.$typeUrl === SimulateResponse.typeUrl;
+  },
+  isSDK(o: any): o is SimulateResponseSDKType {
+    return o && o.$typeUrl === SimulateResponse.typeUrl;
+  },
   encode(
     message: SimulateResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1359,6 +1495,15 @@ export const SimulateResponse = {
       value: SimulateResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(SimulateResponse.typeUrl)
+    ) {
+      return;
+    }
+    GasInfo.registerTypeUrl();
+    Result.registerTypeUrl();
+  },
 };
 function createBaseGetTxRequest(): GetTxRequest {
   return {
@@ -1374,6 +1519,17 @@ function createBaseGetTxRequest(): GetTxRequest {
  */
 export const GetTxRequest = {
   typeUrl: '/cosmos.tx.v1beta1.GetTxRequest' as const,
+  aminoType: 'cosmos-sdk/GetTxRequest' as const,
+  is(o: any): o is GetTxRequest {
+    return (
+      o && (o.$typeUrl === GetTxRequest.typeUrl || typeof o.hash === 'string')
+    );
+  },
+  isSDK(o: any): o is GetTxRequestSDKType {
+    return (
+      o && (o.$typeUrl === GetTxRequest.typeUrl || typeof o.hash === 'string')
+    );
+  },
   encode(
     message: GetTxRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1428,6 +1584,7 @@ export const GetTxRequest = {
       value: GetTxRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseGetTxResponse(): GetTxResponse {
   return {
@@ -1443,6 +1600,13 @@ function createBaseGetTxResponse(): GetTxResponse {
  */
 export const GetTxResponse = {
   typeUrl: '/cosmos.tx.v1beta1.GetTxResponse' as const,
+  aminoType: 'cosmos-sdk/GetTxResponse' as const,
+  is(o: any): o is GetTxResponse {
+    return o && o.$typeUrl === GetTxResponse.typeUrl;
+  },
+  isSDK(o: any): o is GetTxResponseSDKType {
+    return o && o.$typeUrl === GetTxResponse.typeUrl;
+  },
   encode(
     message: GetTxResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1518,6 +1682,13 @@ export const GetTxResponse = {
       value: GetTxResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(GetTxResponse.typeUrl)) {
+      return;
+    }
+    Tx.registerTypeUrl();
+    TxResponse.registerTypeUrl();
+  },
 };
 function createBaseGetBlockWithTxsRequest(): GetBlockWithTxsRequest {
   return {
@@ -1536,6 +1707,21 @@ function createBaseGetBlockWithTxsRequest(): GetBlockWithTxsRequest {
  */
 export const GetBlockWithTxsRequest = {
   typeUrl: '/cosmos.tx.v1beta1.GetBlockWithTxsRequest' as const,
+  aminoType: 'cosmos-sdk/GetBlockWithTxsRequest' as const,
+  is(o: any): o is GetBlockWithTxsRequest {
+    return (
+      o &&
+      (o.$typeUrl === GetBlockWithTxsRequest.typeUrl ||
+        typeof o.height === 'bigint')
+    );
+  },
+  isSDK(o: any): o is GetBlockWithTxsRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GetBlockWithTxsRequest.typeUrl ||
+        typeof o.height === 'bigint')
+    );
+  },
   encode(
     message: GetBlockWithTxsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1618,6 +1804,16 @@ export const GetBlockWithTxsRequest = {
       value: GetBlockWithTxsRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        GetBlockWithTxsRequest.typeUrl,
+      )
+    ) {
+      return;
+    }
+    PageRequest.registerTypeUrl();
+  },
 };
 function createBaseGetBlockWithTxsResponse(): GetBlockWithTxsResponse {
   return {
@@ -1638,6 +1834,21 @@ function createBaseGetBlockWithTxsResponse(): GetBlockWithTxsResponse {
  */
 export const GetBlockWithTxsResponse = {
   typeUrl: '/cosmos.tx.v1beta1.GetBlockWithTxsResponse' as const,
+  aminoType: 'cosmos-sdk/GetBlockWithTxsResponse' as const,
+  is(o: any): o is GetBlockWithTxsResponse {
+    return (
+      o &&
+      (o.$typeUrl === GetBlockWithTxsResponse.typeUrl ||
+        (Array.isArray(o.txs) && (!o.txs.length || Tx.is(o.txs[0]))))
+    );
+  },
+  isSDK(o: any): o is GetBlockWithTxsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GetBlockWithTxsResponse.typeUrl ||
+        (Array.isArray(o.txs) && (!o.txs.length || Tx.isSDK(o.txs[0]))))
+    );
+  },
   encode(
     message: GetBlockWithTxsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1757,6 +1968,19 @@ export const GetBlockWithTxsResponse = {
       value: GetBlockWithTxsResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        GetBlockWithTxsResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Tx.registerTypeUrl();
+    BlockID.registerTypeUrl();
+    Block.registerTypeUrl();
+    PageResponse.registerTypeUrl();
+  },
 };
 function createBaseTxDecodeRequest(): TxDecodeRequest {
   return {
@@ -1774,6 +1998,23 @@ function createBaseTxDecodeRequest(): TxDecodeRequest {
  */
 export const TxDecodeRequest = {
   typeUrl: '/cosmos.tx.v1beta1.TxDecodeRequest' as const,
+  aminoType: 'cosmos-sdk/TxDecodeRequest' as const,
+  is(o: any): o is TxDecodeRequest {
+    return (
+      o &&
+      (o.$typeUrl === TxDecodeRequest.typeUrl ||
+        o.txBytes instanceof Uint8Array ||
+        typeof o.txBytes === 'string')
+    );
+  },
+  isSDK(o: any): o is TxDecodeRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === TxDecodeRequest.typeUrl ||
+        o.tx_bytes instanceof Uint8Array ||
+        typeof o.tx_bytes === 'string')
+    );
+  },
   encode(
     message: TxDecodeRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1833,6 +2074,7 @@ export const TxDecodeRequest = {
       value: TxDecodeRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseTxDecodeResponse(): TxDecodeResponse {
   return {
@@ -1850,6 +2092,13 @@ function createBaseTxDecodeResponse(): TxDecodeResponse {
  */
 export const TxDecodeResponse = {
   typeUrl: '/cosmos.tx.v1beta1.TxDecodeResponse' as const,
+  aminoType: 'cosmos-sdk/TxDecodeResponse' as const,
+  is(o: any): o is TxDecodeResponse {
+    return o && o.$typeUrl === TxDecodeResponse.typeUrl;
+  },
+  isSDK(o: any): o is TxDecodeResponseSDKType {
+    return o && o.$typeUrl === TxDecodeResponse.typeUrl;
+  },
   encode(
     message: TxDecodeResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1908,6 +2157,14 @@ export const TxDecodeResponse = {
       value: TxDecodeResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(TxDecodeResponse.typeUrl)
+    ) {
+      return;
+    }
+    Tx.registerTypeUrl();
+  },
 };
 function createBaseTxEncodeRequest(): TxEncodeRequest {
   return {
@@ -1925,6 +2182,13 @@ function createBaseTxEncodeRequest(): TxEncodeRequest {
  */
 export const TxEncodeRequest = {
   typeUrl: '/cosmos.tx.v1beta1.TxEncodeRequest' as const,
+  aminoType: 'cosmos-sdk/TxEncodeRequest' as const,
+  is(o: any): o is TxEncodeRequest {
+    return o && o.$typeUrl === TxEncodeRequest.typeUrl;
+  },
+  isSDK(o: any): o is TxEncodeRequestSDKType {
+    return o && o.$typeUrl === TxEncodeRequest.typeUrl;
+  },
   encode(
     message: TxEncodeRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1983,6 +2247,14 @@ export const TxEncodeRequest = {
       value: TxEncodeRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(TxEncodeRequest.typeUrl)
+    ) {
+      return;
+    }
+    Tx.registerTypeUrl();
+  },
 };
 function createBaseTxEncodeResponse(): TxEncodeResponse {
   return {
@@ -2000,6 +2272,23 @@ function createBaseTxEncodeResponse(): TxEncodeResponse {
  */
 export const TxEncodeResponse = {
   typeUrl: '/cosmos.tx.v1beta1.TxEncodeResponse' as const,
+  aminoType: 'cosmos-sdk/TxEncodeResponse' as const,
+  is(o: any): o is TxEncodeResponse {
+    return (
+      o &&
+      (o.$typeUrl === TxEncodeResponse.typeUrl ||
+        o.txBytes instanceof Uint8Array ||
+        typeof o.txBytes === 'string')
+    );
+  },
+  isSDK(o: any): o is TxEncodeResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === TxEncodeResponse.typeUrl ||
+        o.tx_bytes instanceof Uint8Array ||
+        typeof o.tx_bytes === 'string')
+    );
+  },
   encode(
     message: TxEncodeResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2059,6 +2348,7 @@ export const TxEncodeResponse = {
       value: TxEncodeResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseTxEncodeAminoRequest(): TxEncodeAminoRequest {
   return {
@@ -2076,6 +2366,21 @@ function createBaseTxEncodeAminoRequest(): TxEncodeAminoRequest {
  */
 export const TxEncodeAminoRequest = {
   typeUrl: '/cosmos.tx.v1beta1.TxEncodeAminoRequest' as const,
+  aminoType: 'cosmos-sdk/TxEncodeAminoRequest' as const,
+  is(o: any): o is TxEncodeAminoRequest {
+    return (
+      o &&
+      (o.$typeUrl === TxEncodeAminoRequest.typeUrl ||
+        typeof o.aminoJson === 'string')
+    );
+  },
+  isSDK(o: any): o is TxEncodeAminoRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === TxEncodeAminoRequest.typeUrl ||
+        typeof o.amino_json === 'string')
+    );
+  },
   encode(
     message: TxEncodeAminoRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2133,6 +2438,7 @@ export const TxEncodeAminoRequest = {
       value: TxEncodeAminoRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseTxEncodeAminoResponse(): TxEncodeAminoResponse {
   return {
@@ -2150,6 +2456,23 @@ function createBaseTxEncodeAminoResponse(): TxEncodeAminoResponse {
  */
 export const TxEncodeAminoResponse = {
   typeUrl: '/cosmos.tx.v1beta1.TxEncodeAminoResponse' as const,
+  aminoType: 'cosmos-sdk/TxEncodeAminoResponse' as const,
+  is(o: any): o is TxEncodeAminoResponse {
+    return (
+      o &&
+      (o.$typeUrl === TxEncodeAminoResponse.typeUrl ||
+        o.aminoBinary instanceof Uint8Array ||
+        typeof o.aminoBinary === 'string')
+    );
+  },
+  isSDK(o: any): o is TxEncodeAminoResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === TxEncodeAminoResponse.typeUrl ||
+        o.amino_binary instanceof Uint8Array ||
+        typeof o.amino_binary === 'string')
+    );
+  },
   encode(
     message: TxEncodeAminoResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2214,6 +2537,7 @@ export const TxEncodeAminoResponse = {
       value: TxEncodeAminoResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseTxDecodeAminoRequest(): TxDecodeAminoRequest {
   return {
@@ -2231,6 +2555,23 @@ function createBaseTxDecodeAminoRequest(): TxDecodeAminoRequest {
  */
 export const TxDecodeAminoRequest = {
   typeUrl: '/cosmos.tx.v1beta1.TxDecodeAminoRequest' as const,
+  aminoType: 'cosmos-sdk/TxDecodeAminoRequest' as const,
+  is(o: any): o is TxDecodeAminoRequest {
+    return (
+      o &&
+      (o.$typeUrl === TxDecodeAminoRequest.typeUrl ||
+        o.aminoBinary instanceof Uint8Array ||
+        typeof o.aminoBinary === 'string')
+    );
+  },
+  isSDK(o: any): o is TxDecodeAminoRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === TxDecodeAminoRequest.typeUrl ||
+        o.amino_binary instanceof Uint8Array ||
+        typeof o.amino_binary === 'string')
+    );
+  },
   encode(
     message: TxDecodeAminoRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2295,6 +2636,7 @@ export const TxDecodeAminoRequest = {
       value: TxDecodeAminoRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseTxDecodeAminoResponse(): TxDecodeAminoResponse {
   return {
@@ -2312,6 +2654,21 @@ function createBaseTxDecodeAminoResponse(): TxDecodeAminoResponse {
  */
 export const TxDecodeAminoResponse = {
   typeUrl: '/cosmos.tx.v1beta1.TxDecodeAminoResponse' as const,
+  aminoType: 'cosmos-sdk/TxDecodeAminoResponse' as const,
+  is(o: any): o is TxDecodeAminoResponse {
+    return (
+      o &&
+      (o.$typeUrl === TxDecodeAminoResponse.typeUrl ||
+        typeof o.aminoJson === 'string')
+    );
+  },
+  isSDK(o: any): o is TxDecodeAminoResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === TxDecodeAminoResponse.typeUrl ||
+        typeof o.amino_json === 'string')
+    );
+  },
   encode(
     message: TxDecodeAminoResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2369,4 +2726,5 @@ export const TxDecodeAminoResponse = {
       value: TxDecodeAminoResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

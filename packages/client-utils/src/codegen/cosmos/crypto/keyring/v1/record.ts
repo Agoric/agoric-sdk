@@ -2,6 +2,7 @@
 import { Any, type AnySDKType } from '../../../../google/protobuf/any.js';
 import { BIP44Params, type BIP44ParamsSDKType } from '../../hd/v1/hd.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
+import { GlobalDecoderRegistry } from '../../../../registry.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
 /**
@@ -154,6 +155,13 @@ function createBaseRecord(): Record {
  */
 export const Record = {
   typeUrl: '/cosmos.crypto.keyring.v1.Record' as const,
+  aminoType: 'cosmos-sdk/Record' as const,
+  is(o: any): o is Record {
+    return o && (o.$typeUrl === Record.typeUrl || typeof o.name === 'string');
+  },
+  isSDK(o: any): o is RecordSDKType {
+    return o && (o.$typeUrl === Record.typeUrl || typeof o.name === 'string');
+  },
   encode(
     message: Record,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -289,6 +297,15 @@ export const Record = {
       value: Record.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(Record.typeUrl)) {
+      return;
+    }
+    Record_Local.registerTypeUrl();
+    Record_Ledger.registerTypeUrl();
+    Record_Multi.registerTypeUrl();
+    Record_Offline.registerTypeUrl();
+  },
 };
 function createBaseRecord_Local(): Record_Local {
   return {
@@ -304,6 +321,13 @@ function createBaseRecord_Local(): Record_Local {
  */
 export const Record_Local = {
   typeUrl: '/cosmos.crypto.keyring.v1.Local' as const,
+  aminoType: 'cosmos-sdk/Local' as const,
+  is(o: any): o is Record_Local {
+    return o && o.$typeUrl === Record_Local.typeUrl;
+  },
+  isSDK(o: any): o is Record_LocalSDKType {
+    return o && o.$typeUrl === Record_Local.typeUrl;
+  },
   encode(
     message: Record_Local,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -362,6 +386,7 @@ export const Record_Local = {
       value: Record_Local.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseRecord_Ledger(): Record_Ledger {
   return {
@@ -376,6 +401,13 @@ function createBaseRecord_Ledger(): Record_Ledger {
  */
 export const Record_Ledger = {
   typeUrl: '/cosmos.crypto.keyring.v1.Ledger' as const,
+  aminoType: 'cosmos-sdk/Ledger' as const,
+  is(o: any): o is Record_Ledger {
+    return o && o.$typeUrl === Record_Ledger.typeUrl;
+  },
+  isSDK(o: any): o is Record_LedgerSDKType {
+    return o && o.$typeUrl === Record_Ledger.typeUrl;
+  },
   encode(
     message: Record_Ledger,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -434,6 +466,12 @@ export const Record_Ledger = {
       value: Record_Ledger.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(Record_Ledger.typeUrl)) {
+      return;
+    }
+    BIP44Params.registerTypeUrl();
+  },
 };
 function createBaseRecord_Multi(): Record_Multi {
   return {};
@@ -446,6 +484,13 @@ function createBaseRecord_Multi(): Record_Multi {
  */
 export const Record_Multi = {
   typeUrl: '/cosmos.crypto.keyring.v1.Multi' as const,
+  aminoType: 'cosmos-sdk/Multi' as const,
+  is(o: any): o is Record_Multi {
+    return o && o.$typeUrl === Record_Multi.typeUrl;
+  },
+  isSDK(o: any): o is Record_MultiSDKType {
+    return o && o.$typeUrl === Record_Multi.typeUrl;
+  },
   encode(
     _: Record_Multi,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -490,6 +535,7 @@ export const Record_Multi = {
       value: Record_Multi.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseRecord_Offline(): Record_Offline {
   return {};
@@ -502,6 +548,13 @@ function createBaseRecord_Offline(): Record_Offline {
  */
 export const Record_Offline = {
   typeUrl: '/cosmos.crypto.keyring.v1.Offline' as const,
+  aminoType: 'cosmos-sdk/Offline' as const,
+  is(o: any): o is Record_Offline {
+    return o && o.$typeUrl === Record_Offline.typeUrl;
+  },
+  isSDK(o: any): o is Record_OfflineSDKType {
+    return o && o.$typeUrl === Record_Offline.typeUrl;
+  },
   encode(
     _: Record_Offline,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -546,4 +599,5 @@ export const Record_Offline = {
       value: Record_Offline.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

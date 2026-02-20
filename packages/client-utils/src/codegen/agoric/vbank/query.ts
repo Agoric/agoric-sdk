@@ -7,6 +7,7 @@ import {
 } from './vbank.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { type JsonSafe } from '../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../registry.js';
 import { isSet } from '../../helpers.js';
 /**
  * QueryParamsRequest is the request type for the Query/Params RPC method.
@@ -105,6 +106,12 @@ function createBaseQueryParamsRequest(): QueryParamsRequest {
  */
 export const QueryParamsRequest = {
   typeUrl: '/agoric.vbank.QueryParamsRequest' as const,
+  is(o: any): o is QueryParamsRequest {
+    return o && o.$typeUrl === QueryParamsRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryParamsRequestSDKType {
+    return o && o.$typeUrl === QueryParamsRequest.typeUrl;
+  },
   encode(
     _: QueryParamsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -152,6 +159,7 @@ export const QueryParamsRequest = {
       value: QueryParamsRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryParamsResponse(): QueryParamsResponse {
   return {
@@ -166,6 +174,17 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
  */
 export const QueryParamsResponse = {
   typeUrl: '/agoric.vbank.QueryParamsResponse' as const,
+  is(o: any): o is QueryParamsResponse {
+    return (
+      o && (o.$typeUrl === QueryParamsResponse.typeUrl || Params.is(o.params))
+    );
+  },
+  isSDK(o: any): o is QueryParamsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryParamsResponse.typeUrl || Params.isSDK(o.params))
+    );
+  },
   encode(
     message: QueryParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -227,6 +246,16 @@ export const QueryParamsResponse = {
       value: QueryParamsResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryParamsResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Params.registerTypeUrl();
+  },
 };
 function createBaseQueryStateRequest(): QueryStateRequest {
   return {};
@@ -239,6 +268,12 @@ function createBaseQueryStateRequest(): QueryStateRequest {
  */
 export const QueryStateRequest = {
   typeUrl: '/agoric.vbank.QueryStateRequest' as const,
+  is(o: any): o is QueryStateRequest {
+    return o && o.$typeUrl === QueryStateRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryStateRequestSDKType {
+    return o && o.$typeUrl === QueryStateRequest.typeUrl;
+  },
   encode(
     _: QueryStateRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -283,6 +318,7 @@ export const QueryStateRequest = {
       value: QueryStateRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryStateResponse(): QueryStateResponse {
   return {
@@ -297,6 +333,16 @@ function createBaseQueryStateResponse(): QueryStateResponse {
  */
 export const QueryStateResponse = {
   typeUrl: '/agoric.vbank.QueryStateResponse' as const,
+  is(o: any): o is QueryStateResponse {
+    return (
+      o && (o.$typeUrl === QueryStateResponse.typeUrl || State.is(o.state))
+    );
+  },
+  isSDK(o: any): o is QueryStateResponseSDKType {
+    return (
+      o && (o.$typeUrl === QueryStateResponse.typeUrl || State.isSDK(o.state))
+    );
+  },
   encode(
     message: QueryStateResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -357,5 +403,13 @@ export const QueryStateResponse = {
       typeUrl: '/agoric.vbank.QueryStateResponse',
       value: QueryStateResponse.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(QueryStateResponse.typeUrl)
+    ) {
+      return;
+    }
+    State.registerTypeUrl();
   },
 };

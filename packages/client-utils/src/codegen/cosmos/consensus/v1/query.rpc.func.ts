@@ -12,4 +12,5 @@ export const getParams = buildQuery<QueryParamsRequest, QueryParamsResponse>({
   decode: QueryParamsResponse.decode,
   service: 'cosmos.consensus.v1.Query',
   method: 'Params',
+  deps: [QueryParamsRequest, QueryParamsResponse],
 });

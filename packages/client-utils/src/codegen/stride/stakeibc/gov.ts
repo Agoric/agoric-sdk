@@ -3,6 +3,7 @@ import { Validator, type ValidatorSDKType } from './validator.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../registry.js';
 /**
  * @name AddValidatorsProposal
  * @package stride.stakeibc
@@ -75,6 +76,30 @@ function createBaseAddValidatorsProposal(): AddValidatorsProposal {
  */
 export const AddValidatorsProposal = {
   typeUrl: '/stride.stakeibc.AddValidatorsProposal' as const,
+  is(o: any): o is AddValidatorsProposal {
+    return (
+      o &&
+      (o.$typeUrl === AddValidatorsProposal.typeUrl ||
+        (typeof o.title === 'string' &&
+          typeof o.description === 'string' &&
+          typeof o.hostZone === 'string' &&
+          Array.isArray(o.validators) &&
+          (!o.validators.length || Validator.is(o.validators[0])) &&
+          typeof o.deposit === 'string'))
+    );
+  },
+  isSDK(o: any): o is AddValidatorsProposalSDKType {
+    return (
+      o &&
+      (o.$typeUrl === AddValidatorsProposal.typeUrl ||
+        (typeof o.title === 'string' &&
+          typeof o.description === 'string' &&
+          typeof o.host_zone === 'string' &&
+          Array.isArray(o.validators) &&
+          (!o.validators.length || Validator.isSDK(o.validators[0])) &&
+          typeof o.deposit === 'string'))
+    );
+  },
   encode(
     message: AddValidatorsProposal,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -178,6 +203,16 @@ export const AddValidatorsProposal = {
       value: AddValidatorsProposal.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        AddValidatorsProposal.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Validator.registerTypeUrl();
+  },
 };
 function createBaseToggleLSMProposal(): ToggleLSMProposal {
   return {
@@ -195,6 +230,28 @@ function createBaseToggleLSMProposal(): ToggleLSMProposal {
  */
 export const ToggleLSMProposal = {
   typeUrl: '/stride.stakeibc.ToggleLSMProposal' as const,
+  is(o: any): o is ToggleLSMProposal {
+    return (
+      o &&
+      (o.$typeUrl === ToggleLSMProposal.typeUrl ||
+        (typeof o.title === 'string' &&
+          typeof o.description === 'string' &&
+          typeof o.hostZone === 'string' &&
+          typeof o.enabled === 'boolean' &&
+          typeof o.deposit === 'string'))
+    );
+  },
+  isSDK(o: any): o is ToggleLSMProposalSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ToggleLSMProposal.typeUrl ||
+        (typeof o.title === 'string' &&
+          typeof o.description === 'string' &&
+          typeof o.host_zone === 'string' &&
+          typeof o.enabled === 'boolean' &&
+          typeof o.deposit === 'string'))
+    );
+  },
   encode(
     message: ToggleLSMProposal,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -286,4 +343,5 @@ export const ToggleLSMProposal = {
       value: ToggleLSMProposal.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

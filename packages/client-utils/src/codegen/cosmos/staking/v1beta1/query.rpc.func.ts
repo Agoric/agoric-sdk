@@ -47,6 +47,7 @@ export const getValidators = buildQuery<
   decode: QueryValidatorsResponse.decode,
   service: 'cosmos.staking.v1beta1.Query',
   method: 'Validators',
+  deps: [QueryValidatorsRequest, QueryValidatorsResponse],
 });
 /**
  * Validator queries validator info for given validator address.
@@ -62,6 +63,7 @@ export const getValidator = buildQuery<
   decode: QueryValidatorResponse.decode,
   service: 'cosmos.staking.v1beta1.Query',
   method: 'Validator',
+  deps: [QueryValidatorRequest, QueryValidatorResponse],
 });
 /**
  * ValidatorDelegations queries delegate info for given validator.
@@ -80,6 +82,7 @@ export const getValidatorDelegations = buildQuery<
   decode: QueryValidatorDelegationsResponse.decode,
   service: 'cosmos.staking.v1beta1.Query',
   method: 'ValidatorDelegations',
+  deps: [QueryValidatorDelegationsRequest, QueryValidatorDelegationsResponse],
 });
 /**
  * ValidatorUnbondingDelegations queries unbonding delegations of a validator.
@@ -98,6 +101,10 @@ export const getValidatorUnbondingDelegations = buildQuery<
   decode: QueryValidatorUnbondingDelegationsResponse.decode,
   service: 'cosmos.staking.v1beta1.Query',
   method: 'ValidatorUnbondingDelegations',
+  deps: [
+    QueryValidatorUnbondingDelegationsRequest,
+    QueryValidatorUnbondingDelegationsResponse,
+  ],
 });
 /**
  * Delegation queries delegate info for given validator delegator pair.
@@ -113,6 +120,7 @@ export const getDelegation = buildQuery<
   decode: QueryDelegationResponse.decode,
   service: 'cosmos.staking.v1beta1.Query',
   method: 'Delegation',
+  deps: [QueryDelegationRequest, QueryDelegationResponse],
 });
 /**
  * UnbondingDelegation queries unbonding info for given validator delegator
@@ -129,6 +137,7 @@ export const getUnbondingDelegation = buildQuery<
   decode: QueryUnbondingDelegationResponse.decode,
   service: 'cosmos.staking.v1beta1.Query',
   method: 'UnbondingDelegation',
+  deps: [QueryUnbondingDelegationRequest, QueryUnbondingDelegationResponse],
 });
 /**
  * DelegatorDelegations queries all delegations of a given delegator address.
@@ -147,6 +156,7 @@ export const getDelegatorDelegations = buildQuery<
   decode: QueryDelegatorDelegationsResponse.decode,
   service: 'cosmos.staking.v1beta1.Query',
   method: 'DelegatorDelegations',
+  deps: [QueryDelegatorDelegationsRequest, QueryDelegatorDelegationsResponse],
 });
 /**
  * DelegatorUnbondingDelegations queries all unbonding delegations of a given
@@ -166,6 +176,10 @@ export const getDelegatorUnbondingDelegations = buildQuery<
   decode: QueryDelegatorUnbondingDelegationsResponse.decode,
   service: 'cosmos.staking.v1beta1.Query',
   method: 'DelegatorUnbondingDelegations',
+  deps: [
+    QueryDelegatorUnbondingDelegationsRequest,
+    QueryDelegatorUnbondingDelegationsResponse,
+  ],
 });
 /**
  * Redelegations queries redelegations of given address.
@@ -184,6 +198,7 @@ export const getRedelegations = buildQuery<
   decode: QueryRedelegationsResponse.decode,
   service: 'cosmos.staking.v1beta1.Query',
   method: 'Redelegations',
+  deps: [QueryRedelegationsRequest, QueryRedelegationsResponse],
 });
 /**
  * DelegatorValidators queries all validators info for given delegator
@@ -203,6 +218,7 @@ export const getDelegatorValidators = buildQuery<
   decode: QueryDelegatorValidatorsResponse.decode,
   service: 'cosmos.staking.v1beta1.Query',
   method: 'DelegatorValidators',
+  deps: [QueryDelegatorValidatorsRequest, QueryDelegatorValidatorsResponse],
 });
 /**
  * DelegatorValidator queries validator info for given delegator validator
@@ -219,6 +235,7 @@ export const getDelegatorValidator = buildQuery<
   decode: QueryDelegatorValidatorResponse.decode,
   service: 'cosmos.staking.v1beta1.Query',
   method: 'DelegatorValidator',
+  deps: [QueryDelegatorValidatorRequest, QueryDelegatorValidatorResponse],
 });
 /**
  * HistoricalInfo queries the historical info for given height.
@@ -234,6 +251,7 @@ export const getHistoricalInfo = buildQuery<
   decode: QueryHistoricalInfoResponse.decode,
   service: 'cosmos.staking.v1beta1.Query',
   method: 'HistoricalInfo',
+  deps: [QueryHistoricalInfoRequest, QueryHistoricalInfoResponse],
 });
 /**
  * Pool queries the pool info.
@@ -246,6 +264,7 @@ export const getPool = buildQuery<QueryPoolRequest, QueryPoolResponse>({
   decode: QueryPoolResponse.decode,
   service: 'cosmos.staking.v1beta1.Query',
   method: 'Pool',
+  deps: [QueryPoolRequest, QueryPoolResponse],
 });
 /**
  * Parameters queries the staking parameters.
@@ -258,4 +277,5 @@ export const getParams = buildQuery<QueryParamsRequest, QueryParamsResponse>({
   decode: QueryParamsResponse.decode,
   service: 'cosmos.staking.v1beta1.Query',
   method: 'Params',
+  deps: [QueryParamsRequest, QueryParamsResponse],
 });

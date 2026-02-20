@@ -17,6 +17,7 @@ export const getConfig = buildQuery<ConfigRequest, ConfigResponse>({
   decode: ConfigResponse.decode,
   service: 'cosmos.base.node.v1beta1.Service',
   method: 'Config',
+  deps: [ConfigRequest, ConfigResponse],
 });
 /**
  * Status queries for the node status.
@@ -29,4 +30,5 @@ export const getStatus = buildQuery<StatusRequest, StatusResponse>({
   decode: StatusResponse.decode,
   service: 'cosmos.base.node.v1beta1.Service',
   method: 'Status',
+  deps: [StatusRequest, StatusResponse],
 });

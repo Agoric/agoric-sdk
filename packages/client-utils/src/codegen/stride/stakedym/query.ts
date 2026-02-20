@@ -19,6 +19,7 @@ import {
 } from './stakedym.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { type JsonSafe } from '../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../registry.js';
 import { isSet } from '../../helpers.js';
 /**
  * Host Zone
@@ -314,6 +315,12 @@ function createBaseQueryHostZoneRequest(): QueryHostZoneRequest {
  */
 export const QueryHostZoneRequest = {
   typeUrl: '/stride.stakedym.QueryHostZoneRequest' as const,
+  is(o: any): o is QueryHostZoneRequest {
+    return o && o.$typeUrl === QueryHostZoneRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryHostZoneRequestSDKType {
+    return o && o.$typeUrl === QueryHostZoneRequest.typeUrl;
+  },
   encode(
     _: QueryHostZoneRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -361,6 +368,7 @@ export const QueryHostZoneRequest = {
       value: QueryHostZoneRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryHostZoneResponse(): QueryHostZoneResponse {
   return {
@@ -374,6 +382,12 @@ function createBaseQueryHostZoneResponse(): QueryHostZoneResponse {
  */
 export const QueryHostZoneResponse = {
   typeUrl: '/stride.stakedym.QueryHostZoneResponse' as const,
+  is(o: any): o is QueryHostZoneResponse {
+    return o && o.$typeUrl === QueryHostZoneResponse.typeUrl;
+  },
+  isSDK(o: any): o is QueryHostZoneResponseSDKType {
+    return o && o.$typeUrl === QueryHostZoneResponse.typeUrl;
+  },
   encode(
     message: QueryHostZoneResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -439,6 +453,16 @@ export const QueryHostZoneResponse = {
       value: QueryHostZoneResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryHostZoneResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    HostZone.registerTypeUrl();
+  },
 };
 function createBaseQueryDelegationRecordsRequest(): QueryDelegationRecordsRequest {
   return {
@@ -453,6 +477,20 @@ function createBaseQueryDelegationRecordsRequest(): QueryDelegationRecordsReques
  */
 export const QueryDelegationRecordsRequest = {
   typeUrl: '/stride.stakedym.QueryDelegationRecordsRequest' as const,
+  is(o: any): o is QueryDelegationRecordsRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryDelegationRecordsRequest.typeUrl ||
+        typeof o.includeArchived === 'boolean')
+    );
+  },
+  isSDK(o: any): o is QueryDelegationRecordsRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryDelegationRecordsRequest.typeUrl ||
+        typeof o.include_archived === 'boolean')
+    );
+  },
   encode(
     message: QueryDelegationRecordsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -521,6 +559,7 @@ export const QueryDelegationRecordsRequest = {
       value: QueryDelegationRecordsRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryDelegationRecordsResponse(): QueryDelegationRecordsResponse {
   return {
@@ -534,6 +573,24 @@ function createBaseQueryDelegationRecordsResponse(): QueryDelegationRecordsRespo
  */
 export const QueryDelegationRecordsResponse = {
   typeUrl: '/stride.stakedym.QueryDelegationRecordsResponse' as const,
+  is(o: any): o is QueryDelegationRecordsResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryDelegationRecordsResponse.typeUrl ||
+        (Array.isArray(o.delegationRecords) &&
+          (!o.delegationRecords.length ||
+            DelegationRecord.is(o.delegationRecords[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryDelegationRecordsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryDelegationRecordsResponse.typeUrl ||
+        (Array.isArray(o.delegation_records) &&
+          (!o.delegation_records.length ||
+            DelegationRecord.isSDK(o.delegation_records[0]))))
+    );
+  },
   encode(
     message: QueryDelegationRecordsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -610,6 +667,16 @@ export const QueryDelegationRecordsResponse = {
       value: QueryDelegationRecordsResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryDelegationRecordsResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    DelegationRecord.registerTypeUrl();
+  },
 };
 function createBaseQueryUnbondingRecordsRequest(): QueryUnbondingRecordsRequest {
   return {
@@ -624,6 +691,20 @@ function createBaseQueryUnbondingRecordsRequest(): QueryUnbondingRecordsRequest 
  */
 export const QueryUnbondingRecordsRequest = {
   typeUrl: '/stride.stakedym.QueryUnbondingRecordsRequest' as const,
+  is(o: any): o is QueryUnbondingRecordsRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryUnbondingRecordsRequest.typeUrl ||
+        typeof o.includeArchived === 'boolean')
+    );
+  },
+  isSDK(o: any): o is QueryUnbondingRecordsRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryUnbondingRecordsRequest.typeUrl ||
+        typeof o.include_archived === 'boolean')
+    );
+  },
   encode(
     message: QueryUnbondingRecordsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -692,6 +773,7 @@ export const QueryUnbondingRecordsRequest = {
       value: QueryUnbondingRecordsRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryUnbondingRecordsResponse(): QueryUnbondingRecordsResponse {
   return {
@@ -705,6 +787,24 @@ function createBaseQueryUnbondingRecordsResponse(): QueryUnbondingRecordsRespons
  */
 export const QueryUnbondingRecordsResponse = {
   typeUrl: '/stride.stakedym.QueryUnbondingRecordsResponse' as const,
+  is(o: any): o is QueryUnbondingRecordsResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryUnbondingRecordsResponse.typeUrl ||
+        (Array.isArray(o.unbondingRecords) &&
+          (!o.unbondingRecords.length ||
+            UnbondingRecord.is(o.unbondingRecords[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryUnbondingRecordsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryUnbondingRecordsResponse.typeUrl ||
+        (Array.isArray(o.unbonding_records) &&
+          (!o.unbonding_records.length ||
+            UnbondingRecord.isSDK(o.unbonding_records[0]))))
+    );
+  },
   encode(
     message: QueryUnbondingRecordsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -781,6 +881,16 @@ export const QueryUnbondingRecordsResponse = {
       value: QueryUnbondingRecordsResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryUnbondingRecordsResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    UnbondingRecord.registerTypeUrl();
+  },
 };
 function createBaseQueryRedemptionRecordRequest(): QueryRedemptionRecordRequest {
   return {
@@ -796,6 +906,22 @@ function createBaseQueryRedemptionRecordRequest(): QueryRedemptionRecordRequest 
  */
 export const QueryRedemptionRecordRequest = {
   typeUrl: '/stride.stakedym.QueryRedemptionRecordRequest' as const,
+  is(o: any): o is QueryRedemptionRecordRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryRedemptionRecordRequest.typeUrl ||
+        (typeof o.unbondingRecordId === 'bigint' &&
+          typeof o.address === 'string'))
+    );
+  },
+  isSDK(o: any): o is QueryRedemptionRecordRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryRedemptionRecordRequest.typeUrl ||
+        (typeof o.unbonding_record_id === 'bigint' &&
+          typeof o.address === 'string'))
+    );
+  },
   encode(
     message: QueryRedemptionRecordRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -879,6 +1005,7 @@ export const QueryRedemptionRecordRequest = {
       value: QueryRedemptionRecordRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryRedemptionRecordResponse(): QueryRedemptionRecordResponse {
   return {
@@ -892,6 +1019,12 @@ function createBaseQueryRedemptionRecordResponse(): QueryRedemptionRecordRespons
  */
 export const QueryRedemptionRecordResponse = {
   typeUrl: '/stride.stakedym.QueryRedemptionRecordResponse' as const,
+  is(o: any): o is QueryRedemptionRecordResponse {
+    return o && o.$typeUrl === QueryRedemptionRecordResponse.typeUrl;
+  },
+  isSDK(o: any): o is QueryRedemptionRecordResponseSDKType {
+    return o && o.$typeUrl === QueryRedemptionRecordResponse.typeUrl;
+  },
   encode(
     message: QueryRedemptionRecordResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -972,6 +1105,16 @@ export const QueryRedemptionRecordResponse = {
       value: QueryRedemptionRecordResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryRedemptionRecordResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    RedemptionRecordResponse.registerTypeUrl();
+  },
 };
 function createBaseQueryRedemptionRecordsRequest(): QueryRedemptionRecordsRequest {
   return {
@@ -988,6 +1131,22 @@ function createBaseQueryRedemptionRecordsRequest(): QueryRedemptionRecordsReques
  */
 export const QueryRedemptionRecordsRequest = {
   typeUrl: '/stride.stakedym.QueryRedemptionRecordsRequest' as const,
+  is(o: any): o is QueryRedemptionRecordsRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryRedemptionRecordsRequest.typeUrl ||
+        (typeof o.address === 'string' &&
+          typeof o.unbondingRecordId === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is QueryRedemptionRecordsRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryRedemptionRecordsRequest.typeUrl ||
+        (typeof o.address === 'string' &&
+          typeof o.unbonding_record_id === 'bigint'))
+    );
+  },
   encode(
     message: QueryRedemptionRecordsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1088,6 +1247,16 @@ export const QueryRedemptionRecordsRequest = {
       value: QueryRedemptionRecordsRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryRedemptionRecordsRequest.typeUrl,
+      )
+    ) {
+      return;
+    }
+    PageRequest.registerTypeUrl();
+  },
 };
 function createBaseQueryRedemptionRecordsResponse(): QueryRedemptionRecordsResponse {
   return {
@@ -1102,6 +1271,24 @@ function createBaseQueryRedemptionRecordsResponse(): QueryRedemptionRecordsRespo
  */
 export const QueryRedemptionRecordsResponse = {
   typeUrl: '/stride.stakedym.QueryRedemptionRecordsResponse' as const,
+  is(o: any): o is QueryRedemptionRecordsResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryRedemptionRecordsResponse.typeUrl ||
+        (Array.isArray(o.redemptionRecordResponses) &&
+          (!o.redemptionRecordResponses.length ||
+            RedemptionRecordResponse.is(o.redemptionRecordResponses[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryRedemptionRecordsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryRedemptionRecordsResponse.typeUrl ||
+        (Array.isArray(o.redemption_record_responses) &&
+          (!o.redemption_record_responses.length ||
+            RedemptionRecordResponse.isSDK(o.redemption_record_responses[0]))))
+    );
+  },
   encode(
     message: QueryRedemptionRecordsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1204,6 +1391,17 @@ export const QueryRedemptionRecordsResponse = {
       value: QueryRedemptionRecordsResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryRedemptionRecordsResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    RedemptionRecordResponse.registerTypeUrl();
+    PageResponse.registerTypeUrl();
+  },
 };
 function createBaseQuerySlashRecordsRequest(): QuerySlashRecordsRequest {
   return {};
@@ -1216,6 +1414,12 @@ function createBaseQuerySlashRecordsRequest(): QuerySlashRecordsRequest {
  */
 export const QuerySlashRecordsRequest = {
   typeUrl: '/stride.stakedym.QuerySlashRecordsRequest' as const,
+  is(o: any): o is QuerySlashRecordsRequest {
+    return o && o.$typeUrl === QuerySlashRecordsRequest.typeUrl;
+  },
+  isSDK(o: any): o is QuerySlashRecordsRequestSDKType {
+    return o && o.$typeUrl === QuerySlashRecordsRequest.typeUrl;
+  },
   encode(
     _: QuerySlashRecordsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1267,6 +1471,7 @@ export const QuerySlashRecordsRequest = {
       value: QuerySlashRecordsRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQuerySlashRecordsResponse(): QuerySlashRecordsResponse {
   return {
@@ -1280,6 +1485,22 @@ function createBaseQuerySlashRecordsResponse(): QuerySlashRecordsResponse {
  */
 export const QuerySlashRecordsResponse = {
   typeUrl: '/stride.stakedym.QuerySlashRecordsResponse' as const,
+  is(o: any): o is QuerySlashRecordsResponse {
+    return (
+      o &&
+      (o.$typeUrl === QuerySlashRecordsResponse.typeUrl ||
+        (Array.isArray(o.slashRecords) &&
+          (!o.slashRecords.length || SlashRecord.is(o.slashRecords[0]))))
+    );
+  },
+  isSDK(o: any): o is QuerySlashRecordsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QuerySlashRecordsResponse.typeUrl ||
+        (Array.isArray(o.slash_records) &&
+          (!o.slash_records.length || SlashRecord.isSDK(o.slash_records[0]))))
+    );
+  },
   encode(
     message: QuerySlashRecordsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1356,6 +1577,16 @@ export const QuerySlashRecordsResponse = {
       value: QuerySlashRecordsResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QuerySlashRecordsResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    SlashRecord.registerTypeUrl();
+  },
 };
 function createBaseRedemptionRecordResponse(): RedemptionRecordResponse {
   return {
@@ -1371,6 +1602,20 @@ function createBaseRedemptionRecordResponse(): RedemptionRecordResponse {
  */
 export const RedemptionRecordResponse = {
   typeUrl: '/stride.stakedym.RedemptionRecordResponse' as const,
+  is(o: any): o is RedemptionRecordResponse {
+    return (
+      o &&
+      (o.$typeUrl === RedemptionRecordResponse.typeUrl ||
+        typeof o.unbondingCompletionTimeSeconds === 'bigint')
+    );
+  },
+  isSDK(o: any): o is RedemptionRecordResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === RedemptionRecordResponse.typeUrl ||
+        typeof o.unbonding_completion_time_seconds === 'bigint')
+    );
+  },
   encode(
     message: RedemptionRecordResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1469,5 +1714,15 @@ export const RedemptionRecordResponse = {
       typeUrl: '/stride.stakedym.RedemptionRecordResponse',
       value: RedemptionRecordResponse.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        RedemptionRecordResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    RedemptionRecord.registerTypeUrl();
   },
 };

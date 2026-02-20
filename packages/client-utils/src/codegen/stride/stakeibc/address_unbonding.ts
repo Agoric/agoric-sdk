@@ -52,6 +52,32 @@ function createBaseAddressUnbonding(): AddressUnbonding {
  */
 export const AddressUnbonding = {
   typeUrl: '/stride.stakeibc.AddressUnbonding' as const,
+  is(o: any): o is AddressUnbonding {
+    return (
+      o &&
+      (o.$typeUrl === AddressUnbonding.typeUrl ||
+        (typeof o.address === 'string' &&
+          typeof o.receiver === 'string' &&
+          typeof o.unbondingEstimatedTime === 'string' &&
+          typeof o.amount === 'string' &&
+          typeof o.denom === 'string' &&
+          typeof o.claimIsPending === 'boolean' &&
+          typeof o.epochNumber === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is AddressUnbondingSDKType {
+    return (
+      o &&
+      (o.$typeUrl === AddressUnbonding.typeUrl ||
+        (typeof o.address === 'string' &&
+          typeof o.receiver === 'string' &&
+          typeof o.unbonding_estimated_time === 'string' &&
+          typeof o.amount === 'string' &&
+          typeof o.denom === 'string' &&
+          typeof o.claim_is_pending === 'boolean' &&
+          typeof o.epoch_number === 'bigint'))
+    );
+  },
   encode(
     message: AddressUnbonding,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -172,4 +198,5 @@ export const AddressUnbonding = {
       value: AddressUnbonding.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

@@ -5,6 +5,7 @@ import {
   type PlanSDKType,
 } from '../../../../cosmos/upgrade/v1beta1/upgrade.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
+import { GlobalDecoderRegistry } from '../../../../registry.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
 /**
@@ -191,6 +192,7 @@ export interface ParamsSDKType {
  * @deprecated
  */
 export interface ClientUpdateProposal {
+  $typeUrl?: '/ibc.core.client.v1.ClientUpdateProposal';
   /**
    * the title of the update proposal
    */
@@ -226,6 +228,7 @@ export interface ClientUpdateProposalProtoMsg {
  * @deprecated
  */
 export interface ClientUpdateProposalSDKType {
+  $typeUrl?: '/ibc.core.client.v1.ClientUpdateProposal';
   title: string;
   description: string;
   subject_client_id: string;
@@ -242,6 +245,7 @@ export interface ClientUpdateProposalSDKType {
  * @deprecated
  */
 export interface UpgradeProposal {
+  $typeUrl?: '/ibc.core.client.v1.UpgradeProposal';
   title: string;
   description: string;
   plan: Plan;
@@ -270,6 +274,7 @@ export interface UpgradeProposalProtoMsg {
  * @deprecated
  */
 export interface UpgradeProposalSDKType {
+  $typeUrl?: '/ibc.core.client.v1.UpgradeProposal';
   title: string;
   description: string;
   plan: PlanSDKType;
@@ -290,6 +295,21 @@ function createBaseIdentifiedClientState(): IdentifiedClientState {
  */
 export const IdentifiedClientState = {
   typeUrl: '/ibc.core.client.v1.IdentifiedClientState' as const,
+  aminoType: 'cosmos-sdk/IdentifiedClientState' as const,
+  is(o: any): o is IdentifiedClientState {
+    return (
+      o &&
+      (o.$typeUrl === IdentifiedClientState.typeUrl ||
+        typeof o.clientId === 'string')
+    );
+  },
+  isSDK(o: any): o is IdentifiedClientStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === IdentifiedClientState.typeUrl ||
+        typeof o.client_id === 'string')
+    );
+  },
   encode(
     message: IdentifiedClientState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -364,6 +384,7 @@ export const IdentifiedClientState = {
       value: IdentifiedClientState.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseConsensusStateWithHeight(): ConsensusStateWithHeight {
   return {
@@ -380,6 +401,20 @@ function createBaseConsensusStateWithHeight(): ConsensusStateWithHeight {
  */
 export const ConsensusStateWithHeight = {
   typeUrl: '/ibc.core.client.v1.ConsensusStateWithHeight' as const,
+  aminoType: 'cosmos-sdk/ConsensusStateWithHeight' as const,
+  is(o: any): o is ConsensusStateWithHeight {
+    return (
+      o &&
+      (o.$typeUrl === ConsensusStateWithHeight.typeUrl || Height.is(o.height))
+    );
+  },
+  isSDK(o: any): o is ConsensusStateWithHeightSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ConsensusStateWithHeight.typeUrl ||
+        Height.isSDK(o.height))
+    );
+  },
   encode(
     message: ConsensusStateWithHeight,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -466,6 +501,7 @@ export const ConsensusStateWithHeight = {
       value: ConsensusStateWithHeight.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseClientConsensusStates(): ClientConsensusStates {
   return {
@@ -482,6 +518,27 @@ function createBaseClientConsensusStates(): ClientConsensusStates {
  */
 export const ClientConsensusStates = {
   typeUrl: '/ibc.core.client.v1.ClientConsensusStates' as const,
+  aminoType: 'cosmos-sdk/ClientConsensusStates' as const,
+  is(o: any): o is ClientConsensusStates {
+    return (
+      o &&
+      (o.$typeUrl === ClientConsensusStates.typeUrl ||
+        (typeof o.clientId === 'string' &&
+          Array.isArray(o.consensusStates) &&
+          (!o.consensusStates.length ||
+            ConsensusStateWithHeight.is(o.consensusStates[0]))))
+    );
+  },
+  isSDK(o: any): o is ClientConsensusStatesSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ClientConsensusStates.typeUrl ||
+        (typeof o.client_id === 'string' &&
+          Array.isArray(o.consensus_states) &&
+          (!o.consensus_states.length ||
+            ConsensusStateWithHeight.isSDK(o.consensus_states[0]))))
+    );
+  },
   encode(
     message: ClientConsensusStates,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -563,6 +620,16 @@ export const ClientConsensusStates = {
       value: ClientConsensusStates.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        ClientConsensusStates.typeUrl,
+      )
+    ) {
+      return;
+    }
+    ConsensusStateWithHeight.registerTypeUrl();
+  },
 };
 function createBaseHeight(): Height {
   return {
@@ -587,6 +654,23 @@ function createBaseHeight(): Height {
  */
 export const Height = {
   typeUrl: '/ibc.core.client.v1.Height' as const,
+  aminoType: 'cosmos-sdk/Height' as const,
+  is(o: any): o is Height {
+    return (
+      o &&
+      (o.$typeUrl === Height.typeUrl ||
+        (typeof o.revisionNumber === 'bigint' &&
+          typeof o.revisionHeight === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is HeightSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Height.typeUrl ||
+        (typeof o.revision_number === 'bigint' &&
+          typeof o.revision_height === 'bigint'))
+    );
+  },
   encode(
     message: Height,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -662,6 +746,7 @@ export const Height = {
       value: Height.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseParams(): Params {
   return {
@@ -676,6 +761,25 @@ function createBaseParams(): Params {
  */
 export const Params = {
   typeUrl: '/ibc.core.client.v1.Params' as const,
+  aminoType: 'cosmos-sdk/Params' as const,
+  is(o: any): o is Params {
+    return (
+      o &&
+      (o.$typeUrl === Params.typeUrl ||
+        (Array.isArray(o.allowedClients) &&
+          (!o.allowedClients.length ||
+            typeof o.allowedClients[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is ParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Params.typeUrl ||
+        (Array.isArray(o.allowed_clients) &&
+          (!o.allowed_clients.length ||
+            typeof o.allowed_clients[0] === 'string')))
+    );
+  },
   encode(
     message: Params,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -736,9 +840,11 @@ export const Params = {
       value: Params.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseClientUpdateProposal(): ClientUpdateProposal {
   return {
+    $typeUrl: '/ibc.core.client.v1.ClientUpdateProposal',
     title: '',
     description: '',
     subjectClientId: '',
@@ -759,6 +865,27 @@ function createBaseClientUpdateProposal(): ClientUpdateProposal {
  */
 export const ClientUpdateProposal = {
   typeUrl: '/ibc.core.client.v1.ClientUpdateProposal' as const,
+  aminoType: 'cosmos-sdk/ClientUpdateProposal' as const,
+  is(o: any): o is ClientUpdateProposal {
+    return (
+      o &&
+      (o.$typeUrl === ClientUpdateProposal.typeUrl ||
+        (typeof o.title === 'string' &&
+          typeof o.description === 'string' &&
+          typeof o.subjectClientId === 'string' &&
+          typeof o.substituteClientId === 'string'))
+    );
+  },
+  isSDK(o: any): o is ClientUpdateProposalSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ClientUpdateProposal.typeUrl ||
+        (typeof o.title === 'string' &&
+          typeof o.description === 'string' &&
+          typeof o.subject_client_id === 'string' &&
+          typeof o.substitute_client_id === 'string'))
+    );
+  },
   encode(
     message: ClientUpdateProposal,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -850,9 +977,27 @@ export const ClientUpdateProposal = {
       value: ClientUpdateProposal.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        ClientUpdateProposal.typeUrl,
+      )
+    ) {
+      return;
+    }
+    GlobalDecoderRegistry.register(
+      ClientUpdateProposal.typeUrl,
+      ClientUpdateProposal,
+    );
+    GlobalDecoderRegistry.registerAminoProtoMapping(
+      ClientUpdateProposal.aminoType,
+      ClientUpdateProposal.typeUrl,
+    );
+  },
 };
 function createBaseUpgradeProposal(): UpgradeProposal {
   return {
+    $typeUrl: '/ibc.core.client.v1.UpgradeProposal',
     title: '',
     description: '',
     plan: Plan.fromPartial({}),
@@ -871,6 +1016,25 @@ function createBaseUpgradeProposal(): UpgradeProposal {
  */
 export const UpgradeProposal = {
   typeUrl: '/ibc.core.client.v1.UpgradeProposal' as const,
+  aminoType: 'cosmos-sdk/UpgradeProposal' as const,
+  is(o: any): o is UpgradeProposal {
+    return (
+      o &&
+      (o.$typeUrl === UpgradeProposal.typeUrl ||
+        (typeof o.title === 'string' &&
+          typeof o.description === 'string' &&
+          Plan.is(o.plan)))
+    );
+  },
+  isSDK(o: any): o is UpgradeProposalSDKType {
+    return (
+      o &&
+      (o.$typeUrl === UpgradeProposal.typeUrl ||
+        (typeof o.title === 'string' &&
+          typeof o.description === 'string' &&
+          Plan.isSDK(o.plan)))
+    );
+  },
   encode(
     message: UpgradeProposal,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -968,5 +1132,17 @@ export const UpgradeProposal = {
       typeUrl: '/ibc.core.client.v1.UpgradeProposal',
       value: UpgradeProposal.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(UpgradeProposal.typeUrl)
+    ) {
+      return;
+    }
+    GlobalDecoderRegistry.register(UpgradeProposal.typeUrl, UpgradeProposal);
+    GlobalDecoderRegistry.registerAminoProtoMapping(
+      UpgradeProposal.aminoType,
+      UpgradeProposal.typeUrl,
+    );
   },
 };

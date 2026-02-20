@@ -75,6 +75,27 @@ function createBaseMultiSignature(): MultiSignature {
  */
 export const MultiSignature = {
   typeUrl: '/cosmos.crypto.multisig.v1beta1.MultiSignature' as const,
+  aminoType: 'cosmos-sdk/MultiSignature' as const,
+  is(o: any): o is MultiSignature {
+    return (
+      o &&
+      (o.$typeUrl === MultiSignature.typeUrl ||
+        (Array.isArray(o.signatures) &&
+          (!o.signatures.length ||
+            o.signatures[0] instanceof Uint8Array ||
+            typeof o.signatures[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is MultiSignatureSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MultiSignature.typeUrl ||
+        (Array.isArray(o.signatures) &&
+          (!o.signatures.length ||
+            o.signatures[0] instanceof Uint8Array ||
+            typeof o.signatures[0] === 'string')))
+    );
+  },
   encode(
     message: MultiSignature,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -137,6 +158,7 @@ export const MultiSignature = {
       value: MultiSignature.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseCompactBitArray(): CompactBitArray {
   return {
@@ -155,6 +177,23 @@ function createBaseCompactBitArray(): CompactBitArray {
  */
 export const CompactBitArray = {
   typeUrl: '/cosmos.crypto.multisig.v1beta1.CompactBitArray' as const,
+  aminoType: 'cosmos-sdk/CompactBitArray' as const,
+  is(o: any): o is CompactBitArray {
+    return (
+      o &&
+      (o.$typeUrl === CompactBitArray.typeUrl ||
+        (typeof o.extraBitsStored === 'number' &&
+          (o.elems instanceof Uint8Array || typeof o.elems === 'string')))
+    );
+  },
+  isSDK(o: any): o is CompactBitArraySDKType {
+    return (
+      o &&
+      (o.$typeUrl === CompactBitArray.typeUrl ||
+        (typeof o.extra_bits_stored === 'number' &&
+          (o.elems instanceof Uint8Array || typeof o.elems === 'string')))
+    );
+  },
   encode(
     message: CompactBitArray,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -226,4 +265,5 @@ export const CompactBitArray = {
       value: CompactBitArray.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

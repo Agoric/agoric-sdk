@@ -12,6 +12,7 @@ import {
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../../registry.js';
 /**
  * EventCreateGroup is an event emitted when a group is created.
  * @name EventCreateGroup
@@ -330,6 +331,20 @@ function createBaseEventCreateGroup(): EventCreateGroup {
  */
 export const EventCreateGroup = {
   typeUrl: '/cosmos.group.v1.EventCreateGroup' as const,
+  aminoType: 'cosmos-sdk/EventCreateGroup' as const,
+  is(o: any): o is EventCreateGroup {
+    return (
+      o &&
+      (o.$typeUrl === EventCreateGroup.typeUrl || typeof o.groupId === 'bigint')
+    );
+  },
+  isSDK(o: any): o is EventCreateGroupSDKType {
+    return (
+      o &&
+      (o.$typeUrl === EventCreateGroup.typeUrl ||
+        typeof o.group_id === 'bigint')
+    );
+  },
   encode(
     message: EventCreateGroup,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -390,6 +405,7 @@ export const EventCreateGroup = {
       value: EventCreateGroup.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseEventUpdateGroup(): EventUpdateGroup {
   return {
@@ -404,6 +420,20 @@ function createBaseEventUpdateGroup(): EventUpdateGroup {
  */
 export const EventUpdateGroup = {
   typeUrl: '/cosmos.group.v1.EventUpdateGroup' as const,
+  aminoType: 'cosmos-sdk/EventUpdateGroup' as const,
+  is(o: any): o is EventUpdateGroup {
+    return (
+      o &&
+      (o.$typeUrl === EventUpdateGroup.typeUrl || typeof o.groupId === 'bigint')
+    );
+  },
+  isSDK(o: any): o is EventUpdateGroupSDKType {
+    return (
+      o &&
+      (o.$typeUrl === EventUpdateGroup.typeUrl ||
+        typeof o.group_id === 'bigint')
+    );
+  },
   encode(
     message: EventUpdateGroup,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -464,6 +494,7 @@ export const EventUpdateGroup = {
       value: EventUpdateGroup.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseEventCreateGroupPolicy(): EventCreateGroupPolicy {
   return {
@@ -478,6 +509,21 @@ function createBaseEventCreateGroupPolicy(): EventCreateGroupPolicy {
  */
 export const EventCreateGroupPolicy = {
   typeUrl: '/cosmos.group.v1.EventCreateGroupPolicy' as const,
+  aminoType: 'cosmos-sdk/EventCreateGroupPolicy' as const,
+  is(o: any): o is EventCreateGroupPolicy {
+    return (
+      o &&
+      (o.$typeUrl === EventCreateGroupPolicy.typeUrl ||
+        typeof o.address === 'string')
+    );
+  },
+  isSDK(o: any): o is EventCreateGroupPolicySDKType {
+    return (
+      o &&
+      (o.$typeUrl === EventCreateGroupPolicy.typeUrl ||
+        typeof o.address === 'string')
+    );
+  },
   encode(
     message: EventCreateGroupPolicy,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -537,6 +583,7 @@ export const EventCreateGroupPolicy = {
       value: EventCreateGroupPolicy.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseEventUpdateGroupPolicy(): EventUpdateGroupPolicy {
   return {
@@ -551,6 +598,21 @@ function createBaseEventUpdateGroupPolicy(): EventUpdateGroupPolicy {
  */
 export const EventUpdateGroupPolicy = {
   typeUrl: '/cosmos.group.v1.EventUpdateGroupPolicy' as const,
+  aminoType: 'cosmos-sdk/EventUpdateGroupPolicy' as const,
+  is(o: any): o is EventUpdateGroupPolicy {
+    return (
+      o &&
+      (o.$typeUrl === EventUpdateGroupPolicy.typeUrl ||
+        typeof o.address === 'string')
+    );
+  },
+  isSDK(o: any): o is EventUpdateGroupPolicySDKType {
+    return (
+      o &&
+      (o.$typeUrl === EventUpdateGroupPolicy.typeUrl ||
+        typeof o.address === 'string')
+    );
+  },
   encode(
     message: EventUpdateGroupPolicy,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -610,6 +672,7 @@ export const EventUpdateGroupPolicy = {
       value: EventUpdateGroupPolicy.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseEventSubmitProposal(): EventSubmitProposal {
   return {
@@ -624,6 +687,21 @@ function createBaseEventSubmitProposal(): EventSubmitProposal {
  */
 export const EventSubmitProposal = {
   typeUrl: '/cosmos.group.v1.EventSubmitProposal' as const,
+  aminoType: 'cosmos-sdk/EventSubmitProposal' as const,
+  is(o: any): o is EventSubmitProposal {
+    return (
+      o &&
+      (o.$typeUrl === EventSubmitProposal.typeUrl ||
+        typeof o.proposalId === 'bigint')
+    );
+  },
+  isSDK(o: any): o is EventSubmitProposalSDKType {
+    return (
+      o &&
+      (o.$typeUrl === EventSubmitProposal.typeUrl ||
+        typeof o.proposal_id === 'bigint')
+    );
+  },
   encode(
     message: EventSubmitProposal,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -687,6 +765,7 @@ export const EventSubmitProposal = {
       value: EventSubmitProposal.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseEventWithdrawProposal(): EventWithdrawProposal {
   return {
@@ -701,6 +780,21 @@ function createBaseEventWithdrawProposal(): EventWithdrawProposal {
  */
 export const EventWithdrawProposal = {
   typeUrl: '/cosmos.group.v1.EventWithdrawProposal' as const,
+  aminoType: 'cosmos-sdk/EventWithdrawProposal' as const,
+  is(o: any): o is EventWithdrawProposal {
+    return (
+      o &&
+      (o.$typeUrl === EventWithdrawProposal.typeUrl ||
+        typeof o.proposalId === 'bigint')
+    );
+  },
+  isSDK(o: any): o is EventWithdrawProposalSDKType {
+    return (
+      o &&
+      (o.$typeUrl === EventWithdrawProposal.typeUrl ||
+        typeof o.proposal_id === 'bigint')
+    );
+  },
   encode(
     message: EventWithdrawProposal,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -764,6 +858,7 @@ export const EventWithdrawProposal = {
       value: EventWithdrawProposal.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseEventVote(): EventVote {
   return {
@@ -778,6 +873,19 @@ function createBaseEventVote(): EventVote {
  */
 export const EventVote = {
   typeUrl: '/cosmos.group.v1.EventVote' as const,
+  aminoType: 'cosmos-sdk/EventVote' as const,
+  is(o: any): o is EventVote {
+    return (
+      o &&
+      (o.$typeUrl === EventVote.typeUrl || typeof o.proposalId === 'bigint')
+    );
+  },
+  isSDK(o: any): o is EventVoteSDKType {
+    return (
+      o &&
+      (o.$typeUrl === EventVote.typeUrl || typeof o.proposal_id === 'bigint')
+    );
+  },
   encode(
     message: EventVote,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -838,6 +946,7 @@ export const EventVote = {
       value: EventVote.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseEventExec(): EventExec {
   return {
@@ -854,6 +963,25 @@ function createBaseEventExec(): EventExec {
  */
 export const EventExec = {
   typeUrl: '/cosmos.group.v1.EventExec' as const,
+  aminoType: 'cosmos-sdk/EventExec' as const,
+  is(o: any): o is EventExec {
+    return (
+      o &&
+      (o.$typeUrl === EventExec.typeUrl ||
+        (typeof o.proposalId === 'bigint' &&
+          isSet(o.result) &&
+          typeof o.logs === 'string'))
+    );
+  },
+  isSDK(o: any): o is EventExecSDKType {
+    return (
+      o &&
+      (o.$typeUrl === EventExec.typeUrl ||
+        (typeof o.proposal_id === 'bigint' &&
+          isSet(o.result) &&
+          typeof o.logs === 'string'))
+    );
+  },
   encode(
     message: EventExec,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -935,6 +1063,7 @@ export const EventExec = {
       value: EventExec.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseEventLeaveGroup(): EventLeaveGroup {
   return {
@@ -950,6 +1079,21 @@ function createBaseEventLeaveGroup(): EventLeaveGroup {
  */
 export const EventLeaveGroup = {
   typeUrl: '/cosmos.group.v1.EventLeaveGroup' as const,
+  aminoType: 'cosmos-sdk/EventLeaveGroup' as const,
+  is(o: any): o is EventLeaveGroup {
+    return (
+      o &&
+      (o.$typeUrl === EventLeaveGroup.typeUrl ||
+        (typeof o.groupId === 'bigint' && typeof o.address === 'string'))
+    );
+  },
+  isSDK(o: any): o is EventLeaveGroupSDKType {
+    return (
+      o &&
+      (o.$typeUrl === EventLeaveGroup.typeUrl ||
+        (typeof o.group_id === 'bigint' && typeof o.address === 'string'))
+    );
+  },
   encode(
     message: EventLeaveGroup,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1019,6 +1163,7 @@ export const EventLeaveGroup = {
       value: EventLeaveGroup.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseEventProposalPruned(): EventProposalPruned {
   return {
@@ -1035,6 +1180,21 @@ function createBaseEventProposalPruned(): EventProposalPruned {
  */
 export const EventProposalPruned = {
   typeUrl: '/cosmos.group.v1.EventProposalPruned' as const,
+  aminoType: 'cosmos-sdk/EventProposalPruned' as const,
+  is(o: any): o is EventProposalPruned {
+    return (
+      o &&
+      (o.$typeUrl === EventProposalPruned.typeUrl ||
+        (typeof o.proposalId === 'bigint' && isSet(o.status)))
+    );
+  },
+  isSDK(o: any): o is EventProposalPrunedSDKType {
+    return (
+      o &&
+      (o.$typeUrl === EventProposalPruned.typeUrl ||
+        (typeof o.proposal_id === 'bigint' && isSet(o.status)))
+    );
+  },
   encode(
     message: EventProposalPruned,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1128,6 +1288,16 @@ export const EventProposalPruned = {
       value: EventProposalPruned.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        EventProposalPruned.typeUrl,
+      )
+    ) {
+      return;
+    }
+    TallyResult.registerTypeUrl();
+  },
 };
 function createBaseEventTallyError(): EventTallyError {
   return {
@@ -1143,6 +1313,23 @@ function createBaseEventTallyError(): EventTallyError {
  */
 export const EventTallyError = {
   typeUrl: '/cosmos.group.v1.EventTallyError' as const,
+  aminoType: 'cosmos-sdk/EventTallyError' as const,
+  is(o: any): o is EventTallyError {
+    return (
+      o &&
+      (o.$typeUrl === EventTallyError.typeUrl ||
+        (typeof o.proposalId === 'bigint' &&
+          typeof o.errorMessage === 'string'))
+    );
+  },
+  isSDK(o: any): o is EventTallyErrorSDKType {
+    return (
+      o &&
+      (o.$typeUrl === EventTallyError.typeUrl ||
+        (typeof o.proposal_id === 'bigint' &&
+          typeof o.error_message === 'string'))
+    );
+  },
   encode(
     message: EventTallyError,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1215,4 +1402,5 @@ export const EventTallyError = {
       value: EventTallyError.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

@@ -1,6 +1,7 @@
 //@ts-nocheck
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { type JsonSafe } from '../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../registry.js';
 import { isSet } from '../../helpers.js';
 /**
  * The initial or exported state.
@@ -67,6 +68,21 @@ function createBaseGenesisState(): GenesisState {
  */
 export const GenesisState = {
   typeUrl: '/agoric.vstorage.GenesisState' as const,
+  is(o: any): o is GenesisState {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Array.isArray(o.data) && (!o.data.length || DataEntry.is(o.data[0]))))
+    );
+  },
+  isSDK(o: any): o is GenesisStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Array.isArray(o.data) &&
+          (!o.data.length || DataEntry.isSDK(o.data[0]))))
+    );
+  },
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -127,6 +143,12 @@ export const GenesisState = {
       value: GenesisState.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(GenesisState.typeUrl)) {
+      return;
+    }
+    DataEntry.registerTypeUrl();
+  },
 };
 function createBaseDataEntry(): DataEntry {
   return {
@@ -143,6 +165,20 @@ function createBaseDataEntry(): DataEntry {
  */
 export const DataEntry = {
   typeUrl: '/agoric.vstorage.DataEntry' as const,
+  is(o: any): o is DataEntry {
+    return (
+      o &&
+      (o.$typeUrl === DataEntry.typeUrl ||
+        (typeof o.path === 'string' && typeof o.value === 'string'))
+    );
+  },
+  isSDK(o: any): o is DataEntrySDKType {
+    return (
+      o &&
+      (o.$typeUrl === DataEntry.typeUrl ||
+        (typeof o.path === 'string' && typeof o.value === 'string'))
+    );
+  },
   encode(
     message: DataEntry,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -206,4 +242,5 @@ export const DataEntry = {
       value: DataEntry.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

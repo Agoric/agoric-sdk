@@ -34,6 +34,7 @@ export const getConstitution = buildQuery<
   decode: QueryConstitutionResponse.decode,
   service: 'cosmos.gov.v1.Query',
   method: 'Constitution',
+  deps: [QueryConstitutionRequest, QueryConstitutionResponse],
 });
 /**
  * Proposal queries proposal details based on ProposalID.
@@ -49,6 +50,7 @@ export const getProposal = buildQuery<
   decode: QueryProposalResponse.decode,
   service: 'cosmos.gov.v1.Query',
   method: 'Proposal',
+  deps: [QueryProposalRequest, QueryProposalResponse],
 });
 /**
  * Proposals queries all proposals based on given status.
@@ -64,6 +66,7 @@ export const getProposals = buildQuery<
   decode: QueryProposalsResponse.decode,
   service: 'cosmos.gov.v1.Query',
   method: 'Proposals',
+  deps: [QueryProposalsRequest, QueryProposalsResponse],
 });
 /**
  * Vote queries voted information based on proposalID, voterAddr.
@@ -76,6 +79,7 @@ export const getVote = buildQuery<QueryVoteRequest, QueryVoteResponse>({
   decode: QueryVoteResponse.decode,
   service: 'cosmos.gov.v1.Query',
   method: 'Vote',
+  deps: [QueryVoteRequest, QueryVoteResponse],
 });
 /**
  * Votes queries votes of a given proposal.
@@ -88,6 +92,7 @@ export const getVotes = buildQuery<QueryVotesRequest, QueryVotesResponse>({
   decode: QueryVotesResponse.decode,
   service: 'cosmos.gov.v1.Query',
   method: 'Votes',
+  deps: [QueryVotesRequest, QueryVotesResponse],
 });
 /**
  * Params queries all parameters of the gov module.
@@ -100,6 +105,7 @@ export const getParams = buildQuery<QueryParamsRequest, QueryParamsResponse>({
   decode: QueryParamsResponse.decode,
   service: 'cosmos.gov.v1.Query',
   method: 'Params',
+  deps: [QueryParamsRequest, QueryParamsResponse],
 });
 /**
  * Deposit queries single deposit information based on proposalID, depositAddr.
@@ -113,6 +119,7 @@ export const getDeposit = buildQuery<QueryDepositRequest, QueryDepositResponse>(
     decode: QueryDepositResponse.decode,
     service: 'cosmos.gov.v1.Query',
     method: 'Deposit',
+    deps: [QueryDepositRequest, QueryDepositResponse],
   },
 );
 /**
@@ -129,6 +136,7 @@ export const getDeposits = buildQuery<
   decode: QueryDepositsResponse.decode,
   service: 'cosmos.gov.v1.Query',
   method: 'Deposits',
+  deps: [QueryDepositsRequest, QueryDepositsResponse],
 });
 /**
  * TallyResult queries the tally of a proposal vote.
@@ -144,4 +152,5 @@ export const getTallyResult = buildQuery<
   decode: QueryTallyResultResponse.decode,
   service: 'cosmos.gov.v1.Query',
   method: 'TallyResult',
+  deps: [QueryTallyResultRequest, QueryTallyResultResponse],
 });

@@ -8,6 +8,7 @@ import { isSet } from '../../../../helpers.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
 import { type JsonSafe } from '../../../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../../../registry.js';
 /**
  * MerkleRoot defines a merkle root hash.
  * In the Cosmos SDK, the AppHash of a block header becomes the root.
@@ -128,6 +129,23 @@ function createBaseMerkleRoot(): MerkleRoot {
  */
 export const MerkleRoot = {
   typeUrl: '/ibc.core.commitment.v1.MerkleRoot' as const,
+  aminoType: 'cosmos-sdk/MerkleRoot' as const,
+  is(o: any): o is MerkleRoot {
+    return (
+      o &&
+      (o.$typeUrl === MerkleRoot.typeUrl ||
+        o.hash instanceof Uint8Array ||
+        typeof o.hash === 'string')
+    );
+  },
+  isSDK(o: any): o is MerkleRootSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MerkleRoot.typeUrl ||
+        o.hash instanceof Uint8Array ||
+        typeof o.hash === 'string')
+    );
+  },
   encode(
     message: MerkleRoot,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -187,6 +205,7 @@ export const MerkleRoot = {
       value: MerkleRoot.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMerklePrefix(): MerklePrefix {
   return {
@@ -203,6 +222,23 @@ function createBaseMerklePrefix(): MerklePrefix {
  */
 export const MerklePrefix = {
   typeUrl: '/ibc.core.commitment.v1.MerklePrefix' as const,
+  aminoType: 'cosmos-sdk/MerklePrefix' as const,
+  is(o: any): o is MerklePrefix {
+    return (
+      o &&
+      (o.$typeUrl === MerklePrefix.typeUrl ||
+        o.keyPrefix instanceof Uint8Array ||
+        typeof o.keyPrefix === 'string')
+    );
+  },
+  isSDK(o: any): o is MerklePrefixSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MerklePrefix.typeUrl ||
+        o.key_prefix instanceof Uint8Array ||
+        typeof o.key_prefix === 'string')
+    );
+  },
   encode(
     message: MerklePrefix,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -262,6 +298,7 @@ export const MerklePrefix = {
       value: MerklePrefix.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMerklePath(): MerklePath {
   return {
@@ -278,6 +315,23 @@ function createBaseMerklePath(): MerklePath {
  */
 export const MerklePath = {
   typeUrl: '/ibc.core.commitment.v1.MerklePath' as const,
+  aminoType: 'cosmos-sdk/MerklePath' as const,
+  is(o: any): o is MerklePath {
+    return (
+      o &&
+      (o.$typeUrl === MerklePath.typeUrl ||
+        (Array.isArray(o.keyPath) &&
+          (!o.keyPath.length || typeof o.keyPath[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is MerklePathSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MerklePath.typeUrl ||
+        (Array.isArray(o.key_path) &&
+          (!o.key_path.length || typeof o.key_path[0] === 'string')))
+    );
+  },
   encode(
     message: MerklePath,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -338,6 +392,7 @@ export const MerklePath = {
       value: MerklePath.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMerkleProof(): MerkleProof {
   return {
@@ -356,6 +411,23 @@ function createBaseMerkleProof(): MerkleProof {
  */
 export const MerkleProof = {
   typeUrl: '/ibc.core.commitment.v1.MerkleProof' as const,
+  aminoType: 'cosmos-sdk/MerkleProof' as const,
+  is(o: any): o is MerkleProof {
+    return (
+      o &&
+      (o.$typeUrl === MerkleProof.typeUrl ||
+        (Array.isArray(o.proofs) &&
+          (!o.proofs.length || CommitmentProof.is(o.proofs[0]))))
+    );
+  },
+  isSDK(o: any): o is MerkleProofSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MerkleProof.typeUrl ||
+        (Array.isArray(o.proofs) &&
+          (!o.proofs.length || CommitmentProof.isSDK(o.proofs[0]))))
+    );
+  },
   encode(
     message: MerkleProof,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -418,5 +490,11 @@ export const MerkleProof = {
       typeUrl: '/ibc.core.commitment.v1.MerkleProof',
       value: MerkleProof.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(MerkleProof.typeUrl)) {
+      return;
+    }
+    CommitmentProof.registerTypeUrl();
   },
 };

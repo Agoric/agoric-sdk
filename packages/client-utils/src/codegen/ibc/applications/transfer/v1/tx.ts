@@ -10,6 +10,7 @@ import {
   type ParamsSDKType,
 } from '../../../core/client/v1/client.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
+import { GlobalDecoderRegistry } from '../../../../registry.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
 /**
@@ -177,6 +178,35 @@ function createBaseMsgTransfer(): MsgTransfer {
  */
 export const MsgTransfer = {
   typeUrl: '/ibc.applications.transfer.v1.MsgTransfer' as const,
+  aminoType: 'cosmos-sdk/MsgTransfer' as const,
+  is(o: any): o is MsgTransfer {
+    return (
+      o &&
+      (o.$typeUrl === MsgTransfer.typeUrl ||
+        (typeof o.sourcePort === 'string' &&
+          typeof o.sourceChannel === 'string' &&
+          Coin.is(o.token) &&
+          typeof o.sender === 'string' &&
+          typeof o.receiver === 'string' &&
+          Height.is(o.timeoutHeight) &&
+          typeof o.timeoutTimestamp === 'bigint' &&
+          typeof o.memo === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgTransferSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgTransfer.typeUrl ||
+        (typeof o.source_port === 'string' &&
+          typeof o.source_channel === 'string' &&
+          Coin.isSDK(o.token) &&
+          typeof o.sender === 'string' &&
+          typeof o.receiver === 'string' &&
+          Height.isSDK(o.timeout_height) &&
+          typeof o.timeout_timestamp === 'bigint' &&
+          typeof o.memo === 'string'))
+    );
+  },
   encode(
     message: MsgTransfer,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -317,6 +347,13 @@ export const MsgTransfer = {
       value: MsgTransfer.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(MsgTransfer.typeUrl)) {
+      return;
+    }
+    Coin.registerTypeUrl();
+    Height.registerTypeUrl();
+  },
 };
 function createBaseMsgTransferResponse(): MsgTransferResponse {
   return {
@@ -331,6 +368,21 @@ function createBaseMsgTransferResponse(): MsgTransferResponse {
  */
 export const MsgTransferResponse = {
   typeUrl: '/ibc.applications.transfer.v1.MsgTransferResponse' as const,
+  aminoType: 'cosmos-sdk/MsgTransferResponse' as const,
+  is(o: any): o is MsgTransferResponse {
+    return (
+      o &&
+      (o.$typeUrl === MsgTransferResponse.typeUrl ||
+        typeof o.sequence === 'bigint')
+    );
+  },
+  isSDK(o: any): o is MsgTransferResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgTransferResponse.typeUrl ||
+        typeof o.sequence === 'bigint')
+    );
+  },
   encode(
     message: MsgTransferResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -394,6 +446,7 @@ export const MsgTransferResponse = {
       value: MsgTransferResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgUpdateParams(): MsgUpdateParams {
   return {
@@ -409,6 +462,21 @@ function createBaseMsgUpdateParams(): MsgUpdateParams {
  */
 export const MsgUpdateParams = {
   typeUrl: '/ibc.applications.transfer.v1.MsgUpdateParams' as const,
+  aminoType: 'cosmos-sdk/MsgUpdateParams' as const,
+  is(o: any): o is MsgUpdateParams {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpdateParams.typeUrl ||
+        (typeof o.signer === 'string' && Params.is(o.params)))
+    );
+  },
+  isSDK(o: any): o is MsgUpdateParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpdateParams.typeUrl ||
+        (typeof o.signer === 'string' && Params.isSDK(o.params)))
+    );
+  },
   encode(
     message: MsgUpdateParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -476,6 +544,14 @@ export const MsgUpdateParams = {
       value: MsgUpdateParams.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(MsgUpdateParams.typeUrl)
+    ) {
+      return;
+    }
+    Params.registerTypeUrl();
+  },
 };
 function createBaseMsgUpdateParamsResponse(): MsgUpdateParamsResponse {
   return {};
@@ -489,6 +565,13 @@ function createBaseMsgUpdateParamsResponse(): MsgUpdateParamsResponse {
  */
 export const MsgUpdateParamsResponse = {
   typeUrl: '/ibc.applications.transfer.v1.MsgUpdateParamsResponse' as const,
+  aminoType: 'cosmos-sdk/MsgUpdateParamsResponse' as const,
+  is(o: any): o is MsgUpdateParamsResponse {
+    return o && o.$typeUrl === MsgUpdateParamsResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgUpdateParamsResponseSDKType {
+    return o && o.$typeUrl === MsgUpdateParamsResponse.typeUrl;
+  },
   encode(
     _: MsgUpdateParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -540,4 +623,5 @@ export const MsgUpdateParamsResponse = {
       value: MsgUpdateParamsResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

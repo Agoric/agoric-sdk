@@ -128,6 +128,21 @@ function createBaseCoin(): Coin {
  */
 export const Coin = {
   typeUrl: '/cosmos.base.v1beta1.Coin' as const,
+  aminoType: 'cosmos-sdk/Coin' as const,
+  is(o: any): o is Coin {
+    return (
+      o &&
+      (o.$typeUrl === Coin.typeUrl ||
+        (typeof o.denom === 'string' && typeof o.amount === 'string'))
+    );
+  },
+  isSDK(o: any): o is CoinSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Coin.typeUrl ||
+        (typeof o.denom === 'string' && typeof o.amount === 'string'))
+    );
+  },
   encode(
     message: Coin,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -191,6 +206,7 @@ export const Coin = {
       value: Coin.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseDecCoin(): DecCoin {
   return {
@@ -209,6 +225,21 @@ function createBaseDecCoin(): DecCoin {
  */
 export const DecCoin = {
   typeUrl: '/cosmos.base.v1beta1.DecCoin' as const,
+  aminoType: 'cosmos-sdk/DecCoin' as const,
+  is(o: any): o is DecCoin {
+    return (
+      o &&
+      (o.$typeUrl === DecCoin.typeUrl ||
+        (typeof o.denom === 'string' && typeof o.amount === 'string'))
+    );
+  },
+  isSDK(o: any): o is DecCoinSDKType {
+    return (
+      o &&
+      (o.$typeUrl === DecCoin.typeUrl ||
+        (typeof o.denom === 'string' && typeof o.amount === 'string'))
+    );
+  },
   encode(
     message: DecCoin,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -274,6 +305,7 @@ export const DecCoin = {
       value: DecCoin.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseIntProto(): IntProto {
   return {
@@ -289,6 +321,13 @@ function createBaseIntProto(): IntProto {
  */
 export const IntProto = {
   typeUrl: '/cosmos.base.v1beta1.IntProto' as const,
+  aminoType: 'cosmos-sdk/IntProto' as const,
+  is(o: any): o is IntProto {
+    return o && (o.$typeUrl === IntProto.typeUrl || typeof o.int === 'string');
+  },
+  isSDK(o: any): o is IntProtoSDKType {
+    return o && (o.$typeUrl === IntProto.typeUrl || typeof o.int === 'string');
+  },
   encode(
     message: IntProto,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -343,6 +382,7 @@ export const IntProto = {
       value: IntProto.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseDecProto(): DecProto {
   return {
@@ -358,6 +398,13 @@ function createBaseDecProto(): DecProto {
  */
 export const DecProto = {
   typeUrl: '/cosmos.base.v1beta1.DecProto' as const,
+  aminoType: 'cosmos-sdk/DecProto' as const,
+  is(o: any): o is DecProto {
+    return o && (o.$typeUrl === DecProto.typeUrl || typeof o.dec === 'string');
+  },
+  isSDK(o: any): o is DecProtoSDKType {
+    return o && (o.$typeUrl === DecProto.typeUrl || typeof o.dec === 'string');
+  },
   encode(
     message: DecProto,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -412,4 +459,5 @@ export const DecProto = {
       value: DecProto.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

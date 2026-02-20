@@ -8,6 +8,7 @@ import {
   type DurationSDKType,
 } from '../../google/protobuf/duration.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
+import { GlobalDecoderRegistry } from '../../registry.js';
 import { isSet, fromJsonTimestamp, fromTimestamp } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
 /**
@@ -82,6 +83,32 @@ function createBaseEpochInfo(): EpochInfo {
  */
 export const EpochInfo = {
   typeUrl: '/stride.epochs.EpochInfo' as const,
+  is(o: any): o is EpochInfo {
+    return (
+      o &&
+      (o.$typeUrl === EpochInfo.typeUrl ||
+        (typeof o.identifier === 'string' &&
+          Timestamp.is(o.startTime) &&
+          Duration.is(o.duration) &&
+          typeof o.currentEpoch === 'bigint' &&
+          Timestamp.is(o.currentEpochStartTime) &&
+          typeof o.epochCountingStarted === 'boolean' &&
+          typeof o.currentEpochStartHeight === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is EpochInfoSDKType {
+    return (
+      o &&
+      (o.$typeUrl === EpochInfo.typeUrl ||
+        (typeof o.identifier === 'string' &&
+          Timestamp.isSDK(o.start_time) &&
+          Duration.isSDK(o.duration) &&
+          typeof o.current_epoch === 'bigint' &&
+          Timestamp.isSDK(o.current_epoch_start_time) &&
+          typeof o.epoch_counting_started === 'boolean' &&
+          typeof o.current_epoch_start_height === 'bigint'))
+    );
+  },
   encode(
     message: EpochInfo,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -237,6 +264,7 @@ export const EpochInfo = {
       value: EpochInfo.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseGenesisState(): GenesisState {
   return {
@@ -251,6 +279,22 @@ function createBaseGenesisState(): GenesisState {
  */
 export const GenesisState = {
   typeUrl: '/stride.epochs.GenesisState' as const,
+  is(o: any): o is GenesisState {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Array.isArray(o.epochs) &&
+          (!o.epochs.length || EpochInfo.is(o.epochs[0]))))
+    );
+  },
+  isSDK(o: any): o is GenesisStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Array.isArray(o.epochs) &&
+          (!o.epochs.length || EpochInfo.isSDK(o.epochs[0]))))
+    );
+  },
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -312,5 +356,11 @@ export const GenesisState = {
       typeUrl: '/stride.epochs.GenesisState',
       value: GenesisState.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(GenesisState.typeUrl)) {
+      return;
+    }
+    EpochInfo.registerTypeUrl();
   },
 };

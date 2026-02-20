@@ -19,6 +19,7 @@ import {
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../../registry.js';
 /**
  * DelegatorWithdrawInfo is the address for where distributions rewards are
  * withdrawn to by default this struct is only used at genesis to feed in
@@ -343,6 +344,23 @@ function createBaseDelegatorWithdrawInfo(): DelegatorWithdrawInfo {
  */
 export const DelegatorWithdrawInfo = {
   typeUrl: '/cosmos.distribution.v1beta1.DelegatorWithdrawInfo' as const,
+  aminoType: 'cosmos-sdk/DelegatorWithdrawInfo' as const,
+  is(o: any): o is DelegatorWithdrawInfo {
+    return (
+      o &&
+      (o.$typeUrl === DelegatorWithdrawInfo.typeUrl ||
+        (typeof o.delegatorAddress === 'string' &&
+          typeof o.withdrawAddress === 'string'))
+    );
+  },
+  isSDK(o: any): o is DelegatorWithdrawInfoSDKType {
+    return (
+      o &&
+      (o.$typeUrl === DelegatorWithdrawInfo.typeUrl ||
+        (typeof o.delegator_address === 'string' &&
+          typeof o.withdraw_address === 'string'))
+    );
+  },
   encode(
     message: DelegatorWithdrawInfo,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -415,6 +433,7 @@ export const DelegatorWithdrawInfo = {
       value: DelegatorWithdrawInfo.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseValidatorOutstandingRewardsRecord(): ValidatorOutstandingRewardsRecord {
   return {
@@ -431,6 +450,27 @@ function createBaseValidatorOutstandingRewardsRecord(): ValidatorOutstandingRewa
 export const ValidatorOutstandingRewardsRecord = {
   typeUrl:
     '/cosmos.distribution.v1beta1.ValidatorOutstandingRewardsRecord' as const,
+  aminoType: 'cosmos-sdk/ValidatorOutstandingRewardsRecord' as const,
+  is(o: any): o is ValidatorOutstandingRewardsRecord {
+    return (
+      o &&
+      (o.$typeUrl === ValidatorOutstandingRewardsRecord.typeUrl ||
+        (typeof o.validatorAddress === 'string' &&
+          Array.isArray(o.outstandingRewards) &&
+          (!o.outstandingRewards.length ||
+            DecCoin.is(o.outstandingRewards[0]))))
+    );
+  },
+  isSDK(o: any): o is ValidatorOutstandingRewardsRecordSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ValidatorOutstandingRewardsRecord.typeUrl ||
+        (typeof o.validator_address === 'string' &&
+          Array.isArray(o.outstanding_rewards) &&
+          (!o.outstanding_rewards.length ||
+            DecCoin.isSDK(o.outstanding_rewards[0]))))
+    );
+  },
   encode(
     message: ValidatorOutstandingRewardsRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -519,6 +559,16 @@ export const ValidatorOutstandingRewardsRecord = {
       value: ValidatorOutstandingRewardsRecord.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        ValidatorOutstandingRewardsRecord.typeUrl,
+      )
+    ) {
+      return;
+    }
+    DecCoin.registerTypeUrl();
+  },
 };
 function createBaseValidatorAccumulatedCommissionRecord(): ValidatorAccumulatedCommissionRecord {
   return {
@@ -536,6 +586,23 @@ function createBaseValidatorAccumulatedCommissionRecord(): ValidatorAccumulatedC
 export const ValidatorAccumulatedCommissionRecord = {
   typeUrl:
     '/cosmos.distribution.v1beta1.ValidatorAccumulatedCommissionRecord' as const,
+  aminoType: 'cosmos-sdk/ValidatorAccumulatedCommissionRecord' as const,
+  is(o: any): o is ValidatorAccumulatedCommissionRecord {
+    return (
+      o &&
+      (o.$typeUrl === ValidatorAccumulatedCommissionRecord.typeUrl ||
+        (typeof o.validatorAddress === 'string' &&
+          ValidatorAccumulatedCommission.is(o.accumulated)))
+    );
+  },
+  isSDK(o: any): o is ValidatorAccumulatedCommissionRecordSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ValidatorAccumulatedCommissionRecord.typeUrl ||
+        (typeof o.validator_address === 'string' &&
+          ValidatorAccumulatedCommission.isSDK(o.accumulated)))
+    );
+  },
   encode(
     message: ValidatorAccumulatedCommissionRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -628,6 +695,16 @@ export const ValidatorAccumulatedCommissionRecord = {
       value: ValidatorAccumulatedCommissionRecord.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        ValidatorAccumulatedCommissionRecord.typeUrl,
+      )
+    ) {
+      return;
+    }
+    ValidatorAccumulatedCommission.registerTypeUrl();
+  },
 };
 function createBaseValidatorHistoricalRewardsRecord(): ValidatorHistoricalRewardsRecord {
   return {
@@ -646,6 +723,25 @@ function createBaseValidatorHistoricalRewardsRecord(): ValidatorHistoricalReward
 export const ValidatorHistoricalRewardsRecord = {
   typeUrl:
     '/cosmos.distribution.v1beta1.ValidatorHistoricalRewardsRecord' as const,
+  aminoType: 'cosmos-sdk/ValidatorHistoricalRewardsRecord' as const,
+  is(o: any): o is ValidatorHistoricalRewardsRecord {
+    return (
+      o &&
+      (o.$typeUrl === ValidatorHistoricalRewardsRecord.typeUrl ||
+        (typeof o.validatorAddress === 'string' &&
+          typeof o.period === 'bigint' &&
+          ValidatorHistoricalRewards.is(o.rewards)))
+    );
+  },
+  isSDK(o: any): o is ValidatorHistoricalRewardsRecordSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ValidatorHistoricalRewardsRecord.typeUrl ||
+        (typeof o.validator_address === 'string' &&
+          typeof o.period === 'bigint' &&
+          ValidatorHistoricalRewards.isSDK(o.rewards)))
+    );
+  },
   encode(
     message: ValidatorHistoricalRewardsRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -752,6 +848,16 @@ export const ValidatorHistoricalRewardsRecord = {
       value: ValidatorHistoricalRewardsRecord.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        ValidatorHistoricalRewardsRecord.typeUrl,
+      )
+    ) {
+      return;
+    }
+    ValidatorHistoricalRewards.registerTypeUrl();
+  },
 };
 function createBaseValidatorCurrentRewardsRecord(): ValidatorCurrentRewardsRecord {
   return {
@@ -768,6 +874,23 @@ function createBaseValidatorCurrentRewardsRecord(): ValidatorCurrentRewardsRecor
 export const ValidatorCurrentRewardsRecord = {
   typeUrl:
     '/cosmos.distribution.v1beta1.ValidatorCurrentRewardsRecord' as const,
+  aminoType: 'cosmos-sdk/ValidatorCurrentRewardsRecord' as const,
+  is(o: any): o is ValidatorCurrentRewardsRecord {
+    return (
+      o &&
+      (o.$typeUrl === ValidatorCurrentRewardsRecord.typeUrl ||
+        (typeof o.validatorAddress === 'string' &&
+          ValidatorCurrentRewards.is(o.rewards)))
+    );
+  },
+  isSDK(o: any): o is ValidatorCurrentRewardsRecordSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ValidatorCurrentRewardsRecord.typeUrl ||
+        (typeof o.validator_address === 'string' &&
+          ValidatorCurrentRewards.isSDK(o.rewards)))
+    );
+  },
   encode(
     message: ValidatorCurrentRewardsRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -859,6 +982,16 @@ export const ValidatorCurrentRewardsRecord = {
       value: ValidatorCurrentRewardsRecord.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        ValidatorCurrentRewardsRecord.typeUrl,
+      )
+    ) {
+      return;
+    }
+    ValidatorCurrentRewards.registerTypeUrl();
+  },
 };
 function createBaseDelegatorStartingInfoRecord(): DelegatorStartingInfoRecord {
   return {
@@ -875,6 +1008,25 @@ function createBaseDelegatorStartingInfoRecord(): DelegatorStartingInfoRecord {
  */
 export const DelegatorStartingInfoRecord = {
   typeUrl: '/cosmos.distribution.v1beta1.DelegatorStartingInfoRecord' as const,
+  aminoType: 'cosmos-sdk/DelegatorStartingInfoRecord' as const,
+  is(o: any): o is DelegatorStartingInfoRecord {
+    return (
+      o &&
+      (o.$typeUrl === DelegatorStartingInfoRecord.typeUrl ||
+        (typeof o.delegatorAddress === 'string' &&
+          typeof o.validatorAddress === 'string' &&
+          DelegatorStartingInfo.is(o.startingInfo)))
+    );
+  },
+  isSDK(o: any): o is DelegatorStartingInfoRecordSDKType {
+    return (
+      o &&
+      (o.$typeUrl === DelegatorStartingInfoRecord.typeUrl ||
+        (typeof o.delegator_address === 'string' &&
+          typeof o.validator_address === 'string' &&
+          DelegatorStartingInfo.isSDK(o.starting_info)))
+    );
+  },
   encode(
     message: DelegatorStartingInfoRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -978,6 +1130,16 @@ export const DelegatorStartingInfoRecord = {
       value: DelegatorStartingInfoRecord.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        DelegatorStartingInfoRecord.typeUrl,
+      )
+    ) {
+      return;
+    }
+    DelegatorStartingInfo.registerTypeUrl();
+  },
 };
 function createBaseValidatorSlashEventRecord(): ValidatorSlashEventRecord {
   return {
@@ -995,6 +1157,27 @@ function createBaseValidatorSlashEventRecord(): ValidatorSlashEventRecord {
  */
 export const ValidatorSlashEventRecord = {
   typeUrl: '/cosmos.distribution.v1beta1.ValidatorSlashEventRecord' as const,
+  aminoType: 'cosmos-sdk/ValidatorSlashEventRecord' as const,
+  is(o: any): o is ValidatorSlashEventRecord {
+    return (
+      o &&
+      (o.$typeUrl === ValidatorSlashEventRecord.typeUrl ||
+        (typeof o.validatorAddress === 'string' &&
+          typeof o.height === 'bigint' &&
+          typeof o.period === 'bigint' &&
+          ValidatorSlashEvent.is(o.validatorSlashEvent)))
+    );
+  },
+  isSDK(o: any): o is ValidatorSlashEventRecordSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ValidatorSlashEventRecord.typeUrl ||
+        (typeof o.validator_address === 'string' &&
+          typeof o.height === 'bigint' &&
+          typeof o.period === 'bigint' &&
+          ValidatorSlashEvent.isSDK(o.validator_slash_event)))
+    );
+  },
   encode(
     message: ValidatorSlashEventRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1117,6 +1300,16 @@ export const ValidatorSlashEventRecord = {
       value: ValidatorSlashEventRecord.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        ValidatorSlashEventRecord.typeUrl,
+      )
+    ) {
+      return;
+    }
+    ValidatorSlashEvent.registerTypeUrl();
+  },
 };
 function createBaseGenesisState(): GenesisState {
   return {
@@ -1140,6 +1333,79 @@ function createBaseGenesisState(): GenesisState {
  */
 export const GenesisState = {
   typeUrl: '/cosmos.distribution.v1beta1.GenesisState' as const,
+  aminoType: 'cosmos-sdk/GenesisState' as const,
+  is(o: any): o is GenesisState {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Params.is(o.params) &&
+          FeePool.is(o.feePool) &&
+          Array.isArray(o.delegatorWithdrawInfos) &&
+          (!o.delegatorWithdrawInfos.length ||
+            DelegatorWithdrawInfo.is(o.delegatorWithdrawInfos[0])) &&
+          typeof o.previousProposer === 'string' &&
+          Array.isArray(o.outstandingRewards) &&
+          (!o.outstandingRewards.length ||
+            ValidatorOutstandingRewardsRecord.is(o.outstandingRewards[0])) &&
+          Array.isArray(o.validatorAccumulatedCommissions) &&
+          (!o.validatorAccumulatedCommissions.length ||
+            ValidatorAccumulatedCommissionRecord.is(
+              o.validatorAccumulatedCommissions[0],
+            )) &&
+          Array.isArray(o.validatorHistoricalRewards) &&
+          (!o.validatorHistoricalRewards.length ||
+            ValidatorHistoricalRewardsRecord.is(
+              o.validatorHistoricalRewards[0],
+            )) &&
+          Array.isArray(o.validatorCurrentRewards) &&
+          (!o.validatorCurrentRewards.length ||
+            ValidatorCurrentRewardsRecord.is(o.validatorCurrentRewards[0])) &&
+          Array.isArray(o.delegatorStartingInfos) &&
+          (!o.delegatorStartingInfos.length ||
+            DelegatorStartingInfoRecord.is(o.delegatorStartingInfos[0])) &&
+          Array.isArray(o.validatorSlashEvents) &&
+          (!o.validatorSlashEvents.length ||
+            ValidatorSlashEventRecord.is(o.validatorSlashEvents[0]))))
+    );
+  },
+  isSDK(o: any): o is GenesisStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Params.isSDK(o.params) &&
+          FeePool.isSDK(o.fee_pool) &&
+          Array.isArray(o.delegator_withdraw_infos) &&
+          (!o.delegator_withdraw_infos.length ||
+            DelegatorWithdrawInfo.isSDK(o.delegator_withdraw_infos[0])) &&
+          typeof o.previous_proposer === 'string' &&
+          Array.isArray(o.outstanding_rewards) &&
+          (!o.outstanding_rewards.length ||
+            ValidatorOutstandingRewardsRecord.isSDK(
+              o.outstanding_rewards[0],
+            )) &&
+          Array.isArray(o.validator_accumulated_commissions) &&
+          (!o.validator_accumulated_commissions.length ||
+            ValidatorAccumulatedCommissionRecord.isSDK(
+              o.validator_accumulated_commissions[0],
+            )) &&
+          Array.isArray(o.validator_historical_rewards) &&
+          (!o.validator_historical_rewards.length ||
+            ValidatorHistoricalRewardsRecord.isSDK(
+              o.validator_historical_rewards[0],
+            )) &&
+          Array.isArray(o.validator_current_rewards) &&
+          (!o.validator_current_rewards.length ||
+            ValidatorCurrentRewardsRecord.isSDK(
+              o.validator_current_rewards[0],
+            )) &&
+          Array.isArray(o.delegator_starting_infos) &&
+          (!o.delegator_starting_infos.length ||
+            DelegatorStartingInfoRecord.isSDK(o.delegator_starting_infos[0])) &&
+          Array.isArray(o.validator_slash_events) &&
+          (!o.validator_slash_events.length ||
+            ValidatorSlashEventRecord.isSDK(o.validator_slash_events[0]))))
+    );
+  },
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1414,5 +1680,19 @@ export const GenesisState = {
       typeUrl: '/cosmos.distribution.v1beta1.GenesisState',
       value: GenesisState.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(GenesisState.typeUrl)) {
+      return;
+    }
+    Params.registerTypeUrl();
+    FeePool.registerTypeUrl();
+    DelegatorWithdrawInfo.registerTypeUrl();
+    ValidatorOutstandingRewardsRecord.registerTypeUrl();
+    ValidatorAccumulatedCommissionRecord.registerTypeUrl();
+    ValidatorHistoricalRewardsRecord.registerTypeUrl();
+    ValidatorCurrentRewardsRecord.registerTypeUrl();
+    DelegatorStartingInfoRecord.registerTypeUrl();
+    ValidatorSlashEventRecord.registerTypeUrl();
   },
 };

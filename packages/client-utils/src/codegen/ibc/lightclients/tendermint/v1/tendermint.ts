@@ -25,6 +25,7 @@ import {
   type ValidatorSetSDKType,
 } from '../../../../tendermint/types/validator.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
+import { GlobalDecoderRegistry } from '../../../../registry.js';
 import {
   isSet,
   fromJsonTimestamp,
@@ -287,6 +288,45 @@ function createBaseClientState(): ClientState {
  */
 export const ClientState = {
   typeUrl: '/ibc.lightclients.tendermint.v1.ClientState' as const,
+  aminoType: 'cosmos-sdk/ClientState' as const,
+  is(o: any): o is ClientState {
+    return (
+      o &&
+      (o.$typeUrl === ClientState.typeUrl ||
+        (typeof o.chainId === 'string' &&
+          Fraction.is(o.trustLevel) &&
+          Duration.is(o.trustingPeriod) &&
+          Duration.is(o.unbondingPeriod) &&
+          Duration.is(o.maxClockDrift) &&
+          Height.is(o.frozenHeight) &&
+          Height.is(o.latestHeight) &&
+          Array.isArray(o.proofSpecs) &&
+          (!o.proofSpecs.length || ProofSpec.is(o.proofSpecs[0])) &&
+          Array.isArray(o.upgradePath) &&
+          (!o.upgradePath.length || typeof o.upgradePath[0] === 'string') &&
+          typeof o.allowUpdateAfterExpiry === 'boolean' &&
+          typeof o.allowUpdateAfterMisbehaviour === 'boolean'))
+    );
+  },
+  isSDK(o: any): o is ClientStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ClientState.typeUrl ||
+        (typeof o.chain_id === 'string' &&
+          Fraction.isSDK(o.trust_level) &&
+          Duration.isSDK(o.trusting_period) &&
+          Duration.isSDK(o.unbonding_period) &&
+          Duration.isSDK(o.max_clock_drift) &&
+          Height.isSDK(o.frozen_height) &&
+          Height.isSDK(o.latest_height) &&
+          Array.isArray(o.proof_specs) &&
+          (!o.proof_specs.length || ProofSpec.isSDK(o.proof_specs[0])) &&
+          Array.isArray(o.upgrade_path) &&
+          (!o.upgrade_path.length || typeof o.upgrade_path[0] === 'string') &&
+          typeof o.allow_update_after_expiry === 'boolean' &&
+          typeof o.allow_update_after_misbehaviour === 'boolean'))
+    );
+  },
   encode(
     message: ClientState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -507,6 +547,14 @@ export const ClientState = {
       value: ClientState.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(ClientState.typeUrl)) {
+      return;
+    }
+    Fraction.registerTypeUrl();
+    Height.registerTypeUrl();
+    ProofSpec.registerTypeUrl();
+  },
 };
 function createBaseConsensusState(): ConsensusState {
   return {
@@ -523,6 +571,27 @@ function createBaseConsensusState(): ConsensusState {
  */
 export const ConsensusState = {
   typeUrl: '/ibc.lightclients.tendermint.v1.ConsensusState' as const,
+  aminoType: 'cosmos-sdk/ConsensusState' as const,
+  is(o: any): o is ConsensusState {
+    return (
+      o &&
+      (o.$typeUrl === ConsensusState.typeUrl ||
+        (Timestamp.is(o.timestamp) &&
+          MerkleRoot.is(o.root) &&
+          (o.nextValidatorsHash instanceof Uint8Array ||
+            typeof o.nextValidatorsHash === 'string')))
+    );
+  },
+  isSDK(o: any): o is ConsensusStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ConsensusState.typeUrl ||
+        (Timestamp.isSDK(o.timestamp) &&
+          MerkleRoot.isSDK(o.root) &&
+          (o.next_validators_hash instanceof Uint8Array ||
+            typeof o.next_validators_hash === 'string')))
+    );
+  },
   encode(
     message: ConsensusState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -612,6 +681,14 @@ export const ConsensusState = {
       value: ConsensusState.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(ConsensusState.typeUrl)
+    ) {
+      return;
+    }
+    MerkleRoot.registerTypeUrl();
+  },
 };
 function createBaseMisbehaviour(): Misbehaviour {
   return {
@@ -629,6 +706,19 @@ function createBaseMisbehaviour(): Misbehaviour {
  */
 export const Misbehaviour = {
   typeUrl: '/ibc.lightclients.tendermint.v1.Misbehaviour' as const,
+  aminoType: 'cosmos-sdk/Misbehaviour' as const,
+  is(o: any): o is Misbehaviour {
+    return (
+      o &&
+      (o.$typeUrl === Misbehaviour.typeUrl || typeof o.clientId === 'string')
+    );
+  },
+  isSDK(o: any): o is MisbehaviourSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Misbehaviour.typeUrl || typeof o.client_id === 'string')
+    );
+  },
   encode(
     message: Misbehaviour,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -717,6 +807,12 @@ export const Misbehaviour = {
       value: Misbehaviour.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(Misbehaviour.typeUrl)) {
+      return;
+    }
+    Header.registerTypeUrl();
+  },
 };
 function createBaseHeader(): Header {
   return {
@@ -745,6 +841,15 @@ function createBaseHeader(): Header {
  */
 export const Header = {
   typeUrl: '/ibc.lightclients.tendermint.v1.Header' as const,
+  aminoType: 'cosmos-sdk/Header' as const,
+  is(o: any): o is Header {
+    return o && (o.$typeUrl === Header.typeUrl || Height.is(o.trustedHeight));
+  },
+  isSDK(o: any): o is HeaderSDKType {
+    return (
+      o && (o.$typeUrl === Header.typeUrl || Height.isSDK(o.trusted_height))
+    );
+  },
   encode(
     message: Header,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -871,6 +976,14 @@ export const Header = {
       value: Header.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(Header.typeUrl)) {
+      return;
+    }
+    SignedHeader.registerTypeUrl();
+    ValidatorSet.registerTypeUrl();
+    Height.registerTypeUrl();
+  },
 };
 function createBaseFraction(): Fraction {
   return {
@@ -887,6 +1000,21 @@ function createBaseFraction(): Fraction {
  */
 export const Fraction = {
   typeUrl: '/ibc.lightclients.tendermint.v1.Fraction' as const,
+  aminoType: 'cosmos-sdk/Fraction' as const,
+  is(o: any): o is Fraction {
+    return (
+      o &&
+      (o.$typeUrl === Fraction.typeUrl ||
+        (typeof o.numerator === 'bigint' && typeof o.denominator === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is FractionSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Fraction.typeUrl ||
+        (typeof o.numerator === 'bigint' && typeof o.denominator === 'bigint'))
+    );
+  },
   encode(
     message: Fraction,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -962,4 +1090,5 @@ export const Fraction = {
       value: Fraction.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

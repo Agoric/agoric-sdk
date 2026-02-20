@@ -224,6 +224,20 @@ function createBaseDuration(): Duration {
  */
 export const Duration = {
   typeUrl: '/google.protobuf.Duration' as const,
+  is(o: any): o is Duration {
+    return (
+      o &&
+      (o.$typeUrl === Duration.typeUrl ||
+        (typeof o.seconds === 'bigint' && typeof o.nanos === 'number'))
+    );
+  },
+  isSDK(o: any): o is DurationSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Duration.typeUrl ||
+        (typeof o.seconds === 'bigint' && typeof o.nanos === 'number'))
+    );
+  },
   encode(
     message: Duration,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -293,4 +307,5 @@ export const Duration = {
       value: Duration.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

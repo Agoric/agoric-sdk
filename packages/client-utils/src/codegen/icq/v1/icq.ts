@@ -46,6 +46,24 @@ function createBaseParams(): Params {
  */
 export const Params = {
   typeUrl: '/icq.v1.Params' as const,
+  is(o: any): o is Params {
+    return (
+      o &&
+      (o.$typeUrl === Params.typeUrl ||
+        (typeof o.hostEnabled === 'boolean' &&
+          Array.isArray(o.allowQueries) &&
+          (!o.allowQueries.length || typeof o.allowQueries[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is ParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Params.typeUrl ||
+        (typeof o.host_enabled === 'boolean' &&
+          Array.isArray(o.allow_queries) &&
+          (!o.allow_queries.length || typeof o.allow_queries[0] === 'string')))
+    );
+  },
   encode(
     message: Params,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -118,4 +136,5 @@ export const Params = {
       value: Params.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

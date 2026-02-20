@@ -6,6 +6,7 @@ import {
   type BlockSDKType,
 } from '../../../../tendermint/types/block.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
+import { GlobalDecoderRegistry } from '../../../../registry.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
@@ -485,6 +486,47 @@ function createBaseTxResponse(): TxResponse {
  */
 export const TxResponse = {
   typeUrl: '/cosmos.base.abci.v1beta1.TxResponse' as const,
+  aminoType: 'cosmos-sdk/TxResponse' as const,
+  is(o: any): o is TxResponse {
+    return (
+      o &&
+      (o.$typeUrl === TxResponse.typeUrl ||
+        (typeof o.height === 'bigint' &&
+          typeof o.txhash === 'string' &&
+          typeof o.codespace === 'string' &&
+          typeof o.code === 'number' &&
+          typeof o.data === 'string' &&
+          typeof o.rawLog === 'string' &&
+          Array.isArray(o.logs) &&
+          (!o.logs.length || ABCIMessageLog.is(o.logs[0])) &&
+          typeof o.info === 'string' &&
+          typeof o.gasWanted === 'bigint' &&
+          typeof o.gasUsed === 'bigint' &&
+          typeof o.timestamp === 'string' &&
+          Array.isArray(o.events) &&
+          (!o.events.length || Event.is(o.events[0]))))
+    );
+  },
+  isSDK(o: any): o is TxResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === TxResponse.typeUrl ||
+        (typeof o.height === 'bigint' &&
+          typeof o.txhash === 'string' &&
+          typeof o.codespace === 'string' &&
+          typeof o.code === 'number' &&
+          typeof o.data === 'string' &&
+          typeof o.raw_log === 'string' &&
+          Array.isArray(o.logs) &&
+          (!o.logs.length || ABCIMessageLog.isSDK(o.logs[0])) &&
+          typeof o.info === 'string' &&
+          typeof o.gas_wanted === 'bigint' &&
+          typeof o.gas_used === 'bigint' &&
+          typeof o.timestamp === 'string' &&
+          Array.isArray(o.events) &&
+          (!o.events.length || Event.isSDK(o.events[0]))))
+    );
+  },
   encode(
     message: TxResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -683,6 +725,12 @@ export const TxResponse = {
       value: TxResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(TxResponse.typeUrl)) {
+      return;
+    }
+    Event.registerTypeUrl();
+  },
 };
 function createBaseABCIMessageLog(): ABCIMessageLog {
   return {
@@ -699,6 +747,27 @@ function createBaseABCIMessageLog(): ABCIMessageLog {
  */
 export const ABCIMessageLog = {
   typeUrl: '/cosmos.base.abci.v1beta1.ABCIMessageLog' as const,
+  aminoType: 'cosmos-sdk/ABCIMessageLog' as const,
+  is(o: any): o is ABCIMessageLog {
+    return (
+      o &&
+      (o.$typeUrl === ABCIMessageLog.typeUrl ||
+        (typeof o.msgIndex === 'number' &&
+          typeof o.log === 'string' &&
+          Array.isArray(o.events) &&
+          (!o.events.length || StringEvent.is(o.events[0]))))
+    );
+  },
+  isSDK(o: any): o is ABCIMessageLogSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ABCIMessageLog.typeUrl ||
+        (typeof o.msg_index === 'number' &&
+          typeof o.log === 'string' &&
+          Array.isArray(o.events) &&
+          (!o.events.length || StringEvent.isSDK(o.events[0]))))
+    );
+  },
   encode(
     message: ABCIMessageLog,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -780,6 +849,14 @@ export const ABCIMessageLog = {
       value: ABCIMessageLog.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(ABCIMessageLog.typeUrl)
+    ) {
+      return;
+    }
+    StringEvent.registerTypeUrl();
+  },
 };
 function createBaseStringEvent(): StringEvent {
   return {
@@ -796,6 +873,25 @@ function createBaseStringEvent(): StringEvent {
  */
 export const StringEvent = {
   typeUrl: '/cosmos.base.abci.v1beta1.StringEvent' as const,
+  aminoType: 'cosmos-sdk/StringEvent' as const,
+  is(o: any): o is StringEvent {
+    return (
+      o &&
+      (o.$typeUrl === StringEvent.typeUrl ||
+        (typeof o.type === 'string' &&
+          Array.isArray(o.attributes) &&
+          (!o.attributes.length || Attribute.is(o.attributes[0]))))
+    );
+  },
+  isSDK(o: any): o is StringEventSDKType {
+    return (
+      o &&
+      (o.$typeUrl === StringEvent.typeUrl ||
+        (typeof o.type === 'string' &&
+          Array.isArray(o.attributes) &&
+          (!o.attributes.length || Attribute.isSDK(o.attributes[0]))))
+    );
+  },
   encode(
     message: StringEvent,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -868,6 +964,12 @@ export const StringEvent = {
       value: StringEvent.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(StringEvent.typeUrl)) {
+      return;
+    }
+    Attribute.registerTypeUrl();
+  },
 };
 function createBaseAttribute(): Attribute {
   return {
@@ -884,6 +986,21 @@ function createBaseAttribute(): Attribute {
  */
 export const Attribute = {
   typeUrl: '/cosmos.base.abci.v1beta1.Attribute' as const,
+  aminoType: 'cosmos-sdk/Attribute' as const,
+  is(o: any): o is Attribute {
+    return (
+      o &&
+      (o.$typeUrl === Attribute.typeUrl ||
+        (typeof o.key === 'string' && typeof o.value === 'string'))
+    );
+  },
+  isSDK(o: any): o is AttributeSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Attribute.typeUrl ||
+        (typeof o.key === 'string' && typeof o.value === 'string'))
+    );
+  },
   encode(
     message: Attribute,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -947,6 +1064,7 @@ export const Attribute = {
       value: Attribute.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseGasInfo(): GasInfo {
   return {
@@ -962,6 +1080,21 @@ function createBaseGasInfo(): GasInfo {
  */
 export const GasInfo = {
   typeUrl: '/cosmos.base.abci.v1beta1.GasInfo' as const,
+  aminoType: 'cosmos-sdk/GasInfo' as const,
+  is(o: any): o is GasInfo {
+    return (
+      o &&
+      (o.$typeUrl === GasInfo.typeUrl ||
+        (typeof o.gasWanted === 'bigint' && typeof o.gasUsed === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is GasInfoSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GasInfo.typeUrl ||
+        (typeof o.gas_wanted === 'bigint' && typeof o.gas_used === 'bigint'))
+    );
+  },
   encode(
     message: GasInfo,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1037,6 +1170,7 @@ export const GasInfo = {
       value: GasInfo.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseResult(): Result {
   return {
@@ -1054,6 +1188,31 @@ function createBaseResult(): Result {
  */
 export const Result = {
   typeUrl: '/cosmos.base.abci.v1beta1.Result' as const,
+  aminoType: 'cosmos-sdk/Result' as const,
+  is(o: any): o is Result {
+    return (
+      o &&
+      (o.$typeUrl === Result.typeUrl ||
+        ((o.data instanceof Uint8Array || typeof o.data === 'string') &&
+          typeof o.log === 'string' &&
+          Array.isArray(o.events) &&
+          (!o.events.length || Event.is(o.events[0])) &&
+          Array.isArray(o.msgResponses) &&
+          (!o.msgResponses.length || Any.is(o.msgResponses[0]))))
+    );
+  },
+  isSDK(o: any): o is ResultSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Result.typeUrl ||
+        ((o.data instanceof Uint8Array || typeof o.data === 'string') &&
+          typeof o.log === 'string' &&
+          Array.isArray(o.events) &&
+          (!o.events.length || Event.isSDK(o.events[0])) &&
+          Array.isArray(o.msg_responses) &&
+          (!o.msg_responses.length || Any.isSDK(o.msg_responses[0]))))
+    );
+  },
   encode(
     message: Result,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1155,6 +1314,7 @@ export const Result = {
       value: Result.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseSimulationResponse(): SimulationResponse {
   return {
@@ -1171,6 +1331,18 @@ function createBaseSimulationResponse(): SimulationResponse {
  */
 export const SimulationResponse = {
   typeUrl: '/cosmos.base.abci.v1beta1.SimulationResponse' as const,
+  aminoType: 'cosmos-sdk/SimulationResponse' as const,
+  is(o: any): o is SimulationResponse {
+    return (
+      o && (o.$typeUrl === SimulationResponse.typeUrl || GasInfo.is(o.gasInfo))
+    );
+  },
+  isSDK(o: any): o is SimulationResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === SimulationResponse.typeUrl || GasInfo.isSDK(o.gas_info))
+    );
+  },
   encode(
     message: SimulationResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1249,6 +1421,15 @@ export const SimulationResponse = {
       value: SimulationResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(SimulationResponse.typeUrl)
+    ) {
+      return;
+    }
+    GasInfo.registerTypeUrl();
+    Result.registerTypeUrl();
+  },
 };
 function createBaseMsgData(): MsgData {
   return {
@@ -1266,6 +1447,23 @@ function createBaseMsgData(): MsgData {
  */
 export const MsgData = {
   typeUrl: '/cosmos.base.abci.v1beta1.MsgData' as const,
+  aminoType: 'cosmos-sdk/MsgData' as const,
+  is(o: any): o is MsgData {
+    return (
+      o &&
+      (o.$typeUrl === MsgData.typeUrl ||
+        (typeof o.msgType === 'string' &&
+          (o.data instanceof Uint8Array || typeof o.data === 'string')))
+    );
+  },
+  isSDK(o: any): o is MsgDataSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgData.typeUrl ||
+        (typeof o.msg_type === 'string' &&
+          (o.data instanceof Uint8Array || typeof o.data === 'string')))
+    );
+  },
   encode(
     message: MsgData,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1334,6 +1532,7 @@ export const MsgData = {
       value: MsgData.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseTxMsgData(): TxMsgData {
   return {
@@ -1350,6 +1549,27 @@ function createBaseTxMsgData(): TxMsgData {
  */
 export const TxMsgData = {
   typeUrl: '/cosmos.base.abci.v1beta1.TxMsgData' as const,
+  aminoType: 'cosmos-sdk/TxMsgData' as const,
+  is(o: any): o is TxMsgData {
+    return (
+      o &&
+      (o.$typeUrl === TxMsgData.typeUrl ||
+        (Array.isArray(o.data) &&
+          (!o.data.length || MsgData.is(o.data[0])) &&
+          Array.isArray(o.msgResponses) &&
+          (!o.msgResponses.length || Any.is(o.msgResponses[0]))))
+    );
+  },
+  isSDK(o: any): o is TxMsgDataSDKType {
+    return (
+      o &&
+      (o.$typeUrl === TxMsgData.typeUrl ||
+        (Array.isArray(o.data) &&
+          (!o.data.length || MsgData.isSDK(o.data[0])) &&
+          Array.isArray(o.msg_responses) &&
+          (!o.msg_responses.length || Any.isSDK(o.msg_responses[0]))))
+    );
+  },
   encode(
     message: TxMsgData,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1428,6 +1648,7 @@ export const TxMsgData = {
       value: TxMsgData.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseSearchTxsResult(): SearchTxsResult {
   return {
@@ -1447,6 +1668,33 @@ function createBaseSearchTxsResult(): SearchTxsResult {
  */
 export const SearchTxsResult = {
   typeUrl: '/cosmos.base.abci.v1beta1.SearchTxsResult' as const,
+  aminoType: 'cosmos-sdk/SearchTxsResult' as const,
+  is(o: any): o is SearchTxsResult {
+    return (
+      o &&
+      (o.$typeUrl === SearchTxsResult.typeUrl ||
+        (typeof o.totalCount === 'bigint' &&
+          typeof o.count === 'bigint' &&
+          typeof o.pageNumber === 'bigint' &&
+          typeof o.pageTotal === 'bigint' &&
+          typeof o.limit === 'bigint' &&
+          Array.isArray(o.txs) &&
+          (!o.txs.length || TxResponse.is(o.txs[0]))))
+    );
+  },
+  isSDK(o: any): o is SearchTxsResultSDKType {
+    return (
+      o &&
+      (o.$typeUrl === SearchTxsResult.typeUrl ||
+        (typeof o.total_count === 'bigint' &&
+          typeof o.count === 'bigint' &&
+          typeof o.page_number === 'bigint' &&
+          typeof o.page_total === 'bigint' &&
+          typeof o.limit === 'bigint' &&
+          Array.isArray(o.txs) &&
+          (!o.txs.length || TxResponse.isSDK(o.txs[0]))))
+    );
+  },
   encode(
     message: SearchTxsResult,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1578,6 +1826,14 @@ export const SearchTxsResult = {
       value: SearchTxsResult.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(SearchTxsResult.typeUrl)
+    ) {
+      return;
+    }
+    TxResponse.registerTypeUrl();
+  },
 };
 function createBaseSearchBlocksResult(): SearchBlocksResult {
   return {
@@ -1597,6 +1853,33 @@ function createBaseSearchBlocksResult(): SearchBlocksResult {
  */
 export const SearchBlocksResult = {
   typeUrl: '/cosmos.base.abci.v1beta1.SearchBlocksResult' as const,
+  aminoType: 'cosmos-sdk/SearchBlocksResult' as const,
+  is(o: any): o is SearchBlocksResult {
+    return (
+      o &&
+      (o.$typeUrl === SearchBlocksResult.typeUrl ||
+        (typeof o.totalCount === 'bigint' &&
+          typeof o.count === 'bigint' &&
+          typeof o.pageNumber === 'bigint' &&
+          typeof o.pageTotal === 'bigint' &&
+          typeof o.limit === 'bigint' &&
+          Array.isArray(o.blocks) &&
+          (!o.blocks.length || Block.is(o.blocks[0]))))
+    );
+  },
+  isSDK(o: any): o is SearchBlocksResultSDKType {
+    return (
+      o &&
+      (o.$typeUrl === SearchBlocksResult.typeUrl ||
+        (typeof o.total_count === 'bigint' &&
+          typeof o.count === 'bigint' &&
+          typeof o.page_number === 'bigint' &&
+          typeof o.page_total === 'bigint' &&
+          typeof o.limit === 'bigint' &&
+          Array.isArray(o.blocks) &&
+          (!o.blocks.length || Block.isSDK(o.blocks[0]))))
+    );
+  },
   encode(
     message: SearchBlocksResult,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1730,5 +2013,13 @@ export const SearchBlocksResult = {
       typeUrl: '/cosmos.base.abci.v1beta1.SearchBlocksResult',
       value: SearchBlocksResult.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(SearchBlocksResult.typeUrl)
+    ) {
+      return;
+    }
+    Block.registerTypeUrl();
   },
 };

@@ -4,6 +4,7 @@ import {
   type DurationSDKType,
 } from '../../google/protobuf/duration.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
+import { GlobalDecoderRegistry } from '../../registry.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
 /**
@@ -239,6 +240,12 @@ function createBaseConsensusParams(): ConsensusParams {
  */
 export const ConsensusParams = {
   typeUrl: '/tendermint.types.ConsensusParams' as const,
+  is(o: any): o is ConsensusParams {
+    return o && o.$typeUrl === ConsensusParams.typeUrl;
+  },
+  isSDK(o: any): o is ConsensusParamsSDKType {
+    return o && o.$typeUrl === ConsensusParams.typeUrl;
+  },
   encode(
     message: ConsensusParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -371,6 +378,18 @@ export const ConsensusParams = {
       value: ConsensusParams.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(ConsensusParams.typeUrl)
+    ) {
+      return;
+    }
+    BlockParams.registerTypeUrl();
+    EvidenceParams.registerTypeUrl();
+    ValidatorParams.registerTypeUrl();
+    VersionParams.registerTypeUrl();
+    ABCIParams.registerTypeUrl();
+  },
 };
 function createBaseBlockParams(): BlockParams {
   return {
@@ -386,6 +405,20 @@ function createBaseBlockParams(): BlockParams {
  */
 export const BlockParams = {
   typeUrl: '/tendermint.types.BlockParams' as const,
+  is(o: any): o is BlockParams {
+    return (
+      o &&
+      (o.$typeUrl === BlockParams.typeUrl ||
+        (typeof o.maxBytes === 'bigint' && typeof o.maxGas === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is BlockParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === BlockParams.typeUrl ||
+        (typeof o.max_bytes === 'bigint' && typeof o.max_gas === 'bigint'))
+    );
+  },
   encode(
     message: BlockParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -461,6 +494,7 @@ export const BlockParams = {
       value: BlockParams.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseEvidenceParams(): EvidenceParams {
   return {
@@ -477,6 +511,24 @@ function createBaseEvidenceParams(): EvidenceParams {
  */
 export const EvidenceParams = {
   typeUrl: '/tendermint.types.EvidenceParams' as const,
+  is(o: any): o is EvidenceParams {
+    return (
+      o &&
+      (o.$typeUrl === EvidenceParams.typeUrl ||
+        (typeof o.maxAgeNumBlocks === 'bigint' &&
+          Duration.is(o.maxAgeDuration) &&
+          typeof o.maxBytes === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is EvidenceParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === EvidenceParams.typeUrl ||
+        (typeof o.max_age_num_blocks === 'bigint' &&
+          Duration.isSDK(o.max_age_duration) &&
+          typeof o.max_bytes === 'bigint'))
+    );
+  },
   encode(
     message: EvidenceParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -572,6 +624,7 @@ export const EvidenceParams = {
       value: EvidenceParams.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseValidatorParams(): ValidatorParams {
   return {
@@ -587,6 +640,22 @@ function createBaseValidatorParams(): ValidatorParams {
  */
 export const ValidatorParams = {
   typeUrl: '/tendermint.types.ValidatorParams' as const,
+  is(o: any): o is ValidatorParams {
+    return (
+      o &&
+      (o.$typeUrl === ValidatorParams.typeUrl ||
+        (Array.isArray(o.pubKeyTypes) &&
+          (!o.pubKeyTypes.length || typeof o.pubKeyTypes[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is ValidatorParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ValidatorParams.typeUrl ||
+        (Array.isArray(o.pub_key_types) &&
+          (!o.pub_key_types.length || typeof o.pub_key_types[0] === 'string')))
+    );
+  },
   encode(
     message: ValidatorParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -647,6 +716,7 @@ export const ValidatorParams = {
       value: ValidatorParams.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseVersionParams(): VersionParams {
   return {
@@ -661,6 +731,16 @@ function createBaseVersionParams(): VersionParams {
  */
 export const VersionParams = {
   typeUrl: '/tendermint.types.VersionParams' as const,
+  is(o: any): o is VersionParams {
+    return (
+      o && (o.$typeUrl === VersionParams.typeUrl || typeof o.app === 'bigint')
+    );
+  },
+  isSDK(o: any): o is VersionParamsSDKType {
+    return (
+      o && (o.$typeUrl === VersionParams.typeUrl || typeof o.app === 'bigint')
+    );
+  },
   encode(
     message: VersionParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -719,6 +799,7 @@ export const VersionParams = {
       value: VersionParams.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseHashedParams(): HashedParams {
   return {
@@ -736,6 +817,22 @@ function createBaseHashedParams(): HashedParams {
  */
 export const HashedParams = {
   typeUrl: '/tendermint.types.HashedParams' as const,
+  is(o: any): o is HashedParams {
+    return (
+      o &&
+      (o.$typeUrl === HashedParams.typeUrl ||
+        (typeof o.blockMaxBytes === 'bigint' &&
+          typeof o.blockMaxGas === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is HashedParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === HashedParams.typeUrl ||
+        (typeof o.block_max_bytes === 'bigint' &&
+          typeof o.block_max_gas === 'bigint'))
+    );
+  },
   encode(
     message: HashedParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -811,6 +908,7 @@ export const HashedParams = {
       value: HashedParams.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseABCIParams(): ABCIParams {
   return {
@@ -825,6 +923,20 @@ function createBaseABCIParams(): ABCIParams {
  */
 export const ABCIParams = {
   typeUrl: '/tendermint.types.ABCIParams' as const,
+  is(o: any): o is ABCIParams {
+    return (
+      o &&
+      (o.$typeUrl === ABCIParams.typeUrl ||
+        typeof o.voteExtensionsEnableHeight === 'bigint')
+    );
+  },
+  isSDK(o: any): o is ABCIParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ABCIParams.typeUrl ||
+        typeof o.vote_extensions_enable_height === 'bigint')
+    );
+  },
   encode(
     message: ABCIParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -888,4 +1000,5 @@ export const ABCIParams = {
       value: ABCIParams.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

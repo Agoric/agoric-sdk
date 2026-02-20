@@ -1,6 +1,7 @@
 //@ts-nocheck
 import { Any, type AnySDKType } from '../../../google/protobuf/any.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
+import { GlobalDecoderRegistry } from '../../../registry.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
@@ -14,6 +15,7 @@ import { encodeBase64 as base64FromBytes } from '@endo/base64';
  * @see proto type: cosmos.auth.v1beta1.BaseAccount
  */
 export interface BaseAccount {
+  $typeUrl?: '/cosmos.auth.v1beta1.BaseAccount';
   address: string;
   pubKey?: Any;
   accountNumber: bigint;
@@ -32,6 +34,7 @@ export interface BaseAccountProtoMsg {
  * @see proto type: cosmos.auth.v1beta1.BaseAccount
  */
 export interface BaseAccountSDKType {
+  $typeUrl?: '/cosmos.auth.v1beta1.BaseAccount';
   address: string;
   pub_key?: AnySDKType;
   account_number: bigint;
@@ -44,6 +47,7 @@ export interface BaseAccountSDKType {
  * @see proto type: cosmos.auth.v1beta1.ModuleAccount
  */
 export interface ModuleAccount {
+  $typeUrl?: '/cosmos.auth.v1beta1.ModuleAccount';
   baseAccount?: BaseAccount;
   name: string;
   permissions: string[];
@@ -59,6 +63,7 @@ export interface ModuleAccountProtoMsg {
  * @see proto type: cosmos.auth.v1beta1.ModuleAccount
  */
 export interface ModuleAccountSDKType {
+  $typeUrl?: '/cosmos.auth.v1beta1.ModuleAccount';
   base_account?: BaseAccountSDKType;
   name: string;
   permissions: string[];
@@ -130,6 +135,7 @@ export interface ParamsSDKType {
 }
 function createBaseBaseAccount(): BaseAccount {
   return {
+    $typeUrl: '/cosmos.auth.v1beta1.BaseAccount',
     address: '',
     pubKey: undefined,
     accountNumber: BigInt(0),
@@ -146,6 +152,25 @@ function createBaseBaseAccount(): BaseAccount {
  */
 export const BaseAccount = {
   typeUrl: '/cosmos.auth.v1beta1.BaseAccount' as const,
+  aminoType: 'cosmos-sdk/BaseAccount' as const,
+  is(o: any): o is BaseAccount {
+    return (
+      o &&
+      (o.$typeUrl === BaseAccount.typeUrl ||
+        (typeof o.address === 'string' &&
+          typeof o.accountNumber === 'bigint' &&
+          typeof o.sequence === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is BaseAccountSDKType {
+    return (
+      o &&
+      (o.$typeUrl === BaseAccount.typeUrl ||
+        (typeof o.address === 'string' &&
+          typeof o.account_number === 'bigint' &&
+          typeof o.sequence === 'bigint'))
+    );
+  },
   encode(
     message: BaseAccount,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -243,9 +268,20 @@ export const BaseAccount = {
       value: BaseAccount.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(BaseAccount.typeUrl)) {
+      return;
+    }
+    GlobalDecoderRegistry.register(BaseAccount.typeUrl, BaseAccount);
+    GlobalDecoderRegistry.registerAminoProtoMapping(
+      BaseAccount.aminoType,
+      BaseAccount.typeUrl,
+    );
+  },
 };
 function createBaseModuleAccount(): ModuleAccount {
   return {
+    $typeUrl: '/cosmos.auth.v1beta1.ModuleAccount',
     baseAccount: undefined,
     name: '',
     permissions: [],
@@ -259,6 +295,25 @@ function createBaseModuleAccount(): ModuleAccount {
  */
 export const ModuleAccount = {
   typeUrl: '/cosmos.auth.v1beta1.ModuleAccount' as const,
+  aminoType: 'cosmos-sdk/ModuleAccount' as const,
+  is(o: any): o is ModuleAccount {
+    return (
+      o &&
+      (o.$typeUrl === ModuleAccount.typeUrl ||
+        (typeof o.name === 'string' &&
+          Array.isArray(o.permissions) &&
+          (!o.permissions.length || typeof o.permissions[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is ModuleAccountSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ModuleAccount.typeUrl ||
+        (typeof o.name === 'string' &&
+          Array.isArray(o.permissions) &&
+          (!o.permissions.length || typeof o.permissions[0] === 'string')))
+    );
+  },
   encode(
     message: ModuleAccount,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -348,6 +403,17 @@ export const ModuleAccount = {
       value: ModuleAccount.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(ModuleAccount.typeUrl)) {
+      return;
+    }
+    GlobalDecoderRegistry.register(ModuleAccount.typeUrl, ModuleAccount);
+    GlobalDecoderRegistry.registerAminoProtoMapping(
+      ModuleAccount.aminoType,
+      ModuleAccount.typeUrl,
+    );
+    BaseAccount.registerTypeUrl();
+  },
 };
 function createBaseModuleCredential(): ModuleCredential {
   return {
@@ -365,6 +431,29 @@ function createBaseModuleCredential(): ModuleCredential {
  */
 export const ModuleCredential = {
   typeUrl: '/cosmos.auth.v1beta1.ModuleCredential' as const,
+  aminoType: 'cosmos-sdk/GroupAccountCredential' as const,
+  is(o: any): o is ModuleCredential {
+    return (
+      o &&
+      (o.$typeUrl === ModuleCredential.typeUrl ||
+        (typeof o.moduleName === 'string' &&
+          Array.isArray(o.derivationKeys) &&
+          (!o.derivationKeys.length ||
+            o.derivationKeys[0] instanceof Uint8Array ||
+            typeof o.derivationKeys[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is ModuleCredentialSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ModuleCredential.typeUrl ||
+        (typeof o.module_name === 'string' &&
+          Array.isArray(o.derivation_keys) &&
+          (!o.derivation_keys.length ||
+            o.derivation_keys[0] instanceof Uint8Array ||
+            typeof o.derivation_keys[0] === 'string')))
+    );
+  },
   encode(
     message: ModuleCredential,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -436,6 +525,7 @@ export const ModuleCredential = {
       value: ModuleCredential.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseParams(): Params {
   return {
@@ -454,6 +544,29 @@ function createBaseParams(): Params {
  */
 export const Params = {
   typeUrl: '/cosmos.auth.v1beta1.Params' as const,
+  aminoType: 'cosmos-sdk/x/auth/Params' as const,
+  is(o: any): o is Params {
+    return (
+      o &&
+      (o.$typeUrl === Params.typeUrl ||
+        (typeof o.maxMemoCharacters === 'bigint' &&
+          typeof o.txSigLimit === 'bigint' &&
+          typeof o.txSizeCostPerByte === 'bigint' &&
+          typeof o.sigVerifyCostEd25519 === 'bigint' &&
+          typeof o.sigVerifyCostSecp256k1 === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is ParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Params.typeUrl ||
+        (typeof o.max_memo_characters === 'bigint' &&
+          typeof o.tx_sig_limit === 'bigint' &&
+          typeof o.tx_size_cost_per_byte === 'bigint' &&
+          typeof o.sig_verify_cost_ed25519 === 'bigint' &&
+          typeof o.sig_verify_cost_secp256k1 === 'bigint'))
+    );
+  },
   encode(
     message: Params,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -586,4 +699,5 @@ export const Params = {
       value: Params.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

@@ -6,6 +6,7 @@ import {
   type PageResponseSDKType,
 } from '../../../../cosmos/base/query/v1beta1/pagination.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
+import { GlobalDecoderRegistry } from '../../../../registry.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
@@ -125,6 +126,13 @@ function createBaseQueryChecksumsRequest(): QueryChecksumsRequest {
  */
 export const QueryChecksumsRequest = {
   typeUrl: '/ibc.lightclients.wasm.v1.QueryChecksumsRequest' as const,
+  aminoType: 'cosmos-sdk/QueryChecksumsRequest' as const,
+  is(o: any): o is QueryChecksumsRequest {
+    return o && o.$typeUrl === QueryChecksumsRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryChecksumsRequestSDKType {
+    return o && o.$typeUrl === QueryChecksumsRequest.typeUrl;
+  },
   encode(
     message: QueryChecksumsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -190,6 +198,16 @@ export const QueryChecksumsRequest = {
       value: QueryChecksumsRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryChecksumsRequest.typeUrl,
+      )
+    ) {
+      return;
+    }
+    PageRequest.registerTypeUrl();
+  },
 };
 function createBaseQueryChecksumsResponse(): QueryChecksumsResponse {
   return {
@@ -205,6 +223,23 @@ function createBaseQueryChecksumsResponse(): QueryChecksumsResponse {
  */
 export const QueryChecksumsResponse = {
   typeUrl: '/ibc.lightclients.wasm.v1.QueryChecksumsResponse' as const,
+  aminoType: 'cosmos-sdk/QueryChecksumsResponse' as const,
+  is(o: any): o is QueryChecksumsResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryChecksumsResponse.typeUrl ||
+        (Array.isArray(o.checksums) &&
+          (!o.checksums.length || typeof o.checksums[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is QueryChecksumsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryChecksumsResponse.typeUrl ||
+        (Array.isArray(o.checksums) &&
+          (!o.checksums.length || typeof o.checksums[0] === 'string')))
+    );
+  },
   encode(
     message: QueryChecksumsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -290,6 +325,16 @@ export const QueryChecksumsResponse = {
       value: QueryChecksumsResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryChecksumsResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    PageResponse.registerTypeUrl();
+  },
 };
 function createBaseQueryCodeRequest(): QueryCodeRequest {
   return {
@@ -304,6 +349,21 @@ function createBaseQueryCodeRequest(): QueryCodeRequest {
  */
 export const QueryCodeRequest = {
   typeUrl: '/ibc.lightclients.wasm.v1.QueryCodeRequest' as const,
+  aminoType: 'cosmos-sdk/QueryCodeRequest' as const,
+  is(o: any): o is QueryCodeRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryCodeRequest.typeUrl ||
+        typeof o.checksum === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryCodeRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryCodeRequest.typeUrl ||
+        typeof o.checksum === 'string')
+    );
+  },
   encode(
     message: QueryCodeRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -358,6 +418,7 @@ export const QueryCodeRequest = {
       value: QueryCodeRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryCodeResponse(): QueryCodeResponse {
   return {
@@ -372,6 +433,23 @@ function createBaseQueryCodeResponse(): QueryCodeResponse {
  */
 export const QueryCodeResponse = {
   typeUrl: '/ibc.lightclients.wasm.v1.QueryCodeResponse' as const,
+  aminoType: 'cosmos-sdk/QueryCodeResponse' as const,
+  is(o: any): o is QueryCodeResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryCodeResponse.typeUrl ||
+        o.data instanceof Uint8Array ||
+        typeof o.data === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryCodeResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryCodeResponse.typeUrl ||
+        o.data instanceof Uint8Array ||
+        typeof o.data === 'string')
+    );
+  },
   encode(
     message: QueryCodeResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -431,4 +509,5 @@ export const QueryCodeResponse = {
       value: QueryCodeResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

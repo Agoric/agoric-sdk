@@ -1,6 +1,7 @@
 //@ts-nocheck
 import { Plan, type PlanSDKType } from './upgrade.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
+import { GlobalDecoderRegistry } from '../../../registry.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
 /**
@@ -126,6 +127,21 @@ function createBaseMsgSoftwareUpgrade(): MsgSoftwareUpgrade {
  */
 export const MsgSoftwareUpgrade = {
   typeUrl: '/cosmos.upgrade.v1beta1.MsgSoftwareUpgrade' as const,
+  aminoType: 'cosmos-sdk/MsgSoftwareUpgrade' as const,
+  is(o: any): o is MsgSoftwareUpgrade {
+    return (
+      o &&
+      (o.$typeUrl === MsgSoftwareUpgrade.typeUrl ||
+        (typeof o.authority === 'string' && Plan.is(o.plan)))
+    );
+  },
+  isSDK(o: any): o is MsgSoftwareUpgradeSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgSoftwareUpgrade.typeUrl ||
+        (typeof o.authority === 'string' && Plan.isSDK(o.plan)))
+    );
+  },
   encode(
     message: MsgSoftwareUpgrade,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -196,6 +212,14 @@ export const MsgSoftwareUpgrade = {
       value: MsgSoftwareUpgrade.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(MsgSoftwareUpgrade.typeUrl)
+    ) {
+      return;
+    }
+    Plan.registerTypeUrl();
+  },
 };
 function createBaseMsgSoftwareUpgradeResponse(): MsgSoftwareUpgradeResponse {
   return {};
@@ -210,6 +234,13 @@ function createBaseMsgSoftwareUpgradeResponse(): MsgSoftwareUpgradeResponse {
  */
 export const MsgSoftwareUpgradeResponse = {
   typeUrl: '/cosmos.upgrade.v1beta1.MsgSoftwareUpgradeResponse' as const,
+  aminoType: 'cosmos-sdk/MsgSoftwareUpgradeResponse' as const,
+  is(o: any): o is MsgSoftwareUpgradeResponse {
+    return o && o.$typeUrl === MsgSoftwareUpgradeResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgSoftwareUpgradeResponseSDKType {
+    return o && o.$typeUrl === MsgSoftwareUpgradeResponse.typeUrl;
+  },
   encode(
     _: MsgSoftwareUpgradeResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -263,6 +294,7 @@ export const MsgSoftwareUpgradeResponse = {
       value: MsgSoftwareUpgradeResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgCancelUpgrade(): MsgCancelUpgrade {
   return {
@@ -279,6 +311,21 @@ function createBaseMsgCancelUpgrade(): MsgCancelUpgrade {
  */
 export const MsgCancelUpgrade = {
   typeUrl: '/cosmos.upgrade.v1beta1.MsgCancelUpgrade' as const,
+  aminoType: 'cosmos-sdk/MsgCancelUpgrade' as const,
+  is(o: any): o is MsgCancelUpgrade {
+    return (
+      o &&
+      (o.$typeUrl === MsgCancelUpgrade.typeUrl ||
+        typeof o.authority === 'string')
+    );
+  },
+  isSDK(o: any): o is MsgCancelUpgradeSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgCancelUpgrade.typeUrl ||
+        typeof o.authority === 'string')
+    );
+  },
   encode(
     message: MsgCancelUpgrade,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -333,6 +380,7 @@ export const MsgCancelUpgrade = {
       value: MsgCancelUpgrade.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgCancelUpgradeResponse(): MsgCancelUpgradeResponse {
   return {};
@@ -347,6 +395,13 @@ function createBaseMsgCancelUpgradeResponse(): MsgCancelUpgradeResponse {
  */
 export const MsgCancelUpgradeResponse = {
   typeUrl: '/cosmos.upgrade.v1beta1.MsgCancelUpgradeResponse' as const,
+  aminoType: 'cosmos-sdk/MsgCancelUpgradeResponse' as const,
+  is(o: any): o is MsgCancelUpgradeResponse {
+    return o && o.$typeUrl === MsgCancelUpgradeResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgCancelUpgradeResponseSDKType {
+    return o && o.$typeUrl === MsgCancelUpgradeResponse.typeUrl;
+  },
   encode(
     _: MsgCancelUpgradeResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -398,4 +453,5 @@ export const MsgCancelUpgradeResponse = {
       value: MsgCancelUpgradeResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

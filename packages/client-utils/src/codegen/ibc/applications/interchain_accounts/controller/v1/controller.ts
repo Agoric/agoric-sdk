@@ -44,6 +44,21 @@ function createBaseParams(): Params {
 export const Params = {
   typeUrl:
     '/ibc.applications.interchain_accounts.controller.v1.Params' as const,
+  aminoType: 'cosmos-sdk/Params' as const,
+  is(o: any): o is Params {
+    return (
+      o &&
+      (o.$typeUrl === Params.typeUrl ||
+        typeof o.controllerEnabled === 'boolean')
+    );
+  },
+  isSDK(o: any): o is ParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Params.typeUrl ||
+        typeof o.controller_enabled === 'boolean')
+    );
+  },
   encode(
     message: Params,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -101,4 +116,5 @@ export const Params = {
       value: Params.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

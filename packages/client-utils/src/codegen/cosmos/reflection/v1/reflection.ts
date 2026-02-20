@@ -5,6 +5,7 @@ import {
 } from '../../../google/protobuf/descriptor.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { type JsonSafe } from '../../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../../registry.js';
 /**
  * FileDescriptorsRequest is the Query/FileDescriptors request type.
  * @name FileDescriptorsRequest
@@ -59,6 +60,13 @@ function createBaseFileDescriptorsRequest(): FileDescriptorsRequest {
  */
 export const FileDescriptorsRequest = {
   typeUrl: '/cosmos.reflection.v1.FileDescriptorsRequest' as const,
+  aminoType: 'cosmos-sdk/FileDescriptorsRequest' as const,
+  is(o: any): o is FileDescriptorsRequest {
+    return o && o.$typeUrl === FileDescriptorsRequest.typeUrl;
+  },
+  isSDK(o: any): o is FileDescriptorsRequestSDKType {
+    return o && o.$typeUrl === FileDescriptorsRequest.typeUrl;
+  },
   encode(
     _: FileDescriptorsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -108,6 +116,7 @@ export const FileDescriptorsRequest = {
       value: FileDescriptorsRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseFileDescriptorsResponse(): FileDescriptorsResponse {
   return {
@@ -122,6 +131,23 @@ function createBaseFileDescriptorsResponse(): FileDescriptorsResponse {
  */
 export const FileDescriptorsResponse = {
   typeUrl: '/cosmos.reflection.v1.FileDescriptorsResponse' as const,
+  aminoType: 'cosmos-sdk/FileDescriptorsResponse' as const,
+  is(o: any): o is FileDescriptorsResponse {
+    return (
+      o &&
+      (o.$typeUrl === FileDescriptorsResponse.typeUrl ||
+        (Array.isArray(o.files) &&
+          (!o.files.length || FileDescriptorProto.is(o.files[0]))))
+    );
+  },
+  isSDK(o: any): o is FileDescriptorsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === FileDescriptorsResponse.typeUrl ||
+        (Array.isArray(o.files) &&
+          (!o.files.length || FileDescriptorProto.isSDK(o.files[0]))))
+    );
+  },
   encode(
     message: FileDescriptorsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -195,5 +221,15 @@ export const FileDescriptorsResponse = {
       typeUrl: '/cosmos.reflection.v1.FileDescriptorsResponse',
       value: FileDescriptorsResponse.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        FileDescriptorsResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    FileDescriptorProto.registerTypeUrl();
   },
 };

@@ -14,9 +14,37 @@ import {
   Timestamp,
   type TimestampSDKType,
 } from '../../../google/protobuf/timestamp.js';
+import {
+  ClientUpdateProposal,
+  type ClientUpdateProposalSDKType,
+  UpgradeProposal,
+  type UpgradeProposalSDKType,
+} from '../../../ibc/core/client/v1/client.js';
+import {
+  SoftwareUpgradeProposal,
+  type SoftwareUpgradeProposalSDKType,
+  CancelSoftwareUpgradeProposal,
+  type CancelSoftwareUpgradeProposalSDKType,
+} from '../../upgrade/v1beta1/upgrade.js';
+import {
+  ParameterChangeProposal,
+  type ParameterChangeProposalSDKType,
+} from '../../params/v1beta1/params.js';
+import { TextProposal, type TextProposalSDKType } from '../v1beta1/gov.js';
+import {
+  CommunityPoolSpendProposal,
+  type CommunityPoolSpendProposalSDKType,
+  CommunityPoolSpendProposalWithDeposit,
+  type CommunityPoolSpendProposalWithDepositSDKType,
+} from '../../distribution/v1beta1/distribution.js';
+import {
+  CoreEvalProposal,
+  type CoreEvalProposalSDKType,
+} from '../../../agoric/swingset/swingset.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet, fromJsonTimestamp, fromTimestamp } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../../registry.js';
 /**
  * MsgSubmitProposal defines an sdk.Msg type that supports submitting arbitrary
  * proposal Content.
@@ -116,7 +144,18 @@ export interface MsgExecLegacyContent {
   /**
    * content is the proposal's content.
    */
-  content?: Any;
+  content?:
+    | (ClientUpdateProposal &
+        UpgradeProposal &
+        SoftwareUpgradeProposal &
+        CancelSoftwareUpgradeProposal &
+        ParameterChangeProposal &
+        TextProposal &
+        CommunityPoolSpendProposal &
+        CommunityPoolSpendProposalWithDeposit &
+        CoreEvalProposal &
+        Any)
+    | undefined;
   /**
    * authority must be the gov module address.
    */
@@ -134,7 +173,18 @@ export interface MsgExecLegacyContentProtoMsg {
  * @see proto type: cosmos.gov.v1.MsgExecLegacyContent
  */
 export interface MsgExecLegacyContentSDKType {
-  content?: AnySDKType;
+  content?:
+    | ClientUpdateProposalSDKType
+    | UpgradeProposalSDKType
+    | SoftwareUpgradeProposalSDKType
+    | CancelSoftwareUpgradeProposalSDKType
+    | ParameterChangeProposalSDKType
+    | TextProposalSDKType
+    | CommunityPoolSpendProposalSDKType
+    | CommunityPoolSpendProposalWithDepositSDKType
+    | CoreEvalProposalSDKType
+    | AnySDKType
+    | undefined;
   authority: string;
 }
 /**
@@ -479,6 +529,37 @@ function createBaseMsgSubmitProposal(): MsgSubmitProposal {
  */
 export const MsgSubmitProposal = {
   typeUrl: '/cosmos.gov.v1.MsgSubmitProposal' as const,
+  aminoType: 'cosmos-sdk/v1/MsgSubmitProposal' as const,
+  is(o: any): o is MsgSubmitProposal {
+    return (
+      o &&
+      (o.$typeUrl === MsgSubmitProposal.typeUrl ||
+        (Array.isArray(o.messages) &&
+          (!o.messages.length || Any.is(o.messages[0])) &&
+          Array.isArray(o.initialDeposit) &&
+          (!o.initialDeposit.length || Coin.is(o.initialDeposit[0])) &&
+          typeof o.proposer === 'string' &&
+          typeof o.metadata === 'string' &&
+          typeof o.title === 'string' &&
+          typeof o.summary === 'string' &&
+          typeof o.expedited === 'boolean'))
+    );
+  },
+  isSDK(o: any): o is MsgSubmitProposalSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgSubmitProposal.typeUrl ||
+        (Array.isArray(o.messages) &&
+          (!o.messages.length || Any.isSDK(o.messages[0])) &&
+          Array.isArray(o.initial_deposit) &&
+          (!o.initial_deposit.length || Coin.isSDK(o.initial_deposit[0])) &&
+          typeof o.proposer === 'string' &&
+          typeof o.metadata === 'string' &&
+          typeof o.title === 'string' &&
+          typeof o.summary === 'string' &&
+          typeof o.expedited === 'boolean'))
+    );
+  },
   encode(
     message: MsgSubmitProposal,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -602,6 +683,14 @@ export const MsgSubmitProposal = {
       value: MsgSubmitProposal.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(MsgSubmitProposal.typeUrl)
+    ) {
+      return;
+    }
+    Coin.registerTypeUrl();
+  },
 };
 function createBaseMsgSubmitProposalResponse(): MsgSubmitProposalResponse {
   return {
@@ -616,6 +705,21 @@ function createBaseMsgSubmitProposalResponse(): MsgSubmitProposalResponse {
  */
 export const MsgSubmitProposalResponse = {
   typeUrl: '/cosmos.gov.v1.MsgSubmitProposalResponse' as const,
+  aminoType: 'cosmos-sdk/v1/MsgSubmitProposalResponse' as const,
+  is(o: any): o is MsgSubmitProposalResponse {
+    return (
+      o &&
+      (o.$typeUrl === MsgSubmitProposalResponse.typeUrl ||
+        typeof o.proposalId === 'bigint')
+    );
+  },
+  isSDK(o: any): o is MsgSubmitProposalResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgSubmitProposalResponse.typeUrl ||
+        typeof o.proposal_id === 'bigint')
+    );
+  },
   encode(
     message: MsgSubmitProposalResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -687,6 +791,7 @@ export const MsgSubmitProposalResponse = {
       value: MsgSubmitProposalResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgExecLegacyContent(): MsgExecLegacyContent {
   return {
@@ -703,12 +808,30 @@ function createBaseMsgExecLegacyContent(): MsgExecLegacyContent {
  */
 export const MsgExecLegacyContent = {
   typeUrl: '/cosmos.gov.v1.MsgExecLegacyContent' as const,
+  aminoType: 'cosmos-sdk/v1/MsgExecLegacyContent' as const,
+  is(o: any): o is MsgExecLegacyContent {
+    return (
+      o &&
+      (o.$typeUrl === MsgExecLegacyContent.typeUrl ||
+        typeof o.authority === 'string')
+    );
+  },
+  isSDK(o: any): o is MsgExecLegacyContentSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgExecLegacyContent.typeUrl ||
+        typeof o.authority === 'string')
+    );
+  },
   encode(
     message: MsgExecLegacyContent,
     writer: BinaryWriter = BinaryWriter.create(),
   ): BinaryWriter {
     if (message.content !== undefined) {
-      Any.encode(message.content, writer.uint32(10).fork()).ldelim();
+      Any.encode(
+        GlobalDecoderRegistry.wrapAny(message.content),
+        writer.uint32(10).fork(),
+      ).ldelim();
     }
     if (message.authority !== '') {
       writer.uint32(18).string(message.authority);
@@ -727,7 +850,7 @@ export const MsgExecLegacyContent = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.content = Any.decode(reader, reader.uint32());
+          message.content = GlobalDecoderRegistry.unwrapAny(reader);
           break;
         case 2:
           message.authority = reader.string();
@@ -741,14 +864,18 @@ export const MsgExecLegacyContent = {
   },
   fromJSON(object: any): MsgExecLegacyContent {
     return {
-      content: isSet(object.content) ? Any.fromJSON(object.content) : undefined,
+      content: isSet(object.content)
+        ? GlobalDecoderRegistry.fromJSON(object.content)
+        : undefined,
       authority: isSet(object.authority) ? String(object.authority) : '',
     };
   },
   toJSON(message: MsgExecLegacyContent): JsonSafe<MsgExecLegacyContent> {
     const obj: any = {};
     message.content !== undefined &&
-      (obj.content = message.content ? Any.toJSON(message.content) : undefined);
+      (obj.content = message.content
+        ? GlobalDecoderRegistry.toJSON(message.content)
+        : undefined);
     message.authority !== undefined && (obj.authority = message.authority);
     return obj;
   },
@@ -756,7 +883,7 @@ export const MsgExecLegacyContent = {
     const message = createBaseMsgExecLegacyContent();
     message.content =
       object.content !== undefined && object.content !== null
-        ? Any.fromPartial(object.content)
+        ? GlobalDecoderRegistry.fromPartial(object.content)
         : undefined;
     message.authority = object.authority ?? '';
     return message;
@@ -773,6 +900,24 @@ export const MsgExecLegacyContent = {
       value: MsgExecLegacyContent.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        MsgExecLegacyContent.typeUrl,
+      )
+    ) {
+      return;
+    }
+    ClientUpdateProposal.registerTypeUrl();
+    UpgradeProposal.registerTypeUrl();
+    SoftwareUpgradeProposal.registerTypeUrl();
+    CancelSoftwareUpgradeProposal.registerTypeUrl();
+    ParameterChangeProposal.registerTypeUrl();
+    TextProposal.registerTypeUrl();
+    CommunityPoolSpendProposal.registerTypeUrl();
+    CommunityPoolSpendProposalWithDeposit.registerTypeUrl();
+    CoreEvalProposal.registerTypeUrl();
+  },
 };
 function createBaseMsgExecLegacyContentResponse(): MsgExecLegacyContentResponse {
   return {};
@@ -785,6 +930,13 @@ function createBaseMsgExecLegacyContentResponse(): MsgExecLegacyContentResponse 
  */
 export const MsgExecLegacyContentResponse = {
   typeUrl: '/cosmos.gov.v1.MsgExecLegacyContentResponse' as const,
+  aminoType: 'cosmos-sdk/v1/MsgExecLegacyContentResponse' as const,
+  is(o: any): o is MsgExecLegacyContentResponse {
+    return o && o.$typeUrl === MsgExecLegacyContentResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgExecLegacyContentResponseSDKType {
+    return o && o.$typeUrl === MsgExecLegacyContentResponse.typeUrl;
+  },
   encode(
     _: MsgExecLegacyContentResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -840,6 +992,7 @@ export const MsgExecLegacyContentResponse = {
       value: MsgExecLegacyContentResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgVote(): MsgVote {
   return {
@@ -857,6 +1010,27 @@ function createBaseMsgVote(): MsgVote {
  */
 export const MsgVote = {
   typeUrl: '/cosmos.gov.v1.MsgVote' as const,
+  aminoType: 'cosmos-sdk/v1/MsgVote' as const,
+  is(o: any): o is MsgVote {
+    return (
+      o &&
+      (o.$typeUrl === MsgVote.typeUrl ||
+        (typeof o.proposalId === 'bigint' &&
+          typeof o.voter === 'string' &&
+          isSet(o.option) &&
+          typeof o.metadata === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgVoteSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgVote.typeUrl ||
+        (typeof o.proposal_id === 'bigint' &&
+          typeof o.voter === 'string' &&
+          isSet(o.option) &&
+          typeof o.metadata === 'string'))
+    );
+  },
   encode(
     message: MsgVote,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -945,6 +1119,7 @@ export const MsgVote = {
       value: MsgVote.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgVoteResponse(): MsgVoteResponse {
   return {};
@@ -957,6 +1132,13 @@ function createBaseMsgVoteResponse(): MsgVoteResponse {
  */
 export const MsgVoteResponse = {
   typeUrl: '/cosmos.gov.v1.MsgVoteResponse' as const,
+  aminoType: 'cosmos-sdk/v1/MsgVoteResponse' as const,
+  is(o: any): o is MsgVoteResponse {
+    return o && o.$typeUrl === MsgVoteResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgVoteResponseSDKType {
+    return o && o.$typeUrl === MsgVoteResponse.typeUrl;
+  },
   encode(
     _: MsgVoteResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1001,6 +1183,7 @@ export const MsgVoteResponse = {
       value: MsgVoteResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgVoteWeighted(): MsgVoteWeighted {
   return {
@@ -1018,6 +1201,29 @@ function createBaseMsgVoteWeighted(): MsgVoteWeighted {
  */
 export const MsgVoteWeighted = {
   typeUrl: '/cosmos.gov.v1.MsgVoteWeighted' as const,
+  aminoType: 'cosmos-sdk/v1/MsgVoteWeighted' as const,
+  is(o: any): o is MsgVoteWeighted {
+    return (
+      o &&
+      (o.$typeUrl === MsgVoteWeighted.typeUrl ||
+        (typeof o.proposalId === 'bigint' &&
+          typeof o.voter === 'string' &&
+          Array.isArray(o.options) &&
+          (!o.options.length || WeightedVoteOption.is(o.options[0])) &&
+          typeof o.metadata === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgVoteWeightedSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgVoteWeighted.typeUrl ||
+        (typeof o.proposal_id === 'bigint' &&
+          typeof o.voter === 'string' &&
+          Array.isArray(o.options) &&
+          (!o.options.length || WeightedVoteOption.isSDK(o.options[0])) &&
+          typeof o.metadata === 'string'))
+    );
+  },
   encode(
     message: MsgVoteWeighted,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1116,6 +1322,14 @@ export const MsgVoteWeighted = {
       value: MsgVoteWeighted.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(MsgVoteWeighted.typeUrl)
+    ) {
+      return;
+    }
+    WeightedVoteOption.registerTypeUrl();
+  },
 };
 function createBaseMsgVoteWeightedResponse(): MsgVoteWeightedResponse {
   return {};
@@ -1128,6 +1342,13 @@ function createBaseMsgVoteWeightedResponse(): MsgVoteWeightedResponse {
  */
 export const MsgVoteWeightedResponse = {
   typeUrl: '/cosmos.gov.v1.MsgVoteWeightedResponse' as const,
+  aminoType: 'cosmos-sdk/v1/MsgVoteWeightedResponse' as const,
+  is(o: any): o is MsgVoteWeightedResponse {
+    return o && o.$typeUrl === MsgVoteWeightedResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgVoteWeightedResponseSDKType {
+    return o && o.$typeUrl === MsgVoteWeightedResponse.typeUrl;
+  },
   encode(
     _: MsgVoteWeightedResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1179,6 +1400,7 @@ export const MsgVoteWeightedResponse = {
       value: MsgVoteWeightedResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgDeposit(): MsgDeposit {
   return {
@@ -1195,6 +1417,27 @@ function createBaseMsgDeposit(): MsgDeposit {
  */
 export const MsgDeposit = {
   typeUrl: '/cosmos.gov.v1.MsgDeposit' as const,
+  aminoType: 'cosmos-sdk/v1/MsgDeposit' as const,
+  is(o: any): o is MsgDeposit {
+    return (
+      o &&
+      (o.$typeUrl === MsgDeposit.typeUrl ||
+        (typeof o.proposalId === 'bigint' &&
+          typeof o.depositor === 'string' &&
+          Array.isArray(o.amount) &&
+          (!o.amount.length || Coin.is(o.amount[0]))))
+    );
+  },
+  isSDK(o: any): o is MsgDepositSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgDeposit.typeUrl ||
+        (typeof o.proposal_id === 'bigint' &&
+          typeof o.depositor === 'string' &&
+          Array.isArray(o.amount) &&
+          (!o.amount.length || Coin.isSDK(o.amount[0]))))
+    );
+  },
   encode(
     message: MsgDeposit,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1279,6 +1522,12 @@ export const MsgDeposit = {
       value: MsgDeposit.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(MsgDeposit.typeUrl)) {
+      return;
+    }
+    Coin.registerTypeUrl();
+  },
 };
 function createBaseMsgDepositResponse(): MsgDepositResponse {
   return {};
@@ -1291,6 +1540,13 @@ function createBaseMsgDepositResponse(): MsgDepositResponse {
  */
 export const MsgDepositResponse = {
   typeUrl: '/cosmos.gov.v1.MsgDepositResponse' as const,
+  aminoType: 'cosmos-sdk/v1/MsgDepositResponse' as const,
+  is(o: any): o is MsgDepositResponse {
+    return o && o.$typeUrl === MsgDepositResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgDepositResponseSDKType {
+    return o && o.$typeUrl === MsgDepositResponse.typeUrl;
+  },
   encode(
     _: MsgDepositResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1338,6 +1594,7 @@ export const MsgDepositResponse = {
       value: MsgDepositResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgUpdateParams(): MsgUpdateParams {
   return {
@@ -1355,6 +1612,21 @@ function createBaseMsgUpdateParams(): MsgUpdateParams {
  */
 export const MsgUpdateParams = {
   typeUrl: '/cosmos.gov.v1.MsgUpdateParams' as const,
+  aminoType: 'cosmos-sdk/x/gov/v1/MsgUpdateParams' as const,
+  is(o: any): o is MsgUpdateParams {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpdateParams.typeUrl ||
+        (typeof o.authority === 'string' && Params.is(o.params)))
+    );
+  },
+  isSDK(o: any): o is MsgUpdateParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpdateParams.typeUrl ||
+        (typeof o.authority === 'string' && Params.isSDK(o.params)))
+    );
+  },
   encode(
     message: MsgUpdateParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1422,6 +1694,14 @@ export const MsgUpdateParams = {
       value: MsgUpdateParams.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(MsgUpdateParams.typeUrl)
+    ) {
+      return;
+    }
+    Params.registerTypeUrl();
+  },
 };
 function createBaseMsgUpdateParamsResponse(): MsgUpdateParamsResponse {
   return {};
@@ -1437,6 +1717,13 @@ function createBaseMsgUpdateParamsResponse(): MsgUpdateParamsResponse {
  */
 export const MsgUpdateParamsResponse = {
   typeUrl: '/cosmos.gov.v1.MsgUpdateParamsResponse' as const,
+  aminoType: 'cosmos-sdk/v1/MsgUpdateParamsResponse' as const,
+  is(o: any): o is MsgUpdateParamsResponse {
+    return o && o.$typeUrl === MsgUpdateParamsResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgUpdateParamsResponseSDKType {
+    return o && o.$typeUrl === MsgUpdateParamsResponse.typeUrl;
+  },
   encode(
     _: MsgUpdateParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1488,6 +1775,7 @@ export const MsgUpdateParamsResponse = {
       value: MsgUpdateParamsResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgCancelProposal(): MsgCancelProposal {
   return {
@@ -1505,6 +1793,21 @@ function createBaseMsgCancelProposal(): MsgCancelProposal {
  */
 export const MsgCancelProposal = {
   typeUrl: '/cosmos.gov.v1.MsgCancelProposal' as const,
+  aminoType: 'cosmos-sdk/v1/MsgCancelProposal' as const,
+  is(o: any): o is MsgCancelProposal {
+    return (
+      o &&
+      (o.$typeUrl === MsgCancelProposal.typeUrl ||
+        (typeof o.proposalId === 'bigint' && typeof o.proposer === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgCancelProposalSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgCancelProposal.typeUrl ||
+        (typeof o.proposal_id === 'bigint' && typeof o.proposer === 'string'))
+    );
+  },
   encode(
     message: MsgCancelProposal,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1574,6 +1877,7 @@ export const MsgCancelProposal = {
       value: MsgCancelProposal.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgCancelProposalResponse(): MsgCancelProposalResponse {
   return {
@@ -1593,6 +1897,25 @@ function createBaseMsgCancelProposalResponse(): MsgCancelProposalResponse {
  */
 export const MsgCancelProposalResponse = {
   typeUrl: '/cosmos.gov.v1.MsgCancelProposalResponse' as const,
+  aminoType: 'cosmos-sdk/v1/MsgCancelProposalResponse' as const,
+  is(o: any): o is MsgCancelProposalResponse {
+    return (
+      o &&
+      (o.$typeUrl === MsgCancelProposalResponse.typeUrl ||
+        (typeof o.proposalId === 'bigint' &&
+          Timestamp.is(o.canceledTime) &&
+          typeof o.canceledHeight === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is MsgCancelProposalResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgCancelProposalResponse.typeUrl ||
+        (typeof o.proposal_id === 'bigint' &&
+          Timestamp.isSDK(o.canceled_time) &&
+          typeof o.canceled_height === 'bigint'))
+    );
+  },
   encode(
     message: MsgCancelProposalResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1694,4 +2017,5 @@ export const MsgCancelProposalResponse = {
       value: MsgCancelProposalResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

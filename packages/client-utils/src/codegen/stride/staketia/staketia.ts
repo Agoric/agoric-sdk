@@ -449,6 +449,46 @@ function createBaseHostZone(): HostZone {
  */
 export const HostZone = {
   typeUrl: '/stride.staketia.HostZone' as const,
+  is(o: any): o is HostZone {
+    return (
+      o &&
+      (o.$typeUrl === HostZone.typeUrl ||
+        (typeof o.chainId === 'string' &&
+          typeof o.nativeTokenDenom === 'string' &&
+          typeof o.nativeTokenIbcDenom === 'string' &&
+          typeof o.transferChannelId === 'string' &&
+          typeof o.delegationAddress === 'string' &&
+          typeof o.rewardAddress === 'string' &&
+          typeof o.depositAddress === 'string' &&
+          typeof o.redemptionAddress === 'string' &&
+          typeof o.claimAddress === 'string' &&
+          typeof o.operatorAddressOnStride === 'string' &&
+          typeof o.safeAddressOnStride === 'string' &&
+          typeof o.remainingDelegatedBalance === 'string' &&
+          typeof o.unbondingPeriodSeconds === 'bigint' &&
+          typeof o.halted === 'boolean'))
+    );
+  },
+  isSDK(o: any): o is HostZoneSDKType {
+    return (
+      o &&
+      (o.$typeUrl === HostZone.typeUrl ||
+        (typeof o.chain_id === 'string' &&
+          typeof o.native_token_denom === 'string' &&
+          typeof o.native_token_ibc_denom === 'string' &&
+          typeof o.transfer_channel_id === 'string' &&
+          typeof o.delegation_address === 'string' &&
+          typeof o.reward_address === 'string' &&
+          typeof o.deposit_address === 'string' &&
+          typeof o.redemption_address === 'string' &&
+          typeof o.claim_address === 'string' &&
+          typeof o.operator_address_on_stride === 'string' &&
+          typeof o.safe_address_on_stride === 'string' &&
+          typeof o.remaining_delegated_balance === 'string' &&
+          typeof o.unbonding_period_seconds === 'bigint' &&
+          typeof o.halted === 'boolean'))
+    );
+  },
   encode(
     message: HostZone,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -662,6 +702,7 @@ export const HostZone = {
       value: HostZone.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseDelegationRecord(): DelegationRecord {
   return {
@@ -683,6 +724,26 @@ function createBaseDelegationRecord(): DelegationRecord {
  */
 export const DelegationRecord = {
   typeUrl: '/stride.staketia.DelegationRecord' as const,
+  is(o: any): o is DelegationRecord {
+    return (
+      o &&
+      (o.$typeUrl === DelegationRecord.typeUrl ||
+        (typeof o.id === 'bigint' &&
+          typeof o.nativeAmount === 'string' &&
+          isSet(o.status) &&
+          typeof o.txHash === 'string'))
+    );
+  },
+  isSDK(o: any): o is DelegationRecordSDKType {
+    return (
+      o &&
+      (o.$typeUrl === DelegationRecord.typeUrl ||
+        (typeof o.id === 'bigint' &&
+          typeof o.native_amount === 'string' &&
+          isSet(o.status) &&
+          typeof o.tx_hash === 'string'))
+    );
+  },
   encode(
     message: DelegationRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -773,6 +834,7 @@ export const DelegationRecord = {
       value: DelegationRecord.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseUnbondingRecord(): UnbondingRecord {
   return {
@@ -793,6 +855,32 @@ function createBaseUnbondingRecord(): UnbondingRecord {
  */
 export const UnbondingRecord = {
   typeUrl: '/stride.staketia.UnbondingRecord' as const,
+  is(o: any): o is UnbondingRecord {
+    return (
+      o &&
+      (o.$typeUrl === UnbondingRecord.typeUrl ||
+        (typeof o.id === 'bigint' &&
+          isSet(o.status) &&
+          typeof o.stTokenAmount === 'string' &&
+          typeof o.nativeAmount === 'string' &&
+          typeof o.unbondingCompletionTimeSeconds === 'bigint' &&
+          typeof o.undelegationTxHash === 'string' &&
+          typeof o.unbondedTokenSweepTxHash === 'string'))
+    );
+  },
+  isSDK(o: any): o is UnbondingRecordSDKType {
+    return (
+      o &&
+      (o.$typeUrl === UnbondingRecord.typeUrl ||
+        (typeof o.id === 'bigint' &&
+          isSet(o.status) &&
+          typeof o.st_token_amount === 'string' &&
+          typeof o.native_amount === 'string' &&
+          typeof o.unbonding_completion_time_seconds === 'bigint' &&
+          typeof o.undelegation_tx_hash === 'string' &&
+          typeof o.unbonded_token_sweep_tx_hash === 'string'))
+    );
+  },
   encode(
     message: UnbondingRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -930,6 +1018,7 @@ export const UnbondingRecord = {
       value: UnbondingRecord.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseRedemptionRecord(): RedemptionRecord {
   return {
@@ -947,6 +1036,26 @@ function createBaseRedemptionRecord(): RedemptionRecord {
  */
 export const RedemptionRecord = {
   typeUrl: '/stride.staketia.RedemptionRecord' as const,
+  is(o: any): o is RedemptionRecord {
+    return (
+      o &&
+      (o.$typeUrl === RedemptionRecord.typeUrl ||
+        (typeof o.unbondingRecordId === 'bigint' &&
+          typeof o.redeemer === 'string' &&
+          typeof o.stTokenAmount === 'string' &&
+          typeof o.nativeAmount === 'string'))
+    );
+  },
+  isSDK(o: any): o is RedemptionRecordSDKType {
+    return (
+      o &&
+      (o.$typeUrl === RedemptionRecord.typeUrl ||
+        (typeof o.unbonding_record_id === 'bigint' &&
+          typeof o.redeemer === 'string' &&
+          typeof o.st_token_amount === 'string' &&
+          typeof o.native_amount === 'string'))
+    );
+  },
   encode(
     message: RedemptionRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1043,6 +1152,7 @@ export const RedemptionRecord = {
       value: RedemptionRecord.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseSlashRecord(): SlashRecord {
   return {
@@ -1060,6 +1170,26 @@ function createBaseSlashRecord(): SlashRecord {
  */
 export const SlashRecord = {
   typeUrl: '/stride.staketia.SlashRecord' as const,
+  is(o: any): o is SlashRecord {
+    return (
+      o &&
+      (o.$typeUrl === SlashRecord.typeUrl ||
+        (typeof o.id === 'bigint' &&
+          typeof o.time === 'bigint' &&
+          typeof o.nativeAmount === 'string' &&
+          typeof o.validatorAddress === 'string'))
+    );
+  },
+  isSDK(o: any): o is SlashRecordSDKType {
+    return (
+      o &&
+      (o.$typeUrl === SlashRecord.typeUrl ||
+        (typeof o.id === 'bigint' &&
+          typeof o.time === 'bigint' &&
+          typeof o.native_amount === 'string' &&
+          typeof o.validator_address === 'string'))
+    );
+  },
   encode(
     message: SlashRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1154,4 +1284,5 @@ export const SlashRecord = {
       value: SlashRecord.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

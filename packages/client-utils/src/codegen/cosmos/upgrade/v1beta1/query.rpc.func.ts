@@ -26,6 +26,7 @@ export const getCurrentPlan = buildQuery<
   decode: QueryCurrentPlanResponse.decode,
   service: 'cosmos.upgrade.v1beta1.Query',
   method: 'CurrentPlan',
+  deps: [QueryCurrentPlanRequest, QueryCurrentPlanResponse],
 });
 /**
  * AppliedPlan queries a previously applied upgrade plan by its name.
@@ -41,6 +42,7 @@ export const getAppliedPlan = buildQuery<
   decode: QueryAppliedPlanResponse.decode,
   service: 'cosmos.upgrade.v1beta1.Query',
   method: 'AppliedPlan',
+  deps: [QueryAppliedPlanRequest, QueryAppliedPlanResponse],
 });
 /**
  * UpgradedConsensusState queries the consensus state that will serve
@@ -62,6 +64,10 @@ export const getUpgradedConsensusState = buildQuery<
   decode: QueryUpgradedConsensusStateResponse.decode,
   service: 'cosmos.upgrade.v1beta1.Query',
   method: 'UpgradedConsensusState',
+  deps: [
+    QueryUpgradedConsensusStateRequest,
+    QueryUpgradedConsensusStateResponse,
+  ],
 });
 /**
  * ModuleVersions queries the list of module versions from state.
@@ -79,6 +85,7 @@ export const getModuleVersions = buildQuery<
   decode: QueryModuleVersionsResponse.decode,
   service: 'cosmos.upgrade.v1beta1.Query',
   method: 'ModuleVersions',
+  deps: [QueryModuleVersionsRequest, QueryModuleVersionsResponse],
 });
 /**
  * Returns the account with authority to conduct upgrades
@@ -96,4 +103,5 @@ export const getAuthority = buildQuery<
   decode: QueryAuthorityResponse.decode,
   service: 'cosmos.upgrade.v1beta1.Query',
   method: 'Authority',
+  deps: [QueryAuthorityRequest, QueryAuthorityResponse],
 });

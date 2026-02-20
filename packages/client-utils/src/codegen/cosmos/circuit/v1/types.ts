@@ -1,7 +1,8 @@
 //@ts-nocheck
-import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
+import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { type JsonSafe } from '../../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../../registry.js';
 /** Level is the permission level. */
 export enum Permissions_Level {
   /**
@@ -161,6 +162,26 @@ function createBasePermissions(): Permissions {
  */
 export const Permissions = {
   typeUrl: '/cosmos.circuit.v1.Permissions' as const,
+  aminoType: 'cosmos-sdk/Permissions' as const,
+  is(o: any): o is Permissions {
+    return (
+      o &&
+      (o.$typeUrl === Permissions.typeUrl ||
+        (isSet(o.level) &&
+          Array.isArray(o.limitTypeUrls) &&
+          (!o.limitTypeUrls.length || typeof o.limitTypeUrls[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is PermissionsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Permissions.typeUrl ||
+        (isSet(o.level) &&
+          Array.isArray(o.limit_type_urls) &&
+          (!o.limit_type_urls.length ||
+            typeof o.limit_type_urls[0] === 'string')))
+    );
+  },
   encode(
     message: Permissions,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -231,6 +252,7 @@ export const Permissions = {
       value: Permissions.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseGenesisAccountPermissions(): GenesisAccountPermissions {
   return {
@@ -246,6 +268,21 @@ function createBaseGenesisAccountPermissions(): GenesisAccountPermissions {
  */
 export const GenesisAccountPermissions = {
   typeUrl: '/cosmos.circuit.v1.GenesisAccountPermissions' as const,
+  aminoType: 'cosmos-sdk/GenesisAccountPermissions' as const,
+  is(o: any): o is GenesisAccountPermissions {
+    return (
+      o &&
+      (o.$typeUrl === GenesisAccountPermissions.typeUrl ||
+        typeof o.address === 'string')
+    );
+  },
+  isSDK(o: any): o is GenesisAccountPermissionsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GenesisAccountPermissions.typeUrl ||
+        typeof o.address === 'string')
+    );
+  },
   encode(
     message: GenesisAccountPermissions,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -331,6 +368,16 @@ export const GenesisAccountPermissions = {
       value: GenesisAccountPermissions.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        GenesisAccountPermissions.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Permissions.registerTypeUrl();
+  },
 };
 function createBaseGenesisState(): GenesisState {
   return {
@@ -346,6 +393,31 @@ function createBaseGenesisState(): GenesisState {
  */
 export const GenesisState = {
   typeUrl: '/cosmos.circuit.v1.GenesisState' as const,
+  aminoType: 'cosmos-sdk/GenesisState' as const,
+  is(o: any): o is GenesisState {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Array.isArray(o.accountPermissions) &&
+          (!o.accountPermissions.length ||
+            GenesisAccountPermissions.is(o.accountPermissions[0])) &&
+          Array.isArray(o.disabledTypeUrls) &&
+          (!o.disabledTypeUrls.length ||
+            typeof o.disabledTypeUrls[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is GenesisStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Array.isArray(o.account_permissions) &&
+          (!o.account_permissions.length ||
+            GenesisAccountPermissions.isSDK(o.account_permissions[0])) &&
+          Array.isArray(o.disabled_type_urls) &&
+          (!o.disabled_type_urls.length ||
+            typeof o.disabled_type_urls[0] === 'string')))
+    );
+  },
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -429,5 +501,11 @@ export const GenesisState = {
       typeUrl: '/cosmos.circuit.v1.GenesisState',
       value: GenesisState.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(GenesisState.typeUrl)) {
+      return;
+    }
+    GenesisAccountPermissions.registerTypeUrl();
   },
 };

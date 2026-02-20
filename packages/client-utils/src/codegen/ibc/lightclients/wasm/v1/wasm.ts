@@ -1,6 +1,7 @@
 //@ts-nocheck
 import { Height, type HeightSDKType } from '../../../core/client/v1/client.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
+import { GlobalDecoderRegistry } from '../../../../registry.js';
 import { isSet } from '../../../../helpers.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
@@ -128,6 +129,27 @@ function createBaseClientState(): ClientState {
  */
 export const ClientState = {
   typeUrl: '/ibc.lightclients.wasm.v1.ClientState' as const,
+  aminoType: 'cosmos-sdk/ClientState' as const,
+  is(o: any): o is ClientState {
+    return (
+      o &&
+      (o.$typeUrl === ClientState.typeUrl ||
+        ((o.data instanceof Uint8Array || typeof o.data === 'string') &&
+          (o.checksum instanceof Uint8Array ||
+            typeof o.checksum === 'string') &&
+          Height.is(o.latestHeight)))
+    );
+  },
+  isSDK(o: any): o is ClientStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ClientState.typeUrl ||
+        ((o.data instanceof Uint8Array || typeof o.data === 'string') &&
+          (o.checksum instanceof Uint8Array ||
+            typeof o.checksum === 'string') &&
+          Height.isSDK(o.latest_height)))
+    );
+  },
   encode(
     message: ClientState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -218,6 +240,12 @@ export const ClientState = {
       value: ClientState.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(ClientState.typeUrl)) {
+      return;
+    }
+    Height.registerTypeUrl();
+  },
 };
 function createBaseConsensusState(): ConsensusState {
   return {
@@ -232,6 +260,23 @@ function createBaseConsensusState(): ConsensusState {
  */
 export const ConsensusState = {
   typeUrl: '/ibc.lightclients.wasm.v1.ConsensusState' as const,
+  aminoType: 'cosmos-sdk/ConsensusState' as const,
+  is(o: any): o is ConsensusState {
+    return (
+      o &&
+      (o.$typeUrl === ConsensusState.typeUrl ||
+        o.data instanceof Uint8Array ||
+        typeof o.data === 'string')
+    );
+  },
+  isSDK(o: any): o is ConsensusStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ConsensusState.typeUrl ||
+        o.data instanceof Uint8Array ||
+        typeof o.data === 'string')
+    );
+  },
   encode(
     message: ConsensusState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -291,6 +336,7 @@ export const ConsensusState = {
       value: ConsensusState.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseClientMessage(): ClientMessage {
   return {
@@ -305,6 +351,23 @@ function createBaseClientMessage(): ClientMessage {
  */
 export const ClientMessage = {
   typeUrl: '/ibc.lightclients.wasm.v1.ClientMessage' as const,
+  aminoType: 'cosmos-sdk/ClientMessage' as const,
+  is(o: any): o is ClientMessage {
+    return (
+      o &&
+      (o.$typeUrl === ClientMessage.typeUrl ||
+        o.data instanceof Uint8Array ||
+        typeof o.data === 'string')
+    );
+  },
+  isSDK(o: any): o is ClientMessageSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ClientMessage.typeUrl ||
+        o.data instanceof Uint8Array ||
+        typeof o.data === 'string')
+    );
+  },
   encode(
     message: ClientMessage,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -364,6 +427,7 @@ export const ClientMessage = {
       value: ClientMessage.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseChecksums(): Checksums {
   return {
@@ -382,6 +446,27 @@ function createBaseChecksums(): Checksums {
  */
 export const Checksums = {
   typeUrl: '/ibc.lightclients.wasm.v1.Checksums' as const,
+  aminoType: 'cosmos-sdk/Checksums' as const,
+  is(o: any): o is Checksums {
+    return (
+      o &&
+      (o.$typeUrl === Checksums.typeUrl ||
+        (Array.isArray(o.checksums) &&
+          (!o.checksums.length ||
+            o.checksums[0] instanceof Uint8Array ||
+            typeof o.checksums[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is ChecksumsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Checksums.typeUrl ||
+        (Array.isArray(o.checksums) &&
+          (!o.checksums.length ||
+            o.checksums[0] instanceof Uint8Array ||
+            typeof o.checksums[0] === 'string')))
+    );
+  },
   encode(
     message: Checksums,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -444,4 +529,5 @@ export const Checksums = {
       value: Checksums.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

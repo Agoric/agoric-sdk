@@ -4,6 +4,7 @@ import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { Decimal } from '../../decimals.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../registry.js';
 /**
  * CommunityPoolRebate stores the size of the community pool liquid stake
  * (denominated in stTokens) and the rebate rate as a decimal
@@ -236,6 +237,22 @@ function createBaseCommunityPoolRebate(): CommunityPoolRebate {
  */
 export const CommunityPoolRebate = {
   typeUrl: '/stride.stakeibc.CommunityPoolRebate' as const,
+  is(o: any): o is CommunityPoolRebate {
+    return (
+      o &&
+      (o.$typeUrl === CommunityPoolRebate.typeUrl ||
+        (typeof o.rebateRate === 'string' &&
+          typeof o.liquidStakedStTokenAmount === 'string'))
+    );
+  },
+  isSDK(o: any): o is CommunityPoolRebateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === CommunityPoolRebate.typeUrl ||
+        (typeof o.rebate_rate === 'string' &&
+          typeof o.liquid_staked_st_token_amount === 'string'))
+    );
+  },
   encode(
     message: CommunityPoolRebate,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -310,6 +327,7 @@ export const CommunityPoolRebate = {
       value: CommunityPoolRebate.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseHostZone(): HostZone {
   return {
@@ -353,6 +371,78 @@ function createBaseHostZone(): HostZone {
  */
 export const HostZone = {
   typeUrl: '/stride.stakeibc.HostZone' as const,
+  is(o: any): o is HostZone {
+    return (
+      o &&
+      (o.$typeUrl === HostZone.typeUrl ||
+        (typeof o.chainId === 'string' &&
+          typeof o.bech32prefix === 'string' &&
+          typeof o.connectionId === 'string' &&
+          typeof o.transferChannelId === 'string' &&
+          typeof o.ibcDenom === 'string' &&
+          typeof o.hostDenom === 'string' &&
+          typeof o.unbondingPeriod === 'bigint' &&
+          Array.isArray(o.validators) &&
+          (!o.validators.length || Validator.is(o.validators[0])) &&
+          typeof o.depositAddress === 'string' &&
+          typeof o.withdrawalIcaAddress === 'string' &&
+          typeof o.feeIcaAddress === 'string' &&
+          typeof o.delegationIcaAddress === 'string' &&
+          typeof o.redemptionIcaAddress === 'string' &&
+          typeof o.communityPoolDepositIcaAddress === 'string' &&
+          typeof o.communityPoolReturnIcaAddress === 'string' &&
+          typeof o.communityPoolStakeHoldingAddress === 'string' &&
+          typeof o.communityPoolRedeemHoldingAddress === 'string' &&
+          typeof o.communityPoolTreasuryAddress === 'string' &&
+          typeof o.totalDelegations === 'string' &&
+          typeof o.lastRedemptionRate === 'string' &&
+          typeof o.redemptionRate === 'string' &&
+          typeof o.minRedemptionRate === 'string' &&
+          typeof o.maxRedemptionRate === 'string' &&
+          typeof o.minInnerRedemptionRate === 'string' &&
+          typeof o.maxInnerRedemptionRate === 'string' &&
+          typeof o.maxMessagesPerIcaTx === 'bigint' &&
+          typeof o.redemptionsEnabled === 'boolean' &&
+          typeof o.lsmLiquidStakeEnabled === 'boolean' &&
+          typeof o.halted === 'boolean'))
+    );
+  },
+  isSDK(o: any): o is HostZoneSDKType {
+    return (
+      o &&
+      (o.$typeUrl === HostZone.typeUrl ||
+        (typeof o.chain_id === 'string' &&
+          typeof o.bech32prefix === 'string' &&
+          typeof o.connection_id === 'string' &&
+          typeof o.transfer_channel_id === 'string' &&
+          typeof o.ibc_denom === 'string' &&
+          typeof o.host_denom === 'string' &&
+          typeof o.unbonding_period === 'bigint' &&
+          Array.isArray(o.validators) &&
+          (!o.validators.length || Validator.isSDK(o.validators[0])) &&
+          typeof o.deposit_address === 'string' &&
+          typeof o.withdrawal_ica_address === 'string' &&
+          typeof o.fee_ica_address === 'string' &&
+          typeof o.delegation_ica_address === 'string' &&
+          typeof o.redemption_ica_address === 'string' &&
+          typeof o.community_pool_deposit_ica_address === 'string' &&
+          typeof o.community_pool_return_ica_address === 'string' &&
+          typeof o.community_pool_stake_holding_address === 'string' &&
+          typeof o.community_pool_redeem_holding_address === 'string' &&
+          typeof o.community_pool_treasury_address === 'string' &&
+          typeof o.total_delegations === 'string' &&
+          typeof o.last_redemption_rate === 'string' &&
+          typeof o.redemption_rate === 'string' &&
+          typeof o.min_redemption_rate === 'string' &&
+          typeof o.max_redemption_rate === 'string' &&
+          typeof o.min_inner_redemption_rate === 'string' &&
+          typeof o.max_inner_redemption_rate === 'string' &&
+          typeof o.max_messages_per_ica_tx === 'bigint' &&
+          typeof o.redemptions_enabled === 'boolean' &&
+          typeof o.lsm_liquid_stake_enabled === 'boolean' &&
+          typeof o.halted === 'boolean'))
+    );
+  },
   encode(
     message: HostZone,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -821,5 +911,12 @@ export const HostZone = {
       typeUrl: '/stride.stakeibc.HostZone',
       value: HostZone.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(HostZone.typeUrl)) {
+      return;
+    }
+    Validator.registerTypeUrl();
+    CommunityPoolRebate.registerTypeUrl();
   },
 };

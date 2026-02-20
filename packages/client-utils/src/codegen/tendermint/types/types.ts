@@ -17,6 +17,7 @@ import { isSet, fromJsonTimestamp, fromTimestamp } from '../../helpers.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
 import { type JsonSafe } from '../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../registry.js';
 /** SignedMsgType is a type of signed message in the consensus. */
 export enum SignedMsgType {
   SIGNED_MSG_TYPE_UNKNOWN = 0,
@@ -567,6 +568,22 @@ function createBasePartSetHeader(): PartSetHeader {
  */
 export const PartSetHeader = {
   typeUrl: '/tendermint.types.PartSetHeader' as const,
+  is(o: any): o is PartSetHeader {
+    return (
+      o &&
+      (o.$typeUrl === PartSetHeader.typeUrl ||
+        (typeof o.total === 'number' &&
+          (o.hash instanceof Uint8Array || typeof o.hash === 'string')))
+    );
+  },
+  isSDK(o: any): o is PartSetHeaderSDKType {
+    return (
+      o &&
+      (o.$typeUrl === PartSetHeader.typeUrl ||
+        (typeof o.total === 'number' &&
+          (o.hash instanceof Uint8Array || typeof o.hash === 'string')))
+    );
+  },
   encode(
     message: PartSetHeader,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -635,6 +652,7 @@ export const PartSetHeader = {
       value: PartSetHeader.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBasePart(): Part {
   return {
@@ -650,6 +668,24 @@ function createBasePart(): Part {
  */
 export const Part = {
   typeUrl: '/tendermint.types.Part' as const,
+  is(o: any): o is Part {
+    return (
+      o &&
+      (o.$typeUrl === Part.typeUrl ||
+        (typeof o.index === 'number' &&
+          (o.bytes instanceof Uint8Array || typeof o.bytes === 'string') &&
+          Proof.is(o.proof)))
+    );
+  },
+  isSDK(o: any): o is PartSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Part.typeUrl ||
+        (typeof o.index === 'number' &&
+          (o.bytes instanceof Uint8Array || typeof o.bytes === 'string') &&
+          Proof.isSDK(o.proof)))
+    );
+  },
   encode(
     message: Part,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -731,6 +767,12 @@ export const Part = {
       value: Part.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(Part.typeUrl)) {
+      return;
+    }
+    Proof.registerTypeUrl();
+  },
 };
 function createBaseBlockID(): BlockID {
   return {
@@ -746,6 +788,22 @@ function createBaseBlockID(): BlockID {
  */
 export const BlockID = {
   typeUrl: '/tendermint.types.BlockID' as const,
+  is(o: any): o is BlockID {
+    return (
+      o &&
+      (o.$typeUrl === BlockID.typeUrl ||
+        ((o.hash instanceof Uint8Array || typeof o.hash === 'string') &&
+          PartSetHeader.is(o.partSetHeader)))
+    );
+  },
+  isSDK(o: any): o is BlockIDSDKType {
+    return (
+      o &&
+      (o.$typeUrl === BlockID.typeUrl ||
+        ((o.hash instanceof Uint8Array || typeof o.hash === 'string') &&
+          PartSetHeader.isSDK(o.part_set_header)))
+    );
+  },
   encode(
     message: BlockID,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -825,6 +883,12 @@ export const BlockID = {
       value: BlockID.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(BlockID.typeUrl)) {
+      return;
+    }
+    PartSetHeader.registerTypeUrl();
+  },
 };
 function createBaseHeader(): Header {
   return {
@@ -852,6 +916,63 @@ function createBaseHeader(): Header {
  */
 export const Header = {
   typeUrl: '/tendermint.types.Header' as const,
+  is(o: any): o is Header {
+    return (
+      o &&
+      (o.$typeUrl === Header.typeUrl ||
+        (Consensus.is(o.version) &&
+          typeof o.chainId === 'string' &&
+          typeof o.height === 'bigint' &&
+          Timestamp.is(o.time) &&
+          BlockID.is(o.lastBlockId) &&
+          (o.lastCommitHash instanceof Uint8Array ||
+            typeof o.lastCommitHash === 'string') &&
+          (o.dataHash instanceof Uint8Array ||
+            typeof o.dataHash === 'string') &&
+          (o.validatorsHash instanceof Uint8Array ||
+            typeof o.validatorsHash === 'string') &&
+          (o.nextValidatorsHash instanceof Uint8Array ||
+            typeof o.nextValidatorsHash === 'string') &&
+          (o.consensusHash instanceof Uint8Array ||
+            typeof o.consensusHash === 'string') &&
+          (o.appHash instanceof Uint8Array || typeof o.appHash === 'string') &&
+          (o.lastResultsHash instanceof Uint8Array ||
+            typeof o.lastResultsHash === 'string') &&
+          (o.evidenceHash instanceof Uint8Array ||
+            typeof o.evidenceHash === 'string') &&
+          (o.proposerAddress instanceof Uint8Array ||
+            typeof o.proposerAddress === 'string')))
+    );
+  },
+  isSDK(o: any): o is HeaderSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Header.typeUrl ||
+        (Consensus.isSDK(o.version) &&
+          typeof o.chain_id === 'string' &&
+          typeof o.height === 'bigint' &&
+          Timestamp.isSDK(o.time) &&
+          BlockID.isSDK(o.last_block_id) &&
+          (o.last_commit_hash instanceof Uint8Array ||
+            typeof o.last_commit_hash === 'string') &&
+          (o.data_hash instanceof Uint8Array ||
+            typeof o.data_hash === 'string') &&
+          (o.validators_hash instanceof Uint8Array ||
+            typeof o.validators_hash === 'string') &&
+          (o.next_validators_hash instanceof Uint8Array ||
+            typeof o.next_validators_hash === 'string') &&
+          (o.consensus_hash instanceof Uint8Array ||
+            typeof o.consensus_hash === 'string') &&
+          (o.app_hash instanceof Uint8Array ||
+            typeof o.app_hash === 'string') &&
+          (o.last_results_hash instanceof Uint8Array ||
+            typeof o.last_results_hash === 'string') &&
+          (o.evidence_hash instanceof Uint8Array ||
+            typeof o.evidence_hash === 'string') &&
+          (o.proposer_address instanceof Uint8Array ||
+            typeof o.proposer_address === 'string')))
+    );
+  },
   encode(
     message: Header,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1108,6 +1229,13 @@ export const Header = {
       value: Header.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(Header.typeUrl)) {
+      return;
+    }
+    Consensus.registerTypeUrl();
+    BlockID.registerTypeUrl();
+  },
 };
 function createBaseData(): Data {
   return {
@@ -1122,6 +1250,26 @@ function createBaseData(): Data {
  */
 export const Data = {
   typeUrl: '/tendermint.types.Data' as const,
+  is(o: any): o is Data {
+    return (
+      o &&
+      (o.$typeUrl === Data.typeUrl ||
+        (Array.isArray(o.txs) &&
+          (!o.txs.length ||
+            o.txs[0] instanceof Uint8Array ||
+            typeof o.txs[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is DataSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Data.typeUrl ||
+        (Array.isArray(o.txs) &&
+          (!o.txs.length ||
+            o.txs[0] instanceof Uint8Array ||
+            typeof o.txs[0] === 'string')))
+    );
+  },
   encode(
     message: Data,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1184,6 +1332,7 @@ export const Data = {
       value: Data.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseVote(): Vote {
   return {
@@ -1208,6 +1357,46 @@ function createBaseVote(): Vote {
  */
 export const Vote = {
   typeUrl: '/tendermint.types.Vote' as const,
+  is(o: any): o is Vote {
+    return (
+      o &&
+      (o.$typeUrl === Vote.typeUrl ||
+        (isSet(o.type) &&
+          typeof o.height === 'bigint' &&
+          typeof o.round === 'number' &&
+          BlockID.is(o.blockId) &&
+          Timestamp.is(o.timestamp) &&
+          (o.validatorAddress instanceof Uint8Array ||
+            typeof o.validatorAddress === 'string') &&
+          typeof o.validatorIndex === 'number' &&
+          (o.signature instanceof Uint8Array ||
+            typeof o.signature === 'string') &&
+          (o.extension instanceof Uint8Array ||
+            typeof o.extension === 'string') &&
+          (o.extensionSignature instanceof Uint8Array ||
+            typeof o.extensionSignature === 'string')))
+    );
+  },
+  isSDK(o: any): o is VoteSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Vote.typeUrl ||
+        (isSet(o.type) &&
+          typeof o.height === 'bigint' &&
+          typeof o.round === 'number' &&
+          BlockID.isSDK(o.block_id) &&
+          Timestamp.isSDK(o.timestamp) &&
+          (o.validator_address instanceof Uint8Array ||
+            typeof o.validator_address === 'string') &&
+          typeof o.validator_index === 'number' &&
+          (o.signature instanceof Uint8Array ||
+            typeof o.signature === 'string') &&
+          (o.extension instanceof Uint8Array ||
+            typeof o.extension === 'string') &&
+          (o.extension_signature instanceof Uint8Array ||
+            typeof o.extension_signature === 'string')))
+    );
+  },
   encode(
     message: Vote,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1391,6 +1580,12 @@ export const Vote = {
       value: Vote.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(Vote.typeUrl)) {
+      return;
+    }
+    BlockID.registerTypeUrl();
+  },
 };
 function createBaseCommit(): Commit {
   return {
@@ -1408,6 +1603,28 @@ function createBaseCommit(): Commit {
  */
 export const Commit = {
   typeUrl: '/tendermint.types.Commit' as const,
+  is(o: any): o is Commit {
+    return (
+      o &&
+      (o.$typeUrl === Commit.typeUrl ||
+        (typeof o.height === 'bigint' &&
+          typeof o.round === 'number' &&
+          BlockID.is(o.blockId) &&
+          Array.isArray(o.signatures) &&
+          (!o.signatures.length || CommitSig.is(o.signatures[0]))))
+    );
+  },
+  isSDK(o: any): o is CommitSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Commit.typeUrl ||
+        (typeof o.height === 'bigint' &&
+          typeof o.round === 'number' &&
+          BlockID.isSDK(o.block_id) &&
+          Array.isArray(o.signatures) &&
+          (!o.signatures.length || CommitSig.isSDK(o.signatures[0]))))
+    );
+  },
   encode(
     message: Commit,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1512,6 +1729,13 @@ export const Commit = {
       value: Commit.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(Commit.typeUrl)) {
+      return;
+    }
+    BlockID.registerTypeUrl();
+    CommitSig.registerTypeUrl();
+  },
 };
 function createBaseCommitSig(): CommitSig {
   return {
@@ -1529,6 +1753,30 @@ function createBaseCommitSig(): CommitSig {
  */
 export const CommitSig = {
   typeUrl: '/tendermint.types.CommitSig' as const,
+  is(o: any): o is CommitSig {
+    return (
+      o &&
+      (o.$typeUrl === CommitSig.typeUrl ||
+        (isSet(o.blockIdFlag) &&
+          (o.validatorAddress instanceof Uint8Array ||
+            typeof o.validatorAddress === 'string') &&
+          Timestamp.is(o.timestamp) &&
+          (o.signature instanceof Uint8Array ||
+            typeof o.signature === 'string')))
+    );
+  },
+  isSDK(o: any): o is CommitSigSDKType {
+    return (
+      o &&
+      (o.$typeUrl === CommitSig.typeUrl ||
+        (isSet(o.block_id_flag) &&
+          (o.validator_address instanceof Uint8Array ||
+            typeof o.validator_address === 'string') &&
+          Timestamp.isSDK(o.timestamp) &&
+          (o.signature instanceof Uint8Array ||
+            typeof o.signature === 'string')))
+    );
+  },
   encode(
     message: CommitSig,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1631,6 +1879,7 @@ export const CommitSig = {
       value: CommitSig.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseExtendedCommit(): ExtendedCommit {
   return {
@@ -1647,6 +1896,30 @@ function createBaseExtendedCommit(): ExtendedCommit {
  */
 export const ExtendedCommit = {
   typeUrl: '/tendermint.types.ExtendedCommit' as const,
+  is(o: any): o is ExtendedCommit {
+    return (
+      o &&
+      (o.$typeUrl === ExtendedCommit.typeUrl ||
+        (typeof o.height === 'bigint' &&
+          typeof o.round === 'number' &&
+          BlockID.is(o.blockId) &&
+          Array.isArray(o.extendedSignatures) &&
+          (!o.extendedSignatures.length ||
+            ExtendedCommitSig.is(o.extendedSignatures[0]))))
+    );
+  },
+  isSDK(o: any): o is ExtendedCommitSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ExtendedCommit.typeUrl ||
+        (typeof o.height === 'bigint' &&
+          typeof o.round === 'number' &&
+          BlockID.isSDK(o.block_id) &&
+          Array.isArray(o.extended_signatures) &&
+          (!o.extended_signatures.length ||
+            ExtendedCommitSig.isSDK(o.extended_signatures[0]))))
+    );
+  },
   encode(
     message: ExtendedCommit,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1756,6 +2029,15 @@ export const ExtendedCommit = {
       value: ExtendedCommit.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(ExtendedCommit.typeUrl)
+    ) {
+      return;
+    }
+    BlockID.registerTypeUrl();
+    ExtendedCommitSig.registerTypeUrl();
+  },
 };
 function createBaseExtendedCommitSig(): ExtendedCommitSig {
   return {
@@ -1777,6 +2059,38 @@ function createBaseExtendedCommitSig(): ExtendedCommitSig {
  */
 export const ExtendedCommitSig = {
   typeUrl: '/tendermint.types.ExtendedCommitSig' as const,
+  is(o: any): o is ExtendedCommitSig {
+    return (
+      o &&
+      (o.$typeUrl === ExtendedCommitSig.typeUrl ||
+        (isSet(o.blockIdFlag) &&
+          (o.validatorAddress instanceof Uint8Array ||
+            typeof o.validatorAddress === 'string') &&
+          Timestamp.is(o.timestamp) &&
+          (o.signature instanceof Uint8Array ||
+            typeof o.signature === 'string') &&
+          (o.extension instanceof Uint8Array ||
+            typeof o.extension === 'string') &&
+          (o.extensionSignature instanceof Uint8Array ||
+            typeof o.extensionSignature === 'string')))
+    );
+  },
+  isSDK(o: any): o is ExtendedCommitSigSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ExtendedCommitSig.typeUrl ||
+        (isSet(o.block_id_flag) &&
+          (o.validator_address instanceof Uint8Array ||
+            typeof o.validator_address === 'string') &&
+          Timestamp.isSDK(o.timestamp) &&
+          (o.signature instanceof Uint8Array ||
+            typeof o.signature === 'string') &&
+          (o.extension instanceof Uint8Array ||
+            typeof o.extension === 'string') &&
+          (o.extension_signature instanceof Uint8Array ||
+            typeof o.extension_signature === 'string')))
+    );
+  },
   encode(
     message: ExtendedCommitSig,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1909,6 +2223,7 @@ export const ExtendedCommitSig = {
       value: ExtendedCommitSig.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseProposal(): Proposal {
   return {
@@ -1928,6 +2243,34 @@ function createBaseProposal(): Proposal {
  */
 export const Proposal = {
   typeUrl: '/tendermint.types.Proposal' as const,
+  is(o: any): o is Proposal {
+    return (
+      o &&
+      (o.$typeUrl === Proposal.typeUrl ||
+        (isSet(o.type) &&
+          typeof o.height === 'bigint' &&
+          typeof o.round === 'number' &&
+          typeof o.polRound === 'number' &&
+          BlockID.is(o.blockId) &&
+          Timestamp.is(o.timestamp) &&
+          (o.signature instanceof Uint8Array ||
+            typeof o.signature === 'string')))
+    );
+  },
+  isSDK(o: any): o is ProposalSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Proposal.typeUrl ||
+        (isSet(o.type) &&
+          typeof o.height === 'bigint' &&
+          typeof o.round === 'number' &&
+          typeof o.pol_round === 'number' &&
+          BlockID.isSDK(o.block_id) &&
+          Timestamp.isSDK(o.timestamp) &&
+          (o.signature instanceof Uint8Array ||
+            typeof o.signature === 'string')))
+    );
+  },
   encode(
     message: Proposal,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2063,6 +2406,12 @@ export const Proposal = {
       value: Proposal.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(Proposal.typeUrl)) {
+      return;
+    }
+    BlockID.registerTypeUrl();
+  },
 };
 function createBaseSignedHeader(): SignedHeader {
   return {
@@ -2077,6 +2426,12 @@ function createBaseSignedHeader(): SignedHeader {
  */
 export const SignedHeader = {
   typeUrl: '/tendermint.types.SignedHeader' as const,
+  is(o: any): o is SignedHeader {
+    return o && o.$typeUrl === SignedHeader.typeUrl;
+  },
+  isSDK(o: any): o is SignedHeaderSDKType {
+    return o && o.$typeUrl === SignedHeader.typeUrl;
+  },
   encode(
     message: SignedHeader,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2148,6 +2503,13 @@ export const SignedHeader = {
       value: SignedHeader.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(SignedHeader.typeUrl)) {
+      return;
+    }
+    Header.registerTypeUrl();
+    Commit.registerTypeUrl();
+  },
 };
 function createBaseLightBlock(): LightBlock {
   return {
@@ -2162,6 +2524,12 @@ function createBaseLightBlock(): LightBlock {
  */
 export const LightBlock = {
   typeUrl: '/tendermint.types.LightBlock' as const,
+  is(o: any): o is LightBlock {
+    return o && o.$typeUrl === LightBlock.typeUrl;
+  },
+  isSDK(o: any): o is LightBlockSDKType {
+    return o && o.$typeUrl === LightBlock.typeUrl;
+  },
   encode(
     message: LightBlock,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2247,6 +2615,13 @@ export const LightBlock = {
       value: LightBlock.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(LightBlock.typeUrl)) {
+      return;
+    }
+    SignedHeader.registerTypeUrl();
+    ValidatorSet.registerTypeUrl();
+  },
 };
 function createBaseBlockMeta(): BlockMeta {
   return {
@@ -2263,6 +2638,26 @@ function createBaseBlockMeta(): BlockMeta {
  */
 export const BlockMeta = {
   typeUrl: '/tendermint.types.BlockMeta' as const,
+  is(o: any): o is BlockMeta {
+    return (
+      o &&
+      (o.$typeUrl === BlockMeta.typeUrl ||
+        (BlockID.is(o.blockId) &&
+          typeof o.blockSize === 'bigint' &&
+          Header.is(o.header) &&
+          typeof o.numTxs === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is BlockMetaSDKType {
+    return (
+      o &&
+      (o.$typeUrl === BlockMeta.typeUrl ||
+        (BlockID.isSDK(o.block_id) &&
+          typeof o.block_size === 'bigint' &&
+          Header.isSDK(o.header) &&
+          typeof o.num_txs === 'bigint'))
+    );
+  },
   encode(
     message: BlockMeta,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2368,6 +2763,13 @@ export const BlockMeta = {
       value: BlockMeta.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(BlockMeta.typeUrl)) {
+      return;
+    }
+    BlockID.registerTypeUrl();
+    Header.registerTypeUrl();
+  },
 };
 function createBaseTxProof(): TxProof {
   return {
@@ -2384,6 +2786,23 @@ function createBaseTxProof(): TxProof {
  */
 export const TxProof = {
   typeUrl: '/tendermint.types.TxProof' as const,
+  is(o: any): o is TxProof {
+    return (
+      o &&
+      (o.$typeUrl === TxProof.typeUrl ||
+        ((o.rootHash instanceof Uint8Array || typeof o.rootHash === 'string') &&
+          (o.data instanceof Uint8Array || typeof o.data === 'string')))
+    );
+  },
+  isSDK(o: any): o is TxProofSDKType {
+    return (
+      o &&
+      (o.$typeUrl === TxProof.typeUrl ||
+        ((o.root_hash instanceof Uint8Array ||
+          typeof o.root_hash === 'string') &&
+          (o.data instanceof Uint8Array || typeof o.data === 'string')))
+    );
+  },
   encode(
     message: TxProof,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2469,5 +2888,11 @@ export const TxProof = {
       typeUrl: '/tendermint.types.TxProof',
       value: TxProof.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(TxProof.typeUrl)) {
+      return;
+    }
+    Proof.registerTypeUrl();
   },
 };

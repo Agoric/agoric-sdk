@@ -28,6 +28,7 @@ export const getConnection = buildQuery<
   decode: QueryConnectionResponse.decode,
   service: 'ibc.core.connection.v1.Query',
   method: 'Connection',
+  deps: [QueryConnectionRequest, QueryConnectionResponse],
 });
 /**
  * Connections queries all the IBC connections of a chain.
@@ -43,6 +44,7 @@ export const getConnections = buildQuery<
   decode: QueryConnectionsResponse.decode,
   service: 'ibc.core.connection.v1.Query',
   method: 'Connections',
+  deps: [QueryConnectionsRequest, QueryConnectionsResponse],
 });
 /**
  * ClientConnections queries the connection paths associated with a client
@@ -59,6 +61,7 @@ export const getClientConnections = buildQuery<
   decode: QueryClientConnectionsResponse.decode,
   service: 'ibc.core.connection.v1.Query',
   method: 'ClientConnections',
+  deps: [QueryClientConnectionsRequest, QueryClientConnectionsResponse],
 });
 /**
  * ConnectionClientState queries the client state associated with the
@@ -75,6 +78,7 @@ export const getConnectionClientState = buildQuery<
   decode: QueryConnectionClientStateResponse.decode,
   service: 'ibc.core.connection.v1.Query',
   method: 'ConnectionClientState',
+  deps: [QueryConnectionClientStateRequest, QueryConnectionClientStateResponse],
 });
 /**
  * ConnectionConsensusState queries the consensus state associated with the
@@ -91,6 +95,10 @@ export const getConnectionConsensusState = buildQuery<
   decode: QueryConnectionConsensusStateResponse.decode,
   service: 'ibc.core.connection.v1.Query',
   method: 'ConnectionConsensusState',
+  deps: [
+    QueryConnectionConsensusStateRequest,
+    QueryConnectionConsensusStateResponse,
+  ],
 });
 /**
  * ConnectionParams queries all parameters of the ibc connection submodule.
@@ -106,4 +114,5 @@ export const getConnectionParams = buildQuery<
   decode: QueryConnectionParamsResponse.decode,
   service: 'ibc.core.connection.v1.Query',
   method: 'ConnectionParams',
+  deps: [QueryConnectionParamsRequest, QueryConnectionParamsResponse],
 });

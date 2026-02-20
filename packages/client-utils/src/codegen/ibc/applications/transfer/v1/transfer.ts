@@ -88,6 +88,21 @@ function createBaseDenomTrace(): DenomTrace {
  */
 export const DenomTrace = {
   typeUrl: '/ibc.applications.transfer.v1.DenomTrace' as const,
+  aminoType: 'cosmos-sdk/DenomTrace' as const,
+  is(o: any): o is DenomTrace {
+    return (
+      o &&
+      (o.$typeUrl === DenomTrace.typeUrl ||
+        (typeof o.path === 'string' && typeof o.baseDenom === 'string'))
+    );
+  },
+  isSDK(o: any): o is DenomTraceSDKType {
+    return (
+      o &&
+      (o.$typeUrl === DenomTrace.typeUrl ||
+        (typeof o.path === 'string' && typeof o.base_denom === 'string'))
+    );
+  },
   encode(
     message: DenomTrace,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -151,6 +166,7 @@ export const DenomTrace = {
       value: DenomTrace.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseParams(): Params {
   return {
@@ -169,6 +185,23 @@ function createBaseParams(): Params {
  */
 export const Params = {
   typeUrl: '/ibc.applications.transfer.v1.Params' as const,
+  aminoType: 'cosmos-sdk/Params' as const,
+  is(o: any): o is Params {
+    return (
+      o &&
+      (o.$typeUrl === Params.typeUrl ||
+        (typeof o.sendEnabled === 'boolean' &&
+          typeof o.receiveEnabled === 'boolean'))
+    );
+  },
+  isSDK(o: any): o is ParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Params.typeUrl ||
+        (typeof o.send_enabled === 'boolean' &&
+          typeof o.receive_enabled === 'boolean'))
+    );
+  },
   encode(
     message: Params,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -238,4 +271,5 @@ export const Params = {
       value: Params.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

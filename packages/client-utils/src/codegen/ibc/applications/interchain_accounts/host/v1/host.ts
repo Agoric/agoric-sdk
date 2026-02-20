@@ -85,6 +85,26 @@ function createBaseParams(): Params {
  */
 export const Params = {
   typeUrl: '/ibc.applications.interchain_accounts.host.v1.Params' as const,
+  aminoType: 'cosmos-sdk/Params' as const,
+  is(o: any): o is Params {
+    return (
+      o &&
+      (o.$typeUrl === Params.typeUrl ||
+        (typeof o.hostEnabled === 'boolean' &&
+          Array.isArray(o.allowMessages) &&
+          (!o.allowMessages.length || typeof o.allowMessages[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is ParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Params.typeUrl ||
+        (typeof o.host_enabled === 'boolean' &&
+          Array.isArray(o.allow_messages) &&
+          (!o.allow_messages.length ||
+            typeof o.allow_messages[0] === 'string')))
+    );
+  },
   encode(
     message: Params,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -157,6 +177,7 @@ export const Params = {
       value: Params.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryRequest(): QueryRequest {
   return {
@@ -174,6 +195,23 @@ function createBaseQueryRequest(): QueryRequest {
 export const QueryRequest = {
   typeUrl:
     '/ibc.applications.interchain_accounts.host.v1.QueryRequest' as const,
+  aminoType: 'cosmos-sdk/QueryRequest' as const,
+  is(o: any): o is QueryRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryRequest.typeUrl ||
+        (typeof o.path === 'string' &&
+          (o.data instanceof Uint8Array || typeof o.data === 'string')))
+    );
+  },
+  isSDK(o: any): o is QueryRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryRequest.typeUrl ||
+        (typeof o.path === 'string' &&
+          (o.data instanceof Uint8Array || typeof o.data === 'string')))
+    );
+  },
   encode(
     message: QueryRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -242,4 +280,5 @@ export const QueryRequest = {
       value: QueryRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

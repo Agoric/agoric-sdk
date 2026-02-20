@@ -13,6 +13,7 @@ import {
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../../registry.js';
 /**
  * MsgSend represents a message to send coins from one account to another.
  * @name MsgSend
@@ -250,6 +251,27 @@ function createBaseMsgSend(): MsgSend {
  */
 export const MsgSend = {
   typeUrl: '/cosmos.bank.v1beta1.MsgSend' as const,
+  aminoType: 'cosmos-sdk/MsgSend' as const,
+  is(o: any): o is MsgSend {
+    return (
+      o &&
+      (o.$typeUrl === MsgSend.typeUrl ||
+        (typeof o.fromAddress === 'string' &&
+          typeof o.toAddress === 'string' &&
+          Array.isArray(o.amount) &&
+          (!o.amount.length || Coin.is(o.amount[0]))))
+    );
+  },
+  isSDK(o: any): o is MsgSendSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgSend.typeUrl ||
+        (typeof o.from_address === 'string' &&
+          typeof o.to_address === 'string' &&
+          Array.isArray(o.amount) &&
+          (!o.amount.length || Coin.isSDK(o.amount[0]))))
+    );
+  },
   encode(
     message: MsgSend,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -329,6 +351,12 @@ export const MsgSend = {
       value: MsgSend.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(MsgSend.typeUrl)) {
+      return;
+    }
+    Coin.registerTypeUrl();
+  },
 };
 function createBaseMsgSendResponse(): MsgSendResponse {
   return {};
@@ -341,6 +369,13 @@ function createBaseMsgSendResponse(): MsgSendResponse {
  */
 export const MsgSendResponse = {
   typeUrl: '/cosmos.bank.v1beta1.MsgSendResponse' as const,
+  aminoType: 'cosmos-sdk/MsgSendResponse' as const,
+  is(o: any): o is MsgSendResponse {
+    return o && o.$typeUrl === MsgSendResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgSendResponseSDKType {
+    return o && o.$typeUrl === MsgSendResponse.typeUrl;
+  },
   encode(
     _: MsgSendResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -385,6 +420,7 @@ export const MsgSendResponse = {
       value: MsgSendResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgMultiSend(): MsgMultiSend {
   return {
@@ -400,6 +436,27 @@ function createBaseMsgMultiSend(): MsgMultiSend {
  */
 export const MsgMultiSend = {
   typeUrl: '/cosmos.bank.v1beta1.MsgMultiSend' as const,
+  aminoType: 'cosmos-sdk/MsgMultiSend' as const,
+  is(o: any): o is MsgMultiSend {
+    return (
+      o &&
+      (o.$typeUrl === MsgMultiSend.typeUrl ||
+        (Array.isArray(o.inputs) &&
+          (!o.inputs.length || Input.is(o.inputs[0])) &&
+          Array.isArray(o.outputs) &&
+          (!o.outputs.length || Output.is(o.outputs[0]))))
+    );
+  },
+  isSDK(o: any): o is MsgMultiSendSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgMultiSend.typeUrl ||
+        (Array.isArray(o.inputs) &&
+          (!o.inputs.length || Input.isSDK(o.inputs[0])) &&
+          Array.isArray(o.outputs) &&
+          (!o.outputs.length || Output.isSDK(o.outputs[0]))))
+    );
+  },
   encode(
     message: MsgMultiSend,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -477,6 +534,13 @@ export const MsgMultiSend = {
       value: MsgMultiSend.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(MsgMultiSend.typeUrl)) {
+      return;
+    }
+    Input.registerTypeUrl();
+    Output.registerTypeUrl();
+  },
 };
 function createBaseMsgMultiSendResponse(): MsgMultiSendResponse {
   return {};
@@ -489,6 +553,13 @@ function createBaseMsgMultiSendResponse(): MsgMultiSendResponse {
  */
 export const MsgMultiSendResponse = {
   typeUrl: '/cosmos.bank.v1beta1.MsgMultiSendResponse' as const,
+  aminoType: 'cosmos-sdk/MsgMultiSendResponse' as const,
+  is(o: any): o is MsgMultiSendResponse {
+    return o && o.$typeUrl === MsgMultiSendResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgMultiSendResponseSDKType {
+    return o && o.$typeUrl === MsgMultiSendResponse.typeUrl;
+  },
   encode(
     _: MsgMultiSendResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -536,6 +607,7 @@ export const MsgMultiSendResponse = {
       value: MsgMultiSendResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgUpdateParams(): MsgUpdateParams {
   return {
@@ -553,6 +625,21 @@ function createBaseMsgUpdateParams(): MsgUpdateParams {
  */
 export const MsgUpdateParams = {
   typeUrl: '/cosmos.bank.v1beta1.MsgUpdateParams' as const,
+  aminoType: 'cosmos-sdk/x/bank/MsgUpdateParams' as const,
+  is(o: any): o is MsgUpdateParams {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpdateParams.typeUrl ||
+        (typeof o.authority === 'string' && Params.is(o.params)))
+    );
+  },
+  isSDK(o: any): o is MsgUpdateParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpdateParams.typeUrl ||
+        (typeof o.authority === 'string' && Params.isSDK(o.params)))
+    );
+  },
   encode(
     message: MsgUpdateParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -620,6 +707,14 @@ export const MsgUpdateParams = {
       value: MsgUpdateParams.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(MsgUpdateParams.typeUrl)
+    ) {
+      return;
+    }
+    Params.registerTypeUrl();
+  },
 };
 function createBaseMsgUpdateParamsResponse(): MsgUpdateParamsResponse {
   return {};
@@ -635,6 +730,13 @@ function createBaseMsgUpdateParamsResponse(): MsgUpdateParamsResponse {
  */
 export const MsgUpdateParamsResponse = {
   typeUrl: '/cosmos.bank.v1beta1.MsgUpdateParamsResponse' as const,
+  aminoType: 'cosmos-sdk/MsgUpdateParamsResponse' as const,
+  is(o: any): o is MsgUpdateParamsResponse {
+    return o && o.$typeUrl === MsgUpdateParamsResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgUpdateParamsResponseSDKType {
+    return o && o.$typeUrl === MsgUpdateParamsResponse.typeUrl;
+  },
   encode(
     _: MsgUpdateParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -686,6 +788,7 @@ export const MsgUpdateParamsResponse = {
       value: MsgUpdateParamsResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgSetSendEnabled(): MsgSetSendEnabled {
   return {
@@ -708,6 +811,30 @@ function createBaseMsgSetSendEnabled(): MsgSetSendEnabled {
  */
 export const MsgSetSendEnabled = {
   typeUrl: '/cosmos.bank.v1beta1.MsgSetSendEnabled' as const,
+  aminoType: 'cosmos-sdk/MsgSetSendEnabled' as const,
+  is(o: any): o is MsgSetSendEnabled {
+    return (
+      o &&
+      (o.$typeUrl === MsgSetSendEnabled.typeUrl ||
+        (typeof o.authority === 'string' &&
+          Array.isArray(o.sendEnabled) &&
+          (!o.sendEnabled.length || SendEnabled.is(o.sendEnabled[0])) &&
+          Array.isArray(o.useDefaultFor) &&
+          (!o.useDefaultFor.length || typeof o.useDefaultFor[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is MsgSetSendEnabledSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgSetSendEnabled.typeUrl ||
+        (typeof o.authority === 'string' &&
+          Array.isArray(o.send_enabled) &&
+          (!o.send_enabled.length || SendEnabled.isSDK(o.send_enabled[0])) &&
+          Array.isArray(o.use_default_for) &&
+          (!o.use_default_for.length ||
+            typeof o.use_default_for[0] === 'string')))
+    );
+  },
   encode(
     message: MsgSetSendEnabled,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -795,6 +922,14 @@ export const MsgSetSendEnabled = {
       value: MsgSetSendEnabled.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(MsgSetSendEnabled.typeUrl)
+    ) {
+      return;
+    }
+    SendEnabled.registerTypeUrl();
+  },
 };
 function createBaseMsgSetSendEnabledResponse(): MsgSetSendEnabledResponse {
   return {};
@@ -809,6 +944,13 @@ function createBaseMsgSetSendEnabledResponse(): MsgSetSendEnabledResponse {
  */
 export const MsgSetSendEnabledResponse = {
   typeUrl: '/cosmos.bank.v1beta1.MsgSetSendEnabledResponse' as const,
+  aminoType: 'cosmos-sdk/MsgSetSendEnabledResponse' as const,
+  is(o: any): o is MsgSetSendEnabledResponse {
+    return o && o.$typeUrl === MsgSetSendEnabledResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgSetSendEnabledResponseSDKType {
+    return o && o.$typeUrl === MsgSetSendEnabledResponse.typeUrl;
+  },
   encode(
     _: MsgSetSendEnabledResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -862,4 +1004,5 @@ export const MsgSetSendEnabledResponse = {
       value: MsgSetSendEnabledResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

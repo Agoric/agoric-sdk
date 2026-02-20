@@ -31,6 +31,7 @@ export const getSimulate = buildQuery<SimulateRequest, SimulateResponse>({
   decode: SimulateResponse.decode,
   service: 'cosmos.tx.v1beta1.Service',
   method: 'Simulate',
+  deps: [SimulateRequest, SimulateResponse],
 });
 /**
  * GetTx fetches a tx by hash.
@@ -43,6 +44,7 @@ export const getGetTx = buildQuery<GetTxRequest, GetTxResponse>({
   decode: GetTxResponse.decode,
   service: 'cosmos.tx.v1beta1.Service',
   method: 'GetTx',
+  deps: [GetTxRequest, GetTxResponse],
 });
 /**
  * BroadcastTx broadcast transaction.
@@ -58,6 +60,7 @@ export const getBroadcastTx = buildQuery<
   decode: BroadcastTxResponse.decode,
   service: 'cosmos.tx.v1beta1.Service',
   method: 'BroadcastTx',
+  deps: [BroadcastTxRequest, BroadcastTxResponse],
 });
 /**
  * GetTxsEvent fetches txs by event.
@@ -73,6 +76,7 @@ export const getGetTxsEvent = buildQuery<
   decode: GetTxsEventResponse.decode,
   service: 'cosmos.tx.v1beta1.Service',
   method: 'GetTxsEvent',
+  deps: [GetTxsEventRequest, GetTxsEventResponse],
 });
 /**
  * GetBlockWithTxs fetches a block with decoded txs.
@@ -90,6 +94,7 @@ export const getGetBlockWithTxs = buildQuery<
   decode: GetBlockWithTxsResponse.decode,
   service: 'cosmos.tx.v1beta1.Service',
   method: 'GetBlockWithTxs',
+  deps: [GetBlockWithTxsRequest, GetBlockWithTxsResponse],
 });
 /**
  * TxDecode decodes the transaction.
@@ -104,6 +109,7 @@ export const getTxDecode = buildQuery<TxDecodeRequest, TxDecodeResponse>({
   decode: TxDecodeResponse.decode,
   service: 'cosmos.tx.v1beta1.Service',
   method: 'TxDecode',
+  deps: [TxDecodeRequest, TxDecodeResponse],
 });
 /**
  * TxEncode encodes the transaction.
@@ -118,6 +124,7 @@ export const getTxEncode = buildQuery<TxEncodeRequest, TxEncodeResponse>({
   decode: TxEncodeResponse.decode,
   service: 'cosmos.tx.v1beta1.Service',
   method: 'TxEncode',
+  deps: [TxEncodeRequest, TxEncodeResponse],
 });
 /**
  * TxEncodeAmino encodes an Amino transaction from JSON to encoded bytes.
@@ -135,6 +142,7 @@ export const getTxEncodeAmino = buildQuery<
   decode: TxEncodeAminoResponse.decode,
   service: 'cosmos.tx.v1beta1.Service',
   method: 'TxEncodeAmino',
+  deps: [TxEncodeAminoRequest, TxEncodeAminoResponse],
 });
 /**
  * TxDecodeAmino decodes an Amino transaction from encoded bytes to JSON.
@@ -152,4 +160,5 @@ export const getTxDecodeAmino = buildQuery<
   decode: TxDecodeAminoResponse.decode,
   service: 'cosmos.tx.v1beta1.Service',
   method: 'TxDecodeAmino',
+  deps: [TxDecodeAminoRequest, TxDecodeAminoResponse],
 });

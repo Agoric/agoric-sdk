@@ -37,6 +37,24 @@ function createBaseBitArray(): BitArray {
  */
 export const BitArray = {
   typeUrl: '/tendermint.libs.bits.BitArray' as const,
+  is(o: any): o is BitArray {
+    return (
+      o &&
+      (o.$typeUrl === BitArray.typeUrl ||
+        (typeof o.bits === 'bigint' &&
+          Array.isArray(o.elems) &&
+          (!o.elems.length || typeof o.elems[0] === 'bigint')))
+    );
+  },
+  isSDK(o: any): o is BitArraySDKType {
+    return (
+      o &&
+      (o.$typeUrl === BitArray.typeUrl ||
+        (typeof o.bits === 'bigint' &&
+          Array.isArray(o.elems) &&
+          (!o.elems.length || typeof o.elems[0] === 'bigint')))
+    );
+  },
   encode(
     message: BitArray,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -119,4 +137,5 @@ export const BitArray = {
       value: BitArray.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

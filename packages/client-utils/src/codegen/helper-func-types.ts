@@ -5,7 +5,7 @@
  * and run the transpile command or npm scripts command that is used to regenerate this bundle.
  */
 
-import { type HttpEndpoint } from '@interchainjs/types';
+import { HttpEndpoint } from '@interchainjs/types';
 import { BinaryReader, BinaryWriter } from './binary.js';
 import { getRpcClient } from './extern.js';
 import { isRpc, Rpc } from './helpers.js';
@@ -23,9 +23,12 @@ export interface QueryBuilderOptions<TReq, TRes> {
   decode: (input: BinaryReader | Uint8Array, length?: number) => TRes;
   service: string;
   method: string;
+  deps?: TelescopeGeneratedCodec<any, any, any>[];
 }
 
 export function buildQuery<TReq, TRes>(opts: QueryBuilderOptions<TReq, TRes>) {
+  registerDependencies(opts.deps ?? []);
+
   return async (client: EndpointOrRpc, request: TReq) => {
     let rpc: Rpc | undefined;
 
@@ -55,6 +58,10 @@ export interface TxBuilderOptions {
 }
 
 export function buildTx<TMsg>(opts: TxBuilderOptions) {
+  if (opts.msg) {
+    registerDependencies([opts.msg]);
+  }
+
   return async (
     client: ISigningClient,
     signerAddress: string,
@@ -97,3 +104,9 @@ export interface AminoConverter {
 }
 
 export type EndpointOrRpc = string | HttpEndpoint | Rpc;
+
+function registerDependencies(deps: TelescopeGeneratedCodec<any, any, any>[]) {
+  for (const dep of deps) {
+    dep.registerTypeUrl?.();
+  }
+}

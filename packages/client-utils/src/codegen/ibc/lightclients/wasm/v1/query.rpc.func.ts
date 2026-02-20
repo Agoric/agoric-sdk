@@ -20,6 +20,7 @@ export const getChecksums = buildQuery<
   decode: QueryChecksumsResponse.decode,
   service: 'ibc.lightclients.wasm.v1.Query',
   method: 'Checksums',
+  deps: [QueryChecksumsRequest, QueryChecksumsResponse],
 });
 /**
  * Get Wasm code for given checksum
@@ -32,4 +33,5 @@ export const getCode = buildQuery<QueryCodeRequest, QueryCodeResponse>({
   decode: QueryCodeResponse.decode,
   service: 'ibc.lightclients.wasm.v1.Query',
   method: 'Code',
+  deps: [QueryCodeRequest, QueryCodeResponse],
 });

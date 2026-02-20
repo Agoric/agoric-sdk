@@ -30,6 +30,7 @@ export const getGetAuthnDescriptor = buildQuery<
   decode: GetAuthnDescriptorResponse.decode,
   service: 'cosmos.base.reflection.v2alpha1.ReflectionService',
   method: 'GetAuthnDescriptor',
+  deps: [GetAuthnDescriptorRequest, GetAuthnDescriptorResponse],
 });
 /**
  * GetChainDescriptor returns the description of the chain
@@ -45,6 +46,7 @@ export const getGetChainDescriptor = buildQuery<
   decode: GetChainDescriptorResponse.decode,
   service: 'cosmos.base.reflection.v2alpha1.ReflectionService',
   method: 'GetChainDescriptor',
+  deps: [GetChainDescriptorRequest, GetChainDescriptorResponse],
 });
 /**
  * GetCodecDescriptor returns the descriptor of the codec of the application
@@ -60,6 +62,7 @@ export const getGetCodecDescriptor = buildQuery<
   decode: GetCodecDescriptorResponse.decode,
   service: 'cosmos.base.reflection.v2alpha1.ReflectionService',
   method: 'GetCodecDescriptor',
+  deps: [GetCodecDescriptorRequest, GetCodecDescriptorResponse],
 });
 /**
  * GetConfigurationDescriptor returns the descriptor for the sdk.Config of the application
@@ -75,6 +78,7 @@ export const getGetConfigurationDescriptor = buildQuery<
   decode: GetConfigurationDescriptorResponse.decode,
   service: 'cosmos.base.reflection.v2alpha1.ReflectionService',
   method: 'GetConfigurationDescriptor',
+  deps: [GetConfigurationDescriptorRequest, GetConfigurationDescriptorResponse],
 });
 /**
  * GetQueryServicesDescriptor returns the available gRPC queryable services of the application
@@ -90,6 +94,7 @@ export const getGetQueryServicesDescriptor = buildQuery<
   decode: GetQueryServicesDescriptorResponse.decode,
   service: 'cosmos.base.reflection.v2alpha1.ReflectionService',
   method: 'GetQueryServicesDescriptor',
+  deps: [GetQueryServicesDescriptorRequest, GetQueryServicesDescriptorResponse],
 });
 /**
  * GetTxDescriptor returns information on the used transaction object and available msgs that can be used
@@ -105,4 +110,5 @@ export const getGetTxDescriptor = buildQuery<
   decode: GetTxDescriptorResponse.decode,
   service: 'cosmos.base.reflection.v2alpha1.ReflectionService',
   method: 'GetTxDescriptor',
+  deps: [GetTxDescriptorRequest, GetTxDescriptorResponse],
 });

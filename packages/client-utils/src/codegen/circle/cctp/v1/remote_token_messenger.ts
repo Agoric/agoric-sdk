@@ -45,6 +45,22 @@ function createBaseRemoteTokenMessenger(): RemoteTokenMessenger {
  */
 export const RemoteTokenMessenger = {
   typeUrl: '/circle.cctp.v1.RemoteTokenMessenger' as const,
+  is(o: any): o is RemoteTokenMessenger {
+    return (
+      o &&
+      (o.$typeUrl === RemoteTokenMessenger.typeUrl ||
+        (typeof o.domainId === 'number' &&
+          (o.address instanceof Uint8Array || typeof o.address === 'string')))
+    );
+  },
+  isSDK(o: any): o is RemoteTokenMessengerSDKType {
+    return (
+      o &&
+      (o.$typeUrl === RemoteTokenMessenger.typeUrl ||
+        (typeof o.domain_id === 'number' &&
+          (o.address instanceof Uint8Array || typeof o.address === 'string')))
+    );
+  },
   encode(
     message: RemoteTokenMessenger,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -117,4 +133,5 @@ export const RemoteTokenMessenger = {
       value: RemoteTokenMessenger.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

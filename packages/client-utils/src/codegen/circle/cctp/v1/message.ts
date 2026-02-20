@@ -99,6 +99,40 @@ function createBaseMessage(): Message {
  */
 export const Message = {
   typeUrl: '/circle.cctp.v1.Message' as const,
+  is(o: any): o is Message {
+    return (
+      o &&
+      (o.$typeUrl === Message.typeUrl ||
+        (typeof o.version === 'number' &&
+          typeof o.sourceDomain === 'number' &&
+          typeof o.destinationDomain === 'number' &&
+          typeof o.nonce === 'bigint' &&
+          (o.sender instanceof Uint8Array || typeof o.sender === 'string') &&
+          (o.recipient instanceof Uint8Array ||
+            typeof o.recipient === 'string') &&
+          (o.destinationCaller instanceof Uint8Array ||
+            typeof o.destinationCaller === 'string') &&
+          (o.messageBody instanceof Uint8Array ||
+            typeof o.messageBody === 'string')))
+    );
+  },
+  isSDK(o: any): o is MessageSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Message.typeUrl ||
+        (typeof o.version === 'number' &&
+          typeof o.source_domain === 'number' &&
+          typeof o.destination_domain === 'number' &&
+          typeof o.nonce === 'bigint' &&
+          (o.sender instanceof Uint8Array || typeof o.sender === 'string') &&
+          (o.recipient instanceof Uint8Array ||
+            typeof o.recipient === 'string') &&
+          (o.destination_caller instanceof Uint8Array ||
+            typeof o.destination_caller === 'string') &&
+          (o.message_body instanceof Uint8Array ||
+            typeof o.message_body === 'string')))
+    );
+  },
   encode(
     message: Message,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -251,4 +285,5 @@ export const Message = {
       value: Message.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

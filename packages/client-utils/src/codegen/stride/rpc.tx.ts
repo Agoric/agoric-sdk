@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { type Rpc } from '../helpers.js';
+import { Rpc } from '../helpers.js';
 export const createRPCMsgClient = async ({ rpc }: { rpc: Rpc }) => ({
   stride: {
     staketia: new (await import('./staketia/tx.rpc.msg.js')).MsgClientImpl(rpc),

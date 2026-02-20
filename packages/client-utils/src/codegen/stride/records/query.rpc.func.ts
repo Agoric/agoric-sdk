@@ -35,6 +35,7 @@ export const getParams = buildQuery<QueryParamsRequest, QueryParamsResponse>({
   decode: QueryParamsResponse.decode,
   service: 'stride.records.Query',
   method: 'Params',
+  deps: [QueryParamsRequest, QueryParamsResponse],
 });
 /**
  * Queries a UserRedemptionRecord by id.
@@ -50,6 +51,10 @@ export const getUserRedemptionRecord = buildQuery<
   decode: QueryGetUserRedemptionRecordResponse.decode,
   service: 'stride.records.Query',
   method: 'UserRedemptionRecord',
+  deps: [
+    QueryGetUserRedemptionRecordRequest,
+    QueryGetUserRedemptionRecordResponse,
+  ],
 });
 /**
  * Queries a list of UserRedemptionRecord items.
@@ -65,6 +70,10 @@ export const getUserRedemptionRecordAll = buildQuery<
   decode: QueryAllUserRedemptionRecordResponse.decode,
   service: 'stride.records.Query',
   method: 'UserRedemptionRecordAll',
+  deps: [
+    QueryAllUserRedemptionRecordRequest,
+    QueryAllUserRedemptionRecordResponse,
+  ],
 });
 /**
  * Queries a list of UserRedemptionRecord items by chainId / userId pair.
@@ -80,6 +89,10 @@ export const getUserRedemptionRecordForUser = buildQuery<
   decode: QueryAllUserRedemptionRecordForUserResponse.decode,
   service: 'stride.records.Query',
   method: 'UserRedemptionRecordForUser',
+  deps: [
+    QueryAllUserRedemptionRecordForUserRequest,
+    QueryAllUserRedemptionRecordForUserResponse,
+  ],
 });
 /**
  * Queries a EpochUnbondingRecord by id.
@@ -95,6 +108,10 @@ export const getEpochUnbondingRecord = buildQuery<
   decode: QueryGetEpochUnbondingRecordResponse.decode,
   service: 'stride.records.Query',
   method: 'EpochUnbondingRecord',
+  deps: [
+    QueryGetEpochUnbondingRecordRequest,
+    QueryGetEpochUnbondingRecordResponse,
+  ],
 });
 /**
  * Queries a list of EpochUnbondingRecord items.
@@ -110,6 +127,10 @@ export const getEpochUnbondingRecordAll = buildQuery<
   decode: QueryAllEpochUnbondingRecordResponse.decode,
   service: 'stride.records.Query',
   method: 'EpochUnbondingRecordAll',
+  deps: [
+    QueryAllEpochUnbondingRecordRequest,
+    QueryAllEpochUnbondingRecordResponse,
+  ],
 });
 /**
  * Queries a DepositRecord by id.
@@ -125,6 +146,7 @@ export const getDepositRecord = buildQuery<
   decode: QueryGetDepositRecordResponse.decode,
   service: 'stride.records.Query',
   method: 'DepositRecord',
+  deps: [QueryGetDepositRecordRequest, QueryGetDepositRecordResponse],
 });
 /**
  * Queries a list of DepositRecord items.
@@ -140,6 +162,7 @@ export const getDepositRecordAll = buildQuery<
   decode: QueryAllDepositRecordResponse.decode,
   service: 'stride.records.Query',
   method: 'DepositRecordAll',
+  deps: [QueryAllDepositRecordRequest, QueryAllDepositRecordResponse],
 });
 /**
  * Queries a list of DepositRecord items for a given host zone
@@ -155,6 +178,7 @@ export const getDepositRecordByHost = buildQuery<
   decode: QueryDepositRecordByHostResponse.decode,
   service: 'stride.records.Query',
   method: 'DepositRecordByHost',
+  deps: [QueryDepositRecordByHostRequest, QueryDepositRecordByHostResponse],
 });
 /**
  * Queries the existing LSMTokenDeposits for one specific deposit
@@ -170,6 +194,7 @@ export const getLSMDeposit = buildQuery<
   decode: QueryLSMDepositResponse.decode,
   service: 'stride.records.Query',
   method: 'LSMDeposit',
+  deps: [QueryLSMDepositRequest, QueryLSMDepositResponse],
 });
 /**
  * Queries the existing LSMTokenDeposits for all which match filters
@@ -187,4 +212,5 @@ export const getLSMDeposits = buildQuery<
   decode: QueryLSMDepositsResponse.decode,
   service: 'stride.records.Query',
   method: 'LSMDeposits',
+  deps: [QueryLSMDepositsRequest, QueryLSMDepositsResponse],
 });

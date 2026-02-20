@@ -52,6 +52,20 @@ function createBaseNonce(): Nonce {
  */
 export const Nonce = {
   typeUrl: '/circle.cctp.v1.Nonce' as const,
+  is(o: any): o is Nonce {
+    return (
+      o &&
+      (o.$typeUrl === Nonce.typeUrl ||
+        (typeof o.sourceDomain === 'number' && typeof o.nonce === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is NonceSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Nonce.typeUrl ||
+        (typeof o.source_domain === 'number' && typeof o.nonce === 'bigint'))
+    );
+  },
   encode(
     message: Nonce,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -122,4 +136,5 @@ export const Nonce = {
       value: Nonce.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

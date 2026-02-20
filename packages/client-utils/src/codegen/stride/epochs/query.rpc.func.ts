@@ -22,6 +22,7 @@ export const getEpochInfos = buildQuery<
   decode: QueryEpochsInfoResponse.decode,
   service: 'stride.epochs.Query',
   method: 'EpochInfos',
+  deps: [QueryEpochsInfoRequest, QueryEpochsInfoResponse],
 });
 /**
  * CurrentEpoch provide current epoch of specified identifier
@@ -37,6 +38,7 @@ export const getCurrentEpoch = buildQuery<
   decode: QueryCurrentEpochResponse.decode,
   service: 'stride.epochs.Query',
   method: 'CurrentEpoch',
+  deps: [QueryCurrentEpochRequest, QueryCurrentEpochResponse],
 });
 /**
  * CurrentEpoch provide current epoch of specified identifier
@@ -52,4 +54,5 @@ export const getEpochInfo = buildQuery<
   decode: QueryEpochInfoResponse.decode,
   service: 'stride.epochs.Query',
   method: 'EpochInfo',
+  deps: [QueryEpochInfoRequest, QueryEpochInfoResponse],
 });

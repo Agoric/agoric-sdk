@@ -40,6 +40,7 @@ export const getBalance = buildQuery<QueryBalanceRequest, QueryBalanceResponse>(
     decode: QueryBalanceResponse.decode,
     service: 'cosmos.bank.v1beta1.Query',
     method: 'Balance',
+    deps: [QueryBalanceRequest, QueryBalanceResponse],
   },
 );
 /**
@@ -59,6 +60,7 @@ export const getAllBalances = buildQuery<
   decode: QueryAllBalancesResponse.decode,
   service: 'cosmos.bank.v1beta1.Query',
   method: 'AllBalances',
+  deps: [QueryAllBalancesRequest, QueryAllBalancesResponse],
 });
 /**
  * SpendableBalances queries the spendable balance of all coins for a single
@@ -80,6 +82,7 @@ export const getSpendableBalances = buildQuery<
   decode: QuerySpendableBalancesResponse.decode,
   service: 'cosmos.bank.v1beta1.Query',
   method: 'SpendableBalances',
+  deps: [QuerySpendableBalancesRequest, QuerySpendableBalancesResponse],
 });
 /**
  * SpendableBalanceByDenom queries the spendable balance of a single denom for
@@ -101,6 +104,10 @@ export const getSpendableBalanceByDenom = buildQuery<
   decode: QuerySpendableBalanceByDenomResponse.decode,
   service: 'cosmos.bank.v1beta1.Query',
   method: 'SpendableBalanceByDenom',
+  deps: [
+    QuerySpendableBalanceByDenomRequest,
+    QuerySpendableBalanceByDenomResponse,
+  ],
 });
 /**
  * TotalSupply queries the total supply of all coins.
@@ -119,6 +126,7 @@ export const getTotalSupply = buildQuery<
   decode: QueryTotalSupplyResponse.decode,
   service: 'cosmos.bank.v1beta1.Query',
   method: 'TotalSupply',
+  deps: [QueryTotalSupplyRequest, QueryTotalSupplyResponse],
 });
 /**
  * SupplyOf queries the supply of a single coin.
@@ -137,6 +145,7 @@ export const getSupplyOf = buildQuery<
   decode: QuerySupplyOfResponse.decode,
   service: 'cosmos.bank.v1beta1.Query',
   method: 'SupplyOf',
+  deps: [QuerySupplyOfRequest, QuerySupplyOfResponse],
 });
 /**
  * Params queries the parameters of x/bank module.
@@ -149,6 +158,7 @@ export const getParams = buildQuery<QueryParamsRequest, QueryParamsResponse>({
   decode: QueryParamsResponse.decode,
   service: 'cosmos.bank.v1beta1.Query',
   method: 'Params',
+  deps: [QueryParamsRequest, QueryParamsResponse],
 });
 /**
  * DenomMetadata queries the client metadata of a given coin denomination.
@@ -164,6 +174,7 @@ export const getDenomMetadata = buildQuery<
   decode: QueryDenomMetadataResponse.decode,
   service: 'cosmos.bank.v1beta1.Query',
   method: 'DenomMetadata',
+  deps: [QueryDenomMetadataRequest, QueryDenomMetadataResponse],
 });
 /**
  * DenomMetadataByQueryString queries the client metadata of a given coin denomination.
@@ -179,6 +190,10 @@ export const getDenomMetadataByQueryString = buildQuery<
   decode: QueryDenomMetadataByQueryStringResponse.decode,
   service: 'cosmos.bank.v1beta1.Query',
   method: 'DenomMetadataByQueryString',
+  deps: [
+    QueryDenomMetadataByQueryStringRequest,
+    QueryDenomMetadataByQueryStringResponse,
+  ],
 });
 /**
  * DenomsMetadata queries the client metadata for all registered coin
@@ -195,6 +210,7 @@ export const getDenomsMetadata = buildQuery<
   decode: QueryDenomsMetadataResponse.decode,
   service: 'cosmos.bank.v1beta1.Query',
   method: 'DenomsMetadata',
+  deps: [QueryDenomsMetadataRequest, QueryDenomsMetadataResponse],
 });
 /**
  * DenomOwners queries for all account addresses that own a particular token
@@ -216,6 +232,7 @@ export const getDenomOwners = buildQuery<
   decode: QueryDenomOwnersResponse.decode,
   service: 'cosmos.bank.v1beta1.Query',
   method: 'DenomOwners',
+  deps: [QueryDenomOwnersRequest, QueryDenomOwnersResponse],
 });
 /**
  * DenomOwnersByQuery queries for all account addresses that own a particular token
@@ -234,6 +251,7 @@ export const getDenomOwnersByQuery = buildQuery<
   decode: QueryDenomOwnersByQueryResponse.decode,
   service: 'cosmos.bank.v1beta1.Query',
   method: 'DenomOwnersByQuery',
+  deps: [QueryDenomOwnersByQueryRequest, QueryDenomOwnersByQueryResponse],
 });
 /**
  * SendEnabled queries for SendEnabled entries.
@@ -255,4 +273,5 @@ export const getSendEnabled = buildQuery<
   decode: QuerySendEnabledResponse.decode,
   service: 'cosmos.bank.v1beta1.Query',
   method: 'SendEnabled',
+  deps: [QuerySendEnabledRequest, QuerySendEnabledResponse],
 });

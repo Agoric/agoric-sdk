@@ -52,6 +52,20 @@ function createBasePerMessageBurnLimit(): PerMessageBurnLimit {
  */
 export const PerMessageBurnLimit = {
   typeUrl: '/circle.cctp.v1.PerMessageBurnLimit' as const,
+  is(o: any): o is PerMessageBurnLimit {
+    return (
+      o &&
+      (o.$typeUrl === PerMessageBurnLimit.typeUrl ||
+        (typeof o.denom === 'string' && typeof o.amount === 'string'))
+    );
+  },
+  isSDK(o: any): o is PerMessageBurnLimitSDKType {
+    return (
+      o &&
+      (o.$typeUrl === PerMessageBurnLimit.typeUrl ||
+        (typeof o.denom === 'string' && typeof o.amount === 'string'))
+    );
+  },
   encode(
     message: PerMessageBurnLimit,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -118,4 +132,5 @@ export const PerMessageBurnLimit = {
       value: PerMessageBurnLimit.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

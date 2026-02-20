@@ -19,6 +19,7 @@ export const getGrants = buildQuery<QueryGrantsRequest, QueryGrantsResponse>({
   decode: QueryGrantsResponse.decode,
   service: 'cosmos.authz.v1beta1.Query',
   method: 'Grants',
+  deps: [QueryGrantsRequest, QueryGrantsResponse],
 });
 /**
  * GranterGrants returns list of `GrantAuthorization`, granted by granter.
@@ -36,6 +37,7 @@ export const getGranterGrants = buildQuery<
   decode: QueryGranterGrantsResponse.decode,
   service: 'cosmos.authz.v1beta1.Query',
   method: 'GranterGrants',
+  deps: [QueryGranterGrantsRequest, QueryGranterGrantsResponse],
 });
 /**
  * GranteeGrants returns a list of `GrantAuthorization` by grantee.
@@ -53,4 +55,5 @@ export const getGranteeGrants = buildQuery<
   decode: QueryGranteeGrantsResponse.decode,
   service: 'cosmos.authz.v1beta1.Query',
   method: 'GranteeGrants',
+  deps: [QueryGranteeGrantsRequest, QueryGranteeGrantsResponse],
 });

@@ -644,6 +644,18 @@ function createBaseAttesterEnabled(): AttesterEnabled {
  */
 export const AttesterEnabled = {
   typeUrl: '/circle.cctp.v1.AttesterEnabled' as const,
+  is(o: any): o is AttesterEnabled {
+    return (
+      o &&
+      (o.$typeUrl === AttesterEnabled.typeUrl || typeof o.attester === 'string')
+    );
+  },
+  isSDK(o: any): o is AttesterEnabledSDKType {
+    return (
+      o &&
+      (o.$typeUrl === AttesterEnabled.typeUrl || typeof o.attester === 'string')
+    );
+  },
   encode(
     message: AttesterEnabled,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -698,6 +710,7 @@ export const AttesterEnabled = {
       value: AttesterEnabled.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseAttesterDisabled(): AttesterDisabled {
   return {
@@ -713,6 +726,20 @@ function createBaseAttesterDisabled(): AttesterDisabled {
  */
 export const AttesterDisabled = {
   typeUrl: '/circle.cctp.v1.AttesterDisabled' as const,
+  is(o: any): o is AttesterDisabled {
+    return (
+      o &&
+      (o.$typeUrl === AttesterDisabled.typeUrl ||
+        typeof o.attester === 'string')
+    );
+  },
+  isSDK(o: any): o is AttesterDisabledSDKType {
+    return (
+      o &&
+      (o.$typeUrl === AttesterDisabled.typeUrl ||
+        typeof o.attester === 'string')
+    );
+  },
   encode(
     message: AttesterDisabled,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -767,6 +794,7 @@ export const AttesterDisabled = {
       value: AttesterDisabled.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseSignatureThresholdUpdated(): SignatureThresholdUpdated {
   return {
@@ -784,6 +812,22 @@ function createBaseSignatureThresholdUpdated(): SignatureThresholdUpdated {
  */
 export const SignatureThresholdUpdated = {
   typeUrl: '/circle.cctp.v1.SignatureThresholdUpdated' as const,
+  is(o: any): o is SignatureThresholdUpdated {
+    return (
+      o &&
+      (o.$typeUrl === SignatureThresholdUpdated.typeUrl ||
+        (typeof o.oldSignatureThreshold === 'bigint' &&
+          typeof o.newSignatureThreshold === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is SignatureThresholdUpdatedSDKType {
+    return (
+      o &&
+      (o.$typeUrl === SignatureThresholdUpdated.typeUrl ||
+        (typeof o.old_signature_threshold === 'bigint' &&
+          typeof o.new_signature_threshold === 'bigint'))
+    );
+  },
   encode(
     message: SignatureThresholdUpdated,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -876,6 +920,7 @@ export const SignatureThresholdUpdated = {
       value: SignatureThresholdUpdated.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseOwnerUpdated(): OwnerUpdated {
   return {
@@ -893,6 +938,21 @@ function createBaseOwnerUpdated(): OwnerUpdated {
  */
 export const OwnerUpdated = {
   typeUrl: '/circle.cctp.v1.OwnerUpdated' as const,
+  is(o: any): o is OwnerUpdated {
+    return (
+      o &&
+      (o.$typeUrl === OwnerUpdated.typeUrl ||
+        (typeof o.previousOwner === 'string' && typeof o.newOwner === 'string'))
+    );
+  },
+  isSDK(o: any): o is OwnerUpdatedSDKType {
+    return (
+      o &&
+      (o.$typeUrl === OwnerUpdated.typeUrl ||
+        (typeof o.previous_owner === 'string' &&
+          typeof o.new_owner === 'string'))
+    );
+  },
   encode(
     message: OwnerUpdated,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -959,6 +1019,7 @@ export const OwnerUpdated = {
       value: OwnerUpdated.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseOwnershipTransferStarted(): OwnershipTransferStarted {
   return {
@@ -976,6 +1037,21 @@ function createBaseOwnershipTransferStarted(): OwnershipTransferStarted {
  */
 export const OwnershipTransferStarted = {
   typeUrl: '/circle.cctp.v1.OwnershipTransferStarted' as const,
+  is(o: any): o is OwnershipTransferStarted {
+    return (
+      o &&
+      (o.$typeUrl === OwnershipTransferStarted.typeUrl ||
+        (typeof o.previousOwner === 'string' && typeof o.newOwner === 'string'))
+    );
+  },
+  isSDK(o: any): o is OwnershipTransferStartedSDKType {
+    return (
+      o &&
+      (o.$typeUrl === OwnershipTransferStarted.typeUrl ||
+        (typeof o.previous_owner === 'string' &&
+          typeof o.new_owner === 'string'))
+    );
+  },
   encode(
     message: OwnershipTransferStarted,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1053,6 +1129,7 @@ export const OwnershipTransferStarted = {
       value: OwnershipTransferStarted.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBasePauserUpdated(): PauserUpdated {
   return {
@@ -1070,6 +1147,22 @@ function createBasePauserUpdated(): PauserUpdated {
  */
 export const PauserUpdated = {
   typeUrl: '/circle.cctp.v1.PauserUpdated' as const,
+  is(o: any): o is PauserUpdated {
+    return (
+      o &&
+      (o.$typeUrl === PauserUpdated.typeUrl ||
+        (typeof o.previousPauser === 'string' &&
+          typeof o.newPauser === 'string'))
+    );
+  },
+  isSDK(o: any): o is PauserUpdatedSDKType {
+    return (
+      o &&
+      (o.$typeUrl === PauserUpdated.typeUrl ||
+        (typeof o.previous_pauser === 'string' &&
+          typeof o.new_pauser === 'string'))
+    );
+  },
   encode(
     message: PauserUpdated,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1136,6 +1229,7 @@ export const PauserUpdated = {
       value: PauserUpdated.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseAttesterManagerUpdated(): AttesterManagerUpdated {
   return {
@@ -1155,6 +1249,22 @@ function createBaseAttesterManagerUpdated(): AttesterManagerUpdated {
  */
 export const AttesterManagerUpdated = {
   typeUrl: '/circle.cctp.v1.AttesterManagerUpdated' as const,
+  is(o: any): o is AttesterManagerUpdated {
+    return (
+      o &&
+      (o.$typeUrl === AttesterManagerUpdated.typeUrl ||
+        (typeof o.previousAttesterManager === 'string' &&
+          typeof o.newAttesterManager === 'string'))
+    );
+  },
+  isSDK(o: any): o is AttesterManagerUpdatedSDKType {
+    return (
+      o &&
+      (o.$typeUrl === AttesterManagerUpdated.typeUrl ||
+        (typeof o.previous_attester_manager === 'string' &&
+          typeof o.new_attester_manager === 'string'))
+    );
+  },
   encode(
     message: AttesterManagerUpdated,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1229,6 +1339,7 @@ export const AttesterManagerUpdated = {
       value: AttesterManagerUpdated.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseTokenControllerUpdated(): TokenControllerUpdated {
   return {
@@ -1248,6 +1359,22 @@ function createBaseTokenControllerUpdated(): TokenControllerUpdated {
  */
 export const TokenControllerUpdated = {
   typeUrl: '/circle.cctp.v1.TokenControllerUpdated' as const,
+  is(o: any): o is TokenControllerUpdated {
+    return (
+      o &&
+      (o.$typeUrl === TokenControllerUpdated.typeUrl ||
+        (typeof o.previousTokenController === 'string' &&
+          typeof o.newTokenController === 'string'))
+    );
+  },
+  isSDK(o: any): o is TokenControllerUpdatedSDKType {
+    return (
+      o &&
+      (o.$typeUrl === TokenControllerUpdated.typeUrl ||
+        (typeof o.previous_token_controller === 'string' &&
+          typeof o.new_token_controller === 'string'))
+    );
+  },
   encode(
     message: TokenControllerUpdated,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1322,6 +1449,7 @@ export const TokenControllerUpdated = {
       value: TokenControllerUpdated.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseBurningAndMintingPausedEvent(): BurningAndMintingPausedEvent {
   return {};
@@ -1334,6 +1462,12 @@ function createBaseBurningAndMintingPausedEvent(): BurningAndMintingPausedEvent 
  */
 export const BurningAndMintingPausedEvent = {
   typeUrl: '/circle.cctp.v1.BurningAndMintingPausedEvent' as const,
+  is(o: any): o is BurningAndMintingPausedEvent {
+    return o && o.$typeUrl === BurningAndMintingPausedEvent.typeUrl;
+  },
+  isSDK(o: any): o is BurningAndMintingPausedEventSDKType {
+    return o && o.$typeUrl === BurningAndMintingPausedEvent.typeUrl;
+  },
   encode(
     _: BurningAndMintingPausedEvent,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1389,6 +1523,7 @@ export const BurningAndMintingPausedEvent = {
       value: BurningAndMintingPausedEvent.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseBurningAndMintingUnpausedEvent(): BurningAndMintingUnpausedEvent {
   return {};
@@ -1401,6 +1536,12 @@ function createBaseBurningAndMintingUnpausedEvent(): BurningAndMintingUnpausedEv
  */
 export const BurningAndMintingUnpausedEvent = {
   typeUrl: '/circle.cctp.v1.BurningAndMintingUnpausedEvent' as const,
+  is(o: any): o is BurningAndMintingUnpausedEvent {
+    return o && o.$typeUrl === BurningAndMintingUnpausedEvent.typeUrl;
+  },
+  isSDK(o: any): o is BurningAndMintingUnpausedEventSDKType {
+    return o && o.$typeUrl === BurningAndMintingUnpausedEvent.typeUrl;
+  },
   encode(
     _: BurningAndMintingUnpausedEvent,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1456,6 +1597,7 @@ export const BurningAndMintingUnpausedEvent = {
       value: BurningAndMintingUnpausedEvent.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseSendingAndReceivingPausedEvent(): SendingAndReceivingPausedEvent {
   return {};
@@ -1468,6 +1610,12 @@ function createBaseSendingAndReceivingPausedEvent(): SendingAndReceivingPausedEv
  */
 export const SendingAndReceivingPausedEvent = {
   typeUrl: '/circle.cctp.v1.SendingAndReceivingPausedEvent' as const,
+  is(o: any): o is SendingAndReceivingPausedEvent {
+    return o && o.$typeUrl === SendingAndReceivingPausedEvent.typeUrl;
+  },
+  isSDK(o: any): o is SendingAndReceivingPausedEventSDKType {
+    return o && o.$typeUrl === SendingAndReceivingPausedEvent.typeUrl;
+  },
   encode(
     _: SendingAndReceivingPausedEvent,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1523,6 +1671,7 @@ export const SendingAndReceivingPausedEvent = {
       value: SendingAndReceivingPausedEvent.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseSendingAndReceivingUnpausedEvent(): SendingAndReceivingUnpausedEvent {
   return {};
@@ -1535,6 +1684,12 @@ function createBaseSendingAndReceivingUnpausedEvent(): SendingAndReceivingUnpaus
  */
 export const SendingAndReceivingUnpausedEvent = {
   typeUrl: '/circle.cctp.v1.SendingAndReceivingUnpausedEvent' as const,
+  is(o: any): o is SendingAndReceivingUnpausedEvent {
+    return o && o.$typeUrl === SendingAndReceivingUnpausedEvent.typeUrl;
+  },
+  isSDK(o: any): o is SendingAndReceivingUnpausedEventSDKType {
+    return o && o.$typeUrl === SendingAndReceivingUnpausedEvent.typeUrl;
+  },
   encode(
     _: SendingAndReceivingUnpausedEvent,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1590,6 +1745,7 @@ export const SendingAndReceivingUnpausedEvent = {
       value: SendingAndReceivingUnpausedEvent.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseDepositForBurn(): DepositForBurn {
   return {
@@ -1623,6 +1779,40 @@ function createBaseDepositForBurn(): DepositForBurn {
  */
 export const DepositForBurn = {
   typeUrl: '/circle.cctp.v1.DepositForBurn' as const,
+  is(o: any): o is DepositForBurn {
+    return (
+      o &&
+      (o.$typeUrl === DepositForBurn.typeUrl ||
+        (typeof o.nonce === 'bigint' &&
+          typeof o.burnToken === 'string' &&
+          typeof o.amount === 'string' &&
+          typeof o.depositor === 'string' &&
+          (o.mintRecipient instanceof Uint8Array ||
+            typeof o.mintRecipient === 'string') &&
+          typeof o.destinationDomain === 'number' &&
+          (o.destinationTokenMessenger instanceof Uint8Array ||
+            typeof o.destinationTokenMessenger === 'string') &&
+          (o.destinationCaller instanceof Uint8Array ||
+            typeof o.destinationCaller === 'string')))
+    );
+  },
+  isSDK(o: any): o is DepositForBurnSDKType {
+    return (
+      o &&
+      (o.$typeUrl === DepositForBurn.typeUrl ||
+        (typeof o.nonce === 'bigint' &&
+          typeof o.burn_token === 'string' &&
+          typeof o.amount === 'string' &&
+          typeof o.depositor === 'string' &&
+          (o.mint_recipient instanceof Uint8Array ||
+            typeof o.mint_recipient === 'string') &&
+          typeof o.destination_domain === 'number' &&
+          (o.destination_token_messenger instanceof Uint8Array ||
+            typeof o.destination_token_messenger === 'string') &&
+          (o.destination_caller instanceof Uint8Array ||
+            typeof o.destination_caller === 'string')))
+    );
+  },
   encode(
     message: DepositForBurn,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1769,6 +1959,7 @@ export const DepositForBurn = {
       value: DepositForBurn.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMintAndWithdraw(): MintAndWithdraw {
   return {
@@ -1788,6 +1979,26 @@ function createBaseMintAndWithdraw(): MintAndWithdraw {
  */
 export const MintAndWithdraw = {
   typeUrl: '/circle.cctp.v1.MintAndWithdraw' as const,
+  is(o: any): o is MintAndWithdraw {
+    return (
+      o &&
+      (o.$typeUrl === MintAndWithdraw.typeUrl ||
+        ((o.mintRecipient instanceof Uint8Array ||
+          typeof o.mintRecipient === 'string') &&
+          typeof o.amount === 'string' &&
+          typeof o.mintToken === 'string'))
+    );
+  },
+  isSDK(o: any): o is MintAndWithdrawSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MintAndWithdraw.typeUrl ||
+        ((o.mint_recipient instanceof Uint8Array ||
+          typeof o.mint_recipient === 'string') &&
+          typeof o.amount === 'string' &&
+          typeof o.mint_token === 'string'))
+    );
+  },
   encode(
     message: MintAndWithdraw,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1867,6 +2078,7 @@ export const MintAndWithdraw = {
       value: MintAndWithdraw.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseTokenPairLinked(): TokenPairLinked {
   return {
@@ -1886,6 +2098,26 @@ function createBaseTokenPairLinked(): TokenPairLinked {
  */
 export const TokenPairLinked = {
   typeUrl: '/circle.cctp.v1.TokenPairLinked' as const,
+  is(o: any): o is TokenPairLinked {
+    return (
+      o &&
+      (o.$typeUrl === TokenPairLinked.typeUrl ||
+        (typeof o.localToken === 'string' &&
+          typeof o.remoteDomain === 'number' &&
+          (o.remoteToken instanceof Uint8Array ||
+            typeof o.remoteToken === 'string')))
+    );
+  },
+  isSDK(o: any): o is TokenPairLinkedSDKType {
+    return (
+      o &&
+      (o.$typeUrl === TokenPairLinked.typeUrl ||
+        (typeof o.local_token === 'string' &&
+          typeof o.remote_domain === 'number' &&
+          (o.remote_token instanceof Uint8Array ||
+            typeof o.remote_token === 'string')))
+    );
+  },
   encode(
     message: TokenPairLinked,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1968,6 +2200,7 @@ export const TokenPairLinked = {
       value: TokenPairLinked.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseTokenPairUnlinked(): TokenPairUnlinked {
   return {
@@ -1987,6 +2220,26 @@ function createBaseTokenPairUnlinked(): TokenPairUnlinked {
  */
 export const TokenPairUnlinked = {
   typeUrl: '/circle.cctp.v1.TokenPairUnlinked' as const,
+  is(o: any): o is TokenPairUnlinked {
+    return (
+      o &&
+      (o.$typeUrl === TokenPairUnlinked.typeUrl ||
+        (typeof o.localToken === 'string' &&
+          typeof o.remoteDomain === 'number' &&
+          (o.remoteToken instanceof Uint8Array ||
+            typeof o.remoteToken === 'string')))
+    );
+  },
+  isSDK(o: any): o is TokenPairUnlinkedSDKType {
+    return (
+      o &&
+      (o.$typeUrl === TokenPairUnlinked.typeUrl ||
+        (typeof o.local_token === 'string' &&
+          typeof o.remote_domain === 'number' &&
+          (o.remote_token instanceof Uint8Array ||
+            typeof o.remote_token === 'string')))
+    );
+  },
   encode(
     message: TokenPairUnlinked,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2069,6 +2322,7 @@ export const TokenPairUnlinked = {
       value: TokenPairUnlinked.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMessageSent(): MessageSent {
   return {
@@ -2084,6 +2338,22 @@ function createBaseMessageSent(): MessageSent {
  */
 export const MessageSent = {
   typeUrl: '/circle.cctp.v1.MessageSent' as const,
+  is(o: any): o is MessageSent {
+    return (
+      o &&
+      (o.$typeUrl === MessageSent.typeUrl ||
+        o.message instanceof Uint8Array ||
+        typeof o.message === 'string')
+    );
+  },
+  isSDK(o: any): o is MessageSentSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MessageSent.typeUrl ||
+        o.message instanceof Uint8Array ||
+        typeof o.message === 'string')
+    );
+  },
   encode(
     message: MessageSent,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2143,6 +2413,7 @@ export const MessageSent = {
       value: MessageSent.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMessageReceived(): MessageReceived {
   return {
@@ -2166,6 +2437,30 @@ function createBaseMessageReceived(): MessageReceived {
  */
 export const MessageReceived = {
   typeUrl: '/circle.cctp.v1.MessageReceived' as const,
+  is(o: any): o is MessageReceived {
+    return (
+      o &&
+      (o.$typeUrl === MessageReceived.typeUrl ||
+        (typeof o.caller === 'string' &&
+          typeof o.sourceDomain === 'number' &&
+          typeof o.nonce === 'bigint' &&
+          (o.sender instanceof Uint8Array || typeof o.sender === 'string') &&
+          (o.messageBody instanceof Uint8Array ||
+            typeof o.messageBody === 'string')))
+    );
+  },
+  isSDK(o: any): o is MessageReceivedSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MessageReceived.typeUrl ||
+        (typeof o.caller === 'string' &&
+          typeof o.source_domain === 'number' &&
+          typeof o.nonce === 'bigint' &&
+          (o.sender instanceof Uint8Array || typeof o.sender === 'string') &&
+          (o.message_body instanceof Uint8Array ||
+            typeof o.message_body === 'string')))
+    );
+  },
   encode(
     message: MessageReceived,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2275,6 +2570,7 @@ export const MessageReceived = {
       value: MessageReceived.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMaxMessageBodySizeUpdated(): MaxMessageBodySizeUpdated {
   return {
@@ -2290,6 +2586,20 @@ function createBaseMaxMessageBodySizeUpdated(): MaxMessageBodySizeUpdated {
  */
 export const MaxMessageBodySizeUpdated = {
   typeUrl: '/circle.cctp.v1.MaxMessageBodySizeUpdated' as const,
+  is(o: any): o is MaxMessageBodySizeUpdated {
+    return (
+      o &&
+      (o.$typeUrl === MaxMessageBodySizeUpdated.typeUrl ||
+        typeof o.newMaxMessageBodySize === 'bigint')
+    );
+  },
+  isSDK(o: any): o is MaxMessageBodySizeUpdatedSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MaxMessageBodySizeUpdated.typeUrl ||
+        typeof o.new_max_message_body_size === 'bigint')
+    );
+  },
   encode(
     message: MaxMessageBodySizeUpdated,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2364,6 +2674,7 @@ export const MaxMessageBodySizeUpdated = {
       value: MaxMessageBodySizeUpdated.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseRemoteTokenMessengerAdded(): RemoteTokenMessengerAdded {
   return {
@@ -2381,6 +2692,24 @@ function createBaseRemoteTokenMessengerAdded(): RemoteTokenMessengerAdded {
  */
 export const RemoteTokenMessengerAdded = {
   typeUrl: '/circle.cctp.v1.RemoteTokenMessengerAdded' as const,
+  is(o: any): o is RemoteTokenMessengerAdded {
+    return (
+      o &&
+      (o.$typeUrl === RemoteTokenMessengerAdded.typeUrl ||
+        (typeof o.domain === 'number' &&
+          (o.remoteTokenMessenger instanceof Uint8Array ||
+            typeof o.remoteTokenMessenger === 'string')))
+    );
+  },
+  isSDK(o: any): o is RemoteTokenMessengerAddedSDKType {
+    return (
+      o &&
+      (o.$typeUrl === RemoteTokenMessengerAdded.typeUrl ||
+        (typeof o.domain === 'number' &&
+          (o.remote_token_messenger instanceof Uint8Array ||
+            typeof o.remote_token_messenger === 'string')))
+    );
+  },
   encode(
     message: RemoteTokenMessengerAdded,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2463,6 +2792,7 @@ export const RemoteTokenMessengerAdded = {
       value: RemoteTokenMessengerAdded.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseRemoteTokenMessengerRemoved(): RemoteTokenMessengerRemoved {
   return {
@@ -2480,6 +2810,24 @@ function createBaseRemoteTokenMessengerRemoved(): RemoteTokenMessengerRemoved {
  */
 export const RemoteTokenMessengerRemoved = {
   typeUrl: '/circle.cctp.v1.RemoteTokenMessengerRemoved' as const,
+  is(o: any): o is RemoteTokenMessengerRemoved {
+    return (
+      o &&
+      (o.$typeUrl === RemoteTokenMessengerRemoved.typeUrl ||
+        (typeof o.domain === 'number' &&
+          (o.remoteTokenMessenger instanceof Uint8Array ||
+            typeof o.remoteTokenMessenger === 'string')))
+    );
+  },
+  isSDK(o: any): o is RemoteTokenMessengerRemovedSDKType {
+    return (
+      o &&
+      (o.$typeUrl === RemoteTokenMessengerRemoved.typeUrl ||
+        (typeof o.domain === 'number' &&
+          (o.remote_token_messenger instanceof Uint8Array ||
+            typeof o.remote_token_messenger === 'string')))
+    );
+  },
   encode(
     message: RemoteTokenMessengerRemoved,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2562,6 +2910,7 @@ export const RemoteTokenMessengerRemoved = {
       value: RemoteTokenMessengerRemoved.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseSetBurnLimitPerMessage(): SetBurnLimitPerMessage {
   return {
@@ -2580,6 +2929,22 @@ function createBaseSetBurnLimitPerMessage(): SetBurnLimitPerMessage {
  */
 export const SetBurnLimitPerMessage = {
   typeUrl: '/circle.cctp.v1.SetBurnLimitPerMessage' as const,
+  is(o: any): o is SetBurnLimitPerMessage {
+    return (
+      o &&
+      (o.$typeUrl === SetBurnLimitPerMessage.typeUrl ||
+        (typeof o.token === 'string' &&
+          typeof o.burnLimitPerMessage === 'string'))
+    );
+  },
+  isSDK(o: any): o is SetBurnLimitPerMessageSDKType {
+    return (
+      o &&
+      (o.$typeUrl === SetBurnLimitPerMessage.typeUrl ||
+        (typeof o.token === 'string' &&
+          typeof o.burn_limit_per_message === 'string'))
+    );
+  },
   encode(
     message: SetBurnLimitPerMessage,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2651,4 +3016,5 @@ export const SetBurnLimitPerMessage = {
       value: SetBurnLimitPerMessage.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

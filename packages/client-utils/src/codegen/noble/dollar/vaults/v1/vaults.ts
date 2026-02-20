@@ -240,6 +240,24 @@ function createBaseReward(): Reward {
  */
 export const Reward = {
   typeUrl: '/noble.dollar.vaults.v1.Reward' as const,
+  is(o: any): o is Reward {
+    return (
+      o &&
+      (o.$typeUrl === Reward.typeUrl ||
+        (typeof o.index === 'bigint' &&
+          typeof o.total === 'string' &&
+          typeof o.rewards === 'string'))
+    );
+  },
+  isSDK(o: any): o is RewardSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Reward.typeUrl ||
+        (typeof o.index === 'bigint' &&
+          typeof o.total === 'string' &&
+          typeof o.rewards === 'string'))
+    );
+  },
   encode(
     message: Reward,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -316,6 +334,7 @@ export const Reward = {
       value: Reward.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBasePosition(): Position {
   return {
@@ -332,6 +351,26 @@ function createBasePosition(): Position {
  */
 export const Position = {
   typeUrl: '/noble.dollar.vaults.v1.Position' as const,
+  is(o: any): o is Position {
+    return (
+      o &&
+      (o.$typeUrl === Position.typeUrl ||
+        (typeof o.principal === 'string' &&
+          typeof o.index === 'bigint' &&
+          typeof o.amount === 'string' &&
+          Timestamp.is(o.time)))
+    );
+  },
+  isSDK(o: any): o is PositionSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Position.typeUrl ||
+        (typeof o.principal === 'string' &&
+          typeof o.index === 'bigint' &&
+          typeof o.amount === 'string' &&
+          Timestamp.isSDK(o.time)))
+    );
+  },
   encode(
     message: Position,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -421,6 +460,7 @@ export const Position = {
       value: Position.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBasePositionRewards(): PositionRewards {
   return {
@@ -435,6 +475,20 @@ function createBasePositionRewards(): PositionRewards {
  */
 export const PositionRewards = {
   typeUrl: '/noble.dollar.vaults.v1.PositionRewards' as const,
+  is(o: any): o is PositionRewards {
+    return (
+      o &&
+      (o.$typeUrl === PositionRewards.typeUrl ||
+        (typeof o.amount === 'string' && typeof o.pendingRewards === 'string'))
+    );
+  },
+  isSDK(o: any): o is PositionRewardsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === PositionRewards.typeUrl ||
+        (typeof o.amount === 'string' && typeof o.pending_rewards === 'string'))
+    );
+  },
   encode(
     message: PositionRewards,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -501,6 +555,7 @@ export const PositionRewards = {
       value: PositionRewards.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBasePositionEntry(): PositionEntry {
   return {
@@ -519,6 +574,30 @@ function createBasePositionEntry(): PositionEntry {
  */
 export const PositionEntry = {
   typeUrl: '/noble.dollar.vaults.v1.PositionEntry' as const,
+  is(o: any): o is PositionEntry {
+    return (
+      o &&
+      (o.$typeUrl === PositionEntry.typeUrl ||
+        ((o.address instanceof Uint8Array || typeof o.address === 'string') &&
+          isSet(o.vault) &&
+          typeof o.principal === 'string' &&
+          typeof o.index === 'bigint' &&
+          typeof o.amount === 'string' &&
+          Timestamp.is(o.time)))
+    );
+  },
+  isSDK(o: any): o is PositionEntrySDKType {
+    return (
+      o &&
+      (o.$typeUrl === PositionEntry.typeUrl ||
+        ((o.address instanceof Uint8Array || typeof o.address === 'string') &&
+          isSet(o.vault) &&
+          typeof o.principal === 'string' &&
+          typeof o.index === 'bigint' &&
+          typeof o.amount === 'string' &&
+          Timestamp.isSDK(o.time)))
+    );
+  },
   encode(
     message: PositionEntry,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -631,6 +710,7 @@ export const PositionEntry = {
       value: PositionEntry.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseStats(): Stats {
   return {
@@ -648,6 +728,28 @@ function createBaseStats(): Stats {
  */
 export const Stats = {
   typeUrl: '/noble.dollar.vaults.v1.Stats' as const,
+  is(o: any): o is Stats {
+    return (
+      o &&
+      (o.$typeUrl === Stats.typeUrl ||
+        (typeof o.flexibleTotalPrincipal === 'string' &&
+          typeof o.flexibleTotalUsers === 'bigint' &&
+          typeof o.flexibleTotalDistributedRewardsPrincipal === 'string' &&
+          typeof o.stakedTotalPrincipal === 'string' &&
+          typeof o.stakedTotalUsers === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is StatsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Stats.typeUrl ||
+        (typeof o.flexible_total_principal === 'string' &&
+          typeof o.flexible_total_users === 'bigint' &&
+          typeof o.flexible_total_distributed_rewards_principal === 'string' &&
+          typeof o.staked_total_principal === 'string' &&
+          typeof o.staked_total_users === 'bigint'))
+    );
+  },
   encode(
     message: Stats,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -770,4 +872,5 @@ export const Stats = {
       value: Stats.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

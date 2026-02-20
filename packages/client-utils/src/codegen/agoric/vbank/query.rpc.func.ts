@@ -17,6 +17,7 @@ export const getParams = buildQuery<QueryParamsRequest, QueryParamsResponse>({
   decode: QueryParamsResponse.decode,
   service: 'agoric.vbank.Query',
   method: 'Params',
+  deps: [QueryParamsRequest, QueryParamsResponse],
 });
 /**
  * State queries current state of the vbank module.
@@ -29,4 +30,5 @@ export const getState = buildQuery<QueryStateRequest, QueryStateResponse>({
   decode: QueryStateResponse.decode,
   service: 'agoric.vbank.Query',
   method: 'State',
+  deps: [QueryStateRequest, QueryStateResponse],
 });

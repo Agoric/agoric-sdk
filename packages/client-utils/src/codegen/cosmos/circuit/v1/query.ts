@@ -14,6 +14,7 @@ import {
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../../registry.js';
 /**
  * QueryAccountRequest is the request type for the Query/Account RPC method.
  * @name QueryAccountRequest
@@ -163,6 +164,21 @@ function createBaseQueryAccountRequest(): QueryAccountRequest {
  */
 export const QueryAccountRequest = {
   typeUrl: '/cosmos.circuit.v1.QueryAccountRequest' as const,
+  aminoType: 'cosmos-sdk/QueryAccountRequest' as const,
+  is(o: any): o is QueryAccountRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryAccountRequest.typeUrl ||
+        typeof o.address === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryAccountRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryAccountRequest.typeUrl ||
+        typeof o.address === 'string')
+    );
+  },
   encode(
     message: QueryAccountRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -220,6 +236,7 @@ export const QueryAccountRequest = {
       value: QueryAccountRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseAccountResponse(): AccountResponse {
   return {
@@ -234,6 +251,13 @@ function createBaseAccountResponse(): AccountResponse {
  */
 export const AccountResponse = {
   typeUrl: '/cosmos.circuit.v1.AccountResponse' as const,
+  aminoType: 'cosmos-sdk/AccountResponse' as const,
+  is(o: any): o is AccountResponse {
+    return o && o.$typeUrl === AccountResponse.typeUrl;
+  },
+  isSDK(o: any): o is AccountResponseSDKType {
+    return o && o.$typeUrl === AccountResponse.typeUrl;
+  },
   encode(
     message: AccountResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -296,6 +320,14 @@ export const AccountResponse = {
       value: AccountResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(AccountResponse.typeUrl)
+    ) {
+      return;
+    }
+    Permissions.registerTypeUrl();
+  },
 };
 function createBaseQueryAccountsRequest(): QueryAccountsRequest {
   return {
@@ -310,6 +342,13 @@ function createBaseQueryAccountsRequest(): QueryAccountsRequest {
  */
 export const QueryAccountsRequest = {
   typeUrl: '/cosmos.circuit.v1.QueryAccountsRequest' as const,
+  aminoType: 'cosmos-sdk/QueryAccountsRequest' as const,
+  is(o: any): o is QueryAccountsRequest {
+    return o && o.$typeUrl === QueryAccountsRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryAccountsRequestSDKType {
+    return o && o.$typeUrl === QueryAccountsRequest.typeUrl;
+  },
   encode(
     message: QueryAccountsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -375,6 +414,16 @@ export const QueryAccountsRequest = {
       value: QueryAccountsRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryAccountsRequest.typeUrl,
+      )
+    ) {
+      return;
+    }
+    PageRequest.registerTypeUrl();
+  },
 };
 function createBaseAccountsResponse(): AccountsResponse {
   return {
@@ -390,6 +439,24 @@ function createBaseAccountsResponse(): AccountsResponse {
  */
 export const AccountsResponse = {
   typeUrl: '/cosmos.circuit.v1.AccountsResponse' as const,
+  aminoType: 'cosmos-sdk/AccountsResponse' as const,
+  is(o: any): o is AccountsResponse {
+    return (
+      o &&
+      (o.$typeUrl === AccountsResponse.typeUrl ||
+        (Array.isArray(o.accounts) &&
+          (!o.accounts.length || GenesisAccountPermissions.is(o.accounts[0]))))
+    );
+  },
+  isSDK(o: any): o is AccountsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === AccountsResponse.typeUrl ||
+        (Array.isArray(o.accounts) &&
+          (!o.accounts.length ||
+            GenesisAccountPermissions.isSDK(o.accounts[0]))))
+    );
+  },
   encode(
     message: AccountsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -475,6 +542,15 @@ export const AccountsResponse = {
       value: AccountsResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(AccountsResponse.typeUrl)
+    ) {
+      return;
+    }
+    GenesisAccountPermissions.registerTypeUrl();
+    PageResponse.registerTypeUrl();
+  },
 };
 function createBaseQueryDisabledListRequest(): QueryDisabledListRequest {
   return {};
@@ -487,6 +563,13 @@ function createBaseQueryDisabledListRequest(): QueryDisabledListRequest {
  */
 export const QueryDisabledListRequest = {
   typeUrl: '/cosmos.circuit.v1.QueryDisabledListRequest' as const,
+  aminoType: 'cosmos-sdk/QueryDisabledListRequest' as const,
+  is(o: any): o is QueryDisabledListRequest {
+    return o && o.$typeUrl === QueryDisabledListRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryDisabledListRequestSDKType {
+    return o && o.$typeUrl === QueryDisabledListRequest.typeUrl;
+  },
   encode(
     _: QueryDisabledListRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -538,6 +621,7 @@ export const QueryDisabledListRequest = {
       value: QueryDisabledListRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseDisabledListResponse(): DisabledListResponse {
   return {
@@ -552,6 +636,23 @@ function createBaseDisabledListResponse(): DisabledListResponse {
  */
 export const DisabledListResponse = {
   typeUrl: '/cosmos.circuit.v1.DisabledListResponse' as const,
+  aminoType: 'cosmos-sdk/DisabledListResponse' as const,
+  is(o: any): o is DisabledListResponse {
+    return (
+      o &&
+      (o.$typeUrl === DisabledListResponse.typeUrl ||
+        (Array.isArray(o.disabledList) &&
+          (!o.disabledList.length || typeof o.disabledList[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is DisabledListResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === DisabledListResponse.typeUrl ||
+        (Array.isArray(o.disabled_list) &&
+          (!o.disabled_list.length || typeof o.disabled_list[0] === 'string')))
+    );
+  },
   encode(
     message: DisabledListResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -615,4 +716,5 @@ export const DisabledListResponse = {
       value: DisabledListResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

@@ -74,6 +74,20 @@ function createBaseApp(): App {
  */
 export const App = {
   typeUrl: '/tendermint.version.App' as const,
+  is(o: any): o is App {
+    return (
+      o &&
+      (o.$typeUrl === App.typeUrl ||
+        (typeof o.protocol === 'bigint' && typeof o.software === 'string'))
+    );
+  },
+  isSDK(o: any): o is AppSDKType {
+    return (
+      o &&
+      (o.$typeUrl === App.typeUrl ||
+        (typeof o.protocol === 'bigint' && typeof o.software === 'string'))
+    );
+  },
   encode(
     message: App,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -143,6 +157,7 @@ export const App = {
       value: App.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseConsensus(): Consensus {
   return {
@@ -160,6 +175,20 @@ function createBaseConsensus(): Consensus {
  */
 export const Consensus = {
   typeUrl: '/tendermint.version.Consensus' as const,
+  is(o: any): o is Consensus {
+    return (
+      o &&
+      (o.$typeUrl === Consensus.typeUrl ||
+        (typeof o.block === 'bigint' && typeof o.app === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is ConsensusSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Consensus.typeUrl ||
+        (typeof o.block === 'bigint' && typeof o.app === 'bigint'))
+    );
+  },
   encode(
     message: Consensus,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -231,4 +260,5 @@ export const Consensus = {
       value: Consensus.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

@@ -4,6 +4,7 @@ import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { Decimal } from '../../decimals.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../registry.js';
 /**
  * Deprecated, this configuration is no longer needed since swaps
  * are executed off-chain via authz
@@ -199,6 +200,30 @@ function createBaseTradeConfig(): TradeConfig {
  */
 export const TradeConfig = {
   typeUrl: '/stride.stakeibc.TradeConfig' as const,
+  is(o: any): o is TradeConfig {
+    return (
+      o &&
+      (o.$typeUrl === TradeConfig.typeUrl ||
+        (typeof o.poolId === 'bigint' &&
+          typeof o.swapPrice === 'string' &&
+          typeof o.priceUpdateTimestamp === 'bigint' &&
+          typeof o.maxAllowedSwapLossRate === 'string' &&
+          typeof o.minSwapAmount === 'string' &&
+          typeof o.maxSwapAmount === 'string'))
+    );
+  },
+  isSDK(o: any): o is TradeConfigSDKType {
+    return (
+      o &&
+      (o.$typeUrl === TradeConfig.typeUrl ||
+        (typeof o.pool_id === 'bigint' &&
+          typeof o.swap_price === 'string' &&
+          typeof o.price_update_timestamp === 'bigint' &&
+          typeof o.max_allowed_swap_loss_rate === 'string' &&
+          typeof o.min_swap_amount === 'string' &&
+          typeof o.max_swap_amount === 'string'))
+    );
+  },
   encode(
     message: TradeConfig,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -334,6 +359,7 @@ export const TradeConfig = {
       value: TradeConfig.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseTradeRoute(): TradeRoute {
   return {
@@ -366,6 +392,44 @@ function createBaseTradeRoute(): TradeRoute {
  */
 export const TradeRoute = {
   typeUrl: '/stride.stakeibc.TradeRoute' as const,
+  is(o: any): o is TradeRoute {
+    return (
+      o &&
+      (o.$typeUrl === TradeRoute.typeUrl ||
+        (typeof o.rewardDenomOnHostZone === 'string' &&
+          typeof o.rewardDenomOnRewardZone === 'string' &&
+          typeof o.rewardDenomOnTradeZone === 'string' &&
+          typeof o.hostDenomOnTradeZone === 'string' &&
+          typeof o.hostDenomOnHostZone === 'string' &&
+          ICAAccount.is(o.hostAccount) &&
+          ICAAccount.is(o.rewardAccount) &&
+          ICAAccount.is(o.tradeAccount) &&
+          typeof o.hostToRewardChannelId === 'string' &&
+          typeof o.rewardToTradeChannelId === 'string' &&
+          typeof o.tradeToHostChannelId === 'string' &&
+          typeof o.minTransferAmount === 'string' &&
+          TradeConfig.is(o.tradeConfig)))
+    );
+  },
+  isSDK(o: any): o is TradeRouteSDKType {
+    return (
+      o &&
+      (o.$typeUrl === TradeRoute.typeUrl ||
+        (typeof o.reward_denom_on_host_zone === 'string' &&
+          typeof o.reward_denom_on_reward_zone === 'string' &&
+          typeof o.reward_denom_on_trade_zone === 'string' &&
+          typeof o.host_denom_on_trade_zone === 'string' &&
+          typeof o.host_denom_on_host_zone === 'string' &&
+          ICAAccount.isSDK(o.host_account) &&
+          ICAAccount.isSDK(o.reward_account) &&
+          ICAAccount.isSDK(o.trade_account) &&
+          typeof o.host_to_reward_channel_id === 'string' &&
+          typeof o.reward_to_trade_channel_id === 'string' &&
+          typeof o.trade_to_host_channel_id === 'string' &&
+          typeof o.min_transfer_amount === 'string' &&
+          TradeConfig.isSDK(o.trade_config)))
+    );
+  },
   encode(
     message: TradeRoute,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -595,5 +659,12 @@ export const TradeRoute = {
       typeUrl: '/stride.stakeibc.TradeRoute',
       value: TradeRoute.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(TradeRoute.typeUrl)) {
+      return;
+    }
+    ICAAccount.registerTypeUrl();
+    TradeConfig.registerTypeUrl();
   },
 };

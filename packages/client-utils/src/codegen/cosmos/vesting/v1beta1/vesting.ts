@@ -5,6 +5,7 @@ import {
 } from '../../auth/v1beta1/auth.js';
 import { Coin, type CoinSDKType } from '../../base/v1beta1/coin.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
+import { GlobalDecoderRegistry } from '../../../registry.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
 /**
@@ -251,6 +252,33 @@ function createBaseBaseVestingAccount(): BaseVestingAccount {
  */
 export const BaseVestingAccount = {
   typeUrl: '/cosmos.vesting.v1beta1.BaseVestingAccount' as const,
+  aminoType: 'cosmos-sdk/BaseVestingAccount' as const,
+  is(o: any): o is BaseVestingAccount {
+    return (
+      o &&
+      (o.$typeUrl === BaseVestingAccount.typeUrl ||
+        (Array.isArray(o.originalVesting) &&
+          (!o.originalVesting.length || Coin.is(o.originalVesting[0])) &&
+          Array.isArray(o.delegatedFree) &&
+          (!o.delegatedFree.length || Coin.is(o.delegatedFree[0])) &&
+          Array.isArray(o.delegatedVesting) &&
+          (!o.delegatedVesting.length || Coin.is(o.delegatedVesting[0])) &&
+          typeof o.endTime === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is BaseVestingAccountSDKType {
+    return (
+      o &&
+      (o.$typeUrl === BaseVestingAccount.typeUrl ||
+        (Array.isArray(o.original_vesting) &&
+          (!o.original_vesting.length || Coin.isSDK(o.original_vesting[0])) &&
+          Array.isArray(o.delegated_free) &&
+          (!o.delegated_free.length || Coin.isSDK(o.delegated_free[0])) &&
+          Array.isArray(o.delegated_vesting) &&
+          (!o.delegated_vesting.length || Coin.isSDK(o.delegated_vesting[0])) &&
+          typeof o.end_time === 'bigint'))
+    );
+  },
   encode(
     message: BaseVestingAccount,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -388,6 +416,15 @@ export const BaseVestingAccount = {
       value: BaseVestingAccount.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(BaseVestingAccount.typeUrl)
+    ) {
+      return;
+    }
+    BaseAccount.registerTypeUrl();
+    Coin.registerTypeUrl();
+  },
 };
 function createBaseContinuousVestingAccount(): ContinuousVestingAccount {
   return {
@@ -404,6 +441,21 @@ function createBaseContinuousVestingAccount(): ContinuousVestingAccount {
  */
 export const ContinuousVestingAccount = {
   typeUrl: '/cosmos.vesting.v1beta1.ContinuousVestingAccount' as const,
+  aminoType: 'cosmos-sdk/ContinuousVestingAccount' as const,
+  is(o: any): o is ContinuousVestingAccount {
+    return (
+      o &&
+      (o.$typeUrl === ContinuousVestingAccount.typeUrl ||
+        typeof o.startTime === 'bigint')
+    );
+  },
+  isSDK(o: any): o is ContinuousVestingAccountSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ContinuousVestingAccount.typeUrl ||
+        typeof o.start_time === 'bigint')
+    );
+  },
   encode(
     message: ContinuousVestingAccount,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -499,6 +551,16 @@ export const ContinuousVestingAccount = {
       value: ContinuousVestingAccount.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        ContinuousVestingAccount.typeUrl,
+      )
+    ) {
+      return;
+    }
+    BaseVestingAccount.registerTypeUrl();
+  },
 };
 function createBaseDelayedVestingAccount(): DelayedVestingAccount {
   return {
@@ -515,6 +577,13 @@ function createBaseDelayedVestingAccount(): DelayedVestingAccount {
  */
 export const DelayedVestingAccount = {
   typeUrl: '/cosmos.vesting.v1beta1.DelayedVestingAccount' as const,
+  aminoType: 'cosmos-sdk/DelayedVestingAccount' as const,
+  is(o: any): o is DelayedVestingAccount {
+    return o && o.$typeUrl === DelayedVestingAccount.typeUrl;
+  },
+  isSDK(o: any): o is DelayedVestingAccountSDKType {
+    return o && o.$typeUrl === DelayedVestingAccount.typeUrl;
+  },
   encode(
     message: DelayedVestingAccount,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -587,6 +656,16 @@ export const DelayedVestingAccount = {
       value: DelayedVestingAccount.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        DelayedVestingAccount.typeUrl,
+      )
+    ) {
+      return;
+    }
+    BaseVestingAccount.registerTypeUrl();
+  },
 };
 function createBasePeriod(): Period {
   return {
@@ -605,6 +684,25 @@ function createBasePeriod(): Period {
  */
 export const Period = {
   typeUrl: '/cosmos.vesting.v1beta1.Period' as const,
+  aminoType: 'cosmos-sdk/Period' as const,
+  is(o: any): o is Period {
+    return (
+      o &&
+      (o.$typeUrl === Period.typeUrl ||
+        (typeof o.length === 'bigint' &&
+          Array.isArray(o.amount) &&
+          (!o.amount.length || Coin.is(o.amount[0]))))
+    );
+  },
+  isSDK(o: any): o is PeriodSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Period.typeUrl ||
+        (typeof o.length === 'bigint' &&
+          Array.isArray(o.amount) &&
+          (!o.amount.length || Coin.isSDK(o.amount[0]))))
+    );
+  },
   encode(
     message: Period,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -680,6 +778,12 @@ export const Period = {
       value: Period.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(Period.typeUrl)) {
+      return;
+    }
+    Coin.registerTypeUrl();
+  },
 };
 function createBasePeriodicVestingAccount(): PeriodicVestingAccount {
   return {
@@ -697,6 +801,25 @@ function createBasePeriodicVestingAccount(): PeriodicVestingAccount {
  */
 export const PeriodicVestingAccount = {
   typeUrl: '/cosmos.vesting.v1beta1.PeriodicVestingAccount' as const,
+  aminoType: 'cosmos-sdk/PeriodicVestingAccount' as const,
+  is(o: any): o is PeriodicVestingAccount {
+    return (
+      o &&
+      (o.$typeUrl === PeriodicVestingAccount.typeUrl ||
+        (typeof o.startTime === 'bigint' &&
+          Array.isArray(o.vestingPeriods) &&
+          (!o.vestingPeriods.length || Period.is(o.vestingPeriods[0]))))
+    );
+  },
+  isSDK(o: any): o is PeriodicVestingAccountSDKType {
+    return (
+      o &&
+      (o.$typeUrl === PeriodicVestingAccount.typeUrl ||
+        (typeof o.start_time === 'bigint' &&
+          Array.isArray(o.vesting_periods) &&
+          (!o.vesting_periods.length || Period.isSDK(o.vesting_periods[0]))))
+    );
+  },
   encode(
     message: PeriodicVestingAccount,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -804,6 +927,17 @@ export const PeriodicVestingAccount = {
       value: PeriodicVestingAccount.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        PeriodicVestingAccount.typeUrl,
+      )
+    ) {
+      return;
+    }
+    BaseVestingAccount.registerTypeUrl();
+    Period.registerTypeUrl();
+  },
 };
 function createBasePermanentLockedAccount(): PermanentLockedAccount {
   return {
@@ -822,6 +956,13 @@ function createBasePermanentLockedAccount(): PermanentLockedAccount {
  */
 export const PermanentLockedAccount = {
   typeUrl: '/cosmos.vesting.v1beta1.PermanentLockedAccount' as const,
+  aminoType: 'cosmos-sdk/PermanentLockedAccount' as const,
+  is(o: any): o is PermanentLockedAccount {
+    return o && o.$typeUrl === PermanentLockedAccount.typeUrl;
+  },
+  isSDK(o: any): o is PermanentLockedAccountSDKType {
+    return o && o.$typeUrl === PermanentLockedAccount.typeUrl;
+  },
   encode(
     message: PermanentLockedAccount,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -896,6 +1037,16 @@ export const PermanentLockedAccount = {
       value: PermanentLockedAccount.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        PermanentLockedAccount.typeUrl,
+      )
+    ) {
+      return;
+    }
+    BaseVestingAccount.registerTypeUrl();
+  },
 };
 function createBaseClawbackVestingAccount(): ClawbackVestingAccount {
   return {
@@ -917,6 +1068,31 @@ function createBaseClawbackVestingAccount(): ClawbackVestingAccount {
  */
 export const ClawbackVestingAccount = {
   typeUrl: '/cosmos.vesting.v1beta1.ClawbackVestingAccount' as const,
+  aminoType: 'cosmos-sdk/ClawbackVestingAccount' as const,
+  is(o: any): o is ClawbackVestingAccount {
+    return (
+      o &&
+      (o.$typeUrl === ClawbackVestingAccount.typeUrl ||
+        (typeof o.funderAddress === 'string' &&
+          typeof o.startTime === 'bigint' &&
+          Array.isArray(o.lockupPeriods) &&
+          (!o.lockupPeriods.length || Period.is(o.lockupPeriods[0])) &&
+          Array.isArray(o.vestingPeriods) &&
+          (!o.vestingPeriods.length || Period.is(o.vestingPeriods[0]))))
+    );
+  },
+  isSDK(o: any): o is ClawbackVestingAccountSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ClawbackVestingAccount.typeUrl ||
+        (typeof o.funder_address === 'string' &&
+          typeof o.start_time === 'bigint' &&
+          Array.isArray(o.lockup_periods) &&
+          (!o.lockup_periods.length || Period.isSDK(o.lockup_periods[0])) &&
+          Array.isArray(o.vesting_periods) &&
+          (!o.vesting_periods.length || Period.isSDK(o.vesting_periods[0]))))
+    );
+  },
   encode(
     message: ClawbackVestingAccount,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1053,5 +1229,16 @@ export const ClawbackVestingAccount = {
       typeUrl: '/cosmos.vesting.v1beta1.ClawbackVestingAccount',
       value: ClawbackVestingAccount.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        ClawbackVestingAccount.typeUrl,
+      )
+    ) {
+      return;
+    }
+    BaseVestingAccount.registerTypeUrl();
+    Period.registerTypeUrl();
   },
 };

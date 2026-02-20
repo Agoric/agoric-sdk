@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
+import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { type JsonSafe } from '../../json-safe.js';
 export enum ICAAccountType {
   DELEGATION = 0,
@@ -110,6 +110,26 @@ function createBaseICAAccount(): ICAAccount {
  */
 export const ICAAccount = {
   typeUrl: '/stride.stakeibc.ICAAccount' as const,
+  is(o: any): o is ICAAccount {
+    return (
+      o &&
+      (o.$typeUrl === ICAAccount.typeUrl ||
+        (typeof o.chainId === 'string' &&
+          isSet(o.type) &&
+          typeof o.connectionId === 'string' &&
+          typeof o.address === 'string'))
+    );
+  },
+  isSDK(o: any): o is ICAAccountSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ICAAccount.typeUrl ||
+        (typeof o.chain_id === 'string' &&
+          isSet(o.type) &&
+          typeof o.connection_id === 'string' &&
+          typeof o.address === 'string'))
+    );
+  },
   encode(
     message: ICAAccount,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -195,4 +215,5 @@ export const ICAAccount = {
       value: ICAAccount.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

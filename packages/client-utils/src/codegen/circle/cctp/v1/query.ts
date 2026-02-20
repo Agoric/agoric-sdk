@@ -35,6 +35,7 @@ import {
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { type JsonSafe } from '../../../json-safe.js';
 import { isSet } from '../../../helpers.js';
+import { GlobalDecoderRegistry } from '../../../registry.js';
 /**
  * QueryRolesRequest is the request type for the Query/Roles RPC method.
  * @name QueryRolesRequest
@@ -945,6 +946,12 @@ function createBaseQueryRolesRequest(): QueryRolesRequest {
  */
 export const QueryRolesRequest = {
   typeUrl: '/circle.cctp.v1.QueryRolesRequest' as const,
+  is(o: any): o is QueryRolesRequest {
+    return o && o.$typeUrl === QueryRolesRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryRolesRequestSDKType {
+    return o && o.$typeUrl === QueryRolesRequest.typeUrl;
+  },
   encode(
     _: QueryRolesRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -989,6 +996,7 @@ export const QueryRolesRequest = {
       value: QueryRolesRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryRolesResponse(): QueryRolesResponse {
   return {
@@ -1006,6 +1014,26 @@ function createBaseQueryRolesResponse(): QueryRolesResponse {
  */
 export const QueryRolesResponse = {
   typeUrl: '/circle.cctp.v1.QueryRolesResponse' as const,
+  is(o: any): o is QueryRolesResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryRolesResponse.typeUrl ||
+        (typeof o.owner === 'string' &&
+          typeof o.attesterManager === 'string' &&
+          typeof o.pauser === 'string' &&
+          typeof o.tokenController === 'string'))
+    );
+  },
+  isSDK(o: any): o is QueryRolesResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryRolesResponse.typeUrl ||
+        (typeof o.owner === 'string' &&
+          typeof o.attester_manager === 'string' &&
+          typeof o.pauser === 'string' &&
+          typeof o.token_controller === 'string'))
+    );
+  },
   encode(
     message: QueryRolesResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1096,6 +1124,7 @@ export const QueryRolesResponse = {
       value: QueryRolesResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryGetAttesterRequest(): QueryGetAttesterRequest {
   return {
@@ -1110,6 +1139,20 @@ function createBaseQueryGetAttesterRequest(): QueryGetAttesterRequest {
  */
 export const QueryGetAttesterRequest = {
   typeUrl: '/circle.cctp.v1.QueryGetAttesterRequest' as const,
+  is(o: any): o is QueryGetAttesterRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetAttesterRequest.typeUrl ||
+        typeof o.attester === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryGetAttesterRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetAttesterRequest.typeUrl ||
+        typeof o.attester === 'string')
+    );
+  },
   encode(
     message: QueryGetAttesterRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1173,6 +1216,7 @@ export const QueryGetAttesterRequest = {
       value: QueryGetAttesterRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryGetAttesterResponse(): QueryGetAttesterResponse {
   return {
@@ -1188,6 +1232,20 @@ function createBaseQueryGetAttesterResponse(): QueryGetAttesterResponse {
  */
 export const QueryGetAttesterResponse = {
   typeUrl: '/circle.cctp.v1.QueryGetAttesterResponse' as const,
+  is(o: any): o is QueryGetAttesterResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetAttesterResponse.typeUrl ||
+        Attester.is(o.attester))
+    );
+  },
+  isSDK(o: any): o is QueryGetAttesterResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetAttesterResponse.typeUrl ||
+        Attester.isSDK(o.attester))
+    );
+  },
   encode(
     message: QueryGetAttesterResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1261,6 +1319,16 @@ export const QueryGetAttesterResponse = {
       value: QueryGetAttesterResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryGetAttesterResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Attester.registerTypeUrl();
+  },
 };
 function createBaseQueryAllAttestersRequest(): QueryAllAttestersRequest {
   return {
@@ -1276,6 +1344,12 @@ function createBaseQueryAllAttestersRequest(): QueryAllAttestersRequest {
  */
 export const QueryAllAttestersRequest = {
   typeUrl: '/circle.cctp.v1.QueryAllAttestersRequest' as const,
+  is(o: any): o is QueryAllAttestersRequest {
+    return o && o.$typeUrl === QueryAllAttestersRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryAllAttestersRequestSDKType {
+    return o && o.$typeUrl === QueryAllAttestersRequest.typeUrl;
+  },
   encode(
     message: QueryAllAttestersRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1349,6 +1423,16 @@ export const QueryAllAttestersRequest = {
       value: QueryAllAttestersRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryAllAttestersRequest.typeUrl,
+      )
+    ) {
+      return;
+    }
+    PageRequest.registerTypeUrl();
+  },
 };
 function createBaseQueryAllAttestersResponse(): QueryAllAttestersResponse {
   return {
@@ -1365,6 +1449,22 @@ function createBaseQueryAllAttestersResponse(): QueryAllAttestersResponse {
  */
 export const QueryAllAttestersResponse = {
   typeUrl: '/circle.cctp.v1.QueryAllAttestersResponse' as const,
+  is(o: any): o is QueryAllAttestersResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllAttestersResponse.typeUrl ||
+        (Array.isArray(o.attesters) &&
+          (!o.attesters.length || Attester.is(o.attesters[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryAllAttestersResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllAttestersResponse.typeUrl ||
+        (Array.isArray(o.attesters) &&
+          (!o.attesters.length || Attester.isSDK(o.attesters[0]))))
+    );
+  },
   encode(
     message: QueryAllAttestersResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1459,6 +1559,17 @@ export const QueryAllAttestersResponse = {
       value: QueryAllAttestersResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryAllAttestersResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Attester.registerTypeUrl();
+    PageResponse.registerTypeUrl();
+  },
 };
 function createBaseQueryGetPerMessageBurnLimitRequest(): QueryGetPerMessageBurnLimitRequest {
   return {
@@ -1474,6 +1585,20 @@ function createBaseQueryGetPerMessageBurnLimitRequest(): QueryGetPerMessageBurnL
  */
 export const QueryGetPerMessageBurnLimitRequest = {
   typeUrl: '/circle.cctp.v1.QueryGetPerMessageBurnLimitRequest' as const,
+  is(o: any): o is QueryGetPerMessageBurnLimitRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetPerMessageBurnLimitRequest.typeUrl ||
+        typeof o.denom === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryGetPerMessageBurnLimitRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetPerMessageBurnLimitRequest.typeUrl ||
+        typeof o.denom === 'string')
+    );
+  },
   encode(
     message: QueryGetPerMessageBurnLimitRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1539,6 +1664,7 @@ export const QueryGetPerMessageBurnLimitRequest = {
       value: QueryGetPerMessageBurnLimitRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryGetPerMessageBurnLimitResponse(): QueryGetPerMessageBurnLimitResponse {
   return {
@@ -1554,6 +1680,20 @@ function createBaseQueryGetPerMessageBurnLimitResponse(): QueryGetPerMessageBurn
  */
 export const QueryGetPerMessageBurnLimitResponse = {
   typeUrl: '/circle.cctp.v1.QueryGetPerMessageBurnLimitResponse' as const,
+  is(o: any): o is QueryGetPerMessageBurnLimitResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetPerMessageBurnLimitResponse.typeUrl ||
+        PerMessageBurnLimit.is(o.burnLimit))
+    );
+  },
+  isSDK(o: any): o is QueryGetPerMessageBurnLimitResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetPerMessageBurnLimitResponse.typeUrl ||
+        PerMessageBurnLimit.isSDK(o.burn_limit))
+    );
+  },
   encode(
     message: QueryGetPerMessageBurnLimitResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1633,6 +1773,16 @@ export const QueryGetPerMessageBurnLimitResponse = {
       value: QueryGetPerMessageBurnLimitResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryGetPerMessageBurnLimitResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    PerMessageBurnLimit.registerTypeUrl();
+  },
 };
 function createBaseQueryAllPerMessageBurnLimitsRequest(): QueryAllPerMessageBurnLimitsRequest {
   return {
@@ -1648,6 +1798,12 @@ function createBaseQueryAllPerMessageBurnLimitsRequest(): QueryAllPerMessageBurn
  */
 export const QueryAllPerMessageBurnLimitsRequest = {
   typeUrl: '/circle.cctp.v1.QueryAllPerMessageBurnLimitsRequest' as const,
+  is(o: any): o is QueryAllPerMessageBurnLimitsRequest {
+    return o && o.$typeUrl === QueryAllPerMessageBurnLimitsRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryAllPerMessageBurnLimitsRequestSDKType {
+    return o && o.$typeUrl === QueryAllPerMessageBurnLimitsRequest.typeUrl;
+  },
   encode(
     message: QueryAllPerMessageBurnLimitsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1721,6 +1877,16 @@ export const QueryAllPerMessageBurnLimitsRequest = {
       value: QueryAllPerMessageBurnLimitsRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryAllPerMessageBurnLimitsRequest.typeUrl,
+      )
+    ) {
+      return;
+    }
+    PageRequest.registerTypeUrl();
+  },
 };
 function createBaseQueryAllPerMessageBurnLimitsResponse(): QueryAllPerMessageBurnLimitsResponse {
   return {
@@ -1737,6 +1903,23 @@ function createBaseQueryAllPerMessageBurnLimitsResponse(): QueryAllPerMessageBur
  */
 export const QueryAllPerMessageBurnLimitsResponse = {
   typeUrl: '/circle.cctp.v1.QueryAllPerMessageBurnLimitsResponse' as const,
+  is(o: any): o is QueryAllPerMessageBurnLimitsResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllPerMessageBurnLimitsResponse.typeUrl ||
+        (Array.isArray(o.burnLimits) &&
+          (!o.burnLimits.length || PerMessageBurnLimit.is(o.burnLimits[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryAllPerMessageBurnLimitsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllPerMessageBurnLimitsResponse.typeUrl ||
+        (Array.isArray(o.burn_limits) &&
+          (!o.burn_limits.length ||
+            PerMessageBurnLimit.isSDK(o.burn_limits[0]))))
+    );
+  },
   encode(
     message: QueryAllPerMessageBurnLimitsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1833,6 +2016,17 @@ export const QueryAllPerMessageBurnLimitsResponse = {
       value: QueryAllPerMessageBurnLimitsResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryAllPerMessageBurnLimitsResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    PerMessageBurnLimit.registerTypeUrl();
+    PageResponse.registerTypeUrl();
+  },
 };
 function createBaseQueryGetBurningAndMintingPausedRequest(): QueryGetBurningAndMintingPausedRequest {
   return {};
@@ -1846,6 +2040,12 @@ function createBaseQueryGetBurningAndMintingPausedRequest(): QueryGetBurningAndM
  */
 export const QueryGetBurningAndMintingPausedRequest = {
   typeUrl: '/circle.cctp.v1.QueryGetBurningAndMintingPausedRequest' as const,
+  is(o: any): o is QueryGetBurningAndMintingPausedRequest {
+    return o && o.$typeUrl === QueryGetBurningAndMintingPausedRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryGetBurningAndMintingPausedRequestSDKType {
+    return o && o.$typeUrl === QueryGetBurningAndMintingPausedRequest.typeUrl;
+  },
   encode(
     _: QueryGetBurningAndMintingPausedRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1901,6 +2101,7 @@ export const QueryGetBurningAndMintingPausedRequest = {
       value: QueryGetBurningAndMintingPausedRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryGetBurningAndMintingPausedResponse(): QueryGetBurningAndMintingPausedResponse {
   return {
@@ -1916,6 +2117,20 @@ function createBaseQueryGetBurningAndMintingPausedResponse(): QueryGetBurningAnd
  */
 export const QueryGetBurningAndMintingPausedResponse = {
   typeUrl: '/circle.cctp.v1.QueryGetBurningAndMintingPausedResponse' as const,
+  is(o: any): o is QueryGetBurningAndMintingPausedResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetBurningAndMintingPausedResponse.typeUrl ||
+        BurningAndMintingPaused.is(o.paused))
+    );
+  },
+  isSDK(o: any): o is QueryGetBurningAndMintingPausedResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetBurningAndMintingPausedResponse.typeUrl ||
+        BurningAndMintingPaused.isSDK(o.paused))
+    );
+  },
   encode(
     message: QueryGetBurningAndMintingPausedResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1995,6 +2210,16 @@ export const QueryGetBurningAndMintingPausedResponse = {
       value: QueryGetBurningAndMintingPausedResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryGetBurningAndMintingPausedResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    BurningAndMintingPaused.registerTypeUrl();
+  },
 };
 function createBaseQueryGetSendingAndReceivingMessagesPausedRequest(): QueryGetSendingAndReceivingMessagesPausedRequest {
   return {};
@@ -2009,6 +2234,18 @@ function createBaseQueryGetSendingAndReceivingMessagesPausedRequest(): QueryGetS
 export const QueryGetSendingAndReceivingMessagesPausedRequest = {
   typeUrl:
     '/circle.cctp.v1.QueryGetSendingAndReceivingMessagesPausedRequest' as const,
+  is(o: any): o is QueryGetSendingAndReceivingMessagesPausedRequest {
+    return (
+      o &&
+      o.$typeUrl === QueryGetSendingAndReceivingMessagesPausedRequest.typeUrl
+    );
+  },
+  isSDK(o: any): o is QueryGetSendingAndReceivingMessagesPausedRequestSDKType {
+    return (
+      o &&
+      o.$typeUrl === QueryGetSendingAndReceivingMessagesPausedRequest.typeUrl
+    );
+  },
   encode(
     _: QueryGetSendingAndReceivingMessagesPausedRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2076,6 +2313,7 @@ export const QueryGetSendingAndReceivingMessagesPausedRequest = {
         ).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryGetSendingAndReceivingMessagesPausedResponse(): QueryGetSendingAndReceivingMessagesPausedResponse {
   return {
@@ -2092,6 +2330,22 @@ function createBaseQueryGetSendingAndReceivingMessagesPausedResponse(): QueryGet
 export const QueryGetSendingAndReceivingMessagesPausedResponse = {
   typeUrl:
     '/circle.cctp.v1.QueryGetSendingAndReceivingMessagesPausedResponse' as const,
+  is(o: any): o is QueryGetSendingAndReceivingMessagesPausedResponse {
+    return (
+      o &&
+      (o.$typeUrl ===
+        QueryGetSendingAndReceivingMessagesPausedResponse.typeUrl ||
+        SendingAndReceivingMessagesPaused.is(o.paused))
+    );
+  },
+  isSDK(o: any): o is QueryGetSendingAndReceivingMessagesPausedResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl ===
+        QueryGetSendingAndReceivingMessagesPausedResponse.typeUrl ||
+        SendingAndReceivingMessagesPaused.isSDK(o.paused))
+    );
+  },
   encode(
     message: QueryGetSendingAndReceivingMessagesPausedResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2183,6 +2437,16 @@ export const QueryGetSendingAndReceivingMessagesPausedResponse = {
         ).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryGetSendingAndReceivingMessagesPausedResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    SendingAndReceivingMessagesPaused.registerTypeUrl();
+  },
 };
 function createBaseQueryGetMaxMessageBodySizeRequest(): QueryGetMaxMessageBodySizeRequest {
   return {};
@@ -2196,6 +2460,12 @@ function createBaseQueryGetMaxMessageBodySizeRequest(): QueryGetMaxMessageBodySi
  */
 export const QueryGetMaxMessageBodySizeRequest = {
   typeUrl: '/circle.cctp.v1.QueryGetMaxMessageBodySizeRequest' as const,
+  is(o: any): o is QueryGetMaxMessageBodySizeRequest {
+    return o && o.$typeUrl === QueryGetMaxMessageBodySizeRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryGetMaxMessageBodySizeRequestSDKType {
+    return o && o.$typeUrl === QueryGetMaxMessageBodySizeRequest.typeUrl;
+  },
   encode(
     _: QueryGetMaxMessageBodySizeRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2251,6 +2521,7 @@ export const QueryGetMaxMessageBodySizeRequest = {
       value: QueryGetMaxMessageBodySizeRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryGetMaxMessageBodySizeResponse(): QueryGetMaxMessageBodySizeResponse {
   return {
@@ -2266,6 +2537,20 @@ function createBaseQueryGetMaxMessageBodySizeResponse(): QueryGetMaxMessageBodyS
  */
 export const QueryGetMaxMessageBodySizeResponse = {
   typeUrl: '/circle.cctp.v1.QueryGetMaxMessageBodySizeResponse' as const,
+  is(o: any): o is QueryGetMaxMessageBodySizeResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetMaxMessageBodySizeResponse.typeUrl ||
+        MaxMessageBodySize.is(o.amount))
+    );
+  },
+  isSDK(o: any): o is QueryGetMaxMessageBodySizeResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetMaxMessageBodySizeResponse.typeUrl ||
+        MaxMessageBodySize.isSDK(o.amount))
+    );
+  },
   encode(
     message: QueryGetMaxMessageBodySizeResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2342,6 +2627,16 @@ export const QueryGetMaxMessageBodySizeResponse = {
       value: QueryGetMaxMessageBodySizeResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryGetMaxMessageBodySizeResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    MaxMessageBodySize.registerTypeUrl();
+  },
 };
 function createBaseQueryGetNextAvailableNonceRequest(): QueryGetNextAvailableNonceRequest {
   return {};
@@ -2355,6 +2650,12 @@ function createBaseQueryGetNextAvailableNonceRequest(): QueryGetNextAvailableNon
  */
 export const QueryGetNextAvailableNonceRequest = {
   typeUrl: '/circle.cctp.v1.QueryGetNextAvailableNonceRequest' as const,
+  is(o: any): o is QueryGetNextAvailableNonceRequest {
+    return o && o.$typeUrl === QueryGetNextAvailableNonceRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryGetNextAvailableNonceRequestSDKType {
+    return o && o.$typeUrl === QueryGetNextAvailableNonceRequest.typeUrl;
+  },
   encode(
     _: QueryGetNextAvailableNonceRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2410,6 +2711,7 @@ export const QueryGetNextAvailableNonceRequest = {
       value: QueryGetNextAvailableNonceRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryGetNextAvailableNonceResponse(): QueryGetNextAvailableNonceResponse {
   return {
@@ -2425,6 +2727,20 @@ function createBaseQueryGetNextAvailableNonceResponse(): QueryGetNextAvailableNo
  */
 export const QueryGetNextAvailableNonceResponse = {
   typeUrl: '/circle.cctp.v1.QueryGetNextAvailableNonceResponse' as const,
+  is(o: any): o is QueryGetNextAvailableNonceResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetNextAvailableNonceResponse.typeUrl ||
+        Nonce.is(o.nonce))
+    );
+  },
+  isSDK(o: any): o is QueryGetNextAvailableNonceResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetNextAvailableNonceResponse.typeUrl ||
+        Nonce.isSDK(o.nonce))
+    );
+  },
   encode(
     message: QueryGetNextAvailableNonceResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2494,6 +2810,16 @@ export const QueryGetNextAvailableNonceResponse = {
       value: QueryGetNextAvailableNonceResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryGetNextAvailableNonceResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Nonce.registerTypeUrl();
+  },
 };
 function createBaseQueryGetSignatureThresholdRequest(): QueryGetSignatureThresholdRequest {
   return {};
@@ -2507,6 +2833,12 @@ function createBaseQueryGetSignatureThresholdRequest(): QueryGetSignatureThresho
  */
 export const QueryGetSignatureThresholdRequest = {
   typeUrl: '/circle.cctp.v1.QueryGetSignatureThresholdRequest' as const,
+  is(o: any): o is QueryGetSignatureThresholdRequest {
+    return o && o.$typeUrl === QueryGetSignatureThresholdRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryGetSignatureThresholdRequestSDKType {
+    return o && o.$typeUrl === QueryGetSignatureThresholdRequest.typeUrl;
+  },
   encode(
     _: QueryGetSignatureThresholdRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2562,6 +2894,7 @@ export const QueryGetSignatureThresholdRequest = {
       value: QueryGetSignatureThresholdRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryGetSignatureThresholdResponse(): QueryGetSignatureThresholdResponse {
   return {
@@ -2577,6 +2910,20 @@ function createBaseQueryGetSignatureThresholdResponse(): QueryGetSignatureThresh
  */
 export const QueryGetSignatureThresholdResponse = {
   typeUrl: '/circle.cctp.v1.QueryGetSignatureThresholdResponse' as const,
+  is(o: any): o is QueryGetSignatureThresholdResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetSignatureThresholdResponse.typeUrl ||
+        SignatureThreshold.is(o.amount))
+    );
+  },
+  isSDK(o: any): o is QueryGetSignatureThresholdResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetSignatureThresholdResponse.typeUrl ||
+        SignatureThreshold.isSDK(o.amount))
+    );
+  },
   encode(
     message: QueryGetSignatureThresholdResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2653,6 +3000,16 @@ export const QueryGetSignatureThresholdResponse = {
       value: QueryGetSignatureThresholdResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryGetSignatureThresholdResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    SignatureThreshold.registerTypeUrl();
+  },
 };
 function createBaseQueryGetTokenPairRequest(): QueryGetTokenPairRequest {
   return {
@@ -2669,6 +3026,22 @@ function createBaseQueryGetTokenPairRequest(): QueryGetTokenPairRequest {
  */
 export const QueryGetTokenPairRequest = {
   typeUrl: '/circle.cctp.v1.QueryGetTokenPairRequest' as const,
+  is(o: any): o is QueryGetTokenPairRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetTokenPairRequest.typeUrl ||
+        (typeof o.remoteDomain === 'number' &&
+          typeof o.remoteToken === 'string'))
+    );
+  },
+  isSDK(o: any): o is QueryGetTokenPairRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetTokenPairRequest.typeUrl ||
+        (typeof o.remote_domain === 'number' &&
+          typeof o.remote_token === 'string'))
+    );
+  },
   encode(
     message: QueryGetTokenPairRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2747,6 +3120,7 @@ export const QueryGetTokenPairRequest = {
       value: QueryGetTokenPairRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryGetTokenPairResponse(): QueryGetTokenPairResponse {
   return {
@@ -2762,6 +3136,19 @@ function createBaseQueryGetTokenPairResponse(): QueryGetTokenPairResponse {
  */
 export const QueryGetTokenPairResponse = {
   typeUrl: '/circle.cctp.v1.QueryGetTokenPairResponse' as const,
+  is(o: any): o is QueryGetTokenPairResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetTokenPairResponse.typeUrl || TokenPair.is(o.pair))
+    );
+  },
+  isSDK(o: any): o is QueryGetTokenPairResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetTokenPairResponse.typeUrl ||
+        TokenPair.isSDK(o.pair))
+    );
+  },
   encode(
     message: QueryGetTokenPairResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2831,6 +3218,16 @@ export const QueryGetTokenPairResponse = {
       value: QueryGetTokenPairResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryGetTokenPairResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    TokenPair.registerTypeUrl();
+  },
 };
 function createBaseQueryAllTokenPairsRequest(): QueryAllTokenPairsRequest {
   return {
@@ -2846,6 +3243,12 @@ function createBaseQueryAllTokenPairsRequest(): QueryAllTokenPairsRequest {
  */
 export const QueryAllTokenPairsRequest = {
   typeUrl: '/circle.cctp.v1.QueryAllTokenPairsRequest' as const,
+  is(o: any): o is QueryAllTokenPairsRequest {
+    return o && o.$typeUrl === QueryAllTokenPairsRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryAllTokenPairsRequestSDKType {
+    return o && o.$typeUrl === QueryAllTokenPairsRequest.typeUrl;
+  },
   encode(
     message: QueryAllTokenPairsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2919,6 +3322,16 @@ export const QueryAllTokenPairsRequest = {
       value: QueryAllTokenPairsRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryAllTokenPairsRequest.typeUrl,
+      )
+    ) {
+      return;
+    }
+    PageRequest.registerTypeUrl();
+  },
 };
 function createBaseQueryAllTokenPairsResponse(): QueryAllTokenPairsResponse {
   return {
@@ -2935,6 +3348,22 @@ function createBaseQueryAllTokenPairsResponse(): QueryAllTokenPairsResponse {
  */
 export const QueryAllTokenPairsResponse = {
   typeUrl: '/circle.cctp.v1.QueryAllTokenPairsResponse' as const,
+  is(o: any): o is QueryAllTokenPairsResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllTokenPairsResponse.typeUrl ||
+        (Array.isArray(o.tokenPairs) &&
+          (!o.tokenPairs.length || TokenPair.is(o.tokenPairs[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryAllTokenPairsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllTokenPairsResponse.typeUrl ||
+        (Array.isArray(o.token_pairs) &&
+          (!o.token_pairs.length || TokenPair.isSDK(o.token_pairs[0]))))
+    );
+  },
   encode(
     message: QueryAllTokenPairsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3029,6 +3458,17 @@ export const QueryAllTokenPairsResponse = {
       value: QueryAllTokenPairsResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryAllTokenPairsResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    TokenPair.registerTypeUrl();
+    PageResponse.registerTypeUrl();
+  },
 };
 function createBaseQueryGetUsedNonceRequest(): QueryGetUsedNonceRequest {
   return {
@@ -3045,6 +3485,20 @@ function createBaseQueryGetUsedNonceRequest(): QueryGetUsedNonceRequest {
  */
 export const QueryGetUsedNonceRequest = {
   typeUrl: '/circle.cctp.v1.QueryGetUsedNonceRequest' as const,
+  is(o: any): o is QueryGetUsedNonceRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetUsedNonceRequest.typeUrl ||
+        (typeof o.sourceDomain === 'number' && typeof o.nonce === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is QueryGetUsedNonceRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetUsedNonceRequest.typeUrl ||
+        (typeof o.source_domain === 'number' && typeof o.nonce === 'bigint'))
+    );
+  },
   encode(
     message: QueryGetUsedNonceRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3126,6 +3580,7 @@ export const QueryGetUsedNonceRequest = {
       value: QueryGetUsedNonceRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryGetUsedNonceResponse(): QueryGetUsedNonceResponse {
   return {
@@ -3141,6 +3596,18 @@ function createBaseQueryGetUsedNonceResponse(): QueryGetUsedNonceResponse {
  */
 export const QueryGetUsedNonceResponse = {
   typeUrl: '/circle.cctp.v1.QueryGetUsedNonceResponse' as const,
+  is(o: any): o is QueryGetUsedNonceResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetUsedNonceResponse.typeUrl || Nonce.is(o.nonce))
+    );
+  },
+  isSDK(o: any): o is QueryGetUsedNonceResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetUsedNonceResponse.typeUrl || Nonce.isSDK(o.nonce))
+    );
+  },
   encode(
     message: QueryGetUsedNonceResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3210,6 +3677,16 @@ export const QueryGetUsedNonceResponse = {
       value: QueryGetUsedNonceResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryGetUsedNonceResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Nonce.registerTypeUrl();
+  },
 };
 function createBaseQueryAllUsedNoncesRequest(): QueryAllUsedNoncesRequest {
   return {
@@ -3225,6 +3702,12 @@ function createBaseQueryAllUsedNoncesRequest(): QueryAllUsedNoncesRequest {
  */
 export const QueryAllUsedNoncesRequest = {
   typeUrl: '/circle.cctp.v1.QueryAllUsedNoncesRequest' as const,
+  is(o: any): o is QueryAllUsedNoncesRequest {
+    return o && o.$typeUrl === QueryAllUsedNoncesRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryAllUsedNoncesRequestSDKType {
+    return o && o.$typeUrl === QueryAllUsedNoncesRequest.typeUrl;
+  },
   encode(
     message: QueryAllUsedNoncesRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3298,6 +3781,16 @@ export const QueryAllUsedNoncesRequest = {
       value: QueryAllUsedNoncesRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryAllUsedNoncesRequest.typeUrl,
+      )
+    ) {
+      return;
+    }
+    PageRequest.registerTypeUrl();
+  },
 };
 function createBaseQueryAllUsedNoncesResponse(): QueryAllUsedNoncesResponse {
   return {
@@ -3314,6 +3807,22 @@ function createBaseQueryAllUsedNoncesResponse(): QueryAllUsedNoncesResponse {
  */
 export const QueryAllUsedNoncesResponse = {
   typeUrl: '/circle.cctp.v1.QueryAllUsedNoncesResponse' as const,
+  is(o: any): o is QueryAllUsedNoncesResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllUsedNoncesResponse.typeUrl ||
+        (Array.isArray(o.usedNonces) &&
+          (!o.usedNonces.length || Nonce.is(o.usedNonces[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryAllUsedNoncesResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllUsedNoncesResponse.typeUrl ||
+        (Array.isArray(o.used_nonces) &&
+          (!o.used_nonces.length || Nonce.isSDK(o.used_nonces[0]))))
+    );
+  },
   encode(
     message: QueryAllUsedNoncesResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3408,6 +3917,17 @@ export const QueryAllUsedNoncesResponse = {
       value: QueryAllUsedNoncesResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryAllUsedNoncesResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Nonce.registerTypeUrl();
+    PageResponse.registerTypeUrl();
+  },
 };
 function createBaseQueryRemoteTokenMessengerRequest(): QueryRemoteTokenMessengerRequest {
   return {
@@ -3423,6 +3943,20 @@ function createBaseQueryRemoteTokenMessengerRequest(): QueryRemoteTokenMessenger
  */
 export const QueryRemoteTokenMessengerRequest = {
   typeUrl: '/circle.cctp.v1.QueryRemoteTokenMessengerRequest' as const,
+  is(o: any): o is QueryRemoteTokenMessengerRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryRemoteTokenMessengerRequest.typeUrl ||
+        typeof o.domainId === 'number')
+    );
+  },
+  isSDK(o: any): o is QueryRemoteTokenMessengerRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryRemoteTokenMessengerRequest.typeUrl ||
+        typeof o.domain_id === 'number')
+    );
+  },
   encode(
     message: QueryRemoteTokenMessengerRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3489,6 +4023,7 @@ export const QueryRemoteTokenMessengerRequest = {
       value: QueryRemoteTokenMessengerRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryRemoteTokenMessengerResponse(): QueryRemoteTokenMessengerResponse {
   return {
@@ -3504,6 +4039,20 @@ function createBaseQueryRemoteTokenMessengerResponse(): QueryRemoteTokenMessenge
  */
 export const QueryRemoteTokenMessengerResponse = {
   typeUrl: '/circle.cctp.v1.QueryRemoteTokenMessengerResponse' as const,
+  is(o: any): o is QueryRemoteTokenMessengerResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryRemoteTokenMessengerResponse.typeUrl ||
+        RemoteTokenMessenger.is(o.remoteTokenMessenger))
+    );
+  },
+  isSDK(o: any): o is QueryRemoteTokenMessengerResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryRemoteTokenMessengerResponse.typeUrl ||
+        RemoteTokenMessenger.isSDK(o.remote_token_messenger))
+    );
+  },
   encode(
     message: QueryRemoteTokenMessengerResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3584,6 +4133,16 @@ export const QueryRemoteTokenMessengerResponse = {
       value: QueryRemoteTokenMessengerResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryRemoteTokenMessengerResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    RemoteTokenMessenger.registerTypeUrl();
+  },
 };
 function createBaseQueryRemoteTokenMessengersRequest(): QueryRemoteTokenMessengersRequest {
   return {
@@ -3599,6 +4158,12 @@ function createBaseQueryRemoteTokenMessengersRequest(): QueryRemoteTokenMessenge
  */
 export const QueryRemoteTokenMessengersRequest = {
   typeUrl: '/circle.cctp.v1.QueryRemoteTokenMessengersRequest' as const,
+  is(o: any): o is QueryRemoteTokenMessengersRequest {
+    return o && o.$typeUrl === QueryRemoteTokenMessengersRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryRemoteTokenMessengersRequestSDKType {
+    return o && o.$typeUrl === QueryRemoteTokenMessengersRequest.typeUrl;
+  },
   encode(
     message: QueryRemoteTokenMessengersRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3672,6 +4237,16 @@ export const QueryRemoteTokenMessengersRequest = {
       value: QueryRemoteTokenMessengersRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryRemoteTokenMessengersRequest.typeUrl,
+      )
+    ) {
+      return;
+    }
+    PageRequest.registerTypeUrl();
+  },
 };
 function createBaseQueryRemoteTokenMessengersResponse(): QueryRemoteTokenMessengersResponse {
   return {
@@ -3688,6 +4263,24 @@ function createBaseQueryRemoteTokenMessengersResponse(): QueryRemoteTokenMesseng
  */
 export const QueryRemoteTokenMessengersResponse = {
   typeUrl: '/circle.cctp.v1.QueryRemoteTokenMessengersResponse' as const,
+  is(o: any): o is QueryRemoteTokenMessengersResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryRemoteTokenMessengersResponse.typeUrl ||
+        (Array.isArray(o.remoteTokenMessengers) &&
+          (!o.remoteTokenMessengers.length ||
+            RemoteTokenMessenger.is(o.remoteTokenMessengers[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryRemoteTokenMessengersResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryRemoteTokenMessengersResponse.typeUrl ||
+        (Array.isArray(o.remote_token_messengers) &&
+          (!o.remote_token_messengers.length ||
+            RemoteTokenMessenger.isSDK(o.remote_token_messengers[0]))))
+    );
+  },
   encode(
     message: QueryRemoteTokenMessengersResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3788,6 +4381,17 @@ export const QueryRemoteTokenMessengersResponse = {
       value: QueryRemoteTokenMessengersResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryRemoteTokenMessengersResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    RemoteTokenMessenger.registerTypeUrl();
+    PageResponse.registerTypeUrl();
+  },
 };
 function createBaseQueryBurnMessageVersionRequest(): QueryBurnMessageVersionRequest {
   return {};
@@ -3801,6 +4405,12 @@ function createBaseQueryBurnMessageVersionRequest(): QueryBurnMessageVersionRequ
  */
 export const QueryBurnMessageVersionRequest = {
   typeUrl: '/circle.cctp.v1.QueryBurnMessageVersionRequest' as const,
+  is(o: any): o is QueryBurnMessageVersionRequest {
+    return o && o.$typeUrl === QueryBurnMessageVersionRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryBurnMessageVersionRequestSDKType {
+    return o && o.$typeUrl === QueryBurnMessageVersionRequest.typeUrl;
+  },
   encode(
     _: QueryBurnMessageVersionRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3856,6 +4466,7 @@ export const QueryBurnMessageVersionRequest = {
       value: QueryBurnMessageVersionRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryBurnMessageVersionResponse(): QueryBurnMessageVersionResponse {
   return {
@@ -3871,6 +4482,20 @@ function createBaseQueryBurnMessageVersionResponse(): QueryBurnMessageVersionRes
  */
 export const QueryBurnMessageVersionResponse = {
   typeUrl: '/circle.cctp.v1.QueryBurnMessageVersionResponse' as const,
+  is(o: any): o is QueryBurnMessageVersionResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryBurnMessageVersionResponse.typeUrl ||
+        typeof o.version === 'number')
+    );
+  },
+  isSDK(o: any): o is QueryBurnMessageVersionResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryBurnMessageVersionResponse.typeUrl ||
+        typeof o.version === 'number')
+    );
+  },
   encode(
     message: QueryBurnMessageVersionResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3937,6 +4562,7 @@ export const QueryBurnMessageVersionResponse = {
       value: QueryBurnMessageVersionResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryLocalMessageVersionRequest(): QueryLocalMessageVersionRequest {
   return {};
@@ -3950,6 +4576,12 @@ function createBaseQueryLocalMessageVersionRequest(): QueryLocalMessageVersionRe
  */
 export const QueryLocalMessageVersionRequest = {
   typeUrl: '/circle.cctp.v1.QueryLocalMessageVersionRequest' as const,
+  is(o: any): o is QueryLocalMessageVersionRequest {
+    return o && o.$typeUrl === QueryLocalMessageVersionRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryLocalMessageVersionRequestSDKType {
+    return o && o.$typeUrl === QueryLocalMessageVersionRequest.typeUrl;
+  },
   encode(
     _: QueryLocalMessageVersionRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4005,6 +4637,7 @@ export const QueryLocalMessageVersionRequest = {
       value: QueryLocalMessageVersionRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryLocalMessageVersionResponse(): QueryLocalMessageVersionResponse {
   return {
@@ -4020,6 +4653,20 @@ function createBaseQueryLocalMessageVersionResponse(): QueryLocalMessageVersionR
  */
 export const QueryLocalMessageVersionResponse = {
   typeUrl: '/circle.cctp.v1.QueryLocalMessageVersionResponse' as const,
+  is(o: any): o is QueryLocalMessageVersionResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryLocalMessageVersionResponse.typeUrl ||
+        typeof o.version === 'number')
+    );
+  },
+  isSDK(o: any): o is QueryLocalMessageVersionResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryLocalMessageVersionResponse.typeUrl ||
+        typeof o.version === 'number')
+    );
+  },
   encode(
     message: QueryLocalMessageVersionResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4086,6 +4733,7 @@ export const QueryLocalMessageVersionResponse = {
       value: QueryLocalMessageVersionResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryLocalDomainRequest(): QueryLocalDomainRequest {
   return {};
@@ -4099,6 +4747,12 @@ function createBaseQueryLocalDomainRequest(): QueryLocalDomainRequest {
  */
 export const QueryLocalDomainRequest = {
   typeUrl: '/circle.cctp.v1.QueryLocalDomainRequest' as const,
+  is(o: any): o is QueryLocalDomainRequest {
+    return o && o.$typeUrl === QueryLocalDomainRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryLocalDomainRequestSDKType {
+    return o && o.$typeUrl === QueryLocalDomainRequest.typeUrl;
+  },
   encode(
     _: QueryLocalDomainRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4150,6 +4804,7 @@ export const QueryLocalDomainRequest = {
       value: QueryLocalDomainRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryLocalDomainResponse(): QueryLocalDomainResponse {
   return {
@@ -4165,6 +4820,20 @@ function createBaseQueryLocalDomainResponse(): QueryLocalDomainResponse {
  */
 export const QueryLocalDomainResponse = {
   typeUrl: '/circle.cctp.v1.QueryLocalDomainResponse' as const,
+  is(o: any): o is QueryLocalDomainResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryLocalDomainResponse.typeUrl ||
+        typeof o.domainId === 'number')
+    );
+  },
+  isSDK(o: any): o is QueryLocalDomainResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryLocalDomainResponse.typeUrl ||
+        typeof o.domain_id === 'number')
+    );
+  },
   encode(
     message: QueryLocalDomainResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4231,4 +4900,5 @@ export const QueryLocalDomainResponse = {
       value: QueryLocalDomainResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

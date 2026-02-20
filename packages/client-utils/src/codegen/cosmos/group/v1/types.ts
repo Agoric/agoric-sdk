@@ -11,6 +11,7 @@ import { Any, type AnySDKType } from '../../../google/protobuf/any.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet, fromJsonTimestamp, fromTimestamp } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../../registry.js';
 /** VoteOption enumerates the valid vote options for a given proposal. */
 export enum VoteOption {
   /**
@@ -288,6 +289,7 @@ export interface MemberRequestSDKType {
  * @see proto type: cosmos.group.v1.ThresholdDecisionPolicy
  */
 export interface ThresholdDecisionPolicy {
+  $typeUrl?: '/cosmos.group.v1.ThresholdDecisionPolicy';
   /**
    * threshold is the minimum weighted sum of `YES` votes that must be met or
    * exceeded for a proposal to succeed.
@@ -314,6 +316,7 @@ export interface ThresholdDecisionPolicyProtoMsg {
  * @see proto type: cosmos.group.v1.ThresholdDecisionPolicy
  */
 export interface ThresholdDecisionPolicySDKType {
+  $typeUrl?: '/cosmos.group.v1.ThresholdDecisionPolicy';
   threshold: string;
   windows?: DecisionPolicyWindowsSDKType;
 }
@@ -329,6 +332,7 @@ export interface ThresholdDecisionPolicySDKType {
  * @see proto type: cosmos.group.v1.PercentageDecisionPolicy
  */
 export interface PercentageDecisionPolicy {
+  $typeUrl?: '/cosmos.group.v1.PercentageDecisionPolicy';
   /**
    * percentage is the minimum percentage of the weighted sum of `YES` votes must
    * meet for a proposal to succeed.
@@ -355,6 +359,7 @@ export interface PercentageDecisionPolicyProtoMsg {
  * @see proto type: cosmos.group.v1.PercentageDecisionPolicy
  */
 export interface PercentageDecisionPolicySDKType {
+  $typeUrl?: '/cosmos.group.v1.PercentageDecisionPolicy';
   percentage: string;
   windows?: DecisionPolicyWindowsSDKType;
 }
@@ -516,7 +521,9 @@ export interface GroupPolicyInfo {
   /**
    * decision_policy specifies the group policy's decision policy.
    */
-  decisionPolicy?: Any;
+  decisionPolicy?:
+    | (ThresholdDecisionPolicy & PercentageDecisionPolicy & Any)
+    | undefined;
   /**
    * created_at is a timestamp specifying when a group policy was created.
    */
@@ -538,7 +545,11 @@ export interface GroupPolicyInfoSDKType {
   admin: string;
   metadata: string;
   version: bigint;
-  decision_policy?: AnySDKType;
+  decision_policy?:
+    | ThresholdDecisionPolicySDKType
+    | PercentageDecisionPolicySDKType
+    | AnySDKType
+    | undefined;
   created_at: TimestampSDKType;
 }
 /**
@@ -757,6 +768,27 @@ function createBaseMember(): Member {
  */
 export const Member = {
   typeUrl: '/cosmos.group.v1.Member' as const,
+  aminoType: 'cosmos-sdk/Member' as const,
+  is(o: any): o is Member {
+    return (
+      o &&
+      (o.$typeUrl === Member.typeUrl ||
+        (typeof o.address === 'string' &&
+          typeof o.weight === 'string' &&
+          typeof o.metadata === 'string' &&
+          Timestamp.is(o.addedAt)))
+    );
+  },
+  isSDK(o: any): o is MemberSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Member.typeUrl ||
+        (typeof o.address === 'string' &&
+          typeof o.weight === 'string' &&
+          typeof o.metadata === 'string' &&
+          Timestamp.isSDK(o.added_at)))
+    );
+  },
   encode(
     message: Member,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -844,6 +876,7 @@ export const Member = {
       value: Member.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMemberRequest(): MemberRequest {
   return {
@@ -862,6 +895,25 @@ function createBaseMemberRequest(): MemberRequest {
  */
 export const MemberRequest = {
   typeUrl: '/cosmos.group.v1.MemberRequest' as const,
+  aminoType: 'cosmos-sdk/MemberRequest' as const,
+  is(o: any): o is MemberRequest {
+    return (
+      o &&
+      (o.$typeUrl === MemberRequest.typeUrl ||
+        (typeof o.address === 'string' &&
+          typeof o.weight === 'string' &&
+          typeof o.metadata === 'string'))
+    );
+  },
+  isSDK(o: any): o is MemberRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MemberRequest.typeUrl ||
+        (typeof o.address === 'string' &&
+          typeof o.weight === 'string' &&
+          typeof o.metadata === 'string'))
+    );
+  },
   encode(
     message: MemberRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -934,9 +986,11 @@ export const MemberRequest = {
       value: MemberRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseThresholdDecisionPolicy(): ThresholdDecisionPolicy {
   return {
+    $typeUrl: '/cosmos.group.v1.ThresholdDecisionPolicy',
     threshold: '',
     windows: undefined,
   };
@@ -954,6 +1008,21 @@ function createBaseThresholdDecisionPolicy(): ThresholdDecisionPolicy {
  */
 export const ThresholdDecisionPolicy = {
   typeUrl: '/cosmos.group.v1.ThresholdDecisionPolicy' as const,
+  aminoType: 'cosmos-sdk/ThresholdDecisionPolicy' as const,
+  is(o: any): o is ThresholdDecisionPolicy {
+    return (
+      o &&
+      (o.$typeUrl === ThresholdDecisionPolicy.typeUrl ||
+        typeof o.threshold === 'string')
+    );
+  },
+  isSDK(o: any): o is ThresholdDecisionPolicySDKType {
+    return (
+      o &&
+      (o.$typeUrl === ThresholdDecisionPolicy.typeUrl ||
+        typeof o.threshold === 'string')
+    );
+  },
   encode(
     message: ThresholdDecisionPolicy,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1040,9 +1109,28 @@ export const ThresholdDecisionPolicy = {
       value: ThresholdDecisionPolicy.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        ThresholdDecisionPolicy.typeUrl,
+      )
+    ) {
+      return;
+    }
+    GlobalDecoderRegistry.register(
+      ThresholdDecisionPolicy.typeUrl,
+      ThresholdDecisionPolicy,
+    );
+    GlobalDecoderRegistry.registerAminoProtoMapping(
+      ThresholdDecisionPolicy.aminoType,
+      ThresholdDecisionPolicy.typeUrl,
+    );
+    DecisionPolicyWindows.registerTypeUrl();
+  },
 };
 function createBasePercentageDecisionPolicy(): PercentageDecisionPolicy {
   return {
+    $typeUrl: '/cosmos.group.v1.PercentageDecisionPolicy',
     percentage: '',
     windows: undefined,
   };
@@ -1060,6 +1148,21 @@ function createBasePercentageDecisionPolicy(): PercentageDecisionPolicy {
  */
 export const PercentageDecisionPolicy = {
   typeUrl: '/cosmos.group.v1.PercentageDecisionPolicy' as const,
+  aminoType: 'cosmos-sdk/PercentageDecisionPolicy' as const,
+  is(o: any): o is PercentageDecisionPolicy {
+    return (
+      o &&
+      (o.$typeUrl === PercentageDecisionPolicy.typeUrl ||
+        typeof o.percentage === 'string')
+    );
+  },
+  isSDK(o: any): o is PercentageDecisionPolicySDKType {
+    return (
+      o &&
+      (o.$typeUrl === PercentageDecisionPolicy.typeUrl ||
+        typeof o.percentage === 'string')
+    );
+  },
   encode(
     message: PercentageDecisionPolicy,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1148,6 +1251,24 @@ export const PercentageDecisionPolicy = {
       value: PercentageDecisionPolicy.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        PercentageDecisionPolicy.typeUrl,
+      )
+    ) {
+      return;
+    }
+    GlobalDecoderRegistry.register(
+      PercentageDecisionPolicy.typeUrl,
+      PercentageDecisionPolicy,
+    );
+    GlobalDecoderRegistry.registerAminoProtoMapping(
+      PercentageDecisionPolicy.aminoType,
+      PercentageDecisionPolicy.typeUrl,
+    );
+    DecisionPolicyWindows.registerTypeUrl();
+  },
 };
 function createBaseDecisionPolicyWindows(): DecisionPolicyWindows {
   return {
@@ -1163,6 +1284,22 @@ function createBaseDecisionPolicyWindows(): DecisionPolicyWindows {
  */
 export const DecisionPolicyWindows = {
   typeUrl: '/cosmos.group.v1.DecisionPolicyWindows' as const,
+  aminoType: 'cosmos-sdk/DecisionPolicyWindows' as const,
+  is(o: any): o is DecisionPolicyWindows {
+    return (
+      o &&
+      (o.$typeUrl === DecisionPolicyWindows.typeUrl ||
+        (Duration.is(o.votingPeriod) && Duration.is(o.minExecutionPeriod)))
+    );
+  },
+  isSDK(o: any): o is DecisionPolicyWindowsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === DecisionPolicyWindows.typeUrl ||
+        (Duration.isSDK(o.voting_period) &&
+          Duration.isSDK(o.min_execution_period)))
+    );
+  },
   encode(
     message: DecisionPolicyWindows,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1249,6 +1386,7 @@ export const DecisionPolicyWindows = {
       value: DecisionPolicyWindows.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseGroupInfo(): GroupInfo {
   return {
@@ -1268,6 +1406,31 @@ function createBaseGroupInfo(): GroupInfo {
  */
 export const GroupInfo = {
   typeUrl: '/cosmos.group.v1.GroupInfo' as const,
+  aminoType: 'cosmos-sdk/GroupInfo' as const,
+  is(o: any): o is GroupInfo {
+    return (
+      o &&
+      (o.$typeUrl === GroupInfo.typeUrl ||
+        (typeof o.id === 'bigint' &&
+          typeof o.admin === 'string' &&
+          typeof o.metadata === 'string' &&
+          typeof o.version === 'bigint' &&
+          typeof o.totalWeight === 'string' &&
+          Timestamp.is(o.createdAt)))
+    );
+  },
+  isSDK(o: any): o is GroupInfoSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GroupInfo.typeUrl ||
+        (typeof o.id === 'bigint' &&
+          typeof o.admin === 'string' &&
+          typeof o.metadata === 'string' &&
+          typeof o.version === 'bigint' &&
+          typeof o.total_weight === 'string' &&
+          Timestamp.isSDK(o.created_at)))
+    );
+  },
   encode(
     message: GroupInfo,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1383,6 +1546,7 @@ export const GroupInfo = {
       value: GroupInfo.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseGroupMember(): GroupMember {
   return {
@@ -1398,6 +1562,18 @@ function createBaseGroupMember(): GroupMember {
  */
 export const GroupMember = {
   typeUrl: '/cosmos.group.v1.GroupMember' as const,
+  aminoType: 'cosmos-sdk/GroupMember' as const,
+  is(o: any): o is GroupMember {
+    return (
+      o && (o.$typeUrl === GroupMember.typeUrl || typeof o.groupId === 'bigint')
+    );
+  },
+  isSDK(o: any): o is GroupMemberSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GroupMember.typeUrl || typeof o.group_id === 'bigint')
+    );
+  },
   encode(
     message: GroupMember,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1471,6 +1647,12 @@ export const GroupMember = {
       value: GroupMember.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(GroupMember.typeUrl)) {
+      return;
+    }
+    Member.registerTypeUrl();
+  },
 };
 function createBaseGroupPolicyInfo(): GroupPolicyInfo {
   return {
@@ -1491,6 +1673,31 @@ function createBaseGroupPolicyInfo(): GroupPolicyInfo {
  */
 export const GroupPolicyInfo = {
   typeUrl: '/cosmos.group.v1.GroupPolicyInfo' as const,
+  aminoType: 'cosmos-sdk/GroupPolicyInfo' as const,
+  is(o: any): o is GroupPolicyInfo {
+    return (
+      o &&
+      (o.$typeUrl === GroupPolicyInfo.typeUrl ||
+        (typeof o.address === 'string' &&
+          typeof o.groupId === 'bigint' &&
+          typeof o.admin === 'string' &&
+          typeof o.metadata === 'string' &&
+          typeof o.version === 'bigint' &&
+          Timestamp.is(o.createdAt)))
+    );
+  },
+  isSDK(o: any): o is GroupPolicyInfoSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GroupPolicyInfo.typeUrl ||
+        (typeof o.address === 'string' &&
+          typeof o.group_id === 'bigint' &&
+          typeof o.admin === 'string' &&
+          typeof o.metadata === 'string' &&
+          typeof o.version === 'bigint' &&
+          Timestamp.isSDK(o.created_at)))
+    );
+  },
   encode(
     message: GroupPolicyInfo,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1511,7 +1718,10 @@ export const GroupPolicyInfo = {
       writer.uint32(40).uint64(message.version);
     }
     if (message.decisionPolicy !== undefined) {
-      Any.encode(message.decisionPolicy, writer.uint32(50).fork()).ldelim();
+      Any.encode(
+        GlobalDecoderRegistry.wrapAny(message.decisionPolicy),
+        writer.uint32(50).fork(),
+      ).ldelim();
     }
     if (message.createdAt !== undefined) {
       Timestamp.encode(message.createdAt, writer.uint32(58).fork()).ldelim();
@@ -1542,7 +1752,7 @@ export const GroupPolicyInfo = {
           message.version = reader.uint64();
           break;
         case 6:
-          message.decisionPolicy = Any.decode(reader, reader.uint32());
+          message.decisionPolicy = GlobalDecoderRegistry.unwrapAny(reader);
           break;
         case 7:
           message.createdAt = Timestamp.decode(reader, reader.uint32());
@@ -1566,7 +1776,7 @@ export const GroupPolicyInfo = {
         ? BigInt(object.version.toString())
         : BigInt(0),
       decisionPolicy: isSet(object.decisionPolicy)
-        ? Any.fromJSON(object.decisionPolicy)
+        ? GlobalDecoderRegistry.fromJSON(object.decisionPolicy)
         : undefined,
       createdAt: isSet(object.createdAt)
         ? fromJsonTimestamp(object.createdAt)
@@ -1584,7 +1794,7 @@ export const GroupPolicyInfo = {
       (obj.version = (message.version || BigInt(0)).toString());
     message.decisionPolicy !== undefined &&
       (obj.decisionPolicy = message.decisionPolicy
-        ? Any.toJSON(message.decisionPolicy)
+        ? GlobalDecoderRegistry.toJSON(message.decisionPolicy)
         : undefined);
     message.createdAt !== undefined &&
       (obj.createdAt = fromTimestamp(message.createdAt).toISOString());
@@ -1605,7 +1815,7 @@ export const GroupPolicyInfo = {
         : BigInt(0);
     message.decisionPolicy =
       object.decisionPolicy !== undefined && object.decisionPolicy !== null
-        ? Any.fromPartial(object.decisionPolicy)
+        ? GlobalDecoderRegistry.fromPartial(object.decisionPolicy)
         : undefined;
     message.createdAt =
       object.createdAt !== undefined && object.createdAt !== null
@@ -1624,6 +1834,15 @@ export const GroupPolicyInfo = {
       typeUrl: '/cosmos.group.v1.GroupPolicyInfo',
       value: GroupPolicyInfo.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(GroupPolicyInfo.typeUrl)
+    ) {
+      return;
+    }
+    ThresholdDecisionPolicy.registerTypeUrl();
+    PercentageDecisionPolicy.registerTypeUrl();
   },
 };
 function createBaseProposal(): Proposal {
@@ -1655,6 +1874,51 @@ function createBaseProposal(): Proposal {
  */
 export const Proposal = {
   typeUrl: '/cosmos.group.v1.Proposal' as const,
+  aminoType: 'cosmos-sdk/Proposal' as const,
+  is(o: any): o is Proposal {
+    return (
+      o &&
+      (o.$typeUrl === Proposal.typeUrl ||
+        (typeof o.id === 'bigint' &&
+          typeof o.groupPolicyAddress === 'string' &&
+          typeof o.metadata === 'string' &&
+          Array.isArray(o.proposers) &&
+          (!o.proposers.length || typeof o.proposers[0] === 'string') &&
+          Timestamp.is(o.submitTime) &&
+          typeof o.groupVersion === 'bigint' &&
+          typeof o.groupPolicyVersion === 'bigint' &&
+          isSet(o.status) &&
+          TallyResult.is(o.finalTallyResult) &&
+          Timestamp.is(o.votingPeriodEnd) &&
+          isSet(o.executorResult) &&
+          Array.isArray(o.messages) &&
+          (!o.messages.length || Any.is(o.messages[0])) &&
+          typeof o.title === 'string' &&
+          typeof o.summary === 'string'))
+    );
+  },
+  isSDK(o: any): o is ProposalSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Proposal.typeUrl ||
+        (typeof o.id === 'bigint' &&
+          typeof o.group_policy_address === 'string' &&
+          typeof o.metadata === 'string' &&
+          Array.isArray(o.proposers) &&
+          (!o.proposers.length || typeof o.proposers[0] === 'string') &&
+          Timestamp.isSDK(o.submit_time) &&
+          typeof o.group_version === 'bigint' &&
+          typeof o.group_policy_version === 'bigint' &&
+          isSet(o.status) &&
+          TallyResult.isSDK(o.final_tally_result) &&
+          Timestamp.isSDK(o.voting_period_end) &&
+          isSet(o.executor_result) &&
+          Array.isArray(o.messages) &&
+          (!o.messages.length || Any.isSDK(o.messages[0])) &&
+          typeof o.title === 'string' &&
+          typeof o.summary === 'string'))
+    );
+  },
   encode(
     message: Proposal,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1896,6 +2160,7 @@ export const Proposal = {
       value: Proposal.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseTallyResult(): TallyResult {
   return {
@@ -1913,6 +2178,27 @@ function createBaseTallyResult(): TallyResult {
  */
 export const TallyResult = {
   typeUrl: '/cosmos.group.v1.TallyResult' as const,
+  aminoType: 'cosmos-sdk/TallyResult' as const,
+  is(o: any): o is TallyResult {
+    return (
+      o &&
+      (o.$typeUrl === TallyResult.typeUrl ||
+        (typeof o.yesCount === 'string' &&
+          typeof o.abstainCount === 'string' &&
+          typeof o.noCount === 'string' &&
+          typeof o.noWithVetoCount === 'string'))
+    );
+  },
+  isSDK(o: any): o is TallyResultSDKType {
+    return (
+      o &&
+      (o.$typeUrl === TallyResult.typeUrl ||
+        (typeof o.yes_count === 'string' &&
+          typeof o.abstain_count === 'string' &&
+          typeof o.no_count === 'string' &&
+          typeof o.no_with_veto_count === 'string'))
+    );
+  },
   encode(
     message: TallyResult,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2000,6 +2286,7 @@ export const TallyResult = {
       value: TallyResult.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseVote(): Vote {
   return {
@@ -2018,6 +2305,29 @@ function createBaseVote(): Vote {
  */
 export const Vote = {
   typeUrl: '/cosmos.group.v1.Vote' as const,
+  aminoType: 'cosmos-sdk/Vote' as const,
+  is(o: any): o is Vote {
+    return (
+      o &&
+      (o.$typeUrl === Vote.typeUrl ||
+        (typeof o.proposalId === 'bigint' &&
+          typeof o.voter === 'string' &&
+          isSet(o.option) &&
+          typeof o.metadata === 'string' &&
+          Timestamp.is(o.submitTime)))
+    );
+  },
+  isSDK(o: any): o is VoteSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Vote.typeUrl ||
+        (typeof o.proposal_id === 'bigint' &&
+          typeof o.voter === 'string' &&
+          isSet(o.option) &&
+          typeof o.metadata === 'string' &&
+          Timestamp.isSDK(o.submit_time)))
+    );
+  },
   encode(
     message: Vote,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2121,4 +2431,5 @@ export const Vote = {
       value: Vote.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

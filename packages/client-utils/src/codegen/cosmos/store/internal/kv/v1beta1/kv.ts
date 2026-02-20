@@ -1,6 +1,7 @@
 //@ts-nocheck
 import { BinaryReader, BinaryWriter } from '../../../../../binary.js';
 import { type JsonSafe } from '../../../../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../../../../registry.js';
 import { isSet } from '../../../../../helpers.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
@@ -63,6 +64,21 @@ function createBasePairs(): Pairs {
  */
 export const Pairs = {
   typeUrl: '/cosmos.store.internal.kv.v1beta1.Pairs' as const,
+  aminoType: 'cosmos-sdk/Pairs' as const,
+  is(o: any): o is Pairs {
+    return (
+      o &&
+      (o.$typeUrl === Pairs.typeUrl ||
+        (Array.isArray(o.pairs) && (!o.pairs.length || Pair.is(o.pairs[0]))))
+    );
+  },
+  isSDK(o: any): o is PairsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Pairs.typeUrl ||
+        (Array.isArray(o.pairs) && (!o.pairs.length || Pair.isSDK(o.pairs[0]))))
+    );
+  },
   encode(
     message: Pairs,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -123,6 +139,12 @@ export const Pairs = {
       value: Pairs.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(Pairs.typeUrl)) {
+      return;
+    }
+    Pair.registerTypeUrl();
+  },
 };
 function createBasePair(): Pair {
   return {
@@ -138,6 +160,23 @@ function createBasePair(): Pair {
  */
 export const Pair = {
   typeUrl: '/cosmos.store.internal.kv.v1beta1.Pair' as const,
+  aminoType: 'cosmos-sdk/Pair' as const,
+  is(o: any): o is Pair {
+    return (
+      o &&
+      (o.$typeUrl === Pair.typeUrl ||
+        ((o.key instanceof Uint8Array || typeof o.key === 'string') &&
+          (o.value instanceof Uint8Array || typeof o.value === 'string')))
+    );
+  },
+  isSDK(o: any): o is PairSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Pair.typeUrl ||
+        ((o.key instanceof Uint8Array || typeof o.key === 'string') &&
+          (o.value instanceof Uint8Array || typeof o.value === 'string')))
+    );
+  },
   encode(
     message: Pair,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -209,4 +248,5 @@ export const Pair = {
       value: Pair.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

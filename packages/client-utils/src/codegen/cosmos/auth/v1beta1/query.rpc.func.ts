@@ -41,6 +41,7 @@ export const getAccounts = buildQuery<
   decode: QueryAccountsResponse.decode,
   service: 'cosmos.auth.v1beta1.Query',
   method: 'Accounts',
+  deps: [QueryAccountsRequest, QueryAccountsResponse],
 });
 /**
  * Account returns account details based on address.
@@ -54,6 +55,7 @@ export const getAccount = buildQuery<QueryAccountRequest, QueryAccountResponse>(
     decode: QueryAccountResponse.decode,
     service: 'cosmos.auth.v1beta1.Query',
     method: 'Account',
+    deps: [QueryAccountRequest, QueryAccountResponse],
   },
 );
 /**
@@ -72,6 +74,7 @@ export const getAccountAddressByID = buildQuery<
   decode: QueryAccountAddressByIDResponse.decode,
   service: 'cosmos.auth.v1beta1.Query',
   method: 'AccountAddressByID',
+  deps: [QueryAccountAddressByIDRequest, QueryAccountAddressByIDResponse],
 });
 /**
  * Params queries all parameters.
@@ -84,6 +87,7 @@ export const getParams = buildQuery<QueryParamsRequest, QueryParamsResponse>({
   decode: QueryParamsResponse.decode,
   service: 'cosmos.auth.v1beta1.Query',
   method: 'Params',
+  deps: [QueryParamsRequest, QueryParamsResponse],
 });
 /**
  * ModuleAccounts returns all the existing module accounts.
@@ -101,6 +105,7 @@ export const getModuleAccounts = buildQuery<
   decode: QueryModuleAccountsResponse.decode,
   service: 'cosmos.auth.v1beta1.Query',
   method: 'ModuleAccounts',
+  deps: [QueryModuleAccountsRequest, QueryModuleAccountsResponse],
 });
 /**
  * ModuleAccountByName returns the module account info by module name
@@ -116,6 +121,7 @@ export const getModuleAccountByName = buildQuery<
   decode: QueryModuleAccountByNameResponse.decode,
   service: 'cosmos.auth.v1beta1.Query',
   method: 'ModuleAccountByName',
+  deps: [QueryModuleAccountByNameRequest, QueryModuleAccountByNameResponse],
 });
 /**
  * Bech32Prefix queries bech32Prefix
@@ -133,6 +139,7 @@ export const getBech32Prefix = buildQuery<
   decode: Bech32PrefixResponse.decode,
   service: 'cosmos.auth.v1beta1.Query',
   method: 'Bech32Prefix',
+  deps: [Bech32PrefixRequest, Bech32PrefixResponse],
 });
 /**
  * AddressBytesToString converts Account Address bytes to string
@@ -150,6 +157,7 @@ export const getAddressBytesToString = buildQuery<
   decode: AddressBytesToStringResponse.decode,
   service: 'cosmos.auth.v1beta1.Query',
   method: 'AddressBytesToString',
+  deps: [AddressBytesToStringRequest, AddressBytesToStringResponse],
 });
 /**
  * AddressStringToBytes converts Address string to bytes
@@ -167,6 +175,7 @@ export const getAddressStringToBytes = buildQuery<
   decode: AddressStringToBytesResponse.decode,
   service: 'cosmos.auth.v1beta1.Query',
   method: 'AddressStringToBytes',
+  deps: [AddressStringToBytesRequest, AddressStringToBytesResponse],
 });
 /**
  * AccountInfo queries account info which is common to all account types.
@@ -184,4 +193,5 @@ export const getAccountInfo = buildQuery<
   decode: QueryAccountInfoResponse.decode,
   service: 'cosmos.auth.v1beta1.Query',
   method: 'AccountInfo',
+  deps: [QueryAccountInfoRequest, QueryAccountInfoResponse],
 });

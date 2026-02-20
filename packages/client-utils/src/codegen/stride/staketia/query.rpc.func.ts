@@ -28,6 +28,7 @@ export const getHostZone = buildQuery<
   decode: QueryHostZoneResponse.decode,
   service: 'stride.staketia.Query',
   method: 'HostZone',
+  deps: [QueryHostZoneRequest, QueryHostZoneResponse],
 });
 /**
  * Queries the delegation records with an optional to include archived records
@@ -46,6 +47,7 @@ export const getDelegationRecords = buildQuery<
   decode: QueryDelegationRecordsResponse.decode,
   service: 'stride.staketia.Query',
   method: 'DelegationRecords',
+  deps: [QueryDelegationRecordsRequest, QueryDelegationRecordsResponse],
 });
 /**
  * Queries the unbonding records with an optional to include archived records
@@ -64,6 +66,7 @@ export const getUnbondingRecords = buildQuery<
   decode: QueryUnbondingRecordsResponse.decode,
   service: 'stride.staketia.Query',
   method: 'UnbondingRecords',
+  deps: [QueryUnbondingRecordsRequest, QueryUnbondingRecordsResponse],
 });
 /**
  * Queries a single user redemption record
@@ -79,6 +82,7 @@ export const getRedemptionRecord = buildQuery<
   decode: QueryRedemptionRecordResponse.decode,
   service: 'stride.staketia.Query',
   method: 'RedemptionRecord',
+  deps: [QueryRedemptionRecordRequest, QueryRedemptionRecordResponse],
 });
 /**
  * Queries all redemption records with optional filters
@@ -98,6 +102,7 @@ export const getRedemptionRecords = buildQuery<
   decode: QueryRedemptionRecordsResponse.decode,
   service: 'stride.staketia.Query',
   method: 'RedemptionRecords',
+  deps: [QueryRedemptionRecordsRequest, QueryRedemptionRecordsResponse],
 });
 /**
  * Queries slash records
@@ -113,4 +118,5 @@ export const getSlashRecords = buildQuery<
   decode: QuerySlashRecordsResponse.decode,
   service: 'stride.staketia.Query',
   method: 'SlashRecords',
+  deps: [QuerySlashRecordsRequest, QuerySlashRecordsResponse],
 });

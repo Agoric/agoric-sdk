@@ -5,6 +5,7 @@ import { Algorithm, algorithmFromJSON, algorithmToJSON } from './algorithm.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../../registry.js';
 /**
  * @name MsgWithdrawProtocolFees
  * @package noble.swap.v1
@@ -378,6 +379,21 @@ function createBaseMsgWithdrawProtocolFees(): MsgWithdrawProtocolFees {
  */
 export const MsgWithdrawProtocolFees = {
   typeUrl: '/noble.swap.v1.MsgWithdrawProtocolFees' as const,
+  aminoType: 'swap/WithdrawProtocolFees' as const,
+  is(o: any): o is MsgWithdrawProtocolFees {
+    return (
+      o &&
+      (o.$typeUrl === MsgWithdrawProtocolFees.typeUrl ||
+        (typeof o.signer === 'string' && typeof o.to === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgWithdrawProtocolFeesSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgWithdrawProtocolFees.typeUrl ||
+        (typeof o.signer === 'string' && typeof o.to === 'string'))
+    );
+  },
   encode(
     message: MsgWithdrawProtocolFees,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -450,6 +466,7 @@ export const MsgWithdrawProtocolFees = {
       value: MsgWithdrawProtocolFees.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgWithdrawProtocolFeesResponse(): MsgWithdrawProtocolFeesResponse {
   return {};
@@ -461,6 +478,12 @@ function createBaseMsgWithdrawProtocolFeesResponse(): MsgWithdrawProtocolFeesRes
  */
 export const MsgWithdrawProtocolFeesResponse = {
   typeUrl: '/noble.swap.v1.MsgWithdrawProtocolFeesResponse' as const,
+  is(o: any): o is MsgWithdrawProtocolFeesResponse {
+    return o && o.$typeUrl === MsgWithdrawProtocolFeesResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgWithdrawProtocolFeesResponseSDKType {
+    return o && o.$typeUrl === MsgWithdrawProtocolFeesResponse.typeUrl;
+  },
   encode(
     _: MsgWithdrawProtocolFeesResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -516,6 +539,7 @@ export const MsgWithdrawProtocolFeesResponse = {
       value: MsgWithdrawProtocolFeesResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgWithdrawRewards(): MsgWithdrawRewards {
   return {
@@ -529,6 +553,21 @@ function createBaseMsgWithdrawRewards(): MsgWithdrawRewards {
  */
 export const MsgWithdrawRewards = {
   typeUrl: '/noble.swap.v1.MsgWithdrawRewards' as const,
+  aminoType: 'swap/WithdrawRewards' as const,
+  is(o: any): o is MsgWithdrawRewards {
+    return (
+      o &&
+      (o.$typeUrl === MsgWithdrawRewards.typeUrl ||
+        typeof o.signer === 'string')
+    );
+  },
+  isSDK(o: any): o is MsgWithdrawRewardsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgWithdrawRewards.typeUrl ||
+        typeof o.signer === 'string')
+    );
+  },
   encode(
     message: MsgWithdrawRewards,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -586,6 +625,7 @@ export const MsgWithdrawRewards = {
       value: MsgWithdrawRewards.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgWithdrawRewardsResponse(): MsgWithdrawRewardsResponse {
   return {
@@ -599,6 +639,22 @@ function createBaseMsgWithdrawRewardsResponse(): MsgWithdrawRewardsResponse {
  */
 export const MsgWithdrawRewardsResponse = {
   typeUrl: '/noble.swap.v1.MsgWithdrawRewardsResponse' as const,
+  is(o: any): o is MsgWithdrawRewardsResponse {
+    return (
+      o &&
+      (o.$typeUrl === MsgWithdrawRewardsResponse.typeUrl ||
+        (Array.isArray(o.rewards) &&
+          (!o.rewards.length || Coin.is(o.rewards[0]))))
+    );
+  },
+  isSDK(o: any): o is MsgWithdrawRewardsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgWithdrawRewardsResponse.typeUrl ||
+        (Array.isArray(o.rewards) &&
+          (!o.rewards.length || Coin.isSDK(o.rewards[0]))))
+    );
+  },
   encode(
     message: MsgWithdrawRewardsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -670,6 +726,16 @@ export const MsgWithdrawRewardsResponse = {
       value: MsgWithdrawRewardsResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        MsgWithdrawRewardsResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Coin.registerTypeUrl();
+  },
 };
 function createBaseMsgSwap(): MsgSwap {
   return {
@@ -686,6 +752,29 @@ function createBaseMsgSwap(): MsgSwap {
  */
 export const MsgSwap = {
   typeUrl: '/noble.swap.v1.MsgSwap' as const,
+  aminoType: 'swap/Swap' as const,
+  is(o: any): o is MsgSwap {
+    return (
+      o &&
+      (o.$typeUrl === MsgSwap.typeUrl ||
+        (typeof o.signer === 'string' &&
+          Coin.is(o.amount) &&
+          Array.isArray(o.routes) &&
+          (!o.routes.length || Route.is(o.routes[0])) &&
+          Coin.is(o.min)))
+    );
+  },
+  isSDK(o: any): o is MsgSwapSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgSwap.typeUrl ||
+        (typeof o.signer === 'string' &&
+          Coin.isSDK(o.amount) &&
+          Array.isArray(o.routes) &&
+          (!o.routes.length || Route.isSDK(o.routes[0])) &&
+          Coin.isSDK(o.min)))
+    );
+  },
   encode(
     message: MsgSwap,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -781,6 +870,13 @@ export const MsgSwap = {
       value: MsgSwap.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(MsgSwap.typeUrl)) {
+      return;
+    }
+    Coin.registerTypeUrl();
+    Route.registerTypeUrl();
+  },
 };
 function createBaseMsgSwapResponse(): MsgSwapResponse {
   return {
@@ -795,6 +891,24 @@ function createBaseMsgSwapResponse(): MsgSwapResponse {
  */
 export const MsgSwapResponse = {
   typeUrl: '/noble.swap.v1.MsgSwapResponse' as const,
+  is(o: any): o is MsgSwapResponse {
+    return (
+      o &&
+      (o.$typeUrl === MsgSwapResponse.typeUrl ||
+        (Coin.is(o.result) &&
+          Array.isArray(o.swaps) &&
+          (!o.swaps.length || Swap.is(o.swaps[0]))))
+    );
+  },
+  isSDK(o: any): o is MsgSwapResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgSwapResponse.typeUrl ||
+        (Coin.isSDK(o.result) &&
+          Array.isArray(o.swaps) &&
+          (!o.swaps.length || Swap.isSDK(o.swaps[0]))))
+    );
+  },
   encode(
     message: MsgSwapResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -868,6 +982,15 @@ export const MsgSwapResponse = {
       value: MsgSwapResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(MsgSwapResponse.typeUrl)
+    ) {
+      return;
+    }
+    Coin.registerTypeUrl();
+    Swap.registerTypeUrl();
+  },
 };
 function createBaseMsgPauseByAlgorithm(): MsgPauseByAlgorithm {
   return {
@@ -882,6 +1005,21 @@ function createBaseMsgPauseByAlgorithm(): MsgPauseByAlgorithm {
  */
 export const MsgPauseByAlgorithm = {
   typeUrl: '/noble.swap.v1.MsgPauseByAlgorithm' as const,
+  aminoType: 'swap/PauseByAlgorithm' as const,
+  is(o: any): o is MsgPauseByAlgorithm {
+    return (
+      o &&
+      (o.$typeUrl === MsgPauseByAlgorithm.typeUrl ||
+        (typeof o.signer === 'string' && isSet(o.algorithm)))
+    );
+  },
+  isSDK(o: any): o is MsgPauseByAlgorithmSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgPauseByAlgorithm.typeUrl ||
+        (typeof o.signer === 'string' && isSet(o.algorithm)))
+    );
+  },
   encode(
     message: MsgPauseByAlgorithm,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -951,6 +1089,7 @@ export const MsgPauseByAlgorithm = {
       value: MsgPauseByAlgorithm.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgPauseByAlgorithmResponse(): MsgPauseByAlgorithmResponse {
   return {
@@ -964,6 +1103,22 @@ function createBaseMsgPauseByAlgorithmResponse(): MsgPauseByAlgorithmResponse {
  */
 export const MsgPauseByAlgorithmResponse = {
   typeUrl: '/noble.swap.v1.MsgPauseByAlgorithmResponse' as const,
+  is(o: any): o is MsgPauseByAlgorithmResponse {
+    return (
+      o &&
+      (o.$typeUrl === MsgPauseByAlgorithmResponse.typeUrl ||
+        (Array.isArray(o.pausedPools) &&
+          (!o.pausedPools.length || typeof o.pausedPools[0] === 'bigint')))
+    );
+  },
+  isSDK(o: any): o is MsgPauseByAlgorithmResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgPauseByAlgorithmResponse.typeUrl ||
+        (Array.isArray(o.paused_pools) &&
+          (!o.paused_pools.length || typeof o.paused_pools[0] === 'bigint')))
+    );
+  },
   encode(
     message: MsgPauseByAlgorithmResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1047,6 +1202,7 @@ export const MsgPauseByAlgorithmResponse = {
       value: MsgPauseByAlgorithmResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgPauseByPoolIds(): MsgPauseByPoolIds {
   return {
@@ -1061,6 +1217,25 @@ function createBaseMsgPauseByPoolIds(): MsgPauseByPoolIds {
  */
 export const MsgPauseByPoolIds = {
   typeUrl: '/noble.swap.v1.MsgPauseByPoolIds' as const,
+  aminoType: 'swap/PauseByPoolIds' as const,
+  is(o: any): o is MsgPauseByPoolIds {
+    return (
+      o &&
+      (o.$typeUrl === MsgPauseByPoolIds.typeUrl ||
+        (typeof o.signer === 'string' &&
+          Array.isArray(o.poolIds) &&
+          (!o.poolIds.length || typeof o.poolIds[0] === 'bigint')))
+    );
+  },
+  isSDK(o: any): o is MsgPauseByPoolIdsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgPauseByPoolIds.typeUrl ||
+        (typeof o.signer === 'string' &&
+          Array.isArray(o.pool_ids) &&
+          (!o.pool_ids.length || typeof o.pool_ids[0] === 'bigint')))
+    );
+  },
   encode(
     message: MsgPauseByPoolIds,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1139,6 +1314,7 @@ export const MsgPauseByPoolIds = {
       value: MsgPauseByPoolIds.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgPauseByPoolIdsResponse(): MsgPauseByPoolIdsResponse {
   return {
@@ -1152,6 +1328,22 @@ function createBaseMsgPauseByPoolIdsResponse(): MsgPauseByPoolIdsResponse {
  */
 export const MsgPauseByPoolIdsResponse = {
   typeUrl: '/noble.swap.v1.MsgPauseByPoolIdsResponse' as const,
+  is(o: any): o is MsgPauseByPoolIdsResponse {
+    return (
+      o &&
+      (o.$typeUrl === MsgPauseByPoolIdsResponse.typeUrl ||
+        (Array.isArray(o.pausedPools) &&
+          (!o.pausedPools.length || typeof o.pausedPools[0] === 'bigint')))
+    );
+  },
+  isSDK(o: any): o is MsgPauseByPoolIdsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgPauseByPoolIdsResponse.typeUrl ||
+        (Array.isArray(o.paused_pools) &&
+          (!o.paused_pools.length || typeof o.paused_pools[0] === 'bigint')))
+    );
+  },
   encode(
     message: MsgPauseByPoolIdsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1235,6 +1427,7 @@ export const MsgPauseByPoolIdsResponse = {
       value: MsgPauseByPoolIdsResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgUnpauseByAlgorithm(): MsgUnpauseByAlgorithm {
   return {
@@ -1249,6 +1442,21 @@ function createBaseMsgUnpauseByAlgorithm(): MsgUnpauseByAlgorithm {
  */
 export const MsgUnpauseByAlgorithm = {
   typeUrl: '/noble.swap.v1.MsgUnpauseByAlgorithm' as const,
+  aminoType: 'swap/UnpauseByAlgorithm' as const,
+  is(o: any): o is MsgUnpauseByAlgorithm {
+    return (
+      o &&
+      (o.$typeUrl === MsgUnpauseByAlgorithm.typeUrl ||
+        (typeof o.signer === 'string' && isSet(o.algorithm)))
+    );
+  },
+  isSDK(o: any): o is MsgUnpauseByAlgorithmSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgUnpauseByAlgorithm.typeUrl ||
+        (typeof o.signer === 'string' && isSet(o.algorithm)))
+    );
+  },
   encode(
     message: MsgUnpauseByAlgorithm,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1318,6 +1526,7 @@ export const MsgUnpauseByAlgorithm = {
       value: MsgUnpauseByAlgorithm.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgUnpauseByAlgorithmResponse(): MsgUnpauseByAlgorithmResponse {
   return {
@@ -1331,6 +1540,23 @@ function createBaseMsgUnpauseByAlgorithmResponse(): MsgUnpauseByAlgorithmRespons
  */
 export const MsgUnpauseByAlgorithmResponse = {
   typeUrl: '/noble.swap.v1.MsgUnpauseByAlgorithmResponse' as const,
+  is(o: any): o is MsgUnpauseByAlgorithmResponse {
+    return (
+      o &&
+      (o.$typeUrl === MsgUnpauseByAlgorithmResponse.typeUrl ||
+        (Array.isArray(o.unpausedPools) &&
+          (!o.unpausedPools.length || typeof o.unpausedPools[0] === 'bigint')))
+    );
+  },
+  isSDK(o: any): o is MsgUnpauseByAlgorithmResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgUnpauseByAlgorithmResponse.typeUrl ||
+        (Array.isArray(o.unpaused_pools) &&
+          (!o.unpaused_pools.length ||
+            typeof o.unpaused_pools[0] === 'bigint')))
+    );
+  },
   encode(
     message: MsgUnpauseByAlgorithmResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1414,6 +1640,7 @@ export const MsgUnpauseByAlgorithmResponse = {
       value: MsgUnpauseByAlgorithmResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgUnpauseByPoolIds(): MsgUnpauseByPoolIds {
   return {
@@ -1428,6 +1655,25 @@ function createBaseMsgUnpauseByPoolIds(): MsgUnpauseByPoolIds {
  */
 export const MsgUnpauseByPoolIds = {
   typeUrl: '/noble.swap.v1.MsgUnpauseByPoolIds' as const,
+  aminoType: 'swap/UnpauseByPoolIds' as const,
+  is(o: any): o is MsgUnpauseByPoolIds {
+    return (
+      o &&
+      (o.$typeUrl === MsgUnpauseByPoolIds.typeUrl ||
+        (typeof o.signer === 'string' &&
+          Array.isArray(o.poolIds) &&
+          (!o.poolIds.length || typeof o.poolIds[0] === 'bigint')))
+    );
+  },
+  isSDK(o: any): o is MsgUnpauseByPoolIdsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgUnpauseByPoolIds.typeUrl ||
+        (typeof o.signer === 'string' &&
+          Array.isArray(o.pool_ids) &&
+          (!o.pool_ids.length || typeof o.pool_ids[0] === 'bigint')))
+    );
+  },
   encode(
     message: MsgUnpauseByPoolIds,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1509,6 +1755,7 @@ export const MsgUnpauseByPoolIds = {
       value: MsgUnpauseByPoolIds.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgUnpauseByPoolIdsResponse(): MsgUnpauseByPoolIdsResponse {
   return {
@@ -1522,6 +1769,23 @@ function createBaseMsgUnpauseByPoolIdsResponse(): MsgUnpauseByPoolIdsResponse {
  */
 export const MsgUnpauseByPoolIdsResponse = {
   typeUrl: '/noble.swap.v1.MsgUnpauseByPoolIdsResponse' as const,
+  is(o: any): o is MsgUnpauseByPoolIdsResponse {
+    return (
+      o &&
+      (o.$typeUrl === MsgUnpauseByPoolIdsResponse.typeUrl ||
+        (Array.isArray(o.unpausedPools) &&
+          (!o.unpausedPools.length || typeof o.unpausedPools[0] === 'bigint')))
+    );
+  },
+  isSDK(o: any): o is MsgUnpauseByPoolIdsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgUnpauseByPoolIdsResponse.typeUrl ||
+        (Array.isArray(o.unpaused_pools) &&
+          (!o.unpaused_pools.length ||
+            typeof o.unpaused_pools[0] === 'bigint')))
+    );
+  },
   encode(
     message: MsgUnpauseByPoolIdsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1605,4 +1869,5 @@ export const MsgUnpauseByPoolIdsResponse = {
       value: MsgUnpauseByPoolIdsResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

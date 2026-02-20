@@ -6,6 +6,7 @@ import {
   type QueryRequestSDKType,
 } from './host.js';
 import { BinaryReader, BinaryWriter } from '../../../../../binary.js';
+import { GlobalDecoderRegistry } from '../../../../../registry.js';
 import { isSet } from '../../../../../helpers.js';
 import { type JsonSafe } from '../../../../../json-safe.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
@@ -135,6 +136,21 @@ function createBaseMsgUpdateParams(): MsgUpdateParams {
 export const MsgUpdateParams = {
   typeUrl:
     '/ibc.applications.interchain_accounts.host.v1.MsgUpdateParams' as const,
+  aminoType: 'cosmos-sdk/MsgUpdateParams' as const,
+  is(o: any): o is MsgUpdateParams {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpdateParams.typeUrl ||
+        (typeof o.signer === 'string' && Params.is(o.params)))
+    );
+  },
+  isSDK(o: any): o is MsgUpdateParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpdateParams.typeUrl ||
+        (typeof o.signer === 'string' && Params.isSDK(o.params)))
+    );
+  },
   encode(
     message: MsgUpdateParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -202,6 +218,14 @@ export const MsgUpdateParams = {
       value: MsgUpdateParams.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(MsgUpdateParams.typeUrl)
+    ) {
+      return;
+    }
+    Params.registerTypeUrl();
+  },
 };
 function createBaseMsgUpdateParamsResponse(): MsgUpdateParamsResponse {
   return {};
@@ -215,6 +239,13 @@ function createBaseMsgUpdateParamsResponse(): MsgUpdateParamsResponse {
 export const MsgUpdateParamsResponse = {
   typeUrl:
     '/ibc.applications.interchain_accounts.host.v1.MsgUpdateParamsResponse' as const,
+  aminoType: 'cosmos-sdk/MsgUpdateParamsResponse' as const,
+  is(o: any): o is MsgUpdateParamsResponse {
+    return o && o.$typeUrl === MsgUpdateParamsResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgUpdateParamsResponseSDKType {
+    return o && o.$typeUrl === MsgUpdateParamsResponse.typeUrl;
+  },
   encode(
     _: MsgUpdateParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -267,6 +298,7 @@ export const MsgUpdateParamsResponse = {
       value: MsgUpdateParamsResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgModuleQuerySafe(): MsgModuleQuerySafe {
   return {
@@ -283,6 +315,25 @@ function createBaseMsgModuleQuerySafe(): MsgModuleQuerySafe {
 export const MsgModuleQuerySafe = {
   typeUrl:
     '/ibc.applications.interchain_accounts.host.v1.MsgModuleQuerySafe' as const,
+  aminoType: 'cosmos-sdk/MsgModuleQuerySafe' as const,
+  is(o: any): o is MsgModuleQuerySafe {
+    return (
+      o &&
+      (o.$typeUrl === MsgModuleQuerySafe.typeUrl ||
+        (typeof o.signer === 'string' &&
+          Array.isArray(o.requests) &&
+          (!o.requests.length || QueryRequest.is(o.requests[0]))))
+    );
+  },
+  isSDK(o: any): o is MsgModuleQuerySafeSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgModuleQuerySafe.typeUrl ||
+        (typeof o.signer === 'string' &&
+          Array.isArray(o.requests) &&
+          (!o.requests.length || QueryRequest.isSDK(o.requests[0]))))
+    );
+  },
   encode(
     message: MsgModuleQuerySafe,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -359,6 +410,14 @@ export const MsgModuleQuerySafe = {
       value: MsgModuleQuerySafe.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(MsgModuleQuerySafe.typeUrl)
+    ) {
+      return;
+    }
+    QueryRequest.registerTypeUrl();
+  },
 };
 function createBaseMsgModuleQuerySafeResponse(): MsgModuleQuerySafeResponse {
   return {
@@ -375,6 +434,29 @@ function createBaseMsgModuleQuerySafeResponse(): MsgModuleQuerySafeResponse {
 export const MsgModuleQuerySafeResponse = {
   typeUrl:
     '/ibc.applications.interchain_accounts.host.v1.MsgModuleQuerySafeResponse' as const,
+  aminoType: 'cosmos-sdk/MsgModuleQuerySafeResponse' as const,
+  is(o: any): o is MsgModuleQuerySafeResponse {
+    return (
+      o &&
+      (o.$typeUrl === MsgModuleQuerySafeResponse.typeUrl ||
+        (typeof o.height === 'bigint' &&
+          Array.isArray(o.responses) &&
+          (!o.responses.length ||
+            o.responses[0] instanceof Uint8Array ||
+            typeof o.responses[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is MsgModuleQuerySafeResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgModuleQuerySafeResponse.typeUrl ||
+        (typeof o.height === 'bigint' &&
+          Array.isArray(o.responses) &&
+          (!o.responses.length ||
+            o.responses[0] instanceof Uint8Array ||
+            typeof o.responses[0] === 'string')))
+    );
+  },
   encode(
     message: MsgModuleQuerySafeResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -464,4 +546,5 @@ export const MsgModuleQuerySafeResponse = {
       value: MsgModuleQuerySafeResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

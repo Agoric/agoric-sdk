@@ -65,6 +65,29 @@ function createBaseBIP44Params(): BIP44Params {
  */
 export const BIP44Params = {
   typeUrl: '/cosmos.crypto.hd.v1.BIP44Params' as const,
+  aminoType: 'crypto/keys/hd/BIP44Params' as const,
+  is(o: any): o is BIP44Params {
+    return (
+      o &&
+      (o.$typeUrl === BIP44Params.typeUrl ||
+        (typeof o.purpose === 'number' &&
+          typeof o.coinType === 'number' &&
+          typeof o.account === 'number' &&
+          typeof o.change === 'boolean' &&
+          typeof o.addressIndex === 'number'))
+    );
+  },
+  isSDK(o: any): o is BIP44ParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === BIP44Params.typeUrl ||
+        (typeof o.purpose === 'number' &&
+          typeof o.coin_type === 'number' &&
+          typeof o.account === 'number' &&
+          typeof o.change === 'boolean' &&
+          typeof o.address_index === 'number'))
+    );
+  },
   encode(
     message: BIP44Params,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -161,4 +184,5 @@ export const BIP44Params = {
       value: BIP44Params.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

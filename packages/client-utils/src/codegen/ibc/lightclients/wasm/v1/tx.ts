@@ -179,6 +179,25 @@ function createBaseMsgStoreCode(): MsgStoreCode {
  */
 export const MsgStoreCode = {
   typeUrl: '/ibc.lightclients.wasm.v1.MsgStoreCode' as const,
+  aminoType: 'cosmos-sdk/MsgStoreCode' as const,
+  is(o: any): o is MsgStoreCode {
+    return (
+      o &&
+      (o.$typeUrl === MsgStoreCode.typeUrl ||
+        (typeof o.signer === 'string' &&
+          (o.wasmByteCode instanceof Uint8Array ||
+            typeof o.wasmByteCode === 'string')))
+    );
+  },
+  isSDK(o: any): o is MsgStoreCodeSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgStoreCode.typeUrl ||
+        (typeof o.signer === 'string' &&
+          (o.wasm_byte_code instanceof Uint8Array ||
+            typeof o.wasm_byte_code === 'string')))
+    );
+  },
   encode(
     message: MsgStoreCode,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -249,6 +268,7 @@ export const MsgStoreCode = {
       value: MsgStoreCode.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgStoreCodeResponse(): MsgStoreCodeResponse {
   return {
@@ -263,6 +283,23 @@ function createBaseMsgStoreCodeResponse(): MsgStoreCodeResponse {
  */
 export const MsgStoreCodeResponse = {
   typeUrl: '/ibc.lightclients.wasm.v1.MsgStoreCodeResponse' as const,
+  aminoType: 'cosmos-sdk/MsgStoreCodeResponse' as const,
+  is(o: any): o is MsgStoreCodeResponse {
+    return (
+      o &&
+      (o.$typeUrl === MsgStoreCodeResponse.typeUrl ||
+        o.checksum instanceof Uint8Array ||
+        typeof o.checksum === 'string')
+    );
+  },
+  isSDK(o: any): o is MsgStoreCodeResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgStoreCodeResponse.typeUrl ||
+        o.checksum instanceof Uint8Array ||
+        typeof o.checksum === 'string')
+    );
+  },
   encode(
     message: MsgStoreCodeResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -325,6 +362,7 @@ export const MsgStoreCodeResponse = {
       value: MsgStoreCodeResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgRemoveChecksum(): MsgRemoveChecksum {
   return {
@@ -340,6 +378,23 @@ function createBaseMsgRemoveChecksum(): MsgRemoveChecksum {
  */
 export const MsgRemoveChecksum = {
   typeUrl: '/ibc.lightclients.wasm.v1.MsgRemoveChecksum' as const,
+  aminoType: 'cosmos-sdk/MsgRemoveChecksum' as const,
+  is(o: any): o is MsgRemoveChecksum {
+    return (
+      o &&
+      (o.$typeUrl === MsgRemoveChecksum.typeUrl ||
+        (typeof o.signer === 'string' &&
+          (o.checksum instanceof Uint8Array || typeof o.checksum === 'string')))
+    );
+  },
+  isSDK(o: any): o is MsgRemoveChecksumSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgRemoveChecksum.typeUrl ||
+        (typeof o.signer === 'string' &&
+          (o.checksum instanceof Uint8Array || typeof o.checksum === 'string')))
+    );
+  },
   encode(
     message: MsgRemoveChecksum,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -408,6 +463,7 @@ export const MsgRemoveChecksum = {
       value: MsgRemoveChecksum.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgRemoveChecksumResponse(): MsgRemoveChecksumResponse {
   return {};
@@ -420,6 +476,13 @@ function createBaseMsgRemoveChecksumResponse(): MsgRemoveChecksumResponse {
  */
 export const MsgRemoveChecksumResponse = {
   typeUrl: '/ibc.lightclients.wasm.v1.MsgRemoveChecksumResponse' as const,
+  aminoType: 'cosmos-sdk/MsgRemoveChecksumResponse' as const,
+  is(o: any): o is MsgRemoveChecksumResponse {
+    return o && o.$typeUrl === MsgRemoveChecksumResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgRemoveChecksumResponseSDKType {
+    return o && o.$typeUrl === MsgRemoveChecksumResponse.typeUrl;
+  },
   encode(
     _: MsgRemoveChecksumResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -473,6 +536,7 @@ export const MsgRemoveChecksumResponse = {
       value: MsgRemoveChecksumResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgMigrateContract(): MsgMigrateContract {
   return {
@@ -490,6 +554,29 @@ function createBaseMsgMigrateContract(): MsgMigrateContract {
  */
 export const MsgMigrateContract = {
   typeUrl: '/ibc.lightclients.wasm.v1.MsgMigrateContract' as const,
+  aminoType: 'cosmos-sdk/MsgMigrateContract' as const,
+  is(o: any): o is MsgMigrateContract {
+    return (
+      o &&
+      (o.$typeUrl === MsgMigrateContract.typeUrl ||
+        (typeof o.signer === 'string' &&
+          typeof o.clientId === 'string' &&
+          (o.checksum instanceof Uint8Array ||
+            typeof o.checksum === 'string') &&
+          (o.msg instanceof Uint8Array || typeof o.msg === 'string')))
+    );
+  },
+  isSDK(o: any): o is MsgMigrateContractSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgMigrateContract.typeUrl ||
+        (typeof o.signer === 'string' &&
+          typeof o.client_id === 'string' &&
+          (o.checksum instanceof Uint8Array ||
+            typeof o.checksum === 'string') &&
+          (o.msg instanceof Uint8Array || typeof o.msg === 'string')))
+    );
+  },
   encode(
     message: MsgMigrateContract,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -582,6 +669,7 @@ export const MsgMigrateContract = {
       value: MsgMigrateContract.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgMigrateContractResponse(): MsgMigrateContractResponse {
   return {};
@@ -594,6 +682,13 @@ function createBaseMsgMigrateContractResponse(): MsgMigrateContractResponse {
  */
 export const MsgMigrateContractResponse = {
   typeUrl: '/ibc.lightclients.wasm.v1.MsgMigrateContractResponse' as const,
+  aminoType: 'cosmos-sdk/MsgMigrateContractResponse' as const,
+  is(o: any): o is MsgMigrateContractResponse {
+    return o && o.$typeUrl === MsgMigrateContractResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgMigrateContractResponseSDKType {
+    return o && o.$typeUrl === MsgMigrateContractResponse.typeUrl;
+  },
   encode(
     _: MsgMigrateContractResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -647,4 +742,5 @@ export const MsgMigrateContractResponse = {
       value: MsgMigrateContractResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

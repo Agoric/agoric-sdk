@@ -30,6 +30,13 @@ function createBaseModule(): Module {
  */
 export const Module = {
   typeUrl: '/cosmos.evidence.module.v1.Module' as const,
+  aminoType: 'cosmos-sdk/Module' as const,
+  is(o: any): o is Module {
+    return o && o.$typeUrl === Module.typeUrl;
+  },
+  isSDK(o: any): o is ModuleSDKType {
+    return o && o.$typeUrl === Module.typeUrl;
+  },
   encode(
     _: Module,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -74,4 +81,5 @@ export const Module = {
       value: Module.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

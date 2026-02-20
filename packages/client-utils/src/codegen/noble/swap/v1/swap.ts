@@ -3,6 +3,7 @@ import { Coin, type CoinSDKType } from '../../../cosmos/base/v1beta1/coin.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../../registry.js';
 /**
  * @name Route
  * @package noble.swap.v1
@@ -82,6 +83,20 @@ function createBaseRoute(): Route {
  */
 export const Route = {
   typeUrl: '/noble.swap.v1.Route' as const,
+  is(o: any): o is Route {
+    return (
+      o &&
+      (o.$typeUrl === Route.typeUrl ||
+        (typeof o.poolId === 'bigint' && typeof o.denomTo === 'string'))
+    );
+  },
+  isSDK(o: any): o is RouteSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Route.typeUrl ||
+        (typeof o.pool_id === 'bigint' && typeof o.denom_to === 'string'))
+    );
+  },
   encode(
     message: Route,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -151,6 +166,7 @@ export const Route = {
       value: Route.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseSwap(): Swap {
   return {
@@ -167,6 +183,28 @@ function createBaseSwap(): Swap {
  */
 export const Swap = {
   typeUrl: '/noble.swap.v1.Swap' as const,
+  is(o: any): o is Swap {
+    return (
+      o &&
+      (o.$typeUrl === Swap.typeUrl ||
+        (typeof o.poolId === 'bigint' &&
+          Coin.is(o.in) &&
+          Coin.is(o.out) &&
+          Array.isArray(o.fees) &&
+          (!o.fees.length || Coin.is(o.fees[0]))))
+    );
+  },
+  isSDK(o: any): o is SwapSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Swap.typeUrl ||
+        (typeof o.pool_id === 'bigint' &&
+          Coin.isSDK(o.in) &&
+          Coin.isSDK(o.out) &&
+          Array.isArray(o.fees) &&
+          (!o.fees.length || Coin.isSDK(o.fees[0]))))
+    );
+  },
   encode(
     message: Swap,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -267,5 +305,11 @@ export const Swap = {
       typeUrl: '/noble.swap.v1.Swap',
       value: Swap.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(Swap.typeUrl)) {
+      return;
+    }
+    Coin.registerTypeUrl();
   },
 };

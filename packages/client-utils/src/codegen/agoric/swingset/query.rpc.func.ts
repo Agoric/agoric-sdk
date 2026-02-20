@@ -19,6 +19,7 @@ export const getParams = buildQuery<QueryParamsRequest, QueryParamsResponse>({
   decode: QueryParamsResponse.decode,
   service: 'agoric.swingset.Query',
   method: 'Params',
+  deps: [QueryParamsRequest, QueryParamsResponse],
 });
 /**
  * Egress queries a provisioned egress.
@@ -31,6 +32,7 @@ export const getEgress = buildQuery<QueryEgressRequest, QueryEgressResponse>({
   decode: QueryEgressResponse.decode,
   service: 'agoric.swingset.Query',
   method: 'Egress',
+  deps: [QueryEgressRequest, QueryEgressResponse],
 });
 /**
  * Return the contents of a peer's outbound mailbox.
@@ -44,5 +46,6 @@ export const getMailbox = buildQuery<QueryMailboxRequest, QueryMailboxResponse>(
     decode: QueryMailboxResponse.decode,
     service: 'agoric.swingset.Query',
     method: 'Mailbox',
+    deps: [QueryMailboxRequest, QueryMailboxResponse],
   },
 );

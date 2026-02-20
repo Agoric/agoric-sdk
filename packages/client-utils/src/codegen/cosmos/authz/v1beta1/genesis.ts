@@ -2,6 +2,7 @@
 import { GrantAuthorization, type GrantAuthorizationSDKType } from './authz.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { type JsonSafe } from '../../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../../registry.js';
 /**
  * GenesisState defines the authz module's genesis state.
  * @name GenesisState
@@ -37,6 +38,25 @@ function createBaseGenesisState(): GenesisState {
  */
 export const GenesisState = {
   typeUrl: '/cosmos.authz.v1beta1.GenesisState' as const,
+  aminoType: 'cosmos-sdk/GenesisState' as const,
+  is(o: any): o is GenesisState {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Array.isArray(o.authorization) &&
+          (!o.authorization.length ||
+            GrantAuthorization.is(o.authorization[0]))))
+    );
+  },
+  isSDK(o: any): o is GenesisStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Array.isArray(o.authorization) &&
+          (!o.authorization.length ||
+            GrantAuthorization.isSDK(o.authorization[0]))))
+    );
+  },
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -101,5 +121,11 @@ export const GenesisState = {
       typeUrl: '/cosmos.authz.v1beta1.GenesisState',
       value: GenesisState.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(GenesisState.typeUrl)) {
+      return;
+    }
+    GrantAuthorization.registerTypeUrl();
   },
 };

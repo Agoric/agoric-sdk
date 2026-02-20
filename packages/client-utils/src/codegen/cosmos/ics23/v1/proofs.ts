@@ -1,5 +1,6 @@
 //@ts-nocheck
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
+import { GlobalDecoderRegistry } from '../../../registry.js';
 import { isSet } from '../../../helpers.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
@@ -718,6 +719,27 @@ function createBaseExistenceProof(): ExistenceProof {
  */
 export const ExistenceProof = {
   typeUrl: '/cosmos.ics23.v1.ExistenceProof' as const,
+  aminoType: 'cosmos-sdk/ExistenceProof' as const,
+  is(o: any): o is ExistenceProof {
+    return (
+      o &&
+      (o.$typeUrl === ExistenceProof.typeUrl ||
+        ((o.key instanceof Uint8Array || typeof o.key === 'string') &&
+          (o.value instanceof Uint8Array || typeof o.value === 'string') &&
+          Array.isArray(o.path) &&
+          (!o.path.length || InnerOp.is(o.path[0]))))
+    );
+  },
+  isSDK(o: any): o is ExistenceProofSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ExistenceProof.typeUrl ||
+        ((o.key instanceof Uint8Array || typeof o.key === 'string') &&
+          (o.value instanceof Uint8Array || typeof o.value === 'string') &&
+          Array.isArray(o.path) &&
+          (!o.path.length || InnerOp.isSDK(o.path[0]))))
+    );
+  },
   encode(
     message: ExistenceProof,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -817,6 +839,15 @@ export const ExistenceProof = {
       value: ExistenceProof.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(ExistenceProof.typeUrl)
+    ) {
+      return;
+    }
+    LeafOp.registerTypeUrl();
+    InnerOp.registerTypeUrl();
+  },
 };
 function createBaseNonExistenceProof(): NonExistenceProof {
   return {
@@ -835,6 +866,23 @@ function createBaseNonExistenceProof(): NonExistenceProof {
  */
 export const NonExistenceProof = {
   typeUrl: '/cosmos.ics23.v1.NonExistenceProof' as const,
+  aminoType: 'cosmos-sdk/NonExistenceProof' as const,
+  is(o: any): o is NonExistenceProof {
+    return (
+      o &&
+      (o.$typeUrl === NonExistenceProof.typeUrl ||
+        o.key instanceof Uint8Array ||
+        typeof o.key === 'string')
+    );
+  },
+  isSDK(o: any): o is NonExistenceProofSDKType {
+    return (
+      o &&
+      (o.$typeUrl === NonExistenceProof.typeUrl ||
+        o.key instanceof Uint8Array ||
+        typeof o.key === 'string')
+    );
+  },
   encode(
     message: NonExistenceProof,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -926,6 +974,14 @@ export const NonExistenceProof = {
       value: NonExistenceProof.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(NonExistenceProof.typeUrl)
+    ) {
+      return;
+    }
+    ExistenceProof.registerTypeUrl();
+  },
 };
 function createBaseCommitmentProof(): CommitmentProof {
   return {
@@ -943,6 +999,13 @@ function createBaseCommitmentProof(): CommitmentProof {
  */
 export const CommitmentProof = {
   typeUrl: '/cosmos.ics23.v1.CommitmentProof' as const,
+  aminoType: 'cosmos-sdk/CommitmentProof' as const,
+  is(o: any): o is CommitmentProof {
+    return o && o.$typeUrl === CommitmentProof.typeUrl;
+  },
+  isSDK(o: any): o is CommitmentProofSDKType {
+    return o && o.$typeUrl === CommitmentProof.typeUrl;
+  },
   encode(
     message: CommitmentProof,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1065,6 +1128,17 @@ export const CommitmentProof = {
       value: CommitmentProof.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(CommitmentProof.typeUrl)
+    ) {
+      return;
+    }
+    ExistenceProof.registerTypeUrl();
+    NonExistenceProof.registerTypeUrl();
+    BatchProof.registerTypeUrl();
+    CompressedBatchProof.registerTypeUrl();
+  },
 };
 function createBaseLeafOp(): LeafOp {
   return {
@@ -1096,6 +1170,29 @@ function createBaseLeafOp(): LeafOp {
  */
 export const LeafOp = {
   typeUrl: '/cosmos.ics23.v1.LeafOp' as const,
+  aminoType: 'cosmos-sdk/LeafOp' as const,
+  is(o: any): o is LeafOp {
+    return (
+      o &&
+      (o.$typeUrl === LeafOp.typeUrl ||
+        (isSet(o.hash) &&
+          isSet(o.prehashKey) &&
+          isSet(o.prehashValue) &&
+          isSet(o.length) &&
+          (o.prefix instanceof Uint8Array || typeof o.prefix === 'string')))
+    );
+  },
+  isSDK(o: any): o is LeafOpSDKType {
+    return (
+      o &&
+      (o.$typeUrl === LeafOp.typeUrl ||
+        (isSet(o.hash) &&
+          isSet(o.prehash_key) &&
+          isSet(o.prehash_value) &&
+          isSet(o.length) &&
+          (o.prefix instanceof Uint8Array || typeof o.prefix === 'string')))
+    );
+  },
   encode(
     message: LeafOp,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1198,6 +1295,7 @@ export const LeafOp = {
       value: LeafOp.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseInnerOp(): InnerOp {
   return {
@@ -1228,6 +1326,25 @@ function createBaseInnerOp(): InnerOp {
  */
 export const InnerOp = {
   typeUrl: '/cosmos.ics23.v1.InnerOp' as const,
+  aminoType: 'cosmos-sdk/InnerOp' as const,
+  is(o: any): o is InnerOp {
+    return (
+      o &&
+      (o.$typeUrl === InnerOp.typeUrl ||
+        (isSet(o.hash) &&
+          (o.prefix instanceof Uint8Array || typeof o.prefix === 'string') &&
+          (o.suffix instanceof Uint8Array || typeof o.suffix === 'string')))
+    );
+  },
+  isSDK(o: any): o is InnerOpSDKType {
+    return (
+      o &&
+      (o.$typeUrl === InnerOp.typeUrl ||
+        (isSet(o.hash) &&
+          (o.prefix instanceof Uint8Array || typeof o.prefix === 'string') &&
+          (o.suffix instanceof Uint8Array || typeof o.suffix === 'string')))
+    );
+  },
   encode(
     message: InnerOp,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1310,6 +1427,7 @@ export const InnerOp = {
       value: InnerOp.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseProofSpec(): ProofSpec {
   return {
@@ -1337,6 +1455,25 @@ function createBaseProofSpec(): ProofSpec {
  */
 export const ProofSpec = {
   typeUrl: '/cosmos.ics23.v1.ProofSpec' as const,
+  aminoType: 'cosmos-sdk/ProofSpec' as const,
+  is(o: any): o is ProofSpec {
+    return (
+      o &&
+      (o.$typeUrl === ProofSpec.typeUrl ||
+        (typeof o.maxDepth === 'number' &&
+          typeof o.minDepth === 'number' &&
+          typeof o.prehashKeyBeforeComparison === 'boolean'))
+    );
+  },
+  isSDK(o: any): o is ProofSpecSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ProofSpec.typeUrl ||
+        (typeof o.max_depth === 'number' &&
+          typeof o.min_depth === 'number' &&
+          typeof o.prehash_key_before_comparison === 'boolean'))
+    );
+  },
   encode(
     message: ProofSpec,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1449,6 +1586,13 @@ export const ProofSpec = {
       value: ProofSpec.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(ProofSpec.typeUrl)) {
+      return;
+    }
+    LeafOp.registerTypeUrl();
+    InnerSpec.registerTypeUrl();
+  },
 };
 function createBaseInnerSpec(): InnerSpec {
   return {
@@ -1475,6 +1619,35 @@ function createBaseInnerSpec(): InnerSpec {
  */
 export const InnerSpec = {
   typeUrl: '/cosmos.ics23.v1.InnerSpec' as const,
+  aminoType: 'cosmos-sdk/InnerSpec' as const,
+  is(o: any): o is InnerSpec {
+    return (
+      o &&
+      (o.$typeUrl === InnerSpec.typeUrl ||
+        (Array.isArray(o.childOrder) &&
+          (!o.childOrder.length || typeof o.childOrder[0] === 'number') &&
+          typeof o.childSize === 'number' &&
+          typeof o.minPrefixLength === 'number' &&
+          typeof o.maxPrefixLength === 'number' &&
+          (o.emptyChild instanceof Uint8Array ||
+            typeof o.emptyChild === 'string') &&
+          isSet(o.hash)))
+    );
+  },
+  isSDK(o: any): o is InnerSpecSDKType {
+    return (
+      o &&
+      (o.$typeUrl === InnerSpec.typeUrl ||
+        (Array.isArray(o.child_order) &&
+          (!o.child_order.length || typeof o.child_order[0] === 'number') &&
+          typeof o.child_size === 'number' &&
+          typeof o.min_prefix_length === 'number' &&
+          typeof o.max_prefix_length === 'number' &&
+          (o.empty_child instanceof Uint8Array ||
+            typeof o.empty_child === 'string') &&
+          isSet(o.hash)))
+    );
+  },
   encode(
     message: InnerSpec,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1603,6 +1776,7 @@ export const InnerSpec = {
       value: InnerSpec.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseBatchProof(): BatchProof {
   return {
@@ -1617,6 +1791,23 @@ function createBaseBatchProof(): BatchProof {
  */
 export const BatchProof = {
   typeUrl: '/cosmos.ics23.v1.BatchProof' as const,
+  aminoType: 'cosmos-sdk/BatchProof' as const,
+  is(o: any): o is BatchProof {
+    return (
+      o &&
+      (o.$typeUrl === BatchProof.typeUrl ||
+        (Array.isArray(o.entries) &&
+          (!o.entries.length || BatchEntry.is(o.entries[0]))))
+    );
+  },
+  isSDK(o: any): o is BatchProofSDKType {
+    return (
+      o &&
+      (o.$typeUrl === BatchProof.typeUrl ||
+        (Array.isArray(o.entries) &&
+          (!o.entries.length || BatchEntry.isSDK(o.entries[0]))))
+    );
+  },
   encode(
     message: BatchProof,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1679,6 +1870,12 @@ export const BatchProof = {
       value: BatchProof.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(BatchProof.typeUrl)) {
+      return;
+    }
+    BatchEntry.registerTypeUrl();
+  },
 };
 function createBaseBatchEntry(): BatchEntry {
   return {
@@ -1694,6 +1891,13 @@ function createBaseBatchEntry(): BatchEntry {
  */
 export const BatchEntry = {
   typeUrl: '/cosmos.ics23.v1.BatchEntry' as const,
+  aminoType: 'cosmos-sdk/BatchEntry' as const,
+  is(o: any): o is BatchEntry {
+    return o && o.$typeUrl === BatchEntry.typeUrl;
+  },
+  isSDK(o: any): o is BatchEntrySDKType {
+    return o && o.$typeUrl === BatchEntry.typeUrl;
+  },
   encode(
     message: BatchEntry,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1776,6 +1980,13 @@ export const BatchEntry = {
       value: BatchEntry.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(BatchEntry.typeUrl)) {
+      return;
+    }
+    ExistenceProof.registerTypeUrl();
+    NonExistenceProof.registerTypeUrl();
+  },
 };
 function createBaseCompressedBatchProof(): CompressedBatchProof {
   return {
@@ -1790,6 +2001,27 @@ function createBaseCompressedBatchProof(): CompressedBatchProof {
  */
 export const CompressedBatchProof = {
   typeUrl: '/cosmos.ics23.v1.CompressedBatchProof' as const,
+  aminoType: 'cosmos-sdk/CompressedBatchProof' as const,
+  is(o: any): o is CompressedBatchProof {
+    return (
+      o &&
+      (o.$typeUrl === CompressedBatchProof.typeUrl ||
+        (Array.isArray(o.entries) &&
+          (!o.entries.length || CompressedBatchEntry.is(o.entries[0])) &&
+          Array.isArray(o.lookupInners) &&
+          (!o.lookupInners.length || InnerOp.is(o.lookupInners[0]))))
+    );
+  },
+  isSDK(o: any): o is CompressedBatchProofSDKType {
+    return (
+      o &&
+      (o.$typeUrl === CompressedBatchProof.typeUrl ||
+        (Array.isArray(o.entries) &&
+          (!o.entries.length || CompressedBatchEntry.isSDK(o.entries[0])) &&
+          Array.isArray(o.lookup_inners) &&
+          (!o.lookup_inners.length || InnerOp.isSDK(o.lookup_inners[0]))))
+    );
+  },
   encode(
     message: CompressedBatchProof,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1876,6 +2108,17 @@ export const CompressedBatchProof = {
       value: CompressedBatchProof.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        CompressedBatchProof.typeUrl,
+      )
+    ) {
+      return;
+    }
+    CompressedBatchEntry.registerTypeUrl();
+    InnerOp.registerTypeUrl();
+  },
 };
 function createBaseCompressedBatchEntry(): CompressedBatchEntry {
   return {
@@ -1891,6 +2134,13 @@ function createBaseCompressedBatchEntry(): CompressedBatchEntry {
  */
 export const CompressedBatchEntry = {
   typeUrl: '/cosmos.ics23.v1.CompressedBatchEntry' as const,
+  aminoType: 'cosmos-sdk/CompressedBatchEntry' as const,
+  is(o: any): o is CompressedBatchEntry {
+    return o && o.$typeUrl === CompressedBatchEntry.typeUrl;
+  },
+  isSDK(o: any): o is CompressedBatchEntrySDKType {
+    return o && o.$typeUrl === CompressedBatchEntry.typeUrl;
+  },
   encode(
     message: CompressedBatchEntry,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1985,6 +2235,17 @@ export const CompressedBatchEntry = {
       value: CompressedBatchEntry.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        CompressedBatchEntry.typeUrl,
+      )
+    ) {
+      return;
+    }
+    CompressedExistenceProof.registerTypeUrl();
+    CompressedNonExistenceProof.registerTypeUrl();
+  },
 };
 function createBaseCompressedExistenceProof(): CompressedExistenceProof {
   return {
@@ -2001,6 +2262,27 @@ function createBaseCompressedExistenceProof(): CompressedExistenceProof {
  */
 export const CompressedExistenceProof = {
   typeUrl: '/cosmos.ics23.v1.CompressedExistenceProof' as const,
+  aminoType: 'cosmos-sdk/CompressedExistenceProof' as const,
+  is(o: any): o is CompressedExistenceProof {
+    return (
+      o &&
+      (o.$typeUrl === CompressedExistenceProof.typeUrl ||
+        ((o.key instanceof Uint8Array || typeof o.key === 'string') &&
+          (o.value instanceof Uint8Array || typeof o.value === 'string') &&
+          Array.isArray(o.path) &&
+          (!o.path.length || typeof o.path[0] === 'number')))
+    );
+  },
+  isSDK(o: any): o is CompressedExistenceProofSDKType {
+    return (
+      o &&
+      (o.$typeUrl === CompressedExistenceProof.typeUrl ||
+        ((o.key instanceof Uint8Array || typeof o.key === 'string') &&
+          (o.value instanceof Uint8Array || typeof o.value === 'string') &&
+          Array.isArray(o.path) &&
+          (!o.path.length || typeof o.path[0] === 'number')))
+    );
+  },
   encode(
     message: CompressedExistenceProof,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2120,6 +2402,16 @@ export const CompressedExistenceProof = {
       value: CompressedExistenceProof.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        CompressedExistenceProof.typeUrl,
+      )
+    ) {
+      return;
+    }
+    LeafOp.registerTypeUrl();
+  },
 };
 function createBaseCompressedNonExistenceProof(): CompressedNonExistenceProof {
   return {
@@ -2135,6 +2427,23 @@ function createBaseCompressedNonExistenceProof(): CompressedNonExistenceProof {
  */
 export const CompressedNonExistenceProof = {
   typeUrl: '/cosmos.ics23.v1.CompressedNonExistenceProof' as const,
+  aminoType: 'cosmos-sdk/CompressedNonExistenceProof' as const,
+  is(o: any): o is CompressedNonExistenceProof {
+    return (
+      o &&
+      (o.$typeUrl === CompressedNonExistenceProof.typeUrl ||
+        o.key instanceof Uint8Array ||
+        typeof o.key === 'string')
+    );
+  },
+  isSDK(o: any): o is CompressedNonExistenceProofSDKType {
+    return (
+      o &&
+      (o.$typeUrl === CompressedNonExistenceProof.typeUrl ||
+        o.key instanceof Uint8Array ||
+        typeof o.key === 'string')
+    );
+  },
   encode(
     message: CompressedNonExistenceProof,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2248,5 +2557,15 @@ export const CompressedNonExistenceProof = {
       typeUrl: '/cosmos.ics23.v1.CompressedNonExistenceProof',
       value: CompressedNonExistenceProof.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        CompressedNonExistenceProof.typeUrl,
+      )
+    ) {
+      return;
+    }
+    CompressedExistenceProof.registerTypeUrl();
   },
 };

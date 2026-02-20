@@ -7,6 +7,7 @@ import {
 } from './swingset.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { type JsonSafe } from '../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../registry.js';
 import { isSet } from '../../helpers.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
@@ -152,6 +153,12 @@ function createBaseQueryParamsRequest(): QueryParamsRequest {
  */
 export const QueryParamsRequest = {
   typeUrl: '/agoric.swingset.QueryParamsRequest' as const,
+  is(o: any): o is QueryParamsRequest {
+    return o && o.$typeUrl === QueryParamsRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryParamsRequestSDKType {
+    return o && o.$typeUrl === QueryParamsRequest.typeUrl;
+  },
   encode(
     _: QueryParamsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -199,6 +206,7 @@ export const QueryParamsRequest = {
       value: QueryParamsRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryParamsResponse(): QueryParamsResponse {
   return {
@@ -213,6 +221,17 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
  */
 export const QueryParamsResponse = {
   typeUrl: '/agoric.swingset.QueryParamsResponse' as const,
+  is(o: any): o is QueryParamsResponse {
+    return (
+      o && (o.$typeUrl === QueryParamsResponse.typeUrl || Params.is(o.params))
+    );
+  },
+  isSDK(o: any): o is QueryParamsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryParamsResponse.typeUrl || Params.isSDK(o.params))
+    );
+  },
   encode(
     message: QueryParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -274,6 +293,16 @@ export const QueryParamsResponse = {
       value: QueryParamsResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryParamsResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Params.registerTypeUrl();
+  },
 };
 function createBaseQueryEgressRequest(): QueryEgressRequest {
   return {
@@ -288,6 +317,22 @@ function createBaseQueryEgressRequest(): QueryEgressRequest {
  */
 export const QueryEgressRequest = {
   typeUrl: '/agoric.swingset.QueryEgressRequest' as const,
+  is(o: any): o is QueryEgressRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryEgressRequest.typeUrl ||
+        o.peer instanceof Uint8Array ||
+        typeof o.peer === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryEgressRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryEgressRequest.typeUrl ||
+        o.peer instanceof Uint8Array ||
+        typeof o.peer === 'string')
+    );
+  },
   encode(
     message: QueryEgressRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -350,6 +395,7 @@ export const QueryEgressRequest = {
       value: QueryEgressRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryEgressResponse(): QueryEgressResponse {
   return {
@@ -364,6 +410,12 @@ function createBaseQueryEgressResponse(): QueryEgressResponse {
  */
 export const QueryEgressResponse = {
   typeUrl: '/agoric.swingset.QueryEgressResponse' as const,
+  is(o: any): o is QueryEgressResponse {
+    return o && o.$typeUrl === QueryEgressResponse.typeUrl;
+  },
+  isSDK(o: any): o is QueryEgressResponseSDKType {
+    return o && o.$typeUrl === QueryEgressResponse.typeUrl;
+  },
   encode(
     message: QueryEgressResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -425,6 +477,16 @@ export const QueryEgressResponse = {
       value: QueryEgressResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryEgressResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Egress.registerTypeUrl();
+  },
 };
 function createBaseQueryMailboxRequest(): QueryMailboxRequest {
   return {
@@ -439,6 +501,22 @@ function createBaseQueryMailboxRequest(): QueryMailboxRequest {
  */
 export const QueryMailboxRequest = {
   typeUrl: '/agoric.swingset.QueryMailboxRequest' as const,
+  is(o: any): o is QueryMailboxRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryMailboxRequest.typeUrl ||
+        o.peer instanceof Uint8Array ||
+        typeof o.peer === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryMailboxRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryMailboxRequest.typeUrl ||
+        o.peer instanceof Uint8Array ||
+        typeof o.peer === 'string')
+    );
+  },
   encode(
     message: QueryMailboxRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -501,6 +579,7 @@ export const QueryMailboxRequest = {
       value: QueryMailboxRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryMailboxResponse(): QueryMailboxResponse {
   return {
@@ -515,6 +594,20 @@ function createBaseQueryMailboxResponse(): QueryMailboxResponse {
  */
 export const QueryMailboxResponse = {
   typeUrl: '/agoric.swingset.QueryMailboxResponse' as const,
+  is(o: any): o is QueryMailboxResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryMailboxResponse.typeUrl ||
+        typeof o.value === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryMailboxResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryMailboxResponse.typeUrl ||
+        typeof o.value === 'string')
+    );
+  },
   encode(
     message: QueryMailboxResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -572,4 +665,5 @@ export const QueryMailboxResponse = {
       value: QueryMailboxResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

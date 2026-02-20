@@ -5,6 +5,7 @@ import {
 } from '../../../google/protobuf/timestamp.js';
 import { Any, type AnySDKType } from '../../../google/protobuf/any.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
+import { GlobalDecoderRegistry } from '../../../registry.js';
 import { isSet, fromJsonTimestamp, fromTimestamp } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
 /**
@@ -82,6 +83,7 @@ export interface PlanSDKType {
  * @deprecated
  */
 export interface SoftwareUpgradeProposal {
+  $typeUrl?: '/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal';
   /**
    * title of the proposal
    */
@@ -110,6 +112,7 @@ export interface SoftwareUpgradeProposalProtoMsg {
  * @deprecated
  */
 export interface SoftwareUpgradeProposalSDKType {
+  $typeUrl?: '/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal';
   title: string;
   description: string;
   plan: PlanSDKType;
@@ -125,6 +128,7 @@ export interface SoftwareUpgradeProposalSDKType {
  * @deprecated
  */
 export interface CancelSoftwareUpgradeProposal {
+  $typeUrl?: '/cosmos.upgrade.v1beta1.CancelSoftwareUpgradeProposal';
   /**
    * title of the proposal
    */
@@ -149,6 +153,7 @@ export interface CancelSoftwareUpgradeProposalProtoMsg {
  * @deprecated
  */
 export interface CancelSoftwareUpgradeProposalSDKType {
+  $typeUrl?: '/cosmos.upgrade.v1beta1.CancelSoftwareUpgradeProposal';
   title: string;
   description: string;
 }
@@ -203,6 +208,27 @@ function createBasePlan(): Plan {
  */
 export const Plan = {
   typeUrl: '/cosmos.upgrade.v1beta1.Plan' as const,
+  aminoType: 'cosmos-sdk/Plan' as const,
+  is(o: any): o is Plan {
+    return (
+      o &&
+      (o.$typeUrl === Plan.typeUrl ||
+        (typeof o.name === 'string' &&
+          Timestamp.is(o.time) &&
+          typeof o.height === 'bigint' &&
+          typeof o.info === 'string'))
+    );
+  },
+  isSDK(o: any): o is PlanSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Plan.typeUrl ||
+        (typeof o.name === 'string' &&
+          Timestamp.isSDK(o.time) &&
+          typeof o.height === 'bigint' &&
+          typeof o.info === 'string'))
+    );
+  },
   encode(
     message: Plan,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -315,9 +341,11 @@ export const Plan = {
       value: Plan.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseSoftwareUpgradeProposal(): SoftwareUpgradeProposal {
   return {
+    $typeUrl: '/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal',
     title: '',
     description: '',
     plan: Plan.fromPartial({}),
@@ -335,6 +363,25 @@ function createBaseSoftwareUpgradeProposal(): SoftwareUpgradeProposal {
  */
 export const SoftwareUpgradeProposal = {
   typeUrl: '/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal' as const,
+  aminoType: 'cosmos-sdk/SoftwareUpgradeProposal' as const,
+  is(o: any): o is SoftwareUpgradeProposal {
+    return (
+      o &&
+      (o.$typeUrl === SoftwareUpgradeProposal.typeUrl ||
+        (typeof o.title === 'string' &&
+          typeof o.description === 'string' &&
+          Plan.is(o.plan)))
+    );
+  },
+  isSDK(o: any): o is SoftwareUpgradeProposalSDKType {
+    return (
+      o &&
+      (o.$typeUrl === SoftwareUpgradeProposal.typeUrl ||
+        (typeof o.title === 'string' &&
+          typeof o.description === 'string' &&
+          Plan.isSDK(o.plan)))
+    );
+  },
   encode(
     message: SoftwareUpgradeProposal,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -421,9 +468,28 @@ export const SoftwareUpgradeProposal = {
       value: SoftwareUpgradeProposal.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        SoftwareUpgradeProposal.typeUrl,
+      )
+    ) {
+      return;
+    }
+    GlobalDecoderRegistry.register(
+      SoftwareUpgradeProposal.typeUrl,
+      SoftwareUpgradeProposal,
+    );
+    GlobalDecoderRegistry.registerAminoProtoMapping(
+      SoftwareUpgradeProposal.aminoType,
+      SoftwareUpgradeProposal.typeUrl,
+    );
+    Plan.registerTypeUrl();
+  },
 };
 function createBaseCancelSoftwareUpgradeProposal(): CancelSoftwareUpgradeProposal {
   return {
+    $typeUrl: '/cosmos.upgrade.v1beta1.CancelSoftwareUpgradeProposal',
     title: '',
     description: '',
   };
@@ -440,6 +506,21 @@ function createBaseCancelSoftwareUpgradeProposal(): CancelSoftwareUpgradeProposa
  */
 export const CancelSoftwareUpgradeProposal = {
   typeUrl: '/cosmos.upgrade.v1beta1.CancelSoftwareUpgradeProposal' as const,
+  aminoType: 'cosmos-sdk/CancelSoftwareUpgradeProposal' as const,
+  is(o: any): o is CancelSoftwareUpgradeProposal {
+    return (
+      o &&
+      (o.$typeUrl === CancelSoftwareUpgradeProposal.typeUrl ||
+        (typeof o.title === 'string' && typeof o.description === 'string'))
+    );
+  },
+  isSDK(o: any): o is CancelSoftwareUpgradeProposalSDKType {
+    return (
+      o &&
+      (o.$typeUrl === CancelSoftwareUpgradeProposal.typeUrl ||
+        (typeof o.title === 'string' && typeof o.description === 'string'))
+    );
+  },
   encode(
     message: CancelSoftwareUpgradeProposal,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -515,6 +596,23 @@ export const CancelSoftwareUpgradeProposal = {
       value: CancelSoftwareUpgradeProposal.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        CancelSoftwareUpgradeProposal.typeUrl,
+      )
+    ) {
+      return;
+    }
+    GlobalDecoderRegistry.register(
+      CancelSoftwareUpgradeProposal.typeUrl,
+      CancelSoftwareUpgradeProposal,
+    );
+    GlobalDecoderRegistry.registerAminoProtoMapping(
+      CancelSoftwareUpgradeProposal.aminoType,
+      CancelSoftwareUpgradeProposal.typeUrl,
+    );
+  },
 };
 function createBaseModuleVersion(): ModuleVersion {
   return {
@@ -532,6 +630,21 @@ function createBaseModuleVersion(): ModuleVersion {
  */
 export const ModuleVersion = {
   typeUrl: '/cosmos.upgrade.v1beta1.ModuleVersion' as const,
+  aminoType: 'cosmos-sdk/ModuleVersion' as const,
+  is(o: any): o is ModuleVersion {
+    return (
+      o &&
+      (o.$typeUrl === ModuleVersion.typeUrl ||
+        (typeof o.name === 'string' && typeof o.version === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is ModuleVersionSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ModuleVersion.typeUrl ||
+        (typeof o.name === 'string' && typeof o.version === 'bigint'))
+    );
+  },
   encode(
     message: ModuleVersion,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -601,4 +714,5 @@ export const ModuleVersion = {
       value: ModuleVersion.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

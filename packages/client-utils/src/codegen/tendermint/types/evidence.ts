@@ -11,6 +11,7 @@ import {
 } from '../../google/protobuf/timestamp.js';
 import { Validator, type ValidatorSDKType } from './validator.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
+import { GlobalDecoderRegistry } from '../../registry.js';
 import { isSet, fromJsonTimestamp, fromTimestamp } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
 /**
@@ -128,6 +129,12 @@ function createBaseEvidence(): Evidence {
  */
 export const Evidence = {
   typeUrl: '/tendermint.types.Evidence' as const,
+  is(o: any): o is Evidence {
+    return o && o.$typeUrl === Evidence.typeUrl;
+  },
+  isSDK(o: any): o is EvidenceSDKType {
+    return o && o.$typeUrl === Evidence.typeUrl;
+  },
   encode(
     message: Evidence,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -223,6 +230,13 @@ export const Evidence = {
       value: Evidence.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(Evidence.typeUrl)) {
+      return;
+    }
+    DuplicateVoteEvidence.registerTypeUrl();
+    LightClientAttackEvidence.registerTypeUrl();
+  },
 };
 function createBaseDuplicateVoteEvidence(): DuplicateVoteEvidence {
   return {
@@ -241,6 +255,24 @@ function createBaseDuplicateVoteEvidence(): DuplicateVoteEvidence {
  */
 export const DuplicateVoteEvidence = {
   typeUrl: '/tendermint.types.DuplicateVoteEvidence' as const,
+  is(o: any): o is DuplicateVoteEvidence {
+    return (
+      o &&
+      (o.$typeUrl === DuplicateVoteEvidence.typeUrl ||
+        (typeof o.totalVotingPower === 'bigint' &&
+          typeof o.validatorPower === 'bigint' &&
+          Timestamp.is(o.timestamp)))
+    );
+  },
+  isSDK(o: any): o is DuplicateVoteEvidenceSDKType {
+    return (
+      o &&
+      (o.$typeUrl === DuplicateVoteEvidence.typeUrl ||
+        (typeof o.total_voting_power === 'bigint' &&
+          typeof o.validator_power === 'bigint' &&
+          Timestamp.isSDK(o.timestamp)))
+    );
+  },
   encode(
     message: DuplicateVoteEvidence,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -362,6 +394,16 @@ export const DuplicateVoteEvidence = {
       value: DuplicateVoteEvidence.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        DuplicateVoteEvidence.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Vote.registerTypeUrl();
+  },
 };
 function createBaseLightClientAttackEvidence(): LightClientAttackEvidence {
   return {
@@ -380,6 +422,30 @@ function createBaseLightClientAttackEvidence(): LightClientAttackEvidence {
  */
 export const LightClientAttackEvidence = {
   typeUrl: '/tendermint.types.LightClientAttackEvidence' as const,
+  is(o: any): o is LightClientAttackEvidence {
+    return (
+      o &&
+      (o.$typeUrl === LightClientAttackEvidence.typeUrl ||
+        (typeof o.commonHeight === 'bigint' &&
+          Array.isArray(o.byzantineValidators) &&
+          (!o.byzantineValidators.length ||
+            Validator.is(o.byzantineValidators[0])) &&
+          typeof o.totalVotingPower === 'bigint' &&
+          Timestamp.is(o.timestamp)))
+    );
+  },
+  isSDK(o: any): o is LightClientAttackEvidenceSDKType {
+    return (
+      o &&
+      (o.$typeUrl === LightClientAttackEvidence.typeUrl ||
+        (typeof o.common_height === 'bigint' &&
+          Array.isArray(o.byzantine_validators) &&
+          (!o.byzantine_validators.length ||
+            Validator.isSDK(o.byzantine_validators[0])) &&
+          typeof o.total_voting_power === 'bigint' &&
+          Timestamp.isSDK(o.timestamp)))
+    );
+  },
   encode(
     message: LightClientAttackEvidence,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -523,6 +589,17 @@ export const LightClientAttackEvidence = {
       value: LightClientAttackEvidence.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        LightClientAttackEvidence.typeUrl,
+      )
+    ) {
+      return;
+    }
+    LightBlock.registerTypeUrl();
+    Validator.registerTypeUrl();
+  },
 };
 function createBaseEvidenceList(): EvidenceList {
   return {
@@ -536,6 +613,22 @@ function createBaseEvidenceList(): EvidenceList {
  */
 export const EvidenceList = {
   typeUrl: '/tendermint.types.EvidenceList' as const,
+  is(o: any): o is EvidenceList {
+    return (
+      o &&
+      (o.$typeUrl === EvidenceList.typeUrl ||
+        (Array.isArray(o.evidence) &&
+          (!o.evidence.length || Evidence.is(o.evidence[0]))))
+    );
+  },
+  isSDK(o: any): o is EvidenceListSDKType {
+    return (
+      o &&
+      (o.$typeUrl === EvidenceList.typeUrl ||
+        (Array.isArray(o.evidence) &&
+          (!o.evidence.length || Evidence.isSDK(o.evidence[0]))))
+    );
+  },
   encode(
     message: EvidenceList,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -597,5 +690,11 @@ export const EvidenceList = {
       typeUrl: '/tendermint.types.EvidenceList',
       value: EvidenceList.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(EvidenceList.typeUrl)) {
+      return;
+    }
+    Evidence.registerTypeUrl();
   },
 };

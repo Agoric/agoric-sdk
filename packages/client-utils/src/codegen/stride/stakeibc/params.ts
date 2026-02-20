@@ -88,6 +88,50 @@ function createBaseParams(): Params {
  */
 export const Params = {
   typeUrl: '/stride.stakeibc.Params' as const,
+  is(o: any): o is Params {
+    return (
+      o &&
+      (o.$typeUrl === Params.typeUrl ||
+        (typeof o.rewardsInterval === 'bigint' &&
+          typeof o.delegateInterval === 'bigint' &&
+          typeof o.depositInterval === 'bigint' &&
+          typeof o.redemptionRateInterval === 'bigint' &&
+          typeof o.strideCommission === 'bigint' &&
+          typeof o.reinvestInterval === 'bigint' &&
+          typeof o.icaTimeoutNanos === 'bigint' &&
+          typeof o.bufferSize === 'bigint' &&
+          typeof o.ibcTimeoutBlocks === 'bigint' &&
+          typeof o.feeTransferTimeoutNanos === 'bigint' &&
+          typeof o.maxStakeIcaCallsPerEpoch === 'bigint' &&
+          typeof o.defaultMinRedemptionRateThreshold === 'bigint' &&
+          typeof o.defaultMaxRedemptionRateThreshold === 'bigint' &&
+          typeof o.ibcTransferTimeoutNanos === 'bigint' &&
+          typeof o.validatorSlashQueryThreshold === 'bigint' &&
+          typeof o.validatorWeightCap === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is ParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Params.typeUrl ||
+        (typeof o.rewards_interval === 'bigint' &&
+          typeof o.delegate_interval === 'bigint' &&
+          typeof o.deposit_interval === 'bigint' &&
+          typeof o.redemption_rate_interval === 'bigint' &&
+          typeof o.stride_commission === 'bigint' &&
+          typeof o.reinvest_interval === 'bigint' &&
+          typeof o.ica_timeout_nanos === 'bigint' &&
+          typeof o.buffer_size === 'bigint' &&
+          typeof o.ibc_timeout_blocks === 'bigint' &&
+          typeof o.fee_transfer_timeout_nanos === 'bigint' &&
+          typeof o.max_stake_ica_calls_per_epoch === 'bigint' &&
+          typeof o.default_min_redemption_rate_threshold === 'bigint' &&
+          typeof o.default_max_redemption_rate_threshold === 'bigint' &&
+          typeof o.ibc_transfer_timeout_nanos === 'bigint' &&
+          typeof o.validator_slash_query_threshold === 'bigint' &&
+          typeof o.validator_weight_cap === 'bigint'))
+    );
+  },
   encode(
     message: Params,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -409,4 +453,5 @@ export const Params = {
       value: Params.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

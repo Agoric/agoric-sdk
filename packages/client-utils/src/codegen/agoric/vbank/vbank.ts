@@ -4,6 +4,7 @@ import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { Decimal } from '../../decimals.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../registry.js';
 /**
  * The module governance/configuration parameters.
  * @name Params
@@ -108,6 +109,30 @@ function createBaseParams(): Params {
  */
 export const Params = {
   typeUrl: '/agoric.vbank.Params' as const,
+  is(o: any): o is Params {
+    return (
+      o &&
+      (o.$typeUrl === Params.typeUrl ||
+        (typeof o.rewardEpochDurationBlocks === 'bigint' &&
+          typeof o.perEpochRewardFraction === 'string' &&
+          typeof o.rewardSmoothingBlocks === 'bigint' &&
+          Array.isArray(o.allowedMonitoringAccounts) &&
+          (!o.allowedMonitoringAccounts.length ||
+            typeof o.allowedMonitoringAccounts[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is ParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Params.typeUrl ||
+        (typeof o.reward_epoch_duration_blocks === 'bigint' &&
+          typeof o.per_epoch_reward_fraction === 'string' &&
+          typeof o.reward_smoothing_blocks === 'bigint' &&
+          Array.isArray(o.allowed_monitoring_accounts) &&
+          (!o.allowed_monitoring_accounts.length ||
+            typeof o.allowed_monitoring_accounts[0] === 'string')))
+    );
+  },
   encode(
     message: Params,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -228,6 +253,7 @@ export const Params = {
       value: Params.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseState(): State {
   return {
@@ -245,6 +271,31 @@ function createBaseState(): State {
  */
 export const State = {
   typeUrl: '/agoric.vbank.State' as const,
+  is(o: any): o is State {
+    return (
+      o &&
+      (o.$typeUrl === State.typeUrl ||
+        (Array.isArray(o.rewardPool) &&
+          (!o.rewardPool.length || Coin.is(o.rewardPool[0])) &&
+          Array.isArray(o.rewardBlockAmount) &&
+          (!o.rewardBlockAmount.length || Coin.is(o.rewardBlockAmount[0])) &&
+          typeof o.lastSequence === 'bigint' &&
+          typeof o.lastRewardDistributionBlock === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is StateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === State.typeUrl ||
+        (Array.isArray(o.reward_pool) &&
+          (!o.reward_pool.length || Coin.isSDK(o.reward_pool[0])) &&
+          Array.isArray(o.reward_block_amount) &&
+          (!o.reward_block_amount.length ||
+            Coin.isSDK(o.reward_block_amount[0])) &&
+          typeof o.last_sequence === 'bigint' &&
+          typeof o.last_reward_distribution_block === 'bigint'))
+    );
+  },
   encode(
     message: State,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -357,5 +408,11 @@ export const State = {
       typeUrl: '/agoric.vbank.State',
       value: State.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(State.typeUrl)) {
+      return;
+    }
+    Coin.registerTypeUrl();
   },
 };

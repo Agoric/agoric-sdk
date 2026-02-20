@@ -7,6 +7,7 @@ import {
 } from '../../cosmos/base/query/v1beta1/pagination.js';
 import { EpochInfo, type EpochInfoSDKType } from './genesis.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
+import { GlobalDecoderRegistry } from '../../registry.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
 /**
@@ -143,6 +144,12 @@ function createBaseQueryEpochsInfoRequest(): QueryEpochsInfoRequest {
  */
 export const QueryEpochsInfoRequest = {
   typeUrl: '/stride.epochs.QueryEpochsInfoRequest' as const,
+  is(o: any): o is QueryEpochsInfoRequest {
+    return o && o.$typeUrl === QueryEpochsInfoRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryEpochsInfoRequestSDKType {
+    return o && o.$typeUrl === QueryEpochsInfoRequest.typeUrl;
+  },
   encode(
     message: QueryEpochsInfoRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -210,6 +217,16 @@ export const QueryEpochsInfoRequest = {
       value: QueryEpochsInfoRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryEpochsInfoRequest.typeUrl,
+      )
+    ) {
+      return;
+    }
+    PageRequest.registerTypeUrl();
+  },
 };
 function createBaseQueryEpochsInfoResponse(): QueryEpochsInfoResponse {
   return {
@@ -224,6 +241,22 @@ function createBaseQueryEpochsInfoResponse(): QueryEpochsInfoResponse {
  */
 export const QueryEpochsInfoResponse = {
   typeUrl: '/stride.epochs.QueryEpochsInfoResponse' as const,
+  is(o: any): o is QueryEpochsInfoResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryEpochsInfoResponse.typeUrl ||
+        (Array.isArray(o.epochs) &&
+          (!o.epochs.length || EpochInfo.is(o.epochs[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryEpochsInfoResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryEpochsInfoResponse.typeUrl ||
+        (Array.isArray(o.epochs) &&
+          (!o.epochs.length || EpochInfo.isSDK(o.epochs[0]))))
+    );
+  },
   encode(
     message: QueryEpochsInfoResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -315,6 +348,17 @@ export const QueryEpochsInfoResponse = {
       value: QueryEpochsInfoResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryEpochsInfoResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    EpochInfo.registerTypeUrl();
+    PageResponse.registerTypeUrl();
+  },
 };
 function createBaseQueryCurrentEpochRequest(): QueryCurrentEpochRequest {
   return {
@@ -328,6 +372,20 @@ function createBaseQueryCurrentEpochRequest(): QueryCurrentEpochRequest {
  */
 export const QueryCurrentEpochRequest = {
   typeUrl: '/stride.epochs.QueryCurrentEpochRequest' as const,
+  is(o: any): o is QueryCurrentEpochRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryCurrentEpochRequest.typeUrl ||
+        typeof o.identifier === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryCurrentEpochRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryCurrentEpochRequest.typeUrl ||
+        typeof o.identifier === 'string')
+    );
+  },
   encode(
     message: QueryCurrentEpochRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -393,6 +451,7 @@ export const QueryCurrentEpochRequest = {
       value: QueryCurrentEpochRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryCurrentEpochResponse(): QueryCurrentEpochResponse {
   return {
@@ -406,6 +465,20 @@ function createBaseQueryCurrentEpochResponse(): QueryCurrentEpochResponse {
  */
 export const QueryCurrentEpochResponse = {
   typeUrl: '/stride.epochs.QueryCurrentEpochResponse' as const,
+  is(o: any): o is QueryCurrentEpochResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryCurrentEpochResponse.typeUrl ||
+        typeof o.currentEpoch === 'bigint')
+    );
+  },
+  isSDK(o: any): o is QueryCurrentEpochResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryCurrentEpochResponse.typeUrl ||
+        typeof o.current_epoch === 'bigint')
+    );
+  },
   encode(
     message: QueryCurrentEpochResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -477,6 +550,7 @@ export const QueryCurrentEpochResponse = {
       value: QueryCurrentEpochResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryEpochInfoRequest(): QueryEpochInfoRequest {
   return {
@@ -490,6 +564,20 @@ function createBaseQueryEpochInfoRequest(): QueryEpochInfoRequest {
  */
 export const QueryEpochInfoRequest = {
   typeUrl: '/stride.epochs.QueryEpochInfoRequest' as const,
+  is(o: any): o is QueryEpochInfoRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryEpochInfoRequest.typeUrl ||
+        typeof o.identifier === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryEpochInfoRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryEpochInfoRequest.typeUrl ||
+        typeof o.identifier === 'string')
+    );
+  },
   encode(
     message: QueryEpochInfoRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -547,6 +635,7 @@ export const QueryEpochInfoRequest = {
       value: QueryEpochInfoRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryEpochInfoResponse(): QueryEpochInfoResponse {
   return {
@@ -560,6 +649,19 @@ function createBaseQueryEpochInfoResponse(): QueryEpochInfoResponse {
  */
 export const QueryEpochInfoResponse = {
   typeUrl: '/stride.epochs.QueryEpochInfoResponse' as const,
+  is(o: any): o is QueryEpochInfoResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryEpochInfoResponse.typeUrl || EpochInfo.is(o.epoch))
+    );
+  },
+  isSDK(o: any): o is QueryEpochInfoResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryEpochInfoResponse.typeUrl ||
+        EpochInfo.isSDK(o.epoch))
+    );
+  },
   encode(
     message: QueryEpochInfoResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -622,5 +724,15 @@ export const QueryEpochInfoResponse = {
       typeUrl: '/stride.epochs.QueryEpochInfoResponse',
       value: QueryEpochInfoResponse.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryEpochInfoResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    EpochInfo.registerTypeUrl();
   },
 };

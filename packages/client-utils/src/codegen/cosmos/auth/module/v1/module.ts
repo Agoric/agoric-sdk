@@ -2,6 +2,7 @@
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../../../registry.js';
 /**
  * Module is the config object for the auth module.
  * @name Module
@@ -83,6 +84,29 @@ function createBaseModule(): Module {
  */
 export const Module = {
   typeUrl: '/cosmos.auth.module.v1.Module' as const,
+  aminoType: 'cosmos-sdk/Module' as const,
+  is(o: any): o is Module {
+    return (
+      o &&
+      (o.$typeUrl === Module.typeUrl ||
+        (typeof o.bech32Prefix === 'string' &&
+          Array.isArray(o.moduleAccountPermissions) &&
+          (!o.moduleAccountPermissions.length ||
+            ModuleAccountPermission.is(o.moduleAccountPermissions[0])) &&
+          typeof o.authority === 'string'))
+    );
+  },
+  isSDK(o: any): o is ModuleSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Module.typeUrl ||
+        (typeof o.bech32_prefix === 'string' &&
+          Array.isArray(o.module_account_permissions) &&
+          (!o.module_account_permissions.length ||
+            ModuleAccountPermission.isSDK(o.module_account_permissions[0])) &&
+          typeof o.authority === 'string'))
+    );
+  },
   encode(
     message: Module,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -173,6 +197,12 @@ export const Module = {
       value: Module.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(Module.typeUrl)) {
+      return;
+    }
+    ModuleAccountPermission.registerTypeUrl();
+  },
 };
 function createBaseModuleAccountPermission(): ModuleAccountPermission {
   return {
@@ -188,6 +218,25 @@ function createBaseModuleAccountPermission(): ModuleAccountPermission {
  */
 export const ModuleAccountPermission = {
   typeUrl: '/cosmos.auth.module.v1.ModuleAccountPermission' as const,
+  aminoType: 'cosmos-sdk/ModuleAccountPermission' as const,
+  is(o: any): o is ModuleAccountPermission {
+    return (
+      o &&
+      (o.$typeUrl === ModuleAccountPermission.typeUrl ||
+        (typeof o.account === 'string' &&
+          Array.isArray(o.permissions) &&
+          (!o.permissions.length || typeof o.permissions[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is ModuleAccountPermissionSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ModuleAccountPermission.typeUrl ||
+        (typeof o.account === 'string' &&
+          Array.isArray(o.permissions) &&
+          (!o.permissions.length || typeof o.permissions[0] === 'string')))
+    );
+  },
   encode(
     message: ModuleAccountPermission,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -266,4 +315,5 @@ export const ModuleAccountPermission = {
       value: ModuleAccountPermission.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

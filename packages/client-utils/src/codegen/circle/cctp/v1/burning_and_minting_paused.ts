@@ -40,6 +40,20 @@ function createBaseBurningAndMintingPaused(): BurningAndMintingPaused {
  */
 export const BurningAndMintingPaused = {
   typeUrl: '/circle.cctp.v1.BurningAndMintingPaused' as const,
+  is(o: any): o is BurningAndMintingPaused {
+    return (
+      o &&
+      (o.$typeUrl === BurningAndMintingPaused.typeUrl ||
+        typeof o.paused === 'boolean')
+    );
+  },
+  isSDK(o: any): o is BurningAndMintingPausedSDKType {
+    return (
+      o &&
+      (o.$typeUrl === BurningAndMintingPaused.typeUrl ||
+        typeof o.paused === 'boolean')
+    );
+  },
   encode(
     message: BurningAndMintingPaused,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -103,4 +117,5 @@ export const BurningAndMintingPaused = {
       value: BurningAndMintingPaused.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

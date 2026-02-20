@@ -40,6 +40,20 @@ function createBaseMaxMessageBodySize(): MaxMessageBodySize {
  */
 export const MaxMessageBodySize = {
   typeUrl: '/circle.cctp.v1.MaxMessageBodySize' as const,
+  is(o: any): o is MaxMessageBodySize {
+    return (
+      o &&
+      (o.$typeUrl === MaxMessageBodySize.typeUrl ||
+        typeof o.amount === 'bigint')
+    );
+  },
+  isSDK(o: any): o is MaxMessageBodySizeSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MaxMessageBodySize.typeUrl ||
+        typeof o.amount === 'bigint')
+    );
+  },
   encode(
     message: MaxMessageBodySize,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -103,4 +117,5 @@ export const MaxMessageBodySize = {
       value: MaxMessageBodySize.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

@@ -47,6 +47,25 @@ function createBaseLegacyAminoPubKey(): LegacyAminoPubKey {
  */
 export const LegacyAminoPubKey = {
   typeUrl: '/cosmos.crypto.multisig.LegacyAminoPubKey' as const,
+  aminoType: 'tendermint/PubKeyMultisigThreshold' as const,
+  is(o: any): o is LegacyAminoPubKey {
+    return (
+      o &&
+      (o.$typeUrl === LegacyAminoPubKey.typeUrl ||
+        (typeof o.threshold === 'number' &&
+          Array.isArray(o.publicKeys) &&
+          (!o.publicKeys.length || Any.is(o.publicKeys[0]))))
+    );
+  },
+  isSDK(o: any): o is LegacyAminoPubKeySDKType {
+    return (
+      o &&
+      (o.$typeUrl === LegacyAminoPubKey.typeUrl ||
+        (typeof o.threshold === 'number' &&
+          Array.isArray(o.public_keys) &&
+          (!o.public_keys.length || Any.isSDK(o.public_keys[0]))))
+    );
+  },
   encode(
     message: LegacyAminoPubKey,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -119,4 +138,5 @@ export const LegacyAminoPubKey = {
       value: LegacyAminoPubKey.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

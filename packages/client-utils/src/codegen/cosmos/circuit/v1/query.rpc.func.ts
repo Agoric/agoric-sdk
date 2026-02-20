@@ -19,6 +19,7 @@ export const getAccount = buildQuery<QueryAccountRequest, AccountResponse>({
   decode: AccountResponse.decode,
   service: 'cosmos.circuit.v1.Query',
   method: 'Account',
+  deps: [QueryAccountRequest, AccountResponse],
 });
 /**
  * Account returns account permissions.
@@ -31,6 +32,7 @@ export const getAccounts = buildQuery<QueryAccountsRequest, AccountsResponse>({
   decode: AccountsResponse.decode,
   service: 'cosmos.circuit.v1.Query',
   method: 'Accounts',
+  deps: [QueryAccountsRequest, AccountsResponse],
 });
 /**
  * DisabledList returns a list of disabled message urls
@@ -46,4 +48,5 @@ export const getDisabledList = buildQuery<
   decode: DisabledListResponse.decode,
   service: 'cosmos.circuit.v1.Query',
   method: 'DisabledList',
+  deps: [QueryDisabledListRequest, DisabledListResponse],
 });

@@ -2,6 +2,7 @@
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../registry.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
 /**
@@ -122,6 +123,24 @@ function createBaseNetAddress(): NetAddress {
  */
 export const NetAddress = {
   typeUrl: '/tendermint.p2p.NetAddress' as const,
+  is(o: any): o is NetAddress {
+    return (
+      o &&
+      (o.$typeUrl === NetAddress.typeUrl ||
+        (typeof o.id === 'string' &&
+          typeof o.ip === 'string' &&
+          typeof o.port === 'number'))
+    );
+  },
+  isSDK(o: any): o is NetAddressSDKType {
+    return (
+      o &&
+      (o.$typeUrl === NetAddress.typeUrl ||
+        (typeof o.id === 'string' &&
+          typeof o.ip === 'string' &&
+          typeof o.port === 'number'))
+    );
+  },
   encode(
     message: NetAddress,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -194,6 +213,7 @@ export const NetAddress = {
       value: NetAddress.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseProtocolVersion(): ProtocolVersion {
   return {
@@ -209,6 +229,24 @@ function createBaseProtocolVersion(): ProtocolVersion {
  */
 export const ProtocolVersion = {
   typeUrl: '/tendermint.p2p.ProtocolVersion' as const,
+  is(o: any): o is ProtocolVersion {
+    return (
+      o &&
+      (o.$typeUrl === ProtocolVersion.typeUrl ||
+        (typeof o.p2p === 'bigint' &&
+          typeof o.block === 'bigint' &&
+          typeof o.app === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is ProtocolVersionSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ProtocolVersion.typeUrl ||
+        (typeof o.p2p === 'bigint' &&
+          typeof o.block === 'bigint' &&
+          typeof o.app === 'bigint'))
+    );
+  },
   encode(
     message: ProtocolVersion,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -293,6 +331,7 @@ export const ProtocolVersion = {
       value: ProtocolVersion.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseDefaultNodeInfo(): DefaultNodeInfo {
   return {
@@ -313,6 +352,36 @@ function createBaseDefaultNodeInfo(): DefaultNodeInfo {
  */
 export const DefaultNodeInfo = {
   typeUrl: '/tendermint.p2p.DefaultNodeInfo' as const,
+  is(o: any): o is DefaultNodeInfo {
+    return (
+      o &&
+      (o.$typeUrl === DefaultNodeInfo.typeUrl ||
+        (ProtocolVersion.is(o.protocolVersion) &&
+          typeof o.defaultNodeId === 'string' &&
+          typeof o.listenAddr === 'string' &&
+          typeof o.network === 'string' &&
+          typeof o.version === 'string' &&
+          (o.channels instanceof Uint8Array ||
+            typeof o.channels === 'string') &&
+          typeof o.moniker === 'string' &&
+          DefaultNodeInfoOther.is(o.other)))
+    );
+  },
+  isSDK(o: any): o is DefaultNodeInfoSDKType {
+    return (
+      o &&
+      (o.$typeUrl === DefaultNodeInfo.typeUrl ||
+        (ProtocolVersion.isSDK(o.protocol_version) &&
+          typeof o.default_node_id === 'string' &&
+          typeof o.listen_addr === 'string' &&
+          typeof o.network === 'string' &&
+          typeof o.version === 'string' &&
+          (o.channels instanceof Uint8Array ||
+            typeof o.channels === 'string') &&
+          typeof o.moniker === 'string' &&
+          DefaultNodeInfoOther.isSDK(o.other)))
+    );
+  },
   encode(
     message: DefaultNodeInfo,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -463,6 +532,15 @@ export const DefaultNodeInfo = {
       value: DefaultNodeInfo.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(DefaultNodeInfo.typeUrl)
+    ) {
+      return;
+    }
+    ProtocolVersion.registerTypeUrl();
+    DefaultNodeInfoOther.registerTypeUrl();
+  },
 };
 function createBaseDefaultNodeInfoOther(): DefaultNodeInfoOther {
   return {
@@ -477,6 +555,20 @@ function createBaseDefaultNodeInfoOther(): DefaultNodeInfoOther {
  */
 export const DefaultNodeInfoOther = {
   typeUrl: '/tendermint.p2p.DefaultNodeInfoOther' as const,
+  is(o: any): o is DefaultNodeInfoOther {
+    return (
+      o &&
+      (o.$typeUrl === DefaultNodeInfoOther.typeUrl ||
+        (typeof o.txIndex === 'string' && typeof o.rpcAddress === 'string'))
+    );
+  },
+  isSDK(o: any): o is DefaultNodeInfoOtherSDKType {
+    return (
+      o &&
+      (o.$typeUrl === DefaultNodeInfoOther.typeUrl ||
+        (typeof o.tx_index === 'string' && typeof o.rpc_address === 'string'))
+    );
+  },
   encode(
     message: DefaultNodeInfoOther,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -543,4 +635,5 @@ export const DefaultNodeInfoOther = {
       value: DefaultNodeInfoOther.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

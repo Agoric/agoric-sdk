@@ -1,7 +1,7 @@
 //@ts-nocheck
 import { Any, type AnySDKType } from '../../../../google/protobuf/any.js';
-import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
+import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
 import { type JsonSafe } from '../../../../json-safe.js';
@@ -106,6 +106,25 @@ function createBaseInterchainAccountPacketData(): InterchainAccountPacketData {
 export const InterchainAccountPacketData = {
   typeUrl:
     '/ibc.applications.interchain_accounts.v1.InterchainAccountPacketData' as const,
+  aminoType: 'cosmos-sdk/InterchainAccountPacketData' as const,
+  is(o: any): o is InterchainAccountPacketData {
+    return (
+      o &&
+      (o.$typeUrl === InterchainAccountPacketData.typeUrl ||
+        (isSet(o.type) &&
+          (o.data instanceof Uint8Array || typeof o.data === 'string') &&
+          typeof o.memo === 'string'))
+    );
+  },
+  isSDK(o: any): o is InterchainAccountPacketDataSDKType {
+    return (
+      o &&
+      (o.$typeUrl === InterchainAccountPacketData.typeUrl ||
+        (isSet(o.type) &&
+          (o.data instanceof Uint8Array || typeof o.data === 'string') &&
+          typeof o.memo === 'string'))
+    );
+  },
   encode(
     message: InterchainAccountPacketData,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -195,6 +214,7 @@ export const InterchainAccountPacketData = {
       value: InterchainAccountPacketData.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseCosmosTx(): CosmosTx {
   return {
@@ -209,6 +229,23 @@ function createBaseCosmosTx(): CosmosTx {
  */
 export const CosmosTx = {
   typeUrl: '/ibc.applications.interchain_accounts.v1.CosmosTx' as const,
+  aminoType: 'cosmos-sdk/CosmosTx' as const,
+  is(o: any): o is CosmosTx {
+    return (
+      o &&
+      (o.$typeUrl === CosmosTx.typeUrl ||
+        (Array.isArray(o.messages) &&
+          (!o.messages.length || Any.is(o.messages[0]))))
+    );
+  },
+  isSDK(o: any): o is CosmosTxSDKType {
+    return (
+      o &&
+      (o.$typeUrl === CosmosTx.typeUrl ||
+        (Array.isArray(o.messages) &&
+          (!o.messages.length || Any.isSDK(o.messages[0]))))
+    );
+  },
   encode(
     message: CosmosTx,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -269,4 +306,5 @@ export const CosmosTx = {
       value: CosmosTx.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

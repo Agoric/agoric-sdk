@@ -87,6 +87,25 @@ function createBaseEventGrant(): EventGrant {
  */
 export const EventGrant = {
   typeUrl: '/cosmos.authz.v1beta1.EventGrant' as const,
+  aminoType: 'cosmos-sdk/EventGrant' as const,
+  is(o: any): o is EventGrant {
+    return (
+      o &&
+      (o.$typeUrl === EventGrant.typeUrl ||
+        (typeof o.msgTypeUrl === 'string' &&
+          typeof o.granter === 'string' &&
+          typeof o.grantee === 'string'))
+    );
+  },
+  isSDK(o: any): o is EventGrantSDKType {
+    return (
+      o &&
+      (o.$typeUrl === EventGrant.typeUrl ||
+        (typeof o.msg_type_url === 'string' &&
+          typeof o.granter === 'string' &&
+          typeof o.grantee === 'string'))
+    );
+  },
   encode(
     message: EventGrant,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -159,6 +178,7 @@ export const EventGrant = {
       value: EventGrant.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseEventRevoke(): EventRevoke {
   return {
@@ -175,6 +195,25 @@ function createBaseEventRevoke(): EventRevoke {
  */
 export const EventRevoke = {
   typeUrl: '/cosmos.authz.v1beta1.EventRevoke' as const,
+  aminoType: 'cosmos-sdk/EventRevoke' as const,
+  is(o: any): o is EventRevoke {
+    return (
+      o &&
+      (o.$typeUrl === EventRevoke.typeUrl ||
+        (typeof o.msgTypeUrl === 'string' &&
+          typeof o.granter === 'string' &&
+          typeof o.grantee === 'string'))
+    );
+  },
+  isSDK(o: any): o is EventRevokeSDKType {
+    return (
+      o &&
+      (o.$typeUrl === EventRevoke.typeUrl ||
+        (typeof o.msg_type_url === 'string' &&
+          typeof o.granter === 'string' &&
+          typeof o.grantee === 'string'))
+    );
+  },
   encode(
     message: EventRevoke,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -247,4 +286,5 @@ export const EventRevoke = {
       value: EventRevoke.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

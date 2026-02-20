@@ -3,8 +3,9 @@ import {
   MerklePrefix,
   type MerklePrefixSDKType,
 } from '../../commitment/v1/commitment.js';
-import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
+import { BinaryReader, BinaryWriter } from '../../../../binary.js';
+import { GlobalDecoderRegistry } from '../../../../registry.js';
 import { type JsonSafe } from '../../../../json-safe.js';
 /**
  * State defines if a connection is in one of the following states:
@@ -338,6 +339,31 @@ function createBaseConnectionEnd(): ConnectionEnd {
  */
 export const ConnectionEnd = {
   typeUrl: '/ibc.core.connection.v1.ConnectionEnd' as const,
+  aminoType: 'cosmos-sdk/ConnectionEnd' as const,
+  is(o: any): o is ConnectionEnd {
+    return (
+      o &&
+      (o.$typeUrl === ConnectionEnd.typeUrl ||
+        (typeof o.clientId === 'string' &&
+          Array.isArray(o.versions) &&
+          (!o.versions.length || Version.is(o.versions[0])) &&
+          isSet(o.state) &&
+          Counterparty.is(o.counterparty) &&
+          typeof o.delayPeriod === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is ConnectionEndSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ConnectionEnd.typeUrl ||
+        (typeof o.client_id === 'string' &&
+          Array.isArray(o.versions) &&
+          (!o.versions.length || Version.isSDK(o.versions[0])) &&
+          isSet(o.state) &&
+          Counterparty.isSDK(o.counterparty) &&
+          typeof o.delay_period === 'bigint'))
+    );
+  },
   encode(
     message: ConnectionEnd,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -453,6 +479,13 @@ export const ConnectionEnd = {
       value: ConnectionEnd.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(ConnectionEnd.typeUrl)) {
+      return;
+    }
+    Version.registerTypeUrl();
+    Counterparty.registerTypeUrl();
+  },
 };
 function createBaseIdentifiedConnection(): IdentifiedConnection {
   return {
@@ -473,6 +506,33 @@ function createBaseIdentifiedConnection(): IdentifiedConnection {
  */
 export const IdentifiedConnection = {
   typeUrl: '/ibc.core.connection.v1.IdentifiedConnection' as const,
+  aminoType: 'cosmos-sdk/IdentifiedConnection' as const,
+  is(o: any): o is IdentifiedConnection {
+    return (
+      o &&
+      (o.$typeUrl === IdentifiedConnection.typeUrl ||
+        (typeof o.id === 'string' &&
+          typeof o.clientId === 'string' &&
+          Array.isArray(o.versions) &&
+          (!o.versions.length || Version.is(o.versions[0])) &&
+          isSet(o.state) &&
+          Counterparty.is(o.counterparty) &&
+          typeof o.delayPeriod === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is IdentifiedConnectionSDKType {
+    return (
+      o &&
+      (o.$typeUrl === IdentifiedConnection.typeUrl ||
+        (typeof o.id === 'string' &&
+          typeof o.client_id === 'string' &&
+          Array.isArray(o.versions) &&
+          (!o.versions.length || Version.isSDK(o.versions[0])) &&
+          isSet(o.state) &&
+          Counterparty.isSDK(o.counterparty) &&
+          typeof o.delay_period === 'bigint'))
+    );
+  },
   encode(
     message: IdentifiedConnection,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -600,6 +660,17 @@ export const IdentifiedConnection = {
       value: IdentifiedConnection.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        IdentifiedConnection.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Version.registerTypeUrl();
+    Counterparty.registerTypeUrl();
+  },
 };
 function createBaseCounterparty(): Counterparty {
   return {
@@ -616,6 +687,25 @@ function createBaseCounterparty(): Counterparty {
  */
 export const Counterparty = {
   typeUrl: '/ibc.core.connection.v1.Counterparty' as const,
+  aminoType: 'cosmos-sdk/Counterparty' as const,
+  is(o: any): o is Counterparty {
+    return (
+      o &&
+      (o.$typeUrl === Counterparty.typeUrl ||
+        (typeof o.clientId === 'string' &&
+          typeof o.connectionId === 'string' &&
+          MerklePrefix.is(o.prefix)))
+    );
+  },
+  isSDK(o: any): o is CounterpartySDKType {
+    return (
+      o &&
+      (o.$typeUrl === Counterparty.typeUrl ||
+        (typeof o.client_id === 'string' &&
+          typeof o.connection_id === 'string' &&
+          MerklePrefix.isSDK(o.prefix)))
+    );
+  },
   encode(
     message: Counterparty,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -699,6 +789,12 @@ export const Counterparty = {
       value: Counterparty.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(Counterparty.typeUrl)) {
+      return;
+    }
+    MerklePrefix.registerTypeUrl();
+  },
 };
 function createBaseClientPaths(): ClientPaths {
   return {
@@ -713,6 +809,23 @@ function createBaseClientPaths(): ClientPaths {
  */
 export const ClientPaths = {
   typeUrl: '/ibc.core.connection.v1.ClientPaths' as const,
+  aminoType: 'cosmos-sdk/ClientPaths' as const,
+  is(o: any): o is ClientPaths {
+    return (
+      o &&
+      (o.$typeUrl === ClientPaths.typeUrl ||
+        (Array.isArray(o.paths) &&
+          (!o.paths.length || typeof o.paths[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is ClientPathsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ClientPaths.typeUrl ||
+        (Array.isArray(o.paths) &&
+          (!o.paths.length || typeof o.paths[0] === 'string')))
+    );
+  },
   encode(
     message: ClientPaths,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -773,6 +886,7 @@ export const ClientPaths = {
       value: ClientPaths.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseConnectionPaths(): ConnectionPaths {
   return {
@@ -788,6 +902,25 @@ function createBaseConnectionPaths(): ConnectionPaths {
  */
 export const ConnectionPaths = {
   typeUrl: '/ibc.core.connection.v1.ConnectionPaths' as const,
+  aminoType: 'cosmos-sdk/ConnectionPaths' as const,
+  is(o: any): o is ConnectionPaths {
+    return (
+      o &&
+      (o.$typeUrl === ConnectionPaths.typeUrl ||
+        (typeof o.clientId === 'string' &&
+          Array.isArray(o.paths) &&
+          (!o.paths.length || typeof o.paths[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is ConnectionPathsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ConnectionPaths.typeUrl ||
+        (typeof o.client_id === 'string' &&
+          Array.isArray(o.paths) &&
+          (!o.paths.length || typeof o.paths[0] === 'string')))
+    );
+  },
   encode(
     message: ConnectionPaths,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -857,6 +990,7 @@ export const ConnectionPaths = {
       value: ConnectionPaths.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseVersion(): Version {
   return {
@@ -873,6 +1007,25 @@ function createBaseVersion(): Version {
  */
 export const Version = {
   typeUrl: '/ibc.core.connection.v1.Version' as const,
+  aminoType: 'cosmos-sdk/Version' as const,
+  is(o: any): o is Version {
+    return (
+      o &&
+      (o.$typeUrl === Version.typeUrl ||
+        (typeof o.identifier === 'string' &&
+          Array.isArray(o.features) &&
+          (!o.features.length || typeof o.features[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is VersionSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Version.typeUrl ||
+        (typeof o.identifier === 'string' &&
+          Array.isArray(o.features) &&
+          (!o.features.length || typeof o.features[0] === 'string')))
+    );
+  },
   encode(
     message: Version,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -942,6 +1095,7 @@ export const Version = {
       value: Version.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseParams(): Params {
   return {
@@ -956,6 +1110,21 @@ function createBaseParams(): Params {
  */
 export const Params = {
   typeUrl: '/ibc.core.connection.v1.Params' as const,
+  aminoType: 'cosmos-sdk/Params' as const,
+  is(o: any): o is Params {
+    return (
+      o &&
+      (o.$typeUrl === Params.typeUrl ||
+        typeof o.maxExpectedTimePerBlock === 'bigint')
+    );
+  },
+  isSDK(o: any): o is ParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Params.typeUrl ||
+        typeof o.max_expected_time_per_block === 'bigint')
+    );
+  },
   encode(
     message: Params,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1019,4 +1188,5 @@ export const Params = {
       value: Params.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

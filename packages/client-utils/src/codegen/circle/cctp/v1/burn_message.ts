@@ -66,6 +66,34 @@ function createBaseBurnMessage(): BurnMessage {
  */
 export const BurnMessage = {
   typeUrl: '/circle.cctp.v1.BurnMessage' as const,
+  is(o: any): o is BurnMessage {
+    return (
+      o &&
+      (o.$typeUrl === BurnMessage.typeUrl ||
+        (typeof o.version === 'number' &&
+          (o.burnToken instanceof Uint8Array ||
+            typeof o.burnToken === 'string') &&
+          (o.mintRecipient instanceof Uint8Array ||
+            typeof o.mintRecipient === 'string') &&
+          typeof o.amount === 'string' &&
+          (o.messageSender instanceof Uint8Array ||
+            typeof o.messageSender === 'string')))
+    );
+  },
+  isSDK(o: any): o is BurnMessageSDKType {
+    return (
+      o &&
+      (o.$typeUrl === BurnMessage.typeUrl ||
+        (typeof o.version === 'number' &&
+          (o.burn_token instanceof Uint8Array ||
+            typeof o.burn_token === 'string') &&
+          (o.mint_recipient instanceof Uint8Array ||
+            typeof o.mint_recipient === 'string') &&
+          typeof o.amount === 'string' &&
+          (o.message_sender instanceof Uint8Array ||
+            typeof o.message_sender === 'string')))
+    );
+  },
   encode(
     message: BurnMessage,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -176,4 +204,5 @@ export const BurnMessage = {
       value: BurnMessage.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
