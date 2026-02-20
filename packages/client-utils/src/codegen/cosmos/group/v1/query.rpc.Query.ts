@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { type Rpc } from '../../../helpers.js';
+import { TxRpc } from '../../../types.js';
 import { BinaryReader } from '../../../binary.js';
 import { QueryClient, createProtobufRpcClient } from '@cosmjs/stargate';
 import {
@@ -96,8 +96,8 @@ export interface Query {
   groups(request?: QueryGroupsRequest): Promise<QueryGroupsResponse>;
 }
 export class QueryClientImpl implements Query {
-  private readonly rpc: Rpc;
-  constructor(rpc: Rpc) {
+  private readonly rpc: TxRpc;
+  constructor(rpc: TxRpc) {
     this.rpc = rpc;
     this.groupInfo = this.groupInfo.bind(this);
     this.groupPolicyInfo = this.groupPolicyInfo.bind(this);

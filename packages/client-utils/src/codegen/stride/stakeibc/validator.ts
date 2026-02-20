@@ -3,6 +3,11 @@ import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { Decimal } from '../../decimals.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
+/**
+ * @name Validator
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.Validator
+ */
 export interface Validator {
   name: string;
   address: string;
@@ -18,6 +23,11 @@ export interface ValidatorProtoMsg {
   typeUrl: '/stride.stakeibc.Validator';
   value: Uint8Array;
 }
+/**
+ * @name ValidatorSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.Validator
+ */
 export interface ValidatorSDKType {
   name: string;
   address: string;
@@ -42,6 +52,11 @@ function createBaseValidator(): Validator {
     slashQueryInProgress: false,
   };
 }
+/**
+ * @name Validator
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.Validator
+ */
 export const Validator = {
   typeUrl: '/stride.stakeibc.Validator' as const,
   encode(

@@ -7,9 +7,14 @@ import { type JsonSafe } from '../../json-safe.js';
  * MsgUpdateParams is the Msg/UpdateParams request type.
  *
  * Since: cosmos-sdk 0.47
+ * @name MsgUpdateParams
+ * @package icq.v1
+ * @see proto type: icq.v1.MsgUpdateParams
  */
 export interface MsgUpdateParams {
-  /** authority is the address of the governance account. */
+  /**
+   * authority is the address of the governance account.
+   */
   authority: string;
   /**
    * params defines the x/async-icq parameters to update.
@@ -26,6 +31,9 @@ export interface MsgUpdateParamsProtoMsg {
  * MsgUpdateParams is the Msg/UpdateParams request type.
  *
  * Since: cosmos-sdk 0.47
+ * @name MsgUpdateParamsSDKType
+ * @package icq.v1
+ * @see proto type: icq.v1.MsgUpdateParams
  */
 export interface MsgUpdateParamsSDKType {
   authority: string;
@@ -36,6 +44,9 @@ export interface MsgUpdateParamsSDKType {
  * MsgUpdateParams message.
  *
  * Since: cosmos-sdk 0.47
+ * @name MsgUpdateParamsResponse
+ * @package icq.v1
+ * @see proto type: icq.v1.MsgUpdateParamsResponse
  */
 export interface MsgUpdateParamsResponse {}
 export interface MsgUpdateParamsResponseProtoMsg {
@@ -47,6 +58,9 @@ export interface MsgUpdateParamsResponseProtoMsg {
  * MsgUpdateParams message.
  *
  * Since: cosmos-sdk 0.47
+ * @name MsgUpdateParamsResponseSDKType
+ * @package icq.v1
+ * @see proto type: icq.v1.MsgUpdateParamsResponse
  */
 export interface MsgUpdateParamsResponseSDKType {}
 function createBaseMsgUpdateParams(): MsgUpdateParams {
@@ -55,6 +69,14 @@ function createBaseMsgUpdateParams(): MsgUpdateParams {
     params: Params.fromPartial({}),
   };
 }
+/**
+ * MsgUpdateParams is the Msg/UpdateParams request type.
+ *
+ * Since: cosmos-sdk 0.47
+ * @name MsgUpdateParams
+ * @package icq.v1
+ * @see proto type: icq.v1.MsgUpdateParams
+ */
 export const MsgUpdateParams = {
   typeUrl: '/icq.v1.MsgUpdateParams' as const,
   encode(
@@ -128,6 +150,15 @@ export const MsgUpdateParams = {
 function createBaseMsgUpdateParamsResponse(): MsgUpdateParamsResponse {
   return {};
 }
+/**
+ * MsgUpdateParamsResponse defines the response structure for executing a
+ * MsgUpdateParams message.
+ *
+ * Since: cosmos-sdk 0.47
+ * @name MsgUpdateParamsResponse
+ * @package icq.v1
+ * @see proto type: icq.v1.MsgUpdateParamsResponse
+ */
 export const MsgUpdateParamsResponse = {
   typeUrl: '/icq.v1.MsgUpdateParamsResponse' as const,
   encode(

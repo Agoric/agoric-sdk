@@ -6,7 +6,12 @@ import { TradeRoute, type TradeRouteSDKType } from './trade_route.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
-/** GenesisState defines the stakeibc module's genesis state. */
+/**
+ * GenesisState defines the stakeibc module's genesis state.
+ * @name GenesisState
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.GenesisState
+ */
 export interface GenesisState {
   params: Params;
   portId: string;
@@ -18,7 +23,12 @@ export interface GenesisStateProtoMsg {
   typeUrl: '/stride.stakeibc.GenesisState';
   value: Uint8Array;
 }
-/** GenesisState defines the stakeibc module's genesis state. */
+/**
+ * GenesisState defines the stakeibc module's genesis state.
+ * @name GenesisStateSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.GenesisState
+ */
 export interface GenesisStateSDKType {
   params: ParamsSDKType;
   port_id: string;
@@ -35,6 +45,12 @@ function createBaseGenesisState(): GenesisState {
     tradeRoutes: [],
   };
 }
+/**
+ * GenesisState defines the stakeibc module's genesis state.
+ * @name GenesisState
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.GenesisState
+ */
 export const GenesisState = {
   typeUrl: '/stride.stakeibc.GenesisState' as const,
   encode(

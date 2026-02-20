@@ -6,13 +6,22 @@ import { type JsonSafe } from '../../../json-safe.js';
 /**
  * MsgGrantAllowance adds permission for Grantee to spend up to Allowance
  * of fees from the account of Granter.
+ * @name MsgGrantAllowance
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.MsgGrantAllowance
  */
 export interface MsgGrantAllowance {
-  /** granter is the address of the user granting an allowance of their funds. */
+  /**
+   * granter is the address of the user granting an allowance of their funds.
+   */
   granter: string;
-  /** grantee is the address of the user being granted an allowance of another user's funds. */
+  /**
+   * grantee is the address of the user being granted an allowance of another user's funds.
+   */
   grantee: string;
-  /** allowance can be any of basic, periodic, allowed fee allowance. */
+  /**
+   * allowance can be any of basic, periodic, allowed fee allowance.
+   */
   allowance?: Any;
 }
 export interface MsgGrantAllowanceProtoMsg {
@@ -22,51 +31,93 @@ export interface MsgGrantAllowanceProtoMsg {
 /**
  * MsgGrantAllowance adds permission for Grantee to spend up to Allowance
  * of fees from the account of Granter.
+ * @name MsgGrantAllowanceSDKType
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.MsgGrantAllowance
  */
 export interface MsgGrantAllowanceSDKType {
   granter: string;
   grantee: string;
   allowance?: AnySDKType;
 }
-/** MsgGrantAllowanceResponse defines the Msg/GrantAllowanceResponse response type. */
+/**
+ * MsgGrantAllowanceResponse defines the Msg/GrantAllowanceResponse response type.
+ * @name MsgGrantAllowanceResponse
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.MsgGrantAllowanceResponse
+ */
 export interface MsgGrantAllowanceResponse {}
 export interface MsgGrantAllowanceResponseProtoMsg {
   typeUrl: '/cosmos.feegrant.v1beta1.MsgGrantAllowanceResponse';
   value: Uint8Array;
 }
-/** MsgGrantAllowanceResponse defines the Msg/GrantAllowanceResponse response type. */
+/**
+ * MsgGrantAllowanceResponse defines the Msg/GrantAllowanceResponse response type.
+ * @name MsgGrantAllowanceResponseSDKType
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.MsgGrantAllowanceResponse
+ */
 export interface MsgGrantAllowanceResponseSDKType {}
-/** MsgRevokeAllowance removes any existing Allowance from Granter to Grantee. */
+/**
+ * MsgRevokeAllowance removes any existing Allowance from Granter to Grantee.
+ * @name MsgRevokeAllowance
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.MsgRevokeAllowance
+ */
 export interface MsgRevokeAllowance {
-  /** granter is the address of the user granting an allowance of their funds. */
+  /**
+   * granter is the address of the user granting an allowance of their funds.
+   */
   granter: string;
-  /** grantee is the address of the user being granted an allowance of another user's funds. */
+  /**
+   * grantee is the address of the user being granted an allowance of another user's funds.
+   */
   grantee: string;
 }
 export interface MsgRevokeAllowanceProtoMsg {
   typeUrl: '/cosmos.feegrant.v1beta1.MsgRevokeAllowance';
   value: Uint8Array;
 }
-/** MsgRevokeAllowance removes any existing Allowance from Granter to Grantee. */
+/**
+ * MsgRevokeAllowance removes any existing Allowance from Granter to Grantee.
+ * @name MsgRevokeAllowanceSDKType
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.MsgRevokeAllowance
+ */
 export interface MsgRevokeAllowanceSDKType {
   granter: string;
   grantee: string;
 }
-/** MsgRevokeAllowanceResponse defines the Msg/RevokeAllowanceResponse response type. */
+/**
+ * MsgRevokeAllowanceResponse defines the Msg/RevokeAllowanceResponse response type.
+ * @name MsgRevokeAllowanceResponse
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.MsgRevokeAllowanceResponse
+ */
 export interface MsgRevokeAllowanceResponse {}
 export interface MsgRevokeAllowanceResponseProtoMsg {
   typeUrl: '/cosmos.feegrant.v1beta1.MsgRevokeAllowanceResponse';
   value: Uint8Array;
 }
-/** MsgRevokeAllowanceResponse defines the Msg/RevokeAllowanceResponse response type. */
+/**
+ * MsgRevokeAllowanceResponse defines the Msg/RevokeAllowanceResponse response type.
+ * @name MsgRevokeAllowanceResponseSDKType
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.MsgRevokeAllowanceResponse
+ */
 export interface MsgRevokeAllowanceResponseSDKType {}
 /**
  * MsgPruneAllowances prunes expired fee allowances.
  *
  * Since cosmos-sdk 0.50
+ * @name MsgPruneAllowances
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.MsgPruneAllowances
  */
 export interface MsgPruneAllowances {
-  /** pruner is the address of the user pruning expired allowances. */
+  /**
+   * pruner is the address of the user pruning expired allowances.
+   */
   pruner: string;
 }
 export interface MsgPruneAllowancesProtoMsg {
@@ -77,6 +128,9 @@ export interface MsgPruneAllowancesProtoMsg {
  * MsgPruneAllowances prunes expired fee allowances.
  *
  * Since cosmos-sdk 0.50
+ * @name MsgPruneAllowancesSDKType
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.MsgPruneAllowances
  */
 export interface MsgPruneAllowancesSDKType {
   pruner: string;
@@ -85,6 +139,9 @@ export interface MsgPruneAllowancesSDKType {
  * MsgPruneAllowancesResponse defines the Msg/PruneAllowancesResponse response type.
  *
  * Since cosmos-sdk 0.50
+ * @name MsgPruneAllowancesResponse
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.MsgPruneAllowancesResponse
  */
 export interface MsgPruneAllowancesResponse {}
 export interface MsgPruneAllowancesResponseProtoMsg {
@@ -95,6 +152,9 @@ export interface MsgPruneAllowancesResponseProtoMsg {
  * MsgPruneAllowancesResponse defines the Msg/PruneAllowancesResponse response type.
  *
  * Since cosmos-sdk 0.50
+ * @name MsgPruneAllowancesResponseSDKType
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.MsgPruneAllowancesResponse
  */
 export interface MsgPruneAllowancesResponseSDKType {}
 function createBaseMsgGrantAllowance(): MsgGrantAllowance {
@@ -104,6 +164,13 @@ function createBaseMsgGrantAllowance(): MsgGrantAllowance {
     allowance: undefined,
   };
 }
+/**
+ * MsgGrantAllowance adds permission for Grantee to spend up to Allowance
+ * of fees from the account of Granter.
+ * @name MsgGrantAllowance
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.MsgGrantAllowance
+ */
 export const MsgGrantAllowance = {
   typeUrl: '/cosmos.feegrant.v1beta1.MsgGrantAllowance' as const,
   encode(
@@ -190,6 +257,12 @@ export const MsgGrantAllowance = {
 function createBaseMsgGrantAllowanceResponse(): MsgGrantAllowanceResponse {
   return {};
 }
+/**
+ * MsgGrantAllowanceResponse defines the Msg/GrantAllowanceResponse response type.
+ * @name MsgGrantAllowanceResponse
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.MsgGrantAllowanceResponse
+ */
 export const MsgGrantAllowanceResponse = {
   typeUrl: '/cosmos.feegrant.v1beta1.MsgGrantAllowanceResponse' as const,
   encode(
@@ -252,6 +325,12 @@ function createBaseMsgRevokeAllowance(): MsgRevokeAllowance {
     grantee: '',
   };
 }
+/**
+ * MsgRevokeAllowance removes any existing Allowance from Granter to Grantee.
+ * @name MsgRevokeAllowance
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.MsgRevokeAllowance
+ */
 export const MsgRevokeAllowance = {
   typeUrl: '/cosmos.feegrant.v1beta1.MsgRevokeAllowance' as const,
   encode(
@@ -324,6 +403,12 @@ export const MsgRevokeAllowance = {
 function createBaseMsgRevokeAllowanceResponse(): MsgRevokeAllowanceResponse {
   return {};
 }
+/**
+ * MsgRevokeAllowanceResponse defines the Msg/RevokeAllowanceResponse response type.
+ * @name MsgRevokeAllowanceResponse
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.MsgRevokeAllowanceResponse
+ */
 export const MsgRevokeAllowanceResponse = {
   typeUrl: '/cosmos.feegrant.v1beta1.MsgRevokeAllowanceResponse' as const,
   encode(
@@ -385,6 +470,14 @@ function createBaseMsgPruneAllowances(): MsgPruneAllowances {
     pruner: '',
   };
 }
+/**
+ * MsgPruneAllowances prunes expired fee allowances.
+ *
+ * Since cosmos-sdk 0.50
+ * @name MsgPruneAllowances
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.MsgPruneAllowances
+ */
 export const MsgPruneAllowances = {
   typeUrl: '/cosmos.feegrant.v1beta1.MsgPruneAllowances' as const,
   encode(
@@ -448,6 +541,14 @@ export const MsgPruneAllowances = {
 function createBaseMsgPruneAllowancesResponse(): MsgPruneAllowancesResponse {
   return {};
 }
+/**
+ * MsgPruneAllowancesResponse defines the Msg/PruneAllowancesResponse response type.
+ *
+ * Since cosmos-sdk 0.50
+ * @name MsgPruneAllowancesResponse
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.MsgPruneAllowancesResponse
+ */
 export const MsgPruneAllowancesResponse = {
   typeUrl: '/cosmos.feegrant.v1beta1.MsgPruneAllowancesResponse' as const,
   encode(

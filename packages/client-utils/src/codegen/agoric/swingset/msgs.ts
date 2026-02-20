@@ -4,7 +4,12 @@ import { isSet } from '../../helpers.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
 import { type JsonSafe } from '../../json-safe.js';
-/** MsgDeliverInbound defines an SDK message for delivering an eventual send */
+/**
+ * MsgDeliverInbound defines an SDK message for delivering an eventual send
+ * @name MsgDeliverInbound
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgDeliverInbound
+ */
 export interface MsgDeliverInbound {
   messages: string[];
   nums: bigint[];
@@ -15,29 +20,49 @@ export interface MsgDeliverInboundProtoMsg {
   typeUrl: '/agoric.swingset.MsgDeliverInbound';
   value: Uint8Array;
 }
-/** MsgDeliverInbound defines an SDK message for delivering an eventual send */
+/**
+ * MsgDeliverInbound defines an SDK message for delivering an eventual send
+ * @name MsgDeliverInboundSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgDeliverInbound
+ */
 export interface MsgDeliverInboundSDKType {
   messages: string[];
   nums: bigint[];
   ack: bigint;
   submitter: Uint8Array;
 }
-/** MsgDeliverInboundResponse is an empty reply. */
+/**
+ * MsgDeliverInboundResponse is an empty reply.
+ * @name MsgDeliverInboundResponse
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgDeliverInboundResponse
+ */
 export interface MsgDeliverInboundResponse {}
 export interface MsgDeliverInboundResponseProtoMsg {
   typeUrl: '/agoric.swingset.MsgDeliverInboundResponse';
   value: Uint8Array;
 }
-/** MsgDeliverInboundResponse is an empty reply. */
+/**
+ * MsgDeliverInboundResponse is an empty reply.
+ * @name MsgDeliverInboundResponseSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgDeliverInboundResponse
+ */
 export interface MsgDeliverInboundResponseSDKType {}
 /**
  * MsgWalletAction defines an SDK message for the on-chain wallet to perform an
  * action that *does not* spend any assets (other than gas fees/stamps).  This
  * message type is typically protected by feegrant budgets.
+ * @name MsgWalletAction
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgWalletAction
  */
 export interface MsgWalletAction {
   owner: Uint8Array;
-  /** The action to perform, as JSON-stringified marshalled data. */
+  /**
+   * The action to perform, as JSON-stringified marshalled data.
+   */
   action: string;
 }
 export interface MsgWalletActionProtoMsg {
@@ -48,27 +73,45 @@ export interface MsgWalletActionProtoMsg {
  * MsgWalletAction defines an SDK message for the on-chain wallet to perform an
  * action that *does not* spend any assets (other than gas fees/stamps).  This
  * message type is typically protected by feegrant budgets.
+ * @name MsgWalletActionSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgWalletAction
  */
 export interface MsgWalletActionSDKType {
   owner: Uint8Array;
   action: string;
 }
-/** MsgWalletActionResponse is an empty reply. */
+/**
+ * MsgWalletActionResponse is an empty reply.
+ * @name MsgWalletActionResponse
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgWalletActionResponse
+ */
 export interface MsgWalletActionResponse {}
 export interface MsgWalletActionResponseProtoMsg {
   typeUrl: '/agoric.swingset.MsgWalletActionResponse';
   value: Uint8Array;
 }
-/** MsgWalletActionResponse is an empty reply. */
+/**
+ * MsgWalletActionResponse is an empty reply.
+ * @name MsgWalletActionResponseSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgWalletActionResponse
+ */
 export interface MsgWalletActionResponseSDKType {}
 /**
  * MsgWalletSpendAction defines an SDK message for the on-chain wallet to
  * perform an action that *does spend the owner's assets.*  This message type is
  * typically protected by explicit confirmation by the user.
+ * @name MsgWalletSpendAction
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgWalletSpendAction
  */
 export interface MsgWalletSpendAction {
   owner: Uint8Array;
-  /** The action to perform, as JSON-stringified marshalled data. */
+  /**
+   * The action to perform, as JSON-stringified marshalled data.
+   */
   spendAction: string;
 }
 export interface MsgWalletSpendActionProtoMsg {
@@ -79,20 +122,38 @@ export interface MsgWalletSpendActionProtoMsg {
  * MsgWalletSpendAction defines an SDK message for the on-chain wallet to
  * perform an action that *does spend the owner's assets.*  This message type is
  * typically protected by explicit confirmation by the user.
+ * @name MsgWalletSpendActionSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgWalletSpendAction
  */
 export interface MsgWalletSpendActionSDKType {
   owner: Uint8Array;
   spend_action: string;
 }
-/** MsgWalletSpendActionResponse is an empty reply. */
+/**
+ * MsgWalletSpendActionResponse is an empty reply.
+ * @name MsgWalletSpendActionResponse
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgWalletSpendActionResponse
+ */
 export interface MsgWalletSpendActionResponse {}
 export interface MsgWalletSpendActionResponseProtoMsg {
   typeUrl: '/agoric.swingset.MsgWalletSpendActionResponse';
   value: Uint8Array;
 }
-/** MsgWalletSpendActionResponse is an empty reply. */
+/**
+ * MsgWalletSpendActionResponse is an empty reply.
+ * @name MsgWalletSpendActionResponseSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgWalletSpendActionResponse
+ */
 export interface MsgWalletSpendActionResponseSDKType {}
-/** MsgProvision defines an SDK message for provisioning a client to the chain */
+/**
+ * MsgProvision defines an SDK message for provisioning a client to the chain
+ * @name MsgProvision
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgProvision
+ */
 export interface MsgProvision {
   nickname: string;
   address: Uint8Array;
@@ -103,22 +164,42 @@ export interface MsgProvisionProtoMsg {
   typeUrl: '/agoric.swingset.MsgProvision';
   value: Uint8Array;
 }
-/** MsgProvision defines an SDK message for provisioning a client to the chain */
+/**
+ * MsgProvision defines an SDK message for provisioning a client to the chain
+ * @name MsgProvisionSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgProvision
+ */
 export interface MsgProvisionSDKType {
   nickname: string;
   address: Uint8Array;
   power_flags: string[];
   submitter: Uint8Array;
 }
-/** MsgProvisionResponse is an empty reply. */
+/**
+ * MsgProvisionResponse is an empty reply.
+ * @name MsgProvisionResponse
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgProvisionResponse
+ */
 export interface MsgProvisionResponse {}
 export interface MsgProvisionResponseProtoMsg {
   typeUrl: '/agoric.swingset.MsgProvisionResponse';
   value: Uint8Array;
 }
-/** MsgProvisionResponse is an empty reply. */
+/**
+ * MsgProvisionResponse is an empty reply.
+ * @name MsgProvisionResponseSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgProvisionResponse
+ */
 export interface MsgProvisionResponseSDKType {}
-/** MsgInstallBundle carries a signed bundle to SwingSet. */
+/**
+ * MsgInstallBundle carries a signed bundle to SwingSet.
+ * @name MsgInstallBundle
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgInstallBundle
+ */
 export interface MsgInstallBundle {
   bundle: string;
   submitter: Uint8Array;
@@ -127,14 +208,21 @@ export interface MsgInstallBundle {
    * Default compression algorithm is gzip.
    */
   compressedBundle: Uint8Array;
-  /** Size in bytes of uncompression of compressed_bundle. */
+  /**
+   * Size in bytes of uncompression of compressed_bundle.
+   */
   uncompressedSize: bigint;
 }
 export interface MsgInstallBundleProtoMsg {
   typeUrl: '/agoric.swingset.MsgInstallBundle';
   value: Uint8Array;
 }
-/** MsgInstallBundle carries a signed bundle to SwingSet. */
+/**
+ * MsgInstallBundle carries a signed bundle to SwingSet.
+ * @name MsgInstallBundleSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgInstallBundle
+ */
 export interface MsgInstallBundleSDKType {
   bundle: string;
   submitter: Uint8Array;
@@ -144,6 +232,9 @@ export interface MsgInstallBundleSDKType {
 /**
  * MsgInstallBundleResponse is an empty acknowledgement that an install bundle
  * message has been queued for the SwingSet kernel's consideration.
+ * @name MsgInstallBundleResponse
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgInstallBundleResponse
  */
 export interface MsgInstallBundleResponse {}
 export interface MsgInstallBundleResponseProtoMsg {
@@ -153,11 +244,21 @@ export interface MsgInstallBundleResponseProtoMsg {
 /**
  * MsgInstallBundleResponse is an empty acknowledgement that an install bundle
  * message has been queued for the SwingSet kernel's consideration.
+ * @name MsgInstallBundleResponseSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgInstallBundleResponse
  */
 export interface MsgInstallBundleResponseSDKType {}
-/** MsgCoreEval defines an SDK message for a core eval. */
+/**
+ * MsgCoreEval defines an SDK message for a core eval.
+ * @name MsgCoreEval
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgCoreEval
+ */
 export interface MsgCoreEval {
-  /** authority is the address that controls the module (defaults to x/gov unless overwritten). */
+  /**
+   * authority is the address that controls the module (defaults to x/gov unless overwritten).
+   */
   authority: string;
   /**
    * The JSON-stringified core bootstrap permits to grant to the jsCode, as the
@@ -174,22 +275,39 @@ export interface MsgCoreEvalProtoMsg {
   typeUrl: '/agoric.swingset.MsgCoreEval';
   value: Uint8Array;
 }
-/** MsgCoreEval defines an SDK message for a core eval. */
+/**
+ * MsgCoreEval defines an SDK message for a core eval.
+ * @name MsgCoreEvalSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgCoreEval
+ */
 export interface MsgCoreEvalSDKType {
   authority: string;
   json_permits: string;
   js_code: string;
 }
-/** MsgCoreEvalResponse is an empty reply. */
+/**
+ * MsgCoreEvalResponse is an empty reply.
+ * @name MsgCoreEvalResponse
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgCoreEvalResponse
+ */
 export interface MsgCoreEvalResponse {
-  /** The result of the core eval. */
+  /**
+   * The result of the core eval.
+   */
   result: string;
 }
 export interface MsgCoreEvalResponseProtoMsg {
   typeUrl: '/agoric.swingset.MsgCoreEvalResponse';
   value: Uint8Array;
 }
-/** MsgCoreEvalResponse is an empty reply. */
+/**
+ * MsgCoreEvalResponse is an empty reply.
+ * @name MsgCoreEvalResponseSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgCoreEvalResponse
+ */
 export interface MsgCoreEvalResponseSDKType {
   result: string;
 }
@@ -201,6 +319,12 @@ function createBaseMsgDeliverInbound(): MsgDeliverInbound {
     submitter: new Uint8Array(),
   };
 }
+/**
+ * MsgDeliverInbound defines an SDK message for delivering an eventual send
+ * @name MsgDeliverInbound
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgDeliverInbound
+ */
 export const MsgDeliverInbound = {
   typeUrl: '/agoric.swingset.MsgDeliverInbound' as const,
   encode(
@@ -318,6 +442,12 @@ export const MsgDeliverInbound = {
 function createBaseMsgDeliverInboundResponse(): MsgDeliverInboundResponse {
   return {};
 }
+/**
+ * MsgDeliverInboundResponse is an empty reply.
+ * @name MsgDeliverInboundResponse
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgDeliverInboundResponse
+ */
 export const MsgDeliverInboundResponse = {
   typeUrl: '/agoric.swingset.MsgDeliverInboundResponse' as const,
   encode(
@@ -380,6 +510,14 @@ function createBaseMsgWalletAction(): MsgWalletAction {
     action: '',
   };
 }
+/**
+ * MsgWalletAction defines an SDK message for the on-chain wallet to perform an
+ * action that *does not* spend any assets (other than gas fees/stamps).  This
+ * message type is typically protected by feegrant budgets.
+ * @name MsgWalletAction
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgWalletAction
+ */
 export const MsgWalletAction = {
   typeUrl: '/agoric.swingset.MsgWalletAction' as const,
   encode(
@@ -454,6 +592,12 @@ export const MsgWalletAction = {
 function createBaseMsgWalletActionResponse(): MsgWalletActionResponse {
   return {};
 }
+/**
+ * MsgWalletActionResponse is an empty reply.
+ * @name MsgWalletActionResponse
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgWalletActionResponse
+ */
 export const MsgWalletActionResponse = {
   typeUrl: '/agoric.swingset.MsgWalletActionResponse' as const,
   encode(
@@ -514,6 +658,14 @@ function createBaseMsgWalletSpendAction(): MsgWalletSpendAction {
     spendAction: '',
   };
 }
+/**
+ * MsgWalletSpendAction defines an SDK message for the on-chain wallet to
+ * perform an action that *does spend the owner's assets.*  This message type is
+ * typically protected by explicit confirmation by the user.
+ * @name MsgWalletSpendAction
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgWalletSpendAction
+ */
 export const MsgWalletSpendAction = {
   typeUrl: '/agoric.swingset.MsgWalletSpendAction' as const,
   encode(
@@ -592,6 +744,12 @@ export const MsgWalletSpendAction = {
 function createBaseMsgWalletSpendActionResponse(): MsgWalletSpendActionResponse {
   return {};
 }
+/**
+ * MsgWalletSpendActionResponse is an empty reply.
+ * @name MsgWalletSpendActionResponse
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgWalletSpendActionResponse
+ */
 export const MsgWalletSpendActionResponse = {
   typeUrl: '/agoric.swingset.MsgWalletSpendActionResponse' as const,
   encode(
@@ -658,6 +816,12 @@ function createBaseMsgProvision(): MsgProvision {
     submitter: new Uint8Array(),
   };
 }
+/**
+ * MsgProvision defines an SDK message for provisioning a client to the chain
+ * @name MsgProvision
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgProvision
+ */
 export const MsgProvision = {
   typeUrl: '/agoric.swingset.MsgProvision' as const,
   encode(
@@ -761,6 +925,12 @@ export const MsgProvision = {
 function createBaseMsgProvisionResponse(): MsgProvisionResponse {
   return {};
 }
+/**
+ * MsgProvisionResponse is an empty reply.
+ * @name MsgProvisionResponse
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgProvisionResponse
+ */
 export const MsgProvisionResponse = {
   typeUrl: '/agoric.swingset.MsgProvisionResponse' as const,
   encode(
@@ -819,6 +989,12 @@ function createBaseMsgInstallBundle(): MsgInstallBundle {
     uncompressedSize: BigInt(0),
   };
 }
+/**
+ * MsgInstallBundle carries a signed bundle to SwingSet.
+ * @name MsgInstallBundle
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgInstallBundle
+ */
 export const MsgInstallBundle = {
   typeUrl: '/agoric.swingset.MsgInstallBundle' as const,
   encode(
@@ -926,6 +1102,13 @@ export const MsgInstallBundle = {
 function createBaseMsgInstallBundleResponse(): MsgInstallBundleResponse {
   return {};
 }
+/**
+ * MsgInstallBundleResponse is an empty acknowledgement that an install bundle
+ * message has been queued for the SwingSet kernel's consideration.
+ * @name MsgInstallBundleResponse
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgInstallBundleResponse
+ */
 export const MsgInstallBundleResponse = {
   typeUrl: '/agoric.swingset.MsgInstallBundleResponse' as const,
   encode(
@@ -987,6 +1170,12 @@ function createBaseMsgCoreEval(): MsgCoreEval {
     jsCode: '',
   };
 }
+/**
+ * MsgCoreEval defines an SDK message for a core eval.
+ * @name MsgCoreEval
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgCoreEval
+ */
 export const MsgCoreEval = {
   typeUrl: '/agoric.swingset.MsgCoreEval' as const,
   encode(
@@ -1068,6 +1257,12 @@ function createBaseMsgCoreEvalResponse(): MsgCoreEvalResponse {
     result: '',
   };
 }
+/**
+ * MsgCoreEvalResponse is an empty reply.
+ * @name MsgCoreEvalResponse
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgCoreEvalResponse
+ */
 export const MsgCoreEvalResponse = {
   typeUrl: '/agoric.swingset.MsgCoreEvalResponse' as const,
   encode(

@@ -1,18 +1,31 @@
 //@ts-nocheck
 import { Height, type HeightSDKType } from '../../../core/client/v1/client.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
+import { GlobalDecoderRegistry } from '../../../../registry.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
-/** ClientState defines the 09-localhost client state */
+/**
+ * ClientState defines the 09-localhost client state
+ * @name ClientState
+ * @package ibc.lightclients.localhost.v2
+ * @see proto type: ibc.lightclients.localhost.v2.ClientState
+ */
 export interface ClientState {
-  /** the latest block height */
+  /**
+   * the latest block height
+   */
   latestHeight: Height;
 }
 export interface ClientStateProtoMsg {
   typeUrl: '/ibc.lightclients.localhost.v2.ClientState';
   value: Uint8Array;
 }
-/** ClientState defines the 09-localhost client state */
+/**
+ * ClientState defines the 09-localhost client state
+ * @name ClientStateSDKType
+ * @package ibc.lightclients.localhost.v2
+ * @see proto type: ibc.lightclients.localhost.v2.ClientState
+ */
 export interface ClientStateSDKType {
   latest_height: HeightSDKType;
 }
@@ -21,8 +34,25 @@ function createBaseClientState(): ClientState {
     latestHeight: Height.fromPartial({}),
   };
 }
+/**
+ * ClientState defines the 09-localhost client state
+ * @name ClientState
+ * @package ibc.lightclients.localhost.v2
+ * @see proto type: ibc.lightclients.localhost.v2.ClientState
+ */
 export const ClientState = {
   typeUrl: '/ibc.lightclients.localhost.v2.ClientState' as const,
+  aminoType: 'cosmos-sdk/ClientState' as const,
+  is(o: any): o is ClientState {
+    return (
+      o && (o.$typeUrl === ClientState.typeUrl || Height.is(o.latestHeight))
+    );
+  },
+  isSDK(o: any): o is ClientStateSDKType {
+    return (
+      o && (o.$typeUrl === ClientState.typeUrl || Height.isSDK(o.latest_height))
+    );
+  },
   encode(
     message: ClientState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -84,5 +114,11 @@ export const ClientState = {
       typeUrl: '/ibc.lightclients.localhost.v2.ClientState',
       value: ClientState.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(ClientState.typeUrl)) {
+      return;
+    }
+    Height.registerTypeUrl();
   },
 };

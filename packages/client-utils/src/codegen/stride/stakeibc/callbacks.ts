@@ -14,6 +14,11 @@ import {
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
+/**
+ * @name SplitDelegation
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.SplitDelegation
+ */
 export interface SplitDelegation {
   validator: string;
   amount: string;
@@ -22,10 +27,20 @@ export interface SplitDelegationProtoMsg {
   typeUrl: '/stride.stakeibc.SplitDelegation';
   value: Uint8Array;
 }
+/**
+ * @name SplitDelegationSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.SplitDelegation
+ */
 export interface SplitDelegationSDKType {
   validator: string;
   amount: string;
 }
+/**
+ * @name SplitUndelegation
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.SplitUndelegation
+ */
 export interface SplitUndelegation {
   validator: string;
   nativeTokenAmount: string;
@@ -34,10 +49,20 @@ export interface SplitUndelegationProtoMsg {
   typeUrl: '/stride.stakeibc.SplitUndelegation';
   value: Uint8Array;
 }
+/**
+ * @name SplitUndelegationSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.SplitUndelegation
+ */
 export interface SplitUndelegationSDKType {
   validator: string;
   native_token_amount: string;
 }
+/**
+ * @name DelegateCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.DelegateCallback
+ */
 export interface DelegateCallback {
   hostZoneId: string;
   depositRecordId: bigint;
@@ -47,11 +72,21 @@ export interface DelegateCallbackProtoMsg {
   typeUrl: '/stride.stakeibc.DelegateCallback';
   value: Uint8Array;
 }
+/**
+ * @name DelegateCallbackSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.DelegateCallback
+ */
 export interface DelegateCallbackSDKType {
   host_zone_id: string;
   deposit_record_id: bigint;
   split_delegations: SplitDelegationSDKType[];
 }
+/**
+ * @name ClaimCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.ClaimCallback
+ */
 export interface ClaimCallback {
   userRedemptionRecordId: string;
   chainId: string;
@@ -61,11 +96,21 @@ export interface ClaimCallbackProtoMsg {
   typeUrl: '/stride.stakeibc.ClaimCallback';
   value: Uint8Array;
 }
+/**
+ * @name ClaimCallbackSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.ClaimCallback
+ */
 export interface ClaimCallbackSDKType {
   user_redemption_record_id: string;
   chain_id: string;
   epoch_number: bigint;
 }
+/**
+ * @name ReinvestCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.ReinvestCallback
+ */
 export interface ReinvestCallback {
   reinvestAmount: Coin;
   hostZoneId: string;
@@ -74,10 +119,20 @@ export interface ReinvestCallbackProtoMsg {
   typeUrl: '/stride.stakeibc.ReinvestCallback';
   value: Uint8Array;
 }
+/**
+ * @name ReinvestCallbackSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.ReinvestCallback
+ */
 export interface ReinvestCallbackSDKType {
   reinvest_amount: CoinSDKType;
   host_zone_id: string;
 }
+/**
+ * @name UndelegateCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.UndelegateCallback
+ */
 export interface UndelegateCallback {
   hostZoneId: string;
   splitUndelegations: SplitUndelegation[];
@@ -87,11 +142,21 @@ export interface UndelegateCallbackProtoMsg {
   typeUrl: '/stride.stakeibc.UndelegateCallback';
   value: Uint8Array;
 }
+/**
+ * @name UndelegateCallbackSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.UndelegateCallback
+ */
 export interface UndelegateCallbackSDKType {
   host_zone_id: string;
   split_undelegations: SplitUndelegationSDKType[];
   epoch_unbonding_record_ids: bigint[];
 }
+/**
+ * @name RedemptionCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.RedemptionCallback
+ */
 export interface RedemptionCallback {
   hostZoneId: string;
   epochUnbondingRecordIds: bigint[];
@@ -100,10 +165,20 @@ export interface RedemptionCallbackProtoMsg {
   typeUrl: '/stride.stakeibc.RedemptionCallback';
   value: Uint8Array;
 }
+/**
+ * @name RedemptionCallbackSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.RedemptionCallback
+ */
 export interface RedemptionCallbackSDKType {
   host_zone_id: string;
   epoch_unbonding_record_ids: bigint[];
 }
+/**
+ * @name Rebalancing
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.Rebalancing
+ */
 export interface Rebalancing {
   srcValidator: string;
   dstValidator: string;
@@ -113,11 +188,21 @@ export interface RebalancingProtoMsg {
   typeUrl: '/stride.stakeibc.Rebalancing';
   value: Uint8Array;
 }
+/**
+ * @name RebalancingSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.Rebalancing
+ */
 export interface RebalancingSDKType {
   src_validator: string;
   dst_validator: string;
   amt: string;
 }
+/**
+ * @name RebalanceCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.RebalanceCallback
+ */
 export interface RebalanceCallback {
   hostZoneId: string;
   rebalancings: Rebalancing[];
@@ -126,10 +211,20 @@ export interface RebalanceCallbackProtoMsg {
   typeUrl: '/stride.stakeibc.RebalanceCallback';
   value: Uint8Array;
 }
+/**
+ * @name RebalanceCallbackSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.RebalanceCallback
+ */
 export interface RebalanceCallbackSDKType {
   host_zone_id: string;
   rebalancings: RebalancingSDKType[];
 }
+/**
+ * @name DetokenizeSharesCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.DetokenizeSharesCallback
+ */
 export interface DetokenizeSharesCallback {
   deposit?: LSMTokenDeposit;
 }
@@ -137,9 +232,19 @@ export interface DetokenizeSharesCallbackProtoMsg {
   typeUrl: '/stride.stakeibc.DetokenizeSharesCallback';
   value: Uint8Array;
 }
+/**
+ * @name DetokenizeSharesCallbackSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.DetokenizeSharesCallback
+ */
 export interface DetokenizeSharesCallbackSDKType {
   deposit?: LSMTokenDepositSDKType;
 }
+/**
+ * @name LSMLiquidStake
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.LSMLiquidStake
+ */
 export interface LSMLiquidStake {
   deposit?: LSMTokenDeposit;
   hostZone?: HostZone;
@@ -149,11 +254,21 @@ export interface LSMLiquidStakeProtoMsg {
   typeUrl: '/stride.stakeibc.LSMLiquidStake';
   value: Uint8Array;
 }
+/**
+ * @name LSMLiquidStakeSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.LSMLiquidStake
+ */
 export interface LSMLiquidStakeSDKType {
   deposit?: LSMTokenDepositSDKType;
   host_zone?: HostZoneSDKType;
   validator?: ValidatorSDKType;
 }
+/**
+ * @name ValidatorSharesToTokensQueryCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.ValidatorSharesToTokensQueryCallback
+ */
 export interface ValidatorSharesToTokensQueryCallback {
   lsmLiquidStake?: LSMLiquidStake;
 }
@@ -161,20 +276,42 @@ export interface ValidatorSharesToTokensQueryCallbackProtoMsg {
   typeUrl: '/stride.stakeibc.ValidatorSharesToTokensQueryCallback';
   value: Uint8Array;
 }
+/**
+ * @name ValidatorSharesToTokensQueryCallbackSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.ValidatorSharesToTokensQueryCallback
+ */
 export interface ValidatorSharesToTokensQueryCallbackSDKType {
   lsm_liquid_stake?: LSMLiquidStakeSDKType;
 }
+/**
+ * @name DelegatorSharesQueryCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.DelegatorSharesQueryCallback
+ */
 export interface DelegatorSharesQueryCallback {
-  /** Validator delegation at the time the query is submitted */
+  /**
+   * Validator delegation at the time the query is submitted
+   */
   initialValidatorDelegation: string;
 }
 export interface DelegatorSharesQueryCallbackProtoMsg {
   typeUrl: '/stride.stakeibc.DelegatorSharesQueryCallback';
   value: Uint8Array;
 }
+/**
+ * @name DelegatorSharesQueryCallbackSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.DelegatorSharesQueryCallback
+ */
 export interface DelegatorSharesQueryCallbackSDKType {
   initial_validator_delegation: string;
 }
+/**
+ * @name CommunityPoolBalanceQueryCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.CommunityPoolBalanceQueryCallback
+ */
 export interface CommunityPoolBalanceQueryCallback {
   icaType: ICAAccountType;
   denom: string;
@@ -183,10 +320,20 @@ export interface CommunityPoolBalanceQueryCallbackProtoMsg {
   typeUrl: '/stride.stakeibc.CommunityPoolBalanceQueryCallback';
   value: Uint8Array;
 }
+/**
+ * @name CommunityPoolBalanceQueryCallbackSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.CommunityPoolBalanceQueryCallback
+ */
 export interface CommunityPoolBalanceQueryCallbackSDKType {
   ica_type: ICAAccountType;
   denom: string;
 }
+/**
+ * @name TradeRouteCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.TradeRouteCallback
+ */
 export interface TradeRouteCallback {
   rewardDenom: string;
   hostDenom: string;
@@ -195,6 +342,11 @@ export interface TradeRouteCallbackProtoMsg {
   typeUrl: '/stride.stakeibc.TradeRouteCallback';
   value: Uint8Array;
 }
+/**
+ * @name TradeRouteCallbackSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.TradeRouteCallback
+ */
 export interface TradeRouteCallbackSDKType {
   reward_denom: string;
   host_denom: string;
@@ -205,6 +357,11 @@ function createBaseSplitDelegation(): SplitDelegation {
     amount: '',
   };
 }
+/**
+ * @name SplitDelegation
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.SplitDelegation
+ */
 export const SplitDelegation = {
   typeUrl: '/stride.stakeibc.SplitDelegation' as const,
   encode(
@@ -277,6 +434,11 @@ function createBaseSplitUndelegation(): SplitUndelegation {
     nativeTokenAmount: '',
   };
 }
+/**
+ * @name SplitUndelegation
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.SplitUndelegation
+ */
 export const SplitUndelegation = {
   typeUrl: '/stride.stakeibc.SplitUndelegation' as const,
   encode(
@@ -353,6 +515,11 @@ function createBaseDelegateCallback(): DelegateCallback {
     splitDelegations: [],
   };
 }
+/**
+ * @name DelegateCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.DelegateCallback
+ */
 export const DelegateCallback = {
   typeUrl: '/stride.stakeibc.DelegateCallback' as const,
   encode(
@@ -452,6 +619,11 @@ function createBaseClaimCallback(): ClaimCallback {
     epochNumber: BigInt(0),
   };
 }
+/**
+ * @name ClaimCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.ClaimCallback
+ */
 export const ClaimCallback = {
   typeUrl: '/stride.stakeibc.ClaimCallback' as const,
   encode(
@@ -542,6 +714,11 @@ function createBaseReinvestCallback(): ReinvestCallback {
     hostZoneId: '',
   };
 }
+/**
+ * @name ReinvestCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.ReinvestCallback
+ */
 export const ReinvestCallback = {
   typeUrl: '/stride.stakeibc.ReinvestCallback' as const,
   encode(
@@ -623,6 +800,11 @@ function createBaseUndelegateCallback(): UndelegateCallback {
     epochUnbondingRecordIds: [],
   };
 }
+/**
+ * @name UndelegateCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.UndelegateCallback
+ */
 export const UndelegateCallback = {
   typeUrl: '/stride.stakeibc.UndelegateCallback' as const,
   encode(
@@ -739,6 +921,11 @@ function createBaseRedemptionCallback(): RedemptionCallback {
     epochUnbondingRecordIds: [],
   };
 }
+/**
+ * @name RedemptionCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.RedemptionCallback
+ */
 export const RedemptionCallback = {
   typeUrl: '/stride.stakeibc.RedemptionCallback' as const,
   encode(
@@ -833,6 +1020,11 @@ function createBaseRebalancing(): Rebalancing {
     amt: '',
   };
 }
+/**
+ * @name Rebalancing
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.Rebalancing
+ */
 export const Rebalancing = {
   typeUrl: '/stride.stakeibc.Rebalancing' as const,
   encode(
@@ -920,6 +1112,11 @@ function createBaseRebalanceCallback(): RebalanceCallback {
     rebalancings: [],
   };
 }
+/**
+ * @name RebalanceCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.RebalanceCallback
+ */
 export const RebalanceCallback = {
   typeUrl: '/stride.stakeibc.RebalanceCallback' as const,
   encode(
@@ -1002,6 +1199,11 @@ function createBaseDetokenizeSharesCallback(): DetokenizeSharesCallback {
     deposit: undefined,
   };
 }
+/**
+ * @name DetokenizeSharesCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.DetokenizeSharesCallback
+ */
 export const DetokenizeSharesCallback = {
   typeUrl: '/stride.stakeibc.DetokenizeSharesCallback' as const,
   encode(
@@ -1088,6 +1290,11 @@ function createBaseLSMLiquidStake(): LSMLiquidStake {
     validator: undefined,
   };
 }
+/**
+ * @name LSMLiquidStake
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.LSMLiquidStake
+ */
 export const LSMLiquidStake = {
   typeUrl: '/stride.stakeibc.LSMLiquidStake' as const,
   encode(
@@ -1195,6 +1402,11 @@ function createBaseValidatorSharesToTokensQueryCallback(): ValidatorSharesToToke
     lsmLiquidStake: undefined,
   };
 }
+/**
+ * @name ValidatorSharesToTokensQueryCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.ValidatorSharesToTokensQueryCallback
+ */
 export const ValidatorSharesToTokensQueryCallback = {
   typeUrl: '/stride.stakeibc.ValidatorSharesToTokensQueryCallback' as const,
   encode(
@@ -1282,6 +1494,11 @@ function createBaseDelegatorSharesQueryCallback(): DelegatorSharesQueryCallback 
     initialValidatorDelegation: '',
   };
 }
+/**
+ * @name DelegatorSharesQueryCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.DelegatorSharesQueryCallback
+ */
 export const DelegatorSharesQueryCallback = {
   typeUrl: '/stride.stakeibc.DelegatorSharesQueryCallback' as const,
   encode(
@@ -1360,6 +1577,11 @@ function createBaseCommunityPoolBalanceQueryCallback(): CommunityPoolBalanceQuer
     denom: '',
   };
 }
+/**
+ * @name CommunityPoolBalanceQueryCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.CommunityPoolBalanceQueryCallback
+ */
 export const CommunityPoolBalanceQueryCallback = {
   typeUrl: '/stride.stakeibc.CommunityPoolBalanceQueryCallback' as const,
   encode(
@@ -1446,6 +1668,11 @@ function createBaseTradeRouteCallback(): TradeRouteCallback {
     hostDenom: '',
   };
 }
+/**
+ * @name TradeRouteCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.TradeRouteCallback
+ */
 export const TradeRouteCallback = {
   typeUrl: '/stride.stakeibc.TradeRouteCallback' as const,
   encode(

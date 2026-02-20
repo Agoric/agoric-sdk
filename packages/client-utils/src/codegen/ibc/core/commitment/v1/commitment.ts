@@ -11,6 +11,9 @@ import { type JsonSafe } from '../../../../json-safe.js';
 /**
  * MerkleRoot defines a merkle root hash.
  * In the Cosmos SDK, the AppHash of a block header becomes the root.
+ * @name MerkleRoot
+ * @package ibc.core.commitment.v1
+ * @see proto type: ibc.core.commitment.v1.MerkleRoot
  */
 export interface MerkleRoot {
   hash: Uint8Array;
@@ -22,6 +25,9 @@ export interface MerkleRootProtoMsg {
 /**
  * MerkleRoot defines a merkle root hash.
  * In the Cosmos SDK, the AppHash of a block header becomes the root.
+ * @name MerkleRootSDKType
+ * @package ibc.core.commitment.v1
+ * @see proto type: ibc.core.commitment.v1.MerkleRoot
  */
 export interface MerkleRootSDKType {
   hash: Uint8Array;
@@ -30,6 +36,9 @@ export interface MerkleRootSDKType {
  * MerklePrefix is merkle path prefixed to the key.
  * The constructed key from the Path and the key will be append(Path.KeyPath,
  * append(Path.KeyPrefix, key...))
+ * @name MerklePrefix
+ * @package ibc.core.commitment.v1
+ * @see proto type: ibc.core.commitment.v1.MerklePrefix
  */
 export interface MerklePrefix {
   keyPrefix: Uint8Array;
@@ -42,6 +51,9 @@ export interface MerklePrefixProtoMsg {
  * MerklePrefix is merkle path prefixed to the key.
  * The constructed key from the Path and the key will be append(Path.KeyPath,
  * append(Path.KeyPrefix, key...))
+ * @name MerklePrefixSDKType
+ * @package ibc.core.commitment.v1
+ * @see proto type: ibc.core.commitment.v1.MerklePrefix
  */
 export interface MerklePrefixSDKType {
   key_prefix: Uint8Array;
@@ -50,6 +62,9 @@ export interface MerklePrefixSDKType {
  * MerklePath is the path used to verify commitment proofs, which can be an
  * arbitrary structured object (defined by a commitment type).
  * MerklePath is represented from root-to-leaf
+ * @name MerklePath
+ * @package ibc.core.commitment.v1
+ * @see proto type: ibc.core.commitment.v1.MerklePath
  */
 export interface MerklePath {
   keyPath: string[];
@@ -62,6 +77,9 @@ export interface MerklePathProtoMsg {
  * MerklePath is the path used to verify commitment proofs, which can be an
  * arbitrary structured object (defined by a commitment type).
  * MerklePath is represented from root-to-leaf
+ * @name MerklePathSDKType
+ * @package ibc.core.commitment.v1
+ * @see proto type: ibc.core.commitment.v1.MerklePath
  */
 export interface MerklePathSDKType {
   key_path: string[];
@@ -72,6 +90,9 @@ export interface MerklePathSDKType {
  * elements, verifiable in conjunction with a known commitment root. Proofs
  * should be succinct.
  * MerkleProofs are ordered from leaf-to-root
+ * @name MerkleProof
+ * @package ibc.core.commitment.v1
+ * @see proto type: ibc.core.commitment.v1.MerkleProof
  */
 export interface MerkleProof {
   proofs: CommitmentProof[];
@@ -86,6 +107,9 @@ export interface MerkleProofProtoMsg {
  * elements, verifiable in conjunction with a known commitment root. Proofs
  * should be succinct.
  * MerkleProofs are ordered from leaf-to-root
+ * @name MerkleProofSDKType
+ * @package ibc.core.commitment.v1
+ * @see proto type: ibc.core.commitment.v1.MerkleProof
  */
 export interface MerkleProofSDKType {
   proofs: CommitmentProofSDKType[];
@@ -95,6 +119,13 @@ function createBaseMerkleRoot(): MerkleRoot {
     hash: new Uint8Array(),
   };
 }
+/**
+ * MerkleRoot defines a merkle root hash.
+ * In the Cosmos SDK, the AppHash of a block header becomes the root.
+ * @name MerkleRoot
+ * @package ibc.core.commitment.v1
+ * @see proto type: ibc.core.commitment.v1.MerkleRoot
+ */
 export const MerkleRoot = {
   typeUrl: '/ibc.core.commitment.v1.MerkleRoot' as const,
   encode(
@@ -162,6 +193,14 @@ function createBaseMerklePrefix(): MerklePrefix {
     keyPrefix: new Uint8Array(),
   };
 }
+/**
+ * MerklePrefix is merkle path prefixed to the key.
+ * The constructed key from the Path and the key will be append(Path.KeyPath,
+ * append(Path.KeyPrefix, key...))
+ * @name MerklePrefix
+ * @package ibc.core.commitment.v1
+ * @see proto type: ibc.core.commitment.v1.MerklePrefix
+ */
 export const MerklePrefix = {
   typeUrl: '/ibc.core.commitment.v1.MerklePrefix' as const,
   encode(
@@ -229,6 +268,14 @@ function createBaseMerklePath(): MerklePath {
     keyPath: [],
   };
 }
+/**
+ * MerklePath is the path used to verify commitment proofs, which can be an
+ * arbitrary structured object (defined by a commitment type).
+ * MerklePath is represented from root-to-leaf
+ * @name MerklePath
+ * @package ibc.core.commitment.v1
+ * @see proto type: ibc.core.commitment.v1.MerklePath
+ */
 export const MerklePath = {
   typeUrl: '/ibc.core.commitment.v1.MerklePath' as const,
   encode(
@@ -297,6 +344,16 @@ function createBaseMerkleProof(): MerkleProof {
     proofs: [],
   };
 }
+/**
+ * MerkleProof is a wrapper type over a chain of CommitmentProofs.
+ * It demonstrates membership or non-membership for an element or set of
+ * elements, verifiable in conjunction with a known commitment root. Proofs
+ * should be succinct.
+ * MerkleProofs are ordered from leaf-to-root
+ * @name MerkleProof
+ * @package ibc.core.commitment.v1
+ * @see proto type: ibc.core.commitment.v1.MerkleProof
+ */
 export const MerkleProof = {
   typeUrl: '/ibc.core.commitment.v1.MerkleProof' as const,
   encode(

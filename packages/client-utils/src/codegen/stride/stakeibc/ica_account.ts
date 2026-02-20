@@ -69,6 +69,11 @@ export function iCAAccountTypeToJSON(object: ICAAccountType): string {
       return 'UNRECOGNIZED';
   }
 }
+/**
+ * @name ICAAccount
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.ICAAccount
+ */
 export interface ICAAccount {
   chainId: string;
   type: ICAAccountType;
@@ -79,6 +84,11 @@ export interface ICAAccountProtoMsg {
   typeUrl: '/stride.stakeibc.ICAAccount';
   value: Uint8Array;
 }
+/**
+ * @name ICAAccountSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.ICAAccount
+ */
 export interface ICAAccountSDKType {
   chain_id: string;
   type: ICAAccountType;
@@ -93,6 +103,11 @@ function createBaseICAAccount(): ICAAccount {
     address: '',
   };
 }
+/**
+ * @name ICAAccount
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.ICAAccount
+ */
 export const ICAAccount = {
   typeUrl: '/stride.stakeibc.ICAAccount' as const,
   encode(

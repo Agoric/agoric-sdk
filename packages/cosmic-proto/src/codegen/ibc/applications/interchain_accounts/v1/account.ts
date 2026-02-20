@@ -4,9 +4,15 @@ import {
   type BaseAccountSDKType,
 } from '../../../../cosmos/auth/v1beta1/auth.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
+import { GlobalDecoderRegistry } from '../../../../registry.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
-/** An InterchainAccount is defined as a BaseAccount & the address of the account owner on the controller chain */
+/**
+ * An InterchainAccount is defined as a BaseAccount & the address of the account owner on the controller chain
+ * @name InterchainAccount
+ * @package ibc.applications.interchain_accounts.v1
+ * @see proto type: ibc.applications.interchain_accounts.v1.InterchainAccount
+ */
 export interface InterchainAccount {
   $typeUrl?: '/ibc.applications.interchain_accounts.v1.InterchainAccount';
   baseAccount?: BaseAccount;
@@ -16,7 +22,12 @@ export interface InterchainAccountProtoMsg {
   typeUrl: '/ibc.applications.interchain_accounts.v1.InterchainAccount';
   value: Uint8Array;
 }
-/** An InterchainAccount is defined as a BaseAccount & the address of the account owner on the controller chain */
+/**
+ * An InterchainAccount is defined as a BaseAccount & the address of the account owner on the controller chain
+ * @name InterchainAccountSDKType
+ * @package ibc.applications.interchain_accounts.v1
+ * @see proto type: ibc.applications.interchain_accounts.v1.InterchainAccount
+ */
 export interface InterchainAccountSDKType {
   $typeUrl?: '/ibc.applications.interchain_accounts.v1.InterchainAccount';
   base_account?: BaseAccountSDKType;
@@ -29,9 +40,30 @@ function createBaseInterchainAccount(): InterchainAccount {
     accountOwner: '',
   };
 }
+/**
+ * An InterchainAccount is defined as a BaseAccount & the address of the account owner on the controller chain
+ * @name InterchainAccount
+ * @package ibc.applications.interchain_accounts.v1
+ * @see proto type: ibc.applications.interchain_accounts.v1.InterchainAccount
+ */
 export const InterchainAccount = {
   typeUrl:
     '/ibc.applications.interchain_accounts.v1.InterchainAccount' as const,
+  aminoType: 'cosmos-sdk/InterchainAccount' as const,
+  is(o: any): o is InterchainAccount {
+    return (
+      o &&
+      (o.$typeUrl === InterchainAccount.typeUrl ||
+        typeof o.accountOwner === 'string')
+    );
+  },
+  isSDK(o: any): o is InterchainAccountSDKType {
+    return (
+      o &&
+      (o.$typeUrl === InterchainAccount.typeUrl ||
+        typeof o.account_owner === 'string')
+    );
+  },
   encode(
     message: InterchainAccount,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -108,5 +140,21 @@ export const InterchainAccount = {
       typeUrl: '/ibc.applications.interchain_accounts.v1.InterchainAccount',
       value: InterchainAccount.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(InterchainAccount.typeUrl)
+    ) {
+      return;
+    }
+    GlobalDecoderRegistry.register(
+      InterchainAccount.typeUrl,
+      InterchainAccount,
+    );
+    GlobalDecoderRegistry.registerAminoProtoMapping(
+      InterchainAccount.aminoType,
+      InterchainAccount.typeUrl,
+    );
+    BaseAccount.registerTypeUrl();
   },
 };

@@ -2,10 +2,14 @@
 import { Any, type AnySDKType } from '../../google/protobuf/any.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { type JsonSafe } from '../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../registry.js';
 import { isSet } from '../../helpers.js';
 /**
  * CosmosTx contains a list of sdk.Msg's. It should be used when sending
  * transactions to a local chain.
+ * @name CosmosTx
+ * @package agoric.vlocalchain
+ * @see proto type: agoric.vlocalchain.CosmosTx
  */
 export interface CosmosTx {
   messages: Any[];
@@ -17,11 +21,19 @@ export interface CosmosTxProtoMsg {
 /**
  * CosmosTx contains a list of sdk.Msg's. It should be used when sending
  * transactions to a local chain.
+ * @name CosmosTxSDKType
+ * @package agoric.vlocalchain
+ * @see proto type: agoric.vlocalchain.CosmosTx
  */
 export interface CosmosTxSDKType {
   messages: AnySDKType[];
 }
-/** QueryRequest is used internally to describe a query for the local chain. */
+/**
+ * QueryRequest is used internally to describe a query for the local chain.
+ * @name QueryRequest
+ * @package agoric.vlocalchain
+ * @see proto type: agoric.vlocalchain.QueryRequest
+ */
 export interface QueryRequest {
   fullMethod: string;
   request?: Any;
@@ -31,13 +43,23 @@ export interface QueryRequestProtoMsg {
   typeUrl: '/agoric.vlocalchain.QueryRequest';
   value: Uint8Array;
 }
-/** QueryRequest is used internally to describe a query for the local chain. */
+/**
+ * QueryRequest is used internally to describe a query for the local chain.
+ * @name QueryRequestSDKType
+ * @package agoric.vlocalchain
+ * @see proto type: agoric.vlocalchain.QueryRequest
+ */
 export interface QueryRequestSDKType {
   full_method: string;
   request?: AnySDKType;
   reply_type: string;
 }
-/** QueryResponse is used internally to describe a response from the local chain. */
+/**
+ * QueryResponse is used internally to describe a response from the local chain.
+ * @name QueryResponse
+ * @package agoric.vlocalchain
+ * @see proto type: agoric.vlocalchain.QueryResponse
+ */
 export interface QueryResponse {
   height: bigint;
   reply?: Any;
@@ -47,13 +69,23 @@ export interface QueryResponseProtoMsg {
   typeUrl: '/agoric.vlocalchain.QueryResponse';
   value: Uint8Array;
 }
-/** QueryResponse is used internally to describe a response from the local chain. */
+/**
+ * QueryResponse is used internally to describe a response from the local chain.
+ * @name QueryResponseSDKType
+ * @package agoric.vlocalchain
+ * @see proto type: agoric.vlocalchain.QueryResponse
+ */
 export interface QueryResponseSDKType {
   height: bigint;
   reply?: AnySDKType;
   error: string;
 }
-/** QueryResponses is used to group multiple QueryResponse messages. */
+/**
+ * QueryResponses is used to group multiple QueryResponse messages.
+ * @name QueryResponses
+ * @package agoric.vlocalchain
+ * @see proto type: agoric.vlocalchain.QueryResponses
+ */
 export interface QueryResponses {
   responses: QueryResponse[];
 }
@@ -61,7 +93,12 @@ export interface QueryResponsesProtoMsg {
   typeUrl: '/agoric.vlocalchain.QueryResponses';
   value: Uint8Array;
 }
-/** QueryResponses is used to group multiple QueryResponse messages. */
+/**
+ * QueryResponses is used to group multiple QueryResponse messages.
+ * @name QueryResponsesSDKType
+ * @package agoric.vlocalchain
+ * @see proto type: agoric.vlocalchain.QueryResponses
+ */
 export interface QueryResponsesSDKType {
   responses: QueryResponseSDKType[];
 }
@@ -70,8 +107,31 @@ function createBaseCosmosTx(): CosmosTx {
     messages: [],
   };
 }
+/**
+ * CosmosTx contains a list of sdk.Msg's. It should be used when sending
+ * transactions to a local chain.
+ * @name CosmosTx
+ * @package agoric.vlocalchain
+ * @see proto type: agoric.vlocalchain.CosmosTx
+ */
 export const CosmosTx = {
   typeUrl: '/agoric.vlocalchain.CosmosTx' as const,
+  is(o: any): o is CosmosTx {
+    return (
+      o &&
+      (o.$typeUrl === CosmosTx.typeUrl ||
+        (Array.isArray(o.messages) &&
+          (!o.messages.length || Any.is(o.messages[0]))))
+    );
+  },
+  isSDK(o: any): o is CosmosTxSDKType {
+    return (
+      o &&
+      (o.$typeUrl === CosmosTx.typeUrl ||
+        (Array.isArray(o.messages) &&
+          (!o.messages.length || Any.isSDK(o.messages[0]))))
+    );
+  },
   encode(
     message: CosmosTx,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -132,6 +192,7 @@ export const CosmosTx = {
       value: CosmosTx.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryRequest(): QueryRequest {
   return {
@@ -140,8 +201,28 @@ function createBaseQueryRequest(): QueryRequest {
     replyType: '',
   };
 }
+/**
+ * QueryRequest is used internally to describe a query for the local chain.
+ * @name QueryRequest
+ * @package agoric.vlocalchain
+ * @see proto type: agoric.vlocalchain.QueryRequest
+ */
 export const QueryRequest = {
   typeUrl: '/agoric.vlocalchain.QueryRequest' as const,
+  is(o: any): o is QueryRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryRequest.typeUrl ||
+        (typeof o.fullMethod === 'string' && typeof o.replyType === 'string'))
+    );
+  },
+  isSDK(o: any): o is QueryRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryRequest.typeUrl ||
+        (typeof o.full_method === 'string' && typeof o.reply_type === 'string'))
+    );
+  },
   encode(
     message: QueryRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -218,6 +299,7 @@ export const QueryRequest = {
       value: QueryRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryResponse(): QueryResponse {
   return {
@@ -226,8 +308,28 @@ function createBaseQueryResponse(): QueryResponse {
     error: '',
   };
 }
+/**
+ * QueryResponse is used internally to describe a response from the local chain.
+ * @name QueryResponse
+ * @package agoric.vlocalchain
+ * @see proto type: agoric.vlocalchain.QueryResponse
+ */
 export const QueryResponse = {
   typeUrl: '/agoric.vlocalchain.QueryResponse' as const,
+  is(o: any): o is QueryResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryResponse.typeUrl ||
+        (typeof o.height === 'bigint' && typeof o.error === 'string'))
+    );
+  },
+  isSDK(o: any): o is QueryResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryResponse.typeUrl ||
+        (typeof o.height === 'bigint' && typeof o.error === 'string'))
+    );
+  },
   encode(
     message: QueryResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -310,14 +412,37 @@ export const QueryResponse = {
       value: QueryResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryResponses(): QueryResponses {
   return {
     responses: [],
   };
 }
+/**
+ * QueryResponses is used to group multiple QueryResponse messages.
+ * @name QueryResponses
+ * @package agoric.vlocalchain
+ * @see proto type: agoric.vlocalchain.QueryResponses
+ */
 export const QueryResponses = {
   typeUrl: '/agoric.vlocalchain.QueryResponses' as const,
+  is(o: any): o is QueryResponses {
+    return (
+      o &&
+      (o.$typeUrl === QueryResponses.typeUrl ||
+        (Array.isArray(o.responses) &&
+          (!o.responses.length || QueryResponse.is(o.responses[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryResponsesSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryResponses.typeUrl ||
+        (Array.isArray(o.responses) &&
+          (!o.responses.length || QueryResponse.isSDK(o.responses[0]))))
+    );
+  },
   encode(
     message: QueryResponses,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -380,5 +505,13 @@ export const QueryResponses = {
       typeUrl: '/agoric.vlocalchain.QueryResponses',
       value: QueryResponses.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(QueryResponses.typeUrl)
+    ) {
+      return;
+    }
+    QueryResponse.registerTypeUrl();
   },
 };

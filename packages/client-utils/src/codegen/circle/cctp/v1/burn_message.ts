@@ -11,6 +11,9 @@ import { type JsonSafe } from '../../../json-safe.js';
  * @param mint_recipient the mint recipient address as bytes32
  * @param amount the burn amount
  * @param message_sender the message sender
+ * @name BurnMessage
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.BurnMessage
  */
 export interface BurnMessage {
   version: number;
@@ -30,6 +33,9 @@ export interface BurnMessageProtoMsg {
  * @param mint_recipient the mint recipient address as bytes32
  * @param amount the burn amount
  * @param message_sender the message sender
+ * @name BurnMessageSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.BurnMessage
  */
 export interface BurnMessageSDKType {
   version: number;
@@ -47,6 +53,17 @@ function createBaseBurnMessage(): BurnMessage {
     messageSender: new Uint8Array(),
   };
 }
+/**
+ * Message format for BurnMessages
+ * @param version the message body version
+ * @param burn_token the burn token address on source domain as bytes32
+ * @param mint_recipient the mint recipient address as bytes32
+ * @param amount the burn amount
+ * @param message_sender the message sender
+ * @name BurnMessage
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.BurnMessage
+ */
 export const BurnMessage = {
   typeUrl: '/circle.cctp.v1.BurnMessage' as const,
   encode(

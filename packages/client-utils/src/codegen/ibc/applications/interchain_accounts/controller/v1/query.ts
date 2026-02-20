@@ -3,7 +3,12 @@ import { Params, type ParamsSDKType } from './controller.js';
 import { BinaryReader, BinaryWriter } from '../../../../../binary.js';
 import { isSet } from '../../../../../helpers.js';
 import { type JsonSafe } from '../../../../../json-safe.js';
-/** QueryInterchainAccountRequest is the request type for the Query/InterchainAccount RPC method. */
+/**
+ * QueryInterchainAccountRequest is the request type for the Query/InterchainAccount RPC method.
+ * @name QueryInterchainAccountRequest
+ * @package ibc.applications.interchain_accounts.controller.v1
+ * @see proto type: ibc.applications.interchain_accounts.controller.v1.QueryInterchainAccountRequest
+ */
 export interface QueryInterchainAccountRequest {
   owner: string;
   connectionId: string;
@@ -12,12 +17,22 @@ export interface QueryInterchainAccountRequestProtoMsg {
   typeUrl: '/ibc.applications.interchain_accounts.controller.v1.QueryInterchainAccountRequest';
   value: Uint8Array;
 }
-/** QueryInterchainAccountRequest is the request type for the Query/InterchainAccount RPC method. */
+/**
+ * QueryInterchainAccountRequest is the request type for the Query/InterchainAccount RPC method.
+ * @name QueryInterchainAccountRequestSDKType
+ * @package ibc.applications.interchain_accounts.controller.v1
+ * @see proto type: ibc.applications.interchain_accounts.controller.v1.QueryInterchainAccountRequest
+ */
 export interface QueryInterchainAccountRequestSDKType {
   owner: string;
   connection_id: string;
 }
-/** QueryInterchainAccountResponse the response type for the Query/InterchainAccount RPC method. */
+/**
+ * QueryInterchainAccountResponse the response type for the Query/InterchainAccount RPC method.
+ * @name QueryInterchainAccountResponse
+ * @package ibc.applications.interchain_accounts.controller.v1
+ * @see proto type: ibc.applications.interchain_accounts.controller.v1.QueryInterchainAccountResponse
+ */
 export interface QueryInterchainAccountResponse {
   address: string;
 }
@@ -25,28 +40,55 @@ export interface QueryInterchainAccountResponseProtoMsg {
   typeUrl: '/ibc.applications.interchain_accounts.controller.v1.QueryInterchainAccountResponse';
   value: Uint8Array;
 }
-/** QueryInterchainAccountResponse the response type for the Query/InterchainAccount RPC method. */
+/**
+ * QueryInterchainAccountResponse the response type for the Query/InterchainAccount RPC method.
+ * @name QueryInterchainAccountResponseSDKType
+ * @package ibc.applications.interchain_accounts.controller.v1
+ * @see proto type: ibc.applications.interchain_accounts.controller.v1.QueryInterchainAccountResponse
+ */
 export interface QueryInterchainAccountResponseSDKType {
   address: string;
 }
-/** QueryParamsRequest is the request type for the Query/Params RPC method. */
+/**
+ * QueryParamsRequest is the request type for the Query/Params RPC method.
+ * @name QueryParamsRequest
+ * @package ibc.applications.interchain_accounts.controller.v1
+ * @see proto type: ibc.applications.interchain_accounts.controller.v1.QueryParamsRequest
+ */
 export interface QueryParamsRequest {}
 export interface QueryParamsRequestProtoMsg {
   typeUrl: '/ibc.applications.interchain_accounts.controller.v1.QueryParamsRequest';
   value: Uint8Array;
 }
-/** QueryParamsRequest is the request type for the Query/Params RPC method. */
+/**
+ * QueryParamsRequest is the request type for the Query/Params RPC method.
+ * @name QueryParamsRequestSDKType
+ * @package ibc.applications.interchain_accounts.controller.v1
+ * @see proto type: ibc.applications.interchain_accounts.controller.v1.QueryParamsRequest
+ */
 export interface QueryParamsRequestSDKType {}
-/** QueryParamsResponse is the response type for the Query/Params RPC method. */
+/**
+ * QueryParamsResponse is the response type for the Query/Params RPC method.
+ * @name QueryParamsResponse
+ * @package ibc.applications.interchain_accounts.controller.v1
+ * @see proto type: ibc.applications.interchain_accounts.controller.v1.QueryParamsResponse
+ */
 export interface QueryParamsResponse {
-  /** params defines the parameters of the module. */
+  /**
+   * params defines the parameters of the module.
+   */
   params?: Params;
 }
 export interface QueryParamsResponseProtoMsg {
   typeUrl: '/ibc.applications.interchain_accounts.controller.v1.QueryParamsResponse';
   value: Uint8Array;
 }
-/** QueryParamsResponse is the response type for the Query/Params RPC method. */
+/**
+ * QueryParamsResponse is the response type for the Query/Params RPC method.
+ * @name QueryParamsResponseSDKType
+ * @package ibc.applications.interchain_accounts.controller.v1
+ * @see proto type: ibc.applications.interchain_accounts.controller.v1.QueryParamsResponse
+ */
 export interface QueryParamsResponseSDKType {
   params?: ParamsSDKType;
 }
@@ -56,6 +98,12 @@ function createBaseQueryInterchainAccountRequest(): QueryInterchainAccountReques
     connectionId: '',
   };
 }
+/**
+ * QueryInterchainAccountRequest is the request type for the Query/InterchainAccount RPC method.
+ * @name QueryInterchainAccountRequest
+ * @package ibc.applications.interchain_accounts.controller.v1
+ * @see proto type: ibc.applications.interchain_accounts.controller.v1.QueryInterchainAccountRequest
+ */
 export const QueryInterchainAccountRequest = {
   typeUrl:
     '/ibc.applications.interchain_accounts.controller.v1.QueryInterchainAccountRequest' as const,
@@ -143,6 +191,12 @@ function createBaseQueryInterchainAccountResponse(): QueryInterchainAccountRespo
     address: '',
   };
 }
+/**
+ * QueryInterchainAccountResponse the response type for the Query/InterchainAccount RPC method.
+ * @name QueryInterchainAccountResponse
+ * @package ibc.applications.interchain_accounts.controller.v1
+ * @see proto type: ibc.applications.interchain_accounts.controller.v1.QueryInterchainAccountResponse
+ */
 export const QueryInterchainAccountResponse = {
   typeUrl:
     '/ibc.applications.interchain_accounts.controller.v1.QueryInterchainAccountResponse' as const,
@@ -216,6 +270,12 @@ export const QueryInterchainAccountResponse = {
 function createBaseQueryParamsRequest(): QueryParamsRequest {
   return {};
 }
+/**
+ * QueryParamsRequest is the request type for the Query/Params RPC method.
+ * @name QueryParamsRequest
+ * @package ibc.applications.interchain_accounts.controller.v1
+ * @see proto type: ibc.applications.interchain_accounts.controller.v1.QueryParamsRequest
+ */
 export const QueryParamsRequest = {
   typeUrl:
     '/ibc.applications.interchain_accounts.controller.v1.QueryParamsRequest' as const,
@@ -273,6 +333,12 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
     params: undefined,
   };
 }
+/**
+ * QueryParamsResponse is the response type for the Query/Params RPC method.
+ * @name QueryParamsResponse
+ * @package ibc.applications.interchain_accounts.controller.v1
+ * @see proto type: ibc.applications.interchain_accounts.controller.v1.QueryParamsResponse
+ */
 export const QueryParamsResponse = {
   typeUrl:
     '/ibc.applications.interchain_accounts.controller.v1.QueryParamsResponse' as const,

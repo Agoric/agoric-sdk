@@ -1,17 +1,25 @@
 //@ts-nocheck
 import { Plan, type PlanSDKType } from './upgrade.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
+import { GlobalDecoderRegistry } from '../../../registry.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
 /**
  * MsgSoftwareUpgrade is the Msg/SoftwareUpgrade request type.
  *
  * Since: cosmos-sdk 0.46
+ * @name MsgSoftwareUpgrade
+ * @package cosmos.upgrade.v1beta1
+ * @see proto type: cosmos.upgrade.v1beta1.MsgSoftwareUpgrade
  */
 export interface MsgSoftwareUpgrade {
-  /** authority is the address that controls the module (defaults to x/gov unless overwritten). */
+  /**
+   * authority is the address that controls the module (defaults to x/gov unless overwritten).
+   */
   authority: string;
-  /** plan is the upgrade plan. */
+  /**
+   * plan is the upgrade plan.
+   */
   plan: Plan;
 }
 export interface MsgSoftwareUpgradeProtoMsg {
@@ -22,6 +30,9 @@ export interface MsgSoftwareUpgradeProtoMsg {
  * MsgSoftwareUpgrade is the Msg/SoftwareUpgrade request type.
  *
  * Since: cosmos-sdk 0.46
+ * @name MsgSoftwareUpgradeSDKType
+ * @package cosmos.upgrade.v1beta1
+ * @see proto type: cosmos.upgrade.v1beta1.MsgSoftwareUpgrade
  */
 export interface MsgSoftwareUpgradeSDKType {
   authority: string;
@@ -31,6 +42,9 @@ export interface MsgSoftwareUpgradeSDKType {
  * MsgSoftwareUpgradeResponse is the Msg/SoftwareUpgrade response type.
  *
  * Since: cosmos-sdk 0.46
+ * @name MsgSoftwareUpgradeResponse
+ * @package cosmos.upgrade.v1beta1
+ * @see proto type: cosmos.upgrade.v1beta1.MsgSoftwareUpgradeResponse
  */
 export interface MsgSoftwareUpgradeResponse {}
 export interface MsgSoftwareUpgradeResponseProtoMsg {
@@ -41,15 +55,23 @@ export interface MsgSoftwareUpgradeResponseProtoMsg {
  * MsgSoftwareUpgradeResponse is the Msg/SoftwareUpgrade response type.
  *
  * Since: cosmos-sdk 0.46
+ * @name MsgSoftwareUpgradeResponseSDKType
+ * @package cosmos.upgrade.v1beta1
+ * @see proto type: cosmos.upgrade.v1beta1.MsgSoftwareUpgradeResponse
  */
 export interface MsgSoftwareUpgradeResponseSDKType {}
 /**
  * MsgCancelUpgrade is the Msg/CancelUpgrade request type.
  *
  * Since: cosmos-sdk 0.46
+ * @name MsgCancelUpgrade
+ * @package cosmos.upgrade.v1beta1
+ * @see proto type: cosmos.upgrade.v1beta1.MsgCancelUpgrade
  */
 export interface MsgCancelUpgrade {
-  /** authority is the address that controls the module (defaults to x/gov unless overwritten). */
+  /**
+   * authority is the address that controls the module (defaults to x/gov unless overwritten).
+   */
   authority: string;
 }
 export interface MsgCancelUpgradeProtoMsg {
@@ -60,6 +82,9 @@ export interface MsgCancelUpgradeProtoMsg {
  * MsgCancelUpgrade is the Msg/CancelUpgrade request type.
  *
  * Since: cosmos-sdk 0.46
+ * @name MsgCancelUpgradeSDKType
+ * @package cosmos.upgrade.v1beta1
+ * @see proto type: cosmos.upgrade.v1beta1.MsgCancelUpgrade
  */
 export interface MsgCancelUpgradeSDKType {
   authority: string;
@@ -68,6 +93,9 @@ export interface MsgCancelUpgradeSDKType {
  * MsgCancelUpgradeResponse is the Msg/CancelUpgrade response type.
  *
  * Since: cosmos-sdk 0.46
+ * @name MsgCancelUpgradeResponse
+ * @package cosmos.upgrade.v1beta1
+ * @see proto type: cosmos.upgrade.v1beta1.MsgCancelUpgradeResponse
  */
 export interface MsgCancelUpgradeResponse {}
 export interface MsgCancelUpgradeResponseProtoMsg {
@@ -78,6 +106,9 @@ export interface MsgCancelUpgradeResponseProtoMsg {
  * MsgCancelUpgradeResponse is the Msg/CancelUpgrade response type.
  *
  * Since: cosmos-sdk 0.46
+ * @name MsgCancelUpgradeResponseSDKType
+ * @package cosmos.upgrade.v1beta1
+ * @see proto type: cosmos.upgrade.v1beta1.MsgCancelUpgradeResponse
  */
 export interface MsgCancelUpgradeResponseSDKType {}
 function createBaseMsgSoftwareUpgrade(): MsgSoftwareUpgrade {
@@ -86,8 +117,31 @@ function createBaseMsgSoftwareUpgrade(): MsgSoftwareUpgrade {
     plan: Plan.fromPartial({}),
   };
 }
+/**
+ * MsgSoftwareUpgrade is the Msg/SoftwareUpgrade request type.
+ *
+ * Since: cosmos-sdk 0.46
+ * @name MsgSoftwareUpgrade
+ * @package cosmos.upgrade.v1beta1
+ * @see proto type: cosmos.upgrade.v1beta1.MsgSoftwareUpgrade
+ */
 export const MsgSoftwareUpgrade = {
   typeUrl: '/cosmos.upgrade.v1beta1.MsgSoftwareUpgrade' as const,
+  aminoType: 'cosmos-sdk/MsgSoftwareUpgrade' as const,
+  is(o: any): o is MsgSoftwareUpgrade {
+    return (
+      o &&
+      (o.$typeUrl === MsgSoftwareUpgrade.typeUrl ||
+        (typeof o.authority === 'string' && Plan.is(o.plan)))
+    );
+  },
+  isSDK(o: any): o is MsgSoftwareUpgradeSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgSoftwareUpgrade.typeUrl ||
+        (typeof o.authority === 'string' && Plan.isSDK(o.plan)))
+    );
+  },
   encode(
     message: MsgSoftwareUpgrade,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -158,12 +212,35 @@ export const MsgSoftwareUpgrade = {
       value: MsgSoftwareUpgrade.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(MsgSoftwareUpgrade.typeUrl)
+    ) {
+      return;
+    }
+    Plan.registerTypeUrl();
+  },
 };
 function createBaseMsgSoftwareUpgradeResponse(): MsgSoftwareUpgradeResponse {
   return {};
 }
+/**
+ * MsgSoftwareUpgradeResponse is the Msg/SoftwareUpgrade response type.
+ *
+ * Since: cosmos-sdk 0.46
+ * @name MsgSoftwareUpgradeResponse
+ * @package cosmos.upgrade.v1beta1
+ * @see proto type: cosmos.upgrade.v1beta1.MsgSoftwareUpgradeResponse
+ */
 export const MsgSoftwareUpgradeResponse = {
   typeUrl: '/cosmos.upgrade.v1beta1.MsgSoftwareUpgradeResponse' as const,
+  aminoType: 'cosmos-sdk/MsgSoftwareUpgradeResponse' as const,
+  is(o: any): o is MsgSoftwareUpgradeResponse {
+    return o && o.$typeUrl === MsgSoftwareUpgradeResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgSoftwareUpgradeResponseSDKType {
+    return o && o.$typeUrl === MsgSoftwareUpgradeResponse.typeUrl;
+  },
   encode(
     _: MsgSoftwareUpgradeResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -217,14 +294,38 @@ export const MsgSoftwareUpgradeResponse = {
       value: MsgSoftwareUpgradeResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgCancelUpgrade(): MsgCancelUpgrade {
   return {
     authority: '',
   };
 }
+/**
+ * MsgCancelUpgrade is the Msg/CancelUpgrade request type.
+ *
+ * Since: cosmos-sdk 0.46
+ * @name MsgCancelUpgrade
+ * @package cosmos.upgrade.v1beta1
+ * @see proto type: cosmos.upgrade.v1beta1.MsgCancelUpgrade
+ */
 export const MsgCancelUpgrade = {
   typeUrl: '/cosmos.upgrade.v1beta1.MsgCancelUpgrade' as const,
+  aminoType: 'cosmos-sdk/MsgCancelUpgrade' as const,
+  is(o: any): o is MsgCancelUpgrade {
+    return (
+      o &&
+      (o.$typeUrl === MsgCancelUpgrade.typeUrl ||
+        typeof o.authority === 'string')
+    );
+  },
+  isSDK(o: any): o is MsgCancelUpgradeSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgCancelUpgrade.typeUrl ||
+        typeof o.authority === 'string')
+    );
+  },
   encode(
     message: MsgCancelUpgrade,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -279,12 +380,28 @@ export const MsgCancelUpgrade = {
       value: MsgCancelUpgrade.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseMsgCancelUpgradeResponse(): MsgCancelUpgradeResponse {
   return {};
 }
+/**
+ * MsgCancelUpgradeResponse is the Msg/CancelUpgrade response type.
+ *
+ * Since: cosmos-sdk 0.46
+ * @name MsgCancelUpgradeResponse
+ * @package cosmos.upgrade.v1beta1
+ * @see proto type: cosmos.upgrade.v1beta1.MsgCancelUpgradeResponse
+ */
 export const MsgCancelUpgradeResponse = {
   typeUrl: '/cosmos.upgrade.v1beta1.MsgCancelUpgradeResponse' as const,
+  aminoType: 'cosmos-sdk/MsgCancelUpgradeResponse' as const,
+  is(o: any): o is MsgCancelUpgradeResponse {
+    return o && o.$typeUrl === MsgCancelUpgradeResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgCancelUpgradeResponseSDKType {
+    return o && o.$typeUrl === MsgCancelUpgradeResponse.typeUrl;
+  },
   encode(
     _: MsgCancelUpgradeResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -336,4 +453,5 @@ export const MsgCancelUpgradeResponse = {
       value: MsgCancelUpgradeResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

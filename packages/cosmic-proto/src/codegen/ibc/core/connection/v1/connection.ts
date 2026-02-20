@@ -3,8 +3,9 @@ import {
   MerklePrefix,
   type MerklePrefixSDKType,
 } from '../../commitment/v1/commitment.js';
-import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
+import { BinaryReader, BinaryWriter } from '../../../../binary.js';
+import { GlobalDecoderRegistry } from '../../../../registry.js';
 import { type JsonSafe } from '../../../../json-safe.js';
 /**
  * State defines if a connection is in one of the following states:
@@ -65,18 +66,27 @@ export function stateToJSON(object: State): string {
  * separate one.
  * NOTE: there must only be 2 defined ConnectionEnds to establish
  * a connection between two chains.
+ * @name ConnectionEnd
+ * @package ibc.core.connection.v1
+ * @see proto type: ibc.core.connection.v1.ConnectionEnd
  */
 export interface ConnectionEnd {
-  /** client associated with this connection. */
+  /**
+   * client associated with this connection.
+   */
   clientId: string;
   /**
    * IBC version which can be utilised to determine encodings or protocols for
    * channels or packets utilising this connection.
    */
   versions: Version[];
-  /** current state of the connection end. */
+  /**
+   * current state of the connection end.
+   */
   state: State;
-  /** counterparty chain associated with this connection. */
+  /**
+   * counterparty chain associated with this connection.
+   */
   counterparty: Counterparty;
   /**
    * delay period that must pass before a consensus state can be used for
@@ -94,6 +104,9 @@ export interface ConnectionEndProtoMsg {
  * separate one.
  * NOTE: there must only be 2 defined ConnectionEnds to establish
  * a connection between two chains.
+ * @name ConnectionEndSDKType
+ * @package ibc.core.connection.v1
+ * @see proto type: ibc.core.connection.v1.ConnectionEnd
  */
 export interface ConnectionEndSDKType {
   client_id: string;
@@ -105,22 +118,35 @@ export interface ConnectionEndSDKType {
 /**
  * IdentifiedConnection defines a connection with additional connection
  * identifier field.
+ * @name IdentifiedConnection
+ * @package ibc.core.connection.v1
+ * @see proto type: ibc.core.connection.v1.IdentifiedConnection
  */
 export interface IdentifiedConnection {
-  /** connection identifier. */
+  /**
+   * connection identifier.
+   */
   id: string;
-  /** client associated with this connection. */
+  /**
+   * client associated with this connection.
+   */
   clientId: string;
   /**
    * IBC version which can be utilised to determine encodings or protocols for
    * channels or packets utilising this connection
    */
   versions: Version[];
-  /** current state of the connection end. */
+  /**
+   * current state of the connection end.
+   */
   state: State;
-  /** counterparty chain associated with this connection. */
+  /**
+   * counterparty chain associated with this connection.
+   */
   counterparty: Counterparty;
-  /** delay period associated with this connection. */
+  /**
+   * delay period associated with this connection.
+   */
   delayPeriod: bigint;
 }
 export interface IdentifiedConnectionProtoMsg {
@@ -130,6 +156,9 @@ export interface IdentifiedConnectionProtoMsg {
 /**
  * IdentifiedConnection defines a connection with additional connection
  * identifier field.
+ * @name IdentifiedConnectionSDKType
+ * @package ibc.core.connection.v1
+ * @see proto type: ibc.core.connection.v1.IdentifiedConnection
  */
 export interface IdentifiedConnectionSDKType {
   id: string;
@@ -139,7 +168,12 @@ export interface IdentifiedConnectionSDKType {
   counterparty: CounterpartySDKType;
   delay_period: bigint;
 }
-/** Counterparty defines the counterparty chain associated with a connection end. */
+/**
+ * Counterparty defines the counterparty chain associated with a connection end.
+ * @name Counterparty
+ * @package ibc.core.connection.v1
+ * @see proto type: ibc.core.connection.v1.Counterparty
+ */
 export interface Counterparty {
   /**
    * identifies the client on the counterparty chain associated with a given
@@ -151,44 +185,77 @@ export interface Counterparty {
    * given connection.
    */
   connectionId: string;
-  /** commitment merkle prefix of the counterparty chain. */
+  /**
+   * commitment merkle prefix of the counterparty chain.
+   */
   prefix: MerklePrefix;
 }
 export interface CounterpartyProtoMsg {
   typeUrl: '/ibc.core.connection.v1.Counterparty';
   value: Uint8Array;
 }
-/** Counterparty defines the counterparty chain associated with a connection end. */
+/**
+ * Counterparty defines the counterparty chain associated with a connection end.
+ * @name CounterpartySDKType
+ * @package ibc.core.connection.v1
+ * @see proto type: ibc.core.connection.v1.Counterparty
+ */
 export interface CounterpartySDKType {
   client_id: string;
   connection_id: string;
   prefix: MerklePrefixSDKType;
 }
-/** ClientPaths define all the connection paths for a client state. */
+/**
+ * ClientPaths define all the connection paths for a client state.
+ * @name ClientPaths
+ * @package ibc.core.connection.v1
+ * @see proto type: ibc.core.connection.v1.ClientPaths
+ */
 export interface ClientPaths {
-  /** list of connection paths */
+  /**
+   * list of connection paths
+   */
   paths: string[];
 }
 export interface ClientPathsProtoMsg {
   typeUrl: '/ibc.core.connection.v1.ClientPaths';
   value: Uint8Array;
 }
-/** ClientPaths define all the connection paths for a client state. */
+/**
+ * ClientPaths define all the connection paths for a client state.
+ * @name ClientPathsSDKType
+ * @package ibc.core.connection.v1
+ * @see proto type: ibc.core.connection.v1.ClientPaths
+ */
 export interface ClientPathsSDKType {
   paths: string[];
 }
-/** ConnectionPaths define all the connection paths for a given client state. */
+/**
+ * ConnectionPaths define all the connection paths for a given client state.
+ * @name ConnectionPaths
+ * @package ibc.core.connection.v1
+ * @see proto type: ibc.core.connection.v1.ConnectionPaths
+ */
 export interface ConnectionPaths {
-  /** client state unique identifier */
+  /**
+   * client state unique identifier
+   */
   clientId: string;
-  /** list of connection paths */
+  /**
+   * list of connection paths
+   */
   paths: string[];
 }
 export interface ConnectionPathsProtoMsg {
   typeUrl: '/ibc.core.connection.v1.ConnectionPaths';
   value: Uint8Array;
 }
-/** ConnectionPaths define all the connection paths for a given client state. */
+/**
+ * ConnectionPaths define all the connection paths for a given client state.
+ * @name ConnectionPathsSDKType
+ * @package ibc.core.connection.v1
+ * @see proto type: ibc.core.connection.v1.ConnectionPaths
+ */
 export interface ConnectionPathsSDKType {
   client_id: string;
   paths: string[];
@@ -196,11 +263,18 @@ export interface ConnectionPathsSDKType {
 /**
  * Version defines the versioning scheme used to negotiate the IBC verison in
  * the connection handshake.
+ * @name Version
+ * @package ibc.core.connection.v1
+ * @see proto type: ibc.core.connection.v1.Version
  */
 export interface Version {
-  /** unique version identifier */
+  /**
+   * unique version identifier
+   */
   identifier: string;
-  /** list of features compatible with the specified identifier */
+  /**
+   * list of features compatible with the specified identifier
+   */
   features: string[];
 }
 export interface VersionProtoMsg {
@@ -210,12 +284,20 @@ export interface VersionProtoMsg {
 /**
  * Version defines the versioning scheme used to negotiate the IBC verison in
  * the connection handshake.
+ * @name VersionSDKType
+ * @package ibc.core.connection.v1
+ * @see proto type: ibc.core.connection.v1.Version
  */
 export interface VersionSDKType {
   identifier: string;
   features: string[];
 }
-/** Params defines the set of Connection parameters. */
+/**
+ * Params defines the set of Connection parameters.
+ * @name Params
+ * @package ibc.core.connection.v1
+ * @see proto type: ibc.core.connection.v1.Params
+ */
 export interface Params {
   /**
    * maximum expected time per block (in nanoseconds), used to enforce block delay. This parameter should reflect the
@@ -228,7 +310,12 @@ export interface ParamsProtoMsg {
   typeUrl: '/ibc.core.connection.v1.Params';
   value: Uint8Array;
 }
-/** Params defines the set of Connection parameters. */
+/**
+ * Params defines the set of Connection parameters.
+ * @name ParamsSDKType
+ * @package ibc.core.connection.v1
+ * @see proto type: ibc.core.connection.v1.Params
+ */
 export interface ParamsSDKType {
   max_expected_time_per_block: bigint;
 }
@@ -241,8 +328,42 @@ function createBaseConnectionEnd(): ConnectionEnd {
     delayPeriod: BigInt(0),
   };
 }
+/**
+ * ConnectionEnd defines a stateful object on a chain connected to another
+ * separate one.
+ * NOTE: there must only be 2 defined ConnectionEnds to establish
+ * a connection between two chains.
+ * @name ConnectionEnd
+ * @package ibc.core.connection.v1
+ * @see proto type: ibc.core.connection.v1.ConnectionEnd
+ */
 export const ConnectionEnd = {
   typeUrl: '/ibc.core.connection.v1.ConnectionEnd' as const,
+  aminoType: 'cosmos-sdk/ConnectionEnd' as const,
+  is(o: any): o is ConnectionEnd {
+    return (
+      o &&
+      (o.$typeUrl === ConnectionEnd.typeUrl ||
+        (typeof o.clientId === 'string' &&
+          Array.isArray(o.versions) &&
+          (!o.versions.length || Version.is(o.versions[0])) &&
+          isSet(o.state) &&
+          Counterparty.is(o.counterparty) &&
+          typeof o.delayPeriod === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is ConnectionEndSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ConnectionEnd.typeUrl ||
+        (typeof o.client_id === 'string' &&
+          Array.isArray(o.versions) &&
+          (!o.versions.length || Version.isSDK(o.versions[0])) &&
+          isSet(o.state) &&
+          Counterparty.isSDK(o.counterparty) &&
+          typeof o.delay_period === 'bigint'))
+    );
+  },
   encode(
     message: ConnectionEnd,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -358,6 +479,13 @@ export const ConnectionEnd = {
       value: ConnectionEnd.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(ConnectionEnd.typeUrl)) {
+      return;
+    }
+    Version.registerTypeUrl();
+    Counterparty.registerTypeUrl();
+  },
 };
 function createBaseIdentifiedConnection(): IdentifiedConnection {
   return {
@@ -369,8 +497,42 @@ function createBaseIdentifiedConnection(): IdentifiedConnection {
     delayPeriod: BigInt(0),
   };
 }
+/**
+ * IdentifiedConnection defines a connection with additional connection
+ * identifier field.
+ * @name IdentifiedConnection
+ * @package ibc.core.connection.v1
+ * @see proto type: ibc.core.connection.v1.IdentifiedConnection
+ */
 export const IdentifiedConnection = {
   typeUrl: '/ibc.core.connection.v1.IdentifiedConnection' as const,
+  aminoType: 'cosmos-sdk/IdentifiedConnection' as const,
+  is(o: any): o is IdentifiedConnection {
+    return (
+      o &&
+      (o.$typeUrl === IdentifiedConnection.typeUrl ||
+        (typeof o.id === 'string' &&
+          typeof o.clientId === 'string' &&
+          Array.isArray(o.versions) &&
+          (!o.versions.length || Version.is(o.versions[0])) &&
+          isSet(o.state) &&
+          Counterparty.is(o.counterparty) &&
+          typeof o.delayPeriod === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is IdentifiedConnectionSDKType {
+    return (
+      o &&
+      (o.$typeUrl === IdentifiedConnection.typeUrl ||
+        (typeof o.id === 'string' &&
+          typeof o.client_id === 'string' &&
+          Array.isArray(o.versions) &&
+          (!o.versions.length || Version.isSDK(o.versions[0])) &&
+          isSet(o.state) &&
+          Counterparty.isSDK(o.counterparty) &&
+          typeof o.delay_period === 'bigint'))
+    );
+  },
   encode(
     message: IdentifiedConnection,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -498,6 +660,17 @@ export const IdentifiedConnection = {
       value: IdentifiedConnection.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        IdentifiedConnection.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Version.registerTypeUrl();
+    Counterparty.registerTypeUrl();
+  },
 };
 function createBaseCounterparty(): Counterparty {
   return {
@@ -506,8 +679,33 @@ function createBaseCounterparty(): Counterparty {
     prefix: MerklePrefix.fromPartial({}),
   };
 }
+/**
+ * Counterparty defines the counterparty chain associated with a connection end.
+ * @name Counterparty
+ * @package ibc.core.connection.v1
+ * @see proto type: ibc.core.connection.v1.Counterparty
+ */
 export const Counterparty = {
   typeUrl: '/ibc.core.connection.v1.Counterparty' as const,
+  aminoType: 'cosmos-sdk/Counterparty' as const,
+  is(o: any): o is Counterparty {
+    return (
+      o &&
+      (o.$typeUrl === Counterparty.typeUrl ||
+        (typeof o.clientId === 'string' &&
+          typeof o.connectionId === 'string' &&
+          MerklePrefix.is(o.prefix)))
+    );
+  },
+  isSDK(o: any): o is CounterpartySDKType {
+    return (
+      o &&
+      (o.$typeUrl === Counterparty.typeUrl ||
+        (typeof o.client_id === 'string' &&
+          typeof o.connection_id === 'string' &&
+          MerklePrefix.isSDK(o.prefix)))
+    );
+  },
   encode(
     message: Counterparty,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -591,14 +789,43 @@ export const Counterparty = {
       value: Counterparty.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(Counterparty.typeUrl)) {
+      return;
+    }
+    MerklePrefix.registerTypeUrl();
+  },
 };
 function createBaseClientPaths(): ClientPaths {
   return {
     paths: [],
   };
 }
+/**
+ * ClientPaths define all the connection paths for a client state.
+ * @name ClientPaths
+ * @package ibc.core.connection.v1
+ * @see proto type: ibc.core.connection.v1.ClientPaths
+ */
 export const ClientPaths = {
   typeUrl: '/ibc.core.connection.v1.ClientPaths' as const,
+  aminoType: 'cosmos-sdk/ClientPaths' as const,
+  is(o: any): o is ClientPaths {
+    return (
+      o &&
+      (o.$typeUrl === ClientPaths.typeUrl ||
+        (Array.isArray(o.paths) &&
+          (!o.paths.length || typeof o.paths[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is ClientPathsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ClientPaths.typeUrl ||
+        (Array.isArray(o.paths) &&
+          (!o.paths.length || typeof o.paths[0] === 'string')))
+    );
+  },
   encode(
     message: ClientPaths,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -659,6 +886,7 @@ export const ClientPaths = {
       value: ClientPaths.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseConnectionPaths(): ConnectionPaths {
   return {
@@ -666,8 +894,33 @@ function createBaseConnectionPaths(): ConnectionPaths {
     paths: [],
   };
 }
+/**
+ * ConnectionPaths define all the connection paths for a given client state.
+ * @name ConnectionPaths
+ * @package ibc.core.connection.v1
+ * @see proto type: ibc.core.connection.v1.ConnectionPaths
+ */
 export const ConnectionPaths = {
   typeUrl: '/ibc.core.connection.v1.ConnectionPaths' as const,
+  aminoType: 'cosmos-sdk/ConnectionPaths' as const,
+  is(o: any): o is ConnectionPaths {
+    return (
+      o &&
+      (o.$typeUrl === ConnectionPaths.typeUrl ||
+        (typeof o.clientId === 'string' &&
+          Array.isArray(o.paths) &&
+          (!o.paths.length || typeof o.paths[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is ConnectionPathsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ConnectionPaths.typeUrl ||
+        (typeof o.client_id === 'string' &&
+          Array.isArray(o.paths) &&
+          (!o.paths.length || typeof o.paths[0] === 'string')))
+    );
+  },
   encode(
     message: ConnectionPaths,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -737,6 +990,7 @@ export const ConnectionPaths = {
       value: ConnectionPaths.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseVersion(): Version {
   return {
@@ -744,8 +998,34 @@ function createBaseVersion(): Version {
     features: [],
   };
 }
+/**
+ * Version defines the versioning scheme used to negotiate the IBC verison in
+ * the connection handshake.
+ * @name Version
+ * @package ibc.core.connection.v1
+ * @see proto type: ibc.core.connection.v1.Version
+ */
 export const Version = {
   typeUrl: '/ibc.core.connection.v1.Version' as const,
+  aminoType: 'cosmos-sdk/Version' as const,
+  is(o: any): o is Version {
+    return (
+      o &&
+      (o.$typeUrl === Version.typeUrl ||
+        (typeof o.identifier === 'string' &&
+          Array.isArray(o.features) &&
+          (!o.features.length || typeof o.features[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is VersionSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Version.typeUrl ||
+        (typeof o.identifier === 'string' &&
+          Array.isArray(o.features) &&
+          (!o.features.length || typeof o.features[0] === 'string')))
+    );
+  },
   encode(
     message: Version,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -815,14 +1095,36 @@ export const Version = {
       value: Version.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseParams(): Params {
   return {
     maxExpectedTimePerBlock: BigInt(0),
   };
 }
+/**
+ * Params defines the set of Connection parameters.
+ * @name Params
+ * @package ibc.core.connection.v1
+ * @see proto type: ibc.core.connection.v1.Params
+ */
 export const Params = {
   typeUrl: '/ibc.core.connection.v1.Params' as const,
+  aminoType: 'cosmos-sdk/Params' as const,
+  is(o: any): o is Params {
+    return (
+      o &&
+      (o.$typeUrl === Params.typeUrl ||
+        typeof o.maxExpectedTimePerBlock === 'bigint')
+    );
+  },
+  isSDK(o: any): o is ParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Params.typeUrl ||
+        typeof o.max_expected_time_per_block === 'bigint')
+    );
+  },
   encode(
     message: Params,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -886,4 +1188,5 @@ export const Params = {
       value: Params.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

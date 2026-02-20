@@ -2,6 +2,11 @@
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
+/**
+ * @name BitArray
+ * @package tendermint.libs.bits
+ * @see proto type: tendermint.libs.bits.BitArray
+ */
 export interface BitArray {
   bits: bigint;
   elems: bigint[];
@@ -10,6 +15,11 @@ export interface BitArrayProtoMsg {
   typeUrl: '/tendermint.libs.bits.BitArray';
   value: Uint8Array;
 }
+/**
+ * @name BitArraySDKType
+ * @package tendermint.libs.bits
+ * @see proto type: tendermint.libs.bits.BitArray
+ */
 export interface BitArraySDKType {
   bits: bigint;
   elems: bigint[];
@@ -20,6 +30,11 @@ function createBaseBitArray(): BitArray {
     elems: [],
   };
 }
+/**
+ * @name BitArray
+ * @package tendermint.libs.bits
+ * @see proto type: tendermint.libs.bits.BitArray
+ */
 export const BitArray = {
   typeUrl: '/tendermint.libs.bits.BitArray' as const,
   encode(

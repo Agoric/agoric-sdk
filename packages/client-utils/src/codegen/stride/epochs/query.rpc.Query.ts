@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { type Rpc } from '../../helpers.js';
+import { TxRpc } from '../../types.js';
 import { BinaryReader } from '../../binary.js';
 import { QueryClient, createProtobufRpcClient } from '@cosmjs/stargate';
 import {
@@ -24,8 +24,8 @@ export interface Query {
   epochInfo(request: QueryEpochInfoRequest): Promise<QueryEpochInfoResponse>;
 }
 export class QueryClientImpl implements Query {
-  private readonly rpc: Rpc;
-  constructor(rpc: Rpc) {
+  private readonly rpc: TxRpc;
+  constructor(rpc: TxRpc) {
     this.rpc = rpc;
     this.epochInfos = this.epochInfos.bind(this);
     this.currentEpoch = this.currentEpoch.bind(this);

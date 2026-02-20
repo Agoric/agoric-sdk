@@ -2,6 +2,11 @@
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
+/**
+ * @name StakeibcPacketData
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.StakeibcPacketData
+ */
 export interface StakeibcPacketData {
   noData?: NoData;
 }
@@ -9,20 +14,40 @@ export interface StakeibcPacketDataProtoMsg {
   typeUrl: '/stride.stakeibc.StakeibcPacketData';
   value: Uint8Array;
 }
+/**
+ * @name StakeibcPacketDataSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.StakeibcPacketData
+ */
 export interface StakeibcPacketDataSDKType {
   no_data?: NoDataSDKType;
 }
+/**
+ * @name NoData
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.NoData
+ */
 export interface NoData {}
 export interface NoDataProtoMsg {
   typeUrl: '/stride.stakeibc.NoData';
   value: Uint8Array;
 }
+/**
+ * @name NoDataSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.NoData
+ */
 export interface NoDataSDKType {}
 function createBaseStakeibcPacketData(): StakeibcPacketData {
   return {
     noData: undefined,
   };
 }
+/**
+ * @name StakeibcPacketData
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.StakeibcPacketData
+ */
 export const StakeibcPacketData = {
   typeUrl: '/stride.stakeibc.StakeibcPacketData' as const,
   encode(
@@ -90,6 +115,11 @@ export const StakeibcPacketData = {
 function createBaseNoData(): NoData {
   return {};
 }
+/**
+ * @name NoData
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.NoData
+ */
 export const NoData = {
   typeUrl: '/stride.stakeibc.NoData' as const,
   encode(

@@ -6,9 +6,15 @@ import {
   type StateSDKType,
 } from './swingset.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
+import { GlobalDecoderRegistry } from '../../registry.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
-/** The initial or exported state. */
+/**
+ * The initial or exported state.
+ * @name GenesisState
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.GenesisState
+ */
 export interface GenesisState {
   params: Params;
   state: State;
@@ -19,14 +25,24 @@ export interface GenesisStateProtoMsg {
   typeUrl: '/agoric.swingset.GenesisState';
   value: Uint8Array;
 }
-/** The initial or exported state. */
+/**
+ * The initial or exported state.
+ * @name GenesisStateSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.GenesisState
+ */
 export interface GenesisStateSDKType {
   params: ParamsSDKType;
   state: StateSDKType;
   swing_store_export_data: SwingStoreExportDataEntrySDKType[];
   swing_store_export_data_hash: string;
 }
-/** A SwingStore "export data" entry. */
+/**
+ * A SwingStore "export data" entry.
+ * @name SwingStoreExportDataEntry
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.SwingStoreExportDataEntry
+ */
 export interface SwingStoreExportDataEntry {
   key: string;
   value: string;
@@ -35,7 +51,12 @@ export interface SwingStoreExportDataEntryProtoMsg {
   typeUrl: '/agoric.swingset.SwingStoreExportDataEntry';
   value: Uint8Array;
 }
-/** A SwingStore "export data" entry. */
+/**
+ * A SwingStore "export data" entry.
+ * @name SwingStoreExportDataEntrySDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.SwingStoreExportDataEntry
+ */
 export interface SwingStoreExportDataEntrySDKType {
   key: string;
   value: string;
@@ -48,8 +69,38 @@ function createBaseGenesisState(): GenesisState {
     swingStoreExportDataHash: '',
   };
 }
+/**
+ * The initial or exported state.
+ * @name GenesisState
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.GenesisState
+ */
 export const GenesisState = {
   typeUrl: '/agoric.swingset.GenesisState' as const,
+  is(o: any): o is GenesisState {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Params.is(o.params) &&
+          State.is(o.state) &&
+          Array.isArray(o.swingStoreExportData) &&
+          (!o.swingStoreExportData.length ||
+            SwingStoreExportDataEntry.is(o.swingStoreExportData[0])) &&
+          typeof o.swingStoreExportDataHash === 'string'))
+    );
+  },
+  isSDK(o: any): o is GenesisStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Params.isSDK(o.params) &&
+          State.isSDK(o.state) &&
+          Array.isArray(o.swing_store_export_data) &&
+          (!o.swing_store_export_data.length ||
+            SwingStoreExportDataEntry.isSDK(o.swing_store_export_data[0])) &&
+          typeof o.swing_store_export_data_hash === 'string'))
+    );
+  },
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -157,6 +208,14 @@ export const GenesisState = {
       value: GenesisState.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(GenesisState.typeUrl)) {
+      return;
+    }
+    Params.registerTypeUrl();
+    State.registerTypeUrl();
+    SwingStoreExportDataEntry.registerTypeUrl();
+  },
 };
 function createBaseSwingStoreExportDataEntry(): SwingStoreExportDataEntry {
   return {
@@ -164,8 +223,28 @@ function createBaseSwingStoreExportDataEntry(): SwingStoreExportDataEntry {
     value: '',
   };
 }
+/**
+ * A SwingStore "export data" entry.
+ * @name SwingStoreExportDataEntry
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.SwingStoreExportDataEntry
+ */
 export const SwingStoreExportDataEntry = {
   typeUrl: '/agoric.swingset.SwingStoreExportDataEntry' as const,
+  is(o: any): o is SwingStoreExportDataEntry {
+    return (
+      o &&
+      (o.$typeUrl === SwingStoreExportDataEntry.typeUrl ||
+        (typeof o.key === 'string' && typeof o.value === 'string'))
+    );
+  },
+  isSDK(o: any): o is SwingStoreExportDataEntrySDKType {
+    return (
+      o &&
+      (o.$typeUrl === SwingStoreExportDataEntry.typeUrl ||
+        (typeof o.key === 'string' && typeof o.value === 'string'))
+    );
+  },
   encode(
     message: SwingStoreExportDataEntry,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -240,4 +319,5 @@ export const SwingStoreExportDataEntry = {
       value: SwingStoreExportDataEntry.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

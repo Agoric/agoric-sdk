@@ -3,16 +3,28 @@ import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
 import { type JsonSafe } from '../../json-safe.js';
-/** The initial and exported module state. */
+/**
+ * The initial and exported module state.
+ * @name GenesisState
+ * @package agoric.vtransfer
+ * @see proto type: agoric.vtransfer.GenesisState
+ */
 export interface GenesisState {
-  /** The list of account addresses that are being watched by the VM. */
+  /**
+   * The list of account addresses that are being watched by the VM.
+   */
   watchedAddresses: Uint8Array[];
 }
 export interface GenesisStateProtoMsg {
   typeUrl: '/agoric.vtransfer.GenesisState';
   value: Uint8Array;
 }
-/** The initial and exported module state. */
+/**
+ * The initial and exported module state.
+ * @name GenesisStateSDKType
+ * @package agoric.vtransfer
+ * @see proto type: agoric.vtransfer.GenesisState
+ */
 export interface GenesisStateSDKType {
   watched_addresses: Uint8Array[];
 }
@@ -21,6 +33,12 @@ function createBaseGenesisState(): GenesisState {
     watchedAddresses: [],
   };
 }
+/**
+ * The initial and exported module state.
+ * @name GenesisState
+ * @package agoric.vtransfer
+ * @see proto type: agoric.vtransfer.GenesisState
+ */
 export const GenesisState = {
   typeUrl: '/agoric.vtransfer.GenesisState' as const,
   encode(
