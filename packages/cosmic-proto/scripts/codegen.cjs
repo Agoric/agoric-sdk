@@ -7,7 +7,7 @@ const fsp = require('fs/promises');
 const path = require('path');
 const assert = require('node:assert/strict');
 const process = require('process');
-const { TelescopeBuilder } = require('@cosmology/telescope');
+const { TelescopeBuilder } = require('@hyperweb/telescope');
 const rimraf = require('rimraf').rimrafSync;
 
 const protoDirs = [path.join(__dirname, '/../proto')];
@@ -28,24 +28,45 @@ function fixTypeImport(directory, gnuSed) {
     -e 's/\\([{,]\\) \\([[:alnum:]_]*SDKType\\)/\\1 type \\2/g' {} +
   `;
 
-  exec(command, (error, stdout, stderr) => {
-    if (error) {
-      console.error(`Error during replacement: ${error.message}`);
-      return;
-    }
-    if (stderr) {
-      console.error(`Standard error: ${stderr}`);
-    }
-  });
+  execSync(command, { stdio: 'inherit' });
 }
 
 /**
- * @type {import('@cosmology/telescope').TelescopeInput}
+ * Remove SigningClientParams from generated types helper to avoid bringing in
+ * CosmJS signer endpoint typing surface in this package.
+ *
+ * @param {string} filePath
+ */
+async function removeSigningClientParams(filePath) {
+  const source = await fsp.readFile(filePath, 'utf8');
+  let next = source;
+
+  next = next.replace(
+    /^import\s+\{\s*OfflineSigner\s*\}\s+from\s+'@cosmjs\/proto-signing';\n/m,
+    '',
+  );
+  next = next.replace(
+    /^import\s+\{\s*HttpEndpoint\s*\}\s+from\s+'@cosmjs\/tendermint-rpc';\n/m,
+    '',
+  );
+  next = next.replace(
+    /\nexport interface SigningClientParams \{[\s\S]*?\n\}\n?/m,
+    '\n',
+  );
+
+  if (next !== source) {
+    await fsp.writeFile(filePath, next);
+  }
+}
+
+/**
+ * @type {import('@hyperweb/telescope').TelescopeInput}
  */
 const input = {
   protoDirs,
   outPath,
   options: {
+    useInterchainJs: false,
     // for ESM compatibility
     restoreImportExtension: '.js',
     tsDisable: {
@@ -65,7 +86,7 @@ const input = {
     },
     prototypes: {
       /**
-       * Not working as expected with @cosmology/telescope@1.12.2
+       * Not working as expected with @hyperweb/telescope
        * It was only implemented for an Amino registry.
        */
       // enableRegistryLoader: true,
@@ -252,6 +273,19 @@ builder
     );
     assert.equal(prettierResult.status, 0);
     console.log('💅 code formatted by Prettier');
+
+    const typesHelperFile = path.join(outPath, 'types.ts');
+    await removeSigningClientParams(typesHelperFile);
+    const prettierTypesResult = spawnSync(
+      'yarn',
+      ['run', '--top-level', 'prettier', '--write', 'src/codegen/types.ts'],
+      {
+        cwd: path.join(__dirname, '..'),
+        stdio: 'inherit',
+      },
+    );
+    assert.equal(prettierTypesResult.status, 0);
+    console.log('🧹 removed SigningClientParams from generated types helper');
 
     console.log('ℹ️ `yarn build && yarn test` to test it.');
   })
