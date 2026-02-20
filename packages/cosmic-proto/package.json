@@ -144,6 +144,46 @@
       "types": "./dist/codegen/agoric/swingset/swingset.d.ts",
       "default": "./dist/codegen/agoric/swingset/swingset.js"
     },
+    "./codegen/binary.js": {
+      "types": "./dist/codegen/binary.d.ts",
+      "default": "./dist/codegen/binary.js"
+    },
+    "./codegen/decimals.js": {
+      "types": "./dist/codegen/decimals.d.ts",
+      "default": "./dist/codegen/decimals.js"
+    },
+    "./codegen/extern.js": {
+      "types": "./dist/codegen/extern.d.ts",
+      "default": "./dist/codegen/extern.js"
+    },
+    "./codegen/helper-func-types.js": {
+      "types": "./dist/codegen/helper-func-types.d.ts",
+      "default": "./dist/codegen/helper-func-types.js"
+    },
+    "./codegen/helpers.js": {
+      "types": "./dist/codegen/helpers.d.ts",
+      "default": "./dist/codegen/helpers.js"
+    },
+    "./codegen/json-safe.js": {
+      "types": "./dist/codegen/json-safe.d.ts",
+      "default": "./dist/codegen/json-safe.js"
+    },
+    "./codegen/types.js": {
+      "types": "./dist/codegen/types.d.ts",
+      "default": "./dist/codegen/types.js"
+    },
+    "./codegen/utf8.js": {
+      "types": "./dist/codegen/utf8.d.ts",
+      "default": "./dist/codegen/utf8.js"
+    },
+    "./codegen/varint.js": {
+      "types": "./dist/codegen/varint.d.ts",
+      "default": "./dist/codegen/varint.js"
+    },
+    "./codegen/*.js": {
+      "types": "./dist/codegen/*.d.ts",
+      "default": "./dist/codegen/*.js"
+    },
     "./tendermint/*.js": {
       "types": "./dist/codegen/tendermint/*.d.ts",
       "default": "./dist/codegen/tendermint/*.js"

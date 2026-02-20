@@ -8,9 +8,9 @@
 import type { IBinaryReader, IBinaryWriter } from './binary.js';
 import { Any } from './google/protobuf/any.js';
 
-import { HttpEndpoint } from '@interchainjs/types';
+import type { HttpEndpoint } from '@interchainjs/types';
 
-import { DeliverTxResponse, Event, Attribute } from '@interchainjs/types';
+import type { DeliverTxResponse, Event, Attribute } from '@interchainjs/types';
 
 export type { DeliverTxResponse };
 
