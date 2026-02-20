@@ -372,6 +372,37 @@ export const AckBehavior = {
   Never: 'NEVER',
 } as const;
 type AckBehaviorType = (typeof AckBehavior)[keyof typeof AckBehavior];
+type FakeStorage = ReturnType<typeof makeFakeStorageKit>;
+type FakeStorageMessage = FakeStorage['messages'][number];
+
+type SwingsetStorageSnapshot = {
+  dataEntries: [string, string][];
+  messages: FakeStorageMessage[];
+};
+
+export type SwingsetTestKitSnapshot = {
+  swingStoreSerialized: Buffer;
+  storageSnapshot?: SwingsetStorageSnapshot;
+};
+
+const snapshotFakeStorage = (storage: FakeStorage): SwingsetStorageSnapshot => ({
+  dataEntries: [...storage.data.entries()],
+  messages: [...storage.messages],
+});
+
+const restoreFakeStorage = (
+  storageSnapshot?: SwingsetStorageSnapshot,
+): FakeStorage => {
+  const storage = makeFakeStorageKit('bootstrapTests');
+  if (!storageSnapshot) {
+    return storage;
+  }
+  for (const [key, value] of storageSnapshot.dataEntries) {
+    storage.data.set(key, value);
+  }
+  storage.messages.push(...storageSnapshot.messages);
+  return storage;
+};
 
 /**
  * Start a SwingSet kernel to be used by tests and benchmarks.
@@ -431,7 +462,7 @@ export const makeSwingsetTestKit = async (
   {
     configSpecifier = '@agoric/vm-config/decentral-itest-vaults-config.json',
     label = undefined as string | undefined,
-    storage = makeFakeStorageKit('bootstrapTests'),
+    storage: storageOpt = undefined as FakeStorage | undefined,
     verbose = false,
     slogFile = undefined as string | undefined,
     profileVats = [] as string[],
@@ -440,8 +471,10 @@ export const makeSwingsetTestKit = async (
     harness = undefined as RunHarness | undefined,
     resolveBase = import.meta.url,
     configOverrides = {} as Partial<SwingSetConfig>,
+    snapshot = undefined as SwingsetTestKitSnapshot | undefined,
   } = {},
 ) => {
+  const storage = storageOpt || restoreFakeStorage(snapshot?.storageSnapshot);
   const importSpec = createRequire(resolveBase).resolve;
   console.time('makeBaseSwingsetTestKit');
   const configPath = await getNodeTestVaultsConfig({
@@ -451,7 +484,9 @@ export const makeSwingsetTestKit = async (
     defaultManagerType,
     configOverrides,
   });
-  const swingStore = initSwingStore();
+  const swingStore = snapshot
+    ? initSwingStore(null, { serialized: snapshot.swingStoreSerialized })
+    : initSwingStore();
   const { kernelStorage, hostStorage } = swingStore;
   const { fromCapData } = boardSlottingMarshaller(slotToBoardRemote);
 
@@ -736,7 +771,9 @@ export const makeSwingsetTestKit = async (
   // XXX This initial run() might not be necessary. Tests pass without it as of
   // 2025-02, but we suspect that `makeSwingsetTestKit` just isn't being
   // exercised in the right way.
-  await controller.run();
+  if (!snapshot) {
+    await controller.run();
+  }
   const runUtils = makeBootstrapRunUtils(controller, harness);
 
   const buildProposal = makeProposalExtractor({
@@ -885,6 +922,13 @@ export const makeSwingsetTestKit = async (
     });
   };
 
+  const makeSnapshot = (): SwingsetTestKitSnapshot => {
+    return {
+      swingStoreSerialized: swingStore.debug.serialize(),
+      storageSnapshot: snapshotFakeStorage(storage),
+    };
+  };
+
   return {
     advanceTimeBy,
     advanceTimeTo,
@@ -900,6 +944,23 @@ export const makeSwingsetTestKit = async (
     readPublished,
     runUtils,
     shutdown,
+    makeSnapshot,
+    forkFromSnapshot: async (
+      forkingSnapshot: SwingsetTestKitSnapshot = makeSnapshot(),
+    ) =>
+      makeSwingsetTestKit(log, bundleDir, {
+        configSpecifier,
+        label,
+        verbose,
+        slogFile,
+        profileVats,
+        debugVats,
+        defaultManagerType,
+        harness,
+        resolveBase,
+        configOverrides,
+        snapshot: forkingSnapshot,
+      }),
     storage,
     swingStore,
     timer,
