@@ -20,6 +20,13 @@ export const makeDirectoryLock = powers => {
     acquireTimeoutMs,
     onEvent = () => {},
   } = powers;
+  const safeEmit = event => {
+    try {
+      onEvent(event);
+    } catch {
+      // Event sinks are observational; lock behavior must not depend on them.
+    }
+  };
 
   /**
    * @param {string} key
@@ -43,7 +50,7 @@ export const makeDirectoryLock = powers => {
             !isPidAlive(ownerInfo.pid)
           ) {
             await fs.rm(lockPath, { recursive: true, force: true });
-            onEvent({
+            safeEmit({
               type: 'lock-broken',
               key,
               lockPath,
@@ -62,7 +69,7 @@ export const makeDirectoryLock = powers => {
         const ageMs = now() - lockStats.mtimeMs;
         if (ageMs >= staleLockMs) {
           await fs.rm(lockPath, { recursive: true, force: true });
-          onEvent({
+          safeEmit({
             type: 'lock-broken',
             key,
             lockPath,
@@ -87,7 +94,7 @@ export const makeDirectoryLock = powers => {
           JSON.stringify({ pid, createdAt: now() }),
           'utf8',
         );
-        onEvent({ type: 'lock-acquired', key, lockPath });
+        safeEmit({ type: 'lock-acquired', key, lockPath });
         break;
       } catch (err) {
         const e = /** @type {NodeJS.ErrnoException} */ (err);
@@ -99,7 +106,7 @@ export const makeDirectoryLock = powers => {
           continue;
         }
         const waitedMs = now() - started;
-        onEvent({ type: 'lock-waiting', key, lockPath, waitedMs });
+        safeEmit({ type: 'lock-waiting', key, lockPath, waitedMs });
         if (waitedMs >= acquireTimeoutMs) {
           throw Error(`Timed out waiting for cache lock ${lockPath}`);
         }
@@ -111,7 +118,7 @@ export const makeDirectoryLock = powers => {
       return await body();
     } finally {
       await fs.rm(lockPath, { recursive: true, force: true });
-      onEvent({ type: 'lock-released', key, lockPath });
+      safeEmit({ type: 'lock-released', key, lockPath });
     }
   };
 
