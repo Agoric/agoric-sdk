@@ -93,7 +93,7 @@ test.serial('failed load does not poison later load for same key', async t => {
 test('makeNodeBundleCache returns independent cache instances', async t => {
   const { bundlesDir, sourcePath } = await setupFixture(t);
   const loadModule = specifier => import(specifier);
-  const opts = { format: 'endoZipBase64', dev: false };
+  const opts = { format: 'endoZipBase64' as const, dev: false };
 
   const cacheAP = makeNodeBundleCache(bundlesDir, opts, loadModule, testPowers);
   const cacheBP = makeNodeBundleCache(bundlesDir, opts, loadModule, testPowers);
