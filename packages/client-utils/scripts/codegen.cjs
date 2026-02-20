@@ -4,7 +4,7 @@ const { execSync, spawnSync } = require('node:child_process');
 const path = require('node:path');
 const assert = require('node:assert/strict');
 const process = require('node:process');
-const telescope = require('@cosmology/telescope').default;
+const telescope = require('@hyperweb/telescope').default;
 const rimraf = require('rimraf').rimrafSync;
 
 const protoDirs = [path.join(__dirname, '/../../cosmic-proto/proto')];
@@ -35,6 +35,7 @@ telescope({
   protoDirs,
   outPath,
   options: {
+    useInterchainJs: false,
     // for ESM compatibility
     restoreImportExtension: '.js',
     tsDisable: {
@@ -119,6 +120,10 @@ telescope({
     },
     lcdClients: {
       // REST APIs are deprecated?
+      enabled: false,
+    },
+    // We don't use these helper functions
+    helperFunctions: {
       enabled: false,
     },
     rpcClients: {
