@@ -21,10 +21,17 @@ import {
   testInterruptedSteps,
   type TestStep,
 } from '@agoric/internal/src/testing-utils.js';
+import type { Bech32Address } from '@agoric/orchestration';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
-import { TxType, type FundsFlowPlan } from '@agoric/portfolio-api';
+import {
+  TxType,
+  type FundsFlowPlan,
+  type PublishedPortfolioTxDetails,
+  type PublishedTx,
+  type TxId,
+} from '@agoric/portfolio-api';
 import { deploy as deployWalletFactory } from '@agoric/smart-wallet/tools/wf-tools.js';
 import { E, passStyleOf } from '@endo/far';
 import { hexToBytes } from '@noble/hashes/utils';
@@ -47,7 +54,11 @@ import {
   simulateCCTPAck,
 } from './contract-setup.ts';
 import { contractsMock, makeCCTPTraffic, portfolio0lcaOrch } from './mocks.ts';
-import { chainInfoWithCCTP, makeStorageTools } from './supports.ts';
+import {
+  chainInfoWithCCTP,
+  makeIncomingVTransferEvent,
+  makeStorageTools,
+} from './supports.ts';
 
 const { fromEntries, keys, values } = Object;
 
@@ -2548,35 +2559,60 @@ test('open portfolio does not require Access token when Access issuer is present
   });
 });
 
-test('verifies fix for p772: make-account recovery after prior failed make-account flow', async t => {
+test('verifies fix for p772 & p775: make-account recovery after prior failed make-account flow', async t => {
   const { common, planner1, readPublished, txResolver, evmTrader } =
     await setupPlanner(t);
   const { usdc, bld } = common.brands;
 
   const inputs = {
     fromChain: 'Base' as const,
+    otherSuccessChain: 'Arbitrum' as const,
+    otherFailedChain: 'Optimism' as const,
     depositAmount: usdc.units(1000),
-    allocations: [{ instrument: 'Aave_Base', portion: 10000n }],
+    allocations: [
+      { instrument: 'Aave_Base', portion: 4000n },
+      { instrument: 'Aave_Arbitrum', portion: 4000n },
+      { instrument: 'Aave_Optimism', portion: 2000n },
+    ],
   };
-  const { fromChain: evm, depositAmount, allocations } = inputs;
+  const {
+    fromChain,
+    otherSuccessChain,
+    otherFailedChain,
+    depositAmount,
+    allocations,
+  } = inputs;
 
   const expected = {
     portfolioId: 0,
     storagePath: `${ROOT_STORAGE_PATH}.portfolios.portfolio0`,
-    positions: { Aave: usdc.units(1000) },
   };
 
   await planner1.redeem();
 
   const openResult = await (async () => {
     const result = await evmTrader
-      .forChain(evm)
+      .forChain(fromChain)
       .openPortfolio(allocations, depositAmount.value);
     t.is(result.storagePath, expected.storagePath);
     t.is(result.portfolioId, expected.portfolioId);
     await ackNFA(common.utils);
     return result;
   })();
+
+  const findPendingTxInfo = async () => {
+    const txIds = await txResolver.findPending();
+    const infos = await Promise.all(
+      txIds.map(async txId => {
+        const info = (await readPublished(
+          `pendingTxs.${txId}`,
+        )) as StatusFor['pendingTx'];
+        return { txId, ...info };
+      }),
+    );
+    // Ignore IBC_FROM_AGORIC txs that are never handled curently
+    return infos.filter(info => info.type !== TxType.IBC_FROM_AGORIC);
+  };
 
   const submitDepositPlan = async (expectedValue: bigint) => {
     const status = await evmTrader.getPortfolioStatus();
@@ -2588,15 +2624,82 @@ test('verifies fix for p772: make-account recovery after prior failed make-accou
     t.is(detail.amount.value, expectedValue);
     const planDepositAmount = AmountMath.make(usdc.brand, detail.amount.value);
     const fee = bld.units(100);
+    const totalPortion = allocations.reduce(
+      (sum, { portion }) => sum + portion,
+      0n,
+    );
+    const allocationTargets = Object.fromEntries(
+      allocations.map(({ instrument, portion }) => [
+        instrument,
+        AmountMath.make(
+          usdc.brand,
+          (portion * detail.amount.value) / totalPortion,
+        ),
+      ]),
+    );
+    const CCTPAmount = AmountMath.add(
+      allocationTargets[`Aave_${otherSuccessChain}`],
+      allocationTargets[`Aave_${otherFailedChain}`],
+    );
     const plan: FundsFlowPlan = {
       flow: [
-        { src: `+${evm}`, dest: `@${evm}`, amount: planDepositAmount, fee },
         {
-          src: `@${evm}`,
-          dest: `Aave_${evm}`,
+          src: `+${fromChain}`,
+          dest: `@${fromChain}`,
           amount: planDepositAmount,
           fee,
         },
+        {
+          src: `@${fromChain}`,
+          dest: `Aave_${fromChain}`,
+          amount: allocationTargets[`Aave_${fromChain}`],
+          fee,
+        },
+        {
+          src: `@${fromChain}`,
+          dest: `@agoric`,
+          amount: CCTPAmount,
+          fee,
+        },
+        {
+          src: `@agoric`,
+          dest: `@noble`,
+          amount: CCTPAmount,
+          fee,
+        },
+        {
+          src: `@noble`,
+          dest: `@${otherSuccessChain}`,
+          amount: allocationTargets[`Aave_${otherSuccessChain}`],
+          fee,
+        },
+        {
+          src: `@noble`,
+          dest: `@${otherFailedChain}`,
+          amount: allocationTargets[`Aave_${otherFailedChain}`],
+          fee,
+        },
+        {
+          src: `@${otherFailedChain}`,
+          dest: `Aave_${otherFailedChain}`,
+          amount: allocationTargets[`Aave_${otherFailedChain}`],
+          fee,
+        },
+        {
+          src: `@${otherSuccessChain}`,
+          dest: `Aave_${otherSuccessChain}`,
+          amount: allocationTargets[`Aave_${otherSuccessChain}`],
+          fee,
+        },
+      ],
+      order: [
+        [1, [0]],
+        [2, [0]],
+        [3, [2]],
+        [4, [3]],
+        [5, [3]],
+        [6, [5]],
+        [7, [4]],
       ],
     };
     await E(planner1.stub).resolvePlan(
@@ -2605,28 +2708,77 @@ test('verifies fix for p772: make-account recovery after prior failed make-accou
       plan,
       ...sync,
     );
-    return flowId;
+    return { flowId, allocationTargets };
   };
 
-  const flow1Num = await submitDepositPlan(depositAmount.value);
+  const { flowId: flow1Num } = await submitDepositPlan(depositAmount.value);
+
+  const chainFromIds = Object.fromEntries(
+    Object.entries(chainInfoWithCCTP).map(([chain, info]) => [
+      info.reference,
+      chain,
+    ]),
+  );
+
+  const getTxIdByChain = (infos: (PublishedTx & { txId: TxId })[]) =>
+    Object.fromEntries(
+      infos.map(info => [
+        chainFromIds[
+          parseAccountId(
+            (info as PublishedPortfolioTxDetails).destinationAddress!,
+          ).reference
+        ],
+        info.txId,
+      ]),
+    );
 
   // Drive flow1 until make-account pending tx is visible, then fail it.
   const flow1TxId = await (async () => {
+    // Send the make-account IBC transfer acks
     await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-    await eventLoopIteration();
-    const [flowTxId] = await txResolver.findPending();
-    const flowInfo = (await readPublished(
-      `pendingTxs.${flowTxId}`,
-    )) as StatusFor['pendingTx'];
-    t.is(
-      flowInfo.type,
-      TxType.MAKE_ACCOUNT,
-      'flow1 has pending make-account tx',
-    );
-    await txResolver.settleTransaction(flowTxId, 'failed');
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -3);
 
-    return flowTxId;
+    const flowsInfo = await findPendingTxInfo();
+    t.like(
+      flowsInfo,
+      [
+        { type: TxType.MAKE_ACCOUNT },
+        { type: TxType.MAKE_ACCOUNT },
+        { type: TxType.MAKE_ACCOUNT },
+      ],
+      'flow1 has 3 pending make-account txs',
+    );
+
+    const txIdByChain = getTxIdByChain(flowsInfo);
+
+    // one chain settles before the failing deposit make-account
+    await txResolver.settleTransaction(
+      txIdByChain[otherSuccessChain],
+      'success',
+    );
+    await eventLoopIteration();
+
+    // The deposit fails
+    await txResolver.settleTransaction(txIdByChain[fromChain], 'failed');
+    await eventLoopIteration();
+
+    // Resolve the last make-account but after
+    await txResolver.settleTransaction(
+      txIdByChain[otherFailedChain],
+      'success',
+    );
+    await eventLoopIteration();
+
+    return txIdByChain[fromChain];
   })();
+
+  const pendingTxAfterFlow1 = await findPendingTxInfo();
+  t.deepEqual(
+    pendingTxAfterFlow1,
+    [],
+    'no pending tx after flow1 make-account failure settles',
+  );
 
   const statusAfterFlow1 = await evmTrader.getPortfolioStatus();
 
@@ -2651,23 +2803,40 @@ test('verifies fix for p772: make-account recovery after prior failed make-accou
     {},
     'flowsRunning should be empty after flow1 fails',
   );
+  // XXX: if we ever change the flow implementation to stay active while tx are
+  // pending, this check would need to change
+  t.deepEqual(
+    statusAfterFlow1.accountsPending,
+    [otherFailedChain],
+    'other failed account is pending after flow1 failure',
+  );
 
   // Start flow2 from same chain/account context.
-  const remoteAddress = statusAfterFlow1.accountIdByChain[evm]
-    ? (parseAccountId(statusAfterFlow1.accountIdByChain[evm])
+  const remoteAddress = statusAfterFlow1.accountIdByChain[fromChain]
+    ? (parseAccountId(statusAfterFlow1.accountIdByChain[fromChain])
         .accountAddress as `0x${string}`)
     : undefined;
   t.truthy(remoteAddress, 'Remote address exists');
 
   const flow2Amount = usdc.units(500);
   const flow2Key = await evmTrader
-    .forChain(evm)
+    .forChain(fromChain)
     .deposit(flow2Amount.value, remoteAddress);
   t.regex(flow2Key, /^flow\d+$/, 'deposit returns a flow key');
 
-  await submitDepositPlan(flow2Amount.value);
+  const statusAfterFlow2Start = await evmTrader.getPortfolioStatus();
 
-  const findFailedMakeAccount = () => {
+  t.deepEqual(
+    statusAfterFlow2Start.accountsPending,
+    [],
+    'other failed account is no longer pending after flow2 starts (but is failed)',
+  );
+
+  const { allocationTargets: flow2AllocationTargets } = await submitDepositPlan(
+    flow2Amount.value,
+  );
+
+  const findFailedMakeAccountTx = () => {
     const paths = [...common.bootstrap.storage.data.keys()].filter(path =>
       path.includes('.pendingTxs.tx'),
     );
@@ -2682,24 +2851,138 @@ test('verifies fix for p772: make-account recovery after prior failed make-accou
   };
 
   await eventLoopIteration();
-  const failedMakeAccount = findFailedMakeAccount();
-  t.is(failedMakeAccount.length, 1, 'only original make-account failed tx');
-  t.like(failedMakeAccount[0], { txId: flow1TxId });
+  const failedMakeAccountTx = findFailedMakeAccountTx();
+  t.is(failedMakeAccountTx.length, 1, 'only original make-account failed tx');
+  t.like(failedMakeAccountTx[0], { txId: flow1TxId });
 
   await (async () => {
-    // Acknowledge Axelar makeAccount
-    await simulateAckTransferToAxelar(common.utils);
-    await txResolver.drainPending();
+    // Step 0: Base and Optimism makeAccount
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
+    const step0Pending = await findPendingTxInfo();
+    t.is(step0Pending.length, 2);
+    t.like(
+      step0Pending,
+      [{ type: TxType.MAKE_ACCOUNT }, { type: TxType.MAKE_ACCOUNT }],
+      'two make-account pending',
+    );
+    await txResolver.settleTransaction(step0Pending[0].txId, 'success');
+    await txResolver.settleTransaction(step0Pending[1].txId, 'success');
     await eventLoopIteration();
 
-    // Acknowledge depositFromEVM GMP call to Axelar
-    await simulateAckTransferToAxelar(common.utils);
-    await txResolver.drainPending();
+    // Step 1:depositFromEVM GMP call to Axelar
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    const step1Pending = await findPendingTxInfo();
+    t.is(step1Pending.length, 1);
+    t.like(step1Pending, [{ type: TxType.GMP }], 'one GMP pending');
+    await txResolver.settleTransaction(step1Pending[0].txId, 'success');
     await eventLoopIteration();
 
-    // Acknowledge Aave GMP call to Axelar
-    await simulateAckTransferToAxelar(common.utils);
-    await txResolver.drainPending();
+    // Step 2 & 3: GMP for Aave_Base and CCTP to Agoric
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
+    const step23Pending = await findPendingTxInfo();
+    const gmpStep23 = step23Pending.filter(info => info.type === TxType.GMP);
+    t.is(gmpStep23.length, 2);
+    await txResolver.settleTransaction(gmpStep23[0].txId, 'success');
+    await txResolver.settleTransaction(gmpStep23[1].txId, 'success');
+    await eventLoopIteration();
+
+    // Step 3: CCTP Transfer In
+    const step3Pending = await findPendingTxInfo();
+    t.is(step3Pending.length, 1);
+    t.like(
+      step3Pending,
+      [{ type: TxType.CCTP_TO_AGORIC }],
+      'one CCTP transfer in',
+    );
+    const cctpInfo = step3Pending[0] as PublishedPortfolioTxDetails;
+    const cctpDestination = parseAccountId(cctpInfo.destinationAddress!);
+    const fwdEvent = makeIncomingVTransferEvent({
+      sender: statusAfterFlow1.nobleForwardingAddress!,
+      sourceChannel:
+        chainInfoWithCCTP.noble.connections['agoric-3'].transferChannel
+          .channelId,
+      destinationChannel:
+        chainInfoWithCCTP.noble.connections['agoric-3'].transferChannel
+          .counterPartyChannelId,
+      target: cctpDestination.accountAddress,
+      receiver: cctpDestination.accountAddress as Bech32Address,
+      amount: cctpInfo.amount,
+    });
+    await E(common.mocks.transferBridge).fromBridge(fwdEvent);
+    await eventLoopIteration();
+
+    // Setup the acks for the Step 5 & 6 CCTP Out
+    const traffic = [otherFailedChain, otherSuccessChain].flatMap(chain =>
+      values(
+        makeCCTPTraffic(
+          parseAccountId(statusAfterFlow1.accountIdByChain.noble!)
+            .accountAddress,
+          `${flow2AllocationTargets[`Aave_${chain}`].value}`,
+          parseAccountId(statusAfterFlow1.accountIdByChain[chain]!)
+            .accountAddress,
+          chainInfoWithCCTP[chain].cctpDestinationDomain,
+        ),
+      ),
+    );
+    for (const { msg, ack } of traffic) {
+      common.mocks.ibcBridge.addMockAck(msg, ack);
+    }
+
+    // Step 4: IBC to Noble
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+
+    // Step 5 & 6: CCTP transfer out to Arbitrum & Optimism
+    const step56Pending = await findPendingTxInfo();
+    t.is(step56Pending.length, 2);
+    t.like(
+      step56Pending,
+      [{ type: TxType.CCTP_TO_EVM }, { type: TxType.CCTP_TO_EVM }],
+      'two CCTP transfers out',
+    );
+    const cctpTxIdByChain = getTxIdByChain(step56Pending);
+    // Ack Step 5
+    await txResolver.settleTransaction(
+      cctpTxIdByChain[otherFailedChain],
+      'success',
+    );
+    await eventLoopIteration();
+
+    // Step 8: GMP Call for Aave Optimism
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    const step8Pending = await findPendingTxInfo();
+    t.is(step8Pending.length, 2);
+    t.like(
+      step8Pending,
+      [
+        { type: TxType.CCTP_TO_EVM, txId: cctpTxIdByChain[otherSuccessChain] },
+        { type: TxType.GMP },
+      ],
+      'only one GMP pending after single CCTP ack',
+    );
+
+    // Ack Step 6
+    await txResolver.settleTransaction(
+      cctpTxIdByChain[otherSuccessChain],
+      'success',
+    );
+    await eventLoopIteration();
+
+    // Step 7: GMP Call for Aave Arbitrum
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    const step7Pending = await findPendingTxInfo();
+    t.is(step7Pending.length, 2);
+    t.like(
+      step7Pending,
+      [{ type: TxType.GMP, txId: step8Pending[1].txId }, { type: TxType.GMP }],
+      'both GMP now pending',
+    );
+    await txResolver.settleTransaction(step7Pending[1].txId, 'success');
+    await eventLoopIteration();
+
+    // Ack Step 8
+    await txResolver.settleTransaction(step8Pending[1].txId, 'success');
     await eventLoopIteration();
   })();
 
@@ -2713,6 +2996,13 @@ test('verifies fix for p772: make-account recovery after prior failed make-accou
   t.snapshot(contentsAfterFlow2, 'after flow 2');
   await documentStorageSchema(t, common.bootstrap.storage, pendingTxOpts);
 
+  const pendingTxAfterFlow2 = await findPendingTxInfo();
+  t.deepEqual(
+    pendingTxAfterFlow2,
+    [],
+    'no pending tx after second flow completes',
+  );
+
   const flow2History =
     contentsAfterFlow2[`${openResult.storagePath}.flows.${flow2Key}`];
 
@@ -2724,9 +3014,24 @@ test('verifies fix for p772: make-account recovery after prior failed make-accou
   t.deepEqual(
     statusAfterFlow2.flowsRunning,
     {},
-    'flowsRunning should be empty after flow2 succeeds',
+    'flowsRunning should be empty after flow2 completes',
   );
 
-  // XXX: At this level we cannot (yet) check that account is no longer failed
+  const failedPosition = (await readPublished(
+    `portfolios.portfolio0.positions.Aave_${otherFailedChain}`,
+  )) as any;
+  t.not(
+    failedPosition.totalIn.value,
+    0n,
+    'position for recovered failed remote account',
+  );
+
+  t.deepEqual(
+    statusAfterFlow2.accountsPending,
+    [],
+    'no accounts left pending after flow2 success',
+  );
+
+  // XXX: At this level we cannot (yet) check that the from account is no longer failed
   // we could observe that another flow does not trigger another make-account.
 });

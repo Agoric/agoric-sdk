@@ -287,6 +287,39 @@ test('capture stateShape to be intentional about changes', t => {
   t.snapshot(PositionStateShape, 'PositionStateShape');
 });
 
+test('manager releases evm pending accounts when starting a new flow', async t => {
+  const { makePortfolioKit } = makeTestSetup();
+  const { manager, reader } = makePortfolioKit({ portfolioId: 1 });
+
+  manager.reserveAccount('noble');
+  const { state: arbitrumStateBefore } =
+    manager.reserveAccountState('Arbitrum');
+  t.is(arbitrumStateBefore, 'new');
+  manager.initAccountInfo({
+    chainName: 'Arbitrum',
+    chainId: 'eip155:42161',
+    namespace: 'eip155',
+    remoteAddress: '0x1234',
+  });
+
+  const { state: arbitrumStateAfterInit } =
+    manager.reserveAccountState('Arbitrum');
+  t.is(arbitrumStateAfterInit, 'pending');
+
+  manager.startFlow({ type: 'deposit', amount: { brand: USDC, value: 100n } });
+
+  const accountInfoAfterStart = reader.getGMPInfo('Arbitrum');
+  t.truthy(accountInfoAfterStart.err);
+  const { state: arbitrumStateAfterStart } =
+    manager.reserveAccountState('Arbitrum');
+  t.is(arbitrumStateAfterStart, 'failed');
+
+  const { noble } = reader.accountIdByChain();
+  t.is(noble, undefined, 'no noble info');
+  const { state: nobleStateAfterStart } = manager.reserveAccountState('noble');
+  t.is(nobleStateAfterStart, 'pending');
+});
+
 test('evmHandler deposit fails if owner does not match', async t => {
   const ownerAddress = '0x2222222222222222222222222222222222222222' as Address;
   const wrongOwnerAddress =

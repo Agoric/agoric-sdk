@@ -228,13 +228,14 @@ export const makeCCTPTraffic = (
   money = `${3_333.33 * 1000000}`,
   // This default matches the predicted addresss computed during tests
   dest = '0x8fcc8340520552c3cc861acaaa752e2d38bff2bb',
+  destinationDomain = 3,
 ) => ({
   depositForBurn: {
     msg: buildTxPacketString([
       MsgDepositForBurn.toProtoMsg({
         amount: money,
         burnToken: 'uusdc',
-        destinationDomain: 3,
+        destinationDomain,
         from,
         mintRecipient: leftPadEthAddressTo32Bytes(dest),
       }),
