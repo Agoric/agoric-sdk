@@ -8,9 +8,12 @@ import { makeDirectoryLock } from '@agoric/internal/src/build-cache.js';
 
 /**
  * @import {EReturn} from '@endo/far';
+ * @import {BuildCacheEvent} from '@agoric/internal/src/build-cache-types.js';
+ * @import {BundleOptions, ModuleFormat} from '@endo/bundle-source';
  */
 
 /** @typedef {EReturn<typeof wrappedMaker>} WrappedBundleCache */
+/** @typedef {BundleOptions<ModuleFormat> & Parameters<typeof wrappedMaker>[1]} BundleCacheOptions */
 /**
  * @typedef {{
  *   sourceSpec?: string;
@@ -34,8 +37,28 @@ import { makeDirectoryLock } from '@agoric/internal/src/build-cache.js';
  */
 /**
  * @typedef {{
- *   onBundleToolEvent?: (event: Record<string, unknown>) => void,
+ *   onBundleToolEvent?: (event: BundleToolEvent) => void,
  * }} BundleToolEventSink
+ */
+/**
+ * @typedef {{
+ *   type: 'bundle-source-log';
+ *   args: unknown[];
+ *   phase: string;
+ *   timestamp: number;
+ * }} BundleSourceLogEvent
+ */
+/**
+ * @typedef {{
+ *   type: 'registry-loaded';
+ *   args: string[];
+ *   phase: '[registry]';
+ *   elapsedMs: number;
+ *   bundleCount: number;
+ * }} RegistryLoadedEvent
+ */
+/**
+ * @typedef {BundleSourceLogEvent | RegistryLoadedEvent | BuildCacheEvent} BundleToolEvent
  */
 /**
  * @typedef {{
@@ -50,7 +73,7 @@ import { makeDirectoryLock } from '@agoric/internal/src/build-cache.js';
 
 /**
  * @param {string} dest
- * @param {Parameters<typeof wrappedMaker>[1]} options
+ * @param {BundleCacheOptions} options
  * @param {Parameters<typeof wrappedMaker>[2]} loadModule
  * @param {BundleToolPowers} powers
  * @returns {Promise<BundleCache>}
@@ -140,7 +163,7 @@ harden(makeAmbientBundleToolPowers);
 
 /**
  * @param {string} dest
- * @param {Parameters<typeof wrappedMaker>[1]} options
+ * @param {BundleCacheOptions} options
  * @param {Parameters<typeof wrappedMaker>[2]} loadModule
  * @param {BundleToolPowers} powers
  * @returns {Promise<BundleCache>}
