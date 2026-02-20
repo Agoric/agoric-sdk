@@ -59,6 +59,7 @@ import type {
 } from '@agoric/portfolio-api';
 import type { EvmAddress } from '@agoric/fast-usdc';
 
+import type { FeatureFlag } from './config.ts';
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
 import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
@@ -663,11 +664,13 @@ export const startEngine = async (
   powers: Powers,
   {
     isDryRun,
+    featureFlags = [],
     contractInstance,
     depositBrandName,
     feeBrandName,
   }: {
     isDryRun?: boolean;
+    featureFlags?: FeatureFlag[];
     contractInstance: string;
     depositBrandName: string;
     feeBrandName: string;
@@ -752,25 +755,27 @@ export const startEngine = async (
     portfolioKeyForDepositAddr,
     evmProviders: evmCtx.evmProviders,
   });
-  await makeWorkPool(portfolioKeys, undefined, async portfolioKey => {
-    const { streamCellJson, event } = makeVstorageEvent(
-      0n,
-      portfoliosPathPrefix,
-      harden({ addPortfolio: portfolioKey }) as StatusFor['portfolios'],
-      marshaller,
-    );
-    const eventRecord: EventRecord = {
-      blockHeight: initialBlockHeight,
-      type: 'kvstore',
-      event,
-    };
-    await processPortfolioEvents(
-      [{ path: portfoliosPathPrefix, value: streamCellJson, eventRecord }],
-      initialBlockHeight,
-      portfoliosMemory,
-      processPortfolioPowers,
-    );
-  }).done;
+  if (!featureFlags.includes('no-planner')) {
+    await makeWorkPool(portfolioKeys, undefined, async portfolioKey => {
+      const { streamCellJson, event } = makeVstorageEvent(
+        0n,
+        portfoliosPathPrefix,
+        harden({ addPortfolio: portfolioKey }) as StatusFor['portfolios'],
+        marshaller,
+      );
+      const eventRecord: EventRecord = {
+        blockHeight: initialBlockHeight,
+        type: 'kvstore',
+        event,
+      };
+      await processPortfolioEvents(
+        [{ path: portfoliosPathPrefix, value: streamCellJson, eventRecord }],
+        initialBlockHeight,
+        portfoliosMemory,
+        processPortfolioPowers,
+      );
+    }).done;
+  }
 
   // Map to track AbortControllers for each pending transaction
   // This allows aborting watchers when transactions are manually resolved
@@ -791,39 +796,46 @@ export const startEngine = async (
   });
   console.warn(`Found ${pendingTxKeys.length} pending transactions`);
 
-  const initialPendingTxData: PendingTxRecord[] = [];
-  await makeWorkPool(pendingTxKeys, undefined, async (txId: TxId) => {
-    const path = `${pendingTxPathPrefix}.${txId}`;
-    await null;
-    let streamCellJson;
-    let data;
-    try {
-      const metaResponse = await readStorageMeta(query.vstorage, path, 'data', {
-        retries: 4,
-      });
-      streamCellJson = metaResponse.result.value;
-      const streamCell = parseStreamCell(streamCellJson, path);
-      const marshalledData = parseStreamCellValue(streamCell, -1, path);
-      data = marshaller.fromCapData(marshalledData);
-      if (
-        data?.status !== TxStatus.PENDING ||
-        data.type === TxType.CCTP_TO_AGORIC
-      )
-        return;
-      mustMatch(harden(data), PublishedTxShape, path);
-      initialPendingTxData.push({
-        blockHeight: BigInt(streamCell.blockHeight),
-        tx: { txId, ...data },
-      });
-    } catch (err) {
-      const errLabel = `🚨 Failed to read old pending tx ${path}`;
-      console.error(errLabel, data || streamCellJson, err);
-    }
-  }).done;
+  if (!featureFlags.includes('no-resolver')) {
+    const initialPendingTxData: PendingTxRecord[] = [];
+    await makeWorkPool(pendingTxKeys, undefined, async (txId: TxId) => {
+      const path = `${pendingTxPathPrefix}.${txId}`;
+      await null;
+      let streamCellJson;
+      let data;
+      try {
+        const metaResponse = await readStorageMeta(
+          query.vstorage,
+          path,
+          'data',
+          {
+            retries: 4,
+          },
+        );
+        streamCellJson = metaResponse.result.value;
+        const streamCell = parseStreamCell(streamCellJson, path);
+        const marshalledData = parseStreamCellValue(streamCell, -1, path);
+        data = marshaller.fromCapData(marshalledData);
+        if (
+          data?.status !== TxStatus.PENDING ||
+          data.type === TxType.CCTP_TO_AGORIC
+        )
+          return;
+        mustMatch(harden(data), PublishedTxShape, path);
+        initialPendingTxData.push({
+          blockHeight: BigInt(streamCell.blockHeight),
+          tx: { txId, ...data },
+        });
+      } catch (err) {
+        const errLabel = `🚨 Failed to read old pending tx ${path}`;
+        console.error(errLabel, data || streamCellJson, err);
+      }
+    }).done;
 
-  if (initialPendingTxData.length > 0) {
-    // Process initial transactions in lookback mode upon planner startup
-    await processInitialPendingTransactions(initialPendingTxData, txPowers);
+    if (initialPendingTxData.length > 0) {
+      // Process initial transactions in lookback mode upon planner startup
+      await processInitialPendingTransactions(initialPendingTxData, txPowers);
+    }
   }
 
   // console.warn('consuming events');
@@ -881,20 +893,26 @@ export const startEngine = async (
       }
     }
 
-    // Process portfolio events in (blockHeight, vstoragePath) order.
-    portfolioEvents.sort(
-      (a, b) =>
-        compareBigints(a.eventRecord.blockHeight, b.eventRecord.blockHeight) ||
-        naturalCompare(a.path, b.path),
-    );
-    await processPortfolioEvents(
-      portfolioEvents,
-      respHeight,
-      portfoliosMemory,
-      processPortfolioPowers,
-    );
+    if (!featureFlags.includes('no-planner')) {
+      // Process portfolio events in (blockHeight, vstoragePath) order.
+      portfolioEvents.sort(
+        (a, b) =>
+          compareBigints(
+            a.eventRecord.blockHeight,
+            b.eventRecord.blockHeight,
+          ) || naturalCompare(a.path, b.path),
+      );
+      await processPortfolioEvents(
+        portfolioEvents,
+        respHeight,
+        portfoliosMemory,
+        processPortfolioPowers,
+      );
+    }
 
-    await processPendingTxEvents(pendingTxEvents, handlePendingTx, txPowers);
+    if (!featureFlags.includes('no-resolver')) {
+      await processPendingTxEvents(pendingTxEvents, handlePendingTx, txPowers);
+    }
 
     console.log(
       inspectForStdout({
