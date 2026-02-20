@@ -111,7 +111,10 @@ telescope({
     assert.equal(prettierResult.status, 0);
     console.log('💅 code formatted by Prettier');
 
-    const cleanedFiles = await applyTelescopeFixes({ outPath });
+    const cleanedFiles = await applyTelescopeFixes({
+      outPath,
+      includeHelperCleanups: false,
+    });
     const dedupedFiles = await dedupeCodegenSupportModules(outPath);
     const postProcessFiles = [...new Set([...cleanedFiles, ...dedupedFiles])];
     if (postProcessFiles.length > 0) {

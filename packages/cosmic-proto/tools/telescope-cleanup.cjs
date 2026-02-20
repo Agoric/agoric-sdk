@@ -262,30 +262,37 @@ async function fixRpcTypeImports(outPath) {
 /**
  * Apply shared Telescope output fixes.
  *
- * @param {{ outPath: string, includeSigningClientParamsCleanup?: boolean }} params
+ * @param {{
+ *   outPath: string,
+ *   includeSigningClientParamsCleanup?: boolean,
+ *   includeHelperCleanups?: boolean
+ * }} params
  */
 async function applyTelescopeFixes({
   outPath,
   includeSigningClientParamsCleanup = false,
+  includeHelperCleanups = true,
 }) {
-  const targets = [
-    {
-      filePath: path.join(outPath, 'types.ts'),
-      fix: fp => fixTypesHelper(fp, includeSigningClientParamsCleanup),
-    },
-    {
-      filePath: path.join(outPath, 'extern.ts'),
-      fix: fixExternHelper,
-    },
-    {
-      filePath: path.join(outPath, 'registry.ts'),
-      fix: fixRegistryHelper,
-    },
-    {
-      filePath: path.join(outPath, 'helper-func-types.ts'),
-      fix: fixHelperFuncTypes,
-    },
-  ];
+  const targets = includeHelperCleanups
+    ? [
+        {
+          filePath: path.join(outPath, 'types.ts'),
+          fix: fp => fixTypesHelper(fp, includeSigningClientParamsCleanup),
+        },
+        {
+          filePath: path.join(outPath, 'extern.ts'),
+          fix: fixExternHelper,
+        },
+        {
+          filePath: path.join(outPath, 'registry.ts'),
+          fix: fixRegistryHelper,
+        },
+        {
+          filePath: path.join(outPath, 'helper-func-types.ts'),
+          fix: fixHelperFuncTypes,
+        },
+      ]
+    : [];
 
   /** @type {string[]} */
   const changed = [];
