@@ -2,63 +2,23 @@
 // @ts-check
 
 /* eslint-env node */
-const { execSync, spawnSync } = require('child_process');
+const { spawnSync } = require('child_process');
 const fsp = require('fs/promises');
 const path = require('path');
 const assert = require('node:assert/strict');
 const process = require('process');
 const { TelescopeBuilder } = require('@hyperweb/telescope');
 const rimraf = require('rimraf').rimrafSync;
+const { getBaseTelescopeOptions } = require('../tools/telescope-options.cjs');
+const {
+  applyTelescopeFixes,
+  detectGnuSed,
+  fixTypeImportForVerbatim,
+} = require('../tools/telescope-cleanup.cjs');
 
 const protoDirs = [path.join(__dirname, '/../proto')];
 const outPath = path.join(__dirname, '../src/codegen');
 rimraf(outPath);
-
-/**
- * Make the JsonSafe type import compatible with TS verbatimImportSyntax
- *
- * @param {string} directory
- * @param {boolean} gnuSed
- */
-function fixTypeImport(directory, gnuSed) {
-  const fullPath = path.resolve(directory);
-  const quotedPath = JSON.stringify(fullPath);
-  const command = `
-    find ${quotedPath} -type f -exec ${gnuSed ? 'sed -i' : 'sed -i ""'} \
-    -e 's/import { JsonSafe/import {type JsonSafe/g' \
-    -e 's/\\([{,]\\) \\([[:alnum:]_]*SDKType\\)/\\1 type \\2/g' {} +
-  `;
-
-  execSync(command, { stdio: 'inherit' });
-}
-
-/**
- * Remove SigningClientParams from generated types helper to avoid bringing in
- * CosmJS signer endpoint typing surface in this package.
- *
- * @param {string} filePath
- */
-async function removeSigningClientParams(filePath) {
-  const source = await fsp.readFile(filePath, 'utf8');
-  let next = source;
-
-  next = next.replace(
-    /^import\s+\{\s*OfflineSigner\s*\}\s+from\s+'@cosmjs\/proto-signing';\n/m,
-    '',
-  );
-  next = next.replace(
-    /^import\s+\{\s*HttpEndpoint\s*\}\s+from\s+'@cosmjs\/tendermint-rpc';\n/m,
-    '',
-  );
-  next = next.replace(
-    /\nexport interface SigningClientParams \{[\s\S]*?\n\}\n?/m,
-    '\n',
-  );
-
-  if (next !== source) {
-    await fsp.writeFile(filePath, next);
-  }
-}
 
 /**
  * @type {import('@hyperweb/telescope').TelescopeInput}
@@ -66,112 +26,7 @@ async function removeSigningClientParams(filePath) {
 const input = {
   protoDirs,
   outPath,
-  options: {
-    useInterchainJs: false,
-    // for ESM compatibility
-    restoreImportExtension: '.js',
-    tsDisable: {
-      // FIXME types aren't resolving correctly
-      disableAll: true,
-      files: [
-        'cosmos/authz/v1beta1/tx.amino.ts',
-        'cosmos/staking/v1beta1/tx.amino.ts',
-      ],
-      patterns: ['**/*amino.ts', '**/*registry.ts'],
-    },
-    interfaces: {
-      enabled: true,
-      // useGlobalDecoderRegistry: true,
-      registerAllDecodersToGlobal: false,
-      useUnionTypes: false,
-    },
-    prototypes: {
-      /**
-       * Not working as expected with @hyperweb/telescope
-       * It was only implemented for an Amino registry.
-       */
-      // enableRegistryLoader: true,
-      /**
-       * Relies on tree-shaking to avoid huge bundle sizes.
-       */
-      enableMessageComposer: false,
-      includePackageVar: false,
-      excluded: {
-        packages: [
-          'ibc.applications.fee.v1', // issue with parsing protos (LCD routes with nested objects in params)
-
-          'cosmos.app.v1alpha1',
-          'cosmos.app.v1beta1',
-          'cosmos.base.kv.v1beta1',
-          'cosmos.base.reflection.v1beta1',
-          'cosmos.base.snapshots.v1beta1',
-          'cosmos.base.store.v1beta1',
-          'cosmos.base.tendermint.v1beta1',
-          'cosmos.crisis.v1beta1',
-          'cosmos.evidence.v1beta1',
-          'cosmos.genutil.v1beta1',
-
-          'cosmos.autocli.v1',
-
-          'cosmos.msg.v1',
-          'cosmos.nft.v1beta1',
-          'cosmos.capability.v1beta1',
-          'cosmos.orm.v1alpha1',
-          'cosmos.orm.v1',
-          'cosmos.slashing.v1beta1',
-          'google.api',
-          'ibc.core.port.v1',
-          'ibc.core.types.v1',
-        ],
-      },
-      methods: {
-        fromJSON: true,
-        toJSON: true,
-        encode: true,
-        decode: true,
-        fromPartial: true,
-        toAmino: false,
-        fromAmino: false,
-        fromProto: true,
-        toProto: true,
-      },
-      parser: {
-        keepCase: false,
-      },
-      typingsFormat: {
-        useDeepPartial: false,
-        timestamp: /** @type {const} */ ('timestamp'),
-
-        // [Defaults]
-        // timestamp: 'date',
-        // duration: 'duration',
-        // num64: 'bigint',
-        // useExact: false,
-        // customTypes: {
-        //   useCosmosSDKDec: true,
-        // },
-        customTypes: {
-          base64Lib: /** @type {const} */ ('@endo/base64'),
-          useEnhancedDecimal: true,
-        },
-      },
-    },
-    aminoEncoding: {
-      // Must be enabled for getSigningAgoricClient
-      enabled: false,
-      // disableMsgTypes: true,
-    },
-    lcdClients: {
-      enabled: false,
-    },
-    // We don't use these helper functions
-    helperFunctions: {
-      enabled: false,
-    },
-    rpcClients: {
-      enabled: false,
-    },
-  },
+  options: getBaseTelescopeOptions(),
 };
 
 const builder = new TelescopeBuilder(input);
@@ -260,11 +115,8 @@ builder
     console.log('🔨 code generated by Telescope');
 
     // for all files under codegen/ replace "import { JsonSafe" with "import type { JsonSafe"
-    const gnuSed =
-      execSync(`sed --help 2>&1 | sed 2q | grep -qe '-i ' || printf gnu`, {
-        encoding: 'utf8',
-      }) === 'gnu';
-    fixTypeImport('./src/codegen', gnuSed);
+    const gnuSed = detectGnuSed();
+    fixTypeImportForVerbatim('./src/codegen', gnuSed);
     console.log('🔧 type keyword added');
 
     const repoRoot = path.join(__dirname, '..', '..', '..');
@@ -287,18 +139,30 @@ builder
     assert.equal(prettierResult.status, 0);
     console.log('💅 code formatted by Prettier');
 
-    const typesHelperFile = path.join(outPath, 'types.ts');
-    await removeSigningClientParams(typesHelperFile);
-    const prettierTypesResult = spawnSync(
-      'yarn',
-      ['run', '--top-level', 'prettier', '--write', 'src/codegen/types.ts'],
-      {
-        cwd: path.join(__dirname, '..'),
-        stdio: 'inherit',
-      },
-    );
-    assert.equal(prettierTypesResult.status, 0);
-    console.log('🧹 removed SigningClientParams from generated types helper');
+    const cleanedFiles = await applyTelescopeFixes({
+      outPath,
+      includeSigningClientParamsCleanup: true,
+    });
+    if (cleanedFiles.length > 0) {
+      const prettierHelpersResult = spawnSync(
+        'yarn',
+        [
+          'run',
+          '--top-level',
+          'prettier',
+          '--write',
+          ...cleanedFiles.map(file =>
+            path.relative(path.join(__dirname, '..'), file),
+          ),
+        ],
+        {
+          cwd: path.join(__dirname, '..'),
+          stdio: 'inherit',
+        },
+      );
+      assert.equal(prettierHelpersResult.status, 0);
+    }
+    console.log('🧹 cleaned generated helper compatibility imports');
 
     console.log('ℹ️ `yarn build && yarn test` to test it.');
   })

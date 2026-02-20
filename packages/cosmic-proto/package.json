@@ -152,6 +152,38 @@
       "types": "./dist/codegen/agoric/swingset/swingset.d.ts",
       "default": "./dist/codegen/agoric/swingset/swingset.js"
     },
+    "./codegen/binary.js": {
+      "types": "./dist/codegen/binary.d.ts",
+      "default": "./dist/codegen/binary.js"
+    },
+    "./codegen/decimals.js": {
+      "types": "./dist/codegen/decimals.d.ts",
+      "default": "./dist/codegen/decimals.js"
+    },
+    "./codegen/helpers.js": {
+      "types": "./dist/codegen/helpers.d.ts",
+      "default": "./dist/codegen/helpers.js"
+    },
+    "./codegen/json-safe.js": {
+      "types": "./dist/codegen/json-safe.d.ts",
+      "default": "./dist/codegen/json-safe.js"
+    },
+    "./codegen/types.js": {
+      "types": "./dist/codegen/types.d.ts",
+      "default": "./dist/codegen/types.js"
+    },
+    "./codegen/utf8.js": {
+      "types": "./dist/codegen/utf8.d.ts",
+      "default": "./dist/codegen/utf8.js"
+    },
+    "./codegen/varint.js": {
+      "types": "./dist/codegen/varint.d.ts",
+      "default": "./dist/codegen/varint.js"
+    },
+    "./codegen/*.js": {
+      "types": "./dist/codegen/*.d.ts",
+      "default": "./dist/codegen/*.js"
+    },
     "./tendermint/*.js": {
       "types": "./dist/codegen/tendermint/*.d.ts",
       "default": "./dist/codegen/tendermint/*.js"
@@ -205,6 +237,8 @@
     "typescript": "~6.0.0-beta"
   },
   "dependencies": {
+    "@chain-registry/v2": "^1.71.186",
+    "@chain-registry/v2-types": "^0.53.115",
     "@endo/base64": "^1.0.12",
     "@endo/init": "^1.1.12",
     "@interchainjs/cosmos": "^1.19.3",

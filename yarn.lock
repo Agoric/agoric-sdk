@@ -525,6 +525,8 @@ __metadata:
   dependencies:
     "@agoric/cosmos": "workspace:*"
     "@ava/typescript": "npm:^6.0.0"
+    "@chain-registry/v2": "npm:^1.71.186"
+    "@chain-registry/v2-types": "npm:^0.53.115"
     "@endo/base64": "npm:^1.0.12"
     "@endo/bundle-source": "npm:^4.1.2"
     "@endo/import-bundle": "npm:^1.5.2"
@@ -2002,6 +2004,22 @@ __metadata:
     bignumber.js: "npm:9.1.2"
     sha.js: "npm:^2.4.11"
   checksum: 10c0/731ac26948b317c20a2a3e5cb1a86f446b5cd2327d53f0e74de3113134fd80166e3ea9b36161c41de4e0ec5370d12a62c8270aefeb21a27ef1987623d7507b47
+  languageName: node
+  linkType: hard
+
+"@chain-registry/v2-types@npm:^0.53.115, @chain-registry/v2-types@npm:^0.53.146":
+  version: 0.53.146
+  resolution: "@chain-registry/v2-types@npm:0.53.146"
+  checksum: 10c0/197d4ac8022294b28e5303863ea2aea2bffeca0af1c8b15917e80aef7b28eaf8d9e7691c8e9266ec6a10af1957b7facdac811529e72b571e4711781e54d80a8d
+  languageName: node
+  linkType: hard
+
+"@chain-registry/v2@npm:^1.71.186":
+  version: 1.71.237
+  resolution: "@chain-registry/v2@npm:1.71.237"
+  dependencies:
+    "@chain-registry/v2-types": "npm:^0.53.146"
+  checksum: 10c0/949068c947a53ef4ab49d47df49a677a338d6ff6cb817fa7987c05e4987152ab35c72e584d615c27201cebd0da57485d5c831193eae83f0d686601558f988c5b
   languageName: node
   linkType: hard
 
