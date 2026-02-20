@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { buildQuery } from '../../../helper-func-types.js';
+import { buildQuery } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   QueryAccountRequest,
   AccountResponse,
@@ -7,7 +7,7 @@ import {
   AccountsResponse,
   QueryDisabledListRequest,
   DisabledListResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/circuit/v1/query.js';
 /**
  * Account returns account permissions.
  * @name getAccount

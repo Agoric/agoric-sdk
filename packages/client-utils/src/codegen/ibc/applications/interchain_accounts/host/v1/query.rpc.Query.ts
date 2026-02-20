@@ -1,8 +1,11 @@
 //@ts-nocheck
-import { TxRpc } from '../../../../../types.js';
-import { BinaryReader } from '../../../../../binary.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import { QueryClient, createProtobufRpcClient } from '@cosmjs/stargate';
-import { QueryParamsRequest, QueryParamsResponse } from './query.js';
+import {
+  QueryParamsRequest,
+  QueryParamsResponse,
+} from '@agoric/cosmic-proto/codegen/ibc/applications/interchain_accounts/host/v1/query.js';
 /** Query provides defines the gRPC querier service. */
 export interface Query {
   /** Params queries all parameters of the ICA host submodule. */

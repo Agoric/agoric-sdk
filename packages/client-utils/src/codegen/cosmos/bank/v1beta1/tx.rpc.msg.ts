@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { TxRpc } from '../../../types.js';
-import { BinaryReader } from '../../../binary.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import {
   MsgSend,
   MsgSendResponse,
@@ -10,7 +10,7 @@ import {
   MsgUpdateParamsResponse,
   MsgSetSendEnabled,
   MsgSetSendEnabledResponse,
-} from './tx.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/bank/v1beta1/tx.js';
 /** Msg defines the bank Msg service. */
 export interface Msg {
   /** Send defines a method for sending coins from one account to another account. */

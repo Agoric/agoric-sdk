@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { buildQuery } from '../../../helper-func-types.js';
+import { buildQuery } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   QueryValidatorsRequest,
   QueryValidatorsResponse,
@@ -29,7 +29,7 @@ import {
   QueryPoolResponse,
   QueryParamsRequest,
   QueryParamsResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/staking/v1beta1/query.js';
 /**
  * Validators queries all validators that match the given status.
  *

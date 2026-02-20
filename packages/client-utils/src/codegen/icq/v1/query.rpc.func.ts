@@ -1,6 +1,9 @@
 //@ts-nocheck
-import { buildQuery } from '../../helper-func-types.js';
-import { QueryParamsRequest, QueryParamsResponse } from './query.js';
+import { buildQuery } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
+import {
+  QueryParamsRequest,
+  QueryParamsResponse,
+} from '@agoric/cosmic-proto/codegen/icq/v1/query.js';
 /**
  * Params queries all parameters of the ICQ module.
  * @name getParams

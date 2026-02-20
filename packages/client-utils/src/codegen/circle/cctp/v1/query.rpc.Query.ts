@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { TxRpc } from '../../../types.js';
-import { BinaryReader } from '../../../binary.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import { QueryClient, createProtobufRpcClient } from '@cosmjs/stargate';
 import {
   QueryRolesRequest,
@@ -41,7 +41,7 @@ import {
   QueryLocalMessageVersionResponse,
   QueryLocalDomainRequest,
   QueryLocalDomainResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/circle/cctp/v1/query.js';
 /** Query defines the gRPC querier service. */
 export interface Query {
   roles(request?: QueryRolesRequest): Promise<QueryRolesResponse>;

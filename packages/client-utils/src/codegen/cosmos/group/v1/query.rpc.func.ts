@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { buildQuery } from '../../../helper-func-types.js';
+import { buildQuery } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   QueryGroupInfoRequest,
   QueryGroupInfoResponse,
@@ -29,7 +29,7 @@ import {
   QueryTallyResultResponse,
   QueryGroupsRequest,
   QueryGroupsResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/group/v1/query.js';
 /**
  * GroupInfo queries group info based on group id.
  * @name getGroupInfo

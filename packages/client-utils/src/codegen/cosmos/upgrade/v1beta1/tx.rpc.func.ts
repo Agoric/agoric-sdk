@@ -1,6 +1,9 @@
 //@ts-nocheck
-import { buildTx } from '../../../helper-func-types.js';
-import { MsgSoftwareUpgrade, MsgCancelUpgrade } from './tx.js';
+import { buildTx } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
+import {
+  MsgSoftwareUpgrade,
+  MsgCancelUpgrade,
+} from '@agoric/cosmic-proto/codegen/cosmos/upgrade/v1beta1/tx.js';
 /**
  * SoftwareUpgrade is a governance operation for initiating a software upgrade.
  *

@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { buildQuery } from '../../../../helper-func-types.js';
+import { buildQuery } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   QueryConnectionRequest,
   QueryConnectionResponse,
@@ -13,7 +13,7 @@ import {
   QueryConnectionConsensusStateResponse,
   QueryConnectionParamsRequest,
   QueryConnectionParamsResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/ibc/core/connection/v1/query.js';
 /**
  * Connection queries an IBC connection end.
  * @name getConnection

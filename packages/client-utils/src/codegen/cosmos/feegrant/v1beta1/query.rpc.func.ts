@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { buildQuery } from '../../../helper-func-types.js';
+import { buildQuery } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   QueryAllowanceRequest,
   QueryAllowanceResponse,
@@ -7,7 +7,7 @@ import {
   QueryAllowancesResponse,
   QueryAllowancesByGranterRequest,
   QueryAllowancesByGranterResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/feegrant/v1beta1/query.js';
 /**
  * Allowance returns granted allwance to the grantee by the granter.
  * @name getAllowance

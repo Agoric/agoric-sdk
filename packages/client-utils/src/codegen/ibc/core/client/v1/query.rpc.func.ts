@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { buildQuery } from '../../../../helper-func-types.js';
+import { buildQuery } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   QueryClientStateRequest,
   QueryClientStateResponse,
@@ -21,7 +21,7 @@ import {
   QueryUpgradedConsensusStateResponse,
   QueryVerifyMembershipRequest,
   QueryVerifyMembershipResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/ibc/core/client/v1/query.js';
 /**
  * ClientState queries an IBC light client.
  * @name getClientState

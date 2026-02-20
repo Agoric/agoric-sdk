@@ -1,7 +1,10 @@
 //@ts-nocheck
-import { TxRpc } from '../../types.js';
-import { BinaryReader } from '../../binary.js';
-import { MsgSendPacket, MsgSendPacketResponse } from './msgs.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
+import {
+  MsgSendPacket,
+  MsgSendPacketResponse,
+} from '@agoric/cosmic-proto/codegen/agoric/vibc/msgs.js';
 /** The module transactions. */
 export interface Msg {
   /** Force sending an arbitrary packet on a channel. */

@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { buildQuery } from '../../helper-func-types.js';
+import { buildQuery } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   QueryDataRequest,
   QueryDataResponse,
@@ -7,7 +7,7 @@ import {
   QueryCapDataResponse,
   QueryChildrenRequest,
   QueryChildrenResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/agoric/vstorage/query.js';
 /**
  * Return the raw string value of an arbitrary vstorage datum.
  * @name getData

@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { TxRpc } from '../../../types.js';
-import { BinaryReader } from '../../../binary.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import { QueryClient, createProtobufRpcClient } from '@cosmjs/stargate';
 import {
   QueryConstitutionRequest,
@@ -21,7 +21,7 @@ import {
   QueryDepositsResponse,
   QueryTallyResultRequest,
   QueryTallyResultResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/gov/v1/query.js';
 /** Query defines the gRPC querier service for gov module */
 export interface Query {
   /** Constitution queries the chain's constitution. */

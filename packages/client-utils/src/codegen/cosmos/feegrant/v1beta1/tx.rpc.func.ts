@@ -1,10 +1,10 @@
 //@ts-nocheck
-import { buildTx } from '../../../helper-func-types.js';
+import { buildTx } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   MsgGrantAllowance,
   MsgRevokeAllowance,
   MsgPruneAllowances,
-} from './tx.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/feegrant/v1beta1/tx.js';
 /**
  * GrantAllowance grants fee allowance to the grantee on the granter's
  * account with the provided expiration time.

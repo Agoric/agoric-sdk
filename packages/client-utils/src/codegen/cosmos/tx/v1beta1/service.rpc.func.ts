@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { buildQuery } from '../../../helper-func-types.js';
+import { buildQuery } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   SimulateRequest,
   SimulateResponse,
@@ -19,7 +19,7 @@ import {
   TxEncodeAminoResponse,
   TxDecodeAminoRequest,
   TxDecodeAminoResponse,
-} from './service.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/tx/v1beta1/service.js';
 /**
  * Simulate simulates executing a transaction for estimating gas usage.
  * @name getSimulate

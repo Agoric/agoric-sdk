@@ -1,9 +1,9 @@
 //@ts-nocheck
-import { buildQuery } from '../../../helper-func-types.js';
+import { buildQuery } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   FileDescriptorsRequest,
   FileDescriptorsResponse,
-} from './reflection.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/reflection/v1/reflection.js';
 /**
  * FileDescriptors queries all the file descriptors in the app in order
  * to enable easier generation of dynamic clients.

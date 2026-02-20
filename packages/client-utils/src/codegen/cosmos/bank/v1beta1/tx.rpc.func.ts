@@ -1,11 +1,11 @@
 //@ts-nocheck
-import { buildTx } from '../../../helper-func-types.js';
+import { buildTx } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   MsgSend,
   MsgMultiSend,
   MsgUpdateParams,
   MsgSetSendEnabled,
-} from './tx.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/bank/v1beta1/tx.js';
 /**
  * Send defines a method for sending coins from one account to another account.
  * @name send

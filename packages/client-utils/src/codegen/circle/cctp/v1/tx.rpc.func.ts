@@ -1,6 +1,9 @@
 //@ts-nocheck
-import { buildTx } from '../../../helper-func-types.js';
-import { MsgDepositForBurn, MsgDepositForBurnWithCaller } from './tx.js';
+import { buildTx } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
+import {
+  MsgDepositForBurn,
+  MsgDepositForBurnWithCaller,
+} from '@agoric/cosmic-proto/codegen/circle/cctp/v1/tx.js';
 /**
  * rpc AcceptOwner(MsgAcceptOwner) returns (MsgAcceptOwnerResponse);
  * rpc AddRemoteTokenMessenger(MsgAddRemoteTokenMessenger) returns (MsgAddRemoteTokenMessengerResponse);

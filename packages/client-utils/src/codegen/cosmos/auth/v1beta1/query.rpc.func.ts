@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { buildQuery } from '../../../helper-func-types.js';
+import { buildQuery } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   QueryAccountsRequest,
   QueryAccountsResponse,
@@ -21,7 +21,7 @@ import {
   AddressStringToBytesResponse,
   QueryAccountInfoRequest,
   QueryAccountInfoResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/auth/v1beta1/query.js';
 /**
  * Accounts returns all the existing accounts.
  *

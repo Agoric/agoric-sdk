@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { buildTx } from '../../../../helper-func-types.js';
+import { buildTx } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   MsgChannelOpenInit,
   MsgChannelOpenTry,
@@ -20,7 +20,7 @@ import {
   MsgChannelUpgradeCancel,
   MsgUpdateParams,
   MsgPruneAcknowledgements,
-} from './tx.js';
+} from '@agoric/cosmic-proto/codegen/ibc/core/channel/v1/tx.js';
 /**
  * ChannelOpenInit defines a rpc handler method for MsgChannelOpenInit.
  * @name channelOpenInit

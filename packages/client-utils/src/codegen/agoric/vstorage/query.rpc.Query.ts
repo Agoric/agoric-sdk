@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { TxRpc } from '../../types.js';
-import { BinaryReader } from '../../binary.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import { QueryClient, createProtobufRpcClient } from '@cosmjs/stargate';
 import {
   QueryDataRequest,
@@ -9,7 +9,7 @@ import {
   QueryCapDataResponse,
   QueryChildrenRequest,
   QueryChildrenResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/agoric/vstorage/query.js';
 /** Query defines the gRPC querier service */
 export interface Query {
   /** Return the raw string value of an arbitrary vstorage datum. */

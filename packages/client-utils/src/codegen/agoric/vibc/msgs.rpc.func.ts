@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { buildTx } from '../../helper-func-types.js';
-import { MsgSendPacket } from './msgs.js';
+import { buildTx } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
+import { MsgSendPacket } from '@agoric/cosmic-proto/codegen/agoric/vibc/msgs.js';
 /**
  * Force sending an arbitrary packet on a channel.
  * @name sendPacket

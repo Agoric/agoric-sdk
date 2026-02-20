@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { buildQuery } from '../../../../helper-func-types.js';
+import { buildQuery } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   GetAuthnDescriptorRequest,
   GetAuthnDescriptorResponse,
@@ -13,7 +13,7 @@ import {
   GetQueryServicesDescriptorResponse,
   GetTxDescriptorRequest,
   GetTxDescriptorResponse,
-} from './reflection.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/base/reflection/v2alpha1/reflection.js';
 /**
  * GetAuthnDescriptor returns information on how to authenticate transactions in the application
  * NOTE: this RPC is still experimental and might be subject to breaking changes or removal in

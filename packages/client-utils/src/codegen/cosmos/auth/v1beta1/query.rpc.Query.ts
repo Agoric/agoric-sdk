@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { TxRpc } from '../../../types.js';
-import { BinaryReader } from '../../../binary.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import { QueryClient, createProtobufRpcClient } from '@cosmjs/stargate';
 import {
   QueryAccountsRequest,
@@ -23,7 +23,7 @@ import {
   AddressStringToBytesResponse,
   QueryAccountInfoRequest,
   QueryAccountInfoResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/auth/v1beta1/query.js';
 /** Query defines the gRPC querier service. */
 export interface Query {
   /**

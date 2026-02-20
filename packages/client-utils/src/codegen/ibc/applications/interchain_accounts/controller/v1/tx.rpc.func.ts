@@ -1,10 +1,10 @@
 //@ts-nocheck
-import { buildTx } from '../../../../../helper-func-types.js';
+import { buildTx } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   MsgRegisterInterchainAccount,
   MsgSendTx,
   MsgUpdateParams,
-} from './tx.js';
+} from '@agoric/cosmic-proto/codegen/ibc/applications/interchain_accounts/controller/v1/tx.js';
 /**
  * RegisterInterchainAccount defines a rpc handler for MsgRegisterInterchainAccount.
  * @name registerInterchainAccount

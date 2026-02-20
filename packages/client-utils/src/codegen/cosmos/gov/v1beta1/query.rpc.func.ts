@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { buildQuery } from '../../../helper-func-types.js';
+import { buildQuery } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   QueryProposalRequest,
   QueryProposalResponse,
@@ -17,7 +17,7 @@ import {
   QueryDepositsResponse,
   QueryTallyResultRequest,
   QueryTallyResultResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/gov/v1beta1/query.js';
 /**
  * Proposal queries proposal details based on ProposalID.
  * @name getProposal

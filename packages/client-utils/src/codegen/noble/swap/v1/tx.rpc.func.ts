@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { buildTx } from '../../../helper-func-types.js';
+import { buildTx } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   MsgSwap,
   MsgWithdrawProtocolFees,
@@ -8,7 +8,7 @@ import {
   MsgPauseByPoolIds,
   MsgUnpauseByAlgorithm,
   MsgUnpauseByPoolIds,
-} from './tx.js';
+} from '@agoric/cosmic-proto/codegen/noble/swap/v1/tx.js';
 /**
  * Swap allows a user to swap one type of token for another, using multiple routes.
  * @name swap

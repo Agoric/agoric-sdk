@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { buildTx } from '../../../helper-func-types.js';
+import { buildTx } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   MsgCreateValidator,
   MsgEditValidator,
@@ -8,7 +8,7 @@ import {
   MsgUndelegate,
   MsgCancelUnbondingDelegation,
   MsgUpdateParams,
-} from './tx.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/staking/v1beta1/tx.js';
 /**
  * CreateValidator defines a method for creating a new validator.
  * @name createValidator

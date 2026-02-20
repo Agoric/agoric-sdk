@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { buildTx } from '../../helper-func-types.js';
+import { buildTx } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   MsgLiquidStake,
   MsgRedeemStake,
@@ -14,7 +14,7 @@ import {
   MsgOverwriteUnbondingRecord,
   MsgOverwriteRedemptionRecord,
   MsgSetOperatorAddress,
-} from './tx.js';
+} from '@agoric/cosmic-proto/codegen/stride/stakedym/tx.js';
 /**
  * User transaction to liquid stake native tokens into stTokens
  * @name liquidStake

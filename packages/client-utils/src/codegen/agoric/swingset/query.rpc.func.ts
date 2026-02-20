@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { buildQuery } from '../../helper-func-types.js';
+import { buildQuery } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   QueryParamsRequest,
   QueryParamsResponse,
@@ -7,7 +7,7 @@ import {
   QueryEgressResponse,
   QueryMailboxRequest,
   QueryMailboxResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/agoric/swingset/query.js';
 /**
  * Params queries params of the swingset module.
  * @name getParams

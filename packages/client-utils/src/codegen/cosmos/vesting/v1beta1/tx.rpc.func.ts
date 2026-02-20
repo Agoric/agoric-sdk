@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { buildTx } from '../../../helper-func-types.js';
+import { buildTx } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   MsgCreateVestingAccount,
   MsgCreatePermanentLockedAccount,
@@ -7,7 +7,7 @@ import {
   MsgCreateClawbackVestingAccount,
   MsgClawback,
   MsgReturnGrants,
-} from './tx.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/vesting/v1beta1/tx.js';
 /**
  * CreateVestingAccount defines a method that enables creating a vesting
  * account.

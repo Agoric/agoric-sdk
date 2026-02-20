@@ -1,6 +1,10 @@
 //@ts-nocheck
-import { buildTx } from '../../../../helper-func-types.js';
-import { MsgLock, MsgUnlock, MsgSetPausedState } from './tx.js';
+import { buildTx } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
+import {
+  MsgLock,
+  MsgUnlock,
+  MsgSetPausedState,
+} from '@agoric/cosmic-proto/codegen/noble/dollar/vaults/v1/tx.js';
 /**
  * @name lock
  * @package noble.dollar.vaults.v1

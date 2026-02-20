@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { buildTx } from '../../../../helper-func-types.js';
+import { buildTx } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   MsgCreateClient,
   MsgUpdateClient,
@@ -8,7 +8,7 @@ import {
   MsgRecoverClient,
   MsgIBCSoftwareUpgrade,
   MsgUpdateParams,
-} from './tx.js';
+} from '@agoric/cosmic-proto/codegen/ibc/core/client/v1/tx.js';
 /**
  * CreateClient defines a rpc handler method for MsgCreateClient.
  * @name createClient

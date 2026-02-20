@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { buildQuery } from '../../helper-func-types.js';
+import { buildQuery } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   QueryHostZoneRequest,
   QueryHostZoneResponse,
@@ -13,7 +13,7 @@ import {
   QueryRedemptionRecordsResponse,
   QuerySlashRecordsRequest,
   QuerySlashRecordsResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/stride/staketia/query.js';
 /**
  * Queries the host zone struct
  * @name getHostZone

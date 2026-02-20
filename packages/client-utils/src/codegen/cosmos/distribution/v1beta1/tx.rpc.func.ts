@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { buildTx } from '../../../helper-func-types.js';
+import { buildTx } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   MsgSetWithdrawAddress,
   MsgWithdrawDelegatorReward,
@@ -8,7 +8,7 @@ import {
   MsgUpdateParams,
   MsgCommunityPoolSpend,
   MsgDepositValidatorRewardsPool,
-} from './tx.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/distribution/v1beta1/tx.js';
 /**
  * SetWithdrawAddress defines a method to change the withdraw address
  * for a delegator (or validator self-delegation).

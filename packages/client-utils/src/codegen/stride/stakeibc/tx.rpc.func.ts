@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { buildTx } from '../../helper-func-types.js';
+import { buildTx } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   MsgLiquidStake,
   MsgLSMLiquidStake,
@@ -23,7 +23,7 @@ import {
   MsgSetCommunityPoolRebate,
   MsgToggleTradeController,
   MsgUpdateHostZoneParams,
-} from './tx.js';
+} from '@agoric/cosmic-proto/codegen/stride/stakeibc/tx.js';
 /**
  * @name liquidStake
  * @package stride.stakeibc

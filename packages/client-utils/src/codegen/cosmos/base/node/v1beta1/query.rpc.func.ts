@@ -1,11 +1,11 @@
 //@ts-nocheck
-import { buildQuery } from '../../../../helper-func-types.js';
+import { buildQuery } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   ConfigRequest,
   ConfigResponse,
   StatusRequest,
   StatusResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/base/node/v1beta1/query.js';
 /**
  * Config queries for the operator configuration.
  * @name getConfig

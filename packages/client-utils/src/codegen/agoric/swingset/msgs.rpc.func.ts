@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { buildTx } from '../../helper-func-types.js';
+import { buildTx } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   MsgInstallBundle,
   MsgDeliverInbound,
@@ -7,7 +7,7 @@ import {
   MsgWalletSpendAction,
   MsgProvision,
   MsgCoreEval,
-} from './msgs.js';
+} from '@agoric/cosmic-proto/codegen/agoric/swingset/msgs.js';
 /**
  * Install a JavaScript sources bundle on the chain's SwingSet controller.
  * @name installBundle

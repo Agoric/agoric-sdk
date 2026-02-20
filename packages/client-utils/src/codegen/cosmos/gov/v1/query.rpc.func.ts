@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { buildQuery } from '../../../helper-func-types.js';
+import { buildQuery } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   QueryConstitutionRequest,
   QueryConstitutionResponse,
@@ -19,7 +19,7 @@ import {
   QueryDepositsResponse,
   QueryTallyResultRequest,
   QueryTallyResultResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/gov/v1/query.js';
 /**
  * Constitution queries the chain's constitution.
  * @name getConstitution

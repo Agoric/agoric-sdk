@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { buildQuery } from '../../../helper-func-types.js';
+import { buildQuery } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   QueryParamsRequest,
   QueryParamsResponse,
@@ -21,7 +21,7 @@ import {
   QueryDelegatorWithdrawAddressResponse,
   QueryCommunityPoolRequest,
   QueryCommunityPoolResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/distribution/v1beta1/query.js';
 /**
  * Params queries params of the distribution module.
  * @name getParams

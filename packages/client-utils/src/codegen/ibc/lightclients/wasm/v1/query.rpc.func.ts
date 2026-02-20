@@ -1,11 +1,11 @@
 //@ts-nocheck
-import { buildQuery } from '../../../../helper-func-types.js';
+import { buildQuery } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   QueryChecksumsRequest,
   QueryChecksumsResponse,
   QueryCodeRequest,
   QueryCodeResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/ibc/lightclients/wasm/v1/query.js';
 /**
  * Get all Wasm checksums
  * @name getChecksums

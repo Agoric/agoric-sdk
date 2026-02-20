@@ -1,11 +1,11 @@
 //@ts-nocheck
-import { buildQuery } from '../../../helper-func-types.js';
+import { buildQuery } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   QueryParamsRequest,
   QueryParamsResponse,
   QuerySubspacesRequest,
   QuerySubspacesResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/params/v1beta1/query.js';
 /**
  * Params queries a specific parameter of a module, given its subspace and
  * key.

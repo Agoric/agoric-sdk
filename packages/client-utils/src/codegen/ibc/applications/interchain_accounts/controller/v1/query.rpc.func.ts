@@ -1,11 +1,11 @@
 //@ts-nocheck
-import { buildQuery } from '../../../../../helper-func-types.js';
+import { buildQuery } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   QueryInterchainAccountRequest,
   QueryInterchainAccountResponse,
   QueryParamsRequest,
   QueryParamsResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/ibc/applications/interchain_accounts/controller/v1/query.js';
 /**
  * InterchainAccount returns the interchain account address for a given owner address on a given connection
  * @name getInterchainAccount

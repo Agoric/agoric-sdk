@@ -1,6 +1,10 @@
 //@ts-nocheck
-import { buildTx } from '../../../../helper-func-types.js';
-import { MsgStoreCode, MsgRemoveChecksum, MsgMigrateContract } from './tx.js';
+import { buildTx } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
+import {
+  MsgStoreCode,
+  MsgRemoveChecksum,
+  MsgMigrateContract,
+} from '@agoric/cosmic-proto/codegen/ibc/lightclients/wasm/v1/tx.js';
 /**
  * StoreCode defines a rpc handler method for MsgStoreCode.
  * @name storeCode

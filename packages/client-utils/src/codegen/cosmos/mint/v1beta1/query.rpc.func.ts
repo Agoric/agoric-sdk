@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { buildQuery } from '../../../helper-func-types.js';
+import { buildQuery } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   QueryParamsRequest,
   QueryParamsResponse,
@@ -7,7 +7,7 @@ import {
   QueryInflationResponse,
   QueryAnnualProvisionsRequest,
   QueryAnnualProvisionsResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/mint/v1beta1/query.js';
 /**
  * Params returns the total set of minting parameters.
  * @name getParams

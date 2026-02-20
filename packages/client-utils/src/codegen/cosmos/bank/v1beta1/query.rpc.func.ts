@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { buildQuery } from '../../../helper-func-types.js';
+import { buildQuery } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   QueryBalanceRequest,
   QueryBalanceResponse,
@@ -27,7 +27,7 @@ import {
   QueryDenomOwnersByQueryResponse,
   QuerySendEnabledRequest,
   QuerySendEnabledResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/bank/v1beta1/query.js';
 /**
  * Balance queries the balance of a single coin for a single account.
  * @name getBalance

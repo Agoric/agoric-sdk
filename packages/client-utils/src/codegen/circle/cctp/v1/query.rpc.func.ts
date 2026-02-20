@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { buildQuery } from '../../../helper-func-types.js';
+import { buildQuery } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   QueryRolesRequest,
   QueryRolesResponse,
@@ -39,7 +39,7 @@ import {
   QueryLocalMessageVersionResponse,
   QueryLocalDomainRequest,
   QueryLocalDomainResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/circle/cctp/v1/query.js';
 /**
  * @name getRoles
  * @package circle.cctp.v1

@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { TxRpc } from '../../types.js';
-import { BinaryReader } from '../../binary.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import { QueryClient, createProtobufRpcClient } from '@cosmjs/stargate';
 import {
   QueryHostZoneRequest,
@@ -15,7 +15,7 @@ import {
   QueryRedemptionRecordsResponse,
   QuerySlashRecordsRequest,
   QuerySlashRecordsResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/stride/stakedym/query.js';
 /** Query defines the gRPC querier service. */
 export interface Query {
   /** Queries the host zone struct */

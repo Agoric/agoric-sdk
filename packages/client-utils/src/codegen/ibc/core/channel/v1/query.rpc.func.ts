@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { buildQuery } from '../../../../helper-func-types.js';
+import { buildQuery } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   QueryChannelRequest,
   QueryChannelResponse,
@@ -35,7 +35,7 @@ import {
   QueryUpgradeResponse,
   QueryChannelParamsRequest,
   QueryChannelParamsResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/ibc/core/channel/v1/query.js';
 /**
  * Channel queries an IBC Channel.
  * @name getChannel

@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { buildTx } from '../../../helper-func-types.js';
+import { buildTx } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   MsgCreateGroup,
   MsgUpdateGroupMembers,
@@ -15,7 +15,7 @@ import {
   MsgVote,
   MsgExec,
   MsgLeaveGroup,
-} from './tx.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/group/v1/tx.js';
 /**
  * CreateGroup creates a new group with an admin account address, a list of members and some optional metadata.
  * @name createGroup

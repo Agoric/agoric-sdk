@@ -1,11 +1,11 @@
 //@ts-nocheck
-import { buildQuery } from '../../helper-func-types.js';
+import { buildQuery } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   QueryParamsRequest,
   QueryParamsResponse,
   QueryStateRequest,
   QueryStateResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/agoric/vbank/query.js';
 /**
  * Params queries params of the vbank module.
  * @name getParams

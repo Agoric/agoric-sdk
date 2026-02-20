@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { buildQuery } from '../../../helper-func-types.js';
+import { buildQuery } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   QueryGrantsRequest,
   QueryGrantsResponse,
@@ -7,7 +7,7 @@ import {
   QueryGranterGrantsResponse,
   QueryGranteeGrantsRequest,
   QueryGranteeGrantsResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/authz/v1beta1/query.js';
 /**
  * Returns list of `Authorization`, granted to the grantee by the granter.
  * @name getGrants

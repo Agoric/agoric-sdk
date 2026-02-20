@@ -1,10 +1,10 @@
 //@ts-nocheck
-import { buildTx } from '../../../helper-func-types.js';
+import { buildTx } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   MsgAuthorizeCircuitBreaker,
   MsgTripCircuitBreaker,
   MsgResetCircuitBreaker,
-} from './tx.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/circuit/v1/tx.js';
 /**
  * AuthorizeCircuitBreaker allows a super-admin to grant (or revoke) another
  * account's circuit breaker permissions.

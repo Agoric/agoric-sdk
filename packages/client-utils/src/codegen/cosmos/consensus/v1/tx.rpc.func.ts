@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { buildTx } from '../../../helper-func-types.js';
-import { MsgUpdateParams } from './tx.js';
+import { buildTx } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
+import { MsgUpdateParams } from '@agoric/cosmic-proto/codegen/cosmos/consensus/v1/tx.js';
 /**
  * UpdateParams defines a governance operation for updating the x/consensus module parameters.
  * The authority is defined in the keeper.

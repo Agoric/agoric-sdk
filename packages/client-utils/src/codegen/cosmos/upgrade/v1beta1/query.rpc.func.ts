@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { buildQuery } from '../../../helper-func-types.js';
+import { buildQuery } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   QueryCurrentPlanRequest,
   QueryCurrentPlanResponse,
@@ -11,7 +11,7 @@ import {
   QueryModuleVersionsResponse,
   QueryAuthorityRequest,
   QueryAuthorityResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/upgrade/v1beta1/query.js';
 /**
  * CurrentPlan queries the current upgrade plan.
  * @name getCurrentPlan

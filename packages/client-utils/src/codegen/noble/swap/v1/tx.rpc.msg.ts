@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { TxRpc } from '../../../types.js';
-import { BinaryReader } from '../../../binary.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import {
   MsgSwap,
   MsgSwapResponse,
@@ -16,7 +16,7 @@ import {
   MsgUnpauseByAlgorithmResponse,
   MsgUnpauseByPoolIds,
   MsgUnpauseByPoolIdsResponse,
-} from './tx.js';
+} from '@agoric/cosmic-proto/codegen/noble/swap/v1/tx.js';
 export interface Msg {
   /** Swap allows a user to swap one type of token for another, using multiple routes. */
   swap(request: MsgSwap): Promise<MsgSwapResponse>;

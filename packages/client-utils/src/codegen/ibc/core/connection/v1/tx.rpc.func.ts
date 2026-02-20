@@ -1,12 +1,12 @@
 //@ts-nocheck
-import { buildTx } from '../../../../helper-func-types.js';
+import { buildTx } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   MsgConnectionOpenInit,
   MsgConnectionOpenTry,
   MsgConnectionOpenAck,
   MsgConnectionOpenConfirm,
   MsgUpdateParams,
-} from './tx.js';
+} from '@agoric/cosmic-proto/codegen/ibc/core/connection/v1/tx.js';
 /**
  * ConnectionOpenInit defines a rpc handler method for MsgConnectionOpenInit.
  * @name connectionOpenInit

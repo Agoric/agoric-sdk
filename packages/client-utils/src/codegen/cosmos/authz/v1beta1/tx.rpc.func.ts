@@ -1,6 +1,10 @@
 //@ts-nocheck
-import { buildTx } from '../../../helper-func-types.js';
-import { MsgGrant, MsgExec, MsgRevoke } from './tx.js';
+import { buildTx } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
+import {
+  MsgGrant,
+  MsgExec,
+  MsgRevoke,
+} from '@agoric/cosmic-proto/codegen/cosmos/authz/v1beta1/tx.js';
 /**
  * Grant grants the provided authorization to the grantee on the granter's
  * account with the provided expiration time. If there is already a grant

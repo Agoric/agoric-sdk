@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { TxRpc } from '../../../types.js';
-import { BinaryReader } from '../../../binary.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import { QueryClient, createProtobufRpcClient } from '@cosmjs/stargate';
 import {
   QueryAllowanceRequest,
@@ -9,7 +9,7 @@ import {
   QueryAllowancesResponse,
   QueryAllowancesByGranterRequest,
   QueryAllowancesByGranterResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/feegrant/v1beta1/query.js';
 /** Query defines the gRPC querier service. */
 export interface Query {
   /** Allowance returns granted allwance to the grantee by the granter. */

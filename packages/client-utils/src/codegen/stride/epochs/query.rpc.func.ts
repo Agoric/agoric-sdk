@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { buildQuery } from '../../helper-func-types.js';
+import { buildQuery } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   QueryEpochsInfoRequest,
   QueryEpochsInfoResponse,
@@ -7,7 +7,7 @@ import {
   QueryCurrentEpochResponse,
   QueryEpochInfoRequest,
   QueryEpochInfoResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/stride/epochs/query.js';
 /**
  * EpochInfos provide running epochInfos
  * @name getEpochInfos

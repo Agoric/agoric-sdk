@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { buildTx } from '../../../helper-func-types.js';
+import { buildTx } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   MsgSubmitProposal,
   MsgExecLegacyContent,
@@ -8,7 +8,7 @@ import {
   MsgDeposit,
   MsgUpdateParams,
   MsgCancelProposal,
-} from './tx.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/gov/v1/tx.js';
 /**
  * SubmitProposal defines a method to create new proposal given the messages.
  * @name submitProposal

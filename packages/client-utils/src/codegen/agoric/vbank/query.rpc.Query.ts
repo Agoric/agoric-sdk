@@ -1,13 +1,13 @@
 //@ts-nocheck
-import { TxRpc } from '../../types.js';
-import { BinaryReader } from '../../binary.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import { QueryClient, createProtobufRpcClient } from '@cosmjs/stargate';
 import {
   QueryParamsRequest,
   QueryParamsResponse,
   QueryStateRequest,
   QueryStateResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/agoric/vbank/query.js';
 /** Query defines the gRPC querier service for vbank module. */
 export interface Query {
   /** Params queries params of the vbank module. */

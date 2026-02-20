@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { buildQuery } from '../../../../helper-func-types.js';
+import { buildQuery } from '@agoric/cosmic-proto/codegen/helper-func-types.js';
 import {
   QueryDenomTracesRequest,
   QueryDenomTracesResponse,
@@ -13,7 +13,7 @@ import {
   QueryEscrowAddressResponse,
   QueryTotalEscrowForDenomRequest,
   QueryTotalEscrowForDenomResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/ibc/applications/transfer/v1/query.js';
 /**
  * DenomTraces queries all denomination traces.
  * @name getDenomTraces
