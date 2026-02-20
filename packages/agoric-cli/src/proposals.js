@@ -54,8 +54,11 @@ const resolveModuleSpecifier = (moduleSpecifier, paths) => {
  * @param {FsPromises} fs
  * @param {string} filePath
  */
-const readJSONFile = async (fs, filePath) =>
-  harden(JSON.parse(await fs.readFile(filePath, 'utf8')));
+const readJSONFile = async (fs, filePath) => {
+  await null;
+  const data = await fs.readFile(filePath, 'utf8');
+  return harden(JSON.parse(data));
+};
 
 /**
  * @param {string} agoricRunOutput
@@ -240,9 +243,14 @@ const runInProcess = async ({
   cacheDir,
   console,
 }) => {
+  /** @type {CoreEvalMaterialRecord[]} */
+  const coreEvalRecords = [];
   const endowments = {
     cacheDir,
     now,
+    onWriteCoreEval: record => {
+      coreEvalRecords.push(record);
+    },
     scriptArgs: args,
     writeFile: makeScopedWriteFile({ fs, cwd }),
   };
@@ -259,6 +267,15 @@ const runInProcess = async ({
 
   const homeP = Promise.resolve({ scratch: Promise.resolve(makeScratchPad()) });
   await runScript({ home: homeP });
+
+  const materialized = materializeFromRecords(
+    coreEvalRecords,
+    resolvedBuilderPath,
+    cwd,
+  );
+  if (materialized) {
+    return materialized;
+  }
 
   return readProposalMaterialsFromPlans(fs, cwd, resolvedBuilderPath);
 };
@@ -330,12 +347,13 @@ export const buildCoreEvalProposal = async ({
   cacheDir = path.join(os.homedir(), '.agoric', 'cache'),
   fs = fsRaw.promises,
   now = Date.now,
-  console = globalThis.console,
+  console = consoleThis,
   childProcess = childProcessAmbient,
 }) => {
   if (!builderPath) {
     throw Error('builderPath is required');
   }
+  await null;
 
   const resolvedBuilderPath = resolveModuleSpecifier(builderPath, [cwd]);
 
