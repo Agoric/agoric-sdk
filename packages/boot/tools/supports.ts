@@ -77,32 +77,36 @@ const fetchCached = NodeFetchCache.create({
   cache: new FileSystemCache(),
 }) as unknown as typeof globalThis.fetch;
 
-type ConsumeBootrapItem = <N extends string>(
+type BootstrapPowersShape = { consume: object };
+
+type ConsumeBootstrapItem<Powers extends BootstrapPowersShape> = <N extends string>(
   name: N,
-) => N extends keyof EconomyBootstrapPowers['consume']
-  ? EconomyBootstrapPowers['consume'][N]
+) => N extends keyof Powers['consume']
+  ? Powers['consume'][N]
   : any;
 
 // XXX should satisfy EVProxy from run-utils.js but that's failing to import
 /**
  * Elaboration of EVProxy with knowledge of bootstrap space in these tests.
  */
-type BootstrapEV = EProxy & {
+type BootstrapEV<Powers extends BootstrapPowersShape> = EProxy & {
   sendOnly: (presence: unknown) => Record<string, (...args: any) => void>;
   vat: <N extends string>(
     name: N,
   ) => N extends 'bootstrap'
     ? Omit<BootstrapRootObject, 'consumeItem'> & {
         // XXX not really local
-        consumeItem: ConsumeBootrapItem;
-      } & Remote<{ consumeItem: ConsumeBootrapItem }>
+        consumeItem: ConsumeBootstrapItem<Powers>;
+      } & Remote<{ consumeItem: ConsumeBootstrapItem<Powers> }>
     : Record<string, (...args: any) => Promise<any>>;
 };
 
-const makeBootstrapRunUtils = makeRunUtils as (
+const makeBootstrapRunUtils = makeRunUtils as <
+  Powers extends BootstrapPowersShape,
+>(
   controller: SwingsetController,
   harness?: RunHarness,
-) => Omit<RunUtils, 'EV'> & { EV: BootstrapEV };
+) => Omit<RunUtils, 'EV'> & { EV: BootstrapEV<Powers> };
 
 const keysToObject = <K extends PropertyKey, V>(
   keys: K[],
@@ -198,7 +202,7 @@ const getNodeTestVaultsConfig = async ({
   return testConfigPath;
 };
 
-interface Powers {
+interface ProposalExtractorPowers {
   childProcess: Pick<typeof import('node:child_process'), 'execFileSync'>;
   fs: typeof import('node:fs/promises');
 }
@@ -212,7 +216,7 @@ interface Powers {
  * @returns A function that builds and extracts proposal data
  */
 export const makeProposalExtractor = (
-  { childProcess, fs }: Powers,
+  { childProcess, fs }: ProposalExtractorPowers,
   resolveBase = import.meta.url,
 ) => {
   const importSpec = createRequire(resolveBase).resolve;
@@ -422,7 +426,9 @@ type AckBehaviorType = (typeof AckBehavior)[keyof typeof AckBehavior];
    `defaultManagerType`)
  * @returns A test kit with various utilities for interacting with the SwingSet
  */
-export const makeSwingsetTestKit = async (
+export const makeSwingsetTestKit = async <
+  Powers extends BootstrapPowersShape = EconomyBootstrapPowers,
+>(
   log: (..._: any[]) => void,
   bundleDir = 'bundles',
   {
@@ -734,7 +740,7 @@ export const makeSwingsetTestKit = async (
   // 2025-02, but we suspect that `makeSwingsetTestKit` just isn't being
   // exercised in the right way.
   await controller.run();
-  const runUtils = makeBootstrapRunUtils(controller, harness);
+  const runUtils = makeBootstrapRunUtils<Powers>(controller, harness);
 
   const buildProposal = makeProposalExtractor({
     childProcess: childProcessAmbient,
@@ -764,9 +770,9 @@ export const makeSwingsetTestKit = async (
       evals: proposal.evals,
     };
     log({ bridgeMessage });
-    const coreEvalBridgeHandler: BridgeHandler = await EV.vat(
-      'bootstrap',
-    ).consumeItem('coreEvalBridgeHandler');
+    const coreEvalBridgeHandler = (await EV.vat('bootstrap').consumeItem(
+      'coreEvalBridgeHandler',
+    )) as BridgeHandler;
     await EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
     log(`proposal executed`);
   };
@@ -903,7 +909,9 @@ export const makeSwingsetTestKit = async (
     slogSender,
   };
 };
-export type SwingsetTestKit = Awaited<ReturnType<typeof makeSwingsetTestKit>>;
+export type SwingsetTestKit<
+  Powers extends BootstrapPowersShape = EconomyBootstrapPowers,
+> = Awaited<ReturnType<typeof makeSwingsetTestKit<Powers>>>;
 
 /**
  * Creates a harness for measuring computron usage in SwingSet tests.
