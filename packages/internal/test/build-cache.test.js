@@ -147,3 +147,23 @@ test('makeDirectoryLock times out waiting for active lock', async t => {
     message: /Timed out waiting for cache lock/,
   });
 });
+
+test('makeDirectoryLock tolerates throwing event sinks', async t => {
+  const { lockRoot } = await makeFixture(t);
+  const { withLock } = makeDirectoryLock({
+    fs: fsPromises,
+    delayMs: ms => new Promise(resolve => setTimeout(resolve, ms)),
+    now: Date.now,
+    pid: process.pid,
+    isPidAlive: () => true,
+    lockRoot,
+    staleLockMs: 60_000,
+    acquireTimeoutMs: 1_000,
+    onEvent: () => {
+      throw Error('sink-failure');
+    },
+  });
+
+  const result = await withLock('event-throws', async () => 'ok');
+  t.is(result, 'ok');
+});
