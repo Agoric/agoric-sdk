@@ -325,12 +325,20 @@ export const makeProposalExtractor = (
       return proposalsMod.buildCoreEvalProposal(opts);
     });
 
-  const bundleCacheP = makeNodeBundleCache(
-    depFingerprintCacheDir,
-    {},
-    s => import(s),
-    makeAmbientBundleToolPowers({ eventSink: { onBundleToolEvent: () => {} } }),
-  );
+  let bundleCacheP: ReturnType<typeof makeNodeBundleCache> | undefined;
+  const getBundleCache = () => {
+    if (!bundleCacheP) {
+      bundleCacheP = makeNodeBundleCache(
+        depFingerprintCacheDir,
+        {},
+        s => import(s),
+        makeAmbientBundleToolPowers({
+          eventSink: { onBundleToolEvent: () => {} },
+        }),
+      );
+    }
+    return bundleCacheP;
+  };
 
   const hashText = (text: string) =>
     createHash('sha256').update(text).digest('hex');
@@ -348,7 +356,7 @@ export const makeProposalExtractor = (
     dependencyPath: string,
   ): Promise<ProposalCacheDependency> => {
     try {
-      const bundleCache = await bundleCacheP;
+      const bundleCache = await getBundleCache();
       const targetName = `dep-${hashText(dependencyPath).slice(0, 16)}`;
       const { bundleFileName } = await bundleCache.validateOrAdd(
         dependencyPath,
