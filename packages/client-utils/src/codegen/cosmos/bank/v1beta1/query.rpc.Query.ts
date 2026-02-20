@@ -1,5 +1,5 @@
 //@ts-nocheck
-import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import type { Rpc } from '@agoric/cosmic-proto/codegen/helpers.js';
 import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import { QueryClient, createProtobufRpcClient } from '@cosmjs/stargate';
 import {
@@ -135,8 +135,8 @@ export interface Query {
   ): Promise<QuerySendEnabledResponse>;
 }
 export class QueryClientImpl implements Query {
-  private readonly rpc: TxRpc;
-  constructor(rpc: TxRpc) {
+  private readonly rpc: Rpc;
+  constructor(rpc: Rpc) {
     this.rpc = rpc;
     this.balance = this.balance.bind(this);
     this.allBalances = this.allBalances.bind(this);

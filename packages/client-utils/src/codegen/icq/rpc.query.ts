@@ -1,5 +1,6 @@
 //@ts-nocheck
-import { Tendermint34Client, HttpEndpoint } from '@cosmjs/tendermint-rpc';
+import { Tendermint34Client } from '@cosmjs/tendermint-rpc';
+import type { HttpEndpoint } from '@cosmjs/tendermint-rpc';
 import { QueryClient } from '@cosmjs/stargate';
 export const createRPCQueryClient = async ({
   rpcEndpoint,
