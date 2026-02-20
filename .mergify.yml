@@ -1,90 +1,94 @@
-# Linear queue for the main branch.
 shared:
-  commit_message_template: &commit-message-template |-
+  commit_message_template: |-
     {{ title }} (#{{ number }})
 
     {{ body | trim }}
-  queue_conditions: &queue-conditions
+  queue_conditions: &a1
     - base=master
     - or:
         - check-pending=integration-test-result
         - check-success=integration-test-result
         - label=bypass:integration
     - check-success=breakage
-  merge_conditions: &merge-conditions
+  merge_conditions: &a2
     - base=master
-    # Rebase PRs with fixup commits are allowed to enter the merge queue but
-    # should not be allowed to merge if there are leftover fixup commits after rebase
     - or:
         - label=bypass:linear-history
         - check-success=no-fixup-commits
         - check-skipped=no-fixup-commits
-    # Require integration tests before merging only
     - or:
         - label=bypass:integration
         - check-success=integration-test-result
-  pr_queue_merge_conditions: &pr-queue-merge-conditions
+  pr_queue_merge_conditions: &a3
     - base=master
     - label=automerge:no-update
     - or:
-        - '#commits-behind=0'
+        - "#commits-behind=0"
         - label=bypass:linear-history
-  pr_queue_rebase_conditions: &pr-queue-rebase-conditions
+  pr_queue_rebase_conditions: &a4
     - base=master
     - label=automerge:rebase
     - or:
-        - '#commits-behind>0'
+        - "#commits-behind>0"
         - linear-history
-  pr_queue_squash_conditions: &pr-queue-squash-conditions
+  pr_queue_squash_conditions: &a5
     - base=master
     - label=automerge:squash
-
 merge_queue:
   max_parallel_checks: 1
-  queued_label: null
-  dequeued_label: null
+  queued_label:
+  dequeued_label:
   status_comments: none
-
 priority_rules:
   - name: high_priority
     conditions:
       - label=priority:high
     priority: high
-
 queue_rules:
   - name: rebase
-    commit_message_template: *commit-message-template
-    queue_conditions: *queue-conditions
-    merge_conditions: *merge-conditions
+    commit_message_template: |-
+      {{ title }} (#{{ number }})
+
+      {{ body | trim }}
+    queue_conditions: *a1
+    merge_conditions: *a2
     merge_method: merge
     update_method: rebase
     autosquash: true
-
+    draft_bot_account: mergify[bot]
+    merge_bot_account: |
+      mergify[bot]
+    update_bot_account: |
+      mergify[bot]
   - name: merge
-    commit_message_template: *commit-message-template
-    queue_conditions: *queue-conditions
-    merge_conditions: *merge-conditions
+    commit_message_template: |-
+      {{ title }} (#{{ number }})
+
+      {{ body | trim }}
+    queue_conditions: *a1
+    merge_conditions: *a2
     merge_method: merge
-
   - name: squash
-    commit_message_template: *commit-message-template
-    queue_conditions: *queue-conditions
-    merge_conditions: *merge-conditions
-    merge_method: squash
+    commit_message_template: |-
+      {{ title }} (#{{ number }})
 
+      {{ body | trim }}
+    queue_conditions: *a1
+    merge_conditions: *a2
+    merge_method: squash
 pull_request_rules:
   - name: merge to master
-    conditions: *pr-queue-merge-conditions
+    conditions: *a3
     actions:
       queue:
         name: merge
   - name: rebase updates then merge to master
-    conditions: *pr-queue-rebase-conditions
+    conditions: *a4
     actions:
       queue:
         name: rebase
   - name: squash to master
-    conditions: *pr-queue-squash-conditions
+    conditions: *a5
     actions:
       queue:
         name: squash
@@ -92,9 +96,9 @@ pull_request_rules:
     conditions:
       - base=master
       - label=automerge:rebase
-      - '#commits-behind=0'
-      - '#approved-reviews-by>=1'
-      - '#changes-requested-reviews-by=0'
+      - "#commits-behind=0"
+      - "#approved-reviews-by>=1"
+      - "#changes-requested-reviews-by=0"
       - branch-protection-review-decision=APPROVED
       - or:
           - -linear-history
