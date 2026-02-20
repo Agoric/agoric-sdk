@@ -2,17 +2,7 @@
 import path from 'node:path';
 
 /**
- * @typedef {{
- *   fs: Pick<import('node:fs/promises'), 'mkdir' | 'readFile' | 'rm' | 'stat' | 'writeFile'>;
- *   delayMs: (ms: number) => Promise<unknown>;
- *   now: () => number;
- *   pid: number;
- *   isPidAlive: (pid: number) => boolean;
- *   lockRoot: string;
- *   staleLockMs: number;
- *   acquireTimeoutMs: number;
- *   onEvent?: (event: Record<string, unknown>) => void;
- * }} DirectoryLockPowers
+ * @import {BuildCacheEvent, DirectoryLockPowers} from './build-cache-types.js';
  */
 
 /**
