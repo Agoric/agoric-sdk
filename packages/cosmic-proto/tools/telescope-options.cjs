@@ -8,9 +8,6 @@
  */
 /** @type {TelescopeInput['options']} */
 const baseTelescopeOptions = {
-  // Telescope v2 migration guide recommends "v-next" as the baseline preset.
-  env: 'v-next',
-  useInterchainJs: true,
   // for ESM compatibility
   restoreImportExtension: '.js',
   tsDisable: {
@@ -22,18 +19,11 @@ const baseTelescopeOptions = {
     ],
     patterns: ['**/*amino.ts', '**/*registry.ts'],
   },
-  interfaces: {
-    enabled: true,
-    useGlobalDecoderRegistry: true,
-    useUnionTypes: true,
-  },
   prototypes: {
-    enableRegistryLoader: false,
     /**
      * Relies on tree-shaking to avoid huge bundle sizes.
      */
     enableMessageComposer: false,
-    includePackageVar: false,
     excluded: {
       packages: [
         'ibc.applications.fee.v1', // issue with parsing protos (LCD routes with nested objects in params)
@@ -65,19 +55,10 @@ const baseTelescopeOptions = {
     methods: {
       fromJSON: true,
       toJSON: true,
-      encode: true,
-      decode: true,
-      fromPartial: true,
       toAmino: false,
       fromAmino: false,
-      fromProto: true,
-      toProto: true,
-    },
-    parser: {
-      keepCase: false,
     },
     typingsFormat: {
-      useDeepPartial: false,
       timestamp: 'timestamp',
       customTypes: {
         base64Lib: '@endo/base64',
@@ -85,22 +66,12 @@ const baseTelescopeOptions = {
       },
     },
   },
-  helperFunctions: {
-    enabled: true,
-    useGlobalDecoderRegistry: true,
-  },
   aminoEncoding: {
     // Must be enabled for getSigningAgoricClient
     enabled: false,
   },
-  lcdClients: {
-    enabled: false,
-  },
   // We don't use these helper functions
   helperFunctions: {
-    enabled: false,
-  },
-  rpcClients: {
     enabled: false,
   },
 };
