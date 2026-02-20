@@ -3,12 +3,15 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { createHash } from 'node:crypto';
 import * as fsPromises from 'node:fs/promises';
-import { mkdtemp, mkdir, rm, stat, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, stat, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import os from 'node:os';
 import { join } from 'node:path';
 
-import { makeProposalExtractor } from '../../tools/supports.js';
+import {
+  makeProposalExtractor,
+  type ProposalBuilderResult,
+} from '../../tools/supports.js';
 
 const sha256 = (value: string) =>
   createHash('sha256').update(value).digest('hex');

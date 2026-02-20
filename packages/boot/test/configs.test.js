@@ -128,8 +128,7 @@ const checkBundle = async (t, sourceSpec, seen, name, configSpec) => {
     seen.add(targetName);
 
     t.log(configSpec, ': check bundle:', name, basename(sourceSpec));
-    await bundleCache.load(sourceSpec, targetName, noLog);
-    const meta = await bundleCache.validate(targetName);
+    const meta = await bundleCache.validateOrAdd(sourceSpec, targetName, noLog);
     t.truthy(meta, name);
 
     for (const item of meta.contents) {
