@@ -31,6 +31,7 @@ const makeFixture = async t => {
 
 test('proposal extractor caches materials on disk and reuses across instances', async t => {
   const { builderPath, dependencyPath, cacheRoot } = await makeFixture(t);
+  const cacheEvents: Array<{ type: string; reason?: string }> = [];
 
   let builds = 0;
   const fakeBuilder: any = async ({ mode }) => {
@@ -60,7 +61,10 @@ test('proposal extractor caches materials on disk and reuses across instances', 
       fs: fsPromises,
     },
     import.meta.url,
-    { cacheRoot },
+    {
+      cacheRoot,
+      onCacheEvent: event => cacheEvents.push(event),
+    },
   );
 
   const first = await extractorA(builderPath, ['--example']);
@@ -85,6 +89,8 @@ test('proposal extractor caches materials on disk and reuses across instances', 
   const third = await extractorB(builderPath, ['--example']);
   t.is(builds, 1);
   t.deepEqual(third, first);
+  t.true(cacheEvents.some(event => event.type === 'proposal-cache-miss'));
+  t.true(cacheEvents.some(event => event.type === 'proposal-cache-hit'));
 });
 
 test('proposal extractor invalidates cache when dependency content changes', async t => {
@@ -162,6 +168,7 @@ test('prefer-in-process falls back to shell-only mode when builder throws', asyn
 
 test('stale/dead lock is recovered before building', async t => {
   const { builderPath, dependencyPath, cacheRoot } = await makeFixture(t);
+  const cacheEvents: Array<{ type: string; reason?: string }> = [];
 
   const args = ['--recover-lock'];
   const mode = 'prefer-in-process';
@@ -212,11 +219,19 @@ test('stale/dead lock is recovered before building', async t => {
       fs: fsPromises,
     },
     import.meta.url,
-    { cacheRoot },
+    {
+      cacheRoot,
+      onCacheEvent: event => cacheEvents.push(event),
+    },
   );
 
   await extractor(builderPath, args);
   t.is(builds, 1);
+  t.true(
+    cacheEvents.some(
+      event => event.type === 'lock-broken' && event.reason === 'dead-owner',
+    ),
+  );
 
   const lockStats = await stat(lockPath).catch(() => undefined);
   t.is(lockStats, undefined);
