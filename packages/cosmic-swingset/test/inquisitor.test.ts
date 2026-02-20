@@ -17,7 +17,10 @@ import {
 } from '@agoric/internal';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import type { SwingSetConfigDescriptor } from '@agoric/swingset-vat';
-import { provideBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import {
+  makeAmbientBundleToolPowers,
+  makeNodeBundleCache,
+} from '@agoric/swingset-vat/tools/bundleTool.js';
 
 import type { SwingStore } from '@agoric/swing-store';
 import { makeHelpers, makeSwingStoreOverlay } from '../tools/inquisitor.mjs';
@@ -173,7 +176,12 @@ test('vat lifecycle', async t => {
   t.teardown(() => removeCallback());
   fs.writeSync(fd, swingStore.debug.serialize());
   const bundleDir = pathlib.resolve('bundles');
-  const bundleCache = await provideBundleCache(bundleDir, {}, s => import(s));
+  const bundleCache = await makeNodeBundleCache(
+    bundleDir,
+    {},
+    s => import(s),
+    makeAmbientBundleToolPowers({ log: () => {} }),
+  );
   const bundle = await bundleCache.load(
     resolveToPath('@agoric/swingset-vat/tools/vat-puppet-v2.js'),
   );
