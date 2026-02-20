@@ -185,8 +185,8 @@ test.serial('load() rebuilds when dependency file changes', async t => {
     s => import(s),
     testPowers,
   );
-  await cache.load(sourcePath, 'toy');
-  const bundlePath = path.join(bundlesDir, 'bundle-toy.js');
+  const { bundleFileName } = await cache.validateOrAdd(sourcePath, 'toy');
+  const bundlePath = path.join(bundlesDir, bundleFileName);
   const before = await readFile(bundlePath, 'utf8');
 
   // Ensure mtime differences are observable on coarser filesystems.
