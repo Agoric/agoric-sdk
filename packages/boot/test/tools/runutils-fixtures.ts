@@ -1,5 +1,6 @@
 import { promises as fs } from 'node:fs';
 import { dirname, resolve } from 'node:path';
+import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import { buildKernelBundle } from '@agoric/swingset-vat/src/controller/initializeSwingset.js';
 import {
@@ -44,6 +45,8 @@ const fixtureSwingStorePath = (name: RunUtilsFixtureName) =>
   `${fixturePath(name)}/swingstore`;
 const fixtureKernelBundlePath = (name: RunUtilsFixtureName) =>
   `${fixturePath(name)}/kernel-bundle.json`;
+const fixtureLockPath = (name: RunUtilsFixtureName) =>
+  `${fixturePath(name)}.lock`;
 
 export const availableRunUtilsFixtureNames = (): RunUtilsFixtureName[] =>
   listNames().filter(isRunUtilsFixtureName);
@@ -115,14 +118,38 @@ export const loadOrCreateRunUtilsFixture = async (
   name: RunUtilsFixtureName,
   log: (...args: unknown[]) => void = console.log,
 ): Promise<SwingsetTestKitSnapshot> => {
-  try {
-    return await loadRunUtilsFixture(name);
-  } catch (cause) {
-    log(
-      `RunUtils fixture ${name} missing or stale; regenerating at ${fixturePath(name)}`,
-      cause,
-    );
-    await createRunUtilsFixture(name, log);
-    return loadRunUtilsFixture(name);
+  const lockPath = fixtureLockPath(name);
+  await fs.mkdir(fixtureDir, { recursive: true });
+  for (;;) {
+    try {
+      return await loadRunUtilsFixture(name);
+    } catch {
+      // fall through to lock acquisition and possible regeneration
+    }
+    let lock;
+    try {
+      lock = await fs.open(lockPath, 'wx');
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code === 'EEXIST') {
+        await delay(100);
+        continue;
+      }
+      throw e;
+    }
+    try {
+      try {
+        return await loadRunUtilsFixture(name);
+      } catch (cause) {
+        log(
+          `RunUtils fixture ${name} missing or stale; regenerating at ${fixturePath(name)}`,
+          cause,
+        );
+        await createRunUtilsFixture(name, log);
+        return loadRunUtilsFixture(name);
+      }
+    } finally {
+      await lock.close();
+      await fs.rm(lockPath, { force: true });
+    }
   }
 };
