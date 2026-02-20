@@ -10,7 +10,10 @@ import path from 'path';
 import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
 import { mustMatch } from '@agoric/store';
 import { loadSwingsetConfigFile, shape as ssShape } from '@agoric/swingset-vat';
-import { provideBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import {
+  makeAmbientBundleToolPowers,
+  makeNodeBundleCache,
+} from '@agoric/swingset-vat/tools/bundleTool.js';
 
 /**
  * @import {TestFn} from 'ava';
@@ -68,7 +71,12 @@ const makeTestContext = async () => {
   const pathResolve = (...ps) => path.join(dirname, ...ps);
 
   const cacheDir = pathResolve('..', 'bundles');
-  const bundleCache = await provideBundleCache(cacheDir, {}, s => import(s));
+  const bundleCache = await makeNodeBundleCache(
+    cacheDir,
+    {},
+    s => import(s),
+    makeAmbientBundleToolPowers({ log: () => {} }),
+  );
 
   const vizTool = pathResolve('..', 'tools', 'authorityViz.js');
   const runViz = pspawn(vizTool, { spawn: ambientSpawn });

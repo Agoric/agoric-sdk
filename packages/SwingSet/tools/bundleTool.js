@@ -31,18 +31,108 @@ import { setTimeout as delay } from 'timers/promises';
  *   loadRegistry: <T extends Record<string, BundleRegistryEntry>>(registry: T) => Promise<LoadedRegistryBundles<T>>;
  * }} BundleCache
  */
+/**
+ * @typedef {{
+ *   delayMs: (ms: number) => Promise<unknown>,
+ *   isPidAlive: (pid: number) => boolean,
+ *   log: (...args: unknown[]) => void,
+ *   monotonicNow: () => number,
+ *   now: () => number,
+ *   pid: number,
+ * }} BundleToolPowers
+ */
 
 /**
  * @param {string} dest
  * @param {Parameters<typeof wrappedMaker>[1]} options
  * @param {Parameters<typeof wrappedMaker>[2]} loadModule
- * @param {number} [pid]
+ * @param {BundleToolPowers} powers
  * @returns {Promise<BundleCache>}
  */
 const BUNDLE_LOCK_ACQUIRE_TIMEOUT_MS = 5 * 60_000;
 const BUNDLE_STALE_LOCK_MS = 60_000;
 
-export const makeNodeBundleCache = async (dest, options, loadModule, pid) => {
+const defaultBundleToolLog = (...args) => {
+  const joined = args.map(arg => String(arg)).join(' ');
+  const isCacheHit = joined.includes(' valid:');
+  if (isCacheHit) {
+    return;
+  }
+  let phase = '[check]';
+  if (joined.includes(' add:') || joined.includes(' bundled ')) {
+    phase = '[rebuilt]';
+  }
+  const flattened = args.map(arg =>
+    // Don't print stack traces.
+    arg instanceof Error ? arg.message : arg,
+  );
+  console.log(
+    // Make all messages prefixed and dim.
+    `${styles.dim.open}[bundleTool]${phase}`,
+    ...flattened,
+    styles.dim.close,
+  );
+};
+harden(defaultBundleToolLog);
+
+/**
+ * @param {{
+ *   delayMs?: (ms: number) => Promise<unknown>,
+ *   isPidAlive?: (pid: number) => boolean,
+ *   log?: (...args: unknown[]) => void,
+ *   monotonicNow?: () => number,
+ *   now?: () => number,
+ *   pid?: number,
+ * }} [options]
+ * @returns {BundleToolPowers}
+ * @alpha
+ */
+export const makeAmbientBundleToolPowers = (options = {}) => {
+  const {
+    delayMs = ms => delay(ms),
+    isPidAlive = lockPid => {
+      if (!Number.isInteger(lockPid) || lockPid <= 0) {
+        return false;
+      }
+      try {
+        process.kill(lockPid, 0);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    log = defaultBundleToolLog,
+    monotonicNow = () => performance.now(),
+    now = () => Date.now(),
+    pid = process.pid,
+  } = options;
+  return harden({
+    delayMs,
+    isPidAlive,
+    log,
+    monotonicNow,
+    now,
+    pid,
+  });
+};
+harden(makeAmbientBundleToolPowers);
+
+/**
+ * @param {string} dest
+ * @param {Parameters<typeof wrappedMaker>[1]} options
+ * @param {Parameters<typeof wrappedMaker>[2]} loadModule
+ * @param {BundleToolPowers} powers
+ * @returns {Promise<BundleCache>}
+ * @alpha
+ */
+export const makeNodeBundleCache = async (
+  dest,
+  options,
+  loadModule,
+  powers,
+) => {
+  const { delayMs, isPidAlive, log, monotonicNow, now, pid } = powers;
+
   /** @param {string} sourceSpec */
   const canonicalizeSourceSpec = sourceSpec => {
     if (sourceSpec.startsWith('file:')) {
@@ -66,27 +156,6 @@ export const makeNodeBundleCache = async (dest, options, loadModule, pid) => {
     }
   };
 
-  const log = (...args) => {
-    const joined = args.map(arg => String(arg)).join(' ');
-    const isCacheHit = joined.includes(' valid:');
-    if (isCacheHit) {
-      return;
-    }
-    let phase = '[check]';
-    if (joined.includes(' add:') || joined.includes(' bundled ')) {
-      phase = '[rebuilt]';
-    }
-    const flattened = args.map(arg =>
-      // Don't print stack traces.
-      arg instanceof Error ? arg.message : arg,
-    );
-    console.log(
-      // Make all messages prefixed and dim.
-      `${styles.dim.open}[bundleTool]${phase}`,
-      ...flattened,
-      styles.dim.close,
-    );
-  };
   const rawCache = await wrappedMaker(
     dest,
     { log, ...options },
@@ -106,19 +175,7 @@ export const makeNodeBundleCache = async (dest, options, loadModule, pid) => {
     const lockPath = path.resolve(lockRoot, lockName);
     const ownerPath = path.resolve(lockPath, 'owner.json');
     await mkdir(lockRoot, { recursive: true });
-    const started = performance.now();
-
-    const isPidAlive = lockPid => {
-      if (!Number.isInteger(lockPid) || lockPid <= 0) {
-        return false;
-      }
-      try {
-        process.kill(lockPid, 0);
-        return true;
-      } catch {
-        return false;
-      }
-    };
+    const started = monotonicNow();
 
     const maybeBreakStaleLock = async () => {
       const ownerTxt = await readFile(ownerPath, 'utf8').catch(() => undefined);
@@ -142,7 +199,7 @@ export const makeNodeBundleCache = async (dest, options, loadModule, pid) => {
       }
       try {
         const st = await stat(lockPath);
-        const ageMs = Date.now() - st.mtimeMs;
+        const ageMs = now() - st.mtimeMs;
         if (ageMs >= BUNDLE_STALE_LOCK_MS) {
           await rm(lockPath, { recursive: true, force: true });
           return true;
@@ -159,7 +216,7 @@ export const makeNodeBundleCache = async (dest, options, loadModule, pid) => {
         await mkdir(lockPath);
         await writeFile(
           ownerPath,
-          JSON.stringify({ pid: process.pid, createdAt: Date.now() }),
+          JSON.stringify({ pid, createdAt: now() }),
           'utf8',
         );
         break;
@@ -169,13 +226,13 @@ export const makeNodeBundleCache = async (dest, options, loadModule, pid) => {
           if (brokeStaleLock) {
             continue;
           }
-          const waitedMs = performance.now() - started;
+          const waitedMs = monotonicNow() - started;
           if (waitedMs >= BUNDLE_LOCK_ACQUIRE_TIMEOUT_MS) {
             throw Error(
               `Timed out waiting for bundle lock ${lockPath} after ${waitedMs}ms`,
             );
           }
-          await delay(20);
+          await delayMs(20);
           continue;
         }
         throw e;
@@ -250,7 +307,7 @@ export const makeNodeBundleCache = async (dest, options, loadModule, pid) => {
    * @returns {Promise<LoadedRegistryBundles<T>>}
    */
   const loadRegistry = async registry => {
-    const started = performance.now();
+    const started = monotonicNow();
     await null;
     try {
       const loaded = await Promise.all(
@@ -270,8 +327,8 @@ export const makeNodeBundleCache = async (dest, options, loadModule, pid) => {
         harden(Object.fromEntries(loaded))
       );
     } finally {
-      const elapsedMs = performance.now() - started;
-      console.log(
+      const elapsedMs = monotonicNow() - started;
+      log(
         `${styles.dim.open}[bundleTool][registry] loaded ${Object.keys(registry).length} bundle(s) in ${elapsedMs}ms`,
         styles.dim.close,
       );
@@ -285,46 +342,27 @@ export const makeNodeBundleCache = async (dest, options, loadModule, pid) => {
   );
 };
 
-/** @type {Map<string, Promise<BundleCache>>} */
-const providedCaches = new Map();
-
 /**
- * Make a new bundle cache for the destination. If there is already one for that
- * destination, return it.
- *
  * @param {string} dest
- * @param {object} options
- * @param {string} [options.format]
- * @param {boolean} [options.dev]
- * @param {number} [options.byteLimit=490_000] - Maximum bundle size in bytes before
- *   falling back to optimizations that may reduce legibility.
- * @param {(id: string) => Promise<any>} loadModule
  * @param {number} [pid]
  * @returns {Promise<BundleCache>}
+ * @alpha
  */
-export const provideBundleCache = (dest, options, loadModule, pid) => {
-  const uniqueDest = [dest, options.format, options.dev].join('-');
-  // store the promise instead of awaiting to prevent a race
-  let bundleCache = providedCaches.get(uniqueDest);
-  if (!bundleCache) {
-    bundleCache = makeNodeBundleCache(dest, options, loadModule, pid);
-    providedCaches.set(uniqueDest, bundleCache);
-  }
-  return bundleCache;
-};
-harden(provideBundleCache);
-
-/**
- * @param {string} dest
- * @returns {Promise<BundleCache>}
- */
-export const unsafeMakeBundleCache = dest =>
-  makeNodeBundleCache(dest, {}, s => import(s));
+export const unsafeMakeBundleCache = (dest, pid = process.pid) =>
+  makeNodeBundleCache(
+    dest,
+    {},
+    s => import(s),
+    makeAmbientBundleToolPowers({ pid }),
+  );
 
 const sharedBundleCachePath = fileURLToPath(
   new URL('../../../bundles', import.meta.url),
 );
 
+/**
+ * @alpha
+ */
 export const unsafeSharedBundleCache = unsafeMakeBundleCache(
   sharedBundleCachePath,
 );
