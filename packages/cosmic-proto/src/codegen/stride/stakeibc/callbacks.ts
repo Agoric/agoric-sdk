@@ -1,25 +1,18 @@
 //@ts-nocheck
-import { Coin, type CoinSDKType } from '../../cosmos/base/v1beta1/coin.js';
-import {
-  LSMTokenDeposit,
-  type LSMTokenDepositSDKType,
-} from '../records/records.js';
-import { HostZone, type HostZoneSDKType } from './host_zone.js';
-import { Validator, type ValidatorSDKType } from './validator.js';
-import {
-  ICAAccountType,
-  iCAAccountTypeFromJSON,
-  iCAAccountTypeToJSON,
-} from './ica_account.js';
-import { BinaryReader, BinaryWriter } from '../../binary.js';
-import { isSet } from '../../helpers.js';
-import { type JsonSafe } from '../../json-safe.js';
+import { Coin, type CoinSDKType } from "../../cosmos/base/v1beta1/coin.js";
+import { LSMTokenDeposit, type LSMTokenDepositSDKType } from "../records/records.js";
+import { HostZone, type HostZoneSDKType } from "./host_zone.js";
+import { Validator, type ValidatorSDKType } from "./validator.js";
+import { ICAAccountType, iCAAccountTypeFromJSON, iCAAccountTypeToJSON } from "./ica_account.js";
+import { BinaryReader, BinaryWriter } from "../../binary.js";
+import { isSet } from "../../helpers.js";
+import {type JsonSafe } from "../../json-safe.js";
 export interface SplitDelegation {
   validator: string;
   amount: string;
 }
 export interface SplitDelegationProtoMsg {
-  typeUrl: '/stride.stakeibc.SplitDelegation';
+  typeUrl: "/stride.stakeibc.SplitDelegation";
   value: Uint8Array;
 }
 export interface SplitDelegationSDKType {
@@ -31,7 +24,7 @@ export interface SplitUndelegation {
   nativeTokenAmount: string;
 }
 export interface SplitUndelegationProtoMsg {
-  typeUrl: '/stride.stakeibc.SplitUndelegation';
+  typeUrl: "/stride.stakeibc.SplitUndelegation";
   value: Uint8Array;
 }
 export interface SplitUndelegationSDKType {
@@ -44,7 +37,7 @@ export interface DelegateCallback {
   splitDelegations: SplitDelegation[];
 }
 export interface DelegateCallbackProtoMsg {
-  typeUrl: '/stride.stakeibc.DelegateCallback';
+  typeUrl: "/stride.stakeibc.DelegateCallback";
   value: Uint8Array;
 }
 export interface DelegateCallbackSDKType {
@@ -58,7 +51,7 @@ export interface ClaimCallback {
   epochNumber: bigint;
 }
 export interface ClaimCallbackProtoMsg {
-  typeUrl: '/stride.stakeibc.ClaimCallback';
+  typeUrl: "/stride.stakeibc.ClaimCallback";
   value: Uint8Array;
 }
 export interface ClaimCallbackSDKType {
@@ -71,7 +64,7 @@ export interface ReinvestCallback {
   hostZoneId: string;
 }
 export interface ReinvestCallbackProtoMsg {
-  typeUrl: '/stride.stakeibc.ReinvestCallback';
+  typeUrl: "/stride.stakeibc.ReinvestCallback";
   value: Uint8Array;
 }
 export interface ReinvestCallbackSDKType {
@@ -84,7 +77,7 @@ export interface UndelegateCallback {
   epochUnbondingRecordIds: bigint[];
 }
 export interface UndelegateCallbackProtoMsg {
-  typeUrl: '/stride.stakeibc.UndelegateCallback';
+  typeUrl: "/stride.stakeibc.UndelegateCallback";
   value: Uint8Array;
 }
 export interface UndelegateCallbackSDKType {
@@ -97,7 +90,7 @@ export interface RedemptionCallback {
   epochUnbondingRecordIds: bigint[];
 }
 export interface RedemptionCallbackProtoMsg {
-  typeUrl: '/stride.stakeibc.RedemptionCallback';
+  typeUrl: "/stride.stakeibc.RedemptionCallback";
   value: Uint8Array;
 }
 export interface RedemptionCallbackSDKType {
@@ -110,7 +103,7 @@ export interface Rebalancing {
   amt: string;
 }
 export interface RebalancingProtoMsg {
-  typeUrl: '/stride.stakeibc.Rebalancing';
+  typeUrl: "/stride.stakeibc.Rebalancing";
   value: Uint8Array;
 }
 export interface RebalancingSDKType {
@@ -123,7 +116,7 @@ export interface RebalanceCallback {
   rebalancings: Rebalancing[];
 }
 export interface RebalanceCallbackProtoMsg {
-  typeUrl: '/stride.stakeibc.RebalanceCallback';
+  typeUrl: "/stride.stakeibc.RebalanceCallback";
   value: Uint8Array;
 }
 export interface RebalanceCallbackSDKType {
@@ -134,7 +127,7 @@ export interface DetokenizeSharesCallback {
   deposit?: LSMTokenDeposit;
 }
 export interface DetokenizeSharesCallbackProtoMsg {
-  typeUrl: '/stride.stakeibc.DetokenizeSharesCallback';
+  typeUrl: "/stride.stakeibc.DetokenizeSharesCallback";
   value: Uint8Array;
 }
 export interface DetokenizeSharesCallbackSDKType {
@@ -146,7 +139,7 @@ export interface LSMLiquidStake {
   validator?: Validator;
 }
 export interface LSMLiquidStakeProtoMsg {
-  typeUrl: '/stride.stakeibc.LSMLiquidStake';
+  typeUrl: "/stride.stakeibc.LSMLiquidStake";
   value: Uint8Array;
 }
 export interface LSMLiquidStakeSDKType {
@@ -158,7 +151,7 @@ export interface ValidatorSharesToTokensQueryCallback {
   lsmLiquidStake?: LSMLiquidStake;
 }
 export interface ValidatorSharesToTokensQueryCallbackProtoMsg {
-  typeUrl: '/stride.stakeibc.ValidatorSharesToTokensQueryCallback';
+  typeUrl: "/stride.stakeibc.ValidatorSharesToTokensQueryCallback";
   value: Uint8Array;
 }
 export interface ValidatorSharesToTokensQueryCallbackSDKType {
@@ -169,7 +162,7 @@ export interface DelegatorSharesQueryCallback {
   initialValidatorDelegation: string;
 }
 export interface DelegatorSharesQueryCallbackProtoMsg {
-  typeUrl: '/stride.stakeibc.DelegatorSharesQueryCallback';
+  typeUrl: "/stride.stakeibc.DelegatorSharesQueryCallback";
   value: Uint8Array;
 }
 export interface DelegatorSharesQueryCallbackSDKType {
@@ -180,7 +173,7 @@ export interface CommunityPoolBalanceQueryCallback {
   denom: string;
 }
 export interface CommunityPoolBalanceQueryCallbackProtoMsg {
-  typeUrl: '/stride.stakeibc.CommunityPoolBalanceQueryCallback';
+  typeUrl: "/stride.stakeibc.CommunityPoolBalanceQueryCallback";
   value: Uint8Array;
 }
 export interface CommunityPoolBalanceQueryCallbackSDKType {
@@ -192,7 +185,7 @@ export interface TradeRouteCallback {
   hostDenom: string;
 }
 export interface TradeRouteCallbackProtoMsg {
-  typeUrl: '/stride.stakeibc.TradeRouteCallback';
+  typeUrl: "/stride.stakeibc.TradeRouteCallback";
   value: Uint8Array;
 }
 export interface TradeRouteCallbackSDKType {
@@ -201,27 +194,23 @@ export interface TradeRouteCallbackSDKType {
 }
 function createBaseSplitDelegation(): SplitDelegation {
   return {
-    validator: '',
-    amount: '',
+    validator: "",
+    amount: ""
   };
 }
 export const SplitDelegation = {
-  typeUrl: '/stride.stakeibc.SplitDelegation' as const,
-  encode(
-    message: SplitDelegation,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.validator !== '') {
+  typeUrl: "/stride.stakeibc.SplitDelegation" as const,
+  encode(message: SplitDelegation, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.validator !== "") {
       writer.uint32(10).string(message.validator);
     }
-    if (message.amount !== '') {
+    if (message.amount !== "") {
       writer.uint32(18).string(message.amount);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): SplitDelegation {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseSplitDelegation();
     while (reader.pos < end) {
@@ -242,8 +231,8 @@ export const SplitDelegation = {
   },
   fromJSON(object: any): SplitDelegation {
     return {
-      validator: isSet(object.validator) ? String(object.validator) : '',
-      amount: isSet(object.amount) ? String(object.amount) : '',
+      validator: isSet(object.validator) ? String(object.validator) : "",
+      amount: isSet(object.amount) ? String(object.amount) : ""
     };
   },
   toJSON(message: SplitDelegation): JsonSafe<SplitDelegation> {
@@ -254,8 +243,8 @@ export const SplitDelegation = {
   },
   fromPartial(object: Partial<SplitDelegation>): SplitDelegation {
     const message = createBaseSplitDelegation();
-    message.validator = object.validator ?? '';
-    message.amount = object.amount ?? '';
+    message.validator = object.validator ?? "";
+    message.amount = object.amount ?? "";
     return message;
   },
   fromProtoMsg(message: SplitDelegationProtoMsg): SplitDelegation {
@@ -266,34 +255,30 @@ export const SplitDelegation = {
   },
   toProtoMsg(message: SplitDelegation): SplitDelegationProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.SplitDelegation',
-      value: SplitDelegation.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.SplitDelegation",
+      value: SplitDelegation.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseSplitUndelegation(): SplitUndelegation {
   return {
-    validator: '',
-    nativeTokenAmount: '',
+    validator: "",
+    nativeTokenAmount: ""
   };
 }
 export const SplitUndelegation = {
-  typeUrl: '/stride.stakeibc.SplitUndelegation' as const,
-  encode(
-    message: SplitUndelegation,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.validator !== '') {
+  typeUrl: "/stride.stakeibc.SplitUndelegation" as const,
+  encode(message: SplitUndelegation, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.validator !== "") {
       writer.uint32(10).string(message.validator);
     }
-    if (message.nativeTokenAmount !== '') {
+    if (message.nativeTokenAmount !== "") {
       writer.uint32(18).string(message.nativeTokenAmount);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): SplitUndelegation {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseSplitUndelegation();
     while (reader.pos < end) {
@@ -314,23 +299,20 @@ export const SplitUndelegation = {
   },
   fromJSON(object: any): SplitUndelegation {
     return {
-      validator: isSet(object.validator) ? String(object.validator) : '',
-      nativeTokenAmount: isSet(object.nativeTokenAmount)
-        ? String(object.nativeTokenAmount)
-        : '',
+      validator: isSet(object.validator) ? String(object.validator) : "",
+      nativeTokenAmount: isSet(object.nativeTokenAmount) ? String(object.nativeTokenAmount) : ""
     };
   },
   toJSON(message: SplitUndelegation): JsonSafe<SplitUndelegation> {
     const obj: any = {};
     message.validator !== undefined && (obj.validator = message.validator);
-    message.nativeTokenAmount !== undefined &&
-      (obj.nativeTokenAmount = message.nativeTokenAmount);
+    message.nativeTokenAmount !== undefined && (obj.nativeTokenAmount = message.nativeTokenAmount);
     return obj;
   },
   fromPartial(object: Partial<SplitUndelegation>): SplitUndelegation {
     const message = createBaseSplitUndelegation();
-    message.validator = object.validator ?? '';
-    message.nativeTokenAmount = object.nativeTokenAmount ?? '';
+    message.validator = object.validator ?? "";
+    message.nativeTokenAmount = object.nativeTokenAmount ?? "";
     return message;
   },
   fromProtoMsg(message: SplitUndelegationProtoMsg): SplitUndelegation {
@@ -341,25 +323,22 @@ export const SplitUndelegation = {
   },
   toProtoMsg(message: SplitUndelegation): SplitUndelegationProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.SplitUndelegation',
-      value: SplitUndelegation.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.SplitUndelegation",
+      value: SplitUndelegation.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseDelegateCallback(): DelegateCallback {
   return {
-    hostZoneId: '',
+    hostZoneId: "",
     depositRecordId: BigInt(0),
-    splitDelegations: [],
+    splitDelegations: []
   };
 }
 export const DelegateCallback = {
-  typeUrl: '/stride.stakeibc.DelegateCallback' as const,
-  encode(
-    message: DelegateCallback,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.hostZoneId !== '') {
+  typeUrl: "/stride.stakeibc.DelegateCallback" as const,
+  encode(message: DelegateCallback, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.hostZoneId !== "") {
       writer.uint32(10).string(message.hostZoneId);
     }
     if (message.depositRecordId !== BigInt(0)) {
@@ -371,8 +350,7 @@ export const DelegateCallback = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): DelegateCallback {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseDelegateCallback();
     while (reader.pos < end) {
@@ -385,9 +363,7 @@ export const DelegateCallback = {
           message.depositRecordId = reader.uint64();
           break;
         case 3:
-          message.splitDelegations.push(
-            SplitDelegation.decode(reader, reader.uint32()),
-          );
+          message.splitDelegations.push(SplitDelegation.decode(reader, reader.uint32()));
           break;
         default:
           reader.skipType(tag & 7);
@@ -398,24 +374,17 @@ export const DelegateCallback = {
   },
   fromJSON(object: any): DelegateCallback {
     return {
-      hostZoneId: isSet(object.hostZoneId) ? String(object.hostZoneId) : '',
-      depositRecordId: isSet(object.depositRecordId)
-        ? BigInt(object.depositRecordId.toString())
-        : BigInt(0),
-      splitDelegations: Array.isArray(object?.splitDelegations)
-        ? object.splitDelegations.map((e: any) => SplitDelegation.fromJSON(e))
-        : [],
+      hostZoneId: isSet(object.hostZoneId) ? String(object.hostZoneId) : "",
+      depositRecordId: isSet(object.depositRecordId) ? BigInt(object.depositRecordId.toString()) : BigInt(0),
+      splitDelegations: Array.isArray(object?.splitDelegations) ? object.splitDelegations.map((e: any) => SplitDelegation.fromJSON(e)) : []
     };
   },
   toJSON(message: DelegateCallback): JsonSafe<DelegateCallback> {
     const obj: any = {};
     message.hostZoneId !== undefined && (obj.hostZoneId = message.hostZoneId);
-    message.depositRecordId !== undefined &&
-      (obj.depositRecordId = (message.depositRecordId || BigInt(0)).toString());
+    message.depositRecordId !== undefined && (obj.depositRecordId = (message.depositRecordId || BigInt(0)).toString());
     if (message.splitDelegations) {
-      obj.splitDelegations = message.splitDelegations.map(e =>
-        e ? SplitDelegation.toJSON(e) : undefined,
-      );
+      obj.splitDelegations = message.splitDelegations.map(e => e ? SplitDelegation.toJSON(e) : undefined);
     } else {
       obj.splitDelegations = [];
     }
@@ -423,13 +392,9 @@ export const DelegateCallback = {
   },
   fromPartial(object: Partial<DelegateCallback>): DelegateCallback {
     const message = createBaseDelegateCallback();
-    message.hostZoneId = object.hostZoneId ?? '';
-    message.depositRecordId =
-      object.depositRecordId !== undefined && object.depositRecordId !== null
-        ? BigInt(object.depositRecordId.toString())
-        : BigInt(0);
-    message.splitDelegations =
-      object.splitDelegations?.map(e => SplitDelegation.fromPartial(e)) || [];
+    message.hostZoneId = object.hostZoneId ?? "";
+    message.depositRecordId = object.depositRecordId !== undefined && object.depositRecordId !== null ? BigInt(object.depositRecordId.toString()) : BigInt(0);
+    message.splitDelegations = object.splitDelegations?.map(e => SplitDelegation.fromPartial(e)) || [];
     return message;
   },
   fromProtoMsg(message: DelegateCallbackProtoMsg): DelegateCallback {
@@ -440,28 +405,25 @@ export const DelegateCallback = {
   },
   toProtoMsg(message: DelegateCallback): DelegateCallbackProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.DelegateCallback',
-      value: DelegateCallback.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.DelegateCallback",
+      value: DelegateCallback.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseClaimCallback(): ClaimCallback {
   return {
-    userRedemptionRecordId: '',
-    chainId: '',
-    epochNumber: BigInt(0),
+    userRedemptionRecordId: "",
+    chainId: "",
+    epochNumber: BigInt(0)
   };
 }
 export const ClaimCallback = {
-  typeUrl: '/stride.stakeibc.ClaimCallback' as const,
-  encode(
-    message: ClaimCallback,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.userRedemptionRecordId !== '') {
+  typeUrl: "/stride.stakeibc.ClaimCallback" as const,
+  encode(message: ClaimCallback, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.userRedemptionRecordId !== "") {
       writer.uint32(10).string(message.userRedemptionRecordId);
     }
-    if (message.chainId !== '') {
+    if (message.chainId !== "") {
       writer.uint32(18).string(message.chainId);
     }
     if (message.epochNumber !== BigInt(0)) {
@@ -470,8 +432,7 @@ export const ClaimCallback = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): ClaimCallback {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseClaimCallback();
     while (reader.pos < end) {
@@ -495,32 +456,23 @@ export const ClaimCallback = {
   },
   fromJSON(object: any): ClaimCallback {
     return {
-      userRedemptionRecordId: isSet(object.userRedemptionRecordId)
-        ? String(object.userRedemptionRecordId)
-        : '',
-      chainId: isSet(object.chainId) ? String(object.chainId) : '',
-      epochNumber: isSet(object.epochNumber)
-        ? BigInt(object.epochNumber.toString())
-        : BigInt(0),
+      userRedemptionRecordId: isSet(object.userRedemptionRecordId) ? String(object.userRedemptionRecordId) : "",
+      chainId: isSet(object.chainId) ? String(object.chainId) : "",
+      epochNumber: isSet(object.epochNumber) ? BigInt(object.epochNumber.toString()) : BigInt(0)
     };
   },
   toJSON(message: ClaimCallback): JsonSafe<ClaimCallback> {
     const obj: any = {};
-    message.userRedemptionRecordId !== undefined &&
-      (obj.userRedemptionRecordId = message.userRedemptionRecordId);
+    message.userRedemptionRecordId !== undefined && (obj.userRedemptionRecordId = message.userRedemptionRecordId);
     message.chainId !== undefined && (obj.chainId = message.chainId);
-    message.epochNumber !== undefined &&
-      (obj.epochNumber = (message.epochNumber || BigInt(0)).toString());
+    message.epochNumber !== undefined && (obj.epochNumber = (message.epochNumber || BigInt(0)).toString());
     return obj;
   },
   fromPartial(object: Partial<ClaimCallback>): ClaimCallback {
     const message = createBaseClaimCallback();
-    message.userRedemptionRecordId = object.userRedemptionRecordId ?? '';
-    message.chainId = object.chainId ?? '';
-    message.epochNumber =
-      object.epochNumber !== undefined && object.epochNumber !== null
-        ? BigInt(object.epochNumber.toString())
-        : BigInt(0);
+    message.userRedemptionRecordId = object.userRedemptionRecordId ?? "";
+    message.chainId = object.chainId ?? "";
+    message.epochNumber = object.epochNumber !== undefined && object.epochNumber !== null ? BigInt(object.epochNumber.toString()) : BigInt(0);
     return message;
   },
   fromProtoMsg(message: ClaimCallbackProtoMsg): ClaimCallback {
@@ -531,34 +483,30 @@ export const ClaimCallback = {
   },
   toProtoMsg(message: ClaimCallback): ClaimCallbackProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.ClaimCallback',
-      value: ClaimCallback.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.ClaimCallback",
+      value: ClaimCallback.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseReinvestCallback(): ReinvestCallback {
   return {
     reinvestAmount: Coin.fromPartial({}),
-    hostZoneId: '',
+    hostZoneId: ""
   };
 }
 export const ReinvestCallback = {
-  typeUrl: '/stride.stakeibc.ReinvestCallback' as const,
-  encode(
-    message: ReinvestCallback,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/stride.stakeibc.ReinvestCallback" as const,
+  encode(message: ReinvestCallback, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.reinvestAmount !== undefined) {
       Coin.encode(message.reinvestAmount, writer.uint32(10).fork()).ldelim();
     }
-    if (message.hostZoneId !== '') {
+    if (message.hostZoneId !== "") {
       writer.uint32(26).string(message.hostZoneId);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): ReinvestCallback {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseReinvestCallback();
     while (reader.pos < end) {
@@ -579,28 +527,20 @@ export const ReinvestCallback = {
   },
   fromJSON(object: any): ReinvestCallback {
     return {
-      reinvestAmount: isSet(object.reinvestAmount)
-        ? Coin.fromJSON(object.reinvestAmount)
-        : undefined,
-      hostZoneId: isSet(object.hostZoneId) ? String(object.hostZoneId) : '',
+      reinvestAmount: isSet(object.reinvestAmount) ? Coin.fromJSON(object.reinvestAmount) : undefined,
+      hostZoneId: isSet(object.hostZoneId) ? String(object.hostZoneId) : ""
     };
   },
   toJSON(message: ReinvestCallback): JsonSafe<ReinvestCallback> {
     const obj: any = {};
-    message.reinvestAmount !== undefined &&
-      (obj.reinvestAmount = message.reinvestAmount
-        ? Coin.toJSON(message.reinvestAmount)
-        : undefined);
+    message.reinvestAmount !== undefined && (obj.reinvestAmount = message.reinvestAmount ? Coin.toJSON(message.reinvestAmount) : undefined);
     message.hostZoneId !== undefined && (obj.hostZoneId = message.hostZoneId);
     return obj;
   },
   fromPartial(object: Partial<ReinvestCallback>): ReinvestCallback {
     const message = createBaseReinvestCallback();
-    message.reinvestAmount =
-      object.reinvestAmount !== undefined && object.reinvestAmount !== null
-        ? Coin.fromPartial(object.reinvestAmount)
-        : undefined;
-    message.hostZoneId = object.hostZoneId ?? '';
+    message.reinvestAmount = object.reinvestAmount !== undefined && object.reinvestAmount !== null ? Coin.fromPartial(object.reinvestAmount) : undefined;
+    message.hostZoneId = object.hostZoneId ?? "";
     return message;
   },
   fromProtoMsg(message: ReinvestCallbackProtoMsg): ReinvestCallback {
@@ -611,25 +551,22 @@ export const ReinvestCallback = {
   },
   toProtoMsg(message: ReinvestCallback): ReinvestCallbackProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.ReinvestCallback',
-      value: ReinvestCallback.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.ReinvestCallback",
+      value: ReinvestCallback.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseUndelegateCallback(): UndelegateCallback {
   return {
-    hostZoneId: '',
+    hostZoneId: "",
     splitUndelegations: [],
-    epochUnbondingRecordIds: [],
+    epochUnbondingRecordIds: []
   };
 }
 export const UndelegateCallback = {
-  typeUrl: '/stride.stakeibc.UndelegateCallback' as const,
-  encode(
-    message: UndelegateCallback,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.hostZoneId !== '') {
+  typeUrl: "/stride.stakeibc.UndelegateCallback" as const,
+  encode(message: UndelegateCallback, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.hostZoneId !== "") {
       writer.uint32(10).string(message.hostZoneId);
     }
     for (const v of message.splitUndelegations) {
@@ -642,12 +579,8 @@ export const UndelegateCallback = {
     writer.ldelim();
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): UndelegateCallback {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): UndelegateCallback {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseUndelegateCallback();
     while (reader.pos < end) {
@@ -657,9 +590,7 @@ export const UndelegateCallback = {
           message.hostZoneId = reader.string();
           break;
         case 2:
-          message.splitUndelegations.push(
-            SplitUndelegation.decode(reader, reader.uint32()),
-          );
+          message.splitUndelegations.push(SplitUndelegation.decode(reader, reader.uint32()));
           break;
         case 3:
           if ((tag & 7) === 2) {
@@ -680,31 +611,21 @@ export const UndelegateCallback = {
   },
   fromJSON(object: any): UndelegateCallback {
     return {
-      hostZoneId: isSet(object.hostZoneId) ? String(object.hostZoneId) : '',
-      splitUndelegations: Array.isArray(object?.splitUndelegations)
-        ? object.splitUndelegations.map((e: any) =>
-            SplitUndelegation.fromJSON(e),
-          )
-        : [],
-      epochUnbondingRecordIds: Array.isArray(object?.epochUnbondingRecordIds)
-        ? object.epochUnbondingRecordIds.map((e: any) => BigInt(e.toString()))
-        : [],
+      hostZoneId: isSet(object.hostZoneId) ? String(object.hostZoneId) : "",
+      splitUndelegations: Array.isArray(object?.splitUndelegations) ? object.splitUndelegations.map((e: any) => SplitUndelegation.fromJSON(e)) : [],
+      epochUnbondingRecordIds: Array.isArray(object?.epochUnbondingRecordIds) ? object.epochUnbondingRecordIds.map((e: any) => BigInt(e.toString())) : []
     };
   },
   toJSON(message: UndelegateCallback): JsonSafe<UndelegateCallback> {
     const obj: any = {};
     message.hostZoneId !== undefined && (obj.hostZoneId = message.hostZoneId);
     if (message.splitUndelegations) {
-      obj.splitUndelegations = message.splitUndelegations.map(e =>
-        e ? SplitUndelegation.toJSON(e) : undefined,
-      );
+      obj.splitUndelegations = message.splitUndelegations.map(e => e ? SplitUndelegation.toJSON(e) : undefined);
     } else {
       obj.splitUndelegations = [];
     }
     if (message.epochUnbondingRecordIds) {
-      obj.epochUnbondingRecordIds = message.epochUnbondingRecordIds.map(e =>
-        (e || BigInt(0)).toString(),
-      );
+      obj.epochUnbondingRecordIds = message.epochUnbondingRecordIds.map(e => (e || BigInt(0)).toString());
     } else {
       obj.epochUnbondingRecordIds = [];
     }
@@ -712,12 +633,9 @@ export const UndelegateCallback = {
   },
   fromPartial(object: Partial<UndelegateCallback>): UndelegateCallback {
     const message = createBaseUndelegateCallback();
-    message.hostZoneId = object.hostZoneId ?? '';
-    message.splitUndelegations =
-      object.splitUndelegations?.map(e => SplitUndelegation.fromPartial(e)) ||
-      [];
-    message.epochUnbondingRecordIds =
-      object.epochUnbondingRecordIds?.map(e => BigInt(e.toString())) || [];
+    message.hostZoneId = object.hostZoneId ?? "";
+    message.splitUndelegations = object.splitUndelegations?.map(e => SplitUndelegation.fromPartial(e)) || [];
+    message.epochUnbondingRecordIds = object.epochUnbondingRecordIds?.map(e => BigInt(e.toString())) || [];
     return message;
   },
   fromProtoMsg(message: UndelegateCallbackProtoMsg): UndelegateCallback {
@@ -728,24 +646,21 @@ export const UndelegateCallback = {
   },
   toProtoMsg(message: UndelegateCallback): UndelegateCallbackProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.UndelegateCallback',
-      value: UndelegateCallback.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.UndelegateCallback",
+      value: UndelegateCallback.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseRedemptionCallback(): RedemptionCallback {
   return {
-    hostZoneId: '',
-    epochUnbondingRecordIds: [],
+    hostZoneId: "",
+    epochUnbondingRecordIds: []
   };
 }
 export const RedemptionCallback = {
-  typeUrl: '/stride.stakeibc.RedemptionCallback' as const,
-  encode(
-    message: RedemptionCallback,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.hostZoneId !== '') {
+  typeUrl: "/stride.stakeibc.RedemptionCallback" as const,
+  encode(message: RedemptionCallback, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.hostZoneId !== "") {
       writer.uint32(10).string(message.hostZoneId);
     }
     writer.uint32(18).fork();
@@ -755,12 +670,8 @@ export const RedemptionCallback = {
     writer.ldelim();
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): RedemptionCallback {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): RedemptionCallback {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseRedemptionCallback();
     while (reader.pos < end) {
@@ -788,19 +699,15 @@ export const RedemptionCallback = {
   },
   fromJSON(object: any): RedemptionCallback {
     return {
-      hostZoneId: isSet(object.hostZoneId) ? String(object.hostZoneId) : '',
-      epochUnbondingRecordIds: Array.isArray(object?.epochUnbondingRecordIds)
-        ? object.epochUnbondingRecordIds.map((e: any) => BigInt(e.toString()))
-        : [],
+      hostZoneId: isSet(object.hostZoneId) ? String(object.hostZoneId) : "",
+      epochUnbondingRecordIds: Array.isArray(object?.epochUnbondingRecordIds) ? object.epochUnbondingRecordIds.map((e: any) => BigInt(e.toString())) : []
     };
   },
   toJSON(message: RedemptionCallback): JsonSafe<RedemptionCallback> {
     const obj: any = {};
     message.hostZoneId !== undefined && (obj.hostZoneId = message.hostZoneId);
     if (message.epochUnbondingRecordIds) {
-      obj.epochUnbondingRecordIds = message.epochUnbondingRecordIds.map(e =>
-        (e || BigInt(0)).toString(),
-      );
+      obj.epochUnbondingRecordIds = message.epochUnbondingRecordIds.map(e => (e || BigInt(0)).toString());
     } else {
       obj.epochUnbondingRecordIds = [];
     }
@@ -808,9 +715,8 @@ export const RedemptionCallback = {
   },
   fromPartial(object: Partial<RedemptionCallback>): RedemptionCallback {
     const message = createBaseRedemptionCallback();
-    message.hostZoneId = object.hostZoneId ?? '';
-    message.epochUnbondingRecordIds =
-      object.epochUnbondingRecordIds?.map(e => BigInt(e.toString())) || [];
+    message.hostZoneId = object.hostZoneId ?? "";
+    message.epochUnbondingRecordIds = object.epochUnbondingRecordIds?.map(e => BigInt(e.toString())) || [];
     return message;
   },
   fromProtoMsg(message: RedemptionCallbackProtoMsg): RedemptionCallback {
@@ -821,38 +727,34 @@ export const RedemptionCallback = {
   },
   toProtoMsg(message: RedemptionCallback): RedemptionCallbackProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.RedemptionCallback',
-      value: RedemptionCallback.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.RedemptionCallback",
+      value: RedemptionCallback.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseRebalancing(): Rebalancing {
   return {
-    srcValidator: '',
-    dstValidator: '',
-    amt: '',
+    srcValidator: "",
+    dstValidator: "",
+    amt: ""
   };
 }
 export const Rebalancing = {
-  typeUrl: '/stride.stakeibc.Rebalancing' as const,
-  encode(
-    message: Rebalancing,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.srcValidator !== '') {
+  typeUrl: "/stride.stakeibc.Rebalancing" as const,
+  encode(message: Rebalancing, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.srcValidator !== "") {
       writer.uint32(10).string(message.srcValidator);
     }
-    if (message.dstValidator !== '') {
+    if (message.dstValidator !== "") {
       writer.uint32(18).string(message.dstValidator);
     }
-    if (message.amt !== '') {
+    if (message.amt !== "") {
       writer.uint32(26).string(message.amt);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Rebalancing {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseRebalancing();
     while (reader.pos < end) {
@@ -876,29 +778,23 @@ export const Rebalancing = {
   },
   fromJSON(object: any): Rebalancing {
     return {
-      srcValidator: isSet(object.srcValidator)
-        ? String(object.srcValidator)
-        : '',
-      dstValidator: isSet(object.dstValidator)
-        ? String(object.dstValidator)
-        : '',
-      amt: isSet(object.amt) ? String(object.amt) : '',
+      srcValidator: isSet(object.srcValidator) ? String(object.srcValidator) : "",
+      dstValidator: isSet(object.dstValidator) ? String(object.dstValidator) : "",
+      amt: isSet(object.amt) ? String(object.amt) : ""
     };
   },
   toJSON(message: Rebalancing): JsonSafe<Rebalancing> {
     const obj: any = {};
-    message.srcValidator !== undefined &&
-      (obj.srcValidator = message.srcValidator);
-    message.dstValidator !== undefined &&
-      (obj.dstValidator = message.dstValidator);
+    message.srcValidator !== undefined && (obj.srcValidator = message.srcValidator);
+    message.dstValidator !== undefined && (obj.dstValidator = message.dstValidator);
     message.amt !== undefined && (obj.amt = message.amt);
     return obj;
   },
   fromPartial(object: Partial<Rebalancing>): Rebalancing {
     const message = createBaseRebalancing();
-    message.srcValidator = object.srcValidator ?? '';
-    message.dstValidator = object.dstValidator ?? '';
-    message.amt = object.amt ?? '';
+    message.srcValidator = object.srcValidator ?? "";
+    message.dstValidator = object.dstValidator ?? "";
+    message.amt = object.amt ?? "";
     return message;
   },
   fromProtoMsg(message: RebalancingProtoMsg): Rebalancing {
@@ -909,24 +805,21 @@ export const Rebalancing = {
   },
   toProtoMsg(message: Rebalancing): RebalancingProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.Rebalancing',
-      value: Rebalancing.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.Rebalancing",
+      value: Rebalancing.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseRebalanceCallback(): RebalanceCallback {
   return {
-    hostZoneId: '',
-    rebalancings: [],
+    hostZoneId: "",
+    rebalancings: []
   };
 }
 export const RebalanceCallback = {
-  typeUrl: '/stride.stakeibc.RebalanceCallback' as const,
-  encode(
-    message: RebalanceCallback,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.hostZoneId !== '') {
+  typeUrl: "/stride.stakeibc.RebalanceCallback" as const,
+  encode(message: RebalanceCallback, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.hostZoneId !== "") {
       writer.uint32(10).string(message.hostZoneId);
     }
     for (const v of message.rebalancings) {
@@ -935,8 +828,7 @@ export const RebalanceCallback = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): RebalanceCallback {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseRebalanceCallback();
     while (reader.pos < end) {
@@ -946,9 +838,7 @@ export const RebalanceCallback = {
           message.hostZoneId = reader.string();
           break;
         case 2:
-          message.rebalancings.push(
-            Rebalancing.decode(reader, reader.uint32()),
-          );
+          message.rebalancings.push(Rebalancing.decode(reader, reader.uint32()));
           break;
         default:
           reader.skipType(tag & 7);
@@ -959,19 +849,15 @@ export const RebalanceCallback = {
   },
   fromJSON(object: any): RebalanceCallback {
     return {
-      hostZoneId: isSet(object.hostZoneId) ? String(object.hostZoneId) : '',
-      rebalancings: Array.isArray(object?.rebalancings)
-        ? object.rebalancings.map((e: any) => Rebalancing.fromJSON(e))
-        : [],
+      hostZoneId: isSet(object.hostZoneId) ? String(object.hostZoneId) : "",
+      rebalancings: Array.isArray(object?.rebalancings) ? object.rebalancings.map((e: any) => Rebalancing.fromJSON(e)) : []
     };
   },
   toJSON(message: RebalanceCallback): JsonSafe<RebalanceCallback> {
     const obj: any = {};
     message.hostZoneId !== undefined && (obj.hostZoneId = message.hostZoneId);
     if (message.rebalancings) {
-      obj.rebalancings = message.rebalancings.map(e =>
-        e ? Rebalancing.toJSON(e) : undefined,
-      );
+      obj.rebalancings = message.rebalancings.map(e => e ? Rebalancing.toJSON(e) : undefined);
     } else {
       obj.rebalancings = [];
     }
@@ -979,9 +865,8 @@ export const RebalanceCallback = {
   },
   fromPartial(object: Partial<RebalanceCallback>): RebalanceCallback {
     const message = createBaseRebalanceCallback();
-    message.hostZoneId = object.hostZoneId ?? '';
-    message.rebalancings =
-      object.rebalancings?.map(e => Rebalancing.fromPartial(e)) || [];
+    message.hostZoneId = object.hostZoneId ?? "";
+    message.rebalancings = object.rebalancings?.map(e => Rebalancing.fromPartial(e)) || [];
     return message;
   },
   fromProtoMsg(message: RebalanceCallbackProtoMsg): RebalanceCallback {
@@ -992,36 +877,26 @@ export const RebalanceCallback = {
   },
   toProtoMsg(message: RebalanceCallback): RebalanceCallbackProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.RebalanceCallback',
-      value: RebalanceCallback.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.RebalanceCallback",
+      value: RebalanceCallback.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseDetokenizeSharesCallback(): DetokenizeSharesCallback {
   return {
-    deposit: undefined,
+    deposit: undefined
   };
 }
 export const DetokenizeSharesCallback = {
-  typeUrl: '/stride.stakeibc.DetokenizeSharesCallback' as const,
-  encode(
-    message: DetokenizeSharesCallback,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/stride.stakeibc.DetokenizeSharesCallback" as const,
+  encode(message: DetokenizeSharesCallback, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.deposit !== undefined) {
-      LSMTokenDeposit.encode(
-        message.deposit,
-        writer.uint32(10).fork(),
-      ).ldelim();
+      LSMTokenDeposit.encode(message.deposit, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): DetokenizeSharesCallback {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): DetokenizeSharesCallback {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseDetokenizeSharesCallback();
     while (reader.pos < end) {
@@ -1039,66 +914,44 @@ export const DetokenizeSharesCallback = {
   },
   fromJSON(object: any): DetokenizeSharesCallback {
     return {
-      deposit: isSet(object.deposit)
-        ? LSMTokenDeposit.fromJSON(object.deposit)
-        : undefined,
+      deposit: isSet(object.deposit) ? LSMTokenDeposit.fromJSON(object.deposit) : undefined
     };
   },
-  toJSON(
-    message: DetokenizeSharesCallback,
-  ): JsonSafe<DetokenizeSharesCallback> {
+  toJSON(message: DetokenizeSharesCallback): JsonSafe<DetokenizeSharesCallback> {
     const obj: any = {};
-    message.deposit !== undefined &&
-      (obj.deposit = message.deposit
-        ? LSMTokenDeposit.toJSON(message.deposit)
-        : undefined);
+    message.deposit !== undefined && (obj.deposit = message.deposit ? LSMTokenDeposit.toJSON(message.deposit) : undefined);
     return obj;
   },
-  fromPartial(
-    object: Partial<DetokenizeSharesCallback>,
-  ): DetokenizeSharesCallback {
+  fromPartial(object: Partial<DetokenizeSharesCallback>): DetokenizeSharesCallback {
     const message = createBaseDetokenizeSharesCallback();
-    message.deposit =
-      object.deposit !== undefined && object.deposit !== null
-        ? LSMTokenDeposit.fromPartial(object.deposit)
-        : undefined;
+    message.deposit = object.deposit !== undefined && object.deposit !== null ? LSMTokenDeposit.fromPartial(object.deposit) : undefined;
     return message;
   },
-  fromProtoMsg(
-    message: DetokenizeSharesCallbackProtoMsg,
-  ): DetokenizeSharesCallback {
+  fromProtoMsg(message: DetokenizeSharesCallbackProtoMsg): DetokenizeSharesCallback {
     return DetokenizeSharesCallback.decode(message.value);
   },
   toProto(message: DetokenizeSharesCallback): Uint8Array {
     return DetokenizeSharesCallback.encode(message).finish();
   },
-  toProtoMsg(
-    message: DetokenizeSharesCallback,
-  ): DetokenizeSharesCallbackProtoMsg {
+  toProtoMsg(message: DetokenizeSharesCallback): DetokenizeSharesCallbackProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.DetokenizeSharesCallback',
-      value: DetokenizeSharesCallback.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.DetokenizeSharesCallback",
+      value: DetokenizeSharesCallback.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseLSMLiquidStake(): LSMLiquidStake {
   return {
     deposit: undefined,
     hostZone: undefined,
-    validator: undefined,
+    validator: undefined
   };
 }
 export const LSMLiquidStake = {
-  typeUrl: '/stride.stakeibc.LSMLiquidStake' as const,
-  encode(
-    message: LSMLiquidStake,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/stride.stakeibc.LSMLiquidStake" as const,
+  encode(message: LSMLiquidStake, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.deposit !== undefined) {
-      LSMTokenDeposit.encode(
-        message.deposit,
-        writer.uint32(10).fork(),
-      ).ldelim();
+      LSMTokenDeposit.encode(message.deposit, writer.uint32(10).fork()).ldelim();
     }
     if (message.hostZone !== undefined) {
       HostZone.encode(message.hostZone, writer.uint32(18).fork()).ldelim();
@@ -1109,8 +962,7 @@ export const LSMLiquidStake = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): LSMLiquidStake {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseLSMLiquidStake();
     while (reader.pos < end) {
@@ -1134,47 +986,23 @@ export const LSMLiquidStake = {
   },
   fromJSON(object: any): LSMLiquidStake {
     return {
-      deposit: isSet(object.deposit)
-        ? LSMTokenDeposit.fromJSON(object.deposit)
-        : undefined,
-      hostZone: isSet(object.hostZone)
-        ? HostZone.fromJSON(object.hostZone)
-        : undefined,
-      validator: isSet(object.validator)
-        ? Validator.fromJSON(object.validator)
-        : undefined,
+      deposit: isSet(object.deposit) ? LSMTokenDeposit.fromJSON(object.deposit) : undefined,
+      hostZone: isSet(object.hostZone) ? HostZone.fromJSON(object.hostZone) : undefined,
+      validator: isSet(object.validator) ? Validator.fromJSON(object.validator) : undefined
     };
   },
   toJSON(message: LSMLiquidStake): JsonSafe<LSMLiquidStake> {
     const obj: any = {};
-    message.deposit !== undefined &&
-      (obj.deposit = message.deposit
-        ? LSMTokenDeposit.toJSON(message.deposit)
-        : undefined);
-    message.hostZone !== undefined &&
-      (obj.hostZone = message.hostZone
-        ? HostZone.toJSON(message.hostZone)
-        : undefined);
-    message.validator !== undefined &&
-      (obj.validator = message.validator
-        ? Validator.toJSON(message.validator)
-        : undefined);
+    message.deposit !== undefined && (obj.deposit = message.deposit ? LSMTokenDeposit.toJSON(message.deposit) : undefined);
+    message.hostZone !== undefined && (obj.hostZone = message.hostZone ? HostZone.toJSON(message.hostZone) : undefined);
+    message.validator !== undefined && (obj.validator = message.validator ? Validator.toJSON(message.validator) : undefined);
     return obj;
   },
   fromPartial(object: Partial<LSMLiquidStake>): LSMLiquidStake {
     const message = createBaseLSMLiquidStake();
-    message.deposit =
-      object.deposit !== undefined && object.deposit !== null
-        ? LSMTokenDeposit.fromPartial(object.deposit)
-        : undefined;
-    message.hostZone =
-      object.hostZone !== undefined && object.hostZone !== null
-        ? HostZone.fromPartial(object.hostZone)
-        : undefined;
-    message.validator =
-      object.validator !== undefined && object.validator !== null
-        ? Validator.fromPartial(object.validator)
-        : undefined;
+    message.deposit = object.deposit !== undefined && object.deposit !== null ? LSMTokenDeposit.fromPartial(object.deposit) : undefined;
+    message.hostZone = object.hostZone !== undefined && object.hostZone !== null ? HostZone.fromPartial(object.hostZone) : undefined;
+    message.validator = object.validator !== undefined && object.validator !== null ? Validator.fromPartial(object.validator) : undefined;
     return message;
   },
   fromProtoMsg(message: LSMLiquidStakeProtoMsg): LSMLiquidStake {
@@ -1185,46 +1013,33 @@ export const LSMLiquidStake = {
   },
   toProtoMsg(message: LSMLiquidStake): LSMLiquidStakeProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.LSMLiquidStake',
-      value: LSMLiquidStake.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.LSMLiquidStake",
+      value: LSMLiquidStake.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseValidatorSharesToTokensQueryCallback(): ValidatorSharesToTokensQueryCallback {
   return {
-    lsmLiquidStake: undefined,
+    lsmLiquidStake: undefined
   };
 }
 export const ValidatorSharesToTokensQueryCallback = {
-  typeUrl: '/stride.stakeibc.ValidatorSharesToTokensQueryCallback' as const,
-  encode(
-    message: ValidatorSharesToTokensQueryCallback,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/stride.stakeibc.ValidatorSharesToTokensQueryCallback" as const,
+  encode(message: ValidatorSharesToTokensQueryCallback, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.lsmLiquidStake !== undefined) {
-      LSMLiquidStake.encode(
-        message.lsmLiquidStake,
-        writer.uint32(10).fork(),
-      ).ldelim();
+      LSMLiquidStake.encode(message.lsmLiquidStake, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): ValidatorSharesToTokensQueryCallback {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): ValidatorSharesToTokensQueryCallback {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseValidatorSharesToTokensQueryCallback();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.lsmLiquidStake = LSMLiquidStake.decode(
-            reader,
-            reader.uint32(),
-          );
+          message.lsmLiquidStake = LSMLiquidStake.decode(reader, reader.uint32());
           break;
         default:
           reader.skipType(tag & 7);
@@ -1235,70 +1050,47 @@ export const ValidatorSharesToTokensQueryCallback = {
   },
   fromJSON(object: any): ValidatorSharesToTokensQueryCallback {
     return {
-      lsmLiquidStake: isSet(object.lsmLiquidStake)
-        ? LSMLiquidStake.fromJSON(object.lsmLiquidStake)
-        : undefined,
+      lsmLiquidStake: isSet(object.lsmLiquidStake) ? LSMLiquidStake.fromJSON(object.lsmLiquidStake) : undefined
     };
   },
-  toJSON(
-    message: ValidatorSharesToTokensQueryCallback,
-  ): JsonSafe<ValidatorSharesToTokensQueryCallback> {
+  toJSON(message: ValidatorSharesToTokensQueryCallback): JsonSafe<ValidatorSharesToTokensQueryCallback> {
     const obj: any = {};
-    message.lsmLiquidStake !== undefined &&
-      (obj.lsmLiquidStake = message.lsmLiquidStake
-        ? LSMLiquidStake.toJSON(message.lsmLiquidStake)
-        : undefined);
+    message.lsmLiquidStake !== undefined && (obj.lsmLiquidStake = message.lsmLiquidStake ? LSMLiquidStake.toJSON(message.lsmLiquidStake) : undefined);
     return obj;
   },
-  fromPartial(
-    object: Partial<ValidatorSharesToTokensQueryCallback>,
-  ): ValidatorSharesToTokensQueryCallback {
+  fromPartial(object: Partial<ValidatorSharesToTokensQueryCallback>): ValidatorSharesToTokensQueryCallback {
     const message = createBaseValidatorSharesToTokensQueryCallback();
-    message.lsmLiquidStake =
-      object.lsmLiquidStake !== undefined && object.lsmLiquidStake !== null
-        ? LSMLiquidStake.fromPartial(object.lsmLiquidStake)
-        : undefined;
+    message.lsmLiquidStake = object.lsmLiquidStake !== undefined && object.lsmLiquidStake !== null ? LSMLiquidStake.fromPartial(object.lsmLiquidStake) : undefined;
     return message;
   },
-  fromProtoMsg(
-    message: ValidatorSharesToTokensQueryCallbackProtoMsg,
-  ): ValidatorSharesToTokensQueryCallback {
+  fromProtoMsg(message: ValidatorSharesToTokensQueryCallbackProtoMsg): ValidatorSharesToTokensQueryCallback {
     return ValidatorSharesToTokensQueryCallback.decode(message.value);
   },
   toProto(message: ValidatorSharesToTokensQueryCallback): Uint8Array {
     return ValidatorSharesToTokensQueryCallback.encode(message).finish();
   },
-  toProtoMsg(
-    message: ValidatorSharesToTokensQueryCallback,
-  ): ValidatorSharesToTokensQueryCallbackProtoMsg {
+  toProtoMsg(message: ValidatorSharesToTokensQueryCallback): ValidatorSharesToTokensQueryCallbackProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.ValidatorSharesToTokensQueryCallback',
-      value: ValidatorSharesToTokensQueryCallback.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.ValidatorSharesToTokensQueryCallback",
+      value: ValidatorSharesToTokensQueryCallback.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseDelegatorSharesQueryCallback(): DelegatorSharesQueryCallback {
   return {
-    initialValidatorDelegation: '',
+    initialValidatorDelegation: ""
   };
 }
 export const DelegatorSharesQueryCallback = {
-  typeUrl: '/stride.stakeibc.DelegatorSharesQueryCallback' as const,
-  encode(
-    message: DelegatorSharesQueryCallback,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.initialValidatorDelegation !== '') {
+  typeUrl: "/stride.stakeibc.DelegatorSharesQueryCallback" as const,
+  encode(message: DelegatorSharesQueryCallback, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.initialValidatorDelegation !== "") {
       writer.uint32(10).string(message.initialValidatorDelegation);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): DelegatorSharesQueryCallback {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): DelegatorSharesQueryCallback {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseDelegatorSharesQueryCallback();
     while (reader.pos < end) {
@@ -1316,70 +1108,51 @@ export const DelegatorSharesQueryCallback = {
   },
   fromJSON(object: any): DelegatorSharesQueryCallback {
     return {
-      initialValidatorDelegation: isSet(object.initialValidatorDelegation)
-        ? String(object.initialValidatorDelegation)
-        : '',
+      initialValidatorDelegation: isSet(object.initialValidatorDelegation) ? String(object.initialValidatorDelegation) : ""
     };
   },
-  toJSON(
-    message: DelegatorSharesQueryCallback,
-  ): JsonSafe<DelegatorSharesQueryCallback> {
+  toJSON(message: DelegatorSharesQueryCallback): JsonSafe<DelegatorSharesQueryCallback> {
     const obj: any = {};
-    message.initialValidatorDelegation !== undefined &&
-      (obj.initialValidatorDelegation = message.initialValidatorDelegation);
+    message.initialValidatorDelegation !== undefined && (obj.initialValidatorDelegation = message.initialValidatorDelegation);
     return obj;
   },
-  fromPartial(
-    object: Partial<DelegatorSharesQueryCallback>,
-  ): DelegatorSharesQueryCallback {
+  fromPartial(object: Partial<DelegatorSharesQueryCallback>): DelegatorSharesQueryCallback {
     const message = createBaseDelegatorSharesQueryCallback();
-    message.initialValidatorDelegation =
-      object.initialValidatorDelegation ?? '';
+    message.initialValidatorDelegation = object.initialValidatorDelegation ?? "";
     return message;
   },
-  fromProtoMsg(
-    message: DelegatorSharesQueryCallbackProtoMsg,
-  ): DelegatorSharesQueryCallback {
+  fromProtoMsg(message: DelegatorSharesQueryCallbackProtoMsg): DelegatorSharesQueryCallback {
     return DelegatorSharesQueryCallback.decode(message.value);
   },
   toProto(message: DelegatorSharesQueryCallback): Uint8Array {
     return DelegatorSharesQueryCallback.encode(message).finish();
   },
-  toProtoMsg(
-    message: DelegatorSharesQueryCallback,
-  ): DelegatorSharesQueryCallbackProtoMsg {
+  toProtoMsg(message: DelegatorSharesQueryCallback): DelegatorSharesQueryCallbackProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.DelegatorSharesQueryCallback',
-      value: DelegatorSharesQueryCallback.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.DelegatorSharesQueryCallback",
+      value: DelegatorSharesQueryCallback.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseCommunityPoolBalanceQueryCallback(): CommunityPoolBalanceQueryCallback {
   return {
     icaType: 0,
-    denom: '',
+    denom: ""
   };
 }
 export const CommunityPoolBalanceQueryCallback = {
-  typeUrl: '/stride.stakeibc.CommunityPoolBalanceQueryCallback' as const,
-  encode(
-    message: CommunityPoolBalanceQueryCallback,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/stride.stakeibc.CommunityPoolBalanceQueryCallback" as const,
+  encode(message: CommunityPoolBalanceQueryCallback, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.icaType !== 0) {
       writer.uint32(8).int32(message.icaType);
     }
-    if (message.denom !== '') {
+    if (message.denom !== "") {
       writer.uint32(18).string(message.denom);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): CommunityPoolBalanceQueryCallback {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): CommunityPoolBalanceQueryCallback {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseCommunityPoolBalanceQueryCallback();
     while (reader.pos < end) {
@@ -1400,72 +1173,54 @@ export const CommunityPoolBalanceQueryCallback = {
   },
   fromJSON(object: any): CommunityPoolBalanceQueryCallback {
     return {
-      icaType: isSet(object.icaType)
-        ? iCAAccountTypeFromJSON(object.icaType)
-        : -1,
-      denom: isSet(object.denom) ? String(object.denom) : '',
+      icaType: isSet(object.icaType) ? iCAAccountTypeFromJSON(object.icaType) : -1,
+      denom: isSet(object.denom) ? String(object.denom) : ""
     };
   },
-  toJSON(
-    message: CommunityPoolBalanceQueryCallback,
-  ): JsonSafe<CommunityPoolBalanceQueryCallback> {
+  toJSON(message: CommunityPoolBalanceQueryCallback): JsonSafe<CommunityPoolBalanceQueryCallback> {
     const obj: any = {};
-    message.icaType !== undefined &&
-      (obj.icaType = iCAAccountTypeToJSON(message.icaType));
+    message.icaType !== undefined && (obj.icaType = iCAAccountTypeToJSON(message.icaType));
     message.denom !== undefined && (obj.denom = message.denom);
     return obj;
   },
-  fromPartial(
-    object: Partial<CommunityPoolBalanceQueryCallback>,
-  ): CommunityPoolBalanceQueryCallback {
+  fromPartial(object: Partial<CommunityPoolBalanceQueryCallback>): CommunityPoolBalanceQueryCallback {
     const message = createBaseCommunityPoolBalanceQueryCallback();
     message.icaType = object.icaType ?? 0;
-    message.denom = object.denom ?? '';
+    message.denom = object.denom ?? "";
     return message;
   },
-  fromProtoMsg(
-    message: CommunityPoolBalanceQueryCallbackProtoMsg,
-  ): CommunityPoolBalanceQueryCallback {
+  fromProtoMsg(message: CommunityPoolBalanceQueryCallbackProtoMsg): CommunityPoolBalanceQueryCallback {
     return CommunityPoolBalanceQueryCallback.decode(message.value);
   },
   toProto(message: CommunityPoolBalanceQueryCallback): Uint8Array {
     return CommunityPoolBalanceQueryCallback.encode(message).finish();
   },
-  toProtoMsg(
-    message: CommunityPoolBalanceQueryCallback,
-  ): CommunityPoolBalanceQueryCallbackProtoMsg {
+  toProtoMsg(message: CommunityPoolBalanceQueryCallback): CommunityPoolBalanceQueryCallbackProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.CommunityPoolBalanceQueryCallback',
-      value: CommunityPoolBalanceQueryCallback.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.CommunityPoolBalanceQueryCallback",
+      value: CommunityPoolBalanceQueryCallback.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseTradeRouteCallback(): TradeRouteCallback {
   return {
-    rewardDenom: '',
-    hostDenom: '',
+    rewardDenom: "",
+    hostDenom: ""
   };
 }
 export const TradeRouteCallback = {
-  typeUrl: '/stride.stakeibc.TradeRouteCallback' as const,
-  encode(
-    message: TradeRouteCallback,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.rewardDenom !== '') {
+  typeUrl: "/stride.stakeibc.TradeRouteCallback" as const,
+  encode(message: TradeRouteCallback, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.rewardDenom !== "") {
       writer.uint32(10).string(message.rewardDenom);
     }
-    if (message.hostDenom !== '') {
+    if (message.hostDenom !== "") {
       writer.uint32(18).string(message.hostDenom);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): TradeRouteCallback {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): TradeRouteCallback {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseTradeRouteCallback();
     while (reader.pos < end) {
@@ -1486,21 +1241,20 @@ export const TradeRouteCallback = {
   },
   fromJSON(object: any): TradeRouteCallback {
     return {
-      rewardDenom: isSet(object.rewardDenom) ? String(object.rewardDenom) : '',
-      hostDenom: isSet(object.hostDenom) ? String(object.hostDenom) : '',
+      rewardDenom: isSet(object.rewardDenom) ? String(object.rewardDenom) : "",
+      hostDenom: isSet(object.hostDenom) ? String(object.hostDenom) : ""
     };
   },
   toJSON(message: TradeRouteCallback): JsonSafe<TradeRouteCallback> {
     const obj: any = {};
-    message.rewardDenom !== undefined &&
-      (obj.rewardDenom = message.rewardDenom);
+    message.rewardDenom !== undefined && (obj.rewardDenom = message.rewardDenom);
     message.hostDenom !== undefined && (obj.hostDenom = message.hostDenom);
     return obj;
   },
   fromPartial(object: Partial<TradeRouteCallback>): TradeRouteCallback {
     const message = createBaseTradeRouteCallback();
-    message.rewardDenom = object.rewardDenom ?? '';
-    message.hostDenom = object.hostDenom ?? '';
+    message.rewardDenom = object.rewardDenom ?? "";
+    message.hostDenom = object.hostDenom ?? "";
     return message;
   },
   fromProtoMsg(message: TradeRouteCallbackProtoMsg): TradeRouteCallback {
@@ -1511,8 +1265,8 @@ export const TradeRouteCallback = {
   },
   toProtoMsg(message: TradeRouteCallback): TradeRouteCallbackProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.TradeRouteCallback',
-      value: TradeRouteCallback.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.TradeRouteCallback",
+      value: TradeRouteCallback.encode(message).finish()
     };
-  },
+  }
 };

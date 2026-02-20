@@ -1,19 +1,8 @@
 //@ts-nocheck
-import {
-  GroupInfo,
-  type GroupInfoSDKType,
-  GroupMember,
-  type GroupMemberSDKType,
-  GroupPolicyInfo,
-  type GroupPolicyInfoSDKType,
-  Proposal,
-  type ProposalSDKType,
-  Vote,
-  type VoteSDKType,
-} from './types.js';
-import { BinaryReader, BinaryWriter } from '../../../binary.js';
-import { isSet } from '../../../helpers.js';
-import { type JsonSafe } from '../../../json-safe.js';
+import { GroupInfo, type GroupInfoSDKType, GroupMember, type GroupMemberSDKType, GroupPolicyInfo, type GroupPolicyInfoSDKType, Proposal, type ProposalSDKType, Vote, type VoteSDKType } from "./types.js";
+import { BinaryReader, BinaryWriter } from "../../../binary.js";
+import { isSet } from "../../../helpers.js";
+import {type JsonSafe } from "../../../json-safe.js";
 /** GenesisState defines the group module's genesis state. */
 export interface GenesisState {
   /**
@@ -43,7 +32,7 @@ export interface GenesisState {
   votes: Vote[];
 }
 export interface GenesisStateProtoMsg {
-  typeUrl: '/cosmos.group.v1.GenesisState';
+  typeUrl: "/cosmos.group.v1.GenesisState";
   value: Uint8Array;
 }
 /** GenesisState defines the group module's genesis state. */
@@ -66,15 +55,12 @@ function createBaseGenesisState(): GenesisState {
     groupPolicies: [],
     proposalSeq: BigInt(0),
     proposals: [],
-    votes: [],
+    votes: []
   };
 }
 export const GenesisState = {
-  typeUrl: '/cosmos.group.v1.GenesisState' as const,
-  encode(
-    message: GenesisState,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/cosmos.group.v1.GenesisState" as const,
+  encode(message: GenesisState, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.groupSeq !== BigInt(0)) {
       writer.uint32(8).uint64(message.groupSeq);
     }
@@ -102,8 +88,7 @@ export const GenesisState = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): GenesisState {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGenesisState();
     while (reader.pos < end) {
@@ -116,17 +101,13 @@ export const GenesisState = {
           message.groups.push(GroupInfo.decode(reader, reader.uint32()));
           break;
         case 3:
-          message.groupMembers.push(
-            GroupMember.decode(reader, reader.uint32()),
-          );
+          message.groupMembers.push(GroupMember.decode(reader, reader.uint32()));
           break;
         case 4:
           message.groupPolicySeq = reader.uint64();
           break;
         case 5:
-          message.groupPolicies.push(
-            GroupPolicyInfo.decode(reader, reader.uint32()),
-          );
+          message.groupPolicies.push(GroupPolicyInfo.decode(reader, reader.uint32()));
           break;
         case 6:
           message.proposalSeq = reader.uint64();
@@ -146,70 +127,43 @@ export const GenesisState = {
   },
   fromJSON(object: any): GenesisState {
     return {
-      groupSeq: isSet(object.groupSeq)
-        ? BigInt(object.groupSeq.toString())
-        : BigInt(0),
-      groups: Array.isArray(object?.groups)
-        ? object.groups.map((e: any) => GroupInfo.fromJSON(e))
-        : [],
-      groupMembers: Array.isArray(object?.groupMembers)
-        ? object.groupMembers.map((e: any) => GroupMember.fromJSON(e))
-        : [],
-      groupPolicySeq: isSet(object.groupPolicySeq)
-        ? BigInt(object.groupPolicySeq.toString())
-        : BigInt(0),
-      groupPolicies: Array.isArray(object?.groupPolicies)
-        ? object.groupPolicies.map((e: any) => GroupPolicyInfo.fromJSON(e))
-        : [],
-      proposalSeq: isSet(object.proposalSeq)
-        ? BigInt(object.proposalSeq.toString())
-        : BigInt(0),
-      proposals: Array.isArray(object?.proposals)
-        ? object.proposals.map((e: any) => Proposal.fromJSON(e))
-        : [],
-      votes: Array.isArray(object?.votes)
-        ? object.votes.map((e: any) => Vote.fromJSON(e))
-        : [],
+      groupSeq: isSet(object.groupSeq) ? BigInt(object.groupSeq.toString()) : BigInt(0),
+      groups: Array.isArray(object?.groups) ? object.groups.map((e: any) => GroupInfo.fromJSON(e)) : [],
+      groupMembers: Array.isArray(object?.groupMembers) ? object.groupMembers.map((e: any) => GroupMember.fromJSON(e)) : [],
+      groupPolicySeq: isSet(object.groupPolicySeq) ? BigInt(object.groupPolicySeq.toString()) : BigInt(0),
+      groupPolicies: Array.isArray(object?.groupPolicies) ? object.groupPolicies.map((e: any) => GroupPolicyInfo.fromJSON(e)) : [],
+      proposalSeq: isSet(object.proposalSeq) ? BigInt(object.proposalSeq.toString()) : BigInt(0),
+      proposals: Array.isArray(object?.proposals) ? object.proposals.map((e: any) => Proposal.fromJSON(e)) : [],
+      votes: Array.isArray(object?.votes) ? object.votes.map((e: any) => Vote.fromJSON(e)) : []
     };
   },
   toJSON(message: GenesisState): JsonSafe<GenesisState> {
     const obj: any = {};
-    message.groupSeq !== undefined &&
-      (obj.groupSeq = (message.groupSeq || BigInt(0)).toString());
+    message.groupSeq !== undefined && (obj.groupSeq = (message.groupSeq || BigInt(0)).toString());
     if (message.groups) {
-      obj.groups = message.groups.map(e =>
-        e ? GroupInfo.toJSON(e) : undefined,
-      );
+      obj.groups = message.groups.map(e => e ? GroupInfo.toJSON(e) : undefined);
     } else {
       obj.groups = [];
     }
     if (message.groupMembers) {
-      obj.groupMembers = message.groupMembers.map(e =>
-        e ? GroupMember.toJSON(e) : undefined,
-      );
+      obj.groupMembers = message.groupMembers.map(e => e ? GroupMember.toJSON(e) : undefined);
     } else {
       obj.groupMembers = [];
     }
-    message.groupPolicySeq !== undefined &&
-      (obj.groupPolicySeq = (message.groupPolicySeq || BigInt(0)).toString());
+    message.groupPolicySeq !== undefined && (obj.groupPolicySeq = (message.groupPolicySeq || BigInt(0)).toString());
     if (message.groupPolicies) {
-      obj.groupPolicies = message.groupPolicies.map(e =>
-        e ? GroupPolicyInfo.toJSON(e) : undefined,
-      );
+      obj.groupPolicies = message.groupPolicies.map(e => e ? GroupPolicyInfo.toJSON(e) : undefined);
     } else {
       obj.groupPolicies = [];
     }
-    message.proposalSeq !== undefined &&
-      (obj.proposalSeq = (message.proposalSeq || BigInt(0)).toString());
+    message.proposalSeq !== undefined && (obj.proposalSeq = (message.proposalSeq || BigInt(0)).toString());
     if (message.proposals) {
-      obj.proposals = message.proposals.map(e =>
-        e ? Proposal.toJSON(e) : undefined,
-      );
+      obj.proposals = message.proposals.map(e => e ? Proposal.toJSON(e) : undefined);
     } else {
       obj.proposals = [];
     }
     if (message.votes) {
-      obj.votes = message.votes.map(e => (e ? Vote.toJSON(e) : undefined));
+      obj.votes = message.votes.map(e => e ? Vote.toJSON(e) : undefined);
     } else {
       obj.votes = [];
     }
@@ -217,25 +171,13 @@ export const GenesisState = {
   },
   fromPartial(object: Partial<GenesisState>): GenesisState {
     const message = createBaseGenesisState();
-    message.groupSeq =
-      object.groupSeq !== undefined && object.groupSeq !== null
-        ? BigInt(object.groupSeq.toString())
-        : BigInt(0);
+    message.groupSeq = object.groupSeq !== undefined && object.groupSeq !== null ? BigInt(object.groupSeq.toString()) : BigInt(0);
     message.groups = object.groups?.map(e => GroupInfo.fromPartial(e)) || [];
-    message.groupMembers =
-      object.groupMembers?.map(e => GroupMember.fromPartial(e)) || [];
-    message.groupPolicySeq =
-      object.groupPolicySeq !== undefined && object.groupPolicySeq !== null
-        ? BigInt(object.groupPolicySeq.toString())
-        : BigInt(0);
-    message.groupPolicies =
-      object.groupPolicies?.map(e => GroupPolicyInfo.fromPartial(e)) || [];
-    message.proposalSeq =
-      object.proposalSeq !== undefined && object.proposalSeq !== null
-        ? BigInt(object.proposalSeq.toString())
-        : BigInt(0);
-    message.proposals =
-      object.proposals?.map(e => Proposal.fromPartial(e)) || [];
+    message.groupMembers = object.groupMembers?.map(e => GroupMember.fromPartial(e)) || [];
+    message.groupPolicySeq = object.groupPolicySeq !== undefined && object.groupPolicySeq !== null ? BigInt(object.groupPolicySeq.toString()) : BigInt(0);
+    message.groupPolicies = object.groupPolicies?.map(e => GroupPolicyInfo.fromPartial(e)) || [];
+    message.proposalSeq = object.proposalSeq !== undefined && object.proposalSeq !== null ? BigInt(object.proposalSeq.toString()) : BigInt(0);
+    message.proposals = object.proposals?.map(e => Proposal.fromPartial(e)) || [];
     message.votes = object.votes?.map(e => Vote.fromPartial(e)) || [];
     return message;
   },
@@ -247,8 +189,8 @@ export const GenesisState = {
   },
   toProtoMsg(message: GenesisState): GenesisStateProtoMsg {
     return {
-      typeUrl: '/cosmos.group.v1.GenesisState',
-      value: GenesisState.encode(message).finish(),
+      typeUrl: "/cosmos.group.v1.GenesisState",
+      value: GenesisState.encode(message).finish()
     };
-  },
+  }
 };

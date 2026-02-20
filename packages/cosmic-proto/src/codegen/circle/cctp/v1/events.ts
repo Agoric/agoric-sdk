@@ -1,9 +1,9 @@
 //@ts-nocheck
-import { BinaryReader, BinaryWriter } from '../../../binary.js';
-import { isSet } from '../../../helpers.js';
-import { type JsonSafe } from '../../../json-safe.js';
-import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
-import { encodeBase64 as base64FromBytes } from '@endo/base64';
+import { BinaryReader, BinaryWriter } from "../../../binary.js";
+import { isSet } from "../../../helpers.js";
+import {type JsonSafe } from "../../../json-safe.js";
+import { decodeBase64 as bytesFromBase64 } from "@endo/base64";
+import { encodeBase64 as base64FromBytes } from "@endo/base64";
 /**
  * Emitted when an attester is enabled
  * @param attester newly enabled attester
@@ -12,7 +12,7 @@ export interface AttesterEnabled {
   attester: string;
 }
 export interface AttesterEnabledProtoMsg {
-  typeUrl: '/circle.cctp.v1.AttesterEnabled';
+  typeUrl: "/circle.cctp.v1.AttesterEnabled";
   value: Uint8Array;
 }
 /**
@@ -30,7 +30,7 @@ export interface AttesterDisabled {
   attester: string;
 }
 export interface AttesterDisabledProtoMsg {
-  typeUrl: '/circle.cctp.v1.AttesterDisabled';
+  typeUrl: "/circle.cctp.v1.AttesterDisabled";
   value: Uint8Array;
 }
 /**
@@ -50,7 +50,7 @@ export interface SignatureThresholdUpdated {
   newSignatureThreshold: bigint;
 }
 export interface SignatureThresholdUpdatedProtoMsg {
-  typeUrl: '/circle.cctp.v1.SignatureThresholdUpdated';
+  typeUrl: "/circle.cctp.v1.SignatureThresholdUpdated";
   value: Uint8Array;
 }
 /**
@@ -72,7 +72,7 @@ export interface OwnerUpdated {
   newOwner: string;
 }
 export interface OwnerUpdatedProtoMsg {
-  typeUrl: '/circle.cctp.v1.OwnerUpdated';
+  typeUrl: "/circle.cctp.v1.OwnerUpdated";
   value: Uint8Array;
 }
 /**
@@ -94,7 +94,7 @@ export interface OwnershipTransferStarted {
   newOwner: string;
 }
 export interface OwnershipTransferStartedProtoMsg {
-  typeUrl: '/circle.cctp.v1.OwnershipTransferStarted';
+  typeUrl: "/circle.cctp.v1.OwnershipTransferStarted";
   value: Uint8Array;
 }
 /**
@@ -116,7 +116,7 @@ export interface PauserUpdated {
   newPauser: string;
 }
 export interface PauserUpdatedProtoMsg {
-  typeUrl: '/circle.cctp.v1.PauserUpdated';
+  typeUrl: "/circle.cctp.v1.PauserUpdated";
   value: Uint8Array;
 }
 /**
@@ -140,7 +140,7 @@ export interface AttesterManagerUpdated {
   newAttesterManager: string;
 }
 export interface AttesterManagerUpdatedProtoMsg {
-  typeUrl: '/circle.cctp.v1.AttesterManagerUpdated';
+  typeUrl: "/circle.cctp.v1.AttesterManagerUpdated";
   value: Uint8Array;
 }
 /**
@@ -166,7 +166,7 @@ export interface TokenControllerUpdated {
   newTokenController: string;
 }
 export interface TokenControllerUpdatedProtoMsg {
-  typeUrl: '/circle.cctp.v1.TokenControllerUpdated';
+  typeUrl: "/circle.cctp.v1.TokenControllerUpdated";
   value: Uint8Array;
 }
 /**
@@ -183,7 +183,7 @@ export interface TokenControllerUpdatedSDKType {
 /** Emitted when burning and minting tokens is paused */
 export interface BurningAndMintingPausedEvent {}
 export interface BurningAndMintingPausedEventProtoMsg {
-  typeUrl: '/circle.cctp.v1.BurningAndMintingPausedEvent';
+  typeUrl: "/circle.cctp.v1.BurningAndMintingPausedEvent";
   value: Uint8Array;
 }
 /** Emitted when burning and minting tokens is paused */
@@ -191,7 +191,7 @@ export interface BurningAndMintingPausedEventSDKType {}
 /** Emitted when burning and minting tokens is unpaused */
 export interface BurningAndMintingUnpausedEvent {}
 export interface BurningAndMintingUnpausedEventProtoMsg {
-  typeUrl: '/circle.cctp.v1.BurningAndMintingUnpausedEvent';
+  typeUrl: "/circle.cctp.v1.BurningAndMintingUnpausedEvent";
   value: Uint8Array;
 }
 /** Emitted when burning and minting tokens is unpaused */
@@ -199,7 +199,7 @@ export interface BurningAndMintingUnpausedEventSDKType {}
 /** Emitted when sending and receiving messages is paused */
 export interface SendingAndReceivingPausedEvent {}
 export interface SendingAndReceivingPausedEventProtoMsg {
-  typeUrl: '/circle.cctp.v1.SendingAndReceivingPausedEvent';
+  typeUrl: "/circle.cctp.v1.SendingAndReceivingPausedEvent";
   value: Uint8Array;
 }
 /** Emitted when sending and receiving messages is paused */
@@ -207,7 +207,7 @@ export interface SendingAndReceivingPausedEventSDKType {}
 /** Emitted when sending and receiving messages is paused */
 export interface SendingAndReceivingUnpausedEvent {}
 export interface SendingAndReceivingUnpausedEventProtoMsg {
-  typeUrl: '/circle.cctp.v1.SendingAndReceivingUnpausedEvent';
+  typeUrl: "/circle.cctp.v1.SendingAndReceivingUnpausedEvent";
   value: Uint8Array;
 }
 /** Emitted when sending and receiving messages is paused */
@@ -238,7 +238,7 @@ export interface DepositForBurn {
   destinationCaller: Uint8Array;
 }
 export interface DepositForBurnProtoMsg {
-  typeUrl: '/circle.cctp.v1.DepositForBurn';
+  typeUrl: "/circle.cctp.v1.DepositForBurn";
   value: Uint8Array;
 }
 /**
@@ -278,7 +278,7 @@ export interface MintAndWithdraw {
   mintToken: string;
 }
 export interface MintAndWithdrawProtoMsg {
-  typeUrl: '/circle.cctp.v1.MintAndWithdraw';
+  typeUrl: "/circle.cctp.v1.MintAndWithdraw";
   value: Uint8Array;
 }
 /**
@@ -304,7 +304,7 @@ export interface TokenPairLinked {
   remoteToken: Uint8Array;
 }
 export interface TokenPairLinkedProtoMsg {
-  typeUrl: '/circle.cctp.v1.TokenPairLinked';
+  typeUrl: "/circle.cctp.v1.TokenPairLinked";
   value: Uint8Array;
 }
 /**
@@ -330,7 +330,7 @@ export interface TokenPairUnlinked {
   remoteToken: Uint8Array;
 }
 export interface TokenPairUnlinkedProtoMsg {
-  typeUrl: '/circle.cctp.v1.TokenPairUnlinked';
+  typeUrl: "/circle.cctp.v1.TokenPairUnlinked";
   value: Uint8Array;
 }
 /**
@@ -352,7 +352,7 @@ export interface MessageSent {
   message: Uint8Array;
 }
 export interface MessageSentProtoMsg {
-  typeUrl: '/circle.cctp.v1.MessageSent';
+  typeUrl: "/circle.cctp.v1.MessageSent";
   value: Uint8Array;
 }
 /**
@@ -378,7 +378,7 @@ export interface MessageReceived {
   messageBody: Uint8Array;
 }
 export interface MessageReceivedProtoMsg {
-  typeUrl: '/circle.cctp.v1.MessageReceived';
+  typeUrl: "/circle.cctp.v1.MessageReceived";
   value: Uint8Array;
 }
 /**
@@ -404,7 +404,7 @@ export interface MaxMessageBodySizeUpdated {
   newMaxMessageBodySize: bigint;
 }
 export interface MaxMessageBodySizeUpdatedProtoMsg {
-  typeUrl: '/circle.cctp.v1.MaxMessageBodySizeUpdated';
+  typeUrl: "/circle.cctp.v1.MaxMessageBodySizeUpdated";
   value: Uint8Array;
 }
 /**
@@ -424,7 +424,7 @@ export interface RemoteTokenMessengerAdded {
   remoteTokenMessenger: Uint8Array;
 }
 export interface RemoteTokenMessengerAddedProtoMsg {
-  typeUrl: '/circle.cctp.v1.RemoteTokenMessengerAdded';
+  typeUrl: "/circle.cctp.v1.RemoteTokenMessengerAdded";
   value: Uint8Array;
 }
 /**
@@ -446,7 +446,7 @@ export interface RemoteTokenMessengerRemoved {
   remoteTokenMessenger: Uint8Array;
 }
 export interface RemoteTokenMessengerRemovedProtoMsg {
-  typeUrl: '/circle.cctp.v1.RemoteTokenMessengerRemoved';
+  typeUrl: "/circle.cctp.v1.RemoteTokenMessengerRemoved";
   value: Uint8Array;
 }
 /**
@@ -469,7 +469,7 @@ export interface SetBurnLimitPerMessage {
   burnLimitPerMessage: string;
 }
 export interface SetBurnLimitPerMessageProtoMsg {
-  typeUrl: '/circle.cctp.v1.SetBurnLimitPerMessage';
+  typeUrl: "/circle.cctp.v1.SetBurnLimitPerMessage";
   value: Uint8Array;
 }
 /**
@@ -484,23 +484,19 @@ export interface SetBurnLimitPerMessageSDKType {
 }
 function createBaseAttesterEnabled(): AttesterEnabled {
   return {
-    attester: '',
+    attester: ""
   };
 }
 export const AttesterEnabled = {
-  typeUrl: '/circle.cctp.v1.AttesterEnabled' as const,
-  encode(
-    message: AttesterEnabled,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.attester !== '') {
+  typeUrl: "/circle.cctp.v1.AttesterEnabled" as const,
+  encode(message: AttesterEnabled, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.attester !== "") {
       writer.uint32(10).string(message.attester);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): AttesterEnabled {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseAttesterEnabled();
     while (reader.pos < end) {
@@ -518,7 +514,7 @@ export const AttesterEnabled = {
   },
   fromJSON(object: any): AttesterEnabled {
     return {
-      attester: isSet(object.attester) ? String(object.attester) : '',
+      attester: isSet(object.attester) ? String(object.attester) : ""
     };
   },
   toJSON(message: AttesterEnabled): JsonSafe<AttesterEnabled> {
@@ -528,7 +524,7 @@ export const AttesterEnabled = {
   },
   fromPartial(object: Partial<AttesterEnabled>): AttesterEnabled {
     const message = createBaseAttesterEnabled();
-    message.attester = object.attester ?? '';
+    message.attester = object.attester ?? "";
     return message;
   },
   fromProtoMsg(message: AttesterEnabledProtoMsg): AttesterEnabled {
@@ -539,30 +535,26 @@ export const AttesterEnabled = {
   },
   toProtoMsg(message: AttesterEnabled): AttesterEnabledProtoMsg {
     return {
-      typeUrl: '/circle.cctp.v1.AttesterEnabled',
-      value: AttesterEnabled.encode(message).finish(),
+      typeUrl: "/circle.cctp.v1.AttesterEnabled",
+      value: AttesterEnabled.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseAttesterDisabled(): AttesterDisabled {
   return {
-    attester: '',
+    attester: ""
   };
 }
 export const AttesterDisabled = {
-  typeUrl: '/circle.cctp.v1.AttesterDisabled' as const,
-  encode(
-    message: AttesterDisabled,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.attester !== '') {
+  typeUrl: "/circle.cctp.v1.AttesterDisabled" as const,
+  encode(message: AttesterDisabled, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.attester !== "") {
       writer.uint32(10).string(message.attester);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): AttesterDisabled {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseAttesterDisabled();
     while (reader.pos < end) {
@@ -580,7 +572,7 @@ export const AttesterDisabled = {
   },
   fromJSON(object: any): AttesterDisabled {
     return {
-      attester: isSet(object.attester) ? String(object.attester) : '',
+      attester: isSet(object.attester) ? String(object.attester) : ""
     };
   },
   toJSON(message: AttesterDisabled): JsonSafe<AttesterDisabled> {
@@ -590,7 +582,7 @@ export const AttesterDisabled = {
   },
   fromPartial(object: Partial<AttesterDisabled>): AttesterDisabled {
     const message = createBaseAttesterDisabled();
-    message.attester = object.attester ?? '';
+    message.attester = object.attester ?? "";
     return message;
   },
   fromProtoMsg(message: AttesterDisabledProtoMsg): AttesterDisabled {
@@ -601,23 +593,20 @@ export const AttesterDisabled = {
   },
   toProtoMsg(message: AttesterDisabled): AttesterDisabledProtoMsg {
     return {
-      typeUrl: '/circle.cctp.v1.AttesterDisabled',
-      value: AttesterDisabled.encode(message).finish(),
+      typeUrl: "/circle.cctp.v1.AttesterDisabled",
+      value: AttesterDisabled.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseSignatureThresholdUpdated(): SignatureThresholdUpdated {
   return {
     oldSignatureThreshold: BigInt(0),
-    newSignatureThreshold: BigInt(0),
+    newSignatureThreshold: BigInt(0)
   };
 }
 export const SignatureThresholdUpdated = {
-  typeUrl: '/circle.cctp.v1.SignatureThresholdUpdated' as const,
-  encode(
-    message: SignatureThresholdUpdated,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/circle.cctp.v1.SignatureThresholdUpdated" as const,
+  encode(message: SignatureThresholdUpdated, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.oldSignatureThreshold !== BigInt(0)) {
       writer.uint32(8).uint64(message.oldSignatureThreshold);
     }
@@ -626,12 +615,8 @@ export const SignatureThresholdUpdated = {
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): SignatureThresholdUpdated {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): SignatureThresholdUpdated {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseSignatureThresholdUpdated();
     while (reader.pos < end) {
@@ -652,84 +637,54 @@ export const SignatureThresholdUpdated = {
   },
   fromJSON(object: any): SignatureThresholdUpdated {
     return {
-      oldSignatureThreshold: isSet(object.oldSignatureThreshold)
-        ? BigInt(object.oldSignatureThreshold.toString())
-        : BigInt(0),
-      newSignatureThreshold: isSet(object.newSignatureThreshold)
-        ? BigInt(object.newSignatureThreshold.toString())
-        : BigInt(0),
+      oldSignatureThreshold: isSet(object.oldSignatureThreshold) ? BigInt(object.oldSignatureThreshold.toString()) : BigInt(0),
+      newSignatureThreshold: isSet(object.newSignatureThreshold) ? BigInt(object.newSignatureThreshold.toString()) : BigInt(0)
     };
   },
-  toJSON(
-    message: SignatureThresholdUpdated,
-  ): JsonSafe<SignatureThresholdUpdated> {
+  toJSON(message: SignatureThresholdUpdated): JsonSafe<SignatureThresholdUpdated> {
     const obj: any = {};
-    message.oldSignatureThreshold !== undefined &&
-      (obj.oldSignatureThreshold = (
-        message.oldSignatureThreshold || BigInt(0)
-      ).toString());
-    message.newSignatureThreshold !== undefined &&
-      (obj.newSignatureThreshold = (
-        message.newSignatureThreshold || BigInt(0)
-      ).toString());
+    message.oldSignatureThreshold !== undefined && (obj.oldSignatureThreshold = (message.oldSignatureThreshold || BigInt(0)).toString());
+    message.newSignatureThreshold !== undefined && (obj.newSignatureThreshold = (message.newSignatureThreshold || BigInt(0)).toString());
     return obj;
   },
-  fromPartial(
-    object: Partial<SignatureThresholdUpdated>,
-  ): SignatureThresholdUpdated {
+  fromPartial(object: Partial<SignatureThresholdUpdated>): SignatureThresholdUpdated {
     const message = createBaseSignatureThresholdUpdated();
-    message.oldSignatureThreshold =
-      object.oldSignatureThreshold !== undefined &&
-      object.oldSignatureThreshold !== null
-        ? BigInt(object.oldSignatureThreshold.toString())
-        : BigInt(0);
-    message.newSignatureThreshold =
-      object.newSignatureThreshold !== undefined &&
-      object.newSignatureThreshold !== null
-        ? BigInt(object.newSignatureThreshold.toString())
-        : BigInt(0);
+    message.oldSignatureThreshold = object.oldSignatureThreshold !== undefined && object.oldSignatureThreshold !== null ? BigInt(object.oldSignatureThreshold.toString()) : BigInt(0);
+    message.newSignatureThreshold = object.newSignatureThreshold !== undefined && object.newSignatureThreshold !== null ? BigInt(object.newSignatureThreshold.toString()) : BigInt(0);
     return message;
   },
-  fromProtoMsg(
-    message: SignatureThresholdUpdatedProtoMsg,
-  ): SignatureThresholdUpdated {
+  fromProtoMsg(message: SignatureThresholdUpdatedProtoMsg): SignatureThresholdUpdated {
     return SignatureThresholdUpdated.decode(message.value);
   },
   toProto(message: SignatureThresholdUpdated): Uint8Array {
     return SignatureThresholdUpdated.encode(message).finish();
   },
-  toProtoMsg(
-    message: SignatureThresholdUpdated,
-  ): SignatureThresholdUpdatedProtoMsg {
+  toProtoMsg(message: SignatureThresholdUpdated): SignatureThresholdUpdatedProtoMsg {
     return {
-      typeUrl: '/circle.cctp.v1.SignatureThresholdUpdated',
-      value: SignatureThresholdUpdated.encode(message).finish(),
+      typeUrl: "/circle.cctp.v1.SignatureThresholdUpdated",
+      value: SignatureThresholdUpdated.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseOwnerUpdated(): OwnerUpdated {
   return {
-    previousOwner: '',
-    newOwner: '',
+    previousOwner: "",
+    newOwner: ""
   };
 }
 export const OwnerUpdated = {
-  typeUrl: '/circle.cctp.v1.OwnerUpdated' as const,
-  encode(
-    message: OwnerUpdated,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.previousOwner !== '') {
+  typeUrl: "/circle.cctp.v1.OwnerUpdated" as const,
+  encode(message: OwnerUpdated, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.previousOwner !== "") {
       writer.uint32(10).string(message.previousOwner);
     }
-    if (message.newOwner !== '') {
+    if (message.newOwner !== "") {
       writer.uint32(18).string(message.newOwner);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): OwnerUpdated {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseOwnerUpdated();
     while (reader.pos < end) {
@@ -750,23 +705,20 @@ export const OwnerUpdated = {
   },
   fromJSON(object: any): OwnerUpdated {
     return {
-      previousOwner: isSet(object.previousOwner)
-        ? String(object.previousOwner)
-        : '',
-      newOwner: isSet(object.newOwner) ? String(object.newOwner) : '',
+      previousOwner: isSet(object.previousOwner) ? String(object.previousOwner) : "",
+      newOwner: isSet(object.newOwner) ? String(object.newOwner) : ""
     };
   },
   toJSON(message: OwnerUpdated): JsonSafe<OwnerUpdated> {
     const obj: any = {};
-    message.previousOwner !== undefined &&
-      (obj.previousOwner = message.previousOwner);
+    message.previousOwner !== undefined && (obj.previousOwner = message.previousOwner);
     message.newOwner !== undefined && (obj.newOwner = message.newOwner);
     return obj;
   },
   fromPartial(object: Partial<OwnerUpdated>): OwnerUpdated {
     const message = createBaseOwnerUpdated();
-    message.previousOwner = object.previousOwner ?? '';
-    message.newOwner = object.newOwner ?? '';
+    message.previousOwner = object.previousOwner ?? "";
+    message.newOwner = object.newOwner ?? "";
     return message;
   },
   fromProtoMsg(message: OwnerUpdatedProtoMsg): OwnerUpdated {
@@ -777,37 +729,30 @@ export const OwnerUpdated = {
   },
   toProtoMsg(message: OwnerUpdated): OwnerUpdatedProtoMsg {
     return {
-      typeUrl: '/circle.cctp.v1.OwnerUpdated',
-      value: OwnerUpdated.encode(message).finish(),
+      typeUrl: "/circle.cctp.v1.OwnerUpdated",
+      value: OwnerUpdated.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseOwnershipTransferStarted(): OwnershipTransferStarted {
   return {
-    previousOwner: '',
-    newOwner: '',
+    previousOwner: "",
+    newOwner: ""
   };
 }
 export const OwnershipTransferStarted = {
-  typeUrl: '/circle.cctp.v1.OwnershipTransferStarted' as const,
-  encode(
-    message: OwnershipTransferStarted,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.previousOwner !== '') {
+  typeUrl: "/circle.cctp.v1.OwnershipTransferStarted" as const,
+  encode(message: OwnershipTransferStarted, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.previousOwner !== "") {
       writer.uint32(10).string(message.previousOwner);
     }
-    if (message.newOwner !== '') {
+    if (message.newOwner !== "") {
       writer.uint32(18).string(message.newOwner);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): OwnershipTransferStarted {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): OwnershipTransferStarted {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseOwnershipTransferStarted();
     while (reader.pos < end) {
@@ -828,69 +773,54 @@ export const OwnershipTransferStarted = {
   },
   fromJSON(object: any): OwnershipTransferStarted {
     return {
-      previousOwner: isSet(object.previousOwner)
-        ? String(object.previousOwner)
-        : '',
-      newOwner: isSet(object.newOwner) ? String(object.newOwner) : '',
+      previousOwner: isSet(object.previousOwner) ? String(object.previousOwner) : "",
+      newOwner: isSet(object.newOwner) ? String(object.newOwner) : ""
     };
   },
-  toJSON(
-    message: OwnershipTransferStarted,
-  ): JsonSafe<OwnershipTransferStarted> {
+  toJSON(message: OwnershipTransferStarted): JsonSafe<OwnershipTransferStarted> {
     const obj: any = {};
-    message.previousOwner !== undefined &&
-      (obj.previousOwner = message.previousOwner);
+    message.previousOwner !== undefined && (obj.previousOwner = message.previousOwner);
     message.newOwner !== undefined && (obj.newOwner = message.newOwner);
     return obj;
   },
-  fromPartial(
-    object: Partial<OwnershipTransferStarted>,
-  ): OwnershipTransferStarted {
+  fromPartial(object: Partial<OwnershipTransferStarted>): OwnershipTransferStarted {
     const message = createBaseOwnershipTransferStarted();
-    message.previousOwner = object.previousOwner ?? '';
-    message.newOwner = object.newOwner ?? '';
+    message.previousOwner = object.previousOwner ?? "";
+    message.newOwner = object.newOwner ?? "";
     return message;
   },
-  fromProtoMsg(
-    message: OwnershipTransferStartedProtoMsg,
-  ): OwnershipTransferStarted {
+  fromProtoMsg(message: OwnershipTransferStartedProtoMsg): OwnershipTransferStarted {
     return OwnershipTransferStarted.decode(message.value);
   },
   toProto(message: OwnershipTransferStarted): Uint8Array {
     return OwnershipTransferStarted.encode(message).finish();
   },
-  toProtoMsg(
-    message: OwnershipTransferStarted,
-  ): OwnershipTransferStartedProtoMsg {
+  toProtoMsg(message: OwnershipTransferStarted): OwnershipTransferStartedProtoMsg {
     return {
-      typeUrl: '/circle.cctp.v1.OwnershipTransferStarted',
-      value: OwnershipTransferStarted.encode(message).finish(),
+      typeUrl: "/circle.cctp.v1.OwnershipTransferStarted",
+      value: OwnershipTransferStarted.encode(message).finish()
     };
-  },
+  }
 };
 function createBasePauserUpdated(): PauserUpdated {
   return {
-    previousPauser: '',
-    newPauser: '',
+    previousPauser: "",
+    newPauser: ""
   };
 }
 export const PauserUpdated = {
-  typeUrl: '/circle.cctp.v1.PauserUpdated' as const,
-  encode(
-    message: PauserUpdated,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.previousPauser !== '') {
+  typeUrl: "/circle.cctp.v1.PauserUpdated" as const,
+  encode(message: PauserUpdated, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.previousPauser !== "") {
       writer.uint32(10).string(message.previousPauser);
     }
-    if (message.newPauser !== '') {
+    if (message.newPauser !== "") {
       writer.uint32(18).string(message.newPauser);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): PauserUpdated {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBasePauserUpdated();
     while (reader.pos < end) {
@@ -911,23 +841,20 @@ export const PauserUpdated = {
   },
   fromJSON(object: any): PauserUpdated {
     return {
-      previousPauser: isSet(object.previousPauser)
-        ? String(object.previousPauser)
-        : '',
-      newPauser: isSet(object.newPauser) ? String(object.newPauser) : '',
+      previousPauser: isSet(object.previousPauser) ? String(object.previousPauser) : "",
+      newPauser: isSet(object.newPauser) ? String(object.newPauser) : ""
     };
   },
   toJSON(message: PauserUpdated): JsonSafe<PauserUpdated> {
     const obj: any = {};
-    message.previousPauser !== undefined &&
-      (obj.previousPauser = message.previousPauser);
+    message.previousPauser !== undefined && (obj.previousPauser = message.previousPauser);
     message.newPauser !== undefined && (obj.newPauser = message.newPauser);
     return obj;
   },
   fromPartial(object: Partial<PauserUpdated>): PauserUpdated {
     const message = createBasePauserUpdated();
-    message.previousPauser = object.previousPauser ?? '';
-    message.newPauser = object.newPauser ?? '';
+    message.previousPauser = object.previousPauser ?? "";
+    message.newPauser = object.newPauser ?? "";
     return message;
   },
   fromProtoMsg(message: PauserUpdatedProtoMsg): PauserUpdated {
@@ -938,37 +865,30 @@ export const PauserUpdated = {
   },
   toProtoMsg(message: PauserUpdated): PauserUpdatedProtoMsg {
     return {
-      typeUrl: '/circle.cctp.v1.PauserUpdated',
-      value: PauserUpdated.encode(message).finish(),
+      typeUrl: "/circle.cctp.v1.PauserUpdated",
+      value: PauserUpdated.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseAttesterManagerUpdated(): AttesterManagerUpdated {
   return {
-    previousAttesterManager: '',
-    newAttesterManager: '',
+    previousAttesterManager: "",
+    newAttesterManager: ""
   };
 }
 export const AttesterManagerUpdated = {
-  typeUrl: '/circle.cctp.v1.AttesterManagerUpdated' as const,
-  encode(
-    message: AttesterManagerUpdated,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.previousAttesterManager !== '') {
+  typeUrl: "/circle.cctp.v1.AttesterManagerUpdated" as const,
+  encode(message: AttesterManagerUpdated, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.previousAttesterManager !== "") {
       writer.uint32(10).string(message.previousAttesterManager);
     }
-    if (message.newAttesterManager !== '') {
+    if (message.newAttesterManager !== "") {
       writer.uint32(18).string(message.newAttesterManager);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): AttesterManagerUpdated {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): AttesterManagerUpdated {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseAttesterManagerUpdated();
     while (reader.pos < end) {
@@ -989,31 +909,23 @@ export const AttesterManagerUpdated = {
   },
   fromJSON(object: any): AttesterManagerUpdated {
     return {
-      previousAttesterManager: isSet(object.previousAttesterManager)
-        ? String(object.previousAttesterManager)
-        : '',
-      newAttesterManager: isSet(object.newAttesterManager)
-        ? String(object.newAttesterManager)
-        : '',
+      previousAttesterManager: isSet(object.previousAttesterManager) ? String(object.previousAttesterManager) : "",
+      newAttesterManager: isSet(object.newAttesterManager) ? String(object.newAttesterManager) : ""
     };
   },
   toJSON(message: AttesterManagerUpdated): JsonSafe<AttesterManagerUpdated> {
     const obj: any = {};
-    message.previousAttesterManager !== undefined &&
-      (obj.previousAttesterManager = message.previousAttesterManager);
-    message.newAttesterManager !== undefined &&
-      (obj.newAttesterManager = message.newAttesterManager);
+    message.previousAttesterManager !== undefined && (obj.previousAttesterManager = message.previousAttesterManager);
+    message.newAttesterManager !== undefined && (obj.newAttesterManager = message.newAttesterManager);
     return obj;
   },
   fromPartial(object: Partial<AttesterManagerUpdated>): AttesterManagerUpdated {
     const message = createBaseAttesterManagerUpdated();
-    message.previousAttesterManager = object.previousAttesterManager ?? '';
-    message.newAttesterManager = object.newAttesterManager ?? '';
+    message.previousAttesterManager = object.previousAttesterManager ?? "";
+    message.newAttesterManager = object.newAttesterManager ?? "";
     return message;
   },
-  fromProtoMsg(
-    message: AttesterManagerUpdatedProtoMsg,
-  ): AttesterManagerUpdated {
+  fromProtoMsg(message: AttesterManagerUpdatedProtoMsg): AttesterManagerUpdated {
     return AttesterManagerUpdated.decode(message.value);
   },
   toProto(message: AttesterManagerUpdated): Uint8Array {
@@ -1021,37 +933,30 @@ export const AttesterManagerUpdated = {
   },
   toProtoMsg(message: AttesterManagerUpdated): AttesterManagerUpdatedProtoMsg {
     return {
-      typeUrl: '/circle.cctp.v1.AttesterManagerUpdated',
-      value: AttesterManagerUpdated.encode(message).finish(),
+      typeUrl: "/circle.cctp.v1.AttesterManagerUpdated",
+      value: AttesterManagerUpdated.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseTokenControllerUpdated(): TokenControllerUpdated {
   return {
-    previousTokenController: '',
-    newTokenController: '',
+    previousTokenController: "",
+    newTokenController: ""
   };
 }
 export const TokenControllerUpdated = {
-  typeUrl: '/circle.cctp.v1.TokenControllerUpdated' as const,
-  encode(
-    message: TokenControllerUpdated,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.previousTokenController !== '') {
+  typeUrl: "/circle.cctp.v1.TokenControllerUpdated" as const,
+  encode(message: TokenControllerUpdated, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.previousTokenController !== "") {
       writer.uint32(10).string(message.previousTokenController);
     }
-    if (message.newTokenController !== '') {
+    if (message.newTokenController !== "") {
       writer.uint32(18).string(message.newTokenController);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): TokenControllerUpdated {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): TokenControllerUpdated {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseTokenControllerUpdated();
     while (reader.pos < end) {
@@ -1072,31 +977,23 @@ export const TokenControllerUpdated = {
   },
   fromJSON(object: any): TokenControllerUpdated {
     return {
-      previousTokenController: isSet(object.previousTokenController)
-        ? String(object.previousTokenController)
-        : '',
-      newTokenController: isSet(object.newTokenController)
-        ? String(object.newTokenController)
-        : '',
+      previousTokenController: isSet(object.previousTokenController) ? String(object.previousTokenController) : "",
+      newTokenController: isSet(object.newTokenController) ? String(object.newTokenController) : ""
     };
   },
   toJSON(message: TokenControllerUpdated): JsonSafe<TokenControllerUpdated> {
     const obj: any = {};
-    message.previousTokenController !== undefined &&
-      (obj.previousTokenController = message.previousTokenController);
-    message.newTokenController !== undefined &&
-      (obj.newTokenController = message.newTokenController);
+    message.previousTokenController !== undefined && (obj.previousTokenController = message.previousTokenController);
+    message.newTokenController !== undefined && (obj.newTokenController = message.newTokenController);
     return obj;
   },
   fromPartial(object: Partial<TokenControllerUpdated>): TokenControllerUpdated {
     const message = createBaseTokenControllerUpdated();
-    message.previousTokenController = object.previousTokenController ?? '';
-    message.newTokenController = object.newTokenController ?? '';
+    message.previousTokenController = object.previousTokenController ?? "";
+    message.newTokenController = object.newTokenController ?? "";
     return message;
   },
-  fromProtoMsg(
-    message: TokenControllerUpdatedProtoMsg,
-  ): TokenControllerUpdated {
+  fromProtoMsg(message: TokenControllerUpdatedProtoMsg): TokenControllerUpdated {
     return TokenControllerUpdated.decode(message.value);
   },
   toProto(message: TokenControllerUpdated): Uint8Array {
@@ -1104,28 +1001,21 @@ export const TokenControllerUpdated = {
   },
   toProtoMsg(message: TokenControllerUpdated): TokenControllerUpdatedProtoMsg {
     return {
-      typeUrl: '/circle.cctp.v1.TokenControllerUpdated',
-      value: TokenControllerUpdated.encode(message).finish(),
+      typeUrl: "/circle.cctp.v1.TokenControllerUpdated",
+      value: TokenControllerUpdated.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseBurningAndMintingPausedEvent(): BurningAndMintingPausedEvent {
   return {};
 }
 export const BurningAndMintingPausedEvent = {
-  typeUrl: '/circle.cctp.v1.BurningAndMintingPausedEvent' as const,
-  encode(
-    _: BurningAndMintingPausedEvent,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/circle.cctp.v1.BurningAndMintingPausedEvent" as const,
+  encode(_: BurningAndMintingPausedEvent, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): BurningAndMintingPausedEvent {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): BurningAndMintingPausedEvent {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseBurningAndMintingPausedEvent();
     while (reader.pos < end) {
@@ -1141,52 +1031,37 @@ export const BurningAndMintingPausedEvent = {
   fromJSON(_: any): BurningAndMintingPausedEvent {
     return {};
   },
-  toJSON(
-    _: BurningAndMintingPausedEvent,
-  ): JsonSafe<BurningAndMintingPausedEvent> {
+  toJSON(_: BurningAndMintingPausedEvent): JsonSafe<BurningAndMintingPausedEvent> {
     const obj: any = {};
     return obj;
   },
-  fromPartial(
-    _: Partial<BurningAndMintingPausedEvent>,
-  ): BurningAndMintingPausedEvent {
+  fromPartial(_: Partial<BurningAndMintingPausedEvent>): BurningAndMintingPausedEvent {
     const message = createBaseBurningAndMintingPausedEvent();
     return message;
   },
-  fromProtoMsg(
-    message: BurningAndMintingPausedEventProtoMsg,
-  ): BurningAndMintingPausedEvent {
+  fromProtoMsg(message: BurningAndMintingPausedEventProtoMsg): BurningAndMintingPausedEvent {
     return BurningAndMintingPausedEvent.decode(message.value);
   },
   toProto(message: BurningAndMintingPausedEvent): Uint8Array {
     return BurningAndMintingPausedEvent.encode(message).finish();
   },
-  toProtoMsg(
-    message: BurningAndMintingPausedEvent,
-  ): BurningAndMintingPausedEventProtoMsg {
+  toProtoMsg(message: BurningAndMintingPausedEvent): BurningAndMintingPausedEventProtoMsg {
     return {
-      typeUrl: '/circle.cctp.v1.BurningAndMintingPausedEvent',
-      value: BurningAndMintingPausedEvent.encode(message).finish(),
+      typeUrl: "/circle.cctp.v1.BurningAndMintingPausedEvent",
+      value: BurningAndMintingPausedEvent.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseBurningAndMintingUnpausedEvent(): BurningAndMintingUnpausedEvent {
   return {};
 }
 export const BurningAndMintingUnpausedEvent = {
-  typeUrl: '/circle.cctp.v1.BurningAndMintingUnpausedEvent' as const,
-  encode(
-    _: BurningAndMintingUnpausedEvent,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/circle.cctp.v1.BurningAndMintingUnpausedEvent" as const,
+  encode(_: BurningAndMintingUnpausedEvent, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): BurningAndMintingUnpausedEvent {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): BurningAndMintingUnpausedEvent {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseBurningAndMintingUnpausedEvent();
     while (reader.pos < end) {
@@ -1202,52 +1077,37 @@ export const BurningAndMintingUnpausedEvent = {
   fromJSON(_: any): BurningAndMintingUnpausedEvent {
     return {};
   },
-  toJSON(
-    _: BurningAndMintingUnpausedEvent,
-  ): JsonSafe<BurningAndMintingUnpausedEvent> {
+  toJSON(_: BurningAndMintingUnpausedEvent): JsonSafe<BurningAndMintingUnpausedEvent> {
     const obj: any = {};
     return obj;
   },
-  fromPartial(
-    _: Partial<BurningAndMintingUnpausedEvent>,
-  ): BurningAndMintingUnpausedEvent {
+  fromPartial(_: Partial<BurningAndMintingUnpausedEvent>): BurningAndMintingUnpausedEvent {
     const message = createBaseBurningAndMintingUnpausedEvent();
     return message;
   },
-  fromProtoMsg(
-    message: BurningAndMintingUnpausedEventProtoMsg,
-  ): BurningAndMintingUnpausedEvent {
+  fromProtoMsg(message: BurningAndMintingUnpausedEventProtoMsg): BurningAndMintingUnpausedEvent {
     return BurningAndMintingUnpausedEvent.decode(message.value);
   },
   toProto(message: BurningAndMintingUnpausedEvent): Uint8Array {
     return BurningAndMintingUnpausedEvent.encode(message).finish();
   },
-  toProtoMsg(
-    message: BurningAndMintingUnpausedEvent,
-  ): BurningAndMintingUnpausedEventProtoMsg {
+  toProtoMsg(message: BurningAndMintingUnpausedEvent): BurningAndMintingUnpausedEventProtoMsg {
     return {
-      typeUrl: '/circle.cctp.v1.BurningAndMintingUnpausedEvent',
-      value: BurningAndMintingUnpausedEvent.encode(message).finish(),
+      typeUrl: "/circle.cctp.v1.BurningAndMintingUnpausedEvent",
+      value: BurningAndMintingUnpausedEvent.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseSendingAndReceivingPausedEvent(): SendingAndReceivingPausedEvent {
   return {};
 }
 export const SendingAndReceivingPausedEvent = {
-  typeUrl: '/circle.cctp.v1.SendingAndReceivingPausedEvent' as const,
-  encode(
-    _: SendingAndReceivingPausedEvent,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/circle.cctp.v1.SendingAndReceivingPausedEvent" as const,
+  encode(_: SendingAndReceivingPausedEvent, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): SendingAndReceivingPausedEvent {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): SendingAndReceivingPausedEvent {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseSendingAndReceivingPausedEvent();
     while (reader.pos < end) {
@@ -1263,52 +1123,37 @@ export const SendingAndReceivingPausedEvent = {
   fromJSON(_: any): SendingAndReceivingPausedEvent {
     return {};
   },
-  toJSON(
-    _: SendingAndReceivingPausedEvent,
-  ): JsonSafe<SendingAndReceivingPausedEvent> {
+  toJSON(_: SendingAndReceivingPausedEvent): JsonSafe<SendingAndReceivingPausedEvent> {
     const obj: any = {};
     return obj;
   },
-  fromPartial(
-    _: Partial<SendingAndReceivingPausedEvent>,
-  ): SendingAndReceivingPausedEvent {
+  fromPartial(_: Partial<SendingAndReceivingPausedEvent>): SendingAndReceivingPausedEvent {
     const message = createBaseSendingAndReceivingPausedEvent();
     return message;
   },
-  fromProtoMsg(
-    message: SendingAndReceivingPausedEventProtoMsg,
-  ): SendingAndReceivingPausedEvent {
+  fromProtoMsg(message: SendingAndReceivingPausedEventProtoMsg): SendingAndReceivingPausedEvent {
     return SendingAndReceivingPausedEvent.decode(message.value);
   },
   toProto(message: SendingAndReceivingPausedEvent): Uint8Array {
     return SendingAndReceivingPausedEvent.encode(message).finish();
   },
-  toProtoMsg(
-    message: SendingAndReceivingPausedEvent,
-  ): SendingAndReceivingPausedEventProtoMsg {
+  toProtoMsg(message: SendingAndReceivingPausedEvent): SendingAndReceivingPausedEventProtoMsg {
     return {
-      typeUrl: '/circle.cctp.v1.SendingAndReceivingPausedEvent',
-      value: SendingAndReceivingPausedEvent.encode(message).finish(),
+      typeUrl: "/circle.cctp.v1.SendingAndReceivingPausedEvent",
+      value: SendingAndReceivingPausedEvent.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseSendingAndReceivingUnpausedEvent(): SendingAndReceivingUnpausedEvent {
   return {};
 }
 export const SendingAndReceivingUnpausedEvent = {
-  typeUrl: '/circle.cctp.v1.SendingAndReceivingUnpausedEvent' as const,
-  encode(
-    _: SendingAndReceivingUnpausedEvent,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/circle.cctp.v1.SendingAndReceivingUnpausedEvent" as const,
+  encode(_: SendingAndReceivingUnpausedEvent, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): SendingAndReceivingUnpausedEvent {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): SendingAndReceivingUnpausedEvent {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseSendingAndReceivingUnpausedEvent();
     while (reader.pos < end) {
@@ -1324,63 +1169,52 @@ export const SendingAndReceivingUnpausedEvent = {
   fromJSON(_: any): SendingAndReceivingUnpausedEvent {
     return {};
   },
-  toJSON(
-    _: SendingAndReceivingUnpausedEvent,
-  ): JsonSafe<SendingAndReceivingUnpausedEvent> {
+  toJSON(_: SendingAndReceivingUnpausedEvent): JsonSafe<SendingAndReceivingUnpausedEvent> {
     const obj: any = {};
     return obj;
   },
-  fromPartial(
-    _: Partial<SendingAndReceivingUnpausedEvent>,
-  ): SendingAndReceivingUnpausedEvent {
+  fromPartial(_: Partial<SendingAndReceivingUnpausedEvent>): SendingAndReceivingUnpausedEvent {
     const message = createBaseSendingAndReceivingUnpausedEvent();
     return message;
   },
-  fromProtoMsg(
-    message: SendingAndReceivingUnpausedEventProtoMsg,
-  ): SendingAndReceivingUnpausedEvent {
+  fromProtoMsg(message: SendingAndReceivingUnpausedEventProtoMsg): SendingAndReceivingUnpausedEvent {
     return SendingAndReceivingUnpausedEvent.decode(message.value);
   },
   toProto(message: SendingAndReceivingUnpausedEvent): Uint8Array {
     return SendingAndReceivingUnpausedEvent.encode(message).finish();
   },
-  toProtoMsg(
-    message: SendingAndReceivingUnpausedEvent,
-  ): SendingAndReceivingUnpausedEventProtoMsg {
+  toProtoMsg(message: SendingAndReceivingUnpausedEvent): SendingAndReceivingUnpausedEventProtoMsg {
     return {
-      typeUrl: '/circle.cctp.v1.SendingAndReceivingUnpausedEvent',
-      value: SendingAndReceivingUnpausedEvent.encode(message).finish(),
+      typeUrl: "/circle.cctp.v1.SendingAndReceivingUnpausedEvent",
+      value: SendingAndReceivingUnpausedEvent.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseDepositForBurn(): DepositForBurn {
   return {
     nonce: BigInt(0),
-    burnToken: '',
-    amount: '',
-    depositor: '',
+    burnToken: "",
+    amount: "",
+    depositor: "",
     mintRecipient: new Uint8Array(),
     destinationDomain: 0,
     destinationTokenMessenger: new Uint8Array(),
-    destinationCaller: new Uint8Array(),
+    destinationCaller: new Uint8Array()
   };
 }
 export const DepositForBurn = {
-  typeUrl: '/circle.cctp.v1.DepositForBurn' as const,
-  encode(
-    message: DepositForBurn,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/circle.cctp.v1.DepositForBurn" as const,
+  encode(message: DepositForBurn, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.nonce !== BigInt(0)) {
       writer.uint32(8).uint64(message.nonce);
     }
-    if (message.burnToken !== '') {
+    if (message.burnToken !== "") {
       writer.uint32(18).string(message.burnToken);
     }
-    if (message.amount !== '') {
+    if (message.amount !== "") {
       writer.uint32(26).string(message.amount);
     }
-    if (message.depositor !== '') {
+    if (message.depositor !== "") {
       writer.uint32(34).string(message.depositor);
     }
     if (message.mintRecipient.length !== 0) {
@@ -1398,8 +1232,7 @@ export const DepositForBurn = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): DepositForBurn {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseDepositForBurn();
     while (reader.pos < end) {
@@ -1439,65 +1272,36 @@ export const DepositForBurn = {
   fromJSON(object: any): DepositForBurn {
     return {
       nonce: isSet(object.nonce) ? BigInt(object.nonce.toString()) : BigInt(0),
-      burnToken: isSet(object.burnToken) ? String(object.burnToken) : '',
-      amount: isSet(object.amount) ? String(object.amount) : '',
-      depositor: isSet(object.depositor) ? String(object.depositor) : '',
-      mintRecipient: isSet(object.mintRecipient)
-        ? bytesFromBase64(object.mintRecipient)
-        : new Uint8Array(),
-      destinationDomain: isSet(object.destinationDomain)
-        ? Number(object.destinationDomain)
-        : 0,
-      destinationTokenMessenger: isSet(object.destinationTokenMessenger)
-        ? bytesFromBase64(object.destinationTokenMessenger)
-        : new Uint8Array(),
-      destinationCaller: isSet(object.destinationCaller)
-        ? bytesFromBase64(object.destinationCaller)
-        : new Uint8Array(),
+      burnToken: isSet(object.burnToken) ? String(object.burnToken) : "",
+      amount: isSet(object.amount) ? String(object.amount) : "",
+      depositor: isSet(object.depositor) ? String(object.depositor) : "",
+      mintRecipient: isSet(object.mintRecipient) ? bytesFromBase64(object.mintRecipient) : new Uint8Array(),
+      destinationDomain: isSet(object.destinationDomain) ? Number(object.destinationDomain) : 0,
+      destinationTokenMessenger: isSet(object.destinationTokenMessenger) ? bytesFromBase64(object.destinationTokenMessenger) : new Uint8Array(),
+      destinationCaller: isSet(object.destinationCaller) ? bytesFromBase64(object.destinationCaller) : new Uint8Array()
     };
   },
   toJSON(message: DepositForBurn): JsonSafe<DepositForBurn> {
     const obj: any = {};
-    message.nonce !== undefined &&
-      (obj.nonce = (message.nonce || BigInt(0)).toString());
+    message.nonce !== undefined && (obj.nonce = (message.nonce || BigInt(0)).toString());
     message.burnToken !== undefined && (obj.burnToken = message.burnToken);
     message.amount !== undefined && (obj.amount = message.amount);
     message.depositor !== undefined && (obj.depositor = message.depositor);
-    message.mintRecipient !== undefined &&
-      (obj.mintRecipient = base64FromBytes(
-        message.mintRecipient !== undefined
-          ? message.mintRecipient
-          : new Uint8Array(),
-      ));
-    message.destinationDomain !== undefined &&
-      (obj.destinationDomain = Math.round(message.destinationDomain));
-    message.destinationTokenMessenger !== undefined &&
-      (obj.destinationTokenMessenger = base64FromBytes(
-        message.destinationTokenMessenger !== undefined
-          ? message.destinationTokenMessenger
-          : new Uint8Array(),
-      ));
-    message.destinationCaller !== undefined &&
-      (obj.destinationCaller = base64FromBytes(
-        message.destinationCaller !== undefined
-          ? message.destinationCaller
-          : new Uint8Array(),
-      ));
+    message.mintRecipient !== undefined && (obj.mintRecipient = base64FromBytes(message.mintRecipient !== undefined ? message.mintRecipient : new Uint8Array()));
+    message.destinationDomain !== undefined && (obj.destinationDomain = Math.round(message.destinationDomain));
+    message.destinationTokenMessenger !== undefined && (obj.destinationTokenMessenger = base64FromBytes(message.destinationTokenMessenger !== undefined ? message.destinationTokenMessenger : new Uint8Array()));
+    message.destinationCaller !== undefined && (obj.destinationCaller = base64FromBytes(message.destinationCaller !== undefined ? message.destinationCaller : new Uint8Array()));
     return obj;
   },
   fromPartial(object: Partial<DepositForBurn>): DepositForBurn {
     const message = createBaseDepositForBurn();
-    message.nonce =
-      object.nonce !== undefined && object.nonce !== null
-        ? BigInt(object.nonce.toString())
-        : BigInt(0);
-    message.burnToken = object.burnToken ?? '';
-    message.amount = object.amount ?? '';
-    message.depositor = object.depositor ?? '';
+    message.nonce = object.nonce !== undefined && object.nonce !== null ? BigInt(object.nonce.toString()) : BigInt(0);
+    message.burnToken = object.burnToken ?? "";
+    message.amount = object.amount ?? "";
+    message.depositor = object.depositor ?? "";
     message.mintRecipient = object.mintRecipient ?? new Uint8Array();
     message.destinationDomain = object.destinationDomain ?? 0;
-    message.destinationTokenMessenger =
-      object.destinationTokenMessenger ?? new Uint8Array();
+    message.destinationTokenMessenger = object.destinationTokenMessenger ?? new Uint8Array();
     message.destinationCaller = object.destinationCaller ?? new Uint8Array();
     return message;
   },
@@ -1509,38 +1313,34 @@ export const DepositForBurn = {
   },
   toProtoMsg(message: DepositForBurn): DepositForBurnProtoMsg {
     return {
-      typeUrl: '/circle.cctp.v1.DepositForBurn',
-      value: DepositForBurn.encode(message).finish(),
+      typeUrl: "/circle.cctp.v1.DepositForBurn",
+      value: DepositForBurn.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMintAndWithdraw(): MintAndWithdraw {
   return {
     mintRecipient: new Uint8Array(),
-    amount: '',
-    mintToken: '',
+    amount: "",
+    mintToken: ""
   };
 }
 export const MintAndWithdraw = {
-  typeUrl: '/circle.cctp.v1.MintAndWithdraw' as const,
-  encode(
-    message: MintAndWithdraw,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/circle.cctp.v1.MintAndWithdraw" as const,
+  encode(message: MintAndWithdraw, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.mintRecipient.length !== 0) {
       writer.uint32(10).bytes(message.mintRecipient);
     }
-    if (message.amount !== '') {
+    if (message.amount !== "") {
       writer.uint32(18).string(message.amount);
     }
-    if (message.mintToken !== '') {
+    if (message.mintToken !== "") {
       writer.uint32(26).string(message.mintToken);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): MintAndWithdraw {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMintAndWithdraw();
     while (reader.pos < end) {
@@ -1564,21 +1364,14 @@ export const MintAndWithdraw = {
   },
   fromJSON(object: any): MintAndWithdraw {
     return {
-      mintRecipient: isSet(object.mintRecipient)
-        ? bytesFromBase64(object.mintRecipient)
-        : new Uint8Array(),
-      amount: isSet(object.amount) ? String(object.amount) : '',
-      mintToken: isSet(object.mintToken) ? String(object.mintToken) : '',
+      mintRecipient: isSet(object.mintRecipient) ? bytesFromBase64(object.mintRecipient) : new Uint8Array(),
+      amount: isSet(object.amount) ? String(object.amount) : "",
+      mintToken: isSet(object.mintToken) ? String(object.mintToken) : ""
     };
   },
   toJSON(message: MintAndWithdraw): JsonSafe<MintAndWithdraw> {
     const obj: any = {};
-    message.mintRecipient !== undefined &&
-      (obj.mintRecipient = base64FromBytes(
-        message.mintRecipient !== undefined
-          ? message.mintRecipient
-          : new Uint8Array(),
-      ));
+    message.mintRecipient !== undefined && (obj.mintRecipient = base64FromBytes(message.mintRecipient !== undefined ? message.mintRecipient : new Uint8Array()));
     message.amount !== undefined && (obj.amount = message.amount);
     message.mintToken !== undefined && (obj.mintToken = message.mintToken);
     return obj;
@@ -1586,8 +1379,8 @@ export const MintAndWithdraw = {
   fromPartial(object: Partial<MintAndWithdraw>): MintAndWithdraw {
     const message = createBaseMintAndWithdraw();
     message.mintRecipient = object.mintRecipient ?? new Uint8Array();
-    message.amount = object.amount ?? '';
-    message.mintToken = object.mintToken ?? '';
+    message.amount = object.amount ?? "";
+    message.mintToken = object.mintToken ?? "";
     return message;
   },
   fromProtoMsg(message: MintAndWithdrawProtoMsg): MintAndWithdraw {
@@ -1598,25 +1391,22 @@ export const MintAndWithdraw = {
   },
   toProtoMsg(message: MintAndWithdraw): MintAndWithdrawProtoMsg {
     return {
-      typeUrl: '/circle.cctp.v1.MintAndWithdraw',
-      value: MintAndWithdraw.encode(message).finish(),
+      typeUrl: "/circle.cctp.v1.MintAndWithdraw",
+      value: MintAndWithdraw.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseTokenPairLinked(): TokenPairLinked {
   return {
-    localToken: '',
+    localToken: "",
     remoteDomain: 0,
-    remoteToken: new Uint8Array(),
+    remoteToken: new Uint8Array()
   };
 }
 export const TokenPairLinked = {
-  typeUrl: '/circle.cctp.v1.TokenPairLinked' as const,
-  encode(
-    message: TokenPairLinked,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.localToken !== '') {
+  typeUrl: "/circle.cctp.v1.TokenPairLinked" as const,
+  encode(message: TokenPairLinked, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.localToken !== "") {
       writer.uint32(10).string(message.localToken);
     }
     if (message.remoteDomain !== 0) {
@@ -1628,8 +1418,7 @@ export const TokenPairLinked = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): TokenPairLinked {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseTokenPairLinked();
     while (reader.pos < end) {
@@ -1653,31 +1442,21 @@ export const TokenPairLinked = {
   },
   fromJSON(object: any): TokenPairLinked {
     return {
-      localToken: isSet(object.localToken) ? String(object.localToken) : '',
-      remoteDomain: isSet(object.remoteDomain)
-        ? Number(object.remoteDomain)
-        : 0,
-      remoteToken: isSet(object.remoteToken)
-        ? bytesFromBase64(object.remoteToken)
-        : new Uint8Array(),
+      localToken: isSet(object.localToken) ? String(object.localToken) : "",
+      remoteDomain: isSet(object.remoteDomain) ? Number(object.remoteDomain) : 0,
+      remoteToken: isSet(object.remoteToken) ? bytesFromBase64(object.remoteToken) : new Uint8Array()
     };
   },
   toJSON(message: TokenPairLinked): JsonSafe<TokenPairLinked> {
     const obj: any = {};
     message.localToken !== undefined && (obj.localToken = message.localToken);
-    message.remoteDomain !== undefined &&
-      (obj.remoteDomain = Math.round(message.remoteDomain));
-    message.remoteToken !== undefined &&
-      (obj.remoteToken = base64FromBytes(
-        message.remoteToken !== undefined
-          ? message.remoteToken
-          : new Uint8Array(),
-      ));
+    message.remoteDomain !== undefined && (obj.remoteDomain = Math.round(message.remoteDomain));
+    message.remoteToken !== undefined && (obj.remoteToken = base64FromBytes(message.remoteToken !== undefined ? message.remoteToken : new Uint8Array()));
     return obj;
   },
   fromPartial(object: Partial<TokenPairLinked>): TokenPairLinked {
     const message = createBaseTokenPairLinked();
-    message.localToken = object.localToken ?? '';
+    message.localToken = object.localToken ?? "";
     message.remoteDomain = object.remoteDomain ?? 0;
     message.remoteToken = object.remoteToken ?? new Uint8Array();
     return message;
@@ -1690,25 +1469,22 @@ export const TokenPairLinked = {
   },
   toProtoMsg(message: TokenPairLinked): TokenPairLinkedProtoMsg {
     return {
-      typeUrl: '/circle.cctp.v1.TokenPairLinked',
-      value: TokenPairLinked.encode(message).finish(),
+      typeUrl: "/circle.cctp.v1.TokenPairLinked",
+      value: TokenPairLinked.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseTokenPairUnlinked(): TokenPairUnlinked {
   return {
-    localToken: '',
+    localToken: "",
     remoteDomain: 0,
-    remoteToken: new Uint8Array(),
+    remoteToken: new Uint8Array()
   };
 }
 export const TokenPairUnlinked = {
-  typeUrl: '/circle.cctp.v1.TokenPairUnlinked' as const,
-  encode(
-    message: TokenPairUnlinked,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.localToken !== '') {
+  typeUrl: "/circle.cctp.v1.TokenPairUnlinked" as const,
+  encode(message: TokenPairUnlinked, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.localToken !== "") {
       writer.uint32(10).string(message.localToken);
     }
     if (message.remoteDomain !== 0) {
@@ -1720,8 +1496,7 @@ export const TokenPairUnlinked = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): TokenPairUnlinked {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseTokenPairUnlinked();
     while (reader.pos < end) {
@@ -1745,31 +1520,21 @@ export const TokenPairUnlinked = {
   },
   fromJSON(object: any): TokenPairUnlinked {
     return {
-      localToken: isSet(object.localToken) ? String(object.localToken) : '',
-      remoteDomain: isSet(object.remoteDomain)
-        ? Number(object.remoteDomain)
-        : 0,
-      remoteToken: isSet(object.remoteToken)
-        ? bytesFromBase64(object.remoteToken)
-        : new Uint8Array(),
+      localToken: isSet(object.localToken) ? String(object.localToken) : "",
+      remoteDomain: isSet(object.remoteDomain) ? Number(object.remoteDomain) : 0,
+      remoteToken: isSet(object.remoteToken) ? bytesFromBase64(object.remoteToken) : new Uint8Array()
     };
   },
   toJSON(message: TokenPairUnlinked): JsonSafe<TokenPairUnlinked> {
     const obj: any = {};
     message.localToken !== undefined && (obj.localToken = message.localToken);
-    message.remoteDomain !== undefined &&
-      (obj.remoteDomain = Math.round(message.remoteDomain));
-    message.remoteToken !== undefined &&
-      (obj.remoteToken = base64FromBytes(
-        message.remoteToken !== undefined
-          ? message.remoteToken
-          : new Uint8Array(),
-      ));
+    message.remoteDomain !== undefined && (obj.remoteDomain = Math.round(message.remoteDomain));
+    message.remoteToken !== undefined && (obj.remoteToken = base64FromBytes(message.remoteToken !== undefined ? message.remoteToken : new Uint8Array()));
     return obj;
   },
   fromPartial(object: Partial<TokenPairUnlinked>): TokenPairUnlinked {
     const message = createBaseTokenPairUnlinked();
-    message.localToken = object.localToken ?? '';
+    message.localToken = object.localToken ?? "";
     message.remoteDomain = object.remoteDomain ?? 0;
     message.remoteToken = object.remoteToken ?? new Uint8Array();
     return message;
@@ -1782,30 +1547,26 @@ export const TokenPairUnlinked = {
   },
   toProtoMsg(message: TokenPairUnlinked): TokenPairUnlinkedProtoMsg {
     return {
-      typeUrl: '/circle.cctp.v1.TokenPairUnlinked',
-      value: TokenPairUnlinked.encode(message).finish(),
+      typeUrl: "/circle.cctp.v1.TokenPairUnlinked",
+      value: TokenPairUnlinked.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMessageSent(): MessageSent {
   return {
-    message: new Uint8Array(),
+    message: new Uint8Array()
   };
 }
 export const MessageSent = {
-  typeUrl: '/circle.cctp.v1.MessageSent' as const,
-  encode(
-    message: MessageSent,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/circle.cctp.v1.MessageSent" as const,
+  encode(message: MessageSent, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.message.length !== 0) {
       writer.uint32(10).bytes(message.message);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): MessageSent {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMessageSent();
     while (reader.pos < end) {
@@ -1823,17 +1584,12 @@ export const MessageSent = {
   },
   fromJSON(object: any): MessageSent {
     return {
-      message: isSet(object.message)
-        ? bytesFromBase64(object.message)
-        : new Uint8Array(),
+      message: isSet(object.message) ? bytesFromBase64(object.message) : new Uint8Array()
     };
   },
   toJSON(message: MessageSent): JsonSafe<MessageSent> {
     const obj: any = {};
-    message.message !== undefined &&
-      (obj.message = base64FromBytes(
-        message.message !== undefined ? message.message : new Uint8Array(),
-      ));
+    message.message !== undefined && (obj.message = base64FromBytes(message.message !== undefined ? message.message : new Uint8Array()));
     return obj;
   },
   fromPartial(object: Partial<MessageSent>): MessageSent {
@@ -1849,27 +1605,24 @@ export const MessageSent = {
   },
   toProtoMsg(message: MessageSent): MessageSentProtoMsg {
     return {
-      typeUrl: '/circle.cctp.v1.MessageSent',
-      value: MessageSent.encode(message).finish(),
+      typeUrl: "/circle.cctp.v1.MessageSent",
+      value: MessageSent.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMessageReceived(): MessageReceived {
   return {
-    caller: '',
+    caller: "",
     sourceDomain: 0,
     nonce: BigInt(0),
     sender: new Uint8Array(),
-    messageBody: new Uint8Array(),
+    messageBody: new Uint8Array()
   };
 }
 export const MessageReceived = {
-  typeUrl: '/circle.cctp.v1.MessageReceived' as const,
-  encode(
-    message: MessageReceived,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.caller !== '') {
+  typeUrl: "/circle.cctp.v1.MessageReceived" as const,
+  encode(message: MessageReceived, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.caller !== "") {
       writer.uint32(10).string(message.caller);
     }
     if (message.sourceDomain !== 0) {
@@ -1887,8 +1640,7 @@ export const MessageReceived = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): MessageReceived {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMessageReceived();
     while (reader.pos < end) {
@@ -1918,46 +1670,27 @@ export const MessageReceived = {
   },
   fromJSON(object: any): MessageReceived {
     return {
-      caller: isSet(object.caller) ? String(object.caller) : '',
-      sourceDomain: isSet(object.sourceDomain)
-        ? Number(object.sourceDomain)
-        : 0,
+      caller: isSet(object.caller) ? String(object.caller) : "",
+      sourceDomain: isSet(object.sourceDomain) ? Number(object.sourceDomain) : 0,
       nonce: isSet(object.nonce) ? BigInt(object.nonce.toString()) : BigInt(0),
-      sender: isSet(object.sender)
-        ? bytesFromBase64(object.sender)
-        : new Uint8Array(),
-      messageBody: isSet(object.messageBody)
-        ? bytesFromBase64(object.messageBody)
-        : new Uint8Array(),
+      sender: isSet(object.sender) ? bytesFromBase64(object.sender) : new Uint8Array(),
+      messageBody: isSet(object.messageBody) ? bytesFromBase64(object.messageBody) : new Uint8Array()
     };
   },
   toJSON(message: MessageReceived): JsonSafe<MessageReceived> {
     const obj: any = {};
     message.caller !== undefined && (obj.caller = message.caller);
-    message.sourceDomain !== undefined &&
-      (obj.sourceDomain = Math.round(message.sourceDomain));
-    message.nonce !== undefined &&
-      (obj.nonce = (message.nonce || BigInt(0)).toString());
-    message.sender !== undefined &&
-      (obj.sender = base64FromBytes(
-        message.sender !== undefined ? message.sender : new Uint8Array(),
-      ));
-    message.messageBody !== undefined &&
-      (obj.messageBody = base64FromBytes(
-        message.messageBody !== undefined
-          ? message.messageBody
-          : new Uint8Array(),
-      ));
+    message.sourceDomain !== undefined && (obj.sourceDomain = Math.round(message.sourceDomain));
+    message.nonce !== undefined && (obj.nonce = (message.nonce || BigInt(0)).toString());
+    message.sender !== undefined && (obj.sender = base64FromBytes(message.sender !== undefined ? message.sender : new Uint8Array()));
+    message.messageBody !== undefined && (obj.messageBody = base64FromBytes(message.messageBody !== undefined ? message.messageBody : new Uint8Array()));
     return obj;
   },
   fromPartial(object: Partial<MessageReceived>): MessageReceived {
     const message = createBaseMessageReceived();
-    message.caller = object.caller ?? '';
+    message.caller = object.caller ?? "";
     message.sourceDomain = object.sourceDomain ?? 0;
-    message.nonce =
-      object.nonce !== undefined && object.nonce !== null
-        ? BigInt(object.nonce.toString())
-        : BigInt(0);
+    message.nonce = object.nonce !== undefined && object.nonce !== null ? BigInt(object.nonce.toString()) : BigInt(0);
     message.sender = object.sender ?? new Uint8Array();
     message.messageBody = object.messageBody ?? new Uint8Array();
     return message;
@@ -1970,33 +1703,26 @@ export const MessageReceived = {
   },
   toProtoMsg(message: MessageReceived): MessageReceivedProtoMsg {
     return {
-      typeUrl: '/circle.cctp.v1.MessageReceived',
-      value: MessageReceived.encode(message).finish(),
+      typeUrl: "/circle.cctp.v1.MessageReceived",
+      value: MessageReceived.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMaxMessageBodySizeUpdated(): MaxMessageBodySizeUpdated {
   return {
-    newMaxMessageBodySize: BigInt(0),
+    newMaxMessageBodySize: BigInt(0)
   };
 }
 export const MaxMessageBodySizeUpdated = {
-  typeUrl: '/circle.cctp.v1.MaxMessageBodySizeUpdated' as const,
-  encode(
-    message: MaxMessageBodySizeUpdated,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/circle.cctp.v1.MaxMessageBodySizeUpdated" as const,
+  encode(message: MaxMessageBodySizeUpdated, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.newMaxMessageBodySize !== BigInt(0)) {
       writer.uint32(8).uint64(message.newMaxMessageBodySize);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MaxMessageBodySizeUpdated {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MaxMessageBodySizeUpdated {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMaxMessageBodySizeUpdated();
     while (reader.pos < end) {
@@ -2014,61 +1740,41 @@ export const MaxMessageBodySizeUpdated = {
   },
   fromJSON(object: any): MaxMessageBodySizeUpdated {
     return {
-      newMaxMessageBodySize: isSet(object.newMaxMessageBodySize)
-        ? BigInt(object.newMaxMessageBodySize.toString())
-        : BigInt(0),
+      newMaxMessageBodySize: isSet(object.newMaxMessageBodySize) ? BigInt(object.newMaxMessageBodySize.toString()) : BigInt(0)
     };
   },
-  toJSON(
-    message: MaxMessageBodySizeUpdated,
-  ): JsonSafe<MaxMessageBodySizeUpdated> {
+  toJSON(message: MaxMessageBodySizeUpdated): JsonSafe<MaxMessageBodySizeUpdated> {
     const obj: any = {};
-    message.newMaxMessageBodySize !== undefined &&
-      (obj.newMaxMessageBodySize = (
-        message.newMaxMessageBodySize || BigInt(0)
-      ).toString());
+    message.newMaxMessageBodySize !== undefined && (obj.newMaxMessageBodySize = (message.newMaxMessageBodySize || BigInt(0)).toString());
     return obj;
   },
-  fromPartial(
-    object: Partial<MaxMessageBodySizeUpdated>,
-  ): MaxMessageBodySizeUpdated {
+  fromPartial(object: Partial<MaxMessageBodySizeUpdated>): MaxMessageBodySizeUpdated {
     const message = createBaseMaxMessageBodySizeUpdated();
-    message.newMaxMessageBodySize =
-      object.newMaxMessageBodySize !== undefined &&
-      object.newMaxMessageBodySize !== null
-        ? BigInt(object.newMaxMessageBodySize.toString())
-        : BigInt(0);
+    message.newMaxMessageBodySize = object.newMaxMessageBodySize !== undefined && object.newMaxMessageBodySize !== null ? BigInt(object.newMaxMessageBodySize.toString()) : BigInt(0);
     return message;
   },
-  fromProtoMsg(
-    message: MaxMessageBodySizeUpdatedProtoMsg,
-  ): MaxMessageBodySizeUpdated {
+  fromProtoMsg(message: MaxMessageBodySizeUpdatedProtoMsg): MaxMessageBodySizeUpdated {
     return MaxMessageBodySizeUpdated.decode(message.value);
   },
   toProto(message: MaxMessageBodySizeUpdated): Uint8Array {
     return MaxMessageBodySizeUpdated.encode(message).finish();
   },
-  toProtoMsg(
-    message: MaxMessageBodySizeUpdated,
-  ): MaxMessageBodySizeUpdatedProtoMsg {
+  toProtoMsg(message: MaxMessageBodySizeUpdated): MaxMessageBodySizeUpdatedProtoMsg {
     return {
-      typeUrl: '/circle.cctp.v1.MaxMessageBodySizeUpdated',
-      value: MaxMessageBodySizeUpdated.encode(message).finish(),
+      typeUrl: "/circle.cctp.v1.MaxMessageBodySizeUpdated",
+      value: MaxMessageBodySizeUpdated.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseRemoteTokenMessengerAdded(): RemoteTokenMessengerAdded {
   return {
     domain: 0,
-    remoteTokenMessenger: new Uint8Array(),
+    remoteTokenMessenger: new Uint8Array()
   };
 }
 export const RemoteTokenMessengerAdded = {
-  typeUrl: '/circle.cctp.v1.RemoteTokenMessengerAdded' as const,
-  encode(
-    message: RemoteTokenMessengerAdded,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/circle.cctp.v1.RemoteTokenMessengerAdded" as const,
+  encode(message: RemoteTokenMessengerAdded, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.domain !== 0) {
       writer.uint32(8).uint32(message.domain);
     }
@@ -2077,12 +1783,8 @@ export const RemoteTokenMessengerAdded = {
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): RemoteTokenMessengerAdded {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): RemoteTokenMessengerAdded {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseRemoteTokenMessengerAdded();
     while (reader.pos < end) {
@@ -2104,62 +1806,43 @@ export const RemoteTokenMessengerAdded = {
   fromJSON(object: any): RemoteTokenMessengerAdded {
     return {
       domain: isSet(object.domain) ? Number(object.domain) : 0,
-      remoteTokenMessenger: isSet(object.remoteTokenMessenger)
-        ? bytesFromBase64(object.remoteTokenMessenger)
-        : new Uint8Array(),
+      remoteTokenMessenger: isSet(object.remoteTokenMessenger) ? bytesFromBase64(object.remoteTokenMessenger) : new Uint8Array()
     };
   },
-  toJSON(
-    message: RemoteTokenMessengerAdded,
-  ): JsonSafe<RemoteTokenMessengerAdded> {
+  toJSON(message: RemoteTokenMessengerAdded): JsonSafe<RemoteTokenMessengerAdded> {
     const obj: any = {};
     message.domain !== undefined && (obj.domain = Math.round(message.domain));
-    message.remoteTokenMessenger !== undefined &&
-      (obj.remoteTokenMessenger = base64FromBytes(
-        message.remoteTokenMessenger !== undefined
-          ? message.remoteTokenMessenger
-          : new Uint8Array(),
-      ));
+    message.remoteTokenMessenger !== undefined && (obj.remoteTokenMessenger = base64FromBytes(message.remoteTokenMessenger !== undefined ? message.remoteTokenMessenger : new Uint8Array()));
     return obj;
   },
-  fromPartial(
-    object: Partial<RemoteTokenMessengerAdded>,
-  ): RemoteTokenMessengerAdded {
+  fromPartial(object: Partial<RemoteTokenMessengerAdded>): RemoteTokenMessengerAdded {
     const message = createBaseRemoteTokenMessengerAdded();
     message.domain = object.domain ?? 0;
-    message.remoteTokenMessenger =
-      object.remoteTokenMessenger ?? new Uint8Array();
+    message.remoteTokenMessenger = object.remoteTokenMessenger ?? new Uint8Array();
     return message;
   },
-  fromProtoMsg(
-    message: RemoteTokenMessengerAddedProtoMsg,
-  ): RemoteTokenMessengerAdded {
+  fromProtoMsg(message: RemoteTokenMessengerAddedProtoMsg): RemoteTokenMessengerAdded {
     return RemoteTokenMessengerAdded.decode(message.value);
   },
   toProto(message: RemoteTokenMessengerAdded): Uint8Array {
     return RemoteTokenMessengerAdded.encode(message).finish();
   },
-  toProtoMsg(
-    message: RemoteTokenMessengerAdded,
-  ): RemoteTokenMessengerAddedProtoMsg {
+  toProtoMsg(message: RemoteTokenMessengerAdded): RemoteTokenMessengerAddedProtoMsg {
     return {
-      typeUrl: '/circle.cctp.v1.RemoteTokenMessengerAdded',
-      value: RemoteTokenMessengerAdded.encode(message).finish(),
+      typeUrl: "/circle.cctp.v1.RemoteTokenMessengerAdded",
+      value: RemoteTokenMessengerAdded.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseRemoteTokenMessengerRemoved(): RemoteTokenMessengerRemoved {
   return {
     domain: 0,
-    remoteTokenMessenger: new Uint8Array(),
+    remoteTokenMessenger: new Uint8Array()
   };
 }
 export const RemoteTokenMessengerRemoved = {
-  typeUrl: '/circle.cctp.v1.RemoteTokenMessengerRemoved' as const,
-  encode(
-    message: RemoteTokenMessengerRemoved,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/circle.cctp.v1.RemoteTokenMessengerRemoved" as const,
+  encode(message: RemoteTokenMessengerRemoved, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.domain !== 0) {
       writer.uint32(8).uint32(message.domain);
     }
@@ -2168,12 +1851,8 @@ export const RemoteTokenMessengerRemoved = {
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): RemoteTokenMessengerRemoved {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): RemoteTokenMessengerRemoved {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseRemoteTokenMessengerRemoved();
     while (reader.pos < end) {
@@ -2195,76 +1874,53 @@ export const RemoteTokenMessengerRemoved = {
   fromJSON(object: any): RemoteTokenMessengerRemoved {
     return {
       domain: isSet(object.domain) ? Number(object.domain) : 0,
-      remoteTokenMessenger: isSet(object.remoteTokenMessenger)
-        ? bytesFromBase64(object.remoteTokenMessenger)
-        : new Uint8Array(),
+      remoteTokenMessenger: isSet(object.remoteTokenMessenger) ? bytesFromBase64(object.remoteTokenMessenger) : new Uint8Array()
     };
   },
-  toJSON(
-    message: RemoteTokenMessengerRemoved,
-  ): JsonSafe<RemoteTokenMessengerRemoved> {
+  toJSON(message: RemoteTokenMessengerRemoved): JsonSafe<RemoteTokenMessengerRemoved> {
     const obj: any = {};
     message.domain !== undefined && (obj.domain = Math.round(message.domain));
-    message.remoteTokenMessenger !== undefined &&
-      (obj.remoteTokenMessenger = base64FromBytes(
-        message.remoteTokenMessenger !== undefined
-          ? message.remoteTokenMessenger
-          : new Uint8Array(),
-      ));
+    message.remoteTokenMessenger !== undefined && (obj.remoteTokenMessenger = base64FromBytes(message.remoteTokenMessenger !== undefined ? message.remoteTokenMessenger : new Uint8Array()));
     return obj;
   },
-  fromPartial(
-    object: Partial<RemoteTokenMessengerRemoved>,
-  ): RemoteTokenMessengerRemoved {
+  fromPartial(object: Partial<RemoteTokenMessengerRemoved>): RemoteTokenMessengerRemoved {
     const message = createBaseRemoteTokenMessengerRemoved();
     message.domain = object.domain ?? 0;
-    message.remoteTokenMessenger =
-      object.remoteTokenMessenger ?? new Uint8Array();
+    message.remoteTokenMessenger = object.remoteTokenMessenger ?? new Uint8Array();
     return message;
   },
-  fromProtoMsg(
-    message: RemoteTokenMessengerRemovedProtoMsg,
-  ): RemoteTokenMessengerRemoved {
+  fromProtoMsg(message: RemoteTokenMessengerRemovedProtoMsg): RemoteTokenMessengerRemoved {
     return RemoteTokenMessengerRemoved.decode(message.value);
   },
   toProto(message: RemoteTokenMessengerRemoved): Uint8Array {
     return RemoteTokenMessengerRemoved.encode(message).finish();
   },
-  toProtoMsg(
-    message: RemoteTokenMessengerRemoved,
-  ): RemoteTokenMessengerRemovedProtoMsg {
+  toProtoMsg(message: RemoteTokenMessengerRemoved): RemoteTokenMessengerRemovedProtoMsg {
     return {
-      typeUrl: '/circle.cctp.v1.RemoteTokenMessengerRemoved',
-      value: RemoteTokenMessengerRemoved.encode(message).finish(),
+      typeUrl: "/circle.cctp.v1.RemoteTokenMessengerRemoved",
+      value: RemoteTokenMessengerRemoved.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseSetBurnLimitPerMessage(): SetBurnLimitPerMessage {
   return {
-    token: '',
-    burnLimitPerMessage: '',
+    token: "",
+    burnLimitPerMessage: ""
   };
 }
 export const SetBurnLimitPerMessage = {
-  typeUrl: '/circle.cctp.v1.SetBurnLimitPerMessage' as const,
-  encode(
-    message: SetBurnLimitPerMessage,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.token !== '') {
+  typeUrl: "/circle.cctp.v1.SetBurnLimitPerMessage" as const,
+  encode(message: SetBurnLimitPerMessage, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.token !== "") {
       writer.uint32(10).string(message.token);
     }
-    if (message.burnLimitPerMessage !== '') {
+    if (message.burnLimitPerMessage !== "") {
       writer.uint32(18).string(message.burnLimitPerMessage);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): SetBurnLimitPerMessage {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): SetBurnLimitPerMessage {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseSetBurnLimitPerMessage();
     while (reader.pos < end) {
@@ -2285,28 +1941,23 @@ export const SetBurnLimitPerMessage = {
   },
   fromJSON(object: any): SetBurnLimitPerMessage {
     return {
-      token: isSet(object.token) ? String(object.token) : '',
-      burnLimitPerMessage: isSet(object.burnLimitPerMessage)
-        ? String(object.burnLimitPerMessage)
-        : '',
+      token: isSet(object.token) ? String(object.token) : "",
+      burnLimitPerMessage: isSet(object.burnLimitPerMessage) ? String(object.burnLimitPerMessage) : ""
     };
   },
   toJSON(message: SetBurnLimitPerMessage): JsonSafe<SetBurnLimitPerMessage> {
     const obj: any = {};
     message.token !== undefined && (obj.token = message.token);
-    message.burnLimitPerMessage !== undefined &&
-      (obj.burnLimitPerMessage = message.burnLimitPerMessage);
+    message.burnLimitPerMessage !== undefined && (obj.burnLimitPerMessage = message.burnLimitPerMessage);
     return obj;
   },
   fromPartial(object: Partial<SetBurnLimitPerMessage>): SetBurnLimitPerMessage {
     const message = createBaseSetBurnLimitPerMessage();
-    message.token = object.token ?? '';
-    message.burnLimitPerMessage = object.burnLimitPerMessage ?? '';
+    message.token = object.token ?? "";
+    message.burnLimitPerMessage = object.burnLimitPerMessage ?? "";
     return message;
   },
-  fromProtoMsg(
-    message: SetBurnLimitPerMessageProtoMsg,
-  ): SetBurnLimitPerMessage {
+  fromProtoMsg(message: SetBurnLimitPerMessageProtoMsg): SetBurnLimitPerMessage {
     return SetBurnLimitPerMessage.decode(message.value);
   },
   toProto(message: SetBurnLimitPerMessage): Uint8Array {
@@ -2314,8 +1965,8 @@ export const SetBurnLimitPerMessage = {
   },
   toProtoMsg(message: SetBurnLimitPerMessage): SetBurnLimitPerMessageProtoMsg {
     return {
-      typeUrl: '/circle.cctp.v1.SetBurnLimitPerMessage',
-      value: SetBurnLimitPerMessage.encode(message).finish(),
+      typeUrl: "/circle.cctp.v1.SetBurnLimitPerMessage",
+      value: SetBurnLimitPerMessage.encode(message).finish()
     };
-  },
+  }
 };

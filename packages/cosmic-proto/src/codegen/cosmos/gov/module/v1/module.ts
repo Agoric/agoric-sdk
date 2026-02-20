@@ -1,7 +1,7 @@
 //@ts-nocheck
-import { BinaryReader, BinaryWriter } from '../../../../binary.js';
-import { isSet } from '../../../../helpers.js';
-import { type JsonSafe } from '../../../../json-safe.js';
+import { BinaryReader, BinaryWriter } from "../../../../binary.js";
+import { isSet } from "../../../../helpers.js";
+import {type JsonSafe } from "../../../../json-safe.js";
 /** Module is the config object of the gov module. */
 export interface Module {
   /**
@@ -13,7 +13,7 @@ export interface Module {
   authority: string;
 }
 export interface ModuleProtoMsg {
-  typeUrl: '/cosmos.gov.module.v1.Module';
+  typeUrl: "/cosmos.gov.module.v1.Module";
   value: Uint8Array;
 }
 /** Module is the config object of the gov module. */
@@ -24,26 +24,22 @@ export interface ModuleSDKType {
 function createBaseModule(): Module {
   return {
     maxMetadataLen: BigInt(0),
-    authority: '',
+    authority: ""
   };
 }
 export const Module = {
-  typeUrl: '/cosmos.gov.module.v1.Module' as const,
-  encode(
-    message: Module,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/cosmos.gov.module.v1.Module" as const,
+  encode(message: Module, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.maxMetadataLen !== BigInt(0)) {
       writer.uint32(8).uint64(message.maxMetadataLen);
     }
-    if (message.authority !== '') {
+    if (message.authority !== "") {
       writer.uint32(18).string(message.authority);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Module {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseModule();
     while (reader.pos < end) {
@@ -64,26 +60,20 @@ export const Module = {
   },
   fromJSON(object: any): Module {
     return {
-      maxMetadataLen: isSet(object.maxMetadataLen)
-        ? BigInt(object.maxMetadataLen.toString())
-        : BigInt(0),
-      authority: isSet(object.authority) ? String(object.authority) : '',
+      maxMetadataLen: isSet(object.maxMetadataLen) ? BigInt(object.maxMetadataLen.toString()) : BigInt(0),
+      authority: isSet(object.authority) ? String(object.authority) : ""
     };
   },
   toJSON(message: Module): JsonSafe<Module> {
     const obj: any = {};
-    message.maxMetadataLen !== undefined &&
-      (obj.maxMetadataLen = (message.maxMetadataLen || BigInt(0)).toString());
+    message.maxMetadataLen !== undefined && (obj.maxMetadataLen = (message.maxMetadataLen || BigInt(0)).toString());
     message.authority !== undefined && (obj.authority = message.authority);
     return obj;
   },
   fromPartial(object: Partial<Module>): Module {
     const message = createBaseModule();
-    message.maxMetadataLen =
-      object.maxMetadataLen !== undefined && object.maxMetadataLen !== null
-        ? BigInt(object.maxMetadataLen.toString())
-        : BigInt(0);
-    message.authority = object.authority ?? '';
+    message.maxMetadataLen = object.maxMetadataLen !== undefined && object.maxMetadataLen !== null ? BigInt(object.maxMetadataLen.toString()) : BigInt(0);
+    message.authority = object.authority ?? "";
     return message;
   },
   fromProtoMsg(message: ModuleProtoMsg): Module {
@@ -94,8 +84,8 @@ export const Module = {
   },
   toProtoMsg(message: Module): ModuleProtoMsg {
     return {
-      typeUrl: '/cosmos.gov.module.v1.Module',
-      value: Module.encode(message).finish(),
+      typeUrl: "/cosmos.gov.module.v1.Module",
+      value: Module.encode(message).finish()
     };
-  },
+  }
 };

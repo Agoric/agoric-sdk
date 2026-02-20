@@ -1,9 +1,9 @@
 //@ts-nocheck
-import { BinaryReader, BinaryWriter } from '../../../../binary.js';
-import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
-import { encodeBase64 as base64FromBytes } from '@endo/base64';
-import { type JsonSafe } from '../../../../json-safe.js';
-import { isSet } from '../../../../helpers.js';
+import { BinaryReader, BinaryWriter } from "../../../../binary.js";
+import { decodeBase64 as bytesFromBase64 } from "@endo/base64";
+import { encodeBase64 as base64FromBytes } from "@endo/base64";
+import {type JsonSafe } from "../../../../json-safe.js";
+import { isSet } from "../../../../helpers.js";
 /**
  * MultiSignature wraps the signatures from a multisig.LegacyAminoPubKey.
  * See cosmos.tx.v1betata1.ModeInfo.Multi for how to specify which signers
@@ -13,7 +13,7 @@ export interface MultiSignature {
   signatures: Uint8Array[];
 }
 export interface MultiSignatureProtoMsg {
-  typeUrl: '/cosmos.crypto.multisig.v1beta1.MultiSignature';
+  typeUrl: "/cosmos.crypto.multisig.v1beta1.MultiSignature";
   value: Uint8Array;
 }
 /**
@@ -35,7 +35,7 @@ export interface CompactBitArray {
   elems: Uint8Array;
 }
 export interface CompactBitArrayProtoMsg {
-  typeUrl: '/cosmos.crypto.multisig.v1beta1.CompactBitArray';
+  typeUrl: "/cosmos.crypto.multisig.v1beta1.CompactBitArray";
   value: Uint8Array;
 }
 /**
@@ -50,23 +50,19 @@ export interface CompactBitArraySDKType {
 }
 function createBaseMultiSignature(): MultiSignature {
   return {
-    signatures: [],
+    signatures: []
   };
 }
 export const MultiSignature = {
-  typeUrl: '/cosmos.crypto.multisig.v1beta1.MultiSignature' as const,
-  encode(
-    message: MultiSignature,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/cosmos.crypto.multisig.v1beta1.MultiSignature" as const,
+  encode(message: MultiSignature, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     for (const v of message.signatures) {
       writer.uint32(10).bytes(v!);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): MultiSignature {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMultiSignature();
     while (reader.pos < end) {
@@ -84,17 +80,13 @@ export const MultiSignature = {
   },
   fromJSON(object: any): MultiSignature {
     return {
-      signatures: Array.isArray(object?.signatures)
-        ? object.signatures.map((e: any) => bytesFromBase64(e))
-        : [],
+      signatures: Array.isArray(object?.signatures) ? object.signatures.map((e: any) => bytesFromBase64(e)) : []
     };
   },
   toJSON(message: MultiSignature): JsonSafe<MultiSignature> {
     const obj: any = {};
     if (message.signatures) {
-      obj.signatures = message.signatures.map(e =>
-        base64FromBytes(e !== undefined ? e : new Uint8Array()),
-      );
+      obj.signatures = message.signatures.map(e => base64FromBytes(e !== undefined ? e : new Uint8Array()));
     } else {
       obj.signatures = [];
     }
@@ -113,23 +105,20 @@ export const MultiSignature = {
   },
   toProtoMsg(message: MultiSignature): MultiSignatureProtoMsg {
     return {
-      typeUrl: '/cosmos.crypto.multisig.v1beta1.MultiSignature',
-      value: MultiSignature.encode(message).finish(),
+      typeUrl: "/cosmos.crypto.multisig.v1beta1.MultiSignature",
+      value: MultiSignature.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseCompactBitArray(): CompactBitArray {
   return {
     extraBitsStored: 0,
-    elems: new Uint8Array(),
+    elems: new Uint8Array()
   };
 }
 export const CompactBitArray = {
-  typeUrl: '/cosmos.crypto.multisig.v1beta1.CompactBitArray' as const,
-  encode(
-    message: CompactBitArray,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/cosmos.crypto.multisig.v1beta1.CompactBitArray" as const,
+  encode(message: CompactBitArray, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.extraBitsStored !== 0) {
       writer.uint32(8).uint32(message.extraBitsStored);
     }
@@ -139,8 +128,7 @@ export const CompactBitArray = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): CompactBitArray {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseCompactBitArray();
     while (reader.pos < end) {
@@ -161,22 +149,14 @@ export const CompactBitArray = {
   },
   fromJSON(object: any): CompactBitArray {
     return {
-      extraBitsStored: isSet(object.extraBitsStored)
-        ? Number(object.extraBitsStored)
-        : 0,
-      elems: isSet(object.elems)
-        ? bytesFromBase64(object.elems)
-        : new Uint8Array(),
+      extraBitsStored: isSet(object.extraBitsStored) ? Number(object.extraBitsStored) : 0,
+      elems: isSet(object.elems) ? bytesFromBase64(object.elems) : new Uint8Array()
     };
   },
   toJSON(message: CompactBitArray): JsonSafe<CompactBitArray> {
     const obj: any = {};
-    message.extraBitsStored !== undefined &&
-      (obj.extraBitsStored = Math.round(message.extraBitsStored));
-    message.elems !== undefined &&
-      (obj.elems = base64FromBytes(
-        message.elems !== undefined ? message.elems : new Uint8Array(),
-      ));
+    message.extraBitsStored !== undefined && (obj.extraBitsStored = Math.round(message.extraBitsStored));
+    message.elems !== undefined && (obj.elems = base64FromBytes(message.elems !== undefined ? message.elems : new Uint8Array()));
     return obj;
   },
   fromPartial(object: Partial<CompactBitArray>): CompactBitArray {
@@ -193,8 +173,8 @@ export const CompactBitArray = {
   },
   toProtoMsg(message: CompactBitArray): CompactBitArrayProtoMsg {
     return {
-      typeUrl: '/cosmos.crypto.multisig.v1beta1.CompactBitArray',
-      value: CompactBitArray.encode(message).finish(),
+      typeUrl: "/cosmos.crypto.multisig.v1beta1.CompactBitArray",
+      value: CompactBitArray.encode(message).finish()
     };
-  },
+  }
 };

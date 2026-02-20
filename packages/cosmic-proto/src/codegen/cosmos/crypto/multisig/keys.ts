@@ -1,8 +1,8 @@
 //@ts-nocheck
-import { Any, type AnySDKType } from '../../../google/protobuf/any.js';
-import { BinaryReader, BinaryWriter } from '../../../binary.js';
-import { isSet } from '../../../helpers.js';
-import { type JsonSafe } from '../../../json-safe.js';
+import { Any, type AnySDKType } from "../../../google/protobuf/any.js";
+import { BinaryReader, BinaryWriter } from "../../../binary.js";
+import { isSet } from "../../../helpers.js";
+import {type JsonSafe } from "../../../json-safe.js";
 /**
  * LegacyAminoPubKey specifies a public key type
  * which nests multiple public keys and a threshold,
@@ -13,7 +13,7 @@ export interface LegacyAminoPubKey {
   publicKeys: Any[];
 }
 export interface LegacyAminoPubKeyProtoMsg {
-  typeUrl: '/cosmos.crypto.multisig.LegacyAminoPubKey';
+  typeUrl: "/cosmos.crypto.multisig.LegacyAminoPubKey";
   value: Uint8Array;
 }
 /**
@@ -28,15 +28,12 @@ export interface LegacyAminoPubKeySDKType {
 function createBaseLegacyAminoPubKey(): LegacyAminoPubKey {
   return {
     threshold: 0,
-    publicKeys: [],
+    publicKeys: []
   };
 }
 export const LegacyAminoPubKey = {
-  typeUrl: '/cosmos.crypto.multisig.LegacyAminoPubKey' as const,
-  encode(
-    message: LegacyAminoPubKey,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/cosmos.crypto.multisig.LegacyAminoPubKey" as const,
+  encode(message: LegacyAminoPubKey, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.threshold !== 0) {
       writer.uint32(8).uint32(message.threshold);
     }
@@ -46,8 +43,7 @@ export const LegacyAminoPubKey = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): LegacyAminoPubKey {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseLegacyAminoPubKey();
     while (reader.pos < end) {
@@ -69,19 +65,14 @@ export const LegacyAminoPubKey = {
   fromJSON(object: any): LegacyAminoPubKey {
     return {
       threshold: isSet(object.threshold) ? Number(object.threshold) : 0,
-      publicKeys: Array.isArray(object?.publicKeys)
-        ? object.publicKeys.map((e: any) => Any.fromJSON(e))
-        : [],
+      publicKeys: Array.isArray(object?.publicKeys) ? object.publicKeys.map((e: any) => Any.fromJSON(e)) : []
     };
   },
   toJSON(message: LegacyAminoPubKey): JsonSafe<LegacyAminoPubKey> {
     const obj: any = {};
-    message.threshold !== undefined &&
-      (obj.threshold = Math.round(message.threshold));
+    message.threshold !== undefined && (obj.threshold = Math.round(message.threshold));
     if (message.publicKeys) {
-      obj.publicKeys = message.publicKeys.map(e =>
-        e ? Any.toJSON(e) : undefined,
-      );
+      obj.publicKeys = message.publicKeys.map(e => e ? Any.toJSON(e) : undefined);
     } else {
       obj.publicKeys = [];
     }
@@ -101,8 +92,8 @@ export const LegacyAminoPubKey = {
   },
   toProtoMsg(message: LegacyAminoPubKey): LegacyAminoPubKeyProtoMsg {
     return {
-      typeUrl: '/cosmos.crypto.multisig.LegacyAminoPubKey',
-      value: LegacyAminoPubKey.encode(message).finish(),
+      typeUrl: "/cosmos.crypto.multisig.LegacyAminoPubKey",
+      value: LegacyAminoPubKey.encode(message).finish()
     };
-  },
+  }
 };

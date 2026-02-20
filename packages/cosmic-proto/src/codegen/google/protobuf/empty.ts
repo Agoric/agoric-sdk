@@ -1,31 +1,31 @@
 //@ts-nocheck
-import { BinaryReader, BinaryWriter } from '../../binary.js';
-import { type JsonSafe } from '../../json-safe.js';
+import { BinaryReader, BinaryWriter } from "../../binary.js";
+import {type JsonSafe } from "../../json-safe.js";
 /**
  * A generic empty message that you can re-use to avoid defining duplicated
  * empty messages in your APIs. A typical example is to use it as the request
  * or the response type of an API method. For instance:
- *
+ * 
  *     service Foo {
  *       rpc Bar(google.protobuf.Empty) returns (google.protobuf.Empty);
  *     }
- *
+ * 
  * The JSON representation for `Empty` is empty JSON object `{}`.
  */
 export interface Empty {}
 export interface EmptyProtoMsg {
-  typeUrl: '/google.protobuf.Empty';
+  typeUrl: "/google.protobuf.Empty";
   value: Uint8Array;
 }
 /**
  * A generic empty message that you can re-use to avoid defining duplicated
  * empty messages in your APIs. A typical example is to use it as the request
  * or the response type of an API method. For instance:
- *
+ * 
  *     service Foo {
  *       rpc Bar(google.protobuf.Empty) returns (google.protobuf.Empty);
  *     }
- *
+ * 
  * The JSON representation for `Empty` is empty JSON object `{}`.
  */
 export interface EmptySDKType {}
@@ -33,13 +33,12 @@ function createBaseEmpty(): Empty {
   return {};
 }
 export const Empty = {
-  typeUrl: '/google.protobuf.Empty' as const,
+  typeUrl: "/google.protobuf.Empty" as const,
   encode(_: Empty, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Empty {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseEmpty();
     while (reader.pos < end) {
@@ -71,8 +70,8 @@ export const Empty = {
   },
   toProtoMsg(message: Empty): EmptyProtoMsg {
     return {
-      typeUrl: '/google.protobuf.Empty',
-      value: Empty.encode(message).finish(),
+      typeUrl: "/google.protobuf.Empty",
+      value: Empty.encode(message).finish()
     };
-  },
+  }
 };

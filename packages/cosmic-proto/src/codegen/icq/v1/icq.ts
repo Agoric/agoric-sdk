@@ -1,7 +1,7 @@
 //@ts-nocheck
-import { BinaryReader, BinaryWriter } from '../../binary.js';
-import { isSet } from '../../helpers.js';
-import { type JsonSafe } from '../../json-safe.js';
+import { BinaryReader, BinaryWriter } from "../../binary.js";
+import { isSet } from "../../helpers.js";
+import {type JsonSafe } from "../../json-safe.js";
 /** Params defines the set of on-chain interchain query parameters. */
 export interface Params {
   /** host_enabled enables or disables the host submodule. */
@@ -10,7 +10,7 @@ export interface Params {
   allowQueries: string[];
 }
 export interface ParamsProtoMsg {
-  typeUrl: '/icq.v1.Params';
+  typeUrl: "/icq.v1.Params";
   value: Uint8Array;
 }
 /** Params defines the set of on-chain interchain query parameters. */
@@ -21,15 +21,12 @@ export interface ParamsSDKType {
 function createBaseParams(): Params {
   return {
     hostEnabled: false,
-    allowQueries: [],
+    allowQueries: []
   };
 }
 export const Params = {
-  typeUrl: '/icq.v1.Params' as const,
-  encode(
-    message: Params,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/icq.v1.Params" as const,
+  encode(message: Params, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.hostEnabled === true) {
       writer.uint32(16).bool(message.hostEnabled);
     }
@@ -39,8 +36,7 @@ export const Params = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Params {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseParams();
     while (reader.pos < end) {
@@ -61,18 +57,13 @@ export const Params = {
   },
   fromJSON(object: any): Params {
     return {
-      hostEnabled: isSet(object.hostEnabled)
-        ? Boolean(object.hostEnabled)
-        : false,
-      allowQueries: Array.isArray(object?.allowQueries)
-        ? object.allowQueries.map((e: any) => String(e))
-        : [],
+      hostEnabled: isSet(object.hostEnabled) ? Boolean(object.hostEnabled) : false,
+      allowQueries: Array.isArray(object?.allowQueries) ? object.allowQueries.map((e: any) => String(e)) : []
     };
   },
   toJSON(message: Params): JsonSafe<Params> {
     const obj: any = {};
-    message.hostEnabled !== undefined &&
-      (obj.hostEnabled = message.hostEnabled);
+    message.hostEnabled !== undefined && (obj.hostEnabled = message.hostEnabled);
     if (message.allowQueries) {
       obj.allowQueries = message.allowQueries.map(e => e);
     } else {
@@ -94,8 +85,8 @@ export const Params = {
   },
   toProtoMsg(message: Params): ParamsProtoMsg {
     return {
-      typeUrl: '/icq.v1.Params',
-      value: Params.encode(message).finish(),
+      typeUrl: "/icq.v1.Params",
+      value: Params.encode(message).finish()
     };
-  },
+  }
 };

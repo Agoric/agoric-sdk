@@ -1,30 +1,14 @@
 //@ts-nocheck
-import {
-  PageRequest,
-  type PageRequestSDKType,
-  PageResponse,
-  type PageResponseSDKType,
-} from '../../base/query/v1beta1/pagination.js';
-import {
-  Params,
-  type ParamsSDKType,
-  ValidatorOutstandingRewards,
-  type ValidatorOutstandingRewardsSDKType,
-  ValidatorAccumulatedCommission,
-  type ValidatorAccumulatedCommissionSDKType,
-  ValidatorSlashEvent,
-  type ValidatorSlashEventSDKType,
-  DelegationDelegatorReward,
-  type DelegationDelegatorRewardSDKType,
-} from './distribution.js';
-import { DecCoin, type DecCoinSDKType } from '../../base/v1beta1/coin.js';
-import { BinaryReader, BinaryWriter } from '../../../binary.js';
-import { type JsonSafe } from '../../../json-safe.js';
-import { isSet } from '../../../helpers.js';
+import { PageRequest, type PageRequestSDKType, PageResponse, type PageResponseSDKType } from "../../base/query/v1beta1/pagination.js";
+import { Params, type ParamsSDKType, ValidatorOutstandingRewards, type ValidatorOutstandingRewardsSDKType, ValidatorAccumulatedCommission, type ValidatorAccumulatedCommissionSDKType, ValidatorSlashEvent, type ValidatorSlashEventSDKType, DelegationDelegatorReward, type DelegationDelegatorRewardSDKType } from "./distribution.js";
+import { DecCoin, type DecCoinSDKType } from "../../base/v1beta1/coin.js";
+import { BinaryReader, BinaryWriter } from "../../../binary.js";
+import {type JsonSafe } from "../../../json-safe.js";
+import { isSet } from "../../../helpers.js";
 /** QueryParamsRequest is the request type for the Query/Params RPC method. */
 export interface QueryParamsRequest {}
 export interface QueryParamsRequestProtoMsg {
-  typeUrl: '/cosmos.distribution.v1beta1.QueryParamsRequest';
+  typeUrl: "/cosmos.distribution.v1beta1.QueryParamsRequest";
   value: Uint8Array;
 }
 /** QueryParamsRequest is the request type for the Query/Params RPC method. */
@@ -35,7 +19,7 @@ export interface QueryParamsResponse {
   params: Params;
 }
 export interface QueryParamsResponseProtoMsg {
-  typeUrl: '/cosmos.distribution.v1beta1.QueryParamsResponse';
+  typeUrl: "/cosmos.distribution.v1beta1.QueryParamsResponse";
   value: Uint8Array;
 }
 /** QueryParamsResponse is the response type for the Query/Params RPC method. */
@@ -48,7 +32,7 @@ export interface QueryValidatorDistributionInfoRequest {
   validatorAddress: string;
 }
 export interface QueryValidatorDistributionInfoRequestProtoMsg {
-  typeUrl: '/cosmos.distribution.v1beta1.QueryValidatorDistributionInfoRequest';
+  typeUrl: "/cosmos.distribution.v1beta1.QueryValidatorDistributionInfoRequest";
   value: Uint8Array;
 }
 /** QueryValidatorDistributionInfoRequest is the request type for the Query/ValidatorDistributionInfo RPC method. */
@@ -65,7 +49,7 @@ export interface QueryValidatorDistributionInfoResponse {
   commission: DecCoin[];
 }
 export interface QueryValidatorDistributionInfoResponseProtoMsg {
-  typeUrl: '/cosmos.distribution.v1beta1.QueryValidatorDistributionInfoResponse';
+  typeUrl: "/cosmos.distribution.v1beta1.QueryValidatorDistributionInfoResponse";
   value: Uint8Array;
 }
 /** QueryValidatorDistributionInfoResponse is the response type for the Query/ValidatorDistributionInfo RPC method. */
@@ -83,7 +67,7 @@ export interface QueryValidatorOutstandingRewardsRequest {
   validatorAddress: string;
 }
 export interface QueryValidatorOutstandingRewardsRequestProtoMsg {
-  typeUrl: '/cosmos.distribution.v1beta1.QueryValidatorOutstandingRewardsRequest';
+  typeUrl: "/cosmos.distribution.v1beta1.QueryValidatorOutstandingRewardsRequest";
   value: Uint8Array;
 }
 /**
@@ -101,7 +85,7 @@ export interface QueryValidatorOutstandingRewardsResponse {
   rewards: ValidatorOutstandingRewards;
 }
 export interface QueryValidatorOutstandingRewardsResponseProtoMsg {
-  typeUrl: '/cosmos.distribution.v1beta1.QueryValidatorOutstandingRewardsResponse';
+  typeUrl: "/cosmos.distribution.v1beta1.QueryValidatorOutstandingRewardsResponse";
   value: Uint8Array;
 }
 /**
@@ -120,7 +104,7 @@ export interface QueryValidatorCommissionRequest {
   validatorAddress: string;
 }
 export interface QueryValidatorCommissionRequestProtoMsg {
-  typeUrl: '/cosmos.distribution.v1beta1.QueryValidatorCommissionRequest';
+  typeUrl: "/cosmos.distribution.v1beta1.QueryValidatorCommissionRequest";
   value: Uint8Array;
 }
 /**
@@ -139,7 +123,7 @@ export interface QueryValidatorCommissionResponse {
   commission: ValidatorAccumulatedCommission;
 }
 export interface QueryValidatorCommissionResponseProtoMsg {
-  typeUrl: '/cosmos.distribution.v1beta1.QueryValidatorCommissionResponse';
+  typeUrl: "/cosmos.distribution.v1beta1.QueryValidatorCommissionResponse";
   value: Uint8Array;
 }
 /**
@@ -164,7 +148,7 @@ export interface QueryValidatorSlashesRequest {
   pagination?: PageRequest;
 }
 export interface QueryValidatorSlashesRequestProtoMsg {
-  typeUrl: '/cosmos.distribution.v1beta1.QueryValidatorSlashesRequest';
+  typeUrl: "/cosmos.distribution.v1beta1.QueryValidatorSlashesRequest";
   value: Uint8Array;
 }
 /**
@@ -188,7 +172,7 @@ export interface QueryValidatorSlashesResponse {
   pagination?: PageResponse;
 }
 export interface QueryValidatorSlashesResponseProtoMsg {
-  typeUrl: '/cosmos.distribution.v1beta1.QueryValidatorSlashesResponse';
+  typeUrl: "/cosmos.distribution.v1beta1.QueryValidatorSlashesResponse";
   value: Uint8Array;
 }
 /**
@@ -210,7 +194,7 @@ export interface QueryDelegationRewardsRequest {
   validatorAddress: string;
 }
 export interface QueryDelegationRewardsRequestProtoMsg {
-  typeUrl: '/cosmos.distribution.v1beta1.QueryDelegationRewardsRequest';
+  typeUrl: "/cosmos.distribution.v1beta1.QueryDelegationRewardsRequest";
   value: Uint8Array;
 }
 /**
@@ -230,7 +214,7 @@ export interface QueryDelegationRewardsResponse {
   rewards: DecCoin[];
 }
 export interface QueryDelegationRewardsResponseProtoMsg {
-  typeUrl: '/cosmos.distribution.v1beta1.QueryDelegationRewardsResponse';
+  typeUrl: "/cosmos.distribution.v1beta1.QueryDelegationRewardsResponse";
   value: Uint8Array;
 }
 /**
@@ -249,7 +233,7 @@ export interface QueryDelegationTotalRewardsRequest {
   delegatorAddress: string;
 }
 export interface QueryDelegationTotalRewardsRequestProtoMsg {
-  typeUrl: '/cosmos.distribution.v1beta1.QueryDelegationTotalRewardsRequest';
+  typeUrl: "/cosmos.distribution.v1beta1.QueryDelegationTotalRewardsRequest";
   value: Uint8Array;
 }
 /**
@@ -270,7 +254,7 @@ export interface QueryDelegationTotalRewardsResponse {
   total: DecCoin[];
 }
 export interface QueryDelegationTotalRewardsResponseProtoMsg {
-  typeUrl: '/cosmos.distribution.v1beta1.QueryDelegationTotalRewardsResponse';
+  typeUrl: "/cosmos.distribution.v1beta1.QueryDelegationTotalRewardsResponse";
   value: Uint8Array;
 }
 /**
@@ -290,7 +274,7 @@ export interface QueryDelegatorValidatorsRequest {
   delegatorAddress: string;
 }
 export interface QueryDelegatorValidatorsRequestProtoMsg {
-  typeUrl: '/cosmos.distribution.v1beta1.QueryDelegatorValidatorsRequest';
+  typeUrl: "/cosmos.distribution.v1beta1.QueryDelegatorValidatorsRequest";
   value: Uint8Array;
 }
 /**
@@ -309,7 +293,7 @@ export interface QueryDelegatorValidatorsResponse {
   validators: string[];
 }
 export interface QueryDelegatorValidatorsResponseProtoMsg {
-  typeUrl: '/cosmos.distribution.v1beta1.QueryDelegatorValidatorsResponse';
+  typeUrl: "/cosmos.distribution.v1beta1.QueryDelegatorValidatorsResponse";
   value: Uint8Array;
 }
 /**
@@ -328,7 +312,7 @@ export interface QueryDelegatorWithdrawAddressRequest {
   delegatorAddress: string;
 }
 export interface QueryDelegatorWithdrawAddressRequestProtoMsg {
-  typeUrl: '/cosmos.distribution.v1beta1.QueryDelegatorWithdrawAddressRequest';
+  typeUrl: "/cosmos.distribution.v1beta1.QueryDelegatorWithdrawAddressRequest";
   value: Uint8Array;
 }
 /**
@@ -347,7 +331,7 @@ export interface QueryDelegatorWithdrawAddressResponse {
   withdrawAddress: string;
 }
 export interface QueryDelegatorWithdrawAddressResponseProtoMsg {
-  typeUrl: '/cosmos.distribution.v1beta1.QueryDelegatorWithdrawAddressResponse';
+  typeUrl: "/cosmos.distribution.v1beta1.QueryDelegatorWithdrawAddressResponse";
   value: Uint8Array;
 }
 /**
@@ -363,7 +347,7 @@ export interface QueryDelegatorWithdrawAddressResponseSDKType {
  */
 export interface QueryCommunityPoolRequest {}
 export interface QueryCommunityPoolRequestProtoMsg {
-  typeUrl: '/cosmos.distribution.v1beta1.QueryCommunityPoolRequest';
+  typeUrl: "/cosmos.distribution.v1beta1.QueryCommunityPoolRequest";
   value: Uint8Array;
 }
 /**
@@ -380,7 +364,7 @@ export interface QueryCommunityPoolResponse {
   pool: DecCoin[];
 }
 export interface QueryCommunityPoolResponseProtoMsg {
-  typeUrl: '/cosmos.distribution.v1beta1.QueryCommunityPoolResponse';
+  typeUrl: "/cosmos.distribution.v1beta1.QueryCommunityPoolResponse";
   value: Uint8Array;
 }
 /**
@@ -394,19 +378,12 @@ function createBaseQueryParamsRequest(): QueryParamsRequest {
   return {};
 }
 export const QueryParamsRequest = {
-  typeUrl: '/cosmos.distribution.v1beta1.QueryParamsRequest' as const,
-  encode(
-    _: QueryParamsRequest,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/cosmos.distribution.v1beta1.QueryParamsRequest" as const,
+  encode(_: QueryParamsRequest, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryParamsRequest {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryParamsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryParamsRequest();
     while (reader.pos < end) {
@@ -438,33 +415,26 @@ export const QueryParamsRequest = {
   },
   toProtoMsg(message: QueryParamsRequest): QueryParamsRequestProtoMsg {
     return {
-      typeUrl: '/cosmos.distribution.v1beta1.QueryParamsRequest',
-      value: QueryParamsRequest.encode(message).finish(),
+      typeUrl: "/cosmos.distribution.v1beta1.QueryParamsRequest",
+      value: QueryParamsRequest.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryParamsResponse(): QueryParamsResponse {
   return {
-    params: Params.fromPartial({}),
+    params: Params.fromPartial({})
   };
 }
 export const QueryParamsResponse = {
-  typeUrl: '/cosmos.distribution.v1beta1.QueryParamsResponse' as const,
-  encode(
-    message: QueryParamsResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/cosmos.distribution.v1beta1.QueryParamsResponse" as const,
+  encode(message: QueryParamsResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.params !== undefined) {
       Params.encode(message.params, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryParamsResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryParamsResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryParamsResponse();
     while (reader.pos < end) {
@@ -482,21 +452,17 @@ export const QueryParamsResponse = {
   },
   fromJSON(object: any): QueryParamsResponse {
     return {
-      params: isSet(object.params) ? Params.fromJSON(object.params) : undefined,
+      params: isSet(object.params) ? Params.fromJSON(object.params) : undefined
     };
   },
   toJSON(message: QueryParamsResponse): JsonSafe<QueryParamsResponse> {
     const obj: any = {};
-    message.params !== undefined &&
-      (obj.params = message.params ? Params.toJSON(message.params) : undefined);
+    message.params !== undefined && (obj.params = message.params ? Params.toJSON(message.params) : undefined);
     return obj;
   },
   fromPartial(object: Partial<QueryParamsResponse>): QueryParamsResponse {
     const message = createBaseQueryParamsResponse();
-    message.params =
-      object.params !== undefined && object.params !== null
-        ? Params.fromPartial(object.params)
-        : undefined;
+    message.params = object.params !== undefined && object.params !== null ? Params.fromPartial(object.params) : undefined;
     return message;
   },
   fromProtoMsg(message: QueryParamsResponseProtoMsg): QueryParamsResponse {
@@ -507,34 +473,26 @@ export const QueryParamsResponse = {
   },
   toProtoMsg(message: QueryParamsResponse): QueryParamsResponseProtoMsg {
     return {
-      typeUrl: '/cosmos.distribution.v1beta1.QueryParamsResponse',
-      value: QueryParamsResponse.encode(message).finish(),
+      typeUrl: "/cosmos.distribution.v1beta1.QueryParamsResponse",
+      value: QueryParamsResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryValidatorDistributionInfoRequest(): QueryValidatorDistributionInfoRequest {
   return {
-    validatorAddress: '',
+    validatorAddress: ""
   };
 }
 export const QueryValidatorDistributionInfoRequest = {
-  typeUrl:
-    '/cosmos.distribution.v1beta1.QueryValidatorDistributionInfoRequest' as const,
-  encode(
-    message: QueryValidatorDistributionInfoRequest,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.validatorAddress !== '') {
+  typeUrl: "/cosmos.distribution.v1beta1.QueryValidatorDistributionInfoRequest" as const,
+  encode(message: QueryValidatorDistributionInfoRequest, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.validatorAddress !== "") {
       writer.uint32(10).string(message.validatorAddress);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryValidatorDistributionInfoRequest {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryValidatorDistributionInfoRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryValidatorDistributionInfoRequest();
     while (reader.pos < end) {
@@ -552,59 +510,43 @@ export const QueryValidatorDistributionInfoRequest = {
   },
   fromJSON(object: any): QueryValidatorDistributionInfoRequest {
     return {
-      validatorAddress: isSet(object.validatorAddress)
-        ? String(object.validatorAddress)
-        : '',
+      validatorAddress: isSet(object.validatorAddress) ? String(object.validatorAddress) : ""
     };
   },
-  toJSON(
-    message: QueryValidatorDistributionInfoRequest,
-  ): JsonSafe<QueryValidatorDistributionInfoRequest> {
+  toJSON(message: QueryValidatorDistributionInfoRequest): JsonSafe<QueryValidatorDistributionInfoRequest> {
     const obj: any = {};
-    message.validatorAddress !== undefined &&
-      (obj.validatorAddress = message.validatorAddress);
+    message.validatorAddress !== undefined && (obj.validatorAddress = message.validatorAddress);
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryValidatorDistributionInfoRequest>,
-  ): QueryValidatorDistributionInfoRequest {
+  fromPartial(object: Partial<QueryValidatorDistributionInfoRequest>): QueryValidatorDistributionInfoRequest {
     const message = createBaseQueryValidatorDistributionInfoRequest();
-    message.validatorAddress = object.validatorAddress ?? '';
+    message.validatorAddress = object.validatorAddress ?? "";
     return message;
   },
-  fromProtoMsg(
-    message: QueryValidatorDistributionInfoRequestProtoMsg,
-  ): QueryValidatorDistributionInfoRequest {
+  fromProtoMsg(message: QueryValidatorDistributionInfoRequestProtoMsg): QueryValidatorDistributionInfoRequest {
     return QueryValidatorDistributionInfoRequest.decode(message.value);
   },
   toProto(message: QueryValidatorDistributionInfoRequest): Uint8Array {
     return QueryValidatorDistributionInfoRequest.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryValidatorDistributionInfoRequest,
-  ): QueryValidatorDistributionInfoRequestProtoMsg {
+  toProtoMsg(message: QueryValidatorDistributionInfoRequest): QueryValidatorDistributionInfoRequestProtoMsg {
     return {
-      typeUrl:
-        '/cosmos.distribution.v1beta1.QueryValidatorDistributionInfoRequest',
-      value: QueryValidatorDistributionInfoRequest.encode(message).finish(),
+      typeUrl: "/cosmos.distribution.v1beta1.QueryValidatorDistributionInfoRequest",
+      value: QueryValidatorDistributionInfoRequest.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryValidatorDistributionInfoResponse(): QueryValidatorDistributionInfoResponse {
   return {
-    operatorAddress: '',
+    operatorAddress: "",
     selfBondRewards: [],
-    commission: [],
+    commission: []
   };
 }
 export const QueryValidatorDistributionInfoResponse = {
-  typeUrl:
-    '/cosmos.distribution.v1beta1.QueryValidatorDistributionInfoResponse' as const,
-  encode(
-    message: QueryValidatorDistributionInfoResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.operatorAddress !== '') {
+  typeUrl: "/cosmos.distribution.v1beta1.QueryValidatorDistributionInfoResponse" as const,
+  encode(message: QueryValidatorDistributionInfoResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.operatorAddress !== "") {
       writer.uint32(10).string(message.operatorAddress);
     }
     for (const v of message.selfBondRewards) {
@@ -615,12 +557,8 @@ export const QueryValidatorDistributionInfoResponse = {
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryValidatorDistributionInfoResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryValidatorDistributionInfoResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryValidatorDistributionInfoResponse();
     while (reader.pos < end) {
@@ -644,91 +582,61 @@ export const QueryValidatorDistributionInfoResponse = {
   },
   fromJSON(object: any): QueryValidatorDistributionInfoResponse {
     return {
-      operatorAddress: isSet(object.operatorAddress)
-        ? String(object.operatorAddress)
-        : '',
-      selfBondRewards: Array.isArray(object?.selfBondRewards)
-        ? object.selfBondRewards.map((e: any) => DecCoin.fromJSON(e))
-        : [],
-      commission: Array.isArray(object?.commission)
-        ? object.commission.map((e: any) => DecCoin.fromJSON(e))
-        : [],
+      operatorAddress: isSet(object.operatorAddress) ? String(object.operatorAddress) : "",
+      selfBondRewards: Array.isArray(object?.selfBondRewards) ? object.selfBondRewards.map((e: any) => DecCoin.fromJSON(e)) : [],
+      commission: Array.isArray(object?.commission) ? object.commission.map((e: any) => DecCoin.fromJSON(e)) : []
     };
   },
-  toJSON(
-    message: QueryValidatorDistributionInfoResponse,
-  ): JsonSafe<QueryValidatorDistributionInfoResponse> {
+  toJSON(message: QueryValidatorDistributionInfoResponse): JsonSafe<QueryValidatorDistributionInfoResponse> {
     const obj: any = {};
-    message.operatorAddress !== undefined &&
-      (obj.operatorAddress = message.operatorAddress);
+    message.operatorAddress !== undefined && (obj.operatorAddress = message.operatorAddress);
     if (message.selfBondRewards) {
-      obj.selfBondRewards = message.selfBondRewards.map(e =>
-        e ? DecCoin.toJSON(e) : undefined,
-      );
+      obj.selfBondRewards = message.selfBondRewards.map(e => e ? DecCoin.toJSON(e) : undefined);
     } else {
       obj.selfBondRewards = [];
     }
     if (message.commission) {
-      obj.commission = message.commission.map(e =>
-        e ? DecCoin.toJSON(e) : undefined,
-      );
+      obj.commission = message.commission.map(e => e ? DecCoin.toJSON(e) : undefined);
     } else {
       obj.commission = [];
     }
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryValidatorDistributionInfoResponse>,
-  ): QueryValidatorDistributionInfoResponse {
+  fromPartial(object: Partial<QueryValidatorDistributionInfoResponse>): QueryValidatorDistributionInfoResponse {
     const message = createBaseQueryValidatorDistributionInfoResponse();
-    message.operatorAddress = object.operatorAddress ?? '';
-    message.selfBondRewards =
-      object.selfBondRewards?.map(e => DecCoin.fromPartial(e)) || [];
-    message.commission =
-      object.commission?.map(e => DecCoin.fromPartial(e)) || [];
+    message.operatorAddress = object.operatorAddress ?? "";
+    message.selfBondRewards = object.selfBondRewards?.map(e => DecCoin.fromPartial(e)) || [];
+    message.commission = object.commission?.map(e => DecCoin.fromPartial(e)) || [];
     return message;
   },
-  fromProtoMsg(
-    message: QueryValidatorDistributionInfoResponseProtoMsg,
-  ): QueryValidatorDistributionInfoResponse {
+  fromProtoMsg(message: QueryValidatorDistributionInfoResponseProtoMsg): QueryValidatorDistributionInfoResponse {
     return QueryValidatorDistributionInfoResponse.decode(message.value);
   },
   toProto(message: QueryValidatorDistributionInfoResponse): Uint8Array {
     return QueryValidatorDistributionInfoResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryValidatorDistributionInfoResponse,
-  ): QueryValidatorDistributionInfoResponseProtoMsg {
+  toProtoMsg(message: QueryValidatorDistributionInfoResponse): QueryValidatorDistributionInfoResponseProtoMsg {
     return {
-      typeUrl:
-        '/cosmos.distribution.v1beta1.QueryValidatorDistributionInfoResponse',
-      value: QueryValidatorDistributionInfoResponse.encode(message).finish(),
+      typeUrl: "/cosmos.distribution.v1beta1.QueryValidatorDistributionInfoResponse",
+      value: QueryValidatorDistributionInfoResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryValidatorOutstandingRewardsRequest(): QueryValidatorOutstandingRewardsRequest {
   return {
-    validatorAddress: '',
+    validatorAddress: ""
   };
 }
 export const QueryValidatorOutstandingRewardsRequest = {
-  typeUrl:
-    '/cosmos.distribution.v1beta1.QueryValidatorOutstandingRewardsRequest' as const,
-  encode(
-    message: QueryValidatorOutstandingRewardsRequest,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.validatorAddress !== '') {
+  typeUrl: "/cosmos.distribution.v1beta1.QueryValidatorOutstandingRewardsRequest" as const,
+  encode(message: QueryValidatorOutstandingRewardsRequest, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.validatorAddress !== "") {
       writer.uint32(10).string(message.validatorAddress);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryValidatorOutstandingRewardsRequest {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryValidatorOutstandingRewardsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryValidatorOutstandingRewardsRequest();
     while (reader.pos < end) {
@@ -746,80 +654,54 @@ export const QueryValidatorOutstandingRewardsRequest = {
   },
   fromJSON(object: any): QueryValidatorOutstandingRewardsRequest {
     return {
-      validatorAddress: isSet(object.validatorAddress)
-        ? String(object.validatorAddress)
-        : '',
+      validatorAddress: isSet(object.validatorAddress) ? String(object.validatorAddress) : ""
     };
   },
-  toJSON(
-    message: QueryValidatorOutstandingRewardsRequest,
-  ): JsonSafe<QueryValidatorOutstandingRewardsRequest> {
+  toJSON(message: QueryValidatorOutstandingRewardsRequest): JsonSafe<QueryValidatorOutstandingRewardsRequest> {
     const obj: any = {};
-    message.validatorAddress !== undefined &&
-      (obj.validatorAddress = message.validatorAddress);
+    message.validatorAddress !== undefined && (obj.validatorAddress = message.validatorAddress);
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryValidatorOutstandingRewardsRequest>,
-  ): QueryValidatorOutstandingRewardsRequest {
+  fromPartial(object: Partial<QueryValidatorOutstandingRewardsRequest>): QueryValidatorOutstandingRewardsRequest {
     const message = createBaseQueryValidatorOutstandingRewardsRequest();
-    message.validatorAddress = object.validatorAddress ?? '';
+    message.validatorAddress = object.validatorAddress ?? "";
     return message;
   },
-  fromProtoMsg(
-    message: QueryValidatorOutstandingRewardsRequestProtoMsg,
-  ): QueryValidatorOutstandingRewardsRequest {
+  fromProtoMsg(message: QueryValidatorOutstandingRewardsRequestProtoMsg): QueryValidatorOutstandingRewardsRequest {
     return QueryValidatorOutstandingRewardsRequest.decode(message.value);
   },
   toProto(message: QueryValidatorOutstandingRewardsRequest): Uint8Array {
     return QueryValidatorOutstandingRewardsRequest.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryValidatorOutstandingRewardsRequest,
-  ): QueryValidatorOutstandingRewardsRequestProtoMsg {
+  toProtoMsg(message: QueryValidatorOutstandingRewardsRequest): QueryValidatorOutstandingRewardsRequestProtoMsg {
     return {
-      typeUrl:
-        '/cosmos.distribution.v1beta1.QueryValidatorOutstandingRewardsRequest',
-      value: QueryValidatorOutstandingRewardsRequest.encode(message).finish(),
+      typeUrl: "/cosmos.distribution.v1beta1.QueryValidatorOutstandingRewardsRequest",
+      value: QueryValidatorOutstandingRewardsRequest.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryValidatorOutstandingRewardsResponse(): QueryValidatorOutstandingRewardsResponse {
   return {
-    rewards: ValidatorOutstandingRewards.fromPartial({}),
+    rewards: ValidatorOutstandingRewards.fromPartial({})
   };
 }
 export const QueryValidatorOutstandingRewardsResponse = {
-  typeUrl:
-    '/cosmos.distribution.v1beta1.QueryValidatorOutstandingRewardsResponse' as const,
-  encode(
-    message: QueryValidatorOutstandingRewardsResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/cosmos.distribution.v1beta1.QueryValidatorOutstandingRewardsResponse" as const,
+  encode(message: QueryValidatorOutstandingRewardsResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.rewards !== undefined) {
-      ValidatorOutstandingRewards.encode(
-        message.rewards,
-        writer.uint32(10).fork(),
-      ).ldelim();
+      ValidatorOutstandingRewards.encode(message.rewards, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryValidatorOutstandingRewardsResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryValidatorOutstandingRewardsResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryValidatorOutstandingRewardsResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.rewards = ValidatorOutstandingRewards.decode(
-            reader,
-            reader.uint32(),
-          );
+          message.rewards = ValidatorOutstandingRewards.decode(reader, reader.uint32());
           break;
         default:
           reader.skipType(tag & 7);
@@ -830,72 +712,47 @@ export const QueryValidatorOutstandingRewardsResponse = {
   },
   fromJSON(object: any): QueryValidatorOutstandingRewardsResponse {
     return {
-      rewards: isSet(object.rewards)
-        ? ValidatorOutstandingRewards.fromJSON(object.rewards)
-        : undefined,
+      rewards: isSet(object.rewards) ? ValidatorOutstandingRewards.fromJSON(object.rewards) : undefined
     };
   },
-  toJSON(
-    message: QueryValidatorOutstandingRewardsResponse,
-  ): JsonSafe<QueryValidatorOutstandingRewardsResponse> {
+  toJSON(message: QueryValidatorOutstandingRewardsResponse): JsonSafe<QueryValidatorOutstandingRewardsResponse> {
     const obj: any = {};
-    message.rewards !== undefined &&
-      (obj.rewards = message.rewards
-        ? ValidatorOutstandingRewards.toJSON(message.rewards)
-        : undefined);
+    message.rewards !== undefined && (obj.rewards = message.rewards ? ValidatorOutstandingRewards.toJSON(message.rewards) : undefined);
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryValidatorOutstandingRewardsResponse>,
-  ): QueryValidatorOutstandingRewardsResponse {
+  fromPartial(object: Partial<QueryValidatorOutstandingRewardsResponse>): QueryValidatorOutstandingRewardsResponse {
     const message = createBaseQueryValidatorOutstandingRewardsResponse();
-    message.rewards =
-      object.rewards !== undefined && object.rewards !== null
-        ? ValidatorOutstandingRewards.fromPartial(object.rewards)
-        : undefined;
+    message.rewards = object.rewards !== undefined && object.rewards !== null ? ValidatorOutstandingRewards.fromPartial(object.rewards) : undefined;
     return message;
   },
-  fromProtoMsg(
-    message: QueryValidatorOutstandingRewardsResponseProtoMsg,
-  ): QueryValidatorOutstandingRewardsResponse {
+  fromProtoMsg(message: QueryValidatorOutstandingRewardsResponseProtoMsg): QueryValidatorOutstandingRewardsResponse {
     return QueryValidatorOutstandingRewardsResponse.decode(message.value);
   },
   toProto(message: QueryValidatorOutstandingRewardsResponse): Uint8Array {
     return QueryValidatorOutstandingRewardsResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryValidatorOutstandingRewardsResponse,
-  ): QueryValidatorOutstandingRewardsResponseProtoMsg {
+  toProtoMsg(message: QueryValidatorOutstandingRewardsResponse): QueryValidatorOutstandingRewardsResponseProtoMsg {
     return {
-      typeUrl:
-        '/cosmos.distribution.v1beta1.QueryValidatorOutstandingRewardsResponse',
-      value: QueryValidatorOutstandingRewardsResponse.encode(message).finish(),
+      typeUrl: "/cosmos.distribution.v1beta1.QueryValidatorOutstandingRewardsResponse",
+      value: QueryValidatorOutstandingRewardsResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryValidatorCommissionRequest(): QueryValidatorCommissionRequest {
   return {
-    validatorAddress: '',
+    validatorAddress: ""
   };
 }
 export const QueryValidatorCommissionRequest = {
-  typeUrl:
-    '/cosmos.distribution.v1beta1.QueryValidatorCommissionRequest' as const,
-  encode(
-    message: QueryValidatorCommissionRequest,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.validatorAddress !== '') {
+  typeUrl: "/cosmos.distribution.v1beta1.QueryValidatorCommissionRequest" as const,
+  encode(message: QueryValidatorCommissionRequest, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.validatorAddress !== "") {
       writer.uint32(10).string(message.validatorAddress);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryValidatorCommissionRequest {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryValidatorCommissionRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryValidatorCommissionRequest();
     while (reader.pos < end) {
@@ -913,79 +770,54 @@ export const QueryValidatorCommissionRequest = {
   },
   fromJSON(object: any): QueryValidatorCommissionRequest {
     return {
-      validatorAddress: isSet(object.validatorAddress)
-        ? String(object.validatorAddress)
-        : '',
+      validatorAddress: isSet(object.validatorAddress) ? String(object.validatorAddress) : ""
     };
   },
-  toJSON(
-    message: QueryValidatorCommissionRequest,
-  ): JsonSafe<QueryValidatorCommissionRequest> {
+  toJSON(message: QueryValidatorCommissionRequest): JsonSafe<QueryValidatorCommissionRequest> {
     const obj: any = {};
-    message.validatorAddress !== undefined &&
-      (obj.validatorAddress = message.validatorAddress);
+    message.validatorAddress !== undefined && (obj.validatorAddress = message.validatorAddress);
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryValidatorCommissionRequest>,
-  ): QueryValidatorCommissionRequest {
+  fromPartial(object: Partial<QueryValidatorCommissionRequest>): QueryValidatorCommissionRequest {
     const message = createBaseQueryValidatorCommissionRequest();
-    message.validatorAddress = object.validatorAddress ?? '';
+    message.validatorAddress = object.validatorAddress ?? "";
     return message;
   },
-  fromProtoMsg(
-    message: QueryValidatorCommissionRequestProtoMsg,
-  ): QueryValidatorCommissionRequest {
+  fromProtoMsg(message: QueryValidatorCommissionRequestProtoMsg): QueryValidatorCommissionRequest {
     return QueryValidatorCommissionRequest.decode(message.value);
   },
   toProto(message: QueryValidatorCommissionRequest): Uint8Array {
     return QueryValidatorCommissionRequest.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryValidatorCommissionRequest,
-  ): QueryValidatorCommissionRequestProtoMsg {
+  toProtoMsg(message: QueryValidatorCommissionRequest): QueryValidatorCommissionRequestProtoMsg {
     return {
-      typeUrl: '/cosmos.distribution.v1beta1.QueryValidatorCommissionRequest',
-      value: QueryValidatorCommissionRequest.encode(message).finish(),
+      typeUrl: "/cosmos.distribution.v1beta1.QueryValidatorCommissionRequest",
+      value: QueryValidatorCommissionRequest.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryValidatorCommissionResponse(): QueryValidatorCommissionResponse {
   return {
-    commission: ValidatorAccumulatedCommission.fromPartial({}),
+    commission: ValidatorAccumulatedCommission.fromPartial({})
   };
 }
 export const QueryValidatorCommissionResponse = {
-  typeUrl:
-    '/cosmos.distribution.v1beta1.QueryValidatorCommissionResponse' as const,
-  encode(
-    message: QueryValidatorCommissionResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/cosmos.distribution.v1beta1.QueryValidatorCommissionResponse" as const,
+  encode(message: QueryValidatorCommissionResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.commission !== undefined) {
-      ValidatorAccumulatedCommission.encode(
-        message.commission,
-        writer.uint32(10).fork(),
-      ).ldelim();
+      ValidatorAccumulatedCommission.encode(message.commission, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryValidatorCommissionResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryValidatorCommissionResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryValidatorCommissionResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.commission = ValidatorAccumulatedCommission.decode(
-            reader,
-            reader.uint32(),
-          );
+          message.commission = ValidatorAccumulatedCommission.decode(reader, reader.uint32());
           break;
         default:
           reader.skipType(tag & 7);
@@ -996,63 +828,44 @@ export const QueryValidatorCommissionResponse = {
   },
   fromJSON(object: any): QueryValidatorCommissionResponse {
     return {
-      commission: isSet(object.commission)
-        ? ValidatorAccumulatedCommission.fromJSON(object.commission)
-        : undefined,
+      commission: isSet(object.commission) ? ValidatorAccumulatedCommission.fromJSON(object.commission) : undefined
     };
   },
-  toJSON(
-    message: QueryValidatorCommissionResponse,
-  ): JsonSafe<QueryValidatorCommissionResponse> {
+  toJSON(message: QueryValidatorCommissionResponse): JsonSafe<QueryValidatorCommissionResponse> {
     const obj: any = {};
-    message.commission !== undefined &&
-      (obj.commission = message.commission
-        ? ValidatorAccumulatedCommission.toJSON(message.commission)
-        : undefined);
+    message.commission !== undefined && (obj.commission = message.commission ? ValidatorAccumulatedCommission.toJSON(message.commission) : undefined);
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryValidatorCommissionResponse>,
-  ): QueryValidatorCommissionResponse {
+  fromPartial(object: Partial<QueryValidatorCommissionResponse>): QueryValidatorCommissionResponse {
     const message = createBaseQueryValidatorCommissionResponse();
-    message.commission =
-      object.commission !== undefined && object.commission !== null
-        ? ValidatorAccumulatedCommission.fromPartial(object.commission)
-        : undefined;
+    message.commission = object.commission !== undefined && object.commission !== null ? ValidatorAccumulatedCommission.fromPartial(object.commission) : undefined;
     return message;
   },
-  fromProtoMsg(
-    message: QueryValidatorCommissionResponseProtoMsg,
-  ): QueryValidatorCommissionResponse {
+  fromProtoMsg(message: QueryValidatorCommissionResponseProtoMsg): QueryValidatorCommissionResponse {
     return QueryValidatorCommissionResponse.decode(message.value);
   },
   toProto(message: QueryValidatorCommissionResponse): Uint8Array {
     return QueryValidatorCommissionResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryValidatorCommissionResponse,
-  ): QueryValidatorCommissionResponseProtoMsg {
+  toProtoMsg(message: QueryValidatorCommissionResponse): QueryValidatorCommissionResponseProtoMsg {
     return {
-      typeUrl: '/cosmos.distribution.v1beta1.QueryValidatorCommissionResponse',
-      value: QueryValidatorCommissionResponse.encode(message).finish(),
+      typeUrl: "/cosmos.distribution.v1beta1.QueryValidatorCommissionResponse",
+      value: QueryValidatorCommissionResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryValidatorSlashesRequest(): QueryValidatorSlashesRequest {
   return {
-    validatorAddress: '',
+    validatorAddress: "",
     startingHeight: BigInt(0),
     endingHeight: BigInt(0),
-    pagination: undefined,
+    pagination: undefined
   };
 }
 export const QueryValidatorSlashesRequest = {
-  typeUrl: '/cosmos.distribution.v1beta1.QueryValidatorSlashesRequest' as const,
-  encode(
-    message: QueryValidatorSlashesRequest,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.validatorAddress !== '') {
+  typeUrl: "/cosmos.distribution.v1beta1.QueryValidatorSlashesRequest" as const,
+  encode(message: QueryValidatorSlashesRequest, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.validatorAddress !== "") {
       writer.uint32(10).string(message.validatorAddress);
     }
     if (message.startingHeight !== BigInt(0)) {
@@ -1066,12 +879,8 @@ export const QueryValidatorSlashesRequest = {
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryValidatorSlashesRequest {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryValidatorSlashesRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryValidatorSlashesRequest();
     while (reader.pos < end) {
@@ -1098,111 +907,67 @@ export const QueryValidatorSlashesRequest = {
   },
   fromJSON(object: any): QueryValidatorSlashesRequest {
     return {
-      validatorAddress: isSet(object.validatorAddress)
-        ? String(object.validatorAddress)
-        : '',
-      startingHeight: isSet(object.startingHeight)
-        ? BigInt(object.startingHeight.toString())
-        : BigInt(0),
-      endingHeight: isSet(object.endingHeight)
-        ? BigInt(object.endingHeight.toString())
-        : BigInt(0),
-      pagination: isSet(object.pagination)
-        ? PageRequest.fromJSON(object.pagination)
-        : undefined,
+      validatorAddress: isSet(object.validatorAddress) ? String(object.validatorAddress) : "",
+      startingHeight: isSet(object.startingHeight) ? BigInt(object.startingHeight.toString()) : BigInt(0),
+      endingHeight: isSet(object.endingHeight) ? BigInt(object.endingHeight.toString()) : BigInt(0),
+      pagination: isSet(object.pagination) ? PageRequest.fromJSON(object.pagination) : undefined
     };
   },
-  toJSON(
-    message: QueryValidatorSlashesRequest,
-  ): JsonSafe<QueryValidatorSlashesRequest> {
+  toJSON(message: QueryValidatorSlashesRequest): JsonSafe<QueryValidatorSlashesRequest> {
     const obj: any = {};
-    message.validatorAddress !== undefined &&
-      (obj.validatorAddress = message.validatorAddress);
-    message.startingHeight !== undefined &&
-      (obj.startingHeight = (message.startingHeight || BigInt(0)).toString());
-    message.endingHeight !== undefined &&
-      (obj.endingHeight = (message.endingHeight || BigInt(0)).toString());
-    message.pagination !== undefined &&
-      (obj.pagination = message.pagination
-        ? PageRequest.toJSON(message.pagination)
-        : undefined);
+    message.validatorAddress !== undefined && (obj.validatorAddress = message.validatorAddress);
+    message.startingHeight !== undefined && (obj.startingHeight = (message.startingHeight || BigInt(0)).toString());
+    message.endingHeight !== undefined && (obj.endingHeight = (message.endingHeight || BigInt(0)).toString());
+    message.pagination !== undefined && (obj.pagination = message.pagination ? PageRequest.toJSON(message.pagination) : undefined);
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryValidatorSlashesRequest>,
-  ): QueryValidatorSlashesRequest {
+  fromPartial(object: Partial<QueryValidatorSlashesRequest>): QueryValidatorSlashesRequest {
     const message = createBaseQueryValidatorSlashesRequest();
-    message.validatorAddress = object.validatorAddress ?? '';
-    message.startingHeight =
-      object.startingHeight !== undefined && object.startingHeight !== null
-        ? BigInt(object.startingHeight.toString())
-        : BigInt(0);
-    message.endingHeight =
-      object.endingHeight !== undefined && object.endingHeight !== null
-        ? BigInt(object.endingHeight.toString())
-        : BigInt(0);
-    message.pagination =
-      object.pagination !== undefined && object.pagination !== null
-        ? PageRequest.fromPartial(object.pagination)
-        : undefined;
+    message.validatorAddress = object.validatorAddress ?? "";
+    message.startingHeight = object.startingHeight !== undefined && object.startingHeight !== null ? BigInt(object.startingHeight.toString()) : BigInt(0);
+    message.endingHeight = object.endingHeight !== undefined && object.endingHeight !== null ? BigInt(object.endingHeight.toString()) : BigInt(0);
+    message.pagination = object.pagination !== undefined && object.pagination !== null ? PageRequest.fromPartial(object.pagination) : undefined;
     return message;
   },
-  fromProtoMsg(
-    message: QueryValidatorSlashesRequestProtoMsg,
-  ): QueryValidatorSlashesRequest {
+  fromProtoMsg(message: QueryValidatorSlashesRequestProtoMsg): QueryValidatorSlashesRequest {
     return QueryValidatorSlashesRequest.decode(message.value);
   },
   toProto(message: QueryValidatorSlashesRequest): Uint8Array {
     return QueryValidatorSlashesRequest.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryValidatorSlashesRequest,
-  ): QueryValidatorSlashesRequestProtoMsg {
+  toProtoMsg(message: QueryValidatorSlashesRequest): QueryValidatorSlashesRequestProtoMsg {
     return {
-      typeUrl: '/cosmos.distribution.v1beta1.QueryValidatorSlashesRequest',
-      value: QueryValidatorSlashesRequest.encode(message).finish(),
+      typeUrl: "/cosmos.distribution.v1beta1.QueryValidatorSlashesRequest",
+      value: QueryValidatorSlashesRequest.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryValidatorSlashesResponse(): QueryValidatorSlashesResponse {
   return {
     slashes: [],
-    pagination: undefined,
+    pagination: undefined
   };
 }
 export const QueryValidatorSlashesResponse = {
-  typeUrl:
-    '/cosmos.distribution.v1beta1.QueryValidatorSlashesResponse' as const,
-  encode(
-    message: QueryValidatorSlashesResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/cosmos.distribution.v1beta1.QueryValidatorSlashesResponse" as const,
+  encode(message: QueryValidatorSlashesResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     for (const v of message.slashes) {
       ValidatorSlashEvent.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     if (message.pagination !== undefined) {
-      PageResponse.encode(
-        message.pagination,
-        writer.uint32(18).fork(),
-      ).ldelim();
+      PageResponse.encode(message.pagination, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryValidatorSlashesResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryValidatorSlashesResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryValidatorSlashesResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.slashes.push(
-            ValidatorSlashEvent.decode(reader, reader.uint32()),
-          );
+          message.slashes.push(ValidatorSlashEvent.decode(reader, reader.uint32()));
           break;
         case 2:
           message.pagination = PageResponse.decode(reader, reader.uint32());
@@ -1216,87 +981,58 @@ export const QueryValidatorSlashesResponse = {
   },
   fromJSON(object: any): QueryValidatorSlashesResponse {
     return {
-      slashes: Array.isArray(object?.slashes)
-        ? object.slashes.map((e: any) => ValidatorSlashEvent.fromJSON(e))
-        : [],
-      pagination: isSet(object.pagination)
-        ? PageResponse.fromJSON(object.pagination)
-        : undefined,
+      slashes: Array.isArray(object?.slashes) ? object.slashes.map((e: any) => ValidatorSlashEvent.fromJSON(e)) : [],
+      pagination: isSet(object.pagination) ? PageResponse.fromJSON(object.pagination) : undefined
     };
   },
-  toJSON(
-    message: QueryValidatorSlashesResponse,
-  ): JsonSafe<QueryValidatorSlashesResponse> {
+  toJSON(message: QueryValidatorSlashesResponse): JsonSafe<QueryValidatorSlashesResponse> {
     const obj: any = {};
     if (message.slashes) {
-      obj.slashes = message.slashes.map(e =>
-        e ? ValidatorSlashEvent.toJSON(e) : undefined,
-      );
+      obj.slashes = message.slashes.map(e => e ? ValidatorSlashEvent.toJSON(e) : undefined);
     } else {
       obj.slashes = [];
     }
-    message.pagination !== undefined &&
-      (obj.pagination = message.pagination
-        ? PageResponse.toJSON(message.pagination)
-        : undefined);
+    message.pagination !== undefined && (obj.pagination = message.pagination ? PageResponse.toJSON(message.pagination) : undefined);
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryValidatorSlashesResponse>,
-  ): QueryValidatorSlashesResponse {
+  fromPartial(object: Partial<QueryValidatorSlashesResponse>): QueryValidatorSlashesResponse {
     const message = createBaseQueryValidatorSlashesResponse();
-    message.slashes =
-      object.slashes?.map(e => ValidatorSlashEvent.fromPartial(e)) || [];
-    message.pagination =
-      object.pagination !== undefined && object.pagination !== null
-        ? PageResponse.fromPartial(object.pagination)
-        : undefined;
+    message.slashes = object.slashes?.map(e => ValidatorSlashEvent.fromPartial(e)) || [];
+    message.pagination = object.pagination !== undefined && object.pagination !== null ? PageResponse.fromPartial(object.pagination) : undefined;
     return message;
   },
-  fromProtoMsg(
-    message: QueryValidatorSlashesResponseProtoMsg,
-  ): QueryValidatorSlashesResponse {
+  fromProtoMsg(message: QueryValidatorSlashesResponseProtoMsg): QueryValidatorSlashesResponse {
     return QueryValidatorSlashesResponse.decode(message.value);
   },
   toProto(message: QueryValidatorSlashesResponse): Uint8Array {
     return QueryValidatorSlashesResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryValidatorSlashesResponse,
-  ): QueryValidatorSlashesResponseProtoMsg {
+  toProtoMsg(message: QueryValidatorSlashesResponse): QueryValidatorSlashesResponseProtoMsg {
     return {
-      typeUrl: '/cosmos.distribution.v1beta1.QueryValidatorSlashesResponse',
-      value: QueryValidatorSlashesResponse.encode(message).finish(),
+      typeUrl: "/cosmos.distribution.v1beta1.QueryValidatorSlashesResponse",
+      value: QueryValidatorSlashesResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryDelegationRewardsRequest(): QueryDelegationRewardsRequest {
   return {
-    delegatorAddress: '',
-    validatorAddress: '',
+    delegatorAddress: "",
+    validatorAddress: ""
   };
 }
 export const QueryDelegationRewardsRequest = {
-  typeUrl:
-    '/cosmos.distribution.v1beta1.QueryDelegationRewardsRequest' as const,
-  encode(
-    message: QueryDelegationRewardsRequest,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.delegatorAddress !== '') {
+  typeUrl: "/cosmos.distribution.v1beta1.QueryDelegationRewardsRequest" as const,
+  encode(message: QueryDelegationRewardsRequest, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.delegatorAddress !== "") {
       writer.uint32(10).string(message.delegatorAddress);
     }
-    if (message.validatorAddress !== '') {
+    if (message.validatorAddress !== "") {
       writer.uint32(18).string(message.validatorAddress);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryDelegationRewardsRequest {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryDelegationRewardsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryDelegationRewardsRequest();
     while (reader.pos < end) {
@@ -1317,72 +1053,50 @@ export const QueryDelegationRewardsRequest = {
   },
   fromJSON(object: any): QueryDelegationRewardsRequest {
     return {
-      delegatorAddress: isSet(object.delegatorAddress)
-        ? String(object.delegatorAddress)
-        : '',
-      validatorAddress: isSet(object.validatorAddress)
-        ? String(object.validatorAddress)
-        : '',
+      delegatorAddress: isSet(object.delegatorAddress) ? String(object.delegatorAddress) : "",
+      validatorAddress: isSet(object.validatorAddress) ? String(object.validatorAddress) : ""
     };
   },
-  toJSON(
-    message: QueryDelegationRewardsRequest,
-  ): JsonSafe<QueryDelegationRewardsRequest> {
+  toJSON(message: QueryDelegationRewardsRequest): JsonSafe<QueryDelegationRewardsRequest> {
     const obj: any = {};
-    message.delegatorAddress !== undefined &&
-      (obj.delegatorAddress = message.delegatorAddress);
-    message.validatorAddress !== undefined &&
-      (obj.validatorAddress = message.validatorAddress);
+    message.delegatorAddress !== undefined && (obj.delegatorAddress = message.delegatorAddress);
+    message.validatorAddress !== undefined && (obj.validatorAddress = message.validatorAddress);
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryDelegationRewardsRequest>,
-  ): QueryDelegationRewardsRequest {
+  fromPartial(object: Partial<QueryDelegationRewardsRequest>): QueryDelegationRewardsRequest {
     const message = createBaseQueryDelegationRewardsRequest();
-    message.delegatorAddress = object.delegatorAddress ?? '';
-    message.validatorAddress = object.validatorAddress ?? '';
+    message.delegatorAddress = object.delegatorAddress ?? "";
+    message.validatorAddress = object.validatorAddress ?? "";
     return message;
   },
-  fromProtoMsg(
-    message: QueryDelegationRewardsRequestProtoMsg,
-  ): QueryDelegationRewardsRequest {
+  fromProtoMsg(message: QueryDelegationRewardsRequestProtoMsg): QueryDelegationRewardsRequest {
     return QueryDelegationRewardsRequest.decode(message.value);
   },
   toProto(message: QueryDelegationRewardsRequest): Uint8Array {
     return QueryDelegationRewardsRequest.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryDelegationRewardsRequest,
-  ): QueryDelegationRewardsRequestProtoMsg {
+  toProtoMsg(message: QueryDelegationRewardsRequest): QueryDelegationRewardsRequestProtoMsg {
     return {
-      typeUrl: '/cosmos.distribution.v1beta1.QueryDelegationRewardsRequest',
-      value: QueryDelegationRewardsRequest.encode(message).finish(),
+      typeUrl: "/cosmos.distribution.v1beta1.QueryDelegationRewardsRequest",
+      value: QueryDelegationRewardsRequest.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryDelegationRewardsResponse(): QueryDelegationRewardsResponse {
   return {
-    rewards: [],
+    rewards: []
   };
 }
 export const QueryDelegationRewardsResponse = {
-  typeUrl:
-    '/cosmos.distribution.v1beta1.QueryDelegationRewardsResponse' as const,
-  encode(
-    message: QueryDelegationRewardsResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/cosmos.distribution.v1beta1.QueryDelegationRewardsResponse" as const,
+  encode(message: QueryDelegationRewardsResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     for (const v of message.rewards) {
       DecCoin.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryDelegationRewardsResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryDelegationRewardsResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryDelegationRewardsResponse();
     while (reader.pos < end) {
@@ -1400,71 +1114,51 @@ export const QueryDelegationRewardsResponse = {
   },
   fromJSON(object: any): QueryDelegationRewardsResponse {
     return {
-      rewards: Array.isArray(object?.rewards)
-        ? object.rewards.map((e: any) => DecCoin.fromJSON(e))
-        : [],
+      rewards: Array.isArray(object?.rewards) ? object.rewards.map((e: any) => DecCoin.fromJSON(e)) : []
     };
   },
-  toJSON(
-    message: QueryDelegationRewardsResponse,
-  ): JsonSafe<QueryDelegationRewardsResponse> {
+  toJSON(message: QueryDelegationRewardsResponse): JsonSafe<QueryDelegationRewardsResponse> {
     const obj: any = {};
     if (message.rewards) {
-      obj.rewards = message.rewards.map(e =>
-        e ? DecCoin.toJSON(e) : undefined,
-      );
+      obj.rewards = message.rewards.map(e => e ? DecCoin.toJSON(e) : undefined);
     } else {
       obj.rewards = [];
     }
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryDelegationRewardsResponse>,
-  ): QueryDelegationRewardsResponse {
+  fromPartial(object: Partial<QueryDelegationRewardsResponse>): QueryDelegationRewardsResponse {
     const message = createBaseQueryDelegationRewardsResponse();
     message.rewards = object.rewards?.map(e => DecCoin.fromPartial(e)) || [];
     return message;
   },
-  fromProtoMsg(
-    message: QueryDelegationRewardsResponseProtoMsg,
-  ): QueryDelegationRewardsResponse {
+  fromProtoMsg(message: QueryDelegationRewardsResponseProtoMsg): QueryDelegationRewardsResponse {
     return QueryDelegationRewardsResponse.decode(message.value);
   },
   toProto(message: QueryDelegationRewardsResponse): Uint8Array {
     return QueryDelegationRewardsResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryDelegationRewardsResponse,
-  ): QueryDelegationRewardsResponseProtoMsg {
+  toProtoMsg(message: QueryDelegationRewardsResponse): QueryDelegationRewardsResponseProtoMsg {
     return {
-      typeUrl: '/cosmos.distribution.v1beta1.QueryDelegationRewardsResponse',
-      value: QueryDelegationRewardsResponse.encode(message).finish(),
+      typeUrl: "/cosmos.distribution.v1beta1.QueryDelegationRewardsResponse",
+      value: QueryDelegationRewardsResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryDelegationTotalRewardsRequest(): QueryDelegationTotalRewardsRequest {
   return {
-    delegatorAddress: '',
+    delegatorAddress: ""
   };
 }
 export const QueryDelegationTotalRewardsRequest = {
-  typeUrl:
-    '/cosmos.distribution.v1beta1.QueryDelegationTotalRewardsRequest' as const,
-  encode(
-    message: QueryDelegationTotalRewardsRequest,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.delegatorAddress !== '') {
+  typeUrl: "/cosmos.distribution.v1beta1.QueryDelegationTotalRewardsRequest" as const,
+  encode(message: QueryDelegationTotalRewardsRequest, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.delegatorAddress !== "") {
       writer.uint32(10).string(message.delegatorAddress);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryDelegationTotalRewardsRequest {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryDelegationTotalRewardsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryDelegationTotalRewardsRequest();
     while (reader.pos < end) {
@@ -1482,57 +1176,41 @@ export const QueryDelegationTotalRewardsRequest = {
   },
   fromJSON(object: any): QueryDelegationTotalRewardsRequest {
     return {
-      delegatorAddress: isSet(object.delegatorAddress)
-        ? String(object.delegatorAddress)
-        : '',
+      delegatorAddress: isSet(object.delegatorAddress) ? String(object.delegatorAddress) : ""
     };
   },
-  toJSON(
-    message: QueryDelegationTotalRewardsRequest,
-  ): JsonSafe<QueryDelegationTotalRewardsRequest> {
+  toJSON(message: QueryDelegationTotalRewardsRequest): JsonSafe<QueryDelegationTotalRewardsRequest> {
     const obj: any = {};
-    message.delegatorAddress !== undefined &&
-      (obj.delegatorAddress = message.delegatorAddress);
+    message.delegatorAddress !== undefined && (obj.delegatorAddress = message.delegatorAddress);
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryDelegationTotalRewardsRequest>,
-  ): QueryDelegationTotalRewardsRequest {
+  fromPartial(object: Partial<QueryDelegationTotalRewardsRequest>): QueryDelegationTotalRewardsRequest {
     const message = createBaseQueryDelegationTotalRewardsRequest();
-    message.delegatorAddress = object.delegatorAddress ?? '';
+    message.delegatorAddress = object.delegatorAddress ?? "";
     return message;
   },
-  fromProtoMsg(
-    message: QueryDelegationTotalRewardsRequestProtoMsg,
-  ): QueryDelegationTotalRewardsRequest {
+  fromProtoMsg(message: QueryDelegationTotalRewardsRequestProtoMsg): QueryDelegationTotalRewardsRequest {
     return QueryDelegationTotalRewardsRequest.decode(message.value);
   },
   toProto(message: QueryDelegationTotalRewardsRequest): Uint8Array {
     return QueryDelegationTotalRewardsRequest.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryDelegationTotalRewardsRequest,
-  ): QueryDelegationTotalRewardsRequestProtoMsg {
+  toProtoMsg(message: QueryDelegationTotalRewardsRequest): QueryDelegationTotalRewardsRequestProtoMsg {
     return {
-      typeUrl:
-        '/cosmos.distribution.v1beta1.QueryDelegationTotalRewardsRequest',
-      value: QueryDelegationTotalRewardsRequest.encode(message).finish(),
+      typeUrl: "/cosmos.distribution.v1beta1.QueryDelegationTotalRewardsRequest",
+      value: QueryDelegationTotalRewardsRequest.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryDelegationTotalRewardsResponse(): QueryDelegationTotalRewardsResponse {
   return {
     rewards: [],
-    total: [],
+    total: []
   };
 }
 export const QueryDelegationTotalRewardsResponse = {
-  typeUrl:
-    '/cosmos.distribution.v1beta1.QueryDelegationTotalRewardsResponse' as const,
-  encode(
-    message: QueryDelegationTotalRewardsResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/cosmos.distribution.v1beta1.QueryDelegationTotalRewardsResponse" as const,
+  encode(message: QueryDelegationTotalRewardsResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     for (const v of message.rewards) {
       DelegationDelegatorReward.encode(v!, writer.uint32(10).fork()).ldelim();
     }
@@ -1541,21 +1219,15 @@ export const QueryDelegationTotalRewardsResponse = {
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryDelegationTotalRewardsResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryDelegationTotalRewardsResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryDelegationTotalRewardsResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.rewards.push(
-            DelegationDelegatorReward.decode(reader, reader.uint32()),
-          );
+          message.rewards.push(DelegationDelegatorReward.decode(reader, reader.uint32()));
           break;
         case 2:
           message.total.push(DecCoin.decode(reader, reader.uint32()));
@@ -1569,82 +1241,58 @@ export const QueryDelegationTotalRewardsResponse = {
   },
   fromJSON(object: any): QueryDelegationTotalRewardsResponse {
     return {
-      rewards: Array.isArray(object?.rewards)
-        ? object.rewards.map((e: any) => DelegationDelegatorReward.fromJSON(e))
-        : [],
-      total: Array.isArray(object?.total)
-        ? object.total.map((e: any) => DecCoin.fromJSON(e))
-        : [],
+      rewards: Array.isArray(object?.rewards) ? object.rewards.map((e: any) => DelegationDelegatorReward.fromJSON(e)) : [],
+      total: Array.isArray(object?.total) ? object.total.map((e: any) => DecCoin.fromJSON(e)) : []
     };
   },
-  toJSON(
-    message: QueryDelegationTotalRewardsResponse,
-  ): JsonSafe<QueryDelegationTotalRewardsResponse> {
+  toJSON(message: QueryDelegationTotalRewardsResponse): JsonSafe<QueryDelegationTotalRewardsResponse> {
     const obj: any = {};
     if (message.rewards) {
-      obj.rewards = message.rewards.map(e =>
-        e ? DelegationDelegatorReward.toJSON(e) : undefined,
-      );
+      obj.rewards = message.rewards.map(e => e ? DelegationDelegatorReward.toJSON(e) : undefined);
     } else {
       obj.rewards = [];
     }
     if (message.total) {
-      obj.total = message.total.map(e => (e ? DecCoin.toJSON(e) : undefined));
+      obj.total = message.total.map(e => e ? DecCoin.toJSON(e) : undefined);
     } else {
       obj.total = [];
     }
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryDelegationTotalRewardsResponse>,
-  ): QueryDelegationTotalRewardsResponse {
+  fromPartial(object: Partial<QueryDelegationTotalRewardsResponse>): QueryDelegationTotalRewardsResponse {
     const message = createBaseQueryDelegationTotalRewardsResponse();
-    message.rewards =
-      object.rewards?.map(e => DelegationDelegatorReward.fromPartial(e)) || [];
+    message.rewards = object.rewards?.map(e => DelegationDelegatorReward.fromPartial(e)) || [];
     message.total = object.total?.map(e => DecCoin.fromPartial(e)) || [];
     return message;
   },
-  fromProtoMsg(
-    message: QueryDelegationTotalRewardsResponseProtoMsg,
-  ): QueryDelegationTotalRewardsResponse {
+  fromProtoMsg(message: QueryDelegationTotalRewardsResponseProtoMsg): QueryDelegationTotalRewardsResponse {
     return QueryDelegationTotalRewardsResponse.decode(message.value);
   },
   toProto(message: QueryDelegationTotalRewardsResponse): Uint8Array {
     return QueryDelegationTotalRewardsResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryDelegationTotalRewardsResponse,
-  ): QueryDelegationTotalRewardsResponseProtoMsg {
+  toProtoMsg(message: QueryDelegationTotalRewardsResponse): QueryDelegationTotalRewardsResponseProtoMsg {
     return {
-      typeUrl:
-        '/cosmos.distribution.v1beta1.QueryDelegationTotalRewardsResponse',
-      value: QueryDelegationTotalRewardsResponse.encode(message).finish(),
+      typeUrl: "/cosmos.distribution.v1beta1.QueryDelegationTotalRewardsResponse",
+      value: QueryDelegationTotalRewardsResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryDelegatorValidatorsRequest(): QueryDelegatorValidatorsRequest {
   return {
-    delegatorAddress: '',
+    delegatorAddress: ""
   };
 }
 export const QueryDelegatorValidatorsRequest = {
-  typeUrl:
-    '/cosmos.distribution.v1beta1.QueryDelegatorValidatorsRequest' as const,
-  encode(
-    message: QueryDelegatorValidatorsRequest,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.delegatorAddress !== '') {
+  typeUrl: "/cosmos.distribution.v1beta1.QueryDelegatorValidatorsRequest" as const,
+  encode(message: QueryDelegatorValidatorsRequest, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.delegatorAddress !== "") {
       writer.uint32(10).string(message.delegatorAddress);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryDelegatorValidatorsRequest {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryDelegatorValidatorsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryDelegatorValidatorsRequest();
     while (reader.pos < end) {
@@ -1662,66 +1310,47 @@ export const QueryDelegatorValidatorsRequest = {
   },
   fromJSON(object: any): QueryDelegatorValidatorsRequest {
     return {
-      delegatorAddress: isSet(object.delegatorAddress)
-        ? String(object.delegatorAddress)
-        : '',
+      delegatorAddress: isSet(object.delegatorAddress) ? String(object.delegatorAddress) : ""
     };
   },
-  toJSON(
-    message: QueryDelegatorValidatorsRequest,
-  ): JsonSafe<QueryDelegatorValidatorsRequest> {
+  toJSON(message: QueryDelegatorValidatorsRequest): JsonSafe<QueryDelegatorValidatorsRequest> {
     const obj: any = {};
-    message.delegatorAddress !== undefined &&
-      (obj.delegatorAddress = message.delegatorAddress);
+    message.delegatorAddress !== undefined && (obj.delegatorAddress = message.delegatorAddress);
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryDelegatorValidatorsRequest>,
-  ): QueryDelegatorValidatorsRequest {
+  fromPartial(object: Partial<QueryDelegatorValidatorsRequest>): QueryDelegatorValidatorsRequest {
     const message = createBaseQueryDelegatorValidatorsRequest();
-    message.delegatorAddress = object.delegatorAddress ?? '';
+    message.delegatorAddress = object.delegatorAddress ?? "";
     return message;
   },
-  fromProtoMsg(
-    message: QueryDelegatorValidatorsRequestProtoMsg,
-  ): QueryDelegatorValidatorsRequest {
+  fromProtoMsg(message: QueryDelegatorValidatorsRequestProtoMsg): QueryDelegatorValidatorsRequest {
     return QueryDelegatorValidatorsRequest.decode(message.value);
   },
   toProto(message: QueryDelegatorValidatorsRequest): Uint8Array {
     return QueryDelegatorValidatorsRequest.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryDelegatorValidatorsRequest,
-  ): QueryDelegatorValidatorsRequestProtoMsg {
+  toProtoMsg(message: QueryDelegatorValidatorsRequest): QueryDelegatorValidatorsRequestProtoMsg {
     return {
-      typeUrl: '/cosmos.distribution.v1beta1.QueryDelegatorValidatorsRequest',
-      value: QueryDelegatorValidatorsRequest.encode(message).finish(),
+      typeUrl: "/cosmos.distribution.v1beta1.QueryDelegatorValidatorsRequest",
+      value: QueryDelegatorValidatorsRequest.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryDelegatorValidatorsResponse(): QueryDelegatorValidatorsResponse {
   return {
-    validators: [],
+    validators: []
   };
 }
 export const QueryDelegatorValidatorsResponse = {
-  typeUrl:
-    '/cosmos.distribution.v1beta1.QueryDelegatorValidatorsResponse' as const,
-  encode(
-    message: QueryDelegatorValidatorsResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/cosmos.distribution.v1beta1.QueryDelegatorValidatorsResponse" as const,
+  encode(message: QueryDelegatorValidatorsResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     for (const v of message.validators) {
       writer.uint32(10).string(v!);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryDelegatorValidatorsResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryDelegatorValidatorsResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryDelegatorValidatorsResponse();
     while (reader.pos < end) {
@@ -1739,14 +1368,10 @@ export const QueryDelegatorValidatorsResponse = {
   },
   fromJSON(object: any): QueryDelegatorValidatorsResponse {
     return {
-      validators: Array.isArray(object?.validators)
-        ? object.validators.map((e: any) => String(e))
-        : [],
+      validators: Array.isArray(object?.validators) ? object.validators.map((e: any) => String(e)) : []
     };
   },
-  toJSON(
-    message: QueryDelegatorValidatorsResponse,
-  ): JsonSafe<QueryDelegatorValidatorsResponse> {
+  toJSON(message: QueryDelegatorValidatorsResponse): JsonSafe<QueryDelegatorValidatorsResponse> {
     const obj: any = {};
     if (message.validators) {
       obj.validators = message.validators.map(e => e);
@@ -1755,53 +1380,39 @@ export const QueryDelegatorValidatorsResponse = {
     }
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryDelegatorValidatorsResponse>,
-  ): QueryDelegatorValidatorsResponse {
+  fromPartial(object: Partial<QueryDelegatorValidatorsResponse>): QueryDelegatorValidatorsResponse {
     const message = createBaseQueryDelegatorValidatorsResponse();
     message.validators = object.validators?.map(e => e) || [];
     return message;
   },
-  fromProtoMsg(
-    message: QueryDelegatorValidatorsResponseProtoMsg,
-  ): QueryDelegatorValidatorsResponse {
+  fromProtoMsg(message: QueryDelegatorValidatorsResponseProtoMsg): QueryDelegatorValidatorsResponse {
     return QueryDelegatorValidatorsResponse.decode(message.value);
   },
   toProto(message: QueryDelegatorValidatorsResponse): Uint8Array {
     return QueryDelegatorValidatorsResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryDelegatorValidatorsResponse,
-  ): QueryDelegatorValidatorsResponseProtoMsg {
+  toProtoMsg(message: QueryDelegatorValidatorsResponse): QueryDelegatorValidatorsResponseProtoMsg {
     return {
-      typeUrl: '/cosmos.distribution.v1beta1.QueryDelegatorValidatorsResponse',
-      value: QueryDelegatorValidatorsResponse.encode(message).finish(),
+      typeUrl: "/cosmos.distribution.v1beta1.QueryDelegatorValidatorsResponse",
+      value: QueryDelegatorValidatorsResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryDelegatorWithdrawAddressRequest(): QueryDelegatorWithdrawAddressRequest {
   return {
-    delegatorAddress: '',
+    delegatorAddress: ""
   };
 }
 export const QueryDelegatorWithdrawAddressRequest = {
-  typeUrl:
-    '/cosmos.distribution.v1beta1.QueryDelegatorWithdrawAddressRequest' as const,
-  encode(
-    message: QueryDelegatorWithdrawAddressRequest,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.delegatorAddress !== '') {
+  typeUrl: "/cosmos.distribution.v1beta1.QueryDelegatorWithdrawAddressRequest" as const,
+  encode(message: QueryDelegatorWithdrawAddressRequest, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.delegatorAddress !== "") {
       writer.uint32(10).string(message.delegatorAddress);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryDelegatorWithdrawAddressRequest {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryDelegatorWithdrawAddressRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryDelegatorWithdrawAddressRequest();
     while (reader.pos < end) {
@@ -1819,67 +1430,47 @@ export const QueryDelegatorWithdrawAddressRequest = {
   },
   fromJSON(object: any): QueryDelegatorWithdrawAddressRequest {
     return {
-      delegatorAddress: isSet(object.delegatorAddress)
-        ? String(object.delegatorAddress)
-        : '',
+      delegatorAddress: isSet(object.delegatorAddress) ? String(object.delegatorAddress) : ""
     };
   },
-  toJSON(
-    message: QueryDelegatorWithdrawAddressRequest,
-  ): JsonSafe<QueryDelegatorWithdrawAddressRequest> {
+  toJSON(message: QueryDelegatorWithdrawAddressRequest): JsonSafe<QueryDelegatorWithdrawAddressRequest> {
     const obj: any = {};
-    message.delegatorAddress !== undefined &&
-      (obj.delegatorAddress = message.delegatorAddress);
+    message.delegatorAddress !== undefined && (obj.delegatorAddress = message.delegatorAddress);
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryDelegatorWithdrawAddressRequest>,
-  ): QueryDelegatorWithdrawAddressRequest {
+  fromPartial(object: Partial<QueryDelegatorWithdrawAddressRequest>): QueryDelegatorWithdrawAddressRequest {
     const message = createBaseQueryDelegatorWithdrawAddressRequest();
-    message.delegatorAddress = object.delegatorAddress ?? '';
+    message.delegatorAddress = object.delegatorAddress ?? "";
     return message;
   },
-  fromProtoMsg(
-    message: QueryDelegatorWithdrawAddressRequestProtoMsg,
-  ): QueryDelegatorWithdrawAddressRequest {
+  fromProtoMsg(message: QueryDelegatorWithdrawAddressRequestProtoMsg): QueryDelegatorWithdrawAddressRequest {
     return QueryDelegatorWithdrawAddressRequest.decode(message.value);
   },
   toProto(message: QueryDelegatorWithdrawAddressRequest): Uint8Array {
     return QueryDelegatorWithdrawAddressRequest.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryDelegatorWithdrawAddressRequest,
-  ): QueryDelegatorWithdrawAddressRequestProtoMsg {
+  toProtoMsg(message: QueryDelegatorWithdrawAddressRequest): QueryDelegatorWithdrawAddressRequestProtoMsg {
     return {
-      typeUrl:
-        '/cosmos.distribution.v1beta1.QueryDelegatorWithdrawAddressRequest',
-      value: QueryDelegatorWithdrawAddressRequest.encode(message).finish(),
+      typeUrl: "/cosmos.distribution.v1beta1.QueryDelegatorWithdrawAddressRequest",
+      value: QueryDelegatorWithdrawAddressRequest.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryDelegatorWithdrawAddressResponse(): QueryDelegatorWithdrawAddressResponse {
   return {
-    withdrawAddress: '',
+    withdrawAddress: ""
   };
 }
 export const QueryDelegatorWithdrawAddressResponse = {
-  typeUrl:
-    '/cosmos.distribution.v1beta1.QueryDelegatorWithdrawAddressResponse' as const,
-  encode(
-    message: QueryDelegatorWithdrawAddressResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.withdrawAddress !== '') {
+  typeUrl: "/cosmos.distribution.v1beta1.QueryDelegatorWithdrawAddressResponse" as const,
+  encode(message: QueryDelegatorWithdrawAddressResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.withdrawAddress !== "") {
       writer.uint32(10).string(message.withdrawAddress);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryDelegatorWithdrawAddressResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryDelegatorWithdrawAddressResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryDelegatorWithdrawAddressResponse();
     while (reader.pos < end) {
@@ -1897,61 +1488,42 @@ export const QueryDelegatorWithdrawAddressResponse = {
   },
   fromJSON(object: any): QueryDelegatorWithdrawAddressResponse {
     return {
-      withdrawAddress: isSet(object.withdrawAddress)
-        ? String(object.withdrawAddress)
-        : '',
+      withdrawAddress: isSet(object.withdrawAddress) ? String(object.withdrawAddress) : ""
     };
   },
-  toJSON(
-    message: QueryDelegatorWithdrawAddressResponse,
-  ): JsonSafe<QueryDelegatorWithdrawAddressResponse> {
+  toJSON(message: QueryDelegatorWithdrawAddressResponse): JsonSafe<QueryDelegatorWithdrawAddressResponse> {
     const obj: any = {};
-    message.withdrawAddress !== undefined &&
-      (obj.withdrawAddress = message.withdrawAddress);
+    message.withdrawAddress !== undefined && (obj.withdrawAddress = message.withdrawAddress);
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryDelegatorWithdrawAddressResponse>,
-  ): QueryDelegatorWithdrawAddressResponse {
+  fromPartial(object: Partial<QueryDelegatorWithdrawAddressResponse>): QueryDelegatorWithdrawAddressResponse {
     const message = createBaseQueryDelegatorWithdrawAddressResponse();
-    message.withdrawAddress = object.withdrawAddress ?? '';
+    message.withdrawAddress = object.withdrawAddress ?? "";
     return message;
   },
-  fromProtoMsg(
-    message: QueryDelegatorWithdrawAddressResponseProtoMsg,
-  ): QueryDelegatorWithdrawAddressResponse {
+  fromProtoMsg(message: QueryDelegatorWithdrawAddressResponseProtoMsg): QueryDelegatorWithdrawAddressResponse {
     return QueryDelegatorWithdrawAddressResponse.decode(message.value);
   },
   toProto(message: QueryDelegatorWithdrawAddressResponse): Uint8Array {
     return QueryDelegatorWithdrawAddressResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryDelegatorWithdrawAddressResponse,
-  ): QueryDelegatorWithdrawAddressResponseProtoMsg {
+  toProtoMsg(message: QueryDelegatorWithdrawAddressResponse): QueryDelegatorWithdrawAddressResponseProtoMsg {
     return {
-      typeUrl:
-        '/cosmos.distribution.v1beta1.QueryDelegatorWithdrawAddressResponse',
-      value: QueryDelegatorWithdrawAddressResponse.encode(message).finish(),
+      typeUrl: "/cosmos.distribution.v1beta1.QueryDelegatorWithdrawAddressResponse",
+      value: QueryDelegatorWithdrawAddressResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryCommunityPoolRequest(): QueryCommunityPoolRequest {
   return {};
 }
 export const QueryCommunityPoolRequest = {
-  typeUrl: '/cosmos.distribution.v1beta1.QueryCommunityPoolRequest' as const,
-  encode(
-    _: QueryCommunityPoolRequest,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/cosmos.distribution.v1beta1.QueryCommunityPoolRequest" as const,
+  encode(_: QueryCommunityPoolRequest, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryCommunityPoolRequest {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryCommunityPoolRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryCommunityPoolRequest();
     while (reader.pos < end) {
@@ -1971,51 +1543,38 @@ export const QueryCommunityPoolRequest = {
     const obj: any = {};
     return obj;
   },
-  fromPartial(
-    _: Partial<QueryCommunityPoolRequest>,
-  ): QueryCommunityPoolRequest {
+  fromPartial(_: Partial<QueryCommunityPoolRequest>): QueryCommunityPoolRequest {
     const message = createBaseQueryCommunityPoolRequest();
     return message;
   },
-  fromProtoMsg(
-    message: QueryCommunityPoolRequestProtoMsg,
-  ): QueryCommunityPoolRequest {
+  fromProtoMsg(message: QueryCommunityPoolRequestProtoMsg): QueryCommunityPoolRequest {
     return QueryCommunityPoolRequest.decode(message.value);
   },
   toProto(message: QueryCommunityPoolRequest): Uint8Array {
     return QueryCommunityPoolRequest.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryCommunityPoolRequest,
-  ): QueryCommunityPoolRequestProtoMsg {
+  toProtoMsg(message: QueryCommunityPoolRequest): QueryCommunityPoolRequestProtoMsg {
     return {
-      typeUrl: '/cosmos.distribution.v1beta1.QueryCommunityPoolRequest',
-      value: QueryCommunityPoolRequest.encode(message).finish(),
+      typeUrl: "/cosmos.distribution.v1beta1.QueryCommunityPoolRequest",
+      value: QueryCommunityPoolRequest.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryCommunityPoolResponse(): QueryCommunityPoolResponse {
   return {
-    pool: [],
+    pool: []
   };
 }
 export const QueryCommunityPoolResponse = {
-  typeUrl: '/cosmos.distribution.v1beta1.QueryCommunityPoolResponse' as const,
-  encode(
-    message: QueryCommunityPoolResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/cosmos.distribution.v1beta1.QueryCommunityPoolResponse" as const,
+  encode(message: QueryCommunityPoolResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     for (const v of message.pool) {
       DecCoin.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryCommunityPoolResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryCommunityPoolResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryCommunityPoolResponse();
     while (reader.pos < end) {
@@ -2033,43 +1592,33 @@ export const QueryCommunityPoolResponse = {
   },
   fromJSON(object: any): QueryCommunityPoolResponse {
     return {
-      pool: Array.isArray(object?.pool)
-        ? object.pool.map((e: any) => DecCoin.fromJSON(e))
-        : [],
+      pool: Array.isArray(object?.pool) ? object.pool.map((e: any) => DecCoin.fromJSON(e)) : []
     };
   },
-  toJSON(
-    message: QueryCommunityPoolResponse,
-  ): JsonSafe<QueryCommunityPoolResponse> {
+  toJSON(message: QueryCommunityPoolResponse): JsonSafe<QueryCommunityPoolResponse> {
     const obj: any = {};
     if (message.pool) {
-      obj.pool = message.pool.map(e => (e ? DecCoin.toJSON(e) : undefined));
+      obj.pool = message.pool.map(e => e ? DecCoin.toJSON(e) : undefined);
     } else {
       obj.pool = [];
     }
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryCommunityPoolResponse>,
-  ): QueryCommunityPoolResponse {
+  fromPartial(object: Partial<QueryCommunityPoolResponse>): QueryCommunityPoolResponse {
     const message = createBaseQueryCommunityPoolResponse();
     message.pool = object.pool?.map(e => DecCoin.fromPartial(e)) || [];
     return message;
   },
-  fromProtoMsg(
-    message: QueryCommunityPoolResponseProtoMsg,
-  ): QueryCommunityPoolResponse {
+  fromProtoMsg(message: QueryCommunityPoolResponseProtoMsg): QueryCommunityPoolResponse {
     return QueryCommunityPoolResponse.decode(message.value);
   },
   toProto(message: QueryCommunityPoolResponse): Uint8Array {
     return QueryCommunityPoolResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryCommunityPoolResponse,
-  ): QueryCommunityPoolResponseProtoMsg {
+  toProtoMsg(message: QueryCommunityPoolResponse): QueryCommunityPoolResponseProtoMsg {
     return {
-      typeUrl: '/cosmos.distribution.v1beta1.QueryCommunityPoolResponse',
-      value: QueryCommunityPoolResponse.encode(message).finish(),
+      typeUrl: "/cosmos.distribution.v1beta1.QueryCommunityPoolResponse",
+      value: QueryCommunityPoolResponse.encode(message).finish()
     };
-  },
+  }
 };

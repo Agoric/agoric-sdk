@@ -1,11 +1,8 @@
 //@ts-nocheck
-import {
-  Coin,
-  type CoinSDKType,
-} from '../../../../cosmos/base/v1beta1/coin.js';
-import { BinaryReader, BinaryWriter } from '../../../../binary.js';
-import { isSet } from '../../../../helpers.js';
-import { type JsonSafe } from '../../../../json-safe.js';
+import { Coin, type CoinSDKType } from "../../../../cosmos/base/v1beta1/coin.js";
+import { BinaryReader, BinaryWriter } from "../../../../binary.js";
+import { isSet } from "../../../../helpers.js";
+import {type JsonSafe } from "../../../../json-safe.js";
 /** Allocation defines the spend limit for a particular port and channel */
 export interface Allocation {
   /** the port on which the packet will be sent */
@@ -23,7 +20,7 @@ export interface Allocation {
   allowedPacketData: string[];
 }
 export interface AllocationProtoMsg {
-  typeUrl: '/ibc.applications.transfer.v1.Allocation';
+  typeUrl: "/ibc.applications.transfer.v1.Allocation";
   value: Uint8Array;
 }
 /** Allocation defines the spend limit for a particular port and channel */
@@ -39,12 +36,12 @@ export interface AllocationSDKType {
  * the granter's account for ibc transfer on a specific channel
  */
 export interface TransferAuthorization {
-  $typeUrl?: '/ibc.applications.transfer.v1.TransferAuthorization';
+  $typeUrl?: "/ibc.applications.transfer.v1.TransferAuthorization";
   /** port and channel amounts */
   allocations: Allocation[];
 }
 export interface TransferAuthorizationProtoMsg {
-  typeUrl: '/ibc.applications.transfer.v1.TransferAuthorization';
+  typeUrl: "/ibc.applications.transfer.v1.TransferAuthorization";
   value: Uint8Array;
 }
 /**
@@ -52,28 +49,25 @@ export interface TransferAuthorizationProtoMsg {
  * the granter's account for ibc transfer on a specific channel
  */
 export interface TransferAuthorizationSDKType {
-  $typeUrl?: '/ibc.applications.transfer.v1.TransferAuthorization';
+  $typeUrl?: "/ibc.applications.transfer.v1.TransferAuthorization";
   allocations: AllocationSDKType[];
 }
 function createBaseAllocation(): Allocation {
   return {
-    sourcePort: '',
-    sourceChannel: '',
+    sourcePort: "",
+    sourceChannel: "",
     spendLimit: [],
     allowList: [],
-    allowedPacketData: [],
+    allowedPacketData: []
   };
 }
 export const Allocation = {
-  typeUrl: '/ibc.applications.transfer.v1.Allocation' as const,
-  encode(
-    message: Allocation,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.sourcePort !== '') {
+  typeUrl: "/ibc.applications.transfer.v1.Allocation" as const,
+  encode(message: Allocation, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.sourcePort !== "") {
       writer.uint32(10).string(message.sourcePort);
     }
-    if (message.sourceChannel !== '') {
+    if (message.sourceChannel !== "") {
       writer.uint32(18).string(message.sourceChannel);
     }
     for (const v of message.spendLimit) {
@@ -88,8 +82,7 @@ export const Allocation = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Allocation {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseAllocation();
     while (reader.pos < end) {
@@ -119,30 +112,19 @@ export const Allocation = {
   },
   fromJSON(object: any): Allocation {
     return {
-      sourcePort: isSet(object.sourcePort) ? String(object.sourcePort) : '',
-      sourceChannel: isSet(object.sourceChannel)
-        ? String(object.sourceChannel)
-        : '',
-      spendLimit: Array.isArray(object?.spendLimit)
-        ? object.spendLimit.map((e: any) => Coin.fromJSON(e))
-        : [],
-      allowList: Array.isArray(object?.allowList)
-        ? object.allowList.map((e: any) => String(e))
-        : [],
-      allowedPacketData: Array.isArray(object?.allowedPacketData)
-        ? object.allowedPacketData.map((e: any) => String(e))
-        : [],
+      sourcePort: isSet(object.sourcePort) ? String(object.sourcePort) : "",
+      sourceChannel: isSet(object.sourceChannel) ? String(object.sourceChannel) : "",
+      spendLimit: Array.isArray(object?.spendLimit) ? object.spendLimit.map((e: any) => Coin.fromJSON(e)) : [],
+      allowList: Array.isArray(object?.allowList) ? object.allowList.map((e: any) => String(e)) : [],
+      allowedPacketData: Array.isArray(object?.allowedPacketData) ? object.allowedPacketData.map((e: any) => String(e)) : []
     };
   },
   toJSON(message: Allocation): JsonSafe<Allocation> {
     const obj: any = {};
     message.sourcePort !== undefined && (obj.sourcePort = message.sourcePort);
-    message.sourceChannel !== undefined &&
-      (obj.sourceChannel = message.sourceChannel);
+    message.sourceChannel !== undefined && (obj.sourceChannel = message.sourceChannel);
     if (message.spendLimit) {
-      obj.spendLimit = message.spendLimit.map(e =>
-        e ? Coin.toJSON(e) : undefined,
-      );
+      obj.spendLimit = message.spendLimit.map(e => e ? Coin.toJSON(e) : undefined);
     } else {
       obj.spendLimit = [];
     }
@@ -160,8 +142,8 @@ export const Allocation = {
   },
   fromPartial(object: Partial<Allocation>): Allocation {
     const message = createBaseAllocation();
-    message.sourcePort = object.sourcePort ?? '';
-    message.sourceChannel = object.sourceChannel ?? '';
+    message.sourcePort = object.sourcePort ?? "";
+    message.sourceChannel = object.sourceChannel ?? "";
     message.spendLimit = object.spendLimit?.map(e => Coin.fromPartial(e)) || [];
     message.allowList = object.allowList?.map(e => e) || [];
     message.allowedPacketData = object.allowedPacketData?.map(e => e) || [];
@@ -175,34 +157,27 @@ export const Allocation = {
   },
   toProtoMsg(message: Allocation): AllocationProtoMsg {
     return {
-      typeUrl: '/ibc.applications.transfer.v1.Allocation',
-      value: Allocation.encode(message).finish(),
+      typeUrl: "/ibc.applications.transfer.v1.Allocation",
+      value: Allocation.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseTransferAuthorization(): TransferAuthorization {
   return {
-    $typeUrl: '/ibc.applications.transfer.v1.TransferAuthorization',
-    allocations: [],
+    $typeUrl: "/ibc.applications.transfer.v1.TransferAuthorization",
+    allocations: []
   };
 }
 export const TransferAuthorization = {
-  typeUrl: '/ibc.applications.transfer.v1.TransferAuthorization' as const,
-  encode(
-    message: TransferAuthorization,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/ibc.applications.transfer.v1.TransferAuthorization" as const,
+  encode(message: TransferAuthorization, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     for (const v of message.allocations) {
       Allocation.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): TransferAuthorization {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): TransferAuthorization {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseTransferAuthorization();
     while (reader.pos < end) {
@@ -220,17 +195,13 @@ export const TransferAuthorization = {
   },
   fromJSON(object: any): TransferAuthorization {
     return {
-      allocations: Array.isArray(object?.allocations)
-        ? object.allocations.map((e: any) => Allocation.fromJSON(e))
-        : [],
+      allocations: Array.isArray(object?.allocations) ? object.allocations.map((e: any) => Allocation.fromJSON(e)) : []
     };
   },
   toJSON(message: TransferAuthorization): JsonSafe<TransferAuthorization> {
     const obj: any = {};
     if (message.allocations) {
-      obj.allocations = message.allocations.map(e =>
-        e ? Allocation.toJSON(e) : undefined,
-      );
+      obj.allocations = message.allocations.map(e => e ? Allocation.toJSON(e) : undefined);
     } else {
       obj.allocations = [];
     }
@@ -238,8 +209,7 @@ export const TransferAuthorization = {
   },
   fromPartial(object: Partial<TransferAuthorization>): TransferAuthorization {
     const message = createBaseTransferAuthorization();
-    message.allocations =
-      object.allocations?.map(e => Allocation.fromPartial(e)) || [];
+    message.allocations = object.allocations?.map(e => Allocation.fromPartial(e)) || [];
     return message;
   },
   fromProtoMsg(message: TransferAuthorizationProtoMsg): TransferAuthorization {
@@ -250,8 +220,8 @@ export const TransferAuthorization = {
   },
   toProtoMsg(message: TransferAuthorization): TransferAuthorizationProtoMsg {
     return {
-      typeUrl: '/ibc.applications.transfer.v1.TransferAuthorization',
-      value: TransferAuthorization.encode(message).finish(),
+      typeUrl: "/ibc.applications.transfer.v1.TransferAuthorization",
+      value: TransferAuthorization.encode(message).finish()
     };
-  },
+  }
 };

@@ -1,7 +1,7 @@
 //@ts-nocheck
-import { BinaryReader, BinaryWriter } from '../../../binary.js';
-import { isSet } from '../../../helpers.js';
-import { type JsonSafe } from '../../../json-safe.js';
+import { BinaryReader, BinaryWriter } from "../../../binary.js";
+import { isSet } from "../../../helpers.js";
+import {type JsonSafe } from "../../../json-safe.js";
 /**
  * PerMessageBurnLimit is the maximum amount of a certain denom that can be
  * burned in an single burn
@@ -14,7 +14,7 @@ export interface PerMessageBurnLimit {
   amount: string;
 }
 export interface PerMessageBurnLimitProtoMsg {
-  typeUrl: '/circle.cctp.v1.PerMessageBurnLimit';
+  typeUrl: "/circle.cctp.v1.PerMessageBurnLimit";
   value: Uint8Array;
 }
 /**
@@ -30,30 +30,23 @@ export interface PerMessageBurnLimitSDKType {
 }
 function createBasePerMessageBurnLimit(): PerMessageBurnLimit {
   return {
-    denom: '',
-    amount: '',
+    denom: "",
+    amount: ""
   };
 }
 export const PerMessageBurnLimit = {
-  typeUrl: '/circle.cctp.v1.PerMessageBurnLimit' as const,
-  encode(
-    message: PerMessageBurnLimit,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.denom !== '') {
+  typeUrl: "/circle.cctp.v1.PerMessageBurnLimit" as const,
+  encode(message: PerMessageBurnLimit, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.denom !== "") {
       writer.uint32(10).string(message.denom);
     }
-    if (message.amount !== '') {
+    if (message.amount !== "") {
       writer.uint32(18).string(message.amount);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): PerMessageBurnLimit {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): PerMessageBurnLimit {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBasePerMessageBurnLimit();
     while (reader.pos < end) {
@@ -74,8 +67,8 @@ export const PerMessageBurnLimit = {
   },
   fromJSON(object: any): PerMessageBurnLimit {
     return {
-      denom: isSet(object.denom) ? String(object.denom) : '',
-      amount: isSet(object.amount) ? String(object.amount) : '',
+      denom: isSet(object.denom) ? String(object.denom) : "",
+      amount: isSet(object.amount) ? String(object.amount) : ""
     };
   },
   toJSON(message: PerMessageBurnLimit): JsonSafe<PerMessageBurnLimit> {
@@ -86,8 +79,8 @@ export const PerMessageBurnLimit = {
   },
   fromPartial(object: Partial<PerMessageBurnLimit>): PerMessageBurnLimit {
     const message = createBasePerMessageBurnLimit();
-    message.denom = object.denom ?? '';
-    message.amount = object.amount ?? '';
+    message.denom = object.denom ?? "";
+    message.amount = object.amount ?? "";
     return message;
   },
   fromProtoMsg(message: PerMessageBurnLimitProtoMsg): PerMessageBurnLimit {
@@ -98,8 +91,8 @@ export const PerMessageBurnLimit = {
   },
   toProtoMsg(message: PerMessageBurnLimit): PerMessageBurnLimitProtoMsg {
     return {
-      typeUrl: '/circle.cctp.v1.PerMessageBurnLimit',
-      value: PerMessageBurnLimit.encode(message).finish(),
+      typeUrl: "/circle.cctp.v1.PerMessageBurnLimit",
+      value: PerMessageBurnLimit.encode(message).finish()
     };
-  },
+  }
 };

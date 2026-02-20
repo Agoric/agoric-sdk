@@ -1,22 +1,14 @@
 //@ts-nocheck
-import {
-  PageRequest,
-  type PageRequestSDKType,
-  PageResponse,
-  type PageResponseSDKType,
-} from '../../cosmos/base/query/v1beta1/pagination.js';
-import { Params, type ParamsSDKType } from './params.js';
-import { Validator, type ValidatorSDKType } from './validator.js';
-import { HostZone, type HostZoneSDKType } from './host_zone.js';
-import { EpochTracker, type EpochTrackerSDKType } from './epoch_tracker.js';
-import {
-  AddressUnbonding,
-  type AddressUnbondingSDKType,
-} from './address_unbonding.js';
-import { TradeRoute, type TradeRouteSDKType } from './trade_route.js';
-import { BinaryReader, BinaryWriter } from '../../binary.js';
-import { isSet } from '../../helpers.js';
-import { type JsonSafe } from '../../json-safe.js';
+import { PageRequest, type PageRequestSDKType, PageResponse, type PageResponseSDKType } from "../../cosmos/base/query/v1beta1/pagination.js";
+import { Params, type ParamsSDKType } from "./params.js";
+import { Validator, type ValidatorSDKType } from "./validator.js";
+import { HostZone, type HostZoneSDKType } from "./host_zone.js";
+import { EpochTracker, type EpochTrackerSDKType } from "./epoch_tracker.js";
+import { AddressUnbonding, type AddressUnbondingSDKType } from "./address_unbonding.js";
+import { TradeRoute, type TradeRouteSDKType } from "./trade_route.js";
+import { BinaryReader, BinaryWriter } from "../../binary.js";
+import { isSet } from "../../helpers.js";
+import {type JsonSafe } from "../../json-safe.js";
 /**
  * QueryInterchainAccountFromAddressRequest is the request type for the
  * Query/InterchainAccountAddress RPC
@@ -26,7 +18,7 @@ export interface QueryInterchainAccountFromAddressRequest {
   connectionId: string;
 }
 export interface QueryInterchainAccountFromAddressRequestProtoMsg {
-  typeUrl: '/stride.stakeibc.QueryInterchainAccountFromAddressRequest';
+  typeUrl: "/stride.stakeibc.QueryInterchainAccountFromAddressRequest";
   value: Uint8Array;
 }
 /**
@@ -45,7 +37,7 @@ export interface QueryInterchainAccountFromAddressResponse {
   interchainAccountAddress: string;
 }
 export interface QueryInterchainAccountFromAddressResponseProtoMsg {
-  typeUrl: '/stride.stakeibc.QueryInterchainAccountFromAddressResponse';
+  typeUrl: "/stride.stakeibc.QueryInterchainAccountFromAddressResponse";
   value: Uint8Array;
 }
 /**
@@ -58,7 +50,7 @@ export interface QueryInterchainAccountFromAddressResponseSDKType {
 /** QueryParamsRequest is request type for the Query/Params RPC method. */
 export interface QueryParamsRequest {}
 export interface QueryParamsRequestProtoMsg {
-  typeUrl: '/stride.stakeibc.QueryParamsRequest';
+  typeUrl: "/stride.stakeibc.QueryParamsRequest";
   value: Uint8Array;
 }
 /** QueryParamsRequest is request type for the Query/Params RPC method. */
@@ -69,7 +61,7 @@ export interface QueryParamsResponse {
   params: Params;
 }
 export interface QueryParamsResponseProtoMsg {
-  typeUrl: '/stride.stakeibc.QueryParamsResponse';
+  typeUrl: "/stride.stakeibc.QueryParamsResponse";
   value: Uint8Array;
 }
 /** QueryParamsResponse is response type for the Query/Params RPC method. */
@@ -80,7 +72,7 @@ export interface QueryGetValidatorsRequest {
   chainId: string;
 }
 export interface QueryGetValidatorsRequestProtoMsg {
-  typeUrl: '/stride.stakeibc.QueryGetValidatorsRequest';
+  typeUrl: "/stride.stakeibc.QueryGetValidatorsRequest";
   value: Uint8Array;
 }
 export interface QueryGetValidatorsRequestSDKType {
@@ -90,7 +82,7 @@ export interface QueryGetValidatorsResponse {
   validators: Validator[];
 }
 export interface QueryGetValidatorsResponseProtoMsg {
-  typeUrl: '/stride.stakeibc.QueryGetValidatorsResponse';
+  typeUrl: "/stride.stakeibc.QueryGetValidatorsResponse";
   value: Uint8Array;
 }
 export interface QueryGetValidatorsResponseSDKType {
@@ -100,7 +92,7 @@ export interface QueryGetHostZoneRequest {
   chainId: string;
 }
 export interface QueryGetHostZoneRequestProtoMsg {
-  typeUrl: '/stride.stakeibc.QueryGetHostZoneRequest';
+  typeUrl: "/stride.stakeibc.QueryGetHostZoneRequest";
   value: Uint8Array;
 }
 export interface QueryGetHostZoneRequestSDKType {
@@ -110,7 +102,7 @@ export interface QueryGetHostZoneResponse {
   hostZone: HostZone;
 }
 export interface QueryGetHostZoneResponseProtoMsg {
-  typeUrl: '/stride.stakeibc.QueryGetHostZoneResponse';
+  typeUrl: "/stride.stakeibc.QueryGetHostZoneResponse";
   value: Uint8Array;
 }
 export interface QueryGetHostZoneResponseSDKType {
@@ -120,7 +112,7 @@ export interface QueryAllHostZoneRequest {
   pagination?: PageRequest;
 }
 export interface QueryAllHostZoneRequestProtoMsg {
-  typeUrl: '/stride.stakeibc.QueryAllHostZoneRequest';
+  typeUrl: "/stride.stakeibc.QueryAllHostZoneRequest";
   value: Uint8Array;
 }
 export interface QueryAllHostZoneRequestSDKType {
@@ -131,7 +123,7 @@ export interface QueryAllHostZoneResponse {
   pagination?: PageResponse;
 }
 export interface QueryAllHostZoneResponseProtoMsg {
-  typeUrl: '/stride.stakeibc.QueryAllHostZoneResponse';
+  typeUrl: "/stride.stakeibc.QueryAllHostZoneResponse";
   value: Uint8Array;
 }
 export interface QueryAllHostZoneResponseSDKType {
@@ -142,7 +134,7 @@ export interface QueryModuleAddressRequest {
   name: string;
 }
 export interface QueryModuleAddressRequestProtoMsg {
-  typeUrl: '/stride.stakeibc.QueryModuleAddressRequest';
+  typeUrl: "/stride.stakeibc.QueryModuleAddressRequest";
   value: Uint8Array;
 }
 export interface QueryModuleAddressRequestSDKType {
@@ -152,7 +144,7 @@ export interface QueryModuleAddressResponse {
   addr: string;
 }
 export interface QueryModuleAddressResponseProtoMsg {
-  typeUrl: '/stride.stakeibc.QueryModuleAddressResponse';
+  typeUrl: "/stride.stakeibc.QueryModuleAddressResponse";
   value: Uint8Array;
 }
 export interface QueryModuleAddressResponseSDKType {
@@ -162,7 +154,7 @@ export interface QueryGetEpochTrackerRequest {
   epochIdentifier: string;
 }
 export interface QueryGetEpochTrackerRequestProtoMsg {
-  typeUrl: '/stride.stakeibc.QueryGetEpochTrackerRequest';
+  typeUrl: "/stride.stakeibc.QueryGetEpochTrackerRequest";
   value: Uint8Array;
 }
 export interface QueryGetEpochTrackerRequestSDKType {
@@ -172,7 +164,7 @@ export interface QueryGetEpochTrackerResponse {
   epochTracker: EpochTracker;
 }
 export interface QueryGetEpochTrackerResponseProtoMsg {
-  typeUrl: '/stride.stakeibc.QueryGetEpochTrackerResponse';
+  typeUrl: "/stride.stakeibc.QueryGetEpochTrackerResponse";
   value: Uint8Array;
 }
 export interface QueryGetEpochTrackerResponseSDKType {
@@ -180,7 +172,7 @@ export interface QueryGetEpochTrackerResponseSDKType {
 }
 export interface QueryAllEpochTrackerRequest {}
 export interface QueryAllEpochTrackerRequestProtoMsg {
-  typeUrl: '/stride.stakeibc.QueryAllEpochTrackerRequest';
+  typeUrl: "/stride.stakeibc.QueryAllEpochTrackerRequest";
   value: Uint8Array;
 }
 export interface QueryAllEpochTrackerRequestSDKType {}
@@ -188,7 +180,7 @@ export interface QueryAllEpochTrackerResponse {
   epochTracker: EpochTracker[];
 }
 export interface QueryAllEpochTrackerResponseProtoMsg {
-  typeUrl: '/stride.stakeibc.QueryAllEpochTrackerResponse';
+  typeUrl: "/stride.stakeibc.QueryAllEpochTrackerResponse";
   value: Uint8Array;
 }
 export interface QueryAllEpochTrackerResponseSDKType {
@@ -199,7 +191,7 @@ export interface QueryGetNextPacketSequenceRequest {
   portId: string;
 }
 export interface QueryGetNextPacketSequenceRequestProtoMsg {
-  typeUrl: '/stride.stakeibc.QueryGetNextPacketSequenceRequest';
+  typeUrl: "/stride.stakeibc.QueryGetNextPacketSequenceRequest";
   value: Uint8Array;
 }
 export interface QueryGetNextPacketSequenceRequestSDKType {
@@ -210,7 +202,7 @@ export interface QueryGetNextPacketSequenceResponse {
   sequence: bigint;
 }
 export interface QueryGetNextPacketSequenceResponseProtoMsg {
-  typeUrl: '/stride.stakeibc.QueryGetNextPacketSequenceResponse';
+  typeUrl: "/stride.stakeibc.QueryGetNextPacketSequenceResponse";
   value: Uint8Array;
 }
 export interface QueryGetNextPacketSequenceResponseSDKType {
@@ -220,7 +212,7 @@ export interface QueryAddressUnbondings {
   address: string;
 }
 export interface QueryAddressUnbondingsProtoMsg {
-  typeUrl: '/stride.stakeibc.QueryAddressUnbondings';
+  typeUrl: "/stride.stakeibc.QueryAddressUnbondings";
   value: Uint8Array;
 }
 export interface QueryAddressUnbondingsSDKType {
@@ -230,7 +222,7 @@ export interface QueryAddressUnbondingsResponse {
   addressUnbondings: AddressUnbonding[];
 }
 export interface QueryAddressUnbondingsResponseProtoMsg {
-  typeUrl: '/stride.stakeibc.QueryAddressUnbondingsResponse';
+  typeUrl: "/stride.stakeibc.QueryAddressUnbondingsResponse";
   value: Uint8Array;
 }
 export interface QueryAddressUnbondingsResponseSDKType {
@@ -238,7 +230,7 @@ export interface QueryAddressUnbondingsResponseSDKType {
 }
 export interface QueryAllTradeRoutes {}
 export interface QueryAllTradeRoutesProtoMsg {
-  typeUrl: '/stride.stakeibc.QueryAllTradeRoutes';
+  typeUrl: "/stride.stakeibc.QueryAllTradeRoutes";
   value: Uint8Array;
 }
 export interface QueryAllTradeRoutesSDKType {}
@@ -246,7 +238,7 @@ export interface QueryAllTradeRoutesResponse {
   tradeRoutes: TradeRoute[];
 }
 export interface QueryAllTradeRoutesResponseProtoMsg {
-  typeUrl: '/stride.stakeibc.QueryAllTradeRoutesResponse';
+  typeUrl: "/stride.stakeibc.QueryAllTradeRoutesResponse";
   value: Uint8Array;
 }
 export interface QueryAllTradeRoutesResponseSDKType {
@@ -254,30 +246,23 @@ export interface QueryAllTradeRoutesResponseSDKType {
 }
 function createBaseQueryInterchainAccountFromAddressRequest(): QueryInterchainAccountFromAddressRequest {
   return {
-    owner: '',
-    connectionId: '',
+    owner: "",
+    connectionId: ""
   };
 }
 export const QueryInterchainAccountFromAddressRequest = {
-  typeUrl: '/stride.stakeibc.QueryInterchainAccountFromAddressRequest' as const,
-  encode(
-    message: QueryInterchainAccountFromAddressRequest,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.owner !== '') {
+  typeUrl: "/stride.stakeibc.QueryInterchainAccountFromAddressRequest" as const,
+  encode(message: QueryInterchainAccountFromAddressRequest, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.owner !== "") {
       writer.uint32(10).string(message.owner);
     }
-    if (message.connectionId !== '') {
+    if (message.connectionId !== "") {
       writer.uint32(18).string(message.connectionId);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryInterchainAccountFromAddressRequest {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryInterchainAccountFromAddressRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryInterchainAccountFromAddressRequest();
     while (reader.pos < end) {
@@ -298,69 +283,50 @@ export const QueryInterchainAccountFromAddressRequest = {
   },
   fromJSON(object: any): QueryInterchainAccountFromAddressRequest {
     return {
-      owner: isSet(object.owner) ? String(object.owner) : '',
-      connectionId: isSet(object.connectionId)
-        ? String(object.connectionId)
-        : '',
+      owner: isSet(object.owner) ? String(object.owner) : "",
+      connectionId: isSet(object.connectionId) ? String(object.connectionId) : ""
     };
   },
-  toJSON(
-    message: QueryInterchainAccountFromAddressRequest,
-  ): JsonSafe<QueryInterchainAccountFromAddressRequest> {
+  toJSON(message: QueryInterchainAccountFromAddressRequest): JsonSafe<QueryInterchainAccountFromAddressRequest> {
     const obj: any = {};
     message.owner !== undefined && (obj.owner = message.owner);
-    message.connectionId !== undefined &&
-      (obj.connectionId = message.connectionId);
+    message.connectionId !== undefined && (obj.connectionId = message.connectionId);
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryInterchainAccountFromAddressRequest>,
-  ): QueryInterchainAccountFromAddressRequest {
+  fromPartial(object: Partial<QueryInterchainAccountFromAddressRequest>): QueryInterchainAccountFromAddressRequest {
     const message = createBaseQueryInterchainAccountFromAddressRequest();
-    message.owner = object.owner ?? '';
-    message.connectionId = object.connectionId ?? '';
+    message.owner = object.owner ?? "";
+    message.connectionId = object.connectionId ?? "";
     return message;
   },
-  fromProtoMsg(
-    message: QueryInterchainAccountFromAddressRequestProtoMsg,
-  ): QueryInterchainAccountFromAddressRequest {
+  fromProtoMsg(message: QueryInterchainAccountFromAddressRequestProtoMsg): QueryInterchainAccountFromAddressRequest {
     return QueryInterchainAccountFromAddressRequest.decode(message.value);
   },
   toProto(message: QueryInterchainAccountFromAddressRequest): Uint8Array {
     return QueryInterchainAccountFromAddressRequest.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryInterchainAccountFromAddressRequest,
-  ): QueryInterchainAccountFromAddressRequestProtoMsg {
+  toProtoMsg(message: QueryInterchainAccountFromAddressRequest): QueryInterchainAccountFromAddressRequestProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.QueryInterchainAccountFromAddressRequest',
-      value: QueryInterchainAccountFromAddressRequest.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.QueryInterchainAccountFromAddressRequest",
+      value: QueryInterchainAccountFromAddressRequest.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryInterchainAccountFromAddressResponse(): QueryInterchainAccountFromAddressResponse {
   return {
-    interchainAccountAddress: '',
+    interchainAccountAddress: ""
   };
 }
 export const QueryInterchainAccountFromAddressResponse = {
-  typeUrl:
-    '/stride.stakeibc.QueryInterchainAccountFromAddressResponse' as const,
-  encode(
-    message: QueryInterchainAccountFromAddressResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.interchainAccountAddress !== '') {
+  typeUrl: "/stride.stakeibc.QueryInterchainAccountFromAddressResponse" as const,
+  encode(message: QueryInterchainAccountFromAddressResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.interchainAccountAddress !== "") {
       writer.uint32(10).string(message.interchainAccountAddress);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryInterchainAccountFromAddressResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryInterchainAccountFromAddressResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryInterchainAccountFromAddressResponse();
     while (reader.pos < end) {
@@ -378,60 +344,42 @@ export const QueryInterchainAccountFromAddressResponse = {
   },
   fromJSON(object: any): QueryInterchainAccountFromAddressResponse {
     return {
-      interchainAccountAddress: isSet(object.interchainAccountAddress)
-        ? String(object.interchainAccountAddress)
-        : '',
+      interchainAccountAddress: isSet(object.interchainAccountAddress) ? String(object.interchainAccountAddress) : ""
     };
   },
-  toJSON(
-    message: QueryInterchainAccountFromAddressResponse,
-  ): JsonSafe<QueryInterchainAccountFromAddressResponse> {
+  toJSON(message: QueryInterchainAccountFromAddressResponse): JsonSafe<QueryInterchainAccountFromAddressResponse> {
     const obj: any = {};
-    message.interchainAccountAddress !== undefined &&
-      (obj.interchainAccountAddress = message.interchainAccountAddress);
+    message.interchainAccountAddress !== undefined && (obj.interchainAccountAddress = message.interchainAccountAddress);
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryInterchainAccountFromAddressResponse>,
-  ): QueryInterchainAccountFromAddressResponse {
+  fromPartial(object: Partial<QueryInterchainAccountFromAddressResponse>): QueryInterchainAccountFromAddressResponse {
     const message = createBaseQueryInterchainAccountFromAddressResponse();
-    message.interchainAccountAddress = object.interchainAccountAddress ?? '';
+    message.interchainAccountAddress = object.interchainAccountAddress ?? "";
     return message;
   },
-  fromProtoMsg(
-    message: QueryInterchainAccountFromAddressResponseProtoMsg,
-  ): QueryInterchainAccountFromAddressResponse {
+  fromProtoMsg(message: QueryInterchainAccountFromAddressResponseProtoMsg): QueryInterchainAccountFromAddressResponse {
     return QueryInterchainAccountFromAddressResponse.decode(message.value);
   },
   toProto(message: QueryInterchainAccountFromAddressResponse): Uint8Array {
     return QueryInterchainAccountFromAddressResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryInterchainAccountFromAddressResponse,
-  ): QueryInterchainAccountFromAddressResponseProtoMsg {
+  toProtoMsg(message: QueryInterchainAccountFromAddressResponse): QueryInterchainAccountFromAddressResponseProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.QueryInterchainAccountFromAddressResponse',
-      value: QueryInterchainAccountFromAddressResponse.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.QueryInterchainAccountFromAddressResponse",
+      value: QueryInterchainAccountFromAddressResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryParamsRequest(): QueryParamsRequest {
   return {};
 }
 export const QueryParamsRequest = {
-  typeUrl: '/stride.stakeibc.QueryParamsRequest' as const,
-  encode(
-    _: QueryParamsRequest,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/stride.stakeibc.QueryParamsRequest" as const,
+  encode(_: QueryParamsRequest, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryParamsRequest {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryParamsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryParamsRequest();
     while (reader.pos < end) {
@@ -463,33 +411,26 @@ export const QueryParamsRequest = {
   },
   toProtoMsg(message: QueryParamsRequest): QueryParamsRequestProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.QueryParamsRequest',
-      value: QueryParamsRequest.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.QueryParamsRequest",
+      value: QueryParamsRequest.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryParamsResponse(): QueryParamsResponse {
   return {
-    params: Params.fromPartial({}),
+    params: Params.fromPartial({})
   };
 }
 export const QueryParamsResponse = {
-  typeUrl: '/stride.stakeibc.QueryParamsResponse' as const,
-  encode(
-    message: QueryParamsResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/stride.stakeibc.QueryParamsResponse" as const,
+  encode(message: QueryParamsResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.params !== undefined) {
       Params.encode(message.params, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryParamsResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryParamsResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryParamsResponse();
     while (reader.pos < end) {
@@ -507,21 +448,17 @@ export const QueryParamsResponse = {
   },
   fromJSON(object: any): QueryParamsResponse {
     return {
-      params: isSet(object.params) ? Params.fromJSON(object.params) : undefined,
+      params: isSet(object.params) ? Params.fromJSON(object.params) : undefined
     };
   },
   toJSON(message: QueryParamsResponse): JsonSafe<QueryParamsResponse> {
     const obj: any = {};
-    message.params !== undefined &&
-      (obj.params = message.params ? Params.toJSON(message.params) : undefined);
+    message.params !== undefined && (obj.params = message.params ? Params.toJSON(message.params) : undefined);
     return obj;
   },
   fromPartial(object: Partial<QueryParamsResponse>): QueryParamsResponse {
     const message = createBaseQueryParamsResponse();
-    message.params =
-      object.params !== undefined && object.params !== null
-        ? Params.fromPartial(object.params)
-        : undefined;
+    message.params = object.params !== undefined && object.params !== null ? Params.fromPartial(object.params) : undefined;
     return message;
   },
   fromProtoMsg(message: QueryParamsResponseProtoMsg): QueryParamsResponse {
@@ -532,33 +469,26 @@ export const QueryParamsResponse = {
   },
   toProtoMsg(message: QueryParamsResponse): QueryParamsResponseProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.QueryParamsResponse',
-      value: QueryParamsResponse.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.QueryParamsResponse",
+      value: QueryParamsResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryGetValidatorsRequest(): QueryGetValidatorsRequest {
   return {
-    chainId: '',
+    chainId: ""
   };
 }
 export const QueryGetValidatorsRequest = {
-  typeUrl: '/stride.stakeibc.QueryGetValidatorsRequest' as const,
-  encode(
-    message: QueryGetValidatorsRequest,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.chainId !== '') {
+  typeUrl: "/stride.stakeibc.QueryGetValidatorsRequest" as const,
+  encode(message: QueryGetValidatorsRequest, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.chainId !== "") {
       writer.uint32(10).string(message.chainId);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryGetValidatorsRequest {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryGetValidatorsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryGetValidatorsRequest();
     while (reader.pos < end) {
@@ -576,62 +506,47 @@ export const QueryGetValidatorsRequest = {
   },
   fromJSON(object: any): QueryGetValidatorsRequest {
     return {
-      chainId: isSet(object.chainId) ? String(object.chainId) : '',
+      chainId: isSet(object.chainId) ? String(object.chainId) : ""
     };
   },
-  toJSON(
-    message: QueryGetValidatorsRequest,
-  ): JsonSafe<QueryGetValidatorsRequest> {
+  toJSON(message: QueryGetValidatorsRequest): JsonSafe<QueryGetValidatorsRequest> {
     const obj: any = {};
     message.chainId !== undefined && (obj.chainId = message.chainId);
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryGetValidatorsRequest>,
-  ): QueryGetValidatorsRequest {
+  fromPartial(object: Partial<QueryGetValidatorsRequest>): QueryGetValidatorsRequest {
     const message = createBaseQueryGetValidatorsRequest();
-    message.chainId = object.chainId ?? '';
+    message.chainId = object.chainId ?? "";
     return message;
   },
-  fromProtoMsg(
-    message: QueryGetValidatorsRequestProtoMsg,
-  ): QueryGetValidatorsRequest {
+  fromProtoMsg(message: QueryGetValidatorsRequestProtoMsg): QueryGetValidatorsRequest {
     return QueryGetValidatorsRequest.decode(message.value);
   },
   toProto(message: QueryGetValidatorsRequest): Uint8Array {
     return QueryGetValidatorsRequest.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryGetValidatorsRequest,
-  ): QueryGetValidatorsRequestProtoMsg {
+  toProtoMsg(message: QueryGetValidatorsRequest): QueryGetValidatorsRequestProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.QueryGetValidatorsRequest',
-      value: QueryGetValidatorsRequest.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.QueryGetValidatorsRequest",
+      value: QueryGetValidatorsRequest.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryGetValidatorsResponse(): QueryGetValidatorsResponse {
   return {
-    validators: [],
+    validators: []
   };
 }
 export const QueryGetValidatorsResponse = {
-  typeUrl: '/stride.stakeibc.QueryGetValidatorsResponse' as const,
-  encode(
-    message: QueryGetValidatorsResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/stride.stakeibc.QueryGetValidatorsResponse" as const,
+  encode(message: QueryGetValidatorsResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     for (const v of message.validators) {
       Validator.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryGetValidatorsResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryGetValidatorsResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryGetValidatorsResponse();
     while (reader.pos < end) {
@@ -649,71 +564,51 @@ export const QueryGetValidatorsResponse = {
   },
   fromJSON(object: any): QueryGetValidatorsResponse {
     return {
-      validators: Array.isArray(object?.validators)
-        ? object.validators.map((e: any) => Validator.fromJSON(e))
-        : [],
+      validators: Array.isArray(object?.validators) ? object.validators.map((e: any) => Validator.fromJSON(e)) : []
     };
   },
-  toJSON(
-    message: QueryGetValidatorsResponse,
-  ): JsonSafe<QueryGetValidatorsResponse> {
+  toJSON(message: QueryGetValidatorsResponse): JsonSafe<QueryGetValidatorsResponse> {
     const obj: any = {};
     if (message.validators) {
-      obj.validators = message.validators.map(e =>
-        e ? Validator.toJSON(e) : undefined,
-      );
+      obj.validators = message.validators.map(e => e ? Validator.toJSON(e) : undefined);
     } else {
       obj.validators = [];
     }
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryGetValidatorsResponse>,
-  ): QueryGetValidatorsResponse {
+  fromPartial(object: Partial<QueryGetValidatorsResponse>): QueryGetValidatorsResponse {
     const message = createBaseQueryGetValidatorsResponse();
-    message.validators =
-      object.validators?.map(e => Validator.fromPartial(e)) || [];
+    message.validators = object.validators?.map(e => Validator.fromPartial(e)) || [];
     return message;
   },
-  fromProtoMsg(
-    message: QueryGetValidatorsResponseProtoMsg,
-  ): QueryGetValidatorsResponse {
+  fromProtoMsg(message: QueryGetValidatorsResponseProtoMsg): QueryGetValidatorsResponse {
     return QueryGetValidatorsResponse.decode(message.value);
   },
   toProto(message: QueryGetValidatorsResponse): Uint8Array {
     return QueryGetValidatorsResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryGetValidatorsResponse,
-  ): QueryGetValidatorsResponseProtoMsg {
+  toProtoMsg(message: QueryGetValidatorsResponse): QueryGetValidatorsResponseProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.QueryGetValidatorsResponse',
-      value: QueryGetValidatorsResponse.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.QueryGetValidatorsResponse",
+      value: QueryGetValidatorsResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryGetHostZoneRequest(): QueryGetHostZoneRequest {
   return {
-    chainId: '',
+    chainId: ""
   };
 }
 export const QueryGetHostZoneRequest = {
-  typeUrl: '/stride.stakeibc.QueryGetHostZoneRequest' as const,
-  encode(
-    message: QueryGetHostZoneRequest,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.chainId !== '') {
+  typeUrl: "/stride.stakeibc.QueryGetHostZoneRequest" as const,
+  encode(message: QueryGetHostZoneRequest, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.chainId !== "") {
       writer.uint32(10).string(message.chainId);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryGetHostZoneRequest {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryGetHostZoneRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryGetHostZoneRequest();
     while (reader.pos < end) {
@@ -731,7 +626,7 @@ export const QueryGetHostZoneRequest = {
   },
   fromJSON(object: any): QueryGetHostZoneRequest {
     return {
-      chainId: isSet(object.chainId) ? String(object.chainId) : '',
+      chainId: isSet(object.chainId) ? String(object.chainId) : ""
     };
   },
   toJSON(message: QueryGetHostZoneRequest): JsonSafe<QueryGetHostZoneRequest> {
@@ -739,52 +634,39 @@ export const QueryGetHostZoneRequest = {
     message.chainId !== undefined && (obj.chainId = message.chainId);
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryGetHostZoneRequest>,
-  ): QueryGetHostZoneRequest {
+  fromPartial(object: Partial<QueryGetHostZoneRequest>): QueryGetHostZoneRequest {
     const message = createBaseQueryGetHostZoneRequest();
-    message.chainId = object.chainId ?? '';
+    message.chainId = object.chainId ?? "";
     return message;
   },
-  fromProtoMsg(
-    message: QueryGetHostZoneRequestProtoMsg,
-  ): QueryGetHostZoneRequest {
+  fromProtoMsg(message: QueryGetHostZoneRequestProtoMsg): QueryGetHostZoneRequest {
     return QueryGetHostZoneRequest.decode(message.value);
   },
   toProto(message: QueryGetHostZoneRequest): Uint8Array {
     return QueryGetHostZoneRequest.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryGetHostZoneRequest,
-  ): QueryGetHostZoneRequestProtoMsg {
+  toProtoMsg(message: QueryGetHostZoneRequest): QueryGetHostZoneRequestProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.QueryGetHostZoneRequest',
-      value: QueryGetHostZoneRequest.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.QueryGetHostZoneRequest",
+      value: QueryGetHostZoneRequest.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryGetHostZoneResponse(): QueryGetHostZoneResponse {
   return {
-    hostZone: HostZone.fromPartial({}),
+    hostZone: HostZone.fromPartial({})
   };
 }
 export const QueryGetHostZoneResponse = {
-  typeUrl: '/stride.stakeibc.QueryGetHostZoneResponse' as const,
-  encode(
-    message: QueryGetHostZoneResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/stride.stakeibc.QueryGetHostZoneResponse" as const,
+  encode(message: QueryGetHostZoneResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.hostZone !== undefined) {
       HostZone.encode(message.hostZone, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryGetHostZoneResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryGetHostZoneResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryGetHostZoneResponse();
     while (reader.pos < end) {
@@ -802,70 +684,47 @@ export const QueryGetHostZoneResponse = {
   },
   fromJSON(object: any): QueryGetHostZoneResponse {
     return {
-      hostZone: isSet(object.hostZone)
-        ? HostZone.fromJSON(object.hostZone)
-        : undefined,
+      hostZone: isSet(object.hostZone) ? HostZone.fromJSON(object.hostZone) : undefined
     };
   },
-  toJSON(
-    message: QueryGetHostZoneResponse,
-  ): JsonSafe<QueryGetHostZoneResponse> {
+  toJSON(message: QueryGetHostZoneResponse): JsonSafe<QueryGetHostZoneResponse> {
     const obj: any = {};
-    message.hostZone !== undefined &&
-      (obj.hostZone = message.hostZone
-        ? HostZone.toJSON(message.hostZone)
-        : undefined);
+    message.hostZone !== undefined && (obj.hostZone = message.hostZone ? HostZone.toJSON(message.hostZone) : undefined);
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryGetHostZoneResponse>,
-  ): QueryGetHostZoneResponse {
+  fromPartial(object: Partial<QueryGetHostZoneResponse>): QueryGetHostZoneResponse {
     const message = createBaseQueryGetHostZoneResponse();
-    message.hostZone =
-      object.hostZone !== undefined && object.hostZone !== null
-        ? HostZone.fromPartial(object.hostZone)
-        : undefined;
+    message.hostZone = object.hostZone !== undefined && object.hostZone !== null ? HostZone.fromPartial(object.hostZone) : undefined;
     return message;
   },
-  fromProtoMsg(
-    message: QueryGetHostZoneResponseProtoMsg,
-  ): QueryGetHostZoneResponse {
+  fromProtoMsg(message: QueryGetHostZoneResponseProtoMsg): QueryGetHostZoneResponse {
     return QueryGetHostZoneResponse.decode(message.value);
   },
   toProto(message: QueryGetHostZoneResponse): Uint8Array {
     return QueryGetHostZoneResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryGetHostZoneResponse,
-  ): QueryGetHostZoneResponseProtoMsg {
+  toProtoMsg(message: QueryGetHostZoneResponse): QueryGetHostZoneResponseProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.QueryGetHostZoneResponse',
-      value: QueryGetHostZoneResponse.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.QueryGetHostZoneResponse",
+      value: QueryGetHostZoneResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryAllHostZoneRequest(): QueryAllHostZoneRequest {
   return {
-    pagination: undefined,
+    pagination: undefined
   };
 }
 export const QueryAllHostZoneRequest = {
-  typeUrl: '/stride.stakeibc.QueryAllHostZoneRequest' as const,
-  encode(
-    message: QueryAllHostZoneRequest,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/stride.stakeibc.QueryAllHostZoneRequest" as const,
+  encode(message: QueryAllHostZoneRequest, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.pagination !== undefined) {
       PageRequest.encode(message.pagination, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryAllHostZoneRequest {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryAllHostZoneRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryAllHostZoneRequest();
     while (reader.pos < end) {
@@ -883,75 +742,51 @@ export const QueryAllHostZoneRequest = {
   },
   fromJSON(object: any): QueryAllHostZoneRequest {
     return {
-      pagination: isSet(object.pagination)
-        ? PageRequest.fromJSON(object.pagination)
-        : undefined,
+      pagination: isSet(object.pagination) ? PageRequest.fromJSON(object.pagination) : undefined
     };
   },
   toJSON(message: QueryAllHostZoneRequest): JsonSafe<QueryAllHostZoneRequest> {
     const obj: any = {};
-    message.pagination !== undefined &&
-      (obj.pagination = message.pagination
-        ? PageRequest.toJSON(message.pagination)
-        : undefined);
+    message.pagination !== undefined && (obj.pagination = message.pagination ? PageRequest.toJSON(message.pagination) : undefined);
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryAllHostZoneRequest>,
-  ): QueryAllHostZoneRequest {
+  fromPartial(object: Partial<QueryAllHostZoneRequest>): QueryAllHostZoneRequest {
     const message = createBaseQueryAllHostZoneRequest();
-    message.pagination =
-      object.pagination !== undefined && object.pagination !== null
-        ? PageRequest.fromPartial(object.pagination)
-        : undefined;
+    message.pagination = object.pagination !== undefined && object.pagination !== null ? PageRequest.fromPartial(object.pagination) : undefined;
     return message;
   },
-  fromProtoMsg(
-    message: QueryAllHostZoneRequestProtoMsg,
-  ): QueryAllHostZoneRequest {
+  fromProtoMsg(message: QueryAllHostZoneRequestProtoMsg): QueryAllHostZoneRequest {
     return QueryAllHostZoneRequest.decode(message.value);
   },
   toProto(message: QueryAllHostZoneRequest): Uint8Array {
     return QueryAllHostZoneRequest.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryAllHostZoneRequest,
-  ): QueryAllHostZoneRequestProtoMsg {
+  toProtoMsg(message: QueryAllHostZoneRequest): QueryAllHostZoneRequestProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.QueryAllHostZoneRequest',
-      value: QueryAllHostZoneRequest.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.QueryAllHostZoneRequest",
+      value: QueryAllHostZoneRequest.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryAllHostZoneResponse(): QueryAllHostZoneResponse {
   return {
     hostZone: [],
-    pagination: undefined,
+    pagination: undefined
   };
 }
 export const QueryAllHostZoneResponse = {
-  typeUrl: '/stride.stakeibc.QueryAllHostZoneResponse' as const,
-  encode(
-    message: QueryAllHostZoneResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/stride.stakeibc.QueryAllHostZoneResponse" as const,
+  encode(message: QueryAllHostZoneResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     for (const v of message.hostZone) {
       HostZone.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     if (message.pagination !== undefined) {
-      PageResponse.encode(
-        message.pagination,
-        writer.uint32(18).fork(),
-      ).ldelim();
+      PageResponse.encode(message.pagination, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryAllHostZoneResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryAllHostZoneResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryAllHostZoneResponse();
     while (reader.pos < end) {
@@ -972,81 +807,54 @@ export const QueryAllHostZoneResponse = {
   },
   fromJSON(object: any): QueryAllHostZoneResponse {
     return {
-      hostZone: Array.isArray(object?.hostZone)
-        ? object.hostZone.map((e: any) => HostZone.fromJSON(e))
-        : [],
-      pagination: isSet(object.pagination)
-        ? PageResponse.fromJSON(object.pagination)
-        : undefined,
+      hostZone: Array.isArray(object?.hostZone) ? object.hostZone.map((e: any) => HostZone.fromJSON(e)) : [],
+      pagination: isSet(object.pagination) ? PageResponse.fromJSON(object.pagination) : undefined
     };
   },
-  toJSON(
-    message: QueryAllHostZoneResponse,
-  ): JsonSafe<QueryAllHostZoneResponse> {
+  toJSON(message: QueryAllHostZoneResponse): JsonSafe<QueryAllHostZoneResponse> {
     const obj: any = {};
     if (message.hostZone) {
-      obj.hostZone = message.hostZone.map(e =>
-        e ? HostZone.toJSON(e) : undefined,
-      );
+      obj.hostZone = message.hostZone.map(e => e ? HostZone.toJSON(e) : undefined);
     } else {
       obj.hostZone = [];
     }
-    message.pagination !== undefined &&
-      (obj.pagination = message.pagination
-        ? PageResponse.toJSON(message.pagination)
-        : undefined);
+    message.pagination !== undefined && (obj.pagination = message.pagination ? PageResponse.toJSON(message.pagination) : undefined);
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryAllHostZoneResponse>,
-  ): QueryAllHostZoneResponse {
+  fromPartial(object: Partial<QueryAllHostZoneResponse>): QueryAllHostZoneResponse {
     const message = createBaseQueryAllHostZoneResponse();
     message.hostZone = object.hostZone?.map(e => HostZone.fromPartial(e)) || [];
-    message.pagination =
-      object.pagination !== undefined && object.pagination !== null
-        ? PageResponse.fromPartial(object.pagination)
-        : undefined;
+    message.pagination = object.pagination !== undefined && object.pagination !== null ? PageResponse.fromPartial(object.pagination) : undefined;
     return message;
   },
-  fromProtoMsg(
-    message: QueryAllHostZoneResponseProtoMsg,
-  ): QueryAllHostZoneResponse {
+  fromProtoMsg(message: QueryAllHostZoneResponseProtoMsg): QueryAllHostZoneResponse {
     return QueryAllHostZoneResponse.decode(message.value);
   },
   toProto(message: QueryAllHostZoneResponse): Uint8Array {
     return QueryAllHostZoneResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryAllHostZoneResponse,
-  ): QueryAllHostZoneResponseProtoMsg {
+  toProtoMsg(message: QueryAllHostZoneResponse): QueryAllHostZoneResponseProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.QueryAllHostZoneResponse',
-      value: QueryAllHostZoneResponse.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.QueryAllHostZoneResponse",
+      value: QueryAllHostZoneResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryModuleAddressRequest(): QueryModuleAddressRequest {
   return {
-    name: '',
+    name: ""
   };
 }
 export const QueryModuleAddressRequest = {
-  typeUrl: '/stride.stakeibc.QueryModuleAddressRequest' as const,
-  encode(
-    message: QueryModuleAddressRequest,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.name !== '') {
+  typeUrl: "/stride.stakeibc.QueryModuleAddressRequest" as const,
+  encode(message: QueryModuleAddressRequest, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryModuleAddressRequest {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryModuleAddressRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryModuleAddressRequest();
     while (reader.pos < end) {
@@ -1064,62 +872,47 @@ export const QueryModuleAddressRequest = {
   },
   fromJSON(object: any): QueryModuleAddressRequest {
     return {
-      name: isSet(object.name) ? String(object.name) : '',
+      name: isSet(object.name) ? String(object.name) : ""
     };
   },
-  toJSON(
-    message: QueryModuleAddressRequest,
-  ): JsonSafe<QueryModuleAddressRequest> {
+  toJSON(message: QueryModuleAddressRequest): JsonSafe<QueryModuleAddressRequest> {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryModuleAddressRequest>,
-  ): QueryModuleAddressRequest {
+  fromPartial(object: Partial<QueryModuleAddressRequest>): QueryModuleAddressRequest {
     const message = createBaseQueryModuleAddressRequest();
-    message.name = object.name ?? '';
+    message.name = object.name ?? "";
     return message;
   },
-  fromProtoMsg(
-    message: QueryModuleAddressRequestProtoMsg,
-  ): QueryModuleAddressRequest {
+  fromProtoMsg(message: QueryModuleAddressRequestProtoMsg): QueryModuleAddressRequest {
     return QueryModuleAddressRequest.decode(message.value);
   },
   toProto(message: QueryModuleAddressRequest): Uint8Array {
     return QueryModuleAddressRequest.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryModuleAddressRequest,
-  ): QueryModuleAddressRequestProtoMsg {
+  toProtoMsg(message: QueryModuleAddressRequest): QueryModuleAddressRequestProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.QueryModuleAddressRequest',
-      value: QueryModuleAddressRequest.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.QueryModuleAddressRequest",
+      value: QueryModuleAddressRequest.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryModuleAddressResponse(): QueryModuleAddressResponse {
   return {
-    addr: '',
+    addr: ""
   };
 }
 export const QueryModuleAddressResponse = {
-  typeUrl: '/stride.stakeibc.QueryModuleAddressResponse' as const,
-  encode(
-    message: QueryModuleAddressResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.addr !== '') {
+  typeUrl: "/stride.stakeibc.QueryModuleAddressResponse" as const,
+  encode(message: QueryModuleAddressResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.addr !== "") {
       writer.uint32(10).string(message.addr);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryModuleAddressResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryModuleAddressResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryModuleAddressResponse();
     while (reader.pos < end) {
@@ -1137,62 +930,47 @@ export const QueryModuleAddressResponse = {
   },
   fromJSON(object: any): QueryModuleAddressResponse {
     return {
-      addr: isSet(object.addr) ? String(object.addr) : '',
+      addr: isSet(object.addr) ? String(object.addr) : ""
     };
   },
-  toJSON(
-    message: QueryModuleAddressResponse,
-  ): JsonSafe<QueryModuleAddressResponse> {
+  toJSON(message: QueryModuleAddressResponse): JsonSafe<QueryModuleAddressResponse> {
     const obj: any = {};
     message.addr !== undefined && (obj.addr = message.addr);
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryModuleAddressResponse>,
-  ): QueryModuleAddressResponse {
+  fromPartial(object: Partial<QueryModuleAddressResponse>): QueryModuleAddressResponse {
     const message = createBaseQueryModuleAddressResponse();
-    message.addr = object.addr ?? '';
+    message.addr = object.addr ?? "";
     return message;
   },
-  fromProtoMsg(
-    message: QueryModuleAddressResponseProtoMsg,
-  ): QueryModuleAddressResponse {
+  fromProtoMsg(message: QueryModuleAddressResponseProtoMsg): QueryModuleAddressResponse {
     return QueryModuleAddressResponse.decode(message.value);
   },
   toProto(message: QueryModuleAddressResponse): Uint8Array {
     return QueryModuleAddressResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryModuleAddressResponse,
-  ): QueryModuleAddressResponseProtoMsg {
+  toProtoMsg(message: QueryModuleAddressResponse): QueryModuleAddressResponseProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.QueryModuleAddressResponse',
-      value: QueryModuleAddressResponse.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.QueryModuleAddressResponse",
+      value: QueryModuleAddressResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryGetEpochTrackerRequest(): QueryGetEpochTrackerRequest {
   return {
-    epochIdentifier: '',
+    epochIdentifier: ""
   };
 }
 export const QueryGetEpochTrackerRequest = {
-  typeUrl: '/stride.stakeibc.QueryGetEpochTrackerRequest' as const,
-  encode(
-    message: QueryGetEpochTrackerRequest,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.epochIdentifier !== '') {
+  typeUrl: "/stride.stakeibc.QueryGetEpochTrackerRequest" as const,
+  encode(message: QueryGetEpochTrackerRequest, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.epochIdentifier !== "") {
       writer.uint32(10).string(message.epochIdentifier);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryGetEpochTrackerRequest {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryGetEpochTrackerRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryGetEpochTrackerRequest();
     while (reader.pos < end) {
@@ -1210,68 +988,47 @@ export const QueryGetEpochTrackerRequest = {
   },
   fromJSON(object: any): QueryGetEpochTrackerRequest {
     return {
-      epochIdentifier: isSet(object.epochIdentifier)
-        ? String(object.epochIdentifier)
-        : '',
+      epochIdentifier: isSet(object.epochIdentifier) ? String(object.epochIdentifier) : ""
     };
   },
-  toJSON(
-    message: QueryGetEpochTrackerRequest,
-  ): JsonSafe<QueryGetEpochTrackerRequest> {
+  toJSON(message: QueryGetEpochTrackerRequest): JsonSafe<QueryGetEpochTrackerRequest> {
     const obj: any = {};
-    message.epochIdentifier !== undefined &&
-      (obj.epochIdentifier = message.epochIdentifier);
+    message.epochIdentifier !== undefined && (obj.epochIdentifier = message.epochIdentifier);
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryGetEpochTrackerRequest>,
-  ): QueryGetEpochTrackerRequest {
+  fromPartial(object: Partial<QueryGetEpochTrackerRequest>): QueryGetEpochTrackerRequest {
     const message = createBaseQueryGetEpochTrackerRequest();
-    message.epochIdentifier = object.epochIdentifier ?? '';
+    message.epochIdentifier = object.epochIdentifier ?? "";
     return message;
   },
-  fromProtoMsg(
-    message: QueryGetEpochTrackerRequestProtoMsg,
-  ): QueryGetEpochTrackerRequest {
+  fromProtoMsg(message: QueryGetEpochTrackerRequestProtoMsg): QueryGetEpochTrackerRequest {
     return QueryGetEpochTrackerRequest.decode(message.value);
   },
   toProto(message: QueryGetEpochTrackerRequest): Uint8Array {
     return QueryGetEpochTrackerRequest.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryGetEpochTrackerRequest,
-  ): QueryGetEpochTrackerRequestProtoMsg {
+  toProtoMsg(message: QueryGetEpochTrackerRequest): QueryGetEpochTrackerRequestProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.QueryGetEpochTrackerRequest',
-      value: QueryGetEpochTrackerRequest.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.QueryGetEpochTrackerRequest",
+      value: QueryGetEpochTrackerRequest.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryGetEpochTrackerResponse(): QueryGetEpochTrackerResponse {
   return {
-    epochTracker: EpochTracker.fromPartial({}),
+    epochTracker: EpochTracker.fromPartial({})
   };
 }
 export const QueryGetEpochTrackerResponse = {
-  typeUrl: '/stride.stakeibc.QueryGetEpochTrackerResponse' as const,
-  encode(
-    message: QueryGetEpochTrackerResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/stride.stakeibc.QueryGetEpochTrackerResponse" as const,
+  encode(message: QueryGetEpochTrackerResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.epochTracker !== undefined) {
-      EpochTracker.encode(
-        message.epochTracker,
-        writer.uint32(10).fork(),
-      ).ldelim();
+      EpochTracker.encode(message.epochTracker, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryGetEpochTrackerResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryGetEpochTrackerResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryGetEpochTrackerResponse();
     while (reader.pos < end) {
@@ -1289,65 +1046,42 @@ export const QueryGetEpochTrackerResponse = {
   },
   fromJSON(object: any): QueryGetEpochTrackerResponse {
     return {
-      epochTracker: isSet(object.epochTracker)
-        ? EpochTracker.fromJSON(object.epochTracker)
-        : undefined,
+      epochTracker: isSet(object.epochTracker) ? EpochTracker.fromJSON(object.epochTracker) : undefined
     };
   },
-  toJSON(
-    message: QueryGetEpochTrackerResponse,
-  ): JsonSafe<QueryGetEpochTrackerResponse> {
+  toJSON(message: QueryGetEpochTrackerResponse): JsonSafe<QueryGetEpochTrackerResponse> {
     const obj: any = {};
-    message.epochTracker !== undefined &&
-      (obj.epochTracker = message.epochTracker
-        ? EpochTracker.toJSON(message.epochTracker)
-        : undefined);
+    message.epochTracker !== undefined && (obj.epochTracker = message.epochTracker ? EpochTracker.toJSON(message.epochTracker) : undefined);
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryGetEpochTrackerResponse>,
-  ): QueryGetEpochTrackerResponse {
+  fromPartial(object: Partial<QueryGetEpochTrackerResponse>): QueryGetEpochTrackerResponse {
     const message = createBaseQueryGetEpochTrackerResponse();
-    message.epochTracker =
-      object.epochTracker !== undefined && object.epochTracker !== null
-        ? EpochTracker.fromPartial(object.epochTracker)
-        : undefined;
+    message.epochTracker = object.epochTracker !== undefined && object.epochTracker !== null ? EpochTracker.fromPartial(object.epochTracker) : undefined;
     return message;
   },
-  fromProtoMsg(
-    message: QueryGetEpochTrackerResponseProtoMsg,
-  ): QueryGetEpochTrackerResponse {
+  fromProtoMsg(message: QueryGetEpochTrackerResponseProtoMsg): QueryGetEpochTrackerResponse {
     return QueryGetEpochTrackerResponse.decode(message.value);
   },
   toProto(message: QueryGetEpochTrackerResponse): Uint8Array {
     return QueryGetEpochTrackerResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryGetEpochTrackerResponse,
-  ): QueryGetEpochTrackerResponseProtoMsg {
+  toProtoMsg(message: QueryGetEpochTrackerResponse): QueryGetEpochTrackerResponseProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.QueryGetEpochTrackerResponse',
-      value: QueryGetEpochTrackerResponse.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.QueryGetEpochTrackerResponse",
+      value: QueryGetEpochTrackerResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryAllEpochTrackerRequest(): QueryAllEpochTrackerRequest {
   return {};
 }
 export const QueryAllEpochTrackerRequest = {
-  typeUrl: '/stride.stakeibc.QueryAllEpochTrackerRequest' as const,
-  encode(
-    _: QueryAllEpochTrackerRequest,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/stride.stakeibc.QueryAllEpochTrackerRequest" as const,
+  encode(_: QueryAllEpochTrackerRequest, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryAllEpochTrackerRequest {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryAllEpochTrackerRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryAllEpochTrackerRequest();
     while (reader.pos < end) {
@@ -1363,66 +1097,49 @@ export const QueryAllEpochTrackerRequest = {
   fromJSON(_: any): QueryAllEpochTrackerRequest {
     return {};
   },
-  toJSON(
-    _: QueryAllEpochTrackerRequest,
-  ): JsonSafe<QueryAllEpochTrackerRequest> {
+  toJSON(_: QueryAllEpochTrackerRequest): JsonSafe<QueryAllEpochTrackerRequest> {
     const obj: any = {};
     return obj;
   },
-  fromPartial(
-    _: Partial<QueryAllEpochTrackerRequest>,
-  ): QueryAllEpochTrackerRequest {
+  fromPartial(_: Partial<QueryAllEpochTrackerRequest>): QueryAllEpochTrackerRequest {
     const message = createBaseQueryAllEpochTrackerRequest();
     return message;
   },
-  fromProtoMsg(
-    message: QueryAllEpochTrackerRequestProtoMsg,
-  ): QueryAllEpochTrackerRequest {
+  fromProtoMsg(message: QueryAllEpochTrackerRequestProtoMsg): QueryAllEpochTrackerRequest {
     return QueryAllEpochTrackerRequest.decode(message.value);
   },
   toProto(message: QueryAllEpochTrackerRequest): Uint8Array {
     return QueryAllEpochTrackerRequest.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryAllEpochTrackerRequest,
-  ): QueryAllEpochTrackerRequestProtoMsg {
+  toProtoMsg(message: QueryAllEpochTrackerRequest): QueryAllEpochTrackerRequestProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.QueryAllEpochTrackerRequest',
-      value: QueryAllEpochTrackerRequest.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.QueryAllEpochTrackerRequest",
+      value: QueryAllEpochTrackerRequest.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryAllEpochTrackerResponse(): QueryAllEpochTrackerResponse {
   return {
-    epochTracker: [],
+    epochTracker: []
   };
 }
 export const QueryAllEpochTrackerResponse = {
-  typeUrl: '/stride.stakeibc.QueryAllEpochTrackerResponse' as const,
-  encode(
-    message: QueryAllEpochTrackerResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/stride.stakeibc.QueryAllEpochTrackerResponse" as const,
+  encode(message: QueryAllEpochTrackerResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     for (const v of message.epochTracker) {
       EpochTracker.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryAllEpochTrackerResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryAllEpochTrackerResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryAllEpochTrackerResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.epochTracker.push(
-            EpochTracker.decode(reader, reader.uint32()),
-          );
+          message.epochTracker.push(EpochTracker.decode(reader, reader.uint32()));
           break;
         default:
           reader.skipType(tag & 7);
@@ -1433,75 +1150,55 @@ export const QueryAllEpochTrackerResponse = {
   },
   fromJSON(object: any): QueryAllEpochTrackerResponse {
     return {
-      epochTracker: Array.isArray(object?.epochTracker)
-        ? object.epochTracker.map((e: any) => EpochTracker.fromJSON(e))
-        : [],
+      epochTracker: Array.isArray(object?.epochTracker) ? object.epochTracker.map((e: any) => EpochTracker.fromJSON(e)) : []
     };
   },
-  toJSON(
-    message: QueryAllEpochTrackerResponse,
-  ): JsonSafe<QueryAllEpochTrackerResponse> {
+  toJSON(message: QueryAllEpochTrackerResponse): JsonSafe<QueryAllEpochTrackerResponse> {
     const obj: any = {};
     if (message.epochTracker) {
-      obj.epochTracker = message.epochTracker.map(e =>
-        e ? EpochTracker.toJSON(e) : undefined,
-      );
+      obj.epochTracker = message.epochTracker.map(e => e ? EpochTracker.toJSON(e) : undefined);
     } else {
       obj.epochTracker = [];
     }
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryAllEpochTrackerResponse>,
-  ): QueryAllEpochTrackerResponse {
+  fromPartial(object: Partial<QueryAllEpochTrackerResponse>): QueryAllEpochTrackerResponse {
     const message = createBaseQueryAllEpochTrackerResponse();
-    message.epochTracker =
-      object.epochTracker?.map(e => EpochTracker.fromPartial(e)) || [];
+    message.epochTracker = object.epochTracker?.map(e => EpochTracker.fromPartial(e)) || [];
     return message;
   },
-  fromProtoMsg(
-    message: QueryAllEpochTrackerResponseProtoMsg,
-  ): QueryAllEpochTrackerResponse {
+  fromProtoMsg(message: QueryAllEpochTrackerResponseProtoMsg): QueryAllEpochTrackerResponse {
     return QueryAllEpochTrackerResponse.decode(message.value);
   },
   toProto(message: QueryAllEpochTrackerResponse): Uint8Array {
     return QueryAllEpochTrackerResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryAllEpochTrackerResponse,
-  ): QueryAllEpochTrackerResponseProtoMsg {
+  toProtoMsg(message: QueryAllEpochTrackerResponse): QueryAllEpochTrackerResponseProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.QueryAllEpochTrackerResponse',
-      value: QueryAllEpochTrackerResponse.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.QueryAllEpochTrackerResponse",
+      value: QueryAllEpochTrackerResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryGetNextPacketSequenceRequest(): QueryGetNextPacketSequenceRequest {
   return {
-    channelId: '',
-    portId: '',
+    channelId: "",
+    portId: ""
   };
 }
 export const QueryGetNextPacketSequenceRequest = {
-  typeUrl: '/stride.stakeibc.QueryGetNextPacketSequenceRequest' as const,
-  encode(
-    message: QueryGetNextPacketSequenceRequest,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.channelId !== '') {
+  typeUrl: "/stride.stakeibc.QueryGetNextPacketSequenceRequest" as const,
+  encode(message: QueryGetNextPacketSequenceRequest, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.channelId !== "") {
       writer.uint32(10).string(message.channelId);
     }
-    if (message.portId !== '') {
+    if (message.portId !== "") {
       writer.uint32(18).string(message.portId);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryGetNextPacketSequenceRequest {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryGetNextPacketSequenceRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryGetNextPacketSequenceRequest();
     while (reader.pos < end) {
@@ -1522,65 +1219,50 @@ export const QueryGetNextPacketSequenceRequest = {
   },
   fromJSON(object: any): QueryGetNextPacketSequenceRequest {
     return {
-      channelId: isSet(object.channelId) ? String(object.channelId) : '',
-      portId: isSet(object.portId) ? String(object.portId) : '',
+      channelId: isSet(object.channelId) ? String(object.channelId) : "",
+      portId: isSet(object.portId) ? String(object.portId) : ""
     };
   },
-  toJSON(
-    message: QueryGetNextPacketSequenceRequest,
-  ): JsonSafe<QueryGetNextPacketSequenceRequest> {
+  toJSON(message: QueryGetNextPacketSequenceRequest): JsonSafe<QueryGetNextPacketSequenceRequest> {
     const obj: any = {};
     message.channelId !== undefined && (obj.channelId = message.channelId);
     message.portId !== undefined && (obj.portId = message.portId);
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryGetNextPacketSequenceRequest>,
-  ): QueryGetNextPacketSequenceRequest {
+  fromPartial(object: Partial<QueryGetNextPacketSequenceRequest>): QueryGetNextPacketSequenceRequest {
     const message = createBaseQueryGetNextPacketSequenceRequest();
-    message.channelId = object.channelId ?? '';
-    message.portId = object.portId ?? '';
+    message.channelId = object.channelId ?? "";
+    message.portId = object.portId ?? "";
     return message;
   },
-  fromProtoMsg(
-    message: QueryGetNextPacketSequenceRequestProtoMsg,
-  ): QueryGetNextPacketSequenceRequest {
+  fromProtoMsg(message: QueryGetNextPacketSequenceRequestProtoMsg): QueryGetNextPacketSequenceRequest {
     return QueryGetNextPacketSequenceRequest.decode(message.value);
   },
   toProto(message: QueryGetNextPacketSequenceRequest): Uint8Array {
     return QueryGetNextPacketSequenceRequest.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryGetNextPacketSequenceRequest,
-  ): QueryGetNextPacketSequenceRequestProtoMsg {
+  toProtoMsg(message: QueryGetNextPacketSequenceRequest): QueryGetNextPacketSequenceRequestProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.QueryGetNextPacketSequenceRequest',
-      value: QueryGetNextPacketSequenceRequest.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.QueryGetNextPacketSequenceRequest",
+      value: QueryGetNextPacketSequenceRequest.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryGetNextPacketSequenceResponse(): QueryGetNextPacketSequenceResponse {
   return {
-    sequence: BigInt(0),
+    sequence: BigInt(0)
   };
 }
 export const QueryGetNextPacketSequenceResponse = {
-  typeUrl: '/stride.stakeibc.QueryGetNextPacketSequenceResponse' as const,
-  encode(
-    message: QueryGetNextPacketSequenceResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/stride.stakeibc.QueryGetNextPacketSequenceResponse" as const,
+  encode(message: QueryGetNextPacketSequenceResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.sequence !== BigInt(0)) {
       writer.uint32(8).uint64(message.sequence);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryGetNextPacketSequenceResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryGetNextPacketSequenceResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryGetNextPacketSequenceResponse();
     while (reader.pos < end) {
@@ -1598,68 +1280,47 @@ export const QueryGetNextPacketSequenceResponse = {
   },
   fromJSON(object: any): QueryGetNextPacketSequenceResponse {
     return {
-      sequence: isSet(object.sequence)
-        ? BigInt(object.sequence.toString())
-        : BigInt(0),
+      sequence: isSet(object.sequence) ? BigInt(object.sequence.toString()) : BigInt(0)
     };
   },
-  toJSON(
-    message: QueryGetNextPacketSequenceResponse,
-  ): JsonSafe<QueryGetNextPacketSequenceResponse> {
+  toJSON(message: QueryGetNextPacketSequenceResponse): JsonSafe<QueryGetNextPacketSequenceResponse> {
     const obj: any = {};
-    message.sequence !== undefined &&
-      (obj.sequence = (message.sequence || BigInt(0)).toString());
+    message.sequence !== undefined && (obj.sequence = (message.sequence || BigInt(0)).toString());
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryGetNextPacketSequenceResponse>,
-  ): QueryGetNextPacketSequenceResponse {
+  fromPartial(object: Partial<QueryGetNextPacketSequenceResponse>): QueryGetNextPacketSequenceResponse {
     const message = createBaseQueryGetNextPacketSequenceResponse();
-    message.sequence =
-      object.sequence !== undefined && object.sequence !== null
-        ? BigInt(object.sequence.toString())
-        : BigInt(0);
+    message.sequence = object.sequence !== undefined && object.sequence !== null ? BigInt(object.sequence.toString()) : BigInt(0);
     return message;
   },
-  fromProtoMsg(
-    message: QueryGetNextPacketSequenceResponseProtoMsg,
-  ): QueryGetNextPacketSequenceResponse {
+  fromProtoMsg(message: QueryGetNextPacketSequenceResponseProtoMsg): QueryGetNextPacketSequenceResponse {
     return QueryGetNextPacketSequenceResponse.decode(message.value);
   },
   toProto(message: QueryGetNextPacketSequenceResponse): Uint8Array {
     return QueryGetNextPacketSequenceResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryGetNextPacketSequenceResponse,
-  ): QueryGetNextPacketSequenceResponseProtoMsg {
+  toProtoMsg(message: QueryGetNextPacketSequenceResponse): QueryGetNextPacketSequenceResponseProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.QueryGetNextPacketSequenceResponse',
-      value: QueryGetNextPacketSequenceResponse.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.QueryGetNextPacketSequenceResponse",
+      value: QueryGetNextPacketSequenceResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryAddressUnbondings(): QueryAddressUnbondings {
   return {
-    address: '',
+    address: ""
   };
 }
 export const QueryAddressUnbondings = {
-  typeUrl: '/stride.stakeibc.QueryAddressUnbondings' as const,
-  encode(
-    message: QueryAddressUnbondings,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.address !== '') {
+  typeUrl: "/stride.stakeibc.QueryAddressUnbondings" as const,
+  encode(message: QueryAddressUnbondings, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.address !== "") {
       writer.uint32(10).string(message.address);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryAddressUnbondings {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryAddressUnbondings {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryAddressUnbondings();
     while (reader.pos < end) {
@@ -1677,7 +1338,7 @@ export const QueryAddressUnbondings = {
   },
   fromJSON(object: any): QueryAddressUnbondings {
     return {
-      address: isSet(object.address) ? String(object.address) : '',
+      address: isSet(object.address) ? String(object.address) : ""
     };
   },
   toJSON(message: QueryAddressUnbondings): JsonSafe<QueryAddressUnbondings> {
@@ -1687,12 +1348,10 @@ export const QueryAddressUnbondings = {
   },
   fromPartial(object: Partial<QueryAddressUnbondings>): QueryAddressUnbondings {
     const message = createBaseQueryAddressUnbondings();
-    message.address = object.address ?? '';
+    message.address = object.address ?? "";
     return message;
   },
-  fromProtoMsg(
-    message: QueryAddressUnbondingsProtoMsg,
-  ): QueryAddressUnbondings {
+  fromProtoMsg(message: QueryAddressUnbondingsProtoMsg): QueryAddressUnbondings {
     return QueryAddressUnbondings.decode(message.value);
   },
   toProto(message: QueryAddressUnbondings): Uint8Array {
@@ -1700,42 +1359,33 @@ export const QueryAddressUnbondings = {
   },
   toProtoMsg(message: QueryAddressUnbondings): QueryAddressUnbondingsProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.QueryAddressUnbondings',
-      value: QueryAddressUnbondings.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.QueryAddressUnbondings",
+      value: QueryAddressUnbondings.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryAddressUnbondingsResponse(): QueryAddressUnbondingsResponse {
   return {
-    addressUnbondings: [],
+    addressUnbondings: []
   };
 }
 export const QueryAddressUnbondingsResponse = {
-  typeUrl: '/stride.stakeibc.QueryAddressUnbondingsResponse' as const,
-  encode(
-    message: QueryAddressUnbondingsResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/stride.stakeibc.QueryAddressUnbondingsResponse" as const,
+  encode(message: QueryAddressUnbondingsResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     for (const v of message.addressUnbondings) {
       AddressUnbonding.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryAddressUnbondingsResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryAddressUnbondingsResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryAddressUnbondingsResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.addressUnbondings.push(
-            AddressUnbonding.decode(reader, reader.uint32()),
-          );
+          message.addressUnbondings.push(AddressUnbonding.decode(reader, reader.uint32()));
           break;
         default:
           reader.skipType(tag & 7);
@@ -1746,66 +1396,46 @@ export const QueryAddressUnbondingsResponse = {
   },
   fromJSON(object: any): QueryAddressUnbondingsResponse {
     return {
-      addressUnbondings: Array.isArray(object?.addressUnbondings)
-        ? object.addressUnbondings.map((e: any) => AddressUnbonding.fromJSON(e))
-        : [],
+      addressUnbondings: Array.isArray(object?.addressUnbondings) ? object.addressUnbondings.map((e: any) => AddressUnbonding.fromJSON(e)) : []
     };
   },
-  toJSON(
-    message: QueryAddressUnbondingsResponse,
-  ): JsonSafe<QueryAddressUnbondingsResponse> {
+  toJSON(message: QueryAddressUnbondingsResponse): JsonSafe<QueryAddressUnbondingsResponse> {
     const obj: any = {};
     if (message.addressUnbondings) {
-      obj.addressUnbondings = message.addressUnbondings.map(e =>
-        e ? AddressUnbonding.toJSON(e) : undefined,
-      );
+      obj.addressUnbondings = message.addressUnbondings.map(e => e ? AddressUnbonding.toJSON(e) : undefined);
     } else {
       obj.addressUnbondings = [];
     }
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryAddressUnbondingsResponse>,
-  ): QueryAddressUnbondingsResponse {
+  fromPartial(object: Partial<QueryAddressUnbondingsResponse>): QueryAddressUnbondingsResponse {
     const message = createBaseQueryAddressUnbondingsResponse();
-    message.addressUnbondings =
-      object.addressUnbondings?.map(e => AddressUnbonding.fromPartial(e)) || [];
+    message.addressUnbondings = object.addressUnbondings?.map(e => AddressUnbonding.fromPartial(e)) || [];
     return message;
   },
-  fromProtoMsg(
-    message: QueryAddressUnbondingsResponseProtoMsg,
-  ): QueryAddressUnbondingsResponse {
+  fromProtoMsg(message: QueryAddressUnbondingsResponseProtoMsg): QueryAddressUnbondingsResponse {
     return QueryAddressUnbondingsResponse.decode(message.value);
   },
   toProto(message: QueryAddressUnbondingsResponse): Uint8Array {
     return QueryAddressUnbondingsResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryAddressUnbondingsResponse,
-  ): QueryAddressUnbondingsResponseProtoMsg {
+  toProtoMsg(message: QueryAddressUnbondingsResponse): QueryAddressUnbondingsResponseProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.QueryAddressUnbondingsResponse',
-      value: QueryAddressUnbondingsResponse.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.QueryAddressUnbondingsResponse",
+      value: QueryAddressUnbondingsResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryAllTradeRoutes(): QueryAllTradeRoutes {
   return {};
 }
 export const QueryAllTradeRoutes = {
-  typeUrl: '/stride.stakeibc.QueryAllTradeRoutes' as const,
-  encode(
-    _: QueryAllTradeRoutes,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/stride.stakeibc.QueryAllTradeRoutes" as const,
+  encode(_: QueryAllTradeRoutes, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryAllTradeRoutes {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryAllTradeRoutes {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryAllTradeRoutes();
     while (reader.pos < end) {
@@ -1837,33 +1467,26 @@ export const QueryAllTradeRoutes = {
   },
   toProtoMsg(message: QueryAllTradeRoutes): QueryAllTradeRoutesProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.QueryAllTradeRoutes',
-      value: QueryAllTradeRoutes.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.QueryAllTradeRoutes",
+      value: QueryAllTradeRoutes.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryAllTradeRoutesResponse(): QueryAllTradeRoutesResponse {
   return {
-    tradeRoutes: [],
+    tradeRoutes: []
   };
 }
 export const QueryAllTradeRoutesResponse = {
-  typeUrl: '/stride.stakeibc.QueryAllTradeRoutesResponse' as const,
-  encode(
-    message: QueryAllTradeRoutesResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/stride.stakeibc.QueryAllTradeRoutesResponse" as const,
+  encode(message: QueryAllTradeRoutesResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     for (const v of message.tradeRoutes) {
       TradeRoute.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryAllTradeRoutesResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryAllTradeRoutesResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryAllTradeRoutesResponse();
     while (reader.pos < end) {
@@ -1881,46 +1504,33 @@ export const QueryAllTradeRoutesResponse = {
   },
   fromJSON(object: any): QueryAllTradeRoutesResponse {
     return {
-      tradeRoutes: Array.isArray(object?.tradeRoutes)
-        ? object.tradeRoutes.map((e: any) => TradeRoute.fromJSON(e))
-        : [],
+      tradeRoutes: Array.isArray(object?.tradeRoutes) ? object.tradeRoutes.map((e: any) => TradeRoute.fromJSON(e)) : []
     };
   },
-  toJSON(
-    message: QueryAllTradeRoutesResponse,
-  ): JsonSafe<QueryAllTradeRoutesResponse> {
+  toJSON(message: QueryAllTradeRoutesResponse): JsonSafe<QueryAllTradeRoutesResponse> {
     const obj: any = {};
     if (message.tradeRoutes) {
-      obj.tradeRoutes = message.tradeRoutes.map(e =>
-        e ? TradeRoute.toJSON(e) : undefined,
-      );
+      obj.tradeRoutes = message.tradeRoutes.map(e => e ? TradeRoute.toJSON(e) : undefined);
     } else {
       obj.tradeRoutes = [];
     }
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryAllTradeRoutesResponse>,
-  ): QueryAllTradeRoutesResponse {
+  fromPartial(object: Partial<QueryAllTradeRoutesResponse>): QueryAllTradeRoutesResponse {
     const message = createBaseQueryAllTradeRoutesResponse();
-    message.tradeRoutes =
-      object.tradeRoutes?.map(e => TradeRoute.fromPartial(e)) || [];
+    message.tradeRoutes = object.tradeRoutes?.map(e => TradeRoute.fromPartial(e)) || [];
     return message;
   },
-  fromProtoMsg(
-    message: QueryAllTradeRoutesResponseProtoMsg,
-  ): QueryAllTradeRoutesResponse {
+  fromProtoMsg(message: QueryAllTradeRoutesResponseProtoMsg): QueryAllTradeRoutesResponse {
     return QueryAllTradeRoutesResponse.decode(message.value);
   },
   toProto(message: QueryAllTradeRoutesResponse): Uint8Array {
     return QueryAllTradeRoutesResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryAllTradeRoutesResponse,
-  ): QueryAllTradeRoutesResponseProtoMsg {
+  toProtoMsg(message: QueryAllTradeRoutesResponse): QueryAllTradeRoutesResponseProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.QueryAllTradeRoutesResponse',
-      value: QueryAllTradeRoutesResponse.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.QueryAllTradeRoutesResponse",
+      value: QueryAllTradeRoutesResponse.encode(message).finish()
     };
-  },
+  }
 };

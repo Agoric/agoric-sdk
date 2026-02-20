@@ -1,15 +1,15 @@
 //@ts-nocheck
-import { BinaryReader, BinaryWriter } from '../../binary.js';
-import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
-import { encodeBase64 as base64FromBytes } from '@endo/base64';
-import { type JsonSafe } from '../../json-safe.js';
+import { BinaryReader, BinaryWriter } from "../../binary.js";
+import { decodeBase64 as bytesFromBase64 } from "@endo/base64";
+import { encodeBase64 as base64FromBytes } from "@endo/base64";
+import {type JsonSafe } from "../../json-safe.js";
 /** The initial and exported module state. */
 export interface GenesisState {
   /** The list of account addresses that are being watched by the VM. */
   watchedAddresses: Uint8Array[];
 }
 export interface GenesisStateProtoMsg {
-  typeUrl: '/agoric.vtransfer.GenesisState';
+  typeUrl: "/agoric.vtransfer.GenesisState";
   value: Uint8Array;
 }
 /** The initial and exported module state. */
@@ -18,23 +18,19 @@ export interface GenesisStateSDKType {
 }
 function createBaseGenesisState(): GenesisState {
   return {
-    watchedAddresses: [],
+    watchedAddresses: []
   };
 }
 export const GenesisState = {
-  typeUrl: '/agoric.vtransfer.GenesisState' as const,
-  encode(
-    message: GenesisState,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/agoric.vtransfer.GenesisState" as const,
+  encode(message: GenesisState, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     for (const v of message.watchedAddresses) {
       writer.uint32(10).bytes(v!);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): GenesisState {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGenesisState();
     while (reader.pos < end) {
@@ -52,17 +48,13 @@ export const GenesisState = {
   },
   fromJSON(object: any): GenesisState {
     return {
-      watchedAddresses: Array.isArray(object?.watchedAddresses)
-        ? object.watchedAddresses.map((e: any) => bytesFromBase64(e))
-        : [],
+      watchedAddresses: Array.isArray(object?.watchedAddresses) ? object.watchedAddresses.map((e: any) => bytesFromBase64(e)) : []
     };
   },
   toJSON(message: GenesisState): JsonSafe<GenesisState> {
     const obj: any = {};
     if (message.watchedAddresses) {
-      obj.watchedAddresses = message.watchedAddresses.map(e =>
-        base64FromBytes(e !== undefined ? e : new Uint8Array()),
-      );
+      obj.watchedAddresses = message.watchedAddresses.map(e => base64FromBytes(e !== undefined ? e : new Uint8Array()));
     } else {
       obj.watchedAddresses = [];
     }
@@ -81,8 +73,8 @@ export const GenesisState = {
   },
   toProtoMsg(message: GenesisState): GenesisStateProtoMsg {
     return {
-      typeUrl: '/agoric.vtransfer.GenesisState',
-      value: GenesisState.encode(message).finish(),
+      typeUrl: "/agoric.vtransfer.GenesisState",
+      value: GenesisState.encode(message).finish()
     };
-  },
+  }
 };

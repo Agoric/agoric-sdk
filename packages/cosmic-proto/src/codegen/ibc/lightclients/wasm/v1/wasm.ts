@@ -1,10 +1,10 @@
 //@ts-nocheck
-import { Height, type HeightSDKType } from '../../../core/client/v1/client.js';
-import { BinaryReader, BinaryWriter } from '../../../../binary.js';
-import { isSet } from '../../../../helpers.js';
-import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
-import { encodeBase64 as base64FromBytes } from '@endo/base64';
-import { type JsonSafe } from '../../../../json-safe.js';
+import { Height, type HeightSDKType } from "../../../core/client/v1/client.js";
+import { BinaryReader, BinaryWriter } from "../../../../binary.js";
+import { isSet } from "../../../../helpers.js";
+import { decodeBase64 as bytesFromBase64 } from "@endo/base64";
+import { encodeBase64 as base64FromBytes } from "@endo/base64";
+import {type JsonSafe } from "../../../../json-safe.js";
 /** Wasm light client's Client state */
 export interface ClientState {
   /**
@@ -16,7 +16,7 @@ export interface ClientState {
   latestHeight: Height;
 }
 export interface ClientStateProtoMsg {
-  typeUrl: '/ibc.lightclients.wasm.v1.ClientState';
+  typeUrl: "/ibc.lightclients.wasm.v1.ClientState";
   value: Uint8Array;
 }
 /** Wasm light client's Client state */
@@ -34,7 +34,7 @@ export interface ConsensusState {
   data: Uint8Array;
 }
 export interface ConsensusStateProtoMsg {
-  typeUrl: '/ibc.lightclients.wasm.v1.ConsensusState';
+  typeUrl: "/ibc.lightclients.wasm.v1.ConsensusState";
   value: Uint8Array;
 }
 /** Wasm light client's ConsensusState */
@@ -46,7 +46,7 @@ export interface ClientMessage {
   data: Uint8Array;
 }
 export interface ClientMessageProtoMsg {
-  typeUrl: '/ibc.lightclients.wasm.v1.ClientMessage';
+  typeUrl: "/ibc.lightclients.wasm.v1.ClientMessage";
   value: Uint8Array;
 }
 /** Wasm light client message (either header(s) or misbehaviour) */
@@ -55,7 +55,7 @@ export interface ClientMessageSDKType {
 }
 /**
  * Checksums defines a list of all checksums that are stored
- *
+ * 
  * Deprecated: This message is deprecated in favor of storing the checksums
  * using a Collections.KeySet.
  */
@@ -64,12 +64,12 @@ export interface Checksums {
   checksums: Uint8Array[];
 }
 export interface ChecksumsProtoMsg {
-  typeUrl: '/ibc.lightclients.wasm.v1.Checksums';
+  typeUrl: "/ibc.lightclients.wasm.v1.Checksums";
   value: Uint8Array;
 }
 /**
  * Checksums defines a list of all checksums that are stored
- *
+ * 
  * Deprecated: This message is deprecated in favor of storing the checksums
  * using a Collections.KeySet.
  */
@@ -81,15 +81,12 @@ function createBaseClientState(): ClientState {
   return {
     data: new Uint8Array(),
     checksum: new Uint8Array(),
-    latestHeight: Height.fromPartial({}),
+    latestHeight: Height.fromPartial({})
   };
 }
 export const ClientState = {
-  typeUrl: '/ibc.lightclients.wasm.v1.ClientState' as const,
-  encode(
-    message: ClientState,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/ibc.lightclients.wasm.v1.ClientState" as const,
+  encode(message: ClientState, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.data.length !== 0) {
       writer.uint32(10).bytes(message.data);
     }
@@ -102,8 +99,7 @@ export const ClientState = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): ClientState {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseClientState();
     while (reader.pos < end) {
@@ -127,41 +123,23 @@ export const ClientState = {
   },
   fromJSON(object: any): ClientState {
     return {
-      data: isSet(object.data)
-        ? bytesFromBase64(object.data)
-        : new Uint8Array(),
-      checksum: isSet(object.checksum)
-        ? bytesFromBase64(object.checksum)
-        : new Uint8Array(),
-      latestHeight: isSet(object.latestHeight)
-        ? Height.fromJSON(object.latestHeight)
-        : undefined,
+      data: isSet(object.data) ? bytesFromBase64(object.data) : new Uint8Array(),
+      checksum: isSet(object.checksum) ? bytesFromBase64(object.checksum) : new Uint8Array(),
+      latestHeight: isSet(object.latestHeight) ? Height.fromJSON(object.latestHeight) : undefined
     };
   },
   toJSON(message: ClientState): JsonSafe<ClientState> {
     const obj: any = {};
-    message.data !== undefined &&
-      (obj.data = base64FromBytes(
-        message.data !== undefined ? message.data : new Uint8Array(),
-      ));
-    message.checksum !== undefined &&
-      (obj.checksum = base64FromBytes(
-        message.checksum !== undefined ? message.checksum : new Uint8Array(),
-      ));
-    message.latestHeight !== undefined &&
-      (obj.latestHeight = message.latestHeight
-        ? Height.toJSON(message.latestHeight)
-        : undefined);
+    message.data !== undefined && (obj.data = base64FromBytes(message.data !== undefined ? message.data : new Uint8Array()));
+    message.checksum !== undefined && (obj.checksum = base64FromBytes(message.checksum !== undefined ? message.checksum : new Uint8Array()));
+    message.latestHeight !== undefined && (obj.latestHeight = message.latestHeight ? Height.toJSON(message.latestHeight) : undefined);
     return obj;
   },
   fromPartial(object: Partial<ClientState>): ClientState {
     const message = createBaseClientState();
     message.data = object.data ?? new Uint8Array();
     message.checksum = object.checksum ?? new Uint8Array();
-    message.latestHeight =
-      object.latestHeight !== undefined && object.latestHeight !== null
-        ? Height.fromPartial(object.latestHeight)
-        : undefined;
+    message.latestHeight = object.latestHeight !== undefined && object.latestHeight !== null ? Height.fromPartial(object.latestHeight) : undefined;
     return message;
   },
   fromProtoMsg(message: ClientStateProtoMsg): ClientState {
@@ -172,30 +150,26 @@ export const ClientState = {
   },
   toProtoMsg(message: ClientState): ClientStateProtoMsg {
     return {
-      typeUrl: '/ibc.lightclients.wasm.v1.ClientState',
-      value: ClientState.encode(message).finish(),
+      typeUrl: "/ibc.lightclients.wasm.v1.ClientState",
+      value: ClientState.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseConsensusState(): ConsensusState {
   return {
-    data: new Uint8Array(),
+    data: new Uint8Array()
   };
 }
 export const ConsensusState = {
-  typeUrl: '/ibc.lightclients.wasm.v1.ConsensusState' as const,
-  encode(
-    message: ConsensusState,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/ibc.lightclients.wasm.v1.ConsensusState" as const,
+  encode(message: ConsensusState, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.data.length !== 0) {
       writer.uint32(10).bytes(message.data);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): ConsensusState {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseConsensusState();
     while (reader.pos < end) {
@@ -213,17 +187,12 @@ export const ConsensusState = {
   },
   fromJSON(object: any): ConsensusState {
     return {
-      data: isSet(object.data)
-        ? bytesFromBase64(object.data)
-        : new Uint8Array(),
+      data: isSet(object.data) ? bytesFromBase64(object.data) : new Uint8Array()
     };
   },
   toJSON(message: ConsensusState): JsonSafe<ConsensusState> {
     const obj: any = {};
-    message.data !== undefined &&
-      (obj.data = base64FromBytes(
-        message.data !== undefined ? message.data : new Uint8Array(),
-      ));
+    message.data !== undefined && (obj.data = base64FromBytes(message.data !== undefined ? message.data : new Uint8Array()));
     return obj;
   },
   fromPartial(object: Partial<ConsensusState>): ConsensusState {
@@ -239,30 +208,26 @@ export const ConsensusState = {
   },
   toProtoMsg(message: ConsensusState): ConsensusStateProtoMsg {
     return {
-      typeUrl: '/ibc.lightclients.wasm.v1.ConsensusState',
-      value: ConsensusState.encode(message).finish(),
+      typeUrl: "/ibc.lightclients.wasm.v1.ConsensusState",
+      value: ConsensusState.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseClientMessage(): ClientMessage {
   return {
-    data: new Uint8Array(),
+    data: new Uint8Array()
   };
 }
 export const ClientMessage = {
-  typeUrl: '/ibc.lightclients.wasm.v1.ClientMessage' as const,
-  encode(
-    message: ClientMessage,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/ibc.lightclients.wasm.v1.ClientMessage" as const,
+  encode(message: ClientMessage, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.data.length !== 0) {
       writer.uint32(10).bytes(message.data);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): ClientMessage {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseClientMessage();
     while (reader.pos < end) {
@@ -280,17 +245,12 @@ export const ClientMessage = {
   },
   fromJSON(object: any): ClientMessage {
     return {
-      data: isSet(object.data)
-        ? bytesFromBase64(object.data)
-        : new Uint8Array(),
+      data: isSet(object.data) ? bytesFromBase64(object.data) : new Uint8Array()
     };
   },
   toJSON(message: ClientMessage): JsonSafe<ClientMessage> {
     const obj: any = {};
-    message.data !== undefined &&
-      (obj.data = base64FromBytes(
-        message.data !== undefined ? message.data : new Uint8Array(),
-      ));
+    message.data !== undefined && (obj.data = base64FromBytes(message.data !== undefined ? message.data : new Uint8Array()));
     return obj;
   },
   fromPartial(object: Partial<ClientMessage>): ClientMessage {
@@ -306,30 +266,26 @@ export const ClientMessage = {
   },
   toProtoMsg(message: ClientMessage): ClientMessageProtoMsg {
     return {
-      typeUrl: '/ibc.lightclients.wasm.v1.ClientMessage',
-      value: ClientMessage.encode(message).finish(),
+      typeUrl: "/ibc.lightclients.wasm.v1.ClientMessage",
+      value: ClientMessage.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseChecksums(): Checksums {
   return {
-    checksums: [],
+    checksums: []
   };
 }
 export const Checksums = {
-  typeUrl: '/ibc.lightclients.wasm.v1.Checksums' as const,
-  encode(
-    message: Checksums,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/ibc.lightclients.wasm.v1.Checksums" as const,
+  encode(message: Checksums, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     for (const v of message.checksums) {
       writer.uint32(10).bytes(v!);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Checksums {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseChecksums();
     while (reader.pos < end) {
@@ -347,17 +303,13 @@ export const Checksums = {
   },
   fromJSON(object: any): Checksums {
     return {
-      checksums: Array.isArray(object?.checksums)
-        ? object.checksums.map((e: any) => bytesFromBase64(e))
-        : [],
+      checksums: Array.isArray(object?.checksums) ? object.checksums.map((e: any) => bytesFromBase64(e)) : []
     };
   },
   toJSON(message: Checksums): JsonSafe<Checksums> {
     const obj: any = {};
     if (message.checksums) {
-      obj.checksums = message.checksums.map(e =>
-        base64FromBytes(e !== undefined ? e : new Uint8Array()),
-      );
+      obj.checksums = message.checksums.map(e => base64FromBytes(e !== undefined ? e : new Uint8Array()));
     } else {
       obj.checksums = [];
     }
@@ -376,8 +328,8 @@ export const Checksums = {
   },
   toProtoMsg(message: Checksums): ChecksumsProtoMsg {
     return {
-      typeUrl: '/ibc.lightclients.wasm.v1.Checksums',
-      value: Checksums.encode(message).finish(),
+      typeUrl: "/ibc.lightclients.wasm.v1.Checksums",
+      value: Checksums.encode(message).finish()
     };
-  },
+  }
 };

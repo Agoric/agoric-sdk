@@ -1,7 +1,7 @@
 //@ts-nocheck
-import { BinaryReader, BinaryWriter } from '../../../../binary.js';
-import { isSet } from '../../../../helpers.js';
-import { type JsonSafe } from '../../../../json-safe.js';
+import { BinaryReader, BinaryWriter } from "../../../../binary.js";
+import { isSet } from "../../../../helpers.js";
+import {type JsonSafe } from "../../../../json-safe.js";
 /**
  * FungibleTokenPacketData defines a struct for the packet payload
  * See FungibleTokenPacketData spec:
@@ -20,7 +20,7 @@ export interface FungibleTokenPacketData {
   memo: string;
 }
 export interface FungibleTokenPacketDataProtoMsg {
-  typeUrl: '/ibc.applications.transfer.v2.FungibleTokenPacketData';
+  typeUrl: "/ibc.applications.transfer.v2.FungibleTokenPacketData";
   value: Uint8Array;
 }
 /**
@@ -37,42 +37,35 @@ export interface FungibleTokenPacketDataSDKType {
 }
 function createBaseFungibleTokenPacketData(): FungibleTokenPacketData {
   return {
-    denom: '',
-    amount: '',
-    sender: '',
-    receiver: '',
-    memo: '',
+    denom: "",
+    amount: "",
+    sender: "",
+    receiver: "",
+    memo: ""
   };
 }
 export const FungibleTokenPacketData = {
-  typeUrl: '/ibc.applications.transfer.v2.FungibleTokenPacketData' as const,
-  encode(
-    message: FungibleTokenPacketData,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.denom !== '') {
+  typeUrl: "/ibc.applications.transfer.v2.FungibleTokenPacketData" as const,
+  encode(message: FungibleTokenPacketData, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.denom !== "") {
       writer.uint32(10).string(message.denom);
     }
-    if (message.amount !== '') {
+    if (message.amount !== "") {
       writer.uint32(18).string(message.amount);
     }
-    if (message.sender !== '') {
+    if (message.sender !== "") {
       writer.uint32(26).string(message.sender);
     }
-    if (message.receiver !== '') {
+    if (message.receiver !== "") {
       writer.uint32(34).string(message.receiver);
     }
-    if (message.memo !== '') {
+    if (message.memo !== "") {
       writer.uint32(42).string(message.memo);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): FungibleTokenPacketData {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): FungibleTokenPacketData {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseFungibleTokenPacketData();
     while (reader.pos < end) {
@@ -102,11 +95,11 @@ export const FungibleTokenPacketData = {
   },
   fromJSON(object: any): FungibleTokenPacketData {
     return {
-      denom: isSet(object.denom) ? String(object.denom) : '',
-      amount: isSet(object.amount) ? String(object.amount) : '',
-      sender: isSet(object.sender) ? String(object.sender) : '',
-      receiver: isSet(object.receiver) ? String(object.receiver) : '',
-      memo: isSet(object.memo) ? String(object.memo) : '',
+      denom: isSet(object.denom) ? String(object.denom) : "",
+      amount: isSet(object.amount) ? String(object.amount) : "",
+      sender: isSet(object.sender) ? String(object.sender) : "",
+      receiver: isSet(object.receiver) ? String(object.receiver) : "",
+      memo: isSet(object.memo) ? String(object.memo) : ""
     };
   },
   toJSON(message: FungibleTokenPacketData): JsonSafe<FungibleTokenPacketData> {
@@ -118,31 +111,25 @@ export const FungibleTokenPacketData = {
     message.memo !== undefined && (obj.memo = message.memo);
     return obj;
   },
-  fromPartial(
-    object: Partial<FungibleTokenPacketData>,
-  ): FungibleTokenPacketData {
+  fromPartial(object: Partial<FungibleTokenPacketData>): FungibleTokenPacketData {
     const message = createBaseFungibleTokenPacketData();
-    message.denom = object.denom ?? '';
-    message.amount = object.amount ?? '';
-    message.sender = object.sender ?? '';
-    message.receiver = object.receiver ?? '';
-    message.memo = object.memo ?? '';
+    message.denom = object.denom ?? "";
+    message.amount = object.amount ?? "";
+    message.sender = object.sender ?? "";
+    message.receiver = object.receiver ?? "";
+    message.memo = object.memo ?? "";
     return message;
   },
-  fromProtoMsg(
-    message: FungibleTokenPacketDataProtoMsg,
-  ): FungibleTokenPacketData {
+  fromProtoMsg(message: FungibleTokenPacketDataProtoMsg): FungibleTokenPacketData {
     return FungibleTokenPacketData.decode(message.value);
   },
   toProto(message: FungibleTokenPacketData): Uint8Array {
     return FungibleTokenPacketData.encode(message).finish();
   },
-  toProtoMsg(
-    message: FungibleTokenPacketData,
-  ): FungibleTokenPacketDataProtoMsg {
+  toProtoMsg(message: FungibleTokenPacketData): FungibleTokenPacketDataProtoMsg {
     return {
-      typeUrl: '/ibc.applications.transfer.v2.FungibleTokenPacketData',
-      value: FungibleTokenPacketData.encode(message).finish(),
+      typeUrl: "/ibc.applications.transfer.v2.FungibleTokenPacketData",
+      value: FungibleTokenPacketData.encode(message).finish()
     };
-  },
+  }
 };

@@ -1,9 +1,9 @@
 //@ts-nocheck
-import { Any, type AnySDKType } from '../../../../google/protobuf/any.js';
-import { BIP44Params, type BIP44ParamsSDKType } from '../../hd/v1/hd.js';
-import { BinaryReader, BinaryWriter } from '../../../../binary.js';
-import { isSet } from '../../../../helpers.js';
-import { type JsonSafe } from '../../../../json-safe.js';
+import { Any, type AnySDKType } from "../../../../google/protobuf/any.js";
+import { BIP44Params, type BIP44ParamsSDKType } from "../../hd/v1/hd.js";
+import { BinaryReader, BinaryWriter } from "../../../../binary.js";
+import { isSet } from "../../../../helpers.js";
+import {type JsonSafe } from "../../../../json-safe.js";
 /** Record is used for representing a key in the keyring. */
 export interface Record {
   /** name represents a name of Record */
@@ -20,7 +20,7 @@ export interface Record {
   offline?: Record_Offline;
 }
 export interface RecordProtoMsg {
-  typeUrl: '/cosmos.crypto.keyring.v1.Record';
+  typeUrl: "/cosmos.crypto.keyring.v1.Record";
   value: Uint8Array;
 }
 /** Record is used for representing a key in the keyring. */
@@ -40,7 +40,7 @@ export interface Record_Local {
   privKey?: Any;
 }
 export interface Record_LocalProtoMsg {
-  typeUrl: '/cosmos.crypto.keyring.v1.Local';
+  typeUrl: "/cosmos.crypto.keyring.v1.Local";
   value: Uint8Array;
 }
 /**
@@ -55,7 +55,7 @@ export interface Record_Ledger {
   path?: BIP44Params;
 }
 export interface Record_LedgerProtoMsg {
-  typeUrl: '/cosmos.crypto.keyring.v1.Ledger';
+  typeUrl: "/cosmos.crypto.keyring.v1.Ledger";
   value: Uint8Array;
 }
 /** Ledger item */
@@ -65,7 +65,7 @@ export interface Record_LedgerSDKType {
 /** Multi item */
 export interface Record_Multi {}
 export interface Record_MultiProtoMsg {
-  typeUrl: '/cosmos.crypto.keyring.v1.Multi';
+  typeUrl: "/cosmos.crypto.keyring.v1.Multi";
   value: Uint8Array;
 }
 /** Multi item */
@@ -73,28 +73,25 @@ export interface Record_MultiSDKType {}
 /** Offline item */
 export interface Record_Offline {}
 export interface Record_OfflineProtoMsg {
-  typeUrl: '/cosmos.crypto.keyring.v1.Offline';
+  typeUrl: "/cosmos.crypto.keyring.v1.Offline";
   value: Uint8Array;
 }
 /** Offline item */
 export interface Record_OfflineSDKType {}
 function createBaseRecord(): Record {
   return {
-    name: '',
+    name: "",
     pubKey: undefined,
     local: undefined,
     ledger: undefined,
     multi: undefined,
-    offline: undefined,
+    offline: undefined
   };
 }
 export const Record = {
-  typeUrl: '/cosmos.crypto.keyring.v1.Record' as const,
-  encode(
-    message: Record,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.name !== '') {
+  typeUrl: "/cosmos.crypto.keyring.v1.Record" as const,
+  encode(message: Record, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
     if (message.pubKey !== undefined) {
@@ -115,8 +112,7 @@ export const Record = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Record {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseRecord();
     while (reader.pos < end) {
@@ -149,68 +145,32 @@ export const Record = {
   },
   fromJSON(object: any): Record {
     return {
-      name: isSet(object.name) ? String(object.name) : '',
+      name: isSet(object.name) ? String(object.name) : "",
       pubKey: isSet(object.pubKey) ? Any.fromJSON(object.pubKey) : undefined,
-      local: isSet(object.local)
-        ? Record_Local.fromJSON(object.local)
-        : undefined,
-      ledger: isSet(object.ledger)
-        ? Record_Ledger.fromJSON(object.ledger)
-        : undefined,
-      multi: isSet(object.multi)
-        ? Record_Multi.fromJSON(object.multi)
-        : undefined,
-      offline: isSet(object.offline)
-        ? Record_Offline.fromJSON(object.offline)
-        : undefined,
+      local: isSet(object.local) ? Record_Local.fromJSON(object.local) : undefined,
+      ledger: isSet(object.ledger) ? Record_Ledger.fromJSON(object.ledger) : undefined,
+      multi: isSet(object.multi) ? Record_Multi.fromJSON(object.multi) : undefined,
+      offline: isSet(object.offline) ? Record_Offline.fromJSON(object.offline) : undefined
     };
   },
   toJSON(message: Record): JsonSafe<Record> {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
-    message.pubKey !== undefined &&
-      (obj.pubKey = message.pubKey ? Any.toJSON(message.pubKey) : undefined);
-    message.local !== undefined &&
-      (obj.local = message.local
-        ? Record_Local.toJSON(message.local)
-        : undefined);
-    message.ledger !== undefined &&
-      (obj.ledger = message.ledger
-        ? Record_Ledger.toJSON(message.ledger)
-        : undefined);
-    message.multi !== undefined &&
-      (obj.multi = message.multi
-        ? Record_Multi.toJSON(message.multi)
-        : undefined);
-    message.offline !== undefined &&
-      (obj.offline = message.offline
-        ? Record_Offline.toJSON(message.offline)
-        : undefined);
+    message.pubKey !== undefined && (obj.pubKey = message.pubKey ? Any.toJSON(message.pubKey) : undefined);
+    message.local !== undefined && (obj.local = message.local ? Record_Local.toJSON(message.local) : undefined);
+    message.ledger !== undefined && (obj.ledger = message.ledger ? Record_Ledger.toJSON(message.ledger) : undefined);
+    message.multi !== undefined && (obj.multi = message.multi ? Record_Multi.toJSON(message.multi) : undefined);
+    message.offline !== undefined && (obj.offline = message.offline ? Record_Offline.toJSON(message.offline) : undefined);
     return obj;
   },
   fromPartial(object: Partial<Record>): Record {
     const message = createBaseRecord();
-    message.name = object.name ?? '';
-    message.pubKey =
-      object.pubKey !== undefined && object.pubKey !== null
-        ? Any.fromPartial(object.pubKey)
-        : undefined;
-    message.local =
-      object.local !== undefined && object.local !== null
-        ? Record_Local.fromPartial(object.local)
-        : undefined;
-    message.ledger =
-      object.ledger !== undefined && object.ledger !== null
-        ? Record_Ledger.fromPartial(object.ledger)
-        : undefined;
-    message.multi =
-      object.multi !== undefined && object.multi !== null
-        ? Record_Multi.fromPartial(object.multi)
-        : undefined;
-    message.offline =
-      object.offline !== undefined && object.offline !== null
-        ? Record_Offline.fromPartial(object.offline)
-        : undefined;
+    message.name = object.name ?? "";
+    message.pubKey = object.pubKey !== undefined && object.pubKey !== null ? Any.fromPartial(object.pubKey) : undefined;
+    message.local = object.local !== undefined && object.local !== null ? Record_Local.fromPartial(object.local) : undefined;
+    message.ledger = object.ledger !== undefined && object.ledger !== null ? Record_Ledger.fromPartial(object.ledger) : undefined;
+    message.multi = object.multi !== undefined && object.multi !== null ? Record_Multi.fromPartial(object.multi) : undefined;
+    message.offline = object.offline !== undefined && object.offline !== null ? Record_Offline.fromPartial(object.offline) : undefined;
     return message;
   },
   fromProtoMsg(message: RecordProtoMsg): Record {
@@ -221,30 +181,26 @@ export const Record = {
   },
   toProtoMsg(message: Record): RecordProtoMsg {
     return {
-      typeUrl: '/cosmos.crypto.keyring.v1.Record',
-      value: Record.encode(message).finish(),
+      typeUrl: "/cosmos.crypto.keyring.v1.Record",
+      value: Record.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseRecord_Local(): Record_Local {
   return {
-    privKey: undefined,
+    privKey: undefined
   };
 }
 export const Record_Local = {
-  typeUrl: '/cosmos.crypto.keyring.v1.Local' as const,
-  encode(
-    message: Record_Local,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/cosmos.crypto.keyring.v1.Local" as const,
+  encode(message: Record_Local, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.privKey !== undefined) {
       Any.encode(message.privKey, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Record_Local {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseRecord_Local();
     while (reader.pos < end) {
@@ -262,21 +218,17 @@ export const Record_Local = {
   },
   fromJSON(object: any): Record_Local {
     return {
-      privKey: isSet(object.privKey) ? Any.fromJSON(object.privKey) : undefined,
+      privKey: isSet(object.privKey) ? Any.fromJSON(object.privKey) : undefined
     };
   },
   toJSON(message: Record_Local): JsonSafe<Record_Local> {
     const obj: any = {};
-    message.privKey !== undefined &&
-      (obj.privKey = message.privKey ? Any.toJSON(message.privKey) : undefined);
+    message.privKey !== undefined && (obj.privKey = message.privKey ? Any.toJSON(message.privKey) : undefined);
     return obj;
   },
   fromPartial(object: Partial<Record_Local>): Record_Local {
     const message = createBaseRecord_Local();
-    message.privKey =
-      object.privKey !== undefined && object.privKey !== null
-        ? Any.fromPartial(object.privKey)
-        : undefined;
+    message.privKey = object.privKey !== undefined && object.privKey !== null ? Any.fromPartial(object.privKey) : undefined;
     return message;
   },
   fromProtoMsg(message: Record_LocalProtoMsg): Record_Local {
@@ -287,30 +239,26 @@ export const Record_Local = {
   },
   toProtoMsg(message: Record_Local): Record_LocalProtoMsg {
     return {
-      typeUrl: '/cosmos.crypto.keyring.v1.Local',
-      value: Record_Local.encode(message).finish(),
+      typeUrl: "/cosmos.crypto.keyring.v1.Local",
+      value: Record_Local.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseRecord_Ledger(): Record_Ledger {
   return {
-    path: undefined,
+    path: undefined
   };
 }
 export const Record_Ledger = {
-  typeUrl: '/cosmos.crypto.keyring.v1.Ledger' as const,
-  encode(
-    message: Record_Ledger,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/cosmos.crypto.keyring.v1.Ledger" as const,
+  encode(message: Record_Ledger, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.path !== undefined) {
       BIP44Params.encode(message.path, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Record_Ledger {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseRecord_Ledger();
     while (reader.pos < end) {
@@ -328,21 +276,17 @@ export const Record_Ledger = {
   },
   fromJSON(object: any): Record_Ledger {
     return {
-      path: isSet(object.path) ? BIP44Params.fromJSON(object.path) : undefined,
+      path: isSet(object.path) ? BIP44Params.fromJSON(object.path) : undefined
     };
   },
   toJSON(message: Record_Ledger): JsonSafe<Record_Ledger> {
     const obj: any = {};
-    message.path !== undefined &&
-      (obj.path = message.path ? BIP44Params.toJSON(message.path) : undefined);
+    message.path !== undefined && (obj.path = message.path ? BIP44Params.toJSON(message.path) : undefined);
     return obj;
   },
   fromPartial(object: Partial<Record_Ledger>): Record_Ledger {
     const message = createBaseRecord_Ledger();
-    message.path =
-      object.path !== undefined && object.path !== null
-        ? BIP44Params.fromPartial(object.path)
-        : undefined;
+    message.path = object.path !== undefined && object.path !== null ? BIP44Params.fromPartial(object.path) : undefined;
     return message;
   },
   fromProtoMsg(message: Record_LedgerProtoMsg): Record_Ledger {
@@ -353,25 +297,21 @@ export const Record_Ledger = {
   },
   toProtoMsg(message: Record_Ledger): Record_LedgerProtoMsg {
     return {
-      typeUrl: '/cosmos.crypto.keyring.v1.Ledger',
-      value: Record_Ledger.encode(message).finish(),
+      typeUrl: "/cosmos.crypto.keyring.v1.Ledger",
+      value: Record_Ledger.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseRecord_Multi(): Record_Multi {
   return {};
 }
 export const Record_Multi = {
-  typeUrl: '/cosmos.crypto.keyring.v1.Multi' as const,
-  encode(
-    _: Record_Multi,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/cosmos.crypto.keyring.v1.Multi" as const,
+  encode(_: Record_Multi, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Record_Multi {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseRecord_Multi();
     while (reader.pos < end) {
@@ -403,25 +343,21 @@ export const Record_Multi = {
   },
   toProtoMsg(message: Record_Multi): Record_MultiProtoMsg {
     return {
-      typeUrl: '/cosmos.crypto.keyring.v1.Multi',
-      value: Record_Multi.encode(message).finish(),
+      typeUrl: "/cosmos.crypto.keyring.v1.Multi",
+      value: Record_Multi.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseRecord_Offline(): Record_Offline {
   return {};
 }
 export const Record_Offline = {
-  typeUrl: '/cosmos.crypto.keyring.v1.Offline' as const,
-  encode(
-    _: Record_Offline,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/cosmos.crypto.keyring.v1.Offline" as const,
+  encode(_: Record_Offline, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Record_Offline {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseRecord_Offline();
     while (reader.pos < end) {
@@ -453,8 +389,8 @@ export const Record_Offline = {
   },
   toProtoMsg(message: Record_Offline): Record_OfflineProtoMsg {
     return {
-      typeUrl: '/cosmos.crypto.keyring.v1.Offline',
-      value: Record_Offline.encode(message).finish(),
+      typeUrl: "/cosmos.crypto.keyring.v1.Offline",
+      value: Record_Offline.encode(message).finish()
     };
-  },
+  }
 };

@@ -1,13 +1,13 @@
 //@ts-nocheck
-import { BinaryReader, BinaryWriter } from '../../binary.js';
-import { type JsonSafe } from '../../json-safe.js';
-import { isSet } from '../../helpers.js';
+import { BinaryReader, BinaryWriter } from "../../binary.js";
+import {type JsonSafe } from "../../json-safe.js";
+import { isSet } from "../../helpers.js";
 /** The initial or exported state. */
 export interface GenesisState {
   data: DataEntry[];
 }
 export interface GenesisStateProtoMsg {
-  typeUrl: '/agoric.vstorage.GenesisState';
+  typeUrl: "/agoric.vstorage.GenesisState";
   value: Uint8Array;
 }
 /** The initial or exported state. */
@@ -27,7 +27,7 @@ export interface DataEntry {
   value: string;
 }
 export interface DataEntryProtoMsg {
-  typeUrl: '/agoric.vstorage.DataEntry';
+  typeUrl: "/agoric.vstorage.DataEntry";
   value: Uint8Array;
 }
 /**
@@ -40,23 +40,19 @@ export interface DataEntrySDKType {
 }
 function createBaseGenesisState(): GenesisState {
   return {
-    data: [],
+    data: []
   };
 }
 export const GenesisState = {
-  typeUrl: '/agoric.vstorage.GenesisState' as const,
-  encode(
-    message: GenesisState,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/agoric.vstorage.GenesisState" as const,
+  encode(message: GenesisState, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     for (const v of message.data) {
       DataEntry.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): GenesisState {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGenesisState();
     while (reader.pos < end) {
@@ -74,15 +70,13 @@ export const GenesisState = {
   },
   fromJSON(object: any): GenesisState {
     return {
-      data: Array.isArray(object?.data)
-        ? object.data.map((e: any) => DataEntry.fromJSON(e))
-        : [],
+      data: Array.isArray(object?.data) ? object.data.map((e: any) => DataEntry.fromJSON(e)) : []
     };
   },
   toJSON(message: GenesisState): JsonSafe<GenesisState> {
     const obj: any = {};
     if (message.data) {
-      obj.data = message.data.map(e => (e ? DataEntry.toJSON(e) : undefined));
+      obj.data = message.data.map(e => e ? DataEntry.toJSON(e) : undefined);
     } else {
       obj.data = [];
     }
@@ -101,34 +95,30 @@ export const GenesisState = {
   },
   toProtoMsg(message: GenesisState): GenesisStateProtoMsg {
     return {
-      typeUrl: '/agoric.vstorage.GenesisState',
-      value: GenesisState.encode(message).finish(),
+      typeUrl: "/agoric.vstorage.GenesisState",
+      value: GenesisState.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseDataEntry(): DataEntry {
   return {
-    path: '',
-    value: '',
+    path: "",
+    value: ""
   };
 }
 export const DataEntry = {
-  typeUrl: '/agoric.vstorage.DataEntry' as const,
-  encode(
-    message: DataEntry,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.path !== '') {
+  typeUrl: "/agoric.vstorage.DataEntry" as const,
+  encode(message: DataEntry, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.path !== "") {
       writer.uint32(10).string(message.path);
     }
-    if (message.value !== '') {
+    if (message.value !== "") {
       writer.uint32(18).string(message.value);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): DataEntry {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseDataEntry();
     while (reader.pos < end) {
@@ -149,8 +139,8 @@ export const DataEntry = {
   },
   fromJSON(object: any): DataEntry {
     return {
-      path: isSet(object.path) ? String(object.path) : '',
-      value: isSet(object.value) ? String(object.value) : '',
+      path: isSet(object.path) ? String(object.path) : "",
+      value: isSet(object.value) ? String(object.value) : ""
     };
   },
   toJSON(message: DataEntry): JsonSafe<DataEntry> {
@@ -161,8 +151,8 @@ export const DataEntry = {
   },
   fromPartial(object: Partial<DataEntry>): DataEntry {
     const message = createBaseDataEntry();
-    message.path = object.path ?? '';
-    message.value = object.value ?? '';
+    message.path = object.path ?? "";
+    message.value = object.value ?? "";
     return message;
   },
   fromProtoMsg(message: DataEntryProtoMsg): DataEntry {
@@ -173,8 +163,8 @@ export const DataEntry = {
   },
   toProtoMsg(message: DataEntry): DataEntryProtoMsg {
     return {
-      typeUrl: '/agoric.vstorage.DataEntry',
-      value: DataEntry.encode(message).finish(),
+      typeUrl: "/agoric.vstorage.DataEntry",
+      value: DataEntry.encode(message).finish()
     };
-  },
+  }
 };

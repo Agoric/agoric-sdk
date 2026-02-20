@@ -1,7 +1,7 @@
 //@ts-nocheck
-import { BinaryReader, BinaryWriter } from '../../../../binary.js';
-import { isSet } from '../../../../helpers.js';
-import { type JsonSafe } from '../../../../json-safe.js';
+import { BinaryReader, BinaryWriter } from "../../../../binary.js";
+import { isSet } from "../../../../helpers.js";
+import {type JsonSafe } from "../../../../json-safe.js";
 /** Module is the config object for the auth module. */
 export interface Module {
   /** bech32_prefix is the bech32 account prefix for the app. */
@@ -12,7 +12,7 @@ export interface Module {
   authority: string;
 }
 export interface ModuleProtoMsg {
-  typeUrl: '/cosmos.auth.module.v1.Module';
+  typeUrl: "/cosmos.auth.module.v1.Module";
   value: Uint8Array;
 }
 /** Module is the config object for the auth module. */
@@ -32,7 +32,7 @@ export interface ModuleAccountPermission {
   permissions: string[];
 }
 export interface ModuleAccountPermissionProtoMsg {
-  typeUrl: '/cosmos.auth.module.v1.ModuleAccountPermission';
+  typeUrl: "/cosmos.auth.module.v1.ModuleAccountPermission";
   value: Uint8Array;
 }
 /** ModuleAccountPermission represents permissions for a module account. */
@@ -42,31 +42,27 @@ export interface ModuleAccountPermissionSDKType {
 }
 function createBaseModule(): Module {
   return {
-    bech32Prefix: '',
+    bech32Prefix: "",
     moduleAccountPermissions: [],
-    authority: '',
+    authority: ""
   };
 }
 export const Module = {
-  typeUrl: '/cosmos.auth.module.v1.Module' as const,
-  encode(
-    message: Module,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.bech32Prefix !== '') {
+  typeUrl: "/cosmos.auth.module.v1.Module" as const,
+  encode(message: Module, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.bech32Prefix !== "") {
       writer.uint32(10).string(message.bech32Prefix);
     }
     for (const v of message.moduleAccountPermissions) {
       ModuleAccountPermission.encode(v!, writer.uint32(18).fork()).ldelim();
     }
-    if (message.authority !== '') {
+    if (message.authority !== "") {
       writer.uint32(26).string(message.authority);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Module {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseModule();
     while (reader.pos < end) {
@@ -76,9 +72,7 @@ export const Module = {
           message.bech32Prefix = reader.string();
           break;
         case 2:
-          message.moduleAccountPermissions.push(
-            ModuleAccountPermission.decode(reader, reader.uint32()),
-          );
+          message.moduleAccountPermissions.push(ModuleAccountPermission.decode(reader, reader.uint32()));
           break;
         case 3:
           message.authority = reader.string();
@@ -92,25 +86,16 @@ export const Module = {
   },
   fromJSON(object: any): Module {
     return {
-      bech32Prefix: isSet(object.bech32Prefix)
-        ? String(object.bech32Prefix)
-        : '',
-      moduleAccountPermissions: Array.isArray(object?.moduleAccountPermissions)
-        ? object.moduleAccountPermissions.map((e: any) =>
-            ModuleAccountPermission.fromJSON(e),
-          )
-        : [],
-      authority: isSet(object.authority) ? String(object.authority) : '',
+      bech32Prefix: isSet(object.bech32Prefix) ? String(object.bech32Prefix) : "",
+      moduleAccountPermissions: Array.isArray(object?.moduleAccountPermissions) ? object.moduleAccountPermissions.map((e: any) => ModuleAccountPermission.fromJSON(e)) : [],
+      authority: isSet(object.authority) ? String(object.authority) : ""
     };
   },
   toJSON(message: Module): JsonSafe<Module> {
     const obj: any = {};
-    message.bech32Prefix !== undefined &&
-      (obj.bech32Prefix = message.bech32Prefix);
+    message.bech32Prefix !== undefined && (obj.bech32Prefix = message.bech32Prefix);
     if (message.moduleAccountPermissions) {
-      obj.moduleAccountPermissions = message.moduleAccountPermissions.map(e =>
-        e ? ModuleAccountPermission.toJSON(e) : undefined,
-      );
+      obj.moduleAccountPermissions = message.moduleAccountPermissions.map(e => e ? ModuleAccountPermission.toJSON(e) : undefined);
     } else {
       obj.moduleAccountPermissions = [];
     }
@@ -119,12 +104,9 @@ export const Module = {
   },
   fromPartial(object: Partial<Module>): Module {
     const message = createBaseModule();
-    message.bech32Prefix = object.bech32Prefix ?? '';
-    message.moduleAccountPermissions =
-      object.moduleAccountPermissions?.map(e =>
-        ModuleAccountPermission.fromPartial(e),
-      ) || [];
-    message.authority = object.authority ?? '';
+    message.bech32Prefix = object.bech32Prefix ?? "";
+    message.moduleAccountPermissions = object.moduleAccountPermissions?.map(e => ModuleAccountPermission.fromPartial(e)) || [];
+    message.authority = object.authority ?? "";
     return message;
   },
   fromProtoMsg(message: ModuleProtoMsg): Module {
@@ -135,24 +117,21 @@ export const Module = {
   },
   toProtoMsg(message: Module): ModuleProtoMsg {
     return {
-      typeUrl: '/cosmos.auth.module.v1.Module',
-      value: Module.encode(message).finish(),
+      typeUrl: "/cosmos.auth.module.v1.Module",
+      value: Module.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseModuleAccountPermission(): ModuleAccountPermission {
   return {
-    account: '',
-    permissions: [],
+    account: "",
+    permissions: []
   };
 }
 export const ModuleAccountPermission = {
-  typeUrl: '/cosmos.auth.module.v1.ModuleAccountPermission' as const,
-  encode(
-    message: ModuleAccountPermission,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.account !== '') {
+  typeUrl: "/cosmos.auth.module.v1.ModuleAccountPermission" as const,
+  encode(message: ModuleAccountPermission, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.account !== "") {
       writer.uint32(10).string(message.account);
     }
     for (const v of message.permissions) {
@@ -160,12 +139,8 @@ export const ModuleAccountPermission = {
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): ModuleAccountPermission {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): ModuleAccountPermission {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseModuleAccountPermission();
     while (reader.pos < end) {
@@ -186,10 +161,8 @@ export const ModuleAccountPermission = {
   },
   fromJSON(object: any): ModuleAccountPermission {
     return {
-      account: isSet(object.account) ? String(object.account) : '',
-      permissions: Array.isArray(object?.permissions)
-        ? object.permissions.map((e: any) => String(e))
-        : [],
+      account: isSet(object.account) ? String(object.account) : "",
+      permissions: Array.isArray(object?.permissions) ? object.permissions.map((e: any) => String(e)) : []
     };
   },
   toJSON(message: ModuleAccountPermission): JsonSafe<ModuleAccountPermission> {
@@ -202,28 +175,22 @@ export const ModuleAccountPermission = {
     }
     return obj;
   },
-  fromPartial(
-    object: Partial<ModuleAccountPermission>,
-  ): ModuleAccountPermission {
+  fromPartial(object: Partial<ModuleAccountPermission>): ModuleAccountPermission {
     const message = createBaseModuleAccountPermission();
-    message.account = object.account ?? '';
+    message.account = object.account ?? "";
     message.permissions = object.permissions?.map(e => e) || [];
     return message;
   },
-  fromProtoMsg(
-    message: ModuleAccountPermissionProtoMsg,
-  ): ModuleAccountPermission {
+  fromProtoMsg(message: ModuleAccountPermissionProtoMsg): ModuleAccountPermission {
     return ModuleAccountPermission.decode(message.value);
   },
   toProto(message: ModuleAccountPermission): Uint8Array {
     return ModuleAccountPermission.encode(message).finish();
   },
-  toProtoMsg(
-    message: ModuleAccountPermission,
-  ): ModuleAccountPermissionProtoMsg {
+  toProtoMsg(message: ModuleAccountPermission): ModuleAccountPermissionProtoMsg {
     return {
-      typeUrl: '/cosmos.auth.module.v1.ModuleAccountPermission',
-      value: ModuleAccountPermission.encode(message).finish(),
+      typeUrl: "/cosmos.auth.module.v1.ModuleAccountPermission",
+      value: ModuleAccountPermission.encode(message).finish()
     };
-  },
+  }
 };

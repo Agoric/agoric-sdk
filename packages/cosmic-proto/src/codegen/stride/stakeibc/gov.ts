@@ -1,8 +1,8 @@
 //@ts-nocheck
-import { Validator, type ValidatorSDKType } from './validator.js';
-import { BinaryReader, BinaryWriter } from '../../binary.js';
-import { isSet } from '../../helpers.js';
-import { type JsonSafe } from '../../json-safe.js';
+import { Validator, type ValidatorSDKType } from "./validator.js";
+import { BinaryReader, BinaryWriter } from "../../binary.js";
+import { isSet } from "../../helpers.js";
+import {type JsonSafe } from "../../json-safe.js";
 export interface AddValidatorsProposal {
   title: string;
   description: string;
@@ -11,7 +11,7 @@ export interface AddValidatorsProposal {
   deposit: string;
 }
 export interface AddValidatorsProposalProtoMsg {
-  typeUrl: '/stride.stakeibc.AddValidatorsProposal';
+  typeUrl: "/stride.stakeibc.AddValidatorsProposal";
   value: Uint8Array;
 }
 export interface AddValidatorsProposalSDKType {
@@ -29,7 +29,7 @@ export interface ToggleLSMProposal {
   deposit: string;
 }
 export interface ToggleLSMProposalProtoMsg {
-  typeUrl: '/stride.stakeibc.ToggleLSMProposal';
+  typeUrl: "/stride.stakeibc.ToggleLSMProposal";
   value: Uint8Array;
 }
 export interface ToggleLSMProposalSDKType {
@@ -41,42 +41,35 @@ export interface ToggleLSMProposalSDKType {
 }
 function createBaseAddValidatorsProposal(): AddValidatorsProposal {
   return {
-    title: '',
-    description: '',
-    hostZone: '',
+    title: "",
+    description: "",
+    hostZone: "",
     validators: [],
-    deposit: '',
+    deposit: ""
   };
 }
 export const AddValidatorsProposal = {
-  typeUrl: '/stride.stakeibc.AddValidatorsProposal' as const,
-  encode(
-    message: AddValidatorsProposal,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.title !== '') {
+  typeUrl: "/stride.stakeibc.AddValidatorsProposal" as const,
+  encode(message: AddValidatorsProposal, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.title !== "") {
       writer.uint32(10).string(message.title);
     }
-    if (message.description !== '') {
+    if (message.description !== "") {
       writer.uint32(18).string(message.description);
     }
-    if (message.hostZone !== '') {
+    if (message.hostZone !== "") {
       writer.uint32(26).string(message.hostZone);
     }
     for (const v of message.validators) {
       Validator.encode(v!, writer.uint32(34).fork()).ldelim();
     }
-    if (message.deposit !== '') {
+    if (message.deposit !== "") {
       writer.uint32(42).string(message.deposit);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): AddValidatorsProposal {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): AddValidatorsProposal {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseAddValidatorsProposal();
     while (reader.pos < end) {
@@ -106,25 +99,20 @@ export const AddValidatorsProposal = {
   },
   fromJSON(object: any): AddValidatorsProposal {
     return {
-      title: isSet(object.title) ? String(object.title) : '',
-      description: isSet(object.description) ? String(object.description) : '',
-      hostZone: isSet(object.hostZone) ? String(object.hostZone) : '',
-      validators: Array.isArray(object?.validators)
-        ? object.validators.map((e: any) => Validator.fromJSON(e))
-        : [],
-      deposit: isSet(object.deposit) ? String(object.deposit) : '',
+      title: isSet(object.title) ? String(object.title) : "",
+      description: isSet(object.description) ? String(object.description) : "",
+      hostZone: isSet(object.hostZone) ? String(object.hostZone) : "",
+      validators: Array.isArray(object?.validators) ? object.validators.map((e: any) => Validator.fromJSON(e)) : [],
+      deposit: isSet(object.deposit) ? String(object.deposit) : ""
     };
   },
   toJSON(message: AddValidatorsProposal): JsonSafe<AddValidatorsProposal> {
     const obj: any = {};
     message.title !== undefined && (obj.title = message.title);
-    message.description !== undefined &&
-      (obj.description = message.description);
+    message.description !== undefined && (obj.description = message.description);
     message.hostZone !== undefined && (obj.hostZone = message.hostZone);
     if (message.validators) {
-      obj.validators = message.validators.map(e =>
-        e ? Validator.toJSON(e) : undefined,
-      );
+      obj.validators = message.validators.map(e => e ? Validator.toJSON(e) : undefined);
     } else {
       obj.validators = [];
     }
@@ -133,12 +121,11 @@ export const AddValidatorsProposal = {
   },
   fromPartial(object: Partial<AddValidatorsProposal>): AddValidatorsProposal {
     const message = createBaseAddValidatorsProposal();
-    message.title = object.title ?? '';
-    message.description = object.description ?? '';
-    message.hostZone = object.hostZone ?? '';
-    message.validators =
-      object.validators?.map(e => Validator.fromPartial(e)) || [];
-    message.deposit = object.deposit ?? '';
+    message.title = object.title ?? "";
+    message.description = object.description ?? "";
+    message.hostZone = object.hostZone ?? "";
+    message.validators = object.validators?.map(e => Validator.fromPartial(e)) || [];
+    message.deposit = object.deposit ?? "";
     return message;
   },
   fromProtoMsg(message: AddValidatorsProposalProtoMsg): AddValidatorsProposal {
@@ -149,46 +136,42 @@ export const AddValidatorsProposal = {
   },
   toProtoMsg(message: AddValidatorsProposal): AddValidatorsProposalProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.AddValidatorsProposal',
-      value: AddValidatorsProposal.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.AddValidatorsProposal",
+      value: AddValidatorsProposal.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseToggleLSMProposal(): ToggleLSMProposal {
   return {
-    title: '',
-    description: '',
-    hostZone: '',
+    title: "",
+    description: "",
+    hostZone: "",
     enabled: false,
-    deposit: '',
+    deposit: ""
   };
 }
 export const ToggleLSMProposal = {
-  typeUrl: '/stride.stakeibc.ToggleLSMProposal' as const,
-  encode(
-    message: ToggleLSMProposal,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.title !== '') {
+  typeUrl: "/stride.stakeibc.ToggleLSMProposal" as const,
+  encode(message: ToggleLSMProposal, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.title !== "") {
       writer.uint32(10).string(message.title);
     }
-    if (message.description !== '') {
+    if (message.description !== "") {
       writer.uint32(18).string(message.description);
     }
-    if (message.hostZone !== '') {
+    if (message.hostZone !== "") {
       writer.uint32(26).string(message.hostZone);
     }
     if (message.enabled === true) {
       writer.uint32(32).bool(message.enabled);
     }
-    if (message.deposit !== '') {
+    if (message.deposit !== "") {
       writer.uint32(42).string(message.deposit);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): ToggleLSMProposal {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseToggleLSMProposal();
     while (reader.pos < end) {
@@ -218,18 +201,17 @@ export const ToggleLSMProposal = {
   },
   fromJSON(object: any): ToggleLSMProposal {
     return {
-      title: isSet(object.title) ? String(object.title) : '',
-      description: isSet(object.description) ? String(object.description) : '',
-      hostZone: isSet(object.hostZone) ? String(object.hostZone) : '',
+      title: isSet(object.title) ? String(object.title) : "",
+      description: isSet(object.description) ? String(object.description) : "",
+      hostZone: isSet(object.hostZone) ? String(object.hostZone) : "",
       enabled: isSet(object.enabled) ? Boolean(object.enabled) : false,
-      deposit: isSet(object.deposit) ? String(object.deposit) : '',
+      deposit: isSet(object.deposit) ? String(object.deposit) : ""
     };
   },
   toJSON(message: ToggleLSMProposal): JsonSafe<ToggleLSMProposal> {
     const obj: any = {};
     message.title !== undefined && (obj.title = message.title);
-    message.description !== undefined &&
-      (obj.description = message.description);
+    message.description !== undefined && (obj.description = message.description);
     message.hostZone !== undefined && (obj.hostZone = message.hostZone);
     message.enabled !== undefined && (obj.enabled = message.enabled);
     message.deposit !== undefined && (obj.deposit = message.deposit);
@@ -237,11 +219,11 @@ export const ToggleLSMProposal = {
   },
   fromPartial(object: Partial<ToggleLSMProposal>): ToggleLSMProposal {
     const message = createBaseToggleLSMProposal();
-    message.title = object.title ?? '';
-    message.description = object.description ?? '';
-    message.hostZone = object.hostZone ?? '';
+    message.title = object.title ?? "";
+    message.description = object.description ?? "";
+    message.hostZone = object.hostZone ?? "";
     message.enabled = object.enabled ?? false;
-    message.deposit = object.deposit ?? '';
+    message.deposit = object.deposit ?? "";
     return message;
   },
   fromProtoMsg(message: ToggleLSMProposalProtoMsg): ToggleLSMProposal {
@@ -252,8 +234,8 @@ export const ToggleLSMProposal = {
   },
   toProtoMsg(message: ToggleLSMProposal): ToggleLSMProposalProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.ToggleLSMProposal',
-      value: ToggleLSMProposal.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.ToggleLSMProposal",
+      value: ToggleLSMProposal.encode(message).finish()
     };
-  },
+  }
 };

@@ -1,15 +1,8 @@
 //@ts-nocheck
-import {
-  VaultType,
-  PausedType,
-  vaultTypeFromJSON,
-  vaultTypeToJSON,
-  pausedTypeFromJSON,
-  pausedTypeToJSON,
-} from './vaults.js';
-import { BinaryReader, BinaryWriter } from '../../../../binary.js';
-import { isSet } from '../../../../helpers.js';
-import { type JsonSafe } from '../../../../json-safe.js';
+import { VaultType, PausedType, vaultTypeFromJSON, vaultTypeToJSON, pausedTypeFromJSON, pausedTypeToJSON } from "./vaults.js";
+import { BinaryReader, BinaryWriter } from "../../../../binary.js";
+import { isSet } from "../../../../helpers.js";
+import {type JsonSafe } from "../../../../json-safe.js";
 /** MsgLock is a message holders of the Noble Dollar can use to lock their $USDN into a Vault to earn rewards. */
 export interface MsgLock {
   signer: string;
@@ -17,7 +10,7 @@ export interface MsgLock {
   amount: string;
 }
 export interface MsgLockProtoMsg {
-  typeUrl: '/noble.dollar.vaults.v1.MsgLock';
+  typeUrl: "/noble.dollar.vaults.v1.MsgLock";
   value: Uint8Array;
 }
 /** MsgLock is a message holders of the Noble Dollar can use to lock their $USDN into a Vault to earn rewards. */
@@ -29,7 +22,7 @@ export interface MsgLockSDKType {
 /** MsgLockResponse is the response of the Lock message. */
 export interface MsgLockResponse {}
 export interface MsgLockResponseProtoMsg {
-  typeUrl: '/noble.dollar.vaults.v1.MsgLockResponse';
+  typeUrl: "/noble.dollar.vaults.v1.MsgLockResponse";
   value: Uint8Array;
 }
 /** MsgLockResponse is the response of the Lock message. */
@@ -41,7 +34,7 @@ export interface MsgUnlock {
   amount: string;
 }
 export interface MsgUnlockProtoMsg {
-  typeUrl: '/noble.dollar.vaults.v1.MsgUnlock';
+  typeUrl: "/noble.dollar.vaults.v1.MsgUnlock";
   value: Uint8Array;
 }
 /** MsgUnlock is a message that allows holders of the Noble Dollar to unlock their $USDN from a Vault, releasing their funds and claiming any available rewards. */
@@ -53,7 +46,7 @@ export interface MsgUnlockSDKType {
 /** MsgLockResponse is the response of the Unlock message. */
 export interface MsgUnlockResponse {}
 export interface MsgUnlockResponseProtoMsg {
-  typeUrl: '/noble.dollar.vaults.v1.MsgUnlockResponse';
+  typeUrl: "/noble.dollar.vaults.v1.MsgUnlockResponse";
   value: Uint8Array;
 }
 /** MsgLockResponse is the response of the Unlock message. */
@@ -64,7 +57,7 @@ export interface MsgSetPausedState {
   paused: PausedType;
 }
 export interface MsgSetPausedStateProtoMsg {
-  typeUrl: '/noble.dollar.vaults.v1.MsgSetPausedState';
+  typeUrl: "/noble.dollar.vaults.v1.MsgSetPausedState";
   value: Uint8Array;
 }
 /** MsgSetPausedState allows the authority to configure the Noble Dollar Vault paused state, enabling or disabling Lock and Unlock actions. */
@@ -75,38 +68,34 @@ export interface MsgSetPausedStateSDKType {
 /** MsgSetPausedStateResponse is the response of the SetPausedState message. */
 export interface MsgSetPausedStateResponse {}
 export interface MsgSetPausedStateResponseProtoMsg {
-  typeUrl: '/noble.dollar.vaults.v1.MsgSetPausedStateResponse';
+  typeUrl: "/noble.dollar.vaults.v1.MsgSetPausedStateResponse";
   value: Uint8Array;
 }
 /** MsgSetPausedStateResponse is the response of the SetPausedState message. */
 export interface MsgSetPausedStateResponseSDKType {}
 function createBaseMsgLock(): MsgLock {
   return {
-    signer: '',
+    signer: "",
     vault: 0,
-    amount: '',
+    amount: ""
   };
 }
 export const MsgLock = {
-  typeUrl: '/noble.dollar.vaults.v1.MsgLock' as const,
-  encode(
-    message: MsgLock,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.signer !== '') {
+  typeUrl: "/noble.dollar.vaults.v1.MsgLock" as const,
+  encode(message: MsgLock, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.signer !== "") {
       writer.uint32(10).string(message.signer);
     }
     if (message.vault !== 0) {
       writer.uint32(16).int32(message.vault);
     }
-    if (message.amount !== '') {
+    if (message.amount !== "") {
       writer.uint32(26).string(message.amount);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): MsgLock {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgLock();
     while (reader.pos < end) {
@@ -130,9 +119,9 @@ export const MsgLock = {
   },
   fromJSON(object: any): MsgLock {
     return {
-      signer: isSet(object.signer) ? String(object.signer) : '',
+      signer: isSet(object.signer) ? String(object.signer) : "",
       vault: isSet(object.vault) ? vaultTypeFromJSON(object.vault) : -1,
-      amount: isSet(object.amount) ? String(object.amount) : '',
+      amount: isSet(object.amount) ? String(object.amount) : ""
     };
   },
   toJSON(message: MsgLock): JsonSafe<MsgLock> {
@@ -144,9 +133,9 @@ export const MsgLock = {
   },
   fromPartial(object: Partial<MsgLock>): MsgLock {
     const message = createBaseMsgLock();
-    message.signer = object.signer ?? '';
+    message.signer = object.signer ?? "";
     message.vault = object.vault ?? 0;
-    message.amount = object.amount ?? '';
+    message.amount = object.amount ?? "";
     return message;
   },
   fromProtoMsg(message: MsgLockProtoMsg): MsgLock {
@@ -157,25 +146,21 @@ export const MsgLock = {
   },
   toProtoMsg(message: MsgLock): MsgLockProtoMsg {
     return {
-      typeUrl: '/noble.dollar.vaults.v1.MsgLock',
-      value: MsgLock.encode(message).finish(),
+      typeUrl: "/noble.dollar.vaults.v1.MsgLock",
+      value: MsgLock.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgLockResponse(): MsgLockResponse {
   return {};
 }
 export const MsgLockResponse = {
-  typeUrl: '/noble.dollar.vaults.v1.MsgLockResponse' as const,
-  encode(
-    _: MsgLockResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/noble.dollar.vaults.v1.MsgLockResponse" as const,
+  encode(_: MsgLockResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): MsgLockResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgLockResponse();
     while (reader.pos < end) {
@@ -207,38 +192,34 @@ export const MsgLockResponse = {
   },
   toProtoMsg(message: MsgLockResponse): MsgLockResponseProtoMsg {
     return {
-      typeUrl: '/noble.dollar.vaults.v1.MsgLockResponse',
-      value: MsgLockResponse.encode(message).finish(),
+      typeUrl: "/noble.dollar.vaults.v1.MsgLockResponse",
+      value: MsgLockResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgUnlock(): MsgUnlock {
   return {
-    signer: '',
+    signer: "",
     vault: 0,
-    amount: '',
+    amount: ""
   };
 }
 export const MsgUnlock = {
-  typeUrl: '/noble.dollar.vaults.v1.MsgUnlock' as const,
-  encode(
-    message: MsgUnlock,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.signer !== '') {
+  typeUrl: "/noble.dollar.vaults.v1.MsgUnlock" as const,
+  encode(message: MsgUnlock, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.signer !== "") {
       writer.uint32(10).string(message.signer);
     }
     if (message.vault !== 0) {
       writer.uint32(16).int32(message.vault);
     }
-    if (message.amount !== '') {
+    if (message.amount !== "") {
       writer.uint32(26).string(message.amount);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): MsgUnlock {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgUnlock();
     while (reader.pos < end) {
@@ -262,9 +243,9 @@ export const MsgUnlock = {
   },
   fromJSON(object: any): MsgUnlock {
     return {
-      signer: isSet(object.signer) ? String(object.signer) : '',
+      signer: isSet(object.signer) ? String(object.signer) : "",
       vault: isSet(object.vault) ? vaultTypeFromJSON(object.vault) : -1,
-      amount: isSet(object.amount) ? String(object.amount) : '',
+      amount: isSet(object.amount) ? String(object.amount) : ""
     };
   },
   toJSON(message: MsgUnlock): JsonSafe<MsgUnlock> {
@@ -276,9 +257,9 @@ export const MsgUnlock = {
   },
   fromPartial(object: Partial<MsgUnlock>): MsgUnlock {
     const message = createBaseMsgUnlock();
-    message.signer = object.signer ?? '';
+    message.signer = object.signer ?? "";
     message.vault = object.vault ?? 0;
-    message.amount = object.amount ?? '';
+    message.amount = object.amount ?? "";
     return message;
   },
   fromProtoMsg(message: MsgUnlockProtoMsg): MsgUnlock {
@@ -289,25 +270,21 @@ export const MsgUnlock = {
   },
   toProtoMsg(message: MsgUnlock): MsgUnlockProtoMsg {
     return {
-      typeUrl: '/noble.dollar.vaults.v1.MsgUnlock',
-      value: MsgUnlock.encode(message).finish(),
+      typeUrl: "/noble.dollar.vaults.v1.MsgUnlock",
+      value: MsgUnlock.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgUnlockResponse(): MsgUnlockResponse {
   return {};
 }
 export const MsgUnlockResponse = {
-  typeUrl: '/noble.dollar.vaults.v1.MsgUnlockResponse' as const,
-  encode(
-    _: MsgUnlockResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/noble.dollar.vaults.v1.MsgUnlockResponse" as const,
+  encode(_: MsgUnlockResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): MsgUnlockResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgUnlockResponse();
     while (reader.pos < end) {
@@ -339,24 +316,21 @@ export const MsgUnlockResponse = {
   },
   toProtoMsg(message: MsgUnlockResponse): MsgUnlockResponseProtoMsg {
     return {
-      typeUrl: '/noble.dollar.vaults.v1.MsgUnlockResponse',
-      value: MsgUnlockResponse.encode(message).finish(),
+      typeUrl: "/noble.dollar.vaults.v1.MsgUnlockResponse",
+      value: MsgUnlockResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgSetPausedState(): MsgSetPausedState {
   return {
-    signer: '',
-    paused: 0,
+    signer: "",
+    paused: 0
   };
 }
 export const MsgSetPausedState = {
-  typeUrl: '/noble.dollar.vaults.v1.MsgSetPausedState' as const,
-  encode(
-    message: MsgSetPausedState,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.signer !== '') {
+  typeUrl: "/noble.dollar.vaults.v1.MsgSetPausedState" as const,
+  encode(message: MsgSetPausedState, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.signer !== "") {
       writer.uint32(10).string(message.signer);
     }
     if (message.paused !== 0) {
@@ -365,8 +339,7 @@ export const MsgSetPausedState = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): MsgSetPausedState {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgSetPausedState();
     while (reader.pos < end) {
@@ -387,20 +360,19 @@ export const MsgSetPausedState = {
   },
   fromJSON(object: any): MsgSetPausedState {
     return {
-      signer: isSet(object.signer) ? String(object.signer) : '',
-      paused: isSet(object.paused) ? pausedTypeFromJSON(object.paused) : -1,
+      signer: isSet(object.signer) ? String(object.signer) : "",
+      paused: isSet(object.paused) ? pausedTypeFromJSON(object.paused) : -1
     };
   },
   toJSON(message: MsgSetPausedState): JsonSafe<MsgSetPausedState> {
     const obj: any = {};
     message.signer !== undefined && (obj.signer = message.signer);
-    message.paused !== undefined &&
-      (obj.paused = pausedTypeToJSON(message.paused));
+    message.paused !== undefined && (obj.paused = pausedTypeToJSON(message.paused));
     return obj;
   },
   fromPartial(object: Partial<MsgSetPausedState>): MsgSetPausedState {
     const message = createBaseMsgSetPausedState();
-    message.signer = object.signer ?? '';
+    message.signer = object.signer ?? "";
     message.paused = object.paused ?? 0;
     return message;
   },
@@ -412,28 +384,21 @@ export const MsgSetPausedState = {
   },
   toProtoMsg(message: MsgSetPausedState): MsgSetPausedStateProtoMsg {
     return {
-      typeUrl: '/noble.dollar.vaults.v1.MsgSetPausedState',
-      value: MsgSetPausedState.encode(message).finish(),
+      typeUrl: "/noble.dollar.vaults.v1.MsgSetPausedState",
+      value: MsgSetPausedState.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgSetPausedStateResponse(): MsgSetPausedStateResponse {
   return {};
 }
 export const MsgSetPausedStateResponse = {
-  typeUrl: '/noble.dollar.vaults.v1.MsgSetPausedStateResponse' as const,
-  encode(
-    _: MsgSetPausedStateResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/noble.dollar.vaults.v1.MsgSetPausedStateResponse" as const,
+  encode(_: MsgSetPausedStateResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgSetPausedStateResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgSetPausedStateResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgSetPausedStateResponse();
     while (reader.pos < end) {
@@ -453,26 +418,20 @@ export const MsgSetPausedStateResponse = {
     const obj: any = {};
     return obj;
   },
-  fromPartial(
-    _: Partial<MsgSetPausedStateResponse>,
-  ): MsgSetPausedStateResponse {
+  fromPartial(_: Partial<MsgSetPausedStateResponse>): MsgSetPausedStateResponse {
     const message = createBaseMsgSetPausedStateResponse();
     return message;
   },
-  fromProtoMsg(
-    message: MsgSetPausedStateResponseProtoMsg,
-  ): MsgSetPausedStateResponse {
+  fromProtoMsg(message: MsgSetPausedStateResponseProtoMsg): MsgSetPausedStateResponse {
     return MsgSetPausedStateResponse.decode(message.value);
   },
   toProto(message: MsgSetPausedStateResponse): Uint8Array {
     return MsgSetPausedStateResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: MsgSetPausedStateResponse,
-  ): MsgSetPausedStateResponseProtoMsg {
+  toProtoMsg(message: MsgSetPausedStateResponse): MsgSetPausedStateResponseProtoMsg {
     return {
-      typeUrl: '/noble.dollar.vaults.v1.MsgSetPausedStateResponse',
-      value: MsgSetPausedStateResponse.encode(message).finish(),
+      typeUrl: "/noble.dollar.vaults.v1.MsgSetPausedStateResponse",
+      value: MsgSetPausedStateResponse.encode(message).finish()
     };
-  },
+  }
 };

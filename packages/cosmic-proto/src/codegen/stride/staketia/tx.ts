@@ -1,17 +1,10 @@
 //@ts-nocheck
-import {
-  DelegationRecord,
-  type DelegationRecordSDKType,
-  UnbondingRecord,
-  type UnbondingRecordSDKType,
-  RedemptionRecord,
-  type RedemptionRecordSDKType,
-} from './staketia.js';
-import { Coin, type CoinSDKType } from '../../cosmos/base/v1beta1/coin.js';
-import { BinaryReader, BinaryWriter } from '../../binary.js';
-import { isSet } from '../../helpers.js';
-import { type JsonSafe } from '../../json-safe.js';
-import { Decimal } from '../../decimals.js';
+import { DelegationRecord, type DelegationRecordSDKType, UnbondingRecord, type UnbondingRecordSDKType, RedemptionRecord, type RedemptionRecordSDKType } from "./staketia.js";
+import { Coin, type CoinSDKType } from "../../cosmos/base/v1beta1/coin.js";
+import { BinaryReader, BinaryWriter } from "../../binary.js";
+import { isSet } from "../../helpers.js";
+import {type JsonSafe } from "../../json-safe.js";
+import { Decimal } from "../../decimals.js";
 export enum OverwritableRecordType {
   RECORD_TYPE_DELEGATION = 0,
   RECORD_TYPE_UNBONDING = 1,
@@ -19,38 +12,34 @@ export enum OverwritableRecordType {
   UNRECOGNIZED = -1,
 }
 export const OverwritableRecordTypeSDKType = OverwritableRecordType;
-export function overwritableRecordTypeFromJSON(
-  object: any,
-): OverwritableRecordType {
+export function overwritableRecordTypeFromJSON(object: any): OverwritableRecordType {
   switch (object) {
     case 0:
-    case 'RECORD_TYPE_DELEGATION':
+    case "RECORD_TYPE_DELEGATION":
       return OverwritableRecordType.RECORD_TYPE_DELEGATION;
     case 1:
-    case 'RECORD_TYPE_UNBONDING':
+    case "RECORD_TYPE_UNBONDING":
       return OverwritableRecordType.RECORD_TYPE_UNBONDING;
     case 2:
-    case 'RECORD_TYPE_REDEMPTION':
+    case "RECORD_TYPE_REDEMPTION":
       return OverwritableRecordType.RECORD_TYPE_REDEMPTION;
     case -1:
-    case 'UNRECOGNIZED':
+    case "UNRECOGNIZED":
     default:
       return OverwritableRecordType.UNRECOGNIZED;
   }
 }
-export function overwritableRecordTypeToJSON(
-  object: OverwritableRecordType,
-): string {
+export function overwritableRecordTypeToJSON(object: OverwritableRecordType): string {
   switch (object) {
     case OverwritableRecordType.RECORD_TYPE_DELEGATION:
-      return 'RECORD_TYPE_DELEGATION';
+      return "RECORD_TYPE_DELEGATION";
     case OverwritableRecordType.RECORD_TYPE_UNBONDING:
-      return 'RECORD_TYPE_UNBONDING';
+      return "RECORD_TYPE_UNBONDING";
     case OverwritableRecordType.RECORD_TYPE_REDEMPTION:
-      return 'RECORD_TYPE_REDEMPTION';
+      return "RECORD_TYPE_REDEMPTION";
     case OverwritableRecordType.UNRECOGNIZED:
     default:
-      return 'UNRECOGNIZED';
+      return "UNRECOGNIZED";
   }
 }
 /**
@@ -63,7 +52,7 @@ export interface MsgLiquidStake {
   nativeAmount: string;
 }
 export interface MsgLiquidStakeProtoMsg {
-  typeUrl: '/stride.staketia.MsgLiquidStake';
+  typeUrl: "/stride.staketia.MsgLiquidStake";
   value: Uint8Array;
 }
 /**
@@ -80,7 +69,7 @@ export interface MsgLiquidStakeResponse {
   stToken: Coin;
 }
 export interface MsgLiquidStakeResponseProtoMsg {
-  typeUrl: '/stride.staketia.MsgLiquidStakeResponse';
+  typeUrl: "/stride.staketia.MsgLiquidStakeResponse";
   value: Uint8Array;
 }
 /** @deprecated */
@@ -98,7 +87,7 @@ export interface MsgRedeemStake {
   receiver: string;
 }
 export interface MsgRedeemStakeProtoMsg {
-  typeUrl: '/stride.staketia.MsgRedeemStake';
+  typeUrl: "/stride.staketia.MsgRedeemStake";
   value: Uint8Array;
 }
 /** RedeemStake */
@@ -111,7 +100,7 @@ export interface MsgRedeemStakeResponse {
   nativeToken: Coin;
 }
 export interface MsgRedeemStakeResponseProtoMsg {
-  typeUrl: '/stride.staketia.MsgRedeemStakeResponse';
+  typeUrl: "/stride.staketia.MsgRedeemStakeResponse";
   value: Uint8Array;
 }
 export interface MsgRedeemStakeResponseSDKType {
@@ -124,7 +113,7 @@ export interface MsgConfirmDelegation {
   txHash: string;
 }
 export interface MsgConfirmDelegationProtoMsg {
-  typeUrl: '/stride.staketia.MsgConfirmDelegation';
+  typeUrl: "/stride.staketia.MsgConfirmDelegation";
   value: Uint8Array;
 }
 /** ConfirmDelegation */
@@ -135,7 +124,7 @@ export interface MsgConfirmDelegationSDKType {
 }
 export interface MsgConfirmDelegationResponse {}
 export interface MsgConfirmDelegationResponseProtoMsg {
-  typeUrl: '/stride.staketia.MsgConfirmDelegationResponse';
+  typeUrl: "/stride.staketia.MsgConfirmDelegationResponse";
   value: Uint8Array;
 }
 export interface MsgConfirmDelegationResponseSDKType {}
@@ -146,7 +135,7 @@ export interface MsgConfirmUndelegation {
   txHash: string;
 }
 export interface MsgConfirmUndelegationProtoMsg {
-  typeUrl: '/stride.staketia.MsgConfirmUndelegation';
+  typeUrl: "/stride.staketia.MsgConfirmUndelegation";
   value: Uint8Array;
 }
 /** ConfirmUndelegation */
@@ -157,7 +146,7 @@ export interface MsgConfirmUndelegationSDKType {
 }
 export interface MsgConfirmUndelegationResponse {}
 export interface MsgConfirmUndelegationResponseProtoMsg {
-  typeUrl: '/stride.staketia.MsgConfirmUndelegationResponse';
+  typeUrl: "/stride.staketia.MsgConfirmUndelegationResponse";
   value: Uint8Array;
 }
 export interface MsgConfirmUndelegationResponseSDKType {}
@@ -168,7 +157,7 @@ export interface MsgConfirmUnbondedTokenSweep {
   txHash: string;
 }
 export interface MsgConfirmUnbondedTokenSweepProtoMsg {
-  typeUrl: '/stride.staketia.MsgConfirmUnbondedTokenSweep';
+  typeUrl: "/stride.staketia.MsgConfirmUnbondedTokenSweep";
   value: Uint8Array;
 }
 /** ConfirmUnbondedTokenSweep */
@@ -179,7 +168,7 @@ export interface MsgConfirmUnbondedTokenSweepSDKType {
 }
 export interface MsgConfirmUnbondedTokenSweepResponse {}
 export interface MsgConfirmUnbondedTokenSweepResponseProtoMsg {
-  typeUrl: '/stride.staketia.MsgConfirmUnbondedTokenSweepResponse';
+  typeUrl: "/stride.staketia.MsgConfirmUnbondedTokenSweepResponse";
   value: Uint8Array;
 }
 export interface MsgConfirmUnbondedTokenSweepResponseSDKType {}
@@ -190,7 +179,7 @@ export interface MsgAdjustDelegatedBalance {
   validatorAddress: string;
 }
 export interface MsgAdjustDelegatedBalanceProtoMsg {
-  typeUrl: '/stride.staketia.MsgAdjustDelegatedBalance';
+  typeUrl: "/stride.staketia.MsgAdjustDelegatedBalance";
   value: Uint8Array;
 }
 /** AdjustDelegatedBalance */
@@ -201,7 +190,7 @@ export interface MsgAdjustDelegatedBalanceSDKType {
 }
 export interface MsgAdjustDelegatedBalanceResponse {}
 export interface MsgAdjustDelegatedBalanceResponseProtoMsg {
-  typeUrl: '/stride.staketia.MsgAdjustDelegatedBalanceResponse';
+  typeUrl: "/stride.staketia.MsgAdjustDelegatedBalanceResponse";
   value: Uint8Array;
 }
 export interface MsgAdjustDelegatedBalanceResponseSDKType {}
@@ -212,7 +201,7 @@ export interface MsgUpdateInnerRedemptionRateBounds {
   maxInnerRedemptionRate: string;
 }
 export interface MsgUpdateInnerRedemptionRateBoundsProtoMsg {
-  typeUrl: '/stride.staketia.MsgUpdateInnerRedemptionRateBounds';
+  typeUrl: "/stride.staketia.MsgUpdateInnerRedemptionRateBounds";
   value: Uint8Array;
 }
 /** UpdateInnerRedemptionRate */
@@ -223,7 +212,7 @@ export interface MsgUpdateInnerRedemptionRateBoundsSDKType {
 }
 export interface MsgUpdateInnerRedemptionRateBoundsResponse {}
 export interface MsgUpdateInnerRedemptionRateBoundsResponseProtoMsg {
-  typeUrl: '/stride.staketia.MsgUpdateInnerRedemptionRateBoundsResponse';
+  typeUrl: "/stride.staketia.MsgUpdateInnerRedemptionRateBoundsResponse";
   value: Uint8Array;
 }
 export interface MsgUpdateInnerRedemptionRateBoundsResponseSDKType {}
@@ -232,7 +221,7 @@ export interface MsgResumeHostZone {
   creator: string;
 }
 export interface MsgResumeHostZoneProtoMsg {
-  typeUrl: '/stride.staketia.MsgResumeHostZone';
+  typeUrl: "/stride.staketia.MsgResumeHostZone";
   value: Uint8Array;
 }
 /** ResumeHostZone */
@@ -241,7 +230,7 @@ export interface MsgResumeHostZoneSDKType {
 }
 export interface MsgResumeHostZoneResponse {}
 export interface MsgResumeHostZoneResponseProtoMsg {
-  typeUrl: '/stride.staketia.MsgResumeHostZoneResponse';
+  typeUrl: "/stride.staketia.MsgResumeHostZoneResponse";
   value: Uint8Array;
 }
 export interface MsgResumeHostZoneResponseSDKType {}
@@ -250,7 +239,7 @@ export interface MsgRefreshRedemptionRate {
   creator: string;
 }
 export interface MsgRefreshRedemptionRateProtoMsg {
-  typeUrl: '/stride.staketia.MsgRefreshRedemptionRate';
+  typeUrl: "/stride.staketia.MsgRefreshRedemptionRate";
   value: Uint8Array;
 }
 /** RefreshRedemptionRate */
@@ -259,7 +248,7 @@ export interface MsgRefreshRedemptionRateSDKType {
 }
 export interface MsgRefreshRedemptionRateResponse {}
 export interface MsgRefreshRedemptionRateResponseProtoMsg {
-  typeUrl: '/stride.staketia.MsgRefreshRedemptionRateResponse';
+  typeUrl: "/stride.staketia.MsgRefreshRedemptionRateResponse";
   value: Uint8Array;
 }
 export interface MsgRefreshRedemptionRateResponseSDKType {}
@@ -269,7 +258,7 @@ export interface MsgOverwriteDelegationRecord {
   delegationRecord?: DelegationRecord;
 }
 export interface MsgOverwriteDelegationRecordProtoMsg {
-  typeUrl: '/stride.staketia.MsgOverwriteDelegationRecord';
+  typeUrl: "/stride.staketia.MsgOverwriteDelegationRecord";
   value: Uint8Array;
 }
 /** OverwriteDelegationRecord */
@@ -279,7 +268,7 @@ export interface MsgOverwriteDelegationRecordSDKType {
 }
 export interface MsgOverwriteDelegationRecordResponse {}
 export interface MsgOverwriteDelegationRecordResponseProtoMsg {
-  typeUrl: '/stride.staketia.MsgOverwriteDelegationRecordResponse';
+  typeUrl: "/stride.staketia.MsgOverwriteDelegationRecordResponse";
   value: Uint8Array;
 }
 export interface MsgOverwriteDelegationRecordResponseSDKType {}
@@ -289,7 +278,7 @@ export interface MsgOverwriteUnbondingRecord {
   unbondingRecord?: UnbondingRecord;
 }
 export interface MsgOverwriteUnbondingRecordProtoMsg {
-  typeUrl: '/stride.staketia.MsgOverwriteUnbondingRecord';
+  typeUrl: "/stride.staketia.MsgOverwriteUnbondingRecord";
   value: Uint8Array;
 }
 /** OverwriteUnbondingRecord */
@@ -299,7 +288,7 @@ export interface MsgOverwriteUnbondingRecordSDKType {
 }
 export interface MsgOverwriteUnbondingRecordResponse {}
 export interface MsgOverwriteUnbondingRecordResponseProtoMsg {
-  typeUrl: '/stride.staketia.MsgOverwriteUnbondingRecordResponse';
+  typeUrl: "/stride.staketia.MsgOverwriteUnbondingRecordResponse";
   value: Uint8Array;
 }
 export interface MsgOverwriteUnbondingRecordResponseSDKType {}
@@ -309,7 +298,7 @@ export interface MsgOverwriteRedemptionRecord {
   redemptionRecord?: RedemptionRecord;
 }
 export interface MsgOverwriteRedemptionRecordProtoMsg {
-  typeUrl: '/stride.staketia.MsgOverwriteRedemptionRecord';
+  typeUrl: "/stride.staketia.MsgOverwriteRedemptionRecord";
   value: Uint8Array;
 }
 /** OverwriteRedemptionRecord */
@@ -319,7 +308,7 @@ export interface MsgOverwriteRedemptionRecordSDKType {
 }
 export interface MsgOverwriteRedemptionRecordResponse {}
 export interface MsgOverwriteRedemptionRecordResponseProtoMsg {
-  typeUrl: '/stride.staketia.MsgOverwriteRedemptionRecordResponse';
+  typeUrl: "/stride.staketia.MsgOverwriteRedemptionRecordResponse";
   value: Uint8Array;
 }
 export interface MsgOverwriteRedemptionRecordResponseSDKType {}
@@ -329,7 +318,7 @@ export interface MsgSetOperatorAddress {
   operator: string;
 }
 export interface MsgSetOperatorAddressProtoMsg {
-  typeUrl: '/stride.staketia.MsgSetOperatorAddress';
+  typeUrl: "/stride.staketia.MsgSetOperatorAddress";
   value: Uint8Array;
 }
 /** SetOperatorAddress */
@@ -339,33 +328,29 @@ export interface MsgSetOperatorAddressSDKType {
 }
 export interface MsgSetOperatorAddressResponse {}
 export interface MsgSetOperatorAddressResponseProtoMsg {
-  typeUrl: '/stride.staketia.MsgSetOperatorAddressResponse';
+  typeUrl: "/stride.staketia.MsgSetOperatorAddressResponse";
   value: Uint8Array;
 }
 export interface MsgSetOperatorAddressResponseSDKType {}
 function createBaseMsgLiquidStake(): MsgLiquidStake {
   return {
-    staker: '',
-    nativeAmount: '',
+    staker: "",
+    nativeAmount: ""
   };
 }
 export const MsgLiquidStake = {
-  typeUrl: '/stride.staketia.MsgLiquidStake' as const,
-  encode(
-    message: MsgLiquidStake,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.staker !== '') {
+  typeUrl: "/stride.staketia.MsgLiquidStake" as const,
+  encode(message: MsgLiquidStake, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.staker !== "") {
       writer.uint32(10).string(message.staker);
     }
-    if (message.nativeAmount !== '') {
+    if (message.nativeAmount !== "") {
       writer.uint32(18).string(message.nativeAmount);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): MsgLiquidStake {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgLiquidStake();
     while (reader.pos < end) {
@@ -386,23 +371,20 @@ export const MsgLiquidStake = {
   },
   fromJSON(object: any): MsgLiquidStake {
     return {
-      staker: isSet(object.staker) ? String(object.staker) : '',
-      nativeAmount: isSet(object.nativeAmount)
-        ? String(object.nativeAmount)
-        : '',
+      staker: isSet(object.staker) ? String(object.staker) : "",
+      nativeAmount: isSet(object.nativeAmount) ? String(object.nativeAmount) : ""
     };
   },
   toJSON(message: MsgLiquidStake): JsonSafe<MsgLiquidStake> {
     const obj: any = {};
     message.staker !== undefined && (obj.staker = message.staker);
-    message.nativeAmount !== undefined &&
-      (obj.nativeAmount = message.nativeAmount);
+    message.nativeAmount !== undefined && (obj.nativeAmount = message.nativeAmount);
     return obj;
   },
   fromPartial(object: Partial<MsgLiquidStake>): MsgLiquidStake {
     const message = createBaseMsgLiquidStake();
-    message.staker = object.staker ?? '';
-    message.nativeAmount = object.nativeAmount ?? '';
+    message.staker = object.staker ?? "";
+    message.nativeAmount = object.nativeAmount ?? "";
     return message;
   },
   fromProtoMsg(message: MsgLiquidStakeProtoMsg): MsgLiquidStake {
@@ -413,33 +395,26 @@ export const MsgLiquidStake = {
   },
   toProtoMsg(message: MsgLiquidStake): MsgLiquidStakeProtoMsg {
     return {
-      typeUrl: '/stride.staketia.MsgLiquidStake',
-      value: MsgLiquidStake.encode(message).finish(),
+      typeUrl: "/stride.staketia.MsgLiquidStake",
+      value: MsgLiquidStake.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgLiquidStakeResponse(): MsgLiquidStakeResponse {
   return {
-    stToken: Coin.fromPartial({}),
+    stToken: Coin.fromPartial({})
   };
 }
 export const MsgLiquidStakeResponse = {
-  typeUrl: '/stride.staketia.MsgLiquidStakeResponse' as const,
-  encode(
-    message: MsgLiquidStakeResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/stride.staketia.MsgLiquidStakeResponse" as const,
+  encode(message: MsgLiquidStakeResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.stToken !== undefined) {
       Coin.encode(message.stToken, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgLiquidStakeResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgLiquidStakeResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgLiquidStakeResponse();
     while (reader.pos < end) {
@@ -457,30 +432,20 @@ export const MsgLiquidStakeResponse = {
   },
   fromJSON(object: any): MsgLiquidStakeResponse {
     return {
-      stToken: isSet(object.stToken)
-        ? Coin.fromJSON(object.stToken)
-        : undefined,
+      stToken: isSet(object.stToken) ? Coin.fromJSON(object.stToken) : undefined
     };
   },
   toJSON(message: MsgLiquidStakeResponse): JsonSafe<MsgLiquidStakeResponse> {
     const obj: any = {};
-    message.stToken !== undefined &&
-      (obj.stToken = message.stToken
-        ? Coin.toJSON(message.stToken)
-        : undefined);
+    message.stToken !== undefined && (obj.stToken = message.stToken ? Coin.toJSON(message.stToken) : undefined);
     return obj;
   },
   fromPartial(object: Partial<MsgLiquidStakeResponse>): MsgLiquidStakeResponse {
     const message = createBaseMsgLiquidStakeResponse();
-    message.stToken =
-      object.stToken !== undefined && object.stToken !== null
-        ? Coin.fromPartial(object.stToken)
-        : undefined;
+    message.stToken = object.stToken !== undefined && object.stToken !== null ? Coin.fromPartial(object.stToken) : undefined;
     return message;
   },
-  fromProtoMsg(
-    message: MsgLiquidStakeResponseProtoMsg,
-  ): MsgLiquidStakeResponse {
+  fromProtoMsg(message: MsgLiquidStakeResponseProtoMsg): MsgLiquidStakeResponse {
     return MsgLiquidStakeResponse.decode(message.value);
   },
   toProto(message: MsgLiquidStakeResponse): Uint8Array {
@@ -488,38 +453,34 @@ export const MsgLiquidStakeResponse = {
   },
   toProtoMsg(message: MsgLiquidStakeResponse): MsgLiquidStakeResponseProtoMsg {
     return {
-      typeUrl: '/stride.staketia.MsgLiquidStakeResponse',
-      value: MsgLiquidStakeResponse.encode(message).finish(),
+      typeUrl: "/stride.staketia.MsgLiquidStakeResponse",
+      value: MsgLiquidStakeResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgRedeemStake(): MsgRedeemStake {
   return {
-    redeemer: '',
-    stTokenAmount: '',
-    receiver: '',
+    redeemer: "",
+    stTokenAmount: "",
+    receiver: ""
   };
 }
 export const MsgRedeemStake = {
-  typeUrl: '/stride.staketia.MsgRedeemStake' as const,
-  encode(
-    message: MsgRedeemStake,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.redeemer !== '') {
+  typeUrl: "/stride.staketia.MsgRedeemStake" as const,
+  encode(message: MsgRedeemStake, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.redeemer !== "") {
       writer.uint32(10).string(message.redeemer);
     }
-    if (message.stTokenAmount !== '') {
+    if (message.stTokenAmount !== "") {
       writer.uint32(18).string(message.stTokenAmount);
     }
-    if (message.receiver !== '') {
+    if (message.receiver !== "") {
       writer.uint32(26).string(message.receiver);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): MsgRedeemStake {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgRedeemStake();
     while (reader.pos < end) {
@@ -543,26 +504,23 @@ export const MsgRedeemStake = {
   },
   fromJSON(object: any): MsgRedeemStake {
     return {
-      redeemer: isSet(object.redeemer) ? String(object.redeemer) : '',
-      stTokenAmount: isSet(object.stTokenAmount)
-        ? String(object.stTokenAmount)
-        : '',
-      receiver: isSet(object.receiver) ? String(object.receiver) : '',
+      redeemer: isSet(object.redeemer) ? String(object.redeemer) : "",
+      stTokenAmount: isSet(object.stTokenAmount) ? String(object.stTokenAmount) : "",
+      receiver: isSet(object.receiver) ? String(object.receiver) : ""
     };
   },
   toJSON(message: MsgRedeemStake): JsonSafe<MsgRedeemStake> {
     const obj: any = {};
     message.redeemer !== undefined && (obj.redeemer = message.redeemer);
-    message.stTokenAmount !== undefined &&
-      (obj.stTokenAmount = message.stTokenAmount);
+    message.stTokenAmount !== undefined && (obj.stTokenAmount = message.stTokenAmount);
     message.receiver !== undefined && (obj.receiver = message.receiver);
     return obj;
   },
   fromPartial(object: Partial<MsgRedeemStake>): MsgRedeemStake {
     const message = createBaseMsgRedeemStake();
-    message.redeemer = object.redeemer ?? '';
-    message.stTokenAmount = object.stTokenAmount ?? '';
-    message.receiver = object.receiver ?? '';
+    message.redeemer = object.redeemer ?? "";
+    message.stTokenAmount = object.stTokenAmount ?? "";
+    message.receiver = object.receiver ?? "";
     return message;
   },
   fromProtoMsg(message: MsgRedeemStakeProtoMsg): MsgRedeemStake {
@@ -573,33 +531,26 @@ export const MsgRedeemStake = {
   },
   toProtoMsg(message: MsgRedeemStake): MsgRedeemStakeProtoMsg {
     return {
-      typeUrl: '/stride.staketia.MsgRedeemStake',
-      value: MsgRedeemStake.encode(message).finish(),
+      typeUrl: "/stride.staketia.MsgRedeemStake",
+      value: MsgRedeemStake.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgRedeemStakeResponse(): MsgRedeemStakeResponse {
   return {
-    nativeToken: Coin.fromPartial({}),
+    nativeToken: Coin.fromPartial({})
   };
 }
 export const MsgRedeemStakeResponse = {
-  typeUrl: '/stride.staketia.MsgRedeemStakeResponse' as const,
-  encode(
-    message: MsgRedeemStakeResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/stride.staketia.MsgRedeemStakeResponse" as const,
+  encode(message: MsgRedeemStakeResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.nativeToken !== undefined) {
       Coin.encode(message.nativeToken, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgRedeemStakeResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgRedeemStakeResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgRedeemStakeResponse();
     while (reader.pos < end) {
@@ -617,30 +568,20 @@ export const MsgRedeemStakeResponse = {
   },
   fromJSON(object: any): MsgRedeemStakeResponse {
     return {
-      nativeToken: isSet(object.nativeToken)
-        ? Coin.fromJSON(object.nativeToken)
-        : undefined,
+      nativeToken: isSet(object.nativeToken) ? Coin.fromJSON(object.nativeToken) : undefined
     };
   },
   toJSON(message: MsgRedeemStakeResponse): JsonSafe<MsgRedeemStakeResponse> {
     const obj: any = {};
-    message.nativeToken !== undefined &&
-      (obj.nativeToken = message.nativeToken
-        ? Coin.toJSON(message.nativeToken)
-        : undefined);
+    message.nativeToken !== undefined && (obj.nativeToken = message.nativeToken ? Coin.toJSON(message.nativeToken) : undefined);
     return obj;
   },
   fromPartial(object: Partial<MsgRedeemStakeResponse>): MsgRedeemStakeResponse {
     const message = createBaseMsgRedeemStakeResponse();
-    message.nativeToken =
-      object.nativeToken !== undefined && object.nativeToken !== null
-        ? Coin.fromPartial(object.nativeToken)
-        : undefined;
+    message.nativeToken = object.nativeToken !== undefined && object.nativeToken !== null ? Coin.fromPartial(object.nativeToken) : undefined;
     return message;
   },
-  fromProtoMsg(
-    message: MsgRedeemStakeResponseProtoMsg,
-  ): MsgRedeemStakeResponse {
+  fromProtoMsg(message: MsgRedeemStakeResponseProtoMsg): MsgRedeemStakeResponse {
     return MsgRedeemStakeResponse.decode(message.value);
   },
   toProto(message: MsgRedeemStakeResponse): Uint8Array {
@@ -648,41 +589,34 @@ export const MsgRedeemStakeResponse = {
   },
   toProtoMsg(message: MsgRedeemStakeResponse): MsgRedeemStakeResponseProtoMsg {
     return {
-      typeUrl: '/stride.staketia.MsgRedeemStakeResponse',
-      value: MsgRedeemStakeResponse.encode(message).finish(),
+      typeUrl: "/stride.staketia.MsgRedeemStakeResponse",
+      value: MsgRedeemStakeResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgConfirmDelegation(): MsgConfirmDelegation {
   return {
-    operator: '',
+    operator: "",
     recordId: BigInt(0),
-    txHash: '',
+    txHash: ""
   };
 }
 export const MsgConfirmDelegation = {
-  typeUrl: '/stride.staketia.MsgConfirmDelegation' as const,
-  encode(
-    message: MsgConfirmDelegation,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.operator !== '') {
+  typeUrl: "/stride.staketia.MsgConfirmDelegation" as const,
+  encode(message: MsgConfirmDelegation, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.operator !== "") {
       writer.uint32(10).string(message.operator);
     }
     if (message.recordId !== BigInt(0)) {
       writer.uint32(16).uint64(message.recordId);
     }
-    if (message.txHash !== '') {
+    if (message.txHash !== "") {
       writer.uint32(26).string(message.txHash);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgConfirmDelegation {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgConfirmDelegation {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgConfirmDelegation();
     while (reader.pos < end) {
@@ -706,29 +640,23 @@ export const MsgConfirmDelegation = {
   },
   fromJSON(object: any): MsgConfirmDelegation {
     return {
-      operator: isSet(object.operator) ? String(object.operator) : '',
-      recordId: isSet(object.recordId)
-        ? BigInt(object.recordId.toString())
-        : BigInt(0),
-      txHash: isSet(object.txHash) ? String(object.txHash) : '',
+      operator: isSet(object.operator) ? String(object.operator) : "",
+      recordId: isSet(object.recordId) ? BigInt(object.recordId.toString()) : BigInt(0),
+      txHash: isSet(object.txHash) ? String(object.txHash) : ""
     };
   },
   toJSON(message: MsgConfirmDelegation): JsonSafe<MsgConfirmDelegation> {
     const obj: any = {};
     message.operator !== undefined && (obj.operator = message.operator);
-    message.recordId !== undefined &&
-      (obj.recordId = (message.recordId || BigInt(0)).toString());
+    message.recordId !== undefined && (obj.recordId = (message.recordId || BigInt(0)).toString());
     message.txHash !== undefined && (obj.txHash = message.txHash);
     return obj;
   },
   fromPartial(object: Partial<MsgConfirmDelegation>): MsgConfirmDelegation {
     const message = createBaseMsgConfirmDelegation();
-    message.operator = object.operator ?? '';
-    message.recordId =
-      object.recordId !== undefined && object.recordId !== null
-        ? BigInt(object.recordId.toString())
-        : BigInt(0);
-    message.txHash = object.txHash ?? '';
+    message.operator = object.operator ?? "";
+    message.recordId = object.recordId !== undefined && object.recordId !== null ? BigInt(object.recordId.toString()) : BigInt(0);
+    message.txHash = object.txHash ?? "";
     return message;
   },
   fromProtoMsg(message: MsgConfirmDelegationProtoMsg): MsgConfirmDelegation {
@@ -739,28 +667,21 @@ export const MsgConfirmDelegation = {
   },
   toProtoMsg(message: MsgConfirmDelegation): MsgConfirmDelegationProtoMsg {
     return {
-      typeUrl: '/stride.staketia.MsgConfirmDelegation',
-      value: MsgConfirmDelegation.encode(message).finish(),
+      typeUrl: "/stride.staketia.MsgConfirmDelegation",
+      value: MsgConfirmDelegation.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgConfirmDelegationResponse(): MsgConfirmDelegationResponse {
   return {};
 }
 export const MsgConfirmDelegationResponse = {
-  typeUrl: '/stride.staketia.MsgConfirmDelegationResponse' as const,
-  encode(
-    _: MsgConfirmDelegationResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/stride.staketia.MsgConfirmDelegationResponse" as const,
+  encode(_: MsgConfirmDelegationResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgConfirmDelegationResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgConfirmDelegationResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgConfirmDelegationResponse();
     while (reader.pos < end) {
@@ -776,65 +697,50 @@ export const MsgConfirmDelegationResponse = {
   fromJSON(_: any): MsgConfirmDelegationResponse {
     return {};
   },
-  toJSON(
-    _: MsgConfirmDelegationResponse,
-  ): JsonSafe<MsgConfirmDelegationResponse> {
+  toJSON(_: MsgConfirmDelegationResponse): JsonSafe<MsgConfirmDelegationResponse> {
     const obj: any = {};
     return obj;
   },
-  fromPartial(
-    _: Partial<MsgConfirmDelegationResponse>,
-  ): MsgConfirmDelegationResponse {
+  fromPartial(_: Partial<MsgConfirmDelegationResponse>): MsgConfirmDelegationResponse {
     const message = createBaseMsgConfirmDelegationResponse();
     return message;
   },
-  fromProtoMsg(
-    message: MsgConfirmDelegationResponseProtoMsg,
-  ): MsgConfirmDelegationResponse {
+  fromProtoMsg(message: MsgConfirmDelegationResponseProtoMsg): MsgConfirmDelegationResponse {
     return MsgConfirmDelegationResponse.decode(message.value);
   },
   toProto(message: MsgConfirmDelegationResponse): Uint8Array {
     return MsgConfirmDelegationResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: MsgConfirmDelegationResponse,
-  ): MsgConfirmDelegationResponseProtoMsg {
+  toProtoMsg(message: MsgConfirmDelegationResponse): MsgConfirmDelegationResponseProtoMsg {
     return {
-      typeUrl: '/stride.staketia.MsgConfirmDelegationResponse',
-      value: MsgConfirmDelegationResponse.encode(message).finish(),
+      typeUrl: "/stride.staketia.MsgConfirmDelegationResponse",
+      value: MsgConfirmDelegationResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgConfirmUndelegation(): MsgConfirmUndelegation {
   return {
-    operator: '',
+    operator: "",
     recordId: BigInt(0),
-    txHash: '',
+    txHash: ""
   };
 }
 export const MsgConfirmUndelegation = {
-  typeUrl: '/stride.staketia.MsgConfirmUndelegation' as const,
-  encode(
-    message: MsgConfirmUndelegation,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.operator !== '') {
+  typeUrl: "/stride.staketia.MsgConfirmUndelegation" as const,
+  encode(message: MsgConfirmUndelegation, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.operator !== "") {
       writer.uint32(10).string(message.operator);
     }
     if (message.recordId !== BigInt(0)) {
       writer.uint32(16).uint64(message.recordId);
     }
-    if (message.txHash !== '') {
+    if (message.txHash !== "") {
       writer.uint32(26).string(message.txHash);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgConfirmUndelegation {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgConfirmUndelegation {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgConfirmUndelegation();
     while (reader.pos < end) {
@@ -858,34 +764,26 @@ export const MsgConfirmUndelegation = {
   },
   fromJSON(object: any): MsgConfirmUndelegation {
     return {
-      operator: isSet(object.operator) ? String(object.operator) : '',
-      recordId: isSet(object.recordId)
-        ? BigInt(object.recordId.toString())
-        : BigInt(0),
-      txHash: isSet(object.txHash) ? String(object.txHash) : '',
+      operator: isSet(object.operator) ? String(object.operator) : "",
+      recordId: isSet(object.recordId) ? BigInt(object.recordId.toString()) : BigInt(0),
+      txHash: isSet(object.txHash) ? String(object.txHash) : ""
     };
   },
   toJSON(message: MsgConfirmUndelegation): JsonSafe<MsgConfirmUndelegation> {
     const obj: any = {};
     message.operator !== undefined && (obj.operator = message.operator);
-    message.recordId !== undefined &&
-      (obj.recordId = (message.recordId || BigInt(0)).toString());
+    message.recordId !== undefined && (obj.recordId = (message.recordId || BigInt(0)).toString());
     message.txHash !== undefined && (obj.txHash = message.txHash);
     return obj;
   },
   fromPartial(object: Partial<MsgConfirmUndelegation>): MsgConfirmUndelegation {
     const message = createBaseMsgConfirmUndelegation();
-    message.operator = object.operator ?? '';
-    message.recordId =
-      object.recordId !== undefined && object.recordId !== null
-        ? BigInt(object.recordId.toString())
-        : BigInt(0);
-    message.txHash = object.txHash ?? '';
+    message.operator = object.operator ?? "";
+    message.recordId = object.recordId !== undefined && object.recordId !== null ? BigInt(object.recordId.toString()) : BigInt(0);
+    message.txHash = object.txHash ?? "";
     return message;
   },
-  fromProtoMsg(
-    message: MsgConfirmUndelegationProtoMsg,
-  ): MsgConfirmUndelegation {
+  fromProtoMsg(message: MsgConfirmUndelegationProtoMsg): MsgConfirmUndelegation {
     return MsgConfirmUndelegation.decode(message.value);
   },
   toProto(message: MsgConfirmUndelegation): Uint8Array {
@@ -893,28 +791,21 @@ export const MsgConfirmUndelegation = {
   },
   toProtoMsg(message: MsgConfirmUndelegation): MsgConfirmUndelegationProtoMsg {
     return {
-      typeUrl: '/stride.staketia.MsgConfirmUndelegation',
-      value: MsgConfirmUndelegation.encode(message).finish(),
+      typeUrl: "/stride.staketia.MsgConfirmUndelegation",
+      value: MsgConfirmUndelegation.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgConfirmUndelegationResponse(): MsgConfirmUndelegationResponse {
   return {};
 }
 export const MsgConfirmUndelegationResponse = {
-  typeUrl: '/stride.staketia.MsgConfirmUndelegationResponse' as const,
-  encode(
-    _: MsgConfirmUndelegationResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/stride.staketia.MsgConfirmUndelegationResponse" as const,
+  encode(_: MsgConfirmUndelegationResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgConfirmUndelegationResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgConfirmUndelegationResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgConfirmUndelegationResponse();
     while (reader.pos < end) {
@@ -930,65 +821,50 @@ export const MsgConfirmUndelegationResponse = {
   fromJSON(_: any): MsgConfirmUndelegationResponse {
     return {};
   },
-  toJSON(
-    _: MsgConfirmUndelegationResponse,
-  ): JsonSafe<MsgConfirmUndelegationResponse> {
+  toJSON(_: MsgConfirmUndelegationResponse): JsonSafe<MsgConfirmUndelegationResponse> {
     const obj: any = {};
     return obj;
   },
-  fromPartial(
-    _: Partial<MsgConfirmUndelegationResponse>,
-  ): MsgConfirmUndelegationResponse {
+  fromPartial(_: Partial<MsgConfirmUndelegationResponse>): MsgConfirmUndelegationResponse {
     const message = createBaseMsgConfirmUndelegationResponse();
     return message;
   },
-  fromProtoMsg(
-    message: MsgConfirmUndelegationResponseProtoMsg,
-  ): MsgConfirmUndelegationResponse {
+  fromProtoMsg(message: MsgConfirmUndelegationResponseProtoMsg): MsgConfirmUndelegationResponse {
     return MsgConfirmUndelegationResponse.decode(message.value);
   },
   toProto(message: MsgConfirmUndelegationResponse): Uint8Array {
     return MsgConfirmUndelegationResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: MsgConfirmUndelegationResponse,
-  ): MsgConfirmUndelegationResponseProtoMsg {
+  toProtoMsg(message: MsgConfirmUndelegationResponse): MsgConfirmUndelegationResponseProtoMsg {
     return {
-      typeUrl: '/stride.staketia.MsgConfirmUndelegationResponse',
-      value: MsgConfirmUndelegationResponse.encode(message).finish(),
+      typeUrl: "/stride.staketia.MsgConfirmUndelegationResponse",
+      value: MsgConfirmUndelegationResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgConfirmUnbondedTokenSweep(): MsgConfirmUnbondedTokenSweep {
   return {
-    operator: '',
+    operator: "",
     recordId: BigInt(0),
-    txHash: '',
+    txHash: ""
   };
 }
 export const MsgConfirmUnbondedTokenSweep = {
-  typeUrl: '/stride.staketia.MsgConfirmUnbondedTokenSweep' as const,
-  encode(
-    message: MsgConfirmUnbondedTokenSweep,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.operator !== '') {
+  typeUrl: "/stride.staketia.MsgConfirmUnbondedTokenSweep" as const,
+  encode(message: MsgConfirmUnbondedTokenSweep, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.operator !== "") {
       writer.uint32(10).string(message.operator);
     }
     if (message.recordId !== BigInt(0)) {
       writer.uint32(16).uint64(message.recordId);
     }
-    if (message.txHash !== '') {
+    if (message.txHash !== "") {
       writer.uint32(26).string(message.txHash);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgConfirmUnbondedTokenSweep {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgConfirmUnbondedTokenSweep {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgConfirmUnbondedTokenSweep();
     while (reader.pos < end) {
@@ -1012,69 +888,48 @@ export const MsgConfirmUnbondedTokenSweep = {
   },
   fromJSON(object: any): MsgConfirmUnbondedTokenSweep {
     return {
-      operator: isSet(object.operator) ? String(object.operator) : '',
-      recordId: isSet(object.recordId)
-        ? BigInt(object.recordId.toString())
-        : BigInt(0),
-      txHash: isSet(object.txHash) ? String(object.txHash) : '',
+      operator: isSet(object.operator) ? String(object.operator) : "",
+      recordId: isSet(object.recordId) ? BigInt(object.recordId.toString()) : BigInt(0),
+      txHash: isSet(object.txHash) ? String(object.txHash) : ""
     };
   },
-  toJSON(
-    message: MsgConfirmUnbondedTokenSweep,
-  ): JsonSafe<MsgConfirmUnbondedTokenSweep> {
+  toJSON(message: MsgConfirmUnbondedTokenSweep): JsonSafe<MsgConfirmUnbondedTokenSweep> {
     const obj: any = {};
     message.operator !== undefined && (obj.operator = message.operator);
-    message.recordId !== undefined &&
-      (obj.recordId = (message.recordId || BigInt(0)).toString());
+    message.recordId !== undefined && (obj.recordId = (message.recordId || BigInt(0)).toString());
     message.txHash !== undefined && (obj.txHash = message.txHash);
     return obj;
   },
-  fromPartial(
-    object: Partial<MsgConfirmUnbondedTokenSweep>,
-  ): MsgConfirmUnbondedTokenSweep {
+  fromPartial(object: Partial<MsgConfirmUnbondedTokenSweep>): MsgConfirmUnbondedTokenSweep {
     const message = createBaseMsgConfirmUnbondedTokenSweep();
-    message.operator = object.operator ?? '';
-    message.recordId =
-      object.recordId !== undefined && object.recordId !== null
-        ? BigInt(object.recordId.toString())
-        : BigInt(0);
-    message.txHash = object.txHash ?? '';
+    message.operator = object.operator ?? "";
+    message.recordId = object.recordId !== undefined && object.recordId !== null ? BigInt(object.recordId.toString()) : BigInt(0);
+    message.txHash = object.txHash ?? "";
     return message;
   },
-  fromProtoMsg(
-    message: MsgConfirmUnbondedTokenSweepProtoMsg,
-  ): MsgConfirmUnbondedTokenSweep {
+  fromProtoMsg(message: MsgConfirmUnbondedTokenSweepProtoMsg): MsgConfirmUnbondedTokenSweep {
     return MsgConfirmUnbondedTokenSweep.decode(message.value);
   },
   toProto(message: MsgConfirmUnbondedTokenSweep): Uint8Array {
     return MsgConfirmUnbondedTokenSweep.encode(message).finish();
   },
-  toProtoMsg(
-    message: MsgConfirmUnbondedTokenSweep,
-  ): MsgConfirmUnbondedTokenSweepProtoMsg {
+  toProtoMsg(message: MsgConfirmUnbondedTokenSweep): MsgConfirmUnbondedTokenSweepProtoMsg {
     return {
-      typeUrl: '/stride.staketia.MsgConfirmUnbondedTokenSweep',
-      value: MsgConfirmUnbondedTokenSweep.encode(message).finish(),
+      typeUrl: "/stride.staketia.MsgConfirmUnbondedTokenSweep",
+      value: MsgConfirmUnbondedTokenSweep.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgConfirmUnbondedTokenSweepResponse(): MsgConfirmUnbondedTokenSweepResponse {
   return {};
 }
 export const MsgConfirmUnbondedTokenSweepResponse = {
-  typeUrl: '/stride.staketia.MsgConfirmUnbondedTokenSweepResponse' as const,
-  encode(
-    _: MsgConfirmUnbondedTokenSweepResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/stride.staketia.MsgConfirmUnbondedTokenSweepResponse" as const,
+  encode(_: MsgConfirmUnbondedTokenSweepResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgConfirmUnbondedTokenSweepResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgConfirmUnbondedTokenSweepResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgConfirmUnbondedTokenSweepResponse();
     while (reader.pos < end) {
@@ -1090,65 +945,50 @@ export const MsgConfirmUnbondedTokenSweepResponse = {
   fromJSON(_: any): MsgConfirmUnbondedTokenSweepResponse {
     return {};
   },
-  toJSON(
-    _: MsgConfirmUnbondedTokenSweepResponse,
-  ): JsonSafe<MsgConfirmUnbondedTokenSweepResponse> {
+  toJSON(_: MsgConfirmUnbondedTokenSweepResponse): JsonSafe<MsgConfirmUnbondedTokenSweepResponse> {
     const obj: any = {};
     return obj;
   },
-  fromPartial(
-    _: Partial<MsgConfirmUnbondedTokenSweepResponse>,
-  ): MsgConfirmUnbondedTokenSweepResponse {
+  fromPartial(_: Partial<MsgConfirmUnbondedTokenSweepResponse>): MsgConfirmUnbondedTokenSweepResponse {
     const message = createBaseMsgConfirmUnbondedTokenSweepResponse();
     return message;
   },
-  fromProtoMsg(
-    message: MsgConfirmUnbondedTokenSweepResponseProtoMsg,
-  ): MsgConfirmUnbondedTokenSweepResponse {
+  fromProtoMsg(message: MsgConfirmUnbondedTokenSweepResponseProtoMsg): MsgConfirmUnbondedTokenSweepResponse {
     return MsgConfirmUnbondedTokenSweepResponse.decode(message.value);
   },
   toProto(message: MsgConfirmUnbondedTokenSweepResponse): Uint8Array {
     return MsgConfirmUnbondedTokenSweepResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: MsgConfirmUnbondedTokenSweepResponse,
-  ): MsgConfirmUnbondedTokenSweepResponseProtoMsg {
+  toProtoMsg(message: MsgConfirmUnbondedTokenSweepResponse): MsgConfirmUnbondedTokenSweepResponseProtoMsg {
     return {
-      typeUrl: '/stride.staketia.MsgConfirmUnbondedTokenSweepResponse',
-      value: MsgConfirmUnbondedTokenSweepResponse.encode(message).finish(),
+      typeUrl: "/stride.staketia.MsgConfirmUnbondedTokenSweepResponse",
+      value: MsgConfirmUnbondedTokenSweepResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgAdjustDelegatedBalance(): MsgAdjustDelegatedBalance {
   return {
-    operator: '',
-    delegationOffset: '',
-    validatorAddress: '',
+    operator: "",
+    delegationOffset: "",
+    validatorAddress: ""
   };
 }
 export const MsgAdjustDelegatedBalance = {
-  typeUrl: '/stride.staketia.MsgAdjustDelegatedBalance' as const,
-  encode(
-    message: MsgAdjustDelegatedBalance,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.operator !== '') {
+  typeUrl: "/stride.staketia.MsgAdjustDelegatedBalance" as const,
+  encode(message: MsgAdjustDelegatedBalance, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.operator !== "") {
       writer.uint32(10).string(message.operator);
     }
-    if (message.delegationOffset !== '') {
+    if (message.delegationOffset !== "") {
       writer.uint32(18).string(message.delegationOffset);
     }
-    if (message.validatorAddress !== '') {
+    if (message.validatorAddress !== "") {
       writer.uint32(26).string(message.validatorAddress);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgAdjustDelegatedBalance {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgAdjustDelegatedBalance {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgAdjustDelegatedBalance();
     while (reader.pos < end) {
@@ -1172,69 +1012,48 @@ export const MsgAdjustDelegatedBalance = {
   },
   fromJSON(object: any): MsgAdjustDelegatedBalance {
     return {
-      operator: isSet(object.operator) ? String(object.operator) : '',
-      delegationOffset: isSet(object.delegationOffset)
-        ? String(object.delegationOffset)
-        : '',
-      validatorAddress: isSet(object.validatorAddress)
-        ? String(object.validatorAddress)
-        : '',
+      operator: isSet(object.operator) ? String(object.operator) : "",
+      delegationOffset: isSet(object.delegationOffset) ? String(object.delegationOffset) : "",
+      validatorAddress: isSet(object.validatorAddress) ? String(object.validatorAddress) : ""
     };
   },
-  toJSON(
-    message: MsgAdjustDelegatedBalance,
-  ): JsonSafe<MsgAdjustDelegatedBalance> {
+  toJSON(message: MsgAdjustDelegatedBalance): JsonSafe<MsgAdjustDelegatedBalance> {
     const obj: any = {};
     message.operator !== undefined && (obj.operator = message.operator);
-    message.delegationOffset !== undefined &&
-      (obj.delegationOffset = message.delegationOffset);
-    message.validatorAddress !== undefined &&
-      (obj.validatorAddress = message.validatorAddress);
+    message.delegationOffset !== undefined && (obj.delegationOffset = message.delegationOffset);
+    message.validatorAddress !== undefined && (obj.validatorAddress = message.validatorAddress);
     return obj;
   },
-  fromPartial(
-    object: Partial<MsgAdjustDelegatedBalance>,
-  ): MsgAdjustDelegatedBalance {
+  fromPartial(object: Partial<MsgAdjustDelegatedBalance>): MsgAdjustDelegatedBalance {
     const message = createBaseMsgAdjustDelegatedBalance();
-    message.operator = object.operator ?? '';
-    message.delegationOffset = object.delegationOffset ?? '';
-    message.validatorAddress = object.validatorAddress ?? '';
+    message.operator = object.operator ?? "";
+    message.delegationOffset = object.delegationOffset ?? "";
+    message.validatorAddress = object.validatorAddress ?? "";
     return message;
   },
-  fromProtoMsg(
-    message: MsgAdjustDelegatedBalanceProtoMsg,
-  ): MsgAdjustDelegatedBalance {
+  fromProtoMsg(message: MsgAdjustDelegatedBalanceProtoMsg): MsgAdjustDelegatedBalance {
     return MsgAdjustDelegatedBalance.decode(message.value);
   },
   toProto(message: MsgAdjustDelegatedBalance): Uint8Array {
     return MsgAdjustDelegatedBalance.encode(message).finish();
   },
-  toProtoMsg(
-    message: MsgAdjustDelegatedBalance,
-  ): MsgAdjustDelegatedBalanceProtoMsg {
+  toProtoMsg(message: MsgAdjustDelegatedBalance): MsgAdjustDelegatedBalanceProtoMsg {
     return {
-      typeUrl: '/stride.staketia.MsgAdjustDelegatedBalance',
-      value: MsgAdjustDelegatedBalance.encode(message).finish(),
+      typeUrl: "/stride.staketia.MsgAdjustDelegatedBalance",
+      value: MsgAdjustDelegatedBalance.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgAdjustDelegatedBalanceResponse(): MsgAdjustDelegatedBalanceResponse {
   return {};
 }
 export const MsgAdjustDelegatedBalanceResponse = {
-  typeUrl: '/stride.staketia.MsgAdjustDelegatedBalanceResponse' as const,
-  encode(
-    _: MsgAdjustDelegatedBalanceResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/stride.staketia.MsgAdjustDelegatedBalanceResponse" as const,
+  encode(_: MsgAdjustDelegatedBalanceResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgAdjustDelegatedBalanceResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgAdjustDelegatedBalanceResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgAdjustDelegatedBalanceResponse();
     while (reader.pos < end) {
@@ -1250,73 +1069,50 @@ export const MsgAdjustDelegatedBalanceResponse = {
   fromJSON(_: any): MsgAdjustDelegatedBalanceResponse {
     return {};
   },
-  toJSON(
-    _: MsgAdjustDelegatedBalanceResponse,
-  ): JsonSafe<MsgAdjustDelegatedBalanceResponse> {
+  toJSON(_: MsgAdjustDelegatedBalanceResponse): JsonSafe<MsgAdjustDelegatedBalanceResponse> {
     const obj: any = {};
     return obj;
   },
-  fromPartial(
-    _: Partial<MsgAdjustDelegatedBalanceResponse>,
-  ): MsgAdjustDelegatedBalanceResponse {
+  fromPartial(_: Partial<MsgAdjustDelegatedBalanceResponse>): MsgAdjustDelegatedBalanceResponse {
     const message = createBaseMsgAdjustDelegatedBalanceResponse();
     return message;
   },
-  fromProtoMsg(
-    message: MsgAdjustDelegatedBalanceResponseProtoMsg,
-  ): MsgAdjustDelegatedBalanceResponse {
+  fromProtoMsg(message: MsgAdjustDelegatedBalanceResponseProtoMsg): MsgAdjustDelegatedBalanceResponse {
     return MsgAdjustDelegatedBalanceResponse.decode(message.value);
   },
   toProto(message: MsgAdjustDelegatedBalanceResponse): Uint8Array {
     return MsgAdjustDelegatedBalanceResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: MsgAdjustDelegatedBalanceResponse,
-  ): MsgAdjustDelegatedBalanceResponseProtoMsg {
+  toProtoMsg(message: MsgAdjustDelegatedBalanceResponse): MsgAdjustDelegatedBalanceResponseProtoMsg {
     return {
-      typeUrl: '/stride.staketia.MsgAdjustDelegatedBalanceResponse',
-      value: MsgAdjustDelegatedBalanceResponse.encode(message).finish(),
+      typeUrl: "/stride.staketia.MsgAdjustDelegatedBalanceResponse",
+      value: MsgAdjustDelegatedBalanceResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgUpdateInnerRedemptionRateBounds(): MsgUpdateInnerRedemptionRateBounds {
   return {
-    creator: '',
-    minInnerRedemptionRate: '',
-    maxInnerRedemptionRate: '',
+    creator: "",
+    minInnerRedemptionRate: "",
+    maxInnerRedemptionRate: ""
   };
 }
 export const MsgUpdateInnerRedemptionRateBounds = {
-  typeUrl: '/stride.staketia.MsgUpdateInnerRedemptionRateBounds' as const,
-  encode(
-    message: MsgUpdateInnerRedemptionRateBounds,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.creator !== '') {
+  typeUrl: "/stride.staketia.MsgUpdateInnerRedemptionRateBounds" as const,
+  encode(message: MsgUpdateInnerRedemptionRateBounds, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.creator !== "") {
       writer.uint32(10).string(message.creator);
     }
-    if (message.minInnerRedemptionRate !== '') {
-      writer
-        .uint32(18)
-        .string(
-          Decimal.fromUserInput(message.minInnerRedemptionRate, 18).atomics,
-        );
+    if (message.minInnerRedemptionRate !== "") {
+      writer.uint32(18).string(Decimal.fromUserInput(message.minInnerRedemptionRate, 18).atomics);
     }
-    if (message.maxInnerRedemptionRate !== '') {
-      writer
-        .uint32(26)
-        .string(
-          Decimal.fromUserInput(message.maxInnerRedemptionRate, 18).atomics,
-        );
+    if (message.maxInnerRedemptionRate !== "") {
+      writer.uint32(26).string(Decimal.fromUserInput(message.maxInnerRedemptionRate, 18).atomics);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgUpdateInnerRedemptionRateBounds {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgUpdateInnerRedemptionRateBounds {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgUpdateInnerRedemptionRateBounds();
     while (reader.pos < end) {
@@ -1326,16 +1122,10 @@ export const MsgUpdateInnerRedemptionRateBounds = {
           message.creator = reader.string();
           break;
         case 2:
-          message.minInnerRedemptionRate = Decimal.fromAtomics(
-            reader.string(),
-            18,
-          ).toString();
+          message.minInnerRedemptionRate = Decimal.fromAtomics(reader.string(), 18).toString();
           break;
         case 3:
-          message.maxInnerRedemptionRate = Decimal.fromAtomics(
-            reader.string(),
-            18,
-          ).toString();
+          message.maxInnerRedemptionRate = Decimal.fromAtomics(reader.string(), 18).toString();
           break;
         default:
           reader.skipType(tag & 7);
@@ -1346,70 +1136,48 @@ export const MsgUpdateInnerRedemptionRateBounds = {
   },
   fromJSON(object: any): MsgUpdateInnerRedemptionRateBounds {
     return {
-      creator: isSet(object.creator) ? String(object.creator) : '',
-      minInnerRedemptionRate: isSet(object.minInnerRedemptionRate)
-        ? String(object.minInnerRedemptionRate)
-        : '',
-      maxInnerRedemptionRate: isSet(object.maxInnerRedemptionRate)
-        ? String(object.maxInnerRedemptionRate)
-        : '',
+      creator: isSet(object.creator) ? String(object.creator) : "",
+      minInnerRedemptionRate: isSet(object.minInnerRedemptionRate) ? String(object.minInnerRedemptionRate) : "",
+      maxInnerRedemptionRate: isSet(object.maxInnerRedemptionRate) ? String(object.maxInnerRedemptionRate) : ""
     };
   },
-  toJSON(
-    message: MsgUpdateInnerRedemptionRateBounds,
-  ): JsonSafe<MsgUpdateInnerRedemptionRateBounds> {
+  toJSON(message: MsgUpdateInnerRedemptionRateBounds): JsonSafe<MsgUpdateInnerRedemptionRateBounds> {
     const obj: any = {};
     message.creator !== undefined && (obj.creator = message.creator);
-    message.minInnerRedemptionRate !== undefined &&
-      (obj.minInnerRedemptionRate = message.minInnerRedemptionRate);
-    message.maxInnerRedemptionRate !== undefined &&
-      (obj.maxInnerRedemptionRate = message.maxInnerRedemptionRate);
+    message.minInnerRedemptionRate !== undefined && (obj.minInnerRedemptionRate = message.minInnerRedemptionRate);
+    message.maxInnerRedemptionRate !== undefined && (obj.maxInnerRedemptionRate = message.maxInnerRedemptionRate);
     return obj;
   },
-  fromPartial(
-    object: Partial<MsgUpdateInnerRedemptionRateBounds>,
-  ): MsgUpdateInnerRedemptionRateBounds {
+  fromPartial(object: Partial<MsgUpdateInnerRedemptionRateBounds>): MsgUpdateInnerRedemptionRateBounds {
     const message = createBaseMsgUpdateInnerRedemptionRateBounds();
-    message.creator = object.creator ?? '';
-    message.minInnerRedemptionRate = object.minInnerRedemptionRate ?? '';
-    message.maxInnerRedemptionRate = object.maxInnerRedemptionRate ?? '';
+    message.creator = object.creator ?? "";
+    message.minInnerRedemptionRate = object.minInnerRedemptionRate ?? "";
+    message.maxInnerRedemptionRate = object.maxInnerRedemptionRate ?? "";
     return message;
   },
-  fromProtoMsg(
-    message: MsgUpdateInnerRedemptionRateBoundsProtoMsg,
-  ): MsgUpdateInnerRedemptionRateBounds {
+  fromProtoMsg(message: MsgUpdateInnerRedemptionRateBoundsProtoMsg): MsgUpdateInnerRedemptionRateBounds {
     return MsgUpdateInnerRedemptionRateBounds.decode(message.value);
   },
   toProto(message: MsgUpdateInnerRedemptionRateBounds): Uint8Array {
     return MsgUpdateInnerRedemptionRateBounds.encode(message).finish();
   },
-  toProtoMsg(
-    message: MsgUpdateInnerRedemptionRateBounds,
-  ): MsgUpdateInnerRedemptionRateBoundsProtoMsg {
+  toProtoMsg(message: MsgUpdateInnerRedemptionRateBounds): MsgUpdateInnerRedemptionRateBoundsProtoMsg {
     return {
-      typeUrl: '/stride.staketia.MsgUpdateInnerRedemptionRateBounds',
-      value: MsgUpdateInnerRedemptionRateBounds.encode(message).finish(),
+      typeUrl: "/stride.staketia.MsgUpdateInnerRedemptionRateBounds",
+      value: MsgUpdateInnerRedemptionRateBounds.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgUpdateInnerRedemptionRateBoundsResponse(): MsgUpdateInnerRedemptionRateBoundsResponse {
   return {};
 }
 export const MsgUpdateInnerRedemptionRateBoundsResponse = {
-  typeUrl:
-    '/stride.staketia.MsgUpdateInnerRedemptionRateBoundsResponse' as const,
-  encode(
-    _: MsgUpdateInnerRedemptionRateBoundsResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/stride.staketia.MsgUpdateInnerRedemptionRateBoundsResponse" as const,
+  encode(_: MsgUpdateInnerRedemptionRateBoundsResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgUpdateInnerRedemptionRateBoundsResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgUpdateInnerRedemptionRateBoundsResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgUpdateInnerRedemptionRateBoundsResponse();
     while (reader.pos < end) {
@@ -1425,55 +1193,42 @@ export const MsgUpdateInnerRedemptionRateBoundsResponse = {
   fromJSON(_: any): MsgUpdateInnerRedemptionRateBoundsResponse {
     return {};
   },
-  toJSON(
-    _: MsgUpdateInnerRedemptionRateBoundsResponse,
-  ): JsonSafe<MsgUpdateInnerRedemptionRateBoundsResponse> {
+  toJSON(_: MsgUpdateInnerRedemptionRateBoundsResponse): JsonSafe<MsgUpdateInnerRedemptionRateBoundsResponse> {
     const obj: any = {};
     return obj;
   },
-  fromPartial(
-    _: Partial<MsgUpdateInnerRedemptionRateBoundsResponse>,
-  ): MsgUpdateInnerRedemptionRateBoundsResponse {
+  fromPartial(_: Partial<MsgUpdateInnerRedemptionRateBoundsResponse>): MsgUpdateInnerRedemptionRateBoundsResponse {
     const message = createBaseMsgUpdateInnerRedemptionRateBoundsResponse();
     return message;
   },
-  fromProtoMsg(
-    message: MsgUpdateInnerRedemptionRateBoundsResponseProtoMsg,
-  ): MsgUpdateInnerRedemptionRateBoundsResponse {
+  fromProtoMsg(message: MsgUpdateInnerRedemptionRateBoundsResponseProtoMsg): MsgUpdateInnerRedemptionRateBoundsResponse {
     return MsgUpdateInnerRedemptionRateBoundsResponse.decode(message.value);
   },
   toProto(message: MsgUpdateInnerRedemptionRateBoundsResponse): Uint8Array {
     return MsgUpdateInnerRedemptionRateBoundsResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: MsgUpdateInnerRedemptionRateBoundsResponse,
-  ): MsgUpdateInnerRedemptionRateBoundsResponseProtoMsg {
+  toProtoMsg(message: MsgUpdateInnerRedemptionRateBoundsResponse): MsgUpdateInnerRedemptionRateBoundsResponseProtoMsg {
     return {
-      typeUrl: '/stride.staketia.MsgUpdateInnerRedemptionRateBoundsResponse',
-      value:
-        MsgUpdateInnerRedemptionRateBoundsResponse.encode(message).finish(),
+      typeUrl: "/stride.staketia.MsgUpdateInnerRedemptionRateBoundsResponse",
+      value: MsgUpdateInnerRedemptionRateBoundsResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgResumeHostZone(): MsgResumeHostZone {
   return {
-    creator: '',
+    creator: ""
   };
 }
 export const MsgResumeHostZone = {
-  typeUrl: '/stride.staketia.MsgResumeHostZone' as const,
-  encode(
-    message: MsgResumeHostZone,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.creator !== '') {
+  typeUrl: "/stride.staketia.MsgResumeHostZone" as const,
+  encode(message: MsgResumeHostZone, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.creator !== "") {
       writer.uint32(10).string(message.creator);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): MsgResumeHostZone {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgResumeHostZone();
     while (reader.pos < end) {
@@ -1491,7 +1246,7 @@ export const MsgResumeHostZone = {
   },
   fromJSON(object: any): MsgResumeHostZone {
     return {
-      creator: isSet(object.creator) ? String(object.creator) : '',
+      creator: isSet(object.creator) ? String(object.creator) : ""
     };
   },
   toJSON(message: MsgResumeHostZone): JsonSafe<MsgResumeHostZone> {
@@ -1501,7 +1256,7 @@ export const MsgResumeHostZone = {
   },
   fromPartial(object: Partial<MsgResumeHostZone>): MsgResumeHostZone {
     const message = createBaseMsgResumeHostZone();
-    message.creator = object.creator ?? '';
+    message.creator = object.creator ?? "";
     return message;
   },
   fromProtoMsg(message: MsgResumeHostZoneProtoMsg): MsgResumeHostZone {
@@ -1512,28 +1267,21 @@ export const MsgResumeHostZone = {
   },
   toProtoMsg(message: MsgResumeHostZone): MsgResumeHostZoneProtoMsg {
     return {
-      typeUrl: '/stride.staketia.MsgResumeHostZone',
-      value: MsgResumeHostZone.encode(message).finish(),
+      typeUrl: "/stride.staketia.MsgResumeHostZone",
+      value: MsgResumeHostZone.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgResumeHostZoneResponse(): MsgResumeHostZoneResponse {
   return {};
 }
 export const MsgResumeHostZoneResponse = {
-  typeUrl: '/stride.staketia.MsgResumeHostZoneResponse' as const,
-  encode(
-    _: MsgResumeHostZoneResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/stride.staketia.MsgResumeHostZoneResponse" as const,
+  encode(_: MsgResumeHostZoneResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgResumeHostZoneResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgResumeHostZoneResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgResumeHostZoneResponse();
     while (reader.pos < end) {
@@ -1553,51 +1301,38 @@ export const MsgResumeHostZoneResponse = {
     const obj: any = {};
     return obj;
   },
-  fromPartial(
-    _: Partial<MsgResumeHostZoneResponse>,
-  ): MsgResumeHostZoneResponse {
+  fromPartial(_: Partial<MsgResumeHostZoneResponse>): MsgResumeHostZoneResponse {
     const message = createBaseMsgResumeHostZoneResponse();
     return message;
   },
-  fromProtoMsg(
-    message: MsgResumeHostZoneResponseProtoMsg,
-  ): MsgResumeHostZoneResponse {
+  fromProtoMsg(message: MsgResumeHostZoneResponseProtoMsg): MsgResumeHostZoneResponse {
     return MsgResumeHostZoneResponse.decode(message.value);
   },
   toProto(message: MsgResumeHostZoneResponse): Uint8Array {
     return MsgResumeHostZoneResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: MsgResumeHostZoneResponse,
-  ): MsgResumeHostZoneResponseProtoMsg {
+  toProtoMsg(message: MsgResumeHostZoneResponse): MsgResumeHostZoneResponseProtoMsg {
     return {
-      typeUrl: '/stride.staketia.MsgResumeHostZoneResponse',
-      value: MsgResumeHostZoneResponse.encode(message).finish(),
+      typeUrl: "/stride.staketia.MsgResumeHostZoneResponse",
+      value: MsgResumeHostZoneResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgRefreshRedemptionRate(): MsgRefreshRedemptionRate {
   return {
-    creator: '',
+    creator: ""
   };
 }
 export const MsgRefreshRedemptionRate = {
-  typeUrl: '/stride.staketia.MsgRefreshRedemptionRate' as const,
-  encode(
-    message: MsgRefreshRedemptionRate,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.creator !== '') {
+  typeUrl: "/stride.staketia.MsgRefreshRedemptionRate" as const,
+  encode(message: MsgRefreshRedemptionRate, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.creator !== "") {
       writer.uint32(10).string(message.creator);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgRefreshRedemptionRate {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgRefreshRedemptionRate {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgRefreshRedemptionRate();
     while (reader.pos < end) {
@@ -1615,57 +1350,42 @@ export const MsgRefreshRedemptionRate = {
   },
   fromJSON(object: any): MsgRefreshRedemptionRate {
     return {
-      creator: isSet(object.creator) ? String(object.creator) : '',
+      creator: isSet(object.creator) ? String(object.creator) : ""
     };
   },
-  toJSON(
-    message: MsgRefreshRedemptionRate,
-  ): JsonSafe<MsgRefreshRedemptionRate> {
+  toJSON(message: MsgRefreshRedemptionRate): JsonSafe<MsgRefreshRedemptionRate> {
     const obj: any = {};
     message.creator !== undefined && (obj.creator = message.creator);
     return obj;
   },
-  fromPartial(
-    object: Partial<MsgRefreshRedemptionRate>,
-  ): MsgRefreshRedemptionRate {
+  fromPartial(object: Partial<MsgRefreshRedemptionRate>): MsgRefreshRedemptionRate {
     const message = createBaseMsgRefreshRedemptionRate();
-    message.creator = object.creator ?? '';
+    message.creator = object.creator ?? "";
     return message;
   },
-  fromProtoMsg(
-    message: MsgRefreshRedemptionRateProtoMsg,
-  ): MsgRefreshRedemptionRate {
+  fromProtoMsg(message: MsgRefreshRedemptionRateProtoMsg): MsgRefreshRedemptionRate {
     return MsgRefreshRedemptionRate.decode(message.value);
   },
   toProto(message: MsgRefreshRedemptionRate): Uint8Array {
     return MsgRefreshRedemptionRate.encode(message).finish();
   },
-  toProtoMsg(
-    message: MsgRefreshRedemptionRate,
-  ): MsgRefreshRedemptionRateProtoMsg {
+  toProtoMsg(message: MsgRefreshRedemptionRate): MsgRefreshRedemptionRateProtoMsg {
     return {
-      typeUrl: '/stride.staketia.MsgRefreshRedemptionRate',
-      value: MsgRefreshRedemptionRate.encode(message).finish(),
+      typeUrl: "/stride.staketia.MsgRefreshRedemptionRate",
+      value: MsgRefreshRedemptionRate.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgRefreshRedemptionRateResponse(): MsgRefreshRedemptionRateResponse {
   return {};
 }
 export const MsgRefreshRedemptionRateResponse = {
-  typeUrl: '/stride.staketia.MsgRefreshRedemptionRateResponse' as const,
-  encode(
-    _: MsgRefreshRedemptionRateResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/stride.staketia.MsgRefreshRedemptionRateResponse" as const,
+  encode(_: MsgRefreshRedemptionRateResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgRefreshRedemptionRateResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgRefreshRedemptionRateResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgRefreshRedemptionRateResponse();
     while (reader.pos < end) {
@@ -1681,64 +1401,46 @@ export const MsgRefreshRedemptionRateResponse = {
   fromJSON(_: any): MsgRefreshRedemptionRateResponse {
     return {};
   },
-  toJSON(
-    _: MsgRefreshRedemptionRateResponse,
-  ): JsonSafe<MsgRefreshRedemptionRateResponse> {
+  toJSON(_: MsgRefreshRedemptionRateResponse): JsonSafe<MsgRefreshRedemptionRateResponse> {
     const obj: any = {};
     return obj;
   },
-  fromPartial(
-    _: Partial<MsgRefreshRedemptionRateResponse>,
-  ): MsgRefreshRedemptionRateResponse {
+  fromPartial(_: Partial<MsgRefreshRedemptionRateResponse>): MsgRefreshRedemptionRateResponse {
     const message = createBaseMsgRefreshRedemptionRateResponse();
     return message;
   },
-  fromProtoMsg(
-    message: MsgRefreshRedemptionRateResponseProtoMsg,
-  ): MsgRefreshRedemptionRateResponse {
+  fromProtoMsg(message: MsgRefreshRedemptionRateResponseProtoMsg): MsgRefreshRedemptionRateResponse {
     return MsgRefreshRedemptionRateResponse.decode(message.value);
   },
   toProto(message: MsgRefreshRedemptionRateResponse): Uint8Array {
     return MsgRefreshRedemptionRateResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: MsgRefreshRedemptionRateResponse,
-  ): MsgRefreshRedemptionRateResponseProtoMsg {
+  toProtoMsg(message: MsgRefreshRedemptionRateResponse): MsgRefreshRedemptionRateResponseProtoMsg {
     return {
-      typeUrl: '/stride.staketia.MsgRefreshRedemptionRateResponse',
-      value: MsgRefreshRedemptionRateResponse.encode(message).finish(),
+      typeUrl: "/stride.staketia.MsgRefreshRedemptionRateResponse",
+      value: MsgRefreshRedemptionRateResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgOverwriteDelegationRecord(): MsgOverwriteDelegationRecord {
   return {
-    creator: '',
-    delegationRecord: undefined,
+    creator: "",
+    delegationRecord: undefined
   };
 }
 export const MsgOverwriteDelegationRecord = {
-  typeUrl: '/stride.staketia.MsgOverwriteDelegationRecord' as const,
-  encode(
-    message: MsgOverwriteDelegationRecord,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.creator !== '') {
+  typeUrl: "/stride.staketia.MsgOverwriteDelegationRecord" as const,
+  encode(message: MsgOverwriteDelegationRecord, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.creator !== "") {
       writer.uint32(10).string(message.creator);
     }
     if (message.delegationRecord !== undefined) {
-      DelegationRecord.encode(
-        message.delegationRecord,
-        writer.uint32(18).fork(),
-      ).ldelim();
+      DelegationRecord.encode(message.delegationRecord, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgOverwriteDelegationRecord {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgOverwriteDelegationRecord {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgOverwriteDelegationRecord();
     while (reader.pos < end) {
@@ -1748,10 +1450,7 @@ export const MsgOverwriteDelegationRecord = {
           message.creator = reader.string();
           break;
         case 2:
-          message.delegationRecord = DelegationRecord.decode(
-            reader,
-            reader.uint32(),
-          );
+          message.delegationRecord = DelegationRecord.decode(reader, reader.uint32());
           break;
         default:
           reader.skipType(tag & 7);
@@ -1762,68 +1461,45 @@ export const MsgOverwriteDelegationRecord = {
   },
   fromJSON(object: any): MsgOverwriteDelegationRecord {
     return {
-      creator: isSet(object.creator) ? String(object.creator) : '',
-      delegationRecord: isSet(object.delegationRecord)
-        ? DelegationRecord.fromJSON(object.delegationRecord)
-        : undefined,
+      creator: isSet(object.creator) ? String(object.creator) : "",
+      delegationRecord: isSet(object.delegationRecord) ? DelegationRecord.fromJSON(object.delegationRecord) : undefined
     };
   },
-  toJSON(
-    message: MsgOverwriteDelegationRecord,
-  ): JsonSafe<MsgOverwriteDelegationRecord> {
+  toJSON(message: MsgOverwriteDelegationRecord): JsonSafe<MsgOverwriteDelegationRecord> {
     const obj: any = {};
     message.creator !== undefined && (obj.creator = message.creator);
-    message.delegationRecord !== undefined &&
-      (obj.delegationRecord = message.delegationRecord
-        ? DelegationRecord.toJSON(message.delegationRecord)
-        : undefined);
+    message.delegationRecord !== undefined && (obj.delegationRecord = message.delegationRecord ? DelegationRecord.toJSON(message.delegationRecord) : undefined);
     return obj;
   },
-  fromPartial(
-    object: Partial<MsgOverwriteDelegationRecord>,
-  ): MsgOverwriteDelegationRecord {
+  fromPartial(object: Partial<MsgOverwriteDelegationRecord>): MsgOverwriteDelegationRecord {
     const message = createBaseMsgOverwriteDelegationRecord();
-    message.creator = object.creator ?? '';
-    message.delegationRecord =
-      object.delegationRecord !== undefined && object.delegationRecord !== null
-        ? DelegationRecord.fromPartial(object.delegationRecord)
-        : undefined;
+    message.creator = object.creator ?? "";
+    message.delegationRecord = object.delegationRecord !== undefined && object.delegationRecord !== null ? DelegationRecord.fromPartial(object.delegationRecord) : undefined;
     return message;
   },
-  fromProtoMsg(
-    message: MsgOverwriteDelegationRecordProtoMsg,
-  ): MsgOverwriteDelegationRecord {
+  fromProtoMsg(message: MsgOverwriteDelegationRecordProtoMsg): MsgOverwriteDelegationRecord {
     return MsgOverwriteDelegationRecord.decode(message.value);
   },
   toProto(message: MsgOverwriteDelegationRecord): Uint8Array {
     return MsgOverwriteDelegationRecord.encode(message).finish();
   },
-  toProtoMsg(
-    message: MsgOverwriteDelegationRecord,
-  ): MsgOverwriteDelegationRecordProtoMsg {
+  toProtoMsg(message: MsgOverwriteDelegationRecord): MsgOverwriteDelegationRecordProtoMsg {
     return {
-      typeUrl: '/stride.staketia.MsgOverwriteDelegationRecord',
-      value: MsgOverwriteDelegationRecord.encode(message).finish(),
+      typeUrl: "/stride.staketia.MsgOverwriteDelegationRecord",
+      value: MsgOverwriteDelegationRecord.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgOverwriteDelegationRecordResponse(): MsgOverwriteDelegationRecordResponse {
   return {};
 }
 export const MsgOverwriteDelegationRecordResponse = {
-  typeUrl: '/stride.staketia.MsgOverwriteDelegationRecordResponse' as const,
-  encode(
-    _: MsgOverwriteDelegationRecordResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/stride.staketia.MsgOverwriteDelegationRecordResponse" as const,
+  encode(_: MsgOverwriteDelegationRecordResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgOverwriteDelegationRecordResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgOverwriteDelegationRecordResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgOverwriteDelegationRecordResponse();
     while (reader.pos < end) {
@@ -1839,64 +1515,46 @@ export const MsgOverwriteDelegationRecordResponse = {
   fromJSON(_: any): MsgOverwriteDelegationRecordResponse {
     return {};
   },
-  toJSON(
-    _: MsgOverwriteDelegationRecordResponse,
-  ): JsonSafe<MsgOverwriteDelegationRecordResponse> {
+  toJSON(_: MsgOverwriteDelegationRecordResponse): JsonSafe<MsgOverwriteDelegationRecordResponse> {
     const obj: any = {};
     return obj;
   },
-  fromPartial(
-    _: Partial<MsgOverwriteDelegationRecordResponse>,
-  ): MsgOverwriteDelegationRecordResponse {
+  fromPartial(_: Partial<MsgOverwriteDelegationRecordResponse>): MsgOverwriteDelegationRecordResponse {
     const message = createBaseMsgOverwriteDelegationRecordResponse();
     return message;
   },
-  fromProtoMsg(
-    message: MsgOverwriteDelegationRecordResponseProtoMsg,
-  ): MsgOverwriteDelegationRecordResponse {
+  fromProtoMsg(message: MsgOverwriteDelegationRecordResponseProtoMsg): MsgOverwriteDelegationRecordResponse {
     return MsgOverwriteDelegationRecordResponse.decode(message.value);
   },
   toProto(message: MsgOverwriteDelegationRecordResponse): Uint8Array {
     return MsgOverwriteDelegationRecordResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: MsgOverwriteDelegationRecordResponse,
-  ): MsgOverwriteDelegationRecordResponseProtoMsg {
+  toProtoMsg(message: MsgOverwriteDelegationRecordResponse): MsgOverwriteDelegationRecordResponseProtoMsg {
     return {
-      typeUrl: '/stride.staketia.MsgOverwriteDelegationRecordResponse',
-      value: MsgOverwriteDelegationRecordResponse.encode(message).finish(),
+      typeUrl: "/stride.staketia.MsgOverwriteDelegationRecordResponse",
+      value: MsgOverwriteDelegationRecordResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgOverwriteUnbondingRecord(): MsgOverwriteUnbondingRecord {
   return {
-    creator: '',
-    unbondingRecord: undefined,
+    creator: "",
+    unbondingRecord: undefined
   };
 }
 export const MsgOverwriteUnbondingRecord = {
-  typeUrl: '/stride.staketia.MsgOverwriteUnbondingRecord' as const,
-  encode(
-    message: MsgOverwriteUnbondingRecord,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.creator !== '') {
+  typeUrl: "/stride.staketia.MsgOverwriteUnbondingRecord" as const,
+  encode(message: MsgOverwriteUnbondingRecord, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.creator !== "") {
       writer.uint32(10).string(message.creator);
     }
     if (message.unbondingRecord !== undefined) {
-      UnbondingRecord.encode(
-        message.unbondingRecord,
-        writer.uint32(18).fork(),
-      ).ldelim();
+      UnbondingRecord.encode(message.unbondingRecord, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgOverwriteUnbondingRecord {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgOverwriteUnbondingRecord {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgOverwriteUnbondingRecord();
     while (reader.pos < end) {
@@ -1906,10 +1564,7 @@ export const MsgOverwriteUnbondingRecord = {
           message.creator = reader.string();
           break;
         case 2:
-          message.unbondingRecord = UnbondingRecord.decode(
-            reader,
-            reader.uint32(),
-          );
+          message.unbondingRecord = UnbondingRecord.decode(reader, reader.uint32());
           break;
         default:
           reader.skipType(tag & 7);
@@ -1920,68 +1575,45 @@ export const MsgOverwriteUnbondingRecord = {
   },
   fromJSON(object: any): MsgOverwriteUnbondingRecord {
     return {
-      creator: isSet(object.creator) ? String(object.creator) : '',
-      unbondingRecord: isSet(object.unbondingRecord)
-        ? UnbondingRecord.fromJSON(object.unbondingRecord)
-        : undefined,
+      creator: isSet(object.creator) ? String(object.creator) : "",
+      unbondingRecord: isSet(object.unbondingRecord) ? UnbondingRecord.fromJSON(object.unbondingRecord) : undefined
     };
   },
-  toJSON(
-    message: MsgOverwriteUnbondingRecord,
-  ): JsonSafe<MsgOverwriteUnbondingRecord> {
+  toJSON(message: MsgOverwriteUnbondingRecord): JsonSafe<MsgOverwriteUnbondingRecord> {
     const obj: any = {};
     message.creator !== undefined && (obj.creator = message.creator);
-    message.unbondingRecord !== undefined &&
-      (obj.unbondingRecord = message.unbondingRecord
-        ? UnbondingRecord.toJSON(message.unbondingRecord)
-        : undefined);
+    message.unbondingRecord !== undefined && (obj.unbondingRecord = message.unbondingRecord ? UnbondingRecord.toJSON(message.unbondingRecord) : undefined);
     return obj;
   },
-  fromPartial(
-    object: Partial<MsgOverwriteUnbondingRecord>,
-  ): MsgOverwriteUnbondingRecord {
+  fromPartial(object: Partial<MsgOverwriteUnbondingRecord>): MsgOverwriteUnbondingRecord {
     const message = createBaseMsgOverwriteUnbondingRecord();
-    message.creator = object.creator ?? '';
-    message.unbondingRecord =
-      object.unbondingRecord !== undefined && object.unbondingRecord !== null
-        ? UnbondingRecord.fromPartial(object.unbondingRecord)
-        : undefined;
+    message.creator = object.creator ?? "";
+    message.unbondingRecord = object.unbondingRecord !== undefined && object.unbondingRecord !== null ? UnbondingRecord.fromPartial(object.unbondingRecord) : undefined;
     return message;
   },
-  fromProtoMsg(
-    message: MsgOverwriteUnbondingRecordProtoMsg,
-  ): MsgOverwriteUnbondingRecord {
+  fromProtoMsg(message: MsgOverwriteUnbondingRecordProtoMsg): MsgOverwriteUnbondingRecord {
     return MsgOverwriteUnbondingRecord.decode(message.value);
   },
   toProto(message: MsgOverwriteUnbondingRecord): Uint8Array {
     return MsgOverwriteUnbondingRecord.encode(message).finish();
   },
-  toProtoMsg(
-    message: MsgOverwriteUnbondingRecord,
-  ): MsgOverwriteUnbondingRecordProtoMsg {
+  toProtoMsg(message: MsgOverwriteUnbondingRecord): MsgOverwriteUnbondingRecordProtoMsg {
     return {
-      typeUrl: '/stride.staketia.MsgOverwriteUnbondingRecord',
-      value: MsgOverwriteUnbondingRecord.encode(message).finish(),
+      typeUrl: "/stride.staketia.MsgOverwriteUnbondingRecord",
+      value: MsgOverwriteUnbondingRecord.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgOverwriteUnbondingRecordResponse(): MsgOverwriteUnbondingRecordResponse {
   return {};
 }
 export const MsgOverwriteUnbondingRecordResponse = {
-  typeUrl: '/stride.staketia.MsgOverwriteUnbondingRecordResponse' as const,
-  encode(
-    _: MsgOverwriteUnbondingRecordResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/stride.staketia.MsgOverwriteUnbondingRecordResponse" as const,
+  encode(_: MsgOverwriteUnbondingRecordResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgOverwriteUnbondingRecordResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgOverwriteUnbondingRecordResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgOverwriteUnbondingRecordResponse();
     while (reader.pos < end) {
@@ -1997,64 +1629,46 @@ export const MsgOverwriteUnbondingRecordResponse = {
   fromJSON(_: any): MsgOverwriteUnbondingRecordResponse {
     return {};
   },
-  toJSON(
-    _: MsgOverwriteUnbondingRecordResponse,
-  ): JsonSafe<MsgOverwriteUnbondingRecordResponse> {
+  toJSON(_: MsgOverwriteUnbondingRecordResponse): JsonSafe<MsgOverwriteUnbondingRecordResponse> {
     const obj: any = {};
     return obj;
   },
-  fromPartial(
-    _: Partial<MsgOverwriteUnbondingRecordResponse>,
-  ): MsgOverwriteUnbondingRecordResponse {
+  fromPartial(_: Partial<MsgOverwriteUnbondingRecordResponse>): MsgOverwriteUnbondingRecordResponse {
     const message = createBaseMsgOverwriteUnbondingRecordResponse();
     return message;
   },
-  fromProtoMsg(
-    message: MsgOverwriteUnbondingRecordResponseProtoMsg,
-  ): MsgOverwriteUnbondingRecordResponse {
+  fromProtoMsg(message: MsgOverwriteUnbondingRecordResponseProtoMsg): MsgOverwriteUnbondingRecordResponse {
     return MsgOverwriteUnbondingRecordResponse.decode(message.value);
   },
   toProto(message: MsgOverwriteUnbondingRecordResponse): Uint8Array {
     return MsgOverwriteUnbondingRecordResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: MsgOverwriteUnbondingRecordResponse,
-  ): MsgOverwriteUnbondingRecordResponseProtoMsg {
+  toProtoMsg(message: MsgOverwriteUnbondingRecordResponse): MsgOverwriteUnbondingRecordResponseProtoMsg {
     return {
-      typeUrl: '/stride.staketia.MsgOverwriteUnbondingRecordResponse',
-      value: MsgOverwriteUnbondingRecordResponse.encode(message).finish(),
+      typeUrl: "/stride.staketia.MsgOverwriteUnbondingRecordResponse",
+      value: MsgOverwriteUnbondingRecordResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgOverwriteRedemptionRecord(): MsgOverwriteRedemptionRecord {
   return {
-    creator: '',
-    redemptionRecord: undefined,
+    creator: "",
+    redemptionRecord: undefined
   };
 }
 export const MsgOverwriteRedemptionRecord = {
-  typeUrl: '/stride.staketia.MsgOverwriteRedemptionRecord' as const,
-  encode(
-    message: MsgOverwriteRedemptionRecord,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.creator !== '') {
+  typeUrl: "/stride.staketia.MsgOverwriteRedemptionRecord" as const,
+  encode(message: MsgOverwriteRedemptionRecord, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.creator !== "") {
       writer.uint32(10).string(message.creator);
     }
     if (message.redemptionRecord !== undefined) {
-      RedemptionRecord.encode(
-        message.redemptionRecord,
-        writer.uint32(18).fork(),
-      ).ldelim();
+      RedemptionRecord.encode(message.redemptionRecord, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgOverwriteRedemptionRecord {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgOverwriteRedemptionRecord {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgOverwriteRedemptionRecord();
     while (reader.pos < end) {
@@ -2064,10 +1678,7 @@ export const MsgOverwriteRedemptionRecord = {
           message.creator = reader.string();
           break;
         case 2:
-          message.redemptionRecord = RedemptionRecord.decode(
-            reader,
-            reader.uint32(),
-          );
+          message.redemptionRecord = RedemptionRecord.decode(reader, reader.uint32());
           break;
         default:
           reader.skipType(tag & 7);
@@ -2078,68 +1689,45 @@ export const MsgOverwriteRedemptionRecord = {
   },
   fromJSON(object: any): MsgOverwriteRedemptionRecord {
     return {
-      creator: isSet(object.creator) ? String(object.creator) : '',
-      redemptionRecord: isSet(object.redemptionRecord)
-        ? RedemptionRecord.fromJSON(object.redemptionRecord)
-        : undefined,
+      creator: isSet(object.creator) ? String(object.creator) : "",
+      redemptionRecord: isSet(object.redemptionRecord) ? RedemptionRecord.fromJSON(object.redemptionRecord) : undefined
     };
   },
-  toJSON(
-    message: MsgOverwriteRedemptionRecord,
-  ): JsonSafe<MsgOverwriteRedemptionRecord> {
+  toJSON(message: MsgOverwriteRedemptionRecord): JsonSafe<MsgOverwriteRedemptionRecord> {
     const obj: any = {};
     message.creator !== undefined && (obj.creator = message.creator);
-    message.redemptionRecord !== undefined &&
-      (obj.redemptionRecord = message.redemptionRecord
-        ? RedemptionRecord.toJSON(message.redemptionRecord)
-        : undefined);
+    message.redemptionRecord !== undefined && (obj.redemptionRecord = message.redemptionRecord ? RedemptionRecord.toJSON(message.redemptionRecord) : undefined);
     return obj;
   },
-  fromPartial(
-    object: Partial<MsgOverwriteRedemptionRecord>,
-  ): MsgOverwriteRedemptionRecord {
+  fromPartial(object: Partial<MsgOverwriteRedemptionRecord>): MsgOverwriteRedemptionRecord {
     const message = createBaseMsgOverwriteRedemptionRecord();
-    message.creator = object.creator ?? '';
-    message.redemptionRecord =
-      object.redemptionRecord !== undefined && object.redemptionRecord !== null
-        ? RedemptionRecord.fromPartial(object.redemptionRecord)
-        : undefined;
+    message.creator = object.creator ?? "";
+    message.redemptionRecord = object.redemptionRecord !== undefined && object.redemptionRecord !== null ? RedemptionRecord.fromPartial(object.redemptionRecord) : undefined;
     return message;
   },
-  fromProtoMsg(
-    message: MsgOverwriteRedemptionRecordProtoMsg,
-  ): MsgOverwriteRedemptionRecord {
+  fromProtoMsg(message: MsgOverwriteRedemptionRecordProtoMsg): MsgOverwriteRedemptionRecord {
     return MsgOverwriteRedemptionRecord.decode(message.value);
   },
   toProto(message: MsgOverwriteRedemptionRecord): Uint8Array {
     return MsgOverwriteRedemptionRecord.encode(message).finish();
   },
-  toProtoMsg(
-    message: MsgOverwriteRedemptionRecord,
-  ): MsgOverwriteRedemptionRecordProtoMsg {
+  toProtoMsg(message: MsgOverwriteRedemptionRecord): MsgOverwriteRedemptionRecordProtoMsg {
     return {
-      typeUrl: '/stride.staketia.MsgOverwriteRedemptionRecord',
-      value: MsgOverwriteRedemptionRecord.encode(message).finish(),
+      typeUrl: "/stride.staketia.MsgOverwriteRedemptionRecord",
+      value: MsgOverwriteRedemptionRecord.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgOverwriteRedemptionRecordResponse(): MsgOverwriteRedemptionRecordResponse {
   return {};
 }
 export const MsgOverwriteRedemptionRecordResponse = {
-  typeUrl: '/stride.staketia.MsgOverwriteRedemptionRecordResponse' as const,
-  encode(
-    _: MsgOverwriteRedemptionRecordResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/stride.staketia.MsgOverwriteRedemptionRecordResponse" as const,
+  encode(_: MsgOverwriteRedemptionRecordResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgOverwriteRedemptionRecordResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgOverwriteRedemptionRecordResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgOverwriteRedemptionRecordResponse();
     while (reader.pos < end) {
@@ -2155,61 +1743,46 @@ export const MsgOverwriteRedemptionRecordResponse = {
   fromJSON(_: any): MsgOverwriteRedemptionRecordResponse {
     return {};
   },
-  toJSON(
-    _: MsgOverwriteRedemptionRecordResponse,
-  ): JsonSafe<MsgOverwriteRedemptionRecordResponse> {
+  toJSON(_: MsgOverwriteRedemptionRecordResponse): JsonSafe<MsgOverwriteRedemptionRecordResponse> {
     const obj: any = {};
     return obj;
   },
-  fromPartial(
-    _: Partial<MsgOverwriteRedemptionRecordResponse>,
-  ): MsgOverwriteRedemptionRecordResponse {
+  fromPartial(_: Partial<MsgOverwriteRedemptionRecordResponse>): MsgOverwriteRedemptionRecordResponse {
     const message = createBaseMsgOverwriteRedemptionRecordResponse();
     return message;
   },
-  fromProtoMsg(
-    message: MsgOverwriteRedemptionRecordResponseProtoMsg,
-  ): MsgOverwriteRedemptionRecordResponse {
+  fromProtoMsg(message: MsgOverwriteRedemptionRecordResponseProtoMsg): MsgOverwriteRedemptionRecordResponse {
     return MsgOverwriteRedemptionRecordResponse.decode(message.value);
   },
   toProto(message: MsgOverwriteRedemptionRecordResponse): Uint8Array {
     return MsgOverwriteRedemptionRecordResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: MsgOverwriteRedemptionRecordResponse,
-  ): MsgOverwriteRedemptionRecordResponseProtoMsg {
+  toProtoMsg(message: MsgOverwriteRedemptionRecordResponse): MsgOverwriteRedemptionRecordResponseProtoMsg {
     return {
-      typeUrl: '/stride.staketia.MsgOverwriteRedemptionRecordResponse',
-      value: MsgOverwriteRedemptionRecordResponse.encode(message).finish(),
+      typeUrl: "/stride.staketia.MsgOverwriteRedemptionRecordResponse",
+      value: MsgOverwriteRedemptionRecordResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgSetOperatorAddress(): MsgSetOperatorAddress {
   return {
-    signer: '',
-    operator: '',
+    signer: "",
+    operator: ""
   };
 }
 export const MsgSetOperatorAddress = {
-  typeUrl: '/stride.staketia.MsgSetOperatorAddress' as const,
-  encode(
-    message: MsgSetOperatorAddress,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.signer !== '') {
+  typeUrl: "/stride.staketia.MsgSetOperatorAddress" as const,
+  encode(message: MsgSetOperatorAddress, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.signer !== "") {
       writer.uint32(10).string(message.signer);
     }
-    if (message.operator !== '') {
+    if (message.operator !== "") {
       writer.uint32(18).string(message.operator);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgSetOperatorAddress {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgSetOperatorAddress {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgSetOperatorAddress();
     while (reader.pos < end) {
@@ -2230,8 +1803,8 @@ export const MsgSetOperatorAddress = {
   },
   fromJSON(object: any): MsgSetOperatorAddress {
     return {
-      signer: isSet(object.signer) ? String(object.signer) : '',
-      operator: isSet(object.operator) ? String(object.operator) : '',
+      signer: isSet(object.signer) ? String(object.signer) : "",
+      operator: isSet(object.operator) ? String(object.operator) : ""
     };
   },
   toJSON(message: MsgSetOperatorAddress): JsonSafe<MsgSetOperatorAddress> {
@@ -2242,8 +1815,8 @@ export const MsgSetOperatorAddress = {
   },
   fromPartial(object: Partial<MsgSetOperatorAddress>): MsgSetOperatorAddress {
     const message = createBaseMsgSetOperatorAddress();
-    message.signer = object.signer ?? '';
-    message.operator = object.operator ?? '';
+    message.signer = object.signer ?? "";
+    message.operator = object.operator ?? "";
     return message;
   },
   fromProtoMsg(message: MsgSetOperatorAddressProtoMsg): MsgSetOperatorAddress {
@@ -2254,28 +1827,21 @@ export const MsgSetOperatorAddress = {
   },
   toProtoMsg(message: MsgSetOperatorAddress): MsgSetOperatorAddressProtoMsg {
     return {
-      typeUrl: '/stride.staketia.MsgSetOperatorAddress',
-      value: MsgSetOperatorAddress.encode(message).finish(),
+      typeUrl: "/stride.staketia.MsgSetOperatorAddress",
+      value: MsgSetOperatorAddress.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgSetOperatorAddressResponse(): MsgSetOperatorAddressResponse {
   return {};
 }
 export const MsgSetOperatorAddressResponse = {
-  typeUrl: '/stride.staketia.MsgSetOperatorAddressResponse' as const,
-  encode(
-    _: MsgSetOperatorAddressResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/stride.staketia.MsgSetOperatorAddressResponse" as const,
+  encode(_: MsgSetOperatorAddressResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgSetOperatorAddressResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgSetOperatorAddressResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgSetOperatorAddressResponse();
     while (reader.pos < end) {
@@ -2291,32 +1857,24 @@ export const MsgSetOperatorAddressResponse = {
   fromJSON(_: any): MsgSetOperatorAddressResponse {
     return {};
   },
-  toJSON(
-    _: MsgSetOperatorAddressResponse,
-  ): JsonSafe<MsgSetOperatorAddressResponse> {
+  toJSON(_: MsgSetOperatorAddressResponse): JsonSafe<MsgSetOperatorAddressResponse> {
     const obj: any = {};
     return obj;
   },
-  fromPartial(
-    _: Partial<MsgSetOperatorAddressResponse>,
-  ): MsgSetOperatorAddressResponse {
+  fromPartial(_: Partial<MsgSetOperatorAddressResponse>): MsgSetOperatorAddressResponse {
     const message = createBaseMsgSetOperatorAddressResponse();
     return message;
   },
-  fromProtoMsg(
-    message: MsgSetOperatorAddressResponseProtoMsg,
-  ): MsgSetOperatorAddressResponse {
+  fromProtoMsg(message: MsgSetOperatorAddressResponseProtoMsg): MsgSetOperatorAddressResponse {
     return MsgSetOperatorAddressResponse.decode(message.value);
   },
   toProto(message: MsgSetOperatorAddressResponse): Uint8Array {
     return MsgSetOperatorAddressResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: MsgSetOperatorAddressResponse,
-  ): MsgSetOperatorAddressResponseProtoMsg {
+  toProtoMsg(message: MsgSetOperatorAddressResponse): MsgSetOperatorAddressResponseProtoMsg {
     return {
-      typeUrl: '/stride.staketia.MsgSetOperatorAddressResponse',
-      value: MsgSetOperatorAddressResponse.encode(message).finish(),
+      typeUrl: "/stride.staketia.MsgSetOperatorAddressResponse",
+      value: MsgSetOperatorAddressResponse.encode(message).finish()
     };
-  },
+  }
 };

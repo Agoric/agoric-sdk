@@ -1,7 +1,7 @@
 //@ts-nocheck
-import { BinaryReader, BinaryWriter } from '../../../binary.js';
-import { isSet } from '../../../helpers.js';
-import { type JsonSafe } from '../../../json-safe.js';
+import { BinaryReader, BinaryWriter } from "../../../binary.js";
+import { isSet } from "../../../helpers.js";
+import {type JsonSafe } from "../../../json-safe.js";
 /**
  * Message format for BurningAndMintingPaused
  * @param paused true if paused, false if not paused
@@ -10,7 +10,7 @@ export interface BurningAndMintingPaused {
   paused: boolean;
 }
 export interface BurningAndMintingPausedProtoMsg {
-  typeUrl: '/circle.cctp.v1.BurningAndMintingPaused';
+  typeUrl: "/circle.cctp.v1.BurningAndMintingPaused";
   value: Uint8Array;
 }
 /**
@@ -22,26 +22,19 @@ export interface BurningAndMintingPausedSDKType {
 }
 function createBaseBurningAndMintingPaused(): BurningAndMintingPaused {
   return {
-    paused: false,
+    paused: false
   };
 }
 export const BurningAndMintingPaused = {
-  typeUrl: '/circle.cctp.v1.BurningAndMintingPaused' as const,
-  encode(
-    message: BurningAndMintingPaused,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/circle.cctp.v1.BurningAndMintingPaused" as const,
+  encode(message: BurningAndMintingPaused, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.paused === true) {
       writer.uint32(8).bool(message.paused);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): BurningAndMintingPaused {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): BurningAndMintingPaused {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseBurningAndMintingPaused();
     while (reader.pos < end) {
@@ -59,7 +52,7 @@ export const BurningAndMintingPaused = {
   },
   fromJSON(object: any): BurningAndMintingPaused {
     return {
-      paused: isSet(object.paused) ? Boolean(object.paused) : false,
+      paused: isSet(object.paused) ? Boolean(object.paused) : false
     };
   },
   toJSON(message: BurningAndMintingPaused): JsonSafe<BurningAndMintingPaused> {
@@ -67,27 +60,21 @@ export const BurningAndMintingPaused = {
     message.paused !== undefined && (obj.paused = message.paused);
     return obj;
   },
-  fromPartial(
-    object: Partial<BurningAndMintingPaused>,
-  ): BurningAndMintingPaused {
+  fromPartial(object: Partial<BurningAndMintingPaused>): BurningAndMintingPaused {
     const message = createBaseBurningAndMintingPaused();
     message.paused = object.paused ?? false;
     return message;
   },
-  fromProtoMsg(
-    message: BurningAndMintingPausedProtoMsg,
-  ): BurningAndMintingPaused {
+  fromProtoMsg(message: BurningAndMintingPausedProtoMsg): BurningAndMintingPaused {
     return BurningAndMintingPaused.decode(message.value);
   },
   toProto(message: BurningAndMintingPaused): Uint8Array {
     return BurningAndMintingPaused.encode(message).finish();
   },
-  toProtoMsg(
-    message: BurningAndMintingPaused,
-  ): BurningAndMintingPausedProtoMsg {
+  toProtoMsg(message: BurningAndMintingPaused): BurningAndMintingPausedProtoMsg {
     return {
-      typeUrl: '/circle.cctp.v1.BurningAndMintingPaused',
-      value: BurningAndMintingPaused.encode(message).finish(),
+      typeUrl: "/circle.cctp.v1.BurningAndMintingPaused",
+      value: BurningAndMintingPaused.encode(message).finish()
     };
-  },
+  }
 };

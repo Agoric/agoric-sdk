@@ -1,9 +1,9 @@
 //@ts-nocheck
-import { BinaryReader, BinaryWriter } from '../../../binary.js';
-import { isSet } from '../../../helpers.js';
-import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
-import { encodeBase64 as base64FromBytes } from '@endo/base64';
-import { type JsonSafe } from '../../../json-safe.js';
+import { BinaryReader, BinaryWriter } from "../../../binary.js";
+import { isSet } from "../../../helpers.js";
+import { decodeBase64 as bytesFromBase64 } from "@endo/base64";
+import { encodeBase64 as base64FromBytes } from "@endo/base64";
+import {type JsonSafe } from "../../../json-safe.js";
 /**
  * PubKey is an ed25519 public key for handling Tendermint keys in SDK.
  * It's needed for Any serialization and SDK compatibility.
@@ -15,7 +15,7 @@ export interface PubKey {
   key: Uint8Array;
 }
 export interface PubKeyProtoMsg {
-  typeUrl: '/cosmos.crypto.ed25519.PubKey';
+  typeUrl: "/cosmos.crypto.ed25519.PubKey";
   value: Uint8Array;
 }
 /**
@@ -36,7 +36,7 @@ export interface PrivKey {
   key: Uint8Array;
 }
 export interface PrivKeyProtoMsg {
-  typeUrl: '/cosmos.crypto.ed25519.PrivKey';
+  typeUrl: "/cosmos.crypto.ed25519.PrivKey";
   value: Uint8Array;
 }
 /**
@@ -48,23 +48,19 @@ export interface PrivKeySDKType {
 }
 function createBasePubKey(): PubKey {
   return {
-    key: new Uint8Array(),
+    key: new Uint8Array()
   };
 }
 export const PubKey = {
-  typeUrl: '/cosmos.crypto.ed25519.PubKey' as const,
-  encode(
-    message: PubKey,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/cosmos.crypto.ed25519.PubKey" as const,
+  encode(message: PubKey, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.key.length !== 0) {
       writer.uint32(10).bytes(message.key);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): PubKey {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBasePubKey();
     while (reader.pos < end) {
@@ -82,15 +78,12 @@ export const PubKey = {
   },
   fromJSON(object: any): PubKey {
     return {
-      key: isSet(object.key) ? bytesFromBase64(object.key) : new Uint8Array(),
+      key: isSet(object.key) ? bytesFromBase64(object.key) : new Uint8Array()
     };
   },
   toJSON(message: PubKey): JsonSafe<PubKey> {
     const obj: any = {};
-    message.key !== undefined &&
-      (obj.key = base64FromBytes(
-        message.key !== undefined ? message.key : new Uint8Array(),
-      ));
+    message.key !== undefined && (obj.key = base64FromBytes(message.key !== undefined ? message.key : new Uint8Array()));
     return obj;
   },
   fromPartial(object: Partial<PubKey>): PubKey {
@@ -106,30 +99,26 @@ export const PubKey = {
   },
   toProtoMsg(message: PubKey): PubKeyProtoMsg {
     return {
-      typeUrl: '/cosmos.crypto.ed25519.PubKey',
-      value: PubKey.encode(message).finish(),
+      typeUrl: "/cosmos.crypto.ed25519.PubKey",
+      value: PubKey.encode(message).finish()
     };
-  },
+  }
 };
 function createBasePrivKey(): PrivKey {
   return {
-    key: new Uint8Array(),
+    key: new Uint8Array()
   };
 }
 export const PrivKey = {
-  typeUrl: '/cosmos.crypto.ed25519.PrivKey' as const,
-  encode(
-    message: PrivKey,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/cosmos.crypto.ed25519.PrivKey" as const,
+  encode(message: PrivKey, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.key.length !== 0) {
       writer.uint32(10).bytes(message.key);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): PrivKey {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBasePrivKey();
     while (reader.pos < end) {
@@ -147,15 +136,12 @@ export const PrivKey = {
   },
   fromJSON(object: any): PrivKey {
     return {
-      key: isSet(object.key) ? bytesFromBase64(object.key) : new Uint8Array(),
+      key: isSet(object.key) ? bytesFromBase64(object.key) : new Uint8Array()
     };
   },
   toJSON(message: PrivKey): JsonSafe<PrivKey> {
     const obj: any = {};
-    message.key !== undefined &&
-      (obj.key = base64FromBytes(
-        message.key !== undefined ? message.key : new Uint8Array(),
-      ));
+    message.key !== undefined && (obj.key = base64FromBytes(message.key !== undefined ? message.key : new Uint8Array()));
     return obj;
   },
   fromPartial(object: Partial<PrivKey>): PrivKey {
@@ -171,8 +157,8 @@ export const PrivKey = {
   },
   toProtoMsg(message: PrivKey): PrivKeyProtoMsg {
     return {
-      typeUrl: '/cosmos.crypto.ed25519.PrivKey',
-      value: PrivKey.encode(message).finish(),
+      typeUrl: "/cosmos.crypto.ed25519.PrivKey",
+      value: PrivKey.encode(message).finish()
     };
-  },
+  }
 };

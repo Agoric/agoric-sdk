@@ -1,7 +1,7 @@
 //@ts-nocheck
-import { BinaryReader, BinaryWriter } from '../../../binary.js';
-import { isSet } from '../../../helpers.js';
-import { type JsonSafe } from '../../../json-safe.js';
+import { BinaryReader, BinaryWriter } from "../../../binary.js";
+import { isSet } from "../../../helpers.js";
+import {type JsonSafe } from "../../../json-safe.js";
 /**
  * The Nonce type functions both to mark receipt of received messages and a
  * counter for sending messages
@@ -14,7 +14,7 @@ export interface Nonce {
   nonce: bigint;
 }
 export interface NonceProtoMsg {
-  typeUrl: '/circle.cctp.v1.Nonce';
+  typeUrl: "/circle.cctp.v1.Nonce";
   value: Uint8Array;
 }
 /**
@@ -31,15 +31,12 @@ export interface NonceSDKType {
 function createBaseNonce(): Nonce {
   return {
     sourceDomain: 0,
-    nonce: BigInt(0),
+    nonce: BigInt(0)
   };
 }
 export const Nonce = {
-  typeUrl: '/circle.cctp.v1.Nonce' as const,
-  encode(
-    message: Nonce,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/circle.cctp.v1.Nonce" as const,
+  encode(message: Nonce, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.sourceDomain !== 0) {
       writer.uint32(8).uint32(message.sourceDomain);
     }
@@ -49,8 +46,7 @@ export const Nonce = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Nonce {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseNonce();
     while (reader.pos < end) {
@@ -71,27 +67,20 @@ export const Nonce = {
   },
   fromJSON(object: any): Nonce {
     return {
-      sourceDomain: isSet(object.sourceDomain)
-        ? Number(object.sourceDomain)
-        : 0,
-      nonce: isSet(object.nonce) ? BigInt(object.nonce.toString()) : BigInt(0),
+      sourceDomain: isSet(object.sourceDomain) ? Number(object.sourceDomain) : 0,
+      nonce: isSet(object.nonce) ? BigInt(object.nonce.toString()) : BigInt(0)
     };
   },
   toJSON(message: Nonce): JsonSafe<Nonce> {
     const obj: any = {};
-    message.sourceDomain !== undefined &&
-      (obj.sourceDomain = Math.round(message.sourceDomain));
-    message.nonce !== undefined &&
-      (obj.nonce = (message.nonce || BigInt(0)).toString());
+    message.sourceDomain !== undefined && (obj.sourceDomain = Math.round(message.sourceDomain));
+    message.nonce !== undefined && (obj.nonce = (message.nonce || BigInt(0)).toString());
     return obj;
   },
   fromPartial(object: Partial<Nonce>): Nonce {
     const message = createBaseNonce();
     message.sourceDomain = object.sourceDomain ?? 0;
-    message.nonce =
-      object.nonce !== undefined && object.nonce !== null
-        ? BigInt(object.nonce.toString())
-        : BigInt(0);
+    message.nonce = object.nonce !== undefined && object.nonce !== null ? BigInt(object.nonce.toString()) : BigInt(0);
     return message;
   },
   fromProtoMsg(message: NonceProtoMsg): Nonce {
@@ -102,8 +91,8 @@ export const Nonce = {
   },
   toProtoMsg(message: Nonce): NonceProtoMsg {
     return {
-      typeUrl: '/circle.cctp.v1.Nonce',
-      value: Nonce.encode(message).finish(),
+      typeUrl: "/circle.cctp.v1.Nonce",
+      value: Nonce.encode(message).finish()
     };
-  },
+  }
 };

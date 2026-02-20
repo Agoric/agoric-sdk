@@ -1,9 +1,9 @@
 //@ts-nocheck
-import { Coin, type CoinSDKType } from '../../base/v1beta1/coin.js';
-import { Period, type PeriodSDKType } from './vesting.js';
-import { BinaryReader, BinaryWriter } from '../../../binary.js';
-import { isSet } from '../../../helpers.js';
-import { type JsonSafe } from '../../../json-safe.js';
+import { Coin, type CoinSDKType } from "../../base/v1beta1/coin.js";
+import { Period, type PeriodSDKType } from "./vesting.js";
+import { BinaryReader, BinaryWriter } from "../../../binary.js";
+import { isSet } from "../../../helpers.js";
+import {type JsonSafe } from "../../../json-safe.js";
 /**
  * MsgCreateVestingAccount defines a message that enables creating a vesting
  * account.
@@ -17,7 +17,7 @@ export interface MsgCreateVestingAccount {
   delayed: boolean;
 }
 export interface MsgCreateVestingAccountProtoMsg {
-  typeUrl: '/cosmos.vesting.v1beta1.MsgCreateVestingAccount';
+  typeUrl: "/cosmos.vesting.v1beta1.MsgCreateVestingAccount";
   value: Uint8Array;
 }
 /**
@@ -34,7 +34,7 @@ export interface MsgCreateVestingAccountSDKType {
 /** MsgCreateVestingAccountResponse defines the Msg/CreateVestingAccount response type. */
 export interface MsgCreateVestingAccountResponse {}
 export interface MsgCreateVestingAccountResponseProtoMsg {
-  typeUrl: '/cosmos.vesting.v1beta1.MsgCreateVestingAccountResponse';
+  typeUrl: "/cosmos.vesting.v1beta1.MsgCreateVestingAccountResponse";
   value: Uint8Array;
 }
 /** MsgCreateVestingAccountResponse defines the Msg/CreateVestingAccount response type. */
@@ -42,7 +42,7 @@ export interface MsgCreateVestingAccountResponseSDKType {}
 /**
  * MsgCreatePermanentLockedAccount defines a message that enables creating a permanent
  * locked account.
- *
+ * 
  * Since: cosmos-sdk 0.46
  */
 export interface MsgCreatePermanentLockedAccount {
@@ -51,13 +51,13 @@ export interface MsgCreatePermanentLockedAccount {
   amount: Coin[];
 }
 export interface MsgCreatePermanentLockedAccountProtoMsg {
-  typeUrl: '/cosmos.vesting.v1beta1.MsgCreatePermanentLockedAccount';
+  typeUrl: "/cosmos.vesting.v1beta1.MsgCreatePermanentLockedAccount";
   value: Uint8Array;
 }
 /**
  * MsgCreatePermanentLockedAccount defines a message that enables creating a permanent
  * locked account.
- *
+ * 
  * Since: cosmos-sdk 0.46
  */
 export interface MsgCreatePermanentLockedAccountSDKType {
@@ -67,24 +67,24 @@ export interface MsgCreatePermanentLockedAccountSDKType {
 }
 /**
  * MsgCreatePermanentLockedAccountResponse defines the Msg/CreatePermanentLockedAccount response type.
- *
+ * 
  * Since: cosmos-sdk 0.46
  */
 export interface MsgCreatePermanentLockedAccountResponse {}
 export interface MsgCreatePermanentLockedAccountResponseProtoMsg {
-  typeUrl: '/cosmos.vesting.v1beta1.MsgCreatePermanentLockedAccountResponse';
+  typeUrl: "/cosmos.vesting.v1beta1.MsgCreatePermanentLockedAccountResponse";
   value: Uint8Array;
 }
 /**
  * MsgCreatePermanentLockedAccountResponse defines the Msg/CreatePermanentLockedAccount response type.
- *
+ * 
  * Since: cosmos-sdk 0.46
  */
 export interface MsgCreatePermanentLockedAccountResponseSDKType {}
 /**
  * MsgCreateVestingAccount defines a message that enables creating a vesting
  * account.
- *
+ * 
  * Since: cosmos-sdk 0.46
  */
 export interface MsgCreatePeriodicVestingAccount {
@@ -101,13 +101,13 @@ export interface MsgCreatePeriodicVestingAccount {
   merge: boolean;
 }
 export interface MsgCreatePeriodicVestingAccountProtoMsg {
-  typeUrl: '/cosmos.vesting.v1beta1.MsgCreatePeriodicVestingAccount';
+  typeUrl: "/cosmos.vesting.v1beta1.MsgCreatePeriodicVestingAccount";
   value: Uint8Array;
 }
 /**
  * MsgCreateVestingAccount defines a message that enables creating a vesting
  * account.
- *
+ * 
  * Since: cosmos-sdk 0.46
  */
 export interface MsgCreatePeriodicVestingAccountSDKType {
@@ -120,18 +120,18 @@ export interface MsgCreatePeriodicVestingAccountSDKType {
 /**
  * MsgCreateVestingAccountResponse defines the Msg/CreatePeriodicVestingAccount
  * response type.
- *
+ * 
  * Since: cosmos-sdk 0.46
  */
 export interface MsgCreatePeriodicVestingAccountResponse {}
 export interface MsgCreatePeriodicVestingAccountResponseProtoMsg {
-  typeUrl: '/cosmos.vesting.v1beta1.MsgCreatePeriodicVestingAccountResponse';
+  typeUrl: "/cosmos.vesting.v1beta1.MsgCreatePeriodicVestingAccountResponse";
   value: Uint8Array;
 }
 /**
  * MsgCreateVestingAccountResponse defines the Msg/CreatePeriodicVestingAccount
  * response type.
- *
+ * 
  * Since: cosmos-sdk 0.46
  */
 export interface MsgCreatePeriodicVestingAccountResponseSDKType {}
@@ -155,7 +155,7 @@ export interface MsgCreateClawbackVestingAccount {
   merge: boolean;
 }
 export interface MsgCreateClawbackVestingAccountProtoMsg {
-  typeUrl: '/cosmos.vesting.v1beta1.MsgCreateClawbackVestingAccount';
+  typeUrl: "/cosmos.vesting.v1beta1.MsgCreateClawbackVestingAccount";
   value: Uint8Array;
 }
 /** MsgCreateClawbackVestingAccount defines a message that enables creating a ClawbackVestingAccount. */
@@ -170,7 +170,7 @@ export interface MsgCreateClawbackVestingAccountSDKType {
 /** MsgCreateClawbackVestingAccountResponse defines the MsgCreateClawbackVestingAccount response type. */
 export interface MsgCreateClawbackVestingAccountResponse {}
 export interface MsgCreateClawbackVestingAccountResponseProtoMsg {
-  typeUrl: '/cosmos.vesting.v1beta1.MsgCreateClawbackVestingAccountResponse';
+  typeUrl: "/cosmos.vesting.v1beta1.MsgCreateClawbackVestingAccountResponse";
   value: Uint8Array;
 }
 /** MsgCreateClawbackVestingAccountResponse defines the MsgCreateClawbackVestingAccount response type. */
@@ -188,7 +188,7 @@ export interface MsgClawback {
   destAddress: string;
 }
 export interface MsgClawbackProtoMsg {
-  typeUrl: '/cosmos.vesting.v1beta1.MsgClawback';
+  typeUrl: "/cosmos.vesting.v1beta1.MsgClawback";
   value: Uint8Array;
 }
 /** MsgClawback defines a message that removes unvested tokens from a ClawbackVestingAccount. */
@@ -200,7 +200,7 @@ export interface MsgClawbackSDKType {
 /** MsgClawbackResponse defines the MsgClawback response type. */
 export interface MsgClawbackResponse {}
 export interface MsgClawbackResponseProtoMsg {
-  typeUrl: '/cosmos.vesting.v1beta1.MsgClawbackResponse';
+  typeUrl: "/cosmos.vesting.v1beta1.MsgClawbackResponse";
   value: Uint8Array;
 }
 /** MsgClawbackResponse defines the MsgClawback response type. */
@@ -217,7 +217,7 @@ export interface MsgReturnGrants {
   address: string;
 }
 export interface MsgReturnGrantsProtoMsg {
-  typeUrl: '/cosmos.vesting.v1beta1.MsgReturnGrants';
+  typeUrl: "/cosmos.vesting.v1beta1.MsgReturnGrants";
   value: Uint8Array;
 }
 /**
@@ -233,30 +233,27 @@ export interface MsgReturnGrantsSDKType {
 /** MsgReturnGrantsResponse defines the ReturnGrants response type. */
 export interface MsgReturnGrantsResponse {}
 export interface MsgReturnGrantsResponseProtoMsg {
-  typeUrl: '/cosmos.vesting.v1beta1.MsgReturnGrantsResponse';
+  typeUrl: "/cosmos.vesting.v1beta1.MsgReturnGrantsResponse";
   value: Uint8Array;
 }
 /** MsgReturnGrantsResponse defines the ReturnGrants response type. */
 export interface MsgReturnGrantsResponseSDKType {}
 function createBaseMsgCreateVestingAccount(): MsgCreateVestingAccount {
   return {
-    fromAddress: '',
-    toAddress: '',
+    fromAddress: "",
+    toAddress: "",
     amount: [],
     endTime: BigInt(0),
-    delayed: false,
+    delayed: false
   };
 }
 export const MsgCreateVestingAccount = {
-  typeUrl: '/cosmos.vesting.v1beta1.MsgCreateVestingAccount' as const,
-  encode(
-    message: MsgCreateVestingAccount,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.fromAddress !== '') {
+  typeUrl: "/cosmos.vesting.v1beta1.MsgCreateVestingAccount" as const,
+  encode(message: MsgCreateVestingAccount, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.fromAddress !== "") {
       writer.uint32(10).string(message.fromAddress);
     }
-    if (message.toAddress !== '') {
+    if (message.toAddress !== "") {
       writer.uint32(18).string(message.toAddress);
     }
     for (const v of message.amount) {
@@ -270,12 +267,8 @@ export const MsgCreateVestingAccount = {
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgCreateVestingAccount {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgCreateVestingAccount {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgCreateVestingAccount();
     while (reader.pos < end) {
@@ -305,80 +298,58 @@ export const MsgCreateVestingAccount = {
   },
   fromJSON(object: any): MsgCreateVestingAccount {
     return {
-      fromAddress: isSet(object.fromAddress) ? String(object.fromAddress) : '',
-      toAddress: isSet(object.toAddress) ? String(object.toAddress) : '',
-      amount: Array.isArray(object?.amount)
-        ? object.amount.map((e: any) => Coin.fromJSON(e))
-        : [],
-      endTime: isSet(object.endTime)
-        ? BigInt(object.endTime.toString())
-        : BigInt(0),
-      delayed: isSet(object.delayed) ? Boolean(object.delayed) : false,
+      fromAddress: isSet(object.fromAddress) ? String(object.fromAddress) : "",
+      toAddress: isSet(object.toAddress) ? String(object.toAddress) : "",
+      amount: Array.isArray(object?.amount) ? object.amount.map((e: any) => Coin.fromJSON(e)) : [],
+      endTime: isSet(object.endTime) ? BigInt(object.endTime.toString()) : BigInt(0),
+      delayed: isSet(object.delayed) ? Boolean(object.delayed) : false
     };
   },
   toJSON(message: MsgCreateVestingAccount): JsonSafe<MsgCreateVestingAccount> {
     const obj: any = {};
-    message.fromAddress !== undefined &&
-      (obj.fromAddress = message.fromAddress);
+    message.fromAddress !== undefined && (obj.fromAddress = message.fromAddress);
     message.toAddress !== undefined && (obj.toAddress = message.toAddress);
     if (message.amount) {
-      obj.amount = message.amount.map(e => (e ? Coin.toJSON(e) : undefined));
+      obj.amount = message.amount.map(e => e ? Coin.toJSON(e) : undefined);
     } else {
       obj.amount = [];
     }
-    message.endTime !== undefined &&
-      (obj.endTime = (message.endTime || BigInt(0)).toString());
+    message.endTime !== undefined && (obj.endTime = (message.endTime || BigInt(0)).toString());
     message.delayed !== undefined && (obj.delayed = message.delayed);
     return obj;
   },
-  fromPartial(
-    object: Partial<MsgCreateVestingAccount>,
-  ): MsgCreateVestingAccount {
+  fromPartial(object: Partial<MsgCreateVestingAccount>): MsgCreateVestingAccount {
     const message = createBaseMsgCreateVestingAccount();
-    message.fromAddress = object.fromAddress ?? '';
-    message.toAddress = object.toAddress ?? '';
+    message.fromAddress = object.fromAddress ?? "";
+    message.toAddress = object.toAddress ?? "";
     message.amount = object.amount?.map(e => Coin.fromPartial(e)) || [];
-    message.endTime =
-      object.endTime !== undefined && object.endTime !== null
-        ? BigInt(object.endTime.toString())
-        : BigInt(0);
+    message.endTime = object.endTime !== undefined && object.endTime !== null ? BigInt(object.endTime.toString()) : BigInt(0);
     message.delayed = object.delayed ?? false;
     return message;
   },
-  fromProtoMsg(
-    message: MsgCreateVestingAccountProtoMsg,
-  ): MsgCreateVestingAccount {
+  fromProtoMsg(message: MsgCreateVestingAccountProtoMsg): MsgCreateVestingAccount {
     return MsgCreateVestingAccount.decode(message.value);
   },
   toProto(message: MsgCreateVestingAccount): Uint8Array {
     return MsgCreateVestingAccount.encode(message).finish();
   },
-  toProtoMsg(
-    message: MsgCreateVestingAccount,
-  ): MsgCreateVestingAccountProtoMsg {
+  toProtoMsg(message: MsgCreateVestingAccount): MsgCreateVestingAccountProtoMsg {
     return {
-      typeUrl: '/cosmos.vesting.v1beta1.MsgCreateVestingAccount',
-      value: MsgCreateVestingAccount.encode(message).finish(),
+      typeUrl: "/cosmos.vesting.v1beta1.MsgCreateVestingAccount",
+      value: MsgCreateVestingAccount.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgCreateVestingAccountResponse(): MsgCreateVestingAccountResponse {
   return {};
 }
 export const MsgCreateVestingAccountResponse = {
-  typeUrl: '/cosmos.vesting.v1beta1.MsgCreateVestingAccountResponse' as const,
-  encode(
-    _: MsgCreateVestingAccountResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/cosmos.vesting.v1beta1.MsgCreateVestingAccountResponse" as const,
+  encode(_: MsgCreateVestingAccountResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgCreateVestingAccountResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgCreateVestingAccountResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgCreateVestingAccountResponse();
     while (reader.pos < end) {
@@ -394,52 +365,41 @@ export const MsgCreateVestingAccountResponse = {
   fromJSON(_: any): MsgCreateVestingAccountResponse {
     return {};
   },
-  toJSON(
-    _: MsgCreateVestingAccountResponse,
-  ): JsonSafe<MsgCreateVestingAccountResponse> {
+  toJSON(_: MsgCreateVestingAccountResponse): JsonSafe<MsgCreateVestingAccountResponse> {
     const obj: any = {};
     return obj;
   },
-  fromPartial(
-    _: Partial<MsgCreateVestingAccountResponse>,
-  ): MsgCreateVestingAccountResponse {
+  fromPartial(_: Partial<MsgCreateVestingAccountResponse>): MsgCreateVestingAccountResponse {
     const message = createBaseMsgCreateVestingAccountResponse();
     return message;
   },
-  fromProtoMsg(
-    message: MsgCreateVestingAccountResponseProtoMsg,
-  ): MsgCreateVestingAccountResponse {
+  fromProtoMsg(message: MsgCreateVestingAccountResponseProtoMsg): MsgCreateVestingAccountResponse {
     return MsgCreateVestingAccountResponse.decode(message.value);
   },
   toProto(message: MsgCreateVestingAccountResponse): Uint8Array {
     return MsgCreateVestingAccountResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: MsgCreateVestingAccountResponse,
-  ): MsgCreateVestingAccountResponseProtoMsg {
+  toProtoMsg(message: MsgCreateVestingAccountResponse): MsgCreateVestingAccountResponseProtoMsg {
     return {
-      typeUrl: '/cosmos.vesting.v1beta1.MsgCreateVestingAccountResponse',
-      value: MsgCreateVestingAccountResponse.encode(message).finish(),
+      typeUrl: "/cosmos.vesting.v1beta1.MsgCreateVestingAccountResponse",
+      value: MsgCreateVestingAccountResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgCreatePermanentLockedAccount(): MsgCreatePermanentLockedAccount {
   return {
-    fromAddress: '',
-    toAddress: '',
-    amount: [],
+    fromAddress: "",
+    toAddress: "",
+    amount: []
   };
 }
 export const MsgCreatePermanentLockedAccount = {
-  typeUrl: '/cosmos.vesting.v1beta1.MsgCreatePermanentLockedAccount' as const,
-  encode(
-    message: MsgCreatePermanentLockedAccount,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.fromAddress !== '') {
+  typeUrl: "/cosmos.vesting.v1beta1.MsgCreatePermanentLockedAccount" as const,
+  encode(message: MsgCreatePermanentLockedAccount, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.fromAddress !== "") {
       writer.uint32(10).string(message.fromAddress);
     }
-    if (message.toAddress !== '') {
+    if (message.toAddress !== "") {
       writer.uint32(18).string(message.toAddress);
     }
     for (const v of message.amount) {
@@ -447,12 +407,8 @@ export const MsgCreatePermanentLockedAccount = {
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgCreatePermanentLockedAccount {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgCreatePermanentLockedAccount {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgCreatePermanentLockedAccount();
     while (reader.pos < end) {
@@ -476,71 +432,52 @@ export const MsgCreatePermanentLockedAccount = {
   },
   fromJSON(object: any): MsgCreatePermanentLockedAccount {
     return {
-      fromAddress: isSet(object.fromAddress) ? String(object.fromAddress) : '',
-      toAddress: isSet(object.toAddress) ? String(object.toAddress) : '',
-      amount: Array.isArray(object?.amount)
-        ? object.amount.map((e: any) => Coin.fromJSON(e))
-        : [],
+      fromAddress: isSet(object.fromAddress) ? String(object.fromAddress) : "",
+      toAddress: isSet(object.toAddress) ? String(object.toAddress) : "",
+      amount: Array.isArray(object?.amount) ? object.amount.map((e: any) => Coin.fromJSON(e)) : []
     };
   },
-  toJSON(
-    message: MsgCreatePermanentLockedAccount,
-  ): JsonSafe<MsgCreatePermanentLockedAccount> {
+  toJSON(message: MsgCreatePermanentLockedAccount): JsonSafe<MsgCreatePermanentLockedAccount> {
     const obj: any = {};
-    message.fromAddress !== undefined &&
-      (obj.fromAddress = message.fromAddress);
+    message.fromAddress !== undefined && (obj.fromAddress = message.fromAddress);
     message.toAddress !== undefined && (obj.toAddress = message.toAddress);
     if (message.amount) {
-      obj.amount = message.amount.map(e => (e ? Coin.toJSON(e) : undefined));
+      obj.amount = message.amount.map(e => e ? Coin.toJSON(e) : undefined);
     } else {
       obj.amount = [];
     }
     return obj;
   },
-  fromPartial(
-    object: Partial<MsgCreatePermanentLockedAccount>,
-  ): MsgCreatePermanentLockedAccount {
+  fromPartial(object: Partial<MsgCreatePermanentLockedAccount>): MsgCreatePermanentLockedAccount {
     const message = createBaseMsgCreatePermanentLockedAccount();
-    message.fromAddress = object.fromAddress ?? '';
-    message.toAddress = object.toAddress ?? '';
+    message.fromAddress = object.fromAddress ?? "";
+    message.toAddress = object.toAddress ?? "";
     message.amount = object.amount?.map(e => Coin.fromPartial(e)) || [];
     return message;
   },
-  fromProtoMsg(
-    message: MsgCreatePermanentLockedAccountProtoMsg,
-  ): MsgCreatePermanentLockedAccount {
+  fromProtoMsg(message: MsgCreatePermanentLockedAccountProtoMsg): MsgCreatePermanentLockedAccount {
     return MsgCreatePermanentLockedAccount.decode(message.value);
   },
   toProto(message: MsgCreatePermanentLockedAccount): Uint8Array {
     return MsgCreatePermanentLockedAccount.encode(message).finish();
   },
-  toProtoMsg(
-    message: MsgCreatePermanentLockedAccount,
-  ): MsgCreatePermanentLockedAccountProtoMsg {
+  toProtoMsg(message: MsgCreatePermanentLockedAccount): MsgCreatePermanentLockedAccountProtoMsg {
     return {
-      typeUrl: '/cosmos.vesting.v1beta1.MsgCreatePermanentLockedAccount',
-      value: MsgCreatePermanentLockedAccount.encode(message).finish(),
+      typeUrl: "/cosmos.vesting.v1beta1.MsgCreatePermanentLockedAccount",
+      value: MsgCreatePermanentLockedAccount.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgCreatePermanentLockedAccountResponse(): MsgCreatePermanentLockedAccountResponse {
   return {};
 }
 export const MsgCreatePermanentLockedAccountResponse = {
-  typeUrl:
-    '/cosmos.vesting.v1beta1.MsgCreatePermanentLockedAccountResponse' as const,
-  encode(
-    _: MsgCreatePermanentLockedAccountResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/cosmos.vesting.v1beta1.MsgCreatePermanentLockedAccountResponse" as const,
+  encode(_: MsgCreatePermanentLockedAccountResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgCreatePermanentLockedAccountResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgCreatePermanentLockedAccountResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgCreatePermanentLockedAccountResponse();
     while (reader.pos < end) {
@@ -556,55 +493,43 @@ export const MsgCreatePermanentLockedAccountResponse = {
   fromJSON(_: any): MsgCreatePermanentLockedAccountResponse {
     return {};
   },
-  toJSON(
-    _: MsgCreatePermanentLockedAccountResponse,
-  ): JsonSafe<MsgCreatePermanentLockedAccountResponse> {
+  toJSON(_: MsgCreatePermanentLockedAccountResponse): JsonSafe<MsgCreatePermanentLockedAccountResponse> {
     const obj: any = {};
     return obj;
   },
-  fromPartial(
-    _: Partial<MsgCreatePermanentLockedAccountResponse>,
-  ): MsgCreatePermanentLockedAccountResponse {
+  fromPartial(_: Partial<MsgCreatePermanentLockedAccountResponse>): MsgCreatePermanentLockedAccountResponse {
     const message = createBaseMsgCreatePermanentLockedAccountResponse();
     return message;
   },
-  fromProtoMsg(
-    message: MsgCreatePermanentLockedAccountResponseProtoMsg,
-  ): MsgCreatePermanentLockedAccountResponse {
+  fromProtoMsg(message: MsgCreatePermanentLockedAccountResponseProtoMsg): MsgCreatePermanentLockedAccountResponse {
     return MsgCreatePermanentLockedAccountResponse.decode(message.value);
   },
   toProto(message: MsgCreatePermanentLockedAccountResponse): Uint8Array {
     return MsgCreatePermanentLockedAccountResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: MsgCreatePermanentLockedAccountResponse,
-  ): MsgCreatePermanentLockedAccountResponseProtoMsg {
+  toProtoMsg(message: MsgCreatePermanentLockedAccountResponse): MsgCreatePermanentLockedAccountResponseProtoMsg {
     return {
-      typeUrl:
-        '/cosmos.vesting.v1beta1.MsgCreatePermanentLockedAccountResponse',
-      value: MsgCreatePermanentLockedAccountResponse.encode(message).finish(),
+      typeUrl: "/cosmos.vesting.v1beta1.MsgCreatePermanentLockedAccountResponse",
+      value: MsgCreatePermanentLockedAccountResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgCreatePeriodicVestingAccount(): MsgCreatePeriodicVestingAccount {
   return {
-    fromAddress: '',
-    toAddress: '',
+    fromAddress: "",
+    toAddress: "",
     startTime: BigInt(0),
     vestingPeriods: [],
-    merge: false,
+    merge: false
   };
 }
 export const MsgCreatePeriodicVestingAccount = {
-  typeUrl: '/cosmos.vesting.v1beta1.MsgCreatePeriodicVestingAccount' as const,
-  encode(
-    message: MsgCreatePeriodicVestingAccount,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.fromAddress !== '') {
+  typeUrl: "/cosmos.vesting.v1beta1.MsgCreatePeriodicVestingAccount" as const,
+  encode(message: MsgCreatePeriodicVestingAccount, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.fromAddress !== "") {
       writer.uint32(10).string(message.fromAddress);
     }
-    if (message.toAddress !== '') {
+    if (message.toAddress !== "") {
       writer.uint32(18).string(message.toAddress);
     }
     if (message.startTime !== BigInt(0)) {
@@ -618,12 +543,8 @@ export const MsgCreatePeriodicVestingAccount = {
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgCreatePeriodicVestingAccount {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgCreatePeriodicVestingAccount {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgCreatePeriodicVestingAccount();
     while (reader.pos < end) {
@@ -653,86 +574,58 @@ export const MsgCreatePeriodicVestingAccount = {
   },
   fromJSON(object: any): MsgCreatePeriodicVestingAccount {
     return {
-      fromAddress: isSet(object.fromAddress) ? String(object.fromAddress) : '',
-      toAddress: isSet(object.toAddress) ? String(object.toAddress) : '',
-      startTime: isSet(object.startTime)
-        ? BigInt(object.startTime.toString())
-        : BigInt(0),
-      vestingPeriods: Array.isArray(object?.vestingPeriods)
-        ? object.vestingPeriods.map((e: any) => Period.fromJSON(e))
-        : [],
-      merge: isSet(object.merge) ? Boolean(object.merge) : false,
+      fromAddress: isSet(object.fromAddress) ? String(object.fromAddress) : "",
+      toAddress: isSet(object.toAddress) ? String(object.toAddress) : "",
+      startTime: isSet(object.startTime) ? BigInt(object.startTime.toString()) : BigInt(0),
+      vestingPeriods: Array.isArray(object?.vestingPeriods) ? object.vestingPeriods.map((e: any) => Period.fromJSON(e)) : [],
+      merge: isSet(object.merge) ? Boolean(object.merge) : false
     };
   },
-  toJSON(
-    message: MsgCreatePeriodicVestingAccount,
-  ): JsonSafe<MsgCreatePeriodicVestingAccount> {
+  toJSON(message: MsgCreatePeriodicVestingAccount): JsonSafe<MsgCreatePeriodicVestingAccount> {
     const obj: any = {};
-    message.fromAddress !== undefined &&
-      (obj.fromAddress = message.fromAddress);
+    message.fromAddress !== undefined && (obj.fromAddress = message.fromAddress);
     message.toAddress !== undefined && (obj.toAddress = message.toAddress);
-    message.startTime !== undefined &&
-      (obj.startTime = (message.startTime || BigInt(0)).toString());
+    message.startTime !== undefined && (obj.startTime = (message.startTime || BigInt(0)).toString());
     if (message.vestingPeriods) {
-      obj.vestingPeriods = message.vestingPeriods.map(e =>
-        e ? Period.toJSON(e) : undefined,
-      );
+      obj.vestingPeriods = message.vestingPeriods.map(e => e ? Period.toJSON(e) : undefined);
     } else {
       obj.vestingPeriods = [];
     }
     message.merge !== undefined && (obj.merge = message.merge);
     return obj;
   },
-  fromPartial(
-    object: Partial<MsgCreatePeriodicVestingAccount>,
-  ): MsgCreatePeriodicVestingAccount {
+  fromPartial(object: Partial<MsgCreatePeriodicVestingAccount>): MsgCreatePeriodicVestingAccount {
     const message = createBaseMsgCreatePeriodicVestingAccount();
-    message.fromAddress = object.fromAddress ?? '';
-    message.toAddress = object.toAddress ?? '';
-    message.startTime =
-      object.startTime !== undefined && object.startTime !== null
-        ? BigInt(object.startTime.toString())
-        : BigInt(0);
-    message.vestingPeriods =
-      object.vestingPeriods?.map(e => Period.fromPartial(e)) || [];
+    message.fromAddress = object.fromAddress ?? "";
+    message.toAddress = object.toAddress ?? "";
+    message.startTime = object.startTime !== undefined && object.startTime !== null ? BigInt(object.startTime.toString()) : BigInt(0);
+    message.vestingPeriods = object.vestingPeriods?.map(e => Period.fromPartial(e)) || [];
     message.merge = object.merge ?? false;
     return message;
   },
-  fromProtoMsg(
-    message: MsgCreatePeriodicVestingAccountProtoMsg,
-  ): MsgCreatePeriodicVestingAccount {
+  fromProtoMsg(message: MsgCreatePeriodicVestingAccountProtoMsg): MsgCreatePeriodicVestingAccount {
     return MsgCreatePeriodicVestingAccount.decode(message.value);
   },
   toProto(message: MsgCreatePeriodicVestingAccount): Uint8Array {
     return MsgCreatePeriodicVestingAccount.encode(message).finish();
   },
-  toProtoMsg(
-    message: MsgCreatePeriodicVestingAccount,
-  ): MsgCreatePeriodicVestingAccountProtoMsg {
+  toProtoMsg(message: MsgCreatePeriodicVestingAccount): MsgCreatePeriodicVestingAccountProtoMsg {
     return {
-      typeUrl: '/cosmos.vesting.v1beta1.MsgCreatePeriodicVestingAccount',
-      value: MsgCreatePeriodicVestingAccount.encode(message).finish(),
+      typeUrl: "/cosmos.vesting.v1beta1.MsgCreatePeriodicVestingAccount",
+      value: MsgCreatePeriodicVestingAccount.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgCreatePeriodicVestingAccountResponse(): MsgCreatePeriodicVestingAccountResponse {
   return {};
 }
 export const MsgCreatePeriodicVestingAccountResponse = {
-  typeUrl:
-    '/cosmos.vesting.v1beta1.MsgCreatePeriodicVestingAccountResponse' as const,
-  encode(
-    _: MsgCreatePeriodicVestingAccountResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/cosmos.vesting.v1beta1.MsgCreatePeriodicVestingAccountResponse" as const,
+  encode(_: MsgCreatePeriodicVestingAccountResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgCreatePeriodicVestingAccountResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgCreatePeriodicVestingAccountResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgCreatePeriodicVestingAccountResponse();
     while (reader.pos < end) {
@@ -748,56 +641,44 @@ export const MsgCreatePeriodicVestingAccountResponse = {
   fromJSON(_: any): MsgCreatePeriodicVestingAccountResponse {
     return {};
   },
-  toJSON(
-    _: MsgCreatePeriodicVestingAccountResponse,
-  ): JsonSafe<MsgCreatePeriodicVestingAccountResponse> {
+  toJSON(_: MsgCreatePeriodicVestingAccountResponse): JsonSafe<MsgCreatePeriodicVestingAccountResponse> {
     const obj: any = {};
     return obj;
   },
-  fromPartial(
-    _: Partial<MsgCreatePeriodicVestingAccountResponse>,
-  ): MsgCreatePeriodicVestingAccountResponse {
+  fromPartial(_: Partial<MsgCreatePeriodicVestingAccountResponse>): MsgCreatePeriodicVestingAccountResponse {
     const message = createBaseMsgCreatePeriodicVestingAccountResponse();
     return message;
   },
-  fromProtoMsg(
-    message: MsgCreatePeriodicVestingAccountResponseProtoMsg,
-  ): MsgCreatePeriodicVestingAccountResponse {
+  fromProtoMsg(message: MsgCreatePeriodicVestingAccountResponseProtoMsg): MsgCreatePeriodicVestingAccountResponse {
     return MsgCreatePeriodicVestingAccountResponse.decode(message.value);
   },
   toProto(message: MsgCreatePeriodicVestingAccountResponse): Uint8Array {
     return MsgCreatePeriodicVestingAccountResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: MsgCreatePeriodicVestingAccountResponse,
-  ): MsgCreatePeriodicVestingAccountResponseProtoMsg {
+  toProtoMsg(message: MsgCreatePeriodicVestingAccountResponse): MsgCreatePeriodicVestingAccountResponseProtoMsg {
     return {
-      typeUrl:
-        '/cosmos.vesting.v1beta1.MsgCreatePeriodicVestingAccountResponse',
-      value: MsgCreatePeriodicVestingAccountResponse.encode(message).finish(),
+      typeUrl: "/cosmos.vesting.v1beta1.MsgCreatePeriodicVestingAccountResponse",
+      value: MsgCreatePeriodicVestingAccountResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgCreateClawbackVestingAccount(): MsgCreateClawbackVestingAccount {
   return {
-    fromAddress: '',
-    toAddress: '',
+    fromAddress: "",
+    toAddress: "",
     startTime: BigInt(0),
     lockupPeriods: [],
     vestingPeriods: [],
-    merge: false,
+    merge: false
   };
 }
 export const MsgCreateClawbackVestingAccount = {
-  typeUrl: '/cosmos.vesting.v1beta1.MsgCreateClawbackVestingAccount' as const,
-  encode(
-    message: MsgCreateClawbackVestingAccount,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.fromAddress !== '') {
+  typeUrl: "/cosmos.vesting.v1beta1.MsgCreateClawbackVestingAccount" as const,
+  encode(message: MsgCreateClawbackVestingAccount, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.fromAddress !== "") {
       writer.uint32(10).string(message.fromAddress);
     }
-    if (message.toAddress !== '') {
+    if (message.toAddress !== "") {
       writer.uint32(18).string(message.toAddress);
     }
     if (message.startTime !== BigInt(0)) {
@@ -814,12 +695,8 @@ export const MsgCreateClawbackVestingAccount = {
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgCreateClawbackVestingAccount {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgCreateClawbackVestingAccount {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgCreateClawbackVestingAccount();
     while (reader.pos < end) {
@@ -852,98 +729,65 @@ export const MsgCreateClawbackVestingAccount = {
   },
   fromJSON(object: any): MsgCreateClawbackVestingAccount {
     return {
-      fromAddress: isSet(object.fromAddress) ? String(object.fromAddress) : '',
-      toAddress: isSet(object.toAddress) ? String(object.toAddress) : '',
-      startTime: isSet(object.startTime)
-        ? BigInt(object.startTime.toString())
-        : BigInt(0),
-      lockupPeriods: Array.isArray(object?.lockupPeriods)
-        ? object.lockupPeriods.map((e: any) => Period.fromJSON(e))
-        : [],
-      vestingPeriods: Array.isArray(object?.vestingPeriods)
-        ? object.vestingPeriods.map((e: any) => Period.fromJSON(e))
-        : [],
-      merge: isSet(object.merge) ? Boolean(object.merge) : false,
+      fromAddress: isSet(object.fromAddress) ? String(object.fromAddress) : "",
+      toAddress: isSet(object.toAddress) ? String(object.toAddress) : "",
+      startTime: isSet(object.startTime) ? BigInt(object.startTime.toString()) : BigInt(0),
+      lockupPeriods: Array.isArray(object?.lockupPeriods) ? object.lockupPeriods.map((e: any) => Period.fromJSON(e)) : [],
+      vestingPeriods: Array.isArray(object?.vestingPeriods) ? object.vestingPeriods.map((e: any) => Period.fromJSON(e)) : [],
+      merge: isSet(object.merge) ? Boolean(object.merge) : false
     };
   },
-  toJSON(
-    message: MsgCreateClawbackVestingAccount,
-  ): JsonSafe<MsgCreateClawbackVestingAccount> {
+  toJSON(message: MsgCreateClawbackVestingAccount): JsonSafe<MsgCreateClawbackVestingAccount> {
     const obj: any = {};
-    message.fromAddress !== undefined &&
-      (obj.fromAddress = message.fromAddress);
+    message.fromAddress !== undefined && (obj.fromAddress = message.fromAddress);
     message.toAddress !== undefined && (obj.toAddress = message.toAddress);
-    message.startTime !== undefined &&
-      (obj.startTime = (message.startTime || BigInt(0)).toString());
+    message.startTime !== undefined && (obj.startTime = (message.startTime || BigInt(0)).toString());
     if (message.lockupPeriods) {
-      obj.lockupPeriods = message.lockupPeriods.map(e =>
-        e ? Period.toJSON(e) : undefined,
-      );
+      obj.lockupPeriods = message.lockupPeriods.map(e => e ? Period.toJSON(e) : undefined);
     } else {
       obj.lockupPeriods = [];
     }
     if (message.vestingPeriods) {
-      obj.vestingPeriods = message.vestingPeriods.map(e =>
-        e ? Period.toJSON(e) : undefined,
-      );
+      obj.vestingPeriods = message.vestingPeriods.map(e => e ? Period.toJSON(e) : undefined);
     } else {
       obj.vestingPeriods = [];
     }
     message.merge !== undefined && (obj.merge = message.merge);
     return obj;
   },
-  fromPartial(
-    object: Partial<MsgCreateClawbackVestingAccount>,
-  ): MsgCreateClawbackVestingAccount {
+  fromPartial(object: Partial<MsgCreateClawbackVestingAccount>): MsgCreateClawbackVestingAccount {
     const message = createBaseMsgCreateClawbackVestingAccount();
-    message.fromAddress = object.fromAddress ?? '';
-    message.toAddress = object.toAddress ?? '';
-    message.startTime =
-      object.startTime !== undefined && object.startTime !== null
-        ? BigInt(object.startTime.toString())
-        : BigInt(0);
-    message.lockupPeriods =
-      object.lockupPeriods?.map(e => Period.fromPartial(e)) || [];
-    message.vestingPeriods =
-      object.vestingPeriods?.map(e => Period.fromPartial(e)) || [];
+    message.fromAddress = object.fromAddress ?? "";
+    message.toAddress = object.toAddress ?? "";
+    message.startTime = object.startTime !== undefined && object.startTime !== null ? BigInt(object.startTime.toString()) : BigInt(0);
+    message.lockupPeriods = object.lockupPeriods?.map(e => Period.fromPartial(e)) || [];
+    message.vestingPeriods = object.vestingPeriods?.map(e => Period.fromPartial(e)) || [];
     message.merge = object.merge ?? false;
     return message;
   },
-  fromProtoMsg(
-    message: MsgCreateClawbackVestingAccountProtoMsg,
-  ): MsgCreateClawbackVestingAccount {
+  fromProtoMsg(message: MsgCreateClawbackVestingAccountProtoMsg): MsgCreateClawbackVestingAccount {
     return MsgCreateClawbackVestingAccount.decode(message.value);
   },
   toProto(message: MsgCreateClawbackVestingAccount): Uint8Array {
     return MsgCreateClawbackVestingAccount.encode(message).finish();
   },
-  toProtoMsg(
-    message: MsgCreateClawbackVestingAccount,
-  ): MsgCreateClawbackVestingAccountProtoMsg {
+  toProtoMsg(message: MsgCreateClawbackVestingAccount): MsgCreateClawbackVestingAccountProtoMsg {
     return {
-      typeUrl: '/cosmos.vesting.v1beta1.MsgCreateClawbackVestingAccount',
-      value: MsgCreateClawbackVestingAccount.encode(message).finish(),
+      typeUrl: "/cosmos.vesting.v1beta1.MsgCreateClawbackVestingAccount",
+      value: MsgCreateClawbackVestingAccount.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgCreateClawbackVestingAccountResponse(): MsgCreateClawbackVestingAccountResponse {
   return {};
 }
 export const MsgCreateClawbackVestingAccountResponse = {
-  typeUrl:
-    '/cosmos.vesting.v1beta1.MsgCreateClawbackVestingAccountResponse' as const,
-  encode(
-    _: MsgCreateClawbackVestingAccountResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/cosmos.vesting.v1beta1.MsgCreateClawbackVestingAccountResponse" as const,
+  encode(_: MsgCreateClawbackVestingAccountResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgCreateClawbackVestingAccountResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgCreateClawbackVestingAccountResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgCreateClawbackVestingAccountResponse();
     while (reader.pos < end) {
@@ -959,63 +803,50 @@ export const MsgCreateClawbackVestingAccountResponse = {
   fromJSON(_: any): MsgCreateClawbackVestingAccountResponse {
     return {};
   },
-  toJSON(
-    _: MsgCreateClawbackVestingAccountResponse,
-  ): JsonSafe<MsgCreateClawbackVestingAccountResponse> {
+  toJSON(_: MsgCreateClawbackVestingAccountResponse): JsonSafe<MsgCreateClawbackVestingAccountResponse> {
     const obj: any = {};
     return obj;
   },
-  fromPartial(
-    _: Partial<MsgCreateClawbackVestingAccountResponse>,
-  ): MsgCreateClawbackVestingAccountResponse {
+  fromPartial(_: Partial<MsgCreateClawbackVestingAccountResponse>): MsgCreateClawbackVestingAccountResponse {
     const message = createBaseMsgCreateClawbackVestingAccountResponse();
     return message;
   },
-  fromProtoMsg(
-    message: MsgCreateClawbackVestingAccountResponseProtoMsg,
-  ): MsgCreateClawbackVestingAccountResponse {
+  fromProtoMsg(message: MsgCreateClawbackVestingAccountResponseProtoMsg): MsgCreateClawbackVestingAccountResponse {
     return MsgCreateClawbackVestingAccountResponse.decode(message.value);
   },
   toProto(message: MsgCreateClawbackVestingAccountResponse): Uint8Array {
     return MsgCreateClawbackVestingAccountResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: MsgCreateClawbackVestingAccountResponse,
-  ): MsgCreateClawbackVestingAccountResponseProtoMsg {
+  toProtoMsg(message: MsgCreateClawbackVestingAccountResponse): MsgCreateClawbackVestingAccountResponseProtoMsg {
     return {
-      typeUrl:
-        '/cosmos.vesting.v1beta1.MsgCreateClawbackVestingAccountResponse',
-      value: MsgCreateClawbackVestingAccountResponse.encode(message).finish(),
+      typeUrl: "/cosmos.vesting.v1beta1.MsgCreateClawbackVestingAccountResponse",
+      value: MsgCreateClawbackVestingAccountResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgClawback(): MsgClawback {
   return {
-    funderAddress: '',
-    address: '',
-    destAddress: '',
+    funderAddress: "",
+    address: "",
+    destAddress: ""
   };
 }
 export const MsgClawback = {
-  typeUrl: '/cosmos.vesting.v1beta1.MsgClawback' as const,
-  encode(
-    message: MsgClawback,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.funderAddress !== '') {
+  typeUrl: "/cosmos.vesting.v1beta1.MsgClawback" as const,
+  encode(message: MsgClawback, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.funderAddress !== "") {
       writer.uint32(10).string(message.funderAddress);
     }
-    if (message.address !== '') {
+    if (message.address !== "") {
       writer.uint32(18).string(message.address);
     }
-    if (message.destAddress !== '') {
+    if (message.destAddress !== "") {
       writer.uint32(26).string(message.destAddress);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): MsgClawback {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgClawback();
     while (reader.pos < end) {
@@ -1039,27 +870,23 @@ export const MsgClawback = {
   },
   fromJSON(object: any): MsgClawback {
     return {
-      funderAddress: isSet(object.funderAddress)
-        ? String(object.funderAddress)
-        : '',
-      address: isSet(object.address) ? String(object.address) : '',
-      destAddress: isSet(object.destAddress) ? String(object.destAddress) : '',
+      funderAddress: isSet(object.funderAddress) ? String(object.funderAddress) : "",
+      address: isSet(object.address) ? String(object.address) : "",
+      destAddress: isSet(object.destAddress) ? String(object.destAddress) : ""
     };
   },
   toJSON(message: MsgClawback): JsonSafe<MsgClawback> {
     const obj: any = {};
-    message.funderAddress !== undefined &&
-      (obj.funderAddress = message.funderAddress);
+    message.funderAddress !== undefined && (obj.funderAddress = message.funderAddress);
     message.address !== undefined && (obj.address = message.address);
-    message.destAddress !== undefined &&
-      (obj.destAddress = message.destAddress);
+    message.destAddress !== undefined && (obj.destAddress = message.destAddress);
     return obj;
   },
   fromPartial(object: Partial<MsgClawback>): MsgClawback {
     const message = createBaseMsgClawback();
-    message.funderAddress = object.funderAddress ?? '';
-    message.address = object.address ?? '';
-    message.destAddress = object.destAddress ?? '';
+    message.funderAddress = object.funderAddress ?? "";
+    message.address = object.address ?? "";
+    message.destAddress = object.destAddress ?? "";
     return message;
   },
   fromProtoMsg(message: MsgClawbackProtoMsg): MsgClawback {
@@ -1070,28 +897,21 @@ export const MsgClawback = {
   },
   toProtoMsg(message: MsgClawback): MsgClawbackProtoMsg {
     return {
-      typeUrl: '/cosmos.vesting.v1beta1.MsgClawback',
-      value: MsgClawback.encode(message).finish(),
+      typeUrl: "/cosmos.vesting.v1beta1.MsgClawback",
+      value: MsgClawback.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgClawbackResponse(): MsgClawbackResponse {
   return {};
 }
 export const MsgClawbackResponse = {
-  typeUrl: '/cosmos.vesting.v1beta1.MsgClawbackResponse' as const,
-  encode(
-    _: MsgClawbackResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/cosmos.vesting.v1beta1.MsgClawbackResponse" as const,
+  encode(_: MsgClawbackResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgClawbackResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgClawbackResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgClawbackResponse();
     while (reader.pos < end) {
@@ -1123,30 +943,26 @@ export const MsgClawbackResponse = {
   },
   toProtoMsg(message: MsgClawbackResponse): MsgClawbackResponseProtoMsg {
     return {
-      typeUrl: '/cosmos.vesting.v1beta1.MsgClawbackResponse',
-      value: MsgClawbackResponse.encode(message).finish(),
+      typeUrl: "/cosmos.vesting.v1beta1.MsgClawbackResponse",
+      value: MsgClawbackResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgReturnGrants(): MsgReturnGrants {
   return {
-    address: '',
+    address: ""
   };
 }
 export const MsgReturnGrants = {
-  typeUrl: '/cosmos.vesting.v1beta1.MsgReturnGrants' as const,
-  encode(
-    message: MsgReturnGrants,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.address !== '') {
+  typeUrl: "/cosmos.vesting.v1beta1.MsgReturnGrants" as const,
+  encode(message: MsgReturnGrants, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.address !== "") {
       writer.uint32(10).string(message.address);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): MsgReturnGrants {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgReturnGrants();
     while (reader.pos < end) {
@@ -1164,7 +980,7 @@ export const MsgReturnGrants = {
   },
   fromJSON(object: any): MsgReturnGrants {
     return {
-      address: isSet(object.address) ? String(object.address) : '',
+      address: isSet(object.address) ? String(object.address) : ""
     };
   },
   toJSON(message: MsgReturnGrants): JsonSafe<MsgReturnGrants> {
@@ -1174,7 +990,7 @@ export const MsgReturnGrants = {
   },
   fromPartial(object: Partial<MsgReturnGrants>): MsgReturnGrants {
     const message = createBaseMsgReturnGrants();
-    message.address = object.address ?? '';
+    message.address = object.address ?? "";
     return message;
   },
   fromProtoMsg(message: MsgReturnGrantsProtoMsg): MsgReturnGrants {
@@ -1185,28 +1001,21 @@ export const MsgReturnGrants = {
   },
   toProtoMsg(message: MsgReturnGrants): MsgReturnGrantsProtoMsg {
     return {
-      typeUrl: '/cosmos.vesting.v1beta1.MsgReturnGrants',
-      value: MsgReturnGrants.encode(message).finish(),
+      typeUrl: "/cosmos.vesting.v1beta1.MsgReturnGrants",
+      value: MsgReturnGrants.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgReturnGrantsResponse(): MsgReturnGrantsResponse {
   return {};
 }
 export const MsgReturnGrantsResponse = {
-  typeUrl: '/cosmos.vesting.v1beta1.MsgReturnGrantsResponse' as const,
-  encode(
-    _: MsgReturnGrantsResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/cosmos.vesting.v1beta1.MsgReturnGrantsResponse" as const,
+  encode(_: MsgReturnGrantsResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgReturnGrantsResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgReturnGrantsResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgReturnGrantsResponse();
     while (reader.pos < end) {
@@ -1230,20 +1039,16 @@ export const MsgReturnGrantsResponse = {
     const message = createBaseMsgReturnGrantsResponse();
     return message;
   },
-  fromProtoMsg(
-    message: MsgReturnGrantsResponseProtoMsg,
-  ): MsgReturnGrantsResponse {
+  fromProtoMsg(message: MsgReturnGrantsResponseProtoMsg): MsgReturnGrantsResponse {
     return MsgReturnGrantsResponse.decode(message.value);
   },
   toProto(message: MsgReturnGrantsResponse): Uint8Array {
     return MsgReturnGrantsResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: MsgReturnGrantsResponse,
-  ): MsgReturnGrantsResponseProtoMsg {
+  toProtoMsg(message: MsgReturnGrantsResponse): MsgReturnGrantsResponseProtoMsg {
     return {
-      typeUrl: '/cosmos.vesting.v1beta1.MsgReturnGrantsResponse',
-      value: MsgReturnGrantsResponse.encode(message).finish(),
+      typeUrl: "/cosmos.vesting.v1beta1.MsgReturnGrantsResponse",
+      value: MsgReturnGrantsResponse.encode(message).finish()
     };
-  },
+  }
 };

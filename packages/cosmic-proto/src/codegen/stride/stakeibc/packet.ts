@@ -1,12 +1,12 @@
 //@ts-nocheck
-import { BinaryReader, BinaryWriter } from '../../binary.js';
-import { isSet } from '../../helpers.js';
-import { type JsonSafe } from '../../json-safe.js';
+import { BinaryReader, BinaryWriter } from "../../binary.js";
+import { isSet } from "../../helpers.js";
+import {type JsonSafe } from "../../json-safe.js";
 export interface StakeibcPacketData {
   noData?: NoData;
 }
 export interface StakeibcPacketDataProtoMsg {
-  typeUrl: '/stride.stakeibc.StakeibcPacketData';
+  typeUrl: "/stride.stakeibc.StakeibcPacketData";
   value: Uint8Array;
 }
 export interface StakeibcPacketDataSDKType {
@@ -14,32 +14,25 @@ export interface StakeibcPacketDataSDKType {
 }
 export interface NoData {}
 export interface NoDataProtoMsg {
-  typeUrl: '/stride.stakeibc.NoData';
+  typeUrl: "/stride.stakeibc.NoData";
   value: Uint8Array;
 }
 export interface NoDataSDKType {}
 function createBaseStakeibcPacketData(): StakeibcPacketData {
   return {
-    noData: undefined,
+    noData: undefined
   };
 }
 export const StakeibcPacketData = {
-  typeUrl: '/stride.stakeibc.StakeibcPacketData' as const,
-  encode(
-    message: StakeibcPacketData,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/stride.stakeibc.StakeibcPacketData" as const,
+  encode(message: StakeibcPacketData, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.noData !== undefined) {
       NoData.encode(message.noData, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): StakeibcPacketData {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): StakeibcPacketData {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseStakeibcPacketData();
     while (reader.pos < end) {
@@ -57,21 +50,17 @@ export const StakeibcPacketData = {
   },
   fromJSON(object: any): StakeibcPacketData {
     return {
-      noData: isSet(object.noData) ? NoData.fromJSON(object.noData) : undefined,
+      noData: isSet(object.noData) ? NoData.fromJSON(object.noData) : undefined
     };
   },
   toJSON(message: StakeibcPacketData): JsonSafe<StakeibcPacketData> {
     const obj: any = {};
-    message.noData !== undefined &&
-      (obj.noData = message.noData ? NoData.toJSON(message.noData) : undefined);
+    message.noData !== undefined && (obj.noData = message.noData ? NoData.toJSON(message.noData) : undefined);
     return obj;
   },
   fromPartial(object: Partial<StakeibcPacketData>): StakeibcPacketData {
     const message = createBaseStakeibcPacketData();
-    message.noData =
-      object.noData !== undefined && object.noData !== null
-        ? NoData.fromPartial(object.noData)
-        : undefined;
+    message.noData = object.noData !== undefined && object.noData !== null ? NoData.fromPartial(object.noData) : undefined;
     return message;
   },
   fromProtoMsg(message: StakeibcPacketDataProtoMsg): StakeibcPacketData {
@@ -82,25 +71,21 @@ export const StakeibcPacketData = {
   },
   toProtoMsg(message: StakeibcPacketData): StakeibcPacketDataProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.StakeibcPacketData',
-      value: StakeibcPacketData.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.StakeibcPacketData",
+      value: StakeibcPacketData.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseNoData(): NoData {
   return {};
 }
 export const NoData = {
-  typeUrl: '/stride.stakeibc.NoData' as const,
-  encode(
-    _: NoData,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/stride.stakeibc.NoData" as const,
+  encode(_: NoData, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): NoData {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseNoData();
     while (reader.pos < end) {
@@ -132,8 +117,8 @@ export const NoData = {
   },
   toProtoMsg(message: NoData): NoDataProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.NoData',
-      value: NoData.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.NoData",
+      value: NoData.encode(message).finish()
     };
-  },
+  }
 };

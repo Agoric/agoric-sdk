@@ -1,16 +1,9 @@
 //@ts-nocheck
-import {
-  Header,
-  type HeaderSDKType,
-  Data,
-  type DataSDKType,
-  Commit,
-  type CommitSDKType,
-} from './types.js';
-import { EvidenceList, type EvidenceListSDKType } from './evidence.js';
-import { BinaryReader, BinaryWriter } from '../../binary.js';
-import { isSet } from '../../helpers.js';
-import { type JsonSafe } from '../../json-safe.js';
+import { Header, type HeaderSDKType, Data, type DataSDKType, Commit, type CommitSDKType } from "./types.js";
+import { EvidenceList, type EvidenceListSDKType } from "./evidence.js";
+import { BinaryReader, BinaryWriter } from "../../binary.js";
+import { isSet } from "../../helpers.js";
+import {type JsonSafe } from "../../json-safe.js";
 export interface Block {
   header: Header;
   data: Data;
@@ -18,7 +11,7 @@ export interface Block {
   lastCommit?: Commit;
 }
 export interface BlockProtoMsg {
-  typeUrl: '/tendermint.types.Block';
+  typeUrl: "/tendermint.types.Block";
   value: Uint8Array;
 }
 export interface BlockSDKType {
@@ -32,15 +25,12 @@ function createBaseBlock(): Block {
     header: Header.fromPartial({}),
     data: Data.fromPartial({}),
     evidence: EvidenceList.fromPartial({}),
-    lastCommit: undefined,
+    lastCommit: undefined
   };
 }
 export const Block = {
-  typeUrl: '/tendermint.types.Block' as const,
-  encode(
-    message: Block,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/tendermint.types.Block" as const,
+  encode(message: Block, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.header !== undefined) {
       Header.encode(message.header, writer.uint32(10).fork()).ldelim();
     }
@@ -56,8 +46,7 @@ export const Block = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Block {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseBlock();
     while (reader.pos < end) {
@@ -86,48 +75,24 @@ export const Block = {
     return {
       header: isSet(object.header) ? Header.fromJSON(object.header) : undefined,
       data: isSet(object.data) ? Data.fromJSON(object.data) : undefined,
-      evidence: isSet(object.evidence)
-        ? EvidenceList.fromJSON(object.evidence)
-        : undefined,
-      lastCommit: isSet(object.lastCommit)
-        ? Commit.fromJSON(object.lastCommit)
-        : undefined,
+      evidence: isSet(object.evidence) ? EvidenceList.fromJSON(object.evidence) : undefined,
+      lastCommit: isSet(object.lastCommit) ? Commit.fromJSON(object.lastCommit) : undefined
     };
   },
   toJSON(message: Block): JsonSafe<Block> {
     const obj: any = {};
-    message.header !== undefined &&
-      (obj.header = message.header ? Header.toJSON(message.header) : undefined);
-    message.data !== undefined &&
-      (obj.data = message.data ? Data.toJSON(message.data) : undefined);
-    message.evidence !== undefined &&
-      (obj.evidence = message.evidence
-        ? EvidenceList.toJSON(message.evidence)
-        : undefined);
-    message.lastCommit !== undefined &&
-      (obj.lastCommit = message.lastCommit
-        ? Commit.toJSON(message.lastCommit)
-        : undefined);
+    message.header !== undefined && (obj.header = message.header ? Header.toJSON(message.header) : undefined);
+    message.data !== undefined && (obj.data = message.data ? Data.toJSON(message.data) : undefined);
+    message.evidence !== undefined && (obj.evidence = message.evidence ? EvidenceList.toJSON(message.evidence) : undefined);
+    message.lastCommit !== undefined && (obj.lastCommit = message.lastCommit ? Commit.toJSON(message.lastCommit) : undefined);
     return obj;
   },
   fromPartial(object: Partial<Block>): Block {
     const message = createBaseBlock();
-    message.header =
-      object.header !== undefined && object.header !== null
-        ? Header.fromPartial(object.header)
-        : undefined;
-    message.data =
-      object.data !== undefined && object.data !== null
-        ? Data.fromPartial(object.data)
-        : undefined;
-    message.evidence =
-      object.evidence !== undefined && object.evidence !== null
-        ? EvidenceList.fromPartial(object.evidence)
-        : undefined;
-    message.lastCommit =
-      object.lastCommit !== undefined && object.lastCommit !== null
-        ? Commit.fromPartial(object.lastCommit)
-        : undefined;
+    message.header = object.header !== undefined && object.header !== null ? Header.fromPartial(object.header) : undefined;
+    message.data = object.data !== undefined && object.data !== null ? Data.fromPartial(object.data) : undefined;
+    message.evidence = object.evidence !== undefined && object.evidence !== null ? EvidenceList.fromPartial(object.evidence) : undefined;
+    message.lastCommit = object.lastCommit !== undefined && object.lastCommit !== null ? Commit.fromPartial(object.lastCommit) : undefined;
     return message;
   },
   fromProtoMsg(message: BlockProtoMsg): Block {
@@ -138,8 +103,8 @@ export const Block = {
   },
   toProtoMsg(message: Block): BlockProtoMsg {
     return {
-      typeUrl: '/tendermint.types.Block',
-      value: Block.encode(message).finish(),
+      typeUrl: "/tendermint.types.Block",
+      value: Block.encode(message).finish()
     };
-  },
+  }
 };

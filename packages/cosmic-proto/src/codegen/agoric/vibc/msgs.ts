@@ -1,20 +1,17 @@
 //@ts-nocheck
-import {
-  Packet,
-  type PacketSDKType,
-} from '../../ibc/core/channel/v1/channel.js';
-import { BinaryReader, BinaryWriter } from '../../binary.js';
-import { isSet } from '../../helpers.js';
-import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
-import { encodeBase64 as base64FromBytes } from '@endo/base64';
-import { type JsonSafe } from '../../json-safe.js';
+import { Packet, type PacketSDKType } from "../../ibc/core/channel/v1/channel.js";
+import { BinaryReader, BinaryWriter } from "../../binary.js";
+import { isSet } from "../../helpers.js";
+import { decodeBase64 as bytesFromBase64 } from "@endo/base64";
+import { encodeBase64 as base64FromBytes } from "@endo/base64";
+import {type JsonSafe } from "../../json-safe.js";
 /** MsgSendPacket is an SDK message for sending an outgoing IBC packet */
 export interface MsgSendPacket {
   packet: Packet;
   sender: Uint8Array;
 }
 export interface MsgSendPacketProtoMsg {
-  typeUrl: '/agoric.vibc.MsgSendPacket';
+  typeUrl: "/agoric.vibc.MsgSendPacket";
   value: Uint8Array;
 }
 /** MsgSendPacket is an SDK message for sending an outgoing IBC packet */
@@ -25,7 +22,7 @@ export interface MsgSendPacketSDKType {
 /** Empty response for SendPacket. */
 export interface MsgSendPacketResponse {}
 export interface MsgSendPacketResponseProtoMsg {
-  typeUrl: '/agoric.vibc.MsgSendPacketResponse';
+  typeUrl: "/agoric.vibc.MsgSendPacketResponse";
   value: Uint8Array;
 }
 /** Empty response for SendPacket. */
@@ -33,15 +30,12 @@ export interface MsgSendPacketResponseSDKType {}
 function createBaseMsgSendPacket(): MsgSendPacket {
   return {
     packet: Packet.fromPartial({}),
-    sender: new Uint8Array(),
+    sender: new Uint8Array()
   };
 }
 export const MsgSendPacket = {
-  typeUrl: '/agoric.vibc.MsgSendPacket' as const,
-  encode(
-    message: MsgSendPacket,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/agoric.vibc.MsgSendPacket" as const,
+  encode(message: MsgSendPacket, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.packet !== undefined) {
       Packet.encode(message.packet, writer.uint32(10).fork()).ldelim();
     }
@@ -51,8 +45,7 @@ export const MsgSendPacket = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): MsgSendPacket {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgSendPacket();
     while (reader.pos < end) {
@@ -74,27 +67,18 @@ export const MsgSendPacket = {
   fromJSON(object: any): MsgSendPacket {
     return {
       packet: isSet(object.packet) ? Packet.fromJSON(object.packet) : undefined,
-      sender: isSet(object.sender)
-        ? bytesFromBase64(object.sender)
-        : new Uint8Array(),
+      sender: isSet(object.sender) ? bytesFromBase64(object.sender) : new Uint8Array()
     };
   },
   toJSON(message: MsgSendPacket): JsonSafe<MsgSendPacket> {
     const obj: any = {};
-    message.packet !== undefined &&
-      (obj.packet = message.packet ? Packet.toJSON(message.packet) : undefined);
-    message.sender !== undefined &&
-      (obj.sender = base64FromBytes(
-        message.sender !== undefined ? message.sender : new Uint8Array(),
-      ));
+    message.packet !== undefined && (obj.packet = message.packet ? Packet.toJSON(message.packet) : undefined);
+    message.sender !== undefined && (obj.sender = base64FromBytes(message.sender !== undefined ? message.sender : new Uint8Array()));
     return obj;
   },
   fromPartial(object: Partial<MsgSendPacket>): MsgSendPacket {
     const message = createBaseMsgSendPacket();
-    message.packet =
-      object.packet !== undefined && object.packet !== null
-        ? Packet.fromPartial(object.packet)
-        : undefined;
+    message.packet = object.packet !== undefined && object.packet !== null ? Packet.fromPartial(object.packet) : undefined;
     message.sender = object.sender ?? new Uint8Array();
     return message;
   },
@@ -106,28 +90,21 @@ export const MsgSendPacket = {
   },
   toProtoMsg(message: MsgSendPacket): MsgSendPacketProtoMsg {
     return {
-      typeUrl: '/agoric.vibc.MsgSendPacket',
-      value: MsgSendPacket.encode(message).finish(),
+      typeUrl: "/agoric.vibc.MsgSendPacket",
+      value: MsgSendPacket.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgSendPacketResponse(): MsgSendPacketResponse {
   return {};
 }
 export const MsgSendPacketResponse = {
-  typeUrl: '/agoric.vibc.MsgSendPacketResponse' as const,
-  encode(
-    _: MsgSendPacketResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/agoric.vibc.MsgSendPacketResponse" as const,
+  encode(_: MsgSendPacketResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgSendPacketResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgSendPacketResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgSendPacketResponse();
     while (reader.pos < end) {
@@ -159,8 +136,8 @@ export const MsgSendPacketResponse = {
   },
   toProtoMsg(message: MsgSendPacketResponse): MsgSendPacketResponseProtoMsg {
     return {
-      typeUrl: '/agoric.vibc.MsgSendPacketResponse',
-      value: MsgSendPacketResponse.encode(message).finish(),
+      typeUrl: "/agoric.vibc.MsgSendPacketResponse",
+      value: MsgSendPacketResponse.encode(message).finish()
     };
-  },
+  }
 };

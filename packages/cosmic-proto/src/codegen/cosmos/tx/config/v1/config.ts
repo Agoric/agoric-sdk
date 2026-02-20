@@ -1,7 +1,7 @@
 //@ts-nocheck
-import { BinaryReader, BinaryWriter } from '../../../../binary.js';
-import { isSet } from '../../../../helpers.js';
-import { type JsonSafe } from '../../../../json-safe.js';
+import { BinaryReader, BinaryWriter } from "../../../../binary.js";
+import { isSet } from "../../../../helpers.js";
+import {type JsonSafe } from "../../../../json-safe.js";
 /** Config is the config object of the x/auth/tx package. */
 export interface Config {
   /**
@@ -16,7 +16,7 @@ export interface Config {
   skipPostHandler: boolean;
 }
 export interface ConfigProtoMsg {
-  typeUrl: '/cosmos.tx.config.v1.Config';
+  typeUrl: "/cosmos.tx.config.v1.Config";
   value: Uint8Array;
 }
 /** Config is the config object of the x/auth/tx package. */
@@ -27,15 +27,12 @@ export interface ConfigSDKType {
 function createBaseConfig(): Config {
   return {
     skipAnteHandler: false,
-    skipPostHandler: false,
+    skipPostHandler: false
   };
 }
 export const Config = {
-  typeUrl: '/cosmos.tx.config.v1.Config' as const,
-  encode(
-    message: Config,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/cosmos.tx.config.v1.Config" as const,
+  encode(message: Config, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.skipAnteHandler === true) {
       writer.uint32(8).bool(message.skipAnteHandler);
     }
@@ -45,8 +42,7 @@ export const Config = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Config {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseConfig();
     while (reader.pos < end) {
@@ -67,20 +63,14 @@ export const Config = {
   },
   fromJSON(object: any): Config {
     return {
-      skipAnteHandler: isSet(object.skipAnteHandler)
-        ? Boolean(object.skipAnteHandler)
-        : false,
-      skipPostHandler: isSet(object.skipPostHandler)
-        ? Boolean(object.skipPostHandler)
-        : false,
+      skipAnteHandler: isSet(object.skipAnteHandler) ? Boolean(object.skipAnteHandler) : false,
+      skipPostHandler: isSet(object.skipPostHandler) ? Boolean(object.skipPostHandler) : false
     };
   },
   toJSON(message: Config): JsonSafe<Config> {
     const obj: any = {};
-    message.skipAnteHandler !== undefined &&
-      (obj.skipAnteHandler = message.skipAnteHandler);
-    message.skipPostHandler !== undefined &&
-      (obj.skipPostHandler = message.skipPostHandler);
+    message.skipAnteHandler !== undefined && (obj.skipAnteHandler = message.skipAnteHandler);
+    message.skipPostHandler !== undefined && (obj.skipPostHandler = message.skipPostHandler);
     return obj;
   },
   fromPartial(object: Partial<Config>): Config {
@@ -97,8 +87,8 @@ export const Config = {
   },
   toProtoMsg(message: Config): ConfigProtoMsg {
     return {
-      typeUrl: '/cosmos.tx.config.v1.Config',
-      value: Config.encode(message).finish(),
+      typeUrl: "/cosmos.tx.config.v1.Config",
+      value: Config.encode(message).finish()
     };
-  },
+  }
 };

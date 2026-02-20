@@ -1,14 +1,14 @@
 //@ts-nocheck
-import { BinaryReader, BinaryWriter } from '../../../../binary.js';
-import { isSet } from '../../../../helpers.js';
-import { type JsonSafe } from '../../../../json-safe.js';
+import { BinaryReader, BinaryWriter } from "../../../../binary.js";
+import { isSet } from "../../../../helpers.js";
+import {type JsonSafe } from "../../../../json-safe.js";
 /** Module is the config object of the slashing module. */
 export interface Module {
   /** authority defines the custom module authority. If not set, defaults to the governance module. */
   authority: string;
 }
 export interface ModuleProtoMsg {
-  typeUrl: '/cosmos.slashing.module.v1.Module';
+  typeUrl: "/cosmos.slashing.module.v1.Module";
   value: Uint8Array;
 }
 /** Module is the config object of the slashing module. */
@@ -17,23 +17,19 @@ export interface ModuleSDKType {
 }
 function createBaseModule(): Module {
   return {
-    authority: '',
+    authority: ""
   };
 }
 export const Module = {
-  typeUrl: '/cosmos.slashing.module.v1.Module' as const,
-  encode(
-    message: Module,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.authority !== '') {
+  typeUrl: "/cosmos.slashing.module.v1.Module" as const,
+  encode(message: Module, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.authority !== "") {
       writer.uint32(10).string(message.authority);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Module {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseModule();
     while (reader.pos < end) {
@@ -51,7 +47,7 @@ export const Module = {
   },
   fromJSON(object: any): Module {
     return {
-      authority: isSet(object.authority) ? String(object.authority) : '',
+      authority: isSet(object.authority) ? String(object.authority) : ""
     };
   },
   toJSON(message: Module): JsonSafe<Module> {
@@ -61,7 +57,7 @@ export const Module = {
   },
   fromPartial(object: Partial<Module>): Module {
     const message = createBaseModule();
-    message.authority = object.authority ?? '';
+    message.authority = object.authority ?? "";
     return message;
   },
   fromProtoMsg(message: ModuleProtoMsg): Module {
@@ -72,8 +68,8 @@ export const Module = {
   },
   toProtoMsg(message: Module): ModuleProtoMsg {
     return {
-      typeUrl: '/cosmos.slashing.module.v1.Module',
-      value: Module.encode(message).finish(),
+      typeUrl: "/cosmos.slashing.module.v1.Module",
+      value: Module.encode(message).finish()
     };
-  },
+  }
 };

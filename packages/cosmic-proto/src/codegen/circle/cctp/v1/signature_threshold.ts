@@ -1,7 +1,7 @@
 //@ts-nocheck
-import { BinaryReader, BinaryWriter } from '../../../binary.js';
-import { isSet } from '../../../helpers.js';
-import { type JsonSafe } from '../../../json-safe.js';
+import { BinaryReader, BinaryWriter } from "../../../binary.js";
+import { isSet } from "../../../helpers.js";
+import {type JsonSafe } from "../../../json-safe.js";
 /**
  * SignatureThreshold is the minimum amount of signatures required to attest to
  * a message (the 'm' in a m/n multisig)
@@ -11,7 +11,7 @@ export interface SignatureThreshold {
   amount: number;
 }
 export interface SignatureThresholdProtoMsg {
-  typeUrl: '/circle.cctp.v1.SignatureThreshold';
+  typeUrl: "/circle.cctp.v1.SignatureThreshold";
   value: Uint8Array;
 }
 /**
@@ -24,26 +24,19 @@ export interface SignatureThresholdSDKType {
 }
 function createBaseSignatureThreshold(): SignatureThreshold {
   return {
-    amount: 0,
+    amount: 0
   };
 }
 export const SignatureThreshold = {
-  typeUrl: '/circle.cctp.v1.SignatureThreshold' as const,
-  encode(
-    message: SignatureThreshold,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/circle.cctp.v1.SignatureThreshold" as const,
+  encode(message: SignatureThreshold, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.amount !== 0) {
       writer.uint32(8).uint32(message.amount);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): SignatureThreshold {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): SignatureThreshold {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseSignatureThreshold();
     while (reader.pos < end) {
@@ -61,7 +54,7 @@ export const SignatureThreshold = {
   },
   fromJSON(object: any): SignatureThreshold {
     return {
-      amount: isSet(object.amount) ? Number(object.amount) : 0,
+      amount: isSet(object.amount) ? Number(object.amount) : 0
     };
   },
   toJSON(message: SignatureThreshold): JsonSafe<SignatureThreshold> {
@@ -82,8 +75,8 @@ export const SignatureThreshold = {
   },
   toProtoMsg(message: SignatureThreshold): SignatureThresholdProtoMsg {
     return {
-      typeUrl: '/circle.cctp.v1.SignatureThreshold',
-      value: SignatureThreshold.encode(message).finish(),
+      typeUrl: "/circle.cctp.v1.SignatureThreshold",
+      value: SignatureThreshold.encode(message).finish()
     };
-  },
+  }
 };

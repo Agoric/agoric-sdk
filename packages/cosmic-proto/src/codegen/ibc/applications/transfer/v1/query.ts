@@ -1,23 +1,10 @@
 //@ts-nocheck
-import {
-  PageRequest,
-  type PageRequestSDKType,
-  PageResponse,
-  type PageResponseSDKType,
-} from '../../../../cosmos/base/query/v1beta1/pagination.js';
-import {
-  DenomTrace,
-  type DenomTraceSDKType,
-  Params,
-  type ParamsSDKType,
-} from './transfer.js';
-import {
-  Coin,
-  type CoinSDKType,
-} from '../../../../cosmos/base/v1beta1/coin.js';
-import { BinaryReader, BinaryWriter } from '../../../../binary.js';
-import { isSet } from '../../../../helpers.js';
-import { type JsonSafe } from '../../../../json-safe.js';
+import { PageRequest, type PageRequestSDKType, PageResponse, type PageResponseSDKType } from "../../../../cosmos/base/query/v1beta1/pagination.js";
+import { DenomTrace, type DenomTraceSDKType, Params, type ParamsSDKType } from "./transfer.js";
+import { Coin, type CoinSDKType } from "../../../../cosmos/base/v1beta1/coin.js";
+import { BinaryReader, BinaryWriter } from "../../../../binary.js";
+import { isSet } from "../../../../helpers.js";
+import {type JsonSafe } from "../../../../json-safe.js";
 /**
  * QueryDenomTraceRequest is the request type for the Query/DenomTrace RPC
  * method
@@ -27,7 +14,7 @@ export interface QueryDenomTraceRequest {
   hash: string;
 }
 export interface QueryDenomTraceRequestProtoMsg {
-  typeUrl: '/ibc.applications.transfer.v1.QueryDenomTraceRequest';
+  typeUrl: "/ibc.applications.transfer.v1.QueryDenomTraceRequest";
   value: Uint8Array;
 }
 /**
@@ -46,7 +33,7 @@ export interface QueryDenomTraceResponse {
   denomTrace?: DenomTrace;
 }
 export interface QueryDenomTraceResponseProtoMsg {
-  typeUrl: '/ibc.applications.transfer.v1.QueryDenomTraceResponse';
+  typeUrl: "/ibc.applications.transfer.v1.QueryDenomTraceResponse";
   value: Uint8Array;
 }
 /**
@@ -65,7 +52,7 @@ export interface QueryDenomTracesRequest {
   pagination?: PageRequest;
 }
 export interface QueryDenomTracesRequestProtoMsg {
-  typeUrl: '/ibc.applications.transfer.v1.QueryDenomTracesRequest';
+  typeUrl: "/ibc.applications.transfer.v1.QueryDenomTracesRequest";
   value: Uint8Array;
 }
 /**
@@ -86,7 +73,7 @@ export interface QueryDenomTracesResponse {
   pagination?: PageResponse;
 }
 export interface QueryDenomTracesResponseProtoMsg {
-  typeUrl: '/ibc.applications.transfer.v1.QueryDenomTracesResponse';
+  typeUrl: "/ibc.applications.transfer.v1.QueryDenomTracesResponse";
   value: Uint8Array;
 }
 /**
@@ -100,7 +87,7 @@ export interface QueryDenomTracesResponseSDKType {
 /** QueryParamsRequest is the request type for the Query/Params RPC method. */
 export interface QueryParamsRequest {}
 export interface QueryParamsRequestProtoMsg {
-  typeUrl: '/ibc.applications.transfer.v1.QueryParamsRequest';
+  typeUrl: "/ibc.applications.transfer.v1.QueryParamsRequest";
   value: Uint8Array;
 }
 /** QueryParamsRequest is the request type for the Query/Params RPC method. */
@@ -111,7 +98,7 @@ export interface QueryParamsResponse {
   params?: Params;
 }
 export interface QueryParamsResponseProtoMsg {
-  typeUrl: '/ibc.applications.transfer.v1.QueryParamsResponse';
+  typeUrl: "/ibc.applications.transfer.v1.QueryParamsResponse";
   value: Uint8Array;
 }
 /** QueryParamsResponse is the response type for the Query/Params RPC method. */
@@ -127,7 +114,7 @@ export interface QueryDenomHashRequest {
   trace: string;
 }
 export interface QueryDenomHashRequestProtoMsg {
-  typeUrl: '/ibc.applications.transfer.v1.QueryDenomHashRequest';
+  typeUrl: "/ibc.applications.transfer.v1.QueryDenomHashRequest";
   value: Uint8Array;
 }
 /**
@@ -146,7 +133,7 @@ export interface QueryDenomHashResponse {
   hash: string;
 }
 export interface QueryDenomHashResponseProtoMsg {
-  typeUrl: '/ibc.applications.transfer.v1.QueryDenomHashResponse';
+  typeUrl: "/ibc.applications.transfer.v1.QueryDenomHashResponse";
   value: Uint8Array;
 }
 /**
@@ -164,7 +151,7 @@ export interface QueryEscrowAddressRequest {
   channelId: string;
 }
 export interface QueryEscrowAddressRequestProtoMsg {
-  typeUrl: '/ibc.applications.transfer.v1.QueryEscrowAddressRequest';
+  typeUrl: "/ibc.applications.transfer.v1.QueryEscrowAddressRequest";
   value: Uint8Array;
 }
 /** QueryEscrowAddressRequest is the request type for the EscrowAddress RPC method. */
@@ -178,7 +165,7 @@ export interface QueryEscrowAddressResponse {
   escrowAddress: string;
 }
 export interface QueryEscrowAddressResponseProtoMsg {
-  typeUrl: '/ibc.applications.transfer.v1.QueryEscrowAddressResponse';
+  typeUrl: "/ibc.applications.transfer.v1.QueryEscrowAddressResponse";
   value: Uint8Array;
 }
 /** QueryEscrowAddressResponse is the response type of the EscrowAddress RPC method. */
@@ -190,7 +177,7 @@ export interface QueryTotalEscrowForDenomRequest {
   denom: string;
 }
 export interface QueryTotalEscrowForDenomRequestProtoMsg {
-  typeUrl: '/ibc.applications.transfer.v1.QueryTotalEscrowForDenomRequest';
+  typeUrl: "/ibc.applications.transfer.v1.QueryTotalEscrowForDenomRequest";
   value: Uint8Array;
 }
 /** QueryTotalEscrowForDenomRequest is the request type for TotalEscrowForDenom RPC method. */
@@ -202,7 +189,7 @@ export interface QueryTotalEscrowForDenomResponse {
   amount: Coin;
 }
 export interface QueryTotalEscrowForDenomResponseProtoMsg {
-  typeUrl: '/ibc.applications.transfer.v1.QueryTotalEscrowForDenomResponse';
+  typeUrl: "/ibc.applications.transfer.v1.QueryTotalEscrowForDenomResponse";
   value: Uint8Array;
 }
 /** QueryTotalEscrowForDenomResponse is the response type for TotalEscrowForDenom RPC method. */
@@ -211,26 +198,19 @@ export interface QueryTotalEscrowForDenomResponseSDKType {
 }
 function createBaseQueryDenomTraceRequest(): QueryDenomTraceRequest {
   return {
-    hash: '',
+    hash: ""
   };
 }
 export const QueryDenomTraceRequest = {
-  typeUrl: '/ibc.applications.transfer.v1.QueryDenomTraceRequest' as const,
-  encode(
-    message: QueryDenomTraceRequest,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.hash !== '') {
+  typeUrl: "/ibc.applications.transfer.v1.QueryDenomTraceRequest" as const,
+  encode(message: QueryDenomTraceRequest, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.hash !== "") {
       writer.uint32(10).string(message.hash);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryDenomTraceRequest {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryDenomTraceRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryDenomTraceRequest();
     while (reader.pos < end) {
@@ -248,7 +228,7 @@ export const QueryDenomTraceRequest = {
   },
   fromJSON(object: any): QueryDenomTraceRequest {
     return {
-      hash: isSet(object.hash) ? String(object.hash) : '',
+      hash: isSet(object.hash) ? String(object.hash) : ""
     };
   },
   toJSON(message: QueryDenomTraceRequest): JsonSafe<QueryDenomTraceRequest> {
@@ -258,12 +238,10 @@ export const QueryDenomTraceRequest = {
   },
   fromPartial(object: Partial<QueryDenomTraceRequest>): QueryDenomTraceRequest {
     const message = createBaseQueryDenomTraceRequest();
-    message.hash = object.hash ?? '';
+    message.hash = object.hash ?? "";
     return message;
   },
-  fromProtoMsg(
-    message: QueryDenomTraceRequestProtoMsg,
-  ): QueryDenomTraceRequest {
+  fromProtoMsg(message: QueryDenomTraceRequestProtoMsg): QueryDenomTraceRequest {
     return QueryDenomTraceRequest.decode(message.value);
   },
   toProto(message: QueryDenomTraceRequest): Uint8Array {
@@ -271,33 +249,26 @@ export const QueryDenomTraceRequest = {
   },
   toProtoMsg(message: QueryDenomTraceRequest): QueryDenomTraceRequestProtoMsg {
     return {
-      typeUrl: '/ibc.applications.transfer.v1.QueryDenomTraceRequest',
-      value: QueryDenomTraceRequest.encode(message).finish(),
+      typeUrl: "/ibc.applications.transfer.v1.QueryDenomTraceRequest",
+      value: QueryDenomTraceRequest.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryDenomTraceResponse(): QueryDenomTraceResponse {
   return {
-    denomTrace: undefined,
+    denomTrace: undefined
   };
 }
 export const QueryDenomTraceResponse = {
-  typeUrl: '/ibc.applications.transfer.v1.QueryDenomTraceResponse' as const,
-  encode(
-    message: QueryDenomTraceResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/ibc.applications.transfer.v1.QueryDenomTraceResponse" as const,
+  encode(message: QueryDenomTraceResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.denomTrace !== undefined) {
       DenomTrace.encode(message.denomTrace, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryDenomTraceResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryDenomTraceResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryDenomTraceResponse();
     while (reader.pos < end) {
@@ -315,68 +286,47 @@ export const QueryDenomTraceResponse = {
   },
   fromJSON(object: any): QueryDenomTraceResponse {
     return {
-      denomTrace: isSet(object.denomTrace)
-        ? DenomTrace.fromJSON(object.denomTrace)
-        : undefined,
+      denomTrace: isSet(object.denomTrace) ? DenomTrace.fromJSON(object.denomTrace) : undefined
     };
   },
   toJSON(message: QueryDenomTraceResponse): JsonSafe<QueryDenomTraceResponse> {
     const obj: any = {};
-    message.denomTrace !== undefined &&
-      (obj.denomTrace = message.denomTrace
-        ? DenomTrace.toJSON(message.denomTrace)
-        : undefined);
+    message.denomTrace !== undefined && (obj.denomTrace = message.denomTrace ? DenomTrace.toJSON(message.denomTrace) : undefined);
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryDenomTraceResponse>,
-  ): QueryDenomTraceResponse {
+  fromPartial(object: Partial<QueryDenomTraceResponse>): QueryDenomTraceResponse {
     const message = createBaseQueryDenomTraceResponse();
-    message.denomTrace =
-      object.denomTrace !== undefined && object.denomTrace !== null
-        ? DenomTrace.fromPartial(object.denomTrace)
-        : undefined;
+    message.denomTrace = object.denomTrace !== undefined && object.denomTrace !== null ? DenomTrace.fromPartial(object.denomTrace) : undefined;
     return message;
   },
-  fromProtoMsg(
-    message: QueryDenomTraceResponseProtoMsg,
-  ): QueryDenomTraceResponse {
+  fromProtoMsg(message: QueryDenomTraceResponseProtoMsg): QueryDenomTraceResponse {
     return QueryDenomTraceResponse.decode(message.value);
   },
   toProto(message: QueryDenomTraceResponse): Uint8Array {
     return QueryDenomTraceResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryDenomTraceResponse,
-  ): QueryDenomTraceResponseProtoMsg {
+  toProtoMsg(message: QueryDenomTraceResponse): QueryDenomTraceResponseProtoMsg {
     return {
-      typeUrl: '/ibc.applications.transfer.v1.QueryDenomTraceResponse',
-      value: QueryDenomTraceResponse.encode(message).finish(),
+      typeUrl: "/ibc.applications.transfer.v1.QueryDenomTraceResponse",
+      value: QueryDenomTraceResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryDenomTracesRequest(): QueryDenomTracesRequest {
   return {
-    pagination: undefined,
+    pagination: undefined
   };
 }
 export const QueryDenomTracesRequest = {
-  typeUrl: '/ibc.applications.transfer.v1.QueryDenomTracesRequest' as const,
-  encode(
-    message: QueryDenomTracesRequest,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/ibc.applications.transfer.v1.QueryDenomTracesRequest" as const,
+  encode(message: QueryDenomTracesRequest, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.pagination !== undefined) {
       PageRequest.encode(message.pagination, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryDenomTracesRequest {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryDenomTracesRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryDenomTracesRequest();
     while (reader.pos < end) {
@@ -394,75 +344,51 @@ export const QueryDenomTracesRequest = {
   },
   fromJSON(object: any): QueryDenomTracesRequest {
     return {
-      pagination: isSet(object.pagination)
-        ? PageRequest.fromJSON(object.pagination)
-        : undefined,
+      pagination: isSet(object.pagination) ? PageRequest.fromJSON(object.pagination) : undefined
     };
   },
   toJSON(message: QueryDenomTracesRequest): JsonSafe<QueryDenomTracesRequest> {
     const obj: any = {};
-    message.pagination !== undefined &&
-      (obj.pagination = message.pagination
-        ? PageRequest.toJSON(message.pagination)
-        : undefined);
+    message.pagination !== undefined && (obj.pagination = message.pagination ? PageRequest.toJSON(message.pagination) : undefined);
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryDenomTracesRequest>,
-  ): QueryDenomTracesRequest {
+  fromPartial(object: Partial<QueryDenomTracesRequest>): QueryDenomTracesRequest {
     const message = createBaseQueryDenomTracesRequest();
-    message.pagination =
-      object.pagination !== undefined && object.pagination !== null
-        ? PageRequest.fromPartial(object.pagination)
-        : undefined;
+    message.pagination = object.pagination !== undefined && object.pagination !== null ? PageRequest.fromPartial(object.pagination) : undefined;
     return message;
   },
-  fromProtoMsg(
-    message: QueryDenomTracesRequestProtoMsg,
-  ): QueryDenomTracesRequest {
+  fromProtoMsg(message: QueryDenomTracesRequestProtoMsg): QueryDenomTracesRequest {
     return QueryDenomTracesRequest.decode(message.value);
   },
   toProto(message: QueryDenomTracesRequest): Uint8Array {
     return QueryDenomTracesRequest.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryDenomTracesRequest,
-  ): QueryDenomTracesRequestProtoMsg {
+  toProtoMsg(message: QueryDenomTracesRequest): QueryDenomTracesRequestProtoMsg {
     return {
-      typeUrl: '/ibc.applications.transfer.v1.QueryDenomTracesRequest',
-      value: QueryDenomTracesRequest.encode(message).finish(),
+      typeUrl: "/ibc.applications.transfer.v1.QueryDenomTracesRequest",
+      value: QueryDenomTracesRequest.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryDenomTracesResponse(): QueryDenomTracesResponse {
   return {
     denomTraces: [],
-    pagination: undefined,
+    pagination: undefined
   };
 }
 export const QueryDenomTracesResponse = {
-  typeUrl: '/ibc.applications.transfer.v1.QueryDenomTracesResponse' as const,
-  encode(
-    message: QueryDenomTracesResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/ibc.applications.transfer.v1.QueryDenomTracesResponse" as const,
+  encode(message: QueryDenomTracesResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     for (const v of message.denomTraces) {
       DenomTrace.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     if (message.pagination !== undefined) {
-      PageResponse.encode(
-        message.pagination,
-        writer.uint32(18).fork(),
-      ).ldelim();
+      PageResponse.encode(message.pagination, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryDenomTracesResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryDenomTracesResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryDenomTracesResponse();
     while (reader.pos < end) {
@@ -483,77 +409,49 @@ export const QueryDenomTracesResponse = {
   },
   fromJSON(object: any): QueryDenomTracesResponse {
     return {
-      denomTraces: Array.isArray(object?.denomTraces)
-        ? object.denomTraces.map((e: any) => DenomTrace.fromJSON(e))
-        : [],
-      pagination: isSet(object.pagination)
-        ? PageResponse.fromJSON(object.pagination)
-        : undefined,
+      denomTraces: Array.isArray(object?.denomTraces) ? object.denomTraces.map((e: any) => DenomTrace.fromJSON(e)) : [],
+      pagination: isSet(object.pagination) ? PageResponse.fromJSON(object.pagination) : undefined
     };
   },
-  toJSON(
-    message: QueryDenomTracesResponse,
-  ): JsonSafe<QueryDenomTracesResponse> {
+  toJSON(message: QueryDenomTracesResponse): JsonSafe<QueryDenomTracesResponse> {
     const obj: any = {};
     if (message.denomTraces) {
-      obj.denomTraces = message.denomTraces.map(e =>
-        e ? DenomTrace.toJSON(e) : undefined,
-      );
+      obj.denomTraces = message.denomTraces.map(e => e ? DenomTrace.toJSON(e) : undefined);
     } else {
       obj.denomTraces = [];
     }
-    message.pagination !== undefined &&
-      (obj.pagination = message.pagination
-        ? PageResponse.toJSON(message.pagination)
-        : undefined);
+    message.pagination !== undefined && (obj.pagination = message.pagination ? PageResponse.toJSON(message.pagination) : undefined);
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryDenomTracesResponse>,
-  ): QueryDenomTracesResponse {
+  fromPartial(object: Partial<QueryDenomTracesResponse>): QueryDenomTracesResponse {
     const message = createBaseQueryDenomTracesResponse();
-    message.denomTraces =
-      object.denomTraces?.map(e => DenomTrace.fromPartial(e)) || [];
-    message.pagination =
-      object.pagination !== undefined && object.pagination !== null
-        ? PageResponse.fromPartial(object.pagination)
-        : undefined;
+    message.denomTraces = object.denomTraces?.map(e => DenomTrace.fromPartial(e)) || [];
+    message.pagination = object.pagination !== undefined && object.pagination !== null ? PageResponse.fromPartial(object.pagination) : undefined;
     return message;
   },
-  fromProtoMsg(
-    message: QueryDenomTracesResponseProtoMsg,
-  ): QueryDenomTracesResponse {
+  fromProtoMsg(message: QueryDenomTracesResponseProtoMsg): QueryDenomTracesResponse {
     return QueryDenomTracesResponse.decode(message.value);
   },
   toProto(message: QueryDenomTracesResponse): Uint8Array {
     return QueryDenomTracesResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryDenomTracesResponse,
-  ): QueryDenomTracesResponseProtoMsg {
+  toProtoMsg(message: QueryDenomTracesResponse): QueryDenomTracesResponseProtoMsg {
     return {
-      typeUrl: '/ibc.applications.transfer.v1.QueryDenomTracesResponse',
-      value: QueryDenomTracesResponse.encode(message).finish(),
+      typeUrl: "/ibc.applications.transfer.v1.QueryDenomTracesResponse",
+      value: QueryDenomTracesResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryParamsRequest(): QueryParamsRequest {
   return {};
 }
 export const QueryParamsRequest = {
-  typeUrl: '/ibc.applications.transfer.v1.QueryParamsRequest' as const,
-  encode(
-    _: QueryParamsRequest,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/ibc.applications.transfer.v1.QueryParamsRequest" as const,
+  encode(_: QueryParamsRequest, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryParamsRequest {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryParamsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryParamsRequest();
     while (reader.pos < end) {
@@ -585,33 +483,26 @@ export const QueryParamsRequest = {
   },
   toProtoMsg(message: QueryParamsRequest): QueryParamsRequestProtoMsg {
     return {
-      typeUrl: '/ibc.applications.transfer.v1.QueryParamsRequest',
-      value: QueryParamsRequest.encode(message).finish(),
+      typeUrl: "/ibc.applications.transfer.v1.QueryParamsRequest",
+      value: QueryParamsRequest.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryParamsResponse(): QueryParamsResponse {
   return {
-    params: undefined,
+    params: undefined
   };
 }
 export const QueryParamsResponse = {
-  typeUrl: '/ibc.applications.transfer.v1.QueryParamsResponse' as const,
-  encode(
-    message: QueryParamsResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/ibc.applications.transfer.v1.QueryParamsResponse" as const,
+  encode(message: QueryParamsResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.params !== undefined) {
       Params.encode(message.params, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryParamsResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryParamsResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryParamsResponse();
     while (reader.pos < end) {
@@ -629,21 +520,17 @@ export const QueryParamsResponse = {
   },
   fromJSON(object: any): QueryParamsResponse {
     return {
-      params: isSet(object.params) ? Params.fromJSON(object.params) : undefined,
+      params: isSet(object.params) ? Params.fromJSON(object.params) : undefined
     };
   },
   toJSON(message: QueryParamsResponse): JsonSafe<QueryParamsResponse> {
     const obj: any = {};
-    message.params !== undefined &&
-      (obj.params = message.params ? Params.toJSON(message.params) : undefined);
+    message.params !== undefined && (obj.params = message.params ? Params.toJSON(message.params) : undefined);
     return obj;
   },
   fromPartial(object: Partial<QueryParamsResponse>): QueryParamsResponse {
     const message = createBaseQueryParamsResponse();
-    message.params =
-      object.params !== undefined && object.params !== null
-        ? Params.fromPartial(object.params)
-        : undefined;
+    message.params = object.params !== undefined && object.params !== null ? Params.fromPartial(object.params) : undefined;
     return message;
   },
   fromProtoMsg(message: QueryParamsResponseProtoMsg): QueryParamsResponse {
@@ -654,33 +541,26 @@ export const QueryParamsResponse = {
   },
   toProtoMsg(message: QueryParamsResponse): QueryParamsResponseProtoMsg {
     return {
-      typeUrl: '/ibc.applications.transfer.v1.QueryParamsResponse',
-      value: QueryParamsResponse.encode(message).finish(),
+      typeUrl: "/ibc.applications.transfer.v1.QueryParamsResponse",
+      value: QueryParamsResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryDenomHashRequest(): QueryDenomHashRequest {
   return {
-    trace: '',
+    trace: ""
   };
 }
 export const QueryDenomHashRequest = {
-  typeUrl: '/ibc.applications.transfer.v1.QueryDenomHashRequest' as const,
-  encode(
-    message: QueryDenomHashRequest,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.trace !== '') {
+  typeUrl: "/ibc.applications.transfer.v1.QueryDenomHashRequest" as const,
+  encode(message: QueryDenomHashRequest, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.trace !== "") {
       writer.uint32(10).string(message.trace);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryDenomHashRequest {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryDenomHashRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryDenomHashRequest();
     while (reader.pos < end) {
@@ -698,7 +578,7 @@ export const QueryDenomHashRequest = {
   },
   fromJSON(object: any): QueryDenomHashRequest {
     return {
-      trace: isSet(object.trace) ? String(object.trace) : '',
+      trace: isSet(object.trace) ? String(object.trace) : ""
     };
   },
   toJSON(message: QueryDenomHashRequest): JsonSafe<QueryDenomHashRequest> {
@@ -708,7 +588,7 @@ export const QueryDenomHashRequest = {
   },
   fromPartial(object: Partial<QueryDenomHashRequest>): QueryDenomHashRequest {
     const message = createBaseQueryDenomHashRequest();
-    message.trace = object.trace ?? '';
+    message.trace = object.trace ?? "";
     return message;
   },
   fromProtoMsg(message: QueryDenomHashRequestProtoMsg): QueryDenomHashRequest {
@@ -719,33 +599,26 @@ export const QueryDenomHashRequest = {
   },
   toProtoMsg(message: QueryDenomHashRequest): QueryDenomHashRequestProtoMsg {
     return {
-      typeUrl: '/ibc.applications.transfer.v1.QueryDenomHashRequest',
-      value: QueryDenomHashRequest.encode(message).finish(),
+      typeUrl: "/ibc.applications.transfer.v1.QueryDenomHashRequest",
+      value: QueryDenomHashRequest.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryDenomHashResponse(): QueryDenomHashResponse {
   return {
-    hash: '',
+    hash: ""
   };
 }
 export const QueryDenomHashResponse = {
-  typeUrl: '/ibc.applications.transfer.v1.QueryDenomHashResponse' as const,
-  encode(
-    message: QueryDenomHashResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.hash !== '') {
+  typeUrl: "/ibc.applications.transfer.v1.QueryDenomHashResponse" as const,
+  encode(message: QueryDenomHashResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.hash !== "") {
       writer.uint32(10).string(message.hash);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryDenomHashResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryDenomHashResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryDenomHashResponse();
     while (reader.pos < end) {
@@ -763,7 +636,7 @@ export const QueryDenomHashResponse = {
   },
   fromJSON(object: any): QueryDenomHashResponse {
     return {
-      hash: isSet(object.hash) ? String(object.hash) : '',
+      hash: isSet(object.hash) ? String(object.hash) : ""
     };
   },
   toJSON(message: QueryDenomHashResponse): JsonSafe<QueryDenomHashResponse> {
@@ -773,12 +646,10 @@ export const QueryDenomHashResponse = {
   },
   fromPartial(object: Partial<QueryDenomHashResponse>): QueryDenomHashResponse {
     const message = createBaseQueryDenomHashResponse();
-    message.hash = object.hash ?? '';
+    message.hash = object.hash ?? "";
     return message;
   },
-  fromProtoMsg(
-    message: QueryDenomHashResponseProtoMsg,
-  ): QueryDenomHashResponse {
+  fromProtoMsg(message: QueryDenomHashResponseProtoMsg): QueryDenomHashResponse {
     return QueryDenomHashResponse.decode(message.value);
   },
   toProto(message: QueryDenomHashResponse): Uint8Array {
@@ -786,37 +657,30 @@ export const QueryDenomHashResponse = {
   },
   toProtoMsg(message: QueryDenomHashResponse): QueryDenomHashResponseProtoMsg {
     return {
-      typeUrl: '/ibc.applications.transfer.v1.QueryDenomHashResponse',
-      value: QueryDenomHashResponse.encode(message).finish(),
+      typeUrl: "/ibc.applications.transfer.v1.QueryDenomHashResponse",
+      value: QueryDenomHashResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryEscrowAddressRequest(): QueryEscrowAddressRequest {
   return {
-    portId: '',
-    channelId: '',
+    portId: "",
+    channelId: ""
   };
 }
 export const QueryEscrowAddressRequest = {
-  typeUrl: '/ibc.applications.transfer.v1.QueryEscrowAddressRequest' as const,
-  encode(
-    message: QueryEscrowAddressRequest,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.portId !== '') {
+  typeUrl: "/ibc.applications.transfer.v1.QueryEscrowAddressRequest" as const,
+  encode(message: QueryEscrowAddressRequest, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.portId !== "") {
       writer.uint32(10).string(message.portId);
     }
-    if (message.channelId !== '') {
+    if (message.channelId !== "") {
       writer.uint32(18).string(message.channelId);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryEscrowAddressRequest {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryEscrowAddressRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryEscrowAddressRequest();
     while (reader.pos < end) {
@@ -837,65 +701,50 @@ export const QueryEscrowAddressRequest = {
   },
   fromJSON(object: any): QueryEscrowAddressRequest {
     return {
-      portId: isSet(object.portId) ? String(object.portId) : '',
-      channelId: isSet(object.channelId) ? String(object.channelId) : '',
+      portId: isSet(object.portId) ? String(object.portId) : "",
+      channelId: isSet(object.channelId) ? String(object.channelId) : ""
     };
   },
-  toJSON(
-    message: QueryEscrowAddressRequest,
-  ): JsonSafe<QueryEscrowAddressRequest> {
+  toJSON(message: QueryEscrowAddressRequest): JsonSafe<QueryEscrowAddressRequest> {
     const obj: any = {};
     message.portId !== undefined && (obj.portId = message.portId);
     message.channelId !== undefined && (obj.channelId = message.channelId);
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryEscrowAddressRequest>,
-  ): QueryEscrowAddressRequest {
+  fromPartial(object: Partial<QueryEscrowAddressRequest>): QueryEscrowAddressRequest {
     const message = createBaseQueryEscrowAddressRequest();
-    message.portId = object.portId ?? '';
-    message.channelId = object.channelId ?? '';
+    message.portId = object.portId ?? "";
+    message.channelId = object.channelId ?? "";
     return message;
   },
-  fromProtoMsg(
-    message: QueryEscrowAddressRequestProtoMsg,
-  ): QueryEscrowAddressRequest {
+  fromProtoMsg(message: QueryEscrowAddressRequestProtoMsg): QueryEscrowAddressRequest {
     return QueryEscrowAddressRequest.decode(message.value);
   },
   toProto(message: QueryEscrowAddressRequest): Uint8Array {
     return QueryEscrowAddressRequest.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryEscrowAddressRequest,
-  ): QueryEscrowAddressRequestProtoMsg {
+  toProtoMsg(message: QueryEscrowAddressRequest): QueryEscrowAddressRequestProtoMsg {
     return {
-      typeUrl: '/ibc.applications.transfer.v1.QueryEscrowAddressRequest',
-      value: QueryEscrowAddressRequest.encode(message).finish(),
+      typeUrl: "/ibc.applications.transfer.v1.QueryEscrowAddressRequest",
+      value: QueryEscrowAddressRequest.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryEscrowAddressResponse(): QueryEscrowAddressResponse {
   return {
-    escrowAddress: '',
+    escrowAddress: ""
   };
 }
 export const QueryEscrowAddressResponse = {
-  typeUrl: '/ibc.applications.transfer.v1.QueryEscrowAddressResponse' as const,
-  encode(
-    message: QueryEscrowAddressResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.escrowAddress !== '') {
+  typeUrl: "/ibc.applications.transfer.v1.QueryEscrowAddressResponse" as const,
+  encode(message: QueryEscrowAddressResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.escrowAddress !== "") {
       writer.uint32(10).string(message.escrowAddress);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryEscrowAddressResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryEscrowAddressResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryEscrowAddressResponse();
     while (reader.pos < end) {
@@ -913,66 +762,47 @@ export const QueryEscrowAddressResponse = {
   },
   fromJSON(object: any): QueryEscrowAddressResponse {
     return {
-      escrowAddress: isSet(object.escrowAddress)
-        ? String(object.escrowAddress)
-        : '',
+      escrowAddress: isSet(object.escrowAddress) ? String(object.escrowAddress) : ""
     };
   },
-  toJSON(
-    message: QueryEscrowAddressResponse,
-  ): JsonSafe<QueryEscrowAddressResponse> {
+  toJSON(message: QueryEscrowAddressResponse): JsonSafe<QueryEscrowAddressResponse> {
     const obj: any = {};
-    message.escrowAddress !== undefined &&
-      (obj.escrowAddress = message.escrowAddress);
+    message.escrowAddress !== undefined && (obj.escrowAddress = message.escrowAddress);
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryEscrowAddressResponse>,
-  ): QueryEscrowAddressResponse {
+  fromPartial(object: Partial<QueryEscrowAddressResponse>): QueryEscrowAddressResponse {
     const message = createBaseQueryEscrowAddressResponse();
-    message.escrowAddress = object.escrowAddress ?? '';
+    message.escrowAddress = object.escrowAddress ?? "";
     return message;
   },
-  fromProtoMsg(
-    message: QueryEscrowAddressResponseProtoMsg,
-  ): QueryEscrowAddressResponse {
+  fromProtoMsg(message: QueryEscrowAddressResponseProtoMsg): QueryEscrowAddressResponse {
     return QueryEscrowAddressResponse.decode(message.value);
   },
   toProto(message: QueryEscrowAddressResponse): Uint8Array {
     return QueryEscrowAddressResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryEscrowAddressResponse,
-  ): QueryEscrowAddressResponseProtoMsg {
+  toProtoMsg(message: QueryEscrowAddressResponse): QueryEscrowAddressResponseProtoMsg {
     return {
-      typeUrl: '/ibc.applications.transfer.v1.QueryEscrowAddressResponse',
-      value: QueryEscrowAddressResponse.encode(message).finish(),
+      typeUrl: "/ibc.applications.transfer.v1.QueryEscrowAddressResponse",
+      value: QueryEscrowAddressResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryTotalEscrowForDenomRequest(): QueryTotalEscrowForDenomRequest {
   return {
-    denom: '',
+    denom: ""
   };
 }
 export const QueryTotalEscrowForDenomRequest = {
-  typeUrl:
-    '/ibc.applications.transfer.v1.QueryTotalEscrowForDenomRequest' as const,
-  encode(
-    message: QueryTotalEscrowForDenomRequest,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.denom !== '') {
+  typeUrl: "/ibc.applications.transfer.v1.QueryTotalEscrowForDenomRequest" as const,
+  encode(message: QueryTotalEscrowForDenomRequest, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.denom !== "") {
       writer.uint32(10).string(message.denom);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryTotalEscrowForDenomRequest {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryTotalEscrowForDenomRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryTotalEscrowForDenomRequest();
     while (reader.pos < end) {
@@ -990,63 +820,47 @@ export const QueryTotalEscrowForDenomRequest = {
   },
   fromJSON(object: any): QueryTotalEscrowForDenomRequest {
     return {
-      denom: isSet(object.denom) ? String(object.denom) : '',
+      denom: isSet(object.denom) ? String(object.denom) : ""
     };
   },
-  toJSON(
-    message: QueryTotalEscrowForDenomRequest,
-  ): JsonSafe<QueryTotalEscrowForDenomRequest> {
+  toJSON(message: QueryTotalEscrowForDenomRequest): JsonSafe<QueryTotalEscrowForDenomRequest> {
     const obj: any = {};
     message.denom !== undefined && (obj.denom = message.denom);
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryTotalEscrowForDenomRequest>,
-  ): QueryTotalEscrowForDenomRequest {
+  fromPartial(object: Partial<QueryTotalEscrowForDenomRequest>): QueryTotalEscrowForDenomRequest {
     const message = createBaseQueryTotalEscrowForDenomRequest();
-    message.denom = object.denom ?? '';
+    message.denom = object.denom ?? "";
     return message;
   },
-  fromProtoMsg(
-    message: QueryTotalEscrowForDenomRequestProtoMsg,
-  ): QueryTotalEscrowForDenomRequest {
+  fromProtoMsg(message: QueryTotalEscrowForDenomRequestProtoMsg): QueryTotalEscrowForDenomRequest {
     return QueryTotalEscrowForDenomRequest.decode(message.value);
   },
   toProto(message: QueryTotalEscrowForDenomRequest): Uint8Array {
     return QueryTotalEscrowForDenomRequest.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryTotalEscrowForDenomRequest,
-  ): QueryTotalEscrowForDenomRequestProtoMsg {
+  toProtoMsg(message: QueryTotalEscrowForDenomRequest): QueryTotalEscrowForDenomRequestProtoMsg {
     return {
-      typeUrl: '/ibc.applications.transfer.v1.QueryTotalEscrowForDenomRequest',
-      value: QueryTotalEscrowForDenomRequest.encode(message).finish(),
+      typeUrl: "/ibc.applications.transfer.v1.QueryTotalEscrowForDenomRequest",
+      value: QueryTotalEscrowForDenomRequest.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseQueryTotalEscrowForDenomResponse(): QueryTotalEscrowForDenomResponse {
   return {
-    amount: Coin.fromPartial({}),
+    amount: Coin.fromPartial({})
   };
 }
 export const QueryTotalEscrowForDenomResponse = {
-  typeUrl:
-    '/ibc.applications.transfer.v1.QueryTotalEscrowForDenomResponse' as const,
-  encode(
-    message: QueryTotalEscrowForDenomResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/ibc.applications.transfer.v1.QueryTotalEscrowForDenomResponse" as const,
+  encode(message: QueryTotalEscrowForDenomResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.amount !== undefined) {
       Coin.encode(message.amount, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryTotalEscrowForDenomResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryTotalEscrowForDenomResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryTotalEscrowForDenomResponse();
     while (reader.pos < end) {
@@ -1064,41 +878,29 @@ export const QueryTotalEscrowForDenomResponse = {
   },
   fromJSON(object: any): QueryTotalEscrowForDenomResponse {
     return {
-      amount: isSet(object.amount) ? Coin.fromJSON(object.amount) : undefined,
+      amount: isSet(object.amount) ? Coin.fromJSON(object.amount) : undefined
     };
   },
-  toJSON(
-    message: QueryTotalEscrowForDenomResponse,
-  ): JsonSafe<QueryTotalEscrowForDenomResponse> {
+  toJSON(message: QueryTotalEscrowForDenomResponse): JsonSafe<QueryTotalEscrowForDenomResponse> {
     const obj: any = {};
-    message.amount !== undefined &&
-      (obj.amount = message.amount ? Coin.toJSON(message.amount) : undefined);
+    message.amount !== undefined && (obj.amount = message.amount ? Coin.toJSON(message.amount) : undefined);
     return obj;
   },
-  fromPartial(
-    object: Partial<QueryTotalEscrowForDenomResponse>,
-  ): QueryTotalEscrowForDenomResponse {
+  fromPartial(object: Partial<QueryTotalEscrowForDenomResponse>): QueryTotalEscrowForDenomResponse {
     const message = createBaseQueryTotalEscrowForDenomResponse();
-    message.amount =
-      object.amount !== undefined && object.amount !== null
-        ? Coin.fromPartial(object.amount)
-        : undefined;
+    message.amount = object.amount !== undefined && object.amount !== null ? Coin.fromPartial(object.amount) : undefined;
     return message;
   },
-  fromProtoMsg(
-    message: QueryTotalEscrowForDenomResponseProtoMsg,
-  ): QueryTotalEscrowForDenomResponse {
+  fromProtoMsg(message: QueryTotalEscrowForDenomResponseProtoMsg): QueryTotalEscrowForDenomResponse {
     return QueryTotalEscrowForDenomResponse.decode(message.value);
   },
   toProto(message: QueryTotalEscrowForDenomResponse): Uint8Array {
     return QueryTotalEscrowForDenomResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: QueryTotalEscrowForDenomResponse,
-  ): QueryTotalEscrowForDenomResponseProtoMsg {
+  toProtoMsg(message: QueryTotalEscrowForDenomResponse): QueryTotalEscrowForDenomResponseProtoMsg {
     return {
-      typeUrl: '/ibc.applications.transfer.v1.QueryTotalEscrowForDenomResponse',
-      value: QueryTotalEscrowForDenomResponse.encode(message).finish(),
+      typeUrl: "/ibc.applications.transfer.v1.QueryTotalEscrowForDenomResponse",
+      value: QueryTotalEscrowForDenomResponse.encode(message).finish()
     };
-  },
+  }
 };

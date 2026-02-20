@@ -1,17 +1,9 @@
 //@ts-nocheck
-import {
-  Coin,
-  type CoinSDKType,
-} from '../../../../cosmos/base/v1beta1/coin.js';
-import {
-  Height,
-  type HeightSDKType,
-  Params,
-  type ParamsSDKType,
-} from '../../../core/client/v1/client.js';
-import { BinaryReader, BinaryWriter } from '../../../../binary.js';
-import { isSet } from '../../../../helpers.js';
-import { type JsonSafe } from '../../../../json-safe.js';
+import { Coin, type CoinSDKType } from "../../../../cosmos/base/v1beta1/coin.js";
+import { Height, type HeightSDKType, Params, type ParamsSDKType } from "../../../core/client/v1/client.js";
+import { BinaryReader, BinaryWriter } from "../../../../binary.js";
+import { isSet } from "../../../../helpers.js";
+import {type JsonSafe } from "../../../../json-safe.js";
 /**
  * MsgTransfer defines a msg to transfer fungible tokens (i.e Coins) between
  * ICS20 enabled chains. See ICS Spec here:
@@ -42,7 +34,7 @@ export interface MsgTransfer {
   memo: string;
 }
 export interface MsgTransferProtoMsg {
-  typeUrl: '/ibc.applications.transfer.v1.MsgTransfer';
+  typeUrl: "/ibc.applications.transfer.v1.MsgTransfer";
   value: Uint8Array;
 }
 /**
@@ -66,7 +58,7 @@ export interface MsgTransferResponse {
   sequence: bigint;
 }
 export interface MsgTransferResponseProtoMsg {
-  typeUrl: '/ibc.applications.transfer.v1.MsgTransferResponse';
+  typeUrl: "/ibc.applications.transfer.v1.MsgTransferResponse";
   value: Uint8Array;
 }
 /** MsgTransferResponse defines the Msg/Transfer response type. */
@@ -79,13 +71,13 @@ export interface MsgUpdateParams {
   signer: string;
   /**
    * params defines the transfer parameters to update.
-   *
+   * 
    * NOTE: All parameters must be supplied.
    */
   params: Params;
 }
 export interface MsgUpdateParamsProtoMsg {
-  typeUrl: '/ibc.applications.transfer.v1.MsgUpdateParams';
+  typeUrl: "/ibc.applications.transfer.v1.MsgUpdateParams";
   value: Uint8Array;
 }
 /** MsgUpdateParams is the Msg/UpdateParams request type. */
@@ -99,7 +91,7 @@ export interface MsgUpdateParamsSDKType {
  */
 export interface MsgUpdateParamsResponse {}
 export interface MsgUpdateParamsResponseProtoMsg {
-  typeUrl: '/ibc.applications.transfer.v1.MsgUpdateParamsResponse';
+  typeUrl: "/ibc.applications.transfer.v1.MsgUpdateParamsResponse";
   value: Uint8Array;
 }
 /**
@@ -109,35 +101,32 @@ export interface MsgUpdateParamsResponseProtoMsg {
 export interface MsgUpdateParamsResponseSDKType {}
 function createBaseMsgTransfer(): MsgTransfer {
   return {
-    sourcePort: '',
-    sourceChannel: '',
+    sourcePort: "",
+    sourceChannel: "",
     token: Coin.fromPartial({}),
-    sender: '',
-    receiver: '',
+    sender: "",
+    receiver: "",
     timeoutHeight: Height.fromPartial({}),
     timeoutTimestamp: BigInt(0),
-    memo: '',
+    memo: ""
   };
 }
 export const MsgTransfer = {
-  typeUrl: '/ibc.applications.transfer.v1.MsgTransfer' as const,
-  encode(
-    message: MsgTransfer,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.sourcePort !== '') {
+  typeUrl: "/ibc.applications.transfer.v1.MsgTransfer" as const,
+  encode(message: MsgTransfer, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.sourcePort !== "") {
       writer.uint32(10).string(message.sourcePort);
     }
-    if (message.sourceChannel !== '') {
+    if (message.sourceChannel !== "") {
       writer.uint32(18).string(message.sourceChannel);
     }
     if (message.token !== undefined) {
       Coin.encode(message.token, writer.uint32(26).fork()).ldelim();
     }
-    if (message.sender !== '') {
+    if (message.sender !== "") {
       writer.uint32(34).string(message.sender);
     }
-    if (message.receiver !== '') {
+    if (message.receiver !== "") {
       writer.uint32(42).string(message.receiver);
     }
     if (message.timeoutHeight !== undefined) {
@@ -146,14 +135,13 @@ export const MsgTransfer = {
     if (message.timeoutTimestamp !== BigInt(0)) {
       writer.uint32(56).uint64(message.timeoutTimestamp);
     }
-    if (message.memo !== '') {
+    if (message.memo !== "") {
       writer.uint32(66).string(message.memo);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): MsgTransfer {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgTransfer();
     while (reader.pos < end) {
@@ -192,61 +180,38 @@ export const MsgTransfer = {
   },
   fromJSON(object: any): MsgTransfer {
     return {
-      sourcePort: isSet(object.sourcePort) ? String(object.sourcePort) : '',
-      sourceChannel: isSet(object.sourceChannel)
-        ? String(object.sourceChannel)
-        : '',
+      sourcePort: isSet(object.sourcePort) ? String(object.sourcePort) : "",
+      sourceChannel: isSet(object.sourceChannel) ? String(object.sourceChannel) : "",
       token: isSet(object.token) ? Coin.fromJSON(object.token) : undefined,
-      sender: isSet(object.sender) ? String(object.sender) : '',
-      receiver: isSet(object.receiver) ? String(object.receiver) : '',
-      timeoutHeight: isSet(object.timeoutHeight)
-        ? Height.fromJSON(object.timeoutHeight)
-        : undefined,
-      timeoutTimestamp: isSet(object.timeoutTimestamp)
-        ? BigInt(object.timeoutTimestamp.toString())
-        : BigInt(0),
-      memo: isSet(object.memo) ? String(object.memo) : '',
+      sender: isSet(object.sender) ? String(object.sender) : "",
+      receiver: isSet(object.receiver) ? String(object.receiver) : "",
+      timeoutHeight: isSet(object.timeoutHeight) ? Height.fromJSON(object.timeoutHeight) : undefined,
+      timeoutTimestamp: isSet(object.timeoutTimestamp) ? BigInt(object.timeoutTimestamp.toString()) : BigInt(0),
+      memo: isSet(object.memo) ? String(object.memo) : ""
     };
   },
   toJSON(message: MsgTransfer): JsonSafe<MsgTransfer> {
     const obj: any = {};
     message.sourcePort !== undefined && (obj.sourcePort = message.sourcePort);
-    message.sourceChannel !== undefined &&
-      (obj.sourceChannel = message.sourceChannel);
-    message.token !== undefined &&
-      (obj.token = message.token ? Coin.toJSON(message.token) : undefined);
+    message.sourceChannel !== undefined && (obj.sourceChannel = message.sourceChannel);
+    message.token !== undefined && (obj.token = message.token ? Coin.toJSON(message.token) : undefined);
     message.sender !== undefined && (obj.sender = message.sender);
     message.receiver !== undefined && (obj.receiver = message.receiver);
-    message.timeoutHeight !== undefined &&
-      (obj.timeoutHeight = message.timeoutHeight
-        ? Height.toJSON(message.timeoutHeight)
-        : undefined);
-    message.timeoutTimestamp !== undefined &&
-      (obj.timeoutTimestamp = (
-        message.timeoutTimestamp || BigInt(0)
-      ).toString());
+    message.timeoutHeight !== undefined && (obj.timeoutHeight = message.timeoutHeight ? Height.toJSON(message.timeoutHeight) : undefined);
+    message.timeoutTimestamp !== undefined && (obj.timeoutTimestamp = (message.timeoutTimestamp || BigInt(0)).toString());
     message.memo !== undefined && (obj.memo = message.memo);
     return obj;
   },
   fromPartial(object: Partial<MsgTransfer>): MsgTransfer {
     const message = createBaseMsgTransfer();
-    message.sourcePort = object.sourcePort ?? '';
-    message.sourceChannel = object.sourceChannel ?? '';
-    message.token =
-      object.token !== undefined && object.token !== null
-        ? Coin.fromPartial(object.token)
-        : undefined;
-    message.sender = object.sender ?? '';
-    message.receiver = object.receiver ?? '';
-    message.timeoutHeight =
-      object.timeoutHeight !== undefined && object.timeoutHeight !== null
-        ? Height.fromPartial(object.timeoutHeight)
-        : undefined;
-    message.timeoutTimestamp =
-      object.timeoutTimestamp !== undefined && object.timeoutTimestamp !== null
-        ? BigInt(object.timeoutTimestamp.toString())
-        : BigInt(0);
-    message.memo = object.memo ?? '';
+    message.sourcePort = object.sourcePort ?? "";
+    message.sourceChannel = object.sourceChannel ?? "";
+    message.token = object.token !== undefined && object.token !== null ? Coin.fromPartial(object.token) : undefined;
+    message.sender = object.sender ?? "";
+    message.receiver = object.receiver ?? "";
+    message.timeoutHeight = object.timeoutHeight !== undefined && object.timeoutHeight !== null ? Height.fromPartial(object.timeoutHeight) : undefined;
+    message.timeoutTimestamp = object.timeoutTimestamp !== undefined && object.timeoutTimestamp !== null ? BigInt(object.timeoutTimestamp.toString()) : BigInt(0);
+    message.memo = object.memo ?? "";
     return message;
   },
   fromProtoMsg(message: MsgTransferProtoMsg): MsgTransfer {
@@ -257,33 +222,26 @@ export const MsgTransfer = {
   },
   toProtoMsg(message: MsgTransfer): MsgTransferProtoMsg {
     return {
-      typeUrl: '/ibc.applications.transfer.v1.MsgTransfer',
-      value: MsgTransfer.encode(message).finish(),
+      typeUrl: "/ibc.applications.transfer.v1.MsgTransfer",
+      value: MsgTransfer.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgTransferResponse(): MsgTransferResponse {
   return {
-    sequence: BigInt(0),
+    sequence: BigInt(0)
   };
 }
 export const MsgTransferResponse = {
-  typeUrl: '/ibc.applications.transfer.v1.MsgTransferResponse' as const,
-  encode(
-    message: MsgTransferResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/ibc.applications.transfer.v1.MsgTransferResponse" as const,
+  encode(message: MsgTransferResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.sequence !== BigInt(0)) {
       writer.uint32(8).uint64(message.sequence);
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgTransferResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgTransferResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgTransferResponse();
     while (reader.pos < end) {
@@ -301,23 +259,17 @@ export const MsgTransferResponse = {
   },
   fromJSON(object: any): MsgTransferResponse {
     return {
-      sequence: isSet(object.sequence)
-        ? BigInt(object.sequence.toString())
-        : BigInt(0),
+      sequence: isSet(object.sequence) ? BigInt(object.sequence.toString()) : BigInt(0)
     };
   },
   toJSON(message: MsgTransferResponse): JsonSafe<MsgTransferResponse> {
     const obj: any = {};
-    message.sequence !== undefined &&
-      (obj.sequence = (message.sequence || BigInt(0)).toString());
+    message.sequence !== undefined && (obj.sequence = (message.sequence || BigInt(0)).toString());
     return obj;
   },
   fromPartial(object: Partial<MsgTransferResponse>): MsgTransferResponse {
     const message = createBaseMsgTransferResponse();
-    message.sequence =
-      object.sequence !== undefined && object.sequence !== null
-        ? BigInt(object.sequence.toString())
-        : BigInt(0);
+    message.sequence = object.sequence !== undefined && object.sequence !== null ? BigInt(object.sequence.toString()) : BigInt(0);
     return message;
   },
   fromProtoMsg(message: MsgTransferResponseProtoMsg): MsgTransferResponse {
@@ -328,24 +280,21 @@ export const MsgTransferResponse = {
   },
   toProtoMsg(message: MsgTransferResponse): MsgTransferResponseProtoMsg {
     return {
-      typeUrl: '/ibc.applications.transfer.v1.MsgTransferResponse',
-      value: MsgTransferResponse.encode(message).finish(),
+      typeUrl: "/ibc.applications.transfer.v1.MsgTransferResponse",
+      value: MsgTransferResponse.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgUpdateParams(): MsgUpdateParams {
   return {
-    signer: '',
-    params: Params.fromPartial({}),
+    signer: "",
+    params: Params.fromPartial({})
   };
 }
 export const MsgUpdateParams = {
-  typeUrl: '/ibc.applications.transfer.v1.MsgUpdateParams' as const,
-  encode(
-    message: MsgUpdateParams,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.signer !== '') {
+  typeUrl: "/ibc.applications.transfer.v1.MsgUpdateParams" as const,
+  encode(message: MsgUpdateParams, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.signer !== "") {
       writer.uint32(10).string(message.signer);
     }
     if (message.params !== undefined) {
@@ -354,8 +303,7 @@ export const MsgUpdateParams = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): MsgUpdateParams {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgUpdateParams();
     while (reader.pos < end) {
@@ -376,24 +324,20 @@ export const MsgUpdateParams = {
   },
   fromJSON(object: any): MsgUpdateParams {
     return {
-      signer: isSet(object.signer) ? String(object.signer) : '',
-      params: isSet(object.params) ? Params.fromJSON(object.params) : undefined,
+      signer: isSet(object.signer) ? String(object.signer) : "",
+      params: isSet(object.params) ? Params.fromJSON(object.params) : undefined
     };
   },
   toJSON(message: MsgUpdateParams): JsonSafe<MsgUpdateParams> {
     const obj: any = {};
     message.signer !== undefined && (obj.signer = message.signer);
-    message.params !== undefined &&
-      (obj.params = message.params ? Params.toJSON(message.params) : undefined);
+    message.params !== undefined && (obj.params = message.params ? Params.toJSON(message.params) : undefined);
     return obj;
   },
   fromPartial(object: Partial<MsgUpdateParams>): MsgUpdateParams {
     const message = createBaseMsgUpdateParams();
-    message.signer = object.signer ?? '';
-    message.params =
-      object.params !== undefined && object.params !== null
-        ? Params.fromPartial(object.params)
-        : undefined;
+    message.signer = object.signer ?? "";
+    message.params = object.params !== undefined && object.params !== null ? Params.fromPartial(object.params) : undefined;
     return message;
   },
   fromProtoMsg(message: MsgUpdateParamsProtoMsg): MsgUpdateParams {
@@ -404,28 +348,21 @@ export const MsgUpdateParams = {
   },
   toProtoMsg(message: MsgUpdateParams): MsgUpdateParamsProtoMsg {
     return {
-      typeUrl: '/ibc.applications.transfer.v1.MsgUpdateParams',
-      value: MsgUpdateParams.encode(message).finish(),
+      typeUrl: "/ibc.applications.transfer.v1.MsgUpdateParams",
+      value: MsgUpdateParams.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgUpdateParamsResponse(): MsgUpdateParamsResponse {
   return {};
 }
 export const MsgUpdateParamsResponse = {
-  typeUrl: '/ibc.applications.transfer.v1.MsgUpdateParamsResponse' as const,
-  encode(
-    _: MsgUpdateParamsResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/ibc.applications.transfer.v1.MsgUpdateParamsResponse" as const,
+  encode(_: MsgUpdateParamsResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgUpdateParamsResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgUpdateParamsResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgUpdateParamsResponse();
     while (reader.pos < end) {
@@ -449,20 +386,16 @@ export const MsgUpdateParamsResponse = {
     const message = createBaseMsgUpdateParamsResponse();
     return message;
   },
-  fromProtoMsg(
-    message: MsgUpdateParamsResponseProtoMsg,
-  ): MsgUpdateParamsResponse {
+  fromProtoMsg(message: MsgUpdateParamsResponseProtoMsg): MsgUpdateParamsResponse {
     return MsgUpdateParamsResponse.decode(message.value);
   },
   toProto(message: MsgUpdateParamsResponse): Uint8Array {
     return MsgUpdateParamsResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: MsgUpdateParamsResponse,
-  ): MsgUpdateParamsResponseProtoMsg {
+  toProtoMsg(message: MsgUpdateParamsResponse): MsgUpdateParamsResponseProtoMsg {
     return {
-      typeUrl: '/ibc.applications.transfer.v1.MsgUpdateParamsResponse',
-      value: MsgUpdateParamsResponse.encode(message).finish(),
+      typeUrl: "/ibc.applications.transfer.v1.MsgUpdateParamsResponse",
+      value: MsgUpdateParamsResponse.encode(message).finish()
     };
-  },
+  }
 };

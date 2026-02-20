@@ -1,21 +1,21 @@
 //@ts-nocheck
-import { BinaryReader, BinaryWriter } from '../../../binary.js';
-import { isSet } from '../../../helpers.js';
-import { type JsonSafe } from '../../../json-safe.js';
+import { BinaryReader, BinaryWriter } from "../../../binary.js";
+import { isSet } from "../../../helpers.js";
+import {type JsonSafe } from "../../../json-safe.js";
 /** ParameterChangeProposal defines a proposal to change one or more parameters. */
 export interface ParameterChangeProposal {
-  $typeUrl?: '/cosmos.params.v1beta1.ParameterChangeProposal';
+  $typeUrl?: "/cosmos.params.v1beta1.ParameterChangeProposal";
   title: string;
   description: string;
   changes: ParamChange[];
 }
 export interface ParameterChangeProposalProtoMsg {
-  typeUrl: '/cosmos.params.v1beta1.ParameterChangeProposal';
+  typeUrl: "/cosmos.params.v1beta1.ParameterChangeProposal";
   value: Uint8Array;
 }
 /** ParameterChangeProposal defines a proposal to change one or more parameters. */
 export interface ParameterChangeProposalSDKType {
-  $typeUrl?: '/cosmos.params.v1beta1.ParameterChangeProposal';
+  $typeUrl?: "/cosmos.params.v1beta1.ParameterChangeProposal";
   title: string;
   description: string;
   changes: ParamChangeSDKType[];
@@ -30,7 +30,7 @@ export interface ParamChange {
   value: string;
 }
 export interface ParamChangeProtoMsg {
-  typeUrl: '/cosmos.params.v1beta1.ParamChange';
+  typeUrl: "/cosmos.params.v1beta1.ParamChange";
   value: Uint8Array;
 }
 /**
@@ -44,22 +44,19 @@ export interface ParamChangeSDKType {
 }
 function createBaseParameterChangeProposal(): ParameterChangeProposal {
   return {
-    $typeUrl: '/cosmos.params.v1beta1.ParameterChangeProposal',
-    title: '',
-    description: '',
-    changes: [],
+    $typeUrl: "/cosmos.params.v1beta1.ParameterChangeProposal",
+    title: "",
+    description: "",
+    changes: []
   };
 }
 export const ParameterChangeProposal = {
-  typeUrl: '/cosmos.params.v1beta1.ParameterChangeProposal' as const,
-  encode(
-    message: ParameterChangeProposal,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.title !== '') {
+  typeUrl: "/cosmos.params.v1beta1.ParameterChangeProposal" as const,
+  encode(message: ParameterChangeProposal, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.title !== "") {
       writer.uint32(10).string(message.title);
     }
-    if (message.description !== '') {
+    if (message.description !== "") {
       writer.uint32(18).string(message.description);
     }
     for (const v of message.changes) {
@@ -67,12 +64,8 @@ export const ParameterChangeProposal = {
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): ParameterChangeProposal {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): ParameterChangeProposal {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseParameterChangeProposal();
     while (reader.pos < end) {
@@ -96,81 +89,65 @@ export const ParameterChangeProposal = {
   },
   fromJSON(object: any): ParameterChangeProposal {
     return {
-      title: isSet(object.title) ? String(object.title) : '',
-      description: isSet(object.description) ? String(object.description) : '',
-      changes: Array.isArray(object?.changes)
-        ? object.changes.map((e: any) => ParamChange.fromJSON(e))
-        : [],
+      title: isSet(object.title) ? String(object.title) : "",
+      description: isSet(object.description) ? String(object.description) : "",
+      changes: Array.isArray(object?.changes) ? object.changes.map((e: any) => ParamChange.fromJSON(e)) : []
     };
   },
   toJSON(message: ParameterChangeProposal): JsonSafe<ParameterChangeProposal> {
     const obj: any = {};
     message.title !== undefined && (obj.title = message.title);
-    message.description !== undefined &&
-      (obj.description = message.description);
+    message.description !== undefined && (obj.description = message.description);
     if (message.changes) {
-      obj.changes = message.changes.map(e =>
-        e ? ParamChange.toJSON(e) : undefined,
-      );
+      obj.changes = message.changes.map(e => e ? ParamChange.toJSON(e) : undefined);
     } else {
       obj.changes = [];
     }
     return obj;
   },
-  fromPartial(
-    object: Partial<ParameterChangeProposal>,
-  ): ParameterChangeProposal {
+  fromPartial(object: Partial<ParameterChangeProposal>): ParameterChangeProposal {
     const message = createBaseParameterChangeProposal();
-    message.title = object.title ?? '';
-    message.description = object.description ?? '';
-    message.changes =
-      object.changes?.map(e => ParamChange.fromPartial(e)) || [];
+    message.title = object.title ?? "";
+    message.description = object.description ?? "";
+    message.changes = object.changes?.map(e => ParamChange.fromPartial(e)) || [];
     return message;
   },
-  fromProtoMsg(
-    message: ParameterChangeProposalProtoMsg,
-  ): ParameterChangeProposal {
+  fromProtoMsg(message: ParameterChangeProposalProtoMsg): ParameterChangeProposal {
     return ParameterChangeProposal.decode(message.value);
   },
   toProto(message: ParameterChangeProposal): Uint8Array {
     return ParameterChangeProposal.encode(message).finish();
   },
-  toProtoMsg(
-    message: ParameterChangeProposal,
-  ): ParameterChangeProposalProtoMsg {
+  toProtoMsg(message: ParameterChangeProposal): ParameterChangeProposalProtoMsg {
     return {
-      typeUrl: '/cosmos.params.v1beta1.ParameterChangeProposal',
-      value: ParameterChangeProposal.encode(message).finish(),
+      typeUrl: "/cosmos.params.v1beta1.ParameterChangeProposal",
+      value: ParameterChangeProposal.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseParamChange(): ParamChange {
   return {
-    subspace: '',
-    key: '',
-    value: '',
+    subspace: "",
+    key: "",
+    value: ""
   };
 }
 export const ParamChange = {
-  typeUrl: '/cosmos.params.v1beta1.ParamChange' as const,
-  encode(
-    message: ParamChange,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.subspace !== '') {
+  typeUrl: "/cosmos.params.v1beta1.ParamChange" as const,
+  encode(message: ParamChange, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.subspace !== "") {
       writer.uint32(10).string(message.subspace);
     }
-    if (message.key !== '') {
+    if (message.key !== "") {
       writer.uint32(18).string(message.key);
     }
-    if (message.value !== '') {
+    if (message.value !== "") {
       writer.uint32(26).string(message.value);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): ParamChange {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseParamChange();
     while (reader.pos < end) {
@@ -194,9 +171,9 @@ export const ParamChange = {
   },
   fromJSON(object: any): ParamChange {
     return {
-      subspace: isSet(object.subspace) ? String(object.subspace) : '',
-      key: isSet(object.key) ? String(object.key) : '',
-      value: isSet(object.value) ? String(object.value) : '',
+      subspace: isSet(object.subspace) ? String(object.subspace) : "",
+      key: isSet(object.key) ? String(object.key) : "",
+      value: isSet(object.value) ? String(object.value) : ""
     };
   },
   toJSON(message: ParamChange): JsonSafe<ParamChange> {
@@ -208,9 +185,9 @@ export const ParamChange = {
   },
   fromPartial(object: Partial<ParamChange>): ParamChange {
     const message = createBaseParamChange();
-    message.subspace = object.subspace ?? '';
-    message.key = object.key ?? '';
-    message.value = object.value ?? '';
+    message.subspace = object.subspace ?? "";
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
     return message;
   },
   fromProtoMsg(message: ParamChangeProtoMsg): ParamChange {
@@ -221,8 +198,8 @@ export const ParamChange = {
   },
   toProtoMsg(message: ParamChange): ParamChangeProtoMsg {
     return {
-      typeUrl: '/cosmos.params.v1beta1.ParamChange',
-      value: ParamChange.encode(message).finish(),
+      typeUrl: "/cosmos.params.v1beta1.ParamChange",
+      value: ParamChange.encode(message).finish()
     };
-  },
+  }
 };

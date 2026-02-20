@@ -1,7 +1,7 @@
 //@ts-nocheck
-import { BinaryReader, BinaryWriter } from '../../binary.js';
-import { isSet } from '../../helpers.js';
-import { type JsonSafe } from '../../json-safe.js';
+import { BinaryReader, BinaryWriter } from "../../binary.js";
+import { isSet } from "../../helpers.js";
+import {type JsonSafe } from "../../json-safe.js";
 export interface EpochTracker {
   epochIdentifier: string;
   epochNumber: bigint;
@@ -9,7 +9,7 @@ export interface EpochTracker {
   duration: bigint;
 }
 export interface EpochTrackerProtoMsg {
-  typeUrl: '/stride.stakeibc.EpochTracker';
+  typeUrl: "/stride.stakeibc.EpochTracker";
   value: Uint8Array;
 }
 export interface EpochTrackerSDKType {
@@ -20,19 +20,16 @@ export interface EpochTrackerSDKType {
 }
 function createBaseEpochTracker(): EpochTracker {
   return {
-    epochIdentifier: '',
+    epochIdentifier: "",
     epochNumber: BigInt(0),
     nextEpochStartTime: BigInt(0),
-    duration: BigInt(0),
+    duration: BigInt(0)
   };
 }
 export const EpochTracker = {
-  typeUrl: '/stride.stakeibc.EpochTracker' as const,
-  encode(
-    message: EpochTracker,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.epochIdentifier !== '') {
+  typeUrl: "/stride.stakeibc.EpochTracker" as const,
+  encode(message: EpochTracker, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.epochIdentifier !== "") {
       writer.uint32(10).string(message.epochIdentifier);
     }
     if (message.epochNumber !== BigInt(0)) {
@@ -47,8 +44,7 @@ export const EpochTracker = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): EpochTracker {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseEpochTracker();
     while (reader.pos < end) {
@@ -75,50 +71,26 @@ export const EpochTracker = {
   },
   fromJSON(object: any): EpochTracker {
     return {
-      epochIdentifier: isSet(object.epochIdentifier)
-        ? String(object.epochIdentifier)
-        : '',
-      epochNumber: isSet(object.epochNumber)
-        ? BigInt(object.epochNumber.toString())
-        : BigInt(0),
-      nextEpochStartTime: isSet(object.nextEpochStartTime)
-        ? BigInt(object.nextEpochStartTime.toString())
-        : BigInt(0),
-      duration: isSet(object.duration)
-        ? BigInt(object.duration.toString())
-        : BigInt(0),
+      epochIdentifier: isSet(object.epochIdentifier) ? String(object.epochIdentifier) : "",
+      epochNumber: isSet(object.epochNumber) ? BigInt(object.epochNumber.toString()) : BigInt(0),
+      nextEpochStartTime: isSet(object.nextEpochStartTime) ? BigInt(object.nextEpochStartTime.toString()) : BigInt(0),
+      duration: isSet(object.duration) ? BigInt(object.duration.toString()) : BigInt(0)
     };
   },
   toJSON(message: EpochTracker): JsonSafe<EpochTracker> {
     const obj: any = {};
-    message.epochIdentifier !== undefined &&
-      (obj.epochIdentifier = message.epochIdentifier);
-    message.epochNumber !== undefined &&
-      (obj.epochNumber = (message.epochNumber || BigInt(0)).toString());
-    message.nextEpochStartTime !== undefined &&
-      (obj.nextEpochStartTime = (
-        message.nextEpochStartTime || BigInt(0)
-      ).toString());
-    message.duration !== undefined &&
-      (obj.duration = (message.duration || BigInt(0)).toString());
+    message.epochIdentifier !== undefined && (obj.epochIdentifier = message.epochIdentifier);
+    message.epochNumber !== undefined && (obj.epochNumber = (message.epochNumber || BigInt(0)).toString());
+    message.nextEpochStartTime !== undefined && (obj.nextEpochStartTime = (message.nextEpochStartTime || BigInt(0)).toString());
+    message.duration !== undefined && (obj.duration = (message.duration || BigInt(0)).toString());
     return obj;
   },
   fromPartial(object: Partial<EpochTracker>): EpochTracker {
     const message = createBaseEpochTracker();
-    message.epochIdentifier = object.epochIdentifier ?? '';
-    message.epochNumber =
-      object.epochNumber !== undefined && object.epochNumber !== null
-        ? BigInt(object.epochNumber.toString())
-        : BigInt(0);
-    message.nextEpochStartTime =
-      object.nextEpochStartTime !== undefined &&
-      object.nextEpochStartTime !== null
-        ? BigInt(object.nextEpochStartTime.toString())
-        : BigInt(0);
-    message.duration =
-      object.duration !== undefined && object.duration !== null
-        ? BigInt(object.duration.toString())
-        : BigInt(0);
+    message.epochIdentifier = object.epochIdentifier ?? "";
+    message.epochNumber = object.epochNumber !== undefined && object.epochNumber !== null ? BigInt(object.epochNumber.toString()) : BigInt(0);
+    message.nextEpochStartTime = object.nextEpochStartTime !== undefined && object.nextEpochStartTime !== null ? BigInt(object.nextEpochStartTime.toString()) : BigInt(0);
+    message.duration = object.duration !== undefined && object.duration !== null ? BigInt(object.duration.toString()) : BigInt(0);
     return message;
   },
   fromProtoMsg(message: EpochTrackerProtoMsg): EpochTracker {
@@ -129,8 +101,8 @@ export const EpochTracker = {
   },
   toProtoMsg(message: EpochTracker): EpochTrackerProtoMsg {
     return {
-      typeUrl: '/stride.stakeibc.EpochTracker',
-      value: EpochTracker.encode(message).finish(),
+      typeUrl: "/stride.stakeibc.EpochTracker",
+      value: EpochTracker.encode(message).finish()
     };
-  },
+  }
 };

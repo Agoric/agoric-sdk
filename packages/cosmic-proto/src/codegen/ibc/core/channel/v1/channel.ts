@@ -1,10 +1,10 @@
 //@ts-nocheck
-import { Height, type HeightSDKType } from '../../client/v1/client.js';
-import { BinaryReader, BinaryWriter } from '../../../../binary.js';
-import { isSet } from '../../../../helpers.js';
-import { type JsonSafe } from '../../../../json-safe.js';
-import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
-import { encodeBase64 as base64FromBytes } from '@endo/base64';
+import { Height, type HeightSDKType } from "../../client/v1/client.js";
+import { BinaryReader, BinaryWriter } from "../../../../binary.js";
+import { isSet } from "../../../../helpers.js";
+import {type JsonSafe } from "../../../../json-safe.js";
+import { decodeBase64 as bytesFromBase64 } from "@endo/base64";
+import { encodeBase64 as base64FromBytes } from "@endo/base64";
 /**
  * State defines if a channel is in one of the following states:
  * CLOSED, INIT, TRYOPEN, OPEN, FLUSHING, FLUSHCOMPLETE or UNINITIALIZED.
@@ -36,28 +36,28 @@ export const StateSDKType = State;
 export function stateFromJSON(object: any): State {
   switch (object) {
     case 0:
-    case 'STATE_UNINITIALIZED_UNSPECIFIED':
+    case "STATE_UNINITIALIZED_UNSPECIFIED":
       return State.STATE_UNINITIALIZED_UNSPECIFIED;
     case 1:
-    case 'STATE_INIT':
+    case "STATE_INIT":
       return State.STATE_INIT;
     case 2:
-    case 'STATE_TRYOPEN':
+    case "STATE_TRYOPEN":
       return State.STATE_TRYOPEN;
     case 3:
-    case 'STATE_OPEN':
+    case "STATE_OPEN":
       return State.STATE_OPEN;
     case 4:
-    case 'STATE_CLOSED':
+    case "STATE_CLOSED":
       return State.STATE_CLOSED;
     case 5:
-    case 'STATE_FLUSHING':
+    case "STATE_FLUSHING":
       return State.STATE_FLUSHING;
     case 6:
-    case 'STATE_FLUSHCOMPLETE':
+    case "STATE_FLUSHCOMPLETE":
       return State.STATE_FLUSHCOMPLETE;
     case -1:
-    case 'UNRECOGNIZED':
+    case "UNRECOGNIZED":
     default:
       return State.UNRECOGNIZED;
   }
@@ -65,22 +65,22 @@ export function stateFromJSON(object: any): State {
 export function stateToJSON(object: State): string {
   switch (object) {
     case State.STATE_UNINITIALIZED_UNSPECIFIED:
-      return 'STATE_UNINITIALIZED_UNSPECIFIED';
+      return "STATE_UNINITIALIZED_UNSPECIFIED";
     case State.STATE_INIT:
-      return 'STATE_INIT';
+      return "STATE_INIT";
     case State.STATE_TRYOPEN:
-      return 'STATE_TRYOPEN';
+      return "STATE_TRYOPEN";
     case State.STATE_OPEN:
-      return 'STATE_OPEN';
+      return "STATE_OPEN";
     case State.STATE_CLOSED:
-      return 'STATE_CLOSED';
+      return "STATE_CLOSED";
     case State.STATE_FLUSHING:
-      return 'STATE_FLUSHING';
+      return "STATE_FLUSHING";
     case State.STATE_FLUSHCOMPLETE:
-      return 'STATE_FLUSHCOMPLETE';
+      return "STATE_FLUSHCOMPLETE";
     case State.UNRECOGNIZED:
     default:
-      return 'UNRECOGNIZED';
+      return "UNRECOGNIZED";
   }
 }
 /** Order defines if a channel is ORDERED or UNORDERED */
@@ -100,16 +100,16 @@ export const OrderSDKType = Order;
 export function orderFromJSON(object: any): Order {
   switch (object) {
     case 0:
-    case 'ORDER_NONE_UNSPECIFIED':
+    case "ORDER_NONE_UNSPECIFIED":
       return Order.ORDER_NONE_UNSPECIFIED;
     case 1:
-    case 'ORDER_UNORDERED':
+    case "ORDER_UNORDERED":
       return Order.ORDER_UNORDERED;
     case 2:
-    case 'ORDER_ORDERED':
+    case "ORDER_ORDERED":
       return Order.ORDER_ORDERED;
     case -1:
-    case 'UNRECOGNIZED':
+    case "UNRECOGNIZED":
     default:
       return Order.UNRECOGNIZED;
   }
@@ -117,14 +117,14 @@ export function orderFromJSON(object: any): Order {
 export function orderToJSON(object: Order): string {
   switch (object) {
     case Order.ORDER_NONE_UNSPECIFIED:
-      return 'ORDER_NONE_UNSPECIFIED';
+      return "ORDER_NONE_UNSPECIFIED";
     case Order.ORDER_UNORDERED:
-      return 'ORDER_UNORDERED';
+      return "ORDER_UNORDERED";
     case Order.ORDER_ORDERED:
-      return 'ORDER_ORDERED';
+      return "ORDER_ORDERED";
     case Order.UNRECOGNIZED:
     default:
-      return 'UNRECOGNIZED';
+      return "UNRECOGNIZED";
   }
 }
 /**
@@ -153,7 +153,7 @@ export interface Channel {
   upgradeSequence: bigint;
 }
 export interface ChannelProtoMsg {
-  typeUrl: '/ibc.core.channel.v1.Channel';
+  typeUrl: "/ibc.core.channel.v1.Channel";
   value: Uint8Array;
 }
 /**
@@ -198,7 +198,7 @@ export interface IdentifiedChannel {
   upgradeSequence: bigint;
 }
 export interface IdentifiedChannelProtoMsg {
-  typeUrl: '/ibc.core.channel.v1.IdentifiedChannel';
+  typeUrl: "/ibc.core.channel.v1.IdentifiedChannel";
   value: Uint8Array;
 }
 /**
@@ -223,7 +223,7 @@ export interface Counterparty {
   channelId: string;
 }
 export interface CounterpartyProtoMsg {
-  typeUrl: '/ibc.core.channel.v1.Counterparty';
+  typeUrl: "/ibc.core.channel.v1.Counterparty";
   value: Uint8Array;
 }
 /** Counterparty defines a channel end counterparty */
@@ -255,7 +255,7 @@ export interface Packet {
   timeoutTimestamp: bigint;
 }
 export interface PacketProtoMsg {
-  typeUrl: '/ibc.core.channel.v1.Packet';
+  typeUrl: "/ibc.core.channel.v1.Packet";
   value: Uint8Array;
 }
 /** Packet defines a type that carries data across different chains through IBC */
@@ -286,7 +286,7 @@ export interface PacketState {
   data: Uint8Array;
 }
 export interface PacketStateProtoMsg {
-  typeUrl: '/ibc.core.channel.v1.PacketState';
+  typeUrl: "/ibc.core.channel.v1.PacketState";
   value: Uint8Array;
 }
 /**
@@ -315,7 +315,7 @@ export interface PacketId {
   sequence: bigint;
 }
 export interface PacketIdProtoMsg {
-  typeUrl: '/ibc.core.channel.v1.PacketId';
+  typeUrl: "/ibc.core.channel.v1.PacketId";
   value: Uint8Array;
 }
 /**
@@ -342,7 +342,7 @@ export interface Acknowledgement {
   error?: string;
 }
 export interface AcknowledgementProtoMsg {
-  typeUrl: '/ibc.core.channel.v1.Acknowledgement';
+  typeUrl: "/ibc.core.channel.v1.Acknowledgement";
   value: Uint8Array;
 }
 /**
@@ -370,7 +370,7 @@ export interface Timeout {
   timestamp: bigint;
 }
 export interface TimeoutProtoMsg {
-  typeUrl: '/ibc.core.channel.v1.Timeout';
+  typeUrl: "/ibc.core.channel.v1.Timeout";
   value: Uint8Array;
 }
 /**
@@ -388,7 +388,7 @@ export interface Params {
   upgradeTimeout: Timeout;
 }
 export interface ParamsProtoMsg {
-  typeUrl: '/ibc.core.channel.v1.Params';
+  typeUrl: "/ibc.core.channel.v1.Params";
   value: Uint8Array;
 }
 /** Params defines the set of IBC channel parameters. */
@@ -401,16 +401,13 @@ function createBaseChannel(): Channel {
     ordering: 0,
     counterparty: Counterparty.fromPartial({}),
     connectionHops: [],
-    version: '',
-    upgradeSequence: BigInt(0),
+    version: "",
+    upgradeSequence: BigInt(0)
   };
 }
 export const Channel = {
-  typeUrl: '/ibc.core.channel.v1.Channel' as const,
-  encode(
-    message: Channel,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/ibc.core.channel.v1.Channel" as const,
+  encode(message: Channel, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.state !== 0) {
       writer.uint32(8).int32(message.state);
     }
@@ -418,15 +415,12 @@ export const Channel = {
       writer.uint32(16).int32(message.ordering);
     }
     if (message.counterparty !== undefined) {
-      Counterparty.encode(
-        message.counterparty,
-        writer.uint32(26).fork(),
-      ).ldelim();
+      Counterparty.encode(message.counterparty, writer.uint32(26).fork()).ldelim();
     }
     for (const v of message.connectionHops) {
       writer.uint32(34).string(v!);
     }
-    if (message.version !== '') {
+    if (message.version !== "") {
       writer.uint32(42).string(message.version);
     }
     if (message.upgradeSequence !== BigInt(0)) {
@@ -435,8 +429,7 @@ export const Channel = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Channel {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseChannel();
     while (reader.pos < end) {
@@ -471,51 +464,34 @@ export const Channel = {
     return {
       state: isSet(object.state) ? stateFromJSON(object.state) : -1,
       ordering: isSet(object.ordering) ? orderFromJSON(object.ordering) : -1,
-      counterparty: isSet(object.counterparty)
-        ? Counterparty.fromJSON(object.counterparty)
-        : undefined,
-      connectionHops: Array.isArray(object?.connectionHops)
-        ? object.connectionHops.map((e: any) => String(e))
-        : [],
-      version: isSet(object.version) ? String(object.version) : '',
-      upgradeSequence: isSet(object.upgradeSequence)
-        ? BigInt(object.upgradeSequence.toString())
-        : BigInt(0),
+      counterparty: isSet(object.counterparty) ? Counterparty.fromJSON(object.counterparty) : undefined,
+      connectionHops: Array.isArray(object?.connectionHops) ? object.connectionHops.map((e: any) => String(e)) : [],
+      version: isSet(object.version) ? String(object.version) : "",
+      upgradeSequence: isSet(object.upgradeSequence) ? BigInt(object.upgradeSequence.toString()) : BigInt(0)
     };
   },
   toJSON(message: Channel): JsonSafe<Channel> {
     const obj: any = {};
     message.state !== undefined && (obj.state = stateToJSON(message.state));
-    message.ordering !== undefined &&
-      (obj.ordering = orderToJSON(message.ordering));
-    message.counterparty !== undefined &&
-      (obj.counterparty = message.counterparty
-        ? Counterparty.toJSON(message.counterparty)
-        : undefined);
+    message.ordering !== undefined && (obj.ordering = orderToJSON(message.ordering));
+    message.counterparty !== undefined && (obj.counterparty = message.counterparty ? Counterparty.toJSON(message.counterparty) : undefined);
     if (message.connectionHops) {
       obj.connectionHops = message.connectionHops.map(e => e);
     } else {
       obj.connectionHops = [];
     }
     message.version !== undefined && (obj.version = message.version);
-    message.upgradeSequence !== undefined &&
-      (obj.upgradeSequence = (message.upgradeSequence || BigInt(0)).toString());
+    message.upgradeSequence !== undefined && (obj.upgradeSequence = (message.upgradeSequence || BigInt(0)).toString());
     return obj;
   },
   fromPartial(object: Partial<Channel>): Channel {
     const message = createBaseChannel();
     message.state = object.state ?? 0;
     message.ordering = object.ordering ?? 0;
-    message.counterparty =
-      object.counterparty !== undefined && object.counterparty !== null
-        ? Counterparty.fromPartial(object.counterparty)
-        : undefined;
+    message.counterparty = object.counterparty !== undefined && object.counterparty !== null ? Counterparty.fromPartial(object.counterparty) : undefined;
     message.connectionHops = object.connectionHops?.map(e => e) || [];
-    message.version = object.version ?? '';
-    message.upgradeSequence =
-      object.upgradeSequence !== undefined && object.upgradeSequence !== null
-        ? BigInt(object.upgradeSequence.toString())
-        : BigInt(0);
+    message.version = object.version ?? "";
+    message.upgradeSequence = object.upgradeSequence !== undefined && object.upgradeSequence !== null ? BigInt(object.upgradeSequence.toString()) : BigInt(0);
     return message;
   },
   fromProtoMsg(message: ChannelProtoMsg): Channel {
@@ -526,10 +502,10 @@ export const Channel = {
   },
   toProtoMsg(message: Channel): ChannelProtoMsg {
     return {
-      typeUrl: '/ibc.core.channel.v1.Channel',
-      value: Channel.encode(message).finish(),
+      typeUrl: "/ibc.core.channel.v1.Channel",
+      value: Channel.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseIdentifiedChannel(): IdentifiedChannel {
   return {
@@ -537,18 +513,15 @@ function createBaseIdentifiedChannel(): IdentifiedChannel {
     ordering: 0,
     counterparty: Counterparty.fromPartial({}),
     connectionHops: [],
-    version: '',
-    portId: '',
-    channelId: '',
-    upgradeSequence: BigInt(0),
+    version: "",
+    portId: "",
+    channelId: "",
+    upgradeSequence: BigInt(0)
   };
 }
 export const IdentifiedChannel = {
-  typeUrl: '/ibc.core.channel.v1.IdentifiedChannel' as const,
-  encode(
-    message: IdentifiedChannel,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/ibc.core.channel.v1.IdentifiedChannel" as const,
+  encode(message: IdentifiedChannel, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.state !== 0) {
       writer.uint32(8).int32(message.state);
     }
@@ -556,21 +529,18 @@ export const IdentifiedChannel = {
       writer.uint32(16).int32(message.ordering);
     }
     if (message.counterparty !== undefined) {
-      Counterparty.encode(
-        message.counterparty,
-        writer.uint32(26).fork(),
-      ).ldelim();
+      Counterparty.encode(message.counterparty, writer.uint32(26).fork()).ldelim();
     }
     for (const v of message.connectionHops) {
       writer.uint32(34).string(v!);
     }
-    if (message.version !== '') {
+    if (message.version !== "") {
       writer.uint32(42).string(message.version);
     }
-    if (message.portId !== '') {
+    if (message.portId !== "") {
       writer.uint32(50).string(message.portId);
     }
-    if (message.channelId !== '') {
+    if (message.channelId !== "") {
       writer.uint32(58).string(message.channelId);
     }
     if (message.upgradeSequence !== BigInt(0)) {
@@ -579,8 +549,7 @@ export const IdentifiedChannel = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): IdentifiedChannel {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseIdentifiedChannel();
     while (reader.pos < end) {
@@ -621,29 +590,19 @@ export const IdentifiedChannel = {
     return {
       state: isSet(object.state) ? stateFromJSON(object.state) : -1,
       ordering: isSet(object.ordering) ? orderFromJSON(object.ordering) : -1,
-      counterparty: isSet(object.counterparty)
-        ? Counterparty.fromJSON(object.counterparty)
-        : undefined,
-      connectionHops: Array.isArray(object?.connectionHops)
-        ? object.connectionHops.map((e: any) => String(e))
-        : [],
-      version: isSet(object.version) ? String(object.version) : '',
-      portId: isSet(object.portId) ? String(object.portId) : '',
-      channelId: isSet(object.channelId) ? String(object.channelId) : '',
-      upgradeSequence: isSet(object.upgradeSequence)
-        ? BigInt(object.upgradeSequence.toString())
-        : BigInt(0),
+      counterparty: isSet(object.counterparty) ? Counterparty.fromJSON(object.counterparty) : undefined,
+      connectionHops: Array.isArray(object?.connectionHops) ? object.connectionHops.map((e: any) => String(e)) : [],
+      version: isSet(object.version) ? String(object.version) : "",
+      portId: isSet(object.portId) ? String(object.portId) : "",
+      channelId: isSet(object.channelId) ? String(object.channelId) : "",
+      upgradeSequence: isSet(object.upgradeSequence) ? BigInt(object.upgradeSequence.toString()) : BigInt(0)
     };
   },
   toJSON(message: IdentifiedChannel): JsonSafe<IdentifiedChannel> {
     const obj: any = {};
     message.state !== undefined && (obj.state = stateToJSON(message.state));
-    message.ordering !== undefined &&
-      (obj.ordering = orderToJSON(message.ordering));
-    message.counterparty !== undefined &&
-      (obj.counterparty = message.counterparty
-        ? Counterparty.toJSON(message.counterparty)
-        : undefined);
+    message.ordering !== undefined && (obj.ordering = orderToJSON(message.ordering));
+    message.counterparty !== undefined && (obj.counterparty = message.counterparty ? Counterparty.toJSON(message.counterparty) : undefined);
     if (message.connectionHops) {
       obj.connectionHops = message.connectionHops.map(e => e);
     } else {
@@ -652,26 +611,19 @@ export const IdentifiedChannel = {
     message.version !== undefined && (obj.version = message.version);
     message.portId !== undefined && (obj.portId = message.portId);
     message.channelId !== undefined && (obj.channelId = message.channelId);
-    message.upgradeSequence !== undefined &&
-      (obj.upgradeSequence = (message.upgradeSequence || BigInt(0)).toString());
+    message.upgradeSequence !== undefined && (obj.upgradeSequence = (message.upgradeSequence || BigInt(0)).toString());
     return obj;
   },
   fromPartial(object: Partial<IdentifiedChannel>): IdentifiedChannel {
     const message = createBaseIdentifiedChannel();
     message.state = object.state ?? 0;
     message.ordering = object.ordering ?? 0;
-    message.counterparty =
-      object.counterparty !== undefined && object.counterparty !== null
-        ? Counterparty.fromPartial(object.counterparty)
-        : undefined;
+    message.counterparty = object.counterparty !== undefined && object.counterparty !== null ? Counterparty.fromPartial(object.counterparty) : undefined;
     message.connectionHops = object.connectionHops?.map(e => e) || [];
-    message.version = object.version ?? '';
-    message.portId = object.portId ?? '';
-    message.channelId = object.channelId ?? '';
-    message.upgradeSequence =
-      object.upgradeSequence !== undefined && object.upgradeSequence !== null
-        ? BigInt(object.upgradeSequence.toString())
-        : BigInt(0);
+    message.version = object.version ?? "";
+    message.portId = object.portId ?? "";
+    message.channelId = object.channelId ?? "";
+    message.upgradeSequence = object.upgradeSequence !== undefined && object.upgradeSequence !== null ? BigInt(object.upgradeSequence.toString()) : BigInt(0);
     return message;
   },
   fromProtoMsg(message: IdentifiedChannelProtoMsg): IdentifiedChannel {
@@ -682,34 +634,30 @@ export const IdentifiedChannel = {
   },
   toProtoMsg(message: IdentifiedChannel): IdentifiedChannelProtoMsg {
     return {
-      typeUrl: '/ibc.core.channel.v1.IdentifiedChannel',
-      value: IdentifiedChannel.encode(message).finish(),
+      typeUrl: "/ibc.core.channel.v1.IdentifiedChannel",
+      value: IdentifiedChannel.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseCounterparty(): Counterparty {
   return {
-    portId: '',
-    channelId: '',
+    portId: "",
+    channelId: ""
   };
 }
 export const Counterparty = {
-  typeUrl: '/ibc.core.channel.v1.Counterparty' as const,
-  encode(
-    message: Counterparty,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.portId !== '') {
+  typeUrl: "/ibc.core.channel.v1.Counterparty" as const,
+  encode(message: Counterparty, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.portId !== "") {
       writer.uint32(10).string(message.portId);
     }
-    if (message.channelId !== '') {
+    if (message.channelId !== "") {
       writer.uint32(18).string(message.channelId);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Counterparty {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseCounterparty();
     while (reader.pos < end) {
@@ -730,8 +678,8 @@ export const Counterparty = {
   },
   fromJSON(object: any): Counterparty {
     return {
-      portId: isSet(object.portId) ? String(object.portId) : '',
-      channelId: isSet(object.channelId) ? String(object.channelId) : '',
+      portId: isSet(object.portId) ? String(object.portId) : "",
+      channelId: isSet(object.channelId) ? String(object.channelId) : ""
     };
   },
   toJSON(message: Counterparty): JsonSafe<Counterparty> {
@@ -742,8 +690,8 @@ export const Counterparty = {
   },
   fromPartial(object: Partial<Counterparty>): Counterparty {
     const message = createBaseCounterparty();
-    message.portId = object.portId ?? '';
-    message.channelId = object.channelId ?? '';
+    message.portId = object.portId ?? "";
+    message.channelId = object.channelId ?? "";
     return message;
   },
   fromProtoMsg(message: CounterpartyProtoMsg): Counterparty {
@@ -754,42 +702,39 @@ export const Counterparty = {
   },
   toProtoMsg(message: Counterparty): CounterpartyProtoMsg {
     return {
-      typeUrl: '/ibc.core.channel.v1.Counterparty',
-      value: Counterparty.encode(message).finish(),
+      typeUrl: "/ibc.core.channel.v1.Counterparty",
+      value: Counterparty.encode(message).finish()
     };
-  },
+  }
 };
 function createBasePacket(): Packet {
   return {
     sequence: BigInt(0),
-    sourcePort: '',
-    sourceChannel: '',
-    destinationPort: '',
-    destinationChannel: '',
+    sourcePort: "",
+    sourceChannel: "",
+    destinationPort: "",
+    destinationChannel: "",
     data: new Uint8Array(),
     timeoutHeight: Height.fromPartial({}),
-    timeoutTimestamp: BigInt(0),
+    timeoutTimestamp: BigInt(0)
   };
 }
 export const Packet = {
-  typeUrl: '/ibc.core.channel.v1.Packet' as const,
-  encode(
-    message: Packet,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/ibc.core.channel.v1.Packet" as const,
+  encode(message: Packet, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.sequence !== BigInt(0)) {
       writer.uint32(8).uint64(message.sequence);
     }
-    if (message.sourcePort !== '') {
+    if (message.sourcePort !== "") {
       writer.uint32(18).string(message.sourcePort);
     }
-    if (message.sourceChannel !== '') {
+    if (message.sourceChannel !== "") {
       writer.uint32(26).string(message.sourceChannel);
     }
-    if (message.destinationPort !== '') {
+    if (message.destinationPort !== "") {
       writer.uint32(34).string(message.destinationPort);
     }
-    if (message.destinationChannel !== '') {
+    if (message.destinationChannel !== "") {
       writer.uint32(42).string(message.destinationChannel);
     }
     if (message.data.length !== 0) {
@@ -804,8 +749,7 @@ export const Packet = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Packet {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBasePacket();
     while (reader.pos < end) {
@@ -844,74 +788,38 @@ export const Packet = {
   },
   fromJSON(object: any): Packet {
     return {
-      sequence: isSet(object.sequence)
-        ? BigInt(object.sequence.toString())
-        : BigInt(0),
-      sourcePort: isSet(object.sourcePort) ? String(object.sourcePort) : '',
-      sourceChannel: isSet(object.sourceChannel)
-        ? String(object.sourceChannel)
-        : '',
-      destinationPort: isSet(object.destinationPort)
-        ? String(object.destinationPort)
-        : '',
-      destinationChannel: isSet(object.destinationChannel)
-        ? String(object.destinationChannel)
-        : '',
-      data: isSet(object.data)
-        ? bytesFromBase64(object.data)
-        : new Uint8Array(),
-      timeoutHeight: isSet(object.timeoutHeight)
-        ? Height.fromJSON(object.timeoutHeight)
-        : undefined,
-      timeoutTimestamp: isSet(object.timeoutTimestamp)
-        ? BigInt(object.timeoutTimestamp.toString())
-        : BigInt(0),
+      sequence: isSet(object.sequence) ? BigInt(object.sequence.toString()) : BigInt(0),
+      sourcePort: isSet(object.sourcePort) ? String(object.sourcePort) : "",
+      sourceChannel: isSet(object.sourceChannel) ? String(object.sourceChannel) : "",
+      destinationPort: isSet(object.destinationPort) ? String(object.destinationPort) : "",
+      destinationChannel: isSet(object.destinationChannel) ? String(object.destinationChannel) : "",
+      data: isSet(object.data) ? bytesFromBase64(object.data) : new Uint8Array(),
+      timeoutHeight: isSet(object.timeoutHeight) ? Height.fromJSON(object.timeoutHeight) : undefined,
+      timeoutTimestamp: isSet(object.timeoutTimestamp) ? BigInt(object.timeoutTimestamp.toString()) : BigInt(0)
     };
   },
   toJSON(message: Packet): JsonSafe<Packet> {
     const obj: any = {};
-    message.sequence !== undefined &&
-      (obj.sequence = (message.sequence || BigInt(0)).toString());
+    message.sequence !== undefined && (obj.sequence = (message.sequence || BigInt(0)).toString());
     message.sourcePort !== undefined && (obj.sourcePort = message.sourcePort);
-    message.sourceChannel !== undefined &&
-      (obj.sourceChannel = message.sourceChannel);
-    message.destinationPort !== undefined &&
-      (obj.destinationPort = message.destinationPort);
-    message.destinationChannel !== undefined &&
-      (obj.destinationChannel = message.destinationChannel);
-    message.data !== undefined &&
-      (obj.data = base64FromBytes(
-        message.data !== undefined ? message.data : new Uint8Array(),
-      ));
-    message.timeoutHeight !== undefined &&
-      (obj.timeoutHeight = message.timeoutHeight
-        ? Height.toJSON(message.timeoutHeight)
-        : undefined);
-    message.timeoutTimestamp !== undefined &&
-      (obj.timeoutTimestamp = (
-        message.timeoutTimestamp || BigInt(0)
-      ).toString());
+    message.sourceChannel !== undefined && (obj.sourceChannel = message.sourceChannel);
+    message.destinationPort !== undefined && (obj.destinationPort = message.destinationPort);
+    message.destinationChannel !== undefined && (obj.destinationChannel = message.destinationChannel);
+    message.data !== undefined && (obj.data = base64FromBytes(message.data !== undefined ? message.data : new Uint8Array()));
+    message.timeoutHeight !== undefined && (obj.timeoutHeight = message.timeoutHeight ? Height.toJSON(message.timeoutHeight) : undefined);
+    message.timeoutTimestamp !== undefined && (obj.timeoutTimestamp = (message.timeoutTimestamp || BigInt(0)).toString());
     return obj;
   },
   fromPartial(object: Partial<Packet>): Packet {
     const message = createBasePacket();
-    message.sequence =
-      object.sequence !== undefined && object.sequence !== null
-        ? BigInt(object.sequence.toString())
-        : BigInt(0);
-    message.sourcePort = object.sourcePort ?? '';
-    message.sourceChannel = object.sourceChannel ?? '';
-    message.destinationPort = object.destinationPort ?? '';
-    message.destinationChannel = object.destinationChannel ?? '';
+    message.sequence = object.sequence !== undefined && object.sequence !== null ? BigInt(object.sequence.toString()) : BigInt(0);
+    message.sourcePort = object.sourcePort ?? "";
+    message.sourceChannel = object.sourceChannel ?? "";
+    message.destinationPort = object.destinationPort ?? "";
+    message.destinationChannel = object.destinationChannel ?? "";
     message.data = object.data ?? new Uint8Array();
-    message.timeoutHeight =
-      object.timeoutHeight !== undefined && object.timeoutHeight !== null
-        ? Height.fromPartial(object.timeoutHeight)
-        : undefined;
-    message.timeoutTimestamp =
-      object.timeoutTimestamp !== undefined && object.timeoutTimestamp !== null
-        ? BigInt(object.timeoutTimestamp.toString())
-        : BigInt(0);
+    message.timeoutHeight = object.timeoutHeight !== undefined && object.timeoutHeight !== null ? Height.fromPartial(object.timeoutHeight) : undefined;
+    message.timeoutTimestamp = object.timeoutTimestamp !== undefined && object.timeoutTimestamp !== null ? BigInt(object.timeoutTimestamp.toString()) : BigInt(0);
     return message;
   },
   fromProtoMsg(message: PacketProtoMsg): Packet {
@@ -922,29 +830,26 @@ export const Packet = {
   },
   toProtoMsg(message: Packet): PacketProtoMsg {
     return {
-      typeUrl: '/ibc.core.channel.v1.Packet',
-      value: Packet.encode(message).finish(),
+      typeUrl: "/ibc.core.channel.v1.Packet",
+      value: Packet.encode(message).finish()
     };
-  },
+  }
 };
 function createBasePacketState(): PacketState {
   return {
-    portId: '',
-    channelId: '',
+    portId: "",
+    channelId: "",
     sequence: BigInt(0),
-    data: new Uint8Array(),
+    data: new Uint8Array()
   };
 }
 export const PacketState = {
-  typeUrl: '/ibc.core.channel.v1.PacketState' as const,
-  encode(
-    message: PacketState,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.portId !== '') {
+  typeUrl: "/ibc.core.channel.v1.PacketState" as const,
+  encode(message: PacketState, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.portId !== "") {
       writer.uint32(10).string(message.portId);
     }
-    if (message.channelId !== '') {
+    if (message.channelId !== "") {
       writer.uint32(18).string(message.channelId);
     }
     if (message.sequence !== BigInt(0)) {
@@ -956,8 +861,7 @@ export const PacketState = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): PacketState {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBasePacketState();
     while (reader.pos < end) {
@@ -984,36 +888,25 @@ export const PacketState = {
   },
   fromJSON(object: any): PacketState {
     return {
-      portId: isSet(object.portId) ? String(object.portId) : '',
-      channelId: isSet(object.channelId) ? String(object.channelId) : '',
-      sequence: isSet(object.sequence)
-        ? BigInt(object.sequence.toString())
-        : BigInt(0),
-      data: isSet(object.data)
-        ? bytesFromBase64(object.data)
-        : new Uint8Array(),
+      portId: isSet(object.portId) ? String(object.portId) : "",
+      channelId: isSet(object.channelId) ? String(object.channelId) : "",
+      sequence: isSet(object.sequence) ? BigInt(object.sequence.toString()) : BigInt(0),
+      data: isSet(object.data) ? bytesFromBase64(object.data) : new Uint8Array()
     };
   },
   toJSON(message: PacketState): JsonSafe<PacketState> {
     const obj: any = {};
     message.portId !== undefined && (obj.portId = message.portId);
     message.channelId !== undefined && (obj.channelId = message.channelId);
-    message.sequence !== undefined &&
-      (obj.sequence = (message.sequence || BigInt(0)).toString());
-    message.data !== undefined &&
-      (obj.data = base64FromBytes(
-        message.data !== undefined ? message.data : new Uint8Array(),
-      ));
+    message.sequence !== undefined && (obj.sequence = (message.sequence || BigInt(0)).toString());
+    message.data !== undefined && (obj.data = base64FromBytes(message.data !== undefined ? message.data : new Uint8Array()));
     return obj;
   },
   fromPartial(object: Partial<PacketState>): PacketState {
     const message = createBasePacketState();
-    message.portId = object.portId ?? '';
-    message.channelId = object.channelId ?? '';
-    message.sequence =
-      object.sequence !== undefined && object.sequence !== null
-        ? BigInt(object.sequence.toString())
-        : BigInt(0);
+    message.portId = object.portId ?? "";
+    message.channelId = object.channelId ?? "";
+    message.sequence = object.sequence !== undefined && object.sequence !== null ? BigInt(object.sequence.toString()) : BigInt(0);
     message.data = object.data ?? new Uint8Array();
     return message;
   },
@@ -1025,28 +918,25 @@ export const PacketState = {
   },
   toProtoMsg(message: PacketState): PacketStateProtoMsg {
     return {
-      typeUrl: '/ibc.core.channel.v1.PacketState',
-      value: PacketState.encode(message).finish(),
+      typeUrl: "/ibc.core.channel.v1.PacketState",
+      value: PacketState.encode(message).finish()
     };
-  },
+  }
 };
 function createBasePacketId(): PacketId {
   return {
-    portId: '',
-    channelId: '',
-    sequence: BigInt(0),
+    portId: "",
+    channelId: "",
+    sequence: BigInt(0)
   };
 }
 export const PacketId = {
-  typeUrl: '/ibc.core.channel.v1.PacketId' as const,
-  encode(
-    message: PacketId,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.portId !== '') {
+  typeUrl: "/ibc.core.channel.v1.PacketId" as const,
+  encode(message: PacketId, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.portId !== "") {
       writer.uint32(10).string(message.portId);
     }
-    if (message.channelId !== '') {
+    if (message.channelId !== "") {
       writer.uint32(18).string(message.channelId);
     }
     if (message.sequence !== BigInt(0)) {
@@ -1055,8 +945,7 @@ export const PacketId = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): PacketId {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBasePacketId();
     while (reader.pos < end) {
@@ -1080,29 +969,23 @@ export const PacketId = {
   },
   fromJSON(object: any): PacketId {
     return {
-      portId: isSet(object.portId) ? String(object.portId) : '',
-      channelId: isSet(object.channelId) ? String(object.channelId) : '',
-      sequence: isSet(object.sequence)
-        ? BigInt(object.sequence.toString())
-        : BigInt(0),
+      portId: isSet(object.portId) ? String(object.portId) : "",
+      channelId: isSet(object.channelId) ? String(object.channelId) : "",
+      sequence: isSet(object.sequence) ? BigInt(object.sequence.toString()) : BigInt(0)
     };
   },
   toJSON(message: PacketId): JsonSafe<PacketId> {
     const obj: any = {};
     message.portId !== undefined && (obj.portId = message.portId);
     message.channelId !== undefined && (obj.channelId = message.channelId);
-    message.sequence !== undefined &&
-      (obj.sequence = (message.sequence || BigInt(0)).toString());
+    message.sequence !== undefined && (obj.sequence = (message.sequence || BigInt(0)).toString());
     return obj;
   },
   fromPartial(object: Partial<PacketId>): PacketId {
     const message = createBasePacketId();
-    message.portId = object.portId ?? '';
-    message.channelId = object.channelId ?? '';
-    message.sequence =
-      object.sequence !== undefined && object.sequence !== null
-        ? BigInt(object.sequence.toString())
-        : BigInt(0);
+    message.portId = object.portId ?? "";
+    message.channelId = object.channelId ?? "";
+    message.sequence = object.sequence !== undefined && object.sequence !== null ? BigInt(object.sequence.toString()) : BigInt(0);
     return message;
   },
   fromProtoMsg(message: PacketIdProtoMsg): PacketId {
@@ -1113,23 +996,20 @@ export const PacketId = {
   },
   toProtoMsg(message: PacketId): PacketIdProtoMsg {
     return {
-      typeUrl: '/ibc.core.channel.v1.PacketId',
-      value: PacketId.encode(message).finish(),
+      typeUrl: "/ibc.core.channel.v1.PacketId",
+      value: PacketId.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseAcknowledgement(): Acknowledgement {
   return {
     result: undefined,
-    error: undefined,
+    error: undefined
   };
 }
 export const Acknowledgement = {
-  typeUrl: '/ibc.core.channel.v1.Acknowledgement' as const,
-  encode(
-    message: Acknowledgement,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/ibc.core.channel.v1.Acknowledgement" as const,
+  encode(message: Acknowledgement, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.result !== undefined) {
       writer.uint32(170).bytes(message.result);
     }
@@ -1139,8 +1019,7 @@ export const Acknowledgement = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Acknowledgement {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseAcknowledgement();
     while (reader.pos < end) {
@@ -1162,16 +1041,12 @@ export const Acknowledgement = {
   fromJSON(object: any): Acknowledgement {
     return {
       result: isSet(object.result) ? bytesFromBase64(object.result) : undefined,
-      error: isSet(object.error) ? String(object.error) : undefined,
+      error: isSet(object.error) ? String(object.error) : undefined
     };
   },
   toJSON(message: Acknowledgement): JsonSafe<Acknowledgement> {
     const obj: any = {};
-    message.result !== undefined &&
-      (obj.result =
-        message.result !== undefined
-          ? base64FromBytes(message.result)
-          : undefined);
+    message.result !== undefined && (obj.result = message.result !== undefined ? base64FromBytes(message.result) : undefined);
     message.error !== undefined && (obj.error = message.error);
     return obj;
   },
@@ -1189,23 +1064,20 @@ export const Acknowledgement = {
   },
   toProtoMsg(message: Acknowledgement): AcknowledgementProtoMsg {
     return {
-      typeUrl: '/ibc.core.channel.v1.Acknowledgement',
-      value: Acknowledgement.encode(message).finish(),
+      typeUrl: "/ibc.core.channel.v1.Acknowledgement",
+      value: Acknowledgement.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseTimeout(): Timeout {
   return {
     height: Height.fromPartial({}),
-    timestamp: BigInt(0),
+    timestamp: BigInt(0)
   };
 }
 export const Timeout = {
-  typeUrl: '/ibc.core.channel.v1.Timeout' as const,
-  encode(
-    message: Timeout,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/ibc.core.channel.v1.Timeout" as const,
+  encode(message: Timeout, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.height !== undefined) {
       Height.encode(message.height, writer.uint32(10).fork()).ldelim();
     }
@@ -1215,8 +1087,7 @@ export const Timeout = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Timeout {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseTimeout();
     while (reader.pos < end) {
@@ -1238,29 +1109,19 @@ export const Timeout = {
   fromJSON(object: any): Timeout {
     return {
       height: isSet(object.height) ? Height.fromJSON(object.height) : undefined,
-      timestamp: isSet(object.timestamp)
-        ? BigInt(object.timestamp.toString())
-        : BigInt(0),
+      timestamp: isSet(object.timestamp) ? BigInt(object.timestamp.toString()) : BigInt(0)
     };
   },
   toJSON(message: Timeout): JsonSafe<Timeout> {
     const obj: any = {};
-    message.height !== undefined &&
-      (obj.height = message.height ? Height.toJSON(message.height) : undefined);
-    message.timestamp !== undefined &&
-      (obj.timestamp = (message.timestamp || BigInt(0)).toString());
+    message.height !== undefined && (obj.height = message.height ? Height.toJSON(message.height) : undefined);
+    message.timestamp !== undefined && (obj.timestamp = (message.timestamp || BigInt(0)).toString());
     return obj;
   },
   fromPartial(object: Partial<Timeout>): Timeout {
     const message = createBaseTimeout();
-    message.height =
-      object.height !== undefined && object.height !== null
-        ? Height.fromPartial(object.height)
-        : undefined;
-    message.timestamp =
-      object.timestamp !== undefined && object.timestamp !== null
-        ? BigInt(object.timestamp.toString())
-        : BigInt(0);
+    message.height = object.height !== undefined && object.height !== null ? Height.fromPartial(object.height) : undefined;
+    message.timestamp = object.timestamp !== undefined && object.timestamp !== null ? BigInt(object.timestamp.toString()) : BigInt(0);
     return message;
   },
   fromProtoMsg(message: TimeoutProtoMsg): Timeout {
@@ -1271,30 +1132,26 @@ export const Timeout = {
   },
   toProtoMsg(message: Timeout): TimeoutProtoMsg {
     return {
-      typeUrl: '/ibc.core.channel.v1.Timeout',
-      value: Timeout.encode(message).finish(),
+      typeUrl: "/ibc.core.channel.v1.Timeout",
+      value: Timeout.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseParams(): Params {
   return {
-    upgradeTimeout: Timeout.fromPartial({}),
+    upgradeTimeout: Timeout.fromPartial({})
   };
 }
 export const Params = {
-  typeUrl: '/ibc.core.channel.v1.Params' as const,
-  encode(
-    message: Params,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/ibc.core.channel.v1.Params" as const,
+  encode(message: Params, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.upgradeTimeout !== undefined) {
       Timeout.encode(message.upgradeTimeout, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Params {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseParams();
     while (reader.pos < end) {
@@ -1312,25 +1169,17 @@ export const Params = {
   },
   fromJSON(object: any): Params {
     return {
-      upgradeTimeout: isSet(object.upgradeTimeout)
-        ? Timeout.fromJSON(object.upgradeTimeout)
-        : undefined,
+      upgradeTimeout: isSet(object.upgradeTimeout) ? Timeout.fromJSON(object.upgradeTimeout) : undefined
     };
   },
   toJSON(message: Params): JsonSafe<Params> {
     const obj: any = {};
-    message.upgradeTimeout !== undefined &&
-      (obj.upgradeTimeout = message.upgradeTimeout
-        ? Timeout.toJSON(message.upgradeTimeout)
-        : undefined);
+    message.upgradeTimeout !== undefined && (obj.upgradeTimeout = message.upgradeTimeout ? Timeout.toJSON(message.upgradeTimeout) : undefined);
     return obj;
   },
   fromPartial(object: Partial<Params>): Params {
     const message = createBaseParams();
-    message.upgradeTimeout =
-      object.upgradeTimeout !== undefined && object.upgradeTimeout !== null
-        ? Timeout.fromPartial(object.upgradeTimeout)
-        : undefined;
+    message.upgradeTimeout = object.upgradeTimeout !== undefined && object.upgradeTimeout !== null ? Timeout.fromPartial(object.upgradeTimeout) : undefined;
     return message;
   },
   fromProtoMsg(message: ParamsProtoMsg): Params {
@@ -1341,8 +1190,8 @@ export const Params = {
   },
   toProtoMsg(message: Params): ParamsProtoMsg {
     return {
-      typeUrl: '/ibc.core.channel.v1.Params',
-      value: Params.encode(message).finish(),
+      typeUrl: "/ibc.core.channel.v1.Params",
+      value: Params.encode(message).finish()
     };
-  },
+  }
 };

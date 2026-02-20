@@ -1,17 +1,9 @@
 //@ts-nocheck
-import {
-  DenomTrace,
-  type DenomTraceSDKType,
-  Params,
-  type ParamsSDKType,
-} from './transfer.js';
-import {
-  Coin,
-  type CoinSDKType,
-} from '../../../../cosmos/base/v1beta1/coin.js';
-import { BinaryReader, BinaryWriter } from '../../../../binary.js';
-import { isSet } from '../../../../helpers.js';
-import { type JsonSafe } from '../../../../json-safe.js';
+import { DenomTrace, type DenomTraceSDKType, Params, type ParamsSDKType } from "./transfer.js";
+import { Coin, type CoinSDKType } from "../../../../cosmos/base/v1beta1/coin.js";
+import { BinaryReader, BinaryWriter } from "../../../../binary.js";
+import { isSet } from "../../../../helpers.js";
+import {type JsonSafe } from "../../../../json-safe.js";
 /** GenesisState defines the ibc-transfer genesis state */
 export interface GenesisState {
   portId: string;
@@ -24,7 +16,7 @@ export interface GenesisState {
   totalEscrowed: Coin[];
 }
 export interface GenesisStateProtoMsg {
-  typeUrl: '/ibc.applications.transfer.v1.GenesisState';
+  typeUrl: "/ibc.applications.transfer.v1.GenesisState";
   value: Uint8Array;
 }
 /** GenesisState defines the ibc-transfer genesis state */
@@ -36,19 +28,16 @@ export interface GenesisStateSDKType {
 }
 function createBaseGenesisState(): GenesisState {
   return {
-    portId: '',
+    portId: "",
     denomTraces: [],
     params: Params.fromPartial({}),
-    totalEscrowed: [],
+    totalEscrowed: []
   };
 }
 export const GenesisState = {
-  typeUrl: '/ibc.applications.transfer.v1.GenesisState' as const,
-  encode(
-    message: GenesisState,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.portId !== '') {
+  typeUrl: "/ibc.applications.transfer.v1.GenesisState" as const,
+  encode(message: GenesisState, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.portId !== "") {
       writer.uint32(10).string(message.portId);
     }
     for (const v of message.denomTraces) {
@@ -63,8 +52,7 @@ export const GenesisState = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): GenesisState {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGenesisState();
     while (reader.pos < end) {
@@ -91,32 +79,23 @@ export const GenesisState = {
   },
   fromJSON(object: any): GenesisState {
     return {
-      portId: isSet(object.portId) ? String(object.portId) : '',
-      denomTraces: Array.isArray(object?.denomTraces)
-        ? object.denomTraces.map((e: any) => DenomTrace.fromJSON(e))
-        : [],
+      portId: isSet(object.portId) ? String(object.portId) : "",
+      denomTraces: Array.isArray(object?.denomTraces) ? object.denomTraces.map((e: any) => DenomTrace.fromJSON(e)) : [],
       params: isSet(object.params) ? Params.fromJSON(object.params) : undefined,
-      totalEscrowed: Array.isArray(object?.totalEscrowed)
-        ? object.totalEscrowed.map((e: any) => Coin.fromJSON(e))
-        : [],
+      totalEscrowed: Array.isArray(object?.totalEscrowed) ? object.totalEscrowed.map((e: any) => Coin.fromJSON(e)) : []
     };
   },
   toJSON(message: GenesisState): JsonSafe<GenesisState> {
     const obj: any = {};
     message.portId !== undefined && (obj.portId = message.portId);
     if (message.denomTraces) {
-      obj.denomTraces = message.denomTraces.map(e =>
-        e ? DenomTrace.toJSON(e) : undefined,
-      );
+      obj.denomTraces = message.denomTraces.map(e => e ? DenomTrace.toJSON(e) : undefined);
     } else {
       obj.denomTraces = [];
     }
-    message.params !== undefined &&
-      (obj.params = message.params ? Params.toJSON(message.params) : undefined);
+    message.params !== undefined && (obj.params = message.params ? Params.toJSON(message.params) : undefined);
     if (message.totalEscrowed) {
-      obj.totalEscrowed = message.totalEscrowed.map(e =>
-        e ? Coin.toJSON(e) : undefined,
-      );
+      obj.totalEscrowed = message.totalEscrowed.map(e => e ? Coin.toJSON(e) : undefined);
     } else {
       obj.totalEscrowed = [];
     }
@@ -124,15 +103,10 @@ export const GenesisState = {
   },
   fromPartial(object: Partial<GenesisState>): GenesisState {
     const message = createBaseGenesisState();
-    message.portId = object.portId ?? '';
-    message.denomTraces =
-      object.denomTraces?.map(e => DenomTrace.fromPartial(e)) || [];
-    message.params =
-      object.params !== undefined && object.params !== null
-        ? Params.fromPartial(object.params)
-        : undefined;
-    message.totalEscrowed =
-      object.totalEscrowed?.map(e => Coin.fromPartial(e)) || [];
+    message.portId = object.portId ?? "";
+    message.denomTraces = object.denomTraces?.map(e => DenomTrace.fromPartial(e)) || [];
+    message.params = object.params !== undefined && object.params !== null ? Params.fromPartial(object.params) : undefined;
+    message.totalEscrowed = object.totalEscrowed?.map(e => Coin.fromPartial(e)) || [];
     return message;
   },
   fromProtoMsg(message: GenesisStateProtoMsg): GenesisState {
@@ -143,8 +117,8 @@ export const GenesisState = {
   },
   toProtoMsg(message: GenesisState): GenesisStateProtoMsg {
     return {
-      typeUrl: '/ibc.applications.transfer.v1.GenesisState',
-      value: GenesisState.encode(message).finish(),
+      typeUrl: "/ibc.applications.transfer.v1.GenesisState",
+      value: GenesisState.encode(message).finish()
     };
-  },
+  }
 };

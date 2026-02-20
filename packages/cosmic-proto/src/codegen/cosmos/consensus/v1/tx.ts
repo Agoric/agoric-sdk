@@ -1,17 +1,8 @@
 //@ts-nocheck
-import {
-  BlockParams,
-  type BlockParamsSDKType,
-  EvidenceParams,
-  type EvidenceParamsSDKType,
-  ValidatorParams,
-  type ValidatorParamsSDKType,
-  ABCIParams,
-  type ABCIParamsSDKType,
-} from '../../../tendermint/types/params.js';
-import { BinaryReader, BinaryWriter } from '../../../binary.js';
-import { isSet } from '../../../helpers.js';
-import { type JsonSafe } from '../../../json-safe.js';
+import { BlockParams, type BlockParamsSDKType, EvidenceParams, type EvidenceParamsSDKType, ValidatorParams, type ValidatorParamsSDKType, ABCIParams, type ABCIParamsSDKType } from "../../../tendermint/types/params.js";
+import { BinaryReader, BinaryWriter } from "../../../binary.js";
+import { isSet } from "../../../helpers.js";
+import {type JsonSafe } from "../../../json-safe.js";
 /** MsgUpdateParams is the Msg/UpdateParams request type. */
 export interface MsgUpdateParams {
   /** authority is the address that controls the module (defaults to x/gov unless overwritten). */
@@ -20,7 +11,7 @@ export interface MsgUpdateParams {
    * params defines the x/consensus parameters to update.
    * VersionsParams is not included in this Msg because it is tracked
    * separarately in x/upgrade.
-   *
+   * 
    * NOTE: All parameters must be supplied.
    */
   block?: BlockParams;
@@ -30,7 +21,7 @@ export interface MsgUpdateParams {
   abci?: ABCIParams;
 }
 export interface MsgUpdateParamsProtoMsg {
-  typeUrl: '/cosmos.consensus.v1.MsgUpdateParams';
+  typeUrl: "/cosmos.consensus.v1.MsgUpdateParams";
   value: Uint8Array;
 }
 /** MsgUpdateParams is the Msg/UpdateParams request type. */
@@ -47,7 +38,7 @@ export interface MsgUpdateParamsSDKType {
  */
 export interface MsgUpdateParamsResponse {}
 export interface MsgUpdateParamsResponseProtoMsg {
-  typeUrl: '/cosmos.consensus.v1.MsgUpdateParamsResponse';
+  typeUrl: "/cosmos.consensus.v1.MsgUpdateParamsResponse";
   value: Uint8Array;
 }
 /**
@@ -57,36 +48,27 @@ export interface MsgUpdateParamsResponseProtoMsg {
 export interface MsgUpdateParamsResponseSDKType {}
 function createBaseMsgUpdateParams(): MsgUpdateParams {
   return {
-    authority: '',
+    authority: "",
     block: undefined,
     evidence: undefined,
     validator: undefined,
-    abci: undefined,
+    abci: undefined
   };
 }
 export const MsgUpdateParams = {
-  typeUrl: '/cosmos.consensus.v1.MsgUpdateParams' as const,
-  encode(
-    message: MsgUpdateParams,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.authority !== '') {
+  typeUrl: "/cosmos.consensus.v1.MsgUpdateParams" as const,
+  encode(message: MsgUpdateParams, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.authority !== "") {
       writer.uint32(10).string(message.authority);
     }
     if (message.block !== undefined) {
       BlockParams.encode(message.block, writer.uint32(18).fork()).ldelim();
     }
     if (message.evidence !== undefined) {
-      EvidenceParams.encode(
-        message.evidence,
-        writer.uint32(26).fork(),
-      ).ldelim();
+      EvidenceParams.encode(message.evidence, writer.uint32(26).fork()).ldelim();
     }
     if (message.validator !== undefined) {
-      ValidatorParams.encode(
-        message.validator,
-        writer.uint32(34).fork(),
-      ).ldelim();
+      ValidatorParams.encode(message.validator, writer.uint32(34).fork()).ldelim();
     }
     if (message.abci !== undefined) {
       ABCIParams.encode(message.abci, writer.uint32(42).fork()).ldelim();
@@ -94,8 +76,7 @@ export const MsgUpdateParams = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): MsgUpdateParams {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgUpdateParams();
     while (reader.pos < end) {
@@ -125,57 +106,29 @@ export const MsgUpdateParams = {
   },
   fromJSON(object: any): MsgUpdateParams {
     return {
-      authority: isSet(object.authority) ? String(object.authority) : '',
-      block: isSet(object.block)
-        ? BlockParams.fromJSON(object.block)
-        : undefined,
-      evidence: isSet(object.evidence)
-        ? EvidenceParams.fromJSON(object.evidence)
-        : undefined,
-      validator: isSet(object.validator)
-        ? ValidatorParams.fromJSON(object.validator)
-        : undefined,
-      abci: isSet(object.abci) ? ABCIParams.fromJSON(object.abci) : undefined,
+      authority: isSet(object.authority) ? String(object.authority) : "",
+      block: isSet(object.block) ? BlockParams.fromJSON(object.block) : undefined,
+      evidence: isSet(object.evidence) ? EvidenceParams.fromJSON(object.evidence) : undefined,
+      validator: isSet(object.validator) ? ValidatorParams.fromJSON(object.validator) : undefined,
+      abci: isSet(object.abci) ? ABCIParams.fromJSON(object.abci) : undefined
     };
   },
   toJSON(message: MsgUpdateParams): JsonSafe<MsgUpdateParams> {
     const obj: any = {};
     message.authority !== undefined && (obj.authority = message.authority);
-    message.block !== undefined &&
-      (obj.block = message.block
-        ? BlockParams.toJSON(message.block)
-        : undefined);
-    message.evidence !== undefined &&
-      (obj.evidence = message.evidence
-        ? EvidenceParams.toJSON(message.evidence)
-        : undefined);
-    message.validator !== undefined &&
-      (obj.validator = message.validator
-        ? ValidatorParams.toJSON(message.validator)
-        : undefined);
-    message.abci !== undefined &&
-      (obj.abci = message.abci ? ABCIParams.toJSON(message.abci) : undefined);
+    message.block !== undefined && (obj.block = message.block ? BlockParams.toJSON(message.block) : undefined);
+    message.evidence !== undefined && (obj.evidence = message.evidence ? EvidenceParams.toJSON(message.evidence) : undefined);
+    message.validator !== undefined && (obj.validator = message.validator ? ValidatorParams.toJSON(message.validator) : undefined);
+    message.abci !== undefined && (obj.abci = message.abci ? ABCIParams.toJSON(message.abci) : undefined);
     return obj;
   },
   fromPartial(object: Partial<MsgUpdateParams>): MsgUpdateParams {
     const message = createBaseMsgUpdateParams();
-    message.authority = object.authority ?? '';
-    message.block =
-      object.block !== undefined && object.block !== null
-        ? BlockParams.fromPartial(object.block)
-        : undefined;
-    message.evidence =
-      object.evidence !== undefined && object.evidence !== null
-        ? EvidenceParams.fromPartial(object.evidence)
-        : undefined;
-    message.validator =
-      object.validator !== undefined && object.validator !== null
-        ? ValidatorParams.fromPartial(object.validator)
-        : undefined;
-    message.abci =
-      object.abci !== undefined && object.abci !== null
-        ? ABCIParams.fromPartial(object.abci)
-        : undefined;
+    message.authority = object.authority ?? "";
+    message.block = object.block !== undefined && object.block !== null ? BlockParams.fromPartial(object.block) : undefined;
+    message.evidence = object.evidence !== undefined && object.evidence !== null ? EvidenceParams.fromPartial(object.evidence) : undefined;
+    message.validator = object.validator !== undefined && object.validator !== null ? ValidatorParams.fromPartial(object.validator) : undefined;
+    message.abci = object.abci !== undefined && object.abci !== null ? ABCIParams.fromPartial(object.abci) : undefined;
     return message;
   },
   fromProtoMsg(message: MsgUpdateParamsProtoMsg): MsgUpdateParams {
@@ -186,28 +139,21 @@ export const MsgUpdateParams = {
   },
   toProtoMsg(message: MsgUpdateParams): MsgUpdateParamsProtoMsg {
     return {
-      typeUrl: '/cosmos.consensus.v1.MsgUpdateParams',
-      value: MsgUpdateParams.encode(message).finish(),
+      typeUrl: "/cosmos.consensus.v1.MsgUpdateParams",
+      value: MsgUpdateParams.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseMsgUpdateParamsResponse(): MsgUpdateParamsResponse {
   return {};
 }
 export const MsgUpdateParamsResponse = {
-  typeUrl: '/cosmos.consensus.v1.MsgUpdateParamsResponse' as const,
-  encode(
-    _: MsgUpdateParamsResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/cosmos.consensus.v1.MsgUpdateParamsResponse" as const,
+  encode(_: MsgUpdateParamsResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgUpdateParamsResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgUpdateParamsResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgUpdateParamsResponse();
     while (reader.pos < end) {
@@ -231,20 +177,16 @@ export const MsgUpdateParamsResponse = {
     const message = createBaseMsgUpdateParamsResponse();
     return message;
   },
-  fromProtoMsg(
-    message: MsgUpdateParamsResponseProtoMsg,
-  ): MsgUpdateParamsResponse {
+  fromProtoMsg(message: MsgUpdateParamsResponseProtoMsg): MsgUpdateParamsResponse {
     return MsgUpdateParamsResponse.decode(message.value);
   },
   toProto(message: MsgUpdateParamsResponse): Uint8Array {
     return MsgUpdateParamsResponse.encode(message).finish();
   },
-  toProtoMsg(
-    message: MsgUpdateParamsResponse,
-  ): MsgUpdateParamsResponseProtoMsg {
+  toProtoMsg(message: MsgUpdateParamsResponse): MsgUpdateParamsResponseProtoMsg {
     return {
-      typeUrl: '/cosmos.consensus.v1.MsgUpdateParamsResponse',
-      value: MsgUpdateParamsResponse.encode(message).finish(),
+      typeUrl: "/cosmos.consensus.v1.MsgUpdateParamsResponse",
+      value: MsgUpdateParamsResponse.encode(message).finish()
     };
-  },
+  }
 };

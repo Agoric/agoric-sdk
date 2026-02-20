@@ -1,23 +1,12 @@
 //@ts-nocheck
-import {
-  HostZone,
-  type HostZoneSDKType,
-  DelegationRecord,
-  type DelegationRecordSDKType,
-  UnbondingRecord,
-  type UnbondingRecordSDKType,
-  RedemptionRecord,
-  type RedemptionRecordSDKType,
-  SlashRecord,
-  type SlashRecordSDKType,
-} from './stakedym.js';
-import { BinaryReader, BinaryWriter } from '../../binary.js';
-import { type JsonSafe } from '../../json-safe.js';
-import { isSet } from '../../helpers.js';
+import { HostZone, type HostZoneSDKType, DelegationRecord, type DelegationRecordSDKType, UnbondingRecord, type UnbondingRecordSDKType, RedemptionRecord, type RedemptionRecordSDKType, SlashRecord, type SlashRecordSDKType } from "./stakedym.js";
+import { BinaryReader, BinaryWriter } from "../../binary.js";
+import {type JsonSafe } from "../../json-safe.js";
+import { isSet } from "../../helpers.js";
 /** Params defines the stakedym module parameters. */
 export interface Params {}
 export interface ParamsProtoMsg {
-  typeUrl: '/stride.stakedym.Params';
+  typeUrl: "/stride.stakedym.Params";
   value: Uint8Array;
 }
 /** Params defines the stakedym module parameters. */
@@ -32,7 +21,7 @@ export interface TransferInProgressRecordIds {
   recordId: bigint;
 }
 export interface TransferInProgressRecordIdsProtoMsg {
-  typeUrl: '/stride.stakedym.TransferInProgressRecordIds';
+  typeUrl: "/stride.stakedym.TransferInProgressRecordIds";
   value: Uint8Array;
 }
 /**
@@ -55,7 +44,7 @@ export interface GenesisState {
   transferInProgressRecordIds: TransferInProgressRecordIds[];
 }
 export interface GenesisStateProtoMsg {
-  typeUrl: '/stride.stakedym.GenesisState';
+  typeUrl: "/stride.stakedym.GenesisState";
   value: Uint8Array;
 }
 /** GenesisState defines the stakedym module's genesis state. */
@@ -72,16 +61,12 @@ function createBaseParams(): Params {
   return {};
 }
 export const Params = {
-  typeUrl: '/stride.stakedym.Params' as const,
-  encode(
-    _: Params,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/stride.stakedym.Params" as const,
+  encode(_: Params, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Params {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseParams();
     while (reader.pos < end) {
@@ -113,25 +98,22 @@ export const Params = {
   },
   toProtoMsg(message: Params): ParamsProtoMsg {
     return {
-      typeUrl: '/stride.stakedym.Params',
-      value: Params.encode(message).finish(),
+      typeUrl: "/stride.stakedym.Params",
+      value: Params.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseTransferInProgressRecordIds(): TransferInProgressRecordIds {
   return {
-    channelId: '',
+    channelId: "",
     sequence: BigInt(0),
-    recordId: BigInt(0),
+    recordId: BigInt(0)
   };
 }
 export const TransferInProgressRecordIds = {
-  typeUrl: '/stride.stakedym.TransferInProgressRecordIds' as const,
-  encode(
-    message: TransferInProgressRecordIds,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.channelId !== '') {
+  typeUrl: "/stride.stakedym.TransferInProgressRecordIds" as const,
+  encode(message: TransferInProgressRecordIds, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+    if (message.channelId !== "") {
       writer.uint32(10).string(message.channelId);
     }
     if (message.sequence !== BigInt(0)) {
@@ -142,12 +124,8 @@ export const TransferInProgressRecordIds = {
     }
     return writer;
   },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): TransferInProgressRecordIds {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(input: BinaryReader | Uint8Array, length?: number): TransferInProgressRecordIds {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseTransferInProgressRecordIds();
     while (reader.pos < end) {
@@ -171,57 +149,37 @@ export const TransferInProgressRecordIds = {
   },
   fromJSON(object: any): TransferInProgressRecordIds {
     return {
-      channelId: isSet(object.channelId) ? String(object.channelId) : '',
-      sequence: isSet(object.sequence)
-        ? BigInt(object.sequence.toString())
-        : BigInt(0),
-      recordId: isSet(object.recordId)
-        ? BigInt(object.recordId.toString())
-        : BigInt(0),
+      channelId: isSet(object.channelId) ? String(object.channelId) : "",
+      sequence: isSet(object.sequence) ? BigInt(object.sequence.toString()) : BigInt(0),
+      recordId: isSet(object.recordId) ? BigInt(object.recordId.toString()) : BigInt(0)
     };
   },
-  toJSON(
-    message: TransferInProgressRecordIds,
-  ): JsonSafe<TransferInProgressRecordIds> {
+  toJSON(message: TransferInProgressRecordIds): JsonSafe<TransferInProgressRecordIds> {
     const obj: any = {};
     message.channelId !== undefined && (obj.channelId = message.channelId);
-    message.sequence !== undefined &&
-      (obj.sequence = (message.sequence || BigInt(0)).toString());
-    message.recordId !== undefined &&
-      (obj.recordId = (message.recordId || BigInt(0)).toString());
+    message.sequence !== undefined && (obj.sequence = (message.sequence || BigInt(0)).toString());
+    message.recordId !== undefined && (obj.recordId = (message.recordId || BigInt(0)).toString());
     return obj;
   },
-  fromPartial(
-    object: Partial<TransferInProgressRecordIds>,
-  ): TransferInProgressRecordIds {
+  fromPartial(object: Partial<TransferInProgressRecordIds>): TransferInProgressRecordIds {
     const message = createBaseTransferInProgressRecordIds();
-    message.channelId = object.channelId ?? '';
-    message.sequence =
-      object.sequence !== undefined && object.sequence !== null
-        ? BigInt(object.sequence.toString())
-        : BigInt(0);
-    message.recordId =
-      object.recordId !== undefined && object.recordId !== null
-        ? BigInt(object.recordId.toString())
-        : BigInt(0);
+    message.channelId = object.channelId ?? "";
+    message.sequence = object.sequence !== undefined && object.sequence !== null ? BigInt(object.sequence.toString()) : BigInt(0);
+    message.recordId = object.recordId !== undefined && object.recordId !== null ? BigInt(object.recordId.toString()) : BigInt(0);
     return message;
   },
-  fromProtoMsg(
-    message: TransferInProgressRecordIdsProtoMsg,
-  ): TransferInProgressRecordIds {
+  fromProtoMsg(message: TransferInProgressRecordIdsProtoMsg): TransferInProgressRecordIds {
     return TransferInProgressRecordIds.decode(message.value);
   },
   toProto(message: TransferInProgressRecordIds): Uint8Array {
     return TransferInProgressRecordIds.encode(message).finish();
   },
-  toProtoMsg(
-    message: TransferInProgressRecordIds,
-  ): TransferInProgressRecordIdsProtoMsg {
+  toProtoMsg(message: TransferInProgressRecordIds): TransferInProgressRecordIdsProtoMsg {
     return {
-      typeUrl: '/stride.stakedym.TransferInProgressRecordIds',
-      value: TransferInProgressRecordIds.encode(message).finish(),
+      typeUrl: "/stride.stakedym.TransferInProgressRecordIds",
+      value: TransferInProgressRecordIds.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseGenesisState(): GenesisState {
   return {
@@ -231,15 +189,12 @@ function createBaseGenesisState(): GenesisState {
     unbondingRecords: [],
     redemptionRecords: [],
     slashRecords: [],
-    transferInProgressRecordIds: [],
+    transferInProgressRecordIds: []
   };
 }
 export const GenesisState = {
-  typeUrl: '/stride.stakedym.GenesisState' as const,
-  encode(
-    message: GenesisState,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/stride.stakedym.GenesisState" as const,
+  encode(message: GenesisState, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.params !== undefined) {
       Params.encode(message.params, writer.uint32(10).fork()).ldelim();
     }
@@ -264,8 +219,7 @@ export const GenesisState = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): GenesisState {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGenesisState();
     while (reader.pos < end) {
@@ -278,29 +232,19 @@ export const GenesisState = {
           message.hostZone = HostZone.decode(reader, reader.uint32());
           break;
         case 3:
-          message.delegationRecords.push(
-            DelegationRecord.decode(reader, reader.uint32()),
-          );
+          message.delegationRecords.push(DelegationRecord.decode(reader, reader.uint32()));
           break;
         case 4:
-          message.unbondingRecords.push(
-            UnbondingRecord.decode(reader, reader.uint32()),
-          );
+          message.unbondingRecords.push(UnbondingRecord.decode(reader, reader.uint32()));
           break;
         case 5:
-          message.redemptionRecords.push(
-            RedemptionRecord.decode(reader, reader.uint32()),
-          );
+          message.redemptionRecords.push(RedemptionRecord.decode(reader, reader.uint32()));
           break;
         case 6:
-          message.slashRecords.push(
-            SlashRecord.decode(reader, reader.uint32()),
-          );
+          message.slashRecords.push(SlashRecord.decode(reader, reader.uint32()));
           break;
         case 7:
-          message.transferInProgressRecordIds.push(
-            TransferInProgressRecordIds.decode(reader, reader.uint32()),
-          );
+          message.transferInProgressRecordIds.push(TransferInProgressRecordIds.decode(reader, reader.uint32()));
           break;
         default:
           reader.skipType(tag & 7);
@@ -312,70 +256,40 @@ export const GenesisState = {
   fromJSON(object: any): GenesisState {
     return {
       params: isSet(object.params) ? Params.fromJSON(object.params) : undefined,
-      hostZone: isSet(object.hostZone)
-        ? HostZone.fromJSON(object.hostZone)
-        : undefined,
-      delegationRecords: Array.isArray(object?.delegationRecords)
-        ? object.delegationRecords.map((e: any) => DelegationRecord.fromJSON(e))
-        : [],
-      unbondingRecords: Array.isArray(object?.unbondingRecords)
-        ? object.unbondingRecords.map((e: any) => UnbondingRecord.fromJSON(e))
-        : [],
-      redemptionRecords: Array.isArray(object?.redemptionRecords)
-        ? object.redemptionRecords.map((e: any) => RedemptionRecord.fromJSON(e))
-        : [],
-      slashRecords: Array.isArray(object?.slashRecords)
-        ? object.slashRecords.map((e: any) => SlashRecord.fromJSON(e))
-        : [],
-      transferInProgressRecordIds: Array.isArray(
-        object?.transferInProgressRecordIds,
-      )
-        ? object.transferInProgressRecordIds.map((e: any) =>
-            TransferInProgressRecordIds.fromJSON(e),
-          )
-        : [],
+      hostZone: isSet(object.hostZone) ? HostZone.fromJSON(object.hostZone) : undefined,
+      delegationRecords: Array.isArray(object?.delegationRecords) ? object.delegationRecords.map((e: any) => DelegationRecord.fromJSON(e)) : [],
+      unbondingRecords: Array.isArray(object?.unbondingRecords) ? object.unbondingRecords.map((e: any) => UnbondingRecord.fromJSON(e)) : [],
+      redemptionRecords: Array.isArray(object?.redemptionRecords) ? object.redemptionRecords.map((e: any) => RedemptionRecord.fromJSON(e)) : [],
+      slashRecords: Array.isArray(object?.slashRecords) ? object.slashRecords.map((e: any) => SlashRecord.fromJSON(e)) : [],
+      transferInProgressRecordIds: Array.isArray(object?.transferInProgressRecordIds) ? object.transferInProgressRecordIds.map((e: any) => TransferInProgressRecordIds.fromJSON(e)) : []
     };
   },
   toJSON(message: GenesisState): JsonSafe<GenesisState> {
     const obj: any = {};
-    message.params !== undefined &&
-      (obj.params = message.params ? Params.toJSON(message.params) : undefined);
-    message.hostZone !== undefined &&
-      (obj.hostZone = message.hostZone
-        ? HostZone.toJSON(message.hostZone)
-        : undefined);
+    message.params !== undefined && (obj.params = message.params ? Params.toJSON(message.params) : undefined);
+    message.hostZone !== undefined && (obj.hostZone = message.hostZone ? HostZone.toJSON(message.hostZone) : undefined);
     if (message.delegationRecords) {
-      obj.delegationRecords = message.delegationRecords.map(e =>
-        e ? DelegationRecord.toJSON(e) : undefined,
-      );
+      obj.delegationRecords = message.delegationRecords.map(e => e ? DelegationRecord.toJSON(e) : undefined);
     } else {
       obj.delegationRecords = [];
     }
     if (message.unbondingRecords) {
-      obj.unbondingRecords = message.unbondingRecords.map(e =>
-        e ? UnbondingRecord.toJSON(e) : undefined,
-      );
+      obj.unbondingRecords = message.unbondingRecords.map(e => e ? UnbondingRecord.toJSON(e) : undefined);
     } else {
       obj.unbondingRecords = [];
     }
     if (message.redemptionRecords) {
-      obj.redemptionRecords = message.redemptionRecords.map(e =>
-        e ? RedemptionRecord.toJSON(e) : undefined,
-      );
+      obj.redemptionRecords = message.redemptionRecords.map(e => e ? RedemptionRecord.toJSON(e) : undefined);
     } else {
       obj.redemptionRecords = [];
     }
     if (message.slashRecords) {
-      obj.slashRecords = message.slashRecords.map(e =>
-        e ? SlashRecord.toJSON(e) : undefined,
-      );
+      obj.slashRecords = message.slashRecords.map(e => e ? SlashRecord.toJSON(e) : undefined);
     } else {
       obj.slashRecords = [];
     }
     if (message.transferInProgressRecordIds) {
-      obj.transferInProgressRecordIds = message.transferInProgressRecordIds.map(
-        e => (e ? TransferInProgressRecordIds.toJSON(e) : undefined),
-      );
+      obj.transferInProgressRecordIds = message.transferInProgressRecordIds.map(e => e ? TransferInProgressRecordIds.toJSON(e) : undefined);
     } else {
       obj.transferInProgressRecordIds = [];
     }
@@ -383,26 +297,13 @@ export const GenesisState = {
   },
   fromPartial(object: Partial<GenesisState>): GenesisState {
     const message = createBaseGenesisState();
-    message.params =
-      object.params !== undefined && object.params !== null
-        ? Params.fromPartial(object.params)
-        : undefined;
-    message.hostZone =
-      object.hostZone !== undefined && object.hostZone !== null
-        ? HostZone.fromPartial(object.hostZone)
-        : undefined;
-    message.delegationRecords =
-      object.delegationRecords?.map(e => DelegationRecord.fromPartial(e)) || [];
-    message.unbondingRecords =
-      object.unbondingRecords?.map(e => UnbondingRecord.fromPartial(e)) || [];
-    message.redemptionRecords =
-      object.redemptionRecords?.map(e => RedemptionRecord.fromPartial(e)) || [];
-    message.slashRecords =
-      object.slashRecords?.map(e => SlashRecord.fromPartial(e)) || [];
-    message.transferInProgressRecordIds =
-      object.transferInProgressRecordIds?.map(e =>
-        TransferInProgressRecordIds.fromPartial(e),
-      ) || [];
+    message.params = object.params !== undefined && object.params !== null ? Params.fromPartial(object.params) : undefined;
+    message.hostZone = object.hostZone !== undefined && object.hostZone !== null ? HostZone.fromPartial(object.hostZone) : undefined;
+    message.delegationRecords = object.delegationRecords?.map(e => DelegationRecord.fromPartial(e)) || [];
+    message.unbondingRecords = object.unbondingRecords?.map(e => UnbondingRecord.fromPartial(e)) || [];
+    message.redemptionRecords = object.redemptionRecords?.map(e => RedemptionRecord.fromPartial(e)) || [];
+    message.slashRecords = object.slashRecords?.map(e => SlashRecord.fromPartial(e)) || [];
+    message.transferInProgressRecordIds = object.transferInProgressRecordIds?.map(e => TransferInProgressRecordIds.fromPartial(e)) || [];
     return message;
   },
   fromProtoMsg(message: GenesisStateProtoMsg): GenesisState {
@@ -413,8 +314,8 @@ export const GenesisState = {
   },
   toProtoMsg(message: GenesisState): GenesisStateProtoMsg {
     return {
-      typeUrl: '/stride.stakedym.GenesisState',
-      value: GenesisState.encode(message).finish(),
+      typeUrl: "/stride.stakedym.GenesisState",
+      value: GenesisState.encode(message).finish()
     };
-  },
+  }
 };

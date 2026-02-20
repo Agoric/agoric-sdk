@@ -1,7 +1,7 @@
 //@ts-nocheck
-import { BinaryReader, BinaryWriter } from '../../binary.js';
-import { isSet } from '../../helpers.js';
-import { type JsonSafe } from '../../json-safe.js';
+import { BinaryReader, BinaryWriter } from "../../binary.js";
+import { isSet } from "../../helpers.js";
+import {type JsonSafe } from "../../json-safe.js";
 /**
  * App includes the protocol and software version for the application.
  * This information is included in ResponseInfo. The App.Protocol can be
@@ -12,7 +12,7 @@ export interface App {
   software: string;
 }
 export interface AppProtoMsg {
-  typeUrl: '/tendermint.version.App';
+  typeUrl: "/tendermint.version.App";
   value: Uint8Array;
 }
 /**
@@ -34,7 +34,7 @@ export interface Consensus {
   app: bigint;
 }
 export interface ConsensusProtoMsg {
-  typeUrl: '/tendermint.version.Consensus';
+  typeUrl: "/tendermint.version.Consensus";
   value: Uint8Array;
 }
 /**
@@ -49,26 +49,22 @@ export interface ConsensusSDKType {
 function createBaseApp(): App {
   return {
     protocol: BigInt(0),
-    software: '',
+    software: ""
   };
 }
 export const App = {
-  typeUrl: '/tendermint.version.App' as const,
-  encode(
-    message: App,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/tendermint.version.App" as const,
+  encode(message: App, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.protocol !== BigInt(0)) {
       writer.uint32(8).uint64(message.protocol);
     }
-    if (message.software !== '') {
+    if (message.software !== "") {
       writer.uint32(18).string(message.software);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): App {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseApp();
     while (reader.pos < end) {
@@ -89,26 +85,20 @@ export const App = {
   },
   fromJSON(object: any): App {
     return {
-      protocol: isSet(object.protocol)
-        ? BigInt(object.protocol.toString())
-        : BigInt(0),
-      software: isSet(object.software) ? String(object.software) : '',
+      protocol: isSet(object.protocol) ? BigInt(object.protocol.toString()) : BigInt(0),
+      software: isSet(object.software) ? String(object.software) : ""
     };
   },
   toJSON(message: App): JsonSafe<App> {
     const obj: any = {};
-    message.protocol !== undefined &&
-      (obj.protocol = (message.protocol || BigInt(0)).toString());
+    message.protocol !== undefined && (obj.protocol = (message.protocol || BigInt(0)).toString());
     message.software !== undefined && (obj.software = message.software);
     return obj;
   },
   fromPartial(object: Partial<App>): App {
     const message = createBaseApp();
-    message.protocol =
-      object.protocol !== undefined && object.protocol !== null
-        ? BigInt(object.protocol.toString())
-        : BigInt(0);
-    message.software = object.software ?? '';
+    message.protocol = object.protocol !== undefined && object.protocol !== null ? BigInt(object.protocol.toString()) : BigInt(0);
+    message.software = object.software ?? "";
     return message;
   },
   fromProtoMsg(message: AppProtoMsg): App {
@@ -119,23 +109,20 @@ export const App = {
   },
   toProtoMsg(message: App): AppProtoMsg {
     return {
-      typeUrl: '/tendermint.version.App',
-      value: App.encode(message).finish(),
+      typeUrl: "/tendermint.version.App",
+      value: App.encode(message).finish()
     };
-  },
+  }
 };
 function createBaseConsensus(): Consensus {
   return {
     block: BigInt(0),
-    app: BigInt(0),
+    app: BigInt(0)
   };
 }
 export const Consensus = {
-  typeUrl: '/tendermint.version.Consensus' as const,
-  encode(
-    message: Consensus,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/tendermint.version.Consensus" as const,
+  encode(message: Consensus, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.block !== BigInt(0)) {
       writer.uint32(8).uint64(message.block);
     }
@@ -145,8 +132,7 @@ export const Consensus = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Consensus {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseConsensus();
     while (reader.pos < end) {
@@ -168,27 +154,19 @@ export const Consensus = {
   fromJSON(object: any): Consensus {
     return {
       block: isSet(object.block) ? BigInt(object.block.toString()) : BigInt(0),
-      app: isSet(object.app) ? BigInt(object.app.toString()) : BigInt(0),
+      app: isSet(object.app) ? BigInt(object.app.toString()) : BigInt(0)
     };
   },
   toJSON(message: Consensus): JsonSafe<Consensus> {
     const obj: any = {};
-    message.block !== undefined &&
-      (obj.block = (message.block || BigInt(0)).toString());
-    message.app !== undefined &&
-      (obj.app = (message.app || BigInt(0)).toString());
+    message.block !== undefined && (obj.block = (message.block || BigInt(0)).toString());
+    message.app !== undefined && (obj.app = (message.app || BigInt(0)).toString());
     return obj;
   },
   fromPartial(object: Partial<Consensus>): Consensus {
     const message = createBaseConsensus();
-    message.block =
-      object.block !== undefined && object.block !== null
-        ? BigInt(object.block.toString())
-        : BigInt(0);
-    message.app =
-      object.app !== undefined && object.app !== null
-        ? BigInt(object.app.toString())
-        : BigInt(0);
+    message.block = object.block !== undefined && object.block !== null ? BigInt(object.block.toString()) : BigInt(0);
+    message.app = object.app !== undefined && object.app !== null ? BigInt(object.app.toString()) : BigInt(0);
     return message;
   },
   fromProtoMsg(message: ConsensusProtoMsg): Consensus {
@@ -199,8 +177,8 @@ export const Consensus = {
   },
   toProtoMsg(message: Consensus): ConsensusProtoMsg {
     return {
-      typeUrl: '/tendermint.version.Consensus',
-      value: Consensus.encode(message).finish(),
+      typeUrl: "/tendermint.version.Consensus",
+      value: Consensus.encode(message).finish()
     };
-  },
+  }
 };

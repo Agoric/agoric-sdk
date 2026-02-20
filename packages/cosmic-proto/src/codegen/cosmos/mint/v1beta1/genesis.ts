@@ -1,13 +1,8 @@
 //@ts-nocheck
-import {
-  Minter,
-  type MinterSDKType,
-  Params,
-  type ParamsSDKType,
-} from './mint.js';
-import { BinaryReader, BinaryWriter } from '../../../binary.js';
-import { isSet } from '../../../helpers.js';
-import { type JsonSafe } from '../../../json-safe.js';
+import { Minter, type MinterSDKType, Params, type ParamsSDKType } from "./mint.js";
+import { BinaryReader, BinaryWriter } from "../../../binary.js";
+import { isSet } from "../../../helpers.js";
+import {type JsonSafe } from "../../../json-safe.js";
 /** GenesisState defines the mint module's genesis state. */
 export interface GenesisState {
   /** minter is a space for holding current inflation information. */
@@ -16,7 +11,7 @@ export interface GenesisState {
   params: Params;
 }
 export interface GenesisStateProtoMsg {
-  typeUrl: '/cosmos.mint.v1beta1.GenesisState';
+  typeUrl: "/cosmos.mint.v1beta1.GenesisState";
   value: Uint8Array;
 }
 /** GenesisState defines the mint module's genesis state. */
@@ -27,15 +22,12 @@ export interface GenesisStateSDKType {
 function createBaseGenesisState(): GenesisState {
   return {
     minter: Minter.fromPartial({}),
-    params: Params.fromPartial({}),
+    params: Params.fromPartial({})
   };
 }
 export const GenesisState = {
-  typeUrl: '/cosmos.mint.v1beta1.GenesisState' as const,
-  encode(
-    message: GenesisState,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/cosmos.mint.v1beta1.GenesisState" as const,
+  encode(message: GenesisState, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.minter !== undefined) {
       Minter.encode(message.minter, writer.uint32(10).fork()).ldelim();
     }
@@ -45,8 +37,7 @@ export const GenesisState = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): GenesisState {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGenesisState();
     while (reader.pos < end) {
@@ -68,27 +59,19 @@ export const GenesisState = {
   fromJSON(object: any): GenesisState {
     return {
       minter: isSet(object.minter) ? Minter.fromJSON(object.minter) : undefined,
-      params: isSet(object.params) ? Params.fromJSON(object.params) : undefined,
+      params: isSet(object.params) ? Params.fromJSON(object.params) : undefined
     };
   },
   toJSON(message: GenesisState): JsonSafe<GenesisState> {
     const obj: any = {};
-    message.minter !== undefined &&
-      (obj.minter = message.minter ? Minter.toJSON(message.minter) : undefined);
-    message.params !== undefined &&
-      (obj.params = message.params ? Params.toJSON(message.params) : undefined);
+    message.minter !== undefined && (obj.minter = message.minter ? Minter.toJSON(message.minter) : undefined);
+    message.params !== undefined && (obj.params = message.params ? Params.toJSON(message.params) : undefined);
     return obj;
   },
   fromPartial(object: Partial<GenesisState>): GenesisState {
     const message = createBaseGenesisState();
-    message.minter =
-      object.minter !== undefined && object.minter !== null
-        ? Minter.fromPartial(object.minter)
-        : undefined;
-    message.params =
-      object.params !== undefined && object.params !== null
-        ? Params.fromPartial(object.params)
-        : undefined;
+    message.minter = object.minter !== undefined && object.minter !== null ? Minter.fromPartial(object.minter) : undefined;
+    message.params = object.params !== undefined && object.params !== null ? Params.fromPartial(object.params) : undefined;
     return message;
   },
   fromProtoMsg(message: GenesisStateProtoMsg): GenesisState {
@@ -99,8 +82,8 @@ export const GenesisState = {
   },
   toProtoMsg(message: GenesisState): GenesisStateProtoMsg {
     return {
-      typeUrl: '/cosmos.mint.v1beta1.GenesisState',
-      value: GenesisState.encode(message).finish(),
+      typeUrl: "/cosmos.mint.v1beta1.GenesisState",
+      value: GenesisState.encode(message).finish()
     };
-  },
+  }
 };

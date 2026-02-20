@@ -1,9 +1,9 @@
 //@ts-nocheck
-import { Params, type ParamsSDKType } from './auth.js';
-import { Any, type AnySDKType } from '../../../google/protobuf/any.js';
-import { BinaryReader, BinaryWriter } from '../../../binary.js';
-import { isSet } from '../../../helpers.js';
-import { type JsonSafe } from '../../../json-safe.js';
+import { Params, type ParamsSDKType } from "./auth.js";
+import { Any, type AnySDKType } from "../../../google/protobuf/any.js";
+import { BinaryReader, BinaryWriter } from "../../../binary.js";
+import { isSet } from "../../../helpers.js";
+import {type JsonSafe } from "../../../json-safe.js";
 /** GenesisState defines the auth module's genesis state. */
 export interface GenesisState {
   /** params defines all the parameters of the module. */
@@ -12,7 +12,7 @@ export interface GenesisState {
   accounts: Any[];
 }
 export interface GenesisStateProtoMsg {
-  typeUrl: '/cosmos.auth.v1beta1.GenesisState';
+  typeUrl: "/cosmos.auth.v1beta1.GenesisState";
   value: Uint8Array;
 }
 /** GenesisState defines the auth module's genesis state. */
@@ -23,15 +23,12 @@ export interface GenesisStateSDKType {
 function createBaseGenesisState(): GenesisState {
   return {
     params: Params.fromPartial({}),
-    accounts: [],
+    accounts: []
   };
 }
 export const GenesisState = {
-  typeUrl: '/cosmos.auth.v1beta1.GenesisState' as const,
-  encode(
-    message: GenesisState,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
+  typeUrl: "/cosmos.auth.v1beta1.GenesisState" as const,
+  encode(message: GenesisState, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     if (message.params !== undefined) {
       Params.encode(message.params, writer.uint32(10).fork()).ldelim();
     }
@@ -41,8 +38,7 @@ export const GenesisState = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): GenesisState {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGenesisState();
     while (reader.pos < end) {
@@ -64,17 +60,14 @@ export const GenesisState = {
   fromJSON(object: any): GenesisState {
     return {
       params: isSet(object.params) ? Params.fromJSON(object.params) : undefined,
-      accounts: Array.isArray(object?.accounts)
-        ? object.accounts.map((e: any) => Any.fromJSON(e))
-        : [],
+      accounts: Array.isArray(object?.accounts) ? object.accounts.map((e: any) => Any.fromJSON(e)) : []
     };
   },
   toJSON(message: GenesisState): JsonSafe<GenesisState> {
     const obj: any = {};
-    message.params !== undefined &&
-      (obj.params = message.params ? Params.toJSON(message.params) : undefined);
+    message.params !== undefined && (obj.params = message.params ? Params.toJSON(message.params) : undefined);
     if (message.accounts) {
-      obj.accounts = message.accounts.map(e => (e ? Any.toJSON(e) : undefined));
+      obj.accounts = message.accounts.map(e => e ? Any.toJSON(e) : undefined);
     } else {
       obj.accounts = [];
     }
@@ -82,10 +75,7 @@ export const GenesisState = {
   },
   fromPartial(object: Partial<GenesisState>): GenesisState {
     const message = createBaseGenesisState();
-    message.params =
-      object.params !== undefined && object.params !== null
-        ? Params.fromPartial(object.params)
-        : undefined;
+    message.params = object.params !== undefined && object.params !== null ? Params.fromPartial(object.params) : undefined;
     message.accounts = object.accounts?.map(e => Any.fromPartial(e)) || [];
     return message;
   },
@@ -97,8 +87,8 @@ export const GenesisState = {
   },
   toProtoMsg(message: GenesisState): GenesisStateProtoMsg {
     return {
-      typeUrl: '/cosmos.auth.v1beta1.GenesisState',
-      value: GenesisState.encode(message).finish(),
+      typeUrl: "/cosmos.auth.v1beta1.GenesisState",
+      value: GenesisState.encode(message).finish()
     };
-  },
+  }
 };
