@@ -68,6 +68,9 @@ const endoZipBase64Sha512Shape = harden({
   endoZipBase64Sha512: M.string(),
 });
 
+/** @type {Promise<Bundle> | undefined} */
+let cachedKernelBundleP;
+
 /** @param {Uint8Array} bytes */
 export function computeSha512(bytes) {
   const hash = crypto.createHash('sha512');
@@ -146,6 +149,7 @@ function onUnhandledRejection(e, pr) {
  *   bundleHandler?: BundleHandler,
  *   profileVats?: string[],
  *   debugVats?: string[],
+ *   cacheKernelBundle?: boolean,
  * }} runtimeOptions
  */
 export async function makeSwingsetController(
@@ -169,12 +173,22 @@ export async function makeSwingsetController(
     xsnapBundleData = makeXsnapBundleData(),
     profileVats = [],
     debugVats = [],
+    cacheKernelBundle = false,
 
     bundleHandler = makeWorkerBundleHandler(
       kernelStorage.bundleStore,
       xsnapBundleData,
     ),
   } = runtimeOptions;
+
+  const shouldProfileStartup = env.SWINGSET_STARTUP_PROFILE === '1';
+  /** @type {Array<{ label: string, ms: number }>} */
+  const startupPhases = [];
+  const noteStartupPhase = (label, ms) => {
+    if (shouldProfileStartup) {
+      startupPhases.push({ label, ms });
+    }
+  };
 
   if (typeof Compartment === 'undefined') {
     throw Error('SES must be installed before calling makeSwingsetController');
@@ -306,7 +320,20 @@ export async function makeSwingsetController(
     const kernelBundle = await slogDuration(
       ['bundle-kernel-start', 'bundle-kernel-finish'],
       {},
-      async () => runtimeOptions.kernelBundle ?? buildKernelBundle(),
+      async () => {
+        const t0 = performance.now();
+        const kb =
+          runtimeOptions.kernelBundle ??
+          (cacheKernelBundle
+            ? (cachedKernelBundleP ||= buildKernelBundle())
+            : buildKernelBundle());
+        const resolved = await kb;
+        noteStartupPhase(
+          'controller.buildKernelBundle',
+          performance.now() - t0,
+        );
+        return resolved;
+      },
     );
 
     // FIXME: Put this somewhere better.
@@ -326,6 +353,7 @@ export async function makeSwingsetController(
       ['import-kernel-start', 'import-kernel-finish'],
       {},
       async () => {
+        const t0 = performance.now();
         const kernelNS = await importBundle(kernelBundle, {
           filePrefix: 'kernel/...',
           endowments: {
@@ -340,12 +368,17 @@ export async function makeSwingsetController(
             Base64: globalThis.Base64, // Available only on XSnap
           },
         });
+        noteStartupPhase(
+          'controller.importKernelBundle',
+          performance.now() - t0,
+        );
         return /** @type {typeof kernelDefault} */ (kernelNS.default);
       },
     );
 
     const kernelEndowments = {
       waitUntilQuiescent,
+      now: () => performance.now(),
       kernelStorage,
       debugPrefix,
       // all vats get these in their global scope, plus a vat-specific 'console'
@@ -365,6 +398,7 @@ export async function makeSwingsetController(
       verbose,
       warehousePolicy,
       overrideVatManagerOptions,
+      startupProfiler: noteStartupPhase,
     };
 
     const kernel = buildKernel(
@@ -373,7 +407,11 @@ export async function makeSwingsetController(
       kernelRuntimeOptions,
     );
 
-    await kernel.start();
+    {
+      const t0 = performance.now();
+      await kernel.start();
+      noteStartupPhase('controller.kernel.start', performance.now() - t0);
+    }
 
     /**
      * Validate and install a code bundle.
@@ -614,6 +652,14 @@ export async function makeSwingsetController(
       },
     });
   });
+  if (shouldProfileStartup) {
+    const rows = startupPhases
+      .sort((a, b) => b.ms - a.ms)
+      .map(({ label, ms }) => `${label}=${ms.toFixed(1)}ms`)
+      .join(', ');
+    // Use ambient console so profiling output is visible regardless of logger levels.
+    console.error(`startup-profile: ${rows}`);
+  }
 
   return controller;
 }
