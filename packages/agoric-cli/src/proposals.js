@@ -159,7 +159,7 @@ const readProposalMaterialsFromPlans = async (
   const readTextFile = fileName =>
     fs.readFile(absoluteFromCwd(fileName, outputDir), 'utf8');
 
-  for await (const planFile of planFiles) {
+  for (const planFile of planFiles) {
     /**
      * @type {{
      *   permit: string;
@@ -175,7 +175,7 @@ const readProposalMaterialsFromPlans = async (
     ]);
     evals.push({ json_permits: jsonPermits, js_code: jsCode });
 
-    for await (const bundleInfo of plan.bundles) {
+    for (const bundleInfo of plan.bundles) {
       const bundlePath = absoluteFromCwd(bundleInfo.fileName, outputDir);
       bundles.push(await readJSONFile(fs, bundlePath));
 
