@@ -70,6 +70,8 @@ export const makeHelpers = async (homePromise, endowments) => {
     publishBundle,
     pathResolve,
     cacheDir = pathResolve(os.homedir(), '.agoric/cache'),
+    writeFile,
+    log,
   } = endowments;
 
   // Internal-to-this-function lazy dependencies.
@@ -156,6 +158,8 @@ export const makeHelpers = async (homePromise, endowments) => {
       return makeWriteCoreEval(homePromise, endowments, {
         getBundleSpec: deps.cacheAndGetBundleSpec,
         getBundlerMaker: helpers.getBundlerMaker,
+        ...(log && { log }),
+        ...(writeFile && { writeFile }),
       });
     },
     /** @deprecated use writeCoreEval */
@@ -163,6 +167,8 @@ export const makeHelpers = async (homePromise, endowments) => {
       return makeWriteCoreEval(homePromise, endowments, {
         getBundleSpec: deps.cacheAndGetBundleSpec,
         getBundlerMaker: helpers.getBundlerMaker,
+        ...(log && { log }),
+        ...(writeFile && { writeFile }),
       });
     },
   });
