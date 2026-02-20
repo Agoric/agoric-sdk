@@ -33,6 +33,24 @@ test('writeFileAtomic writes content atomically', async t => {
   t.is(written, '{"hello":"world"}\n');
 });
 
+test('writeFileAtomic avoids temp-file collisions with fixed timestamps', async t => {
+  const { cacheFile } = await makeFixture(t);
+  const now = () => 1_700_000_000_000;
+  const writes = Array.from({ length: 16 }, (_, i) =>
+    writeFileAtomic({
+      fs: fsPromises,
+      filePath: cacheFile,
+      data: `{"write":${i}}\n`,
+      now,
+      pid: 12345,
+    }),
+  );
+
+  await t.notThrowsAsync(() => Promise.all(writes));
+  const written = await readFile(cacheFile, 'utf8');
+  t.regex(written, /^\{"write":\d+\}\n$/);
+});
+
 test('makeDirectoryLock recovers dead-owner lock', async t => {
   const { lockRoot } = await makeFixture(t);
   const key = 'dead-owner';
