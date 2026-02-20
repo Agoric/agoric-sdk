@@ -5,7 +5,6 @@ import type { CaipChainId } from '@agoric/orchestration';
 import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import { tryJsonParse } from '@agoric/internal';
 import type { JSONRPCClient } from 'json-rpc-2.0';
-import type { MakeAbortController } from '../support.ts';
 import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
@@ -343,7 +342,6 @@ type SmartWalletLookback = {
   signal?: AbortSignal;
   rpcClient: JSONRPCClient;
   subscribeToAddr: `0x${string}`;
-  makeAbortController: MakeAbortController;
 };
 
 export const lookBackSmartWalletTx = async ({
@@ -360,7 +358,6 @@ export const lookBackSmartWalletTx = async ({
   txId,
   rpcClient,
   subscribeToAddr,
-  makeAbortController,
 }: SmartWalletWatch & SmartWalletLookback): Promise<WatcherResult> => {
   await null;
   try {
@@ -401,23 +398,13 @@ export const lookBackSmartWalletTx = async ({
       }
     };
 
-    // Options shared by all scans (including an abort signal that is triggered
-    // by whichever finishes first to stop the others).
-    const { abort: abortScans, signal: sharedSignal } = makeAbortController(
-      undefined,
-      signal ? [signal] : [],
-    );
-    const passthroughWithAbort = result => {
-      if (result) abortScans();
-      return result;
-    };
     const sharedOpts = {
       provider,
       toBlock,
       chainId,
       setTimeout,
       log,
-      signal: sharedSignal,
+      signal,
     };
     const logScanOpts = {
       ...sharedOpts,
@@ -426,40 +413,13 @@ export const lookBackSmartWalletTx = async ({
       predicate: checkMatch,
     };
 
-    const [matchingEvent, failedTx] = await Promise.all([
-      Promise.all([
-        scanEvmLogsInChunks({ ...logScanOpts, baseFilter: baseFilterV1 }),
-        scanEvmLogsInChunks({ ...logScanOpts, baseFilter: baseFilterV2 }),
-      ]).then(([v1Result, v2Result]) => {
-        const result = v1Result || v2Result;
-        if (result) abortScans();
-        return result;
-      }),
-      scanFailedTxsInChunks({
-        ...sharedOpts,
-        fromBlock: savedFailedTxFromBlock,
-        toAddress: subscribeToAddr,
-        verifyFailedTx: tx => {
-          if (!tx.to) return false;
-          const isFactoryPath = getAddress(tx.to) === getAddress(factoryAddr);
-          const data = isFactoryPath
-            ? extractFactoryExecuteData(tx.data)
-            : extractDepositFactoryExecuteData(tx.data);
-          return (
-            !!data &&
-            getAddress(data.expectedWalletAddress) ===
-              getAddress(expectedAddr) &&
-            data.sourceAddress === expectedSourceAddress
-          );
-        },
-        onRejectedChunk: (_, to) => {
-          setTxBlockLowerBound(kvStore, txId, to, FAILED_TX_SCOPE);
-        },
-        rpcClient,
-      }).then(passthroughWithAbort),
+    // Success path first (cheap on all chains: uses eth_getLogs).
+    // v1 and v2 event signatures are scanned concurrently.
+    const [v1Result, v2Result] = await Promise.all([
+      scanEvmLogsInChunks({ ...logScanOpts, baseFilter: baseFilterV1 }),
+      scanEvmLogsInChunks({ ...logScanOpts, baseFilter: baseFilterV2 }),
     ]);
-
-    abortScans();
+    const matchingEvent = v1Result || v2Result;
 
     if (matchingEvent) {
       log(`Found matching SmartWalletCreated event`);
@@ -471,6 +431,30 @@ export const lookBackSmartWalletTx = async ({
         success: true,
       };
     }
+
+    // Failure path second (expensive on Arb/Ava: uses eth_getBlockReceipts).
+    // Only reached when the success scan found nothing in the block range.
+    const failedTx = await scanFailedTxsInChunks({
+      ...sharedOpts,
+      fromBlock: savedFailedTxFromBlock,
+      toAddress: subscribeToAddr,
+      verifyFailedTx: tx => {
+        if (!tx.to) return false;
+        const isFactoryPath = getAddress(tx.to) === getAddress(factoryAddr);
+        const data = isFactoryPath
+          ? extractFactoryExecuteData(tx.data)
+          : extractDepositFactoryExecuteData(tx.data);
+        return (
+          !!data &&
+          getAddress(data.expectedWalletAddress) === getAddress(expectedAddr) &&
+          data.sourceAddress === expectedSourceAddress
+        );
+      },
+      onRejectedChunk: (_, to) => {
+        setTxBlockLowerBound(kvStore, txId, to, FAILED_TX_SCOPE);
+      },
+      rpcClient,
+    });
 
     if (failedTx) {
       log(`Found matching failed transaction`);
