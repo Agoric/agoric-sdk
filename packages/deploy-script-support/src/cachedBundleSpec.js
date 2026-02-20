@@ -1,4 +1,5 @@
 import { Fail } from '@endo/errors';
+import { writeFileAtomic } from '@agoric/internal/src/build-cache.js';
 
 /**
  * @import {promises} from 'fs';
@@ -30,11 +31,13 @@ export const makeCacheAndGetBundleSpec =
       if (e.code !== 'ENOENT') {
         throw e;
       }
-      const tmpFile = `${cacheFile}.${pid}.${now()}.${Math.random().toString(16).slice(2)}.tmp`;
-      await fs.writeFile(tmpFile, JSON.stringify(bundle, null, 2), {
-        flag: 'wx',
+      await writeFileAtomic({
+        fs,
+        filePath: cacheFile,
+        data: JSON.stringify(bundle, null, 2),
+        now,
+        pid,
       });
-      await fs.rename(tmpFile, cacheFile);
     }
     return harden({ bundleID, fileName: cacheFile });
   };
