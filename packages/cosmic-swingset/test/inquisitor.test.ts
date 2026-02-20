@@ -180,7 +180,7 @@ test('vat lifecycle', async t => {
     bundleDir,
     {},
     s => import(s),
-    makeAmbientBundleToolPowers({ log: () => {} }),
+    makeAmbientBundleToolPowers({ eventSink: { onBundleToolEvent: () => {} } }),
   );
   const bundle = await bundleCache.load(
     resolveToPath('@agoric/swingset-vat/tools/vat-puppet-v2.js'),

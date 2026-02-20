@@ -15,7 +15,9 @@ const watchIgnoredTmpRoot = path.join(
   fileURLToPath(new URL('../', import.meta.url)),
   '.sass-cache',
 );
-const testPowers = makeAmbientBundleToolPowers({ log: () => {} });
+const testPowers = makeAmbientBundleToolPowers({
+  eventSink: { onBundleToolEvent: () => {} },
+});
 
 const setupFixture = async (t: ExecutionContext) => {
   await mkdir(watchIgnoredTmpRoot, { recursive: true });
