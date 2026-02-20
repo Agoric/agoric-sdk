@@ -52,16 +52,16 @@ export interface MsgSubmitProposal {
    * content is the proposal's content.
    */
   content?:
-    | (ClientUpdateProposal &
-        UpgradeProposal &
-        SoftwareUpgradeProposal &
-        CancelSoftwareUpgradeProposal &
-        ParameterChangeProposal &
-        TextProposal &
-        CommunityPoolSpendProposal &
-        CommunityPoolSpendProposalWithDeposit &
-        CoreEvalProposal &
-        Any)
+    | ClientUpdateProposal
+    | UpgradeProposal
+    | SoftwareUpgradeProposal
+    | CancelSoftwareUpgradeProposal
+    | ParameterChangeProposal
+    | TextProposal
+    | CommunityPoolSpendProposal
+    | CommunityPoolSpendProposalWithDeposit
+    | CoreEvalProposal
+    | Any
     | undefined;
   /**
    * initial_deposit is the deposit value that must be paid at proposal submission.

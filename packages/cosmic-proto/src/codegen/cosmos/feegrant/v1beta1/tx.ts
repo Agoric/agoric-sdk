@@ -32,7 +32,10 @@ export interface MsgGrantAllowance {
    * allowance can be any of basic, periodic, allowed fee allowance.
    */
   allowance?:
-    | (BasicAllowance & PeriodicAllowance & AllowedMsgAllowance & Any)
+    | BasicAllowance
+    | PeriodicAllowance
+    | AllowedMsgAllowance
+    | Any
     | undefined;
 }
 export interface MsgGrantAllowanceProtoMsg {

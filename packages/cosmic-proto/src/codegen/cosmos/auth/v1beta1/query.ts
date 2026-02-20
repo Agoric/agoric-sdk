@@ -61,7 +61,7 @@ export interface QueryAccountsResponse {
   /**
    * accounts are the existing accounts
    */
-  accounts: (BaseAccount & Any)[] | Any[];
+  accounts: (BaseAccount | Any)[] | Any[];
   /**
    * pagination defines the pagination in the response.
    */
@@ -118,7 +118,7 @@ export interface QueryAccountResponse {
   /**
    * account defines the account of the corresponding address.
    */
-  account?: (BaseAccount & Any) | undefined;
+  account?: BaseAccount | Any | undefined;
 }
 export interface QueryAccountResponseProtoMsg {
   typeUrl: '/cosmos.auth.v1beta1.QueryAccountResponse';
@@ -207,7 +207,7 @@ export interface QueryModuleAccountsRequestSDKType {}
  * @see proto type: cosmos.auth.v1beta1.QueryModuleAccountsResponse
  */
 export interface QueryModuleAccountsResponse {
-  accounts: (ModuleAccount & Any)[] | Any[];
+  accounts: (ModuleAccount | Any)[] | Any[];
 }
 export interface QueryModuleAccountsResponseProtoMsg {
   typeUrl: '/cosmos.auth.v1beta1.QueryModuleAccountsResponse';
@@ -253,7 +253,7 @@ export interface QueryModuleAccountByNameRequestSDKType {
  * @see proto type: cosmos.auth.v1beta1.QueryModuleAccountByNameResponse
  */
 export interface QueryModuleAccountByNameResponse {
-  account?: (ModuleAccount & Any) | undefined;
+  account?: ModuleAccount | Any | undefined;
 }
 export interface QueryModuleAccountByNameResponseProtoMsg {
   typeUrl: '/cosmos.auth.v1beta1.QueryModuleAccountByNameResponse';

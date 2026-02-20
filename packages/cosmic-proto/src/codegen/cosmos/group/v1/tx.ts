@@ -303,7 +303,9 @@ export interface MsgCreateGroupPolicy {
    * decision_policy specifies the group policy's decision policy.
    */
   decisionPolicy?:
-    | (ThresholdDecisionPolicy & PercentageDecisionPolicy & Any)
+    | ThresholdDecisionPolicy
+    | PercentageDecisionPolicy
+    | Any
     | undefined;
 }
 export interface MsgCreateGroupPolicyProtoMsg {
@@ -436,7 +438,9 @@ export interface MsgCreateGroupWithPolicy {
    * decision_policy specifies the group policy's decision policy.
    */
   decisionPolicy?:
-    | (ThresholdDecisionPolicy & PercentageDecisionPolicy & Any)
+    | ThresholdDecisionPolicy
+    | PercentageDecisionPolicy
+    | Any
     | undefined;
 }
 export interface MsgCreateGroupWithPolicyProtoMsg {
@@ -510,7 +514,9 @@ export interface MsgUpdateGroupPolicyDecisionPolicy {
    * decision_policy is the updated group policy's decision policy.
    */
   decisionPolicy?:
-    | (ThresholdDecisionPolicy & PercentageDecisionPolicy & Any)
+    | ThresholdDecisionPolicy
+    | PercentageDecisionPolicy
+    | Any
     | undefined;
 }
 export interface MsgUpdateGroupPolicyDecisionPolicyProtoMsg {

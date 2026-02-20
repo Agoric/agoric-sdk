@@ -294,16 +294,16 @@ export interface Proposal {
    * content is the proposal's content.
    */
   content?:
-    | (TextProposal &
-        ClientUpdateProposal &
-        UpgradeProposal &
-        SoftwareUpgradeProposal &
-        CancelSoftwareUpgradeProposal &
-        ParameterChangeProposal &
-        CommunityPoolSpendProposal &
-        CommunityPoolSpendProposalWithDeposit &
-        CoreEvalProposal &
-        Any)
+    | TextProposal
+    | ClientUpdateProposal
+    | UpgradeProposal
+    | SoftwareUpgradeProposal
+    | CancelSoftwareUpgradeProposal
+    | ParameterChangeProposal
+    | CommunityPoolSpendProposal
+    | CommunityPoolSpendProposalWithDeposit
+    | CoreEvalProposal
+    | Any
     | undefined;
   /**
    * status defines the proposal status.
