@@ -1,6 +1,7 @@
 import { makeNodeBundleCache as wrappedMaker } from '@endo/bundle-source/cache.js';
 import styles from 'ansi-styles'; // less authority than 'chalk'
 import * as fsPromises from 'fs/promises';
+import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { setTimeout as delay } from 'timers/promises';
@@ -208,6 +209,25 @@ export const makeNodeBundleCache = async (
   };
 
   const onEvent = eventSink.onBundleToolEvent || (() => {});
+  const optionsKeyFor = options0 => {
+    try {
+      return JSON.stringify(options0 || {});
+    } catch {
+      return '[unstringifiable-options]';
+    }
+  };
+  const sanitizeName = name => name.replace(/[^a-zA-Z0-9._-]/g, '-');
+  const getTargetNames = (canonicalRootPath, targetName, options0) => {
+    const requestedTargetName =
+      targetName || path.basename(canonicalRootPath, '.js');
+    const optionsKey = optionsKeyFor(options0);
+    const hashKey = createHash('sha256')
+      .update(`${canonicalRootPath}\n${optionsKey}`)
+      .digest('hex')
+      .slice(0, 12);
+    const cacheTargetName = `${sanitizeName(requestedTargetName)}-${hashKey}`;
+    return harden({ requestedTargetName, cacheTargetName, optionsKey });
+  };
   const log = (...args) => {
     onEvent({
       type: 'bundle-source-log',
@@ -242,20 +262,26 @@ export const makeNodeBundleCache = async (
     ...rawCache,
     add: (rootPath, targetName, log0, options0) => {
       const canonicalRootPath = canonicalizeSourceSpec(rootPath);
-      const resolvedTargetName =
-        targetName || path.basename(canonicalRootPath, '.js');
-      return withLock(resolvedTargetName, () =>
-        rawCache.add(canonicalRootPath, resolvedTargetName, log0, options0),
+      const { requestedTargetName, cacheTargetName } = getTargetNames(
+        canonicalRootPath,
+        targetName,
+        options0,
+      );
+      return withLock(requestedTargetName, () =>
+        rawCache.add(canonicalRootPath, cacheTargetName, log0, options0),
       );
     },
     validateOrAdd: (rootPath, targetName, log0, options0) => {
       const canonicalRootPath = canonicalizeSourceSpec(rootPath);
-      const resolvedTargetName =
-        targetName || path.basename(canonicalRootPath, '.js');
-      return withLock(resolvedTargetName, () =>
+      const { requestedTargetName, cacheTargetName } = getTargetNames(
+        canonicalRootPath,
+        targetName,
+        options0,
+      );
+      return withLock(requestedTargetName, () =>
         rawCache.validateOrAdd(
           canonicalRootPath,
-          resolvedTargetName,
+          cacheTargetName,
           log0,
           options0,
         ),
@@ -263,19 +289,17 @@ export const makeNodeBundleCache = async (
     },
     load: async (rootPath, targetName, log0, options0) => {
       const canonicalRootPath = canonicalizeSourceSpec(rootPath);
-      const resolvedTargetName =
-        targetName || path.basename(canonicalRootPath, '.js');
-      const key = `${resolvedTargetName}:${canonicalRootPath}:${JSON.stringify(
-        options0 || {},
-      )}`;
+      const { requestedTargetName, cacheTargetName, optionsKey } =
+        getTargetNames(canonicalRootPath, targetName, options0);
+      const key = `${cacheTargetName}:${canonicalRootPath}:${optionsKey}`;
       const found = inProcessLoads.get(key);
       if (found) {
         return found;
       }
-      const pending = withLock(resolvedTargetName, async () => {
+      const pending = withLock(requestedTargetName, async () => {
         const { bundleFileName } = await rawCache.validateOrAdd(
           canonicalRootPath,
-          resolvedTargetName,
+          cacheTargetName,
           log0,
           options0,
         );
