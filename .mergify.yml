@@ -51,6 +51,17 @@ priority_rules:
       - label=priority:high
     priority: high
 
+# Mergify's suggestion to ensure update_bot_account is set. The doc that say a random org user
+# will be picked is no longer accurate (https://docs.mergify.com/configuration/file-format/)
+defaults:
+  actions:
+    rebase:
+      bot_account: "{% if '[bot]' in author %}mergify[bot]{% else %}{{ author }}{% endif %}"
+  queue_rule:
+    update_bot_account: "{% if '[bot]' in author %}mergify[bot]{% else %}{{ author }}{% endif %}"
+    merge_bot_account: 'mergify[bot]'
+    draft_bot_account: 'mergify[bot]'
+
 queue_rules:
   - name: rebase
     commit_message_template: *commit-message-template
