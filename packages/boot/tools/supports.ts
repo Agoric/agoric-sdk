@@ -23,6 +23,7 @@ import {
   makeDirectoryLock,
   writeFileAtomic,
 } from '@agoric/internal/src/build-cache.js';
+import type { BuildCacheEvent } from '@agoric/internal/src/build-cache-types.js';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal/board-client-utils.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
@@ -261,8 +262,18 @@ interface ProposalCacheMetadata {
 interface ProposalExtractorOptions {
   cacheRoot?: string;
   mode?: ProposalBuildMode;
+  onCacheEvent?: (event: ProposalExtractorEvent) => void;
   schemaVersion?: string;
 }
+
+type ProposalExtractorEvent =
+  | BuildCacheEvent
+  | {
+      args: string[];
+      builderPath: string;
+      cacheKey: string;
+      type: 'proposal-cache-hit' | 'proposal-cache-miss';
+    };
 
 /**
  * Creates a function that can build and extract proposal data from package scripts.
@@ -281,6 +292,7 @@ export const makeProposalExtractor = (
 ) => {
   const importSpec = createRequire(resolveBase).resolve;
   const mode = options.mode || 'prefer-in-process';
+  const onCacheEvent = options.onCacheEvent || (() => {});
   const schemaVersion = options.schemaVersion || 'v1';
   const cacheRoot =
     options.cacheRoot ||
@@ -394,6 +406,7 @@ export const makeProposalExtractor = (
     lockRoot,
     staleLockMs,
     acquireTimeoutMs: lockAcquireTimeoutMs,
+    onEvent: onCacheEvent,
   });
 
   const cachePathsForKey = (key: string) => {
@@ -487,9 +500,20 @@ export const makeProposalExtractor = (
     const pending = withLock(cacheKey, async () => {
       const cached = await loadCachedMaterials(cacheKey);
       if (cached) {
-        console.info('proposal cache hit:', scriptPath, args);
+        onCacheEvent({
+          type: 'proposal-cache-hit',
+          builderPath: scriptPath,
+          args: [...args],
+          cacheKey,
+        });
         return cached;
       }
+      onCacheEvent({
+        type: 'proposal-cache-miss',
+        builderPath: scriptPath,
+        args: [...args],
+        cacheKey,
+      });
 
       const [builtDir, cleanup] = tmpDir('agoric-proposal');
       await fs.mkdir(cacheRoot, { recursive: true });
