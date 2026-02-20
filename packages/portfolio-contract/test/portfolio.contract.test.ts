@@ -2828,8 +2828,8 @@ test('verifies fix for p772 & p775: make-account recovery after prior failed mak
 
   t.deepEqual(
     statusAfterFlow2Start.accountsPending,
-    [otherFailedChain],
-    'other failed account is still pending after flow2 starts',
+    [],
+    'other failed account is no longer pending after flow2 starts (but is failed)',
   );
 
   const { allocationTargets: flow2AllocationTargets } = await submitDepositPlan(
@@ -2856,16 +2856,18 @@ test('verifies fix for p772 & p775: make-account recovery after prior failed mak
   t.like(failedMakeAccountTx[0], { txId: flow1TxId });
 
   await (async () => {
-    // Step 0: Base makeAccount
+    // Step 0: Base and Optimism makeAccount
     await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
     const step0Pending = await findPendingTxInfo();
-    t.is(step0Pending.length, 1);
+    t.is(step0Pending.length, 2);
     t.like(
       step0Pending,
-      [{ type: TxType.MAKE_ACCOUNT }],
-      'one make-account pending',
+      [{ type: TxType.MAKE_ACCOUNT }, { type: TxType.MAKE_ACCOUNT }],
+      'two make-account pending',
     );
     await txResolver.settleTransaction(step0Pending[0].txId, 'success');
+    await txResolver.settleTransaction(step0Pending[1].txId, 'success');
     await eventLoopIteration();
 
     // Step 1:depositFromEVM GMP call to Axelar
@@ -2948,15 +2950,16 @@ test('verifies fix for p772 & p775: make-account recovery after prior failed mak
     await eventLoopIteration();
 
     // Step 8: GMP Call for Aave Optimism
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
     const step8Pending = await findPendingTxInfo();
-    // XXX: https://github.com/Agoric/agoric-private/issues/774
-    // The failed account is not recovered, so GMP call for it is not issued
-    // Only the unacknowledged CCTP transfer is still pending
-    t.is(step8Pending.length, 1);
+    t.is(step8Pending.length, 2);
     t.like(
       step8Pending,
-      [{ type: TxType.CCTP_TO_EVM, txId: cctpTxIdByChain[otherSuccessChain] }],
-      'no GMP pending after CCTP ack of failed chain (account pending)',
+      [
+        { type: TxType.CCTP_TO_EVM, txId: cctpTxIdByChain[otherSuccessChain] },
+        { type: TxType.GMP },
+      ],
+      'only one GMP pending after single CCTP ack',
     );
 
     // Ack Step 6
@@ -2969,13 +2972,17 @@ test('verifies fix for p772 & p775: make-account recovery after prior failed mak
     // Step 7: GMP Call for Aave Arbitrum
     await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
     const step7Pending = await findPendingTxInfo();
-    t.is(step7Pending.length, 1);
+    t.is(step7Pending.length, 2);
     t.like(
       step7Pending,
-      [{ type: TxType.GMP }],
-      'only one GMP actually pending',
+      [{ type: TxType.GMP, txId: step8Pending[1].txId }, { type: TxType.GMP }],
+      'both GMP now pending',
     );
-    await txResolver.settleTransaction(step7Pending[0].txId, 'success');
+    await txResolver.settleTransaction(step7Pending[1].txId, 'success');
+    await eventLoopIteration();
+
+    // Ack Step 8
+    await txResolver.settleTransaction(step8Pending[1].txId, 'success');
     await eventLoopIteration();
   })();
 
@@ -2993,7 +3000,7 @@ test('verifies fix for p772 & p775: make-account recovery after prior failed mak
   t.deepEqual(
     pendingTxAfterFlow2,
     [],
-    'no pending tx for second flow, even though it has not completed',
+    'no pending tx after second flow completes',
   );
 
   const flow2History =
@@ -3001,30 +3008,28 @@ test('verifies fix for p772 & p775: make-account recovery after prior failed mak
 
   t.truthy(
     Array.isArray(flow2History) &&
-      !flow2History.some(
-        entry => entry?.state === 'done' || entry?.state === 'fail',
-      ),
-    'flow history should not include a done or fail entry',
+      flow2History.some(entry => entry?.state === 'done'),
+    'flow history should include a done entry',
   );
-  t.like(
+  t.deepEqual(
     statusAfterFlow2.flowsRunning,
-    { [flow2Key]: { type: 'deposit' } },
-    'flowsRunning should still contain flow2',
+    {},
+    'flowsRunning should be empty after flow2 completes',
   );
 
   const failedPosition = (await readPublished(
     `portfolios.portfolio0.positions.Aave_${otherFailedChain}`,
   )) as any;
-  t.is(
+  t.not(
     failedPosition.totalIn.value,
     0n,
-    'no position for failed remote account',
+    'position for recovered failed remote account',
   );
 
   t.deepEqual(
     statusAfterFlow2.accountsPending,
-    [otherFailedChain],
-    'other failed account is still pending',
+    [],
+    'no accounts left pending after flow2 success',
   );
 
   // XXX: At this level we cannot (yet) check that the from account is no longer failed

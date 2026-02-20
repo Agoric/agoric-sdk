@@ -597,12 +597,28 @@ export const preparePortfolioKit = (
          * NB: `flowId` is a counter, not the key in vstorage.
          */
         startFlow(detail: FlowDetail, steps?: MovementDesc[]) {
-          const { nextFlowId: flowId, flowsRunning } = this.state;
+          const {
+            nextFlowId: flowId,
+            flowsRunning,
+            accountsPending,
+          } = this.state;
           this.state.nextFlowId = flowId + 1;
           const sync: VowKit<MovementDesc[]> = vowTools.makeVowKit();
           if (steps) sync.resolver.resolve(steps);
           flowsRunning.init(flowId, harden({ sync, ...detail }));
           this.facets.reporter.publishStatus();
+          if (accountsPending.getSize() > 0) {
+            const traceFlow = trace
+              .sub(`portfolio${this.state.portfolioId}`)
+              .sub(`flow${flowId}`);
+            traceFlow(`releasing pending accounts`, [
+              ...accountsPending.keys(),
+            ]);
+            const reason = Error('starting new flow');
+            for (const chainName of accountsPending.keys()) {
+              this.facets.manager.releaseAccount(chainName, reason);
+            }
+          }
           return { stepsP: sync.vow, flowId };
         },
         providePosition(
