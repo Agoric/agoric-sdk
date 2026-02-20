@@ -6,7 +6,6 @@ import { createHash } from 'node:crypto';
 import { promises as fsAmbientPromises } from 'node:fs';
 import { createRequire } from 'node:module';
 import { basename, join, resolve as pathResolve } from 'node:path';
-import { setTimeout as delay } from 'node:timers/promises';
 import { inspect } from 'node:util';
 import tmp from 'tmp';
 
@@ -23,6 +22,11 @@ import {
   VBankAccount,
   type Remote,
 } from '@agoric/internal';
+import type { BuildCacheEvent } from '@agoric/internal/src/build-cache-types.js';
+import {
+  makeDirectoryLock,
+  writeFileAtomic,
+} from '@agoric/internal/src/build-cache.js';
 import { makeReadJsonFile } from '@agoric/internal/src/node/read-json.js';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal/board-client-utils.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
@@ -299,10 +303,7 @@ export const makeProposalExtractor = (
     cacheRoot,
     'dependency-fingerprint-cache',
   );
-  const lockRoot = join(cacheRoot, '.locks');
   const cacheToolVersion = 'boot-proposal-cache-v1';
-  const lockAcquireTimeoutMs = 5 * 60_000;
-  const staleLockMs = 60_000;
   const dedupe = new Map<string, Promise<ProposalBuilderResult>>();
   const buildProposal =
     buildCoreEvalProposal ||
@@ -331,7 +332,7 @@ export const makeProposalExtractor = (
     depFingerprintCacheDir,
     {},
     s => import(s),
-    makeAmbientBundleToolPowers({ log: () => {} }),
+    makeAmbientBundleToolPowers({ eventSink: { onBundleToolEvent: () => {} } }),
   );
 
   const hashText = (text: string) =>
@@ -339,12 +340,6 @@ export const makeProposalExtractor = (
 
   const hashBuffer = (content: string | Uint8Array) =>
     createHash('sha256').update(content).digest('hex');
-
-  const writeFileAtomic = async (filePath: string, data: string) => {
-    const tempPath = `${filePath}.${process.pid}.${now()}.tmp`;
-    await fs.writeFile(tempPath, data, { flag: 'wx' });
-    await fs.rename(tempPath, filePath);
-  };
 
   const normalizeDependencyPaths = (dependencyPaths: string[]) =>
     [...new Set(dependencyPaths.map(spec => pathResolve(spec)))].sort();
@@ -386,8 +381,8 @@ export const makeProposalExtractor = (
     b: ProposalCacheDependency[],
   ) => JSON.stringify(a) === JSON.stringify(b);
 
-  const isPidAlive = (pid: unknown) => {
-    if (typeof pid !== 'number' || !Number.isInteger(pid) || pid <= 0) {
+  const isPidAlive = (pid: number) => {
+    if (!Number.isInteger(pid) || pid <= 0) {
       return false;
     }
     try {
@@ -398,71 +393,16 @@ export const makeProposalExtractor = (
     }
   };
 
-  const maybeBreakStaleLock = async (lockPath: string) => {
-    const ownerPath = join(lockPath, 'owner.json');
-    const ownerText = await fs.readFile(ownerPath, 'utf8').catch(() => '');
-    if (ownerText) {
-      try {
-        const ownerInfo = JSON.parse(ownerText) as { pid?: number };
-        if (ownerInfo.pid && !isPidAlive(ownerInfo.pid)) {
-          await fs.rm(lockPath, { recursive: true, force: true });
-          return true;
-        }
-      } catch {
-        // rely on age-based lock breaking for malformed owner files
-      }
-    }
-
-    try {
-      const lockStats = await fs.stat(lockPath);
-      if (now() - lockStats.mtimeMs >= staleLockMs) {
-        await fs.rm(lockPath, { recursive: true, force: true });
-        return true;
-      }
-    } catch {
-      return true;
-    }
-
-    return false;
-  };
-
-  const withLock = async <T>(key: string, body: () => Promise<T>) => {
-    const lockPath = join(lockRoot, `${encodeURIComponent(key)}.lock`);
-    const ownerPath = join(lockPath, 'owner.json');
-    const started = now();
-    await fs.mkdir(lockRoot, { recursive: true });
-
-    for (;;) {
-      try {
-        await fs.mkdir(lockPath);
-        await fs.writeFile(
-          ownerPath,
-          JSON.stringify({ pid: process.pid, createdAt: now() }),
-          'utf8',
-        );
-        break;
-      } catch (err) {
-        const e = err as NodeJS.ErrnoException;
-        if (e.code !== 'EEXIST') {
-          throw err;
-        }
-        const recovered = await maybeBreakStaleLock(lockPath);
-        if (recovered) {
-          continue;
-        }
-        if (now() - started >= lockAcquireTimeoutMs) {
-          throw Error(`Timed out waiting for proposal cache lock ${lockPath}`);
-        }
-        await delay(20);
-      }
-    }
-
-    try {
-      return await body();
-    } finally {
-      await fs.rm(lockPath, { recursive: true, force: true });
-    }
-  };
+  const { withLock } = makeDirectoryLock({
+    fs,
+    delayMs: ms => new Promise(resolve => setTimeout(resolve, ms)),
+    now,
+    pid: process.pid,
+    isPidAlive,
+    lockRoot: join(cacheRoot, '.locks'),
+    staleLockMs: 60_000,
+    acquireTimeoutMs: 5 * 60_000,
+  });
 
   const cachePathsForKey = (key: string) => {
     const entryDir = join(cacheRoot, key);
@@ -514,19 +454,29 @@ export const makeProposalExtractor = (
     await fs.mkdir(entryDir, { recursive: true });
     await Promise.all([
       writeFileAtomic(
-        `${metadataPath}`,
-        `${JSON.stringify(metadata, null, 2)}\n`,
+        {
+          fs,
+          filePath: `${metadataPath}`,
+          data: `${JSON.stringify(metadata, null, 2)}\n`,
+          now,
+          pid: process.pid,
+        },
       ),
       writeFileAtomic(
-        `${materialsPath}`,
-        `${JSON.stringify(
-          {
-            evals: materials.evals,
-            bundles: materials.bundles,
-          },
-          null,
-          2,
-        )}\n`,
+        {
+          fs,
+          filePath: `${materialsPath}`,
+          data: `${JSON.stringify(
+            {
+              evals: materials.evals,
+              bundles: materials.bundles,
+            },
+            null,
+            2,
+          )}\n`,
+          now,
+          pid: process.pid,
+        },
       ),
     ]);
   };

@@ -5,9 +5,8 @@ import { setTimeout as delay } from 'timers/promises';
 import { fileURLToPath, pathToFileURL } from 'url';
 
 import {
+  makeAmbientBundleToolPowers,
   makeNodeBundleCache,
-  provideBundleCache,
-  sharedBundleCachePath,
 } from '../tools/bundleTool.js';
 
 // Use a directory ignored by AVA watch mode (via ignore-by-default).
@@ -16,6 +15,9 @@ const watchIgnoredTmpRoot = path.join(
   fileURLToPath(new URL('../', import.meta.url)),
   '.sass-cache',
 );
+const testPowers = makeAmbientBundleToolPowers({
+  eventSink: { onBundleToolEvent: () => {} },
+});
 
 const setupFixture = async (t: ExecutionContext) => {
   await mkdir(watchIgnoredTmpRoot, { recursive: true });
@@ -54,7 +56,12 @@ test.serial('load() breaks stale lock from dead owner pid', async t => {
     'utf8',
   );
 
-  const cache = await makeNodeBundleCache(bundlesDir, {}, s => import(s));
+  const cache = await makeNodeBundleCache(
+    bundlesDir,
+    {},
+    s => import(s),
+    testPowers,
+  );
   const loaded = await cache.load(sourcePath, 'toy');
   t.truthy(loaded);
 });
@@ -67,7 +74,12 @@ test.serial('failed load does not poison later load for same key', async t => {
   const fixtureSource = await readFile(fixtureSourcePath, 'utf8');
   await rm(sourcePath, { force: true });
 
-  const cache = await makeNodeBundleCache(bundlesDir, {}, s => import(s));
+  const cache = await makeNodeBundleCache(
+    bundlesDir,
+    {},
+    s => import(s),
+    testPowers,
+  );
   await t.throwsAsync(() => cache.load(sourcePath, 'toy'), {
     message:
       /no such file or directory|Cannot find module|Failed to load module|Cannot find file/i,
@@ -78,16 +90,16 @@ test.serial('failed load does not poison later load for same key', async t => {
   t.truthy(loaded);
 });
 
-test('provideBundleCache returns shared cache for same key', async t => {
+test('makeNodeBundleCache returns independent cache instances', async t => {
   const { bundlesDir, sourcePath } = await setupFixture(t);
   const loadModule = specifier => import(specifier);
   const opts = { format: 'endoZipBase64', dev: false };
 
-  const cacheAP = provideBundleCache(bundlesDir, opts, loadModule);
-  const cacheBP = provideBundleCache(bundlesDir, opts, loadModule);
-  t.is(cacheAP, cacheBP, 'cache promises are the same');
+  const cacheAP = makeNodeBundleCache(bundlesDir, opts, loadModule, testPowers);
+  const cacheBP = makeNodeBundleCache(bundlesDir, opts, loadModule, testPowers);
+  t.not(cacheAP, cacheBP, 'cache promises are distinct');
   const [cacheA, cacheB] = await Promise.all([cacheAP, cacheBP]);
-  t.is(cacheA, cacheB, 'cache fulfilments are the same');
+  t.not(cacheA, cacheB, 'cache fulfilments are distinct');
 
   const [bundleA, bundleB] = await Promise.all([
     cacheA.load(sourcePath, 'toy'),
@@ -101,14 +113,14 @@ test('provideBundleCache returns shared cache for same key', async t => {
   );
 });
 
-test('sharedBundleCachePath resolves from the repo root', t => {
-  const repoRoot = fileURLToPath(new URL('../../..', import.meta.url));
-  t.is(sharedBundleCachePath, path.join(repoRoot, 'bundles'));
-});
-
 test('concurrent load() calls for same key settle without hanging', async t => {
   const { bundlesDir, sourcePath } = await setupFixture(t);
-  const cache = await makeNodeBundleCache(bundlesDir, {}, s => import(s));
+  const cache = await makeNodeBundleCache(
+    bundlesDir,
+    {},
+    s => import(s),
+    testPowers,
+  );
   const loads = Array.from({ length: 24 }, () => cache.load(sourcePath, 'toy'));
   const bundles = await Promise.all(loads);
   t.is(bundles.length, 24);
@@ -120,7 +132,12 @@ test('concurrent load() calls for same key settle without hanging', async t => {
 
 test('load() accepts file URL source specs', async t => {
   const { bundlesDir, sourcePath } = await setupFixture(t);
-  const cache = await makeNodeBundleCache(bundlesDir, {}, s => import(s));
+  const cache = await makeNodeBundleCache(
+    bundlesDir,
+    {},
+    s => import(s),
+    testPowers,
+  );
   const sourceURL = pathToFileURL(sourcePath).href;
   const loaded = await cache.load(sourceURL, 'toy');
   t.truthy(loaded);
@@ -153,7 +170,12 @@ test.serial('load() rebuilds when dependency file changes', async t => {
     'utf8',
   );
 
-  const cache = await makeNodeBundleCache(bundlesDir, {}, s => import(s));
+  const cache = await makeNodeBundleCache(
+    bundlesDir,
+    {},
+    s => import(s),
+    testPowers,
+  );
   await cache.load(sourcePath, 'toy');
   const bundlePath = path.join(bundlesDir, 'bundle-toy.js');
   const before = await readFile(bundlePath, 'utf8');
@@ -171,7 +193,12 @@ test.serial(
   'add() and validateOrAdd() accept relative and absolute specs',
   async t => {
     const { bundlesDir, sourcePath } = await setupFixture(t);
-    const cache = await makeNodeBundleCache(bundlesDir, {}, s => import(s));
+    const cache = await makeNodeBundleCache(
+      bundlesDir,
+      {},
+      s => import(s),
+      testPowers,
+    );
 
     const originalCwd = process.cwd();
     const relDir = path.dirname(sourcePath);
@@ -217,7 +244,12 @@ test.serial(
     const staleTime = Date.now() - 120_000;
     await utimes(malformedLock, staleTime / 1000, staleTime / 1000);
 
-    const cache = await makeNodeBundleCache(bundlesDir, {}, s => import(s));
+    const cache = await makeNodeBundleCache(
+      bundlesDir,
+      {},
+      s => import(s),
+      testPowers,
+    );
     const loaded = await cache.load(sourcePath, 'toy');
     t.truthy(loaded);
     const loadedBad = await cache.load(sourcePath, 'toy-bad');
@@ -244,14 +276,24 @@ test.serial('load() handles missing lock path', async t => {
     void rm(brokenLock, { recursive: true, force: true });
   }, 0);
 
-  const cache = await makeNodeBundleCache(bundlesDir, {}, s => import(s));
+  const cache = await makeNodeBundleCache(
+    bundlesDir,
+    {},
+    s => import(s),
+    testPowers,
+  );
   const loaded = await cache.load(sourcePath, 'toy-broken');
   t.truthy(loaded);
 });
 
 test.serial('loadRegistry() loads bundles and validates entries', async t => {
   const { bundlesDir, sourcePath } = await setupFixture(t);
-  const cache = await makeNodeBundleCache(bundlesDir, {}, s => import(s));
+  const cache = await makeNodeBundleCache(
+    bundlesDir,
+    {},
+    s => import(s),
+    testPowers,
+  );
 
   const registry = {
     demo: {
