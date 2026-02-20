@@ -28,7 +28,6 @@ import {
   writeFileAtomic,
 } from '@agoric/internal/src/build-cache.js';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal/board-client-utils.js';
-import { makeReadJsonFile } from '@agoric/internal/src/node/read-json.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
 import { krefOf } from '@agoric/kmarshal';
@@ -36,7 +35,6 @@ import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.j
 import { decodeProtobufBase64 } from '@agoric/orchestration/tools/protobuf-decoder.js';
 import { initSwingStore } from '@agoric/swing-store';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
-import { sharedBundleCachePath } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { makeSlogSender } from '@agoric/telemetry';
 import { TimeMath, type Timestamp } from '@agoric/time';
 import {
@@ -70,7 +68,7 @@ import type { ExecutionContext as AvaT } from 'ava';
 import type { CoreEvalSDKType } from '@agoric/cosmic-proto/swingset/swingset.js';
 import { computronCounter } from '@agoric/cosmic-swingset/src/computron-counter.js';
 import { defaultBeansPerVatCreation } from '@agoric/cosmic-swingset/src/sim-params.js';
-import type { GovernancePublishedPathTypes } from '@agoric/governance/src/types.js';
+import type { GovernancePublishedPathTypes } from '@agoric/governance';
 import type { EconomyBootstrapPowers } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 import { base64ToBytes } from '@agoric/network';
 import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
@@ -132,7 +130,6 @@ const makeBootstrapRunUtils = <
   makeRunUtils(controller, harness) as Omit<RunUtils, 'EV'> & {
     EV: BootstrapEV<BootstrapVatItems>;
   };
-
 const keysToObject = <K extends PropertyKey, V>(
   keys: K[],
   valueMaker: (key: K, i: number) => V,
@@ -286,59 +283,74 @@ type ProposalExtractorEvent =
       type: 'proposal-cache-hit' | 'proposal-cache-miss';
     };
 
-/**
- * Creates a function that can build and extract proposal data from package scripts.
- *
- * @param powers - Object containing required capabilities
- * @param powers.childProcess - Node child_process module for executing commands
- * @param powers.fs - Node fs/promises module for file operations
- * @param powers.now - Optional wall-clock function used for cache metadata and lock timing
- * @param powers.buildCoreEvalProposal - Optional in-process proposal builder implementation
- * @returns A function that builds and extracts proposal data
- */
-export const makeProposalExtractor = (
-  { childProcess, fs, now = Date.now, buildCoreEvalProposal }: Powers,
-  resolveBase = import.meta.url,
-  options: ProposalExtractorOptions = {},
-) => {
-  const importSpec = createRequire(resolveBase).resolve;
-  const readJSONFile = makeReadJsonFile(fs, harden);
-  const mode = options.mode || 'prefer-in-process';
-  const onCacheEvent = options.onCacheEvent || (() => {});
-  const schemaVersion = options.schemaVersion || 'v1';
-  const cacheRoot =
-    options.cacheRoot ||
-    join(process.cwd(), '.cache', 'boot-proposal-build', schemaVersion);
-  const scriptCacheDir = join(cacheRoot, 'script-bundle-cache');
-  const depFingerprintCacheDir = join(
-    cacheRoot,
-    'dependency-fingerprint-cache',
-  );
-  const cacheToolVersion = 'boot-proposal-cache-v1';
-  const dedupe = new Map<string, Promise<ProposalBuilderResult>>();
-  const buildProposal =
-    buildCoreEvalProposal ||
-    (async (opts: {
-      args?: string[];
-      builderPath: string;
-      cacheDir?: string;
-      childProcess?: Pick<typeof import('node:child_process'), 'execFileSync'>;
-      console?: Pick<Console, 'warn'>;
-      cwd?: string;
-      fs?: typeof import('node:fs/promises');
-      mode?: ProposalBuildMode;
-      now?: () => number;
-    }) => {
-      const proposalsMod = (await import(
-        importSpec('agoric/src/proposals.js')
-      )) as {
-        buildCoreEvalProposal: (
-          o: typeof opts,
-        ) => Promise<ProposalBuilderResult>;
-      };
-      return proposalsMod.buildCoreEvalProposal(opts);
-    });
+const PROPOSAL_CACHE_TOOL_VERSION = 'boot-proposal-cache-v1';
 
+const hashText = (text: string) =>
+  createHash('sha256').update(text).digest('hex');
+
+const hashBuffer = (content: string | Uint8Array) =>
+  createHash('sha256').update(content).digest('hex');
+
+const isPidAlive = (pid: number) => {
+  if (!Number.isInteger(pid) || pid <= 0) {
+    return false;
+  }
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const cachePathsForKey = (cacheRoot: string, key: string) => {
+  const entryDir = join(cacheRoot, key);
+  return {
+    entryDir,
+    metadataPath: join(entryDir, 'metadata.json'),
+    materialsPath: join(entryDir, 'materials.json'),
+  };
+};
+
+interface ProposalCacheStore {
+  ensureBuildDirs: () => Promise<void>;
+  fingerprintDependencies: (
+    dependencyPaths: string[],
+  ) => Promise<ProposalCacheDependency[]>;
+  loadCachedMaterials: (
+    cacheKey: string,
+  ) => Promise<ProposalBuilderResult | undefined>;
+  normalizeDependencyPaths: (dependencyPaths: string[]) => string[];
+  persistMaterials: (
+    cacheKey: string,
+    metadata: ProposalCacheMetadata,
+    materials: ProposalBuilderResult,
+  ) => Promise<void>;
+  withCacheLock: <T>(cacheKey: string, body: () => Promise<T>) => Promise<T>;
+}
+
+const makeProposalCacheStore = ({
+  cacheRoot,
+  depFingerprintCacheDir,
+  fs,
+  mode,
+  now,
+  onCacheEvent,
+  schemaVersion,
+  scriptCacheDir,
+}: {
+  cacheRoot: string;
+  depFingerprintCacheDir: string;
+  fs: typeof import('node:fs/promises');
+  mode: ProposalBuildMode;
+  now: () => number;
+  onCacheEvent: (event: ProposalExtractorEvent) => void;
+  schemaVersion: string;
+  scriptCacheDir: string;
+}): ProposalCacheStore => {
+  const lockAcquireTimeoutMs = 5 * 60_000;
+  const staleLockMs = 60_000;
+  const lockRoot = join(cacheRoot, '.locks');
   let bundleCacheP: ReturnType<typeof makeNodeBundleCache> | undefined;
   const getBundleCache = () => {
     if (!bundleCacheP) {
@@ -353,16 +365,14 @@ export const makeProposalExtractor = (
     }
     return bundleCacheP;
   };
-
-  const hashText = (text: string) =>
-    createHash('sha256').update(text).digest('hex');
-
-  const hashBuffer = (content: string | Uint8Array) =>
-    createHash('sha256').update(content).digest('hex');
-
+  const readJSONFile = async <T>(filePath: string) =>
+    harden(JSON.parse(await fs.readFile(filePath, 'utf8')) as T);
+  const sameDependencies = (
+    a: ProposalCacheDependency[],
+    b: ProposalCacheDependency[],
+  ) => JSON.stringify(a) === JSON.stringify(b);
   const normalizeDependencyPaths = (dependencyPaths: string[]) =>
     [...new Set(dependencyPaths.map(spec => pathResolve(spec)))].sort();
-
   const fingerprintDependency = async (
     dependencyPath: string,
   ): Promise<ProposalCacheDependency> => {
@@ -391,27 +401,8 @@ export const makeProposalExtractor = (
       };
     }
   };
-
   const fingerprintDependencies = async (dependencyPaths: string[]) =>
     Promise.all(dependencyPaths.map(path => fingerprintDependency(path)));
-
-  const sameDependencies = (
-    a: ProposalCacheDependency[],
-    b: ProposalCacheDependency[],
-  ) => JSON.stringify(a) === JSON.stringify(b);
-
-  const isPidAlive = (pid: number) => {
-    if (!Number.isInteger(pid) || pid <= 0) {
-      return false;
-    }
-    try {
-      process.kill(pid, 0);
-      return true;
-    } catch {
-      return false;
-    }
-  };
-
   const { withLock } = makeDirectoryLock({
     fs,
     delayMs: ms => new Promise(resolve => setTimeout(resolve, ms)),
@@ -423,20 +414,13 @@ export const makeProposalExtractor = (
     acquireTimeoutMs: lockAcquireTimeoutMs,
     onEvent: onCacheEvent,
   });
-
-  const cachePathsForKey = (key: string) => {
-    const entryDir = join(cacheRoot, key);
-    return {
-      entryDir,
-      metadataPath: join(entryDir, 'metadata.json'),
-      materialsPath: join(entryDir, 'materials.json'),
-    };
-  };
-
   const loadCachedMaterials = async (
     cacheKey: string,
   ): Promise<ProposalBuilderResult | undefined> => {
-    const { metadataPath, materialsPath } = cachePathsForKey(cacheKey);
+    const { metadataPath, materialsPath } = cachePathsForKey(
+      cacheRoot,
+      cacheKey,
+    );
     try {
       const [metadata, materials] = await Promise.all([
         readJSONFile<ProposalCacheMetadata>(metadataPath),
@@ -445,7 +429,7 @@ export const makeProposalExtractor = (
 
       if (
         metadata.schemaVersion !== schemaVersion ||
-        metadata.toolVersion !== cacheToolVersion ||
+        metadata.toolVersion !== PROPOSAL_CACHE_TOOL_VERSION ||
         metadata.mode !== mode
       ) {
         return undefined;
@@ -463,14 +447,15 @@ export const makeProposalExtractor = (
       return undefined;
     }
   };
-
   const persistMaterials = async (
     cacheKey: string,
     metadata: ProposalCacheMetadata,
     materials: ProposalBuilderResult,
   ) => {
-    const { entryDir, metadataPath, materialsPath } =
-      cachePathsForKey(cacheKey);
+    const { entryDir, metadataPath, materialsPath } = cachePathsForKey(
+      cacheRoot,
+      cacheKey,
+    );
     await fs.mkdir(entryDir, { recursive: true });
     await Promise.all([
       writeFileAtomic({
@@ -496,6 +481,81 @@ export const makeProposalExtractor = (
       }),
     ]);
   };
+  const ensureBuildDirs = async () => {
+    await fs.mkdir(cacheRoot, { recursive: true });
+    await fs.mkdir(scriptCacheDir, { recursive: true });
+  };
+
+  return harden({
+    ensureBuildDirs,
+    fingerprintDependencies,
+    loadCachedMaterials,
+    normalizeDependencyPaths,
+    persistMaterials,
+    withCacheLock: withLock,
+  });
+};
+
+/**
+ * Creates a function that can build and extract proposal data from package scripts.
+ *
+ * @param powers - Object containing required capabilities
+ * @param powers.childProcess - Node child_process module for executing commands
+ * @param powers.fs - Node fs/promises module for file operations
+ * @param powers.now - Optional wall-clock function used for cache metadata and lock timing
+ * @param powers.buildCoreEvalProposal - Optional in-process proposal builder implementation
+ * @returns A function that builds and extracts proposal data
+ */
+export const makeProposalExtractor = (
+  { childProcess, fs, now = Date.now, buildCoreEvalProposal }: Powers,
+  resolveBase = import.meta.url,
+  options: ProposalExtractorOptions = {},
+) => {
+  const importSpec = createRequire(resolveBase).resolve;
+  const mode = options.mode || 'prefer-in-process';
+  const onCacheEvent = options.onCacheEvent || (() => {});
+  const schemaVersion = options.schemaVersion || 'v1';
+  const cacheRoot =
+    options.cacheRoot ||
+    join(process.cwd(), '.cache', 'boot-proposal-build', schemaVersion);
+  const scriptCacheDir = join(cacheRoot, 'script-bundle-cache');
+  const depFingerprintCacheDir = join(
+    cacheRoot,
+    'dependency-fingerprint-cache',
+  );
+  const dedupe = new Map<string, Promise<ProposalBuilderResult>>();
+  const cacheStore = makeProposalCacheStore({
+    cacheRoot,
+    depFingerprintCacheDir,
+    fs,
+    mode,
+    now,
+    onCacheEvent,
+    schemaVersion,
+    scriptCacheDir,
+  });
+  const buildProposal =
+    buildCoreEvalProposal ||
+    (async (opts: {
+      args?: string[];
+      builderPath: string;
+      cacheDir?: string;
+      childProcess?: Pick<typeof import('node:child_process'), 'execFileSync'>;
+      console?: Pick<Console, 'warn'>;
+      cwd?: string;
+      fs?: typeof import('node:fs/promises');
+      mode?: ProposalBuildMode;
+      now?: () => number;
+    }) => {
+      const proposalsMod = (await import(
+        importSpec('agoric/src/proposals.js')
+      )) as {
+        buildCoreEvalProposal: (
+          o: typeof opts,
+        ) => Promise<ProposalBuilderResult>;
+      };
+      return proposalsMod.buildCoreEvalProposal(opts);
+    });
 
   const buildAndExtract = async (builderPath: string, args: string[] = []) => {
     const scriptPath = importSpec(builderPath);
@@ -512,8 +572,8 @@ export const makeProposalExtractor = (
       return found;
     }
 
-    const pending = withLock(cacheKey, async () => {
-      const cached = await loadCachedMaterials(cacheKey);
+    const pending = cacheStore.withCacheLock(cacheKey, async () => {
+      const cached = await cacheStore.loadCachedMaterials(cacheKey);
       if (cached) {
         onCacheEvent({
           type: 'proposal-cache-hit',
@@ -531,8 +591,7 @@ export const makeProposalExtractor = (
       });
 
       const [builtDir, cleanup] = tmpDir('agoric-proposal');
-      await fs.mkdir(cacheRoot, { recursive: true });
-      await fs.mkdir(scriptCacheDir, { recursive: true });
+      await cacheStore.ensureBuildDirs();
 
       try {
         const built = await buildProposal({
@@ -546,11 +605,12 @@ export const makeProposalExtractor = (
           mode,
           now,
         });
-        const dependencyPaths = normalizeDependencyPaths([
+        const dependencyPaths = cacheStore.normalizeDependencyPaths([
           scriptPath,
           ...(built.dependencies || []),
         ]);
-        const dependencies = await fingerprintDependencies(dependencyPaths);
+        const dependencies =
+          await cacheStore.fingerprintDependencies(dependencyPaths);
         const metadata: ProposalCacheMetadata = {
           args: [...args],
           builderPath: built.resolvedBuilderPath || scriptPath,
@@ -558,14 +618,14 @@ export const makeProposalExtractor = (
           dependencies,
           mode,
           schemaVersion,
-          toolVersion: cacheToolVersion,
+          toolVersion: PROPOSAL_CACHE_TOOL_VERSION,
         };
         const materials = harden({
           evals: built.evals,
           bundles: built.bundles,
         });
 
-        await persistMaterials(cacheKey, metadata, materials);
+        await cacheStore.persistMaterials(cacheKey, metadata, materials);
         return materials;
       } finally {
         await cleanup();
@@ -573,12 +633,13 @@ export const makeProposalExtractor = (
     });
 
     dedupe.set(cacheKey, pending);
-    const cleanupPending = pending.finally(() => {
-      if (dedupe.get(cacheKey) === pending) {
-        dedupe.delete(cacheKey);
-      }
-    });
-    void cleanupPending.catch(() => {});
+    void pending
+      .finally(() => {
+        if (dedupe.get(cacheKey) === pending) {
+          dedupe.delete(cacheKey);
+        }
+      })
+      .catch(() => {});
     return pending;
   };
 
@@ -753,7 +814,7 @@ export const makeSwingsetTestKit = async <
     EconomyBootstrapPowers['consume'],
 >(
   log: (..._: any[]) => void,
-  bundleDir = sharedBundleCachePath,
+  bundleDir = 'bundles',
   {
     configSpecifier = '@agoric/vm-config/decentral-itest-vaults-config.json',
     label = undefined as string | undefined,
@@ -801,7 +862,6 @@ export const makeSwingsetTestKit = async <
       T,
       PublishedPathTypes
     >;
-
   let lastBankNonce = 0n;
   let ibcSequenceNonce = 0;
   let lcaSequenceNonce = 0;
@@ -1067,10 +1127,7 @@ export const makeSwingsetTestKit = async <
   // 2025-02, but we suspect that `makeSwingsetTestKit` just isn't being
   // exercised in the right way.
   await controller.run();
-  const runUtils = makeBootstrapRunUtils<BootstrapVatItems>(
-    controller,
-    harness,
-  );
+  const runUtils = makeBootstrapRunUtils(controller, harness);
 
   const buildProposal = makeProposalExtractor(
     {
