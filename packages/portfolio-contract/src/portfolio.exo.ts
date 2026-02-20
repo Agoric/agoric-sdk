@@ -611,11 +611,12 @@ export const preparePortfolioKit = (
             const traceFlow = trace
               .sub(`portfolio${this.state.portfolioId}`)
               .sub(`flow${flowId}`);
-            traceFlow(`releasing pending accounts`, [
-              ...accountsPending.keys(),
-            ]);
+            const evmPendingAccounts = [...accountsPending.keys()].filter(
+              chain => chain in AxelarChain,
+            );
+            traceFlow(`releasing pending evm accounts`, evmPendingAccounts);
             const reason = Error('starting new flow');
-            for (const chainName of accountsPending.keys()) {
+            for (const chainName of evmPendingAccounts) {
               this.facets.manager.releaseAccount(chainName, reason);
             }
           }

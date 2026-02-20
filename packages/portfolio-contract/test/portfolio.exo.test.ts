@@ -287,10 +287,11 @@ test('capture stateShape to be intentional about changes', t => {
   t.snapshot(PositionStateShape, 'PositionStateShape');
 });
 
-test('manager releases pending accounts when starting a new flow', async t => {
+test('manager releases evm pending accounts when starting a new flow', async t => {
   const { makePortfolioKit } = makeTestSetup();
   const { manager, reader } = makePortfolioKit({ portfolioId: 1 });
 
+  manager.reserveAccount('noble');
   const { state: arbitrumStateBefore } =
     manager.reserveAccountState('Arbitrum');
   t.is(arbitrumStateBefore, 'new');
@@ -312,6 +313,11 @@ test('manager releases pending accounts when starting a new flow', async t => {
   const { state: arbitrumStateAfterStart } =
     manager.reserveAccountState('Arbitrum');
   t.is(arbitrumStateAfterStart, 'failed');
+
+  const { noble } = reader.accountIdByChain();
+  t.is(noble, undefined, 'no noble info');
+  const { state: nobleStateAfterStart } = manager.reserveAccountState('noble');
+  t.is(nobleStateAfterStart, 'pending');
 });
 
 test('evmHandler deposit fails if owner does not match', async t => {
