@@ -313,6 +313,7 @@ async function applyTelescopeFixes({
 
 module.exports = {
   applyTelescopeFixes,
+  fixRpcTypeImports,
   detectGnuSed,
   fixTypeImportForVerbatim,
 };
