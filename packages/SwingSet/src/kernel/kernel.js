@@ -160,6 +160,7 @@ export default function buildKernel(
 ) {
   const {
     waitUntilQuiescent,
+    now = () => 0,
     kernelStorage,
     debugPrefix,
     vatEndowments,
@@ -179,7 +180,11 @@ export default function buildKernel(
     verbose,
     warehousePolicy,
     overrideVatManagerOptions = {},
+    startupProfiler = undefined,
   } = kernelRuntimeOptions;
+  const noteStartupPhase = (label, ms) => {
+    startupProfiler && startupProfiler(label, ms);
+  };
   const logStartup = verbose ? console.debug : () => {};
   if (verbose) kdebugEnable(true);
 
@@ -1844,7 +1849,11 @@ export default function buildKernel(
 
     kernelKeeper.loadStats();
 
-    await vatWarehouse.start(logStartup);
+    {
+      const t0 = now();
+      await vatWarehouse.start(logStartup);
+      noteStartupPhase('kernel.vatWarehouse.start', now() - t0);
+    }
 
     // the admin device is endowed directly by the kernel
     deviceEndowments.vatAdmin = {
@@ -1863,6 +1872,7 @@ export default function buildKernel(
     // instantiate all devices
     for (const [name, deviceID] of kernelKeeper.getDevices()) {
       logStartup(`starting device ${name} as ${deviceID}`);
+      const deviceStart = now();
       const deviceKeeper = kernelKeeper.allocateDeviceKeeperIfNeeded(deviceID);
       const { source, options } = deviceKeeper.getSourceAndOptions();
       assert(source.bundleID);
@@ -1870,6 +1880,7 @@ export default function buildKernel(
       const { deviceParameters = {}, unendowed } = options;
       const devConsole = makeConsole(`${debugPrefix}SwingSet:dev-${name}`);
 
+      const bundleLoadStart = now();
       const bundle = kernelKeeper.getBundle(source.bundleID);
       assert(bundle);
       const NS = await importBundle(bundle, {
@@ -1881,6 +1892,10 @@ export default function buildKernel(
           assert: globalThis.assert,
         }),
       });
+      noteStartupPhase(
+        `kernel.device.${name}.importBundle`,
+        now() - bundleLoadStart,
+      );
 
       if (deviceEndowments[name] || unendowed) {
         const translators = makeDeviceTranslators(deviceID, name, kernelKeeper);
@@ -1921,6 +1936,7 @@ export default function buildKernel(
           `WARNING: skipping device ${deviceID} (${name}) because it has no endowments`,
         );
       }
+      noteStartupPhase(`kernel.device.${name}.total`, now() - deviceStart);
     }
 
     // attach vat-admin device hooks
