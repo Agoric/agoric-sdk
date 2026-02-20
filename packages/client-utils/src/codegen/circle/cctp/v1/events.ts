@@ -7,6 +7,9 @@ import { encodeBase64 as base64FromBytes } from '@endo/base64';
 /**
  * Emitted when an attester is enabled
  * @param attester newly enabled attester
+ * @name AttesterEnabled
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.AttesterEnabled
  */
 export interface AttesterEnabled {
   attester: string;
@@ -18,6 +21,9 @@ export interface AttesterEnabledProtoMsg {
 /**
  * Emitted when an attester is enabled
  * @param attester newly enabled attester
+ * @name AttesterEnabledSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.AttesterEnabled
  */
 export interface AttesterEnabledSDKType {
   attester: string;
@@ -25,6 +31,9 @@ export interface AttesterEnabledSDKType {
 /**
  * Emitted when an attester is disabled
  * @param attester newly disabled attester
+ * @name AttesterDisabled
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.AttesterDisabled
  */
 export interface AttesterDisabled {
   attester: string;
@@ -36,6 +45,9 @@ export interface AttesterDisabledProtoMsg {
 /**
  * Emitted when an attester is disabled
  * @param attester newly disabled attester
+ * @name AttesterDisabledSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.AttesterDisabled
  */
 export interface AttesterDisabledSDKType {
   attester: string;
@@ -44,6 +56,9 @@ export interface AttesterDisabledSDKType {
  * Emitted when threshold number of attestations (m in m/n multisig) is updated
  * @param old_signature_threshold old signature threshold
  * @param new_signature_threshold new signature threshold
+ * @name SignatureThresholdUpdated
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.SignatureThresholdUpdated
  */
 export interface SignatureThresholdUpdated {
   oldSignatureThreshold: bigint;
@@ -57,6 +72,9 @@ export interface SignatureThresholdUpdatedProtoMsg {
  * Emitted when threshold number of attestations (m in m/n multisig) is updated
  * @param old_signature_threshold old signature threshold
  * @param new_signature_threshold new signature threshold
+ * @name SignatureThresholdUpdatedSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.SignatureThresholdUpdated
  */
 export interface SignatureThresholdUpdatedSDKType {
   old_signature_threshold: bigint;
@@ -66,6 +84,9 @@ export interface SignatureThresholdUpdatedSDKType {
  * Emitted when owner address is updated
  * @param previous_owner representing the address of the previous owner
  * @param new_owner representing the address of the new owner
+ * @name OwnerUpdated
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.OwnerUpdated
  */
 export interface OwnerUpdated {
   previousOwner: string;
@@ -79,6 +100,9 @@ export interface OwnerUpdatedProtoMsg {
  * Emitted when owner address is updated
  * @param previous_owner representing the address of the previous owner
  * @param new_owner representing the address of the new owner
+ * @name OwnerUpdatedSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.OwnerUpdated
  */
 export interface OwnerUpdatedSDKType {
   previous_owner: string;
@@ -88,6 +112,9 @@ export interface OwnerUpdatedSDKType {
  * Emitted when starting the two stage transfer ownership process
  * @param previousOwner representing the address of the previous owner
  * @param newOwner representing the address of the new owner
+ * @name OwnershipTransferStarted
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.OwnershipTransferStarted
  */
 export interface OwnershipTransferStarted {
   previousOwner: string;
@@ -101,6 +128,9 @@ export interface OwnershipTransferStartedProtoMsg {
  * Emitted when starting the two stage transfer ownership process
  * @param previousOwner representing the address of the previous owner
  * @param newOwner representing the address of the new owner
+ * @name OwnershipTransferStartedSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.OwnershipTransferStarted
  */
 export interface OwnershipTransferStartedSDKType {
   previous_owner: string;
@@ -110,6 +140,9 @@ export interface OwnershipTransferStartedSDKType {
  * Emitted when pauser address is updated
  * @param previous_pauser representing the address of the previous pauser
  * @param new_pauser representing the address of the new pauser
+ * @name PauserUpdated
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.PauserUpdated
  */
 export interface PauserUpdated {
   previousPauser: string;
@@ -123,6 +156,9 @@ export interface PauserUpdatedProtoMsg {
  * Emitted when pauser address is updated
  * @param previous_pauser representing the address of the previous pauser
  * @param new_pauser representing the address of the new pauser
+ * @name PauserUpdatedSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.PauserUpdated
  */
 export interface PauserUpdatedSDKType {
   previous_pauser: string;
@@ -134,6 +170,9 @@ export interface PauserUpdatedSDKType {
  * attester manager
  * @param new_attester_manager representing the address of the new attester
  * manager
+ * @name AttesterManagerUpdated
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.AttesterManagerUpdated
  */
 export interface AttesterManagerUpdated {
   previousAttesterManager: string;
@@ -149,6 +188,9 @@ export interface AttesterManagerUpdatedProtoMsg {
  * attester manager
  * @param new_attester_manager representing the address of the new attester
  * manager
+ * @name AttesterManagerUpdatedSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.AttesterManagerUpdated
  */
 export interface AttesterManagerUpdatedSDKType {
   previous_attester_manager: string;
@@ -160,6 +202,9 @@ export interface AttesterManagerUpdatedSDKType {
  * token controller
  * @param new_token_controller representing the address of the new token
  * controller
+ * @name TokenControllerUpdated
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.TokenControllerUpdated
  */
 export interface TokenControllerUpdated {
   previousTokenController: string;
@@ -175,42 +220,85 @@ export interface TokenControllerUpdatedProtoMsg {
  * token controller
  * @param new_token_controller representing the address of the new token
  * controller
+ * @name TokenControllerUpdatedSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.TokenControllerUpdated
  */
 export interface TokenControllerUpdatedSDKType {
   previous_token_controller: string;
   new_token_controller: string;
 }
-/** Emitted when burning and minting tokens is paused */
+/**
+ * Emitted when burning and minting tokens is paused
+ * @name BurningAndMintingPausedEvent
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.BurningAndMintingPausedEvent
+ */
 export interface BurningAndMintingPausedEvent {}
 export interface BurningAndMintingPausedEventProtoMsg {
   typeUrl: '/circle.cctp.v1.BurningAndMintingPausedEvent';
   value: Uint8Array;
 }
-/** Emitted when burning and minting tokens is paused */
+/**
+ * Emitted when burning and minting tokens is paused
+ * @name BurningAndMintingPausedEventSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.BurningAndMintingPausedEvent
+ */
 export interface BurningAndMintingPausedEventSDKType {}
-/** Emitted when burning and minting tokens is unpaused */
+/**
+ * Emitted when burning and minting tokens is unpaused
+ * @name BurningAndMintingUnpausedEvent
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.BurningAndMintingUnpausedEvent
+ */
 export interface BurningAndMintingUnpausedEvent {}
 export interface BurningAndMintingUnpausedEventProtoMsg {
   typeUrl: '/circle.cctp.v1.BurningAndMintingUnpausedEvent';
   value: Uint8Array;
 }
-/** Emitted when burning and minting tokens is unpaused */
+/**
+ * Emitted when burning and minting tokens is unpaused
+ * @name BurningAndMintingUnpausedEventSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.BurningAndMintingUnpausedEvent
+ */
 export interface BurningAndMintingUnpausedEventSDKType {}
-/** Emitted when sending and receiving messages is paused */
+/**
+ * Emitted when sending and receiving messages is paused
+ * @name SendingAndReceivingPausedEvent
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.SendingAndReceivingPausedEvent
+ */
 export interface SendingAndReceivingPausedEvent {}
 export interface SendingAndReceivingPausedEventProtoMsg {
   typeUrl: '/circle.cctp.v1.SendingAndReceivingPausedEvent';
   value: Uint8Array;
 }
-/** Emitted when sending and receiving messages is paused */
+/**
+ * Emitted when sending and receiving messages is paused
+ * @name SendingAndReceivingPausedEventSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.SendingAndReceivingPausedEvent
+ */
 export interface SendingAndReceivingPausedEventSDKType {}
-/** Emitted when sending and receiving messages is paused */
+/**
+ * Emitted when sending and receiving messages is paused
+ * @name SendingAndReceivingUnpausedEvent
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.SendingAndReceivingUnpausedEvent
+ */
 export interface SendingAndReceivingUnpausedEvent {}
 export interface SendingAndReceivingUnpausedEventProtoMsg {
   typeUrl: '/circle.cctp.v1.SendingAndReceivingUnpausedEvent';
   value: Uint8Array;
 }
-/** Emitted when sending and receiving messages is paused */
+/**
+ * Emitted when sending and receiving messages is paused
+ * @name SendingAndReceivingUnpausedEventSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.SendingAndReceivingUnpausedEvent
+ */
 export interface SendingAndReceivingUnpausedEventSDKType {}
 /**
  * Emitted when a DepositForBurn message is sent
@@ -226,6 +314,9 @@ export interface SendingAndReceivingUnpausedEventSDKType {}
  * @param destination_caller authorized caller as bytes32 of receiveMessage() on
  * destination domain, if not equal to bytes32(0). If equal to bytes32(0), any
  * address can call receiveMessage().
+ * @name DepositForBurn
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.DepositForBurn
  */
 export interface DepositForBurn {
   nonce: bigint;
@@ -255,6 +346,9 @@ export interface DepositForBurnProtoMsg {
  * @param destination_caller authorized caller as bytes32 of receiveMessage() on
  * destination domain, if not equal to bytes32(0). If equal to bytes32(0), any
  * address can call receiveMessage().
+ * @name DepositForBurnSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.DepositForBurn
  */
 export interface DepositForBurnSDKType {
   nonce: bigint;
@@ -271,6 +365,9 @@ export interface DepositForBurnSDKType {
  * @param mint_recipient recipient address of minted tokens
  * @param amount amount of minted tokens
  * @param mint_token contract address of minted token
+ * @name MintAndWithdraw
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MintAndWithdraw
  */
 export interface MintAndWithdraw {
   mintRecipient: Uint8Array;
@@ -286,6 +383,9 @@ export interface MintAndWithdrawProtoMsg {
  * @param mint_recipient recipient address of minted tokens
  * @param amount amount of minted tokens
  * @param mint_token contract address of minted token
+ * @name MintAndWithdrawSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MintAndWithdraw
  */
 export interface MintAndWithdrawSDKType {
   mint_recipient: Uint8Array;
@@ -297,6 +397,9 @@ export interface MintAndWithdrawSDKType {
  * @param local_token local token to support
  * @param remote_domain remote domain
  * @param remote_token token on `remoteDomain` corresponding to `localToken`
+ * @name TokenPairLinked
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.TokenPairLinked
  */
 export interface TokenPairLinked {
   localToken: string;
@@ -312,6 +415,9 @@ export interface TokenPairLinkedProtoMsg {
  * @param local_token local token to support
  * @param remote_domain remote domain
  * @param remote_token token on `remoteDomain` corresponding to `localToken`
+ * @name TokenPairLinkedSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.TokenPairLinked
  */
 export interface TokenPairLinkedSDKType {
   local_token: string;
@@ -323,6 +429,9 @@ export interface TokenPairLinkedSDKType {
  * @param local_token local token address
  * @param remote_domain remote domain
  * @param remote_token token on `remoteDomain` unlinked from `localToken`
+ * @name TokenPairUnlinked
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.TokenPairUnlinked
  */
 export interface TokenPairUnlinked {
   localToken: string;
@@ -338,6 +447,9 @@ export interface TokenPairUnlinkedProtoMsg {
  * @param local_token local token address
  * @param remote_domain remote domain
  * @param remote_token token on `remoteDomain` unlinked from `localToken`
+ * @name TokenPairUnlinkedSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.TokenPairUnlinked
  */
 export interface TokenPairUnlinkedSDKType {
   local_token: string;
@@ -347,6 +459,9 @@ export interface TokenPairUnlinkedSDKType {
 /**
  * Emitted when a new message is dispatched
  * @param message Raw bytes of message
+ * @name MessageSent
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MessageSent
  */
 export interface MessageSent {
   message: Uint8Array;
@@ -358,6 +473,9 @@ export interface MessageSentProtoMsg {
 /**
  * Emitted when a new message is dispatched
  * @param message Raw bytes of message
+ * @name MessageSentSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MessageSent
  */
 export interface MessageSentSDKType {
   message: Uint8Array;
@@ -369,6 +487,9 @@ export interface MessageSentSDKType {
  * @param nonce the nonce unique to this message
  * @param sender the sender of this message
  * @param message_body message body bytes
+ * @name MessageReceived
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MessageReceived
  */
 export interface MessageReceived {
   caller: string;
@@ -388,6 +509,9 @@ export interface MessageReceivedProtoMsg {
  * @param nonce the nonce unique to this message
  * @param sender the sender of this message
  * @param message_body message body bytes
+ * @name MessageReceivedSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MessageReceived
  */
 export interface MessageReceivedSDKType {
   caller: string;
@@ -399,6 +523,9 @@ export interface MessageReceivedSDKType {
 /**
  * Emitted when max message body size is updated
  * @param new_max_message_body_size new maximum message body size, in bytes
+ * @name MaxMessageBodySizeUpdated
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MaxMessageBodySizeUpdated
  */
 export interface MaxMessageBodySizeUpdated {
   newMaxMessageBodySize: bigint;
@@ -410,6 +537,9 @@ export interface MaxMessageBodySizeUpdatedProtoMsg {
 /**
  * Emitted when max message body size is updated
  * @param new_max_message_body_size new maximum message body size, in bytes
+ * @name MaxMessageBodySizeUpdatedSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MaxMessageBodySizeUpdated
  */
 export interface MaxMessageBodySizeUpdatedSDKType {
   new_max_message_body_size: bigint;
@@ -418,6 +548,9 @@ export interface MaxMessageBodySizeUpdatedSDKType {
  * Emitted when a RemoteTokenMessenger is added
  * @param domain remote domain
  * @param remote_token_messenger RemoteTokenMessenger on domain
+ * @name RemoteTokenMessengerAdded
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.RemoteTokenMessengerAdded
  */
 export interface RemoteTokenMessengerAdded {
   domain: number;
@@ -431,6 +564,9 @@ export interface RemoteTokenMessengerAddedProtoMsg {
  * Emitted when a RemoteTokenMessenger is added
  * @param domain remote domain
  * @param remote_token_messenger RemoteTokenMessenger on domain
+ * @name RemoteTokenMessengerAddedSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.RemoteTokenMessengerAdded
  */
 export interface RemoteTokenMessengerAddedSDKType {
   domain: number;
@@ -440,6 +576,9 @@ export interface RemoteTokenMessengerAddedSDKType {
  * Emitted when a RemoteTokenMessenger is removed
  * @param domain remote domain
  * @param remote_token_messenger RemoteTokenMessenger on domain
+ * @name RemoteTokenMessengerRemoved
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.RemoteTokenMessengerRemoved
  */
 export interface RemoteTokenMessengerRemoved {
   domain: number;
@@ -453,6 +592,9 @@ export interface RemoteTokenMessengerRemovedProtoMsg {
  * Emitted when a RemoteTokenMessenger is removed
  * @param domain remote domain
  * @param remote_token_messenger RemoteTokenMessenger on domain
+ * @name RemoteTokenMessengerRemovedSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.RemoteTokenMessengerRemoved
  */
 export interface RemoteTokenMessengerRemovedSDKType {
   domain: number;
@@ -463,6 +605,9 @@ export interface RemoteTokenMessengerRemovedSDKType {
  * @param local_token
  * @param old_amount old max burn amount
  * @param new_amount new max burn amount
+ * @name SetBurnLimitPerMessage
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.SetBurnLimitPerMessage
  */
 export interface SetBurnLimitPerMessage {
   token: string;
@@ -477,6 +622,9 @@ export interface SetBurnLimitPerMessageProtoMsg {
  * @param local_token
  * @param old_amount old max burn amount
  * @param new_amount new max burn amount
+ * @name SetBurnLimitPerMessageSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.SetBurnLimitPerMessage
  */
 export interface SetBurnLimitPerMessageSDKType {
   token: string;
@@ -487,6 +635,13 @@ function createBaseAttesterEnabled(): AttesterEnabled {
     attester: '',
   };
 }
+/**
+ * Emitted when an attester is enabled
+ * @param attester newly enabled attester
+ * @name AttesterEnabled
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.AttesterEnabled
+ */
 export const AttesterEnabled = {
   typeUrl: '/circle.cctp.v1.AttesterEnabled' as const,
   encode(
@@ -549,6 +704,13 @@ function createBaseAttesterDisabled(): AttesterDisabled {
     attester: '',
   };
 }
+/**
+ * Emitted when an attester is disabled
+ * @param attester newly disabled attester
+ * @name AttesterDisabled
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.AttesterDisabled
+ */
 export const AttesterDisabled = {
   typeUrl: '/circle.cctp.v1.AttesterDisabled' as const,
   encode(
@@ -612,6 +774,14 @@ function createBaseSignatureThresholdUpdated(): SignatureThresholdUpdated {
     newSignatureThreshold: BigInt(0),
   };
 }
+/**
+ * Emitted when threshold number of attestations (m in m/n multisig) is updated
+ * @param old_signature_threshold old signature threshold
+ * @param new_signature_threshold new signature threshold
+ * @name SignatureThresholdUpdated
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.SignatureThresholdUpdated
+ */
 export const SignatureThresholdUpdated = {
   typeUrl: '/circle.cctp.v1.SignatureThresholdUpdated' as const,
   encode(
@@ -713,6 +883,14 @@ function createBaseOwnerUpdated(): OwnerUpdated {
     newOwner: '',
   };
 }
+/**
+ * Emitted when owner address is updated
+ * @param previous_owner representing the address of the previous owner
+ * @param new_owner representing the address of the new owner
+ * @name OwnerUpdated
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.OwnerUpdated
+ */
 export const OwnerUpdated = {
   typeUrl: '/circle.cctp.v1.OwnerUpdated' as const,
   encode(
@@ -788,6 +966,14 @@ function createBaseOwnershipTransferStarted(): OwnershipTransferStarted {
     newOwner: '',
   };
 }
+/**
+ * Emitted when starting the two stage transfer ownership process
+ * @param previousOwner representing the address of the previous owner
+ * @param newOwner representing the address of the new owner
+ * @name OwnershipTransferStarted
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.OwnershipTransferStarted
+ */
 export const OwnershipTransferStarted = {
   typeUrl: '/circle.cctp.v1.OwnershipTransferStarted' as const,
   encode(
@@ -874,6 +1060,14 @@ function createBasePauserUpdated(): PauserUpdated {
     newPauser: '',
   };
 }
+/**
+ * Emitted when pauser address is updated
+ * @param previous_pauser representing the address of the previous pauser
+ * @param new_pauser representing the address of the new pauser
+ * @name PauserUpdated
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.PauserUpdated
+ */
 export const PauserUpdated = {
   typeUrl: '/circle.cctp.v1.PauserUpdated' as const,
   encode(
@@ -949,6 +1143,16 @@ function createBaseAttesterManagerUpdated(): AttesterManagerUpdated {
     newAttesterManager: '',
   };
 }
+/**
+ * Emitted when attester manager address is updated
+ * @param previous_attester_manager representing the address of the previous
+ * attester manager
+ * @param new_attester_manager representing the address of the new attester
+ * manager
+ * @name AttesterManagerUpdated
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.AttesterManagerUpdated
+ */
 export const AttesterManagerUpdated = {
   typeUrl: '/circle.cctp.v1.AttesterManagerUpdated' as const,
   encode(
@@ -1032,6 +1236,16 @@ function createBaseTokenControllerUpdated(): TokenControllerUpdated {
     newTokenController: '',
   };
 }
+/**
+ * Emitted when token controller address is updated
+ * @param previous_token_controller representing the address of the previous
+ * token controller
+ * @param new_token_controller representing the address of the new token
+ * controller
+ * @name TokenControllerUpdated
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.TokenControllerUpdated
+ */
 export const TokenControllerUpdated = {
   typeUrl: '/circle.cctp.v1.TokenControllerUpdated' as const,
   encode(
@@ -1112,6 +1326,12 @@ export const TokenControllerUpdated = {
 function createBaseBurningAndMintingPausedEvent(): BurningAndMintingPausedEvent {
   return {};
 }
+/**
+ * Emitted when burning and minting tokens is paused
+ * @name BurningAndMintingPausedEvent
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.BurningAndMintingPausedEvent
+ */
 export const BurningAndMintingPausedEvent = {
   typeUrl: '/circle.cctp.v1.BurningAndMintingPausedEvent' as const,
   encode(
@@ -1173,6 +1393,12 @@ export const BurningAndMintingPausedEvent = {
 function createBaseBurningAndMintingUnpausedEvent(): BurningAndMintingUnpausedEvent {
   return {};
 }
+/**
+ * Emitted when burning and minting tokens is unpaused
+ * @name BurningAndMintingUnpausedEvent
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.BurningAndMintingUnpausedEvent
+ */
 export const BurningAndMintingUnpausedEvent = {
   typeUrl: '/circle.cctp.v1.BurningAndMintingUnpausedEvent' as const,
   encode(
@@ -1234,6 +1460,12 @@ export const BurningAndMintingUnpausedEvent = {
 function createBaseSendingAndReceivingPausedEvent(): SendingAndReceivingPausedEvent {
   return {};
 }
+/**
+ * Emitted when sending and receiving messages is paused
+ * @name SendingAndReceivingPausedEvent
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.SendingAndReceivingPausedEvent
+ */
 export const SendingAndReceivingPausedEvent = {
   typeUrl: '/circle.cctp.v1.SendingAndReceivingPausedEvent' as const,
   encode(
@@ -1295,6 +1527,12 @@ export const SendingAndReceivingPausedEvent = {
 function createBaseSendingAndReceivingUnpausedEvent(): SendingAndReceivingUnpausedEvent {
   return {};
 }
+/**
+ * Emitted when sending and receiving messages is paused
+ * @name SendingAndReceivingUnpausedEvent
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.SendingAndReceivingUnpausedEvent
+ */
 export const SendingAndReceivingUnpausedEvent = {
   typeUrl: '/circle.cctp.v1.SendingAndReceivingUnpausedEvent' as const,
   encode(
@@ -1365,6 +1603,24 @@ function createBaseDepositForBurn(): DepositForBurn {
     destinationCaller: new Uint8Array(),
   };
 }
+/**
+ * Emitted when a DepositForBurn message is sent
+ * @param nonce unique nonce reserved by message
+ * @param burn_token address of token burnt on source domain
+ * @param amount deposit amount
+ * @param depositor address where deposit is transferred from
+ * @param mint_recipient address receiving minted tokens on destination domain
+ * as bytes32
+ * @param destination_domain destination domain
+ * @param destination_token_messenger address of TokenMessenger on destination
+ * domain as bytes32
+ * @param destination_caller authorized caller as bytes32 of receiveMessage() on
+ * destination domain, if not equal to bytes32(0). If equal to bytes32(0), any
+ * address can call receiveMessage().
+ * @name DepositForBurn
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.DepositForBurn
+ */
 export const DepositForBurn = {
   typeUrl: '/circle.cctp.v1.DepositForBurn' as const,
   encode(
@@ -1521,6 +1777,15 @@ function createBaseMintAndWithdraw(): MintAndWithdraw {
     mintToken: '',
   };
 }
+/**
+ * Emitted when tokens are minted
+ * @param mint_recipient recipient address of minted tokens
+ * @param amount amount of minted tokens
+ * @param mint_token contract address of minted token
+ * @name MintAndWithdraw
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MintAndWithdraw
+ */
 export const MintAndWithdraw = {
   typeUrl: '/circle.cctp.v1.MintAndWithdraw' as const,
   encode(
@@ -1610,6 +1875,15 @@ function createBaseTokenPairLinked(): TokenPairLinked {
     remoteToken: new Uint8Array(),
   };
 }
+/**
+ * Emitted when a token pair is linked
+ * @param local_token local token to support
+ * @param remote_domain remote domain
+ * @param remote_token token on `remoteDomain` corresponding to `localToken`
+ * @name TokenPairLinked
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.TokenPairLinked
+ */
 export const TokenPairLinked = {
   typeUrl: '/circle.cctp.v1.TokenPairLinked' as const,
   encode(
@@ -1702,6 +1976,15 @@ function createBaseTokenPairUnlinked(): TokenPairUnlinked {
     remoteToken: new Uint8Array(),
   };
 }
+/**
+ * Emitted when a token pair is unlinked
+ * @param local_token local token address
+ * @param remote_domain remote domain
+ * @param remote_token token on `remoteDomain` unlinked from `localToken`
+ * @name TokenPairUnlinked
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.TokenPairUnlinked
+ */
 export const TokenPairUnlinked = {
   typeUrl: '/circle.cctp.v1.TokenPairUnlinked' as const,
   encode(
@@ -1792,6 +2075,13 @@ function createBaseMessageSent(): MessageSent {
     message: new Uint8Array(),
   };
 }
+/**
+ * Emitted when a new message is dispatched
+ * @param message Raw bytes of message
+ * @name MessageSent
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MessageSent
+ */
 export const MessageSent = {
   typeUrl: '/circle.cctp.v1.MessageSent' as const,
   encode(
@@ -1863,6 +2153,17 @@ function createBaseMessageReceived(): MessageReceived {
     messageBody: new Uint8Array(),
   };
 }
+/**
+ * Emitted when a new message is received
+ * @param caller caller (msg.sender) on destination domain
+ * @param source_domain the source domain this message originated from
+ * @param nonce the nonce unique to this message
+ * @param sender the sender of this message
+ * @param message_body message body bytes
+ * @name MessageReceived
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MessageReceived
+ */
 export const MessageReceived = {
   typeUrl: '/circle.cctp.v1.MessageReceived' as const,
   encode(
@@ -1980,6 +2281,13 @@ function createBaseMaxMessageBodySizeUpdated(): MaxMessageBodySizeUpdated {
     newMaxMessageBodySize: BigInt(0),
   };
 }
+/**
+ * Emitted when max message body size is updated
+ * @param new_max_message_body_size new maximum message body size, in bytes
+ * @name MaxMessageBodySizeUpdated
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MaxMessageBodySizeUpdated
+ */
 export const MaxMessageBodySizeUpdated = {
   typeUrl: '/circle.cctp.v1.MaxMessageBodySizeUpdated' as const,
   encode(
@@ -2063,6 +2371,14 @@ function createBaseRemoteTokenMessengerAdded(): RemoteTokenMessengerAdded {
     remoteTokenMessenger: new Uint8Array(),
   };
 }
+/**
+ * Emitted when a RemoteTokenMessenger is added
+ * @param domain remote domain
+ * @param remote_token_messenger RemoteTokenMessenger on domain
+ * @name RemoteTokenMessengerAdded
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.RemoteTokenMessengerAdded
+ */
 export const RemoteTokenMessengerAdded = {
   typeUrl: '/circle.cctp.v1.RemoteTokenMessengerAdded' as const,
   encode(
@@ -2154,6 +2470,14 @@ function createBaseRemoteTokenMessengerRemoved(): RemoteTokenMessengerRemoved {
     remoteTokenMessenger: new Uint8Array(),
   };
 }
+/**
+ * Emitted when a RemoteTokenMessenger is removed
+ * @param domain remote domain
+ * @param remote_token_messenger RemoteTokenMessenger on domain
+ * @name RemoteTokenMessengerRemoved
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.RemoteTokenMessengerRemoved
+ */
 export const RemoteTokenMessengerRemoved = {
   typeUrl: '/circle.cctp.v1.RemoteTokenMessengerRemoved' as const,
   encode(
@@ -2245,6 +2569,15 @@ function createBaseSetBurnLimitPerMessage(): SetBurnLimitPerMessage {
     burnLimitPerMessage: '',
   };
 }
+/**
+ * Emitted when max burn amount per message is updated
+ * @param local_token
+ * @param old_amount old max burn amount
+ * @param new_amount new max burn amount
+ * @name SetBurnLimitPerMessage
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.SetBurnLimitPerMessage
+ */
 export const SetBurnLimitPerMessage = {
   typeUrl: '/circle.cctp.v1.SetBurnLimitPerMessage' as const,
   encode(

@@ -2,7 +2,12 @@
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
-/** Config is the config object of the x/auth/tx package. */
+/**
+ * Config is the config object of the x/auth/tx package.
+ * @name Config
+ * @package cosmos.tx.config.v1
+ * @see proto type: cosmos.tx.config.v1.Config
+ */
 export interface Config {
   /**
    * skip_ante_handler defines whether the ante handler registration should be skipped in case an app wants to override
@@ -19,7 +24,12 @@ export interface ConfigProtoMsg {
   typeUrl: '/cosmos.tx.config.v1.Config';
   value: Uint8Array;
 }
-/** Config is the config object of the x/auth/tx package. */
+/**
+ * Config is the config object of the x/auth/tx package.
+ * @name ConfigSDKType
+ * @package cosmos.tx.config.v1
+ * @see proto type: cosmos.tx.config.v1.Config
+ */
 export interface ConfigSDKType {
   skip_ante_handler: boolean;
   skip_post_handler: boolean;
@@ -30,6 +40,12 @@ function createBaseConfig(): Config {
     skipPostHandler: false,
   };
 }
+/**
+ * Config is the config object of the x/auth/tx package.
+ * @name Config
+ * @package cosmos.tx.config.v1
+ * @see proto type: cosmos.tx.config.v1.Config
+ */
 export const Config = {
   typeUrl: '/cosmos.tx.config.v1.Config' as const,
   encode(

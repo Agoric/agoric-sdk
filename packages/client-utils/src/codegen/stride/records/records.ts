@@ -219,8 +219,15 @@ export function lSMTokenDeposit_StatusToJSON(
       return 'UNRECOGNIZED';
   }
 }
+/**
+ * @name UserRedemptionRecord
+ * @package stride.records
+ * @see proto type: stride.records.UserRedemptionRecord
+ */
 export interface UserRedemptionRecord {
-  /** {chain_id}.{epoch}.{receiver} */
+  /**
+   * {chain_id}.{epoch}.{receiver}
+   */
   id: string;
   receiver: string;
   nativeTokenAmount: string;
@@ -234,6 +241,11 @@ export interface UserRedemptionRecordProtoMsg {
   typeUrl: '/stride.records.UserRedemptionRecord';
   value: Uint8Array;
 }
+/**
+ * @name UserRedemptionRecordSDKType
+ * @package stride.records
+ * @see proto type: stride.records.UserRedemptionRecord
+ */
 export interface UserRedemptionRecordSDKType {
   id: string;
   receiver: string;
@@ -244,6 +256,11 @@ export interface UserRedemptionRecordSDKType {
   claim_is_pending: boolean;
   st_token_amount: string;
 }
+/**
+ * @name DepositRecord
+ * @package stride.records
+ * @see proto type: stride.records.DepositRecord
+ */
 export interface DepositRecord {
   id: bigint;
   amount: string;
@@ -258,6 +275,11 @@ export interface DepositRecordProtoMsg {
   typeUrl: '/stride.records.DepositRecord';
   value: Uint8Array;
 }
+/**
+ * @name DepositRecordSDKType
+ * @package stride.records
+ * @see proto type: stride.records.DepositRecord
+ */
 export interface DepositRecordSDKType {
   id: bigint;
   amount: string;
@@ -268,6 +290,11 @@ export interface DepositRecordSDKType {
   source: DepositRecord_Source;
   delegation_txs_in_progress: bigint;
 }
+/**
+ * @name HostZoneUnbonding
+ * @package stride.records
+ * @see proto type: stride.records.HostZoneUnbonding
+ */
 export interface HostZoneUnbonding {
   stTokenAmount: string;
   nativeTokenAmount: string;
@@ -285,6 +312,11 @@ export interface HostZoneUnbondingProtoMsg {
   typeUrl: '/stride.records.HostZoneUnbonding';
   value: Uint8Array;
 }
+/**
+ * @name HostZoneUnbondingSDKType
+ * @package stride.records
+ * @see proto type: stride.records.HostZoneUnbonding
+ */
 export interface HostZoneUnbondingSDKType {
   st_token_amount: string;
   native_token_amount: string;
@@ -298,6 +330,11 @@ export interface HostZoneUnbondingSDKType {
   status: HostZoneUnbonding_Status;
   user_redemption_records: string[];
 }
+/**
+ * @name EpochUnbondingRecord
+ * @package stride.records
+ * @see proto type: stride.records.EpochUnbondingRecord
+ */
 export interface EpochUnbondingRecord {
   epochNumber: bigint;
   hostZoneUnbondings: HostZoneUnbonding[];
@@ -306,10 +343,20 @@ export interface EpochUnbondingRecordProtoMsg {
   typeUrl: '/stride.records.EpochUnbondingRecord';
   value: Uint8Array;
 }
+/**
+ * @name EpochUnbondingRecordSDKType
+ * @package stride.records
+ * @see proto type: stride.records.EpochUnbondingRecord
+ */
 export interface EpochUnbondingRecordSDKType {
   epoch_number: bigint;
   host_zone_unbondings: HostZoneUnbondingSDKType[];
 }
+/**
+ * @name LSMTokenDeposit
+ * @package stride.records
+ * @see proto type: stride.records.LSMTokenDeposit
+ */
 export interface LSMTokenDeposit {
   depositId: string;
   chainId: string;
@@ -325,6 +372,11 @@ export interface LSMTokenDepositProtoMsg {
   typeUrl: '/stride.records.LSMTokenDeposit';
   value: Uint8Array;
 }
+/**
+ * @name LSMTokenDepositSDKType
+ * @package stride.records
+ * @see proto type: stride.records.LSMTokenDeposit
+ */
 export interface LSMTokenDepositSDKType {
   deposit_id: string;
   chain_id: string;
@@ -348,6 +400,11 @@ function createBaseUserRedemptionRecord(): UserRedemptionRecord {
     stTokenAmount: '',
   };
 }
+/**
+ * @name UserRedemptionRecord
+ * @package stride.records
+ * @see proto type: stride.records.UserRedemptionRecord
+ */
 export const UserRedemptionRecord = {
   typeUrl: '/stride.records.UserRedemptionRecord' as const,
   encode(
@@ -498,6 +555,11 @@ function createBaseDepositRecord(): DepositRecord {
     delegationTxsInProgress: BigInt(0),
   };
 }
+/**
+ * @name DepositRecord
+ * @package stride.records
+ * @see proto type: stride.records.DepositRecord
+ */
 export const DepositRecord = {
   typeUrl: '/stride.records.DepositRecord' as const,
   encode(
@@ -660,6 +722,11 @@ function createBaseHostZoneUnbonding(): HostZoneUnbonding {
     userRedemptionRecords: [],
   };
 }
+/**
+ * @name HostZoneUnbonding
+ * @package stride.records
+ * @see proto type: stride.records.HostZoneUnbonding
+ */
 export const HostZoneUnbonding = {
   typeUrl: '/stride.records.HostZoneUnbonding' as const,
   encode(
@@ -853,6 +920,11 @@ function createBaseEpochUnbondingRecord(): EpochUnbondingRecord {
     hostZoneUnbondings: [],
   };
 }
+/**
+ * @name EpochUnbondingRecord
+ * @package stride.records
+ * @see proto type: stride.records.EpochUnbondingRecord
+ */
 export const EpochUnbondingRecord = {
   typeUrl: '/stride.records.EpochUnbondingRecord' as const,
   encode(
@@ -955,6 +1027,11 @@ function createBaseLSMTokenDeposit(): LSMTokenDeposit {
     status: 0,
   };
 }
+/**
+ * @name LSMTokenDeposit
+ * @package stride.records
+ * @see proto type: stride.records.LSMTokenDeposit
+ */
 export const LSMTokenDeposit = {
   typeUrl: '/stride.records.LSMTokenDeposit' as const,
   encode(

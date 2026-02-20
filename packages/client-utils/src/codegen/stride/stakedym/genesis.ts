@@ -14,17 +14,30 @@ import {
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { type JsonSafe } from '../../json-safe.js';
 import { isSet } from '../../helpers.js';
-/** Params defines the stakedym module parameters. */
+/**
+ * Params defines the stakedym module parameters.
+ * @name Params
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.Params
+ */
 export interface Params {}
 export interface ParamsProtoMsg {
   typeUrl: '/stride.stakedym.Params';
   value: Uint8Array;
 }
-/** Params defines the stakedym module parameters. */
+/**
+ * Params defines the stakedym module parameters.
+ * @name ParamsSDKType
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.Params
+ */
 export interface ParamsSDKType {}
 /**
  * TransferInProgressRecordIds stores record IDs for delegation records
  * that have a transfer in progress
+ * @name TransferInProgressRecordIds
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.TransferInProgressRecordIds
  */
 export interface TransferInProgressRecordIds {
   channelId: string;
@@ -38,13 +51,21 @@ export interface TransferInProgressRecordIdsProtoMsg {
 /**
  * TransferInProgressRecordIds stores record IDs for delegation records
  * that have a transfer in progress
+ * @name TransferInProgressRecordIdsSDKType
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.TransferInProgressRecordIds
  */
 export interface TransferInProgressRecordIdsSDKType {
   channel_id: string;
   sequence: bigint;
   record_id: bigint;
 }
-/** GenesisState defines the stakedym module's genesis state. */
+/**
+ * GenesisState defines the stakedym module's genesis state.
+ * @name GenesisState
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.GenesisState
+ */
 export interface GenesisState {
   params: Params;
   hostZone: HostZone;
@@ -58,7 +79,12 @@ export interface GenesisStateProtoMsg {
   typeUrl: '/stride.stakedym.GenesisState';
   value: Uint8Array;
 }
-/** GenesisState defines the stakedym module's genesis state. */
+/**
+ * GenesisState defines the stakedym module's genesis state.
+ * @name GenesisStateSDKType
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.GenesisState
+ */
 export interface GenesisStateSDKType {
   params: ParamsSDKType;
   host_zone: HostZoneSDKType;
@@ -71,6 +97,12 @@ export interface GenesisStateSDKType {
 function createBaseParams(): Params {
   return {};
 }
+/**
+ * Params defines the stakedym module parameters.
+ * @name Params
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.Params
+ */
 export const Params = {
   typeUrl: '/stride.stakedym.Params' as const,
   encode(
@@ -125,6 +157,13 @@ function createBaseTransferInProgressRecordIds(): TransferInProgressRecordIds {
     recordId: BigInt(0),
   };
 }
+/**
+ * TransferInProgressRecordIds stores record IDs for delegation records
+ * that have a transfer in progress
+ * @name TransferInProgressRecordIds
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.TransferInProgressRecordIds
+ */
 export const TransferInProgressRecordIds = {
   typeUrl: '/stride.stakedym.TransferInProgressRecordIds' as const,
   encode(
@@ -234,6 +273,12 @@ function createBaseGenesisState(): GenesisState {
     transferInProgressRecordIds: [],
   };
 }
+/**
+ * GenesisState defines the stakedym module's genesis state.
+ * @name GenesisState
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.GenesisState
+ */
 export const GenesisState = {
   typeUrl: '/stride.stakedym.GenesisState' as const,
   encode(

@@ -2,29 +2,49 @@
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
-/** AppDescriptor describes a cosmos-sdk based application */
+/**
+ * AppDescriptor describes a cosmos-sdk based application
+ * @name AppDescriptor
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.AppDescriptor
+ */
 export interface AppDescriptor {
   /**
    * AuthnDescriptor provides information on how to authenticate transactions on the application
    * NOTE: experimental and subject to change in future releases.
    */
   authn?: AuthnDescriptor;
-  /** chain provides the chain descriptor */
+  /**
+   * chain provides the chain descriptor
+   */
   chain?: ChainDescriptor;
-  /** codec provides metadata information regarding codec related types */
+  /**
+   * codec provides metadata information regarding codec related types
+   */
   codec?: CodecDescriptor;
-  /** configuration provides metadata information regarding the sdk.Config type */
+  /**
+   * configuration provides metadata information regarding the sdk.Config type
+   */
   configuration?: ConfigurationDescriptor;
-  /** query_services provides metadata information regarding the available queriable endpoints */
+  /**
+   * query_services provides metadata information regarding the available queriable endpoints
+   */
   queryServices?: QueryServicesDescriptor;
-  /** tx provides metadata information regarding how to send transactions to the given application */
+  /**
+   * tx provides metadata information regarding how to send transactions to the given application
+   */
   tx?: TxDescriptor;
 }
 export interface AppDescriptorProtoMsg {
   typeUrl: '/cosmos.base.reflection.v2alpha1.AppDescriptor';
   value: Uint8Array;
 }
-/** AppDescriptor describes a cosmos-sdk based application */
+/**
+ * AppDescriptor describes a cosmos-sdk based application
+ * @name AppDescriptorSDKType
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.AppDescriptor
+ */
 export interface AppDescriptorSDKType {
   authn?: AuthnDescriptorSDKType;
   chain?: ChainDescriptorSDKType;
@@ -33,7 +53,12 @@ export interface AppDescriptorSDKType {
   query_services?: QueryServicesDescriptorSDKType;
   tx?: TxDescriptorSDKType;
 }
-/** TxDescriptor describes the accepted transaction type */
+/**
+ * TxDescriptor describes the accepted transaction type
+ * @name TxDescriptor
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.TxDescriptor
+ */
 export interface TxDescriptor {
   /**
    * fullname is the protobuf fullname of the raw transaction type (for instance the tx.Tx type)
@@ -41,14 +66,21 @@ export interface TxDescriptor {
    * reflection clients to understand if they can handle a specific transaction type in an application.
    */
   fullname: string;
-  /** msgs lists the accepted application messages (sdk.Msg) */
+  /**
+   * msgs lists the accepted application messages (sdk.Msg)
+   */
   msgs: MsgDescriptor[];
 }
 export interface TxDescriptorProtoMsg {
   typeUrl: '/cosmos.base.reflection.v2alpha1.TxDescriptor';
   value: Uint8Array;
 }
-/** TxDescriptor describes the accepted transaction type */
+/**
+ * TxDescriptor describes the accepted transaction type
+ * @name TxDescriptorSDKType
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.TxDescriptor
+ */
 export interface TxDescriptorSDKType {
   fullname: string;
   msgs: MsgDescriptorSDKType[];
@@ -56,9 +88,14 @@ export interface TxDescriptorSDKType {
 /**
  * AuthnDescriptor provides information on how to sign transactions without relying
  * on the online RPCs GetTxMetadata and CombineUnsignedTxAndSignatures
+ * @name AuthnDescriptor
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.AuthnDescriptor
  */
 export interface AuthnDescriptor {
-  /** sign_modes defines the supported signature algorithm */
+  /**
+   * sign_modes defines the supported signature algorithm
+   */
   signModes: SigningModeDescriptor[];
 }
 export interface AuthnDescriptorProtoMsg {
@@ -68,6 +105,9 @@ export interface AuthnDescriptorProtoMsg {
 /**
  * AuthnDescriptor provides information on how to sign transactions without relying
  * on the online RPCs GetTxMetadata and CombineUnsignedTxAndSignatures
+ * @name AuthnDescriptorSDKType
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.AuthnDescriptor
  */
 export interface AuthnDescriptorSDKType {
   sign_modes: SigningModeDescriptorSDKType[];
@@ -77,11 +117,18 @@ export interface AuthnDescriptorSDKType {
  * NOTE(fdymylja): here we could go as far as providing an entire flow on how
  * to sign a message given a SigningModeDescriptor, but it's better to think about
  * this another time
+ * @name SigningModeDescriptor
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.SigningModeDescriptor
  */
 export interface SigningModeDescriptor {
-  /** name defines the unique name of the signing mode */
+  /**
+   * name defines the unique name of the signing mode
+   */
   name: string;
-  /** number is the unique int32 identifier for the sign_mode enum */
+  /**
+   * number is the unique int32 identifier for the sign_mode enum
+   */
   number: number;
   /**
    * authn_info_provider_method_fullname defines the fullname of the method to call to get
@@ -98,63 +145,111 @@ export interface SigningModeDescriptorProtoMsg {
  * NOTE(fdymylja): here we could go as far as providing an entire flow on how
  * to sign a message given a SigningModeDescriptor, but it's better to think about
  * this another time
+ * @name SigningModeDescriptorSDKType
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.SigningModeDescriptor
  */
 export interface SigningModeDescriptorSDKType {
   name: string;
   number: number;
   authn_info_provider_method_fullname: string;
 }
-/** ChainDescriptor describes chain information of the application */
+/**
+ * ChainDescriptor describes chain information of the application
+ * @name ChainDescriptor
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.ChainDescriptor
+ */
 export interface ChainDescriptor {
-  /** id is the chain id */
+  /**
+   * id is the chain id
+   */
   id: string;
 }
 export interface ChainDescriptorProtoMsg {
   typeUrl: '/cosmos.base.reflection.v2alpha1.ChainDescriptor';
   value: Uint8Array;
 }
-/** ChainDescriptor describes chain information of the application */
+/**
+ * ChainDescriptor describes chain information of the application
+ * @name ChainDescriptorSDKType
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.ChainDescriptor
+ */
 export interface ChainDescriptorSDKType {
   id: string;
 }
-/** CodecDescriptor describes the registered interfaces and provides metadata information on the types */
+/**
+ * CodecDescriptor describes the registered interfaces and provides metadata information on the types
+ * @name CodecDescriptor
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.CodecDescriptor
+ */
 export interface CodecDescriptor {
-  /** interfaces is a list of the registerted interfaces descriptors */
+  /**
+   * interfaces is a list of the registerted interfaces descriptors
+   */
   interfaces: InterfaceDescriptor[];
 }
 export interface CodecDescriptorProtoMsg {
   typeUrl: '/cosmos.base.reflection.v2alpha1.CodecDescriptor';
   value: Uint8Array;
 }
-/** CodecDescriptor describes the registered interfaces and provides metadata information on the types */
+/**
+ * CodecDescriptor describes the registered interfaces and provides metadata information on the types
+ * @name CodecDescriptorSDKType
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.CodecDescriptor
+ */
 export interface CodecDescriptorSDKType {
   interfaces: InterfaceDescriptorSDKType[];
 }
-/** InterfaceDescriptor describes the implementation of an interface */
+/**
+ * InterfaceDescriptor describes the implementation of an interface
+ * @name InterfaceDescriptor
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.InterfaceDescriptor
+ */
 export interface InterfaceDescriptor {
-  /** fullname is the name of the interface */
+  /**
+   * fullname is the name of the interface
+   */
   fullname: string;
   /**
    * interface_accepting_messages contains information regarding the proto messages which contain the interface as
    * google.protobuf.Any field
    */
   interfaceAcceptingMessages: InterfaceAcceptingMessageDescriptor[];
-  /** interface_implementers is a list of the descriptors of the interface implementers */
+  /**
+   * interface_implementers is a list of the descriptors of the interface implementers
+   */
   interfaceImplementers: InterfaceImplementerDescriptor[];
 }
 export interface InterfaceDescriptorProtoMsg {
   typeUrl: '/cosmos.base.reflection.v2alpha1.InterfaceDescriptor';
   value: Uint8Array;
 }
-/** InterfaceDescriptor describes the implementation of an interface */
+/**
+ * InterfaceDescriptor describes the implementation of an interface
+ * @name InterfaceDescriptorSDKType
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.InterfaceDescriptor
+ */
 export interface InterfaceDescriptorSDKType {
   fullname: string;
   interface_accepting_messages: InterfaceAcceptingMessageDescriptorSDKType[];
   interface_implementers: InterfaceImplementerDescriptorSDKType[];
 }
-/** InterfaceImplementerDescriptor describes an interface implementer */
+/**
+ * InterfaceImplementerDescriptor describes an interface implementer
+ * @name InterfaceImplementerDescriptor
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.InterfaceImplementerDescriptor
+ */
 export interface InterfaceImplementerDescriptor {
-  /** fullname is the protobuf queryable name of the interface implementer */
+  /**
+   * fullname is the protobuf queryable name of the interface implementer
+   */
   fullname: string;
   /**
    * type_url defines the type URL used when marshalling the type as any
@@ -168,7 +263,12 @@ export interface InterfaceImplementerDescriptorProtoMsg {
   typeUrl: '/cosmos.base.reflection.v2alpha1.InterfaceImplementerDescriptor';
   value: Uint8Array;
 }
-/** InterfaceImplementerDescriptor describes an interface implementer */
+/**
+ * InterfaceImplementerDescriptor describes an interface implementer
+ * @name InterfaceImplementerDescriptorSDKType
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.InterfaceImplementerDescriptor
+ */
 export interface InterfaceImplementerDescriptorSDKType {
   fullname: string;
   type_url: string;
@@ -176,9 +276,14 @@ export interface InterfaceImplementerDescriptorSDKType {
 /**
  * InterfaceAcceptingMessageDescriptor describes a protobuf message which contains
  * an interface represented as a google.protobuf.Any
+ * @name InterfaceAcceptingMessageDescriptor
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.InterfaceAcceptingMessageDescriptor
  */
 export interface InterfaceAcceptingMessageDescriptor {
-  /** fullname is the protobuf fullname of the type containing the interface */
+  /**
+   * fullname is the protobuf fullname of the type containing the interface
+   */
   fullname: string;
   /**
    * field_descriptor_names is a list of the protobuf name (not fullname) of the field
@@ -194,151 +299,303 @@ export interface InterfaceAcceptingMessageDescriptorProtoMsg {
 /**
  * InterfaceAcceptingMessageDescriptor describes a protobuf message which contains
  * an interface represented as a google.protobuf.Any
+ * @name InterfaceAcceptingMessageDescriptorSDKType
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.InterfaceAcceptingMessageDescriptor
  */
 export interface InterfaceAcceptingMessageDescriptorSDKType {
   fullname: string;
   field_descriptor_names: string[];
 }
-/** ConfigurationDescriptor contains metadata information on the sdk.Config */
+/**
+ * ConfigurationDescriptor contains metadata information on the sdk.Config
+ * @name ConfigurationDescriptor
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.ConfigurationDescriptor
+ */
 export interface ConfigurationDescriptor {
-  /** bech32_account_address_prefix is the account address prefix */
+  /**
+   * bech32_account_address_prefix is the account address prefix
+   */
   bech32AccountAddressPrefix: string;
 }
 export interface ConfigurationDescriptorProtoMsg {
   typeUrl: '/cosmos.base.reflection.v2alpha1.ConfigurationDescriptor';
   value: Uint8Array;
 }
-/** ConfigurationDescriptor contains metadata information on the sdk.Config */
+/**
+ * ConfigurationDescriptor contains metadata information on the sdk.Config
+ * @name ConfigurationDescriptorSDKType
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.ConfigurationDescriptor
+ */
 export interface ConfigurationDescriptorSDKType {
   bech32_account_address_prefix: string;
 }
-/** MsgDescriptor describes a cosmos-sdk message that can be delivered with a transaction */
+/**
+ * MsgDescriptor describes a cosmos-sdk message that can be delivered with a transaction
+ * @name MsgDescriptor
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.MsgDescriptor
+ */
 export interface MsgDescriptor {
-  /** msg_type_url contains the TypeURL of a sdk.Msg. */
+  /**
+   * msg_type_url contains the TypeURL of a sdk.Msg.
+   */
   msgTypeUrl: string;
 }
 export interface MsgDescriptorProtoMsg {
   typeUrl: '/cosmos.base.reflection.v2alpha1.MsgDescriptor';
   value: Uint8Array;
 }
-/** MsgDescriptor describes a cosmos-sdk message that can be delivered with a transaction */
+/**
+ * MsgDescriptor describes a cosmos-sdk message that can be delivered with a transaction
+ * @name MsgDescriptorSDKType
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.MsgDescriptor
+ */
 export interface MsgDescriptorSDKType {
   msg_type_url: string;
 }
-/** GetAuthnDescriptorRequest is the request used for the GetAuthnDescriptor RPC */
+/**
+ * GetAuthnDescriptorRequest is the request used for the GetAuthnDescriptor RPC
+ * @name GetAuthnDescriptorRequest
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.GetAuthnDescriptorRequest
+ */
 export interface GetAuthnDescriptorRequest {}
 export interface GetAuthnDescriptorRequestProtoMsg {
   typeUrl: '/cosmos.base.reflection.v2alpha1.GetAuthnDescriptorRequest';
   value: Uint8Array;
 }
-/** GetAuthnDescriptorRequest is the request used for the GetAuthnDescriptor RPC */
+/**
+ * GetAuthnDescriptorRequest is the request used for the GetAuthnDescriptor RPC
+ * @name GetAuthnDescriptorRequestSDKType
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.GetAuthnDescriptorRequest
+ */
 export interface GetAuthnDescriptorRequestSDKType {}
-/** GetAuthnDescriptorResponse is the response returned by the GetAuthnDescriptor RPC */
+/**
+ * GetAuthnDescriptorResponse is the response returned by the GetAuthnDescriptor RPC
+ * @name GetAuthnDescriptorResponse
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.GetAuthnDescriptorResponse
+ */
 export interface GetAuthnDescriptorResponse {
-  /** authn describes how to authenticate to the application when sending transactions */
+  /**
+   * authn describes how to authenticate to the application when sending transactions
+   */
   authn?: AuthnDescriptor;
 }
 export interface GetAuthnDescriptorResponseProtoMsg {
   typeUrl: '/cosmos.base.reflection.v2alpha1.GetAuthnDescriptorResponse';
   value: Uint8Array;
 }
-/** GetAuthnDescriptorResponse is the response returned by the GetAuthnDescriptor RPC */
+/**
+ * GetAuthnDescriptorResponse is the response returned by the GetAuthnDescriptor RPC
+ * @name GetAuthnDescriptorResponseSDKType
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.GetAuthnDescriptorResponse
+ */
 export interface GetAuthnDescriptorResponseSDKType {
   authn?: AuthnDescriptorSDKType;
 }
-/** GetChainDescriptorRequest is the request used for the GetChainDescriptor RPC */
+/**
+ * GetChainDescriptorRequest is the request used for the GetChainDescriptor RPC
+ * @name GetChainDescriptorRequest
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.GetChainDescriptorRequest
+ */
 export interface GetChainDescriptorRequest {}
 export interface GetChainDescriptorRequestProtoMsg {
   typeUrl: '/cosmos.base.reflection.v2alpha1.GetChainDescriptorRequest';
   value: Uint8Array;
 }
-/** GetChainDescriptorRequest is the request used for the GetChainDescriptor RPC */
+/**
+ * GetChainDescriptorRequest is the request used for the GetChainDescriptor RPC
+ * @name GetChainDescriptorRequestSDKType
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.GetChainDescriptorRequest
+ */
 export interface GetChainDescriptorRequestSDKType {}
-/** GetChainDescriptorResponse is the response returned by the GetChainDescriptor RPC */
+/**
+ * GetChainDescriptorResponse is the response returned by the GetChainDescriptor RPC
+ * @name GetChainDescriptorResponse
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.GetChainDescriptorResponse
+ */
 export interface GetChainDescriptorResponse {
-  /** chain describes application chain information */
+  /**
+   * chain describes application chain information
+   */
   chain?: ChainDescriptor;
 }
 export interface GetChainDescriptorResponseProtoMsg {
   typeUrl: '/cosmos.base.reflection.v2alpha1.GetChainDescriptorResponse';
   value: Uint8Array;
 }
-/** GetChainDescriptorResponse is the response returned by the GetChainDescriptor RPC */
+/**
+ * GetChainDescriptorResponse is the response returned by the GetChainDescriptor RPC
+ * @name GetChainDescriptorResponseSDKType
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.GetChainDescriptorResponse
+ */
 export interface GetChainDescriptorResponseSDKType {
   chain?: ChainDescriptorSDKType;
 }
-/** GetCodecDescriptorRequest is the request used for the GetCodecDescriptor RPC */
+/**
+ * GetCodecDescriptorRequest is the request used for the GetCodecDescriptor RPC
+ * @name GetCodecDescriptorRequest
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.GetCodecDescriptorRequest
+ */
 export interface GetCodecDescriptorRequest {}
 export interface GetCodecDescriptorRequestProtoMsg {
   typeUrl: '/cosmos.base.reflection.v2alpha1.GetCodecDescriptorRequest';
   value: Uint8Array;
 }
-/** GetCodecDescriptorRequest is the request used for the GetCodecDescriptor RPC */
+/**
+ * GetCodecDescriptorRequest is the request used for the GetCodecDescriptor RPC
+ * @name GetCodecDescriptorRequestSDKType
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.GetCodecDescriptorRequest
+ */
 export interface GetCodecDescriptorRequestSDKType {}
-/** GetCodecDescriptorResponse is the response returned by the GetCodecDescriptor RPC */
+/**
+ * GetCodecDescriptorResponse is the response returned by the GetCodecDescriptor RPC
+ * @name GetCodecDescriptorResponse
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.GetCodecDescriptorResponse
+ */
 export interface GetCodecDescriptorResponse {
-  /** codec describes the application codec such as registered interfaces and implementations */
+  /**
+   * codec describes the application codec such as registered interfaces and implementations
+   */
   codec?: CodecDescriptor;
 }
 export interface GetCodecDescriptorResponseProtoMsg {
   typeUrl: '/cosmos.base.reflection.v2alpha1.GetCodecDescriptorResponse';
   value: Uint8Array;
 }
-/** GetCodecDescriptorResponse is the response returned by the GetCodecDescriptor RPC */
+/**
+ * GetCodecDescriptorResponse is the response returned by the GetCodecDescriptor RPC
+ * @name GetCodecDescriptorResponseSDKType
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.GetCodecDescriptorResponse
+ */
 export interface GetCodecDescriptorResponseSDKType {
   codec?: CodecDescriptorSDKType;
 }
-/** GetConfigurationDescriptorRequest is the request used for the GetConfigurationDescriptor RPC */
+/**
+ * GetConfigurationDescriptorRequest is the request used for the GetConfigurationDescriptor RPC
+ * @name GetConfigurationDescriptorRequest
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.GetConfigurationDescriptorRequest
+ */
 export interface GetConfigurationDescriptorRequest {}
 export interface GetConfigurationDescriptorRequestProtoMsg {
   typeUrl: '/cosmos.base.reflection.v2alpha1.GetConfigurationDescriptorRequest';
   value: Uint8Array;
 }
-/** GetConfigurationDescriptorRequest is the request used for the GetConfigurationDescriptor RPC */
+/**
+ * GetConfigurationDescriptorRequest is the request used for the GetConfigurationDescriptor RPC
+ * @name GetConfigurationDescriptorRequestSDKType
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.GetConfigurationDescriptorRequest
+ */
 export interface GetConfigurationDescriptorRequestSDKType {}
-/** GetConfigurationDescriptorResponse is the response returned by the GetConfigurationDescriptor RPC */
+/**
+ * GetConfigurationDescriptorResponse is the response returned by the GetConfigurationDescriptor RPC
+ * @name GetConfigurationDescriptorResponse
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.GetConfigurationDescriptorResponse
+ */
 export interface GetConfigurationDescriptorResponse {
-  /** config describes the application's sdk.Config */
+  /**
+   * config describes the application's sdk.Config
+   */
   config?: ConfigurationDescriptor;
 }
 export interface GetConfigurationDescriptorResponseProtoMsg {
   typeUrl: '/cosmos.base.reflection.v2alpha1.GetConfigurationDescriptorResponse';
   value: Uint8Array;
 }
-/** GetConfigurationDescriptorResponse is the response returned by the GetConfigurationDescriptor RPC */
+/**
+ * GetConfigurationDescriptorResponse is the response returned by the GetConfigurationDescriptor RPC
+ * @name GetConfigurationDescriptorResponseSDKType
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.GetConfigurationDescriptorResponse
+ */
 export interface GetConfigurationDescriptorResponseSDKType {
   config?: ConfigurationDescriptorSDKType;
 }
-/** GetQueryServicesDescriptorRequest is the request used for the GetQueryServicesDescriptor RPC */
+/**
+ * GetQueryServicesDescriptorRequest is the request used for the GetQueryServicesDescriptor RPC
+ * @name GetQueryServicesDescriptorRequest
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.GetQueryServicesDescriptorRequest
+ */
 export interface GetQueryServicesDescriptorRequest {}
 export interface GetQueryServicesDescriptorRequestProtoMsg {
   typeUrl: '/cosmos.base.reflection.v2alpha1.GetQueryServicesDescriptorRequest';
   value: Uint8Array;
 }
-/** GetQueryServicesDescriptorRequest is the request used for the GetQueryServicesDescriptor RPC */
+/**
+ * GetQueryServicesDescriptorRequest is the request used for the GetQueryServicesDescriptor RPC
+ * @name GetQueryServicesDescriptorRequestSDKType
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.GetQueryServicesDescriptorRequest
+ */
 export interface GetQueryServicesDescriptorRequestSDKType {}
-/** GetQueryServicesDescriptorResponse is the response returned by the GetQueryServicesDescriptor RPC */
+/**
+ * GetQueryServicesDescriptorResponse is the response returned by the GetQueryServicesDescriptor RPC
+ * @name GetQueryServicesDescriptorResponse
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.GetQueryServicesDescriptorResponse
+ */
 export interface GetQueryServicesDescriptorResponse {
-  /** queries provides information on the available queryable services */
+  /**
+   * queries provides information on the available queryable services
+   */
   queries?: QueryServicesDescriptor;
 }
 export interface GetQueryServicesDescriptorResponseProtoMsg {
   typeUrl: '/cosmos.base.reflection.v2alpha1.GetQueryServicesDescriptorResponse';
   value: Uint8Array;
 }
-/** GetQueryServicesDescriptorResponse is the response returned by the GetQueryServicesDescriptor RPC */
+/**
+ * GetQueryServicesDescriptorResponse is the response returned by the GetQueryServicesDescriptor RPC
+ * @name GetQueryServicesDescriptorResponseSDKType
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.GetQueryServicesDescriptorResponse
+ */
 export interface GetQueryServicesDescriptorResponseSDKType {
   queries?: QueryServicesDescriptorSDKType;
 }
-/** GetTxDescriptorRequest is the request used for the GetTxDescriptor RPC */
+/**
+ * GetTxDescriptorRequest is the request used for the GetTxDescriptor RPC
+ * @name GetTxDescriptorRequest
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.GetTxDescriptorRequest
+ */
 export interface GetTxDescriptorRequest {}
 export interface GetTxDescriptorRequestProtoMsg {
   typeUrl: '/cosmos.base.reflection.v2alpha1.GetTxDescriptorRequest';
   value: Uint8Array;
 }
-/** GetTxDescriptorRequest is the request used for the GetTxDescriptor RPC */
+/**
+ * GetTxDescriptorRequest is the request used for the GetTxDescriptor RPC
+ * @name GetTxDescriptorRequestSDKType
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.GetTxDescriptorRequest
+ */
 export interface GetTxDescriptorRequestSDKType {}
-/** GetTxDescriptorResponse is the response returned by the GetTxDescriptor RPC */
+/**
+ * GetTxDescriptorResponse is the response returned by the GetTxDescriptor RPC
+ * @name GetTxDescriptorResponse
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.GetTxDescriptorResponse
+ */
 export interface GetTxDescriptorResponse {
   /**
    * tx provides information on msgs that can be forwarded to the application
@@ -350,37 +607,70 @@ export interface GetTxDescriptorResponseProtoMsg {
   typeUrl: '/cosmos.base.reflection.v2alpha1.GetTxDescriptorResponse';
   value: Uint8Array;
 }
-/** GetTxDescriptorResponse is the response returned by the GetTxDescriptor RPC */
+/**
+ * GetTxDescriptorResponse is the response returned by the GetTxDescriptor RPC
+ * @name GetTxDescriptorResponseSDKType
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.GetTxDescriptorResponse
+ */
 export interface GetTxDescriptorResponseSDKType {
   tx?: TxDescriptorSDKType;
 }
-/** QueryServicesDescriptor contains the list of cosmos-sdk queriable services */
+/**
+ * QueryServicesDescriptor contains the list of cosmos-sdk queriable services
+ * @name QueryServicesDescriptor
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.QueryServicesDescriptor
+ */
 export interface QueryServicesDescriptor {
-  /** query_services is a list of cosmos-sdk QueryServiceDescriptor */
+  /**
+   * query_services is a list of cosmos-sdk QueryServiceDescriptor
+   */
   queryServices: QueryServiceDescriptor[];
 }
 export interface QueryServicesDescriptorProtoMsg {
   typeUrl: '/cosmos.base.reflection.v2alpha1.QueryServicesDescriptor';
   value: Uint8Array;
 }
-/** QueryServicesDescriptor contains the list of cosmos-sdk queriable services */
+/**
+ * QueryServicesDescriptor contains the list of cosmos-sdk queriable services
+ * @name QueryServicesDescriptorSDKType
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.QueryServicesDescriptor
+ */
 export interface QueryServicesDescriptorSDKType {
   query_services: QueryServiceDescriptorSDKType[];
 }
-/** QueryServiceDescriptor describes a cosmos-sdk queryable service */
+/**
+ * QueryServiceDescriptor describes a cosmos-sdk queryable service
+ * @name QueryServiceDescriptor
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.QueryServiceDescriptor
+ */
 export interface QueryServiceDescriptor {
-  /** fullname is the protobuf fullname of the service descriptor */
+  /**
+   * fullname is the protobuf fullname of the service descriptor
+   */
   fullname: string;
-  /** is_module describes if this service is actually exposed by an application's module */
+  /**
+   * is_module describes if this service is actually exposed by an application's module
+   */
   isModule: boolean;
-  /** methods provides a list of query service methods */
+  /**
+   * methods provides a list of query service methods
+   */
   methods: QueryMethodDescriptor[];
 }
 export interface QueryServiceDescriptorProtoMsg {
   typeUrl: '/cosmos.base.reflection.v2alpha1.QueryServiceDescriptor';
   value: Uint8Array;
 }
-/** QueryServiceDescriptor describes a cosmos-sdk queryable service */
+/**
+ * QueryServiceDescriptor describes a cosmos-sdk queryable service
+ * @name QueryServiceDescriptorSDKType
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.QueryServiceDescriptor
+ */
 export interface QueryServiceDescriptorSDKType {
   fullname: string;
   is_module: boolean;
@@ -390,9 +680,14 @@ export interface QueryServiceDescriptorSDKType {
  * QueryMethodDescriptor describes a queryable method of a query service
  * no other info is provided beside method name and tendermint queryable path
  * because it would be redundant with the grpc reflection service
+ * @name QueryMethodDescriptor
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.QueryMethodDescriptor
  */
 export interface QueryMethodDescriptor {
-  /** name is the protobuf name (not fullname) of the method */
+  /**
+   * name is the protobuf name (not fullname) of the method
+   */
   name: string;
   /**
    * full_query_path is the path that can be used to query
@@ -408,6 +703,9 @@ export interface QueryMethodDescriptorProtoMsg {
  * QueryMethodDescriptor describes a queryable method of a query service
  * no other info is provided beside method name and tendermint queryable path
  * because it would be redundant with the grpc reflection service
+ * @name QueryMethodDescriptorSDKType
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.QueryMethodDescriptor
  */
 export interface QueryMethodDescriptorSDKType {
   name: string;
@@ -423,8 +721,21 @@ function createBaseAppDescriptor(): AppDescriptor {
     tx: undefined,
   };
 }
+/**
+ * AppDescriptor describes a cosmos-sdk based application
+ * @name AppDescriptor
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.AppDescriptor
+ */
 export const AppDescriptor = {
   typeUrl: '/cosmos.base.reflection.v2alpha1.AppDescriptor' as const,
+  aminoType: 'cosmos-sdk/AppDescriptor' as const,
+  is(o: any): o is AppDescriptor {
+    return o && o.$typeUrl === AppDescriptor.typeUrl;
+  },
+  isSDK(o: any): o is AppDescriptorSDKType {
+    return o && o.$typeUrl === AppDescriptor.typeUrl;
+  },
   encode(
     message: AppDescriptor,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -587,8 +898,33 @@ function createBaseTxDescriptor(): TxDescriptor {
     msgs: [],
   };
 }
+/**
+ * TxDescriptor describes the accepted transaction type
+ * @name TxDescriptor
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.TxDescriptor
+ */
 export const TxDescriptor = {
   typeUrl: '/cosmos.base.reflection.v2alpha1.TxDescriptor' as const,
+  aminoType: 'cosmos-sdk/TxDescriptor' as const,
+  is(o: any): o is TxDescriptor {
+    return (
+      o &&
+      (o.$typeUrl === TxDescriptor.typeUrl ||
+        (typeof o.fullname === 'string' &&
+          Array.isArray(o.msgs) &&
+          (!o.msgs.length || MsgDescriptor.is(o.msgs[0]))))
+    );
+  },
+  isSDK(o: any): o is TxDescriptorSDKType {
+    return (
+      o &&
+      (o.$typeUrl === TxDescriptor.typeUrl ||
+        (typeof o.fullname === 'string' &&
+          Array.isArray(o.msgs) &&
+          (!o.msgs.length || MsgDescriptor.isSDK(o.msgs[0]))))
+    );
+  },
   encode(
     message: TxDescriptor,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -666,8 +1002,33 @@ function createBaseAuthnDescriptor(): AuthnDescriptor {
     signModes: [],
   };
 }
+/**
+ * AuthnDescriptor provides information on how to sign transactions without relying
+ * on the online RPCs GetTxMetadata and CombineUnsignedTxAndSignatures
+ * @name AuthnDescriptor
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.AuthnDescriptor
+ */
 export const AuthnDescriptor = {
   typeUrl: '/cosmos.base.reflection.v2alpha1.AuthnDescriptor' as const,
+  aminoType: 'cosmos-sdk/AuthnDescriptor' as const,
+  is(o: any): o is AuthnDescriptor {
+    return (
+      o &&
+      (o.$typeUrl === AuthnDescriptor.typeUrl ||
+        (Array.isArray(o.signModes) &&
+          (!o.signModes.length || SigningModeDescriptor.is(o.signModes[0]))))
+    );
+  },
+  isSDK(o: any): o is AuthnDescriptorSDKType {
+    return (
+      o &&
+      (o.$typeUrl === AuthnDescriptor.typeUrl ||
+        (Array.isArray(o.sign_modes) &&
+          (!o.sign_modes.length ||
+            SigningModeDescriptor.isSDK(o.sign_modes[0]))))
+    );
+  },
   encode(
     message: AuthnDescriptor,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -741,8 +1102,36 @@ function createBaseSigningModeDescriptor(): SigningModeDescriptor {
     authnInfoProviderMethodFullname: '',
   };
 }
+/**
+ * SigningModeDescriptor provides information on a signing flow of the application
+ * NOTE(fdymylja): here we could go as far as providing an entire flow on how
+ * to sign a message given a SigningModeDescriptor, but it's better to think about
+ * this another time
+ * @name SigningModeDescriptor
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.SigningModeDescriptor
+ */
 export const SigningModeDescriptor = {
   typeUrl: '/cosmos.base.reflection.v2alpha1.SigningModeDescriptor' as const,
+  aminoType: 'cosmos-sdk/SigningModeDescriptor' as const,
+  is(o: any): o is SigningModeDescriptor {
+    return (
+      o &&
+      (o.$typeUrl === SigningModeDescriptor.typeUrl ||
+        (typeof o.name === 'string' &&
+          typeof o.number === 'number' &&
+          typeof o.authnInfoProviderMethodFullname === 'string'))
+    );
+  },
+  isSDK(o: any): o is SigningModeDescriptorSDKType {
+    return (
+      o &&
+      (o.$typeUrl === SigningModeDescriptor.typeUrl ||
+        (typeof o.name === 'string' &&
+          typeof o.number === 'number' &&
+          typeof o.authn_info_provider_method_fullname === 'string'))
+    );
+  },
   encode(
     message: SigningModeDescriptor,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -831,8 +1220,25 @@ function createBaseChainDescriptor(): ChainDescriptor {
     id: '',
   };
 }
+/**
+ * ChainDescriptor describes chain information of the application
+ * @name ChainDescriptor
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.ChainDescriptor
+ */
 export const ChainDescriptor = {
   typeUrl: '/cosmos.base.reflection.v2alpha1.ChainDescriptor' as const,
+  aminoType: 'cosmos-sdk/ChainDescriptor' as const,
+  is(o: any): o is ChainDescriptor {
+    return (
+      o && (o.$typeUrl === ChainDescriptor.typeUrl || typeof o.id === 'string')
+    );
+  },
+  isSDK(o: any): o is ChainDescriptorSDKType {
+    return (
+      o && (o.$typeUrl === ChainDescriptor.typeUrl || typeof o.id === 'string')
+    );
+  },
   encode(
     message: ChainDescriptor,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -893,8 +1299,31 @@ function createBaseCodecDescriptor(): CodecDescriptor {
     interfaces: [],
   };
 }
+/**
+ * CodecDescriptor describes the registered interfaces and provides metadata information on the types
+ * @name CodecDescriptor
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.CodecDescriptor
+ */
 export const CodecDescriptor = {
   typeUrl: '/cosmos.base.reflection.v2alpha1.CodecDescriptor' as const,
+  aminoType: 'cosmos-sdk/CodecDescriptor' as const,
+  is(o: any): o is CodecDescriptor {
+    return (
+      o &&
+      (o.$typeUrl === CodecDescriptor.typeUrl ||
+        (Array.isArray(o.interfaces) &&
+          (!o.interfaces.length || InterfaceDescriptor.is(o.interfaces[0]))))
+    );
+  },
+  isSDK(o: any): o is CodecDescriptorSDKType {
+    return (
+      o &&
+      (o.$typeUrl === CodecDescriptor.typeUrl ||
+        (Array.isArray(o.interfaces) &&
+          (!o.interfaces.length || InterfaceDescriptor.isSDK(o.interfaces[0]))))
+    );
+  },
   encode(
     message: CodecDescriptor,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -968,8 +1397,45 @@ function createBaseInterfaceDescriptor(): InterfaceDescriptor {
     interfaceImplementers: [],
   };
 }
+/**
+ * InterfaceDescriptor describes the implementation of an interface
+ * @name InterfaceDescriptor
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.InterfaceDescriptor
+ */
 export const InterfaceDescriptor = {
   typeUrl: '/cosmos.base.reflection.v2alpha1.InterfaceDescriptor' as const,
+  aminoType: 'cosmos-sdk/InterfaceDescriptor' as const,
+  is(o: any): o is InterfaceDescriptor {
+    return (
+      o &&
+      (o.$typeUrl === InterfaceDescriptor.typeUrl ||
+        (typeof o.fullname === 'string' &&
+          Array.isArray(o.interfaceAcceptingMessages) &&
+          (!o.interfaceAcceptingMessages.length ||
+            InterfaceAcceptingMessageDescriptor.is(
+              o.interfaceAcceptingMessages[0],
+            )) &&
+          Array.isArray(o.interfaceImplementers) &&
+          (!o.interfaceImplementers.length ||
+            InterfaceImplementerDescriptor.is(o.interfaceImplementers[0]))))
+    );
+  },
+  isSDK(o: any): o is InterfaceDescriptorSDKType {
+    return (
+      o &&
+      (o.$typeUrl === InterfaceDescriptor.typeUrl ||
+        (typeof o.fullname === 'string' &&
+          Array.isArray(o.interface_accepting_messages) &&
+          (!o.interface_accepting_messages.length ||
+            InterfaceAcceptingMessageDescriptor.isSDK(
+              o.interface_accepting_messages[0],
+            )) &&
+          Array.isArray(o.interface_implementers) &&
+          (!o.interface_implementers.length ||
+            InterfaceImplementerDescriptor.isSDK(o.interface_implementers[0]))))
+    );
+  },
   encode(
     message: InterfaceDescriptor,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1090,9 +1556,30 @@ function createBaseInterfaceImplementerDescriptor(): InterfaceImplementerDescrip
     typeUrl: '',
   };
 }
+/**
+ * InterfaceImplementerDescriptor describes an interface implementer
+ * @name InterfaceImplementerDescriptor
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.InterfaceImplementerDescriptor
+ */
 export const InterfaceImplementerDescriptor = {
   typeUrl:
     '/cosmos.base.reflection.v2alpha1.InterfaceImplementerDescriptor' as const,
+  aminoType: 'cosmos-sdk/InterfaceImplementerDescriptor' as const,
+  is(o: any): o is InterfaceImplementerDescriptor {
+    return (
+      o &&
+      (o.$typeUrl === InterfaceImplementerDescriptor.typeUrl ||
+        (typeof o.fullname === 'string' && typeof o.typeUrl === 'string'))
+    );
+  },
+  isSDK(o: any): o is InterfaceImplementerDescriptorSDKType {
+    return (
+      o &&
+      (o.$typeUrl === InterfaceImplementerDescriptor.typeUrl ||
+        (typeof o.fullname === 'string' && typeof o.type_url === 'string'))
+    );
+  },
   encode(
     message: InterfaceImplementerDescriptor,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1175,9 +1662,37 @@ function createBaseInterfaceAcceptingMessageDescriptor(): InterfaceAcceptingMess
     fieldDescriptorNames: [],
   };
 }
+/**
+ * InterfaceAcceptingMessageDescriptor describes a protobuf message which contains
+ * an interface represented as a google.protobuf.Any
+ * @name InterfaceAcceptingMessageDescriptor
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.InterfaceAcceptingMessageDescriptor
+ */
 export const InterfaceAcceptingMessageDescriptor = {
   typeUrl:
     '/cosmos.base.reflection.v2alpha1.InterfaceAcceptingMessageDescriptor' as const,
+  aminoType: 'cosmos-sdk/InterfaceAcceptingMessageDescriptor' as const,
+  is(o: any): o is InterfaceAcceptingMessageDescriptor {
+    return (
+      o &&
+      (o.$typeUrl === InterfaceAcceptingMessageDescriptor.typeUrl ||
+        (typeof o.fullname === 'string' &&
+          Array.isArray(o.fieldDescriptorNames) &&
+          (!o.fieldDescriptorNames.length ||
+            typeof o.fieldDescriptorNames[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is InterfaceAcceptingMessageDescriptorSDKType {
+    return (
+      o &&
+      (o.$typeUrl === InterfaceAcceptingMessageDescriptor.typeUrl ||
+        (typeof o.fullname === 'string' &&
+          Array.isArray(o.field_descriptor_names) &&
+          (!o.field_descriptor_names.length ||
+            typeof o.field_descriptor_names[0] === 'string')))
+    );
+  },
   encode(
     message: InterfaceAcceptingMessageDescriptor,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1266,8 +1781,29 @@ function createBaseConfigurationDescriptor(): ConfigurationDescriptor {
     bech32AccountAddressPrefix: '',
   };
 }
+/**
+ * ConfigurationDescriptor contains metadata information on the sdk.Config
+ * @name ConfigurationDescriptor
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.ConfigurationDescriptor
+ */
 export const ConfigurationDescriptor = {
   typeUrl: '/cosmos.base.reflection.v2alpha1.ConfigurationDescriptor' as const,
+  aminoType: 'cosmos-sdk/ConfigurationDescriptor' as const,
+  is(o: any): o is ConfigurationDescriptor {
+    return (
+      o &&
+      (o.$typeUrl === ConfigurationDescriptor.typeUrl ||
+        typeof o.bech32AccountAddressPrefix === 'string')
+    );
+  },
+  isSDK(o: any): o is ConfigurationDescriptorSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ConfigurationDescriptor.typeUrl ||
+        typeof o.bech32_account_address_prefix === 'string')
+    );
+  },
   encode(
     message: ConfigurationDescriptor,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1341,8 +1877,28 @@ function createBaseMsgDescriptor(): MsgDescriptor {
     msgTypeUrl: '',
   };
 }
+/**
+ * MsgDescriptor describes a cosmos-sdk message that can be delivered with a transaction
+ * @name MsgDescriptor
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.MsgDescriptor
+ */
 export const MsgDescriptor = {
   typeUrl: '/cosmos.base.reflection.v2alpha1.MsgDescriptor' as const,
+  aminoType: 'cosmos-sdk/MsgDescriptor' as const,
+  is(o: any): o is MsgDescriptor {
+    return (
+      o &&
+      (o.$typeUrl === MsgDescriptor.typeUrl || typeof o.msgTypeUrl === 'string')
+    );
+  },
+  isSDK(o: any): o is MsgDescriptorSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgDescriptor.typeUrl ||
+        typeof o.msg_type_url === 'string')
+    );
+  },
   encode(
     message: MsgDescriptor,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1401,9 +1957,22 @@ export const MsgDescriptor = {
 function createBaseGetAuthnDescriptorRequest(): GetAuthnDescriptorRequest {
   return {};
 }
+/**
+ * GetAuthnDescriptorRequest is the request used for the GetAuthnDescriptor RPC
+ * @name GetAuthnDescriptorRequest
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.GetAuthnDescriptorRequest
+ */
 export const GetAuthnDescriptorRequest = {
   typeUrl:
     '/cosmos.base.reflection.v2alpha1.GetAuthnDescriptorRequest' as const,
+  aminoType: 'cosmos-sdk/GetAuthnDescriptorRequest' as const,
+  is(o: any): o is GetAuthnDescriptorRequest {
+    return o && o.$typeUrl === GetAuthnDescriptorRequest.typeUrl;
+  },
+  isSDK(o: any): o is GetAuthnDescriptorRequestSDKType {
+    return o && o.$typeUrl === GetAuthnDescriptorRequest.typeUrl;
+  },
   encode(
     _: GetAuthnDescriptorRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1463,9 +2032,22 @@ function createBaseGetAuthnDescriptorResponse(): GetAuthnDescriptorResponse {
     authn: undefined,
   };
 }
+/**
+ * GetAuthnDescriptorResponse is the response returned by the GetAuthnDescriptor RPC
+ * @name GetAuthnDescriptorResponse
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.GetAuthnDescriptorResponse
+ */
 export const GetAuthnDescriptorResponse = {
   typeUrl:
     '/cosmos.base.reflection.v2alpha1.GetAuthnDescriptorResponse' as const,
+  aminoType: 'cosmos-sdk/GetAuthnDescriptorResponse' as const,
+  is(o: any): o is GetAuthnDescriptorResponse {
+    return o && o.$typeUrl === GetAuthnDescriptorResponse.typeUrl;
+  },
+  isSDK(o: any): o is GetAuthnDescriptorResponseSDKType {
+    return o && o.$typeUrl === GetAuthnDescriptorResponse.typeUrl;
+  },
   encode(
     message: GetAuthnDescriptorResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1543,9 +2125,22 @@ export const GetAuthnDescriptorResponse = {
 function createBaseGetChainDescriptorRequest(): GetChainDescriptorRequest {
   return {};
 }
+/**
+ * GetChainDescriptorRequest is the request used for the GetChainDescriptor RPC
+ * @name GetChainDescriptorRequest
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.GetChainDescriptorRequest
+ */
 export const GetChainDescriptorRequest = {
   typeUrl:
     '/cosmos.base.reflection.v2alpha1.GetChainDescriptorRequest' as const,
+  aminoType: 'cosmos-sdk/GetChainDescriptorRequest' as const,
+  is(o: any): o is GetChainDescriptorRequest {
+    return o && o.$typeUrl === GetChainDescriptorRequest.typeUrl;
+  },
+  isSDK(o: any): o is GetChainDescriptorRequestSDKType {
+    return o && o.$typeUrl === GetChainDescriptorRequest.typeUrl;
+  },
   encode(
     _: GetChainDescriptorRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1605,9 +2200,22 @@ function createBaseGetChainDescriptorResponse(): GetChainDescriptorResponse {
     chain: undefined,
   };
 }
+/**
+ * GetChainDescriptorResponse is the response returned by the GetChainDescriptor RPC
+ * @name GetChainDescriptorResponse
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.GetChainDescriptorResponse
+ */
 export const GetChainDescriptorResponse = {
   typeUrl:
     '/cosmos.base.reflection.v2alpha1.GetChainDescriptorResponse' as const,
+  aminoType: 'cosmos-sdk/GetChainDescriptorResponse' as const,
+  is(o: any): o is GetChainDescriptorResponse {
+    return o && o.$typeUrl === GetChainDescriptorResponse.typeUrl;
+  },
+  isSDK(o: any): o is GetChainDescriptorResponseSDKType {
+    return o && o.$typeUrl === GetChainDescriptorResponse.typeUrl;
+  },
   encode(
     message: GetChainDescriptorResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1685,9 +2293,22 @@ export const GetChainDescriptorResponse = {
 function createBaseGetCodecDescriptorRequest(): GetCodecDescriptorRequest {
   return {};
 }
+/**
+ * GetCodecDescriptorRequest is the request used for the GetCodecDescriptor RPC
+ * @name GetCodecDescriptorRequest
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.GetCodecDescriptorRequest
+ */
 export const GetCodecDescriptorRequest = {
   typeUrl:
     '/cosmos.base.reflection.v2alpha1.GetCodecDescriptorRequest' as const,
+  aminoType: 'cosmos-sdk/GetCodecDescriptorRequest' as const,
+  is(o: any): o is GetCodecDescriptorRequest {
+    return o && o.$typeUrl === GetCodecDescriptorRequest.typeUrl;
+  },
+  isSDK(o: any): o is GetCodecDescriptorRequestSDKType {
+    return o && o.$typeUrl === GetCodecDescriptorRequest.typeUrl;
+  },
   encode(
     _: GetCodecDescriptorRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1747,9 +2368,22 @@ function createBaseGetCodecDescriptorResponse(): GetCodecDescriptorResponse {
     codec: undefined,
   };
 }
+/**
+ * GetCodecDescriptorResponse is the response returned by the GetCodecDescriptor RPC
+ * @name GetCodecDescriptorResponse
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.GetCodecDescriptorResponse
+ */
 export const GetCodecDescriptorResponse = {
   typeUrl:
     '/cosmos.base.reflection.v2alpha1.GetCodecDescriptorResponse' as const,
+  aminoType: 'cosmos-sdk/GetCodecDescriptorResponse' as const,
+  is(o: any): o is GetCodecDescriptorResponse {
+    return o && o.$typeUrl === GetCodecDescriptorResponse.typeUrl;
+  },
+  isSDK(o: any): o is GetCodecDescriptorResponseSDKType {
+    return o && o.$typeUrl === GetCodecDescriptorResponse.typeUrl;
+  },
   encode(
     message: GetCodecDescriptorResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1827,9 +2461,22 @@ export const GetCodecDescriptorResponse = {
 function createBaseGetConfigurationDescriptorRequest(): GetConfigurationDescriptorRequest {
   return {};
 }
+/**
+ * GetConfigurationDescriptorRequest is the request used for the GetConfigurationDescriptor RPC
+ * @name GetConfigurationDescriptorRequest
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.GetConfigurationDescriptorRequest
+ */
 export const GetConfigurationDescriptorRequest = {
   typeUrl:
     '/cosmos.base.reflection.v2alpha1.GetConfigurationDescriptorRequest' as const,
+  aminoType: 'cosmos-sdk/GetConfigurationDescriptorRequest' as const,
+  is(o: any): o is GetConfigurationDescriptorRequest {
+    return o && o.$typeUrl === GetConfigurationDescriptorRequest.typeUrl;
+  },
+  isSDK(o: any): o is GetConfigurationDescriptorRequestSDKType {
+    return o && o.$typeUrl === GetConfigurationDescriptorRequest.typeUrl;
+  },
   encode(
     _: GetConfigurationDescriptorRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1892,9 +2539,22 @@ function createBaseGetConfigurationDescriptorResponse(): GetConfigurationDescrip
     config: undefined,
   };
 }
+/**
+ * GetConfigurationDescriptorResponse is the response returned by the GetConfigurationDescriptor RPC
+ * @name GetConfigurationDescriptorResponse
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.GetConfigurationDescriptorResponse
+ */
 export const GetConfigurationDescriptorResponse = {
   typeUrl:
     '/cosmos.base.reflection.v2alpha1.GetConfigurationDescriptorResponse' as const,
+  aminoType: 'cosmos-sdk/GetConfigurationDescriptorResponse' as const,
+  is(o: any): o is GetConfigurationDescriptorResponse {
+    return o && o.$typeUrl === GetConfigurationDescriptorResponse.typeUrl;
+  },
+  isSDK(o: any): o is GetConfigurationDescriptorResponseSDKType {
+    return o && o.$typeUrl === GetConfigurationDescriptorResponse.typeUrl;
+  },
   encode(
     message: GetConfigurationDescriptorResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1979,9 +2639,22 @@ export const GetConfigurationDescriptorResponse = {
 function createBaseGetQueryServicesDescriptorRequest(): GetQueryServicesDescriptorRequest {
   return {};
 }
+/**
+ * GetQueryServicesDescriptorRequest is the request used for the GetQueryServicesDescriptor RPC
+ * @name GetQueryServicesDescriptorRequest
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.GetQueryServicesDescriptorRequest
+ */
 export const GetQueryServicesDescriptorRequest = {
   typeUrl:
     '/cosmos.base.reflection.v2alpha1.GetQueryServicesDescriptorRequest' as const,
+  aminoType: 'cosmos-sdk/GetQueryServicesDescriptorRequest' as const,
+  is(o: any): o is GetQueryServicesDescriptorRequest {
+    return o && o.$typeUrl === GetQueryServicesDescriptorRequest.typeUrl;
+  },
+  isSDK(o: any): o is GetQueryServicesDescriptorRequestSDKType {
+    return o && o.$typeUrl === GetQueryServicesDescriptorRequest.typeUrl;
+  },
   encode(
     _: GetQueryServicesDescriptorRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2044,9 +2717,22 @@ function createBaseGetQueryServicesDescriptorResponse(): GetQueryServicesDescrip
     queries: undefined,
   };
 }
+/**
+ * GetQueryServicesDescriptorResponse is the response returned by the GetQueryServicesDescriptor RPC
+ * @name GetQueryServicesDescriptorResponse
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.GetQueryServicesDescriptorResponse
+ */
 export const GetQueryServicesDescriptorResponse = {
   typeUrl:
     '/cosmos.base.reflection.v2alpha1.GetQueryServicesDescriptorResponse' as const,
+  aminoType: 'cosmos-sdk/GetQueryServicesDescriptorResponse' as const,
+  is(o: any): o is GetQueryServicesDescriptorResponse {
+    return o && o.$typeUrl === GetQueryServicesDescriptorResponse.typeUrl;
+  },
+  isSDK(o: any): o is GetQueryServicesDescriptorResponseSDKType {
+    return o && o.$typeUrl === GetQueryServicesDescriptorResponse.typeUrl;
+  },
   encode(
     message: GetQueryServicesDescriptorResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2131,8 +2817,21 @@ export const GetQueryServicesDescriptorResponse = {
 function createBaseGetTxDescriptorRequest(): GetTxDescriptorRequest {
   return {};
 }
+/**
+ * GetTxDescriptorRequest is the request used for the GetTxDescriptor RPC
+ * @name GetTxDescriptorRequest
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.GetTxDescriptorRequest
+ */
 export const GetTxDescriptorRequest = {
   typeUrl: '/cosmos.base.reflection.v2alpha1.GetTxDescriptorRequest' as const,
+  aminoType: 'cosmos-sdk/GetTxDescriptorRequest' as const,
+  is(o: any): o is GetTxDescriptorRequest {
+    return o && o.$typeUrl === GetTxDescriptorRequest.typeUrl;
+  },
+  isSDK(o: any): o is GetTxDescriptorRequestSDKType {
+    return o && o.$typeUrl === GetTxDescriptorRequest.typeUrl;
+  },
   encode(
     _: GetTxDescriptorRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2188,8 +2887,21 @@ function createBaseGetTxDescriptorResponse(): GetTxDescriptorResponse {
     tx: undefined,
   };
 }
+/**
+ * GetTxDescriptorResponse is the response returned by the GetTxDescriptor RPC
+ * @name GetTxDescriptorResponse
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.GetTxDescriptorResponse
+ */
 export const GetTxDescriptorResponse = {
   typeUrl: '/cosmos.base.reflection.v2alpha1.GetTxDescriptorResponse' as const,
+  aminoType: 'cosmos-sdk/GetTxDescriptorResponse' as const,
+  is(o: any): o is GetTxDescriptorResponse {
+    return o && o.$typeUrl === GetTxDescriptorResponse.typeUrl;
+  },
+  isSDK(o: any): o is GetTxDescriptorResponseSDKType {
+    return o && o.$typeUrl === GetTxDescriptorResponse.typeUrl;
+  },
   encode(
     message: GetTxDescriptorResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2263,8 +2975,33 @@ function createBaseQueryServicesDescriptor(): QueryServicesDescriptor {
     queryServices: [],
   };
 }
+/**
+ * QueryServicesDescriptor contains the list of cosmos-sdk queriable services
+ * @name QueryServicesDescriptor
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.QueryServicesDescriptor
+ */
 export const QueryServicesDescriptor = {
   typeUrl: '/cosmos.base.reflection.v2alpha1.QueryServicesDescriptor' as const,
+  aminoType: 'cosmos-sdk/QueryServicesDescriptor' as const,
+  is(o: any): o is QueryServicesDescriptor {
+    return (
+      o &&
+      (o.$typeUrl === QueryServicesDescriptor.typeUrl ||
+        (Array.isArray(o.queryServices) &&
+          (!o.queryServices.length ||
+            QueryServiceDescriptor.is(o.queryServices[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryServicesDescriptorSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryServicesDescriptor.typeUrl ||
+        (Array.isArray(o.query_services) &&
+          (!o.query_services.length ||
+            QueryServiceDescriptor.isSDK(o.query_services[0]))))
+    );
+  },
   encode(
     message: QueryServicesDescriptor,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2350,8 +3087,35 @@ function createBaseQueryServiceDescriptor(): QueryServiceDescriptor {
     methods: [],
   };
 }
+/**
+ * QueryServiceDescriptor describes a cosmos-sdk queryable service
+ * @name QueryServiceDescriptor
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.QueryServiceDescriptor
+ */
 export const QueryServiceDescriptor = {
   typeUrl: '/cosmos.base.reflection.v2alpha1.QueryServiceDescriptor' as const,
+  aminoType: 'cosmos-sdk/QueryServiceDescriptor' as const,
+  is(o: any): o is QueryServiceDescriptor {
+    return (
+      o &&
+      (o.$typeUrl === QueryServiceDescriptor.typeUrl ||
+        (typeof o.fullname === 'string' &&
+          typeof o.isModule === 'boolean' &&
+          Array.isArray(o.methods) &&
+          (!o.methods.length || QueryMethodDescriptor.is(o.methods[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryServiceDescriptorSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryServiceDescriptor.typeUrl ||
+        (typeof o.fullname === 'string' &&
+          typeof o.is_module === 'boolean' &&
+          Array.isArray(o.methods) &&
+          (!o.methods.length || QueryMethodDescriptor.isSDK(o.methods[0]))))
+    );
+  },
   encode(
     message: QueryServiceDescriptor,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2447,8 +3211,31 @@ function createBaseQueryMethodDescriptor(): QueryMethodDescriptor {
     fullQueryPath: '',
   };
 }
+/**
+ * QueryMethodDescriptor describes a queryable method of a query service
+ * no other info is provided beside method name and tendermint queryable path
+ * because it would be redundant with the grpc reflection service
+ * @name QueryMethodDescriptor
+ * @package cosmos.base.reflection.v2alpha1
+ * @see proto type: cosmos.base.reflection.v2alpha1.QueryMethodDescriptor
+ */
 export const QueryMethodDescriptor = {
   typeUrl: '/cosmos.base.reflection.v2alpha1.QueryMethodDescriptor' as const,
+  aminoType: 'cosmos-sdk/QueryMethodDescriptor' as const,
+  is(o: any): o is QueryMethodDescriptor {
+    return (
+      o &&
+      (o.$typeUrl === QueryMethodDescriptor.typeUrl ||
+        (typeof o.name === 'string' && typeof o.fullQueryPath === 'string'))
+    );
+  },
+  isSDK(o: any): o is QueryMethodDescriptorSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryMethodDescriptor.typeUrl ||
+        (typeof o.name === 'string' && typeof o.full_query_path === 'string'))
+    );
+  },
   encode(
     message: QueryMethodDescriptor,
     writer: BinaryWriter = BinaryWriter.create(),

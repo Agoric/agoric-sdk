@@ -193,6 +193,9 @@ export function lengthOpToJSON(object: LengthOp): string {
  * With LengthOp this is tricker but not impossible. Which is why the "leafPrefixEqual" field
  * in the ProofSpec is valuable to prevent this mutability. And why all trees should
  * length-prefix the data before hashing it.
+ * @name ExistenceProof
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.ExistenceProof
  */
 export interface ExistenceProof {
   key: Uint8Array;
@@ -224,6 +227,9 @@ export interface ExistenceProofProtoMsg {
  * With LengthOp this is tricker but not impossible. Which is why the "leafPrefixEqual" field
  * in the ProofSpec is valuable to prevent this mutability. And why all trees should
  * length-prefix the data before hashing it.
+ * @name ExistenceProofSDKType
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.ExistenceProof
  */
 export interface ExistenceProofSDKType {
   key: Uint8Array;
@@ -235,9 +241,14 @@ export interface ExistenceProofSDKType {
  * NonExistenceProof takes a proof of two neighbors, one left of the desired key,
  * one right of the desired key. If both proofs are valid AND they are neighbors,
  * then there is no valid proof for the given key.
+ * @name NonExistenceProof
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.NonExistenceProof
  */
 export interface NonExistenceProof {
-  /** TODO: remove this as unnecessary??? we prove a range */
+  /**
+   * TODO: remove this as unnecessary??? we prove a range
+   */
   key: Uint8Array;
   left?: ExistenceProof;
   right?: ExistenceProof;
@@ -250,13 +261,21 @@ export interface NonExistenceProofProtoMsg {
  * NonExistenceProof takes a proof of two neighbors, one left of the desired key,
  * one right of the desired key. If both proofs are valid AND they are neighbors,
  * then there is no valid proof for the given key.
+ * @name NonExistenceProofSDKType
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.NonExistenceProof
  */
 export interface NonExistenceProofSDKType {
   key: Uint8Array;
   left?: ExistenceProofSDKType;
   right?: ExistenceProofSDKType;
 }
-/** CommitmentProof is either an ExistenceProof or a NonExistenceProof, or a Batch of such messages */
+/**
+ * CommitmentProof is either an ExistenceProof or a NonExistenceProof, or a Batch of such messages
+ * @name CommitmentProof
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.CommitmentProof
+ */
 export interface CommitmentProof {
   exist?: ExistenceProof;
   nonexist?: NonExistenceProof;
@@ -267,7 +286,12 @@ export interface CommitmentProofProtoMsg {
   typeUrl: '/cosmos.ics23.v1.CommitmentProof';
   value: Uint8Array;
 }
-/** CommitmentProof is either an ExistenceProof or a NonExistenceProof, or a Batch of such messages */
+/**
+ * CommitmentProof is either an ExistenceProof or a NonExistenceProof, or a Batch of such messages
+ * @name CommitmentProofSDKType
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.CommitmentProof
+ */
 export interface CommitmentProofSDKType {
   exist?: ExistenceProofSDKType;
   nonexist?: NonExistenceProofSDKType;
@@ -289,6 +313,9 @@ export interface CommitmentProofSDKType {
  *
  * Then combine the bytes, and hash it
  * output = hash(prefix || length(hkey) || hkey || length(hvalue) || hvalue)
+ * @name LeafOp
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.LeafOp
  */
 export interface LeafOp {
   hash: HashOp;
@@ -320,6 +347,9 @@ export interface LeafOpProtoMsg {
  *
  * Then combine the bytes, and hash it
  * output = hash(prefix || length(hkey) || hkey || length(hvalue) || hvalue)
+ * @name LeafOpSDKType
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.LeafOp
  */
 export interface LeafOpSDKType {
   hash: HashOp;
@@ -344,6 +374,9 @@ export interface LeafOpSDKType {
  * Any special data, like prepending child with the length, or prepending the entire operation with
  * some value to differentiate from leaf nodes, should be included in prefix and suffix.
  * If either of prefix or suffix is empty, we just treat it as an empty string
+ * @name InnerOp
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.InnerOp
  */
 export interface InnerOp {
   hash: HashOp;
@@ -370,6 +403,9 @@ export interface InnerOpProtoMsg {
  * Any special data, like prepending child with the length, or prepending the entire operation with
  * some value to differentiate from leaf nodes, should be included in prefix and suffix.
  * If either of prefix or suffix is empty, we just treat it as an empty string
+ * @name InnerOpSDKType
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.InnerOp
  */
 export interface InnerOpSDKType {
   hash: HashOp;
@@ -387,6 +423,9 @@ export interface InnerOpSDKType {
  * generate a given hash (by interpretting the preimage differently).
  * We need this for proper security, requires client knows a priori what
  * tree format server uses. But not in code, rather a configuration object.
+ * @name ProofSpec
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.ProofSpec
  */
 export interface ProofSpec {
   /**
@@ -400,7 +439,9 @@ export interface ProofSpec {
    * the max_depth is interpreted as 128 if set to 0
    */
   maxDepth: number;
-  /** min_depth (if > 0) is the minimum number of InnerOps allowed (mainly for fixed-depth tries) */
+  /**
+   * min_depth (if > 0) is the minimum number of InnerOps allowed (mainly for fixed-depth tries)
+   */
   minDepth: number;
   /**
    * prehash_key_before_comparison is a flag that indicates whether to use the
@@ -424,6 +465,9 @@ export interface ProofSpecProtoMsg {
  * generate a given hash (by interpretting the preimage differently).
  * We need this for proper security, requires client knows a priori what
  * tree format server uses. But not in code, rather a configuration object.
+ * @name ProofSpecSDKType
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.ProofSpec
  */
 export interface ProofSpecSDKType {
   leaf_spec?: LeafOpSDKType;
@@ -441,6 +485,9 @@ export interface ProofSpecSDKType {
  * isLeftMost(spec: InnerSpec, op: InnerOp)
  * isRightMost(spec: InnerSpec, op: InnerOp)
  * isLeftNeighbor(spec: InnerSpec, left: InnerOp, right: InnerOp)
+ * @name InnerSpec
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.InnerSpec
  */
 export interface InnerSpec {
   /**
@@ -451,11 +498,17 @@ export interface InnerSpec {
   childOrder: number[];
   childSize: number;
   minPrefixLength: number;
-  /** the max prefix length must be less than the minimum prefix length + child size */
+  /**
+   * the max prefix length must be less than the minimum prefix length + child size
+   */
   maxPrefixLength: number;
-  /** empty child is the prehash image that is used when one child is nil (eg. 20 bytes of 0) */
+  /**
+   * empty child is the prehash image that is used when one child is nil (eg. 20 bytes of 0)
+   */
   emptyChild: Uint8Array;
-  /** hash is the algorithm that must be used for each InnerOp */
+  /**
+   * hash is the algorithm that must be used for each InnerOp
+   */
   hash: HashOp;
 }
 export interface InnerSpecProtoMsg {
@@ -471,6 +524,9 @@ export interface InnerSpecProtoMsg {
  * isLeftMost(spec: InnerSpec, op: InnerOp)
  * isRightMost(spec: InnerSpec, op: InnerOp)
  * isLeftNeighbor(spec: InnerSpec, left: InnerOp, right: InnerOp)
+ * @name InnerSpecSDKType
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.InnerSpec
  */
 export interface InnerSpecSDKType {
   child_order: number[];
@@ -480,7 +536,12 @@ export interface InnerSpecSDKType {
   empty_child: Uint8Array;
   hash: HashOp;
 }
-/** BatchProof is a group of multiple proof types than can be compressed */
+/**
+ * BatchProof is a group of multiple proof types than can be compressed
+ * @name BatchProof
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.BatchProof
+ */
 export interface BatchProof {
   entries: BatchEntry[];
 }
@@ -488,11 +549,21 @@ export interface BatchProofProtoMsg {
   typeUrl: '/cosmos.ics23.v1.BatchProof';
   value: Uint8Array;
 }
-/** BatchProof is a group of multiple proof types than can be compressed */
+/**
+ * BatchProof is a group of multiple proof types than can be compressed
+ * @name BatchProofSDKType
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.BatchProof
+ */
 export interface BatchProofSDKType {
   entries: BatchEntrySDKType[];
 }
-/** Use BatchEntry not CommitmentProof, to avoid recursion */
+/**
+ * Use BatchEntry not CommitmentProof, to avoid recursion
+ * @name BatchEntry
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.BatchEntry
+ */
 export interface BatchEntry {
   exist?: ExistenceProof;
   nonexist?: NonExistenceProof;
@@ -501,11 +572,21 @@ export interface BatchEntryProtoMsg {
   typeUrl: '/cosmos.ics23.v1.BatchEntry';
   value: Uint8Array;
 }
-/** Use BatchEntry not CommitmentProof, to avoid recursion */
+/**
+ * Use BatchEntry not CommitmentProof, to avoid recursion
+ * @name BatchEntrySDKType
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.BatchEntry
+ */
 export interface BatchEntrySDKType {
   exist?: ExistenceProofSDKType;
   nonexist?: NonExistenceProofSDKType;
 }
+/**
+ * @name CompressedBatchProof
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.CompressedBatchProof
+ */
 export interface CompressedBatchProof {
   entries: CompressedBatchEntry[];
   lookupInners: InnerOp[];
@@ -514,11 +595,21 @@ export interface CompressedBatchProofProtoMsg {
   typeUrl: '/cosmos.ics23.v1.CompressedBatchProof';
   value: Uint8Array;
 }
+/**
+ * @name CompressedBatchProofSDKType
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.CompressedBatchProof
+ */
 export interface CompressedBatchProofSDKType {
   entries: CompressedBatchEntrySDKType[];
   lookup_inners: InnerOpSDKType[];
 }
-/** Use BatchEntry not CommitmentProof, to avoid recursion */
+/**
+ * Use BatchEntry not CommitmentProof, to avoid recursion
+ * @name CompressedBatchEntry
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.CompressedBatchEntry
+ */
 export interface CompressedBatchEntry {
   exist?: CompressedExistenceProof;
   nonexist?: CompressedNonExistenceProof;
@@ -527,30 +618,54 @@ export interface CompressedBatchEntryProtoMsg {
   typeUrl: '/cosmos.ics23.v1.CompressedBatchEntry';
   value: Uint8Array;
 }
-/** Use BatchEntry not CommitmentProof, to avoid recursion */
+/**
+ * Use BatchEntry not CommitmentProof, to avoid recursion
+ * @name CompressedBatchEntrySDKType
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.CompressedBatchEntry
+ */
 export interface CompressedBatchEntrySDKType {
   exist?: CompressedExistenceProofSDKType;
   nonexist?: CompressedNonExistenceProofSDKType;
 }
+/**
+ * @name CompressedExistenceProof
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.CompressedExistenceProof
+ */
 export interface CompressedExistenceProof {
   key: Uint8Array;
   value: Uint8Array;
   leaf?: LeafOp;
-  /** these are indexes into the lookup_inners table in CompressedBatchProof */
+  /**
+   * these are indexes into the lookup_inners table in CompressedBatchProof
+   */
   path: number[];
 }
 export interface CompressedExistenceProofProtoMsg {
   typeUrl: '/cosmos.ics23.v1.CompressedExistenceProof';
   value: Uint8Array;
 }
+/**
+ * @name CompressedExistenceProofSDKType
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.CompressedExistenceProof
+ */
 export interface CompressedExistenceProofSDKType {
   key: Uint8Array;
   value: Uint8Array;
   leaf?: LeafOpSDKType;
   path: number[];
 }
+/**
+ * @name CompressedNonExistenceProof
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.CompressedNonExistenceProof
+ */
 export interface CompressedNonExistenceProof {
-  /** TODO: remove this as unnecessary??? we prove a range */
+  /**
+   * TODO: remove this as unnecessary??? we prove a range
+   */
   key: Uint8Array;
   left?: CompressedExistenceProof;
   right?: CompressedExistenceProof;
@@ -559,6 +674,11 @@ export interface CompressedNonExistenceProofProtoMsg {
   typeUrl: '/cosmos.ics23.v1.CompressedNonExistenceProof';
   value: Uint8Array;
 }
+/**
+ * @name CompressedNonExistenceProofSDKType
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.CompressedNonExistenceProof
+ */
 export interface CompressedNonExistenceProofSDKType {
   key: Uint8Array;
   left?: CompressedExistenceProofSDKType;
@@ -572,6 +692,30 @@ function createBaseExistenceProof(): ExistenceProof {
     path: [],
   };
 }
+/**
+ * ExistenceProof takes a key and a value and a set of steps to perform on it.
+ * The result of peforming all these steps will provide a "root hash", which can
+ * be compared to the value in a header.
+ *
+ * Since it is computationally infeasible to produce a hash collission for any of the used
+ * cryptographic hash functions, if someone can provide a series of operations to transform
+ * a given key and value into a root hash that matches some trusted root, these key and values
+ * must be in the referenced merkle tree.
+ *
+ * The only possible issue is maliablity in LeafOp, such as providing extra prefix data,
+ * which should be controlled by a spec. Eg. with lengthOp as NONE,
+ * prefix = FOO, key = BAR, value = CHOICE
+ * and
+ * prefix = F, key = OOBAR, value = CHOICE
+ * would produce the same value.
+ *
+ * With LengthOp this is tricker but not impossible. Which is why the "leafPrefixEqual" field
+ * in the ProofSpec is valuable to prevent this mutability. And why all trees should
+ * length-prefix the data before hashing it.
+ * @name ExistenceProof
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.ExistenceProof
+ */
 export const ExistenceProof = {
   typeUrl: '/cosmos.ics23.v1.ExistenceProof' as const,
   encode(
@@ -681,6 +825,14 @@ function createBaseNonExistenceProof(): NonExistenceProof {
     right: undefined,
   };
 }
+/**
+ * NonExistenceProof takes a proof of two neighbors, one left of the desired key,
+ * one right of the desired key. If both proofs are valid AND they are neighbors,
+ * then there is no valid proof for the given key.
+ * @name NonExistenceProof
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.NonExistenceProof
+ */
 export const NonExistenceProof = {
   typeUrl: '/cosmos.ics23.v1.NonExistenceProof' as const,
   encode(
@@ -783,6 +935,12 @@ function createBaseCommitmentProof(): CommitmentProof {
     compressed: undefined,
   };
 }
+/**
+ * CommitmentProof is either an ExistenceProof or a NonExistenceProof, or a Batch of such messages
+ * @name CommitmentProof
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.CommitmentProof
+ */
 export const CommitmentProof = {
   typeUrl: '/cosmos.ics23.v1.CommitmentProof' as const,
   encode(
@@ -917,6 +1075,25 @@ function createBaseLeafOp(): LeafOp {
     prefix: new Uint8Array(),
   };
 }
+/**
+ * LeafOp represents the raw key-value data we wish to prove, and
+ * must be flexible to represent the internal transformation from
+ * the original key-value pairs into the basis hash, for many existing
+ * merkle trees.
+ *
+ * key and value are passed in. So that the signature of this operation is:
+ * leafOp(key, value) -> output
+ *
+ * To process this, first prehash the keys and values if needed (ANY means no hash in this case):
+ * hkey = prehashKey(key)
+ * hvalue = prehashValue(value)
+ *
+ * Then combine the bytes, and hash it
+ * output = hash(prefix || length(hkey) || hkey || length(hvalue) || hvalue)
+ * @name LeafOp
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.LeafOp
+ */
 export const LeafOp = {
   typeUrl: '/cosmos.ics23.v1.LeafOp' as const,
   encode(
@@ -1029,6 +1206,26 @@ function createBaseInnerOp(): InnerOp {
     suffix: new Uint8Array(),
   };
 }
+/**
+ * InnerOp represents a merkle-proof step that is not a leaf.
+ * It represents concatenating two children and hashing them to provide the next result.
+ *
+ * The result of the previous step is passed in, so the signature of this op is:
+ * innerOp(child) -> output
+ *
+ * The result of applying InnerOp should be:
+ * output = op.hash(op.prefix || child || op.suffix)
+ *
+ * where the || operator is concatenation of binary data,
+ * and child is the result of hashing all the tree below this step.
+ *
+ * Any special data, like prepending child with the length, or prepending the entire operation with
+ * some value to differentiate from leaf nodes, should be included in prefix and suffix.
+ * If either of prefix or suffix is empty, we just treat it as an empty string
+ * @name InnerOp
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.InnerOp
+ */
 export const InnerOp = {
   typeUrl: '/cosmos.ics23.v1.InnerOp' as const,
   encode(
@@ -1123,6 +1320,21 @@ function createBaseProofSpec(): ProofSpec {
     prehashKeyBeforeComparison: false,
   };
 }
+/**
+ * ProofSpec defines what the expected parameters are for a given proof type.
+ * This can be stored in the client and used to validate any incoming proofs.
+ *
+ * verify(ProofSpec, Proof) -> Proof | Error
+ *
+ * As demonstrated in tests, if we don't fix the algorithm used to calculate the
+ * LeafHash for a given tree, there are many possible key-value pairs that can
+ * generate a given hash (by interpretting the preimage differently).
+ * We need this for proper security, requires client knows a priori what
+ * tree format server uses. But not in code, rather a configuration object.
+ * @name ProofSpec
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.ProofSpec
+ */
 export const ProofSpec = {
   typeUrl: '/cosmos.ics23.v1.ProofSpec' as const,
   encode(
@@ -1248,6 +1460,19 @@ function createBaseInnerSpec(): InnerSpec {
     hash: 0,
   };
 }
+/**
+ * InnerSpec contains all store-specific structure info to determine if two proofs from a
+ * given store are neighbors.
+ *
+ * This enables:
+ *
+ * isLeftMost(spec: InnerSpec, op: InnerOp)
+ * isRightMost(spec: InnerSpec, op: InnerOp)
+ * isLeftNeighbor(spec: InnerSpec, left: InnerOp, right: InnerOp)
+ * @name InnerSpec
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.InnerSpec
+ */
 export const InnerSpec = {
   typeUrl: '/cosmos.ics23.v1.InnerSpec' as const,
   encode(
@@ -1384,6 +1609,12 @@ function createBaseBatchProof(): BatchProof {
     entries: [],
   };
 }
+/**
+ * BatchProof is a group of multiple proof types than can be compressed
+ * @name BatchProof
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.BatchProof
+ */
 export const BatchProof = {
   typeUrl: '/cosmos.ics23.v1.BatchProof' as const,
   encode(
@@ -1455,6 +1686,12 @@ function createBaseBatchEntry(): BatchEntry {
     nonexist: undefined,
   };
 }
+/**
+ * Use BatchEntry not CommitmentProof, to avoid recursion
+ * @name BatchEntry
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.BatchEntry
+ */
 export const BatchEntry = {
   typeUrl: '/cosmos.ics23.v1.BatchEntry' as const,
   encode(
@@ -1546,6 +1783,11 @@ function createBaseCompressedBatchProof(): CompressedBatchProof {
     lookupInners: [],
   };
 }
+/**
+ * @name CompressedBatchProof
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.CompressedBatchProof
+ */
 export const CompressedBatchProof = {
   typeUrl: '/cosmos.ics23.v1.CompressedBatchProof' as const,
   encode(
@@ -1641,6 +1883,12 @@ function createBaseCompressedBatchEntry(): CompressedBatchEntry {
     nonexist: undefined,
   };
 }
+/**
+ * Use BatchEntry not CommitmentProof, to avoid recursion
+ * @name CompressedBatchEntry
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.CompressedBatchEntry
+ */
 export const CompressedBatchEntry = {
   typeUrl: '/cosmos.ics23.v1.CompressedBatchEntry' as const,
   encode(
@@ -1746,6 +1994,11 @@ function createBaseCompressedExistenceProof(): CompressedExistenceProof {
     path: [],
   };
 }
+/**
+ * @name CompressedExistenceProof
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.CompressedExistenceProof
+ */
 export const CompressedExistenceProof = {
   typeUrl: '/cosmos.ics23.v1.CompressedExistenceProof' as const,
   encode(
@@ -1875,6 +2128,11 @@ function createBaseCompressedNonExistenceProof(): CompressedNonExistenceProof {
     right: undefined,
   };
 }
+/**
+ * @name CompressedNonExistenceProof
+ * @package cosmos.ics23.v1
+ * @see proto type: cosmos.ics23.v1.CompressedNonExistenceProof
+ */
 export const CompressedNonExistenceProof = {
   typeUrl: '/cosmos.ics23.v1.CompressedNonExistenceProof' as const,
   encode(

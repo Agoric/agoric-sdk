@@ -12,9 +12,13 @@ import { Any, type AnySDKType } from '../../../google/protobuf/any.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet, fromJsonTimestamp, fromTimestamp } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../../registry.js';
 /**
  * BasicAllowance implements Allowance with a one-time grant of coins
  * that optionally expires. The grantee can use up to SpendLimit to cover fees.
+ * @name BasicAllowance
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.BasicAllowance
  */
 export interface BasicAllowance {
   $typeUrl?: '/cosmos.feegrant.v1beta1.BasicAllowance';
@@ -24,7 +28,9 @@ export interface BasicAllowance {
    * empty, there is no spend limit and any amount of coins can be spent.
    */
   spendLimit: Coin[];
-  /** expiration specifies an optional time when this allowance expires */
+  /**
+   * expiration specifies an optional time when this allowance expires
+   */
   expiration?: Timestamp;
 }
 export interface BasicAllowanceProtoMsg {
@@ -34,6 +40,9 @@ export interface BasicAllowanceProtoMsg {
 /**
  * BasicAllowance implements Allowance with a one-time grant of coins
  * that optionally expires. The grantee can use up to SpendLimit to cover fees.
+ * @name BasicAllowanceSDKType
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.BasicAllowance
  */
 export interface BasicAllowanceSDKType {
   $typeUrl?: '/cosmos.feegrant.v1beta1.BasicAllowance';
@@ -43,10 +52,15 @@ export interface BasicAllowanceSDKType {
 /**
  * PeriodicAllowance extends Allowance to allow for both a maximum cap,
  * as well as a limit per time period.
+ * @name PeriodicAllowance
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.PeriodicAllowance
  */
 export interface PeriodicAllowance {
   $typeUrl?: '/cosmos.feegrant.v1beta1.PeriodicAllowance';
-  /** basic specifies a struct of `BasicAllowance` */
+  /**
+   * basic specifies a struct of `BasicAllowance`
+   */
   basic: BasicAllowance;
   /**
    * period specifies the time duration in which period_spend_limit coins can
@@ -58,7 +72,9 @@ export interface PeriodicAllowance {
    * in the period
    */
   periodSpendLimit: Coin[];
-  /** period_can_spend is the number of coins left to be spent before the period_reset time */
+  /**
+   * period_can_spend is the number of coins left to be spent before the period_reset time
+   */
   periodCanSpend: Coin[];
   /**
    * period_reset is the time at which this period resets and a new one begins,
@@ -74,6 +90,9 @@ export interface PeriodicAllowanceProtoMsg {
 /**
  * PeriodicAllowance extends Allowance to allow for both a maximum cap,
  * as well as a limit per time period.
+ * @name PeriodicAllowanceSDKType
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.PeriodicAllowance
  */
 export interface PeriodicAllowanceSDKType {
   $typeUrl?: '/cosmos.feegrant.v1beta1.PeriodicAllowance';
@@ -83,21 +102,35 @@ export interface PeriodicAllowanceSDKType {
   period_can_spend: CoinSDKType[];
   period_reset: TimestampSDKType;
 }
-/** AllowedMsgAllowance creates allowance only for specified message types. */
+/**
+ * AllowedMsgAllowance creates allowance only for specified message types.
+ * @name AllowedMsgAllowance
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.AllowedMsgAllowance
+ */
 export interface AllowedMsgAllowance {
   $typeUrl?: '/cosmos.feegrant.v1beta1.AllowedMsgAllowance';
-  /** allowance can be any of basic and periodic fee allowance. */
+  /**
+   * allowance can be any of basic and periodic fee allowance.
+   */
   allowance?:
     | (BasicAllowance & PeriodicAllowance & AllowedMsgAllowance & Any)
     | undefined;
-  /** allowed_messages are the messages for which the grantee has the access. */
+  /**
+   * allowed_messages are the messages for which the grantee has the access.
+   */
   allowedMessages: string[];
 }
 export interface AllowedMsgAllowanceProtoMsg {
   typeUrl: '/cosmos.feegrant.v1beta1.AllowedMsgAllowance';
   value: Uint8Array;
 }
-/** AllowedMsgAllowance creates allowance only for specified message types. */
+/**
+ * AllowedMsgAllowance creates allowance only for specified message types.
+ * @name AllowedMsgAllowanceSDKType
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.AllowedMsgAllowance
+ */
 export interface AllowedMsgAllowanceSDKType {
   $typeUrl?: '/cosmos.feegrant.v1beta1.AllowedMsgAllowance';
   allowance?:
@@ -108,13 +141,24 @@ export interface AllowedMsgAllowanceSDKType {
     | undefined;
   allowed_messages: string[];
 }
-/** Grant is stored in the KVStore to record a grant with full context */
+/**
+ * Grant is stored in the KVStore to record a grant with full context
+ * @name Grant
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.Grant
+ */
 export interface Grant {
-  /** granter is the address of the user granting an allowance of their funds. */
+  /**
+   * granter is the address of the user granting an allowance of their funds.
+   */
   granter: string;
-  /** grantee is the address of the user being granted an allowance of another user's funds. */
+  /**
+   * grantee is the address of the user being granted an allowance of another user's funds.
+   */
   grantee: string;
-  /** allowance can be any of basic, periodic, allowed fee allowance. */
+  /**
+   * allowance can be any of basic, periodic, allowed fee allowance.
+   */
   allowance?:
     | (BasicAllowance & PeriodicAllowance & AllowedMsgAllowance & Any)
     | undefined;
@@ -123,7 +167,12 @@ export interface GrantProtoMsg {
   typeUrl: '/cosmos.feegrant.v1beta1.Grant';
   value: Uint8Array;
 }
-/** Grant is stored in the KVStore to record a grant with full context */
+/**
+ * Grant is stored in the KVStore to record a grant with full context
+ * @name GrantSDKType
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.Grant
+ */
 export interface GrantSDKType {
   granter: string;
   grantee: string;
@@ -141,8 +190,32 @@ function createBaseBasicAllowance(): BasicAllowance {
     expiration: undefined,
   };
 }
+/**
+ * BasicAllowance implements Allowance with a one-time grant of coins
+ * that optionally expires. The grantee can use up to SpendLimit to cover fees.
+ * @name BasicAllowance
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.BasicAllowance
+ */
 export const BasicAllowance = {
   typeUrl: '/cosmos.feegrant.v1beta1.BasicAllowance' as const,
+  aminoType: 'cosmos-sdk/BasicAllowance' as const,
+  is(o: any): o is BasicAllowance {
+    return (
+      o &&
+      (o.$typeUrl === BasicAllowance.typeUrl ||
+        (Array.isArray(o.spendLimit) &&
+          (!o.spendLimit.length || Coin.is(o.spendLimit[0]))))
+    );
+  },
+  isSDK(o: any): o is BasicAllowanceSDKType {
+    return (
+      o &&
+      (o.$typeUrl === BasicAllowance.typeUrl ||
+        (Array.isArray(o.spend_limit) &&
+          (!o.spend_limit.length || Coin.isSDK(o.spend_limit[0]))))
+    );
+  },
   encode(
     message: BasicAllowance,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -231,8 +304,43 @@ function createBasePeriodicAllowance(): PeriodicAllowance {
     periodReset: Timestamp.fromPartial({}),
   };
 }
+/**
+ * PeriodicAllowance extends Allowance to allow for both a maximum cap,
+ * as well as a limit per time period.
+ * @name PeriodicAllowance
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.PeriodicAllowance
+ */
 export const PeriodicAllowance = {
   typeUrl: '/cosmos.feegrant.v1beta1.PeriodicAllowance' as const,
+  aminoType: 'cosmos-sdk/PeriodicAllowance' as const,
+  is(o: any): o is PeriodicAllowance {
+    return (
+      o &&
+      (o.$typeUrl === PeriodicAllowance.typeUrl ||
+        (BasicAllowance.is(o.basic) &&
+          Duration.is(o.period) &&
+          Array.isArray(o.periodSpendLimit) &&
+          (!o.periodSpendLimit.length || Coin.is(o.periodSpendLimit[0])) &&
+          Array.isArray(o.periodCanSpend) &&
+          (!o.periodCanSpend.length || Coin.is(o.periodCanSpend[0])) &&
+          Timestamp.is(o.periodReset)))
+    );
+  },
+  isSDK(o: any): o is PeriodicAllowanceSDKType {
+    return (
+      o &&
+      (o.$typeUrl === PeriodicAllowance.typeUrl ||
+        (BasicAllowance.isSDK(o.basic) &&
+          Duration.isSDK(o.period) &&
+          Array.isArray(o.period_spend_limit) &&
+          (!o.period_spend_limit.length ||
+            Coin.isSDK(o.period_spend_limit[0])) &&
+          Array.isArray(o.period_can_spend) &&
+          (!o.period_can_spend.length || Coin.isSDK(o.period_can_spend[0])) &&
+          Timestamp.isSDK(o.period_reset)))
+    );
+  },
   encode(
     message: PeriodicAllowance,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -371,14 +479,42 @@ function createBaseAllowedMsgAllowance(): AllowedMsgAllowance {
     allowedMessages: [],
   };
 }
+/**
+ * AllowedMsgAllowance creates allowance only for specified message types.
+ * @name AllowedMsgAllowance
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.AllowedMsgAllowance
+ */
 export const AllowedMsgAllowance = {
   typeUrl: '/cosmos.feegrant.v1beta1.AllowedMsgAllowance' as const,
+  aminoType: 'cosmos-sdk/AllowedMsgAllowance' as const,
+  is(o: any): o is AllowedMsgAllowance {
+    return (
+      o &&
+      (o.$typeUrl === AllowedMsgAllowance.typeUrl ||
+        (Array.isArray(o.allowedMessages) &&
+          (!o.allowedMessages.length ||
+            typeof o.allowedMessages[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is AllowedMsgAllowanceSDKType {
+    return (
+      o &&
+      (o.$typeUrl === AllowedMsgAllowance.typeUrl ||
+        (Array.isArray(o.allowed_messages) &&
+          (!o.allowed_messages.length ||
+            typeof o.allowed_messages[0] === 'string')))
+    );
+  },
   encode(
     message: AllowedMsgAllowance,
     writer: BinaryWriter = BinaryWriter.create(),
   ): BinaryWriter {
     if (message.allowance !== undefined) {
-      Any.encode(message.allowance as Any, writer.uint32(10).fork()).ldelim();
+      Any.encode(
+        GlobalDecoderRegistry.wrapAny(message.allowance),
+        writer.uint32(10).fork(),
+      ).ldelim();
     }
     for (const v of message.allowedMessages) {
       writer.uint32(18).string(v!);
@@ -397,8 +533,7 @@ export const AllowedMsgAllowance = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.allowance =
-            Cosmos_feegrantv1beta1FeeAllowanceI_InterfaceDecoder(reader) as Any;
+          message.allowance = GlobalDecoderRegistry.unwrapAny(reader);
           break;
         case 2:
           message.allowedMessages.push(reader.string());
@@ -413,7 +548,7 @@ export const AllowedMsgAllowance = {
   fromJSON(object: any): AllowedMsgAllowance {
     return {
       allowance: isSet(object.allowance)
-        ? Any.fromJSON(object.allowance)
+        ? GlobalDecoderRegistry.fromJSON(object.allowance)
         : undefined,
       allowedMessages: Array.isArray(object?.allowedMessages)
         ? object.allowedMessages.map((e: any) => String(e))
@@ -424,7 +559,7 @@ export const AllowedMsgAllowance = {
     const obj: any = {};
     message.allowance !== undefined &&
       (obj.allowance = message.allowance
-        ? Any.toJSON(message.allowance)
+        ? GlobalDecoderRegistry.toJSON(message.allowance)
         : undefined);
     if (message.allowedMessages) {
       obj.allowedMessages = message.allowedMessages.map(e => e);
@@ -437,7 +572,7 @@ export const AllowedMsgAllowance = {
     const message = createBaseAllowedMsgAllowance();
     message.allowance =
       object.allowance !== undefined && object.allowance !== null
-        ? Any.fromPartial(object.allowance)
+        ? GlobalDecoderRegistry.fromPartial(object.allowance)
         : undefined;
     message.allowedMessages = object.allowedMessages?.map(e => e) || [];
     return message;
@@ -462,8 +597,29 @@ function createBaseGrant(): Grant {
     allowance: undefined,
   };
 }
+/**
+ * Grant is stored in the KVStore to record a grant with full context
+ * @name Grant
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.Grant
+ */
 export const Grant = {
   typeUrl: '/cosmos.feegrant.v1beta1.Grant' as const,
+  aminoType: 'cosmos-sdk/Grant' as const,
+  is(o: any): o is Grant {
+    return (
+      o &&
+      (o.$typeUrl === Grant.typeUrl ||
+        (typeof o.granter === 'string' && typeof o.grantee === 'string'))
+    );
+  },
+  isSDK(o: any): o is GrantSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Grant.typeUrl ||
+        (typeof o.granter === 'string' && typeof o.grantee === 'string'))
+    );
+  },
   encode(
     message: Grant,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -475,7 +631,10 @@ export const Grant = {
       writer.uint32(18).string(message.grantee);
     }
     if (message.allowance !== undefined) {
-      Any.encode(message.allowance as Any, writer.uint32(26).fork()).ldelim();
+      Any.encode(
+        GlobalDecoderRegistry.wrapAny(message.allowance),
+        writer.uint32(26).fork(),
+      ).ldelim();
     }
     return writer;
   },
@@ -494,8 +653,7 @@ export const Grant = {
           message.grantee = reader.string();
           break;
         case 3:
-          message.allowance =
-            Cosmos_feegrantv1beta1FeeAllowanceI_InterfaceDecoder(reader) as Any;
+          message.allowance = GlobalDecoderRegistry.unwrapAny(reader);
           break;
         default:
           reader.skipType(tag & 7);
@@ -509,7 +667,7 @@ export const Grant = {
       granter: isSet(object.granter) ? String(object.granter) : '',
       grantee: isSet(object.grantee) ? String(object.grantee) : '',
       allowance: isSet(object.allowance)
-        ? Any.fromJSON(object.allowance)
+        ? GlobalDecoderRegistry.fromJSON(object.allowance)
         : undefined,
     };
   },
@@ -519,7 +677,7 @@ export const Grant = {
     message.grantee !== undefined && (obj.grantee = message.grantee);
     message.allowance !== undefined &&
       (obj.allowance = message.allowance
-        ? Any.toJSON(message.allowance)
+        ? GlobalDecoderRegistry.toJSON(message.allowance)
         : undefined);
     return obj;
   },
@@ -529,7 +687,7 @@ export const Grant = {
     message.grantee = object.grantee ?? '';
     message.allowance =
       object.allowance !== undefined && object.allowance !== null
-        ? Any.fromPartial(object.allowance)
+        ? GlobalDecoderRegistry.fromPartial(object.allowance)
         : undefined;
     return message;
   },
@@ -545,21 +703,4 @@ export const Grant = {
       value: Grant.encode(message).finish(),
     };
   },
-};
-export const Cosmos_feegrantv1beta1FeeAllowanceI_InterfaceDecoder = (
-  input: BinaryReader | Uint8Array,
-): BasicAllowance | PeriodicAllowance | AllowedMsgAllowance | Any => {
-  const reader =
-    input instanceof BinaryReader ? input : new BinaryReader(input);
-  const data = Any.decode(reader, reader.uint32());
-  switch (data.typeUrl) {
-    case '/cosmos.feegrant.v1beta1.BasicAllowance':
-      return BasicAllowance.decode(data.value);
-    case '/cosmos.feegrant.v1beta1.PeriodicAllowance':
-      return PeriodicAllowance.decode(data.value);
-    case '/cosmos.feegrant.v1beta1.AllowedMsgAllowance':
-      return AllowedMsgAllowance.decode(data.value);
-    default:
-      return data;
-  }
 };

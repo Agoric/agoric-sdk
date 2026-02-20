@@ -10,11 +10,18 @@ import { type JsonSafe } from '../../../../json-safe.js';
 /**
  * IdentifiedClientState defines a client state with an additional client
  * identifier field.
+ * @name IdentifiedClientState
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.IdentifiedClientState
  */
 export interface IdentifiedClientState {
-  /** client identifier */
+  /**
+   * client identifier
+   */
   clientId: string;
-  /** client state */
+  /**
+   * client state
+   */
   clientState?: Any;
 }
 export interface IdentifiedClientStateProtoMsg {
@@ -24,6 +31,9 @@ export interface IdentifiedClientStateProtoMsg {
 /**
  * IdentifiedClientState defines a client state with an additional client
  * identifier field.
+ * @name IdentifiedClientStateSDKType
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.IdentifiedClientState
  */
 export interface IdentifiedClientStateSDKType {
   client_id: string;
@@ -32,11 +42,18 @@ export interface IdentifiedClientStateSDKType {
 /**
  * ConsensusStateWithHeight defines a consensus state with an additional height
  * field.
+ * @name ConsensusStateWithHeight
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.ConsensusStateWithHeight
  */
 export interface ConsensusStateWithHeight {
-  /** consensus state height */
+  /**
+   * consensus state height
+   */
   height: Height;
-  /** consensus state */
+  /**
+   * consensus state
+   */
   consensusState?: Any;
 }
 export interface ConsensusStateWithHeightProtoMsg {
@@ -46,6 +63,9 @@ export interface ConsensusStateWithHeightProtoMsg {
 /**
  * ConsensusStateWithHeight defines a consensus state with an additional height
  * field.
+ * @name ConsensusStateWithHeightSDKType
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.ConsensusStateWithHeight
  */
 export interface ConsensusStateWithHeightSDKType {
   height: HeightSDKType;
@@ -54,11 +74,18 @@ export interface ConsensusStateWithHeightSDKType {
 /**
  * ClientConsensusStates defines all the stored consensus states for a given
  * client.
+ * @name ClientConsensusStates
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.ClientConsensusStates
  */
 export interface ClientConsensusStates {
-  /** client identifier */
+  /**
+   * client identifier
+   */
   clientId: string;
-  /** consensus states and their heights associated with the client */
+  /**
+   * consensus states and their heights associated with the client
+   */
   consensusStates: ConsensusStateWithHeight[];
 }
 export interface ClientConsensusStatesProtoMsg {
@@ -68,6 +95,9 @@ export interface ClientConsensusStatesProtoMsg {
 /**
  * ClientConsensusStates defines all the stored consensus states for a given
  * client.
+ * @name ClientConsensusStatesSDKType
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.ClientConsensusStates
  */
 export interface ClientConsensusStatesSDKType {
   client_id: string;
@@ -84,11 +114,18 @@ export interface ClientConsensusStatesSDKType {
  * breaking changes In these cases, the RevisionNumber is incremented so that
  * height continues to be monitonically increasing even as the RevisionHeight
  * gets reset
+ * @name Height
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.Height
  */
 export interface Height {
-  /** the revision that the client is currently on */
+  /**
+   * the revision that the client is currently on
+   */
   revisionNumber: bigint;
-  /** the height within the given revision */
+  /**
+   * the height within the given revision
+   */
   revisionHeight: bigint;
 }
 export interface HeightProtoMsg {
@@ -106,12 +143,20 @@ export interface HeightProtoMsg {
  * breaking changes In these cases, the RevisionNumber is incremented so that
  * height continues to be monitonically increasing even as the RevisionHeight
  * gets reset
+ * @name HeightSDKType
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.Height
  */
 export interface HeightSDKType {
   revision_number: bigint;
   revision_height: bigint;
 }
-/** Params defines the set of IBC light client parameters. */
+/**
+ * Params defines the set of IBC light client parameters.
+ * @name Params
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.Params
+ */
 export interface Params {
   /**
    * allowed_clients defines the list of allowed client state types which can be created
@@ -124,7 +169,12 @@ export interface ParamsProtoMsg {
   typeUrl: '/ibc.core.client.v1.Params';
   value: Uint8Array;
 }
-/** Params defines the set of IBC light client parameters. */
+/**
+ * Params defines the set of IBC light client parameters.
+ * @name ParamsSDKType
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.Params
+ */
 export interface ParamsSDKType {
   allowed_clients: string[];
 }
@@ -135,14 +185,23 @@ export interface ParamsSDKType {
  * chain parameters (with exception to latest height, frozen height, and chain-id).
  *
  * Deprecated: Please use MsgRecoverClient in favour of this message type.
+ * @name ClientUpdateProposal
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.ClientUpdateProposal
+ * @deprecated
  */
-/** @deprecated */
 export interface ClientUpdateProposal {
-  /** the title of the update proposal */
+  /**
+   * the title of the update proposal
+   */
   title: string;
-  /** the description of the proposal */
+  /**
+   * the description of the proposal
+   */
   description: string;
-  /** the client identifier for the client to be updated if the proposal passes */
+  /**
+   * the client identifier for the client to be updated if the proposal passes
+   */
   subjectClientId: string;
   /**
    * the substitute client identifier for the client standing in for the subject
@@ -161,8 +220,11 @@ export interface ClientUpdateProposalProtoMsg {
  * chain parameters (with exception to latest height, frozen height, and chain-id).
  *
  * Deprecated: Please use MsgRecoverClient in favour of this message type.
+ * @name ClientUpdateProposalSDKType
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.ClientUpdateProposal
+ * @deprecated
  */
-/** @deprecated */
 export interface ClientUpdateProposalSDKType {
   title: string;
   description: string;
@@ -174,8 +236,11 @@ export interface ClientUpdateProposalSDKType {
  * upgrade.
  *
  * Deprecated: Please use MsgIBCSoftwareUpgrade in favour of this message type.
+ * @name UpgradeProposal
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.UpgradeProposal
+ * @deprecated
  */
-/** @deprecated */
 export interface UpgradeProposal {
   title: string;
   description: string;
@@ -199,8 +264,11 @@ export interface UpgradeProposalProtoMsg {
  * upgrade.
  *
  * Deprecated: Please use MsgIBCSoftwareUpgrade in favour of this message type.
+ * @name UpgradeProposalSDKType
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.UpgradeProposal
+ * @deprecated
  */
-/** @deprecated */
 export interface UpgradeProposalSDKType {
   title: string;
   description: string;
@@ -213,6 +281,13 @@ function createBaseIdentifiedClientState(): IdentifiedClientState {
     clientState: undefined,
   };
 }
+/**
+ * IdentifiedClientState defines a client state with an additional client
+ * identifier field.
+ * @name IdentifiedClientState
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.IdentifiedClientState
+ */
 export const IdentifiedClientState = {
   typeUrl: '/ibc.core.client.v1.IdentifiedClientState' as const,
   encode(
@@ -296,6 +371,13 @@ function createBaseConsensusStateWithHeight(): ConsensusStateWithHeight {
     consensusState: undefined,
   };
 }
+/**
+ * ConsensusStateWithHeight defines a consensus state with an additional height
+ * field.
+ * @name ConsensusStateWithHeight
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.ConsensusStateWithHeight
+ */
 export const ConsensusStateWithHeight = {
   typeUrl: '/ibc.core.client.v1.ConsensusStateWithHeight' as const,
   encode(
@@ -391,6 +473,13 @@ function createBaseClientConsensusStates(): ClientConsensusStates {
     consensusStates: [],
   };
 }
+/**
+ * ClientConsensusStates defines all the stored consensus states for a given
+ * client.
+ * @name ClientConsensusStates
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.ClientConsensusStates
+ */
 export const ClientConsensusStates = {
   typeUrl: '/ibc.core.client.v1.ClientConsensusStates' as const,
   encode(
@@ -481,6 +570,21 @@ function createBaseHeight(): Height {
     revisionHeight: BigInt(0),
   };
 }
+/**
+ * Height is a monotonically increasing data type
+ * that can be compared against another Height for the purposes of updating and
+ * freezing clients
+ *
+ * Normally the RevisionHeight is incremented at each height while keeping
+ * RevisionNumber the same. However some consensus algorithms may choose to
+ * reset the height in certain conditions e.g. hard forks, state-machine
+ * breaking changes In these cases, the RevisionNumber is incremented so that
+ * height continues to be monitonically increasing even as the RevisionHeight
+ * gets reset
+ * @name Height
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.Height
+ */
 export const Height = {
   typeUrl: '/ibc.core.client.v1.Height' as const,
   encode(
@@ -564,6 +668,12 @@ function createBaseParams(): Params {
     allowedClients: [],
   };
 }
+/**
+ * Params defines the set of IBC light client parameters.
+ * @name Params
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.Params
+ */
 export const Params = {
   typeUrl: '/ibc.core.client.v1.Params' as const,
   encode(
@@ -635,6 +745,18 @@ function createBaseClientUpdateProposal(): ClientUpdateProposal {
     substituteClientId: '',
   };
 }
+/**
+ * ClientUpdateProposal is a legacy governance proposal. If it passes, the substitute
+ * client's latest consensus state is copied over to the subject client. The proposal
+ * handler may fail if the subject and the substitute do not match in client and
+ * chain parameters (with exception to latest height, frozen height, and chain-id).
+ *
+ * Deprecated: Please use MsgRecoverClient in favour of this message type.
+ * @name ClientUpdateProposal
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.ClientUpdateProposal
+ * @deprecated
+ */
 export const ClientUpdateProposal = {
   typeUrl: '/ibc.core.client.v1.ClientUpdateProposal' as const,
   encode(
@@ -737,6 +859,16 @@ function createBaseUpgradeProposal(): UpgradeProposal {
     upgradedClientState: undefined,
   };
 }
+/**
+ * UpgradeProposal is a gov Content type for initiating an IBC breaking
+ * upgrade.
+ *
+ * Deprecated: Please use MsgIBCSoftwareUpgrade in favour of this message type.
+ * @name UpgradeProposal
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.UpgradeProposal
+ * @deprecated
+ */
 export const UpgradeProposal = {
   typeUrl: '/ibc.core.client.v1.UpgradeProposal' as const,
   encode(

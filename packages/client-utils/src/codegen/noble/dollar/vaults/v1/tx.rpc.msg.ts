@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { type Rpc } from '../../../../helpers.js';
+import { TxRpc } from '../../../../types.js';
 import { BinaryReader } from '../../../../binary.js';
 import {
   MsgLock,
@@ -17,8 +17,8 @@ export interface Msg {
   ): Promise<MsgSetPausedStateResponse>;
 }
 export class MsgClientImpl implements Msg {
-  private readonly rpc: Rpc;
-  constructor(rpc: Rpc) {
+  private readonly rpc: TxRpc;
+  constructor(rpc: TxRpc) {
     this.rpc = rpc;
     this.lock = this.lock.bind(this);
     this.unlock = this.unlock.bind(this);
@@ -58,3 +58,6 @@ export class MsgClientImpl implements Msg {
     );
   }
 }
+export const createClientImpl = (rpc: TxRpc) => {
+  return new MsgClientImpl(rpc);
+};

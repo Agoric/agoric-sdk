@@ -4,7 +4,12 @@ import { isSet } from '../../helpers.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
 import { type JsonSafe } from '../../json-safe.js';
-/** PublicKey defines the keys available for use with Tendermint Validators */
+/**
+ * PublicKey defines the keys available for use with Tendermint Validators
+ * @name PublicKey
+ * @package tendermint.crypto
+ * @see proto type: tendermint.crypto.PublicKey
+ */
 export interface PublicKey {
   ed25519?: Uint8Array;
   secp256k1?: Uint8Array;
@@ -13,7 +18,12 @@ export interface PublicKeyProtoMsg {
   typeUrl: '/tendermint.crypto.PublicKey';
   value: Uint8Array;
 }
-/** PublicKey defines the keys available for use with Tendermint Validators */
+/**
+ * PublicKey defines the keys available for use with Tendermint Validators
+ * @name PublicKeySDKType
+ * @package tendermint.crypto
+ * @see proto type: tendermint.crypto.PublicKey
+ */
 export interface PublicKeySDKType {
   ed25519?: Uint8Array;
   secp256k1?: Uint8Array;
@@ -24,6 +34,12 @@ function createBasePublicKey(): PublicKey {
     secp256k1: undefined,
   };
 }
+/**
+ * PublicKey defines the keys available for use with Tendermint Validators
+ * @name PublicKey
+ * @package tendermint.crypto
+ * @see proto type: tendermint.crypto.PublicKey
+ */
 export const PublicKey = {
   typeUrl: '/tendermint.crypto.PublicKey' as const,
   encode(

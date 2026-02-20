@@ -5,7 +5,12 @@ import { isSet } from '../../../../helpers.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
 import { type JsonSafe } from '../../../../json-safe.js';
-/** Wasm light client's Client state */
+/**
+ * Wasm light client's Client state
+ * @name ClientState
+ * @package ibc.lightclients.wasm.v1
+ * @see proto type: ibc.lightclients.wasm.v1.ClientState
+ */
 export interface ClientState {
   /**
    * bytes encoding the client state of the underlying light client
@@ -19,13 +24,23 @@ export interface ClientStateProtoMsg {
   typeUrl: '/ibc.lightclients.wasm.v1.ClientState';
   value: Uint8Array;
 }
-/** Wasm light client's Client state */
+/**
+ * Wasm light client's Client state
+ * @name ClientStateSDKType
+ * @package ibc.lightclients.wasm.v1
+ * @see proto type: ibc.lightclients.wasm.v1.ClientState
+ */
 export interface ClientStateSDKType {
   data: Uint8Array;
   checksum: Uint8Array;
   latest_height: HeightSDKType;
 }
-/** Wasm light client's ConsensusState */
+/**
+ * Wasm light client's ConsensusState
+ * @name ConsensusState
+ * @package ibc.lightclients.wasm.v1
+ * @see proto type: ibc.lightclients.wasm.v1.ConsensusState
+ */
 export interface ConsensusState {
   /**
    * bytes encoding the consensus state of the underlying light client
@@ -37,11 +52,21 @@ export interface ConsensusStateProtoMsg {
   typeUrl: '/ibc.lightclients.wasm.v1.ConsensusState';
   value: Uint8Array;
 }
-/** Wasm light client's ConsensusState */
+/**
+ * Wasm light client's ConsensusState
+ * @name ConsensusStateSDKType
+ * @package ibc.lightclients.wasm.v1
+ * @see proto type: ibc.lightclients.wasm.v1.ConsensusState
+ */
 export interface ConsensusStateSDKType {
   data: Uint8Array;
 }
-/** Wasm light client message (either header(s) or misbehaviour) */
+/**
+ * Wasm light client message (either header(s) or misbehaviour)
+ * @name ClientMessage
+ * @package ibc.lightclients.wasm.v1
+ * @see proto type: ibc.lightclients.wasm.v1.ClientMessage
+ */
 export interface ClientMessage {
   data: Uint8Array;
 }
@@ -49,7 +74,12 @@ export interface ClientMessageProtoMsg {
   typeUrl: '/ibc.lightclients.wasm.v1.ClientMessage';
   value: Uint8Array;
 }
-/** Wasm light client message (either header(s) or misbehaviour) */
+/**
+ * Wasm light client message (either header(s) or misbehaviour)
+ * @name ClientMessageSDKType
+ * @package ibc.lightclients.wasm.v1
+ * @see proto type: ibc.lightclients.wasm.v1.ClientMessage
+ */
 export interface ClientMessageSDKType {
   data: Uint8Array;
 }
@@ -58,8 +88,11 @@ export interface ClientMessageSDKType {
  *
  * Deprecated: This message is deprecated in favor of storing the checksums
  * using a Collections.KeySet.
+ * @name Checksums
+ * @package ibc.lightclients.wasm.v1
+ * @see proto type: ibc.lightclients.wasm.v1.Checksums
+ * @deprecated
  */
-/** @deprecated */
 export interface Checksums {
   checksums: Uint8Array[];
 }
@@ -72,8 +105,11 @@ export interface ChecksumsProtoMsg {
  *
  * Deprecated: This message is deprecated in favor of storing the checksums
  * using a Collections.KeySet.
+ * @name ChecksumsSDKType
+ * @package ibc.lightclients.wasm.v1
+ * @see proto type: ibc.lightclients.wasm.v1.Checksums
+ * @deprecated
  */
-/** @deprecated */
 export interface ChecksumsSDKType {
   checksums: Uint8Array[];
 }
@@ -84,6 +120,12 @@ function createBaseClientState(): ClientState {
     latestHeight: Height.fromPartial({}),
   };
 }
+/**
+ * Wasm light client's Client state
+ * @name ClientState
+ * @package ibc.lightclients.wasm.v1
+ * @see proto type: ibc.lightclients.wasm.v1.ClientState
+ */
 export const ClientState = {
   typeUrl: '/ibc.lightclients.wasm.v1.ClientState' as const,
   encode(
@@ -182,6 +224,12 @@ function createBaseConsensusState(): ConsensusState {
     data: new Uint8Array(),
   };
 }
+/**
+ * Wasm light client's ConsensusState
+ * @name ConsensusState
+ * @package ibc.lightclients.wasm.v1
+ * @see proto type: ibc.lightclients.wasm.v1.ConsensusState
+ */
 export const ConsensusState = {
   typeUrl: '/ibc.lightclients.wasm.v1.ConsensusState' as const,
   encode(
@@ -249,6 +297,12 @@ function createBaseClientMessage(): ClientMessage {
     data: new Uint8Array(),
   };
 }
+/**
+ * Wasm light client message (either header(s) or misbehaviour)
+ * @name ClientMessage
+ * @package ibc.lightclients.wasm.v1
+ * @see proto type: ibc.lightclients.wasm.v1.ClientMessage
+ */
 export const ClientMessage = {
   typeUrl: '/ibc.lightclients.wasm.v1.ClientMessage' as const,
   encode(
@@ -316,6 +370,16 @@ function createBaseChecksums(): Checksums {
     checksums: [],
   };
 }
+/**
+ * Checksums defines a list of all checksums that are stored
+ *
+ * Deprecated: This message is deprecated in favor of storing the checksums
+ * using a Collections.KeySet.
+ * @name Checksums
+ * @package ibc.lightclients.wasm.v1
+ * @see proto type: ibc.lightclients.wasm.v1.Checksums
+ * @deprecated
+ */
 export const Checksums = {
   typeUrl: '/ibc.lightclients.wasm.v1.Checksums' as const,
   encode(

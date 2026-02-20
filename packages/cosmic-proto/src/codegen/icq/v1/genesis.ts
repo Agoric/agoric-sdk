@@ -3,7 +3,12 @@ import { Params, type ParamsSDKType } from './icq.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
-/** GenesisState defines the interchain query genesis state */
+/**
+ * GenesisState defines the interchain query genesis state
+ * @name GenesisState
+ * @package icq.v1
+ * @see proto type: icq.v1.GenesisState
+ */
 export interface GenesisState {
   hostPort: string;
   params: Params;
@@ -12,7 +17,12 @@ export interface GenesisStateProtoMsg {
   typeUrl: '/icq.v1.GenesisState';
   value: Uint8Array;
 }
-/** GenesisState defines the interchain query genesis state */
+/**
+ * GenesisState defines the interchain query genesis state
+ * @name GenesisStateSDKType
+ * @package icq.v1
+ * @see proto type: icq.v1.GenesisState
+ */
 export interface GenesisStateSDKType {
   host_port: string;
   params: ParamsSDKType;
@@ -23,8 +33,28 @@ function createBaseGenesisState(): GenesisState {
     params: Params.fromPartial({}),
   };
 }
+/**
+ * GenesisState defines the interchain query genesis state
+ * @name GenesisState
+ * @package icq.v1
+ * @see proto type: icq.v1.GenesisState
+ */
 export const GenesisState = {
   typeUrl: '/icq.v1.GenesisState' as const,
+  is(o: any): o is GenesisState {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (typeof o.hostPort === 'string' && Params.is(o.params)))
+    );
+  },
+  isSDK(o: any): o is GenesisStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (typeof o.host_port === 'string' && Params.isSDK(o.params)))
+    );
+  },
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),

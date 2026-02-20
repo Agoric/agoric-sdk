@@ -10,6 +10,9 @@ import { type JsonSafe } from '../../../json-safe.js';
  * It must not be used in a non Tendermint key context because it doesn't implement
  * ADR-28. Nevertheless, you will like to use ed25519 in app user level
  * then you must create a new proto message and follow ADR-28 for Address construction.
+ * @name PubKey
+ * @package cosmos.crypto.ed25519
+ * @see proto type: cosmos.crypto.ed25519.PubKey
  */
 export interface PubKey {
   key: Uint8Array;
@@ -24,6 +27,9 @@ export interface PubKeyProtoMsg {
  * It must not be used in a non Tendermint key context because it doesn't implement
  * ADR-28. Nevertheless, you will like to use ed25519 in app user level
  * then you must create a new proto message and follow ADR-28 for Address construction.
+ * @name PubKeySDKType
+ * @package cosmos.crypto.ed25519
+ * @see proto type: cosmos.crypto.ed25519.PubKey
  */
 export interface PubKeySDKType {
   key: Uint8Array;
@@ -31,6 +37,9 @@ export interface PubKeySDKType {
 /**
  * PrivKey defines a ed25519 private key.
  * NOTE: ed25519 keys must not be used in SDK apps except in a tendermint validator context.
+ * @name PrivKey
+ * @package cosmos.crypto.ed25519
+ * @see proto type: cosmos.crypto.ed25519.PrivKey
  */
 export interface PrivKey {
   key: Uint8Array;
@@ -42,6 +51,9 @@ export interface PrivKeyProtoMsg {
 /**
  * PrivKey defines a ed25519 private key.
  * NOTE: ed25519 keys must not be used in SDK apps except in a tendermint validator context.
+ * @name PrivKeySDKType
+ * @package cosmos.crypto.ed25519
+ * @see proto type: cosmos.crypto.ed25519.PrivKey
  */
 export interface PrivKeySDKType {
   key: Uint8Array;
@@ -51,6 +63,16 @@ function createBasePubKey(): PubKey {
     key: new Uint8Array(),
   };
 }
+/**
+ * PubKey is an ed25519 public key for handling Tendermint keys in SDK.
+ * It's needed for Any serialization and SDK compatibility.
+ * It must not be used in a non Tendermint key context because it doesn't implement
+ * ADR-28. Nevertheless, you will like to use ed25519 in app user level
+ * then you must create a new proto message and follow ADR-28 for Address construction.
+ * @name PubKey
+ * @package cosmos.crypto.ed25519
+ * @see proto type: cosmos.crypto.ed25519.PubKey
+ */
 export const PubKey = {
   typeUrl: '/cosmos.crypto.ed25519.PubKey' as const,
   encode(
@@ -116,6 +138,13 @@ function createBasePrivKey(): PrivKey {
     key: new Uint8Array(),
   };
 }
+/**
+ * PrivKey defines a ed25519 private key.
+ * NOTE: ed25519 keys must not be used in SDK apps except in a tendermint validator context.
+ * @name PrivKey
+ * @package cosmos.crypto.ed25519
+ * @see proto type: cosmos.crypto.ed25519.PrivKey
+ */
 export const PrivKey = {
   typeUrl: '/cosmos.crypto.ed25519.PrivKey' as const,
   encode(

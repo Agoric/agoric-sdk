@@ -9,6 +9,11 @@ import { EpochInfo, type EpochInfoSDKType } from './genesis.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
+/**
+ * @name QueryEpochsInfoRequest
+ * @package stride.epochs
+ * @see proto type: stride.epochs.QueryEpochsInfoRequest
+ */
 export interface QueryEpochsInfoRequest {
   pagination?: PageRequest;
 }
@@ -16,9 +21,19 @@ export interface QueryEpochsInfoRequestProtoMsg {
   typeUrl: '/stride.epochs.QueryEpochsInfoRequest';
   value: Uint8Array;
 }
+/**
+ * @name QueryEpochsInfoRequestSDKType
+ * @package stride.epochs
+ * @see proto type: stride.epochs.QueryEpochsInfoRequest
+ */
 export interface QueryEpochsInfoRequestSDKType {
   pagination?: PageRequestSDKType;
 }
+/**
+ * @name QueryEpochsInfoResponse
+ * @package stride.epochs
+ * @see proto type: stride.epochs.QueryEpochsInfoResponse
+ */
 export interface QueryEpochsInfoResponse {
   epochs: EpochInfo[];
   pagination?: PageResponse;
@@ -27,10 +42,20 @@ export interface QueryEpochsInfoResponseProtoMsg {
   typeUrl: '/stride.epochs.QueryEpochsInfoResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryEpochsInfoResponseSDKType
+ * @package stride.epochs
+ * @see proto type: stride.epochs.QueryEpochsInfoResponse
+ */
 export interface QueryEpochsInfoResponseSDKType {
   epochs: EpochInfoSDKType[];
   pagination?: PageResponseSDKType;
 }
+/**
+ * @name QueryCurrentEpochRequest
+ * @package stride.epochs
+ * @see proto type: stride.epochs.QueryCurrentEpochRequest
+ */
 export interface QueryCurrentEpochRequest {
   identifier: string;
 }
@@ -38,9 +63,19 @@ export interface QueryCurrentEpochRequestProtoMsg {
   typeUrl: '/stride.epochs.QueryCurrentEpochRequest';
   value: Uint8Array;
 }
+/**
+ * @name QueryCurrentEpochRequestSDKType
+ * @package stride.epochs
+ * @see proto type: stride.epochs.QueryCurrentEpochRequest
+ */
 export interface QueryCurrentEpochRequestSDKType {
   identifier: string;
 }
+/**
+ * @name QueryCurrentEpochResponse
+ * @package stride.epochs
+ * @see proto type: stride.epochs.QueryCurrentEpochResponse
+ */
 export interface QueryCurrentEpochResponse {
   currentEpoch: bigint;
 }
@@ -48,9 +83,19 @@ export interface QueryCurrentEpochResponseProtoMsg {
   typeUrl: '/stride.epochs.QueryCurrentEpochResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryCurrentEpochResponseSDKType
+ * @package stride.epochs
+ * @see proto type: stride.epochs.QueryCurrentEpochResponse
+ */
 export interface QueryCurrentEpochResponseSDKType {
   current_epoch: bigint;
 }
+/**
+ * @name QueryEpochInfoRequest
+ * @package stride.epochs
+ * @see proto type: stride.epochs.QueryEpochInfoRequest
+ */
 export interface QueryEpochInfoRequest {
   identifier: string;
 }
@@ -58,9 +103,19 @@ export interface QueryEpochInfoRequestProtoMsg {
   typeUrl: '/stride.epochs.QueryEpochInfoRequest';
   value: Uint8Array;
 }
+/**
+ * @name QueryEpochInfoRequestSDKType
+ * @package stride.epochs
+ * @see proto type: stride.epochs.QueryEpochInfoRequest
+ */
 export interface QueryEpochInfoRequestSDKType {
   identifier: string;
 }
+/**
+ * @name QueryEpochInfoResponse
+ * @package stride.epochs
+ * @see proto type: stride.epochs.QueryEpochInfoResponse
+ */
 export interface QueryEpochInfoResponse {
   epoch: EpochInfo;
 }
@@ -68,6 +123,11 @@ export interface QueryEpochInfoResponseProtoMsg {
   typeUrl: '/stride.epochs.QueryEpochInfoResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryEpochInfoResponseSDKType
+ * @package stride.epochs
+ * @see proto type: stride.epochs.QueryEpochInfoResponse
+ */
 export interface QueryEpochInfoResponseSDKType {
   epoch: EpochInfoSDKType;
 }
@@ -76,6 +136,11 @@ function createBaseQueryEpochsInfoRequest(): QueryEpochsInfoRequest {
     pagination: undefined,
   };
 }
+/**
+ * @name QueryEpochsInfoRequest
+ * @package stride.epochs
+ * @see proto type: stride.epochs.QueryEpochsInfoRequest
+ */
 export const QueryEpochsInfoRequest = {
   typeUrl: '/stride.epochs.QueryEpochsInfoRequest' as const,
   encode(
@@ -152,6 +217,11 @@ function createBaseQueryEpochsInfoResponse(): QueryEpochsInfoResponse {
     pagination: undefined,
   };
 }
+/**
+ * @name QueryEpochsInfoResponse
+ * @package stride.epochs
+ * @see proto type: stride.epochs.QueryEpochsInfoResponse
+ */
 export const QueryEpochsInfoResponse = {
   typeUrl: '/stride.epochs.QueryEpochsInfoResponse' as const,
   encode(
@@ -251,6 +321,11 @@ function createBaseQueryCurrentEpochRequest(): QueryCurrentEpochRequest {
     identifier: '',
   };
 }
+/**
+ * @name QueryCurrentEpochRequest
+ * @package stride.epochs
+ * @see proto type: stride.epochs.QueryCurrentEpochRequest
+ */
 export const QueryCurrentEpochRequest = {
   typeUrl: '/stride.epochs.QueryCurrentEpochRequest' as const,
   encode(
@@ -324,6 +399,11 @@ function createBaseQueryCurrentEpochResponse(): QueryCurrentEpochResponse {
     currentEpoch: BigInt(0),
   };
 }
+/**
+ * @name QueryCurrentEpochResponse
+ * @package stride.epochs
+ * @see proto type: stride.epochs.QueryCurrentEpochResponse
+ */
 export const QueryCurrentEpochResponse = {
   typeUrl: '/stride.epochs.QueryCurrentEpochResponse' as const,
   encode(
@@ -403,6 +483,11 @@ function createBaseQueryEpochInfoRequest(): QueryEpochInfoRequest {
     identifier: '',
   };
 }
+/**
+ * @name QueryEpochInfoRequest
+ * @package stride.epochs
+ * @see proto type: stride.epochs.QueryEpochInfoRequest
+ */
 export const QueryEpochInfoRequest = {
   typeUrl: '/stride.epochs.QueryEpochInfoRequest' as const,
   encode(
@@ -468,6 +553,11 @@ function createBaseQueryEpochInfoResponse(): QueryEpochInfoResponse {
     epoch: EpochInfo.fromPartial({}),
   };
 }
+/**
+ * @name QueryEpochInfoResponse
+ * @package stride.epochs
+ * @see proto type: stride.epochs.QueryEpochInfoResponse
+ */
 export const QueryEpochInfoResponse = {
   typeUrl: '/stride.epochs.QueryEpochInfoResponse' as const,
   encode(

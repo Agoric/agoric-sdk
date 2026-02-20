@@ -6,6 +6,9 @@ import { type JsonSafe } from '../../../json-safe.js';
  * SignatureThreshold is the minimum amount of signatures required to attest to
  * a message (the 'm' in a m/n multisig)
  * @param amount the number of signatures required
+ * @name SignatureThreshold
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.SignatureThreshold
  */
 export interface SignatureThreshold {
   amount: number;
@@ -18,6 +21,9 @@ export interface SignatureThresholdProtoMsg {
  * SignatureThreshold is the minimum amount of signatures required to attest to
  * a message (the 'm' in a m/n multisig)
  * @param amount the number of signatures required
+ * @name SignatureThresholdSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.SignatureThreshold
  */
 export interface SignatureThresholdSDKType {
   amount: number;
@@ -27,6 +33,14 @@ function createBaseSignatureThreshold(): SignatureThreshold {
     amount: 0,
   };
 }
+/**
+ * SignatureThreshold is the minimum amount of signatures required to attest to
+ * a message (the 'm' in a m/n multisig)
+ * @param amount the number of signatures required
+ * @name SignatureThreshold
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.SignatureThreshold
+ */
 export const SignatureThreshold = {
   typeUrl: '/circle.cctp.v1.SignatureThreshold' as const,
   encode(

@@ -2,6 +2,11 @@
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
+/**
+ * @name EpochTracker
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.EpochTracker
+ */
 export interface EpochTracker {
   epochIdentifier: string;
   epochNumber: bigint;
@@ -12,6 +17,11 @@ export interface EpochTrackerProtoMsg {
   typeUrl: '/stride.stakeibc.EpochTracker';
   value: Uint8Array;
 }
+/**
+ * @name EpochTrackerSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.EpochTracker
+ */
 export interface EpochTrackerSDKType {
   epoch_identifier: string;
   epoch_number: bigint;
@@ -26,6 +36,11 @@ function createBaseEpochTracker(): EpochTracker {
     duration: BigInt(0),
   };
 }
+/**
+ * @name EpochTracker
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.EpochTracker
+ */
 export const EpochTracker = {
   typeUrl: '/stride.stakeibc.EpochTracker' as const,
   encode(

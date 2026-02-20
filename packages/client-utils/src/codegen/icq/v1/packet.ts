@@ -10,22 +10,39 @@ import { isSet } from '../../helpers.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
 import { type JsonSafe } from '../../json-safe.js';
-/** InterchainQueryPacketData is comprised of raw query. */
+/**
+ * InterchainQueryPacketData is comprised of raw query.
+ * @name InterchainQueryPacketData
+ * @package icq.v1
+ * @see proto type: icq.v1.InterchainQueryPacketData
+ */
 export interface InterchainQueryPacketData {
   data: Uint8Array;
-  /** optional memo */
+  /**
+   * optional memo
+   */
   memo: string;
 }
 export interface InterchainQueryPacketDataProtoMsg {
   typeUrl: '/icq.v1.InterchainQueryPacketData';
   value: Uint8Array;
 }
-/** InterchainQueryPacketData is comprised of raw query. */
+/**
+ * InterchainQueryPacketData is comprised of raw query.
+ * @name InterchainQueryPacketDataSDKType
+ * @package icq.v1
+ * @see proto type: icq.v1.InterchainQueryPacketData
+ */
 export interface InterchainQueryPacketDataSDKType {
   data: Uint8Array;
   memo: string;
 }
-/** InterchainQueryPacketAck is comprised of an ABCI query response with non-deterministic fields left empty (e.g. Codespace, Log, Info and ...). */
+/**
+ * InterchainQueryPacketAck is comprised of an ABCI query response with non-deterministic fields left empty (e.g. Codespace, Log, Info and ...).
+ * @name InterchainQueryPacketAck
+ * @package icq.v1
+ * @see proto type: icq.v1.InterchainQueryPacketAck
+ */
 export interface InterchainQueryPacketAck {
   data: Uint8Array;
 }
@@ -33,11 +50,21 @@ export interface InterchainQueryPacketAckProtoMsg {
   typeUrl: '/icq.v1.InterchainQueryPacketAck';
   value: Uint8Array;
 }
-/** InterchainQueryPacketAck is comprised of an ABCI query response with non-deterministic fields left empty (e.g. Codespace, Log, Info and ...). */
+/**
+ * InterchainQueryPacketAck is comprised of an ABCI query response with non-deterministic fields left empty (e.g. Codespace, Log, Info and ...).
+ * @name InterchainQueryPacketAckSDKType
+ * @package icq.v1
+ * @see proto type: icq.v1.InterchainQueryPacketAck
+ */
 export interface InterchainQueryPacketAckSDKType {
   data: Uint8Array;
 }
-/** CosmosQuery contains a list of tendermint ABCI query requests. It should be used when sending queries to an SDK host chain. */
+/**
+ * CosmosQuery contains a list of tendermint ABCI query requests. It should be used when sending queries to an SDK host chain.
+ * @name CosmosQuery
+ * @package icq.v1
+ * @see proto type: icq.v1.CosmosQuery
+ */
 export interface CosmosQuery {
   requests: RequestQuery[];
 }
@@ -45,11 +72,21 @@ export interface CosmosQueryProtoMsg {
   typeUrl: '/icq.v1.CosmosQuery';
   value: Uint8Array;
 }
-/** CosmosQuery contains a list of tendermint ABCI query requests. It should be used when sending queries to an SDK host chain. */
+/**
+ * CosmosQuery contains a list of tendermint ABCI query requests. It should be used when sending queries to an SDK host chain.
+ * @name CosmosQuerySDKType
+ * @package icq.v1
+ * @see proto type: icq.v1.CosmosQuery
+ */
 export interface CosmosQuerySDKType {
   requests: RequestQuerySDKType[];
 }
-/** CosmosResponse contains a list of tendermint ABCI query responses. It should be used when receiving responses from an SDK host chain. */
+/**
+ * CosmosResponse contains a list of tendermint ABCI query responses. It should be used when receiving responses from an SDK host chain.
+ * @name CosmosResponse
+ * @package icq.v1
+ * @see proto type: icq.v1.CosmosResponse
+ */
 export interface CosmosResponse {
   responses: ResponseQuery[];
 }
@@ -57,7 +94,12 @@ export interface CosmosResponseProtoMsg {
   typeUrl: '/icq.v1.CosmosResponse';
   value: Uint8Array;
 }
-/** CosmosResponse contains a list of tendermint ABCI query responses. It should be used when receiving responses from an SDK host chain. */
+/**
+ * CosmosResponse contains a list of tendermint ABCI query responses. It should be used when receiving responses from an SDK host chain.
+ * @name CosmosResponseSDKType
+ * @package icq.v1
+ * @see proto type: icq.v1.CosmosResponse
+ */
 export interface CosmosResponseSDKType {
   responses: ResponseQuerySDKType[];
 }
@@ -67,6 +109,12 @@ function createBaseInterchainQueryPacketData(): InterchainQueryPacketData {
     memo: '',
   };
 }
+/**
+ * InterchainQueryPacketData is comprised of raw query.
+ * @name InterchainQueryPacketData
+ * @package icq.v1
+ * @see proto type: icq.v1.InterchainQueryPacketData
+ */
 export const InterchainQueryPacketData = {
   typeUrl: '/icq.v1.InterchainQueryPacketData' as const,
   encode(
@@ -154,6 +202,12 @@ function createBaseInterchainQueryPacketAck(): InterchainQueryPacketAck {
     data: new Uint8Array(),
   };
 }
+/**
+ * InterchainQueryPacketAck is comprised of an ABCI query response with non-deterministic fields left empty (e.g. Codespace, Log, Info and ...).
+ * @name InterchainQueryPacketAck
+ * @package icq.v1
+ * @see proto type: icq.v1.InterchainQueryPacketAck
+ */
 export const InterchainQueryPacketAck = {
   typeUrl: '/icq.v1.InterchainQueryPacketAck' as const,
   encode(
@@ -232,6 +286,12 @@ function createBaseCosmosQuery(): CosmosQuery {
     requests: [],
   };
 }
+/**
+ * CosmosQuery contains a list of tendermint ABCI query requests. It should be used when sending queries to an SDK host chain.
+ * @name CosmosQuery
+ * @package icq.v1
+ * @see proto type: icq.v1.CosmosQuery
+ */
 export const CosmosQuery = {
   typeUrl: '/icq.v1.CosmosQuery' as const,
   encode(
@@ -303,6 +363,12 @@ function createBaseCosmosResponse(): CosmosResponse {
     responses: [],
   };
 }
+/**
+ * CosmosResponse contains a list of tendermint ABCI query responses. It should be used when receiving responses from an SDK host chain.
+ * @name CosmosResponse
+ * @package icq.v1
+ * @see proto type: icq.v1.CosmosResponse
+ */
 export const CosmosResponse = {
   typeUrl: '/icq.v1.CosmosResponse' as const,
   encode(

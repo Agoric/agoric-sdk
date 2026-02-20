@@ -5,6 +5,9 @@ import { type JsonSafe } from '../../../json-safe.js';
 /**
  * Message format for SendingAndReceivingMessagesPaused
  * @param paused true if paused, false if not paused
+ * @name SendingAndReceivingMessagesPaused
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.SendingAndReceivingMessagesPaused
  */
 export interface SendingAndReceivingMessagesPaused {
   paused: boolean;
@@ -16,6 +19,9 @@ export interface SendingAndReceivingMessagesPausedProtoMsg {
 /**
  * Message format for SendingAndReceivingMessagesPaused
  * @param paused true if paused, false if not paused
+ * @name SendingAndReceivingMessagesPausedSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.SendingAndReceivingMessagesPaused
  */
 export interface SendingAndReceivingMessagesPausedSDKType {
   paused: boolean;
@@ -25,6 +31,13 @@ function createBaseSendingAndReceivingMessagesPaused(): SendingAndReceivingMessa
     paused: false,
   };
 }
+/**
+ * Message format for SendingAndReceivingMessagesPaused
+ * @param paused true if paused, false if not paused
+ * @name SendingAndReceivingMessagesPaused
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.SendingAndReceivingMessagesPaused
+ */
 export const SendingAndReceivingMessagesPaused = {
   typeUrl: '/circle.cctp.v1.SendingAndReceivingMessagesPaused' as const,
   encode(

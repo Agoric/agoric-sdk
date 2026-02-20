@@ -4,6 +4,11 @@ import { isSet } from '../../../helpers.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
 import { type JsonSafe } from '../../../json-safe.js';
+/**
+ * @name MsgDepositForBurn
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MsgDepositForBurn
+ */
 export interface MsgDepositForBurn {
   from: string;
   amount: string;
@@ -15,6 +20,11 @@ export interface MsgDepositForBurnProtoMsg {
   typeUrl: '/circle.cctp.v1.MsgDepositForBurn';
   value: Uint8Array;
 }
+/**
+ * @name MsgDepositForBurnSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MsgDepositForBurn
+ */
 export interface MsgDepositForBurnSDKType {
   from: string;
   amount: string;
@@ -22,6 +32,11 @@ export interface MsgDepositForBurnSDKType {
   mint_recipient: Uint8Array;
   burn_token: string;
 }
+/**
+ * @name MsgDepositForBurnResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MsgDepositForBurnResponse
+ */
 export interface MsgDepositForBurnResponse {
   nonce: bigint;
 }
@@ -29,9 +44,19 @@ export interface MsgDepositForBurnResponseProtoMsg {
   typeUrl: '/circle.cctp.v1.MsgDepositForBurnResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgDepositForBurnResponseSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MsgDepositForBurnResponse
+ */
 export interface MsgDepositForBurnResponseSDKType {
   nonce: bigint;
 }
+/**
+ * @name MsgDepositForBurnWithCaller
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MsgDepositForBurnWithCaller
+ */
 export interface MsgDepositForBurnWithCaller {
   from: string;
   amount: string;
@@ -44,6 +69,11 @@ export interface MsgDepositForBurnWithCallerProtoMsg {
   typeUrl: '/circle.cctp.v1.MsgDepositForBurnWithCaller';
   value: Uint8Array;
 }
+/**
+ * @name MsgDepositForBurnWithCallerSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MsgDepositForBurnWithCaller
+ */
 export interface MsgDepositForBurnWithCallerSDKType {
   from: string;
   amount: string;
@@ -52,6 +82,11 @@ export interface MsgDepositForBurnWithCallerSDKType {
   burn_token: string;
   destination_caller: Uint8Array;
 }
+/**
+ * @name MsgDepositForBurnWithCallerResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MsgDepositForBurnWithCallerResponse
+ */
 export interface MsgDepositForBurnWithCallerResponse {
   nonce: bigint;
 }
@@ -59,6 +94,11 @@ export interface MsgDepositForBurnWithCallerResponseProtoMsg {
   typeUrl: '/circle.cctp.v1.MsgDepositForBurnWithCallerResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgDepositForBurnWithCallerResponseSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MsgDepositForBurnWithCallerResponse
+ */
 export interface MsgDepositForBurnWithCallerResponseSDKType {
   nonce: bigint;
 }
@@ -71,6 +111,11 @@ function createBaseMsgDepositForBurn(): MsgDepositForBurn {
     burnToken: '',
   };
 }
+/**
+ * @name MsgDepositForBurn
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MsgDepositForBurn
+ */
 export const MsgDepositForBurn = {
   typeUrl: '/circle.cctp.v1.MsgDepositForBurn' as const,
   encode(
@@ -179,6 +224,11 @@ function createBaseMsgDepositForBurnResponse(): MsgDepositForBurnResponse {
     nonce: BigInt(0),
   };
 }
+/**
+ * @name MsgDepositForBurnResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MsgDepositForBurnResponse
+ */
 export const MsgDepositForBurnResponse = {
   typeUrl: '/circle.cctp.v1.MsgDepositForBurnResponse' as const,
   encode(
@@ -261,6 +311,11 @@ function createBaseMsgDepositForBurnWithCaller(): MsgDepositForBurnWithCaller {
     destinationCaller: new Uint8Array(),
   };
 }
+/**
+ * @name MsgDepositForBurnWithCaller
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MsgDepositForBurnWithCaller
+ */
 export const MsgDepositForBurnWithCaller = {
   typeUrl: '/circle.cctp.v1.MsgDepositForBurnWithCaller' as const,
   encode(
@@ -396,6 +451,11 @@ function createBaseMsgDepositForBurnWithCallerResponse(): MsgDepositForBurnWithC
     nonce: BigInt(0),
   };
 }
+/**
+ * @name MsgDepositForBurnWithCallerResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MsgDepositForBurnWithCallerResponse
+ */
 export const MsgDepositForBurnWithCallerResponse = {
   typeUrl: '/circle.cctp.v1.MsgDepositForBurnWithCallerResponse' as const,
   encode(

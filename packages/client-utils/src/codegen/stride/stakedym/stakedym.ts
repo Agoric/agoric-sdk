@@ -153,52 +153,102 @@ export function unbondingRecordStatusToJSON(
       return 'UNRECOGNIZED';
   }
 }
+/**
+ * @name HostZone
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.HostZone
+ */
 export interface HostZone {
-  /** Chain ID */
+  /**
+   * Chain ID
+   */
   chainId: string;
-  /** Native token denom on the host zone (e.g. adym) */
+  /**
+   * Native token denom on the host zone (e.g. adym)
+   */
   nativeTokenDenom: string;
-  /** IBC denom of the native token as it lives on stride (e.g. ibc/...) */
+  /**
+   * IBC denom of the native token as it lives on stride (e.g. ibc/...)
+   */
   nativeTokenIbcDenom: string;
-  /** Transfer channel ID from stride to the host zone */
+  /**
+   * Transfer channel ID from stride to the host zone
+   */
   transferChannelId: string;
-  /** Operator controlled delegation address on the host zone */
+  /**
+   * Operator controlled delegation address on the host zone
+   */
   delegationAddress: string;
-  /** Operator controlled reward address on the host zone */
+  /**
+   * Operator controlled reward address on the host zone
+   */
   rewardAddress: string;
-  /** Deposit address on stride */
+  /**
+   * Deposit address on stride
+   */
   depositAddress: string;
-  /** Redemption address on stride */
+  /**
+   * Redemption address on stride
+   */
   redemptionAddress: string;
-  /** Claim address on stride */
+  /**
+   * Claim address on stride
+   */
   claimAddress: string;
-  /** operator address set by safe, on stride */
+  /**
+   * operator address set by safe, on stride
+   */
   operatorAddressOnStride: string;
-  /** admin address set upon host zone creation,  on stride */
+  /**
+   * admin address set upon host zone creation,  on stride
+   */
   safeAddressOnStride: string;
-  /** Previous redemption rate */
+  /**
+   * Previous redemption rate
+   */
   lastRedemptionRate: string;
-  /** Current redemption rate */
+  /**
+   * Current redemption rate
+   */
   redemptionRate: string;
-  /** Min outer redemption rate - adjusted by governance */
+  /**
+   * Min outer redemption rate - adjusted by governance
+   */
   minRedemptionRate: string;
-  /** Max outer redemption rate - adjusted by governance */
+  /**
+   * Max outer redemption rate - adjusted by governance
+   */
   maxRedemptionRate: string;
-  /** Min inner redemption rate - adjusted by controller */
+  /**
+   * Min inner redemption rate - adjusted by controller
+   */
   minInnerRedemptionRate: string;
-  /** Max inner redemption rate - adjusted by controller */
+  /**
+   * Max inner redemption rate - adjusted by controller
+   */
   maxInnerRedemptionRate: string;
-  /** Total delegated balance on the host zone delegation account */
+  /**
+   * Total delegated balance on the host zone delegation account
+   */
   delegatedBalance: string;
-  /** The undelegation period for Dymension in days */
+  /**
+   * The undelegation period for Dymension in days
+   */
   unbondingPeriodSeconds: bigint;
-  /** Indicates whether the host zone has been halted */
+  /**
+   * Indicates whether the host zone has been halted
+   */
   halted: boolean;
 }
 export interface HostZoneProtoMsg {
   typeUrl: '/stride.stakedym.HostZone';
   value: Uint8Array;
 }
+/**
+ * @name HostZoneSDKType
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.HostZone
+ */
 export interface HostZoneSDKType {
   chain_id: string;
   native_token_denom: string;
@@ -227,15 +277,26 @@ export interface HostZoneSDKType {
  * Note: There is an important assumption here that tokens in the deposit
  * account should not be tracked by these records. The record is created as soon
  * as the tokens leave stride
+ * @name DelegationRecord
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.DelegationRecord
  */
 export interface DelegationRecord {
-  /** Deposit record unique ID */
+  /**
+   * Deposit record unique ID
+   */
   id: bigint;
-  /** The amount of native tokens that should be delegated */
+  /**
+   * The amount of native tokens that should be delegated
+   */
   nativeAmount: string;
-  /** The status indicating the point in the delegation's lifecycle */
+  /**
+   * The status indicating the point in the delegation's lifecycle
+   */
   status: DelegationRecordStatus;
-  /** The tx hash of the delegation on the host zone */
+  /**
+   * The tx hash of the delegation on the host zone
+   */
   txHash: string;
 }
 export interface DelegationRecordProtoMsg {
@@ -248,6 +309,9 @@ export interface DelegationRecordProtoMsg {
  * Note: There is an important assumption here that tokens in the deposit
  * account should not be tracked by these records. The record is created as soon
  * as the tokens leave stride
+ * @name DelegationRecordSDKType
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.DelegationRecord
  */
 export interface DelegationRecordSDKType {
   id: bigint;
@@ -255,28 +319,52 @@ export interface DelegationRecordSDKType {
   status: DelegationRecordStatus;
   tx_hash: string;
 }
-/** UnbondingRecords track the aggregate unbondings across an epoch */
+/**
+ * UnbondingRecords track the aggregate unbondings across an epoch
+ * @name UnbondingRecord
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.UnbondingRecord
+ */
 export interface UnbondingRecord {
-  /** Unbonding record ID */
+  /**
+   * Unbonding record ID
+   */
   id: bigint;
-  /** The status indicating the point in the delegation's lifecycle */
+  /**
+   * The status indicating the point in the delegation's lifecycle
+   */
   status: UnbondingRecordStatus;
-  /** The amount of stTokens that were redeemed */
+  /**
+   * The amount of stTokens that were redeemed
+   */
   stTokenAmount: string;
-  /** The corresponding amount of native tokens that should be unbonded */
+  /**
+   * The corresponding amount of native tokens that should be unbonded
+   */
   nativeAmount: string;
-  /** The Unix timestamp (in seconds) at which the unbonding completes */
+  /**
+   * The Unix timestamp (in seconds) at which the unbonding completes
+   */
   unbondingCompletionTimeSeconds: bigint;
-  /** The tx hash of the undelegation on the host zone */
+  /**
+   * The tx hash of the undelegation on the host zone
+   */
   undelegationTxHash: string;
-  /** The tx hash of the unbonded token sweep on the host zone */
+  /**
+   * The tx hash of the unbonded token sweep on the host zone
+   */
   unbondedTokenSweepTxHash: string;
 }
 export interface UnbondingRecordProtoMsg {
   typeUrl: '/stride.stakedym.UnbondingRecord';
   value: Uint8Array;
 }
-/** UnbondingRecords track the aggregate unbondings across an epoch */
+/**
+ * UnbondingRecords track the aggregate unbondings across an epoch
+ * @name UnbondingRecordSDKType
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.UnbondingRecord
+ */
 export interface UnbondingRecordSDKType {
   id: bigint;
   status: UnbondingRecordStatus;
@@ -286,47 +374,81 @@ export interface UnbondingRecordSDKType {
   undelegation_tx_hash: string;
   unbonded_token_sweep_tx_hash: string;
 }
-/** RedemptionRecords track an individual user's redemption claims */
+/**
+ * RedemptionRecords track an individual user's redemption claims
+ * @name RedemptionRecord
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.RedemptionRecord
+ */
 export interface RedemptionRecord {
-  /** Unbonding record ID */
+  /**
+   * Unbonding record ID
+   */
   unbondingRecordId: bigint;
-  /** Redeemer */
+  /**
+   * Redeemer
+   */
   redeemer: string;
-  /** The amount of stTokens that were redeemed */
+  /**
+   * The amount of stTokens that were redeemed
+   */
   stTokenAmount: string;
-  /** The corresponding amount of native tokens that should be unbonded */
+  /**
+   * The corresponding amount of native tokens that should be unbonded
+   */
   nativeAmount: string;
 }
 export interface RedemptionRecordProtoMsg {
   typeUrl: '/stride.stakedym.RedemptionRecord';
   value: Uint8Array;
 }
-/** RedemptionRecords track an individual user's redemption claims */
+/**
+ * RedemptionRecords track an individual user's redemption claims
+ * @name RedemptionRecordSDKType
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.RedemptionRecord
+ */
 export interface RedemptionRecordSDKType {
   unbonding_record_id: bigint;
   redeemer: string;
   st_token_amount: string;
   native_amount: string;
 }
-/** SlashRecords log adjustments to the delegated balance */
+/**
+ * SlashRecords log adjustments to the delegated balance
+ * @name SlashRecord
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.SlashRecord
+ */
 export interface SlashRecord {
-  /** The slash record monotonically increasing ID */
+  /**
+   * The slash record monotonically increasing ID
+   */
   id: bigint;
   /**
    * The Unix timestamp (in seconds) when the slash adjustment was processed on
    * stride
    */
   time: bigint;
-  /** The delta by which the total delegated amount changed from slash */
+  /**
+   * The delta by which the total delegated amount changed from slash
+   */
   nativeAmount: string;
-  /** The address (or addresses) of the validator that was slashed */
+  /**
+   * The address (or addresses) of the validator that was slashed
+   */
   validatorAddress: string;
 }
 export interface SlashRecordProtoMsg {
   typeUrl: '/stride.stakedym.SlashRecord';
   value: Uint8Array;
 }
-/** SlashRecords log adjustments to the delegated balance */
+/**
+ * SlashRecords log adjustments to the delegated balance
+ * @name SlashRecordSDKType
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.SlashRecord
+ */
 export interface SlashRecordSDKType {
   id: bigint;
   time: bigint;
@@ -357,6 +479,11 @@ function createBaseHostZone(): HostZone {
     halted: false,
   };
 }
+/**
+ * @name HostZone
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.HostZone
+ */
 export const HostZone = {
   typeUrl: '/stride.stakedym.HostZone' as const,
   encode(
@@ -687,6 +814,16 @@ function createBaseDelegationRecord(): DelegationRecord {
     txHash: '',
   };
 }
+/**
+ * DelegationRecords track the aggregate liquid stakes and delegations
+ * for a given epoch
+ * Note: There is an important assumption here that tokens in the deposit
+ * account should not be tracked by these records. The record is created as soon
+ * as the tokens leave stride
+ * @name DelegationRecord
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.DelegationRecord
+ */
 export const DelegationRecord = {
   typeUrl: '/stride.stakedym.DelegationRecord' as const,
   encode(
@@ -791,6 +928,12 @@ function createBaseUnbondingRecord(): UnbondingRecord {
     unbondedTokenSweepTxHash: '',
   };
 }
+/**
+ * UnbondingRecords track the aggregate unbondings across an epoch
+ * @name UnbondingRecord
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.UnbondingRecord
+ */
 export const UnbondingRecord = {
   typeUrl: '/stride.stakedym.UnbondingRecord' as const,
   encode(
@@ -939,6 +1082,12 @@ function createBaseRedemptionRecord(): RedemptionRecord {
     nativeAmount: '',
   };
 }
+/**
+ * RedemptionRecords track an individual user's redemption claims
+ * @name RedemptionRecord
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.RedemptionRecord
+ */
 export const RedemptionRecord = {
   typeUrl: '/stride.stakedym.RedemptionRecord' as const,
   encode(
@@ -1046,6 +1195,12 @@ function createBaseSlashRecord(): SlashRecord {
     validatorAddress: '',
   };
 }
+/**
+ * SlashRecords log adjustments to the delegated balance
+ * @name SlashRecord
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.SlashRecord
+ */
 export const SlashRecord = {
   typeUrl: '/stride.stakedym.SlashRecord' as const,
   encode(

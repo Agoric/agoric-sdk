@@ -9,20 +9,80 @@ export const createRPCQueryClient = async ({
   const tmClient = await Tendermint34Client.connect(rpcEndpoint);
   const client = new QueryClient(tmClient);
   return {
+    stride: {
+      staketia: (
+        await import('./staketia/query.rpc.Query.js')
+      ).createRpcQueryExtension(client),
+      stakeibc: (
+        await import('./stakeibc/query.rpc.Query.js')
+      ).createRpcQueryExtension(client),
+      stakedym: (
+        await import('./stakedym/query.rpc.Query.js')
+      ).createRpcQueryExtension(client),
+      records: (
+        await import('./records/query.rpc.Query.js')
+      ).createRpcQueryExtension(client),
+      epochs: (
+        await import('./epochs/query.rpc.Query.js')
+      ).createRpcQueryExtension(client),
+    },
     cosmos: {
-      auth: {
+      upgrade: {
         v1beta1: (
-          await import('../cosmos/auth/v1beta1/query.rpc.Query.js')
+          await import('../cosmos/upgrade/v1beta1/query.rpc.Query.js')
         ).createRpcQueryExtension(client),
       },
-      authz: {
+      tx: {
         v1beta1: (
-          await import('../cosmos/authz/v1beta1/query.rpc.Query.js')
+          await import('../cosmos/tx/v1beta1/service.rpc.Service.js')
         ).createRpcQueryExtension(client),
       },
-      bank: {
+      staking: {
         v1beta1: (
-          await import('../cosmos/bank/v1beta1/query.rpc.Query.js')
+          await import('../cosmos/staking/v1beta1/query.rpc.Query.js')
+        ).createRpcQueryExtension(client),
+      },
+      params: {
+        v1beta1: (
+          await import('../cosmos/params/v1beta1/query.rpc.Query.js')
+        ).createRpcQueryExtension(client),
+      },
+      mint: {
+        v1beta1: (
+          await import('../cosmos/mint/v1beta1/query.rpc.Query.js')
+        ).createRpcQueryExtension(client),
+      },
+      group: {
+        v1: (
+          await import('../cosmos/group/v1/query.rpc.Query.js')
+        ).createRpcQueryExtension(client),
+      },
+      gov: {
+        v1beta1: (
+          await import('../cosmos/gov/v1beta1/query.rpc.Query.js')
+        ).createRpcQueryExtension(client),
+        v1: (
+          await import('../cosmos/gov/v1/query.rpc.Query.js')
+        ).createRpcQueryExtension(client),
+      },
+      feegrant: {
+        v1beta1: (
+          await import('../cosmos/feegrant/v1beta1/query.rpc.Query.js')
+        ).createRpcQueryExtension(client),
+      },
+      distribution: {
+        v1beta1: (
+          await import('../cosmos/distribution/v1beta1/query.rpc.Query.js')
+        ).createRpcQueryExtension(client),
+      },
+      consensus: {
+        v1: (
+          await import('../cosmos/consensus/v1/query.rpc.Query.js')
+        ).createRpcQueryExtension(client),
+      },
+      circuit: {
+        v1: (
+          await import('../cosmos/circuit/v1/query.rpc.Query.js')
         ).createRpcQueryExtension(client),
       },
       base: {
@@ -32,81 +92,21 @@ export const createRPCQueryClient = async ({
           ).createRpcQueryExtension(client),
         },
       },
-      circuit: {
-        v1: (
-          await import('../cosmos/circuit/v1/query.rpc.Query.js')
-        ).createRpcQueryExtension(client),
-      },
-      consensus: {
-        v1: (
-          await import('../cosmos/consensus/v1/query.rpc.Query.js')
-        ).createRpcQueryExtension(client),
-      },
-      distribution: {
+      bank: {
         v1beta1: (
-          await import('../cosmos/distribution/v1beta1/query.rpc.Query.js')
+          await import('../cosmos/bank/v1beta1/query.rpc.Query.js')
         ).createRpcQueryExtension(client),
       },
-      feegrant: {
+      authz: {
         v1beta1: (
-          await import('../cosmos/feegrant/v1beta1/query.rpc.Query.js')
+          await import('../cosmos/authz/v1beta1/query.rpc.Query.js')
         ).createRpcQueryExtension(client),
       },
-      gov: {
-        v1: (
-          await import('../cosmos/gov/v1/query.rpc.Query.js')
-        ).createRpcQueryExtension(client),
+      auth: {
         v1beta1: (
-          await import('../cosmos/gov/v1beta1/query.rpc.Query.js')
+          await import('../cosmos/auth/v1beta1/query.rpc.Query.js')
         ).createRpcQueryExtension(client),
       },
-      group: {
-        v1: (
-          await import('../cosmos/group/v1/query.rpc.Query.js')
-        ).createRpcQueryExtension(client),
-      },
-      mint: {
-        v1beta1: (
-          await import('../cosmos/mint/v1beta1/query.rpc.Query.js')
-        ).createRpcQueryExtension(client),
-      },
-      params: {
-        v1beta1: (
-          await import('../cosmos/params/v1beta1/query.rpc.Query.js')
-        ).createRpcQueryExtension(client),
-      },
-      staking: {
-        v1beta1: (
-          await import('../cosmos/staking/v1beta1/query.rpc.Query.js')
-        ).createRpcQueryExtension(client),
-      },
-      tx: {
-        v1beta1: (
-          await import('../cosmos/tx/v1beta1/service.rpc.Service.js')
-        ).createRpcQueryExtension(client),
-      },
-      upgrade: {
-        v1beta1: (
-          await import('../cosmos/upgrade/v1beta1/query.rpc.Query.js')
-        ).createRpcQueryExtension(client),
-      },
-    },
-    stride: {
-      epochs: (
-        await import('./epochs/query.rpc.Query.js')
-      ).createRpcQueryExtension(client),
-      records: (
-        await import('./records/query.rpc.Query.js')
-      ).createRpcQueryExtension(client),
-      stakedym: (
-        await import('./stakedym/query.rpc.Query.js')
-      ).createRpcQueryExtension(client),
-      stakeibc: (
-        await import('./stakeibc/query.rpc.Query.js')
-      ).createRpcQueryExtension(client),
-      staketia: (
-        await import('./staketia/query.rpc.Query.js')
-      ).createRpcQueryExtension(client),
     },
   };
 };

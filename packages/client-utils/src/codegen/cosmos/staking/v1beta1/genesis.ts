@@ -16,9 +16,16 @@ import { isSet } from '../../../helpers.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
 import { type JsonSafe } from '../../../json-safe.js';
-/** GenesisState defines the staking module's genesis state. */
+/**
+ * GenesisState defines the staking module's genesis state.
+ * @name GenesisState
+ * @package cosmos.staking.v1beta1
+ * @see proto type: cosmos.staking.v1beta1.GenesisState
+ */
 export interface GenesisState {
-  /** params defines all the parameters of related to deposit. */
+  /**
+   * params defines all the parameters of related to deposit.
+   */
   params: Params;
   /**
    * last_total_power tracks the total amounts of bonded tokens recorded during
@@ -30,22 +37,37 @@ export interface GenesisState {
    * of the last-block's bonded validators.
    */
   lastValidatorPowers: LastValidatorPower[];
-  /** validators defines the validator set at genesis. */
+  /**
+   * validators defines the validator set at genesis.
+   */
   validators: Validator[];
-  /** delegations defines the delegations active at genesis. */
+  /**
+   * delegations defines the delegations active at genesis.
+   */
   delegations: Delegation[];
-  /** unbonding_delegations defines the unbonding delegations active at genesis. */
+  /**
+   * unbonding_delegations defines the unbonding delegations active at genesis.
+   */
   unbondingDelegations: UnbondingDelegation[];
-  /** redelegations defines the redelegations active at genesis. */
+  /**
+   * redelegations defines the redelegations active at genesis.
+   */
   redelegations: Redelegation[];
-  /** exported defines a bool to identify whether the chain dealing with exported or initialized genesis. */
+  /**
+   * exported defines a bool to identify whether the chain dealing with exported or initialized genesis.
+   */
   exported: boolean;
 }
 export interface GenesisStateProtoMsg {
   typeUrl: '/cosmos.staking.v1beta1.GenesisState';
   value: Uint8Array;
 }
-/** GenesisState defines the staking module's genesis state. */
+/**
+ * GenesisState defines the staking module's genesis state.
+ * @name GenesisStateSDKType
+ * @package cosmos.staking.v1beta1
+ * @see proto type: cosmos.staking.v1beta1.GenesisState
+ */
 export interface GenesisStateSDKType {
   params: ParamsSDKType;
   last_total_power: Uint8Array;
@@ -56,18 +78,32 @@ export interface GenesisStateSDKType {
   redelegations: RedelegationSDKType[];
   exported: boolean;
 }
-/** LastValidatorPower required for validator set update logic. */
+/**
+ * LastValidatorPower required for validator set update logic.
+ * @name LastValidatorPower
+ * @package cosmos.staking.v1beta1
+ * @see proto type: cosmos.staking.v1beta1.LastValidatorPower
+ */
 export interface LastValidatorPower {
-  /** address is the address of the validator. */
+  /**
+   * address is the address of the validator.
+   */
   address: string;
-  /** power defines the power of the validator. */
+  /**
+   * power defines the power of the validator.
+   */
   power: bigint;
 }
 export interface LastValidatorPowerProtoMsg {
   typeUrl: '/cosmos.staking.v1beta1.LastValidatorPower';
   value: Uint8Array;
 }
-/** LastValidatorPower required for validator set update logic. */
+/**
+ * LastValidatorPower required for validator set update logic.
+ * @name LastValidatorPowerSDKType
+ * @package cosmos.staking.v1beta1
+ * @see proto type: cosmos.staking.v1beta1.LastValidatorPower
+ */
 export interface LastValidatorPowerSDKType {
   address: string;
   power: bigint;
@@ -84,6 +120,12 @@ function createBaseGenesisState(): GenesisState {
     exported: false,
   };
 }
+/**
+ * GenesisState defines the staking module's genesis state.
+ * @name GenesisState
+ * @package cosmos.staking.v1beta1
+ * @see proto type: cosmos.staking.v1beta1.GenesisState
+ */
 export const GenesisState = {
   typeUrl: '/cosmos.staking.v1beta1.GenesisState' as const,
   encode(
@@ -279,6 +321,12 @@ function createBaseLastValidatorPower(): LastValidatorPower {
     power: BigInt(0),
   };
 }
+/**
+ * LastValidatorPower required for validator set update logic.
+ * @name LastValidatorPower
+ * @package cosmos.staking.v1beta1
+ * @see proto type: cosmos.staking.v1beta1.LastValidatorPower
+ */
 export const LastValidatorPower = {
   typeUrl: '/cosmos.staking.v1beta1.LastValidatorPower' as const,
   encode(

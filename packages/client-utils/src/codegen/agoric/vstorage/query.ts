@@ -8,7 +8,12 @@ import {
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
-/** QueryDataRequest is the vstorage path data query. */
+/**
+ * QueryDataRequest is the vstorage path data query.
+ * @name QueryDataRequest
+ * @package agoric.vstorage
+ * @see proto type: agoric.vstorage.QueryDataRequest
+ */
 export interface QueryDataRequest {
   path: string;
 }
@@ -16,11 +21,21 @@ export interface QueryDataRequestProtoMsg {
   typeUrl: '/agoric.vstorage.QueryDataRequest';
   value: Uint8Array;
 }
-/** QueryDataRequest is the vstorage path data query. */
+/**
+ * QueryDataRequest is the vstorage path data query.
+ * @name QueryDataRequestSDKType
+ * @package agoric.vstorage
+ * @see proto type: agoric.vstorage.QueryDataRequest
+ */
 export interface QueryDataRequestSDKType {
   path: string;
 }
-/** QueryDataResponse is the vstorage path data response. */
+/**
+ * QueryDataResponse is the vstorage path data response.
+ * @name QueryDataResponse
+ * @package agoric.vstorage
+ * @see proto type: agoric.vstorage.QueryDataResponse
+ */
 export interface QueryDataResponse {
   value: string;
 }
@@ -28,11 +43,21 @@ export interface QueryDataResponseProtoMsg {
   typeUrl: '/agoric.vstorage.QueryDataResponse';
   value: Uint8Array;
 }
-/** QueryDataResponse is the vstorage path data response. */
+/**
+ * QueryDataResponse is the vstorage path data response.
+ * @name QueryDataResponseSDKType
+ * @package agoric.vstorage
+ * @see proto type: agoric.vstorage.QueryDataResponse
+ */
 export interface QueryDataResponseSDKType {
   value: string;
 }
-/** QueryCapDataRequest contains a path and formatting configuration. */
+/**
+ * QueryCapDataRequest contains a path and formatting configuration.
+ * @name QueryCapDataRequest
+ * @package agoric.vstorage
+ * @see proto type: agoric.vstorage.QueryCapDataRequest
+ */
 export interface QueryCapDataRequest {
   path: string;
   /**
@@ -63,7 +88,12 @@ export interface QueryCapDataRequestProtoMsg {
   typeUrl: '/agoric.vstorage.QueryCapDataRequest';
   value: Uint8Array;
 }
-/** QueryCapDataRequest contains a path and formatting configuration. */
+/**
+ * QueryCapDataRequest contains a path and formatting configuration.
+ * @name QueryCapDataRequestSDKType
+ * @package agoric.vstorage
+ * @see proto type: agoric.vstorage.QueryCapDataRequest
+ */
 export interface QueryCapDataRequestSDKType {
   path: string;
   media_type: string;
@@ -73,6 +103,9 @@ export interface QueryCapDataRequestSDKType {
 /**
  * QueryCapDataResponse represents the result with the requested formatting,
  * reserving space for future metadata such as media type.
+ * @name QueryCapDataResponse
+ * @package agoric.vstorage
+ * @see proto type: agoric.vstorage.QueryCapDataResponse
  */
 export interface QueryCapDataResponse {
   blockHeight: string;
@@ -85,12 +118,20 @@ export interface QueryCapDataResponseProtoMsg {
 /**
  * QueryCapDataResponse represents the result with the requested formatting,
  * reserving space for future metadata such as media type.
+ * @name QueryCapDataResponseSDKType
+ * @package agoric.vstorage
+ * @see proto type: agoric.vstorage.QueryCapDataResponse
  */
 export interface QueryCapDataResponseSDKType {
   block_height: string;
   value: string;
 }
-/** QueryChildrenRequest is the vstorage path children query. */
+/**
+ * QueryChildrenRequest is the vstorage path children query.
+ * @name QueryChildrenRequest
+ * @package agoric.vstorage
+ * @see proto type: agoric.vstorage.QueryChildrenRequest
+ */
 export interface QueryChildrenRequest {
   path: string;
   pagination?: PageRequest;
@@ -99,12 +140,22 @@ export interface QueryChildrenRequestProtoMsg {
   typeUrl: '/agoric.vstorage.QueryChildrenRequest';
   value: Uint8Array;
 }
-/** QueryChildrenRequest is the vstorage path children query. */
+/**
+ * QueryChildrenRequest is the vstorage path children query.
+ * @name QueryChildrenRequestSDKType
+ * @package agoric.vstorage
+ * @see proto type: agoric.vstorage.QueryChildrenRequest
+ */
 export interface QueryChildrenRequestSDKType {
   path: string;
   pagination?: PageRequestSDKType;
 }
-/** QueryChildrenResponse is the vstorage path children response. */
+/**
+ * QueryChildrenResponse is the vstorage path children response.
+ * @name QueryChildrenResponse
+ * @package agoric.vstorage
+ * @see proto type: agoric.vstorage.QueryChildrenResponse
+ */
 export interface QueryChildrenResponse {
   children: string[];
   pagination?: PageResponse;
@@ -113,7 +164,12 @@ export interface QueryChildrenResponseProtoMsg {
   typeUrl: '/agoric.vstorage.QueryChildrenResponse';
   value: Uint8Array;
 }
-/** QueryChildrenResponse is the vstorage path children response. */
+/**
+ * QueryChildrenResponse is the vstorage path children response.
+ * @name QueryChildrenResponseSDKType
+ * @package agoric.vstorage
+ * @see proto type: agoric.vstorage.QueryChildrenResponse
+ */
 export interface QueryChildrenResponseSDKType {
   children: string[];
   pagination?: PageResponseSDKType;
@@ -123,6 +179,12 @@ function createBaseQueryDataRequest(): QueryDataRequest {
     path: '',
   };
 }
+/**
+ * QueryDataRequest is the vstorage path data query.
+ * @name QueryDataRequest
+ * @package agoric.vstorage
+ * @see proto type: agoric.vstorage.QueryDataRequest
+ */
 export const QueryDataRequest = {
   typeUrl: '/agoric.vstorage.QueryDataRequest' as const,
   encode(
@@ -185,6 +247,12 @@ function createBaseQueryDataResponse(): QueryDataResponse {
     value: '',
   };
 }
+/**
+ * QueryDataResponse is the vstorage path data response.
+ * @name QueryDataResponse
+ * @package agoric.vstorage
+ * @see proto type: agoric.vstorage.QueryDataResponse
+ */
 export const QueryDataResponse = {
   typeUrl: '/agoric.vstorage.QueryDataResponse' as const,
   encode(
@@ -250,6 +318,12 @@ function createBaseQueryCapDataRequest(): QueryCapDataRequest {
     remotableValueFormat: '',
   };
 }
+/**
+ * QueryCapDataRequest contains a path and formatting configuration.
+ * @name QueryCapDataRequest
+ * @package agoric.vstorage
+ * @see proto type: agoric.vstorage.QueryCapDataRequest
+ */
 export const QueryCapDataRequest = {
   typeUrl: '/agoric.vstorage.QueryCapDataRequest' as const,
   encode(
@@ -346,6 +420,13 @@ function createBaseQueryCapDataResponse(): QueryCapDataResponse {
     value: '',
   };
 }
+/**
+ * QueryCapDataResponse represents the result with the requested formatting,
+ * reserving space for future metadata such as media type.
+ * @name QueryCapDataResponse
+ * @package agoric.vstorage
+ * @see proto type: agoric.vstorage.QueryCapDataResponse
+ */
 export const QueryCapDataResponse = {
   typeUrl: '/agoric.vstorage.QueryCapDataResponse' as const,
   encode(
@@ -422,6 +503,12 @@ function createBaseQueryChildrenRequest(): QueryChildrenRequest {
     pagination: undefined,
   };
 }
+/**
+ * QueryChildrenRequest is the vstorage path children query.
+ * @name QueryChildrenRequest
+ * @package agoric.vstorage
+ * @see proto type: agoric.vstorage.QueryChildrenRequest
+ */
 export const QueryChildrenRequest = {
   typeUrl: '/agoric.vstorage.QueryChildrenRequest' as const,
   encode(
@@ -505,6 +592,12 @@ function createBaseQueryChildrenResponse(): QueryChildrenResponse {
     pagination: undefined,
   };
 }
+/**
+ * QueryChildrenResponse is the vstorage path children response.
+ * @name QueryChildrenResponse
+ * @package agoric.vstorage
+ * @see proto type: agoric.vstorage.QueryChildrenResponse
+ */
 export const QueryChildrenResponse = {
   typeUrl: '/agoric.vstorage.QueryChildrenResponse' as const,
   encode(

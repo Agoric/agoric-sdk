@@ -3,6 +3,11 @@ import { Validator, type ValidatorSDKType } from './validator.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
+/**
+ * @name AddValidatorsProposal
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.AddValidatorsProposal
+ */
 export interface AddValidatorsProposal {
   title: string;
   description: string;
@@ -14,6 +19,11 @@ export interface AddValidatorsProposalProtoMsg {
   typeUrl: '/stride.stakeibc.AddValidatorsProposal';
   value: Uint8Array;
 }
+/**
+ * @name AddValidatorsProposalSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.AddValidatorsProposal
+ */
 export interface AddValidatorsProposalSDKType {
   title: string;
   description: string;
@@ -21,6 +31,11 @@ export interface AddValidatorsProposalSDKType {
   validators: ValidatorSDKType[];
   deposit: string;
 }
+/**
+ * @name ToggleLSMProposal
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.ToggleLSMProposal
+ */
 export interface ToggleLSMProposal {
   title: string;
   description: string;
@@ -32,6 +47,11 @@ export interface ToggleLSMProposalProtoMsg {
   typeUrl: '/stride.stakeibc.ToggleLSMProposal';
   value: Uint8Array;
 }
+/**
+ * @name ToggleLSMProposalSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.ToggleLSMProposal
+ */
 export interface ToggleLSMProposalSDKType {
   title: string;
   description: string;
@@ -48,6 +68,11 @@ function createBaseAddValidatorsProposal(): AddValidatorsProposal {
     deposit: '',
   };
 }
+/**
+ * @name AddValidatorsProposal
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.AddValidatorsProposal
+ */
 export const AddValidatorsProposal = {
   typeUrl: '/stride.stakeibc.AddValidatorsProposal' as const,
   encode(
@@ -163,6 +188,11 @@ function createBaseToggleLSMProposal(): ToggleLSMProposal {
     deposit: '',
   };
 }
+/**
+ * @name ToggleLSMProposal
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.ToggleLSMProposal
+ */
 export const ToggleLSMProposal = {
   typeUrl: '/stride.stakeibc.ToggleLSMProposal' as const,
   encode(

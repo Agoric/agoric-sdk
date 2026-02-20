@@ -42,7 +42,12 @@ export function typeToJSON(object: Type): string {
       return 'UNRECOGNIZED';
   }
 }
-/** InterchainAccountPacketData is comprised of a raw transaction, type of transaction and optional memo field. */
+/**
+ * InterchainAccountPacketData is comprised of a raw transaction, type of transaction and optional memo field.
+ * @name InterchainAccountPacketData
+ * @package ibc.applications.interchain_accounts.v1
+ * @see proto type: ibc.applications.interchain_accounts.v1.InterchainAccountPacketData
+ */
 export interface InterchainAccountPacketData {
   type: Type;
   data: Uint8Array;
@@ -52,13 +57,23 @@ export interface InterchainAccountPacketDataProtoMsg {
   typeUrl: '/ibc.applications.interchain_accounts.v1.InterchainAccountPacketData';
   value: Uint8Array;
 }
-/** InterchainAccountPacketData is comprised of a raw transaction, type of transaction and optional memo field. */
+/**
+ * InterchainAccountPacketData is comprised of a raw transaction, type of transaction and optional memo field.
+ * @name InterchainAccountPacketDataSDKType
+ * @package ibc.applications.interchain_accounts.v1
+ * @see proto type: ibc.applications.interchain_accounts.v1.InterchainAccountPacketData
+ */
 export interface InterchainAccountPacketDataSDKType {
   type: Type;
   data: Uint8Array;
   memo: string;
 }
-/** CosmosTx contains a list of sdk.Msg's. It should be used when sending transactions to an SDK host chain. */
+/**
+ * CosmosTx contains a list of sdk.Msg's. It should be used when sending transactions to an SDK host chain.
+ * @name CosmosTx
+ * @package ibc.applications.interchain_accounts.v1
+ * @see proto type: ibc.applications.interchain_accounts.v1.CosmosTx
+ */
 export interface CosmosTx {
   messages: Any[];
 }
@@ -66,7 +81,12 @@ export interface CosmosTxProtoMsg {
   typeUrl: '/ibc.applications.interchain_accounts.v1.CosmosTx';
   value: Uint8Array;
 }
-/** CosmosTx contains a list of sdk.Msg's. It should be used when sending transactions to an SDK host chain. */
+/**
+ * CosmosTx contains a list of sdk.Msg's. It should be used when sending transactions to an SDK host chain.
+ * @name CosmosTxSDKType
+ * @package ibc.applications.interchain_accounts.v1
+ * @see proto type: ibc.applications.interchain_accounts.v1.CosmosTx
+ */
 export interface CosmosTxSDKType {
   messages: AnySDKType[];
 }
@@ -77,6 +97,12 @@ function createBaseInterchainAccountPacketData(): InterchainAccountPacketData {
     memo: '',
   };
 }
+/**
+ * InterchainAccountPacketData is comprised of a raw transaction, type of transaction and optional memo field.
+ * @name InterchainAccountPacketData
+ * @package ibc.applications.interchain_accounts.v1
+ * @see proto type: ibc.applications.interchain_accounts.v1.InterchainAccountPacketData
+ */
 export const InterchainAccountPacketData = {
   typeUrl:
     '/ibc.applications.interchain_accounts.v1.InterchainAccountPacketData' as const,
@@ -175,6 +201,12 @@ function createBaseCosmosTx(): CosmosTx {
     messages: [],
   };
 }
+/**
+ * CosmosTx contains a list of sdk.Msg's. It should be used when sending transactions to an SDK host chain.
+ * @name CosmosTx
+ * @package ibc.applications.interchain_accounts.v1
+ * @see proto type: ibc.applications.interchain_accounts.v1.CosmosTx
+ */
 export const CosmosTx = {
   typeUrl: '/ibc.applications.interchain_accounts.v1.CosmosTx' as const,
   encode(

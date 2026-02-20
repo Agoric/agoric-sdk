@@ -5,6 +5,9 @@ import { type JsonSafe } from '../../../json-safe.js';
 /**
  * Message format for BurningAndMintingPaused
  * @param paused true if paused, false if not paused
+ * @name BurningAndMintingPaused
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.BurningAndMintingPaused
  */
 export interface BurningAndMintingPaused {
   paused: boolean;
@@ -16,6 +19,9 @@ export interface BurningAndMintingPausedProtoMsg {
 /**
  * Message format for BurningAndMintingPaused
  * @param paused true if paused, false if not paused
+ * @name BurningAndMintingPausedSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.BurningAndMintingPaused
  */
 export interface BurningAndMintingPausedSDKType {
   paused: boolean;
@@ -25,6 +31,13 @@ function createBaseBurningAndMintingPaused(): BurningAndMintingPaused {
     paused: false,
   };
 }
+/**
+ * Message format for BurningAndMintingPaused
+ * @param paused true if paused, false if not paused
+ * @name BurningAndMintingPaused
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.BurningAndMintingPaused
+ */
 export const BurningAndMintingPaused = {
   typeUrl: '/circle.cctp.v1.BurningAndMintingPaused' as const,
   encode(

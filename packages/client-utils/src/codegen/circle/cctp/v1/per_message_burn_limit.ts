@@ -8,6 +8,9 @@ import { type JsonSafe } from '../../../json-safe.js';
  * @param denom the denom
  * @param amount the amount that can be burned (in microunits).  An amount of
  * 1000000 uusdc is equivalent to 1USDC
+ * @name PerMessageBurnLimit
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.PerMessageBurnLimit
  */
 export interface PerMessageBurnLimit {
   denom: string;
@@ -23,6 +26,9 @@ export interface PerMessageBurnLimitProtoMsg {
  * @param denom the denom
  * @param amount the amount that can be burned (in microunits).  An amount of
  * 1000000 uusdc is equivalent to 1USDC
+ * @name PerMessageBurnLimitSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.PerMessageBurnLimit
  */
 export interface PerMessageBurnLimitSDKType {
   denom: string;
@@ -34,6 +40,16 @@ function createBasePerMessageBurnLimit(): PerMessageBurnLimit {
     amount: '',
   };
 }
+/**
+ * PerMessageBurnLimit is the maximum amount of a certain denom that can be
+ * burned in an single burn
+ * @param denom the denom
+ * @param amount the amount that can be burned (in microunits).  An amount of
+ * 1000000 uusdc is equivalent to 1USDC
+ * @name PerMessageBurnLimit
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.PerMessageBurnLimit
+ */
 export const PerMessageBurnLimit = {
   typeUrl: '/circle.cctp.v1.PerMessageBurnLimit' as const,
   encode(

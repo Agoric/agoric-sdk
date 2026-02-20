@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { type Rpc } from '../../../../helpers.js';
+import { TxRpc } from '../../../../types.js';
 import { BinaryReader } from '../../../../binary.js';
 import { QueryClient, createProtobufRpcClient } from '@cosmjs/stargate';
 import {
@@ -128,8 +128,8 @@ export interface Query {
   ): Promise<QueryChannelParamsResponse>;
 }
 export class QueryClientImpl implements Query {
-  private readonly rpc: Rpc;
-  constructor(rpc: Rpc) {
+  private readonly rpc: TxRpc;
+  constructor(rpc: TxRpc) {
     this.rpc = rpc;
     this.channel = this.channel.bind(this);
     this.channels = this.channels.bind(this);

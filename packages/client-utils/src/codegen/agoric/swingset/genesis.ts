@@ -8,7 +8,12 @@ import {
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
-/** The initial or exported state. */
+/**
+ * The initial or exported state.
+ * @name GenesisState
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.GenesisState
+ */
 export interface GenesisState {
   params: Params;
   state: State;
@@ -19,14 +24,24 @@ export interface GenesisStateProtoMsg {
   typeUrl: '/agoric.swingset.GenesisState';
   value: Uint8Array;
 }
-/** The initial or exported state. */
+/**
+ * The initial or exported state.
+ * @name GenesisStateSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.GenesisState
+ */
 export interface GenesisStateSDKType {
   params: ParamsSDKType;
   state: StateSDKType;
   swing_store_export_data: SwingStoreExportDataEntrySDKType[];
   swing_store_export_data_hash: string;
 }
-/** A SwingStore "export data" entry. */
+/**
+ * A SwingStore "export data" entry.
+ * @name SwingStoreExportDataEntry
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.SwingStoreExportDataEntry
+ */
 export interface SwingStoreExportDataEntry {
   key: string;
   value: string;
@@ -35,7 +50,12 @@ export interface SwingStoreExportDataEntryProtoMsg {
   typeUrl: '/agoric.swingset.SwingStoreExportDataEntry';
   value: Uint8Array;
 }
-/** A SwingStore "export data" entry. */
+/**
+ * A SwingStore "export data" entry.
+ * @name SwingStoreExportDataEntrySDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.SwingStoreExportDataEntry
+ */
 export interface SwingStoreExportDataEntrySDKType {
   key: string;
   value: string;
@@ -48,6 +68,12 @@ function createBaseGenesisState(): GenesisState {
     swingStoreExportDataHash: '',
   };
 }
+/**
+ * The initial or exported state.
+ * @name GenesisState
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.GenesisState
+ */
 export const GenesisState = {
   typeUrl: '/agoric.swingset.GenesisState' as const,
   encode(
@@ -164,6 +190,12 @@ function createBaseSwingStoreExportDataEntry(): SwingStoreExportDataEntry {
     value: '',
   };
 }
+/**
+ * A SwingStore "export data" entry.
+ * @name SwingStoreExportDataEntry
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.SwingStoreExportDataEntry
+ */
 export const SwingStoreExportDataEntry = {
   typeUrl: '/agoric.swingset.SwingStoreExportDataEntry' as const,
   encode(

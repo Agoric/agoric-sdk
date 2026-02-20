@@ -12,46 +12,73 @@ import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
-/** GenesisState defines the ibc client submodule's genesis state. */
+/**
+ * GenesisState defines the ibc client submodule's genesis state.
+ * @name GenesisState
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.GenesisState
+ */
 export interface GenesisState {
-  /** client states with their corresponding identifiers */
+  /**
+   * client states with their corresponding identifiers
+   */
   clients: IdentifiedClientState[];
-  /** consensus states from each client */
+  /**
+   * consensus states from each client
+   */
   clientsConsensus: ClientConsensusStates[];
-  /** metadata from each client */
+  /**
+   * metadata from each client
+   */
   clientsMetadata: IdentifiedGenesisMetadata[];
   params: Params;
   /**
    * Deprecated: create_localhost has been deprecated.
    * The localhost client is automatically created at genesis.
+   * @deprecated
    */
-  /** @deprecated */
   createLocalhost: boolean;
-  /** the sequence for the next generated client identifier */
+  /**
+   * the sequence for the next generated client identifier
+   */
   nextClientSequence: bigint;
 }
 export interface GenesisStateProtoMsg {
   typeUrl: '/ibc.core.client.v1.GenesisState';
   value: Uint8Array;
 }
-/** GenesisState defines the ibc client submodule's genesis state. */
+/**
+ * GenesisState defines the ibc client submodule's genesis state.
+ * @name GenesisStateSDKType
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.GenesisState
+ */
 export interface GenesisStateSDKType {
   clients: IdentifiedClientStateSDKType[];
   clients_consensus: ClientConsensusStatesSDKType[];
   clients_metadata: IdentifiedGenesisMetadataSDKType[];
   params: ParamsSDKType;
-  /** @deprecated */
+  /**
+   * @deprecated
+   */
   create_localhost: boolean;
   next_client_sequence: bigint;
 }
 /**
  * GenesisMetadata defines the genesis type for metadata that clients may return
  * with ExportMetadata
+ * @name GenesisMetadata
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.GenesisMetadata
  */
 export interface GenesisMetadata {
-  /** store key of metadata without clientID-prefix */
+  /**
+   * store key of metadata without clientID-prefix
+   */
   key: Uint8Array;
-  /** metadata value */
+  /**
+   * metadata value
+   */
   value: Uint8Array;
 }
 export interface GenesisMetadataProtoMsg {
@@ -61,6 +88,9 @@ export interface GenesisMetadataProtoMsg {
 /**
  * GenesisMetadata defines the genesis type for metadata that clients may return
  * with ExportMetadata
+ * @name GenesisMetadataSDKType
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.GenesisMetadata
  */
 export interface GenesisMetadataSDKType {
   key: Uint8Array;
@@ -69,6 +99,9 @@ export interface GenesisMetadataSDKType {
 /**
  * IdentifiedGenesisMetadata has the client metadata with the corresponding
  * client id.
+ * @name IdentifiedGenesisMetadata
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.IdentifiedGenesisMetadata
  */
 export interface IdentifiedGenesisMetadata {
   clientId: string;
@@ -81,6 +114,9 @@ export interface IdentifiedGenesisMetadataProtoMsg {
 /**
  * IdentifiedGenesisMetadata has the client metadata with the corresponding
  * client id.
+ * @name IdentifiedGenesisMetadataSDKType
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.IdentifiedGenesisMetadata
  */
 export interface IdentifiedGenesisMetadataSDKType {
   client_id: string;
@@ -96,8 +132,49 @@ function createBaseGenesisState(): GenesisState {
     nextClientSequence: BigInt(0),
   };
 }
+/**
+ * GenesisState defines the ibc client submodule's genesis state.
+ * @name GenesisState
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.GenesisState
+ */
 export const GenesisState = {
   typeUrl: '/ibc.core.client.v1.GenesisState' as const,
+  aminoType: 'cosmos-sdk/GenesisState' as const,
+  is(o: any): o is GenesisState {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Array.isArray(o.clients) &&
+          (!o.clients.length || IdentifiedClientState.is(o.clients[0])) &&
+          Array.isArray(o.clientsConsensus) &&
+          (!o.clientsConsensus.length ||
+            ClientConsensusStates.is(o.clientsConsensus[0])) &&
+          Array.isArray(o.clientsMetadata) &&
+          (!o.clientsMetadata.length ||
+            IdentifiedGenesisMetadata.is(o.clientsMetadata[0])) &&
+          Params.is(o.params) &&
+          typeof o.createLocalhost === 'boolean' &&
+          typeof o.nextClientSequence === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is GenesisStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Array.isArray(o.clients) &&
+          (!o.clients.length || IdentifiedClientState.isSDK(o.clients[0])) &&
+          Array.isArray(o.clients_consensus) &&
+          (!o.clients_consensus.length ||
+            ClientConsensusStates.isSDK(o.clients_consensus[0])) &&
+          Array.isArray(o.clients_metadata) &&
+          (!o.clients_metadata.length ||
+            IdentifiedGenesisMetadata.isSDK(o.clients_metadata[0])) &&
+          Params.isSDK(o.params) &&
+          typeof o.create_localhost === 'boolean' &&
+          typeof o.next_client_sequence === 'bigint'))
+    );
+  },
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -260,8 +337,32 @@ function createBaseGenesisMetadata(): GenesisMetadata {
     value: new Uint8Array(),
   };
 }
+/**
+ * GenesisMetadata defines the genesis type for metadata that clients may return
+ * with ExportMetadata
+ * @name GenesisMetadata
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.GenesisMetadata
+ */
 export const GenesisMetadata = {
   typeUrl: '/ibc.core.client.v1.GenesisMetadata' as const,
+  aminoType: 'cosmos-sdk/GenesisMetadata' as const,
+  is(o: any): o is GenesisMetadata {
+    return (
+      o &&
+      (o.$typeUrl === GenesisMetadata.typeUrl ||
+        ((o.key instanceof Uint8Array || typeof o.key === 'string') &&
+          (o.value instanceof Uint8Array || typeof o.value === 'string')))
+    );
+  },
+  isSDK(o: any): o is GenesisMetadataSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GenesisMetadata.typeUrl ||
+        ((o.key instanceof Uint8Array || typeof o.key === 'string') &&
+          (o.value instanceof Uint8Array || typeof o.value === 'string')))
+    );
+  },
   encode(
     message: GenesisMetadata,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -340,8 +441,36 @@ function createBaseIdentifiedGenesisMetadata(): IdentifiedGenesisMetadata {
     clientMetadata: [],
   };
 }
+/**
+ * IdentifiedGenesisMetadata has the client metadata with the corresponding
+ * client id.
+ * @name IdentifiedGenesisMetadata
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.IdentifiedGenesisMetadata
+ */
 export const IdentifiedGenesisMetadata = {
   typeUrl: '/ibc.core.client.v1.IdentifiedGenesisMetadata' as const,
+  aminoType: 'cosmos-sdk/IdentifiedGenesisMetadata' as const,
+  is(o: any): o is IdentifiedGenesisMetadata {
+    return (
+      o &&
+      (o.$typeUrl === IdentifiedGenesisMetadata.typeUrl ||
+        (typeof o.clientId === 'string' &&
+          Array.isArray(o.clientMetadata) &&
+          (!o.clientMetadata.length ||
+            GenesisMetadata.is(o.clientMetadata[0]))))
+    );
+  },
+  isSDK(o: any): o is IdentifiedGenesisMetadataSDKType {
+    return (
+      o &&
+      (o.$typeUrl === IdentifiedGenesisMetadata.typeUrl ||
+        (typeof o.client_id === 'string' &&
+          Array.isArray(o.client_metadata) &&
+          (!o.client_metadata.length ||
+            GenesisMetadata.isSDK(o.client_metadata[0]))))
+    );
+  },
   encode(
     message: IdentifiedGenesisMetadata,
     writer: BinaryWriter = BinaryWriter.create(),

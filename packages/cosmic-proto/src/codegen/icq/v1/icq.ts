@@ -2,18 +2,32 @@
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
-/** Params defines the set of on-chain interchain query parameters. */
+/**
+ * Params defines the set of on-chain interchain query parameters.
+ * @name Params
+ * @package icq.v1
+ * @see proto type: icq.v1.Params
+ */
 export interface Params {
-  /** host_enabled enables or disables the host submodule. */
+  /**
+   * host_enabled enables or disables the host submodule.
+   */
   hostEnabled: boolean;
-  /** allow_queries defines a list of query paths allowed to be queried on a host chain. */
+  /**
+   * allow_queries defines a list of query paths allowed to be queried on a host chain.
+   */
   allowQueries: string[];
 }
 export interface ParamsProtoMsg {
   typeUrl: '/icq.v1.Params';
   value: Uint8Array;
 }
-/** Params defines the set of on-chain interchain query parameters. */
+/**
+ * Params defines the set of on-chain interchain query parameters.
+ * @name ParamsSDKType
+ * @package icq.v1
+ * @see proto type: icq.v1.Params
+ */
 export interface ParamsSDKType {
   host_enabled: boolean;
   allow_queries: string[];
@@ -24,8 +38,32 @@ function createBaseParams(): Params {
     allowQueries: [],
   };
 }
+/**
+ * Params defines the set of on-chain interchain query parameters.
+ * @name Params
+ * @package icq.v1
+ * @see proto type: icq.v1.Params
+ */
 export const Params = {
   typeUrl: '/icq.v1.Params' as const,
+  is(o: any): o is Params {
+    return (
+      o &&
+      (o.$typeUrl === Params.typeUrl ||
+        (typeof o.hostEnabled === 'boolean' &&
+          Array.isArray(o.allowQueries) &&
+          (!o.allowQueries.length || typeof o.allowQueries[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is ParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Params.typeUrl ||
+        (typeof o.host_enabled === 'boolean' &&
+          Array.isArray(o.allow_queries) &&
+          (!o.allow_queries.length || typeof o.allow_queries[0] === 'string')))
+    );
+  },
   encode(
     message: Params,
     writer: BinaryWriter = BinaryWriter.create(),

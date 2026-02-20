@@ -15,6 +15,9 @@ import { type JsonSafe } from '../../../json-safe.js';
 /**
  * BasicAllowance implements Allowance with a one-time grant of coins
  * that optionally expires. The grantee can use up to SpendLimit to cover fees.
+ * @name BasicAllowance
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.BasicAllowance
  */
 export interface BasicAllowance {
   /**
@@ -23,7 +26,9 @@ export interface BasicAllowance {
    * empty, there is no spend limit and any amount of coins can be spent.
    */
   spendLimit: Coin[];
-  /** expiration specifies an optional time when this allowance expires */
+  /**
+   * expiration specifies an optional time when this allowance expires
+   */
   expiration?: Timestamp;
 }
 export interface BasicAllowanceProtoMsg {
@@ -33,6 +38,9 @@ export interface BasicAllowanceProtoMsg {
 /**
  * BasicAllowance implements Allowance with a one-time grant of coins
  * that optionally expires. The grantee can use up to SpendLimit to cover fees.
+ * @name BasicAllowanceSDKType
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.BasicAllowance
  */
 export interface BasicAllowanceSDKType {
   spend_limit: CoinSDKType[];
@@ -41,9 +49,14 @@ export interface BasicAllowanceSDKType {
 /**
  * PeriodicAllowance extends Allowance to allow for both a maximum cap,
  * as well as a limit per time period.
+ * @name PeriodicAllowance
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.PeriodicAllowance
  */
 export interface PeriodicAllowance {
-  /** basic specifies a struct of `BasicAllowance` */
+  /**
+   * basic specifies a struct of `BasicAllowance`
+   */
   basic: BasicAllowance;
   /**
    * period specifies the time duration in which period_spend_limit coins can
@@ -55,7 +68,9 @@ export interface PeriodicAllowance {
    * in the period
    */
   periodSpendLimit: Coin[];
-  /** period_can_spend is the number of coins left to be spent before the period_reset time */
+  /**
+   * period_can_spend is the number of coins left to be spent before the period_reset time
+   */
   periodCanSpend: Coin[];
   /**
    * period_reset is the time at which this period resets and a new one begins,
@@ -71,6 +86,9 @@ export interface PeriodicAllowanceProtoMsg {
 /**
  * PeriodicAllowance extends Allowance to allow for both a maximum cap,
  * as well as a limit per time period.
+ * @name PeriodicAllowanceSDKType
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.PeriodicAllowance
  */
 export interface PeriodicAllowanceSDKType {
   basic: BasicAllowanceSDKType;
@@ -79,36 +97,66 @@ export interface PeriodicAllowanceSDKType {
   period_can_spend: CoinSDKType[];
   period_reset: TimestampSDKType;
 }
-/** AllowedMsgAllowance creates allowance only for specified message types. */
+/**
+ * AllowedMsgAllowance creates allowance only for specified message types.
+ * @name AllowedMsgAllowance
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.AllowedMsgAllowance
+ */
 export interface AllowedMsgAllowance {
-  /** allowance can be any of basic and periodic fee allowance. */
+  /**
+   * allowance can be any of basic and periodic fee allowance.
+   */
   allowance?: Any;
-  /** allowed_messages are the messages for which the grantee has the access. */
+  /**
+   * allowed_messages are the messages for which the grantee has the access.
+   */
   allowedMessages: string[];
 }
 export interface AllowedMsgAllowanceProtoMsg {
   typeUrl: '/cosmos.feegrant.v1beta1.AllowedMsgAllowance';
   value: Uint8Array;
 }
-/** AllowedMsgAllowance creates allowance only for specified message types. */
+/**
+ * AllowedMsgAllowance creates allowance only for specified message types.
+ * @name AllowedMsgAllowanceSDKType
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.AllowedMsgAllowance
+ */
 export interface AllowedMsgAllowanceSDKType {
   allowance?: AnySDKType;
   allowed_messages: string[];
 }
-/** Grant is stored in the KVStore to record a grant with full context */
+/**
+ * Grant is stored in the KVStore to record a grant with full context
+ * @name Grant
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.Grant
+ */
 export interface Grant {
-  /** granter is the address of the user granting an allowance of their funds. */
+  /**
+   * granter is the address of the user granting an allowance of their funds.
+   */
   granter: string;
-  /** grantee is the address of the user being granted an allowance of another user's funds. */
+  /**
+   * grantee is the address of the user being granted an allowance of another user's funds.
+   */
   grantee: string;
-  /** allowance can be any of basic, periodic, allowed fee allowance. */
+  /**
+   * allowance can be any of basic, periodic, allowed fee allowance.
+   */
   allowance?: Any;
 }
 export interface GrantProtoMsg {
   typeUrl: '/cosmos.feegrant.v1beta1.Grant';
   value: Uint8Array;
 }
-/** Grant is stored in the KVStore to record a grant with full context */
+/**
+ * Grant is stored in the KVStore to record a grant with full context
+ * @name GrantSDKType
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.Grant
+ */
 export interface GrantSDKType {
   granter: string;
   grantee: string;
@@ -120,6 +168,13 @@ function createBaseBasicAllowance(): BasicAllowance {
     expiration: undefined,
   };
 }
+/**
+ * BasicAllowance implements Allowance with a one-time grant of coins
+ * that optionally expires. The grantee can use up to SpendLimit to cover fees.
+ * @name BasicAllowance
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.BasicAllowance
+ */
 export const BasicAllowance = {
   typeUrl: '/cosmos.feegrant.v1beta1.BasicAllowance' as const,
   encode(
@@ -209,6 +264,13 @@ function createBasePeriodicAllowance(): PeriodicAllowance {
     periodReset: Timestamp.fromPartial({}),
   };
 }
+/**
+ * PeriodicAllowance extends Allowance to allow for both a maximum cap,
+ * as well as a limit per time period.
+ * @name PeriodicAllowance
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.PeriodicAllowance
+ */
 export const PeriodicAllowance = {
   typeUrl: '/cosmos.feegrant.v1beta1.PeriodicAllowance' as const,
   encode(
@@ -348,6 +410,12 @@ function createBaseAllowedMsgAllowance(): AllowedMsgAllowance {
     allowedMessages: [],
   };
 }
+/**
+ * AllowedMsgAllowance creates allowance only for specified message types.
+ * @name AllowedMsgAllowance
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.AllowedMsgAllowance
+ */
 export const AllowedMsgAllowance = {
   typeUrl: '/cosmos.feegrant.v1beta1.AllowedMsgAllowance' as const,
   encode(
@@ -438,6 +506,12 @@ function createBaseGrant(): Grant {
     allowance: undefined,
   };
 }
+/**
+ * Grant is stored in the KVStore to record a grant with full context
+ * @name Grant
+ * @package cosmos.feegrant.v1beta1
+ * @see proto type: cosmos.feegrant.v1beta1.Grant
+ */
 export const Grant = {
   typeUrl: '/cosmos.feegrant.v1beta1.Grant' as const,
   encode(

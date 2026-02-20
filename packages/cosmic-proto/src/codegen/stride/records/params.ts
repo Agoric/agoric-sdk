@@ -1,19 +1,41 @@
 //@ts-nocheck
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { type JsonSafe } from '../../json-safe.js';
-/** Params defines the parameters for the module. */
+/**
+ * Params defines the parameters for the module.
+ * @name Params
+ * @package stride.records
+ * @see proto type: stride.records.Params
+ */
 export interface Params {}
 export interface ParamsProtoMsg {
   typeUrl: '/stride.records.Params';
   value: Uint8Array;
 }
-/** Params defines the parameters for the module. */
+/**
+ * Params defines the parameters for the module.
+ * @name ParamsSDKType
+ * @package stride.records
+ * @see proto type: stride.records.Params
+ */
 export interface ParamsSDKType {}
 function createBaseParams(): Params {
   return {};
 }
+/**
+ * Params defines the parameters for the module.
+ * @name Params
+ * @package stride.records
+ * @see proto type: stride.records.Params
+ */
 export const Params = {
   typeUrl: '/stride.records.Params' as const,
+  is(o: any): o is Params {
+    return o && o.$typeUrl === Params.typeUrl;
+  },
+  isSDK(o: any): o is ParamsSDKType {
+    return o && o.$typeUrl === Params.typeUrl;
+  },
   encode(
     _: Params,
     writer: BinaryWriter = BinaryWriter.create(),

@@ -20,14 +20,29 @@ import {
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { type JsonSafe } from '../../json-safe.js';
 import { isSet } from '../../helpers.js';
-/** Host Zone */
+/**
+ * Host Zone
+ * @name QueryHostZoneRequest
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.QueryHostZoneRequest
+ */
 export interface QueryHostZoneRequest {}
 export interface QueryHostZoneRequestProtoMsg {
   typeUrl: '/stride.stakedym.QueryHostZoneRequest';
   value: Uint8Array;
 }
-/** Host Zone */
+/**
+ * Host Zone
+ * @name QueryHostZoneRequestSDKType
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.QueryHostZoneRequest
+ */
 export interface QueryHostZoneRequestSDKType {}
+/**
+ * @name QueryHostZoneResponse
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.QueryHostZoneResponse
+ */
 export interface QueryHostZoneResponse {
   hostZone?: HostZone;
 }
@@ -35,10 +50,20 @@ export interface QueryHostZoneResponseProtoMsg {
   typeUrl: '/stride.stakedym.QueryHostZoneResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryHostZoneResponseSDKType
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.QueryHostZoneResponse
+ */
 export interface QueryHostZoneResponseSDKType {
   host_zone?: HostZoneSDKType;
 }
-/** All Delegation Records */
+/**
+ * All Delegation Records
+ * @name QueryDelegationRecordsRequest
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.QueryDelegationRecordsRequest
+ */
 export interface QueryDelegationRecordsRequest {
   includeArchived: boolean;
 }
@@ -46,10 +71,20 @@ export interface QueryDelegationRecordsRequestProtoMsg {
   typeUrl: '/stride.stakedym.QueryDelegationRecordsRequest';
   value: Uint8Array;
 }
-/** All Delegation Records */
+/**
+ * All Delegation Records
+ * @name QueryDelegationRecordsRequestSDKType
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.QueryDelegationRecordsRequest
+ */
 export interface QueryDelegationRecordsRequestSDKType {
   include_archived: boolean;
 }
+/**
+ * @name QueryDelegationRecordsResponse
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.QueryDelegationRecordsResponse
+ */
 export interface QueryDelegationRecordsResponse {
   delegationRecords: DelegationRecord[];
 }
@@ -57,10 +92,20 @@ export interface QueryDelegationRecordsResponseProtoMsg {
   typeUrl: '/stride.stakedym.QueryDelegationRecordsResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryDelegationRecordsResponseSDKType
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.QueryDelegationRecordsResponse
+ */
 export interface QueryDelegationRecordsResponseSDKType {
   delegation_records: DelegationRecordSDKType[];
 }
-/** All Unbonding Records */
+/**
+ * All Unbonding Records
+ * @name QueryUnbondingRecordsRequest
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.QueryUnbondingRecordsRequest
+ */
 export interface QueryUnbondingRecordsRequest {
   includeArchived: boolean;
 }
@@ -68,10 +113,20 @@ export interface QueryUnbondingRecordsRequestProtoMsg {
   typeUrl: '/stride.stakedym.QueryUnbondingRecordsRequest';
   value: Uint8Array;
 }
-/** All Unbonding Records */
+/**
+ * All Unbonding Records
+ * @name QueryUnbondingRecordsRequestSDKType
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.QueryUnbondingRecordsRequest
+ */
 export interface QueryUnbondingRecordsRequestSDKType {
   include_archived: boolean;
 }
+/**
+ * @name QueryUnbondingRecordsResponse
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.QueryUnbondingRecordsResponse
+ */
 export interface QueryUnbondingRecordsResponse {
   unbondingRecords: UnbondingRecord[];
 }
@@ -79,10 +134,20 @@ export interface QueryUnbondingRecordsResponseProtoMsg {
   typeUrl: '/stride.stakedym.QueryUnbondingRecordsResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryUnbondingRecordsResponseSDKType
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.QueryUnbondingRecordsResponse
+ */
 export interface QueryUnbondingRecordsResponseSDKType {
   unbonding_records: UnbondingRecordSDKType[];
 }
-/** Single Redemption Record */
+/**
+ * Single Redemption Record
+ * @name QueryRedemptionRecordRequest
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.QueryRedemptionRecordRequest
+ */
 export interface QueryRedemptionRecordRequest {
   unbondingRecordId: bigint;
   address: string;
@@ -91,11 +156,21 @@ export interface QueryRedemptionRecordRequestProtoMsg {
   typeUrl: '/stride.stakedym.QueryRedemptionRecordRequest';
   value: Uint8Array;
 }
-/** Single Redemption Record */
+/**
+ * Single Redemption Record
+ * @name QueryRedemptionRecordRequestSDKType
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.QueryRedemptionRecordRequest
+ */
 export interface QueryRedemptionRecordRequestSDKType {
   unbonding_record_id: bigint;
   address: string;
 }
+/**
+ * @name QueryRedemptionRecordResponse
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.QueryRedemptionRecordResponse
+ */
 export interface QueryRedemptionRecordResponse {
   redemptionRecordResponse?: RedemptionRecordResponse;
 }
@@ -103,10 +178,20 @@ export interface QueryRedemptionRecordResponseProtoMsg {
   typeUrl: '/stride.stakedym.QueryRedemptionRecordResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryRedemptionRecordResponseSDKType
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.QueryRedemptionRecordResponse
+ */
 export interface QueryRedemptionRecordResponseSDKType {
   redemption_record_response?: RedemptionRecordResponseSDKType;
 }
-/** All Redemption Records */
+/**
+ * All Redemption Records
+ * @name QueryRedemptionRecordsRequest
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.QueryRedemptionRecordsRequest
+ */
 export interface QueryRedemptionRecordsRequest {
   address: string;
   unbondingRecordId: bigint;
@@ -116,12 +201,22 @@ export interface QueryRedemptionRecordsRequestProtoMsg {
   typeUrl: '/stride.stakedym.QueryRedemptionRecordsRequest';
   value: Uint8Array;
 }
-/** All Redemption Records */
+/**
+ * All Redemption Records
+ * @name QueryRedemptionRecordsRequestSDKType
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.QueryRedemptionRecordsRequest
+ */
 export interface QueryRedemptionRecordsRequestSDKType {
   address: string;
   unbonding_record_id: bigint;
   pagination?: PageRequestSDKType;
 }
+/**
+ * @name QueryRedemptionRecordsResponse
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.QueryRedemptionRecordsResponse
+ */
 export interface QueryRedemptionRecordsResponse {
   redemptionRecordResponses: RedemptionRecordResponse[];
   pagination?: PageResponse;
@@ -130,18 +225,38 @@ export interface QueryRedemptionRecordsResponseProtoMsg {
   typeUrl: '/stride.stakedym.QueryRedemptionRecordsResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryRedemptionRecordsResponseSDKType
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.QueryRedemptionRecordsResponse
+ */
 export interface QueryRedemptionRecordsResponseSDKType {
   redemption_record_responses: RedemptionRecordResponseSDKType[];
   pagination?: PageResponseSDKType;
 }
-/** All Slash Records */
+/**
+ * All Slash Records
+ * @name QuerySlashRecordsRequest
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.QuerySlashRecordsRequest
+ */
 export interface QuerySlashRecordsRequest {}
 export interface QuerySlashRecordsRequestProtoMsg {
   typeUrl: '/stride.stakedym.QuerySlashRecordsRequest';
   value: Uint8Array;
 }
-/** All Slash Records */
+/**
+ * All Slash Records
+ * @name QuerySlashRecordsRequestSDKType
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.QuerySlashRecordsRequest
+ */
 export interface QuerySlashRecordsRequestSDKType {}
+/**
+ * @name QuerySlashRecordsResponse
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.QuerySlashRecordsResponse
+ */
 export interface QuerySlashRecordsResponse {
   slashRecords: SlashRecord[];
 }
@@ -149,12 +264,24 @@ export interface QuerySlashRecordsResponseProtoMsg {
   typeUrl: '/stride.stakedym.QuerySlashRecordsResponse';
   value: Uint8Array;
 }
+/**
+ * @name QuerySlashRecordsResponseSDKType
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.QuerySlashRecordsResponse
+ */
 export interface QuerySlashRecordsResponseSDKType {
   slash_records: SlashRecordSDKType[];
 }
-/** Data structure for frontend to consume */
+/**
+ * Data structure for frontend to consume
+ * @name RedemptionRecordResponse
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.RedemptionRecordResponse
+ */
 export interface RedemptionRecordResponse {
-  /** Redemption record */
+  /**
+   * Redemption record
+   */
   redemptionRecord?: RedemptionRecord;
   /**
    * The Unix timestamp (in seconds) at which the unbonding for the UR
@@ -166,7 +293,12 @@ export interface RedemptionRecordResponseProtoMsg {
   typeUrl: '/stride.stakedym.RedemptionRecordResponse';
   value: Uint8Array;
 }
-/** Data structure for frontend to consume */
+/**
+ * Data structure for frontend to consume
+ * @name RedemptionRecordResponseSDKType
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.RedemptionRecordResponse
+ */
 export interface RedemptionRecordResponseSDKType {
   redemption_record?: RedemptionRecordSDKType;
   unbonding_completion_time_seconds: bigint;
@@ -174,6 +306,12 @@ export interface RedemptionRecordResponseSDKType {
 function createBaseQueryHostZoneRequest(): QueryHostZoneRequest {
   return {};
 }
+/**
+ * Host Zone
+ * @name QueryHostZoneRequest
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.QueryHostZoneRequest
+ */
 export const QueryHostZoneRequest = {
   typeUrl: '/stride.stakedym.QueryHostZoneRequest' as const,
   encode(
@@ -229,6 +367,11 @@ function createBaseQueryHostZoneResponse(): QueryHostZoneResponse {
     hostZone: undefined,
   };
 }
+/**
+ * @name QueryHostZoneResponse
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.QueryHostZoneResponse
+ */
 export const QueryHostZoneResponse = {
   typeUrl: '/stride.stakedym.QueryHostZoneResponse' as const,
   encode(
@@ -302,6 +445,12 @@ function createBaseQueryDelegationRecordsRequest(): QueryDelegationRecordsReques
     includeArchived: false,
   };
 }
+/**
+ * All Delegation Records
+ * @name QueryDelegationRecordsRequest
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.QueryDelegationRecordsRequest
+ */
 export const QueryDelegationRecordsRequest = {
   typeUrl: '/stride.stakedym.QueryDelegationRecordsRequest' as const,
   encode(
@@ -378,6 +527,11 @@ function createBaseQueryDelegationRecordsResponse(): QueryDelegationRecordsRespo
     delegationRecords: [],
   };
 }
+/**
+ * @name QueryDelegationRecordsResponse
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.QueryDelegationRecordsResponse
+ */
 export const QueryDelegationRecordsResponse = {
   typeUrl: '/stride.stakedym.QueryDelegationRecordsResponse' as const,
   encode(
@@ -462,6 +616,12 @@ function createBaseQueryUnbondingRecordsRequest(): QueryUnbondingRecordsRequest 
     includeArchived: false,
   };
 }
+/**
+ * All Unbonding Records
+ * @name QueryUnbondingRecordsRequest
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.QueryUnbondingRecordsRequest
+ */
 export const QueryUnbondingRecordsRequest = {
   typeUrl: '/stride.stakedym.QueryUnbondingRecordsRequest' as const,
   encode(
@@ -538,6 +698,11 @@ function createBaseQueryUnbondingRecordsResponse(): QueryUnbondingRecordsRespons
     unbondingRecords: [],
   };
 }
+/**
+ * @name QueryUnbondingRecordsResponse
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.QueryUnbondingRecordsResponse
+ */
 export const QueryUnbondingRecordsResponse = {
   typeUrl: '/stride.stakedym.QueryUnbondingRecordsResponse' as const,
   encode(
@@ -623,6 +788,12 @@ function createBaseQueryRedemptionRecordRequest(): QueryRedemptionRecordRequest 
     address: '',
   };
 }
+/**
+ * Single Redemption Record
+ * @name QueryRedemptionRecordRequest
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.QueryRedemptionRecordRequest
+ */
 export const QueryRedemptionRecordRequest = {
   typeUrl: '/stride.stakedym.QueryRedemptionRecordRequest' as const,
   encode(
@@ -714,6 +885,11 @@ function createBaseQueryRedemptionRecordResponse(): QueryRedemptionRecordRespons
     redemptionRecordResponse: undefined,
   };
 }
+/**
+ * @name QueryRedemptionRecordResponse
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.QueryRedemptionRecordResponse
+ */
 export const QueryRedemptionRecordResponse = {
   typeUrl: '/stride.stakedym.QueryRedemptionRecordResponse' as const,
   encode(
@@ -804,6 +980,12 @@ function createBaseQueryRedemptionRecordsRequest(): QueryRedemptionRecordsReques
     pagination: undefined,
   };
 }
+/**
+ * All Redemption Records
+ * @name QueryRedemptionRecordsRequest
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.QueryRedemptionRecordsRequest
+ */
 export const QueryRedemptionRecordsRequest = {
   typeUrl: '/stride.stakedym.QueryRedemptionRecordsRequest' as const,
   encode(
@@ -913,6 +1095,11 @@ function createBaseQueryRedemptionRecordsResponse(): QueryRedemptionRecordsRespo
     pagination: undefined,
   };
 }
+/**
+ * @name QueryRedemptionRecordsResponse
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.QueryRedemptionRecordsResponse
+ */
 export const QueryRedemptionRecordsResponse = {
   typeUrl: '/stride.stakedym.QueryRedemptionRecordsResponse' as const,
   encode(
@@ -1021,6 +1208,12 @@ export const QueryRedemptionRecordsResponse = {
 function createBaseQuerySlashRecordsRequest(): QuerySlashRecordsRequest {
   return {};
 }
+/**
+ * All Slash Records
+ * @name QuerySlashRecordsRequest
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.QuerySlashRecordsRequest
+ */
 export const QuerySlashRecordsRequest = {
   typeUrl: '/stride.stakedym.QuerySlashRecordsRequest' as const,
   encode(
@@ -1080,6 +1273,11 @@ function createBaseQuerySlashRecordsResponse(): QuerySlashRecordsResponse {
     slashRecords: [],
   };
 }
+/**
+ * @name QuerySlashRecordsResponse
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.QuerySlashRecordsResponse
+ */
 export const QuerySlashRecordsResponse = {
   typeUrl: '/stride.stakedym.QuerySlashRecordsResponse' as const,
   encode(
@@ -1165,6 +1363,12 @@ function createBaseRedemptionRecordResponse(): RedemptionRecordResponse {
     unbondingCompletionTimeSeconds: BigInt(0),
   };
 }
+/**
+ * Data structure for frontend to consume
+ * @name RedemptionRecordResponse
+ * @package stride.stakedym
+ * @see proto type: stride.stakedym.RedemptionRecordResponse
+ */
 export const RedemptionRecordResponse = {
   typeUrl: '/stride.stakedym.RedemptionRecordResponse' as const,
   encode(

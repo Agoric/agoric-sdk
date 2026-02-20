@@ -20,6 +20,9 @@ import { type JsonSafe } from '../../json-safe.js';
 /**
  * QueryInterchainAccountFromAddressRequest is the request type for the
  * Query/InterchainAccountAddress RPC
+ * @name QueryInterchainAccountFromAddressRequest
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryInterchainAccountFromAddressRequest
  */
 export interface QueryInterchainAccountFromAddressRequest {
   owner: string;
@@ -32,6 +35,9 @@ export interface QueryInterchainAccountFromAddressRequestProtoMsg {
 /**
  * QueryInterchainAccountFromAddressRequest is the request type for the
  * Query/InterchainAccountAddress RPC
+ * @name QueryInterchainAccountFromAddressRequestSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryInterchainAccountFromAddressRequest
  */
 export interface QueryInterchainAccountFromAddressRequestSDKType {
   owner: string;
@@ -40,6 +46,9 @@ export interface QueryInterchainAccountFromAddressRequestSDKType {
 /**
  * QueryInterchainAccountFromAddressResponse the response type for the
  * Query/InterchainAccountAddress RPC
+ * @name QueryInterchainAccountFromAddressResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryInterchainAccountFromAddressResponse
  */
 export interface QueryInterchainAccountFromAddressResponse {
   interchainAccountAddress: string;
@@ -51,31 +60,61 @@ export interface QueryInterchainAccountFromAddressResponseProtoMsg {
 /**
  * QueryInterchainAccountFromAddressResponse the response type for the
  * Query/InterchainAccountAddress RPC
+ * @name QueryInterchainAccountFromAddressResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryInterchainAccountFromAddressResponse
  */
 export interface QueryInterchainAccountFromAddressResponseSDKType {
   interchain_account_address: string;
 }
-/** QueryParamsRequest is request type for the Query/Params RPC method. */
+/**
+ * QueryParamsRequest is request type for the Query/Params RPC method.
+ * @name QueryParamsRequest
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryParamsRequest
+ */
 export interface QueryParamsRequest {}
 export interface QueryParamsRequestProtoMsg {
   typeUrl: '/stride.stakeibc.QueryParamsRequest';
   value: Uint8Array;
 }
-/** QueryParamsRequest is request type for the Query/Params RPC method. */
+/**
+ * QueryParamsRequest is request type for the Query/Params RPC method.
+ * @name QueryParamsRequestSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryParamsRequest
+ */
 export interface QueryParamsRequestSDKType {}
-/** QueryParamsResponse is response type for the Query/Params RPC method. */
+/**
+ * QueryParamsResponse is response type for the Query/Params RPC method.
+ * @name QueryParamsResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryParamsResponse
+ */
 export interface QueryParamsResponse {
-  /** params holds all the parameters of this module. */
+  /**
+   * params holds all the parameters of this module.
+   */
   params: Params;
 }
 export interface QueryParamsResponseProtoMsg {
   typeUrl: '/stride.stakeibc.QueryParamsResponse';
   value: Uint8Array;
 }
-/** QueryParamsResponse is response type for the Query/Params RPC method. */
+/**
+ * QueryParamsResponse is response type for the Query/Params RPC method.
+ * @name QueryParamsResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryParamsResponse
+ */
 export interface QueryParamsResponseSDKType {
   params: ParamsSDKType;
 }
+/**
+ * @name QueryGetValidatorsRequest
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetValidatorsRequest
+ */
 export interface QueryGetValidatorsRequest {
   chainId: string;
 }
@@ -83,9 +122,19 @@ export interface QueryGetValidatorsRequestProtoMsg {
   typeUrl: '/stride.stakeibc.QueryGetValidatorsRequest';
   value: Uint8Array;
 }
+/**
+ * @name QueryGetValidatorsRequestSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetValidatorsRequest
+ */
 export interface QueryGetValidatorsRequestSDKType {
   chain_id: string;
 }
+/**
+ * @name QueryGetValidatorsResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetValidatorsResponse
+ */
 export interface QueryGetValidatorsResponse {
   validators: Validator[];
 }
@@ -93,9 +142,19 @@ export interface QueryGetValidatorsResponseProtoMsg {
   typeUrl: '/stride.stakeibc.QueryGetValidatorsResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryGetValidatorsResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetValidatorsResponse
+ */
 export interface QueryGetValidatorsResponseSDKType {
   validators: ValidatorSDKType[];
 }
+/**
+ * @name QueryGetHostZoneRequest
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetHostZoneRequest
+ */
 export interface QueryGetHostZoneRequest {
   chainId: string;
 }
@@ -103,9 +162,19 @@ export interface QueryGetHostZoneRequestProtoMsg {
   typeUrl: '/stride.stakeibc.QueryGetHostZoneRequest';
   value: Uint8Array;
 }
+/**
+ * @name QueryGetHostZoneRequestSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetHostZoneRequest
+ */
 export interface QueryGetHostZoneRequestSDKType {
   chain_id: string;
 }
+/**
+ * @name QueryGetHostZoneResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetHostZoneResponse
+ */
 export interface QueryGetHostZoneResponse {
   hostZone: HostZone;
 }
@@ -113,9 +182,19 @@ export interface QueryGetHostZoneResponseProtoMsg {
   typeUrl: '/stride.stakeibc.QueryGetHostZoneResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryGetHostZoneResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetHostZoneResponse
+ */
 export interface QueryGetHostZoneResponseSDKType {
   host_zone: HostZoneSDKType;
 }
+/**
+ * @name QueryAllHostZoneRequest
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAllHostZoneRequest
+ */
 export interface QueryAllHostZoneRequest {
   pagination?: PageRequest;
 }
@@ -123,9 +202,19 @@ export interface QueryAllHostZoneRequestProtoMsg {
   typeUrl: '/stride.stakeibc.QueryAllHostZoneRequest';
   value: Uint8Array;
 }
+/**
+ * @name QueryAllHostZoneRequestSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAllHostZoneRequest
+ */
 export interface QueryAllHostZoneRequestSDKType {
   pagination?: PageRequestSDKType;
 }
+/**
+ * @name QueryAllHostZoneResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAllHostZoneResponse
+ */
 export interface QueryAllHostZoneResponse {
   hostZone: HostZone[];
   pagination?: PageResponse;
@@ -134,10 +223,20 @@ export interface QueryAllHostZoneResponseProtoMsg {
   typeUrl: '/stride.stakeibc.QueryAllHostZoneResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryAllHostZoneResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAllHostZoneResponse
+ */
 export interface QueryAllHostZoneResponseSDKType {
   host_zone: HostZoneSDKType[];
   pagination?: PageResponseSDKType;
 }
+/**
+ * @name QueryModuleAddressRequest
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryModuleAddressRequest
+ */
 export interface QueryModuleAddressRequest {
   name: string;
 }
@@ -145,9 +244,19 @@ export interface QueryModuleAddressRequestProtoMsg {
   typeUrl: '/stride.stakeibc.QueryModuleAddressRequest';
   value: Uint8Array;
 }
+/**
+ * @name QueryModuleAddressRequestSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryModuleAddressRequest
+ */
 export interface QueryModuleAddressRequestSDKType {
   name: string;
 }
+/**
+ * @name QueryModuleAddressResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryModuleAddressResponse
+ */
 export interface QueryModuleAddressResponse {
   addr: string;
 }
@@ -155,9 +264,19 @@ export interface QueryModuleAddressResponseProtoMsg {
   typeUrl: '/stride.stakeibc.QueryModuleAddressResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryModuleAddressResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryModuleAddressResponse
+ */
 export interface QueryModuleAddressResponseSDKType {
   addr: string;
 }
+/**
+ * @name QueryGetEpochTrackerRequest
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetEpochTrackerRequest
+ */
 export interface QueryGetEpochTrackerRequest {
   epochIdentifier: string;
 }
@@ -165,9 +284,19 @@ export interface QueryGetEpochTrackerRequestProtoMsg {
   typeUrl: '/stride.stakeibc.QueryGetEpochTrackerRequest';
   value: Uint8Array;
 }
+/**
+ * @name QueryGetEpochTrackerRequestSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetEpochTrackerRequest
+ */
 export interface QueryGetEpochTrackerRequestSDKType {
   epoch_identifier: string;
 }
+/**
+ * @name QueryGetEpochTrackerResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetEpochTrackerResponse
+ */
 export interface QueryGetEpochTrackerResponse {
   epochTracker: EpochTracker;
 }
@@ -175,15 +304,35 @@ export interface QueryGetEpochTrackerResponseProtoMsg {
   typeUrl: '/stride.stakeibc.QueryGetEpochTrackerResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryGetEpochTrackerResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetEpochTrackerResponse
+ */
 export interface QueryGetEpochTrackerResponseSDKType {
   epoch_tracker: EpochTrackerSDKType;
 }
+/**
+ * @name QueryAllEpochTrackerRequest
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAllEpochTrackerRequest
+ */
 export interface QueryAllEpochTrackerRequest {}
 export interface QueryAllEpochTrackerRequestProtoMsg {
   typeUrl: '/stride.stakeibc.QueryAllEpochTrackerRequest';
   value: Uint8Array;
 }
+/**
+ * @name QueryAllEpochTrackerRequestSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAllEpochTrackerRequest
+ */
 export interface QueryAllEpochTrackerRequestSDKType {}
+/**
+ * @name QueryAllEpochTrackerResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAllEpochTrackerResponse
+ */
 export interface QueryAllEpochTrackerResponse {
   epochTracker: EpochTracker[];
 }
@@ -191,9 +340,19 @@ export interface QueryAllEpochTrackerResponseProtoMsg {
   typeUrl: '/stride.stakeibc.QueryAllEpochTrackerResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryAllEpochTrackerResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAllEpochTrackerResponse
+ */
 export interface QueryAllEpochTrackerResponseSDKType {
   epoch_tracker: EpochTrackerSDKType[];
 }
+/**
+ * @name QueryGetNextPacketSequenceRequest
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetNextPacketSequenceRequest
+ */
 export interface QueryGetNextPacketSequenceRequest {
   channelId: string;
   portId: string;
@@ -202,10 +361,20 @@ export interface QueryGetNextPacketSequenceRequestProtoMsg {
   typeUrl: '/stride.stakeibc.QueryGetNextPacketSequenceRequest';
   value: Uint8Array;
 }
+/**
+ * @name QueryGetNextPacketSequenceRequestSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetNextPacketSequenceRequest
+ */
 export interface QueryGetNextPacketSequenceRequestSDKType {
   channel_id: string;
   port_id: string;
 }
+/**
+ * @name QueryGetNextPacketSequenceResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetNextPacketSequenceResponse
+ */
 export interface QueryGetNextPacketSequenceResponse {
   sequence: bigint;
 }
@@ -213,9 +382,19 @@ export interface QueryGetNextPacketSequenceResponseProtoMsg {
   typeUrl: '/stride.stakeibc.QueryGetNextPacketSequenceResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryGetNextPacketSequenceResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetNextPacketSequenceResponse
+ */
 export interface QueryGetNextPacketSequenceResponseSDKType {
   sequence: bigint;
 }
+/**
+ * @name QueryAddressUnbondings
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAddressUnbondings
+ */
 export interface QueryAddressUnbondings {
   address: string;
 }
@@ -223,9 +402,19 @@ export interface QueryAddressUnbondingsProtoMsg {
   typeUrl: '/stride.stakeibc.QueryAddressUnbondings';
   value: Uint8Array;
 }
+/**
+ * @name QueryAddressUnbondingsSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAddressUnbondings
+ */
 export interface QueryAddressUnbondingsSDKType {
   address: string;
 }
+/**
+ * @name QueryAddressUnbondingsResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAddressUnbondingsResponse
+ */
 export interface QueryAddressUnbondingsResponse {
   addressUnbondings: AddressUnbonding[];
 }
@@ -233,15 +422,35 @@ export interface QueryAddressUnbondingsResponseProtoMsg {
   typeUrl: '/stride.stakeibc.QueryAddressUnbondingsResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryAddressUnbondingsResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAddressUnbondingsResponse
+ */
 export interface QueryAddressUnbondingsResponseSDKType {
   address_unbondings: AddressUnbondingSDKType[];
 }
+/**
+ * @name QueryAllTradeRoutes
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAllTradeRoutes
+ */
 export interface QueryAllTradeRoutes {}
 export interface QueryAllTradeRoutesProtoMsg {
   typeUrl: '/stride.stakeibc.QueryAllTradeRoutes';
   value: Uint8Array;
 }
+/**
+ * @name QueryAllTradeRoutesSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAllTradeRoutes
+ */
 export interface QueryAllTradeRoutesSDKType {}
+/**
+ * @name QueryAllTradeRoutesResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAllTradeRoutesResponse
+ */
 export interface QueryAllTradeRoutesResponse {
   tradeRoutes: TradeRoute[];
 }
@@ -249,6 +458,11 @@ export interface QueryAllTradeRoutesResponseProtoMsg {
   typeUrl: '/stride.stakeibc.QueryAllTradeRoutesResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryAllTradeRoutesResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAllTradeRoutesResponse
+ */
 export interface QueryAllTradeRoutesResponseSDKType {
   trade_routes: TradeRouteSDKType[];
 }
@@ -258,6 +472,13 @@ function createBaseQueryInterchainAccountFromAddressRequest(): QueryInterchainAc
     connectionId: '',
   };
 }
+/**
+ * QueryInterchainAccountFromAddressRequest is the request type for the
+ * Query/InterchainAccountAddress RPC
+ * @name QueryInterchainAccountFromAddressRequest
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryInterchainAccountFromAddressRequest
+ */
 export const QueryInterchainAccountFromAddressRequest = {
   typeUrl: '/stride.stakeibc.QueryInterchainAccountFromAddressRequest' as const,
   encode(
@@ -343,6 +564,13 @@ function createBaseQueryInterchainAccountFromAddressResponse(): QueryInterchainA
     interchainAccountAddress: '',
   };
 }
+/**
+ * QueryInterchainAccountFromAddressResponse the response type for the
+ * Query/InterchainAccountAddress RPC
+ * @name QueryInterchainAccountFromAddressResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryInterchainAccountFromAddressResponse
+ */
 export const QueryInterchainAccountFromAddressResponse = {
   typeUrl:
     '/stride.stakeibc.QueryInterchainAccountFromAddressResponse' as const,
@@ -418,6 +646,12 @@ export const QueryInterchainAccountFromAddressResponse = {
 function createBaseQueryParamsRequest(): QueryParamsRequest {
   return {};
 }
+/**
+ * QueryParamsRequest is request type for the Query/Params RPC method.
+ * @name QueryParamsRequest
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryParamsRequest
+ */
 export const QueryParamsRequest = {
   typeUrl: '/stride.stakeibc.QueryParamsRequest' as const,
   encode(
@@ -473,6 +707,12 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
     params: Params.fromPartial({}),
   };
 }
+/**
+ * QueryParamsResponse is response type for the Query/Params RPC method.
+ * @name QueryParamsResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryParamsResponse
+ */
 export const QueryParamsResponse = {
   typeUrl: '/stride.stakeibc.QueryParamsResponse' as const,
   encode(
@@ -542,6 +782,11 @@ function createBaseQueryGetValidatorsRequest(): QueryGetValidatorsRequest {
     chainId: '',
   };
 }
+/**
+ * @name QueryGetValidatorsRequest
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetValidatorsRequest
+ */
 export const QueryGetValidatorsRequest = {
   typeUrl: '/stride.stakeibc.QueryGetValidatorsRequest' as const,
   encode(
@@ -615,6 +860,11 @@ function createBaseQueryGetValidatorsResponse(): QueryGetValidatorsResponse {
     validators: [],
   };
 }
+/**
+ * @name QueryGetValidatorsResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetValidatorsResponse
+ */
 export const QueryGetValidatorsResponse = {
   typeUrl: '/stride.stakeibc.QueryGetValidatorsResponse' as const,
   encode(
@@ -697,6 +947,11 @@ function createBaseQueryGetHostZoneRequest(): QueryGetHostZoneRequest {
     chainId: '',
   };
 }
+/**
+ * @name QueryGetHostZoneRequest
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetHostZoneRequest
+ */
 export const QueryGetHostZoneRequest = {
   typeUrl: '/stride.stakeibc.QueryGetHostZoneRequest' as const,
   encode(
@@ -768,6 +1023,11 @@ function createBaseQueryGetHostZoneResponse(): QueryGetHostZoneResponse {
     hostZone: HostZone.fromPartial({}),
   };
 }
+/**
+ * @name QueryGetHostZoneResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetHostZoneResponse
+ */
 export const QueryGetHostZoneResponse = {
   typeUrl: '/stride.stakeibc.QueryGetHostZoneResponse' as const,
   encode(
@@ -849,6 +1109,11 @@ function createBaseQueryAllHostZoneRequest(): QueryAllHostZoneRequest {
     pagination: undefined,
   };
 }
+/**
+ * @name QueryAllHostZoneRequest
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAllHostZoneRequest
+ */
 export const QueryAllHostZoneRequest = {
   typeUrl: '/stride.stakeibc.QueryAllHostZoneRequest' as const,
   encode(
@@ -929,6 +1194,11 @@ function createBaseQueryAllHostZoneResponse(): QueryAllHostZoneResponse {
     pagination: undefined,
   };
 }
+/**
+ * @name QueryAllHostZoneResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAllHostZoneResponse
+ */
 export const QueryAllHostZoneResponse = {
   typeUrl: '/stride.stakeibc.QueryAllHostZoneResponse' as const,
   encode(
@@ -1030,6 +1300,11 @@ function createBaseQueryModuleAddressRequest(): QueryModuleAddressRequest {
     name: '',
   };
 }
+/**
+ * @name QueryModuleAddressRequest
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryModuleAddressRequest
+ */
 export const QueryModuleAddressRequest = {
   typeUrl: '/stride.stakeibc.QueryModuleAddressRequest' as const,
   encode(
@@ -1103,6 +1378,11 @@ function createBaseQueryModuleAddressResponse(): QueryModuleAddressResponse {
     addr: '',
   };
 }
+/**
+ * @name QueryModuleAddressResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryModuleAddressResponse
+ */
 export const QueryModuleAddressResponse = {
   typeUrl: '/stride.stakeibc.QueryModuleAddressResponse' as const,
   encode(
@@ -1176,6 +1456,11 @@ function createBaseQueryGetEpochTrackerRequest(): QueryGetEpochTrackerRequest {
     epochIdentifier: '',
   };
 }
+/**
+ * @name QueryGetEpochTrackerRequest
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetEpochTrackerRequest
+ */
 export const QueryGetEpochTrackerRequest = {
   typeUrl: '/stride.stakeibc.QueryGetEpochTrackerRequest' as const,
   encode(
@@ -1252,6 +1537,11 @@ function createBaseQueryGetEpochTrackerResponse(): QueryGetEpochTrackerResponse 
     epochTracker: EpochTracker.fromPartial({}),
   };
 }
+/**
+ * @name QueryGetEpochTrackerResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetEpochTrackerResponse
+ */
 export const QueryGetEpochTrackerResponse = {
   typeUrl: '/stride.stakeibc.QueryGetEpochTrackerResponse' as const,
   encode(
@@ -1334,6 +1624,11 @@ export const QueryGetEpochTrackerResponse = {
 function createBaseQueryAllEpochTrackerRequest(): QueryAllEpochTrackerRequest {
   return {};
 }
+/**
+ * @name QueryAllEpochTrackerRequest
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAllEpochTrackerRequest
+ */
 export const QueryAllEpochTrackerRequest = {
   typeUrl: '/stride.stakeibc.QueryAllEpochTrackerRequest' as const,
   encode(
@@ -1397,6 +1692,11 @@ function createBaseQueryAllEpochTrackerResponse(): QueryAllEpochTrackerResponse 
     epochTracker: [],
   };
 }
+/**
+ * @name QueryAllEpochTrackerResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAllEpochTrackerResponse
+ */
 export const QueryAllEpochTrackerResponse = {
   typeUrl: '/stride.stakeibc.QueryAllEpochTrackerResponse' as const,
   encode(
@@ -1482,6 +1782,11 @@ function createBaseQueryGetNextPacketSequenceRequest(): QueryGetNextPacketSequen
     portId: '',
   };
 }
+/**
+ * @name QueryGetNextPacketSequenceRequest
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetNextPacketSequenceRequest
+ */
 export const QueryGetNextPacketSequenceRequest = {
   typeUrl: '/stride.stakeibc.QueryGetNextPacketSequenceRequest' as const,
   encode(
@@ -1564,6 +1869,11 @@ function createBaseQueryGetNextPacketSequenceResponse(): QueryGetNextPacketSeque
     sequence: BigInt(0),
   };
 }
+/**
+ * @name QueryGetNextPacketSequenceResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetNextPacketSequenceResponse
+ */
 export const QueryGetNextPacketSequenceResponse = {
   typeUrl: '/stride.stakeibc.QueryGetNextPacketSequenceResponse' as const,
   encode(
@@ -1643,6 +1953,11 @@ function createBaseQueryAddressUnbondings(): QueryAddressUnbondings {
     address: '',
   };
 }
+/**
+ * @name QueryAddressUnbondings
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAddressUnbondings
+ */
 export const QueryAddressUnbondings = {
   typeUrl: '/stride.stakeibc.QueryAddressUnbondings' as const,
   encode(
@@ -1710,6 +2025,11 @@ function createBaseQueryAddressUnbondingsResponse(): QueryAddressUnbondingsRespo
     addressUnbondings: [],
   };
 }
+/**
+ * @name QueryAddressUnbondingsResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAddressUnbondingsResponse
+ */
 export const QueryAddressUnbondingsResponse = {
   typeUrl: '/stride.stakeibc.QueryAddressUnbondingsResponse' as const,
   encode(
@@ -1792,6 +2112,11 @@ export const QueryAddressUnbondingsResponse = {
 function createBaseQueryAllTradeRoutes(): QueryAllTradeRoutes {
   return {};
 }
+/**
+ * @name QueryAllTradeRoutes
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAllTradeRoutes
+ */
 export const QueryAllTradeRoutes = {
   typeUrl: '/stride.stakeibc.QueryAllTradeRoutes' as const,
   encode(
@@ -1847,6 +2172,11 @@ function createBaseQueryAllTradeRoutesResponse(): QueryAllTradeRoutesResponse {
     tradeRoutes: [],
   };
 }
+/**
+ * @name QueryAllTradeRoutesResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAllTradeRoutesResponse
+ */
 export const QueryAllTradeRoutesResponse = {
   typeUrl: '/stride.stakeibc.QueryAllTradeRoutesResponse' as const,
   encode(

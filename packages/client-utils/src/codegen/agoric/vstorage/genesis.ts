@@ -2,7 +2,12 @@
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { type JsonSafe } from '../../json-safe.js';
 import { isSet } from '../../helpers.js';
-/** The initial or exported state. */
+/**
+ * The initial or exported state.
+ * @name GenesisState
+ * @package agoric.vstorage
+ * @see proto type: agoric.vstorage.GenesisState
+ */
 export interface GenesisState {
   data: DataEntry[];
 }
@@ -10,13 +15,21 @@ export interface GenesisStateProtoMsg {
   typeUrl: '/agoric.vstorage.GenesisState';
   value: Uint8Array;
 }
-/** The initial or exported state. */
+/**
+ * The initial or exported state.
+ * @name GenesisStateSDKType
+ * @package agoric.vstorage
+ * @see proto type: agoric.vstorage.GenesisState
+ */
 export interface GenesisStateSDKType {
   data: DataEntrySDKType[];
 }
 /**
  * A vstorage entry.  The only necessary entries are those with data, as the
  * ancestor nodes are reconstructed on import.
+ * @name DataEntry
+ * @package agoric.vstorage
+ * @see proto type: agoric.vstorage.DataEntry
  */
 export interface DataEntry {
   /**
@@ -33,6 +46,9 @@ export interface DataEntryProtoMsg {
 /**
  * A vstorage entry.  The only necessary entries are those with data, as the
  * ancestor nodes are reconstructed on import.
+ * @name DataEntrySDKType
+ * @package agoric.vstorage
+ * @see proto type: agoric.vstorage.DataEntry
  */
 export interface DataEntrySDKType {
   path: string;
@@ -43,6 +59,12 @@ function createBaseGenesisState(): GenesisState {
     data: [],
   };
 }
+/**
+ * The initial or exported state.
+ * @name GenesisState
+ * @package agoric.vstorage
+ * @see proto type: agoric.vstorage.GenesisState
+ */
 export const GenesisState = {
   typeUrl: '/agoric.vstorage.GenesisState' as const,
   encode(
@@ -112,6 +134,13 @@ function createBaseDataEntry(): DataEntry {
     value: '',
   };
 }
+/**
+ * A vstorage entry.  The only necessary entries are those with data, as the
+ * ancestor nodes are reconstructed on import.
+ * @name DataEntry
+ * @package agoric.vstorage
+ * @see proto type: agoric.vstorage.DataEntry
+ */
 export const DataEntry = {
   typeUrl: '/agoric.vstorage.DataEntry' as const,
   encode(

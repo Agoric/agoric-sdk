@@ -57,6 +57,9 @@ export function chunkStateToJSON(object: ChunkState): string {
  * CoreEvalProposal is a gov Content type for evaluating code in the SwingSet
  * core.
  * See `bridgeCoreEval` in agoric-sdk packages/vats/src/core/chain-behaviors.js.
+ * @name CoreEvalProposal
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.CoreEvalProposal
  */
 export interface CoreEvalProposal {
   title: string;
@@ -75,6 +78,9 @@ export interface CoreEvalProposalProtoMsg {
  * CoreEvalProposal is a gov Content type for evaluating code in the SwingSet
  * core.
  * See `bridgeCoreEval` in agoric-sdk packages/vats/src/core/chain-behaviors.js.
+ * @name CoreEvalProposalSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.CoreEvalProposal
  */
 export interface CoreEvalProposalSDKType {
   title: string;
@@ -84,6 +90,9 @@ export interface CoreEvalProposalSDKType {
 /**
  * CoreEval defines an individual SwingSet core evaluation, for use in
  * CoreEvalProposal.
+ * @name CoreEval
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.CoreEval
  */
 export interface CoreEval {
   /**
@@ -104,12 +113,20 @@ export interface CoreEvalProtoMsg {
 /**
  * CoreEval defines an individual SwingSet core evaluation, for use in
  * CoreEvalProposal.
+ * @name CoreEvalSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.CoreEval
  */
 export interface CoreEvalSDKType {
   json_permits: string;
   js_code: string;
 }
-/** Params are the swingset configuration/governance parameters. */
+/**
+ * Params are the swingset configuration/governance parameters.
+ * @name Params
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.Params
+ */
 export interface Params {
   /**
    * Map from unit name to a value in SwingSet "beans".
@@ -179,14 +196,21 @@ export interface Params {
    * limit is exclusive.
    */
   bundleUncompressedSizeLimitBytes: bigint;
-  /** The maximum size of a bundle or artifact chunk (0 implies default 490000 bytes) */
+  /**
+   * The maximum size of a bundle or artifact chunk (0 implies default 490000 bytes)
+   */
   chunkSizeLimitBytes: bigint;
 }
 export interface ParamsProtoMsg {
   typeUrl: '/agoric.swingset.Params';
   value: Uint8Array;
 }
-/** Params are the swingset configuration/governance parameters. */
+/**
+ * Params are the swingset configuration/governance parameters.
+ * @name ParamsSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.Params
+ */
 export interface ParamsSDKType {
   beans_per_unit: StringBeansSDKType[];
   fee_unit_price: CoinSDKType[];
@@ -199,48 +223,83 @@ export interface ParamsSDKType {
   bundle_uncompressed_size_limit_bytes: bigint;
   chunk_size_limit_bytes: bigint;
 }
-/** The current state of the module. */
+/**
+ * The current state of the module.
+ * @name State
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.State
+ */
 export interface State {
   /**
    * The allowed number of items to add to queues, as determined by SwingSet.
    * Transactions which attempt to enqueue more should be rejected.
    */
   queueAllowed: QueueSize[];
-  /** Doubly-linked list in order of ascending start block and time. */
+  /**
+   * Doubly-linked list in order of ascending start block and time.
+   */
   firstChunkedArtifactId: bigint;
-  /** The last chunked artifact id that has not expired nor completed. */
+  /**
+   * The last chunked artifact id that has not expired nor completed.
+   */
   lastChunkedArtifactId: bigint;
-  /** The next monotonically increasing chunked artifact id to allocate. */
+  /**
+   * The next monotonically increasing chunked artifact id to allocate.
+   */
   nextChunkedArtifactId: bigint;
 }
 export interface StateProtoMsg {
   typeUrl: '/agoric.swingset.State';
   value: Uint8Array;
 }
-/** The current state of the module. */
+/**
+ * The current state of the module.
+ * @name StateSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.State
+ */
 export interface StateSDKType {
   queue_allowed: QueueSizeSDKType[];
   first_chunked_artifact_id: bigint;
   last_chunked_artifact_id: bigint;
   next_chunked_artifact_id: bigint;
 }
-/** Map element of a string key to a Nat bean count. */
+/**
+ * Map element of a string key to a Nat bean count.
+ * @name StringBeans
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.StringBeans
+ */
 export interface StringBeans {
-  /** What the beans are for. */
+  /**
+   * What the beans are for.
+   */
   key: string;
-  /** The actual bean value. */
+  /**
+   * The actual bean value.
+   */
   beans: string;
 }
 export interface StringBeansProtoMsg {
   typeUrl: '/agoric.swingset.StringBeans';
   value: Uint8Array;
 }
-/** Map element of a string key to a Nat bean count. */
+/**
+ * Map element of a string key to a Nat bean count.
+ * @name StringBeansSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.StringBeans
+ */
 export interface StringBeansSDKType {
   key: string;
   beans: string;
 }
-/** Map a provisioning power flag to its corresponding fee. */
+/**
+ * Map a provisioning power flag to its corresponding fee.
+ * @name PowerFlagFee
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.PowerFlagFee
+ */
 export interface PowerFlagFee {
   powerFlag: string;
   fee: Coin[];
@@ -249,7 +308,12 @@ export interface PowerFlagFeeProtoMsg {
   typeUrl: '/agoric.swingset.PowerFlagFee';
   value: Uint8Array;
 }
-/** Map a provisioning power flag to its corresponding fee. */
+/**
+ * Map a provisioning power flag to its corresponding fee.
+ * @name PowerFlagFeeSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.PowerFlagFee
+ */
 export interface PowerFlagFeeSDKType {
   power_flag: string;
   fee: CoinSDKType[];
@@ -257,11 +321,18 @@ export interface PowerFlagFeeSDKType {
 /**
  * Map element of a string key to a size.
  * TODO: Replace with UintMapEntry?
+ * @name QueueSize
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueueSize
  */
 export interface QueueSize {
-  /** What the size is for. */
+  /**
+   * What the size is for.
+   */
   key: string;
-  /** The actual size value. */
+  /**
+   * The actual size value.
+   */
   size: number;
 }
 export interface QueueSizeProtoMsg {
@@ -271,6 +342,9 @@ export interface QueueSizeProtoMsg {
 /**
  * Map element of a string key to a size.
  * TODO: Replace with UintMapEntry?
+ * @name QueueSizeSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueueSize
  */
 export interface QueueSizeSDKType {
   key: string;
@@ -280,6 +354,9 @@ export interface QueueSizeSDKType {
  * Map element of a string key to an unsigned integer.
  * The value uses cosmos-sdk Uint rather than a native Go type to ensure that
  * zeroes survive "omitempty" JSON serialization.
+ * @name UintMapEntry
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.UintMapEntry
  */
 export interface UintMapEntry {
   key: string;
@@ -293,23 +370,38 @@ export interface UintMapEntryProtoMsg {
  * Map element of a string key to an unsigned integer.
  * The value uses cosmos-sdk Uint rather than a native Go type to ensure that
  * zeroes survive "omitempty" JSON serialization.
+ * @name UintMapEntrySDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.UintMapEntry
  */
 export interface UintMapEntrySDKType {
   key: string;
   value: string;
 }
-/** Egress is the format for a swingset egress. */
+/**
+ * Egress is the format for a swingset egress.
+ * @name Egress
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.Egress
+ */
 export interface Egress {
   nickname: string;
   peer: Uint8Array;
-  /** TODO: Remove these power flags as they are deprecated and have no effect. */
+  /**
+   * TODO: Remove these power flags as they are deprecated and have no effect.
+   */
   powerFlags: string[];
 }
 export interface EgressProtoMsg {
   typeUrl: '/agoric.swingset.Egress';
   value: Uint8Array;
 }
-/** Egress is the format for a swingset egress. */
+/**
+ * Egress is the format for a swingset egress.
+ * @name EgressSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.Egress
+ */
 export interface EgressSDKType {
   nickname: string;
   peer: Uint8Array;
@@ -320,6 +412,9 @@ export interface EgressSDKType {
  * Artifacts may be stored or transmitted in any order. Most handlers do
  * maintain the artifact order from their original source as an effect of how
  * they handle the artifacts.
+ * @name SwingStoreArtifact
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.SwingStoreArtifact
  */
 export interface SwingStoreArtifact {
   name: string;
@@ -334,6 +429,9 @@ export interface SwingStoreArtifactProtoMsg {
  * Artifacts may be stored or transmitted in any order. Most handlers do
  * maintain the artifact order from their original source as an effect of how
  * they handle the artifacts.
+ * @name SwingStoreArtifactSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.SwingStoreArtifact
  */
 export interface SwingStoreArtifactSDKType {
   name: string;
@@ -343,11 +441,18 @@ export interface SwingStoreArtifactSDKType {
  * ChunkedArtifact is the manifest for an artifact that is submitted across
  * multiple transactions, in chunks, as when using InstallBundle to submit
  * chunks.
+ * @name ChunkedArtifact
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.ChunkedArtifact
  */
 export interface ChunkedArtifact {
-  /** The SHA-512 hash of the entire artifact's contents. */
+  /**
+   * The SHA-512 hash of the entire artifact's contents.
+   */
   sha512: string;
-  /** The size of the final artifact in bytes. */
+  /**
+   * The size of the final artifact in bytes.
+   */
   sizeBytes: bigint;
   /**
    * Information about the chunks that will be concatenated to form this
@@ -363,26 +468,45 @@ export interface ChunkedArtifactProtoMsg {
  * ChunkedArtifact is the manifest for an artifact that is submitted across
  * multiple transactions, in chunks, as when using InstallBundle to submit
  * chunks.
+ * @name ChunkedArtifactSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.ChunkedArtifact
  */
 export interface ChunkedArtifactSDKType {
   sha512: string;
   size_bytes: bigint;
   chunks: ChunkInfoSDKType[];
 }
-/** Information about a chunk of an artifact. */
+/**
+ * Information about a chunk of an artifact.
+ * @name ChunkInfo
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.ChunkInfo
+ */
 export interface ChunkInfo {
-  /** The SHA-512 hash of the chunk contents. */
+  /**
+   * The SHA-512 hash of the chunk contents.
+   */
   sha512: string;
-  /** The chunk size in bytes. */
+  /**
+   * The chunk size in bytes.
+   */
   sizeBytes: bigint;
-  /** The current state of the chunk. */
+  /**
+   * The current state of the chunk.
+   */
   state: ChunkState;
 }
 export interface ChunkInfoProtoMsg {
   typeUrl: '/agoric.swingset.ChunkInfo';
   value: Uint8Array;
 }
-/** Information about a chunk of an artifact. */
+/**
+ * Information about a chunk of an artifact.
+ * @name ChunkInfoSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.ChunkInfo
+ */
 export interface ChunkInfoSDKType {
   sha512: string;
   size_bytes: bigint;
@@ -394,9 +518,14 @@ export interface ChunkInfoSDKType {
  * This list is not circular and has no sentinel head node; the start and end
  * are indicated by prev_id/next_id being 0.
  * The keeper uses this to expediently expire stale incomplete artifacts.
+ * @name ChunkedArtifactNode
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.ChunkedArtifactNode
  */
 export interface ChunkedArtifactNode {
-  /** The id of the pending bundle installation. */
+  /**
+   * The id of the pending bundle installation.
+   */
   chunkedArtifactId: bigint;
   /**
    * The ID of the next chunked artifact in the list.
@@ -408,9 +537,13 @@ export interface ChunkedArtifactNode {
    * A value of 0 indicates the start of the list.
    */
   prevId: bigint;
-  /** The time at which the pending installation began, in UNIX epoch seconds. */
+  /**
+   * The time at which the pending installation began, in UNIX epoch seconds.
+   */
   startTimeUnix: bigint;
-  /** The block at which the pending installation began. */
+  /**
+   * The block at which the pending installation began.
+   */
   startBlockHeight: bigint;
 }
 export interface ChunkedArtifactNodeProtoMsg {
@@ -423,6 +556,9 @@ export interface ChunkedArtifactNodeProtoMsg {
  * This list is not circular and has no sentinel head node; the start and end
  * are indicated by prev_id/next_id being 0.
  * The keeper uses this to expediently expire stale incomplete artifacts.
+ * @name ChunkedArtifactNodeSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.ChunkedArtifactNode
  */
 export interface ChunkedArtifactNodeSDKType {
   chunked_artifact_id: bigint;
@@ -438,6 +574,14 @@ function createBaseCoreEvalProposal(): CoreEvalProposal {
     evals: [],
   };
 }
+/**
+ * CoreEvalProposal is a gov Content type for evaluating code in the SwingSet
+ * core.
+ * See `bridgeCoreEval` in agoric-sdk packages/vats/src/core/chain-behaviors.js.
+ * @name CoreEvalProposal
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.CoreEvalProposal
+ */
 export const CoreEvalProposal = {
   typeUrl: '/agoric.swingset.CoreEvalProposal' as const,
   encode(
@@ -526,6 +670,13 @@ function createBaseCoreEval(): CoreEval {
     jsCode: '',
   };
 }
+/**
+ * CoreEval defines an individual SwingSet core evaluation, for use in
+ * CoreEvalProposal.
+ * @name CoreEval
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.CoreEval
+ */
 export const CoreEval = {
   typeUrl: '/agoric.swingset.CoreEval' as const,
   encode(
@@ -607,6 +758,12 @@ function createBaseParams(): Params {
     chunkSizeLimitBytes: BigInt(0),
   };
 }
+/**
+ * Params are the swingset configuration/governance parameters.
+ * @name Params
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.Params
+ */
 export const Params = {
   typeUrl: '/agoric.swingset.Params' as const,
   encode(
@@ -845,6 +1002,12 @@ function createBaseState(): State {
     nextChunkedArtifactId: BigInt(0),
   };
 }
+/**
+ * The current state of the module.
+ * @name State
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.State
+ */
 export const State = {
   typeUrl: '/agoric.swingset.State' as const,
   encode(
@@ -971,6 +1134,12 @@ function createBaseStringBeans(): StringBeans {
     beans: '',
   };
 }
+/**
+ * Map element of a string key to a Nat bean count.
+ * @name StringBeans
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.StringBeans
+ */
 export const StringBeans = {
   typeUrl: '/agoric.swingset.StringBeans' as const,
   encode(
@@ -1043,6 +1212,12 @@ function createBasePowerFlagFee(): PowerFlagFee {
     fee: [],
   };
 }
+/**
+ * Map a provisioning power flag to its corresponding fee.
+ * @name PowerFlagFee
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.PowerFlagFee
+ */
 export const PowerFlagFee = {
   typeUrl: '/agoric.swingset.PowerFlagFee' as const,
   encode(
@@ -1121,6 +1296,13 @@ function createBaseQueueSize(): QueueSize {
     size: 0,
   };
 }
+/**
+ * Map element of a string key to a size.
+ * TODO: Replace with UintMapEntry?
+ * @name QueueSize
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueueSize
+ */
 export const QueueSize = {
   typeUrl: '/agoric.swingset.QueueSize' as const,
   encode(
@@ -1193,6 +1375,14 @@ function createBaseUintMapEntry(): UintMapEntry {
     value: '',
   };
 }
+/**
+ * Map element of a string key to an unsigned integer.
+ * The value uses cosmos-sdk Uint rather than a native Go type to ensure that
+ * zeroes survive "omitempty" JSON serialization.
+ * @name UintMapEntry
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.UintMapEntry
+ */
 export const UintMapEntry = {
   typeUrl: '/agoric.swingset.UintMapEntry' as const,
   encode(
@@ -1266,6 +1456,12 @@ function createBaseEgress(): Egress {
     powerFlags: [],
   };
 }
+/**
+ * Egress is the format for a swingset egress.
+ * @name Egress
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.Egress
+ */
 export const Egress = {
   typeUrl: '/agoric.swingset.Egress' as const,
   encode(
@@ -1358,6 +1554,15 @@ function createBaseSwingStoreArtifact(): SwingStoreArtifact {
     data: new Uint8Array(),
   };
 }
+/**
+ * SwingStoreArtifact encodes an artifact of a swing-store export.
+ * Artifacts may be stored or transmitted in any order. Most handlers do
+ * maintain the artifact order from their original source as an effect of how
+ * they handle the artifacts.
+ * @name SwingStoreArtifact
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.SwingStoreArtifact
+ */
 export const SwingStoreArtifact = {
   typeUrl: '/agoric.swingset.SwingStoreArtifact' as const,
   encode(
@@ -1439,6 +1644,14 @@ function createBaseChunkedArtifact(): ChunkedArtifact {
     chunks: [],
   };
 }
+/**
+ * ChunkedArtifact is the manifest for an artifact that is submitted across
+ * multiple transactions, in chunks, as when using InstallBundle to submit
+ * chunks.
+ * @name ChunkedArtifact
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.ChunkedArtifact
+ */
 export const ChunkedArtifact = {
   typeUrl: '/agoric.swingset.ChunkedArtifact' as const,
   encode(
@@ -1535,6 +1748,12 @@ function createBaseChunkInfo(): ChunkInfo {
     state: 0,
   };
 }
+/**
+ * Information about a chunk of an artifact.
+ * @name ChunkInfo
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.ChunkInfo
+ */
 export const ChunkInfo = {
   typeUrl: '/agoric.swingset.ChunkInfo' as const,
   encode(
@@ -1626,6 +1845,16 @@ function createBaseChunkedArtifactNode(): ChunkedArtifactNode {
     startBlockHeight: BigInt(0),
   };
 }
+/**
+ * A node in a doubly-linked-list of chunked artifacts, as used for chunked
+ * bundle installation, in order of ascending block time.
+ * This list is not circular and has no sentinel head node; the start and end
+ * are indicated by prev_id/next_id being 0.
+ * The keeper uses this to expediently expire stale incomplete artifacts.
+ * @name ChunkedArtifactNode
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.ChunkedArtifactNode
+ */
 export const ChunkedArtifactNode = {
   typeUrl: '/agoric.swingset.ChunkedArtifactNode' as const,
   encode(

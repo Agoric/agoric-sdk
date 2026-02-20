@@ -4,29 +4,53 @@ import { type JsonSafe } from '../../../../json-safe.js';
 import { isSet } from '../../../../helpers.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
-/** GenesisState defines 08-wasm's keeper genesis state */
+/**
+ * GenesisState defines 08-wasm's keeper genesis state
+ * @name GenesisState
+ * @package ibc.lightclients.wasm.v1
+ * @see proto type: ibc.lightclients.wasm.v1.GenesisState
+ */
 export interface GenesisState {
-  /** uploaded light client wasm contracts */
+  /**
+   * uploaded light client wasm contracts
+   */
   contracts: Contract[];
 }
 export interface GenesisStateProtoMsg {
   typeUrl: '/ibc.lightclients.wasm.v1.GenesisState';
   value: Uint8Array;
 }
-/** GenesisState defines 08-wasm's keeper genesis state */
+/**
+ * GenesisState defines 08-wasm's keeper genesis state
+ * @name GenesisStateSDKType
+ * @package ibc.lightclients.wasm.v1
+ * @see proto type: ibc.lightclients.wasm.v1.GenesisState
+ */
 export interface GenesisStateSDKType {
   contracts: ContractSDKType[];
 }
-/** Contract stores contract code */
+/**
+ * Contract stores contract code
+ * @name Contract
+ * @package ibc.lightclients.wasm.v1
+ * @see proto type: ibc.lightclients.wasm.v1.Contract
+ */
 export interface Contract {
-  /** contract byte code */
+  /**
+   * contract byte code
+   */
   codeBytes: Uint8Array;
 }
 export interface ContractProtoMsg {
   typeUrl: '/ibc.lightclients.wasm.v1.Contract';
   value: Uint8Array;
 }
-/** Contract stores contract code */
+/**
+ * Contract stores contract code
+ * @name ContractSDKType
+ * @package ibc.lightclients.wasm.v1
+ * @see proto type: ibc.lightclients.wasm.v1.Contract
+ */
 export interface ContractSDKType {
   code_bytes: Uint8Array;
 }
@@ -35,6 +59,12 @@ function createBaseGenesisState(): GenesisState {
     contracts: [],
   };
 }
+/**
+ * GenesisState defines 08-wasm's keeper genesis state
+ * @name GenesisState
+ * @package ibc.lightclients.wasm.v1
+ * @see proto type: ibc.lightclients.wasm.v1.GenesisState
+ */
 export const GenesisState = {
   typeUrl: '/ibc.lightclients.wasm.v1.GenesisState' as const,
   encode(
@@ -106,6 +136,12 @@ function createBaseContract(): Contract {
     codeBytes: new Uint8Array(),
   };
 }
+/**
+ * Contract stores contract code
+ * @name Contract
+ * @package ibc.lightclients.wasm.v1
+ * @see proto type: ibc.lightclients.wasm.v1.Contract
+ */
 export const Contract = {
   typeUrl: '/ibc.lightclients.wasm.v1.Contract' as const,
   encode(

@@ -11,6 +11,11 @@ import { EvidenceList, type EvidenceListSDKType } from './evidence.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
+/**
+ * @name Block
+ * @package tendermint.types
+ * @see proto type: tendermint.types.Block
+ */
 export interface Block {
   header: Header;
   data: Data;
@@ -21,6 +26,11 @@ export interface BlockProtoMsg {
   typeUrl: '/tendermint.types.Block';
   value: Uint8Array;
 }
+/**
+ * @name BlockSDKType
+ * @package tendermint.types
+ * @see proto type: tendermint.types.Block
+ */
 export interface BlockSDKType {
   header: HeaderSDKType;
   data: DataSDKType;
@@ -35,6 +45,11 @@ function createBaseBlock(): Block {
     lastCommit: undefined,
   };
 }
+/**
+ * @name Block
+ * @package tendermint.types
+ * @see proto type: tendermint.types.Block
+ */
 export const Block = {
   typeUrl: '/tendermint.types.Block' as const,
   encode(

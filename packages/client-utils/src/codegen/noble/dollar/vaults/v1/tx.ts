@@ -10,7 +10,12 @@ import {
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
-/** MsgLock is a message holders of the Noble Dollar can use to lock their $USDN into a Vault to earn rewards. */
+/**
+ * MsgLock is a message holders of the Noble Dollar can use to lock their $USDN into a Vault to earn rewards.
+ * @name MsgLock
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.MsgLock
+ */
 export interface MsgLock {
   signer: string;
   vault: VaultType;
@@ -20,21 +25,41 @@ export interface MsgLockProtoMsg {
   typeUrl: '/noble.dollar.vaults.v1.MsgLock';
   value: Uint8Array;
 }
-/** MsgLock is a message holders of the Noble Dollar can use to lock their $USDN into a Vault to earn rewards. */
+/**
+ * MsgLock is a message holders of the Noble Dollar can use to lock their $USDN into a Vault to earn rewards.
+ * @name MsgLockSDKType
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.MsgLock
+ */
 export interface MsgLockSDKType {
   signer: string;
   vault: VaultType;
   amount: string;
 }
-/** MsgLockResponse is the response of the Lock message. */
+/**
+ * MsgLockResponse is the response of the Lock message.
+ * @name MsgLockResponse
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.MsgLockResponse
+ */
 export interface MsgLockResponse {}
 export interface MsgLockResponseProtoMsg {
   typeUrl: '/noble.dollar.vaults.v1.MsgLockResponse';
   value: Uint8Array;
 }
-/** MsgLockResponse is the response of the Lock message. */
+/**
+ * MsgLockResponse is the response of the Lock message.
+ * @name MsgLockResponseSDKType
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.MsgLockResponse
+ */
 export interface MsgLockResponseSDKType {}
-/** MsgUnlock is a message that allows holders of the Noble Dollar to unlock their $USDN from a Vault, releasing their funds and claiming any available rewards. */
+/**
+ * MsgUnlock is a message that allows holders of the Noble Dollar to unlock their $USDN from a Vault, releasing their funds and claiming any available rewards.
+ * @name MsgUnlock
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.MsgUnlock
+ */
 export interface MsgUnlock {
   signer: string;
   vault: VaultType;
@@ -44,21 +69,41 @@ export interface MsgUnlockProtoMsg {
   typeUrl: '/noble.dollar.vaults.v1.MsgUnlock';
   value: Uint8Array;
 }
-/** MsgUnlock is a message that allows holders of the Noble Dollar to unlock their $USDN from a Vault, releasing their funds and claiming any available rewards. */
+/**
+ * MsgUnlock is a message that allows holders of the Noble Dollar to unlock their $USDN from a Vault, releasing their funds and claiming any available rewards.
+ * @name MsgUnlockSDKType
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.MsgUnlock
+ */
 export interface MsgUnlockSDKType {
   signer: string;
   vault: VaultType;
   amount: string;
 }
-/** MsgLockResponse is the response of the Unlock message. */
+/**
+ * MsgLockResponse is the response of the Unlock message.
+ * @name MsgUnlockResponse
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.MsgUnlockResponse
+ */
 export interface MsgUnlockResponse {}
 export interface MsgUnlockResponseProtoMsg {
   typeUrl: '/noble.dollar.vaults.v1.MsgUnlockResponse';
   value: Uint8Array;
 }
-/** MsgLockResponse is the response of the Unlock message. */
+/**
+ * MsgLockResponse is the response of the Unlock message.
+ * @name MsgUnlockResponseSDKType
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.MsgUnlockResponse
+ */
 export interface MsgUnlockResponseSDKType {}
-/** MsgSetPausedState allows the authority to configure the Noble Dollar Vault paused state, enabling or disabling Lock and Unlock actions. */
+/**
+ * MsgSetPausedState allows the authority to configure the Noble Dollar Vault paused state, enabling or disabling Lock and Unlock actions.
+ * @name MsgSetPausedState
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.MsgSetPausedState
+ */
 export interface MsgSetPausedState {
   signer: string;
   paused: PausedType;
@@ -67,18 +112,33 @@ export interface MsgSetPausedStateProtoMsg {
   typeUrl: '/noble.dollar.vaults.v1.MsgSetPausedState';
   value: Uint8Array;
 }
-/** MsgSetPausedState allows the authority to configure the Noble Dollar Vault paused state, enabling or disabling Lock and Unlock actions. */
+/**
+ * MsgSetPausedState allows the authority to configure the Noble Dollar Vault paused state, enabling or disabling Lock and Unlock actions.
+ * @name MsgSetPausedStateSDKType
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.MsgSetPausedState
+ */
 export interface MsgSetPausedStateSDKType {
   signer: string;
   paused: PausedType;
 }
-/** MsgSetPausedStateResponse is the response of the SetPausedState message. */
+/**
+ * MsgSetPausedStateResponse is the response of the SetPausedState message.
+ * @name MsgSetPausedStateResponse
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.MsgSetPausedStateResponse
+ */
 export interface MsgSetPausedStateResponse {}
 export interface MsgSetPausedStateResponseProtoMsg {
   typeUrl: '/noble.dollar.vaults.v1.MsgSetPausedStateResponse';
   value: Uint8Array;
 }
-/** MsgSetPausedStateResponse is the response of the SetPausedState message. */
+/**
+ * MsgSetPausedStateResponse is the response of the SetPausedState message.
+ * @name MsgSetPausedStateResponseSDKType
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.MsgSetPausedStateResponse
+ */
 export interface MsgSetPausedStateResponseSDKType {}
 function createBaseMsgLock(): MsgLock {
   return {
@@ -87,6 +147,12 @@ function createBaseMsgLock(): MsgLock {
     amount: '',
   };
 }
+/**
+ * MsgLock is a message holders of the Noble Dollar can use to lock their $USDN into a Vault to earn rewards.
+ * @name MsgLock
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.MsgLock
+ */
 export const MsgLock = {
   typeUrl: '/noble.dollar.vaults.v1.MsgLock' as const,
   encode(
@@ -165,6 +231,12 @@ export const MsgLock = {
 function createBaseMsgLockResponse(): MsgLockResponse {
   return {};
 }
+/**
+ * MsgLockResponse is the response of the Lock message.
+ * @name MsgLockResponse
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.MsgLockResponse
+ */
 export const MsgLockResponse = {
   typeUrl: '/noble.dollar.vaults.v1.MsgLockResponse' as const,
   encode(
@@ -219,6 +291,12 @@ function createBaseMsgUnlock(): MsgUnlock {
     amount: '',
   };
 }
+/**
+ * MsgUnlock is a message that allows holders of the Noble Dollar to unlock their $USDN from a Vault, releasing their funds and claiming any available rewards.
+ * @name MsgUnlock
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.MsgUnlock
+ */
 export const MsgUnlock = {
   typeUrl: '/noble.dollar.vaults.v1.MsgUnlock' as const,
   encode(
@@ -297,6 +375,12 @@ export const MsgUnlock = {
 function createBaseMsgUnlockResponse(): MsgUnlockResponse {
   return {};
 }
+/**
+ * MsgLockResponse is the response of the Unlock message.
+ * @name MsgUnlockResponse
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.MsgUnlockResponse
+ */
 export const MsgUnlockResponse = {
   typeUrl: '/noble.dollar.vaults.v1.MsgUnlockResponse' as const,
   encode(
@@ -350,6 +434,12 @@ function createBaseMsgSetPausedState(): MsgSetPausedState {
     paused: 0,
   };
 }
+/**
+ * MsgSetPausedState allows the authority to configure the Noble Dollar Vault paused state, enabling or disabling Lock and Unlock actions.
+ * @name MsgSetPausedState
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.MsgSetPausedState
+ */
 export const MsgSetPausedState = {
   typeUrl: '/noble.dollar.vaults.v1.MsgSetPausedState' as const,
   encode(
@@ -420,6 +510,12 @@ export const MsgSetPausedState = {
 function createBaseMsgSetPausedStateResponse(): MsgSetPausedStateResponse {
   return {};
 }
+/**
+ * MsgSetPausedStateResponse is the response of the SetPausedState message.
+ * @name MsgSetPausedStateResponse
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.MsgSetPausedStateResponse
+ */
 export const MsgSetPausedStateResponse = {
   typeUrl: '/noble.dollar.vaults.v1.MsgSetPausedStateResponse' as const,
   encode(

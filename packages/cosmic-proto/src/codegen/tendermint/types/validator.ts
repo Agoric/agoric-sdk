@@ -52,6 +52,11 @@ export function blockIDFlagToJSON(object: BlockIDFlag): string {
       return 'UNRECOGNIZED';
   }
 }
+/**
+ * @name ValidatorSet
+ * @package tendermint.types
+ * @see proto type: tendermint.types.ValidatorSet
+ */
 export interface ValidatorSet {
   validators: Validator[];
   proposer?: Validator;
@@ -61,11 +66,21 @@ export interface ValidatorSetProtoMsg {
   typeUrl: '/tendermint.types.ValidatorSet';
   value: Uint8Array;
 }
+/**
+ * @name ValidatorSetSDKType
+ * @package tendermint.types
+ * @see proto type: tendermint.types.ValidatorSet
+ */
 export interface ValidatorSetSDKType {
   validators: ValidatorSDKType[];
   proposer?: ValidatorSDKType;
   total_voting_power: bigint;
 }
+/**
+ * @name Validator
+ * @package tendermint.types
+ * @see proto type: tendermint.types.Validator
+ */
 export interface Validator {
   address: Uint8Array;
   pubKey: PublicKey;
@@ -76,12 +91,22 @@ export interface ValidatorProtoMsg {
   typeUrl: '/tendermint.types.Validator';
   value: Uint8Array;
 }
+/**
+ * @name ValidatorSDKType
+ * @package tendermint.types
+ * @see proto type: tendermint.types.Validator
+ */
 export interface ValidatorSDKType {
   address: Uint8Array;
   pub_key: PublicKeySDKType;
   voting_power: bigint;
   proposer_priority: bigint;
 }
+/**
+ * @name SimpleValidator
+ * @package tendermint.types
+ * @see proto type: tendermint.types.SimpleValidator
+ */
 export interface SimpleValidator {
   pubKey?: PublicKey;
   votingPower: bigint;
@@ -90,6 +115,11 @@ export interface SimpleValidatorProtoMsg {
   typeUrl: '/tendermint.types.SimpleValidator';
   value: Uint8Array;
 }
+/**
+ * @name SimpleValidatorSDKType
+ * @package tendermint.types
+ * @see proto type: tendermint.types.SimpleValidator
+ */
 export interface SimpleValidatorSDKType {
   pub_key?: PublicKeySDKType;
   voting_power: bigint;
@@ -101,8 +131,31 @@ function createBaseValidatorSet(): ValidatorSet {
     totalVotingPower: BigInt(0),
   };
 }
+/**
+ * @name ValidatorSet
+ * @package tendermint.types
+ * @see proto type: tendermint.types.ValidatorSet
+ */
 export const ValidatorSet = {
   typeUrl: '/tendermint.types.ValidatorSet' as const,
+  is(o: any): o is ValidatorSet {
+    return (
+      o &&
+      (o.$typeUrl === ValidatorSet.typeUrl ||
+        (Array.isArray(o.validators) &&
+          (!o.validators.length || Validator.is(o.validators[0])) &&
+          typeof o.totalVotingPower === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is ValidatorSetSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ValidatorSet.typeUrl ||
+        (Array.isArray(o.validators) &&
+          (!o.validators.length || Validator.isSDK(o.validators[0])) &&
+          typeof o.total_voting_power === 'bigint'))
+    );
+  },
   encode(
     message: ValidatorSet,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -209,8 +262,33 @@ function createBaseValidator(): Validator {
     proposerPriority: BigInt(0),
   };
 }
+/**
+ * @name Validator
+ * @package tendermint.types
+ * @see proto type: tendermint.types.Validator
+ */
 export const Validator = {
   typeUrl: '/tendermint.types.Validator' as const,
+  is(o: any): o is Validator {
+    return (
+      o &&
+      (o.$typeUrl === Validator.typeUrl ||
+        ((o.address instanceof Uint8Array || typeof o.address === 'string') &&
+          PublicKey.is(o.pubKey) &&
+          typeof o.votingPower === 'bigint' &&
+          typeof o.proposerPriority === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is ValidatorSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Validator.typeUrl ||
+        ((o.address instanceof Uint8Array || typeof o.address === 'string') &&
+          PublicKey.isSDK(o.pub_key) &&
+          typeof o.voting_power === 'bigint' &&
+          typeof o.proposer_priority === 'bigint'))
+    );
+  },
   encode(
     message: Validator,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -326,8 +404,27 @@ function createBaseSimpleValidator(): SimpleValidator {
     votingPower: BigInt(0),
   };
 }
+/**
+ * @name SimpleValidator
+ * @package tendermint.types
+ * @see proto type: tendermint.types.SimpleValidator
+ */
 export const SimpleValidator = {
   typeUrl: '/tendermint.types.SimpleValidator' as const,
+  is(o: any): o is SimpleValidator {
+    return (
+      o &&
+      (o.$typeUrl === SimpleValidator.typeUrl ||
+        typeof o.votingPower === 'bigint')
+    );
+  },
+  isSDK(o: any): o is SimpleValidatorSDKType {
+    return (
+      o &&
+      (o.$typeUrl === SimpleValidator.typeUrl ||
+        typeof o.voting_power === 'bigint')
+    );
+  },
   encode(
     message: SimpleValidator,
     writer: BinaryWriter = BinaryWriter.create(),

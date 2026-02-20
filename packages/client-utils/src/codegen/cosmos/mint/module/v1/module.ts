@@ -2,17 +2,29 @@
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
-/** Module is the config object of the mint module. */
+/**
+ * Module is the config object of the mint module.
+ * @name Module
+ * @package cosmos.mint.module.v1
+ * @see proto type: cosmos.mint.module.v1.Module
+ */
 export interface Module {
   feeCollectorName: string;
-  /** authority defines the custom module authority. If not set, defaults to the governance module. */
+  /**
+   * authority defines the custom module authority. If not set, defaults to the governance module.
+   */
   authority: string;
 }
 export interface ModuleProtoMsg {
   typeUrl: '/cosmos.mint.module.v1.Module';
   value: Uint8Array;
 }
-/** Module is the config object of the mint module. */
+/**
+ * Module is the config object of the mint module.
+ * @name ModuleSDKType
+ * @package cosmos.mint.module.v1
+ * @see proto type: cosmos.mint.module.v1.Module
+ */
 export interface ModuleSDKType {
   fee_collector_name: string;
   authority: string;
@@ -23,6 +35,12 @@ function createBaseModule(): Module {
     authority: '',
   };
 }
+/**
+ * Module is the config object of the mint module.
+ * @name Module
+ * @package cosmos.mint.module.v1
+ * @see proto type: cosmos.mint.module.v1.Module
+ */
 export const Module = {
   typeUrl: '/cosmos.mint.module.v1.Module' as const,
   encode(

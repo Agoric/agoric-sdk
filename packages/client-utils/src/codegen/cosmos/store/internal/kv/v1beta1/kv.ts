@@ -4,7 +4,12 @@ import { type JsonSafe } from '../../../../../json-safe.js';
 import { isSet } from '../../../../../helpers.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
-/** Pairs defines a repeated slice of Pair objects. */
+/**
+ * Pairs defines a repeated slice of Pair objects.
+ * @name Pairs
+ * @package cosmos.store.internal.kv.v1beta1
+ * @see proto type: cosmos.store.internal.kv.v1beta1.Pairs
+ */
 export interface Pairs {
   pairs: Pair[];
 }
@@ -12,11 +17,21 @@ export interface PairsProtoMsg {
   typeUrl: '/cosmos.store.internal.kv.v1beta1.Pairs';
   value: Uint8Array;
 }
-/** Pairs defines a repeated slice of Pair objects. */
+/**
+ * Pairs defines a repeated slice of Pair objects.
+ * @name PairsSDKType
+ * @package cosmos.store.internal.kv.v1beta1
+ * @see proto type: cosmos.store.internal.kv.v1beta1.Pairs
+ */
 export interface PairsSDKType {
   pairs: PairSDKType[];
 }
-/** Pair defines a key/value bytes tuple. */
+/**
+ * Pair defines a key/value bytes tuple.
+ * @name Pair
+ * @package cosmos.store.internal.kv.v1beta1
+ * @see proto type: cosmos.store.internal.kv.v1beta1.Pair
+ */
 export interface Pair {
   key: Uint8Array;
   value: Uint8Array;
@@ -25,7 +40,12 @@ export interface PairProtoMsg {
   typeUrl: '/cosmos.store.internal.kv.v1beta1.Pair';
   value: Uint8Array;
 }
-/** Pair defines a key/value bytes tuple. */
+/**
+ * Pair defines a key/value bytes tuple.
+ * @name PairSDKType
+ * @package cosmos.store.internal.kv.v1beta1
+ * @see proto type: cosmos.store.internal.kv.v1beta1.Pair
+ */
 export interface PairSDKType {
   key: Uint8Array;
   value: Uint8Array;
@@ -35,6 +55,12 @@ function createBasePairs(): Pairs {
     pairs: [],
   };
 }
+/**
+ * Pairs defines a repeated slice of Pair objects.
+ * @name Pairs
+ * @package cosmos.store.internal.kv.v1beta1
+ * @see proto type: cosmos.store.internal.kv.v1beta1.Pairs
+ */
 export const Pairs = {
   typeUrl: '/cosmos.store.internal.kv.v1beta1.Pairs' as const,
   encode(
@@ -104,6 +130,12 @@ function createBasePair(): Pair {
     value: new Uint8Array(),
   };
 }
+/**
+ * Pair defines a key/value bytes tuple.
+ * @name Pair
+ * @package cosmos.store.internal.kv.v1beta1
+ * @see proto type: cosmos.store.internal.kv.v1beta1.Pair
+ */
 export const Pair = {
   typeUrl: '/cosmos.store.internal.kv.v1beta1.Pair' as const,
   encode(

@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { type Rpc } from '../../../../../helpers.js';
+import { TxRpc } from '../../../../../types.js';
 import { BinaryReader } from '../../../../../binary.js';
 import {
   MsgRegisterInterchainAccount,
@@ -21,8 +21,8 @@ export interface Msg {
   updateParams(request: MsgUpdateParams): Promise<MsgUpdateParamsResponse>;
 }
 export class MsgClientImpl implements Msg {
-  private readonly rpc: Rpc;
-  constructor(rpc: Rpc) {
+  private readonly rpc: TxRpc;
+  constructor(rpc: TxRpc) {
     this.rpc = rpc;
     this.registerInterchainAccount = this.registerInterchainAccount.bind(this);
     this.sendTx = this.sendTx.bind(this);
@@ -64,3 +64,6 @@ export class MsgClientImpl implements Msg {
     );
   }
 }
+export const createClientImpl = (rpc: TxRpc) => {
+  return new MsgClientImpl(rpc);
+};

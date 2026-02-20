@@ -6,11 +6,18 @@ import { type JsonSafe } from '../../../../json-safe.js';
 /**
  * ClientState defines a loopback (localhost) client. It requires (read-only)
  * access to keys outside the client prefix.
+ * @name ClientState
+ * @package ibc.lightclients.localhost.v1
+ * @see proto type: ibc.lightclients.localhost.v1.ClientState
  */
 export interface ClientState {
-  /** self chain ID */
+  /**
+   * self chain ID
+   */
   chainId: string;
-  /** self latest block height */
+  /**
+   * self latest block height
+   */
   height: Height;
 }
 export interface ClientStateProtoMsg {
@@ -20,6 +27,9 @@ export interface ClientStateProtoMsg {
 /**
  * ClientState defines a loopback (localhost) client. It requires (read-only)
  * access to keys outside the client prefix.
+ * @name ClientStateSDKType
+ * @package ibc.lightclients.localhost.v1
+ * @see proto type: ibc.lightclients.localhost.v1.ClientState
  */
 export interface ClientStateSDKType {
   chain_id: string;
@@ -31,6 +41,13 @@ function createBaseClientState(): ClientState {
     height: Height.fromPartial({}),
   };
 }
+/**
+ * ClientState defines a loopback (localhost) client. It requires (read-only)
+ * access to keys outside the client prefix.
+ * @name ClientState
+ * @package ibc.lightclients.localhost.v1
+ * @see proto type: ibc.lightclients.localhost.v1.ClientState
+ */
 export const ClientState = {
   typeUrl: '/ibc.lightclients.localhost.v1.ClientState' as const,
   encode(

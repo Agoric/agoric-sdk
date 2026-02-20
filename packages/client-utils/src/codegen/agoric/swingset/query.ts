@@ -12,28 +12,55 @@ import { type JsonSafe } from '../../json-safe.js';
 import { isSet } from '../../helpers.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
-/** QueryParamsRequest is the request type for the Query/Params RPC method. */
+/**
+ * QueryParamsRequest is the request type for the Query/Params RPC method.
+ * @name QueryParamsRequest
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryParamsRequest
+ */
 export interface QueryParamsRequest {}
 export interface QueryParamsRequestProtoMsg {
   typeUrl: '/agoric.swingset.QueryParamsRequest';
   value: Uint8Array;
 }
-/** QueryParamsRequest is the request type for the Query/Params RPC method. */
+/**
+ * QueryParamsRequest is the request type for the Query/Params RPC method.
+ * @name QueryParamsRequestSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryParamsRequest
+ */
 export interface QueryParamsRequestSDKType {}
-/** QueryParamsResponse is the response type for the Query/Params RPC method. */
+/**
+ * QueryParamsResponse is the response type for the Query/Params RPC method.
+ * @name QueryParamsResponse
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryParamsResponse
+ */
 export interface QueryParamsResponse {
-  /** params defines the parameters of the module. */
+  /**
+   * params defines the parameters of the module.
+   */
   params: Params;
 }
 export interface QueryParamsResponseProtoMsg {
   typeUrl: '/agoric.swingset.QueryParamsResponse';
   value: Uint8Array;
 }
-/** QueryParamsResponse is the response type for the Query/Params RPC method. */
+/**
+ * QueryParamsResponse is the response type for the Query/Params RPC method.
+ * @name QueryParamsResponseSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryParamsResponse
+ */
 export interface QueryParamsResponseSDKType {
   params: ParamsSDKType;
 }
-/** QueryEgressRequest is the request type for the Query/Egress RPC method */
+/**
+ * QueryEgressRequest is the request type for the Query/Egress RPC method
+ * @name QueryEgressRequest
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryEgressRequest
+ */
 export interface QueryEgressRequest {
   peer: Uint8Array;
 }
@@ -41,11 +68,21 @@ export interface QueryEgressRequestProtoMsg {
   typeUrl: '/agoric.swingset.QueryEgressRequest';
   value: Uint8Array;
 }
-/** QueryEgressRequest is the request type for the Query/Egress RPC method */
+/**
+ * QueryEgressRequest is the request type for the Query/Egress RPC method
+ * @name QueryEgressRequestSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryEgressRequest
+ */
 export interface QueryEgressRequestSDKType {
   peer: Uint8Array;
 }
-/** QueryEgressResponse is the egress response. */
+/**
+ * QueryEgressResponse is the egress response.
+ * @name QueryEgressResponse
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryEgressResponse
+ */
 export interface QueryEgressResponse {
   egress?: Egress;
 }
@@ -53,11 +90,21 @@ export interface QueryEgressResponseProtoMsg {
   typeUrl: '/agoric.swingset.QueryEgressResponse';
   value: Uint8Array;
 }
-/** QueryEgressResponse is the egress response. */
+/**
+ * QueryEgressResponse is the egress response.
+ * @name QueryEgressResponseSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryEgressResponse
+ */
 export interface QueryEgressResponseSDKType {
   egress?: EgressSDKType;
 }
-/** QueryMailboxRequest is the mailbox query. */
+/**
+ * QueryMailboxRequest is the mailbox query.
+ * @name QueryMailboxRequest
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryMailboxRequest
+ */
 export interface QueryMailboxRequest {
   peer: Uint8Array;
 }
@@ -65,11 +112,21 @@ export interface QueryMailboxRequestProtoMsg {
   typeUrl: '/agoric.swingset.QueryMailboxRequest';
   value: Uint8Array;
 }
-/** QueryMailboxRequest is the mailbox query. */
+/**
+ * QueryMailboxRequest is the mailbox query.
+ * @name QueryMailboxRequestSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryMailboxRequest
+ */
 export interface QueryMailboxRequestSDKType {
   peer: Uint8Array;
 }
-/** QueryMailboxResponse is the mailbox response. */
+/**
+ * QueryMailboxResponse is the mailbox response.
+ * @name QueryMailboxResponse
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryMailboxResponse
+ */
 export interface QueryMailboxResponse {
   value: string;
 }
@@ -77,11 +134,21 @@ export interface QueryMailboxResponseProtoMsg {
   typeUrl: '/agoric.swingset.QueryMailboxResponse';
   value: Uint8Array;
 }
-/** QueryMailboxResponse is the mailbox response. */
+/**
+ * QueryMailboxResponse is the mailbox response.
+ * @name QueryMailboxResponseSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryMailboxResponse
+ */
 export interface QueryMailboxResponseSDKType {
   value: string;
 }
-/** QueryChunkedArtifactStatusRequest is the request type for the Query/ChunkedArtifact RPC method. */
+/**
+ * QueryChunkedArtifactStatusRequest is the request type for the Query/ChunkedArtifact RPC method.
+ * @name QueryChunkedArtifactStatusRequest
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryChunkedArtifactStatusRequest
+ */
 export interface QueryChunkedArtifactStatusRequest {
   chunkedArtifactId: bigint;
 }
@@ -89,15 +156,27 @@ export interface QueryChunkedArtifactStatusRequestProtoMsg {
   typeUrl: '/agoric.swingset.QueryChunkedArtifactStatusRequest';
   value: Uint8Array;
 }
-/** QueryChunkedArtifactStatusRequest is the request type for the Query/ChunkedArtifact RPC method. */
+/**
+ * QueryChunkedArtifactStatusRequest is the request type for the Query/ChunkedArtifact RPC method.
+ * @name QueryChunkedArtifactStatusRequestSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryChunkedArtifactStatusRequest
+ */
 export interface QueryChunkedArtifactStatusRequestSDKType {
   chunked_artifact_id: bigint;
 }
-/** QueryChunkedArtifactStatusResponse is the response type for the Query/ChunkedArtifact RPC method. */
+/**
+ * QueryChunkedArtifactStatusResponse is the response type for the Query/ChunkedArtifact RPC method.
+ * @name QueryChunkedArtifactStatusResponse
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryChunkedArtifactStatusResponse
+ */
 export interface QueryChunkedArtifactStatusResponse {
   chunkedArtifactId: bigint;
   chunkedArtifact?: ChunkedArtifact;
-  /** Start time in UNIX epoch seconds. */
+  /**
+   * Start time in UNIX epoch seconds.
+   */
   startTimeUnix: bigint;
   startBlockHeight: bigint;
 }
@@ -105,7 +184,12 @@ export interface QueryChunkedArtifactStatusResponseProtoMsg {
   typeUrl: '/agoric.swingset.QueryChunkedArtifactStatusResponse';
   value: Uint8Array;
 }
-/** QueryChunkedArtifactStatusResponse is the response type for the Query/ChunkedArtifact RPC method. */
+/**
+ * QueryChunkedArtifactStatusResponse is the response type for the Query/ChunkedArtifact RPC method.
+ * @name QueryChunkedArtifactStatusResponseSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryChunkedArtifactStatusResponse
+ */
 export interface QueryChunkedArtifactStatusResponseSDKType {
   chunked_artifact_id: bigint;
   chunked_artifact?: ChunkedArtifactSDKType;
@@ -115,6 +199,12 @@ export interface QueryChunkedArtifactStatusResponseSDKType {
 function createBaseQueryParamsRequest(): QueryParamsRequest {
   return {};
 }
+/**
+ * QueryParamsRequest is the request type for the Query/Params RPC method.
+ * @name QueryParamsRequest
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryParamsRequest
+ */
 export const QueryParamsRequest = {
   typeUrl: '/agoric.swingset.QueryParamsRequest' as const,
   encode(
@@ -170,6 +260,12 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
     params: Params.fromPartial({}),
   };
 }
+/**
+ * QueryParamsResponse is the response type for the Query/Params RPC method.
+ * @name QueryParamsResponse
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryParamsResponse
+ */
 export const QueryParamsResponse = {
   typeUrl: '/agoric.swingset.QueryParamsResponse' as const,
   encode(
@@ -239,6 +335,12 @@ function createBaseQueryEgressRequest(): QueryEgressRequest {
     peer: new Uint8Array(),
   };
 }
+/**
+ * QueryEgressRequest is the request type for the Query/Egress RPC method
+ * @name QueryEgressRequest
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryEgressRequest
+ */
 export const QueryEgressRequest = {
   typeUrl: '/agoric.swingset.QueryEgressRequest' as const,
   encode(
@@ -309,6 +411,12 @@ function createBaseQueryEgressResponse(): QueryEgressResponse {
     egress: undefined,
   };
 }
+/**
+ * QueryEgressResponse is the egress response.
+ * @name QueryEgressResponse
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryEgressResponse
+ */
 export const QueryEgressResponse = {
   typeUrl: '/agoric.swingset.QueryEgressResponse' as const,
   encode(
@@ -378,6 +486,12 @@ function createBaseQueryMailboxRequest(): QueryMailboxRequest {
     peer: new Uint8Array(),
   };
 }
+/**
+ * QueryMailboxRequest is the mailbox query.
+ * @name QueryMailboxRequest
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryMailboxRequest
+ */
 export const QueryMailboxRequest = {
   typeUrl: '/agoric.swingset.QueryMailboxRequest' as const,
   encode(
@@ -448,6 +562,12 @@ function createBaseQueryMailboxResponse(): QueryMailboxResponse {
     value: '',
   };
 }
+/**
+ * QueryMailboxResponse is the mailbox response.
+ * @name QueryMailboxResponse
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryMailboxResponse
+ */
 export const QueryMailboxResponse = {
   typeUrl: '/agoric.swingset.QueryMailboxResponse' as const,
   encode(
@@ -513,6 +633,12 @@ function createBaseQueryChunkedArtifactStatusRequest(): QueryChunkedArtifactStat
     chunkedArtifactId: BigInt(0),
   };
 }
+/**
+ * QueryChunkedArtifactStatusRequest is the request type for the Query/ChunkedArtifact RPC method.
+ * @name QueryChunkedArtifactStatusRequest
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryChunkedArtifactStatusRequest
+ */
 export const QueryChunkedArtifactStatusRequest = {
   typeUrl: '/agoric.swingset.QueryChunkedArtifactStatusRequest' as const,
   encode(
@@ -598,6 +724,12 @@ function createBaseQueryChunkedArtifactStatusResponse(): QueryChunkedArtifactSta
     startBlockHeight: BigInt(0),
   };
 }
+/**
+ * QueryChunkedArtifactStatusResponse is the response type for the Query/ChunkedArtifact RPC method.
+ * @name QueryChunkedArtifactStatusResponse
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryChunkedArtifactStatusResponse
+ */
 export const QueryChunkedArtifactStatusResponse = {
   typeUrl: '/agoric.swingset.QueryChunkedArtifactStatusResponse' as const,
   encode(

@@ -2,6 +2,11 @@
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
+/**
+ * @name AddressUnbonding
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.AddressUnbonding
+ */
 export interface AddressUnbonding {
   address: string;
   receiver: string;
@@ -15,6 +20,11 @@ export interface AddressUnbondingProtoMsg {
   typeUrl: '/stride.stakeibc.AddressUnbonding';
   value: Uint8Array;
 }
+/**
+ * @name AddressUnbondingSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.AddressUnbonding
+ */
 export interface AddressUnbondingSDKType {
   address: string;
   receiver: string;
@@ -35,6 +45,11 @@ function createBaseAddressUnbonding(): AddressUnbonding {
     epochNumber: BigInt(0),
   };
 }
+/**
+ * @name AddressUnbonding
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.AddressUnbonding
+ */
 export const AddressUnbonding = {
   typeUrl: '/stride.stakeibc.AddressUnbonding' as const,
   encode(
