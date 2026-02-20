@@ -70,7 +70,7 @@ const makeTestContext = async () => {
   const cacheDir = pathResolve('..', 'bundles');
   const bundleCache = await provideBundleCache(cacheDir, {}, s => import(s));
 
-  const vizTool = pathResolve('..', 'tools', 'authorityViz.js');
+  const vizTool = pathResolve('..', 'scripts', 'authorityViz.js');
   const runViz = pspawn(vizTool, { spawn: ambientSpawn });
 
   return {

@@ -56,7 +56,7 @@ export type LiquidationSetup = {
 };
 
 // TODO read from the config file
-export const atomConfig = {
+const atomConfig = {
   oracleAddresses: [
     'agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr',
     'agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8',
@@ -69,15 +69,6 @@ export const atomConfig = {
 export const scale6 = x => BigInt(Math.round(x * 1_000_000));
 
 const DebtLimitValue = scale6(100_000);
-
-export const likePayouts = ({ Bid, Collateral }) => ({
-  Collateral: {
-    value: scale6(Collateral),
-  },
-  Bid: {
-    value: scale6(Bid),
-  },
-});
 
 /**
  * @deprecated liquidation is no longer supported

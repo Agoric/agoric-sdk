@@ -1,12 +1,12 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
-import { protoMsgMockMap } from '@aglocal/boot/tools/ibc/mocks.js';
+import { protoMsgMockMap } from '@aglocal/boot/ibc/mocks.js';
 import {
   AckBehavior,
   insistManagerType,
   makeSwingsetHarness,
-} from '@aglocal/boot/tools/supports.js';
+} from '@aglocal/boot/supports.js';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import {
   MsgDepositForBurn,

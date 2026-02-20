@@ -1,4 +1,4 @@
-import test from 'ava';
+import test, { type ExecutionContext } from 'ava';
 
 import {
   getYmaxStandaloneOperationData,
@@ -15,6 +15,25 @@ const MOCK_CONTRACT_ADDRESS =
   '0x1234567890123456789012345678901234567890' as const;
 const MOCK_TOKEN_ADDRESS =
   '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as const;
+
+type DomainThrowCase = {
+  title: string;
+  domain: Parameters<typeof validateYmaxDomain>[0];
+  message: RegExp;
+  validAddresses?: Record<string, `0x${string}`>;
+};
+
+const throwsYmaxDomainMacro = (
+  t: ExecutionContext,
+  { domain, message, validAddresses }: DomainThrowCase,
+) => {
+  t.throws(() => validateYmaxDomain(domain, validAddresses), {
+    message,
+  });
+};
+
+throwsYmaxDomainMacro.title = (_providedTitle, { title }: DomainThrowCase) =>
+  `validateYmaxDomain throws for ${title}`;
 
 test('getYmaxStandaloneOperationData for OpenPortfolio', t => {
   const allocations: TargetAllocation[] = [
@@ -211,31 +230,30 @@ test('validateYmaxDomain passes for valid domain', t => {
   t.notThrows(() => validateYmaxDomain(domain));
 });
 
-test('validateYmaxDomain throws for invalid name', t => {
-  const domain = {
-    name: 'WrongName',
-    version: '1',
-    chainId: 42161n,
-    verifyingContract: MOCK_CONTRACT_ADDRESS,
-  };
-
-  t.throws(() => validateYmaxDomain(domain), {
+for (const domainThrowCase of [
+  {
+    title: 'invalid name',
+    domain: {
+      name: 'WrongName',
+      version: '1',
+      chainId: 42161n,
+      verifyingContract: MOCK_CONTRACT_ADDRESS,
+    },
     message: /Invalid Ymax domain name/,
-  });
-});
-
-test('validateYmaxDomain throws for invalid version', t => {
-  const domain = {
-    name: 'Ymax',
-    version: '2',
-    chainId: 42161n,
-    verifyingContract: MOCK_CONTRACT_ADDRESS,
-  };
-
-  t.throws(() => validateYmaxDomain(domain), {
+  },
+  {
+    title: 'invalid version',
+    domain: {
+      name: 'Ymax',
+      version: '2',
+      chainId: 42161n,
+      verifyingContract: MOCK_CONTRACT_ADDRESS,
+    },
     message: /Invalid Ymax domain version/,
-  });
-});
+  },
+] satisfies DomainThrowCase[]) {
+  test(domainThrowCase.title, throwsYmaxDomainMacro, domainThrowCase);
+}
 
 test('validateYmaxDomain passes without verifyingContract when no validContractAddresses provided', t => {
   const domain = {
@@ -270,37 +288,36 @@ test('validateYmaxDomain validates contract addresses', t => {
   t.notThrows(() => validateYmaxDomain(domain, validAddresses));
 });
 
-test('validateYmaxDomain throws for unknown chain ID', t => {
-  const validAddresses = {
-    '42161': MOCK_CONTRACT_ADDRESS,
-  };
-  const domain = {
-    name: 'Ymax',
-    version: '1',
-    chainId: 1n, // mainnet, not in validAddresses
-    verifyingContract: MOCK_CONTRACT_ADDRESS,
-  };
-
-  t.throws(() => validateYmaxDomain(domain, validAddresses), {
+for (const domainThrowCase of [
+  {
+    title: 'unknown chain ID',
+    domain: {
+      name: 'Ymax',
+      version: '1',
+      chainId: 1n, // mainnet, not in validAddresses
+      verifyingContract: MOCK_CONTRACT_ADDRESS,
+    },
+    validAddresses: {
+      '42161': MOCK_CONTRACT_ADDRESS,
+    },
     message: /Unknown chain ID/,
-  });
-});
-
-test('validateYmaxDomain throws for wrong contract address', t => {
-  const validAddresses = {
-    '42161': MOCK_CONTRACT_ADDRESS,
-  };
-  const domain = {
-    name: 'Ymax',
-    version: '1',
-    chainId: 42161n,
-    verifyingContract: '0x0000000000000000000000000000000000000000' as const,
-  };
-
-  t.throws(() => validateYmaxDomain(domain, validAddresses), {
+  },
+  {
+    title: 'wrong contract address',
+    domain: {
+      name: 'Ymax',
+      version: '1',
+      chainId: 42161n,
+      verifyingContract: '0x0000000000000000000000000000000000000000' as const,
+    },
+    validAddresses: {
+      '42161': MOCK_CONTRACT_ADDRESS,
+    },
     message: /Invalid verifying contract/,
-  });
-});
+  },
+] satisfies DomainThrowCase[]) {
+  test(domainThrowCase.title, throwsYmaxDomainMacro, domainThrowCase);
+}
 
 test('validateYmaxOperationTypeName passes for valid types', t => {
   const validTypes: OperationTypeNames[] = [
@@ -322,40 +339,38 @@ test('validateYmaxOperationTypeName throws for invalid type', t => {
   });
 });
 
-test('splitWitnessFieldType parses OpenPortfolio witness type', t => {
-  t.deepEqual(splitWitnessFieldType('YmaxV1OpenPortfolio'), {
-    domain: { name: 'Ymax', version: '1' },
-    primaryType: 'OpenPortfolio',
-  });
-});
+type WitnessSplitCase = {
+  witnessType: `YmaxV${number}${OperationTypeNames}`;
+  primaryType: OperationTypeNames;
+};
 
-test('splitWitnessFieldType parses Deposit witness type', t => {
-  t.deepEqual(splitWitnessFieldType('YmaxV1Deposit'), {
+const splitWitnessFieldTypeMacro = (
+  t: ExecutionContext,
+  { witnessType, primaryType }: WitnessSplitCase,
+) => {
+  t.deepEqual(splitWitnessFieldType(witnessType), {
     domain: { name: 'Ymax', version: '1' },
-    primaryType: 'Deposit',
+    primaryType,
   });
-});
+};
 
-test('splitWitnessFieldType parses Withdraw witness type', t => {
-  t.deepEqual(splitWitnessFieldType('YmaxV1Withdraw'), {
-    domain: { name: 'Ymax', version: '1' },
-    primaryType: 'Withdraw',
-  });
-});
+splitWitnessFieldTypeMacro.title = (
+  _providedTitle,
+  { witnessType }: WitnessSplitCase,
+) => `splitWitnessFieldType parses ${witnessType}`;
 
-test('splitWitnessFieldType parses Rebalance witness type', t => {
-  t.deepEqual(splitWitnessFieldType('YmaxV1Rebalance'), {
-    domain: { name: 'Ymax', version: '1' },
-    primaryType: 'Rebalance',
-  });
-});
-
-test('splitWitnessFieldType parses SetTargetAllocation witness type', t => {
-  t.deepEqual(splitWitnessFieldType('YmaxV1SetTargetAllocation'), {
-    domain: { name: 'Ymax', version: '1' },
+for (const witnessCase of [
+  { witnessType: 'YmaxV1OpenPortfolio', primaryType: 'OpenPortfolio' },
+  { witnessType: 'YmaxV1Deposit', primaryType: 'Deposit' },
+  { witnessType: 'YmaxV1Withdraw', primaryType: 'Withdraw' },
+  { witnessType: 'YmaxV1Rebalance', primaryType: 'Rebalance' },
+  {
+    witnessType: 'YmaxV1SetTargetAllocation',
     primaryType: 'SetTargetAllocation',
-  });
-});
+  },
+] satisfies WitnessSplitCase[]) {
+  test(witnessCase.witnessType, splitWitnessFieldTypeMacro, witnessCase);
+}
 
 test('splitWitnessFieldType throws for invalid format', t => {
   t.throws(() => splitWitnessFieldType('InvalidFormat' as any), {
