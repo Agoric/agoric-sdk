@@ -12,6 +12,9 @@ import { type JsonSafe } from '../../../json-safe.js';
  * @param remote_domain the remote domain_id corresponding to the token
  * @param remote_token the remote token address
  * @param local_token the corresponding Noble token denom in uunits
+ * @name TokenPair
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.TokenPair
  */
 export interface TokenPair {
   remoteDomain: number;
@@ -30,6 +33,9 @@ export interface TokenPairProtoMsg {
  * @param remote_domain the remote domain_id corresponding to the token
  * @param remote_token the remote token address
  * @param local_token the corresponding Noble token denom in uunits
+ * @name TokenPairSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.TokenPair
  */
 export interface TokenPairSDKType {
   remote_domain: number;
@@ -43,6 +49,18 @@ function createBaseTokenPair(): TokenPair {
     localToken: '',
   };
 }
+/**
+ * TokenPair is used to look up the Noble token (i.e. "uusdc") from a remote
+ * domain token address Multiple remote_domain + remote_token pairs can map to
+ * the same local_token
+ *
+ * @param remote_domain the remote domain_id corresponding to the token
+ * @param remote_token the remote token address
+ * @param local_token the corresponding Noble token denom in uunits
+ * @name TokenPair
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.TokenPair
+ */
 export const TokenPair = {
   typeUrl: '/circle.cctp.v1.TokenPair' as const,
   encode(

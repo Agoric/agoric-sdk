@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { type Rpc } from '../../../helpers.js';
+import { TxRpc } from '../../../types.js';
 import { BinaryReader } from '../../../binary.js';
 import {
   MsgGrantAllowance,
@@ -35,8 +35,8 @@ export interface Msg {
   ): Promise<MsgPruneAllowancesResponse>;
 }
 export class MsgClientImpl implements Msg {
-  private readonly rpc: Rpc;
-  constructor(rpc: Rpc) {
+  private readonly rpc: TxRpc;
+  constructor(rpc: TxRpc) {
     this.rpc = rpc;
     this.grantAllowance = this.grantAllowance.bind(this);
     this.revokeAllowance = this.revokeAllowance.bind(this);
@@ -82,3 +82,6 @@ export class MsgClientImpl implements Msg {
     );
   }
 }
+export const createClientImpl = (rpc: TxRpc) => {
+  return new MsgClientImpl(rpc);
+};

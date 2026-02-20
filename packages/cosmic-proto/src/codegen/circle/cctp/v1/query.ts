@@ -35,15 +35,30 @@ import {
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { type JsonSafe } from '../../../json-safe.js';
 import { isSet } from '../../../helpers.js';
-/** QueryRolesRequest is the request type for the Query/Roles RPC method. */
+/**
+ * QueryRolesRequest is the request type for the Query/Roles RPC method.
+ * @name QueryRolesRequest
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryRolesRequest
+ */
 export interface QueryRolesRequest {}
 export interface QueryRolesRequestProtoMsg {
   typeUrl: '/circle.cctp.v1.QueryRolesRequest';
   value: Uint8Array;
 }
-/** QueryRolesRequest is the request type for the Query/Roles RPC method. */
+/**
+ * QueryRolesRequest is the request type for the Query/Roles RPC method.
+ * @name QueryRolesRequestSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryRolesRequest
+ */
 export interface QueryRolesRequestSDKType {}
-/** QueryRolesResponse is the response type for the Query/Roles RPC method. */
+/**
+ * QueryRolesResponse is the response type for the Query/Roles RPC method.
+ * @name QueryRolesResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryRolesResponse
+ */
 export interface QueryRolesResponse {
   owner: string;
   attesterManager: string;
@@ -54,14 +69,24 @@ export interface QueryRolesResponseProtoMsg {
   typeUrl: '/circle.cctp.v1.QueryRolesResponse';
   value: Uint8Array;
 }
-/** QueryRolesResponse is the response type for the Query/Roles RPC method. */
+/**
+ * QueryRolesResponse is the response type for the Query/Roles RPC method.
+ * @name QueryRolesResponseSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryRolesResponse
+ */
 export interface QueryRolesResponseSDKType {
   owner: string;
   attester_manager: string;
   pauser: string;
   token_controller: string;
 }
-/** QueryAttestersRequest is the request type for the Query/Attester RPC method. */
+/**
+ * QueryAttestersRequest is the request type for the Query/Attester RPC method.
+ * @name QueryGetAttesterRequest
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetAttesterRequest
+ */
 export interface QueryGetAttesterRequest {
   attester: string;
 }
@@ -69,13 +94,21 @@ export interface QueryGetAttesterRequestProtoMsg {
   typeUrl: '/circle.cctp.v1.QueryGetAttesterRequest';
   value: Uint8Array;
 }
-/** QueryAttestersRequest is the request type for the Query/Attester RPC method. */
+/**
+ * QueryAttestersRequest is the request type for the Query/Attester RPC method.
+ * @name QueryGetAttesterRequestSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetAttesterRequest
+ */
 export interface QueryGetAttesterRequestSDKType {
   attester: string;
 }
 /**
  * QueryAttestersResponse is the response type for the Query/Attester RPC
  * method.
+ * @name QueryGetAttesterResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetAttesterResponse
  */
 export interface QueryGetAttesterResponse {
   attester: Attester;
@@ -87,6 +120,9 @@ export interface QueryGetAttesterResponseProtoMsg {
 /**
  * QueryAttestersResponse is the response type for the Query/Attester RPC
  * method.
+ * @name QueryGetAttesterResponseSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetAttesterResponse
  */
 export interface QueryGetAttesterResponseSDKType {
   attester: AttesterSDKType;
@@ -94,6 +130,9 @@ export interface QueryGetAttesterResponseSDKType {
 /**
  * QueryAllAttestersRequest is the request type for the Query/Attesters RPC
  * method.
+ * @name QueryAllAttestersRequest
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryAllAttestersRequest
  */
 export interface QueryAllAttestersRequest {
   pagination?: PageRequest;
@@ -105,6 +144,9 @@ export interface QueryAllAttestersRequestProtoMsg {
 /**
  * QueryAllAttestersRequest is the request type for the Query/Attesters RPC
  * method.
+ * @name QueryAllAttestersRequestSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryAllAttestersRequest
  */
 export interface QueryAllAttestersRequestSDKType {
   pagination?: PageRequestSDKType;
@@ -112,6 +154,9 @@ export interface QueryAllAttestersRequestSDKType {
 /**
  * QueryAllAttestersResponse is the response type for the Query/Attesters RPC
  * method.
+ * @name QueryAllAttestersResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryAllAttestersResponse
  */
 export interface QueryAllAttestersResponse {
   attesters: Attester[];
@@ -124,6 +169,9 @@ export interface QueryAllAttestersResponseProtoMsg {
 /**
  * QueryAllAttestersResponse is the response type for the Query/Attesters RPC
  * method.
+ * @name QueryAllAttestersResponseSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryAllAttestersResponse
  */
 export interface QueryAllAttestersResponseSDKType {
   attesters: AttesterSDKType[];
@@ -132,6 +180,9 @@ export interface QueryAllAttestersResponseSDKType {
 /**
  * QueryPerMessageBurnLimitRequest is the request type for the
  * Query/PerMessageBurnLimit RPC method.
+ * @name QueryGetPerMessageBurnLimitRequest
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetPerMessageBurnLimitRequest
  */
 export interface QueryGetPerMessageBurnLimitRequest {
   denom: string;
@@ -143,6 +194,9 @@ export interface QueryGetPerMessageBurnLimitRequestProtoMsg {
 /**
  * QueryPerMessageBurnLimitRequest is the request type for the
  * Query/PerMessageBurnLimit RPC method.
+ * @name QueryGetPerMessageBurnLimitRequestSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetPerMessageBurnLimitRequest
  */
 export interface QueryGetPerMessageBurnLimitRequestSDKType {
   denom: string;
@@ -150,6 +204,9 @@ export interface QueryGetPerMessageBurnLimitRequestSDKType {
 /**
  * QueryPerMessageBurnLimitResponse is the response type for the
  * Query/PerMessageBurnLimit RPC method.
+ * @name QueryGetPerMessageBurnLimitResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetPerMessageBurnLimitResponse
  */
 export interface QueryGetPerMessageBurnLimitResponse {
   burnLimit: PerMessageBurnLimit;
@@ -161,6 +218,9 @@ export interface QueryGetPerMessageBurnLimitResponseProtoMsg {
 /**
  * QueryPerMessageBurnLimitResponse is the response type for the
  * Query/PerMessageBurnLimit RPC method.
+ * @name QueryGetPerMessageBurnLimitResponseSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetPerMessageBurnLimitResponse
  */
 export interface QueryGetPerMessageBurnLimitResponseSDKType {
   burn_limit: PerMessageBurnLimitSDKType;
@@ -168,6 +228,9 @@ export interface QueryGetPerMessageBurnLimitResponseSDKType {
 /**
  * QueryAllPerMessageBurnLimitsRequest is the response type for the
  * Query/PerMessageBurnLimit RPC method.
+ * @name QueryAllPerMessageBurnLimitsRequest
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryAllPerMessageBurnLimitsRequest
  */
 export interface QueryAllPerMessageBurnLimitsRequest {
   pagination?: PageRequest;
@@ -179,6 +242,9 @@ export interface QueryAllPerMessageBurnLimitsRequestProtoMsg {
 /**
  * QueryAllPerMessageBurnLimitsRequest is the response type for the
  * Query/PerMessageBurnLimit RPC method.
+ * @name QueryAllPerMessageBurnLimitsRequestSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryAllPerMessageBurnLimitsRequest
  */
 export interface QueryAllPerMessageBurnLimitsRequestSDKType {
   pagination?: PageRequestSDKType;
@@ -186,6 +252,9 @@ export interface QueryAllPerMessageBurnLimitsRequestSDKType {
 /**
  * QueryAllPerMessageBurnLimitsRequest is the response type for the
  * Query/PerMessageBurnLimit RPC method.
+ * @name QueryAllPerMessageBurnLimitsResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryAllPerMessageBurnLimitsResponse
  */
 export interface QueryAllPerMessageBurnLimitsResponse {
   burnLimits: PerMessageBurnLimit[];
@@ -198,6 +267,9 @@ export interface QueryAllPerMessageBurnLimitsResponseProtoMsg {
 /**
  * QueryAllPerMessageBurnLimitsRequest is the response type for the
  * Query/PerMessageBurnLimit RPC method.
+ * @name QueryAllPerMessageBurnLimitsResponseSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryAllPerMessageBurnLimitsResponse
  */
 export interface QueryAllPerMessageBurnLimitsResponseSDKType {
   burn_limits: PerMessageBurnLimitSDKType[];
@@ -206,6 +278,9 @@ export interface QueryAllPerMessageBurnLimitsResponseSDKType {
 /**
  * QueryBurningAndMintingPausedRequest is the request type for the
  * Query/BurningAndMintingPaused RPC method.
+ * @name QueryGetBurningAndMintingPausedRequest
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetBurningAndMintingPausedRequest
  */
 export interface QueryGetBurningAndMintingPausedRequest {}
 export interface QueryGetBurningAndMintingPausedRequestProtoMsg {
@@ -215,11 +290,17 @@ export interface QueryGetBurningAndMintingPausedRequestProtoMsg {
 /**
  * QueryBurningAndMintingPausedRequest is the request type for the
  * Query/BurningAndMintingPaused RPC method.
+ * @name QueryGetBurningAndMintingPausedRequestSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetBurningAndMintingPausedRequest
  */
 export interface QueryGetBurningAndMintingPausedRequestSDKType {}
 /**
  * QueryBurningAndMintingPausedResponse is the response type for the
  * Query/BurningAndMintingPaused RPC method.
+ * @name QueryGetBurningAndMintingPausedResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetBurningAndMintingPausedResponse
  */
 export interface QueryGetBurningAndMintingPausedResponse {
   paused: BurningAndMintingPaused;
@@ -231,6 +312,9 @@ export interface QueryGetBurningAndMintingPausedResponseProtoMsg {
 /**
  * QueryBurningAndMintingPausedResponse is the response type for the
  * Query/BurningAndMintingPaused RPC method.
+ * @name QueryGetBurningAndMintingPausedResponseSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetBurningAndMintingPausedResponse
  */
 export interface QueryGetBurningAndMintingPausedResponseSDKType {
   paused: BurningAndMintingPausedSDKType;
@@ -238,6 +322,9 @@ export interface QueryGetBurningAndMintingPausedResponseSDKType {
 /**
  * QuerySendingAndReceivingPausedRequest is the request type for the
  * Query/SendingAndReceivingPaused RPC method.
+ * @name QueryGetSendingAndReceivingMessagesPausedRequest
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetSendingAndReceivingMessagesPausedRequest
  */
 export interface QueryGetSendingAndReceivingMessagesPausedRequest {}
 export interface QueryGetSendingAndReceivingMessagesPausedRequestProtoMsg {
@@ -247,11 +334,17 @@ export interface QueryGetSendingAndReceivingMessagesPausedRequestProtoMsg {
 /**
  * QuerySendingAndReceivingPausedRequest is the request type for the
  * Query/SendingAndReceivingPaused RPC method.
+ * @name QueryGetSendingAndReceivingMessagesPausedRequestSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetSendingAndReceivingMessagesPausedRequest
  */
 export interface QueryGetSendingAndReceivingMessagesPausedRequestSDKType {}
 /**
  * QuerySendingAndReceivingPausedResponse is the response type for the
  * Query/SendingAndReceivingPaused RPC method.
+ * @name QueryGetSendingAndReceivingMessagesPausedResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetSendingAndReceivingMessagesPausedResponse
  */
 export interface QueryGetSendingAndReceivingMessagesPausedResponse {
   paused: SendingAndReceivingMessagesPaused;
@@ -263,6 +356,9 @@ export interface QueryGetSendingAndReceivingMessagesPausedResponseProtoMsg {
 /**
  * QuerySendingAndReceivingPausedResponse is the response type for the
  * Query/SendingAndReceivingPaused RPC method.
+ * @name QueryGetSendingAndReceivingMessagesPausedResponseSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetSendingAndReceivingMessagesPausedResponse
  */
 export interface QueryGetSendingAndReceivingMessagesPausedResponseSDKType {
   paused: SendingAndReceivingMessagesPausedSDKType;
@@ -270,6 +366,9 @@ export interface QueryGetSendingAndReceivingMessagesPausedResponseSDKType {
 /**
  * QueryMaxMessageBodySizeRequest is the request type for the
  * Query/MaxMessageBodySize RPC method.
+ * @name QueryGetMaxMessageBodySizeRequest
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetMaxMessageBodySizeRequest
  */
 export interface QueryGetMaxMessageBodySizeRequest {}
 export interface QueryGetMaxMessageBodySizeRequestProtoMsg {
@@ -279,11 +378,17 @@ export interface QueryGetMaxMessageBodySizeRequestProtoMsg {
 /**
  * QueryMaxMessageBodySizeRequest is the request type for the
  * Query/MaxMessageBodySize RPC method.
+ * @name QueryGetMaxMessageBodySizeRequestSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetMaxMessageBodySizeRequest
  */
 export interface QueryGetMaxMessageBodySizeRequestSDKType {}
 /**
  * QueryMaxMessageBodySizeResponse is the response type for the
  * Query/MaxMessageBodySize RPC method.
+ * @name QueryGetMaxMessageBodySizeResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetMaxMessageBodySizeResponse
  */
 export interface QueryGetMaxMessageBodySizeResponse {
   amount: MaxMessageBodySize;
@@ -295,6 +400,9 @@ export interface QueryGetMaxMessageBodySizeResponseProtoMsg {
 /**
  * QueryMaxMessageBodySizeResponse is the response type for the
  * Query/MaxMessageBodySize RPC method.
+ * @name QueryGetMaxMessageBodySizeResponseSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetMaxMessageBodySizeResponse
  */
 export interface QueryGetMaxMessageBodySizeResponseSDKType {
   amount: MaxMessageBodySizeSDKType;
@@ -302,6 +410,9 @@ export interface QueryGetMaxMessageBodySizeResponseSDKType {
 /**
  * QueryGetNextAvailableNonceRequest is the request type for the
  * Query/NextAvailableNonce RPC method.
+ * @name QueryGetNextAvailableNonceRequest
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetNextAvailableNonceRequest
  */
 export interface QueryGetNextAvailableNonceRequest {}
 export interface QueryGetNextAvailableNonceRequestProtoMsg {
@@ -311,11 +422,17 @@ export interface QueryGetNextAvailableNonceRequestProtoMsg {
 /**
  * QueryGetNextAvailableNonceRequest is the request type for the
  * Query/NextAvailableNonce RPC method.
+ * @name QueryGetNextAvailableNonceRequestSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetNextAvailableNonceRequest
  */
 export interface QueryGetNextAvailableNonceRequestSDKType {}
 /**
  * Query QueryGetNextAvailableNonceResponse is the response type for the
  * Query/NextAvailableNonce RPC method.
+ * @name QueryGetNextAvailableNonceResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetNextAvailableNonceResponse
  */
 export interface QueryGetNextAvailableNonceResponse {
   nonce: Nonce;
@@ -327,6 +444,9 @@ export interface QueryGetNextAvailableNonceResponseProtoMsg {
 /**
  * Query QueryGetNextAvailableNonceResponse is the response type for the
  * Query/NextAvailableNonce RPC method.
+ * @name QueryGetNextAvailableNonceResponseSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetNextAvailableNonceResponse
  */
 export interface QueryGetNextAvailableNonceResponseSDKType {
   nonce: NonceSDKType;
@@ -334,6 +454,9 @@ export interface QueryGetNextAvailableNonceResponseSDKType {
 /**
  * QuerySignatureThresholdRequest is the request type for the
  * Query/SignatureThreshold RPC method.
+ * @name QueryGetSignatureThresholdRequest
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetSignatureThresholdRequest
  */
 export interface QueryGetSignatureThresholdRequest {}
 export interface QueryGetSignatureThresholdRequestProtoMsg {
@@ -343,11 +466,17 @@ export interface QueryGetSignatureThresholdRequestProtoMsg {
 /**
  * QuerySignatureThresholdRequest is the request type for the
  * Query/SignatureThreshold RPC method.
+ * @name QueryGetSignatureThresholdRequestSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetSignatureThresholdRequest
  */
 export interface QueryGetSignatureThresholdRequestSDKType {}
 /**
  * QuerySignatureThresholdResponse is the response type for the
  * Query/SignatureThreshold RPC method.
+ * @name QueryGetSignatureThresholdResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetSignatureThresholdResponse
  */
 export interface QueryGetSignatureThresholdResponse {
   amount: SignatureThreshold;
@@ -359,6 +488,9 @@ export interface QueryGetSignatureThresholdResponseProtoMsg {
 /**
  * QuerySignatureThresholdResponse is the response type for the
  * Query/SignatureThreshold RPC method.
+ * @name QueryGetSignatureThresholdResponseSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetSignatureThresholdResponse
  */
 export interface QueryGetSignatureThresholdResponseSDKType {
   amount: SignatureThresholdSDKType;
@@ -366,6 +498,9 @@ export interface QueryGetSignatureThresholdResponseSDKType {
 /**
  * QueryGetTokenPairRequest is the request type for the Query/TokenPair RPC
  * method.
+ * @name QueryGetTokenPairRequest
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetTokenPairRequest
  */
 export interface QueryGetTokenPairRequest {
   remoteDomain: number;
@@ -378,6 +513,9 @@ export interface QueryGetTokenPairRequestProtoMsg {
 /**
  * QueryGetTokenPairRequest is the request type for the Query/TokenPair RPC
  * method.
+ * @name QueryGetTokenPairRequestSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetTokenPairRequest
  */
 export interface QueryGetTokenPairRequestSDKType {
   remote_domain: number;
@@ -386,6 +524,9 @@ export interface QueryGetTokenPairRequestSDKType {
 /**
  * QueryGetTokenPairResponse is the response type for the Query/TokenPair RPC
  * method.
+ * @name QueryGetTokenPairResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetTokenPairResponse
  */
 export interface QueryGetTokenPairResponse {
   pair: TokenPair;
@@ -397,6 +538,9 @@ export interface QueryGetTokenPairResponseProtoMsg {
 /**
  * QueryGetTokenPairResponse is the response type for the Query/TokenPair RPC
  * method.
+ * @name QueryGetTokenPairResponseSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetTokenPairResponse
  */
 export interface QueryGetTokenPairResponseSDKType {
   pair: TokenPairSDKType;
@@ -404,6 +548,9 @@ export interface QueryGetTokenPairResponseSDKType {
 /**
  * QueryAllTokenPairsRequest is the request type for the Query/TokenPairs RPC
  * method.
+ * @name QueryAllTokenPairsRequest
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryAllTokenPairsRequest
  */
 export interface QueryAllTokenPairsRequest {
   pagination?: PageRequest;
@@ -415,6 +562,9 @@ export interface QueryAllTokenPairsRequestProtoMsg {
 /**
  * QueryAllTokenPairsRequest is the request type for the Query/TokenPairs RPC
  * method.
+ * @name QueryAllTokenPairsRequestSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryAllTokenPairsRequest
  */
 export interface QueryAllTokenPairsRequestSDKType {
   pagination?: PageRequestSDKType;
@@ -422,6 +572,9 @@ export interface QueryAllTokenPairsRequestSDKType {
 /**
  * QueryAllTokenPairsResponse is the response type for the Query/TokenPairs RPC
  * method.
+ * @name QueryAllTokenPairsResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryAllTokenPairsResponse
  */
 export interface QueryAllTokenPairsResponse {
   tokenPairs: TokenPair[];
@@ -434,6 +587,9 @@ export interface QueryAllTokenPairsResponseProtoMsg {
 /**
  * QueryAllTokenPairsResponse is the response type for the Query/TokenPairs RPC
  * method.
+ * @name QueryAllTokenPairsResponseSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryAllTokenPairsResponse
  */
 export interface QueryAllTokenPairsResponseSDKType {
   token_pairs: TokenPairSDKType[];
@@ -442,6 +598,9 @@ export interface QueryAllTokenPairsResponseSDKType {
 /**
  * QueryGetUsedNonceRequest is the request type for the Query/UsedNonce RPC
  * method.
+ * @name QueryGetUsedNonceRequest
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetUsedNonceRequest
  */
 export interface QueryGetUsedNonceRequest {
   sourceDomain: number;
@@ -454,6 +613,9 @@ export interface QueryGetUsedNonceRequestProtoMsg {
 /**
  * QueryGetUsedNonceRequest is the request type for the Query/UsedNonce RPC
  * method.
+ * @name QueryGetUsedNonceRequestSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetUsedNonceRequest
  */
 export interface QueryGetUsedNonceRequestSDKType {
   source_domain: number;
@@ -462,6 +624,9 @@ export interface QueryGetUsedNonceRequestSDKType {
 /**
  * QueryGetUsedNonceResponse is the response type for the Query/UsedNonce RPC
  * method.
+ * @name QueryGetUsedNonceResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetUsedNonceResponse
  */
 export interface QueryGetUsedNonceResponse {
   nonce: Nonce;
@@ -473,6 +638,9 @@ export interface QueryGetUsedNonceResponseProtoMsg {
 /**
  * QueryGetUsedNonceResponse is the response type for the Query/UsedNonce RPC
  * method.
+ * @name QueryGetUsedNonceResponseSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetUsedNonceResponse
  */
 export interface QueryGetUsedNonceResponseSDKType {
   nonce: NonceSDKType;
@@ -480,6 +648,9 @@ export interface QueryGetUsedNonceResponseSDKType {
 /**
  * QueryAllUsedNonceRequest is the request type for the Query/UsedNonces RPC
  * method.
+ * @name QueryAllUsedNoncesRequest
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryAllUsedNoncesRequest
  */
 export interface QueryAllUsedNoncesRequest {
   pagination?: PageRequest;
@@ -491,6 +662,9 @@ export interface QueryAllUsedNoncesRequestProtoMsg {
 /**
  * QueryAllUsedNonceRequest is the request type for the Query/UsedNonces RPC
  * method.
+ * @name QueryAllUsedNoncesRequestSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryAllUsedNoncesRequest
  */
 export interface QueryAllUsedNoncesRequestSDKType {
   pagination?: PageRequestSDKType;
@@ -498,6 +672,9 @@ export interface QueryAllUsedNoncesRequestSDKType {
 /**
  * QueryAllUsedNonceResponse is the response type for the Query/UsedNonces RPC
  * method.
+ * @name QueryAllUsedNoncesResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryAllUsedNoncesResponse
  */
 export interface QueryAllUsedNoncesResponse {
   usedNonces: Nonce[];
@@ -510,6 +687,9 @@ export interface QueryAllUsedNoncesResponseProtoMsg {
 /**
  * QueryAllUsedNonceResponse is the response type for the Query/UsedNonces RPC
  * method.
+ * @name QueryAllUsedNoncesResponseSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryAllUsedNoncesResponse
  */
 export interface QueryAllUsedNoncesResponseSDKType {
   used_nonces: NonceSDKType[];
@@ -518,6 +698,9 @@ export interface QueryAllUsedNoncesResponseSDKType {
 /**
  * QueryRemoteTokenMessengerRequest is the request type for the
  * Query/RemoteTokenMessenger RPC method.
+ * @name QueryRemoteTokenMessengerRequest
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryRemoteTokenMessengerRequest
  */
 export interface QueryRemoteTokenMessengerRequest {
   domainId: number;
@@ -529,6 +712,9 @@ export interface QueryRemoteTokenMessengerRequestProtoMsg {
 /**
  * QueryRemoteTokenMessengerRequest is the request type for the
  * Query/RemoteTokenMessenger RPC method.
+ * @name QueryRemoteTokenMessengerRequestSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryRemoteTokenMessengerRequest
  */
 export interface QueryRemoteTokenMessengerRequestSDKType {
   domain_id: number;
@@ -536,6 +722,9 @@ export interface QueryRemoteTokenMessengerRequestSDKType {
 /**
  * QueryRemoteTokenMessengerResponse is the response type for the
  * Query/RemoteTokenMessenger RPC method.
+ * @name QueryRemoteTokenMessengerResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryRemoteTokenMessengerResponse
  */
 export interface QueryRemoteTokenMessengerResponse {
   remoteTokenMessenger: RemoteTokenMessenger;
@@ -547,6 +736,9 @@ export interface QueryRemoteTokenMessengerResponseProtoMsg {
 /**
  * QueryRemoteTokenMessengerResponse is the response type for the
  * Query/RemoteTokenMessenger RPC method.
+ * @name QueryRemoteTokenMessengerResponseSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryRemoteTokenMessengerResponse
  */
 export interface QueryRemoteTokenMessengerResponseSDKType {
   remote_token_messenger: RemoteTokenMessengerSDKType;
@@ -554,6 +746,9 @@ export interface QueryRemoteTokenMessengerResponseSDKType {
 /**
  * QueryRemoteTokenMessengersRequest is the request type for the
  * Query/RemoteTokenMessengers RPC method.
+ * @name QueryRemoteTokenMessengersRequest
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryRemoteTokenMessengersRequest
  */
 export interface QueryRemoteTokenMessengersRequest {
   pagination?: PageRequest;
@@ -565,6 +760,9 @@ export interface QueryRemoteTokenMessengersRequestProtoMsg {
 /**
  * QueryRemoteTokenMessengersRequest is the request type for the
  * Query/RemoteTokenMessengers RPC method.
+ * @name QueryRemoteTokenMessengersRequestSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryRemoteTokenMessengersRequest
  */
 export interface QueryRemoteTokenMessengersRequestSDKType {
   pagination?: PageRequestSDKType;
@@ -572,6 +770,9 @@ export interface QueryRemoteTokenMessengersRequestSDKType {
 /**
  * QueryRemoteTokenMessengersResponse is the response type for the
  * Query/RemoteTokenMessengers RPC method.
+ * @name QueryRemoteTokenMessengersResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryRemoteTokenMessengersResponse
  */
 export interface QueryRemoteTokenMessengersResponse {
   remoteTokenMessengers: RemoteTokenMessenger[];
@@ -584,6 +785,9 @@ export interface QueryRemoteTokenMessengersResponseProtoMsg {
 /**
  * QueryRemoteTokenMessengersResponse is the response type for the
  * Query/RemoteTokenMessengers RPC method.
+ * @name QueryRemoteTokenMessengersResponseSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryRemoteTokenMessengersResponse
  */
 export interface QueryRemoteTokenMessengersResponseSDKType {
   remote_token_messengers: RemoteTokenMessengerSDKType[];
@@ -592,6 +796,9 @@ export interface QueryRemoteTokenMessengersResponseSDKType {
 /**
  * QueryBurnMessageVersionRequest is the request type for the
  * Query/BurnMessageVersion RPC method.
+ * @name QueryBurnMessageVersionRequest
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryBurnMessageVersionRequest
  */
 export interface QueryBurnMessageVersionRequest {}
 export interface QueryBurnMessageVersionRequestProtoMsg {
@@ -601,14 +808,22 @@ export interface QueryBurnMessageVersionRequestProtoMsg {
 /**
  * QueryBurnMessageVersionRequest is the request type for the
  * Query/BurnMessageVersion RPC method.
+ * @name QueryBurnMessageVersionRequestSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryBurnMessageVersionRequest
  */
 export interface QueryBurnMessageVersionRequestSDKType {}
 /**
  * QueryBurnMessageVersionResponse is the response type for the
  * Query/BurnMessageVersion RPC method.
+ * @name QueryBurnMessageVersionResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryBurnMessageVersionResponse
  */
 export interface QueryBurnMessageVersionResponse {
-  /** version is the burn message version of the local domain. */
+  /**
+   * version is the burn message version of the local domain.
+   */
   version: number;
 }
 export interface QueryBurnMessageVersionResponseProtoMsg {
@@ -618,6 +833,9 @@ export interface QueryBurnMessageVersionResponseProtoMsg {
 /**
  * QueryBurnMessageVersionResponse is the response type for the
  * Query/BurnMessageVersion RPC method.
+ * @name QueryBurnMessageVersionResponseSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryBurnMessageVersionResponse
  */
 export interface QueryBurnMessageVersionResponseSDKType {
   version: number;
@@ -625,6 +843,9 @@ export interface QueryBurnMessageVersionResponseSDKType {
 /**
  * QueryLocalMessageVersionRequest is the request type for the
  * Query/LocalMessageVersion RPC method.
+ * @name QueryLocalMessageVersionRequest
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryLocalMessageVersionRequest
  */
 export interface QueryLocalMessageVersionRequest {}
 export interface QueryLocalMessageVersionRequestProtoMsg {
@@ -634,14 +855,22 @@ export interface QueryLocalMessageVersionRequestProtoMsg {
 /**
  * QueryLocalMessageVersionRequest is the request type for the
  * Query/LocalMessageVersion RPC method.
+ * @name QueryLocalMessageVersionRequestSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryLocalMessageVersionRequest
  */
 export interface QueryLocalMessageVersionRequestSDKType {}
 /**
  * QueryLocalMessageVersionResponse is the response type for the
  * Query/LocalMessageVersion RPC method.
+ * @name QueryLocalMessageVersionResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryLocalMessageVersionResponse
  */
 export interface QueryLocalMessageVersionResponse {
-  /** version is the message version of the local domain. */
+  /**
+   * version is the message version of the local domain.
+   */
   version: number;
 }
 export interface QueryLocalMessageVersionResponseProtoMsg {
@@ -651,6 +880,9 @@ export interface QueryLocalMessageVersionResponseProtoMsg {
 /**
  * QueryLocalMessageVersionResponse is the response type for the
  * Query/LocalMessageVersion RPC method.
+ * @name QueryLocalMessageVersionResponseSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryLocalMessageVersionResponse
  */
 export interface QueryLocalMessageVersionResponseSDKType {
   version: number;
@@ -658,6 +890,9 @@ export interface QueryLocalMessageVersionResponseSDKType {
 /**
  * QueryLocalDomainRequest is the request type for the Query/LocalDomain RPC
  * method.
+ * @name QueryLocalDomainRequest
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryLocalDomainRequest
  */
 export interface QueryLocalDomainRequest {}
 export interface QueryLocalDomainRequestProtoMsg {
@@ -667,14 +902,22 @@ export interface QueryLocalDomainRequestProtoMsg {
 /**
  * QueryLocalDomainRequest is the request type for the Query/LocalDomain RPC
  * method.
+ * @name QueryLocalDomainRequestSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryLocalDomainRequest
  */
 export interface QueryLocalDomainRequestSDKType {}
 /**
  * QueryLocalDomainResponse is the response type for the Query/LocalDomain RPC
  * method.
+ * @name QueryLocalDomainResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryLocalDomainResponse
  */
 export interface QueryLocalDomainResponse {
-  /** domain_id is the id of the local domain. */
+  /**
+   * domain_id is the id of the local domain.
+   */
   domainId: number;
 }
 export interface QueryLocalDomainResponseProtoMsg {
@@ -684,6 +927,9 @@ export interface QueryLocalDomainResponseProtoMsg {
 /**
  * QueryLocalDomainResponse is the response type for the Query/LocalDomain RPC
  * method.
+ * @name QueryLocalDomainResponseSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryLocalDomainResponse
  */
 export interface QueryLocalDomainResponseSDKType {
   domain_id: number;
@@ -691,8 +937,20 @@ export interface QueryLocalDomainResponseSDKType {
 function createBaseQueryRolesRequest(): QueryRolesRequest {
   return {};
 }
+/**
+ * QueryRolesRequest is the request type for the Query/Roles RPC method.
+ * @name QueryRolesRequest
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryRolesRequest
+ */
 export const QueryRolesRequest = {
   typeUrl: '/circle.cctp.v1.QueryRolesRequest' as const,
+  is(o: any): o is QueryRolesRequest {
+    return o && o.$typeUrl === QueryRolesRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryRolesRequestSDKType {
+    return o && o.$typeUrl === QueryRolesRequest.typeUrl;
+  },
   encode(
     _: QueryRolesRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -746,8 +1004,34 @@ function createBaseQueryRolesResponse(): QueryRolesResponse {
     tokenController: '',
   };
 }
+/**
+ * QueryRolesResponse is the response type for the Query/Roles RPC method.
+ * @name QueryRolesResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryRolesResponse
+ */
 export const QueryRolesResponse = {
   typeUrl: '/circle.cctp.v1.QueryRolesResponse' as const,
+  is(o: any): o is QueryRolesResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryRolesResponse.typeUrl ||
+        (typeof o.owner === 'string' &&
+          typeof o.attesterManager === 'string' &&
+          typeof o.pauser === 'string' &&
+          typeof o.tokenController === 'string'))
+    );
+  },
+  isSDK(o: any): o is QueryRolesResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryRolesResponse.typeUrl ||
+        (typeof o.owner === 'string' &&
+          typeof o.attester_manager === 'string' &&
+          typeof o.pauser === 'string' &&
+          typeof o.token_controller === 'string'))
+    );
+  },
   encode(
     message: QueryRolesResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -844,8 +1128,28 @@ function createBaseQueryGetAttesterRequest(): QueryGetAttesterRequest {
     attester: '',
   };
 }
+/**
+ * QueryAttestersRequest is the request type for the Query/Attester RPC method.
+ * @name QueryGetAttesterRequest
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetAttesterRequest
+ */
 export const QueryGetAttesterRequest = {
   typeUrl: '/circle.cctp.v1.QueryGetAttesterRequest' as const,
+  is(o: any): o is QueryGetAttesterRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetAttesterRequest.typeUrl ||
+        typeof o.attester === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryGetAttesterRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetAttesterRequest.typeUrl ||
+        typeof o.attester === 'string')
+    );
+  },
   encode(
     message: QueryGetAttesterRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -915,8 +1219,29 @@ function createBaseQueryGetAttesterResponse(): QueryGetAttesterResponse {
     attester: Attester.fromPartial({}),
   };
 }
+/**
+ * QueryAttestersResponse is the response type for the Query/Attester RPC
+ * method.
+ * @name QueryGetAttesterResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetAttesterResponse
+ */
 export const QueryGetAttesterResponse = {
   typeUrl: '/circle.cctp.v1.QueryGetAttesterResponse' as const,
+  is(o: any): o is QueryGetAttesterResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetAttesterResponse.typeUrl ||
+        Attester.is(o.attester))
+    );
+  },
+  isSDK(o: any): o is QueryGetAttesterResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetAttesterResponse.typeUrl ||
+        Attester.isSDK(o.attester))
+    );
+  },
   encode(
     message: QueryGetAttesterResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -996,8 +1321,21 @@ function createBaseQueryAllAttestersRequest(): QueryAllAttestersRequest {
     pagination: undefined,
   };
 }
+/**
+ * QueryAllAttestersRequest is the request type for the Query/Attesters RPC
+ * method.
+ * @name QueryAllAttestersRequest
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryAllAttestersRequest
+ */
 export const QueryAllAttestersRequest = {
   typeUrl: '/circle.cctp.v1.QueryAllAttestersRequest' as const,
+  is(o: any): o is QueryAllAttestersRequest {
+    return o && o.$typeUrl === QueryAllAttestersRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryAllAttestersRequestSDKType {
+    return o && o.$typeUrl === QueryAllAttestersRequest.typeUrl;
+  },
   encode(
     message: QueryAllAttestersRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1078,8 +1416,31 @@ function createBaseQueryAllAttestersResponse(): QueryAllAttestersResponse {
     pagination: undefined,
   };
 }
+/**
+ * QueryAllAttestersResponse is the response type for the Query/Attesters RPC
+ * method.
+ * @name QueryAllAttestersResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryAllAttestersResponse
+ */
 export const QueryAllAttestersResponse = {
   typeUrl: '/circle.cctp.v1.QueryAllAttestersResponse' as const,
+  is(o: any): o is QueryAllAttestersResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllAttestersResponse.typeUrl ||
+        (Array.isArray(o.attesters) &&
+          (!o.attesters.length || Attester.is(o.attesters[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryAllAttestersResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllAttestersResponse.typeUrl ||
+        (Array.isArray(o.attesters) &&
+          (!o.attesters.length || Attester.isSDK(o.attesters[0]))))
+    );
+  },
   encode(
     message: QueryAllAttestersResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1180,8 +1541,29 @@ function createBaseQueryGetPerMessageBurnLimitRequest(): QueryGetPerMessageBurnL
     denom: '',
   };
 }
+/**
+ * QueryPerMessageBurnLimitRequest is the request type for the
+ * Query/PerMessageBurnLimit RPC method.
+ * @name QueryGetPerMessageBurnLimitRequest
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetPerMessageBurnLimitRequest
+ */
 export const QueryGetPerMessageBurnLimitRequest = {
   typeUrl: '/circle.cctp.v1.QueryGetPerMessageBurnLimitRequest' as const,
+  is(o: any): o is QueryGetPerMessageBurnLimitRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetPerMessageBurnLimitRequest.typeUrl ||
+        typeof o.denom === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryGetPerMessageBurnLimitRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetPerMessageBurnLimitRequest.typeUrl ||
+        typeof o.denom === 'string')
+    );
+  },
   encode(
     message: QueryGetPerMessageBurnLimitRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1253,8 +1635,29 @@ function createBaseQueryGetPerMessageBurnLimitResponse(): QueryGetPerMessageBurn
     burnLimit: PerMessageBurnLimit.fromPartial({}),
   };
 }
+/**
+ * QueryPerMessageBurnLimitResponse is the response type for the
+ * Query/PerMessageBurnLimit RPC method.
+ * @name QueryGetPerMessageBurnLimitResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetPerMessageBurnLimitResponse
+ */
 export const QueryGetPerMessageBurnLimitResponse = {
   typeUrl: '/circle.cctp.v1.QueryGetPerMessageBurnLimitResponse' as const,
+  is(o: any): o is QueryGetPerMessageBurnLimitResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetPerMessageBurnLimitResponse.typeUrl ||
+        PerMessageBurnLimit.is(o.burnLimit))
+    );
+  },
+  isSDK(o: any): o is QueryGetPerMessageBurnLimitResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetPerMessageBurnLimitResponse.typeUrl ||
+        PerMessageBurnLimit.isSDK(o.burn_limit))
+    );
+  },
   encode(
     message: QueryGetPerMessageBurnLimitResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1340,8 +1743,21 @@ function createBaseQueryAllPerMessageBurnLimitsRequest(): QueryAllPerMessageBurn
     pagination: undefined,
   };
 }
+/**
+ * QueryAllPerMessageBurnLimitsRequest is the response type for the
+ * Query/PerMessageBurnLimit RPC method.
+ * @name QueryAllPerMessageBurnLimitsRequest
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryAllPerMessageBurnLimitsRequest
+ */
 export const QueryAllPerMessageBurnLimitsRequest = {
   typeUrl: '/circle.cctp.v1.QueryAllPerMessageBurnLimitsRequest' as const,
+  is(o: any): o is QueryAllPerMessageBurnLimitsRequest {
+    return o && o.$typeUrl === QueryAllPerMessageBurnLimitsRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryAllPerMessageBurnLimitsRequestSDKType {
+    return o && o.$typeUrl === QueryAllPerMessageBurnLimitsRequest.typeUrl;
+  },
   encode(
     message: QueryAllPerMessageBurnLimitsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1422,8 +1838,32 @@ function createBaseQueryAllPerMessageBurnLimitsResponse(): QueryAllPerMessageBur
     pagination: undefined,
   };
 }
+/**
+ * QueryAllPerMessageBurnLimitsRequest is the response type for the
+ * Query/PerMessageBurnLimit RPC method.
+ * @name QueryAllPerMessageBurnLimitsResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryAllPerMessageBurnLimitsResponse
+ */
 export const QueryAllPerMessageBurnLimitsResponse = {
   typeUrl: '/circle.cctp.v1.QueryAllPerMessageBurnLimitsResponse' as const,
+  is(o: any): o is QueryAllPerMessageBurnLimitsResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllPerMessageBurnLimitsResponse.typeUrl ||
+        (Array.isArray(o.burnLimits) &&
+          (!o.burnLimits.length || PerMessageBurnLimit.is(o.burnLimits[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryAllPerMessageBurnLimitsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllPerMessageBurnLimitsResponse.typeUrl ||
+        (Array.isArray(o.burn_limits) &&
+          (!o.burn_limits.length ||
+            PerMessageBurnLimit.isSDK(o.burn_limits[0]))))
+    );
+  },
   encode(
     message: QueryAllPerMessageBurnLimitsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1524,8 +1964,21 @@ export const QueryAllPerMessageBurnLimitsResponse = {
 function createBaseQueryGetBurningAndMintingPausedRequest(): QueryGetBurningAndMintingPausedRequest {
   return {};
 }
+/**
+ * QueryBurningAndMintingPausedRequest is the request type for the
+ * Query/BurningAndMintingPaused RPC method.
+ * @name QueryGetBurningAndMintingPausedRequest
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetBurningAndMintingPausedRequest
+ */
 export const QueryGetBurningAndMintingPausedRequest = {
   typeUrl: '/circle.cctp.v1.QueryGetBurningAndMintingPausedRequest' as const,
+  is(o: any): o is QueryGetBurningAndMintingPausedRequest {
+    return o && o.$typeUrl === QueryGetBurningAndMintingPausedRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryGetBurningAndMintingPausedRequestSDKType {
+    return o && o.$typeUrl === QueryGetBurningAndMintingPausedRequest.typeUrl;
+  },
   encode(
     _: QueryGetBurningAndMintingPausedRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1587,8 +2040,29 @@ function createBaseQueryGetBurningAndMintingPausedResponse(): QueryGetBurningAnd
     paused: BurningAndMintingPaused.fromPartial({}),
   };
 }
+/**
+ * QueryBurningAndMintingPausedResponse is the response type for the
+ * Query/BurningAndMintingPaused RPC method.
+ * @name QueryGetBurningAndMintingPausedResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetBurningAndMintingPausedResponse
+ */
 export const QueryGetBurningAndMintingPausedResponse = {
   typeUrl: '/circle.cctp.v1.QueryGetBurningAndMintingPausedResponse' as const,
+  is(o: any): o is QueryGetBurningAndMintingPausedResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetBurningAndMintingPausedResponse.typeUrl ||
+        BurningAndMintingPaused.is(o.paused))
+    );
+  },
+  isSDK(o: any): o is QueryGetBurningAndMintingPausedResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetBurningAndMintingPausedResponse.typeUrl ||
+        BurningAndMintingPaused.isSDK(o.paused))
+    );
+  },
   encode(
     message: QueryGetBurningAndMintingPausedResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1672,9 +2146,28 @@ export const QueryGetBurningAndMintingPausedResponse = {
 function createBaseQueryGetSendingAndReceivingMessagesPausedRequest(): QueryGetSendingAndReceivingMessagesPausedRequest {
   return {};
 }
+/**
+ * QuerySendingAndReceivingPausedRequest is the request type for the
+ * Query/SendingAndReceivingPaused RPC method.
+ * @name QueryGetSendingAndReceivingMessagesPausedRequest
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetSendingAndReceivingMessagesPausedRequest
+ */
 export const QueryGetSendingAndReceivingMessagesPausedRequest = {
   typeUrl:
     '/circle.cctp.v1.QueryGetSendingAndReceivingMessagesPausedRequest' as const,
+  is(o: any): o is QueryGetSendingAndReceivingMessagesPausedRequest {
+    return (
+      o &&
+      o.$typeUrl === QueryGetSendingAndReceivingMessagesPausedRequest.typeUrl
+    );
+  },
+  isSDK(o: any): o is QueryGetSendingAndReceivingMessagesPausedRequestSDKType {
+    return (
+      o &&
+      o.$typeUrl === QueryGetSendingAndReceivingMessagesPausedRequest.typeUrl
+    );
+  },
   encode(
     _: QueryGetSendingAndReceivingMessagesPausedRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1748,9 +2241,32 @@ function createBaseQueryGetSendingAndReceivingMessagesPausedResponse(): QueryGet
     paused: SendingAndReceivingMessagesPaused.fromPartial({}),
   };
 }
+/**
+ * QuerySendingAndReceivingPausedResponse is the response type for the
+ * Query/SendingAndReceivingPaused RPC method.
+ * @name QueryGetSendingAndReceivingMessagesPausedResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetSendingAndReceivingMessagesPausedResponse
+ */
 export const QueryGetSendingAndReceivingMessagesPausedResponse = {
   typeUrl:
     '/circle.cctp.v1.QueryGetSendingAndReceivingMessagesPausedResponse' as const,
+  is(o: any): o is QueryGetSendingAndReceivingMessagesPausedResponse {
+    return (
+      o &&
+      (o.$typeUrl ===
+        QueryGetSendingAndReceivingMessagesPausedResponse.typeUrl ||
+        SendingAndReceivingMessagesPaused.is(o.paused))
+    );
+  },
+  isSDK(o: any): o is QueryGetSendingAndReceivingMessagesPausedResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl ===
+        QueryGetSendingAndReceivingMessagesPausedResponse.typeUrl ||
+        SendingAndReceivingMessagesPaused.isSDK(o.paused))
+    );
+  },
   encode(
     message: QueryGetSendingAndReceivingMessagesPausedResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1846,8 +2362,21 @@ export const QueryGetSendingAndReceivingMessagesPausedResponse = {
 function createBaseQueryGetMaxMessageBodySizeRequest(): QueryGetMaxMessageBodySizeRequest {
   return {};
 }
+/**
+ * QueryMaxMessageBodySizeRequest is the request type for the
+ * Query/MaxMessageBodySize RPC method.
+ * @name QueryGetMaxMessageBodySizeRequest
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetMaxMessageBodySizeRequest
+ */
 export const QueryGetMaxMessageBodySizeRequest = {
   typeUrl: '/circle.cctp.v1.QueryGetMaxMessageBodySizeRequest' as const,
+  is(o: any): o is QueryGetMaxMessageBodySizeRequest {
+    return o && o.$typeUrl === QueryGetMaxMessageBodySizeRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryGetMaxMessageBodySizeRequestSDKType {
+    return o && o.$typeUrl === QueryGetMaxMessageBodySizeRequest.typeUrl;
+  },
   encode(
     _: QueryGetMaxMessageBodySizeRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1909,8 +2438,29 @@ function createBaseQueryGetMaxMessageBodySizeResponse(): QueryGetMaxMessageBodyS
     amount: MaxMessageBodySize.fromPartial({}),
   };
 }
+/**
+ * QueryMaxMessageBodySizeResponse is the response type for the
+ * Query/MaxMessageBodySize RPC method.
+ * @name QueryGetMaxMessageBodySizeResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetMaxMessageBodySizeResponse
+ */
 export const QueryGetMaxMessageBodySizeResponse = {
   typeUrl: '/circle.cctp.v1.QueryGetMaxMessageBodySizeResponse' as const,
+  is(o: any): o is QueryGetMaxMessageBodySizeResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetMaxMessageBodySizeResponse.typeUrl ||
+        MaxMessageBodySize.is(o.amount))
+    );
+  },
+  isSDK(o: any): o is QueryGetMaxMessageBodySizeResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetMaxMessageBodySizeResponse.typeUrl ||
+        MaxMessageBodySize.isSDK(o.amount))
+    );
+  },
   encode(
     message: QueryGetMaxMessageBodySizeResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1991,8 +2541,21 @@ export const QueryGetMaxMessageBodySizeResponse = {
 function createBaseQueryGetNextAvailableNonceRequest(): QueryGetNextAvailableNonceRequest {
   return {};
 }
+/**
+ * QueryGetNextAvailableNonceRequest is the request type for the
+ * Query/NextAvailableNonce RPC method.
+ * @name QueryGetNextAvailableNonceRequest
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetNextAvailableNonceRequest
+ */
 export const QueryGetNextAvailableNonceRequest = {
   typeUrl: '/circle.cctp.v1.QueryGetNextAvailableNonceRequest' as const,
+  is(o: any): o is QueryGetNextAvailableNonceRequest {
+    return o && o.$typeUrl === QueryGetNextAvailableNonceRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryGetNextAvailableNonceRequestSDKType {
+    return o && o.$typeUrl === QueryGetNextAvailableNonceRequest.typeUrl;
+  },
   encode(
     _: QueryGetNextAvailableNonceRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2054,8 +2617,29 @@ function createBaseQueryGetNextAvailableNonceResponse(): QueryGetNextAvailableNo
     nonce: Nonce.fromPartial({}),
   };
 }
+/**
+ * Query QueryGetNextAvailableNonceResponse is the response type for the
+ * Query/NextAvailableNonce RPC method.
+ * @name QueryGetNextAvailableNonceResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetNextAvailableNonceResponse
+ */
 export const QueryGetNextAvailableNonceResponse = {
   typeUrl: '/circle.cctp.v1.QueryGetNextAvailableNonceResponse' as const,
+  is(o: any): o is QueryGetNextAvailableNonceResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetNextAvailableNonceResponse.typeUrl ||
+        Nonce.is(o.nonce))
+    );
+  },
+  isSDK(o: any): o is QueryGetNextAvailableNonceResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetNextAvailableNonceResponse.typeUrl ||
+        Nonce.isSDK(o.nonce))
+    );
+  },
   encode(
     message: QueryGetNextAvailableNonceResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2129,8 +2713,21 @@ export const QueryGetNextAvailableNonceResponse = {
 function createBaseQueryGetSignatureThresholdRequest(): QueryGetSignatureThresholdRequest {
   return {};
 }
+/**
+ * QuerySignatureThresholdRequest is the request type for the
+ * Query/SignatureThreshold RPC method.
+ * @name QueryGetSignatureThresholdRequest
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetSignatureThresholdRequest
+ */
 export const QueryGetSignatureThresholdRequest = {
   typeUrl: '/circle.cctp.v1.QueryGetSignatureThresholdRequest' as const,
+  is(o: any): o is QueryGetSignatureThresholdRequest {
+    return o && o.$typeUrl === QueryGetSignatureThresholdRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryGetSignatureThresholdRequestSDKType {
+    return o && o.$typeUrl === QueryGetSignatureThresholdRequest.typeUrl;
+  },
   encode(
     _: QueryGetSignatureThresholdRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2192,8 +2789,29 @@ function createBaseQueryGetSignatureThresholdResponse(): QueryGetSignatureThresh
     amount: SignatureThreshold.fromPartial({}),
   };
 }
+/**
+ * QuerySignatureThresholdResponse is the response type for the
+ * Query/SignatureThreshold RPC method.
+ * @name QueryGetSignatureThresholdResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetSignatureThresholdResponse
+ */
 export const QueryGetSignatureThresholdResponse = {
   typeUrl: '/circle.cctp.v1.QueryGetSignatureThresholdResponse' as const,
+  is(o: any): o is QueryGetSignatureThresholdResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetSignatureThresholdResponse.typeUrl ||
+        SignatureThreshold.is(o.amount))
+    );
+  },
+  isSDK(o: any): o is QueryGetSignatureThresholdResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetSignatureThresholdResponse.typeUrl ||
+        SignatureThreshold.isSDK(o.amount))
+    );
+  },
   encode(
     message: QueryGetSignatureThresholdResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2277,8 +2895,31 @@ function createBaseQueryGetTokenPairRequest(): QueryGetTokenPairRequest {
     remoteToken: '',
   };
 }
+/**
+ * QueryGetTokenPairRequest is the request type for the Query/TokenPair RPC
+ * method.
+ * @name QueryGetTokenPairRequest
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetTokenPairRequest
+ */
 export const QueryGetTokenPairRequest = {
   typeUrl: '/circle.cctp.v1.QueryGetTokenPairRequest' as const,
+  is(o: any): o is QueryGetTokenPairRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetTokenPairRequest.typeUrl ||
+        (typeof o.remoteDomain === 'number' &&
+          typeof o.remoteToken === 'string'))
+    );
+  },
+  isSDK(o: any): o is QueryGetTokenPairRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetTokenPairRequest.typeUrl ||
+        (typeof o.remote_domain === 'number' &&
+          typeof o.remote_token === 'string'))
+    );
+  },
   encode(
     message: QueryGetTokenPairRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2363,8 +3004,28 @@ function createBaseQueryGetTokenPairResponse(): QueryGetTokenPairResponse {
     pair: TokenPair.fromPartial({}),
   };
 }
+/**
+ * QueryGetTokenPairResponse is the response type for the Query/TokenPair RPC
+ * method.
+ * @name QueryGetTokenPairResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetTokenPairResponse
+ */
 export const QueryGetTokenPairResponse = {
   typeUrl: '/circle.cctp.v1.QueryGetTokenPairResponse' as const,
+  is(o: any): o is QueryGetTokenPairResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetTokenPairResponse.typeUrl || TokenPair.is(o.pair))
+    );
+  },
+  isSDK(o: any): o is QueryGetTokenPairResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetTokenPairResponse.typeUrl ||
+        TokenPair.isSDK(o.pair))
+    );
+  },
   encode(
     message: QueryGetTokenPairResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2440,8 +3101,21 @@ function createBaseQueryAllTokenPairsRequest(): QueryAllTokenPairsRequest {
     pagination: undefined,
   };
 }
+/**
+ * QueryAllTokenPairsRequest is the request type for the Query/TokenPairs RPC
+ * method.
+ * @name QueryAllTokenPairsRequest
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryAllTokenPairsRequest
+ */
 export const QueryAllTokenPairsRequest = {
   typeUrl: '/circle.cctp.v1.QueryAllTokenPairsRequest' as const,
+  is(o: any): o is QueryAllTokenPairsRequest {
+    return o && o.$typeUrl === QueryAllTokenPairsRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryAllTokenPairsRequestSDKType {
+    return o && o.$typeUrl === QueryAllTokenPairsRequest.typeUrl;
+  },
   encode(
     message: QueryAllTokenPairsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2522,8 +3196,31 @@ function createBaseQueryAllTokenPairsResponse(): QueryAllTokenPairsResponse {
     pagination: undefined,
   };
 }
+/**
+ * QueryAllTokenPairsResponse is the response type for the Query/TokenPairs RPC
+ * method.
+ * @name QueryAllTokenPairsResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryAllTokenPairsResponse
+ */
 export const QueryAllTokenPairsResponse = {
   typeUrl: '/circle.cctp.v1.QueryAllTokenPairsResponse' as const,
+  is(o: any): o is QueryAllTokenPairsResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllTokenPairsResponse.typeUrl ||
+        (Array.isArray(o.tokenPairs) &&
+          (!o.tokenPairs.length || TokenPair.is(o.tokenPairs[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryAllTokenPairsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllTokenPairsResponse.typeUrl ||
+        (Array.isArray(o.token_pairs) &&
+          (!o.token_pairs.length || TokenPair.isSDK(o.token_pairs[0]))))
+    );
+  },
   encode(
     message: QueryAllTokenPairsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2625,8 +3322,29 @@ function createBaseQueryGetUsedNonceRequest(): QueryGetUsedNonceRequest {
     nonce: BigInt(0),
   };
 }
+/**
+ * QueryGetUsedNonceRequest is the request type for the Query/UsedNonce RPC
+ * method.
+ * @name QueryGetUsedNonceRequest
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetUsedNonceRequest
+ */
 export const QueryGetUsedNonceRequest = {
   typeUrl: '/circle.cctp.v1.QueryGetUsedNonceRequest' as const,
+  is(o: any): o is QueryGetUsedNonceRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetUsedNonceRequest.typeUrl ||
+        (typeof o.sourceDomain === 'number' && typeof o.nonce === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is QueryGetUsedNonceRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetUsedNonceRequest.typeUrl ||
+        (typeof o.source_domain === 'number' && typeof o.nonce === 'bigint'))
+    );
+  },
   encode(
     message: QueryGetUsedNonceRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2714,8 +3432,27 @@ function createBaseQueryGetUsedNonceResponse(): QueryGetUsedNonceResponse {
     nonce: Nonce.fromPartial({}),
   };
 }
+/**
+ * QueryGetUsedNonceResponse is the response type for the Query/UsedNonce RPC
+ * method.
+ * @name QueryGetUsedNonceResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryGetUsedNonceResponse
+ */
 export const QueryGetUsedNonceResponse = {
   typeUrl: '/circle.cctp.v1.QueryGetUsedNonceResponse' as const,
+  is(o: any): o is QueryGetUsedNonceResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetUsedNonceResponse.typeUrl || Nonce.is(o.nonce))
+    );
+  },
+  isSDK(o: any): o is QueryGetUsedNonceResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetUsedNonceResponse.typeUrl || Nonce.isSDK(o.nonce))
+    );
+  },
   encode(
     message: QueryGetUsedNonceResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2791,8 +3528,21 @@ function createBaseQueryAllUsedNoncesRequest(): QueryAllUsedNoncesRequest {
     pagination: undefined,
   };
 }
+/**
+ * QueryAllUsedNonceRequest is the request type for the Query/UsedNonces RPC
+ * method.
+ * @name QueryAllUsedNoncesRequest
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryAllUsedNoncesRequest
+ */
 export const QueryAllUsedNoncesRequest = {
   typeUrl: '/circle.cctp.v1.QueryAllUsedNoncesRequest' as const,
+  is(o: any): o is QueryAllUsedNoncesRequest {
+    return o && o.$typeUrl === QueryAllUsedNoncesRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryAllUsedNoncesRequestSDKType {
+    return o && o.$typeUrl === QueryAllUsedNoncesRequest.typeUrl;
+  },
   encode(
     message: QueryAllUsedNoncesRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2873,8 +3623,31 @@ function createBaseQueryAllUsedNoncesResponse(): QueryAllUsedNoncesResponse {
     pagination: undefined,
   };
 }
+/**
+ * QueryAllUsedNonceResponse is the response type for the Query/UsedNonces RPC
+ * method.
+ * @name QueryAllUsedNoncesResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryAllUsedNoncesResponse
+ */
 export const QueryAllUsedNoncesResponse = {
   typeUrl: '/circle.cctp.v1.QueryAllUsedNoncesResponse' as const,
+  is(o: any): o is QueryAllUsedNoncesResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllUsedNoncesResponse.typeUrl ||
+        (Array.isArray(o.usedNonces) &&
+          (!o.usedNonces.length || Nonce.is(o.usedNonces[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryAllUsedNoncesResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllUsedNoncesResponse.typeUrl ||
+        (Array.isArray(o.used_nonces) &&
+          (!o.used_nonces.length || Nonce.isSDK(o.used_nonces[0]))))
+    );
+  },
   encode(
     message: QueryAllUsedNoncesResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2975,8 +3748,29 @@ function createBaseQueryRemoteTokenMessengerRequest(): QueryRemoteTokenMessenger
     domainId: 0,
   };
 }
+/**
+ * QueryRemoteTokenMessengerRequest is the request type for the
+ * Query/RemoteTokenMessenger RPC method.
+ * @name QueryRemoteTokenMessengerRequest
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryRemoteTokenMessengerRequest
+ */
 export const QueryRemoteTokenMessengerRequest = {
   typeUrl: '/circle.cctp.v1.QueryRemoteTokenMessengerRequest' as const,
+  is(o: any): o is QueryRemoteTokenMessengerRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryRemoteTokenMessengerRequest.typeUrl ||
+        typeof o.domainId === 'number')
+    );
+  },
+  isSDK(o: any): o is QueryRemoteTokenMessengerRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryRemoteTokenMessengerRequest.typeUrl ||
+        typeof o.domain_id === 'number')
+    );
+  },
   encode(
     message: QueryRemoteTokenMessengerRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3049,8 +3843,29 @@ function createBaseQueryRemoteTokenMessengerResponse(): QueryRemoteTokenMessenge
     remoteTokenMessenger: RemoteTokenMessenger.fromPartial({}),
   };
 }
+/**
+ * QueryRemoteTokenMessengerResponse is the response type for the
+ * Query/RemoteTokenMessenger RPC method.
+ * @name QueryRemoteTokenMessengerResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryRemoteTokenMessengerResponse
+ */
 export const QueryRemoteTokenMessengerResponse = {
   typeUrl: '/circle.cctp.v1.QueryRemoteTokenMessengerResponse' as const,
+  is(o: any): o is QueryRemoteTokenMessengerResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryRemoteTokenMessengerResponse.typeUrl ||
+        RemoteTokenMessenger.is(o.remoteTokenMessenger))
+    );
+  },
+  isSDK(o: any): o is QueryRemoteTokenMessengerResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryRemoteTokenMessengerResponse.typeUrl ||
+        RemoteTokenMessenger.isSDK(o.remote_token_messenger))
+    );
+  },
   encode(
     message: QueryRemoteTokenMessengerResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3137,8 +3952,21 @@ function createBaseQueryRemoteTokenMessengersRequest(): QueryRemoteTokenMessenge
     pagination: undefined,
   };
 }
+/**
+ * QueryRemoteTokenMessengersRequest is the request type for the
+ * Query/RemoteTokenMessengers RPC method.
+ * @name QueryRemoteTokenMessengersRequest
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryRemoteTokenMessengersRequest
+ */
 export const QueryRemoteTokenMessengersRequest = {
   typeUrl: '/circle.cctp.v1.QueryRemoteTokenMessengersRequest' as const,
+  is(o: any): o is QueryRemoteTokenMessengersRequest {
+    return o && o.$typeUrl === QueryRemoteTokenMessengersRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryRemoteTokenMessengersRequestSDKType {
+    return o && o.$typeUrl === QueryRemoteTokenMessengersRequest.typeUrl;
+  },
   encode(
     message: QueryRemoteTokenMessengersRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3219,8 +4047,33 @@ function createBaseQueryRemoteTokenMessengersResponse(): QueryRemoteTokenMesseng
     pagination: undefined,
   };
 }
+/**
+ * QueryRemoteTokenMessengersResponse is the response type for the
+ * Query/RemoteTokenMessengers RPC method.
+ * @name QueryRemoteTokenMessengersResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryRemoteTokenMessengersResponse
+ */
 export const QueryRemoteTokenMessengersResponse = {
   typeUrl: '/circle.cctp.v1.QueryRemoteTokenMessengersResponse' as const,
+  is(o: any): o is QueryRemoteTokenMessengersResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryRemoteTokenMessengersResponse.typeUrl ||
+        (Array.isArray(o.remoteTokenMessengers) &&
+          (!o.remoteTokenMessengers.length ||
+            RemoteTokenMessenger.is(o.remoteTokenMessengers[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryRemoteTokenMessengersResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryRemoteTokenMessengersResponse.typeUrl ||
+        (Array.isArray(o.remote_token_messengers) &&
+          (!o.remote_token_messengers.length ||
+            RemoteTokenMessenger.isSDK(o.remote_token_messengers[0]))))
+    );
+  },
   encode(
     message: QueryRemoteTokenMessengersResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3325,8 +4178,21 @@ export const QueryRemoteTokenMessengersResponse = {
 function createBaseQueryBurnMessageVersionRequest(): QueryBurnMessageVersionRequest {
   return {};
 }
+/**
+ * QueryBurnMessageVersionRequest is the request type for the
+ * Query/BurnMessageVersion RPC method.
+ * @name QueryBurnMessageVersionRequest
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryBurnMessageVersionRequest
+ */
 export const QueryBurnMessageVersionRequest = {
   typeUrl: '/circle.cctp.v1.QueryBurnMessageVersionRequest' as const,
+  is(o: any): o is QueryBurnMessageVersionRequest {
+    return o && o.$typeUrl === QueryBurnMessageVersionRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryBurnMessageVersionRequestSDKType {
+    return o && o.$typeUrl === QueryBurnMessageVersionRequest.typeUrl;
+  },
   encode(
     _: QueryBurnMessageVersionRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3388,8 +4254,29 @@ function createBaseQueryBurnMessageVersionResponse(): QueryBurnMessageVersionRes
     version: 0,
   };
 }
+/**
+ * QueryBurnMessageVersionResponse is the response type for the
+ * Query/BurnMessageVersion RPC method.
+ * @name QueryBurnMessageVersionResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryBurnMessageVersionResponse
+ */
 export const QueryBurnMessageVersionResponse = {
   typeUrl: '/circle.cctp.v1.QueryBurnMessageVersionResponse' as const,
+  is(o: any): o is QueryBurnMessageVersionResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryBurnMessageVersionResponse.typeUrl ||
+        typeof o.version === 'number')
+    );
+  },
+  isSDK(o: any): o is QueryBurnMessageVersionResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryBurnMessageVersionResponse.typeUrl ||
+        typeof o.version === 'number')
+    );
+  },
   encode(
     message: QueryBurnMessageVersionResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3460,8 +4347,21 @@ export const QueryBurnMessageVersionResponse = {
 function createBaseQueryLocalMessageVersionRequest(): QueryLocalMessageVersionRequest {
   return {};
 }
+/**
+ * QueryLocalMessageVersionRequest is the request type for the
+ * Query/LocalMessageVersion RPC method.
+ * @name QueryLocalMessageVersionRequest
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryLocalMessageVersionRequest
+ */
 export const QueryLocalMessageVersionRequest = {
   typeUrl: '/circle.cctp.v1.QueryLocalMessageVersionRequest' as const,
+  is(o: any): o is QueryLocalMessageVersionRequest {
+    return o && o.$typeUrl === QueryLocalMessageVersionRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryLocalMessageVersionRequestSDKType {
+    return o && o.$typeUrl === QueryLocalMessageVersionRequest.typeUrl;
+  },
   encode(
     _: QueryLocalMessageVersionRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3523,8 +4423,29 @@ function createBaseQueryLocalMessageVersionResponse(): QueryLocalMessageVersionR
     version: 0,
   };
 }
+/**
+ * QueryLocalMessageVersionResponse is the response type for the
+ * Query/LocalMessageVersion RPC method.
+ * @name QueryLocalMessageVersionResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryLocalMessageVersionResponse
+ */
 export const QueryLocalMessageVersionResponse = {
   typeUrl: '/circle.cctp.v1.QueryLocalMessageVersionResponse' as const,
+  is(o: any): o is QueryLocalMessageVersionResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryLocalMessageVersionResponse.typeUrl ||
+        typeof o.version === 'number')
+    );
+  },
+  isSDK(o: any): o is QueryLocalMessageVersionResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryLocalMessageVersionResponse.typeUrl ||
+        typeof o.version === 'number')
+    );
+  },
   encode(
     message: QueryLocalMessageVersionResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3595,8 +4516,21 @@ export const QueryLocalMessageVersionResponse = {
 function createBaseQueryLocalDomainRequest(): QueryLocalDomainRequest {
   return {};
 }
+/**
+ * QueryLocalDomainRequest is the request type for the Query/LocalDomain RPC
+ * method.
+ * @name QueryLocalDomainRequest
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryLocalDomainRequest
+ */
 export const QueryLocalDomainRequest = {
   typeUrl: '/circle.cctp.v1.QueryLocalDomainRequest' as const,
+  is(o: any): o is QueryLocalDomainRequest {
+    return o && o.$typeUrl === QueryLocalDomainRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryLocalDomainRequestSDKType {
+    return o && o.$typeUrl === QueryLocalDomainRequest.typeUrl;
+  },
   encode(
     _: QueryLocalDomainRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3654,8 +4588,29 @@ function createBaseQueryLocalDomainResponse(): QueryLocalDomainResponse {
     domainId: 0,
   };
 }
+/**
+ * QueryLocalDomainResponse is the response type for the Query/LocalDomain RPC
+ * method.
+ * @name QueryLocalDomainResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.QueryLocalDomainResponse
+ */
 export const QueryLocalDomainResponse = {
   typeUrl: '/circle.cctp.v1.QueryLocalDomainResponse' as const,
+  is(o: any): o is QueryLocalDomainResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryLocalDomainResponse.typeUrl ||
+        typeof o.domainId === 'number')
+    );
+  },
+  isSDK(o: any): o is QueryLocalDomainResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryLocalDomainResponse.typeUrl ||
+        typeof o.domain_id === 'number')
+    );
+  },
   encode(
     message: QueryLocalDomainResponse,
     writer: BinaryWriter = BinaryWriter.create(),

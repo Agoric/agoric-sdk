@@ -7,6 +7,9 @@ import { type JsonSafe } from '../../../json-safe.js';
  * the granter's account.
  *
  * Since: cosmos-sdk 0.43
+ * @name SendAuthorization
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.SendAuthorization
  */
 export interface SendAuthorization {
   $typeUrl?: '/cosmos.bank.v1beta1.SendAuthorization';
@@ -28,6 +31,9 @@ export interface SendAuthorizationProtoMsg {
  * the granter's account.
  *
  * Since: cosmos-sdk 0.43
+ * @name SendAuthorizationSDKType
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.SendAuthorization
  */
 export interface SendAuthorizationSDKType {
   $typeUrl?: '/cosmos.bank.v1beta1.SendAuthorization';
@@ -41,8 +47,38 @@ function createBaseSendAuthorization(): SendAuthorization {
     allowList: [],
   };
 }
+/**
+ * SendAuthorization allows the grantee to spend up to spend_limit coins from
+ * the granter's account.
+ *
+ * Since: cosmos-sdk 0.43
+ * @name SendAuthorization
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.SendAuthorization
+ */
 export const SendAuthorization = {
   typeUrl: '/cosmos.bank.v1beta1.SendAuthorization' as const,
+  aminoType: 'cosmos-sdk/SendAuthorization' as const,
+  is(o: any): o is SendAuthorization {
+    return (
+      o &&
+      (o.$typeUrl === SendAuthorization.typeUrl ||
+        (Array.isArray(o.spendLimit) &&
+          (!o.spendLimit.length || Coin.is(o.spendLimit[0])) &&
+          Array.isArray(o.allowList) &&
+          (!o.allowList.length || typeof o.allowList[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is SendAuthorizationSDKType {
+    return (
+      o &&
+      (o.$typeUrl === SendAuthorization.typeUrl ||
+        (Array.isArray(o.spend_limit) &&
+          (!o.spend_limit.length || Coin.isSDK(o.spend_limit[0])) &&
+          Array.isArray(o.allow_list) &&
+          (!o.allow_list.length || typeof o.allow_list[0] === 'string')))
+    );
+  },
   encode(
     message: SendAuthorization,
     writer: BinaryWriter = BinaryWriter.create(),

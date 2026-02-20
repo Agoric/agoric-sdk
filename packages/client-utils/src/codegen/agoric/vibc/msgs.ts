@@ -8,7 +8,12 @@ import { isSet } from '../../helpers.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
 import { type JsonSafe } from '../../json-safe.js';
-/** MsgSendPacket is an SDK message for sending an outgoing IBC packet */
+/**
+ * MsgSendPacket is an SDK message for sending an outgoing IBC packet
+ * @name MsgSendPacket
+ * @package agoric.vibc
+ * @see proto type: agoric.vibc.MsgSendPacket
+ */
 export interface MsgSendPacket {
   packet: Packet;
   sender: Uint8Array;
@@ -17,18 +22,33 @@ export interface MsgSendPacketProtoMsg {
   typeUrl: '/agoric.vibc.MsgSendPacket';
   value: Uint8Array;
 }
-/** MsgSendPacket is an SDK message for sending an outgoing IBC packet */
+/**
+ * MsgSendPacket is an SDK message for sending an outgoing IBC packet
+ * @name MsgSendPacketSDKType
+ * @package agoric.vibc
+ * @see proto type: agoric.vibc.MsgSendPacket
+ */
 export interface MsgSendPacketSDKType {
   packet: PacketSDKType;
   sender: Uint8Array;
 }
-/** Empty response for SendPacket. */
+/**
+ * Empty response for SendPacket.
+ * @name MsgSendPacketResponse
+ * @package agoric.vibc
+ * @see proto type: agoric.vibc.MsgSendPacketResponse
+ */
 export interface MsgSendPacketResponse {}
 export interface MsgSendPacketResponseProtoMsg {
   typeUrl: '/agoric.vibc.MsgSendPacketResponse';
   value: Uint8Array;
 }
-/** Empty response for SendPacket. */
+/**
+ * Empty response for SendPacket.
+ * @name MsgSendPacketResponseSDKType
+ * @package agoric.vibc
+ * @see proto type: agoric.vibc.MsgSendPacketResponse
+ */
 export interface MsgSendPacketResponseSDKType {}
 function createBaseMsgSendPacket(): MsgSendPacket {
   return {
@@ -36,6 +56,12 @@ function createBaseMsgSendPacket(): MsgSendPacket {
     sender: new Uint8Array(),
   };
 }
+/**
+ * MsgSendPacket is an SDK message for sending an outgoing IBC packet
+ * @name MsgSendPacket
+ * @package agoric.vibc
+ * @see proto type: agoric.vibc.MsgSendPacket
+ */
 export const MsgSendPacket = {
   typeUrl: '/agoric.vibc.MsgSendPacket' as const,
   encode(
@@ -114,6 +140,12 @@ export const MsgSendPacket = {
 function createBaseMsgSendPacketResponse(): MsgSendPacketResponse {
   return {};
 }
+/**
+ * Empty response for SendPacket.
+ * @name MsgSendPacketResponse
+ * @package agoric.vibc
+ * @see proto type: agoric.vibc.MsgSendPacketResponse
+ */
 export const MsgSendPacketResponse = {
   typeUrl: '/agoric.vibc.MsgSendPacketResponse' as const,
   encode(

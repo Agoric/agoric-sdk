@@ -14,100 +14,180 @@ import {
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
-/** QueryGrantsRequest is the request type for the Query/Grants RPC method. */
+/**
+ * QueryGrantsRequest is the request type for the Query/Grants RPC method.
+ * @name QueryGrantsRequest
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.QueryGrantsRequest
+ */
 export interface QueryGrantsRequest {
   granter: string;
   grantee: string;
-  /** Optional, msg_type_url, when set, will query only grants matching given msg type. */
+  /**
+   * Optional, msg_type_url, when set, will query only grants matching given msg type.
+   */
   msgTypeUrl: string;
-  /** pagination defines an pagination for the request. */
+  /**
+   * pagination defines an pagination for the request.
+   */
   pagination?: PageRequest;
 }
 export interface QueryGrantsRequestProtoMsg {
   typeUrl: '/cosmos.authz.v1beta1.QueryGrantsRequest';
   value: Uint8Array;
 }
-/** QueryGrantsRequest is the request type for the Query/Grants RPC method. */
+/**
+ * QueryGrantsRequest is the request type for the Query/Grants RPC method.
+ * @name QueryGrantsRequestSDKType
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.QueryGrantsRequest
+ */
 export interface QueryGrantsRequestSDKType {
   granter: string;
   grantee: string;
   msg_type_url: string;
   pagination?: PageRequestSDKType;
 }
-/** QueryGrantsResponse is the response type for the Query/Authorizations RPC method. */
+/**
+ * QueryGrantsResponse is the response type for the Query/Authorizations RPC method.
+ * @name QueryGrantsResponse
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.QueryGrantsResponse
+ */
 export interface QueryGrantsResponse {
-  /** authorizations is a list of grants granted for grantee by granter. */
+  /**
+   * authorizations is a list of grants granted for grantee by granter.
+   */
   grants: Grant[];
-  /** pagination defines an pagination for the response. */
+  /**
+   * pagination defines an pagination for the response.
+   */
   pagination?: PageResponse;
 }
 export interface QueryGrantsResponseProtoMsg {
   typeUrl: '/cosmos.authz.v1beta1.QueryGrantsResponse';
   value: Uint8Array;
 }
-/** QueryGrantsResponse is the response type for the Query/Authorizations RPC method. */
+/**
+ * QueryGrantsResponse is the response type for the Query/Authorizations RPC method.
+ * @name QueryGrantsResponseSDKType
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.QueryGrantsResponse
+ */
 export interface QueryGrantsResponseSDKType {
   grants: GrantSDKType[];
   pagination?: PageResponseSDKType;
 }
-/** QueryGranterGrantsRequest is the request type for the Query/GranterGrants RPC method. */
+/**
+ * QueryGranterGrantsRequest is the request type for the Query/GranterGrants RPC method.
+ * @name QueryGranterGrantsRequest
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.QueryGranterGrantsRequest
+ */
 export interface QueryGranterGrantsRequest {
   granter: string;
-  /** pagination defines an pagination for the request. */
+  /**
+   * pagination defines an pagination for the request.
+   */
   pagination?: PageRequest;
 }
 export interface QueryGranterGrantsRequestProtoMsg {
   typeUrl: '/cosmos.authz.v1beta1.QueryGranterGrantsRequest';
   value: Uint8Array;
 }
-/** QueryGranterGrantsRequest is the request type for the Query/GranterGrants RPC method. */
+/**
+ * QueryGranterGrantsRequest is the request type for the Query/GranterGrants RPC method.
+ * @name QueryGranterGrantsRequestSDKType
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.QueryGranterGrantsRequest
+ */
 export interface QueryGranterGrantsRequestSDKType {
   granter: string;
   pagination?: PageRequestSDKType;
 }
-/** QueryGranterGrantsResponse is the response type for the Query/GranterGrants RPC method. */
+/**
+ * QueryGranterGrantsResponse is the response type for the Query/GranterGrants RPC method.
+ * @name QueryGranterGrantsResponse
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.QueryGranterGrantsResponse
+ */
 export interface QueryGranterGrantsResponse {
-  /** grants is a list of grants granted by the granter. */
+  /**
+   * grants is a list of grants granted by the granter.
+   */
   grants: GrantAuthorization[];
-  /** pagination defines an pagination for the response. */
+  /**
+   * pagination defines an pagination for the response.
+   */
   pagination?: PageResponse;
 }
 export interface QueryGranterGrantsResponseProtoMsg {
   typeUrl: '/cosmos.authz.v1beta1.QueryGranterGrantsResponse';
   value: Uint8Array;
 }
-/** QueryGranterGrantsResponse is the response type for the Query/GranterGrants RPC method. */
+/**
+ * QueryGranterGrantsResponse is the response type for the Query/GranterGrants RPC method.
+ * @name QueryGranterGrantsResponseSDKType
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.QueryGranterGrantsResponse
+ */
 export interface QueryGranterGrantsResponseSDKType {
   grants: GrantAuthorizationSDKType[];
   pagination?: PageResponseSDKType;
 }
-/** QueryGranteeGrantsRequest is the request type for the Query/GranteeGrants RPC method. */
+/**
+ * QueryGranteeGrantsRequest is the request type for the Query/GranteeGrants RPC method.
+ * @name QueryGranteeGrantsRequest
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.QueryGranteeGrantsRequest
+ */
 export interface QueryGranteeGrantsRequest {
   grantee: string;
-  /** pagination defines an pagination for the request. */
+  /**
+   * pagination defines an pagination for the request.
+   */
   pagination?: PageRequest;
 }
 export interface QueryGranteeGrantsRequestProtoMsg {
   typeUrl: '/cosmos.authz.v1beta1.QueryGranteeGrantsRequest';
   value: Uint8Array;
 }
-/** QueryGranteeGrantsRequest is the request type for the Query/GranteeGrants RPC method. */
+/**
+ * QueryGranteeGrantsRequest is the request type for the Query/GranteeGrants RPC method.
+ * @name QueryGranteeGrantsRequestSDKType
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.QueryGranteeGrantsRequest
+ */
 export interface QueryGranteeGrantsRequestSDKType {
   grantee: string;
   pagination?: PageRequestSDKType;
 }
-/** QueryGranteeGrantsResponse is the response type for the Query/GranteeGrants RPC method. */
+/**
+ * QueryGranteeGrantsResponse is the response type for the Query/GranteeGrants RPC method.
+ * @name QueryGranteeGrantsResponse
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.QueryGranteeGrantsResponse
+ */
 export interface QueryGranteeGrantsResponse {
-  /** grants is a list of grants granted to the grantee. */
+  /**
+   * grants is a list of grants granted to the grantee.
+   */
   grants: GrantAuthorization[];
-  /** pagination defines an pagination for the response. */
+  /**
+   * pagination defines an pagination for the response.
+   */
   pagination?: PageResponse;
 }
 export interface QueryGranteeGrantsResponseProtoMsg {
   typeUrl: '/cosmos.authz.v1beta1.QueryGranteeGrantsResponse';
   value: Uint8Array;
 }
-/** QueryGranteeGrantsResponse is the response type for the Query/GranteeGrants RPC method. */
+/**
+ * QueryGranteeGrantsResponse is the response type for the Query/GranteeGrants RPC method.
+ * @name QueryGranteeGrantsResponseSDKType
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.QueryGranteeGrantsResponse
+ */
 export interface QueryGranteeGrantsResponseSDKType {
   grants: GrantAuthorizationSDKType[];
   pagination?: PageResponseSDKType;
@@ -120,6 +200,12 @@ function createBaseQueryGrantsRequest(): QueryGrantsRequest {
     pagination: undefined,
   };
 }
+/**
+ * QueryGrantsRequest is the request type for the Query/Grants RPC method.
+ * @name QueryGrantsRequest
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.QueryGrantsRequest
+ */
 export const QueryGrantsRequest = {
   typeUrl: '/cosmos.authz.v1beta1.QueryGrantsRequest' as const,
   encode(
@@ -221,6 +307,12 @@ function createBaseQueryGrantsResponse(): QueryGrantsResponse {
     pagination: undefined,
   };
 }
+/**
+ * QueryGrantsResponse is the response type for the Query/Authorizations RPC method.
+ * @name QueryGrantsResponse
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.QueryGrantsResponse
+ */
 export const QueryGrantsResponse = {
   typeUrl: '/cosmos.authz.v1beta1.QueryGrantsResponse' as const,
   encode(
@@ -313,6 +405,12 @@ function createBaseQueryGranterGrantsRequest(): QueryGranterGrantsRequest {
     pagination: undefined,
   };
 }
+/**
+ * QueryGranterGrantsRequest is the request type for the Query/GranterGrants RPC method.
+ * @name QueryGranterGrantsRequest
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.QueryGranterGrantsRequest
+ */
 export const QueryGranterGrantsRequest = {
   typeUrl: '/cosmos.authz.v1beta1.QueryGranterGrantsRequest' as const,
   encode(
@@ -404,6 +502,12 @@ function createBaseQueryGranterGrantsResponse(): QueryGranterGrantsResponse {
     pagination: undefined,
   };
 }
+/**
+ * QueryGranterGrantsResponse is the response type for the Query/GranterGrants RPC method.
+ * @name QueryGranterGrantsResponse
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.QueryGranterGrantsResponse
+ */
 export const QueryGranterGrantsResponse = {
   typeUrl: '/cosmos.authz.v1beta1.QueryGranterGrantsResponse' as const,
   encode(
@@ -509,6 +613,12 @@ function createBaseQueryGranteeGrantsRequest(): QueryGranteeGrantsRequest {
     pagination: undefined,
   };
 }
+/**
+ * QueryGranteeGrantsRequest is the request type for the Query/GranteeGrants RPC method.
+ * @name QueryGranteeGrantsRequest
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.QueryGranteeGrantsRequest
+ */
 export const QueryGranteeGrantsRequest = {
   typeUrl: '/cosmos.authz.v1beta1.QueryGranteeGrantsRequest' as const,
   encode(
@@ -600,6 +710,12 @@ function createBaseQueryGranteeGrantsResponse(): QueryGranteeGrantsResponse {
     pagination: undefined,
   };
 }
+/**
+ * QueryGranteeGrantsResponse is the response type for the Query/GranteeGrants RPC method.
+ * @name QueryGranteeGrantsResponse
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.QueryGranteeGrantsResponse
+ */
 export const QueryGranteeGrantsResponse = {
   typeUrl: '/cosmos.authz.v1beta1.QueryGranteeGrantsResponse' as const,
   encode(

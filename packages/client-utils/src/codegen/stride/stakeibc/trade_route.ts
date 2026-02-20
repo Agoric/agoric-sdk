@@ -9,10 +9,15 @@ import { type JsonSafe } from '../../json-safe.js';
  * are executed off-chain via authz
  *
  * Stores pool information needed to execute the swap along a trade route
+ * @name TradeConfig
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.TradeConfig
+ * @deprecated
  */
-/** @deprecated */
 export interface TradeConfig {
-  /** Currently Osmosis is the only trade chain so this is an osmosis pool id */
+  /**
+   * Currently Osmosis is the only trade chain so this is an osmosis pool id
+   */
   poolId: bigint;
   /**
    * Spot price in the pool to convert the reward denom to the host denom
@@ -20,7 +25,9 @@ export interface TradeConfig {
    * This value may be slightly stale as it is updated by an ICQ
    */
   swapPrice: string;
-  /** unix time in seconds that the price was last updated */
+  /**
+   * unix time in seconds that the price was last updated
+   */
   priceUpdateTimestamp: bigint;
   /**
    * Threshold defining the percentage of tokens that could be lost in the trade
@@ -45,8 +52,11 @@ export interface TradeConfigProtoMsg {
  * are executed off-chain via authz
  *
  * Stores pool information needed to execute the swap along a trade route
+ * @name TradeConfigSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.TradeConfig
+ * @deprecated
  */
-/** @deprecated */
 export interface TradeConfigSDKType {
   pool_id: bigint;
   swap_price: string;
@@ -63,17 +73,30 @@ export interface TradeConfigSDKType {
  * withdrawl ICA on hostZone
  * The structure is key'd on reward denom and host denom in their native forms
  * (i.e. reward_denom_on_reward_zone and host_denom_on_host_zone)
+ * @name TradeRoute
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.TradeRoute
  */
 export interface TradeRoute {
-  /** ibc denom for the reward on the host zone */
+  /**
+   * ibc denom for the reward on the host zone
+   */
   rewardDenomOnHostZone: string;
-  /** should be the native denom for the reward chain */
+  /**
+   * should be the native denom for the reward chain
+   */
   rewardDenomOnRewardZone: string;
-  /** ibc denom of the reward on the trade chain, input to the swap */
+  /**
+   * ibc denom of the reward on the trade chain, input to the swap
+   */
   rewardDenomOnTradeZone: string;
-  /** ibc of the host denom on the trade chain, output from the swap */
+  /**
+   * ibc of the host denom on the trade chain, output from the swap
+   */
   hostDenomOnTradeZone: string;
-  /** should be the same as the native host denom on the host chain */
+  /**
+   * should be the same as the native host denom on the host chain
+   */
   hostDenomOnHostZone: string;
   /**
    * ICAAccount on the host zone with the reward tokens
@@ -116,8 +139,8 @@ export interface TradeRoute {
    *
    * specifies the configuration needed to execute the swap
    * such as pool_id, slippage, min trade amount, etc.
+   * @deprecated
    */
-  /** @deprecated */
   tradeConfig: TradeConfig;
 }
 export interface TradeRouteProtoMsg {
@@ -132,6 +155,9 @@ export interface TradeRouteProtoMsg {
  * withdrawl ICA on hostZone
  * The structure is key'd on reward denom and host denom in their native forms
  * (i.e. reward_denom_on_reward_zone and host_denom_on_host_zone)
+ * @name TradeRouteSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.TradeRoute
  */
 export interface TradeRouteSDKType {
   reward_denom_on_host_zone: string;
@@ -146,7 +172,9 @@ export interface TradeRouteSDKType {
   reward_to_trade_channel_id: string;
   trade_to_host_channel_id: string;
   min_transfer_amount: string;
-  /** @deprecated */
+  /**
+   * @deprecated
+   */
   trade_config: TradeConfigSDKType;
 }
 function createBaseTradeConfig(): TradeConfig {
@@ -159,6 +187,16 @@ function createBaseTradeConfig(): TradeConfig {
     maxSwapAmount: '',
   };
 }
+/**
+ * Deprecated, this configuration is no longer needed since swaps
+ * are executed off-chain via authz
+ *
+ * Stores pool information needed to execute the swap along a trade route
+ * @name TradeConfig
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.TradeConfig
+ * @deprecated
+ */
 export const TradeConfig = {
   typeUrl: '/stride.stakeibc.TradeConfig' as const,
   encode(
@@ -314,6 +352,18 @@ function createBaseTradeRoute(): TradeRoute {
     tradeConfig: TradeConfig.fromPartial({}),
   };
 }
+/**
+ * TradeRoute represents a round trip including info on transfer and how to do
+ * the swap. It makes the assumption that the reward token is always foreign to
+ * the host so therefore the first two hops are to unwind the ibc denom enroute
+ * to the trade chain and the last hop is the return so funds start/end in the
+ * withdrawl ICA on hostZone
+ * The structure is key'd on reward denom and host denom in their native forms
+ * (i.e. reward_denom_on_reward_zone and host_denom_on_host_zone)
+ * @name TradeRoute
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.TradeRoute
+ */
 export const TradeRoute = {
   typeUrl: '/stride.stakeibc.TradeRoute' as const,
   encode(

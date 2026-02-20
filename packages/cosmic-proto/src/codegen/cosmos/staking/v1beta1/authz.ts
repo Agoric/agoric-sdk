@@ -1,7 +1,7 @@
 //@ts-nocheck
 import { Coin, type CoinSDKType } from '../../base/v1beta1/coin.js';
-import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
+import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { type JsonSafe } from '../../../json-safe.js';
 /**
  * AuthorizationType defines the type of staking module authorization type
@@ -66,6 +66,9 @@ export function authorizationTypeToJSON(object: AuthorizationType): string {
  * StakeAuthorization defines authorization for delegate/undelegate/redelegate.
  *
  * Since: cosmos-sdk 0.43
+ * @name StakeAuthorization
+ * @package cosmos.staking.v1beta1
+ * @see proto type: cosmos.staking.v1beta1.StakeAuthorization
  */
 export interface StakeAuthorization {
   $typeUrl?: '/cosmos.staking.v1beta1.StakeAuthorization';
@@ -79,9 +82,13 @@ export interface StakeAuthorization {
    * account.
    */
   allowList?: StakeAuthorization_Validators;
-  /** deny_list specifies list of validator addresses to whom grantee can not delegate tokens. */
+  /**
+   * deny_list specifies list of validator addresses to whom grantee can not delegate tokens.
+   */
   denyList?: StakeAuthorization_Validators;
-  /** authorization_type defines one of AuthorizationType. */
+  /**
+   * authorization_type defines one of AuthorizationType.
+   */
   authorizationType: AuthorizationType;
 }
 export interface StakeAuthorizationProtoMsg {
@@ -92,6 +99,9 @@ export interface StakeAuthorizationProtoMsg {
  * StakeAuthorization defines authorization for delegate/undelegate/redelegate.
  *
  * Since: cosmos-sdk 0.43
+ * @name StakeAuthorizationSDKType
+ * @package cosmos.staking.v1beta1
+ * @see proto type: cosmos.staking.v1beta1.StakeAuthorization
  */
 export interface StakeAuthorizationSDKType {
   $typeUrl?: '/cosmos.staking.v1beta1.StakeAuthorization';
@@ -100,7 +110,12 @@ export interface StakeAuthorizationSDKType {
   deny_list?: StakeAuthorization_ValidatorsSDKType;
   authorization_type: AuthorizationType;
 }
-/** Validators defines list of validator addresses. */
+/**
+ * Validators defines list of validator addresses.
+ * @name StakeAuthorization_Validators
+ * @package cosmos.staking.v1beta1
+ * @see proto type: cosmos.staking.v1beta1.Validators
+ */
 export interface StakeAuthorization_Validators {
   address: string[];
 }
@@ -108,7 +123,12 @@ export interface StakeAuthorization_ValidatorsProtoMsg {
   typeUrl: '/cosmos.staking.v1beta1.Validators';
   value: Uint8Array;
 }
-/** Validators defines list of validator addresses. */
+/**
+ * Validators defines list of validator addresses.
+ * @name StakeAuthorization_ValidatorsSDKType
+ * @package cosmos.staking.v1beta1
+ * @see proto type: cosmos.staking.v1beta1.Validators
+ */
 export interface StakeAuthorization_ValidatorsSDKType {
   address: string[];
 }
@@ -121,8 +141,29 @@ function createBaseStakeAuthorization(): StakeAuthorization {
     authorizationType: 0,
   };
 }
+/**
+ * StakeAuthorization defines authorization for delegate/undelegate/redelegate.
+ *
+ * Since: cosmos-sdk 0.43
+ * @name StakeAuthorization
+ * @package cosmos.staking.v1beta1
+ * @see proto type: cosmos.staking.v1beta1.StakeAuthorization
+ */
 export const StakeAuthorization = {
   typeUrl: '/cosmos.staking.v1beta1.StakeAuthorization' as const,
+  aminoType: 'cosmos-sdk/StakeAuthorization' as const,
+  is(o: any): o is StakeAuthorization {
+    return (
+      o &&
+      (o.$typeUrl === StakeAuthorization.typeUrl || isSet(o.authorizationType))
+    );
+  },
+  isSDK(o: any): o is StakeAuthorizationSDKType {
+    return (
+      o &&
+      (o.$typeUrl === StakeAuthorization.typeUrl || isSet(o.authorization_type))
+    );
+  },
   encode(
     message: StakeAuthorization,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -254,8 +295,31 @@ function createBaseStakeAuthorization_Validators(): StakeAuthorization_Validator
     address: [],
   };
 }
+/**
+ * Validators defines list of validator addresses.
+ * @name StakeAuthorization_Validators
+ * @package cosmos.staking.v1beta1
+ * @see proto type: cosmos.staking.v1beta1.Validators
+ */
 export const StakeAuthorization_Validators = {
   typeUrl: '/cosmos.staking.v1beta1.Validators' as const,
+  aminoType: 'cosmos-sdk/Validators' as const,
+  is(o: any): o is StakeAuthorization_Validators {
+    return (
+      o &&
+      (o.$typeUrl === StakeAuthorization_Validators.typeUrl ||
+        (Array.isArray(o.address) &&
+          (!o.address.length || typeof o.address[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is StakeAuthorization_ValidatorsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === StakeAuthorization_Validators.typeUrl ||
+        (Array.isArray(o.address) &&
+          (!o.address.length || typeof o.address[0] === 'string')))
+    );
+  },
   encode(
     message: StakeAuthorization_Validators,
     writer: BinaryWriter = BinaryWriter.create(),

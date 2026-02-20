@@ -3,6 +3,11 @@ import { LSMTokenDeposit, type LSMTokenDepositSDKType } from './records.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
+/**
+ * @name TransferCallback
+ * @package stride.records
+ * @see proto type: stride.records.TransferCallback
+ */
 export interface TransferCallback {
   depositRecordId: bigint;
 }
@@ -10,9 +15,19 @@ export interface TransferCallbackProtoMsg {
   typeUrl: '/stride.records.TransferCallback';
   value: Uint8Array;
 }
+/**
+ * @name TransferCallbackSDKType
+ * @package stride.records
+ * @see proto type: stride.records.TransferCallback
+ */
 export interface TransferCallbackSDKType {
   deposit_record_id: bigint;
 }
+/**
+ * @name TransferLSMTokenCallback
+ * @package stride.records
+ * @see proto type: stride.records.TransferLSMTokenCallback
+ */
 export interface TransferLSMTokenCallback {
   deposit?: LSMTokenDeposit;
 }
@@ -20,6 +35,11 @@ export interface TransferLSMTokenCallbackProtoMsg {
   typeUrl: '/stride.records.TransferLSMTokenCallback';
   value: Uint8Array;
 }
+/**
+ * @name TransferLSMTokenCallbackSDKType
+ * @package stride.records
+ * @see proto type: stride.records.TransferLSMTokenCallback
+ */
 export interface TransferLSMTokenCallbackSDKType {
   deposit?: LSMTokenDepositSDKType;
 }
@@ -28,6 +48,11 @@ function createBaseTransferCallback(): TransferCallback {
     depositRecordId: BigInt(0),
   };
 }
+/**
+ * @name TransferCallback
+ * @package stride.records
+ * @see proto type: stride.records.TransferCallback
+ */
 export const TransferCallback = {
   typeUrl: '/stride.records.TransferCallback' as const,
   encode(
@@ -96,6 +121,11 @@ function createBaseTransferLSMTokenCallback(): TransferLSMTokenCallback {
     deposit: undefined,
   };
 }
+/**
+ * @name TransferLSMTokenCallback
+ * @package stride.records
+ * @see proto type: stride.records.TransferLSMTokenCallback
+ */
 export const TransferLSMTokenCallback = {
   typeUrl: '/stride.records.TransferLSMTokenCallback' as const,
   encode(

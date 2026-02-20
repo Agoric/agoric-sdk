@@ -6,6 +6,9 @@ import { isSet } from '../../helpers.js';
 /**
  * CosmosTx contains a list of sdk.Msg's. It should be used when sending
  * transactions to a local chain.
+ * @name CosmosTx
+ * @package agoric.vlocalchain
+ * @see proto type: agoric.vlocalchain.CosmosTx
  */
 export interface CosmosTx {
   messages: Any[];
@@ -17,11 +20,19 @@ export interface CosmosTxProtoMsg {
 /**
  * CosmosTx contains a list of sdk.Msg's. It should be used when sending
  * transactions to a local chain.
+ * @name CosmosTxSDKType
+ * @package agoric.vlocalchain
+ * @see proto type: agoric.vlocalchain.CosmosTx
  */
 export interface CosmosTxSDKType {
   messages: AnySDKType[];
 }
-/** QueryRequest is used internally to describe a query for the local chain. */
+/**
+ * QueryRequest is used internally to describe a query for the local chain.
+ * @name QueryRequest
+ * @package agoric.vlocalchain
+ * @see proto type: agoric.vlocalchain.QueryRequest
+ */
 export interface QueryRequest {
   fullMethod: string;
   request?: Any;
@@ -31,13 +42,23 @@ export interface QueryRequestProtoMsg {
   typeUrl: '/agoric.vlocalchain.QueryRequest';
   value: Uint8Array;
 }
-/** QueryRequest is used internally to describe a query for the local chain. */
+/**
+ * QueryRequest is used internally to describe a query for the local chain.
+ * @name QueryRequestSDKType
+ * @package agoric.vlocalchain
+ * @see proto type: agoric.vlocalchain.QueryRequest
+ */
 export interface QueryRequestSDKType {
   full_method: string;
   request?: AnySDKType;
   reply_type: string;
 }
-/** QueryResponse is used internally to describe a response from the local chain. */
+/**
+ * QueryResponse is used internally to describe a response from the local chain.
+ * @name QueryResponse
+ * @package agoric.vlocalchain
+ * @see proto type: agoric.vlocalchain.QueryResponse
+ */
 export interface QueryResponse {
   height: bigint;
   reply?: Any;
@@ -47,13 +68,23 @@ export interface QueryResponseProtoMsg {
   typeUrl: '/agoric.vlocalchain.QueryResponse';
   value: Uint8Array;
 }
-/** QueryResponse is used internally to describe a response from the local chain. */
+/**
+ * QueryResponse is used internally to describe a response from the local chain.
+ * @name QueryResponseSDKType
+ * @package agoric.vlocalchain
+ * @see proto type: agoric.vlocalchain.QueryResponse
+ */
 export interface QueryResponseSDKType {
   height: bigint;
   reply?: AnySDKType;
   error: string;
 }
-/** QueryResponses is used to group multiple QueryResponse messages. */
+/**
+ * QueryResponses is used to group multiple QueryResponse messages.
+ * @name QueryResponses
+ * @package agoric.vlocalchain
+ * @see proto type: agoric.vlocalchain.QueryResponses
+ */
 export interface QueryResponses {
   responses: QueryResponse[];
 }
@@ -61,7 +92,12 @@ export interface QueryResponsesProtoMsg {
   typeUrl: '/agoric.vlocalchain.QueryResponses';
   value: Uint8Array;
 }
-/** QueryResponses is used to group multiple QueryResponse messages. */
+/**
+ * QueryResponses is used to group multiple QueryResponse messages.
+ * @name QueryResponsesSDKType
+ * @package agoric.vlocalchain
+ * @see proto type: agoric.vlocalchain.QueryResponses
+ */
 export interface QueryResponsesSDKType {
   responses: QueryResponseSDKType[];
 }
@@ -70,6 +106,13 @@ function createBaseCosmosTx(): CosmosTx {
     messages: [],
   };
 }
+/**
+ * CosmosTx contains a list of sdk.Msg's. It should be used when sending
+ * transactions to a local chain.
+ * @name CosmosTx
+ * @package agoric.vlocalchain
+ * @see proto type: agoric.vlocalchain.CosmosTx
+ */
 export const CosmosTx = {
   typeUrl: '/agoric.vlocalchain.CosmosTx' as const,
   encode(
@@ -140,6 +183,12 @@ function createBaseQueryRequest(): QueryRequest {
     replyType: '',
   };
 }
+/**
+ * QueryRequest is used internally to describe a query for the local chain.
+ * @name QueryRequest
+ * @package agoric.vlocalchain
+ * @see proto type: agoric.vlocalchain.QueryRequest
+ */
 export const QueryRequest = {
   typeUrl: '/agoric.vlocalchain.QueryRequest' as const,
   encode(
@@ -226,6 +275,12 @@ function createBaseQueryResponse(): QueryResponse {
     error: '',
   };
 }
+/**
+ * QueryResponse is used internally to describe a response from the local chain.
+ * @name QueryResponse
+ * @package agoric.vlocalchain
+ * @see proto type: agoric.vlocalchain.QueryResponse
+ */
 export const QueryResponse = {
   typeUrl: '/agoric.vlocalchain.QueryResponse' as const,
   encode(
@@ -316,6 +371,12 @@ function createBaseQueryResponses(): QueryResponses {
     responses: [],
   };
 }
+/**
+ * QueryResponses is used to group multiple QueryResponse messages.
+ * @name QueryResponses
+ * @package agoric.vlocalchain
+ * @see proto type: agoric.vlocalchain.QueryResponses
+ */
 export const QueryResponses = {
   typeUrl: '/agoric.vlocalchain.QueryResponses' as const,
   encode(

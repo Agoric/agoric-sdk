@@ -12,9 +12,16 @@ import {
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
-/** MsgUpdateParams is the Msg/UpdateParams request type. */
+/**
+ * MsgUpdateParams is the Msg/UpdateParams request type.
+ * @name MsgUpdateParams
+ * @package cosmos.consensus.v1
+ * @see proto type: cosmos.consensus.v1.MsgUpdateParams
+ */
 export interface MsgUpdateParams {
-  /** authority is the address that controls the module (defaults to x/gov unless overwritten). */
+  /**
+   * authority is the address that controls the module (defaults to x/gov unless overwritten).
+   */
   authority: string;
   /**
    * params defines the x/consensus parameters to update.
@@ -26,14 +33,21 @@ export interface MsgUpdateParams {
   block?: BlockParams;
   evidence?: EvidenceParams;
   validator?: ValidatorParams;
-  /** Since: cosmos-sdk 0.50 */
+  /**
+   * Since: cosmos-sdk 0.50
+   */
   abci?: ABCIParams;
 }
 export interface MsgUpdateParamsProtoMsg {
   typeUrl: '/cosmos.consensus.v1.MsgUpdateParams';
   value: Uint8Array;
 }
-/** MsgUpdateParams is the Msg/UpdateParams request type. */
+/**
+ * MsgUpdateParams is the Msg/UpdateParams request type.
+ * @name MsgUpdateParamsSDKType
+ * @package cosmos.consensus.v1
+ * @see proto type: cosmos.consensus.v1.MsgUpdateParams
+ */
 export interface MsgUpdateParamsSDKType {
   authority: string;
   block?: BlockParamsSDKType;
@@ -44,6 +58,9 @@ export interface MsgUpdateParamsSDKType {
 /**
  * MsgUpdateParamsResponse defines the response structure for executing a
  * MsgUpdateParams message.
+ * @name MsgUpdateParamsResponse
+ * @package cosmos.consensus.v1
+ * @see proto type: cosmos.consensus.v1.MsgUpdateParamsResponse
  */
 export interface MsgUpdateParamsResponse {}
 export interface MsgUpdateParamsResponseProtoMsg {
@@ -53,6 +70,9 @@ export interface MsgUpdateParamsResponseProtoMsg {
 /**
  * MsgUpdateParamsResponse defines the response structure for executing a
  * MsgUpdateParams message.
+ * @name MsgUpdateParamsResponseSDKType
+ * @package cosmos.consensus.v1
+ * @see proto type: cosmos.consensus.v1.MsgUpdateParamsResponse
  */
 export interface MsgUpdateParamsResponseSDKType {}
 function createBaseMsgUpdateParams(): MsgUpdateParams {
@@ -64,6 +84,12 @@ function createBaseMsgUpdateParams(): MsgUpdateParams {
     abci: undefined,
   };
 }
+/**
+ * MsgUpdateParams is the Msg/UpdateParams request type.
+ * @name MsgUpdateParams
+ * @package cosmos.consensus.v1
+ * @see proto type: cosmos.consensus.v1.MsgUpdateParams
+ */
 export const MsgUpdateParams = {
   typeUrl: '/cosmos.consensus.v1.MsgUpdateParams' as const,
   encode(
@@ -194,6 +220,13 @@ export const MsgUpdateParams = {
 function createBaseMsgUpdateParamsResponse(): MsgUpdateParamsResponse {
   return {};
 }
+/**
+ * MsgUpdateParamsResponse defines the response structure for executing a
+ * MsgUpdateParams message.
+ * @name MsgUpdateParamsResponse
+ * @package cosmos.consensus.v1
+ * @see proto type: cosmos.consensus.v1.MsgUpdateParamsResponse
+ */
 export const MsgUpdateParamsResponse = {
   typeUrl: '/cosmos.consensus.v1.MsgUpdateParamsResponse' as const,
   encode(

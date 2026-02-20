@@ -4,88 +4,166 @@ import { isSet } from '../../../../helpers.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
 import { type JsonSafe } from '../../../../json-safe.js';
-/** MsgStoreCode defines the request type for the StoreCode rpc. */
+/**
+ * MsgStoreCode defines the request type for the StoreCode rpc.
+ * @name MsgStoreCode
+ * @package ibc.lightclients.wasm.v1
+ * @see proto type: ibc.lightclients.wasm.v1.MsgStoreCode
+ */
 export interface MsgStoreCode {
-  /** signer address */
+  /**
+   * signer address
+   */
   signer: string;
-  /** wasm byte code of light client contract. It can be raw or gzip compressed */
+  /**
+   * wasm byte code of light client contract. It can be raw or gzip compressed
+   */
   wasmByteCode: Uint8Array;
 }
 export interface MsgStoreCodeProtoMsg {
   typeUrl: '/ibc.lightclients.wasm.v1.MsgStoreCode';
   value: Uint8Array;
 }
-/** MsgStoreCode defines the request type for the StoreCode rpc. */
+/**
+ * MsgStoreCode defines the request type for the StoreCode rpc.
+ * @name MsgStoreCodeSDKType
+ * @package ibc.lightclients.wasm.v1
+ * @see proto type: ibc.lightclients.wasm.v1.MsgStoreCode
+ */
 export interface MsgStoreCodeSDKType {
   signer: string;
   wasm_byte_code: Uint8Array;
 }
-/** MsgStoreCodeResponse defines the response type for the StoreCode rpc */
+/**
+ * MsgStoreCodeResponse defines the response type for the StoreCode rpc
+ * @name MsgStoreCodeResponse
+ * @package ibc.lightclients.wasm.v1
+ * @see proto type: ibc.lightclients.wasm.v1.MsgStoreCodeResponse
+ */
 export interface MsgStoreCodeResponse {
-  /** checksum is the sha256 hash of the stored code */
+  /**
+   * checksum is the sha256 hash of the stored code
+   */
   checksum: Uint8Array;
 }
 export interface MsgStoreCodeResponseProtoMsg {
   typeUrl: '/ibc.lightclients.wasm.v1.MsgStoreCodeResponse';
   value: Uint8Array;
 }
-/** MsgStoreCodeResponse defines the response type for the StoreCode rpc */
+/**
+ * MsgStoreCodeResponse defines the response type for the StoreCode rpc
+ * @name MsgStoreCodeResponseSDKType
+ * @package ibc.lightclients.wasm.v1
+ * @see proto type: ibc.lightclients.wasm.v1.MsgStoreCodeResponse
+ */
 export interface MsgStoreCodeResponseSDKType {
   checksum: Uint8Array;
 }
-/** MsgRemoveChecksum defines the request type for the MsgRemoveChecksum rpc. */
+/**
+ * MsgRemoveChecksum defines the request type for the MsgRemoveChecksum rpc.
+ * @name MsgRemoveChecksum
+ * @package ibc.lightclients.wasm.v1
+ * @see proto type: ibc.lightclients.wasm.v1.MsgRemoveChecksum
+ */
 export interface MsgRemoveChecksum {
-  /** signer address */
+  /**
+   * signer address
+   */
   signer: string;
-  /** checksum is the sha256 hash to be removed from the store */
+  /**
+   * checksum is the sha256 hash to be removed from the store
+   */
   checksum: Uint8Array;
 }
 export interface MsgRemoveChecksumProtoMsg {
   typeUrl: '/ibc.lightclients.wasm.v1.MsgRemoveChecksum';
   value: Uint8Array;
 }
-/** MsgRemoveChecksum defines the request type for the MsgRemoveChecksum rpc. */
+/**
+ * MsgRemoveChecksum defines the request type for the MsgRemoveChecksum rpc.
+ * @name MsgRemoveChecksumSDKType
+ * @package ibc.lightclients.wasm.v1
+ * @see proto type: ibc.lightclients.wasm.v1.MsgRemoveChecksum
+ */
 export interface MsgRemoveChecksumSDKType {
   signer: string;
   checksum: Uint8Array;
 }
-/** MsgStoreChecksumResponse defines the response type for the StoreCode rpc */
+/**
+ * MsgStoreChecksumResponse defines the response type for the StoreCode rpc
+ * @name MsgRemoveChecksumResponse
+ * @package ibc.lightclients.wasm.v1
+ * @see proto type: ibc.lightclients.wasm.v1.MsgRemoveChecksumResponse
+ */
 export interface MsgRemoveChecksumResponse {}
 export interface MsgRemoveChecksumResponseProtoMsg {
   typeUrl: '/ibc.lightclients.wasm.v1.MsgRemoveChecksumResponse';
   value: Uint8Array;
 }
-/** MsgStoreChecksumResponse defines the response type for the StoreCode rpc */
+/**
+ * MsgStoreChecksumResponse defines the response type for the StoreCode rpc
+ * @name MsgRemoveChecksumResponseSDKType
+ * @package ibc.lightclients.wasm.v1
+ * @see proto type: ibc.lightclients.wasm.v1.MsgRemoveChecksumResponse
+ */
 export interface MsgRemoveChecksumResponseSDKType {}
-/** MsgMigrateContract defines the request type for the MigrateContract rpc. */
+/**
+ * MsgMigrateContract defines the request type for the MigrateContract rpc.
+ * @name MsgMigrateContract
+ * @package ibc.lightclients.wasm.v1
+ * @see proto type: ibc.lightclients.wasm.v1.MsgMigrateContract
+ */
 export interface MsgMigrateContract {
-  /** signer address */
+  /**
+   * signer address
+   */
   signer: string;
-  /** the client id of the contract */
+  /**
+   * the client id of the contract
+   */
   clientId: string;
-  /** checksum is the sha256 hash of the new wasm byte code for the contract */
+  /**
+   * checksum is the sha256 hash of the new wasm byte code for the contract
+   */
   checksum: Uint8Array;
-  /** the json encoded message to be passed to the contract on migration */
+  /**
+   * the json encoded message to be passed to the contract on migration
+   */
   msg: Uint8Array;
 }
 export interface MsgMigrateContractProtoMsg {
   typeUrl: '/ibc.lightclients.wasm.v1.MsgMigrateContract';
   value: Uint8Array;
 }
-/** MsgMigrateContract defines the request type for the MigrateContract rpc. */
+/**
+ * MsgMigrateContract defines the request type for the MigrateContract rpc.
+ * @name MsgMigrateContractSDKType
+ * @package ibc.lightclients.wasm.v1
+ * @see proto type: ibc.lightclients.wasm.v1.MsgMigrateContract
+ */
 export interface MsgMigrateContractSDKType {
   signer: string;
   client_id: string;
   checksum: Uint8Array;
   msg: Uint8Array;
 }
-/** MsgMigrateContractResponse defines the response type for the MigrateContract rpc */
+/**
+ * MsgMigrateContractResponse defines the response type for the MigrateContract rpc
+ * @name MsgMigrateContractResponse
+ * @package ibc.lightclients.wasm.v1
+ * @see proto type: ibc.lightclients.wasm.v1.MsgMigrateContractResponse
+ */
 export interface MsgMigrateContractResponse {}
 export interface MsgMigrateContractResponseProtoMsg {
   typeUrl: '/ibc.lightclients.wasm.v1.MsgMigrateContractResponse';
   value: Uint8Array;
 }
-/** MsgMigrateContractResponse defines the response type for the MigrateContract rpc */
+/**
+ * MsgMigrateContractResponse defines the response type for the MigrateContract rpc
+ * @name MsgMigrateContractResponseSDKType
+ * @package ibc.lightclients.wasm.v1
+ * @see proto type: ibc.lightclients.wasm.v1.MsgMigrateContractResponse
+ */
 export interface MsgMigrateContractResponseSDKType {}
 function createBaseMsgStoreCode(): MsgStoreCode {
   return {
@@ -93,6 +171,12 @@ function createBaseMsgStoreCode(): MsgStoreCode {
     wasmByteCode: new Uint8Array(),
   };
 }
+/**
+ * MsgStoreCode defines the request type for the StoreCode rpc.
+ * @name MsgStoreCode
+ * @package ibc.lightclients.wasm.v1
+ * @see proto type: ibc.lightclients.wasm.v1.MsgStoreCode
+ */
 export const MsgStoreCode = {
   typeUrl: '/ibc.lightclients.wasm.v1.MsgStoreCode' as const,
   encode(
@@ -171,6 +255,12 @@ function createBaseMsgStoreCodeResponse(): MsgStoreCodeResponse {
     checksum: new Uint8Array(),
   };
 }
+/**
+ * MsgStoreCodeResponse defines the response type for the StoreCode rpc
+ * @name MsgStoreCodeResponse
+ * @package ibc.lightclients.wasm.v1
+ * @see proto type: ibc.lightclients.wasm.v1.MsgStoreCodeResponse
+ */
 export const MsgStoreCodeResponse = {
   typeUrl: '/ibc.lightclients.wasm.v1.MsgStoreCodeResponse' as const,
   encode(
@@ -242,6 +332,12 @@ function createBaseMsgRemoveChecksum(): MsgRemoveChecksum {
     checksum: new Uint8Array(),
   };
 }
+/**
+ * MsgRemoveChecksum defines the request type for the MsgRemoveChecksum rpc.
+ * @name MsgRemoveChecksum
+ * @package ibc.lightclients.wasm.v1
+ * @see proto type: ibc.lightclients.wasm.v1.MsgRemoveChecksum
+ */
 export const MsgRemoveChecksum = {
   typeUrl: '/ibc.lightclients.wasm.v1.MsgRemoveChecksum' as const,
   encode(
@@ -316,6 +412,12 @@ export const MsgRemoveChecksum = {
 function createBaseMsgRemoveChecksumResponse(): MsgRemoveChecksumResponse {
   return {};
 }
+/**
+ * MsgStoreChecksumResponse defines the response type for the StoreCode rpc
+ * @name MsgRemoveChecksumResponse
+ * @package ibc.lightclients.wasm.v1
+ * @see proto type: ibc.lightclients.wasm.v1.MsgRemoveChecksumResponse
+ */
 export const MsgRemoveChecksumResponse = {
   typeUrl: '/ibc.lightclients.wasm.v1.MsgRemoveChecksumResponse' as const,
   encode(
@@ -380,6 +482,12 @@ function createBaseMsgMigrateContract(): MsgMigrateContract {
     msg: new Uint8Array(),
   };
 }
+/**
+ * MsgMigrateContract defines the request type for the MigrateContract rpc.
+ * @name MsgMigrateContract
+ * @package ibc.lightclients.wasm.v1
+ * @see proto type: ibc.lightclients.wasm.v1.MsgMigrateContract
+ */
 export const MsgMigrateContract = {
   typeUrl: '/ibc.lightclients.wasm.v1.MsgMigrateContract' as const,
   encode(
@@ -478,6 +586,12 @@ export const MsgMigrateContract = {
 function createBaseMsgMigrateContractResponse(): MsgMigrateContractResponse {
   return {};
 }
+/**
+ * MsgMigrateContractResponse defines the response type for the MigrateContract rpc
+ * @name MsgMigrateContractResponse
+ * @package ibc.lightclients.wasm.v1
+ * @see proto type: ibc.lightclients.wasm.v1.MsgMigrateContractResponse
+ */
 export const MsgMigrateContractResponse = {
   typeUrl: '/ibc.lightclients.wasm.v1.MsgMigrateContractResponse' as const,
   encode(

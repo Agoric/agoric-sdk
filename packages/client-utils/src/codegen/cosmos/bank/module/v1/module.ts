@@ -2,7 +2,12 @@
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
-/** Module is the config object of the bank module. */
+/**
+ * Module is the config object of the bank module.
+ * @name Module
+ * @package cosmos.bank.module.v1
+ * @see proto type: cosmos.bank.module.v1.Module
+ */
 export interface Module {
   /**
    * blocked_module_accounts_override configures exceptional module accounts which should be blocked from receiving
@@ -10,7 +15,9 @@ export interface Module {
    * module_account_permissions
    */
   blockedModuleAccountsOverride: string[];
-  /** authority defines the custom module authority. If not set, defaults to the governance module. */
+  /**
+   * authority defines the custom module authority. If not set, defaults to the governance module.
+   */
   authority: string;
   /**
    * restrictions_order specifies the order of send restrictions and should be
@@ -24,7 +31,12 @@ export interface ModuleProtoMsg {
   typeUrl: '/cosmos.bank.module.v1.Module';
   value: Uint8Array;
 }
-/** Module is the config object of the bank module. */
+/**
+ * Module is the config object of the bank module.
+ * @name ModuleSDKType
+ * @package cosmos.bank.module.v1
+ * @see proto type: cosmos.bank.module.v1.Module
+ */
 export interface ModuleSDKType {
   blocked_module_accounts_override: string[];
   authority: string;
@@ -37,6 +49,12 @@ function createBaseModule(): Module {
     restrictionsOrder: [],
   };
 }
+/**
+ * Module is the config object of the bank module.
+ * @name Module
+ * @package cosmos.bank.module.v1
+ * @see proto type: cosmos.bank.module.v1.Module
+ */
 export const Module = {
   typeUrl: '/cosmos.bank.module.v1.Module' as const,
   encode(

@@ -8,18 +8,32 @@ import {
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
-/** GenesisState defines the mint module's genesis state. */
+/**
+ * GenesisState defines the mint module's genesis state.
+ * @name GenesisState
+ * @package cosmos.mint.v1beta1
+ * @see proto type: cosmos.mint.v1beta1.GenesisState
+ */
 export interface GenesisState {
-  /** minter is a space for holding current inflation information. */
+  /**
+   * minter is a space for holding current inflation information.
+   */
   minter: Minter;
-  /** params defines all the parameters of the module. */
+  /**
+   * params defines all the parameters of the module.
+   */
   params: Params;
 }
 export interface GenesisStateProtoMsg {
   typeUrl: '/cosmos.mint.v1beta1.GenesisState';
   value: Uint8Array;
 }
-/** GenesisState defines the mint module's genesis state. */
+/**
+ * GenesisState defines the mint module's genesis state.
+ * @name GenesisStateSDKType
+ * @package cosmos.mint.v1beta1
+ * @see proto type: cosmos.mint.v1beta1.GenesisState
+ */
 export interface GenesisStateSDKType {
   minter: MinterSDKType;
   params: ParamsSDKType;
@@ -30,8 +44,29 @@ function createBaseGenesisState(): GenesisState {
     params: Params.fromPartial({}),
   };
 }
+/**
+ * GenesisState defines the mint module's genesis state.
+ * @name GenesisState
+ * @package cosmos.mint.v1beta1
+ * @see proto type: cosmos.mint.v1beta1.GenesisState
+ */
 export const GenesisState = {
   typeUrl: '/cosmos.mint.v1beta1.GenesisState' as const,
+  aminoType: 'cosmos-sdk/GenesisState' as const,
+  is(o: any): o is GenesisState {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Minter.is(o.minter) && Params.is(o.params)))
+    );
+  },
+  isSDK(o: any): o is GenesisStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Minter.isSDK(o.minter) && Params.isSDK(o.params)))
+    );
+  },
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),

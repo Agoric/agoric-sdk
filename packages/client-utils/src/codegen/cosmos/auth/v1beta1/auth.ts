@@ -9,6 +9,9 @@ import { encodeBase64 as base64FromBytes } from '@endo/base64';
  * BaseAccount defines a base account type. It contains all the necessary fields
  * for basic account functionality. Any custom account type should extend this
  * type for additional functionality (e.g. vesting).
+ * @name BaseAccount
+ * @package cosmos.auth.v1beta1
+ * @see proto type: cosmos.auth.v1beta1.BaseAccount
  */
 export interface BaseAccount {
   address: string;
@@ -24,6 +27,9 @@ export interface BaseAccountProtoMsg {
  * BaseAccount defines a base account type. It contains all the necessary fields
  * for basic account functionality. Any custom account type should extend this
  * type for additional functionality (e.g. vesting).
+ * @name BaseAccountSDKType
+ * @package cosmos.auth.v1beta1
+ * @see proto type: cosmos.auth.v1beta1.BaseAccount
  */
 export interface BaseAccountSDKType {
   address: string;
@@ -31,7 +37,12 @@ export interface BaseAccountSDKType {
   account_number: bigint;
   sequence: bigint;
 }
-/** ModuleAccount defines an account for modules that holds coins on a pool. */
+/**
+ * ModuleAccount defines an account for modules that holds coins on a pool.
+ * @name ModuleAccount
+ * @package cosmos.auth.v1beta1
+ * @see proto type: cosmos.auth.v1beta1.ModuleAccount
+ */
 export interface ModuleAccount {
   baseAccount?: BaseAccount;
   name: string;
@@ -41,7 +52,12 @@ export interface ModuleAccountProtoMsg {
   typeUrl: '/cosmos.auth.v1beta1.ModuleAccount';
   value: Uint8Array;
 }
-/** ModuleAccount defines an account for modules that holds coins on a pool. */
+/**
+ * ModuleAccount defines an account for modules that holds coins on a pool.
+ * @name ModuleAccountSDKType
+ * @package cosmos.auth.v1beta1
+ * @see proto type: cosmos.auth.v1beta1.ModuleAccount
+ */
 export interface ModuleAccountSDKType {
   base_account?: BaseAccountSDKType;
   name: string;
@@ -51,9 +67,14 @@ export interface ModuleAccountSDKType {
  * ModuleCredential represents a unclaimable pubkey for base accounts controlled by modules.
  *
  * Since: cosmos-sdk 0.47
+ * @name ModuleCredential
+ * @package cosmos.auth.v1beta1
+ * @see proto type: cosmos.auth.v1beta1.ModuleCredential
  */
 export interface ModuleCredential {
-  /** module_name is the name of the module used for address derivation (passed into address.Module). */
+  /**
+   * module_name is the name of the module used for address derivation (passed into address.Module).
+   */
   moduleName: string;
   /**
    * derivation_keys is for deriving a module account address (passed into address.Module)
@@ -69,12 +90,20 @@ export interface ModuleCredentialProtoMsg {
  * ModuleCredential represents a unclaimable pubkey for base accounts controlled by modules.
  *
  * Since: cosmos-sdk 0.47
+ * @name ModuleCredentialSDKType
+ * @package cosmos.auth.v1beta1
+ * @see proto type: cosmos.auth.v1beta1.ModuleCredential
  */
 export interface ModuleCredentialSDKType {
   module_name: string;
   derivation_keys: Uint8Array[];
 }
-/** Params defines the parameters for the auth module. */
+/**
+ * Params defines the parameters for the auth module.
+ * @name Params
+ * @package cosmos.auth.v1beta1
+ * @see proto type: cosmos.auth.v1beta1.Params
+ */
 export interface Params {
   maxMemoCharacters: bigint;
   txSigLimit: bigint;
@@ -86,7 +115,12 @@ export interface ParamsProtoMsg {
   typeUrl: '/cosmos.auth.v1beta1.Params';
   value: Uint8Array;
 }
-/** Params defines the parameters for the auth module. */
+/**
+ * Params defines the parameters for the auth module.
+ * @name ParamsSDKType
+ * @package cosmos.auth.v1beta1
+ * @see proto type: cosmos.auth.v1beta1.Params
+ */
 export interface ParamsSDKType {
   max_memo_characters: bigint;
   tx_sig_limit: bigint;
@@ -102,6 +136,14 @@ function createBaseBaseAccount(): BaseAccount {
     sequence: BigInt(0),
   };
 }
+/**
+ * BaseAccount defines a base account type. It contains all the necessary fields
+ * for basic account functionality. Any custom account type should extend this
+ * type for additional functionality (e.g. vesting).
+ * @name BaseAccount
+ * @package cosmos.auth.v1beta1
+ * @see proto type: cosmos.auth.v1beta1.BaseAccount
+ */
 export const BaseAccount = {
   typeUrl: '/cosmos.auth.v1beta1.BaseAccount' as const,
   encode(
@@ -209,6 +251,12 @@ function createBaseModuleAccount(): ModuleAccount {
     permissions: [],
   };
 }
+/**
+ * ModuleAccount defines an account for modules that holds coins on a pool.
+ * @name ModuleAccount
+ * @package cosmos.auth.v1beta1
+ * @see proto type: cosmos.auth.v1beta1.ModuleAccount
+ */
 export const ModuleAccount = {
   typeUrl: '/cosmos.auth.v1beta1.ModuleAccount' as const,
   encode(
@@ -307,6 +355,14 @@ function createBaseModuleCredential(): ModuleCredential {
     derivationKeys: [],
   };
 }
+/**
+ * ModuleCredential represents a unclaimable pubkey for base accounts controlled by modules.
+ *
+ * Since: cosmos-sdk 0.47
+ * @name ModuleCredential
+ * @package cosmos.auth.v1beta1
+ * @see proto type: cosmos.auth.v1beta1.ModuleCredential
+ */
 export const ModuleCredential = {
   typeUrl: '/cosmos.auth.v1beta1.ModuleCredential' as const,
   encode(
@@ -390,6 +446,12 @@ function createBaseParams(): Params {
     sigVerifyCostSecp256k1: BigInt(0),
   };
 }
+/**
+ * Params defines the parameters for the auth module.
+ * @name Params
+ * @package cosmos.auth.v1beta1
+ * @see proto type: cosmos.auth.v1beta1.Params
+ */
 export const Params = {
   typeUrl: '/cosmos.auth.v1beta1.Params' as const,
   encode(

@@ -10,9 +10,16 @@ import { isSet } from '../../../../../helpers.js';
 import { type JsonSafe } from '../../../../../json-safe.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
-/** MsgUpdateParams defines the payload for Msg/UpdateParams */
+/**
+ * MsgUpdateParams defines the payload for Msg/UpdateParams
+ * @name MsgUpdateParams
+ * @package ibc.applications.interchain_accounts.host.v1
+ * @see proto type: ibc.applications.interchain_accounts.host.v1.MsgUpdateParams
+ */
 export interface MsgUpdateParams {
-  /** signer address */
+  /**
+   * signer address
+   */
   signer: string;
   /**
    * params defines the 27-interchain-accounts/host parameters to update.
@@ -25,47 +32,90 @@ export interface MsgUpdateParamsProtoMsg {
   typeUrl: '/ibc.applications.interchain_accounts.host.v1.MsgUpdateParams';
   value: Uint8Array;
 }
-/** MsgUpdateParams defines the payload for Msg/UpdateParams */
+/**
+ * MsgUpdateParams defines the payload for Msg/UpdateParams
+ * @name MsgUpdateParamsSDKType
+ * @package ibc.applications.interchain_accounts.host.v1
+ * @see proto type: ibc.applications.interchain_accounts.host.v1.MsgUpdateParams
+ */
 export interface MsgUpdateParamsSDKType {
   signer: string;
   params: ParamsSDKType;
 }
-/** MsgUpdateParamsResponse defines the response for Msg/UpdateParams */
+/**
+ * MsgUpdateParamsResponse defines the response for Msg/UpdateParams
+ * @name MsgUpdateParamsResponse
+ * @package ibc.applications.interchain_accounts.host.v1
+ * @see proto type: ibc.applications.interchain_accounts.host.v1.MsgUpdateParamsResponse
+ */
 export interface MsgUpdateParamsResponse {}
 export interface MsgUpdateParamsResponseProtoMsg {
   typeUrl: '/ibc.applications.interchain_accounts.host.v1.MsgUpdateParamsResponse';
   value: Uint8Array;
 }
-/** MsgUpdateParamsResponse defines the response for Msg/UpdateParams */
+/**
+ * MsgUpdateParamsResponse defines the response for Msg/UpdateParams
+ * @name MsgUpdateParamsResponseSDKType
+ * @package ibc.applications.interchain_accounts.host.v1
+ * @see proto type: ibc.applications.interchain_accounts.host.v1.MsgUpdateParamsResponse
+ */
 export interface MsgUpdateParamsResponseSDKType {}
-/** MsgModuleQuerySafe defines the payload for Msg/ModuleQuerySafe */
+/**
+ * MsgModuleQuerySafe defines the payload for Msg/ModuleQuerySafe
+ * @name MsgModuleQuerySafe
+ * @package ibc.applications.interchain_accounts.host.v1
+ * @see proto type: ibc.applications.interchain_accounts.host.v1.MsgModuleQuerySafe
+ */
 export interface MsgModuleQuerySafe {
-  /** signer address */
+  /**
+   * signer address
+   */
   signer: string;
-  /** requests defines the module safe queries to execute. */
+  /**
+   * requests defines the module safe queries to execute.
+   */
   requests: QueryRequest[];
 }
 export interface MsgModuleQuerySafeProtoMsg {
   typeUrl: '/ibc.applications.interchain_accounts.host.v1.MsgModuleQuerySafe';
   value: Uint8Array;
 }
-/** MsgModuleQuerySafe defines the payload for Msg/ModuleQuerySafe */
+/**
+ * MsgModuleQuerySafe defines the payload for Msg/ModuleQuerySafe
+ * @name MsgModuleQuerySafeSDKType
+ * @package ibc.applications.interchain_accounts.host.v1
+ * @see proto type: ibc.applications.interchain_accounts.host.v1.MsgModuleQuerySafe
+ */
 export interface MsgModuleQuerySafeSDKType {
   signer: string;
   requests: QueryRequestSDKType[];
 }
-/** MsgModuleQuerySafeResponse defines the response for Msg/ModuleQuerySafe */
+/**
+ * MsgModuleQuerySafeResponse defines the response for Msg/ModuleQuerySafe
+ * @name MsgModuleQuerySafeResponse
+ * @package ibc.applications.interchain_accounts.host.v1
+ * @see proto type: ibc.applications.interchain_accounts.host.v1.MsgModuleQuerySafeResponse
+ */
 export interface MsgModuleQuerySafeResponse {
-  /** height at which the responses were queried */
+  /**
+   * height at which the responses were queried
+   */
   height: bigint;
-  /** protobuf encoded responses for each query */
+  /**
+   * protobuf encoded responses for each query
+   */
   responses: Uint8Array[];
 }
 export interface MsgModuleQuerySafeResponseProtoMsg {
   typeUrl: '/ibc.applications.interchain_accounts.host.v1.MsgModuleQuerySafeResponse';
   value: Uint8Array;
 }
-/** MsgModuleQuerySafeResponse defines the response for Msg/ModuleQuerySafe */
+/**
+ * MsgModuleQuerySafeResponse defines the response for Msg/ModuleQuerySafe
+ * @name MsgModuleQuerySafeResponseSDKType
+ * @package ibc.applications.interchain_accounts.host.v1
+ * @see proto type: ibc.applications.interchain_accounts.host.v1.MsgModuleQuerySafeResponse
+ */
 export interface MsgModuleQuerySafeResponseSDKType {
   height: bigint;
   responses: Uint8Array[];
@@ -76,6 +126,12 @@ function createBaseMsgUpdateParams(): MsgUpdateParams {
     params: Params.fromPartial({}),
   };
 }
+/**
+ * MsgUpdateParams defines the payload for Msg/UpdateParams
+ * @name MsgUpdateParams
+ * @package ibc.applications.interchain_accounts.host.v1
+ * @see proto type: ibc.applications.interchain_accounts.host.v1.MsgUpdateParams
+ */
 export const MsgUpdateParams = {
   typeUrl:
     '/ibc.applications.interchain_accounts.host.v1.MsgUpdateParams' as const,
@@ -150,6 +206,12 @@ export const MsgUpdateParams = {
 function createBaseMsgUpdateParamsResponse(): MsgUpdateParamsResponse {
   return {};
 }
+/**
+ * MsgUpdateParamsResponse defines the response for Msg/UpdateParams
+ * @name MsgUpdateParamsResponse
+ * @package ibc.applications.interchain_accounts.host.v1
+ * @see proto type: ibc.applications.interchain_accounts.host.v1.MsgUpdateParamsResponse
+ */
 export const MsgUpdateParamsResponse = {
   typeUrl:
     '/ibc.applications.interchain_accounts.host.v1.MsgUpdateParamsResponse' as const,
@@ -212,6 +274,12 @@ function createBaseMsgModuleQuerySafe(): MsgModuleQuerySafe {
     requests: [],
   };
 }
+/**
+ * MsgModuleQuerySafe defines the payload for Msg/ModuleQuerySafe
+ * @name MsgModuleQuerySafe
+ * @package ibc.applications.interchain_accounts.host.v1
+ * @see proto type: ibc.applications.interchain_accounts.host.v1.MsgModuleQuerySafe
+ */
 export const MsgModuleQuerySafe = {
   typeUrl:
     '/ibc.applications.interchain_accounts.host.v1.MsgModuleQuerySafe' as const,
@@ -298,6 +366,12 @@ function createBaseMsgModuleQuerySafeResponse(): MsgModuleQuerySafeResponse {
     responses: [],
   };
 }
+/**
+ * MsgModuleQuerySafeResponse defines the response for Msg/ModuleQuerySafe
+ * @name MsgModuleQuerySafeResponse
+ * @package ibc.applications.interchain_accounts.host.v1
+ * @see proto type: ibc.applications.interchain_accounts.host.v1.MsgModuleQuerySafeResponse
+ */
 export const MsgModuleQuerySafeResponse = {
   typeUrl:
     '/ibc.applications.interchain_accounts.host.v1.MsgModuleQuerySafeResponse' as const,

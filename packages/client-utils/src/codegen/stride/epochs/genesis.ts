@@ -10,6 +10,11 @@ import {
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet, fromJsonTimestamp, fromTimestamp } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
+/**
+ * @name EpochInfo
+ * @package stride.epochs
+ * @see proto type: stride.epochs.EpochInfo
+ */
 export interface EpochInfo {
   identifier: string;
   startTime: Timestamp;
@@ -23,6 +28,11 @@ export interface EpochInfoProtoMsg {
   typeUrl: '/stride.epochs.EpochInfo';
   value: Uint8Array;
 }
+/**
+ * @name EpochInfoSDKType
+ * @package stride.epochs
+ * @see proto type: stride.epochs.EpochInfo
+ */
 export interface EpochInfoSDKType {
   identifier: string;
   start_time: TimestampSDKType;
@@ -32,7 +42,12 @@ export interface EpochInfoSDKType {
   epoch_counting_started: boolean;
   current_epoch_start_height: bigint;
 }
-/** GenesisState defines the epochs module's genesis state. */
+/**
+ * GenesisState defines the epochs module's genesis state.
+ * @name GenesisState
+ * @package stride.epochs
+ * @see proto type: stride.epochs.GenesisState
+ */
 export interface GenesisState {
   epochs: EpochInfo[];
 }
@@ -40,7 +55,12 @@ export interface GenesisStateProtoMsg {
   typeUrl: '/stride.epochs.GenesisState';
   value: Uint8Array;
 }
-/** GenesisState defines the epochs module's genesis state. */
+/**
+ * GenesisState defines the epochs module's genesis state.
+ * @name GenesisStateSDKType
+ * @package stride.epochs
+ * @see proto type: stride.epochs.GenesisState
+ */
 export interface GenesisStateSDKType {
   epochs: EpochInfoSDKType[];
 }
@@ -55,6 +75,11 @@ function createBaseEpochInfo(): EpochInfo {
     currentEpochStartHeight: BigInt(0),
   };
 }
+/**
+ * @name EpochInfo
+ * @package stride.epochs
+ * @see proto type: stride.epochs.EpochInfo
+ */
 export const EpochInfo = {
   typeUrl: '/stride.epochs.EpochInfo' as const,
   encode(
@@ -218,6 +243,12 @@ function createBaseGenesisState(): GenesisState {
     epochs: [],
   };
 }
+/**
+ * GenesisState defines the epochs module's genesis state.
+ * @name GenesisState
+ * @package stride.epochs
+ * @see proto type: stride.epochs.GenesisState
+ */
 export const GenesisState = {
   typeUrl: '/stride.epochs.GenesisState' as const,
   encode(

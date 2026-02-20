@@ -10,11 +10,18 @@ import {
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
-/** GenesisState defines the ibc connection submodule's genesis state. */
+/**
+ * GenesisState defines the ibc connection submodule's genesis state.
+ * @name GenesisState
+ * @package ibc.core.connection.v1
+ * @see proto type: ibc.core.connection.v1.GenesisState
+ */
 export interface GenesisState {
   connections: IdentifiedConnection[];
   clientConnectionPaths: ConnectionPaths[];
-  /** the sequence for the next generated connection identifier */
+  /**
+   * the sequence for the next generated connection identifier
+   */
   nextConnectionSequence: bigint;
   params: Params;
 }
@@ -22,7 +29,12 @@ export interface GenesisStateProtoMsg {
   typeUrl: '/ibc.core.connection.v1.GenesisState';
   value: Uint8Array;
 }
-/** GenesisState defines the ibc connection submodule's genesis state. */
+/**
+ * GenesisState defines the ibc connection submodule's genesis state.
+ * @name GenesisStateSDKType
+ * @package ibc.core.connection.v1
+ * @see proto type: ibc.core.connection.v1.GenesisState
+ */
 export interface GenesisStateSDKType {
   connections: IdentifiedConnectionSDKType[];
   client_connection_paths: ConnectionPathsSDKType[];
@@ -37,6 +49,12 @@ function createBaseGenesisState(): GenesisState {
     params: Params.fromPartial({}),
   };
 }
+/**
+ * GenesisState defines the ibc connection submodule's genesis state.
+ * @name GenesisState
+ * @package ibc.core.connection.v1
+ * @see proto type: ibc.core.connection.v1.GenesisState
+ */
 export const GenesisState = {
   typeUrl: '/ibc.core.connection.v1.GenesisState' as const,
   encode(

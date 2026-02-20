@@ -6,15 +6,30 @@ import {
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { type JsonSafe } from '../../../json-safe.js';
 import { isSet } from '../../../helpers.js';
-/** QueryParamsRequest defines the request type for querying x/consensus parameters. */
+/**
+ * QueryParamsRequest defines the request type for querying x/consensus parameters.
+ * @name QueryParamsRequest
+ * @package cosmos.consensus.v1
+ * @see proto type: cosmos.consensus.v1.QueryParamsRequest
+ */
 export interface QueryParamsRequest {}
 export interface QueryParamsRequestProtoMsg {
   typeUrl: '/cosmos.consensus.v1.QueryParamsRequest';
   value: Uint8Array;
 }
-/** QueryParamsRequest defines the request type for querying x/consensus parameters. */
+/**
+ * QueryParamsRequest defines the request type for querying x/consensus parameters.
+ * @name QueryParamsRequestSDKType
+ * @package cosmos.consensus.v1
+ * @see proto type: cosmos.consensus.v1.QueryParamsRequest
+ */
 export interface QueryParamsRequestSDKType {}
-/** QueryParamsResponse defines the response type for querying x/consensus parameters. */
+/**
+ * QueryParamsResponse defines the response type for querying x/consensus parameters.
+ * @name QueryParamsResponse
+ * @package cosmos.consensus.v1
+ * @see proto type: cosmos.consensus.v1.QueryParamsResponse
+ */
 export interface QueryParamsResponse {
   /**
    * params are the tendermint consensus params stored in the consensus module.
@@ -27,15 +42,33 @@ export interface QueryParamsResponseProtoMsg {
   typeUrl: '/cosmos.consensus.v1.QueryParamsResponse';
   value: Uint8Array;
 }
-/** QueryParamsResponse defines the response type for querying x/consensus parameters. */
+/**
+ * QueryParamsResponse defines the response type for querying x/consensus parameters.
+ * @name QueryParamsResponseSDKType
+ * @package cosmos.consensus.v1
+ * @see proto type: cosmos.consensus.v1.QueryParamsResponse
+ */
 export interface QueryParamsResponseSDKType {
   params?: ConsensusParamsSDKType;
 }
 function createBaseQueryParamsRequest(): QueryParamsRequest {
   return {};
 }
+/**
+ * QueryParamsRequest defines the request type for querying x/consensus parameters.
+ * @name QueryParamsRequest
+ * @package cosmos.consensus.v1
+ * @see proto type: cosmos.consensus.v1.QueryParamsRequest
+ */
 export const QueryParamsRequest = {
   typeUrl: '/cosmos.consensus.v1.QueryParamsRequest' as const,
+  aminoType: 'cosmos-sdk/QueryParamsRequest' as const,
+  is(o: any): o is QueryParamsRequest {
+    return o && o.$typeUrl === QueryParamsRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryParamsRequestSDKType {
+    return o && o.$typeUrl === QueryParamsRequest.typeUrl;
+  },
   encode(
     _: QueryParamsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -89,8 +122,21 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
     params: undefined,
   };
 }
+/**
+ * QueryParamsResponse defines the response type for querying x/consensus parameters.
+ * @name QueryParamsResponse
+ * @package cosmos.consensus.v1
+ * @see proto type: cosmos.consensus.v1.QueryParamsResponse
+ */
 export const QueryParamsResponse = {
   typeUrl: '/cosmos.consensus.v1.QueryParamsResponse' as const,
+  aminoType: 'cosmos-sdk/QueryParamsResponse' as const,
+  is(o: any): o is QueryParamsResponse {
+    return o && o.$typeUrl === QueryParamsResponse.typeUrl;
+  },
+  isSDK(o: any): o is QueryParamsResponseSDKType {
+    return o && o.$typeUrl === QueryParamsResponse.typeUrl;
+  },
   encode(
     message: QueryParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),

@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { type Rpc } from '../../../helpers.js';
+import { TxRpc } from '../../../types.js';
 import { BinaryReader } from '../../../binary.js';
 import {
   MsgAuthorizeCircuitBreaker,
@@ -31,8 +31,8 @@ export interface Msg {
   ): Promise<MsgResetCircuitBreakerResponse>;
 }
 export class MsgClientImpl implements Msg {
-  private readonly rpc: Rpc;
-  constructor(rpc: Rpc) {
+  private readonly rpc: TxRpc;
+  constructor(rpc: TxRpc) {
     this.rpc = rpc;
     this.authorizeCircuitBreaker = this.authorizeCircuitBreaker.bind(this);
     this.tripCircuitBreaker = this.tripCircuitBreaker.bind(this);
@@ -78,3 +78,6 @@ export class MsgClientImpl implements Msg {
     );
   }
 }
+export const createClientImpl = (rpc: TxRpc) => {
+  return new MsgClientImpl(rpc);
+};

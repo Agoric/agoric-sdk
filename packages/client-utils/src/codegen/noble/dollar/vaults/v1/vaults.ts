@@ -96,6 +96,11 @@ export function pausedTypeToJSON(object: PausedType): string {
       return 'UNRECOGNIZED';
   }
 }
+/**
+ * @name Reward
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.Reward
+ */
 export interface Reward {
   index: bigint;
   total: string;
@@ -105,11 +110,21 @@ export interface RewardProtoMsg {
   typeUrl: '/noble.dollar.vaults.v1.Reward';
   value: Uint8Array;
 }
+/**
+ * @name RewardSDKType
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.Reward
+ */
 export interface RewardSDKType {
   index: bigint;
   total: string;
   rewards: string;
 }
+/**
+ * @name Position
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.Position
+ */
 export interface Position {
   principal: string;
   index: bigint;
@@ -120,12 +135,22 @@ export interface PositionProtoMsg {
   typeUrl: '/noble.dollar.vaults.v1.Position';
   value: Uint8Array;
 }
+/**
+ * @name PositionSDKType
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.Position
+ */
 export interface PositionSDKType {
   principal: string;
   index: bigint;
   amount: string;
   time: TimestampSDKType;
 }
+/**
+ * @name PositionRewards
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.PositionRewards
+ */
 export interface PositionRewards {
   amount: string;
   pendingRewards: string;
@@ -134,10 +159,20 @@ export interface PositionRewardsProtoMsg {
   typeUrl: '/noble.dollar.vaults.v1.PositionRewards';
   value: Uint8Array;
 }
+/**
+ * @name PositionRewardsSDKType
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.PositionRewards
+ */
 export interface PositionRewardsSDKType {
   amount: string;
   pending_rewards: string;
 }
+/**
+ * @name PositionEntry
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.PositionEntry
+ */
 export interface PositionEntry {
   address: Uint8Array;
   vault: VaultType;
@@ -150,6 +185,11 @@ export interface PositionEntryProtoMsg {
   typeUrl: '/noble.dollar.vaults.v1.PositionEntry';
   value: Uint8Array;
 }
+/**
+ * @name PositionEntrySDKType
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.PositionEntry
+ */
 export interface PositionEntrySDKType {
   address: Uint8Array;
   vault: VaultType;
@@ -158,6 +198,11 @@ export interface PositionEntrySDKType {
   amount: string;
   time: TimestampSDKType;
 }
+/**
+ * @name Stats
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.Stats
+ */
 export interface Stats {
   flexibleTotalPrincipal: string;
   flexibleTotalUsers: bigint;
@@ -169,6 +214,11 @@ export interface StatsProtoMsg {
   typeUrl: '/noble.dollar.vaults.v1.Stats';
   value: Uint8Array;
 }
+/**
+ * @name StatsSDKType
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.Stats
+ */
 export interface StatsSDKType {
   flexible_total_principal: string;
   flexible_total_users: bigint;
@@ -183,6 +233,11 @@ function createBaseReward(): Reward {
     rewards: '',
   };
 }
+/**
+ * @name Reward
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.Reward
+ */
 export const Reward = {
   typeUrl: '/noble.dollar.vaults.v1.Reward' as const,
   encode(
@@ -270,6 +325,11 @@ function createBasePosition(): Position {
     time: Timestamp.fromPartial({}),
   };
 }
+/**
+ * @name Position
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.Position
+ */
 export const Position = {
   typeUrl: '/noble.dollar.vaults.v1.Position' as const,
   encode(
@@ -368,6 +428,11 @@ function createBasePositionRewards(): PositionRewards {
     pendingRewards: '',
   };
 }
+/**
+ * @name PositionRewards
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.PositionRewards
+ */
 export const PositionRewards = {
   typeUrl: '/noble.dollar.vaults.v1.PositionRewards' as const,
   encode(
@@ -447,6 +512,11 @@ function createBasePositionEntry(): PositionEntry {
     time: Timestamp.fromPartial({}),
   };
 }
+/**
+ * @name PositionEntry
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.PositionEntry
+ */
 export const PositionEntry = {
   typeUrl: '/noble.dollar.vaults.v1.PositionEntry' as const,
   encode(
@@ -571,6 +641,11 @@ function createBaseStats(): Stats {
     stakedTotalUsers: BigInt(0),
   };
 }
+/**
+ * @name Stats
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.Stats
+ */
 export const Stats = {
   typeUrl: '/noble.dollar.vaults.v1.Stats' as const,
   encode(

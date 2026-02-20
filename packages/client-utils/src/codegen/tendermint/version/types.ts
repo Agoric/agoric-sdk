@@ -6,6 +6,9 @@ import { type JsonSafe } from '../../json-safe.js';
  * App includes the protocol and software version for the application.
  * This information is included in ResponseInfo. The App.Protocol can be
  * updated in ResponseEndBlock.
+ * @name App
+ * @package tendermint.version
+ * @see proto type: tendermint.version.App
  */
 export interface App {
   protocol: bigint;
@@ -19,6 +22,9 @@ export interface AppProtoMsg {
  * App includes the protocol and software version for the application.
  * This information is included in ResponseInfo. The App.Protocol can be
  * updated in ResponseEndBlock.
+ * @name AppSDKType
+ * @package tendermint.version
+ * @see proto type: tendermint.version.App
  */
 export interface AppSDKType {
   protocol: bigint;
@@ -28,6 +34,9 @@ export interface AppSDKType {
  * Consensus captures the consensus rules for processing a block in the blockchain,
  * including all blockchain data structures and the rules of the application's
  * state transition machine.
+ * @name Consensus
+ * @package tendermint.version
+ * @see proto type: tendermint.version.Consensus
  */
 export interface Consensus {
   block: bigint;
@@ -41,6 +50,9 @@ export interface ConsensusProtoMsg {
  * Consensus captures the consensus rules for processing a block in the blockchain,
  * including all blockchain data structures and the rules of the application's
  * state transition machine.
+ * @name ConsensusSDKType
+ * @package tendermint.version
+ * @see proto type: tendermint.version.Consensus
  */
 export interface ConsensusSDKType {
   block: bigint;
@@ -52,6 +64,14 @@ function createBaseApp(): App {
     software: '',
   };
 }
+/**
+ * App includes the protocol and software version for the application.
+ * This information is included in ResponseInfo. The App.Protocol can be
+ * updated in ResponseEndBlock.
+ * @name App
+ * @package tendermint.version
+ * @see proto type: tendermint.version.App
+ */
 export const App = {
   typeUrl: '/tendermint.version.App' as const,
   encode(
@@ -130,6 +150,14 @@ function createBaseConsensus(): Consensus {
     app: BigInt(0),
   };
 }
+/**
+ * Consensus captures the consensus rules for processing a block in the blockchain,
+ * including all blockchain data structures and the rules of the application's
+ * state transition machine.
+ * @name Consensus
+ * @package tendermint.version
+ * @see proto type: tendermint.version.Consensus
+ */
 export const Consensus = {
   typeUrl: '/tendermint.version.Consensus' as const,
   encode(

@@ -13,7 +13,12 @@ import {
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
-/** GenesisState defines the records module's genesis state. */
+/**
+ * GenesisState defines the records module's genesis state.
+ * @name GenesisState
+ * @package stride.records
+ * @see proto type: stride.records.GenesisState
+ */
 export interface GenesisState {
   params: Params;
   portId: string;
@@ -28,7 +33,12 @@ export interface GenesisStateProtoMsg {
   typeUrl: '/stride.records.GenesisState';
   value: Uint8Array;
 }
-/** GenesisState defines the records module's genesis state. */
+/**
+ * GenesisState defines the records module's genesis state.
+ * @name GenesisStateSDKType
+ * @package stride.records
+ * @see proto type: stride.records.GenesisState
+ */
 export interface GenesisStateSDKType {
   params: ParamsSDKType;
   port_id: string;
@@ -51,6 +61,12 @@ function createBaseGenesisState(): GenesisState {
     lsmTokenDepositList: [],
   };
 }
+/**
+ * GenesisState defines the records module's genesis state.
+ * @name GenesisState
+ * @package stride.records
+ * @see proto type: stride.records.GenesisState
+ */
 export const GenesisState = {
   typeUrl: '/stride.records.GenesisState' as const,
   encode(

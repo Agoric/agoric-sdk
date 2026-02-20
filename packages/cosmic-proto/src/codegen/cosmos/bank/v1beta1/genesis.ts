@@ -11,18 +11,29 @@ import { Coin, type CoinSDKType } from '../../base/v1beta1/coin.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
-/** GenesisState defines the bank module's genesis state. */
+/**
+ * GenesisState defines the bank module's genesis state.
+ * @name GenesisState
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.GenesisState
+ */
 export interface GenesisState {
-  /** params defines all the parameters of the module. */
+  /**
+   * params defines all the parameters of the module.
+   */
   params: Params;
-  /** balances is an array containing the balances of all the accounts. */
+  /**
+   * balances is an array containing the balances of all the accounts.
+   */
   balances: Balance[];
   /**
    * supply represents the total supply. If it is left empty, then supply will be calculated based on the provided
    * balances. Otherwise, it will be used to validate that the sum of the balances equals this amount.
    */
   supply: Coin[];
-  /** denom_metadata defines the metadata of the different coins. */
+  /**
+   * denom_metadata defines the metadata of the different coins.
+   */
   denomMetadata: Metadata[];
   /**
    * send_enabled defines the denoms where send is enabled or disabled.
@@ -35,7 +46,12 @@ export interface GenesisStateProtoMsg {
   typeUrl: '/cosmos.bank.v1beta1.GenesisState';
   value: Uint8Array;
 }
-/** GenesisState defines the bank module's genesis state. */
+/**
+ * GenesisState defines the bank module's genesis state.
+ * @name GenesisStateSDKType
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.GenesisState
+ */
 export interface GenesisStateSDKType {
   params: ParamsSDKType;
   balances: BalanceSDKType[];
@@ -46,11 +62,18 @@ export interface GenesisStateSDKType {
 /**
  * Balance defines an account address and balance pair used in the bank module's
  * genesis state.
+ * @name Balance
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.Balance
  */
 export interface Balance {
-  /** address is the address of the balance holder. */
+  /**
+   * address is the address of the balance holder.
+   */
   address: string;
-  /** coins defines the different coins this balance holds. */
+  /**
+   * coins defines the different coins this balance holds.
+   */
   coins: Coin[];
 }
 export interface BalanceProtoMsg {
@@ -60,6 +83,9 @@ export interface BalanceProtoMsg {
 /**
  * Balance defines an account address and balance pair used in the bank module's
  * genesis state.
+ * @name BalanceSDKType
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.Balance
  */
 export interface BalanceSDKType {
   address: string;
@@ -74,8 +100,45 @@ function createBaseGenesisState(): GenesisState {
     sendEnabled: [],
   };
 }
+/**
+ * GenesisState defines the bank module's genesis state.
+ * @name GenesisState
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.GenesisState
+ */
 export const GenesisState = {
   typeUrl: '/cosmos.bank.v1beta1.GenesisState' as const,
+  aminoType: 'cosmos-sdk/GenesisState' as const,
+  is(o: any): o is GenesisState {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Params.is(o.params) &&
+          Array.isArray(o.balances) &&
+          (!o.balances.length || Balance.is(o.balances[0])) &&
+          Array.isArray(o.supply) &&
+          (!o.supply.length || Coin.is(o.supply[0])) &&
+          Array.isArray(o.denomMetadata) &&
+          (!o.denomMetadata.length || Metadata.is(o.denomMetadata[0])) &&
+          Array.isArray(o.sendEnabled) &&
+          (!o.sendEnabled.length || SendEnabled.is(o.sendEnabled[0]))))
+    );
+  },
+  isSDK(o: any): o is GenesisStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Params.isSDK(o.params) &&
+          Array.isArray(o.balances) &&
+          (!o.balances.length || Balance.isSDK(o.balances[0])) &&
+          Array.isArray(o.supply) &&
+          (!o.supply.length || Coin.isSDK(o.supply[0])) &&
+          Array.isArray(o.denom_metadata) &&
+          (!o.denom_metadata.length || Metadata.isSDK(o.denom_metadata[0])) &&
+          Array.isArray(o.send_enabled) &&
+          (!o.send_enabled.length || SendEnabled.isSDK(o.send_enabled[0]))))
+    );
+  },
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -209,8 +272,34 @@ function createBaseBalance(): Balance {
     coins: [],
   };
 }
+/**
+ * Balance defines an account address and balance pair used in the bank module's
+ * genesis state.
+ * @name Balance
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.Balance
+ */
 export const Balance = {
   typeUrl: '/cosmos.bank.v1beta1.Balance' as const,
+  aminoType: 'cosmos-sdk/Balance' as const,
+  is(o: any): o is Balance {
+    return (
+      o &&
+      (o.$typeUrl === Balance.typeUrl ||
+        (typeof o.address === 'string' &&
+          Array.isArray(o.coins) &&
+          (!o.coins.length || Coin.is(o.coins[0]))))
+    );
+  },
+  isSDK(o: any): o is BalanceSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Balance.typeUrl ||
+        (typeof o.address === 'string' &&
+          Array.isArray(o.coins) &&
+          (!o.coins.length || Coin.isSDK(o.coins[0]))))
+    );
+  },
   encode(
     message: Balance,
     writer: BinaryWriter = BinaryWriter.create(),

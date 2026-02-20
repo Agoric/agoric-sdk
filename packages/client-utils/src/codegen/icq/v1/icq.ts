@@ -2,18 +2,32 @@
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
-/** Params defines the set of on-chain interchain query parameters. */
+/**
+ * Params defines the set of on-chain interchain query parameters.
+ * @name Params
+ * @package icq.v1
+ * @see proto type: icq.v1.Params
+ */
 export interface Params {
-  /** host_enabled enables or disables the host submodule. */
+  /**
+   * host_enabled enables or disables the host submodule.
+   */
   hostEnabled: boolean;
-  /** allow_queries defines a list of query paths allowed to be queried on a host chain. */
+  /**
+   * allow_queries defines a list of query paths allowed to be queried on a host chain.
+   */
   allowQueries: string[];
 }
 export interface ParamsProtoMsg {
   typeUrl: '/icq.v1.Params';
   value: Uint8Array;
 }
-/** Params defines the set of on-chain interchain query parameters. */
+/**
+ * Params defines the set of on-chain interchain query parameters.
+ * @name ParamsSDKType
+ * @package icq.v1
+ * @see proto type: icq.v1.Params
+ */
 export interface ParamsSDKType {
   host_enabled: boolean;
   allow_queries: string[];
@@ -24,6 +38,12 @@ function createBaseParams(): Params {
     allowQueries: [],
   };
 }
+/**
+ * Params defines the set of on-chain interchain query parameters.
+ * @name Params
+ * @package icq.v1
+ * @see proto type: icq.v1.Params
+ */
 export const Params = {
   typeUrl: '/icq.v1.Params' as const,
   encode(

@@ -8,6 +8,9 @@ import { Decimal } from '../../../decimals.js';
  *
  * NOTE: The amount field is an Int which implements the custom method
  * signatures required by gogoproto.
+ * @name Coin
+ * @package cosmos.base.v1beta1
+ * @see proto type: cosmos.base.v1beta1.Coin
  */
 export interface Coin {
   denom: string;
@@ -22,6 +25,9 @@ export interface CoinProtoMsg {
  *
  * NOTE: The amount field is an Int which implements the custom method
  * signatures required by gogoproto.
+ * @name CoinSDKType
+ * @package cosmos.base.v1beta1
+ * @see proto type: cosmos.base.v1beta1.Coin
  */
 export interface CoinSDKType {
   denom: string;
@@ -32,6 +38,9 @@ export interface CoinSDKType {
  *
  * NOTE: The amount field is an Dec which implements the custom method
  * signatures required by gogoproto.
+ * @name DecCoin
+ * @package cosmos.base.v1beta1
+ * @see proto type: cosmos.base.v1beta1.DecCoin
  */
 export interface DecCoin {
   denom: string;
@@ -46,6 +55,9 @@ export interface DecCoinProtoMsg {
  *
  * NOTE: The amount field is an Dec which implements the custom method
  * signatures required by gogoproto.
+ * @name DecCoinSDKType
+ * @package cosmos.base.v1beta1
+ * @see proto type: cosmos.base.v1beta1.DecCoin
  */
 export interface DecCoinSDKType {
   denom: string;
@@ -54,6 +66,9 @@ export interface DecCoinSDKType {
 /**
  * IntProto defines a Protobuf wrapper around an Int object.
  * Deprecated: Prefer to use math.Int directly. It supports binary Marshal and Unmarshal.
+ * @name IntProto
+ * @package cosmos.base.v1beta1
+ * @see proto type: cosmos.base.v1beta1.IntProto
  */
 export interface IntProto {
   int: string;
@@ -65,6 +80,9 @@ export interface IntProtoProtoMsg {
 /**
  * IntProto defines a Protobuf wrapper around an Int object.
  * Deprecated: Prefer to use math.Int directly. It supports binary Marshal and Unmarshal.
+ * @name IntProtoSDKType
+ * @package cosmos.base.v1beta1
+ * @see proto type: cosmos.base.v1beta1.IntProto
  */
 export interface IntProtoSDKType {
   int: string;
@@ -72,6 +90,9 @@ export interface IntProtoSDKType {
 /**
  * DecProto defines a Protobuf wrapper around a Dec object.
  * Deprecated: Prefer to use math.LegacyDec directly. It supports binary Marshal and Unmarshal.
+ * @name DecProto
+ * @package cosmos.base.v1beta1
+ * @see proto type: cosmos.base.v1beta1.DecProto
  */
 export interface DecProto {
   dec: string;
@@ -83,6 +104,9 @@ export interface DecProtoProtoMsg {
 /**
  * DecProto defines a Protobuf wrapper around a Dec object.
  * Deprecated: Prefer to use math.LegacyDec directly. It supports binary Marshal and Unmarshal.
+ * @name DecProtoSDKType
+ * @package cosmos.base.v1beta1
+ * @see proto type: cosmos.base.v1beta1.DecProto
  */
 export interface DecProtoSDKType {
   dec: string;
@@ -93,6 +117,15 @@ function createBaseCoin(): Coin {
     amount: '',
   };
 }
+/**
+ * Coin defines a token with a denomination and an amount.
+ *
+ * NOTE: The amount field is an Int which implements the custom method
+ * signatures required by gogoproto.
+ * @name Coin
+ * @package cosmos.base.v1beta1
+ * @see proto type: cosmos.base.v1beta1.Coin
+ */
 export const Coin = {
   typeUrl: '/cosmos.base.v1beta1.Coin' as const,
   encode(
@@ -165,6 +198,15 @@ function createBaseDecCoin(): DecCoin {
     amount: '',
   };
 }
+/**
+ * DecCoin defines a token with a denomination and a decimal amount.
+ *
+ * NOTE: The amount field is an Dec which implements the custom method
+ * signatures required by gogoproto.
+ * @name DecCoin
+ * @package cosmos.base.v1beta1
+ * @see proto type: cosmos.base.v1beta1.DecCoin
+ */
 export const DecCoin = {
   typeUrl: '/cosmos.base.v1beta1.DecCoin' as const,
   encode(
@@ -238,6 +280,13 @@ function createBaseIntProto(): IntProto {
     int: '',
   };
 }
+/**
+ * IntProto defines a Protobuf wrapper around an Int object.
+ * Deprecated: Prefer to use math.Int directly. It supports binary Marshal and Unmarshal.
+ * @name IntProto
+ * @package cosmos.base.v1beta1
+ * @see proto type: cosmos.base.v1beta1.IntProto
+ */
 export const IntProto = {
   typeUrl: '/cosmos.base.v1beta1.IntProto' as const,
   encode(
@@ -300,6 +349,13 @@ function createBaseDecProto(): DecProto {
     dec: '',
   };
 }
+/**
+ * DecProto defines a Protobuf wrapper around a Dec object.
+ * Deprecated: Prefer to use math.LegacyDec directly. It supports binary Marshal and Unmarshal.
+ * @name DecProto
+ * @package cosmos.base.v1beta1
+ * @see proto type: cosmos.base.v1beta1.DecProto
+ */
 export const DecProto = {
   typeUrl: '/cosmos.base.v1beta1.DecProto' as const,
   encode(

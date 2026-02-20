@@ -16,28 +16,52 @@ import {
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
-/** GenesisState defines the gov module's genesis state. */
+/**
+ * GenesisState defines the gov module's genesis state.
+ * @name GenesisState
+ * @package cosmos.gov.v1beta1
+ * @see proto type: cosmos.gov.v1beta1.GenesisState
+ */
 export interface GenesisState {
-  /** starting_proposal_id is the ID of the starting proposal. */
+  /**
+   * starting_proposal_id is the ID of the starting proposal.
+   */
   startingProposalId: bigint;
-  /** deposits defines all the deposits present at genesis. */
+  /**
+   * deposits defines all the deposits present at genesis.
+   */
   deposits: Deposit[];
-  /** votes defines all the votes present at genesis. */
+  /**
+   * votes defines all the votes present at genesis.
+   */
   votes: Vote[];
-  /** proposals defines all the proposals present at genesis. */
+  /**
+   * proposals defines all the proposals present at genesis.
+   */
   proposals: Proposal[];
-  /** deposit_params defines all the parameters related to deposit. */
+  /**
+   * deposit_params defines all the parameters related to deposit.
+   */
   depositParams: DepositParams;
-  /** voting_params defines all the parameters related to voting. */
+  /**
+   * voting_params defines all the parameters related to voting.
+   */
   votingParams: VotingParams;
-  /** tally_params defines all the parameters related to tally. */
+  /**
+   * tally_params defines all the parameters related to tally.
+   */
   tallyParams: TallyParams;
 }
 export interface GenesisStateProtoMsg {
   typeUrl: '/cosmos.gov.v1beta1.GenesisState';
   value: Uint8Array;
 }
-/** GenesisState defines the gov module's genesis state. */
+/**
+ * GenesisState defines the gov module's genesis state.
+ * @name GenesisStateSDKType
+ * @package cosmos.gov.v1beta1
+ * @see proto type: cosmos.gov.v1beta1.GenesisState
+ */
 export interface GenesisStateSDKType {
   starting_proposal_id: bigint;
   deposits: DepositSDKType[];
@@ -58,6 +82,12 @@ function createBaseGenesisState(): GenesisState {
     tallyParams: TallyParams.fromPartial({}),
   };
 }
+/**
+ * GenesisState defines the gov module's genesis state.
+ * @name GenesisState
+ * @package cosmos.gov.v1beta1
+ * @see proto type: cosmos.gov.v1beta1.GenesisState
+ */
 export const GenesisState = {
   typeUrl: '/cosmos.gov.v1beta1.GenesisState' as const,
   encode(

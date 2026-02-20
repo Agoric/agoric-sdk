@@ -2,28 +2,51 @@
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
-/** Module is the config object for the auth module. */
+/**
+ * Module is the config object for the auth module.
+ * @name Module
+ * @package cosmos.auth.module.v1
+ * @see proto type: cosmos.auth.module.v1.Module
+ */
 export interface Module {
-  /** bech32_prefix is the bech32 account prefix for the app. */
+  /**
+   * bech32_prefix is the bech32 account prefix for the app.
+   */
   bech32Prefix: string;
-  /** module_account_permissions are module account permissions. */
+  /**
+   * module_account_permissions are module account permissions.
+   */
   moduleAccountPermissions: ModuleAccountPermission[];
-  /** authority defines the custom module authority. If not set, defaults to the governance module. */
+  /**
+   * authority defines the custom module authority. If not set, defaults to the governance module.
+   */
   authority: string;
 }
 export interface ModuleProtoMsg {
   typeUrl: '/cosmos.auth.module.v1.Module';
   value: Uint8Array;
 }
-/** Module is the config object for the auth module. */
+/**
+ * Module is the config object for the auth module.
+ * @name ModuleSDKType
+ * @package cosmos.auth.module.v1
+ * @see proto type: cosmos.auth.module.v1.Module
+ */
 export interface ModuleSDKType {
   bech32_prefix: string;
   module_account_permissions: ModuleAccountPermissionSDKType[];
   authority: string;
 }
-/** ModuleAccountPermission represents permissions for a module account. */
+/**
+ * ModuleAccountPermission represents permissions for a module account.
+ * @name ModuleAccountPermission
+ * @package cosmos.auth.module.v1
+ * @see proto type: cosmos.auth.module.v1.ModuleAccountPermission
+ */
 export interface ModuleAccountPermission {
-  /** account is the name of the module. */
+  /**
+   * account is the name of the module.
+   */
   account: string;
   /**
    * permissions are the permissions this module has. Currently recognized
@@ -35,7 +58,12 @@ export interface ModuleAccountPermissionProtoMsg {
   typeUrl: '/cosmos.auth.module.v1.ModuleAccountPermission';
   value: Uint8Array;
 }
-/** ModuleAccountPermission represents permissions for a module account. */
+/**
+ * ModuleAccountPermission represents permissions for a module account.
+ * @name ModuleAccountPermissionSDKType
+ * @package cosmos.auth.module.v1
+ * @see proto type: cosmos.auth.module.v1.ModuleAccountPermission
+ */
 export interface ModuleAccountPermissionSDKType {
   account: string;
   permissions: string[];
@@ -47,8 +75,37 @@ function createBaseModule(): Module {
     authority: '',
   };
 }
+/**
+ * Module is the config object for the auth module.
+ * @name Module
+ * @package cosmos.auth.module.v1
+ * @see proto type: cosmos.auth.module.v1.Module
+ */
 export const Module = {
   typeUrl: '/cosmos.auth.module.v1.Module' as const,
+  aminoType: 'cosmos-sdk/Module' as const,
+  is(o: any): o is Module {
+    return (
+      o &&
+      (o.$typeUrl === Module.typeUrl ||
+        (typeof o.bech32Prefix === 'string' &&
+          Array.isArray(o.moduleAccountPermissions) &&
+          (!o.moduleAccountPermissions.length ||
+            ModuleAccountPermission.is(o.moduleAccountPermissions[0])) &&
+          typeof o.authority === 'string'))
+    );
+  },
+  isSDK(o: any): o is ModuleSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Module.typeUrl ||
+        (typeof o.bech32_prefix === 'string' &&
+          Array.isArray(o.module_account_permissions) &&
+          (!o.module_account_permissions.length ||
+            ModuleAccountPermission.isSDK(o.module_account_permissions[0])) &&
+          typeof o.authority === 'string'))
+    );
+  },
   encode(
     message: Module,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -146,8 +203,33 @@ function createBaseModuleAccountPermission(): ModuleAccountPermission {
     permissions: [],
   };
 }
+/**
+ * ModuleAccountPermission represents permissions for a module account.
+ * @name ModuleAccountPermission
+ * @package cosmos.auth.module.v1
+ * @see proto type: cosmos.auth.module.v1.ModuleAccountPermission
+ */
 export const ModuleAccountPermission = {
   typeUrl: '/cosmos.auth.module.v1.ModuleAccountPermission' as const,
+  aminoType: 'cosmos-sdk/ModuleAccountPermission' as const,
+  is(o: any): o is ModuleAccountPermission {
+    return (
+      o &&
+      (o.$typeUrl === ModuleAccountPermission.typeUrl ||
+        (typeof o.account === 'string' &&
+          Array.isArray(o.permissions) &&
+          (!o.permissions.length || typeof o.permissions[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is ModuleAccountPermissionSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ModuleAccountPermission.typeUrl ||
+        (typeof o.account === 'string' &&
+          Array.isArray(o.permissions) &&
+          (!o.permissions.length || typeof o.permissions[0] === 'string')))
+    );
+  },
   encode(
     message: ModuleAccountPermission,
     writer: BinaryWriter = BinaryWriter.create(),

@@ -8,53 +8,109 @@ import {
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { type JsonSafe } from '../../json-safe.js';
 import { isSet } from '../../helpers.js';
-/** QueryParamsRequest is the request type for the Query/Params RPC method. */
+/**
+ * QueryParamsRequest is the request type for the Query/Params RPC method.
+ * @name QueryParamsRequest
+ * @package agoric.vbank
+ * @see proto type: agoric.vbank.QueryParamsRequest
+ */
 export interface QueryParamsRequest {}
 export interface QueryParamsRequestProtoMsg {
   typeUrl: '/agoric.vbank.QueryParamsRequest';
   value: Uint8Array;
 }
-/** QueryParamsRequest is the request type for the Query/Params RPC method. */
+/**
+ * QueryParamsRequest is the request type for the Query/Params RPC method.
+ * @name QueryParamsRequestSDKType
+ * @package agoric.vbank
+ * @see proto type: agoric.vbank.QueryParamsRequest
+ */
 export interface QueryParamsRequestSDKType {}
-/** QueryParamsResponse is the response type for the Query/Params RPC method. */
+/**
+ * QueryParamsResponse is the response type for the Query/Params RPC method.
+ * @name QueryParamsResponse
+ * @package agoric.vbank
+ * @see proto type: agoric.vbank.QueryParamsResponse
+ */
 export interface QueryParamsResponse {
-  /** params defines the parameters of the module. */
+  /**
+   * params defines the parameters of the module.
+   */
   params: Params;
 }
 export interface QueryParamsResponseProtoMsg {
   typeUrl: '/agoric.vbank.QueryParamsResponse';
   value: Uint8Array;
 }
-/** QueryParamsResponse is the response type for the Query/Params RPC method. */
+/**
+ * QueryParamsResponse is the response type for the Query/Params RPC method.
+ * @name QueryParamsResponseSDKType
+ * @package agoric.vbank
+ * @see proto type: agoric.vbank.QueryParamsResponse
+ */
 export interface QueryParamsResponseSDKType {
   params: ParamsSDKType;
 }
-/** QueryStateRequest is the request type for the Query/State RPC method. */
+/**
+ * QueryStateRequest is the request type for the Query/State RPC method.
+ * @name QueryStateRequest
+ * @package agoric.vbank
+ * @see proto type: agoric.vbank.QueryStateRequest
+ */
 export interface QueryStateRequest {}
 export interface QueryStateRequestProtoMsg {
   typeUrl: '/agoric.vbank.QueryStateRequest';
   value: Uint8Array;
 }
-/** QueryStateRequest is the request type for the Query/State RPC method. */
+/**
+ * QueryStateRequest is the request type for the Query/State RPC method.
+ * @name QueryStateRequestSDKType
+ * @package agoric.vbank
+ * @see proto type: agoric.vbank.QueryStateRequest
+ */
 export interface QueryStateRequestSDKType {}
-/** QueryStateResponse is the response type for the Query/State RPC method. */
+/**
+ * QueryStateResponse is the response type for the Query/State RPC method.
+ * @name QueryStateResponse
+ * @package agoric.vbank
+ * @see proto type: agoric.vbank.QueryStateResponse
+ */
 export interface QueryStateResponse {
-  /** state defines the parameters of the module. */
+  /**
+   * state defines the parameters of the module.
+   */
   state: State;
 }
 export interface QueryStateResponseProtoMsg {
   typeUrl: '/agoric.vbank.QueryStateResponse';
   value: Uint8Array;
 }
-/** QueryStateResponse is the response type for the Query/State RPC method. */
+/**
+ * QueryStateResponse is the response type for the Query/State RPC method.
+ * @name QueryStateResponseSDKType
+ * @package agoric.vbank
+ * @see proto type: agoric.vbank.QueryStateResponse
+ */
 export interface QueryStateResponseSDKType {
   state: StateSDKType;
 }
 function createBaseQueryParamsRequest(): QueryParamsRequest {
   return {};
 }
+/**
+ * QueryParamsRequest is the request type for the Query/Params RPC method.
+ * @name QueryParamsRequest
+ * @package agoric.vbank
+ * @see proto type: agoric.vbank.QueryParamsRequest
+ */
 export const QueryParamsRequest = {
   typeUrl: '/agoric.vbank.QueryParamsRequest' as const,
+  is(o: any): o is QueryParamsRequest {
+    return o && o.$typeUrl === QueryParamsRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryParamsRequestSDKType {
+    return o && o.$typeUrl === QueryParamsRequest.typeUrl;
+  },
   encode(
     _: QueryParamsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -108,8 +164,25 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
     params: Params.fromPartial({}),
   };
 }
+/**
+ * QueryParamsResponse is the response type for the Query/Params RPC method.
+ * @name QueryParamsResponse
+ * @package agoric.vbank
+ * @see proto type: agoric.vbank.QueryParamsResponse
+ */
 export const QueryParamsResponse = {
   typeUrl: '/agoric.vbank.QueryParamsResponse' as const,
+  is(o: any): o is QueryParamsResponse {
+    return (
+      o && (o.$typeUrl === QueryParamsResponse.typeUrl || Params.is(o.params))
+    );
+  },
+  isSDK(o: any): o is QueryParamsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryParamsResponse.typeUrl || Params.isSDK(o.params))
+    );
+  },
   encode(
     message: QueryParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -175,8 +248,20 @@ export const QueryParamsResponse = {
 function createBaseQueryStateRequest(): QueryStateRequest {
   return {};
 }
+/**
+ * QueryStateRequest is the request type for the Query/State RPC method.
+ * @name QueryStateRequest
+ * @package agoric.vbank
+ * @see proto type: agoric.vbank.QueryStateRequest
+ */
 export const QueryStateRequest = {
   typeUrl: '/agoric.vbank.QueryStateRequest' as const,
+  is(o: any): o is QueryStateRequest {
+    return o && o.$typeUrl === QueryStateRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryStateRequestSDKType {
+    return o && o.$typeUrl === QueryStateRequest.typeUrl;
+  },
   encode(
     _: QueryStateRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -227,8 +312,24 @@ function createBaseQueryStateResponse(): QueryStateResponse {
     state: State.fromPartial({}),
   };
 }
+/**
+ * QueryStateResponse is the response type for the Query/State RPC method.
+ * @name QueryStateResponse
+ * @package agoric.vbank
+ * @see proto type: agoric.vbank.QueryStateResponse
+ */
 export const QueryStateResponse = {
   typeUrl: '/agoric.vbank.QueryStateResponse' as const,
+  is(o: any): o is QueryStateResponse {
+    return (
+      o && (o.$typeUrl === QueryStateResponse.typeUrl || State.is(o.state))
+    );
+  },
+  isSDK(o: any): o is QueryStateResponseSDKType {
+    return (
+      o && (o.$typeUrl === QueryStateResponse.typeUrl || State.isSDK(o.state))
+    );
+  },
   encode(
     message: QueryStateResponse,
     writer: BinaryWriter = BinaryWriter.create(),

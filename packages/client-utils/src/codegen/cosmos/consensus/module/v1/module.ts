@@ -2,16 +2,28 @@
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
-/** Module is the config object of the consensus module. */
+/**
+ * Module is the config object of the consensus module.
+ * @name Module
+ * @package cosmos.consensus.module.v1
+ * @see proto type: cosmos.consensus.module.v1.Module
+ */
 export interface Module {
-  /** authority defines the custom module authority. If not set, defaults to the governance module. */
+  /**
+   * authority defines the custom module authority. If not set, defaults to the governance module.
+   */
   authority: string;
 }
 export interface ModuleProtoMsg {
   typeUrl: '/cosmos.consensus.module.v1.Module';
   value: Uint8Array;
 }
-/** Module is the config object of the consensus module. */
+/**
+ * Module is the config object of the consensus module.
+ * @name ModuleSDKType
+ * @package cosmos.consensus.module.v1
+ * @see proto type: cosmos.consensus.module.v1.Module
+ */
 export interface ModuleSDKType {
   authority: string;
 }
@@ -20,6 +32,12 @@ function createBaseModule(): Module {
     authority: '',
   };
 }
+/**
+ * Module is the config object of the consensus module.
+ * @name Module
+ * @package cosmos.consensus.module.v1
+ * @see proto type: cosmos.consensus.module.v1.Module
+ */
 export const Module = {
   typeUrl: '/cosmos.consensus.module.v1.Module' as const,
   encode(

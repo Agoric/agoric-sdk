@@ -5,6 +5,9 @@ import { type JsonSafe } from '../../../json-safe.js';
 /**
  * Message format for BurningAndMintingPaused
  * @param paused true if paused, false if not paused
+ * @name MaxMessageBodySize
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MaxMessageBodySize
  */
 export interface MaxMessageBodySize {
   amount: bigint;
@@ -16,6 +19,9 @@ export interface MaxMessageBodySizeProtoMsg {
 /**
  * Message format for BurningAndMintingPaused
  * @param paused true if paused, false if not paused
+ * @name MaxMessageBodySizeSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MaxMessageBodySize
  */
 export interface MaxMessageBodySizeSDKType {
   amount: bigint;
@@ -25,6 +31,13 @@ function createBaseMaxMessageBodySize(): MaxMessageBodySize {
     amount: BigInt(0),
   };
 }
+/**
+ * Message format for BurningAndMintingPaused
+ * @param paused true if paused, false if not paused
+ * @name MaxMessageBodySize
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MaxMessageBodySize
+ */
 export const MaxMessageBodySize = {
   typeUrl: '/circle.cctp.v1.MaxMessageBodySize' as const,
   encode(

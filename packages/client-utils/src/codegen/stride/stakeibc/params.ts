@@ -5,9 +5,14 @@ import { type JsonSafe } from '../../json-safe.js';
 /**
  * Params defines the parameters for the module.
  * next id: 20
+ * @name Params
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.Params
  */
 export interface Params {
-  /** define epoch lengths, in stride_epochs */
+  /**
+   * define epoch lengths, in stride_epochs
+   */
   rewardsInterval: bigint;
   delegateInterval: bigint;
   depositInterval: bigint;
@@ -32,6 +37,9 @@ export interface ParamsProtoMsg {
 /**
  * Params defines the parameters for the module.
  * next id: 20
+ * @name ParamsSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.Params
  */
 export interface ParamsSDKType {
   rewards_interval: bigint;
@@ -71,6 +79,13 @@ function createBaseParams(): Params {
     validatorWeightCap: BigInt(0),
   };
 }
+/**
+ * Params defines the parameters for the module.
+ * next id: 20
+ * @name Params
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.Params
+ */
 export const Params = {
   typeUrl: '/stride.stakeibc.Params' as const,
   encode(

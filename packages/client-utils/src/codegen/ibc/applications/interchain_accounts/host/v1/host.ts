@@ -7,11 +7,18 @@ import { encodeBase64 as base64FromBytes } from '@endo/base64';
 /**
  * Params defines the set of on-chain interchain accounts parameters.
  * The following parameters may be used to disable the host submodule.
+ * @name Params
+ * @package ibc.applications.interchain_accounts.host.v1
+ * @see proto type: ibc.applications.interchain_accounts.host.v1.Params
  */
 export interface Params {
-  /** host_enabled enables or disables the host submodule. */
+  /**
+   * host_enabled enables or disables the host submodule.
+   */
   hostEnabled: boolean;
-  /** allow_messages defines a list of sdk message typeURLs allowed to be executed on a host chain. */
+  /**
+   * allow_messages defines a list of sdk message typeURLs allowed to be executed on a host chain.
+   */
   allowMessages: string[];
 }
 export interface ParamsProtoMsg {
@@ -21,6 +28,9 @@ export interface ParamsProtoMsg {
 /**
  * Params defines the set of on-chain interchain accounts parameters.
  * The following parameters may be used to disable the host submodule.
+ * @name ParamsSDKType
+ * @package ibc.applications.interchain_accounts.host.v1
+ * @see proto type: ibc.applications.interchain_accounts.host.v1.Params
  */
 export interface ParamsSDKType {
   host_enabled: boolean;
@@ -29,6 +39,9 @@ export interface ParamsSDKType {
 /**
  * QueryRequest defines the parameters for a particular query request
  * by an interchain account.
+ * @name QueryRequest
+ * @package ibc.applications.interchain_accounts.host.v1
+ * @see proto type: ibc.applications.interchain_accounts.host.v1.QueryRequest
  */
 export interface QueryRequest {
   /**
@@ -49,6 +62,9 @@ export interface QueryRequestProtoMsg {
 /**
  * QueryRequest defines the parameters for a particular query request
  * by an interchain account.
+ * @name QueryRequestSDKType
+ * @package ibc.applications.interchain_accounts.host.v1
+ * @see proto type: ibc.applications.interchain_accounts.host.v1.QueryRequest
  */
 export interface QueryRequestSDKType {
   path: string;
@@ -60,6 +76,13 @@ function createBaseParams(): Params {
     allowMessages: [],
   };
 }
+/**
+ * Params defines the set of on-chain interchain accounts parameters.
+ * The following parameters may be used to disable the host submodule.
+ * @name Params
+ * @package ibc.applications.interchain_accounts.host.v1
+ * @see proto type: ibc.applications.interchain_accounts.host.v1.Params
+ */
 export const Params = {
   typeUrl: '/ibc.applications.interchain_accounts.host.v1.Params' as const,
   encode(
@@ -141,6 +164,13 @@ function createBaseQueryRequest(): QueryRequest {
     data: new Uint8Array(),
   };
 }
+/**
+ * QueryRequest defines the parameters for a particular query request
+ * by an interchain account.
+ * @name QueryRequest
+ * @package ibc.applications.interchain_accounts.host.v1
+ * @see proto type: ibc.applications.interchain_accounts.host.v1.QueryRequest
+ */
 export const QueryRequest = {
   typeUrl:
     '/ibc.applications.interchain_accounts.host.v1.QueryRequest' as const,

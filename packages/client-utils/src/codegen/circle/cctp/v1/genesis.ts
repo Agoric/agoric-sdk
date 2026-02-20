@@ -29,7 +29,12 @@ import {
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
-/** GenesisState defines the cctp module's genesis state. */
+/**
+ * GenesisState defines the cctp module's genesis state.
+ * @name GenesisState
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.GenesisState
+ */
 export interface GenesisState {
   owner: string;
   attesterManager: string;
@@ -50,7 +55,12 @@ export interface GenesisStateProtoMsg {
   typeUrl: '/circle.cctp.v1.GenesisState';
   value: Uint8Array;
 }
-/** GenesisState defines the cctp module's genesis state. */
+/**
+ * GenesisState defines the cctp module's genesis state.
+ * @name GenesisStateSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.GenesisState
+ */
 export interface GenesisStateSDKType {
   owner: string;
   attester_manager: string;
@@ -85,6 +95,12 @@ function createBaseGenesisState(): GenesisState {
     tokenMessengerList: [],
   };
 }
+/**
+ * GenesisState defines the cctp module's genesis state.
+ * @name GenesisState
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.GenesisState
+ */
 export const GenesisState = {
   typeUrl: '/circle.cctp.v1.GenesisState' as const,
   encode(

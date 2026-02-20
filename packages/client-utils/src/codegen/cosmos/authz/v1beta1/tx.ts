@@ -9,6 +9,9 @@ import { encodeBase64 as base64FromBytes } from '@endo/base64';
 /**
  * MsgGrant is a request type for Grant method. It declares authorization to the grantee
  * on behalf of the granter with the provided expiration time.
+ * @name MsgGrant
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.MsgGrant
  */
 export interface MsgGrant {
   granter: string;
@@ -22,24 +25,40 @@ export interface MsgGrantProtoMsg {
 /**
  * MsgGrant is a request type for Grant method. It declares authorization to the grantee
  * on behalf of the granter with the provided expiration time.
+ * @name MsgGrantSDKType
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.MsgGrant
  */
 export interface MsgGrantSDKType {
   granter: string;
   grantee: string;
   grant: GrantSDKType;
 }
-/** MsgGrantResponse defines the Msg/MsgGrant response type. */
+/**
+ * MsgGrantResponse defines the Msg/MsgGrant response type.
+ * @name MsgGrantResponse
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.MsgGrantResponse
+ */
 export interface MsgGrantResponse {}
 export interface MsgGrantResponseProtoMsg {
   typeUrl: '/cosmos.authz.v1beta1.MsgGrantResponse';
   value: Uint8Array;
 }
-/** MsgGrantResponse defines the Msg/MsgGrant response type. */
+/**
+ * MsgGrantResponse defines the Msg/MsgGrant response type.
+ * @name MsgGrantResponseSDKType
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.MsgGrantResponse
+ */
 export interface MsgGrantResponseSDKType {}
 /**
  * MsgExec attempts to execute the provided messages using
  * authorizations granted to the grantee. Each message should have only
  * one signer corresponding to the granter of the authorization.
+ * @name MsgExec
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.MsgExec
  */
 export interface MsgExec {
   grantee: string;
@@ -58,12 +77,20 @@ export interface MsgExecProtoMsg {
  * MsgExec attempts to execute the provided messages using
  * authorizations granted to the grantee. Each message should have only
  * one signer corresponding to the granter of the authorization.
+ * @name MsgExecSDKType
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.MsgExec
  */
 export interface MsgExecSDKType {
   grantee: string;
   msgs: AnySDKType[];
 }
-/** MsgExecResponse defines the Msg/MsgExecResponse response type. */
+/**
+ * MsgExecResponse defines the Msg/MsgExecResponse response type.
+ * @name MsgExecResponse
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.MsgExecResponse
+ */
 export interface MsgExecResponse {
   results: Uint8Array[];
 }
@@ -71,13 +98,21 @@ export interface MsgExecResponseProtoMsg {
   typeUrl: '/cosmos.authz.v1beta1.MsgExecResponse';
   value: Uint8Array;
 }
-/** MsgExecResponse defines the Msg/MsgExecResponse response type. */
+/**
+ * MsgExecResponse defines the Msg/MsgExecResponse response type.
+ * @name MsgExecResponseSDKType
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.MsgExecResponse
+ */
 export interface MsgExecResponseSDKType {
   results: Uint8Array[];
 }
 /**
  * MsgRevoke revokes any authorization with the provided sdk.Msg type on the
  * granter's account with that has been granted to the grantee.
+ * @name MsgRevoke
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.MsgRevoke
  */
 export interface MsgRevoke {
   granter: string;
@@ -91,19 +126,32 @@ export interface MsgRevokeProtoMsg {
 /**
  * MsgRevoke revokes any authorization with the provided sdk.Msg type on the
  * granter's account with that has been granted to the grantee.
+ * @name MsgRevokeSDKType
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.MsgRevoke
  */
 export interface MsgRevokeSDKType {
   granter: string;
   grantee: string;
   msg_type_url: string;
 }
-/** MsgRevokeResponse defines the Msg/MsgRevokeResponse response type. */
+/**
+ * MsgRevokeResponse defines the Msg/MsgRevokeResponse response type.
+ * @name MsgRevokeResponse
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.MsgRevokeResponse
+ */
 export interface MsgRevokeResponse {}
 export interface MsgRevokeResponseProtoMsg {
   typeUrl: '/cosmos.authz.v1beta1.MsgRevokeResponse';
   value: Uint8Array;
 }
-/** MsgRevokeResponse defines the Msg/MsgRevokeResponse response type. */
+/**
+ * MsgRevokeResponse defines the Msg/MsgRevokeResponse response type.
+ * @name MsgRevokeResponseSDKType
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.MsgRevokeResponse
+ */
 export interface MsgRevokeResponseSDKType {}
 function createBaseMsgGrant(): MsgGrant {
   return {
@@ -112,6 +160,13 @@ function createBaseMsgGrant(): MsgGrant {
     grant: Grant.fromPartial({}),
   };
 }
+/**
+ * MsgGrant is a request type for Grant method. It declares authorization to the grantee
+ * on behalf of the granter with the provided expiration time.
+ * @name MsgGrant
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.MsgGrant
+ */
 export const MsgGrant = {
   typeUrl: '/cosmos.authz.v1beta1.MsgGrant' as const,
   encode(
@@ -194,6 +249,12 @@ export const MsgGrant = {
 function createBaseMsgGrantResponse(): MsgGrantResponse {
   return {};
 }
+/**
+ * MsgGrantResponse defines the Msg/MsgGrant response type.
+ * @name MsgGrantResponse
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.MsgGrantResponse
+ */
 export const MsgGrantResponse = {
   typeUrl: '/cosmos.authz.v1beta1.MsgGrantResponse' as const,
   encode(
@@ -247,6 +308,14 @@ function createBaseMsgExec(): MsgExec {
     msgs: [],
   };
 }
+/**
+ * MsgExec attempts to execute the provided messages using
+ * authorizations granted to the grantee. Each message should have only
+ * one signer corresponding to the granter of the authorization.
+ * @name MsgExec
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.MsgExec
+ */
 export const MsgExec = {
   typeUrl: '/cosmos.authz.v1beta1.MsgExec' as const,
   encode(
@@ -324,6 +393,12 @@ function createBaseMsgExecResponse(): MsgExecResponse {
     results: [],
   };
 }
+/**
+ * MsgExecResponse defines the Msg/MsgExecResponse response type.
+ * @name MsgExecResponse
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.MsgExecResponse
+ */
 export const MsgExecResponse = {
   typeUrl: '/cosmos.authz.v1beta1.MsgExecResponse' as const,
   encode(
@@ -396,6 +471,13 @@ function createBaseMsgRevoke(): MsgRevoke {
     msgTypeUrl: '',
   };
 }
+/**
+ * MsgRevoke revokes any authorization with the provided sdk.Msg type on the
+ * granter's account with that has been granted to the grantee.
+ * @name MsgRevoke
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.MsgRevoke
+ */
 export const MsgRevoke = {
   typeUrl: '/cosmos.authz.v1beta1.MsgRevoke' as const,
   encode(
@@ -474,6 +556,12 @@ export const MsgRevoke = {
 function createBaseMsgRevokeResponse(): MsgRevokeResponse {
   return {};
 }
+/**
+ * MsgRevokeResponse defines the Msg/MsgRevokeResponse response type.
+ * @name MsgRevokeResponse
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.MsgRevokeResponse
+ */
 export const MsgRevokeResponse = {
   typeUrl: '/cosmos.authz.v1beta1.MsgRevokeResponse' as const,
   encode(

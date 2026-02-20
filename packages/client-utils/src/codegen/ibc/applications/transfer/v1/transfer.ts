@@ -5,6 +5,9 @@ import { type JsonSafe } from '../../../../json-safe.js';
 /**
  * DenomTrace contains the base denomination for ICS20 fungible tokens and the
  * source tracing information path.
+ * @name DenomTrace
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.DenomTrace
  */
 export interface DenomTrace {
   /**
@@ -12,7 +15,9 @@ export interface DenomTrace {
    * source of the fungible token.
    */
   path: string;
-  /** base denomination of the relayed fungible token. */
+  /**
+   * base denomination of the relayed fungible token.
+   */
   baseDenom: string;
 }
 export interface DenomTraceProtoMsg {
@@ -22,6 +27,9 @@ export interface DenomTraceProtoMsg {
 /**
  * DenomTrace contains the base denomination for ICS20 fungible tokens and the
  * source tracing information path.
+ * @name DenomTraceSDKType
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.DenomTrace
  */
 export interface DenomTraceSDKType {
   path: string;
@@ -32,6 +40,9 @@ export interface DenomTraceSDKType {
  * NOTE: To prevent a single token from being transferred, set the
  * TransfersEnabled parameter to true and then set the bank module's SendEnabled
  * parameter for the denomination to false.
+ * @name Params
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.Params
  */
 export interface Params {
   /**
@@ -54,6 +65,9 @@ export interface ParamsProtoMsg {
  * NOTE: To prevent a single token from being transferred, set the
  * TransfersEnabled parameter to true and then set the bank module's SendEnabled
  * parameter for the denomination to false.
+ * @name ParamsSDKType
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.Params
  */
 export interface ParamsSDKType {
   send_enabled: boolean;
@@ -65,6 +79,13 @@ function createBaseDenomTrace(): DenomTrace {
     baseDenom: '',
   };
 }
+/**
+ * DenomTrace contains the base denomination for ICS20 fungible tokens and the
+ * source tracing information path.
+ * @name DenomTrace
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.DenomTrace
+ */
 export const DenomTrace = {
   typeUrl: '/ibc.applications.transfer.v1.DenomTrace' as const,
   encode(
@@ -137,6 +158,15 @@ function createBaseParams(): Params {
     receiveEnabled: false,
   };
 }
+/**
+ * Params defines the set of IBC transfer parameters.
+ * NOTE: To prevent a single token from being transferred, set the
+ * TransfersEnabled parameter to true and then set the bank module's SendEnabled
+ * parameter for the denomination to false.
+ * @name Params
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.Params
+ */
 export const Params = {
   typeUrl: '/ibc.applications.transfer.v1.Params' as const,
   encode(

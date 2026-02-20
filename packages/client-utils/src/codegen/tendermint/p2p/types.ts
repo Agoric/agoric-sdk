@@ -4,6 +4,11 @@ import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
+/**
+ * @name NetAddress
+ * @package tendermint.p2p
+ * @see proto type: tendermint.p2p.NetAddress
+ */
 export interface NetAddress {
   id: string;
   ip: string;
@@ -13,11 +18,21 @@ export interface NetAddressProtoMsg {
   typeUrl: '/tendermint.p2p.NetAddress';
   value: Uint8Array;
 }
+/**
+ * @name NetAddressSDKType
+ * @package tendermint.p2p
+ * @see proto type: tendermint.p2p.NetAddress
+ */
 export interface NetAddressSDKType {
   id: string;
   ip: string;
   port: number;
 }
+/**
+ * @name ProtocolVersion
+ * @package tendermint.p2p
+ * @see proto type: tendermint.p2p.ProtocolVersion
+ */
 export interface ProtocolVersion {
   p2p: bigint;
   block: bigint;
@@ -27,11 +42,21 @@ export interface ProtocolVersionProtoMsg {
   typeUrl: '/tendermint.p2p.ProtocolVersion';
   value: Uint8Array;
 }
+/**
+ * @name ProtocolVersionSDKType
+ * @package tendermint.p2p
+ * @see proto type: tendermint.p2p.ProtocolVersion
+ */
 export interface ProtocolVersionSDKType {
   p2p: bigint;
   block: bigint;
   app: bigint;
 }
+/**
+ * @name DefaultNodeInfo
+ * @package tendermint.p2p
+ * @see proto type: tendermint.p2p.DefaultNodeInfo
+ */
 export interface DefaultNodeInfo {
   protocolVersion: ProtocolVersion;
   defaultNodeId: string;
@@ -46,6 +71,11 @@ export interface DefaultNodeInfoProtoMsg {
   typeUrl: '/tendermint.p2p.DefaultNodeInfo';
   value: Uint8Array;
 }
+/**
+ * @name DefaultNodeInfoSDKType
+ * @package tendermint.p2p
+ * @see proto type: tendermint.p2p.DefaultNodeInfo
+ */
 export interface DefaultNodeInfoSDKType {
   protocol_version: ProtocolVersionSDKType;
   default_node_id: string;
@@ -56,6 +86,11 @@ export interface DefaultNodeInfoSDKType {
   moniker: string;
   other: DefaultNodeInfoOtherSDKType;
 }
+/**
+ * @name DefaultNodeInfoOther
+ * @package tendermint.p2p
+ * @see proto type: tendermint.p2p.DefaultNodeInfoOther
+ */
 export interface DefaultNodeInfoOther {
   txIndex: string;
   rpcAddress: string;
@@ -64,6 +99,11 @@ export interface DefaultNodeInfoOtherProtoMsg {
   typeUrl: '/tendermint.p2p.DefaultNodeInfoOther';
   value: Uint8Array;
 }
+/**
+ * @name DefaultNodeInfoOtherSDKType
+ * @package tendermint.p2p
+ * @see proto type: tendermint.p2p.DefaultNodeInfoOther
+ */
 export interface DefaultNodeInfoOtherSDKType {
   tx_index: string;
   rpc_address: string;
@@ -75,6 +115,11 @@ function createBaseNetAddress(): NetAddress {
     port: 0,
   };
 }
+/**
+ * @name NetAddress
+ * @package tendermint.p2p
+ * @see proto type: tendermint.p2p.NetAddress
+ */
 export const NetAddress = {
   typeUrl: '/tendermint.p2p.NetAddress' as const,
   encode(
@@ -157,6 +202,11 @@ function createBaseProtocolVersion(): ProtocolVersion {
     app: BigInt(0),
   };
 }
+/**
+ * @name ProtocolVersion
+ * @package tendermint.p2p
+ * @see proto type: tendermint.p2p.ProtocolVersion
+ */
 export const ProtocolVersion = {
   typeUrl: '/tendermint.p2p.ProtocolVersion' as const,
   encode(
@@ -256,6 +306,11 @@ function createBaseDefaultNodeInfo(): DefaultNodeInfo {
     other: DefaultNodeInfoOther.fromPartial({}),
   };
 }
+/**
+ * @name DefaultNodeInfo
+ * @package tendermint.p2p
+ * @see proto type: tendermint.p2p.DefaultNodeInfo
+ */
 export const DefaultNodeInfo = {
   typeUrl: '/tendermint.p2p.DefaultNodeInfo' as const,
   encode(
@@ -415,6 +470,11 @@ function createBaseDefaultNodeInfoOther(): DefaultNodeInfoOther {
     rpcAddress: '',
   };
 }
+/**
+ * @name DefaultNodeInfoOther
+ * @package tendermint.p2p
+ * @see proto type: tendermint.p2p.DefaultNodeInfoOther
+ */
 export const DefaultNodeInfoOther = {
   typeUrl: '/tendermint.p2p.DefaultNodeInfoOther' as const,
   encode(
