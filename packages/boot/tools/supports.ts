@@ -4,6 +4,7 @@
 import childProcessAmbient from 'node:child_process';
 import { promises as fsAmbientPromises } from 'node:fs';
 import { createRequire } from 'node:module';
+import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 import { inspect } from 'node:util';
 import tmp from 'tmp';
@@ -24,7 +25,7 @@ import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
 import { krefOf } from '@agoric/kmarshal';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { decodeProtobufBase64 } from '@agoric/orchestration/tools/protobuf-decoder.js';
-import { initSwingStore } from '@agoric/swing-store';
+import { initSwingStore, openSwingStore } from '@agoric/swing-store';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import { makeSlogSender } from '@agoric/telemetry';
 import { TimeMath, type Timestamp } from '@agoric/time';
@@ -372,6 +373,39 @@ export const AckBehavior = {
   Never: 'NEVER',
 } as const;
 type AckBehaviorType = (typeof AckBehavior)[keyof typeof AckBehavior];
+type FakeStorage = ReturnType<typeof makeFakeStorageKit>;
+type FakeStorageMessage = FakeStorage['messages'][number];
+
+type SwingsetStorageSnapshot = {
+  dataEntries: [string, string][];
+  messages: FakeStorageMessage[];
+};
+
+export type SwingsetTestKitSnapshot = {
+  swingStoreSerialized?: Buffer;
+  swingStoreDir?: string;
+  kernelBundle?: EndoZipBase64Bundle;
+  storageSnapshot?: SwingsetStorageSnapshot;
+};
+
+const snapshotFakeStorage = (storage: FakeStorage): SwingsetStorageSnapshot => ({
+  dataEntries: [...storage.data.entries()],
+  messages: [...storage.messages],
+});
+
+const restoreFakeStorage = (
+  storageSnapshot?: SwingsetStorageSnapshot,
+): FakeStorage => {
+  const storage = makeFakeStorageKit('bootstrapTests');
+  if (!storageSnapshot) {
+    return storage;
+  }
+  for (const [key, value] of storageSnapshot.dataEntries) {
+    storage.data.set(key, value);
+  }
+  storage.messages.push(...storageSnapshot.messages);
+  return storage;
+};
 
 /**
  * Start a SwingSet kernel to be used by tests and benchmarks.
@@ -431,7 +465,7 @@ export const makeSwingsetTestKit = async (
   {
     configSpecifier = '@agoric/vm-config/decentral-itest-vaults-config.json',
     label = undefined as string | undefined,
-    storage = makeFakeStorageKit('bootstrapTests'),
+    storage: storageOpt = undefined as FakeStorage | undefined,
     verbose = false,
     slogFile = undefined as string | undefined,
     profileVats = [] as string[],
@@ -440,18 +474,40 @@ export const makeSwingsetTestKit = async (
     harness = undefined as RunHarness | undefined,
     resolveBase = import.meta.url,
     configOverrides = {} as Partial<SwingSetConfig>,
+    snapshot = undefined as SwingsetTestKitSnapshot | undefined,
+    swingStorePath = undefined as string | undefined,
   } = {},
 ) => {
-  const importSpec = createRequire(resolveBase).resolve;
+  const storage = storageOpt || restoreFakeStorage(snapshot?.storageSnapshot);
   console.time('makeBaseSwingsetTestKit');
-  const configPath = await getNodeTestVaultsConfig({
-    bundleDir,
-    configPath: importSpec(configSpecifier),
-    discriminator: label,
-    defaultManagerType,
-    configOverrides,
-  });
-  const swingStore = initSwingStore();
+  const importSpec = createRequire(resolveBase).resolve;
+  const resolvedConfigPath = importSpec(configSpecifier);
+  const configPath = snapshot
+    ? undefined
+    : await getNodeTestVaultsConfig({
+        bundleDir,
+        configPath: resolvedConfigPath,
+        discriminator: label,
+        defaultManagerType,
+        configOverrides,
+      });
+  let swingStoreClonePath: string | undefined;
+  const snapshotDir = snapshot?.swingStoreDir;
+  const swingStore = snapshotDir
+    ? await (async () => {
+        swingStoreClonePath = await fsAmbientPromises.mkdtemp(
+          join(tmpdir(), 'boot-swingset-fixture-'),
+        );
+        await fsAmbientPromises.cp(snapshotDir, swingStoreClonePath, {
+          recursive: true,
+        });
+        return openSwingStore(swingStoreClonePath);
+      })()
+    : snapshot?.swingStoreSerialized
+      ? initSwingStore(null, { serialized: snapshot.swingStoreSerialized })
+      : swingStorePath
+        ? initSwingStore(swingStorePath)
+        : initSwingStore();
   const { kernelStorage, hostStorage } = swingStore;
   const { fromCapData } = boardSlottingMarshaller(slotToBoardRemote);
 
@@ -718,9 +774,14 @@ export const makeSwingsetTestKit = async (
     mailboxStorage,
     bridgeOutbound,
     kernelStorage,
-    configPath,
+    // Only used when kernel storage is uninitialized; snapshots are already initialized.
+    configPath || resolvedConfigPath,
     [],
-    {},
+    {
+      SWINGSET_STARTUP_PROFILE: process.env.SWINGSET_STARTUP_PROFILE,
+      XSNAP_DEBUG: process.env.XSNAP_DEBUG,
+      XSNAP_TEST_RECORD: process.env.XSNAP_TEST_RECORD,
+    },
     {
       callerWillEvaluateCoreProposals: false,
       debugName: 'TESTBOOT',
@@ -728,6 +789,9 @@ export const makeSwingsetTestKit = async (
       slogSender,
       profileVats,
       debugVats,
+      warehousePolicy: snapshot ? { maxPreloadVats: 0 } : undefined,
+      kernelBundle: snapshot?.kernelBundle,
+      cacheKernelBundle: !!snapshot && !snapshot?.kernelBundle,
     },
   );
 
@@ -736,7 +800,9 @@ export const makeSwingsetTestKit = async (
   // XXX This initial run() might not be necessary. Tests pass without it as of
   // 2025-02, but we suspect that `makeSwingsetTestKit` just isn't being
   // exercised in the right way.
-  await controller.run();
+  if (!snapshot) {
+    await controller.run();
+  }
   const runUtils = makeBootstrapRunUtils(controller, harness);
 
   const buildProposal = makeProposalExtractor({
@@ -814,7 +880,16 @@ export const makeSwingsetTestKit = async (
   };
 
   const shutdown = async () =>
-    Promise.all([controller.shutdown(), hostStorage.close()]).then(() => {});
+    Promise.all([
+      controller.shutdown(),
+      hostStorage.close(),
+      swingStoreClonePath
+        ? fsAmbientPromises.rm(swingStoreClonePath, {
+            recursive: true,
+            force: true,
+          })
+        : undefined,
+    ]).then(() => {});
 
   const getCrankNumber = () => Number(kernelStorage.kvStore.get('crankNumber'));
 
@@ -885,6 +960,15 @@ export const makeSwingsetTestKit = async (
     });
   };
 
+  const makeSnapshot = (): SwingsetTestKitSnapshot => {
+    return {
+      swingStoreSerialized: swingStore.debug.serialize(),
+      kernelBundle: snapshot?.kernelBundle,
+      storageSnapshot: snapshotFakeStorage(storage),
+    };
+  };
+  const makeStorageSnapshot = () => snapshotFakeStorage(storage);
+
   return {
     advanceTimeBy,
     advanceTimeTo,
@@ -900,6 +984,24 @@ export const makeSwingsetTestKit = async (
     readPublished,
     runUtils,
     shutdown,
+    makeStorageSnapshot,
+    makeSnapshot,
+    forkFromSnapshot: async (
+      forkingSnapshot: SwingsetTestKitSnapshot = makeSnapshot(),
+    ) =>
+      makeSwingsetTestKit(log, bundleDir, {
+        configSpecifier,
+        label,
+        verbose,
+        slogFile,
+        profileVats,
+        debugVats,
+        defaultManagerType,
+        harness,
+        resolveBase,
+        configOverrides,
+        snapshot: forkingSnapshot,
+      }),
     storage,
     swingStore,
     timer,
