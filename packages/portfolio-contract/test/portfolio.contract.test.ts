@@ -2993,23 +2993,23 @@ test('verifies fix for p772 & p775: make-account recovery after prior failed mak
   t.deepEqual(
     pendingTxAfterFlow2,
     [],
-    'no pending tx after second flow settles',
+    'no pending tx for second flow, even though it has not completed',
   );
 
   const flow2History =
     contentsAfterFlow2[`${openResult.storagePath}.flows.${flow2Key}`];
 
-  // XXX: https://github.com/Agoric/agoric-private/issues/777
-  // The flow should not have completed with a pending step
   t.truthy(
     Array.isArray(flow2History) &&
-      flow2History.some(entry => entry?.state === 'done'),
-    'flow history should include a done entry',
+      !flow2History.some(
+        entry => entry?.state === 'done' || entry?.state === 'fail',
+      ),
+    'flow history should not include a done or fail entry',
   );
-  t.deepEqual(
+  t.like(
     statusAfterFlow2.flowsRunning,
-    {},
-    'flowsRunning should be empty after flow2 completes',
+    { [flow2Key]: { type: 'deposit' } },
+    'flowsRunning should still contain flow2',
   );
 
   const failedPosition = (await readPublished(
@@ -3024,7 +3024,7 @@ test('verifies fix for p772 & p775: make-account recovery after prior failed mak
   t.deepEqual(
     statusAfterFlow2.accountsPending,
     [otherFailedChain],
-    'other failed account is still pending after flow2 success',
+    'other failed account is still pending',
   );
 
   // XXX: At this level we cannot (yet) check that the from account is no longer failed
