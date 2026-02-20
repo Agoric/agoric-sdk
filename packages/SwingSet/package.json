@@ -88,9 +88,17 @@
     "example": "examples"
   },
   "ava": {
+    "extensions": {
+      "js": true,
+      "ts": "module"
+    },
     "workerThreads": false,
     "files": [
       "test/**/*.test.*"
+    ],
+    "nodeArguments": [
+      "--import=ts-blank-space/register",
+      "--no-warnings"
     ],
     "require": [
       "@agoric/internal/src/ava-force-exit.mjs",
