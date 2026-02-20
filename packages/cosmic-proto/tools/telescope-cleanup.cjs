@@ -59,6 +59,14 @@ async function fixTypesHelper(filePath, includeSigningClientParamsCleanup) {
       /^import\s+\{\s*HttpEndpoint\s*\}\s+from\s+'@cosmjs\/tendermint-rpc';\n/m,
       "import type { HttpEndpoint } from '@cosmjs/tendermint-rpc';\n",
     );
+    next = next.replace(
+      /^import\s+\{\s*HttpEndpoint\s*\}\s+from\s+'@interchainjs\/types';\n/m,
+      "import type { HttpEndpoint } from '@interchainjs/types';\n",
+    );
+    next = next.replace(
+      /^import\s+\{\s*DeliverTxResponse,\s*Event,\s*Attribute\s*\}\s+from\s+'@interchainjs\/types';\n/m,
+      "import type { DeliverTxResponse, Event, Attribute } from '@interchainjs/types';\n",
+    );
     if (includeSigningClientParamsCleanup) {
       next = next.replace(
         /\nexport interface SigningClientParams \{[\s\S]*?\n\}\n?/m,

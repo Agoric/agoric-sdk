@@ -5,7 +5,7 @@
  * Consumers can override nested fields after calling this factory.
  */
 const baseTelescopeOptions = {
-  useInterchainJs: false,
+  useInterchainJs: true,
   // for ESM compatibility
   restoreImportExtension: '.js',
   tsDisable: {
