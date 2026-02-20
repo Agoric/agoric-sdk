@@ -114,7 +114,10 @@ export interface AllowedMsgAllowance {
    * allowance can be any of basic and periodic fee allowance.
    */
   allowance?:
-    | (BasicAllowance & PeriodicAllowance & AllowedMsgAllowance & Any)
+    | BasicAllowance
+    | PeriodicAllowance
+    | AllowedMsgAllowance
+    | Any
     | undefined;
   /**
    * allowed_messages are the messages for which the grantee has the access.
@@ -160,7 +163,10 @@ export interface Grant {
    * allowance can be any of basic, periodic, allowed fee allowance.
    */
   allowance?:
-    | (BasicAllowance & PeriodicAllowance & AllowedMsgAllowance & Any)
+    | BasicAllowance
+    | PeriodicAllowance
+    | AllowedMsgAllowance
+    | Any
     | undefined;
 }
 export interface GrantProtoMsg {

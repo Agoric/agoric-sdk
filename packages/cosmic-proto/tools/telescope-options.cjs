@@ -8,6 +8,8 @@
  */
 /** @type {TelescopeInput['options']} */
 const baseTelescopeOptions = {
+  // Telescope v2 migration guide recommends "v-next" as the baseline preset.
+  env: 'v-next',
   useInterchainJs: true,
   // for ESM compatibility
   restoreImportExtension: '.js',
@@ -22,15 +24,11 @@ const baseTelescopeOptions = {
   },
   interfaces: {
     enabled: true,
-    registerAllDecodersToGlobal: false,
-    useUnionTypes: false,
+    useGlobalDecoderRegistry: true,
+    useUnionTypes: true,
   },
   prototypes: {
-    /**
-     * Not working as expected with @hyperweb/telescope.
-     * It was only implemented for an Amino registry.
-     */
-    // enableRegistryLoader: true,
+    enableRegistryLoader: false,
     /**
      * Relies on tree-shaking to avoid huge bundle sizes.
      */
@@ -86,6 +84,10 @@ const baseTelescopeOptions = {
         useEnhancedDecimal: true,
       },
     },
+  },
+  helperFunctions: {
+    enabled: true,
+    useGlobalDecoderRegistry: true,
   },
   aminoEncoding: {
     // Must be enabled for getSigningAgoricClient

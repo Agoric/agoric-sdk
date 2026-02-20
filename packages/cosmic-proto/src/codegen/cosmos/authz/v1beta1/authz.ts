@@ -58,11 +58,11 @@ export interface GenericAuthorizationSDKType {
  */
 export interface Grant {
   authorization?:
-    | (GenericAuthorization &
-        TransferAuthorization &
-        StakeAuthorization &
-        SendAuthorization &
-        Any)
+    | GenericAuthorization
+    | TransferAuthorization
+    | StakeAuthorization
+    | SendAuthorization
+    | Any
     | undefined;
   /**
    * time when the grant will expire and will be pruned. If null, then the grant
@@ -103,11 +103,11 @@ export interface GrantAuthorization {
   granter: string;
   grantee: string;
   authorization?:
-    | (GenericAuthorization &
-        TransferAuthorization &
-        StakeAuthorization &
-        SendAuthorization &
-        Any)
+    | GenericAuthorization
+    | TransferAuthorization
+    | StakeAuthorization
+    | SendAuthorization
+    | Any
     | undefined;
   expiration?: Timestamp;
 }

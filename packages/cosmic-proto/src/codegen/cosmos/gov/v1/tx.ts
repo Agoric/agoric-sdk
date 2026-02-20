@@ -145,16 +145,16 @@ export interface MsgExecLegacyContent {
    * content is the proposal's content.
    */
   content?:
-    | (ClientUpdateProposal &
-        UpgradeProposal &
-        SoftwareUpgradeProposal &
-        CancelSoftwareUpgradeProposal &
-        ParameterChangeProposal &
-        TextProposal &
-        CommunityPoolSpendProposal &
-        CommunityPoolSpendProposalWithDeposit &
-        CoreEvalProposal &
-        Any)
+    | ClientUpdateProposal
+    | UpgradeProposal
+    | SoftwareUpgradeProposal
+    | CancelSoftwareUpgradeProposal
+    | ParameterChangeProposal
+    | TextProposal
+    | CommunityPoolSpendProposal
+    | CommunityPoolSpendProposalWithDeposit
+    | CoreEvalProposal
+    | Any
     | undefined;
   /**
    * authority must be the gov module address.
