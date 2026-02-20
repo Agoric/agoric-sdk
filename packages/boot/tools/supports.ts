@@ -5,7 +5,7 @@ import childProcessAmbient from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { promises as fsAmbientPromises } from 'node:fs';
 import { createRequire } from 'node:module';
-import { basename, join, resolve as pathResolve } from 'node:path';
+import { basename, dirname, join, resolve as pathResolve } from 'node:path';
 import { inspect } from 'node:util';
 import tmp from 'tmp';
 
@@ -78,6 +78,11 @@ import type { ERef } from '@agoric/vow';
 import type { EProxy } from '@endo/eventual-send';
 import { FileSystemCache, NodeFetchCache } from 'node-fetch-cache';
 import { icaMocks, protoMsgMockMap, protoMsgMocks } from './ibc/mocks.js';
+import {
+  type TraceCompleteEvent,
+  type TraceFile,
+  type TraceMetadataEvent,
+} from './profiling-types.js';
 
 const tmpDir = makeTempDirFactory(tmp);
 
@@ -284,6 +289,146 @@ type ProposalExtractorEvent =
     };
 
 const PROPOSAL_CACHE_TOOL_VERSION = 'boot-proposal-cache-v1';
+// Profiling env vars are documented in packages/boot/README.md.
+const BOOT_PROFILE_ENV = 'AGORIC_BOOT_TEST_PROFILE';
+const BOOT_PROFILE_FILE_ENV = 'AGORIC_BOOT_TEST_PROFILE_FILE';
+
+// Chrome Trace Event format:
+// https://chromium.googlesource.com/catapult/+/HEAD/tracing/README.md
+interface BootProfileCompleteEvent extends TraceCompleteEvent {
+  cat: 'agoric.boot.test-supports';
+}
+
+interface BootProfileMetadataEvent extends TraceMetadataEvent {
+  args: { name: string };
+  pid: number;
+  tid: number;
+  ts: 0;
+}
+
+interface BootProfileTraceFile extends TraceFile {
+  displayTimeUnit: 'ms';
+  traceEvents: Array<BootProfileMetadataEvent | BootProfileCompleteEvent>;
+}
+
+interface BootProfiler {
+  measure: <T>(
+    name: string,
+    op: () => Promise<T> | T,
+    args?: Record<string, unknown>,
+  ) => Promise<T>;
+}
+
+const bootProfileSessions = new Map<
+  string,
+  {
+    events: BootProfileCompleteEvent[];
+    writeQueue: Promise<void>;
+  }
+>();
+
+const isEnabledProfileSetting = (value: string | undefined) => {
+  if (!value) {
+    return false;
+  }
+  const normalized = value.trim().toLowerCase();
+  return normalized !== '0' && normalized !== 'false' && normalized !== 'off';
+};
+
+const makeBootProfiler = ({
+  cwd = process.cwd(),
+  env = process.env,
+  fs = fsAmbientPromises,
+  pid = process.pid,
+}: {
+  cwd?: string;
+  env?: NodeJS.ProcessEnv;
+  fs?: typeof import('node:fs/promises');
+  pid?: number;
+} = {}): BootProfiler => {
+  const enabled = isEnabledProfileSetting(env[BOOT_PROFILE_ENV]);
+  if (!enabled) {
+    return harden({
+      measure: async (_name, op) => op(),
+    });
+  }
+
+  const configuredPath = env[BOOT_PROFILE_FILE_ENV];
+  const profilePath = configuredPath
+    ? pathResolve(configuredPath)
+    : join(
+        cwd,
+        '.cache',
+        'boot-test-profiles',
+        `bootstrap-supports-${pid}.trace.json`,
+      );
+  const session =
+    bootProfileSessions.get(profilePath) ||
+    (() => {
+      const next = { events: [], writeQueue: Promise.resolve() };
+      bootProfileSessions.set(profilePath, next);
+      return next;
+    })();
+  const origin = performance.now();
+
+  const queueWrite = () => {
+    session.writeQueue = session.writeQueue
+      .catch(() => {})
+      .then(async () => {
+        const metadataEvents: BootProfileMetadataEvent[] = [
+          {
+            name: 'process_name',
+            ph: 'M',
+            pid,
+            tid: 0,
+            ts: 0,
+            args: { name: 'agoric-boot-tests' },
+          },
+          {
+            name: 'thread_name',
+            ph: 'M',
+            pid,
+            tid: 0,
+            ts: 0,
+            args: { name: 'main' },
+          },
+        ];
+        const traceFile: BootProfileTraceFile = {
+          displayTimeUnit: 'ms',
+          traceEvents: [...metadataEvents, ...session.events],
+        };
+        await fs.mkdir(dirname(profilePath), { recursive: true });
+        await fs.writeFile(
+          `${profilePath}`,
+          `${JSON.stringify(traceFile, null, 2)}\n`,
+          'utf8',
+        );
+      })
+      .catch(() => {});
+  };
+
+  return harden({
+    measure: async (name, op, args) => {
+      const start = performance.now();
+      try {
+        return await op();
+      } finally {
+        const end = performance.now();
+        session.events.push({
+          name,
+          args,
+          cat: 'agoric.boot.test-supports',
+          ph: 'X',
+          pid,
+          tid: 0,
+          ts: (start - origin) * 1000,
+          dur: (end - start) * 1000,
+        });
+        queueWrite();
+      }
+    },
+  });
+};
 
 const hashText = (text: string) =>
   createHash('sha256').update(text).digest('hex');
@@ -831,14 +976,24 @@ export const makeSwingsetTestKit = async <
   } = {},
 ) => {
   const importSpec = createRequire(resolveBase).resolve;
-  console.time('makeBaseSwingsetTestKit');
-  const configPath = await getNodeTestVaultsConfig({
-    bundleDir,
-    configPath: importSpec(configSpecifier),
-    discriminator: label,
-    defaultManagerType,
-    configOverrides,
-  });
+  const profiler = makeBootProfiler();
+  const configPath = await profiler.measure(
+    'makeSwingsetTestKit.getNodeTestVaultsConfig',
+    () =>
+      getNodeTestVaultsConfig({
+        bundleDir,
+        configPath: importSpec(configSpecifier),
+        discriminator: label,
+        defaultManagerType,
+        configOverrides,
+      }),
+    {
+      bundleDir,
+      configSpecifier,
+      defaultManagerType,
+      label,
+    },
+  );
   const swingStore = initSwingStore();
   const { kernelStorage, hostStorage } = swingStore;
   const { fromCapData } = boardSlottingMarshaller(slotToBoardRemote);
@@ -1103,33 +1258,46 @@ export const makeSwingsetTestKit = async <
     : undefined;
 
   const mailboxStorage = new Map();
-  const { controller, timer, bridgeInbound } = await buildSwingset(
-    // @ts-expect-error missing method 'getNextKey'
-    mailboxStorage,
-    bridgeOutbound,
-    kernelStorage,
-    configPath,
-    [],
-    {},
+  const { controller, timer, bridgeInbound } = await profiler.measure(
+    'makeSwingsetTestKit.buildSwingset',
+    () =>
+      buildSwingset(
+        // @ts-expect-error missing method 'getNextKey'
+        mailboxStorage,
+        bridgeOutbound,
+        kernelStorage,
+        configPath,
+        [],
+        {},
+        {
+          callerWillEvaluateCoreProposals: false,
+          debugName: 'TESTBOOT',
+          verbose,
+          slogSender,
+          profileVats,
+          debugVats,
+        },
+      ),
     {
-      callerWillEvaluateCoreProposals: false,
-      debugName: 'TESTBOOT',
+      configPath,
+      debugVatsCount: debugVats.length,
+      profileVatsCount: profileVats.length,
       verbose,
-      slogSender,
-      profileVats,
-      debugVats,
     },
   );
-
-  console.timeLog('makeBaseSwingsetTestKit', 'buildSwingset');
 
   // XXX This initial run() might not be necessary. Tests pass without it as of
   // 2025-02, but we suspect that `makeSwingsetTestKit` just isn't being
   // exercised in the right way.
-  await controller.run();
-  const runUtils = makeBootstrapRunUtils(controller, harness);
+  await profiler.measure('makeSwingsetTestKit.controller.run.initial', () =>
+    controller.run(),
+  );
+  const runUtils = makeBootstrapRunUtils<BootstrapVatItems>(
+    controller,
+    harness,
+  );
 
-  const buildProposal = makeProposalExtractor(
+  const extractProposal = makeProposalExtractor(
     {
       childProcess: childProcessAmbient,
       fs: fsAmbientPromises,
@@ -1141,6 +1309,12 @@ export const makeSwingsetTestKit = async <
       mode: proposalBuildMode,
     },
   );
+  const buildProposal = (builderPath: string, args: string[] = []) =>
+    profiler.measure(
+      'makeSwingsetTestKit.proposal.extract',
+      () => extractProposal(builderPath, args),
+      { argsCount: args.length, builderPath, mode: proposalBuildMode },
+    );
 
   type ProposalMaterials = Awaited<ReturnType<typeof buildProposal>>;
 
@@ -1154,9 +1328,15 @@ export const makeSwingsetTestKit = async <
 
     const proposal = harden(await proposalP);
 
-    for await (const bundle of proposal.bundles) {
-      await controller.validateAndInstallBundle(bundle);
-    }
+    await profiler.measure(
+      'makeSwingsetTestKit.proposal.installBundles',
+      async () => {
+        for (const bundle of proposal.bundles) {
+          await controller.validateAndInstallBundle(bundle);
+        }
+      },
+      { bundleCount: proposal.bundles.length },
+    );
     log('installed', proposal.bundles.length, 'bundles');
 
     log('executing proposal');
@@ -1168,11 +1348,13 @@ export const makeSwingsetTestKit = async <
     const coreEvalBridgeHandler = await EV.vat('bootstrap').consumeItem(
       'coreEvalBridgeHandler',
     );
-    await EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
+    await profiler.measure(
+      'makeSwingsetTestKit.proposal.executeCoreEval',
+      () => EV(coreEvalBridgeHandler).fromBridge(bridgeMessage),
+      { evalCount: proposal.evals.length },
+    );
     log(`proposal executed`);
   };
-
-  console.timeEnd('makeBaseSwingsetTestKit');
 
   let currentTime = 0n;
   const updateTimer = async time => {
