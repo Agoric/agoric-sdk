@@ -1,9 +1,10 @@
 import { makeNodeBundleCache as wrappedMaker } from '@endo/bundle-source/cache.js';
 import styles from 'ansi-styles'; // less authority than 'chalk'
-import { mkdir, readFile, rm, stat, writeFile } from 'fs/promises';
+import * as fsPromises from 'fs/promises';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { setTimeout as delay } from 'timers/promises';
+import { makeDirectoryLock } from '@agoric/internal/src/build-cache.js';
 
 /**
  * @import {EReturn} from '@endo/far';
@@ -33,9 +34,14 @@ import { setTimeout as delay } from 'timers/promises';
  */
 /**
  * @typedef {{
+ *   onBundleToolEvent?: (event: Record<string, unknown>) => void,
+ * }} BundleToolEventSink
+ */
+/**
+ * @typedef {{
  *   delayMs: (ms: number) => Promise<unknown>,
+ *   eventSink?: BundleToolEventSink,
  *   isPidAlive: (pid: number) => boolean,
- *   log: (...args: unknown[]) => void,
  *   monotonicNow: () => number,
  *   now: () => number,
  *   pid: number,
@@ -52,34 +58,49 @@ import { setTimeout as delay } from 'timers/promises';
 const BUNDLE_LOCK_ACQUIRE_TIMEOUT_MS = 5 * 60_000;
 const BUNDLE_STALE_LOCK_MS = 60_000;
 
-const defaultBundleToolLog = (...args) => {
+const defaultBundleToolEventSink = {
+  onBundleToolEvent: event => {
+    if (
+      event.type !== 'bundle-source-log' &&
+      event.type !== 'registry-loaded'
+    ) {
+      return;
+    }
+    const { args = [], phase = '[check]', type } = event;
+    if (type === 'bundle-source-log') {
+      const joined = args.map(arg => String(arg)).join(' ');
+      if (joined.includes(' valid:')) {
+        return;
+      }
+    }
+    const flattened = args.map(arg =>
+      // Don't print stack traces.
+      arg instanceof Error ? arg.message : arg,
+    );
+    console.log(
+      `${styles.dim.open}[bundleTool]${phase}`,
+      ...flattened,
+      styles.dim.close,
+    );
+  },
+};
+harden(defaultBundleToolEventSink);
+
+const inferLogPhase = args => {
   const joined = args.map(arg => String(arg)).join(' ');
-  const isCacheHit = joined.includes(' valid:');
-  if (isCacheHit) {
-    return;
-  }
   let phase = '[check]';
   if (joined.includes(' add:') || joined.includes(' bundled ')) {
     phase = '[rebuilt]';
   }
-  const flattened = args.map(arg =>
-    // Don't print stack traces.
-    arg instanceof Error ? arg.message : arg,
-  );
-  console.log(
-    // Make all messages prefixed and dim.
-    `${styles.dim.open}[bundleTool]${phase}`,
-    ...flattened,
-    styles.dim.close,
-  );
+  return phase;
 };
-harden(defaultBundleToolLog);
+harden(inferLogPhase);
 
 /**
  * @param {{
  *   delayMs?: (ms: number) => Promise<unknown>,
+ *   eventSink?: BundleToolEventSink,
  *   isPidAlive?: (pid: number) => boolean,
- *   log?: (...args: unknown[]) => void,
  *   monotonicNow?: () => number,
  *   now?: () => number,
  *   pid?: number,
@@ -90,6 +111,7 @@ harden(defaultBundleToolLog);
 export const makeAmbientBundleToolPowers = (options = {}) => {
   const {
     delayMs = ms => delay(ms),
+    eventSink = defaultBundleToolEventSink,
     isPidAlive = lockPid => {
       if (!Number.isInteger(lockPid) || lockPid <= 0) {
         return false;
@@ -101,15 +123,14 @@ export const makeAmbientBundleToolPowers = (options = {}) => {
         return false;
       }
     },
-    log = defaultBundleToolLog,
     monotonicNow = () => performance.now(),
     now = () => Date.now(),
     pid = process.pid,
   } = options;
   return harden({
     delayMs,
+    eventSink,
     isPidAlive,
-    log,
     monotonicNow,
     now,
     pid,
@@ -131,7 +152,14 @@ export const makeNodeBundleCache = async (
   loadModule,
   powers,
 ) => {
-  const { delayMs, isPidAlive, log, monotonicNow, now, pid } = powers;
+  const {
+    delayMs,
+    eventSink = defaultBundleToolEventSink,
+    isPidAlive,
+    monotonicNow,
+    now,
+    pid,
+  } = powers;
 
   /** @param {string} sourceSpec */
   const canonicalizeSourceSpec = sourceSpec => {
@@ -156,6 +184,16 @@ export const makeNodeBundleCache = async (
     }
   };
 
+  const onEvent = eventSink.onBundleToolEvent || (() => {});
+  const log = (...args) => {
+    onEvent({
+      type: 'bundle-source-log',
+      args,
+      phase: inferLogPhase(args),
+      timestamp: now(),
+    });
+  };
+
   const rawCache = await wrappedMaker(
     dest,
     { log, ...options },
@@ -165,86 +203,17 @@ export const makeNodeBundleCache = async (
   const lockRoot = path.resolve(dest, '.bundle-locks');
   /** @type {Map<string, Promise<unknown>>} */
   const inProcessLoads = new Map();
-
-  /**
-   * @param {string} targetName
-   * @param {() => Promise<any>} duringLock
-   */
-  const withBundleLock = async (targetName, duringLock) => {
-    const lockName = `${encodeURIComponent(targetName)}.lock`;
-    const lockPath = path.resolve(lockRoot, lockName);
-    const ownerPath = path.resolve(lockPath, 'owner.json');
-    await mkdir(lockRoot, { recursive: true });
-    const started = monotonicNow();
-
-    const maybeBreakStaleLock = async () => {
-      const ownerTxt = await readFile(ownerPath, 'utf8').catch(() => undefined);
-      let lockInfo;
-      if (typeof ownerTxt === 'string') {
-        try {
-          lockInfo = JSON.parse(ownerTxt);
-        } catch {
-          // Another process may be in the middle of writing owner.json.
-          // Treat malformed data as unknown owner and rely on age checks below.
-          lockInfo = undefined;
-        }
-      }
-      if (
-        lockInfo &&
-        Number.isInteger(lockInfo.pid) &&
-        !isPidAlive(lockInfo.pid)
-      ) {
-        await rm(lockPath, { recursive: true, force: true });
-        return true;
-      }
-      try {
-        const st = await stat(lockPath);
-        const ageMs = now() - st.mtimeMs;
-        if (ageMs >= BUNDLE_STALE_LOCK_MS) {
-          await rm(lockPath, { recursive: true, force: true });
-          return true;
-        }
-      } catch {
-        return true;
-      }
-      return false;
-    };
-
-    // Cross-process lock via mkdir(). Retriable on EEXIST.
-    for (;;) {
-      try {
-        await mkdir(lockPath);
-        await writeFile(
-          ownerPath,
-          JSON.stringify({ pid, createdAt: now() }),
-          'utf8',
-        );
-        break;
-      } catch (e) {
-        if (e && typeof e === 'object' && 'code' in e && e.code === 'EEXIST') {
-          const brokeStaleLock = await maybeBreakStaleLock();
-          if (brokeStaleLock) {
-            continue;
-          }
-          const waitedMs = monotonicNow() - started;
-          if (waitedMs >= BUNDLE_LOCK_ACQUIRE_TIMEOUT_MS) {
-            throw Error(
-              `Timed out waiting for bundle lock ${lockPath} after ${waitedMs}ms`,
-            );
-          }
-          await delayMs(20);
-          continue;
-        }
-        throw e;
-      }
-    }
-
-    try {
-      return await duringLock();
-    } finally {
-      await rm(lockPath, { recursive: true, force: true });
-    }
-  };
+  const { withLock } = makeDirectoryLock({
+    fs: fsPromises,
+    delayMs,
+    now,
+    pid,
+    isPidAlive,
+    lockRoot,
+    staleLockMs: BUNDLE_STALE_LOCK_MS,
+    acquireTimeoutMs: BUNDLE_LOCK_ACQUIRE_TIMEOUT_MS,
+    onEvent,
+  });
 
   const cache = harden({
     ...rawCache,
@@ -252,7 +221,7 @@ export const makeNodeBundleCache = async (
       const canonicalRootPath = canonicalizeSourceSpec(rootPath);
       const resolvedTargetName =
         targetName || path.basename(canonicalRootPath, '.js');
-      return withBundleLock(resolvedTargetName, () =>
+      return withLock(resolvedTargetName, () =>
         rawCache.add(canonicalRootPath, resolvedTargetName, log0, options0),
       );
     },
@@ -260,7 +229,7 @@ export const makeNodeBundleCache = async (
       const canonicalRootPath = canonicalizeSourceSpec(rootPath);
       const resolvedTargetName =
         targetName || path.basename(canonicalRootPath, '.js');
-      return withBundleLock(resolvedTargetName, () =>
+      return withLock(resolvedTargetName, () =>
         rawCache.validateOrAdd(
           canonicalRootPath,
           resolvedTargetName,
@@ -280,7 +249,7 @@ export const makeNodeBundleCache = async (
       if (found) {
         return found;
       }
-      const pending = withBundleLock(resolvedTargetName, async () => {
+      const pending = withLock(resolvedTargetName, async () => {
         const { bundleFileName } = await rawCache.validateOrAdd(
           canonicalRootPath,
           resolvedTargetName,
@@ -328,10 +297,15 @@ export const makeNodeBundleCache = async (
       );
     } finally {
       const elapsedMs = monotonicNow() - started;
-      log(
-        `${styles.dim.open}[bundleTool][registry] loaded ${Object.keys(registry).length} bundle(s) in ${elapsedMs}ms`,
-        styles.dim.close,
-      );
+      onEvent({
+        type: 'registry-loaded',
+        phase: '[registry]',
+        args: [
+          `loaded ${Object.keys(registry).length} bundle(s) in ${elapsedMs}ms`,
+        ],
+        elapsedMs,
+        bundleCount: Object.keys(registry).length,
+      });
     }
   };
   return /** @type {BundleCache} */ (

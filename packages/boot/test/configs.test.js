@@ -75,7 +75,7 @@ const makeTestContext = async () => {
     cacheDir,
     {},
     s => import(s),
-    makeAmbientBundleToolPowers({ log: () => {} }),
+    makeAmbientBundleToolPowers({ eventSink: { onBundleToolEvent: () => {} } }),
   );
 
   const vizTool = pathResolve('..', 'tools', 'authorityViz.js');
