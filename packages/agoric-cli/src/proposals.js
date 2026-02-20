@@ -14,6 +14,9 @@ import { makeScriptLoader } from './scripts.js';
 /** @import {promises as FsPromises} from 'node:fs' */
 /** @import {EndoZipBase64Bundle} from '@agoric/swingset-vat' */
 /** @import {CoreEvalSDKType} from '@agoric/cosmic-proto/swingset/swingset.js' */
+/** @import {CoreEvalMaterialRecord} from '@agoric/deploy-script-support/src/writeCoreEvalParts.js' */
+
+const consoleThis = console;
 
 /**
  * @typedef {'prefer-in-process' | 'in-process-only' | 'shell-only'} ProposalBuildMode
@@ -49,8 +52,11 @@ const resolveModuleSpecifier = (moduleSpecifier, paths) => {
  * @param {FsPromises} fs
  * @param {string} filePath
  */
-const readJSONFile = async (fs, filePath) =>
-  harden(JSON.parse(await fs.readFile(filePath, 'utf8')));
+const readJSONFile = async (fs, filePath) => {
+  await null;
+  const data = await fs.readFile(filePath, 'utf8');
+  return harden(JSON.parse(data));
+};
 
 /**
  * @param {string} agoricRunOutput
@@ -92,6 +98,40 @@ const absoluteFromCwd = (filePath, cwd) =>
   path.isAbsolute(filePath) ? filePath : path.join(cwd, filePath);
 
 /**
+ * @param {CoreEvalMaterialRecord[]} records
+ * @param {string} resolvedBuilderPath
+ * @param {string} cwd
+ */
+const materializeFromRecords = (records, resolvedBuilderPath, cwd) => {
+  if (!records.length) {
+    return undefined;
+  }
+  const dependencySet = new Set([resolvedBuilderPath]);
+  /** @type {CoreEvalSDKType[]} */
+  const evals = [];
+  /** @type {EndoZipBase64Bundle[]} */
+  const bundles = [];
+
+  for (const record of records) {
+    evals.push(record.eval);
+    for (const bundleInfo of record.bundles) {
+      bundles.push(bundleInfo.bundle);
+      const resolvedEntrypoint = resolveModuleSpecifier(bundleInfo.entrypoint, [
+        path.dirname(resolvedBuilderPath),
+        cwd,
+      ]);
+      dependencySet.add(resolvedEntrypoint);
+    }
+  }
+
+  return harden({
+    evals,
+    bundles,
+    dependencies: [...dependencySet].sort(),
+  });
+};
+
+/**
  * @param {FsPromises} fs
  * @param {string} outputDir
  * @param {string} resolvedBuilderPath
@@ -120,7 +160,8 @@ const readProposalMaterialsFromPlans = async (
     fs.readFile(absoluteFromCwd(fileName, outputDir), 'utf8');
 
   for await (const planFile of planFiles) {
-    /** @type {{
+    /**
+     * @type {{
      *   permit: string;
      *   script: string;
      *   bundles: Array<{ entrypoint: string; fileName: string }>;
@@ -185,9 +226,14 @@ const runInProcess = async ({
   cacheDir,
   console,
 }) => {
+  /** @type {CoreEvalMaterialRecord[]} */
+  const coreEvalRecords = [];
   const endowments = {
     cacheDir,
     now,
+    onWriteCoreEval: record => {
+      coreEvalRecords.push(record);
+    },
     scriptArgs: args,
     writeFile: makeScopedWriteFile({ fs, cwd }),
   };
@@ -204,6 +250,15 @@ const runInProcess = async ({
 
   const homeP = Promise.resolve({ scratch: Promise.resolve(makeScratchPad()) });
   await runScript({ home: homeP });
+
+  const materialized = materializeFromRecords(
+    coreEvalRecords,
+    resolvedBuilderPath,
+    cwd,
+  );
+  if (materialized) {
+    return materialized;
+  }
 
   return readProposalMaterialsFromPlans(fs, cwd, resolvedBuilderPath);
 };
@@ -280,12 +335,13 @@ export const buildCoreEvalProposal = async ({
   cacheDir = path.join(os.homedir(), '.agoric', 'cache'),
   fs = fsRaw.promises,
   now = Date.now,
-  console = globalThis.console,
+  console = consoleThis,
   childProcess = childProcessAmbient,
 }) => {
   if (!builderPath) {
     throw Error('builderPath is required');
   }
+  await null;
 
   const resolvedBuilderPath = resolveModuleSpecifier(builderPath, [cwd]);
 
