@@ -27,8 +27,8 @@ import {
   makeDirectoryLock,
   writeFileAtomic,
 } from '@agoric/internal/src/build-cache.js';
-import { makeReadJsonFile } from '@agoric/internal/src/node/read-json.js';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal/board-client-utils.js';
+import { makeReadJsonFile } from '@agoric/internal/src/node/read-json.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
 import { krefOf } from '@agoric/kmarshal';
@@ -36,9 +36,9 @@ import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.j
 import { decodeProtobufBase64 } from '@agoric/orchestration/tools/protobuf-decoder.js';
 import { initSwingStore } from '@agoric/swing-store';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
+import { sharedBundleCachePath } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { makeSlogSender } from '@agoric/telemetry';
 import { TimeMath, type Timestamp } from '@agoric/time';
-import { sharedBundleCachePath } from '@agoric/swingset-vat/tools/bundleTool.js';
 import {
   fakeLocalChainBridgeQueryHandler,
   fakeLocalChainBridgeTxMsgHandler,
@@ -76,9 +76,9 @@ import { base64ToBytes } from '@agoric/network';
 import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
 import type { IBCDowncallMethod, IBCMethod } from '@agoric/vats';
 import type { BootstrapRootObject } from '@agoric/vats/src/core/lib-boot.js';
+import type { ERef } from '@agoric/vow';
 import type { EProxy } from '@endo/eventual-send';
 import { FileSystemCache, NodeFetchCache } from 'node-fetch-cache';
-import type { ERef } from '@agoric/vow';
 import { icaMocks, protoMsgMockMap, protoMsgMocks } from './ibc/mocks.js';
 
 const tmpDir = makeTempDirFactory(tmp);
@@ -273,8 +273,18 @@ interface ProposalCacheMetadata {
 interface ProposalExtractorOptions {
   cacheRoot?: string;
   mode?: ProposalBuildMode;
+  onCacheEvent?: (event: ProposalExtractorEvent) => void;
   schemaVersion?: string;
 }
+
+type ProposalExtractorEvent =
+  | BuildCacheEvent
+  | {
+      args: string[];
+      builderPath: string;
+      cacheKey: string;
+      type: 'proposal-cache-hit' | 'proposal-cache-miss';
+    };
 
 /**
  * Creates a function that can build and extract proposal data from package scripts.
@@ -294,6 +304,7 @@ export const makeProposalExtractor = (
   const importSpec = createRequire(resolveBase).resolve;
   const readJSONFile = makeReadJsonFile(fs, harden);
   const mode = options.mode || 'prefer-in-process';
+  const onCacheEvent = options.onCacheEvent || (() => {});
   const schemaVersion = options.schemaVersion || 'v1';
   const cacheRoot =
     options.cacheRoot ||
@@ -399,9 +410,10 @@ export const makeProposalExtractor = (
     now,
     pid: process.pid,
     isPidAlive,
-    lockRoot: join(cacheRoot, '.locks'),
-    staleLockMs: 60_000,
-    acquireTimeoutMs: 5 * 60_000,
+    lockRoot,
+    staleLockMs,
+    acquireTimeoutMs: lockAcquireTimeoutMs,
+    onEvent: onCacheEvent,
   });
 
   const cachePathsForKey = (key: string) => {
@@ -453,31 +465,27 @@ export const makeProposalExtractor = (
       cachePathsForKey(cacheKey);
     await fs.mkdir(entryDir, { recursive: true });
     await Promise.all([
-      writeFileAtomic(
-        {
-          fs,
-          filePath: `${metadataPath}`,
-          data: `${JSON.stringify(metadata, null, 2)}\n`,
-          now,
-          pid: process.pid,
-        },
-      ),
-      writeFileAtomic(
-        {
-          fs,
-          filePath: `${materialsPath}`,
-          data: `${JSON.stringify(
-            {
-              evals: materials.evals,
-              bundles: materials.bundles,
-            },
-            null,
-            2,
-          )}\n`,
-          now,
-          pid: process.pid,
-        },
-      ),
+      writeFileAtomic({
+        fs,
+        filePath: `${metadataPath}`,
+        data: `${JSON.stringify(metadata, null, 2)}\n`,
+        now,
+        pid: process.pid,
+      }),
+      writeFileAtomic({
+        fs,
+        filePath: `${materialsPath}`,
+        data: `${JSON.stringify(
+          {
+            evals: materials.evals,
+            bundles: materials.bundles,
+          },
+          null,
+          2,
+        )}\n`,
+        now,
+        pid: process.pid,
+      }),
     ]);
   };
 
@@ -499,9 +507,20 @@ export const makeProposalExtractor = (
     const pending = withLock(cacheKey, async () => {
       const cached = await loadCachedMaterials(cacheKey);
       if (cached) {
-        console.info('proposal cache hit:', scriptPath, args);
+        onCacheEvent({
+          type: 'proposal-cache-hit',
+          builderPath: scriptPath,
+          args: [...args],
+          cacheKey,
+        });
         return cached;
       }
+      onCacheEvent({
+        type: 'proposal-cache-miss',
+        builderPath: scriptPath,
+        args: [...args],
+        cacheKey,
+      });
 
       const [builtDir, cleanup] = tmpDir('agoric-proposal');
       await fs.mkdir(cacheRoot, { recursive: true });

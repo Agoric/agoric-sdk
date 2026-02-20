@@ -31,6 +31,7 @@ const makeFixture = async t => {
 
 test('proposal extractor caches materials on disk and reuses across instances', async t => {
   const { builderPath, dependencyPath, cacheRoot } = await makeFixture(t);
+  const cacheEvents: Array<{ type: string; reason?: string }> = [];
 
   let builds = 0;
   const fakeBuilder: any = async ({ mode }) => {
@@ -54,13 +55,16 @@ test('proposal extractor caches materials on disk and reuses across instances', 
       buildCoreEvalProposal: fakeBuilder,
       childProcess: {
         execFileSync: () => {
-          throw Error('shell path should not be used');
+          throw Error('shell mode should not be used');
         },
       },
       fs: fsPromises,
     },
     import.meta.url,
-    { cacheRoot },
+    {
+      cacheRoot,
+      onCacheEvent: event => cacheEvents.push(event),
+    },
   );
 
   const first = await extractorA(builderPath, ['--example']);
@@ -73,7 +77,7 @@ test('proposal extractor caches materials on disk and reuses across instances', 
       buildCoreEvalProposal: fakeBuilder,
       childProcess: {
         execFileSync: () => {
-          throw Error('shell path should not be used');
+          throw Error('shell mode should not be used');
         },
       },
       fs: fsPromises,
@@ -85,8 +89,78 @@ test('proposal extractor caches materials on disk and reuses across instances', 
   const third = await extractorB(builderPath, ['--example']);
   t.is(builds, 1);
   t.deepEqual(third, first);
+  t.true(cacheEvents.some(event => event.type === 'proposal-cache-miss'));
+  t.true(cacheEvents.some(event => event.type === 'proposal-cache-hit'));
 });
 
+test('proposal cache key and on-disk cache contents are explicit', async t => {
+  const { builderPath, dependencyPath, cacheRoot } = await makeFixture(t);
+  const args = ['--key-shape'];
+  const mode = 'prefer-in-process';
+  const schemaVersion = 'v1';
+  const resolvedBuilderPath = importSpec(builderPath);
+  const expectedCacheKey = sha256(
+    JSON.stringify({
+      args,
+      builderPath: resolvedBuilderPath,
+      mode,
+      schemaVersion,
+    }),
+  );
+  const builtMaterials: ProposalBuilderResult = harden({
+    bundles: [
+      {
+        moduleFormat: 'endoZipBase64',
+        endoZipBase64: 'AAAA',
+        endoZipBase64Sha512: 'fake-sha512-for-test',
+      },
+    ],
+    dependencies: [dependencyPath],
+    evals: [{ json_permits: '{}', js_code: 'harden({ cached: true });' }],
+    modeUsed: 'in-process',
+    resolvedBuilderPath,
+  });
+
+  const extractor = makeProposalExtractor(
+    {
+      buildCoreEvalProposal: async () => builtMaterials,
+      childProcess: {
+        execFileSync: () => {
+          throw Error('shell mode should not be used');
+        },
+      },
+      fs: fsPromises,
+    },
+    import.meta.url,
+    { cacheRoot },
+  );
+
+  await extractor(builderPath, args);
+
+  const cacheEntryDir = join(cacheRoot, expectedCacheKey);
+  const metadataPath = join(cacheEntryDir, 'metadata.json');
+  const materialsPath = join(cacheEntryDir, 'materials.json');
+  const metadata = JSON.parse(await fsPromises.readFile(metadataPath, 'utf8'));
+  const materials = JSON.parse(
+    await fsPromises.readFile(materialsPath, 'utf8'),
+  );
+
+  t.like(metadata, {
+    args,
+    builderPath: resolvedBuilderPath,
+    mode,
+    schemaVersion,
+    toolVersion: 'boot-proposal-cache-v1',
+  });
+  t.deepEqual(
+    metadata.dependencies.map(dep => dep.path).sort(),
+    [resolvedBuilderPath, dependencyPath].sort(),
+  );
+  t.deepEqual(materials, {
+    evals: builtMaterials.evals,
+    bundles: builtMaterials.bundles,
+  });
+});
 test('proposal extractor invalidates cache when dependency content changes', async t => {
   const { builderPath, dependencyPath, cacheRoot } = await makeFixture(t);
 
@@ -107,7 +181,7 @@ test('proposal extractor invalidates cache when dependency content changes', asy
       buildCoreEvalProposal: fakeBuilder,
       childProcess: {
         execFileSync: () => {
-          throw Error('shell path should not be used');
+          throw Error('shell mode should not be used');
         },
       },
       fs: fsPromises,
@@ -145,9 +219,7 @@ test('prefer-in-process falls back to shell-only mode when builder throws', asyn
     {
       buildCoreEvalProposal: fakeBuilder,
       childProcess: {
-        execFileSync: () => {
-          throw Error('shell child process should not run in this unit test');
-        },
+        execFileSync: (() => t.fail('shell mode should not be used')) as any,
       },
       fs: fsPromises,
     },
@@ -162,6 +234,7 @@ test('prefer-in-process falls back to shell-only mode when builder throws', asyn
 
 test('stale/dead lock is recovered before building', async t => {
   const { builderPath, dependencyPath, cacheRoot } = await makeFixture(t);
+  const cacheEvents: Array<{ type: string; reason?: string }> = [];
 
   const args = ['--recover-lock'];
   const mode = 'prefer-in-process';
@@ -206,17 +279,25 @@ test('stale/dead lock is recovered before building', async t => {
       buildCoreEvalProposal: fakeBuilder,
       childProcess: {
         execFileSync: () => {
-          throw Error('shell path should not be used');
+          throw Error('shell mode should not be used');
         },
       },
       fs: fsPromises,
     },
     import.meta.url,
-    { cacheRoot },
+    {
+      cacheRoot,
+      onCacheEvent: event => cacheEvents.push(event),
+    },
   );
 
   await extractor(builderPath, args);
   t.is(builds, 1);
+  t.true(
+    cacheEvents.some(
+      event => event.type === 'lock-broken' && event.reason === 'dead-owner',
+    ),
+  );
 
   const lockStats = await stat(lockPath).catch(() => undefined);
   t.is(lockStats, undefined);
