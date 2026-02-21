@@ -1,5 +1,7 @@
 /** global FinalizationRegistry */
 
+import '@endo/init/debug.js';
+
 import test from 'ava';
 
 import process from 'node:process';

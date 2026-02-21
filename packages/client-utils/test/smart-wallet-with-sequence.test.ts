@@ -1,3 +1,5 @@
+import '@endo/init/legacy.js';
+
 import test from 'ava';
 import { arrayIsLike } from '@agoric/internal/tools/ava-assertions.js';
 import { makeTxSequencer } from '../src/sequence-manager.js';

@@ -1,5 +1,7 @@
 // @ts-nocheck
 /* global FinalizationRegistry WeakRef */
+import '@endo/init/debug.js';
+
 import test from 'ava';
 
 import { buildSyscall } from '../liveslots-helpers.js';

@@ -1,4 +1,7 @@
 // @ts-nocheck
+import '@agoric/internal/src/ava-force-exit.mjs';
+import '@endo/init/debug.js';
+
 import test from 'ava';
 
 import { kunser } from '@agoric/kmarshal';

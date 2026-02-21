@@ -1,3 +1,5 @@
+import '@endo/init/debug.js';
+
 import anyTest from 'ava';
 import path from 'path';
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';

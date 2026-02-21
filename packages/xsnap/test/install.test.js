@@ -3,6 +3,8 @@
 // toolchain.
 // This test verifies the post-publish experience.
 
+import '@endo/init/debug.js';
+
 import { mkdtemp, rm } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';

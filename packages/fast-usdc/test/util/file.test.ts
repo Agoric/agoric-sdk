@@ -1,3 +1,5 @@
+import '@endo/init/debug.js';
+
 import test from 'ava';
 import { makeFile } from '../../src/cli/util/file.js';
 

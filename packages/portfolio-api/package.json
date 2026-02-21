@@ -34,6 +34,7 @@
     "@endo/patterns": "^1.7.0"
   },
   "devDependencies": {
+    "@endo/init": "^1.1.12",
     "@types/js-yaml": "^4",
     "ajv": "^6.12.6",
     "ava": "^6.4.1",
@@ -53,9 +54,6 @@
     "nodeArguments": [
       "--import=ts-blank-space/register",
       "--no-warnings"
-    ],
-    "require": [
-      "@endo/init/debug.js"
     ],
     "timeout": "20m"
   },

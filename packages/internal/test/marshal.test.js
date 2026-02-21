@@ -1,4 +1,6 @@
 // @ts-check
+import '@endo/init/debug.js';
+
 import test from 'ava';
 
 import { Far, getInterfaceOf, makeMarshal, passStyleOf } from '@endo/marshal';

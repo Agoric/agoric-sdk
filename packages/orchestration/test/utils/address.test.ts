@@ -1,3 +1,5 @@
+import '@endo/init/debug.js';
+
 import { decodeRemoteIbcAddress } from '@agoric/vats/tools/ibc-utils.js';
 import test from '@endo/ses-ava/prepare-endo.js';
 import type { Bech32Address } from '../../src/cosmos-api.ts';

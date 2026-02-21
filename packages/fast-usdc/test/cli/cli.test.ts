@@ -1,3 +1,5 @@
+import '@endo/init/debug.js';
+
 import test from 'ava';
 import spawn from 'nano-spawn';
 import { fileURLToPath } from 'url';

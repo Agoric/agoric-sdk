@@ -59,9 +59,6 @@
     "files": [
       "test/**/*.test.*"
     ],
-    "require": [
-      "@endo/init/debug.js"
-    ],
     "timeout": "20m"
   },
   "typeCoverage": {

@@ -1,3 +1,5 @@
+import '@endo/init/debug.js';
+
 import test from 'ava';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import * as transferLib from '../../src/cli/transfer.js';

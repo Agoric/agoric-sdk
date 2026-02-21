@@ -1,4 +1,6 @@
 /* eslint-env node */
+import '@endo/init/legacy.js';
+
 import test from 'ava';
 import { encodeBase64 } from '@endo/base64';
 import { makeAgoricNames, makeVstorageKit } from '../src/vstorage-kit.js';

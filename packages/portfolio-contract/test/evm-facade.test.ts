@@ -1,8 +1,8 @@
 /**
  * @file Tests for EVM call batch facade helpers.
  */
-import { encodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { encodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
 import { hexToBytes } from '@noble/hashes/utils';
 import { type Abi } from 'viem';
 import { makeEvmAbiCallBatch, makeGmpBuilder } from '../src/evm-facade.ts';

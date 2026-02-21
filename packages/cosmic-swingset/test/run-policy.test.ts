@@ -1,4 +1,6 @@
 /* eslint-env node */
+import '@endo/init/debug.js';
+
 import type { ParamsSDKType } from '@agoric/cosmic-proto/swingset/swingset.js';
 import { BridgeId, deepCopyJsonable, objectMap } from '@agoric/internal';
 import type { BlockInfo } from '@agoric/internal/src/chain-utils.js';

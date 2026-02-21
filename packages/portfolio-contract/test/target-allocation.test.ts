@@ -1,9 +1,10 @@
 /**
  * @file Test target allocation functionality
  */
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
 import type { VstorageKit } from '@agoric/client-utils';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { E } from '@endo/far';
 import { makeTrader } from '../tools/portfolio-actors.js';
 import { makeWallet } from '../tools/wallet-offer-tools.js';

@@ -1,3 +1,5 @@
+import '@endo/init/debug.js';
+
 import test from 'ava';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { runJob, type Job } from '../src/schedule-order.ts';

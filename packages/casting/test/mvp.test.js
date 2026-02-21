@@ -1,16 +1,16 @@
 // @ts-nocheck
-
 import './lockdown.js';
 
 import { makeMarshal } from '@endo/marshal';
+
 import { test } from './prepare-test-env-ava.js';
 
 import {
-  iterateLatest,
   iterateEach,
+  iterateLatest,
+  makeCastingSpec,
   makeFollower,
   makeLeader,
-  makeCastingSpec,
 } from '../src/main.js';
 
 import { delay } from '../src/defaults.js';

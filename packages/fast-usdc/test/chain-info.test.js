@@ -1,3 +1,5 @@
+import '@endo/init/debug.js';
+
 import test from 'ava';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';

@@ -1,4 +1,6 @@
 // @ts-check
+import '@endo/init/debug.js';
+
 import test from 'ava';
 
 import { assertOfferResult } from '../../src/assertOfferResult.js';

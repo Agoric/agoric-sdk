@@ -1,3 +1,6 @@
+import '@agoric/internal/src/ava-force-exit.mjs';
+import '@endo/init/debug.js';
+
 import { runDVOTest, test } from '../../tools/dvo-test-harness.js';
 
 /**
