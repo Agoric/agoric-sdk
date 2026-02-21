@@ -10,4 +10,8 @@
     "test/**/*.js",
     "tools/**/*.js",
   ],
+  "exclude": [
+    "scripts/zips-before/**",
+    "scripts/zips-after/**",
+  ],
 }

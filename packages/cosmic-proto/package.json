@@ -20,6 +20,10 @@
       "default": "./dist/index.js"
     },
     "./package.json": "./package.json",
+    "./json-safe": {
+      "types": "./dist/codegen/json-safe.d.ts",
+      "default": "./dist/codegen/json-safe.js"
+    },
     "./address-hooks.js": {
       "types": "./dist/address-hooks.d.ts",
       "default": "./dist/address-hooks.js"
@@ -31,6 +35,10 @@
     "./cosmos/*.js": {
       "types": "./dist/codegen/cosmos/*.d.ts",
       "default": "./dist/codegen/cosmos/*.js"
+    },
+    "./cosmos/gov/v1/gov.js": {
+      "types": "./dist/codegen/cosmos/gov/v1/gov.d.ts",
+      "default": "./dist/codegen/cosmos/gov/v1/gov.js"
     },
     "./circle/cctp/v1/tx.js": {
       "types": "./dist/codegen/circle/cctp/v1/tx.d.ts",
