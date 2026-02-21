@@ -1,0 +1,1 @@
+import{buildQuery as e}from"../../../../../helper-func-types.js";import{QueryParamsRequest as o,QueryParamsResponse as c}from"./query.js";export const getParams=e({encode:o.encode,decode:c.decode,service:"ibc.applications.interchain_accounts.host.v1.Query",method:"Params",deps:[o,c]});

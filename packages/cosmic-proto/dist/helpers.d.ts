@@ -1,0 +1,47 @@
+import { RequestQuery } from './codegen/tendermint/abci/types.js';
+import type { TypeFromUrl } from './codegen/typeFromUrl.js';
+import type { JsonSafe } from './codegen/index.js';
+import type { Any } from './codegen/google/protobuf/any.js';
+import type { QueryBalanceRequestProtoMsg } from './codegen/cosmos/bank/v1beta1/query.js';
+/**
+ * A mapping from typeUrl strings to their corresponding TypeScript types. This
+ * is generated automatically during the build process, and has no runtime code,
+ * just compiler hints.
+ */
+export type { TypeFromUrl };
+/**
+ * The result of Any.toJSON(). Exported at top level as a convenience
+ * for a very common import.
+ */
+export type AnyJson<TU extends unknown | keyof TypeFromUrl = unknown> = TU extends keyof TypeFromUrl ? JsonSafe<Omit<Any, 'typeUrl'> & {
+    typeUrl: TU;
+}> : JsonSafe<Any>;
+/**
+ * The encoding introduced in Protobuf 3 for Any that can be serialized to JSON.
+ *
+ * Technically JSON is a string, a notation encoding a JSON object. So this is
+ * more accurately "JSON-ifiable" but we don't expect anyone to confuse this
+ * type with a string.
+ */
+export type TypedJson<TU extends unknown | keyof TypeFromUrl = unknown> = TU extends keyof TypeFromUrl ? TypeFromUrl[TU] & {
+    '@type': TU;
+} : {
+    '@type': string;
+};
+export type MessageBody<TU extends keyof TypeFromUrl | unknown> = Omit<TypedJson<TU>, '@type'>;
+/** General pattern for Request that has a corresponding Response */
+type RequestTypeUrl<Base extends string> = `/${Base}Request`;
+/** Pattern specific to Msg sends, in which "Msg" without "Response" implies it's a request */
+type TxMessageTypeUrl<Package extends string, Name extends Capitalize<string>> = `/${Package}.Msg${Name}`;
+export type ResponseTypeUrl<TU extends keyof TypeFromUrl | unknown> = TU extends RequestTypeUrl<infer Base> ? `/${Base}Response` : TU extends TxMessageTypeUrl<infer Package, infer Name> ? `/${Package}.Msg${Name}Response` : unknown;
+export type ResponseTo<T extends TypedJson> = TypedJson<ResponseTypeUrl<T['@type']>>;
+export declare const typedJson: <TU extends keyof TypeFromUrl>(typeStr: TU, value: MessageBody<TU>) => TypedJson<TU>;
+export declare const typeUrlToGrpcPath: (typeUrl: Any["typeUrl"]) => string;
+type RequestQueryOpts = Partial<Omit<RequestQuery, 'path' | 'data'>>;
+export declare const toRequestQueryJson: (msg: Any | QueryBalanceRequestProtoMsg, opts?: RequestQueryOpts) => {
+    data: string;
+    path: string;
+    height: string;
+    prove: boolean;
+};
+//# sourceMappingURL=helpers.d.ts.map

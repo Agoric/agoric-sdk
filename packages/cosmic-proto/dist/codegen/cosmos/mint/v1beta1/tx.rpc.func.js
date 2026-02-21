@@ -1,0 +1,1 @@
+import{buildTx as r}from"../../../helper-func-types.js";import{MsgUpdateParams as t}from"./tx.js";export const updateParams=r({msg:t});

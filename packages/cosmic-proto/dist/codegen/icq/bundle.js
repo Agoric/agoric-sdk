@@ -1,0 +1,1 @@
+import*as r from"./v1/tx.js";import*as o from"./v1/query.js";import*as s from"./v1/packet.js";import*as m from"./v1/icq.js";import*as i from"./v1/genesis.js";import*as t from"./v1/query.rpc.func.js";import*as p from"./v1/tx.rpc.func.js";export var icq;!function(c){c.v1={...r,...o,...s,...m,...i,...t,...p}}(icq||(icq={}));

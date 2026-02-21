@@ -1,0 +1,152 @@
+import * as _44 from './v1/tx.js';
+import * as _45 from './v1/query.js';
+import * as _46 from './v1/packet.js';
+import * as _47 from './v1/icq.js';
+import * as _48 from './v1/genesis.js';
+export declare namespace icq {
+    const v1: {
+        updateParams: (client: import("@interchainjs/cosmos").ISigningClient, signerAddress: string, message: _44.MsgUpdateParams | _44.MsgUpdateParams[], fee: import("../types.ts").StdFee | "auto", memo: string) => Promise<import("@interchainjs/types").DeliverTxResponse>;
+        getParams: (client: import("../helper-func-types.ts").EndpointOrRpc, request: _45.QueryParamsRequest) => Promise<_45.QueryParamsResponse>;
+        GenesisState: {
+            typeUrl: "/icq.v1.GenesisState";
+            is(o: any): o is _48.GenesisState;
+            isSDK(o: any): o is _48.GenesisStateSDKType;
+            encode(message: _48.GenesisState, writer?: import("../binary.ts").BinaryWriter): import("../binary.ts").BinaryWriter;
+            decode(input: import("../binary.ts").BinaryReader | Uint8Array, length?: number): _48.GenesisState;
+            fromJSON(object: any): _48.GenesisState;
+            toJSON(message: _48.GenesisState): import("../json-safe.ts").JsonSafe<_48.GenesisState>;
+            fromPartial(object: Partial<_48.GenesisState>): _48.GenesisState;
+            fromProtoMsg(message: _48.GenesisStateProtoMsg): _48.GenesisState;
+            toProto(message: _48.GenesisState): Uint8Array;
+            toProtoMsg(message: _48.GenesisState): _48.GenesisStateProtoMsg;
+            registerTypeUrl(): void;
+        };
+        Params: {
+            typeUrl: "/icq.v1.Params";
+            is(o: any): o is _47.Params;
+            isSDK(o: any): o is _47.ParamsSDKType;
+            encode(message: _47.Params, writer?: import("../binary.ts").BinaryWriter): import("../binary.ts").BinaryWriter;
+            decode(input: import("../binary.ts").BinaryReader | Uint8Array, length?: number): _47.Params;
+            fromJSON(object: any): _47.Params;
+            toJSON(message: _47.Params): import("../json-safe.ts").JsonSafe<_47.Params>;
+            fromPartial(object: Partial<_47.Params>): _47.Params;
+            fromProtoMsg(message: _47.ParamsProtoMsg): _47.Params;
+            toProto(message: _47.Params): Uint8Array;
+            toProtoMsg(message: _47.Params): _47.ParamsProtoMsg;
+            registerTypeUrl(): void;
+        };
+        InterchainQueryPacketData: {
+            typeUrl: "/icq.v1.InterchainQueryPacketData";
+            is(o: any): o is _46.InterchainQueryPacketData;
+            isSDK(o: any): o is _46.InterchainQueryPacketDataSDKType;
+            encode(message: _46.InterchainQueryPacketData, writer?: import("../binary.ts").BinaryWriter): import("../binary.ts").BinaryWriter;
+            decode(input: import("../binary.ts").BinaryReader | Uint8Array, length?: number): _46.InterchainQueryPacketData;
+            fromJSON(object: any): _46.InterchainQueryPacketData;
+            toJSON(message: _46.InterchainQueryPacketData): import("../json-safe.ts").JsonSafe<_46.InterchainQueryPacketData>;
+            fromPartial(object: Partial<_46.InterchainQueryPacketData>): _46.InterchainQueryPacketData;
+            fromProtoMsg(message: _46.InterchainQueryPacketDataProtoMsg): _46.InterchainQueryPacketData;
+            toProto(message: _46.InterchainQueryPacketData): Uint8Array;
+            toProtoMsg(message: _46.InterchainQueryPacketData): _46.InterchainQueryPacketDataProtoMsg;
+            registerTypeUrl(): void;
+        };
+        InterchainQueryPacketAck: {
+            typeUrl: "/icq.v1.InterchainQueryPacketAck";
+            is(o: any): o is _46.InterchainQueryPacketAck;
+            isSDK(o: any): o is _46.InterchainQueryPacketAckSDKType;
+            encode(message: _46.InterchainQueryPacketAck, writer?: import("../binary.ts").BinaryWriter): import("../binary.ts").BinaryWriter;
+            decode(input: import("../binary.ts").BinaryReader | Uint8Array, length?: number): _46.InterchainQueryPacketAck;
+            fromJSON(object: any): _46.InterchainQueryPacketAck;
+            toJSON(message: _46.InterchainQueryPacketAck): import("../json-safe.ts").JsonSafe<_46.InterchainQueryPacketAck>;
+            fromPartial(object: Partial<_46.InterchainQueryPacketAck>): _46.InterchainQueryPacketAck;
+            fromProtoMsg(message: _46.InterchainQueryPacketAckProtoMsg): _46.InterchainQueryPacketAck;
+            toProto(message: _46.InterchainQueryPacketAck): Uint8Array;
+            toProtoMsg(message: _46.InterchainQueryPacketAck): _46.InterchainQueryPacketAckProtoMsg;
+            registerTypeUrl(): void;
+        };
+        CosmosQuery: {
+            typeUrl: "/icq.v1.CosmosQuery";
+            is(o: any): o is _46.CosmosQuery;
+            isSDK(o: any): o is _46.CosmosQuerySDKType;
+            encode(message: _46.CosmosQuery, writer?: import("../binary.ts").BinaryWriter): import("../binary.ts").BinaryWriter;
+            decode(input: import("../binary.ts").BinaryReader | Uint8Array, length?: number): _46.CosmosQuery;
+            fromJSON(object: any): _46.CosmosQuery;
+            toJSON(message: _46.CosmosQuery): import("../json-safe.ts").JsonSafe<_46.CosmosQuery>;
+            fromPartial(object: Partial<_46.CosmosQuery>): _46.CosmosQuery;
+            fromProtoMsg(message: _46.CosmosQueryProtoMsg): _46.CosmosQuery;
+            toProto(message: _46.CosmosQuery): Uint8Array;
+            toProtoMsg(message: _46.CosmosQuery): _46.CosmosQueryProtoMsg;
+            registerTypeUrl(): void;
+        };
+        CosmosResponse: {
+            typeUrl: "/icq.v1.CosmosResponse";
+            is(o: any): o is _46.CosmosResponse;
+            isSDK(o: any): o is _46.CosmosResponseSDKType;
+            encode(message: _46.CosmosResponse, writer?: import("../binary.ts").BinaryWriter): import("../binary.ts").BinaryWriter;
+            decode(input: import("../binary.ts").BinaryReader | Uint8Array, length?: number): _46.CosmosResponse;
+            fromJSON(object: any): _46.CosmosResponse;
+            toJSON(message: _46.CosmosResponse): import("../json-safe.ts").JsonSafe<_46.CosmosResponse>;
+            fromPartial(object: Partial<_46.CosmosResponse>): _46.CosmosResponse;
+            fromProtoMsg(message: _46.CosmosResponseProtoMsg): _46.CosmosResponse;
+            toProto(message: _46.CosmosResponse): Uint8Array;
+            toProtoMsg(message: _46.CosmosResponse): _46.CosmosResponseProtoMsg;
+            registerTypeUrl(): void;
+        };
+        QueryParamsRequest: {
+            typeUrl: "/icq.v1.QueryParamsRequest";
+            is(o: any): o is _45.QueryParamsRequest;
+            isSDK(o: any): o is _45.QueryParamsRequestSDKType;
+            encode(_: _45.QueryParamsRequest, writer?: import("../binary.ts").BinaryWriter): import("../binary.ts").BinaryWriter;
+            decode(input: import("../binary.ts").BinaryReader | Uint8Array, length?: number): _45.QueryParamsRequest;
+            fromJSON(_: any): _45.QueryParamsRequest;
+            toJSON(_: _45.QueryParamsRequest): import("../json-safe.ts").JsonSafe<_45.QueryParamsRequest>;
+            fromPartial(_: Partial<_45.QueryParamsRequest>): _45.QueryParamsRequest;
+            fromProtoMsg(message: _45.QueryParamsRequestProtoMsg): _45.QueryParamsRequest;
+            toProto(message: _45.QueryParamsRequest): Uint8Array;
+            toProtoMsg(message: _45.QueryParamsRequest): _45.QueryParamsRequestProtoMsg;
+            registerTypeUrl(): void;
+        };
+        QueryParamsResponse: {
+            typeUrl: "/icq.v1.QueryParamsResponse";
+            is(o: any): o is _45.QueryParamsResponse;
+            isSDK(o: any): o is _45.QueryParamsResponseSDKType;
+            encode(message: _45.QueryParamsResponse, writer?: import("../binary.ts").BinaryWriter): import("../binary.ts").BinaryWriter;
+            decode(input: import("../binary.ts").BinaryReader | Uint8Array, length?: number): _45.QueryParamsResponse;
+            fromJSON(object: any): _45.QueryParamsResponse;
+            toJSON(message: _45.QueryParamsResponse): import("../json-safe.ts").JsonSafe<_45.QueryParamsResponse>;
+            fromPartial(object: Partial<_45.QueryParamsResponse>): _45.QueryParamsResponse;
+            fromProtoMsg(message: _45.QueryParamsResponseProtoMsg): _45.QueryParamsResponse;
+            toProto(message: _45.QueryParamsResponse): Uint8Array;
+            toProtoMsg(message: _45.QueryParamsResponse): _45.QueryParamsResponseProtoMsg;
+            registerTypeUrl(): void;
+        };
+        MsgUpdateParams: {
+            typeUrl: "/icq.v1.MsgUpdateParams";
+            is(o: any): o is _44.MsgUpdateParams;
+            isSDK(o: any): o is _44.MsgUpdateParamsSDKType;
+            encode(message: _44.MsgUpdateParams, writer?: import("../binary.ts").BinaryWriter): import("../binary.ts").BinaryWriter;
+            decode(input: import("../binary.ts").BinaryReader | Uint8Array, length?: number): _44.MsgUpdateParams;
+            fromJSON(object: any): _44.MsgUpdateParams;
+            toJSON(message: _44.MsgUpdateParams): import("../json-safe.ts").JsonSafe<_44.MsgUpdateParams>;
+            fromPartial(object: Partial<_44.MsgUpdateParams>): _44.MsgUpdateParams;
+            fromProtoMsg(message: _44.MsgUpdateParamsProtoMsg): _44.MsgUpdateParams;
+            toProto(message: _44.MsgUpdateParams): Uint8Array;
+            toProtoMsg(message: _44.MsgUpdateParams): _44.MsgUpdateParamsProtoMsg;
+            registerTypeUrl(): void;
+        };
+        MsgUpdateParamsResponse: {
+            typeUrl: "/icq.v1.MsgUpdateParamsResponse";
+            is(o: any): o is _44.MsgUpdateParamsResponse;
+            isSDK(o: any): o is _44.MsgUpdateParamsResponseSDKType;
+            encode(_: _44.MsgUpdateParamsResponse, writer?: import("../binary.ts").BinaryWriter): import("../binary.ts").BinaryWriter;
+            decode(input: import("../binary.ts").BinaryReader | Uint8Array, length?: number): _44.MsgUpdateParamsResponse;
+            fromJSON(_: any): _44.MsgUpdateParamsResponse;
+            toJSON(_: _44.MsgUpdateParamsResponse): import("../json-safe.ts").JsonSafe<_44.MsgUpdateParamsResponse>;
+            fromPartial(_: Partial<_44.MsgUpdateParamsResponse>): _44.MsgUpdateParamsResponse;
+            fromProtoMsg(message: _44.MsgUpdateParamsResponseProtoMsg): _44.MsgUpdateParamsResponse;
+            toProto(message: _44.MsgUpdateParamsResponse): Uint8Array;
+            toProtoMsg(message: _44.MsgUpdateParamsResponse): _44.MsgUpdateParamsResponseProtoMsg;
+            registerTypeUrl(): void;
+        };
+    };
+}
+//# sourceMappingURL=bundle.d.ts.map

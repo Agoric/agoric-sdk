@@ -1,0 +1,1 @@
+import{buildTx as o}from"../../../helper-func-types.js";import{MsgGrantAllowance as e,MsgRevokeAllowance as r,MsgPruneAllowances as t}from"./tx.js";export const grantAllowance=o({msg:e});export const revokeAllowance=o({msg:r});export const pruneAllowances=o({msg:t});

@@ -1,0 +1,1 @@
+import{buildTx as r}from"../../../helper-func-types.js";import{MsgAuthorizeCircuitBreaker as t,MsgTripCircuitBreaker as e,MsgResetCircuitBreaker as o}from"./tx.js";export const authorizeCircuitBreaker=r({msg:t});export const tripCircuitBreaker=r({msg:e});export const resetCircuitBreaker=r({msg:o});

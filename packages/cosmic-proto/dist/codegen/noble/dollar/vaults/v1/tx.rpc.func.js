@@ -1,0 +1,1 @@
+import{buildTx as t}from"../../../../helper-func-types.js";import{MsgLock as o,MsgUnlock as s,MsgSetPausedState as e}from"./tx.js";export const lock=t({msg:o});export const unlock=t({msg:s});export const setPausedState=t({msg:e});

@@ -1,0 +1,1 @@
+import{buildTx as r}from"../../../../helper-func-types.js";import{MsgTransfer as t,MsgUpdateParams as s}from"./tx.js";export const transfer=r({msg:t});export const updateParams=r({msg:s});

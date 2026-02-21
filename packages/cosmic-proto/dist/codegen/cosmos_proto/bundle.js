@@ -1,0 +1,1 @@
+import*as o from"./cosmos.js";export const cosmos_proto={...o};

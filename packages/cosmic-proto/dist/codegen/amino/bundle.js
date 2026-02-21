@@ -1,0 +1,1 @@
+import*as o from"./amino.js";export const amino={...o};

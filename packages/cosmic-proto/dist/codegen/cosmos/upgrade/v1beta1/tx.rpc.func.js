@@ -1,0 +1,1 @@
+import{buildTx as r}from"../../../helper-func-types.js";import{MsgSoftwareUpgrade as e,MsgCancelUpgrade as o}from"./tx.js";export const softwareUpgrade=r({msg:e});export const cancelUpgrade=r({msg:o});

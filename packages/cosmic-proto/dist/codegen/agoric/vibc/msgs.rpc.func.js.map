@@ -1,0 +1,1 @@
+{"version":3,"file":"msgs.rpc.func.js","sourceRoot":"","sources":["../../../../src/codegen/agoric/vibc/msgs.rpc.func.ts"],"names":[],"mappings":"AAAA,aAAa;AACb,OAAO,EAAE,OAAO,EAAE,MAAM,4BAA4B,CAAC;AACrD,OAAO,EAAE,aAAa,EAAE,MAAM,WAAW,CAAC;AAC1C;;;;;GAKG;AACH,MAAM,CAAC,MAAM,UAAU,GAAG,OAAO,CAAgB;IAC/C,GAAG,EAAE,aAAa;CACnB,CAAC,CAAC"}

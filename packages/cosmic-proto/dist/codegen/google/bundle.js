@@ -1,0 +1,1 @@
+import*as o from"./protobuf/timestamp.js";import*as r from"./protobuf/empty.js";import*as t from"./protobuf/duration.js";import*as p from"./protobuf/descriptor.js";import*as m from"./protobuf/any.js";export var google;!function(f){f.protobuf={...o,...r,...t,...p,...m}}(google||(google={}));

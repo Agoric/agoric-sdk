@@ -1,0 +1,1 @@
+import{buildTx as t}from"../../../helper-func-types.js";import{MsgSend as s,MsgMultiSend as e,MsgUpdateParams as o,MsgSetSendEnabled as m}from"./tx.js";export const send=t({msg:s});export const multiSend=t({msg:e});export const updateParams=t({msg:o});export const setSendEnabled=t({msg:m});

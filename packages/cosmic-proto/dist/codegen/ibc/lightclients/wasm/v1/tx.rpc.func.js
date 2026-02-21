@@ -1,0 +1,1 @@
+import{buildTx as o}from"../../../../helper-func-types.js";import{MsgStoreCode as t,MsgRemoveChecksum as e,MsgMigrateContract as r}from"./tx.js";export const storeCode=o({msg:t});export const removeChecksum=o({msg:e});export const migrateContract=o({msg:r});

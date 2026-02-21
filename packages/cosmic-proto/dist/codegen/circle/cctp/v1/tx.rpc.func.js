@@ -1,0 +1,1 @@
+import{buildTx as o}from"../../../helper-func-types.js";import{MsgDepositForBurn as r,MsgDepositForBurnWithCaller as t}from"./tx.js";export const depositForBurn=o({msg:r});export const depositForBurnWithCaller=o({msg:t});

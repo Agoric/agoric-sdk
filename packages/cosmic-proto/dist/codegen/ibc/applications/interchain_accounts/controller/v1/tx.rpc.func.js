@@ -1,0 +1,1 @@
+import{buildTx as t}from"../../../../../helper-func-types.js";import{MsgRegisterInterchainAccount as r,MsgSendTx as s,MsgUpdateParams as e}from"./tx.js";export const registerInterchainAccount=t({msg:r});export const sendTx=t({msg:s});export const updateParams=t({msg:e});

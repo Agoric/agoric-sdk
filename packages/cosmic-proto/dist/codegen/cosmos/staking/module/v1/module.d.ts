@@ -1,0 +1,66 @@
+import { BinaryReader, BinaryWriter } from '../../../../binary.js';
+import { type JsonSafe } from '../../../../json-safe.js';
+/**
+ * Module is the config object of the staking module.
+ * @name Module
+ * @package cosmos.staking.module.v1
+ * @see proto type: cosmos.staking.module.v1.Module
+ */
+export interface Module {
+    /**
+     * hooks_order specifies the order of staking hooks and should be a list
+     * of module names which provide a staking hooks instance. If no order is
+     * provided, then hooks will be applied in alphabetical order of module names.
+     */
+    hooksOrder: string[];
+    /**
+     * authority defines the custom module authority. If not set, defaults to the governance module.
+     */
+    authority: string;
+    /**
+     * bech32_prefix_validator is the bech32 validator prefix for the app.
+     */
+    bech32PrefixValidator: string;
+    /**
+     * bech32_prefix_consensus is the bech32 consensus node prefix for the app.
+     */
+    bech32PrefixConsensus: string;
+}
+export interface ModuleProtoMsg {
+    typeUrl: '/cosmos.staking.module.v1.Module';
+    value: Uint8Array;
+}
+/**
+ * Module is the config object of the staking module.
+ * @name ModuleSDKType
+ * @package cosmos.staking.module.v1
+ * @see proto type: cosmos.staking.module.v1.Module
+ */
+export interface ModuleSDKType {
+    hooks_order: string[];
+    authority: string;
+    bech32_prefix_validator: string;
+    bech32_prefix_consensus: string;
+}
+/**
+ * Module is the config object of the staking module.
+ * @name Module
+ * @package cosmos.staking.module.v1
+ * @see proto type: cosmos.staking.module.v1.Module
+ */
+export declare const Module: {
+    typeUrl: "/cosmos.staking.module.v1.Module";
+    aminoType: "cosmos-sdk/Module";
+    is(o: any): o is Module;
+    isSDK(o: any): o is ModuleSDKType;
+    encode(message: Module, writer?: BinaryWriter): BinaryWriter;
+    decode(input: BinaryReader | Uint8Array, length?: number): Module;
+    fromJSON(object: any): Module;
+    toJSON(message: Module): JsonSafe<Module>;
+    fromPartial(object: Partial<Module>): Module;
+    fromProtoMsg(message: ModuleProtoMsg): Module;
+    toProto(message: Module): Uint8Array;
+    toProtoMsg(message: Module): ModuleProtoMsg;
+    registerTypeUrl(): void;
+};
+//# sourceMappingURL=module.d.ts.map
