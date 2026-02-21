@@ -1,0 +1,100 @@
+diff --git a/main/proto.js b/main/proto.js
+index a863e99ac7c747b9304ae6d698b74b01145ca5f2..10928d63ce5c658ffc0c230096ff9f99a54dabf9 100644
+--- a/main/proto.js
++++ b/main/proto.js
+@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
+ exports.getAliasName = exports.getHelperFuncName = exports.getTypeNameFromFieldName = exports.getObjectName = exports.isRefExcluded = exports.isPackageIncluded = exports.isRefIncluded = exports.getQueryMethodNames = exports.makeAliasNameWithLastTwoPkgParts = exports.makeAliasNameWithLastPkgPart = exports.makeServiceAliasName = exports.makeAliasNameWithPackageAtEnd = exports.makeAliasName = exports.makeHookKeyName = exports.makeUseHookTypeName = exports.makePkgMethodName = exports.makeUsePkgHookName = exports.makeUseHookNameWithCamel = exports.makeUseHookName = exports.getNested = exports.getNestedProtoGeneric = exports.getNestedProto = void 0;
+ const _1 = require(".");
+ const case_1 = require("case");
+-const minimatch_1 = __importDefault(require("minimatch"));
++const minimatch_1 = require("minimatch");
+ const dotty_1 = __importDefault(require("dotty"));
+ const getNestedProto = (root) => {
+     const nestedPath = "root.nested." + root.package.split(".").join(".nested.") + ".nested";
+@@ -134,7 +134,7 @@ const getQueryMethodNames = (packagePath, methodKeys, patterns, makeMethodName)
+                 if (!globPattern.test(pattern)) {
+                     return methodNameWithPkg === pattern;
+                 }
+-                return (0, minimatch_1.default)(methodNameWithPkg, pattern);
++                return (0, minimatch_1.minimatch)(methodNameWithPkg, pattern);
+             });
+         if (isMatching) {
+             return key;
+@@ -164,7 +164,7 @@ const isRefIncluded = (ref, include) => {
+     }
+     // TODO consider deprecating `patterns` in favor of packages and protos supporting minimatch
+     if (Boolean(ref.filename) &&
+-        include?.patterns?.some((pattern) => (0, minimatch_1.default)(ref.filename, pattern))) {
++        include?.patterns?.some((pattern) => (0, minimatch_1.minimatch)(ref.filename, pattern))) {
+         return true;
+     }
+     const pkgMatched = Boolean(ref.proto?.package) &&
+@@ -172,7 +172,7 @@ const isRefIncluded = (ref, include) => {
+             if (!globPattern.test(pkgName)) {
+                 return ref.proto.package === pkgName;
+             }
+-            return (0, minimatch_1.default)(ref.proto.package, pkgName);
++            return (0, minimatch_1.minimatch)(ref.proto.package, pkgName);
+         });
+     if (pkgMatched) {
+         return true;
+@@ -182,7 +182,7 @@ const isRefIncluded = (ref, include) => {
+             if (!globPattern.test(protoName)) {
+                 return ref.filename === protoName;
+             }
+-            return (0, minimatch_1.default)(ref.filename, protoName);
++            return (0, minimatch_1.minimatch)(ref.filename, protoName);
+         });
+     if (protoMatched) {
+         return true;
+@@ -198,7 +198,7 @@ exports.isRefIncluded = isRefIncluded;
+  */
+ const isPackageIncluded = (input, patterns) => {
+     return patterns.some((pattern) => {
+-        return (0, minimatch_1.default)(input, pattern);
++        return (0, minimatch_1.minimatch)(input, pattern);
+     });
+ };
+ exports.isPackageIncluded = isPackageIncluded;
+@@ -257,7 +257,7 @@ function getHelperFuncName(packagePath, methodKey, mappers, defaultFuncBodyFn) {
+             if (!globPattern.test(pattern)) {
+                 isMatching = methodKeyWithPkg === pattern;
+             }
+-            isMatching = (0, minimatch_1.default)(methodKeyWithPkg, pattern);
++            isMatching = (0, minimatch_1.minimatch)(methodKeyWithPkg, pattern);
+             if (isMatching) {
+                 rule = mapper[pattern];
+                 break;
+@@ -300,7 +300,7 @@ function getAliasName(packagePath, typeNameKey, alias) {
+         if (!globPattern.test(pattern)) {
+             isMatching = typeNameKeyWithPkg === pattern;
+         }
+-        isMatching = (0, minimatch_1.default)(typeNameKeyWithPkg, pattern);
++        isMatching = (0, minimatch_1.minimatch)(typeNameKeyWithPkg, pattern);
+         if (isMatching) {
+             const aliasName = alias[pattern];
+             if (typeof aliasName === "function") {
+diff --git a/module/proto.js b/module/proto.js
+index b022e92f8a22ef0eb25bd028c2525774ee60abff..e24c2ad756b30b8dbb724266981e4b1ee346718a 100644
+--- a/module/proto.js
++++ b/module/proto.js
+@@ -1,6 +1,6 @@
+ import { camel, variableSlug } from ".";
+ import { pascal, snake } from "case";
+-import minimatch from "minimatch";
++import { minimatch } from "minimatch";
+ import dotty from "dotty";
+ export const getNestedProto = (root) => {
+     const nestedPath = "root.nested." + root.package.split(".").join(".nested.") + ".nested";
+diff --git a/src/proto.ts b/src/proto.ts
+index f93a58db29f7f37b0203e9d091db255281754ee6..d5e4d244b61f6eff8ea85de4b8da705c05453dda 100644
+--- a/src/proto.ts
++++ b/src/proto.ts
+@@ -1,6 +1,6 @@
+ import { camel, variableSlug } from ".";
+ import { pascal, snake } from "case";
+-import minimatch from "minimatch";
++import { minimatch } from "minimatch";
+ import {
+   ProtoField,
+   ProtoRef,

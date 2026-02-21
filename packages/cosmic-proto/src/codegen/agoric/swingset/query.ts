@@ -7,31 +7,59 @@ import {
 } from './swingset.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { type JsonSafe } from '../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../registry.js';
 import { isSet } from '../../helpers.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
-/** QueryParamsRequest is the request type for the Query/Params RPC method. */
+/**
+ * QueryParamsRequest is the request type for the Query/Params RPC method.
+ * @name QueryParamsRequest
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryParamsRequest
+ */
 export interface QueryParamsRequest {}
 export interface QueryParamsRequestProtoMsg {
   typeUrl: '/agoric.swingset.QueryParamsRequest';
   value: Uint8Array;
 }
-/** QueryParamsRequest is the request type for the Query/Params RPC method. */
+/**
+ * QueryParamsRequest is the request type for the Query/Params RPC method.
+ * @name QueryParamsRequestSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryParamsRequest
+ */
 export interface QueryParamsRequestSDKType {}
-/** QueryParamsResponse is the response type for the Query/Params RPC method. */
+/**
+ * QueryParamsResponse is the response type for the Query/Params RPC method.
+ * @name QueryParamsResponse
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryParamsResponse
+ */
 export interface QueryParamsResponse {
-  /** params defines the parameters of the module. */
+  /**
+   * params defines the parameters of the module.
+   */
   params: Params;
 }
 export interface QueryParamsResponseProtoMsg {
   typeUrl: '/agoric.swingset.QueryParamsResponse';
   value: Uint8Array;
 }
-/** QueryParamsResponse is the response type for the Query/Params RPC method. */
+/**
+ * QueryParamsResponse is the response type for the Query/Params RPC method.
+ * @name QueryParamsResponseSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryParamsResponse
+ */
 export interface QueryParamsResponseSDKType {
   params: ParamsSDKType;
 }
-/** QueryEgressRequest is the request type for the Query/Egress RPC method */
+/**
+ * QueryEgressRequest is the request type for the Query/Egress RPC method
+ * @name QueryEgressRequest
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryEgressRequest
+ */
 export interface QueryEgressRequest {
   peer: Uint8Array;
 }
@@ -39,11 +67,21 @@ export interface QueryEgressRequestProtoMsg {
   typeUrl: '/agoric.swingset.QueryEgressRequest';
   value: Uint8Array;
 }
-/** QueryEgressRequest is the request type for the Query/Egress RPC method */
+/**
+ * QueryEgressRequest is the request type for the Query/Egress RPC method
+ * @name QueryEgressRequestSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryEgressRequest
+ */
 export interface QueryEgressRequestSDKType {
   peer: Uint8Array;
 }
-/** QueryEgressResponse is the egress response. */
+/**
+ * QueryEgressResponse is the egress response.
+ * @name QueryEgressResponse
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryEgressResponse
+ */
 export interface QueryEgressResponse {
   egress?: Egress;
 }
@@ -51,11 +89,21 @@ export interface QueryEgressResponseProtoMsg {
   typeUrl: '/agoric.swingset.QueryEgressResponse';
   value: Uint8Array;
 }
-/** QueryEgressResponse is the egress response. */
+/**
+ * QueryEgressResponse is the egress response.
+ * @name QueryEgressResponseSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryEgressResponse
+ */
 export interface QueryEgressResponseSDKType {
   egress?: EgressSDKType;
 }
-/** QueryMailboxRequest is the mailbox query. */
+/**
+ * QueryMailboxRequest is the mailbox query.
+ * @name QueryMailboxRequest
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryMailboxRequest
+ */
 export interface QueryMailboxRequest {
   peer: Uint8Array;
 }
@@ -63,11 +111,21 @@ export interface QueryMailboxRequestProtoMsg {
   typeUrl: '/agoric.swingset.QueryMailboxRequest';
   value: Uint8Array;
 }
-/** QueryMailboxRequest is the mailbox query. */
+/**
+ * QueryMailboxRequest is the mailbox query.
+ * @name QueryMailboxRequestSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryMailboxRequest
+ */
 export interface QueryMailboxRequestSDKType {
   peer: Uint8Array;
 }
-/** QueryMailboxResponse is the mailbox response. */
+/**
+ * QueryMailboxResponse is the mailbox response.
+ * @name QueryMailboxResponse
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryMailboxResponse
+ */
 export interface QueryMailboxResponse {
   value: string;
 }
@@ -75,15 +133,32 @@ export interface QueryMailboxResponseProtoMsg {
   typeUrl: '/agoric.swingset.QueryMailboxResponse';
   value: Uint8Array;
 }
-/** QueryMailboxResponse is the mailbox response. */
+/**
+ * QueryMailboxResponse is the mailbox response.
+ * @name QueryMailboxResponseSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryMailboxResponse
+ */
 export interface QueryMailboxResponseSDKType {
   value: string;
 }
 function createBaseQueryParamsRequest(): QueryParamsRequest {
   return {};
 }
+/**
+ * QueryParamsRequest is the request type for the Query/Params RPC method.
+ * @name QueryParamsRequest
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryParamsRequest
+ */
 export const QueryParamsRequest = {
   typeUrl: '/agoric.swingset.QueryParamsRequest' as const,
+  is(o: any): o is QueryParamsRequest {
+    return o && o.$typeUrl === QueryParamsRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryParamsRequestSDKType {
+    return o && o.$typeUrl === QueryParamsRequest.typeUrl;
+  },
   encode(
     _: QueryParamsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -131,14 +206,32 @@ export const QueryParamsRequest = {
       value: QueryParamsRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryParamsResponse(): QueryParamsResponse {
   return {
     params: Params.fromPartial({}),
   };
 }
+/**
+ * QueryParamsResponse is the response type for the Query/Params RPC method.
+ * @name QueryParamsResponse
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryParamsResponse
+ */
 export const QueryParamsResponse = {
   typeUrl: '/agoric.swingset.QueryParamsResponse' as const,
+  is(o: any): o is QueryParamsResponse {
+    return (
+      o && (o.$typeUrl === QueryParamsResponse.typeUrl || Params.is(o.params))
+    );
+  },
+  isSDK(o: any): o is QueryParamsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryParamsResponse.typeUrl || Params.isSDK(o.params))
+    );
+  },
   encode(
     message: QueryParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -200,14 +293,46 @@ export const QueryParamsResponse = {
       value: QueryParamsResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryParamsResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Params.registerTypeUrl();
+  },
 };
 function createBaseQueryEgressRequest(): QueryEgressRequest {
   return {
     peer: new Uint8Array(),
   };
 }
+/**
+ * QueryEgressRequest is the request type for the Query/Egress RPC method
+ * @name QueryEgressRequest
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryEgressRequest
+ */
 export const QueryEgressRequest = {
   typeUrl: '/agoric.swingset.QueryEgressRequest' as const,
+  is(o: any): o is QueryEgressRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryEgressRequest.typeUrl ||
+        o.peer instanceof Uint8Array ||
+        typeof o.peer === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryEgressRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryEgressRequest.typeUrl ||
+        o.peer instanceof Uint8Array ||
+        typeof o.peer === 'string')
+    );
+  },
   encode(
     message: QueryEgressRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -270,14 +395,27 @@ export const QueryEgressRequest = {
       value: QueryEgressRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryEgressResponse(): QueryEgressResponse {
   return {
     egress: undefined,
   };
 }
+/**
+ * QueryEgressResponse is the egress response.
+ * @name QueryEgressResponse
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryEgressResponse
+ */
 export const QueryEgressResponse = {
   typeUrl: '/agoric.swingset.QueryEgressResponse' as const,
+  is(o: any): o is QueryEgressResponse {
+    return o && o.$typeUrl === QueryEgressResponse.typeUrl;
+  },
+  isSDK(o: any): o is QueryEgressResponseSDKType {
+    return o && o.$typeUrl === QueryEgressResponse.typeUrl;
+  },
   encode(
     message: QueryEgressResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -339,14 +477,46 @@ export const QueryEgressResponse = {
       value: QueryEgressResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryEgressResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Egress.registerTypeUrl();
+  },
 };
 function createBaseQueryMailboxRequest(): QueryMailboxRequest {
   return {
     peer: new Uint8Array(),
   };
 }
+/**
+ * QueryMailboxRequest is the mailbox query.
+ * @name QueryMailboxRequest
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryMailboxRequest
+ */
 export const QueryMailboxRequest = {
   typeUrl: '/agoric.swingset.QueryMailboxRequest' as const,
+  is(o: any): o is QueryMailboxRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryMailboxRequest.typeUrl ||
+        o.peer instanceof Uint8Array ||
+        typeof o.peer === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryMailboxRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryMailboxRequest.typeUrl ||
+        o.peer instanceof Uint8Array ||
+        typeof o.peer === 'string')
+    );
+  },
   encode(
     message: QueryMailboxRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -409,14 +579,35 @@ export const QueryMailboxRequest = {
       value: QueryMailboxRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryMailboxResponse(): QueryMailboxResponse {
   return {
     value: '',
   };
 }
+/**
+ * QueryMailboxResponse is the mailbox response.
+ * @name QueryMailboxResponse
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryMailboxResponse
+ */
 export const QueryMailboxResponse = {
   typeUrl: '/agoric.swingset.QueryMailboxResponse' as const,
+  is(o: any): o is QueryMailboxResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryMailboxResponse.typeUrl ||
+        typeof o.value === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryMailboxResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryMailboxResponse.typeUrl ||
+        typeof o.value === 'string')
+    );
+  },
   encode(
     message: QueryMailboxResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -474,4 +665,5 @@ export const QueryMailboxResponse = {
       value: QueryMailboxResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

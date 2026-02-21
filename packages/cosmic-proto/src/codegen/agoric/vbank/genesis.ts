@@ -6,20 +6,35 @@ import {
   type StateSDKType,
 } from './vbank.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
+import { GlobalDecoderRegistry } from '../../registry.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
-/** The initial and exported module state. */
+/**
+ * The initial and exported module state.
+ * @name GenesisState
+ * @package agoric.vbank
+ * @see proto type: agoric.vbank.GenesisState
+ */
 export interface GenesisState {
-  /** parms defines all the parameters of the module. */
+  /**
+   * parms defines all the parameters of the module.
+   */
   params: Params;
-  /** state is the current operation state. */
+  /**
+   * state is the current operation state.
+   */
   state: State;
 }
 export interface GenesisStateProtoMsg {
   typeUrl: '/agoric.vbank.GenesisState';
   value: Uint8Array;
 }
-/** The initial and exported module state. */
+/**
+ * The initial and exported module state.
+ * @name GenesisStateSDKType
+ * @package agoric.vbank
+ * @see proto type: agoric.vbank.GenesisState
+ */
 export interface GenesisStateSDKType {
   params: ParamsSDKType;
   state: StateSDKType;
@@ -30,8 +45,28 @@ function createBaseGenesisState(): GenesisState {
     state: State.fromPartial({}),
   };
 }
+/**
+ * The initial and exported module state.
+ * @name GenesisState
+ * @package agoric.vbank
+ * @see proto type: agoric.vbank.GenesisState
+ */
 export const GenesisState = {
   typeUrl: '/agoric.vbank.GenesisState' as const,
+  is(o: any): o is GenesisState {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Params.is(o.params) && State.is(o.state)))
+    );
+  },
+  isSDK(o: any): o is GenesisStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Params.isSDK(o.params) && State.isSDK(o.state)))
+    );
+  },
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -102,5 +137,12 @@ export const GenesisState = {
       typeUrl: '/agoric.vbank.GenesisState',
       value: GenesisState.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(GenesisState.typeUrl)) {
+      return;
+    }
+    Params.registerTypeUrl();
+    State.registerTypeUrl();
   },
 };

@@ -1,0 +1,1 @@
+{"version":3,"file":"signing-client.d.ts","sourceRoot":"","sources":["../src/signing-client.ts"],"names":[],"mappings":"AASA,OAAO,EAAE,qBAAqB,EAAE,MAAM,kBAAkB,CAAC;AAiBzD,eAAO,MAAM,qBAAqB,GAChC,UAAU,MAAM,EAChB,iDAKG;IACD,MAAM,CAAC,EAAE,MAAM,CAAC;IAChB,MAAM,CAAC,EAAE,MAAM,CAAC;IAChB,OAAO,EAAE,MAAM,CAAC;IAChB,iBAAiB,EAAE,OAAO,qBAAqB,CAAC,iBAAiB,CAAC;CACnE;;;GAcF,CAAC"}

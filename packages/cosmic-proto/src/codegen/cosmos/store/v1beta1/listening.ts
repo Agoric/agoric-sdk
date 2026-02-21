@@ -12,17 +12,25 @@ import { isSet } from '../../../helpers.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
 import { type JsonSafe } from '../../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../../registry.js';
 /**
  * StoreKVPair is a KVStore KVPair used for listening to state changes (Sets and Deletes)
  * It optionally includes the StoreKey for the originating KVStore and a Boolean flag to distinguish between Sets and
  * Deletes
  *
  * Since: cosmos-sdk 0.43
+ * @name StoreKVPair
+ * @package cosmos.store.v1beta1
+ * @see proto type: cosmos.store.v1beta1.StoreKVPair
  */
 export interface StoreKVPair {
-  /** the store key for the KVStore this pair originates from */
+  /**
+   * the store key for the KVStore this pair originates from
+   */
   storeKey: string;
-  /** true indicates a delete operation, false indicates a set operation */
+  /**
+   * true indicates a delete operation, false indicates a set operation
+   */
   delete: boolean;
   key: Uint8Array;
   value: Uint8Array;
@@ -37,6 +45,9 @@ export interface StoreKVPairProtoMsg {
  * Deletes
  *
  * Since: cosmos-sdk 0.43
+ * @name StoreKVPairSDKType
+ * @package cosmos.store.v1beta1
+ * @see proto type: cosmos.store.v1beta1.StoreKVPair
  */
 export interface StoreKVPairSDKType {
   store_key: string;
@@ -47,11 +58,16 @@ export interface StoreKVPairSDKType {
 /**
  * BlockMetadata contains all the abci event data of a block
  * the file streamer dump them into files together with the state changes.
+ * @name BlockMetadata
+ * @package cosmos.store.v1beta1
+ * @see proto type: cosmos.store.v1beta1.BlockMetadata
  */
 export interface BlockMetadata {
   responseCommit?: ResponseCommit;
   requestFinalizeBlock?: RequestFinalizeBlock;
-  /** TODO: should we renumber this? */
+  /**
+   * TODO: should we renumber this?
+   */
   responseFinalizeBlock?: ResponseFinalizeBlock;
 }
 export interface BlockMetadataProtoMsg {
@@ -61,6 +77,9 @@ export interface BlockMetadataProtoMsg {
 /**
  * BlockMetadata contains all the abci event data of a block
  * the file streamer dump them into files together with the state changes.
+ * @name BlockMetadataSDKType
+ * @package cosmos.store.v1beta1
+ * @see proto type: cosmos.store.v1beta1.BlockMetadata
  */
 export interface BlockMetadataSDKType {
   response_commit?: ResponseCommitSDKType;
@@ -75,8 +94,39 @@ function createBaseStoreKVPair(): StoreKVPair {
     value: new Uint8Array(),
   };
 }
+/**
+ * StoreKVPair is a KVStore KVPair used for listening to state changes (Sets and Deletes)
+ * It optionally includes the StoreKey for the originating KVStore and a Boolean flag to distinguish between Sets and
+ * Deletes
+ *
+ * Since: cosmos-sdk 0.43
+ * @name StoreKVPair
+ * @package cosmos.store.v1beta1
+ * @see proto type: cosmos.store.v1beta1.StoreKVPair
+ */
 export const StoreKVPair = {
   typeUrl: '/cosmos.store.v1beta1.StoreKVPair' as const,
+  aminoType: 'cosmos-sdk/StoreKVPair' as const,
+  is(o: any): o is StoreKVPair {
+    return (
+      o &&
+      (o.$typeUrl === StoreKVPair.typeUrl ||
+        (typeof o.storeKey === 'string' &&
+          typeof o.delete === 'boolean' &&
+          (o.key instanceof Uint8Array || typeof o.key === 'string') &&
+          (o.value instanceof Uint8Array || typeof o.value === 'string')))
+    );
+  },
+  isSDK(o: any): o is StoreKVPairSDKType {
+    return (
+      o &&
+      (o.$typeUrl === StoreKVPair.typeUrl ||
+        (typeof o.store_key === 'string' &&
+          typeof o.delete === 'boolean' &&
+          (o.key instanceof Uint8Array || typeof o.key === 'string') &&
+          (o.value instanceof Uint8Array || typeof o.value === 'string')))
+    );
+  },
   encode(
     message: StoreKVPair,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -166,6 +216,7 @@ export const StoreKVPair = {
       value: StoreKVPair.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseBlockMetadata(): BlockMetadata {
   return {
@@ -174,8 +225,22 @@ function createBaseBlockMetadata(): BlockMetadata {
     responseFinalizeBlock: undefined,
   };
 }
+/**
+ * BlockMetadata contains all the abci event data of a block
+ * the file streamer dump them into files together with the state changes.
+ * @name BlockMetadata
+ * @package cosmos.store.v1beta1
+ * @see proto type: cosmos.store.v1beta1.BlockMetadata
+ */
 export const BlockMetadata = {
   typeUrl: '/cosmos.store.v1beta1.BlockMetadata' as const,
+  aminoType: 'cosmos-sdk/BlockMetadata' as const,
+  is(o: any): o is BlockMetadata {
+    return o && o.$typeUrl === BlockMetadata.typeUrl;
+  },
+  isSDK(o: any): o is BlockMetadataSDKType {
+    return o && o.$typeUrl === BlockMetadata.typeUrl;
+  },
   encode(
     message: BlockMetadata,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -291,5 +356,13 @@ export const BlockMetadata = {
       typeUrl: '/cosmos.store.v1beta1.BlockMetadata',
       value: BlockMetadata.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(BlockMetadata.typeUrl)) {
+      return;
+    }
+    ResponseCommit.registerTypeUrl();
+    RequestFinalizeBlock.registerTypeUrl();
+    ResponseFinalizeBlock.registerTypeUrl();
   },
 };

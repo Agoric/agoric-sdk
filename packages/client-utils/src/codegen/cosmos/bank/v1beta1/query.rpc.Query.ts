@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { type Rpc } from '../../../helpers.js';
-import { BinaryReader } from '../../../binary.js';
+import type { Rpc } from '@agoric/cosmic-proto/codegen/helpers.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import { QueryClient, createProtobufRpcClient } from '@cosmjs/stargate';
 import {
   QueryBalanceRequest,
@@ -29,7 +29,7 @@ import {
   QueryDenomOwnersByQueryResponse,
   QuerySendEnabledRequest,
   QuerySendEnabledResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/bank/v1beta1/query.js';
 /** Query defines the gRPC querier service. */
 export interface Query {
   /** Balance queries the balance of a single coin for a single account. */

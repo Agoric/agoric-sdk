@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { type Rpc } from '../../helpers.js';
-import { BinaryReader } from '../../binary.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import {
   MsgLiquidStake,
   MsgLiquidStakeResponse,
@@ -28,7 +28,7 @@ import {
   MsgOverwriteRedemptionRecordResponse,
   MsgSetOperatorAddress,
   MsgSetOperatorAddressResponse,
-} from './tx.js';
+} from '@agoric/cosmic-proto/codegen/stride/stakedym/tx.js';
 /** Msg defines the Msg service. */
 export interface Msg {
   /** User transaction to liquid stake native tokens into stTokens */
@@ -93,8 +93,8 @@ export interface Msg {
   ): Promise<MsgSetOperatorAddressResponse>;
 }
 export class MsgClientImpl implements Msg {
-  private readonly rpc: Rpc;
-  constructor(rpc: Rpc) {
+  private readonly rpc: TxRpc;
+  constructor(rpc: TxRpc) {
     this.rpc = rpc;
     this.liquidStake = this.liquidStake.bind(this);
     this.redeemStake = this.redeemStake.bind(this);
@@ -277,3 +277,6 @@ export class MsgClientImpl implements Msg {
     );
   }
 }
+export const createClientImpl = (rpc: TxRpc) => {
+  return new MsgClientImpl(rpc);
+};

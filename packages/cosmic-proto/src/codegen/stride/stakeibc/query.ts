@@ -17,9 +17,13 @@ import { TradeRoute, type TradeRouteSDKType } from './trade_route.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../registry.js';
 /**
  * QueryInterchainAccountFromAddressRequest is the request type for the
  * Query/InterchainAccountAddress RPC
+ * @name QueryInterchainAccountFromAddressRequest
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryInterchainAccountFromAddressRequest
  */
 export interface QueryInterchainAccountFromAddressRequest {
   owner: string;
@@ -32,6 +36,9 @@ export interface QueryInterchainAccountFromAddressRequestProtoMsg {
 /**
  * QueryInterchainAccountFromAddressRequest is the request type for the
  * Query/InterchainAccountAddress RPC
+ * @name QueryInterchainAccountFromAddressRequestSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryInterchainAccountFromAddressRequest
  */
 export interface QueryInterchainAccountFromAddressRequestSDKType {
   owner: string;
@@ -40,6 +47,9 @@ export interface QueryInterchainAccountFromAddressRequestSDKType {
 /**
  * QueryInterchainAccountFromAddressResponse the response type for the
  * Query/InterchainAccountAddress RPC
+ * @name QueryInterchainAccountFromAddressResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryInterchainAccountFromAddressResponse
  */
 export interface QueryInterchainAccountFromAddressResponse {
   interchainAccountAddress: string;
@@ -51,31 +61,61 @@ export interface QueryInterchainAccountFromAddressResponseProtoMsg {
 /**
  * QueryInterchainAccountFromAddressResponse the response type for the
  * Query/InterchainAccountAddress RPC
+ * @name QueryInterchainAccountFromAddressResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryInterchainAccountFromAddressResponse
  */
 export interface QueryInterchainAccountFromAddressResponseSDKType {
   interchain_account_address: string;
 }
-/** QueryParamsRequest is request type for the Query/Params RPC method. */
+/**
+ * QueryParamsRequest is request type for the Query/Params RPC method.
+ * @name QueryParamsRequest
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryParamsRequest
+ */
 export interface QueryParamsRequest {}
 export interface QueryParamsRequestProtoMsg {
   typeUrl: '/stride.stakeibc.QueryParamsRequest';
   value: Uint8Array;
 }
-/** QueryParamsRequest is request type for the Query/Params RPC method. */
+/**
+ * QueryParamsRequest is request type for the Query/Params RPC method.
+ * @name QueryParamsRequestSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryParamsRequest
+ */
 export interface QueryParamsRequestSDKType {}
-/** QueryParamsResponse is response type for the Query/Params RPC method. */
+/**
+ * QueryParamsResponse is response type for the Query/Params RPC method.
+ * @name QueryParamsResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryParamsResponse
+ */
 export interface QueryParamsResponse {
-  /** params holds all the parameters of this module. */
+  /**
+   * params holds all the parameters of this module.
+   */
   params: Params;
 }
 export interface QueryParamsResponseProtoMsg {
   typeUrl: '/stride.stakeibc.QueryParamsResponse';
   value: Uint8Array;
 }
-/** QueryParamsResponse is response type for the Query/Params RPC method. */
+/**
+ * QueryParamsResponse is response type for the Query/Params RPC method.
+ * @name QueryParamsResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryParamsResponse
+ */
 export interface QueryParamsResponseSDKType {
   params: ParamsSDKType;
 }
+/**
+ * @name QueryGetValidatorsRequest
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetValidatorsRequest
+ */
 export interface QueryGetValidatorsRequest {
   chainId: string;
 }
@@ -83,9 +123,19 @@ export interface QueryGetValidatorsRequestProtoMsg {
   typeUrl: '/stride.stakeibc.QueryGetValidatorsRequest';
   value: Uint8Array;
 }
+/**
+ * @name QueryGetValidatorsRequestSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetValidatorsRequest
+ */
 export interface QueryGetValidatorsRequestSDKType {
   chain_id: string;
 }
+/**
+ * @name QueryGetValidatorsResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetValidatorsResponse
+ */
 export interface QueryGetValidatorsResponse {
   validators: Validator[];
 }
@@ -93,9 +143,19 @@ export interface QueryGetValidatorsResponseProtoMsg {
   typeUrl: '/stride.stakeibc.QueryGetValidatorsResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryGetValidatorsResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetValidatorsResponse
+ */
 export interface QueryGetValidatorsResponseSDKType {
   validators: ValidatorSDKType[];
 }
+/**
+ * @name QueryGetHostZoneRequest
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetHostZoneRequest
+ */
 export interface QueryGetHostZoneRequest {
   chainId: string;
 }
@@ -103,9 +163,19 @@ export interface QueryGetHostZoneRequestProtoMsg {
   typeUrl: '/stride.stakeibc.QueryGetHostZoneRequest';
   value: Uint8Array;
 }
+/**
+ * @name QueryGetHostZoneRequestSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetHostZoneRequest
+ */
 export interface QueryGetHostZoneRequestSDKType {
   chain_id: string;
 }
+/**
+ * @name QueryGetHostZoneResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetHostZoneResponse
+ */
 export interface QueryGetHostZoneResponse {
   hostZone: HostZone;
 }
@@ -113,9 +183,19 @@ export interface QueryGetHostZoneResponseProtoMsg {
   typeUrl: '/stride.stakeibc.QueryGetHostZoneResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryGetHostZoneResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetHostZoneResponse
+ */
 export interface QueryGetHostZoneResponseSDKType {
   host_zone: HostZoneSDKType;
 }
+/**
+ * @name QueryAllHostZoneRequest
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAllHostZoneRequest
+ */
 export interface QueryAllHostZoneRequest {
   pagination?: PageRequest;
 }
@@ -123,9 +203,19 @@ export interface QueryAllHostZoneRequestProtoMsg {
   typeUrl: '/stride.stakeibc.QueryAllHostZoneRequest';
   value: Uint8Array;
 }
+/**
+ * @name QueryAllHostZoneRequestSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAllHostZoneRequest
+ */
 export interface QueryAllHostZoneRequestSDKType {
   pagination?: PageRequestSDKType;
 }
+/**
+ * @name QueryAllHostZoneResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAllHostZoneResponse
+ */
 export interface QueryAllHostZoneResponse {
   hostZone: HostZone[];
   pagination?: PageResponse;
@@ -134,10 +224,20 @@ export interface QueryAllHostZoneResponseProtoMsg {
   typeUrl: '/stride.stakeibc.QueryAllHostZoneResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryAllHostZoneResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAllHostZoneResponse
+ */
 export interface QueryAllHostZoneResponseSDKType {
   host_zone: HostZoneSDKType[];
   pagination?: PageResponseSDKType;
 }
+/**
+ * @name QueryModuleAddressRequest
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryModuleAddressRequest
+ */
 export interface QueryModuleAddressRequest {
   name: string;
 }
@@ -145,9 +245,19 @@ export interface QueryModuleAddressRequestProtoMsg {
   typeUrl: '/stride.stakeibc.QueryModuleAddressRequest';
   value: Uint8Array;
 }
+/**
+ * @name QueryModuleAddressRequestSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryModuleAddressRequest
+ */
 export interface QueryModuleAddressRequestSDKType {
   name: string;
 }
+/**
+ * @name QueryModuleAddressResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryModuleAddressResponse
+ */
 export interface QueryModuleAddressResponse {
   addr: string;
 }
@@ -155,9 +265,19 @@ export interface QueryModuleAddressResponseProtoMsg {
   typeUrl: '/stride.stakeibc.QueryModuleAddressResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryModuleAddressResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryModuleAddressResponse
+ */
 export interface QueryModuleAddressResponseSDKType {
   addr: string;
 }
+/**
+ * @name QueryGetEpochTrackerRequest
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetEpochTrackerRequest
+ */
 export interface QueryGetEpochTrackerRequest {
   epochIdentifier: string;
 }
@@ -165,9 +285,19 @@ export interface QueryGetEpochTrackerRequestProtoMsg {
   typeUrl: '/stride.stakeibc.QueryGetEpochTrackerRequest';
   value: Uint8Array;
 }
+/**
+ * @name QueryGetEpochTrackerRequestSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetEpochTrackerRequest
+ */
 export interface QueryGetEpochTrackerRequestSDKType {
   epoch_identifier: string;
 }
+/**
+ * @name QueryGetEpochTrackerResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetEpochTrackerResponse
+ */
 export interface QueryGetEpochTrackerResponse {
   epochTracker: EpochTracker;
 }
@@ -175,15 +305,35 @@ export interface QueryGetEpochTrackerResponseProtoMsg {
   typeUrl: '/stride.stakeibc.QueryGetEpochTrackerResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryGetEpochTrackerResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetEpochTrackerResponse
+ */
 export interface QueryGetEpochTrackerResponseSDKType {
   epoch_tracker: EpochTrackerSDKType;
 }
+/**
+ * @name QueryAllEpochTrackerRequest
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAllEpochTrackerRequest
+ */
 export interface QueryAllEpochTrackerRequest {}
 export interface QueryAllEpochTrackerRequestProtoMsg {
   typeUrl: '/stride.stakeibc.QueryAllEpochTrackerRequest';
   value: Uint8Array;
 }
+/**
+ * @name QueryAllEpochTrackerRequestSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAllEpochTrackerRequest
+ */
 export interface QueryAllEpochTrackerRequestSDKType {}
+/**
+ * @name QueryAllEpochTrackerResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAllEpochTrackerResponse
+ */
 export interface QueryAllEpochTrackerResponse {
   epochTracker: EpochTracker[];
 }
@@ -191,9 +341,19 @@ export interface QueryAllEpochTrackerResponseProtoMsg {
   typeUrl: '/stride.stakeibc.QueryAllEpochTrackerResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryAllEpochTrackerResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAllEpochTrackerResponse
+ */
 export interface QueryAllEpochTrackerResponseSDKType {
   epoch_tracker: EpochTrackerSDKType[];
 }
+/**
+ * @name QueryGetNextPacketSequenceRequest
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetNextPacketSequenceRequest
+ */
 export interface QueryGetNextPacketSequenceRequest {
   channelId: string;
   portId: string;
@@ -202,10 +362,20 @@ export interface QueryGetNextPacketSequenceRequestProtoMsg {
   typeUrl: '/stride.stakeibc.QueryGetNextPacketSequenceRequest';
   value: Uint8Array;
 }
+/**
+ * @name QueryGetNextPacketSequenceRequestSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetNextPacketSequenceRequest
+ */
 export interface QueryGetNextPacketSequenceRequestSDKType {
   channel_id: string;
   port_id: string;
 }
+/**
+ * @name QueryGetNextPacketSequenceResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetNextPacketSequenceResponse
+ */
 export interface QueryGetNextPacketSequenceResponse {
   sequence: bigint;
 }
@@ -213,9 +383,19 @@ export interface QueryGetNextPacketSequenceResponseProtoMsg {
   typeUrl: '/stride.stakeibc.QueryGetNextPacketSequenceResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryGetNextPacketSequenceResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetNextPacketSequenceResponse
+ */
 export interface QueryGetNextPacketSequenceResponseSDKType {
   sequence: bigint;
 }
+/**
+ * @name QueryAddressUnbondings
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAddressUnbondings
+ */
 export interface QueryAddressUnbondings {
   address: string;
 }
@@ -223,9 +403,19 @@ export interface QueryAddressUnbondingsProtoMsg {
   typeUrl: '/stride.stakeibc.QueryAddressUnbondings';
   value: Uint8Array;
 }
+/**
+ * @name QueryAddressUnbondingsSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAddressUnbondings
+ */
 export interface QueryAddressUnbondingsSDKType {
   address: string;
 }
+/**
+ * @name QueryAddressUnbondingsResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAddressUnbondingsResponse
+ */
 export interface QueryAddressUnbondingsResponse {
   addressUnbondings: AddressUnbonding[];
 }
@@ -233,15 +423,35 @@ export interface QueryAddressUnbondingsResponseProtoMsg {
   typeUrl: '/stride.stakeibc.QueryAddressUnbondingsResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryAddressUnbondingsResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAddressUnbondingsResponse
+ */
 export interface QueryAddressUnbondingsResponseSDKType {
   address_unbondings: AddressUnbondingSDKType[];
 }
+/**
+ * @name QueryAllTradeRoutes
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAllTradeRoutes
+ */
 export interface QueryAllTradeRoutes {}
 export interface QueryAllTradeRoutesProtoMsg {
   typeUrl: '/stride.stakeibc.QueryAllTradeRoutes';
   value: Uint8Array;
 }
+/**
+ * @name QueryAllTradeRoutesSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAllTradeRoutes
+ */
 export interface QueryAllTradeRoutesSDKType {}
+/**
+ * @name QueryAllTradeRoutesResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAllTradeRoutesResponse
+ */
 export interface QueryAllTradeRoutesResponse {
   tradeRoutes: TradeRoute[];
 }
@@ -249,6 +459,11 @@ export interface QueryAllTradeRoutesResponseProtoMsg {
   typeUrl: '/stride.stakeibc.QueryAllTradeRoutesResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryAllTradeRoutesResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAllTradeRoutesResponse
+ */
 export interface QueryAllTradeRoutesResponseSDKType {
   trade_routes: TradeRouteSDKType[];
 }
@@ -258,8 +473,29 @@ function createBaseQueryInterchainAccountFromAddressRequest(): QueryInterchainAc
     connectionId: '',
   };
 }
+/**
+ * QueryInterchainAccountFromAddressRequest is the request type for the
+ * Query/InterchainAccountAddress RPC
+ * @name QueryInterchainAccountFromAddressRequest
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryInterchainAccountFromAddressRequest
+ */
 export const QueryInterchainAccountFromAddressRequest = {
   typeUrl: '/stride.stakeibc.QueryInterchainAccountFromAddressRequest' as const,
+  is(o: any): o is QueryInterchainAccountFromAddressRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryInterchainAccountFromAddressRequest.typeUrl ||
+        (typeof o.owner === 'string' && typeof o.connectionId === 'string'))
+    );
+  },
+  isSDK(o: any): o is QueryInterchainAccountFromAddressRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryInterchainAccountFromAddressRequest.typeUrl ||
+        (typeof o.owner === 'string' && typeof o.connection_id === 'string'))
+    );
+  },
   encode(
     message: QueryInterchainAccountFromAddressRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -337,15 +573,37 @@ export const QueryInterchainAccountFromAddressRequest = {
       value: QueryInterchainAccountFromAddressRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryInterchainAccountFromAddressResponse(): QueryInterchainAccountFromAddressResponse {
   return {
     interchainAccountAddress: '',
   };
 }
+/**
+ * QueryInterchainAccountFromAddressResponse the response type for the
+ * Query/InterchainAccountAddress RPC
+ * @name QueryInterchainAccountFromAddressResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryInterchainAccountFromAddressResponse
+ */
 export const QueryInterchainAccountFromAddressResponse = {
   typeUrl:
     '/stride.stakeibc.QueryInterchainAccountFromAddressResponse' as const,
+  is(o: any): o is QueryInterchainAccountFromAddressResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryInterchainAccountFromAddressResponse.typeUrl ||
+        typeof o.interchainAccountAddress === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryInterchainAccountFromAddressResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryInterchainAccountFromAddressResponse.typeUrl ||
+        typeof o.interchain_account_address === 'string')
+    );
+  },
   encode(
     message: QueryInterchainAccountFromAddressResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -414,12 +672,25 @@ export const QueryInterchainAccountFromAddressResponse = {
       value: QueryInterchainAccountFromAddressResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryParamsRequest(): QueryParamsRequest {
   return {};
 }
+/**
+ * QueryParamsRequest is request type for the Query/Params RPC method.
+ * @name QueryParamsRequest
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryParamsRequest
+ */
 export const QueryParamsRequest = {
   typeUrl: '/stride.stakeibc.QueryParamsRequest' as const,
+  is(o: any): o is QueryParamsRequest {
+    return o && o.$typeUrl === QueryParamsRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryParamsRequestSDKType {
+    return o && o.$typeUrl === QueryParamsRequest.typeUrl;
+  },
   encode(
     _: QueryParamsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -467,14 +738,32 @@ export const QueryParamsRequest = {
       value: QueryParamsRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryParamsResponse(): QueryParamsResponse {
   return {
     params: Params.fromPartial({}),
   };
 }
+/**
+ * QueryParamsResponse is response type for the Query/Params RPC method.
+ * @name QueryParamsResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryParamsResponse
+ */
 export const QueryParamsResponse = {
   typeUrl: '/stride.stakeibc.QueryParamsResponse' as const,
+  is(o: any): o is QueryParamsResponse {
+    return (
+      o && (o.$typeUrl === QueryParamsResponse.typeUrl || Params.is(o.params))
+    );
+  },
+  isSDK(o: any): o is QueryParamsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryParamsResponse.typeUrl || Params.isSDK(o.params))
+    );
+  },
   encode(
     message: QueryParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -536,14 +825,43 @@ export const QueryParamsResponse = {
       value: QueryParamsResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryParamsResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Params.registerTypeUrl();
+  },
 };
 function createBaseQueryGetValidatorsRequest(): QueryGetValidatorsRequest {
   return {
     chainId: '',
   };
 }
+/**
+ * @name QueryGetValidatorsRequest
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetValidatorsRequest
+ */
 export const QueryGetValidatorsRequest = {
   typeUrl: '/stride.stakeibc.QueryGetValidatorsRequest' as const,
+  is(o: any): o is QueryGetValidatorsRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetValidatorsRequest.typeUrl ||
+        typeof o.chainId === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryGetValidatorsRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetValidatorsRequest.typeUrl ||
+        typeof o.chain_id === 'string')
+    );
+  },
   encode(
     message: QueryGetValidatorsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -609,14 +927,36 @@ export const QueryGetValidatorsRequest = {
       value: QueryGetValidatorsRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryGetValidatorsResponse(): QueryGetValidatorsResponse {
   return {
     validators: [],
   };
 }
+/**
+ * @name QueryGetValidatorsResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetValidatorsResponse
+ */
 export const QueryGetValidatorsResponse = {
   typeUrl: '/stride.stakeibc.QueryGetValidatorsResponse' as const,
+  is(o: any): o is QueryGetValidatorsResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetValidatorsResponse.typeUrl ||
+        (Array.isArray(o.validators) &&
+          (!o.validators.length || Validator.is(o.validators[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryGetValidatorsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetValidatorsResponse.typeUrl ||
+        (Array.isArray(o.validators) &&
+          (!o.validators.length || Validator.isSDK(o.validators[0]))))
+    );
+  },
   encode(
     message: QueryGetValidatorsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -691,14 +1031,43 @@ export const QueryGetValidatorsResponse = {
       value: QueryGetValidatorsResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryGetValidatorsResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Validator.registerTypeUrl();
+  },
 };
 function createBaseQueryGetHostZoneRequest(): QueryGetHostZoneRequest {
   return {
     chainId: '',
   };
 }
+/**
+ * @name QueryGetHostZoneRequest
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetHostZoneRequest
+ */
 export const QueryGetHostZoneRequest = {
   typeUrl: '/stride.stakeibc.QueryGetHostZoneRequest' as const,
+  is(o: any): o is QueryGetHostZoneRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetHostZoneRequest.typeUrl ||
+        typeof o.chainId === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryGetHostZoneRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetHostZoneRequest.typeUrl ||
+        typeof o.chain_id === 'string')
+    );
+  },
   encode(
     message: QueryGetHostZoneRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -762,14 +1131,34 @@ export const QueryGetHostZoneRequest = {
       value: QueryGetHostZoneRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryGetHostZoneResponse(): QueryGetHostZoneResponse {
   return {
     hostZone: HostZone.fromPartial({}),
   };
 }
+/**
+ * @name QueryGetHostZoneResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetHostZoneResponse
+ */
 export const QueryGetHostZoneResponse = {
   typeUrl: '/stride.stakeibc.QueryGetHostZoneResponse' as const,
+  is(o: any): o is QueryGetHostZoneResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetHostZoneResponse.typeUrl ||
+        HostZone.is(o.hostZone))
+    );
+  },
+  isSDK(o: any): o is QueryGetHostZoneResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetHostZoneResponse.typeUrl ||
+        HostZone.isSDK(o.host_zone))
+    );
+  },
   encode(
     message: QueryGetHostZoneResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -843,14 +1232,35 @@ export const QueryGetHostZoneResponse = {
       value: QueryGetHostZoneResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryGetHostZoneResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    HostZone.registerTypeUrl();
+  },
 };
 function createBaseQueryAllHostZoneRequest(): QueryAllHostZoneRequest {
   return {
     pagination: undefined,
   };
 }
+/**
+ * @name QueryAllHostZoneRequest
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAllHostZoneRequest
+ */
 export const QueryAllHostZoneRequest = {
   typeUrl: '/stride.stakeibc.QueryAllHostZoneRequest' as const,
+  is(o: any): o is QueryAllHostZoneRequest {
+    return o && o.$typeUrl === QueryAllHostZoneRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryAllHostZoneRequestSDKType {
+    return o && o.$typeUrl === QueryAllHostZoneRequest.typeUrl;
+  },
   encode(
     message: QueryAllHostZoneRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -922,6 +1332,16 @@ export const QueryAllHostZoneRequest = {
       value: QueryAllHostZoneRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryAllHostZoneRequest.typeUrl,
+      )
+    ) {
+      return;
+    }
+    PageRequest.registerTypeUrl();
+  },
 };
 function createBaseQueryAllHostZoneResponse(): QueryAllHostZoneResponse {
   return {
@@ -929,8 +1349,29 @@ function createBaseQueryAllHostZoneResponse(): QueryAllHostZoneResponse {
     pagination: undefined,
   };
 }
+/**
+ * @name QueryAllHostZoneResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAllHostZoneResponse
+ */
 export const QueryAllHostZoneResponse = {
   typeUrl: '/stride.stakeibc.QueryAllHostZoneResponse' as const,
+  is(o: any): o is QueryAllHostZoneResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllHostZoneResponse.typeUrl ||
+        (Array.isArray(o.hostZone) &&
+          (!o.hostZone.length || HostZone.is(o.hostZone[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryAllHostZoneResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllHostZoneResponse.typeUrl ||
+        (Array.isArray(o.host_zone) &&
+          (!o.host_zone.length || HostZone.isSDK(o.host_zone[0]))))
+    );
+  },
   encode(
     message: QueryAllHostZoneResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1024,14 +1465,44 @@ export const QueryAllHostZoneResponse = {
       value: QueryAllHostZoneResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryAllHostZoneResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    HostZone.registerTypeUrl();
+    PageResponse.registerTypeUrl();
+  },
 };
 function createBaseQueryModuleAddressRequest(): QueryModuleAddressRequest {
   return {
     name: '',
   };
 }
+/**
+ * @name QueryModuleAddressRequest
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryModuleAddressRequest
+ */
 export const QueryModuleAddressRequest = {
   typeUrl: '/stride.stakeibc.QueryModuleAddressRequest' as const,
+  is(o: any): o is QueryModuleAddressRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryModuleAddressRequest.typeUrl ||
+        typeof o.name === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryModuleAddressRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryModuleAddressRequest.typeUrl ||
+        typeof o.name === 'string')
+    );
+  },
   encode(
     message: QueryModuleAddressRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1097,14 +1568,34 @@ export const QueryModuleAddressRequest = {
       value: QueryModuleAddressRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryModuleAddressResponse(): QueryModuleAddressResponse {
   return {
     addr: '',
   };
 }
+/**
+ * @name QueryModuleAddressResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryModuleAddressResponse
+ */
 export const QueryModuleAddressResponse = {
   typeUrl: '/stride.stakeibc.QueryModuleAddressResponse' as const,
+  is(o: any): o is QueryModuleAddressResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryModuleAddressResponse.typeUrl ||
+        typeof o.addr === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryModuleAddressResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryModuleAddressResponse.typeUrl ||
+        typeof o.addr === 'string')
+    );
+  },
   encode(
     message: QueryModuleAddressResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1170,14 +1661,34 @@ export const QueryModuleAddressResponse = {
       value: QueryModuleAddressResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryGetEpochTrackerRequest(): QueryGetEpochTrackerRequest {
   return {
     epochIdentifier: '',
   };
 }
+/**
+ * @name QueryGetEpochTrackerRequest
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetEpochTrackerRequest
+ */
 export const QueryGetEpochTrackerRequest = {
   typeUrl: '/stride.stakeibc.QueryGetEpochTrackerRequest' as const,
+  is(o: any): o is QueryGetEpochTrackerRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetEpochTrackerRequest.typeUrl ||
+        typeof o.epochIdentifier === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryGetEpochTrackerRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetEpochTrackerRequest.typeUrl ||
+        typeof o.epoch_identifier === 'string')
+    );
+  },
   encode(
     message: QueryGetEpochTrackerRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1246,14 +1757,34 @@ export const QueryGetEpochTrackerRequest = {
       value: QueryGetEpochTrackerRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryGetEpochTrackerResponse(): QueryGetEpochTrackerResponse {
   return {
     epochTracker: EpochTracker.fromPartial({}),
   };
 }
+/**
+ * @name QueryGetEpochTrackerResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetEpochTrackerResponse
+ */
 export const QueryGetEpochTrackerResponse = {
   typeUrl: '/stride.stakeibc.QueryGetEpochTrackerResponse' as const,
+  is(o: any): o is QueryGetEpochTrackerResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetEpochTrackerResponse.typeUrl ||
+        EpochTracker.is(o.epochTracker))
+    );
+  },
+  isSDK(o: any): o is QueryGetEpochTrackerResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetEpochTrackerResponse.typeUrl ||
+        EpochTracker.isSDK(o.epoch_tracker))
+    );
+  },
   encode(
     message: QueryGetEpochTrackerResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1330,12 +1861,33 @@ export const QueryGetEpochTrackerResponse = {
       value: QueryGetEpochTrackerResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryGetEpochTrackerResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    EpochTracker.registerTypeUrl();
+  },
 };
 function createBaseQueryAllEpochTrackerRequest(): QueryAllEpochTrackerRequest {
   return {};
 }
+/**
+ * @name QueryAllEpochTrackerRequest
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAllEpochTrackerRequest
+ */
 export const QueryAllEpochTrackerRequest = {
   typeUrl: '/stride.stakeibc.QueryAllEpochTrackerRequest' as const,
+  is(o: any): o is QueryAllEpochTrackerRequest {
+    return o && o.$typeUrl === QueryAllEpochTrackerRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryAllEpochTrackerRequestSDKType {
+    return o && o.$typeUrl === QueryAllEpochTrackerRequest.typeUrl;
+  },
   encode(
     _: QueryAllEpochTrackerRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1391,14 +1943,36 @@ export const QueryAllEpochTrackerRequest = {
       value: QueryAllEpochTrackerRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryAllEpochTrackerResponse(): QueryAllEpochTrackerResponse {
   return {
     epochTracker: [],
   };
 }
+/**
+ * @name QueryAllEpochTrackerResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAllEpochTrackerResponse
+ */
 export const QueryAllEpochTrackerResponse = {
   typeUrl: '/stride.stakeibc.QueryAllEpochTrackerResponse' as const,
+  is(o: any): o is QueryAllEpochTrackerResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllEpochTrackerResponse.typeUrl ||
+        (Array.isArray(o.epochTracker) &&
+          (!o.epochTracker.length || EpochTracker.is(o.epochTracker[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryAllEpochTrackerResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllEpochTrackerResponse.typeUrl ||
+        (Array.isArray(o.epoch_tracker) &&
+          (!o.epoch_tracker.length || EpochTracker.isSDK(o.epoch_tracker[0]))))
+    );
+  },
   encode(
     message: QueryAllEpochTrackerResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1475,6 +2049,16 @@ export const QueryAllEpochTrackerResponse = {
       value: QueryAllEpochTrackerResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryAllEpochTrackerResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    EpochTracker.registerTypeUrl();
+  },
 };
 function createBaseQueryGetNextPacketSequenceRequest(): QueryGetNextPacketSequenceRequest {
   return {
@@ -1482,8 +2066,27 @@ function createBaseQueryGetNextPacketSequenceRequest(): QueryGetNextPacketSequen
     portId: '',
   };
 }
+/**
+ * @name QueryGetNextPacketSequenceRequest
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetNextPacketSequenceRequest
+ */
 export const QueryGetNextPacketSequenceRequest = {
   typeUrl: '/stride.stakeibc.QueryGetNextPacketSequenceRequest' as const,
+  is(o: any): o is QueryGetNextPacketSequenceRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetNextPacketSequenceRequest.typeUrl ||
+        (typeof o.channelId === 'string' && typeof o.portId === 'string'))
+    );
+  },
+  isSDK(o: any): o is QueryGetNextPacketSequenceRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetNextPacketSequenceRequest.typeUrl ||
+        (typeof o.channel_id === 'string' && typeof o.port_id === 'string'))
+    );
+  },
   encode(
     message: QueryGetNextPacketSequenceRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1558,14 +2161,34 @@ export const QueryGetNextPacketSequenceRequest = {
       value: QueryGetNextPacketSequenceRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryGetNextPacketSequenceResponse(): QueryGetNextPacketSequenceResponse {
   return {
     sequence: BigInt(0),
   };
 }
+/**
+ * @name QueryGetNextPacketSequenceResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryGetNextPacketSequenceResponse
+ */
 export const QueryGetNextPacketSequenceResponse = {
   typeUrl: '/stride.stakeibc.QueryGetNextPacketSequenceResponse' as const,
+  is(o: any): o is QueryGetNextPacketSequenceResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetNextPacketSequenceResponse.typeUrl ||
+        typeof o.sequence === 'bigint')
+    );
+  },
+  isSDK(o: any): o is QueryGetNextPacketSequenceResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetNextPacketSequenceResponse.typeUrl ||
+        typeof o.sequence === 'bigint')
+    );
+  },
   encode(
     message: QueryGetNextPacketSequenceResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1637,14 +2260,34 @@ export const QueryGetNextPacketSequenceResponse = {
       value: QueryGetNextPacketSequenceResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryAddressUnbondings(): QueryAddressUnbondings {
   return {
     address: '',
   };
 }
+/**
+ * @name QueryAddressUnbondings
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAddressUnbondings
+ */
 export const QueryAddressUnbondings = {
   typeUrl: '/stride.stakeibc.QueryAddressUnbondings' as const,
+  is(o: any): o is QueryAddressUnbondings {
+    return (
+      o &&
+      (o.$typeUrl === QueryAddressUnbondings.typeUrl ||
+        typeof o.address === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryAddressUnbondingsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryAddressUnbondings.typeUrl ||
+        typeof o.address === 'string')
+    );
+  },
   encode(
     message: QueryAddressUnbondings,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1704,14 +2347,38 @@ export const QueryAddressUnbondings = {
       value: QueryAddressUnbondings.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryAddressUnbondingsResponse(): QueryAddressUnbondingsResponse {
   return {
     addressUnbondings: [],
   };
 }
+/**
+ * @name QueryAddressUnbondingsResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAddressUnbondingsResponse
+ */
 export const QueryAddressUnbondingsResponse = {
   typeUrl: '/stride.stakeibc.QueryAddressUnbondingsResponse' as const,
+  is(o: any): o is QueryAddressUnbondingsResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryAddressUnbondingsResponse.typeUrl ||
+        (Array.isArray(o.addressUnbondings) &&
+          (!o.addressUnbondings.length ||
+            AddressUnbonding.is(o.addressUnbondings[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryAddressUnbondingsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryAddressUnbondingsResponse.typeUrl ||
+        (Array.isArray(o.address_unbondings) &&
+          (!o.address_unbondings.length ||
+            AddressUnbonding.isSDK(o.address_unbondings[0]))))
+    );
+  },
   encode(
     message: QueryAddressUnbondingsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1788,12 +2455,33 @@ export const QueryAddressUnbondingsResponse = {
       value: QueryAddressUnbondingsResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryAddressUnbondingsResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    AddressUnbonding.registerTypeUrl();
+  },
 };
 function createBaseQueryAllTradeRoutes(): QueryAllTradeRoutes {
   return {};
 }
+/**
+ * @name QueryAllTradeRoutes
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAllTradeRoutes
+ */
 export const QueryAllTradeRoutes = {
   typeUrl: '/stride.stakeibc.QueryAllTradeRoutes' as const,
+  is(o: any): o is QueryAllTradeRoutes {
+    return o && o.$typeUrl === QueryAllTradeRoutes.typeUrl;
+  },
+  isSDK(o: any): o is QueryAllTradeRoutesSDKType {
+    return o && o.$typeUrl === QueryAllTradeRoutes.typeUrl;
+  },
   encode(
     _: QueryAllTradeRoutes,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1841,14 +2529,36 @@ export const QueryAllTradeRoutes = {
       value: QueryAllTradeRoutes.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryAllTradeRoutesResponse(): QueryAllTradeRoutesResponse {
   return {
     tradeRoutes: [],
   };
 }
+/**
+ * @name QueryAllTradeRoutesResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.QueryAllTradeRoutesResponse
+ */
 export const QueryAllTradeRoutesResponse = {
   typeUrl: '/stride.stakeibc.QueryAllTradeRoutesResponse' as const,
+  is(o: any): o is QueryAllTradeRoutesResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllTradeRoutesResponse.typeUrl ||
+        (Array.isArray(o.tradeRoutes) &&
+          (!o.tradeRoutes.length || TradeRoute.is(o.tradeRoutes[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryAllTradeRoutesResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllTradeRoutesResponse.typeUrl ||
+        (Array.isArray(o.trade_routes) &&
+          (!o.trade_routes.length || TradeRoute.isSDK(o.trade_routes[0]))))
+    );
+  },
   encode(
     message: QueryAllTradeRoutesResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1922,5 +2632,15 @@ export const QueryAllTradeRoutesResponse = {
       typeUrl: '/stride.stakeibc.QueryAllTradeRoutesResponse',
       value: QueryAllTradeRoutesResponse.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryAllTradeRoutesResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    TradeRoute.registerTypeUrl();
   },
 };

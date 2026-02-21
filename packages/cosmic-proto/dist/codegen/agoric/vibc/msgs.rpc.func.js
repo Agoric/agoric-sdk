@@ -1,0 +1,1 @@
+import{buildTx as s}from"../../helper-func-types.js";import{MsgSendPacket as e}from"./msgs.js";export const sendPacket=s({msg:e});

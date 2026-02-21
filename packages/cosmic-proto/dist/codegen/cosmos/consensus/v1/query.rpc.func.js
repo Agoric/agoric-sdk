@@ -1,0 +1,1 @@
+import{buildQuery as e}from"../../../helper-func-types.js";import{QueryParamsRequest as o,QueryParamsResponse as s}from"./query.js";export const getParams=e({encode:o.encode,decode:s.decode,service:"cosmos.consensus.v1.Query",method:"Params",deps:[o,s]});

@@ -1,0 +1,1 @@
+{"version":3,"file":"tx.rpc.func.d.ts","sourceRoot":"","sources":["../../../../../../src/codegen/ibc/lightclients/wasm/v1/tx.rpc.func.ts"],"names":[],"mappings":"AAEA,OAAO,EAAE,YAAY,EAAE,iBAAiB,EAAE,kBAAkB,EAAE,MAAM,SAAS,CAAC;AAC9E;;;;;GAKG;AACH,eAAO,MAAM,SAAS,uPAEpB,CAAC;AACH;;;;;GAKG;AACH,eAAO,MAAM,cAAc,iQAEzB,CAAC;AACH;;;;;GAKG;AACH,eAAO,MAAM,eAAe,mQAE1B,CAAC"}

@@ -1,0 +1,1 @@
+import{Any as o}from"./google/protobuf/any.js";

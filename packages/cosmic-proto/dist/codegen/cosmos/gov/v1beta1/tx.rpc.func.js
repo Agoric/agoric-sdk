@@ -1,0 +1,1 @@
+import{buildTx as o}from"../../../helper-func-types.js";import{MsgSubmitProposal as t,MsgVote as s,MsgVoteWeighted as e,MsgDeposit as p}from"./tx.js";export const submitProposal=o({msg:t});export const vote=o({msg:s});export const voteWeighted=o({msg:e});export const deposit=o({msg:p});

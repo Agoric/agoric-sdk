@@ -3,6 +3,12 @@ import { LSMTokenDeposit, type LSMTokenDepositSDKType } from './records.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../registry.js';
+/**
+ * @name TransferCallback
+ * @package stride.records
+ * @see proto type: stride.records.TransferCallback
+ */
 export interface TransferCallback {
   depositRecordId: bigint;
 }
@@ -10,9 +16,19 @@ export interface TransferCallbackProtoMsg {
   typeUrl: '/stride.records.TransferCallback';
   value: Uint8Array;
 }
+/**
+ * @name TransferCallbackSDKType
+ * @package stride.records
+ * @see proto type: stride.records.TransferCallback
+ */
 export interface TransferCallbackSDKType {
   deposit_record_id: bigint;
 }
+/**
+ * @name TransferLSMTokenCallback
+ * @package stride.records
+ * @see proto type: stride.records.TransferLSMTokenCallback
+ */
 export interface TransferLSMTokenCallback {
   deposit?: LSMTokenDeposit;
 }
@@ -20,6 +36,11 @@ export interface TransferLSMTokenCallbackProtoMsg {
   typeUrl: '/stride.records.TransferLSMTokenCallback';
   value: Uint8Array;
 }
+/**
+ * @name TransferLSMTokenCallbackSDKType
+ * @package stride.records
+ * @see proto type: stride.records.TransferLSMTokenCallback
+ */
 export interface TransferLSMTokenCallbackSDKType {
   deposit?: LSMTokenDepositSDKType;
 }
@@ -28,8 +49,27 @@ function createBaseTransferCallback(): TransferCallback {
     depositRecordId: BigInt(0),
   };
 }
+/**
+ * @name TransferCallback
+ * @package stride.records
+ * @see proto type: stride.records.TransferCallback
+ */
 export const TransferCallback = {
   typeUrl: '/stride.records.TransferCallback' as const,
+  is(o: any): o is TransferCallback {
+    return (
+      o &&
+      (o.$typeUrl === TransferCallback.typeUrl ||
+        typeof o.depositRecordId === 'bigint')
+    );
+  },
+  isSDK(o: any): o is TransferCallbackSDKType {
+    return (
+      o &&
+      (o.$typeUrl === TransferCallback.typeUrl ||
+        typeof o.deposit_record_id === 'bigint')
+    );
+  },
   encode(
     message: TransferCallback,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -90,14 +130,26 @@ export const TransferCallback = {
       value: TransferCallback.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseTransferLSMTokenCallback(): TransferLSMTokenCallback {
   return {
     deposit: undefined,
   };
 }
+/**
+ * @name TransferLSMTokenCallback
+ * @package stride.records
+ * @see proto type: stride.records.TransferLSMTokenCallback
+ */
 export const TransferLSMTokenCallback = {
   typeUrl: '/stride.records.TransferLSMTokenCallback' as const,
+  is(o: any): o is TransferLSMTokenCallback {
+    return o && o.$typeUrl === TransferLSMTokenCallback.typeUrl;
+  },
+  isSDK(o: any): o is TransferLSMTokenCallbackSDKType {
+    return o && o.$typeUrl === TransferLSMTokenCallback.typeUrl;
+  },
   encode(
     message: TransferLSMTokenCallback,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -173,5 +225,15 @@ export const TransferLSMTokenCallback = {
       typeUrl: '/stride.records.TransferLSMTokenCallback',
       value: TransferLSMTokenCallback.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        TransferLSMTokenCallback.typeUrl,
+      )
+    ) {
+      return;
+    }
+    LSMTokenDeposit.registerTypeUrl();
   },
 };

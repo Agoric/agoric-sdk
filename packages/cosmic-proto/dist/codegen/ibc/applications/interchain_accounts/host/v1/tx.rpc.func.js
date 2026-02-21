@@ -1,0 +1,1 @@
+import{buildTx as e}from"../../../../../helper-func-types.js";import{MsgUpdateParams as o,MsgModuleQuerySafe as r}from"./tx.js";export const updateParams=e({msg:o});export const moduleQuerySafe=e({msg:r});

@@ -1,0 +1,1 @@
+import{buildTx as o}from"../../../helper-func-types.js";import{MsgGrant as t,MsgExec as e,MsgRevoke as r}from"./tx.js";export const grant=o({msg:t});export const exec=o({msg:e});export const revoke=o({msg:r});

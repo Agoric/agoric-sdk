@@ -1,0 +1,1 @@
+import*as o from"./gogo.js";export const gogoproto={...o};

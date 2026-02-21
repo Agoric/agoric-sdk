@@ -1,0 +1,1 @@
+import{buildQuery as e}from"../../../helper-func-types.js";import{FileDescriptorsRequest as o,FileDescriptorsResponse as c}from"./reflection.js";export const getFileDescriptors=e({encode:o.encode,decode:c.decode,service:"cosmos.reflection.v1.ReflectionService",method:"FileDescriptors",deps:[o,c]});

@@ -3,12 +3,16 @@ import { Coin, type CoinSDKType } from '../../cosmos/base/v1beta1/coin.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
+import { GlobalDecoderRegistry } from '../../registry.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
 /**
  * CoreEvalProposal is a gov Content type for evaluating code in the SwingSet
  * core.
  * See `bridgeCoreEval` in agoric-sdk packages/vats/src/core/chain-behaviors.js.
+ * @name CoreEvalProposal
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.CoreEvalProposal
  */
 export interface CoreEvalProposal {
   $typeUrl?: '/agoric.swingset.CoreEvalProposal';
@@ -28,6 +32,9 @@ export interface CoreEvalProposalProtoMsg {
  * CoreEvalProposal is a gov Content type for evaluating code in the SwingSet
  * core.
  * See `bridgeCoreEval` in agoric-sdk packages/vats/src/core/chain-behaviors.js.
+ * @name CoreEvalProposalSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.CoreEvalProposal
  */
 export interface CoreEvalProposalSDKType {
   $typeUrl?: '/agoric.swingset.CoreEvalProposal';
@@ -38,6 +45,9 @@ export interface CoreEvalProposalSDKType {
 /**
  * CoreEval defines an individual SwingSet core evaluation, for use in
  * CoreEvalProposal.
+ * @name CoreEval
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.CoreEval
  */
 export interface CoreEval {
   /**
@@ -58,12 +68,20 @@ export interface CoreEvalProtoMsg {
 /**
  * CoreEval defines an individual SwingSet core evaluation, for use in
  * CoreEvalProposal.
+ * @name CoreEvalSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.CoreEval
  */
 export interface CoreEvalSDKType {
   json_permits: string;
   js_code: string;
 }
-/** Params are the swingset configuration/governance parameters. */
+/**
+ * Params are the swingset configuration/governance parameters.
+ * @name Params
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.Params
+ */
 export interface Params {
   /**
    * Map from unit name to a value in SwingSet "beans".
@@ -123,7 +141,12 @@ export interface ParamsProtoMsg {
   typeUrl: '/agoric.swingset.Params';
   value: Uint8Array;
 }
-/** Params are the swingset configuration/governance parameters. */
+/**
+ * Params are the swingset configuration/governance parameters.
+ * @name ParamsSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.Params
+ */
 export interface ParamsSDKType {
   beans_per_unit: StringBeansSDKType[];
   fee_unit_price: CoinSDKType[];
@@ -132,7 +155,12 @@ export interface ParamsSDKType {
   queue_max: QueueSizeSDKType[];
   vat_cleanup_budget: UintMapEntrySDKType[];
 }
-/** The current state of the module. */
+/**
+ * The current state of the module.
+ * @name State
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.State
+ */
 export interface State {
   /**
    * The allowed number of items to add to queues, as determined by SwingSet.
@@ -144,27 +172,51 @@ export interface StateProtoMsg {
   typeUrl: '/agoric.swingset.State';
   value: Uint8Array;
 }
-/** The current state of the module. */
+/**
+ * The current state of the module.
+ * @name StateSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.State
+ */
 export interface StateSDKType {
   queue_allowed: QueueSizeSDKType[];
 }
-/** Map element of a string key to a Nat bean count. */
+/**
+ * Map element of a string key to a Nat bean count.
+ * @name StringBeans
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.StringBeans
+ */
 export interface StringBeans {
-  /** What the beans are for. */
+  /**
+   * What the beans are for.
+   */
   key: string;
-  /** The actual bean value. */
+  /**
+   * The actual bean value.
+   */
   beans: string;
 }
 export interface StringBeansProtoMsg {
   typeUrl: '/agoric.swingset.StringBeans';
   value: Uint8Array;
 }
-/** Map element of a string key to a Nat bean count. */
+/**
+ * Map element of a string key to a Nat bean count.
+ * @name StringBeansSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.StringBeans
+ */
 export interface StringBeansSDKType {
   key: string;
   beans: string;
 }
-/** Map a provisioning power flag to its corresponding fee. */
+/**
+ * Map a provisioning power flag to its corresponding fee.
+ * @name PowerFlagFee
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.PowerFlagFee
+ */
 export interface PowerFlagFee {
   powerFlag: string;
   fee: Coin[];
@@ -173,7 +225,12 @@ export interface PowerFlagFeeProtoMsg {
   typeUrl: '/agoric.swingset.PowerFlagFee';
   value: Uint8Array;
 }
-/** Map a provisioning power flag to its corresponding fee. */
+/**
+ * Map a provisioning power flag to its corresponding fee.
+ * @name PowerFlagFeeSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.PowerFlagFee
+ */
 export interface PowerFlagFeeSDKType {
   power_flag: string;
   fee: CoinSDKType[];
@@ -181,11 +238,18 @@ export interface PowerFlagFeeSDKType {
 /**
  * Map element of a string key to a size.
  * TODO: Replace with UintMapEntry?
+ * @name QueueSize
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueueSize
  */
 export interface QueueSize {
-  /** What the size is for. */
+  /**
+   * What the size is for.
+   */
   key: string;
-  /** The actual size value. */
+  /**
+   * The actual size value.
+   */
   size: number;
 }
 export interface QueueSizeProtoMsg {
@@ -195,6 +259,9 @@ export interface QueueSizeProtoMsg {
 /**
  * Map element of a string key to a size.
  * TODO: Replace with UintMapEntry?
+ * @name QueueSizeSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueueSize
  */
 export interface QueueSizeSDKType {
   key: string;
@@ -204,6 +271,9 @@ export interface QueueSizeSDKType {
  * Map element of a string key to an unsigned integer.
  * The value uses cosmos-sdk Uint rather than a native Go type to ensure that
  * zeroes survive "omitempty" JSON serialization.
+ * @name UintMapEntry
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.UintMapEntry
  */
 export interface UintMapEntry {
   key: string;
@@ -217,23 +287,38 @@ export interface UintMapEntryProtoMsg {
  * Map element of a string key to an unsigned integer.
  * The value uses cosmos-sdk Uint rather than a native Go type to ensure that
  * zeroes survive "omitempty" JSON serialization.
+ * @name UintMapEntrySDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.UintMapEntry
  */
 export interface UintMapEntrySDKType {
   key: string;
   value: string;
 }
-/** Egress is the format for a swingset egress. */
+/**
+ * Egress is the format for a swingset egress.
+ * @name Egress
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.Egress
+ */
 export interface Egress {
   nickname: string;
   peer: Uint8Array;
-  /** TODO: Remove these power flags as they are deprecated and have no effect. */
+  /**
+   * TODO: Remove these power flags as they are deprecated and have no effect.
+   */
   powerFlags: string[];
 }
 export interface EgressProtoMsg {
   typeUrl: '/agoric.swingset.Egress';
   value: Uint8Array;
 }
-/** Egress is the format for a swingset egress. */
+/**
+ * Egress is the format for a swingset egress.
+ * @name EgressSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.Egress
+ */
 export interface EgressSDKType {
   nickname: string;
   peer: Uint8Array;
@@ -244,6 +329,9 @@ export interface EgressSDKType {
  * Artifacts may be stored or transmitted in any order. Most handlers do
  * maintain the artifact order from their original source as an effect of how
  * they handle the artifacts.
+ * @name SwingStoreArtifact
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.SwingStoreArtifact
  */
 export interface SwingStoreArtifact {
   name: string;
@@ -258,6 +346,9 @@ export interface SwingStoreArtifactProtoMsg {
  * Artifacts may be stored or transmitted in any order. Most handlers do
  * maintain the artifact order from their original source as an effect of how
  * they handle the artifacts.
+ * @name SwingStoreArtifactSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.SwingStoreArtifact
  */
 export interface SwingStoreArtifactSDKType {
   name: string;
@@ -271,8 +362,37 @@ function createBaseCoreEvalProposal(): CoreEvalProposal {
     evals: [],
   };
 }
+/**
+ * CoreEvalProposal is a gov Content type for evaluating code in the SwingSet
+ * core.
+ * See `bridgeCoreEval` in agoric-sdk packages/vats/src/core/chain-behaviors.js.
+ * @name CoreEvalProposal
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.CoreEvalProposal
+ */
 export const CoreEvalProposal = {
   typeUrl: '/agoric.swingset.CoreEvalProposal' as const,
+  aminoType: 'swingset/CoreEvalProposal' as const,
+  is(o: any): o is CoreEvalProposal {
+    return (
+      o &&
+      (o.$typeUrl === CoreEvalProposal.typeUrl ||
+        (typeof o.title === 'string' &&
+          typeof o.description === 'string' &&
+          Array.isArray(o.evals) &&
+          (!o.evals.length || CoreEval.is(o.evals[0]))))
+    );
+  },
+  isSDK(o: any): o is CoreEvalProposalSDKType {
+    return (
+      o &&
+      (o.$typeUrl === CoreEvalProposal.typeUrl ||
+        (typeof o.title === 'string' &&
+          typeof o.description === 'string' &&
+          Array.isArray(o.evals) &&
+          (!o.evals.length || CoreEval.isSDK(o.evals[0]))))
+    );
+  },
   encode(
     message: CoreEvalProposal,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -352,6 +472,19 @@ export const CoreEvalProposal = {
       value: CoreEvalProposal.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(CoreEvalProposal.typeUrl)
+    ) {
+      return;
+    }
+    GlobalDecoderRegistry.register(CoreEvalProposal.typeUrl, CoreEvalProposal);
+    GlobalDecoderRegistry.registerAminoProtoMapping(
+      CoreEvalProposal.aminoType,
+      CoreEvalProposal.typeUrl,
+    );
+    CoreEval.registerTypeUrl();
+  },
 };
 function createBaseCoreEval(): CoreEval {
   return {
@@ -359,8 +492,29 @@ function createBaseCoreEval(): CoreEval {
     jsCode: '',
   };
 }
+/**
+ * CoreEval defines an individual SwingSet core evaluation, for use in
+ * CoreEvalProposal.
+ * @name CoreEval
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.CoreEval
+ */
 export const CoreEval = {
   typeUrl: '/agoric.swingset.CoreEval' as const,
+  is(o: any): o is CoreEval {
+    return (
+      o &&
+      (o.$typeUrl === CoreEval.typeUrl ||
+        (typeof o.jsonPermits === 'string' && typeof o.jsCode === 'string'))
+    );
+  },
+  isSDK(o: any): o is CoreEvalSDKType {
+    return (
+      o &&
+      (o.$typeUrl === CoreEval.typeUrl ||
+        (typeof o.json_permits === 'string' && typeof o.js_code === 'string'))
+    );
+  },
   encode(
     message: CoreEval,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -425,6 +579,7 @@ export const CoreEval = {
       value: CoreEval.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseParams(): Params {
   return {
@@ -436,8 +591,52 @@ function createBaseParams(): Params {
     vatCleanupBudget: [],
   };
 }
+/**
+ * Params are the swingset configuration/governance parameters.
+ * @name Params
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.Params
+ */
 export const Params = {
   typeUrl: '/agoric.swingset.Params' as const,
+  is(o: any): o is Params {
+    return (
+      o &&
+      (o.$typeUrl === Params.typeUrl ||
+        (Array.isArray(o.beansPerUnit) &&
+          (!o.beansPerUnit.length || StringBeans.is(o.beansPerUnit[0])) &&
+          Array.isArray(o.feeUnitPrice) &&
+          (!o.feeUnitPrice.length || Coin.is(o.feeUnitPrice[0])) &&
+          typeof o.bootstrapVatConfig === 'string' &&
+          Array.isArray(o.powerFlagFees) &&
+          (!o.powerFlagFees.length || PowerFlagFee.is(o.powerFlagFees[0])) &&
+          Array.isArray(o.queueMax) &&
+          (!o.queueMax.length || QueueSize.is(o.queueMax[0])) &&
+          Array.isArray(o.vatCleanupBudget) &&
+          (!o.vatCleanupBudget.length ||
+            UintMapEntry.is(o.vatCleanupBudget[0]))))
+    );
+  },
+  isSDK(o: any): o is ParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Params.typeUrl ||
+        (Array.isArray(o.beans_per_unit) &&
+          (!o.beans_per_unit.length ||
+            StringBeans.isSDK(o.beans_per_unit[0])) &&
+          Array.isArray(o.fee_unit_price) &&
+          (!o.fee_unit_price.length || Coin.isSDK(o.fee_unit_price[0])) &&
+          typeof o.bootstrap_vat_config === 'string' &&
+          Array.isArray(o.power_flag_fees) &&
+          (!o.power_flag_fees.length ||
+            PowerFlagFee.isSDK(o.power_flag_fees[0])) &&
+          Array.isArray(o.queue_max) &&
+          (!o.queue_max.length || QueueSize.isSDK(o.queue_max[0])) &&
+          Array.isArray(o.vat_cleanup_budget) &&
+          (!o.vat_cleanup_budget.length ||
+            UintMapEntry.isSDK(o.vat_cleanup_budget[0]))))
+    );
+  },
   encode(
     message: Params,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -591,14 +790,46 @@ export const Params = {
       value: Params.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(Params.typeUrl)) {
+      return;
+    }
+    StringBeans.registerTypeUrl();
+    Coin.registerTypeUrl();
+    PowerFlagFee.registerTypeUrl();
+    QueueSize.registerTypeUrl();
+    UintMapEntry.registerTypeUrl();
+  },
 };
 function createBaseState(): State {
   return {
     queueAllowed: [],
   };
 }
+/**
+ * The current state of the module.
+ * @name State
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.State
+ */
 export const State = {
   typeUrl: '/agoric.swingset.State' as const,
+  is(o: any): o is State {
+    return (
+      o &&
+      (o.$typeUrl === State.typeUrl ||
+        (Array.isArray(o.queueAllowed) &&
+          (!o.queueAllowed.length || QueueSize.is(o.queueAllowed[0]))))
+    );
+  },
+  isSDK(o: any): o is StateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === State.typeUrl ||
+        (Array.isArray(o.queue_allowed) &&
+          (!o.queue_allowed.length || QueueSize.isSDK(o.queue_allowed[0]))))
+    );
+  },
   encode(
     message: State,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -662,6 +893,12 @@ export const State = {
       value: State.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(State.typeUrl)) {
+      return;
+    }
+    QueueSize.registerTypeUrl();
+  },
 };
 function createBaseStringBeans(): StringBeans {
   return {
@@ -669,8 +906,28 @@ function createBaseStringBeans(): StringBeans {
     beans: '',
   };
 }
+/**
+ * Map element of a string key to a Nat bean count.
+ * @name StringBeans
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.StringBeans
+ */
 export const StringBeans = {
   typeUrl: '/agoric.swingset.StringBeans' as const,
+  is(o: any): o is StringBeans {
+    return (
+      o &&
+      (o.$typeUrl === StringBeans.typeUrl ||
+        (typeof o.key === 'string' && typeof o.beans === 'string'))
+    );
+  },
+  isSDK(o: any): o is StringBeansSDKType {
+    return (
+      o &&
+      (o.$typeUrl === StringBeans.typeUrl ||
+        (typeof o.key === 'string' && typeof o.beans === 'string'))
+    );
+  },
   encode(
     message: StringBeans,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -734,6 +991,7 @@ export const StringBeans = {
       value: StringBeans.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBasePowerFlagFee(): PowerFlagFee {
   return {
@@ -741,8 +999,32 @@ function createBasePowerFlagFee(): PowerFlagFee {
     fee: [],
   };
 }
+/**
+ * Map a provisioning power flag to its corresponding fee.
+ * @name PowerFlagFee
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.PowerFlagFee
+ */
 export const PowerFlagFee = {
   typeUrl: '/agoric.swingset.PowerFlagFee' as const,
+  is(o: any): o is PowerFlagFee {
+    return (
+      o &&
+      (o.$typeUrl === PowerFlagFee.typeUrl ||
+        (typeof o.powerFlag === 'string' &&
+          Array.isArray(o.fee) &&
+          (!o.fee.length || Coin.is(o.fee[0]))))
+    );
+  },
+  isSDK(o: any): o is PowerFlagFeeSDKType {
+    return (
+      o &&
+      (o.$typeUrl === PowerFlagFee.typeUrl ||
+        (typeof o.power_flag === 'string' &&
+          Array.isArray(o.fee) &&
+          (!o.fee.length || Coin.isSDK(o.fee[0]))))
+    );
+  },
   encode(
     message: PowerFlagFee,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -812,6 +1094,12 @@ export const PowerFlagFee = {
       value: PowerFlagFee.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(PowerFlagFee.typeUrl)) {
+      return;
+    }
+    Coin.registerTypeUrl();
+  },
 };
 function createBaseQueueSize(): QueueSize {
   return {
@@ -819,8 +1107,29 @@ function createBaseQueueSize(): QueueSize {
     size: 0,
   };
 }
+/**
+ * Map element of a string key to a size.
+ * TODO: Replace with UintMapEntry?
+ * @name QueueSize
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueueSize
+ */
 export const QueueSize = {
   typeUrl: '/agoric.swingset.QueueSize' as const,
+  is(o: any): o is QueueSize {
+    return (
+      o &&
+      (o.$typeUrl === QueueSize.typeUrl ||
+        (typeof o.key === 'string' && typeof o.size === 'number'))
+    );
+  },
+  isSDK(o: any): o is QueueSizeSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueueSize.typeUrl ||
+        (typeof o.key === 'string' && typeof o.size === 'number'))
+    );
+  },
   encode(
     message: QueueSize,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -884,6 +1193,7 @@ export const QueueSize = {
       value: QueueSize.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseUintMapEntry(): UintMapEntry {
   return {
@@ -891,8 +1201,30 @@ function createBaseUintMapEntry(): UintMapEntry {
     value: '',
   };
 }
+/**
+ * Map element of a string key to an unsigned integer.
+ * The value uses cosmos-sdk Uint rather than a native Go type to ensure that
+ * zeroes survive "omitempty" JSON serialization.
+ * @name UintMapEntry
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.UintMapEntry
+ */
 export const UintMapEntry = {
   typeUrl: '/agoric.swingset.UintMapEntry' as const,
+  is(o: any): o is UintMapEntry {
+    return (
+      o &&
+      (o.$typeUrl === UintMapEntry.typeUrl ||
+        (typeof o.key === 'string' && typeof o.value === 'string'))
+    );
+  },
+  isSDK(o: any): o is UintMapEntrySDKType {
+    return (
+      o &&
+      (o.$typeUrl === UintMapEntry.typeUrl ||
+        (typeof o.key === 'string' && typeof o.value === 'string'))
+    );
+  },
   encode(
     message: UintMapEntry,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -956,6 +1288,7 @@ export const UintMapEntry = {
       value: UintMapEntry.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseEgress(): Egress {
   return {
@@ -964,8 +1297,34 @@ function createBaseEgress(): Egress {
     powerFlags: [],
   };
 }
+/**
+ * Egress is the format for a swingset egress.
+ * @name Egress
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.Egress
+ */
 export const Egress = {
   typeUrl: '/agoric.swingset.Egress' as const,
+  is(o: any): o is Egress {
+    return (
+      o &&
+      (o.$typeUrl === Egress.typeUrl ||
+        (typeof o.nickname === 'string' &&
+          (o.peer instanceof Uint8Array || typeof o.peer === 'string') &&
+          Array.isArray(o.powerFlags) &&
+          (!o.powerFlags.length || typeof o.powerFlags[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is EgressSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Egress.typeUrl ||
+        (typeof o.nickname === 'string' &&
+          (o.peer instanceof Uint8Array || typeof o.peer === 'string') &&
+          Array.isArray(o.power_flags) &&
+          (!o.power_flags.length || typeof o.power_flags[0] === 'string')))
+    );
+  },
   encode(
     message: Egress,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1049,6 +1408,7 @@ export const Egress = {
       value: Egress.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseSwingStoreArtifact(): SwingStoreArtifact {
   return {
@@ -1056,8 +1416,33 @@ function createBaseSwingStoreArtifact(): SwingStoreArtifact {
     data: new Uint8Array(),
   };
 }
+/**
+ * SwingStoreArtifact encodes an artifact of a swing-store export.
+ * Artifacts may be stored or transmitted in any order. Most handlers do
+ * maintain the artifact order from their original source as an effect of how
+ * they handle the artifacts.
+ * @name SwingStoreArtifact
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.SwingStoreArtifact
+ */
 export const SwingStoreArtifact = {
   typeUrl: '/agoric.swingset.SwingStoreArtifact' as const,
+  is(o: any): o is SwingStoreArtifact {
+    return (
+      o &&
+      (o.$typeUrl === SwingStoreArtifact.typeUrl ||
+        (typeof o.name === 'string' &&
+          (o.data instanceof Uint8Array || typeof o.data === 'string')))
+    );
+  },
+  isSDK(o: any): o is SwingStoreArtifactSDKType {
+    return (
+      o &&
+      (o.$typeUrl === SwingStoreArtifact.typeUrl ||
+        (typeof o.name === 'string' &&
+          (o.data instanceof Uint8Array || typeof o.data === 'string')))
+    );
+  },
   encode(
     message: SwingStoreArtifact,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1129,4 +1514,5 @@ export const SwingStoreArtifact = {
       value: SwingStoreArtifact.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };

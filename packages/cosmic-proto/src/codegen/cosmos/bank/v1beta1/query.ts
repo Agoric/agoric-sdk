@@ -17,40 +17,76 @@ import {
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
-/** QueryBalanceRequest is the request type for the Query/Balance RPC method. */
+import { GlobalDecoderRegistry } from '../../../registry.js';
+/**
+ * QueryBalanceRequest is the request type for the Query/Balance RPC method.
+ * @name QueryBalanceRequest
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryBalanceRequest
+ */
 export interface QueryBalanceRequest {
-  /** address is the address to query balances for. */
+  /**
+   * address is the address to query balances for.
+   */
   address: string;
-  /** denom is the coin denom to query balances for. */
+  /**
+   * denom is the coin denom to query balances for.
+   */
   denom: string;
 }
 export interface QueryBalanceRequestProtoMsg {
   typeUrl: '/cosmos.bank.v1beta1.QueryBalanceRequest';
   value: Uint8Array;
 }
-/** QueryBalanceRequest is the request type for the Query/Balance RPC method. */
+/**
+ * QueryBalanceRequest is the request type for the Query/Balance RPC method.
+ * @name QueryBalanceRequestSDKType
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryBalanceRequest
+ */
 export interface QueryBalanceRequestSDKType {
   address: string;
   denom: string;
 }
-/** QueryBalanceResponse is the response type for the Query/Balance RPC method. */
+/**
+ * QueryBalanceResponse is the response type for the Query/Balance RPC method.
+ * @name QueryBalanceResponse
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryBalanceResponse
+ */
 export interface QueryBalanceResponse {
-  /** balance is the balance of the coin. */
+  /**
+   * balance is the balance of the coin.
+   */
   balance?: Coin;
 }
 export interface QueryBalanceResponseProtoMsg {
   typeUrl: '/cosmos.bank.v1beta1.QueryBalanceResponse';
   value: Uint8Array;
 }
-/** QueryBalanceResponse is the response type for the Query/Balance RPC method. */
+/**
+ * QueryBalanceResponse is the response type for the Query/Balance RPC method.
+ * @name QueryBalanceResponseSDKType
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryBalanceResponse
+ */
 export interface QueryBalanceResponseSDKType {
   balance?: CoinSDKType;
 }
-/** QueryBalanceRequest is the request type for the Query/AllBalances RPC method. */
+/**
+ * QueryBalanceRequest is the request type for the Query/AllBalances RPC method.
+ * @name QueryAllBalancesRequest
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryAllBalancesRequest
+ */
 export interface QueryAllBalancesRequest {
-  /** address is the address to query balances for. */
+  /**
+   * address is the address to query balances for.
+   */
   address: string;
-  /** pagination defines an optional pagination for the request. */
+  /**
+   * pagination defines an optional pagination for the request.
+   */
   pagination?: PageRequest;
   /**
    * resolve_denom is the flag to resolve the denom into a human-readable form from the metadata.
@@ -63,7 +99,12 @@ export interface QueryAllBalancesRequestProtoMsg {
   typeUrl: '/cosmos.bank.v1beta1.QueryAllBalancesRequest';
   value: Uint8Array;
 }
-/** QueryBalanceRequest is the request type for the Query/AllBalances RPC method. */
+/**
+ * QueryBalanceRequest is the request type for the Query/AllBalances RPC method.
+ * @name QueryAllBalancesRequestSDKType
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryAllBalancesRequest
+ */
 export interface QueryAllBalancesRequestSDKType {
   address: string;
   pagination?: PageRequestSDKType;
@@ -72,11 +113,18 @@ export interface QueryAllBalancesRequestSDKType {
 /**
  * QueryAllBalancesResponse is the response type for the Query/AllBalances RPC
  * method.
+ * @name QueryAllBalancesResponse
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryAllBalancesResponse
  */
 export interface QueryAllBalancesResponse {
-  /** balances is the balances of all the coins. */
+  /**
+   * balances is the balances of all the coins.
+   */
   balances: Coin[];
-  /** pagination defines the pagination in the response. */
+  /**
+   * pagination defines the pagination in the response.
+   */
   pagination?: PageResponse;
 }
 export interface QueryAllBalancesResponseProtoMsg {
@@ -86,6 +134,9 @@ export interface QueryAllBalancesResponseProtoMsg {
 /**
  * QueryAllBalancesResponse is the response type for the Query/AllBalances RPC
  * method.
+ * @name QueryAllBalancesResponseSDKType
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryAllBalancesResponse
  */
 export interface QueryAllBalancesResponseSDKType {
   balances: CoinSDKType[];
@@ -96,11 +147,18 @@ export interface QueryAllBalancesResponseSDKType {
  * an account's spendable balances.
  *
  * Since: cosmos-sdk 0.46
+ * @name QuerySpendableBalancesRequest
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QuerySpendableBalancesRequest
  */
 export interface QuerySpendableBalancesRequest {
-  /** address is the address to query spendable balances for. */
+  /**
+   * address is the address to query spendable balances for.
+   */
   address: string;
-  /** pagination defines an optional pagination for the request. */
+  /**
+   * pagination defines an optional pagination for the request.
+   */
   pagination?: PageRequest;
 }
 export interface QuerySpendableBalancesRequestProtoMsg {
@@ -112,6 +170,9 @@ export interface QuerySpendableBalancesRequestProtoMsg {
  * an account's spendable balances.
  *
  * Since: cosmos-sdk 0.46
+ * @name QuerySpendableBalancesRequestSDKType
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QuerySpendableBalancesRequest
  */
 export interface QuerySpendableBalancesRequestSDKType {
   address: string;
@@ -122,11 +183,18 @@ export interface QuerySpendableBalancesRequestSDKType {
  * an account's spendable balances.
  *
  * Since: cosmos-sdk 0.46
+ * @name QuerySpendableBalancesResponse
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QuerySpendableBalancesResponse
  */
 export interface QuerySpendableBalancesResponse {
-  /** balances is the spendable balances of all the coins. */
+  /**
+   * balances is the spendable balances of all the coins.
+   */
   balances: Coin[];
-  /** pagination defines the pagination in the response. */
+  /**
+   * pagination defines the pagination in the response.
+   */
   pagination?: PageResponse;
 }
 export interface QuerySpendableBalancesResponseProtoMsg {
@@ -138,6 +206,9 @@ export interface QuerySpendableBalancesResponseProtoMsg {
  * an account's spendable balances.
  *
  * Since: cosmos-sdk 0.46
+ * @name QuerySpendableBalancesResponseSDKType
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QuerySpendableBalancesResponse
  */
 export interface QuerySpendableBalancesResponseSDKType {
   balances: CoinSDKType[];
@@ -148,11 +219,18 @@ export interface QuerySpendableBalancesResponseSDKType {
  * querying an account's spendable balance for a specific denom.
  *
  * Since: cosmos-sdk 0.47
+ * @name QuerySpendableBalanceByDenomRequest
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QuerySpendableBalanceByDenomRequest
  */
 export interface QuerySpendableBalanceByDenomRequest {
-  /** address is the address to query balances for. */
+  /**
+   * address is the address to query balances for.
+   */
   address: string;
-  /** denom is the coin denom to query balances for. */
+  /**
+   * denom is the coin denom to query balances for.
+   */
   denom: string;
 }
 export interface QuerySpendableBalanceByDenomRequestProtoMsg {
@@ -164,6 +242,9 @@ export interface QuerySpendableBalanceByDenomRequestProtoMsg {
  * querying an account's spendable balance for a specific denom.
  *
  * Since: cosmos-sdk 0.47
+ * @name QuerySpendableBalanceByDenomRequestSDKType
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QuerySpendableBalanceByDenomRequest
  */
 export interface QuerySpendableBalanceByDenomRequestSDKType {
   address: string;
@@ -174,9 +255,14 @@ export interface QuerySpendableBalanceByDenomRequestSDKType {
  * querying an account's spendable balance for a specific denom.
  *
  * Since: cosmos-sdk 0.47
+ * @name QuerySpendableBalanceByDenomResponse
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QuerySpendableBalanceByDenomResponse
  */
 export interface QuerySpendableBalanceByDenomResponse {
-  /** balance is the balance of the coin. */
+  /**
+   * balance is the balance of the coin.
+   */
   balance?: Coin;
 }
 export interface QuerySpendableBalanceByDenomResponseProtoMsg {
@@ -188,6 +274,9 @@ export interface QuerySpendableBalanceByDenomResponseProtoMsg {
  * querying an account's spendable balance for a specific denom.
  *
  * Since: cosmos-sdk 0.47
+ * @name QuerySpendableBalanceByDenomResponseSDKType
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QuerySpendableBalanceByDenomResponse
  */
 export interface QuerySpendableBalanceByDenomResponseSDKType {
   balance?: CoinSDKType;
@@ -195,6 +284,9 @@ export interface QuerySpendableBalanceByDenomResponseSDKType {
 /**
  * QueryTotalSupplyRequest is the request type for the Query/TotalSupply RPC
  * method.
+ * @name QueryTotalSupplyRequest
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryTotalSupplyRequest
  */
 export interface QueryTotalSupplyRequest {
   /**
@@ -211,6 +303,9 @@ export interface QueryTotalSupplyRequestProtoMsg {
 /**
  * QueryTotalSupplyRequest is the request type for the Query/TotalSupply RPC
  * method.
+ * @name QueryTotalSupplyRequestSDKType
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryTotalSupplyRequest
  */
 export interface QueryTotalSupplyRequestSDKType {
   pagination?: PageRequestSDKType;
@@ -218,9 +313,14 @@ export interface QueryTotalSupplyRequestSDKType {
 /**
  * QueryTotalSupplyResponse is the response type for the Query/TotalSupply RPC
  * method
+ * @name QueryTotalSupplyResponse
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryTotalSupplyResponse
  */
 export interface QueryTotalSupplyResponse {
-  /** supply is the supply of the coins */
+  /**
+   * supply is the supply of the coins
+   */
   supply: Coin[];
   /**
    * pagination defines the pagination in the response.
@@ -236,79 +336,147 @@ export interface QueryTotalSupplyResponseProtoMsg {
 /**
  * QueryTotalSupplyResponse is the response type for the Query/TotalSupply RPC
  * method
+ * @name QueryTotalSupplyResponseSDKType
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryTotalSupplyResponse
  */
 export interface QueryTotalSupplyResponseSDKType {
   supply: CoinSDKType[];
   pagination?: PageResponseSDKType;
 }
-/** QuerySupplyOfRequest is the request type for the Query/SupplyOf RPC method. */
+/**
+ * QuerySupplyOfRequest is the request type for the Query/SupplyOf RPC method.
+ * @name QuerySupplyOfRequest
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QuerySupplyOfRequest
+ */
 export interface QuerySupplyOfRequest {
-  /** denom is the coin denom to query balances for. */
+  /**
+   * denom is the coin denom to query balances for.
+   */
   denom: string;
 }
 export interface QuerySupplyOfRequestProtoMsg {
   typeUrl: '/cosmos.bank.v1beta1.QuerySupplyOfRequest';
   value: Uint8Array;
 }
-/** QuerySupplyOfRequest is the request type for the Query/SupplyOf RPC method. */
+/**
+ * QuerySupplyOfRequest is the request type for the Query/SupplyOf RPC method.
+ * @name QuerySupplyOfRequestSDKType
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QuerySupplyOfRequest
+ */
 export interface QuerySupplyOfRequestSDKType {
   denom: string;
 }
-/** QuerySupplyOfResponse is the response type for the Query/SupplyOf RPC method. */
+/**
+ * QuerySupplyOfResponse is the response type for the Query/SupplyOf RPC method.
+ * @name QuerySupplyOfResponse
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QuerySupplyOfResponse
+ */
 export interface QuerySupplyOfResponse {
-  /** amount is the supply of the coin. */
+  /**
+   * amount is the supply of the coin.
+   */
   amount: Coin;
 }
 export interface QuerySupplyOfResponseProtoMsg {
   typeUrl: '/cosmos.bank.v1beta1.QuerySupplyOfResponse';
   value: Uint8Array;
 }
-/** QuerySupplyOfResponse is the response type for the Query/SupplyOf RPC method. */
+/**
+ * QuerySupplyOfResponse is the response type for the Query/SupplyOf RPC method.
+ * @name QuerySupplyOfResponseSDKType
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QuerySupplyOfResponse
+ */
 export interface QuerySupplyOfResponseSDKType {
   amount: CoinSDKType;
 }
-/** QueryParamsRequest defines the request type for querying x/bank parameters. */
+/**
+ * QueryParamsRequest defines the request type for querying x/bank parameters.
+ * @name QueryParamsRequest
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryParamsRequest
+ */
 export interface QueryParamsRequest {}
 export interface QueryParamsRequestProtoMsg {
   typeUrl: '/cosmos.bank.v1beta1.QueryParamsRequest';
   value: Uint8Array;
 }
-/** QueryParamsRequest defines the request type for querying x/bank parameters. */
+/**
+ * QueryParamsRequest defines the request type for querying x/bank parameters.
+ * @name QueryParamsRequestSDKType
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryParamsRequest
+ */
 export interface QueryParamsRequestSDKType {}
-/** QueryParamsResponse defines the response type for querying x/bank parameters. */
+/**
+ * QueryParamsResponse defines the response type for querying x/bank parameters.
+ * @name QueryParamsResponse
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryParamsResponse
+ */
 export interface QueryParamsResponse {
-  /** params provides the parameters of the bank module. */
+  /**
+   * params provides the parameters of the bank module.
+   */
   params: Params;
 }
 export interface QueryParamsResponseProtoMsg {
   typeUrl: '/cosmos.bank.v1beta1.QueryParamsResponse';
   value: Uint8Array;
 }
-/** QueryParamsResponse defines the response type for querying x/bank parameters. */
+/**
+ * QueryParamsResponse defines the response type for querying x/bank parameters.
+ * @name QueryParamsResponseSDKType
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryParamsResponse
+ */
 export interface QueryParamsResponseSDKType {
   params: ParamsSDKType;
 }
-/** QueryDenomsMetadataRequest is the request type for the Query/DenomsMetadata RPC method. */
+/**
+ * QueryDenomsMetadataRequest is the request type for the Query/DenomsMetadata RPC method.
+ * @name QueryDenomsMetadataRequest
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryDenomsMetadataRequest
+ */
 export interface QueryDenomsMetadataRequest {
-  /** pagination defines an optional pagination for the request. */
+  /**
+   * pagination defines an optional pagination for the request.
+   */
   pagination?: PageRequest;
 }
 export interface QueryDenomsMetadataRequestProtoMsg {
   typeUrl: '/cosmos.bank.v1beta1.QueryDenomsMetadataRequest';
   value: Uint8Array;
 }
-/** QueryDenomsMetadataRequest is the request type for the Query/DenomsMetadata RPC method. */
+/**
+ * QueryDenomsMetadataRequest is the request type for the Query/DenomsMetadata RPC method.
+ * @name QueryDenomsMetadataRequestSDKType
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryDenomsMetadataRequest
+ */
 export interface QueryDenomsMetadataRequestSDKType {
   pagination?: PageRequestSDKType;
 }
 /**
  * QueryDenomsMetadataResponse is the response type for the Query/DenomsMetadata RPC
  * method.
+ * @name QueryDenomsMetadataResponse
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryDenomsMetadataResponse
  */
 export interface QueryDenomsMetadataResponse {
-  /** metadata provides the client information for all the registered tokens. */
+  /**
+   * metadata provides the client information for all the registered tokens.
+   */
   metadatas: Metadata[];
-  /** pagination defines the pagination in the response. */
+  /**
+   * pagination defines the pagination in the response.
+   */
   pagination?: PageResponse;
 }
 export interface QueryDenomsMetadataResponseProtoMsg {
@@ -318,30 +486,50 @@ export interface QueryDenomsMetadataResponseProtoMsg {
 /**
  * QueryDenomsMetadataResponse is the response type for the Query/DenomsMetadata RPC
  * method.
+ * @name QueryDenomsMetadataResponseSDKType
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryDenomsMetadataResponse
  */
 export interface QueryDenomsMetadataResponseSDKType {
   metadatas: MetadataSDKType[];
   pagination?: PageResponseSDKType;
 }
-/** QueryDenomMetadataRequest is the request type for the Query/DenomMetadata RPC method. */
+/**
+ * QueryDenomMetadataRequest is the request type for the Query/DenomMetadata RPC method.
+ * @name QueryDenomMetadataRequest
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryDenomMetadataRequest
+ */
 export interface QueryDenomMetadataRequest {
-  /** denom is the coin denom to query the metadata for. */
+  /**
+   * denom is the coin denom to query the metadata for.
+   */
   denom: string;
 }
 export interface QueryDenomMetadataRequestProtoMsg {
   typeUrl: '/cosmos.bank.v1beta1.QueryDenomMetadataRequest';
   value: Uint8Array;
 }
-/** QueryDenomMetadataRequest is the request type for the Query/DenomMetadata RPC method. */
+/**
+ * QueryDenomMetadataRequest is the request type for the Query/DenomMetadata RPC method.
+ * @name QueryDenomMetadataRequestSDKType
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryDenomMetadataRequest
+ */
 export interface QueryDenomMetadataRequestSDKType {
   denom: string;
 }
 /**
  * QueryDenomMetadataResponse is the response type for the Query/DenomMetadata RPC
  * method.
+ * @name QueryDenomMetadataResponse
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryDenomMetadataResponse
  */
 export interface QueryDenomMetadataResponse {
-  /** metadata describes and provides all the client information for the requested token. */
+  /**
+   * metadata describes and provides all the client information for the requested token.
+   */
   metadata: Metadata;
 }
 export interface QueryDenomMetadataResponseProtoMsg {
@@ -351,6 +539,9 @@ export interface QueryDenomMetadataResponseProtoMsg {
 /**
  * QueryDenomMetadataResponse is the response type for the Query/DenomMetadata RPC
  * method.
+ * @name QueryDenomMetadataResponseSDKType
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryDenomMetadataResponse
  */
 export interface QueryDenomMetadataResponseSDKType {
   metadata: MetadataSDKType;
@@ -358,9 +549,14 @@ export interface QueryDenomMetadataResponseSDKType {
 /**
  * QueryDenomMetadataByQueryStringRequest is the request type for the Query/DenomMetadata RPC method.
  * Identical with QueryDenomMetadataRequest but receives denom as query string.
+ * @name QueryDenomMetadataByQueryStringRequest
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryDenomMetadataByQueryStringRequest
  */
 export interface QueryDenomMetadataByQueryStringRequest {
-  /** denom is the coin denom to query the metadata for. */
+  /**
+   * denom is the coin denom to query the metadata for.
+   */
   denom: string;
 }
 export interface QueryDenomMetadataByQueryStringRequestProtoMsg {
@@ -370,6 +566,9 @@ export interface QueryDenomMetadataByQueryStringRequestProtoMsg {
 /**
  * QueryDenomMetadataByQueryStringRequest is the request type for the Query/DenomMetadata RPC method.
  * Identical with QueryDenomMetadataRequest but receives denom as query string.
+ * @name QueryDenomMetadataByQueryStringRequestSDKType
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryDenomMetadataByQueryStringRequest
  */
 export interface QueryDenomMetadataByQueryStringRequestSDKType {
   denom: string;
@@ -377,9 +576,14 @@ export interface QueryDenomMetadataByQueryStringRequestSDKType {
 /**
  * QueryDenomMetadataByQueryStringResponse is the response type for the Query/DenomMetadata RPC
  * method. Identical with QueryDenomMetadataResponse but receives denom as query string in request.
+ * @name QueryDenomMetadataByQueryStringResponse
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryDenomMetadataByQueryStringResponse
  */
 export interface QueryDenomMetadataByQueryStringResponse {
-  /** metadata describes and provides all the client information for the requested token. */
+  /**
+   * metadata describes and provides all the client information for the requested token.
+   */
   metadata: Metadata;
 }
 export interface QueryDenomMetadataByQueryStringResponseProtoMsg {
@@ -389,6 +593,9 @@ export interface QueryDenomMetadataByQueryStringResponseProtoMsg {
 /**
  * QueryDenomMetadataByQueryStringResponse is the response type for the Query/DenomMetadata RPC
  * method. Identical with QueryDenomMetadataResponse but receives denom as query string in request.
+ * @name QueryDenomMetadataByQueryStringResponseSDKType
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryDenomMetadataByQueryStringResponse
  */
 export interface QueryDenomMetadataByQueryStringResponseSDKType {
   metadata: MetadataSDKType;
@@ -397,11 +604,18 @@ export interface QueryDenomMetadataByQueryStringResponseSDKType {
  * QueryDenomOwnersRequest defines the request type for the DenomOwners RPC query,
  * which queries for a paginated set of all account holders of a particular
  * denomination.
+ * @name QueryDenomOwnersRequest
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryDenomOwnersRequest
  */
 export interface QueryDenomOwnersRequest {
-  /** denom defines the coin denomination to query all account holders for. */
+  /**
+   * denom defines the coin denomination to query all account holders for.
+   */
   denom: string;
-  /** pagination defines an optional pagination for the request. */
+  /**
+   * pagination defines an optional pagination for the request.
+   */
   pagination?: PageRequest;
 }
 export interface QueryDenomOwnersRequestProtoMsg {
@@ -412,6 +626,9 @@ export interface QueryDenomOwnersRequestProtoMsg {
  * QueryDenomOwnersRequest defines the request type for the DenomOwners RPC query,
  * which queries for a paginated set of all account holders of a particular
  * denomination.
+ * @name QueryDenomOwnersRequestSDKType
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryDenomOwnersRequest
  */
 export interface QueryDenomOwnersRequestSDKType {
   denom: string;
@@ -423,11 +640,18 @@ export interface QueryDenomOwnersRequestSDKType {
  * balance of the denominated token.
  *
  * Since: cosmos-sdk 0.46
+ * @name DenomOwner
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.DenomOwner
  */
 export interface DenomOwner {
-  /** address defines the address that owns a particular denomination. */
+  /**
+   * address defines the address that owns a particular denomination.
+   */
   address: string;
-  /** balance is the balance of the denominated coin for an account. */
+  /**
+   * balance is the balance of the denominated coin for an account.
+   */
   balance: Coin;
 }
 export interface DenomOwnerProtoMsg {
@@ -440,6 +664,9 @@ export interface DenomOwnerProtoMsg {
  * balance of the denominated token.
  *
  * Since: cosmos-sdk 0.46
+ * @name DenomOwnerSDKType
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.DenomOwner
  */
 export interface DenomOwnerSDKType {
   address: string;
@@ -449,10 +676,15 @@ export interface DenomOwnerSDKType {
  * QueryDenomOwnersResponse defines the RPC response of a DenomOwners RPC query.
  *
  * Since: cosmos-sdk 0.46
+ * @name QueryDenomOwnersResponse
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryDenomOwnersResponse
  */
 export interface QueryDenomOwnersResponse {
   denomOwners: DenomOwner[];
-  /** pagination defines the pagination in the response. */
+  /**
+   * pagination defines the pagination in the response.
+   */
   pagination?: PageResponse;
 }
 export interface QueryDenomOwnersResponseProtoMsg {
@@ -463,6 +695,9 @@ export interface QueryDenomOwnersResponseProtoMsg {
  * QueryDenomOwnersResponse defines the RPC response of a DenomOwners RPC query.
  *
  * Since: cosmos-sdk 0.46
+ * @name QueryDenomOwnersResponseSDKType
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryDenomOwnersResponse
  */
 export interface QueryDenomOwnersResponseSDKType {
   denom_owners: DenomOwnerSDKType[];
@@ -474,11 +709,18 @@ export interface QueryDenomOwnersResponseSDKType {
  * denomination.
  *
  * Since: cosmos-sdk 0.50.3
+ * @name QueryDenomOwnersByQueryRequest
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryDenomOwnersByQueryRequest
  */
 export interface QueryDenomOwnersByQueryRequest {
-  /** denom defines the coin denomination to query all account holders for. */
+  /**
+   * denom defines the coin denomination to query all account holders for.
+   */
   denom: string;
-  /** pagination defines an optional pagination for the request. */
+  /**
+   * pagination defines an optional pagination for the request.
+   */
   pagination?: PageRequest;
 }
 export interface QueryDenomOwnersByQueryRequestProtoMsg {
@@ -491,6 +733,9 @@ export interface QueryDenomOwnersByQueryRequestProtoMsg {
  * denomination.
  *
  * Since: cosmos-sdk 0.50.3
+ * @name QueryDenomOwnersByQueryRequestSDKType
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryDenomOwnersByQueryRequest
  */
 export interface QueryDenomOwnersByQueryRequestSDKType {
   denom: string;
@@ -500,10 +745,15 @@ export interface QueryDenomOwnersByQueryRequestSDKType {
  * QueryDenomOwnersByQueryResponse defines the RPC response of a DenomOwnersByQuery RPC query.
  *
  * Since: cosmos-sdk 0.50.3
+ * @name QueryDenomOwnersByQueryResponse
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryDenomOwnersByQueryResponse
  */
 export interface QueryDenomOwnersByQueryResponse {
   denomOwners: DenomOwner[];
-  /** pagination defines the pagination in the response. */
+  /**
+   * pagination defines the pagination in the response.
+   */
   pagination?: PageResponse;
 }
 export interface QueryDenomOwnersByQueryResponseProtoMsg {
@@ -514,6 +764,9 @@ export interface QueryDenomOwnersByQueryResponseProtoMsg {
  * QueryDenomOwnersByQueryResponse defines the RPC response of a DenomOwnersByQuery RPC query.
  *
  * Since: cosmos-sdk 0.50.3
+ * @name QueryDenomOwnersByQueryResponseSDKType
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryDenomOwnersByQueryResponse
  */
 export interface QueryDenomOwnersByQueryResponseSDKType {
   denom_owners: DenomOwnerSDKType[];
@@ -523,9 +776,14 @@ export interface QueryDenomOwnersByQueryResponseSDKType {
  * QuerySendEnabledRequest defines the RPC request for looking up SendEnabled entries.
  *
  * Since: cosmos-sdk 0.47
+ * @name QuerySendEnabledRequest
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QuerySendEnabledRequest
  */
 export interface QuerySendEnabledRequest {
-  /** denoms is the specific denoms you want look up. Leave empty to get all entries. */
+  /**
+   * denoms is the specific denoms you want look up. Leave empty to get all entries.
+   */
   denoms: string[];
   /**
    * pagination defines an optional pagination for the request. This field is
@@ -541,6 +799,9 @@ export interface QuerySendEnabledRequestProtoMsg {
  * QuerySendEnabledRequest defines the RPC request for looking up SendEnabled entries.
  *
  * Since: cosmos-sdk 0.47
+ * @name QuerySendEnabledRequestSDKType
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QuerySendEnabledRequest
  */
 export interface QuerySendEnabledRequestSDKType {
   denoms: string[];
@@ -550,6 +811,9 @@ export interface QuerySendEnabledRequestSDKType {
  * QuerySendEnabledResponse defines the RPC response of a SendEnable query.
  *
  * Since: cosmos-sdk 0.47
+ * @name QuerySendEnabledResponse
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QuerySendEnabledResponse
  */
 export interface QuerySendEnabledResponse {
   sendEnabled: SendEnabled[];
@@ -567,6 +831,9 @@ export interface QuerySendEnabledResponseProtoMsg {
  * QuerySendEnabledResponse defines the RPC response of a SendEnable query.
  *
  * Since: cosmos-sdk 0.47
+ * @name QuerySendEnabledResponseSDKType
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QuerySendEnabledResponse
  */
 export interface QuerySendEnabledResponseSDKType {
   send_enabled: SendEnabledSDKType[];
@@ -578,8 +845,29 @@ function createBaseQueryBalanceRequest(): QueryBalanceRequest {
     denom: '',
   };
 }
+/**
+ * QueryBalanceRequest is the request type for the Query/Balance RPC method.
+ * @name QueryBalanceRequest
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryBalanceRequest
+ */
 export const QueryBalanceRequest = {
   typeUrl: '/cosmos.bank.v1beta1.QueryBalanceRequest' as const,
+  aminoType: 'cosmos-sdk/QueryBalanceRequest' as const,
+  is(o: any): o is QueryBalanceRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryBalanceRequest.typeUrl ||
+        (typeof o.address === 'string' && typeof o.denom === 'string'))
+    );
+  },
+  isSDK(o: any): o is QueryBalanceRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryBalanceRequest.typeUrl ||
+        (typeof o.address === 'string' && typeof o.denom === 'string'))
+    );
+  },
   encode(
     message: QueryBalanceRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -646,14 +934,28 @@ export const QueryBalanceRequest = {
       value: QueryBalanceRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryBalanceResponse(): QueryBalanceResponse {
   return {
     balance: undefined,
   };
 }
+/**
+ * QueryBalanceResponse is the response type for the Query/Balance RPC method.
+ * @name QueryBalanceResponse
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryBalanceResponse
+ */
 export const QueryBalanceResponse = {
   typeUrl: '/cosmos.bank.v1beta1.QueryBalanceResponse' as const,
+  aminoType: 'cosmos-sdk/QueryBalanceResponse' as const,
+  is(o: any): o is QueryBalanceResponse {
+    return o && o.$typeUrl === QueryBalanceResponse.typeUrl;
+  },
+  isSDK(o: any): o is QueryBalanceResponseSDKType {
+    return o && o.$typeUrl === QueryBalanceResponse.typeUrl;
+  },
   encode(
     message: QueryBalanceResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -719,6 +1021,16 @@ export const QueryBalanceResponse = {
       value: QueryBalanceResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryBalanceResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Coin.registerTypeUrl();
+  },
 };
 function createBaseQueryAllBalancesRequest(): QueryAllBalancesRequest {
   return {
@@ -727,8 +1039,29 @@ function createBaseQueryAllBalancesRequest(): QueryAllBalancesRequest {
     resolveDenom: false,
   };
 }
+/**
+ * QueryBalanceRequest is the request type for the Query/AllBalances RPC method.
+ * @name QueryAllBalancesRequest
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryAllBalancesRequest
+ */
 export const QueryAllBalancesRequest = {
   typeUrl: '/cosmos.bank.v1beta1.QueryAllBalancesRequest' as const,
+  aminoType: 'cosmos-sdk/QueryAllBalancesRequest' as const,
+  is(o: any): o is QueryAllBalancesRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllBalancesRequest.typeUrl ||
+        (typeof o.address === 'string' && typeof o.resolveDenom === 'boolean'))
+    );
+  },
+  isSDK(o: any): o is QueryAllBalancesRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllBalancesRequest.typeUrl ||
+        (typeof o.address === 'string' && typeof o.resolve_denom === 'boolean'))
+    );
+  },
   encode(
     message: QueryAllBalancesRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -821,6 +1154,16 @@ export const QueryAllBalancesRequest = {
       value: QueryAllBalancesRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryAllBalancesRequest.typeUrl,
+      )
+    ) {
+      return;
+    }
+    PageRequest.registerTypeUrl();
+  },
 };
 function createBaseQueryAllBalancesResponse(): QueryAllBalancesResponse {
   return {
@@ -828,8 +1171,32 @@ function createBaseQueryAllBalancesResponse(): QueryAllBalancesResponse {
     pagination: undefined,
   };
 }
+/**
+ * QueryAllBalancesResponse is the response type for the Query/AllBalances RPC
+ * method.
+ * @name QueryAllBalancesResponse
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryAllBalancesResponse
+ */
 export const QueryAllBalancesResponse = {
   typeUrl: '/cosmos.bank.v1beta1.QueryAllBalancesResponse' as const,
+  aminoType: 'cosmos-sdk/QueryAllBalancesResponse' as const,
+  is(o: any): o is QueryAllBalancesResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllBalancesResponse.typeUrl ||
+        (Array.isArray(o.balances) &&
+          (!o.balances.length || Coin.is(o.balances[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryAllBalancesResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllBalancesResponse.typeUrl ||
+        (Array.isArray(o.balances) &&
+          (!o.balances.length || Coin.isSDK(o.balances[0]))))
+    );
+  },
   encode(
     message: QueryAllBalancesResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -923,6 +1290,17 @@ export const QueryAllBalancesResponse = {
       value: QueryAllBalancesResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryAllBalancesResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Coin.registerTypeUrl();
+    PageResponse.registerTypeUrl();
+  },
 };
 function createBaseQuerySpendableBalancesRequest(): QuerySpendableBalancesRequest {
   return {
@@ -930,8 +1308,32 @@ function createBaseQuerySpendableBalancesRequest(): QuerySpendableBalancesReques
     pagination: undefined,
   };
 }
+/**
+ * QuerySpendableBalancesRequest defines the gRPC request structure for querying
+ * an account's spendable balances.
+ *
+ * Since: cosmos-sdk 0.46
+ * @name QuerySpendableBalancesRequest
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QuerySpendableBalancesRequest
+ */
 export const QuerySpendableBalancesRequest = {
   typeUrl: '/cosmos.bank.v1beta1.QuerySpendableBalancesRequest' as const,
+  aminoType: 'cosmos-sdk/QuerySpendableBalancesRequest' as const,
+  is(o: any): o is QuerySpendableBalancesRequest {
+    return (
+      o &&
+      (o.$typeUrl === QuerySpendableBalancesRequest.typeUrl ||
+        typeof o.address === 'string')
+    );
+  },
+  isSDK(o: any): o is QuerySpendableBalancesRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QuerySpendableBalancesRequest.typeUrl ||
+        typeof o.address === 'string')
+    );
+  },
   encode(
     message: QuerySpendableBalancesRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1014,6 +1416,16 @@ export const QuerySpendableBalancesRequest = {
       value: QuerySpendableBalancesRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QuerySpendableBalancesRequest.typeUrl,
+      )
+    ) {
+      return;
+    }
+    PageRequest.registerTypeUrl();
+  },
 };
 function createBaseQuerySpendableBalancesResponse(): QuerySpendableBalancesResponse {
   return {
@@ -1021,8 +1433,34 @@ function createBaseQuerySpendableBalancesResponse(): QuerySpendableBalancesRespo
     pagination: undefined,
   };
 }
+/**
+ * QuerySpendableBalancesResponse defines the gRPC response structure for querying
+ * an account's spendable balances.
+ *
+ * Since: cosmos-sdk 0.46
+ * @name QuerySpendableBalancesResponse
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QuerySpendableBalancesResponse
+ */
 export const QuerySpendableBalancesResponse = {
   typeUrl: '/cosmos.bank.v1beta1.QuerySpendableBalancesResponse' as const,
+  aminoType: 'cosmos-sdk/QuerySpendableBalancesResponse' as const,
+  is(o: any): o is QuerySpendableBalancesResponse {
+    return (
+      o &&
+      (o.$typeUrl === QuerySpendableBalancesResponse.typeUrl ||
+        (Array.isArray(o.balances) &&
+          (!o.balances.length || Coin.is(o.balances[0]))))
+    );
+  },
+  isSDK(o: any): o is QuerySpendableBalancesResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QuerySpendableBalancesResponse.typeUrl ||
+        (Array.isArray(o.balances) &&
+          (!o.balances.length || Coin.isSDK(o.balances[0]))))
+    );
+  },
   encode(
     message: QuerySpendableBalancesResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1116,6 +1554,17 @@ export const QuerySpendableBalancesResponse = {
       value: QuerySpendableBalancesResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QuerySpendableBalancesResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Coin.registerTypeUrl();
+    PageResponse.registerTypeUrl();
+  },
 };
 function createBaseQuerySpendableBalanceByDenomRequest(): QuerySpendableBalanceByDenomRequest {
   return {
@@ -1123,8 +1572,32 @@ function createBaseQuerySpendableBalanceByDenomRequest(): QuerySpendableBalanceB
     denom: '',
   };
 }
+/**
+ * QuerySpendableBalanceByDenomRequest defines the gRPC request structure for
+ * querying an account's spendable balance for a specific denom.
+ *
+ * Since: cosmos-sdk 0.47
+ * @name QuerySpendableBalanceByDenomRequest
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QuerySpendableBalanceByDenomRequest
+ */
 export const QuerySpendableBalanceByDenomRequest = {
   typeUrl: '/cosmos.bank.v1beta1.QuerySpendableBalanceByDenomRequest' as const,
+  aminoType: 'cosmos-sdk/QuerySpendableBalanceByDenomRequest' as const,
+  is(o: any): o is QuerySpendableBalanceByDenomRequest {
+    return (
+      o &&
+      (o.$typeUrl === QuerySpendableBalanceByDenomRequest.typeUrl ||
+        (typeof o.address === 'string' && typeof o.denom === 'string'))
+    );
+  },
+  isSDK(o: any): o is QuerySpendableBalanceByDenomRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QuerySpendableBalanceByDenomRequest.typeUrl ||
+        (typeof o.address === 'string' && typeof o.denom === 'string'))
+    );
+  },
   encode(
     message: QuerySpendableBalanceByDenomRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1199,14 +1672,31 @@ export const QuerySpendableBalanceByDenomRequest = {
       value: QuerySpendableBalanceByDenomRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQuerySpendableBalanceByDenomResponse(): QuerySpendableBalanceByDenomResponse {
   return {
     balance: undefined,
   };
 }
+/**
+ * QuerySpendableBalanceByDenomResponse defines the gRPC response structure for
+ * querying an account's spendable balance for a specific denom.
+ *
+ * Since: cosmos-sdk 0.47
+ * @name QuerySpendableBalanceByDenomResponse
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QuerySpendableBalanceByDenomResponse
+ */
 export const QuerySpendableBalanceByDenomResponse = {
   typeUrl: '/cosmos.bank.v1beta1.QuerySpendableBalanceByDenomResponse' as const,
+  aminoType: 'cosmos-sdk/QuerySpendableBalanceByDenomResponse' as const,
+  is(o: any): o is QuerySpendableBalanceByDenomResponse {
+    return o && o.$typeUrl === QuerySpendableBalanceByDenomResponse.typeUrl;
+  },
+  isSDK(o: any): o is QuerySpendableBalanceByDenomResponseSDKType {
+    return o && o.$typeUrl === QuerySpendableBalanceByDenomResponse.typeUrl;
+  },
   encode(
     message: QuerySpendableBalanceByDenomResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1280,14 +1770,38 @@ export const QuerySpendableBalanceByDenomResponse = {
       value: QuerySpendableBalanceByDenomResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QuerySpendableBalanceByDenomResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Coin.registerTypeUrl();
+  },
 };
 function createBaseQueryTotalSupplyRequest(): QueryTotalSupplyRequest {
   return {
     pagination: undefined,
   };
 }
+/**
+ * QueryTotalSupplyRequest is the request type for the Query/TotalSupply RPC
+ * method.
+ * @name QueryTotalSupplyRequest
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryTotalSupplyRequest
+ */
 export const QueryTotalSupplyRequest = {
   typeUrl: '/cosmos.bank.v1beta1.QueryTotalSupplyRequest' as const,
+  aminoType: 'cosmos-sdk/QueryTotalSupplyRequest' as const,
+  is(o: any): o is QueryTotalSupplyRequest {
+    return o && o.$typeUrl === QueryTotalSupplyRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryTotalSupplyRequestSDKType {
+    return o && o.$typeUrl === QueryTotalSupplyRequest.typeUrl;
+  },
   encode(
     message: QueryTotalSupplyRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1359,6 +1873,16 @@ export const QueryTotalSupplyRequest = {
       value: QueryTotalSupplyRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryTotalSupplyRequest.typeUrl,
+      )
+    ) {
+      return;
+    }
+    PageRequest.registerTypeUrl();
+  },
 };
 function createBaseQueryTotalSupplyResponse(): QueryTotalSupplyResponse {
   return {
@@ -1366,8 +1890,31 @@ function createBaseQueryTotalSupplyResponse(): QueryTotalSupplyResponse {
     pagination: undefined,
   };
 }
+/**
+ * QueryTotalSupplyResponse is the response type for the Query/TotalSupply RPC
+ * method
+ * @name QueryTotalSupplyResponse
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryTotalSupplyResponse
+ */
 export const QueryTotalSupplyResponse = {
   typeUrl: '/cosmos.bank.v1beta1.QueryTotalSupplyResponse' as const,
+  aminoType: 'cosmos-sdk/QueryTotalSupplyResponse' as const,
+  is(o: any): o is QueryTotalSupplyResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryTotalSupplyResponse.typeUrl ||
+        (Array.isArray(o.supply) && (!o.supply.length || Coin.is(o.supply[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryTotalSupplyResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryTotalSupplyResponse.typeUrl ||
+        (Array.isArray(o.supply) &&
+          (!o.supply.length || Coin.isSDK(o.supply[0]))))
+    );
+  },
   encode(
     message: QueryTotalSupplyResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1459,14 +2006,46 @@ export const QueryTotalSupplyResponse = {
       value: QueryTotalSupplyResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryTotalSupplyResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Coin.registerTypeUrl();
+    PageResponse.registerTypeUrl();
+  },
 };
 function createBaseQuerySupplyOfRequest(): QuerySupplyOfRequest {
   return {
     denom: '',
   };
 }
+/**
+ * QuerySupplyOfRequest is the request type for the Query/SupplyOf RPC method.
+ * @name QuerySupplyOfRequest
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QuerySupplyOfRequest
+ */
 export const QuerySupplyOfRequest = {
   typeUrl: '/cosmos.bank.v1beta1.QuerySupplyOfRequest' as const,
+  aminoType: 'cosmos-sdk/QuerySupplyOfRequest' as const,
+  is(o: any): o is QuerySupplyOfRequest {
+    return (
+      o &&
+      (o.$typeUrl === QuerySupplyOfRequest.typeUrl ||
+        typeof o.denom === 'string')
+    );
+  },
+  isSDK(o: any): o is QuerySupplyOfRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QuerySupplyOfRequest.typeUrl ||
+        typeof o.denom === 'string')
+    );
+  },
   encode(
     message: QuerySupplyOfRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1524,14 +2103,33 @@ export const QuerySupplyOfRequest = {
       value: QuerySupplyOfRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQuerySupplyOfResponse(): QuerySupplyOfResponse {
   return {
     amount: Coin.fromPartial({}),
   };
 }
+/**
+ * QuerySupplyOfResponse is the response type for the Query/SupplyOf RPC method.
+ * @name QuerySupplyOfResponse
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QuerySupplyOfResponse
+ */
 export const QuerySupplyOfResponse = {
   typeUrl: '/cosmos.bank.v1beta1.QuerySupplyOfResponse' as const,
+  aminoType: 'cosmos-sdk/QuerySupplyOfResponse' as const,
+  is(o: any): o is QuerySupplyOfResponse {
+    return (
+      o && (o.$typeUrl === QuerySupplyOfResponse.typeUrl || Coin.is(o.amount))
+    );
+  },
+  isSDK(o: any): o is QuerySupplyOfResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QuerySupplyOfResponse.typeUrl || Coin.isSDK(o.amount))
+    );
+  },
   encode(
     message: QuerySupplyOfResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1593,12 +2191,35 @@ export const QuerySupplyOfResponse = {
       value: QuerySupplyOfResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QuerySupplyOfResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Coin.registerTypeUrl();
+  },
 };
 function createBaseQueryParamsRequest(): QueryParamsRequest {
   return {};
 }
+/**
+ * QueryParamsRequest defines the request type for querying x/bank parameters.
+ * @name QueryParamsRequest
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryParamsRequest
+ */
 export const QueryParamsRequest = {
   typeUrl: '/cosmos.bank.v1beta1.QueryParamsRequest' as const,
+  aminoType: 'cosmos-sdk/QueryParamsRequest' as const,
+  is(o: any): o is QueryParamsRequest {
+    return o && o.$typeUrl === QueryParamsRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryParamsRequestSDKType {
+    return o && o.$typeUrl === QueryParamsRequest.typeUrl;
+  },
   encode(
     _: QueryParamsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1646,14 +2267,33 @@ export const QueryParamsRequest = {
       value: QueryParamsRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryParamsResponse(): QueryParamsResponse {
   return {
     params: Params.fromPartial({}),
   };
 }
+/**
+ * QueryParamsResponse defines the response type for querying x/bank parameters.
+ * @name QueryParamsResponse
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryParamsResponse
+ */
 export const QueryParamsResponse = {
   typeUrl: '/cosmos.bank.v1beta1.QueryParamsResponse' as const,
+  aminoType: 'cosmos-sdk/QueryParamsResponse' as const,
+  is(o: any): o is QueryParamsResponse {
+    return (
+      o && (o.$typeUrl === QueryParamsResponse.typeUrl || Params.is(o.params))
+    );
+  },
+  isSDK(o: any): o is QueryParamsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryParamsResponse.typeUrl || Params.isSDK(o.params))
+    );
+  },
   encode(
     message: QueryParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1715,14 +2355,37 @@ export const QueryParamsResponse = {
       value: QueryParamsResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryParamsResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Params.registerTypeUrl();
+  },
 };
 function createBaseQueryDenomsMetadataRequest(): QueryDenomsMetadataRequest {
   return {
     pagination: undefined,
   };
 }
+/**
+ * QueryDenomsMetadataRequest is the request type for the Query/DenomsMetadata RPC method.
+ * @name QueryDenomsMetadataRequest
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryDenomsMetadataRequest
+ */
 export const QueryDenomsMetadataRequest = {
   typeUrl: '/cosmos.bank.v1beta1.QueryDenomsMetadataRequest' as const,
+  aminoType: 'cosmos-sdk/QueryDenomsMetadataRequest' as const,
+  is(o: any): o is QueryDenomsMetadataRequest {
+    return o && o.$typeUrl === QueryDenomsMetadataRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryDenomsMetadataRequestSDKType {
+    return o && o.$typeUrl === QueryDenomsMetadataRequest.typeUrl;
+  },
   encode(
     message: QueryDenomsMetadataRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1796,6 +2459,16 @@ export const QueryDenomsMetadataRequest = {
       value: QueryDenomsMetadataRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryDenomsMetadataRequest.typeUrl,
+      )
+    ) {
+      return;
+    }
+    PageRequest.registerTypeUrl();
+  },
 };
 function createBaseQueryDenomsMetadataResponse(): QueryDenomsMetadataResponse {
   return {
@@ -1803,8 +2476,32 @@ function createBaseQueryDenomsMetadataResponse(): QueryDenomsMetadataResponse {
     pagination: undefined,
   };
 }
+/**
+ * QueryDenomsMetadataResponse is the response type for the Query/DenomsMetadata RPC
+ * method.
+ * @name QueryDenomsMetadataResponse
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryDenomsMetadataResponse
+ */
 export const QueryDenomsMetadataResponse = {
   typeUrl: '/cosmos.bank.v1beta1.QueryDenomsMetadataResponse' as const,
+  aminoType: 'cosmos-sdk/QueryDenomsMetadataResponse' as const,
+  is(o: any): o is QueryDenomsMetadataResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryDenomsMetadataResponse.typeUrl ||
+        (Array.isArray(o.metadatas) &&
+          (!o.metadatas.length || Metadata.is(o.metadatas[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryDenomsMetadataResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryDenomsMetadataResponse.typeUrl ||
+        (Array.isArray(o.metadatas) &&
+          (!o.metadatas.length || Metadata.isSDK(o.metadatas[0]))))
+    );
+  },
   encode(
     message: QueryDenomsMetadataResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1899,14 +2596,46 @@ export const QueryDenomsMetadataResponse = {
       value: QueryDenomsMetadataResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryDenomsMetadataResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Metadata.registerTypeUrl();
+    PageResponse.registerTypeUrl();
+  },
 };
 function createBaseQueryDenomMetadataRequest(): QueryDenomMetadataRequest {
   return {
     denom: '',
   };
 }
+/**
+ * QueryDenomMetadataRequest is the request type for the Query/DenomMetadata RPC method.
+ * @name QueryDenomMetadataRequest
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryDenomMetadataRequest
+ */
 export const QueryDenomMetadataRequest = {
   typeUrl: '/cosmos.bank.v1beta1.QueryDenomMetadataRequest' as const,
+  aminoType: 'cosmos-sdk/QueryDenomMetadataRequest' as const,
+  is(o: any): o is QueryDenomMetadataRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryDenomMetadataRequest.typeUrl ||
+        typeof o.denom === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryDenomMetadataRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryDenomMetadataRequest.typeUrl ||
+        typeof o.denom === 'string')
+    );
+  },
   encode(
     message: QueryDenomMetadataRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1972,14 +2701,37 @@ export const QueryDenomMetadataRequest = {
       value: QueryDenomMetadataRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryDenomMetadataResponse(): QueryDenomMetadataResponse {
   return {
     metadata: Metadata.fromPartial({}),
   };
 }
+/**
+ * QueryDenomMetadataResponse is the response type for the Query/DenomMetadata RPC
+ * method.
+ * @name QueryDenomMetadataResponse
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryDenomMetadataResponse
+ */
 export const QueryDenomMetadataResponse = {
   typeUrl: '/cosmos.bank.v1beta1.QueryDenomMetadataResponse' as const,
+  aminoType: 'cosmos-sdk/QueryDenomMetadataResponse' as const,
+  is(o: any): o is QueryDenomMetadataResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryDenomMetadataResponse.typeUrl ||
+        Metadata.is(o.metadata))
+    );
+  },
+  isSDK(o: any): o is QueryDenomMetadataResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryDenomMetadataResponse.typeUrl ||
+        Metadata.isSDK(o.metadata))
+    );
+  },
   encode(
     message: QueryDenomMetadataResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2053,15 +2805,47 @@ export const QueryDenomMetadataResponse = {
       value: QueryDenomMetadataResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryDenomMetadataResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Metadata.registerTypeUrl();
+  },
 };
 function createBaseQueryDenomMetadataByQueryStringRequest(): QueryDenomMetadataByQueryStringRequest {
   return {
     denom: '',
   };
 }
+/**
+ * QueryDenomMetadataByQueryStringRequest is the request type for the Query/DenomMetadata RPC method.
+ * Identical with QueryDenomMetadataRequest but receives denom as query string.
+ * @name QueryDenomMetadataByQueryStringRequest
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryDenomMetadataByQueryStringRequest
+ */
 export const QueryDenomMetadataByQueryStringRequest = {
   typeUrl:
     '/cosmos.bank.v1beta1.QueryDenomMetadataByQueryStringRequest' as const,
+  aminoType: 'cosmos-sdk/QueryDenomMetadataByQueryStringRequest' as const,
+  is(o: any): o is QueryDenomMetadataByQueryStringRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryDenomMetadataByQueryStringRequest.typeUrl ||
+        typeof o.denom === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryDenomMetadataByQueryStringRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryDenomMetadataByQueryStringRequest.typeUrl ||
+        typeof o.denom === 'string')
+    );
+  },
   encode(
     message: QueryDenomMetadataByQueryStringRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2127,15 +2911,38 @@ export const QueryDenomMetadataByQueryStringRequest = {
       value: QueryDenomMetadataByQueryStringRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {},
 };
 function createBaseQueryDenomMetadataByQueryStringResponse(): QueryDenomMetadataByQueryStringResponse {
   return {
     metadata: Metadata.fromPartial({}),
   };
 }
+/**
+ * QueryDenomMetadataByQueryStringResponse is the response type for the Query/DenomMetadata RPC
+ * method. Identical with QueryDenomMetadataResponse but receives denom as query string in request.
+ * @name QueryDenomMetadataByQueryStringResponse
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryDenomMetadataByQueryStringResponse
+ */
 export const QueryDenomMetadataByQueryStringResponse = {
   typeUrl:
     '/cosmos.bank.v1beta1.QueryDenomMetadataByQueryStringResponse' as const,
+  aminoType: 'cosmos-sdk/QueryDenomMetadataByQueryStringResponse' as const,
+  is(o: any): o is QueryDenomMetadataByQueryStringResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryDenomMetadataByQueryStringResponse.typeUrl ||
+        Metadata.is(o.metadata))
+    );
+  },
+  isSDK(o: any): o is QueryDenomMetadataByQueryStringResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryDenomMetadataByQueryStringResponse.typeUrl ||
+        Metadata.isSDK(o.metadata))
+    );
+  },
   encode(
     message: QueryDenomMetadataByQueryStringResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2209,6 +3016,16 @@ export const QueryDenomMetadataByQueryStringResponse = {
       value: QueryDenomMetadataByQueryStringResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryDenomMetadataByQueryStringResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    Metadata.registerTypeUrl();
+  },
 };
 function createBaseQueryDenomOwnersRequest(): QueryDenomOwnersRequest {
   return {
@@ -2216,8 +3033,31 @@ function createBaseQueryDenomOwnersRequest(): QueryDenomOwnersRequest {
     pagination: undefined,
   };
 }
+/**
+ * QueryDenomOwnersRequest defines the request type for the DenomOwners RPC query,
+ * which queries for a paginated set of all account holders of a particular
+ * denomination.
+ * @name QueryDenomOwnersRequest
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryDenomOwnersRequest
+ */
 export const QueryDenomOwnersRequest = {
   typeUrl: '/cosmos.bank.v1beta1.QueryDenomOwnersRequest' as const,
+  aminoType: 'cosmos-sdk/QueryDenomOwnersRequest' as const,
+  is(o: any): o is QueryDenomOwnersRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryDenomOwnersRequest.typeUrl ||
+        typeof o.denom === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryDenomOwnersRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryDenomOwnersRequest.typeUrl ||
+        typeof o.denom === 'string')
+    );
+  },
   encode(
     message: QueryDenomOwnersRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2298,6 +3138,16 @@ export const QueryDenomOwnersRequest = {
       value: QueryDenomOwnersRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryDenomOwnersRequest.typeUrl,
+      )
+    ) {
+      return;
+    }
+    PageRequest.registerTypeUrl();
+  },
 };
 function createBaseDenomOwner(): DenomOwner {
   return {
@@ -2305,8 +3155,33 @@ function createBaseDenomOwner(): DenomOwner {
     balance: Coin.fromPartial({}),
   };
 }
+/**
+ * DenomOwner defines structure representing an account that owns or holds a
+ * particular denominated token. It contains the account address and account
+ * balance of the denominated token.
+ *
+ * Since: cosmos-sdk 0.46
+ * @name DenomOwner
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.DenomOwner
+ */
 export const DenomOwner = {
   typeUrl: '/cosmos.bank.v1beta1.DenomOwner' as const,
+  aminoType: 'cosmos-sdk/DenomOwner' as const,
+  is(o: any): o is DenomOwner {
+    return (
+      o &&
+      (o.$typeUrl === DenomOwner.typeUrl ||
+        (typeof o.address === 'string' && Coin.is(o.balance)))
+    );
+  },
+  isSDK(o: any): o is DenomOwnerSDKType {
+    return (
+      o &&
+      (o.$typeUrl === DenomOwner.typeUrl ||
+        (typeof o.address === 'string' && Coin.isSDK(o.balance)))
+    );
+  },
   encode(
     message: DenomOwner,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2378,6 +3253,12 @@ export const DenomOwner = {
       value: DenomOwner.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(DenomOwner.typeUrl)) {
+      return;
+    }
+    Coin.registerTypeUrl();
+  },
 };
 function createBaseQueryDenomOwnersResponse(): QueryDenomOwnersResponse {
   return {
@@ -2385,8 +3266,33 @@ function createBaseQueryDenomOwnersResponse(): QueryDenomOwnersResponse {
     pagination: undefined,
   };
 }
+/**
+ * QueryDenomOwnersResponse defines the RPC response of a DenomOwners RPC query.
+ *
+ * Since: cosmos-sdk 0.46
+ * @name QueryDenomOwnersResponse
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryDenomOwnersResponse
+ */
 export const QueryDenomOwnersResponse = {
   typeUrl: '/cosmos.bank.v1beta1.QueryDenomOwnersResponse' as const,
+  aminoType: 'cosmos-sdk/QueryDenomOwnersResponse' as const,
+  is(o: any): o is QueryDenomOwnersResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryDenomOwnersResponse.typeUrl ||
+        (Array.isArray(o.denomOwners) &&
+          (!o.denomOwners.length || DenomOwner.is(o.denomOwners[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryDenomOwnersResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryDenomOwnersResponse.typeUrl ||
+        (Array.isArray(o.denom_owners) &&
+          (!o.denom_owners.length || DenomOwner.isSDK(o.denom_owners[0]))))
+    );
+  },
   encode(
     message: QueryDenomOwnersResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2481,6 +3387,17 @@ export const QueryDenomOwnersResponse = {
       value: QueryDenomOwnersResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryDenomOwnersResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    DenomOwner.registerTypeUrl();
+    PageResponse.registerTypeUrl();
+  },
 };
 function createBaseQueryDenomOwnersByQueryRequest(): QueryDenomOwnersByQueryRequest {
   return {
@@ -2488,8 +3405,33 @@ function createBaseQueryDenomOwnersByQueryRequest(): QueryDenomOwnersByQueryRequ
     pagination: undefined,
   };
 }
+/**
+ * QueryDenomOwnersByQueryRequest defines the request type for the DenomOwnersByQuery RPC query,
+ * which queries for a paginated set of all account holders of a particular
+ * denomination.
+ *
+ * Since: cosmos-sdk 0.50.3
+ * @name QueryDenomOwnersByQueryRequest
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryDenomOwnersByQueryRequest
+ */
 export const QueryDenomOwnersByQueryRequest = {
   typeUrl: '/cosmos.bank.v1beta1.QueryDenomOwnersByQueryRequest' as const,
+  aminoType: 'cosmos-sdk/QueryDenomOwnersByQueryRequest' as const,
+  is(o: any): o is QueryDenomOwnersByQueryRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryDenomOwnersByQueryRequest.typeUrl ||
+        typeof o.denom === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryDenomOwnersByQueryRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryDenomOwnersByQueryRequest.typeUrl ||
+        typeof o.denom === 'string')
+    );
+  },
   encode(
     message: QueryDenomOwnersByQueryRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2572,6 +3514,16 @@ export const QueryDenomOwnersByQueryRequest = {
       value: QueryDenomOwnersByQueryRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryDenomOwnersByQueryRequest.typeUrl,
+      )
+    ) {
+      return;
+    }
+    PageRequest.registerTypeUrl();
+  },
 };
 function createBaseQueryDenomOwnersByQueryResponse(): QueryDenomOwnersByQueryResponse {
   return {
@@ -2579,8 +3531,33 @@ function createBaseQueryDenomOwnersByQueryResponse(): QueryDenomOwnersByQueryRes
     pagination: undefined,
   };
 }
+/**
+ * QueryDenomOwnersByQueryResponse defines the RPC response of a DenomOwnersByQuery RPC query.
+ *
+ * Since: cosmos-sdk 0.50.3
+ * @name QueryDenomOwnersByQueryResponse
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QueryDenomOwnersByQueryResponse
+ */
 export const QueryDenomOwnersByQueryResponse = {
   typeUrl: '/cosmos.bank.v1beta1.QueryDenomOwnersByQueryResponse' as const,
+  aminoType: 'cosmos-sdk/QueryDenomOwnersByQueryResponse' as const,
+  is(o: any): o is QueryDenomOwnersByQueryResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryDenomOwnersByQueryResponse.typeUrl ||
+        (Array.isArray(o.denomOwners) &&
+          (!o.denomOwners.length || DenomOwner.is(o.denomOwners[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryDenomOwnersByQueryResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryDenomOwnersByQueryResponse.typeUrl ||
+        (Array.isArray(o.denom_owners) &&
+          (!o.denom_owners.length || DenomOwner.isSDK(o.denom_owners[0]))))
+    );
+  },
   encode(
     message: QueryDenomOwnersByQueryResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2675,6 +3652,17 @@ export const QueryDenomOwnersByQueryResponse = {
       value: QueryDenomOwnersByQueryResponse.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QueryDenomOwnersByQueryResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    DenomOwner.registerTypeUrl();
+    PageResponse.registerTypeUrl();
+  },
 };
 function createBaseQuerySendEnabledRequest(): QuerySendEnabledRequest {
   return {
@@ -2682,8 +3670,33 @@ function createBaseQuerySendEnabledRequest(): QuerySendEnabledRequest {
     pagination: undefined,
   };
 }
+/**
+ * QuerySendEnabledRequest defines the RPC request for looking up SendEnabled entries.
+ *
+ * Since: cosmos-sdk 0.47
+ * @name QuerySendEnabledRequest
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QuerySendEnabledRequest
+ */
 export const QuerySendEnabledRequest = {
   typeUrl: '/cosmos.bank.v1beta1.QuerySendEnabledRequest' as const,
+  aminoType: 'cosmos-sdk/QuerySendEnabledRequest' as const,
+  is(o: any): o is QuerySendEnabledRequest {
+    return (
+      o &&
+      (o.$typeUrl === QuerySendEnabledRequest.typeUrl ||
+        (Array.isArray(o.denoms) &&
+          (!o.denoms.length || typeof o.denoms[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is QuerySendEnabledRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QuerySendEnabledRequest.typeUrl ||
+        (Array.isArray(o.denoms) &&
+          (!o.denoms.length || typeof o.denoms[0] === 'string')))
+    );
+  },
   encode(
     message: QuerySendEnabledRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2773,6 +3786,16 @@ export const QuerySendEnabledRequest = {
       value: QuerySendEnabledRequest.encode(message).finish(),
     };
   },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QuerySendEnabledRequest.typeUrl,
+      )
+    ) {
+      return;
+    }
+    PageRequest.registerTypeUrl();
+  },
 };
 function createBaseQuerySendEnabledResponse(): QuerySendEnabledResponse {
   return {
@@ -2780,8 +3803,33 @@ function createBaseQuerySendEnabledResponse(): QuerySendEnabledResponse {
     pagination: undefined,
   };
 }
+/**
+ * QuerySendEnabledResponse defines the RPC response of a SendEnable query.
+ *
+ * Since: cosmos-sdk 0.47
+ * @name QuerySendEnabledResponse
+ * @package cosmos.bank.v1beta1
+ * @see proto type: cosmos.bank.v1beta1.QuerySendEnabledResponse
+ */
 export const QuerySendEnabledResponse = {
   typeUrl: '/cosmos.bank.v1beta1.QuerySendEnabledResponse' as const,
+  aminoType: 'cosmos-sdk/QuerySendEnabledResponse' as const,
+  is(o: any): o is QuerySendEnabledResponse {
+    return (
+      o &&
+      (o.$typeUrl === QuerySendEnabledResponse.typeUrl ||
+        (Array.isArray(o.sendEnabled) &&
+          (!o.sendEnabled.length || SendEnabled.is(o.sendEnabled[0]))))
+    );
+  },
+  isSDK(o: any): o is QuerySendEnabledResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QuerySendEnabledResponse.typeUrl ||
+        (Array.isArray(o.send_enabled) &&
+          (!o.send_enabled.length || SendEnabled.isSDK(o.send_enabled[0]))))
+    );
+  },
   encode(
     message: QuerySendEnabledResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2875,5 +3923,16 @@ export const QuerySendEnabledResponse = {
       typeUrl: '/cosmos.bank.v1beta1.QuerySendEnabledResponse',
       value: QuerySendEnabledResponse.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (
+      !GlobalDecoderRegistry.registerExistingTypeUrl(
+        QuerySendEnabledResponse.typeUrl,
+      )
+    ) {
+      return;
+    }
+    SendEnabled.registerTypeUrl();
+    PageResponse.registerTypeUrl();
   },
 };

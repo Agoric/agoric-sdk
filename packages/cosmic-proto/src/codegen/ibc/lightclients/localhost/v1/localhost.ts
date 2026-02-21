@@ -1,16 +1,24 @@
 //@ts-nocheck
 import { Height, type HeightSDKType } from '../../../core/client/v1/client.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
+import { GlobalDecoderRegistry } from '../../../../registry.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
 /**
  * ClientState defines a loopback (localhost) client. It requires (read-only)
  * access to keys outside the client prefix.
+ * @name ClientState
+ * @package ibc.lightclients.localhost.v1
+ * @see proto type: ibc.lightclients.localhost.v1.ClientState
  */
 export interface ClientState {
-  /** self chain ID */
+  /**
+   * self chain ID
+   */
   chainId: string;
-  /** self latest block height */
+  /**
+   * self latest block height
+   */
   height: Height;
 }
 export interface ClientStateProtoMsg {
@@ -20,6 +28,9 @@ export interface ClientStateProtoMsg {
 /**
  * ClientState defines a loopback (localhost) client. It requires (read-only)
  * access to keys outside the client prefix.
+ * @name ClientStateSDKType
+ * @package ibc.lightclients.localhost.v1
+ * @see proto type: ibc.lightclients.localhost.v1.ClientState
  */
 export interface ClientStateSDKType {
   chain_id: string;
@@ -31,8 +42,30 @@ function createBaseClientState(): ClientState {
     height: Height.fromPartial({}),
   };
 }
+/**
+ * ClientState defines a loopback (localhost) client. It requires (read-only)
+ * access to keys outside the client prefix.
+ * @name ClientState
+ * @package ibc.lightclients.localhost.v1
+ * @see proto type: ibc.lightclients.localhost.v1.ClientState
+ */
 export const ClientState = {
   typeUrl: '/ibc.lightclients.localhost.v1.ClientState' as const,
+  aminoType: 'cosmos-sdk/ClientState' as const,
+  is(o: any): o is ClientState {
+    return (
+      o &&
+      (o.$typeUrl === ClientState.typeUrl ||
+        (typeof o.chainId === 'string' && Height.is(o.height)))
+    );
+  },
+  isSDK(o: any): o is ClientStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ClientState.typeUrl ||
+        (typeof o.chain_id === 'string' && Height.isSDK(o.height)))
+    );
+  },
   encode(
     message: ClientState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -99,5 +132,11 @@ export const ClientState = {
       typeUrl: '/ibc.lightclients.localhost.v1.ClientState',
       value: ClientState.encode(message).finish(),
     };
+  },
+  registerTypeUrl() {
+    if (!GlobalDecoderRegistry.registerExistingTypeUrl(ClientState.typeUrl)) {
+      return;
+    }
+    Height.registerTypeUrl();
   },
 };

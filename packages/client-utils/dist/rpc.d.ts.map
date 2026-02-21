@@ -1,0 +1,1 @@
+{"version":3,"file":"rpc.d.ts","sourceRoot":"","sources":["../src/rpc.js"],"names":[],"mappings":"AASO;;QAAkD;AAOlD,iDAJI,MAAM,aACN;IAAE,KAAK,EAAE,OAAO,MAAM,CAAC,KAAK,CAAA;CAAE,GAC5B,kBAAkB,CAK9B;AAOM,2CAJI,oBAAoB,aACpB;IAAE,KAAK,EAAE,OAAO,MAAM,CAAC,KAAK,CAAA;CAAE,GAC5B,cAAc,CAM1B;mCA5BkC,wBAAwB;0CAGpB,qBAAqB;+BAJ7B,kBAAkB"}
