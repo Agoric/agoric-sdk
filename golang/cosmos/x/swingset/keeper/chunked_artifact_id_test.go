@@ -94,6 +94,42 @@ func TestChunkedArtifactIdMonotonicAfterRemoval(t *testing.T) {
 	}
 }
 
+func TestAddPendingBundleInstallLinksList(t *testing.T) {
+	env := setupKeeperTestEnv(t)
+
+	first, err := env.keeper.AddPendingBundleInstall(env.ctx, &swingsettypes.MsgInstallBundle{Submitter: submitAddr})
+	if err != nil {
+		t.Fatalf("AddPendingBundleInstall failed: %v", err)
+	}
+	second, err := env.keeper.AddPendingBundleInstall(env.ctx, &swingsettypes.MsgInstallBundle{Submitter: submitAddr})
+	if err != nil {
+		t.Fatalf("AddPendingBundleInstall failed: %v", err)
+	}
+
+	state := env.keeper.GetState(env.ctx)
+	if state.FirstChunkedArtifactId != first {
+		t.Fatalf("expected first chunked artifact id %d, got %d", first, state.FirstChunkedArtifactId)
+	}
+	if state.LastChunkedArtifactId != second {
+		t.Fatalf("expected last chunked artifact id %d, got %d", second, state.LastChunkedArtifactId)
+	}
+
+	firstNode := env.keeper.GetChunkedArtifactNode(env.ctx, first)
+	if firstNode == nil {
+		t.Fatalf("expected node for chunked artifact id %d", first)
+	}
+	secondNode := env.keeper.GetChunkedArtifactNode(env.ctx, second)
+	if secondNode == nil {
+		t.Fatalf("expected node for chunked artifact id %d", second)
+	}
+	if firstNode.NextId != second {
+		t.Fatalf("expected first node next id %d, got %d", second, firstNode.NextId)
+	}
+	if secondNode.PrevId != first {
+		t.Fatalf("expected second node prev id %d, got %d", first, secondNode.PrevId)
+	}
+}
+
 func TestPruneExpiredBundleInstallsClearsLastWhenEmpty(t *testing.T) {
 	env := setupKeeperTestEnv(t)
 

@@ -120,6 +120,16 @@ func TestInstallBundle_ValidateBasic(t *testing.T) {
 			},
 		},
 		{
+			name: "compressed with empty chunked artifact",
+			msg: &MsgInstallBundle{
+				Submitter:        addr,
+				CompressedBundle: []byte{1, 2, 3},
+				UncompressedSize: 4,
+				ChunkedArtifact:  &ChunkedArtifact{},
+			},
+			shouldErr: true,
+		},
+		{
 			name: "both",
 			msg: &MsgInstallBundle{
 				Bundle:           "foo",
