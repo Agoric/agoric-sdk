@@ -1,0 +1,167 @@
+# Coverage Steps Action for Daily Test Coverage Improver
+#
+# This composite action builds the Agoric SDK monorepo, runs a focused subset
+# of packages with coverage instrumentation (c8/V8), generates a combined HTML
+# coverage report, and uploads it as a GitHub Actions artifact called "coverage".
+#
+# Coverage report location after this action runs:
+#   ./coverage/html/   (HTML-SPA report for browsing)
+#   ./coverage/tmp/    (raw V8 JSON coverage files, accumulated across packages)
+#
+# The action targets a curated set of small-to-medium packages that are known
+# to have low test coverage ratios.  Focusing on a subset keeps run-time
+# manageable (full-repo coverage can take hours).  Update the PACKAGES list
+# below to change which packages are covered.
+#
+# To run the equivalent commands locally:
+#   export NODE_V8_COVERAGE="$PWD/coverage/tmp"
+#   export C8_OPTIONS="--clean=false"
+#   export NODE_OPTIONS="--max-old-space-size=4096"
+#   yarn lerna run test:c8 --no-bail --scope "@agoric/telemetry"
+#   yarn c8 report --all --include 'packages/*/{src,tools}' \
+#       --reporter=html-spa --reports-dir=coverage/html
+#
+name: 'Daily Test Coverage Improver - Coverage Steps'
+description: 'Build, test with coverage, generate report, and upload artifact'
+
+runs:
+  using: composite
+  steps:
+    # -----------------------------------------------------------------------
+    # Step 1: Set up Node.js
+    # Uses the same Node version as the rest of the Agoric SDK CI (Node 20).
+    # -----------------------------------------------------------------------
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    # -----------------------------------------------------------------------
+    # Step 2: Enable Corepack and install dependencies
+    # `--immutable` ensures no lockfile changes; matches CI convention.
+    # -----------------------------------------------------------------------
+    - name: Install dependencies
+      shell: bash
+      run: |
+        set -euo pipefail
+        echo "=== Installing dependencies ===" | tee -a coverage-steps.log
+        corepack enable 2>&1 | tee -a coverage-steps.log
+        yarn install --immutable 2>&1 | tee -a coverage-steps.log
+        echo "=== Dependencies installed ===" | tee -a coverage-steps.log
+
+    # -----------------------------------------------------------------------
+    # Step 3: Build packages
+    # Only build the packages needed for the coverage run to save time.
+    # Uses lerna `--scope` to limit to target packages and their dependencies.
+    # -----------------------------------------------------------------------
+    - name: Build packages
+      shell: bash
+      run: |
+        set -euo pipefail
+        echo "=== Building packages ===" | tee -a coverage-steps.log
+        # Build all packages (some have generated files needed by others)
+        yarn build 2>&1 | tee -a coverage-steps.log
+        echo "=== Build complete ===" | tee -a coverage-steps.log
+
+    # -----------------------------------------------------------------------
+    # Step 4: Run tests with V8 coverage collection
+    # NODE_V8_COVERAGE tells Node.js to write raw coverage JSON to this dir.
+    # C8_OPTIONS=--clean=false accumulates coverage across multiple packages.
+    # --no-bail keeps going even if one package's tests fail.
+    #
+    # Target packages are selected for their combination of:
+    #   - small size (fast to run)
+    #   - low test-to-source ratio (high improvement potential)
+    # -----------------------------------------------------------------------
+    - name: Run tests with coverage
+      shell: bash
+      run: |
+        set -euo pipefail
+        echo "=== Running tests with coverage ===" | tee -a coverage-steps.log
+
+        # Prepare clean coverage directory
+        export NODE_V8_COVERAGE="$PWD/coverage/tmp"
+        export C8_OPTIONS="--clean=false"
+        export NODE_OPTIONS="--max-old-space-size=4096"
+        rm -rf "$NODE_V8_COVERAGE"
+        mkdir -p "$NODE_V8_COVERAGE"
+
+        # Run coverage for a focused set of small packages with low coverage.
+        # Add or remove scopes here to change the coverage target.
+        PACKAGES=(
+          "@agoric/telemetry"
+          "@agoric/cache"
+          "@agoric/zone"
+          "@agoric/base-zone"
+          "@agoric/network"
+          "@agoric/casting"
+          "@agoric/portfolio-api"
+          "@agoric/kmarshal"
+          "@agoric/access-token"
+          "@agoric/notifier"
+        )
+
+        # Build the --scope flags for lerna
+        SCOPE_FLAGS=""
+        for pkg in "${PACKAGES[@]}"; do
+          SCOPE_FLAGS="$SCOPE_FLAGS --scope $pkg"
+        done
+
+        # shellcheck disable=SC2086
+        yarn lerna run test:c8 --no-bail $SCOPE_FLAGS 2>&1 | tee -a coverage-steps.log
+
+        echo "=== Test run complete ===" | tee -a coverage-steps.log
+
+    # -----------------------------------------------------------------------
+    # Step 5: Generate combined HTML coverage report
+    # --all: include all source files (even those not loaded during tests)
+    # --include: restrict to src/ and tools/ within each package
+    # --reports-dir: where the HTML report is written
+    # -----------------------------------------------------------------------
+    - name: Generate coverage report
+      shell: bash
+      run: |
+        set -euo pipefail
+        echo "=== Generating coverage report ===" | tee -a coverage-steps.log
+
+        export NODE_V8_COVERAGE="$PWD/coverage/tmp"
+
+        yarn c8 report \
+          --all \
+          --include 'packages/*/{src,tools}' \
+          --reporter=html-spa \
+          --reporter=text \
+          --reporter=json-summary \
+          --reports-dir=coverage/html \
+          2>&1 | tee -a coverage-steps.log
+
+        echo "=== Coverage report generated at ./coverage/html ===" | tee -a coverage-steps.log
+
+        # Print a brief summary to the log
+        if [ -f coverage/html/coverage-summary.json ]; then
+          echo "--- Coverage Summary ---" | tee -a coverage-steps.log
+          cat coverage/html/coverage-summary.json | \
+            python3 -c "
+        import json, sys
+        data = json.load(sys.stdin)
+        t = data.get('total', {})
+        print('Lines:     {pct}% ({covered}/{total})'.format(**t.get('lines',{})))
+        print('Functions: {pct}% ({covered}/{total})'.format(**t.get('functions',{})))
+        print('Branches:  {pct}% ({covered}/{total})'.format(**t.get('branches',{})))
+        print('Statements:{pct}% ({covered}/{total})'.format(**t.get('statements',{})))
+        " 2>&1 | tee -a coverage-steps.log
+        fi
+
+    # -----------------------------------------------------------------------
+    # Step 6: Upload coverage report as artifact
+    # The artifact is named "coverage" as required by the workflow.
+    # The HTML report and raw coverage files are both included.
+    # -----------------------------------------------------------------------
+    - name: Upload coverage artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage
+        path: |
+          coverage/html/
+          coverage-steps.log
+        retention-days: 30
