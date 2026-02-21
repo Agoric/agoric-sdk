@@ -8,15 +8,14 @@
     "skipLibCheck": true,
     "allowJs": true,
     "checkJs": true,
-    "allowSyntheticDefaultImports": true,
     "strict": false,
-    "downlevelIteration": true,
     "strictNullChecks": true,
     "noImplicitThis": true,
     "noUncheckedSideEffectImports": true,
     "erasableSyntaxOnly": true,
     "verbatimModuleSyntax": true,
-    "typeRoots": ["./types", "./node_modules/@types"],
+    "types": ["node"],
+    "typeRoots": ["./node_modules/@types"],
     // .ts and rewriting relative paths allow us to include in bundles
     // files that are JS executable (with TS chars blanked) but end in .ts
     "allowImportingTsExtensions": true,
@@ -27,6 +26,5 @@
     "eslint.config.mjs",
     "dist",
     "scripts",
-    "types/**/*.d.ts"
   ]
 }
