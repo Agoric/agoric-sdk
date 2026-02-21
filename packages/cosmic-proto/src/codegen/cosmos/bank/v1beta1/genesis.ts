@@ -1,9 +1,16 @@
 //@ts-nocheck
-import { Params, type ParamsSDKType, Metadata, type MetadataSDKType, SendEnabled, type SendEnabledSDKType } from "./bank.js";
-import { Coin, type CoinSDKType } from "../../base/v1beta1/coin.js";
-import { BinaryReader, BinaryWriter } from "../../../binary.js";
-import { isSet } from "../../../helpers.js";
-import {type JsonSafe } from "../../../json-safe.js";
+import {
+  Params,
+  type ParamsSDKType,
+  Metadata,
+  type MetadataSDKType,
+  SendEnabled,
+  type SendEnabledSDKType,
+} from './bank.js';
+import { Coin, type CoinSDKType } from '../../base/v1beta1/coin.js';
+import { BinaryReader, BinaryWriter } from '../../../binary.js';
+import { isSet } from '../../../helpers.js';
+import { type JsonSafe } from '../../../json-safe.js';
 /** GenesisState defines the bank module's genesis state. */
 export interface GenesisState {
   /** params defines all the parameters of the module. */
@@ -19,13 +26,13 @@ export interface GenesisState {
   denomMetadata: Metadata[];
   /**
    * send_enabled defines the denoms where send is enabled or disabled.
-   * 
+   *
    * Since: cosmos-sdk 0.47
    */
   sendEnabled: SendEnabled[];
 }
 export interface GenesisStateProtoMsg {
-  typeUrl: "/cosmos.bank.v1beta1.GenesisState";
+  typeUrl: '/cosmos.bank.v1beta1.GenesisState';
   value: Uint8Array;
 }
 /** GenesisState defines the bank module's genesis state. */
@@ -47,7 +54,7 @@ export interface Balance {
   coins: Coin[];
 }
 export interface BalanceProtoMsg {
-  typeUrl: "/cosmos.bank.v1beta1.Balance";
+  typeUrl: '/cosmos.bank.v1beta1.Balance';
   value: Uint8Array;
 }
 /**
@@ -64,12 +71,15 @@ function createBaseGenesisState(): GenesisState {
     balances: [],
     supply: [],
     denomMetadata: [],
-    sendEnabled: []
+    sendEnabled: [],
   };
 }
 export const GenesisState = {
-  typeUrl: "/cosmos.bank.v1beta1.GenesisState" as const,
-  encode(message: GenesisState, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/cosmos.bank.v1beta1.GenesisState' as const,
+  encode(
+    message: GenesisState,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.params !== undefined) {
       Params.encode(message.params, writer.uint32(10).fork()).ldelim();
     }
@@ -88,7 +98,8 @@ export const GenesisState = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): GenesisState {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGenesisState();
     while (reader.pos < end) {
@@ -119,32 +130,47 @@ export const GenesisState = {
   fromJSON(object: any): GenesisState {
     return {
       params: isSet(object.params) ? Params.fromJSON(object.params) : undefined,
-      balances: Array.isArray(object?.balances) ? object.balances.map((e: any) => Balance.fromJSON(e)) : [],
-      supply: Array.isArray(object?.supply) ? object.supply.map((e: any) => Coin.fromJSON(e)) : [],
-      denomMetadata: Array.isArray(object?.denomMetadata) ? object.denomMetadata.map((e: any) => Metadata.fromJSON(e)) : [],
-      sendEnabled: Array.isArray(object?.sendEnabled) ? object.sendEnabled.map((e: any) => SendEnabled.fromJSON(e)) : []
+      balances: Array.isArray(object?.balances)
+        ? object.balances.map((e: any) => Balance.fromJSON(e))
+        : [],
+      supply: Array.isArray(object?.supply)
+        ? object.supply.map((e: any) => Coin.fromJSON(e))
+        : [],
+      denomMetadata: Array.isArray(object?.denomMetadata)
+        ? object.denomMetadata.map((e: any) => Metadata.fromJSON(e))
+        : [],
+      sendEnabled: Array.isArray(object?.sendEnabled)
+        ? object.sendEnabled.map((e: any) => SendEnabled.fromJSON(e))
+        : [],
     };
   },
   toJSON(message: GenesisState): JsonSafe<GenesisState> {
     const obj: any = {};
-    message.params !== undefined && (obj.params = message.params ? Params.toJSON(message.params) : undefined);
+    message.params !== undefined &&
+      (obj.params = message.params ? Params.toJSON(message.params) : undefined);
     if (message.balances) {
-      obj.balances = message.balances.map(e => e ? Balance.toJSON(e) : undefined);
+      obj.balances = message.balances.map(e =>
+        e ? Balance.toJSON(e) : undefined,
+      );
     } else {
       obj.balances = [];
     }
     if (message.supply) {
-      obj.supply = message.supply.map(e => e ? Coin.toJSON(e) : undefined);
+      obj.supply = message.supply.map(e => (e ? Coin.toJSON(e) : undefined));
     } else {
       obj.supply = [];
     }
     if (message.denomMetadata) {
-      obj.denomMetadata = message.denomMetadata.map(e => e ? Metadata.toJSON(e) : undefined);
+      obj.denomMetadata = message.denomMetadata.map(e =>
+        e ? Metadata.toJSON(e) : undefined,
+      );
     } else {
       obj.denomMetadata = [];
     }
     if (message.sendEnabled) {
-      obj.sendEnabled = message.sendEnabled.map(e => e ? SendEnabled.toJSON(e) : undefined);
+      obj.sendEnabled = message.sendEnabled.map(e =>
+        e ? SendEnabled.toJSON(e) : undefined,
+      );
     } else {
       obj.sendEnabled = [];
     }
@@ -152,11 +178,16 @@ export const GenesisState = {
   },
   fromPartial(object: Partial<GenesisState>): GenesisState {
     const message = createBaseGenesisState();
-    message.params = object.params !== undefined && object.params !== null ? Params.fromPartial(object.params) : undefined;
+    message.params =
+      object.params !== undefined && object.params !== null
+        ? Params.fromPartial(object.params)
+        : undefined;
     message.balances = object.balances?.map(e => Balance.fromPartial(e)) || [];
     message.supply = object.supply?.map(e => Coin.fromPartial(e)) || [];
-    message.denomMetadata = object.denomMetadata?.map(e => Metadata.fromPartial(e)) || [];
-    message.sendEnabled = object.sendEnabled?.map(e => SendEnabled.fromPartial(e)) || [];
+    message.denomMetadata =
+      object.denomMetadata?.map(e => Metadata.fromPartial(e)) || [];
+    message.sendEnabled =
+      object.sendEnabled?.map(e => SendEnabled.fromPartial(e)) || [];
     return message;
   },
   fromProtoMsg(message: GenesisStateProtoMsg): GenesisState {
@@ -167,21 +198,24 @@ export const GenesisState = {
   },
   toProtoMsg(message: GenesisState): GenesisStateProtoMsg {
     return {
-      typeUrl: "/cosmos.bank.v1beta1.GenesisState",
-      value: GenesisState.encode(message).finish()
+      typeUrl: '/cosmos.bank.v1beta1.GenesisState',
+      value: GenesisState.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseBalance(): Balance {
   return {
-    address: "",
-    coins: []
+    address: '',
+    coins: [],
   };
 }
 export const Balance = {
-  typeUrl: "/cosmos.bank.v1beta1.Balance" as const,
-  encode(message: Balance, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.address !== "") {
+  typeUrl: '/cosmos.bank.v1beta1.Balance' as const,
+  encode(
+    message: Balance,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.address !== '') {
       writer.uint32(10).string(message.address);
     }
     for (const v of message.coins) {
@@ -190,7 +224,8 @@ export const Balance = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Balance {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseBalance();
     while (reader.pos < end) {
@@ -211,15 +246,17 @@ export const Balance = {
   },
   fromJSON(object: any): Balance {
     return {
-      address: isSet(object.address) ? String(object.address) : "",
-      coins: Array.isArray(object?.coins) ? object.coins.map((e: any) => Coin.fromJSON(e)) : []
+      address: isSet(object.address) ? String(object.address) : '',
+      coins: Array.isArray(object?.coins)
+        ? object.coins.map((e: any) => Coin.fromJSON(e))
+        : [],
     };
   },
   toJSON(message: Balance): JsonSafe<Balance> {
     const obj: any = {};
     message.address !== undefined && (obj.address = message.address);
     if (message.coins) {
-      obj.coins = message.coins.map(e => e ? Coin.toJSON(e) : undefined);
+      obj.coins = message.coins.map(e => (e ? Coin.toJSON(e) : undefined));
     } else {
       obj.coins = [];
     }
@@ -227,7 +264,7 @@ export const Balance = {
   },
   fromPartial(object: Partial<Balance>): Balance {
     const message = createBaseBalance();
-    message.address = object.address ?? "";
+    message.address = object.address ?? '';
     message.coins = object.coins?.map(e => Coin.fromPartial(e)) || [];
     return message;
   },
@@ -239,8 +276,8 @@ export const Balance = {
   },
   toProtoMsg(message: Balance): BalanceProtoMsg {
     return {
-      typeUrl: "/cosmos.bank.v1beta1.Balance",
-      value: Balance.encode(message).finish()
+      typeUrl: '/cosmos.bank.v1beta1.Balance',
+      value: Balance.encode(message).finish(),
     };
-  }
+  },
 };

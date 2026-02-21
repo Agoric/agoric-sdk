@@ -1,7 +1,7 @@
 //@ts-nocheck
-import { BinaryReader, BinaryWriter } from "../../../../binary.js";
-import { isSet } from "../../../../helpers.js";
-import {type JsonSafe } from "../../../../json-safe.js";
+import { BinaryReader, BinaryWriter } from '../../../../binary.js';
+import { isSet } from '../../../../helpers.js';
+import { type JsonSafe } from '../../../../json-safe.js';
 /** Module is the config object of the distribution module. */
 export interface Module {
   feeCollectorName: string;
@@ -9,7 +9,7 @@ export interface Module {
   authority: string;
 }
 export interface ModuleProtoMsg {
-  typeUrl: "/cosmos.distribution.module.v1.Module";
+  typeUrl: '/cosmos.distribution.module.v1.Module';
   value: Uint8Array;
 }
 /** Module is the config object of the distribution module. */
@@ -19,23 +19,27 @@ export interface ModuleSDKType {
 }
 function createBaseModule(): Module {
   return {
-    feeCollectorName: "",
-    authority: ""
+    feeCollectorName: '',
+    authority: '',
   };
 }
 export const Module = {
-  typeUrl: "/cosmos.distribution.module.v1.Module" as const,
-  encode(message: Module, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.feeCollectorName !== "") {
+  typeUrl: '/cosmos.distribution.module.v1.Module' as const,
+  encode(
+    message: Module,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.feeCollectorName !== '') {
       writer.uint32(10).string(message.feeCollectorName);
     }
-    if (message.authority !== "") {
+    if (message.authority !== '') {
       writer.uint32(18).string(message.authority);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Module {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseModule();
     while (reader.pos < end) {
@@ -56,20 +60,23 @@ export const Module = {
   },
   fromJSON(object: any): Module {
     return {
-      feeCollectorName: isSet(object.feeCollectorName) ? String(object.feeCollectorName) : "",
-      authority: isSet(object.authority) ? String(object.authority) : ""
+      feeCollectorName: isSet(object.feeCollectorName)
+        ? String(object.feeCollectorName)
+        : '',
+      authority: isSet(object.authority) ? String(object.authority) : '',
     };
   },
   toJSON(message: Module): JsonSafe<Module> {
     const obj: any = {};
-    message.feeCollectorName !== undefined && (obj.feeCollectorName = message.feeCollectorName);
+    message.feeCollectorName !== undefined &&
+      (obj.feeCollectorName = message.feeCollectorName);
     message.authority !== undefined && (obj.authority = message.authority);
     return obj;
   },
   fromPartial(object: Partial<Module>): Module {
     const message = createBaseModule();
-    message.feeCollectorName = object.feeCollectorName ?? "";
-    message.authority = object.authority ?? "";
+    message.feeCollectorName = object.feeCollectorName ?? '';
+    message.authority = object.authority ?? '';
     return message;
   },
   fromProtoMsg(message: ModuleProtoMsg): Module {
@@ -80,8 +87,8 @@ export const Module = {
   },
   toProtoMsg(message: Module): ModuleProtoMsg {
     return {
-      typeUrl: "/cosmos.distribution.module.v1.Module",
-      value: Module.encode(message).finish()
+      typeUrl: '/cosmos.distribution.module.v1.Module',
+      value: Module.encode(message).finish(),
     };
-  }
+  },
 };

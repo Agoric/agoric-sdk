@@ -1,10 +1,13 @@
 //@ts-nocheck
-import { CommitmentProof, type CommitmentProofSDKType } from "../../../../cosmos/ics23/v1/proofs.js";
-import { BinaryReader, BinaryWriter } from "../../../../binary.js";
-import { isSet } from "../../../../helpers.js";
-import { decodeBase64 as bytesFromBase64 } from "@endo/base64";
-import { encodeBase64 as base64FromBytes } from "@endo/base64";
-import {type JsonSafe } from "../../../../json-safe.js";
+import {
+  CommitmentProof,
+  type CommitmentProofSDKType,
+} from '../../../../cosmos/ics23/v1/proofs.js';
+import { BinaryReader, BinaryWriter } from '../../../../binary.js';
+import { isSet } from '../../../../helpers.js';
+import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
+import { encodeBase64 as base64FromBytes } from '@endo/base64';
+import { type JsonSafe } from '../../../../json-safe.js';
 /**
  * MerkleRoot defines a merkle root hash.
  * In the Cosmos SDK, the AppHash of a block header becomes the root.
@@ -13,7 +16,7 @@ export interface MerkleRoot {
   hash: Uint8Array;
 }
 export interface MerkleRootProtoMsg {
-  typeUrl: "/ibc.core.commitment.v1.MerkleRoot";
+  typeUrl: '/ibc.core.commitment.v1.MerkleRoot';
   value: Uint8Array;
 }
 /**
@@ -32,7 +35,7 @@ export interface MerklePrefix {
   keyPrefix: Uint8Array;
 }
 export interface MerklePrefixProtoMsg {
-  typeUrl: "/ibc.core.commitment.v1.MerklePrefix";
+  typeUrl: '/ibc.core.commitment.v1.MerklePrefix';
   value: Uint8Array;
 }
 /**
@@ -52,7 +55,7 @@ export interface MerklePath {
   keyPath: string[];
 }
 export interface MerklePathProtoMsg {
-  typeUrl: "/ibc.core.commitment.v1.MerklePath";
+  typeUrl: '/ibc.core.commitment.v1.MerklePath';
   value: Uint8Array;
 }
 /**
@@ -74,7 +77,7 @@ export interface MerkleProof {
   proofs: CommitmentProof[];
 }
 export interface MerkleProofProtoMsg {
-  typeUrl: "/ibc.core.commitment.v1.MerkleProof";
+  typeUrl: '/ibc.core.commitment.v1.MerkleProof';
   value: Uint8Array;
 }
 /**
@@ -89,19 +92,23 @@ export interface MerkleProofSDKType {
 }
 function createBaseMerkleRoot(): MerkleRoot {
   return {
-    hash: new Uint8Array()
+    hash: new Uint8Array(),
   };
 }
 export const MerkleRoot = {
-  typeUrl: "/ibc.core.commitment.v1.MerkleRoot" as const,
-  encode(message: MerkleRoot, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/ibc.core.commitment.v1.MerkleRoot' as const,
+  encode(
+    message: MerkleRoot,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.hash.length !== 0) {
       writer.uint32(10).bytes(message.hash);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): MerkleRoot {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMerkleRoot();
     while (reader.pos < end) {
@@ -119,12 +126,17 @@ export const MerkleRoot = {
   },
   fromJSON(object: any): MerkleRoot {
     return {
-      hash: isSet(object.hash) ? bytesFromBase64(object.hash) : new Uint8Array()
+      hash: isSet(object.hash)
+        ? bytesFromBase64(object.hash)
+        : new Uint8Array(),
     };
   },
   toJSON(message: MerkleRoot): JsonSafe<MerkleRoot> {
     const obj: any = {};
-    message.hash !== undefined && (obj.hash = base64FromBytes(message.hash !== undefined ? message.hash : new Uint8Array()));
+    message.hash !== undefined &&
+      (obj.hash = base64FromBytes(
+        message.hash !== undefined ? message.hash : new Uint8Array(),
+      ));
     return obj;
   },
   fromPartial(object: Partial<MerkleRoot>): MerkleRoot {
@@ -140,26 +152,30 @@ export const MerkleRoot = {
   },
   toProtoMsg(message: MerkleRoot): MerkleRootProtoMsg {
     return {
-      typeUrl: "/ibc.core.commitment.v1.MerkleRoot",
-      value: MerkleRoot.encode(message).finish()
+      typeUrl: '/ibc.core.commitment.v1.MerkleRoot',
+      value: MerkleRoot.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseMerklePrefix(): MerklePrefix {
   return {
-    keyPrefix: new Uint8Array()
+    keyPrefix: new Uint8Array(),
   };
 }
 export const MerklePrefix = {
-  typeUrl: "/ibc.core.commitment.v1.MerklePrefix" as const,
-  encode(message: MerklePrefix, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/ibc.core.commitment.v1.MerklePrefix' as const,
+  encode(
+    message: MerklePrefix,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.keyPrefix.length !== 0) {
       writer.uint32(10).bytes(message.keyPrefix);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): MerklePrefix {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMerklePrefix();
     while (reader.pos < end) {
@@ -177,12 +193,17 @@ export const MerklePrefix = {
   },
   fromJSON(object: any): MerklePrefix {
     return {
-      keyPrefix: isSet(object.keyPrefix) ? bytesFromBase64(object.keyPrefix) : new Uint8Array()
+      keyPrefix: isSet(object.keyPrefix)
+        ? bytesFromBase64(object.keyPrefix)
+        : new Uint8Array(),
     };
   },
   toJSON(message: MerklePrefix): JsonSafe<MerklePrefix> {
     const obj: any = {};
-    message.keyPrefix !== undefined && (obj.keyPrefix = base64FromBytes(message.keyPrefix !== undefined ? message.keyPrefix : new Uint8Array()));
+    message.keyPrefix !== undefined &&
+      (obj.keyPrefix = base64FromBytes(
+        message.keyPrefix !== undefined ? message.keyPrefix : new Uint8Array(),
+      ));
     return obj;
   },
   fromPartial(object: Partial<MerklePrefix>): MerklePrefix {
@@ -198,26 +219,30 @@ export const MerklePrefix = {
   },
   toProtoMsg(message: MerklePrefix): MerklePrefixProtoMsg {
     return {
-      typeUrl: "/ibc.core.commitment.v1.MerklePrefix",
-      value: MerklePrefix.encode(message).finish()
+      typeUrl: '/ibc.core.commitment.v1.MerklePrefix',
+      value: MerklePrefix.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseMerklePath(): MerklePath {
   return {
-    keyPath: []
+    keyPath: [],
   };
 }
 export const MerklePath = {
-  typeUrl: "/ibc.core.commitment.v1.MerklePath" as const,
-  encode(message: MerklePath, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/ibc.core.commitment.v1.MerklePath' as const,
+  encode(
+    message: MerklePath,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     for (const v of message.keyPath) {
       writer.uint32(10).string(v!);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): MerklePath {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMerklePath();
     while (reader.pos < end) {
@@ -235,7 +260,9 @@ export const MerklePath = {
   },
   fromJSON(object: any): MerklePath {
     return {
-      keyPath: Array.isArray(object?.keyPath) ? object.keyPath.map((e: any) => String(e)) : []
+      keyPath: Array.isArray(object?.keyPath)
+        ? object.keyPath.map((e: any) => String(e))
+        : [],
     };
   },
   toJSON(message: MerklePath): JsonSafe<MerklePath> {
@@ -260,26 +287,30 @@ export const MerklePath = {
   },
   toProtoMsg(message: MerklePath): MerklePathProtoMsg {
     return {
-      typeUrl: "/ibc.core.commitment.v1.MerklePath",
-      value: MerklePath.encode(message).finish()
+      typeUrl: '/ibc.core.commitment.v1.MerklePath',
+      value: MerklePath.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseMerkleProof(): MerkleProof {
   return {
-    proofs: []
+    proofs: [],
   };
 }
 export const MerkleProof = {
-  typeUrl: "/ibc.core.commitment.v1.MerkleProof" as const,
-  encode(message: MerkleProof, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/ibc.core.commitment.v1.MerkleProof' as const,
+  encode(
+    message: MerkleProof,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     for (const v of message.proofs) {
       CommitmentProof.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): MerkleProof {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMerkleProof();
     while (reader.pos < end) {
@@ -297,13 +328,17 @@ export const MerkleProof = {
   },
   fromJSON(object: any): MerkleProof {
     return {
-      proofs: Array.isArray(object?.proofs) ? object.proofs.map((e: any) => CommitmentProof.fromJSON(e)) : []
+      proofs: Array.isArray(object?.proofs)
+        ? object.proofs.map((e: any) => CommitmentProof.fromJSON(e))
+        : [],
     };
   },
   toJSON(message: MerkleProof): JsonSafe<MerkleProof> {
     const obj: any = {};
     if (message.proofs) {
-      obj.proofs = message.proofs.map(e => e ? CommitmentProof.toJSON(e) : undefined);
+      obj.proofs = message.proofs.map(e =>
+        e ? CommitmentProof.toJSON(e) : undefined,
+      );
     } else {
       obj.proofs = [];
     }
@@ -311,7 +346,8 @@ export const MerkleProof = {
   },
   fromPartial(object: Partial<MerkleProof>): MerkleProof {
     const message = createBaseMerkleProof();
-    message.proofs = object.proofs?.map(e => CommitmentProof.fromPartial(e)) || [];
+    message.proofs =
+      object.proofs?.map(e => CommitmentProof.fromPartial(e)) || [];
     return message;
   },
   fromProtoMsg(message: MerkleProofProtoMsg): MerkleProof {
@@ -322,8 +358,8 @@ export const MerkleProof = {
   },
   toProtoMsg(message: MerkleProof): MerkleProofProtoMsg {
     return {
-      typeUrl: "/ibc.core.commitment.v1.MerkleProof",
-      value: MerkleProof.encode(message).finish()
+      typeUrl: '/ibc.core.commitment.v1.MerkleProof',
+      value: MerkleProof.encode(message).finish(),
     };
-  }
+  },
 };

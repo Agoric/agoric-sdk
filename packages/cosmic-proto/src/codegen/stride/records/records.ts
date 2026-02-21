@@ -1,8 +1,8 @@
 //@ts-nocheck
-import { Coin, type CoinSDKType } from "../../cosmos/base/v1beta1/coin.js";
-import { BinaryReader, BinaryWriter } from "../../binary.js";
-import { isSet } from "../../helpers.js";
-import {type JsonSafe } from "../../json-safe.js";
+import { Coin, type CoinSDKType } from '../../cosmos/base/v1beta1/coin.js';
+import { BinaryReader, BinaryWriter } from '../../binary.js';
+import { isSet } from '../../helpers.js';
+import { type JsonSafe } from '../../json-safe.js';
 export enum DepositRecord_Status {
   /** TRANSFER_QUEUE - in transfer queue to be sent to the delegation ICA */
   TRANSFER_QUEUE = 0,
@@ -15,39 +15,43 @@ export enum DepositRecord_Status {
   UNRECOGNIZED = -1,
 }
 export const DepositRecord_StatusSDKType = DepositRecord_Status;
-export function depositRecord_StatusFromJSON(object: any): DepositRecord_Status {
+export function depositRecord_StatusFromJSON(
+  object: any,
+): DepositRecord_Status {
   switch (object) {
     case 0:
-    case "TRANSFER_QUEUE":
+    case 'TRANSFER_QUEUE':
       return DepositRecord_Status.TRANSFER_QUEUE;
     case 2:
-    case "TRANSFER_IN_PROGRESS":
+    case 'TRANSFER_IN_PROGRESS':
       return DepositRecord_Status.TRANSFER_IN_PROGRESS;
     case 1:
-    case "DELEGATION_QUEUE":
+    case 'DELEGATION_QUEUE':
       return DepositRecord_Status.DELEGATION_QUEUE;
     case 3:
-    case "DELEGATION_IN_PROGRESS":
+    case 'DELEGATION_IN_PROGRESS':
       return DepositRecord_Status.DELEGATION_IN_PROGRESS;
     case -1:
-    case "UNRECOGNIZED":
+    case 'UNRECOGNIZED':
     default:
       return DepositRecord_Status.UNRECOGNIZED;
   }
 }
-export function depositRecord_StatusToJSON(object: DepositRecord_Status): string {
+export function depositRecord_StatusToJSON(
+  object: DepositRecord_Status,
+): string {
   switch (object) {
     case DepositRecord_Status.TRANSFER_QUEUE:
-      return "TRANSFER_QUEUE";
+      return 'TRANSFER_QUEUE';
     case DepositRecord_Status.TRANSFER_IN_PROGRESS:
-      return "TRANSFER_IN_PROGRESS";
+      return 'TRANSFER_IN_PROGRESS';
     case DepositRecord_Status.DELEGATION_QUEUE:
-      return "DELEGATION_QUEUE";
+      return 'DELEGATION_QUEUE';
     case DepositRecord_Status.DELEGATION_IN_PROGRESS:
-      return "DELEGATION_IN_PROGRESS";
+      return 'DELEGATION_IN_PROGRESS';
     case DepositRecord_Status.UNRECOGNIZED:
     default:
-      return "UNRECOGNIZED";
+      return 'UNRECOGNIZED';
   }
 }
 export enum DepositRecord_Source {
@@ -56,29 +60,33 @@ export enum DepositRecord_Source {
   UNRECOGNIZED = -1,
 }
 export const DepositRecord_SourceSDKType = DepositRecord_Source;
-export function depositRecord_SourceFromJSON(object: any): DepositRecord_Source {
+export function depositRecord_SourceFromJSON(
+  object: any,
+): DepositRecord_Source {
   switch (object) {
     case 0:
-    case "STRIDE":
+    case 'STRIDE':
       return DepositRecord_Source.STRIDE;
     case 1:
-    case "WITHDRAWAL_ICA":
+    case 'WITHDRAWAL_ICA':
       return DepositRecord_Source.WITHDRAWAL_ICA;
     case -1:
-    case "UNRECOGNIZED":
+    case 'UNRECOGNIZED':
     default:
       return DepositRecord_Source.UNRECOGNIZED;
   }
 }
-export function depositRecord_SourceToJSON(object: DepositRecord_Source): string {
+export function depositRecord_SourceToJSON(
+  object: DepositRecord_Source,
+): string {
   switch (object) {
     case DepositRecord_Source.STRIDE:
-      return "STRIDE";
+      return 'STRIDE';
     case DepositRecord_Source.WITHDRAWAL_ICA:
-      return "WITHDRAWAL_ICA";
+      return 'WITHDRAWAL_ICA';
     case DepositRecord_Source.UNRECOGNIZED:
     default:
-      return "UNRECOGNIZED";
+      return 'UNRECOGNIZED';
   }
 }
 export enum HostZoneUnbonding_Status {
@@ -97,49 +105,53 @@ export enum HostZoneUnbonding_Status {
   UNRECOGNIZED = -1,
 }
 export const HostZoneUnbonding_StatusSDKType = HostZoneUnbonding_Status;
-export function hostZoneUnbonding_StatusFromJSON(object: any): HostZoneUnbonding_Status {
+export function hostZoneUnbonding_StatusFromJSON(
+  object: any,
+): HostZoneUnbonding_Status {
   switch (object) {
     case 0:
-    case "UNBONDING_QUEUE":
+    case 'UNBONDING_QUEUE':
       return HostZoneUnbonding_Status.UNBONDING_QUEUE;
     case 3:
-    case "UNBONDING_IN_PROGRESS":
+    case 'UNBONDING_IN_PROGRESS':
       return HostZoneUnbonding_Status.UNBONDING_IN_PROGRESS;
     case 5:
-    case "UNBONDING_RETRY_QUEUE":
+    case 'UNBONDING_RETRY_QUEUE':
       return HostZoneUnbonding_Status.UNBONDING_RETRY_QUEUE;
     case 1:
-    case "EXIT_TRANSFER_QUEUE":
+    case 'EXIT_TRANSFER_QUEUE':
       return HostZoneUnbonding_Status.EXIT_TRANSFER_QUEUE;
     case 4:
-    case "EXIT_TRANSFER_IN_PROGRESS":
+    case 'EXIT_TRANSFER_IN_PROGRESS':
       return HostZoneUnbonding_Status.EXIT_TRANSFER_IN_PROGRESS;
     case 2:
-    case "CLAIMABLE":
+    case 'CLAIMABLE':
       return HostZoneUnbonding_Status.CLAIMABLE;
     case -1:
-    case "UNRECOGNIZED":
+    case 'UNRECOGNIZED':
     default:
       return HostZoneUnbonding_Status.UNRECOGNIZED;
   }
 }
-export function hostZoneUnbonding_StatusToJSON(object: HostZoneUnbonding_Status): string {
+export function hostZoneUnbonding_StatusToJSON(
+  object: HostZoneUnbonding_Status,
+): string {
   switch (object) {
     case HostZoneUnbonding_Status.UNBONDING_QUEUE:
-      return "UNBONDING_QUEUE";
+      return 'UNBONDING_QUEUE';
     case HostZoneUnbonding_Status.UNBONDING_IN_PROGRESS:
-      return "UNBONDING_IN_PROGRESS";
+      return 'UNBONDING_IN_PROGRESS';
     case HostZoneUnbonding_Status.UNBONDING_RETRY_QUEUE:
-      return "UNBONDING_RETRY_QUEUE";
+      return 'UNBONDING_RETRY_QUEUE';
     case HostZoneUnbonding_Status.EXIT_TRANSFER_QUEUE:
-      return "EXIT_TRANSFER_QUEUE";
+      return 'EXIT_TRANSFER_QUEUE';
     case HostZoneUnbonding_Status.EXIT_TRANSFER_IN_PROGRESS:
-      return "EXIT_TRANSFER_IN_PROGRESS";
+      return 'EXIT_TRANSFER_IN_PROGRESS';
     case HostZoneUnbonding_Status.CLAIMABLE:
-      return "CLAIMABLE";
+      return 'CLAIMABLE';
     case HostZoneUnbonding_Status.UNRECOGNIZED:
     default:
-      return "UNRECOGNIZED";
+      return 'UNRECOGNIZED';
   }
 }
 export enum LSMTokenDeposit_Status {
@@ -153,54 +165,58 @@ export enum LSMTokenDeposit_Status {
   UNRECOGNIZED = -1,
 }
 export const LSMTokenDeposit_StatusSDKType = LSMTokenDeposit_Status;
-export function lSMTokenDeposit_StatusFromJSON(object: any): LSMTokenDeposit_Status {
+export function lSMTokenDeposit_StatusFromJSON(
+  object: any,
+): LSMTokenDeposit_Status {
   switch (object) {
     case 0:
-    case "DEPOSIT_PENDING":
+    case 'DEPOSIT_PENDING':
       return LSMTokenDeposit_Status.DEPOSIT_PENDING;
     case 1:
-    case "TRANSFER_QUEUE":
+    case 'TRANSFER_QUEUE':
       return LSMTokenDeposit_Status.TRANSFER_QUEUE;
     case 2:
-    case "TRANSFER_IN_PROGRESS":
+    case 'TRANSFER_IN_PROGRESS':
       return LSMTokenDeposit_Status.TRANSFER_IN_PROGRESS;
     case 3:
-    case "TRANSFER_FAILED":
+    case 'TRANSFER_FAILED':
       return LSMTokenDeposit_Status.TRANSFER_FAILED;
     case 4:
-    case "DETOKENIZATION_QUEUE":
+    case 'DETOKENIZATION_QUEUE':
       return LSMTokenDeposit_Status.DETOKENIZATION_QUEUE;
     case 5:
-    case "DETOKENIZATION_IN_PROGRESS":
+    case 'DETOKENIZATION_IN_PROGRESS':
       return LSMTokenDeposit_Status.DETOKENIZATION_IN_PROGRESS;
     case 6:
-    case "DETOKENIZATION_FAILED":
+    case 'DETOKENIZATION_FAILED':
       return LSMTokenDeposit_Status.DETOKENIZATION_FAILED;
     case -1:
-    case "UNRECOGNIZED":
+    case 'UNRECOGNIZED':
     default:
       return LSMTokenDeposit_Status.UNRECOGNIZED;
   }
 }
-export function lSMTokenDeposit_StatusToJSON(object: LSMTokenDeposit_Status): string {
+export function lSMTokenDeposit_StatusToJSON(
+  object: LSMTokenDeposit_Status,
+): string {
   switch (object) {
     case LSMTokenDeposit_Status.DEPOSIT_PENDING:
-      return "DEPOSIT_PENDING";
+      return 'DEPOSIT_PENDING';
     case LSMTokenDeposit_Status.TRANSFER_QUEUE:
-      return "TRANSFER_QUEUE";
+      return 'TRANSFER_QUEUE';
     case LSMTokenDeposit_Status.TRANSFER_IN_PROGRESS:
-      return "TRANSFER_IN_PROGRESS";
+      return 'TRANSFER_IN_PROGRESS';
     case LSMTokenDeposit_Status.TRANSFER_FAILED:
-      return "TRANSFER_FAILED";
+      return 'TRANSFER_FAILED';
     case LSMTokenDeposit_Status.DETOKENIZATION_QUEUE:
-      return "DETOKENIZATION_QUEUE";
+      return 'DETOKENIZATION_QUEUE';
     case LSMTokenDeposit_Status.DETOKENIZATION_IN_PROGRESS:
-      return "DETOKENIZATION_IN_PROGRESS";
+      return 'DETOKENIZATION_IN_PROGRESS';
     case LSMTokenDeposit_Status.DETOKENIZATION_FAILED:
-      return "DETOKENIZATION_FAILED";
+      return 'DETOKENIZATION_FAILED';
     case LSMTokenDeposit_Status.UNRECOGNIZED:
     default:
-      return "UNRECOGNIZED";
+      return 'UNRECOGNIZED';
   }
 }
 export interface UserRedemptionRecord {
@@ -215,7 +231,7 @@ export interface UserRedemptionRecord {
   stTokenAmount: string;
 }
 export interface UserRedemptionRecordProtoMsg {
-  typeUrl: "/stride.records.UserRedemptionRecord";
+  typeUrl: '/stride.records.UserRedemptionRecord';
   value: Uint8Array;
 }
 export interface UserRedemptionRecordSDKType {
@@ -239,7 +255,7 @@ export interface DepositRecord {
   delegationTxsInProgress: bigint;
 }
 export interface DepositRecordProtoMsg {
-  typeUrl: "/stride.records.DepositRecord";
+  typeUrl: '/stride.records.DepositRecord';
   value: Uint8Array;
 }
 export interface DepositRecordSDKType {
@@ -266,7 +282,7 @@ export interface HostZoneUnbonding {
   userRedemptionRecords: string[];
 }
 export interface HostZoneUnbondingProtoMsg {
-  typeUrl: "/stride.records.HostZoneUnbonding";
+  typeUrl: '/stride.records.HostZoneUnbonding';
   value: Uint8Array;
 }
 export interface HostZoneUnbondingSDKType {
@@ -287,7 +303,7 @@ export interface EpochUnbondingRecord {
   hostZoneUnbondings: HostZoneUnbonding[];
 }
 export interface EpochUnbondingRecordProtoMsg {
-  typeUrl: "/stride.records.EpochUnbondingRecord";
+  typeUrl: '/stride.records.EpochUnbondingRecord';
   value: Uint8Array;
 }
 export interface EpochUnbondingRecordSDKType {
@@ -306,7 +322,7 @@ export interface LSMTokenDeposit {
   status: LSMTokenDeposit_Status;
 }
 export interface LSMTokenDepositProtoMsg {
-  typeUrl: "/stride.records.LSMTokenDeposit";
+  typeUrl: '/stride.records.LSMTokenDeposit';
   value: Uint8Array;
 }
 export interface LSMTokenDepositSDKType {
@@ -322,32 +338,35 @@ export interface LSMTokenDepositSDKType {
 }
 function createBaseUserRedemptionRecord(): UserRedemptionRecord {
   return {
-    id: "",
-    receiver: "",
-    nativeTokenAmount: "",
-    denom: "",
-    hostZoneId: "",
+    id: '',
+    receiver: '',
+    nativeTokenAmount: '',
+    denom: '',
+    hostZoneId: '',
     epochNumber: BigInt(0),
     claimIsPending: false,
-    stTokenAmount: ""
+    stTokenAmount: '',
   };
 }
 export const UserRedemptionRecord = {
-  typeUrl: "/stride.records.UserRedemptionRecord" as const,
-  encode(message: UserRedemptionRecord, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.id !== "") {
+  typeUrl: '/stride.records.UserRedemptionRecord' as const,
+  encode(
+    message: UserRedemptionRecord,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.id !== '') {
       writer.uint32(10).string(message.id);
     }
-    if (message.receiver !== "") {
+    if (message.receiver !== '') {
       writer.uint32(26).string(message.receiver);
     }
-    if (message.nativeTokenAmount !== "") {
+    if (message.nativeTokenAmount !== '') {
       writer.uint32(34).string(message.nativeTokenAmount);
     }
-    if (message.denom !== "") {
+    if (message.denom !== '') {
       writer.uint32(42).string(message.denom);
     }
-    if (message.hostZoneId !== "") {
+    if (message.hostZoneId !== '') {
       writer.uint32(50).string(message.hostZoneId);
     }
     if (message.epochNumber !== BigInt(0)) {
@@ -356,13 +375,17 @@ export const UserRedemptionRecord = {
     if (message.claimIsPending === true) {
       writer.uint32(64).bool(message.claimIsPending);
     }
-    if (message.stTokenAmount !== "") {
+    if (message.stTokenAmount !== '') {
       writer.uint32(74).string(message.stTokenAmount);
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): UserRedemptionRecord {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): UserRedemptionRecord {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseUserRedemptionRecord();
     while (reader.pos < end) {
@@ -401,38 +424,53 @@ export const UserRedemptionRecord = {
   },
   fromJSON(object: any): UserRedemptionRecord {
     return {
-      id: isSet(object.id) ? String(object.id) : "",
-      receiver: isSet(object.receiver) ? String(object.receiver) : "",
-      nativeTokenAmount: isSet(object.nativeTokenAmount) ? String(object.nativeTokenAmount) : "",
-      denom: isSet(object.denom) ? String(object.denom) : "",
-      hostZoneId: isSet(object.hostZoneId) ? String(object.hostZoneId) : "",
-      epochNumber: isSet(object.epochNumber) ? BigInt(object.epochNumber.toString()) : BigInt(0),
-      claimIsPending: isSet(object.claimIsPending) ? Boolean(object.claimIsPending) : false,
-      stTokenAmount: isSet(object.stTokenAmount) ? String(object.stTokenAmount) : ""
+      id: isSet(object.id) ? String(object.id) : '',
+      receiver: isSet(object.receiver) ? String(object.receiver) : '',
+      nativeTokenAmount: isSet(object.nativeTokenAmount)
+        ? String(object.nativeTokenAmount)
+        : '',
+      denom: isSet(object.denom) ? String(object.denom) : '',
+      hostZoneId: isSet(object.hostZoneId) ? String(object.hostZoneId) : '',
+      epochNumber: isSet(object.epochNumber)
+        ? BigInt(object.epochNumber.toString())
+        : BigInt(0),
+      claimIsPending: isSet(object.claimIsPending)
+        ? Boolean(object.claimIsPending)
+        : false,
+      stTokenAmount: isSet(object.stTokenAmount)
+        ? String(object.stTokenAmount)
+        : '',
     };
   },
   toJSON(message: UserRedemptionRecord): JsonSafe<UserRedemptionRecord> {
     const obj: any = {};
     message.id !== undefined && (obj.id = message.id);
     message.receiver !== undefined && (obj.receiver = message.receiver);
-    message.nativeTokenAmount !== undefined && (obj.nativeTokenAmount = message.nativeTokenAmount);
+    message.nativeTokenAmount !== undefined &&
+      (obj.nativeTokenAmount = message.nativeTokenAmount);
     message.denom !== undefined && (obj.denom = message.denom);
     message.hostZoneId !== undefined && (obj.hostZoneId = message.hostZoneId);
-    message.epochNumber !== undefined && (obj.epochNumber = (message.epochNumber || BigInt(0)).toString());
-    message.claimIsPending !== undefined && (obj.claimIsPending = message.claimIsPending);
-    message.stTokenAmount !== undefined && (obj.stTokenAmount = message.stTokenAmount);
+    message.epochNumber !== undefined &&
+      (obj.epochNumber = (message.epochNumber || BigInt(0)).toString());
+    message.claimIsPending !== undefined &&
+      (obj.claimIsPending = message.claimIsPending);
+    message.stTokenAmount !== undefined &&
+      (obj.stTokenAmount = message.stTokenAmount);
     return obj;
   },
   fromPartial(object: Partial<UserRedemptionRecord>): UserRedemptionRecord {
     const message = createBaseUserRedemptionRecord();
-    message.id = object.id ?? "";
-    message.receiver = object.receiver ?? "";
-    message.nativeTokenAmount = object.nativeTokenAmount ?? "";
-    message.denom = object.denom ?? "";
-    message.hostZoneId = object.hostZoneId ?? "";
-    message.epochNumber = object.epochNumber !== undefined && object.epochNumber !== null ? BigInt(object.epochNumber.toString()) : BigInt(0);
+    message.id = object.id ?? '';
+    message.receiver = object.receiver ?? '';
+    message.nativeTokenAmount = object.nativeTokenAmount ?? '';
+    message.denom = object.denom ?? '';
+    message.hostZoneId = object.hostZoneId ?? '';
+    message.epochNumber =
+      object.epochNumber !== undefined && object.epochNumber !== null
+        ? BigInt(object.epochNumber.toString())
+        : BigInt(0);
     message.claimIsPending = object.claimIsPending ?? false;
-    message.stTokenAmount = object.stTokenAmount ?? "";
+    message.stTokenAmount = object.stTokenAmount ?? '';
     return message;
   },
   fromProtoMsg(message: UserRedemptionRecordProtoMsg): UserRedemptionRecord {
@@ -443,36 +481,39 @@ export const UserRedemptionRecord = {
   },
   toProtoMsg(message: UserRedemptionRecord): UserRedemptionRecordProtoMsg {
     return {
-      typeUrl: "/stride.records.UserRedemptionRecord",
-      value: UserRedemptionRecord.encode(message).finish()
+      typeUrl: '/stride.records.UserRedemptionRecord',
+      value: UserRedemptionRecord.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseDepositRecord(): DepositRecord {
   return {
     id: BigInt(0),
-    amount: "",
-    denom: "",
-    hostZoneId: "",
+    amount: '',
+    denom: '',
+    hostZoneId: '',
     status: 0,
     depositEpochNumber: BigInt(0),
     source: 0,
-    delegationTxsInProgress: BigInt(0)
+    delegationTxsInProgress: BigInt(0),
   };
 }
 export const DepositRecord = {
-  typeUrl: "/stride.records.DepositRecord" as const,
-  encode(message: DepositRecord, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/stride.records.DepositRecord' as const,
+  encode(
+    message: DepositRecord,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.id !== BigInt(0)) {
       writer.uint32(8).uint64(message.id);
     }
-    if (message.amount !== "") {
+    if (message.amount !== '') {
       writer.uint32(18).string(message.amount);
     }
-    if (message.denom !== "") {
+    if (message.denom !== '') {
       writer.uint32(26).string(message.denom);
     }
-    if (message.hostZoneId !== "") {
+    if (message.hostZoneId !== '') {
       writer.uint32(34).string(message.hostZoneId);
     }
     if (message.status !== 0) {
@@ -490,7 +531,8 @@ export const DepositRecord = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): DepositRecord {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseDepositRecord();
     while (reader.pos < end) {
@@ -530,13 +572,21 @@ export const DepositRecord = {
   fromJSON(object: any): DepositRecord {
     return {
       id: isSet(object.id) ? BigInt(object.id.toString()) : BigInt(0),
-      amount: isSet(object.amount) ? String(object.amount) : "",
-      denom: isSet(object.denom) ? String(object.denom) : "",
-      hostZoneId: isSet(object.hostZoneId) ? String(object.hostZoneId) : "",
-      status: isSet(object.status) ? depositRecord_StatusFromJSON(object.status) : -1,
-      depositEpochNumber: isSet(object.depositEpochNumber) ? BigInt(object.depositEpochNumber.toString()) : BigInt(0),
-      source: isSet(object.source) ? depositRecord_SourceFromJSON(object.source) : -1,
-      delegationTxsInProgress: isSet(object.delegationTxsInProgress) ? BigInt(object.delegationTxsInProgress.toString()) : BigInt(0)
+      amount: isSet(object.amount) ? String(object.amount) : '',
+      denom: isSet(object.denom) ? String(object.denom) : '',
+      hostZoneId: isSet(object.hostZoneId) ? String(object.hostZoneId) : '',
+      status: isSet(object.status)
+        ? depositRecord_StatusFromJSON(object.status)
+        : -1,
+      depositEpochNumber: isSet(object.depositEpochNumber)
+        ? BigInt(object.depositEpochNumber.toString())
+        : BigInt(0),
+      source: isSet(object.source)
+        ? depositRecord_SourceFromJSON(object.source)
+        : -1,
+      delegationTxsInProgress: isSet(object.delegationTxsInProgress)
+        ? BigInt(object.delegationTxsInProgress.toString())
+        : BigInt(0),
     };
   },
   toJSON(message: DepositRecord): JsonSafe<DepositRecord> {
@@ -545,22 +595,41 @@ export const DepositRecord = {
     message.amount !== undefined && (obj.amount = message.amount);
     message.denom !== undefined && (obj.denom = message.denom);
     message.hostZoneId !== undefined && (obj.hostZoneId = message.hostZoneId);
-    message.status !== undefined && (obj.status = depositRecord_StatusToJSON(message.status));
-    message.depositEpochNumber !== undefined && (obj.depositEpochNumber = (message.depositEpochNumber || BigInt(0)).toString());
-    message.source !== undefined && (obj.source = depositRecord_SourceToJSON(message.source));
-    message.delegationTxsInProgress !== undefined && (obj.delegationTxsInProgress = (message.delegationTxsInProgress || BigInt(0)).toString());
+    message.status !== undefined &&
+      (obj.status = depositRecord_StatusToJSON(message.status));
+    message.depositEpochNumber !== undefined &&
+      (obj.depositEpochNumber = (
+        message.depositEpochNumber || BigInt(0)
+      ).toString());
+    message.source !== undefined &&
+      (obj.source = depositRecord_SourceToJSON(message.source));
+    message.delegationTxsInProgress !== undefined &&
+      (obj.delegationTxsInProgress = (
+        message.delegationTxsInProgress || BigInt(0)
+      ).toString());
     return obj;
   },
   fromPartial(object: Partial<DepositRecord>): DepositRecord {
     const message = createBaseDepositRecord();
-    message.id = object.id !== undefined && object.id !== null ? BigInt(object.id.toString()) : BigInt(0);
-    message.amount = object.amount ?? "";
-    message.denom = object.denom ?? "";
-    message.hostZoneId = object.hostZoneId ?? "";
+    message.id =
+      object.id !== undefined && object.id !== null
+        ? BigInt(object.id.toString())
+        : BigInt(0);
+    message.amount = object.amount ?? '';
+    message.denom = object.denom ?? '';
+    message.hostZoneId = object.hostZoneId ?? '';
     message.status = object.status ?? 0;
-    message.depositEpochNumber = object.depositEpochNumber !== undefined && object.depositEpochNumber !== null ? BigInt(object.depositEpochNumber.toString()) : BigInt(0);
+    message.depositEpochNumber =
+      object.depositEpochNumber !== undefined &&
+      object.depositEpochNumber !== null
+        ? BigInt(object.depositEpochNumber.toString())
+        : BigInt(0);
     message.source = object.source ?? 0;
-    message.delegationTxsInProgress = object.delegationTxsInProgress !== undefined && object.delegationTxsInProgress !== null ? BigInt(object.delegationTxsInProgress.toString()) : BigInt(0);
+    message.delegationTxsInProgress =
+      object.delegationTxsInProgress !== undefined &&
+      object.delegationTxsInProgress !== null
+        ? BigInt(object.delegationTxsInProgress.toString())
+        : BigInt(0);
     return message;
   },
   fromProtoMsg(message: DepositRecordProtoMsg): DepositRecord {
@@ -571,51 +640,54 @@ export const DepositRecord = {
   },
   toProtoMsg(message: DepositRecord): DepositRecordProtoMsg {
     return {
-      typeUrl: "/stride.records.DepositRecord",
-      value: DepositRecord.encode(message).finish()
+      typeUrl: '/stride.records.DepositRecord',
+      value: DepositRecord.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseHostZoneUnbonding(): HostZoneUnbonding {
   return {
-    stTokenAmount: "",
-    nativeTokenAmount: "",
-    stTokensToBurn: "",
-    nativeTokensToUnbond: "",
-    claimableNativeTokens: "",
+    stTokenAmount: '',
+    nativeTokenAmount: '',
+    stTokensToBurn: '',
+    nativeTokensToUnbond: '',
+    claimableNativeTokens: '',
     undelegationTxsInProgress: BigInt(0),
-    denom: "",
-    hostZoneId: "",
+    denom: '',
+    hostZoneId: '',
     unbondingTime: BigInt(0),
     status: 0,
-    userRedemptionRecords: []
+    userRedemptionRecords: [],
   };
 }
 export const HostZoneUnbonding = {
-  typeUrl: "/stride.records.HostZoneUnbonding" as const,
-  encode(message: HostZoneUnbonding, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.stTokenAmount !== "") {
+  typeUrl: '/stride.records.HostZoneUnbonding' as const,
+  encode(
+    message: HostZoneUnbonding,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.stTokenAmount !== '') {
       writer.uint32(10).string(message.stTokenAmount);
     }
-    if (message.nativeTokenAmount !== "") {
+    if (message.nativeTokenAmount !== '') {
       writer.uint32(18).string(message.nativeTokenAmount);
     }
-    if (message.stTokensToBurn !== "") {
+    if (message.stTokensToBurn !== '') {
       writer.uint32(66).string(message.stTokensToBurn);
     }
-    if (message.nativeTokensToUnbond !== "") {
+    if (message.nativeTokensToUnbond !== '') {
       writer.uint32(74).string(message.nativeTokensToUnbond);
     }
-    if (message.claimableNativeTokens !== "") {
+    if (message.claimableNativeTokens !== '') {
       writer.uint32(82).string(message.claimableNativeTokens);
     }
     if (message.undelegationTxsInProgress !== BigInt(0)) {
       writer.uint32(88).uint64(message.undelegationTxsInProgress);
     }
-    if (message.denom !== "") {
+    if (message.denom !== '') {
       writer.uint32(26).string(message.denom);
     }
-    if (message.hostZoneId !== "") {
+    if (message.hostZoneId !== '') {
       writer.uint32(34).string(message.hostZoneId);
     }
     if (message.unbondingTime !== BigInt(0)) {
@@ -630,7 +702,8 @@ export const HostZoneUnbonding = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): HostZoneUnbonding {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseHostZoneUnbonding();
     while (reader.pos < end) {
@@ -678,31 +751,59 @@ export const HostZoneUnbonding = {
   },
   fromJSON(object: any): HostZoneUnbonding {
     return {
-      stTokenAmount: isSet(object.stTokenAmount) ? String(object.stTokenAmount) : "",
-      nativeTokenAmount: isSet(object.nativeTokenAmount) ? String(object.nativeTokenAmount) : "",
-      stTokensToBurn: isSet(object.stTokensToBurn) ? String(object.stTokensToBurn) : "",
-      nativeTokensToUnbond: isSet(object.nativeTokensToUnbond) ? String(object.nativeTokensToUnbond) : "",
-      claimableNativeTokens: isSet(object.claimableNativeTokens) ? String(object.claimableNativeTokens) : "",
-      undelegationTxsInProgress: isSet(object.undelegationTxsInProgress) ? BigInt(object.undelegationTxsInProgress.toString()) : BigInt(0),
-      denom: isSet(object.denom) ? String(object.denom) : "",
-      hostZoneId: isSet(object.hostZoneId) ? String(object.hostZoneId) : "",
-      unbondingTime: isSet(object.unbondingTime) ? BigInt(object.unbondingTime.toString()) : BigInt(0),
-      status: isSet(object.status) ? hostZoneUnbonding_StatusFromJSON(object.status) : -1,
-      userRedemptionRecords: Array.isArray(object?.userRedemptionRecords) ? object.userRedemptionRecords.map((e: any) => String(e)) : []
+      stTokenAmount: isSet(object.stTokenAmount)
+        ? String(object.stTokenAmount)
+        : '',
+      nativeTokenAmount: isSet(object.nativeTokenAmount)
+        ? String(object.nativeTokenAmount)
+        : '',
+      stTokensToBurn: isSet(object.stTokensToBurn)
+        ? String(object.stTokensToBurn)
+        : '',
+      nativeTokensToUnbond: isSet(object.nativeTokensToUnbond)
+        ? String(object.nativeTokensToUnbond)
+        : '',
+      claimableNativeTokens: isSet(object.claimableNativeTokens)
+        ? String(object.claimableNativeTokens)
+        : '',
+      undelegationTxsInProgress: isSet(object.undelegationTxsInProgress)
+        ? BigInt(object.undelegationTxsInProgress.toString())
+        : BigInt(0),
+      denom: isSet(object.denom) ? String(object.denom) : '',
+      hostZoneId: isSet(object.hostZoneId) ? String(object.hostZoneId) : '',
+      unbondingTime: isSet(object.unbondingTime)
+        ? BigInt(object.unbondingTime.toString())
+        : BigInt(0),
+      status: isSet(object.status)
+        ? hostZoneUnbonding_StatusFromJSON(object.status)
+        : -1,
+      userRedemptionRecords: Array.isArray(object?.userRedemptionRecords)
+        ? object.userRedemptionRecords.map((e: any) => String(e))
+        : [],
     };
   },
   toJSON(message: HostZoneUnbonding): JsonSafe<HostZoneUnbonding> {
     const obj: any = {};
-    message.stTokenAmount !== undefined && (obj.stTokenAmount = message.stTokenAmount);
-    message.nativeTokenAmount !== undefined && (obj.nativeTokenAmount = message.nativeTokenAmount);
-    message.stTokensToBurn !== undefined && (obj.stTokensToBurn = message.stTokensToBurn);
-    message.nativeTokensToUnbond !== undefined && (obj.nativeTokensToUnbond = message.nativeTokensToUnbond);
-    message.claimableNativeTokens !== undefined && (obj.claimableNativeTokens = message.claimableNativeTokens);
-    message.undelegationTxsInProgress !== undefined && (obj.undelegationTxsInProgress = (message.undelegationTxsInProgress || BigInt(0)).toString());
+    message.stTokenAmount !== undefined &&
+      (obj.stTokenAmount = message.stTokenAmount);
+    message.nativeTokenAmount !== undefined &&
+      (obj.nativeTokenAmount = message.nativeTokenAmount);
+    message.stTokensToBurn !== undefined &&
+      (obj.stTokensToBurn = message.stTokensToBurn);
+    message.nativeTokensToUnbond !== undefined &&
+      (obj.nativeTokensToUnbond = message.nativeTokensToUnbond);
+    message.claimableNativeTokens !== undefined &&
+      (obj.claimableNativeTokens = message.claimableNativeTokens);
+    message.undelegationTxsInProgress !== undefined &&
+      (obj.undelegationTxsInProgress = (
+        message.undelegationTxsInProgress || BigInt(0)
+      ).toString());
     message.denom !== undefined && (obj.denom = message.denom);
     message.hostZoneId !== undefined && (obj.hostZoneId = message.hostZoneId);
-    message.unbondingTime !== undefined && (obj.unbondingTime = (message.unbondingTime || BigInt(0)).toString());
-    message.status !== undefined && (obj.status = hostZoneUnbonding_StatusToJSON(message.status));
+    message.unbondingTime !== undefined &&
+      (obj.unbondingTime = (message.unbondingTime || BigInt(0)).toString());
+    message.status !== undefined &&
+      (obj.status = hostZoneUnbonding_StatusToJSON(message.status));
     if (message.userRedemptionRecords) {
       obj.userRedemptionRecords = message.userRedemptionRecords.map(e => e);
     } else {
@@ -712,17 +813,25 @@ export const HostZoneUnbonding = {
   },
   fromPartial(object: Partial<HostZoneUnbonding>): HostZoneUnbonding {
     const message = createBaseHostZoneUnbonding();
-    message.stTokenAmount = object.stTokenAmount ?? "";
-    message.nativeTokenAmount = object.nativeTokenAmount ?? "";
-    message.stTokensToBurn = object.stTokensToBurn ?? "";
-    message.nativeTokensToUnbond = object.nativeTokensToUnbond ?? "";
-    message.claimableNativeTokens = object.claimableNativeTokens ?? "";
-    message.undelegationTxsInProgress = object.undelegationTxsInProgress !== undefined && object.undelegationTxsInProgress !== null ? BigInt(object.undelegationTxsInProgress.toString()) : BigInt(0);
-    message.denom = object.denom ?? "";
-    message.hostZoneId = object.hostZoneId ?? "";
-    message.unbondingTime = object.unbondingTime !== undefined && object.unbondingTime !== null ? BigInt(object.unbondingTime.toString()) : BigInt(0);
+    message.stTokenAmount = object.stTokenAmount ?? '';
+    message.nativeTokenAmount = object.nativeTokenAmount ?? '';
+    message.stTokensToBurn = object.stTokensToBurn ?? '';
+    message.nativeTokensToUnbond = object.nativeTokensToUnbond ?? '';
+    message.claimableNativeTokens = object.claimableNativeTokens ?? '';
+    message.undelegationTxsInProgress =
+      object.undelegationTxsInProgress !== undefined &&
+      object.undelegationTxsInProgress !== null
+        ? BigInt(object.undelegationTxsInProgress.toString())
+        : BigInt(0);
+    message.denom = object.denom ?? '';
+    message.hostZoneId = object.hostZoneId ?? '';
+    message.unbondingTime =
+      object.unbondingTime !== undefined && object.unbondingTime !== null
+        ? BigInt(object.unbondingTime.toString())
+        : BigInt(0);
     message.status = object.status ?? 0;
-    message.userRedemptionRecords = object.userRedemptionRecords?.map(e => e) || [];
+    message.userRedemptionRecords =
+      object.userRedemptionRecords?.map(e => e) || [];
     return message;
   },
   fromProtoMsg(message: HostZoneUnbondingProtoMsg): HostZoneUnbonding {
@@ -733,20 +842,23 @@ export const HostZoneUnbonding = {
   },
   toProtoMsg(message: HostZoneUnbonding): HostZoneUnbondingProtoMsg {
     return {
-      typeUrl: "/stride.records.HostZoneUnbonding",
-      value: HostZoneUnbonding.encode(message).finish()
+      typeUrl: '/stride.records.HostZoneUnbonding',
+      value: HostZoneUnbonding.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseEpochUnbondingRecord(): EpochUnbondingRecord {
   return {
     epochNumber: BigInt(0),
-    hostZoneUnbondings: []
+    hostZoneUnbondings: [],
   };
 }
 export const EpochUnbondingRecord = {
-  typeUrl: "/stride.records.EpochUnbondingRecord" as const,
-  encode(message: EpochUnbondingRecord, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/stride.records.EpochUnbondingRecord' as const,
+  encode(
+    message: EpochUnbondingRecord,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.epochNumber !== BigInt(0)) {
       writer.uint32(8).uint64(message.epochNumber);
     }
@@ -755,8 +867,12 @@ export const EpochUnbondingRecord = {
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): EpochUnbondingRecord {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): EpochUnbondingRecord {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseEpochUnbondingRecord();
     while (reader.pos < end) {
@@ -766,7 +882,9 @@ export const EpochUnbondingRecord = {
           message.epochNumber = reader.uint64();
           break;
         case 3:
-          message.hostZoneUnbondings.push(HostZoneUnbonding.decode(reader, reader.uint32()));
+          message.hostZoneUnbondings.push(
+            HostZoneUnbonding.decode(reader, reader.uint32()),
+          );
           break;
         default:
           reader.skipType(tag & 7);
@@ -777,15 +895,24 @@ export const EpochUnbondingRecord = {
   },
   fromJSON(object: any): EpochUnbondingRecord {
     return {
-      epochNumber: isSet(object.epochNumber) ? BigInt(object.epochNumber.toString()) : BigInt(0),
-      hostZoneUnbondings: Array.isArray(object?.hostZoneUnbondings) ? object.hostZoneUnbondings.map((e: any) => HostZoneUnbonding.fromJSON(e)) : []
+      epochNumber: isSet(object.epochNumber)
+        ? BigInt(object.epochNumber.toString())
+        : BigInt(0),
+      hostZoneUnbondings: Array.isArray(object?.hostZoneUnbondings)
+        ? object.hostZoneUnbondings.map((e: any) =>
+            HostZoneUnbonding.fromJSON(e),
+          )
+        : [],
     };
   },
   toJSON(message: EpochUnbondingRecord): JsonSafe<EpochUnbondingRecord> {
     const obj: any = {};
-    message.epochNumber !== undefined && (obj.epochNumber = (message.epochNumber || BigInt(0)).toString());
+    message.epochNumber !== undefined &&
+      (obj.epochNumber = (message.epochNumber || BigInt(0)).toString());
     if (message.hostZoneUnbondings) {
-      obj.hostZoneUnbondings = message.hostZoneUnbondings.map(e => e ? HostZoneUnbonding.toJSON(e) : undefined);
+      obj.hostZoneUnbondings = message.hostZoneUnbondings.map(e =>
+        e ? HostZoneUnbonding.toJSON(e) : undefined,
+      );
     } else {
       obj.hostZoneUnbondings = [];
     }
@@ -793,8 +920,13 @@ export const EpochUnbondingRecord = {
   },
   fromPartial(object: Partial<EpochUnbondingRecord>): EpochUnbondingRecord {
     const message = createBaseEpochUnbondingRecord();
-    message.epochNumber = object.epochNumber !== undefined && object.epochNumber !== null ? BigInt(object.epochNumber.toString()) : BigInt(0);
-    message.hostZoneUnbondings = object.hostZoneUnbondings?.map(e => HostZoneUnbonding.fromPartial(e)) || [];
+    message.epochNumber =
+      object.epochNumber !== undefined && object.epochNumber !== null
+        ? BigInt(object.epochNumber.toString())
+        : BigInt(0);
+    message.hostZoneUnbondings =
+      object.hostZoneUnbondings?.map(e => HostZoneUnbonding.fromPartial(e)) ||
+      [];
     return message;
   },
   fromProtoMsg(message: EpochUnbondingRecordProtoMsg): EpochUnbondingRecord {
@@ -805,46 +937,49 @@ export const EpochUnbondingRecord = {
   },
   toProtoMsg(message: EpochUnbondingRecord): EpochUnbondingRecordProtoMsg {
     return {
-      typeUrl: "/stride.records.EpochUnbondingRecord",
-      value: EpochUnbondingRecord.encode(message).finish()
+      typeUrl: '/stride.records.EpochUnbondingRecord',
+      value: EpochUnbondingRecord.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseLSMTokenDeposit(): LSMTokenDeposit {
   return {
-    depositId: "",
-    chainId: "",
-    denom: "",
-    ibcDenom: "",
-    stakerAddress: "",
-    validatorAddress: "",
-    amount: "",
+    depositId: '',
+    chainId: '',
+    denom: '',
+    ibcDenom: '',
+    stakerAddress: '',
+    validatorAddress: '',
+    amount: '',
     stToken: Coin.fromPartial({}),
-    status: 0
+    status: 0,
   };
 }
 export const LSMTokenDeposit = {
-  typeUrl: "/stride.records.LSMTokenDeposit" as const,
-  encode(message: LSMTokenDeposit, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.depositId !== "") {
+  typeUrl: '/stride.records.LSMTokenDeposit' as const,
+  encode(
+    message: LSMTokenDeposit,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.depositId !== '') {
       writer.uint32(10).string(message.depositId);
     }
-    if (message.chainId !== "") {
+    if (message.chainId !== '') {
       writer.uint32(18).string(message.chainId);
     }
-    if (message.denom !== "") {
+    if (message.denom !== '') {
       writer.uint32(26).string(message.denom);
     }
-    if (message.ibcDenom !== "") {
+    if (message.ibcDenom !== '') {
       writer.uint32(34).string(message.ibcDenom);
     }
-    if (message.stakerAddress !== "") {
+    if (message.stakerAddress !== '') {
       writer.uint32(42).string(message.stakerAddress);
     }
-    if (message.validatorAddress !== "") {
+    if (message.validatorAddress !== '') {
       writer.uint32(50).string(message.validatorAddress);
     }
-    if (message.amount !== "") {
+    if (message.amount !== '') {
       writer.uint32(58).string(message.amount);
     }
     if (message.stToken !== undefined) {
@@ -856,7 +991,8 @@ export const LSMTokenDeposit = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): LSMTokenDeposit {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseLSMTokenDeposit();
     while (reader.pos < end) {
@@ -898,15 +1034,23 @@ export const LSMTokenDeposit = {
   },
   fromJSON(object: any): LSMTokenDeposit {
     return {
-      depositId: isSet(object.depositId) ? String(object.depositId) : "",
-      chainId: isSet(object.chainId) ? String(object.chainId) : "",
-      denom: isSet(object.denom) ? String(object.denom) : "",
-      ibcDenom: isSet(object.ibcDenom) ? String(object.ibcDenom) : "",
-      stakerAddress: isSet(object.stakerAddress) ? String(object.stakerAddress) : "",
-      validatorAddress: isSet(object.validatorAddress) ? String(object.validatorAddress) : "",
-      amount: isSet(object.amount) ? String(object.amount) : "",
-      stToken: isSet(object.stToken) ? Coin.fromJSON(object.stToken) : undefined,
-      status: isSet(object.status) ? lSMTokenDeposit_StatusFromJSON(object.status) : -1
+      depositId: isSet(object.depositId) ? String(object.depositId) : '',
+      chainId: isSet(object.chainId) ? String(object.chainId) : '',
+      denom: isSet(object.denom) ? String(object.denom) : '',
+      ibcDenom: isSet(object.ibcDenom) ? String(object.ibcDenom) : '',
+      stakerAddress: isSet(object.stakerAddress)
+        ? String(object.stakerAddress)
+        : '',
+      validatorAddress: isSet(object.validatorAddress)
+        ? String(object.validatorAddress)
+        : '',
+      amount: isSet(object.amount) ? String(object.amount) : '',
+      stToken: isSet(object.stToken)
+        ? Coin.fromJSON(object.stToken)
+        : undefined,
+      status: isSet(object.status)
+        ? lSMTokenDeposit_StatusFromJSON(object.status)
+        : -1,
     };
   },
   toJSON(message: LSMTokenDeposit): JsonSafe<LSMTokenDeposit> {
@@ -915,23 +1059,32 @@ export const LSMTokenDeposit = {
     message.chainId !== undefined && (obj.chainId = message.chainId);
     message.denom !== undefined && (obj.denom = message.denom);
     message.ibcDenom !== undefined && (obj.ibcDenom = message.ibcDenom);
-    message.stakerAddress !== undefined && (obj.stakerAddress = message.stakerAddress);
-    message.validatorAddress !== undefined && (obj.validatorAddress = message.validatorAddress);
+    message.stakerAddress !== undefined &&
+      (obj.stakerAddress = message.stakerAddress);
+    message.validatorAddress !== undefined &&
+      (obj.validatorAddress = message.validatorAddress);
     message.amount !== undefined && (obj.amount = message.amount);
-    message.stToken !== undefined && (obj.stToken = message.stToken ? Coin.toJSON(message.stToken) : undefined);
-    message.status !== undefined && (obj.status = lSMTokenDeposit_StatusToJSON(message.status));
+    message.stToken !== undefined &&
+      (obj.stToken = message.stToken
+        ? Coin.toJSON(message.stToken)
+        : undefined);
+    message.status !== undefined &&
+      (obj.status = lSMTokenDeposit_StatusToJSON(message.status));
     return obj;
   },
   fromPartial(object: Partial<LSMTokenDeposit>): LSMTokenDeposit {
     const message = createBaseLSMTokenDeposit();
-    message.depositId = object.depositId ?? "";
-    message.chainId = object.chainId ?? "";
-    message.denom = object.denom ?? "";
-    message.ibcDenom = object.ibcDenom ?? "";
-    message.stakerAddress = object.stakerAddress ?? "";
-    message.validatorAddress = object.validatorAddress ?? "";
-    message.amount = object.amount ?? "";
-    message.stToken = object.stToken !== undefined && object.stToken !== null ? Coin.fromPartial(object.stToken) : undefined;
+    message.depositId = object.depositId ?? '';
+    message.chainId = object.chainId ?? '';
+    message.denom = object.denom ?? '';
+    message.ibcDenom = object.ibcDenom ?? '';
+    message.stakerAddress = object.stakerAddress ?? '';
+    message.validatorAddress = object.validatorAddress ?? '';
+    message.amount = object.amount ?? '';
+    message.stToken =
+      object.stToken !== undefined && object.stToken !== null
+        ? Coin.fromPartial(object.stToken)
+        : undefined;
     message.status = object.status ?? 0;
     return message;
   },
@@ -943,8 +1096,8 @@ export const LSMTokenDeposit = {
   },
   toProtoMsg(message: LSMTokenDeposit): LSMTokenDepositProtoMsg {
     return {
-      typeUrl: "/stride.records.LSMTokenDeposit",
-      value: LSMTokenDeposit.encode(message).finish()
+      typeUrl: '/stride.records.LSMTokenDeposit',
+      value: LSMTokenDeposit.encode(message).finish(),
     };
-  }
+  },
 };

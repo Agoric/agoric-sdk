@@ -1,13 +1,13 @@
 //@ts-nocheck
-import { ICAAccount, type ICAAccountSDKType } from "./ica_account.js";
-import { BinaryReader, BinaryWriter } from "../../binary.js";
-import { Decimal } from "../../decimals.js";
-import { isSet } from "../../helpers.js";
-import {type JsonSafe } from "../../json-safe.js";
+import { ICAAccount, type ICAAccountSDKType } from './ica_account.js';
+import { BinaryReader, BinaryWriter } from '../../binary.js';
+import { Decimal } from '../../decimals.js';
+import { isSet } from '../../helpers.js';
+import { type JsonSafe } from '../../json-safe.js';
 /**
  * Deprecated, this configuration is no longer needed since swaps
  * are executed off-chain via authz
- * 
+ *
  * Stores pool information needed to execute the swap along a trade route
  */
 /** @deprecated */
@@ -37,13 +37,13 @@ export interface TradeConfig {
   maxSwapAmount: string;
 }
 export interface TradeConfigProtoMsg {
-  typeUrl: "/stride.stakeibc.TradeConfig";
+  typeUrl: '/stride.stakeibc.TradeConfig';
   value: Uint8Array;
 }
 /**
  * Deprecated, this configuration is no longer needed since swaps
  * are executed off-chain via authz
- * 
+ *
  * Stores pool information needed to execute the swap along a trade route
  */
 /** @deprecated */
@@ -113,7 +113,7 @@ export interface TradeRoute {
   /**
    * Deprecated, the trades are now executed off-chain via authz
    * so the trade configuration is no longer needed
-   * 
+   *
    * specifies the configuration needed to execute the swap
    * such as pool_id, slippage, min trade amount, etc.
    */
@@ -121,7 +121,7 @@ export interface TradeRoute {
   tradeConfig: TradeConfig;
 }
 export interface TradeRouteProtoMsg {
-  typeUrl: "/stride.stakeibc.TradeRoute";
+  typeUrl: '/stride.stakeibc.TradeRoute';
   value: Uint8Array;
 }
 /**
@@ -152,38 +152,48 @@ export interface TradeRouteSDKType {
 function createBaseTradeConfig(): TradeConfig {
   return {
     poolId: BigInt(0),
-    swapPrice: "",
+    swapPrice: '',
     priceUpdateTimestamp: BigInt(0),
-    maxAllowedSwapLossRate: "",
-    minSwapAmount: "",
-    maxSwapAmount: ""
+    maxAllowedSwapLossRate: '',
+    minSwapAmount: '',
+    maxSwapAmount: '',
   };
 }
 export const TradeConfig = {
-  typeUrl: "/stride.stakeibc.TradeConfig" as const,
-  encode(message: TradeConfig, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/stride.stakeibc.TradeConfig' as const,
+  encode(
+    message: TradeConfig,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.poolId !== BigInt(0)) {
       writer.uint32(8).uint64(message.poolId);
     }
-    if (message.swapPrice !== "") {
-      writer.uint32(18).string(Decimal.fromUserInput(message.swapPrice, 18).atomics);
+    if (message.swapPrice !== '') {
+      writer
+        .uint32(18)
+        .string(Decimal.fromUserInput(message.swapPrice, 18).atomics);
     }
     if (message.priceUpdateTimestamp !== BigInt(0)) {
       writer.uint32(24).uint64(message.priceUpdateTimestamp);
     }
-    if (message.maxAllowedSwapLossRate !== "") {
-      writer.uint32(34).string(Decimal.fromUserInput(message.maxAllowedSwapLossRate, 18).atomics);
+    if (message.maxAllowedSwapLossRate !== '') {
+      writer
+        .uint32(34)
+        .string(
+          Decimal.fromUserInput(message.maxAllowedSwapLossRate, 18).atomics,
+        );
     }
-    if (message.minSwapAmount !== "") {
+    if (message.minSwapAmount !== '') {
       writer.uint32(42).string(message.minSwapAmount);
     }
-    if (message.maxSwapAmount !== "") {
+    if (message.maxSwapAmount !== '') {
       writer.uint32(50).string(message.maxSwapAmount);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): TradeConfig {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseTradeConfig();
     while (reader.pos < end) {
@@ -193,13 +203,19 @@ export const TradeConfig = {
           message.poolId = reader.uint64();
           break;
         case 2:
-          message.swapPrice = Decimal.fromAtomics(reader.string(), 18).toString();
+          message.swapPrice = Decimal.fromAtomics(
+            reader.string(),
+            18,
+          ).toString();
           break;
         case 3:
           message.priceUpdateTimestamp = reader.uint64();
           break;
         case 4:
-          message.maxAllowedSwapLossRate = Decimal.fromAtomics(reader.string(), 18).toString();
+          message.maxAllowedSwapLossRate = Decimal.fromAtomics(
+            reader.string(),
+            18,
+          ).toString();
           break;
         case 5:
           message.minSwapAmount = reader.string();
@@ -216,32 +232,56 @@ export const TradeConfig = {
   },
   fromJSON(object: any): TradeConfig {
     return {
-      poolId: isSet(object.poolId) ? BigInt(object.poolId.toString()) : BigInt(0),
-      swapPrice: isSet(object.swapPrice) ? String(object.swapPrice) : "",
-      priceUpdateTimestamp: isSet(object.priceUpdateTimestamp) ? BigInt(object.priceUpdateTimestamp.toString()) : BigInt(0),
-      maxAllowedSwapLossRate: isSet(object.maxAllowedSwapLossRate) ? String(object.maxAllowedSwapLossRate) : "",
-      minSwapAmount: isSet(object.minSwapAmount) ? String(object.minSwapAmount) : "",
-      maxSwapAmount: isSet(object.maxSwapAmount) ? String(object.maxSwapAmount) : ""
+      poolId: isSet(object.poolId)
+        ? BigInt(object.poolId.toString())
+        : BigInt(0),
+      swapPrice: isSet(object.swapPrice) ? String(object.swapPrice) : '',
+      priceUpdateTimestamp: isSet(object.priceUpdateTimestamp)
+        ? BigInt(object.priceUpdateTimestamp.toString())
+        : BigInt(0),
+      maxAllowedSwapLossRate: isSet(object.maxAllowedSwapLossRate)
+        ? String(object.maxAllowedSwapLossRate)
+        : '',
+      minSwapAmount: isSet(object.minSwapAmount)
+        ? String(object.minSwapAmount)
+        : '',
+      maxSwapAmount: isSet(object.maxSwapAmount)
+        ? String(object.maxSwapAmount)
+        : '',
     };
   },
   toJSON(message: TradeConfig): JsonSafe<TradeConfig> {
     const obj: any = {};
-    message.poolId !== undefined && (obj.poolId = (message.poolId || BigInt(0)).toString());
+    message.poolId !== undefined &&
+      (obj.poolId = (message.poolId || BigInt(0)).toString());
     message.swapPrice !== undefined && (obj.swapPrice = message.swapPrice);
-    message.priceUpdateTimestamp !== undefined && (obj.priceUpdateTimestamp = (message.priceUpdateTimestamp || BigInt(0)).toString());
-    message.maxAllowedSwapLossRate !== undefined && (obj.maxAllowedSwapLossRate = message.maxAllowedSwapLossRate);
-    message.minSwapAmount !== undefined && (obj.minSwapAmount = message.minSwapAmount);
-    message.maxSwapAmount !== undefined && (obj.maxSwapAmount = message.maxSwapAmount);
+    message.priceUpdateTimestamp !== undefined &&
+      (obj.priceUpdateTimestamp = (
+        message.priceUpdateTimestamp || BigInt(0)
+      ).toString());
+    message.maxAllowedSwapLossRate !== undefined &&
+      (obj.maxAllowedSwapLossRate = message.maxAllowedSwapLossRate);
+    message.minSwapAmount !== undefined &&
+      (obj.minSwapAmount = message.minSwapAmount);
+    message.maxSwapAmount !== undefined &&
+      (obj.maxSwapAmount = message.maxSwapAmount);
     return obj;
   },
   fromPartial(object: Partial<TradeConfig>): TradeConfig {
     const message = createBaseTradeConfig();
-    message.poolId = object.poolId !== undefined && object.poolId !== null ? BigInt(object.poolId.toString()) : BigInt(0);
-    message.swapPrice = object.swapPrice ?? "";
-    message.priceUpdateTimestamp = object.priceUpdateTimestamp !== undefined && object.priceUpdateTimestamp !== null ? BigInt(object.priceUpdateTimestamp.toString()) : BigInt(0);
-    message.maxAllowedSwapLossRate = object.maxAllowedSwapLossRate ?? "";
-    message.minSwapAmount = object.minSwapAmount ?? "";
-    message.maxSwapAmount = object.maxSwapAmount ?? "";
+    message.poolId =
+      object.poolId !== undefined && object.poolId !== null
+        ? BigInt(object.poolId.toString())
+        : BigInt(0);
+    message.swapPrice = object.swapPrice ?? '';
+    message.priceUpdateTimestamp =
+      object.priceUpdateTimestamp !== undefined &&
+      object.priceUpdateTimestamp !== null
+        ? BigInt(object.priceUpdateTimestamp.toString())
+        : BigInt(0);
+    message.maxAllowedSwapLossRate = object.maxAllowedSwapLossRate ?? '';
+    message.minSwapAmount = object.minSwapAmount ?? '';
+    message.maxSwapAmount = object.maxSwapAmount ?? '';
     return message;
   },
   fromProtoMsg(message: TradeConfigProtoMsg): TradeConfig {
@@ -252,74 +292,87 @@ export const TradeConfig = {
   },
   toProtoMsg(message: TradeConfig): TradeConfigProtoMsg {
     return {
-      typeUrl: "/stride.stakeibc.TradeConfig",
-      value: TradeConfig.encode(message).finish()
+      typeUrl: '/stride.stakeibc.TradeConfig',
+      value: TradeConfig.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseTradeRoute(): TradeRoute {
   return {
-    rewardDenomOnHostZone: "",
-    rewardDenomOnRewardZone: "",
-    rewardDenomOnTradeZone: "",
-    hostDenomOnTradeZone: "",
-    hostDenomOnHostZone: "",
+    rewardDenomOnHostZone: '',
+    rewardDenomOnRewardZone: '',
+    rewardDenomOnTradeZone: '',
+    hostDenomOnTradeZone: '',
+    hostDenomOnHostZone: '',
     hostAccount: ICAAccount.fromPartial({}),
     rewardAccount: ICAAccount.fromPartial({}),
     tradeAccount: ICAAccount.fromPartial({}),
-    hostToRewardChannelId: "",
-    rewardToTradeChannelId: "",
-    tradeToHostChannelId: "",
-    minTransferAmount: "",
-    tradeConfig: TradeConfig.fromPartial({})
+    hostToRewardChannelId: '',
+    rewardToTradeChannelId: '',
+    tradeToHostChannelId: '',
+    minTransferAmount: '',
+    tradeConfig: TradeConfig.fromPartial({}),
   };
 }
 export const TradeRoute = {
-  typeUrl: "/stride.stakeibc.TradeRoute" as const,
-  encode(message: TradeRoute, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.rewardDenomOnHostZone !== "") {
+  typeUrl: '/stride.stakeibc.TradeRoute' as const,
+  encode(
+    message: TradeRoute,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.rewardDenomOnHostZone !== '') {
       writer.uint32(10).string(message.rewardDenomOnHostZone);
     }
-    if (message.rewardDenomOnRewardZone !== "") {
+    if (message.rewardDenomOnRewardZone !== '') {
       writer.uint32(18).string(message.rewardDenomOnRewardZone);
     }
-    if (message.rewardDenomOnTradeZone !== "") {
+    if (message.rewardDenomOnTradeZone !== '') {
       writer.uint32(26).string(message.rewardDenomOnTradeZone);
     }
-    if (message.hostDenomOnTradeZone !== "") {
+    if (message.hostDenomOnTradeZone !== '') {
       writer.uint32(34).string(message.hostDenomOnTradeZone);
     }
-    if (message.hostDenomOnHostZone !== "") {
+    if (message.hostDenomOnHostZone !== '') {
       writer.uint32(42).string(message.hostDenomOnHostZone);
     }
     if (message.hostAccount !== undefined) {
       ICAAccount.encode(message.hostAccount, writer.uint32(50).fork()).ldelim();
     }
     if (message.rewardAccount !== undefined) {
-      ICAAccount.encode(message.rewardAccount, writer.uint32(58).fork()).ldelim();
+      ICAAccount.encode(
+        message.rewardAccount,
+        writer.uint32(58).fork(),
+      ).ldelim();
     }
     if (message.tradeAccount !== undefined) {
-      ICAAccount.encode(message.tradeAccount, writer.uint32(66).fork()).ldelim();
+      ICAAccount.encode(
+        message.tradeAccount,
+        writer.uint32(66).fork(),
+      ).ldelim();
     }
-    if (message.hostToRewardChannelId !== "") {
+    if (message.hostToRewardChannelId !== '') {
       writer.uint32(74).string(message.hostToRewardChannelId);
     }
-    if (message.rewardToTradeChannelId !== "") {
+    if (message.rewardToTradeChannelId !== '') {
       writer.uint32(82).string(message.rewardToTradeChannelId);
     }
-    if (message.tradeToHostChannelId !== "") {
+    if (message.tradeToHostChannelId !== '') {
       writer.uint32(90).string(message.tradeToHostChannelId);
     }
-    if (message.minTransferAmount !== "") {
+    if (message.minTransferAmount !== '') {
       writer.uint32(106).string(message.minTransferAmount);
     }
     if (message.tradeConfig !== undefined) {
-      TradeConfig.encode(message.tradeConfig, writer.uint32(98).fork()).ldelim();
+      TradeConfig.encode(
+        message.tradeConfig,
+        writer.uint32(98).fork(),
+      ).ldelim();
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): TradeRoute {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseTradeRoute();
     while (reader.pos < end) {
@@ -373,53 +426,112 @@ export const TradeRoute = {
   },
   fromJSON(object: any): TradeRoute {
     return {
-      rewardDenomOnHostZone: isSet(object.rewardDenomOnHostZone) ? String(object.rewardDenomOnHostZone) : "",
-      rewardDenomOnRewardZone: isSet(object.rewardDenomOnRewardZone) ? String(object.rewardDenomOnRewardZone) : "",
-      rewardDenomOnTradeZone: isSet(object.rewardDenomOnTradeZone) ? String(object.rewardDenomOnTradeZone) : "",
-      hostDenomOnTradeZone: isSet(object.hostDenomOnTradeZone) ? String(object.hostDenomOnTradeZone) : "",
-      hostDenomOnHostZone: isSet(object.hostDenomOnHostZone) ? String(object.hostDenomOnHostZone) : "",
-      hostAccount: isSet(object.hostAccount) ? ICAAccount.fromJSON(object.hostAccount) : undefined,
-      rewardAccount: isSet(object.rewardAccount) ? ICAAccount.fromJSON(object.rewardAccount) : undefined,
-      tradeAccount: isSet(object.tradeAccount) ? ICAAccount.fromJSON(object.tradeAccount) : undefined,
-      hostToRewardChannelId: isSet(object.hostToRewardChannelId) ? String(object.hostToRewardChannelId) : "",
-      rewardToTradeChannelId: isSet(object.rewardToTradeChannelId) ? String(object.rewardToTradeChannelId) : "",
-      tradeToHostChannelId: isSet(object.tradeToHostChannelId) ? String(object.tradeToHostChannelId) : "",
-      minTransferAmount: isSet(object.minTransferAmount) ? String(object.minTransferAmount) : "",
-      tradeConfig: isSet(object.tradeConfig) ? TradeConfig.fromJSON(object.tradeConfig) : undefined
+      rewardDenomOnHostZone: isSet(object.rewardDenomOnHostZone)
+        ? String(object.rewardDenomOnHostZone)
+        : '',
+      rewardDenomOnRewardZone: isSet(object.rewardDenomOnRewardZone)
+        ? String(object.rewardDenomOnRewardZone)
+        : '',
+      rewardDenomOnTradeZone: isSet(object.rewardDenomOnTradeZone)
+        ? String(object.rewardDenomOnTradeZone)
+        : '',
+      hostDenomOnTradeZone: isSet(object.hostDenomOnTradeZone)
+        ? String(object.hostDenomOnTradeZone)
+        : '',
+      hostDenomOnHostZone: isSet(object.hostDenomOnHostZone)
+        ? String(object.hostDenomOnHostZone)
+        : '',
+      hostAccount: isSet(object.hostAccount)
+        ? ICAAccount.fromJSON(object.hostAccount)
+        : undefined,
+      rewardAccount: isSet(object.rewardAccount)
+        ? ICAAccount.fromJSON(object.rewardAccount)
+        : undefined,
+      tradeAccount: isSet(object.tradeAccount)
+        ? ICAAccount.fromJSON(object.tradeAccount)
+        : undefined,
+      hostToRewardChannelId: isSet(object.hostToRewardChannelId)
+        ? String(object.hostToRewardChannelId)
+        : '',
+      rewardToTradeChannelId: isSet(object.rewardToTradeChannelId)
+        ? String(object.rewardToTradeChannelId)
+        : '',
+      tradeToHostChannelId: isSet(object.tradeToHostChannelId)
+        ? String(object.tradeToHostChannelId)
+        : '',
+      minTransferAmount: isSet(object.minTransferAmount)
+        ? String(object.minTransferAmount)
+        : '',
+      tradeConfig: isSet(object.tradeConfig)
+        ? TradeConfig.fromJSON(object.tradeConfig)
+        : undefined,
     };
   },
   toJSON(message: TradeRoute): JsonSafe<TradeRoute> {
     const obj: any = {};
-    message.rewardDenomOnHostZone !== undefined && (obj.rewardDenomOnHostZone = message.rewardDenomOnHostZone);
-    message.rewardDenomOnRewardZone !== undefined && (obj.rewardDenomOnRewardZone = message.rewardDenomOnRewardZone);
-    message.rewardDenomOnTradeZone !== undefined && (obj.rewardDenomOnTradeZone = message.rewardDenomOnTradeZone);
-    message.hostDenomOnTradeZone !== undefined && (obj.hostDenomOnTradeZone = message.hostDenomOnTradeZone);
-    message.hostDenomOnHostZone !== undefined && (obj.hostDenomOnHostZone = message.hostDenomOnHostZone);
-    message.hostAccount !== undefined && (obj.hostAccount = message.hostAccount ? ICAAccount.toJSON(message.hostAccount) : undefined);
-    message.rewardAccount !== undefined && (obj.rewardAccount = message.rewardAccount ? ICAAccount.toJSON(message.rewardAccount) : undefined);
-    message.tradeAccount !== undefined && (obj.tradeAccount = message.tradeAccount ? ICAAccount.toJSON(message.tradeAccount) : undefined);
-    message.hostToRewardChannelId !== undefined && (obj.hostToRewardChannelId = message.hostToRewardChannelId);
-    message.rewardToTradeChannelId !== undefined && (obj.rewardToTradeChannelId = message.rewardToTradeChannelId);
-    message.tradeToHostChannelId !== undefined && (obj.tradeToHostChannelId = message.tradeToHostChannelId);
-    message.minTransferAmount !== undefined && (obj.minTransferAmount = message.minTransferAmount);
-    message.tradeConfig !== undefined && (obj.tradeConfig = message.tradeConfig ? TradeConfig.toJSON(message.tradeConfig) : undefined);
+    message.rewardDenomOnHostZone !== undefined &&
+      (obj.rewardDenomOnHostZone = message.rewardDenomOnHostZone);
+    message.rewardDenomOnRewardZone !== undefined &&
+      (obj.rewardDenomOnRewardZone = message.rewardDenomOnRewardZone);
+    message.rewardDenomOnTradeZone !== undefined &&
+      (obj.rewardDenomOnTradeZone = message.rewardDenomOnTradeZone);
+    message.hostDenomOnTradeZone !== undefined &&
+      (obj.hostDenomOnTradeZone = message.hostDenomOnTradeZone);
+    message.hostDenomOnHostZone !== undefined &&
+      (obj.hostDenomOnHostZone = message.hostDenomOnHostZone);
+    message.hostAccount !== undefined &&
+      (obj.hostAccount = message.hostAccount
+        ? ICAAccount.toJSON(message.hostAccount)
+        : undefined);
+    message.rewardAccount !== undefined &&
+      (obj.rewardAccount = message.rewardAccount
+        ? ICAAccount.toJSON(message.rewardAccount)
+        : undefined);
+    message.tradeAccount !== undefined &&
+      (obj.tradeAccount = message.tradeAccount
+        ? ICAAccount.toJSON(message.tradeAccount)
+        : undefined);
+    message.hostToRewardChannelId !== undefined &&
+      (obj.hostToRewardChannelId = message.hostToRewardChannelId);
+    message.rewardToTradeChannelId !== undefined &&
+      (obj.rewardToTradeChannelId = message.rewardToTradeChannelId);
+    message.tradeToHostChannelId !== undefined &&
+      (obj.tradeToHostChannelId = message.tradeToHostChannelId);
+    message.minTransferAmount !== undefined &&
+      (obj.minTransferAmount = message.minTransferAmount);
+    message.tradeConfig !== undefined &&
+      (obj.tradeConfig = message.tradeConfig
+        ? TradeConfig.toJSON(message.tradeConfig)
+        : undefined);
     return obj;
   },
   fromPartial(object: Partial<TradeRoute>): TradeRoute {
     const message = createBaseTradeRoute();
-    message.rewardDenomOnHostZone = object.rewardDenomOnHostZone ?? "";
-    message.rewardDenomOnRewardZone = object.rewardDenomOnRewardZone ?? "";
-    message.rewardDenomOnTradeZone = object.rewardDenomOnTradeZone ?? "";
-    message.hostDenomOnTradeZone = object.hostDenomOnTradeZone ?? "";
-    message.hostDenomOnHostZone = object.hostDenomOnHostZone ?? "";
-    message.hostAccount = object.hostAccount !== undefined && object.hostAccount !== null ? ICAAccount.fromPartial(object.hostAccount) : undefined;
-    message.rewardAccount = object.rewardAccount !== undefined && object.rewardAccount !== null ? ICAAccount.fromPartial(object.rewardAccount) : undefined;
-    message.tradeAccount = object.tradeAccount !== undefined && object.tradeAccount !== null ? ICAAccount.fromPartial(object.tradeAccount) : undefined;
-    message.hostToRewardChannelId = object.hostToRewardChannelId ?? "";
-    message.rewardToTradeChannelId = object.rewardToTradeChannelId ?? "";
-    message.tradeToHostChannelId = object.tradeToHostChannelId ?? "";
-    message.minTransferAmount = object.minTransferAmount ?? "";
-    message.tradeConfig = object.tradeConfig !== undefined && object.tradeConfig !== null ? TradeConfig.fromPartial(object.tradeConfig) : undefined;
+    message.rewardDenomOnHostZone = object.rewardDenomOnHostZone ?? '';
+    message.rewardDenomOnRewardZone = object.rewardDenomOnRewardZone ?? '';
+    message.rewardDenomOnTradeZone = object.rewardDenomOnTradeZone ?? '';
+    message.hostDenomOnTradeZone = object.hostDenomOnTradeZone ?? '';
+    message.hostDenomOnHostZone = object.hostDenomOnHostZone ?? '';
+    message.hostAccount =
+      object.hostAccount !== undefined && object.hostAccount !== null
+        ? ICAAccount.fromPartial(object.hostAccount)
+        : undefined;
+    message.rewardAccount =
+      object.rewardAccount !== undefined && object.rewardAccount !== null
+        ? ICAAccount.fromPartial(object.rewardAccount)
+        : undefined;
+    message.tradeAccount =
+      object.tradeAccount !== undefined && object.tradeAccount !== null
+        ? ICAAccount.fromPartial(object.tradeAccount)
+        : undefined;
+    message.hostToRewardChannelId = object.hostToRewardChannelId ?? '';
+    message.rewardToTradeChannelId = object.rewardToTradeChannelId ?? '';
+    message.tradeToHostChannelId = object.tradeToHostChannelId ?? '';
+    message.minTransferAmount = object.minTransferAmount ?? '';
+    message.tradeConfig =
+      object.tradeConfig !== undefined && object.tradeConfig !== null
+        ? TradeConfig.fromPartial(object.tradeConfig)
+        : undefined;
     return message;
   },
   fromProtoMsg(message: TradeRouteProtoMsg): TradeRoute {
@@ -430,8 +542,8 @@ export const TradeRoute = {
   },
   toProtoMsg(message: TradeRoute): TradeRouteProtoMsg {
     return {
-      typeUrl: "/stride.stakeibc.TradeRoute",
-      value: TradeRoute.encode(message).finish()
+      typeUrl: '/stride.stakeibc.TradeRoute',
+      value: TradeRoute.encode(message).finish(),
     };
-  }
+  },
 };

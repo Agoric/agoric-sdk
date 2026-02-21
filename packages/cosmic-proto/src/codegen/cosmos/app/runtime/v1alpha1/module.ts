@@ -1,7 +1,7 @@
 //@ts-nocheck
-import { BinaryReader, BinaryWriter } from "../../../../binary.js";
-import { isSet } from "../../../../helpers.js";
-import {type JsonSafe } from "../../../../json-safe.js";
+import { BinaryReader, BinaryWriter } from '../../../../binary.js';
+import { isSet } from '../../../../helpers.js';
+import { type JsonSafe } from '../../../../json-safe.js';
 /** Module is the config object for the runtime module. */
 export interface Module {
   /** app_name is the name of the app. */
@@ -55,7 +55,7 @@ export interface Module {
   prepareCheckStaters: string[];
 }
 export interface ModuleProtoMsg {
-  typeUrl: "/cosmos.app.runtime.v1alpha1.Module";
+  typeUrl: '/cosmos.app.runtime.v1alpha1.Module';
   value: Uint8Array;
 }
 /** Module is the config object for the runtime module. */
@@ -81,7 +81,7 @@ export interface StoreKeyConfig {
   kvStoreKey: string;
 }
 export interface StoreKeyConfigProtoMsg {
-  typeUrl: "/cosmos.app.runtime.v1alpha1.StoreKeyConfig";
+  typeUrl: '/cosmos.app.runtime.v1alpha1.StoreKeyConfig';
   value: Uint8Array;
 }
 /**
@@ -94,7 +94,7 @@ export interface StoreKeyConfigSDKType {
 }
 function createBaseModule(): Module {
   return {
-    appName: "",
+    appName: '',
     beginBlockers: [],
     endBlockers: [],
     initGenesis: [],
@@ -102,13 +102,16 @@ function createBaseModule(): Module {
     overrideStoreKeys: [],
     orderMigrations: [],
     precommiters: [],
-    prepareCheckStaters: []
+    prepareCheckStaters: [],
   };
 }
 export const Module = {
-  typeUrl: "/cosmos.app.runtime.v1alpha1.Module" as const,
-  encode(message: Module, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.appName !== "") {
+  typeUrl: '/cosmos.app.runtime.v1alpha1.Module' as const,
+  encode(
+    message: Module,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.appName !== '') {
       writer.uint32(10).string(message.appName);
     }
     for (const v of message.beginBlockers) {
@@ -138,7 +141,8 @@ export const Module = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Module {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseModule();
     while (reader.pos < end) {
@@ -160,7 +164,9 @@ export const Module = {
           message.exportGenesis.push(reader.string());
           break;
         case 6:
-          message.overrideStoreKeys.push(StoreKeyConfig.decode(reader, reader.uint32()));
+          message.overrideStoreKeys.push(
+            StoreKeyConfig.decode(reader, reader.uint32()),
+          );
           break;
         case 7:
           message.orderMigrations.push(reader.string());
@@ -180,15 +186,31 @@ export const Module = {
   },
   fromJSON(object: any): Module {
     return {
-      appName: isSet(object.appName) ? String(object.appName) : "",
-      beginBlockers: Array.isArray(object?.beginBlockers) ? object.beginBlockers.map((e: any) => String(e)) : [],
-      endBlockers: Array.isArray(object?.endBlockers) ? object.endBlockers.map((e: any) => String(e)) : [],
-      initGenesis: Array.isArray(object?.initGenesis) ? object.initGenesis.map((e: any) => String(e)) : [],
-      exportGenesis: Array.isArray(object?.exportGenesis) ? object.exportGenesis.map((e: any) => String(e)) : [],
-      overrideStoreKeys: Array.isArray(object?.overrideStoreKeys) ? object.overrideStoreKeys.map((e: any) => StoreKeyConfig.fromJSON(e)) : [],
-      orderMigrations: Array.isArray(object?.orderMigrations) ? object.orderMigrations.map((e: any) => String(e)) : [],
-      precommiters: Array.isArray(object?.precommiters) ? object.precommiters.map((e: any) => String(e)) : [],
-      prepareCheckStaters: Array.isArray(object?.prepareCheckStaters) ? object.prepareCheckStaters.map((e: any) => String(e)) : []
+      appName: isSet(object.appName) ? String(object.appName) : '',
+      beginBlockers: Array.isArray(object?.beginBlockers)
+        ? object.beginBlockers.map((e: any) => String(e))
+        : [],
+      endBlockers: Array.isArray(object?.endBlockers)
+        ? object.endBlockers.map((e: any) => String(e))
+        : [],
+      initGenesis: Array.isArray(object?.initGenesis)
+        ? object.initGenesis.map((e: any) => String(e))
+        : [],
+      exportGenesis: Array.isArray(object?.exportGenesis)
+        ? object.exportGenesis.map((e: any) => String(e))
+        : [],
+      overrideStoreKeys: Array.isArray(object?.overrideStoreKeys)
+        ? object.overrideStoreKeys.map((e: any) => StoreKeyConfig.fromJSON(e))
+        : [],
+      orderMigrations: Array.isArray(object?.orderMigrations)
+        ? object.orderMigrations.map((e: any) => String(e))
+        : [],
+      precommiters: Array.isArray(object?.precommiters)
+        ? object.precommiters.map((e: any) => String(e))
+        : [],
+      prepareCheckStaters: Array.isArray(object?.prepareCheckStaters)
+        ? object.prepareCheckStaters.map((e: any) => String(e))
+        : [],
     };
   },
   toJSON(message: Module): JsonSafe<Module> {
@@ -215,7 +237,9 @@ export const Module = {
       obj.exportGenesis = [];
     }
     if (message.overrideStoreKeys) {
-      obj.overrideStoreKeys = message.overrideStoreKeys.map(e => e ? StoreKeyConfig.toJSON(e) : undefined);
+      obj.overrideStoreKeys = message.overrideStoreKeys.map(e =>
+        e ? StoreKeyConfig.toJSON(e) : undefined,
+      );
     } else {
       obj.overrideStoreKeys = [];
     }
@@ -238,12 +262,13 @@ export const Module = {
   },
   fromPartial(object: Partial<Module>): Module {
     const message = createBaseModule();
-    message.appName = object.appName ?? "";
+    message.appName = object.appName ?? '';
     message.beginBlockers = object.beginBlockers?.map(e => e) || [];
     message.endBlockers = object.endBlockers?.map(e => e) || [];
     message.initGenesis = object.initGenesis?.map(e => e) || [];
     message.exportGenesis = object.exportGenesis?.map(e => e) || [];
-    message.overrideStoreKeys = object.overrideStoreKeys?.map(e => StoreKeyConfig.fromPartial(e)) || [];
+    message.overrideStoreKeys =
+      object.overrideStoreKeys?.map(e => StoreKeyConfig.fromPartial(e)) || [];
     message.orderMigrations = object.orderMigrations?.map(e => e) || [];
     message.precommiters = object.precommiters?.map(e => e) || [];
     message.prepareCheckStaters = object.prepareCheckStaters?.map(e => e) || [];
@@ -257,30 +282,34 @@ export const Module = {
   },
   toProtoMsg(message: Module): ModuleProtoMsg {
     return {
-      typeUrl: "/cosmos.app.runtime.v1alpha1.Module",
-      value: Module.encode(message).finish()
+      typeUrl: '/cosmos.app.runtime.v1alpha1.Module',
+      value: Module.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseStoreKeyConfig(): StoreKeyConfig {
   return {
-    moduleName: "",
-    kvStoreKey: ""
+    moduleName: '',
+    kvStoreKey: '',
   };
 }
 export const StoreKeyConfig = {
-  typeUrl: "/cosmos.app.runtime.v1alpha1.StoreKeyConfig" as const,
-  encode(message: StoreKeyConfig, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.moduleName !== "") {
+  typeUrl: '/cosmos.app.runtime.v1alpha1.StoreKeyConfig' as const,
+  encode(
+    message: StoreKeyConfig,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.moduleName !== '') {
       writer.uint32(10).string(message.moduleName);
     }
-    if (message.kvStoreKey !== "") {
+    if (message.kvStoreKey !== '') {
       writer.uint32(18).string(message.kvStoreKey);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): StoreKeyConfig {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseStoreKeyConfig();
     while (reader.pos < end) {
@@ -301,8 +330,8 @@ export const StoreKeyConfig = {
   },
   fromJSON(object: any): StoreKeyConfig {
     return {
-      moduleName: isSet(object.moduleName) ? String(object.moduleName) : "",
-      kvStoreKey: isSet(object.kvStoreKey) ? String(object.kvStoreKey) : ""
+      moduleName: isSet(object.moduleName) ? String(object.moduleName) : '',
+      kvStoreKey: isSet(object.kvStoreKey) ? String(object.kvStoreKey) : '',
     };
   },
   toJSON(message: StoreKeyConfig): JsonSafe<StoreKeyConfig> {
@@ -313,8 +342,8 @@ export const StoreKeyConfig = {
   },
   fromPartial(object: Partial<StoreKeyConfig>): StoreKeyConfig {
     const message = createBaseStoreKeyConfig();
-    message.moduleName = object.moduleName ?? "";
-    message.kvStoreKey = object.kvStoreKey ?? "";
+    message.moduleName = object.moduleName ?? '';
+    message.kvStoreKey = object.kvStoreKey ?? '';
     return message;
   },
   fromProtoMsg(message: StoreKeyConfigProtoMsg): StoreKeyConfig {
@@ -325,8 +354,8 @@ export const StoreKeyConfig = {
   },
   toProtoMsg(message: StoreKeyConfig): StoreKeyConfigProtoMsg {
     return {
-      typeUrl: "/cosmos.app.runtime.v1alpha1.StoreKeyConfig",
-      value: StoreKeyConfig.encode(message).finish()
+      typeUrl: '/cosmos.app.runtime.v1alpha1.StoreKeyConfig',
+      value: StoreKeyConfig.encode(message).finish(),
     };
-  }
+  },
 };

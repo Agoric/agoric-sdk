@@ -1,11 +1,17 @@
 //@ts-nocheck
-import { Coin, type CoinSDKType } from "../../base/v1beta1/coin.js";
-import { Any, type AnySDKType } from "../../../google/protobuf/any.js";
-import { Timestamp, type TimestampSDKType } from "../../../google/protobuf/timestamp.js";
-import { Duration, type DurationSDKType } from "../../../google/protobuf/duration.js";
-import { BinaryReader, BinaryWriter } from "../../../binary.js";
-import { isSet, fromJsonTimestamp, fromTimestamp } from "../../../helpers.js";
-import {type JsonSafe } from "../../../json-safe.js";
+import { Coin, type CoinSDKType } from '../../base/v1beta1/coin.js';
+import { Any, type AnySDKType } from '../../../google/protobuf/any.js';
+import {
+  Timestamp,
+  type TimestampSDKType,
+} from '../../../google/protobuf/timestamp.js';
+import {
+  Duration,
+  type DurationSDKType,
+} from '../../../google/protobuf/duration.js';
+import { BinaryReader, BinaryWriter } from '../../../binary.js';
+import { isSet, fromJsonTimestamp, fromTimestamp } from '../../../helpers.js';
+import { type JsonSafe } from '../../../json-safe.js';
 /** VoteOption enumerates the valid vote options for a given governance proposal. */
 export enum VoteOption {
   /** VOTE_OPTION_UNSPECIFIED - VOTE_OPTION_UNSPECIFIED defines a no-op vote option. */
@@ -24,22 +30,22 @@ export const VoteOptionSDKType = VoteOption;
 export function voteOptionFromJSON(object: any): VoteOption {
   switch (object) {
     case 0:
-    case "VOTE_OPTION_UNSPECIFIED":
+    case 'VOTE_OPTION_UNSPECIFIED':
       return VoteOption.VOTE_OPTION_UNSPECIFIED;
     case 1:
-    case "VOTE_OPTION_YES":
+    case 'VOTE_OPTION_YES':
       return VoteOption.VOTE_OPTION_YES;
     case 2:
-    case "VOTE_OPTION_ABSTAIN":
+    case 'VOTE_OPTION_ABSTAIN':
       return VoteOption.VOTE_OPTION_ABSTAIN;
     case 3:
-    case "VOTE_OPTION_NO":
+    case 'VOTE_OPTION_NO':
       return VoteOption.VOTE_OPTION_NO;
     case 4:
-    case "VOTE_OPTION_NO_WITH_VETO":
+    case 'VOTE_OPTION_NO_WITH_VETO':
       return VoteOption.VOTE_OPTION_NO_WITH_VETO;
     case -1:
-    case "UNRECOGNIZED":
+    case 'UNRECOGNIZED':
     default:
       return VoteOption.UNRECOGNIZED;
   }
@@ -47,18 +53,18 @@ export function voteOptionFromJSON(object: any): VoteOption {
 export function voteOptionToJSON(object: VoteOption): string {
   switch (object) {
     case VoteOption.VOTE_OPTION_UNSPECIFIED:
-      return "VOTE_OPTION_UNSPECIFIED";
+      return 'VOTE_OPTION_UNSPECIFIED';
     case VoteOption.VOTE_OPTION_YES:
-      return "VOTE_OPTION_YES";
+      return 'VOTE_OPTION_YES';
     case VoteOption.VOTE_OPTION_ABSTAIN:
-      return "VOTE_OPTION_ABSTAIN";
+      return 'VOTE_OPTION_ABSTAIN';
     case VoteOption.VOTE_OPTION_NO:
-      return "VOTE_OPTION_NO";
+      return 'VOTE_OPTION_NO';
     case VoteOption.VOTE_OPTION_NO_WITH_VETO:
-      return "VOTE_OPTION_NO_WITH_VETO";
+      return 'VOTE_OPTION_NO_WITH_VETO';
     case VoteOption.UNRECOGNIZED:
     default:
-      return "UNRECOGNIZED";
+      return 'UNRECOGNIZED';
   }
 }
 /** ProposalStatus enumerates the valid statuses of a proposal. */
@@ -96,25 +102,25 @@ export const ProposalStatusSDKType = ProposalStatus;
 export function proposalStatusFromJSON(object: any): ProposalStatus {
   switch (object) {
     case 0:
-    case "PROPOSAL_STATUS_UNSPECIFIED":
+    case 'PROPOSAL_STATUS_UNSPECIFIED':
       return ProposalStatus.PROPOSAL_STATUS_UNSPECIFIED;
     case 1:
-    case "PROPOSAL_STATUS_DEPOSIT_PERIOD":
+    case 'PROPOSAL_STATUS_DEPOSIT_PERIOD':
       return ProposalStatus.PROPOSAL_STATUS_DEPOSIT_PERIOD;
     case 2:
-    case "PROPOSAL_STATUS_VOTING_PERIOD":
+    case 'PROPOSAL_STATUS_VOTING_PERIOD':
       return ProposalStatus.PROPOSAL_STATUS_VOTING_PERIOD;
     case 3:
-    case "PROPOSAL_STATUS_PASSED":
+    case 'PROPOSAL_STATUS_PASSED':
       return ProposalStatus.PROPOSAL_STATUS_PASSED;
     case 4:
-    case "PROPOSAL_STATUS_REJECTED":
+    case 'PROPOSAL_STATUS_REJECTED':
       return ProposalStatus.PROPOSAL_STATUS_REJECTED;
     case 5:
-    case "PROPOSAL_STATUS_FAILED":
+    case 'PROPOSAL_STATUS_FAILED':
       return ProposalStatus.PROPOSAL_STATUS_FAILED;
     case -1:
-    case "UNRECOGNIZED":
+    case 'UNRECOGNIZED':
     default:
       return ProposalStatus.UNRECOGNIZED;
   }
@@ -122,20 +128,20 @@ export function proposalStatusFromJSON(object: any): ProposalStatus {
 export function proposalStatusToJSON(object: ProposalStatus): string {
   switch (object) {
     case ProposalStatus.PROPOSAL_STATUS_UNSPECIFIED:
-      return "PROPOSAL_STATUS_UNSPECIFIED";
+      return 'PROPOSAL_STATUS_UNSPECIFIED';
     case ProposalStatus.PROPOSAL_STATUS_DEPOSIT_PERIOD:
-      return "PROPOSAL_STATUS_DEPOSIT_PERIOD";
+      return 'PROPOSAL_STATUS_DEPOSIT_PERIOD';
     case ProposalStatus.PROPOSAL_STATUS_VOTING_PERIOD:
-      return "PROPOSAL_STATUS_VOTING_PERIOD";
+      return 'PROPOSAL_STATUS_VOTING_PERIOD';
     case ProposalStatus.PROPOSAL_STATUS_PASSED:
-      return "PROPOSAL_STATUS_PASSED";
+      return 'PROPOSAL_STATUS_PASSED';
     case ProposalStatus.PROPOSAL_STATUS_REJECTED:
-      return "PROPOSAL_STATUS_REJECTED";
+      return 'PROPOSAL_STATUS_REJECTED';
     case ProposalStatus.PROPOSAL_STATUS_FAILED:
-      return "PROPOSAL_STATUS_FAILED";
+      return 'PROPOSAL_STATUS_FAILED';
     case ProposalStatus.UNRECOGNIZED:
     default:
-      return "UNRECOGNIZED";
+      return 'UNRECOGNIZED';
   }
 }
 /** WeightedVoteOption defines a unit of vote for vote split. */
@@ -146,7 +152,7 @@ export interface WeightedVoteOption {
   weight: string;
 }
 export interface WeightedVoteOptionProtoMsg {
-  typeUrl: "/cosmos.gov.v1.WeightedVoteOption";
+  typeUrl: '/cosmos.gov.v1.WeightedVoteOption';
   value: Uint8Array;
 }
 /** WeightedVoteOption defines a unit of vote for vote split. */
@@ -167,7 +173,7 @@ export interface Deposit {
   amount: Coin[];
 }
 export interface DepositProtoMsg {
-  typeUrl: "/cosmos.gov.v1.Deposit";
+  typeUrl: '/cosmos.gov.v1.Deposit';
   value: Uint8Array;
 }
 /**
@@ -211,37 +217,37 @@ export interface Proposal {
   metadata: string;
   /**
    * title is the title of the proposal
-   * 
+   *
    * Since: cosmos-sdk 0.47
    */
   title: string;
   /**
    * summary is a short summary of the proposal
-   * 
+   *
    * Since: cosmos-sdk 0.47
    */
   summary: string;
   /**
    * proposer is the address of the proposal sumbitter
-   * 
+   *
    * Since: cosmos-sdk 0.47
    */
   proposer: string;
   /**
    * expedited defines if the proposal is expedited
-   * 
+   *
    * Since: cosmos-sdk 0.50
    */
   expedited: boolean;
   /**
    * failed_reason defines the reason why the proposal failed
-   * 
+   *
    * Since: cosmos-sdk 0.50
    */
   failedReason: string;
 }
 export interface ProposalProtoMsg {
-  typeUrl: "/cosmos.gov.v1.Proposal";
+  typeUrl: '/cosmos.gov.v1.Proposal';
   value: Uint8Array;
 }
 /** Proposal defines the core field members of a governance proposal. */
@@ -274,7 +280,7 @@ export interface TallyResult {
   noWithVetoCount: string;
 }
 export interface TallyResultProtoMsg {
-  typeUrl: "/cosmos.gov.v1.TallyResult";
+  typeUrl: '/cosmos.gov.v1.TallyResult';
   value: Uint8Array;
 }
 /** TallyResult defines a standard tally for a governance proposal. */
@@ -302,7 +308,7 @@ export interface Vote {
   metadata: string;
 }
 export interface VoteProtoMsg {
-  typeUrl: "/cosmos.gov.v1.Vote";
+  typeUrl: '/cosmos.gov.v1.Vote';
   value: Uint8Array;
 }
 /**
@@ -327,7 +333,7 @@ export interface DepositParams {
   maxDepositPeriod?: Duration;
 }
 export interface DepositParamsProtoMsg {
-  typeUrl: "/cosmos.gov.v1.DepositParams";
+  typeUrl: '/cosmos.gov.v1.DepositParams';
   value: Uint8Array;
 }
 /** DepositParams defines the params for deposits on governance proposals. */
@@ -343,7 +349,7 @@ export interface VotingParams {
   votingPeriod?: Duration;
 }
 export interface VotingParamsProtoMsg {
-  typeUrl: "/cosmos.gov.v1.VotingParams";
+  typeUrl: '/cosmos.gov.v1.VotingParams';
   value: Uint8Array;
 }
 /** VotingParams defines the params for voting on governance proposals. */
@@ -368,7 +374,7 @@ export interface TallyParams {
   vetoThreshold: string;
 }
 export interface TallyParamsProtoMsg {
-  typeUrl: "/cosmos.gov.v1.TallyParams";
+  typeUrl: '/cosmos.gov.v1.TallyParams';
   value: Uint8Array;
 }
 /** TallyParams defines the params for tallying votes on governance proposals. */
@@ -380,7 +386,7 @@ export interface TallyParamsSDKType {
 }
 /**
  * Params defines the parameters for the x/gov module.
- * 
+ *
  * Since: cosmos-sdk 0.47
  */
 export interface Params {
@@ -409,26 +415,26 @@ export interface Params {
   minInitialDepositRatio: string;
   /**
    * The cancel ratio which will not be returned back to the depositors when a proposal is cancelled.
-   * 
+   *
    * Since: cosmos-sdk 0.50
    */
   proposalCancelRatio: string;
   /**
    * The address which will receive (proposal_cancel_ratio * deposit) proposal deposits.
    * If empty, the (proposal_cancel_ratio * deposit) proposal deposits will be burned.
-   * 
+   *
    * Since: cosmos-sdk 0.50
    */
   proposalCancelDest: string;
   /**
    * Duration of the voting period of an expedited proposal.
-   * 
+   *
    * Since: cosmos-sdk 0.50
    */
   expeditedVotingPeriod?: Duration;
   /**
    * Minimum proportion of Yes votes for proposal to pass. Default value: 0.67.
-   * 
+   *
    * Since: cosmos-sdk 0.50
    */
   expeditedThreshold: string;
@@ -444,18 +450,18 @@ export interface Params {
    * The ratio representing the proportion of the deposit value minimum that must be met when making a deposit.
    * Default value: 0.01. Meaning that for a chain with a min_deposit of 100stake, a deposit of 1stake would be
    * required.
-   * 
+   *
    * Since: cosmos-sdk 0.50
    */
   minDepositRatio: string;
 }
 export interface ParamsProtoMsg {
-  typeUrl: "/cosmos.gov.v1.Params";
+  typeUrl: '/cosmos.gov.v1.Params';
   value: Uint8Array;
 }
 /**
  * Params defines the parameters for the x/gov module.
- * 
+ *
  * Since: cosmos-sdk 0.47
  */
 export interface ParamsSDKType {
@@ -479,22 +485,29 @@ export interface ParamsSDKType {
 function createBaseWeightedVoteOption(): WeightedVoteOption {
   return {
     option: 0,
-    weight: ""
+    weight: '',
   };
 }
 export const WeightedVoteOption = {
-  typeUrl: "/cosmos.gov.v1.WeightedVoteOption" as const,
-  encode(message: WeightedVoteOption, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/cosmos.gov.v1.WeightedVoteOption' as const,
+  encode(
+    message: WeightedVoteOption,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.option !== 0) {
       writer.uint32(8).int32(message.option);
     }
-    if (message.weight !== "") {
+    if (message.weight !== '') {
       writer.uint32(18).string(message.weight);
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): WeightedVoteOption {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): WeightedVoteOption {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseWeightedVoteOption();
     while (reader.pos < end) {
@@ -516,19 +529,20 @@ export const WeightedVoteOption = {
   fromJSON(object: any): WeightedVoteOption {
     return {
       option: isSet(object.option) ? voteOptionFromJSON(object.option) : -1,
-      weight: isSet(object.weight) ? String(object.weight) : ""
+      weight: isSet(object.weight) ? String(object.weight) : '',
     };
   },
   toJSON(message: WeightedVoteOption): JsonSafe<WeightedVoteOption> {
     const obj: any = {};
-    message.option !== undefined && (obj.option = voteOptionToJSON(message.option));
+    message.option !== undefined &&
+      (obj.option = voteOptionToJSON(message.option));
     message.weight !== undefined && (obj.weight = message.weight);
     return obj;
   },
   fromPartial(object: Partial<WeightedVoteOption>): WeightedVoteOption {
     const message = createBaseWeightedVoteOption();
     message.option = object.option ?? 0;
-    message.weight = object.weight ?? "";
+    message.weight = object.weight ?? '';
     return message;
   },
   fromProtoMsg(message: WeightedVoteOptionProtoMsg): WeightedVoteOption {
@@ -539,25 +553,28 @@ export const WeightedVoteOption = {
   },
   toProtoMsg(message: WeightedVoteOption): WeightedVoteOptionProtoMsg {
     return {
-      typeUrl: "/cosmos.gov.v1.WeightedVoteOption",
-      value: WeightedVoteOption.encode(message).finish()
+      typeUrl: '/cosmos.gov.v1.WeightedVoteOption',
+      value: WeightedVoteOption.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseDeposit(): Deposit {
   return {
     proposalId: BigInt(0),
-    depositor: "",
-    amount: []
+    depositor: '',
+    amount: [],
   };
 }
 export const Deposit = {
-  typeUrl: "/cosmos.gov.v1.Deposit" as const,
-  encode(message: Deposit, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/cosmos.gov.v1.Deposit' as const,
+  encode(
+    message: Deposit,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.proposalId !== BigInt(0)) {
       writer.uint32(8).uint64(message.proposalId);
     }
-    if (message.depositor !== "") {
+    if (message.depositor !== '') {
       writer.uint32(18).string(message.depositor);
     }
     for (const v of message.amount) {
@@ -566,7 +583,8 @@ export const Deposit = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Deposit {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseDeposit();
     while (reader.pos < end) {
@@ -590,17 +608,22 @@ export const Deposit = {
   },
   fromJSON(object: any): Deposit {
     return {
-      proposalId: isSet(object.proposalId) ? BigInt(object.proposalId.toString()) : BigInt(0),
-      depositor: isSet(object.depositor) ? String(object.depositor) : "",
-      amount: Array.isArray(object?.amount) ? object.amount.map((e: any) => Coin.fromJSON(e)) : []
+      proposalId: isSet(object.proposalId)
+        ? BigInt(object.proposalId.toString())
+        : BigInt(0),
+      depositor: isSet(object.depositor) ? String(object.depositor) : '',
+      amount: Array.isArray(object?.amount)
+        ? object.amount.map((e: any) => Coin.fromJSON(e))
+        : [],
     };
   },
   toJSON(message: Deposit): JsonSafe<Deposit> {
     const obj: any = {};
-    message.proposalId !== undefined && (obj.proposalId = (message.proposalId || BigInt(0)).toString());
+    message.proposalId !== undefined &&
+      (obj.proposalId = (message.proposalId || BigInt(0)).toString());
     message.depositor !== undefined && (obj.depositor = message.depositor);
     if (message.amount) {
-      obj.amount = message.amount.map(e => e ? Coin.toJSON(e) : undefined);
+      obj.amount = message.amount.map(e => (e ? Coin.toJSON(e) : undefined));
     } else {
       obj.amount = [];
     }
@@ -608,8 +631,11 @@ export const Deposit = {
   },
   fromPartial(object: Partial<Deposit>): Deposit {
     const message = createBaseDeposit();
-    message.proposalId = object.proposalId !== undefined && object.proposalId !== null ? BigInt(object.proposalId.toString()) : BigInt(0);
-    message.depositor = object.depositor ?? "";
+    message.proposalId =
+      object.proposalId !== undefined && object.proposalId !== null
+        ? BigInt(object.proposalId.toString())
+        : BigInt(0);
+    message.depositor = object.depositor ?? '';
     message.amount = object.amount?.map(e => Coin.fromPartial(e)) || [];
     return message;
   },
@@ -621,10 +647,10 @@ export const Deposit = {
   },
   toProtoMsg(message: Deposit): DepositProtoMsg {
     return {
-      typeUrl: "/cosmos.gov.v1.Deposit",
-      value: Deposit.encode(message).finish()
+      typeUrl: '/cosmos.gov.v1.Deposit',
+      value: Deposit.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseProposal(): Proposal {
   return {
@@ -637,17 +663,20 @@ function createBaseProposal(): Proposal {
     totalDeposit: [],
     votingStartTime: undefined,
     votingEndTime: undefined,
-    metadata: "",
-    title: "",
-    summary: "",
-    proposer: "",
+    metadata: '',
+    title: '',
+    summary: '',
+    proposer: '',
     expedited: false,
-    failedReason: ""
+    failedReason: '',
   };
 }
 export const Proposal = {
-  typeUrl: "/cosmos.gov.v1.Proposal" as const,
-  encode(message: Proposal, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/cosmos.gov.v1.Proposal' as const,
+  encode(
+    message: Proposal,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.id !== BigInt(0)) {
       writer.uint32(8).uint64(message.id);
     }
@@ -658,45 +687,58 @@ export const Proposal = {
       writer.uint32(24).int32(message.status);
     }
     if (message.finalTallyResult !== undefined) {
-      TallyResult.encode(message.finalTallyResult, writer.uint32(34).fork()).ldelim();
+      TallyResult.encode(
+        message.finalTallyResult,
+        writer.uint32(34).fork(),
+      ).ldelim();
     }
     if (message.submitTime !== undefined) {
       Timestamp.encode(message.submitTime, writer.uint32(42).fork()).ldelim();
     }
     if (message.depositEndTime !== undefined) {
-      Timestamp.encode(message.depositEndTime, writer.uint32(50).fork()).ldelim();
+      Timestamp.encode(
+        message.depositEndTime,
+        writer.uint32(50).fork(),
+      ).ldelim();
     }
     for (const v of message.totalDeposit) {
       Coin.encode(v!, writer.uint32(58).fork()).ldelim();
     }
     if (message.votingStartTime !== undefined) {
-      Timestamp.encode(message.votingStartTime, writer.uint32(66).fork()).ldelim();
+      Timestamp.encode(
+        message.votingStartTime,
+        writer.uint32(66).fork(),
+      ).ldelim();
     }
     if (message.votingEndTime !== undefined) {
-      Timestamp.encode(message.votingEndTime, writer.uint32(74).fork()).ldelim();
+      Timestamp.encode(
+        message.votingEndTime,
+        writer.uint32(74).fork(),
+      ).ldelim();
     }
-    if (message.metadata !== "") {
+    if (message.metadata !== '') {
       writer.uint32(82).string(message.metadata);
     }
-    if (message.title !== "") {
+    if (message.title !== '') {
       writer.uint32(90).string(message.title);
     }
-    if (message.summary !== "") {
+    if (message.summary !== '') {
       writer.uint32(98).string(message.summary);
     }
-    if (message.proposer !== "") {
+    if (message.proposer !== '') {
       writer.uint32(106).string(message.proposer);
     }
     if (message.expedited === true) {
       writer.uint32(112).bool(message.expedited);
     }
-    if (message.failedReason !== "") {
+    if (message.failedReason !== '') {
       writer.uint32(122).string(message.failedReason);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Proposal {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseProposal();
     while (reader.pos < end) {
@@ -712,7 +754,10 @@ export const Proposal = {
           message.status = reader.int32() as any;
           break;
         case 4:
-          message.finalTallyResult = TallyResult.decode(reader, reader.uint32());
+          message.finalTallyResult = TallyResult.decode(
+            reader,
+            reader.uint32(),
+          );
           break;
         case 5:
           message.submitTime = Timestamp.decode(reader, reader.uint32());
@@ -757,66 +802,116 @@ export const Proposal = {
   fromJSON(object: any): Proposal {
     return {
       id: isSet(object.id) ? BigInt(object.id.toString()) : BigInt(0),
-      messages: Array.isArray(object?.messages) ? object.messages.map((e: any) => Any.fromJSON(e)) : [],
+      messages: Array.isArray(object?.messages)
+        ? object.messages.map((e: any) => Any.fromJSON(e))
+        : [],
       status: isSet(object.status) ? proposalStatusFromJSON(object.status) : -1,
-      finalTallyResult: isSet(object.finalTallyResult) ? TallyResult.fromJSON(object.finalTallyResult) : undefined,
-      submitTime: isSet(object.submitTime) ? fromJsonTimestamp(object.submitTime) : undefined,
-      depositEndTime: isSet(object.depositEndTime) ? fromJsonTimestamp(object.depositEndTime) : undefined,
-      totalDeposit: Array.isArray(object?.totalDeposit) ? object.totalDeposit.map((e: any) => Coin.fromJSON(e)) : [],
-      votingStartTime: isSet(object.votingStartTime) ? fromJsonTimestamp(object.votingStartTime) : undefined,
-      votingEndTime: isSet(object.votingEndTime) ? fromJsonTimestamp(object.votingEndTime) : undefined,
-      metadata: isSet(object.metadata) ? String(object.metadata) : "",
-      title: isSet(object.title) ? String(object.title) : "",
-      summary: isSet(object.summary) ? String(object.summary) : "",
-      proposer: isSet(object.proposer) ? String(object.proposer) : "",
+      finalTallyResult: isSet(object.finalTallyResult)
+        ? TallyResult.fromJSON(object.finalTallyResult)
+        : undefined,
+      submitTime: isSet(object.submitTime)
+        ? fromJsonTimestamp(object.submitTime)
+        : undefined,
+      depositEndTime: isSet(object.depositEndTime)
+        ? fromJsonTimestamp(object.depositEndTime)
+        : undefined,
+      totalDeposit: Array.isArray(object?.totalDeposit)
+        ? object.totalDeposit.map((e: any) => Coin.fromJSON(e))
+        : [],
+      votingStartTime: isSet(object.votingStartTime)
+        ? fromJsonTimestamp(object.votingStartTime)
+        : undefined,
+      votingEndTime: isSet(object.votingEndTime)
+        ? fromJsonTimestamp(object.votingEndTime)
+        : undefined,
+      metadata: isSet(object.metadata) ? String(object.metadata) : '',
+      title: isSet(object.title) ? String(object.title) : '',
+      summary: isSet(object.summary) ? String(object.summary) : '',
+      proposer: isSet(object.proposer) ? String(object.proposer) : '',
       expedited: isSet(object.expedited) ? Boolean(object.expedited) : false,
-      failedReason: isSet(object.failedReason) ? String(object.failedReason) : ""
+      failedReason: isSet(object.failedReason)
+        ? String(object.failedReason)
+        : '',
     };
   },
   toJSON(message: Proposal): JsonSafe<Proposal> {
     const obj: any = {};
     message.id !== undefined && (obj.id = (message.id || BigInt(0)).toString());
     if (message.messages) {
-      obj.messages = message.messages.map(e => e ? Any.toJSON(e) : undefined);
+      obj.messages = message.messages.map(e => (e ? Any.toJSON(e) : undefined));
     } else {
       obj.messages = [];
     }
-    message.status !== undefined && (obj.status = proposalStatusToJSON(message.status));
-    message.finalTallyResult !== undefined && (obj.finalTallyResult = message.finalTallyResult ? TallyResult.toJSON(message.finalTallyResult) : undefined);
-    message.submitTime !== undefined && (obj.submitTime = fromTimestamp(message.submitTime).toISOString());
-    message.depositEndTime !== undefined && (obj.depositEndTime = fromTimestamp(message.depositEndTime).toISOString());
+    message.status !== undefined &&
+      (obj.status = proposalStatusToJSON(message.status));
+    message.finalTallyResult !== undefined &&
+      (obj.finalTallyResult = message.finalTallyResult
+        ? TallyResult.toJSON(message.finalTallyResult)
+        : undefined);
+    message.submitTime !== undefined &&
+      (obj.submitTime = fromTimestamp(message.submitTime).toISOString());
+    message.depositEndTime !== undefined &&
+      (obj.depositEndTime = fromTimestamp(
+        message.depositEndTime,
+      ).toISOString());
     if (message.totalDeposit) {
-      obj.totalDeposit = message.totalDeposit.map(e => e ? Coin.toJSON(e) : undefined);
+      obj.totalDeposit = message.totalDeposit.map(e =>
+        e ? Coin.toJSON(e) : undefined,
+      );
     } else {
       obj.totalDeposit = [];
     }
-    message.votingStartTime !== undefined && (obj.votingStartTime = fromTimestamp(message.votingStartTime).toISOString());
-    message.votingEndTime !== undefined && (obj.votingEndTime = fromTimestamp(message.votingEndTime).toISOString());
+    message.votingStartTime !== undefined &&
+      (obj.votingStartTime = fromTimestamp(
+        message.votingStartTime,
+      ).toISOString());
+    message.votingEndTime !== undefined &&
+      (obj.votingEndTime = fromTimestamp(message.votingEndTime).toISOString());
     message.metadata !== undefined && (obj.metadata = message.metadata);
     message.title !== undefined && (obj.title = message.title);
     message.summary !== undefined && (obj.summary = message.summary);
     message.proposer !== undefined && (obj.proposer = message.proposer);
     message.expedited !== undefined && (obj.expedited = message.expedited);
-    message.failedReason !== undefined && (obj.failedReason = message.failedReason);
+    message.failedReason !== undefined &&
+      (obj.failedReason = message.failedReason);
     return obj;
   },
   fromPartial(object: Partial<Proposal>): Proposal {
     const message = createBaseProposal();
-    message.id = object.id !== undefined && object.id !== null ? BigInt(object.id.toString()) : BigInt(0);
+    message.id =
+      object.id !== undefined && object.id !== null
+        ? BigInt(object.id.toString())
+        : BigInt(0);
     message.messages = object.messages?.map(e => Any.fromPartial(e)) || [];
     message.status = object.status ?? 0;
-    message.finalTallyResult = object.finalTallyResult !== undefined && object.finalTallyResult !== null ? TallyResult.fromPartial(object.finalTallyResult) : undefined;
-    message.submitTime = object.submitTime !== undefined && object.submitTime !== null ? Timestamp.fromPartial(object.submitTime) : undefined;
-    message.depositEndTime = object.depositEndTime !== undefined && object.depositEndTime !== null ? Timestamp.fromPartial(object.depositEndTime) : undefined;
-    message.totalDeposit = object.totalDeposit?.map(e => Coin.fromPartial(e)) || [];
-    message.votingStartTime = object.votingStartTime !== undefined && object.votingStartTime !== null ? Timestamp.fromPartial(object.votingStartTime) : undefined;
-    message.votingEndTime = object.votingEndTime !== undefined && object.votingEndTime !== null ? Timestamp.fromPartial(object.votingEndTime) : undefined;
-    message.metadata = object.metadata ?? "";
-    message.title = object.title ?? "";
-    message.summary = object.summary ?? "";
-    message.proposer = object.proposer ?? "";
+    message.finalTallyResult =
+      object.finalTallyResult !== undefined && object.finalTallyResult !== null
+        ? TallyResult.fromPartial(object.finalTallyResult)
+        : undefined;
+    message.submitTime =
+      object.submitTime !== undefined && object.submitTime !== null
+        ? Timestamp.fromPartial(object.submitTime)
+        : undefined;
+    message.depositEndTime =
+      object.depositEndTime !== undefined && object.depositEndTime !== null
+        ? Timestamp.fromPartial(object.depositEndTime)
+        : undefined;
+    message.totalDeposit =
+      object.totalDeposit?.map(e => Coin.fromPartial(e)) || [];
+    message.votingStartTime =
+      object.votingStartTime !== undefined && object.votingStartTime !== null
+        ? Timestamp.fromPartial(object.votingStartTime)
+        : undefined;
+    message.votingEndTime =
+      object.votingEndTime !== undefined && object.votingEndTime !== null
+        ? Timestamp.fromPartial(object.votingEndTime)
+        : undefined;
+    message.metadata = object.metadata ?? '';
+    message.title = object.title ?? '';
+    message.summary = object.summary ?? '';
+    message.proposer = object.proposer ?? '';
     message.expedited = object.expedited ?? false;
-    message.failedReason = object.failedReason ?? "";
+    message.failedReason = object.failedReason ?? '';
     return message;
   },
   fromProtoMsg(message: ProposalProtoMsg): Proposal {
@@ -827,38 +922,42 @@ export const Proposal = {
   },
   toProtoMsg(message: Proposal): ProposalProtoMsg {
     return {
-      typeUrl: "/cosmos.gov.v1.Proposal",
-      value: Proposal.encode(message).finish()
+      typeUrl: '/cosmos.gov.v1.Proposal',
+      value: Proposal.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseTallyResult(): TallyResult {
   return {
-    yesCount: "",
-    abstainCount: "",
-    noCount: "",
-    noWithVetoCount: ""
+    yesCount: '',
+    abstainCount: '',
+    noCount: '',
+    noWithVetoCount: '',
   };
 }
 export const TallyResult = {
-  typeUrl: "/cosmos.gov.v1.TallyResult" as const,
-  encode(message: TallyResult, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.yesCount !== "") {
+  typeUrl: '/cosmos.gov.v1.TallyResult' as const,
+  encode(
+    message: TallyResult,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.yesCount !== '') {
       writer.uint32(10).string(message.yesCount);
     }
-    if (message.abstainCount !== "") {
+    if (message.abstainCount !== '') {
       writer.uint32(18).string(message.abstainCount);
     }
-    if (message.noCount !== "") {
+    if (message.noCount !== '') {
       writer.uint32(26).string(message.noCount);
     }
-    if (message.noWithVetoCount !== "") {
+    if (message.noWithVetoCount !== '') {
       writer.uint32(34).string(message.noWithVetoCount);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): TallyResult {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseTallyResult();
     while (reader.pos < end) {
@@ -885,26 +984,32 @@ export const TallyResult = {
   },
   fromJSON(object: any): TallyResult {
     return {
-      yesCount: isSet(object.yesCount) ? String(object.yesCount) : "",
-      abstainCount: isSet(object.abstainCount) ? String(object.abstainCount) : "",
-      noCount: isSet(object.noCount) ? String(object.noCount) : "",
-      noWithVetoCount: isSet(object.noWithVetoCount) ? String(object.noWithVetoCount) : ""
+      yesCount: isSet(object.yesCount) ? String(object.yesCount) : '',
+      abstainCount: isSet(object.abstainCount)
+        ? String(object.abstainCount)
+        : '',
+      noCount: isSet(object.noCount) ? String(object.noCount) : '',
+      noWithVetoCount: isSet(object.noWithVetoCount)
+        ? String(object.noWithVetoCount)
+        : '',
     };
   },
   toJSON(message: TallyResult): JsonSafe<TallyResult> {
     const obj: any = {};
     message.yesCount !== undefined && (obj.yesCount = message.yesCount);
-    message.abstainCount !== undefined && (obj.abstainCount = message.abstainCount);
+    message.abstainCount !== undefined &&
+      (obj.abstainCount = message.abstainCount);
     message.noCount !== undefined && (obj.noCount = message.noCount);
-    message.noWithVetoCount !== undefined && (obj.noWithVetoCount = message.noWithVetoCount);
+    message.noWithVetoCount !== undefined &&
+      (obj.noWithVetoCount = message.noWithVetoCount);
     return obj;
   },
   fromPartial(object: Partial<TallyResult>): TallyResult {
     const message = createBaseTallyResult();
-    message.yesCount = object.yesCount ?? "";
-    message.abstainCount = object.abstainCount ?? "";
-    message.noCount = object.noCount ?? "";
-    message.noWithVetoCount = object.noWithVetoCount ?? "";
+    message.yesCount = object.yesCount ?? '';
+    message.abstainCount = object.abstainCount ?? '';
+    message.noCount = object.noCount ?? '';
+    message.noWithVetoCount = object.noWithVetoCount ?? '';
     return message;
   },
   fromProtoMsg(message: TallyResultProtoMsg): TallyResult {
@@ -915,38 +1020,42 @@ export const TallyResult = {
   },
   toProtoMsg(message: TallyResult): TallyResultProtoMsg {
     return {
-      typeUrl: "/cosmos.gov.v1.TallyResult",
-      value: TallyResult.encode(message).finish()
+      typeUrl: '/cosmos.gov.v1.TallyResult',
+      value: TallyResult.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseVote(): Vote {
   return {
     proposalId: BigInt(0),
-    voter: "",
+    voter: '',
     options: [],
-    metadata: ""
+    metadata: '',
   };
 }
 export const Vote = {
-  typeUrl: "/cosmos.gov.v1.Vote" as const,
-  encode(message: Vote, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/cosmos.gov.v1.Vote' as const,
+  encode(
+    message: Vote,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.proposalId !== BigInt(0)) {
       writer.uint32(8).uint64(message.proposalId);
     }
-    if (message.voter !== "") {
+    if (message.voter !== '') {
       writer.uint32(18).string(message.voter);
     }
     for (const v of message.options) {
       WeightedVoteOption.encode(v!, writer.uint32(34).fork()).ldelim();
     }
-    if (message.metadata !== "") {
+    if (message.metadata !== '') {
       writer.uint32(42).string(message.metadata);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Vote {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseVote();
     while (reader.pos < end) {
@@ -959,7 +1068,9 @@ export const Vote = {
           message.voter = reader.string();
           break;
         case 4:
-          message.options.push(WeightedVoteOption.decode(reader, reader.uint32()));
+          message.options.push(
+            WeightedVoteOption.decode(reader, reader.uint32()),
+          );
           break;
         case 5:
           message.metadata = reader.string();
@@ -973,18 +1084,25 @@ export const Vote = {
   },
   fromJSON(object: any): Vote {
     return {
-      proposalId: isSet(object.proposalId) ? BigInt(object.proposalId.toString()) : BigInt(0),
-      voter: isSet(object.voter) ? String(object.voter) : "",
-      options: Array.isArray(object?.options) ? object.options.map((e: any) => WeightedVoteOption.fromJSON(e)) : [],
-      metadata: isSet(object.metadata) ? String(object.metadata) : ""
+      proposalId: isSet(object.proposalId)
+        ? BigInt(object.proposalId.toString())
+        : BigInt(0),
+      voter: isSet(object.voter) ? String(object.voter) : '',
+      options: Array.isArray(object?.options)
+        ? object.options.map((e: any) => WeightedVoteOption.fromJSON(e))
+        : [],
+      metadata: isSet(object.metadata) ? String(object.metadata) : '',
     };
   },
   toJSON(message: Vote): JsonSafe<Vote> {
     const obj: any = {};
-    message.proposalId !== undefined && (obj.proposalId = (message.proposalId || BigInt(0)).toString());
+    message.proposalId !== undefined &&
+      (obj.proposalId = (message.proposalId || BigInt(0)).toString());
     message.voter !== undefined && (obj.voter = message.voter);
     if (message.options) {
-      obj.options = message.options.map(e => e ? WeightedVoteOption.toJSON(e) : undefined);
+      obj.options = message.options.map(e =>
+        e ? WeightedVoteOption.toJSON(e) : undefined,
+      );
     } else {
       obj.options = [];
     }
@@ -993,10 +1111,14 @@ export const Vote = {
   },
   fromPartial(object: Partial<Vote>): Vote {
     const message = createBaseVote();
-    message.proposalId = object.proposalId !== undefined && object.proposalId !== null ? BigInt(object.proposalId.toString()) : BigInt(0);
-    message.voter = object.voter ?? "";
-    message.options = object.options?.map(e => WeightedVoteOption.fromPartial(e)) || [];
-    message.metadata = object.metadata ?? "";
+    message.proposalId =
+      object.proposalId !== undefined && object.proposalId !== null
+        ? BigInt(object.proposalId.toString())
+        : BigInt(0);
+    message.voter = object.voter ?? '';
+    message.options =
+      object.options?.map(e => WeightedVoteOption.fromPartial(e)) || [];
+    message.metadata = object.metadata ?? '';
     return message;
   },
   fromProtoMsg(message: VoteProtoMsg): Vote {
@@ -1007,30 +1129,37 @@ export const Vote = {
   },
   toProtoMsg(message: Vote): VoteProtoMsg {
     return {
-      typeUrl: "/cosmos.gov.v1.Vote",
-      value: Vote.encode(message).finish()
+      typeUrl: '/cosmos.gov.v1.Vote',
+      value: Vote.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseDepositParams(): DepositParams {
   return {
     minDeposit: [],
-    maxDepositPeriod: undefined
+    maxDepositPeriod: undefined,
   };
 }
 export const DepositParams = {
-  typeUrl: "/cosmos.gov.v1.DepositParams" as const,
-  encode(message: DepositParams, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/cosmos.gov.v1.DepositParams' as const,
+  encode(
+    message: DepositParams,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     for (const v of message.minDeposit) {
       Coin.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     if (message.maxDepositPeriod !== undefined) {
-      Duration.encode(message.maxDepositPeriod, writer.uint32(18).fork()).ldelim();
+      Duration.encode(
+        message.maxDepositPeriod,
+        writer.uint32(18).fork(),
+      ).ldelim();
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): DepositParams {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseDepositParams();
     while (reader.pos < end) {
@@ -1051,24 +1180,36 @@ export const DepositParams = {
   },
   fromJSON(object: any): DepositParams {
     return {
-      minDeposit: Array.isArray(object?.minDeposit) ? object.minDeposit.map((e: any) => Coin.fromJSON(e)) : [],
-      maxDepositPeriod: isSet(object.maxDepositPeriod) ? Duration.fromJSON(object.maxDepositPeriod) : undefined
+      minDeposit: Array.isArray(object?.minDeposit)
+        ? object.minDeposit.map((e: any) => Coin.fromJSON(e))
+        : [],
+      maxDepositPeriod: isSet(object.maxDepositPeriod)
+        ? Duration.fromJSON(object.maxDepositPeriod)
+        : undefined,
     };
   },
   toJSON(message: DepositParams): JsonSafe<DepositParams> {
     const obj: any = {};
     if (message.minDeposit) {
-      obj.minDeposit = message.minDeposit.map(e => e ? Coin.toJSON(e) : undefined);
+      obj.minDeposit = message.minDeposit.map(e =>
+        e ? Coin.toJSON(e) : undefined,
+      );
     } else {
       obj.minDeposit = [];
     }
-    message.maxDepositPeriod !== undefined && (obj.maxDepositPeriod = message.maxDepositPeriod ? Duration.toJSON(message.maxDepositPeriod) : undefined);
+    message.maxDepositPeriod !== undefined &&
+      (obj.maxDepositPeriod = message.maxDepositPeriod
+        ? Duration.toJSON(message.maxDepositPeriod)
+        : undefined);
     return obj;
   },
   fromPartial(object: Partial<DepositParams>): DepositParams {
     const message = createBaseDepositParams();
     message.minDeposit = object.minDeposit?.map(e => Coin.fromPartial(e)) || [];
-    message.maxDepositPeriod = object.maxDepositPeriod !== undefined && object.maxDepositPeriod !== null ? Duration.fromPartial(object.maxDepositPeriod) : undefined;
+    message.maxDepositPeriod =
+      object.maxDepositPeriod !== undefined && object.maxDepositPeriod !== null
+        ? Duration.fromPartial(object.maxDepositPeriod)
+        : undefined;
     return message;
   },
   fromProtoMsg(message: DepositParamsProtoMsg): DepositParams {
@@ -1079,26 +1220,30 @@ export const DepositParams = {
   },
   toProtoMsg(message: DepositParams): DepositParamsProtoMsg {
     return {
-      typeUrl: "/cosmos.gov.v1.DepositParams",
-      value: DepositParams.encode(message).finish()
+      typeUrl: '/cosmos.gov.v1.DepositParams',
+      value: DepositParams.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseVotingParams(): VotingParams {
   return {
-    votingPeriod: undefined
+    votingPeriod: undefined,
   };
 }
 export const VotingParams = {
-  typeUrl: "/cosmos.gov.v1.VotingParams" as const,
-  encode(message: VotingParams, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/cosmos.gov.v1.VotingParams' as const,
+  encode(
+    message: VotingParams,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.votingPeriod !== undefined) {
       Duration.encode(message.votingPeriod, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): VotingParams {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseVotingParams();
     while (reader.pos < end) {
@@ -1116,17 +1261,25 @@ export const VotingParams = {
   },
   fromJSON(object: any): VotingParams {
     return {
-      votingPeriod: isSet(object.votingPeriod) ? Duration.fromJSON(object.votingPeriod) : undefined
+      votingPeriod: isSet(object.votingPeriod)
+        ? Duration.fromJSON(object.votingPeriod)
+        : undefined,
     };
   },
   toJSON(message: VotingParams): JsonSafe<VotingParams> {
     const obj: any = {};
-    message.votingPeriod !== undefined && (obj.votingPeriod = message.votingPeriod ? Duration.toJSON(message.votingPeriod) : undefined);
+    message.votingPeriod !== undefined &&
+      (obj.votingPeriod = message.votingPeriod
+        ? Duration.toJSON(message.votingPeriod)
+        : undefined);
     return obj;
   },
   fromPartial(object: Partial<VotingParams>): VotingParams {
     const message = createBaseVotingParams();
-    message.votingPeriod = object.votingPeriod !== undefined && object.votingPeriod !== null ? Duration.fromPartial(object.votingPeriod) : undefined;
+    message.votingPeriod =
+      object.votingPeriod !== undefined && object.votingPeriod !== null
+        ? Duration.fromPartial(object.votingPeriod)
+        : undefined;
     return message;
   },
   fromProtoMsg(message: VotingParamsProtoMsg): VotingParams {
@@ -1137,34 +1290,38 @@ export const VotingParams = {
   },
   toProtoMsg(message: VotingParams): VotingParamsProtoMsg {
     return {
-      typeUrl: "/cosmos.gov.v1.VotingParams",
-      value: VotingParams.encode(message).finish()
+      typeUrl: '/cosmos.gov.v1.VotingParams',
+      value: VotingParams.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseTallyParams(): TallyParams {
   return {
-    quorum: "",
-    threshold: "",
-    vetoThreshold: ""
+    quorum: '',
+    threshold: '',
+    vetoThreshold: '',
   };
 }
 export const TallyParams = {
-  typeUrl: "/cosmos.gov.v1.TallyParams" as const,
-  encode(message: TallyParams, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.quorum !== "") {
+  typeUrl: '/cosmos.gov.v1.TallyParams' as const,
+  encode(
+    message: TallyParams,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.quorum !== '') {
       writer.uint32(10).string(message.quorum);
     }
-    if (message.threshold !== "") {
+    if (message.threshold !== '') {
       writer.uint32(18).string(message.threshold);
     }
-    if (message.vetoThreshold !== "") {
+    if (message.vetoThreshold !== '') {
       writer.uint32(26).string(message.vetoThreshold);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): TallyParams {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseTallyParams();
     while (reader.pos < end) {
@@ -1188,23 +1345,26 @@ export const TallyParams = {
   },
   fromJSON(object: any): TallyParams {
     return {
-      quorum: isSet(object.quorum) ? String(object.quorum) : "",
-      threshold: isSet(object.threshold) ? String(object.threshold) : "",
-      vetoThreshold: isSet(object.vetoThreshold) ? String(object.vetoThreshold) : ""
+      quorum: isSet(object.quorum) ? String(object.quorum) : '',
+      threshold: isSet(object.threshold) ? String(object.threshold) : '',
+      vetoThreshold: isSet(object.vetoThreshold)
+        ? String(object.vetoThreshold)
+        : '',
     };
   },
   toJSON(message: TallyParams): JsonSafe<TallyParams> {
     const obj: any = {};
     message.quorum !== undefined && (obj.quorum = message.quorum);
     message.threshold !== undefined && (obj.threshold = message.threshold);
-    message.vetoThreshold !== undefined && (obj.vetoThreshold = message.vetoThreshold);
+    message.vetoThreshold !== undefined &&
+      (obj.vetoThreshold = message.vetoThreshold);
     return obj;
   },
   fromPartial(object: Partial<TallyParams>): TallyParams {
     const message = createBaseTallyParams();
-    message.quorum = object.quorum ?? "";
-    message.threshold = object.threshold ?? "";
-    message.vetoThreshold = object.vetoThreshold ?? "";
+    message.quorum = object.quorum ?? '';
+    message.threshold = object.threshold ?? '';
+    message.vetoThreshold = object.vetoThreshold ?? '';
     return message;
   },
   fromProtoMsg(message: TallyParamsProtoMsg): TallyParams {
@@ -1215,65 +1375,74 @@ export const TallyParams = {
   },
   toProtoMsg(message: TallyParams): TallyParamsProtoMsg {
     return {
-      typeUrl: "/cosmos.gov.v1.TallyParams",
-      value: TallyParams.encode(message).finish()
+      typeUrl: '/cosmos.gov.v1.TallyParams',
+      value: TallyParams.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseParams(): Params {
   return {
     minDeposit: [],
     maxDepositPeriod: undefined,
     votingPeriod: undefined,
-    quorum: "",
-    threshold: "",
-    vetoThreshold: "",
-    minInitialDepositRatio: "",
-    proposalCancelRatio: "",
-    proposalCancelDest: "",
+    quorum: '',
+    threshold: '',
+    vetoThreshold: '',
+    minInitialDepositRatio: '',
+    proposalCancelRatio: '',
+    proposalCancelDest: '',
     expeditedVotingPeriod: undefined,
-    expeditedThreshold: "",
+    expeditedThreshold: '',
     expeditedMinDeposit: [],
     burnVoteQuorum: false,
     burnProposalDepositPrevote: false,
     burnVoteVeto: false,
-    minDepositRatio: ""
+    minDepositRatio: '',
   };
 }
 export const Params = {
-  typeUrl: "/cosmos.gov.v1.Params" as const,
-  encode(message: Params, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/cosmos.gov.v1.Params' as const,
+  encode(
+    message: Params,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     for (const v of message.minDeposit) {
       Coin.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     if (message.maxDepositPeriod !== undefined) {
-      Duration.encode(message.maxDepositPeriod, writer.uint32(18).fork()).ldelim();
+      Duration.encode(
+        message.maxDepositPeriod,
+        writer.uint32(18).fork(),
+      ).ldelim();
     }
     if (message.votingPeriod !== undefined) {
       Duration.encode(message.votingPeriod, writer.uint32(26).fork()).ldelim();
     }
-    if (message.quorum !== "") {
+    if (message.quorum !== '') {
       writer.uint32(34).string(message.quorum);
     }
-    if (message.threshold !== "") {
+    if (message.threshold !== '') {
       writer.uint32(42).string(message.threshold);
     }
-    if (message.vetoThreshold !== "") {
+    if (message.vetoThreshold !== '') {
       writer.uint32(50).string(message.vetoThreshold);
     }
-    if (message.minInitialDepositRatio !== "") {
+    if (message.minInitialDepositRatio !== '') {
       writer.uint32(58).string(message.minInitialDepositRatio);
     }
-    if (message.proposalCancelRatio !== "") {
+    if (message.proposalCancelRatio !== '') {
       writer.uint32(66).string(message.proposalCancelRatio);
     }
-    if (message.proposalCancelDest !== "") {
+    if (message.proposalCancelDest !== '') {
       writer.uint32(74).string(message.proposalCancelDest);
     }
     if (message.expeditedVotingPeriod !== undefined) {
-      Duration.encode(message.expeditedVotingPeriod, writer.uint32(82).fork()).ldelim();
+      Duration.encode(
+        message.expeditedVotingPeriod,
+        writer.uint32(82).fork(),
+      ).ldelim();
     }
-    if (message.expeditedThreshold !== "") {
+    if (message.expeditedThreshold !== '') {
       writer.uint32(90).string(message.expeditedThreshold);
     }
     for (const v of message.expeditedMinDeposit) {
@@ -1288,13 +1457,14 @@ export const Params = {
     if (message.burnVoteVeto === true) {
       writer.uint32(120).bool(message.burnVoteVeto);
     }
-    if (message.minDepositRatio !== "") {
+    if (message.minDepositRatio !== '') {
       writer.uint32(130).string(message.minDepositRatio);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Params {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseParams();
     while (reader.pos < end) {
@@ -1328,13 +1498,18 @@ export const Params = {
           message.proposalCancelDest = reader.string();
           break;
         case 10:
-          message.expeditedVotingPeriod = Duration.decode(reader, reader.uint32());
+          message.expeditedVotingPeriod = Duration.decode(
+            reader,
+            reader.uint32(),
+          );
           break;
         case 11:
           message.expeditedThreshold = reader.string();
           break;
         case 12:
-          message.expeditedMinDeposit.push(Coin.decode(reader, reader.uint32()));
+          message.expeditedMinDeposit.push(
+            Coin.decode(reader, reader.uint32()),
+          );
           break;
         case 13:
           message.burnVoteQuorum = reader.bool();
@@ -1357,70 +1532,132 @@ export const Params = {
   },
   fromJSON(object: any): Params {
     return {
-      minDeposit: Array.isArray(object?.minDeposit) ? object.minDeposit.map((e: any) => Coin.fromJSON(e)) : [],
-      maxDepositPeriod: isSet(object.maxDepositPeriod) ? Duration.fromJSON(object.maxDepositPeriod) : undefined,
-      votingPeriod: isSet(object.votingPeriod) ? Duration.fromJSON(object.votingPeriod) : undefined,
-      quorum: isSet(object.quorum) ? String(object.quorum) : "",
-      threshold: isSet(object.threshold) ? String(object.threshold) : "",
-      vetoThreshold: isSet(object.vetoThreshold) ? String(object.vetoThreshold) : "",
-      minInitialDepositRatio: isSet(object.minInitialDepositRatio) ? String(object.minInitialDepositRatio) : "",
-      proposalCancelRatio: isSet(object.proposalCancelRatio) ? String(object.proposalCancelRatio) : "",
-      proposalCancelDest: isSet(object.proposalCancelDest) ? String(object.proposalCancelDest) : "",
-      expeditedVotingPeriod: isSet(object.expeditedVotingPeriod) ? Duration.fromJSON(object.expeditedVotingPeriod) : undefined,
-      expeditedThreshold: isSet(object.expeditedThreshold) ? String(object.expeditedThreshold) : "",
-      expeditedMinDeposit: Array.isArray(object?.expeditedMinDeposit) ? object.expeditedMinDeposit.map((e: any) => Coin.fromJSON(e)) : [],
-      burnVoteQuorum: isSet(object.burnVoteQuorum) ? Boolean(object.burnVoteQuorum) : false,
-      burnProposalDepositPrevote: isSet(object.burnProposalDepositPrevote) ? Boolean(object.burnProposalDepositPrevote) : false,
-      burnVoteVeto: isSet(object.burnVoteVeto) ? Boolean(object.burnVoteVeto) : false,
-      minDepositRatio: isSet(object.minDepositRatio) ? String(object.minDepositRatio) : ""
+      minDeposit: Array.isArray(object?.minDeposit)
+        ? object.minDeposit.map((e: any) => Coin.fromJSON(e))
+        : [],
+      maxDepositPeriod: isSet(object.maxDepositPeriod)
+        ? Duration.fromJSON(object.maxDepositPeriod)
+        : undefined,
+      votingPeriod: isSet(object.votingPeriod)
+        ? Duration.fromJSON(object.votingPeriod)
+        : undefined,
+      quorum: isSet(object.quorum) ? String(object.quorum) : '',
+      threshold: isSet(object.threshold) ? String(object.threshold) : '',
+      vetoThreshold: isSet(object.vetoThreshold)
+        ? String(object.vetoThreshold)
+        : '',
+      minInitialDepositRatio: isSet(object.minInitialDepositRatio)
+        ? String(object.minInitialDepositRatio)
+        : '',
+      proposalCancelRatio: isSet(object.proposalCancelRatio)
+        ? String(object.proposalCancelRatio)
+        : '',
+      proposalCancelDest: isSet(object.proposalCancelDest)
+        ? String(object.proposalCancelDest)
+        : '',
+      expeditedVotingPeriod: isSet(object.expeditedVotingPeriod)
+        ? Duration.fromJSON(object.expeditedVotingPeriod)
+        : undefined,
+      expeditedThreshold: isSet(object.expeditedThreshold)
+        ? String(object.expeditedThreshold)
+        : '',
+      expeditedMinDeposit: Array.isArray(object?.expeditedMinDeposit)
+        ? object.expeditedMinDeposit.map((e: any) => Coin.fromJSON(e))
+        : [],
+      burnVoteQuorum: isSet(object.burnVoteQuorum)
+        ? Boolean(object.burnVoteQuorum)
+        : false,
+      burnProposalDepositPrevote: isSet(object.burnProposalDepositPrevote)
+        ? Boolean(object.burnProposalDepositPrevote)
+        : false,
+      burnVoteVeto: isSet(object.burnVoteVeto)
+        ? Boolean(object.burnVoteVeto)
+        : false,
+      minDepositRatio: isSet(object.minDepositRatio)
+        ? String(object.minDepositRatio)
+        : '',
     };
   },
   toJSON(message: Params): JsonSafe<Params> {
     const obj: any = {};
     if (message.minDeposit) {
-      obj.minDeposit = message.minDeposit.map(e => e ? Coin.toJSON(e) : undefined);
+      obj.minDeposit = message.minDeposit.map(e =>
+        e ? Coin.toJSON(e) : undefined,
+      );
     } else {
       obj.minDeposit = [];
     }
-    message.maxDepositPeriod !== undefined && (obj.maxDepositPeriod = message.maxDepositPeriod ? Duration.toJSON(message.maxDepositPeriod) : undefined);
-    message.votingPeriod !== undefined && (obj.votingPeriod = message.votingPeriod ? Duration.toJSON(message.votingPeriod) : undefined);
+    message.maxDepositPeriod !== undefined &&
+      (obj.maxDepositPeriod = message.maxDepositPeriod
+        ? Duration.toJSON(message.maxDepositPeriod)
+        : undefined);
+    message.votingPeriod !== undefined &&
+      (obj.votingPeriod = message.votingPeriod
+        ? Duration.toJSON(message.votingPeriod)
+        : undefined);
     message.quorum !== undefined && (obj.quorum = message.quorum);
     message.threshold !== undefined && (obj.threshold = message.threshold);
-    message.vetoThreshold !== undefined && (obj.vetoThreshold = message.vetoThreshold);
-    message.minInitialDepositRatio !== undefined && (obj.minInitialDepositRatio = message.minInitialDepositRatio);
-    message.proposalCancelRatio !== undefined && (obj.proposalCancelRatio = message.proposalCancelRatio);
-    message.proposalCancelDest !== undefined && (obj.proposalCancelDest = message.proposalCancelDest);
-    message.expeditedVotingPeriod !== undefined && (obj.expeditedVotingPeriod = message.expeditedVotingPeriod ? Duration.toJSON(message.expeditedVotingPeriod) : undefined);
-    message.expeditedThreshold !== undefined && (obj.expeditedThreshold = message.expeditedThreshold);
+    message.vetoThreshold !== undefined &&
+      (obj.vetoThreshold = message.vetoThreshold);
+    message.minInitialDepositRatio !== undefined &&
+      (obj.minInitialDepositRatio = message.minInitialDepositRatio);
+    message.proposalCancelRatio !== undefined &&
+      (obj.proposalCancelRatio = message.proposalCancelRatio);
+    message.proposalCancelDest !== undefined &&
+      (obj.proposalCancelDest = message.proposalCancelDest);
+    message.expeditedVotingPeriod !== undefined &&
+      (obj.expeditedVotingPeriod = message.expeditedVotingPeriod
+        ? Duration.toJSON(message.expeditedVotingPeriod)
+        : undefined);
+    message.expeditedThreshold !== undefined &&
+      (obj.expeditedThreshold = message.expeditedThreshold);
     if (message.expeditedMinDeposit) {
-      obj.expeditedMinDeposit = message.expeditedMinDeposit.map(e => e ? Coin.toJSON(e) : undefined);
+      obj.expeditedMinDeposit = message.expeditedMinDeposit.map(e =>
+        e ? Coin.toJSON(e) : undefined,
+      );
     } else {
       obj.expeditedMinDeposit = [];
     }
-    message.burnVoteQuorum !== undefined && (obj.burnVoteQuorum = message.burnVoteQuorum);
-    message.burnProposalDepositPrevote !== undefined && (obj.burnProposalDepositPrevote = message.burnProposalDepositPrevote);
-    message.burnVoteVeto !== undefined && (obj.burnVoteVeto = message.burnVoteVeto);
-    message.minDepositRatio !== undefined && (obj.minDepositRatio = message.minDepositRatio);
+    message.burnVoteQuorum !== undefined &&
+      (obj.burnVoteQuorum = message.burnVoteQuorum);
+    message.burnProposalDepositPrevote !== undefined &&
+      (obj.burnProposalDepositPrevote = message.burnProposalDepositPrevote);
+    message.burnVoteVeto !== undefined &&
+      (obj.burnVoteVeto = message.burnVoteVeto);
+    message.minDepositRatio !== undefined &&
+      (obj.minDepositRatio = message.minDepositRatio);
     return obj;
   },
   fromPartial(object: Partial<Params>): Params {
     const message = createBaseParams();
     message.minDeposit = object.minDeposit?.map(e => Coin.fromPartial(e)) || [];
-    message.maxDepositPeriod = object.maxDepositPeriod !== undefined && object.maxDepositPeriod !== null ? Duration.fromPartial(object.maxDepositPeriod) : undefined;
-    message.votingPeriod = object.votingPeriod !== undefined && object.votingPeriod !== null ? Duration.fromPartial(object.votingPeriod) : undefined;
-    message.quorum = object.quorum ?? "";
-    message.threshold = object.threshold ?? "";
-    message.vetoThreshold = object.vetoThreshold ?? "";
-    message.minInitialDepositRatio = object.minInitialDepositRatio ?? "";
-    message.proposalCancelRatio = object.proposalCancelRatio ?? "";
-    message.proposalCancelDest = object.proposalCancelDest ?? "";
-    message.expeditedVotingPeriod = object.expeditedVotingPeriod !== undefined && object.expeditedVotingPeriod !== null ? Duration.fromPartial(object.expeditedVotingPeriod) : undefined;
-    message.expeditedThreshold = object.expeditedThreshold ?? "";
-    message.expeditedMinDeposit = object.expeditedMinDeposit?.map(e => Coin.fromPartial(e)) || [];
+    message.maxDepositPeriod =
+      object.maxDepositPeriod !== undefined && object.maxDepositPeriod !== null
+        ? Duration.fromPartial(object.maxDepositPeriod)
+        : undefined;
+    message.votingPeriod =
+      object.votingPeriod !== undefined && object.votingPeriod !== null
+        ? Duration.fromPartial(object.votingPeriod)
+        : undefined;
+    message.quorum = object.quorum ?? '';
+    message.threshold = object.threshold ?? '';
+    message.vetoThreshold = object.vetoThreshold ?? '';
+    message.minInitialDepositRatio = object.minInitialDepositRatio ?? '';
+    message.proposalCancelRatio = object.proposalCancelRatio ?? '';
+    message.proposalCancelDest = object.proposalCancelDest ?? '';
+    message.expeditedVotingPeriod =
+      object.expeditedVotingPeriod !== undefined &&
+      object.expeditedVotingPeriod !== null
+        ? Duration.fromPartial(object.expeditedVotingPeriod)
+        : undefined;
+    message.expeditedThreshold = object.expeditedThreshold ?? '';
+    message.expeditedMinDeposit =
+      object.expeditedMinDeposit?.map(e => Coin.fromPartial(e)) || [];
     message.burnVoteQuorum = object.burnVoteQuorum ?? false;
-    message.burnProposalDepositPrevote = object.burnProposalDepositPrevote ?? false;
+    message.burnProposalDepositPrevote =
+      object.burnProposalDepositPrevote ?? false;
     message.burnVoteVeto = object.burnVoteVeto ?? false;
-    message.minDepositRatio = object.minDepositRatio ?? "";
+    message.minDepositRatio = object.minDepositRatio ?? '';
     return message;
   },
   fromProtoMsg(message: ParamsProtoMsg): Params {
@@ -1431,8 +1668,8 @@ export const Params = {
   },
   toProtoMsg(message: Params): ParamsProtoMsg {
     return {
-      typeUrl: "/cosmos.gov.v1.Params",
-      value: Params.encode(message).finish()
+      typeUrl: '/cosmos.gov.v1.Params',
+      value: Params.encode(message).finish(),
     };
-  }
+  },
 };

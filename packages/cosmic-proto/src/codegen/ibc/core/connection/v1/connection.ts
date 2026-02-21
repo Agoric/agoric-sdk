@@ -1,8 +1,11 @@
 //@ts-nocheck
-import { MerklePrefix, type MerklePrefixSDKType } from "../../commitment/v1/commitment.js";
-import { BinaryReader, BinaryWriter } from "../../../../binary.js";
-import { isSet } from "../../../../helpers.js";
-import {type JsonSafe } from "../../../../json-safe.js";
+import {
+  MerklePrefix,
+  type MerklePrefixSDKType,
+} from '../../commitment/v1/commitment.js';
+import { BinaryReader, BinaryWriter } from '../../../../binary.js';
+import { isSet } from '../../../../helpers.js';
+import { type JsonSafe } from '../../../../json-safe.js';
 /**
  * State defines if a connection is in one of the following states:
  * INIT, TRYOPEN, OPEN or UNINITIALIZED.
@@ -25,19 +28,19 @@ export const StateSDKType = State;
 export function stateFromJSON(object: any): State {
   switch (object) {
     case 0:
-    case "STATE_UNINITIALIZED_UNSPECIFIED":
+    case 'STATE_UNINITIALIZED_UNSPECIFIED':
       return State.STATE_UNINITIALIZED_UNSPECIFIED;
     case 1:
-    case "STATE_INIT":
+    case 'STATE_INIT':
       return State.STATE_INIT;
     case 2:
-    case "STATE_TRYOPEN":
+    case 'STATE_TRYOPEN':
       return State.STATE_TRYOPEN;
     case 3:
-    case "STATE_OPEN":
+    case 'STATE_OPEN':
       return State.STATE_OPEN;
     case -1:
-    case "UNRECOGNIZED":
+    case 'UNRECOGNIZED':
     default:
       return State.UNRECOGNIZED;
   }
@@ -45,16 +48,16 @@ export function stateFromJSON(object: any): State {
 export function stateToJSON(object: State): string {
   switch (object) {
     case State.STATE_UNINITIALIZED_UNSPECIFIED:
-      return "STATE_UNINITIALIZED_UNSPECIFIED";
+      return 'STATE_UNINITIALIZED_UNSPECIFIED';
     case State.STATE_INIT:
-      return "STATE_INIT";
+      return 'STATE_INIT';
     case State.STATE_TRYOPEN:
-      return "STATE_TRYOPEN";
+      return 'STATE_TRYOPEN';
     case State.STATE_OPEN:
-      return "STATE_OPEN";
+      return 'STATE_OPEN';
     case State.UNRECOGNIZED:
     default:
-      return "UNRECOGNIZED";
+      return 'UNRECOGNIZED';
   }
 }
 /**
@@ -83,7 +86,7 @@ export interface ConnectionEnd {
   delayPeriod: bigint;
 }
 export interface ConnectionEndProtoMsg {
-  typeUrl: "/ibc.core.connection.v1.ConnectionEnd";
+  typeUrl: '/ibc.core.connection.v1.ConnectionEnd';
   value: Uint8Array;
 }
 /**
@@ -121,7 +124,7 @@ export interface IdentifiedConnection {
   delayPeriod: bigint;
 }
 export interface IdentifiedConnectionProtoMsg {
-  typeUrl: "/ibc.core.connection.v1.IdentifiedConnection";
+  typeUrl: '/ibc.core.connection.v1.IdentifiedConnection';
   value: Uint8Array;
 }
 /**
@@ -152,7 +155,7 @@ export interface Counterparty {
   prefix: MerklePrefix;
 }
 export interface CounterpartyProtoMsg {
-  typeUrl: "/ibc.core.connection.v1.Counterparty";
+  typeUrl: '/ibc.core.connection.v1.Counterparty';
   value: Uint8Array;
 }
 /** Counterparty defines the counterparty chain associated with a connection end. */
@@ -167,7 +170,7 @@ export interface ClientPaths {
   paths: string[];
 }
 export interface ClientPathsProtoMsg {
-  typeUrl: "/ibc.core.connection.v1.ClientPaths";
+  typeUrl: '/ibc.core.connection.v1.ClientPaths';
   value: Uint8Array;
 }
 /** ClientPaths define all the connection paths for a client state. */
@@ -182,7 +185,7 @@ export interface ConnectionPaths {
   paths: string[];
 }
 export interface ConnectionPathsProtoMsg {
-  typeUrl: "/ibc.core.connection.v1.ConnectionPaths";
+  typeUrl: '/ibc.core.connection.v1.ConnectionPaths';
   value: Uint8Array;
 }
 /** ConnectionPaths define all the connection paths for a given client state. */
@@ -201,7 +204,7 @@ export interface Version {
   features: string[];
 }
 export interface VersionProtoMsg {
-  typeUrl: "/ibc.core.connection.v1.Version";
+  typeUrl: '/ibc.core.connection.v1.Version';
   value: Uint8Array;
 }
 /**
@@ -222,7 +225,7 @@ export interface Params {
   maxExpectedTimePerBlock: bigint;
 }
 export interface ParamsProtoMsg {
-  typeUrl: "/ibc.core.connection.v1.Params";
+  typeUrl: '/ibc.core.connection.v1.Params';
   value: Uint8Array;
 }
 /** Params defines the set of Connection parameters. */
@@ -231,17 +234,20 @@ export interface ParamsSDKType {
 }
 function createBaseConnectionEnd(): ConnectionEnd {
   return {
-    clientId: "",
+    clientId: '',
     versions: [],
     state: 0,
     counterparty: Counterparty.fromPartial({}),
-    delayPeriod: BigInt(0)
+    delayPeriod: BigInt(0),
   };
 }
 export const ConnectionEnd = {
-  typeUrl: "/ibc.core.connection.v1.ConnectionEnd" as const,
-  encode(message: ConnectionEnd, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.clientId !== "") {
+  typeUrl: '/ibc.core.connection.v1.ConnectionEnd' as const,
+  encode(
+    message: ConnectionEnd,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.clientId !== '') {
       writer.uint32(10).string(message.clientId);
     }
     for (const v of message.versions) {
@@ -251,7 +257,10 @@ export const ConnectionEnd = {
       writer.uint32(24).int32(message.state);
     }
     if (message.counterparty !== undefined) {
-      Counterparty.encode(message.counterparty, writer.uint32(34).fork()).ldelim();
+      Counterparty.encode(
+        message.counterparty,
+        writer.uint32(34).fork(),
+      ).ldelim();
     }
     if (message.delayPeriod !== BigInt(0)) {
       writer.uint32(40).uint64(message.delayPeriod);
@@ -259,7 +268,8 @@ export const ConnectionEnd = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): ConnectionEnd {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseConnectionEnd();
     while (reader.pos < end) {
@@ -289,33 +299,51 @@ export const ConnectionEnd = {
   },
   fromJSON(object: any): ConnectionEnd {
     return {
-      clientId: isSet(object.clientId) ? String(object.clientId) : "",
-      versions: Array.isArray(object?.versions) ? object.versions.map((e: any) => Version.fromJSON(e)) : [],
+      clientId: isSet(object.clientId) ? String(object.clientId) : '',
+      versions: Array.isArray(object?.versions)
+        ? object.versions.map((e: any) => Version.fromJSON(e))
+        : [],
       state: isSet(object.state) ? stateFromJSON(object.state) : -1,
-      counterparty: isSet(object.counterparty) ? Counterparty.fromJSON(object.counterparty) : undefined,
-      delayPeriod: isSet(object.delayPeriod) ? BigInt(object.delayPeriod.toString()) : BigInt(0)
+      counterparty: isSet(object.counterparty)
+        ? Counterparty.fromJSON(object.counterparty)
+        : undefined,
+      delayPeriod: isSet(object.delayPeriod)
+        ? BigInt(object.delayPeriod.toString())
+        : BigInt(0),
     };
   },
   toJSON(message: ConnectionEnd): JsonSafe<ConnectionEnd> {
     const obj: any = {};
     message.clientId !== undefined && (obj.clientId = message.clientId);
     if (message.versions) {
-      obj.versions = message.versions.map(e => e ? Version.toJSON(e) : undefined);
+      obj.versions = message.versions.map(e =>
+        e ? Version.toJSON(e) : undefined,
+      );
     } else {
       obj.versions = [];
     }
     message.state !== undefined && (obj.state = stateToJSON(message.state));
-    message.counterparty !== undefined && (obj.counterparty = message.counterparty ? Counterparty.toJSON(message.counterparty) : undefined);
-    message.delayPeriod !== undefined && (obj.delayPeriod = (message.delayPeriod || BigInt(0)).toString());
+    message.counterparty !== undefined &&
+      (obj.counterparty = message.counterparty
+        ? Counterparty.toJSON(message.counterparty)
+        : undefined);
+    message.delayPeriod !== undefined &&
+      (obj.delayPeriod = (message.delayPeriod || BigInt(0)).toString());
     return obj;
   },
   fromPartial(object: Partial<ConnectionEnd>): ConnectionEnd {
     const message = createBaseConnectionEnd();
-    message.clientId = object.clientId ?? "";
+    message.clientId = object.clientId ?? '';
     message.versions = object.versions?.map(e => Version.fromPartial(e)) || [];
     message.state = object.state ?? 0;
-    message.counterparty = object.counterparty !== undefined && object.counterparty !== null ? Counterparty.fromPartial(object.counterparty) : undefined;
-    message.delayPeriod = object.delayPeriod !== undefined && object.delayPeriod !== null ? BigInt(object.delayPeriod.toString()) : BigInt(0);
+    message.counterparty =
+      object.counterparty !== undefined && object.counterparty !== null
+        ? Counterparty.fromPartial(object.counterparty)
+        : undefined;
+    message.delayPeriod =
+      object.delayPeriod !== undefined && object.delayPeriod !== null
+        ? BigInt(object.delayPeriod.toString())
+        : BigInt(0);
     return message;
   },
   fromProtoMsg(message: ConnectionEndProtoMsg): ConnectionEnd {
@@ -326,28 +354,31 @@ export const ConnectionEnd = {
   },
   toProtoMsg(message: ConnectionEnd): ConnectionEndProtoMsg {
     return {
-      typeUrl: "/ibc.core.connection.v1.ConnectionEnd",
-      value: ConnectionEnd.encode(message).finish()
+      typeUrl: '/ibc.core.connection.v1.ConnectionEnd',
+      value: ConnectionEnd.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseIdentifiedConnection(): IdentifiedConnection {
   return {
-    id: "",
-    clientId: "",
+    id: '',
+    clientId: '',
     versions: [],
     state: 0,
     counterparty: Counterparty.fromPartial({}),
-    delayPeriod: BigInt(0)
+    delayPeriod: BigInt(0),
   };
 }
 export const IdentifiedConnection = {
-  typeUrl: "/ibc.core.connection.v1.IdentifiedConnection" as const,
-  encode(message: IdentifiedConnection, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.id !== "") {
+  typeUrl: '/ibc.core.connection.v1.IdentifiedConnection' as const,
+  encode(
+    message: IdentifiedConnection,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.id !== '') {
       writer.uint32(10).string(message.id);
     }
-    if (message.clientId !== "") {
+    if (message.clientId !== '') {
       writer.uint32(18).string(message.clientId);
     }
     for (const v of message.versions) {
@@ -357,15 +388,22 @@ export const IdentifiedConnection = {
       writer.uint32(32).int32(message.state);
     }
     if (message.counterparty !== undefined) {
-      Counterparty.encode(message.counterparty, writer.uint32(42).fork()).ldelim();
+      Counterparty.encode(
+        message.counterparty,
+        writer.uint32(42).fork(),
+      ).ldelim();
     }
     if (message.delayPeriod !== BigInt(0)) {
       writer.uint32(48).uint64(message.delayPeriod);
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): IdentifiedConnection {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): IdentifiedConnection {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseIdentifiedConnection();
     while (reader.pos < end) {
@@ -398,12 +436,18 @@ export const IdentifiedConnection = {
   },
   fromJSON(object: any): IdentifiedConnection {
     return {
-      id: isSet(object.id) ? String(object.id) : "",
-      clientId: isSet(object.clientId) ? String(object.clientId) : "",
-      versions: Array.isArray(object?.versions) ? object.versions.map((e: any) => Version.fromJSON(e)) : [],
+      id: isSet(object.id) ? String(object.id) : '',
+      clientId: isSet(object.clientId) ? String(object.clientId) : '',
+      versions: Array.isArray(object?.versions)
+        ? object.versions.map((e: any) => Version.fromJSON(e))
+        : [],
       state: isSet(object.state) ? stateFromJSON(object.state) : -1,
-      counterparty: isSet(object.counterparty) ? Counterparty.fromJSON(object.counterparty) : undefined,
-      delayPeriod: isSet(object.delayPeriod) ? BigInt(object.delayPeriod.toString()) : BigInt(0)
+      counterparty: isSet(object.counterparty)
+        ? Counterparty.fromJSON(object.counterparty)
+        : undefined,
+      delayPeriod: isSet(object.delayPeriod)
+        ? BigInt(object.delayPeriod.toString())
+        : BigInt(0),
     };
   },
   toJSON(message: IdentifiedConnection): JsonSafe<IdentifiedConnection> {
@@ -411,23 +455,35 @@ export const IdentifiedConnection = {
     message.id !== undefined && (obj.id = message.id);
     message.clientId !== undefined && (obj.clientId = message.clientId);
     if (message.versions) {
-      obj.versions = message.versions.map(e => e ? Version.toJSON(e) : undefined);
+      obj.versions = message.versions.map(e =>
+        e ? Version.toJSON(e) : undefined,
+      );
     } else {
       obj.versions = [];
     }
     message.state !== undefined && (obj.state = stateToJSON(message.state));
-    message.counterparty !== undefined && (obj.counterparty = message.counterparty ? Counterparty.toJSON(message.counterparty) : undefined);
-    message.delayPeriod !== undefined && (obj.delayPeriod = (message.delayPeriod || BigInt(0)).toString());
+    message.counterparty !== undefined &&
+      (obj.counterparty = message.counterparty
+        ? Counterparty.toJSON(message.counterparty)
+        : undefined);
+    message.delayPeriod !== undefined &&
+      (obj.delayPeriod = (message.delayPeriod || BigInt(0)).toString());
     return obj;
   },
   fromPartial(object: Partial<IdentifiedConnection>): IdentifiedConnection {
     const message = createBaseIdentifiedConnection();
-    message.id = object.id ?? "";
-    message.clientId = object.clientId ?? "";
+    message.id = object.id ?? '';
+    message.clientId = object.clientId ?? '';
     message.versions = object.versions?.map(e => Version.fromPartial(e)) || [];
     message.state = object.state ?? 0;
-    message.counterparty = object.counterparty !== undefined && object.counterparty !== null ? Counterparty.fromPartial(object.counterparty) : undefined;
-    message.delayPeriod = object.delayPeriod !== undefined && object.delayPeriod !== null ? BigInt(object.delayPeriod.toString()) : BigInt(0);
+    message.counterparty =
+      object.counterparty !== undefined && object.counterparty !== null
+        ? Counterparty.fromPartial(object.counterparty)
+        : undefined;
+    message.delayPeriod =
+      object.delayPeriod !== undefined && object.delayPeriod !== null
+        ? BigInt(object.delayPeriod.toString())
+        : BigInt(0);
     return message;
   },
   fromProtoMsg(message: IdentifiedConnectionProtoMsg): IdentifiedConnection {
@@ -438,25 +494,28 @@ export const IdentifiedConnection = {
   },
   toProtoMsg(message: IdentifiedConnection): IdentifiedConnectionProtoMsg {
     return {
-      typeUrl: "/ibc.core.connection.v1.IdentifiedConnection",
-      value: IdentifiedConnection.encode(message).finish()
+      typeUrl: '/ibc.core.connection.v1.IdentifiedConnection',
+      value: IdentifiedConnection.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseCounterparty(): Counterparty {
   return {
-    clientId: "",
-    connectionId: "",
-    prefix: MerklePrefix.fromPartial({})
+    clientId: '',
+    connectionId: '',
+    prefix: MerklePrefix.fromPartial({}),
   };
 }
 export const Counterparty = {
-  typeUrl: "/ibc.core.connection.v1.Counterparty" as const,
-  encode(message: Counterparty, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.clientId !== "") {
+  typeUrl: '/ibc.core.connection.v1.Counterparty' as const,
+  encode(
+    message: Counterparty,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.clientId !== '') {
       writer.uint32(10).string(message.clientId);
     }
-    if (message.connectionId !== "") {
+    if (message.connectionId !== '') {
       writer.uint32(18).string(message.connectionId);
     }
     if (message.prefix !== undefined) {
@@ -465,7 +524,8 @@ export const Counterparty = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Counterparty {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseCounterparty();
     while (reader.pos < end) {
@@ -489,23 +549,34 @@ export const Counterparty = {
   },
   fromJSON(object: any): Counterparty {
     return {
-      clientId: isSet(object.clientId) ? String(object.clientId) : "",
-      connectionId: isSet(object.connectionId) ? String(object.connectionId) : "",
-      prefix: isSet(object.prefix) ? MerklePrefix.fromJSON(object.prefix) : undefined
+      clientId: isSet(object.clientId) ? String(object.clientId) : '',
+      connectionId: isSet(object.connectionId)
+        ? String(object.connectionId)
+        : '',
+      prefix: isSet(object.prefix)
+        ? MerklePrefix.fromJSON(object.prefix)
+        : undefined,
     };
   },
   toJSON(message: Counterparty): JsonSafe<Counterparty> {
     const obj: any = {};
     message.clientId !== undefined && (obj.clientId = message.clientId);
-    message.connectionId !== undefined && (obj.connectionId = message.connectionId);
-    message.prefix !== undefined && (obj.prefix = message.prefix ? MerklePrefix.toJSON(message.prefix) : undefined);
+    message.connectionId !== undefined &&
+      (obj.connectionId = message.connectionId);
+    message.prefix !== undefined &&
+      (obj.prefix = message.prefix
+        ? MerklePrefix.toJSON(message.prefix)
+        : undefined);
     return obj;
   },
   fromPartial(object: Partial<Counterparty>): Counterparty {
     const message = createBaseCounterparty();
-    message.clientId = object.clientId ?? "";
-    message.connectionId = object.connectionId ?? "";
-    message.prefix = object.prefix !== undefined && object.prefix !== null ? MerklePrefix.fromPartial(object.prefix) : undefined;
+    message.clientId = object.clientId ?? '';
+    message.connectionId = object.connectionId ?? '';
+    message.prefix =
+      object.prefix !== undefined && object.prefix !== null
+        ? MerklePrefix.fromPartial(object.prefix)
+        : undefined;
     return message;
   },
   fromProtoMsg(message: CounterpartyProtoMsg): Counterparty {
@@ -516,26 +587,30 @@ export const Counterparty = {
   },
   toProtoMsg(message: Counterparty): CounterpartyProtoMsg {
     return {
-      typeUrl: "/ibc.core.connection.v1.Counterparty",
-      value: Counterparty.encode(message).finish()
+      typeUrl: '/ibc.core.connection.v1.Counterparty',
+      value: Counterparty.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseClientPaths(): ClientPaths {
   return {
-    paths: []
+    paths: [],
   };
 }
 export const ClientPaths = {
-  typeUrl: "/ibc.core.connection.v1.ClientPaths" as const,
-  encode(message: ClientPaths, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/ibc.core.connection.v1.ClientPaths' as const,
+  encode(
+    message: ClientPaths,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     for (const v of message.paths) {
       writer.uint32(10).string(v!);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): ClientPaths {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseClientPaths();
     while (reader.pos < end) {
@@ -553,7 +628,9 @@ export const ClientPaths = {
   },
   fromJSON(object: any): ClientPaths {
     return {
-      paths: Array.isArray(object?.paths) ? object.paths.map((e: any) => String(e)) : []
+      paths: Array.isArray(object?.paths)
+        ? object.paths.map((e: any) => String(e))
+        : [],
     };
   },
   toJSON(message: ClientPaths): JsonSafe<ClientPaths> {
@@ -578,21 +655,24 @@ export const ClientPaths = {
   },
   toProtoMsg(message: ClientPaths): ClientPathsProtoMsg {
     return {
-      typeUrl: "/ibc.core.connection.v1.ClientPaths",
-      value: ClientPaths.encode(message).finish()
+      typeUrl: '/ibc.core.connection.v1.ClientPaths',
+      value: ClientPaths.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseConnectionPaths(): ConnectionPaths {
   return {
-    clientId: "",
-    paths: []
+    clientId: '',
+    paths: [],
   };
 }
 export const ConnectionPaths = {
-  typeUrl: "/ibc.core.connection.v1.ConnectionPaths" as const,
-  encode(message: ConnectionPaths, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.clientId !== "") {
+  typeUrl: '/ibc.core.connection.v1.ConnectionPaths' as const,
+  encode(
+    message: ConnectionPaths,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.clientId !== '') {
       writer.uint32(10).string(message.clientId);
     }
     for (const v of message.paths) {
@@ -601,7 +681,8 @@ export const ConnectionPaths = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): ConnectionPaths {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseConnectionPaths();
     while (reader.pos < end) {
@@ -622,8 +703,10 @@ export const ConnectionPaths = {
   },
   fromJSON(object: any): ConnectionPaths {
     return {
-      clientId: isSet(object.clientId) ? String(object.clientId) : "",
-      paths: Array.isArray(object?.paths) ? object.paths.map((e: any) => String(e)) : []
+      clientId: isSet(object.clientId) ? String(object.clientId) : '',
+      paths: Array.isArray(object?.paths)
+        ? object.paths.map((e: any) => String(e))
+        : [],
     };
   },
   toJSON(message: ConnectionPaths): JsonSafe<ConnectionPaths> {
@@ -638,7 +721,7 @@ export const ConnectionPaths = {
   },
   fromPartial(object: Partial<ConnectionPaths>): ConnectionPaths {
     const message = createBaseConnectionPaths();
-    message.clientId = object.clientId ?? "";
+    message.clientId = object.clientId ?? '';
     message.paths = object.paths?.map(e => e) || [];
     return message;
   },
@@ -650,21 +733,24 @@ export const ConnectionPaths = {
   },
   toProtoMsg(message: ConnectionPaths): ConnectionPathsProtoMsg {
     return {
-      typeUrl: "/ibc.core.connection.v1.ConnectionPaths",
-      value: ConnectionPaths.encode(message).finish()
+      typeUrl: '/ibc.core.connection.v1.ConnectionPaths',
+      value: ConnectionPaths.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseVersion(): Version {
   return {
-    identifier: "",
-    features: []
+    identifier: '',
+    features: [],
   };
 }
 export const Version = {
-  typeUrl: "/ibc.core.connection.v1.Version" as const,
-  encode(message: Version, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.identifier !== "") {
+  typeUrl: '/ibc.core.connection.v1.Version' as const,
+  encode(
+    message: Version,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.identifier !== '') {
       writer.uint32(10).string(message.identifier);
     }
     for (const v of message.features) {
@@ -673,7 +759,8 @@ export const Version = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Version {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseVersion();
     while (reader.pos < end) {
@@ -694,8 +781,10 @@ export const Version = {
   },
   fromJSON(object: any): Version {
     return {
-      identifier: isSet(object.identifier) ? String(object.identifier) : "",
-      features: Array.isArray(object?.features) ? object.features.map((e: any) => String(e)) : []
+      identifier: isSet(object.identifier) ? String(object.identifier) : '',
+      features: Array.isArray(object?.features)
+        ? object.features.map((e: any) => String(e))
+        : [],
     };
   },
   toJSON(message: Version): JsonSafe<Version> {
@@ -710,7 +799,7 @@ export const Version = {
   },
   fromPartial(object: Partial<Version>): Version {
     const message = createBaseVersion();
-    message.identifier = object.identifier ?? "";
+    message.identifier = object.identifier ?? '';
     message.features = object.features?.map(e => e) || [];
     return message;
   },
@@ -722,26 +811,30 @@ export const Version = {
   },
   toProtoMsg(message: Version): VersionProtoMsg {
     return {
-      typeUrl: "/ibc.core.connection.v1.Version",
-      value: Version.encode(message).finish()
+      typeUrl: '/ibc.core.connection.v1.Version',
+      value: Version.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseParams(): Params {
   return {
-    maxExpectedTimePerBlock: BigInt(0)
+    maxExpectedTimePerBlock: BigInt(0),
   };
 }
 export const Params = {
-  typeUrl: "/ibc.core.connection.v1.Params" as const,
-  encode(message: Params, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/ibc.core.connection.v1.Params' as const,
+  encode(
+    message: Params,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.maxExpectedTimePerBlock !== BigInt(0)) {
       writer.uint32(8).uint64(message.maxExpectedTimePerBlock);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Params {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseParams();
     while (reader.pos < end) {
@@ -759,17 +852,26 @@ export const Params = {
   },
   fromJSON(object: any): Params {
     return {
-      maxExpectedTimePerBlock: isSet(object.maxExpectedTimePerBlock) ? BigInt(object.maxExpectedTimePerBlock.toString()) : BigInt(0)
+      maxExpectedTimePerBlock: isSet(object.maxExpectedTimePerBlock)
+        ? BigInt(object.maxExpectedTimePerBlock.toString())
+        : BigInt(0),
     };
   },
   toJSON(message: Params): JsonSafe<Params> {
     const obj: any = {};
-    message.maxExpectedTimePerBlock !== undefined && (obj.maxExpectedTimePerBlock = (message.maxExpectedTimePerBlock || BigInt(0)).toString());
+    message.maxExpectedTimePerBlock !== undefined &&
+      (obj.maxExpectedTimePerBlock = (
+        message.maxExpectedTimePerBlock || BigInt(0)
+      ).toString());
     return obj;
   },
   fromPartial(object: Partial<Params>): Params {
     const message = createBaseParams();
-    message.maxExpectedTimePerBlock = object.maxExpectedTimePerBlock !== undefined && object.maxExpectedTimePerBlock !== null ? BigInt(object.maxExpectedTimePerBlock.toString()) : BigInt(0);
+    message.maxExpectedTimePerBlock =
+      object.maxExpectedTimePerBlock !== undefined &&
+      object.maxExpectedTimePerBlock !== null
+        ? BigInt(object.maxExpectedTimePerBlock.toString())
+        : BigInt(0);
     return message;
   },
   fromProtoMsg(message: ParamsProtoMsg): Params {
@@ -780,8 +882,8 @@ export const Params = {
   },
   toProtoMsg(message: Params): ParamsProtoMsg {
     return {
-      typeUrl: "/ibc.core.connection.v1.Params",
-      value: Params.encode(message).finish()
+      typeUrl: '/ibc.core.connection.v1.Params',
+      value: Params.encode(message).finish(),
     };
-  }
+  },
 };

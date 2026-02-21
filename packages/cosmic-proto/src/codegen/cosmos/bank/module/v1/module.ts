@@ -1,7 +1,7 @@
 //@ts-nocheck
-import { BinaryReader, BinaryWriter } from "../../../../binary.js";
-import { isSet } from "../../../../helpers.js";
-import {type JsonSafe } from "../../../../json-safe.js";
+import { BinaryReader, BinaryWriter } from '../../../../binary.js';
+import { isSet } from '../../../../helpers.js';
+import { type JsonSafe } from '../../../../json-safe.js';
 /** Module is the config object of the bank module. */
 export interface Module {
   /**
@@ -21,7 +21,7 @@ export interface Module {
   restrictionsOrder: string[];
 }
 export interface ModuleProtoMsg {
-  typeUrl: "/cosmos.bank.module.v1.Module";
+  typeUrl: '/cosmos.bank.module.v1.Module';
   value: Uint8Array;
 }
 /** Module is the config object of the bank module. */
@@ -33,17 +33,20 @@ export interface ModuleSDKType {
 function createBaseModule(): Module {
   return {
     blockedModuleAccountsOverride: [],
-    authority: "",
-    restrictionsOrder: []
+    authority: '',
+    restrictionsOrder: [],
   };
 }
 export const Module = {
-  typeUrl: "/cosmos.bank.module.v1.Module" as const,
-  encode(message: Module, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/cosmos.bank.module.v1.Module' as const,
+  encode(
+    message: Module,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     for (const v of message.blockedModuleAccountsOverride) {
       writer.uint32(10).string(v!);
     }
-    if (message.authority !== "") {
+    if (message.authority !== '') {
       writer.uint32(18).string(message.authority);
     }
     for (const v of message.restrictionsOrder) {
@@ -52,7 +55,8 @@ export const Module = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Module {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseModule();
     while (reader.pos < end) {
@@ -76,15 +80,22 @@ export const Module = {
   },
   fromJSON(object: any): Module {
     return {
-      blockedModuleAccountsOverride: Array.isArray(object?.blockedModuleAccountsOverride) ? object.blockedModuleAccountsOverride.map((e: any) => String(e)) : [],
-      authority: isSet(object.authority) ? String(object.authority) : "",
-      restrictionsOrder: Array.isArray(object?.restrictionsOrder) ? object.restrictionsOrder.map((e: any) => String(e)) : []
+      blockedModuleAccountsOverride: Array.isArray(
+        object?.blockedModuleAccountsOverride,
+      )
+        ? object.blockedModuleAccountsOverride.map((e: any) => String(e))
+        : [],
+      authority: isSet(object.authority) ? String(object.authority) : '',
+      restrictionsOrder: Array.isArray(object?.restrictionsOrder)
+        ? object.restrictionsOrder.map((e: any) => String(e))
+        : [],
     };
   },
   toJSON(message: Module): JsonSafe<Module> {
     const obj: any = {};
     if (message.blockedModuleAccountsOverride) {
-      obj.blockedModuleAccountsOverride = message.blockedModuleAccountsOverride.map(e => e);
+      obj.blockedModuleAccountsOverride =
+        message.blockedModuleAccountsOverride.map(e => e);
     } else {
       obj.blockedModuleAccountsOverride = [];
     }
@@ -98,8 +109,9 @@ export const Module = {
   },
   fromPartial(object: Partial<Module>): Module {
     const message = createBaseModule();
-    message.blockedModuleAccountsOverride = object.blockedModuleAccountsOverride?.map(e => e) || [];
-    message.authority = object.authority ?? "";
+    message.blockedModuleAccountsOverride =
+      object.blockedModuleAccountsOverride?.map(e => e) || [];
+    message.authority = object.authority ?? '';
     message.restrictionsOrder = object.restrictionsOrder?.map(e => e) || [];
     return message;
   },
@@ -111,8 +123,8 @@ export const Module = {
   },
   toProtoMsg(message: Module): ModuleProtoMsg {
     return {
-      typeUrl: "/cosmos.bank.module.v1.Module",
-      value: Module.encode(message).finish()
+      typeUrl: '/cosmos.bank.module.v1.Module',
+      value: Module.encode(message).finish(),
     };
-  }
+  },
 };

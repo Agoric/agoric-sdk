@@ -1,44 +1,55 @@
 //@ts-nocheck
-import { BaseAccount, type BaseAccountSDKType } from "../../../../cosmos/auth/v1beta1/auth.js";
-import { BinaryReader, BinaryWriter } from "../../../../binary.js";
-import { isSet } from "../../../../helpers.js";
-import {type JsonSafe } from "../../../../json-safe.js";
+import {
+  BaseAccount,
+  type BaseAccountSDKType,
+} from '../../../../cosmos/auth/v1beta1/auth.js';
+import { BinaryReader, BinaryWriter } from '../../../../binary.js';
+import { isSet } from '../../../../helpers.js';
+import { type JsonSafe } from '../../../../json-safe.js';
 /** An InterchainAccount is defined as a BaseAccount & the address of the account owner on the controller chain */
 export interface InterchainAccount {
-  $typeUrl?: "/ibc.applications.interchain_accounts.v1.InterchainAccount";
+  $typeUrl?: '/ibc.applications.interchain_accounts.v1.InterchainAccount';
   baseAccount?: BaseAccount;
   accountOwner: string;
 }
 export interface InterchainAccountProtoMsg {
-  typeUrl: "/ibc.applications.interchain_accounts.v1.InterchainAccount";
+  typeUrl: '/ibc.applications.interchain_accounts.v1.InterchainAccount';
   value: Uint8Array;
 }
 /** An InterchainAccount is defined as a BaseAccount & the address of the account owner on the controller chain */
 export interface InterchainAccountSDKType {
-  $typeUrl?: "/ibc.applications.interchain_accounts.v1.InterchainAccount";
+  $typeUrl?: '/ibc.applications.interchain_accounts.v1.InterchainAccount';
   base_account?: BaseAccountSDKType;
   account_owner: string;
 }
 function createBaseInterchainAccount(): InterchainAccount {
   return {
-    $typeUrl: "/ibc.applications.interchain_accounts.v1.InterchainAccount",
+    $typeUrl: '/ibc.applications.interchain_accounts.v1.InterchainAccount',
     baseAccount: undefined,
-    accountOwner: ""
+    accountOwner: '',
   };
 }
 export const InterchainAccount = {
-  typeUrl: "/ibc.applications.interchain_accounts.v1.InterchainAccount" as const,
-  encode(message: InterchainAccount, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl:
+    '/ibc.applications.interchain_accounts.v1.InterchainAccount' as const,
+  encode(
+    message: InterchainAccount,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.baseAccount !== undefined) {
-      BaseAccount.encode(message.baseAccount, writer.uint32(10).fork()).ldelim();
+      BaseAccount.encode(
+        message.baseAccount,
+        writer.uint32(10).fork(),
+      ).ldelim();
     }
-    if (message.accountOwner !== "") {
+    if (message.accountOwner !== '') {
       writer.uint32(18).string(message.accountOwner);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): InterchainAccount {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseInterchainAccount();
     while (reader.pos < end) {
@@ -59,20 +70,31 @@ export const InterchainAccount = {
   },
   fromJSON(object: any): InterchainAccount {
     return {
-      baseAccount: isSet(object.baseAccount) ? BaseAccount.fromJSON(object.baseAccount) : undefined,
-      accountOwner: isSet(object.accountOwner) ? String(object.accountOwner) : ""
+      baseAccount: isSet(object.baseAccount)
+        ? BaseAccount.fromJSON(object.baseAccount)
+        : undefined,
+      accountOwner: isSet(object.accountOwner)
+        ? String(object.accountOwner)
+        : '',
     };
   },
   toJSON(message: InterchainAccount): JsonSafe<InterchainAccount> {
     const obj: any = {};
-    message.baseAccount !== undefined && (obj.baseAccount = message.baseAccount ? BaseAccount.toJSON(message.baseAccount) : undefined);
-    message.accountOwner !== undefined && (obj.accountOwner = message.accountOwner);
+    message.baseAccount !== undefined &&
+      (obj.baseAccount = message.baseAccount
+        ? BaseAccount.toJSON(message.baseAccount)
+        : undefined);
+    message.accountOwner !== undefined &&
+      (obj.accountOwner = message.accountOwner);
     return obj;
   },
   fromPartial(object: Partial<InterchainAccount>): InterchainAccount {
     const message = createBaseInterchainAccount();
-    message.baseAccount = object.baseAccount !== undefined && object.baseAccount !== null ? BaseAccount.fromPartial(object.baseAccount) : undefined;
-    message.accountOwner = object.accountOwner ?? "";
+    message.baseAccount =
+      object.baseAccount !== undefined && object.baseAccount !== null
+        ? BaseAccount.fromPartial(object.baseAccount)
+        : undefined;
+    message.accountOwner = object.accountOwner ?? '';
     return message;
   },
   fromProtoMsg(message: InterchainAccountProtoMsg): InterchainAccount {
@@ -83,8 +105,8 @@ export const InterchainAccount = {
   },
   toProtoMsg(message: InterchainAccount): InterchainAccountProtoMsg {
     return {
-      typeUrl: "/ibc.applications.interchain_accounts.v1.InterchainAccount",
-      value: InterchainAccount.encode(message).finish()
+      typeUrl: '/ibc.applications.interchain_accounts.v1.InterchainAccount',
+      value: InterchainAccount.encode(message).finish(),
     };
-  }
+  },
 };

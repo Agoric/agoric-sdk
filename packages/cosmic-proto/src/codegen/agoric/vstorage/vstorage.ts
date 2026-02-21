@@ -1,13 +1,13 @@
 //@ts-nocheck
-import { BinaryReader, BinaryWriter } from "../../binary.js";
-import { isSet } from "../../helpers.js";
-import {type JsonSafe } from "../../json-safe.js";
+import { BinaryReader, BinaryWriter } from '../../binary.js';
+import { isSet } from '../../helpers.js';
+import { type JsonSafe } from '../../json-safe.js';
 /** Data is the vstorage node data. */
 export interface Data {
   value: string;
 }
 export interface DataProtoMsg {
-  typeUrl: "/agoric.vstorage.Data";
+  typeUrl: '/agoric.vstorage.Data';
   value: Uint8Array;
 }
 /** Data is the vstorage node data. */
@@ -22,7 +22,7 @@ export interface Children {
   children: string[];
 }
 export interface ChildrenProtoMsg {
-  typeUrl: "/agoric.vstorage.Children";
+  typeUrl: '/agoric.vstorage.Children';
   value: Uint8Array;
 }
 /**
@@ -34,19 +34,23 @@ export interface ChildrenSDKType {
 }
 function createBaseData(): Data {
   return {
-    value: ""
+    value: '',
   };
 }
 export const Data = {
-  typeUrl: "/agoric.vstorage.Data" as const,
-  encode(message: Data, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.value !== "") {
+  typeUrl: '/agoric.vstorage.Data' as const,
+  encode(
+    message: Data,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.value !== '') {
       writer.uint32(10).string(message.value);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Data {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseData();
     while (reader.pos < end) {
@@ -64,7 +68,7 @@ export const Data = {
   },
   fromJSON(object: any): Data {
     return {
-      value: isSet(object.value) ? String(object.value) : ""
+      value: isSet(object.value) ? String(object.value) : '',
     };
   },
   toJSON(message: Data): JsonSafe<Data> {
@@ -74,7 +78,7 @@ export const Data = {
   },
   fromPartial(object: Partial<Data>): Data {
     const message = createBaseData();
-    message.value = object.value ?? "";
+    message.value = object.value ?? '';
     return message;
   },
   fromProtoMsg(message: DataProtoMsg): Data {
@@ -85,26 +89,30 @@ export const Data = {
   },
   toProtoMsg(message: Data): DataProtoMsg {
     return {
-      typeUrl: "/agoric.vstorage.Data",
-      value: Data.encode(message).finish()
+      typeUrl: '/agoric.vstorage.Data',
+      value: Data.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseChildren(): Children {
   return {
-    children: []
+    children: [],
   };
 }
 export const Children = {
-  typeUrl: "/agoric.vstorage.Children" as const,
-  encode(message: Children, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/agoric.vstorage.Children' as const,
+  encode(
+    message: Children,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     for (const v of message.children) {
       writer.uint32(10).string(v!);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Children {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseChildren();
     while (reader.pos < end) {
@@ -122,7 +130,9 @@ export const Children = {
   },
   fromJSON(object: any): Children {
     return {
-      children: Array.isArray(object?.children) ? object.children.map((e: any) => String(e)) : []
+      children: Array.isArray(object?.children)
+        ? object.children.map((e: any) => String(e))
+        : [],
     };
   },
   toJSON(message: Children): JsonSafe<Children> {
@@ -147,8 +157,8 @@ export const Children = {
   },
   toProtoMsg(message: Children): ChildrenProtoMsg {
     return {
-      typeUrl: "/agoric.vstorage.Children",
-      value: Children.encode(message).finish()
+      typeUrl: '/agoric.vstorage.Children',
+      value: Children.encode(message).finish(),
     };
-  }
+  },
 };

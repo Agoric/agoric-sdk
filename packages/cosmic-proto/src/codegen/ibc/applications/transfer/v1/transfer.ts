@@ -1,7 +1,7 @@
 //@ts-nocheck
-import { BinaryReader, BinaryWriter } from "../../../../binary.js";
-import { isSet } from "../../../../helpers.js";
-import {type JsonSafe } from "../../../../json-safe.js";
+import { BinaryReader, BinaryWriter } from '../../../../binary.js';
+import { isSet } from '../../../../helpers.js';
+import { type JsonSafe } from '../../../../json-safe.js';
 /**
  * DenomTrace contains the base denomination for ICS20 fungible tokens and the
  * source tracing information path.
@@ -16,7 +16,7 @@ export interface DenomTrace {
   baseDenom: string;
 }
 export interface DenomTraceProtoMsg {
-  typeUrl: "/ibc.applications.transfer.v1.DenomTrace";
+  typeUrl: '/ibc.applications.transfer.v1.DenomTrace';
   value: Uint8Array;
 }
 /**
@@ -46,7 +46,7 @@ export interface Params {
   receiveEnabled: boolean;
 }
 export interface ParamsProtoMsg {
-  typeUrl: "/ibc.applications.transfer.v1.Params";
+  typeUrl: '/ibc.applications.transfer.v1.Params';
   value: Uint8Array;
 }
 /**
@@ -61,23 +61,27 @@ export interface ParamsSDKType {
 }
 function createBaseDenomTrace(): DenomTrace {
   return {
-    path: "",
-    baseDenom: ""
+    path: '',
+    baseDenom: '',
   };
 }
 export const DenomTrace = {
-  typeUrl: "/ibc.applications.transfer.v1.DenomTrace" as const,
-  encode(message: DenomTrace, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.path !== "") {
+  typeUrl: '/ibc.applications.transfer.v1.DenomTrace' as const,
+  encode(
+    message: DenomTrace,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.path !== '') {
       writer.uint32(10).string(message.path);
     }
-    if (message.baseDenom !== "") {
+    if (message.baseDenom !== '') {
       writer.uint32(18).string(message.baseDenom);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): DenomTrace {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseDenomTrace();
     while (reader.pos < end) {
@@ -98,8 +102,8 @@ export const DenomTrace = {
   },
   fromJSON(object: any): DenomTrace {
     return {
-      path: isSet(object.path) ? String(object.path) : "",
-      baseDenom: isSet(object.baseDenom) ? String(object.baseDenom) : ""
+      path: isSet(object.path) ? String(object.path) : '',
+      baseDenom: isSet(object.baseDenom) ? String(object.baseDenom) : '',
     };
   },
   toJSON(message: DenomTrace): JsonSafe<DenomTrace> {
@@ -110,8 +114,8 @@ export const DenomTrace = {
   },
   fromPartial(object: Partial<DenomTrace>): DenomTrace {
     const message = createBaseDenomTrace();
-    message.path = object.path ?? "";
-    message.baseDenom = object.baseDenom ?? "";
+    message.path = object.path ?? '';
+    message.baseDenom = object.baseDenom ?? '';
     return message;
   },
   fromProtoMsg(message: DenomTraceProtoMsg): DenomTrace {
@@ -122,20 +126,23 @@ export const DenomTrace = {
   },
   toProtoMsg(message: DenomTrace): DenomTraceProtoMsg {
     return {
-      typeUrl: "/ibc.applications.transfer.v1.DenomTrace",
-      value: DenomTrace.encode(message).finish()
+      typeUrl: '/ibc.applications.transfer.v1.DenomTrace',
+      value: DenomTrace.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseParams(): Params {
   return {
     sendEnabled: false,
-    receiveEnabled: false
+    receiveEnabled: false,
   };
 }
 export const Params = {
-  typeUrl: "/ibc.applications.transfer.v1.Params" as const,
-  encode(message: Params, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/ibc.applications.transfer.v1.Params' as const,
+  encode(
+    message: Params,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.sendEnabled === true) {
       writer.uint32(8).bool(message.sendEnabled);
     }
@@ -145,7 +152,8 @@ export const Params = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Params {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseParams();
     while (reader.pos < end) {
@@ -166,14 +174,20 @@ export const Params = {
   },
   fromJSON(object: any): Params {
     return {
-      sendEnabled: isSet(object.sendEnabled) ? Boolean(object.sendEnabled) : false,
-      receiveEnabled: isSet(object.receiveEnabled) ? Boolean(object.receiveEnabled) : false
+      sendEnabled: isSet(object.sendEnabled)
+        ? Boolean(object.sendEnabled)
+        : false,
+      receiveEnabled: isSet(object.receiveEnabled)
+        ? Boolean(object.receiveEnabled)
+        : false,
     };
   },
   toJSON(message: Params): JsonSafe<Params> {
     const obj: any = {};
-    message.sendEnabled !== undefined && (obj.sendEnabled = message.sendEnabled);
-    message.receiveEnabled !== undefined && (obj.receiveEnabled = message.receiveEnabled);
+    message.sendEnabled !== undefined &&
+      (obj.sendEnabled = message.sendEnabled);
+    message.receiveEnabled !== undefined &&
+      (obj.receiveEnabled = message.receiveEnabled);
     return obj;
   },
   fromPartial(object: Partial<Params>): Params {
@@ -190,8 +204,8 @@ export const Params = {
   },
   toProtoMsg(message: Params): ParamsProtoMsg {
     return {
-      typeUrl: "/ibc.applications.transfer.v1.Params",
-      value: Params.encode(message).finish()
+      typeUrl: '/ibc.applications.transfer.v1.Params',
+      value: Params.encode(message).finish(),
     };
-  }
+  },
 };

@@ -1,14 +1,28 @@
 //@ts-nocheck
-import { PageRequest, type PageRequestSDKType, PageResponse, type PageResponseSDKType } from "../../cosmos/base/query/v1beta1/pagination.js";
-import { Params, type ParamsSDKType } from "./params.js";
-import { DepositRecord, type DepositRecordSDKType, UserRedemptionRecord, type UserRedemptionRecordSDKType, EpochUnbondingRecord, type EpochUnbondingRecordSDKType, LSMTokenDeposit, type LSMTokenDepositSDKType } from "./records.js";
-import { BinaryReader, BinaryWriter } from "../../binary.js";
-import {type JsonSafe } from "../../json-safe.js";
-import { isSet } from "../../helpers.js";
+import {
+  PageRequest,
+  type PageRequestSDKType,
+  PageResponse,
+  type PageResponseSDKType,
+} from '../../cosmos/base/query/v1beta1/pagination.js';
+import { Params, type ParamsSDKType } from './params.js';
+import {
+  DepositRecord,
+  type DepositRecordSDKType,
+  UserRedemptionRecord,
+  type UserRedemptionRecordSDKType,
+  EpochUnbondingRecord,
+  type EpochUnbondingRecordSDKType,
+  LSMTokenDeposit,
+  type LSMTokenDepositSDKType,
+} from './records.js';
+import { BinaryReader, BinaryWriter } from '../../binary.js';
+import { type JsonSafe } from '../../json-safe.js';
+import { isSet } from '../../helpers.js';
 /** QueryParamsRequest is request type for the Query/Params RPC method. */
 export interface QueryParamsRequest {}
 export interface QueryParamsRequestProtoMsg {
-  typeUrl: "/stride.records.QueryParamsRequest";
+  typeUrl: '/stride.records.QueryParamsRequest';
   value: Uint8Array;
 }
 /** QueryParamsRequest is request type for the Query/Params RPC method. */
@@ -19,7 +33,7 @@ export interface QueryParamsResponse {
   params: Params;
 }
 export interface QueryParamsResponseProtoMsg {
-  typeUrl: "/stride.records.QueryParamsResponse";
+  typeUrl: '/stride.records.QueryParamsResponse';
   value: Uint8Array;
 }
 /** QueryParamsResponse is response type for the Query/Params RPC method. */
@@ -30,7 +44,7 @@ export interface QueryGetDepositRecordRequest {
   id: bigint;
 }
 export interface QueryGetDepositRecordRequestProtoMsg {
-  typeUrl: "/stride.records.QueryGetDepositRecordRequest";
+  typeUrl: '/stride.records.QueryGetDepositRecordRequest';
   value: Uint8Array;
 }
 export interface QueryGetDepositRecordRequestSDKType {
@@ -40,7 +54,7 @@ export interface QueryGetDepositRecordResponse {
   depositRecord: DepositRecord;
 }
 export interface QueryGetDepositRecordResponseProtoMsg {
-  typeUrl: "/stride.records.QueryGetDepositRecordResponse";
+  typeUrl: '/stride.records.QueryGetDepositRecordResponse';
   value: Uint8Array;
 }
 export interface QueryGetDepositRecordResponseSDKType {
@@ -50,7 +64,7 @@ export interface QueryAllDepositRecordRequest {
   pagination?: PageRequest;
 }
 export interface QueryAllDepositRecordRequestProtoMsg {
-  typeUrl: "/stride.records.QueryAllDepositRecordRequest";
+  typeUrl: '/stride.records.QueryAllDepositRecordRequest';
   value: Uint8Array;
 }
 export interface QueryAllDepositRecordRequestSDKType {
@@ -61,7 +75,7 @@ export interface QueryAllDepositRecordResponse {
   pagination?: PageResponse;
 }
 export interface QueryAllDepositRecordResponseProtoMsg {
-  typeUrl: "/stride.records.QueryAllDepositRecordResponse";
+  typeUrl: '/stride.records.QueryAllDepositRecordResponse';
   value: Uint8Array;
 }
 export interface QueryAllDepositRecordResponseSDKType {
@@ -72,7 +86,7 @@ export interface QueryDepositRecordByHostRequest {
   hostZoneId: string;
 }
 export interface QueryDepositRecordByHostRequestProtoMsg {
-  typeUrl: "/stride.records.QueryDepositRecordByHostRequest";
+  typeUrl: '/stride.records.QueryDepositRecordByHostRequest';
   value: Uint8Array;
 }
 export interface QueryDepositRecordByHostRequestSDKType {
@@ -82,7 +96,7 @@ export interface QueryDepositRecordByHostResponse {
   depositRecord: DepositRecord[];
 }
 export interface QueryDepositRecordByHostResponseProtoMsg {
-  typeUrl: "/stride.records.QueryDepositRecordByHostResponse";
+  typeUrl: '/stride.records.QueryDepositRecordByHostResponse';
   value: Uint8Array;
 }
 export interface QueryDepositRecordByHostResponseSDKType {
@@ -92,7 +106,7 @@ export interface QueryGetUserRedemptionRecordRequest {
   id: string;
 }
 export interface QueryGetUserRedemptionRecordRequestProtoMsg {
-  typeUrl: "/stride.records.QueryGetUserRedemptionRecordRequest";
+  typeUrl: '/stride.records.QueryGetUserRedemptionRecordRequest';
   value: Uint8Array;
 }
 export interface QueryGetUserRedemptionRecordRequestSDKType {
@@ -102,7 +116,7 @@ export interface QueryGetUserRedemptionRecordResponse {
   userRedemptionRecord: UserRedemptionRecord;
 }
 export interface QueryGetUserRedemptionRecordResponseProtoMsg {
-  typeUrl: "/stride.records.QueryGetUserRedemptionRecordResponse";
+  typeUrl: '/stride.records.QueryGetUserRedemptionRecordResponse';
   value: Uint8Array;
 }
 export interface QueryGetUserRedemptionRecordResponseSDKType {
@@ -112,7 +126,7 @@ export interface QueryAllUserRedemptionRecordRequest {
   pagination?: PageRequest;
 }
 export interface QueryAllUserRedemptionRecordRequestProtoMsg {
-  typeUrl: "/stride.records.QueryAllUserRedemptionRecordRequest";
+  typeUrl: '/stride.records.QueryAllUserRedemptionRecordRequest';
   value: Uint8Array;
 }
 export interface QueryAllUserRedemptionRecordRequestSDKType {
@@ -123,7 +137,7 @@ export interface QueryAllUserRedemptionRecordResponse {
   pagination?: PageResponse;
 }
 export interface QueryAllUserRedemptionRecordResponseProtoMsg {
-  typeUrl: "/stride.records.QueryAllUserRedemptionRecordResponse";
+  typeUrl: '/stride.records.QueryAllUserRedemptionRecordResponse';
   value: Uint8Array;
 }
 export interface QueryAllUserRedemptionRecordResponseSDKType {
@@ -139,7 +153,7 @@ export interface QueryAllUserRedemptionRecordForUserRequest {
   pagination?: PageRequest;
 }
 export interface QueryAllUserRedemptionRecordForUserRequestProtoMsg {
-  typeUrl: "/stride.records.QueryAllUserRedemptionRecordForUserRequest";
+  typeUrl: '/stride.records.QueryAllUserRedemptionRecordForUserRequest';
   value: Uint8Array;
 }
 /** Query UserRedemptionRecords by chainId / userId pair */
@@ -155,7 +169,7 @@ export interface QueryAllUserRedemptionRecordForUserResponse {
   pagination?: PageResponse;
 }
 export interface QueryAllUserRedemptionRecordForUserResponseProtoMsg {
-  typeUrl: "/stride.records.QueryAllUserRedemptionRecordForUserResponse";
+  typeUrl: '/stride.records.QueryAllUserRedemptionRecordForUserResponse';
   value: Uint8Array;
 }
 export interface QueryAllUserRedemptionRecordForUserResponseSDKType {
@@ -166,7 +180,7 @@ export interface QueryGetEpochUnbondingRecordRequest {
   epochNumber: bigint;
 }
 export interface QueryGetEpochUnbondingRecordRequestProtoMsg {
-  typeUrl: "/stride.records.QueryGetEpochUnbondingRecordRequest";
+  typeUrl: '/stride.records.QueryGetEpochUnbondingRecordRequest';
   value: Uint8Array;
 }
 export interface QueryGetEpochUnbondingRecordRequestSDKType {
@@ -176,7 +190,7 @@ export interface QueryGetEpochUnbondingRecordResponse {
   epochUnbondingRecord: EpochUnbondingRecord;
 }
 export interface QueryGetEpochUnbondingRecordResponseProtoMsg {
-  typeUrl: "/stride.records.QueryGetEpochUnbondingRecordResponse";
+  typeUrl: '/stride.records.QueryGetEpochUnbondingRecordResponse';
   value: Uint8Array;
 }
 export interface QueryGetEpochUnbondingRecordResponseSDKType {
@@ -186,7 +200,7 @@ export interface QueryAllEpochUnbondingRecordRequest {
   pagination?: PageRequest;
 }
 export interface QueryAllEpochUnbondingRecordRequestProtoMsg {
-  typeUrl: "/stride.records.QueryAllEpochUnbondingRecordRequest";
+  typeUrl: '/stride.records.QueryAllEpochUnbondingRecordRequest';
   value: Uint8Array;
 }
 export interface QueryAllEpochUnbondingRecordRequestSDKType {
@@ -197,7 +211,7 @@ export interface QueryAllEpochUnbondingRecordResponse {
   pagination?: PageResponse;
 }
 export interface QueryAllEpochUnbondingRecordResponseProtoMsg {
-  typeUrl: "/stride.records.QueryAllEpochUnbondingRecordResponse";
+  typeUrl: '/stride.records.QueryAllEpochUnbondingRecordResponse';
   value: Uint8Array;
 }
 export interface QueryAllEpochUnbondingRecordResponseSDKType {
@@ -209,7 +223,7 @@ export interface QueryLSMDepositRequest {
   denom: string;
 }
 export interface QueryLSMDepositRequestProtoMsg {
-  typeUrl: "/stride.records.QueryLSMDepositRequest";
+  typeUrl: '/stride.records.QueryLSMDepositRequest';
   value: Uint8Array;
 }
 export interface QueryLSMDepositRequestSDKType {
@@ -220,7 +234,7 @@ export interface QueryLSMDepositResponse {
   deposit: LSMTokenDeposit;
 }
 export interface QueryLSMDepositResponseProtoMsg {
-  typeUrl: "/stride.records.QueryLSMDepositResponse";
+  typeUrl: '/stride.records.QueryLSMDepositResponse';
   value: Uint8Array;
 }
 export interface QueryLSMDepositResponseSDKType {
@@ -232,7 +246,7 @@ export interface QueryLSMDepositsRequest {
   status: string;
 }
 export interface QueryLSMDepositsRequestProtoMsg {
-  typeUrl: "/stride.records.QueryLSMDepositsRequest";
+  typeUrl: '/stride.records.QueryLSMDepositsRequest';
   value: Uint8Array;
 }
 export interface QueryLSMDepositsRequestSDKType {
@@ -244,7 +258,7 @@ export interface QueryLSMDepositsResponse {
   deposits: LSMTokenDeposit[];
 }
 export interface QueryLSMDepositsResponseProtoMsg {
-  typeUrl: "/stride.records.QueryLSMDepositsResponse";
+  typeUrl: '/stride.records.QueryLSMDepositsResponse';
   value: Uint8Array;
 }
 export interface QueryLSMDepositsResponseSDKType {
@@ -254,12 +268,19 @@ function createBaseQueryParamsRequest(): QueryParamsRequest {
   return {};
 }
 export const QueryParamsRequest = {
-  typeUrl: "/stride.records.QueryParamsRequest" as const,
-  encode(_: QueryParamsRequest, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/stride.records.QueryParamsRequest' as const,
+  encode(
+    _: QueryParamsRequest,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): QueryParamsRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryParamsRequest {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryParamsRequest();
     while (reader.pos < end) {
@@ -291,26 +312,33 @@ export const QueryParamsRequest = {
   },
   toProtoMsg(message: QueryParamsRequest): QueryParamsRequestProtoMsg {
     return {
-      typeUrl: "/stride.records.QueryParamsRequest",
-      value: QueryParamsRequest.encode(message).finish()
+      typeUrl: '/stride.records.QueryParamsRequest',
+      value: QueryParamsRequest.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseQueryParamsResponse(): QueryParamsResponse {
   return {
-    params: Params.fromPartial({})
+    params: Params.fromPartial({}),
   };
 }
 export const QueryParamsResponse = {
-  typeUrl: "/stride.records.QueryParamsResponse" as const,
-  encode(message: QueryParamsResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/stride.records.QueryParamsResponse' as const,
+  encode(
+    message: QueryParamsResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.params !== undefined) {
       Params.encode(message.params, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): QueryParamsResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryParamsResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryParamsResponse();
     while (reader.pos < end) {
@@ -328,17 +356,21 @@ export const QueryParamsResponse = {
   },
   fromJSON(object: any): QueryParamsResponse {
     return {
-      params: isSet(object.params) ? Params.fromJSON(object.params) : undefined
+      params: isSet(object.params) ? Params.fromJSON(object.params) : undefined,
     };
   },
   toJSON(message: QueryParamsResponse): JsonSafe<QueryParamsResponse> {
     const obj: any = {};
-    message.params !== undefined && (obj.params = message.params ? Params.toJSON(message.params) : undefined);
+    message.params !== undefined &&
+      (obj.params = message.params ? Params.toJSON(message.params) : undefined);
     return obj;
   },
   fromPartial(object: Partial<QueryParamsResponse>): QueryParamsResponse {
     const message = createBaseQueryParamsResponse();
-    message.params = object.params !== undefined && object.params !== null ? Params.fromPartial(object.params) : undefined;
+    message.params =
+      object.params !== undefined && object.params !== null
+        ? Params.fromPartial(object.params)
+        : undefined;
     return message;
   },
   fromProtoMsg(message: QueryParamsResponseProtoMsg): QueryParamsResponse {
@@ -349,26 +381,33 @@ export const QueryParamsResponse = {
   },
   toProtoMsg(message: QueryParamsResponse): QueryParamsResponseProtoMsg {
     return {
-      typeUrl: "/stride.records.QueryParamsResponse",
-      value: QueryParamsResponse.encode(message).finish()
+      typeUrl: '/stride.records.QueryParamsResponse',
+      value: QueryParamsResponse.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseQueryGetDepositRecordRequest(): QueryGetDepositRecordRequest {
   return {
-    id: BigInt(0)
+    id: BigInt(0),
   };
 }
 export const QueryGetDepositRecordRequest = {
-  typeUrl: "/stride.records.QueryGetDepositRecordRequest" as const,
-  encode(message: QueryGetDepositRecordRequest, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/stride.records.QueryGetDepositRecordRequest' as const,
+  encode(
+    message: QueryGetDepositRecordRequest,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.id !== BigInt(0)) {
       writer.uint32(8).uint64(message.id);
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): QueryGetDepositRecordRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryGetDepositRecordRequest {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryGetDepositRecordRequest();
     while (reader.pos < end) {
@@ -386,47 +425,68 @@ export const QueryGetDepositRecordRequest = {
   },
   fromJSON(object: any): QueryGetDepositRecordRequest {
     return {
-      id: isSet(object.id) ? BigInt(object.id.toString()) : BigInt(0)
+      id: isSet(object.id) ? BigInt(object.id.toString()) : BigInt(0),
     };
   },
-  toJSON(message: QueryGetDepositRecordRequest): JsonSafe<QueryGetDepositRecordRequest> {
+  toJSON(
+    message: QueryGetDepositRecordRequest,
+  ): JsonSafe<QueryGetDepositRecordRequest> {
     const obj: any = {};
     message.id !== undefined && (obj.id = (message.id || BigInt(0)).toString());
     return obj;
   },
-  fromPartial(object: Partial<QueryGetDepositRecordRequest>): QueryGetDepositRecordRequest {
+  fromPartial(
+    object: Partial<QueryGetDepositRecordRequest>,
+  ): QueryGetDepositRecordRequest {
     const message = createBaseQueryGetDepositRecordRequest();
-    message.id = object.id !== undefined && object.id !== null ? BigInt(object.id.toString()) : BigInt(0);
+    message.id =
+      object.id !== undefined && object.id !== null
+        ? BigInt(object.id.toString())
+        : BigInt(0);
     return message;
   },
-  fromProtoMsg(message: QueryGetDepositRecordRequestProtoMsg): QueryGetDepositRecordRequest {
+  fromProtoMsg(
+    message: QueryGetDepositRecordRequestProtoMsg,
+  ): QueryGetDepositRecordRequest {
     return QueryGetDepositRecordRequest.decode(message.value);
   },
   toProto(message: QueryGetDepositRecordRequest): Uint8Array {
     return QueryGetDepositRecordRequest.encode(message).finish();
   },
-  toProtoMsg(message: QueryGetDepositRecordRequest): QueryGetDepositRecordRequestProtoMsg {
+  toProtoMsg(
+    message: QueryGetDepositRecordRequest,
+  ): QueryGetDepositRecordRequestProtoMsg {
     return {
-      typeUrl: "/stride.records.QueryGetDepositRecordRequest",
-      value: QueryGetDepositRecordRequest.encode(message).finish()
+      typeUrl: '/stride.records.QueryGetDepositRecordRequest',
+      value: QueryGetDepositRecordRequest.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseQueryGetDepositRecordResponse(): QueryGetDepositRecordResponse {
   return {
-    depositRecord: DepositRecord.fromPartial({})
+    depositRecord: DepositRecord.fromPartial({}),
   };
 }
 export const QueryGetDepositRecordResponse = {
-  typeUrl: "/stride.records.QueryGetDepositRecordResponse" as const,
-  encode(message: QueryGetDepositRecordResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/stride.records.QueryGetDepositRecordResponse' as const,
+  encode(
+    message: QueryGetDepositRecordResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.depositRecord !== undefined) {
-      DepositRecord.encode(message.depositRecord, writer.uint32(10).fork()).ldelim();
+      DepositRecord.encode(
+        message.depositRecord,
+        writer.uint32(10).fork(),
+      ).ldelim();
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): QueryGetDepositRecordResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryGetDepositRecordResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryGetDepositRecordResponse();
     while (reader.pos < end) {
@@ -444,47 +504,70 @@ export const QueryGetDepositRecordResponse = {
   },
   fromJSON(object: any): QueryGetDepositRecordResponse {
     return {
-      depositRecord: isSet(object.depositRecord) ? DepositRecord.fromJSON(object.depositRecord) : undefined
+      depositRecord: isSet(object.depositRecord)
+        ? DepositRecord.fromJSON(object.depositRecord)
+        : undefined,
     };
   },
-  toJSON(message: QueryGetDepositRecordResponse): JsonSafe<QueryGetDepositRecordResponse> {
+  toJSON(
+    message: QueryGetDepositRecordResponse,
+  ): JsonSafe<QueryGetDepositRecordResponse> {
     const obj: any = {};
-    message.depositRecord !== undefined && (obj.depositRecord = message.depositRecord ? DepositRecord.toJSON(message.depositRecord) : undefined);
+    message.depositRecord !== undefined &&
+      (obj.depositRecord = message.depositRecord
+        ? DepositRecord.toJSON(message.depositRecord)
+        : undefined);
     return obj;
   },
-  fromPartial(object: Partial<QueryGetDepositRecordResponse>): QueryGetDepositRecordResponse {
+  fromPartial(
+    object: Partial<QueryGetDepositRecordResponse>,
+  ): QueryGetDepositRecordResponse {
     const message = createBaseQueryGetDepositRecordResponse();
-    message.depositRecord = object.depositRecord !== undefined && object.depositRecord !== null ? DepositRecord.fromPartial(object.depositRecord) : undefined;
+    message.depositRecord =
+      object.depositRecord !== undefined && object.depositRecord !== null
+        ? DepositRecord.fromPartial(object.depositRecord)
+        : undefined;
     return message;
   },
-  fromProtoMsg(message: QueryGetDepositRecordResponseProtoMsg): QueryGetDepositRecordResponse {
+  fromProtoMsg(
+    message: QueryGetDepositRecordResponseProtoMsg,
+  ): QueryGetDepositRecordResponse {
     return QueryGetDepositRecordResponse.decode(message.value);
   },
   toProto(message: QueryGetDepositRecordResponse): Uint8Array {
     return QueryGetDepositRecordResponse.encode(message).finish();
   },
-  toProtoMsg(message: QueryGetDepositRecordResponse): QueryGetDepositRecordResponseProtoMsg {
+  toProtoMsg(
+    message: QueryGetDepositRecordResponse,
+  ): QueryGetDepositRecordResponseProtoMsg {
     return {
-      typeUrl: "/stride.records.QueryGetDepositRecordResponse",
-      value: QueryGetDepositRecordResponse.encode(message).finish()
+      typeUrl: '/stride.records.QueryGetDepositRecordResponse',
+      value: QueryGetDepositRecordResponse.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseQueryAllDepositRecordRequest(): QueryAllDepositRecordRequest {
   return {
-    pagination: undefined
+    pagination: undefined,
   };
 }
 export const QueryAllDepositRecordRequest = {
-  typeUrl: "/stride.records.QueryAllDepositRecordRequest" as const,
-  encode(message: QueryAllDepositRecordRequest, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/stride.records.QueryAllDepositRecordRequest' as const,
+  encode(
+    message: QueryAllDepositRecordRequest,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.pagination !== undefined) {
       PageRequest.encode(message.pagination, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): QueryAllDepositRecordRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryAllDepositRecordRequest {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryAllDepositRecordRequest();
     while (reader.pos < end) {
@@ -502,58 +585,86 @@ export const QueryAllDepositRecordRequest = {
   },
   fromJSON(object: any): QueryAllDepositRecordRequest {
     return {
-      pagination: isSet(object.pagination) ? PageRequest.fromJSON(object.pagination) : undefined
+      pagination: isSet(object.pagination)
+        ? PageRequest.fromJSON(object.pagination)
+        : undefined,
     };
   },
-  toJSON(message: QueryAllDepositRecordRequest): JsonSafe<QueryAllDepositRecordRequest> {
+  toJSON(
+    message: QueryAllDepositRecordRequest,
+  ): JsonSafe<QueryAllDepositRecordRequest> {
     const obj: any = {};
-    message.pagination !== undefined && (obj.pagination = message.pagination ? PageRequest.toJSON(message.pagination) : undefined);
+    message.pagination !== undefined &&
+      (obj.pagination = message.pagination
+        ? PageRequest.toJSON(message.pagination)
+        : undefined);
     return obj;
   },
-  fromPartial(object: Partial<QueryAllDepositRecordRequest>): QueryAllDepositRecordRequest {
+  fromPartial(
+    object: Partial<QueryAllDepositRecordRequest>,
+  ): QueryAllDepositRecordRequest {
     const message = createBaseQueryAllDepositRecordRequest();
-    message.pagination = object.pagination !== undefined && object.pagination !== null ? PageRequest.fromPartial(object.pagination) : undefined;
+    message.pagination =
+      object.pagination !== undefined && object.pagination !== null
+        ? PageRequest.fromPartial(object.pagination)
+        : undefined;
     return message;
   },
-  fromProtoMsg(message: QueryAllDepositRecordRequestProtoMsg): QueryAllDepositRecordRequest {
+  fromProtoMsg(
+    message: QueryAllDepositRecordRequestProtoMsg,
+  ): QueryAllDepositRecordRequest {
     return QueryAllDepositRecordRequest.decode(message.value);
   },
   toProto(message: QueryAllDepositRecordRequest): Uint8Array {
     return QueryAllDepositRecordRequest.encode(message).finish();
   },
-  toProtoMsg(message: QueryAllDepositRecordRequest): QueryAllDepositRecordRequestProtoMsg {
+  toProtoMsg(
+    message: QueryAllDepositRecordRequest,
+  ): QueryAllDepositRecordRequestProtoMsg {
     return {
-      typeUrl: "/stride.records.QueryAllDepositRecordRequest",
-      value: QueryAllDepositRecordRequest.encode(message).finish()
+      typeUrl: '/stride.records.QueryAllDepositRecordRequest',
+      value: QueryAllDepositRecordRequest.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseQueryAllDepositRecordResponse(): QueryAllDepositRecordResponse {
   return {
     depositRecord: [],
-    pagination: undefined
+    pagination: undefined,
   };
 }
 export const QueryAllDepositRecordResponse = {
-  typeUrl: "/stride.records.QueryAllDepositRecordResponse" as const,
-  encode(message: QueryAllDepositRecordResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/stride.records.QueryAllDepositRecordResponse' as const,
+  encode(
+    message: QueryAllDepositRecordResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     for (const v of message.depositRecord) {
       DepositRecord.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     if (message.pagination !== undefined) {
-      PageResponse.encode(message.pagination, writer.uint32(18).fork()).ldelim();
+      PageResponse.encode(
+        message.pagination,
+        writer.uint32(18).fork(),
+      ).ldelim();
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): QueryAllDepositRecordResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryAllDepositRecordResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryAllDepositRecordResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.depositRecord.push(DepositRecord.decode(reader, reader.uint32()));
+          message.depositRecord.push(
+            DepositRecord.decode(reader, reader.uint32()),
+          );
           break;
         case 2:
           message.pagination = PageResponse.decode(reader, reader.uint32());
@@ -567,54 +678,82 @@ export const QueryAllDepositRecordResponse = {
   },
   fromJSON(object: any): QueryAllDepositRecordResponse {
     return {
-      depositRecord: Array.isArray(object?.depositRecord) ? object.depositRecord.map((e: any) => DepositRecord.fromJSON(e)) : [],
-      pagination: isSet(object.pagination) ? PageResponse.fromJSON(object.pagination) : undefined
+      depositRecord: Array.isArray(object?.depositRecord)
+        ? object.depositRecord.map((e: any) => DepositRecord.fromJSON(e))
+        : [],
+      pagination: isSet(object.pagination)
+        ? PageResponse.fromJSON(object.pagination)
+        : undefined,
     };
   },
-  toJSON(message: QueryAllDepositRecordResponse): JsonSafe<QueryAllDepositRecordResponse> {
+  toJSON(
+    message: QueryAllDepositRecordResponse,
+  ): JsonSafe<QueryAllDepositRecordResponse> {
     const obj: any = {};
     if (message.depositRecord) {
-      obj.depositRecord = message.depositRecord.map(e => e ? DepositRecord.toJSON(e) : undefined);
+      obj.depositRecord = message.depositRecord.map(e =>
+        e ? DepositRecord.toJSON(e) : undefined,
+      );
     } else {
       obj.depositRecord = [];
     }
-    message.pagination !== undefined && (obj.pagination = message.pagination ? PageResponse.toJSON(message.pagination) : undefined);
+    message.pagination !== undefined &&
+      (obj.pagination = message.pagination
+        ? PageResponse.toJSON(message.pagination)
+        : undefined);
     return obj;
   },
-  fromPartial(object: Partial<QueryAllDepositRecordResponse>): QueryAllDepositRecordResponse {
+  fromPartial(
+    object: Partial<QueryAllDepositRecordResponse>,
+  ): QueryAllDepositRecordResponse {
     const message = createBaseQueryAllDepositRecordResponse();
-    message.depositRecord = object.depositRecord?.map(e => DepositRecord.fromPartial(e)) || [];
-    message.pagination = object.pagination !== undefined && object.pagination !== null ? PageResponse.fromPartial(object.pagination) : undefined;
+    message.depositRecord =
+      object.depositRecord?.map(e => DepositRecord.fromPartial(e)) || [];
+    message.pagination =
+      object.pagination !== undefined && object.pagination !== null
+        ? PageResponse.fromPartial(object.pagination)
+        : undefined;
     return message;
   },
-  fromProtoMsg(message: QueryAllDepositRecordResponseProtoMsg): QueryAllDepositRecordResponse {
+  fromProtoMsg(
+    message: QueryAllDepositRecordResponseProtoMsg,
+  ): QueryAllDepositRecordResponse {
     return QueryAllDepositRecordResponse.decode(message.value);
   },
   toProto(message: QueryAllDepositRecordResponse): Uint8Array {
     return QueryAllDepositRecordResponse.encode(message).finish();
   },
-  toProtoMsg(message: QueryAllDepositRecordResponse): QueryAllDepositRecordResponseProtoMsg {
+  toProtoMsg(
+    message: QueryAllDepositRecordResponse,
+  ): QueryAllDepositRecordResponseProtoMsg {
     return {
-      typeUrl: "/stride.records.QueryAllDepositRecordResponse",
-      value: QueryAllDepositRecordResponse.encode(message).finish()
+      typeUrl: '/stride.records.QueryAllDepositRecordResponse',
+      value: QueryAllDepositRecordResponse.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseQueryDepositRecordByHostRequest(): QueryDepositRecordByHostRequest {
   return {
-    hostZoneId: ""
+    hostZoneId: '',
   };
 }
 export const QueryDepositRecordByHostRequest = {
-  typeUrl: "/stride.records.QueryDepositRecordByHostRequest" as const,
-  encode(message: QueryDepositRecordByHostRequest, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.hostZoneId !== "") {
+  typeUrl: '/stride.records.QueryDepositRecordByHostRequest' as const,
+  encode(
+    message: QueryDepositRecordByHostRequest,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.hostZoneId !== '') {
       writer.uint32(10).string(message.hostZoneId);
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): QueryDepositRecordByHostRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryDepositRecordByHostRequest {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryDepositRecordByHostRequest();
     while (reader.pos < end) {
@@ -632,54 +771,71 @@ export const QueryDepositRecordByHostRequest = {
   },
   fromJSON(object: any): QueryDepositRecordByHostRequest {
     return {
-      hostZoneId: isSet(object.hostZoneId) ? String(object.hostZoneId) : ""
+      hostZoneId: isSet(object.hostZoneId) ? String(object.hostZoneId) : '',
     };
   },
-  toJSON(message: QueryDepositRecordByHostRequest): JsonSafe<QueryDepositRecordByHostRequest> {
+  toJSON(
+    message: QueryDepositRecordByHostRequest,
+  ): JsonSafe<QueryDepositRecordByHostRequest> {
     const obj: any = {};
     message.hostZoneId !== undefined && (obj.hostZoneId = message.hostZoneId);
     return obj;
   },
-  fromPartial(object: Partial<QueryDepositRecordByHostRequest>): QueryDepositRecordByHostRequest {
+  fromPartial(
+    object: Partial<QueryDepositRecordByHostRequest>,
+  ): QueryDepositRecordByHostRequest {
     const message = createBaseQueryDepositRecordByHostRequest();
-    message.hostZoneId = object.hostZoneId ?? "";
+    message.hostZoneId = object.hostZoneId ?? '';
     return message;
   },
-  fromProtoMsg(message: QueryDepositRecordByHostRequestProtoMsg): QueryDepositRecordByHostRequest {
+  fromProtoMsg(
+    message: QueryDepositRecordByHostRequestProtoMsg,
+  ): QueryDepositRecordByHostRequest {
     return QueryDepositRecordByHostRequest.decode(message.value);
   },
   toProto(message: QueryDepositRecordByHostRequest): Uint8Array {
     return QueryDepositRecordByHostRequest.encode(message).finish();
   },
-  toProtoMsg(message: QueryDepositRecordByHostRequest): QueryDepositRecordByHostRequestProtoMsg {
+  toProtoMsg(
+    message: QueryDepositRecordByHostRequest,
+  ): QueryDepositRecordByHostRequestProtoMsg {
     return {
-      typeUrl: "/stride.records.QueryDepositRecordByHostRequest",
-      value: QueryDepositRecordByHostRequest.encode(message).finish()
+      typeUrl: '/stride.records.QueryDepositRecordByHostRequest',
+      value: QueryDepositRecordByHostRequest.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseQueryDepositRecordByHostResponse(): QueryDepositRecordByHostResponse {
   return {
-    depositRecord: []
+    depositRecord: [],
   };
 }
 export const QueryDepositRecordByHostResponse = {
-  typeUrl: "/stride.records.QueryDepositRecordByHostResponse" as const,
-  encode(message: QueryDepositRecordByHostResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/stride.records.QueryDepositRecordByHostResponse' as const,
+  encode(
+    message: QueryDepositRecordByHostResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     for (const v of message.depositRecord) {
       DepositRecord.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): QueryDepositRecordByHostResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryDepositRecordByHostResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryDepositRecordByHostResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.depositRecord.push(DepositRecord.decode(reader, reader.uint32()));
+          message.depositRecord.push(
+            DepositRecord.decode(reader, reader.uint32()),
+          );
           break;
         default:
           reader.skipType(tag & 7);
@@ -690,51 +846,71 @@ export const QueryDepositRecordByHostResponse = {
   },
   fromJSON(object: any): QueryDepositRecordByHostResponse {
     return {
-      depositRecord: Array.isArray(object?.depositRecord) ? object.depositRecord.map((e: any) => DepositRecord.fromJSON(e)) : []
+      depositRecord: Array.isArray(object?.depositRecord)
+        ? object.depositRecord.map((e: any) => DepositRecord.fromJSON(e))
+        : [],
     };
   },
-  toJSON(message: QueryDepositRecordByHostResponse): JsonSafe<QueryDepositRecordByHostResponse> {
+  toJSON(
+    message: QueryDepositRecordByHostResponse,
+  ): JsonSafe<QueryDepositRecordByHostResponse> {
     const obj: any = {};
     if (message.depositRecord) {
-      obj.depositRecord = message.depositRecord.map(e => e ? DepositRecord.toJSON(e) : undefined);
+      obj.depositRecord = message.depositRecord.map(e =>
+        e ? DepositRecord.toJSON(e) : undefined,
+      );
     } else {
       obj.depositRecord = [];
     }
     return obj;
   },
-  fromPartial(object: Partial<QueryDepositRecordByHostResponse>): QueryDepositRecordByHostResponse {
+  fromPartial(
+    object: Partial<QueryDepositRecordByHostResponse>,
+  ): QueryDepositRecordByHostResponse {
     const message = createBaseQueryDepositRecordByHostResponse();
-    message.depositRecord = object.depositRecord?.map(e => DepositRecord.fromPartial(e)) || [];
+    message.depositRecord =
+      object.depositRecord?.map(e => DepositRecord.fromPartial(e)) || [];
     return message;
   },
-  fromProtoMsg(message: QueryDepositRecordByHostResponseProtoMsg): QueryDepositRecordByHostResponse {
+  fromProtoMsg(
+    message: QueryDepositRecordByHostResponseProtoMsg,
+  ): QueryDepositRecordByHostResponse {
     return QueryDepositRecordByHostResponse.decode(message.value);
   },
   toProto(message: QueryDepositRecordByHostResponse): Uint8Array {
     return QueryDepositRecordByHostResponse.encode(message).finish();
   },
-  toProtoMsg(message: QueryDepositRecordByHostResponse): QueryDepositRecordByHostResponseProtoMsg {
+  toProtoMsg(
+    message: QueryDepositRecordByHostResponse,
+  ): QueryDepositRecordByHostResponseProtoMsg {
     return {
-      typeUrl: "/stride.records.QueryDepositRecordByHostResponse",
-      value: QueryDepositRecordByHostResponse.encode(message).finish()
+      typeUrl: '/stride.records.QueryDepositRecordByHostResponse',
+      value: QueryDepositRecordByHostResponse.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseQueryGetUserRedemptionRecordRequest(): QueryGetUserRedemptionRecordRequest {
   return {
-    id: ""
+    id: '',
   };
 }
 export const QueryGetUserRedemptionRecordRequest = {
-  typeUrl: "/stride.records.QueryGetUserRedemptionRecordRequest" as const,
-  encode(message: QueryGetUserRedemptionRecordRequest, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.id !== "") {
+  typeUrl: '/stride.records.QueryGetUserRedemptionRecordRequest' as const,
+  encode(
+    message: QueryGetUserRedemptionRecordRequest,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.id !== '') {
       writer.uint32(10).string(message.id);
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): QueryGetUserRedemptionRecordRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryGetUserRedemptionRecordRequest {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryGetUserRedemptionRecordRequest();
     while (reader.pos < end) {
@@ -752,54 +928,75 @@ export const QueryGetUserRedemptionRecordRequest = {
   },
   fromJSON(object: any): QueryGetUserRedemptionRecordRequest {
     return {
-      id: isSet(object.id) ? String(object.id) : ""
+      id: isSet(object.id) ? String(object.id) : '',
     };
   },
-  toJSON(message: QueryGetUserRedemptionRecordRequest): JsonSafe<QueryGetUserRedemptionRecordRequest> {
+  toJSON(
+    message: QueryGetUserRedemptionRecordRequest,
+  ): JsonSafe<QueryGetUserRedemptionRecordRequest> {
     const obj: any = {};
     message.id !== undefined && (obj.id = message.id);
     return obj;
   },
-  fromPartial(object: Partial<QueryGetUserRedemptionRecordRequest>): QueryGetUserRedemptionRecordRequest {
+  fromPartial(
+    object: Partial<QueryGetUserRedemptionRecordRequest>,
+  ): QueryGetUserRedemptionRecordRequest {
     const message = createBaseQueryGetUserRedemptionRecordRequest();
-    message.id = object.id ?? "";
+    message.id = object.id ?? '';
     return message;
   },
-  fromProtoMsg(message: QueryGetUserRedemptionRecordRequestProtoMsg): QueryGetUserRedemptionRecordRequest {
+  fromProtoMsg(
+    message: QueryGetUserRedemptionRecordRequestProtoMsg,
+  ): QueryGetUserRedemptionRecordRequest {
     return QueryGetUserRedemptionRecordRequest.decode(message.value);
   },
   toProto(message: QueryGetUserRedemptionRecordRequest): Uint8Array {
     return QueryGetUserRedemptionRecordRequest.encode(message).finish();
   },
-  toProtoMsg(message: QueryGetUserRedemptionRecordRequest): QueryGetUserRedemptionRecordRequestProtoMsg {
+  toProtoMsg(
+    message: QueryGetUserRedemptionRecordRequest,
+  ): QueryGetUserRedemptionRecordRequestProtoMsg {
     return {
-      typeUrl: "/stride.records.QueryGetUserRedemptionRecordRequest",
-      value: QueryGetUserRedemptionRecordRequest.encode(message).finish()
+      typeUrl: '/stride.records.QueryGetUserRedemptionRecordRequest',
+      value: QueryGetUserRedemptionRecordRequest.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseQueryGetUserRedemptionRecordResponse(): QueryGetUserRedemptionRecordResponse {
   return {
-    userRedemptionRecord: UserRedemptionRecord.fromPartial({})
+    userRedemptionRecord: UserRedemptionRecord.fromPartial({}),
   };
 }
 export const QueryGetUserRedemptionRecordResponse = {
-  typeUrl: "/stride.records.QueryGetUserRedemptionRecordResponse" as const,
-  encode(message: QueryGetUserRedemptionRecordResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/stride.records.QueryGetUserRedemptionRecordResponse' as const,
+  encode(
+    message: QueryGetUserRedemptionRecordResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.userRedemptionRecord !== undefined) {
-      UserRedemptionRecord.encode(message.userRedemptionRecord, writer.uint32(10).fork()).ldelim();
+      UserRedemptionRecord.encode(
+        message.userRedemptionRecord,
+        writer.uint32(10).fork(),
+      ).ldelim();
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): QueryGetUserRedemptionRecordResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryGetUserRedemptionRecordResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryGetUserRedemptionRecordResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.userRedemptionRecord = UserRedemptionRecord.decode(reader, reader.uint32());
+          message.userRedemptionRecord = UserRedemptionRecord.decode(
+            reader,
+            reader.uint32(),
+          );
           break;
         default:
           reader.skipType(tag & 7);
@@ -810,47 +1007,71 @@ export const QueryGetUserRedemptionRecordResponse = {
   },
   fromJSON(object: any): QueryGetUserRedemptionRecordResponse {
     return {
-      userRedemptionRecord: isSet(object.userRedemptionRecord) ? UserRedemptionRecord.fromJSON(object.userRedemptionRecord) : undefined
+      userRedemptionRecord: isSet(object.userRedemptionRecord)
+        ? UserRedemptionRecord.fromJSON(object.userRedemptionRecord)
+        : undefined,
     };
   },
-  toJSON(message: QueryGetUserRedemptionRecordResponse): JsonSafe<QueryGetUserRedemptionRecordResponse> {
+  toJSON(
+    message: QueryGetUserRedemptionRecordResponse,
+  ): JsonSafe<QueryGetUserRedemptionRecordResponse> {
     const obj: any = {};
-    message.userRedemptionRecord !== undefined && (obj.userRedemptionRecord = message.userRedemptionRecord ? UserRedemptionRecord.toJSON(message.userRedemptionRecord) : undefined);
+    message.userRedemptionRecord !== undefined &&
+      (obj.userRedemptionRecord = message.userRedemptionRecord
+        ? UserRedemptionRecord.toJSON(message.userRedemptionRecord)
+        : undefined);
     return obj;
   },
-  fromPartial(object: Partial<QueryGetUserRedemptionRecordResponse>): QueryGetUserRedemptionRecordResponse {
+  fromPartial(
+    object: Partial<QueryGetUserRedemptionRecordResponse>,
+  ): QueryGetUserRedemptionRecordResponse {
     const message = createBaseQueryGetUserRedemptionRecordResponse();
-    message.userRedemptionRecord = object.userRedemptionRecord !== undefined && object.userRedemptionRecord !== null ? UserRedemptionRecord.fromPartial(object.userRedemptionRecord) : undefined;
+    message.userRedemptionRecord =
+      object.userRedemptionRecord !== undefined &&
+      object.userRedemptionRecord !== null
+        ? UserRedemptionRecord.fromPartial(object.userRedemptionRecord)
+        : undefined;
     return message;
   },
-  fromProtoMsg(message: QueryGetUserRedemptionRecordResponseProtoMsg): QueryGetUserRedemptionRecordResponse {
+  fromProtoMsg(
+    message: QueryGetUserRedemptionRecordResponseProtoMsg,
+  ): QueryGetUserRedemptionRecordResponse {
     return QueryGetUserRedemptionRecordResponse.decode(message.value);
   },
   toProto(message: QueryGetUserRedemptionRecordResponse): Uint8Array {
     return QueryGetUserRedemptionRecordResponse.encode(message).finish();
   },
-  toProtoMsg(message: QueryGetUserRedemptionRecordResponse): QueryGetUserRedemptionRecordResponseProtoMsg {
+  toProtoMsg(
+    message: QueryGetUserRedemptionRecordResponse,
+  ): QueryGetUserRedemptionRecordResponseProtoMsg {
     return {
-      typeUrl: "/stride.records.QueryGetUserRedemptionRecordResponse",
-      value: QueryGetUserRedemptionRecordResponse.encode(message).finish()
+      typeUrl: '/stride.records.QueryGetUserRedemptionRecordResponse',
+      value: QueryGetUserRedemptionRecordResponse.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseQueryAllUserRedemptionRecordRequest(): QueryAllUserRedemptionRecordRequest {
   return {
-    pagination: undefined
+    pagination: undefined,
   };
 }
 export const QueryAllUserRedemptionRecordRequest = {
-  typeUrl: "/stride.records.QueryAllUserRedemptionRecordRequest" as const,
-  encode(message: QueryAllUserRedemptionRecordRequest, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/stride.records.QueryAllUserRedemptionRecordRequest' as const,
+  encode(
+    message: QueryAllUserRedemptionRecordRequest,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.pagination !== undefined) {
       PageRequest.encode(message.pagination, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): QueryAllUserRedemptionRecordRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryAllUserRedemptionRecordRequest {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryAllUserRedemptionRecordRequest();
     while (reader.pos < end) {
@@ -868,58 +1089,86 @@ export const QueryAllUserRedemptionRecordRequest = {
   },
   fromJSON(object: any): QueryAllUserRedemptionRecordRequest {
     return {
-      pagination: isSet(object.pagination) ? PageRequest.fromJSON(object.pagination) : undefined
+      pagination: isSet(object.pagination)
+        ? PageRequest.fromJSON(object.pagination)
+        : undefined,
     };
   },
-  toJSON(message: QueryAllUserRedemptionRecordRequest): JsonSafe<QueryAllUserRedemptionRecordRequest> {
+  toJSON(
+    message: QueryAllUserRedemptionRecordRequest,
+  ): JsonSafe<QueryAllUserRedemptionRecordRequest> {
     const obj: any = {};
-    message.pagination !== undefined && (obj.pagination = message.pagination ? PageRequest.toJSON(message.pagination) : undefined);
+    message.pagination !== undefined &&
+      (obj.pagination = message.pagination
+        ? PageRequest.toJSON(message.pagination)
+        : undefined);
     return obj;
   },
-  fromPartial(object: Partial<QueryAllUserRedemptionRecordRequest>): QueryAllUserRedemptionRecordRequest {
+  fromPartial(
+    object: Partial<QueryAllUserRedemptionRecordRequest>,
+  ): QueryAllUserRedemptionRecordRequest {
     const message = createBaseQueryAllUserRedemptionRecordRequest();
-    message.pagination = object.pagination !== undefined && object.pagination !== null ? PageRequest.fromPartial(object.pagination) : undefined;
+    message.pagination =
+      object.pagination !== undefined && object.pagination !== null
+        ? PageRequest.fromPartial(object.pagination)
+        : undefined;
     return message;
   },
-  fromProtoMsg(message: QueryAllUserRedemptionRecordRequestProtoMsg): QueryAllUserRedemptionRecordRequest {
+  fromProtoMsg(
+    message: QueryAllUserRedemptionRecordRequestProtoMsg,
+  ): QueryAllUserRedemptionRecordRequest {
     return QueryAllUserRedemptionRecordRequest.decode(message.value);
   },
   toProto(message: QueryAllUserRedemptionRecordRequest): Uint8Array {
     return QueryAllUserRedemptionRecordRequest.encode(message).finish();
   },
-  toProtoMsg(message: QueryAllUserRedemptionRecordRequest): QueryAllUserRedemptionRecordRequestProtoMsg {
+  toProtoMsg(
+    message: QueryAllUserRedemptionRecordRequest,
+  ): QueryAllUserRedemptionRecordRequestProtoMsg {
     return {
-      typeUrl: "/stride.records.QueryAllUserRedemptionRecordRequest",
-      value: QueryAllUserRedemptionRecordRequest.encode(message).finish()
+      typeUrl: '/stride.records.QueryAllUserRedemptionRecordRequest',
+      value: QueryAllUserRedemptionRecordRequest.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseQueryAllUserRedemptionRecordResponse(): QueryAllUserRedemptionRecordResponse {
   return {
     userRedemptionRecord: [],
-    pagination: undefined
+    pagination: undefined,
   };
 }
 export const QueryAllUserRedemptionRecordResponse = {
-  typeUrl: "/stride.records.QueryAllUserRedemptionRecordResponse" as const,
-  encode(message: QueryAllUserRedemptionRecordResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/stride.records.QueryAllUserRedemptionRecordResponse' as const,
+  encode(
+    message: QueryAllUserRedemptionRecordResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     for (const v of message.userRedemptionRecord) {
       UserRedemptionRecord.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     if (message.pagination !== undefined) {
-      PageResponse.encode(message.pagination, writer.uint32(18).fork()).ldelim();
+      PageResponse.encode(
+        message.pagination,
+        writer.uint32(18).fork(),
+      ).ldelim();
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): QueryAllUserRedemptionRecordResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryAllUserRedemptionRecordResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryAllUserRedemptionRecordResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.userRedemptionRecord.push(UserRedemptionRecord.decode(reader, reader.uint32()));
+          message.userRedemptionRecord.push(
+            UserRedemptionRecord.decode(reader, reader.uint32()),
+          );
           break;
         case 2:
           message.pagination = PageResponse.decode(reader, reader.uint32());
@@ -933,58 +1182,87 @@ export const QueryAllUserRedemptionRecordResponse = {
   },
   fromJSON(object: any): QueryAllUserRedemptionRecordResponse {
     return {
-      userRedemptionRecord: Array.isArray(object?.userRedemptionRecord) ? object.userRedemptionRecord.map((e: any) => UserRedemptionRecord.fromJSON(e)) : [],
-      pagination: isSet(object.pagination) ? PageResponse.fromJSON(object.pagination) : undefined
+      userRedemptionRecord: Array.isArray(object?.userRedemptionRecord)
+        ? object.userRedemptionRecord.map((e: any) =>
+            UserRedemptionRecord.fromJSON(e),
+          )
+        : [],
+      pagination: isSet(object.pagination)
+        ? PageResponse.fromJSON(object.pagination)
+        : undefined,
     };
   },
-  toJSON(message: QueryAllUserRedemptionRecordResponse): JsonSafe<QueryAllUserRedemptionRecordResponse> {
+  toJSON(
+    message: QueryAllUserRedemptionRecordResponse,
+  ): JsonSafe<QueryAllUserRedemptionRecordResponse> {
     const obj: any = {};
     if (message.userRedemptionRecord) {
-      obj.userRedemptionRecord = message.userRedemptionRecord.map(e => e ? UserRedemptionRecord.toJSON(e) : undefined);
+      obj.userRedemptionRecord = message.userRedemptionRecord.map(e =>
+        e ? UserRedemptionRecord.toJSON(e) : undefined,
+      );
     } else {
       obj.userRedemptionRecord = [];
     }
-    message.pagination !== undefined && (obj.pagination = message.pagination ? PageResponse.toJSON(message.pagination) : undefined);
+    message.pagination !== undefined &&
+      (obj.pagination = message.pagination
+        ? PageResponse.toJSON(message.pagination)
+        : undefined);
     return obj;
   },
-  fromPartial(object: Partial<QueryAllUserRedemptionRecordResponse>): QueryAllUserRedemptionRecordResponse {
+  fromPartial(
+    object: Partial<QueryAllUserRedemptionRecordResponse>,
+  ): QueryAllUserRedemptionRecordResponse {
     const message = createBaseQueryAllUserRedemptionRecordResponse();
-    message.userRedemptionRecord = object.userRedemptionRecord?.map(e => UserRedemptionRecord.fromPartial(e)) || [];
-    message.pagination = object.pagination !== undefined && object.pagination !== null ? PageResponse.fromPartial(object.pagination) : undefined;
+    message.userRedemptionRecord =
+      object.userRedemptionRecord?.map(e =>
+        UserRedemptionRecord.fromPartial(e),
+      ) || [];
+    message.pagination =
+      object.pagination !== undefined && object.pagination !== null
+        ? PageResponse.fromPartial(object.pagination)
+        : undefined;
     return message;
   },
-  fromProtoMsg(message: QueryAllUserRedemptionRecordResponseProtoMsg): QueryAllUserRedemptionRecordResponse {
+  fromProtoMsg(
+    message: QueryAllUserRedemptionRecordResponseProtoMsg,
+  ): QueryAllUserRedemptionRecordResponse {
     return QueryAllUserRedemptionRecordResponse.decode(message.value);
   },
   toProto(message: QueryAllUserRedemptionRecordResponse): Uint8Array {
     return QueryAllUserRedemptionRecordResponse.encode(message).finish();
   },
-  toProtoMsg(message: QueryAllUserRedemptionRecordResponse): QueryAllUserRedemptionRecordResponseProtoMsg {
+  toProtoMsg(
+    message: QueryAllUserRedemptionRecordResponse,
+  ): QueryAllUserRedemptionRecordResponseProtoMsg {
     return {
-      typeUrl: "/stride.records.QueryAllUserRedemptionRecordResponse",
-      value: QueryAllUserRedemptionRecordResponse.encode(message).finish()
+      typeUrl: '/stride.records.QueryAllUserRedemptionRecordResponse',
+      value: QueryAllUserRedemptionRecordResponse.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseQueryAllUserRedemptionRecordForUserRequest(): QueryAllUserRedemptionRecordForUserRequest {
   return {
-    chainId: "",
+    chainId: '',
     day: BigInt(0),
-    address: "",
+    address: '',
     limit: BigInt(0),
-    pagination: undefined
+    pagination: undefined,
   };
 }
 export const QueryAllUserRedemptionRecordForUserRequest = {
-  typeUrl: "/stride.records.QueryAllUserRedemptionRecordForUserRequest" as const,
-  encode(message: QueryAllUserRedemptionRecordForUserRequest, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.chainId !== "") {
+  typeUrl:
+    '/stride.records.QueryAllUserRedemptionRecordForUserRequest' as const,
+  encode(
+    message: QueryAllUserRedemptionRecordForUserRequest,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.chainId !== '') {
       writer.uint32(10).string(message.chainId);
     }
     if (message.day !== BigInt(0)) {
       writer.uint32(16).uint64(message.day);
     }
-    if (message.address !== "") {
+    if (message.address !== '') {
       writer.uint32(26).string(message.address);
     }
     if (message.limit !== BigInt(0)) {
@@ -995,8 +1273,12 @@ export const QueryAllUserRedemptionRecordForUserRequest = {
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): QueryAllUserRedemptionRecordForUserRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryAllUserRedemptionRecordForUserRequest {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryAllUserRedemptionRecordForUserRequest();
     while (reader.pos < end) {
@@ -1026,70 +1308,108 @@ export const QueryAllUserRedemptionRecordForUserRequest = {
   },
   fromJSON(object: any): QueryAllUserRedemptionRecordForUserRequest {
     return {
-      chainId: isSet(object.chainId) ? String(object.chainId) : "",
+      chainId: isSet(object.chainId) ? String(object.chainId) : '',
       day: isSet(object.day) ? BigInt(object.day.toString()) : BigInt(0),
-      address: isSet(object.address) ? String(object.address) : "",
+      address: isSet(object.address) ? String(object.address) : '',
       limit: isSet(object.limit) ? BigInt(object.limit.toString()) : BigInt(0),
-      pagination: isSet(object.pagination) ? PageRequest.fromJSON(object.pagination) : undefined
+      pagination: isSet(object.pagination)
+        ? PageRequest.fromJSON(object.pagination)
+        : undefined,
     };
   },
-  toJSON(message: QueryAllUserRedemptionRecordForUserRequest): JsonSafe<QueryAllUserRedemptionRecordForUserRequest> {
+  toJSON(
+    message: QueryAllUserRedemptionRecordForUserRequest,
+  ): JsonSafe<QueryAllUserRedemptionRecordForUserRequest> {
     const obj: any = {};
     message.chainId !== undefined && (obj.chainId = message.chainId);
-    message.day !== undefined && (obj.day = (message.day || BigInt(0)).toString());
+    message.day !== undefined &&
+      (obj.day = (message.day || BigInt(0)).toString());
     message.address !== undefined && (obj.address = message.address);
-    message.limit !== undefined && (obj.limit = (message.limit || BigInt(0)).toString());
-    message.pagination !== undefined && (obj.pagination = message.pagination ? PageRequest.toJSON(message.pagination) : undefined);
+    message.limit !== undefined &&
+      (obj.limit = (message.limit || BigInt(0)).toString());
+    message.pagination !== undefined &&
+      (obj.pagination = message.pagination
+        ? PageRequest.toJSON(message.pagination)
+        : undefined);
     return obj;
   },
-  fromPartial(object: Partial<QueryAllUserRedemptionRecordForUserRequest>): QueryAllUserRedemptionRecordForUserRequest {
+  fromPartial(
+    object: Partial<QueryAllUserRedemptionRecordForUserRequest>,
+  ): QueryAllUserRedemptionRecordForUserRequest {
     const message = createBaseQueryAllUserRedemptionRecordForUserRequest();
-    message.chainId = object.chainId ?? "";
-    message.day = object.day !== undefined && object.day !== null ? BigInt(object.day.toString()) : BigInt(0);
-    message.address = object.address ?? "";
-    message.limit = object.limit !== undefined && object.limit !== null ? BigInt(object.limit.toString()) : BigInt(0);
-    message.pagination = object.pagination !== undefined && object.pagination !== null ? PageRequest.fromPartial(object.pagination) : undefined;
+    message.chainId = object.chainId ?? '';
+    message.day =
+      object.day !== undefined && object.day !== null
+        ? BigInt(object.day.toString())
+        : BigInt(0);
+    message.address = object.address ?? '';
+    message.limit =
+      object.limit !== undefined && object.limit !== null
+        ? BigInt(object.limit.toString())
+        : BigInt(0);
+    message.pagination =
+      object.pagination !== undefined && object.pagination !== null
+        ? PageRequest.fromPartial(object.pagination)
+        : undefined;
     return message;
   },
-  fromProtoMsg(message: QueryAllUserRedemptionRecordForUserRequestProtoMsg): QueryAllUserRedemptionRecordForUserRequest {
+  fromProtoMsg(
+    message: QueryAllUserRedemptionRecordForUserRequestProtoMsg,
+  ): QueryAllUserRedemptionRecordForUserRequest {
     return QueryAllUserRedemptionRecordForUserRequest.decode(message.value);
   },
   toProto(message: QueryAllUserRedemptionRecordForUserRequest): Uint8Array {
     return QueryAllUserRedemptionRecordForUserRequest.encode(message).finish();
   },
-  toProtoMsg(message: QueryAllUserRedemptionRecordForUserRequest): QueryAllUserRedemptionRecordForUserRequestProtoMsg {
+  toProtoMsg(
+    message: QueryAllUserRedemptionRecordForUserRequest,
+  ): QueryAllUserRedemptionRecordForUserRequestProtoMsg {
     return {
-      typeUrl: "/stride.records.QueryAllUserRedemptionRecordForUserRequest",
-      value: QueryAllUserRedemptionRecordForUserRequest.encode(message).finish()
+      typeUrl: '/stride.records.QueryAllUserRedemptionRecordForUserRequest',
+      value:
+        QueryAllUserRedemptionRecordForUserRequest.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseQueryAllUserRedemptionRecordForUserResponse(): QueryAllUserRedemptionRecordForUserResponse {
   return {
     userRedemptionRecord: [],
-    pagination: undefined
+    pagination: undefined,
   };
 }
 export const QueryAllUserRedemptionRecordForUserResponse = {
-  typeUrl: "/stride.records.QueryAllUserRedemptionRecordForUserResponse" as const,
-  encode(message: QueryAllUserRedemptionRecordForUserResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl:
+    '/stride.records.QueryAllUserRedemptionRecordForUserResponse' as const,
+  encode(
+    message: QueryAllUserRedemptionRecordForUserResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     for (const v of message.userRedemptionRecord) {
       UserRedemptionRecord.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     if (message.pagination !== undefined) {
-      PageResponse.encode(message.pagination, writer.uint32(18).fork()).ldelim();
+      PageResponse.encode(
+        message.pagination,
+        writer.uint32(18).fork(),
+      ).ldelim();
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): QueryAllUserRedemptionRecordForUserResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryAllUserRedemptionRecordForUserResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryAllUserRedemptionRecordForUserResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.userRedemptionRecord.push(UserRedemptionRecord.decode(reader, reader.uint32()));
+          message.userRedemptionRecord.push(
+            UserRedemptionRecord.decode(reader, reader.uint32()),
+          );
           break;
         case 2:
           message.pagination = PageResponse.decode(reader, reader.uint32());
@@ -1103,54 +1423,87 @@ export const QueryAllUserRedemptionRecordForUserResponse = {
   },
   fromJSON(object: any): QueryAllUserRedemptionRecordForUserResponse {
     return {
-      userRedemptionRecord: Array.isArray(object?.userRedemptionRecord) ? object.userRedemptionRecord.map((e: any) => UserRedemptionRecord.fromJSON(e)) : [],
-      pagination: isSet(object.pagination) ? PageResponse.fromJSON(object.pagination) : undefined
+      userRedemptionRecord: Array.isArray(object?.userRedemptionRecord)
+        ? object.userRedemptionRecord.map((e: any) =>
+            UserRedemptionRecord.fromJSON(e),
+          )
+        : [],
+      pagination: isSet(object.pagination)
+        ? PageResponse.fromJSON(object.pagination)
+        : undefined,
     };
   },
-  toJSON(message: QueryAllUserRedemptionRecordForUserResponse): JsonSafe<QueryAllUserRedemptionRecordForUserResponse> {
+  toJSON(
+    message: QueryAllUserRedemptionRecordForUserResponse,
+  ): JsonSafe<QueryAllUserRedemptionRecordForUserResponse> {
     const obj: any = {};
     if (message.userRedemptionRecord) {
-      obj.userRedemptionRecord = message.userRedemptionRecord.map(e => e ? UserRedemptionRecord.toJSON(e) : undefined);
+      obj.userRedemptionRecord = message.userRedemptionRecord.map(e =>
+        e ? UserRedemptionRecord.toJSON(e) : undefined,
+      );
     } else {
       obj.userRedemptionRecord = [];
     }
-    message.pagination !== undefined && (obj.pagination = message.pagination ? PageResponse.toJSON(message.pagination) : undefined);
+    message.pagination !== undefined &&
+      (obj.pagination = message.pagination
+        ? PageResponse.toJSON(message.pagination)
+        : undefined);
     return obj;
   },
-  fromPartial(object: Partial<QueryAllUserRedemptionRecordForUserResponse>): QueryAllUserRedemptionRecordForUserResponse {
+  fromPartial(
+    object: Partial<QueryAllUserRedemptionRecordForUserResponse>,
+  ): QueryAllUserRedemptionRecordForUserResponse {
     const message = createBaseQueryAllUserRedemptionRecordForUserResponse();
-    message.userRedemptionRecord = object.userRedemptionRecord?.map(e => UserRedemptionRecord.fromPartial(e)) || [];
-    message.pagination = object.pagination !== undefined && object.pagination !== null ? PageResponse.fromPartial(object.pagination) : undefined;
+    message.userRedemptionRecord =
+      object.userRedemptionRecord?.map(e =>
+        UserRedemptionRecord.fromPartial(e),
+      ) || [];
+    message.pagination =
+      object.pagination !== undefined && object.pagination !== null
+        ? PageResponse.fromPartial(object.pagination)
+        : undefined;
     return message;
   },
-  fromProtoMsg(message: QueryAllUserRedemptionRecordForUserResponseProtoMsg): QueryAllUserRedemptionRecordForUserResponse {
+  fromProtoMsg(
+    message: QueryAllUserRedemptionRecordForUserResponseProtoMsg,
+  ): QueryAllUserRedemptionRecordForUserResponse {
     return QueryAllUserRedemptionRecordForUserResponse.decode(message.value);
   },
   toProto(message: QueryAllUserRedemptionRecordForUserResponse): Uint8Array {
     return QueryAllUserRedemptionRecordForUserResponse.encode(message).finish();
   },
-  toProtoMsg(message: QueryAllUserRedemptionRecordForUserResponse): QueryAllUserRedemptionRecordForUserResponseProtoMsg {
+  toProtoMsg(
+    message: QueryAllUserRedemptionRecordForUserResponse,
+  ): QueryAllUserRedemptionRecordForUserResponseProtoMsg {
     return {
-      typeUrl: "/stride.records.QueryAllUserRedemptionRecordForUserResponse",
-      value: QueryAllUserRedemptionRecordForUserResponse.encode(message).finish()
+      typeUrl: '/stride.records.QueryAllUserRedemptionRecordForUserResponse',
+      value:
+        QueryAllUserRedemptionRecordForUserResponse.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseQueryGetEpochUnbondingRecordRequest(): QueryGetEpochUnbondingRecordRequest {
   return {
-    epochNumber: BigInt(0)
+    epochNumber: BigInt(0),
   };
 }
 export const QueryGetEpochUnbondingRecordRequest = {
-  typeUrl: "/stride.records.QueryGetEpochUnbondingRecordRequest" as const,
-  encode(message: QueryGetEpochUnbondingRecordRequest, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/stride.records.QueryGetEpochUnbondingRecordRequest' as const,
+  encode(
+    message: QueryGetEpochUnbondingRecordRequest,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.epochNumber !== BigInt(0)) {
       writer.uint32(8).uint64(message.epochNumber);
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): QueryGetEpochUnbondingRecordRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryGetEpochUnbondingRecordRequest {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryGetEpochUnbondingRecordRequest();
     while (reader.pos < end) {
@@ -1168,54 +1521,81 @@ export const QueryGetEpochUnbondingRecordRequest = {
   },
   fromJSON(object: any): QueryGetEpochUnbondingRecordRequest {
     return {
-      epochNumber: isSet(object.epochNumber) ? BigInt(object.epochNumber.toString()) : BigInt(0)
+      epochNumber: isSet(object.epochNumber)
+        ? BigInt(object.epochNumber.toString())
+        : BigInt(0),
     };
   },
-  toJSON(message: QueryGetEpochUnbondingRecordRequest): JsonSafe<QueryGetEpochUnbondingRecordRequest> {
+  toJSON(
+    message: QueryGetEpochUnbondingRecordRequest,
+  ): JsonSafe<QueryGetEpochUnbondingRecordRequest> {
     const obj: any = {};
-    message.epochNumber !== undefined && (obj.epochNumber = (message.epochNumber || BigInt(0)).toString());
+    message.epochNumber !== undefined &&
+      (obj.epochNumber = (message.epochNumber || BigInt(0)).toString());
     return obj;
   },
-  fromPartial(object: Partial<QueryGetEpochUnbondingRecordRequest>): QueryGetEpochUnbondingRecordRequest {
+  fromPartial(
+    object: Partial<QueryGetEpochUnbondingRecordRequest>,
+  ): QueryGetEpochUnbondingRecordRequest {
     const message = createBaseQueryGetEpochUnbondingRecordRequest();
-    message.epochNumber = object.epochNumber !== undefined && object.epochNumber !== null ? BigInt(object.epochNumber.toString()) : BigInt(0);
+    message.epochNumber =
+      object.epochNumber !== undefined && object.epochNumber !== null
+        ? BigInt(object.epochNumber.toString())
+        : BigInt(0);
     return message;
   },
-  fromProtoMsg(message: QueryGetEpochUnbondingRecordRequestProtoMsg): QueryGetEpochUnbondingRecordRequest {
+  fromProtoMsg(
+    message: QueryGetEpochUnbondingRecordRequestProtoMsg,
+  ): QueryGetEpochUnbondingRecordRequest {
     return QueryGetEpochUnbondingRecordRequest.decode(message.value);
   },
   toProto(message: QueryGetEpochUnbondingRecordRequest): Uint8Array {
     return QueryGetEpochUnbondingRecordRequest.encode(message).finish();
   },
-  toProtoMsg(message: QueryGetEpochUnbondingRecordRequest): QueryGetEpochUnbondingRecordRequestProtoMsg {
+  toProtoMsg(
+    message: QueryGetEpochUnbondingRecordRequest,
+  ): QueryGetEpochUnbondingRecordRequestProtoMsg {
     return {
-      typeUrl: "/stride.records.QueryGetEpochUnbondingRecordRequest",
-      value: QueryGetEpochUnbondingRecordRequest.encode(message).finish()
+      typeUrl: '/stride.records.QueryGetEpochUnbondingRecordRequest',
+      value: QueryGetEpochUnbondingRecordRequest.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseQueryGetEpochUnbondingRecordResponse(): QueryGetEpochUnbondingRecordResponse {
   return {
-    epochUnbondingRecord: EpochUnbondingRecord.fromPartial({})
+    epochUnbondingRecord: EpochUnbondingRecord.fromPartial({}),
   };
 }
 export const QueryGetEpochUnbondingRecordResponse = {
-  typeUrl: "/stride.records.QueryGetEpochUnbondingRecordResponse" as const,
-  encode(message: QueryGetEpochUnbondingRecordResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/stride.records.QueryGetEpochUnbondingRecordResponse' as const,
+  encode(
+    message: QueryGetEpochUnbondingRecordResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.epochUnbondingRecord !== undefined) {
-      EpochUnbondingRecord.encode(message.epochUnbondingRecord, writer.uint32(10).fork()).ldelim();
+      EpochUnbondingRecord.encode(
+        message.epochUnbondingRecord,
+        writer.uint32(10).fork(),
+      ).ldelim();
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): QueryGetEpochUnbondingRecordResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryGetEpochUnbondingRecordResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryGetEpochUnbondingRecordResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.epochUnbondingRecord = EpochUnbondingRecord.decode(reader, reader.uint32());
+          message.epochUnbondingRecord = EpochUnbondingRecord.decode(
+            reader,
+            reader.uint32(),
+          );
           break;
         default:
           reader.skipType(tag & 7);
@@ -1226,47 +1606,71 @@ export const QueryGetEpochUnbondingRecordResponse = {
   },
   fromJSON(object: any): QueryGetEpochUnbondingRecordResponse {
     return {
-      epochUnbondingRecord: isSet(object.epochUnbondingRecord) ? EpochUnbondingRecord.fromJSON(object.epochUnbondingRecord) : undefined
+      epochUnbondingRecord: isSet(object.epochUnbondingRecord)
+        ? EpochUnbondingRecord.fromJSON(object.epochUnbondingRecord)
+        : undefined,
     };
   },
-  toJSON(message: QueryGetEpochUnbondingRecordResponse): JsonSafe<QueryGetEpochUnbondingRecordResponse> {
+  toJSON(
+    message: QueryGetEpochUnbondingRecordResponse,
+  ): JsonSafe<QueryGetEpochUnbondingRecordResponse> {
     const obj: any = {};
-    message.epochUnbondingRecord !== undefined && (obj.epochUnbondingRecord = message.epochUnbondingRecord ? EpochUnbondingRecord.toJSON(message.epochUnbondingRecord) : undefined);
+    message.epochUnbondingRecord !== undefined &&
+      (obj.epochUnbondingRecord = message.epochUnbondingRecord
+        ? EpochUnbondingRecord.toJSON(message.epochUnbondingRecord)
+        : undefined);
     return obj;
   },
-  fromPartial(object: Partial<QueryGetEpochUnbondingRecordResponse>): QueryGetEpochUnbondingRecordResponse {
+  fromPartial(
+    object: Partial<QueryGetEpochUnbondingRecordResponse>,
+  ): QueryGetEpochUnbondingRecordResponse {
     const message = createBaseQueryGetEpochUnbondingRecordResponse();
-    message.epochUnbondingRecord = object.epochUnbondingRecord !== undefined && object.epochUnbondingRecord !== null ? EpochUnbondingRecord.fromPartial(object.epochUnbondingRecord) : undefined;
+    message.epochUnbondingRecord =
+      object.epochUnbondingRecord !== undefined &&
+      object.epochUnbondingRecord !== null
+        ? EpochUnbondingRecord.fromPartial(object.epochUnbondingRecord)
+        : undefined;
     return message;
   },
-  fromProtoMsg(message: QueryGetEpochUnbondingRecordResponseProtoMsg): QueryGetEpochUnbondingRecordResponse {
+  fromProtoMsg(
+    message: QueryGetEpochUnbondingRecordResponseProtoMsg,
+  ): QueryGetEpochUnbondingRecordResponse {
     return QueryGetEpochUnbondingRecordResponse.decode(message.value);
   },
   toProto(message: QueryGetEpochUnbondingRecordResponse): Uint8Array {
     return QueryGetEpochUnbondingRecordResponse.encode(message).finish();
   },
-  toProtoMsg(message: QueryGetEpochUnbondingRecordResponse): QueryGetEpochUnbondingRecordResponseProtoMsg {
+  toProtoMsg(
+    message: QueryGetEpochUnbondingRecordResponse,
+  ): QueryGetEpochUnbondingRecordResponseProtoMsg {
     return {
-      typeUrl: "/stride.records.QueryGetEpochUnbondingRecordResponse",
-      value: QueryGetEpochUnbondingRecordResponse.encode(message).finish()
+      typeUrl: '/stride.records.QueryGetEpochUnbondingRecordResponse',
+      value: QueryGetEpochUnbondingRecordResponse.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseQueryAllEpochUnbondingRecordRequest(): QueryAllEpochUnbondingRecordRequest {
   return {
-    pagination: undefined
+    pagination: undefined,
   };
 }
 export const QueryAllEpochUnbondingRecordRequest = {
-  typeUrl: "/stride.records.QueryAllEpochUnbondingRecordRequest" as const,
-  encode(message: QueryAllEpochUnbondingRecordRequest, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/stride.records.QueryAllEpochUnbondingRecordRequest' as const,
+  encode(
+    message: QueryAllEpochUnbondingRecordRequest,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.pagination !== undefined) {
       PageRequest.encode(message.pagination, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): QueryAllEpochUnbondingRecordRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryAllEpochUnbondingRecordRequest {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryAllEpochUnbondingRecordRequest();
     while (reader.pos < end) {
@@ -1284,58 +1688,86 @@ export const QueryAllEpochUnbondingRecordRequest = {
   },
   fromJSON(object: any): QueryAllEpochUnbondingRecordRequest {
     return {
-      pagination: isSet(object.pagination) ? PageRequest.fromJSON(object.pagination) : undefined
+      pagination: isSet(object.pagination)
+        ? PageRequest.fromJSON(object.pagination)
+        : undefined,
     };
   },
-  toJSON(message: QueryAllEpochUnbondingRecordRequest): JsonSafe<QueryAllEpochUnbondingRecordRequest> {
+  toJSON(
+    message: QueryAllEpochUnbondingRecordRequest,
+  ): JsonSafe<QueryAllEpochUnbondingRecordRequest> {
     const obj: any = {};
-    message.pagination !== undefined && (obj.pagination = message.pagination ? PageRequest.toJSON(message.pagination) : undefined);
+    message.pagination !== undefined &&
+      (obj.pagination = message.pagination
+        ? PageRequest.toJSON(message.pagination)
+        : undefined);
     return obj;
   },
-  fromPartial(object: Partial<QueryAllEpochUnbondingRecordRequest>): QueryAllEpochUnbondingRecordRequest {
+  fromPartial(
+    object: Partial<QueryAllEpochUnbondingRecordRequest>,
+  ): QueryAllEpochUnbondingRecordRequest {
     const message = createBaseQueryAllEpochUnbondingRecordRequest();
-    message.pagination = object.pagination !== undefined && object.pagination !== null ? PageRequest.fromPartial(object.pagination) : undefined;
+    message.pagination =
+      object.pagination !== undefined && object.pagination !== null
+        ? PageRequest.fromPartial(object.pagination)
+        : undefined;
     return message;
   },
-  fromProtoMsg(message: QueryAllEpochUnbondingRecordRequestProtoMsg): QueryAllEpochUnbondingRecordRequest {
+  fromProtoMsg(
+    message: QueryAllEpochUnbondingRecordRequestProtoMsg,
+  ): QueryAllEpochUnbondingRecordRequest {
     return QueryAllEpochUnbondingRecordRequest.decode(message.value);
   },
   toProto(message: QueryAllEpochUnbondingRecordRequest): Uint8Array {
     return QueryAllEpochUnbondingRecordRequest.encode(message).finish();
   },
-  toProtoMsg(message: QueryAllEpochUnbondingRecordRequest): QueryAllEpochUnbondingRecordRequestProtoMsg {
+  toProtoMsg(
+    message: QueryAllEpochUnbondingRecordRequest,
+  ): QueryAllEpochUnbondingRecordRequestProtoMsg {
     return {
-      typeUrl: "/stride.records.QueryAllEpochUnbondingRecordRequest",
-      value: QueryAllEpochUnbondingRecordRequest.encode(message).finish()
+      typeUrl: '/stride.records.QueryAllEpochUnbondingRecordRequest',
+      value: QueryAllEpochUnbondingRecordRequest.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseQueryAllEpochUnbondingRecordResponse(): QueryAllEpochUnbondingRecordResponse {
   return {
     epochUnbondingRecord: [],
-    pagination: undefined
+    pagination: undefined,
   };
 }
 export const QueryAllEpochUnbondingRecordResponse = {
-  typeUrl: "/stride.records.QueryAllEpochUnbondingRecordResponse" as const,
-  encode(message: QueryAllEpochUnbondingRecordResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/stride.records.QueryAllEpochUnbondingRecordResponse' as const,
+  encode(
+    message: QueryAllEpochUnbondingRecordResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     for (const v of message.epochUnbondingRecord) {
       EpochUnbondingRecord.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     if (message.pagination !== undefined) {
-      PageResponse.encode(message.pagination, writer.uint32(18).fork()).ldelim();
+      PageResponse.encode(
+        message.pagination,
+        writer.uint32(18).fork(),
+      ).ldelim();
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): QueryAllEpochUnbondingRecordResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryAllEpochUnbondingRecordResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryAllEpochUnbondingRecordResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.epochUnbondingRecord.push(EpochUnbondingRecord.decode(reader, reader.uint32()));
+          message.epochUnbondingRecord.push(
+            EpochUnbondingRecord.decode(reader, reader.uint32()),
+          );
           break;
         case 2:
           message.pagination = PageResponse.decode(reader, reader.uint32());
@@ -1349,58 +1781,90 @@ export const QueryAllEpochUnbondingRecordResponse = {
   },
   fromJSON(object: any): QueryAllEpochUnbondingRecordResponse {
     return {
-      epochUnbondingRecord: Array.isArray(object?.epochUnbondingRecord) ? object.epochUnbondingRecord.map((e: any) => EpochUnbondingRecord.fromJSON(e)) : [],
-      pagination: isSet(object.pagination) ? PageResponse.fromJSON(object.pagination) : undefined
+      epochUnbondingRecord: Array.isArray(object?.epochUnbondingRecord)
+        ? object.epochUnbondingRecord.map((e: any) =>
+            EpochUnbondingRecord.fromJSON(e),
+          )
+        : [],
+      pagination: isSet(object.pagination)
+        ? PageResponse.fromJSON(object.pagination)
+        : undefined,
     };
   },
-  toJSON(message: QueryAllEpochUnbondingRecordResponse): JsonSafe<QueryAllEpochUnbondingRecordResponse> {
+  toJSON(
+    message: QueryAllEpochUnbondingRecordResponse,
+  ): JsonSafe<QueryAllEpochUnbondingRecordResponse> {
     const obj: any = {};
     if (message.epochUnbondingRecord) {
-      obj.epochUnbondingRecord = message.epochUnbondingRecord.map(e => e ? EpochUnbondingRecord.toJSON(e) : undefined);
+      obj.epochUnbondingRecord = message.epochUnbondingRecord.map(e =>
+        e ? EpochUnbondingRecord.toJSON(e) : undefined,
+      );
     } else {
       obj.epochUnbondingRecord = [];
     }
-    message.pagination !== undefined && (obj.pagination = message.pagination ? PageResponse.toJSON(message.pagination) : undefined);
+    message.pagination !== undefined &&
+      (obj.pagination = message.pagination
+        ? PageResponse.toJSON(message.pagination)
+        : undefined);
     return obj;
   },
-  fromPartial(object: Partial<QueryAllEpochUnbondingRecordResponse>): QueryAllEpochUnbondingRecordResponse {
+  fromPartial(
+    object: Partial<QueryAllEpochUnbondingRecordResponse>,
+  ): QueryAllEpochUnbondingRecordResponse {
     const message = createBaseQueryAllEpochUnbondingRecordResponse();
-    message.epochUnbondingRecord = object.epochUnbondingRecord?.map(e => EpochUnbondingRecord.fromPartial(e)) || [];
-    message.pagination = object.pagination !== undefined && object.pagination !== null ? PageResponse.fromPartial(object.pagination) : undefined;
+    message.epochUnbondingRecord =
+      object.epochUnbondingRecord?.map(e =>
+        EpochUnbondingRecord.fromPartial(e),
+      ) || [];
+    message.pagination =
+      object.pagination !== undefined && object.pagination !== null
+        ? PageResponse.fromPartial(object.pagination)
+        : undefined;
     return message;
   },
-  fromProtoMsg(message: QueryAllEpochUnbondingRecordResponseProtoMsg): QueryAllEpochUnbondingRecordResponse {
+  fromProtoMsg(
+    message: QueryAllEpochUnbondingRecordResponseProtoMsg,
+  ): QueryAllEpochUnbondingRecordResponse {
     return QueryAllEpochUnbondingRecordResponse.decode(message.value);
   },
   toProto(message: QueryAllEpochUnbondingRecordResponse): Uint8Array {
     return QueryAllEpochUnbondingRecordResponse.encode(message).finish();
   },
-  toProtoMsg(message: QueryAllEpochUnbondingRecordResponse): QueryAllEpochUnbondingRecordResponseProtoMsg {
+  toProtoMsg(
+    message: QueryAllEpochUnbondingRecordResponse,
+  ): QueryAllEpochUnbondingRecordResponseProtoMsg {
     return {
-      typeUrl: "/stride.records.QueryAllEpochUnbondingRecordResponse",
-      value: QueryAllEpochUnbondingRecordResponse.encode(message).finish()
+      typeUrl: '/stride.records.QueryAllEpochUnbondingRecordResponse',
+      value: QueryAllEpochUnbondingRecordResponse.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseQueryLSMDepositRequest(): QueryLSMDepositRequest {
   return {
-    chainId: "",
-    denom: ""
+    chainId: '',
+    denom: '',
   };
 }
 export const QueryLSMDepositRequest = {
-  typeUrl: "/stride.records.QueryLSMDepositRequest" as const,
-  encode(message: QueryLSMDepositRequest, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.chainId !== "") {
+  typeUrl: '/stride.records.QueryLSMDepositRequest' as const,
+  encode(
+    message: QueryLSMDepositRequest,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.chainId !== '') {
       writer.uint32(10).string(message.chainId);
     }
-    if (message.denom !== "") {
+    if (message.denom !== '') {
       writer.uint32(18).string(message.denom);
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): QueryLSMDepositRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryLSMDepositRequest {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryLSMDepositRequest();
     while (reader.pos < end) {
@@ -1421,8 +1885,8 @@ export const QueryLSMDepositRequest = {
   },
   fromJSON(object: any): QueryLSMDepositRequest {
     return {
-      chainId: isSet(object.chainId) ? String(object.chainId) : "",
-      denom: isSet(object.denom) ? String(object.denom) : ""
+      chainId: isSet(object.chainId) ? String(object.chainId) : '',
+      denom: isSet(object.denom) ? String(object.denom) : '',
     };
   },
   toJSON(message: QueryLSMDepositRequest): JsonSafe<QueryLSMDepositRequest> {
@@ -1433,11 +1897,13 @@ export const QueryLSMDepositRequest = {
   },
   fromPartial(object: Partial<QueryLSMDepositRequest>): QueryLSMDepositRequest {
     const message = createBaseQueryLSMDepositRequest();
-    message.chainId = object.chainId ?? "";
-    message.denom = object.denom ?? "";
+    message.chainId = object.chainId ?? '';
+    message.denom = object.denom ?? '';
     return message;
   },
-  fromProtoMsg(message: QueryLSMDepositRequestProtoMsg): QueryLSMDepositRequest {
+  fromProtoMsg(
+    message: QueryLSMDepositRequestProtoMsg,
+  ): QueryLSMDepositRequest {
     return QueryLSMDepositRequest.decode(message.value);
   },
   toProto(message: QueryLSMDepositRequest): Uint8Array {
@@ -1445,26 +1911,36 @@ export const QueryLSMDepositRequest = {
   },
   toProtoMsg(message: QueryLSMDepositRequest): QueryLSMDepositRequestProtoMsg {
     return {
-      typeUrl: "/stride.records.QueryLSMDepositRequest",
-      value: QueryLSMDepositRequest.encode(message).finish()
+      typeUrl: '/stride.records.QueryLSMDepositRequest',
+      value: QueryLSMDepositRequest.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseQueryLSMDepositResponse(): QueryLSMDepositResponse {
   return {
-    deposit: LSMTokenDeposit.fromPartial({})
+    deposit: LSMTokenDeposit.fromPartial({}),
   };
 }
 export const QueryLSMDepositResponse = {
-  typeUrl: "/stride.records.QueryLSMDepositResponse" as const,
-  encode(message: QueryLSMDepositResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/stride.records.QueryLSMDepositResponse' as const,
+  encode(
+    message: QueryLSMDepositResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.deposit !== undefined) {
-      LSMTokenDeposit.encode(message.deposit, writer.uint32(10).fork()).ldelim();
+      LSMTokenDeposit.encode(
+        message.deposit,
+        writer.uint32(10).fork(),
+      ).ldelim();
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): QueryLSMDepositResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryLSMDepositResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryLSMDepositResponse();
     while (reader.pos < end) {
@@ -1482,55 +1958,76 @@ export const QueryLSMDepositResponse = {
   },
   fromJSON(object: any): QueryLSMDepositResponse {
     return {
-      deposit: isSet(object.deposit) ? LSMTokenDeposit.fromJSON(object.deposit) : undefined
+      deposit: isSet(object.deposit)
+        ? LSMTokenDeposit.fromJSON(object.deposit)
+        : undefined,
     };
   },
   toJSON(message: QueryLSMDepositResponse): JsonSafe<QueryLSMDepositResponse> {
     const obj: any = {};
-    message.deposit !== undefined && (obj.deposit = message.deposit ? LSMTokenDeposit.toJSON(message.deposit) : undefined);
+    message.deposit !== undefined &&
+      (obj.deposit = message.deposit
+        ? LSMTokenDeposit.toJSON(message.deposit)
+        : undefined);
     return obj;
   },
-  fromPartial(object: Partial<QueryLSMDepositResponse>): QueryLSMDepositResponse {
+  fromPartial(
+    object: Partial<QueryLSMDepositResponse>,
+  ): QueryLSMDepositResponse {
     const message = createBaseQueryLSMDepositResponse();
-    message.deposit = object.deposit !== undefined && object.deposit !== null ? LSMTokenDeposit.fromPartial(object.deposit) : undefined;
+    message.deposit =
+      object.deposit !== undefined && object.deposit !== null
+        ? LSMTokenDeposit.fromPartial(object.deposit)
+        : undefined;
     return message;
   },
-  fromProtoMsg(message: QueryLSMDepositResponseProtoMsg): QueryLSMDepositResponse {
+  fromProtoMsg(
+    message: QueryLSMDepositResponseProtoMsg,
+  ): QueryLSMDepositResponse {
     return QueryLSMDepositResponse.decode(message.value);
   },
   toProto(message: QueryLSMDepositResponse): Uint8Array {
     return QueryLSMDepositResponse.encode(message).finish();
   },
-  toProtoMsg(message: QueryLSMDepositResponse): QueryLSMDepositResponseProtoMsg {
+  toProtoMsg(
+    message: QueryLSMDepositResponse,
+  ): QueryLSMDepositResponseProtoMsg {
     return {
-      typeUrl: "/stride.records.QueryLSMDepositResponse",
-      value: QueryLSMDepositResponse.encode(message).finish()
+      typeUrl: '/stride.records.QueryLSMDepositResponse',
+      value: QueryLSMDepositResponse.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseQueryLSMDepositsRequest(): QueryLSMDepositsRequest {
   return {
-    chainId: "",
-    validatorAddress: "",
-    status: ""
+    chainId: '',
+    validatorAddress: '',
+    status: '',
   };
 }
 export const QueryLSMDepositsRequest = {
-  typeUrl: "/stride.records.QueryLSMDepositsRequest" as const,
-  encode(message: QueryLSMDepositsRequest, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.chainId !== "") {
+  typeUrl: '/stride.records.QueryLSMDepositsRequest' as const,
+  encode(
+    message: QueryLSMDepositsRequest,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.chainId !== '') {
       writer.uint32(10).string(message.chainId);
     }
-    if (message.validatorAddress !== "") {
+    if (message.validatorAddress !== '') {
       writer.uint32(18).string(message.validatorAddress);
     }
-    if (message.status !== "") {
+    if (message.status !== '') {
       writer.uint32(26).string(message.status);
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): QueryLSMDepositsRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryLSMDepositsRequest {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryLSMDepositsRequest();
     while (reader.pos < end) {
@@ -1554,60 +2051,78 @@ export const QueryLSMDepositsRequest = {
   },
   fromJSON(object: any): QueryLSMDepositsRequest {
     return {
-      chainId: isSet(object.chainId) ? String(object.chainId) : "",
-      validatorAddress: isSet(object.validatorAddress) ? String(object.validatorAddress) : "",
-      status: isSet(object.status) ? String(object.status) : ""
+      chainId: isSet(object.chainId) ? String(object.chainId) : '',
+      validatorAddress: isSet(object.validatorAddress)
+        ? String(object.validatorAddress)
+        : '',
+      status: isSet(object.status) ? String(object.status) : '',
     };
   },
   toJSON(message: QueryLSMDepositsRequest): JsonSafe<QueryLSMDepositsRequest> {
     const obj: any = {};
     message.chainId !== undefined && (obj.chainId = message.chainId);
-    message.validatorAddress !== undefined && (obj.validatorAddress = message.validatorAddress);
+    message.validatorAddress !== undefined &&
+      (obj.validatorAddress = message.validatorAddress);
     message.status !== undefined && (obj.status = message.status);
     return obj;
   },
-  fromPartial(object: Partial<QueryLSMDepositsRequest>): QueryLSMDepositsRequest {
+  fromPartial(
+    object: Partial<QueryLSMDepositsRequest>,
+  ): QueryLSMDepositsRequest {
     const message = createBaseQueryLSMDepositsRequest();
-    message.chainId = object.chainId ?? "";
-    message.validatorAddress = object.validatorAddress ?? "";
-    message.status = object.status ?? "";
+    message.chainId = object.chainId ?? '';
+    message.validatorAddress = object.validatorAddress ?? '';
+    message.status = object.status ?? '';
     return message;
   },
-  fromProtoMsg(message: QueryLSMDepositsRequestProtoMsg): QueryLSMDepositsRequest {
+  fromProtoMsg(
+    message: QueryLSMDepositsRequestProtoMsg,
+  ): QueryLSMDepositsRequest {
     return QueryLSMDepositsRequest.decode(message.value);
   },
   toProto(message: QueryLSMDepositsRequest): Uint8Array {
     return QueryLSMDepositsRequest.encode(message).finish();
   },
-  toProtoMsg(message: QueryLSMDepositsRequest): QueryLSMDepositsRequestProtoMsg {
+  toProtoMsg(
+    message: QueryLSMDepositsRequest,
+  ): QueryLSMDepositsRequestProtoMsg {
     return {
-      typeUrl: "/stride.records.QueryLSMDepositsRequest",
-      value: QueryLSMDepositsRequest.encode(message).finish()
+      typeUrl: '/stride.records.QueryLSMDepositsRequest',
+      value: QueryLSMDepositsRequest.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseQueryLSMDepositsResponse(): QueryLSMDepositsResponse {
   return {
-    deposits: []
+    deposits: [],
   };
 }
 export const QueryLSMDepositsResponse = {
-  typeUrl: "/stride.records.QueryLSMDepositsResponse" as const,
-  encode(message: QueryLSMDepositsResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/stride.records.QueryLSMDepositsResponse' as const,
+  encode(
+    message: QueryLSMDepositsResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     for (const v of message.deposits) {
       LSMTokenDeposit.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): QueryLSMDepositsResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryLSMDepositsResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryLSMDepositsResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.deposits.push(LSMTokenDeposit.decode(reader, reader.uint32()));
+          message.deposits.push(
+            LSMTokenDeposit.decode(reader, reader.uint32()),
+          );
           break;
         default:
           reader.skipType(tag & 7);
@@ -1618,33 +2133,46 @@ export const QueryLSMDepositsResponse = {
   },
   fromJSON(object: any): QueryLSMDepositsResponse {
     return {
-      deposits: Array.isArray(object?.deposits) ? object.deposits.map((e: any) => LSMTokenDeposit.fromJSON(e)) : []
+      deposits: Array.isArray(object?.deposits)
+        ? object.deposits.map((e: any) => LSMTokenDeposit.fromJSON(e))
+        : [],
     };
   },
-  toJSON(message: QueryLSMDepositsResponse): JsonSafe<QueryLSMDepositsResponse> {
+  toJSON(
+    message: QueryLSMDepositsResponse,
+  ): JsonSafe<QueryLSMDepositsResponse> {
     const obj: any = {};
     if (message.deposits) {
-      obj.deposits = message.deposits.map(e => e ? LSMTokenDeposit.toJSON(e) : undefined);
+      obj.deposits = message.deposits.map(e =>
+        e ? LSMTokenDeposit.toJSON(e) : undefined,
+      );
     } else {
       obj.deposits = [];
     }
     return obj;
   },
-  fromPartial(object: Partial<QueryLSMDepositsResponse>): QueryLSMDepositsResponse {
+  fromPartial(
+    object: Partial<QueryLSMDepositsResponse>,
+  ): QueryLSMDepositsResponse {
     const message = createBaseQueryLSMDepositsResponse();
-    message.deposits = object.deposits?.map(e => LSMTokenDeposit.fromPartial(e)) || [];
+    message.deposits =
+      object.deposits?.map(e => LSMTokenDeposit.fromPartial(e)) || [];
     return message;
   },
-  fromProtoMsg(message: QueryLSMDepositsResponseProtoMsg): QueryLSMDepositsResponse {
+  fromProtoMsg(
+    message: QueryLSMDepositsResponseProtoMsg,
+  ): QueryLSMDepositsResponse {
     return QueryLSMDepositsResponse.decode(message.value);
   },
   toProto(message: QueryLSMDepositsResponse): Uint8Array {
     return QueryLSMDepositsResponse.encode(message).finish();
   },
-  toProtoMsg(message: QueryLSMDepositsResponse): QueryLSMDepositsResponseProtoMsg {
+  toProtoMsg(
+    message: QueryLSMDepositsResponse,
+  ): QueryLSMDepositsResponseProtoMsg {
     return {
-      typeUrl: "/stride.records.QueryLSMDepositsResponse",
-      value: QueryLSMDepositsResponse.encode(message).finish()
+      typeUrl: '/stride.records.QueryLSMDepositsResponse',
+      value: QueryLSMDepositsResponse.encode(message).finish(),
     };
-  }
+  },
 };

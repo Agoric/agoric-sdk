@@ -1,11 +1,11 @@
 //@ts-nocheck
-import { Grant, type GrantSDKType } from "./authz.js";
-import { Any, type AnySDKType } from "../../../google/protobuf/any.js";
-import { BinaryReader, BinaryWriter } from "../../../binary.js";
-import { isSet } from "../../../helpers.js";
-import {type JsonSafe } from "../../../json-safe.js";
-import { decodeBase64 as bytesFromBase64 } from "@endo/base64";
-import { encodeBase64 as base64FromBytes } from "@endo/base64";
+import { Grant, type GrantSDKType } from './authz.js';
+import { Any, type AnySDKType } from '../../../google/protobuf/any.js';
+import { BinaryReader, BinaryWriter } from '../../../binary.js';
+import { isSet } from '../../../helpers.js';
+import { type JsonSafe } from '../../../json-safe.js';
+import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
+import { encodeBase64 as base64FromBytes } from '@endo/base64';
 /**
  * MsgGrant is a request type for Grant method. It declares authorization to the grantee
  * on behalf of the granter with the provided expiration time.
@@ -16,7 +16,7 @@ export interface MsgGrant {
   grant: Grant;
 }
 export interface MsgGrantProtoMsg {
-  typeUrl: "/cosmos.authz.v1beta1.MsgGrant";
+  typeUrl: '/cosmos.authz.v1beta1.MsgGrant';
   value: Uint8Array;
 }
 /**
@@ -31,7 +31,7 @@ export interface MsgGrantSDKType {
 /** MsgGrantResponse defines the Msg/MsgGrant response type. */
 export interface MsgGrantResponse {}
 export interface MsgGrantResponseProtoMsg {
-  typeUrl: "/cosmos.authz.v1beta1.MsgGrantResponse";
+  typeUrl: '/cosmos.authz.v1beta1.MsgGrantResponse';
   value: Uint8Array;
 }
 /** MsgGrantResponse defines the Msg/MsgGrant response type. */
@@ -48,10 +48,10 @@ export interface MsgExec {
    * The x/authz will try to find a grant matching (msg.signers[0], grantee, MsgTypeURL(msg))
    * triple and validate it.
    */
-  msgs: (Any)[] | Any[];
+  msgs: Any[] | Any[];
 }
 export interface MsgExecProtoMsg {
-  typeUrl: "/cosmos.authz.v1beta1.MsgExec";
+  typeUrl: '/cosmos.authz.v1beta1.MsgExec';
   value: Uint8Array;
 }
 /**
@@ -61,14 +61,14 @@ export interface MsgExecProtoMsg {
  */
 export interface MsgExecSDKType {
   grantee: string;
-  msgs: (AnySDKType)[];
+  msgs: AnySDKType[];
 }
 /** MsgExecResponse defines the Msg/MsgExecResponse response type. */
 export interface MsgExecResponse {
   results: Uint8Array[];
 }
 export interface MsgExecResponseProtoMsg {
-  typeUrl: "/cosmos.authz.v1beta1.MsgExecResponse";
+  typeUrl: '/cosmos.authz.v1beta1.MsgExecResponse';
   value: Uint8Array;
 }
 /** MsgExecResponse defines the Msg/MsgExecResponse response type. */
@@ -85,7 +85,7 @@ export interface MsgRevoke {
   msgTypeUrl: string;
 }
 export interface MsgRevokeProtoMsg {
-  typeUrl: "/cosmos.authz.v1beta1.MsgRevoke";
+  typeUrl: '/cosmos.authz.v1beta1.MsgRevoke';
   value: Uint8Array;
 }
 /**
@@ -100,25 +100,28 @@ export interface MsgRevokeSDKType {
 /** MsgRevokeResponse defines the Msg/MsgRevokeResponse response type. */
 export interface MsgRevokeResponse {}
 export interface MsgRevokeResponseProtoMsg {
-  typeUrl: "/cosmos.authz.v1beta1.MsgRevokeResponse";
+  typeUrl: '/cosmos.authz.v1beta1.MsgRevokeResponse';
   value: Uint8Array;
 }
 /** MsgRevokeResponse defines the Msg/MsgRevokeResponse response type. */
 export interface MsgRevokeResponseSDKType {}
 function createBaseMsgGrant(): MsgGrant {
   return {
-    granter: "",
-    grantee: "",
-    grant: Grant.fromPartial({})
+    granter: '',
+    grantee: '',
+    grant: Grant.fromPartial({}),
   };
 }
 export const MsgGrant = {
-  typeUrl: "/cosmos.authz.v1beta1.MsgGrant" as const,
-  encode(message: MsgGrant, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.granter !== "") {
+  typeUrl: '/cosmos.authz.v1beta1.MsgGrant' as const,
+  encode(
+    message: MsgGrant,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.granter !== '') {
       writer.uint32(10).string(message.granter);
     }
-    if (message.grantee !== "") {
+    if (message.grantee !== '') {
       writer.uint32(18).string(message.grantee);
     }
     if (message.grant !== undefined) {
@@ -127,7 +130,8 @@ export const MsgGrant = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): MsgGrant {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgGrant();
     while (reader.pos < end) {
@@ -151,23 +155,27 @@ export const MsgGrant = {
   },
   fromJSON(object: any): MsgGrant {
     return {
-      granter: isSet(object.granter) ? String(object.granter) : "",
-      grantee: isSet(object.grantee) ? String(object.grantee) : "",
-      grant: isSet(object.grant) ? Grant.fromJSON(object.grant) : undefined
+      granter: isSet(object.granter) ? String(object.granter) : '',
+      grantee: isSet(object.grantee) ? String(object.grantee) : '',
+      grant: isSet(object.grant) ? Grant.fromJSON(object.grant) : undefined,
     };
   },
   toJSON(message: MsgGrant): JsonSafe<MsgGrant> {
     const obj: any = {};
     message.granter !== undefined && (obj.granter = message.granter);
     message.grantee !== undefined && (obj.grantee = message.grantee);
-    message.grant !== undefined && (obj.grant = message.grant ? Grant.toJSON(message.grant) : undefined);
+    message.grant !== undefined &&
+      (obj.grant = message.grant ? Grant.toJSON(message.grant) : undefined);
     return obj;
   },
   fromPartial(object: Partial<MsgGrant>): MsgGrant {
     const message = createBaseMsgGrant();
-    message.granter = object.granter ?? "";
-    message.grantee = object.grantee ?? "";
-    message.grant = object.grant !== undefined && object.grant !== null ? Grant.fromPartial(object.grant) : undefined;
+    message.granter = object.granter ?? '';
+    message.grantee = object.grantee ?? '';
+    message.grant =
+      object.grant !== undefined && object.grant !== null
+        ? Grant.fromPartial(object.grant)
+        : undefined;
     return message;
   },
   fromProtoMsg(message: MsgGrantProtoMsg): MsgGrant {
@@ -178,21 +186,25 @@ export const MsgGrant = {
   },
   toProtoMsg(message: MsgGrant): MsgGrantProtoMsg {
     return {
-      typeUrl: "/cosmos.authz.v1beta1.MsgGrant",
-      value: MsgGrant.encode(message).finish()
+      typeUrl: '/cosmos.authz.v1beta1.MsgGrant',
+      value: MsgGrant.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseMsgGrantResponse(): MsgGrantResponse {
   return {};
 }
 export const MsgGrantResponse = {
-  typeUrl: "/cosmos.authz.v1beta1.MsgGrantResponse" as const,
-  encode(_: MsgGrantResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/cosmos.authz.v1beta1.MsgGrantResponse' as const,
+  encode(
+    _: MsgGrantResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): MsgGrantResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgGrantResponse();
     while (reader.pos < end) {
@@ -224,21 +236,24 @@ export const MsgGrantResponse = {
   },
   toProtoMsg(message: MsgGrantResponse): MsgGrantResponseProtoMsg {
     return {
-      typeUrl: "/cosmos.authz.v1beta1.MsgGrantResponse",
-      value: MsgGrantResponse.encode(message).finish()
+      typeUrl: '/cosmos.authz.v1beta1.MsgGrantResponse',
+      value: MsgGrantResponse.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseMsgExec(): MsgExec {
   return {
-    grantee: "",
-    msgs: []
+    grantee: '',
+    msgs: [],
   };
 }
 export const MsgExec = {
-  typeUrl: "/cosmos.authz.v1beta1.MsgExec" as const,
-  encode(message: MsgExec, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.grantee !== "") {
+  typeUrl: '/cosmos.authz.v1beta1.MsgExec' as const,
+  encode(
+    message: MsgExec,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.grantee !== '') {
       writer.uint32(10).string(message.grantee);
     }
     for (const v of message.msgs) {
@@ -247,7 +262,8 @@ export const MsgExec = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): MsgExec {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgExec();
     while (reader.pos < end) {
@@ -268,15 +284,17 @@ export const MsgExec = {
   },
   fromJSON(object: any): MsgExec {
     return {
-      grantee: isSet(object.grantee) ? String(object.grantee) : "",
-      msgs: Array.isArray(object?.msgs) ? object.msgs.map((e: any) => Any.fromJSON(e)) : []
+      grantee: isSet(object.grantee) ? String(object.grantee) : '',
+      msgs: Array.isArray(object?.msgs)
+        ? object.msgs.map((e: any) => Any.fromJSON(e))
+        : [],
     };
   },
   toJSON(message: MsgExec): JsonSafe<MsgExec> {
     const obj: any = {};
     message.grantee !== undefined && (obj.grantee = message.grantee);
     if (message.msgs) {
-      obj.msgs = message.msgs.map(e => e ? Any.toJSON(e) : undefined);
+      obj.msgs = message.msgs.map(e => (e ? Any.toJSON(e) : undefined));
     } else {
       obj.msgs = [];
     }
@@ -284,7 +302,7 @@ export const MsgExec = {
   },
   fromPartial(object: Partial<MsgExec>): MsgExec {
     const message = createBaseMsgExec();
-    message.grantee = object.grantee ?? "";
+    message.grantee = object.grantee ?? '';
     message.msgs = object.msgs?.map(e => Any.fromPartial(e)) || [];
     return message;
   },
@@ -296,26 +314,30 @@ export const MsgExec = {
   },
   toProtoMsg(message: MsgExec): MsgExecProtoMsg {
     return {
-      typeUrl: "/cosmos.authz.v1beta1.MsgExec",
-      value: MsgExec.encode(message).finish()
+      typeUrl: '/cosmos.authz.v1beta1.MsgExec',
+      value: MsgExec.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseMsgExecResponse(): MsgExecResponse {
   return {
-    results: []
+    results: [],
   };
 }
 export const MsgExecResponse = {
-  typeUrl: "/cosmos.authz.v1beta1.MsgExecResponse" as const,
-  encode(message: MsgExecResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/cosmos.authz.v1beta1.MsgExecResponse' as const,
+  encode(
+    message: MsgExecResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     for (const v of message.results) {
       writer.uint32(10).bytes(v!);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): MsgExecResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgExecResponse();
     while (reader.pos < end) {
@@ -333,13 +355,17 @@ export const MsgExecResponse = {
   },
   fromJSON(object: any): MsgExecResponse {
     return {
-      results: Array.isArray(object?.results) ? object.results.map((e: any) => bytesFromBase64(e)) : []
+      results: Array.isArray(object?.results)
+        ? object.results.map((e: any) => bytesFromBase64(e))
+        : [],
     };
   },
   toJSON(message: MsgExecResponse): JsonSafe<MsgExecResponse> {
     const obj: any = {};
     if (message.results) {
-      obj.results = message.results.map(e => base64FromBytes(e !== undefined ? e : new Uint8Array()));
+      obj.results = message.results.map(e =>
+        base64FromBytes(e !== undefined ? e : new Uint8Array()),
+      );
     } else {
       obj.results = [];
     }
@@ -358,34 +384,38 @@ export const MsgExecResponse = {
   },
   toProtoMsg(message: MsgExecResponse): MsgExecResponseProtoMsg {
     return {
-      typeUrl: "/cosmos.authz.v1beta1.MsgExecResponse",
-      value: MsgExecResponse.encode(message).finish()
+      typeUrl: '/cosmos.authz.v1beta1.MsgExecResponse',
+      value: MsgExecResponse.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseMsgRevoke(): MsgRevoke {
   return {
-    granter: "",
-    grantee: "",
-    msgTypeUrl: ""
+    granter: '',
+    grantee: '',
+    msgTypeUrl: '',
   };
 }
 export const MsgRevoke = {
-  typeUrl: "/cosmos.authz.v1beta1.MsgRevoke" as const,
-  encode(message: MsgRevoke, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.granter !== "") {
+  typeUrl: '/cosmos.authz.v1beta1.MsgRevoke' as const,
+  encode(
+    message: MsgRevoke,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.granter !== '') {
       writer.uint32(10).string(message.granter);
     }
-    if (message.grantee !== "") {
+    if (message.grantee !== '') {
       writer.uint32(18).string(message.grantee);
     }
-    if (message.msgTypeUrl !== "") {
+    if (message.msgTypeUrl !== '') {
       writer.uint32(26).string(message.msgTypeUrl);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): MsgRevoke {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgRevoke();
     while (reader.pos < end) {
@@ -409,9 +439,9 @@ export const MsgRevoke = {
   },
   fromJSON(object: any): MsgRevoke {
     return {
-      granter: isSet(object.granter) ? String(object.granter) : "",
-      grantee: isSet(object.grantee) ? String(object.grantee) : "",
-      msgTypeUrl: isSet(object.msgTypeUrl) ? String(object.msgTypeUrl) : ""
+      granter: isSet(object.granter) ? String(object.granter) : '',
+      grantee: isSet(object.grantee) ? String(object.grantee) : '',
+      msgTypeUrl: isSet(object.msgTypeUrl) ? String(object.msgTypeUrl) : '',
     };
   },
   toJSON(message: MsgRevoke): JsonSafe<MsgRevoke> {
@@ -423,9 +453,9 @@ export const MsgRevoke = {
   },
   fromPartial(object: Partial<MsgRevoke>): MsgRevoke {
     const message = createBaseMsgRevoke();
-    message.granter = object.granter ?? "";
-    message.grantee = object.grantee ?? "";
-    message.msgTypeUrl = object.msgTypeUrl ?? "";
+    message.granter = object.granter ?? '';
+    message.grantee = object.grantee ?? '';
+    message.msgTypeUrl = object.msgTypeUrl ?? '';
     return message;
   },
   fromProtoMsg(message: MsgRevokeProtoMsg): MsgRevoke {
@@ -436,21 +466,25 @@ export const MsgRevoke = {
   },
   toProtoMsg(message: MsgRevoke): MsgRevokeProtoMsg {
     return {
-      typeUrl: "/cosmos.authz.v1beta1.MsgRevoke",
-      value: MsgRevoke.encode(message).finish()
+      typeUrl: '/cosmos.authz.v1beta1.MsgRevoke',
+      value: MsgRevoke.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseMsgRevokeResponse(): MsgRevokeResponse {
   return {};
 }
 export const MsgRevokeResponse = {
-  typeUrl: "/cosmos.authz.v1beta1.MsgRevokeResponse" as const,
-  encode(_: MsgRevokeResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/cosmos.authz.v1beta1.MsgRevokeResponse' as const,
+  encode(
+    _: MsgRevokeResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): MsgRevokeResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgRevokeResponse();
     while (reader.pos < end) {
@@ -482,13 +516,16 @@ export const MsgRevokeResponse = {
   },
   toProtoMsg(message: MsgRevokeResponse): MsgRevokeResponseProtoMsg {
     return {
-      typeUrl: "/cosmos.authz.v1beta1.MsgRevokeResponse",
-      value: MsgRevokeResponse.encode(message).finish()
+      typeUrl: '/cosmos.authz.v1beta1.MsgRevokeResponse',
+      value: MsgRevokeResponse.encode(message).finish(),
     };
-  }
+  },
 };
-export const Cosmos_basev1beta1Msg_InterfaceDecoder = (input: BinaryReader | Uint8Array): Any => {
-  const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+export const Cosmos_basev1beta1Msg_InterfaceDecoder = (
+  input: BinaryReader | Uint8Array,
+): Any => {
+  const reader =
+    input instanceof BinaryReader ? input : new BinaryReader(input);
   const data = Any.decode(reader, reader.uint32());
   switch (data.typeUrl) {
     default:

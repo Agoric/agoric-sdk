@@ -1,10 +1,15 @@
 //@ts-nocheck
-import { ChunkedArtifact, type ChunkedArtifactSDKType, ChunkInfo, type ChunkInfoSDKType } from "./swingset.js";
-import { BinaryReader, BinaryWriter } from "../../binary.js";
-import { isSet } from "../../helpers.js";
-import { decodeBase64 as bytesFromBase64 } from "@endo/base64";
-import { encodeBase64 as base64FromBytes } from "@endo/base64";
-import {type JsonSafe } from "../../json-safe.js";
+import {
+  ChunkedArtifact,
+  type ChunkedArtifactSDKType,
+  ChunkInfo,
+  type ChunkInfoSDKType,
+} from './swingset.js';
+import { BinaryReader, BinaryWriter } from '../../binary.js';
+import { isSet } from '../../helpers.js';
+import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
+import { encodeBase64 as base64FromBytes } from '@endo/base64';
+import { type JsonSafe } from '../../json-safe.js';
 /** MsgDeliverInbound defines an SDK message for delivering an eventual send */
 export interface MsgDeliverInbound {
   messages: string[];
@@ -13,7 +18,7 @@ export interface MsgDeliverInbound {
   submitter: Uint8Array;
 }
 export interface MsgDeliverInboundProtoMsg {
-  typeUrl: "/agoric.swingset.MsgDeliverInbound";
+  typeUrl: '/agoric.swingset.MsgDeliverInbound';
   value: Uint8Array;
 }
 /** MsgDeliverInbound defines an SDK message for delivering an eventual send */
@@ -26,7 +31,7 @@ export interface MsgDeliverInboundSDKType {
 /** MsgDeliverInboundResponse is an empty reply. */
 export interface MsgDeliverInboundResponse {}
 export interface MsgDeliverInboundResponseProtoMsg {
-  typeUrl: "/agoric.swingset.MsgDeliverInboundResponse";
+  typeUrl: '/agoric.swingset.MsgDeliverInboundResponse';
   value: Uint8Array;
 }
 /** MsgDeliverInboundResponse is an empty reply. */
@@ -42,7 +47,7 @@ export interface MsgWalletAction {
   action: string;
 }
 export interface MsgWalletActionProtoMsg {
-  typeUrl: "/agoric.swingset.MsgWalletAction";
+  typeUrl: '/agoric.swingset.MsgWalletAction';
   value: Uint8Array;
 }
 /**
@@ -57,7 +62,7 @@ export interface MsgWalletActionSDKType {
 /** MsgWalletActionResponse is an empty reply. */
 export interface MsgWalletActionResponse {}
 export interface MsgWalletActionResponseProtoMsg {
-  typeUrl: "/agoric.swingset.MsgWalletActionResponse";
+  typeUrl: '/agoric.swingset.MsgWalletActionResponse';
   value: Uint8Array;
 }
 /** MsgWalletActionResponse is an empty reply. */
@@ -73,7 +78,7 @@ export interface MsgWalletSpendAction {
   spendAction: string;
 }
 export interface MsgWalletSpendActionProtoMsg {
-  typeUrl: "/agoric.swingset.MsgWalletSpendAction";
+  typeUrl: '/agoric.swingset.MsgWalletSpendAction';
   value: Uint8Array;
 }
 /**
@@ -88,7 +93,7 @@ export interface MsgWalletSpendActionSDKType {
 /** MsgWalletSpendActionResponse is an empty reply. */
 export interface MsgWalletSpendActionResponse {}
 export interface MsgWalletSpendActionResponseProtoMsg {
-  typeUrl: "/agoric.swingset.MsgWalletSpendActionResponse";
+  typeUrl: '/agoric.swingset.MsgWalletSpendActionResponse';
   value: Uint8Array;
 }
 /** MsgWalletSpendActionResponse is an empty reply. */
@@ -101,7 +106,7 @@ export interface MsgProvision {
   submitter: Uint8Array;
 }
 export interface MsgProvisionProtoMsg {
-  typeUrl: "/agoric.swingset.MsgProvision";
+  typeUrl: '/agoric.swingset.MsgProvision';
   value: Uint8Array;
 }
 /** MsgProvision defines an SDK message for provisioning a client to the chain */
@@ -114,7 +119,7 @@ export interface MsgProvisionSDKType {
 /** MsgProvisionResponse is an empty reply. */
 export interface MsgProvisionResponse {}
 export interface MsgProvisionResponseProtoMsg {
-  typeUrl: "/agoric.swingset.MsgProvisionResponse";
+  typeUrl: '/agoric.swingset.MsgProvisionResponse';
   value: Uint8Array;
 }
 /** MsgProvisionResponse is an empty reply. */
@@ -142,7 +147,7 @@ export interface MsgInstallBundle {
   chunkedArtifact?: ChunkedArtifact;
 }
 export interface MsgInstallBundleProtoMsg {
-  typeUrl: "/agoric.swingset.MsgInstallBundle";
+  typeUrl: '/agoric.swingset.MsgInstallBundle';
   value: Uint8Array;
 }
 /**
@@ -177,7 +182,7 @@ export interface MsgCoreEval {
   jsCode: string;
 }
 export interface MsgCoreEvalProtoMsg {
-  typeUrl: "/agoric.swingset.MsgCoreEval";
+  typeUrl: '/agoric.swingset.MsgCoreEval';
   value: Uint8Array;
 }
 /** MsgCoreEval defines an SDK message for a core eval. */
@@ -192,7 +197,7 @@ export interface MsgCoreEvalResponse {
   result: string;
 }
 export interface MsgCoreEvalResponseProtoMsg {
-  typeUrl: "/agoric.swingset.MsgCoreEvalResponse";
+  typeUrl: '/agoric.swingset.MsgCoreEvalResponse';
   value: Uint8Array;
 }
 /** MsgCoreEvalResponse is an empty reply. */
@@ -215,7 +220,7 @@ export interface MsgInstallBundleResponse {
   chunkedArtifactId: bigint;
 }
 export interface MsgInstallBundleResponseProtoMsg {
-  typeUrl: "/agoric.swingset.MsgInstallBundleResponse";
+  typeUrl: '/agoric.swingset.MsgInstallBundleResponse';
   value: Uint8Array;
 }
 /**
@@ -242,7 +247,7 @@ export interface MsgSendChunk {
   chunkData: Uint8Array;
 }
 export interface MsgSendChunkProtoMsg {
-  typeUrl: "/agoric.swingset.MsgSendChunk";
+  typeUrl: '/agoric.swingset.MsgSendChunk';
   value: Uint8Array;
 }
 /**
@@ -267,7 +272,7 @@ export interface MsgSendChunkResponse {
   chunk?: ChunkInfo;
 }
 export interface MsgSendChunkResponseProtoMsg {
-  typeUrl: "/agoric.swingset.MsgSendChunkResponse";
+  typeUrl: '/agoric.swingset.MsgSendChunkResponse';
   value: Uint8Array;
 }
 /**
@@ -283,12 +288,15 @@ function createBaseMsgDeliverInbound(): MsgDeliverInbound {
     messages: [],
     nums: [],
     ack: BigInt(0),
-    submitter: new Uint8Array()
+    submitter: new Uint8Array(),
   };
 }
 export const MsgDeliverInbound = {
-  typeUrl: "/agoric.swingset.MsgDeliverInbound" as const,
-  encode(message: MsgDeliverInbound, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/agoric.swingset.MsgDeliverInbound' as const,
+  encode(
+    message: MsgDeliverInbound,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     for (const v of message.messages) {
       writer.uint32(10).string(v!);
     }
@@ -306,7 +314,8 @@ export const MsgDeliverInbound = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): MsgDeliverInbound {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgDeliverInbound();
     while (reader.pos < end) {
@@ -340,10 +349,16 @@ export const MsgDeliverInbound = {
   },
   fromJSON(object: any): MsgDeliverInbound {
     return {
-      messages: Array.isArray(object?.messages) ? object.messages.map((e: any) => String(e)) : [],
-      nums: Array.isArray(object?.nums) ? object.nums.map((e: any) => BigInt(e.toString())) : [],
+      messages: Array.isArray(object?.messages)
+        ? object.messages.map((e: any) => String(e))
+        : [],
+      nums: Array.isArray(object?.nums)
+        ? object.nums.map((e: any) => BigInt(e.toString()))
+        : [],
       ack: isSet(object.ack) ? BigInt(object.ack.toString()) : BigInt(0),
-      submitter: isSet(object.submitter) ? bytesFromBase64(object.submitter) : new Uint8Array()
+      submitter: isSet(object.submitter)
+        ? bytesFromBase64(object.submitter)
+        : new Uint8Array(),
     };
   },
   toJSON(message: MsgDeliverInbound): JsonSafe<MsgDeliverInbound> {
@@ -358,15 +373,22 @@ export const MsgDeliverInbound = {
     } else {
       obj.nums = [];
     }
-    message.ack !== undefined && (obj.ack = (message.ack || BigInt(0)).toString());
-    message.submitter !== undefined && (obj.submitter = base64FromBytes(message.submitter !== undefined ? message.submitter : new Uint8Array()));
+    message.ack !== undefined &&
+      (obj.ack = (message.ack || BigInt(0)).toString());
+    message.submitter !== undefined &&
+      (obj.submitter = base64FromBytes(
+        message.submitter !== undefined ? message.submitter : new Uint8Array(),
+      ));
     return obj;
   },
   fromPartial(object: Partial<MsgDeliverInbound>): MsgDeliverInbound {
     const message = createBaseMsgDeliverInbound();
     message.messages = object.messages?.map(e => e) || [];
     message.nums = object.nums?.map(e => BigInt(e.toString())) || [];
-    message.ack = object.ack !== undefined && object.ack !== null ? BigInt(object.ack.toString()) : BigInt(0);
+    message.ack =
+      object.ack !== undefined && object.ack !== null
+        ? BigInt(object.ack.toString())
+        : BigInt(0);
     message.submitter = object.submitter ?? new Uint8Array();
     return message;
   },
@@ -378,21 +400,28 @@ export const MsgDeliverInbound = {
   },
   toProtoMsg(message: MsgDeliverInbound): MsgDeliverInboundProtoMsg {
     return {
-      typeUrl: "/agoric.swingset.MsgDeliverInbound",
-      value: MsgDeliverInbound.encode(message).finish()
+      typeUrl: '/agoric.swingset.MsgDeliverInbound',
+      value: MsgDeliverInbound.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseMsgDeliverInboundResponse(): MsgDeliverInboundResponse {
   return {};
 }
 export const MsgDeliverInboundResponse = {
-  typeUrl: "/agoric.swingset.MsgDeliverInboundResponse" as const,
-  encode(_: MsgDeliverInboundResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/agoric.swingset.MsgDeliverInboundResponse' as const,
+  encode(
+    _: MsgDeliverInboundResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): MsgDeliverInboundResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): MsgDeliverInboundResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgDeliverInboundResponse();
     while (reader.pos < end) {
@@ -412,42 +441,52 @@ export const MsgDeliverInboundResponse = {
     const obj: any = {};
     return obj;
   },
-  fromPartial(_: Partial<MsgDeliverInboundResponse>): MsgDeliverInboundResponse {
+  fromPartial(
+    _: Partial<MsgDeliverInboundResponse>,
+  ): MsgDeliverInboundResponse {
     const message = createBaseMsgDeliverInboundResponse();
     return message;
   },
-  fromProtoMsg(message: MsgDeliverInboundResponseProtoMsg): MsgDeliverInboundResponse {
+  fromProtoMsg(
+    message: MsgDeliverInboundResponseProtoMsg,
+  ): MsgDeliverInboundResponse {
     return MsgDeliverInboundResponse.decode(message.value);
   },
   toProto(message: MsgDeliverInboundResponse): Uint8Array {
     return MsgDeliverInboundResponse.encode(message).finish();
   },
-  toProtoMsg(message: MsgDeliverInboundResponse): MsgDeliverInboundResponseProtoMsg {
+  toProtoMsg(
+    message: MsgDeliverInboundResponse,
+  ): MsgDeliverInboundResponseProtoMsg {
     return {
-      typeUrl: "/agoric.swingset.MsgDeliverInboundResponse",
-      value: MsgDeliverInboundResponse.encode(message).finish()
+      typeUrl: '/agoric.swingset.MsgDeliverInboundResponse',
+      value: MsgDeliverInboundResponse.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseMsgWalletAction(): MsgWalletAction {
   return {
     owner: new Uint8Array(),
-    action: ""
+    action: '',
   };
 }
 export const MsgWalletAction = {
-  typeUrl: "/agoric.swingset.MsgWalletAction" as const,
-  encode(message: MsgWalletAction, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/agoric.swingset.MsgWalletAction' as const,
+  encode(
+    message: MsgWalletAction,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.owner.length !== 0) {
       writer.uint32(10).bytes(message.owner);
     }
-    if (message.action !== "") {
+    if (message.action !== '') {
       writer.uint32(18).string(message.action);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): MsgWalletAction {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgWalletAction();
     while (reader.pos < end) {
@@ -468,20 +507,25 @@ export const MsgWalletAction = {
   },
   fromJSON(object: any): MsgWalletAction {
     return {
-      owner: isSet(object.owner) ? bytesFromBase64(object.owner) : new Uint8Array(),
-      action: isSet(object.action) ? String(object.action) : ""
+      owner: isSet(object.owner)
+        ? bytesFromBase64(object.owner)
+        : new Uint8Array(),
+      action: isSet(object.action) ? String(object.action) : '',
     };
   },
   toJSON(message: MsgWalletAction): JsonSafe<MsgWalletAction> {
     const obj: any = {};
-    message.owner !== undefined && (obj.owner = base64FromBytes(message.owner !== undefined ? message.owner : new Uint8Array()));
+    message.owner !== undefined &&
+      (obj.owner = base64FromBytes(
+        message.owner !== undefined ? message.owner : new Uint8Array(),
+      ));
     message.action !== undefined && (obj.action = message.action);
     return obj;
   },
   fromPartial(object: Partial<MsgWalletAction>): MsgWalletAction {
     const message = createBaseMsgWalletAction();
     message.owner = object.owner ?? new Uint8Array();
-    message.action = object.action ?? "";
+    message.action = object.action ?? '';
     return message;
   },
   fromProtoMsg(message: MsgWalletActionProtoMsg): MsgWalletAction {
@@ -492,21 +536,28 @@ export const MsgWalletAction = {
   },
   toProtoMsg(message: MsgWalletAction): MsgWalletActionProtoMsg {
     return {
-      typeUrl: "/agoric.swingset.MsgWalletAction",
-      value: MsgWalletAction.encode(message).finish()
+      typeUrl: '/agoric.swingset.MsgWalletAction',
+      value: MsgWalletAction.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseMsgWalletActionResponse(): MsgWalletActionResponse {
   return {};
 }
 export const MsgWalletActionResponse = {
-  typeUrl: "/agoric.swingset.MsgWalletActionResponse" as const,
-  encode(_: MsgWalletActionResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/agoric.swingset.MsgWalletActionResponse' as const,
+  encode(
+    _: MsgWalletActionResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): MsgWalletActionResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): MsgWalletActionResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgWalletActionResponse();
     while (reader.pos < end) {
@@ -530,38 +581,49 @@ export const MsgWalletActionResponse = {
     const message = createBaseMsgWalletActionResponse();
     return message;
   },
-  fromProtoMsg(message: MsgWalletActionResponseProtoMsg): MsgWalletActionResponse {
+  fromProtoMsg(
+    message: MsgWalletActionResponseProtoMsg,
+  ): MsgWalletActionResponse {
     return MsgWalletActionResponse.decode(message.value);
   },
   toProto(message: MsgWalletActionResponse): Uint8Array {
     return MsgWalletActionResponse.encode(message).finish();
   },
-  toProtoMsg(message: MsgWalletActionResponse): MsgWalletActionResponseProtoMsg {
+  toProtoMsg(
+    message: MsgWalletActionResponse,
+  ): MsgWalletActionResponseProtoMsg {
     return {
-      typeUrl: "/agoric.swingset.MsgWalletActionResponse",
-      value: MsgWalletActionResponse.encode(message).finish()
+      typeUrl: '/agoric.swingset.MsgWalletActionResponse',
+      value: MsgWalletActionResponse.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseMsgWalletSpendAction(): MsgWalletSpendAction {
   return {
     owner: new Uint8Array(),
-    spendAction: ""
+    spendAction: '',
   };
 }
 export const MsgWalletSpendAction = {
-  typeUrl: "/agoric.swingset.MsgWalletSpendAction" as const,
-  encode(message: MsgWalletSpendAction, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/agoric.swingset.MsgWalletSpendAction' as const,
+  encode(
+    message: MsgWalletSpendAction,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.owner.length !== 0) {
       writer.uint32(10).bytes(message.owner);
     }
-    if (message.spendAction !== "") {
+    if (message.spendAction !== '') {
       writer.uint32(18).string(message.spendAction);
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): MsgWalletSpendAction {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): MsgWalletSpendAction {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgWalletSpendAction();
     while (reader.pos < end) {
@@ -582,20 +644,26 @@ export const MsgWalletSpendAction = {
   },
   fromJSON(object: any): MsgWalletSpendAction {
     return {
-      owner: isSet(object.owner) ? bytesFromBase64(object.owner) : new Uint8Array(),
-      spendAction: isSet(object.spendAction) ? String(object.spendAction) : ""
+      owner: isSet(object.owner)
+        ? bytesFromBase64(object.owner)
+        : new Uint8Array(),
+      spendAction: isSet(object.spendAction) ? String(object.spendAction) : '',
     };
   },
   toJSON(message: MsgWalletSpendAction): JsonSafe<MsgWalletSpendAction> {
     const obj: any = {};
-    message.owner !== undefined && (obj.owner = base64FromBytes(message.owner !== undefined ? message.owner : new Uint8Array()));
-    message.spendAction !== undefined && (obj.spendAction = message.spendAction);
+    message.owner !== undefined &&
+      (obj.owner = base64FromBytes(
+        message.owner !== undefined ? message.owner : new Uint8Array(),
+      ));
+    message.spendAction !== undefined &&
+      (obj.spendAction = message.spendAction);
     return obj;
   },
   fromPartial(object: Partial<MsgWalletSpendAction>): MsgWalletSpendAction {
     const message = createBaseMsgWalletSpendAction();
     message.owner = object.owner ?? new Uint8Array();
-    message.spendAction = object.spendAction ?? "";
+    message.spendAction = object.spendAction ?? '';
     return message;
   },
   fromProtoMsg(message: MsgWalletSpendActionProtoMsg): MsgWalletSpendAction {
@@ -606,21 +674,28 @@ export const MsgWalletSpendAction = {
   },
   toProtoMsg(message: MsgWalletSpendAction): MsgWalletSpendActionProtoMsg {
     return {
-      typeUrl: "/agoric.swingset.MsgWalletSpendAction",
-      value: MsgWalletSpendAction.encode(message).finish()
+      typeUrl: '/agoric.swingset.MsgWalletSpendAction',
+      value: MsgWalletSpendAction.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseMsgWalletSpendActionResponse(): MsgWalletSpendActionResponse {
   return {};
 }
 export const MsgWalletSpendActionResponse = {
-  typeUrl: "/agoric.swingset.MsgWalletSpendActionResponse" as const,
-  encode(_: MsgWalletSpendActionResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/agoric.swingset.MsgWalletSpendActionResponse' as const,
+  encode(
+    _: MsgWalletSpendActionResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): MsgWalletSpendActionResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): MsgWalletSpendActionResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgWalletSpendActionResponse();
     while (reader.pos < end) {
@@ -636,39 +711,50 @@ export const MsgWalletSpendActionResponse = {
   fromJSON(_: any): MsgWalletSpendActionResponse {
     return {};
   },
-  toJSON(_: MsgWalletSpendActionResponse): JsonSafe<MsgWalletSpendActionResponse> {
+  toJSON(
+    _: MsgWalletSpendActionResponse,
+  ): JsonSafe<MsgWalletSpendActionResponse> {
     const obj: any = {};
     return obj;
   },
-  fromPartial(_: Partial<MsgWalletSpendActionResponse>): MsgWalletSpendActionResponse {
+  fromPartial(
+    _: Partial<MsgWalletSpendActionResponse>,
+  ): MsgWalletSpendActionResponse {
     const message = createBaseMsgWalletSpendActionResponse();
     return message;
   },
-  fromProtoMsg(message: MsgWalletSpendActionResponseProtoMsg): MsgWalletSpendActionResponse {
+  fromProtoMsg(
+    message: MsgWalletSpendActionResponseProtoMsg,
+  ): MsgWalletSpendActionResponse {
     return MsgWalletSpendActionResponse.decode(message.value);
   },
   toProto(message: MsgWalletSpendActionResponse): Uint8Array {
     return MsgWalletSpendActionResponse.encode(message).finish();
   },
-  toProtoMsg(message: MsgWalletSpendActionResponse): MsgWalletSpendActionResponseProtoMsg {
+  toProtoMsg(
+    message: MsgWalletSpendActionResponse,
+  ): MsgWalletSpendActionResponseProtoMsg {
     return {
-      typeUrl: "/agoric.swingset.MsgWalletSpendActionResponse",
-      value: MsgWalletSpendActionResponse.encode(message).finish()
+      typeUrl: '/agoric.swingset.MsgWalletSpendActionResponse',
+      value: MsgWalletSpendActionResponse.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseMsgProvision(): MsgProvision {
   return {
-    nickname: "",
+    nickname: '',
     address: new Uint8Array(),
     powerFlags: [],
-    submitter: new Uint8Array()
+    submitter: new Uint8Array(),
   };
 }
 export const MsgProvision = {
-  typeUrl: "/agoric.swingset.MsgProvision" as const,
-  encode(message: MsgProvision, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.nickname !== "") {
+  typeUrl: '/agoric.swingset.MsgProvision' as const,
+  encode(
+    message: MsgProvision,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.nickname !== '') {
       writer.uint32(10).string(message.nickname);
     }
     if (message.address.length !== 0) {
@@ -683,7 +769,8 @@ export const MsgProvision = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): MsgProvision {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgProvision();
     while (reader.pos < end) {
@@ -710,27 +797,39 @@ export const MsgProvision = {
   },
   fromJSON(object: any): MsgProvision {
     return {
-      nickname: isSet(object.nickname) ? String(object.nickname) : "",
-      address: isSet(object.address) ? bytesFromBase64(object.address) : new Uint8Array(),
-      powerFlags: Array.isArray(object?.powerFlags) ? object.powerFlags.map((e: any) => String(e)) : [],
-      submitter: isSet(object.submitter) ? bytesFromBase64(object.submitter) : new Uint8Array()
+      nickname: isSet(object.nickname) ? String(object.nickname) : '',
+      address: isSet(object.address)
+        ? bytesFromBase64(object.address)
+        : new Uint8Array(),
+      powerFlags: Array.isArray(object?.powerFlags)
+        ? object.powerFlags.map((e: any) => String(e))
+        : [],
+      submitter: isSet(object.submitter)
+        ? bytesFromBase64(object.submitter)
+        : new Uint8Array(),
     };
   },
   toJSON(message: MsgProvision): JsonSafe<MsgProvision> {
     const obj: any = {};
     message.nickname !== undefined && (obj.nickname = message.nickname);
-    message.address !== undefined && (obj.address = base64FromBytes(message.address !== undefined ? message.address : new Uint8Array()));
+    message.address !== undefined &&
+      (obj.address = base64FromBytes(
+        message.address !== undefined ? message.address : new Uint8Array(),
+      ));
     if (message.powerFlags) {
       obj.powerFlags = message.powerFlags.map(e => e);
     } else {
       obj.powerFlags = [];
     }
-    message.submitter !== undefined && (obj.submitter = base64FromBytes(message.submitter !== undefined ? message.submitter : new Uint8Array()));
+    message.submitter !== undefined &&
+      (obj.submitter = base64FromBytes(
+        message.submitter !== undefined ? message.submitter : new Uint8Array(),
+      ));
     return obj;
   },
   fromPartial(object: Partial<MsgProvision>): MsgProvision {
     const message = createBaseMsgProvision();
-    message.nickname = object.nickname ?? "";
+    message.nickname = object.nickname ?? '';
     message.address = object.address ?? new Uint8Array();
     message.powerFlags = object.powerFlags?.map(e => e) || [];
     message.submitter = object.submitter ?? new Uint8Array();
@@ -744,21 +843,28 @@ export const MsgProvision = {
   },
   toProtoMsg(message: MsgProvision): MsgProvisionProtoMsg {
     return {
-      typeUrl: "/agoric.swingset.MsgProvision",
-      value: MsgProvision.encode(message).finish()
+      typeUrl: '/agoric.swingset.MsgProvision',
+      value: MsgProvision.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseMsgProvisionResponse(): MsgProvisionResponse {
   return {};
 }
 export const MsgProvisionResponse = {
-  typeUrl: "/agoric.swingset.MsgProvisionResponse" as const,
-  encode(_: MsgProvisionResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/agoric.swingset.MsgProvisionResponse' as const,
+  encode(
+    _: MsgProvisionResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): MsgProvisionResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): MsgProvisionResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgProvisionResponse();
     while (reader.pos < end) {
@@ -790,24 +896,27 @@ export const MsgProvisionResponse = {
   },
   toProtoMsg(message: MsgProvisionResponse): MsgProvisionResponseProtoMsg {
     return {
-      typeUrl: "/agoric.swingset.MsgProvisionResponse",
-      value: MsgProvisionResponse.encode(message).finish()
+      typeUrl: '/agoric.swingset.MsgProvisionResponse',
+      value: MsgProvisionResponse.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseMsgInstallBundle(): MsgInstallBundle {
   return {
-    bundle: "",
+    bundle: '',
     submitter: new Uint8Array(),
     compressedBundle: new Uint8Array(),
     uncompressedSize: BigInt(0),
-    chunkedArtifact: undefined
+    chunkedArtifact: undefined,
   };
 }
 export const MsgInstallBundle = {
-  typeUrl: "/agoric.swingset.MsgInstallBundle" as const,
-  encode(message: MsgInstallBundle, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.bundle !== "") {
+  typeUrl: '/agoric.swingset.MsgInstallBundle' as const,
+  encode(
+    message: MsgInstallBundle,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.bundle !== '') {
       writer.uint32(10).string(message.bundle);
     }
     if (message.submitter.length !== 0) {
@@ -820,12 +929,16 @@ export const MsgInstallBundle = {
       writer.uint32(32).int64(message.uncompressedSize);
     }
     if (message.chunkedArtifact !== undefined) {
-      ChunkedArtifact.encode(message.chunkedArtifact, writer.uint32(42).fork()).ldelim();
+      ChunkedArtifact.encode(
+        message.chunkedArtifact,
+        writer.uint32(42).fork(),
+      ).ldelim();
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): MsgInstallBundle {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgInstallBundle();
     while (reader.pos < end) {
@@ -844,7 +957,10 @@ export const MsgInstallBundle = {
           message.uncompressedSize = reader.int64();
           break;
         case 5:
-          message.chunkedArtifact = ChunkedArtifact.decode(reader, reader.uint32());
+          message.chunkedArtifact = ChunkedArtifact.decode(
+            reader,
+            reader.uint32(),
+          );
           break;
         default:
           reader.skipType(tag & 7);
@@ -855,29 +971,57 @@ export const MsgInstallBundle = {
   },
   fromJSON(object: any): MsgInstallBundle {
     return {
-      bundle: isSet(object.bundle) ? String(object.bundle) : "",
-      submitter: isSet(object.submitter) ? bytesFromBase64(object.submitter) : new Uint8Array(),
-      compressedBundle: isSet(object.compressedBundle) ? bytesFromBase64(object.compressedBundle) : new Uint8Array(),
-      uncompressedSize: isSet(object.uncompressedSize) ? BigInt(object.uncompressedSize.toString()) : BigInt(0),
-      chunkedArtifact: isSet(object.chunkedArtifact) ? ChunkedArtifact.fromJSON(object.chunkedArtifact) : undefined
+      bundle: isSet(object.bundle) ? String(object.bundle) : '',
+      submitter: isSet(object.submitter)
+        ? bytesFromBase64(object.submitter)
+        : new Uint8Array(),
+      compressedBundle: isSet(object.compressedBundle)
+        ? bytesFromBase64(object.compressedBundle)
+        : new Uint8Array(),
+      uncompressedSize: isSet(object.uncompressedSize)
+        ? BigInt(object.uncompressedSize.toString())
+        : BigInt(0),
+      chunkedArtifact: isSet(object.chunkedArtifact)
+        ? ChunkedArtifact.fromJSON(object.chunkedArtifact)
+        : undefined,
     };
   },
   toJSON(message: MsgInstallBundle): JsonSafe<MsgInstallBundle> {
     const obj: any = {};
     message.bundle !== undefined && (obj.bundle = message.bundle);
-    message.submitter !== undefined && (obj.submitter = base64FromBytes(message.submitter !== undefined ? message.submitter : new Uint8Array()));
-    message.compressedBundle !== undefined && (obj.compressedBundle = base64FromBytes(message.compressedBundle !== undefined ? message.compressedBundle : new Uint8Array()));
-    message.uncompressedSize !== undefined && (obj.uncompressedSize = (message.uncompressedSize || BigInt(0)).toString());
-    message.chunkedArtifact !== undefined && (obj.chunkedArtifact = message.chunkedArtifact ? ChunkedArtifact.toJSON(message.chunkedArtifact) : undefined);
+    message.submitter !== undefined &&
+      (obj.submitter = base64FromBytes(
+        message.submitter !== undefined ? message.submitter : new Uint8Array(),
+      ));
+    message.compressedBundle !== undefined &&
+      (obj.compressedBundle = base64FromBytes(
+        message.compressedBundle !== undefined
+          ? message.compressedBundle
+          : new Uint8Array(),
+      ));
+    message.uncompressedSize !== undefined &&
+      (obj.uncompressedSize = (
+        message.uncompressedSize || BigInt(0)
+      ).toString());
+    message.chunkedArtifact !== undefined &&
+      (obj.chunkedArtifact = message.chunkedArtifact
+        ? ChunkedArtifact.toJSON(message.chunkedArtifact)
+        : undefined);
     return obj;
   },
   fromPartial(object: Partial<MsgInstallBundle>): MsgInstallBundle {
     const message = createBaseMsgInstallBundle();
-    message.bundle = object.bundle ?? "";
+    message.bundle = object.bundle ?? '';
     message.submitter = object.submitter ?? new Uint8Array();
     message.compressedBundle = object.compressedBundle ?? new Uint8Array();
-    message.uncompressedSize = object.uncompressedSize !== undefined && object.uncompressedSize !== null ? BigInt(object.uncompressedSize.toString()) : BigInt(0);
-    message.chunkedArtifact = object.chunkedArtifact !== undefined && object.chunkedArtifact !== null ? ChunkedArtifact.fromPartial(object.chunkedArtifact) : undefined;
+    message.uncompressedSize =
+      object.uncompressedSize !== undefined && object.uncompressedSize !== null
+        ? BigInt(object.uncompressedSize.toString())
+        : BigInt(0);
+    message.chunkedArtifact =
+      object.chunkedArtifact !== undefined && object.chunkedArtifact !== null
+        ? ChunkedArtifact.fromPartial(object.chunkedArtifact)
+        : undefined;
     return message;
   },
   fromProtoMsg(message: MsgInstallBundleProtoMsg): MsgInstallBundle {
@@ -888,34 +1032,38 @@ export const MsgInstallBundle = {
   },
   toProtoMsg(message: MsgInstallBundle): MsgInstallBundleProtoMsg {
     return {
-      typeUrl: "/agoric.swingset.MsgInstallBundle",
-      value: MsgInstallBundle.encode(message).finish()
+      typeUrl: '/agoric.swingset.MsgInstallBundle',
+      value: MsgInstallBundle.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseMsgCoreEval(): MsgCoreEval {
   return {
-    authority: "",
-    jsonPermits: "",
-    jsCode: ""
+    authority: '',
+    jsonPermits: '',
+    jsCode: '',
   };
 }
 export const MsgCoreEval = {
-  typeUrl: "/agoric.swingset.MsgCoreEval" as const,
-  encode(message: MsgCoreEval, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.authority !== "") {
+  typeUrl: '/agoric.swingset.MsgCoreEval' as const,
+  encode(
+    message: MsgCoreEval,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.authority !== '') {
       writer.uint32(10).string(message.authority);
     }
-    if (message.jsonPermits !== "") {
+    if (message.jsonPermits !== '') {
       writer.uint32(18).string(message.jsonPermits);
     }
-    if (message.jsCode !== "") {
+    if (message.jsCode !== '') {
       writer.uint32(26).string(message.jsCode);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): MsgCoreEval {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgCoreEval();
     while (reader.pos < end) {
@@ -939,23 +1087,24 @@ export const MsgCoreEval = {
   },
   fromJSON(object: any): MsgCoreEval {
     return {
-      authority: isSet(object.authority) ? String(object.authority) : "",
-      jsonPermits: isSet(object.jsonPermits) ? String(object.jsonPermits) : "",
-      jsCode: isSet(object.jsCode) ? String(object.jsCode) : ""
+      authority: isSet(object.authority) ? String(object.authority) : '',
+      jsonPermits: isSet(object.jsonPermits) ? String(object.jsonPermits) : '',
+      jsCode: isSet(object.jsCode) ? String(object.jsCode) : '',
     };
   },
   toJSON(message: MsgCoreEval): JsonSafe<MsgCoreEval> {
     const obj: any = {};
     message.authority !== undefined && (obj.authority = message.authority);
-    message.jsonPermits !== undefined && (obj.jsonPermits = message.jsonPermits);
+    message.jsonPermits !== undefined &&
+      (obj.jsonPermits = message.jsonPermits);
     message.jsCode !== undefined && (obj.jsCode = message.jsCode);
     return obj;
   },
   fromPartial(object: Partial<MsgCoreEval>): MsgCoreEval {
     const message = createBaseMsgCoreEval();
-    message.authority = object.authority ?? "";
-    message.jsonPermits = object.jsonPermits ?? "";
-    message.jsCode = object.jsCode ?? "";
+    message.authority = object.authority ?? '';
+    message.jsonPermits = object.jsonPermits ?? '';
+    message.jsCode = object.jsCode ?? '';
     return message;
   },
   fromProtoMsg(message: MsgCoreEvalProtoMsg): MsgCoreEval {
@@ -966,26 +1115,33 @@ export const MsgCoreEval = {
   },
   toProtoMsg(message: MsgCoreEval): MsgCoreEvalProtoMsg {
     return {
-      typeUrl: "/agoric.swingset.MsgCoreEval",
-      value: MsgCoreEval.encode(message).finish()
+      typeUrl: '/agoric.swingset.MsgCoreEval',
+      value: MsgCoreEval.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseMsgCoreEvalResponse(): MsgCoreEvalResponse {
   return {
-    result: ""
+    result: '',
   };
 }
 export const MsgCoreEvalResponse = {
-  typeUrl: "/agoric.swingset.MsgCoreEvalResponse" as const,
-  encode(message: MsgCoreEvalResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.result !== "") {
+  typeUrl: '/agoric.swingset.MsgCoreEvalResponse' as const,
+  encode(
+    message: MsgCoreEvalResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.result !== '') {
       writer.uint32(10).string(message.result);
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): MsgCoreEvalResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): MsgCoreEvalResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgCoreEvalResponse();
     while (reader.pos < end) {
@@ -1003,7 +1159,7 @@ export const MsgCoreEvalResponse = {
   },
   fromJSON(object: any): MsgCoreEvalResponse {
     return {
-      result: isSet(object.result) ? String(object.result) : ""
+      result: isSet(object.result) ? String(object.result) : '',
     };
   },
   toJSON(message: MsgCoreEvalResponse): JsonSafe<MsgCoreEvalResponse> {
@@ -1013,7 +1169,7 @@ export const MsgCoreEvalResponse = {
   },
   fromPartial(object: Partial<MsgCoreEvalResponse>): MsgCoreEvalResponse {
     const message = createBaseMsgCoreEvalResponse();
-    message.result = object.result ?? "";
+    message.result = object.result ?? '';
     return message;
   },
   fromProtoMsg(message: MsgCoreEvalResponseProtoMsg): MsgCoreEvalResponse {
@@ -1024,26 +1180,33 @@ export const MsgCoreEvalResponse = {
   },
   toProtoMsg(message: MsgCoreEvalResponse): MsgCoreEvalResponseProtoMsg {
     return {
-      typeUrl: "/agoric.swingset.MsgCoreEvalResponse",
-      value: MsgCoreEvalResponse.encode(message).finish()
+      typeUrl: '/agoric.swingset.MsgCoreEvalResponse',
+      value: MsgCoreEvalResponse.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseMsgInstallBundleResponse(): MsgInstallBundleResponse {
   return {
-    chunkedArtifactId: BigInt(0)
+    chunkedArtifactId: BigInt(0),
   };
 }
 export const MsgInstallBundleResponse = {
-  typeUrl: "/agoric.swingset.MsgInstallBundleResponse" as const,
-  encode(message: MsgInstallBundleResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/agoric.swingset.MsgInstallBundleResponse' as const,
+  encode(
+    message: MsgInstallBundleResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.chunkedArtifactId !== BigInt(0)) {
       writer.uint32(8).uint64(message.chunkedArtifactId);
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): MsgInstallBundleResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): MsgInstallBundleResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgInstallBundleResponse();
     while (reader.pos < end) {
@@ -1061,43 +1224,63 @@ export const MsgInstallBundleResponse = {
   },
   fromJSON(object: any): MsgInstallBundleResponse {
     return {
-      chunkedArtifactId: isSet(object.chunkedArtifactId) ? BigInt(object.chunkedArtifactId.toString()) : BigInt(0)
+      chunkedArtifactId: isSet(object.chunkedArtifactId)
+        ? BigInt(object.chunkedArtifactId.toString())
+        : BigInt(0),
     };
   },
-  toJSON(message: MsgInstallBundleResponse): JsonSafe<MsgInstallBundleResponse> {
+  toJSON(
+    message: MsgInstallBundleResponse,
+  ): JsonSafe<MsgInstallBundleResponse> {
     const obj: any = {};
-    message.chunkedArtifactId !== undefined && (obj.chunkedArtifactId = (message.chunkedArtifactId || BigInt(0)).toString());
+    message.chunkedArtifactId !== undefined &&
+      (obj.chunkedArtifactId = (
+        message.chunkedArtifactId || BigInt(0)
+      ).toString());
     return obj;
   },
-  fromPartial(object: Partial<MsgInstallBundleResponse>): MsgInstallBundleResponse {
+  fromPartial(
+    object: Partial<MsgInstallBundleResponse>,
+  ): MsgInstallBundleResponse {
     const message = createBaseMsgInstallBundleResponse();
-    message.chunkedArtifactId = object.chunkedArtifactId !== undefined && object.chunkedArtifactId !== null ? BigInt(object.chunkedArtifactId.toString()) : BigInt(0);
+    message.chunkedArtifactId =
+      object.chunkedArtifactId !== undefined &&
+      object.chunkedArtifactId !== null
+        ? BigInt(object.chunkedArtifactId.toString())
+        : BigInt(0);
     return message;
   },
-  fromProtoMsg(message: MsgInstallBundleResponseProtoMsg): MsgInstallBundleResponse {
+  fromProtoMsg(
+    message: MsgInstallBundleResponseProtoMsg,
+  ): MsgInstallBundleResponse {
     return MsgInstallBundleResponse.decode(message.value);
   },
   toProto(message: MsgInstallBundleResponse): Uint8Array {
     return MsgInstallBundleResponse.encode(message).finish();
   },
-  toProtoMsg(message: MsgInstallBundleResponse): MsgInstallBundleResponseProtoMsg {
+  toProtoMsg(
+    message: MsgInstallBundleResponse,
+  ): MsgInstallBundleResponseProtoMsg {
     return {
-      typeUrl: "/agoric.swingset.MsgInstallBundleResponse",
-      value: MsgInstallBundleResponse.encode(message).finish()
+      typeUrl: '/agoric.swingset.MsgInstallBundleResponse',
+      value: MsgInstallBundleResponse.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseMsgSendChunk(): MsgSendChunk {
   return {
     chunkedArtifactId: BigInt(0),
     submitter: new Uint8Array(),
     chunkIndex: BigInt(0),
-    chunkData: new Uint8Array()
+    chunkData: new Uint8Array(),
   };
 }
 export const MsgSendChunk = {
-  typeUrl: "/agoric.swingset.MsgSendChunk" as const,
-  encode(message: MsgSendChunk, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/agoric.swingset.MsgSendChunk' as const,
+  encode(
+    message: MsgSendChunk,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.chunkedArtifactId !== BigInt(0)) {
       writer.uint32(8).uint64(message.chunkedArtifactId);
     }
@@ -1113,7 +1296,8 @@ export const MsgSendChunk = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): MsgSendChunk {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgSendChunk();
     while (reader.pos < end) {
@@ -1140,25 +1324,50 @@ export const MsgSendChunk = {
   },
   fromJSON(object: any): MsgSendChunk {
     return {
-      chunkedArtifactId: isSet(object.chunkedArtifactId) ? BigInt(object.chunkedArtifactId.toString()) : BigInt(0),
-      submitter: isSet(object.submitter) ? bytesFromBase64(object.submitter) : new Uint8Array(),
-      chunkIndex: isSet(object.chunkIndex) ? BigInt(object.chunkIndex.toString()) : BigInt(0),
-      chunkData: isSet(object.chunkData) ? bytesFromBase64(object.chunkData) : new Uint8Array()
+      chunkedArtifactId: isSet(object.chunkedArtifactId)
+        ? BigInt(object.chunkedArtifactId.toString())
+        : BigInt(0),
+      submitter: isSet(object.submitter)
+        ? bytesFromBase64(object.submitter)
+        : new Uint8Array(),
+      chunkIndex: isSet(object.chunkIndex)
+        ? BigInt(object.chunkIndex.toString())
+        : BigInt(0),
+      chunkData: isSet(object.chunkData)
+        ? bytesFromBase64(object.chunkData)
+        : new Uint8Array(),
     };
   },
   toJSON(message: MsgSendChunk): JsonSafe<MsgSendChunk> {
     const obj: any = {};
-    message.chunkedArtifactId !== undefined && (obj.chunkedArtifactId = (message.chunkedArtifactId || BigInt(0)).toString());
-    message.submitter !== undefined && (obj.submitter = base64FromBytes(message.submitter !== undefined ? message.submitter : new Uint8Array()));
-    message.chunkIndex !== undefined && (obj.chunkIndex = (message.chunkIndex || BigInt(0)).toString());
-    message.chunkData !== undefined && (obj.chunkData = base64FromBytes(message.chunkData !== undefined ? message.chunkData : new Uint8Array()));
+    message.chunkedArtifactId !== undefined &&
+      (obj.chunkedArtifactId = (
+        message.chunkedArtifactId || BigInt(0)
+      ).toString());
+    message.submitter !== undefined &&
+      (obj.submitter = base64FromBytes(
+        message.submitter !== undefined ? message.submitter : new Uint8Array(),
+      ));
+    message.chunkIndex !== undefined &&
+      (obj.chunkIndex = (message.chunkIndex || BigInt(0)).toString());
+    message.chunkData !== undefined &&
+      (obj.chunkData = base64FromBytes(
+        message.chunkData !== undefined ? message.chunkData : new Uint8Array(),
+      ));
     return obj;
   },
   fromPartial(object: Partial<MsgSendChunk>): MsgSendChunk {
     const message = createBaseMsgSendChunk();
-    message.chunkedArtifactId = object.chunkedArtifactId !== undefined && object.chunkedArtifactId !== null ? BigInt(object.chunkedArtifactId.toString()) : BigInt(0);
+    message.chunkedArtifactId =
+      object.chunkedArtifactId !== undefined &&
+      object.chunkedArtifactId !== null
+        ? BigInt(object.chunkedArtifactId.toString())
+        : BigInt(0);
     message.submitter = object.submitter ?? new Uint8Array();
-    message.chunkIndex = object.chunkIndex !== undefined && object.chunkIndex !== null ? BigInt(object.chunkIndex.toString()) : BigInt(0);
+    message.chunkIndex =
+      object.chunkIndex !== undefined && object.chunkIndex !== null
+        ? BigInt(object.chunkIndex.toString())
+        : BigInt(0);
     message.chunkData = object.chunkData ?? new Uint8Array();
     return message;
   },
@@ -1170,20 +1379,23 @@ export const MsgSendChunk = {
   },
   toProtoMsg(message: MsgSendChunk): MsgSendChunkProtoMsg {
     return {
-      typeUrl: "/agoric.swingset.MsgSendChunk",
-      value: MsgSendChunk.encode(message).finish()
+      typeUrl: '/agoric.swingset.MsgSendChunk',
+      value: MsgSendChunk.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseMsgSendChunkResponse(): MsgSendChunkResponse {
   return {
     chunkedArtifactId: BigInt(0),
-    chunk: undefined
+    chunk: undefined,
   };
 }
 export const MsgSendChunkResponse = {
-  typeUrl: "/agoric.swingset.MsgSendChunkResponse" as const,
-  encode(message: MsgSendChunkResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/agoric.swingset.MsgSendChunkResponse' as const,
+  encode(
+    message: MsgSendChunkResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.chunkedArtifactId !== BigInt(0)) {
       writer.uint32(8).uint64(message.chunkedArtifactId);
     }
@@ -1192,8 +1404,12 @@ export const MsgSendChunkResponse = {
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): MsgSendChunkResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): MsgSendChunkResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgSendChunkResponse();
     while (reader.pos < end) {
@@ -1214,20 +1430,33 @@ export const MsgSendChunkResponse = {
   },
   fromJSON(object: any): MsgSendChunkResponse {
     return {
-      chunkedArtifactId: isSet(object.chunkedArtifactId) ? BigInt(object.chunkedArtifactId.toString()) : BigInt(0),
-      chunk: isSet(object.chunk) ? ChunkInfo.fromJSON(object.chunk) : undefined
+      chunkedArtifactId: isSet(object.chunkedArtifactId)
+        ? BigInt(object.chunkedArtifactId.toString())
+        : BigInt(0),
+      chunk: isSet(object.chunk) ? ChunkInfo.fromJSON(object.chunk) : undefined,
     };
   },
   toJSON(message: MsgSendChunkResponse): JsonSafe<MsgSendChunkResponse> {
     const obj: any = {};
-    message.chunkedArtifactId !== undefined && (obj.chunkedArtifactId = (message.chunkedArtifactId || BigInt(0)).toString());
-    message.chunk !== undefined && (obj.chunk = message.chunk ? ChunkInfo.toJSON(message.chunk) : undefined);
+    message.chunkedArtifactId !== undefined &&
+      (obj.chunkedArtifactId = (
+        message.chunkedArtifactId || BigInt(0)
+      ).toString());
+    message.chunk !== undefined &&
+      (obj.chunk = message.chunk ? ChunkInfo.toJSON(message.chunk) : undefined);
     return obj;
   },
   fromPartial(object: Partial<MsgSendChunkResponse>): MsgSendChunkResponse {
     const message = createBaseMsgSendChunkResponse();
-    message.chunkedArtifactId = object.chunkedArtifactId !== undefined && object.chunkedArtifactId !== null ? BigInt(object.chunkedArtifactId.toString()) : BigInt(0);
-    message.chunk = object.chunk !== undefined && object.chunk !== null ? ChunkInfo.fromPartial(object.chunk) : undefined;
+    message.chunkedArtifactId =
+      object.chunkedArtifactId !== undefined &&
+      object.chunkedArtifactId !== null
+        ? BigInt(object.chunkedArtifactId.toString())
+        : BigInt(0);
+    message.chunk =
+      object.chunk !== undefined && object.chunk !== null
+        ? ChunkInfo.fromPartial(object.chunk)
+        : undefined;
     return message;
   },
   fromProtoMsg(message: MsgSendChunkResponseProtoMsg): MsgSendChunkResponse {
@@ -1238,8 +1467,8 @@ export const MsgSendChunkResponse = {
   },
   toProtoMsg(message: MsgSendChunkResponse): MsgSendChunkResponseProtoMsg {
     return {
-      typeUrl: "/agoric.swingset.MsgSendChunkResponse",
-      value: MsgSendChunkResponse.encode(message).finish()
+      typeUrl: '/agoric.swingset.MsgSendChunkResponse',
+      value: MsgSendChunkResponse.encode(message).finish(),
     };
-  }
+  },
 };

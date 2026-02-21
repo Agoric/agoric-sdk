@@ -1,9 +1,9 @@
 //@ts-nocheck
-import { BinaryReader, BinaryWriter } from "../../../binary.js";
-import { isSet } from "../../../helpers.js";
-import { decodeBase64 as bytesFromBase64 } from "@endo/base64";
-import { encodeBase64 as base64FromBytes } from "@endo/base64";
-import {type JsonSafe } from "../../../json-safe.js";
+import { BinaryReader, BinaryWriter } from '../../../binary.js';
+import { isSet } from '../../../helpers.js';
+import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
+import { encodeBase64 as base64FromBytes } from '@endo/base64';
+import { type JsonSafe } from '../../../json-safe.js';
 export interface MsgDepositForBurn {
   from: string;
   amount: string;
@@ -12,7 +12,7 @@ export interface MsgDepositForBurn {
   burnToken: string;
 }
 export interface MsgDepositForBurnProtoMsg {
-  typeUrl: "/circle.cctp.v1.MsgDepositForBurn";
+  typeUrl: '/circle.cctp.v1.MsgDepositForBurn';
   value: Uint8Array;
 }
 export interface MsgDepositForBurnSDKType {
@@ -26,7 +26,7 @@ export interface MsgDepositForBurnResponse {
   nonce: bigint;
 }
 export interface MsgDepositForBurnResponseProtoMsg {
-  typeUrl: "/circle.cctp.v1.MsgDepositForBurnResponse";
+  typeUrl: '/circle.cctp.v1.MsgDepositForBurnResponse';
   value: Uint8Array;
 }
 export interface MsgDepositForBurnResponseSDKType {
@@ -41,7 +41,7 @@ export interface MsgDepositForBurnWithCaller {
   destinationCaller: Uint8Array;
 }
 export interface MsgDepositForBurnWithCallerProtoMsg {
-  typeUrl: "/circle.cctp.v1.MsgDepositForBurnWithCaller";
+  typeUrl: '/circle.cctp.v1.MsgDepositForBurnWithCaller';
   value: Uint8Array;
 }
 export interface MsgDepositForBurnWithCallerSDKType {
@@ -56,7 +56,7 @@ export interface MsgDepositForBurnWithCallerResponse {
   nonce: bigint;
 }
 export interface MsgDepositForBurnWithCallerResponseProtoMsg {
-  typeUrl: "/circle.cctp.v1.MsgDepositForBurnWithCallerResponse";
+  typeUrl: '/circle.cctp.v1.MsgDepositForBurnWithCallerResponse';
   value: Uint8Array;
 }
 export interface MsgDepositForBurnWithCallerResponseSDKType {
@@ -64,20 +64,23 @@ export interface MsgDepositForBurnWithCallerResponseSDKType {
 }
 function createBaseMsgDepositForBurn(): MsgDepositForBurn {
   return {
-    from: "",
-    amount: "",
+    from: '',
+    amount: '',
     destinationDomain: 0,
     mintRecipient: new Uint8Array(),
-    burnToken: ""
+    burnToken: '',
   };
 }
 export const MsgDepositForBurn = {
-  typeUrl: "/circle.cctp.v1.MsgDepositForBurn" as const,
-  encode(message: MsgDepositForBurn, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.from !== "") {
+  typeUrl: '/circle.cctp.v1.MsgDepositForBurn' as const,
+  encode(
+    message: MsgDepositForBurn,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.from !== '') {
       writer.uint32(10).string(message.from);
     }
-    if (message.amount !== "") {
+    if (message.amount !== '') {
       writer.uint32(18).string(message.amount);
     }
     if (message.destinationDomain !== 0) {
@@ -86,13 +89,14 @@ export const MsgDepositForBurn = {
     if (message.mintRecipient.length !== 0) {
       writer.uint32(34).bytes(message.mintRecipient);
     }
-    if (message.burnToken !== "") {
+    if (message.burnToken !== '') {
       writer.uint32(42).string(message.burnToken);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): MsgDepositForBurn {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgDepositForBurn();
     while (reader.pos < end) {
@@ -122,29 +126,39 @@ export const MsgDepositForBurn = {
   },
   fromJSON(object: any): MsgDepositForBurn {
     return {
-      from: isSet(object.from) ? String(object.from) : "",
-      amount: isSet(object.amount) ? String(object.amount) : "",
-      destinationDomain: isSet(object.destinationDomain) ? Number(object.destinationDomain) : 0,
-      mintRecipient: isSet(object.mintRecipient) ? bytesFromBase64(object.mintRecipient) : new Uint8Array(),
-      burnToken: isSet(object.burnToken) ? String(object.burnToken) : ""
+      from: isSet(object.from) ? String(object.from) : '',
+      amount: isSet(object.amount) ? String(object.amount) : '',
+      destinationDomain: isSet(object.destinationDomain)
+        ? Number(object.destinationDomain)
+        : 0,
+      mintRecipient: isSet(object.mintRecipient)
+        ? bytesFromBase64(object.mintRecipient)
+        : new Uint8Array(),
+      burnToken: isSet(object.burnToken) ? String(object.burnToken) : '',
     };
   },
   toJSON(message: MsgDepositForBurn): JsonSafe<MsgDepositForBurn> {
     const obj: any = {};
     message.from !== undefined && (obj.from = message.from);
     message.amount !== undefined && (obj.amount = message.amount);
-    message.destinationDomain !== undefined && (obj.destinationDomain = Math.round(message.destinationDomain));
-    message.mintRecipient !== undefined && (obj.mintRecipient = base64FromBytes(message.mintRecipient !== undefined ? message.mintRecipient : new Uint8Array()));
+    message.destinationDomain !== undefined &&
+      (obj.destinationDomain = Math.round(message.destinationDomain));
+    message.mintRecipient !== undefined &&
+      (obj.mintRecipient = base64FromBytes(
+        message.mintRecipient !== undefined
+          ? message.mintRecipient
+          : new Uint8Array(),
+      ));
     message.burnToken !== undefined && (obj.burnToken = message.burnToken);
     return obj;
   },
   fromPartial(object: Partial<MsgDepositForBurn>): MsgDepositForBurn {
     const message = createBaseMsgDepositForBurn();
-    message.from = object.from ?? "";
-    message.amount = object.amount ?? "";
+    message.from = object.from ?? '';
+    message.amount = object.amount ?? '';
     message.destinationDomain = object.destinationDomain ?? 0;
     message.mintRecipient = object.mintRecipient ?? new Uint8Array();
-    message.burnToken = object.burnToken ?? "";
+    message.burnToken = object.burnToken ?? '';
     return message;
   },
   fromProtoMsg(message: MsgDepositForBurnProtoMsg): MsgDepositForBurn {
@@ -155,26 +169,33 @@ export const MsgDepositForBurn = {
   },
   toProtoMsg(message: MsgDepositForBurn): MsgDepositForBurnProtoMsg {
     return {
-      typeUrl: "/circle.cctp.v1.MsgDepositForBurn",
-      value: MsgDepositForBurn.encode(message).finish()
+      typeUrl: '/circle.cctp.v1.MsgDepositForBurn',
+      value: MsgDepositForBurn.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseMsgDepositForBurnResponse(): MsgDepositForBurnResponse {
   return {
-    nonce: BigInt(0)
+    nonce: BigInt(0),
   };
 }
 export const MsgDepositForBurnResponse = {
-  typeUrl: "/circle.cctp.v1.MsgDepositForBurnResponse" as const,
-  encode(message: MsgDepositForBurnResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/circle.cctp.v1.MsgDepositForBurnResponse' as const,
+  encode(
+    message: MsgDepositForBurnResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.nonce !== BigInt(0)) {
       writer.uint32(8).uint64(message.nonce);
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): MsgDepositForBurnResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): MsgDepositForBurnResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgDepositForBurnResponse();
     while (reader.pos < end) {
@@ -192,49 +213,64 @@ export const MsgDepositForBurnResponse = {
   },
   fromJSON(object: any): MsgDepositForBurnResponse {
     return {
-      nonce: isSet(object.nonce) ? BigInt(object.nonce.toString()) : BigInt(0)
+      nonce: isSet(object.nonce) ? BigInt(object.nonce.toString()) : BigInt(0),
     };
   },
-  toJSON(message: MsgDepositForBurnResponse): JsonSafe<MsgDepositForBurnResponse> {
+  toJSON(
+    message: MsgDepositForBurnResponse,
+  ): JsonSafe<MsgDepositForBurnResponse> {
     const obj: any = {};
-    message.nonce !== undefined && (obj.nonce = (message.nonce || BigInt(0)).toString());
+    message.nonce !== undefined &&
+      (obj.nonce = (message.nonce || BigInt(0)).toString());
     return obj;
   },
-  fromPartial(object: Partial<MsgDepositForBurnResponse>): MsgDepositForBurnResponse {
+  fromPartial(
+    object: Partial<MsgDepositForBurnResponse>,
+  ): MsgDepositForBurnResponse {
     const message = createBaseMsgDepositForBurnResponse();
-    message.nonce = object.nonce !== undefined && object.nonce !== null ? BigInt(object.nonce.toString()) : BigInt(0);
+    message.nonce =
+      object.nonce !== undefined && object.nonce !== null
+        ? BigInt(object.nonce.toString())
+        : BigInt(0);
     return message;
   },
-  fromProtoMsg(message: MsgDepositForBurnResponseProtoMsg): MsgDepositForBurnResponse {
+  fromProtoMsg(
+    message: MsgDepositForBurnResponseProtoMsg,
+  ): MsgDepositForBurnResponse {
     return MsgDepositForBurnResponse.decode(message.value);
   },
   toProto(message: MsgDepositForBurnResponse): Uint8Array {
     return MsgDepositForBurnResponse.encode(message).finish();
   },
-  toProtoMsg(message: MsgDepositForBurnResponse): MsgDepositForBurnResponseProtoMsg {
+  toProtoMsg(
+    message: MsgDepositForBurnResponse,
+  ): MsgDepositForBurnResponseProtoMsg {
     return {
-      typeUrl: "/circle.cctp.v1.MsgDepositForBurnResponse",
-      value: MsgDepositForBurnResponse.encode(message).finish()
+      typeUrl: '/circle.cctp.v1.MsgDepositForBurnResponse',
+      value: MsgDepositForBurnResponse.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseMsgDepositForBurnWithCaller(): MsgDepositForBurnWithCaller {
   return {
-    from: "",
-    amount: "",
+    from: '',
+    amount: '',
     destinationDomain: 0,
     mintRecipient: new Uint8Array(),
-    burnToken: "",
-    destinationCaller: new Uint8Array()
+    burnToken: '',
+    destinationCaller: new Uint8Array(),
   };
 }
 export const MsgDepositForBurnWithCaller = {
-  typeUrl: "/circle.cctp.v1.MsgDepositForBurnWithCaller" as const,
-  encode(message: MsgDepositForBurnWithCaller, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.from !== "") {
+  typeUrl: '/circle.cctp.v1.MsgDepositForBurnWithCaller' as const,
+  encode(
+    message: MsgDepositForBurnWithCaller,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.from !== '') {
       writer.uint32(10).string(message.from);
     }
-    if (message.amount !== "") {
+    if (message.amount !== '') {
       writer.uint32(18).string(message.amount);
     }
     if (message.destinationDomain !== 0) {
@@ -243,7 +279,7 @@ export const MsgDepositForBurnWithCaller = {
     if (message.mintRecipient.length !== 0) {
       writer.uint32(34).bytes(message.mintRecipient);
     }
-    if (message.burnToken !== "") {
+    if (message.burnToken !== '') {
       writer.uint32(42).string(message.burnToken);
     }
     if (message.destinationCaller.length !== 0) {
@@ -251,8 +287,12 @@ export const MsgDepositForBurnWithCaller = {
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): MsgDepositForBurnWithCaller {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): MsgDepositForBurnWithCaller {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgDepositForBurnWithCaller();
     while (reader.pos < end) {
@@ -285,62 +325,94 @@ export const MsgDepositForBurnWithCaller = {
   },
   fromJSON(object: any): MsgDepositForBurnWithCaller {
     return {
-      from: isSet(object.from) ? String(object.from) : "",
-      amount: isSet(object.amount) ? String(object.amount) : "",
-      destinationDomain: isSet(object.destinationDomain) ? Number(object.destinationDomain) : 0,
-      mintRecipient: isSet(object.mintRecipient) ? bytesFromBase64(object.mintRecipient) : new Uint8Array(),
-      burnToken: isSet(object.burnToken) ? String(object.burnToken) : "",
-      destinationCaller: isSet(object.destinationCaller) ? bytesFromBase64(object.destinationCaller) : new Uint8Array()
+      from: isSet(object.from) ? String(object.from) : '',
+      amount: isSet(object.amount) ? String(object.amount) : '',
+      destinationDomain: isSet(object.destinationDomain)
+        ? Number(object.destinationDomain)
+        : 0,
+      mintRecipient: isSet(object.mintRecipient)
+        ? bytesFromBase64(object.mintRecipient)
+        : new Uint8Array(),
+      burnToken: isSet(object.burnToken) ? String(object.burnToken) : '',
+      destinationCaller: isSet(object.destinationCaller)
+        ? bytesFromBase64(object.destinationCaller)
+        : new Uint8Array(),
     };
   },
-  toJSON(message: MsgDepositForBurnWithCaller): JsonSafe<MsgDepositForBurnWithCaller> {
+  toJSON(
+    message: MsgDepositForBurnWithCaller,
+  ): JsonSafe<MsgDepositForBurnWithCaller> {
     const obj: any = {};
     message.from !== undefined && (obj.from = message.from);
     message.amount !== undefined && (obj.amount = message.amount);
-    message.destinationDomain !== undefined && (obj.destinationDomain = Math.round(message.destinationDomain));
-    message.mintRecipient !== undefined && (obj.mintRecipient = base64FromBytes(message.mintRecipient !== undefined ? message.mintRecipient : new Uint8Array()));
+    message.destinationDomain !== undefined &&
+      (obj.destinationDomain = Math.round(message.destinationDomain));
+    message.mintRecipient !== undefined &&
+      (obj.mintRecipient = base64FromBytes(
+        message.mintRecipient !== undefined
+          ? message.mintRecipient
+          : new Uint8Array(),
+      ));
     message.burnToken !== undefined && (obj.burnToken = message.burnToken);
-    message.destinationCaller !== undefined && (obj.destinationCaller = base64FromBytes(message.destinationCaller !== undefined ? message.destinationCaller : new Uint8Array()));
+    message.destinationCaller !== undefined &&
+      (obj.destinationCaller = base64FromBytes(
+        message.destinationCaller !== undefined
+          ? message.destinationCaller
+          : new Uint8Array(),
+      ));
     return obj;
   },
-  fromPartial(object: Partial<MsgDepositForBurnWithCaller>): MsgDepositForBurnWithCaller {
+  fromPartial(
+    object: Partial<MsgDepositForBurnWithCaller>,
+  ): MsgDepositForBurnWithCaller {
     const message = createBaseMsgDepositForBurnWithCaller();
-    message.from = object.from ?? "";
-    message.amount = object.amount ?? "";
+    message.from = object.from ?? '';
+    message.amount = object.amount ?? '';
     message.destinationDomain = object.destinationDomain ?? 0;
     message.mintRecipient = object.mintRecipient ?? new Uint8Array();
-    message.burnToken = object.burnToken ?? "";
+    message.burnToken = object.burnToken ?? '';
     message.destinationCaller = object.destinationCaller ?? new Uint8Array();
     return message;
   },
-  fromProtoMsg(message: MsgDepositForBurnWithCallerProtoMsg): MsgDepositForBurnWithCaller {
+  fromProtoMsg(
+    message: MsgDepositForBurnWithCallerProtoMsg,
+  ): MsgDepositForBurnWithCaller {
     return MsgDepositForBurnWithCaller.decode(message.value);
   },
   toProto(message: MsgDepositForBurnWithCaller): Uint8Array {
     return MsgDepositForBurnWithCaller.encode(message).finish();
   },
-  toProtoMsg(message: MsgDepositForBurnWithCaller): MsgDepositForBurnWithCallerProtoMsg {
+  toProtoMsg(
+    message: MsgDepositForBurnWithCaller,
+  ): MsgDepositForBurnWithCallerProtoMsg {
     return {
-      typeUrl: "/circle.cctp.v1.MsgDepositForBurnWithCaller",
-      value: MsgDepositForBurnWithCaller.encode(message).finish()
+      typeUrl: '/circle.cctp.v1.MsgDepositForBurnWithCaller',
+      value: MsgDepositForBurnWithCaller.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseMsgDepositForBurnWithCallerResponse(): MsgDepositForBurnWithCallerResponse {
   return {
-    nonce: BigInt(0)
+    nonce: BigInt(0),
   };
 }
 export const MsgDepositForBurnWithCallerResponse = {
-  typeUrl: "/circle.cctp.v1.MsgDepositForBurnWithCallerResponse" as const,
-  encode(message: MsgDepositForBurnWithCallerResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/circle.cctp.v1.MsgDepositForBurnWithCallerResponse' as const,
+  encode(
+    message: MsgDepositForBurnWithCallerResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.nonce !== BigInt(0)) {
       writer.uint32(8).uint64(message.nonce);
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): MsgDepositForBurnWithCallerResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): MsgDepositForBurnWithCallerResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgDepositForBurnWithCallerResponse();
     while (reader.pos < end) {
@@ -358,29 +430,41 @@ export const MsgDepositForBurnWithCallerResponse = {
   },
   fromJSON(object: any): MsgDepositForBurnWithCallerResponse {
     return {
-      nonce: isSet(object.nonce) ? BigInt(object.nonce.toString()) : BigInt(0)
+      nonce: isSet(object.nonce) ? BigInt(object.nonce.toString()) : BigInt(0),
     };
   },
-  toJSON(message: MsgDepositForBurnWithCallerResponse): JsonSafe<MsgDepositForBurnWithCallerResponse> {
+  toJSON(
+    message: MsgDepositForBurnWithCallerResponse,
+  ): JsonSafe<MsgDepositForBurnWithCallerResponse> {
     const obj: any = {};
-    message.nonce !== undefined && (obj.nonce = (message.nonce || BigInt(0)).toString());
+    message.nonce !== undefined &&
+      (obj.nonce = (message.nonce || BigInt(0)).toString());
     return obj;
   },
-  fromPartial(object: Partial<MsgDepositForBurnWithCallerResponse>): MsgDepositForBurnWithCallerResponse {
+  fromPartial(
+    object: Partial<MsgDepositForBurnWithCallerResponse>,
+  ): MsgDepositForBurnWithCallerResponse {
     const message = createBaseMsgDepositForBurnWithCallerResponse();
-    message.nonce = object.nonce !== undefined && object.nonce !== null ? BigInt(object.nonce.toString()) : BigInt(0);
+    message.nonce =
+      object.nonce !== undefined && object.nonce !== null
+        ? BigInt(object.nonce.toString())
+        : BigInt(0);
     return message;
   },
-  fromProtoMsg(message: MsgDepositForBurnWithCallerResponseProtoMsg): MsgDepositForBurnWithCallerResponse {
+  fromProtoMsg(
+    message: MsgDepositForBurnWithCallerResponseProtoMsg,
+  ): MsgDepositForBurnWithCallerResponse {
     return MsgDepositForBurnWithCallerResponse.decode(message.value);
   },
   toProto(message: MsgDepositForBurnWithCallerResponse): Uint8Array {
     return MsgDepositForBurnWithCallerResponse.encode(message).finish();
   },
-  toProtoMsg(message: MsgDepositForBurnWithCallerResponse): MsgDepositForBurnWithCallerResponseProtoMsg {
+  toProtoMsg(
+    message: MsgDepositForBurnWithCallerResponse,
+  ): MsgDepositForBurnWithCallerResponseProtoMsg {
     return {
-      typeUrl: "/circle.cctp.v1.MsgDepositForBurnWithCallerResponse",
-      value: MsgDepositForBurnWithCallerResponse.encode(message).finish()
+      typeUrl: '/circle.cctp.v1.MsgDepositForBurnWithCallerResponse',
+      value: MsgDepositForBurnWithCallerResponse.encode(message).finish(),
     };
-  }
+  },
 };

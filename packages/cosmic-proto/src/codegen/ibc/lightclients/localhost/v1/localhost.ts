@@ -1,8 +1,8 @@
 //@ts-nocheck
-import { Height, type HeightSDKType } from "../../../core/client/v1/client.js";
-import { BinaryReader, BinaryWriter } from "../../../../binary.js";
-import { isSet } from "../../../../helpers.js";
-import {type JsonSafe } from "../../../../json-safe.js";
+import { Height, type HeightSDKType } from '../../../core/client/v1/client.js';
+import { BinaryReader, BinaryWriter } from '../../../../binary.js';
+import { isSet } from '../../../../helpers.js';
+import { type JsonSafe } from '../../../../json-safe.js';
 /**
  * ClientState defines a loopback (localhost) client. It requires (read-only)
  * access to keys outside the client prefix.
@@ -14,7 +14,7 @@ export interface ClientState {
   height: Height;
 }
 export interface ClientStateProtoMsg {
-  typeUrl: "/ibc.lightclients.localhost.v1.ClientState";
+  typeUrl: '/ibc.lightclients.localhost.v1.ClientState';
   value: Uint8Array;
 }
 /**
@@ -27,14 +27,17 @@ export interface ClientStateSDKType {
 }
 function createBaseClientState(): ClientState {
   return {
-    chainId: "",
-    height: Height.fromPartial({})
+    chainId: '',
+    height: Height.fromPartial({}),
   };
 }
 export const ClientState = {
-  typeUrl: "/ibc.lightclients.localhost.v1.ClientState" as const,
-  encode(message: ClientState, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.chainId !== "") {
+  typeUrl: '/ibc.lightclients.localhost.v1.ClientState' as const,
+  encode(
+    message: ClientState,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.chainId !== '') {
       writer.uint32(10).string(message.chainId);
     }
     if (message.height !== undefined) {
@@ -43,7 +46,8 @@ export const ClientState = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): ClientState {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseClientState();
     while (reader.pos < end) {
@@ -64,20 +68,24 @@ export const ClientState = {
   },
   fromJSON(object: any): ClientState {
     return {
-      chainId: isSet(object.chainId) ? String(object.chainId) : "",
-      height: isSet(object.height) ? Height.fromJSON(object.height) : undefined
+      chainId: isSet(object.chainId) ? String(object.chainId) : '',
+      height: isSet(object.height) ? Height.fromJSON(object.height) : undefined,
     };
   },
   toJSON(message: ClientState): JsonSafe<ClientState> {
     const obj: any = {};
     message.chainId !== undefined && (obj.chainId = message.chainId);
-    message.height !== undefined && (obj.height = message.height ? Height.toJSON(message.height) : undefined);
+    message.height !== undefined &&
+      (obj.height = message.height ? Height.toJSON(message.height) : undefined);
     return obj;
   },
   fromPartial(object: Partial<ClientState>): ClientState {
     const message = createBaseClientState();
-    message.chainId = object.chainId ?? "";
-    message.height = object.height !== undefined && object.height !== null ? Height.fromPartial(object.height) : undefined;
+    message.chainId = object.chainId ?? '';
+    message.height =
+      object.height !== undefined && object.height !== null
+        ? Height.fromPartial(object.height)
+        : undefined;
     return message;
   },
   fromProtoMsg(message: ClientStateProtoMsg): ClientState {
@@ -88,8 +96,8 @@ export const ClientState = {
   },
   toProtoMsg(message: ClientState): ClientStateProtoMsg {
     return {
-      typeUrl: "/ibc.lightclients.localhost.v1.ClientState",
-      value: ClientState.encode(message).finish()
+      typeUrl: '/ibc.lightclients.localhost.v1.ClientState',
+      value: ClientState.encode(message).finish(),
     };
-  }
+  },
 };

@@ -1,9 +1,9 @@
 //@ts-nocheck
-import { Coin, type CoinSDKType } from "../../cosmos/base/v1beta1/coin.js";
-import { BinaryReader, BinaryWriter } from "../../binary.js";
-import { Decimal } from "../../decimals.js";
-import { isSet } from "../../helpers.js";
-import {type JsonSafe } from "../../json-safe.js";
+import { Coin, type CoinSDKType } from '../../cosmos/base/v1beta1/coin.js';
+import { BinaryReader, BinaryWriter } from '../../binary.js';
+import { Decimal } from '../../decimals.js';
+import { isSet } from '../../helpers.js';
+import { type JsonSafe } from '../../json-safe.js';
 /** The module governance/configuration parameters. */
 export interface Params {
   /**
@@ -32,7 +32,7 @@ export interface Params {
   allowedMonitoringAccounts: string[];
 }
 export interface ParamsProtoMsg {
-  typeUrl: "/agoric.vbank.Params";
+  typeUrl: '/agoric.vbank.Params';
   value: Uint8Array;
 }
 /** The module governance/configuration parameters. */
@@ -60,7 +60,7 @@ export interface State {
   lastRewardDistributionBlock: bigint;
 }
 export interface StateProtoMsg {
-  typeUrl: "/agoric.vbank.State";
+  typeUrl: '/agoric.vbank.State';
   value: Uint8Array;
 }
 /** The current state of the module. */
@@ -73,19 +73,26 @@ export interface StateSDKType {
 function createBaseParams(): Params {
   return {
     rewardEpochDurationBlocks: BigInt(0),
-    perEpochRewardFraction: "",
+    perEpochRewardFraction: '',
     rewardSmoothingBlocks: BigInt(0),
-    allowedMonitoringAccounts: []
+    allowedMonitoringAccounts: [],
   };
 }
 export const Params = {
-  typeUrl: "/agoric.vbank.Params" as const,
-  encode(message: Params, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/agoric.vbank.Params' as const,
+  encode(
+    message: Params,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.rewardEpochDurationBlocks !== BigInt(0)) {
       writer.uint32(8).int64(message.rewardEpochDurationBlocks);
     }
-    if (message.perEpochRewardFraction !== "") {
-      writer.uint32(18).string(Decimal.fromUserInput(message.perEpochRewardFraction, 18).atomics);
+    if (message.perEpochRewardFraction !== '') {
+      writer
+        .uint32(18)
+        .string(
+          Decimal.fromUserInput(message.perEpochRewardFraction, 18).atomics,
+        );
     }
     if (message.rewardSmoothingBlocks !== BigInt(0)) {
       writer.uint32(24).int64(message.rewardSmoothingBlocks);
@@ -96,7 +103,8 @@ export const Params = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Params {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseParams();
     while (reader.pos < end) {
@@ -106,7 +114,10 @@ export const Params = {
           message.rewardEpochDurationBlocks = reader.int64();
           break;
         case 2:
-          message.perEpochRewardFraction = Decimal.fromAtomics(reader.string(), 18).toString();
+          message.perEpochRewardFraction = Decimal.fromAtomics(
+            reader.string(),
+            18,
+          ).toString();
           break;
         case 3:
           message.rewardSmoothingBlocks = reader.int64();
@@ -123,19 +134,38 @@ export const Params = {
   },
   fromJSON(object: any): Params {
     return {
-      rewardEpochDurationBlocks: isSet(object.rewardEpochDurationBlocks) ? BigInt(object.rewardEpochDurationBlocks.toString()) : BigInt(0),
-      perEpochRewardFraction: isSet(object.perEpochRewardFraction) ? String(object.perEpochRewardFraction) : "",
-      rewardSmoothingBlocks: isSet(object.rewardSmoothingBlocks) ? BigInt(object.rewardSmoothingBlocks.toString()) : BigInt(0),
-      allowedMonitoringAccounts: Array.isArray(object?.allowedMonitoringAccounts) ? object.allowedMonitoringAccounts.map((e: any) => String(e)) : []
+      rewardEpochDurationBlocks: isSet(object.rewardEpochDurationBlocks)
+        ? BigInt(object.rewardEpochDurationBlocks.toString())
+        : BigInt(0),
+      perEpochRewardFraction: isSet(object.perEpochRewardFraction)
+        ? String(object.perEpochRewardFraction)
+        : '',
+      rewardSmoothingBlocks: isSet(object.rewardSmoothingBlocks)
+        ? BigInt(object.rewardSmoothingBlocks.toString())
+        : BigInt(0),
+      allowedMonitoringAccounts: Array.isArray(
+        object?.allowedMonitoringAccounts,
+      )
+        ? object.allowedMonitoringAccounts.map((e: any) => String(e))
+        : [],
     };
   },
   toJSON(message: Params): JsonSafe<Params> {
     const obj: any = {};
-    message.rewardEpochDurationBlocks !== undefined && (obj.rewardEpochDurationBlocks = (message.rewardEpochDurationBlocks || BigInt(0)).toString());
-    message.perEpochRewardFraction !== undefined && (obj.perEpochRewardFraction = message.perEpochRewardFraction);
-    message.rewardSmoothingBlocks !== undefined && (obj.rewardSmoothingBlocks = (message.rewardSmoothingBlocks || BigInt(0)).toString());
+    message.rewardEpochDurationBlocks !== undefined &&
+      (obj.rewardEpochDurationBlocks = (
+        message.rewardEpochDurationBlocks || BigInt(0)
+      ).toString());
+    message.perEpochRewardFraction !== undefined &&
+      (obj.perEpochRewardFraction = message.perEpochRewardFraction);
+    message.rewardSmoothingBlocks !== undefined &&
+      (obj.rewardSmoothingBlocks = (
+        message.rewardSmoothingBlocks || BigInt(0)
+      ).toString());
     if (message.allowedMonitoringAccounts) {
-      obj.allowedMonitoringAccounts = message.allowedMonitoringAccounts.map(e => e);
+      obj.allowedMonitoringAccounts = message.allowedMonitoringAccounts.map(
+        e => e,
+      );
     } else {
       obj.allowedMonitoringAccounts = [];
     }
@@ -143,10 +173,19 @@ export const Params = {
   },
   fromPartial(object: Partial<Params>): Params {
     const message = createBaseParams();
-    message.rewardEpochDurationBlocks = object.rewardEpochDurationBlocks !== undefined && object.rewardEpochDurationBlocks !== null ? BigInt(object.rewardEpochDurationBlocks.toString()) : BigInt(0);
-    message.perEpochRewardFraction = object.perEpochRewardFraction ?? "";
-    message.rewardSmoothingBlocks = object.rewardSmoothingBlocks !== undefined && object.rewardSmoothingBlocks !== null ? BigInt(object.rewardSmoothingBlocks.toString()) : BigInt(0);
-    message.allowedMonitoringAccounts = object.allowedMonitoringAccounts?.map(e => e) || [];
+    message.rewardEpochDurationBlocks =
+      object.rewardEpochDurationBlocks !== undefined &&
+      object.rewardEpochDurationBlocks !== null
+        ? BigInt(object.rewardEpochDurationBlocks.toString())
+        : BigInt(0);
+    message.perEpochRewardFraction = object.perEpochRewardFraction ?? '';
+    message.rewardSmoothingBlocks =
+      object.rewardSmoothingBlocks !== undefined &&
+      object.rewardSmoothingBlocks !== null
+        ? BigInt(object.rewardSmoothingBlocks.toString())
+        : BigInt(0);
+    message.allowedMonitoringAccounts =
+      object.allowedMonitoringAccounts?.map(e => e) || [];
     return message;
   },
   fromProtoMsg(message: ParamsProtoMsg): Params {
@@ -157,22 +196,25 @@ export const Params = {
   },
   toProtoMsg(message: Params): ParamsProtoMsg {
     return {
-      typeUrl: "/agoric.vbank.Params",
-      value: Params.encode(message).finish()
+      typeUrl: '/agoric.vbank.Params',
+      value: Params.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseState(): State {
   return {
     rewardPool: [],
     rewardBlockAmount: [],
     lastSequence: BigInt(0),
-    lastRewardDistributionBlock: BigInt(0)
+    lastRewardDistributionBlock: BigInt(0),
   };
 }
 export const State = {
-  typeUrl: "/agoric.vbank.State" as const,
-  encode(message: State, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/agoric.vbank.State' as const,
+  encode(
+    message: State,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     for (const v of message.rewardPool) {
       Coin.encode(v!, writer.uint32(10).fork()).ldelim();
     }
@@ -188,7 +230,8 @@ export const State = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): State {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseState();
     while (reader.pos < end) {
@@ -215,34 +258,58 @@ export const State = {
   },
   fromJSON(object: any): State {
     return {
-      rewardPool: Array.isArray(object?.rewardPool) ? object.rewardPool.map((e: any) => Coin.fromJSON(e)) : [],
-      rewardBlockAmount: Array.isArray(object?.rewardBlockAmount) ? object.rewardBlockAmount.map((e: any) => Coin.fromJSON(e)) : [],
-      lastSequence: isSet(object.lastSequence) ? BigInt(object.lastSequence.toString()) : BigInt(0),
-      lastRewardDistributionBlock: isSet(object.lastRewardDistributionBlock) ? BigInt(object.lastRewardDistributionBlock.toString()) : BigInt(0)
+      rewardPool: Array.isArray(object?.rewardPool)
+        ? object.rewardPool.map((e: any) => Coin.fromJSON(e))
+        : [],
+      rewardBlockAmount: Array.isArray(object?.rewardBlockAmount)
+        ? object.rewardBlockAmount.map((e: any) => Coin.fromJSON(e))
+        : [],
+      lastSequence: isSet(object.lastSequence)
+        ? BigInt(object.lastSequence.toString())
+        : BigInt(0),
+      lastRewardDistributionBlock: isSet(object.lastRewardDistributionBlock)
+        ? BigInt(object.lastRewardDistributionBlock.toString())
+        : BigInt(0),
     };
   },
   toJSON(message: State): JsonSafe<State> {
     const obj: any = {};
     if (message.rewardPool) {
-      obj.rewardPool = message.rewardPool.map(e => e ? Coin.toJSON(e) : undefined);
+      obj.rewardPool = message.rewardPool.map(e =>
+        e ? Coin.toJSON(e) : undefined,
+      );
     } else {
       obj.rewardPool = [];
     }
     if (message.rewardBlockAmount) {
-      obj.rewardBlockAmount = message.rewardBlockAmount.map(e => e ? Coin.toJSON(e) : undefined);
+      obj.rewardBlockAmount = message.rewardBlockAmount.map(e =>
+        e ? Coin.toJSON(e) : undefined,
+      );
     } else {
       obj.rewardBlockAmount = [];
     }
-    message.lastSequence !== undefined && (obj.lastSequence = (message.lastSequence || BigInt(0)).toString());
-    message.lastRewardDistributionBlock !== undefined && (obj.lastRewardDistributionBlock = (message.lastRewardDistributionBlock || BigInt(0)).toString());
+    message.lastSequence !== undefined &&
+      (obj.lastSequence = (message.lastSequence || BigInt(0)).toString());
+    message.lastRewardDistributionBlock !== undefined &&
+      (obj.lastRewardDistributionBlock = (
+        message.lastRewardDistributionBlock || BigInt(0)
+      ).toString());
     return obj;
   },
   fromPartial(object: Partial<State>): State {
     const message = createBaseState();
     message.rewardPool = object.rewardPool?.map(e => Coin.fromPartial(e)) || [];
-    message.rewardBlockAmount = object.rewardBlockAmount?.map(e => Coin.fromPartial(e)) || [];
-    message.lastSequence = object.lastSequence !== undefined && object.lastSequence !== null ? BigInt(object.lastSequence.toString()) : BigInt(0);
-    message.lastRewardDistributionBlock = object.lastRewardDistributionBlock !== undefined && object.lastRewardDistributionBlock !== null ? BigInt(object.lastRewardDistributionBlock.toString()) : BigInt(0);
+    message.rewardBlockAmount =
+      object.rewardBlockAmount?.map(e => Coin.fromPartial(e)) || [];
+    message.lastSequence =
+      object.lastSequence !== undefined && object.lastSequence !== null
+        ? BigInt(object.lastSequence.toString())
+        : BigInt(0);
+    message.lastRewardDistributionBlock =
+      object.lastRewardDistributionBlock !== undefined &&
+      object.lastRewardDistributionBlock !== null
+        ? BigInt(object.lastRewardDistributionBlock.toString())
+        : BigInt(0);
     return message;
   },
   fromProtoMsg(message: StateProtoMsg): State {
@@ -253,8 +320,8 @@ export const State = {
   },
   toProtoMsg(message: State): StateProtoMsg {
     return {
-      typeUrl: "/agoric.vbank.State",
-      value: State.encode(message).finish()
+      typeUrl: '/agoric.vbank.State',
+      value: State.encode(message).finish(),
     };
-  }
+  },
 };

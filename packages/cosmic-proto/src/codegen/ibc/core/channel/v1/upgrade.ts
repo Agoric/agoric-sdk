@@ -1,8 +1,14 @@
 //@ts-nocheck
-import { Timeout, type TimeoutSDKType, Order, orderFromJSON, orderToJSON } from "./channel.js";
-import { BinaryReader, BinaryWriter } from "../../../../binary.js";
-import { isSet } from "../../../../helpers.js";
-import {type JsonSafe } from "../../../../json-safe.js";
+import {
+  Timeout,
+  type TimeoutSDKType,
+  Order,
+  orderFromJSON,
+  orderToJSON,
+} from './channel.js';
+import { BinaryReader, BinaryWriter } from '../../../../binary.js';
+import { isSet } from '../../../../helpers.js';
+import { type JsonSafe } from '../../../../json-safe.js';
 /**
  * Upgrade is a verifiable type which contains the relevant information
  * for an attempted upgrade. It provides the proposed changes to the channel
@@ -16,7 +22,7 @@ export interface Upgrade {
   nextSequenceSend: bigint;
 }
 export interface UpgradeProtoMsg {
-  typeUrl: "/ibc.core.channel.v1.Upgrade";
+  typeUrl: '/ibc.core.channel.v1.Upgrade';
   value: Uint8Array;
 }
 /**
@@ -41,7 +47,7 @@ export interface UpgradeFields {
   version: string;
 }
 export interface UpgradeFieldsProtoMsg {
-  typeUrl: "/ibc.core.channel.v1.UpgradeFields";
+  typeUrl: '/ibc.core.channel.v1.UpgradeFields';
   value: Uint8Array;
 }
 /**
@@ -65,7 +71,7 @@ export interface ErrorReceipt {
   message: string;
 }
 export interface ErrorReceiptProtoMsg {
-  typeUrl: "/ibc.core.channel.v1.ErrorReceipt";
+  typeUrl: '/ibc.core.channel.v1.ErrorReceipt';
   value: Uint8Array;
 }
 /**
@@ -81,12 +87,15 @@ function createBaseUpgrade(): Upgrade {
   return {
     fields: UpgradeFields.fromPartial({}),
     timeout: Timeout.fromPartial({}),
-    nextSequenceSend: BigInt(0)
+    nextSequenceSend: BigInt(0),
   };
 }
 export const Upgrade = {
-  typeUrl: "/ibc.core.channel.v1.Upgrade" as const,
-  encode(message: Upgrade, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/ibc.core.channel.v1.Upgrade' as const,
+  encode(
+    message: Upgrade,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.fields !== undefined) {
       UpgradeFields.encode(message.fields, writer.uint32(10).fork()).ldelim();
     }
@@ -99,7 +108,8 @@ export const Upgrade = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Upgrade {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseUpgrade();
     while (reader.pos < end) {
@@ -123,23 +133,47 @@ export const Upgrade = {
   },
   fromJSON(object: any): Upgrade {
     return {
-      fields: isSet(object.fields) ? UpgradeFields.fromJSON(object.fields) : undefined,
-      timeout: isSet(object.timeout) ? Timeout.fromJSON(object.timeout) : undefined,
-      nextSequenceSend: isSet(object.nextSequenceSend) ? BigInt(object.nextSequenceSend.toString()) : BigInt(0)
+      fields: isSet(object.fields)
+        ? UpgradeFields.fromJSON(object.fields)
+        : undefined,
+      timeout: isSet(object.timeout)
+        ? Timeout.fromJSON(object.timeout)
+        : undefined,
+      nextSequenceSend: isSet(object.nextSequenceSend)
+        ? BigInt(object.nextSequenceSend.toString())
+        : BigInt(0),
     };
   },
   toJSON(message: Upgrade): JsonSafe<Upgrade> {
     const obj: any = {};
-    message.fields !== undefined && (obj.fields = message.fields ? UpgradeFields.toJSON(message.fields) : undefined);
-    message.timeout !== undefined && (obj.timeout = message.timeout ? Timeout.toJSON(message.timeout) : undefined);
-    message.nextSequenceSend !== undefined && (obj.nextSequenceSend = (message.nextSequenceSend || BigInt(0)).toString());
+    message.fields !== undefined &&
+      (obj.fields = message.fields
+        ? UpgradeFields.toJSON(message.fields)
+        : undefined);
+    message.timeout !== undefined &&
+      (obj.timeout = message.timeout
+        ? Timeout.toJSON(message.timeout)
+        : undefined);
+    message.nextSequenceSend !== undefined &&
+      (obj.nextSequenceSend = (
+        message.nextSequenceSend || BigInt(0)
+      ).toString());
     return obj;
   },
   fromPartial(object: Partial<Upgrade>): Upgrade {
     const message = createBaseUpgrade();
-    message.fields = object.fields !== undefined && object.fields !== null ? UpgradeFields.fromPartial(object.fields) : undefined;
-    message.timeout = object.timeout !== undefined && object.timeout !== null ? Timeout.fromPartial(object.timeout) : undefined;
-    message.nextSequenceSend = object.nextSequenceSend !== undefined && object.nextSequenceSend !== null ? BigInt(object.nextSequenceSend.toString()) : BigInt(0);
+    message.fields =
+      object.fields !== undefined && object.fields !== null
+        ? UpgradeFields.fromPartial(object.fields)
+        : undefined;
+    message.timeout =
+      object.timeout !== undefined && object.timeout !== null
+        ? Timeout.fromPartial(object.timeout)
+        : undefined;
+    message.nextSequenceSend =
+      object.nextSequenceSend !== undefined && object.nextSequenceSend !== null
+        ? BigInt(object.nextSequenceSend.toString())
+        : BigInt(0);
     return message;
   },
   fromProtoMsg(message: UpgradeProtoMsg): Upgrade {
@@ -150,34 +184,38 @@ export const Upgrade = {
   },
   toProtoMsg(message: Upgrade): UpgradeProtoMsg {
     return {
-      typeUrl: "/ibc.core.channel.v1.Upgrade",
-      value: Upgrade.encode(message).finish()
+      typeUrl: '/ibc.core.channel.v1.Upgrade',
+      value: Upgrade.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseUpgradeFields(): UpgradeFields {
   return {
     ordering: 0,
     connectionHops: [],
-    version: ""
+    version: '',
   };
 }
 export const UpgradeFields = {
-  typeUrl: "/ibc.core.channel.v1.UpgradeFields" as const,
-  encode(message: UpgradeFields, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/ibc.core.channel.v1.UpgradeFields' as const,
+  encode(
+    message: UpgradeFields,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.ordering !== 0) {
       writer.uint32(8).int32(message.ordering);
     }
     for (const v of message.connectionHops) {
       writer.uint32(18).string(v!);
     }
-    if (message.version !== "") {
+    if (message.version !== '') {
       writer.uint32(26).string(message.version);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): UpgradeFields {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseUpgradeFields();
     while (reader.pos < end) {
@@ -202,13 +240,16 @@ export const UpgradeFields = {
   fromJSON(object: any): UpgradeFields {
     return {
       ordering: isSet(object.ordering) ? orderFromJSON(object.ordering) : -1,
-      connectionHops: Array.isArray(object?.connectionHops) ? object.connectionHops.map((e: any) => String(e)) : [],
-      version: isSet(object.version) ? String(object.version) : ""
+      connectionHops: Array.isArray(object?.connectionHops)
+        ? object.connectionHops.map((e: any) => String(e))
+        : [],
+      version: isSet(object.version) ? String(object.version) : '',
     };
   },
   toJSON(message: UpgradeFields): JsonSafe<UpgradeFields> {
     const obj: any = {};
-    message.ordering !== undefined && (obj.ordering = orderToJSON(message.ordering));
+    message.ordering !== undefined &&
+      (obj.ordering = orderToJSON(message.ordering));
     if (message.connectionHops) {
       obj.connectionHops = message.connectionHops.map(e => e);
     } else {
@@ -221,7 +262,7 @@ export const UpgradeFields = {
     const message = createBaseUpgradeFields();
     message.ordering = object.ordering ?? 0;
     message.connectionHops = object.connectionHops?.map(e => e) || [];
-    message.version = object.version ?? "";
+    message.version = object.version ?? '';
     return message;
   },
   fromProtoMsg(message: UpgradeFieldsProtoMsg): UpgradeFields {
@@ -232,30 +273,34 @@ export const UpgradeFields = {
   },
   toProtoMsg(message: UpgradeFields): UpgradeFieldsProtoMsg {
     return {
-      typeUrl: "/ibc.core.channel.v1.UpgradeFields",
-      value: UpgradeFields.encode(message).finish()
+      typeUrl: '/ibc.core.channel.v1.UpgradeFields',
+      value: UpgradeFields.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseErrorReceipt(): ErrorReceipt {
   return {
     sequence: BigInt(0),
-    message: ""
+    message: '',
   };
 }
 export const ErrorReceipt = {
-  typeUrl: "/ibc.core.channel.v1.ErrorReceipt" as const,
-  encode(message: ErrorReceipt, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/ibc.core.channel.v1.ErrorReceipt' as const,
+  encode(
+    message: ErrorReceipt,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.sequence !== BigInt(0)) {
       writer.uint32(8).uint64(message.sequence);
     }
-    if (message.message !== "") {
+    if (message.message !== '') {
       writer.uint32(18).string(message.message);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): ErrorReceipt {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseErrorReceipt();
     while (reader.pos < end) {
@@ -276,20 +321,26 @@ export const ErrorReceipt = {
   },
   fromJSON(object: any): ErrorReceipt {
     return {
-      sequence: isSet(object.sequence) ? BigInt(object.sequence.toString()) : BigInt(0),
-      message: isSet(object.message) ? String(object.message) : ""
+      sequence: isSet(object.sequence)
+        ? BigInt(object.sequence.toString())
+        : BigInt(0),
+      message: isSet(object.message) ? String(object.message) : '',
     };
   },
   toJSON(message: ErrorReceipt): JsonSafe<ErrorReceipt> {
     const obj: any = {};
-    message.sequence !== undefined && (obj.sequence = (message.sequence || BigInt(0)).toString());
+    message.sequence !== undefined &&
+      (obj.sequence = (message.sequence || BigInt(0)).toString());
     message.message !== undefined && (obj.message = message.message);
     return obj;
   },
   fromPartial(object: Partial<ErrorReceipt>): ErrorReceipt {
     const message = createBaseErrorReceipt();
-    message.sequence = object.sequence !== undefined && object.sequence !== null ? BigInt(object.sequence.toString()) : BigInt(0);
-    message.message = object.message ?? "";
+    message.sequence =
+      object.sequence !== undefined && object.sequence !== null
+        ? BigInt(object.sequence.toString())
+        : BigInt(0);
+    message.message = object.message ?? '';
     return message;
   },
   fromProtoMsg(message: ErrorReceiptProtoMsg): ErrorReceipt {
@@ -300,8 +351,8 @@ export const ErrorReceipt = {
   },
   toProtoMsg(message: ErrorReceipt): ErrorReceiptProtoMsg {
     return {
-      typeUrl: "/ibc.core.channel.v1.ErrorReceipt",
-      value: ErrorReceipt.encode(message).finish()
+      typeUrl: '/ibc.core.channel.v1.ErrorReceipt',
+      value: ErrorReceipt.encode(message).finish(),
     };
-  }
+  },
 };

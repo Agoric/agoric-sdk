@@ -1,8 +1,13 @@
 //@ts-nocheck
-import { Params, type ParamsSDKType, State, type StateSDKType } from "./vbank.js";
-import { BinaryReader, BinaryWriter } from "../../binary.js";
-import { isSet } from "../../helpers.js";
-import {type JsonSafe } from "../../json-safe.js";
+import {
+  Params,
+  type ParamsSDKType,
+  State,
+  type StateSDKType,
+} from './vbank.js';
+import { BinaryReader, BinaryWriter } from '../../binary.js';
+import { isSet } from '../../helpers.js';
+import { type JsonSafe } from '../../json-safe.js';
 /** The initial and exported module state. */
 export interface GenesisState {
   /** parms defines all the parameters of the module. */
@@ -11,7 +16,7 @@ export interface GenesisState {
   state: State;
 }
 export interface GenesisStateProtoMsg {
-  typeUrl: "/agoric.vbank.GenesisState";
+  typeUrl: '/agoric.vbank.GenesisState';
   value: Uint8Array;
 }
 /** The initial and exported module state. */
@@ -22,12 +27,15 @@ export interface GenesisStateSDKType {
 function createBaseGenesisState(): GenesisState {
   return {
     params: Params.fromPartial({}),
-    state: State.fromPartial({})
+    state: State.fromPartial({}),
   };
 }
 export const GenesisState = {
-  typeUrl: "/agoric.vbank.GenesisState" as const,
-  encode(message: GenesisState, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/agoric.vbank.GenesisState' as const,
+  encode(
+    message: GenesisState,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.params !== undefined) {
       Params.encode(message.params, writer.uint32(10).fork()).ldelim();
     }
@@ -37,7 +45,8 @@ export const GenesisState = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): GenesisState {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGenesisState();
     while (reader.pos < end) {
@@ -59,19 +68,27 @@ export const GenesisState = {
   fromJSON(object: any): GenesisState {
     return {
       params: isSet(object.params) ? Params.fromJSON(object.params) : undefined,
-      state: isSet(object.state) ? State.fromJSON(object.state) : undefined
+      state: isSet(object.state) ? State.fromJSON(object.state) : undefined,
     };
   },
   toJSON(message: GenesisState): JsonSafe<GenesisState> {
     const obj: any = {};
-    message.params !== undefined && (obj.params = message.params ? Params.toJSON(message.params) : undefined);
-    message.state !== undefined && (obj.state = message.state ? State.toJSON(message.state) : undefined);
+    message.params !== undefined &&
+      (obj.params = message.params ? Params.toJSON(message.params) : undefined);
+    message.state !== undefined &&
+      (obj.state = message.state ? State.toJSON(message.state) : undefined);
     return obj;
   },
   fromPartial(object: Partial<GenesisState>): GenesisState {
     const message = createBaseGenesisState();
-    message.params = object.params !== undefined && object.params !== null ? Params.fromPartial(object.params) : undefined;
-    message.state = object.state !== undefined && object.state !== null ? State.fromPartial(object.state) : undefined;
+    message.params =
+      object.params !== undefined && object.params !== null
+        ? Params.fromPartial(object.params)
+        : undefined;
+    message.state =
+      object.state !== undefined && object.state !== null
+        ? State.fromPartial(object.state)
+        : undefined;
     return message;
   },
   fromProtoMsg(message: GenesisStateProtoMsg): GenesisState {
@@ -82,8 +99,8 @@ export const GenesisState = {
   },
   toProtoMsg(message: GenesisState): GenesisStateProtoMsg {
     return {
-      typeUrl: "/agoric.vbank.GenesisState",
-      value: GenesisState.encode(message).finish()
+      typeUrl: '/agoric.vbank.GenesisState',
+      value: GenesisState.encode(message).finish(),
     };
-  }
+  },
 };

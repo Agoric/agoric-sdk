@@ -1,7 +1,7 @@
 //@ts-nocheck
-import { BinaryReader, BinaryWriter } from "../../../binary.js";
-import { isSet } from "../../../helpers.js";
-import {type JsonSafe } from "../../../json-safe.js";
+import { BinaryReader, BinaryWriter } from '../../../binary.js';
+import { isSet } from '../../../helpers.js';
+import { type JsonSafe } from '../../../json-safe.js';
 /** Level is the permission level. */
 export enum Permissions_Level {
   /**
@@ -32,19 +32,19 @@ export const Permissions_LevelSDKType = Permissions_Level;
 export function permissions_LevelFromJSON(object: any): Permissions_Level {
   switch (object) {
     case 0:
-    case "LEVEL_NONE_UNSPECIFIED":
+    case 'LEVEL_NONE_UNSPECIFIED':
       return Permissions_Level.LEVEL_NONE_UNSPECIFIED;
     case 1:
-    case "LEVEL_SOME_MSGS":
+    case 'LEVEL_SOME_MSGS':
       return Permissions_Level.LEVEL_SOME_MSGS;
     case 2:
-    case "LEVEL_ALL_MSGS":
+    case 'LEVEL_ALL_MSGS':
       return Permissions_Level.LEVEL_ALL_MSGS;
     case 3:
-    case "LEVEL_SUPER_ADMIN":
+    case 'LEVEL_SUPER_ADMIN':
       return Permissions_Level.LEVEL_SUPER_ADMIN;
     case -1:
-    case "UNRECOGNIZED":
+    case 'UNRECOGNIZED':
     default:
       return Permissions_Level.UNRECOGNIZED;
   }
@@ -52,16 +52,16 @@ export function permissions_LevelFromJSON(object: any): Permissions_Level {
 export function permissions_LevelToJSON(object: Permissions_Level): string {
   switch (object) {
     case Permissions_Level.LEVEL_NONE_UNSPECIFIED:
-      return "LEVEL_NONE_UNSPECIFIED";
+      return 'LEVEL_NONE_UNSPECIFIED';
     case Permissions_Level.LEVEL_SOME_MSGS:
-      return "LEVEL_SOME_MSGS";
+      return 'LEVEL_SOME_MSGS';
     case Permissions_Level.LEVEL_ALL_MSGS:
-      return "LEVEL_ALL_MSGS";
+      return 'LEVEL_ALL_MSGS';
     case Permissions_Level.LEVEL_SUPER_ADMIN:
-      return "LEVEL_SUPER_ADMIN";
+      return 'LEVEL_SUPER_ADMIN';
     case Permissions_Level.UNRECOGNIZED:
     default:
-      return "UNRECOGNIZED";
+      return 'UNRECOGNIZED';
   }
 }
 /**
@@ -79,7 +79,7 @@ export interface Permissions {
   limitTypeUrls: string[];
 }
 export interface PermissionsProtoMsg {
-  typeUrl: "/cosmos.circuit.v1.Permissions";
+  typeUrl: '/cosmos.circuit.v1.Permissions';
   value: Uint8Array;
 }
 /**
@@ -96,7 +96,7 @@ export interface GenesisAccountPermissions {
   permissions?: Permissions;
 }
 export interface GenesisAccountPermissionsProtoMsg {
-  typeUrl: "/cosmos.circuit.v1.GenesisAccountPermissions";
+  typeUrl: '/cosmos.circuit.v1.GenesisAccountPermissions';
   value: Uint8Array;
 }
 /** GenesisAccountPermissions is the account permissions for the circuit breaker in genesis */
@@ -110,7 +110,7 @@ export interface GenesisState {
   disabledTypeUrls: string[];
 }
 export interface GenesisStateProtoMsg {
-  typeUrl: "/cosmos.circuit.v1.GenesisState";
+  typeUrl: '/cosmos.circuit.v1.GenesisState';
   value: Uint8Array;
 }
 /** GenesisState is the state that must be provided at genesis. */
@@ -121,12 +121,15 @@ export interface GenesisStateSDKType {
 function createBasePermissions(): Permissions {
   return {
     level: 0,
-    limitTypeUrls: []
+    limitTypeUrls: [],
   };
 }
 export const Permissions = {
-  typeUrl: "/cosmos.circuit.v1.Permissions" as const,
-  encode(message: Permissions, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/cosmos.circuit.v1.Permissions' as const,
+  encode(
+    message: Permissions,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.level !== 0) {
       writer.uint32(8).int32(message.level);
     }
@@ -136,7 +139,8 @@ export const Permissions = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Permissions {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBasePermissions();
     while (reader.pos < end) {
@@ -158,12 +162,15 @@ export const Permissions = {
   fromJSON(object: any): Permissions {
     return {
       level: isSet(object.level) ? permissions_LevelFromJSON(object.level) : -1,
-      limitTypeUrls: Array.isArray(object?.limitTypeUrls) ? object.limitTypeUrls.map((e: any) => String(e)) : []
+      limitTypeUrls: Array.isArray(object?.limitTypeUrls)
+        ? object.limitTypeUrls.map((e: any) => String(e))
+        : [],
     };
   },
   toJSON(message: Permissions): JsonSafe<Permissions> {
     const obj: any = {};
-    message.level !== undefined && (obj.level = permissions_LevelToJSON(message.level));
+    message.level !== undefined &&
+      (obj.level = permissions_LevelToJSON(message.level));
     if (message.limitTypeUrls) {
       obj.limitTypeUrls = message.limitTypeUrls.map(e => e);
     } else {
@@ -185,30 +192,40 @@ export const Permissions = {
   },
   toProtoMsg(message: Permissions): PermissionsProtoMsg {
     return {
-      typeUrl: "/cosmos.circuit.v1.Permissions",
-      value: Permissions.encode(message).finish()
+      typeUrl: '/cosmos.circuit.v1.Permissions',
+      value: Permissions.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseGenesisAccountPermissions(): GenesisAccountPermissions {
   return {
-    address: "",
-    permissions: undefined
+    address: '',
+    permissions: undefined,
   };
 }
 export const GenesisAccountPermissions = {
-  typeUrl: "/cosmos.circuit.v1.GenesisAccountPermissions" as const,
-  encode(message: GenesisAccountPermissions, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.address !== "") {
+  typeUrl: '/cosmos.circuit.v1.GenesisAccountPermissions' as const,
+  encode(
+    message: GenesisAccountPermissions,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.address !== '') {
       writer.uint32(10).string(message.address);
     }
     if (message.permissions !== undefined) {
-      Permissions.encode(message.permissions, writer.uint32(18).fork()).ldelim();
+      Permissions.encode(
+        message.permissions,
+        writer.uint32(18).fork(),
+      ).ldelim();
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): GenesisAccountPermissions {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): GenesisAccountPermissions {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGenesisAccountPermissions();
     while (reader.pos < end) {
@@ -229,44 +246,63 @@ export const GenesisAccountPermissions = {
   },
   fromJSON(object: any): GenesisAccountPermissions {
     return {
-      address: isSet(object.address) ? String(object.address) : "",
-      permissions: isSet(object.permissions) ? Permissions.fromJSON(object.permissions) : undefined
+      address: isSet(object.address) ? String(object.address) : '',
+      permissions: isSet(object.permissions)
+        ? Permissions.fromJSON(object.permissions)
+        : undefined,
     };
   },
-  toJSON(message: GenesisAccountPermissions): JsonSafe<GenesisAccountPermissions> {
+  toJSON(
+    message: GenesisAccountPermissions,
+  ): JsonSafe<GenesisAccountPermissions> {
     const obj: any = {};
     message.address !== undefined && (obj.address = message.address);
-    message.permissions !== undefined && (obj.permissions = message.permissions ? Permissions.toJSON(message.permissions) : undefined);
+    message.permissions !== undefined &&
+      (obj.permissions = message.permissions
+        ? Permissions.toJSON(message.permissions)
+        : undefined);
     return obj;
   },
-  fromPartial(object: Partial<GenesisAccountPermissions>): GenesisAccountPermissions {
+  fromPartial(
+    object: Partial<GenesisAccountPermissions>,
+  ): GenesisAccountPermissions {
     const message = createBaseGenesisAccountPermissions();
-    message.address = object.address ?? "";
-    message.permissions = object.permissions !== undefined && object.permissions !== null ? Permissions.fromPartial(object.permissions) : undefined;
+    message.address = object.address ?? '';
+    message.permissions =
+      object.permissions !== undefined && object.permissions !== null
+        ? Permissions.fromPartial(object.permissions)
+        : undefined;
     return message;
   },
-  fromProtoMsg(message: GenesisAccountPermissionsProtoMsg): GenesisAccountPermissions {
+  fromProtoMsg(
+    message: GenesisAccountPermissionsProtoMsg,
+  ): GenesisAccountPermissions {
     return GenesisAccountPermissions.decode(message.value);
   },
   toProto(message: GenesisAccountPermissions): Uint8Array {
     return GenesisAccountPermissions.encode(message).finish();
   },
-  toProtoMsg(message: GenesisAccountPermissions): GenesisAccountPermissionsProtoMsg {
+  toProtoMsg(
+    message: GenesisAccountPermissions,
+  ): GenesisAccountPermissionsProtoMsg {
     return {
-      typeUrl: "/cosmos.circuit.v1.GenesisAccountPermissions",
-      value: GenesisAccountPermissions.encode(message).finish()
+      typeUrl: '/cosmos.circuit.v1.GenesisAccountPermissions',
+      value: GenesisAccountPermissions.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseGenesisState(): GenesisState {
   return {
     accountPermissions: [],
-    disabledTypeUrls: []
+    disabledTypeUrls: [],
   };
 }
 export const GenesisState = {
-  typeUrl: "/cosmos.circuit.v1.GenesisState" as const,
-  encode(message: GenesisState, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/cosmos.circuit.v1.GenesisState' as const,
+  encode(
+    message: GenesisState,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     for (const v of message.accountPermissions) {
       GenesisAccountPermissions.encode(v!, writer.uint32(10).fork()).ldelim();
     }
@@ -276,14 +312,17 @@ export const GenesisState = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): GenesisState {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGenesisState();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.accountPermissions.push(GenesisAccountPermissions.decode(reader, reader.uint32()));
+          message.accountPermissions.push(
+            GenesisAccountPermissions.decode(reader, reader.uint32()),
+          );
           break;
         case 2:
           message.disabledTypeUrls.push(reader.string());
@@ -297,14 +336,22 @@ export const GenesisState = {
   },
   fromJSON(object: any): GenesisState {
     return {
-      accountPermissions: Array.isArray(object?.accountPermissions) ? object.accountPermissions.map((e: any) => GenesisAccountPermissions.fromJSON(e)) : [],
-      disabledTypeUrls: Array.isArray(object?.disabledTypeUrls) ? object.disabledTypeUrls.map((e: any) => String(e)) : []
+      accountPermissions: Array.isArray(object?.accountPermissions)
+        ? object.accountPermissions.map((e: any) =>
+            GenesisAccountPermissions.fromJSON(e),
+          )
+        : [],
+      disabledTypeUrls: Array.isArray(object?.disabledTypeUrls)
+        ? object.disabledTypeUrls.map((e: any) => String(e))
+        : [],
     };
   },
   toJSON(message: GenesisState): JsonSafe<GenesisState> {
     const obj: any = {};
     if (message.accountPermissions) {
-      obj.accountPermissions = message.accountPermissions.map(e => e ? GenesisAccountPermissions.toJSON(e) : undefined);
+      obj.accountPermissions = message.accountPermissions.map(e =>
+        e ? GenesisAccountPermissions.toJSON(e) : undefined,
+      );
     } else {
       obj.accountPermissions = [];
     }
@@ -317,7 +364,10 @@ export const GenesisState = {
   },
   fromPartial(object: Partial<GenesisState>): GenesisState {
     const message = createBaseGenesisState();
-    message.accountPermissions = object.accountPermissions?.map(e => GenesisAccountPermissions.fromPartial(e)) || [];
+    message.accountPermissions =
+      object.accountPermissions?.map(e =>
+        GenesisAccountPermissions.fromPartial(e),
+      ) || [];
     message.disabledTypeUrls = object.disabledTypeUrls?.map(e => e) || [];
     return message;
   },
@@ -329,8 +379,8 @@ export const GenesisState = {
   },
   toProtoMsg(message: GenesisState): GenesisStateProtoMsg {
     return {
-      typeUrl: "/cosmos.circuit.v1.GenesisState",
-      value: GenesisState.encode(message).finish()
+      typeUrl: '/cosmos.circuit.v1.GenesisState',
+      value: GenesisState.encode(message).finish(),
     };
-  }
+  },
 };

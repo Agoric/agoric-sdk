@@ -1,15 +1,15 @@
 //@ts-nocheck
-import { Params, type ParamsSDKType } from "./controller.js";
-import { BinaryReader, BinaryWriter } from "../../../../../binary.js";
-import { isSet } from "../../../../../helpers.js";
-import {type JsonSafe } from "../../../../../json-safe.js";
+import { Params, type ParamsSDKType } from './controller.js';
+import { BinaryReader, BinaryWriter } from '../../../../../binary.js';
+import { isSet } from '../../../../../helpers.js';
+import { type JsonSafe } from '../../../../../json-safe.js';
 /** QueryInterchainAccountRequest is the request type for the Query/InterchainAccount RPC method. */
 export interface QueryInterchainAccountRequest {
   owner: string;
   connectionId: string;
 }
 export interface QueryInterchainAccountRequestProtoMsg {
-  typeUrl: "/ibc.applications.interchain_accounts.controller.v1.QueryInterchainAccountRequest";
+  typeUrl: '/ibc.applications.interchain_accounts.controller.v1.QueryInterchainAccountRequest';
   value: Uint8Array;
 }
 /** QueryInterchainAccountRequest is the request type for the Query/InterchainAccount RPC method. */
@@ -22,7 +22,7 @@ export interface QueryInterchainAccountResponse {
   address: string;
 }
 export interface QueryInterchainAccountResponseProtoMsg {
-  typeUrl: "/ibc.applications.interchain_accounts.controller.v1.QueryInterchainAccountResponse";
+  typeUrl: '/ibc.applications.interchain_accounts.controller.v1.QueryInterchainAccountResponse';
   value: Uint8Array;
 }
 /** QueryInterchainAccountResponse the response type for the Query/InterchainAccount RPC method. */
@@ -32,7 +32,7 @@ export interface QueryInterchainAccountResponseSDKType {
 /** QueryParamsRequest is the request type for the Query/Params RPC method. */
 export interface QueryParamsRequest {}
 export interface QueryParamsRequestProtoMsg {
-  typeUrl: "/ibc.applications.interchain_accounts.controller.v1.QueryParamsRequest";
+  typeUrl: '/ibc.applications.interchain_accounts.controller.v1.QueryParamsRequest';
   value: Uint8Array;
 }
 /** QueryParamsRequest is the request type for the Query/Params RPC method. */
@@ -43,7 +43,7 @@ export interface QueryParamsResponse {
   params?: Params;
 }
 export interface QueryParamsResponseProtoMsg {
-  typeUrl: "/ibc.applications.interchain_accounts.controller.v1.QueryParamsResponse";
+  typeUrl: '/ibc.applications.interchain_accounts.controller.v1.QueryParamsResponse';
   value: Uint8Array;
 }
 /** QueryParamsResponse is the response type for the Query/Params RPC method. */
@@ -52,23 +52,31 @@ export interface QueryParamsResponseSDKType {
 }
 function createBaseQueryInterchainAccountRequest(): QueryInterchainAccountRequest {
   return {
-    owner: "",
-    connectionId: ""
+    owner: '',
+    connectionId: '',
   };
 }
 export const QueryInterchainAccountRequest = {
-  typeUrl: "/ibc.applications.interchain_accounts.controller.v1.QueryInterchainAccountRequest" as const,
-  encode(message: QueryInterchainAccountRequest, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.owner !== "") {
+  typeUrl:
+    '/ibc.applications.interchain_accounts.controller.v1.QueryInterchainAccountRequest' as const,
+  encode(
+    message: QueryInterchainAccountRequest,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.owner !== '') {
       writer.uint32(10).string(message.owner);
     }
-    if (message.connectionId !== "") {
+    if (message.connectionId !== '') {
       writer.uint32(18).string(message.connectionId);
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): QueryInterchainAccountRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryInterchainAccountRequest {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryInterchainAccountRequest();
     while (reader.pos < end) {
@@ -89,50 +97,70 @@ export const QueryInterchainAccountRequest = {
   },
   fromJSON(object: any): QueryInterchainAccountRequest {
     return {
-      owner: isSet(object.owner) ? String(object.owner) : "",
-      connectionId: isSet(object.connectionId) ? String(object.connectionId) : ""
+      owner: isSet(object.owner) ? String(object.owner) : '',
+      connectionId: isSet(object.connectionId)
+        ? String(object.connectionId)
+        : '',
     };
   },
-  toJSON(message: QueryInterchainAccountRequest): JsonSafe<QueryInterchainAccountRequest> {
+  toJSON(
+    message: QueryInterchainAccountRequest,
+  ): JsonSafe<QueryInterchainAccountRequest> {
     const obj: any = {};
     message.owner !== undefined && (obj.owner = message.owner);
-    message.connectionId !== undefined && (obj.connectionId = message.connectionId);
+    message.connectionId !== undefined &&
+      (obj.connectionId = message.connectionId);
     return obj;
   },
-  fromPartial(object: Partial<QueryInterchainAccountRequest>): QueryInterchainAccountRequest {
+  fromPartial(
+    object: Partial<QueryInterchainAccountRequest>,
+  ): QueryInterchainAccountRequest {
     const message = createBaseQueryInterchainAccountRequest();
-    message.owner = object.owner ?? "";
-    message.connectionId = object.connectionId ?? "";
+    message.owner = object.owner ?? '';
+    message.connectionId = object.connectionId ?? '';
     return message;
   },
-  fromProtoMsg(message: QueryInterchainAccountRequestProtoMsg): QueryInterchainAccountRequest {
+  fromProtoMsg(
+    message: QueryInterchainAccountRequestProtoMsg,
+  ): QueryInterchainAccountRequest {
     return QueryInterchainAccountRequest.decode(message.value);
   },
   toProto(message: QueryInterchainAccountRequest): Uint8Array {
     return QueryInterchainAccountRequest.encode(message).finish();
   },
-  toProtoMsg(message: QueryInterchainAccountRequest): QueryInterchainAccountRequestProtoMsg {
+  toProtoMsg(
+    message: QueryInterchainAccountRequest,
+  ): QueryInterchainAccountRequestProtoMsg {
     return {
-      typeUrl: "/ibc.applications.interchain_accounts.controller.v1.QueryInterchainAccountRequest",
-      value: QueryInterchainAccountRequest.encode(message).finish()
+      typeUrl:
+        '/ibc.applications.interchain_accounts.controller.v1.QueryInterchainAccountRequest',
+      value: QueryInterchainAccountRequest.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseQueryInterchainAccountResponse(): QueryInterchainAccountResponse {
   return {
-    address: ""
+    address: '',
   };
 }
 export const QueryInterchainAccountResponse = {
-  typeUrl: "/ibc.applications.interchain_accounts.controller.v1.QueryInterchainAccountResponse" as const,
-  encode(message: QueryInterchainAccountResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.address !== "") {
+  typeUrl:
+    '/ibc.applications.interchain_accounts.controller.v1.QueryInterchainAccountResponse' as const,
+  encode(
+    message: QueryInterchainAccountResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.address !== '') {
       writer.uint32(10).string(message.address);
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): QueryInterchainAccountResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryInterchainAccountResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryInterchainAccountResponse();
     while (reader.pos < end) {
@@ -150,42 +178,59 @@ export const QueryInterchainAccountResponse = {
   },
   fromJSON(object: any): QueryInterchainAccountResponse {
     return {
-      address: isSet(object.address) ? String(object.address) : ""
+      address: isSet(object.address) ? String(object.address) : '',
     };
   },
-  toJSON(message: QueryInterchainAccountResponse): JsonSafe<QueryInterchainAccountResponse> {
+  toJSON(
+    message: QueryInterchainAccountResponse,
+  ): JsonSafe<QueryInterchainAccountResponse> {
     const obj: any = {};
     message.address !== undefined && (obj.address = message.address);
     return obj;
   },
-  fromPartial(object: Partial<QueryInterchainAccountResponse>): QueryInterchainAccountResponse {
+  fromPartial(
+    object: Partial<QueryInterchainAccountResponse>,
+  ): QueryInterchainAccountResponse {
     const message = createBaseQueryInterchainAccountResponse();
-    message.address = object.address ?? "";
+    message.address = object.address ?? '';
     return message;
   },
-  fromProtoMsg(message: QueryInterchainAccountResponseProtoMsg): QueryInterchainAccountResponse {
+  fromProtoMsg(
+    message: QueryInterchainAccountResponseProtoMsg,
+  ): QueryInterchainAccountResponse {
     return QueryInterchainAccountResponse.decode(message.value);
   },
   toProto(message: QueryInterchainAccountResponse): Uint8Array {
     return QueryInterchainAccountResponse.encode(message).finish();
   },
-  toProtoMsg(message: QueryInterchainAccountResponse): QueryInterchainAccountResponseProtoMsg {
+  toProtoMsg(
+    message: QueryInterchainAccountResponse,
+  ): QueryInterchainAccountResponseProtoMsg {
     return {
-      typeUrl: "/ibc.applications.interchain_accounts.controller.v1.QueryInterchainAccountResponse",
-      value: QueryInterchainAccountResponse.encode(message).finish()
+      typeUrl:
+        '/ibc.applications.interchain_accounts.controller.v1.QueryInterchainAccountResponse',
+      value: QueryInterchainAccountResponse.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseQueryParamsRequest(): QueryParamsRequest {
   return {};
 }
 export const QueryParamsRequest = {
-  typeUrl: "/ibc.applications.interchain_accounts.controller.v1.QueryParamsRequest" as const,
-  encode(_: QueryParamsRequest, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl:
+    '/ibc.applications.interchain_accounts.controller.v1.QueryParamsRequest' as const,
+  encode(
+    _: QueryParamsRequest,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): QueryParamsRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryParamsRequest {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryParamsRequest();
     while (reader.pos < end) {
@@ -217,26 +262,35 @@ export const QueryParamsRequest = {
   },
   toProtoMsg(message: QueryParamsRequest): QueryParamsRequestProtoMsg {
     return {
-      typeUrl: "/ibc.applications.interchain_accounts.controller.v1.QueryParamsRequest",
-      value: QueryParamsRequest.encode(message).finish()
+      typeUrl:
+        '/ibc.applications.interchain_accounts.controller.v1.QueryParamsRequest',
+      value: QueryParamsRequest.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseQueryParamsResponse(): QueryParamsResponse {
   return {
-    params: undefined
+    params: undefined,
   };
 }
 export const QueryParamsResponse = {
-  typeUrl: "/ibc.applications.interchain_accounts.controller.v1.QueryParamsResponse" as const,
-  encode(message: QueryParamsResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl:
+    '/ibc.applications.interchain_accounts.controller.v1.QueryParamsResponse' as const,
+  encode(
+    message: QueryParamsResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.params !== undefined) {
       Params.encode(message.params, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): QueryParamsResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryParamsResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryParamsResponse();
     while (reader.pos < end) {
@@ -254,17 +308,21 @@ export const QueryParamsResponse = {
   },
   fromJSON(object: any): QueryParamsResponse {
     return {
-      params: isSet(object.params) ? Params.fromJSON(object.params) : undefined
+      params: isSet(object.params) ? Params.fromJSON(object.params) : undefined,
     };
   },
   toJSON(message: QueryParamsResponse): JsonSafe<QueryParamsResponse> {
     const obj: any = {};
-    message.params !== undefined && (obj.params = message.params ? Params.toJSON(message.params) : undefined);
+    message.params !== undefined &&
+      (obj.params = message.params ? Params.toJSON(message.params) : undefined);
     return obj;
   },
   fromPartial(object: Partial<QueryParamsResponse>): QueryParamsResponse {
     const message = createBaseQueryParamsResponse();
-    message.params = object.params !== undefined && object.params !== null ? Params.fromPartial(object.params) : undefined;
+    message.params =
+      object.params !== undefined && object.params !== null
+        ? Params.fromPartial(object.params)
+        : undefined;
     return message;
   },
   fromProtoMsg(message: QueryParamsResponseProtoMsg): QueryParamsResponse {
@@ -275,8 +333,9 @@ export const QueryParamsResponse = {
   },
   toProtoMsg(message: QueryParamsResponse): QueryParamsResponseProtoMsg {
     return {
-      typeUrl: "/ibc.applications.interchain_accounts.controller.v1.QueryParamsResponse",
-      value: QueryParamsResponse.encode(message).finish()
+      typeUrl:
+        '/ibc.applications.interchain_accounts.controller.v1.QueryParamsResponse',
+      value: QueryParamsResponse.encode(message).finish(),
     };
-  }
+  },
 };

@@ -1,9 +1,9 @@
 //@ts-nocheck
-import { BinaryReader, BinaryWriter } from "../../../binary.js";
-import { isSet } from "../../../helpers.js";
-import { decodeBase64 as bytesFromBase64 } from "@endo/base64";
-import { encodeBase64 as base64FromBytes } from "@endo/base64";
-import {type JsonSafe } from "../../../json-safe.js";
+import { BinaryReader, BinaryWriter } from '../../../binary.js';
+import { isSet } from '../../../helpers.js';
+import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
+import { encodeBase64 as base64FromBytes } from '@endo/base64';
+import { type JsonSafe } from '../../../json-safe.js';
 /**
  * @param domain_id
  * @param address
@@ -13,7 +13,7 @@ export interface RemoteTokenMessenger {
   address: Uint8Array;
 }
 export interface RemoteTokenMessengerProtoMsg {
-  typeUrl: "/circle.cctp.v1.RemoteTokenMessenger";
+  typeUrl: '/circle.cctp.v1.RemoteTokenMessenger';
   value: Uint8Array;
 }
 /**
@@ -27,12 +27,15 @@ export interface RemoteTokenMessengerSDKType {
 function createBaseRemoteTokenMessenger(): RemoteTokenMessenger {
   return {
     domainId: 0,
-    address: new Uint8Array()
+    address: new Uint8Array(),
   };
 }
 export const RemoteTokenMessenger = {
-  typeUrl: "/circle.cctp.v1.RemoteTokenMessenger" as const,
-  encode(message: RemoteTokenMessenger, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/circle.cctp.v1.RemoteTokenMessenger' as const,
+  encode(
+    message: RemoteTokenMessenger,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.domainId !== 0) {
       writer.uint32(8).uint32(message.domainId);
     }
@@ -41,8 +44,12 @@ export const RemoteTokenMessenger = {
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): RemoteTokenMessenger {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): RemoteTokenMessenger {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseRemoteTokenMessenger();
     while (reader.pos < end) {
@@ -64,13 +71,19 @@ export const RemoteTokenMessenger = {
   fromJSON(object: any): RemoteTokenMessenger {
     return {
       domainId: isSet(object.domainId) ? Number(object.domainId) : 0,
-      address: isSet(object.address) ? bytesFromBase64(object.address) : new Uint8Array()
+      address: isSet(object.address)
+        ? bytesFromBase64(object.address)
+        : new Uint8Array(),
     };
   },
   toJSON(message: RemoteTokenMessenger): JsonSafe<RemoteTokenMessenger> {
     const obj: any = {};
-    message.domainId !== undefined && (obj.domainId = Math.round(message.domainId));
-    message.address !== undefined && (obj.address = base64FromBytes(message.address !== undefined ? message.address : new Uint8Array()));
+    message.domainId !== undefined &&
+      (obj.domainId = Math.round(message.domainId));
+    message.address !== undefined &&
+      (obj.address = base64FromBytes(
+        message.address !== undefined ? message.address : new Uint8Array(),
+      ));
     return obj;
   },
   fromPartial(object: Partial<RemoteTokenMessenger>): RemoteTokenMessenger {
@@ -87,8 +100,8 @@ export const RemoteTokenMessenger = {
   },
   toProtoMsg(message: RemoteTokenMessenger): RemoteTokenMessengerProtoMsg {
     return {
-      typeUrl: "/circle.cctp.v1.RemoteTokenMessenger",
-      value: RemoteTokenMessenger.encode(message).finish()
+      typeUrl: '/circle.cctp.v1.RemoteTokenMessenger',
+      value: RemoteTokenMessenger.encode(message).finish(),
     };
-  }
+  },
 };

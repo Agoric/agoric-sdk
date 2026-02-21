@@ -1,13 +1,13 @@
 //@ts-nocheck
-import { LSMTokenDeposit, type LSMTokenDepositSDKType } from "./records.js";
-import { BinaryReader, BinaryWriter } from "../../binary.js";
-import { isSet } from "../../helpers.js";
-import {type JsonSafe } from "../../json-safe.js";
+import { LSMTokenDeposit, type LSMTokenDepositSDKType } from './records.js';
+import { BinaryReader, BinaryWriter } from '../../binary.js';
+import { isSet } from '../../helpers.js';
+import { type JsonSafe } from '../../json-safe.js';
 export interface TransferCallback {
   depositRecordId: bigint;
 }
 export interface TransferCallbackProtoMsg {
-  typeUrl: "/stride.records.TransferCallback";
+  typeUrl: '/stride.records.TransferCallback';
   value: Uint8Array;
 }
 export interface TransferCallbackSDKType {
@@ -17,7 +17,7 @@ export interface TransferLSMTokenCallback {
   deposit?: LSMTokenDeposit;
 }
 export interface TransferLSMTokenCallbackProtoMsg {
-  typeUrl: "/stride.records.TransferLSMTokenCallback";
+  typeUrl: '/stride.records.TransferLSMTokenCallback';
   value: Uint8Array;
 }
 export interface TransferLSMTokenCallbackSDKType {
@@ -25,19 +25,23 @@ export interface TransferLSMTokenCallbackSDKType {
 }
 function createBaseTransferCallback(): TransferCallback {
   return {
-    depositRecordId: BigInt(0)
+    depositRecordId: BigInt(0),
   };
 }
 export const TransferCallback = {
-  typeUrl: "/stride.records.TransferCallback" as const,
-  encode(message: TransferCallback, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/stride.records.TransferCallback' as const,
+  encode(
+    message: TransferCallback,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.depositRecordId !== BigInt(0)) {
       writer.uint32(8).uint64(message.depositRecordId);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): TransferCallback {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseTransferCallback();
     while (reader.pos < end) {
@@ -55,17 +59,23 @@ export const TransferCallback = {
   },
   fromJSON(object: any): TransferCallback {
     return {
-      depositRecordId: isSet(object.depositRecordId) ? BigInt(object.depositRecordId.toString()) : BigInt(0)
+      depositRecordId: isSet(object.depositRecordId)
+        ? BigInt(object.depositRecordId.toString())
+        : BigInt(0),
     };
   },
   toJSON(message: TransferCallback): JsonSafe<TransferCallback> {
     const obj: any = {};
-    message.depositRecordId !== undefined && (obj.depositRecordId = (message.depositRecordId || BigInt(0)).toString());
+    message.depositRecordId !== undefined &&
+      (obj.depositRecordId = (message.depositRecordId || BigInt(0)).toString());
     return obj;
   },
   fromPartial(object: Partial<TransferCallback>): TransferCallback {
     const message = createBaseTransferCallback();
-    message.depositRecordId = object.depositRecordId !== undefined && object.depositRecordId !== null ? BigInt(object.depositRecordId.toString()) : BigInt(0);
+    message.depositRecordId =
+      object.depositRecordId !== undefined && object.depositRecordId !== null
+        ? BigInt(object.depositRecordId.toString())
+        : BigInt(0);
     return message;
   },
   fromProtoMsg(message: TransferCallbackProtoMsg): TransferCallback {
@@ -76,26 +86,36 @@ export const TransferCallback = {
   },
   toProtoMsg(message: TransferCallback): TransferCallbackProtoMsg {
     return {
-      typeUrl: "/stride.records.TransferCallback",
-      value: TransferCallback.encode(message).finish()
+      typeUrl: '/stride.records.TransferCallback',
+      value: TransferCallback.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseTransferLSMTokenCallback(): TransferLSMTokenCallback {
   return {
-    deposit: undefined
+    deposit: undefined,
   };
 }
 export const TransferLSMTokenCallback = {
-  typeUrl: "/stride.records.TransferLSMTokenCallback" as const,
-  encode(message: TransferLSMTokenCallback, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/stride.records.TransferLSMTokenCallback' as const,
+  encode(
+    message: TransferLSMTokenCallback,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.deposit !== undefined) {
-      LSMTokenDeposit.encode(message.deposit, writer.uint32(10).fork()).ldelim();
+      LSMTokenDeposit.encode(
+        message.deposit,
+        writer.uint32(10).fork(),
+      ).ldelim();
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): TransferLSMTokenCallback {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): TransferLSMTokenCallback {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseTransferLSMTokenCallback();
     while (reader.pos < end) {
@@ -113,29 +133,45 @@ export const TransferLSMTokenCallback = {
   },
   fromJSON(object: any): TransferLSMTokenCallback {
     return {
-      deposit: isSet(object.deposit) ? LSMTokenDeposit.fromJSON(object.deposit) : undefined
+      deposit: isSet(object.deposit)
+        ? LSMTokenDeposit.fromJSON(object.deposit)
+        : undefined,
     };
   },
-  toJSON(message: TransferLSMTokenCallback): JsonSafe<TransferLSMTokenCallback> {
+  toJSON(
+    message: TransferLSMTokenCallback,
+  ): JsonSafe<TransferLSMTokenCallback> {
     const obj: any = {};
-    message.deposit !== undefined && (obj.deposit = message.deposit ? LSMTokenDeposit.toJSON(message.deposit) : undefined);
+    message.deposit !== undefined &&
+      (obj.deposit = message.deposit
+        ? LSMTokenDeposit.toJSON(message.deposit)
+        : undefined);
     return obj;
   },
-  fromPartial(object: Partial<TransferLSMTokenCallback>): TransferLSMTokenCallback {
+  fromPartial(
+    object: Partial<TransferLSMTokenCallback>,
+  ): TransferLSMTokenCallback {
     const message = createBaseTransferLSMTokenCallback();
-    message.deposit = object.deposit !== undefined && object.deposit !== null ? LSMTokenDeposit.fromPartial(object.deposit) : undefined;
+    message.deposit =
+      object.deposit !== undefined && object.deposit !== null
+        ? LSMTokenDeposit.fromPartial(object.deposit)
+        : undefined;
     return message;
   },
-  fromProtoMsg(message: TransferLSMTokenCallbackProtoMsg): TransferLSMTokenCallback {
+  fromProtoMsg(
+    message: TransferLSMTokenCallbackProtoMsg,
+  ): TransferLSMTokenCallback {
     return TransferLSMTokenCallback.decode(message.value);
   },
   toProto(message: TransferLSMTokenCallback): Uint8Array {
     return TransferLSMTokenCallback.encode(message).finish();
   },
-  toProtoMsg(message: TransferLSMTokenCallback): TransferLSMTokenCallbackProtoMsg {
+  toProtoMsg(
+    message: TransferLSMTokenCallback,
+  ): TransferLSMTokenCallbackProtoMsg {
     return {
-      typeUrl: "/stride.records.TransferLSMTokenCallback",
-      value: TransferLSMTokenCallback.encode(message).finish()
+      typeUrl: '/stride.records.TransferLSMTokenCallback',
+      value: TransferLSMTokenCallback.encode(message).finish(),
     };
-  }
+  },
 };

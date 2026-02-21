@@ -11,16 +11,16 @@ export const AlgorithmSDKType = Algorithm;
 export function algorithmFromJSON(object: any): Algorithm {
   switch (object) {
     case 0:
-    case "UNSPECIFIED":
+    case 'UNSPECIFIED':
       return Algorithm.UNSPECIFIED;
     case 1:
-    case "STABLESWAP":
+    case 'STABLESWAP':
       return Algorithm.STABLESWAP;
     case 2:
-    case "PERFECTPRICE":
+    case 'PERFECTPRICE':
       return Algorithm.PERFECTPRICE;
     case -1:
-    case "UNRECOGNIZED":
+    case 'UNRECOGNIZED':
     default:
       return Algorithm.UNRECOGNIZED;
   }
@@ -28,13 +28,13 @@ export function algorithmFromJSON(object: any): Algorithm {
 export function algorithmToJSON(object: Algorithm): string {
   switch (object) {
     case Algorithm.UNSPECIFIED:
-      return "UNSPECIFIED";
+      return 'UNSPECIFIED';
     case Algorithm.STABLESWAP:
-      return "STABLESWAP";
+      return 'STABLESWAP';
     case Algorithm.PERFECTPRICE:
-      return "PERFECTPRICE";
+      return 'PERFECTPRICE';
     case Algorithm.UNRECOGNIZED:
     default:
-      return "UNRECOGNIZED";
+      return 'UNRECOGNIZED';
   }
 }

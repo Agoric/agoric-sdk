@@ -1,8 +1,8 @@
 //@ts-nocheck
-import { BinaryReader, BinaryWriter } from "../../binary.js";
-import { Decimal } from "../../decimals.js";
-import { isSet } from "../../helpers.js";
-import {type JsonSafe } from "../../json-safe.js";
+import { BinaryReader, BinaryWriter } from '../../binary.js';
+import { Decimal } from '../../decimals.js';
+import { isSet } from '../../helpers.js';
+import { type JsonSafe } from '../../json-safe.js';
 /**
  * Status fields for a delegation record
  * Note: There is an important assumption here that tokens in the deposit
@@ -33,39 +33,43 @@ export enum DelegationRecordStatus {
   UNRECOGNIZED = -1,
 }
 export const DelegationRecordStatusSDKType = DelegationRecordStatus;
-export function delegationRecordStatusFromJSON(object: any): DelegationRecordStatus {
+export function delegationRecordStatusFromJSON(
+  object: any,
+): DelegationRecordStatus {
   switch (object) {
     case 0:
-    case "TRANSFER_IN_PROGRESS":
+    case 'TRANSFER_IN_PROGRESS':
       return DelegationRecordStatus.TRANSFER_IN_PROGRESS;
     case 1:
-    case "TRANSFER_FAILED":
+    case 'TRANSFER_FAILED':
       return DelegationRecordStatus.TRANSFER_FAILED;
     case 2:
-    case "DELEGATION_QUEUE":
+    case 'DELEGATION_QUEUE':
       return DelegationRecordStatus.DELEGATION_QUEUE;
     case 3:
-    case "DELEGATION_COMPLETE":
+    case 'DELEGATION_COMPLETE':
       return DelegationRecordStatus.DELEGATION_COMPLETE;
     case -1:
-    case "UNRECOGNIZED":
+    case 'UNRECOGNIZED':
     default:
       return DelegationRecordStatus.UNRECOGNIZED;
   }
 }
-export function delegationRecordStatusToJSON(object: DelegationRecordStatus): string {
+export function delegationRecordStatusToJSON(
+  object: DelegationRecordStatus,
+): string {
   switch (object) {
     case DelegationRecordStatus.TRANSFER_IN_PROGRESS:
-      return "TRANSFER_IN_PROGRESS";
+      return 'TRANSFER_IN_PROGRESS';
     case DelegationRecordStatus.TRANSFER_FAILED:
-      return "TRANSFER_FAILED";
+      return 'TRANSFER_FAILED';
     case DelegationRecordStatus.DELEGATION_QUEUE:
-      return "DELEGATION_QUEUE";
+      return 'DELEGATION_QUEUE';
     case DelegationRecordStatus.DELEGATION_COMPLETE:
-      return "DELEGATION_COMPLETE";
+      return 'DELEGATION_COMPLETE';
     case DelegationRecordStatus.UNRECOGNIZED:
     default:
-      return "UNRECOGNIZED";
+      return 'UNRECOGNIZED';
   }
 }
 /** Status fields for an unbonding record */
@@ -100,49 +104,53 @@ export enum UnbondingRecordStatus {
   UNRECOGNIZED = -1,
 }
 export const UnbondingRecordStatusSDKType = UnbondingRecordStatus;
-export function unbondingRecordStatusFromJSON(object: any): UnbondingRecordStatus {
+export function unbondingRecordStatusFromJSON(
+  object: any,
+): UnbondingRecordStatus {
   switch (object) {
     case 0:
-    case "ACCUMULATING_REDEMPTIONS":
+    case 'ACCUMULATING_REDEMPTIONS':
       return UnbondingRecordStatus.ACCUMULATING_REDEMPTIONS;
     case 1:
-    case "UNBONDING_QUEUE":
+    case 'UNBONDING_QUEUE':
       return UnbondingRecordStatus.UNBONDING_QUEUE;
     case 2:
-    case "UNBONDING_IN_PROGRESS":
+    case 'UNBONDING_IN_PROGRESS':
       return UnbondingRecordStatus.UNBONDING_IN_PROGRESS;
     case 3:
-    case "UNBONDED":
+    case 'UNBONDED':
       return UnbondingRecordStatus.UNBONDED;
     case 4:
-    case "CLAIMABLE":
+    case 'CLAIMABLE':
       return UnbondingRecordStatus.CLAIMABLE;
     case 5:
-    case "CLAIMED":
+    case 'CLAIMED':
       return UnbondingRecordStatus.CLAIMED;
     case -1:
-    case "UNRECOGNIZED":
+    case 'UNRECOGNIZED':
     default:
       return UnbondingRecordStatus.UNRECOGNIZED;
   }
 }
-export function unbondingRecordStatusToJSON(object: UnbondingRecordStatus): string {
+export function unbondingRecordStatusToJSON(
+  object: UnbondingRecordStatus,
+): string {
   switch (object) {
     case UnbondingRecordStatus.ACCUMULATING_REDEMPTIONS:
-      return "ACCUMULATING_REDEMPTIONS";
+      return 'ACCUMULATING_REDEMPTIONS';
     case UnbondingRecordStatus.UNBONDING_QUEUE:
-      return "UNBONDING_QUEUE";
+      return 'UNBONDING_QUEUE';
     case UnbondingRecordStatus.UNBONDING_IN_PROGRESS:
-      return "UNBONDING_IN_PROGRESS";
+      return 'UNBONDING_IN_PROGRESS';
     case UnbondingRecordStatus.UNBONDED:
-      return "UNBONDED";
+      return 'UNBONDED';
     case UnbondingRecordStatus.CLAIMABLE:
-      return "CLAIMABLE";
+      return 'CLAIMABLE';
     case UnbondingRecordStatus.CLAIMED:
-      return "CLAIMED";
+      return 'CLAIMED';
     case UnbondingRecordStatus.UNRECOGNIZED:
     default:
-      return "UNRECOGNIZED";
+      return 'UNRECOGNIZED';
   }
 }
 export interface HostZone {
@@ -188,7 +196,7 @@ export interface HostZone {
   halted: boolean;
 }
 export interface HostZoneProtoMsg {
-  typeUrl: "/stride.stakedym.HostZone";
+  typeUrl: '/stride.stakedym.HostZone';
   value: Uint8Array;
 }
 export interface HostZoneSDKType {
@@ -231,7 +239,7 @@ export interface DelegationRecord {
   txHash: string;
 }
 export interface DelegationRecordProtoMsg {
-  typeUrl: "/stride.stakedym.DelegationRecord";
+  typeUrl: '/stride.stakedym.DelegationRecord';
   value: Uint8Array;
 }
 /**
@@ -265,7 +273,7 @@ export interface UnbondingRecord {
   unbondedTokenSweepTxHash: string;
 }
 export interface UnbondingRecordProtoMsg {
-  typeUrl: "/stride.stakedym.UnbondingRecord";
+  typeUrl: '/stride.stakedym.UnbondingRecord';
   value: Uint8Array;
 }
 /** UnbondingRecords track the aggregate unbondings across an epoch */
@@ -290,7 +298,7 @@ export interface RedemptionRecord {
   nativeAmount: string;
 }
 export interface RedemptionRecordProtoMsg {
-  typeUrl: "/stride.stakedym.RedemptionRecord";
+  typeUrl: '/stride.stakedym.RedemptionRecord';
   value: Uint8Array;
 }
 /** RedemptionRecords track an individual user's redemption claims */
@@ -315,7 +323,7 @@ export interface SlashRecord {
   validatorAddress: string;
 }
 export interface SlashRecordProtoMsg {
-  typeUrl: "/stride.stakedym.SlashRecord";
+  typeUrl: '/stride.stakedym.SlashRecord';
   value: Uint8Array;
 }
 /** SlashRecords log adjustments to the delegated balance */
@@ -327,83 +335,102 @@ export interface SlashRecordSDKType {
 }
 function createBaseHostZone(): HostZone {
   return {
-    chainId: "",
-    nativeTokenDenom: "",
-    nativeTokenIbcDenom: "",
-    transferChannelId: "",
-    delegationAddress: "",
-    rewardAddress: "",
-    depositAddress: "",
-    redemptionAddress: "",
-    claimAddress: "",
-    operatorAddressOnStride: "",
-    safeAddressOnStride: "",
-    lastRedemptionRate: "",
-    redemptionRate: "",
-    minRedemptionRate: "",
-    maxRedemptionRate: "",
-    minInnerRedemptionRate: "",
-    maxInnerRedemptionRate: "",
-    delegatedBalance: "",
+    chainId: '',
+    nativeTokenDenom: '',
+    nativeTokenIbcDenom: '',
+    transferChannelId: '',
+    delegationAddress: '',
+    rewardAddress: '',
+    depositAddress: '',
+    redemptionAddress: '',
+    claimAddress: '',
+    operatorAddressOnStride: '',
+    safeAddressOnStride: '',
+    lastRedemptionRate: '',
+    redemptionRate: '',
+    minRedemptionRate: '',
+    maxRedemptionRate: '',
+    minInnerRedemptionRate: '',
+    maxInnerRedemptionRate: '',
+    delegatedBalance: '',
     unbondingPeriodSeconds: BigInt(0),
-    halted: false
+    halted: false,
   };
 }
 export const HostZone = {
-  typeUrl: "/stride.stakedym.HostZone" as const,
-  encode(message: HostZone, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.chainId !== "") {
+  typeUrl: '/stride.stakedym.HostZone' as const,
+  encode(
+    message: HostZone,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.chainId !== '') {
       writer.uint32(10).string(message.chainId);
     }
-    if (message.nativeTokenDenom !== "") {
+    if (message.nativeTokenDenom !== '') {
       writer.uint32(18).string(message.nativeTokenDenom);
     }
-    if (message.nativeTokenIbcDenom !== "") {
+    if (message.nativeTokenIbcDenom !== '') {
       writer.uint32(26).string(message.nativeTokenIbcDenom);
     }
-    if (message.transferChannelId !== "") {
+    if (message.transferChannelId !== '') {
       writer.uint32(34).string(message.transferChannelId);
     }
-    if (message.delegationAddress !== "") {
+    if (message.delegationAddress !== '') {
       writer.uint32(42).string(message.delegationAddress);
     }
-    if (message.rewardAddress !== "") {
+    if (message.rewardAddress !== '') {
       writer.uint32(50).string(message.rewardAddress);
     }
-    if (message.depositAddress !== "") {
+    if (message.depositAddress !== '') {
       writer.uint32(58).string(message.depositAddress);
     }
-    if (message.redemptionAddress !== "") {
+    if (message.redemptionAddress !== '') {
       writer.uint32(66).string(message.redemptionAddress);
     }
-    if (message.claimAddress !== "") {
+    if (message.claimAddress !== '') {
       writer.uint32(74).string(message.claimAddress);
     }
-    if (message.operatorAddressOnStride !== "") {
+    if (message.operatorAddressOnStride !== '') {
       writer.uint32(82).string(message.operatorAddressOnStride);
     }
-    if (message.safeAddressOnStride !== "") {
+    if (message.safeAddressOnStride !== '') {
       writer.uint32(90).string(message.safeAddressOnStride);
     }
-    if (message.lastRedemptionRate !== "") {
-      writer.uint32(98).string(Decimal.fromUserInput(message.lastRedemptionRate, 18).atomics);
+    if (message.lastRedemptionRate !== '') {
+      writer
+        .uint32(98)
+        .string(Decimal.fromUserInput(message.lastRedemptionRate, 18).atomics);
     }
-    if (message.redemptionRate !== "") {
-      writer.uint32(106).string(Decimal.fromUserInput(message.redemptionRate, 18).atomics);
+    if (message.redemptionRate !== '') {
+      writer
+        .uint32(106)
+        .string(Decimal.fromUserInput(message.redemptionRate, 18).atomics);
     }
-    if (message.minRedemptionRate !== "") {
-      writer.uint32(114).string(Decimal.fromUserInput(message.minRedemptionRate, 18).atomics);
+    if (message.minRedemptionRate !== '') {
+      writer
+        .uint32(114)
+        .string(Decimal.fromUserInput(message.minRedemptionRate, 18).atomics);
     }
-    if (message.maxRedemptionRate !== "") {
-      writer.uint32(122).string(Decimal.fromUserInput(message.maxRedemptionRate, 18).atomics);
+    if (message.maxRedemptionRate !== '') {
+      writer
+        .uint32(122)
+        .string(Decimal.fromUserInput(message.maxRedemptionRate, 18).atomics);
     }
-    if (message.minInnerRedemptionRate !== "") {
-      writer.uint32(130).string(Decimal.fromUserInput(message.minInnerRedemptionRate, 18).atomics);
+    if (message.minInnerRedemptionRate !== '') {
+      writer
+        .uint32(130)
+        .string(
+          Decimal.fromUserInput(message.minInnerRedemptionRate, 18).atomics,
+        );
     }
-    if (message.maxInnerRedemptionRate !== "") {
-      writer.uint32(138).string(Decimal.fromUserInput(message.maxInnerRedemptionRate, 18).atomics);
+    if (message.maxInnerRedemptionRate !== '') {
+      writer
+        .uint32(138)
+        .string(
+          Decimal.fromUserInput(message.maxInnerRedemptionRate, 18).atomics,
+        );
     }
-    if (message.delegatedBalance !== "") {
+    if (message.delegatedBalance !== '') {
       writer.uint32(146).string(message.delegatedBalance);
     }
     if (message.unbondingPeriodSeconds !== BigInt(0)) {
@@ -415,7 +442,8 @@ export const HostZone = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): HostZone {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseHostZone();
     while (reader.pos < end) {
@@ -455,22 +483,40 @@ export const HostZone = {
           message.safeAddressOnStride = reader.string();
           break;
         case 12:
-          message.lastRedemptionRate = Decimal.fromAtomics(reader.string(), 18).toString();
+          message.lastRedemptionRate = Decimal.fromAtomics(
+            reader.string(),
+            18,
+          ).toString();
           break;
         case 13:
-          message.redemptionRate = Decimal.fromAtomics(reader.string(), 18).toString();
+          message.redemptionRate = Decimal.fromAtomics(
+            reader.string(),
+            18,
+          ).toString();
           break;
         case 14:
-          message.minRedemptionRate = Decimal.fromAtomics(reader.string(), 18).toString();
+          message.minRedemptionRate = Decimal.fromAtomics(
+            reader.string(),
+            18,
+          ).toString();
           break;
         case 15:
-          message.maxRedemptionRate = Decimal.fromAtomics(reader.string(), 18).toString();
+          message.maxRedemptionRate = Decimal.fromAtomics(
+            reader.string(),
+            18,
+          ).toString();
           break;
         case 16:
-          message.minInnerRedemptionRate = Decimal.fromAtomics(reader.string(), 18).toString();
+          message.minInnerRedemptionRate = Decimal.fromAtomics(
+            reader.string(),
+            18,
+          ).toString();
           break;
         case 17:
-          message.maxInnerRedemptionRate = Decimal.fromAtomics(reader.string(), 18).toString();
+          message.maxInnerRedemptionRate = Decimal.fromAtomics(
+            reader.string(),
+            18,
+          ).toString();
           break;
         case 18:
           message.delegatedBalance = reader.string();
@@ -490,73 +536,133 @@ export const HostZone = {
   },
   fromJSON(object: any): HostZone {
     return {
-      chainId: isSet(object.chainId) ? String(object.chainId) : "",
-      nativeTokenDenom: isSet(object.nativeTokenDenom) ? String(object.nativeTokenDenom) : "",
-      nativeTokenIbcDenom: isSet(object.nativeTokenIbcDenom) ? String(object.nativeTokenIbcDenom) : "",
-      transferChannelId: isSet(object.transferChannelId) ? String(object.transferChannelId) : "",
-      delegationAddress: isSet(object.delegationAddress) ? String(object.delegationAddress) : "",
-      rewardAddress: isSet(object.rewardAddress) ? String(object.rewardAddress) : "",
-      depositAddress: isSet(object.depositAddress) ? String(object.depositAddress) : "",
-      redemptionAddress: isSet(object.redemptionAddress) ? String(object.redemptionAddress) : "",
-      claimAddress: isSet(object.claimAddress) ? String(object.claimAddress) : "",
-      operatorAddressOnStride: isSet(object.operatorAddressOnStride) ? String(object.operatorAddressOnStride) : "",
-      safeAddressOnStride: isSet(object.safeAddressOnStride) ? String(object.safeAddressOnStride) : "",
-      lastRedemptionRate: isSet(object.lastRedemptionRate) ? String(object.lastRedemptionRate) : "",
-      redemptionRate: isSet(object.redemptionRate) ? String(object.redemptionRate) : "",
-      minRedemptionRate: isSet(object.minRedemptionRate) ? String(object.minRedemptionRate) : "",
-      maxRedemptionRate: isSet(object.maxRedemptionRate) ? String(object.maxRedemptionRate) : "",
-      minInnerRedemptionRate: isSet(object.minInnerRedemptionRate) ? String(object.minInnerRedemptionRate) : "",
-      maxInnerRedemptionRate: isSet(object.maxInnerRedemptionRate) ? String(object.maxInnerRedemptionRate) : "",
-      delegatedBalance: isSet(object.delegatedBalance) ? String(object.delegatedBalance) : "",
-      unbondingPeriodSeconds: isSet(object.unbondingPeriodSeconds) ? BigInt(object.unbondingPeriodSeconds.toString()) : BigInt(0),
-      halted: isSet(object.halted) ? Boolean(object.halted) : false
+      chainId: isSet(object.chainId) ? String(object.chainId) : '',
+      nativeTokenDenom: isSet(object.nativeTokenDenom)
+        ? String(object.nativeTokenDenom)
+        : '',
+      nativeTokenIbcDenom: isSet(object.nativeTokenIbcDenom)
+        ? String(object.nativeTokenIbcDenom)
+        : '',
+      transferChannelId: isSet(object.transferChannelId)
+        ? String(object.transferChannelId)
+        : '',
+      delegationAddress: isSet(object.delegationAddress)
+        ? String(object.delegationAddress)
+        : '',
+      rewardAddress: isSet(object.rewardAddress)
+        ? String(object.rewardAddress)
+        : '',
+      depositAddress: isSet(object.depositAddress)
+        ? String(object.depositAddress)
+        : '',
+      redemptionAddress: isSet(object.redemptionAddress)
+        ? String(object.redemptionAddress)
+        : '',
+      claimAddress: isSet(object.claimAddress)
+        ? String(object.claimAddress)
+        : '',
+      operatorAddressOnStride: isSet(object.operatorAddressOnStride)
+        ? String(object.operatorAddressOnStride)
+        : '',
+      safeAddressOnStride: isSet(object.safeAddressOnStride)
+        ? String(object.safeAddressOnStride)
+        : '',
+      lastRedemptionRate: isSet(object.lastRedemptionRate)
+        ? String(object.lastRedemptionRate)
+        : '',
+      redemptionRate: isSet(object.redemptionRate)
+        ? String(object.redemptionRate)
+        : '',
+      minRedemptionRate: isSet(object.minRedemptionRate)
+        ? String(object.minRedemptionRate)
+        : '',
+      maxRedemptionRate: isSet(object.maxRedemptionRate)
+        ? String(object.maxRedemptionRate)
+        : '',
+      minInnerRedemptionRate: isSet(object.minInnerRedemptionRate)
+        ? String(object.minInnerRedemptionRate)
+        : '',
+      maxInnerRedemptionRate: isSet(object.maxInnerRedemptionRate)
+        ? String(object.maxInnerRedemptionRate)
+        : '',
+      delegatedBalance: isSet(object.delegatedBalance)
+        ? String(object.delegatedBalance)
+        : '',
+      unbondingPeriodSeconds: isSet(object.unbondingPeriodSeconds)
+        ? BigInt(object.unbondingPeriodSeconds.toString())
+        : BigInt(0),
+      halted: isSet(object.halted) ? Boolean(object.halted) : false,
     };
   },
   toJSON(message: HostZone): JsonSafe<HostZone> {
     const obj: any = {};
     message.chainId !== undefined && (obj.chainId = message.chainId);
-    message.nativeTokenDenom !== undefined && (obj.nativeTokenDenom = message.nativeTokenDenom);
-    message.nativeTokenIbcDenom !== undefined && (obj.nativeTokenIbcDenom = message.nativeTokenIbcDenom);
-    message.transferChannelId !== undefined && (obj.transferChannelId = message.transferChannelId);
-    message.delegationAddress !== undefined && (obj.delegationAddress = message.delegationAddress);
-    message.rewardAddress !== undefined && (obj.rewardAddress = message.rewardAddress);
-    message.depositAddress !== undefined && (obj.depositAddress = message.depositAddress);
-    message.redemptionAddress !== undefined && (obj.redemptionAddress = message.redemptionAddress);
-    message.claimAddress !== undefined && (obj.claimAddress = message.claimAddress);
-    message.operatorAddressOnStride !== undefined && (obj.operatorAddressOnStride = message.operatorAddressOnStride);
-    message.safeAddressOnStride !== undefined && (obj.safeAddressOnStride = message.safeAddressOnStride);
-    message.lastRedemptionRate !== undefined && (obj.lastRedemptionRate = message.lastRedemptionRate);
-    message.redemptionRate !== undefined && (obj.redemptionRate = message.redemptionRate);
-    message.minRedemptionRate !== undefined && (obj.minRedemptionRate = message.minRedemptionRate);
-    message.maxRedemptionRate !== undefined && (obj.maxRedemptionRate = message.maxRedemptionRate);
-    message.minInnerRedemptionRate !== undefined && (obj.minInnerRedemptionRate = message.minInnerRedemptionRate);
-    message.maxInnerRedemptionRate !== undefined && (obj.maxInnerRedemptionRate = message.maxInnerRedemptionRate);
-    message.delegatedBalance !== undefined && (obj.delegatedBalance = message.delegatedBalance);
-    message.unbondingPeriodSeconds !== undefined && (obj.unbondingPeriodSeconds = (message.unbondingPeriodSeconds || BigInt(0)).toString());
+    message.nativeTokenDenom !== undefined &&
+      (obj.nativeTokenDenom = message.nativeTokenDenom);
+    message.nativeTokenIbcDenom !== undefined &&
+      (obj.nativeTokenIbcDenom = message.nativeTokenIbcDenom);
+    message.transferChannelId !== undefined &&
+      (obj.transferChannelId = message.transferChannelId);
+    message.delegationAddress !== undefined &&
+      (obj.delegationAddress = message.delegationAddress);
+    message.rewardAddress !== undefined &&
+      (obj.rewardAddress = message.rewardAddress);
+    message.depositAddress !== undefined &&
+      (obj.depositAddress = message.depositAddress);
+    message.redemptionAddress !== undefined &&
+      (obj.redemptionAddress = message.redemptionAddress);
+    message.claimAddress !== undefined &&
+      (obj.claimAddress = message.claimAddress);
+    message.operatorAddressOnStride !== undefined &&
+      (obj.operatorAddressOnStride = message.operatorAddressOnStride);
+    message.safeAddressOnStride !== undefined &&
+      (obj.safeAddressOnStride = message.safeAddressOnStride);
+    message.lastRedemptionRate !== undefined &&
+      (obj.lastRedemptionRate = message.lastRedemptionRate);
+    message.redemptionRate !== undefined &&
+      (obj.redemptionRate = message.redemptionRate);
+    message.minRedemptionRate !== undefined &&
+      (obj.minRedemptionRate = message.minRedemptionRate);
+    message.maxRedemptionRate !== undefined &&
+      (obj.maxRedemptionRate = message.maxRedemptionRate);
+    message.minInnerRedemptionRate !== undefined &&
+      (obj.minInnerRedemptionRate = message.minInnerRedemptionRate);
+    message.maxInnerRedemptionRate !== undefined &&
+      (obj.maxInnerRedemptionRate = message.maxInnerRedemptionRate);
+    message.delegatedBalance !== undefined &&
+      (obj.delegatedBalance = message.delegatedBalance);
+    message.unbondingPeriodSeconds !== undefined &&
+      (obj.unbondingPeriodSeconds = (
+        message.unbondingPeriodSeconds || BigInt(0)
+      ).toString());
     message.halted !== undefined && (obj.halted = message.halted);
     return obj;
   },
   fromPartial(object: Partial<HostZone>): HostZone {
     const message = createBaseHostZone();
-    message.chainId = object.chainId ?? "";
-    message.nativeTokenDenom = object.nativeTokenDenom ?? "";
-    message.nativeTokenIbcDenom = object.nativeTokenIbcDenom ?? "";
-    message.transferChannelId = object.transferChannelId ?? "";
-    message.delegationAddress = object.delegationAddress ?? "";
-    message.rewardAddress = object.rewardAddress ?? "";
-    message.depositAddress = object.depositAddress ?? "";
-    message.redemptionAddress = object.redemptionAddress ?? "";
-    message.claimAddress = object.claimAddress ?? "";
-    message.operatorAddressOnStride = object.operatorAddressOnStride ?? "";
-    message.safeAddressOnStride = object.safeAddressOnStride ?? "";
-    message.lastRedemptionRate = object.lastRedemptionRate ?? "";
-    message.redemptionRate = object.redemptionRate ?? "";
-    message.minRedemptionRate = object.minRedemptionRate ?? "";
-    message.maxRedemptionRate = object.maxRedemptionRate ?? "";
-    message.minInnerRedemptionRate = object.minInnerRedemptionRate ?? "";
-    message.maxInnerRedemptionRate = object.maxInnerRedemptionRate ?? "";
-    message.delegatedBalance = object.delegatedBalance ?? "";
-    message.unbondingPeriodSeconds = object.unbondingPeriodSeconds !== undefined && object.unbondingPeriodSeconds !== null ? BigInt(object.unbondingPeriodSeconds.toString()) : BigInt(0);
+    message.chainId = object.chainId ?? '';
+    message.nativeTokenDenom = object.nativeTokenDenom ?? '';
+    message.nativeTokenIbcDenom = object.nativeTokenIbcDenom ?? '';
+    message.transferChannelId = object.transferChannelId ?? '';
+    message.delegationAddress = object.delegationAddress ?? '';
+    message.rewardAddress = object.rewardAddress ?? '';
+    message.depositAddress = object.depositAddress ?? '';
+    message.redemptionAddress = object.redemptionAddress ?? '';
+    message.claimAddress = object.claimAddress ?? '';
+    message.operatorAddressOnStride = object.operatorAddressOnStride ?? '';
+    message.safeAddressOnStride = object.safeAddressOnStride ?? '';
+    message.lastRedemptionRate = object.lastRedemptionRate ?? '';
+    message.redemptionRate = object.redemptionRate ?? '';
+    message.minRedemptionRate = object.minRedemptionRate ?? '';
+    message.maxRedemptionRate = object.maxRedemptionRate ?? '';
+    message.minInnerRedemptionRate = object.minInnerRedemptionRate ?? '';
+    message.maxInnerRedemptionRate = object.maxInnerRedemptionRate ?? '';
+    message.delegatedBalance = object.delegatedBalance ?? '';
+    message.unbondingPeriodSeconds =
+      object.unbondingPeriodSeconds !== undefined &&
+      object.unbondingPeriodSeconds !== null
+        ? BigInt(object.unbondingPeriodSeconds.toString())
+        : BigInt(0);
     message.halted = object.halted ?? false;
     return message;
   },
@@ -568,38 +674,42 @@ export const HostZone = {
   },
   toProtoMsg(message: HostZone): HostZoneProtoMsg {
     return {
-      typeUrl: "/stride.stakedym.HostZone",
-      value: HostZone.encode(message).finish()
+      typeUrl: '/stride.stakedym.HostZone',
+      value: HostZone.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseDelegationRecord(): DelegationRecord {
   return {
     id: BigInt(0),
-    nativeAmount: "",
+    nativeAmount: '',
     status: 0,
-    txHash: ""
+    txHash: '',
   };
 }
 export const DelegationRecord = {
-  typeUrl: "/stride.stakedym.DelegationRecord" as const,
-  encode(message: DelegationRecord, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/stride.stakedym.DelegationRecord' as const,
+  encode(
+    message: DelegationRecord,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.id !== BigInt(0)) {
       writer.uint32(8).uint64(message.id);
     }
-    if (message.nativeAmount !== "") {
+    if (message.nativeAmount !== '') {
       writer.uint32(18).string(message.nativeAmount);
     }
     if (message.status !== 0) {
       writer.uint32(24).int32(message.status);
     }
-    if (message.txHash !== "") {
+    if (message.txHash !== '') {
       writer.uint32(34).string(message.txHash);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): DelegationRecord {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseDelegationRecord();
     while (reader.pos < end) {
@@ -627,25 +737,34 @@ export const DelegationRecord = {
   fromJSON(object: any): DelegationRecord {
     return {
       id: isSet(object.id) ? BigInt(object.id.toString()) : BigInt(0),
-      nativeAmount: isSet(object.nativeAmount) ? String(object.nativeAmount) : "",
-      status: isSet(object.status) ? delegationRecordStatusFromJSON(object.status) : -1,
-      txHash: isSet(object.txHash) ? String(object.txHash) : ""
+      nativeAmount: isSet(object.nativeAmount)
+        ? String(object.nativeAmount)
+        : '',
+      status: isSet(object.status)
+        ? delegationRecordStatusFromJSON(object.status)
+        : -1,
+      txHash: isSet(object.txHash) ? String(object.txHash) : '',
     };
   },
   toJSON(message: DelegationRecord): JsonSafe<DelegationRecord> {
     const obj: any = {};
     message.id !== undefined && (obj.id = (message.id || BigInt(0)).toString());
-    message.nativeAmount !== undefined && (obj.nativeAmount = message.nativeAmount);
-    message.status !== undefined && (obj.status = delegationRecordStatusToJSON(message.status));
+    message.nativeAmount !== undefined &&
+      (obj.nativeAmount = message.nativeAmount);
+    message.status !== undefined &&
+      (obj.status = delegationRecordStatusToJSON(message.status));
     message.txHash !== undefined && (obj.txHash = message.txHash);
     return obj;
   },
   fromPartial(object: Partial<DelegationRecord>): DelegationRecord {
     const message = createBaseDelegationRecord();
-    message.id = object.id !== undefined && object.id !== null ? BigInt(object.id.toString()) : BigInt(0);
-    message.nativeAmount = object.nativeAmount ?? "";
+    message.id =
+      object.id !== undefined && object.id !== null
+        ? BigInt(object.id.toString())
+        : BigInt(0);
+    message.nativeAmount = object.nativeAmount ?? '';
     message.status = object.status ?? 0;
-    message.txHash = object.txHash ?? "";
+    message.txHash = object.txHash ?? '';
     return message;
   },
   fromProtoMsg(message: DelegationRecordProtoMsg): DelegationRecord {
@@ -656,50 +775,54 @@ export const DelegationRecord = {
   },
   toProtoMsg(message: DelegationRecord): DelegationRecordProtoMsg {
     return {
-      typeUrl: "/stride.stakedym.DelegationRecord",
-      value: DelegationRecord.encode(message).finish()
+      typeUrl: '/stride.stakedym.DelegationRecord',
+      value: DelegationRecord.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseUnbondingRecord(): UnbondingRecord {
   return {
     id: BigInt(0),
     status: 0,
-    stTokenAmount: "",
-    nativeAmount: "",
+    stTokenAmount: '',
+    nativeAmount: '',
     unbondingCompletionTimeSeconds: BigInt(0),
-    undelegationTxHash: "",
-    unbondedTokenSweepTxHash: ""
+    undelegationTxHash: '',
+    unbondedTokenSweepTxHash: '',
   };
 }
 export const UnbondingRecord = {
-  typeUrl: "/stride.stakedym.UnbondingRecord" as const,
-  encode(message: UnbondingRecord, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/stride.stakedym.UnbondingRecord' as const,
+  encode(
+    message: UnbondingRecord,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.id !== BigInt(0)) {
       writer.uint32(8).uint64(message.id);
     }
     if (message.status !== 0) {
       writer.uint32(16).int32(message.status);
     }
-    if (message.stTokenAmount !== "") {
+    if (message.stTokenAmount !== '') {
       writer.uint32(26).string(message.stTokenAmount);
     }
-    if (message.nativeAmount !== "") {
+    if (message.nativeAmount !== '') {
       writer.uint32(34).string(message.nativeAmount);
     }
     if (message.unbondingCompletionTimeSeconds !== BigInt(0)) {
       writer.uint32(40).uint64(message.unbondingCompletionTimeSeconds);
     }
-    if (message.undelegationTxHash !== "") {
+    if (message.undelegationTxHash !== '') {
       writer.uint32(50).string(message.undelegationTxHash);
     }
-    if (message.unbondedTokenSweepTxHash !== "") {
+    if (message.unbondedTokenSweepTxHash !== '') {
       writer.uint32(58).string(message.unbondedTokenSweepTxHash);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): UnbondingRecord {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseUnbondingRecord();
     while (reader.pos < end) {
@@ -736,34 +859,63 @@ export const UnbondingRecord = {
   fromJSON(object: any): UnbondingRecord {
     return {
       id: isSet(object.id) ? BigInt(object.id.toString()) : BigInt(0),
-      status: isSet(object.status) ? unbondingRecordStatusFromJSON(object.status) : -1,
-      stTokenAmount: isSet(object.stTokenAmount) ? String(object.stTokenAmount) : "",
-      nativeAmount: isSet(object.nativeAmount) ? String(object.nativeAmount) : "",
-      unbondingCompletionTimeSeconds: isSet(object.unbondingCompletionTimeSeconds) ? BigInt(object.unbondingCompletionTimeSeconds.toString()) : BigInt(0),
-      undelegationTxHash: isSet(object.undelegationTxHash) ? String(object.undelegationTxHash) : "",
-      unbondedTokenSweepTxHash: isSet(object.unbondedTokenSweepTxHash) ? String(object.unbondedTokenSweepTxHash) : ""
+      status: isSet(object.status)
+        ? unbondingRecordStatusFromJSON(object.status)
+        : -1,
+      stTokenAmount: isSet(object.stTokenAmount)
+        ? String(object.stTokenAmount)
+        : '',
+      nativeAmount: isSet(object.nativeAmount)
+        ? String(object.nativeAmount)
+        : '',
+      unbondingCompletionTimeSeconds: isSet(
+        object.unbondingCompletionTimeSeconds,
+      )
+        ? BigInt(object.unbondingCompletionTimeSeconds.toString())
+        : BigInt(0),
+      undelegationTxHash: isSet(object.undelegationTxHash)
+        ? String(object.undelegationTxHash)
+        : '',
+      unbondedTokenSweepTxHash: isSet(object.unbondedTokenSweepTxHash)
+        ? String(object.unbondedTokenSweepTxHash)
+        : '',
     };
   },
   toJSON(message: UnbondingRecord): JsonSafe<UnbondingRecord> {
     const obj: any = {};
     message.id !== undefined && (obj.id = (message.id || BigInt(0)).toString());
-    message.status !== undefined && (obj.status = unbondingRecordStatusToJSON(message.status));
-    message.stTokenAmount !== undefined && (obj.stTokenAmount = message.stTokenAmount);
-    message.nativeAmount !== undefined && (obj.nativeAmount = message.nativeAmount);
-    message.unbondingCompletionTimeSeconds !== undefined && (obj.unbondingCompletionTimeSeconds = (message.unbondingCompletionTimeSeconds || BigInt(0)).toString());
-    message.undelegationTxHash !== undefined && (obj.undelegationTxHash = message.undelegationTxHash);
-    message.unbondedTokenSweepTxHash !== undefined && (obj.unbondedTokenSweepTxHash = message.unbondedTokenSweepTxHash);
+    message.status !== undefined &&
+      (obj.status = unbondingRecordStatusToJSON(message.status));
+    message.stTokenAmount !== undefined &&
+      (obj.stTokenAmount = message.stTokenAmount);
+    message.nativeAmount !== undefined &&
+      (obj.nativeAmount = message.nativeAmount);
+    message.unbondingCompletionTimeSeconds !== undefined &&
+      (obj.unbondingCompletionTimeSeconds = (
+        message.unbondingCompletionTimeSeconds || BigInt(0)
+      ).toString());
+    message.undelegationTxHash !== undefined &&
+      (obj.undelegationTxHash = message.undelegationTxHash);
+    message.unbondedTokenSweepTxHash !== undefined &&
+      (obj.unbondedTokenSweepTxHash = message.unbondedTokenSweepTxHash);
     return obj;
   },
   fromPartial(object: Partial<UnbondingRecord>): UnbondingRecord {
     const message = createBaseUnbondingRecord();
-    message.id = object.id !== undefined && object.id !== null ? BigInt(object.id.toString()) : BigInt(0);
+    message.id =
+      object.id !== undefined && object.id !== null
+        ? BigInt(object.id.toString())
+        : BigInt(0);
     message.status = object.status ?? 0;
-    message.stTokenAmount = object.stTokenAmount ?? "";
-    message.nativeAmount = object.nativeAmount ?? "";
-    message.unbondingCompletionTimeSeconds = object.unbondingCompletionTimeSeconds !== undefined && object.unbondingCompletionTimeSeconds !== null ? BigInt(object.unbondingCompletionTimeSeconds.toString()) : BigInt(0);
-    message.undelegationTxHash = object.undelegationTxHash ?? "";
-    message.unbondedTokenSweepTxHash = object.unbondedTokenSweepTxHash ?? "";
+    message.stTokenAmount = object.stTokenAmount ?? '';
+    message.nativeAmount = object.nativeAmount ?? '';
+    message.unbondingCompletionTimeSeconds =
+      object.unbondingCompletionTimeSeconds !== undefined &&
+      object.unbondingCompletionTimeSeconds !== null
+        ? BigInt(object.unbondingCompletionTimeSeconds.toString())
+        : BigInt(0);
+    message.undelegationTxHash = object.undelegationTxHash ?? '';
+    message.unbondedTokenSweepTxHash = object.unbondedTokenSweepTxHash ?? '';
     return message;
   },
   fromProtoMsg(message: UnbondingRecordProtoMsg): UnbondingRecord {
@@ -774,38 +926,42 @@ export const UnbondingRecord = {
   },
   toProtoMsg(message: UnbondingRecord): UnbondingRecordProtoMsg {
     return {
-      typeUrl: "/stride.stakedym.UnbondingRecord",
-      value: UnbondingRecord.encode(message).finish()
+      typeUrl: '/stride.stakedym.UnbondingRecord',
+      value: UnbondingRecord.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseRedemptionRecord(): RedemptionRecord {
   return {
     unbondingRecordId: BigInt(0),
-    redeemer: "",
-    stTokenAmount: "",
-    nativeAmount: ""
+    redeemer: '',
+    stTokenAmount: '',
+    nativeAmount: '',
   };
 }
 export const RedemptionRecord = {
-  typeUrl: "/stride.stakedym.RedemptionRecord" as const,
-  encode(message: RedemptionRecord, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/stride.stakedym.RedemptionRecord' as const,
+  encode(
+    message: RedemptionRecord,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.unbondingRecordId !== BigInt(0)) {
       writer.uint32(8).uint64(message.unbondingRecordId);
     }
-    if (message.redeemer !== "") {
+    if (message.redeemer !== '') {
       writer.uint32(18).string(message.redeemer);
     }
-    if (message.stTokenAmount !== "") {
+    if (message.stTokenAmount !== '') {
       writer.uint32(26).string(message.stTokenAmount);
     }
-    if (message.nativeAmount !== "") {
+    if (message.nativeAmount !== '') {
       writer.uint32(34).string(message.nativeAmount);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): RedemptionRecord {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseRedemptionRecord();
     while (reader.pos < end) {
@@ -832,26 +988,41 @@ export const RedemptionRecord = {
   },
   fromJSON(object: any): RedemptionRecord {
     return {
-      unbondingRecordId: isSet(object.unbondingRecordId) ? BigInt(object.unbondingRecordId.toString()) : BigInt(0),
-      redeemer: isSet(object.redeemer) ? String(object.redeemer) : "",
-      stTokenAmount: isSet(object.stTokenAmount) ? String(object.stTokenAmount) : "",
-      nativeAmount: isSet(object.nativeAmount) ? String(object.nativeAmount) : ""
+      unbondingRecordId: isSet(object.unbondingRecordId)
+        ? BigInt(object.unbondingRecordId.toString())
+        : BigInt(0),
+      redeemer: isSet(object.redeemer) ? String(object.redeemer) : '',
+      stTokenAmount: isSet(object.stTokenAmount)
+        ? String(object.stTokenAmount)
+        : '',
+      nativeAmount: isSet(object.nativeAmount)
+        ? String(object.nativeAmount)
+        : '',
     };
   },
   toJSON(message: RedemptionRecord): JsonSafe<RedemptionRecord> {
     const obj: any = {};
-    message.unbondingRecordId !== undefined && (obj.unbondingRecordId = (message.unbondingRecordId || BigInt(0)).toString());
+    message.unbondingRecordId !== undefined &&
+      (obj.unbondingRecordId = (
+        message.unbondingRecordId || BigInt(0)
+      ).toString());
     message.redeemer !== undefined && (obj.redeemer = message.redeemer);
-    message.stTokenAmount !== undefined && (obj.stTokenAmount = message.stTokenAmount);
-    message.nativeAmount !== undefined && (obj.nativeAmount = message.nativeAmount);
+    message.stTokenAmount !== undefined &&
+      (obj.stTokenAmount = message.stTokenAmount);
+    message.nativeAmount !== undefined &&
+      (obj.nativeAmount = message.nativeAmount);
     return obj;
   },
   fromPartial(object: Partial<RedemptionRecord>): RedemptionRecord {
     const message = createBaseRedemptionRecord();
-    message.unbondingRecordId = object.unbondingRecordId !== undefined && object.unbondingRecordId !== null ? BigInt(object.unbondingRecordId.toString()) : BigInt(0);
-    message.redeemer = object.redeemer ?? "";
-    message.stTokenAmount = object.stTokenAmount ?? "";
-    message.nativeAmount = object.nativeAmount ?? "";
+    message.unbondingRecordId =
+      object.unbondingRecordId !== undefined &&
+      object.unbondingRecordId !== null
+        ? BigInt(object.unbondingRecordId.toString())
+        : BigInt(0);
+    message.redeemer = object.redeemer ?? '';
+    message.stTokenAmount = object.stTokenAmount ?? '';
+    message.nativeAmount = object.nativeAmount ?? '';
     return message;
   },
   fromProtoMsg(message: RedemptionRecordProtoMsg): RedemptionRecord {
@@ -862,38 +1033,42 @@ export const RedemptionRecord = {
   },
   toProtoMsg(message: RedemptionRecord): RedemptionRecordProtoMsg {
     return {
-      typeUrl: "/stride.stakedym.RedemptionRecord",
-      value: RedemptionRecord.encode(message).finish()
+      typeUrl: '/stride.stakedym.RedemptionRecord',
+      value: RedemptionRecord.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseSlashRecord(): SlashRecord {
   return {
     id: BigInt(0),
     time: BigInt(0),
-    nativeAmount: "",
-    validatorAddress: ""
+    nativeAmount: '',
+    validatorAddress: '',
   };
 }
 export const SlashRecord = {
-  typeUrl: "/stride.stakedym.SlashRecord" as const,
-  encode(message: SlashRecord, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/stride.stakedym.SlashRecord' as const,
+  encode(
+    message: SlashRecord,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.id !== BigInt(0)) {
       writer.uint32(8).uint64(message.id);
     }
     if (message.time !== BigInt(0)) {
       writer.uint32(16).uint64(message.time);
     }
-    if (message.nativeAmount !== "") {
+    if (message.nativeAmount !== '') {
       writer.uint32(26).string(message.nativeAmount);
     }
-    if (message.validatorAddress !== "") {
+    if (message.validatorAddress !== '') {
       writer.uint32(34).string(message.validatorAddress);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): SlashRecord {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseSlashRecord();
     while (reader.pos < end) {
@@ -922,24 +1097,37 @@ export const SlashRecord = {
     return {
       id: isSet(object.id) ? BigInt(object.id.toString()) : BigInt(0),
       time: isSet(object.time) ? BigInt(object.time.toString()) : BigInt(0),
-      nativeAmount: isSet(object.nativeAmount) ? String(object.nativeAmount) : "",
-      validatorAddress: isSet(object.validatorAddress) ? String(object.validatorAddress) : ""
+      nativeAmount: isSet(object.nativeAmount)
+        ? String(object.nativeAmount)
+        : '',
+      validatorAddress: isSet(object.validatorAddress)
+        ? String(object.validatorAddress)
+        : '',
     };
   },
   toJSON(message: SlashRecord): JsonSafe<SlashRecord> {
     const obj: any = {};
     message.id !== undefined && (obj.id = (message.id || BigInt(0)).toString());
-    message.time !== undefined && (obj.time = (message.time || BigInt(0)).toString());
-    message.nativeAmount !== undefined && (obj.nativeAmount = message.nativeAmount);
-    message.validatorAddress !== undefined && (obj.validatorAddress = message.validatorAddress);
+    message.time !== undefined &&
+      (obj.time = (message.time || BigInt(0)).toString());
+    message.nativeAmount !== undefined &&
+      (obj.nativeAmount = message.nativeAmount);
+    message.validatorAddress !== undefined &&
+      (obj.validatorAddress = message.validatorAddress);
     return obj;
   },
   fromPartial(object: Partial<SlashRecord>): SlashRecord {
     const message = createBaseSlashRecord();
-    message.id = object.id !== undefined && object.id !== null ? BigInt(object.id.toString()) : BigInt(0);
-    message.time = object.time !== undefined && object.time !== null ? BigInt(object.time.toString()) : BigInt(0);
-    message.nativeAmount = object.nativeAmount ?? "";
-    message.validatorAddress = object.validatorAddress ?? "";
+    message.id =
+      object.id !== undefined && object.id !== null
+        ? BigInt(object.id.toString())
+        : BigInt(0);
+    message.time =
+      object.time !== undefined && object.time !== null
+        ? BigInt(object.time.toString())
+        : BigInt(0);
+    message.nativeAmount = object.nativeAmount ?? '';
+    message.validatorAddress = object.validatorAddress ?? '';
     return message;
   },
   fromProtoMsg(message: SlashRecordProtoMsg): SlashRecord {
@@ -950,8 +1138,8 @@ export const SlashRecord = {
   },
   toProtoMsg(message: SlashRecord): SlashRecordProtoMsg {
     return {
-      typeUrl: "/stride.stakedym.SlashRecord",
-      value: SlashRecord.encode(message).finish()
+      typeUrl: '/stride.stakedym.SlashRecord',
+      value: SlashRecord.encode(message).finish(),
     };
-  }
+  },
 };

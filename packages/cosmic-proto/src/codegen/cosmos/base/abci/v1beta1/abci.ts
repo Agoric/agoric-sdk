@@ -1,12 +1,15 @@
 //@ts-nocheck
-import { Any, type AnySDKType } from "../../../../google/protobuf/any.js";
-import { Event, type EventSDKType } from "../../../../tendermint/abci/types.js";
-import { Block, type BlockSDKType } from "../../../../tendermint/types/block.js";
-import { BinaryReader, BinaryWriter } from "../../../../binary.js";
-import { isSet } from "../../../../helpers.js";
-import {type JsonSafe } from "../../../../json-safe.js";
-import { decodeBase64 as bytesFromBase64 } from "@endo/base64";
-import { encodeBase64 as base64FromBytes } from "@endo/base64";
+import { Any, type AnySDKType } from '../../../../google/protobuf/any.js';
+import { Event, type EventSDKType } from '../../../../tendermint/abci/types.js';
+import {
+  Block,
+  type BlockSDKType,
+} from '../../../../tendermint/types/block.js';
+import { BinaryReader, BinaryWriter } from '../../../../binary.js';
+import { isSet } from '../../../../helpers.js';
+import { type JsonSafe } from '../../../../json-safe.js';
+import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
+import { encodeBase64 as base64FromBytes } from '@endo/base64';
 /**
  * TxResponse defines a structure containing relevant tx data and metadata. The
  * tags are stringified and the log is JSON decoded.
@@ -48,13 +51,13 @@ export interface TxResponse {
    * these events include those emitted by processing all the messages and those
    * emitted from the ante. Whereas Logs contains the events, with
    * additional metadata, emitted only by processing the messages.
-   * 
+   *
    * Since: cosmos-sdk 0.42.11, 0.44.5, 0.45
    */
   events: Event[];
 }
 export interface TxResponseProtoMsg {
-  typeUrl: "/cosmos.base.abci.v1beta1.TxResponse";
+  typeUrl: '/cosmos.base.abci.v1beta1.TxResponse';
   value: Uint8Array;
 }
 /**
@@ -87,7 +90,7 @@ export interface ABCIMessageLog {
   events: StringEvent[];
 }
 export interface ABCIMessageLogProtoMsg {
-  typeUrl: "/cosmos.base.abci.v1beta1.ABCIMessageLog";
+  typeUrl: '/cosmos.base.abci.v1beta1.ABCIMessageLog';
   value: Uint8Array;
 }
 /** ABCIMessageLog defines a structure containing an indexed tx ABCI message log. */
@@ -105,7 +108,7 @@ export interface StringEvent {
   attributes: Attribute[];
 }
 export interface StringEventProtoMsg {
-  typeUrl: "/cosmos.base.abci.v1beta1.StringEvent";
+  typeUrl: '/cosmos.base.abci.v1beta1.StringEvent';
   value: Uint8Array;
 }
 /**
@@ -125,7 +128,7 @@ export interface Attribute {
   value: string;
 }
 export interface AttributeProtoMsg {
-  typeUrl: "/cosmos.base.abci.v1beta1.Attribute";
+  typeUrl: '/cosmos.base.abci.v1beta1.Attribute';
   value: Uint8Array;
 }
 /**
@@ -144,7 +147,7 @@ export interface GasInfo {
   gasUsed: bigint;
 }
 export interface GasInfoProtoMsg {
-  typeUrl: "/cosmos.base.abci.v1beta1.GasInfo";
+  typeUrl: '/cosmos.base.abci.v1beta1.GasInfo';
   value: Uint8Array;
 }
 /** GasInfo defines tx execution gas context. */
@@ -171,13 +174,13 @@ export interface Result {
   events: Event[];
   /**
    * msg_responses contains the Msg handler responses type packed in Anys.
-   * 
+   *
    * Since: cosmos-sdk 0.46
    */
   msgResponses: Any[];
 }
 export interface ResultProtoMsg {
-  typeUrl: "/cosmos.base.abci.v1beta1.Result";
+  typeUrl: '/cosmos.base.abci.v1beta1.Result';
   value: Uint8Array;
 }
 /** Result is the union of ResponseFormat and ResponseCheckTx. */
@@ -197,7 +200,7 @@ export interface SimulationResponse {
   result?: Result;
 }
 export interface SimulationResponseProtoMsg {
-  typeUrl: "/cosmos.base.abci.v1beta1.SimulationResponse";
+  typeUrl: '/cosmos.base.abci.v1beta1.SimulationResponse';
   value: Uint8Array;
 }
 /**
@@ -218,7 +221,7 @@ export interface MsgData {
   data: Uint8Array;
 }
 export interface MsgDataProtoMsg {
-  typeUrl: "/cosmos.base.abci.v1beta1.MsgData";
+  typeUrl: '/cosmos.base.abci.v1beta1.MsgData';
   value: Uint8Array;
 }
 /**
@@ -240,13 +243,13 @@ export interface TxMsgData {
   data: MsgData[];
   /**
    * msg_responses contains the Msg handler responses packed into Anys.
-   * 
+   *
    * Since: cosmos-sdk 0.46
    */
   msgResponses: Any[];
 }
 export interface TxMsgDataProtoMsg {
-  typeUrl: "/cosmos.base.abci.v1beta1.TxMsgData";
+  typeUrl: '/cosmos.base.abci.v1beta1.TxMsgData';
   value: Uint8Array;
 }
 /**
@@ -274,7 +277,7 @@ export interface SearchTxsResult {
   txs: TxResponse[];
 }
 export interface SearchTxsResultProtoMsg {
-  typeUrl: "/cosmos.base.abci.v1beta1.SearchTxsResult";
+  typeUrl: '/cosmos.base.abci.v1beta1.SearchTxsResult';
   value: Uint8Array;
 }
 /** SearchTxsResult defines a structure for querying txs pageable */
@@ -302,7 +305,7 @@ export interface SearchBlocksResult {
   blocks: Block[];
 }
 export interface SearchBlocksResultProtoMsg {
-  typeUrl: "/cosmos.base.abci.v1beta1.SearchBlocksResult";
+  typeUrl: '/cosmos.base.abci.v1beta1.SearchBlocksResult';
   value: Uint8Array;
 }
 /** SearchBlocksResult defines a structure for querying blocks pageable */
@@ -317,45 +320,48 @@ export interface SearchBlocksResultSDKType {
 function createBaseTxResponse(): TxResponse {
   return {
     height: BigInt(0),
-    txhash: "",
-    codespace: "",
+    txhash: '',
+    codespace: '',
     code: 0,
-    data: "",
-    rawLog: "",
+    data: '',
+    rawLog: '',
     logs: [],
-    info: "",
+    info: '',
     gasWanted: BigInt(0),
     gasUsed: BigInt(0),
     tx: undefined,
-    timestamp: "",
-    events: []
+    timestamp: '',
+    events: [],
   };
 }
 export const TxResponse = {
-  typeUrl: "/cosmos.base.abci.v1beta1.TxResponse" as const,
-  encode(message: TxResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/cosmos.base.abci.v1beta1.TxResponse' as const,
+  encode(
+    message: TxResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.height !== BigInt(0)) {
       writer.uint32(8).int64(message.height);
     }
-    if (message.txhash !== "") {
+    if (message.txhash !== '') {
       writer.uint32(18).string(message.txhash);
     }
-    if (message.codespace !== "") {
+    if (message.codespace !== '') {
       writer.uint32(26).string(message.codespace);
     }
     if (message.code !== 0) {
       writer.uint32(32).uint32(message.code);
     }
-    if (message.data !== "") {
+    if (message.data !== '') {
       writer.uint32(42).string(message.data);
     }
-    if (message.rawLog !== "") {
+    if (message.rawLog !== '') {
       writer.uint32(50).string(message.rawLog);
     }
     for (const v of message.logs) {
       ABCIMessageLog.encode(v!, writer.uint32(58).fork()).ldelim();
     }
-    if (message.info !== "") {
+    if (message.info !== '') {
       writer.uint32(66).string(message.info);
     }
     if (message.gasWanted !== BigInt(0)) {
@@ -367,7 +373,7 @@ export const TxResponse = {
     if (message.tx !== undefined) {
       Any.encode(message.tx, writer.uint32(90).fork()).ldelim();
     }
-    if (message.timestamp !== "") {
+    if (message.timestamp !== '') {
       writer.uint32(98).string(message.timestamp);
     }
     for (const v of message.events) {
@@ -376,7 +382,8 @@ export const TxResponse = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): TxResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseTxResponse();
     while (reader.pos < end) {
@@ -430,41 +437,57 @@ export const TxResponse = {
   },
   fromJSON(object: any): TxResponse {
     return {
-      height: isSet(object.height) ? BigInt(object.height.toString()) : BigInt(0),
-      txhash: isSet(object.txhash) ? String(object.txhash) : "",
-      codespace: isSet(object.codespace) ? String(object.codespace) : "",
+      height: isSet(object.height)
+        ? BigInt(object.height.toString())
+        : BigInt(0),
+      txhash: isSet(object.txhash) ? String(object.txhash) : '',
+      codespace: isSet(object.codespace) ? String(object.codespace) : '',
       code: isSet(object.code) ? Number(object.code) : 0,
-      data: isSet(object.data) ? String(object.data) : "",
-      rawLog: isSet(object.rawLog) ? String(object.rawLog) : "",
-      logs: Array.isArray(object?.logs) ? object.logs.map((e: any) => ABCIMessageLog.fromJSON(e)) : [],
-      info: isSet(object.info) ? String(object.info) : "",
-      gasWanted: isSet(object.gasWanted) ? BigInt(object.gasWanted.toString()) : BigInt(0),
-      gasUsed: isSet(object.gasUsed) ? BigInt(object.gasUsed.toString()) : BigInt(0),
+      data: isSet(object.data) ? String(object.data) : '',
+      rawLog: isSet(object.rawLog) ? String(object.rawLog) : '',
+      logs: Array.isArray(object?.logs)
+        ? object.logs.map((e: any) => ABCIMessageLog.fromJSON(e))
+        : [],
+      info: isSet(object.info) ? String(object.info) : '',
+      gasWanted: isSet(object.gasWanted)
+        ? BigInt(object.gasWanted.toString())
+        : BigInt(0),
+      gasUsed: isSet(object.gasUsed)
+        ? BigInt(object.gasUsed.toString())
+        : BigInt(0),
       tx: isSet(object.tx) ? Any.fromJSON(object.tx) : undefined,
-      timestamp: isSet(object.timestamp) ? String(object.timestamp) : "",
-      events: Array.isArray(object?.events) ? object.events.map((e: any) => Event.fromJSON(e)) : []
+      timestamp: isSet(object.timestamp) ? String(object.timestamp) : '',
+      events: Array.isArray(object?.events)
+        ? object.events.map((e: any) => Event.fromJSON(e))
+        : [],
     };
   },
   toJSON(message: TxResponse): JsonSafe<TxResponse> {
     const obj: any = {};
-    message.height !== undefined && (obj.height = (message.height || BigInt(0)).toString());
+    message.height !== undefined &&
+      (obj.height = (message.height || BigInt(0)).toString());
     message.txhash !== undefined && (obj.txhash = message.txhash);
     message.codespace !== undefined && (obj.codespace = message.codespace);
     message.code !== undefined && (obj.code = Math.round(message.code));
     message.data !== undefined && (obj.data = message.data);
     message.rawLog !== undefined && (obj.rawLog = message.rawLog);
     if (message.logs) {
-      obj.logs = message.logs.map(e => e ? ABCIMessageLog.toJSON(e) : undefined);
+      obj.logs = message.logs.map(e =>
+        e ? ABCIMessageLog.toJSON(e) : undefined,
+      );
     } else {
       obj.logs = [];
     }
     message.info !== undefined && (obj.info = message.info);
-    message.gasWanted !== undefined && (obj.gasWanted = (message.gasWanted || BigInt(0)).toString());
-    message.gasUsed !== undefined && (obj.gasUsed = (message.gasUsed || BigInt(0)).toString());
-    message.tx !== undefined && (obj.tx = message.tx ? Any.toJSON(message.tx) : undefined);
+    message.gasWanted !== undefined &&
+      (obj.gasWanted = (message.gasWanted || BigInt(0)).toString());
+    message.gasUsed !== undefined &&
+      (obj.gasUsed = (message.gasUsed || BigInt(0)).toString());
+    message.tx !== undefined &&
+      (obj.tx = message.tx ? Any.toJSON(message.tx) : undefined);
     message.timestamp !== undefined && (obj.timestamp = message.timestamp);
     if (message.events) {
-      obj.events = message.events.map(e => e ? Event.toJSON(e) : undefined);
+      obj.events = message.events.map(e => (e ? Event.toJSON(e) : undefined));
     } else {
       obj.events = [];
     }
@@ -472,18 +495,30 @@ export const TxResponse = {
   },
   fromPartial(object: Partial<TxResponse>): TxResponse {
     const message = createBaseTxResponse();
-    message.height = object.height !== undefined && object.height !== null ? BigInt(object.height.toString()) : BigInt(0);
-    message.txhash = object.txhash ?? "";
-    message.codespace = object.codespace ?? "";
+    message.height =
+      object.height !== undefined && object.height !== null
+        ? BigInt(object.height.toString())
+        : BigInt(0);
+    message.txhash = object.txhash ?? '';
+    message.codespace = object.codespace ?? '';
     message.code = object.code ?? 0;
-    message.data = object.data ?? "";
-    message.rawLog = object.rawLog ?? "";
+    message.data = object.data ?? '';
+    message.rawLog = object.rawLog ?? '';
     message.logs = object.logs?.map(e => ABCIMessageLog.fromPartial(e)) || [];
-    message.info = object.info ?? "";
-    message.gasWanted = object.gasWanted !== undefined && object.gasWanted !== null ? BigInt(object.gasWanted.toString()) : BigInt(0);
-    message.gasUsed = object.gasUsed !== undefined && object.gasUsed !== null ? BigInt(object.gasUsed.toString()) : BigInt(0);
-    message.tx = object.tx !== undefined && object.tx !== null ? Any.fromPartial(object.tx) : undefined;
-    message.timestamp = object.timestamp ?? "";
+    message.info = object.info ?? '';
+    message.gasWanted =
+      object.gasWanted !== undefined && object.gasWanted !== null
+        ? BigInt(object.gasWanted.toString())
+        : BigInt(0);
+    message.gasUsed =
+      object.gasUsed !== undefined && object.gasUsed !== null
+        ? BigInt(object.gasUsed.toString())
+        : BigInt(0);
+    message.tx =
+      object.tx !== undefined && object.tx !== null
+        ? Any.fromPartial(object.tx)
+        : undefined;
+    message.timestamp = object.timestamp ?? '';
     message.events = object.events?.map(e => Event.fromPartial(e)) || [];
     return message;
   },
@@ -495,25 +530,28 @@ export const TxResponse = {
   },
   toProtoMsg(message: TxResponse): TxResponseProtoMsg {
     return {
-      typeUrl: "/cosmos.base.abci.v1beta1.TxResponse",
-      value: TxResponse.encode(message).finish()
+      typeUrl: '/cosmos.base.abci.v1beta1.TxResponse',
+      value: TxResponse.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseABCIMessageLog(): ABCIMessageLog {
   return {
     msgIndex: 0,
-    log: "",
-    events: []
+    log: '',
+    events: [],
   };
 }
 export const ABCIMessageLog = {
-  typeUrl: "/cosmos.base.abci.v1beta1.ABCIMessageLog" as const,
-  encode(message: ABCIMessageLog, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/cosmos.base.abci.v1beta1.ABCIMessageLog' as const,
+  encode(
+    message: ABCIMessageLog,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.msgIndex !== 0) {
       writer.uint32(8).uint32(message.msgIndex);
     }
-    if (message.log !== "") {
+    if (message.log !== '') {
       writer.uint32(18).string(message.log);
     }
     for (const v of message.events) {
@@ -522,7 +560,8 @@ export const ABCIMessageLog = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): ABCIMessageLog {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseABCIMessageLog();
     while (reader.pos < end) {
@@ -547,16 +586,21 @@ export const ABCIMessageLog = {
   fromJSON(object: any): ABCIMessageLog {
     return {
       msgIndex: isSet(object.msgIndex) ? Number(object.msgIndex) : 0,
-      log: isSet(object.log) ? String(object.log) : "",
-      events: Array.isArray(object?.events) ? object.events.map((e: any) => StringEvent.fromJSON(e)) : []
+      log: isSet(object.log) ? String(object.log) : '',
+      events: Array.isArray(object?.events)
+        ? object.events.map((e: any) => StringEvent.fromJSON(e))
+        : [],
     };
   },
   toJSON(message: ABCIMessageLog): JsonSafe<ABCIMessageLog> {
     const obj: any = {};
-    message.msgIndex !== undefined && (obj.msgIndex = Math.round(message.msgIndex));
+    message.msgIndex !== undefined &&
+      (obj.msgIndex = Math.round(message.msgIndex));
     message.log !== undefined && (obj.log = message.log);
     if (message.events) {
-      obj.events = message.events.map(e => e ? StringEvent.toJSON(e) : undefined);
+      obj.events = message.events.map(e =>
+        e ? StringEvent.toJSON(e) : undefined,
+      );
     } else {
       obj.events = [];
     }
@@ -565,7 +609,7 @@ export const ABCIMessageLog = {
   fromPartial(object: Partial<ABCIMessageLog>): ABCIMessageLog {
     const message = createBaseABCIMessageLog();
     message.msgIndex = object.msgIndex ?? 0;
-    message.log = object.log ?? "";
+    message.log = object.log ?? '';
     message.events = object.events?.map(e => StringEvent.fromPartial(e)) || [];
     return message;
   },
@@ -577,21 +621,24 @@ export const ABCIMessageLog = {
   },
   toProtoMsg(message: ABCIMessageLog): ABCIMessageLogProtoMsg {
     return {
-      typeUrl: "/cosmos.base.abci.v1beta1.ABCIMessageLog",
-      value: ABCIMessageLog.encode(message).finish()
+      typeUrl: '/cosmos.base.abci.v1beta1.ABCIMessageLog',
+      value: ABCIMessageLog.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseStringEvent(): StringEvent {
   return {
-    type: "",
-    attributes: []
+    type: '',
+    attributes: [],
   };
 }
 export const StringEvent = {
-  typeUrl: "/cosmos.base.abci.v1beta1.StringEvent" as const,
-  encode(message: StringEvent, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.type !== "") {
+  typeUrl: '/cosmos.base.abci.v1beta1.StringEvent' as const,
+  encode(
+    message: StringEvent,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.type !== '') {
       writer.uint32(10).string(message.type);
     }
     for (const v of message.attributes) {
@@ -600,7 +647,8 @@ export const StringEvent = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): StringEvent {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseStringEvent();
     while (reader.pos < end) {
@@ -621,15 +669,19 @@ export const StringEvent = {
   },
   fromJSON(object: any): StringEvent {
     return {
-      type: isSet(object.type) ? String(object.type) : "",
-      attributes: Array.isArray(object?.attributes) ? object.attributes.map((e: any) => Attribute.fromJSON(e)) : []
+      type: isSet(object.type) ? String(object.type) : '',
+      attributes: Array.isArray(object?.attributes)
+        ? object.attributes.map((e: any) => Attribute.fromJSON(e))
+        : [],
     };
   },
   toJSON(message: StringEvent): JsonSafe<StringEvent> {
     const obj: any = {};
     message.type !== undefined && (obj.type = message.type);
     if (message.attributes) {
-      obj.attributes = message.attributes.map(e => e ? Attribute.toJSON(e) : undefined);
+      obj.attributes = message.attributes.map(e =>
+        e ? Attribute.toJSON(e) : undefined,
+      );
     } else {
       obj.attributes = [];
     }
@@ -637,8 +689,9 @@ export const StringEvent = {
   },
   fromPartial(object: Partial<StringEvent>): StringEvent {
     const message = createBaseStringEvent();
-    message.type = object.type ?? "";
-    message.attributes = object.attributes?.map(e => Attribute.fromPartial(e)) || [];
+    message.type = object.type ?? '';
+    message.attributes =
+      object.attributes?.map(e => Attribute.fromPartial(e)) || [];
     return message;
   },
   fromProtoMsg(message: StringEventProtoMsg): StringEvent {
@@ -649,30 +702,34 @@ export const StringEvent = {
   },
   toProtoMsg(message: StringEvent): StringEventProtoMsg {
     return {
-      typeUrl: "/cosmos.base.abci.v1beta1.StringEvent",
-      value: StringEvent.encode(message).finish()
+      typeUrl: '/cosmos.base.abci.v1beta1.StringEvent',
+      value: StringEvent.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseAttribute(): Attribute {
   return {
-    key: "",
-    value: ""
+    key: '',
+    value: '',
   };
 }
 export const Attribute = {
-  typeUrl: "/cosmos.base.abci.v1beta1.Attribute" as const,
-  encode(message: Attribute, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.key !== "") {
+  typeUrl: '/cosmos.base.abci.v1beta1.Attribute' as const,
+  encode(
+    message: Attribute,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.key !== '') {
       writer.uint32(10).string(message.key);
     }
-    if (message.value !== "") {
+    if (message.value !== '') {
       writer.uint32(18).string(message.value);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Attribute {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseAttribute();
     while (reader.pos < end) {
@@ -693,8 +750,8 @@ export const Attribute = {
   },
   fromJSON(object: any): Attribute {
     return {
-      key: isSet(object.key) ? String(object.key) : "",
-      value: isSet(object.value) ? String(object.value) : ""
+      key: isSet(object.key) ? String(object.key) : '',
+      value: isSet(object.value) ? String(object.value) : '',
     };
   },
   toJSON(message: Attribute): JsonSafe<Attribute> {
@@ -705,8 +762,8 @@ export const Attribute = {
   },
   fromPartial(object: Partial<Attribute>): Attribute {
     const message = createBaseAttribute();
-    message.key = object.key ?? "";
-    message.value = object.value ?? "";
+    message.key = object.key ?? '';
+    message.value = object.value ?? '';
     return message;
   },
   fromProtoMsg(message: AttributeProtoMsg): Attribute {
@@ -717,20 +774,23 @@ export const Attribute = {
   },
   toProtoMsg(message: Attribute): AttributeProtoMsg {
     return {
-      typeUrl: "/cosmos.base.abci.v1beta1.Attribute",
-      value: Attribute.encode(message).finish()
+      typeUrl: '/cosmos.base.abci.v1beta1.Attribute',
+      value: Attribute.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseGasInfo(): GasInfo {
   return {
     gasWanted: BigInt(0),
-    gasUsed: BigInt(0)
+    gasUsed: BigInt(0),
   };
 }
 export const GasInfo = {
-  typeUrl: "/cosmos.base.abci.v1beta1.GasInfo" as const,
-  encode(message: GasInfo, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/cosmos.base.abci.v1beta1.GasInfo' as const,
+  encode(
+    message: GasInfo,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.gasWanted !== BigInt(0)) {
       writer.uint32(8).uint64(message.gasWanted);
     }
@@ -740,7 +800,8 @@ export const GasInfo = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): GasInfo {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGasInfo();
     while (reader.pos < end) {
@@ -761,20 +822,32 @@ export const GasInfo = {
   },
   fromJSON(object: any): GasInfo {
     return {
-      gasWanted: isSet(object.gasWanted) ? BigInt(object.gasWanted.toString()) : BigInt(0),
-      gasUsed: isSet(object.gasUsed) ? BigInt(object.gasUsed.toString()) : BigInt(0)
+      gasWanted: isSet(object.gasWanted)
+        ? BigInt(object.gasWanted.toString())
+        : BigInt(0),
+      gasUsed: isSet(object.gasUsed)
+        ? BigInt(object.gasUsed.toString())
+        : BigInt(0),
     };
   },
   toJSON(message: GasInfo): JsonSafe<GasInfo> {
     const obj: any = {};
-    message.gasWanted !== undefined && (obj.gasWanted = (message.gasWanted || BigInt(0)).toString());
-    message.gasUsed !== undefined && (obj.gasUsed = (message.gasUsed || BigInt(0)).toString());
+    message.gasWanted !== undefined &&
+      (obj.gasWanted = (message.gasWanted || BigInt(0)).toString());
+    message.gasUsed !== undefined &&
+      (obj.gasUsed = (message.gasUsed || BigInt(0)).toString());
     return obj;
   },
   fromPartial(object: Partial<GasInfo>): GasInfo {
     const message = createBaseGasInfo();
-    message.gasWanted = object.gasWanted !== undefined && object.gasWanted !== null ? BigInt(object.gasWanted.toString()) : BigInt(0);
-    message.gasUsed = object.gasUsed !== undefined && object.gasUsed !== null ? BigInt(object.gasUsed.toString()) : BigInt(0);
+    message.gasWanted =
+      object.gasWanted !== undefined && object.gasWanted !== null
+        ? BigInt(object.gasWanted.toString())
+        : BigInt(0);
+    message.gasUsed =
+      object.gasUsed !== undefined && object.gasUsed !== null
+        ? BigInt(object.gasUsed.toString())
+        : BigInt(0);
     return message;
   },
   fromProtoMsg(message: GasInfoProtoMsg): GasInfo {
@@ -785,26 +858,29 @@ export const GasInfo = {
   },
   toProtoMsg(message: GasInfo): GasInfoProtoMsg {
     return {
-      typeUrl: "/cosmos.base.abci.v1beta1.GasInfo",
-      value: GasInfo.encode(message).finish()
+      typeUrl: '/cosmos.base.abci.v1beta1.GasInfo',
+      value: GasInfo.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseResult(): Result {
   return {
     data: new Uint8Array(),
-    log: "",
+    log: '',
     events: [],
-    msgResponses: []
+    msgResponses: [],
   };
 }
 export const Result = {
-  typeUrl: "/cosmos.base.abci.v1beta1.Result" as const,
-  encode(message: Result, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/cosmos.base.abci.v1beta1.Result' as const,
+  encode(
+    message: Result,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.data.length !== 0) {
       writer.uint32(10).bytes(message.data);
     }
-    if (message.log !== "") {
+    if (message.log !== '') {
       writer.uint32(18).string(message.log);
     }
     for (const v of message.events) {
@@ -816,7 +892,8 @@ export const Result = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Result {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseResult();
     while (reader.pos < end) {
@@ -843,23 +920,34 @@ export const Result = {
   },
   fromJSON(object: any): Result {
     return {
-      data: isSet(object.data) ? bytesFromBase64(object.data) : new Uint8Array(),
-      log: isSet(object.log) ? String(object.log) : "",
-      events: Array.isArray(object?.events) ? object.events.map((e: any) => Event.fromJSON(e)) : [],
-      msgResponses: Array.isArray(object?.msgResponses) ? object.msgResponses.map((e: any) => Any.fromJSON(e)) : []
+      data: isSet(object.data)
+        ? bytesFromBase64(object.data)
+        : new Uint8Array(),
+      log: isSet(object.log) ? String(object.log) : '',
+      events: Array.isArray(object?.events)
+        ? object.events.map((e: any) => Event.fromJSON(e))
+        : [],
+      msgResponses: Array.isArray(object?.msgResponses)
+        ? object.msgResponses.map((e: any) => Any.fromJSON(e))
+        : [],
     };
   },
   toJSON(message: Result): JsonSafe<Result> {
     const obj: any = {};
-    message.data !== undefined && (obj.data = base64FromBytes(message.data !== undefined ? message.data : new Uint8Array()));
+    message.data !== undefined &&
+      (obj.data = base64FromBytes(
+        message.data !== undefined ? message.data : new Uint8Array(),
+      ));
     message.log !== undefined && (obj.log = message.log);
     if (message.events) {
-      obj.events = message.events.map(e => e ? Event.toJSON(e) : undefined);
+      obj.events = message.events.map(e => (e ? Event.toJSON(e) : undefined));
     } else {
       obj.events = [];
     }
     if (message.msgResponses) {
-      obj.msgResponses = message.msgResponses.map(e => e ? Any.toJSON(e) : undefined);
+      obj.msgResponses = message.msgResponses.map(e =>
+        e ? Any.toJSON(e) : undefined,
+      );
     } else {
       obj.msgResponses = [];
     }
@@ -868,9 +956,10 @@ export const Result = {
   fromPartial(object: Partial<Result>): Result {
     const message = createBaseResult();
     message.data = object.data ?? new Uint8Array();
-    message.log = object.log ?? "";
+    message.log = object.log ?? '';
     message.events = object.events?.map(e => Event.fromPartial(e)) || [];
-    message.msgResponses = object.msgResponses?.map(e => Any.fromPartial(e)) || [];
+    message.msgResponses =
+      object.msgResponses?.map(e => Any.fromPartial(e)) || [];
     return message;
   },
   fromProtoMsg(message: ResultProtoMsg): Result {
@@ -881,20 +970,23 @@ export const Result = {
   },
   toProtoMsg(message: Result): ResultProtoMsg {
     return {
-      typeUrl: "/cosmos.base.abci.v1beta1.Result",
-      value: Result.encode(message).finish()
+      typeUrl: '/cosmos.base.abci.v1beta1.Result',
+      value: Result.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseSimulationResponse(): SimulationResponse {
   return {
     gasInfo: GasInfo.fromPartial({}),
-    result: undefined
+    result: undefined,
   };
 }
 export const SimulationResponse = {
-  typeUrl: "/cosmos.base.abci.v1beta1.SimulationResponse" as const,
-  encode(message: SimulationResponse, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/cosmos.base.abci.v1beta1.SimulationResponse' as const,
+  encode(
+    message: SimulationResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.gasInfo !== undefined) {
       GasInfo.encode(message.gasInfo, writer.uint32(10).fork()).ldelim();
     }
@@ -903,8 +995,12 @@ export const SimulationResponse = {
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): SimulationResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): SimulationResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseSimulationResponse();
     while (reader.pos < end) {
@@ -925,20 +1021,32 @@ export const SimulationResponse = {
   },
   fromJSON(object: any): SimulationResponse {
     return {
-      gasInfo: isSet(object.gasInfo) ? GasInfo.fromJSON(object.gasInfo) : undefined,
-      result: isSet(object.result) ? Result.fromJSON(object.result) : undefined
+      gasInfo: isSet(object.gasInfo)
+        ? GasInfo.fromJSON(object.gasInfo)
+        : undefined,
+      result: isSet(object.result) ? Result.fromJSON(object.result) : undefined,
     };
   },
   toJSON(message: SimulationResponse): JsonSafe<SimulationResponse> {
     const obj: any = {};
-    message.gasInfo !== undefined && (obj.gasInfo = message.gasInfo ? GasInfo.toJSON(message.gasInfo) : undefined);
-    message.result !== undefined && (obj.result = message.result ? Result.toJSON(message.result) : undefined);
+    message.gasInfo !== undefined &&
+      (obj.gasInfo = message.gasInfo
+        ? GasInfo.toJSON(message.gasInfo)
+        : undefined);
+    message.result !== undefined &&
+      (obj.result = message.result ? Result.toJSON(message.result) : undefined);
     return obj;
   },
   fromPartial(object: Partial<SimulationResponse>): SimulationResponse {
     const message = createBaseSimulationResponse();
-    message.gasInfo = object.gasInfo !== undefined && object.gasInfo !== null ? GasInfo.fromPartial(object.gasInfo) : undefined;
-    message.result = object.result !== undefined && object.result !== null ? Result.fromPartial(object.result) : undefined;
+    message.gasInfo =
+      object.gasInfo !== undefined && object.gasInfo !== null
+        ? GasInfo.fromPartial(object.gasInfo)
+        : undefined;
+    message.result =
+      object.result !== undefined && object.result !== null
+        ? Result.fromPartial(object.result)
+        : undefined;
     return message;
   },
   fromProtoMsg(message: SimulationResponseProtoMsg): SimulationResponse {
@@ -949,21 +1057,24 @@ export const SimulationResponse = {
   },
   toProtoMsg(message: SimulationResponse): SimulationResponseProtoMsg {
     return {
-      typeUrl: "/cosmos.base.abci.v1beta1.SimulationResponse",
-      value: SimulationResponse.encode(message).finish()
+      typeUrl: '/cosmos.base.abci.v1beta1.SimulationResponse',
+      value: SimulationResponse.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseMsgData(): MsgData {
   return {
-    msgType: "",
-    data: new Uint8Array()
+    msgType: '',
+    data: new Uint8Array(),
   };
 }
 export const MsgData = {
-  typeUrl: "/cosmos.base.abci.v1beta1.MsgData" as const,
-  encode(message: MsgData, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.msgType !== "") {
+  typeUrl: '/cosmos.base.abci.v1beta1.MsgData' as const,
+  encode(
+    message: MsgData,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.msgType !== '') {
       writer.uint32(10).string(message.msgType);
     }
     if (message.data.length !== 0) {
@@ -972,7 +1083,8 @@ export const MsgData = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): MsgData {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMsgData();
     while (reader.pos < end) {
@@ -993,19 +1105,24 @@ export const MsgData = {
   },
   fromJSON(object: any): MsgData {
     return {
-      msgType: isSet(object.msgType) ? String(object.msgType) : "",
-      data: isSet(object.data) ? bytesFromBase64(object.data) : new Uint8Array()
+      msgType: isSet(object.msgType) ? String(object.msgType) : '',
+      data: isSet(object.data)
+        ? bytesFromBase64(object.data)
+        : new Uint8Array(),
     };
   },
   toJSON(message: MsgData): JsonSafe<MsgData> {
     const obj: any = {};
     message.msgType !== undefined && (obj.msgType = message.msgType);
-    message.data !== undefined && (obj.data = base64FromBytes(message.data !== undefined ? message.data : new Uint8Array()));
+    message.data !== undefined &&
+      (obj.data = base64FromBytes(
+        message.data !== undefined ? message.data : new Uint8Array(),
+      ));
     return obj;
   },
   fromPartial(object: Partial<MsgData>): MsgData {
     const message = createBaseMsgData();
-    message.msgType = object.msgType ?? "";
+    message.msgType = object.msgType ?? '';
     message.data = object.data ?? new Uint8Array();
     return message;
   },
@@ -1017,20 +1134,23 @@ export const MsgData = {
   },
   toProtoMsg(message: MsgData): MsgDataProtoMsg {
     return {
-      typeUrl: "/cosmos.base.abci.v1beta1.MsgData",
-      value: MsgData.encode(message).finish()
+      typeUrl: '/cosmos.base.abci.v1beta1.MsgData',
+      value: MsgData.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseTxMsgData(): TxMsgData {
   return {
     data: [],
-    msgResponses: []
+    msgResponses: [],
   };
 }
 export const TxMsgData = {
-  typeUrl: "/cosmos.base.abci.v1beta1.TxMsgData" as const,
-  encode(message: TxMsgData, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/cosmos.base.abci.v1beta1.TxMsgData' as const,
+  encode(
+    message: TxMsgData,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     for (const v of message.data) {
       MsgData.encode(v!, writer.uint32(10).fork()).ldelim();
     }
@@ -1040,7 +1160,8 @@ export const TxMsgData = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): TxMsgData {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseTxMsgData();
     while (reader.pos < end) {
@@ -1061,19 +1182,25 @@ export const TxMsgData = {
   },
   fromJSON(object: any): TxMsgData {
     return {
-      data: Array.isArray(object?.data) ? object.data.map((e: any) => MsgData.fromJSON(e)) : [],
-      msgResponses: Array.isArray(object?.msgResponses) ? object.msgResponses.map((e: any) => Any.fromJSON(e)) : []
+      data: Array.isArray(object?.data)
+        ? object.data.map((e: any) => MsgData.fromJSON(e))
+        : [],
+      msgResponses: Array.isArray(object?.msgResponses)
+        ? object.msgResponses.map((e: any) => Any.fromJSON(e))
+        : [],
     };
   },
   toJSON(message: TxMsgData): JsonSafe<TxMsgData> {
     const obj: any = {};
     if (message.data) {
-      obj.data = message.data.map(e => e ? MsgData.toJSON(e) : undefined);
+      obj.data = message.data.map(e => (e ? MsgData.toJSON(e) : undefined));
     } else {
       obj.data = [];
     }
     if (message.msgResponses) {
-      obj.msgResponses = message.msgResponses.map(e => e ? Any.toJSON(e) : undefined);
+      obj.msgResponses = message.msgResponses.map(e =>
+        e ? Any.toJSON(e) : undefined,
+      );
     } else {
       obj.msgResponses = [];
     }
@@ -1082,7 +1209,8 @@ export const TxMsgData = {
   fromPartial(object: Partial<TxMsgData>): TxMsgData {
     const message = createBaseTxMsgData();
     message.data = object.data?.map(e => MsgData.fromPartial(e)) || [];
-    message.msgResponses = object.msgResponses?.map(e => Any.fromPartial(e)) || [];
+    message.msgResponses =
+      object.msgResponses?.map(e => Any.fromPartial(e)) || [];
     return message;
   },
   fromProtoMsg(message: TxMsgDataProtoMsg): TxMsgData {
@@ -1093,10 +1221,10 @@ export const TxMsgData = {
   },
   toProtoMsg(message: TxMsgData): TxMsgDataProtoMsg {
     return {
-      typeUrl: "/cosmos.base.abci.v1beta1.TxMsgData",
-      value: TxMsgData.encode(message).finish()
+      typeUrl: '/cosmos.base.abci.v1beta1.TxMsgData',
+      value: TxMsgData.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseSearchTxsResult(): SearchTxsResult {
   return {
@@ -1105,12 +1233,15 @@ function createBaseSearchTxsResult(): SearchTxsResult {
     pageNumber: BigInt(0),
     pageTotal: BigInt(0),
     limit: BigInt(0),
-    txs: []
+    txs: [],
   };
 }
 export const SearchTxsResult = {
-  typeUrl: "/cosmos.base.abci.v1beta1.SearchTxsResult" as const,
-  encode(message: SearchTxsResult, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/cosmos.base.abci.v1beta1.SearchTxsResult' as const,
+  encode(
+    message: SearchTxsResult,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.totalCount !== BigInt(0)) {
       writer.uint32(8).uint64(message.totalCount);
     }
@@ -1132,7 +1263,8 @@ export const SearchTxsResult = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): SearchTxsResult {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseSearchTxsResult();
     while (reader.pos < end) {
@@ -1165,23 +1297,36 @@ export const SearchTxsResult = {
   },
   fromJSON(object: any): SearchTxsResult {
     return {
-      totalCount: isSet(object.totalCount) ? BigInt(object.totalCount.toString()) : BigInt(0),
+      totalCount: isSet(object.totalCount)
+        ? BigInt(object.totalCount.toString())
+        : BigInt(0),
       count: isSet(object.count) ? BigInt(object.count.toString()) : BigInt(0),
-      pageNumber: isSet(object.pageNumber) ? BigInt(object.pageNumber.toString()) : BigInt(0),
-      pageTotal: isSet(object.pageTotal) ? BigInt(object.pageTotal.toString()) : BigInt(0),
+      pageNumber: isSet(object.pageNumber)
+        ? BigInt(object.pageNumber.toString())
+        : BigInt(0),
+      pageTotal: isSet(object.pageTotal)
+        ? BigInt(object.pageTotal.toString())
+        : BigInt(0),
       limit: isSet(object.limit) ? BigInt(object.limit.toString()) : BigInt(0),
-      txs: Array.isArray(object?.txs) ? object.txs.map((e: any) => TxResponse.fromJSON(e)) : []
+      txs: Array.isArray(object?.txs)
+        ? object.txs.map((e: any) => TxResponse.fromJSON(e))
+        : [],
     };
   },
   toJSON(message: SearchTxsResult): JsonSafe<SearchTxsResult> {
     const obj: any = {};
-    message.totalCount !== undefined && (obj.totalCount = (message.totalCount || BigInt(0)).toString());
-    message.count !== undefined && (obj.count = (message.count || BigInt(0)).toString());
-    message.pageNumber !== undefined && (obj.pageNumber = (message.pageNumber || BigInt(0)).toString());
-    message.pageTotal !== undefined && (obj.pageTotal = (message.pageTotal || BigInt(0)).toString());
-    message.limit !== undefined && (obj.limit = (message.limit || BigInt(0)).toString());
+    message.totalCount !== undefined &&
+      (obj.totalCount = (message.totalCount || BigInt(0)).toString());
+    message.count !== undefined &&
+      (obj.count = (message.count || BigInt(0)).toString());
+    message.pageNumber !== undefined &&
+      (obj.pageNumber = (message.pageNumber || BigInt(0)).toString());
+    message.pageTotal !== undefined &&
+      (obj.pageTotal = (message.pageTotal || BigInt(0)).toString());
+    message.limit !== undefined &&
+      (obj.limit = (message.limit || BigInt(0)).toString());
     if (message.txs) {
-      obj.txs = message.txs.map(e => e ? TxResponse.toJSON(e) : undefined);
+      obj.txs = message.txs.map(e => (e ? TxResponse.toJSON(e) : undefined));
     } else {
       obj.txs = [];
     }
@@ -1189,11 +1334,26 @@ export const SearchTxsResult = {
   },
   fromPartial(object: Partial<SearchTxsResult>): SearchTxsResult {
     const message = createBaseSearchTxsResult();
-    message.totalCount = object.totalCount !== undefined && object.totalCount !== null ? BigInt(object.totalCount.toString()) : BigInt(0);
-    message.count = object.count !== undefined && object.count !== null ? BigInt(object.count.toString()) : BigInt(0);
-    message.pageNumber = object.pageNumber !== undefined && object.pageNumber !== null ? BigInt(object.pageNumber.toString()) : BigInt(0);
-    message.pageTotal = object.pageTotal !== undefined && object.pageTotal !== null ? BigInt(object.pageTotal.toString()) : BigInt(0);
-    message.limit = object.limit !== undefined && object.limit !== null ? BigInt(object.limit.toString()) : BigInt(0);
+    message.totalCount =
+      object.totalCount !== undefined && object.totalCount !== null
+        ? BigInt(object.totalCount.toString())
+        : BigInt(0);
+    message.count =
+      object.count !== undefined && object.count !== null
+        ? BigInt(object.count.toString())
+        : BigInt(0);
+    message.pageNumber =
+      object.pageNumber !== undefined && object.pageNumber !== null
+        ? BigInt(object.pageNumber.toString())
+        : BigInt(0);
+    message.pageTotal =
+      object.pageTotal !== undefined && object.pageTotal !== null
+        ? BigInt(object.pageTotal.toString())
+        : BigInt(0);
+    message.limit =
+      object.limit !== undefined && object.limit !== null
+        ? BigInt(object.limit.toString())
+        : BigInt(0);
     message.txs = object.txs?.map(e => TxResponse.fromPartial(e)) || [];
     return message;
   },
@@ -1205,10 +1365,10 @@ export const SearchTxsResult = {
   },
   toProtoMsg(message: SearchTxsResult): SearchTxsResultProtoMsg {
     return {
-      typeUrl: "/cosmos.base.abci.v1beta1.SearchTxsResult",
-      value: SearchTxsResult.encode(message).finish()
+      typeUrl: '/cosmos.base.abci.v1beta1.SearchTxsResult',
+      value: SearchTxsResult.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseSearchBlocksResult(): SearchBlocksResult {
   return {
@@ -1217,12 +1377,15 @@ function createBaseSearchBlocksResult(): SearchBlocksResult {
     pageNumber: BigInt(0),
     pageTotal: BigInt(0),
     limit: BigInt(0),
-    blocks: []
+    blocks: [],
   };
 }
 export const SearchBlocksResult = {
-  typeUrl: "/cosmos.base.abci.v1beta1.SearchBlocksResult" as const,
-  encode(message: SearchBlocksResult, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/cosmos.base.abci.v1beta1.SearchBlocksResult' as const,
+  encode(
+    message: SearchBlocksResult,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.totalCount !== BigInt(0)) {
       writer.uint32(8).int64(message.totalCount);
     }
@@ -1243,8 +1406,12 @@ export const SearchBlocksResult = {
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): SearchBlocksResult {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): SearchBlocksResult {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseSearchBlocksResult();
     while (reader.pos < end) {
@@ -1277,23 +1444,36 @@ export const SearchBlocksResult = {
   },
   fromJSON(object: any): SearchBlocksResult {
     return {
-      totalCount: isSet(object.totalCount) ? BigInt(object.totalCount.toString()) : BigInt(0),
+      totalCount: isSet(object.totalCount)
+        ? BigInt(object.totalCount.toString())
+        : BigInt(0),
       count: isSet(object.count) ? BigInt(object.count.toString()) : BigInt(0),
-      pageNumber: isSet(object.pageNumber) ? BigInt(object.pageNumber.toString()) : BigInt(0),
-      pageTotal: isSet(object.pageTotal) ? BigInt(object.pageTotal.toString()) : BigInt(0),
+      pageNumber: isSet(object.pageNumber)
+        ? BigInt(object.pageNumber.toString())
+        : BigInt(0),
+      pageTotal: isSet(object.pageTotal)
+        ? BigInt(object.pageTotal.toString())
+        : BigInt(0),
       limit: isSet(object.limit) ? BigInt(object.limit.toString()) : BigInt(0),
-      blocks: Array.isArray(object?.blocks) ? object.blocks.map((e: any) => Block.fromJSON(e)) : []
+      blocks: Array.isArray(object?.blocks)
+        ? object.blocks.map((e: any) => Block.fromJSON(e))
+        : [],
     };
   },
   toJSON(message: SearchBlocksResult): JsonSafe<SearchBlocksResult> {
     const obj: any = {};
-    message.totalCount !== undefined && (obj.totalCount = (message.totalCount || BigInt(0)).toString());
-    message.count !== undefined && (obj.count = (message.count || BigInt(0)).toString());
-    message.pageNumber !== undefined && (obj.pageNumber = (message.pageNumber || BigInt(0)).toString());
-    message.pageTotal !== undefined && (obj.pageTotal = (message.pageTotal || BigInt(0)).toString());
-    message.limit !== undefined && (obj.limit = (message.limit || BigInt(0)).toString());
+    message.totalCount !== undefined &&
+      (obj.totalCount = (message.totalCount || BigInt(0)).toString());
+    message.count !== undefined &&
+      (obj.count = (message.count || BigInt(0)).toString());
+    message.pageNumber !== undefined &&
+      (obj.pageNumber = (message.pageNumber || BigInt(0)).toString());
+    message.pageTotal !== undefined &&
+      (obj.pageTotal = (message.pageTotal || BigInt(0)).toString());
+    message.limit !== undefined &&
+      (obj.limit = (message.limit || BigInt(0)).toString());
     if (message.blocks) {
-      obj.blocks = message.blocks.map(e => e ? Block.toJSON(e) : undefined);
+      obj.blocks = message.blocks.map(e => (e ? Block.toJSON(e) : undefined));
     } else {
       obj.blocks = [];
     }
@@ -1301,11 +1481,26 @@ export const SearchBlocksResult = {
   },
   fromPartial(object: Partial<SearchBlocksResult>): SearchBlocksResult {
     const message = createBaseSearchBlocksResult();
-    message.totalCount = object.totalCount !== undefined && object.totalCount !== null ? BigInt(object.totalCount.toString()) : BigInt(0);
-    message.count = object.count !== undefined && object.count !== null ? BigInt(object.count.toString()) : BigInt(0);
-    message.pageNumber = object.pageNumber !== undefined && object.pageNumber !== null ? BigInt(object.pageNumber.toString()) : BigInt(0);
-    message.pageTotal = object.pageTotal !== undefined && object.pageTotal !== null ? BigInt(object.pageTotal.toString()) : BigInt(0);
-    message.limit = object.limit !== undefined && object.limit !== null ? BigInt(object.limit.toString()) : BigInt(0);
+    message.totalCount =
+      object.totalCount !== undefined && object.totalCount !== null
+        ? BigInt(object.totalCount.toString())
+        : BigInt(0);
+    message.count =
+      object.count !== undefined && object.count !== null
+        ? BigInt(object.count.toString())
+        : BigInt(0);
+    message.pageNumber =
+      object.pageNumber !== undefined && object.pageNumber !== null
+        ? BigInt(object.pageNumber.toString())
+        : BigInt(0);
+    message.pageTotal =
+      object.pageTotal !== undefined && object.pageTotal !== null
+        ? BigInt(object.pageTotal.toString())
+        : BigInt(0);
+    message.limit =
+      object.limit !== undefined && object.limit !== null
+        ? BigInt(object.limit.toString())
+        : BigInt(0);
     message.blocks = object.blocks?.map(e => Block.fromPartial(e)) || [];
     return message;
   },
@@ -1317,8 +1512,8 @@ export const SearchBlocksResult = {
   },
   toProtoMsg(message: SearchBlocksResult): SearchBlocksResultProtoMsg {
     return {
-      typeUrl: "/cosmos.base.abci.v1beta1.SearchBlocksResult",
-      value: SearchBlocksResult.encode(message).finish()
+      typeUrl: '/cosmos.base.abci.v1beta1.SearchBlocksResult',
+      value: SearchBlocksResult.encode(message).finish(),
     };
-  }
+  },
 };

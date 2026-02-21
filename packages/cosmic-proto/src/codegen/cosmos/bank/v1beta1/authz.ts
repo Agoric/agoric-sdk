@@ -1,49 +1,52 @@
 //@ts-nocheck
-import { Coin, type CoinSDKType } from "../../base/v1beta1/coin.js";
-import { BinaryReader, BinaryWriter } from "../../../binary.js";
-import {type JsonSafe } from "../../../json-safe.js";
+import { Coin, type CoinSDKType } from '../../base/v1beta1/coin.js';
+import { BinaryReader, BinaryWriter } from '../../../binary.js';
+import { type JsonSafe } from '../../../json-safe.js';
 /**
  * SendAuthorization allows the grantee to spend up to spend_limit coins from
  * the granter's account.
- * 
+ *
  * Since: cosmos-sdk 0.43
  */
 export interface SendAuthorization {
-  $typeUrl?: "/cosmos.bank.v1beta1.SendAuthorization";
+  $typeUrl?: '/cosmos.bank.v1beta1.SendAuthorization';
   spendLimit: Coin[];
   /**
    * allow_list specifies an optional list of addresses to whom the grantee can send tokens on behalf of the
    * granter. If omitted, any recipient is allowed.
-   * 
+   *
    * Since: cosmos-sdk 0.47
    */
   allowList: string[];
 }
 export interface SendAuthorizationProtoMsg {
-  typeUrl: "/cosmos.bank.v1beta1.SendAuthorization";
+  typeUrl: '/cosmos.bank.v1beta1.SendAuthorization';
   value: Uint8Array;
 }
 /**
  * SendAuthorization allows the grantee to spend up to spend_limit coins from
  * the granter's account.
- * 
+ *
  * Since: cosmos-sdk 0.43
  */
 export interface SendAuthorizationSDKType {
-  $typeUrl?: "/cosmos.bank.v1beta1.SendAuthorization";
+  $typeUrl?: '/cosmos.bank.v1beta1.SendAuthorization';
   spend_limit: CoinSDKType[];
   allow_list: string[];
 }
 function createBaseSendAuthorization(): SendAuthorization {
   return {
-    $typeUrl: "/cosmos.bank.v1beta1.SendAuthorization",
+    $typeUrl: '/cosmos.bank.v1beta1.SendAuthorization',
     spendLimit: [],
-    allowList: []
+    allowList: [],
   };
 }
 export const SendAuthorization = {
-  typeUrl: "/cosmos.bank.v1beta1.SendAuthorization" as const,
-  encode(message: SendAuthorization, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/cosmos.bank.v1beta1.SendAuthorization' as const,
+  encode(
+    message: SendAuthorization,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     for (const v of message.spendLimit) {
       Coin.encode(v!, writer.uint32(10).fork()).ldelim();
     }
@@ -53,7 +56,8 @@ export const SendAuthorization = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): SendAuthorization {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseSendAuthorization();
     while (reader.pos < end) {
@@ -74,14 +78,20 @@ export const SendAuthorization = {
   },
   fromJSON(object: any): SendAuthorization {
     return {
-      spendLimit: Array.isArray(object?.spendLimit) ? object.spendLimit.map((e: any) => Coin.fromJSON(e)) : [],
-      allowList: Array.isArray(object?.allowList) ? object.allowList.map((e: any) => String(e)) : []
+      spendLimit: Array.isArray(object?.spendLimit)
+        ? object.spendLimit.map((e: any) => Coin.fromJSON(e))
+        : [],
+      allowList: Array.isArray(object?.allowList)
+        ? object.allowList.map((e: any) => String(e))
+        : [],
     };
   },
   toJSON(message: SendAuthorization): JsonSafe<SendAuthorization> {
     const obj: any = {};
     if (message.spendLimit) {
-      obj.spendLimit = message.spendLimit.map(e => e ? Coin.toJSON(e) : undefined);
+      obj.spendLimit = message.spendLimit.map(e =>
+        e ? Coin.toJSON(e) : undefined,
+      );
     } else {
       obj.spendLimit = [];
     }
@@ -106,8 +116,8 @@ export const SendAuthorization = {
   },
   toProtoMsg(message: SendAuthorization): SendAuthorizationProtoMsg {
     return {
-      typeUrl: "/cosmos.bank.v1beta1.SendAuthorization",
-      value: SendAuthorization.encode(message).finish()
+      typeUrl: '/cosmos.bank.v1beta1.SendAuthorization',
+      value: SendAuthorization.encode(message).finish(),
     };
-  }
+  },
 };

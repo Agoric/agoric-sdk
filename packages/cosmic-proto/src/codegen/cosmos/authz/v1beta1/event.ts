@@ -1,7 +1,7 @@
 //@ts-nocheck
-import { BinaryReader, BinaryWriter } from "../../../binary.js";
-import { isSet } from "../../../helpers.js";
-import {type JsonSafe } from "../../../json-safe.js";
+import { BinaryReader, BinaryWriter } from '../../../binary.js';
+import { isSet } from '../../../helpers.js';
+import { type JsonSafe } from '../../../json-safe.js';
 /** EventGrant is emitted on Msg/Grant */
 export interface EventGrant {
   /** Msg type URL for which an autorization is granted */
@@ -12,7 +12,7 @@ export interface EventGrant {
   grantee: string;
 }
 export interface EventGrantProtoMsg {
-  typeUrl: "/cosmos.authz.v1beta1.EventGrant";
+  typeUrl: '/cosmos.authz.v1beta1.EventGrant';
   value: Uint8Array;
 }
 /** EventGrant is emitted on Msg/Grant */
@@ -31,7 +31,7 @@ export interface EventRevoke {
   grantee: string;
 }
 export interface EventRevokeProtoMsg {
-  typeUrl: "/cosmos.authz.v1beta1.EventRevoke";
+  typeUrl: '/cosmos.authz.v1beta1.EventRevoke';
   value: Uint8Array;
 }
 /** EventRevoke is emitted on Msg/Revoke */
@@ -42,27 +42,31 @@ export interface EventRevokeSDKType {
 }
 function createBaseEventGrant(): EventGrant {
   return {
-    msgTypeUrl: "",
-    granter: "",
-    grantee: ""
+    msgTypeUrl: '',
+    granter: '',
+    grantee: '',
   };
 }
 export const EventGrant = {
-  typeUrl: "/cosmos.authz.v1beta1.EventGrant" as const,
-  encode(message: EventGrant, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.msgTypeUrl !== "") {
+  typeUrl: '/cosmos.authz.v1beta1.EventGrant' as const,
+  encode(
+    message: EventGrant,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.msgTypeUrl !== '') {
       writer.uint32(18).string(message.msgTypeUrl);
     }
-    if (message.granter !== "") {
+    if (message.granter !== '') {
       writer.uint32(26).string(message.granter);
     }
-    if (message.grantee !== "") {
+    if (message.grantee !== '') {
       writer.uint32(34).string(message.grantee);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): EventGrant {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseEventGrant();
     while (reader.pos < end) {
@@ -86,9 +90,9 @@ export const EventGrant = {
   },
   fromJSON(object: any): EventGrant {
     return {
-      msgTypeUrl: isSet(object.msgTypeUrl) ? String(object.msgTypeUrl) : "",
-      granter: isSet(object.granter) ? String(object.granter) : "",
-      grantee: isSet(object.grantee) ? String(object.grantee) : ""
+      msgTypeUrl: isSet(object.msgTypeUrl) ? String(object.msgTypeUrl) : '',
+      granter: isSet(object.granter) ? String(object.granter) : '',
+      grantee: isSet(object.grantee) ? String(object.grantee) : '',
     };
   },
   toJSON(message: EventGrant): JsonSafe<EventGrant> {
@@ -100,9 +104,9 @@ export const EventGrant = {
   },
   fromPartial(object: Partial<EventGrant>): EventGrant {
     const message = createBaseEventGrant();
-    message.msgTypeUrl = object.msgTypeUrl ?? "";
-    message.granter = object.granter ?? "";
-    message.grantee = object.grantee ?? "";
+    message.msgTypeUrl = object.msgTypeUrl ?? '';
+    message.granter = object.granter ?? '';
+    message.grantee = object.grantee ?? '';
     return message;
   },
   fromProtoMsg(message: EventGrantProtoMsg): EventGrant {
@@ -113,34 +117,38 @@ export const EventGrant = {
   },
   toProtoMsg(message: EventGrant): EventGrantProtoMsg {
     return {
-      typeUrl: "/cosmos.authz.v1beta1.EventGrant",
-      value: EventGrant.encode(message).finish()
+      typeUrl: '/cosmos.authz.v1beta1.EventGrant',
+      value: EventGrant.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseEventRevoke(): EventRevoke {
   return {
-    msgTypeUrl: "",
-    granter: "",
-    grantee: ""
+    msgTypeUrl: '',
+    granter: '',
+    grantee: '',
   };
 }
 export const EventRevoke = {
-  typeUrl: "/cosmos.authz.v1beta1.EventRevoke" as const,
-  encode(message: EventRevoke, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.msgTypeUrl !== "") {
+  typeUrl: '/cosmos.authz.v1beta1.EventRevoke' as const,
+  encode(
+    message: EventRevoke,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.msgTypeUrl !== '') {
       writer.uint32(18).string(message.msgTypeUrl);
     }
-    if (message.granter !== "") {
+    if (message.granter !== '') {
       writer.uint32(26).string(message.granter);
     }
-    if (message.grantee !== "") {
+    if (message.grantee !== '') {
       writer.uint32(34).string(message.grantee);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): EventRevoke {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseEventRevoke();
     while (reader.pos < end) {
@@ -164,9 +172,9 @@ export const EventRevoke = {
   },
   fromJSON(object: any): EventRevoke {
     return {
-      msgTypeUrl: isSet(object.msgTypeUrl) ? String(object.msgTypeUrl) : "",
-      granter: isSet(object.granter) ? String(object.granter) : "",
-      grantee: isSet(object.grantee) ? String(object.grantee) : ""
+      msgTypeUrl: isSet(object.msgTypeUrl) ? String(object.msgTypeUrl) : '',
+      granter: isSet(object.granter) ? String(object.granter) : '',
+      grantee: isSet(object.grantee) ? String(object.grantee) : '',
     };
   },
   toJSON(message: EventRevoke): JsonSafe<EventRevoke> {
@@ -178,9 +186,9 @@ export const EventRevoke = {
   },
   fromPartial(object: Partial<EventRevoke>): EventRevoke {
     const message = createBaseEventRevoke();
-    message.msgTypeUrl = object.msgTypeUrl ?? "";
-    message.granter = object.granter ?? "";
-    message.grantee = object.grantee ?? "";
+    message.msgTypeUrl = object.msgTypeUrl ?? '';
+    message.granter = object.granter ?? '';
+    message.grantee = object.grantee ?? '';
     return message;
   },
   fromProtoMsg(message: EventRevokeProtoMsg): EventRevoke {
@@ -191,8 +199,8 @@ export const EventRevoke = {
   },
   toProtoMsg(message: EventRevoke): EventRevokeProtoMsg {
     return {
-      typeUrl: "/cosmos.authz.v1beta1.EventRevoke",
-      value: EventRevoke.encode(message).finish()
+      typeUrl: '/cosmos.authz.v1beta1.EventRevoke',
+      value: EventRevoke.encode(message).finish(),
     };
-  }
+  },
 };

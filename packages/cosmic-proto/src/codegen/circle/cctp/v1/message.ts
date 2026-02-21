@@ -1,16 +1,16 @@
 //@ts-nocheck
-import { BinaryReader, BinaryWriter } from "../../../binary.js";
-import { isSet } from "../../../helpers.js";
-import { decodeBase64 as bytesFromBase64 } from "@endo/base64";
-import { encodeBase64 as base64FromBytes } from "@endo/base64";
-import {type JsonSafe } from "../../../json-safe.js";
+import { BinaryReader, BinaryWriter } from '../../../binary.js';
+import { isSet } from '../../../helpers.js';
+import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
+import { encodeBase64 as base64FromBytes } from '@endo/base64';
+import { type JsonSafe } from '../../../json-safe.js';
 /**
  * Generic message header for all messages passing through CCTP
  * The message body is dynamically-sized to support custom message body
  * formats. Other fields must be fixed-size to avoid hash collisions.
- * 
+ *
  * Padding: uintNN fields are left-padded, and bytesNN fields are right-padded.
- * 
+ *
  * @param version the version of the message format
  * @param source_domain domain of home chain
  * @param destination_domain domain of destination chain
@@ -31,16 +31,16 @@ export interface Message {
   messageBody: Uint8Array;
 }
 export interface MessageProtoMsg {
-  typeUrl: "/circle.cctp.v1.Message";
+  typeUrl: '/circle.cctp.v1.Message';
   value: Uint8Array;
 }
 /**
  * Generic message header for all messages passing through CCTP
  * The message body is dynamically-sized to support custom message body
  * formats. Other fields must be fixed-size to avoid hash collisions.
- * 
+ *
  * Padding: uintNN fields are left-padded, and bytesNN fields are right-padded.
- * 
+ *
  * @param version the version of the message format
  * @param source_domain domain of home chain
  * @param destination_domain domain of destination chain
@@ -69,12 +69,15 @@ function createBaseMessage(): Message {
     sender: new Uint8Array(),
     recipient: new Uint8Array(),
     destinationCaller: new Uint8Array(),
-    messageBody: new Uint8Array()
+    messageBody: new Uint8Array(),
   };
 }
 export const Message = {
-  typeUrl: "/circle.cctp.v1.Message" as const,
-  encode(message: Message, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/circle.cctp.v1.Message' as const,
+  encode(
+    message: Message,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.version !== 0) {
       writer.uint32(8).uint32(message.version);
     }
@@ -102,7 +105,8 @@ export const Message = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Message {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMessage();
     while (reader.pos < end) {
@@ -142,25 +146,57 @@ export const Message = {
   fromJSON(object: any): Message {
     return {
       version: isSet(object.version) ? Number(object.version) : 0,
-      sourceDomain: isSet(object.sourceDomain) ? Number(object.sourceDomain) : 0,
-      destinationDomain: isSet(object.destinationDomain) ? Number(object.destinationDomain) : 0,
+      sourceDomain: isSet(object.sourceDomain)
+        ? Number(object.sourceDomain)
+        : 0,
+      destinationDomain: isSet(object.destinationDomain)
+        ? Number(object.destinationDomain)
+        : 0,
       nonce: isSet(object.nonce) ? BigInt(object.nonce.toString()) : BigInt(0),
-      sender: isSet(object.sender) ? bytesFromBase64(object.sender) : new Uint8Array(),
-      recipient: isSet(object.recipient) ? bytesFromBase64(object.recipient) : new Uint8Array(),
-      destinationCaller: isSet(object.destinationCaller) ? bytesFromBase64(object.destinationCaller) : new Uint8Array(),
-      messageBody: isSet(object.messageBody) ? bytesFromBase64(object.messageBody) : new Uint8Array()
+      sender: isSet(object.sender)
+        ? bytesFromBase64(object.sender)
+        : new Uint8Array(),
+      recipient: isSet(object.recipient)
+        ? bytesFromBase64(object.recipient)
+        : new Uint8Array(),
+      destinationCaller: isSet(object.destinationCaller)
+        ? bytesFromBase64(object.destinationCaller)
+        : new Uint8Array(),
+      messageBody: isSet(object.messageBody)
+        ? bytesFromBase64(object.messageBody)
+        : new Uint8Array(),
     };
   },
   toJSON(message: Message): JsonSafe<Message> {
     const obj: any = {};
-    message.version !== undefined && (obj.version = Math.round(message.version));
-    message.sourceDomain !== undefined && (obj.sourceDomain = Math.round(message.sourceDomain));
-    message.destinationDomain !== undefined && (obj.destinationDomain = Math.round(message.destinationDomain));
-    message.nonce !== undefined && (obj.nonce = (message.nonce || BigInt(0)).toString());
-    message.sender !== undefined && (obj.sender = base64FromBytes(message.sender !== undefined ? message.sender : new Uint8Array()));
-    message.recipient !== undefined && (obj.recipient = base64FromBytes(message.recipient !== undefined ? message.recipient : new Uint8Array()));
-    message.destinationCaller !== undefined && (obj.destinationCaller = base64FromBytes(message.destinationCaller !== undefined ? message.destinationCaller : new Uint8Array()));
-    message.messageBody !== undefined && (obj.messageBody = base64FromBytes(message.messageBody !== undefined ? message.messageBody : new Uint8Array()));
+    message.version !== undefined &&
+      (obj.version = Math.round(message.version));
+    message.sourceDomain !== undefined &&
+      (obj.sourceDomain = Math.round(message.sourceDomain));
+    message.destinationDomain !== undefined &&
+      (obj.destinationDomain = Math.round(message.destinationDomain));
+    message.nonce !== undefined &&
+      (obj.nonce = (message.nonce || BigInt(0)).toString());
+    message.sender !== undefined &&
+      (obj.sender = base64FromBytes(
+        message.sender !== undefined ? message.sender : new Uint8Array(),
+      ));
+    message.recipient !== undefined &&
+      (obj.recipient = base64FromBytes(
+        message.recipient !== undefined ? message.recipient : new Uint8Array(),
+      ));
+    message.destinationCaller !== undefined &&
+      (obj.destinationCaller = base64FromBytes(
+        message.destinationCaller !== undefined
+          ? message.destinationCaller
+          : new Uint8Array(),
+      ));
+    message.messageBody !== undefined &&
+      (obj.messageBody = base64FromBytes(
+        message.messageBody !== undefined
+          ? message.messageBody
+          : new Uint8Array(),
+      ));
     return obj;
   },
   fromPartial(object: Partial<Message>): Message {
@@ -168,7 +204,10 @@ export const Message = {
     message.version = object.version ?? 0;
     message.sourceDomain = object.sourceDomain ?? 0;
     message.destinationDomain = object.destinationDomain ?? 0;
-    message.nonce = object.nonce !== undefined && object.nonce !== null ? BigInt(object.nonce.toString()) : BigInt(0);
+    message.nonce =
+      object.nonce !== undefined && object.nonce !== null
+        ? BigInt(object.nonce.toString())
+        : BigInt(0);
     message.sender = object.sender ?? new Uint8Array();
     message.recipient = object.recipient ?? new Uint8Array();
     message.destinationCaller = object.destinationCaller ?? new Uint8Array();
@@ -183,8 +222,8 @@ export const Message = {
   },
   toProtoMsg(message: Message): MessageProtoMsg {
     return {
-      typeUrl: "/circle.cctp.v1.Message",
-      value: Message.encode(message).finish()
+      typeUrl: '/circle.cctp.v1.Message',
+      value: Message.encode(message).finish(),
     };
-  }
+  },
 };

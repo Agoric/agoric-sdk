@@ -1,10 +1,21 @@
 //@ts-nocheck
-import { Params, type ParamsSDKType, Validator, type ValidatorSDKType, Delegation, type DelegationSDKType, UnbondingDelegation, type UnbondingDelegationSDKType, Redelegation, type RedelegationSDKType } from "./staking.js";
-import { BinaryReader, BinaryWriter } from "../../../binary.js";
-import { isSet } from "../../../helpers.js";
-import { decodeBase64 as bytesFromBase64 } from "@endo/base64";
-import { encodeBase64 as base64FromBytes } from "@endo/base64";
-import {type JsonSafe } from "../../../json-safe.js";
+import {
+  Params,
+  type ParamsSDKType,
+  Validator,
+  type ValidatorSDKType,
+  Delegation,
+  type DelegationSDKType,
+  UnbondingDelegation,
+  type UnbondingDelegationSDKType,
+  Redelegation,
+  type RedelegationSDKType,
+} from './staking.js';
+import { BinaryReader, BinaryWriter } from '../../../binary.js';
+import { isSet } from '../../../helpers.js';
+import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
+import { encodeBase64 as base64FromBytes } from '@endo/base64';
+import { type JsonSafe } from '../../../json-safe.js';
 /** GenesisState defines the staking module's genesis state. */
 export interface GenesisState {
   /** params defines all the parameters of related to deposit. */
@@ -31,7 +42,7 @@ export interface GenesisState {
   exported: boolean;
 }
 export interface GenesisStateProtoMsg {
-  typeUrl: "/cosmos.staking.v1beta1.GenesisState";
+  typeUrl: '/cosmos.staking.v1beta1.GenesisState';
   value: Uint8Array;
 }
 /** GenesisState defines the staking module's genesis state. */
@@ -53,7 +64,7 @@ export interface LastValidatorPower {
   power: bigint;
 }
 export interface LastValidatorPowerProtoMsg {
-  typeUrl: "/cosmos.staking.v1beta1.LastValidatorPower";
+  typeUrl: '/cosmos.staking.v1beta1.LastValidatorPower';
   value: Uint8Array;
 }
 /** LastValidatorPower required for validator set update logic. */
@@ -70,12 +81,15 @@ function createBaseGenesisState(): GenesisState {
     delegations: [],
     unbondingDelegations: [],
     redelegations: [],
-    exported: false
+    exported: false,
   };
 }
 export const GenesisState = {
-  typeUrl: "/cosmos.staking.v1beta1.GenesisState" as const,
-  encode(message: GenesisState, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/cosmos.staking.v1beta1.GenesisState' as const,
+  encode(
+    message: GenesisState,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.params !== undefined) {
       Params.encode(message.params, writer.uint32(10).fork()).ldelim();
     }
@@ -103,7 +117,8 @@ export const GenesisState = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): GenesisState {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGenesisState();
     while (reader.pos < end) {
@@ -116,7 +131,9 @@ export const GenesisState = {
           message.lastTotalPower = reader.bytes();
           break;
         case 3:
-          message.lastValidatorPowers.push(LastValidatorPower.decode(reader, reader.uint32()));
+          message.lastValidatorPowers.push(
+            LastValidatorPower.decode(reader, reader.uint32()),
+          );
           break;
         case 4:
           message.validators.push(Validator.decode(reader, reader.uint32()));
@@ -125,10 +142,14 @@ export const GenesisState = {
           message.delegations.push(Delegation.decode(reader, reader.uint32()));
           break;
         case 6:
-          message.unbondingDelegations.push(UnbondingDelegation.decode(reader, reader.uint32()));
+          message.unbondingDelegations.push(
+            UnbondingDelegation.decode(reader, reader.uint32()),
+          );
           break;
         case 7:
-          message.redelegations.push(Redelegation.decode(reader, reader.uint32()));
+          message.redelegations.push(
+            Redelegation.decode(reader, reader.uint32()),
+          );
           break;
         case 8:
           message.exported = reader.bool();
@@ -143,41 +164,73 @@ export const GenesisState = {
   fromJSON(object: any): GenesisState {
     return {
       params: isSet(object.params) ? Params.fromJSON(object.params) : undefined,
-      lastTotalPower: isSet(object.lastTotalPower) ? bytesFromBase64(object.lastTotalPower) : new Uint8Array(),
-      lastValidatorPowers: Array.isArray(object?.lastValidatorPowers) ? object.lastValidatorPowers.map((e: any) => LastValidatorPower.fromJSON(e)) : [],
-      validators: Array.isArray(object?.validators) ? object.validators.map((e: any) => Validator.fromJSON(e)) : [],
-      delegations: Array.isArray(object?.delegations) ? object.delegations.map((e: any) => Delegation.fromJSON(e)) : [],
-      unbondingDelegations: Array.isArray(object?.unbondingDelegations) ? object.unbondingDelegations.map((e: any) => UnbondingDelegation.fromJSON(e)) : [],
-      redelegations: Array.isArray(object?.redelegations) ? object.redelegations.map((e: any) => Redelegation.fromJSON(e)) : [],
-      exported: isSet(object.exported) ? Boolean(object.exported) : false
+      lastTotalPower: isSet(object.lastTotalPower)
+        ? bytesFromBase64(object.lastTotalPower)
+        : new Uint8Array(),
+      lastValidatorPowers: Array.isArray(object?.lastValidatorPowers)
+        ? object.lastValidatorPowers.map((e: any) =>
+            LastValidatorPower.fromJSON(e),
+          )
+        : [],
+      validators: Array.isArray(object?.validators)
+        ? object.validators.map((e: any) => Validator.fromJSON(e))
+        : [],
+      delegations: Array.isArray(object?.delegations)
+        ? object.delegations.map((e: any) => Delegation.fromJSON(e))
+        : [],
+      unbondingDelegations: Array.isArray(object?.unbondingDelegations)
+        ? object.unbondingDelegations.map((e: any) =>
+            UnbondingDelegation.fromJSON(e),
+          )
+        : [],
+      redelegations: Array.isArray(object?.redelegations)
+        ? object.redelegations.map((e: any) => Redelegation.fromJSON(e))
+        : [],
+      exported: isSet(object.exported) ? Boolean(object.exported) : false,
     };
   },
   toJSON(message: GenesisState): JsonSafe<GenesisState> {
     const obj: any = {};
-    message.params !== undefined && (obj.params = message.params ? Params.toJSON(message.params) : undefined);
-    message.lastTotalPower !== undefined && (obj.lastTotalPower = base64FromBytes(message.lastTotalPower !== undefined ? message.lastTotalPower : new Uint8Array()));
+    message.params !== undefined &&
+      (obj.params = message.params ? Params.toJSON(message.params) : undefined);
+    message.lastTotalPower !== undefined &&
+      (obj.lastTotalPower = base64FromBytes(
+        message.lastTotalPower !== undefined
+          ? message.lastTotalPower
+          : new Uint8Array(),
+      ));
     if (message.lastValidatorPowers) {
-      obj.lastValidatorPowers = message.lastValidatorPowers.map(e => e ? LastValidatorPower.toJSON(e) : undefined);
+      obj.lastValidatorPowers = message.lastValidatorPowers.map(e =>
+        e ? LastValidatorPower.toJSON(e) : undefined,
+      );
     } else {
       obj.lastValidatorPowers = [];
     }
     if (message.validators) {
-      obj.validators = message.validators.map(e => e ? Validator.toJSON(e) : undefined);
+      obj.validators = message.validators.map(e =>
+        e ? Validator.toJSON(e) : undefined,
+      );
     } else {
       obj.validators = [];
     }
     if (message.delegations) {
-      obj.delegations = message.delegations.map(e => e ? Delegation.toJSON(e) : undefined);
+      obj.delegations = message.delegations.map(e =>
+        e ? Delegation.toJSON(e) : undefined,
+      );
     } else {
       obj.delegations = [];
     }
     if (message.unbondingDelegations) {
-      obj.unbondingDelegations = message.unbondingDelegations.map(e => e ? UnbondingDelegation.toJSON(e) : undefined);
+      obj.unbondingDelegations = message.unbondingDelegations.map(e =>
+        e ? UnbondingDelegation.toJSON(e) : undefined,
+      );
     } else {
       obj.unbondingDelegations = [];
     }
     if (message.redelegations) {
-      obj.redelegations = message.redelegations.map(e => e ? Redelegation.toJSON(e) : undefined);
+      obj.redelegations = message.redelegations.map(e =>
+        e ? Redelegation.toJSON(e) : undefined,
+      );
     } else {
       obj.redelegations = [];
     }
@@ -186,13 +239,24 @@ export const GenesisState = {
   },
   fromPartial(object: Partial<GenesisState>): GenesisState {
     const message = createBaseGenesisState();
-    message.params = object.params !== undefined && object.params !== null ? Params.fromPartial(object.params) : undefined;
+    message.params =
+      object.params !== undefined && object.params !== null
+        ? Params.fromPartial(object.params)
+        : undefined;
     message.lastTotalPower = object.lastTotalPower ?? new Uint8Array();
-    message.lastValidatorPowers = object.lastValidatorPowers?.map(e => LastValidatorPower.fromPartial(e)) || [];
-    message.validators = object.validators?.map(e => Validator.fromPartial(e)) || [];
-    message.delegations = object.delegations?.map(e => Delegation.fromPartial(e)) || [];
-    message.unbondingDelegations = object.unbondingDelegations?.map(e => UnbondingDelegation.fromPartial(e)) || [];
-    message.redelegations = object.redelegations?.map(e => Redelegation.fromPartial(e)) || [];
+    message.lastValidatorPowers =
+      object.lastValidatorPowers?.map(e => LastValidatorPower.fromPartial(e)) ||
+      [];
+    message.validators =
+      object.validators?.map(e => Validator.fromPartial(e)) || [];
+    message.delegations =
+      object.delegations?.map(e => Delegation.fromPartial(e)) || [];
+    message.unbondingDelegations =
+      object.unbondingDelegations?.map(e =>
+        UnbondingDelegation.fromPartial(e),
+      ) || [];
+    message.redelegations =
+      object.redelegations?.map(e => Redelegation.fromPartial(e)) || [];
     message.exported = object.exported ?? false;
     return message;
   },
@@ -204,21 +268,24 @@ export const GenesisState = {
   },
   toProtoMsg(message: GenesisState): GenesisStateProtoMsg {
     return {
-      typeUrl: "/cosmos.staking.v1beta1.GenesisState",
-      value: GenesisState.encode(message).finish()
+      typeUrl: '/cosmos.staking.v1beta1.GenesisState',
+      value: GenesisState.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseLastValidatorPower(): LastValidatorPower {
   return {
-    address: "",
-    power: BigInt(0)
+    address: '',
+    power: BigInt(0),
   };
 }
 export const LastValidatorPower = {
-  typeUrl: "/cosmos.staking.v1beta1.LastValidatorPower" as const,
-  encode(message: LastValidatorPower, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.address !== "") {
+  typeUrl: '/cosmos.staking.v1beta1.LastValidatorPower' as const,
+  encode(
+    message: LastValidatorPower,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.address !== '') {
       writer.uint32(10).string(message.address);
     }
     if (message.power !== BigInt(0)) {
@@ -226,8 +293,12 @@ export const LastValidatorPower = {
     }
     return writer;
   },
-  decode(input: BinaryReader | Uint8Array, length?: number): LastValidatorPower {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): LastValidatorPower {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseLastValidatorPower();
     while (reader.pos < end) {
@@ -248,20 +319,24 @@ export const LastValidatorPower = {
   },
   fromJSON(object: any): LastValidatorPower {
     return {
-      address: isSet(object.address) ? String(object.address) : "",
-      power: isSet(object.power) ? BigInt(object.power.toString()) : BigInt(0)
+      address: isSet(object.address) ? String(object.address) : '',
+      power: isSet(object.power) ? BigInt(object.power.toString()) : BigInt(0),
     };
   },
   toJSON(message: LastValidatorPower): JsonSafe<LastValidatorPower> {
     const obj: any = {};
     message.address !== undefined && (obj.address = message.address);
-    message.power !== undefined && (obj.power = (message.power || BigInt(0)).toString());
+    message.power !== undefined &&
+      (obj.power = (message.power || BigInt(0)).toString());
     return obj;
   },
   fromPartial(object: Partial<LastValidatorPower>): LastValidatorPower {
     const message = createBaseLastValidatorPower();
-    message.address = object.address ?? "";
-    message.power = object.power !== undefined && object.power !== null ? BigInt(object.power.toString()) : BigInt(0);
+    message.address = object.address ?? '';
+    message.power =
+      object.power !== undefined && object.power !== null
+        ? BigInt(object.power.toString())
+        : BigInt(0);
     return message;
   },
   fromProtoMsg(message: LastValidatorPowerProtoMsg): LastValidatorPower {
@@ -272,8 +347,8 @@ export const LastValidatorPower = {
   },
   toProtoMsg(message: LastValidatorPower): LastValidatorPowerProtoMsg {
     return {
-      typeUrl: "/cosmos.staking.v1beta1.LastValidatorPower",
-      value: LastValidatorPower.encode(message).finish()
+      typeUrl: '/cosmos.staking.v1beta1.LastValidatorPower',
+      value: LastValidatorPower.encode(message).finish(),
     };
-  }
+  },
 };

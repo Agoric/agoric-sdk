@@ -1,10 +1,17 @@
 //@ts-nocheck
-import { Timestamp, type TimestampSDKType } from "../../../../google/protobuf/timestamp.js";
-import { BinaryReader, BinaryWriter } from "../../../../binary.js";
-import { isSet, fromJsonTimestamp, fromTimestamp } from "../../../../helpers.js";
-import {type JsonSafe } from "../../../../json-safe.js";
-import { decodeBase64 as bytesFromBase64 } from "@endo/base64";
-import { encodeBase64 as base64FromBytes } from "@endo/base64";
+import {
+  Timestamp,
+  type TimestampSDKType,
+} from '../../../../google/protobuf/timestamp.js';
+import { BinaryReader, BinaryWriter } from '../../../../binary.js';
+import {
+  isSet,
+  fromJsonTimestamp,
+  fromTimestamp,
+} from '../../../../helpers.js';
+import { type JsonSafe } from '../../../../json-safe.js';
+import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
+import { encodeBase64 as base64FromBytes } from '@endo/base64';
 /** buf:lint:ignore ENUM_VALUE_PREFIX */
 export enum VaultType {
   /** UNSPECIFIED - buf:lint:ignore ENUM_ZERO_VALUE_SUFFIX */
@@ -17,16 +24,16 @@ export const VaultTypeSDKType = VaultType;
 export function vaultTypeFromJSON(object: any): VaultType {
   switch (object) {
     case 0:
-    case "UNSPECIFIED":
+    case 'UNSPECIFIED':
       return VaultType.UNSPECIFIED;
     case 1:
-    case "STAKED":
+    case 'STAKED':
       return VaultType.STAKED;
     case 2:
-    case "FLEXIBLE":
+    case 'FLEXIBLE':
       return VaultType.FLEXIBLE;
     case -1:
-    case "UNRECOGNIZED":
+    case 'UNRECOGNIZED':
     default:
       return VaultType.UNRECOGNIZED;
   }
@@ -34,14 +41,14 @@ export function vaultTypeFromJSON(object: any): VaultType {
 export function vaultTypeToJSON(object: VaultType): string {
   switch (object) {
     case VaultType.UNSPECIFIED:
-      return "UNSPECIFIED";
+      return 'UNSPECIFIED';
     case VaultType.STAKED:
-      return "STAKED";
+      return 'STAKED';
     case VaultType.FLEXIBLE:
-      return "FLEXIBLE";
+      return 'FLEXIBLE';
     case VaultType.UNRECOGNIZED:
     default:
-      return "UNRECOGNIZED";
+      return 'UNRECOGNIZED';
   }
 }
 /** buf:lint:ignore ENUM_VALUE_PREFIX */
@@ -57,19 +64,19 @@ export const PausedTypeSDKType = PausedType;
 export function pausedTypeFromJSON(object: any): PausedType {
   switch (object) {
     case 0:
-    case "NONE":
+    case 'NONE':
       return PausedType.NONE;
     case 1:
-    case "LOCK":
+    case 'LOCK':
       return PausedType.LOCK;
     case 2:
-    case "UNLOCK":
+    case 'UNLOCK':
       return PausedType.UNLOCK;
     case 3:
-    case "ALL":
+    case 'ALL':
       return PausedType.ALL;
     case -1:
-    case "UNRECOGNIZED":
+    case 'UNRECOGNIZED':
     default:
       return PausedType.UNRECOGNIZED;
   }
@@ -77,16 +84,16 @@ export function pausedTypeFromJSON(object: any): PausedType {
 export function pausedTypeToJSON(object: PausedType): string {
   switch (object) {
     case PausedType.NONE:
-      return "NONE";
+      return 'NONE';
     case PausedType.LOCK:
-      return "LOCK";
+      return 'LOCK';
     case PausedType.UNLOCK:
-      return "UNLOCK";
+      return 'UNLOCK';
     case PausedType.ALL:
-      return "ALL";
+      return 'ALL';
     case PausedType.UNRECOGNIZED:
     default:
-      return "UNRECOGNIZED";
+      return 'UNRECOGNIZED';
   }
 }
 export interface Reward {
@@ -95,7 +102,7 @@ export interface Reward {
   rewards: string;
 }
 export interface RewardProtoMsg {
-  typeUrl: "/noble.dollar.vaults.v1.Reward";
+  typeUrl: '/noble.dollar.vaults.v1.Reward';
   value: Uint8Array;
 }
 export interface RewardSDKType {
@@ -110,7 +117,7 @@ export interface Position {
   time: Timestamp;
 }
 export interface PositionProtoMsg {
-  typeUrl: "/noble.dollar.vaults.v1.Position";
+  typeUrl: '/noble.dollar.vaults.v1.Position';
   value: Uint8Array;
 }
 export interface PositionSDKType {
@@ -124,7 +131,7 @@ export interface PositionRewards {
   pendingRewards: string;
 }
 export interface PositionRewardsProtoMsg {
-  typeUrl: "/noble.dollar.vaults.v1.PositionRewards";
+  typeUrl: '/noble.dollar.vaults.v1.PositionRewards';
   value: Uint8Array;
 }
 export interface PositionRewardsSDKType {
@@ -140,7 +147,7 @@ export interface PositionEntry {
   time: Timestamp;
 }
 export interface PositionEntryProtoMsg {
-  typeUrl: "/noble.dollar.vaults.v1.PositionEntry";
+  typeUrl: '/noble.dollar.vaults.v1.PositionEntry';
   value: Uint8Array;
 }
 export interface PositionEntrySDKType {
@@ -159,7 +166,7 @@ export interface Stats {
   stakedTotalUsers: bigint;
 }
 export interface StatsProtoMsg {
-  typeUrl: "/noble.dollar.vaults.v1.Stats";
+  typeUrl: '/noble.dollar.vaults.v1.Stats';
   value: Uint8Array;
 }
 export interface StatsSDKType {
@@ -172,26 +179,30 @@ export interface StatsSDKType {
 function createBaseReward(): Reward {
   return {
     index: BigInt(0),
-    total: "",
-    rewards: ""
+    total: '',
+    rewards: '',
   };
 }
 export const Reward = {
-  typeUrl: "/noble.dollar.vaults.v1.Reward" as const,
-  encode(message: Reward, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/noble.dollar.vaults.v1.Reward' as const,
+  encode(
+    message: Reward,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.index !== BigInt(0)) {
       writer.uint32(8).int64(message.index);
     }
-    if (message.total !== "") {
+    if (message.total !== '') {
       writer.uint32(18).string(message.total);
     }
-    if (message.rewards !== "") {
+    if (message.rewards !== '') {
       writer.uint32(26).string(message.rewards);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Reward {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseReward();
     while (reader.pos < end) {
@@ -216,22 +227,26 @@ export const Reward = {
   fromJSON(object: any): Reward {
     return {
       index: isSet(object.index) ? BigInt(object.index.toString()) : BigInt(0),
-      total: isSet(object.total) ? String(object.total) : "",
-      rewards: isSet(object.rewards) ? String(object.rewards) : ""
+      total: isSet(object.total) ? String(object.total) : '',
+      rewards: isSet(object.rewards) ? String(object.rewards) : '',
     };
   },
   toJSON(message: Reward): JsonSafe<Reward> {
     const obj: any = {};
-    message.index !== undefined && (obj.index = (message.index || BigInt(0)).toString());
+    message.index !== undefined &&
+      (obj.index = (message.index || BigInt(0)).toString());
     message.total !== undefined && (obj.total = message.total);
     message.rewards !== undefined && (obj.rewards = message.rewards);
     return obj;
   },
   fromPartial(object: Partial<Reward>): Reward {
     const message = createBaseReward();
-    message.index = object.index !== undefined && object.index !== null ? BigInt(object.index.toString()) : BigInt(0);
-    message.total = object.total ?? "";
-    message.rewards = object.rewards ?? "";
+    message.index =
+      object.index !== undefined && object.index !== null
+        ? BigInt(object.index.toString())
+        : BigInt(0);
+    message.total = object.total ?? '';
+    message.rewards = object.rewards ?? '';
     return message;
   },
   fromProtoMsg(message: RewardProtoMsg): Reward {
@@ -242,29 +257,32 @@ export const Reward = {
   },
   toProtoMsg(message: Reward): RewardProtoMsg {
     return {
-      typeUrl: "/noble.dollar.vaults.v1.Reward",
-      value: Reward.encode(message).finish()
+      typeUrl: '/noble.dollar.vaults.v1.Reward',
+      value: Reward.encode(message).finish(),
     };
-  }
+  },
 };
 function createBasePosition(): Position {
   return {
-    principal: "",
+    principal: '',
     index: BigInt(0),
-    amount: "",
-    time: Timestamp.fromPartial({})
+    amount: '',
+    time: Timestamp.fromPartial({}),
   };
 }
 export const Position = {
-  typeUrl: "/noble.dollar.vaults.v1.Position" as const,
-  encode(message: Position, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.principal !== "") {
+  typeUrl: '/noble.dollar.vaults.v1.Position' as const,
+  encode(
+    message: Position,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.principal !== '') {
       writer.uint32(10).string(message.principal);
     }
     if (message.index !== BigInt(0)) {
       writer.uint32(16).int64(message.index);
     }
-    if (message.amount !== "") {
+    if (message.amount !== '') {
       writer.uint32(26).string(message.amount);
     }
     if (message.time !== undefined) {
@@ -273,7 +291,8 @@ export const Position = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Position {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBasePosition();
     while (reader.pos < end) {
@@ -300,26 +319,34 @@ export const Position = {
   },
   fromJSON(object: any): Position {
     return {
-      principal: isSet(object.principal) ? String(object.principal) : "",
+      principal: isSet(object.principal) ? String(object.principal) : '',
       index: isSet(object.index) ? BigInt(object.index.toString()) : BigInt(0),
-      amount: isSet(object.amount) ? String(object.amount) : "",
-      time: isSet(object.time) ? fromJsonTimestamp(object.time) : undefined
+      amount: isSet(object.amount) ? String(object.amount) : '',
+      time: isSet(object.time) ? fromJsonTimestamp(object.time) : undefined,
     };
   },
   toJSON(message: Position): JsonSafe<Position> {
     const obj: any = {};
     message.principal !== undefined && (obj.principal = message.principal);
-    message.index !== undefined && (obj.index = (message.index || BigInt(0)).toString());
+    message.index !== undefined &&
+      (obj.index = (message.index || BigInt(0)).toString());
     message.amount !== undefined && (obj.amount = message.amount);
-    message.time !== undefined && (obj.time = fromTimestamp(message.time).toISOString());
+    message.time !== undefined &&
+      (obj.time = fromTimestamp(message.time).toISOString());
     return obj;
   },
   fromPartial(object: Partial<Position>): Position {
     const message = createBasePosition();
-    message.principal = object.principal ?? "";
-    message.index = object.index !== undefined && object.index !== null ? BigInt(object.index.toString()) : BigInt(0);
-    message.amount = object.amount ?? "";
-    message.time = object.time !== undefined && object.time !== null ? Timestamp.fromPartial(object.time) : undefined;
+    message.principal = object.principal ?? '';
+    message.index =
+      object.index !== undefined && object.index !== null
+        ? BigInt(object.index.toString())
+        : BigInt(0);
+    message.amount = object.amount ?? '';
+    message.time =
+      object.time !== undefined && object.time !== null
+        ? Timestamp.fromPartial(object.time)
+        : undefined;
     return message;
   },
   fromProtoMsg(message: PositionProtoMsg): Position {
@@ -330,30 +357,34 @@ export const Position = {
   },
   toProtoMsg(message: Position): PositionProtoMsg {
     return {
-      typeUrl: "/noble.dollar.vaults.v1.Position",
-      value: Position.encode(message).finish()
+      typeUrl: '/noble.dollar.vaults.v1.Position',
+      value: Position.encode(message).finish(),
     };
-  }
+  },
 };
 function createBasePositionRewards(): PositionRewards {
   return {
-    amount: "",
-    pendingRewards: ""
+    amount: '',
+    pendingRewards: '',
   };
 }
 export const PositionRewards = {
-  typeUrl: "/noble.dollar.vaults.v1.PositionRewards" as const,
-  encode(message: PositionRewards, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.amount !== "") {
+  typeUrl: '/noble.dollar.vaults.v1.PositionRewards' as const,
+  encode(
+    message: PositionRewards,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.amount !== '') {
       writer.uint32(10).string(message.amount);
     }
-    if (message.pendingRewards !== "") {
+    if (message.pendingRewards !== '') {
       writer.uint32(18).string(message.pendingRewards);
     }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): PositionRewards {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBasePositionRewards();
     while (reader.pos < end) {
@@ -374,20 +405,23 @@ export const PositionRewards = {
   },
   fromJSON(object: any): PositionRewards {
     return {
-      amount: isSet(object.amount) ? String(object.amount) : "",
-      pendingRewards: isSet(object.pendingRewards) ? String(object.pendingRewards) : ""
+      amount: isSet(object.amount) ? String(object.amount) : '',
+      pendingRewards: isSet(object.pendingRewards)
+        ? String(object.pendingRewards)
+        : '',
     };
   },
   toJSON(message: PositionRewards): JsonSafe<PositionRewards> {
     const obj: any = {};
     message.amount !== undefined && (obj.amount = message.amount);
-    message.pendingRewards !== undefined && (obj.pendingRewards = message.pendingRewards);
+    message.pendingRewards !== undefined &&
+      (obj.pendingRewards = message.pendingRewards);
     return obj;
   },
   fromPartial(object: Partial<PositionRewards>): PositionRewards {
     const message = createBasePositionRewards();
-    message.amount = object.amount ?? "";
-    message.pendingRewards = object.pendingRewards ?? "";
+    message.amount = object.amount ?? '';
+    message.pendingRewards = object.pendingRewards ?? '';
     return message;
   },
   fromProtoMsg(message: PositionRewardsProtoMsg): PositionRewards {
@@ -398,37 +432,40 @@ export const PositionRewards = {
   },
   toProtoMsg(message: PositionRewards): PositionRewardsProtoMsg {
     return {
-      typeUrl: "/noble.dollar.vaults.v1.PositionRewards",
-      value: PositionRewards.encode(message).finish()
+      typeUrl: '/noble.dollar.vaults.v1.PositionRewards',
+      value: PositionRewards.encode(message).finish(),
     };
-  }
+  },
 };
 function createBasePositionEntry(): PositionEntry {
   return {
     address: new Uint8Array(),
     vault: 0,
-    principal: "",
+    principal: '',
     index: BigInt(0),
-    amount: "",
-    time: Timestamp.fromPartial({})
+    amount: '',
+    time: Timestamp.fromPartial({}),
   };
 }
 export const PositionEntry = {
-  typeUrl: "/noble.dollar.vaults.v1.PositionEntry" as const,
-  encode(message: PositionEntry, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/noble.dollar.vaults.v1.PositionEntry' as const,
+  encode(
+    message: PositionEntry,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     if (message.address.length !== 0) {
       writer.uint32(10).bytes(message.address);
     }
     if (message.vault !== 0) {
       writer.uint32(16).int32(message.vault);
     }
-    if (message.principal !== "") {
+    if (message.principal !== '') {
       writer.uint32(26).string(message.principal);
     }
     if (message.index !== BigInt(0)) {
       writer.uint32(32).int64(message.index);
     }
-    if (message.amount !== "") {
+    if (message.amount !== '') {
       writer.uint32(42).string(message.amount);
     }
     if (message.time !== undefined) {
@@ -437,7 +474,8 @@ export const PositionEntry = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): PositionEntry {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBasePositionEntry();
     while (reader.pos < end) {
@@ -470,32 +508,45 @@ export const PositionEntry = {
   },
   fromJSON(object: any): PositionEntry {
     return {
-      address: isSet(object.address) ? bytesFromBase64(object.address) : new Uint8Array(),
+      address: isSet(object.address)
+        ? bytesFromBase64(object.address)
+        : new Uint8Array(),
       vault: isSet(object.vault) ? vaultTypeFromJSON(object.vault) : -1,
-      principal: isSet(object.principal) ? String(object.principal) : "",
+      principal: isSet(object.principal) ? String(object.principal) : '',
       index: isSet(object.index) ? BigInt(object.index.toString()) : BigInt(0),
-      amount: isSet(object.amount) ? String(object.amount) : "",
-      time: isSet(object.time) ? fromJsonTimestamp(object.time) : undefined
+      amount: isSet(object.amount) ? String(object.amount) : '',
+      time: isSet(object.time) ? fromJsonTimestamp(object.time) : undefined,
     };
   },
   toJSON(message: PositionEntry): JsonSafe<PositionEntry> {
     const obj: any = {};
-    message.address !== undefined && (obj.address = base64FromBytes(message.address !== undefined ? message.address : new Uint8Array()));
+    message.address !== undefined &&
+      (obj.address = base64FromBytes(
+        message.address !== undefined ? message.address : new Uint8Array(),
+      ));
     message.vault !== undefined && (obj.vault = vaultTypeToJSON(message.vault));
     message.principal !== undefined && (obj.principal = message.principal);
-    message.index !== undefined && (obj.index = (message.index || BigInt(0)).toString());
+    message.index !== undefined &&
+      (obj.index = (message.index || BigInt(0)).toString());
     message.amount !== undefined && (obj.amount = message.amount);
-    message.time !== undefined && (obj.time = fromTimestamp(message.time).toISOString());
+    message.time !== undefined &&
+      (obj.time = fromTimestamp(message.time).toISOString());
     return obj;
   },
   fromPartial(object: Partial<PositionEntry>): PositionEntry {
     const message = createBasePositionEntry();
     message.address = object.address ?? new Uint8Array();
     message.vault = object.vault ?? 0;
-    message.principal = object.principal ?? "";
-    message.index = object.index !== undefined && object.index !== null ? BigInt(object.index.toString()) : BigInt(0);
-    message.amount = object.amount ?? "";
-    message.time = object.time !== undefined && object.time !== null ? Timestamp.fromPartial(object.time) : undefined;
+    message.principal = object.principal ?? '';
+    message.index =
+      object.index !== undefined && object.index !== null
+        ? BigInt(object.index.toString())
+        : BigInt(0);
+    message.amount = object.amount ?? '';
+    message.time =
+      object.time !== undefined && object.time !== null
+        ? Timestamp.fromPartial(object.time)
+        : undefined;
     return message;
   },
   fromProtoMsg(message: PositionEntryProtoMsg): PositionEntry {
@@ -506,33 +557,38 @@ export const PositionEntry = {
   },
   toProtoMsg(message: PositionEntry): PositionEntryProtoMsg {
     return {
-      typeUrl: "/noble.dollar.vaults.v1.PositionEntry",
-      value: PositionEntry.encode(message).finish()
+      typeUrl: '/noble.dollar.vaults.v1.PositionEntry',
+      value: PositionEntry.encode(message).finish(),
     };
-  }
+  },
 };
 function createBaseStats(): Stats {
   return {
-    flexibleTotalPrincipal: "",
+    flexibleTotalPrincipal: '',
     flexibleTotalUsers: BigInt(0),
-    flexibleTotalDistributedRewardsPrincipal: "",
-    stakedTotalPrincipal: "",
-    stakedTotalUsers: BigInt(0)
+    flexibleTotalDistributedRewardsPrincipal: '',
+    stakedTotalPrincipal: '',
+    stakedTotalUsers: BigInt(0),
   };
 }
 export const Stats = {
-  typeUrl: "/noble.dollar.vaults.v1.Stats" as const,
-  encode(message: Stats, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
-    if (message.flexibleTotalPrincipal !== "") {
+  typeUrl: '/noble.dollar.vaults.v1.Stats' as const,
+  encode(
+    message: Stats,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.flexibleTotalPrincipal !== '') {
       writer.uint32(10).string(message.flexibleTotalPrincipal);
     }
     if (message.flexibleTotalUsers !== BigInt(0)) {
       writer.uint32(16).uint64(message.flexibleTotalUsers);
     }
-    if (message.flexibleTotalDistributedRewardsPrincipal !== "") {
-      writer.uint32(26).string(message.flexibleTotalDistributedRewardsPrincipal);
+    if (message.flexibleTotalDistributedRewardsPrincipal !== '') {
+      writer
+        .uint32(26)
+        .string(message.flexibleTotalDistributedRewardsPrincipal);
     }
-    if (message.stakedTotalPrincipal !== "") {
+    if (message.stakedTotalPrincipal !== '') {
       writer.uint32(34).string(message.stakedTotalPrincipal);
     }
     if (message.stakedTotalUsers !== BigInt(0)) {
@@ -541,7 +597,8 @@ export const Stats = {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Stats {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseStats();
     while (reader.pos < end) {
@@ -571,29 +628,59 @@ export const Stats = {
   },
   fromJSON(object: any): Stats {
     return {
-      flexibleTotalPrincipal: isSet(object.flexibleTotalPrincipal) ? String(object.flexibleTotalPrincipal) : "",
-      flexibleTotalUsers: isSet(object.flexibleTotalUsers) ? BigInt(object.flexibleTotalUsers.toString()) : BigInt(0),
-      flexibleTotalDistributedRewardsPrincipal: isSet(object.flexibleTotalDistributedRewardsPrincipal) ? String(object.flexibleTotalDistributedRewardsPrincipal) : "",
-      stakedTotalPrincipal: isSet(object.stakedTotalPrincipal) ? String(object.stakedTotalPrincipal) : "",
-      stakedTotalUsers: isSet(object.stakedTotalUsers) ? BigInt(object.stakedTotalUsers.toString()) : BigInt(0)
+      flexibleTotalPrincipal: isSet(object.flexibleTotalPrincipal)
+        ? String(object.flexibleTotalPrincipal)
+        : '',
+      flexibleTotalUsers: isSet(object.flexibleTotalUsers)
+        ? BigInt(object.flexibleTotalUsers.toString())
+        : BigInt(0),
+      flexibleTotalDistributedRewardsPrincipal: isSet(
+        object.flexibleTotalDistributedRewardsPrincipal,
+      )
+        ? String(object.flexibleTotalDistributedRewardsPrincipal)
+        : '',
+      stakedTotalPrincipal: isSet(object.stakedTotalPrincipal)
+        ? String(object.stakedTotalPrincipal)
+        : '',
+      stakedTotalUsers: isSet(object.stakedTotalUsers)
+        ? BigInt(object.stakedTotalUsers.toString())
+        : BigInt(0),
     };
   },
   toJSON(message: Stats): JsonSafe<Stats> {
     const obj: any = {};
-    message.flexibleTotalPrincipal !== undefined && (obj.flexibleTotalPrincipal = message.flexibleTotalPrincipal);
-    message.flexibleTotalUsers !== undefined && (obj.flexibleTotalUsers = (message.flexibleTotalUsers || BigInt(0)).toString());
-    message.flexibleTotalDistributedRewardsPrincipal !== undefined && (obj.flexibleTotalDistributedRewardsPrincipal = message.flexibleTotalDistributedRewardsPrincipal);
-    message.stakedTotalPrincipal !== undefined && (obj.stakedTotalPrincipal = message.stakedTotalPrincipal);
-    message.stakedTotalUsers !== undefined && (obj.stakedTotalUsers = (message.stakedTotalUsers || BigInt(0)).toString());
+    message.flexibleTotalPrincipal !== undefined &&
+      (obj.flexibleTotalPrincipal = message.flexibleTotalPrincipal);
+    message.flexibleTotalUsers !== undefined &&
+      (obj.flexibleTotalUsers = (
+        message.flexibleTotalUsers || BigInt(0)
+      ).toString());
+    message.flexibleTotalDistributedRewardsPrincipal !== undefined &&
+      (obj.flexibleTotalDistributedRewardsPrincipal =
+        message.flexibleTotalDistributedRewardsPrincipal);
+    message.stakedTotalPrincipal !== undefined &&
+      (obj.stakedTotalPrincipal = message.stakedTotalPrincipal);
+    message.stakedTotalUsers !== undefined &&
+      (obj.stakedTotalUsers = (
+        message.stakedTotalUsers || BigInt(0)
+      ).toString());
     return obj;
   },
   fromPartial(object: Partial<Stats>): Stats {
     const message = createBaseStats();
-    message.flexibleTotalPrincipal = object.flexibleTotalPrincipal ?? "";
-    message.flexibleTotalUsers = object.flexibleTotalUsers !== undefined && object.flexibleTotalUsers !== null ? BigInt(object.flexibleTotalUsers.toString()) : BigInt(0);
-    message.flexibleTotalDistributedRewardsPrincipal = object.flexibleTotalDistributedRewardsPrincipal ?? "";
-    message.stakedTotalPrincipal = object.stakedTotalPrincipal ?? "";
-    message.stakedTotalUsers = object.stakedTotalUsers !== undefined && object.stakedTotalUsers !== null ? BigInt(object.stakedTotalUsers.toString()) : BigInt(0);
+    message.flexibleTotalPrincipal = object.flexibleTotalPrincipal ?? '';
+    message.flexibleTotalUsers =
+      object.flexibleTotalUsers !== undefined &&
+      object.flexibleTotalUsers !== null
+        ? BigInt(object.flexibleTotalUsers.toString())
+        : BigInt(0);
+    message.flexibleTotalDistributedRewardsPrincipal =
+      object.flexibleTotalDistributedRewardsPrincipal ?? '';
+    message.stakedTotalPrincipal = object.stakedTotalPrincipal ?? '';
+    message.stakedTotalUsers =
+      object.stakedTotalUsers !== undefined && object.stakedTotalUsers !== null
+        ? BigInt(object.stakedTotalUsers.toString())
+        : BigInt(0);
     return message;
   },
   fromProtoMsg(message: StatsProtoMsg): Stats {
@@ -604,8 +691,8 @@ export const Stats = {
   },
   toProtoMsg(message: Stats): StatsProtoMsg {
     return {
-      typeUrl: "/noble.dollar.vaults.v1.Stats",
-      value: Stats.encode(message).finish()
+      typeUrl: '/noble.dollar.vaults.v1.Stats',
+      value: Stats.encode(message).finish(),
     };
-  }
+  },
 };

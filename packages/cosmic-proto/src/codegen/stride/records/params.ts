@@ -1,10 +1,10 @@
 //@ts-nocheck
-import { BinaryReader, BinaryWriter } from "../../binary.js";
-import {type JsonSafe } from "../../json-safe.js";
+import { BinaryReader, BinaryWriter } from '../../binary.js';
+import { type JsonSafe } from '../../json-safe.js';
 /** Params defines the parameters for the module. */
 export interface Params {}
 export interface ParamsProtoMsg {
-  typeUrl: "/stride.records.Params";
+  typeUrl: '/stride.records.Params';
   value: Uint8Array;
 }
 /** Params defines the parameters for the module. */
@@ -13,12 +13,16 @@ function createBaseParams(): Params {
   return {};
 }
 export const Params = {
-  typeUrl: "/stride.records.Params" as const,
-  encode(_: Params, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
+  typeUrl: '/stride.records.Params' as const,
+  encode(
+    _: Params,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Params {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseParams();
     while (reader.pos < end) {
@@ -50,8 +54,8 @@ export const Params = {
   },
   toProtoMsg(message: Params): ParamsProtoMsg {
     return {
-      typeUrl: "/stride.records.Params",
-      value: Params.encode(message).finish()
+      typeUrl: '/stride.records.Params',
+      value: Params.encode(message).finish(),
     };
-  }
+  },
 };
