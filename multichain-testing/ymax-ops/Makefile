@@ -6,6 +6,7 @@ AGORIC_NET ?= devnet
 CONTRACT ?= ymax0
 
 YMAX_TOOL=../scripts/ymax-tool.ts
+YMAX_ADMIN=../scripts/ymax-admin.ts
 AGD=agd
 AGORIC=agoric
 JQ=jq
@@ -77,7 +78,7 @@ $(CONTRACT)-terminate:
 
 ,privateArgsOverrides.json:
 	@echo "Using AGORIC_NET=$(AGORIC_NET)"
-	AGORIC_NET=$(AGORIC_NET) $(YMAX_TOOL) --buildEthOverrides >$@ || (rm $@; false)
+	AGORIC_NET=$(AGORIC_NET) $(YMAX_ADMIN) $(DEPLOY)/src/ymax-overrides.ts $@
 
 NETCONFIG=https://$(AGORIC_NET).agoric.net/network-config
 ,$(CONTRACT)-deployed: ,ymax-bundle-id ,privateArgsOverrides.json ,ymax-installed
@@ -147,9 +148,9 @@ fund-fee-acct: ,$(CONTRACT)-node.json
 check-control-account:
 	$(YMAX_TOOL) --repl </dev/null | grep $(YMAX_CONTROL_ADDR)
 
-,$(CONTRACT)-upgraded: ,ymax-bundle-id ,ymax-installed ,privateArgsOverrides.json check-control-account
+,$(CONTRACT)-upgraded: ,ymax-bundle-id ,ymax-installed ,privateArgsOverrides.json
 	AGORIC_NET=$(AGORIC_NET) \
-		$(YMAX_TOOL) --upgrade <,privateArgsOverrides.json $$(cat ,ymax-bundle-id) >$@ || (rm $@; false)
+		$(YMAX_ADMIN) $(DEPLOY)/src/ymax-upgrade.ts --overrides ,privateArgsOverrides.json --bundle "$$(cat ,ymax-bundle-id)" >$@ || (rm $@; false)
 
 ,$(CONTRACT)-upgraded-repl: ,ymax-upgrade.js ,ymax-installed
 	AGORIC_NET=$(AGORIC_NET) \
