@@ -8,7 +8,7 @@
     "tools"
   ],
   "main": "src/main.js",
-  "bin": "./src/cli/bin.js",
+  "bin": "src/cli/bin.js",
   "scripts": {
     "build": "exit 0",
     "prepack": "yarn run -T prepack-package",
@@ -34,6 +34,7 @@
     "@endo/patterns": "^1.7.0"
   },
   "devDependencies": {
+    "@endo/init": "^1.1.12",
     "@types/js-yaml": "^4",
     "ajv": "^6.12.6",
     "ava": "^6.4.1",

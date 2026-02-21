@@ -35,5 +35,8 @@
   },
   "typeCoverage": {
     "atLeast": 100
+  },
+  "devDependencies": {
+    "@endo/init": "^1.1.12"
   }
 }

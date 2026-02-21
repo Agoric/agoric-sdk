@@ -3,7 +3,10 @@
   "version": "0.2.2",
   "description": "Allocation zone abstraction for objects on the heap, persistent stores, etc.",
   "type": "module",
-  "repository": "https://github.com/Agoric/agoric-sdk",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agoric/agoric-sdk.git"
+  },
   "main": "./src/index.js",
   "scripts": {
     "build": "exit 0",
@@ -35,6 +38,7 @@
   },
   "devDependencies": {
     "@agoric/swingset-vat": "workspace:*",
+    "@endo/init": "^1.1.12",
     "@endo/patterns": "^1.7.0",
     "ava": "^6.4.1"
   },

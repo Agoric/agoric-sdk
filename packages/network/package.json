@@ -4,7 +4,10 @@
   "description": "Agoric's network protocol API",
   "type": "module",
   "main": "./src/index.js",
-  "repository": "https://github.com/Agoric/agoric-sdk",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agoric/agoric-sdk.git"
+  },
   "scripts": {
     "build": "exit 0",
     "prepack": "yarn run -T prepack-package",
@@ -37,6 +40,7 @@
     "@agoric/vow": "workspace:*",
     "@agoric/zone": "workspace:*",
     "@endo/bundle-source": "^4.1.2",
+    "@endo/init": "^1.1.12",
     "ava": "^6.4.1",
     "c8": "^10.1.3"
   },
