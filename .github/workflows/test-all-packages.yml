@@ -285,7 +285,7 @@ jobs:
       # Some codegen (e.g., cosmic-proto) depends on Go toolchain
       - uses: ./.github/actions/restore-golang
         with:
-          go-version: '1.22'
+          go-version: '1.24'
 
       - name: Verify codegen idempotence
         shell: bash
@@ -599,7 +599,7 @@ jobs:
       # END-TEST-BOILERPLATE
       - uses: ./.github/actions/restore-golang
         with:
-          go-version: '1.22'
+          go-version: '1.24'
       - name: yarn test (cosmic-swingset)
         if: (success() || failure())
         run: cd packages/cosmic-swingset && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
