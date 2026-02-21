@@ -254,7 +254,9 @@ func TestInstallBundleJustUnderSizeLimit(t *testing.T) {
 	// Create minimal gzip data
 	var buf bytes.Buffer
 	gzipWriter := gzip.NewWriter(&buf)
-	gzipWriter.Close() // Empty but valid gzip
+	if err := gzipWriter.Close(); err != nil {
+		t.Fatalf("Failed to close gzip writer: %v", err)
+	}
 
 	msg := &types.MsgInstallBundle{
 		Submitter:        submitAddr,
@@ -279,7 +281,9 @@ func TestInstallBundleAtSizeLimit(t *testing.T) {
 	// Create minimal gzip data
 	var buf bytes.Buffer
 	gzipWriter := gzip.NewWriter(&buf)
-	gzipWriter.Close() // Empty but valid gzip
+	if err := gzipWriter.Close(); err != nil {
+		t.Fatalf("Failed to close gzip writer: %v", err)
+	}
 
 	msg := &types.MsgInstallBundle{
 		Submitter:        submitAddr,
@@ -370,7 +374,9 @@ func TestInstallBundleOverSizeLimit(t *testing.T) {
 	// Create minimal gzip data
 	var buf bytes.Buffer
 	gzipWriter := gzip.NewWriter(&buf)
-	gzipWriter.Close()
+	if err := gzipWriter.Close(); err != nil {
+		t.Fatalf("Failed to close gzip writer: %v", err)
+	}
 
 	msg := &types.MsgInstallBundle{
 		Submitter:        submitAddr,

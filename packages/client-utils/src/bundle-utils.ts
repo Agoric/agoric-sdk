@@ -87,9 +87,9 @@ export const chunkBundle = async (
   chunkSizeLimit: number,
   { sha512 = defaultSha512 }: { sha512?: Sha512 } = {},
 ) => {
-  if (!Number.isFinite(chunkSizeLimit) || chunkSizeLimit <= 0) {
+  if (!Number.isSafeInteger(chunkSizeLimit) || chunkSizeLimit <= 0) {
     throw new Error(
-      `chunkSizeLimit must be a positive number, got ${chunkSizeLimit}`,
+      `chunkSizeLimit must be a positive safe integer, got ${chunkSizeLimit}`,
     );
   }
 
@@ -334,12 +334,6 @@ export const installBundle = async (
         `Transaction failed to submit bundle manifest to chain for bundle ${endoZipBase64Sha512}: ${
           error instanceof Error ? error.message : String(error)
         }`,
-      );
-    }
-
-    if (chunkedArtifactId === undefined || chunkedArtifactId === 0n) {
-      throw new Error(
-        `No chunked artifact identifier found in manifest submission transaction response for bundle ${endoZipBase64Sha512}. This is a software defect. Please report.`,
       );
     }
 

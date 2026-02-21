@@ -215,9 +215,10 @@ type Params struct {
 	// The maximum number of seconds that an async installation can use.  -1 is
 	// unlimited.
 	InstallationDeadlineSeconds int64 `protobuf:"varint,8,opt,name=installation_deadline_seconds,json=installationDeadlineSeconds,proto3" json:"installation_deadline_seconds,omitempty"`
-	// The maximum size of a bundle (0 implies default 10MB)
+	// The maximum size of a bundle (0 implies default 10000000 bytes). This
+	// limit is exclusive.
 	BundleUncompressedSizeLimitBytes int64 `protobuf:"varint,9,opt,name=bundle_uncompressed_size_limit_bytes,json=bundleUncompressedSizeLimitBytes,proto3" json:"bundle_uncompressed_size_limit_bytes,omitempty"`
-	// The maximum size of a bundle or artifact chunk (0 implies default 512KB)
+	// The maximum size of a bundle or artifact chunk (0 implies default 490000 bytes)
 	ChunkSizeLimitBytes int64 `protobuf:"varint,10,opt,name=chunk_size_limit_bytes,json=chunkSizeLimitBytes,proto3" json:"chunk_size_limit_bytes,omitempty"`
 }
 

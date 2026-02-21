@@ -22,8 +22,9 @@ rimraf(outPath);
  */
 function fixTypeImport(directory, gnuSed) {
   const fullPath = path.resolve(directory);
+  const quotedPath = JSON.stringify(fullPath);
   const command = `
-    find ${fullPath} -type f -exec ${gnuSed ? 'sed -i' : 'sed -i ""'} \
+    find ${quotedPath} -type f -exec ${gnuSed ? 'sed -i' : 'sed -i ""'} \
     -e 's/import { JsonSafe/import {type JsonSafe/g' \
     -e 's/\\([{,]\\) \\([[:alnum:]_]*SDKType\\)/\\1 type \\2/g' {} +
   `;
@@ -247,6 +248,9 @@ builder
         stdio: 'inherit',
       },
     );
+    if (prettierResult.error) {
+      throw prettierResult.error;
+    }
     assert.equal(prettierResult.status, 0);
     console.log('💅 code formatted by Prettier');
 

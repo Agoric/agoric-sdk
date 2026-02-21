@@ -107,8 +107,8 @@ func TestUpdateParamsFromEmpty(t *testing.T) {
 		PowerFlagFees:                    DefaultPowerFlagFees,
 		QueueMax:                         DefaultQueueMax,
 		VatCleanupBudget:                 DefaultVatCleanupBudget,
-		InstallationDeadlineBlocks:       -1,
-		InstallationDeadlineSeconds:      24 * 60 * 60,
+		InstallationDeadlineBlocks:       DefaultInstallationDeadlineBlocks,
+		InstallationDeadlineSeconds:      DefaultInstallationDeadlineSeconds,
 		BundleUncompressedSizeLimitBytes: DefaultBundleUncompressedSizeLimitBytes,
 		ChunkSizeLimitBytes:              DefaultChunkSizeLimitBytes,
 	}

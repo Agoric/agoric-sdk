@@ -109,6 +109,9 @@ type InboundQueueRecord struct {
 
 // MaxArtifactChunkCount derrives the maximum number of entries in an artifact manifest
 func MaxArtifactChunksCount(bundleUncompressedSizeLimitBytes int64, chunkSizeLimitBytes int64) int64 {
+	if chunkSizeLimitBytes <= 0 {
+		return 0
+	}
 	return (bundleUncompressedSizeLimitBytes + chunkSizeLimitBytes - 1) / chunkSizeLimitBytes
 }
 
@@ -446,7 +449,7 @@ func (msg MsgInstallBundle) ValidateBasic() error {
 	if msg.Submitter.Empty() {
 		return sdkioerrors.Wrap(sdkerrors.ErrInvalidAddress, "Submitter address cannot be empty")
 	}
-	hasBundle, hasCompressed, hasChunks := len(msg.Bundle) > 0, len(msg.CompressedBundle) > 0, msg.ChunkedArtifact != nil && len(msg.ChunkedArtifact.Chunks) > 0
+	hasBundle, hasCompressed, hasChunks := len(msg.Bundle) > 0, len(msg.CompressedBundle) > 0, msg.ChunkedArtifact != nil
 	switch {
 	case hasBundle && hasCompressed, hasBundle && hasChunks, hasCompressed && hasChunks:
 		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Cannot submit more than one of bundle, compressed bundle, or chunks")

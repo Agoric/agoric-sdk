@@ -176,9 +176,12 @@ export interface Params {
    * unlimited.
    */
   installationDeadlineSeconds: bigint;
-  /** The maximum size of a bundle (0 implies default 10MB) */
+  /**
+   * The maximum size of a bundle (0 implies default 10000000 bytes). This
+   * limit is exclusive.
+   */
   bundleUncompressedSizeLimitBytes: bigint;
-  /** The maximum size of a bundle or artifact chunk (0 implies default 512KB) */
+  /** The maximum size of a bundle or artifact chunk (0 implies default 490000 bytes) */
   chunkSizeLimitBytes: bigint;
 }
 export interface ParamsProtoMsg {

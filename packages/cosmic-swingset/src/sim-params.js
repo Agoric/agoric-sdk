@@ -79,6 +79,8 @@ export const defaultBeansPerUnit = [
 
 export const defaultInstallationDeadlineBlocks = -1n; // no deadline
 export const defaultInstallationDeadlineSeconds = 24n * 60n * 60n; // 24 hours
+export const defaultBundleUncompressedSizeLimitBytes = 10_000_000n;
+export const defaultChunkSizeLimitBytes = 490_000n;
 
 const defaultBootstrapVatConfig =
   '@agoric/vm-config/decentral-demo-config.json';
@@ -146,6 +148,6 @@ export const DEFAULT_SIM_SWINGSET_PARAMS = {
   vat_cleanup_budget: defaultVatCleanupBudget,
   installation_deadline_blocks: `${defaultInstallationDeadlineBlocks}`,
   installation_deadline_seconds: `${defaultInstallationDeadlineSeconds}`,
-  bundle_uncompressed_size_limit_bytes: `${10_000_000}`,
-  chunk_size_limit_bytes: `${490_000}`,
+  bundle_uncompressed_size_limit_bytes: `${defaultBundleUncompressedSizeLimitBytes}`,
+  chunk_size_limit_bytes: `${defaultChunkSizeLimitBytes}`,
 };

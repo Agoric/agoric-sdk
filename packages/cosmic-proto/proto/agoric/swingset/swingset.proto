@@ -98,10 +98,11 @@ message Params {
   // unlimited.
   int64 installation_deadline_seconds = 8;
 
-  // The maximum size of a bundle (0 implies default 10MB)
+  // The maximum size of a bundle (0 implies default 10000000 bytes). This
+  // limit is exclusive.
   int64 bundle_uncompressed_size_limit_bytes = 9;
 
-  // The maximum size of a bundle or artifact chunk (0 implies default 512KB)
+  // The maximum size of a bundle or artifact chunk (0 implies default 490000 bytes)
   int64 chunk_size_limit_bytes = 10;
 }
 

@@ -539,11 +539,6 @@ func (k Keeper) AddPendingBundleInstall(ctx sdk.Context, msg *types.MsgInstallBu
 	}
 	state.NextChunkedArtifactId++
 	chunkedArtifactId := state.NextChunkedArtifactId
-	state.LastChunkedArtifactId = chunkedArtifactId
-	k.SetState(ctx, state)
-	if err := k.SetPendingBundleInstall(ctx, chunkedArtifactId, msg); err != nil {
-		return 0, err
-	}
 
 	// Create and store the pending install node. The list is non-circular;
 	// PrevId/NextId use 0 to indicate the start/end, and State tracks endpoints
@@ -555,10 +550,35 @@ func (k Keeper) AddPendingBundleInstall(ctx sdk.Context, msg *types.MsgInstallBu
 	}
 	kvstore := k.storeService.OpenKVStore(ctx)
 	store := runtime.KVStoreAdapter(kvstore)
-	key := sdk.Uint64ToBigEndian(chunkedArtifactId)
 	startStore := prefix.NewStore(store, []byte(pendingNodeKeyPrefix))
-	bz := k.cdc.MustMarshal(node)
-	startStore.Set(key, bz)
+	if state.FirstChunkedArtifactId == 0 {
+		if state.LastChunkedArtifactId != 0 {
+			return 0, fmt.Errorf("inconsistent chunked artifact list: first=0 last=%d", state.LastChunkedArtifactId)
+		}
+		state.FirstChunkedArtifactId = chunkedArtifactId
+	} else {
+		prevId := state.LastChunkedArtifactId
+		if prevId == 0 {
+			return 0, fmt.Errorf("missing last chunked artifact id for non-empty list")
+		}
+		prevKey := sdk.Uint64ToBigEndian(prevId)
+		if !startStore.Has(prevKey) {
+			return 0, fmt.Errorf("missing chunked artifact node id=%d during add", prevId)
+		}
+		prevNode := &types.ChunkedArtifactNode{}
+		k.cdc.MustUnmarshal(startStore.Get(prevKey), prevNode)
+		prevNode.NextId = chunkedArtifactId
+		startStore.Set(prevKey, k.cdc.MustMarshal(prevNode))
+		node.PrevId = prevId
+	}
+	state.LastChunkedArtifactId = chunkedArtifactId
+	k.SetState(ctx, state)
+	if err := k.SetPendingBundleInstall(ctx, chunkedArtifactId, msg); err != nil {
+		return 0, err
+	}
+
+	key := sdk.Uint64ToBigEndian(chunkedArtifactId)
+	startStore.Set(key, k.cdc.MustMarshal(node))
 
 	return chunkedArtifactId, nil
 }
