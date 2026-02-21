@@ -1,15 +1,25 @@
 # Repository Guidelines
 
-per https://agents.md/
+per [[https://agents.md/]]
 
 ## Project Structure & Module Organization
-- Monorepo managed by Yarn workspaces and Lerna Lite. Primary code lives under `packages/*` (e.g., `SwingSet`, `zoe`, `ERTP`, `smart-wallet`).
+
+- Monorepo managed by Yarn workspaces and Lerna Lite. Primary code lives under
+  `packages/*` (e.g., `SwingSet`, `zoe`, `ERTP`, `smart-wallet`).
 - Go components are under `golang/` (e.g., `golang/cosmos`).
 - Tests reside per package in `packages/<name>/test/`.
-- Utilities, CI and developer tooling scripts are in `scripts/`. Integration assets live in `a3p-integration/` and `multichain-testing/`.
+- Utilities, CI and developer tooling scripts are in `scripts/`. Integration
+  assets live in `a3p-integration/` and `multichain-testing/`.
 
 ## Build, Test, and Development Commands
-- `corepack enable && yarn install`: Set up the repo with the pinned Yarn version and install dependencies.
+
+- `source scripts/use-devenv.sh`: Ensure the required versions of development
+  tools are usable in the current shell. This only needs to be run once in each
+  shell instance, but is harmless to run multiple times.
+- `yarn install`: Install or refresh JS package dependencies.
+- `yarn codegen`: Regenerate derived source files across the entire repository.
+  Required when `*.proto` files are changed, or network resources need to be
+  reprocessed (such as chain registry entries or GraphQL schemata).
 - `yarn build`: Build all workspaces (generates kernel bundles where needed).
 - `yarn test`: Run unit tests across all packages (AVA).
 - `yarn lint` | `yarn lint-fix`: Check or auto-fix lint issues across packages.
@@ -26,6 +36,7 @@ per https://agents.md/
   - After any prepack run, clean generated artifacts and restore package trees with: `yarn lerna run --reject-cycles --concurrency 1 postpack`
 
 ## Coding Style & Naming Conventions
+
 - ESM by default; JS and TypeScript both used. Target Node ^20.9 or ^22.11.
 - Prettier enforced with single quotes; 2-space indentation.
 - ESLint configured via `eslint.config.mjs` (includes AVA, TypeScript, JSDoc, and repository-specific rules).
@@ -38,9 +49,11 @@ per https://agents.md/
     - Never `@endo/init` in modules; best practice is at the beginning of an entrypoint
 
 ## Testing Guidelines
+
 - Framework: AVA. Test files follow `**/test/**/*.test.*` within each package.
 - Run all: `yarn test`. Per-package: `yarn test` from that package directory.
-- Coverage: in a package, run `yarn test:c8` and open `coverage/html/index.html` after `yarn c8 report --reporter=html-spa` if needed.
+- Coverage: in a package, run `yarn test:c8` and open `coverage/html/index.html`
+  after `yarn c8 report --reporter=html-spa` if needed.
 
 ## A3P Container & Proposal Build Notes
 - A3P tests run inside a Docker container built from an agoric-sdk checkout, so the container can access the full repo filesystem, not just published npm packages.
@@ -51,7 +64,9 @@ per https://agents.md/
    - it's performed by `a3p-integration/build-submission.sh`
 
 ## Commit & Pull Request Guidelines
-- Use Conventional Commits in titles and commits (e.g., `feat(swingstore): add snapshot…`).
+
+- Use Conventional Commits in titles and commits (e.g.,
+  `feat(swingstore): add snapshot…`).
 - Branches should reference an issue number (e.g., `123-fix-solo-reconnect`).
 - PRs: link related issues, describe changes and risks; ensure `yarn build`, `yarn test`, and `yarn lint` pass. Prefer “Squash and merge.”
 - Integration tests: use labels `force:integration`/`bypass:integration` when appropriate; otherwise they run as part of the merge queue.

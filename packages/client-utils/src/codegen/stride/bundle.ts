@@ -27,21 +27,21 @@ import * as _211 from './staketia/genesis.js';
 import * as _212 from './staketia/query.js';
 import * as _213 from './staketia/staketia.js';
 import * as _214 from './staketia/tx.js';
-import * as _281 from './epochs/query.rpc.Query.js';
-import * as _282 from './records/query.rpc.Query.js';
-import * as _283 from './stakedym/query.rpc.Query.js';
-import * as _284 from './stakeibc/query.rpc.Query.js';
-import * as _285 from './staketia/query.rpc.Query.js';
-import * as _286 from './stakedym/tx.rpc.msg.js';
-import * as _287 from './stakeibc/tx.rpc.msg.js';
-import * as _288 from './staketia/tx.rpc.msg.js';
-import * as _300 from './rpc.query.js';
-import * as _301 from './rpc.tx.js';
+import * as _282 from './epochs/query.rpc.Query.js';
+import * as _283 from './records/query.rpc.Query.js';
+import * as _284 from './stakedym/query.rpc.Query.js';
+import * as _285 from './stakeibc/query.rpc.Query.js';
+import * as _286 from './staketia/query.rpc.Query.js';
+import * as _287 from './stakedym/tx.rpc.msg.js';
+import * as _288 from './stakeibc/tx.rpc.msg.js';
+import * as _289 from './staketia/tx.rpc.msg.js';
+import * as _301 from './rpc.query.js';
+import * as _302 from './rpc.tx.js';
 export namespace stride {
   export const epochs = {
     ..._187,
     ..._188,
-    ..._281,
+    ..._282,
   };
   export const records = {
     ..._189,
@@ -49,15 +49,15 @@ export namespace stride {
     ..._191,
     ..._192,
     ..._193,
-    ..._282,
+    ..._283,
   };
   export const stakedym = {
     ..._194,
     ..._195,
     ..._196,
     ..._197,
-    ..._283,
-    ..._286,
+    ..._284,
+    ..._287,
   };
   export const stakeibc = {
     ..._198,
@@ -73,19 +73,19 @@ export namespace stride {
     ..._208,
     ..._209,
     ..._210,
-    ..._284,
-    ..._287,
+    ..._285,
+    ..._288,
   };
   export const staketia = {
     ..._211,
     ..._212,
     ..._213,
     ..._214,
-    ..._285,
-    ..._288,
+    ..._286,
+    ..._289,
   };
   export const ClientFactory = {
-    ..._300,
     ..._301,
+    ..._302,
   };
 }
