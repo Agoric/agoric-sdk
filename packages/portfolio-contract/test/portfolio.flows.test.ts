@@ -2491,6 +2491,40 @@ test('failed transaction publishes rejectionReason to vstorage', async t => {
   await documentStorageSchema(t, storage, docOpts);
 });
 
+test('CCTP from EVM waits for source wallet readiness before sending GMP call', async t => {
+  const { orch, ctx, offer, txResolver, cosmosId } = mocks({});
+  const { log } = offer;
+  const kit = await ctx.makePortfolioKit();
+  const amount = make(USDC, 2_000_000n);
+  const fee = AmountMath.make(BLD, 100n);
+  const seat = makeMockSeat({}, {}, log);
+  const axelarId = await cosmosId('axelar');
+
+  const flowP = rebalance(
+    orch,
+    ctx,
+    seat,
+    {
+      flow: [{ src: '@Base', dest: '@agoric', amount, fee }],
+    },
+    kit,
+  );
+
+  await eventLoopIteration();
+  const transfersToAxelar = log.filter(
+    (entry: any) =>
+      entry._method === 'transfer' && entry.address?.chainId === axelarId,
+  );
+  t.is(
+    transfersToAxelar.length,
+    1,
+    'only makeAccount GMP transfer should be sent before wallet is ready',
+  );
+
+  await txResolver.drainPending();
+  await flowP;
+});
+
 test('asking to relay less than 1 USDC over CCTP is refused by contract', async t => {
   const amount = make(USDC, 250_000n);
   const { orch, tapPK, ctx, offer, storage, txResolver, cosmosId } = mocks(
