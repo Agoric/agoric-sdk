@@ -52,8 +52,13 @@
     "@endo/promise-kit": "^1.1.13"
   },
   "devDependencies": {
+    "@agoric/base-zone": "workspace:*",
+    "@agoric/ertp": "workspace:*",
+    "@agoric/internal": "workspace:*",
     "@agoric/swingset-vat": "workspace:*",
+    "@agoric/zone": "workspace:*",
     "@endo/bundle-source": "^4.1.2",
+    "@endo/pass-style": "^1.6.3",
     "@fast-check/ava": "^1.1.5",
     "ava": "^6.4.1",
     "tsd": "^0.33.0"

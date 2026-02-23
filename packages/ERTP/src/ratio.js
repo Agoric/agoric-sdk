@@ -54,6 +54,10 @@ const PERCENT = 100n;
 
 const ratioPropertyNames = ['numerator', 'denominator'];
 
+/**
+ * @param {any} ratio
+ * @returns {asserts ratio is Ratio}
+ */
 export const assertIsRatio = ratio => {
   assertRecord(ratio, 'ratio');
   const keys = Object.keys(ratio);

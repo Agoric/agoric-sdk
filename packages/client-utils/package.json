@@ -25,10 +25,17 @@
     "lint:types": "yarn run -T tsc"
   },
   "devDependencies": {
+    "@agoric/client-utils": "workspace:*",
+    "@agoric/governance": "workspace:*",
+    "@agoric/inter-protocol": "workspace:*",
+    "@agoric/portfolio-api": "workspace:*",
     "@agoric/smart-wallet": "workspace:*",
     "@agoric/vats": "workspace:*",
+    "@agoric/vow": "workspace:*",
     "@agoric/zoe": "workspace:*",
     "@cosmology/telescope": "^1.12.21",
+    "@endo/far": "^1.1.14",
+    "@endo/init": "^1.1.12",
     "ava": "^6.4.1",
     "c8": "^10.1.3",
     "rimraf": "^6.0.1",

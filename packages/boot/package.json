@@ -53,6 +53,7 @@
     "@endo/patterns": "^1.7.0",
     "@endo/promise-kit": "^1.1.13",
     "@endo/stream": "^1.2.13",
+    "agoric": "workspace:*",
     "import-meta-resolve": "^4.1.0",
     "node-fetch-cache": "^5.0.2",
     "tmp": "^0.2.1",

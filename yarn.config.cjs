@@ -4,6 +4,7 @@ const { defineConfig } = require('@yarnpkg/types');
 module.exports = defineConfig({
   async constraints({ Yarn }) {
     for (const workspace of Yarn.workspaces()) {
+      // pkg.dependencies makes no distinction between dependencies and devDependencies
       for (const version of workspace.pkg.dependencies.values()) {
         if (
           version.ident.startsWith('@aglocal/') ||

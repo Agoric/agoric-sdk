@@ -1,0 +1,14 @@
+diff --git a/dist/package-graph/package-graph.js b/dist/package-graph/package-graph.js
+index a433e78cdecee1fc6eee5fc500d6e8fd70949095..2684470e32d84b6aba3dbbe1143f136f2f212532 100644
+--- a/dist/package-graph/package-graph.js
++++ b/dist/package-graph/package-graph.js
+@@ -163,7 +163,8 @@ export class PackageGraph extends Map {
+         }
+         this.forEach((currentNode) => visitWithStack(currentNode));
+         cycles.forEach((collapsedNode) => visitWithStack(collapsedNode));
+-        reportCycles(cyclePaths, rejectCycles);
++        const nonSelfCyclePaths = cyclePaths.filter((cyclePath) => !/^(.+?) -> \1$/.test(cyclePath));
++        reportCycles(nonSelfCyclePaths, rejectCycles);
+         return cycles;
+     }
+     prune(...candidates) {

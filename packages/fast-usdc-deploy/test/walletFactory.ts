@@ -6,8 +6,8 @@ import {
 import {
   fetchCoreEvalRelease,
   makeSwingsetTestKit,
-} from '@aglocal/boot/tools/supports.js';
-import { makeWalletFactoryDriver } from '@aglocal/boot/tools/drivers.js';
+} from '../../boot/tools/supports.js';
+import { makeWalletFactoryDriver } from '../../boot/tools/drivers.js';
 
 export const makeWalletFactoryContext = async (
   t,

@@ -17,10 +17,7 @@ const { when } = heapVowTools;
 /**
  * @import {ProtocolHandler} from '@agoric/network';
  * @import {ERef, Remote} from '@agoric/vow';
- * @import {SpawnerVat} from '@agoric/solo/src/vat-spawner.js';
- * @import {HttpVat} from '@agoric/solo/src/vat-http.js';
  * @import {NetworkVat} from '../vat-network.js';
- * @import {UploadsVat} from '@agoric/solo/src/vat-uploads.js';
  * @import {ScopedBridgeManager} from '../types.js';
  * @import {BootstrapPowers} from '../core/types.ts';
  * @import {Producer} from '../core/types.ts';
@@ -28,6 +25,10 @@ const { when } = heapVowTools;
  * @import {ProvisioningVat} from '../vat-provisioning.js';
  * @import {IBCVat} from '../vat-ibc.js';
  */
+
+/** @typedef {object} SpawnerVat */
+/** @typedef {object} HttpVat */
+/** @typedef {object} UploadsVat */
 
 /**
  * @typedef SoloVats

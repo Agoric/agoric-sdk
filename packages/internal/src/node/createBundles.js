@@ -4,16 +4,34 @@
 import path from 'path';
 import { spawnSync } from 'child_process';
 import { createRequire } from 'module';
+import fs from 'fs';
 
 import { Fail, q } from '@endo/errors';
 
 const BUNDLE_SOURCE_PROGRAM = 'bundle-source';
 const req = createRequire(import.meta.url);
 
-export const createBundlesFromAbsolute = async sourceBundles => {
-  const prog = req.resolve(`.bin/${BUNDLE_SOURCE_PROGRAM}`);
+/**
+ * @param {string} startDir
+ * @returns {string | undefined}
+ */
+const findPackageRoot = startDir => {
+  let dir = path.resolve(startDir);
+  for (;;) {
+    if (fs.existsSync(path.join(dir, 'package.json'))) {
+      return dir;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) {
+      return undefined;
+    }
+    dir = parent;
+  }
+};
 
-  const cacheToArgs = new Map();
+export const createBundlesFromAbsolute = async sourceBundles => {
+  /** @type {Map<string, { args: string[], cwd: string }>} */
+  const cacheToConfig = new Map();
   for (const [srcPath, bundlePath] of sourceBundles) {
     const cache = path.dirname(bundlePath);
     const base = path.basename(bundlePath);
@@ -24,13 +42,17 @@ export const createBundlesFromAbsolute = async sourceBundles => {
     }
     const bundle = match[1];
 
-    const args = cacheToArgs.get(cache) || ['--cache-js', cache];
+    const cfg = cacheToConfig.get(cache) || {
+      args: ['--cache-js', cache],
+      cwd: findPackageRoot(cache) || process.cwd(),
+    };
+    const { args } = cfg;
     args.push('--elide-comments');
     args.push(srcPath, bundle);
-    cacheToArgs.set(cache, args);
+    cacheToConfig.set(cache, cfg);
   }
 
-  for (const args of cacheToArgs.values()) {
+  for (const { args, cwd } of cacheToConfig.values()) {
     console.log(BUNDLE_SOURCE_PROGRAM, ...args);
     const env = /** @type {NodeJS.ProcessEnv} */ (
       /** @type {unknown} */ ({
@@ -38,7 +60,11 @@ export const createBundlesFromAbsolute = async sourceBundles => {
         LOCKDOWN_OVERRIDE_TAMING: 'severe',
       })
     );
-    const { status } = spawnSync(prog, args, { stdio: 'inherit', env });
+    const { status } = spawnSync(
+      'yarn',
+      ['exec', BUNDLE_SOURCE_PROGRAM, ...args],
+      { stdio: 'inherit', env, cwd },
+    );
     status === 0 ||
       Fail`${q(BUNDLE_SOURCE_PROGRAM)} failed with status ${q(status)}`;
   }

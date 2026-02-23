@@ -1,7 +1,6 @@
 /** @file exercise Fast USDC contract in iterations; see chain-impact.test.ts */
 import type { ExecutionContext } from 'ava';
 
-import { AckBehavior } from '@aglocal/boot/tools/supports.js';
 import {
   encodeAddressHook,
   encodeBech32,
@@ -22,6 +21,7 @@ import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import type { IBCChannelID } from '@agoric/vats';
 import { makePromiseKit } from '@endo/promise-kit';
+import { AckBehavior } from '../../boot/tools/supports.js';
 import { configurations } from '../src/utils/deploy-config.js';
 import { type WalletFactoryTestContext } from './walletFactory.js';
 

@@ -17,7 +17,8 @@
     "doctor": "yarn synthetic-chain doctor"
   },
   "dependencies": {
-    "@agoric/synthetic-chain": "^0.6.1"
+    "@agoric/synthetic-chain": "^0.6.1",
+    "@endo/bundle-source": "patch:@endo/bundle-source@npm%3A4.1.2#~/../.yarn/patches/@endo-bundle-source-npm-4.1.2-80da9522ea.patch"
   },
   "devDependencies": {
     "eslint": "^8.57.1",
@@ -26,6 +27,6 @@
   "packageManager": "yarn@4.12.0",
   "license": "Apache-2.0",
   "resolutions": {
-    "@endo/bundle-source": "portal:../node_modules/@endo/bundle-source"
+    "@endo/bundle-source": "patch:@endo/bundle-source@npm%3A4.1.2#~/../.yarn/patches/@endo-bundle-source-npm-4.1.2-80da9522ea.patch"
   }
 }

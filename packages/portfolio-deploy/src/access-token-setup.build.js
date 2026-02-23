@@ -3,7 +3,7 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { parseArgs } from 'node:util';
 
-// based on register-interchain-bank-assets.builder.js
+// based on register-interchain-bank-assets.build.js
 
 /**
  * @import {ParseArgsConfig} from 'node:util';

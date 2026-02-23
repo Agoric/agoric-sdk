@@ -5,7 +5,7 @@ import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 
 /**
  * @import {ERef} from '@endo/far';
- * @import {IterationObserver, LatestTopic, Notifier, NotifierRecord, PublicationRecord, Publisher, PublishKit, StoredPublishKit, StoredSubscription, StoredSubscriber, Subscriber, Subscription, UpdateRecord, EachTopic, ForkableAsyncIterableIterator} from '../src/types.js';
+ * @import {IterationObserver, LatestTopic, Notifier, NotifierRecord, PublicationRecord, Publisher, PublishKit, StoredPublishKit, StoredSubscription, StoredSubscriber, Subscriber, Subscription, UpdateRecord, EachTopic, ForkableAsyncIterableIterator, IterableEachTopic, ForkableAsyncIterable} from '../src/types.js';
  */
 
 const sink = () => {};
@@ -147,6 +147,7 @@ const makeEachIterator = (topic, nextCellP) => {
  *
  * @template T
  * @param {ERef<EachTopic<T>>} topic
+ * @returns {ForkableAsyncIterable<T>}
  */
 export const subscribeEach = topic => {
   const iterable = Far('EachIterable', {

@@ -562,7 +562,7 @@ export const contract = async (
     makeOpenPortfolioInvitation() {
       trace('makeOpenPortfolioInvitation');
       return zcf.makeInvitation(
-        async (seat, offerArgs) => {
+        async (seat, offerArgs: unknown) => {
           mustMatch(offerArgs, offerArgsShapes.openPortfolio);
           await null;
           consumeAccessToken(seat);
