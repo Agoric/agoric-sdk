@@ -36,7 +36,7 @@ const trace = makeTracer(`YMX-Start`, true);
  *   };
  *   oldBoardId?: string;
  *   walletBytecode: `0x${string}`;
- *   remoteAccountBytecodeHash: `0x${string}`;
+ *   remoteAccountBytecodeHash?: `0x${string}`;
  *   defaultFlowConfig?: FlowConfig | null;
  * } & CopyRecord} PortfolioDeployConfig
  */
@@ -51,11 +51,11 @@ export const portfolioDeployConfigShape = M.splitRecord(
       AXELAR_GAS: M.string(),
     }),
     walletBytecode: M.string(),
-    remoteAccountBytecodeHash: M.string(),
   },
   {
     oldBoardId: M.string(),
     defaultFlowConfig: M.or(FlowConfigShape, M.null()),
+    remoteAccountBytecodeHash: M.string(),
   },
 );
 

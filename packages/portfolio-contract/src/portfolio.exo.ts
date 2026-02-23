@@ -317,7 +317,7 @@ export const preparePortfolioKit = (
       axelar?: IBCConnectionInfo['transferChannel'];
     };
     walletBytecode: `0x${string}`;
-    remoteAccountBytecodeHash: `0x${string}`;
+    remoteAccountBytecodeHash?: `0x${string}`;
     proposalShapes: ReturnType<typeof makeProposalShapes>;
     offerArgsShapes: ReturnType<typeof makeOfferArgsShapes>;
     vowTools: VowTools;

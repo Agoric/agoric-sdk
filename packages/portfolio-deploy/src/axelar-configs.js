@@ -55,6 +55,11 @@ export const AxelarChainIdMap = harden({
  */
 
 /**
+ * @typedef {Record<string, HexAddress> | Partial<Record<string, undefined>>} OptionalEvmAddressesMap
+ * @typedef {{ mainnet: OptionalEvmAddressesMap, testnet: OptionalEvmAddressesMap }} OptionalAddressesMap
+ */
+
+/**
  * @typedef {object} AxelarChainConfig
  * @property {string} axelarId
  * @property {BaseChainInfo<"eip155">} chainInfo
@@ -406,41 +411,41 @@ const depositFactoryAddresses = harden({
   },
 });
 
-/** @type {AddressesMap} */
+/** @type {OptionalAddressesMap} */
 const remoteAccountFactory = harden({
   // TODO: These are addresses specific to ymax0 and its current contractAddress
   mainnet: {
-    Arbitrum: '0x', // https://arbiscan.io/address/0x
-    Avalanche: '0x', // https://snowtrace.io/address/0x
-    Base: '0x', // https://basescan.org/address/0x
-    Ethereum: '0x', // https://etherscan.io/address/0x
-    Optimism: '0x', // https://optimistic.etherscan.io/address/0x
+    Arbitrum: undefined, // https://arbiscan.io/address/0x
+    Avalanche: undefined, // https://snowtrace.io/address/0x
+    Base: undefined, // https://basescan.org/address/0x
+    Ethereum: undefined, // https://etherscan.io/address/0x
+    Optimism: undefined, // https://optimistic.etherscan.io/address/0x
   },
   testnet: {
-    Arbitrum: '0x', // https://sepolia.arbiscan.io/address/0x
-    Avalanche: '0x', // https://testnet.snowtrace.io/address/0x
-    Base: '0x', // https://sepolia.basescan.org/address/0x
-    Ethereum: '0x', // https://sepolia.etherscan.io/address/0x
-    Optimism: '0x',
+    Arbitrum: undefined, // https://sepolia.arbiscan.io/address/0x
+    Avalanche: undefined, // https://testnet.snowtrace.io/address/0x
+    Base: undefined, // https://sepolia.basescan.org/address/0x
+    Ethereum: undefined, // https://sepolia.etherscan.io/address/0x
+    Optimism: undefined, // https://sepolia-optimism.etherscan.io/address/0x
   },
 });
 
-/** @type {AddressesMap} */
+/** @type {OptionalAddressesMap} */
 const remoteAccountRouter = harden({
   // TODO: These are addresses specific to ymax0 and its current contractAddress
   mainnet: {
-    Arbitrum: '0x', // https://arbiscan.io/address/0x
-    Avalanche: '0x', // https://snowtrace.io/address/0x
-    Base: '0x', // https://basescan.org/address/0x
-    Ethereum: '0x', // https://etherscan.io/address/0x
-    Optimism: '0x', // https://optimistic.etherscan.io/address/0x
+    Arbitrum: undefined, // https://arbiscan.io/address/0x
+    Avalanche: undefined, // https://snowtrace.io/address/0x
+    Base: undefined, // https://basescan.org/address/0x
+    Ethereum: undefined, // https://etherscan.io/address/0x
+    Optimism: undefined, // https://optimistic.etherscan.io/address/0x
   },
   testnet: {
-    Arbitrum: '0x', // https://sepolia.arbiscan.io/address/0x
-    Avalanche: '0x', // https://testnet.snowtrace.io/address/0x
-    Base: '0x', // https://sepolia.basescan.org/address/0x
-    Ethereum: '0x', // https://sepolia.etherscan.io/address/0x
-    Optimism: '0x',
+    Arbitrum: undefined, // https://sepolia.arbiscan.io/address/0x
+    Avalanche: undefined,
+    Base: undefined, // https://sepolia.basescan.org/address/0x
+    Ethereum: undefined, // https://sepolia.etherscan.io/address/0x
+    Optimism: undefined,
   },
 });
 

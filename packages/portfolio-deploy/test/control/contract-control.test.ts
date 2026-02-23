@@ -107,8 +107,8 @@ test.before(async t => (t.context = await makeTestContext(t)));
 
 const contractName = 'ymax0';
 const makeYmaxDataPrivateArgs = (
-  walletBytecode: string,
-  remoteAccountBytecodeHash: string,
+  walletBytecode: `0x${string}`,
+  remoteAccountBytecodeHash: `0x${string}`,
 ) =>
   harden({
     chainInfo: Object.fromEntries(
