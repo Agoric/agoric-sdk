@@ -1,0 +1,62 @@
+name: 'Daily Test Coverage Improver - Coverage Steps'
+description: |
+  Runs the Agoric SDK test suite with coverage collection and uploads the
+  combined HTML coverage report as the "coverage" artifact.
+  Coverage is collected using c8 (V8 native coverage for Node.js).
+  The combined HTML report lands at coverage/html/ after running these steps.
+
+runs:
+  using: composite
+  steps:
+    # Step 1: Set up Node.js 22 (minimum required by the repo: ^20.9 || ^22.11)
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+
+    - name: Log - Set up Node.js
+      shell: bash
+      run: echo "[coverage-steps] Node $(node --version), npm $(npm --version)" | tee -a coverage-steps.log
+
+    # Step 2: Enable corepack so the pinned Yarn version (yarn@4.x) is used
+    - name: Enable corepack (Yarn 4)
+      shell: bash
+      run: |
+        corepack enable
+        echo "[coverage-steps] Yarn version: $(yarn --version)" | tee -a coverage-steps.log
+
+    # Step 3: Install all workspace dependencies
+    - name: Install dependencies
+      shell: bash
+      run: |
+        yarn install --immutable 2>&1 | tee -a coverage-steps.log
+        echo "[coverage-steps] yarn install complete" | tee -a coverage-steps.log
+
+    # Step 4: Build all packages (generates kernel bundles and TypeScript outputs)
+    - name: Build all packages
+      shell: bash
+      run: |
+        yarn build 2>&1 | tee -a coverage-steps.log
+        echo "[coverage-steps] yarn build complete" | tee -a coverage-steps.log
+
+    # Step 5: Run all package test suites with V8 coverage collection.
+    #   - NODE_V8_COVERAGE=coverage/tmp  → raw V8 coverage JSON is written here
+    #   - C8_OPTIONS=--clean=false       → accumulate coverage across all packages
+    #   - NODE_MEMORY_SIZE=8192          → increase heap for large packages
+    #   --no-bail so that a failing package does not abort other packages
+    - name: Run tests with coverage
+      shell: bash
+      env:
+        NODE_MEMORY_SIZE: '8192'
+      run: |
+        ./scripts/ci/generate-test-coverage-report.sh 2>&1 | tee -a coverage-steps.log
+        echo "[coverage-steps] Coverage report generation complete" | tee -a coverage-steps.log
+
+    # Step 6: Upload the combined HTML coverage report and raw data as an artifact.
+    #   The HTML report is at coverage/html/index.html after the previous step.
+    - name: Upload coverage artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage
+        path: coverage
+        if-no-files-found: warn
