@@ -269,6 +269,30 @@ export const TargetAllocationShapeExt: TypedPattern<Record<string, NatValue>> =
 // XXX the vstorage path API is kinda awkward to use; see ymax-deploy.test.ts
 
 /**
+ * Published vstorage values produced by the portfolio contract.
+ */
+export type PortfolioPublishedPathTypes = {
+  ymax0: StatusFor['contract'];
+  ymax1: StatusFor['contract'];
+  'ymax0.portfolios': StatusFor['portfolios'];
+  'ymax1.portfolios': StatusFor['portfolios'];
+} & {
+  [K in `ymax${'0' | '1'}.portfolios.portfolio${number}`]: StatusFor['portfolio'];
+} & {
+  [K in `ymax${'0' | '1'}.portfolios.portfolio${number}.positions.${string}`]: StatusFor['position'];
+} & {
+  [K in `ymax${'0' | '1'}.portfolios.portfolio${number}.pendingTx.tx${number}`]: StatusFor['pendingTx'];
+} & {
+  [K in `ymax${'0' | '1'}.portfolios.portfolio${number}.flows.flow${number}`]: StatusFor['flow'];
+} & {
+  [K in `ymax${'0' | '1'}.portfolios.portfolio${number}.flows.flow${number}.steps`]: StatusFor['flowSteps'];
+} & {
+  [K in `ymax${'0' | '1'}.evmWallets.0x${string}.portfolio`]: StatusFor['evmWalletPortfolios'];
+} & {
+  [K in `ymax${'0' | '1'}.evmWallets.0x${string}`]: StatusFor['evmWallet'];
+};
+
+/**
  * Creates vstorage path for portfolio status under published.ymax0.
  *
  * Portfolio status includes position counts, account mappings, and flow history.

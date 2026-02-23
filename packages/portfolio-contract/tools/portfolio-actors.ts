@@ -28,6 +28,7 @@ import {
   portfolioIdOfPath,
   type OfferArgsFor,
   type ProposalType,
+  type PortfolioPublishedPathTypes,
   type StatusFor,
   type PoolKey,
   type EVMContractAddressesMap,
@@ -56,7 +57,7 @@ assert.equal(ROOT_STORAGE_PATH, 'orchtest');
 const stripRoot = (path: string) => path.replace(/^orchtest\./, '');
 
 export const makePortfolioQuery = (
-  readPublished: VstorageKit['readPublished'],
+  readPublished: VstorageKit<PortfolioPublishedPathTypes>['readPublished'],
   portfolioKey: `${string}.portfolios.portfolio${number}`,
 ) => {
   const self = harden({
@@ -100,7 +101,7 @@ export const makePortfolioQuery = (
 export const makeTrader = (
   wallet: WalletTool,
   instance: Instance<typeof start>,
-  readPublished: VstorageKit['readPublished'] = () =>
+  readPublished: VstorageKit<PortfolioPublishedPathTypes>['readPublished'] = () =>
     assert.fail('no vstorage access'),
 ) => {
   let nonce = 0;
@@ -277,7 +278,7 @@ type EvmTraderConfig = {
   contractsByChain: EVMContractAddressesMap;
   chainInfoByName: Record<AxelarChain, ChainInfo<'eip155'>>;
   timerService: ERemote<TimerService>;
-  readPublished: VstorageKit['readPublished'];
+  readPublished: VstorageKit<PortfolioPublishedPathTypes>['readPublished'];
   when: VowTools['when'];
 };
 
@@ -308,11 +309,15 @@ export const makeEvmTrader = ({
     await when(vow);
   };
 
+  // FIXME: bare `evmWallets.*` paths are inconsistent with the `ymax0|ymax1`
+  // published root contract; switch to rooted paths.
   const getWalletPortfolios = async () =>
     readPublished(`evmWallets.${account.address}.portfolio`) as Promise<
       StatusFor['evmWalletPortfolios']
     >;
 
+  // FIXME: bare `evmWallets.*` paths are inconsistent with the `ymax0|ymax1`
+  // published root contract; switch to rooted paths.
   const getWalletStatus = async () =>
     readPublished(`evmWallets.${account.address}`) as Promise<
       StatusFor['evmWallet']

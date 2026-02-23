@@ -30,7 +30,10 @@ import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
-import type { StatusFor } from '../src/type-guards.ts';
+import type {
+  PortfolioPublishedPathTypes,
+  StatusFor,
+} from '../src/type-guards.ts';
 import type { MovementDesc } from '../src/type-guards-steps.js';
 
 // Use realistic flow values (e.g., millions of uUSDC) but format for
@@ -116,7 +119,7 @@ export const makeStorageTools = (storage: FakeStorageKit) => {
         storage.getValues(`${ROOT_STORAGE_PATH}.${path}`).at(-1) || '',
       ),
     );
-  }) as VstorageKit['readPublished'];
+  }) as VstorageKit<PortfolioPublishedPathTypes>['readPublished'];
 
   const readLegible = async (path: string) => {
     await vstoragePendingWrites();

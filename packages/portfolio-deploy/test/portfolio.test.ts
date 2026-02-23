@@ -481,7 +481,9 @@ test.serial('restart contract', async t => {
   // XXX There is got to be a cleaner way to do this
   const getPortfolioCount = () => {
     try {
-      const portfolioData = t.context.readPublished('ymax0.portfolios');
+      const portfolioData = t.context.readPublished('ymax0.portfolios') as {
+        addPortfolio: string;
+      };
       const match = portfolioData.addPortfolio.match(/^portfolio(\d+)$/);
       return parseInt(match![1], 10) + 1;
     } catch (e) {
@@ -789,7 +791,7 @@ test.serial('invite evm handler; test open portfolio', async t => {
 
   const portfolios = t.context.readPublished(
     `ymax0.evmWallets.${userAccount.address}.portfolio`,
-  );
+  ) as string[];
 
   t.true(portfolios.some(p => p.endsWith(portfolio)));
 });
@@ -946,7 +948,9 @@ test.serial(
 
     const getPortfolioCount = () => {
       try {
-        const portfolioData = t.context.readPublished('ymax0.portfolios');
+        const portfolioData = t.context.readPublished('ymax0.portfolios') as {
+          addPortfolio: string;
+        };
         const match = portfolioData.addPortfolio.match(/^portfolio(\d+)$/);
         return parseInt(match![1], 10) + 1;
       } catch {
