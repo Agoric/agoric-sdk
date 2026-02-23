@@ -10,7 +10,7 @@ export { boardSlottingMarshaller };
 /**
  * @import {Marshal} from '@endo/marshal';
  * @import {MinimalNetworkConfig} from './network-config.js';
- * @import {TypedPublished} from './types.js';
+ * @import {PublishedPathTypes, TypedPublishedFor, VstorageKit} from './types.js';
  * @import {VStorage} from './vstorage.js';
  * @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js';
  * @import {BoardRemote} from '@agoric/vats/tools/board-utils.js';
@@ -97,10 +97,12 @@ export const makeAgoricNames = async (ctx, vstorage) => {
 };
 
 /**
+ * @template {PublishedPathTypes} [Ext={}]
  * @param {object} config
  * @param {VStorage} config.vstorage
  * @param {MinimalNetworkConfig} config.networkConfig
  * @param {Pick<Marshal<string>, 'fromCapData' | 'toCapData'>} [config.marshaller]
+ * @returns {VstorageKit<Ext>}
  * @alpha
  */
 export const makeVstorageKitFromVstorage = ({
@@ -150,10 +152,10 @@ export const makeVstorageKitFromVstorage = ({
    * vstorage, which is validated in testing of the chain code that is run
    * in consensus.
    *
-   * @type {<T extends string>(subpath: T) => Promise<TypedPublished<T>>}
+   * @type {<T extends string>(subpath: T) => Promise<TypedPublishedFor<T, Ext>>}
    */
   const readPublished = subpath =>
-    /** @type {Promise<TypedPublished<any>>} */ (
+    /** @type {Promise<TypedPublishedFor<any, Ext>>} */ (
       readLatestHead(`published.${subpath}`)
     );
 
@@ -170,8 +172,10 @@ export const makeVstorageKitFromVstorage = ({
 harden(makeVstorageKitFromVstorage);
 
 /**
+ * @template {PublishedPathTypes} [Ext={}]
  * @param {{ fetch: typeof window.fetch }} io
  * @param {MinimalNetworkConfig} networkConfig
+ * @returns {VstorageKit<Ext>}
  */
 export const makeVstorageKit = ({ fetch }, networkConfig) => {
   const vstorage = tryNow(
@@ -183,5 +187,3 @@ export const makeVstorageKit = ({ fetch }, networkConfig) => {
   return makeVstorageKitFromVstorage({ vstorage, networkConfig });
 };
 harden(makeVstorageKit);
-
-/** @typedef {ReturnType<typeof makeVstorageKit>} VstorageKit */
