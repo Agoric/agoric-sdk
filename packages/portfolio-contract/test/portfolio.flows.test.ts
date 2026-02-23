@@ -3676,7 +3676,7 @@ test(
   'sendGMPContractCall unsubscribes resolver on send failure',
   expectUnhandled(1),
   async t => {
-    const { resolverClient, storage } = mocks({});
+    const { resolverClient, storage, makeProgressTracker } = mocks({});
     const lcaAddress = harden({ chainId: 'agoric-3', value: 'agoric1test' });
     const ctx = {
       feeAccount: {
@@ -3717,9 +3717,13 @@ test(
       },
     ];
 
-    await t.throwsAsync(() => sendGMPContractCall(ctx, gmpAcct, calls), {
-      message: 'fee send failed',
-    });
+    await t.throwsAsync(
+      () =>
+        sendGMPContractCall(ctx, gmpAcct, calls, {
+          progressTracker: makeProgressTracker(),
+        }),
+      { message: 'fee send failed' },
+    );
 
     await eventLoopIteration();
     const values = storage.getDeserialized('published.ymax0.pendingTxs.tx0');
@@ -3733,7 +3737,7 @@ test(
   'sendPermit2GMP unsubscribes resolver on send failure',
   expectUnhandled(1),
   async t => {
-    const { resolverClient, storage } = mocks({});
+    const { resolverClient, storage, makeProgressTracker } = mocks({});
     const lcaAddress = harden({ chainId: 'agoric-3', value: 'agoric1test' });
     const ctx = {
       feeAccount: {
@@ -3778,7 +3782,10 @@ test(
     };
 
     await t.throwsAsync(
-      () => sendPermit2GMP(ctx, gmpAcct, permit2Payload, 1_000_000n),
+      () =>
+        sendPermit2GMP(ctx, gmpAcct, permit2Payload, 1_000_000n, {
+          progressTracker: makeProgressTracker(),
+        }),
       { message: 'fee send failed' },
     );
 
