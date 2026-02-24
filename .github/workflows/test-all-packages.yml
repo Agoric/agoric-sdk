@@ -239,15 +239,27 @@ jobs:
         # This package has been flaky with exit code 129 (SIGHUP) in CI, and the diagnostics here should help us figure out why. We use bash to be able to capture the exit code of the test command even when piped through tee, and to be able to run the diagnostics conditionally on that exit code.
         run: |
           set +e
+          trap 'echo "swing-store shell received SIGHUP"' HUP
+          diag_module="$PWD/packages/swing-store/test/ava-process-diagnostics.js"
+          export NODE_OPTIONS="--require=$diag_module ${NODE_OPTIONS:-}"
           # include this exact line for check-untested-packages.mjs to recognize that this package is being tested
           cd packages/swing-store && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-          rc=$?
+          pipe_status=("${PIPESTATUS[@]}")
+          rc=0
+          for ((idx=${#pipe_status[@]} - 1; idx >= 0; idx--)); do
+            if [ "${pipe_status[$idx]}" -ne 0 ]; then
+              rc="${pipe_status[$idx]}"
+              break
+            fi
+          done
           if [ "$rc" -ne 0 ]; then
             echo "::group::swing-store failure diagnostics"
             echo "test command exit code: $rc"
             if [ "$rc" -eq 129 ]; then
               echo "exit 129 indicates SIGHUP"
             fi
+            echo "PIPESTATUS (yarn tee): ${pipe_status[*]}"
+            echo "NODE_OPTIONS: ${NODE_OPTIONS}"
             echo "node: $(node -v)"
             echo "yarn: $(yarn -v)"
             echo "pwd: $(pwd)"
