@@ -9,7 +9,7 @@ on:
     branches: [master]
   schedule:
     # We start a little earlier to give our build cache time to populate.
-    - cron: '47 5 * * *'
+    - cron: "47 5 * * *"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -18,7 +18,7 @@ concurrency:
 env:
   AGORIC_AVA_USE_TAP: true
   NODE_V8_COVERAGE: coverage
-  TEST_COLLECT: 'tee -a _testoutput.txt'
+  TEST_COLLECT: "tee -a _testoutput.txt"
 
 # this is required, since explicitly setting bash as shell enables pipefail, which is not
 # on by default.  This is required to fail correctly when teeing output to a file to collect
@@ -32,11 +32,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: ['node-new', 'node-old']
+        node-version: ["node-new", "node-old"]
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: 'true'
+          submodules: "true"
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ matrix.node-version }}
@@ -57,7 +57,7 @@ jobs:
       # install node_modules
       - uses: ./.github/actions/restore-node
         with:
-          node-version: 'node-new'
+          node-version: "node-new"
 
       # Releasing SDK builds all packages in this order during `lerna publish`.
       # Due to ambient types, certain build orders (from the dependency graph)
@@ -95,7 +95,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          node-version: 'node-new'
+          node-version: "node-new"
 
       # eslint and tsc
       # XXX running tsc in every package is slow and redundant.
@@ -109,7 +109,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          node-version: 'node-new'
+          node-version: "node-new"
 
       - name: lint repo format
         run: yarn lint:format
@@ -149,7 +149,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          node-version: 'node-new'
+          node-version: "node-new"
 
       - name: Update package lockfiles
         run: scripts/update-package-locks.sh || exit 0
@@ -173,7 +173,7 @@ jobs:
     runs-on: ubuntu-latest-16core # avoid exit 129
     strategy:
       matrix:
-        engine: ['node-new', 'node-old', 'xs']
+        engine: ["node-new", "node-old", "xs"]
     steps:
       - name: set vars
         id: vars
@@ -235,7 +235,103 @@ jobs:
         run: cd packages/store && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (swing-store)
         if: (success() || failure())
-        run: cd packages/swing-store && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+        shell: bash
+        run: |
+          set +e
+          trap 'echo "swing-store shell received SIGHUP"' HUP
+          diag_module="$PWD/packages/swing-store/test/ava-process-diagnostics.js"
+          export NODE_OPTIONS="--require=$diag_module ${NODE_OPTIONS:-}"
+
+          # include the following string for check-untested-packages.mjs to believe that this package is being tested
+          # cd packages/swingset-runner && yarn ${{ steps.vars.outputs.test }}
+          # now actually run this test command, so that we get the diagnostics on this package if it fails
+          cd packages/swing-store || exit $?
+
+          echo "::group::swing-store preflight diagnostics"
+          echo "matrix.engine=${{ matrix.engine }}"
+          echo "test target=${{ steps.vars.outputs.test }}"
+          echo "node: $(node -v)"
+          echo "yarn: $(yarn -v)"
+          echo "pwd: $(pwd)"
+          echo "NODE_OPTIONS: ${NODE_OPTIONS}"
+          if [ -n "${NODE_V8_COVERAGE:-}" ] && [ -d "$NODE_V8_COVERAGE" ]; then
+            echo "NODE_V8_COVERAGE dir: $NODE_V8_COVERAGE"
+            echo "coverage files in NODE_V8_COVERAGE:"
+            find "$NODE_V8_COVERAGE" -maxdepth 1 -type f -name '*.json' | wc -l
+            du -sh "$NODE_V8_COVERAGE" || true
+          else
+            echo "NODE_V8_COVERAGE dir not present yet: ${NODE_V8_COVERAGE:-<unset>}"
+          fi
+          echo "repo-wide coverage json count so far:"
+          find ../.. -type f -name 'coverage*.json' | wc -l
+          echo "--- free -m ---"
+          free -m || true
+          echo "--- df -h . ---"
+          df -h . || true
+          echo "::endgroup::"
+
+          if [ "${{ steps.vars.outputs.test }}" = "test" ]; then
+            node ../../node_modules/ava/entrypoints/cli.mjs > >(tee -a _testoutput.txt) 2>&1
+            rc=$?
+            pipe_status=("$rc" 0)
+          else
+            yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+            pipe_status=("${PIPESTATUS[@]}")
+            rc=0
+            for ((idx=${#pipe_status[@]} - 1; idx >= 0; idx--)); do
+              if [ "${pipe_status[$idx]}" -ne 0 ]; then
+                rc="${pipe_status[$idx]}"
+                break
+              fi
+            done
+          fi
+
+          if [ "$rc" -ne 0 ]; then
+            echo "::group::swing-store failure diagnostics"
+            echo "test command exit code: $rc"
+            if [ "$rc" -eq 129 ]; then
+              echo "exit 129 indicates SIGHUP"
+            fi
+            if [ "$rc" -eq 139 ]; then
+              echo "exit 139 indicates SIGSEGV"
+            fi
+            echo "PIPESTATUS (test tee): ${pipe_status[*]}"
+            echo "NODE_OPTIONS: ${NODE_OPTIONS}"
+            echo "node: $(node -v)"
+            echo "yarn: $(yarn -v)"
+            echo "pwd: $(pwd)"
+            echo "--- ulimit -a ---"
+            ulimit -a || true
+            echo "--- process tree (pstree) ---"
+            pstree -pal "$$" || true
+            echo "--- process list (filtered for test processes) ---"
+            ps -eo pid,ppid,pgid,sid,stat,etime,pcpu,pmem,comm,args | grep -E '(PID|ava|node|yarn|tee)' || true
+            echo "--- coverage state at failure ---"
+            if [ -n "${NODE_V8_COVERAGE:-}" ] && [ -d "$NODE_V8_COVERAGE" ]; then
+              find "$NODE_V8_COVERAGE" -maxdepth 1 -type f -name '*.json' | wc -l
+              du -sh "$NODE_V8_COVERAGE" || true
+            fi
+            echo "--- last 200 lines of _testoutput.txt ---"
+            tail -n 200 _testoutput.txt || true
+
+            # Triangulation probe: retry once in a fresh coverage directory to
+            # see whether the failure depends on accumulated job-level coverage.
+            if [ "${{ matrix.engine }}" = "node-old" ] && [ "${{ steps.vars.outputs.test }}" = "test" ]; then
+              retry_cov_dir="$PWD/coverage-retry-$RANDOM"
+              echo "--- retry with isolated NODE_V8_COVERAGE=$retry_cov_dir ---"
+              NODE_V8_COVERAGE="$retry_cov_dir" node ../../node_modules/ava/entrypoints/cli.mjs > >(tee -a _testoutput_retry.txt) 2>&1
+              retry_rc=$?
+              echo "retry exit code: $retry_rc"
+              if [ -d "$retry_cov_dir" ]; then
+                find "$retry_cov_dir" -maxdepth 1 -type f -name '*.json' | wc -l
+                du -sh "$retry_cov_dir" || true
+              fi
+              echo "--- last 200 lines of _testoutput_retry.txt ---"
+              tail -n 200 _testoutput_retry.txt || true
+            fi
+            echo "::endgroup::"
+          fi
+          exit "$rc"
       - name: yarn test (cosmic-proto)
         if: (success() || failure())
         run: cd packages/cosmic-proto && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
@@ -276,16 +372,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: 'true'
+          submodules: "true"
 
       - uses: ./.github/actions/restore-node
         with:
-          node-version: 'node-new'
+          node-version: "node-new"
 
       # Some codegen (e.g., cosmic-proto) depends on Go toolchain
       - uses: ./.github/actions/restore-golang
         with:
-          go-version: '1.22'
+          go-version: "1.22"
 
       - name: Verify codegen idempotence
         shell: bash
@@ -298,7 +394,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['node-new', 'node-old', 'xs']
+        engine: ["node-new", "node-old", "xs"]
     steps:
       - name: set vars
         id: vars
@@ -433,7 +529,7 @@ jobs:
     strategy:
       matrix:
         # test:xs is noop in governance/package.json
-        engine: ['node-new', 'node-old']
+        engine: ["node-new", "node-old"]
     steps:
       - name: set vars
         id: vars
@@ -471,7 +567,7 @@ jobs:
     strategy:
       matrix:
         # test:xs is noop in governance/package.json
-        engine: ['node-new', 'node-old']
+        engine: ["node-new", "node-old"]
     steps:
       - name: set vars
         id: vars
@@ -509,7 +605,7 @@ jobs:
     strategy:
       matrix:
         # test:xs is noop in portfolio-contract/package.json
-        engine: ['node-new', 'node-old']
+        engine: ["node-new", "node-old"]
     steps:
       - name: set vars
         id: vars
@@ -547,7 +643,7 @@ jobs:
     strategy:
       matrix:
         # test:xs is noop in solo/package.json
-        engine: ['node-new', 'node-old']
+        engine: ["node-new", "node-old"]
     steps:
       - name: set vars
         id: vars
@@ -585,7 +681,7 @@ jobs:
     strategy:
       matrix:
         # test:xs is noop in cosmic-swingset/package.json
-        engine: ['node-new', 'node-old', 'xs']
+        engine: ["node-new", "node-old", "xs"]
     steps:
       - name: set vars
         id: vars
@@ -599,7 +695,7 @@ jobs:
       # END-TEST-BOILERPLATE
       - uses: ./.github/actions/restore-golang
         with:
-          go-version: '1.22'
+          go-version: "1.22"
       - name: yarn test (cosmic-swingset)
         if: (success() || failure())
         run: cd packages/cosmic-swingset && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
@@ -627,7 +723,7 @@ jobs:
     strategy:
       matrix:
         # test:xs is noop in inter-protocol/package.json
-        engine: ['node-new', 'node-old']
+        engine: ["node-new", "node-old"]
     steps:
       - name: set vars
         id: vars
@@ -664,7 +760,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['node-new', 'node-old', 'xs']
+        engine: ["node-new", "node-old", "xs"]
         # Run parallel testing jobs, each executing a subset.
         node_index: [0, 1, 2, 3]
         total_nodes: [4] # the total number of nodes
@@ -707,7 +803,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['node-new', 'node-old', 'xs']
+        engine: ["node-new", "node-old", "xs"]
         # Run parallel testing jobs, each executing a subset.
         node_index: [0, 1, 2, 3, 4]
         total_nodes: [5] # the total number of nodes
@@ -756,7 +852,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['node-new', 'node-old', 'xs']
+        engine: ["node-new", "node-old", "xs"]
     steps:
       - name: set vars
         id: vars
@@ -797,7 +893,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['node-new', 'node-old', 'xs']
+        engine: ["node-new", "node-old", "xs"]
     steps:
       - name: set vars
         id: vars
