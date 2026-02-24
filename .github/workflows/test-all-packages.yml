@@ -235,7 +235,33 @@ jobs:
         run: cd packages/store && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (swing-store)
         if: (success() || failure())
-        run: cd packages/swing-store && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+        shell: bash
+        # This package has been flaky with exit code 129 (SIGHUP) in CI, and the diagnostics here should help us figure out why. We use bash to be able to capture the exit code of the test command even when piped through tee, and to be able to run the diagnostics conditionally on that exit code.
+        run: |
+          set +e
+          # include this exact line for check-untested-packages.mjs to recognize that this package is being tested
+          cd packages/swing-store && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+          rc=$?
+          if [ "$rc" -ne 0 ]; then
+            echo "::group::swing-store failure diagnostics"
+            echo "test command exit code: $rc"
+            if [ "$rc" -eq 129 ]; then
+              echo "exit 129 indicates SIGHUP"
+            fi
+            echo "node: $(node -v)"
+            echo "yarn: $(yarn -v)"
+            echo "pwd: $(pwd)"
+            echo "--- ulimit -a ---"
+            ulimit -a || true
+            echo "--- process tree (pstree) ---"
+            pstree -pal "$$" || true
+            echo "--- process list (filtered for test processes) ---"
+            ps -eo pid,ppid,pgid,sid,stat,etime,pcpu,pmem,comm,args | grep -E '(PID|ava|node|yarn|tee)' || true
+            echo "--- last 200 lines of _testoutput.txt ---"
+            tail -n 200 _testoutput.txt || true
+            echo "::endgroup::"
+          fi
+          exit "$rc"
       - name: yarn test (cosmic-proto)
         if: (success() || failure())
         run: cd packages/cosmic-proto && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
