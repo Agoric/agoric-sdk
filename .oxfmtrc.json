@@ -1,0 +1,30 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "arrowParens": "avoid",
+  "trailingComma": "all",
+  "singleQuote": true,
+  "printWidth": 80, // Prettier's default
+  "sortPackageJson": false,
+  "ignorePatterns": [
+    "build",
+    "bundles",
+    "bundle-*.js",
+    "compiled",
+    "dist",
+    "lcov-report",
+    "public",
+    "vendor",
+    "/packages/cosmic-swingset/t[0-9]/",
+    "/packages/cosmic-swingset/t[0-9].*/",
+    "*.html",
+    "*.yml",
+    "*.yaml",
+    "*.md",
+    "**/tsup.config.ts",
+    "/packages/xsnap/moddable",
+    "/packages/xsnap/xsnap-native",
+    "/packages/xsnap/lib/object-inspect.js",
+    "/packages/orchestration/src/vendor/",
+    "/packages/orchestration/src/stubs/"
+  ]
+}

@@ -141,16 +141,20 @@ telescope({
     fixTypeImport('./src/codegen', gnuSed);
     console.log('🔧 type keyword added');
 
-    const prettierResult = spawnSync(
+    // top-level to get the root oxfmt config
+    const result = spawnSync(
       'yarn',
-      ['run', '--top-level', 'prettier', '--write', 'src/codegen'],
+      ['run', '--top-level', 'oxfmt', 'src/codegen'],
       {
         cwd: path.join(__dirname, '..'),
         stdio: 'inherit',
       },
     );
-    assert.equal(prettierResult.status, 0);
-    console.log('💅 code formatted by Prettier');
+    if (result.error) {
+      throw result.error;
+    }
+    assert.equal(result.status, 0);
+    console.log('💅 code formatted');
 
     console.log('ℹ️ `yarn build && yarn test` to test it.');
   })

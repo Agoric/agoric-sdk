@@ -18,7 +18,6 @@ export default [
   ...compat.extends(
     'eslint:recommended',
     'plugin:@typescript-eslint/recommended',
-    'prettier',
   ),
   {
     plugins: {

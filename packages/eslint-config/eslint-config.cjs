@@ -16,7 +16,6 @@ module.exports = {
     'airbnb-base',
     'plugin:@endo/recommended',
     'plugin:jsdoc/recommended',
-    'prettier',
   ],
   plugins: ['import', 'github'],
   rules: {

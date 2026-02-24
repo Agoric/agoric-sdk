@@ -1,8 +1,0 @@
-{
-  // NB: keep in sync with dprint.json's prettier plugin config
-  arrowParens: 'avoid',
-  trailingComma: 'all',
-  singleQuote: true,
-  // NB: dprint does not support overrides yet so we can't use Prettier's overrides feature
-  // https://github.com/dprint/dprint/issues/996
-}
