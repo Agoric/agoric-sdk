@@ -244,7 +244,14 @@ jobs:
           diag_module="$PWD/packages/swing-store/test/ava-process-diagnostics.js"
           export NODE_OPTIONS="--require=$diag_module ${NODE_OPTIONS:-}"
           # include this exact line for check-untested-packages.mjs to recognize that this package is being tested
-          cd packages/swing-store && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+          cd packages/swing-store || exit $?
+          if [ "${{ steps.vars.outputs.test }}" = "test" ]; then
+            # Bypass the yarn test wrapper so we can determine whether the 129
+            # originates in AVA itself or in yarn's process/wrapper handling.
+            node ../../node_modules/ava/entrypoints/cli.mjs --tap | $TEST_COLLECT
+          else
+            yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+          fi
           pipe_status=("${PIPESTATUS[@]}")
           rc=0
           for ((idx=${#pipe_status[@]} - 1; idx >= 0; idx--)); do
