@@ -1,11 +1,14 @@
 {
   "name": "@agoric/cosmos",
   "version": "0.34.1",
-  "description": "Connect JS to the Cosmos blockchain SDK",
+  "description": "Connect JS to the Cosmos blockchain SDK and provides agd binary",
   "parsers": {
     "js": "mjs"
   },
   "main": "index.cjs",
+  "bin": {
+    "agd": "./agd"
+  },
   "engines": {
     "node": "^20.9 || ^22.11"
   },
@@ -15,12 +18,21 @@
     "build:gyp": "make compile-gyp",
     "build:gyp-debug": "make compile-gyp GYP_DEBUG=--debug",
     "test:xs": "exit 0",
-    "prepack": "git rev-parse --short HEAD > git-revision.txt && rm -rf build",
+    "prepack": "git rev-parse --short HEAD > git-revision.txt && make compile-agd-all",
     "postpack": "git clean -f git-revision.txt",
+    "postinstall": "node scripts/postinstall.js",
     "build": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "exit 0"
   },
+  "files": [
+    "README.md",
+    "index.cjs",
+    "scripts/postinstall.js",
+    "build/npm-binaries/",
+    "agd",
+    "agd.exe"
+  ],
   "dependencies": {
     "bindings": "^1.2.1",
     "napi-thread-safe-callback": "0.0.6",
