@@ -194,45 +194,6 @@ jobs:
       #  category here, or that don't have a package.json.
       #- name: yarn test (everything)
       #  run: yarn ${{ steps.vars.outputs.test }}
-      - name: yarn test (access-token)
-        if: (success() || failure())
-        run: cd packages/access-token && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (benchmark)
-        if: (success() || failure())
-        run: cd packages/benchmark && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (deployment)
-        if: (success() || failure())
-        run: cd packages/deployment && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (ERTP)
-        if: (success() || failure())
-        run: cd packages/ERTP && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (import-manager)
-        if: (success() || failure())
-        run: cd packages/import-manager && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (notifier)
-        if: (success() || failure())
-        run: cd packages/notifier && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (orchestration)
-        if: (success() || failure())
-        run: cd packages/orchestration && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (portfolio-api)
-        if: (success() || failure())
-        run: cd packages/portfolio-api && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (portfolio-deploy)
-        if: (success() || failure())
-        run: cd packages/portfolio-deploy && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (sparse-ints)
-        if: (success() || failure())
-        run: cd packages/sparse-ints && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (spawner)
-        if: (success() || failure())
-        run: cd packages/spawner && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (stat-logger)
-        if: (success() || failure())
-        run: cd packages/stat-logger && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (store)
-        if: (success() || failure())
-        run: cd packages/store && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (swing-store)
         if: (success() || failure())
         shell: bash
@@ -332,6 +293,45 @@ jobs:
             echo "::endgroup::"
           fi
           exit "$rc"
+      - name: yarn test (access-token)
+        if: (success() || failure())
+        run: cd packages/access-token && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (benchmark)
+        if: (success() || failure())
+        run: cd packages/benchmark && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (deployment)
+        if: (success() || failure())
+        run: cd packages/deployment && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (ERTP)
+        if: (success() || failure())
+        run: cd packages/ERTP && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (import-manager)
+        if: (success() || failure())
+        run: cd packages/import-manager && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (notifier)
+        if: (success() || failure())
+        run: cd packages/notifier && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (orchestration)
+        if: (success() || failure())
+        run: cd packages/orchestration && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (portfolio-api)
+        if: (success() || failure())
+        run: cd packages/portfolio-api && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (portfolio-deploy)
+        if: (success() || failure())
+        run: cd packages/portfolio-deploy && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (sparse-ints)
+        if: (success() || failure())
+        run: cd packages/sparse-ints && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (spawner)
+        if: (success() || failure())
+        run: cd packages/spawner && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (stat-logger)
+        if: (success() || failure())
+        run: cd packages/stat-logger && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (store)
+        if: (success() || failure())
+        run: cd packages/store && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (cosmic-proto)
         if: (success() || failure())
         run: cd packages/cosmic-proto && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT

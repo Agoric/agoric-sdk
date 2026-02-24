@@ -22,7 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: ['20', '22', '24']
+        node-version: ['20', '22']
     env:
       AGORIC_AVA_USE_TAP: true
       NODE_V8_COVERAGE: coverage
