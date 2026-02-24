@@ -1,4 +1,6 @@
 // @ts-check
+import '@endo/init/debug.js';
+
 import test from 'ava';
 
 import { makeExo } from '@endo/exo';

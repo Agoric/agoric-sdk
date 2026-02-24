@@ -1,5 +1,7 @@
 /* global setTimeout, FinalizationRegistry, setImmediate, process */
 
+import '@endo/init/debug.js';
+
 import test from 'ava';
 
 import { createHash } from 'crypto';

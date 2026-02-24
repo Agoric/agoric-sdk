@@ -78,6 +78,7 @@ __metadata:
     "@endo/base64": "npm:^1.0.12"
     "@endo/common": "npm:^1.2.13"
     "@endo/errors": "npm:^1.2.13"
+    "@endo/init": "npm:^1.1.12"
     "@endo/marshal": "npm:^1.8.0"
     "@endo/pass-style": "npm:^1.6.3"
     "@endo/patterns": "npm:^1.7.0"

@@ -39,9 +39,6 @@
     "tsd": "^0.33.0"
   },
   "ava": {
-    "require": [
-      "@endo/init/debug.js"
-    ],
     "files": [
       "test/**/*.test.*"
     ]

@@ -1,4 +1,6 @@
 // @ts-check
+import '@endo/init/debug.js';
+
 import test from 'ava';
 
 import { fc, testProp } from '@fast-check/ava';

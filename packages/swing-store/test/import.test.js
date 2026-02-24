@@ -1,5 +1,7 @@
 // @ts-check
 
+import '@endo/init/debug.js';
+
 import path from 'path';
 import { createGunzip } from 'zlib';
 import { Readable } from 'stream';

@@ -1,3 +1,5 @@
+import '@endo/init/debug.js';
+
 import test from 'ava';
 import { makeSpy, runVOTest } from '../tools/vo-test-harness.js';
 

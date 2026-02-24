@@ -71,13 +71,10 @@
       "--import=ts-blank-space/register",
       "--no-warnings"
     ],
-    "require": [
-      "@endo/init/debug.js"
-    ],
     "timeout": "20m"
   },
   "typeCoverage": {
-    "atLeast": 97.61
+    "atLeast": 97.84
   },
   "engines": {
     "node": "^20.9 || ^22.11"

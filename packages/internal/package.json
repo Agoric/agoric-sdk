@@ -47,9 +47,6 @@
     "tsd": "^0.33.0"
   },
   "ava": {
-    "require": [
-      "@endo/init/debug.js"
-    ],
     "files": [
       "test/**/*.test.*"
     ]
@@ -64,6 +61,6 @@
     "access": "public"
   },
   "typeCoverage": {
-    "atLeast": 92.84
+    "atLeast": 92.9
   }
 }

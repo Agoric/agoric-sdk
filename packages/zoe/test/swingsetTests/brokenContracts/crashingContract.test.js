@@ -1,5 +1,7 @@
 // @ts-nocheck
 
+import '@endo/init/debug.js';
+
 import test from 'ava';
 import path from 'path';
 

@@ -72,15 +72,12 @@
   "ava": {
     "files": [
       "test/**/*.test.*"
-    ],
-    "require": [
-      "@endo/init/debug.js"
     ]
   },
   "publishConfig": {
     "access": "public"
   },
   "typeCoverage": {
-    "atLeast": 84.46
+    "atLeast": 88.67
   }
 }
