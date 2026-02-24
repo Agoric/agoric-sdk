@@ -1,0 +1,80 @@
+# Coverage Steps Action
+#
+# This composite action builds agoric-sdk, runs all package test:c8 targets,
+# generates a combined HTML+JSON coverage report, and uploads it as an artifact.
+#
+# Coverage report location: coverage/html/ (HTML) and coverage/ (JSON/raw)
+# The artifact "coverage" will contain the full coverage/ directory.
+#
+# Each step appends its output to coverage-steps.log in the repo root.
+name: Daily Test Coverage Improver - Coverage Steps
+description: 'Build, test with coverage, and upload combined coverage report'
+
+runs:
+  using: composite
+  steps:
+    # Step 1: Set up Node.js and restore the built agoric-sdk environment
+    - name: Restore Node.js build
+      uses: ./.github/actions/restore-node
+      with:
+        node-version: 'node-new'
+
+    # Step 2: Run all package test:c8 scripts to collect V8 coverage
+    # Uses lerna (not yarn workspaces) because workspaces v1 bails on missing scripts.
+    # NODE_V8_COVERAGE points to a shared directory so coverage accumulates across packages.
+    # C8_OPTIONS=--clean=false prevents c8 from wiping earlier results between packages.
+    - name: Run tests with coverage
+      shell: bash
+      env:
+        NODE_MEMORY_SIZE: '8192'
+        NODE_V8_COVERAGE: ${{ github.workspace }}/coverage/tmp
+        C8_OPTIONS: '--clean=false'
+        NODE_OPTIONS: '--max-old-space-size=8192'
+      run: |
+        set -o pipefail
+        rm -rf coverage/tmp
+        mkdir -p coverage/tmp
+        echo "=== Running tests with coverage ===" | tee -a coverage-steps.log
+        yarn lerna run test:c8 --no-bail 2>&1 | tee -a coverage-steps.log
+        echo "=== Test run complete ===" | tee -a coverage-steps.log
+
+    # Step 3: Generate combined HTML and JSON coverage reports from raw V8 data
+    # --all ensures untested source files are included (shows 0% coverage, not absent)
+    # --include restricts to package src/ and tools/ directories only
+    - name: Generate combined coverage report
+      shell: bash
+      env:
+        NODE_V8_COVERAGE: ${{ github.workspace }}/coverage/tmp
+      run: |
+        set -o pipefail
+        echo "=== Generating coverage report ===" | tee -a coverage-steps.log
+        yarn c8 report \
+          --all \
+          --include 'packages/*/{src,tools}' \
+          --reporter=html-spa \
+          --reporter=json-summary \
+          --reports-dir=coverage/html \
+          2>&1 | tee -a coverage-steps.log
+        # Copy summary JSON to coverage root for easy access
+        cp coverage/html/coverage-summary.json coverage/ 2>/dev/null || true
+        echo "=== Coverage report generated ===" | tee -a coverage-steps.log
+        # Print summary to log
+        if [ -f coverage/coverage-summary.json ]; then
+          echo "=== Coverage Summary ===" | tee -a coverage-steps.log
+          node -e "
+            const s = require('./coverage/coverage-summary.json').total;
+            console.log('Lines:     ' + s.lines.pct + '%');
+            console.log('Functions: ' + s.functions.pct + '%');
+            console.log('Branches:  ' + s.branches.pct + '%');
+            console.log('Statements:' + s.statements.pct + '%');
+          " 2>&1 | tee -a coverage-steps.log
+        fi
+
+    # Step 4: Upload the coverage directory as a GitHub Actions artifact
+    # The artifact "coverage" contains HTML report, JSON summary, and raw V8 data.
+    - name: Upload coverage artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage
+        path: coverage
+        retention-days: 14
