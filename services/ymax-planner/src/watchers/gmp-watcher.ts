@@ -329,17 +329,13 @@ export const lookBackGmp = async ({
     const updateFailedTxLowerBound = (_from: number, to: number) =>
       setTxBlockLowerBound(kvStore, txId, to, FAILED_TX_SCOPE);
 
-    // Options shared by both scans (including an abort signal that is triggered
-    // by whichever finishes first to stop the other).
+    // Options shared by both scans. The abort signal propagates external
+    // cancellation.
     // see `prepareAbortController` in services/ymax-planner/src/main.ts
-    const { abort: abortScans, signal: sharedSignal } = makeAbortController(
+    const { signal: sharedSignal } = makeAbortController(
       undefined,
       signal ? [signal] : [],
     );
-    const passthroughWithAbort = result => {
-      if (result) abortScans();
-      return result;
-    };
     const sharedOpts = {
       provider,
       toBlock,
@@ -349,30 +345,14 @@ export const lookBackGmp = async ({
       signal: sharedSignal,
     };
 
-    const [matchingEvent, failedTx] = await Promise.all([
-      scanEvmLogsInChunks({
-        ...sharedOpts,
-        baseFilter: statusFilter,
-        fromBlock: statusEventLowerBound,
-        onRejectedChunk: updateStatusEventLowerBound,
-        predicate: isMatch,
-      }).then(passthroughWithAbort),
-      scanFailedTxsInChunks({
-        ...sharedOpts,
-        fromBlock: failedTxLowerBound,
-        toAddress: contractAddress,
-        verifyFailedTx: tx => {
-          const data = extractGmpExecuteData(tx.data);
-          return (
-            data?.txId === txId && data.sourceAddress === expectedSourceAddress
-          );
-        },
-        onRejectedChunk: updateFailedTxLowerBound,
-        rpcClient,
-      }).then(passthroughWithAbort),
-    ]);
-
-    abortScans();
+    // Success path first (cheap on all chains: uses eth_getLogs).
+    const matchingEvent = await scanEvmLogsInChunks({
+      ...sharedOpts,
+      baseFilter: statusFilter,
+      fromBlock: statusEventLowerBound,
+      onRejectedChunk: updateStatusEventLowerBound,
+      predicate: isMatch,
+    });
 
     if (matchingEvent) {
       log(`Found matching event`);
@@ -384,6 +364,22 @@ export const lookBackGmp = async ({
         success: true,
       };
     }
+
+    // Failure path second (expensive on Arb/Ava: uses eth_getBlockReceipts).
+    // Only reached when the success scan found nothing in the block range.
+    const failedTx = await scanFailedTxsInChunks({
+      ...sharedOpts,
+      fromBlock: failedTxLowerBound,
+      toAddress: contractAddress,
+      verifyFailedTx: tx => {
+        const data = extractGmpExecuteData(tx.data);
+        return (
+          data?.txId === txId && data.sourceAddress === expectedSourceAddress
+        );
+      },
+      onRejectedChunk: updateFailedTxLowerBound,
+      rpcClient,
+    });
 
     if (failedTx) {
       log(`Found matching failed transaction`);
