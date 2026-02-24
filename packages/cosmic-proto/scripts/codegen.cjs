@@ -488,32 +488,29 @@ builder
       path.join(__dirname, '..', 'src'),
     );
     const codegenFromRoot = path.join(srcFromRoot, 'codegen');
-    const prettierResult = spawnSync(
+    // -T (top-level) to get the root oxfmt config
+    const oxfmtResult = spawnSync(
       'yarn',
-      ['run', '-T', 'prettier', '--write', codegenFromRoot],
+      ['run', '-T', 'oxfmt', codegenFromRoot],
       {
         cwd: repoRoot,
         stdio: 'inherit',
       },
     );
-    if (prettierResult.error) {
-      throw prettierResult.error;
-    }
-    assert.equal(prettierResult.status, 0);
-    console.log('💅 code formatted by Prettier');
+    assert.equal(oxfmtResult.status, 0);
+    console.log('💅 code formatted by oxfmt');
 
     const cleanedFiles = await applyTelescopeFixes({
       outPath,
       includeSigningClientParamsCleanup: true,
     });
     if (cleanedFiles.length > 0) {
-      const prettierHelpersResult = spawnSync(
+      const oxfmtHelpersResult = spawnSync(
         'yarn',
         [
           'run',
           '--top-level',
-          'prettier',
-          '--write',
+          'oxfmt',
           ...cleanedFiles.map(file =>
             path.relative(path.join(__dirname, '..'), file),
           ),
@@ -523,7 +520,7 @@ builder
           stdio: 'inherit',
         },
       );
-      assert.equal(prettierHelpersResult.status, 0);
+      assert.equal(oxfmtHelpersResult.status, 0);
     }
     console.log('🧹 cleaned generated helper compatibility imports');
 

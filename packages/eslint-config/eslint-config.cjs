@@ -16,6 +16,9 @@ module.exports = {
     'airbnb-base',
     'plugin:@endo/recommended',
     'plugin:jsdoc/recommended',
+    // Disable ESLint rules that overlap with the formatter (oxfmt). Despite the
+    // package name, eslint-config-prettier is formatter-agnostic and is also
+    // required transitively by @endo/recommended.
     'prettier',
   ],
   plugins: ['import'],

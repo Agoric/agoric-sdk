@@ -6,9 +6,9 @@
  */
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import Ajv, { type ErrorObject } from 'ajv';
-import prettier from 'prettier';
 import {
   DEFAULT_YMAX_MACHINE_PATH,
   DEFAULT_YMAX_SCHEMA_PATH,
@@ -98,9 +98,18 @@ export default ymaxMachine;
 `;
 };
 
-const formatWithPrettier = async (content: string) => {
-  const config = await prettier.resolveConfig(OUTPUT_PATH);
-  return prettier.format(content, { ...(config ?? {}), filepath: OUTPUT_PATH });
+const formatWithOxfmt = (content: string) => {
+  const oxfmtResult = spawnSync(
+    'yarn',
+    ['run', '--top-level', 'oxfmt', '--stdin-filepath', OUTPUT_PATH],
+    { input: content, encoding: 'utf8' },
+  );
+  if (oxfmtResult.status !== 0 || oxfmtResult.stdout === undefined) {
+    throw new Error(
+      `oxfmt failed: ${oxfmtResult.stderr || 'unknown formatting error'}`,
+    );
+  }
+  return oxfmtResult.stdout;
 };
 
 const ensureGenerated = async (content: string) => {
@@ -137,7 +146,7 @@ const main = async () => {
   const spec = await loadYmaxSpec(DEFAULT_YMAX_MACHINE_PATH);
   await validateSpec(spec);
   const moduleBody = renderModule(spec);
-  const formattedModule = await formatWithPrettier(moduleBody);
+  const formattedModule = formatWithOxfmt(moduleBody);
   await ensureGenerated(formattedModule);
 };
 
