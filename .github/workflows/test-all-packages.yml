@@ -16,7 +16,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  AGORIC_AVA_USE_TAP: true
+  # debugging the code 129 premature exits which seem to be during teardown
+  AGORIC_AVA_USE_TAP: false
   NODE_V8_COVERAGE: coverage
   TEST_COLLECT: 'tee -a _testoutput.txt'
 
