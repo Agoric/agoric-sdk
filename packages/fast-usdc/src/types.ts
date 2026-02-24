@@ -130,6 +130,17 @@ export interface PoolMetrics extends PoolStats {
   shareWorth: Ratio;
 }
 
+/**
+ * Published vstorage values under the `fastUsdc.` hierarchy.
+ */
+export type FastUsdcPublishedPathTypes = {
+  fastUsdc: ContractRecord;
+  'fastUsdc.feeConfig': FeeConfig;
+  'fastUsdc.poolMetrics': PoolMetrics;
+} & {
+  [K in `fastUsdc.txns.${string}`]: TransactionRecord;
+};
+
 export interface ChainPolicy {
   /** `msg.sender` of DepositAndBurn to TokenMessenger must be an attenuated wrapper contract that does not contain `replaceDepositForBurn` */
   attenuatedCttpBridgeAddresses: EvmHash[];

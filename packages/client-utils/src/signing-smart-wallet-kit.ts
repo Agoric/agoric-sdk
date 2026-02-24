@@ -44,6 +44,12 @@ export const makeSigningSmartWalletKitFromClient = async ({
   address: string;
   client: SigningStargateClient;
 }) => {
+  type PollOfferWithoutAddressArgs = [
+    id: Parameters<SmartWalletKit['pollOffer']>[1],
+    minHeight?: Parameters<SmartWalletKit['pollOffer']>[2],
+    untilNumWantsSatisfied?: Parameters<SmartWalletKit['pollOffer']>[3],
+  ];
+
   // Omit deprecated utilities
   const { storedWalletState: _, ...swk } = walletUtils;
 
@@ -52,14 +58,8 @@ export const makeSigningSmartWalletKitFromClient = async ({
     vstorage: swk.vstorage,
     getLastUpdate: () => swk.getLastUpdate(address),
     getCurrentWalletRecord: () => swk.getCurrentWalletRecord(address),
-    pollOffer: (
-      ...args: Parameters<SmartWalletKit['pollOffer']> extends [
-        any,
-        ...infer Rest,
-      ]
-        ? Rest
-        : never
-    ) => swk.pollOffer(address, ...args),
+    pollOffer: (...args: PollOfferWithoutAddressArgs) =>
+      swk.pollOffer(address, ...args),
   };
 
   const sendBridgeAction = async (

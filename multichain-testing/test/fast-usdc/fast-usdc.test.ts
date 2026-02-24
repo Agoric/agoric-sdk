@@ -7,6 +7,7 @@ import { AmountMath, type Brand } from '@agoric/ertp';
 import { divideBy, multiplyBy } from '@agoric/ertp/src/ratio.js';
 import type { USDCProposalShapes } from '@agoric/fast-usdc/src/pool-share-math.js';
 import type { CctpTxEvidence } from '@agoric/fast-usdc/src/types.js';
+import type { TransactionRecord } from '@agoric/fast-usdc/src/types.js';
 import { makeTracer } from '@agoric/internal';
 import type { AccountId, Denom, DenomDetail } from '@agoric/orchestration';
 import type { ExecutionContext, TestFn } from 'ava';
@@ -199,9 +200,9 @@ const makeTestContext = async (t: ExecutionContext) => {
   );
 
   const queryTxRecord = async (txHash: string) => {
-    const record = await common.smartWalletKit.readPublished(
+    const record = (await common.smartWalletKit.readPublished(
       `fastUsdc.txns.${txHash}`,
-    );
+    )) as TransactionRecord;
     if (!record) {
       throw new Error(`no record for ${txHash}`);
     }

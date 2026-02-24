@@ -15,6 +15,7 @@ import { privateKeyToAccount } from 'viem/accounts';
 import type { PortfolioPrivateArgs } from '../src/portfolio.contract.ts';
 import * as contractExports from '../src/portfolio.contract.ts';
 import type { PublishedTx, TxId, TxStatus } from '../src/resolver/types.ts';
+import type { PortfolioPublishedPathTypes } from '../src/type-guards.ts';
 import { makeEvmTrader, makeTrader } from '../tools/portfolio-actors.ts';
 import { makeWallet } from '../tools/wallet-offer-tools.ts';
 import {
@@ -43,7 +44,7 @@ const makeReadPublished = (
       .getDeserialized(`${ROOT_STORAGE_PATH}.${subpath}`)
       .at(-1);
     return val;
-  }) as unknown as VstorageKit['readPublished'];
+  }) as unknown as VstorageKit<PortfolioPublishedPathTypes>['readPublished'];
 
 const makeEvmWalletHandler = async (
   zoe: ZoeService,

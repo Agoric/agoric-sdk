@@ -19,6 +19,7 @@ import type {
 } from '@aglocal/portfolio-contract/tools/network/network-spec.js';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.js';
+import type { PortfolioPublishedPathTypes } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import type { VstorageKit } from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp';
 import type { Brand, NatAmount } from '@agoric/ertp/src/types.js';
@@ -74,7 +75,7 @@ const handleDeposit = async (
   amount: NatAmount,
   feeBrand: Brand<'nat'>,
   powers: {
-    readPublished: VstorageKit['readPublished'];
+    readPublished: VstorageKit<PortfolioPublishedPathTypes>['readPublished'];
     cosmosRest?: CosmosRestClient;
     gasEstimator: GasEstimator;
     spectrumBlockchain?: SpectrumBlockchainSdk;
@@ -226,9 +227,9 @@ test('handleDeposit works with mocked dependencies', async t => {
   };
 
   // Mock VstorageKit
-  const mockVstorageKit: VstorageKit = {
+  const mockVstorageKit: VstorageKit<PortfolioPublishedPathTypes> = {
     readPublished: mockReadPublished,
-  } as VstorageKit;
+  } as VstorageKit<PortfolioPublishedPathTypes>;
 
   const result = await handleDeposit(portfolioKey, deposit, feeBrand, {
     readPublished: mockVstorageKit.readPublished,
@@ -300,9 +301,9 @@ test('handleDeposit handles missing targetAllocation gracefully', async t => {
   };
 
   // Mock VstorageKit
-  const mockVstorageKit: VstorageKit = {
+  const mockVstorageKit: VstorageKit<PortfolioPublishedPathTypes> = {
     readPublished: mockReadPublished,
-  } as VstorageKit;
+  } as VstorageKit<PortfolioPublishedPathTypes>;
 
   const result = await handleDeposit(portfolioKey, deposit, feeBrand, {
     readPublished: mockVstorageKit.readPublished,
@@ -346,9 +347,9 @@ test('handleDeposit handles different position types correctly', async t => {
   };
 
   // Mock VstorageKit
-  const mockVstorageKit: VstorageKit = {
+  const mockVstorageKit: VstorageKit<PortfolioPublishedPathTypes> = {
     readPublished: mockReadPublished,
-  } as VstorageKit;
+  } as VstorageKit<PortfolioPublishedPathTypes>;
 
   const result = await handleDeposit(
     portfolioKey,
