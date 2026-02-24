@@ -248,7 +248,9 @@ jobs:
           if [ "${{ steps.vars.outputs.test }}" = "test" ]; then
             # Bypass the yarn test wrapper so we can determine whether the 129
             # originates in AVA itself or in yarn's process/wrapper handling.
-            node ../../node_modules/ava/entrypoints/cli.mjs --tap | $TEST_COLLECT
+            # Do not force TAP here; this lane is explicitly probing whether
+            # TAP output mode contributes to the crash behavior.
+            node ../../node_modules/ava/entrypoints/cli.mjs | $TEST_COLLECT
           else
             yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
           fi
