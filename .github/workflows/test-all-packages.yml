@@ -246,22 +246,30 @@ jobs:
           # include this exact line for check-untested-packages.mjs to recognize that this package is being tested
           cd packages/swing-store || exit $?
           if [ "${{ steps.vars.outputs.test }}" = "test" ]; then
-            # Bypass the yarn test wrapper so we can determine whether the 129
-            # originates in AVA itself or in yarn's process/wrapper handling.
-            # Do not force TAP here; this lane is explicitly probing whether
-            # TAP output mode contributes to the crash behavior.
-            node ../../node_modules/ava/entrypoints/cli.mjs | $TEST_COLLECT
+            # Bypass the yarn test wrapper so we can determine whether failures
+            # originate in AVA itself or in yarn's process/wrapper handling.
+            #
+            # Also avoid shell pipeline semantics for the AVA invocation, so we
+            # can keep running diagnostics even if AVA segfaults.
+            ava_args=()
+            if [ "${{ matrix.node-version }}" = "20" ]; then
+              echo "swing-store diag: enabling --no-worker-threads on node 20"
+              ava_args+=(--no-worker-threads)
+            fi
+            node ../../node_modules/ava/entrypoints/cli.mjs "${ava_args[@]}" > >(tee -a _testoutput.txt) 2>&1
+            rc=$?
+            pipe_status=("$rc" 0)
           else
             yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+            pipe_status=("${PIPESTATUS[@]}")
+            rc=0
+            for ((idx=${#pipe_status[@]} - 1; idx >= 0; idx--)); do
+              if [ "${pipe_status[$idx]}" -ne 0 ]; then
+                rc="${pipe_status[$idx]}"
+                break
+              fi
+            done
           fi
-          pipe_status=("${PIPESTATUS[@]}")
-          rc=0
-          for ((idx=${#pipe_status[@]} - 1; idx >= 0; idx--)); do
-            if [ "${pipe_status[$idx]}" -ne 0 ]; then
-              rc="${pipe_status[$idx]}"
-              break
-            fi
-          done
           if [ "$rc" -ne 0 ]; then
             echo "::group::swing-store failure diagnostics"
             echo "test command exit code: $rc"
