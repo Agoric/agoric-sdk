@@ -39,6 +39,8 @@ const require = createRequire(import.meta.url);
  */
 const resolveModuleSpecifier = (moduleSpecifier, paths) => {
   try {
+    // Use Node's CJS resolver semantics for parity with agoric script loading.
+    // This can differ from strict ESM resolution behavior.
     return require.resolve(moduleSpecifier, { paths });
   } catch (_err) {
     if (path.isAbsolute(moduleSpecifier)) {
@@ -91,13 +93,32 @@ const parseProposalParts = agoricRunOutput => {
 };
 
 /**
- * @param {string} filePath
+ * Resolve a file path relative to a working directory.
+ *
+ * @param {string | number} filePath
  * @param {string} cwd
  */
-const absoluteFromCwd = (filePath, cwd) =>
-  path.isAbsolute(filePath) ? filePath : path.join(cwd, filePath);
+const resolveFromCwd = (filePath, cwd) => path.resolve(cwd, String(filePath));
 
 /**
+ * @param {FsPromises} fs
+ * @param {string} cwd
+ * @param {string | number} filePath
+ */
+const readTextFromCwd = (fs, cwd, filePath) =>
+  fs.readFile(resolveFromCwd(filePath, cwd), 'utf8');
+
+/**
+ * @param {FsPromises} fs
+ * @param {string} cwd
+ * @param {string | number} filePath
+ */
+const readJSONFromCwd = (fs, cwd, filePath) =>
+  readJSONFile(fs, resolveFromCwd(filePath, cwd));
+
+/**
+ * Materialize in-memory proposal output from writeCoreEval callback records.
+ *
  * @param {CoreEvalMaterialRecord[]} records
  * @param {string} resolvedBuilderPath
  * @param {string} cwd
@@ -156,9 +177,6 @@ const readProposalMaterialsFromPlans = async (
   /** @type {EndoZipBase64Bundle[]} */
   const bundles = [];
 
-  const readTextFile = fileName =>
-    fs.readFile(absoluteFromCwd(fileName, outputDir), 'utf8');
-
   for (const planFile of planFiles) {
     /**
      * @type {{
@@ -170,14 +188,13 @@ const readProposalMaterialsFromPlans = async (
     const plan = await readJSONFile(fs, path.join(outputDir, planFile));
 
     const [jsonPermits, jsCode] = await Promise.all([
-      readTextFile(plan.permit),
-      readTextFile(plan.script),
+      readTextFromCwd(fs, outputDir, plan.permit),
+      readTextFromCwd(fs, outputDir, plan.script),
     ]);
     evals.push({ json_permits: jsonPermits, js_code: jsCode });
 
     for (const bundleInfo of plan.bundles) {
-      const bundlePath = absoluteFromCwd(bundleInfo.fileName, outputDir);
-      bundles.push(await readJSONFile(fs, bundlePath));
+      bundles.push(await readJSONFromCwd(fs, outputDir, bundleInfo.fileName));
 
       const resolvedEntrypoint = resolveModuleSpecifier(bundleInfo.entrypoint, [
         path.dirname(resolvedBuilderPath),
@@ -200,7 +217,7 @@ const readProposalMaterialsFromPlans = async (
 const makeScopedWriteFile = ({ fs, cwd }) => {
   /** @type {typeof fs.writeFile} */
   return async (filePath, data, options) => {
-    const abs = absoluteFromCwd(String(filePath), cwd);
+    const abs = resolveFromCwd(String(filePath), cwd);
     await fs.mkdir(path.dirname(abs), { recursive: true });
     return fs.writeFile(abs, data, options);
   };
@@ -291,9 +308,7 @@ const runWithShell = async ({
   const evals = await Promise.all(
     built.evals.map(async ({ permit, script }) => {
       const [permits, code] = await Promise.all(
-        [permit, script].map(filePath =>
-          fs.readFile(absoluteFromCwd(filePath, cwd), 'utf8'),
-        ),
+        [permit, script].map(filePath => readTextFromCwd(fs, cwd, filePath)),
       );
       return { json_permits: permits, js_code: code };
     }),
@@ -301,7 +316,7 @@ const runWithShell = async ({
 
   const bundles = await Promise.all(
     built.bundles.map(async filePath =>
-      readJSONFile(fs, absoluteFromCwd(filePath, cwd)),
+      readJSONFromCwd(fs, cwd, filePath),
     ),
   );
 
