@@ -66,6 +66,10 @@ export const makeFileRd = (root, { fs = {}, fsp = {}, path = {} } = {}) => {
       /** @param {string} to */
       relative: to => pathio.relative(there, to),
       stat: () => fspio.stat(there),
+      /**
+       * @param {BufferEncoding | { encoding?: null | BufferEncoding; flag?: string; } | null} [options]
+       */
+      read: options => fspio.readFile(there, options),
       readText: () => fspio.readFile(there, 'utf8'),
       readJSON: () => self.readText().then(txt => JSON.parse(txt)),
       /** @param {string} [suffix] */
@@ -97,6 +101,7 @@ freeze(makeFileRd);
 export const makeFileRW = (root, { fs = {}, fsp = {}, path = {} } = {}) => {
   // XXX share dyn with makeFileRd?
   const [fspio, pathio] = [dyn(fsp), dyn(path)];
+  let atomicWriteSequence = 0;
 
   /** @param {string} there */
   const make = there => {
@@ -106,13 +111,67 @@ export const makeFileRW = (root, { fs = {}, fsp = {}, path = {} } = {}) => {
       readOnly: () => ro,
       /** @param {string[]} segments */
       join: (...segments) => make(pathio.join(there, ...segments)),
+      /**
+       * @param {string | Uint8Array} data
+       * @param {*} [options]
+       */
+      write: (data, options) => fspio.writeFile(there, data, options),
       writeText: text => fspio.writeFile(there, text, 'utf8'),
+      /**
+       * @param {string | Uint8Array} data
+       * @param {{ now?: () => number; pid?: number; options?: any }} [atomic]
+       */
+      writeAtomic: async (data, atomic = {}) => {
+        const { now = Date.now, pid = process.pid, options } = atomic;
+        atomicWriteSequence += 1;
+        const tempPath = `${there}.${pid}.${now()}.${atomicWriteSequence}.tmp`;
+        await fspio.writeFile(tempPath, data, { ...(options || {}), flag: 'wx' });
+        await fspio.rename(tempPath, there);
+      },
       unlink: () => fspio.unlink(there),
-      mkdir: () => fspio.mkdir(there, { recursive: true }),
-      rmdir: () => fspio.rmdir(there),
+      /**
+       * @param {{ recursive?: boolean; mode?: string | number }} [options]
+       */
+      mkdir: (options = { recursive: true }) => fspio.mkdir(there, options),
+      /**
+       * @param {string} [prefix]
+       */
+      mkdtemp: async (prefix = '') => {
+        const dirPath = await fspio.mkdtemp(pathio.join(there, prefix));
+        return make(dirPath);
+      },
+      /**
+       * @param {{ recursive?: boolean; force?: boolean; maxRetries?: number; retryDelay?: number }} [options]
+       */
+      rm: options => fspio.rm(there, options),
+      /**
+       * @param {{ recursive?: boolean; maxRetries?: number; retryDelay?: number }} [options]
+       */
+      rmdir: options => fspio.rmdir(there, options),
     };
     return freeze(self);
   };
   return make(root);
 };
 freeze(makeFileRW);
+
+/**
+ * Reify file read/write access where `join()` uses `path.resolve()`.
+ *
+ * @param {string} root
+ * @param {object} [io]
+ * @param {Partial<typeof import('fs')>} [io.fs]
+ * @param {Partial<typeof import('fs/promises')>} [io.fsp]
+ * @param {Partial<typeof import('path')>} [io.path]
+ */
+export const makeFileRWResolve = (
+  root,
+  { fs = {}, fsp = {}, path = {} } = {},
+) => {
+  const resolvePath = {
+    ...path,
+    join: (...segments) => dyn(path).resolve(...segments),
+  };
+  return makeFileRW(root, { fs, fsp, path: resolvePath });
+};
+freeze(makeFileRWResolve);
