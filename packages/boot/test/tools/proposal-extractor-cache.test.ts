@@ -3,12 +3,15 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { createHash } from 'node:crypto';
 import * as fsPromises from 'node:fs/promises';
-import { mkdtemp, mkdir, rm, stat, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, stat, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import os from 'node:os';
 import { join } from 'node:path';
 
-import { makeProposalExtractor } from '../../tools/supports.js';
+import {
+  makeProposalExtractor,
+  type ProposalBuilderResult,
+} from '../../tools/supports.js';
 
 const sha256 = (value: string) =>
   createHash('sha256').update(value).digest('hex');
@@ -107,8 +110,14 @@ test('proposal cache key and on-disk cache contents are explicit', async t => {
       schemaVersion,
     }),
   );
-  const builtMaterials = harden({
-    bundles: [{ moduleFormat: 'endoZipBase64', endoZipBase64: 'AAAA' }],
+  const builtMaterials: ProposalBuilderResult = harden({
+    bundles: [
+      {
+        moduleFormat: 'endoZipBase64',
+        endoZipBase64: 'AAAA',
+        endoZipBase64Sha512: 'fake-sha512-for-test',
+      },
+    ],
     dependencies: [dependencyPath],
     evals: [{ json_permits: '{}', js_code: 'harden({ cached: true });' }],
     modeUsed: 'in-process',
