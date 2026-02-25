@@ -361,7 +361,9 @@ const makeBootProfiler = ({
 
   const queueWrite = () => {
     session.writeQueue = session.writeQueue
-      .catch(() => {})
+      .catch(err => {
+        console.error('boot profiler previous trace write failed', err);
+      })
       .then(async () => {
         const metadataEvents: BootProfileMetadataEvent[] = [
           {
@@ -392,7 +394,9 @@ const makeBootProfiler = ({
           'utf8',
         );
       })
-      .catch(() => {});
+      .catch(err => {
+        console.error('boot profiler trace write failed', err);
+      });
   };
 
   return harden({
@@ -766,18 +770,12 @@ export const makeProposalExtractor = (
     });
 
     dedupe.set(cacheKey, pending);
-    void pending.then(
-      () => {
-        if (dedupe.get(cacheKey) === pending) {
-          dedupe.delete(cacheKey);
-        }
-      },
-      () => {
-        if (dedupe.get(cacheKey) === pending) {
-          dedupe.delete(cacheKey);
-        }
-      },
-    );
+    const cleanupPending = pending.finally(() => {
+      if (dedupe.get(cacheKey) === pending) {
+        dedupe.delete(cacheKey);
+      }
+    });
+    void cleanupPending.catch(() => {});
     return pending;
   };
 
