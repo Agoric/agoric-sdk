@@ -38,6 +38,33 @@ export const makeDirectoryLock = powers => {
     await fs.mkdir(lockRoot, { recursive: true });
     const started = now();
 
+    /** @param {string} path */
+    const mkdirUnlessExists = async path => {
+      try {
+        await fs.mkdir(path);
+        return true;
+      } catch (err) {
+        const e = /** @type {NodeJS.ErrnoException} */ (err);
+        if (e.code === 'EEXIST') {
+          return false;
+        }
+        throw err;
+      }
+    };
+
+    /** @param {string} path */
+    const statUnlessMissing = async path => {
+      try {
+        return await fs.stat(path);
+      } catch (err) {
+        const e = /** @type {NodeJS.ErrnoException} */ (err);
+        if (e.code === 'ENOENT') {
+          return undefined;
+        }
+        throw err;
+      }
+    };
+
     const maybeBreakStaleLock = async () => {
       const ownerText = await fs.readFile(ownerPath, 'utf8').catch(() => '');
       if (ownerText) {
@@ -64,22 +91,21 @@ export const makeDirectoryLock = powers => {
         }
       }
 
-      try {
-        const lockStats = await fs.stat(lockPath);
-        const ageMs = now() - lockStats.mtimeMs;
-        if (ageMs >= staleLockMs) {
-          await fs.rm(lockPath, { recursive: true, force: true });
-          safeEmit({
-            type: 'lock-broken',
-            key,
-            lockPath,
-            reason: 'stale-age',
-            ageMs,
-            staleLockMs,
-          });
-          return true;
-        }
-      } catch {
+      const lockStats = await statUnlessMissing(lockPath);
+      if (!lockStats) {
+        return true;
+      }
+      const ageMs = now() - lockStats.mtimeMs;
+      if (ageMs >= staleLockMs) {
+        await fs.rm(lockPath, { recursive: true, force: true });
+        safeEmit({
+          type: 'lock-broken',
+          key,
+          lockPath,
+          reason: 'stale-age',
+          ageMs,
+          staleLockMs,
+        });
         return true;
       }
 
@@ -87,8 +113,7 @@ export const makeDirectoryLock = powers => {
     };
 
     for (;;) {
-      try {
-        await fs.mkdir(lockPath);
+      if (await mkdirUnlessExists(lockPath)) {
         await fs.writeFile(
           ownerPath,
           JSON.stringify({ pid, createdAt: now() }),
@@ -96,22 +121,17 @@ export const makeDirectoryLock = powers => {
         );
         safeEmit({ type: 'lock-acquired', key, lockPath });
         break;
-      } catch (err) {
-        const e = /** @type {NodeJS.ErrnoException} */ (err);
-        if (e.code !== 'EEXIST') {
-          throw err;
-        }
-        const recovered = await maybeBreakStaleLock();
-        if (recovered) {
-          continue;
-        }
-        const waitedMs = now() - started;
-        safeEmit({ type: 'lock-waiting', key, lockPath, waitedMs });
-        if (waitedMs >= acquireTimeoutMs) {
-          throw Error(`Timed out waiting for cache lock ${lockPath}`);
-        }
-        await delayMs(20);
       }
+      const recovered = await maybeBreakStaleLock();
+      if (recovered) {
+        continue;
+      }
+      const waitedMs = now() - started;
+      safeEmit({ type: 'lock-waiting', key, lockPath, waitedMs });
+      if (waitedMs >= acquireTimeoutMs) {
+        throw Error(`Timed out waiting for cache lock ${lockPath}`);
+      }
+      await delayMs(20);
     }
 
     try {
@@ -136,6 +156,8 @@ let atomicWriteSequence = 0;
  *   now: () => number;
  *   pid: number;
  * }} options
+ * @throws {NodeJS.ErrnoException} when a unique temp file cannot be created
+ *   or the atomic rename fails.
  */
 export const writeFileAtomic = async ({ fs, filePath, data, now, pid }) => {
   atomicWriteSequence += 1;
