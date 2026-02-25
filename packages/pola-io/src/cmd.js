@@ -34,6 +34,7 @@ export const makeCmdRunner = (file, { execFile, defaultEnv } = {}) => {
       /**
        * @param {string[]} args
        * @param {object} [opts]
+       * @param {string} [opts.cwd]
        * @param {Record<string, string | undefined>} [opts.env]
        * @param {string} [opts.encoding]
        * @param {*} [opts.stdio]
