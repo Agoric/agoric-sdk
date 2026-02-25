@@ -8,25 +8,23 @@ import {
 import type { TrafficEntry } from '../../src/cosmos-api.ts';
 
 test('finishTrafficEntries - empty traffic, no slice descriptor', t => {
-  const result = finishTrafficEntries(undefined, undefined, entries => entries);
+  const result = finishTrafficEntries(undefined, undefined, _entries =>
+    t.fail('should not be called on empty slice'),
+  );
   t.deepEqual(result, [], 'returns empty array');
 });
 
 test('finishTrafficEntries - empty traffic, explicit empty slice', t => {
-  const result = finishTrafficEntries(
-    [],
-    { start: 0, end: 0 },
-    entries => entries,
+  const result = finishTrafficEntries([], { start: 0, end: 0 }, _entries =>
+    t.fail('should not be called on empty slice'),
   );
   t.deepEqual(result, [], 'returns empty array');
 });
 
 test('finishTrafficEntries - non-empty traffic, empty slice', t => {
   const traffic = [{ op: 'transfer', seq: 1 }] as TrafficEntry[];
-  const result = finishTrafficEntries(
-    traffic,
-    { start: 1, end: 1 },
-    entries => entries,
+  const result = finishTrafficEntries(traffic, { start: 1, end: 1 }, _entries =>
+    t.fail('should not be called on empty slice'),
   );
   t.deepEqual(result, traffic, 'returns original traffic unchanged');
 });
