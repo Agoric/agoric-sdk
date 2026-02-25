@@ -93,6 +93,67 @@ test('proposal extractor caches materials on disk and reuses across instances', 
   t.true(cacheEvents.some(event => event.type === 'proposal-cache-hit'));
 });
 
+test('proposal cache key and on-disk cache contents are explicit', async t => {
+  const { builderPath, dependencyPath, cacheRoot } = await makeFixture(t);
+  const args = ['--key-shape'];
+  const mode = 'prefer-in-process';
+  const schemaVersion = 'v1';
+  const resolvedBuilderPath = importSpec(builderPath);
+  const expectedCacheKey = sha256(
+    JSON.stringify({
+      args,
+      builderPath: resolvedBuilderPath,
+      mode,
+      schemaVersion,
+    }),
+  );
+  const builtMaterials = harden({
+    bundles: [{ moduleFormat: 'endoZipBase64', endoZipBase64: 'AAAA' }],
+    dependencies: [dependencyPath],
+    evals: [{ json_permits: '{}', js_code: 'harden({ cached: true });' }],
+    modeUsed: 'in-process',
+    resolvedBuilderPath,
+  });
+
+  const extractor = makeProposalExtractor(
+    {
+      buildCoreEvalProposal: async () => builtMaterials,
+      childProcess: {
+        execFileSync: () => {
+          throw Error('shell path should not be used');
+        },
+      },
+      fs: fsPromises,
+    },
+    import.meta.url,
+    { cacheRoot },
+  );
+
+  await extractor(builderPath, args);
+
+  const cacheEntryDir = join(cacheRoot, expectedCacheKey);
+  const metadataPath = join(cacheEntryDir, 'metadata.json');
+  const materialsPath = join(cacheEntryDir, 'materials.json');
+  const metadata = JSON.parse(await fsPromises.readFile(metadataPath, 'utf8'));
+  const materials = JSON.parse(await fsPromises.readFile(materialsPath, 'utf8'));
+
+  t.like(metadata, {
+    args,
+    builderPath: resolvedBuilderPath,
+    mode,
+    schemaVersion,
+    toolVersion: 'boot-proposal-cache-v1',
+  });
+  t.deepEqual(
+    metadata.dependencies.map(dep => dep.path).sort(),
+    [resolvedBuilderPath, dependencyPath].sort(),
+  );
+  t.deepEqual(materials, {
+    evals: builtMaterials.evals,
+    bundles: builtMaterials.bundles,
+  });
+});
+
 test('proposal extractor invalidates cache when dependency content changes', async t => {
   const { builderPath, dependencyPath, cacheRoot } = await makeFixture(t);
 
