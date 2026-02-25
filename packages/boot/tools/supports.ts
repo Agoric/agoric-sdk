@@ -213,7 +213,7 @@ export const getNodeTestVaultsConfig = async ({
 
 type ProposalBuildMode = 'prefer-in-process' | 'in-process-only' | 'shell-only';
 
-interface ProposalBuilderResult {
+export interface ProposalBuilderResult {
   bundles: EndoZipBase64Bundle[];
   dependencies?: string[];
   evals: CoreEvalSDKType[];
