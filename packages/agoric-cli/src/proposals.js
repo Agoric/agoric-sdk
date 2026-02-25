@@ -315,9 +315,7 @@ const runWithShell = async ({
   );
 
   const bundles = await Promise.all(
-    built.bundles.map(async filePath =>
-      readJSONFromCwd(fs, cwd, filePath),
-    ),
+    built.bundles.map(async filePath => readJSONFromCwd(fs, cwd, filePath)),
   );
 
   return harden({
