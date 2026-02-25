@@ -38,10 +38,11 @@ export const makeDirectoryLock = powers => {
     await fs.mkdir(lockRoot, { recursive: true });
     const started = now();
 
-    /** @param {string} path */
-    const mkdirUnlessExists = async path => {
+    /** @param {string} dpath */
+    const mkdirUnlessExists = async dpath => {
+      await null; // avoid accidentally catching synchronous exceptions
       try {
-        await fs.mkdir(path);
+        await fs.mkdir(dpath);
         return true;
       } catch (err) {
         const e = /** @type {NodeJS.ErrnoException} */ (err);
@@ -52,10 +53,11 @@ export const makeDirectoryLock = powers => {
       }
     };
 
-    /** @param {string} path */
-    const statUnlessMissing = async path => {
+    /** @param {string} fpath */
+    const statUnlessMissing = async fpath => {
+      await null; // avoid accidentally catching synchronous exceptions
       try {
-        return await fs.stat(path);
+        return await fs.stat(fpath);
       } catch (err) {
         const e = /** @type {NodeJS.ErrnoException} */ (err);
         if (e.code === 'ENOENT') {
