@@ -210,6 +210,9 @@ export const makeNodeBundleCache = async (
 
   const onEvent = eventSink.onBundleToolEvent || (() => {});
   const optionsKeyFor = options0 => {
+    // Include options in the key on purpose: bundle output may differ by
+    // bundle-source options, and correctness prefers over-segmentation over
+    // accidental cache aliasing.
     try {
       return JSON.stringify(options0 || {});
     } catch {
