@@ -6,8 +6,8 @@ import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
   type WatcherTimeoutOptions,
-} from '../support.ts';
-import { TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
+} from '../evm-scanner.ts';
+import { PendingTxCode, TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
 import {
   deleteTxBlockLowerBound,
   getTxBlockLowerBound,
@@ -30,7 +30,6 @@ const OPERATION_RESULT_SIGNATURE = id('OperationResult(string,bool,bytes)');
 type OperationResultWatch = {
   routerAddress: `0x${string}`;
   provider: WebSocketProvider;
-  expectedId: string;
   chainId: CaipChainId;
   log?: (...args: unknown[]) => void;
   kvStore: KVStore;
@@ -48,33 +47,31 @@ type OperationResultWatch = {
 const parseOperationResultLog = (
   log: Log,
   abiCoder: AbiCoder = new AbiCoder(),
-): { idHash: string; success: boolean; reason: string } => {
+): { idHash: string; success: boolean } => {
   if (!log.topics || log.topics.length < 2 || !log.data) {
     throw new Error('Malformed OperationResult log');
   }
 
   const idHash = log.topics[1];
-  const [success, reason] = abiCoder.decode(['bool', 'bytes'], log.data);
+  const [success] = abiCoder.decode(['bool', 'bytes'], log.data);
 
-  // XXX: decode the reason bytes into a human-readable error message
   return {
     idHash,
     success,
-    reason: reason.length > 0 ? reason : '',
   };
 };
 
 /**
  * Watch for OperationResult events in real-time (live mode).
  *
- * Subscribes to the PortfolioRouter contract and waits for an OperationResult
- * event with the expected instruction ID.
+ * Subscribes to the Router contract and waits for an OperationResult
+ * event with the expected txId.
  */
 export const watchOperationResult = ({
   routerAddress,
   provider,
-  expectedId,
   chainId,
+  txId,
   timeoutMs = TX_TIMEOUT_MS,
   log = () => {},
   setTimeout = globalThis.setTimeout,
@@ -87,14 +84,14 @@ export const watchOperationResult = ({
     }
 
     // For indexed strings, Solidity stores keccak256(string) in the topic
-    const expectedIdHash = id(expectedId);
+    const expectedIdHash = id(txId);
     const filter: Filter = {
       address: routerAddress,
       topics: [OPERATION_RESULT_SIGNATURE, expectedIdHash],
     };
 
     log(
-      `Watching for OperationResult on router ${routerAddress} with id: ${expectedId}`,
+      `Watching for OperationResult on router ${routerAddress} with id: ${txId}`,
     );
 
     let resultFound = false;
@@ -115,25 +112,19 @@ export const watchOperationResult = ({
     const listenForOperationResult = async (eventLog: Log) => {
       await null;
       try {
-        const { idHash, success, reason } = parseOperationResultLog(eventLog);
+        const { idHash, success } = parseOperationResultLog(eventLog);
 
         if (idHash !== expectedIdHash) {
-          log(`ID hash mismatch. Expected: ${expectedIdHash}, Got: ${idHash}`);
           return;
         }
 
-        const txHash = eventLog.transactionHash;
-        log(
-          `✓ ID matches! expectedId=${expectedId} idHash=${idHash} success=${success} reason=${reason} tx=${txHash}`,
-        );
-
         if (success) {
-          // Success case: return immediately without waiting for confirmations
-          // Rationale: Even if a reorg occurs, the transaction will likely succeed again
-          log(`✅ SUCCESS: expectedId=${expectedId} txHash=${txHash}`);
+          const txHash = eventLog.transactionHash;
+          log(
+            `✅ SUCCESS: expectedId=${txId} idHash=${idHash} txHash=${txHash}`,
+          );
           resultFound = true;
-          finish({ settled: true, txHash, success: true });
-          return;
+          return finish({ settled: true, txHash, success: true });
         }
 
         // Failure case: wait for confirmations before declaring failure
@@ -141,7 +132,7 @@ export const watchOperationResult = ({
           eventLog,
           filter,
           parseOperationResultLog,
-          `expectedId=${expectedId}`,
+          `expectedId=${txId}`,
           chainId,
           provider,
           log,
@@ -149,7 +140,7 @@ export const watchOperationResult = ({
 
         if (result) {
           resultFound = true;
-          finish(result);
+          return finish(result);
         }
       } catch (error: any) {
         log(`Error:`, error);
@@ -178,16 +169,17 @@ export const watchOperationResult = ({
 export const lookBackOperationResult = async ({
   routerAddress,
   provider,
-  expectedId,
+  txId,
   publishTimeMs,
   chainId,
   log = () => {},
   signal,
   kvStore,
-  txId,
+  setTimeout = globalThis.setTimeout,
 }: OperationResultWatch & {
   publishTimeMs: number;
   signal?: AbortSignal;
+  setTimeout?: typeof globalThis.setTimeout;
 }): Promise<WatcherResult> => {
   await null;
   try {
@@ -197,14 +189,13 @@ export const lookBackOperationResult = async ({
     );
     const toBlock = await provider.getBlockNumber();
 
-    const savedFromBlock =
-      (await getTxBlockLowerBound(kvStore, txId)) || fromBlock;
+    const savedFromBlock = getTxBlockLowerBound(kvStore, txId) || fromBlock;
 
     // For indexed strings, Solidity stores keccak256(string) in the topic
-    const expectedIdHash = id(expectedId);
+    const expectedIdHash = id(txId);
 
     log(
-      `Searching blocks ${savedFromBlock} → ${toBlock} for OperationResult with id ${expectedId} (hash: ${expectedIdHash})`,
+      `Searching blocks ${savedFromBlock} → ${toBlock} for OperationResult with id ${txId} (hash: ${expectedIdHash})`,
     );
 
     const baseFilter: Filter = {
@@ -214,34 +205,32 @@ export const lookBackOperationResult = async ({
 
     const abiCoder = new AbiCoder();
 
-    const matchingEvent = await scanEvmLogsInChunks(
-      {
-        provider,
-        baseFilter,
-        fromBlock: savedFromBlock,
-        toBlock,
-        chainId,
-        log,
-        signal,
-        onRejectedChunk: async (_, to) => {
-          await setTxBlockLowerBound(kvStore, txId, to);
-        },
-      },
-      ev => {
+    const matchingEvent = await scanEvmLogsInChunks({
+      provider,
+      baseFilter,
+      fromBlock: savedFromBlock,
+      toBlock,
+      chainId,
+      setTimeout,
+      log,
+      signal,
+      onRejectedChunk: (_from, to) => setTxBlockLowerBound(kvStore, txId, to),
+      predicate: ev => {
         try {
           const parsed = parseOperationResultLog(ev, abiCoder);
           log(`Check: idHash=${parsed.idHash} success=${parsed.success}`);
-          // The filter already ensures idHash matches, but we verify anyway
           return parsed.idHash === expectedIdHash;
         } catch (e) {
           log(`Parse error:`, e);
           return false;
         }
       },
-    );
+    });
 
     if (!matchingEvent) {
-      log(`No matching OperationResult found`);
+      log(
+        `[${PendingTxCode.ROUTED_GMP_TX_NOT_FOUND}] No matching OperationResult found`,
+      );
       return { settled: false };
     }
 
@@ -249,8 +238,7 @@ export const lookBackOperationResult = async ({
     const txHash = matchingEvent.transactionHash;
 
     if (parsed.success) {
-      // Success case: return immediately
-      log(`✅ SUCCESS: expectedId=${expectedId} txHash=${txHash}`);
+      log(`✅ SUCCESS: txId=${txId} txHash=${txHash}`);
       deleteTxBlockLowerBound(kvStore, txId);
       return { settled: true, txHash, success: true };
     }
@@ -260,7 +248,7 @@ export const lookBackOperationResult = async ({
       matchingEvent,
       baseFilter,
       logEntry => parseOperationResultLog(logEntry, abiCoder),
-      `expectedId=${expectedId}`,
+      `txId=${txId}`,
       chainId,
       provider,
       log,

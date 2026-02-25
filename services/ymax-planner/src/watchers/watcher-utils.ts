@@ -4,7 +4,7 @@ import type {
   Filter,
   Log,
 } from 'ethers';
-import { Interface, AbiCoder, getAddress } from 'ethers';
+import { Interface, AbiCoder, getAddress, keccak256 } from 'ethers';
 import type { CaipChainId } from '@agoric/orchestration';
 import { depositFactoryCreateAndDepositInputs } from '@aglocal/portfolio-contract/src/utils/evm-orch-factory.ts';
 import { decodeAbiParameters } from 'viem';
@@ -121,6 +121,21 @@ export const extractDepositFactoryExecuteData = (
   } catch {
     return null;
   }
+};
+
+/**
+ * Parses the `execute(bytes32, string, string, bytes)` calldata, extracts
+ * the raw `payload` bytes (arg index 3), and returns `keccak256(payload)`.
+ *
+ * @param data - Transaction input data (the full `execute()` calldata)
+ * @returns keccak256(payload) hex string, or null if parsing fails
+ */
+export const extractPayloadHash = (data: string): string | null => {
+  const parsed = axelarExecuteIface.parseTransaction({ data });
+  if (!parsed) return null;
+
+  const [_commandId, _sourceChain, _sourceAddress, payload] = parsed.args;
+  return keccak256(payload);
 };
 //#endregion
 
@@ -294,49 +309,51 @@ export const handleOperationFailure = async <T extends { success: boolean }>(
   provider: WebSocketProvider,
   log: (...args: unknown[]) => void,
 ): Promise<{ settled: true; txHash: string; success: boolean } | null> => {
-  await null;
   const txHash = eventLog.transactionHash;
-  const eventBlock = eventLog.blockNumber;
+  const originalBlock = eventLog.blockNumber;
 
   const confirmations = getConfirmationsRequired(chainId);
   const currentBlock = await provider.getBlockNumber();
-  const confirmedBlocks = currentBlock - eventBlock;
+  const confirmedBlocks = currentBlock - originalBlock;
+
+  let finalBlock = originalBlock;
 
   if (confirmedBlocks < confirmations) {
     log(
       `⏳ FAILURE detected, waiting for ${confirmations} confirmations (have ${confirmedBlocks}): ${identifier} txHash=${txHash}`,
     );
 
-    const confirmedReceipt = await provider.waitForTransaction(
-      txHash,
-      confirmations,
-    );
+    const receipt = await provider.waitForTransaction(txHash, confirmations);
 
-    if (!confirmedReceipt) {
+    if (!receipt) {
       log(
-        `Transaction ${txHash} was not confirmed after waiting (possibly reorged out)`,
+        `Transaction ${txHash} not confirmed after waiting (possibly reorged out)`,
       );
       return null;
     }
+
+    // If reorged, the tx may have landed in a different block.
+    finalBlock = receipt.blockNumber;
   }
 
-  // Re-fetch the logs to verify the failure is still present
-  const confirmedLogs = await provider.getLogs({
+  // Re-fetch logs to verify the failure is still present.
+  // Use finalBlock (post-wait)
+  const logsInBlock = await provider.getLogs({
     ...filter,
-    fromBlock: eventBlock,
-    toBlock: eventBlock,
+    fromBlock: finalBlock,
+    toBlock: finalBlock,
   });
 
-  const confirmedEvent = confirmedLogs.find(l => l.transactionHash === txHash);
+  const confirmedLog = logsInBlock.find(l => l.transactionHash === txHash);
 
-  if (!confirmedEvent) {
+  if (!confirmedLog) {
     log(
-      `Event not found after ${confirmations} confirmations (possibly reorged): ${identifier}`,
+      `Event not found after ${confirmations} confirmations (possibly reorged): ${identifier} txHash=${txHash}`,
     );
     return null;
   }
 
-  const confirmedParsed = parseEvent(confirmedEvent);
+  const confirmedParsed = parseEvent(confirmedLog);
 
   if (confirmedParsed.success) {
     log(

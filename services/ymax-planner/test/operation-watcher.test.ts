@@ -77,7 +77,6 @@ test('watchOperationResult detects successful OperationResult event (live mode)'
   const result = await watchOperationResult({
     routerAddress: routerAddress as `0x${string}`,
     provider,
-    expectedId,
     chainId,
     kvStore,
     txId,
@@ -141,7 +140,6 @@ test('watchOperationResult detects failed OperationResult event with finality pr
   const result = await watchOperationResult({
     routerAddress: routerAddress as `0x${string}`,
     provider,
-    expectedId,
     chainId,
     kvStore,
     txId,
@@ -186,7 +184,6 @@ test('lookBackOperationResult finds successful OperationResult event (lookback m
   const result = await lookBackOperationResult({
     routerAddress: routerAddress as `0x${string}`,
     provider,
-    expectedId,
     chainId,
     kvStore,
     txId,
@@ -247,7 +244,6 @@ test('lookBackOperationResult finds failed OperationResult event with finality p
   const result = await lookBackOperationResult({
     routerAddress: routerAddress as `0x${string}`,
     provider,
-    expectedId,
     chainId,
     kvStore,
     txId,
