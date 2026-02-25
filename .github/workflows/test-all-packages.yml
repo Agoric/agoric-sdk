@@ -204,7 +204,7 @@ jobs:
           export NODE_OPTIONS="--require=$diag_module ${NODE_OPTIONS:-}"
 
           # include the following string for check-untested-packages.mjs to believe that this package is being tested
-          # cd packages/swingset-runner && yarn ${{ steps.vars.outputs.test }}
+          # cd packages/swing-store && yarn ${{ steps.vars.outputs.test }}
           # now actually run this test command, so that we get the diagnostics on this package if it fails
           cd packages/swing-store || exit $?
 
