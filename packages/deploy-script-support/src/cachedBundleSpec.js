@@ -1,5 +1,6 @@
 import { Fail } from '@endo/errors';
-import { writeFileAtomic } from '@agoric/internal/src/build-cache.js';
+import pathAmbient from 'node:path';
+import { makeFileRWResolve } from '@agoric/pola-io';
 
 /**
  * @import {promises} from 'fs';
@@ -22,22 +23,20 @@ export const makeCacheAndGetBundleSpec =
 
     typeof hash === 'string' || Fail`bundle hash ${hash} must be a string`;
     const bundleID = `b1-${hash}`;
-    const cacheFile = pathResolve(cacheDir, `${bundleID}.json`);
+    const cacheDirRoot = makeFileRWResolve(pathResolve(cacheDir), {
+      fsp: fs,
+      path: pathAmbient,
+    });
+    const cacheFile = cacheDirRoot.join(`${bundleID}.json`);
 
-    await fs.mkdir(cacheDir, { recursive: true });
+    await cacheDirRoot.mkdir({ recursive: true });
     try {
-      await fs.stat(cacheFile);
+      await cacheFile.readOnly().stat();
     } catch (e) {
       if (e.code !== 'ENOENT') {
         throw e;
       }
-      await writeFileAtomic({
-        fs,
-        filePath: cacheFile,
-        data: JSON.stringify(bundle, null, 2),
-        now,
-        pid,
-      });
+      await cacheFile.writeAtomic(JSON.stringify(bundle, null, 2), { now, pid });
     }
-    return harden({ bundleID, fileName: cacheFile });
+    return harden({ bundleID, fileName: String(cacheFile) });
   };

@@ -6,6 +6,8 @@ import fsRaw from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
+import { promisify } from 'node:util';
+import { makeCmdRunner, makeFileRWResolve } from '@agoric/pola-io';
 
 import makeScratchPad from '@agoric/internal/src/scratch.js';
 
@@ -15,6 +17,9 @@ import { makeScriptLoader } from './scripts.js';
 /** @import {EndoZipBase64Bundle} from '@agoric/swingset-vat' */
 /** @import {CoreEvalSDKType} from '@agoric/cosmic-proto/swingset/swingset.js' */
 /** @import {CoreEvalMaterialRecord} from '@agoric/deploy-script-support/src/writeCoreEvalParts.js' */
+/** @import {CmdRunner} from '@agoric/pola-io' */
+/** @import {FileRd} from '@agoric/pola-io' */
+/** @import {FileRW} from '@agoric/pola-io' */
 
 const consoleThis = console;
 
@@ -49,16 +54,6 @@ const resolveModuleSpecifier = (moduleSpecifier, paths) => {
 };
 
 /**
- * @param {FsPromises} fs
- * @param {string} filePath
- */
-const readJSONFile = async (fs, filePath) => {
-  await null;
-  const data = await fs.readFile(filePath, 'utf8');
-  return harden(JSON.parse(data));
-};
-
-/**
  * @param {string} agoricRunOutput
  */
 const parseProposalParts = agoricRunOutput => {
@@ -89,13 +84,6 @@ const parseProposalParts = agoricRunOutput => {
 
   return { evals, bundles };
 };
-
-/**
- * @param {string} filePath
- * @param {string} cwd
- */
-const absoluteFromCwd = (filePath, cwd) =>
-  path.isAbsolute(filePath) ? filePath : path.join(cwd, filePath);
 
 /**
  * @param {CoreEvalMaterialRecord[]} records
@@ -132,21 +120,19 @@ const materializeFromRecords = (records, resolvedBuilderPath, cwd) => {
 };
 
 /**
- * @param {FsPromises} fs
- * @param {string} outputDir
+ * @param {FileRd} cwd
  * @param {string} resolvedBuilderPath
  */
-const readProposalMaterialsFromPlans = async (
-  fs,
-  outputDir,
-  resolvedBuilderPath,
-) => {
-  const files = await fs.readdir(outputDir);
-  const planFiles = files.filter(f => f.endsWith('-plan.json')).sort();
+const readProposalMaterialsFromPlans = async (cwd, resolvedBuilderPath) => {
+  const entries = await cwd.readdir();
+  const planFiles = entries
+    .map(entry => entry.basename())
+    .filter(f => f.endsWith('-plan.json'))
+    .sort();
 
   // TODO: Replace this with metadata capture during writeCoreEval execution.
   if (!planFiles.length) {
-    throw Error(`No core-eval plan files found in ${outputDir}`);
+    throw Error(`No core-eval plan files found in ${cwd}`);
   }
 
   const dependencySet = new Set([resolvedBuilderPath]);
@@ -156,8 +142,7 @@ const readProposalMaterialsFromPlans = async (
   /** @type {EndoZipBase64Bundle[]} */
   const bundles = [];
 
-  const readTextFile = fileName =>
-    fs.readFile(absoluteFromCwd(fileName, outputDir), 'utf8');
+  const readTextFile = fileName => cwd.join(fileName).readText();
 
   for (const planFile of planFiles) {
     /**
@@ -167,7 +152,7 @@ const readProposalMaterialsFromPlans = async (
      *   bundles: Array<{ entrypoint: string; fileName: string }>;
      * }}
      */
-    const plan = await readJSONFile(fs, path.join(outputDir, planFile));
+    const plan = harden(await cwd.join(planFile).readJSON());
 
     const [jsonPermits, jsCode] = await Promise.all([
       readTextFile(plan.permit),
@@ -176,12 +161,11 @@ const readProposalMaterialsFromPlans = async (
     evals.push({ json_permits: jsonPermits, js_code: jsCode });
 
     for (const bundleInfo of plan.bundles) {
-      const bundlePath = absoluteFromCwd(bundleInfo.fileName, outputDir);
-      bundles.push(await readJSONFile(fs, bundlePath));
+      bundles.push(await cwd.join(bundleInfo.fileName).readJSON());
 
       const resolvedEntrypoint = resolveModuleSpecifier(bundleInfo.entrypoint, [
         path.dirname(resolvedBuilderPath),
-        outputDir,
+        String(cwd),
       ]);
       dependencySet.add(resolvedEntrypoint);
     }
@@ -195,21 +179,17 @@ const readProposalMaterialsFromPlans = async (
 };
 
 /**
- * @param {{ fs: FsPromises; cwd: string; }} param0
+ * @param {FileRW} cwd
  */
-const makeScopedWriteFile = ({ fs, cwd }) => {
-  /** @type {typeof fs.writeFile} */
-  return async (filePath, data, options) => {
-    const abs = absoluteFromCwd(String(filePath), cwd);
-    await fs.mkdir(path.dirname(abs), { recursive: true });
-    return fs.writeFile(abs, data, options);
-  };
+const makeScopedWriteFile = cwd => async (filePath, data, options) => {
+  const there = cwd.join(String(filePath));
+  await cwd.join(path.dirname(String(there))).mkdir({ recursive: true });
+  return there.write(data, options);
 };
 
 /**
  * @param {{
- *   fs: FsPromises;
- *   cwd: string;
+ *   cwd: FileRW;
  *   resolvedBuilderPath: string;
  *   args: string[];
  *   now: () => number;
@@ -218,7 +198,6 @@ const makeScopedWriteFile = ({ fs, cwd }) => {
  * }} param0
  */
 const runInProcess = async ({
-  fs,
   cwd,
   resolvedBuilderPath,
   args,
@@ -226,6 +205,8 @@ const runInProcess = async ({
   cacheDir,
   console,
 }) => {
+  const writeFile = makeScopedWriteFile(cwd);
+
   /** @type {CoreEvalMaterialRecord[]} */
   const coreEvalRecords = [];
   const endowments = {
@@ -235,7 +216,7 @@ const runInProcess = async ({
       coreEvalRecords.push(record);
     },
     scriptArgs: args,
-    writeFile: makeScopedWriteFile({ fs, cwd }),
+    writeFile,
   };
 
   const runScript = makeScriptLoader(
@@ -245,7 +226,7 @@ const runInProcess = async ({
       rawArgs: ['run', resolvedBuilderPath, ...args],
       endowments,
     },
-    { fs, console },
+    { fs: { writeFile }, console },
   );
 
   const homeP = Promise.resolve({ scratch: Promise.resolve(makeScratchPad()) });
@@ -254,46 +235,41 @@ const runInProcess = async ({
   const materialized = materializeFromRecords(
     coreEvalRecords,
     resolvedBuilderPath,
-    cwd,
+    String(cwd),
   );
   if (materialized) {
     return materialized;
   }
 
-  return readProposalMaterialsFromPlans(fs, cwd, resolvedBuilderPath);
+  return readProposalMaterialsFromPlans(cwd.readOnly(), resolvedBuilderPath);
 };
 
 /**
  * @param {{
- *   fs: FsPromises;
- *   cwd: string;
+ *   cwd: FileRW;
  *   resolvedBuilderPath: string;
  *   args: string[];
- *   childProcess: Pick<typeof import('node:child_process'), 'execFileSync'>;
+ *   agoricRunner: CmdRunner;
  * }} param0
  */
 const runWithShell = async ({
-  fs,
   cwd,
   resolvedBuilderPath,
   args,
-  childProcess,
+  agoricRunner,
 }) => {
-  const req = createRequire(import.meta.url);
-  const agoricEntrypoint = req.resolve('agoric/src/entrypoint.js');
-  const agoricRunOutput = childProcess.execFileSync(
-    agoricEntrypoint,
+  const { stdout } = await agoricRunner.exec(
     ['run', resolvedBuilderPath, ...args],
-    { cwd },
+    { cwd: String(cwd) },
   );
 
-  const built = parseProposalParts(agoricRunOutput.toString());
+  const built = parseProposalParts(String(stdout || ''));
 
   const evals = await Promise.all(
     built.evals.map(async ({ permit, script }) => {
       const [permits, code] = await Promise.all(
         [permit, script].map(filePath =>
-          fs.readFile(absoluteFromCwd(filePath, cwd), 'utf8'),
+          cwd.join(filePath).readOnly().readText(),
         ),
       );
       return { json_permits: permits, js_code: code };
@@ -301,9 +277,7 @@ const runWithShell = async ({
   );
 
   const bundles = await Promise.all(
-    built.bundles.map(async filePath =>
-      readJSONFile(fs, absoluteFromCwd(filePath, cwd)),
-    ),
+    built.bundles.map(filePath => cwd.join(filePath).readOnly().readJSON()),
   );
 
   return harden({
@@ -317,38 +291,53 @@ const runWithShell = async ({
  * @param {{
  *   builderPath: string;
  *   args?: string[];
- *   cwd?: string;
+ *   cwd?: FileRW;
+ *   cwdPath?: string;
  *   mode?: ProposalBuildMode;
  *   cacheDir?: string;
- *   fs?: FsPromises;
  *   now?: () => number;
  *   console?: Console;
- *   childProcess?: Pick<typeof import('node:child_process'), 'execFileSync'>;
+ *   childProcess?: Pick<typeof import('node:child_process'), 'execFile'>;
+ *   agoricRunner?: CmdRunner;
  * }} opts
  * @returns {Promise<ProposalBuildResult>}
  */
 export const buildCoreEvalProposal = async ({
   builderPath,
   args = [],
-  cwd = process.cwd(),
+  cwd,
+  cwdPath = process.cwd(),
   mode = 'prefer-in-process',
   cacheDir = path.join(os.homedir(), '.agoric', 'cache'),
-  fs = fsRaw.promises,
   now = Date.now,
   console = consoleThis,
   childProcess = childProcessAmbient,
+  agoricRunner = makeCmdRunner(
+    createRequire(import.meta.url).resolve('agoric/src/entrypoint.js'),
+    {
+      execFile: promisify(childProcess.execFile),
+      defaultEnv: process.env,
+    },
+  ),
 }) => {
   if (!builderPath) {
     throw Error('builderPath is required');
   }
   await null;
 
-  const resolvedBuilderPath = resolveModuleSpecifier(builderPath, [cwd]);
+  const cwdCap =
+    cwd ||
+    makeFileRWResolve(path.resolve(cwdPath), {
+      fs: fsRaw,
+      fsp: fsRaw.promises,
+      path,
+    });
+  const cwdAbs = String(cwdCap);
+  const resolvedBuilderPath = resolveModuleSpecifier(builderPath, [cwdAbs]);
 
   const inProcess = async () =>
     runInProcess({
-      fs,
-      cwd,
+      cwd: cwdCap,
       resolvedBuilderPath,
       args,
       now,
@@ -361,11 +350,10 @@ export const buildCoreEvalProposal = async ({
 
   const shell = async () =>
     runWithShell({
-      fs,
-      cwd,
+      cwd: cwdCap,
       resolvedBuilderPath,
       args,
-      childProcess,
+      agoricRunner,
     }).then(result => ({
       ...result,
       modeUsed: /** @type {const} */ ('shell'),

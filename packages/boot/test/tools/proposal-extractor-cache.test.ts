@@ -7,12 +7,20 @@ import { mkdtemp, mkdir, rm, stat, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import os from 'node:os';
 import { join } from 'node:path';
+import { makeCmdRunner } from '@agoric/pola-io';
+import tmp from 'tmp';
+import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
 
 import { makeProposalExtractor } from '../../tools/supports.js';
 
 const sha256 = (value: string) =>
   createHash('sha256').update(value).digest('hex');
 const importSpec = createRequire(import.meta.url).resolve;
+const rejectedExecFile = async () => {
+  throw Error('shell path should not be used');
+};
+const agoricRunner = makeCmdRunner('agoric', { execFile: rejectedExecFile });
+const makeTempDir = makeTempDirFactory(tmp);
 
 const makeFixture = async t => {
   const root = await mkdtemp(join(os.tmpdir(), 'boot-proposal-cache-'));
@@ -53,12 +61,11 @@ test('proposal extractor caches materials on disk and reuses across instances', 
   const extractorA = makeProposalExtractor(
     {
       buildCoreEvalProposal: fakeBuilder,
-      childProcess: {
-        execFileSync: () => {
-          throw Error('shell path should not be used');
-        },
-      },
+      agoricRunner,
       fs: fsPromises,
+      now: Date.now,
+      warn: () => {},
+      makeTempDir,
     },
     import.meta.url,
     {
@@ -75,12 +82,11 @@ test('proposal extractor caches materials on disk and reuses across instances', 
   const extractorB = makeProposalExtractor(
     {
       buildCoreEvalProposal: fakeBuilder,
-      childProcess: {
-        execFileSync: () => {
-          throw Error('shell path should not be used');
-        },
-      },
+      agoricRunner,
       fs: fsPromises,
+      now: Date.now,
+      warn: () => {},
+      makeTempDir,
     },
     import.meta.url,
     { cacheRoot },
@@ -111,12 +117,11 @@ test('proposal extractor invalidates cache when dependency content changes', asy
   const extractor = makeProposalExtractor(
     {
       buildCoreEvalProposal: fakeBuilder,
-      childProcess: {
-        execFileSync: () => {
-          throw Error('shell path should not be used');
-        },
-      },
+      agoricRunner,
       fs: fsPromises,
+      now: Date.now,
+      warn: () => {},
+      makeTempDir,
     },
     import.meta.url,
     { cacheRoot },
@@ -150,12 +155,11 @@ test('prefer-in-process falls back to shell-only mode when builder throws', asyn
   const extractor = makeProposalExtractor(
     {
       buildCoreEvalProposal: fakeBuilder,
-      childProcess: {
-        execFileSync: () => {
-          throw Error('shell child process should not run in this unit test');
-        },
-      },
+      agoricRunner,
       fs: fsPromises,
+      now: Date.now,
+      warn: () => {},
+      makeTempDir,
     },
     import.meta.url,
     { cacheRoot, mode: 'prefer-in-process' },
@@ -211,12 +215,11 @@ test('stale/dead lock is recovered before building', async t => {
   const extractor = makeProposalExtractor(
     {
       buildCoreEvalProposal: fakeBuilder,
-      childProcess: {
-        execFileSync: () => {
-          throw Error('shell path should not be used');
-        },
-      },
+      agoricRunner,
       fs: fsPromises,
+      now: Date.now,
+      warn: () => {},
+      makeTempDir,
     },
     import.meta.url,
     {

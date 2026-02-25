@@ -1,16 +1,19 @@
 import { makeNodeBundleCache as wrappedMaker } from '@endo/bundle-source/cache.js';
 import styles from 'ansi-styles'; // less authority than 'chalk'
+import * as fs from 'node:fs';
 import * as fsPromises from 'fs/promises';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { setTimeout as delay } from 'timers/promises';
 import { makeDirectoryLock } from '@agoric/internal/src/build-cache.js';
+import { makeFileRWResolve } from '@agoric/pola-io';
 
 /**
  * @import {EReturn} from '@endo/far';
  * @import {BuildCacheEvent} from '@agoric/internal/src/build-cache-types.js';
  * @import {BundleOptions, ModuleFormat} from '@endo/bundle-source';
+ * @import {FileRW} from '@agoric/pola-io';
  */
 
 /** @typedef {EReturn<typeof wrappedMaker>} WrappedBundleCache */
@@ -63,6 +66,7 @@ import { makeDirectoryLock } from '@agoric/internal/src/build-cache.js';
  */
 /**
  * @typedef {{
+ *   root: FileRW,
  *   delayMs: (ms: number) => Promise<unknown>,
  *   eventSink?: BundleToolEventSink,
  *   isPidAlive: (pid: number) => boolean,
@@ -122,6 +126,7 @@ harden(inferLogPhase);
 
 /**
  * @param {{
+ *   root?: FileRW,
  *   delayMs?: (ms: number) => Promise<unknown>,
  *   eventSink?: BundleToolEventSink,
  *   isPidAlive?: (pid: number) => boolean,
@@ -134,6 +139,11 @@ harden(inferLogPhase);
  */
 export const makeAmbientBundleToolPowers = (options = {}) => {
   const {
+    root = makeFileRWResolve(path.parse(process.cwd()).root, {
+      fs,
+      fsp: fsPromises,
+      path,
+    }),
     delayMs = ms => delay(ms),
     eventSink = defaultBundleToolEventSink,
     isPidAlive = lockPid => {
@@ -152,6 +162,7 @@ export const makeAmbientBundleToolPowers = (options = {}) => {
     pid = process.pid,
   } = options;
   return harden({
+    root,
     delayMs,
     eventSink,
     isPidAlive,
@@ -177,6 +188,7 @@ export const makeNodeBundleCache = async (
   powers,
 ) => {
   const {
+    root,
     delayMs,
     eventSink = defaultBundleToolEventSink,
     isPidAlive,
@@ -247,7 +259,7 @@ export const makeNodeBundleCache = async (
   /** @type {Map<string, Promise<unknown>>} */
   const inProcessLoads = new Map();
   const { withLock } = makeDirectoryLock({
-    fs: fsPromises,
+    root,
     delayMs,
     now,
     pid,

@@ -3,10 +3,12 @@
 
 import childProcessAmbient from 'node:child_process';
 import { createHash } from 'node:crypto';
+import * as fsAmbient from 'node:fs';
 import { promises as fsAmbientPromises } from 'node:fs';
 import { createRequire } from 'node:module';
+import * as pathAmbient from 'node:path';
 import { basename, dirname, join, resolve as pathResolve } from 'node:path';
-import { inspect } from 'node:util';
+import { inspect, promisify } from 'node:util';
 import tmp from 'tmp';
 
 import type { TypedPublished } from '@agoric/client-utils';
@@ -21,7 +23,6 @@ import {
 } from '@agoric/internal';
 import {
   makeDirectoryLock,
-  writeFileAtomic,
 } from '@agoric/internal/src/build-cache.js';
 import type { BuildCacheEvent } from '@agoric/internal/src/build-cache-types.js';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal/board-client-utils.js';
@@ -50,6 +51,12 @@ import {
   makeAmbientBundleToolPowers,
   makeNodeBundleCache,
 } from '@agoric/swingset-vat/tools/bundleTool.js';
+import {
+  makeCmdRunner,
+  makeFileRWResolve,
+  type CmdRunner,
+  type FileRW,
+} from '@agoric/pola-io';
 import {
   makeRunUtils,
   type RunHarness,
@@ -160,6 +167,10 @@ export const keyArrayEqual = (
  * @param options.configOverrides - Other SwingSet options to set in the config
    (may be overridden by more specific options such as `bundleDir` and
    `defaultManagerType`)
+ * @param options.powers - Capabilities for deterministic config file generation
+ * @param options.powers.configDir - Directory authority used to create/write config files
+ * @param options.powers.now - Wall-clock source used for timestamped filenames
+ * @param options.powers.random - Random source used to avoid filename collisions
  * @returns Path to the generated config file
  */
 export const getNodeTestVaultsConfig = async ({
@@ -168,7 +179,25 @@ export const getNodeTestVaultsConfig = async ({
   defaultManagerType = 'local' as ManagerType,
   discriminator = '',
   configOverrides = {},
+  powers,
+}: {
+  bundleDir: FileRW;
+  configPath: string;
+  defaultManagerType?: ManagerType;
+  discriminator?: string;
+  configOverrides?: Partial<SwingSetConfig>;
+  powers: {
+    configDir?: FileRW;
+    now: () => number;
+    random: () => number;
+  };
 }) => {
+  const {
+    configDir = bundleDir,
+    now,
+    random,
+  } = powers;
+  const bundleDirPath = String(configDir);
   const configFromFile: SwingSetConfig & { coreProposals?: any[] } = NonNullish(
     await loadSwingsetConfigFile(configPath),
   );
@@ -190,25 +219,21 @@ export const getNodeTestVaultsConfig = async ({
     //     - timing results more accurately reflect production
     defaultManagerType,
     // speed up build (60s down to 10s in testing)
-    bundleCachePath: bundleDir,
+    bundleCachePath: bundleDirPath,
   };
-  await fsAmbientPromises.mkdir(bundleDir, { recursive: true });
+  await configDir.mkdir({ recursive: true });
 
   // make an almost-certainly-unique file name with a fixed-length prefix
   const configFilenameParts = [
     'config',
     discriminator,
-    new Date().toISOString().replaceAll(/[^0-9TZ]/g, ''),
-    `${Math.random()}`.replace(/.*[.]/, '').padEnd(8, '0').slice(0, 8),
+    new Date(now()).toISOString().replaceAll(/[^0-9TZ]/g, ''),
+    `${random()}`.replace(/.*[.]/, '').padEnd(8, '0').slice(0, 8),
     basename(configPath),
   ].filter(s => !!s);
-  const testConfigPath = `${bundleDir}/${configFilenameParts.join('.')}`;
-  await fsAmbientPromises.writeFile(
-    testConfigPath,
-    JSON.stringify(config),
-    'utf-8',
-  );
-  return testConfigPath;
+  const testConfig = configDir.join(configFilenameParts.join('.'));
+  await testConfig.writeText(JSON.stringify(config));
+  return String(testConfig);
 };
 
 type ProposalBuildMode = 'prefer-in-process' | 'in-process-only' | 'shell-only';
@@ -225,17 +250,18 @@ interface Powers {
   buildCoreEvalProposal?: (opts: {
     args?: string[];
     builderPath: string;
+    agoricRunner?: CmdRunner;
     cacheDir?: string;
-    childProcess?: Pick<typeof import('node:child_process'), 'execFileSync'>;
     console?: Pick<Console, 'warn'>;
-    cwd?: string;
-    fs?: typeof import('node:fs/promises');
+    cwd?: FileRW;
     mode?: ProposalBuildMode;
     now?: () => number;
   }) => Promise<ProposalBuilderResult>;
-  childProcess: Pick<typeof import('node:child_process'), 'execFileSync'>;
+  agoricRunner: CmdRunner;
   fs: typeof import('node:fs/promises');
-  now?: () => number;
+  now: () => number;
+  warn: (...args: unknown[]) => void;
+  makeTempDir: (prefix: string) => [string, () => void | Promise<void>];
 }
 
 interface ProposalCacheDependency {
@@ -255,7 +281,7 @@ interface ProposalCacheMetadata {
 }
 
 interface ProposalExtractorOptions {
-  cacheRoot?: string;
+  cacheRoot: string;
   mode?: ProposalBuildMode;
   onCacheEvent?: (event: ProposalExtractorEvent) => void;
   schemaVersion?: string;
@@ -324,16 +350,18 @@ const isEnabledProfileSetting = (value: string | undefined) => {
 };
 
 const makeBootProfiler = ({
-  cwd = process.cwd(),
-  env = process.env,
-  fs = fsAmbientPromises,
-  pid = process.pid,
+  cwd,
+  env,
+  fs,
+  pid,
+  monotonicNow,
 }: {
-  cwd?: string;
-  env?: NodeJS.ProcessEnv;
-  fs?: typeof import('node:fs/promises');
-  pid?: number;
-} = {}): BootProfiler => {
+  cwd: string;
+  env: NodeJS.ProcessEnv;
+  fs: Pick<typeof import('node:fs/promises'), 'mkdir' | 'writeFile'>;
+  pid: number;
+  monotonicNow: () => number;
+}): BootProfiler => {
   const enabled = isEnabledProfileSetting(env[BOOT_PROFILE_ENV]);
   if (!enabled) {
     return harden({
@@ -357,7 +385,7 @@ const makeBootProfiler = ({
       bootProfileSessions.set(profilePath, next);
       return next;
     })();
-  const origin = performance.now();
+  const origin = monotonicNow();
 
   const queueWrite = () => {
     session.writeQueue = session.writeQueue
@@ -397,11 +425,11 @@ const makeBootProfiler = ({
 
   return harden({
     measure: async (name, op, args) => {
-      const start = performance.now();
+      const start = monotonicNow();
       try {
         return await op();
       } finally {
-        const end = performance.now();
+        const end = monotonicNow();
         session.events.push({
           name,
           args,
@@ -484,6 +512,11 @@ const makeProposalCacheStore = ({
   const lockAcquireTimeoutMs = 5 * 60_000;
   const staleLockMs = 60_000;
   const lockRoot = join(cacheRoot, '.locks');
+  const cacheRootFs = makeFileRWResolve(pathResolve(cacheRoot), {
+    fs: fsAmbient,
+    fsp: fs,
+    path: pathAmbient,
+  });
   let bundleCacheP: ReturnType<typeof makeNodeBundleCache> | undefined;
   const getBundleCache = () => {
     if (!bundleCacheP) {
@@ -537,7 +570,7 @@ const makeProposalCacheStore = ({
   const fingerprintDependencies = async (dependencyPaths: string[]) =>
     Promise.all(dependencyPaths.map(path => fingerprintDependency(path)));
   const { withLock } = makeDirectoryLock({
-    fs,
+    root: cacheRootFs,
     delayMs: ms => new Promise(resolve => setTimeout(resolve, ms)),
     now,
     pid: process.pid,
@@ -589,19 +622,17 @@ const makeProposalCacheStore = ({
       cacheRoot,
       cacheKey,
     );
-    await fs.mkdir(entryDir, { recursive: true });
+    await cacheRootFs.join(entryDir).mkdir({ recursive: true });
     await Promise.all([
-      writeFileAtomic({
-        fs,
-        filePath: `${metadataPath}`,
-        data: `${JSON.stringify(metadata, null, 2)}\n`,
-        now,
-        pid: process.pid,
-      }),
-      writeFileAtomic({
-        fs,
-        filePath: `${materialsPath}`,
-        data: `${JSON.stringify(
+      cacheRootFs.join(`${metadataPath}`).writeAtomic(
+        `${JSON.stringify(metadata, null, 2)}\n`,
+        {
+          now,
+          pid: process.pid,
+        },
+      ),
+      cacheRootFs.join(`${materialsPath}`).writeAtomic(
+        `${JSON.stringify(
           {
             evals: materials.evals,
             bundles: materials.bundles,
@@ -609,9 +640,11 @@ const makeProposalCacheStore = ({
           null,
           2,
         )}\n`,
-        now,
-        pid: process.pid,
-      }),
+        {
+          now,
+          pid: process.pid,
+        },
+      ),
     ]);
   };
   const ensureBuildDirs = async () => {
@@ -633,24 +666,25 @@ const makeProposalCacheStore = ({
  * Creates a function that can build and extract proposal data from package scripts.
  *
  * @param powers - Object containing required capabilities
- * @param powers.childProcess - Node child_process module for executing commands
+ * @param powers.agoricRunner - Command authority used for shell fallback execution
  * @param powers.fs - Node fs/promises module for file operations
- * @param powers.now - Optional wall-clock function used for cache metadata and lock timing
+ * @param powers.now - Wall-clock function used for cache metadata and lock timing
+ * @param powers.warn - Logging sink for non-fatal fallback warnings
+ * @param powers.makeTempDir - Temp directory capability used for isolated builds
  * @param powers.buildCoreEvalProposal - Optional in-process proposal builder implementation
  * @returns A function that builds and extracts proposal data
  */
 export const makeProposalExtractor = (
-  { childProcess, fs, now = Date.now, buildCoreEvalProposal }: Powers,
+  { agoricRunner, fs, now, warn, makeTempDir, buildCoreEvalProposal }: Powers,
   resolveBase = import.meta.url,
-  options: ProposalExtractorOptions = {},
+  options: ProposalExtractorOptions,
 ) => {
   const importSpec = createRequire(resolveBase).resolve;
   const mode = options.mode || 'prefer-in-process';
   const onCacheEvent = options.onCacheEvent || (() => {});
   const schemaVersion = options.schemaVersion || 'v1';
-  const cacheRoot =
-    options.cacheRoot ||
-    join(process.cwd(), '.cache', 'boot-proposal-build', schemaVersion);
+  const { cacheRoot } = options;
+  cacheRoot || Fail`makeProposalExtractor requires options.cacheRoot`;
   const scriptCacheDir = join(cacheRoot, 'script-bundle-cache');
   const depFingerprintCacheDir = join(
     cacheRoot,
@@ -672,11 +706,10 @@ export const makeProposalExtractor = (
     (async (opts: {
       args?: string[];
       builderPath: string;
+      agoricRunner?: CmdRunner;
       cacheDir?: string;
-      childProcess?: Pick<typeof import('node:child_process'), 'execFileSync'>;
       console?: Pick<Console, 'warn'>;
-      cwd?: string;
-      fs?: typeof import('node:fs/promises');
+      cwd?: FileRW;
       mode?: ProposalBuildMode;
       now?: () => number;
     }) => {
@@ -723,18 +756,22 @@ export const makeProposalExtractor = (
         cacheKey,
       });
 
-      const [builtDir, cleanup] = tmpDir('agoric-proposal');
+      const [builtDir, cleanup] = makeTempDir('agoric-proposal');
       await cacheStore.ensureBuildDirs();
+      const cwd = makeFileRWResolve(builtDir, {
+        fs: fsAmbient,
+        fsp: fs,
+        path: pathAmbient,
+      });
 
       try {
         const built = await buildProposal({
           builderPath: scriptPath,
           args,
+          agoricRunner,
           cacheDir: scriptCacheDir,
-          childProcess,
           console,
-          cwd: builtDir,
-          fs,
+          cwd,
           mode,
           now,
         });
@@ -788,20 +825,24 @@ export const makeProposalExtractor = (
       if (mode !== 'prefer-in-process') {
         throw err;
       }
-      console.warn(
+      warn(
         'proposal extraction failed in cache/in-process path, retrying shell-only build',
         err,
       );
-      const [builtDir, cleanup] = tmpDir('agoric-proposal');
+      const [builtDir, cleanup] = makeTempDir('agoric-proposal');
+      const cwd = makeFileRWResolve(builtDir, {
+        fs: fsAmbient,
+        fsp: fs,
+        path: pathAmbient,
+      });
       try {
         const fallback = await buildProposal({
           builderPath: importSpec(builderPath),
           args,
+          agoricRunner,
           cacheDir: scriptCacheDir,
-          childProcess,
           console,
-          cwd: builtDir,
-          fs,
+          cwd,
           mode: 'shell-only',
           now,
         });
@@ -907,7 +948,7 @@ type AckBehaviorType = (typeof AckBehavior)[keyof typeof AckBehavior];
  * test fails.
  *
  * @param log
- * @param bundleDir directory to write bundles and config to
+ * @param bundleDirPath directory path to write bundles and config to
  * @param [options]
  * @param [options.configSpecifier] bootstrap config specifier
  * @param [options.label] bootstrap config specifier
@@ -927,7 +968,7 @@ type AckBehaviorType = (typeof AckBehavior)[keyof typeof AckBehavior];
  * utilities for time manipulation, proposal evaluation, and more.
  *
  * @param log - Logging function
- * @param bundleDir - Directory to store bundle cache files
+ * @param bundleDirPath - Directory path to store bundle cache files
  * @param options - Configuration options
  * @param options.configSpecifier - Path to the base config file
  * @param options.label - Optional label for the test environment
@@ -941,13 +982,13 @@ type AckBehaviorType = (typeof AckBehavior)[keyof typeof AckBehavior];
  * @param options.proposalBuildMode - Proposal extraction mode
  * @param options.resolveBase - Base URL or path for resolving module paths
  * @param options.configOverrides - Other SwingSet options to set in the config
-   (may be overridden by more specific options such as `bundleDir` and
+   (may be overridden by more specific options such as `bundleDirPath` and
    `defaultManagerType`)
  * @returns A test kit with various utilities for interacting with the SwingSet
  */
 export const makeSwingsetTestKit = async (
   log: (..._: any[]) => void,
-  bundleDir = 'bundles',
+  bundleDirPath = 'bundles',
   {
     configSpecifier = '@agoric/vm-config/decentral-itest-vaults-config.json',
     label = undefined as string | undefined,
@@ -964,7 +1005,18 @@ export const makeSwingsetTestKit = async (
   } = {},
 ) => {
   const importSpec = createRequire(resolveBase).resolve;
-  const profiler = makeBootProfiler();
+  const profiler = makeBootProfiler({
+    cwd: process.cwd(),
+    env: process.env,
+    fs: fsAmbientPromises,
+    pid: process.pid,
+    monotonicNow: () => performance.now(),
+  });
+  const bundleDir = makeFileRWResolve(bundleDirPath, {
+    fs: fsAmbient,
+    fsp: fsAmbientPromises,
+    path: pathAmbient,
+  });
   const configPath = await profiler.measure(
     'makeSwingsetTestKit.getNodeTestVaultsConfig',
     () =>
@@ -974,9 +1026,14 @@ export const makeSwingsetTestKit = async (
         discriminator: label,
         defaultManagerType,
         configOverrides,
+        powers: {
+          configDir: bundleDir,
+          now: Date.now,
+          random: Math.random,
+        },
       }),
     {
-      bundleDir,
+      bundleDir: bundleDirPath,
       configSpecifier,
       defaultManagerType,
       label,
@@ -1282,13 +1339,22 @@ export const makeSwingsetTestKit = async (
 
   const extractProposal = makeProposalExtractor(
     {
-      childProcess: childProcessAmbient,
+      agoricRunner: makeCmdRunner(
+        createRequire(resolveBase).resolve('agoric/src/entrypoint.js'),
+        {
+          execFile: promisify(childProcessAmbient.execFile),
+          defaultEnv: process.env,
+        },
+      ),
       fs: fsAmbientPromises,
       now: Date.now,
+      warn: (...args) => console.warn(...args),
+      makeTempDir: tmpDir,
       // keep default proposal builder implementation
     },
     resolveBase,
     {
+      cacheRoot: join(process.cwd(), '.cache', 'boot-proposal-build', 'v1'),
       mode: proposalBuildMode,
     },
   );

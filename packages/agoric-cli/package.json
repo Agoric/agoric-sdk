@@ -46,6 +46,7 @@
     "@agoric/inter-protocol": "workspace:*",
     "@agoric/internal": "workspace:*",
     "@agoric/network": "workspace:*",
+    "@agoric/pola-io": "workspace:*",
     "@agoric/smart-wallet": "workspace:*",
     "@agoric/store": "workspace:*",
     "@agoric/swingset-vat": "workspace:*",

@@ -16,6 +16,7 @@ It is meant to be a home for modules that have no dependencies on other packages
 - [base-zone](../base-zone)
 - [store](../store)
 - [cosmic-proto](../cosmic-proto)
+- [pola-io](../pola-io)
 
 This package may not take dependencies on any others in this repository.
 

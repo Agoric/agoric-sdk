@@ -1,30 +1,33 @@
 // @ts-check
 import test from 'ava';
 
-import os from 'node:os';
 import path from 'node:path';
-import { mkdtemp, mkdir, readFile, rm, utimes } from 'node:fs/promises';
+import { mkdir, readFile, utimes } from 'node:fs/promises';
 import * as fsPromises from 'node:fs/promises';
+import { makeTempDir } from '@agoric/pola-io/src/ambient/file.js';
 
-import { makeDirectoryLock, writeFileAtomic } from '../src/build-cache.js';
+import { makeDirectoryLock } from '../src/build-cache.js';
 
 const makeFixture = async t => {
-  const root = await mkdtemp(path.join(os.tmpdir(), 'internal-build-cache-'));
-  t.teardown(async () => rm(root, { recursive: true, force: true }));
+  const rootWr = await makeTempDir().mkdtemp('internal-build-cache-');
+  const root = String(rootWr);
+  t.teardown(async () => rootWr.rm({ recursive: true, force: true }));
+  const lockRoot = path.join(root, '.locks');
+  const cacheFile = path.join(root, 'artifact.json');
   return harden({
     root,
-    lockRoot: path.join(root, '.locks'),
-    cacheFile: path.join(root, 'artifact.json'),
+    rootWr,
+    lockRoot,
+    lockRootWr: rootWr.join(lockRoot),
+    cacheFile,
+    cacheFileWr: rootWr.join(cacheFile),
   });
 };
 
-test('writeFileAtomic writes content atomically', async t => {
-  const { cacheFile } = await makeFixture(t);
+test('FileRW.writeAtomic writes content atomically', async t => {
+  const { cacheFile, cacheFileWr } = await makeFixture(t);
 
-  await writeFileAtomic({
-    fs: fsPromises,
-    filePath: cacheFile,
-    data: '{"hello":"world"}\n',
+  await cacheFileWr.writeAtomic('{"hello":"world"}\n', {
     now: Date.now,
     pid: process.pid,
   });
@@ -33,17 +36,11 @@ test('writeFileAtomic writes content atomically', async t => {
   t.is(written, '{"hello":"world"}\n');
 });
 
-test('writeFileAtomic avoids temp-file collisions with fixed timestamps', async t => {
-  const { cacheFile } = await makeFixture(t);
+test('FileRW.writeAtomic avoids temp-file collisions with fixed timestamps', async t => {
+  const { cacheFile, cacheFileWr } = await makeFixture(t);
   const now = () => 1_700_000_000_000;
   const writes = Array.from({ length: 16 }, (_, i) =>
-    writeFileAtomic({
-      fs: fsPromises,
-      filePath: cacheFile,
-      data: `{"write":${i}}\n`,
-      now,
-      pid: 12345,
-    }),
+    cacheFileWr.writeAtomic(`{"write":${i}}\n`, { now, pid: 12345 }),
   );
 
   await t.notThrowsAsync(() => Promise.all(writes));
@@ -52,7 +49,7 @@ test('writeFileAtomic avoids temp-file collisions with fixed timestamps', async 
 });
 
 test('makeDirectoryLock recovers dead-owner lock', async t => {
-  const { lockRoot } = await makeFixture(t);
+  const { lockRoot, rootWr } = await makeFixture(t);
   const key = 'dead-owner';
   const lockPath = path.join(lockRoot, `${encodeURIComponent(key)}.lock`);
   await mkdir(lockPath, { recursive: true });
@@ -65,7 +62,7 @@ test('makeDirectoryLock recovers dead-owner lock', async t => {
   /** @type {Array<{type: string, reason?: string}>} */
   const events = [];
   const { withLock } = makeDirectoryLock({
-    fs: fsPromises,
+    root: rootWr,
     delayMs: ms => new Promise(resolve => setTimeout(resolve, ms)),
     now: Date.now,
     pid: process.pid,
@@ -87,7 +84,7 @@ test('makeDirectoryLock recovers dead-owner lock', async t => {
 });
 
 test('makeDirectoryLock recovers stale lock by age', async t => {
-  const { lockRoot } = await makeFixture(t);
+  const { lockRoot, rootWr } = await makeFixture(t);
   const key = 'stale-age';
   const lockPath = path.join(lockRoot, `${encodeURIComponent(key)}.lock`);
   await mkdir(lockPath, { recursive: true });
@@ -98,7 +95,7 @@ test('makeDirectoryLock recovers stale lock by age', async t => {
   /** @type {Array<{type: string, reason?: string}>} */
   const events = [];
   const { withLock } = makeDirectoryLock({
-    fs: fsPromises,
+    root: rootWr,
     delayMs: ms => new Promise(resolve => setTimeout(resolve, ms)),
     now: Date.now,
     pid: process.pid,
@@ -118,7 +115,7 @@ test('makeDirectoryLock recovers stale lock by age', async t => {
 });
 
 test('makeDirectoryLock times out waiting for active lock', async t => {
-  const { lockRoot } = await makeFixture(t);
+  const { lockRoot, rootWr } = await makeFixture(t);
   const key = 'timeout';
   const lockPath = path.join(lockRoot, `${encodeURIComponent(key)}.lock`);
   await mkdir(lockPath, { recursive: true });
@@ -130,7 +127,7 @@ test('makeDirectoryLock times out waiting for active lock', async t => {
 
   let tick = 0;
   const { withLock } = makeDirectoryLock({
-    fs: fsPromises,
+    root: rootWr,
     delayMs: () => Promise.resolve(),
     now: () => {
       tick += 25;
@@ -149,9 +146,9 @@ test('makeDirectoryLock times out waiting for active lock', async t => {
 });
 
 test('makeDirectoryLock tolerates throwing event sinks', async t => {
-  const { lockRoot } = await makeFixture(t);
+  const { lockRoot, rootWr } = await makeFixture(t);
   const { withLock } = makeDirectoryLock({
-    fs: fsPromises,
+    root: rootWr,
     delayMs: ms => new Promise(resolve => setTimeout(resolve, ms)),
     now: Date.now,
     pid: process.pid,

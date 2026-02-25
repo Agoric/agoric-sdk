@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@agoric/base-zone": "workspace:*",
+    "@agoric/pola-io": "workspace:*",
     "@endo/cache-map": "^1.1.0",
     "@endo/common": "^1.2.13",
     "@endo/compartment-mapper": "^1.6.3",

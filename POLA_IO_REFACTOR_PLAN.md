@@ -1,0 +1,89 @@
+# POLA-IO Refactor Plan (this branch vs master)
+
+- [ ] Goal: Make file I/O authority explicit and minimal across this PR
+  - [x] Inventory every direct `fs`/`fs.promises` touchpoint in changed files and classify by capability: `read`, `write`, `mkdir`, `readdir`, `stat`, `rm`, `rename`
+  - [x] Define allowed I/O roots per module (for example: cache directories, proposal output directories, config files)
+    - [x] `packages/agoric-cli/src/proposals.js`
+      - [x] Read roots: builder path, resolved dependency/module paths, generated proposal parts under provided `cwd`
+      - [x] Write roots: provided `cwd` (proposal artifacts) and provided `cacheDir` only
+      - [x] No writes outside resolved `cwd` and `cacheDir`
+    - [x] `packages/boot/tools/supports.ts`
+      - [x] Read roots: proposal builder/dependency paths; cache metadata/material files under `cacheRoot`
+      - [x] Write roots: `cacheRoot` subtree (`script-bundle-cache`, `dependency-fingerprint-cache`, per-key entries), optional profile output file path, temp build dirs created by `tmpDir`
+      - [x] Lock roots: `join(cacheRoot, '.locks')` only
+    - [x] `packages/internal/src/build-cache.js`
+      - [x] Read/write/delete roots: caller-provided `lockRoot` and target file directory for atomic writes
+      - [x] No path discovery or ambient root expansion inside module
+    - [x] `packages/SwingSet/tools/bundleTool.js`
+      - [x] Read/write roots: `dest` bundle cache dir and `path.resolve(dest, '.bundle-locks')`
+      - [x] Source read roots: canonicalized source specs resolved from explicit registry entries/options
+    - [x] `packages/deploy-script-support/src/cachedBundleSpec.js`
+      - [x] Read/write roots: explicit `cacheDir` only
+    - [x] `packages/deploy-script-support/src/writeCoreEvalParts.js`
+      - [x] Read roots: explicit `sourceSpec`/entrypoint resolution via provided resolver
+      - [x] Write roots: explicit `filePrefix` target directory and bundle cache path passed in
+    - [x] `packages/deploy-script-support/src/helpers.js`
+      - [x] Read/write roots delegated to endowment-provided `writeFile`, `pathResolve`, `cacheDir`
+      - [x] Keep module free of ambient root decisions
+  - [ ] Document current ambient authority entrypoints and target replacement seams
+
+- [ ] Goal: Introduce explicit I/O capabilities at module boundaries
+  - [x] Add `pola-io`-based file authority construction at entrypoints only (CLI/test harness/runtime bootstrap entrypoints)
+    - [x] `packages/agoric-cli/src/proposals.js` now constructs scoped `pola-io` file authorities from entrypoint parameters (`cwd`, `fs`)
+  - [x] Pass authority objects into shared modules instead of importing ambient `fs` in those modules (note: injected `fs` is non-ambient, but still often too broad)
+    - [x] `packages/agoric-cli/src/proposals.js` now threads `files` capability through in-process and shell materialization paths
+  - [ ] Standardize injected interfaces so helpers accept narrow facets (`readOnly`, `writeOnly`, `readWrite`) rather than broad injected `fs` modules
+
+- [ ] Goal: Refactor branch hotspots first (highest I/O churn)
+  - [x] `packages/agoric-cli/src/proposals.js`
+    - [x] Replace ambient directory/file operations with scoped authorities rooted at `cwd` and build output dirs
+    - [x] Replace ambient command execution with `@agoric/pola-io` command authority and keep it separate from file authority
+  - [ ] `packages/boot/tools/supports.ts`
+    - [ ] Replace direct `fs` usage in proposal cache/profiler paths with explicit authorities for `.cache` and temporary build dirs
+      - [x] Remove ambient defaults from `makeProposalExtractor`, `makeBootProfiler`, and `getNodeTestVaultsConfig`
+      - [x] Require caller-supplied capabilities for clock/env/tmp/cwd/cache roots
+      - [ ] Keep ambient authority construction only at callsites that behave as entrypoints (for example `makeSwingsetTestKit`)
+    - [x] Replace ambient command execution with `@agoric/pola-io` command authority where shell fallback is retained
+      - [x] `makeProposalExtractor` now constructs and passes scoped `agoricRunner` when `execFile` authority is present
+    - [x] Thread authority through `makeProposalCacheStore` and `makeProposalExtractor` so callsites cannot exceed designated roots
+      - [x] `Powers.agoricRunner` is now required and proposal build calls pass `cwd: FileRW` instead of `cwdPath`+`fs` pairs
+  - [ ] `packages/internal/src/build-cache.js`
+    - [x] Keep lock and atomic-write logic, but require a minimal fs facet contract from callers
+      - [x] `makeDirectoryLock` now consumes `root: FileRW` capability instead of fs module-shaped powers
+      - [x] atomic write moved to `FileRW.writeAtomic()` with per-maker sequence state
+    - [x] Ensure lock cleanup/breaking only uses authority scoped to lock root
+  - [ ] `packages/SwingSet/tools/bundleTool.js`
+    - [x] Remove ambient file access from cache/lock paths and inject root-scoped cache authority
+      - [x] `makeAmbientBundleToolPowers` now carries explicit fs capability and `makeNodeBundleCache` consumes that authority
+      - [x] `BundleToolPowers` now uses `FileRW` root authority instead of ad-hoc fs method bundles
+  - [ ] `packages/deploy-script-support/src/{helpers.js,cachedBundleSpec.js,writeCoreEvalParts.js}`
+    - [ ] Remove ambient imports in shared helpers; keep authority creation at execution entrypoints
+    - [ ] Scope write authority for generated permit/code/plan files to intended output directories
+
+- [ ] Goal: Align read-only and read-write intent with pola-io facets
+  - [ ] Use read-only handles for config parsing and dependency fingerprint reads
+  - [ ] Use read-write handles only where artifact generation or cache mutation is required
+  - [ ] Add thin adapters where needed for operations not directly covered by current wrappers (for example atomic write/rename workflows)
+  - [ ] Keep `makeScriptLoader` on narrow `writeFile` capability (not full `FileRW`) and separately harden adapter path policy for review clarity
+
+- [ ] Goal: Preserve behavior while tightening authority
+  - [ ] Add or update tests that assert modules fail when required capabilities are absent
+  - [x] Keep existing functional tests for bundle caching, proposal extraction cache, and lock recovery green
+    - [x] `yarn workspace @aglocal/boot test test/tools/proposal-extractor-cache.test.ts`
+    - [x] `yarn workspace @agoric/swingset-vat test test/bundleTool.test.ts`
+  - [ ] Add targeted tests for root confinement (attempted access outside authorized roots should fail)
+
+- [ ] Goal: Make authority flow reviewable in code
+  - [ ] Keep constructor signatures explicit (`makeX({ fileIO, cmdIO, ... })`) and avoid fallback to ambient globals in shared modules where practical
+  - [x] Keep authority flow readable directly from code structure/signatures (no required explanatory comments)
+    - [x] Naming cleanup: string paths use `*Path`; directory capabilities use role names like `bundleDir`, `cwd`, `tempDir`
+  - [ ] Update concrete docs when behavior/API changes land:
+    - [ ] `packages/pola-io/README.md` (if we add/adjust wrappers used by this refactor)
+    - [ ] Do not change CLI user-facing usage/docs in this refactor (out of scope)
+    - [ ] package-local READMEs for touched behavior (`packages/boot`, `packages/deploy-script-support`) only if user-visible workflows change
+
+- [ ] Goal: Roll out safely in phases
+  - [ ] Phase 1: Introduce capability interfaces and adapters without changing behavior
+  - [ ] Phase 2: Switch hot modules to capability-only internal implementation
+  - [ ] Phase 3: Remove remaining ambient `fs` imports from shared code paths
+  - [ ] Phase 4: Run `yarn typecheck-quick`, targeted package tests, then full test/lint gates

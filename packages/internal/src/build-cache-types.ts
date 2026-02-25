@@ -29,10 +29,7 @@ export type BuildCacheEvent =
 export interface DirectoryLockPowers {
   acquireTimeoutMs: number;
   delayMs: (ms: number) => Promise<unknown>;
-  fs: Pick<
-    typeof import('node:fs/promises'),
-    'mkdir' | 'readFile' | 'rm' | 'stat' | 'writeFile'
-  >;
+  root: import('@agoric/pola-io').FileRW;
   isPidAlive: (pid: number) => boolean;
   lockRoot: string;
   now: () => number;
