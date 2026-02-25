@@ -57,9 +57,7 @@ test('proposal extractor caches materials on disk and reuses across instances', 
     {
       buildCoreEvalProposal: fakeBuilder,
       childProcess: {
-        execFileSync: () => {
-          throw Error('shell path should not be used');
-        },
+        execFileSync: (() => t.fail('shell mode should not be used')) as any,
       },
       fs: fsPromises,
     },
@@ -79,9 +77,7 @@ test('proposal extractor caches materials on disk and reuses across instances', 
     {
       buildCoreEvalProposal: fakeBuilder,
       childProcess: {
-        execFileSync: () => {
-          throw Error('shell path should not be used');
-        },
+        execFileSync: (() => t.fail('shell mode should not be used')) as any,
       },
       fs: fsPromises,
     },
@@ -128,9 +124,7 @@ test('proposal cache key and on-disk cache contents are explicit', async t => {
     {
       buildCoreEvalProposal: async () => builtMaterials,
       childProcess: {
-        execFileSync: () => {
-          throw Error('shell path should not be used');
-        },
+        execFileSync: (() => t.fail('shell mode should not be used')) as any,
       },
       fs: fsPromises,
     },
@@ -184,9 +178,7 @@ test('proposal extractor invalidates cache when dependency content changes', asy
     {
       buildCoreEvalProposal: fakeBuilder,
       childProcess: {
-        execFileSync: () => {
-          throw Error('shell path should not be used');
-        },
+        execFileSync: (() => t.fail('shell mode should not be used')) as any,
       },
       fs: fsPromises,
     },
@@ -284,9 +276,7 @@ test('stale/dead lock is recovered before building', async t => {
     {
       buildCoreEvalProposal: fakeBuilder,
       childProcess: {
-        execFileSync: () => {
-          throw Error('shell path should not be used');
-        },
+        execFileSync: (() => t.fail('shell mode should not be used')) as any,
       },
       fs: fsPromises,
     },
