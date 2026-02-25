@@ -448,6 +448,7 @@ export async function initializeSwingset(
   const bundleCache = await (config.bundleCachePath
     ? makeNodeBundleCache(
         config.bundleCachePath,
+        makeAmbientBundleToolPowers(),
         {
           dev: config.includeDevDependencies,
           format: config.bundleFormat,
@@ -456,8 +457,6 @@ export async function initializeSwingset(
           // legible.
           byteLimit: Infinity,
         },
-        s => import(s),
-        makeAmbientBundleToolPowers(),
       )
     : null);
 

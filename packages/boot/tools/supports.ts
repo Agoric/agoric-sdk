@@ -501,9 +501,8 @@ const makeProposalCacheStore = ({
     if (!bundleCacheP) {
       bundleCacheP = makeNodeBundleCache(
         depFingerprintCacheDir,
-        {},
-        s => import(s),
         makeAmbientBundleToolPowers({
+          loadModule: s => import(s),
           eventSink: { onBundleToolEvent: () => {} },
         }),
       );

@@ -66,6 +66,7 @@ import { makeDirectoryLock } from '@agoric/internal/src/build-cache.js';
  *   delayMs: (ms: number) => Promise<unknown>,
  *   eventSink?: BundleToolEventSink,
  *   isPidAlive: (pid: number) => boolean,
+ *   loadModule: Parameters<typeof wrappedMaker>[2],
  *   monotonicNow: () => number,
  *   now: () => number,
  *   pid: number,
@@ -114,14 +115,7 @@ const inferLogPhase = args => {
 harden(inferLogPhase);
 
 /**
- * @param {{
- *   delayMs?: (ms: number) => Promise<unknown>,
- *   eventSink?: BundleToolEventSink,
- *   isPidAlive?: (pid: number) => boolean,
- *   monotonicNow?: () => number,
- *   now?: () => number,
- *   pid?: number,
- * }} [options]
+ * @param {Partial<BundleToolPowers>} [options]
  * @returns {BundleToolPowers}
  * @alpha
  */
@@ -140,6 +134,7 @@ export const makeAmbientBundleToolPowers = (options = {}) => {
         return false;
       }
     },
+    loadModule = specifier => import(specifier),
     monotonicNow = () => performance.now(),
     now = () => Date.now(),
     pid = process.pid,
@@ -148,6 +143,7 @@ export const makeAmbientBundleToolPowers = (options = {}) => {
     delayMs,
     eventSink,
     isPidAlive,
+    loadModule,
     monotonicNow,
     now,
     pid,
@@ -156,23 +152,18 @@ export const makeAmbientBundleToolPowers = (options = {}) => {
 harden(makeAmbientBundleToolPowers);
 
 /**
- * @param {string} dest
- * @param {BundleCacheOptions} options
- * @param {Parameters<typeof wrappedMaker>[2]} loadModule
+ * @param {string} destPath
  * @param {BundleToolPowers} powers
+ * @param {BundleCacheOptions} [options]
  * @returns {Promise<BundleCache>}
  * @alpha
  */
-export const makeNodeBundleCache = async (
-  dest,
-  options,
-  loadModule,
-  powers,
-) => {
+export const makeNodeBundleCache = async (destPath, powers, options = {}) => {
   const {
     delayMs,
     eventSink = defaultBundleToolEventSink,
     isPidAlive,
+    loadModule,
     monotonicNow,
     now,
     pid,
@@ -234,12 +225,12 @@ export const makeNodeBundleCache = async (
   };
 
   const rawCache = await wrappedMaker(
-    dest,
+    destPath,
     { log, ...options },
     loadModule,
     pid,
   );
-  const lockRoot = path.resolve(dest, '.bundle-locks');
+  const lockRoot = path.resolve(destPath, '.bundle-locks');
   /** @type {Map<string, Promise<unknown>>} */
   const inProcessLoads = new Map();
   const { withLock } = makeDirectoryLock({
@@ -299,7 +290,7 @@ export const makeNodeBundleCache = async (
           log0,
           options0,
         );
-        const bundlePath = path.resolve(dest, bundleFileName);
+        const bundlePath = path.resolve(destPath, bundleFileName);
         return import(bundlePath).then(m => harden(m.default));
       });
       inProcessLoads.set(key, pending);
@@ -366,12 +357,7 @@ export const makeNodeBundleCache = async (
  * @alpha
  */
 export const unsafeMakeBundleCache = (dest, pid = process.pid) =>
-  makeNodeBundleCache(
-    dest,
-    {},
-    s => import(s),
-    makeAmbientBundleToolPowers({ pid }),
-  );
+  makeNodeBundleCache(dest, makeAmbientBundleToolPowers({ pid }));
 
 const sharedBundleCachePath = fileURLToPath(
   new URL('../../../bundles', import.meta.url),

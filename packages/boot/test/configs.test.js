@@ -73,9 +73,10 @@ const makeTestContext = async () => {
   const cacheDir = pathResolve('..', 'bundles');
   const bundleCache = await makeNodeBundleCache(
     cacheDir,
-    {},
-    s => import(s),
-    makeAmbientBundleToolPowers({ eventSink: { onBundleToolEvent: () => {} } }),
+    makeAmbientBundleToolPowers({
+      loadModule: s => import(s),
+      eventSink: { onBundleToolEvent: () => {} },
+    }),
   );
 
   const vizTool = pathResolve('..', 'tools', 'authorityViz.js');
