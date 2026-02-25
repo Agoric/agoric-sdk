@@ -10,8 +10,8 @@
  *
  * @see type-guards.ts for the authoritative interface specification
  */
-import { type VstorageKit } from '@agoric/client-utils';
 import { AmountMath, type NatAmount } from '@agoric/ertp';
+import type { VstorageKit } from '@agoric/client-utils';
 import type { ChainInfo } from '@agoric/orchestration';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js';
 import {

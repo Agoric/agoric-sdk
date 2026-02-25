@@ -1,5 +1,5 @@
-import type { VstorageKit } from '@agoric/client-utils';
 import { mustMatch, type ERemote } from '@agoric/internal';
+import type { VstorageKit } from '@agoric/client-utils';
 import { defaultSerializer } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js';
@@ -32,7 +32,6 @@ import { chainInfoWithCCTP, setupPortfolioTest } from './supports.ts';
 const contractName = 'ymax0';
 type StartFn = typeof contractExports.start;
 const { values } = Object;
-
 const makeReadPublished = (
   storage: Awaited<
     ReturnType<typeof setupPortfolioTest>
@@ -44,7 +43,7 @@ const makeReadPublished = (
       .getDeserialized(`${ROOT_STORAGE_PATH}.${subpath}`)
       .at(-1);
     return val;
-  }) as unknown as VstorageKit<PortfolioPublishedPathTypes>['readPublished'];
+  }) as VstorageKit<PortfolioPublishedPathTypes>['readPublished'];
 
 const makeEvmWalletHandler = async (
   zoe: ZoeService,

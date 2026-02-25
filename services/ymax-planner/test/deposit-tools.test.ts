@@ -227,9 +227,13 @@ test('handleDeposit works with mocked dependencies', async t => {
   };
 
   // Mock VstorageKit
-  const mockVstorageKit: VstorageKit<PortfolioPublishedPathTypes> = {
-    readPublished: mockReadPublished,
-  } as VstorageKit<PortfolioPublishedPathTypes>;
+  const mockVstorageKit: Pick<
+    VstorageKit<PortfolioPublishedPathTypes>,
+    'readPublished'
+  > = {
+    readPublished:
+      mockReadPublished as VstorageKit<PortfolioPublishedPathTypes>['readPublished'],
+  };
 
   const result = await handleDeposit(portfolioKey, deposit, feeBrand, {
     readPublished: mockVstorageKit.readPublished,
@@ -301,9 +305,13 @@ test('handleDeposit handles missing targetAllocation gracefully', async t => {
   };
 
   // Mock VstorageKit
-  const mockVstorageKit: VstorageKit<PortfolioPublishedPathTypes> = {
-    readPublished: mockReadPublished,
-  } as VstorageKit<PortfolioPublishedPathTypes>;
+  const mockVstorageKit: Pick<
+    VstorageKit<PortfolioPublishedPathTypes>,
+    'readPublished'
+  > = {
+    readPublished:
+      mockReadPublished as VstorageKit<PortfolioPublishedPathTypes>['readPublished'],
+  };
 
   const result = await handleDeposit(portfolioKey, deposit, feeBrand, {
     readPublished: mockVstorageKit.readPublished,
@@ -347,9 +355,13 @@ test('handleDeposit handles different position types correctly', async t => {
   };
 
   // Mock VstorageKit
-  const mockVstorageKit: VstorageKit<PortfolioPublishedPathTypes> = {
-    readPublished: mockReadPublished,
-  } as VstorageKit<PortfolioPublishedPathTypes>;
+  const mockVstorageKit: Pick<
+    VstorageKit<PortfolioPublishedPathTypes>,
+    'readPublished'
+  > = {
+    readPublished:
+      mockReadPublished as VstorageKit<PortfolioPublishedPathTypes>['readPublished'],
+  };
 
   const result = await handleDeposit(
     portfolioKey,

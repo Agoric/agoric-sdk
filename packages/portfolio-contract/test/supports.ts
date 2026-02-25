@@ -1,5 +1,5 @@
-import type { VstorageKit } from '@agoric/client-utils';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
+import type { VstorageKit } from '@agoric/client-utils';
 import { makeIssuerKit } from '@agoric/ertp';
 import type { Brand, NatAmount } from '@agoric/ertp';
 import {
