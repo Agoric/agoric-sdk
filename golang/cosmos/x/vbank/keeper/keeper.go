@@ -36,6 +36,7 @@ type Keeper struct {
 	accountKeeper         types.AccountKeeper
 	bankKeeper            types.BankKeeper
 	rewardDistributorName string
+	authority             string // authority is the address capable of executing privileged operations
 	PushAction            vm.ActionPusher
 	AddressToUpdate       map[string]sdk.Coins // address string -> Coins
 }
@@ -48,6 +49,7 @@ func NewKeeper(
 	paramSpace paramtypes.Subspace,
 	accountKeeper types.AccountKeeper, bankKeeper types.BankKeeper,
 	rewardDistributorName string,
+	authority string,
 	pushAction vm.ActionPusher,
 ) Keeper {
 
@@ -64,6 +66,7 @@ func NewKeeper(
 		accountKeeper:         accountKeeper,
 		bankKeeper:            bankKeeper,
 		rewardDistributorName: rewardDistributorName,
+		authority:             authority,
 		PushAction:            pushAction,
 	}
 

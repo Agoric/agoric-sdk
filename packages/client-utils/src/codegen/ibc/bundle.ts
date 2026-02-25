@@ -39,22 +39,22 @@ import * as _173 from './lightclients/wasm/v1/genesis.js';
 import * as _174 from './lightclients/wasm/v1/query.js';
 import * as _175 from './lightclients/wasm/v1/tx.js';
 import * as _176 from './lightclients/wasm/v1/wasm.js';
-import * as _263 from './applications/interchain_accounts/controller/v1/query.rpc.Query.js';
-import * as _264 from './applications/interchain_accounts/host/v1/query.rpc.Query.js';
-import * as _265 from './applications/transfer/v1/query.rpc.Query.js';
-import * as _266 from './core/channel/v1/query.rpc.Query.js';
-import * as _267 from './core/client/v1/query.rpc.Query.js';
-import * as _268 from './core/connection/v1/query.rpc.Query.js';
-import * as _269 from './lightclients/wasm/v1/query.rpc.Query.js';
-import * as _270 from './applications/interchain_accounts/controller/v1/tx.rpc.msg.js';
-import * as _271 from './applications/interchain_accounts/host/v1/tx.rpc.msg.js';
-import * as _272 from './applications/transfer/v1/tx.rpc.msg.js';
-import * as _273 from './core/channel/v1/tx.rpc.msg.js';
-import * as _274 from './core/client/v1/tx.rpc.msg.js';
-import * as _275 from './core/connection/v1/tx.rpc.msg.js';
-import * as _276 from './lightclients/wasm/v1/tx.rpc.msg.js';
-import * as _295 from './rpc.query.js';
-import * as _296 from './rpc.tx.js';
+import * as _264 from './applications/interchain_accounts/controller/v1/query.rpc.Query.js';
+import * as _265 from './applications/interchain_accounts/host/v1/query.rpc.Query.js';
+import * as _266 from './applications/transfer/v1/query.rpc.Query.js';
+import * as _267 from './core/channel/v1/query.rpc.Query.js';
+import * as _268 from './core/client/v1/query.rpc.Query.js';
+import * as _269 from './core/connection/v1/query.rpc.Query.js';
+import * as _270 from './lightclients/wasm/v1/query.rpc.Query.js';
+import * as _271 from './applications/interchain_accounts/controller/v1/tx.rpc.msg.js';
+import * as _272 from './applications/interchain_accounts/host/v1/tx.rpc.msg.js';
+import * as _273 from './applications/transfer/v1/tx.rpc.msg.js';
+import * as _274 from './core/channel/v1/tx.rpc.msg.js';
+import * as _275 from './core/client/v1/tx.rpc.msg.js';
+import * as _276 from './core/connection/v1/tx.rpc.msg.js';
+import * as _277 from './lightclients/wasm/v1/tx.rpc.msg.js';
+import * as _296 from './rpc.query.js';
+import * as _297 from './rpc.tx.js';
 export namespace ibc {
   export namespace applications {
     export namespace interchain_accounts {
@@ -63,8 +63,8 @@ export namespace ibc {
           ..._137,
           ..._138,
           ..._139,
-          ..._263,
-          ..._270,
+          ..._264,
+          ..._271,
         };
       }
       export namespace genesis {
@@ -77,8 +77,8 @@ export namespace ibc {
           ..._141,
           ..._142,
           ..._143,
-          ..._264,
-          ..._271,
+          ..._265,
+          ..._272,
         };
       }
       export const v1 = {
@@ -94,8 +94,8 @@ export namespace ibc {
         ..._149,
         ..._150,
         ..._151,
-        ..._265,
-        ..._272,
+        ..._266,
+        ..._273,
       };
       export const v2 = {
         ..._152,
@@ -110,8 +110,8 @@ export namespace ibc {
         ..._155,
         ..._156,
         ..._157,
-        ..._266,
-        ..._273,
+        ..._267,
+        ..._274,
       };
     }
     export namespace client {
@@ -120,8 +120,8 @@ export namespace ibc {
         ..._159,
         ..._160,
         ..._161,
-        ..._267,
-        ..._274,
+        ..._268,
+        ..._275,
       };
     }
     export namespace commitment {
@@ -135,8 +135,8 @@ export namespace ibc {
         ..._164,
         ..._165,
         ..._166,
-        ..._268,
-        ..._275,
+        ..._269,
+        ..._276,
       };
     }
   }
@@ -171,13 +171,13 @@ export namespace ibc {
         ..._174,
         ..._175,
         ..._176,
-        ..._269,
-        ..._276,
+        ..._270,
+        ..._277,
       };
     }
   }
   export const ClientFactory = {
-    ..._295,
     ..._296,
+    ..._297,
   };
 }

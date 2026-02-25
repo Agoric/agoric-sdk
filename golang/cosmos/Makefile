@@ -91,23 +91,37 @@ endif
 ###                           Protobuf                                    ###
 ###############################################################################
 
+usertag:=$(shell id -u)-$(shell id -g)
+protoImageStamp=build/proto-image-$(usertag).stamp
 protoVer=0.15.3
-protoImageName=ghcr.io/cosmos/proto-builder:$(protoVer)
-protoImage=$(DOCKER) run --rm -v $(CURDIR):/workspace --workdir /workspace $(protoImageName)
+protoSourceImageName=ghcr.io/cosmos/proto-builder:$(protoVer)
+protoImageName=$(protoSourceImageName)-user-$(usertag)
+#protoUserFlags=-e HOME=/tmp \
+#	--user=$(shell id -u):$(shell id -g) \
+#	$(shell id -G | xargs -n1 printf -- ' --group-add %s')
+protoImage=$(DOCKER) run --rm -v $(CURDIR):/workspace:z --workdir /workspace $(protoImageName)
+
+$(protoImageStamp):
+	@echo "Creating user-specific Protobuf builder image $(protoImageName)"
+	mkdir -p build/empty
+	$(DOCKER) build \
+		--build-arg NEW_UID=$(shell id -u) --build-arg SOURCE_IMAGE=$(protoSourceImageName) \
+		--pull --load -f proto/Dockerfile -t $(protoImageName) build/empty
+	@touch $(protoImageStamp)
 
 proto-all: proto-format proto-lint proto-gen
 
-proto-gen:
+proto-gen: $(protoImageStamp)
 	@echo "Generating Protobuf files"
 	@$(protoImage) sh ./scripts/protocgen.sh
 
-proto-format:
+proto-format: $(protoImageStamp)
 	@$(protoImage) find ./proto -name "*.proto" -exec clang-format -i {} \;
 
-proto-lint:
+proto-lint: $(protoImageStamp)
 	@$(protoImage) buf lint --error-format=json ./proto
 
-proto-check-breaking:
+proto-check-breaking: $(protoImageStamp)
 	@$(protoImage) buf breaking --against $(PR_TARGET_REPO)#branch=$(PR_TARGET_BRANCH),subdir=golang/cosmos
 
 GOGO_PROTO_URL = file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/gogoproto)
@@ -132,6 +146,7 @@ SDK_BASE_TYPES = third_party/proto/cosmos/base/v1beta1
 SDK_QUERY_TYPES = third_party/proto/cosmos/base/query/v1beta1
 SDK_UPGRADE_TYPES = third_party/proto/cosmos/upgrade/v1beta1
 SDK_MSG_TYPES = third_party/proto/cosmos/msg/v1
+SDK_BANK_TYPES = third_party/proto/cosmos/bank/v1beta1
 
 proto-update-deps:
 	mkdir -p $(COSMOS_PROTO_TYPES)
@@ -171,7 +186,10 @@ proto-update-deps:
 	mkdir -p $(SDK_UPGRADE_TYPES) && \
 	curl -sSL $$url/upgrade/v1beta1/upgrade.proto > $(SDK_UPGRADE_TYPES)/upgrade.proto && \
 	mkdir -p $(SDK_MSG_TYPES) && \
-	curl -sSL $$url/msg/v1/msg.proto > $(SDK_MSG_TYPES)/msg.proto
+	curl -sSL $$url/msg/v1/msg.proto > $(SDK_MSG_TYPES)/msg.proto && \
+	mkdir -p $(SDK_BANK_TYPES) && \
+	curl -sSL $$url/bank/v1beta1/bank.proto > $(SDK_BANK_TYPES)/bank.proto
+
 
 	url="$(COSMOS_SDK_AMINO_URL)"; \
 	mkdir -p $(COSMOS_SDK_AMINO_TYPES) && \

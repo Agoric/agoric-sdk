@@ -10,9 +10,10 @@
   },
   "scripts": {
     "esbuild:axelar": "esbuild ./src/examples/axelar-gmp.contract.js --platform=node --format=esm --bundle --outfile=dist/axelar-gmp.contract.bundle.js",
+    "codegen:download": "yarn run -T run-s codegen:fetch codegen:viem-abi",
+    "codegen:fetch": "scripts/fetch-chain-info.ts",
     "codegen:viem-abi": "tsup",
     "build": "yarn esbuild:axelar",
-    "codegen": "scripts/fetch-chain-info.ts",
     "prepack": "yarn run -T prepack-package",
     "postpack": "yarn run -T postpack-package",
     "test": "ava",
