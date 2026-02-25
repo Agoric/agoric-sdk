@@ -107,9 +107,9 @@ test('concurrent load() calls for same key settle without hanging', async t => {
   const bundles = await Promise.all(loads);
   t.is(bundles.length, 24);
   t.truthy(bundles[0]);
-  bundles.forEach((bundle, i) => {
+  for (const [i, bundle] of bundles.entries()) {
     t.deepEqual(bundle, bundles[0], `bundles[${i}] matches bundles[0]`);
-  });
+  }
 });
 
 test('load() accepts file URL source specs', async t => {
