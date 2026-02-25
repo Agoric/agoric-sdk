@@ -1,12 +1,17 @@
 import type { Filter, WebSocketProvider, Log } from 'ethers';
 import { id, AbiCoder } from 'ethers';
+import type { WebSocket } from 'ws';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { KVStore } from '@agoric/internal/src/kv-store.js';
+import { tryJsonParse } from '@agoric/internal';
+import type { JSONRPCClient } from 'json-rpc-2.0';
 import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
+  scanFailedTxsInChunks,
   type WatcherTimeoutOptions,
 } from '../evm-scanner.ts';
+import type { MakeAbortController } from '../support.ts';
 import { PendingTxCode, TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
 import {
   deleteTxBlockLowerBound,
@@ -14,7 +19,16 @@ import {
   setTxBlockLowerBound,
 } from '../kv-store.ts';
 import type { WatcherResult } from '../pending-tx-manager.ts';
-import { handleOperationFailure } from './watcher-utils.ts';
+import {
+  extractPayloadHash,
+  fetchReceiptWithRetry,
+  handleTxRevert,
+  handleOperationFailure,
+  FAILED_TX_SCOPE,
+  DEFAULT_RETRY_OPTIONS,
+  type AlchemySubscriptionMessage,
+  type RetryOptions,
+} from './watcher-utils.ts';
 
 /**
  * The Keccak256 hash (event signature) of the PortfolioRouter `OperationResult` event.
@@ -34,6 +48,7 @@ type OperationResultWatch = {
   log?: (...args: unknown[]) => void;
   kvStore: KVStore;
   txId: `tx${number}`;
+  payloadHash: string;
 };
 
 /**
@@ -76,7 +91,12 @@ export const watchOperationResult = ({
   log = () => {},
   setTimeout = globalThis.setTimeout,
   signal,
-}: OperationResultWatch & WatcherTimeoutOptions): Promise<WatcherResult> => {
+  payloadHash,
+  retryOptions = DEFAULT_RETRY_OPTIONS,
+}: OperationResultWatch &
+  WatcherTimeoutOptions & {
+    retryOptions?: RetryOptions;
+  }): Promise<WatcherResult> => {
   return new Promise(resolve => {
     if (signal?.aborted) {
       resolve({ settled: false });
@@ -94,23 +114,38 @@ export const watchOperationResult = ({
       `Watching for OperationResult on router ${routerAddress} with id: ${txId}`,
     );
 
-    let resultFound = false;
+    let done = false;
     let timeoutId: NodeJS.Timeout;
-    let listeners: Array<{ event: any; listener: any }> = [];
+    let subId: string | null = null;
+    const cleanups: (() => void)[] = [];
+
+    const ws = provider.websocket as WebSocket;
 
     const finish = (result: WatcherResult) => {
-      resolve(result);
+      if (done) return;
+      done = true;
+
       if (timeoutId) clearTimeout(timeoutId);
-      for (const { event, listener } of listeners) {
-        void provider.off(event, listener);
+      resolve(result);
+
+      if (subId) {
+        void provider
+          .send('eth_unsubscribe', [subId])
+          .catch(e => log('Failed to unsubscribe:', e));
       }
-      listeners = [];
+      for (const cleanup of cleanups) cleanup();
     };
 
-    signal?.addEventListener('abort', () => finish({ settled: false }));
+    if (signal) {
+      const onAbort = () => finish({ settled: false });
+      signal.addEventListener('abort', onAbort);
+      cleanups.unshift(() => signal.removeEventListener('abort', onAbort));
+    }
 
+    // Primary path: OperationResult event listener
     const listenForOperationResult = async (eventLog: Log) => {
       await null;
+      if (done) return;
       try {
         const { idHash, success } = parseOperationResultLog(eventLog);
 
@@ -123,7 +158,6 @@ export const watchOperationResult = ({
           log(
             `✅ SUCCESS: expectedId=${txId} idHash=${idHash} txHash=${txHash}`,
           );
-          resultFound = true;
           return finish({ settled: true, txHash, success: true });
         }
 
@@ -139,7 +173,6 @@ export const watchOperationResult = ({
         );
 
         if (result) {
-          resultFound = true;
           return finish(result);
         }
       } catch (error: any) {
@@ -148,10 +181,113 @@ export const watchOperationResult = ({
     };
 
     void provider.on(filter, listenForOperationResult);
-    listeners.push({ event: filter, listener: listenForOperationResult });
+    cleanups.unshift(() => {
+      void provider.off(filter, listenForOperationResult);
+    });
+
+    // Secondary path: Alchemy mined-tx subscription for revert detection
+    {
+      const messageHandler = async (data: any) => {
+        await null;
+        if (done) return;
+
+        try {
+          const msg = tryJsonParse(
+            data.toString(),
+            'alchemy_minedTransactions subscription response',
+          ) as AlchemySubscriptionMessage;
+
+          if (msg.method !== 'eth_subscription') return;
+
+          const tx = msg.params?.result?.transaction;
+          const removed = msg.params?.result?.removed;
+          if (!tx) return;
+
+          if (removed === true) {
+            log(
+              `⚠️  REORG: txId=${txId} txHash=${tx.hash} was removed from chain - ignoring`,
+            );
+            return;
+          }
+
+          const txHash = tx.hash;
+          const txData = tx.input;
+          if (!txHash || !txData) return;
+
+          // Validate the payload hash matches
+          if (extractPayloadHash(txData) !== payloadHash) return;
+
+          const receipt = await fetchReceiptWithRetry(
+            provider,
+            txHash,
+            log,
+            retryOptions,
+            setTimeout,
+          );
+          if (!receipt) {
+            log(`Transaction ${txHash} not confirmed after waiting`);
+            return;
+          }
+
+          // If receipt has an OperationResult event, let the event listener handle it
+          const hasOperationResultEvent = receipt.logs.some(
+            l =>
+              l.topics?.[0] === OPERATION_RESULT_SIGNATURE &&
+              l.topics?.[1] === expectedIdHash,
+          );
+          if (hasOperationResultEvent) return;
+
+          // Transaction reverted (status=0) without emitting OperationResult
+          const result = await handleTxRevert(
+            receipt,
+            txHash,
+            `txId=${txId}`,
+            chainId,
+            provider,
+            log,
+          );
+          if (result) {
+            return finish(result);
+          }
+        } catch (e) {
+          log(
+            `Error processing WebSocket message for txId=${txId}:`,
+            e instanceof Error ? e.message : String(e),
+          );
+        }
+      };
+
+      const subscribe = async () => {
+        await provider.getNetwork();
+
+        ws.on('message', messageHandler);
+        cleanups.unshift(() => ws.off('message', messageHandler));
+
+        subId = await provider.send('eth_subscribe', [
+          'alchemy_minedTransactions',
+          {
+            addresses: [{ to: routerAddress }],
+            includeRemoved: true,
+            hashesOnly: false,
+          },
+        ]);
+      };
+
+      if (ws.readyState === 1) {
+        subscribe().catch(e => {
+          log(`Alchemy subscription failed (non-fatal):`, e);
+        });
+      } else {
+        ws.once('open', () =>
+          subscribe().catch(e => {
+            log(`Alchemy subscription failed (non-fatal):`, e);
+          }),
+        );
+      }
+    }
 
     timeoutId = setTimeout(() => {
-      if (!resultFound) {
+      if (!done) {
         log(
           `✗ No matching OperationResult found within ${timeoutMs / 60000} minutes`,
         );
@@ -176,10 +312,15 @@ export const lookBackOperationResult = async ({
   signal,
   kvStore,
   setTimeout = globalThis.setTimeout,
+  payloadHash,
+  rpcClient,
+  makeAbortController,
 }: OperationResultWatch & {
   publishTimeMs: number;
   signal?: AbortSignal;
   setTimeout?: typeof globalThis.setTimeout;
+  rpcClient: JSONRPCClient;
+  makeAbortController: MakeAbortController;
 }): Promise<WatcherResult> => {
   await null;
   try {
@@ -190,6 +331,8 @@ export const lookBackOperationResult = async ({
     const toBlock = await provider.getBlockNumber();
 
     const savedFromBlock = getTxBlockLowerBound(kvStore, txId) || fromBlock;
+    const failedTxLowerBound =
+      getTxBlockLowerBound(kvStore, txId, FAILED_TX_SCOPE) || fromBlock;
 
     // For indexed strings, Solidity stores keccak256(string) in the topic
     const expectedIdHash = id(txId);
@@ -205,6 +348,17 @@ export const lookBackOperationResult = async ({
 
     const abiCoder = new AbiCoder();
 
+    const updateFailedTxLowerBound = (_from: number, to: number) =>
+      setTxBlockLowerBound(kvStore, txId, to, FAILED_TX_SCOPE);
+
+    // Options shared by both scans. The abort signal propagates external
+    // cancellation.
+    const { signal: sharedSignal } = makeAbortController(
+      undefined,
+      signal ? [signal] : [],
+    );
+
+    // Phase 1: Scan for OperationResult events (cheap: uses eth_getLogs)
     const matchingEvent = await scanEvmLogsInChunks({
       provider,
       baseFilter,
@@ -213,7 +367,7 @@ export const lookBackOperationResult = async ({
       chainId,
       setTimeout,
       log,
-      signal,
+      signal: sharedSignal,
       onRejectedChunk: (_from, to) => setTxBlockLowerBound(kvStore, txId, to),
       predicate: ev => {
         try {
@@ -227,35 +381,73 @@ export const lookBackOperationResult = async ({
       },
     });
 
-    if (!matchingEvent) {
-      log(
-        `[${PendingTxCode.ROUTED_GMP_TX_NOT_FOUND}] No matching OperationResult found`,
+    if (matchingEvent) {
+      const parsed = parseOperationResultLog(matchingEvent, abiCoder);
+      const txHash = matchingEvent.transactionHash;
+
+      if (parsed.success) {
+        log(`✅ SUCCESS: txId=${txId} txHash=${txHash}`);
+        deleteTxBlockLowerBound(kvStore, txId);
+        deleteTxBlockLowerBound(kvStore, txId, FAILED_TX_SCOPE);
+        return { settled: true, txHash, success: true };
+      }
+
+      // Failure case: wait for confirmations before declaring failure
+      const result = await handleOperationFailure(
+        matchingEvent,
+        baseFilter,
+        logEntry => parseOperationResultLog(logEntry, abiCoder),
+        `txId=${txId}`,
+        chainId,
+        provider,
+        log,
       );
-      return { settled: false };
-    }
-
-    const parsed = parseOperationResultLog(matchingEvent, abiCoder);
-    const txHash = matchingEvent.transactionHash;
-
-    if (parsed.success) {
-      log(`✅ SUCCESS: txId=${txId} txHash=${txHash}`);
       deleteTxBlockLowerBound(kvStore, txId);
-      return { settled: true, txHash, success: true };
+      deleteTxBlockLowerBound(kvStore, txId, FAILED_TX_SCOPE);
+
+      return result ?? { settled: false };
     }
 
-    // Failure case: wait for confirmations before declaring failure
-    const result = await handleOperationFailure(
-      matchingEvent,
-      baseFilter,
-      logEntry => parseOperationResultLog(logEntry, abiCoder),
-      `txId=${txId}`,
-      chainId,
+    // Phase 2: Scan for reverted transactions (uses eth_getBlockReceipts or trace_filter)
+    // Only reached when phase 1 found nothing in the block range.
+    const failedTx = await scanFailedTxsInChunks({
       provider,
+      fromBlock: failedTxLowerBound,
+      toBlock,
+      chainId,
+      setTimeout,
       log,
-    );
-    deleteTxBlockLowerBound(kvStore, txId);
+      signal: sharedSignal,
+      toAddress: routerAddress,
+      verifyFailedTx: tx => extractPayloadHash(tx.data) === payloadHash,
+      onRejectedChunk: updateFailedTxLowerBound,
+      rpcClient,
+    });
 
-    return result ?? { settled: false };
+    if (failedTx) {
+      log(`Found matching failed transaction`);
+      const receipt = await provider.getTransactionReceipt(failedTx.hash);
+      if (receipt) {
+        const result = await handleTxRevert(
+          receipt,
+          failedTx.hash,
+          `txId=${txId}`,
+          chainId,
+          provider,
+          log,
+        );
+        if (result) {
+          deleteTxBlockLowerBound(kvStore, txId);
+          deleteTxBlockLowerBound(kvStore, txId, FAILED_TX_SCOPE);
+          return result;
+        }
+      }
+    }
+
+    log(
+      `[${PendingTxCode.ROUTED_GMP_TX_NOT_FOUND}] No matching OperationResult found`,
+    );
+    return { settled: false };
   } catch (error) {
     log(`Error:`, error);
     return { settled: false };

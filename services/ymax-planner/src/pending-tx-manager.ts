@@ -74,7 +74,10 @@ export type GmpTransfer = {
 type CctpTx = PendingTx & { type: typeof TxType.CCTP_TO_EVM; amount: bigint };
 type GmpTx = PendingTx & { type: typeof TxType.GMP };
 type MakeAccountTx = PendingTx & { type: typeof TxType.MAKE_ACCOUNT };
-type RoutedGmpTx = PendingTx & { type: typeof TxType.ROUTED_GMP };
+type RoutedGmpTx = PendingTx & {
+  type: typeof TxType.ROUTED_GMP;
+  payloadHash: string;
+};
 
 type LiveWatchOpts = { mode: 'live'; timeoutMs: number; signal?: AbortSignal };
 type LookBackWatchOpts = {
@@ -478,7 +481,7 @@ const routedGmpMonitor: PendingTxMonitor<RoutedGmpTx, EvmContext> = {
   watch: async (ctx, tx, log, opts) => {
     await null;
 
-    const { txId, destinationAddress } = tx;
+    const { txId, destinationAddress, payloadHash } = tx;
     const logPrefix = `[${txId}]`;
 
     if (opts.signal?.aborted) {
@@ -496,13 +499,16 @@ const routedGmpMonitor: PendingTxMonitor<RoutedGmpTx, EvmContext> = {
       Fail`${logPrefix} No EVM provider for chain: ${caipId}`;
 
     const provider = ctx.evmProviders[caipId] as WebSocketProvider;
-
+    const rpcUrl =
+      ctx.rpcUrls[caipId] || Fail`${logPrefix} No RPC URL for chain: ${caipId}`;
+    const rpcClient = makeJsonRpcClient(ctx.fetch, rpcUrl);
     const watchArgs = {
       routerAddress: accountAddress as `0x${string}`,
       provider,
       chainId: caipId,
       kvStore: ctx.kvStore,
       txId,
+      payloadHash,
       log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
     };
 
@@ -546,6 +552,8 @@ const routedGmpMonitor: PendingTxMonitor<RoutedGmpTx, EvmContext> = {
         publishTimeMs: opts.publishTimeMs,
         signal: abortController.signal,
         setTimeout: ctx.setTimeout,
+        rpcClient,
+        makeAbortController: ctx.makeAbortController,
       });
 
       if (lookBackResult.settled) {

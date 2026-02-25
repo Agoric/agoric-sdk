@@ -1,14 +1,32 @@
 import test from 'ava';
-import { AbiCoder, id } from 'ethers';
+import { AbiCoder, Interface, id, hexlify, randomBytes, keccak256 } from 'ethers';
 import type { Log } from 'ethers';
 import { makeKVStoreFromMap } from '@agoric/internal/src/kv-store.js';
 import { createMockProvider } from './mocks.ts';
+import { prepareAbortController } from '../src/support.ts';
 import {
   watchOperationResult,
   lookBackOperationResult,
 } from '../src/watchers/operation-watcher.ts';
 
 const OPERATION_RESULT_SIGNATURE = id('OperationResult(string,bool,bytes)');
+
+/**
+ * Encode Axelar execute() calldata with a given payload, returning the
+ * calldata and the expected payloadHash (keccak256 of the raw payload bytes).
+ */
+const encodeExecuteCalldata = (payload: string) => {
+  const axelarExecuteIface = new Interface([
+    'function execute(bytes32 commandId, string sourceChain, string sourceAddress, bytes payload) external',
+  ]);
+  const calldata = axelarExecuteIface.encodeFunctionData('execute', [
+    hexlify(randomBytes(32)),
+    'agoric',
+    'agoric1test',
+    payload,
+  ]);
+  return { calldata, payloadHash: keccak256(payload) };
+};
 
 /**
  * Create a mock OperationResult event log.
@@ -42,6 +60,14 @@ const createMockOperationResultLog = (
     transactionHash,
   };
 };
+
+const MOCK_PAYLOAD_HASH = '0x' + '00'.repeat(32);
+
+const makeAbortController = prepareAbortController({
+  setTimeout,
+  AbortController,
+  AbortSignal,
+});
 
 test('watchOperationResult detects successful OperationResult event (live mode)', async t => {
   const routerAddress = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
@@ -80,6 +106,7 @@ test('watchOperationResult detects successful OperationResult event (live mode)'
     chainId,
     kvStore,
     txId,
+    payloadHash: MOCK_PAYLOAD_HASH,
     timeoutMs: 3000,
     log: logger,
   });
@@ -143,6 +170,7 @@ test('watchOperationResult detects failed OperationResult event with finality pr
     chainId,
     kvStore,
     txId,
+    payloadHash: MOCK_PAYLOAD_HASH,
     timeoutMs: 3000,
     log: logger,
   });
@@ -187,6 +215,9 @@ test('lookBackOperationResult finds successful OperationResult event (lookback m
     chainId,
     kvStore,
     txId,
+    payloadHash: MOCK_PAYLOAD_HASH,
+    rpcClient: {} as any,
+    makeAbortController,
     publishTimeMs: Date.now() - 60000, // 1 minute ago
     log: logger,
   });
@@ -247,6 +278,9 @@ test('lookBackOperationResult finds failed OperationResult event with finality p
     chainId,
     kvStore,
     txId,
+    payloadHash: MOCK_PAYLOAD_HASH,
+    rpcClient: {} as any,
+    makeAbortController,
     publishTimeMs: Date.now() - 60000, // 1 minute ago
     log: logger,
   });
@@ -258,5 +292,221 @@ test('lookBackOperationResult finds failed OperationResult event with finality p
   t.true(
     logMessages.some(msg => msg.includes('FAILURE')),
     'Should log failure message',
+  );
+});
+
+// --- Revert detection tests ---
+
+test('lookBackOperationResult phase 2 detects reverted tx via payloadHash', async t => {
+  const routerAddress = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
+  const txId = 'tx5' as `tx${number}`;
+  const chainId = 'eip155:1';
+  const kvStore = makeKVStoreFromMap(new Map());
+  const latestBlock = 1000;
+  const revertTxHash = '0xrevertedtx';
+
+  // Encode execute calldata with a known payload
+  const payload = new AbiCoder().encode(['string'], ['test-payload']);
+  const { calldata, payloadHash } = encodeExecuteCalldata(payload);
+
+  // No OperationResult events (phase 1 finds nothing)
+  const provider = createMockProvider(latestBlock, []);
+
+  // Mock trace_filter to return our reverted tx (eip155:1 uses trace_filter)
+  (provider as any).send = async (method: string, params: any[]) => {
+    if (method === 'trace_filter') {
+      return [
+        {
+          type: 'call',
+          action: {
+            from: '0x0000000000000000000000000000000000000001',
+            to: routerAddress.toLowerCase(),
+            input: calldata,
+            value: '0x0',
+            gas: '0x186a0',
+            callType: 'call',
+          },
+          blockNumber: latestBlock,
+          transactionHash: revertTxHash,
+          error: 'Reverted',
+          subtraces: 0,
+          traceAddress: [],
+        },
+      ];
+    }
+    return 'mock-subscription-id';
+  };
+
+  // Receipt for the reverted tx
+  (provider as any).getTransactionReceipt = async (hash: string) => {
+    if (hash === revertTxHash) {
+      return {
+        status: 0,
+        blockNumber: latestBlock,
+        blockHash: '0xblockhash',
+        transactionHash: revertTxHash,
+        logs: [],
+      };
+    }
+    return null;
+  };
+
+  // waitForTransaction for finality check
+  (provider as any).waitForTransaction = async () => ({
+    status: 0,
+    blockNumber: latestBlock,
+    blockHash: '0xblockhash',
+    transactionHash: revertTxHash,
+  });
+
+  const logMessages: string[] = [];
+  const logger = (...args: any[]) => logMessages.push(args.join(' '));
+
+  // Mock rpcClient (not used for trace_filter path but required by type)
+  const mockRpcClient = {} as any;
+
+  const result = await lookBackOperationResult({
+    routerAddress: routerAddress as `0x${string}`,
+    provider,
+    chainId,
+    kvStore,
+    txId,
+    payloadHash,
+    rpcClient: mockRpcClient,
+    makeAbortController,
+    publishTimeMs: Date.now() - 60000,
+    log: logger,
+  });
+
+  t.true(result.settled, 'Should be settled');
+  t.false(result.success, 'Should be failed (reverted)');
+  t.is(result.txHash, revertTxHash, 'Should have correct txHash');
+  t.true(
+    logMessages.some(msg => msg.includes('REVERTED')),
+    'Should log revert message',
+  );
+});
+
+test('watchOperationResult detects revert via Alchemy subscription (live mode)', async t => {
+  const routerAddress = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
+  const txId = 'tx6' as `tx${number}`;
+  const chainId = 'eip155:1';
+  const kvStore = makeKVStoreFromMap(new Map());
+  const provider = createMockProvider(1000);
+  const revertTxHash = '0xrevertedlivetx';
+  const blockNumber = 1001;
+
+  // Encode execute calldata with a known payload
+  const payload = new AbiCoder().encode(['string'], ['live-test-payload']);
+  const { calldata, payloadHash } = encodeExecuteCalldata(payload);
+
+  // Receipt for the reverted tx (no OperationResult events)
+  (provider as any).getTransactionReceipt = async (hash: string) => {
+    if (hash === revertTxHash) {
+      return {
+        status: 0,
+        blockNumber,
+        blockHash: '0xblockhash',
+        transactionHash: revertTxHash,
+        logs: [],
+      };
+    }
+    return null;
+  };
+
+  // waitForTransaction for finality check
+  (provider as any).waitForTransaction = async () => ({
+    status: 0,
+    blockNumber,
+    blockHash: '0xblockhash',
+    transactionHash: revertTxHash,
+  });
+
+  const logMessages: string[] = [];
+  const logger = (...args: any[]) => logMessages.push(args.join(' '));
+
+  // Simulate Alchemy mined-tx WebSocket message after a short delay
+  setTimeout(() => {
+    const wsMessage = JSON.stringify({
+      jsonrpc: '2.0',
+      method: 'eth_subscription',
+      params: {
+        result: {
+          removed: false,
+          transaction: {
+            hash: revertTxHash,
+            input: calldata,
+            to: routerAddress,
+            from: '0x0000000000000000000000000000000000000001',
+            value: '0x0',
+            blockNumber: `0x${blockNumber.toString(16)}`,
+          },
+        },
+        subscription: 'mock-sub-id',
+      },
+    });
+
+    (provider as any).websocket.emit('message', wsMessage);
+  }, 50);
+
+  const result = await watchOperationResult({
+    routerAddress: routerAddress as `0x${string}`,
+    provider,
+    chainId,
+    kvStore,
+    txId,
+    payloadHash,
+    timeoutMs: 3000,
+    log: logger,
+  });
+
+  t.true(result.settled, 'Should be settled');
+  t.false(result.success, 'Should be failed (reverted)');
+  t.is(result.txHash, revertTxHash, 'Should have correct txHash');
+  t.true(
+    logMessages.some(msg => msg.includes('REVERTED')),
+    'Should log revert message',
+  );
+});
+
+test('lookBackOperationResult returns not-found when both phases find nothing', async t => {
+  const routerAddress = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
+  const txId = 'tx7' as `tx${number}`;
+  const chainId = 'eip155:1';
+  const kvStore = makeKVStoreFromMap(new Map());
+  const latestBlock = 1000;
+  const payloadHash = '0xdeadbeef';
+
+  // No events (phase 1 finds nothing)
+  const provider = createMockProvider(latestBlock, []);
+
+  // trace_filter returns no failed txs (phase 2 finds nothing)
+  (provider as any).send = async (method: string) => {
+    if (method === 'trace_filter') return [];
+    return 'mock-subscription-id';
+  };
+
+  const logMessages: string[] = [];
+  const logger = (...args: any[]) => logMessages.push(args.join(' '));
+
+  const mockRpcClient = {} as any;
+
+  const result = await lookBackOperationResult({
+    routerAddress: routerAddress as `0x${string}`,
+    provider,
+    chainId,
+    kvStore,
+    txId,
+    payloadHash,
+    rpcClient: mockRpcClient,
+    makeAbortController,
+    publishTimeMs: Date.now() - 60000,
+    log: logger,
+  });
+
+  t.false(result.settled, 'Should not be settled when nothing found');
+  t.true(
+    logMessages.some(msg => msg.includes('ROUTED_GMP_TX_NOT_FOUND')),
+    'Should log not-found code',
   );
 });
