@@ -170,7 +170,7 @@ jobs:
     # BEGIN-TEST-BOILERPLATE
     timeout-minutes: 30
     needs: build
-    runs-on: ubuntu-latest-16core # avoid exit 129
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         engine: ["node-new", "node-old", "xs"]
@@ -677,7 +677,7 @@ jobs:
     # BEGIN-TEST-BOILERPLATE
     timeout-minutes: 30
     needs: build
-    runs-on: ubuntu-latest-16core # avoid exit 129
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         # test:xs is noop in cosmic-swingset/package.json
