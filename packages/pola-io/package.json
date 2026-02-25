@@ -14,9 +14,6 @@
     "lint:types": "yarn run -T tsc",
     "lint-fix": "eslint --fix ."
   },
-  "dependencies": {
-    "@agoric/internal": "workspace:*"
-  },
   "devDependencies": {
     "ava": "^6.4.1"
   },
