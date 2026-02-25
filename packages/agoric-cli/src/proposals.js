@@ -17,6 +17,7 @@ import { makeScriptLoader } from './scripts.js';
 /** @import {CoreEvalMaterialRecord} from '@agoric/deploy-script-support/src/writeCoreEvalParts.js' */
 
 const consoleThis = console;
+const require = createRequire(import.meta.url);
 
 /**
  * @typedef {'prefer-in-process' | 'in-process-only' | 'shell-only'} ProposalBuildMode
@@ -37,9 +38,8 @@ const consoleThis = console;
  * @param {string[]} paths
  */
 const resolveModuleSpecifier = (moduleSpecifier, paths) => {
-  const req = createRequire(import.meta.url);
   try {
-    return req.resolve(moduleSpecifier, { paths });
+    return require.resolve(moduleSpecifier, { paths });
   } catch (_err) {
     if (path.isAbsolute(moduleSpecifier)) {
       return path.normalize(moduleSpecifier);
@@ -279,8 +279,7 @@ const runWithShell = async ({
   args,
   childProcess,
 }) => {
-  const req = createRequire(import.meta.url);
-  const agoricEntrypoint = req.resolve('agoric/src/entrypoint.js');
+  const agoricEntrypoint = require.resolve('agoric/src/entrypoint.js');
   const agoricRunOutput = childProcess.execFileSync(
     agoricEntrypoint,
     ['run', resolvedBuilderPath, ...args],
