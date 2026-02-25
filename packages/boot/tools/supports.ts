@@ -276,9 +276,12 @@ type ProposalExtractorEvent =
     };
 
 const PROPOSAL_CACHE_TOOL_VERSION = 'boot-proposal-cache-v1';
+// Profiling env vars are documented in packages/boot/README.md.
 const BOOT_PROFILE_ENV = 'AGORIC_BOOT_TEST_PROFILE';
 const BOOT_PROFILE_FILE_ENV = 'AGORIC_BOOT_TEST_PROFILE_FILE';
 
+// Chrome Trace Event format:
+// https://chromium.googlesource.com/catapult/+/HEAD/tracing/README.md
 interface BootProfileCompleteEvent {
   args?: Record<string, unknown>;
   cat: 'agoric.boot.test-supports';
