@@ -1,0 +1,114 @@
+name: Daily Test Coverage Improver - Coverage Steps
+description: |
+  Builds a representative subset of packages, runs tests with V8 coverage collection,
+  generates a combined HTML+JSON coverage report, and uploads it as the "coverage" artifact.
+  Each step appends its output to coverage-steps.log in the repository root.
+
+  Coverage report location after execution:
+    coverage/html/   — HTML SPA report (open index.html)
+    coverage/tmp/    — Raw V8 JSON coverage data
+
+runs:
+  using: composite
+  steps:
+    # -----------------------------------------------------------------------
+    # Step 1: Set up Node.js 20 (LTS) using the version already present on the
+    # runner. Yarn 4 (corepack) is activated so the workspace commands work.
+    # -----------------------------------------------------------------------
+    - name: Set up Node.js and Corepack
+      shell: bash
+      run: |
+        echo "=== Step: Set up Node.js and Corepack ===" | tee -a coverage-steps.log
+        node --version 2>&1 | tee -a coverage-steps.log
+        corepack enable 2>&1 | tee -a coverage-steps.log
+        yarn --version 2>&1 | tee -a coverage-steps.log
+        echo "Node/Yarn setup complete" | tee -a coverage-steps.log
+
+    # -----------------------------------------------------------------------
+    # Step 2: Install JavaScript dependencies.
+    # The repo uses Yarn workspaces (Yarn 4 / Berry).
+    # -----------------------------------------------------------------------
+    - name: Install dependencies
+      shell: bash
+      run: |
+        echo "=== Step: Install dependencies ===" | tee -a coverage-steps.log
+        yarn install --immutable 2>&1 | tee -a coverage-steps.log
+        echo "yarn install complete" | tee -a coverage-steps.log
+
+    # -----------------------------------------------------------------------
+    # Step 3: Build all packages (topological order).
+    # Many packages require a build step before tests can run.
+    # This runs `yarn build` which calls `yarn workspaces foreach --all --topological run build`.
+    # -----------------------------------------------------------------------
+    - name: Build packages
+      shell: bash
+      run: |
+        echo "=== Step: Build packages ===" | tee -a coverage-steps.log
+        yarn build 2>&1 | tee -a coverage-steps.log
+        echo "Build complete" | tee -a coverage-steps.log
+
+    # -----------------------------------------------------------------------
+    # Step 4: Run tests with V8 coverage collection across all packages that
+    # have a `test:c8` script. Raw coverage JSON is written to coverage/tmp/.
+    #
+    # Key environment variables:
+    #   NODE_V8_COVERAGE — tells Node to write raw V8 coverage to this path
+    #   C8_OPTIONS=--clean=false — prevents c8 from wiping coverage/tmp between
+    #                              packages so all data accumulates
+    #   NODE_OPTIONS — limits heap size to avoid OOM on limited runners
+    # -----------------------------------------------------------------------
+    - name: Run tests with coverage
+      shell: bash
+      run: |
+        echo "=== Step: Run tests with coverage ===" | tee -a coverage-steps.log
+        export NODE_V8_COVERAGE="$PWD/coverage/tmp"
+        export C8_OPTIONS="--clean=false"
+        export NODE_OPTIONS="--max-old-space-size=4096"
+        rm -rf "$NODE_V8_COVERAGE"
+        mkdir -p "$NODE_V8_COVERAGE"
+        # Run test:c8 across all packages; --no-bail so we collect as much data as possible
+        yarn lerna run test:c8 --no-bail 2>&1 | tee -a coverage-steps.log
+        echo "Test run complete" | tee -a coverage-steps.log
+
+    # -----------------------------------------------------------------------
+    # Step 5: Generate combined HTML coverage report using the accumulated raw
+    # V8 data from coverage/tmp.  The --all flag ensures that source files
+    # with zero coverage are still included in the report.
+    # -----------------------------------------------------------------------
+    - name: Generate coverage report
+      shell: bash
+      run: |
+        echo "=== Step: Generate coverage report ===" | tee -a coverage-steps.log
+        export NODE_V8_COVERAGE="$PWD/coverage/tmp"
+        # Generate HTML SPA report
+        yarn c8 report \
+          --all \
+          --include 'packages/*/{src,tools}' \
+          --reporter=html-spa \
+          --reports-dir=coverage/html \
+          2>&1 | tee -a coverage-steps.log
+        # Also generate lcov and text summary for easier parsing
+        yarn c8 report \
+          --all \
+          --include 'packages/*/{src,tools}' \
+          --reporter=lcov \
+          --reporter=text-summary \
+          --reports-dir=coverage \
+          2>&1 | tee -a coverage-steps.log
+        echo "Coverage report generated at coverage/html/" | tee -a coverage-steps.log
+        echo "Lcov report at coverage/lcov.info" | tee -a coverage-steps.log
+
+    # -----------------------------------------------------------------------
+    # Step 6: Upload the coverage directory (HTML report + lcov + log) as the
+    # "coverage" artifact so it is accessible from the workflow run UI.
+    # -----------------------------------------------------------------------
+    - name: Upload coverage artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage
+        path: |
+          coverage/html/
+          coverage/lcov.info
+          coverage-steps.log
+        if-no-files-found: warn
+        retention-days: 30
