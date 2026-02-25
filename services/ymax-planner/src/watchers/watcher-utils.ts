@@ -222,6 +222,32 @@ export const fetchReceiptWithRetry = async (
 };
 
 /**
+ * Wait for sufficient block confirmations on a transaction.
+ *
+ * Implements the finality protection pattern: wait for enough confirmations
+ * to ensure the result is permanent before reporting it. This prevents
+ * premature failure reports that could be reversed by a blockchain reorg.
+ *
+ * @returns Confirmed receipt and confirmation count, or null if reorged out
+ */
+const waitForFinalConfirmations = async (
+  txHash: string,
+  chainId: CaipChainId | `${string}:${string}`,
+  provider: WebSocketProvider,
+  log: (...args: unknown[]) => void,
+): Promise<{ receipt: TransactionReceipt; confirmations: number } | null> => {
+  const confirmations = getConfirmationsRequired(chainId);
+  const receipt = await provider.waitForTransaction(txHash, confirmations);
+  if (!receipt) {
+    log(
+      `Transaction ${txHash} not confirmed after waiting for ${confirmations} confirmations (possibly reorged out)`,
+    );
+    return null;
+  }
+  return { receipt, confirmations };
+};
+
+/**
  * Handle receipt status for a transaction that has been validated as matching
  * the watcher's criteria. Returns the result to report to the caller.
  *
@@ -250,34 +276,24 @@ export const handleTxRevert = async (
   // success → failure just as it can flip failure → success.
   if (receipt.status !== 0) return null;
 
-  /**
-   * Transaction reverted - For failure cases, we wait for full finality
-   * confirmations to ensure the failure is permanent. A failure that reorgs
-   * into a success is very hard for our system to recover from, so we must
-   * be certain of the failure.
-   */
-  const confirmations = getConfirmationsRequired(chainId);
-  const confirmedReceipt = await provider.waitForTransaction(
+  const confirmed = await waitForFinalConfirmations(
     txHash,
-    confirmations,
+    chainId,
+    provider,
+    log,
   );
-  if (!confirmedReceipt) {
-    log(
-      `Transaction ${txHash} was not confirmed after waiting for ${confirmations} confirmations (possibly reorged out)`,
-    );
-    return null;
-  }
+  if (!confirmed) return null;
 
   // Re-check status after confirmations in case of reorg
-  if (confirmedReceipt.status === 0) {
+  if (confirmed.receipt.status === 0) {
     log(
-      `❌ REVERTED (${confirmations} confirmations): ${identifier} txHash=${txHash} block=${confirmedReceipt.blockNumber} - transaction failed`,
+      `❌ REVERTED (${confirmed.confirmations} confirmations): ${identifier} txHash=${txHash} block=${confirmed.receipt.blockNumber} - transaction failed`,
     );
     return { settled: true, txHash, success: false };
   } else {
     // Transaction was reorged and succeeded - treat as success
     log(
-      `✅ SUCCESS (after reorg, ${confirmations} confirmations): ${identifier} txHash=${txHash} block=${confirmedReceipt.blockNumber}`,
+      `✅ SUCCESS (after reorg, ${confirmed.confirmations} confirmations): ${identifier} txHash=${txHash} block=${confirmed.receipt.blockNumber}`,
     );
     return { settled: true, txHash, success: true };
   }
@@ -310,34 +326,18 @@ export const handleOperationFailure = async <T extends { success: boolean }>(
   log: (...args: unknown[]) => void,
 ): Promise<{ settled: true; txHash: string; success: boolean } | null> => {
   const txHash = eventLog.transactionHash;
-  const originalBlock = eventLog.blockNumber;
 
-  const confirmations = getConfirmationsRequired(chainId);
-  const currentBlock = await provider.getBlockNumber();
-  const confirmedBlocks = currentBlock - originalBlock;
+  const confirmed = await waitForFinalConfirmations(
+    txHash,
+    chainId,
+    provider,
+    log,
+  );
+  if (!confirmed) return null;
 
-  let finalBlock = originalBlock;
+  const finalBlock = confirmed.receipt.blockNumber;
 
-  if (confirmedBlocks < confirmations) {
-    log(
-      `⏳ FAILURE detected, waiting for ${confirmations} confirmations (have ${confirmedBlocks}): ${identifier} txHash=${txHash}`,
-    );
-
-    const receipt = await provider.waitForTransaction(txHash, confirmations);
-
-    if (!receipt) {
-      log(
-        `Transaction ${txHash} not confirmed after waiting (possibly reorged out)`,
-      );
-      return null;
-    }
-
-    // If reorged, the tx may have landed in a different block.
-    finalBlock = receipt.blockNumber;
-  }
-
-  // Re-fetch logs to verify the failure is still present.
-  // Use finalBlock (post-wait)
+  // Re-fetch logs to verify the failure is still present
   const logsInBlock = await provider.getLogs({
     ...filter,
     fromBlock: finalBlock,
@@ -348,7 +348,7 @@ export const handleOperationFailure = async <T extends { success: boolean }>(
 
   if (!confirmedLog) {
     log(
-      `Event not found after ${confirmations} confirmations (possibly reorged): ${identifier} txHash=${txHash}`,
+      `Event not found after ${confirmed.confirmations} confirmations (possibly reorged): ${identifier} txHash=${txHash}`,
     );
     return null;
   }
@@ -357,13 +357,13 @@ export const handleOperationFailure = async <T extends { success: boolean }>(
 
   if (confirmedParsed.success) {
     log(
-      `✅ SUCCESS (after reorg, ${confirmations} confirmations): ${identifier} txHash=${txHash}`,
+      `✅ SUCCESS (after reorg, ${confirmed.confirmations} confirmations): ${identifier} txHash=${txHash}`,
     );
     return { settled: true, txHash, success: true };
   }
 
   log(
-    `❌ FAILURE (${confirmations} confirmations): ${identifier} txHash=${txHash}`,
+    `❌ FAILURE (${confirmed.confirmations} confirmations): ${identifier} txHash=${txHash}`,
   );
   return { settled: true, txHash, success: false };
 };
