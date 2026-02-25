@@ -72,13 +72,6 @@ import { makeDirectoryLock } from '@agoric/internal/src/build-cache.js';
  * }} BundleToolPowers
  */
 
-/**
- * @param {string} dest
- * @param {BundleCacheOptions} options
- * @param {Parameters<typeof wrappedMaker>[2]} loadModule
- * @param {BundleToolPowers} powers
- * @returns {Promise<BundleCache>}
- */
 const BUNDLE_LOCK_ACQUIRE_TIMEOUT_MS = 5 * 60_000;
 const BUNDLE_STALE_LOCK_MS = 60_000;
 
