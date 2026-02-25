@@ -135,7 +135,9 @@ test('proposal cache key and on-disk cache contents are explicit', async t => {
   const metadataPath = join(cacheEntryDir, 'metadata.json');
   const materialsPath = join(cacheEntryDir, 'materials.json');
   const metadata = JSON.parse(await fsPromises.readFile(metadataPath, 'utf8'));
-  const materials = JSON.parse(await fsPromises.readFile(materialsPath, 'utf8'));
+  const materials = JSON.parse(
+    await fsPromises.readFile(materialsPath, 'utf8'),
+  );
 
   t.like(metadata, {
     args,
