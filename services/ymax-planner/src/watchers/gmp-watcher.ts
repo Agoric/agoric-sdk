@@ -5,12 +5,15 @@ import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.js';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import { tryJsonParse } from '@agoric/internal';
+import type { JSONRPCClient } from 'json-rpc-2.0';
 import { PendingTxCode } from '../pending-tx-manager.ts';
 import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
-} from '../support.ts';
-import type { MakeAbortController, WatcherTimeoutOptions } from '../support.ts';
+  scanFailedTxsInChunks,
+  type WatcherTimeoutOptions,
+} from '../evm-scanner.ts';
+import type { MakeAbortController } from '../support.ts';
 import { TX_TIMEOUT_MS, type WatcherResult } from '../pending-tx-manager.ts';
 import {
   deleteTxBlockLowerBound,
@@ -21,6 +24,7 @@ import {
   fetchReceiptWithRetry,
   extractGmpExecuteData,
   DEFAULT_RETRY_OPTIONS,
+  FAILED_TX_SCOPE,
   type AlchemySubscriptionMessage,
   type RetryOptions,
   handleTxRevert,
@@ -270,21 +274,28 @@ export const watchGmp = ({
 
 export const MULTICALL_STATUS_EVENT = 'status';
 
+type WatchGmpLookback = {
+  publishTimeMs: number;
+  chainId: CaipChainId;
+  setTimeout: typeof globalThis.setTimeout;
+  signal?: AbortSignal;
+  rpcClient: JSONRPCClient;
+};
+
 export const lookBackGmp = async ({
   provider,
+  rpcClient,
   contractAddress,
   txId,
+  expectedSourceAddress,
   publishTimeMs,
   chainId,
+  setTimeout,
   log = () => {},
   signal,
   kvStore,
   makeAbortController,
-}: WatchGmp & {
-  publishTimeMs: number;
-  chainId: CaipChainId;
-  signal?: AbortSignal;
-}): Promise<WatcherResult> => {
+}: WatchGmp & WatchGmpLookback): Promise<WatcherResult> => {
   await null;
   try {
     const fromBlock = await getBlockNumberBeforeRealTime(
@@ -295,6 +306,8 @@ export const lookBackGmp = async ({
 
     const statusEventLowerBound =
       getTxBlockLowerBound(kvStore, txId, MULTICALL_STATUS_EVENT) || fromBlock;
+    const failedTxLowerBound =
+      getTxBlockLowerBound(kvStore, txId, FAILED_TX_SCOPE) || fromBlock;
 
     log(
       `Searching blocks ${statusEventLowerBound} → ${toBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
@@ -313,42 +326,79 @@ export const lookBackGmp = async ({
 
     const updateStatusEventLowerBound = (_from: number, to: number) =>
       setTxBlockLowerBound(kvStore, txId, to, MULTICALL_STATUS_EVENT);
+    const updateFailedTxLowerBound = (_from: number, to: number) =>
+      setTxBlockLowerBound(kvStore, txId, to, FAILED_TX_SCOPE);
 
-    // Options shared by both scans (including an abort signal that is triggered
-    // by a match from either).
+    // Options shared by both scans. The abort signal propagates external
+    // cancellation.
     // see `prepareAbortController` in services/ymax-planner/src/main.ts
-    const { abort: abortScans, signal: sharedSignal } = makeAbortController(
+    const { signal: sharedSignal } = makeAbortController(
       undefined,
       signal ? [signal] : [],
     );
-    const baseScanOpts = {
+    const sharedOpts = {
       provider,
       toBlock,
       chainId,
+      setTimeout,
       log,
       signal: sharedSignal,
     };
 
-    const matchingEvent = await scanEvmLogsInChunks(
-      {
-        ...baseScanOpts,
-        baseFilter: statusFilter,
-        fromBlock: statusEventLowerBound,
-        onRejectedChunk: updateStatusEventLowerBound,
-      },
-      isMatch,
-    );
-
-    abortScans();
+    // Success path first (cheap on all chains: uses eth_getLogs).
+    const matchingEvent = await scanEvmLogsInChunks({
+      ...sharedOpts,
+      baseFilter: statusFilter,
+      fromBlock: statusEventLowerBound,
+      onRejectedChunk: updateStatusEventLowerBound,
+      predicate: isMatch,
+    });
 
     if (matchingEvent) {
       log(`Found matching event`);
       deleteTxBlockLowerBound(kvStore, txId, MULTICALL_STATUS_EVENT);
+      deleteTxBlockLowerBound(kvStore, txId, FAILED_TX_SCOPE);
       return {
         settled: true,
         txHash: matchingEvent.transactionHash,
         success: true,
       };
+    }
+
+    // Failure path second (expensive on Arb/Ava: uses eth_getBlockReceipts).
+    // Only reached when the success scan found nothing in the block range.
+    const failedTx = await scanFailedTxsInChunks({
+      ...sharedOpts,
+      fromBlock: failedTxLowerBound,
+      toAddress: contractAddress,
+      verifyFailedTx: tx => {
+        const data = extractGmpExecuteData(tx.data);
+        return (
+          data?.txId === txId && data.sourceAddress === expectedSourceAddress
+        );
+      },
+      onRejectedChunk: updateFailedTxLowerBound,
+      rpcClient,
+    });
+
+    if (failedTx) {
+      log(`Found matching failed transaction`);
+      const receipt = await provider.getTransactionReceipt(failedTx.hash);
+      if (receipt) {
+        const result = await handleTxRevert(
+          receipt,
+          failedTx.hash,
+          `txId=${txId}`,
+          chainId,
+          provider,
+          log,
+        );
+        if (result) {
+          deleteTxBlockLowerBound(kvStore, txId, MULTICALL_STATUS_EVENT);
+          deleteTxBlockLowerBound(kvStore, txId, FAILED_TX_SCOPE);
+          return result;
+        }
+      }
     }
 
     log(

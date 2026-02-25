@@ -9,7 +9,7 @@
 import { fork } from 'child_process';
 import path from 'path';
 import { promisify } from 'util';
-import anylogger from 'anylogger';
+import anylogger from '@agoric/internal/vendor/anylogger.js';
 
 import { q, Fail } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';

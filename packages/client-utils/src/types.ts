@@ -1,77 +1,62 @@
 // @file types for the client-utils package
 // NB: this doesn't follow best practices for TS in JS because this package will likely soon be written in TS
 
-import type { Brand, Issuer } from '@agoric/ertp';
-import type {
-  ContractRecord,
-  FeeConfig,
-  PoolMetrics,
-  TransactionRecord,
-} from '@agoric/fast-usdc';
-import type {
-  OutcomeRecord,
-  QuestionDetails,
-} from '@agoric/governance/src/types.js';
-import type { MetricsNotification as VaultDirectorMetrics } from '@agoric/inter-protocol/src/vaultFactory/vaultDirector.js';
-import type {
-  CurrentWalletRecord,
-  UpdateRecord,
-} from '@agoric/smart-wallet/src/smartWallet.js';
-import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
-import type { StatusFor } from '@aglocal/portfolio-contract/src/type-guards.js';
-import type {
-  Installation,
-  Instance,
-} from '@agoric/zoe/src/zoeService/types.js';
-
-// For static string key types. String template matching has to be in the ternary below.
-type PublishedTypeMap = {
-  'vaultFactory.metrics': VaultDirectorMetrics;
-  'agoricNames.installation': Array<[string, Installation]>;
-  'agoricNames.instance': Array<[string, Instance]>;
-  'agoricNames.brand': Array<[string, Brand]>;
-  'agoricNames.issuer': Array<[string, Issuer]>;
-  'agoricNames.vbankAsset': Array<[string, AssetInfo]>;
-  fastUsdc: ContractRecord;
-  'fastUsdc.feeConfig': FeeConfig;
-  'fastUsdc.poolMetrics': PoolMetrics;
-  ymax0: StatusFor['contract'];
-  ymax1: StatusFor['contract'];
-  'ymax0.portfolios': StatusFor['portfolios'];
-  'ymax1.portfolios': StatusFor['portfolios'];
-};
+import type { SmartWalletPublishedPathValue } from '@agoric/smart-wallet/src/types.js';
+import type { AgoricNamesPublishedPathTypes } from '@agoric/vats/src/types.js';
+import type { Marshal } from '@endo/marshal';
+import type { MinimalNetworkConfig } from './network-config.js';
+import type { VStorage } from './vstorage.js';
 
 /**
- * Utility type to the type that would result from unmarshalling the latest
- * value at a vstorage `published` path.
+ * Additional published path mappings supplied by VstorageKit consumers.
+ *
+ * Keys can be either exact path strings or template literal path types.
  */
-export type TypedPublished<T extends string> = T extends keyof PublishedTypeMap
-  ? PublishedTypeMap[T]
-  : T extends `wallet.${string}.current`
-    ? CurrentWalletRecord
-    : T extends `wallet.${string}`
-      ? UpdateRecord
-      : T extends `ymax${'0' | '1'}.portfolios.portfolio${number}`
-        ? StatusFor['portfolio']
-        : T extends `ymax${'0' | '1'}.portfolios.portfolio${number}.positions.${string}`
-          ? StatusFor['position']
-          : T extends `ymax${'0' | '1'}.portfolios.portfolio${number}.pendingTx.tx${number}`
-            ? StatusFor['pendingTx']
-            : T extends `ymax${'0' | '1'}.portfolios.portfolio${number}.flows.flow${number}`
-              ? StatusFor['flow']
-              : T extends `ymax${'0' | '1'}.portfolios.portfolio${number}.flows.flow${number}.steps`
-                ? StatusFor['flowSteps']
-                : T extends `ymax${'0' | '1'}.evmWallets.0x${string}.portfolio`
-                  ? StatusFor['evmWalletPortfolios']
-                  : T extends `ymax${'0' | '1'}.evmWallets.0x${string}`
-                    ? StatusFor['evmWallet']
-                    : T extends `committees.${string}.latestQuestion`
-                      ? QuestionDetails
-                      : T extends `committees.${string}.latestOutcome`
-                        ? OutcomeRecord
-                        : T extends `vaultFactory.managers.manager${number}.metrics`
-                          ? VaultDirectorMetrics
-                          : T extends `fastUsdc.txns.${string}`
-                            ? TransactionRecord
-                            : unknown;
-// static string keys are defined in PublishedTypeMap
+export type PublishedPathTypes = Record<string, unknown>;
+
+/**
+ * Built-in published path mappings for exact `agoricNames.*` paths.
+ */
+export type CorePublishedPathTypes = AgoricNamesPublishedPathTypes;
+
+/**
+ * Built-in typing for values under the `agoricNames.` and `wallet.`
+ * hierarchies.
+ */
+export type CoreTypedPublished<P extends string> =
+  P extends keyof CorePublishedPathTypes
+    ? CorePublishedPathTypes[P]
+    : SmartWalletPublishedPathValue<P> extends never
+      ? unknown
+      : SmartWalletPublishedPathValue<P>;
+
+/**
+ * Utility type for the value that results from unmarshalling the latest value
+ * at a vstorage `published` path.
+ */
+export type TypedPublishedFor<
+  P extends string,
+  Ext extends PublishedPathTypes = Record<never, never>,
+> = P extends keyof Ext ? Ext[P] : CoreTypedPublished<P>;
+
+type IdMapLike = {
+  convertSlotToVal: (boardId: string, iface?: string) => unknown;
+};
+
+export type VstorageKit<Ext extends PublishedPathTypes = Record<never, never>> =
+  {
+    fromBoard: IdMapLike;
+    marshaller: Pick<Marshal<string>, 'fromCapData' | 'toCapData'>;
+    networkConfig: MinimalNetworkConfig;
+    readLatestHead: <T = any>(path: string) => Promise<T>;
+    readPublished: <P extends string>(
+      subpath: P,
+    ) => Promise<TypedPublishedFor<P, Ext>>;
+    unserializeHead: (txt: string | { value: string }) => unknown;
+    vstorage: VStorage;
+  };
+
+/**
+ * @deprecated Use `TypedPublishedFor<P, Ext>` with `VstorageKit<Ext>` instead.
+ */
+export type TypedPublished<P extends string> = CoreTypedPublished<P>;

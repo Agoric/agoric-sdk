@@ -15,7 +15,7 @@
 
 /**
  * @import {RemotableObject} from '@endo/marshal';
- * @import {VstorageKit} from './vstorage-kit.js';
+ * @import {VstorageKit} from './types.js';
  */
 
 /**

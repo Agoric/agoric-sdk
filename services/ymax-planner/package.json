@@ -93,7 +93,8 @@
       "--no-warnings"
     ],
     "require": [
-      "@endo/init/debug.js"
+      "@endo/init/pre-remoting.js",
+      "./src/lockdown.js"
     ],
     "timeout": "30s"
   },

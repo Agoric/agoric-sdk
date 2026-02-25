@@ -13,7 +13,7 @@ import {
  * @import {CurrentWalletRecord, UpdateRecord} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {MinimalNetworkConfig} from './network-config.js';
  * @import {RetryOptionsAndPowers} from './sync-tools.js';
- * @import {VstorageKit} from './vstorage-kit.js';
+ * @import {VstorageKit} from './types.js';
  * @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js';
  * @import {Instance, InvitationDetails} from '@agoric/zoe';
  */

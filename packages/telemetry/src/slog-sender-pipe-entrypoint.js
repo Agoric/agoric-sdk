@@ -9,7 +9,7 @@
 
 import '@endo/init';
 
-import anylogger from 'anylogger';
+import anylogger from '@agoric/internal/vendor/anylogger.js';
 import { Fail } from '@endo/errors';
 import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 

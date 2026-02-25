@@ -1,0 +1,537 @@
+diff --git a/lib/diff.js b/lib/diff.js
+index 840ac5774ede99a9a90ac6471c8fd422de691e6c..6f14cf18d7577a2d761f450a41fd776a5def8d6a 100644
+--- a/lib/diff.js
++++ b/lib/diff.js
+@@ -172,6 +172,7 @@ function diffDescriptors (lhs, rhs, options) {
+ 
+   do {
+     let compareResult = NOOP
++    let diffablePairs = null
+     if (lhsCircular.has(lhs)) {
+       compareResult = lhsCircular.get(lhs) === rhsCircular.get(rhs)
+         ? DEEP_EQUAL
+@@ -217,31 +218,41 @@ function diffDescriptors (lhs, rhs, options) {
+         }
+         if (instructions.mustRecurse === true) {
+           mustRecurse = true
+-        } else {
+-          if (instructions.actualIsExtraneous === true) {
+-            format(lineBuilder.actual, lhs, lhsCircular)
+-            didFormat = true
+-          } else if (instructions.multipleAreExtraneous === true) {
+-            for (const extraneous of instructions.descriptors) {
+-              format(lineBuilder.actual, extraneous, lhsCircular)
+-            }
+-            didFormat = true
+-          } else if (instructions.expectedIsMissing === true) {
+-            format(lineBuilder.expected, rhs, rhsCircular)
+-            didFormat = true
+-          } else if (instructions.multipleAreMissing === true) {
+-            for (const missing of instructions.descriptors) {
+-              format(lineBuilder.expected, missing, rhsCircular)
+-            }
+-            didFormat = true
+-          } else if (instructions.isUnequal === true) {
+-            format(lineBuilder.actual, lhs, lhsCircular)
+-            format(lineBuilder.expected, rhs, rhsCircular)
+-            didFormat = true
+-          } else if (!instructions.compareResult) {
+-            // TODO: Throw a useful, custom error
+-            throw new Error('Illegal result of prepareDiff()')
++        } else if (instructions.pairedDescriptorsLHS || instructions.pairedDescriptorsRHS) {
++          const len = instructions.pairedDescriptorsLHS.length
++          if (instructions.pairedDescriptorsRHS.length !== len) {
++            throw new Error('Unmatched LHS/RHS descriptors from prepareDiff()')
++          }
++          diffablePairs = []
++          for (let i = 0; i < len; i++) {
++            const plhs = instructions.pairedDescriptorsLHS[i]
++            const prhs = instructions.pairedDescriptorsRHS[i]
++            diffablePairs.push([plhs, prhs])
++          }
++        } else if (instructions.actualIsExtraneous === true) {
++          format(lineBuilder.actual, lhs, lhsCircular)
++          didFormat = true
++        } else if (instructions.expectedIsMissing === true) {
++          format(lineBuilder.expected, rhs, rhsCircular)
++          didFormat = true
++        } else if (
++          instructions.multipleAreExtraneous === true ||
++          instructions.multipleAreMissing === true
++        ) {
++          for (const extraneous of instructions.extraneousDescriptors || []) {
++            format(lineBuilder.actual, extraneous, lhsCircular)
++          }
++          for (const missing of instructions.missingDescriptors || []) {
++            format(lineBuilder.expected, missing, rhsCircular)
+           }
++          didFormat = true
++        } else if (instructions.isUnequal === true) {
++          format(lineBuilder.actual, lhs, lhsCircular)
++          format(lineBuilder.expected, rhs, rhsCircular)
++          didFormat = true
++        } else if (!instructions.compareResult) {
++          // TODO: Throw a useful, custom error
++          throw new Error('Illegal result of prepareDiff()')
+         }
+       }
+     }
+@@ -303,18 +314,23 @@ function diffDescriptors (lhs, rhs, options) {
+         rhsStack.push({ diffIndex, subject: rhs, recursor: rhs.createRecursor() })
+         topIndex++
+       } else {
+-        const diffed = typeof lhs.diffDeep === 'function'
+-          ? lhs.diffDeep(rhs, themeUtils.applyModifiers(lhs, theme), indent, invert)
+-          : null
+-
+-        if (diffed === null) {
+-          format(lineBuilder.actual, lhs, lhsCircular)
+-          format(lineBuilder.expected, rhs, rhsCircular)
+-        } else {
+-          if (diffIndex === -1) {
+-            buffer.append(diffed)
++        if (diffablePairs === null) diffablePairs = [[lhs, rhs]]
++        for (const pair of diffablePairs) {
++          const plhs = pair[0]
++          const prhs = pair[1]
++          const diffed = typeof plhs.diffDeep === 'function'
++            ? plhs.diffDeep(prhs, themeUtils.applyModifiers(plhs, theme), indent, invert)
++            : null
++
++          if (diffed === null) {
++            format(lineBuilder.actual, plhs, lhsCircular)
++            format(lineBuilder.expected, prhs, rhsCircular)
+           } else {
+-            diffStack[diffIndex].formatter.append(diffed, lhs)
++            if (diffIndex === -1) {
++              buffer.append(diffed)
++            } else {
++              diffStack[diffIndex].formatter.append(diffed, plhs)
++            }
+           }
+         }
+       }
+diff --git a/lib/metaDescriptors/item.js b/lib/metaDescriptors/item.js
+index 529e95be440cf7aadd317297edae1265e3b49da9..30756136f826db137f074a3cd681f2b73f66e202 100644
+--- a/lib/metaDescriptors/item.js
++++ b/lib/metaDescriptors/item.js
+@@ -68,8 +68,8 @@ class ComplexItem {
+     if (isCircular(this.value) || isCircular(expected.value)) return { compareResult: UNEQUAL }
+ 
+     // Try to line up this or remaining items with the expected items.
+-    const lhsFork = recursorUtils.fork(lhsRecursor)
+-    const rhsFork = recursorUtils.fork(rhsRecursor)
++    const lhsFork = new recursorUtils.Lookahead(lhsRecursor)
++    const rhsFork = new recursorUtils.Lookahead(rhsRecursor)
+     const initialExpected = expected
+ 
+     let expectedIsMissing = false
+@@ -78,7 +78,7 @@ class ComplexItem {
+         expectedIsMissing = compareComplexShape(this.value, expected.value) !== UNEQUAL
+       }
+ 
+-      expected = rhsFork.shared()
++      expected = rhsFork.peek()
+     }
+ 
+     let actualIsExtraneous = false
+@@ -89,7 +89,7 @@ class ComplexItem {
+           actualIsExtraneous = compareComplexShape(actual.value, initialExpected.value) !== UNEQUAL
+         }
+ 
+-        actual = lhsFork.shared()
++        actual = lhsFork.peek()
+       }
+     } else if (initialExpected.tag === primitiveTag) {
+       let actual = this
+@@ -98,7 +98,7 @@ class ComplexItem {
+           actualIsExtraneous = initialExpected.value.compare(actual.value) === DEEP_EQUAL
+         }
+ 
+-        actual = lhsFork.shared()
++        actual = lhsFork.peek()
+       }
+     }
+ 
+@@ -149,6 +149,19 @@ class ComplexItem {
+ Object.defineProperty(ComplexItem.prototype, 'isItem', { value: true })
+ Object.defineProperty(ComplexItem.prototype, 'tag', { value: complexTag })
+ 
++function ifItem (value) {
++  return value !== null && value.isItem === true ? value : null
++}
++
++function withIndexIncrement (recurse, offset = 1) {
++  return recursorUtils.map(recurse, next => {
++    if (next.isItem !== true) return next
++
++    next.index += offset
++    return next
++  })
++}
++
+ class PrimitiveItem {
+   constructor (index, value) {
+     this.index = index
+@@ -178,53 +191,98 @@ class PrimitiveItem {
+ 
+   prepareDiff (expected, lhsRecursor, rhsRecursor, compareComplexShape, isCircular) {
+     const compareResult = this.compare(expected)
++
+     // Short-circuit when values are deeply equal.
+     if (compareResult === DEEP_EQUAL) return { compareResult }
+ 
+-    // Short-circut when values can be diffed directly.
+-    if (
+-      expected.tag === primitiveTag &&
+-      this.value.tag === expected.value.tag && typeof this.value.diffDeep === 'function'
+-    ) {
+-      return { compareResult }
+-    }
+-
+-    // Try to line up this or remaining items with the expected items.
+-    const rhsFork = recursorUtils.fork(rhsRecursor)
+-    const initialExpected = expected
++    // Try to line up this or remaining items with the expected items,
++    // zigzagging forward to recover from insertions and/or removals (actual
++    // vs. expected+, actual+ vs. expected, actual vs. expected++, actual+ vs.
++    // expected+, actual++ vs. expected, etc.):
++    //   actual LHS | 0 | 1 | 2 | …
++    // expected RHS ===============
++    //            0 | X | ⤦ | ⤦ | …
++    //            1 | ↗ | ↗ | ↗ | …
++    //            2 | ↗ | ↗ | ↗ | …
++    //            ⋮ | ⋮ | ⋮ | ⋮ | ⋱
++    const lhsBuffer = [this]
++    const rhsBuffer = [expected]
++    const lhsFork = new recursorUtils.Lookahead(lhsRecursor, lhsBuffer)
++    const rhsFork = new recursorUtils.Lookahead(rhsRecursor, rhsBuffer)
++    let lhsIdx = 0
++    let rhsIdx = 0
++    let lhsLen = Infinity
++    let rhsLen = Infinity
+ 
+     do {
+-      if (expected === null || expected.isItem !== true) {
++      // Advance along the current diagonal, jumping to the next diagonal at its end.
++      if (rhsIdx > 0) {
++        rhsIdx--
++        lhsIdx++
++      } else {
++        rhsIdx = lhsIdx + 1
++        lhsIdx = 0
++      }
++      const lhs = lhsIdx < lhsLen ? ifItem(lhsFork.peek(lhsIdx)) : null
++      const rhs = rhsIdx < rhsLen ? ifItem(rhsFork.peek(rhsIdx)) : null
++
++      // Detect LHS/RHS length.
++      if (lhs === null && lhsIdx < lhsLen) lhsLen = lhsIdx
++      if (rhs === null && rhsIdx < rhsLen) rhsLen = rhsIdx
++
++      // We can compare lhs and rhs when both are in bounds *or* both are null
++      // and minimally out of bounds (to handle differences at final position).
++      if ((lhsIdx >= lhsLen) !== (rhsIdx >= rhsLen)) continue
++      if (lhs !== rhs && lhs.value.compare(rhs.value) !== DEEP_EQUAL) continue
++
++      // Try to resynchronize with direct sub-diffing when insert/remove counts match.
++      if (
++        lhsIdx === rhsIdx &&
++        expected.tag === primitiveTag &&
++        expected.value.tag === this.value.tag &&
++        typeof this.value.diffDeep === 'function'
++      ) {
++        const pairedDescriptorsLHS = lhsBuffer.splice(0, lhsIdx)
++        const pairedDescriptorsRHS = rhsBuffer.splice(0, rhsIdx)
+         return {
+-          actualIsExtraneous: true,
+-          rhsRecursor: recursorUtils.map(
+-            recursorUtils.unshift(rhsFork.recursor, initialExpected),
+-            next => {
+-              if (next.isItem !== true) return next
+-
+-              next.index++
+-              return next
+-            }),
++          compareResult,
++          pairedDescriptorsLHS,
++          pairedDescriptorsRHS,
++          lhsRecursor: lhsFork.recursor,
++          rhsRecursor: rhsFork.recursor,
+         }
+       }
+ 
+-      if (this.value.compare(expected.value) === DEEP_EQUAL) {
++      // If we resynchronized with lhsIdx at 0, at least one RHS item is missing.
++      if (lhsIdx === 0) {
++        const missing = rhsBuffer.splice(0, rhsIdx)
+         return {
+-          expectedIsMissing: true,
+-          lhsRecursor: recursorUtils.map(
+-            recursorUtils.unshift(lhsRecursor, this),
+-            next => {
+-              if (next.isItem !== true) return next
+-
+-              next.index++
+-              return next
+-            }),
++          multipleAreMissing: true,
++          missingDescriptors: missing,
++          lhsRecursor: withIndexIncrement(lhsFork.recursor, missing.length),
+           rhsRecursor: rhsFork.recursor,
+         }
+       }
+ 
+-      expected = rhsFork.shared()
+-    } while (true)
++      // At least one LHS item is extraneous, but reaching this point means that
++      // we found a later match at which to resynchronize.
++      lhsLen = lhsIdx + 1
++      rhsLen = rhsIdx + 1
++      break
++    } while (lhsIdx < lhsLen || rhsIdx < rhsLen)
++
++    // There might be missing RHS items, but there is definitely at least one
++    // extraneous LHS item. Propagate both lists.
++    const extraneousDescriptors = lhsBuffer.splice(0, lhsLen - 1)
++    const missingDescriptors = rhsBuffer.splice(0, rhsLen - 1)
++    return {
++      multipleAreExtraneous: true,
++      extraneousDescriptors,
++      multipleAreMissing: true,
++      missingDescriptors,
++      lhsRecursor: withIndexIncrement(lhsFork.recursor, missingDescriptors.length),
++      rhsRecursor: withIndexIncrement(rhsFork.recursor, extraneousDescriptors.length),
++    }
+   }
+ 
+   diffDeep (expected, theme, indent, invert) {
+diff --git a/lib/metaDescriptors/mapEntry.js b/lib/metaDescriptors/mapEntry.js
+index 2f9031ec1beea7904d64e2a8f009feea48988833..61d8e9543b9d326f3e9199e84ff16c442f3c283d 100644
+--- a/lib/metaDescriptors/mapEntry.js
++++ b/lib/metaDescriptors/mapEntry.js
+@@ -144,8 +144,8 @@ class MapEntry {
+     if (compareResult === DEEP_EQUAL || keysAreEqual) return { compareResult }
+ 
+     // Try to line up this or remaining map entries with the expected entries.
+-    const lhsFork = recursorUtils.fork(lhsRecursor)
+-    const rhsFork = recursorUtils.fork(rhsRecursor)
++    const lhsFork = new recursorUtils.Lookahead(lhsRecursor)
++    const rhsFork = new recursorUtils.Lookahead(rhsRecursor)
+     const initialExpected = expected
+ 
+     let expectedIsMissing = false
+@@ -156,7 +156,7 @@ class MapEntry {
+         expectedIsMissing = compareComplexShape(this.key, expected.key) !== UNEQUAL
+       }
+ 
+-      expected = rhsFork.shared()
++      expected = rhsFork.peek()
+     }
+ 
+     let actualIsExtraneous = false
+@@ -168,7 +168,7 @@ class MapEntry {
+             actualIsExtraneous = initialExpected.key.compare(actual.key) === DEEP_EQUAL
+           }
+ 
+-          actual = lhsFork.shared()
++          actual = lhsFork.peek()
+         }
+       } else {
+         let actual = this
+@@ -177,7 +177,7 @@ class MapEntry {
+             actualIsExtraneous = compareComplexShape(actual.key, initialExpected.key) !== UNEQUAL
+           }
+ 
+-          actual = lhsFork.shared()
++          actual = lhsFork.peek()
+         }
+       }
+     }
+diff --git a/lib/metaDescriptors/property.js b/lib/metaDescriptors/property.js
+index 77a453b556d35bb459241db63cc1d8721c5eeb2c..15bd9942d65c66a9654ef7660019ef4b8d6d6160 100644
+--- a/lib/metaDescriptors/property.js
++++ b/lib/metaDescriptors/property.js
+@@ -59,7 +59,7 @@ class Property {
+     if (isCircular(this.value) || isCircular(expected.value)) return { compareResult: UNEQUAL }
+ 
+     // Try to line up this or remaining properties with the expected properties.
+-    const rhsFork = recursorUtils.fork(rhsRecursor)
++    const rhsFork = new recursorUtils.Lookahead(rhsRecursor)
+     const initialExpected = expected
+ 
+     do {
+@@ -80,7 +80,7 @@ class Property {
+         }
+       }
+ 
+-      expected = rhsFork.shared()
++      expected = rhsFork.peek()
+     } while (true)
+   }
+ }
+diff --git a/lib/metaDescriptors/stats.js b/lib/metaDescriptors/stats.js
+index 45e30ad23042fffc2f4d90db230151ce507e5b98..d49fb7b265b565c5299c0ff2298effa099dbc367 100644
+--- a/lib/metaDescriptors/stats.js
++++ b/lib/metaDescriptors/stats.js
+@@ -59,19 +59,19 @@ class Stats {
+     if (expected.isStats !== true || expected.tag === this.tag) return null
+ 
+     // Try to line up stats descriptors with the same tag.
+-    const rhsFork = recursorUtils.fork(rhsRecursor)
++    const rhsFork = new recursorUtils.Lookahead(rhsRecursor)
+     const initialExpected = expected
+ 
+     const missing = []
+     while (expected !== null && this.tag !== expected.tag) {
+       missing.push(expected)
+-      expected = rhsFork.shared()
++      expected = rhsFork.peek()
+     }
+ 
+     if (expected !== null && missing.length > 0) {
+       return {
+         multipleAreMissing: true,
+-        descriptors: missing,
++        missingDescriptors: missing,
+         lhsRecursor: recursorUtils.unshift(lhsRecursor, this),
+         // Use original `rhsRecursor`, not `rhsFork`, since the consumed
+         // descriptors are returned with the `missing` array.
+@@ -79,19 +79,19 @@ class Stats {
+       }
+     }
+ 
+-    const lhsFork = recursorUtils.fork(lhsRecursor)
++    const lhsFork = new recursorUtils.Lookahead(lhsRecursor)
+     let actual = this
+ 
+     const extraneous = []
+     while (actual !== null && actual.tag !== initialExpected.tag) {
+       extraneous.push(actual)
+-      actual = lhsFork.shared()
++      actual = lhsFork.peek()
+     }
+ 
+     if (actual !== null && extraneous.length > 0) {
+       return {
+         multipleAreExtraneous: true,
+-        descriptors: extraneous,
++        extraneousDescriptors: extraneous,
+         // Use original `lhsRecursor`, not `lhsFork`, since the consumed
+         // descriptors are returned with the `extraneous` array.
+         lhsRecursor: recursorUtils.unshift(lhsRecursor, actual),
+diff --git a/lib/primitiveValues/string.js b/lib/primitiveValues/string.js
+index e9e4d85f7d77e01948a2599b3c3d278bba0fcfd0..f7fc054f768cc3cf9c7d4c663ca00c872a159a10 100644
+--- a/lib/primitiveValues/string.js
++++ b/lib/primitiveValues/string.js
+@@ -61,8 +61,66 @@ function includesLinebreaks (string) {
+   return string.includes('\r') || string.includes('\n')
+ }
+ 
++// https://unicode.org/glossary/#surrogate_code_point
++function skipSurrogatesForward (n) {
++  return n < 0xD800 ? n : n + 0x800
++}
++
++function skipSurrogatesBackward (n) {
++  return n < 0xD800 ? n : n - 0x800
++}
++
++// Use the diff-match-patch trick of mapping each diffable atom to and from a
++// single character, excluding U+0000 NUL and Surrogates U+D800 through U+DFFF
++// https://github.com/google/diff-match-patch/wiki/Line-or-Word-Diffs
++function mapAtoms (atoms, atomMap, atomList) {
++  const chunks = []
++  const codePoints = []
++  for (const atom of atoms) {
++    if (!atom) continue
++    let codePoint = atomMap.get(atom)
++    if (!codePoint) {
++      codePoint = skipSurrogatesForward(atomList.length)
++      if (codePoint > 0x10FFFF) throw new Error('Too many diffable atoms')
++      atomList.push(atom)
++      atomMap.set(atom, codePoint)
++    }
++    // Avoid invoking String.fromCodePoint with too many arguments.
++    if (codePoints.push(codePoint) >= 5000) {
++      chunks.push(String.fromCodePoint(...codePoints.splice(0)))
++    }
++  }
++  chunks.push(String.fromCodePoint(...codePoints))
++  return chunks.join('')
++}
++
++// Diff by word-like/single-space/all-punctuation atoms.
++const MATCH_STRING_PART = /([\p{ID_Continue}]+|\s)/u
++function diffByParts (actual, expected) {
++  const actualAtoms = actual.split(MATCH_STRING_PART)
++  const expectedAtoms = expected.split(MATCH_STRING_PART)
++
++  const atomMap = new Map([['', 0]])
++  const atomList = ['']
++  const actualMapped = mapAtoms(actualAtoms, atomMap, atomList)
++  const expectedMapped = mapAtoms(expectedAtoms, atomMap, atomList)
++
++  const outcome = fastDiff(actualMapped, expectedMapped)
++  for (const diff of outcome) {
++    const str = diff[1]
++    const unmapped = []
++    for (let i = 0; i < str.length; i++) {
++      const codePoint = str.codePointAt(i)
++      unmapped.push(atomList[skipSurrogatesBackward(codePoint)])
++      if (codePoint > 0xFFFF) i++
++    }
++    diff[1] = unmapped.join('')
++  }
++  return outcome
++}
++
+ function diffLine (theme, actual, expected, invert) {
+-  const outcome = fastDiff(actual, expected)
++  const outcome = diffByParts(actual, expected)
+ 
+   // TODO: Compute when line is mostly unequal (80%? 90%?) and treat it as being
+   // completely unequal.
+diff --git a/lib/recursorUtils.js b/lib/recursorUtils.js
+index 514147413f934584b51497fd780dde2bbeef8e4e..973553e4a561f1856993cdbfa093d46661f742b6 100644
+--- a/lib/recursorUtils.js
++++ b/lib/recursorUtils.js
+@@ -6,23 +6,24 @@ const NOOP_RECURSOR = {
+ }
+ exports.NOOP_RECURSOR = NOOP_RECURSOR
+ 
+-function fork (recursor) {
+-  const buffer = []
+-
+-  return {
+-    shared () {
+-      const next = recursor()
+-      if (next !== null) buffer.push(next)
+-      return next
+-    },
+-
+-    recursor () {
+-      if (buffer.length > 0) return buffer.shift()
+-      return recursor()
+-    },
++class Lookahead {
++  constructor (recurse, buffer = []) {
++    // Concise arrow functions for detachability.
++    const peek = (i = buffer.length) => {
++      while (i >= buffer.length && recurse) {
++        const next = recurse()
++        buffer.push(next)
++        if (next !== null) continue
++        recurse = null
++      }
++      return i < buffer.length ? buffer[i] : null
++    }
++    const nextFromLookahead = () => buffer.length > 0 ? buffer.shift() : recurse && recurse()
++    this.peek = peek
++    this.recursor = nextFromLookahead
+   }
+ }
+-exports.fork = fork
++exports.Lookahead = Lookahead
+ 
+ function consumeDeep (recursor) {
+   const stack = [recursor]

@@ -1,5 +1,5 @@
-import { WebSocketProvider, Log } from 'ethers';
-import type { Filter } from 'ethers';
+import { WebSocketProvider } from 'ethers';
+import type { Address as EvmAddress } from 'viem';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { ClusterName } from '@agoric/internal';
 import { fromTypedEntries, objectMap, typedEntries } from '@agoric/internal';
@@ -25,21 +25,13 @@ harden(UserInputError);
 
 type ROPartial<K extends string, V> = Readonly<Partial<Record<K, V>>>;
 
-type HexAddress = `0x${string}`;
-
-export type WatcherTimeoutOptions = {
-  timeoutMs?: number;
-  setTimeout?: typeof globalThis.setTimeout;
-  signal?: AbortSignal;
-};
-
 /**
  * @deprecated should come from e.g. @agoric/portfolio-api/src/constants.js
  *   or @agoric/orchestration
  */
 export type UsdcAddresses = {
-  mainnet: Record<CaipChainId, HexAddress>;
-  testnet: Record<CaipChainId, HexAddress>;
+  mainnet: Record<CaipChainId, EvmAddress>;
+  testnet: Record<CaipChainId, EvmAddress>;
 };
 
 const spectrumChainIds: Record<`${CaipChainId} ${SupportedChain}`, string> = {
@@ -269,33 +261,34 @@ export const getConfirmationsRequired = (chainId: CaipChainId): number => {
 export const getEvmRpcMap = (
   clusterName: ClusterName,
   alchemyApiKey: string,
+  protocol: 'wss' | 'https' = 'wss',
 ): Record<CaipChainId, string> => {
   switch (clusterName) {
     case 'mainnet':
       return {
         // Source: https://www.alchemy.com/rpc/ethereum
-        'eip155:1': `wss://eth-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:1': `${protocol}://eth-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/avalanche
-        'eip155:43114': `wss://avax-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
-        // Source:  https://www.alchemy.com/rpc/arbitrum
-        'eip155:42161': `wss://arb-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:43114': `${protocol}://avax-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
+        // Source: https://www.alchemy.com/rpc/arbitrum
+        'eip155:42161': `${protocol}://arb-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/optimism
-        'eip155:10': `wss://opt-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:10': `${protocol}://opt-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/base
-        'eip155:8453': `wss://base-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:8453': `${protocol}://base-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
       };
     case 'testnet':
       return {
         // Source: https://www.alchemy.com/rpc/ethereum-sepolia
-        'eip155:11155111': `wss://eth-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:11155111': `${protocol}://eth-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/avalanche-fuji
-        'eip155:43113': `wss://avax-fuji.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:43113': `${protocol}://avax-fuji.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/arbitrum-sepolia
-        'eip155:421614': `wss://arb-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:421614': `${protocol}://arb-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/optimism-sepolia
-        'eip155:11155420': `wss://opt-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:11155420': `${protocol}://opt-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/base-sepolia
-        'eip155:84532': `wss://base-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:84532': `${protocol}://base-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
       };
     default:
       throw Error(`Unsupported cluster name ${clusterName}`);
@@ -312,14 +305,15 @@ export const createEVMContext = async ({
   clusterName,
   alchemyApiKey,
 }: CreateContextParams): Promise<
-  Pick<EvmContext, 'evmProviders' | 'usdcAddresses'>
+  Pick<EvmContext, 'evmProviders' | 'usdcAddresses' | 'rpcUrls'>
 > => {
   if (clusterName === 'local') clusterName = 'testnet';
   if (!alchemyApiKey) throw Error('missing alchemyApiKey');
 
-  const urls = getEvmRpcMap(clusterName, alchemyApiKey);
+  const wssUrls = getEvmRpcMap(clusterName, alchemyApiKey, 'wss');
+  const httpsUrls = getEvmRpcMap(clusterName, alchemyApiKey, 'https');
   const evmProviders = Object.fromEntries(
-    Object.entries(urls).map(([caip, wsUrl]) => [
+    Object.entries(wssUrls).map(([caip, wsUrl]) => [
       caip,
       new WebSocketProvider(wsUrl),
     ]),
@@ -330,199 +324,8 @@ export const createEVMContext = async ({
     // XXX Remove now that @agoric/portfolio-api/src/constants.js
     // defines UsdcTokenIds.
     usdcAddresses: usdcAddresses[clusterName],
+    rpcUrls: httpsUrls,
   };
-};
-
-// XXX This can move to ./utils.ts.
-type BinarySearch = {
-  (
-    start: number,
-    end: number,
-    isAcceptable: (idx: number) => Promise<boolean> | boolean,
-  ): Promise<number>;
-  (
-    start: bigint,
-    end: bigint,
-    isAcceptable: (idx: bigint) => Promise<boolean> | boolean,
-  ): Promise<bigint>;
-};
-
-/**
- * Generic binary search helper for finding the greatest value that satisfies a predicate.
- * Assumes a transition from acceptance to rejection somewhere in [start, end].
- *
- * @param start - Starting value (inclusive)
- * @param end - Ending value (inclusive)
- * @param isAcceptable - Function that returns true for accepted values
- * @returns The greatest accepted value in the range
- */
-export const binarySearch = (async <Index extends number | bigint>(
-  start: Index,
-  end: Index,
-  isAcceptable: (idx: Index) => Promise<boolean> | boolean,
-): Promise<Index> => {
-  const unit = (typeof start === 'bigint' ? 1n : 1) as Index;
-  let left: Index = start;
-  let right: Index = end;
-  let greatestFound: Index = left;
-  await null;
-  while (left <= right) {
-    // Calculate the number or bigint midpoint of `left` and `right` by halving
-    // their sum with a single-bit right shift (skipped if the sum is already
-    // zero).
-    const sum = ((left as any) + (right as any)) as Index;
-    // eslint-disable-next-line no-bitwise
-    const mid = (sum && sum >> unit) as Index;
-    if (await isAcceptable(mid)) {
-      greatestFound = mid;
-      left = mid + (unit as any);
-    } else {
-      right = (mid - unit) as any;
-    }
-  }
-  return greatestFound;
-}) as BinarySearch;
-
-/**
- * Returns the highest block number whose real time (i.e., published timestamp
- * as adjusted by clock skew of up to fudgeFactorMs) is known to be less than or
- * equal to targetMs.
- */
-export const getBlockNumberBeforeRealTime = async (
-  provider: WebSocketProvider,
-  targetMs: number,
-  {
-    fudgeFactorMs = 5 * 60 * 1000, // 5 minutes to account for cross-chain clock differences
-    meanBlockDurationMs,
-  }: {
-    fudgeFactorMs?: number;
-    meanBlockDurationMs?: number;
-  } = {},
-) => {
-  const posixSeconds = Math.floor((targetMs - fudgeFactorMs) / 1000);
-
-  // Try to find a good starting point.
-  let startNumber = 0;
-  const latestNumber = await provider.getBlockNumber();
-  const latestBlock = await provider.getBlock(latestNumber);
-  const deltaSec = latestBlock!.timestamp - posixSeconds;
-  if (deltaSec <= 0) return latestNumber;
-  if (deltaSec > 0 && meanBlockDurationMs) {
-    const deltaBlocks = Math.ceil(deltaSec / (meanBlockDurationMs / 1000));
-    const pastNumber = latestNumber - deltaBlocks * 2;
-    if (startNumber < pastNumber) {
-      const pastBlock = await provider.getBlock(pastNumber);
-      if (pastBlock?.timestamp && pastBlock.timestamp <= posixSeconds) {
-        startNumber = pastNumber;
-      }
-    }
-  }
-
-  const blockNumber = await binarySearch(startNumber, latestNumber, async n => {
-    const block = await provider.getBlock(n);
-    return block?.timestamp ? block.timestamp <= posixSeconds : false;
-  });
-  return blockNumber;
-};
-
-type LogPredicate = (log: Log) => boolean | Promise<boolean>;
-
-type ScanOpts = {
-  provider: WebSocketProvider;
-  baseFilter: Omit<Filter, 'fromBlock' | 'toBlock'> & Partial<Filter>;
-  fromBlock: number;
-  toBlock: number;
-  chainId: CaipChainId;
-  chunkSize?: number;
-  log?: (...args: unknown[]) => void;
-  signal?: AbortSignal;
-  onRejectedChunk?: (
-    startBlock: number,
-    endBlock: number,
-  ) => Promise<void> | void;
-};
-
-/**
- * Generic chunked log scanner: scans [fromBlock, toBlock] in CHUNK_SIZE windows,
- * runs `predicate` on each log, and returns the first matching log or undefined.
- */
-export const scanEvmLogsInChunks = async (
-  opts: ScanOpts,
-  predicate: LogPredicate,
-): Promise<Log | undefined> => {
-  const {
-    provider,
-    baseFilter,
-    fromBlock,
-    toBlock,
-    chainId,
-    chunkSize = 10,
-    log = () => {},
-    signal,
-  } = opts;
-
-  await null;
-  for (let start = fromBlock; start <= toBlock; ) {
-    if (signal?.aborted) {
-      log('[LogScan] Aborted');
-      return undefined;
-    }
-    const end = Math.min(start + chunkSize - 1, toBlock);
-    const currentBlock = await provider.getBlockNumber();
-
-    // Wait for the chain to catch up if end block doesn't exist yet
-    if (end > currentBlock) {
-      const blockTimeMs = getBlockTimeMs(chainId);
-      const blocksToWait = Math.max(50, chunkSize);
-      const waitTimeMs = blocksToWait * blockTimeMs;
-      const blocksBehind = end - currentBlock;
-      log(
-        `[LogScan] Chain ${blocksBehind} blocks behind (need ${end}, at ${currentBlock}). Waiting ${waitTimeMs}ms (${blocksToWait} blocks @ ${blockTimeMs}ms/block)`,
-      );
-      await new Promise(resolve => setTimeout(resolve, waitTimeMs));
-      continue; // Retry this chunk after waiting
-    }
-
-    const chunkFilter: Filter = {
-      // baseFilter represents core filter configuration (address, topics, etc.) without block range
-      ...baseFilter,
-      fromBlock: start,
-      toBlock: end,
-    };
-
-    try {
-      log(`[LogScan] Searching chunk ${start} → ${end}`);
-      const logs = await provider.getLogs(chunkFilter);
-      for (const evt of logs) {
-        if (await predicate(evt)) {
-          log(`[LogScan] Match in tx=${evt.transactionHash}`);
-          return evt;
-        }
-      }
-      await opts.onRejectedChunk?.(start, end);
-    } catch (err) {
-      log(`[LogScan] Error searching chunk ${start}–${end}:`, err);
-      // continue
-    }
-
-    start += chunkSize;
-  }
-  return undefined;
-};
-
-export const waitForBlock = async (
-  provider: WebSocketProvider,
-  targetBlock: number,
-) => {
-  return new Promise(resolve => {
-    const listener = blockNumber => {
-      if (blockNumber >= targetBlock) {
-        void provider.off('block', listener);
-        resolve(blockNumber);
-      }
-    };
-    void provider.on('block', listener);
-  });
 };
 
 /**

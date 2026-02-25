@@ -7,7 +7,7 @@ import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
   type WatcherTimeoutOptions,
-} from '../support.ts';
+} from '../evm-scanner.ts';
 import {
   deleteTxBlockLowerBound,
   getTxBlockLowerBound,
@@ -161,6 +161,7 @@ export const lookBackCctp = async ({
   expectedAmount,
   publishTimeMs,
   chainId,
+  setTimeout,
   log = () => {},
   signal,
   kvStore,
@@ -168,6 +169,7 @@ export const lookBackCctp = async ({
 }: CctpWatch & {
   publishTimeMs: number;
   chainId: CaipChainId;
+  setTimeout: typeof globalThis.setTimeout;
   signal?: AbortSignal;
 }): Promise<WatcherResult> => {
   await null;
@@ -192,20 +194,19 @@ export const lookBackCctp = async ({
 
     // XXX: Consider async iteration pattern for more flexible log scanning
     // See: https://github.com/Agoric/agoric-sdk/pull/11915#discussion_r2353872425
-    const matchingEvent = await scanEvmLogsInChunks(
-      {
-        provider,
-        baseFilter,
-        fromBlock: savedFromBlock,
-        toBlock,
-        chainId,
-        log,
-        signal,
-        onRejectedChunk: async (_, to) => {
-          await setTxBlockLowerBound(kvStore, txId, to);
-        },
+    const matchingEvent = await scanEvmLogsInChunks({
+      provider,
+      baseFilter,
+      fromBlock: savedFromBlock,
+      toBlock,
+      chainId,
+      setTimeout,
+      log,
+      signal,
+      onRejectedChunk: async (_, to) => {
+        await setTxBlockLowerBound(kvStore, txId, to);
       },
-      ev => {
+      predicate: ev => {
         try {
           const t = parseTransferLog(ev);
           log(`Check: amount=${t.amount}`);
@@ -215,7 +216,7 @@ export const lookBackCctp = async ({
           return false;
         }
       },
-    );
+    });
 
     if (!matchingEvent) {
       log(`[${PendingTxCode.CCTP_TX_NOT_FOUND}] No matching transfer found`);

@@ -17,7 +17,7 @@ import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js
 import {
   getPermitWitnessTransferFromData,
   type TokenPermissions,
-} from '@agoric/orchestration/src/utils/permit2.ts';
+} from '@agoric/orchestration/src/utils/permit2.js';
 import type { VowTools } from '@agoric/vow';
 import type { InvitationSpec } from '@agoric/smart-wallet/src/invitations.js';
 import type { Instance } from '@agoric/zoe';
@@ -28,6 +28,7 @@ import {
   portfolioIdOfPath,
   type OfferArgsFor,
   type ProposalType,
+  type PortfolioPublishedPathTypes,
   type StatusFor,
   type PoolKey,
   type EVMContractAddressesMap,
@@ -41,8 +42,8 @@ import type {
 import {
   getYmaxStandaloneOperationData,
   getYmaxWitness,
-} from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.ts';
-import type { TargetAllocation } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.ts';
+} from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
+import type { TargetAllocation } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import type { TimerService } from '@agoric/time';
 import type { ERemote } from '@agoric/internal';
 import { E } from '@endo/far';
@@ -56,7 +57,7 @@ assert.equal(ROOT_STORAGE_PATH, 'orchtest');
 const stripRoot = (path: string) => path.replace(/^orchtest\./, '');
 
 export const makePortfolioQuery = (
-  readPublished: VstorageKit['readPublished'],
+  readPublished: VstorageKit<PortfolioPublishedPathTypes>['readPublished'],
   portfolioKey: `${string}.portfolios.portfolio${number}`,
 ) => {
   const self = harden({
@@ -100,7 +101,7 @@ export const makePortfolioQuery = (
 export const makeTrader = (
   wallet: WalletTool,
   instance: Instance<typeof start>,
-  readPublished: VstorageKit['readPublished'] = () =>
+  readPublished: VstorageKit<PortfolioPublishedPathTypes>['readPublished'] = () =>
     assert.fail('no vstorage access'),
 ) => {
   let nonce = 0;
@@ -277,7 +278,7 @@ type EvmTraderConfig = {
   contractsByChain: EVMContractAddressesMap;
   chainInfoByName: Record<AxelarChain, ChainInfo<'eip155'>>;
   timerService: ERemote<TimerService>;
-  readPublished: VstorageKit['readPublished'];
+  readPublished: VstorageKit<PortfolioPublishedPathTypes>['readPublished'];
   when: VowTools['when'];
 };
 
@@ -308,11 +309,15 @@ export const makeEvmTrader = ({
     await when(vow);
   };
 
+  // FIXME: bare `evmWallets.*` paths are inconsistent with the `ymax0|ymax1`
+  // published root contract; switch to rooted paths.
   const getWalletPortfolios = async () =>
     readPublished(`evmWallets.${account.address}.portfolio`) as Promise<
       StatusFor['evmWalletPortfolios']
     >;
 
+  // FIXME: bare `evmWallets.*` paths are inconsistent with the `ymax0|ymax1`
+  // published root contract; switch to rooted paths.
   const getWalletStatus = async () =>
     readPublished(`evmWallets.${account.address}`) as Promise<
       StatusFor['evmWallet']
@@ -401,8 +406,11 @@ export const makeEvmTrader = ({
           const storagePath = await updatePortfolioPath(parsedId);
           return harden({ storagePath, portfolioId: parsedId });
         },
-        async deposit(portfolio: bigint, depositAmount: bigint) {
-          const witness = getYmaxWitness('Deposit', { portfolio });
+        async deposit(depositAmount: bigint, spender = depositFactory) {
+          const currentPortfolioId = self.getPortfolioId();
+          const witness = getYmaxWitness('Deposit', {
+            portfolio: BigInt(currentPortfolioId),
+          });
           const deadline = await getDeadline();
           const permitMessage = getPermitWitnessTransferFromData(
             {
@@ -410,9 +418,7 @@ export const makeEvmTrader = ({
                 token: usdcToken,
                 amount: depositAmount,
               },
-              // TODO: spender for deposit more should be the remote account for the chain
-              // (if already published), or copied from the remote account of the portfolio source chain
-              spender: depositFactory,
+              spender,
               nonce: (nonce += 1n),
               deadline,
             },

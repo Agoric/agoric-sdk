@@ -535,7 +535,7 @@ __metadata:
     rimraf: "npm:^5.0.0"
     terser: "npm:^5.39.0"
     tsd: "npm:^0.33.0"
-    typescript: "npm:~5.9.2"
+    typescript: "npm:~6.0.0-beta"
   languageName: unknown
   linkType: soft
 
@@ -567,7 +567,6 @@ __metadata:
     "@iarna/toml": "npm:^2.2.3"
     "@opentelemetry/api": "npm:~1.9.0"
     "@opentelemetry/sdk-metrics": "npm:~1.30.1"
-    anylogger: "npm:^0.21.0"
     ava: "npm:^6.4.1"
     better-sqlite3: "npm:^10.1.0"
     c8: "npm:^10.1.3"
@@ -825,7 +824,6 @@ __metadata:
     "@endo/ses-ava": "npm:^1.3.2"
     "@endo/stream": "npm:^1.2.13"
     "@fast-check/ava": "npm:^2.0.1"
-    anylogger: "npm:^0.21.0"
     ava: "npm:^6.4.1"
     import-meta-resolve: "npm:^4.1.0"
     jessie.js: "npm:^0.3.4"
@@ -1032,7 +1030,7 @@ __metadata:
     type-coverage: "npm:^2.29.7"
     typedoc: "npm:^0.26.7"
     typedoc-plugin-markdown: "npm:^4.2.1"
-    typescript: "npm:~5.9.3"
+    typescript: "npm:~6.0.0-beta"
     typescript-eslint: "npm:^8.40.0"
   dependenciesMeta:
     better-sqlite3@10.1.0:
@@ -1103,7 +1101,6 @@ __metadata:
     "@endo/init": "npm:^1.1.12"
     "@endo/marshal": "npm:^1.8.0"
     "@endo/promise-kit": "npm:^1.1.13"
-    anylogger: "npm:^0.21.0"
     ava: "npm:^6.4.1"
     c8: "npm:^10.1.3"
     deterministic-json: "npm:^1.0.5"
@@ -1256,7 +1253,6 @@ __metadata:
     "@types/tmp": "npm:^0.2.0"
     "@types/yargs-parser": "npm:^21.0.0"
     ansi-styles: "npm:^6.2.1"
-    anylogger: "npm:^0.21.0"
     ava: "npm:^6.4.1"
     better-sqlite3: "npm:^10.1.0"
     import-meta-resolve: "npm:^4.1.0"
@@ -1313,7 +1309,6 @@ __metadata:
     "@opentelemetry/sdk-metrics": "npm:~1.30.1"
     "@opentelemetry/sdk-trace-base": "npm:~1.30.1"
     "@opentelemetry/semantic-conventions": "npm:~1.28.0"
-    anylogger: "npm:^0.21.0"
     ava: "npm:^6.4.1"
     better-sqlite3: "npm:^10.1.0"
     c8: "npm:^10.1.3"
@@ -8547,7 +8542,6 @@ __metadata:
     "@endo/promise-kit": "npm:^1.1.13"
     "@endo/zip": "npm:^1.0.11"
     "@iarna/toml": "npm:^2.2.3"
-    anylogger: "npm:^0.21.0"
     ava: "npm:^6.4.1"
     c8: "npm:^10.1.2"
     chalk: "npm:^5.2.0"
@@ -8685,13 +8679,6 @@ __metadata:
   version: 1.3.0
   resolution: "any-promise@npm:1.3.0"
   checksum: 10c0/60f0298ed34c74fef50daab88e8dab786036ed5a7fad02e012ab57e376e0a0b4b29e83b95ea9b5e7d89df762f5f25119b83e00706ecaccb22cfbacee98d74889
-  languageName: node
-  linkType: hard
-
-"anylogger@npm:^0.21.0":
-  version: 0.21.0
-  resolution: "anylogger@npm:0.21.0"
-  checksum: 10c0/1ca7fcf5bc2b78d1e1d9b8c8cc7ce50b5c6cc67a8da5a28c9c975b7b46fff255a04abab02de38a5139190c9d8b34b3d6c59af6724521b077f7d7dfbad9b47a9c
   languageName: node
   linkType: hard
 
@@ -10082,7 +10069,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"concordance@npm:^5.0.4":
+"concordance@npm:5.0.4":
   version: 5.0.4
   resolution: "concordance@npm:5.0.4"
   dependencies:
@@ -10095,6 +10082,22 @@ __metadata:
     semver: "npm:^7.3.2"
     well-known-symbols: "npm:^2.0.0"
   checksum: 10c0/59b440f330df3a7c9aa148ba588b3e99aed86acab225b4f01ffcea34ace4cf11f817e31153254e8f38ed48508998dad40b9106951a743c334d751f7ab21afb8a
+  languageName: node
+  linkType: hard
+
+"concordance@patch:concordance@npm%3A5.0.4#~/.yarn/patches/concordance-npm-5.0.4-e641405dd9.patch":
+  version: 5.0.4
+  resolution: "concordance@patch:concordance@npm%3A5.0.4#~/.yarn/patches/concordance-npm-5.0.4-e641405dd9.patch::version=5.0.4&hash=e7626d"
+  dependencies:
+    date-time: "npm:^3.1.0"
+    esutils: "npm:^2.0.3"
+    fast-diff: "npm:^1.2.0"
+    js-string-escape: "npm:^1.0.1"
+    lodash: "npm:^4.17.15"
+    md5-hex: "npm:^3.0.1"
+    semver: "npm:^7.3.2"
+    well-known-symbols: "npm:^2.0.0"
+  checksum: 10c0/13b934cfc406909b685c453f5439cecee7399b7c95e73cecfe7130ec2ceeec8eaa9c3fc6ab6080c50a727496dcd133deec5ea236c2015fd52738ed293433ddb3
   languageName: node
   linkType: hard
 
@@ -19721,7 +19724,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:5.1.6 - 5.9.x, typescript@npm:^5.4.5, typescript@npm:^5.9.2, typescript@npm:~5.9.2, typescript@npm:~5.9.3":
+"typescript@npm:5.1.6 - 5.9.x, typescript@npm:^5.4.5, typescript@npm:^5.9.2":
   version: 5.9.3
   resolution: "typescript@npm:5.9.3"
   bin:
@@ -19741,6 +19744,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"typescript@npm:~6.0.0-beta":
+  version: 6.0.0-dev.20260212
+  resolution: "typescript@npm:6.0.0-dev.20260212"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 10c0/771cb73e1068229564badc056505333e716506308e148efc4dc4b19046b4d10944a256d450e68271d61f2061c945b59a6ef90de665b9967e1ce3fa4137675e22
+  languageName: node
+  linkType: hard
+
 "typescript@patch:typescript@npm%3A5.1.6 - 5.7.x#optional!builtin<compat/typescript>":
   version: 5.7.3
   resolution: "typescript@patch:typescript@npm%3A5.7.3#optional!builtin<compat/typescript>::version=5.7.3&hash=5786d5"
@@ -19751,7 +19764,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A5.1.6 - 5.9.x#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.4.5#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.9.2#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A~5.9.2#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A~5.9.3#optional!builtin<compat/typescript>":
+"typescript@patch:typescript@npm%3A5.1.6 - 5.9.x#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.4.5#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.9.2#optional!builtin<compat/typescript>":
   version: 5.9.3
   resolution: "typescript@patch:typescript@npm%3A5.9.3#optional!builtin<compat/typescript>::version=5.9.3&hash=5786d5"
   bin:
@@ -19768,6 +19781,16 @@ __metadata:
     tsc: bin/tsc
     tsserver: bin/tsserver
   checksum: 10c0/39117e346ff8ebd87ae1510b3a77d5d92dae5a89bde588c747d25da5c146603a99c8ee588c7ef80faaf123d89ed46f6dbd918d534d641083177d5fac38b8a1cb
+  languageName: node
+  linkType: hard
+
+"typescript@patch:typescript@npm%3A~6.0.0-beta#optional!builtin<compat/typescript>":
+  version: 6.0.0-dev.20260212
+  resolution: "typescript@patch:typescript@npm%3A6.0.0-dev.20260212#optional!builtin<compat/typescript>::version=6.0.0-dev.20260212&hash=5786d5"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 10c0/dcb569136ad90bcc89a7a5b92e919807eacd3e21cf33f72f33f25bffff3cca77ea44924c353f5f054e89e2c2eef06b1d9cd34b31366ef8e9684b2a1b85758745
   languageName: node
   linkType: hard
 

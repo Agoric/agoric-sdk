@@ -299,6 +299,7 @@ export const main = async (
     evmCtx: {
       kvStore,
       makeAbortController,
+      setTimeout,
       axelarApiUrl: config.axelar.apiUrl,
       ydsNotifier,
       ...evmCtx,

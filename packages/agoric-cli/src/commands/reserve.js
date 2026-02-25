@@ -11,7 +11,7 @@ import { Command } from 'commander';
 import { outputActionAndHint } from '../lib/wallet.js';
 
 /**
- * @import {Logger} from 'anylogger';
+ * @import {Logger} from '@agoric/internal/vendor/anylogger.js';
  * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
  */
 

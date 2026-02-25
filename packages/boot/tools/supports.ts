@@ -8,7 +8,7 @@ import { basename, join } from 'node:path';
 import { inspect } from 'node:util';
 import tmp from 'tmp';
 
-import type { TypedPublished } from '@agoric/client-utils';
+import type { TypedPublishedFor } from '@agoric/client-utils';
 import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
 import { makeHelpers } from '@agoric/cosmic-swingset/tools/inquisitor.mjs';
 import {
@@ -56,6 +56,8 @@ import type { FastUSDCCorePowers } from '@aglocal/fast-usdc-deploy/src/start-fas
 import type { CoreEvalSDKType } from '@agoric/cosmic-proto/swingset/swingset.js';
 import { computronCounter } from '@agoric/cosmic-swingset/src/computron-counter.js';
 import { defaultBeansPerVatCreation } from '@agoric/cosmic-swingset/src/sim-params.js';
+import type { FastUsdcPublishedPathTypes } from '@agoric/fast-usdc';
+import type { GovernancePublishedPathTypes } from '@agoric/governance/src/types.js';
 import type { EconomyBootstrapPowers } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 import { base64ToBytes } from '@agoric/network';
 import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
@@ -85,6 +87,9 @@ type ConsumeBootrapItem = <N extends string>(
   : N extends keyof EconomyBootstrapPowers['consume']
     ? EconomyBootstrapPowers['consume'][N]
     : unknown;
+
+type BootstrapPublishedPathTypes = FastUsdcPublishedPathTypes &
+  GovernancePublishedPathTypes;
 
 // XXX should satisfy EVProxy from run-utils.js but that's failing to import
 /**
@@ -470,7 +475,10 @@ export const makeSwingsetTestKit = async (
   };
 
   const readPublished = <T extends string>(subpath: T) =>
-    readLatest(`published.${subpath}`) as TypedPublished<T>;
+    readLatest(`published.${subpath}`) as TypedPublishedFor<
+      T,
+      BootstrapPublishedPathTypes
+    >;
 
   let lastBankNonce = 0n;
   let ibcSequenceNonce = 0;

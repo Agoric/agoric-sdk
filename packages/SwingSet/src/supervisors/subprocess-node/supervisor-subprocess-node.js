@@ -3,7 +3,7 @@
 // this file is loaded at the start of a new subprocess
 import '@endo/init';
 
-import anylogger from 'anylogger';
+import anylogger from '@agoric/internal/vendor/anylogger.js';
 import fs from 'fs';
 import { Buffer } from 'buffer';
 import process from 'node:process';

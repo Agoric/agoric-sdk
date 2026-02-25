@@ -29,8 +29,8 @@ import {
 import type {
   YmaxSharedDomain,
   TargetAllocation as EIP712Allocation,
-} from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.ts';
-import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.ts';
+} from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
+import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import type { MapStore } from '@agoric/store';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
@@ -511,16 +511,21 @@ export const preparePortfolioKit = (
             const val = accountsPending.get(chainName);
             return { ready: val.vow as Vow<AccountInfoFor[C]>, state };
           }
+          let state: 'new' | 'failed' | 'ok';
           if (accounts.has(chainName)) {
             const infoAny = accounts.get(chainName);
             assert.equal(infoAny.chainName, chainName);
             const info = infoAny as AccountInfoFor[C];
-            const state = info.err ? 'failed' : 'ok';
-            traceChain('state', state);
-            const ready = vowTools.asVow(async () => info);
-            return { ready, state };
+            if (!info.err) {
+              state = 'ok';
+              traceChain('state', state);
+              const ready = vowTools.asVow(async () => info);
+              return { ready, state };
+            }
+            state = 'failed';
+          } else {
+            state = 'new';
           }
-          const state = 'new';
           traceChain('state', state);
           const pending: VowKit<AccountInfoFor[C]> = vowTools.makeVowKit();
           vowTools.watch(pending.vow, this.facets.accountWatcher, chainName);
@@ -592,12 +597,29 @@ export const preparePortfolioKit = (
          * NB: `flowId` is a counter, not the key in vstorage.
          */
         startFlow(detail: FlowDetail, steps?: MovementDesc[]) {
-          const { nextFlowId: flowId, flowsRunning } = this.state;
+          const {
+            nextFlowId: flowId,
+            flowsRunning,
+            accountsPending,
+          } = this.state;
           this.state.nextFlowId = flowId + 1;
           const sync: VowKit<MovementDesc[]> = vowTools.makeVowKit();
           if (steps) sync.resolver.resolve(steps);
           flowsRunning.init(flowId, harden({ sync, ...detail }));
           this.facets.reporter.publishStatus();
+          if (accountsPending.getSize() > 0) {
+            const traceFlow = trace
+              .sub(`portfolio${this.state.portfolioId}`)
+              .sub(`flow${flowId}`);
+            const evmPendingAccounts = [...accountsPending.keys()].filter(
+              chain => chain in AxelarChain,
+            );
+            traceFlow(`releasing pending evm accounts`, evmPendingAccounts);
+            const reason = Error('starting new flow');
+            for (const chainName of evmPendingAccounts) {
+              this.facets.manager.releaseAccount(chainName, reason);
+            }
+          }
           return { stepsP: sync.vow, flowId };
         },
         providePosition(

@@ -949,8 +949,7 @@ const stepFlow = async (
             );
           }
 
-          await gInfo.ready;
-          await queuedStep.done;
+          await Promise.all([gInfo.ready, queuedStep.done]);
           return {};
         },
       });
@@ -1071,6 +1070,9 @@ const stepFlow = async (
               await CCTP.apply(ctx, amount, noble, gInfo, ...optsArgs);
               return {};
             }
+            // EVM-originated CCTP sends a GMP call from the smart wallet,
+            // so the wallet contract must exist first.
+            await gInfo.ready;
             const evmCtx = await makeEVMCtx(
               evmChain,
               move,

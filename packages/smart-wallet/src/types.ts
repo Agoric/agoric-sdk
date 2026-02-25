@@ -12,6 +12,7 @@ import type { AgoricNamesRemotes } from '@agoric/vats/tools/board-utils.js';
 import type { InvitationDetails } from '@agoric/zoe';
 import type { PublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { OfferSpec } from './offers.js';
+import type { CurrentWalletRecord, UpdateRecord } from './smartWallet.js';
 
 // Match the type in Zoe, which can't be imported because it's ambient.
 // This omits the parameters that aren't used in this module.
@@ -88,3 +89,13 @@ export type OfferMaker = (
   agoricNames: AgoricNamesRemotes,
   ...rest: any[]
 ) => OfferSpec;
+
+/**
+ * Published vstorage values under the `wallet.` hierarchy.
+ */
+export type SmartWalletPublishedPathValue<P extends string> =
+  P extends `wallet.${string}.current`
+    ? CurrentWalletRecord
+    : P extends `wallet.${string}`
+      ? UpdateRecord
+      : never;

@@ -6,7 +6,6 @@
         "./tsconfig-build-options.json"
     ],
     "compilerOptions": {
-        "allowSyntheticDefaultImports": true,
         "outDir": "./build"
     },
     "exclude": [

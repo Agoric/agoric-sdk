@@ -45,7 +45,7 @@
     "type-coverage": "^2.29.7",
     "typedoc": "^0.26.7",
     "typedoc-plugin-markdown": "^4.2.1",
-    "typescript": "~5.9.3",
+    "typescript": "~6.0.0-beta",
     "typescript-eslint": "^8.40.0"
   },
   "resolutions": {
@@ -97,7 +97,8 @@
     "@graphql-codegen/visitor-plugin-common@npm:6.1.0": "patch:@graphql-codegen/visitor-plugin-common@npm%3A6.1.0#~/.yarn/patches/@graphql-codegen-visitor-plugin-common-npm-6.1.0-c6f558d634.patch",
     "@graphql-tools/optimize@npm:^2.0.0": "patch:@graphql-tools/optimize@npm%3A2.0.0#~/.yarn/patches/@graphql-tools-optimize-npm-2.0.0-710bf461f3.patch",
     "@graphql-codegen/visitor-plugin-common@npm:^6.2.2": "patch:@graphql-codegen/visitor-plugin-common@npm%3A6.2.2#~/.yarn/patches/@graphql-codegen-visitor-plugin-common-npm-6.2.2-1dfc1601b5.patch",
-    "@graphql-codegen/visitor-plugin-common@npm:6.2.2": "patch:@graphql-codegen/visitor-plugin-common@npm%3A6.2.2#~/.yarn/patches/@graphql-codegen-visitor-plugin-common-npm-6.2.2-1dfc1601b5.patch"
+    "@graphql-codegen/visitor-plugin-common@npm:6.2.2": "patch:@graphql-codegen/visitor-plugin-common@npm%3A6.2.2#~/.yarn/patches/@graphql-codegen-visitor-plugin-common-npm-6.2.2-1dfc1601b5.patch",
+    "concordance@npm:^5.0.4": "patch:concordance@npm%3A5.0.4#~/.yarn/patches/concordance-npm-5.0.4-e641405dd9.patch"
   },
   "dependenciesMeta": {
     "better-sqlite3@10.1.0": {

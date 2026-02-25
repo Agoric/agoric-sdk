@@ -7,6 +7,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { E } from '@endo/far';
 import { makeTrader } from '../tools/portfolio-actors.js';
 import { makeWallet } from '../tools/wallet-offer-tools.js';
+import type { PortfolioPublishedPathTypes } from '../src/type-guards.ts';
 import { setupTrader } from './contract-setup.js';
 
 const ackNFA = (utils, ix = 0) =>
@@ -65,7 +66,7 @@ test('multiple portfolios have independent allocations', async t => {
     await eventLoopIteration();
     const val = storage.getDeserialized(`orchtest.${subpath}`).at(-1);
     return val;
-  }) as unknown as VstorageKit['readPublished'];
+  }) as unknown as VstorageKit<PortfolioPublishedPathTypes>['readPublished'];
 
   // Create two separate wallets and traders
   const { mint: _, ...poc26SansMint } = poc26;
