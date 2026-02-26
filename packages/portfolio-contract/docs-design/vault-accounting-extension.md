@@ -38,19 +38,18 @@ User-facing (standard):
 - `redeem(uint256 shares, address receiver, address owner)`
 
 Privileged extension (spike):
-- `deployToPortfolio(uint256 assets)`
-  - `require(msg.sender == ownerPortfolioAccount)`
-  - transfer `assets` USDC from vault to `ownerPortfolioAccount`
-  - increment `managedAssets` by `assets`
-  - emit `PortfolioDeploy(ownerPortfolioAccount, assets)`
-
 - `reportManagedAssets(uint256 newManagedAssets, uint256 asOf, bytes32 reportId)`
-  - restricted to trusted reporting authority (resolver-gated path for spike)
+  - authority path (candidate):
+    - planner controls `0xASSET_REPORTER`
+    - `VaultFactory` stores `assetReporter` in constructor args
+    - `VaultFactory.reportManagedAssets(...)` requires `msg.sender == assetReporter`
+    - `VaultFactory` forwards to `Vault.reportManagedAssets(...)`
+    - `Vault` requires `msg.sender == factory`
   - sets or updates `managedAssets` from orchestration outcomes
   - emits `ManagedAssetsReported(newManagedAssets, asOf, reportId)`
 
 Notes:
-- Exact authority wiring for `reportManagedAssets` is part of spike seam work; trust minimization is product follow-up.
+- Exact key management / rotation / multisig hardening for `assetReporter` remains product follow-up.
 - Naming is provisional; behavior and invariants matter more than exact method names for the spike.
 
 ## Local Liquidity Policy (Chosen for Chris Spike)
@@ -60,8 +59,8 @@ Notes:
 - Use hysteresis to avoid churn:
   - only adjust when deviation exceeds `rebalanceIfOffByPct` (`5%` in spike config)
 - On `deposit(...)` and periodic rebalance:
-  - if local liquidity is above target band, deploy only the excess via `deployToPortfolio(...)`
-  - update `managedAssets` consistently with deploy operations
+  - if local liquidity is above target band, vault transfers only excess USDC to `ownerPortfolioAccount`
+  - vault updates `managedAssets` consistently with deploy operations
 
 ## Redemption/Liquidity Policy
 
