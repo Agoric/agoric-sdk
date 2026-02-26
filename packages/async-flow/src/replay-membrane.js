@@ -665,6 +665,7 @@ export const makeReplayMembraneForTesting = ({
       }
     }
     unnestFlag = false;
+    return undefined;
   };
 
   /**

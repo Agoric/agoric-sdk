@@ -1,8 +1,8 @@
 import test from 'ava';
-import { handlePendingTx } from '../src/pending-tx-manager.ts';
-import { createMockPendingTxOpts } from './mocks.ts';
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import { createMockPendingTxData } from '@aglocal/portfolio-contract/tools/mocks.ts';
+import { handlePendingTx } from '../src/pending-tx-manager.ts';
+import { createMockPendingTxOpts } from './mocks.ts';
 
 test('handlePendingTx aborts CCTP watcher in live mode when signal is aborted', async t => {
   const logs: string[] = [];
@@ -99,7 +99,7 @@ test('handlePendingTx aborts GMP watcher in live mode when signal is aborted', a
 
   const ctxWithFetch = harden({
     ...opts,
-    fetch: async (url: string) => {
+    fetch: async (_url: string) => {
       return {
         ok: true,
         json: async () => ({

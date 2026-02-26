@@ -108,7 +108,7 @@ const makeAlice = async (
 const makeBob = (
   t,
   zoe,
-  installation,
+  _installation,
   issuers,
   origPayments,
   coveredCallInstallation,

@@ -67,13 +67,13 @@ export const makeSmartWalletKitFromVstorageKit = async (
    *
    * @param {string} from
    * @param {string|number} id
-   * @param {number|string} [minHeight] - deprecated, start polling before broadcasting the offer
+   * @param {number|string} [_minHeight] - deprecated, start polling before broadcasting the offer
    * @param {boolean} [untilNumWantsSatisfied]
    */
   const pollOffer = async (
     from,
     id,
-    minHeight,
+    _minHeight = undefined,
     untilNumWantsSatisfied = false,
   ) => {
     const getAddrLastUpdate = () => getLastUpdate(from);
@@ -128,8 +128,8 @@ harden(makeSmartWalletKitFromVstorageKit);
 export const makeSmartWalletKit = async (
   {
     fetch,
-    // eslint-disable-next-line no-unused-vars -- keep for removing ambient authority
-    delay,
+    // unused but keep for eventually removing ambient authority
+    delay: _delay,
     names = true,
   },
   networkConfig,

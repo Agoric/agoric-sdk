@@ -31,7 +31,7 @@ class SlotWrapper {
   #slot;
 
   /** @type {InterfaceSpec} */
-  [Symbol.toStringTag];
+  [Symbol.toStringTag] = 'Alleged: SlotWrapper';
 
   /**
    * @param {Slot} slot

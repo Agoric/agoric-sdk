@@ -12,13 +12,13 @@ import { heapVowE as E } from '@agoric/vow/vat.js';
  */
 
 /**
- * @param {ZCF} zcf
+ * @param {ZCF} _zcf
  * @param {{
  *   portAllocator: ERemote<PortAllocator>;
  * }} privateArgs
  * @param {Baggage} _baggage
  */
-export const start = async (zcf, privateArgs, _baggage) => {
+export const start = async (_zcf, privateArgs, _baggage) => {
   const { portAllocator } = privateArgs;
 
   const myPort = await E(portAllocator).allocateCustomIBCPort();

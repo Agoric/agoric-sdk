@@ -26,10 +26,7 @@ const marshaller = boardSlottingMarshaller();
 
 const makeMockHandlePendingTx = () => {
   const handledTxs: PendingTx[] = [];
-  const mockHandlePendingTx = async (
-    tx: PendingTx,
-    { log: _log, ..._evmCtx }: any,
-  ) => {
+  const mockHandlePendingTx = async (tx: PendingTx) => {
     handledTxs.push(tx);
   };
   return { mockHandlePendingTx, handledTxs };

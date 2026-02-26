@@ -44,9 +44,9 @@ const walk = (node, onSourceSpec, onModule, currentPath = '$') => {
     return;
   }
   if (Array.isArray(node)) {
-    node.forEach((child, i) =>
-      walk(child, onSourceSpec, onModule, `${currentPath}[${i}]`),
-    );
+    for (const [i, child] of node.entries()) {
+      walk(child, onSourceSpec, onModule, `${currentPath}[${i}]`);
+    }
     return;
   }
   const record = /** @type {Record<string, unknown>} */ (node);

@@ -119,6 +119,7 @@ async function main() {
       return result;
     };
   }
+  return undefined;
 }
 
 main().then(

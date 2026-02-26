@@ -10,8 +10,8 @@
  *
  * @see type-guards.ts for the authoritative interface specification
  */
-import { type VstorageKit } from '@agoric/client-utils';
 import { AmountMath, type NatAmount } from '@agoric/ertp';
+import type { VstorageKit } from '@agoric/client-utils';
 import type { ChainInfo } from '@agoric/orchestration';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js';
 import {
@@ -165,7 +165,7 @@ export const makeTrader = (
      * This enables ongoing portfolio management after initial creation.
      */
     async rebalance(
-      t: ExecutionContext,
+      _t: ExecutionContext,
       proposal: ProposalType['rebalance'],
       offerArgs: OfferArgsFor['rebalance'],
     ) {
@@ -187,7 +187,7 @@ export const makeTrader = (
       });
     },
     async simpleRebalance(
-      t: ExecutionContext,
+      _t: ExecutionContext,
       proposal: ProposalType['rebalance'],
       offerArgs: OfferArgsFor['rebalance'],
     ) {
@@ -208,7 +208,7 @@ export const makeTrader = (
         offerArgs,
       });
     },
-    async withdraw(t: ExecutionContext, Cash: NatAmount) {
+    async withdraw(_t: ExecutionContext, Cash: NatAmount) {
       if (!openId) throw Error('not open');
       const invitationMakerName: PortfolioContinuingInvitationMaker =
         'Withdraw';
@@ -222,7 +222,7 @@ export const makeTrader = (
       const proposal: ProposalType['withdraw'] = { give: {}, want: { Cash } };
       return wallet.executeContinuingOffer({ id, invitationSpec, proposal });
     },
-    async deposit(t: ExecutionContext, Deposit: NatAmount) {
+    async deposit(_t: ExecutionContext, Deposit: NatAmount) {
       if (!openId) throw Error('not open');
       const invitationMakerName: PortfolioContinuingInvitationMaker = 'Deposit';
       const id = `Deposit-${(nonce += 1)}`;

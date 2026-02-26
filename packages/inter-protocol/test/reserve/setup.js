@@ -30,11 +30,11 @@ import * as faucetContractExports from '../vaultFactory/faucet.js';
 /**
  * NOTE: called separately by each test so zoe/priceAuthority don't interfere
  *
- * @param {any} t
+ * @param {any} _t
  * @param {ZoeManualTimer | undefined} timer
  * @param {FarZoeKit} farZoeKit
  */
-const setupReserveBootstrap = async (t, timer, farZoeKit) => {
+const setupReserveBootstrap = async (_t, timer, farZoeKit) => {
   const space = /** @type {any} */ (makePromiseSpace());
   const { produce, consume } = /** @type {EconomyBootstrapPowers} */ (space);
 

@@ -211,7 +211,7 @@ const setupOfferFilterChange = async (
   log,
   governor,
   installations,
-  invitation,
+  _invitation,
   strings = ['foo', 'bar:'],
 ) => {
   const filterChangeSpec = harden(strings);
@@ -255,7 +255,7 @@ const setupApiCall = async (zoe, log, governor, installations) => {
 const validateElectorateChange = async (
   zoe,
   log,
-  voters1,
+  _voters1,
   detailsP,
   governorInstance,
   electorateInstance,

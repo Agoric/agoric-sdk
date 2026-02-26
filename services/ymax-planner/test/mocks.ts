@@ -479,7 +479,7 @@ export const createMockCosmosRestClient = (
   let mockAccount = initialAccount;
 
   return {
-    getAccountBalance: async (chainKey, address, denom) => {
+    getAccountBalance: async (_chainKey, _address, denom) => {
       const response =
         balanceResponses[callCount] ||
         balanceResponses[balanceResponses.length - 1];
@@ -489,7 +489,7 @@ export const createMockCosmosRestClient = (
         amount: response.amount,
       };
     },
-    async getAccountSequence(chainKey: string, address: string) {
+    async getAccountSequence(_chainKey: string, _address: string) {
       callCount++;
       return { account: mockAccount };
     },

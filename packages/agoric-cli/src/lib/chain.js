@@ -116,6 +116,7 @@ export const execSwingsetTransaction = (swingsetArgs, opts) => {
     stdout.write(`${agdBinary} `);
     stdout.write(cmd.join(' '));
     stdout.write('\n');
+    return undefined;
   } else {
     const yesCmd = cmd.concat(['--yes']);
     if (verbose) console.log('Executing ', agdBinary, yesCmd);

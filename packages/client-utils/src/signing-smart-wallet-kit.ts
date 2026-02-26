@@ -11,8 +11,8 @@ import type {
 } from '@cosmjs/stargate';
 import { toAccAddress } from '@cosmjs/stargate/build/queryclient/utils.js';
 import type { EReturn } from '@endo/far';
-import { MsgWalletSpendAction } from './codegen/agoric/swingset/msgs.js';
-import { TxRaw } from './codegen/cosmos/tx/v1beta1/tx.js';
+import { MsgWalletSpendAction } from '@agoric/cosmic-proto/agoric/swingset/msgs.js';
+import { TxRaw } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
 import { makeStargateClientKit } from './signing-client.js';
 import type { SmartWalletKit } from './smart-wallet-kit.js';
 

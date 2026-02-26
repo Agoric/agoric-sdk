@@ -245,7 +245,7 @@ test('upgrade vat-bank', async t => {
                 return '1000';
               }
               default:
-                Fail`unexpected call to bank handler ${obj}`;
+                throw Fail`unexpected call to bank handler ${obj}`;
             }
           },
         },

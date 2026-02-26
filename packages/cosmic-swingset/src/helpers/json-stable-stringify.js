@@ -32,7 +32,7 @@ export default function stableStringify(obj, opts) {
   let space = opts.space || '';
   if (typeof space === 'number') space = Array(space + 1).join(' ');
   const cycles = typeof opts.cycles === 'boolean' ? opts.cycles : false;
-  const replacer = opts.replacer || ((key, value) => value);
+  const replacer = opts.replacer || ((_key, value) => value);
 
   const cmp =
     opts.cmp &&

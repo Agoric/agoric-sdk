@@ -13,7 +13,7 @@ import { makeBundlePublisher, makeCosmosBundlePublisher } from './publish.js';
  * @import {CosmosConnectionSpec} from './publish.js';
  */
 
-const publishMain = async (progname, rawArgs, powers, opts) => {
+const publishMain = async (_progname, rawArgs, powers, opts) => {
   const { fs } = powers;
 
   const { node: rpcAddress, home: homeDirectory, chainID = 'agoric' } = opts;

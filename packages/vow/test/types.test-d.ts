@@ -12,7 +12,7 @@ vt.retryable(zone, 'foo', () => null);
 vt.retryable(zone, 'foo', () => Promise.resolve(null));
 
 expectType<(p1: number, p2: string) => Vow<{ someValue: 'bar' }>>(
-  vt.retryable(zone, 'foo', (p1: number, p2: string) =>
+  vt.retryable(zone, 'foo', (_p1: number, _p2: string) =>
     Promise.resolve({ someValue: 'bar' } as const),
   ),
 );

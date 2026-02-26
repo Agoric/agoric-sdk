@@ -680,7 +680,7 @@ export const startEngine = async (
     feeBrandName: string;
   },
 ) => {
-  const { evmCtx, cosmosRest, now, rpc, signingSmartWalletKit } = powers;
+  const { evmCtx, cosmosRest, rpc, signingSmartWalletKit } = powers;
   const vstoragePathPrefixes = makeVstoragePathPrefixes(contractInstance);
   const { portfoliosPathPrefix, pendingTxPathPrefix } = vstoragePathPrefixes;
   await null;
@@ -791,7 +791,6 @@ export const startEngine = async (
     log: console.warn.bind(console),
     error: console.error.bind(console),
     marshaller,
-    now,
     signingSmartWalletKit,
     vstoragePathPrefixes,
     pendingTxAbortControllers,

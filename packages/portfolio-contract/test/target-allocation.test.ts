@@ -1,8 +1,8 @@
 /**
  * @file Test target allocation functionality
  */
-import type { VstorageKit } from '@agoric/client-utils';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import type { VstorageKit } from '@agoric/client-utils';
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { E } from '@endo/far';
 import { makeTrader } from '../tools/portfolio-actors.js';
@@ -66,7 +66,7 @@ test('multiple portfolios have independent allocations', async t => {
     await eventLoopIteration();
     const val = storage.getDeserialized(`orchtest.${subpath}`).at(-1);
     return val;
-  }) as unknown as VstorageKit<PortfolioPublishedPathTypes>['readPublished'];
+  }) as VstorageKit<PortfolioPublishedPathTypes>['readPublished'];
 
   // Create two separate wallets and traders
   const { mint: _, ...poc26SansMint } = poc26;

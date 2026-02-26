@@ -179,7 +179,14 @@ test(
  * >}
  */
 const lengthCheckMacro = test.macro({
-  title(providedTitle = '', prefix, baseAddress, hookData, charLimit, throws) {
+  title(
+    providedTitle = '',
+    _prefix,
+    _baseAddress,
+    _hookData,
+    charLimit,
+    throws,
+  ) {
     let sep = providedTitle.endsWith(' ') ? '' : ' ';
     const limitDesc = charLimit ? `${sep}charLimit=${charLimit}` : '';
     if (limitDesc) sep = ' ';

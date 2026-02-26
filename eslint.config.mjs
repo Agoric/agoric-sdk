@@ -182,6 +182,7 @@ export default [
 
       'jsdoc/no-defaults': 'off',
       'no-use-before-define': 'off',
+      'no-nested-ternary': 'off',
     },
   },
   {

@@ -408,6 +408,7 @@ export const scanEvmLogsInChunks = async (
           return evt;
         }
       }
+      return undefined;
     },
   });
 };
