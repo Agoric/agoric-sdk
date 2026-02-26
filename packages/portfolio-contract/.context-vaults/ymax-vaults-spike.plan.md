@@ -133,22 +133,33 @@ We'd like a quick spike / prototype to begin to estimate the cost and risks of a
      - [x] yes: add focused tests for sync redeem, timer overlap/coalescing behavior, and policy/version guardrails
 
  - [ ] write code
-   - [ ] define APY seam API for spike (planner submits allocation plan under policyVersion)
+   - [x] define APY seam API for spike (planner submits allocation plan under policyVersion)
    - [x] prototype directly in `agoric-labs/ymax0-ui0` to leverage fast PR deploy previews
-   - [ ] EVM contract spike: implement/fork contract changes with unit tests up front before any deploy/integration steps
-     - [ ] planned next (not now): encode privileged extension and accounting invariants as Solidity unit tests first
+   - [x] EVM contract spike: implement/fork contract changes with unit tests up front before any deploy/integration steps
+     - [x] encode privileged extension and accounting invariants as Solidity unit tests first
    - [x] out of scope: periodic timer-driven rebalance in code path (orthogonal to core demo)
    - [ ] deferred design-to-code task (not now): derive a minimal simulation scaffold from sequence diagrams (e.g., `makeUI(0xVAU1)`, `makeVault()`, `deposit(amount)`, `rebalance()`, `redeem(shares)`)
-   - [ ] brand new prototype UI?
+   - [x] creator/admin prototype UI wiring for spike (`creatorFacet.createVault(...)` trigger with fixed allocation)
 
 ## T-Shirt Estimates
 
-- [ ] `agoric-to-axelar-local` EVM vault/factory contract changes (deposit-triggered excess transfer, managed-assets accounting, factory-mediated reporting): `L`
-  - [ ] `agoric-to-axelar-local` EVM vault changes: deposit-triggered excess transfer to `ownerPortfolioAccount` + `managedAssets` accounting updates: `M`
-  - [ ] `agoric-to-axelar-local` EVM factory/reporting changes: `assetReporter` constructor arg and `reportManagedAssets` forwarder (`reporter -> factory -> vault` guards): `M`
-  - [ ] `agoric-to-axelar-local` EVM contract config/plumbing: constructor params, role wiring, and event surface updates for demo integration: `M`
-- [ ] `agoric-to-axelar-local` Solidity/Jest unit tests for invariants and authority guards: `M`
+- [x] `agoric-to-axelar-local` EVM vault/factory contract changes (deposit-triggered excess transfer, managed-assets accounting, factory-mediated reporting): `L`
+  - [x] `agoric-to-axelar-local` EVM vault changes: deposit-triggered excess transfer to `ownerPortfolioAccount` + `managedAssets` accounting updates: `M`
+  - [x] `agoric-to-axelar-local` EVM factory/reporting changes: `assetReporter` constructor arg and `reportManagedAssets` forwarder (`reporter -> factory -> vault` guards): `M`
+  - [x] `agoric-to-axelar-local` EVM contract config/plumbing: constructor params, role wiring, and event surface updates for demo integration: `M`
+- [x] `agoric-to-axelar-local` Solidity/Jest unit tests for invariants and authority guards: `M`
 - [ ] `agoric-sdk/packages/portfolio-contract` APY seam + planner/contract integration updates (plan-only boundary): `M`
-- [ ] `agoric-sdk/packages/portfolio-contract` wiring for creator-facet `createVault(...)` via `ymaxControl`: `M`
+- [x] `agoric-sdk/packages/portfolio-contract` wiring for creator-facet `createVault(...)` via `ymaxControl`: `M`
 - [ ] `ymax0-ui0` end-user demo flow updates (deposit/withdraw state, vault URL pathing, basic status): `M`
 - [ ] Deployment/config wiring across testnets (factory address, reporter address, env/config propagation): `M`
+
+## Test Obligations (Code First)
+
+- [x] EVM vault: `deposit(...)` mints shares and keeps `totalAssets = localBalance + managedAssets` invariant when excess is transferred to `ownerPortfolioAccount`
+- [x] EVM vault: excess-transfer logic follows tiered liquidity policy and `5%` hysteresis for Chris spike defaults
+- [x] EVM factory/vault reporting path: only `0xASSET_REPORTER` can call factory reporting; vault accepts reports only from factory
+- [x] EVM vault reporting semantics: `reportManagedAssets(newManagedAssets, asOf, reportId)` uses absolute values and rejects stale/replayed report identifiers
+- [x] EVM redeem gating: sync redeem succeeds only when local liquidity is sufficient and `maxReportAge = 8h` freshness gate passes
+- [ ] Agoric-side seam: planner->contract boundary carries executable plan only (no APY payload), with policy/version context
+- [x] Agoric-side creator flow: creator-facet `createVault(...)` via `ymaxControl` starts a vault-backed portfolio with fixed target allocation and returns `{ portfolioId, storagePath }` for follow-on wiring
+- [ ] Integration smoke (non-UI): end-to-end happy path reaches “funds moved to `@Avalanche` with accounting updated”

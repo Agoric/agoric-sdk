@@ -3,6 +3,7 @@
  */
 import type { VstorageKit } from '@agoric/client-utils';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js';
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { E } from '@endo/far';
 import { makeTrader } from '../tools/portfolio-actors.js';
@@ -126,4 +127,36 @@ test('multiple portfolios have independent allocations', async t => {
 
   // Verify portfolios have different IDs
   t.not(trader1.getPortfolioId(), trader2.getPortfolioId());
+});
+
+test('creatorFacet.createVault publishes target allocation', async t => {
+  const { common, started } = await setupTrader(t);
+  const targetAllocation = harden({ Aave_Base: 6000n, Compound_Base: 4000n });
+
+  const result = await E(started.creatorFacet).createVault(targetAllocation);
+  t.like(result, {
+    portfolioId: 0,
+    storagePath: `${ROOT_STORAGE_PATH}.portfolios.portfolio0`,
+  });
+
+  await ackNFA(common.utils);
+  await eventLoopIteration();
+
+  const portfolioStatus = common.bootstrap.storage
+    .getDeserialized(result.storagePath)
+    .at(-1) as { targetAllocation?: Record<string, bigint> };
+  t.deepEqual(portfolioStatus.targetAllocation, targetAllocation);
+});
+
+test('creatorFacet.createVault rejects invalid pool keys', async t => {
+  const { started } = await setupTrader(t);
+  const badTargetAllocation = harden({
+    Aave_Base: 5000n,
+    Nope_Not_A_Protocol: 5000n,
+  });
+
+  await t.throwsAsync(
+    () => E(started.creatorFacet).createVault(badTargetAllocation),
+    { message: /Nope_Not_A_Protocol/ },
+  );
 });

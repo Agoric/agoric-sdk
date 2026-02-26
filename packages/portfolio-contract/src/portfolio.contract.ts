@@ -71,6 +71,7 @@ import {
   BeefyPoolPlaces,
   ERC4626PoolPlaces,
   makeProposalShapes,
+  TargetAllocationShape,
   type EVMContractAddressesMap,
   type OfferArgsFor,
   type ProposalType,
@@ -732,6 +733,7 @@ export const contract = async (
         M.string(),
         M.remotable('Instance'),
       ).returns(),
+      createVault: M.callWhen(TargetAllocationShape).returns(M.record()),
       withdrawFees: M.callWhen(M.string())
         .optional(M.record())
         .returns(M.record()),
@@ -793,6 +795,29 @@ export const contract = async (
         trace('made EVM wallet handler invitation', invitation);
         await E(pfP).deliverPayment(address, invitation);
         trace('delivered EVM wallet handler invitation');
+      },
+      /**
+       * Create a vault-backed portfolio policy with a fixed target allocation.
+       * Returns immediately with stable identifiers while account provisioning
+       * and any downstream planner handling continue asynchronously.
+       */
+      async createVault(targetAllocation: TargetAllocation) {
+        mustMatch(targetAllocation, TargetAllocationShape);
+        const kit = makeNextPortfolioKit();
+        const seat = zcf.makeEmptySeatKit().zcfSeat;
+        void openPortfolio(
+          seat,
+          { targetAllocation },
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- sensitive to build order
+          // @ts-ignore XXX Guest...
+          kit,
+        );
+
+        const storagePath = await vowTools.asPromise(kit.reader.getStoragePath());
+        return harden({
+          portfolioId: kit.reader.getPortfolioId(),
+          storagePath,
+        });
       },
       /**
        * Withdraw from contractAccount; for example, before terminating the contract
