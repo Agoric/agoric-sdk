@@ -7,7 +7,8 @@ import bundleSource from '@endo/bundle-source';
 import { assert } from '@endo/errors';
 import { kunser, krefOf } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
-import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
+import { makeSwingsetController } from '../../src/index.js';
+import { initializeTestSwingset as initializeSwingset } from '../../tools/test-swingset.js';
 
 function bfile(name) {
   return new URL(name, import.meta.url).pathname;

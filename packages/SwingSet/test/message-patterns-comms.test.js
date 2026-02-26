@@ -9,11 +9,8 @@ import { test } from '../tools/prepare-test-env-ava.js';
 import path from 'path';
 import bundleSource from '@endo/bundle-source';
 import { initSwingStore } from '@agoric/swing-store';
-import {
-  initializeSwingset,
-  makeSwingsetController,
-  buildKernelBundles,
-} from '../src/index.js';
+import { makeSwingsetController, buildKernelBundles } from '../src/index.js';
+import { initializeTestSwingset as initializeSwingset } from '../tools/test-swingset.js';
 import { bundleOpts } from './util.js';
 import { buildLoopbox } from '../src/devices/loopbox/loopbox.js';
 import { buildPatterns } from './message-patterns.js';
