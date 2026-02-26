@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { TxRpc } from '../../../types.js';
-import { BinaryReader } from '../../../binary.js';
+import type { Rpc } from '@agoric/cosmic-proto/codegen/helpers.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import { QueryClient, createProtobufRpcClient } from '@cosmjs/stargate';
 import {
   QueryParamsRequest,
@@ -9,7 +9,7 @@ import {
   QueryInflationResponse,
   QueryAnnualProvisionsRequest,
   QueryAnnualProvisionsResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/mint/v1beta1/query.js';
 /** Query provides defines the gRPC querier service. */
 export interface Query {
   /** Params returns the total set of minting parameters. */
@@ -22,8 +22,8 @@ export interface Query {
   ): Promise<QueryAnnualProvisionsResponse>;
 }
 export class QueryClientImpl implements Query {
-  private readonly rpc: TxRpc;
-  constructor(rpc: TxRpc) {
+  private readonly rpc: Rpc;
+  constructor(rpc: Rpc) {
     this.rpc = rpc;
     this.params = this.params.bind(this);
     this.inflation = this.inflation.bind(this);

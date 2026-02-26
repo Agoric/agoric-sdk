@@ -1,13 +1,13 @@
 //@ts-nocheck
-import { TxRpc } from '../../../../types.js';
-import { BinaryReader } from '../../../../binary.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import { QueryClient, createProtobufRpcClient } from '@cosmjs/stargate';
 import {
   ConfigRequest,
   ConfigResponse,
   StatusRequest,
   StatusResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/base/node/v1beta1/query.js';
 /** Service defines the gRPC querier service for node related queries. */
 export interface Service {
   /** Config queries for the operator configuration. */

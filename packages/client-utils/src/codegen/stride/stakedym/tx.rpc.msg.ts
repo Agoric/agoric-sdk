@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { TxRpc } from '../../types.js';
-import { BinaryReader } from '../../binary.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import {
   MsgLiquidStake,
   MsgLiquidStakeResponse,
@@ -28,7 +28,7 @@ import {
   MsgOverwriteRedemptionRecordResponse,
   MsgSetOperatorAddress,
   MsgSetOperatorAddressResponse,
-} from './tx.js';
+} from '@agoric/cosmic-proto/codegen/stride/stakedym/tx.js';
 /** Msg defines the Msg service. */
 export interface Msg {
   /** User transaction to liquid stake native tokens into stTokens */

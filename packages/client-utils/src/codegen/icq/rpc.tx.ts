@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { type Rpc } from '../helpers.js';
+import type { Rpc } from '@agoric/cosmic-proto/codegen/helpers.js';
 export const createRPCMsgClient = async ({ rpc }: { rpc: Rpc }) => ({
   icq: {
     v1: new (await import('./v1/tx.rpc.msg.js')).MsgClientImpl(rpc),

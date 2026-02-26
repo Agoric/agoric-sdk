@@ -1,12 +1,12 @@
 //@ts-nocheck
-import { TxRpc } from '../../../../types.js';
-import { BinaryReader } from '../../../../binary.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import {
   MsgTransfer,
   MsgTransferResponse,
   MsgUpdateParams,
   MsgUpdateParamsResponse,
-} from './tx.js';
+} from '@agoric/cosmic-proto/codegen/ibc/applications/transfer/v1/tx.js';
 /** Msg defines the ibc/transfer Msg service. */
 export interface Msg {
   /** Transfer defines a rpc handler method for MsgTransfer. */

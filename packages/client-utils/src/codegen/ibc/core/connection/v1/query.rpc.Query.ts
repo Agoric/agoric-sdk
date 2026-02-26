@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { TxRpc } from '../../../../types.js';
-import { BinaryReader } from '../../../../binary.js';
+import type { Rpc } from '@agoric/cosmic-proto/codegen/helpers.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import { QueryClient, createProtobufRpcClient } from '@cosmjs/stargate';
 import {
   QueryConnectionRequest,
@@ -15,7 +15,7 @@ import {
   QueryConnectionConsensusStateResponse,
   QueryConnectionParamsRequest,
   QueryConnectionParamsResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/ibc/core/connection/v1/query.js';
 /** Query provides defines the gRPC querier service */
 export interface Query {
   /** Connection queries an IBC connection end. */
@@ -51,8 +51,8 @@ export interface Query {
   ): Promise<QueryConnectionParamsResponse>;
 }
 export class QueryClientImpl implements Query {
-  private readonly rpc: TxRpc;
-  constructor(rpc: TxRpc) {
+  private readonly rpc: Rpc;
+  constructor(rpc: Rpc) {
     this.rpc = rpc;
     this.connection = this.connection.bind(this);
     this.connections = this.connections.bind(this);

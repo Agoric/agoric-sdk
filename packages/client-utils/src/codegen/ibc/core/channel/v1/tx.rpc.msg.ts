@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { TxRpc } from '../../../../types.js';
-import { BinaryReader } from '../../../../binary.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import {
   MsgChannelOpenInit,
   MsgChannelOpenInitResponse,
@@ -40,7 +40,7 @@ import {
   MsgUpdateParamsResponse,
   MsgPruneAcknowledgements,
   MsgPruneAcknowledgementsResponse,
-} from './tx.js';
+} from '@agoric/cosmic-proto/codegen/ibc/core/channel/v1/tx.js';
 /** Msg defines the ibc/channel Msg service. */
 export interface Msg {
   /** ChannelOpenInit defines a rpc handler method for MsgChannelOpenInit. */

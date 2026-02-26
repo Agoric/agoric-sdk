@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { TxRpc } from '../../types.js';
-import { BinaryReader } from '../../binary.js';
+import type { Rpc } from '@agoric/cosmic-proto/codegen/helpers.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import { QueryClient, createProtobufRpcClient } from '@cosmjs/stargate';
 import {
   QueryParamsRequest,
@@ -25,7 +25,7 @@ import {
   QueryLSMDepositResponse,
   QueryLSMDepositsRequest,
   QueryLSMDepositsResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/stride/records/query.js';
 /** Query defines the gRPC querier service. */
 export interface Query {
   /** Parameters queries the parameters of the module. */
@@ -74,8 +74,8 @@ export interface Query {
   ): Promise<QueryLSMDepositsResponse>;
 }
 export class QueryClientImpl implements Query {
-  private readonly rpc: TxRpc;
-  constructor(rpc: TxRpc) {
+  private readonly rpc: Rpc;
+  constructor(rpc: Rpc) {
     this.rpc = rpc;
     this.params = this.params.bind(this);
     this.userRedemptionRecord = this.userRedemptionRecord.bind(this);

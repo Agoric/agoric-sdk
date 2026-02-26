@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { TxRpc } from '../../../../types.js';
-import { BinaryReader } from '../../../../binary.js';
+import type { Rpc } from '@agoric/cosmic-proto/codegen/helpers.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import { QueryClient, createProtobufRpcClient } from '@cosmjs/stargate';
 import {
   QueryChannelRequest,
@@ -37,7 +37,7 @@ import {
   QueryUpgradeResponse,
   QueryChannelParamsRequest,
   QueryChannelParamsResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/ibc/core/channel/v1/query.js';
 /** Query provides defines the gRPC querier service */
 export interface Query {
   /** Channel queries an IBC Channel. */
@@ -128,8 +128,8 @@ export interface Query {
   ): Promise<QueryChannelParamsResponse>;
 }
 export class QueryClientImpl implements Query {
-  private readonly rpc: TxRpc;
-  constructor(rpc: TxRpc) {
+  private readonly rpc: Rpc;
+  constructor(rpc: Rpc) {
     this.rpc = rpc;
     this.channel = this.channel.bind(this);
     this.channels = this.channels.bind(this);

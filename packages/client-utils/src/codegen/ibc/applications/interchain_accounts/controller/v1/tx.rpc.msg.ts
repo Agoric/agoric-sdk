@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { TxRpc } from '../../../../../types.js';
-import { BinaryReader } from '../../../../../binary.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import {
   MsgRegisterInterchainAccount,
   MsgRegisterInterchainAccountResponse,
@@ -8,7 +8,7 @@ import {
   MsgSendTxResponse,
   MsgUpdateParams,
   MsgUpdateParamsResponse,
-} from './tx.js';
+} from '@agoric/cosmic-proto/codegen/ibc/applications/interchain_accounts/controller/v1/tx.js';
 /** Msg defines the 27-interchain-accounts/controller Msg service. */
 export interface Msg {
   /** RegisterInterchainAccount defines a rpc handler for MsgRegisterInterchainAccount. */
