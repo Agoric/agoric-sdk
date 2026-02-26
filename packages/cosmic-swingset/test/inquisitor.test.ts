@@ -3,7 +3,6 @@ import anyTest from 'ava';
 
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
-import pathlib from 'node:path';
 
 import tmp from 'tmp';
 
@@ -17,7 +16,7 @@ import {
 } from '@agoric/internal';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import type { SwingSetConfigDescriptor } from '@agoric/swingset-vat';
-import { provideBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 
 import type { SwingStore } from '@agoric/swing-store';
 import { makeHelpers, makeSwingStoreOverlay } from '../tools/inquisitor.mjs';
@@ -172,8 +171,7 @@ test('vat lifecycle', async t => {
   } = tmp.fileSync({ detachDescriptor: true });
   t.teardown(() => removeCallback());
   fs.writeSync(fd, swingStore.debug.serialize());
-  const bundleDir = pathlib.resolve('bundles');
-  const bundleCache = await provideBundleCache(bundleDir, {}, s => import(s));
+  const bundleCache = await unsafeSharedBundleCache;
   const bundle = await bundleCache.load(
     resolveToPath('@agoric/swingset-vat/tools/vat-puppet-v2.js'),
   );
