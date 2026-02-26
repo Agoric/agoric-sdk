@@ -103,7 +103,6 @@ export const processTx = async (
     alchemyApiKey: config.alchemyApiKey,
   });
 
-
   // Verify Alchemy chain availability
   const failedEvmChains = [] as Array<keyof typeof evmCtx.evmProviders>;
   const evmHeights = await deeplyFulfilledObject(
@@ -134,18 +133,32 @@ export const processTx = async (
     // EVM Wallet: https://43114.snowtrace.io/address/0x57733a73f0eb38fae93ae5af01cd994625fc5b6f
     // Tx https://vstorage.agoric.net/?path=published.ymax1.pendingTxs.tx445&endpoint=https%3A%2F%2Fmain-a.rpc.agoric.net%3A443&height=undefined
     // Tx on EVM: https://43114.snowtrace.io/tx/0x00c09227e4aeba5d2c78678cf278ac0afddfff073c27b99f5357ff95f8d9e178
-    const txId = 'tx445';
-    const sourceAddr =
-      'cosmos:agoric-3:agoric1uu7jv958xxayfeezq7yz8zxda9jfr0v7h6shlke350qadqld9jgqgu3lpq';
+    // const txId = 'tx445';
+    // const sourceAddr =
+    //   'cosmos:agoric-3:agoric1uu7jv958xxayfeezq7yz8zxda9jfr0v7h6shlke350qadqld9jgqgu3lpq';
+    // const pendingTxData = {
+    //   txId,
+    //   destinationAddress:
+    //     'eip155:43114:0x57733a73f0eb38fae93ae5af01cd994625fc5b6f',
+    //   status: 'pending',
+    //   type: 'GMP',
+    //   sourceAddress: sourceAddr,
+    // };
+    // const timestampMs = 1764837518000 - 4 * 60 * 1000;
+
+    // https://optimistic.etherscan.io/address/0xbe731782c125b12d1549a5a5dc29eeafc2f82322
+    // https://vstorage.agoric.net/?path=published.ymax0.pendingTxs.tx465&endpoint=https%3A%2F%2Fmain-a.rpc.agoric.net%3A443&height=undefined
+    const txId = 'tx465';
     const pendingTxData = {
       txId,
       destinationAddress:
-        'eip155:43114:0x57733a73f0eb38fae93ae5af01cd994625fc5b6f',
+        'eip155:10:0xbe731782c125b12d1549a5a5dc29eeafc2f82322',
+      sourceAddress:
+        'cosmos:agoric-3:agoric1u6mpx9zzzahtmdvlhswmdyxm9wyush7xr6hl7k93kzxdu77xljrs35k424',
       status: 'pending',
       type: 'GMP',
-      sourceAddress: sourceAddr,
     };
-    const timestampMs = 1764837518000 - 4 * 60 * 1000;
+    const timestampMs = 1769482245000 - 4 * 60 * 1000;
 
     // successful tx on Arbitrum
     // evm tx https://arbiscan.io/tx/0xa145fae8071255f72e14ef49f0b77d2805721ccaa08f54c01f447396685983ce
