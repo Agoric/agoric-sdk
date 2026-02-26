@@ -1,0 +1,25 @@
+%%{init: {'theme': 'base', 'themeVariables': {'background': '#f3f4f6', 'primaryColor': '#eef2f7', 'secondaryColor': '#e9eef5', 'tertiaryColor': '#f6f8fb', 'lineColor': '#5f6b7a', 'textColor': '#1f2937'}, 'themeCSS': '.sequenceNumber { font-size: 14px !important; font-weight: 600; }'}}%%
+sequenceDiagram
+    title Ymax Vault - Withdraw Flow (ERC-4626 Shares -> USDC)
+    autonumber
+
+    %% Conventions: solid(->>) = spontaneous trigger; dotted(-->>) = consequence/follow-on
+
+    actor user as Trader Tim<br/>EOA: 0xTIM
+    participant ui as vault-ui-1<br/>URL: /vaults/1
+
+    box EVM Chain
+    participant vault as vault-contract-1<br/>ERC-4626: 0xVAU1
+    participant usdc as USDC Token<br/>ERC-20: 0xUSDC
+    end
+
+    Note over user,ui: Signing wallet (MetaMask) omitted in this diagram.
+    user->>ui: redeem(250CVSH)
+    ui-->>vault: redeem(250CVSH, 0xTIM, 0xTIM)
+    vault-->>vault: realizeUSDCForRedeem(250CVSH, currentAllocation)
+    vault-->>usdc: transfer(0xTIM, 250USDC)
+    vault-->>ui: emit Withdraw(0xTIM, 0xTIM, 0xTIM, 250USDC, 250CVSH)
+    usdc-->>ui: emit Transfer(0xVAU1, 0xTIM, 250USDC)
+    ui-->>vault: balanceOf(0xTIM)
+    vault-->>ui: balance=0CVSH
+    ui-->>user: balances(usdc=+250USDC, cvsh=0CVSH)

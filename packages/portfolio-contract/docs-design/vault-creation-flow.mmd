@@ -1,0 +1,38 @@
+%%{init: {'theme': 'base', 'themeVariables': {'background': '#f3f4f6', 'primaryColor': '#eef2f7', 'secondaryColor': '#e9eef5', 'tertiaryColor': '#f6f8fb', 'lineColor': '#5f6b7a', 'textColor': '#1f2937'}, 'themeCSS': '.sequenceNumber { font-size: 14px !important; font-weight: 600; }'}}%%
+sequenceDiagram
+    title Ymax Vault - Creator Vault Creation Flow
+    autonumber
+
+    actor creator as Chris<br/>EOA: 0xCHR1
+    participant ui as vault-ui-1<br/>URL: /vaults/1
+
+    box Agoric
+    participant yc as Ymax contract<br/>instance: 0xYMAX
+    participant vstorage as vstorage<br/>node: 0xVST1
+    end
+    participant planner as Planner service<br/>svc: 0xPLN1
+
+    box EVM Chain
+    participant factory as VaultFactory<br/>addr: 0xFAC1
+    participant vault as vault-contract-1<br/>ERC-4626: 0xVAU1
+    end
+
+    %% Conventions: solid(->>) = spontaneous trigger; dotted(-->>) = consequence/follow-on
+
+    creator->>ui: createVault({ allocations: [Aave_Base: 60%, Morpho_Base: 40%],<br/>fee: 0.5bps, cadence: P1H })
+    ui-->>yc: createVault(...)
+    yc-->>yc: p75 = openPortfolio()
+    yc-->>yc: vaults.add(p75)
+    yc-->>yc: 0xVAU1 = computeCreate2Address(factory=0xFAC1, salt=p75)
+    yc-->>vstorage: setValue(p75.policy, { vault: 0xVAU1,<br/>allocations: [Aave_Base: 60%, Morpho_Base: 40%],<br/>fee: 0.5bps, cadence: P1H })
+    yc-->>ui: vaultSpecAccepted(p75)
+    yc-->>factory: createVault(0xUSDC, Chris Vault Share, CVSH, p75)
+    Note right of yc: via Axelar GMP
+    factory-->>vault: initialize(0xUSDC, Chris Vault Share, CVSH)
+    Note left of factory: emit VaultCreated(0xVAU1, 0xCHR1, p75)<br/>resolver reports success
+    factory-->>yc: ack
+
+    yc-->>vstorage: setValue(p75.status, ready)
+    vstorage-->>planner: observeValue(p75.policy, p75.status)
+    yc-->>ui: vaultReady(0xVAU1, p75, /vaults/1)
+    ui-->>creator: showVault(0xVAU1, /vaults/1)

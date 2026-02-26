@@ -1,0 +1,20 @@
+%%{init: {'theme': 'base', 'themeVariables': {'background': '#f3f4f6', 'primaryColor': '#eef2f7', 'secondaryColor': '#e9eef5', 'tertiaryColor': '#f6f8fb', 'lineColor': '#5f6b7a', 'textColor': '#1f2937'}, 'themeCSS': '.sequenceNumber { font-size: 14px !important; font-weight: 600; }'}}%%
+sequenceDiagram
+    title EVM Prerequisite Flow - VaultFactory Deployment
+    autonumber
+
+    %% Conventions: solid(->>) = spontaneous trigger; dotted(-->>) = consequence/follow-on
+
+    actor ops as Deployer
+    participant wallet as EVM Wallet<br/>EOA: 0xOPS1
+    participant chain as Avalanche C-Chain
+    participant factory as VaultFactory<br/>addr: 0xFAC1
+    participant ymax as Ymax config
+
+    Note right of ops: Use deterministic deployment pattern from `agoric-to-axelar-local`<br/>for consistent addresses across chains.
+    ops->>wallet: deployVaultFactory(0xUSDC, implConfig)
+    wallet-->>chain: create(VaultFactory bytecode, constructorArgs)
+    chain-->>factory: constructor(0xUSDC, implConfig)
+    chain-->>wallet: receipt(contractAddress=0xFAC1)
+    wallet-->>ops: deploymentConfirmed(0xFAC1)
+    ops->>ymax: setFactoryAddress(0xFAC1)

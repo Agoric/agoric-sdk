@@ -1,0 +1,34 @@
+%%{init: {'theme': 'base', 'themeVariables': {'background': '#f3f4f6', 'primaryColor': '#eef2f7', 'secondaryColor': '#e9eef5', 'tertiaryColor': '#f6f8fb', 'lineColor': '#5f6b7a', 'textColor': '#1f2937'}, 'themeCSS': '.sequenceNumber { font-size: 14px !important; font-weight: 600; }'}}%%
+sequenceDiagram
+    title Ymax Vault - Hourly Best-Effort Rebalance Flow
+    autonumber
+
+    %% Conventions: solid(->>) = spontaneous trigger; dotted(-->>) = consequence/follow-on
+
+    box Agoric
+    participant yc as Ymax contract<br/>instance: 0xYMAX
+    participant timer as chainTimerService<br/>clock: 0xTMR1
+    end
+
+    participant planner as Planner service<br/>svc: 0xPLN1
+
+    box EVM Chain
+    participant aave as Aave_Base<br/>pool: 0xAAV1
+    participant morpho as Morpho_Base<br/>market: 0xMOR1
+    end
+
+    timer->>yc: repeatAfter tick (1h cadence)
+    yc-->>yc: single-flight guard
+    alt no rebalance in flight
+        yc-->>planner: request latest allocation plan(policyVersion)
+        planner-->>planner: queryBalancesAndApyInputs(p75, policyVersion)
+        planner-->>yc: plan
+        yc-->>yc: executeRebalancePlan(p75, plan)
+        rect rgba(226, 232, 240, 0.6)
+        Note over yc,aave: orchestration magic happens here<br/>multi-step execution across Aave_Base / Morpho_Base<br/>resolver reports success/failure only
+        end
+        yc-->>yc: rebalanceComplete(status)
+        yc-->>yc: clear in-flight + pending flags
+    else rebalance already in flight
+        yc-->>yc: coalesce tick (keep at most one pending rerun)
+    end

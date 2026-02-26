@@ -1,0 +1,42 @@
+%%{init: {'theme': 'base', 'themeVariables': {'background': '#f3f4f6', 'primaryColor': '#eef2f7', 'secondaryColor': '#e9eef5', 'tertiaryColor': '#f6f8fb', 'lineColor': '#5f6b7a', 'textColor': '#1f2937'}, 'themeCSS': '.sequenceNumber { font-size: 14px !important; font-weight: 600; }'}}%%
+sequenceDiagram
+    title Ymax Vault - Deposit Flow (USDC -> ERC-4626 Shares)
+    autonumber
+
+    %% Conventions: solid(->>) = spontaneous trigger; dotted(-->>) = consequence/follow-on
+    %% Share token glossary: name = Chris Vault Share, symbol = CVSH
+    %% Product TODO: switch to Permit2 flow (one-time high approval + per-action permit signature) after spike.
+
+    actor user as Trader Tim<br/>EOA: 0xTIM
+    participant wallet as MetaMask<br/>signer: 0xTIM
+    participant ui as vault-ui-1<br/>URL: /vaults/1
+
+    box Avalanche C-Chain
+    participant vault as vault-contract-1<br/>ERC-4626: 0xVAU1
+    participant usdc as USDC Token<br/>ERC-20: 0xUSDC
+    participant p75 as p75 @Avalanche<br/>smart wallet: 0xP751
+    end
+
+    user->>ui: deposit(250USDC)
+    ui-->>ui: approveTx = { to: 0xUSDC,<br/>spender: 0xVAU1, amount: 250USDC,<br/>data, chainId, nonce }
+    ui-->>wallet: requestSignatureAndBroadcast(approveTx)
+    wallet-->>user: promptApproval(approveTx)
+    user->>wallet: approve(approveTx)
+    wallet-->>usdc: approve(0xVAU1, 250USDC)
+    ui-->>ui: depositTx = { to: 0xVAU1,<br/>assets: 250USDC, receiver: 0xTIM,<br/>data, chainId, nonce }
+    ui-->>wallet: requestSignatureAndBroadcast(depositTx)
+    wallet-->>user: promptApproval(depositTx)
+    user->>wallet: approve(depositTx)
+    wallet-->>vault: deposit(250USDC, 0xTIM)
+    vault-->>usdc: transferFrom(0xTIM, 0xVAU1, 250USDC)
+    vault-->>vault: computeExcess(tieredLiquidityPolicy, 5% hysteresis)
+    vault-->>usdc: transfer(0xP751, excessUSDC)
+    Note over usdc,p75: emit Transfer(0xVAU1,<br/>0xP751, excessUSDC)
+    vault-->>vault: managedAssets += excessUSDC
+    vault-->>ui: emit Deposit(0xTIM, 0xTIM, 250USDC, 250CVSH)
+    loop polling interval
+        ui->>ui: pollTick()
+        ui-->>vault: balanceOf(0xTIM)
+        vault-->>ui: balance=250CVSH
+    end
+    ui-->>user: balance=250CVSH
