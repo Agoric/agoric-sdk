@@ -25,9 +25,10 @@ import { kslot, krefOf } from '@agoric/kmarshal';
 import { insistStorageAPI } from '../lib/storageAPI.js';
 import { insistCapData } from '../lib/capdata.js';
 import {
+  buildSwingsetKernelConfig,
   buildKernelBundle,
+  initializeSwingsetKernel,
   swingsetIsInitialized,
-  initializeSwingset,
 } from './initializeSwingset.js';
 import {
   makeWorkerBundleHandler,
@@ -683,11 +684,15 @@ export async function buildVatController(
   let bootstrapResult;
   await null;
   if (!swingsetIsInitialized(kernelStorage)) {
-    bootstrapResult = await initializeSwingset(
+    const kernelConfig = await buildSwingsetKernelConfig(
       config,
       bootstrapArgs,
-      kernelStorage,
       initializationOptions,
+      runtimeOptions,
+    );
+    bootstrapResult = await initializeSwingsetKernel(
+      kernelConfig,
+      kernelStorage,
       runtimeOptions,
     );
   }
