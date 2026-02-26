@@ -1,4 +1,3 @@
-// @ts-nocheck
 // eslint-disable-next-line import/order
 import { test } from '../../../tools/prepare-test-env-ava.js';
 
@@ -72,6 +71,7 @@ test('VO property deletion is not short-circuited', async t => {
   t.is(step1status, 'fulfilled');
 
   // now vat-target should be importing the sensor
+  // @ts-expect-error can be undefined
   t.true(has(imp1kref).isReachable);
 
   // step2() deletes vo1 from vc1. This walks all properties of vo1's
