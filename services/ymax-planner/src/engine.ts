@@ -124,6 +124,12 @@ export type VstorageEventDetail = {
 
 type PendingTxRecord = { blockHeight: bigint; tx: PendingTx };
 
+const RESOLVER_SUPPORTED_TRANSACTIONS: TxType[] = [
+  TxType.CCTP_TO_EVM,
+  TxType.GMP,
+  TxType.MAKE_ACCOUNT,
+];
+
 const makeVstoragePathPrefixes = (contractInstance: string) => ({
   portfoliosPathPrefix: `published.${contractInstance}.portfolios`,
   pendingTxPathPrefix: `published.${contractInstance}.pendingTxs`,
@@ -555,8 +561,7 @@ export const processPendingTxEvents = async (
         }
         continue;
       }
-
-      if (data.type === TxType.CCTP_TO_AGORIC) continue;
+      if (!RESOLVER_SUPPORTED_TRANSACTIONS.includes(data.type)) continue;
 
       mustMatch(data, PublishedTxShape, `${path} index -1`);
       const tx = { txId, ...data } as PendingTx;
@@ -620,6 +625,8 @@ export const processInitialPendingTransactions = async (
 
   await makeWorkPool(initialPendingTxData, undefined, async pendingTxRecord => {
     const { blockHeight, tx } = pendingTxRecord;
+
+    if (!RESOLVER_SUPPORTED_TRANSACTIONS.includes(tx.type)) return;
 
     const timestampMs = await provideLazyMap(
       blockHeightToTimestamp,
