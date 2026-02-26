@@ -996,7 +996,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/sdk@workspace:."
   dependencies:
+    "@agoric/internal": "workspace:*"
     "@endo/eslint-plugin": "npm:^2.4.0"
+    "@endo/init": "npm:^1.1.12"
     "@google-cloud/monitoring": "npm:^4.1.0"
     "@jessie.js/eslint-plugin": "npm:^0.4.2"
     "@lerna-lite/cli": "npm:^4.6.1"
