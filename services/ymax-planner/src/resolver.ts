@@ -45,6 +45,8 @@ export const resolvePendingTx = async ({
   rejectionReason,
   proposal = {},
 }: ResolveTxParams) => {
+  console.log('tx resolved with', { txId, status, rejectionReason });
+  return;
   const invitationMakersOffer = await getInvitationMakers(
     signingSmartWalletKit,
   );

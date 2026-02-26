@@ -1,7 +1,6 @@
 /* eslint-env node */
 
 import timersPromises from 'node:timers/promises';
-import { inspect } from 'node:util';
 
 import { SigningStargateClient } from '@cosmjs/stargate';
 import * as ws from 'ws';
@@ -13,16 +12,7 @@ import {
   makeSigningSmartWalletKit,
   makeSmartWalletKit,
 } from '@agoric/client-utils';
-import { deeplyFulfilledObject, mustMatch, objectMap } from '@agoric/internal';
-
-import {
-  PublishedTxShape,
-  type PendingTx,
-} from '@aglocal/portfolio-contract/src/resolver/types.ts';
-import {
-  TxStatus,
-  TxType,
-} from '@aglocal/portfolio-contract/src/resolver/constants.js';
+import { deeplyFulfilledObject, objectMap } from '@agoric/internal';
 
 import { loadConfig } from '../src/config.ts';
 import { CosmosRestClient } from '../src/cosmos-rest-client.ts';
@@ -32,20 +22,14 @@ import type { SimplePowers } from '../src/main.ts';
 import { makeSQLiteKeyValueStore } from '../src/kv-store.ts';
 import type { HandlePendingTxOpts } from '../src/pending-tx-manager.ts';
 import { handlePendingTx } from '../src/pending-tx-manager.ts';
-import {
-  parseStreamCell,
-  parseStreamCellValue,
-} from '../src/vstorage-utils.ts';
 
 const makeVstoragePathPrefixes = (contractInstance: string) => ({
   portfoliosPathPrefix: `published.${contractInstance}.portfolios`,
   pendingTxPathPrefix: `published.${contractInstance}.pendingTxs`,
 });
 
-const inspectOpts = { depth: 6, colors: process.stdout.isTTY };
-
 export const processTx = async (
-  txId: string,
+  concurrency: number,
   cliArgs: string[],
   {
     env = process.env,
@@ -59,7 +43,7 @@ export const processTx = async (
     WebSocket = ws.WebSocket,
   } = {},
 ) => {
-  console.log(`\n🔍 Resolving transaction: ${txId}\n`);
+  console.log(`\n🔍 Load testing lookback with ${concurrency} parallel scans\n`);
 
   const maybeOpts = cliArgs;
   const isVerbose = maybeOpts.includes('--verbose');
@@ -135,85 +119,115 @@ export const processTx = async (
     const vstoragePathPrefixes = makeVstoragePathPrefixes(
       config.contractInstance,
     );
-    const { pendingTxPathPrefix } = vstoragePathPrefixes;
-    const path = `${pendingTxPathPrefix}.${txId}`;
+    const { marshaller } = signingSmartWalletKit;
 
-    console.log(`\n📖 Reading from vstorage: ${path}\n`);
+    // This tx failed on EVM
+    // EVM Wallet: https://43114.snowtrace.io/address/0x57733a73f0eb38fae93ae5af01cd994625fc5b6f
+    // Tx https://vstorage.agoric.net/?path=published.ymax1.pendingTxs.tx445&endpoint=https%3A%2F%2Fmain-a.rpc.agoric.net%3A443&height=undefined
+    // Tx on EVM: https://43114.snowtrace.io/tx/0x00c09227e4aeba5d2c78678cf278ac0afddfff073c27b99f5357ff95f8d9e178
+    const txId = 'tx445';
+    const sourceAddr =
+      'cosmos:agoric-3:agoric1uu7jv958xxayfeezq7yz8zxda9jfr0v7h6shlke350qadqld9jgqgu3lpq';
+    const pendingTxData = {
+      destinationAddress:
+        'eip155:43114:0x57733a73f0eb38fae93ae5af01cd994625fc5b6f',
+      status: 'pending',
+      type: 'GMP',
+      sourceAddress: sourceAddr,
+    };
 
-    // Fetch transaction data from vstorage
-    const { query, marshaller } = signingSmartWalletKit;
-    let streamCellJson;
-    let data;
+    const timestampMs = 123;
 
-    try {
-      streamCellJson = await query.vstorage.readStorage(path, {
-        kind: 'data',
-      });
-      const streamCell = parseStreamCell(streamCellJson.value, path);
-      const marshalledData = parseStreamCellValue(streamCell, -1, path);
-      data = marshaller.fromCapData(marshalledData);
+    console.log(`\n🔄 Launching ${concurrency} parallel lookback scans for ${txId}...\n`);
+    const startTime = now();
 
-      console.log('📦 Transaction data:', inspect(data, inspectOpts));
+    const results = await Promise.allSettled(
+      Array.from({ length: concurrency }, (_, i) => {
+        const label = `[scan-${i}]`;
+        const scanStart = now();
 
-      if (data?.status !== TxStatus.PENDING) {
-        console.warn(
-          `⚠️  Transaction ${txId} is not pending (status: ${data?.status})`,
+        const txPowers: HandlePendingTxOpts = Object.freeze({
+          ...evmCtx,
+          cosmosRest,
+          cosmosRpc: rpc,
+          fetch,
+          setTimeout,
+          kvStore,
+          makeAbortController,
+          log: (...args: unknown[]) => console.log(label, ...args),
+          error: (...args: unknown[]) => console.error(label, ...args),
+          marshaller,
+          signingSmartWalletKit,
+          vstoragePathPrefixes,
+          axelarApiUrl: config.axelar.apiUrl,
+          pendingTxAbortControllers: new Map(),
+        });
+
+        return handlePendingTx(pendingTxData as any, {
+          ...txPowers,
+          txTimestampMs: timestampMs,
+        }).then(
+          () => ({ index: i, durationMs: now() - scanStart }),
+          err => {
+            throw Object.assign(err, {
+              index: i,
+              durationMs: now() - scanStart,
+            });
+          },
         );
-        return;
-      }
+      }),
+    );
 
-      if (data.type === TxType.CCTP_TO_AGORIC) {
-        console.warn(
-          `⚠️  Transaction ${txId} is CCTP_TO_AGORIC type, skipping`,
-        );
-        return;
-      }
+    const totalDuration = now() - startTime;
 
-      mustMatch(harden(data), PublishedTxShape, path);
+    // Report results
+    const succeeded = results.filter(r => r.status === 'fulfilled');
+    const failed = results.filter(r => r.status === 'rejected');
 
-      const tx: PendingTx = { txId, ...data };
+    const durations = results.map(r =>
+      r.status === 'fulfilled'
+        ? r.value.durationMs
+        : (r.reason as { durationMs: number }).durationMs,
+    );
+    durations.sort((a, b) => a - b);
 
-      console.log(`\n🔄 Processing transaction...\n`);
+    console.log('\n========== LOAD TEST RESULTS ==========');
+    console.log(`Concurrency: ${concurrency}`);
+    console.log(`Total wall time: ${(totalDuration / 1000).toFixed(1)}s`);
+    console.log(`Succeeded: ${succeeded.length} / ${concurrency}`);
+    console.log(`Failed: ${failed.length} / ${concurrency}`);
 
-      // Prepare powers for handling the transaction
-      const txPowers: HandlePendingTxOpts = Object.freeze({
-        ...evmCtx,
-        cosmosRest,
-        cosmosRpc: rpc,
-        fetch,
-        setTimeout,
-        kvStore,
-        makeAbortController,
-        log: (...args) => console.log('[TX]', ...args),
-        error: (...args) => console.error('[ERROR]', ...args),
-        marshaller,
-        signingSmartWalletKit,
-        vstoragePathPrefixes,
-        axelarApiUrl: config.axelar.apiUrl,
-        pendingTxAbortControllers: new Map(),
-      });
+    if (durations.length > 0) {
+      const avg = durations.reduce((a, b) => a + b, 0) / durations.length;
+      const min = durations[0];
+      const max = durations[durations.length - 1];
+      const p50 = durations[Math.floor(durations.length * 0.5)];
+      const p95 = durations[Math.floor(durations.length * 0.95)];
 
-      // Get the block timestamp for lookback mode
-      const blockHeight = BigInt(streamCell.blockHeight);
-      const resp = await rpc.request('block', {
-        height: `${blockHeight}`,
-      });
-      const date = new Date(resp.block.header.time);
-      const timestampMs = date.getTime();
-
-      console.log(
-        `📅 Transaction published at block ${blockHeight} (${date.toISOString()})`,
-      );
-
-      // Process the transaction with lookback mode
-      await handlePendingTx(tx, { ...txPowers, txTimestampMs: timestampMs });
-
-      console.log(`\n✅ Transaction ${txId} processing complete!\n`);
-    } catch (err) {
-      const errLabel = `🚨 Failed to process pending tx ${path}`;
-      console.error(errLabel, data || streamCellJson, err);
-      throw err;
+      console.log(`\nPer-scan latency:`);
+      console.log(`  Min:  ${(min / 1000).toFixed(1)}s`);
+      console.log(`  Avg:  ${(avg / 1000).toFixed(1)}s`);
+      console.log(`  P50:  ${(p50 / 1000).toFixed(1)}s`);
+      console.log(`  P95:  ${(p95 / 1000).toFixed(1)}s`);
+      console.log(`  Max:  ${(max / 1000).toFixed(1)}s`);
     }
+
+    if (failed.length > 0) {
+      console.log(`\nFailed scans:`);
+      for (const r of failed) {
+        if (r.status === 'rejected') {
+          const { index, durationMs, message } = r.reason as {
+            index: number;
+            durationMs: number;
+            message: string;
+          };
+          console.error(
+            `  [scan-${index}] after ${(durationMs / 1000).toFixed(1)}s: ${message}`,
+          );
+        }
+      }
+    }
+    console.log('========================================\n');
   } finally {
     await db.close();
     await rpc.close();

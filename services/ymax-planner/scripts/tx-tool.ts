@@ -19,8 +19,10 @@ const showUsage = () => {
   console.error('Usage: ./scripts/tx-tool.ts <command> [options]');
   console.error('');
   console.error('Commands:');
-  console.error('  scan <txId> [--verbose]');
-  console.error('    Process a pending transaction by reading from vstorage');
+  console.error('  scan <concurrency> [--verbose]');
+  console.error(
+    '    Run N parallel lookback scans for the hardcoded tx (load test)',
+  );
   console.error('');
   console.error('  settle <txId> <status> [reason]');
   console.error('    Manually mark a transaction as succeeded or failed');
@@ -28,8 +30,8 @@ const showUsage = () => {
   console.error('    reason: required when status is "fail"');
   console.error('');
   console.error('Examples:');
-  console.error('  ./scripts/tx-tool.ts scan tx233');
-  console.error('  ./scripts/tx-tool.ts scan tx233 --verbose');
+  console.error('  ./scripts/tx-tool.ts scan 10');
+  console.error('  ./scripts/tx-tool.ts scan 50 --verbose');
   console.error('  ./scripts/tx-tool.ts settle tx399 success');
   console.error(
     '  ./scripts/tx-tool.ts settle tx400 fail "Transaction timeout"',
@@ -47,17 +49,25 @@ const commandArgs = args.slice(1);
 
 if (command === 'scan') {
   if (commandArgs.length === 0) {
-    console.error('Error: scan requires a transaction ID');
+    console.error('Error: scan requires a concurrency number');
     console.error('');
-    console.error('Usage: ./scripts/tx-tool.ts scan <txId> [--verbose]');
-    console.error('Example: ./scripts/tx-tool.ts scan tx233');
+    console.error(
+      'Usage: ./scripts/tx-tool.ts scan <concurrency> [--verbose]',
+    );
+    console.error('Example: ./scripts/tx-tool.ts scan 10');
     process.exit(1);
   }
 
-  const txId = commandArgs[0];
+  const concurrency = Number(commandArgs[0]);
+  if (!Number.isFinite(concurrency) || concurrency < 1) {
+    console.error(
+      `Error: concurrency must be a positive number, got "${commandArgs[0]}"`,
+    );
+    process.exit(1);
+  }
   const options = commandArgs.slice(1);
 
-  processTx(txId, options, { env }).catch(err => {
+  processTx(concurrency, options, { env }).catch(err => {
     console.error(err);
     process.exit(1);
   });
