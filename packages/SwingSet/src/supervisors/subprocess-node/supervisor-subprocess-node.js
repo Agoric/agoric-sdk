@@ -31,7 +31,6 @@ import {
  * @import {Bundle} from '../../types-external.js';
  */
 
-// eslint-disable-next-line no-unused-vars
 function workerLog(_first, ..._args) {
   // console.error(`---worker: ${_first}`, ..._args);
 }
