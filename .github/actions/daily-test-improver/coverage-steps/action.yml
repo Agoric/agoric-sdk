@@ -1,0 +1,64 @@
+name: Daily Test Coverage Improver - Coverage Steps
+description: >
+  Build the repository, run all tests with V8 coverage collection, generate
+  a combined HTML+JSON coverage report, and upload it as a "coverage" artifact.
+  This mirrors the existing coverage job in .github/workflows/after-merge.yml
+  and scripts/ci/generate-test-coverage-report.sh.
+
+runs:
+  using: composite
+  steps:
+    # Restore the cached Node.js build (installs deps and built artifacts).
+    # Uses the "node-new" alias which maps to Node.js 22.
+    - name: Restore Node.js build
+      uses: ./.github/actions/restore-node
+      with:
+        node-version: node-new
+      # Append step start marker to the log
+    - name: Log restore-node complete
+      shell: bash
+      run: echo "[coverage-steps] restore-node complete" >> coverage-steps.log
+
+    # Run all package test:c8 scripts via Lerna.
+    # NODE_V8_COVERAGE causes Node.js to write raw V8 coverage data to
+    # coverage/tmp/. C8_OPTIONS=--clean=false lets data accumulate across all
+    # packages (each package appends rather than replacing). NODE_MEMORY_SIZE
+    # gives Node.js extra heap space since some packages are memory-intensive.
+    # --no-bail ensures all packages are tested even if some fail.
+    - name: Run tests with coverage
+      shell: bash
+      env:
+        NODE_V8_COVERAGE: ${{ github.workspace }}/coverage/tmp
+        C8_OPTIONS: --clean=false
+        NODE_OPTIONS: --max-old-space-size=8192
+        NODE_MEMORY_SIZE: '8192'
+      run: |
+        echo "[coverage-steps] running generate-test-coverage-report.sh" >> coverage-steps.log
+        # The script sets NODE_V8_COVERAGE, C8_OPTIONS, and NODE_MEMORY_SIZE itself,
+        # so we delegate entirely to it for consistency with the main CI job.
+        NODE_MEMORY_SIZE=8192 ./scripts/ci/generate-test-coverage-report.sh 2>&1 | tee -a coverage-steps.log
+
+    # The script above writes the HTML report to coverage/html/ and raw V8
+    # data to coverage/tmp/. We also generate an lcov report for tools that
+    # consume it (e.g. Codecov, coverage-gutters in VS Code).
+    - name: Generate additional lcov report
+      shell: bash
+      run: |
+        echo "[coverage-steps] generating lcov report" >> coverage-steps.log
+        yarn c8 report --all \
+          --include 'packages/*/{src,tools}' \
+          --reporter=lcov \
+          --reports-dir=coverage/lcov \
+          2>&1 | tee -a coverage-steps.log || true
+
+    # Upload the entire coverage/ directory as an artifact named "coverage".
+    # Downstream jobs (e.g. Netlify deploy, Codecov upload) can download this.
+    - name: Upload coverage artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage
+        path: coverage
+      # Append final marker to the log
+    - name: Log upload complete
+      shell: bash
+      run: echo "[coverage-steps] coverage artifact uploaded" >> coverage-steps.log
