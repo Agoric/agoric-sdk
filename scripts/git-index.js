@@ -10,6 +10,10 @@ import { createReadStream } from 'node:fs';
 import { parseArgs } from 'node:util';
 
 /**
+ * @import {ResultPromise} from 'execa';
+ */
+
+/**
  * Parse the --stages option value into a Set of stage numbers (0-3).
  *
  * @param {string} stages
@@ -53,40 +57,49 @@ const splitWrapOpts = allOpts => {
 };
 
 /**
+ * @typedef {{
+ *   (tmpl: TemplateStringsArray, ...args: any[]): ResultPromise<{}> | undefined;
+ *   (opts: Record<string, any>): WrappedExeca;
+ * }} WrappedExeca
+ */
+
+/**
  * Wrap an execa function to support both tagged template and normal calls, and
  * to log the command in dry-run mode.
  *
  * @param {typeof execa | false | null | undefined} exe
- * @param {object} [opts]
+ * @returns {WrappedExeca}
  */
-const wrap$ = (exe, opts = {}) => {
-  exe ||= undefined;
+const wrapExeca = exe => {
+  const innerWrapExeca = (nestedExe, opts = {}) => {
+    nestedExe ||= undefined;
 
-  /**
-   * @param {TemplateStringsArray | Record<string, any>} tmplOrOpts
-   * @param  {...any} args
-   */
-  return (tmplOrOpts, ...args) => {
-    if (!Array.isArray(tmplOrOpts)) {
-      const [exeOpts, wrapOpts] = splitWrapOpts(tmplOrOpts);
-      return wrap$(exe?.(exeOpts), { ...opts, ...wrapOpts });
-    }
+    const wrappedExeca = (tmplOrOpts, ...args) => {
+      if (!Array.isArray(tmplOrOpts)) {
+        const [exeOpts, wrapOpts] = splitWrapOpts(tmplOrOpts);
+        return innerWrapExeca(nestedExe?.(exeOpts), { ...opts, ...wrapOpts });
+      }
 
-    const tmpl = /** @type {TemplateStringsArray} */ (
-      /** @type {unknown} */ (tmplOrOpts)
-    );
+      const tmpl = /** @type {TemplateStringsArray} */ (
+        /** @type {unknown} */ (tmplOrOpts)
+      );
 
-    // Would be nice if execa provided a way to get the escaped command
-    // without running it, but it doesn't, so we have to reconstruct it
-    // ourselves for logging in dry-run mode.
-    const { log = (...largs) => console.log(...largs), logSuffix = [] } = opts;
-    log(
-      '$',
-      [tmpl[0], ...args.flatMap((arg, idx) => [arg, tmpl[idx + 1]])].join(''),
-      ...(logSuffix || []),
-    );
-    return exe?.(tmpl, ...args);
+      // Would be nice if execa provided a way to get the escaped command
+      // without running it, but it doesn't, so we have to reconstruct it
+      // ourselves for logging in dry-run mode.
+      const { log = (...largs) => console.log(...largs), logSuffix = [] } =
+        opts;
+      log(
+        '$',
+        [tmpl[0], ...args.flatMap((arg, idx) => [arg, tmpl[idx + 1]])].join(''),
+        ...(logSuffix || []),
+      );
+      return nestedExe?.(tmpl, ...args);
+    };
+
+    return /** @type {WrappedExeca} */ (wrappedExeca);
   };
+  return innerWrapExeca(exe);
 };
 
 /**
@@ -103,33 +116,27 @@ const wrap$ = (exe, opts = {}) => {
  */
 const pack = async ({ write, wetRun, stages, includeBlobContent, log }) => {
   log('# Reading Git index entries');
-  const ro$ = wrap$(execa, { log });
-  const lsResult = await ro$`git ls-files --stage`;
-
-  // git ls-files --stage output: "<mode> <hash> <stage>\t<path>"
-  const entries = lsResult.stdout
-    .split('\n')
-    .filter(Boolean)
-    .map(line => {
-      const tabIdx = line.indexOf('\t');
-      const meta = line.slice(0, tabIdx).split(' ');
-      const [mode, hash, stageStr] = meta;
-      const stage = Number(stageStr);
-      const path = line.slice(tabIdx + 1);
-      return { mode, hash, stage, path };
-    })
-    .filter(e => stages.has(e.stage));
-
-  log(
-    `# Found ${entries.length} index entries matching stages [${[...stages].join(',')}]`,
-  );
+  const ro$ = wrapExeca(execa)({ log });
 
   let written = 0;
-  /** @type {Array<{stage: number, mode: string, hash: string, path: string, content?: string}>} */
-  for await (const { mode, hash, stage, path } of entries) {
+
+  // git ls-files --stage output: "<mode> <hash> <stage>\t<path>"
+  const lsResult = ro$({ lines: true })`git ls-files --stage`;
+  for await (const line of lsResult ?? []) {
+    if (!line.trim()) continue;
+
+    const tabIdx = line.indexOf('\t');
+    const meta = line.slice(0, tabIdx).split(' ');
+    const [mode, hash, stageStr] = meta;
+    const stage = Number(stageStr);
+    if (!stages.has(stage)) continue;
+
+    const path = line.slice(tabIdx + 1);
+
     /** @type {{stage: number, mode: string, hash: string, path: string, content?: string}} */
     const record = { stage, mode, hash, path };
     await null;
+
     // Optionally fetch blob content for each entry.
     if (includeBlobContent) {
       const opt$ = ro$({
@@ -137,17 +144,23 @@ const pack = async ({ write, wetRun, stages, includeBlobContent, log }) => {
         logSuffix: [`  # ${path} (stage ${stage})`],
       });
       const blobResult = await opt$`git cat-file blob ${hash}`;
-      record.content = blobResult.stdout;
+      record.content = blobResult?.stdout;
     }
+
     written += 1;
     wetRun && (await write(`${JSON.stringify(record)}\n`));
   }
+
+  log(
+    `# Found ${written} index entries matching stages [${[...stages].join(',')}]`,
+  );
 
   if (!written) {
     throw new Error(
       'No index entries found for the specified stages; refusing to write an empty file',
     );
   }
+
   log(`# Wrote ${written} records`);
 };
 
@@ -162,7 +175,7 @@ const pack = async ({ write, wetRun, stages, includeBlobContent, log }) => {
  */
 const unpack = async ({ readLines, wetRun, replaceIndex, log }) => {
   await null;
-  const rw$ = wrap$(wetRun && execa, { log });
+  const rw$ = wrapExeca(wetRun && execa)({ log });
 
   if (replaceIndex) {
     log('# Clearing the current Git index');
@@ -170,18 +183,13 @@ const unpack = async ({ readLines, wetRun, replaceIndex, log }) => {
   }
 
   log(`# Reading records`);
-  /** @type {Array<{stage: number, mode: string, hash: string, path: string, content?: string}>} */
-  const records = [];
+
+  let recordsRead = 0;
   for await (const line of readLines()) {
     if (!line.trim()) continue;
-    records.push(JSON.parse(line));
-  }
-  log(`# Loaded ${records.length} records`);
-  if (records.length === 0) {
-    throw new Error('Input file is empty; refusing to modify the index');
-  }
-
-  for (const { stage, mode, hash: recordHash, path, content } of records) {
+    const parsedLine = JSON.parse(line);
+    const { stage, mode, hash: recordHash, path, content } = parsedLine;
+    recordsRead += 1;
     let hash = recordHash;
 
     // If blob content is embedded, restore the object into the Git object store.
@@ -192,11 +200,22 @@ const unpack = async ({ readLines, wetRun, replaceIndex, log }) => {
         logSuffix: [`  # ${path} (stage ${stage})`],
       });
       const result = await opt$`git hash-object -w --stdin`;
-      hash = result?.stdout.trim();
+      if (result) {
+        hash = result.stdout.trim();
+      }
     }
 
     // For all stages: git update-index --add --stage=N --cacheinfo mode,hash,path
-    await rw$`git update-index --add --stage=${stage} --cacheinfo ${mode},${hash},${path}`;
+    // await rw$`git update-index --add --stage=${stage} --cacheinfo ${mode},${hash},${path}`;
+    // await rw$({ input: `0 ${hash}\t${path}\n` })`git update-index --index-info`;
+    await rw$({
+      input: `${mode} ${hash} ${stage}\t${path}\n`,
+    })`git update-index --index-info`;
+  }
+
+  log(`# Loaded ${recordsRead} records`);
+  if (recordsRead === 0) {
+    throw new Error('Input file is empty; not modifying the index');
   }
 };
 
@@ -290,22 +309,30 @@ Options:
 
   await null;
   if (command === 'pack') {
-    /** @type {Writer} */
-    let write;
+    /** @type {ReturnType<typeof makeFsStreamWriter> | undefined} */
+    let wsP;
 
-    /** @type {Awaited<ReturnType<typeof makeFsStreamWriter>>} */
-    let ws;
     try {
+      /** @type {Writer} */
+      let write;
+
       if (wetRun) {
-        ws = await makeFsStreamWriter(file);
-        write = data => ws.write(data);
+        write = async data => {
+          if (!wsP) {
+            wsP = makeFsStreamWriter(file);
+          }
+          const ws = await wsP;
+          return ws.write(data);
+        };
       } else {
         write = async _data => {};
       }
+
       log(`# Will write to ${file}`);
       await pack({ write, wetRun, stages, includeBlobContent, log });
     } finally {
-      if (ws) {
+      if (wsP) {
+        const ws = await wsP;
         await ws.close();
       }
     }
