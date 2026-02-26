@@ -201,7 +201,54 @@ jobs:
           set +e
           trap 'echo "swing-store shell received SIGHUP"' HUP
           diag_module="$PWD/packages/swing-store/test/ava-process-diagnostics.js"
-          export NODE_OPTIONS="--require=$diag_module ${NODE_OPTIONS:-}"
+          node_report_dir="$PWD/packages/swing-store/node-reports"
+          mkdir -p "$node_report_dir"
+          export NODE_OPTIONS="--require=$diag_module --report-on-fatalerror --report-on-signal --report-signal=SIGSEGV --report-dir=$node_report_dir --report-compact ${NODE_OPTIONS:-}"
+
+          show_coverage_state() {
+            local cov_dir="$1"
+            if [ -n "$cov_dir" ] && [ -d "$cov_dir" ]; then
+              echo "coverage dir: $cov_dir"
+              find "$cov_dir" -maxdepth 1 -type f -name '*.json' | wc -l
+              du -sh "$cov_dir" || true
+              find "$cov_dir" -maxdepth 1 -type f -name '*.json' -printf '%T@ %f\n' 2>/dev/null | sort -n | tail -n 5 || true
+            else
+              echo "coverage dir not present: ${cov_dir:-<unset>}"
+            fi
+          }
+
+          run_ava_attempt() {
+            local label="$1"
+            local worker_mode="$2"
+            local cov_mode="$3"
+            local out_file="$4"
+            local attempt_cov="${NODE_V8_COVERAGE:-}"
+            local -a cmd=(node ../../node_modules/ava/entrypoints/cli.mjs)
+            if [ "$worker_mode" = "no-workers" ]; then
+              cmd+=(--no-worker-threads)
+            fi
+            if [ "$cov_mode" = "fresh" ]; then
+              attempt_cov="$PWD/coverage-retry-${label// /-}-$RANDOM"
+              mkdir -p "$attempt_cov"
+            elif [ "$cov_mode" = "off" ]; then
+              attempt_cov=""
+            fi
+
+            echo "--- attempt: $label ---"
+            echo "attempt worker mode: $worker_mode"
+            echo "attempt coverage mode: $cov_mode"
+            if [ -n "$attempt_cov" ]; then
+              echo "attempt NODE_V8_COVERAGE=$attempt_cov"
+              NODE_V8_COVERAGE="$attempt_cov" "${cmd[@]}" > >(tee -a "$out_file") 2>&1
+            else
+              echo "attempt NODE_V8_COVERAGE=<unset>"
+              env -u NODE_V8_COVERAGE "${cmd[@]}" > >(tee -a "$out_file") 2>&1
+            fi
+            local attempt_rc=$?
+            echo "attempt exit code: $attempt_rc"
+            show_coverage_state "$attempt_cov"
+            return "$attempt_rc"
+          }
 
           # include the following string for check-untested-packages.mjs to believe that this package is being tested
           # cd packages/swing-store && yarn ${{ steps.vars.outputs.test }}
@@ -215,14 +262,9 @@ jobs:
           echo "yarn: $(yarn -v)"
           echo "pwd: $(pwd)"
           echo "NODE_OPTIONS: ${NODE_OPTIONS}"
-          if [ -n "${NODE_V8_COVERAGE:-}" ] && [ -d "$NODE_V8_COVERAGE" ]; then
-            echo "NODE_V8_COVERAGE dir: $NODE_V8_COVERAGE"
-            echo "coverage files in NODE_V8_COVERAGE:"
-            find "$NODE_V8_COVERAGE" -maxdepth 1 -type f -name '*.json' | wc -l
-            du -sh "$NODE_V8_COVERAGE" || true
-          else
-            echo "NODE_V8_COVERAGE dir not present yet: ${NODE_V8_COVERAGE:-<unset>}"
-          fi
+          show_coverage_state "${NODE_V8_COVERAGE:-}"
+          echo "node report dir: $node_report_dir"
+          ls -la "$node_report_dir" || true
           echo "repo-wide coverage json count so far:"
           find ../.. -type f -name 'coverage*.json' | wc -l
           echo "--- free -m ---"
@@ -232,7 +274,7 @@ jobs:
           echo "::endgroup::"
 
           if [ "${{ steps.vars.outputs.test }}" = "test" ]; then
-            node ../../node_modules/ava/entrypoints/cli.mjs > >(tee -a _testoutput.txt) 2>&1
+            run_ava_attempt "main" "default" "default" "_testoutput.txt"
             rc=$?
             pipe_status=("$rc" 0)
           else
@@ -268,31 +310,41 @@ jobs:
             echo "--- process list (filtered for test processes) ---"
             ps -eo pid,ppid,pgid,sid,stat,etime,pcpu,pmem,comm,args | grep -E '(PID|ava|node|yarn|tee)' || true
             echo "--- coverage state at failure ---"
-            if [ -n "${NODE_V8_COVERAGE:-}" ] && [ -d "$NODE_V8_COVERAGE" ]; then
-              find "$NODE_V8_COVERAGE" -maxdepth 1 -type f -name '*.json' | wc -l
-              du -sh "$NODE_V8_COVERAGE" || true
-            fi
+            show_coverage_state "${NODE_V8_COVERAGE:-}"
+            echo "--- node crash reports at failure ---"
+            ls -la "$node_report_dir" || true
             echo "--- last 200 lines of _testoutput.txt ---"
             tail -n 200 _testoutput.txt || true
 
-            # Triangulation probe: retry once in a fresh coverage directory to
-            # see whether the failure depends on accumulated job-level coverage.
+            # Triangulation probes to isolate coverage-state and worker-thread effects.
             if [ "${{ matrix.engine }}" = "node-old" ] && [ "${{ steps.vars.outputs.test }}" = "test" ]; then
-              retry_cov_dir="$PWD/coverage-retry-$RANDOM"
-              echo "--- retry with isolated NODE_V8_COVERAGE=$retry_cov_dir ---"
-              NODE_V8_COVERAGE="$retry_cov_dir" node ../../node_modules/ava/entrypoints/cli.mjs > >(tee -a _testoutput_retry.txt) 2>&1
-              retry_rc=$?
-              echo "retry exit code: $retry_rc"
-              if [ -d "$retry_cov_dir" ]; then
-                find "$retry_cov_dir" -maxdepth 1 -type f -name '*.json' | wc -l
-                du -sh "$retry_cov_dir" || true
-              fi
-              echo "--- last 200 lines of _testoutput_retry.txt ---"
-              tail -n 200 _testoutput_retry.txt || true
+              run_ava_attempt "retry-a-same" "default" "default" "_testoutput_retry_a.txt"; echo "retry-a exit code: $?"
+              run_ava_attempt "retry-b-cov-off" "default" "off" "_testoutput_retry_b.txt"; echo "retry-b exit code: $?"
+              run_ava_attempt "retry-c-cov-fresh" "default" "fresh" "_testoutput_retry_c.txt"; echo "retry-c exit code: $?"
+              run_ava_attempt "retry-d-nowork-same" "no-workers" "default" "_testoutput_retry_d.txt"; echo "retry-d exit code: $?"
+              run_ava_attempt "retry-e-nowork-fresh" "no-workers" "fresh" "_testoutput_retry_e.txt"; echo "retry-e exit code: $?"
+              echo "--- last 120 lines of retry outputs ---"
+              for f in _testoutput_retry_*.txt; do
+                [ -f "$f" ] || continue
+                echo ">>> $f"
+                tail -n 120 "$f" || true
+              done
+              echo "--- node crash reports after retries ---"
+              ls -la "$node_report_dir" || true
             fi
             echo "::endgroup::"
           fi
           exit "$rc"
+      - name: upload swing-store crash artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: swing-store-diag-${{ matrix.engine }}-${{ github.run_id }}
+          path: |
+            packages/swing-store/_testoutput*.txt
+            packages/swing-store/node-reports/**
+            packages/swing-store/coverage-retry-*/
+          if-no-files-found: ignore
       - name: yarn test (access-token)
         if: (success() || failure())
         run: cd packages/access-token && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
