@@ -1,24 +1,16 @@
-/* eslint-env node */
-
-import { assert, Fail } from '@endo/errors';
 import { deepCopyJsonable, makeTracer } from '@agoric/internal';
 import { mustMatch } from '@agoric/store';
 import bundleSource from '@endo/bundle-source';
-import { ManagerType } from '../typeGuards.js';
+import { assert, Fail } from '@endo/errors';
 import { provideBundleCache } from '../../tools/bundleTool.js';
 import { kdebugEnable } from '../lib/kdebug.js';
 import { insistStorageAPI } from '../lib/storageAPI.js';
-import { readBundleSpecFile as readBundleSpecFileNode } from './bundle-spec-node.js';
-import { initializeKernel } from './initializeKernel.js';
-import {
-  loadBasedir,
-  loadSwingsetConfigFile,
-  normalizeConfig,
-} from './swingset-config-node.js';
+import { ManagerType } from '../typeGuards.js';
 import {
   makeWorkerBundleHandler,
   makeXsnapBundleData,
 } from './bundle-handler.js';
+import { initializeKernel } from './initializeKernel.js';
 
 /**
  * @import {SwingSetConfig} from '../types-external.js';
@@ -28,10 +20,10 @@ import {
  * @import {SwingStoreKernelStorage} from '../types-external.js';
  * @import {EndoZipBase64Bundle} from '../types-external.js';
  * @import {BundleHandler} from './bundle-handler.js';
- * @import {readBundleSpecFile as ReadBundleSpecPower} from './bundle-spec-node.js';
  */
-
-export { loadBasedir, loadSwingsetConfigFile, normalizeConfig };
+/**
+ * @typedef {(bundleSpecPath: string) => EndoZipBase64Bundle} ReadBundleSpecPower
+ */
 
 const trace = makeTracer('IniSwi', false);
 
@@ -131,16 +123,20 @@ function sortObjectProperties(obj, firsts = []) {
  *              addTimer?: boolean,
  *            }} InitializationOptions
  */
+/**
+ * @typedef {{
+ *   env?: Record<string, string | undefined>,
+ *   bundleHandler?: BundleHandler,
+ *   readBundleSpec?: ReadBundleSpecPower,
+ * }} InitializeSwingsetRuntimeOptions
+ */
 
 /**
  * @param {SwingSetConfig} config
  * @param {unknown} bootstrapArgs
  * @param {SwingStoreKernelStorage} kernelStorage
  * @param {InitializationOptions} initializationOptions
- * @param {{ env?: Record<string, string | undefined >,
- *           bundleHandler?: BundleHandler,
- *           readBundleSpec?: ReadBundleSpecPower,
- *         }} runtimeOptions
+ * @param {InitializeSwingsetRuntimeOptions} runtimeOptions
  * @returns {Promise<string | undefined>} KPID of the bootstrap message result promise
  */
 export async function initializeSwingset(
@@ -159,7 +155,7 @@ export async function initializeSwingset(
       kernelStorage.bundleStore,
       makeXsnapBundleData(),
     ),
-    readBundleSpec = readBundleSpecFileNode,
+    readBundleSpec,
   } = runtimeOptions;
 
   // copy config so we can safely mess with it even if it's shared or hardened
@@ -314,7 +310,10 @@ export async function initializeSwingset(
     if ('bundle' in desc) {
       return desc.bundle;
     } else if ('bundleSpec' in desc) {
-      return readBundleSpec(desc.bundleSpec);
+      const readBundleSpecFile =
+        readBundleSpec ||
+        Fail`runtimeOptions.readBundleSpec is required for bundleSpec`;
+      return readBundleSpecFile(desc.bundleSpec);
     } else if ('sourceSpec' in desc) {
       if (bundleCache) {
         return bundleCache.load(desc.sourceSpec);

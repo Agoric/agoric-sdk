@@ -9,7 +9,8 @@ const { loadBasedir, normalizeConfig, loadSwingsetConfigFile } =
     readdirSync: fs.readdirSync,
     statSync: fs.statSync,
     existsSync: fs.existsSync,
-    readFileSync: (filePath, encoding) => fs.readFileSync(filePath, encoding),
+    readFileSync: (filePath, encoding) =>
+      fs.readFileSync(filePath, /** @type {BufferEncoding} */ (encoding)),
     pathResolve: path.resolve,
     cwd: () => process.cwd(),
     importMetaResolve,

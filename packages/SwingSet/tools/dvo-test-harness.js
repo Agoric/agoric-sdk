@@ -4,7 +4,8 @@ import { test } from './prepare-test-env-ava.js';
 import { assert } from '@endo/errors';
 import { makeMarshal } from '@endo/marshal';
 import { initSwingStore } from '@agoric/swing-store';
-import { initializeSwingset, makeSwingsetController } from '../src/index.js';
+import { makeSwingsetController } from '../src/index.js';
+import { initializeTestSwingset as initializeSwingset } from './test-swingset.js';
 
 export { test };
 
