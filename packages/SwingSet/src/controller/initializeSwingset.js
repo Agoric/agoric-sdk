@@ -1,33 +1,37 @@
 /* eslint-env node */
-import fs from 'fs';
-import path from 'path';
 
-import { assert, b, Fail } from '@endo/errors';
+import { assert, Fail } from '@endo/errors';
 import { deepCopyJsonable, makeTracer } from '@agoric/internal';
 import { mustMatch } from '@agoric/store';
 import bundleSource from '@endo/bundle-source';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { ManagerType } from '../typeGuards.js';
 import { provideBundleCache } from '../../tools/bundleTool.js';
 import { kdebugEnable } from '../lib/kdebug.js';
 import { insistStorageAPI } from '../lib/storageAPI.js';
+import { readBundleSpecFile as readBundleSpecFileNode } from './bundle-spec-node.js';
 import { initializeKernel } from './initializeKernel.js';
+import {
+  loadBasedir,
+  loadSwingsetConfigFile,
+  normalizeConfig,
+} from './swingset-config-node.js';
 import {
   makeWorkerBundleHandler,
   makeXsnapBundleData,
 } from './bundle-handler.js';
 
 /**
- * @import {BundleFormat} from '../types-external.js';
  * @import {SwingSetConfig} from '../types-external.js';
  * @import {SwingSetKernelConfig} from '../types-external.js';
- * @import {SwingSetConfigDescriptor} from '../types-external.js';
  * @import {SwingSetConfigProperties} from '../types-external.js';
  * @import {Bundle} from '../types-external.js';
  * @import {SwingStoreKernelStorage} from '../types-external.js';
  * @import {EndoZipBase64Bundle} from '../types-external.js';
  * @import {BundleHandler} from './bundle-handler.js';
+ * @import {readBundleSpecFile as ReadBundleSpecPower} from './bundle-spec-node.js';
  */
+
+export { loadBasedir, loadSwingsetConfigFile, normalizeConfig };
 
 const trace = makeTracer('IniSwi', false);
 
@@ -98,184 +102,6 @@ export async function buildKernelBundles() {
   return harden({ kernel: kernelBundle, ...vdBundles });
 }
 
-/**
- * Scan a directory for files defining the vats to bootstrap for a swingset, and
- * produce a swingset config object for what was found there.  Looks for files
- * with names of the pattern `vat-NAME.js` as well as a file named
- * 'bootstrap.js'.
- *
- * @param {string} basedir  The directory to scan
- * @param {object} [options]
- * @param {boolean} [options.includeDevDependencies] whether to include devDependencies
- * @param {BundleFormat} [options.bundleFormat] the bundle format to use
- * @returns {SwingSetConfig} a swingset config object: {
- *   bootstrap: "bootstrap",
- *   vats: {
- *     NAME: {
- *       sourceSpec: PATHSTRING
- *     }
- *   }
- * }
- *
- * Where NAME is the name of the vat; `sourceSpec` contains the path to the vat with that name.  Note that
- * the `bootstrap` property names the vat that should be used as the bootstrap vat.  Although a swingset
- * configuration can designate any vat as its bootstrap vat, `loadBasedir` will always look for a file named
- * 'bootstrap.js' and use that (note that if there is no 'bootstrap.js', there will be no bootstrap vat).
- *
- * Swingsets defined by scanning a directory in this manner define no devices.
- */
-export function loadBasedir(basedir, options = {}) {
-  const { includeDevDependencies = false, bundleFormat = undefined } = options;
-  /** @type { SwingSetConfigDescriptor } */
-  const vats = {};
-  const rVatName = /^vat-(.*)\.js$/s;
-  const files = fs.readdirSync(basedir, { withFileTypes: true });
-  const vatFiles = files.flatMap(dirent => {
-    const file = dirent.name;
-    const m = rVatName.exec(file);
-    return m && dirent.isFile() ? [{ file, label: m[1] }] : [];
-  });
-  // eslint-disable-next-line no-shadow,no-nested-ternary
-  vatFiles.sort((a, b) => (a.label < b.label ? -1 : a.label > b.label ? 1 : 0));
-  for (const { file, label } of vatFiles) {
-    const vatSourcePath = path.resolve(basedir, file);
-    vats[label] = { sourceSpec: vatSourcePath, parameters: {} };
-  }
-  /** @type {string | void} */
-  let bootstrapPath = path.resolve(basedir, 'bootstrap.js');
-  try {
-    fs.statSync(bootstrapPath);
-  } catch (e) {
-    // TODO this will catch the case of the file not existing but doesn't check
-    // that it's a plain file and not a directory or something else unreadable.
-    // Consider putting in a more sophisticated check if this whole directory
-    // scanning thing is something we decide we want to have long term.
-    bootstrapPath = undefined;
-  }
-  const config = { vats, includeDevDependencies, format: bundleFormat };
-  if (bootstrapPath) {
-    vats.bootstrap = {
-      sourceSpec: bootstrapPath,
-      parameters: {},
-    };
-    config.bootstrap = 'bootstrap';
-  }
-  return config;
-}
-
-/**
- * Resolve a pathname found in a config descriptor.  First try to resolve it as
- * a module path, and then if that doesn't work try to resolve it as an
- * ordinary path relative to the directory in which the config file was found.
- *
- * @param {string} referrer  URL of file or directory containing the config file
- * @param {string} specPath  Path found in a `sourceSpec` or `bundleSpec` property
- *
- * @returns {Promise<string>} the absolute path corresponding to `specPath` if it can be
- *    determined.
- */
-async function resolveSpecFromConfig(referrer, specPath) {
-  await null;
-  try {
-    return new URL(await importMetaResolve(specPath, referrer)).pathname;
-  } catch (e) {
-    if (e.code !== 'MODULE_NOT_FOUND' && e.code !== 'ERR_MODULE_NOT_FOUND') {
-      throw e;
-    }
-  }
-  return new URL(specPath, referrer).pathname;
-}
-
-/**
- * Convert each entry in a config descriptor group (`vats`/`bundles`/etc.) to
- * normal form: resolve each pathname to a context-insensitive absolute path and
- * run any other appropriate fixup.
- *
- * @param {SwingSetConfig} config
- * @param {'vats' | 'bundles' | 'devices'} groupName
- * @param {string | undefined} configPath of the containing config file
- * @param {string} referrer URL
- * @param {(entry: SwingSetConfigProperties, name?: string) => void} [fixupEntry]
- *   A function to call on each entry to e.g. add defaults for missing fields
- *   such as vat `parameters`.
- */
-async function normalizeConfigDescriptor(
-  config,
-  groupName,
-  configPath,
-  referrer,
-  fixupEntry,
-) {
-  const normalizeSpec = async (entry, specKey, name) => {
-    const sourcePath = await resolveSpecFromConfig(referrer, entry[specKey]);
-    fs.existsSync(sourcePath) ||
-      Fail`${sourcePath} for ${b(groupName)}[${name}].${b(specKey)} in ${configPath} config file does not exist`;
-    entry[specKey] = sourcePath;
-  };
-
-  const jobs = [];
-  const desc = config[groupName];
-  if (desc) {
-    for (const [name, entry] of Object.entries(desc)) {
-      fixupEntry?.(entry, name);
-      if ('sourceSpec' in entry) {
-        jobs.push(normalizeSpec(entry, 'sourceSpec', name));
-      }
-      if ('bundleSpec' in entry) {
-        jobs.push(normalizeSpec(entry, 'bundleSpec', name));
-      }
-    }
-  }
-  return Promise.all(jobs);
-}
-
-/**
- * @param {SwingSetConfig} config
- * @param {string} [configPath]
- * @returns {Promise<void>}
- * @throws {Error} if the config is invalid
- */
-export async function normalizeConfig(config, configPath) {
-  const base = `file://${process.cwd()}/`;
-  const referrer = configPath
-    ? new URL(configPath, base).href
-    : new URL(base).href;
-  const fixupVat = vat => (vat.parameters ||= {});
-  await Promise.all([
-    normalizeConfigDescriptor(config, 'vats', configPath, referrer, fixupVat),
-    normalizeConfigDescriptor(config, 'bundles', configPath, referrer),
-    // TODO: represent devices
-    // normalizeConfigDescriptor(config, 'devices', configPath, referrer),
-  ]);
-  config.bootstrap ||
-    Fail`no designated bootstrap vat in ${configPath} config file`;
-  (config.vats && config.vats[/** @type {string} */ (config.bootstrap)]) ||
-    Fail`bootstrap vat ${config.bootstrap} not found in ${configPath} config file`;
-}
-
-/**
- * Read and normalize a swingset config file.
- *
- * @param {string} configPath
- * @returns {Promise<SwingSetConfig | null>} the normalized config,
- *   or null if the file did not exist
- */
-export async function loadSwingsetConfigFile(configPath) {
-  await null;
-  try {
-    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-    await normalizeConfig(config, configPath);
-    return config;
-  } catch (e) {
-    console.error(`failed to load ${configPath}`);
-    if (e.code === 'ENOENT') {
-      return null;
-    } else {
-      throw e;
-    }
-  }
-}
-
 export function swingsetIsInitialized(kernelStorage) {
   return !!(
     kernelStorage.kvStore.get('version') ||
@@ -313,6 +139,7 @@ function sortObjectProperties(obj, firsts = []) {
  * @param {InitializationOptions} initializationOptions
  * @param {{ env?: Record<string, string | undefined >,
  *           bundleHandler?: BundleHandler,
+ *           readBundleSpec?: ReadBundleSpecPower,
  *         }} runtimeOptions
  * @returns {Promise<string | undefined>} KPID of the bootstrap message result promise
  */
@@ -332,6 +159,7 @@ export async function initializeSwingset(
       kernelStorage.bundleStore,
       makeXsnapBundleData(),
     ),
+    readBundleSpec = readBundleSpecFileNode,
   } = runtimeOptions;
 
   // copy config so we can safely mess with it even if it's shared or hardened
@@ -486,7 +314,7 @@ export async function initializeSwingset(
     if ('bundle' in desc) {
       return desc.bundle;
     } else if ('bundleSpec' in desc) {
-      return JSON.parse(fs.readFileSync(desc.bundleSpec).toString());
+      return readBundleSpec(desc.bundleSpec);
     } else if ('sourceSpec' in desc) {
       if (bundleCache) {
         return bundleCache.load(desc.sourceSpec);
