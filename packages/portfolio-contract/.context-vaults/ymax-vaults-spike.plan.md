@@ -1,0 +1,142 @@
+# Plan for Spike on Vaults for Ymax
+
+We'd like a quick spike / prototype to begin to estimate the cost and risks of adding vaults to Ymax.
+
+ - [x] Pick user story
+   - [x] draft: `nifty-vaults.story.md`
+   - [x] confirm that the story is clear in the context of `portfolio-contract/`
+   - [x] Clarify unclear parts before approach discussion
+     - [x] confirm vault model: story uses one vault; product likely supports one per creator/strategy
+     - [x] confirm rebalance trigger model for story intent: best effort hourly
+     - [x] confirm LP token model direction: follow market norm (e.g., Veda/BoringVault style)
+     - [x] confirm instrument scope: choose N from current Ymax instrument table; spike can fix Chris's choices
+     - [x] confirm fee model in story: creator receives a cut of yield (performance fee)
+     - [x] confirm prototype boundary: end-user UI in scope; creator UI is stretch goal
+     - [x] ask user and capture answers
+
+ - [x] Explore approaches and pick one
+   - [x] explore APY source approaches and pick one
+     - [x] evaluate oracle-backed APY source approach ❌ rejected for this spike
+       - rationale: decentralization is important but mostly orthogonal to core vault-flow prototype; keep APY source as a swappable seam and defer oracle integration
+     - [x] pick APY source for spike: current off-chain service
+       - [x] concrete source for spike: YDS HTTP API (`GET /instruments`) provides per-instrument `baseApy`/`totalApy` used by UI and planner inputs
+       - [x] contract boundary remains plan-only: APY values are not sent to on-chain contract
+   - [x] decide redemption semantics approach
+     - [x] pick sync redeem as spike default (market-norm path)
+     - [x] stretch goal 🚀: add `requestRedeem` async fallback flow
+   - [x] define LP/share accounting approach for spike
+     - [x] choose share mint/redeem math: ERC-4626
+     - [x] choose transferability behavior: standard ERC-4626 share token behavior
+     - [x] choose cross-chain assets accounting approach
+       - [x] spike choice: privileged vault extension to deploy funds from vault to portfolio owner account on vault chain (e.g., `@Avalanche`)
+       - [x] vault constructor arg includes owner portfolio account address (for `p75`)
+       - [x] privileged method guard: only owner portfolio account may call deploy/sweep method
+       - [x] accounting invariant: `totalAssets = localVaultUsdc + managedAssets`
+       - [x] managed-assets update path is explicit/trusted (resolver-gated reporting path)
+       - [x] sync redeem is allowed only when local liquidity is sufficient and accounting state is fresh
+       - [ ] product TODO 🏭: harden/reporting trust model for managed-assets/NAV updates
+     - [x] define local-liquidity management approach for spike
+       - [x] question: what policy controls local vault liquidity vs deployed funds?
+         - [x] choose tiered policy: `max(localLiquidityFloorAssets, localLiquidityPct * totalAssets)` with hysteresis
+         - [x] fixed hysteresis for Chris spike: `rebalanceIfOffByPct = 5%`
+         - [x] candidate considered: fixed local liquidity amount `localLiquidityTargetAssets` (not chosen for spike)
+         - [x] candidate considered: percent-only `localLiquidityTargetPct` with hysteresis (not chosen for spike)
+       - [x] question: when/how does excess local liquidity move to portfolio account on vault chain (e.g., `@Arbitrum`)?
+         - [x] answer: on deposit and rebalance, deploy only excess above tiered target; update `managedAssets` atomically with deploy
+     - [x] question: what policy applies on liquidity shortfall for sync redeem?
+       - [x] answer: attempt local pullback to target first; if still short, fail sync redeem (async `requestRedeem` remains stretch)
+     - [ ] product TODO 🏭: tune tiered policy params (`floorAssets`, `localLiquidityPct`, hysteresis) from production redemption telemetry
+     - [ ] product TODO 🏭: implement robust low-liquidity replenishment path (recall/pullback from deployed funds to local vault liquidity)
+   - [x] define rebalance execution approach
+     - [x] decide where "best effort hourly" is triggered from: Agoric chain timer (`chainTimerService`)
+       - [x] API package: `@agoric/time` `TimerService`
+       - [x] trigger method: `repeatAfter(delay, interval, handler, cancelToken?)` with 1-hour interval
+       - [x] control method: `cancel(cancelToken)` to stop/reschedule periodic rebalance
+       - [x] time check method: `getCurrentTimestamp()` for guardrails/observability
+     - [x] approach goals from execution-latency implications
+       - [x] question: how do we handle overlap when a new hourly tick arrives before prior rebalance completes?
+         - [x] answer: single-flight lock (never run more than one rebalance concurrently)
+       - [x] question: what does "best effort hourly" mean operationally?
+         - [x] answer: attempt at most once per hour when idle
+       - [x] question: what is the policy for missed ticks while busy (skip/coalesce/queue)?
+         - [x] answer: coalesce with at most one pending rerun
+       - [x] question: how do we handle stale plans as APY snapshots age during long execution?
+         - [x] answer: stale-plan/runtime guard; drop or replan when max age is exceeded
+       - [x] question: how should observability map to user-facing alerts?
+         - [x] answer: track elapsed vs estimated and map to existing UI yellow/red semantics
+     - [x] chosen rebalance control approach for spike
+       - [x] single-flight lock: only one rebalance execution in flight at a time
+       - [x] tick coalescing: if timer fires while busy, keep at most one pending rerun
+       - [x] stale-plan/runtime guard: drop or replan when execution exceeds configured max age
+       - [x] observability: track elapsed vs estimated and map to UI yellow/red thresholds
+     - [x] define failure-handling approach when target allocations cannot be fully reached
+       - [x] choose best-effort partial commit (existing Ymax behavior): execute what succeeds, persist actual positions/drift, and reconcile on subsequent rebalance
+   - [x] define creator policy approach for spike
+     - [x] question: what are the minimal creator policy fields for the spike?
+       - [x] answer: instrument set, max instrument count, fee bps, rebalance cadence hint
+     - [x] question: which policy checks are enforced on-chain vs checked off-chain by planner?
+     - [x] answer: on-chain enforces policy-shape constraints and policyVersion matching; planner enforces optimization/APY selection under policy; policy and outcomes are auditable via vstorage + on-chain history
+   - [x] define authority/ownership approach for vault control surfaces
+     - [x] question: who owns `VaultFactory` and who is allowed to create vaults?
+       - [x] answer: `createVault(...)` is exposed via creator facet; invoked through `ymaxControl` (creator + Agoric partner operational model)
+     - [x] question: what is the reporting authority path for managed-assets updates?
+       - [x] answer: planner controls `0xASSET_REPORTER`; factory constructor stores reporter; `factory.reportManagedAssets(...)` requires `msg.sender == reporter`; factory forwards to vault; vault requires `msg.sender == factory`
+     - [x] question: should managed-assets reports be delta or absolute?
+       - [x] answer: absolute (`newManagedAssets`) for spike
+     - [x] question: what freshness gate applies to sync redeem for spike?
+       - [x] answer: `maxReportAge = 8h`
+     - [x] question: what is the minimum acceptable spike security posture for authority keys?
+       - [x] spike posture: testnet-only; do not commit private keys/secrets; otherwise keep key management lightweight for speed
+      - [ ] product TODO 🏭: define production key custody/rotation and separation of duties
+     - [ ] product TODO 🏭: define/implement sync-redeem freshness gate for managed-assets reports
+       - [ ] production guardrail candidate: tighter `maxReportAge` (e.g. `15m` or `60m`)
+       - [ ] production guardrail candidate: hybrid gate (`maxReportAge` plus monotonic `reportId`/nonce check)
+       - [ ] production guardrail candidate: conservative redeem caps when reports are stale-but-allowed
+
+ - [x] Define spike success criteria (feasibility, estimate quality, demo expectations)
+   - [x] feasibility criterion: either reach working end-to-end flow or identify concrete infeasibility point(s) with reasons
+   - [x] estimate-quality criterion: document spike shortcuts and list productization work required beyond the spike
+   - [x] demo expectation: low-stakes peer demo is sufficient
+   - [x] demo scope rule: demo proceeds either to completion or to the identified infeasibility point
+   - [x] demo success threshold for this spike: funds are moved from vault to `@Avalanche` with correct accounting updates
+
+ - [x] System engineering: which changes have to be made to which parts of the system to try it out?
+   - [x] related-work review: `agoric-labs/ymax0-ui0#21` and `#22`
+     - [x] system-engineering takeaway: `agoric-labs/ymax0-ui0` is available as a practical prototype base
+     - [x] system-engineering takeaway: PR deploy previews are available with very low incremental setup/cost
+   - [x] UI?
+     - [x] yes: end-user vault UX is in scope (deposit/redeem + basic flow states)
+     - [x] stretch goal 🚀: creator UI
+     - [x] stretch goal 🚀: advanced in-progress UX
+       - [x] yellow/red reassurance thresholds are out of scope for this spike
+     - [x] spike quality bar: whatever works
+       - [x] if UI code fails first pass, test-driven fixing is encouraged (not required)
+   - [x] ymax contract on agoric?
+     - [x] yes: policy persistence/versioning, timer-triggered rebalance orchestration, single-flight/coalescing guards
+     - [x] no: ERC-4626 share accounting is not on Agoric in this spike
+   - [x] EVM contracts?
+     - [x] yes: primary vault/accounting surface uses an EVM ERC-4626-style contract (market-norm interaction)
+     - [x] Agoric interacts as policy/planning/orchestration layer
+     - [x] decide whether to reuse an existing vault implementation or deploy a minimal new spike contract
+     - [x] codebase starting point: `agoric-labs/agoric-to-axelar-local`
+     - [x] deployment addressing approach: follow `agoric-to-axelar-local` deterministic deployment pattern for consistent contract addresses across chains
+     - [ ] product TODO 🏭: before implementation, verify local `agoric-to-axelar-local` checkout against latest `main` and align deployment scripts/params
+     - [x] development loop: unit tests first, no blockchain deploy in inner-loop feedback
+     - [x] reference test entrypoint: `packages/axelar-local-dev-cosmos` `yarn test` (Jest `*.spec.ts`)
+     - [ ] product TODO 🏭: evaluate modular strategy adapters after spike (if multi-protocol complexity warrants)
+     - [ ] product TODO 🏭: migrate token approval path to Permit2 (one-time approval to Permit2 + per-action permit signatures); spike uses approve-per-deposit for simplicity
+   - [x] planner/off-chain service?
+     - [x] yes: consume current APY source, compute allocation plan under policyVersion, and emit plan metadata needed for auditability
+   - [x] deployment/ops wiring?
+     - [x] yes: wire timer cadence/max-age config and capture runtime observability consistent with UI alert semantics
+   - [x] test scope?
+     - [x] yes: add focused tests for sync redeem, timer overlap/coalescing behavior, and policy/version guardrails
+
+ - [ ] write code
+   - [ ] define APY seam API for spike (planner submits allocation plan under policyVersion)
+   - [x] prototype directly in `agoric-labs/ymax0-ui0` to leverage fast PR deploy previews
+   - [ ] EVM contract spike: implement/fork contract changes with unit tests up front before any deploy/integration steps
+     - [ ] planned next (not now): encode privileged extension and accounting invariants as Solidity unit tests first
+   - [ ] stretch goal 🚀: add periodic timer-driven rebalance in code path (orthogonal to core demo)
+   - [ ] deferred design-to-code task (not now): derive a minimal simulation scaffold from sequence diagrams (e.g., `makeUI(0xVAU1)`, `makeVault()`, `deposit(amount)`, `rebalance()`, `redeem(shares)`)
+   - [ ] brand new prototype UI?
