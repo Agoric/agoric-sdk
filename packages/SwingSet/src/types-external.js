@@ -225,7 +225,8 @@ export {};
  * @property {boolean} [includeDevDependencies] indicates that
  * `devDependencies` of the surrounding `package.json` should be accessible to
  * bundles.
- * @property {string} [bundleCachePath] if present, SwingSet will use a bundle cache at this path
+ * @property {string} [bundleCachePath] optional cache path used by wrappers
+ *   that choose to cache `sourceSpec` bundling
  * @property {SwingSetConfigDescriptor<VatConfigOptions>} vats
  * @property {SwingSetConfigDescriptor} [bundles]
  * @property {BundleFormat} [bundleFormat] the bundle source / import bundle

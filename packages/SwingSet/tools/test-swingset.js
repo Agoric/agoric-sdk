@@ -1,6 +1,11 @@
 /* eslint-env node */
 import fs from 'fs';
-import { initializeSwingset } from '../src/controller/initializeSwingset.js';
+import path from 'path';
+import { provideBundleCache } from './bundleTool.js';
+import {
+  buildSwingsetKernelConfig,
+  initializeSwingsetKernel,
+} from '../src/controller/initializeSwingset.js';
 import { parseBundleSpec } from '../src/controller/bundle-spec.js';
 
 /**
@@ -14,7 +19,13 @@ import { parseBundleSpec } from '../src/controller/bundle-spec.js';
  * @param {string} bundleSpecPath
  */
 const readBundleSpecFile = bundleSpecPath =>
-  parseBundleSpec(path => fs.readFileSync(path, 'utf-8'), bundleSpecPath);
+  parseBundleSpec(
+    filePath => fs.readFileSync(filePath, 'utf-8'),
+    bundleSpecPath,
+  );
+
+const sharedBundleCachePath = new URL('../../../bundles', import.meta.url)
+  .pathname;
 
 /**
  * Test-only wrapper that supplies ambient-powered bundleSpec loading.
@@ -31,14 +42,31 @@ export const initializeTestSwingset = async (
   kernelStorage,
   initializationOptions = {},
   runtimeOptions = {},
-) =>
-  initializeSwingset(
+) => {
+  const {
+    bundleCachePath = sharedBundleCachePath,
+    includeDevDependencies,
+    bundleFormat,
+  } = config;
+  const cache = await provideBundleCache(
+    path.resolve(bundleCachePath),
+    {
+      dev: includeDevDependencies,
+      format: bundleFormat,
+      byteLimit: Infinity,
+    },
+    spec => import(spec),
+  );
+
+  const kernelConfig = await buildSwingsetKernelConfig(
     config,
     bootstrapArgs,
-    kernelStorage,
     initializationOptions,
     {
       ...runtimeOptions,
       readBundleSpec: runtimeOptions.readBundleSpec || readBundleSpecFile,
+      bundleFromSourceSpec: (sourceSpec, _options) => cache.load(sourceSpec),
     },
   );
+  return initializeSwingsetKernel(kernelConfig, kernelStorage, runtimeOptions);
+};
