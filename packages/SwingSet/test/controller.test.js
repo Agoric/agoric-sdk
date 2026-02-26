@@ -8,9 +8,9 @@ import { initSwingStore } from '@agoric/swing-store';
 import {
   buildVatController,
   loadBasedir,
-  initializeSwingset,
   makeSwingsetController,
 } from '../src/index.js';
+import { initializeTestSwingset as initializeSwingset } from '../tools/test-swingset.js';
 import { makeDummySlogger } from '../src/kernel/slogger.js';
 import makeKernelKeeper, {
   CURRENT_SCHEMA_VERSION,

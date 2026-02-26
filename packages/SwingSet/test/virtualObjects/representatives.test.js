@@ -5,11 +5,8 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 import { kser, kslot } from '@agoric/kmarshal';
 import { M } from '@agoric/store';
 import { initSwingStore } from '@agoric/swing-store';
-import {
-  buildVatController,
-  initializeSwingset,
-  makeSwingsetController,
-} from '../../src/index.js';
+import { buildVatController, makeSwingsetController } from '../../src/index.js';
+import { initializeTestSwingset as initializeSwingset } from '../../tools/test-swingset.js';
 import makeNextLog from '../make-nextlog.js';
 
 import { enumeratePrefixedKeys } from '../../src/kernel/state/storageHelper.js';
