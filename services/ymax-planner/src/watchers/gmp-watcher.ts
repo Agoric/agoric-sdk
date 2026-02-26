@@ -280,6 +280,8 @@ type WatchGmpLookback = {
   setTimeout: typeof globalThis.setTimeout;
   signal?: AbortSignal;
   rpcClient: JSONRPCClient;
+  /** Skip the success event scan and only look for failed txs. */
+  skipSuccessPath?: boolean;
 };
 
 export const lookBackGmp = async ({
@@ -295,6 +297,7 @@ export const lookBackGmp = async ({
   signal,
   kvStore,
   makeAbortController,
+  skipSuccessPath = false,
 }: WatchGmp & WatchGmpLookback): Promise<WatcherResult> => {
   await null;
   try {
@@ -346,23 +349,27 @@ export const lookBackGmp = async ({
     };
 
     // Success path first (cheap on all chains: uses eth_getLogs).
-    const matchingEvent = await scanEvmLogsInChunks({
-      ...sharedOpts,
-      baseFilter: statusFilter,
-      fromBlock: statusEventLowerBound,
-      onRejectedChunk: updateStatusEventLowerBound,
-      predicate: isMatch,
-    });
+    if (!skipSuccessPath) {
+      const matchingEvent = await scanEvmLogsInChunks({
+        ...sharedOpts,
+        baseFilter: statusFilter,
+        fromBlock: statusEventLowerBound,
+        onRejectedChunk: updateStatusEventLowerBound,
+        predicate: isMatch,
+      });
 
-    if (matchingEvent) {
-      log(`Found matching event`);
-      deleteTxBlockLowerBound(kvStore, txId, MULTICALL_STATUS_EVENT);
-      deleteTxBlockLowerBound(kvStore, txId, FAILED_TX_SCOPE);
-      return {
-        settled: true,
-        txHash: matchingEvent.transactionHash,
-        success: true,
-      };
+      if (matchingEvent) {
+        log(`Found matching event`);
+        deleteTxBlockLowerBound(kvStore, txId, MULTICALL_STATUS_EVENT);
+        deleteTxBlockLowerBound(kvStore, txId, FAILED_TX_SCOPE);
+        return {
+          settled: true,
+          txHash: matchingEvent.transactionHash,
+          success: true,
+        };
+      }
+    } else {
+      log(`Skipping success path scan`);
     }
 
     // Failure path second (expensive on Arb/Ava: uses eth_getBlockReceipts).

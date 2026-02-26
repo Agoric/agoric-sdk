@@ -1,5 +1,6 @@
 /* eslint-env node */
 
+import { EventEmitter } from 'node:events';
 import timersPromises from 'node:timers/promises';
 
 import { SigningStargateClient } from '@cosmjs/stargate';
@@ -29,7 +30,8 @@ const makeVstoragePathPrefixes = (contractInstance: string) => ({
 });
 
 export const processTx = async (
-  concurrency: number,
+  failedCount: number,
+  successCount: number,
   cliArgs: string[],
   {
     env = process.env,
@@ -43,7 +45,10 @@ export const processTx = async (
     WebSocket = ws.WebSocket,
   } = {},
 ) => {
-  console.log(`\n🔍 Load testing lookback with ${concurrency} parallel scans\n`);
+  const totalCount = failedCount + successCount;
+  console.log(
+    `\n🔍 Load testing lookback: ${failedCount} failed tx + ${successCount} success tx = ${totalCount} parallel scans\n`,
+  );
 
   const maybeOpts = cliArgs;
   const isVerbose = maybeOpts.includes('--verbose');
@@ -77,6 +82,9 @@ export const processTx = async (
   });
   await rpc.opened();
 
+  // Bump global listener limit for shared WebSockets under high concurrency
+  EventEmitter.defaultMaxListeners = totalCount + 20;
+
   const cosmosRest = new CosmosRestClient(simplePowers, {
     clusterName,
     timeout: config.cosmosRest.timeout,
@@ -94,6 +102,7 @@ export const processTx = async (
     clusterName,
     alchemyApiKey: config.alchemyApiKey,
   });
+
 
   // Verify Alchemy chain availability
   const failedEvmChains = [] as Array<keyof typeof evmCtx.evmProviders>;
@@ -129,60 +138,92 @@ export const processTx = async (
     const sourceAddr =
       'cosmos:agoric-3:agoric1uu7jv958xxayfeezq7yz8zxda9jfr0v7h6shlke350qadqld9jgqgu3lpq';
     const pendingTxData = {
+      txId,
       destinationAddress:
         'eip155:43114:0x57733a73f0eb38fae93ae5af01cd994625fc5b6f',
       status: 'pending',
       type: 'GMP',
       sourceAddress: sourceAddr,
     };
+    const timestampMs = 1764837518000 - 4 * 60 * 1000;
 
-    const timestampMs = 123;
+    // successful tx on Arbitrum
+    // evm tx https://arbiscan.io/tx/0xa145fae8071255f72e14ef49f0b77d2805721ccaa08f54c01f447396685983ce
+    // https://vstorage.agoric.net/?path=published.ymax1.pendingTxs.tx1359&endpoint=https%3A%2F%2Fmain-a.rpc.agoric.net%3A443&height=undefined
+    const txId1 = 'tx1359';
+    const pendingTxData2 = {
+      txId: txId1,
+      destinationAddress:
+        'eip155:42161:0x7f52ccd46cebd4a15649f68d077424c346dd7498',
+      sourceAddress:
+        'cosmos:agoric-3:agoric10g55pv27870cyyqszqtgfxu9mvhmangv73vr0ut0hel92mndzrhq799zvq',
+      status: 'pending',
+      type: 'GMP',
+    };
+    const timestampMs1 = 1769733702000 - 2 * 60 * 1000;
 
-    console.log(`\n🔄 Launching ${concurrency} parallel lookback scans for ${txId}...\n`);
+    const makeScanJob = (
+      label: string,
+      txData: Record<string, string>,
+      txTimestampMs: number,
+      { skipSuccessPath = false } = {},
+    ) => {
+      const scanStart = now();
+
+      const txPowers: HandlePendingTxOpts = Object.freeze({
+        ...evmCtx,
+        cosmosRest,
+        cosmosRpc: rpc,
+        fetch,
+        setTimeout,
+        kvStore,
+        makeAbortController,
+        log: (...args: unknown[]) => console.log(label, ...args),
+        error: (...args: unknown[]) => console.error(label, ...args),
+        marshaller,
+        signingSmartWalletKit,
+        vstoragePathPrefixes,
+        axelarApiUrl: config.axelar.apiUrl,
+        pendingTxAbortControllers: new Map(),
+      });
+
+      return handlePendingTx(txData as any, {
+        ...txPowers,
+        txTimestampMs,
+        skipSuccessPath,
+      }).then(
+        () => ({ label, durationMs: now() - scanStart }),
+        err => {
+          throw Object.assign(err, {
+            label,
+            durationMs: now() - scanStart,
+          });
+        },
+      );
+    };
+
+    console.log(
+      `\n🔄 Launching ${totalCount} parallel lookback scans (${failedCount}x ${txId} failed + ${successCount}x ${txId1} success)...\n`,
+    );
     const startTime = now();
 
-    const results = await Promise.allSettled(
-      Array.from({ length: concurrency }, (_, i) => {
-        const label = `[scan-${i}]`;
-        const scanStart = now();
+    const jobs = [
+      ...Array.from({ length: failedCount }, (_, i) =>
+        makeScanJob(`[failed-${i}]`, pendingTxData, timestampMs, {
+          skipSuccessPath: true,
+        }),
+      ),
+      ...Array.from({ length: successCount }, (_, i) =>
+        makeScanJob(`[success-${i}]`, pendingTxData2, timestampMs1),
+      ),
+    ];
 
-        const txPowers: HandlePendingTxOpts = Object.freeze({
-          ...evmCtx,
-          cosmosRest,
-          cosmosRpc: rpc,
-          fetch,
-          setTimeout,
-          kvStore,
-          makeAbortController,
-          log: (...args: unknown[]) => console.log(label, ...args),
-          error: (...args: unknown[]) => console.error(label, ...args),
-          marshaller,
-          signingSmartWalletKit,
-          vstoragePathPrefixes,
-          axelarApiUrl: config.axelar.apiUrl,
-          pendingTxAbortControllers: new Map(),
-        });
-
-        return handlePendingTx(pendingTxData as any, {
-          ...txPowers,
-          txTimestampMs: timestampMs,
-        }).then(
-          () => ({ index: i, durationMs: now() - scanStart }),
-          err => {
-            throw Object.assign(err, {
-              index: i,
-              durationMs: now() - scanStart,
-            });
-          },
-        );
-      }),
-    );
-
+    const results = await Promise.allSettled(jobs);
     const totalDuration = now() - startTime;
 
     // Report results
-    const succeeded = results.filter(r => r.status === 'fulfilled');
-    const failed = results.filter(r => r.status === 'rejected');
+    const settled = results.filter(r => r.status === 'fulfilled');
+    const errored = results.filter(r => r.status === 'rejected');
 
     const durations = results.map(r =>
       r.status === 'fulfilled'
@@ -192,10 +233,12 @@ export const processTx = async (
     durations.sort((a, b) => a - b);
 
     console.log('\n========== LOAD TEST RESULTS ==========');
-    console.log(`Concurrency: ${concurrency}`);
+    console.log(
+      `Concurrency: ${totalCount} (${failedCount} failed + ${successCount} success)`,
+    );
     console.log(`Total wall time: ${(totalDuration / 1000).toFixed(1)}s`);
-    console.log(`Succeeded: ${succeeded.length} / ${concurrency}`);
-    console.log(`Failed: ${failed.length} / ${concurrency}`);
+    console.log(`Succeeded: ${settled.length} / ${totalCount}`);
+    console.log(`Errored: ${errored.length} / ${totalCount}`);
 
     if (durations.length > 0) {
       const avg = durations.reduce((a, b) => a + b, 0) / durations.length;
@@ -212,17 +255,17 @@ export const processTx = async (
       console.log(`  Max:  ${(max / 1000).toFixed(1)}s`);
     }
 
-    if (failed.length > 0) {
-      console.log(`\nFailed scans:`);
-      for (const r of failed) {
+    if (errored.length > 0) {
+      console.log(`\nErrored scans:`);
+      for (const r of errored) {
         if (r.status === 'rejected') {
-          const { index, durationMs, message } = r.reason as {
-            index: number;
+          const { label, durationMs, message } = r.reason as {
+            label: string;
             durationMs: number;
             message: string;
           };
           console.error(
-            `  [scan-${index}] after ${(durationMs / 1000).toFixed(1)}s: ${message}`,
+            `  ${label} after ${(durationMs / 1000).toFixed(1)}s: ${message}`,
           );
         }
       }

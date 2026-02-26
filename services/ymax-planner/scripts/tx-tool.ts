@@ -19,9 +19,13 @@ const showUsage = () => {
   console.error('Usage: ./scripts/tx-tool.ts <command> [options]');
   console.error('');
   console.error('Commands:');
-  console.error('  scan <concurrency> [--verbose]');
+  console.error('  scan <failedCount> <successCount> [--verbose]');
   console.error(
-    '    Run N parallel lookback scans for the hardcoded tx (load test)',
+    '    Run parallel lookback scans for hardcoded txs (load test)',
+  );
+  console.error('    failedCount:  instances of failed tx (tx445 on Avalanche)');
+  console.error(
+    '    successCount: instances of success tx (tx1359 on Arbitrum)',
   );
   console.error('');
   console.error('  settle <txId> <status> [reason]');
@@ -30,8 +34,8 @@ const showUsage = () => {
   console.error('    reason: required when status is "fail"');
   console.error('');
   console.error('Examples:');
-  console.error('  ./scripts/tx-tool.ts scan 10');
-  console.error('  ./scripts/tx-tool.ts scan 50 --verbose');
+  console.error('  ./scripts/tx-tool.ts scan 5 10');
+  console.error('  ./scripts/tx-tool.ts scan 25 25 --verbose');
   console.error('  ./scripts/tx-tool.ts settle tx399 success');
   console.error(
     '  ./scripts/tx-tool.ts settle tx400 fail "Transaction timeout"',
@@ -48,26 +52,37 @@ const command = args[0];
 const commandArgs = args.slice(1);
 
 if (command === 'scan') {
-  if (commandArgs.length === 0) {
-    console.error('Error: scan requires a concurrency number');
+  if (commandArgs.length < 2) {
+    console.error('Error: scan requires failedCount and successCount');
     console.error('');
     console.error(
-      'Usage: ./scripts/tx-tool.ts scan <concurrency> [--verbose]',
+      'Usage: ./scripts/tx-tool.ts scan <failedCount> <successCount> [--verbose]',
     );
-    console.error('Example: ./scripts/tx-tool.ts scan 10');
+    console.error('Example: ./scripts/tx-tool.ts scan 5 10');
     process.exit(1);
   }
 
-  const concurrency = Number(commandArgs[0]);
-  if (!Number.isFinite(concurrency) || concurrency < 1) {
+  const failedCount = Number(commandArgs[0]);
+  const successCount = Number(commandArgs[1]);
+  if (!Number.isFinite(failedCount) || failedCount < 0) {
     console.error(
-      `Error: concurrency must be a positive number, got "${commandArgs[0]}"`,
+      `Error: failedCount must be a non-negative number, got "${commandArgs[0]}"`,
     );
     process.exit(1);
   }
-  const options = commandArgs.slice(1);
+  if (!Number.isFinite(successCount) || successCount < 0) {
+    console.error(
+      `Error: successCount must be a non-negative number, got "${commandArgs[1]}"`,
+    );
+    process.exit(1);
+  }
+  if (failedCount + successCount < 1) {
+    console.error('Error: at least one of failedCount or successCount must be > 0');
+    process.exit(1);
+  }
+  const options = commandArgs.slice(2);
 
-  processTx(concurrency, options, { env }).catch(err => {
+  processTx(failedCount, successCount, options, { env }).catch(err => {
     console.error(err);
     process.exit(1);
   });

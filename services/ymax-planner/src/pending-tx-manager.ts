@@ -77,6 +77,7 @@ type LookBackWatchOpts = {
   publishTimeMs: number;
   timeoutMs: number;
   signal?: AbortSignal;
+  skipSuccessPath?: boolean;
 };
 type WatchOpts = LiveWatchOpts | LookBackWatchOpts;
 
@@ -298,6 +299,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
         signal: abortController.signal,
         kvStore: ctx.kvStore,
         makeAbortController: ctx.makeAbortController,
+        skipSuccessPath: opts.skipSuccessPath,
       });
 
       // Determine which result to use based on what completed successfully
@@ -499,6 +501,8 @@ export type HandlePendingTxOpts = {
   txTimestampMs?: number;
   signal?: AbortSignal;
   pendingTxAbortControllers: Map<TxId, AbortController>;
+  /** Skip the success event scan in GMP lookback (test only). */
+  skipSuccessPath?: boolean;
 } & EvmContext;
 
 /**
@@ -521,6 +525,7 @@ export const handlePendingTx = async (
     timeoutMs = TX_TIMEOUT_MS,
     txTimestampMs,
     signal,
+    skipSuccessPath,
     ...evmCtx
   }: HandlePendingTxOpts,
 ) => {
@@ -549,6 +554,7 @@ export const handlePendingTx = async (
       await monitor.watch(evmCtx, tx, log, {
         mode: 'lookback',
         publishTimeMs: txTimestampMs,
+        skipSuccessPath,
         ...watchOpts,
       });
     } else {
