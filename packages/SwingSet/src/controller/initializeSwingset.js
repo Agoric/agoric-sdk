@@ -2,7 +2,6 @@ import { deepCopyJsonable, makeTracer } from '@agoric/internal';
 import { mustMatch } from '@agoric/store';
 import bundleSource from '@endo/bundle-source';
 import { assert, Fail } from '@endo/errors';
-import { provideBundleCache } from '../../tools/bundleTool.js';
 import { kdebugEnable } from '../lib/kdebug.js';
 import { insistStorageAPI } from '../lib/storageAPI.js';
 import { ManagerType } from '../typeGuards.js';
@@ -23,6 +22,13 @@ import { initializeKernel } from './initializeKernel.js';
  */
 /**
  * @typedef {(bundleSpecPath: string) => EndoZipBase64Bundle} ReadBundleSpecPower
+ */
+/**
+ * @typedef {(sourceSpec: string, options: {
+ *   dev?: boolean,
+ *   format?: string,
+ *   byteLimit?: number,
+ * }) => Promise<EndoZipBase64Bundle>} BundleFromSourceSpecPower
  */
 
 const trace = makeTracer('IniSwi', false);
@@ -126,37 +132,28 @@ function sortObjectProperties(obj, firsts = []) {
 /**
  * @typedef {{
  *   env?: Record<string, string | undefined>,
- *   bundleHandler?: BundleHandler,
  *   readBundleSpec?: ReadBundleSpecPower,
+ *   bundleFromSourceSpec?: BundleFromSourceSpecPower,
+ *   bundleHandler?: BundleHandler,
  * }} InitializeSwingsetRuntimeOptions
  */
 
 /**
+ * Build the kernel-facing config object with deterministic bundle IDs.
+ *
  * @param {SwingSetConfig} config
  * @param {unknown} bootstrapArgs
- * @param {SwingStoreKernelStorage} kernelStorage
  * @param {InitializationOptions} initializationOptions
  * @param {InitializeSwingsetRuntimeOptions} runtimeOptions
- * @returns {Promise<string | undefined>} KPID of the bootstrap message result promise
+ * @returns {Promise<SwingSetKernelConfig>}
  */
-export async function initializeSwingset(
+export async function buildSwingsetKernelConfig(
   config,
   bootstrapArgs,
-  kernelStorage,
   initializationOptions = {},
   runtimeOptions = {},
 ) {
-  const kvStore = kernelStorage.kvStore;
-  insistStorageAPI(kvStore);
-  !swingsetIsInitialized(kernelStorage) ||
-    Fail`kernel store already initialized`;
-  const {
-    bundleHandler = makeWorkerBundleHandler(
-      kernelStorage.bundleStore,
-      makeXsnapBundleData(),
-    ),
-    readBundleSpec,
-  } = runtimeOptions;
+  const { readBundleSpec, bundleFromSourceSpec } = runtimeOptions;
 
   // copy config so we can safely mess with it even if it's shared or hardened
   config = deepCopyJsonable(config);
@@ -266,21 +263,6 @@ export async function initializeSwingset(
     };
   }
 
-  const bundleCache = await (config.bundleCachePath
-    ? provideBundleCache(
-        config.bundleCachePath,
-        {
-          dev: config.includeDevDependencies,
-          format: config.bundleFormat,
-          // Disable bundle size limits for kernel-generated bundles which may
-          // be large, but do not travel through RPC and we still want to be
-          // legible.
-          byteLimit: Infinity,
-        },
-        s => import(s),
-      )
-    : null);
-
   /**
    * The host application gives us
    * config.[vats|devices].NAME.[bundle|bundleSpec|sourceSpec|bundleName] .
@@ -315,16 +297,17 @@ export async function initializeSwingset(
         Fail`runtimeOptions.readBundleSpec is required for bundleSpec`;
       return readBundleSpecFile(desc.bundleSpec);
     } else if ('sourceSpec' in desc) {
-      if (bundleCache) {
-        return bundleCache.load(desc.sourceSpec);
-      }
-      return bundleSource(desc.sourceSpec, {
+      const options = {
         dev: config.includeDevDependencies,
         format: config.bundleFormat,
         // Disable bundle size limits for kernel-generated bundles which may be
         // large, but do not travel through RPC and we still want to be legible.
         byteLimit: Infinity,
-      });
+      };
+      if (bundleFromSourceSpec) {
+        return bundleFromSourceSpec(desc.sourceSpec, options);
+      }
+      return bundleSource(desc.sourceSpec, options);
     } else if ('bundleName' in desc) {
       if (!nameToBundle) {
         throw Fail`cannot use .bundleName in config.bundles`;
@@ -444,9 +427,59 @@ export async function initializeSwingset(
   if (verbose) {
     kdebugEnable(true);
   }
+  return kconfig;
+}
 
-  const kopts = { bundleHandler };
-  // returns the kpid of the bootstrap() result
-  const bootKpid = await initializeKernel(kconfig, kernelStorage, kopts);
-  return bootKpid;
+/**
+ * Initialize kernel state from a pre-built kernel config.
+ *
+ * @param {SwingSetKernelConfig} kernelConfig
+ * @param {SwingStoreKernelStorage} kernelStorage
+ * @param {InitializeSwingsetRuntimeOptions} runtimeOptions
+ * @returns {Promise<string | undefined>} KPID of the bootstrap message result promise
+ */
+export async function initializeSwingsetKernel(
+  kernelConfig,
+  kernelStorage,
+  runtimeOptions = {},
+) {
+  const kvStore = kernelStorage.kvStore;
+  insistStorageAPI(kvStore);
+  !swingsetIsInitialized(kernelStorage) ||
+    Fail`kernel store already initialized`;
+
+  const {
+    bundleHandler = makeWorkerBundleHandler(
+      kernelStorage.bundleStore,
+      makeXsnapBundleData(),
+    ),
+  } = runtimeOptions;
+
+  return initializeKernel(kernelConfig, kernelStorage, { bundleHandler });
+}
+
+/**
+ * @deprecated For tests use initializeTestSwingset()
+ *
+ * @param {SwingSetConfig} config
+ * @param {unknown} bootstrapArgs
+ * @param {SwingStoreKernelStorage} kernelStorage
+ * @param {InitializationOptions} initializationOptions
+ * @param {InitializeSwingsetRuntimeOptions} runtimeOptions
+ * @returns {Promise<string | undefined>} KPID of the bootstrap message result promise
+ */
+export async function initializeSwingset(
+  config,
+  bootstrapArgs,
+  kernelStorage,
+  initializationOptions = {},
+  runtimeOptions = {},
+) {
+  const kernelConfig = await buildSwingsetKernelConfig(
+    config,
+    bootstrapArgs,
+    initializationOptions,
+    runtimeOptions,
+  );
+  return initializeSwingsetKernel(kernelConfig, kernelStorage, runtimeOptions);
 }
