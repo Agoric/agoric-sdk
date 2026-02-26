@@ -6,8 +6,9 @@
  */
 
 import { BinaryReader } from './binary.js';
-import { Any, AnyAmino } from './google/protobuf/any.js';
-import { IProtoType, TelescopeGeneratedCodec } from './types.js';
+import { Any } from './google/protobuf/any.js';
+import type { AnyAmino } from './google/protobuf/any.js';
+import type { IProtoType, TelescopeGeneratedCodec } from './types.js';
 
 export class GlobalDecoderRegistry {
   static registry: {

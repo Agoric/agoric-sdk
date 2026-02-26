@@ -1,13 +1,13 @@
 //@ts-nocheck
-import { TxRpc } from '../../../../../types.js';
-import { BinaryReader } from '../../../../../binary.js';
+import type { Rpc } from '@agoric/cosmic-proto/codegen/helpers.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import { QueryClient, createProtobufRpcClient } from '@cosmjs/stargate';
 import {
   QueryInterchainAccountRequest,
   QueryInterchainAccountResponse,
   QueryParamsRequest,
   QueryParamsResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/ibc/applications/interchain_accounts/controller/v1/query.js';
 /** Query provides defines the gRPC querier service. */
 export interface Query {
   /** InterchainAccount returns the interchain account address for a given owner address on a given connection */
@@ -18,8 +18,8 @@ export interface Query {
   params(request?: QueryParamsRequest): Promise<QueryParamsResponse>;
 }
 export class QueryClientImpl implements Query {
-  private readonly rpc: TxRpc;
-  constructor(rpc: TxRpc) {
+  private readonly rpc: Rpc;
+  constructor(rpc: Rpc) {
     this.rpc = rpc;
     this.interchainAccount = this.interchainAccount.bind(this);
     this.params = this.params.bind(this);

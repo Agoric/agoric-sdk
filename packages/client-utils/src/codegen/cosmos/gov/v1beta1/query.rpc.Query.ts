@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { TxRpc } from '../../../types.js';
-import { BinaryReader } from '../../../binary.js';
+import type { Rpc } from '@agoric/cosmic-proto/codegen/helpers.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import { QueryClient, createProtobufRpcClient } from '@cosmjs/stargate';
 import {
   QueryProposalRequest,
@@ -19,7 +19,7 @@ import {
   QueryDepositsResponse,
   QueryTallyResultRequest,
   QueryTallyResultResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/gov/v1beta1/query.js';
 /** Query defines the gRPC querier service for gov module */
 export interface Query {
   /** Proposal queries proposal details based on ProposalID. */
@@ -42,8 +42,8 @@ export interface Query {
   ): Promise<QueryTallyResultResponse>;
 }
 export class QueryClientImpl implements Query {
-  private readonly rpc: TxRpc;
-  constructor(rpc: TxRpc) {
+  private readonly rpc: Rpc;
+  constructor(rpc: Rpc) {
     this.rpc = rpc;
     this.proposal = this.proposal.bind(this);
     this.proposals = this.proposals.bind(this);

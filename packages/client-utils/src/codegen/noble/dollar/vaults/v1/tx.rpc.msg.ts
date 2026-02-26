@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { TxRpc } from '../../../../types.js';
-import { BinaryReader } from '../../../../binary.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import {
   MsgLock,
   MsgLockResponse,
@@ -8,7 +8,7 @@ import {
   MsgUnlockResponse,
   MsgSetPausedState,
   MsgSetPausedStateResponse,
-} from './tx.js';
+} from '@agoric/cosmic-proto/codegen/noble/dollar/vaults/v1/tx.js';
 export interface Msg {
   lock(request: MsgLock): Promise<MsgLockResponse>;
   unlock(request: MsgUnlock): Promise<MsgUnlockResponse>;

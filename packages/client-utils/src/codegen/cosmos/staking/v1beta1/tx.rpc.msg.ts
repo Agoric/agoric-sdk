@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { TxRpc } from '../../../types.js';
-import { BinaryReader } from '../../../binary.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import {
   MsgCreateValidator,
   MsgCreateValidatorResponse,
@@ -16,7 +16,7 @@ import {
   MsgCancelUnbondingDelegationResponse,
   MsgUpdateParams,
   MsgUpdateParamsResponse,
-} from './tx.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/staking/v1beta1/tx.js';
 /** Msg defines the staking Msg service. */
 export interface Msg {
   /** CreateValidator defines a method for creating a new validator. */

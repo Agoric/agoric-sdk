@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { TxRpc } from '../../types.js';
-import { BinaryReader } from '../../binary.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import {
   MsgLiquidStake,
   MsgLiquidStakeResponse,
@@ -46,7 +46,7 @@ import {
   MsgToggleTradeControllerResponse,
   MsgUpdateHostZoneParams,
   MsgUpdateHostZoneParamsResponse,
-} from './tx.js';
+} from '@agoric/cosmic-proto/codegen/stride/stakeibc/tx.js';
 /** Msg defines the Msg service. */
 export interface Msg {
   liquidStake(request: MsgLiquidStake): Promise<MsgLiquidStakeResponse>;

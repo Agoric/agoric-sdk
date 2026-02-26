@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { type Rpc } from '../helpers.js';
+import type { Rpc } from '@agoric/cosmic-proto/codegen/helpers.js';
 export const createRPCMsgClient = async ({ rpc }: { rpc: Rpc }) => ({
   cosmos: {
     vesting: {

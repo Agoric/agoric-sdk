@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { TxRpc } from '../../../../types.js';
-import { BinaryReader } from '../../../../binary.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import {
   MsgCreateClient,
   MsgCreateClientResponse,
@@ -16,7 +16,7 @@ import {
   MsgIBCSoftwareUpgradeResponse,
   MsgUpdateParams,
   MsgUpdateParamsResponse,
-} from './tx.js';
+} from '@agoric/cosmic-proto/codegen/ibc/core/client/v1/tx.js';
 /** Msg defines the ibc/client Msg service. */
 export interface Msg {
   /** CreateClient defines a rpc handler method for MsgCreateClient. */

@@ -1,13 +1,13 @@
 //@ts-nocheck
-import { TxRpc } from '../../../../types.js';
-import { BinaryReader } from '../../../../binary.js';
+import type { Rpc } from '@agoric/cosmic-proto/codegen/helpers.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import { QueryClient, createProtobufRpcClient } from '@cosmjs/stargate';
 import {
   QueryChecksumsRequest,
   QueryChecksumsResponse,
   QueryCodeRequest,
   QueryCodeResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/ibc/lightclients/wasm/v1/query.js';
 /** Query service for wasm module */
 export interface Query {
   /** Get all Wasm checksums */
@@ -16,8 +16,8 @@ export interface Query {
   code(request: QueryCodeRequest): Promise<QueryCodeResponse>;
 }
 export class QueryClientImpl implements Query {
-  private readonly rpc: TxRpc;
-  constructor(rpc: TxRpc) {
+  private readonly rpc: Rpc;
+  constructor(rpc: Rpc) {
     this.rpc = rpc;
     this.checksums = this.checksums.bind(this);
     this.code = this.code.bind(this);

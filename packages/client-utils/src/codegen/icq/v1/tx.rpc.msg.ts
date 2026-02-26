@@ -1,7 +1,10 @@
 //@ts-nocheck
-import { TxRpc } from '../../types.js';
-import { BinaryReader } from '../../binary.js';
-import { MsgUpdateParams, MsgUpdateParamsResponse } from './tx.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
+import {
+  MsgUpdateParams,
+  MsgUpdateParamsResponse,
+} from '@agoric/cosmic-proto/codegen/icq/v1/tx.js';
 /** Msg defines the Msg service. */
 export interface Msg {
   /**

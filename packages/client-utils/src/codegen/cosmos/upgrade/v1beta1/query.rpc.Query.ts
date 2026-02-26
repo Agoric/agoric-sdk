@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { TxRpc } from '../../../types.js';
-import { BinaryReader } from '../../../binary.js';
+import type { Rpc } from '@agoric/cosmic-proto/codegen/helpers.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import { QueryClient, createProtobufRpcClient } from '@cosmjs/stargate';
 import {
   QueryCurrentPlanRequest,
@@ -13,7 +13,7 @@ import {
   QueryModuleVersionsResponse,
   QueryAuthorityRequest,
   QueryAuthorityResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/upgrade/v1beta1/query.js';
 /** Query defines the gRPC upgrade querier service. */
 export interface Query {
   /** CurrentPlan queries the current upgrade plan. */
@@ -51,8 +51,8 @@ export interface Query {
   authority(request?: QueryAuthorityRequest): Promise<QueryAuthorityResponse>;
 }
 export class QueryClientImpl implements Query {
-  private readonly rpc: TxRpc;
-  constructor(rpc: TxRpc) {
+  private readonly rpc: Rpc;
+  constructor(rpc: Rpc) {
     this.rpc = rpc;
     this.currentPlan = this.currentPlan.bind(this);
     this.appliedPlan = this.appliedPlan.bind(this);

@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { TxRpc } from '../../types.js';
-import { BinaryReader } from '../../binary.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import {
   MsgInstallBundle,
   MsgInstallBundleResponse,
@@ -16,7 +16,7 @@ import {
   MsgProvisionResponse,
   MsgCoreEval,
   MsgCoreEvalResponse,
-} from './msgs.js';
+} from '@agoric/cosmic-proto/codegen/agoric/swingset/msgs.js';
 /** Transactions. */
 export interface Msg {
   /** Install a JavaScript sources bundle on the chain's SwingSet controller. */

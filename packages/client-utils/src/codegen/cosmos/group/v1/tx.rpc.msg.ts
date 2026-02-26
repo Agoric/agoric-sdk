@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { TxRpc } from '../../../types.js';
-import { BinaryReader } from '../../../binary.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import {
   MsgCreateGroup,
   MsgCreateGroupResponse,
@@ -30,7 +30,7 @@ import {
   MsgExecResponse,
   MsgLeaveGroup,
   MsgLeaveGroupResponse,
-} from './tx.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/group/v1/tx.js';
 /** Msg is the cosmos.group.v1 Msg service. */
 export interface Msg {
   /** CreateGroup creates a new group with an admin account address, a list of members and some optional metadata. */

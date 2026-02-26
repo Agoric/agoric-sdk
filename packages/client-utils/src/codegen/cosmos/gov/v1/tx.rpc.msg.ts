@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { TxRpc } from '../../../types.js';
-import { BinaryReader } from '../../../binary.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import {
   MsgSubmitProposal,
   MsgSubmitProposalResponse,
@@ -16,7 +16,7 @@ import {
   MsgUpdateParamsResponse,
   MsgCancelProposal,
   MsgCancelProposalResponse,
-} from './tx.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/gov/v1/tx.js';
 /** Msg defines the gov Msg service. */
 export interface Msg {
   /** SubmitProposal defines a method to create new proposal given the messages. */
