@@ -35,6 +35,7 @@ We'd like a quick spike / prototype to begin to estimate the cost and risks of a
        - [x] managed-assets update path is explicit/trusted (resolver-gated reporting path)
        - [x] sync redeem is allowed only when local liquidity is sufficient and accounting state is fresh
        - [ ] product TODO 🏭: harden/reporting trust model for managed-assets/NAV updates
+       - [ ] product TODO 🏭: add ERC-4626 slippage protections (`deposit` min-shares-out / `redeem` min-assets-out) to reduce value extraction from report manipulation windows
      - [x] define local-liquidity management approach for spike
        - [x] question: what policy controls local vault liquidity vs deployed funds?
          - [x] choose tiered policy: `max(localLiquidityFloorAssets, localLiquidityPct * totalAssets)` with hysteresis
@@ -79,6 +80,7 @@ We'd like a quick spike / prototype to begin to estimate the cost and risks of a
    - [x] define authority/ownership approach for vault control surfaces
      - [x] question: who owns `VaultFactory` and who is allowed to create vaults?
        - [x] answer: `createVault(...)` is exposed via creator facet; invoked through `ymaxControl` (creator + Agoric partner operational model)
+       - [ ] product TODO 🏭: decide and enforce production permissioning for `createVault(...)` / factory creation rights (not permissionless by default)
      - [x] question: what is the reporting authority path for managed-assets updates?
        - [x] answer: planner controls `0xASSET_REPORTER`; factory constructor stores reporter; `factory.reportManagedAssets(...)` requires `msg.sender == reporter`; factory forwards to vault; vault requires `msg.sender == factory`
      - [x] question: should managed-assets reports be delta or absolute?
@@ -92,6 +94,7 @@ We'd like a quick spike / prototype to begin to estimate the cost and risks of a
        - [ ] production guardrail candidate: tighter `maxReportAge` (e.g. `15m` or `60m`)
        - [ ] production guardrail candidate: hybrid gate (`maxReportAge` plus monotonic `reportId`/nonce check)
        - [ ] production guardrail candidate: conservative redeem caps when reports are stale-but-allowed
+     - [ ] product TODO 🏭: add liquidity-DoS mitigations for sync redeem (buffer sizing policy, pullback SLOs, and degraded-mode redemption path)
 
  - [x] Define spike success criteria (feasibility, estimate quality, demo expectations)
    - [x] feasibility criterion: either reach working end-to-end flow or identify concrete infeasibility point(s) with reasons
