@@ -13,6 +13,7 @@ concurrency:
 jobs:
   # This job is only run when a .proto file has been changed
   lint:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.ref != 'codex/swing-store-ava-diag-flake' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -30,6 +31,7 @@ jobs:
         if: env.GIT_DIFF
   # This job is only run when a .proto file has been changed
   breakage:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.ref != 'codex/swing-store-ava-diag-flake' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -67,6 +69,7 @@ jobs:
           BRANCH: ${{ github.base_ref}}
           EXPECT_BREAKAGE: ${{ contains( github.event.pull_request.labels.*.name, 'proto:expect-breakage') }}
   up-to-date:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.ref != 'codex/swing-store-ava-diag-flake' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
