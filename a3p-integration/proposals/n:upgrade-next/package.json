@@ -17,12 +17,17 @@
     "@agoric/internal": "dev",
     "@agoric/synthetic-chain": "^0.6.1",
     "@agoric/zoe": "dev",
+    "@cosmjs/encoding": "^0.36.0",
+    "@cosmjs/proto-signing": "^0.36.0",
+    "@cosmjs/stargate": "^0.36.0",
+    "@endo/bundle-source": "^4.1.2",
     "@endo/errors": "^1.2.13",
     "@endo/init": "^1.1.12",
     "@endo/marshal": "^1.8.0",
     "agoric": "dev",
-    "ava": "^5.3.1",
-    "execa": "9.1.0"
+    "ava": "^6.4.1",
+    "execa": "9.1.0",
+    "ts-blank-space": "^0.6.2"
   },
   "resolutions": {
     "@agoric/access-token": "portal:../../agoric-sdk/packages/access-token",
@@ -64,8 +69,16 @@
   "ava": {
     "concurrency": 1,
     "timeout": "2m",
+    "extensions": {
+      "js": true,
+      "ts": "module"
+    },
     "files": [
-      "!submission"
+      "test/**/*.test.*"
+    ],
+    "nodeArguments": [
+      "--loader=ts-blank-space/register",
+      "--no-warnings"
     ]
   },
   "scripts": {

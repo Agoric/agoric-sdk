@@ -2,7 +2,7 @@
 // @ts-check
 
 /* eslint-env node */
-const { exec, execSync, spawnSync } = require('child_process');
+const { execSync, spawnSync } = require('child_process');
 const fsp = require('fs/promises');
 const path = require('path');
 const assert = require('node:assert/strict');
@@ -22,21 +22,14 @@ rimraf(outPath);
  */
 function fixTypeImport(directory, gnuSed) {
   const fullPath = path.resolve(directory);
+  const quotedPath = JSON.stringify(fullPath);
   const command = `
-    find ${fullPath} -type f -exec ${gnuSed ? 'sed -i' : 'sed -i ""'} \
+    find ${quotedPath} -type f -exec ${gnuSed ? 'sed -i' : 'sed -i ""'} \
     -e 's/import { JsonSafe/import {type JsonSafe/g' \
     -e 's/\\([{,]\\) \\([[:alnum:]_]*SDKType\\)/\\1 type \\2/g' {} +
   `;
 
-  exec(command, (error, stdout, stderr) => {
-    if (error) {
-      console.error(`Error during replacement: ${error.message}`);
-      return;
-    }
-    if (stderr) {
-      console.error(`Standard error: ${stderr}`);
-    }
-  });
+  execSync(command, { stdio: 'inherit' });
 }
 
 /**
@@ -241,15 +234,23 @@ builder
     fixTypeImport('./src/codegen', gnuSed);
     console.log('🔧 type keyword added');
 
-    // top-level to get the root prettier config
+    const repoRoot = path.join(__dirname, '..', '..', '..');
+    const srcFromRoot = path.relative(
+      repoRoot,
+      path.join(__dirname, '..', 'src'),
+    );
+    const codegenFromRoot = path.join(srcFromRoot, 'codegen');
     const prettierResult = spawnSync(
       'yarn',
-      ['run', '--top-level', 'prettier', '--write', 'src'],
+      ['run', '-T', 'prettier', '--write', codegenFromRoot],
       {
-        cwd: path.join(__dirname, '..'),
+        cwd: repoRoot,
         stdio: 'inherit',
       },
     );
+    if (prettierResult.error) {
+      throw prettierResult.error;
+    }
     assert.equal(prettierResult.status, 0);
     console.log('💅 code formatted by Prettier');
 

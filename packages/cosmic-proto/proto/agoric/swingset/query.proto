@@ -23,6 +23,11 @@ service Query {
   rpc Mailbox(QueryMailboxRequest) returns (QueryMailboxResponse) {
     option (google.api.http).get = "/agoric/swingset/mailbox/{peer}";
   }
+
+  // Return the state of a pending installation.
+  rpc ChunkedArtifactStatus(QueryChunkedArtifactStatusRequest) returns (QueryChunkedArtifactStatusResponse) {
+    option (google.api.http).get = "/agoric/swingset/chunked-artifact-status/{chunked_artifact_id}";
+  }
 }
 
 // QueryParamsRequest is the request type for the Query/Params RPC method.
@@ -60,4 +65,25 @@ message QueryMailboxRequest {
 // QueryMailboxResponse is the mailbox response.
 message QueryMailboxResponse {
   string value = 1 [(gogoproto.jsontag) = "value", (gogoproto.moretags) = "yaml:\"value\""];
+}
+
+// QueryChunkedArtifactStatusRequest is the request type for the Query/ChunkedArtifact RPC method.
+message QueryChunkedArtifactStatusRequest {
+  uint64 chunked_artifact_id = 1
+      [(gogoproto.jsontag) = "chunkedArtifactId", (gogoproto.moretags) = "yaml:\"chunkedArtifactId\""];
+}
+
+// QueryChunkedArtifactStatusResponse is the response type for the Query/ChunkedArtifact RPC method.
+message QueryChunkedArtifactStatusResponse {
+  uint64 chunked_artifact_id = 1
+      [(gogoproto.jsontag) = "chunkedArtifactId", (gogoproto.moretags) = "yaml:\"chunkedArtifactId\""];
+
+  ChunkedArtifact chunked_artifact = 2
+      [(gogoproto.jsontag) = "chunkedArtifact", (gogoproto.moretags) = "yaml:\"chunkedArtifact\""];
+
+  // Start time in UNIX epoch seconds.
+  int64 start_time_unix = 3 [(gogoproto.jsontag) = "startTimeUnix", (gogoproto.moretags) = "yaml:\"startTimeUnix\""];
+
+  int64 start_block_height = 4
+      [(gogoproto.jsontag) = "startBlockHeight", (gogoproto.moretags) = "yaml:\"startBlockHeight\""];
 }

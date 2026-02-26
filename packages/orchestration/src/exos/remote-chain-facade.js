@@ -159,12 +159,16 @@ const prepareRemoteChainFacadeKit = (
          */
         query(msgs) {
           return asVow(() => {
+            /**
+             * @typedef {{
+             *   remoteChainInfo: CosmosChainInfo;
+             *   connectionInfo?: IBCConnectionInfo;
+             * }} QueryState
+             */
             const {
-              /** @type {CosmosChainInfo} */
               remoteChainInfo: { icqEnabled, chainId },
-              /** @type {IBCConnectionInfo | undefined} */
               connectionInfo,
-            } = /** @type {any} */ (this.state);
+            } = /** @type {QueryState} */ (this.state);
 
             if (!icqEnabled) {
               throw Fail`Queries not available for chain ${q(chainId)}`;

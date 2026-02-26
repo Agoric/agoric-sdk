@@ -5,7 +5,8 @@ import { X, Fail, makeError } from '@endo/errors';
 import { Nat, isNat } from '@endo/nat';
 
 /**
- * @import {ParamsSDKType} from '@agoric/cosmic-proto/swingset/swingset.js';
+ * @import {ParamsSDKType} from '@agoric/cosmic-proto/swingset/swingset.js'
+ * @import {JsonSafe} from '@agoric/cosmic-proto/json-safe'
  */
 
 /**
@@ -60,10 +61,9 @@ export const encodeQueueSizes = queueSizes =>
     isNat(size) || Fail`Size ${size} is not a positive integer`;
     return { key, size };
   });
-
 /**
  * Map the SwingSet parameters to a deterministic data structure.
- * @param {ParamsSDKType} params
+ * @param {JsonSafe<ParamsSDKType>} params
  */
 export const parseParams = params => {
   const {

@@ -1,7 +1,11 @@
 package keeper
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha512"
+	"encoding/hex"
+	"fmt"
 
 	sdkioerrors "cosmossdk.io/errors"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -203,11 +207,94 @@ type installBundleAction struct {
 	*types.MsgInstallBundle
 }
 
+func (keeper msgServer) validateMsgInstallBundle(goCtx context.Context, msg *types.MsgInstallBundle) error {
+	if err := msg.ValidateBasic(); err != nil {
+		return err
+	}
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	params := keeper.GetParams(ctx)
+	if msg.UncompressedSize >= params.BundleUncompressedSizeLimitBytes {
+		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Uncompressed size out of range")
+	}
+	return keeper.validateChunkedArtifact(goCtx, msg.ChunkedArtifact)
+}
+
+func (keeper msgServer) validateChunkedArtifact(goCtx context.Context, msg *types.ChunkedArtifact) error {
+	if msg == nil {
+		return nil
+	}
+	if err := msg.ValidateBasic(); err != nil {
+		return err
+	}
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	params := keeper.GetParams(ctx)
+	if msg.SizeBytes == 0 || int64(msg.SizeBytes) >= params.BundleUncompressedSizeLimitBytes {
+		return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Bundle size out of range")
+	}
+	chunkIndexLimit := types.MaxArtifactChunksCount(params.BundleUncompressedSizeLimitBytes, params.ChunkSizeLimitBytes)
+	if int64(len(msg.Chunks)) > chunkIndexLimit {
+		return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Number of bundle chunks must be less than %d", chunkIndexLimit)
+	}
+	for i, chunk := range msg.Chunks {
+		if chunk.SizeBytes == 0 || int64(chunk.SizeBytes) > params.ChunkSizeLimitBytes {
+			return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Chunk %d size out of range", i)
+		}
+	}
+	return nil
+}
+
+func (keeper msgServer) validateMsgSendChunk(goCtx context.Context, msg *types.MsgSendChunk) error {
+	if err := msg.ValidateBasic(); err != nil {
+		return err
+	}
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	params := keeper.GetParams(ctx)
+	if int64(len(msg.ChunkData)) > params.ChunkSizeLimitBytes {
+		return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Chunk size must be at most %d bytes", params.ChunkSizeLimitBytes)
+	}
+	chunkIndexLimit := types.MaxArtifactChunksCount(params.BundleUncompressedSizeLimitBytes, params.ChunkSizeLimitBytes)
+	if int64(msg.ChunkIndex) >= chunkIndexLimit {
+		return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Chunk index must be less than %d", chunkIndexLimit)
+	}
+	return nil
+}
+
 func (keeper msgServer) InstallBundle(goCtx context.Context, msg *types.MsgInstallBundle) (*types.MsgInstallBundleResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	if err := msg.ValidateBasic(); err != nil {
+	if err := keeper.validateMsgInstallBundle(goCtx, msg); err != nil {
 		return nil, sdkioerrors.Wrap(sdkerrors.ErrInvalidRequest, err.Error())
 	}
+
+	if msg.ChunkedArtifact == nil || len(msg.ChunkedArtifact.Chunks) == 0 {
+		return keeper.InstallFinishedBundle(goCtx, msg)
+	}
+
+	// Mark all the chunks as in-flight.
+	ca := *msg.ChunkedArtifact
+	chunks := make([]*types.ChunkInfo, len(ca.Chunks))
+	for i, chunk := range ca.Chunks {
+		if chunk == nil {
+			return nil, fmt.Errorf("chunk %d is nil", i)
+		}
+		ci := *chunk
+		if ci.State != types.ChunkState_CHUNK_STATE_UNSPECIFIED {
+			return nil, fmt.Errorf("chunk %d state must be unspecified", i)
+		}
+		ci.State = types.ChunkState_CHUNK_STATE_IN_FLIGHT
+		chunks[i] = &ci
+	}
+	ca.Chunks = chunks
+	msg.ChunkedArtifact = &ca
+
+	chunkedArtifactId, err := keeper.AddPendingBundleInstall(ctx, msg)
+	if err != nil {
+		return nil, err
+	}
+	return &types.MsgInstallBundleResponse{ChunkedArtifactId: chunkedArtifactId}, nil
+}
+
+func (keeper msgServer) InstallFinishedBundle(goCtx context.Context, msg *types.MsgInstallBundle) (*types.MsgInstallBundleResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	if err := msg.Uncompress(); err != nil {
 		return nil, err
@@ -253,4 +340,120 @@ func (k msgServer) CoreEval(goCtx context.Context, msg *types.MsgCoreEval) (*typ
 	}
 
 	return &types.MsgCoreEvalResponse{}, nil
+}
+
+func (keeper msgServer) SendChunk(goCtx context.Context, msg *types.MsgSendChunk) (*types.MsgSendChunkResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	if err := keeper.validateMsgSendChunk(goCtx, msg); err != nil {
+		return nil, err
+	}
+
+	inst := keeper.GetPendingBundleInstall(ctx, msg.ChunkedArtifactId)
+	if inst == nil {
+		return nil, fmt.Errorf("no upload in progress for chunked artifact identifier %d", msg.ChunkedArtifactId)
+	}
+
+	ca := inst.ChunkedArtifact
+
+	if msg.ChunkIndex >= uint64(len(ca.Chunks)) {
+		return nil, fmt.Errorf("chunk index %d out of range for chunked artifact identifier %d", msg.ChunkIndex, msg.ChunkedArtifactId)
+	}
+
+	if ca.Chunks[msg.ChunkIndex].State != types.ChunkState_CHUNK_STATE_IN_FLIGHT {
+		return nil, fmt.Errorf("chunk %d must be in flight for chunked artifact id %d", msg.ChunkIndex, msg.ChunkedArtifactId)
+	}
+
+	// Verify the chunk data.
+	ci := ca.Chunks[msg.ChunkIndex]
+	if ci.SizeBytes != uint64(len(msg.ChunkData)) {
+		return nil, fmt.Errorf("chunk %d size mismatch for chunked artifact id %d", msg.ChunkIndex, msg.ChunkedArtifactId)
+	}
+
+	expectedSha512, err := hex.DecodeString(ci.Sha512)
+	if err != nil {
+		return nil, fmt.Errorf("chunk %d cannot decode hash %s: %s", msg.ChunkIndex, ci.Sha512, err)
+	}
+
+	actualSha512 := sha512.Sum512(msg.ChunkData)
+	if len(expectedSha512) != sha512.Size {
+		return nil, fmt.Errorf(
+			"chunk %d hash length mismatch; expected %d, got %d",
+			msg.ChunkIndex,
+			sha512.Size,
+			len(expectedSha512),
+		)
+	}
+	if !bytes.Equal(actualSha512[:], expectedSha512) {
+		return nil, fmt.Errorf("chunk %d hash mismatch; expected %x, got %x", msg.ChunkIndex, expectedSha512, actualSha512)
+	}
+
+	// Data is valid, so store it.
+	keeper.SetPendingChunkData(ctx, msg.ChunkedArtifactId, msg.ChunkIndex, msg.ChunkData)
+
+	// Mark the chunk as received, and store the pending installation.
+	ci.State = types.ChunkState_CHUNK_STATE_RECEIVED
+	if err := keeper.SetPendingBundleInstall(ctx, msg.ChunkedArtifactId, inst); err != nil {
+		return nil, err
+	}
+
+	err = keeper.MaybeFinalizeBundle(ctx, msg.ChunkedArtifactId)
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.MsgSendChunkResponse{
+		ChunkedArtifactId: msg.ChunkedArtifactId,
+		Chunk:             ci,
+	}, err
+}
+
+func (keeper msgServer) MaybeFinalizeBundle(ctx sdk.Context, chunkedArtifactId uint64) error {
+	msg := keeper.GetPendingBundleInstall(ctx, chunkedArtifactId)
+	if msg == nil {
+		return nil
+	}
+
+	// If any chunks are not received, then bail (without error).
+	ca := msg.ChunkedArtifact
+	var totalSize uint64
+	for _, chunk := range ca.Chunks {
+		if chunk.State != types.ChunkState_CHUNK_STATE_RECEIVED {
+			return nil
+		}
+		totalSize += chunk.SizeBytes
+	}
+
+	chunkData := make([]byte, 0, totalSize)
+	for i := range ca.Chunks {
+		bz := keeper.GetPendingChunkData(ctx, chunkedArtifactId, uint64(i))
+		chunkData = append(chunkData, bz...)
+	}
+
+	// Verify the hash of the concatenated chunks.
+	actualSha512 := sha512.Sum512(chunkData)
+	expectedSha512, err := hex.DecodeString(ca.Sha512)
+	if err != nil {
+		return fmt.Errorf("cannot decode hash %s: %s", ca.Sha512, err)
+	}
+	if !bytes.Equal(expectedSha512, actualSha512[:]) {
+		return fmt.Errorf("bundle hash mismatch; expected %x, got %x", expectedSha512, actualSha512)
+	}
+
+	// Is it compressed or not?
+	if msg.UncompressedSize > 0 {
+		msg.CompressedBundle = chunkData
+	} else {
+		msg.Bundle = string(chunkData)
+	}
+
+	// Clean up the pending installation state.
+	msg.ChunkedArtifact = nil
+	if err := keeper.SetPendingBundleInstall(ctx, chunkedArtifactId, nil); err != nil {
+		return err
+	}
+
+	// Install the bundle now that all the chunks are processed.
+	_, err = keeper.InstallFinishedBundle(ctx, msg)
+	return err
 }
