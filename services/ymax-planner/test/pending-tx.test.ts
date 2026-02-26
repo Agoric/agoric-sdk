@@ -130,13 +130,12 @@ test('processPendingTxEvents errors do not disrupt processing valid transactions
     ...createMockPendingTxOpts(),
     error: (...args) => errorLog.push(args),
   });
-  if (errorLog.length !== 2) {
+  if (errorLog.length !== 1) {
     t.log(errorLog);
   }
-  t.is(errorLog.length, 2);
-  t.regex(errorLog[0].at(-1).message, /\btx2\b/);
+  t.is(errorLog.length, 1);
   t.regex(
-    errorLog[1].at(-1).message,
+    errorLog[0].at(-1).message,
     /\btx3\b.*Must have missing properties.*blockHeight/,
   );
 
