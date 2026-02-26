@@ -1,7 +1,13 @@
 /* eslint-env node */
 import fs from 'fs';
-import { initializeSwingset } from '../src/controller/initializeSwingset.js';
-import { parseBundleSpec } from '../src/controller/bundle-spec.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { makeReadJsonFile } from '@agoric/internal/src/node/read-json.js';
+import { provideBundleCache } from './bundleTool.js';
+import {
+  buildSwingsetKernelConfig,
+  initializeSwingsetKernel,
+} from '../src/controller/initializeSwingset.js';
 
 /**
  * @import {SwingSetConfig} from '../src/types-external.js';
@@ -10,11 +16,11 @@ import { parseBundleSpec } from '../src/controller/bundle-spec.js';
  * @import {InitializeSwingsetRuntimeOptions} from '../src/controller/initializeSwingset.js';
  */
 
-/**
- * @param {string} bundleSpecPath
- */
-const readBundleSpecFile = bundleSpecPath =>
-  parseBundleSpec(path => fs.readFileSync(path, 'utf-8'), bundleSpecPath);
+const readBundleSpecFile = makeReadJsonFile(fs.promises);
+
+const sharedBundleCachePath = fileURLToPath(
+  new URL('../../../bundles', import.meta.url),
+);
 
 /**
  * Test-only wrapper that supplies ambient-powered bundleSpec loading.
@@ -31,14 +37,31 @@ export const initializeTestSwingset = async (
   kernelStorage,
   initializationOptions = {},
   runtimeOptions = {},
-) =>
-  initializeSwingset(
+) => {
+  const {
+    bundleCachePath = sharedBundleCachePath,
+    includeDevDependencies,
+    bundleFormat,
+  } = config;
+  const cache = await provideBundleCache(
+    path.resolve(bundleCachePath),
+    {
+      dev: includeDevDependencies,
+      format: bundleFormat,
+      byteLimit: Infinity,
+    },
+    spec => import(spec),
+  );
+
+  const kernelConfig = await buildSwingsetKernelConfig(
     config,
     bootstrapArgs,
-    kernelStorage,
     initializationOptions,
     {
       ...runtimeOptions,
-      readBundleSpec: runtimeOptions.readBundleSpec || readBundleSpecFile,
+      bundleFromPath: runtimeOptions.bundleFromPath || readBundleSpecFile,
+      bundleFromSourceSpec: (sourceSpec, _options) => cache.load(sourceSpec),
     },
   );
+  return initializeSwingsetKernel(kernelConfig, kernelStorage, runtimeOptions);
+};

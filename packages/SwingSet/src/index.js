@@ -4,6 +4,8 @@ export {
 } from './controller/controller.js';
 export {
   swingsetIsInitialized,
+  buildSwingsetKernelConfig,
+  initializeSwingsetKernel,
   initializeSwingset,
   buildKernelBundles,
 } from './controller/initializeSwingset.js';
