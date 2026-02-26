@@ -137,6 +137,18 @@ We'd like a quick spike / prototype to begin to estimate the cost and risks of a
    - [x] prototype directly in `agoric-labs/ymax0-ui0` to leverage fast PR deploy previews
    - [ ] EVM contract spike: implement/fork contract changes with unit tests up front before any deploy/integration steps
      - [ ] planned next (not now): encode privileged extension and accounting invariants as Solidity unit tests first
-   - [ ] stretch goal 🚀: add periodic timer-driven rebalance in code path (orthogonal to core demo)
+   - [x] out of scope: periodic timer-driven rebalance in code path (orthogonal to core demo)
    - [ ] deferred design-to-code task (not now): derive a minimal simulation scaffold from sequence diagrams (e.g., `makeUI(0xVAU1)`, `makeVault()`, `deposit(amount)`, `rebalance()`, `redeem(shares)`)
    - [ ] brand new prototype UI?
+
+## T-Shirt Estimates
+
+- [ ] `agoric-to-axelar-local` EVM vault/factory contract changes (deposit-triggered excess transfer, managed-assets accounting, factory-mediated reporting): `L`
+  - [ ] `agoric-to-axelar-local` EVM vault changes: deposit-triggered excess transfer to `ownerPortfolioAccount` + `managedAssets` accounting updates: `M`
+  - [ ] `agoric-to-axelar-local` EVM factory/reporting changes: `assetReporter` constructor arg and `reportManagedAssets` forwarder (`reporter -> factory -> vault` guards): `M`
+  - [ ] `agoric-to-axelar-local` EVM contract config/plumbing: constructor params, role wiring, and event surface updates for demo integration: `M`
+- [ ] `agoric-to-axelar-local` Solidity/Jest unit tests for invariants and authority guards: `M`
+- [ ] `agoric-sdk/packages/portfolio-contract` APY seam + planner/contract integration updates (plan-only boundary): `M`
+- [ ] `agoric-sdk/packages/portfolio-contract` wiring for creator-facet `createVault(...)` via `ymaxControl`: `M`
+- [ ] `ymax0-ui0` end-user demo flow updates (deposit/withdraw state, vault URL pathing, basic status): `M`
+- [ ] Deployment/config wiring across testnets (factory address, reporter address, env/config propagation): `M`
