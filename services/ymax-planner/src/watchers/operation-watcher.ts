@@ -33,13 +33,18 @@ import {
 /**
  * The Keccak256 hash (event signature) of the PortfolioRouter `OperationResult` event.
  *
- * Event signature: OperationResult(string indexed id, bool success, bytes reason)
+ * Event signature:
+ *   OperationResult(string indexed id, string indexed sourceAddressIndex,
+ *     string sourceAddress, address indexed allegedRemoteAccount,
+ *     bool success, bytes reason)
  *
  * This event is emitted by the PortfolioRouter contract after processing each
  * RouterInstruction. It indicates whether the instruction (which may include
  * deposit, account provision, and/or multicall operations) succeeded or failed.
  */
-const OPERATION_RESULT_SIGNATURE = id('OperationResult(string,bool,bytes)');
+const OPERATION_RESULT_SIGNATURE = id(
+  'OperationResult(string,string,string,address,bool,bytes)',
+);
 
 type OperationResultWatch = {
   routerAddress: `0x${string}`;
@@ -49,29 +54,50 @@ type OperationResultWatch = {
   kvStore: KVStore;
   txId: `tx${number}`;
   payloadHash: string;
+  /** The LCA address used as padding template for the txId. */
+  sourceAddress: string;
+};
+
+/**
+ * Pad a txId with null bytes to match the length of the sourceAddress.
+ */
+export const padTxId = (txId: string, sourceAddress: string): string => {
+  const paddingLength = sourceAddress.length - txId.length;
+  assert(paddingLength > 0, 'sourceAddress must be longer than txId');
+  return txId + '\0'.repeat(paddingLength);
 };
 
 /**
  * Parse the OperationResult event log.
  *
- * Event: OperationResult(string indexed id, bool success, bytes reason)
+ * Event: OperationResult(
+ *   string indexed id, string indexed sourceAddressIndex,
+ *   string sourceAddress, address indexed allegedRemoteAccount,
+ *   bool success, bytes reason
+ * )
  * - topics[0]: event signature
- * - topics[1]: keccak256(id) (indexed string is stored as hash)
- * - data: abi.encode(bool success, bytes reason)
+ * - topics[1]: keccak256(id)                        — indexed string hash
+ * - topics[2]: keccak256(sourceAddressIndex)         — indexed string hash
+ * - topics[3]: allegedRemoteAccount                  — indexed address
+ * - data: abi.encode(string, bool, bytes)
  */
 const parseOperationResultLog = (
   log: Log,
   abiCoder: AbiCoder = new AbiCoder(),
-): { idHash: string; success: boolean } => {
-  if (!log.topics || log.topics.length < 2 || !log.data) {
+): { idHash: string; sourceAddress: string; success: boolean } => {
+  if (!log.topics || log.topics.length < 4 || !log.data) {
     throw new Error('Malformed OperationResult log');
   }
 
   const idHash = log.topics[1];
-  const [success] = abiCoder.decode(['bool', 'bytes'], log.data);
+  const [sourceAddress, success] = abiCoder.decode(
+    ['string', 'bool', 'bytes'],
+    log.data,
+  );
 
   return {
     idHash,
+    sourceAddress,
     success,
   };
 };
@@ -87,6 +113,7 @@ export const watchOperationResult = ({
   provider,
   chainId,
   txId,
+  sourceAddress,
   timeoutMs = TX_TIMEOUT_MS,
   log = () => {},
   setTimeout = globalThis.setTimeout,
@@ -103,8 +130,9 @@ export const watchOperationResult = ({
       return;
     }
 
-    // For indexed strings, Solidity stores keccak256(string) in the topic
-    const expectedIdHash = id(txId);
+    // The txId must be padded to match sourceAddress length
+    const paddedTxId = padTxId(txId, sourceAddress);
+    const expectedIdHash = id(paddedTxId);
     const filter: Filter = {
       address: routerAddress,
       topics: [OPERATION_RESULT_SIGNATURE, expectedIdHash],
@@ -306,6 +334,7 @@ export const lookBackOperationResult = async ({
   routerAddress,
   provider,
   txId,
+  sourceAddress,
   publishTimeMs,
   chainId,
   log = () => {},
@@ -334,8 +363,10 @@ export const lookBackOperationResult = async ({
     const failedTxLowerBound =
       getTxBlockLowerBound(kvStore, txId, FAILED_TX_SCOPE) || fromBlock;
 
-    // For indexed strings, Solidity stores keccak256(string) in the topic
-    const expectedIdHash = id(txId);
+    // For indexed strings, Solidity stores keccak256(string) in the topic.
+    // The txId must be padded to match sourceAddress length (see padTxId).
+    const paddedTxId = padTxId(txId, sourceAddress);
+    const expectedIdHash = id(paddedTxId);
 
     log(
       `Searching blocks ${savedFromBlock} → ${toBlock} for OperationResult with id ${txId} (hash: ${expectedIdHash})`,

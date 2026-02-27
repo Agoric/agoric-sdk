@@ -1,5 +1,13 @@
 import test from 'ava';
-import { AbiCoder, Interface, id, hexlify, randomBytes, keccak256 } from 'ethers';
+import {
+  AbiCoder,
+  Interface,
+  id,
+  hexlify,
+  randomBytes,
+  keccak256,
+  zeroPadValue,
+} from 'ethers';
 import type { Log } from 'ethers';
 import { makeKVStoreFromMap } from '@agoric/internal/src/kv-store.js';
 import { createMockProvider } from './mocks.ts';
@@ -7,9 +15,14 @@ import { prepareAbortController } from '../src/support.ts';
 import {
   watchOperationResult,
   lookBackOperationResult,
+  padTxId,
 } from '../src/watchers/operation-watcher.ts';
 
-const OPERATION_RESULT_SIGNATURE = id('OperationResult(string,bool,bytes)');
+const OPERATION_RESULT_SIGNATURE = id(
+  'OperationResult(string,string,string,address,bool,bytes)',
+);
+
+const MOCK_SOURCE_ADDRESS = 'agoric1testaddr0123456789abcdefghijklmno';
 
 /**
  * Encode Axelar execute() calldata with a given payload, returning the
@@ -31,14 +44,20 @@ const encodeExecuteCalldata = (payload: string) => {
 /**
  * Create a mock OperationResult event log.
  *
- * Event: OperationResult(string indexed id, bool success, bytes reason)
+ * Event: OperationResult(
+ *   string indexed id, string indexed sourceAddressIndex,
+ *   string sourceAddress, address indexed allegedRemoteAccount,
+ *   bool success, bytes reason
+ * )
  * - topics[0]: event signature
- * - topics[1]: keccak256(id) (indexed string stored as hash)
- * - data: abi.encode(bool success, bytes reason)
+ * - topics[1]: keccak256(paddedId)                  — indexed string hash
+ * - topics[2]: keccak256(sourceAddressIndex)         — indexed string hash
+ * - topics[3]: allegedRemoteAccount                  — indexed address
+ * - data: abi.encode(string, bool, bytes)
  */
 const createMockOperationResultLog = (
   routerAddress: string,
-  expectedId: string,
+  paddedId: string,
   success: boolean,
   reason: string = '',
   blockNumber: number = 1000,
@@ -48,13 +67,23 @@ const createMockOperationResultLog = (
   'address' | 'topics' | 'data' | 'blockNumber' | 'transactionHash'
 > => {
   const abiCoder = new AbiCoder();
-  const expectedIdHash = id(expectedId);
+  const expectedIdHash = id(paddedId);
+  const sourceAddressHash = id(MOCK_SOURCE_ADDRESS);
+  const mockAccountAddress = zeroPadValue('0x01', 32);
   const reasonBytes = reason ? Buffer.from(reason, 'utf8') : new Uint8Array(0);
-  const data = abiCoder.encode(['bool', 'bytes'], [success, reasonBytes]);
+  const data = abiCoder.encode(
+    ['string', 'bool', 'bytes'],
+    [MOCK_SOURCE_ADDRESS, success, reasonBytes],
+  );
 
   return {
     address: routerAddress,
-    topics: [OPERATION_RESULT_SIGNATURE, expectedIdHash],
+    topics: [
+      OPERATION_RESULT_SIGNATURE,
+      expectedIdHash,
+      sourceAddressHash,
+      mockAccountAddress,
+    ],
     data,
     blockNumber,
     transactionHash,
@@ -71,9 +100,9 @@ const makeAbortController = prepareAbortController({
 
 test('watchOperationResult detects successful OperationResult event (live mode)', async t => {
   const routerAddress = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
-  const expectedId = 'tx1';
-  const chainId = 'eip155:1';
   const txId = 'tx1' as `tx${number}`;
+  const paddedId = padTxId(txId, MOCK_SOURCE_ADDRESS);
+  const chainId = 'eip155:1';
   const provider = createMockProvider(1000);
   const kvStore = makeKVStoreFromMap(new Map());
 
@@ -84,14 +113,14 @@ test('watchOperationResult detects successful OperationResult event (live mode)'
   setTimeout(() => {
     const mockLog = createMockOperationResultLog(
       routerAddress,
-      expectedId,
+      paddedId,
       true, // success
       '',
       18500000,
       '0x123abc',
     );
 
-    const expectedIdHash = id(expectedId);
+    const expectedIdHash = id(paddedId);
     const filter = {
       address: routerAddress,
       topics: [OPERATION_RESULT_SIGNATURE, expectedIdHash],
@@ -106,6 +135,7 @@ test('watchOperationResult detects successful OperationResult event (live mode)'
     chainId,
     kvStore,
     txId,
+    sourceAddress: MOCK_SOURCE_ADDRESS,
     payloadHash: MOCK_PAYLOAD_HASH,
     timeoutMs: 3000,
     log: logger,
@@ -123,9 +153,9 @@ test('watchOperationResult detects successful OperationResult event (live mode)'
 
 test('watchOperationResult detects failed OperationResult event with finality protection (live mode)', async t => {
   const routerAddress = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
-  const expectedId = 'tx2';
-  const chainId = 'eip155:1';
   const txId = 'tx2' as `tx${number}`;
+  const paddedId = padTxId(txId, MOCK_SOURCE_ADDRESS);
+  const chainId = 'eip155:1';
   const provider = createMockProvider(1000);
   const kvStore = makeKVStoreFromMap(new Map());
 
@@ -137,7 +167,7 @@ test('watchOperationResult detects failed OperationResult event with finality pr
 
   const mockLog = createMockOperationResultLog(
     routerAddress,
-    expectedId,
+    paddedId,
     false, // failure
     'revert reason',
     blockNumber,
@@ -155,7 +185,7 @@ test('watchOperationResult detects failed OperationResult event with finality pr
 
   // Emit failure event after a short delay
   setTimeout(() => {
-    const expectedIdHash = id(expectedId);
+    const expectedIdHash = id(paddedId);
     const filter = {
       address: routerAddress,
       topics: [OPERATION_RESULT_SIGNATURE, expectedIdHash],
@@ -170,6 +200,7 @@ test('watchOperationResult detects failed OperationResult event with finality pr
     chainId,
     kvStore,
     txId,
+    sourceAddress: MOCK_SOURCE_ADDRESS,
     payloadHash: MOCK_PAYLOAD_HASH,
     timeoutMs: 3000,
     log: logger,
@@ -187,9 +218,9 @@ test('watchOperationResult detects failed OperationResult event with finality pr
 
 test('lookBackOperationResult finds successful OperationResult event (lookback mode)', async t => {
   const routerAddress = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
-  const expectedId = 'tx3';
-  const chainId = 'eip155:1';
   const txId = 'tx3' as `tx${number}`;
+  const paddedId = padTxId(txId, MOCK_SOURCE_ADDRESS);
+  const chainId = 'eip155:1';
   const kvStore = makeKVStoreFromMap(new Map());
   const latestBlock = 1000;
   const blockNumber = latestBlock; // Put the log at latest block so it's in scan range
@@ -197,7 +228,7 @@ test('lookBackOperationResult finds successful OperationResult event (lookback m
 
   const mockLog = createMockOperationResultLog(
     routerAddress,
-    expectedId,
+    paddedId,
     true, // success
     '',
     blockNumber,
@@ -215,6 +246,7 @@ test('lookBackOperationResult finds successful OperationResult event (lookback m
     chainId,
     kvStore,
     txId,
+    sourceAddress: MOCK_SOURCE_ADDRESS,
     payloadHash: MOCK_PAYLOAD_HASH,
     rpcClient: {} as any,
     makeAbortController,
@@ -234,9 +266,9 @@ test('lookBackOperationResult finds successful OperationResult event (lookback m
 
 test('lookBackOperationResult finds failed OperationResult event with finality protection (lookback mode)', async t => {
   const routerAddress = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
-  const expectedId = 'tx4';
-  const chainId = 'eip155:1';
   const txId = 'tx4' as `tx${number}`;
+  const paddedId = padTxId(txId, MOCK_SOURCE_ADDRESS);
+  const chainId = 'eip155:1';
   const kvStore = makeKVStoreFromMap(new Map());
   const latestBlock = 1000;
   const blockNumber = latestBlock; // Put the log at latest block so it's in scan range
@@ -244,7 +276,7 @@ test('lookBackOperationResult finds failed OperationResult event with finality p
 
   const mockLog = createMockOperationResultLog(
     routerAddress,
-    expectedId,
+    paddedId,
     false, // failure
     'execution reverted',
     blockNumber,
@@ -278,6 +310,7 @@ test('lookBackOperationResult finds failed OperationResult event with finality p
     chainId,
     kvStore,
     txId,
+    sourceAddress: MOCK_SOURCE_ADDRESS,
     payloadHash: MOCK_PAYLOAD_HASH,
     rpcClient: {} as any,
     makeAbortController,
@@ -313,7 +346,7 @@ test('lookBackOperationResult phase 2 detects reverted tx via payloadHash', asyn
   const provider = createMockProvider(latestBlock, []);
 
   // Mock trace_filter to return our reverted tx (eip155:1 uses trace_filter)
-  (provider as any).send = async (method: string, params: any[]) => {
+  (provider as any).send = async (method: string, _params: any[]) => {
     if (method === 'trace_filter') {
       return [
         {
@@ -371,6 +404,7 @@ test('lookBackOperationResult phase 2 detects reverted tx via payloadHash', asyn
     chainId,
     kvStore,
     txId,
+    sourceAddress: MOCK_SOURCE_ADDRESS,
     payloadHash,
     rpcClient: mockRpcClient,
     makeAbortController,
@@ -455,6 +489,7 @@ test('watchOperationResult detects revert via Alchemy subscription (live mode)',
     chainId,
     kvStore,
     txId,
+    sourceAddress: MOCK_SOURCE_ADDRESS,
     payloadHash,
     timeoutMs: 3000,
     log: logger,
@@ -497,6 +532,7 @@ test('lookBackOperationResult returns not-found when both phases find nothing', 
     chainId,
     kvStore,
     txId,
+    sourceAddress: MOCK_SOURCE_ADDRESS,
     payloadHash,
     rpcClient: mockRpcClient,
     makeAbortController,
