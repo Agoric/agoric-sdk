@@ -157,10 +157,16 @@ export const extractPaddedTxId = (
     const parsed = axelarExecuteIface.parseTransaction({ data });
     if (!parsed) return null;
 
-    const [_commandId, _sourceChain, _sourceAddress, payload] = parsed.args;
+    const [_commandId, _sourceChain, sourceAddress, payload] = parsed.args;
     // Strip the 4-byte selector (0x + 8 hex chars) to get the ABI-encoded args
     const encodedArgs = `0x${payload.slice(10)}`;
     const [paddedTxId] = abiCoder.decode(['string'], encodedArgs);
+
+    // Sanity check: the padded txId should match the source address length
+    if (paddedTxId.length !== sourceAddress.length) {
+      return null;
+    }
+
     return paddedTxId;
   } catch {
     return null;

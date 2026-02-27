@@ -37,14 +37,14 @@ import {
  * Event signature:
  *   OperationResult(string indexed id, string indexed sourceAddressIndex,
  *     string sourceAddress, address indexed allegedRemoteAccount,
- *     bool success, bytes reason)
+ *     bytes4 instructionSelector, bool success, bytes reason)
  *
  * This event is emitted by the PortfolioRouter contract after processing each
  * RouterInstruction. It indicates whether the instruction (which may include
  * deposit, account provision, and/or multicall operations) succeeded or failed.
  */
 const OPERATION_RESULT_SIGNATURE = id(
-  'OperationResult(string,string,string,address,bool,bytes)',
+  'OperationResult(string,string,string,address,bytes4,bool,bytes)',
 );
 
 type OperationResultWatch = {
@@ -64,8 +64,40 @@ type OperationResultWatch = {
  */
 export const padTxId = (txId: string, sourceAddress: string): string => {
   const paddingLength = sourceAddress.length - txId.length;
-  assert(paddingLength > 0, 'sourceAddress must be longer than txId');
+  assert(paddingLength >= 0, 'sourceAddress must not be shorter than txId');
   return txId + '\0'.repeat(paddingLength);
+};
+
+/**
+ * Check whether a transaction's calldata matches the expected padded txId
+ * or payloadHash. Resilient to contract bugs that may not correctly pad the
+ * txId — returns true if either identifier matches, and warns if they disagree.
+ */
+const matchesTxPayload = (
+  txData: string,
+  paddedTxId: string,
+  payloadHash: string | undefined,
+  log: (...args: unknown[]) => void,
+  txHash: string,
+  txId: string,
+): boolean => {
+  const extractedTxId = extractPaddedTxId(txData);
+  const txIdMatches = extractedTxId === paddedTxId;
+
+  const hashMatches = payloadHash
+    ? extractPayloadHash(txData) === payloadHash
+    : false;
+
+  if (txIdMatches && payloadHash && !hashMatches) {
+    log(`⚠️  payloadHash mismatch for txId=${txId} txHash=${txHash}`);
+  }
+  if (!txIdMatches && hashMatches) {
+    log(
+      `⚠️  paddedTxId mismatch for txId=${txId} txHash=${txHash} (matched by payloadHash)`,
+    );
+  }
+
+  return txIdMatches || hashMatches;
 };
 
 /**
@@ -74,32 +106,43 @@ export const padTxId = (txId: string, sourceAddress: string): string => {
  * Event: OperationResult(
  *   string indexed id, string indexed sourceAddressIndex,
  *   string sourceAddress, address indexed allegedRemoteAccount,
- *   bool success, bytes reason
+ *   bytes4 instructionSelector, bool success, bytes reason
  * )
  * - topics[0]: event signature
  * - topics[1]: keccak256(id)                        — indexed string hash
  * - topics[2]: keccak256(sourceAddressIndex)         — indexed string hash
  * - topics[3]: allegedRemoteAccount                  — indexed address
- * - data: abi.encode(string, bool, bytes)
+ * - data: abi.encode(string, bytes4, bool, bytes)
  */
 const parseOperationResultLog = (
   log: Log,
   abiCoder: AbiCoder = new AbiCoder(),
-): { idHash: string; sourceAddress: string; success: boolean } => {
+): {
+  idHash: string;
+  sourceAddress: string;
+  allegedRemoteAccount: string;
+  instructionSelector: string;
+  success: boolean;
+  reason: string;
+} => {
   if (!log.topics || log.topics.length < 4 || !log.data) {
     throw new Error('Malformed OperationResult log');
   }
 
   const idHash = log.topics[1];
-  const [sourceAddress, success] = abiCoder.decode(
-    ['string', 'bool', 'bytes'],
+  const allegedRemoteAccount = log.topics[3];
+  const [sourceAddress, instructionSelector, success, reason] = abiCoder.decode(
+    ['string', 'bytes4', 'bool', 'bytes'],
     log.data,
   );
 
   return {
     idHash,
     sourceAddress,
+    allegedRemoteAccount,
+    instructionSelector,
     success,
+    reason,
   };
 };
 
@@ -237,12 +280,17 @@ export const watchOperationResult = ({
           const txData = tx.input;
           if (!txHash || !txData) return;
 
-          // Match by extracting the padded txId from the payload
-          if (extractPaddedTxId(txData) !== paddedTxId) return;
-
-          if (payloadHash && extractPayloadHash(txData) !== payloadHash) {
-            log(`⚠️  payloadHash mismatch for txId=${txId} txHash=${txHash}`);
-          }
+          if (
+            !matchesTxPayload(
+              txData,
+              paddedTxId,
+              payloadHash,
+              log,
+              txHash,
+              txId,
+            )
+          )
+            return;
 
           const receipt = await fetchReceiptWithRetry(
             provider,
@@ -449,13 +497,8 @@ export const lookBackOperationResult = async ({
       log,
       signal: sharedSignal,
       toAddress: routerAddress,
-      verifyFailedTx: tx => {
-        if (extractPaddedTxId(tx.data) !== paddedTxId) return false;
-        if (payloadHash && extractPayloadHash(tx.data) !== payloadHash) {
-          log(`⚠️  payloadHash mismatch for txId=${txId} txHash=${tx.hash}`);
-        }
-        return true;
-      },
+      verifyFailedTx: tx =>
+        matchesTxPayload(tx.data, paddedTxId, payloadHash, log, tx.hash, txId),
       onRejectedChunk: updateFailedTxLowerBound,
       rpcClient,
     });
