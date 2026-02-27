@@ -259,12 +259,12 @@ test('handlePendingTx ignores non-matching wallet addresses', async t => {
   ]);
 });
 
-test('find a failed tx in MAKE_ACCOUNT lookback mode', async t => {
+test('find a failed tx in MAKE_ACCOUNT lookback mode via trace_filter', async t => {
   const logs: string[] = [];
   const mockLog = (...args: unknown[]) => logs.push(args.join(' '));
 
   const txId = 'tx10' as `tx${number}`;
-  const chain = 'eip155:42161';
+  const chain = 'eip155:8453'; // Base (trace_filter supported)
 
   // Encode Factory.execute() calldata with the wallet address as payload
   const axelarExecuteIface = new Interface([
@@ -278,7 +278,7 @@ test('find a failed tx in MAKE_ACCOUNT lookback mode', async t => {
     payload,
   ]);
 
-  const failedTxHash = '0xdeadbeef123';
+  const failedTxHash = '0xdeadbeef123' as `0x${string}`;
 
   const makeAccountTx: PendingTx = {
     txId,
@@ -295,7 +295,7 @@ test('find a failed tx in MAKE_ACCOUNT lookback mode', async t => {
 
   const currentTimeMs = 1700000000;
   const txTimestampMs = currentTimeMs - 10 * 1000;
-  const avgBlockTimeMs = 300;
+  const avgBlockTimeMs = 2500;
 
   const latestBlock = 1_450_031;
   mockProvider.getBlockNumber = async () => latestBlock;
@@ -307,7 +307,7 @@ test('find a failed tx in MAKE_ACCOUNT lookback mode', async t => {
   };
 
   // Providers: getLogs returns [] so the event scanner finds nothing.
-  // The failed-tx scanner is the one that produces the result.
+  // The failed-tx scanner (trace_filter) is the one that produces the result.
   const newEvmProviders = objectMap(
     opts.evmProviders,
     provider =>
@@ -320,11 +320,30 @@ test('find a failed tx in MAKE_ACCOUNT lookback mode', async t => {
             queueMicrotask(() => listener(latestBlock + 1));
           }
         },
-        getTransaction: async () => ({
-          hash: failedTxHash,
-          to: factoryAddress,
-          data: mockCalldata,
-        }),
+        // trace_filter uses provider.send()
+        send: async (method: string, _params: unknown[]) => {
+          if (method === 'trace_filter') {
+            return [
+              {
+                action: {
+                  from: '0x0000000000000000000000000000000000000000',
+                  to: factoryAddress.toLowerCase(),
+                  input: mockCalldata,
+                  value: '0x0',
+                  gas: '0x186a0',
+                  callType: 'call',
+                },
+                blockNumber: latestBlock,
+                transactionHash: failedTxHash,
+                error: 'Reverted',
+                type: 'call',
+                subtraces: 0,
+                traceAddress: [],
+              },
+            ];
+          }
+          return null;
+        },
         getTransactionReceipt: async () => ({
           status: 0,
           blockNumber: latestBlock,
@@ -336,27 +355,7 @@ test('find a failed tx in MAKE_ACCOUNT lookback mode', async t => {
   const ctxWithFetch = harden({
     ...opts,
     evmProviders: newEvmProviders,
-    fetch: async (url: string, init?: RequestInit) => {
-      if (Object.values(opts.rpcUrls).includes(url)) {
-        const batch = JSON.parse(init?.body as string);
-        return {
-          ok: true,
-          json: async () =>
-            batch.map((req: any) => ({
-              jsonrpc: '2.0',
-              id: req.id,
-              result: [
-                {
-                  transactionHash: failedTxHash,
-                  status: '0x0',
-                  to: factoryAddress,
-                },
-              ],
-            })),
-        } as Response;
-      }
-      return {} as Response;
-    },
+    fetch: async () => ({}) as Response,
   });
 
   await handlePendingTx(

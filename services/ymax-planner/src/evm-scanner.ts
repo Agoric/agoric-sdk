@@ -2,10 +2,6 @@ import { WebSocketProvider, Log, toQuantity, isError } from 'ethers';
 import type { Filter, TransactionResponse } from 'ethers';
 import type { Address as EvmAddress } from 'viem';
 import type { CaipChainId } from '@agoric/orchestration';
-import { makeWorkPool } from '@agoric/internal/src/work-pool.js';
-import { makePromiseKit } from '@endo/promise-kit';
-import { JSONRPCClient, createJSONRPCRequest } from 'json-rpc-2.0';
-import type { JSONRPCResponse } from 'json-rpc-2.0';
 import { getBlockTimeMs } from './support.ts';
 
 export type WatcherTimeoutOptions = {
@@ -189,7 +185,6 @@ type FailedTxScanOpts = ScanOptsBase & {
     tx: TransactionResponse,
     receipt: TxReceipt,
   ) => boolean | Promise<boolean>;
-  rpcClient: JSONRPCClient;
 };
 
 // https://www.alchemy.com/docs/reference/what-are-evm-traces#the-solution-evm-traces
@@ -217,62 +212,6 @@ type CallTraceAction = {
 type CallTraceResult = CallTraceResultBase & {
   type: 'call';
   action: CallTraceAction;
-};
-
-/**
- * Create a {@link JSONRPCClient} backed by HTTP POST via the given `fetch`.
- *
- * Use this instead of passing raw `fetch` + `rpcUrl` to downstream functions
- * so that callees only receive the constrained JSON-RPC interface.
- */
-export const makeJsonRpcClient = (
-  fetch: typeof globalThis.fetch,
-  rpcUrl: string,
-): JSONRPCClient => {
-  const client: JSONRPCClient = new JSONRPCClient(async payload => {
-    const res = await fetch(rpcUrl, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
-    client.receive(await res.json());
-  });
-  return client;
-};
-
-/**
- * Fetches block receipts in batch using eth_getBlockReceipts RPC method.
- * This function cannot use an ethers provider because ethers does not support
- * batching of this method.
- *
- * @param start - Start block number (inclusive)
- * @param end - End block number (inclusive)
- * @param client - JSON-RPC batch client
- * @returns Array of TxReceipt objects for the requested blocks
- */
-const getTxReceiptsBatch = async (
-  start: number,
-  end: number,
-  client: JSONRPCClient,
-  log?: (...args: unknown[]) => void,
-): Promise<TxReceipt[]> => {
-  const requests = Array.from({ length: end - start + 1 }, (_, i) =>
-    createJSONRPCRequest(i + 1, 'eth_getBlockReceipts', [
-      toQuantity(start + i),
-    ]),
-  );
-  const responses: JSONRPCResponse[] = await client.requestAdvanced(requests);
-
-  const errors = responses.filter(r => r.error);
-  if (errors.length > 0) {
-    log?.(
-      `[FailedTxScan] eth_getBlockReceipts returned ${errors.length}/${responses.length} errors for blocks ${start}–${end}:`,
-      errors[0],
-    );
-  }
-
-  return responses.flatMap(r => (r.result ?? []) as TxReceipt[]);
 };
 
 /**
@@ -415,67 +354,6 @@ export const scanEvmLogsInChunks = async (
 
 /**
  * Scan a block range for reverted transactions to `toAddress` using
- * eth_getBlockReceipts, returning the first one accepted by `verifyFailedTx`.
- *
- * Used where Alchemy does not support trace_filter (as of 2026-02, Arbitrum and
- * Avalanche).
- * Downloads ALL receipts for each block, filters client-side by toAddress
- * and status, then makes a separate getTransaction call to retrieve
- * calldata for verification.
- *
- * Cost per 10-block chunk: 200 CU + 20 CU/match.
- */
-const scanChunkTxReceiptsForFailedTx = async (
-  start: number,
-  end: number,
-  opts: FailedTxScanOpts,
-): Promise<TransactionResponse | undefined> => {
-  const { provider, toAddress, verifyFailedTx, rpcClient } = opts;
-
-  const receipts = await getTxReceiptsBatch(start, end, rpcClient, opts.log);
-
-  const { promise, resolve, reject } = makePromiseKit<
-    TransactionResponse | undefined
-  >();
-  let isDone = false;
-  const scanner = makeWorkPool(receipts, undefined, async receipt => {
-    if (isDone) return;
-    const { transactionHash, status, to } = receipt;
-
-    if (!to || to.toLowerCase() !== toAddress.toLowerCase()) return;
-
-    // We only care about failed transactions.
-    if (status !== '0x0') return;
-
-    opts.log?.(
-      `[FailedTxScan] Candidate failed tx ${transactionHash} (status=${status})`,
-    );
-
-    const tx = await provider.getTransaction(transactionHash);
-    if (!tx) {
-      opts.log?.(
-        `[FailedTxScan] tx ${transactionHash} not found (possible reorg), skipping`,
-      );
-      return;
-    }
-    if (await verifyFailedTx(tx, receipt)) {
-      resolve(tx);
-      isDone = true;
-    } else {
-      opts.log?.(
-        `[FailedTxScan] tx ${transactionHash} failed verifyFailedTx check`,
-      );
-    }
-  });
-  scanner.done.then(
-    () => resolve(undefined),
-    err => reject(err),
-  );
-  return promise;
-};
-
-/**
- * Scan a block range for reverted transactions to `toAddress` using
  * trace_filter, returning the first one accepted by `verifyFailedTx`.
  *
  * Used where Alchemy supports trace_filter (as of 2026-02, Ethereum, Base, and
@@ -537,27 +415,17 @@ const scanChunkTracesForFailedTx = async (
 };
 
 const TRACE_FILTER_CHUNK_SIZE = 100;
-const BLOCK_RECEIPTS_CHUNK_SIZE = 10;
 
 /**
- * Chunked scanner for failed transactions.
+ * Chunked scanner for failed transactions using the `trace_filter` RPC method.
  *
  * Scans [fromBlock, toBlock] in chunk windows looking for reverted
  * transactions sent to `toAddress`, then validates each candidate with
  * the caller-supplied `verifyFailedTx` predicate.
  *
- * Two strategies are used depending on chain support:
- *
- * | Strategy             | Chains (as of 2026-02)        | CU (10 blocks) |
- * |----------------------|-------------------------------|----------------|
- * | trace_filter         | Ethereum, Base, Optimism      | 40             |
- * | eth_getBlockReceipts | Arbitrum, Avalanche           | 200 + 20/match |
- *
- * trace_filter is preferred where available because it filters by toAddress
- * server-side and includes calldata, avoiding per-block receipt downloads
- * and extra getTransaction round-trips. Arbitrum's arbtrace_filter only
- * covers pre-Nitro blocks (< 22,207,815) so is not usable for recent
- * transaction scanning. Avalanche has no trace_filter support.
+ * Only supported on chains where Alchemy provides `trace_filter`
+ * (Ethereum, Base, Optimism). Returns `undefined` immediately for
+ * unsupported chains (Arbitrum, Avalanche).
  *
  * @see https://www.alchemy.com/docs/reference/compute-unit-costs
  * @see https://www.alchemy.com/docs/reference/what-is-trace_filter
@@ -574,16 +442,17 @@ export const scanFailedTxsInChunks = async (
     ...rest
   } = opts;
 
-  const useTraceFilter = traceFilterSupportedChains.has(chainId);
-  const chunkSize =
-    requestedChunkSize ??
-    (useTraceFilter ? TRACE_FILTER_CHUNK_SIZE : BLOCK_RECEIPTS_CHUNK_SIZE);
-  const innerScanChunk = useTraceFilter
-    ? scanChunkTracesForFailedTx
-    : scanChunkTxReceiptsForFailedTx;
+  if (!traceFilterSupportedChains.has(chainId)) {
+    log(
+      `[FailedTxScan] Skipping failed tx scan for ${chainId} (trace_filter not supported)`,
+    );
+    return undefined;
+  }
+
+  const chunkSize = requestedChunkSize ?? TRACE_FILTER_CHUNK_SIZE;
 
   log(
-    `[FailedTxScan] Scanning ${rest.fromBlock} → ${rest.toBlock} using ${useTraceFilter ? 'trace_filter' : 'eth_getTxReceipts'} (chunk=${chunkSize})`,
+    `[FailedTxScan] Scanning ${rest.fromBlock} → ${rest.toBlock} using trace_filter (chunk=${chunkSize})`,
   );
 
   return scanEvmBlocksInChunks<TransactionResponse>({
@@ -593,7 +462,7 @@ export const scanFailedTxsInChunks = async (
     log,
     label: 'FailedTxScan',
     scanChunk: async (start, end) => {
-      const result = await innerScanChunk(start, end, opts);
+      const result = await scanChunkTracesForFailedTx(start, end, opts);
       if (result) {
         log(`[FailedTxScan] Match in tx=${result.hash}`);
       }

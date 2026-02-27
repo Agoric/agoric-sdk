@@ -506,19 +506,7 @@ test('resolves a 10 second old pending GMP transaction in lookback mode', async 
 
   const ctxWithFetch = harden({
     ...opts,
-    fetch: async (url: string, init?: RequestInit) => {
-      if (Object.values(opts.rpcUrls).includes(url)) {
-        const batch = JSON.parse(init?.body as string);
-        return {
-          ok: true,
-          json: async () =>
-            batch.map((req: any) => ({
-              jsonrpc: '2.0',
-              id: req.id,
-              result: [],
-            })),
-        } as Response;
-      }
+    fetch: async () => {
       return {
         ok: true,
         json: async () => ({
@@ -744,19 +732,7 @@ test('GMP monitor does not resolve transaction twice when live mode completes be
 
   const ctxWithFetch = harden({
     ...opts,
-    fetch: async (url: string, init?: RequestInit) => {
-      if (Object.values(opts.rpcUrls).includes(url)) {
-        const batch = JSON.parse(init?.body as string);
-        return {
-          ok: true,
-          json: async () =>
-            batch.map((req: any) => ({
-              jsonrpc: '2.0',
-              id: req.id,
-              result: [],
-            })),
-        } as Response;
-      }
+    fetch: async () => {
       // Axelarscan returns executed status
       return {
         ok: true,
@@ -853,8 +829,7 @@ const makeFailedTxTestContext = ({
   txId: `tx${number}`;
   avgBlockTimeMs: number;
   failedTxHash: `0x${string}`;
-  /** Build a mock `fetch` placed on the test context.  `pending-tx-manager`
-   *  feeds it to `makeJsonRpcClient`, so responses must be JSON-RPC 2.0. */
+  /** Build a mock `fetch` placed on the test context. */
   makeFetchMock: (info: {
     failedTxHash: `0x${string}`;
   }) => typeof globalThis.fetch;
@@ -922,55 +897,6 @@ const makeFailedTxTestContext = ({
     txTimestampMs: FAILED_TX_TIME_MS - 10_000,
   };
 };
-
-test('find a failed tx in lookback mode via getBlockReceipts', async t => {
-  const { logs, mockLog, txId, gmpTx, ctxWithFetch, txTimestampMs } =
-    makeFailedTxTestContext({
-      chainId: 'eip155:42161',
-      txId: 'tx553' as `tx${number}`,
-      avgBlockTimeMs: 300,
-      failedTxHash: '0x123123213' as `0x${string}`,
-      providerOverrides: ({ calldata, failedTxHash: fth }) => ({
-        getTransaction: async (_: any) => ({ hash: fth, data: calldata }),
-      }),
-      makeFetchMock:
-        ({ failedTxHash: fth }) =>
-        async (_url: string, init?: RequestInit) => {
-          const batch = JSON.parse(init?.body as string);
-          return {
-            ok: true,
-            json: async () =>
-              batch.map((req: any) => ({
-                jsonrpc: '2.0',
-                id: req.id,
-                result: [
-                  {
-                    transactionHash: fth,
-                    status: '0x0',
-                    to: FAILED_TX_CONTRACT,
-                  },
-                ],
-              })),
-          } as Response;
-        },
-    });
-
-  await handlePendingTx(
-    { txId, ...gmpTx },
-    { ...ctxWithFetch, log: mockLog, txTimestampMs },
-  );
-
-  t.true(logs.some(l => l.includes(`handling ${TxType.GMP} tx`)));
-  t.true(logs.some(l => l.includes('Found matching failed transaction')));
-  t.true(
-    logs.some(l =>
-      l.includes(
-        `[${txId}] ❌ REVERTED (25 confirmations): txId=${txId} txHash=0x123123213 block=${FAILED_TX_LATEST_BLOCK} - transaction failed`,
-      ),
-    ),
-  );
-  t.true(logs.some(l => l.includes('GMP tx resolved')));
-});
 
 test('find a failed tx in lookback mode via trace_filter (Base)', async t => {
   let getTransactionCalled = false;

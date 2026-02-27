@@ -305,13 +305,12 @@ export const createEVMContext = async ({
   clusterName,
   alchemyApiKey,
 }: CreateContextParams): Promise<
-  Pick<EvmContext, 'evmProviders' | 'usdcAddresses' | 'rpcUrls'>
+  Pick<EvmContext, 'evmProviders' | 'usdcAddresses'>
 > => {
   if (clusterName === 'local') clusterName = 'testnet';
   if (!alchemyApiKey) throw Error('missing alchemyApiKey');
 
   const wssUrls = getEvmRpcMap(clusterName, alchemyApiKey, 'wss');
-  const httpsUrls = getEvmRpcMap(clusterName, alchemyApiKey, 'https');
   const evmProviders = Object.fromEntries(
     Object.entries(wssUrls).map(([caip, wsUrl]) => [
       caip,
@@ -324,7 +323,6 @@ export const createEVMContext = async ({
     // XXX Remove now that @agoric/portfolio-api/src/constants.js
     // defines UsdcTokenIds.
     usdcAddresses: usdcAddresses[clusterName],
-    rpcUrls: httpsUrls,
   };
 };
 
