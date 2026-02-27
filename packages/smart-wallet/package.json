@@ -45,6 +45,7 @@
   },
   "files": [
     "src/",
+    "tools/",
     "source-spec-registry.*"
   ],
   "keywords": [],
