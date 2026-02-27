@@ -139,7 +139,7 @@
     "build-xs-worker": "cd packages/xs-vat-worker && yarn build:xs-lin"
   },
   "lint-staged": {
-    "**/*.{cjs,cts,js,mjs,mts,ts,tsx}": "oxfmt --no-error-on-unmatched-pattern"
+    "**/*.{cjs,cts,js,json,mjs,mts,ts,tsx}": "oxfmt --no-error-on-unmatched-pattern"
   },
   "ava": {
     "files": [

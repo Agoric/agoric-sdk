@@ -181,11 +181,10 @@ async function replay(transcriptFile) {
   const snapshotActivityFd = fs.openSync('snapshot-activity.jsonl', 'a');
 
   const fakeKernelKeeper = /** @type {KernelKeeper} */ ({
-    provideVatKeeper: _vatID =>
-      /** @type {Partial<VatKeeper>} */ ({
-        addToTranscript: () => {},
-        getSnapshotInfo: () => loadSnapshotID && { hash: loadSnapshotID },
-      }),
+    provideVatKeeper: _vatID => /** @type {Partial<VatKeeper>} */ ({
+      addToTranscript: () => {},
+      getSnapshotInfo: () => loadSnapshotID && { hash: loadSnapshotID },
+    }),
     getRelaxDurabilityRules: () => false,
   });
 

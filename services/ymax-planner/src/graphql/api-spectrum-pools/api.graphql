@@ -4,7 +4,9 @@ type APYResult {
   totalApy: String
 }
 
-"""The JSON scalar type for method information"""
+"""
+The JSON scalar type for method information
+"""
 scalar JSON
 
 type PendleImpliedApyCalculation {
@@ -92,22 +94,38 @@ type ProtocolPoolUserBalanceResult {
 }
 
 type Query {
-  """Get all available methods for each chain"""
+  """
+  Get all available methods for each chain
+  """
   getMethodInfo: JSON!
 
-  """Get the details for a pool protocol (TVL and APY)"""
-  getProtocolPoolDetails(input: [ProtocolPoolChainInput!]!): [ProtocolPoolDetailsResult!]!
+  """
+  Get the details for a pool protocol (TVL and APY)
+  """
+  getProtocolPoolDetails(
+    input: [ProtocolPoolChainInput!]!
+  ): [ProtocolPoolDetailsResult!]!
 
   """
   Get protocol pool price(s) in USD for supported protocols (aave, morpho, pendle)
   """
-  getProtocolPoolPrice(input: [ProtocolPoolPriceInput!]!): [ProtocolPoolPriceResult!]!
+  getProtocolPoolPrice(
+    input: [ProtocolPoolPriceInput!]!
+  ): [ProtocolPoolPriceResult!]!
 
-  """Get the user balance in a pool for protocol on a chain"""
-  getProtocolPoolUserBalance(input: [ProtocolPoolUserBalanceInput!]!): [ProtocolPoolUserBalanceResult!]!
+  """
+  Get the user balance in a pool for protocol on a chain
+  """
+  getProtocolPoolUserBalance(
+    input: [ProtocolPoolUserBalanceInput!]!
+  ): [ProtocolPoolUserBalanceResult!]!
 
-  """Calculate implied APY for a user's PT position"""
-  pendleImpliedApy(input: [PendlePoolUserImpliedAPYInput!]!): [PendleImpliedApyCalculation!]!
+  """
+  Calculate implied APY for a user's PT position
+  """
+  pendleImpliedApy(
+    input: [PendlePoolUserImpliedAPYInput!]!
+  ): [PendleImpliedApyCalculation!]!
 }
 
 type TVLResult {

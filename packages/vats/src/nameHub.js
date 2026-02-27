@@ -202,8 +202,10 @@ export const prepareNameHubKit = zone => {
           const out = harden([
             ...keyToValue.entries(),
             ...[...keyToPK.entries()].map(
-              ([k, kit]) =>
-                /** @type {[string, ERef<unknown>]} */ ([k, kit.promise]),
+              ([k, kit]) => /** @type {[string, ERef<unknown>]} */ ([
+                k,
+                kit.promise,
+              ]),
             ),
           ]);
           return out;

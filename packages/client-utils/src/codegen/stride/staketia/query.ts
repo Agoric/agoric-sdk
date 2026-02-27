@@ -975,8 +975,8 @@ export const QueryRedemptionRecordsResponse = {
   ): JsonSafe<QueryRedemptionRecordsResponse> {
     const obj: any = {};
     if (message.redemptionRecordResponses) {
-      obj.redemptionRecordResponses = message.redemptionRecordResponses.map(
-        e => (e ? RedemptionRecordResponse.toJSON(e) : undefined),
+      obj.redemptionRecordResponses = message.redemptionRecordResponses.map(e =>
+        e ? RedemptionRecordResponse.toJSON(e) : undefined,
       );
     } else {
       obj.redemptionRecordResponses = [];

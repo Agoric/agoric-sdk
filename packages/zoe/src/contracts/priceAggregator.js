@@ -282,8 +282,10 @@ const start = async (zcf, privateArgs) => {
     timestamp = TimeMath.coerceTimestampRecord(timestamp, timerBrand);
 
     const submitted = [...oracleRecords.values()].map(
-      ({ oracleKey, lastSample }) =>
-        /** @type {[OracleKey, Ratio]} */ ([oracleKey, lastSample]),
+      ({ oracleKey, lastSample }) => /** @type {[OracleKey, Ratio]} */ ([
+        oracleKey,
+        lastSample,
+      ]),
     );
     const median = calculateMedian(
       submitted
